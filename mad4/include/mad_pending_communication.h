@@ -73,6 +73,8 @@ typedef struct s_mad_track_t{
 
 
 typedef struct s_mad_track_set_t{
+    tbx_bool_t receiver;
+
     p_tbx_htable_t tracks_htable;
     p_mad_track_t *tracks_tab;
     uint32_t       nb_track;

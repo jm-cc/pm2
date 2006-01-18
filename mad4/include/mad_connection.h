@@ -95,13 +95,19 @@ typedef struct s_mad_connection{
     tbx_bool_t               first_sub_buffer_group;
     tbx_bool_t               more_data;
 
+
+    /*-----------------------------*/
+    // Packs of the message blocking the connection
     p_tbx_slist_t  packs_list;
+    // Current sequence of the packs
     sequence_t     sequence;
 
+    // True if the nb_unexpected > 
     tbx_bool_t     blocked;
     uint32_t       nb_unexpected;
 
     int            need_reception;
+    /*-----------------------------*/
 
     /* Driver specific data */
     p_mad_driver_specific_t  specific;

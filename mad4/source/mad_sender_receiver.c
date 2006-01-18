@@ -109,7 +109,7 @@ mad_s_make_progress(p_mad_adapter_t adapter){
                 p_mad_connection_t     cnx         = NULL;
                 rank_t                 remote_rank = 0;
 
-                DISP("ENVOI d'un gros");
+                //DISP("ENVOI d'un gros");
 
                 channel_id  = cur->channel->id;
                 remote_rank = cur->remote_rank;
@@ -126,11 +126,11 @@ mad_s_make_progress(p_mad_adapter_t adapter){
                 s_track_set->cur = NULL;
 
             } else {
-                DISP("ENVOI d'un petit");
+                //DISP("ENVOI d'un petit");
 
                 mad_iovec_s_check(adapter, cur);
                 s_track_set->cur = NULL;
-                DISP("s_check OK!");
+                //DISP("s_check OK!");
             }
 
             // envoi du suivant
@@ -214,6 +214,10 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     // pour chaque piste de réception
     for(i = 0; i < nb_track && j < nb_pending_reception; i++){
 
+        //DISP_VAL("reception_tracks_in_use : i", i);
+        //DISP_VAL("in use?", reception_tracks_in_use[i]);
+
+
         if(reception_tracks_in_use[i]){
             j++;
 
@@ -225,8 +229,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 track->pending_reception[mad_iovec->remote_rank] = NULL;
 
                 if(track->pre_posted){
-                    DISP("r_mkp : RECEPTION d'un petit");
-
+                    //DISP("r_mkp : RECEPTION d'un petit");
                     // dépot d'une nouvelle zone pré-postée
                     interface->replace_pre_posted(adapter, track,
                                                   mad_iovec->remote_rank);
@@ -244,17 +247,20 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                     }
 
                 } else {
-                    DISP("r_mkp : RECEPTION d'un long");
+                    //DISP("r_mkp : RECEPTION d'un long");
                     mad_iovec = mad_iovec_get(mad_iovec->channel->unpacks_list,
                                               mad_iovec->channel->id,
                                               mad_iovec->remote_rank,
                                               mad_iovec->sequence);
+
+                    r_track_set->rdv_track->pending_reception[mad_iovec->remote_rank] = NULL;
+                    r_track_set->rdv_track->nb_pending_reception--;
+                    r_track_set->reception_tracks_in_use[r_track_set->rdv_track->id] = tbx_false;
+
                     mad_iovec_free(mad_iovec);
 
                     //DISP_VAL("unpack_list -len", mad_iovec->channel->unpacks_list->length);
                     //DISP("");
-
-                    r_track_set->rdv_track->pending_reception[mad_iovec->remote_rank] = tbx_false;
 
                     // cherche un nouveau à envoyer
                     if(adapter->rdv->length)

@@ -686,6 +686,10 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
     sequence_t   msg_seq = 0;
     p_mad_iovec_t mad_iovec = NULL;
     p_mad_iovec_t cur = NULL;
+    p_mad_channel_t channel = NULL;
+    p_mad_connection_t cnx = NULL;
+
+
     LOG_IN();
     interface     = adapter->driver->interface;
     s_track_set   = adapter->s_track_set;
@@ -708,27 +712,22 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
 
     // si la piste est libre, on envoie directement
     if(!cur){
-        p_mad_channel_t channel = NULL;
-        p_mad_connection_t cnx = NULL;
-
         s_track_set->cur = mad_iovec;
 
-        //interface->isend(rdv_track,
-        //                 remote_rank,
-        //                 mad_iovec->data,
-        //                 mad_iovec->total_nb_seg);
         interface->isend(rdv_track, mad_iovec);
+        //DISP("ACK->Gros envoyé");
 
         s_track_set->status = MAD_MKP_PROGRESS;
 
-        channel = mad_iovec->channel;
-        cnx = tbx_darray_get(channel->out_connection_darray,
-                             remote_rank);
-        cnx->need_reception--;
-
     } else { // sinon on met en attente
         tbx_slist_append(adapter->s_ready_msg_list, mad_iovec);
+        //DISP("ACK->Gros mis en attente");
     }
+
+    channel = mad_iovec->channel;
+    cnx = tbx_darray_get(channel->out_connection_darray,
+                         remote_rank);
+    cnx->need_reception--;
 
     // on marque le segment "traité"
     set_type(header, MAD_IOVEC_CONTROL_TREATED);
@@ -793,8 +792,6 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
         rdv_track->pending_reception[destination] = large_iov;
 
         interface->irecv(rdv_track, large_iov);
-        //DISP("POste de la reception du gros");
-
 
         // création de l'acquittement
         ack = mad_iovec_create(destination,
@@ -929,8 +926,6 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
                                 channel_id,
                                 remote_rank,
                                 sequence);
-
-            DISP_VAL("s_chek - packs_list len", cnx->packs_list->length);
 
             if(!tmp)
                 FAILURE("iovec envoyé non retrouvé");
@@ -1178,6 +1173,8 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
             tbx_slist_append(adapter->s_ready_msg_list, ack);
             //DISP("depot de l'acq");
 
+            // on rend la demande de rdv
+            tbx_free(mad_iovec_header_key, rdv);
 
             break;
         }

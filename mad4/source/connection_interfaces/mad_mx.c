@@ -435,7 +435,26 @@ mad_mx_track_init(p_mad_adapter_t adapter,
     mad_mx_check_return("mx_open_track", rc);
     r_ps->endpoint_addr = s_ps->endpoint_addr;
 
-    DISP("<--- TRACK_INIT");
+    //{
+    //    static int rdv = 0;
+    //
+    //    if(!rdv){
+    //        s_ps = s_track_set->cpy_track->local_ports[0]->specific;
+    //        DISP_PTR("En emission, endpoint", s_ps->endpoint);
+    //        r_ps = r_track_set->cpy_track->local_ports[0]->specific;
+    //        DISP_PTR("En réception, endpoint", r_ps->endpoint);
+    //        rdv ++;
+    //
+    //    } else if (rdv == 1) {
+    //        s_ps = s_track_set->rdv_track->local_ports[0]->specific;
+    //        DISP_PTR("En emission, endpoint", s_ps->endpoint);
+    //        r_ps = r_track_set->rdv_track->local_ports[0]->specific;
+    //        DISP_PTR("En réception, endpoint", r_ps->endpoint);
+    //        rdv ++;
+    //    }
+    //
+    //}
+    //DISP("<--- TRACK_INIT");
 
     LOG_OUT();
 }
@@ -673,7 +692,7 @@ mad_mx_new_message(p_mad_connection_t out){
     uint32_t            result;
     LOG_IN();
 
-    DISP("-------------->new_message");
+    //DISP("-------------->new_message");
 
     channel = out->channel;
     adapter = channel->adapter;
@@ -699,7 +718,7 @@ mad_mx_new_message(p_mad_connection_t out){
         rc = mx_test(*endpoint, &request, &status, &result);
     } while (rc == MX_SUCCESS && !result);
 
-    DISP("<--------------new_message");
+    //DISP("<--------------new_message");
     LOG_OUT();
 }
 
@@ -724,10 +743,7 @@ mad_mx_receive_message(p_mad_channel_t ch) {
     uint32_t       result;
     LOG_IN();
 
-    DISP("-------------->receive_message");
-
-
-
+    //DISP("-------------->receive_message");
     chs		= ch->specific;
     a           = ch->adapter;
     as          = a->specific;
@@ -739,9 +755,8 @@ mad_mx_receive_message(p_mad_channel_t ch) {
     r_ps    = track->local_ports[0]->specific;
     ep    = r_ps->endpoint;
 
-    DISP_PTR("endpoint", ep);
-    DISP_PTR("request", request);
-
+    //DISP_PTR("endpoint", ep);
+    //DISP_PTR("request", request);
 
     rc	= mx_irecv(*ep,
                    NULL, 0,
@@ -757,7 +772,7 @@ mad_mx_receive_message(p_mad_channel_t ch) {
         FAILURE("mad_mx_receive_message : connection not found");
     }
 
-    DISP("<--------------receive_message");
+    //DISP("<--------------receive_message");
 
     LOG_OUT();
     return in;
@@ -798,6 +813,7 @@ mad_mx_cpy_limit_size(void){
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
+
 tbx_bool_t
 mad_mx_s_test(p_mad_track_set_t track_set){
     p_mad_mx_port_specific_t ps = NULL;
@@ -812,8 +828,6 @@ mad_mx_s_test(p_mad_track_set_t track_set){
     uint32_t     result	= 0;
     mx_status_t  status;
     LOG_IN();
-
-
     //DISP("-------------->s_test");
 
     mad_iovec = track_set->cur;
@@ -823,11 +837,6 @@ mad_mx_s_test(p_mad_track_set_t track_set){
 
     request  = ps->request;
     endpoint = ps->endpoint;
-
-
-    //DISP_PTR("endpoint", endpoint);
-    //DISP_PTR("request", request);
-
 
     //rc = mx_wait(*endpoint, request, MX_INFINITE, &status, &result);
     rc = mx_test(*endpoint, request, &status, &result);
@@ -865,7 +874,6 @@ mad_mx_r_test(p_mad_track_t track){
 
     //DISP_PTR("endpoint", endpoint);
     //DISP_PTR("request", request);
-
 
     rc = mx_test(*endpoint, request, &status, &result);
     if(rc == MX_SUCCESS && result){
@@ -920,23 +928,20 @@ mad_mx_isend(p_mad_track_t track, p_mad_iovec_t mad_iovec){
     uint32_t nb_seg = 0;
 
     LOG_IN();
-
-    DISP("---->isend");
-
-
-    ps       = track->local_ports[mad_iovec->remote_rank]->specific;
+    //DISP("---->isend");
+    ps = track->local_ports[mad_iovec->remote_rank]->specific;
     endpoint = ps->endpoint;
     request  = ps->request;
 
-    remote_port = track->remote_ports[mad_iovec->remote_rank];
+    remote_port  = track->remote_ports[mad_iovec->remote_rank];
     remote_ps    = remote_port->specific;
     dest_address = remote_ps->endpoint_addr;
     seg_list     = (mx_segment_t *)mad_iovec->data;
     match_info   = 0;
     nb_seg = mad_iovec->total_nb_seg;
 
-    DISP_PTR("endpoint", endpoint);
-    DISP_PTR("request", request);
+    //DISP_PTR("endpoint", endpoint);
+    //DISP_PTR("request", request);
 
     rc = mx_isend(*endpoint,
                   seg_list, nb_seg,
@@ -944,7 +949,7 @@ mad_mx_isend(p_mad_track_t track, p_mad_iovec_t mad_iovec){
                   match_info,
                   NULL, request);
 
-    DISP("---->isend");
+    //DISP("---->isend");
     LOG_OUT();
 }
 
@@ -959,8 +964,7 @@ mad_mx_irecv(p_mad_track_t track, p_mad_iovec_t mad_iovec){
     uint32_t nb_seg = 0;
     LOG_IN();
 
-    DISP("--->mad_mx_irecv");
-
+    //DISP("--->mad_mx_irecv");
     ps = track->local_ports[0]->specific;
     endpoint = ps->endpoint;
     request  = ps->request;
@@ -969,8 +973,8 @@ mad_mx_irecv(p_mad_track_t track, p_mad_iovec_t mad_iovec){
     nb_seg = mad_iovec->total_nb_seg;
 
 
-    DISP_PTR("endpoint", endpoint);
-    DISP_PTR("request", request);
+    //DISP_PTR("endpoint", endpoint);
+    //DISP_PTR("request", request);
 
     rc	= mx_irecv(*endpoint,
                    seg_list, nb_seg,
@@ -980,7 +984,11 @@ mad_mx_irecv(p_mad_track_t track, p_mad_iovec_t mad_iovec){
 
     ps->mad_iovec        = mad_iovec;
 
-    DISP("<---mad_mx_irecv");
+    track->pending_reception[mad_iovec->remote_rank] = mad_iovec;
+    track->nb_pending_reception++;
+    track->track_set->reception_tracks_in_use[track->id] = tbx_true;
+
+    //DISP("<---mad_mx_irecv");
     LOG_OUT();
 }
 
@@ -996,7 +1004,7 @@ mad_mx_init_pre_posted(p_mad_adapter_t adapter,
     p_mad_session_t     session = NULL;
 
     LOG_IN();
-    DISP("-->mad_mx_init_pre_posted");
+    //DISP("-->mad_mx_init_pre_posted");
     madeleine = mad_get_madeleine();
     session = madeleine->session;
     my_rank = session->process_rank;
@@ -1023,7 +1031,7 @@ mad_mx_init_pre_posted(p_mad_adapter_t adapter,
 
     r_track_set->reception_tracks_in_use[track->id] = tbx_true;
     r_track_set->status = MAD_MKP_PROGRESS;
-    DISP("<--mad_mx_init_pre_posted");
+    //DISP("<--mad_mx_init_pre_posted");
     LOG_OUT();
 }
 
@@ -1034,7 +1042,7 @@ mad_mx_replace_pre_posted(p_mad_adapter_t adapter,
                           int port_id){
     p_mad_iovec_t mad_iovec = NULL;
     p_mad_track_set_t r_track_set = NULL;
-    DISP("---------6> replace pre posted");
+    //DISP("---------6> replace pre posted");
 
     r_track_set = adapter->r_track_set;
 
@@ -1052,26 +1060,33 @@ mad_mx_replace_pre_posted(p_mad_adapter_t adapter,
     r_track_set->reception_tracks_in_use[track->id] = tbx_true;
     r_track_set->status = MAD_MKP_PROGRESS;
 
-    DISP("<--------- replace pre posted");
+    //DISP("<--------- replace pre posted");
     LOG_OUT();
 }
 
 void
 mad_mx_remove_all_pre_posted(p_mad_adapter_t adapter){
-//    p_mad_track_set_t r_track_set = NULL;
-//    p_mad_track_t     cpy_track       = NULL;
-//    p_mad_iovec_t     mad_iovec   = NULL;
-//    LOG_IN();
-//    r_track_set = adapter->r_track_set;
-//    cpy_track = r_track_set->cpy_track;
-//    mad_iovec = r_track_set->reception_curs[cpy_track->id];
-//    r_track_set->reception_curs[cpy_track->id] = NULL;
-//
-//    if(mad_iovec){
-//        mad_pipeline_add(adapter->pre_posted, mad_iovec);
-//    }
-//
-//    LOG_OUT();
+    p_mad_track_set_t r_track_set = NULL;
+    p_mad_track_t     cpy_track       = NULL;
+    p_mad_iovec_t     mad_iovec   = NULL;
+    int i = 0;
+    LOG_IN();
+    //DISP("-->remove pre posted");
+
+    r_track_set = adapter->r_track_set;
+    cpy_track   = r_track_set->cpy_track;
+
+    for(i = 0; i < cpy_track->nb_dest; i++){
+        mad_iovec   = cpy_track->pending_reception[i];
+        cpy_track->pending_reception[i] = NULL;
+
+        if(mad_iovec){
+            mad_pipeline_add(adapter->pre_posted, mad_iovec);
+        }
+    }
+
+    //DISP("<--remove pre posted");
+    LOG_OUT();
 }
 
 void

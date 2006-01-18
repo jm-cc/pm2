@@ -80,6 +80,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
         adapter->s_track_set     = TBX_MALLOC(sizeof(mad_track_set_t));
 
         track_set                = adapter->s_track_set;
+        track_set->receiver = tbx_false;
         track_set->status        = MAD_MKP_NOTHING_TO_DO;
         track_set->nb_track      = 2;
         track_set->tracks_htable = tbx_htable_empty_table();
@@ -146,6 +147,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
         adapter->r_track_set      = TBX_MALLOC(sizeof(mad_track_set_t));
 
         track_set                 = adapter->r_track_set;
+        track_set->receiver = tbx_true;
         track_set->status         = MAD_MKP_NOTHING_TO_DO;
         track_set->nb_track       = 2;
         track_set->tracks_htable  = tbx_htable_empty_table();
@@ -226,6 +228,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
         adapter->s_track_set     = TBX_MALLOC(sizeof(mad_track_set_t));
 
         track_set                = adapter->s_track_set;
+        track_set->receiver = tbx_false;
         track_set->status        = MAD_MKP_NOTHING_TO_DO;
         track_set->nb_track      = 2;
         track_set->tracks_htable = tbx_htable_empty_table();
@@ -295,6 +298,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
         adapter->r_track_set      = TBX_MALLOC(sizeof(mad_track_set_t));
 
         track_set                 = adapter->r_track_set;
+        track_set->receiver = tbx_true;
         track_set->status         = MAD_MKP_NOTHING_TO_DO;
         track_set->nb_track       = 2;
         track_set->tracks_htable  = tbx_htable_empty_table();
@@ -360,9 +364,11 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
         track_set->cpy_track    = track0;
         track_set->rdv_track    = track1;
 
+        //DISP("TRACK CPY");
         interface->track_init(adapter, 0);
+        //DISP("");
+        //DISP("Track RDV");
         interface->track_init(adapter, 1);
-
 
         //interface->add_pre_posted(adapter, track_set);
         if(interface->track_set_init)

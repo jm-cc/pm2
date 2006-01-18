@@ -35,22 +35,17 @@ mad_begin_packing(p_mad_channel_t      channel,
     interface   = driver->interface;
     connection  = tbx_darray_get(channel->out_connection_darray, remote_rank);
 
-    //DISP("---------------->begin_packing");
-
-
     // lock the connection
     if (connection->lock == tbx_true)
         FAILURE("mad_begin_packing: connection dead lock");
     connection->lock = tbx_true;
 
+    // initialize transmission of the message
     if (interface->new_message)
         interface->new_message(connection);
 
     // initialize the sequence
     connection->sequence = 1;
-
-    //DISP("<----------------begin_packing");
-
 
     LOG_OUT();
     return connection;
@@ -69,19 +64,16 @@ mad_pack(p_mad_connection_t   connection,
     p_mad_driver_interface_t  interface      = NULL;
     ntbx_process_lrank_t      remote_rank = -1;
     unsigned int              seq         = -1;
-    tbx_bool_t need_rdv = tbx_false;
-
-    tbx_tick_t t1, t2;
+    tbx_bool_t                need_rdv = tbx_false;
     LOG_IN();
-    //DISP("-------------------->pack");
-    TBX_GET_TICK(t1);
-
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
     adapter     = channel->adapter;
     driver      = adapter->driver;
     interface   = driver->interface;
     seq         = connection->sequence;
+
+    // flag the pack if it needs a rdv
     if(interface->buffer_need_rdv){
         need_rdv    = interface->buffer_need_rdv(buffer_length);
     } else {
@@ -101,15 +93,12 @@ mad_pack(p_mad_connection_t   connection,
         mad_iovec_add_data_at_index(mad_iovec, buffer,
                                     buffer_length, 2);
 
+    // Add to the global list of the data to send for the optimization
     tbx_slist_append(driver->s_msg_slist, mad_iovec);
+    // Add the data to the associated message
     tbx_slist_append(connection->packs_list, mad_iovec);
 
     driver->nb_pack_to_send++;
-
-    TBX_GET_TICK(t2);
-    chrono_pack += TBX_TIMING_DELAY(t1, t2);
-    nb_pack++;
-    //DISP("<--------------------pack");
     LOG_OUT();
 }
 
@@ -129,9 +118,6 @@ mad_end_packing(p_mad_connection_t connection){
     remote_rank = connection->remote_rank;
     packs_list  = connection->packs_list;
 
-    DISP("-------->end_packing");
-
-
     // flush packs
     while(packs_list->length){
         mad_s_make_progress(adapter);
@@ -145,8 +131,6 @@ mad_end_packing(p_mad_connection_t connection){
 
     // unlock the connection
     connection->lock = tbx_false;
-
-    DISP("<--end_packing");
     LOG_OUT();
 }
 

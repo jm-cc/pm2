@@ -28,7 +28,7 @@
 #define NB_LOOPS 1000
 #define WARMUP_LOOPS 10
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  2048 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  (2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -154,7 +154,7 @@ client(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection1);
 
-            DISP("PACK");
+            //DISP("PACK");
 
             TBX_GET_TICK(t4);
 
@@ -165,7 +165,7 @@ client(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection2);
 
-            DISP("UNPACK");
+            //DISP("UNPACK");
 
             counter++;
 
@@ -224,7 +224,6 @@ server(p_mad_channel_t channel){
         connection1 = mad_begin_unpacking(channel);
 
         while (counter++ < WARMUP_LOOPS) {
-
             //DISP("Dépot d'une réception");
             mad_unpack(connection1,
                        buffer_r,
@@ -277,7 +276,7 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
 
-            DISP("PACK");
+            //DISP("PACK");
 
             mad_unpack(connection1,
                        buffer_r,
@@ -286,7 +285,7 @@ server(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection1);
 
-            DISP("UNPACK");
+            //DISP("UNPACK");
 
             counter++;
         }

@@ -916,10 +916,6 @@ mad_close_track(p_mad_adapter_t adapter,
   LOG_IN();
   interface = adapter->driver->interface;
 
-  if(track->pre_posted){
-    interface->remove_all_pre_posted(adapter);
-  }
-
   if(interface->track_exit){
     interface->track_exit(track);
   }
@@ -939,6 +935,9 @@ mad_close_track_set(p_mad_adapter_t adapter,
   LOG_IN();
   interface = adapter->driver->interface;
 
+  if(track_set->receiver && interface->remove_all_pre_posted)
+    interface->remove_all_pre_posted(adapter);
+
   for(i = 0; i < track_set->nb_track; i++){
     mad_close_track(adapter, track_set->tracks_tab[i]);
   }
@@ -947,6 +946,8 @@ mad_close_track_set(p_mad_adapter_t adapter,
   TBX_FREE(track_set->tracks_tab);
 
   TBX_FREE(track_set->reception_tracks_in_use);
+
+
 
   if(interface->track_set_exit)
     interface->track_set_exit(track_set);

@@ -181,4 +181,6 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 
 int  marcel_test_activity(void);
 
+void marcel_start_playing(void);
+
 #endif // MARCEL_EST_DEF

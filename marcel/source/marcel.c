@@ -249,3 +249,6 @@ int marcel_extlib_unprotect(void)
 }
 #endif /* MA__LIBPTHREAD */
 
+void marcel_start_playing(void) {
+	PROF_EVENT(fut_start_playing);
+}

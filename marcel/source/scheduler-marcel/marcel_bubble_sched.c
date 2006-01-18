@@ -679,10 +679,10 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				/* todo: le faire quand même ? */
 				ma_holder_rawunlock(&rq->hold);
 			} else {
-				ma_holder_rawlock(&b->hold);
 				bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->name, b);
 				PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 				/* laisser d'abord ce qui est ordonnancé sur place */
+				ma_holder_rawlock(&b->hold);
 				list_for_each_entry(e, &b->heldentities, entity_list) {
 					b2 = NULL;
 					if (e->type == MA_BUBBLE_ENTITY)
@@ -720,11 +720,11 @@ static int see(struct marcel_topo_level *level, int up_power) {
 							PROF_EVENT2(bubble_sched_switchrq, t, rq);
 					}
 				}
+				ma_holder_rawunlock(&b->hold);
 				/* enlever b de rq */
 				if (b->sched.holder_data)
 					ma_dequeue_entity(&b->sched,&rq->hold);
 				ma_deactivate_running_entity(&b->sched, &rq->hold);
-				ma_holder_rawunlock(&b->hold);
 				ma_holder_rawunlock(&rq->hold);
 				ma_holder_rawlock(&rq2->hold);
 				ma_holder_rawlock(&b->hold);
@@ -764,10 +764,10 @@ static int see(struct marcel_topo_level *level, int up_power) {
 						e->sched_level = rq->level;
 					}
 				}
+				ma_holder_rawunlock(&b->hold);
 				/* mettre b sur rq2 */
 				ma_activate_entity(&b->sched, &rq2->hold);
 				b->sched.sched_level = rq2->level;
-				ma_holder_rawunlock(&b->hold);
 				ma_holder_rawunlock(&rq2->hold);
 			}
 		}
@@ -807,7 +807,6 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 int marcel_bubble_steal_work(void) {
-#if 0
 #ifdef MA__LWPS
 	struct marcel_topo_level *me =
 		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
@@ -816,8 +815,6 @@ int marcel_bubble_steal_work(void) {
 #else
 	return 0;
 #endif
-#endif
-	return 0;
 }
 #endif
 #endif
@@ -886,9 +883,6 @@ static void __marcel_init bubble_sched_init() {
 	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
 }
 
-void marcel_start_playing(void) {
-	PROF_EVENT(fut_start_playing);
-}
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,
 		MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");
 #endif /* MA__BUBBLES */

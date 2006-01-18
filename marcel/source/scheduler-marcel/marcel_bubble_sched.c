@@ -17,6 +17,8 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
+static int idle_scheduler = 1;
+
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 int marcel_bubble_init(marcel_bubble_t *bubble) {
@@ -808,13 +810,14 @@ static int see_up(struct marcel_topo_level *level) {
 
 int marcel_bubble_steal_work(void) {
 #ifdef MA__LWPS
-	struct marcel_topo_level *me =
-		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
-	/* couln't find work on local runqueue, go see elsewhere */
-	return see_up(me);
-#else
-	return 0;
+	if (idle_scheduler) {
+		struct marcel_topo_level *me =
+			&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
+		/* couln't find work on local runqueue, go see elsewhere */
+		return see_up(me);
+	}
 #endif
+	return 0;
 }
 #endif
 #endif
@@ -826,6 +829,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 	marcel_bubble_t *b;
 	ma_runqueue_t *rq;
 	struct list_head *queue;
+	idle_scheduler = 0;
 	while(1) {
 		marcel_delay(1);
 		rq = &ma_main_runqueue;

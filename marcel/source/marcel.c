@@ -265,11 +265,11 @@ static int rand_lwp_start(ma_lwp_t lwp) {
 	return 0;
 }
 
-MA_DEFINE_LWP_NOTIFIER_START(lwp, "Initialisation générateur aléatoire",
+MA_DEFINE_LWP_NOTIFIER_START(random_lwp, "Initialisation générateur aléatoire",
 		rand_lwp_init, "Initialisation générateur",
 		rand_lwp_start, "");
 
-MA_LWP_NOTIFIER_CALL_UP_PREPARE(lwp, MA_INIT_MAIN_LWP);
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(random_lwp, MA_INIT_MAIN_LWP);
 
 long marcel_random(void) {
 	long res;

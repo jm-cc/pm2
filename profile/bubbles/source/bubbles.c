@@ -1711,13 +1711,14 @@ int main(int argc, char *argv[]) {
 			case FUT_RQS_NEWRQ: {
 				unsigned rqlevel = ev.ev64.param[0];
 				unsigned rqnum;
-				if (rqlevel == -1)
+				if (rqlevel == -1) {
 					newPtr(ev.ev64.param[1],norq);
-				else {
+					printf("dontsched runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],norq);
+				} else {
 					rqnum = rqnums[rqlevel]++;
 					newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+					printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				}
-				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
 			}
 			case FUT_SETUP_CODE:

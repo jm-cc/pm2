@@ -56,10 +56,10 @@
 /* movie size */
 
 /* X */
-#define MOVIEX 1000.
+#define MOVIEX 1400.
 
 /* Y */
-#define MOVIEY 400.
+#define MOVIEY 600.
 
 
 
@@ -149,7 +149,7 @@ SWFFont font;
 
 static int playing =
 #ifdef FUT_START_PLAYING
-	0
+	1
 #else
 	1
 #endif
@@ -213,7 +213,7 @@ SWFShape newArrow(float width, float height, int right) {
 
 void gasp() {
 	/* essaie quand même de sauver ce qu'on peut */
-	SWFMovie_save(movie,"rescue.swf", -1);
+	SWFMovie_save(movie,"rescue.swf");
 	fprintf(stderr,"written on rescue.swf\n");
 	abort();
 }
@@ -1489,7 +1489,7 @@ void error(const char *msg, ...) {
 	vfprintf(stderr,msg, args);
 	va_end(args);
 	if (!recur++) {
-		SWFMovie_save(movie,"rescue.swf", -1);
+		SWFMovie_save(movie,"rescue.swf");
 		fprintf(stderr,"saved to rescue.swf\n");
 	}
 	abort();
@@ -1837,12 +1837,10 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				default:
-#if 0
 					printf("%16llu %p %010lx %1u" ,ev.ev64.time ,ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
 					for (i=0;i<ev.ev64.nb_params;i++)
 						printf(" %010lx", ev.ev64.param[i]);
 					printf("\n");
-#endif
 					break;
 			}
 		}
@@ -1854,7 +1852,7 @@ int main(int argc, char *argv[]) {
 		case FXT_EV_ERROR: perror("fxt_next_ev"); break;
 		case FXT_EV_TYPEERROR: fprintf(stderr,"wrong trace word size\n"); break;
 	}
-	SWFMovie_save(movie,"autobulles.swf", -1);
+	SWFMovie_save(movie,"autobulles.swf");
 	exit(0);
 #else
 
@@ -2061,7 +2059,7 @@ int main(int argc, char *argv[]) {
 		pause(1);
 #endif /* SHOWPRIO */
 	}
-	SWFMovie_save(movie,"bulles.swf", -1);
+	SWFMovie_save(movie,"bulles.swf");
 
 	return 0;
 #endif /* FXT */

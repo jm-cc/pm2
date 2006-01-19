@@ -554,7 +554,7 @@ les #ifdef dans les arguments de macro...
 	ma_holder_rawlock(&bubble->hold);
 
 	/* bulle fraîche, on l'amène près de nous */
-	if (0 && !bubble->settled) {
+	if (ma_idle_scheduler && !bubble->settled) {
 		ma_runqueue_t *rq2 = ma_lwp_rq(LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {

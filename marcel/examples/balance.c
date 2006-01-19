@@ -18,16 +18,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#undef MA__BUBBLES
+
 #define NWORKS 2
 #define NWORKERS_POW 3
 #define NWORKERS (1<<NWORKERS_POW)
 //#define TREE
+#if 0
+#define BARRIER
+#else
+#define PIPE
+#endif
 
-unsigned long works[]  = { 5000, 7000 };
-unsigned long delays[] = { 5000, 7000 };
 int iterations = 3;
 
+#ifdef BARRIER
+unsigned long works[]  = { 5000, 7000 };
+unsigned long delays[] = { 5000, 7000 };
 marcel_barrier_t barrier[NWORKS];
+#endif
+#ifdef PIPE
+#define DATASIZE (512<<10)
+#endif
+
 #ifdef MA__BUBBLES
 marcel_bubble_t bubbles[
 #ifdef TREE
@@ -36,6 +49,15 @@ marcel_bubble_t bubbles[
 	NWORKS];
 #endif
 
+
+#ifdef PIPE
+#define NBBUFS 3
+static void *data[NWORKS][NWORKERS-1];
+static marcel_sem_t reader[NWORKS][NWORKERS-1];
+static marcel_sem_t writer[NWORKS][NWORKERS-1];
+#endif
+
+#ifdef BARRIER
 any_t work(any_t arg) {
 	int i = (int) arg;
 	unsigned long start;
@@ -57,15 +79,81 @@ any_t work(any_t arg) {
 	tprintf("group %d finished\n",i);
 	return NULL;
 }
+#endif
+
+#ifdef PIPE
+any_t producer(any_t arg) {
+	int i = (int) arg;
+	int group = i/NWORKERS;
+	int me = i%NWORKERS;
+	int n = iterations;
+	int buffer_write = 0;
+	unsigned char *dataw;
+	while (n--) {
+		marcel_sem_P(&writer[group][me]);
+		dataw = data[group][me]+buffer_write*DATASIZE;
+		for (i=0;i<DATASIZE;i++)
+			dataw[i]=random();
+		buffer_write = (buffer_write+1)%NBBUFS;
+		marcel_sem_V(&reader[group][me]);
+		marcel_fprintf(stderr,"%d: %d produced unit\n",group,me);
+	}
+	return NULL;
+}
+any_t consumer(any_t arg) {
+	int i = (int) arg;
+	int group = i/NWORKERS;
+	int me = i%NWORKERS;
+	int n = iterations;
+	int buffer_read = 0;
+	unsigned char *datar;
+	unsigned long sum;
+	while (n--) {
+		marcel_sem_P(&reader[group][me-1]);
+		datar = data[group][me]+buffer_read*DATASIZE;
+		sum = 0;
+		for (i=0;i<DATASIZE;i++)
+			sum+=datar[i]+random();
+		buffer_read = (buffer_read+1)%NBBUFS;
+		marcel_sem_V(&writer[group][me-1]);
+		marcel_fprintf(stderr,"%d: %d consumed unit\n",group,me);
+	}
+	return NULL;
+}
+any_t piper(any_t arg) {
+	int i = (int) arg;
+	int group = i/NWORKERS;
+	int me = i%NWORKERS;
+	int n = iterations;
+	int buffer_read = 0;
+	int buffer_write = 0;
+	unsigned char *datar, *dataw;
+	while (n--) {
+		marcel_sem_P(&reader[group][me-1]);
+		datar = data[group][me]+buffer_read*DATASIZE;
+		marcel_sem_P(&writer[group][me]);
+		dataw = data[group][me]+buffer_write*DATASIZE;
+		for (i=0;i<DATASIZE;i++)
+			dataw[i]=datar[i]+random();
+		buffer_read = (buffer_read+1)%NBBUFS;
+		buffer_write = (buffer_write+1)%NBBUFS;
+		marcel_sem_V(&reader[group][me]);
+		marcel_sem_V(&writer[group][me-1]);
+		marcel_fprintf(stderr,"%d: %d piped unit\n",group,me);
+	}
+	return NULL;
+}
+#endif
 
 int marcel_main(int argc, char *argv[]) {
-#ifdef MA__BUBBLES
 	int i,j;
 	marcel_attr_t attr;
 	char s[MARCEL_MAXNAMESIZE];
+#ifdef MA__BUBBLES
 #ifdef TREE
 	marcel_bubble_t *b;
 	int k,n,m;
+#endif
 #endif
 
 	marcel_init(&argc, argv);
@@ -82,7 +170,10 @@ int marcel_main(int argc, char *argv[]) {
 #endif
 
 	for (i=0;i<NWORKS;i++) {
+#ifdef BARRIER
 		marcel_barrier_init(&barrier[i], NULL, NWORKERS);
+#endif
+#ifdef MA__BUBBLES
 #ifdef TREE
 		n = m = 0;
 		for (j=0;j<NWORKERS_POW;j++) {
@@ -99,9 +190,16 @@ int marcel_main(int argc, char *argv[]) {
 #else
 		marcel_bubble_init(&bubbles[i]);
 #endif
+#endif
 		for (j=0;j<NWORKERS;j++) {
+			if (j < NWORKERS-1) {
+				data[i][j] = malloc(NBBUFS*DATASIZE);
+				marcel_sem_init(&reader[i][j],0);
+				marcel_sem_init(&writer[i][j],NBBUFS);
+			}
 			snprintf(s,sizeof(s),"%d-%d",i,j);
 			marcel_attr_setname(&attr,s);
+#ifdef MA__BUBBLES
 			marcel_attr_setinitbubble(&attr,
 #ifdef TREE
 					&bubbles[(NWORKERS-1)*i+m+j/2]
@@ -109,18 +207,22 @@ int marcel_main(int argc, char *argv[]) {
 					&bubbles[i]
 #endif
 					);
-			marcel_create(NULL,&attr,work,(any_t) i);
+#endif
+			marcel_create(NULL,&attr,
+					j ?
+						j<NWORKERS-1?piper:consumer
+						: producer,
+					(any_t) (i*NWORKERS+j));
 		}
+#ifdef MA__BUBBLES
 		marcel_wake_up_bubble(&bubbles[
 #ifdef TREE
 				(NWORKERS-1)*
 #endif
 				i]);
+#endif
 	}
 
 	marcel_end();
-#else
-	marcel_fprintf(stderr,"%s needs bubbles\n",argv[0]);
-#endif
 	return 0;
 }

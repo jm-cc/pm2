@@ -93,7 +93,7 @@ any_t producer(any_t arg) {
 		marcel_sem_P(&writer[group][me]);
 		dataw = data[group][me]+buffer_write*DATASIZE;
 		for (i=0;i<DATASIZE;i++)
-			dataw[i]=random();
+			dataw[i]=marcel_random();
 		buffer_write = (buffer_write+1)%NBBUFS;
 		marcel_sem_V(&reader[group][me]);
 		marcel_fprintf(stderr,"%d: %d produced unit\n",group,me);
@@ -113,7 +113,7 @@ any_t consumer(any_t arg) {
 		datar = data[group][me-1]+buffer_read*DATASIZE;
 		sum = 0;
 		for (i=0;i<DATASIZE;i++)
-			sum+=datar[i]+random();
+			sum+=datar[i]+marcel_random();
 		buffer_read = (buffer_read+1)%NBBUFS;
 		marcel_sem_V(&writer[group][me-1]);
 		marcel_fprintf(stderr,"%d: %d consumed unit\n",group,me);
@@ -134,7 +134,7 @@ any_t piper(any_t arg) {
 		marcel_sem_P(&writer[group][me]);
 		dataw = data[group][me]+buffer_write*DATASIZE;
 		for (i=0;i<DATASIZE;i++)
-			dataw[i]=datar[i]+random();
+			dataw[i]=datar[i]+marcel_random();
 		buffer_read = (buffer_read+1)%NBBUFS;
 		buffer_write = (buffer_write+1)%NBBUFS;
 		marcel_sem_V(&reader[group][me]);

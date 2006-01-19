@@ -183,4 +183,8 @@ int  marcel_test_activity(void);
 
 void marcel_start_playing(void);
 
+#if defined(LINUX_SYS) || defined(GNU_SYS)
+long marcel_random(void);
+#endif
+
 #endif // MARCEL_EST_DEF

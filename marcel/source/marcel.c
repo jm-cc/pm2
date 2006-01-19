@@ -252,3 +252,32 @@ int marcel_extlib_unprotect(void)
 void marcel_start_playing(void) {
 	PROF_EVENT(fut_start_playing);
 }
+
+#if defined(LINUX_SYS) || defined(GNU_SYS)
+static MA_DEFINE_PER_LWP(struct drand48_data, random_buffer, {{0}});
+
+static int rand_lwp_init(ma_lwp_t lwp) {
+	memset(&ma_per_lwp(random_buffer, lwp), 0, sizeof(ma_per_lwp(random_buffer, lwp)));
+	return 0;
+}
+
+static int rand_lwp_start(ma_lwp_t lwp) {
+	return 0;
+}
+
+MA_DEFINE_LWP_NOTIFIER_START(lwp, "Initialisation générateur aléatoire",
+		rand_lwp_init, "Initialisation générateur",
+		rand_lwp_start, "");
+
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(lwp, MA_INIT_MAIN_LWP);
+
+long marcel_random(void) {
+	long res;
+	ma_local_bh_disable();
+	ma_preempt_disable();
+	lrand48_r(&ma_per_lwp(random_buffer, LWP_SELF), &res);
+	ma_preempt_enable_no_resched();
+	ma_local_bh_disable();
+	return res;
+}
+#endif

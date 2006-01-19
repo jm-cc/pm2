@@ -38,7 +38,9 @@
 /* Pour avoir pmarcel_yield */
 #define _GNU_SOURCE
 #ifndef DARWIN_SYS
+#ifndef OSF_SYS
 #  include <features.h>
+#endif
 #endif
 
 

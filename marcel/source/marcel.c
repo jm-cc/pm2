@@ -277,7 +277,7 @@ long marcel_random(void) {
 	ma_preempt_disable();
 	lrand48_r(&ma_per_lwp(random_buffer, LWP_SELF), &res);
 	ma_preempt_enable_no_resched();
-	ma_local_bh_disable();
+	ma_local_bh_enable();
 	return res;
 }
 #endif

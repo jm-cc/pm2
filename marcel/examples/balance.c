@@ -18,12 +18,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#undef MA__BUBBLES
+//#undef MA__BUBBLES
 
 #define NWORKS 2
 #define NWORKERS_POW 3
 #define NWORKERS (1<<NWORKERS_POW)
-//#define TREE
+#define TREE
 #if 0
 #define BARRIER
 #else
@@ -96,7 +96,8 @@ any_t producer(any_t arg) {
 			dataw[i]=marcel_random();
 		buffer_write = (buffer_write+1)%NBBUFS;
 		marcel_sem_V(&reader[group][me]);
-		marcel_fprintf(stderr,"%d: %d produced unit\n",group,me);
+		if (!(n%10))
+			marcel_fprintf(stderr,"%d: %d produced unit\n",group,me);
 	}
 	return NULL;
 }
@@ -116,7 +117,6 @@ any_t consumer(any_t arg) {
 			sum+=datar[i]+marcel_random();
 		buffer_read = (buffer_read+1)%NBBUFS;
 		marcel_sem_V(&writer[group][me-1]);
-		marcel_fprintf(stderr,"%d: %d consumed unit\n",group,me);
 	}
 	return NULL;
 }
@@ -139,7 +139,6 @@ any_t piper(any_t arg) {
 		buffer_write = (buffer_write+1)%NBBUFS;
 		marcel_sem_V(&reader[group][me]);
 		marcel_sem_V(&writer[group][me-1]);
-		marcel_fprintf(stderr,"%d: %d piped unit\n",group,me);
 	}
 	return NULL;
 }
@@ -181,6 +180,9 @@ int marcel_main(int argc, char *argv[]) {
 				b = &bubbles[(NWORKERS-1)*i+n+k];
 				marcel_bubble_init(b);
 				marcel_bubble_setprio(b, MA_DEF_PRIO);
+#ifdef MARCEL_BUBBLE_EXPLODE
+				marcel_bubble_setschedlevel(b, j);
+#endif
 				if (n)
 					marcel_bubble_insertbubble(&bubbles[(NWORKERS-1)*i+m+k/2], b);
 			}

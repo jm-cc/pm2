@@ -15,7 +15,7 @@
 
 FLAVOR_DEFAULT:=marcel-prof
 CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} -I/usr/local/include
-LDFLAGS += -lming -lfxt
+LDFLAGS += -lming -lfxt -lm
 
 .PHONY: default
 include $(PM2_ROOT)/make/progs.mak

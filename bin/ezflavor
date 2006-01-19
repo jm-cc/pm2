@@ -100,7 +100,7 @@ if [ ! -x "${PROG}" ]; then
 	-- ${@:+"$@"}
 fi
 
-export LD_LIBRARY_PATH=`${PM2_CONFIG} --flavor=$flavor --libdir $module`
+export LD_LIBRARY_PATH="`${PM2_CONFIG} --flavor=$flavor --libdir $module`${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a -n "$X" ] ; then
 

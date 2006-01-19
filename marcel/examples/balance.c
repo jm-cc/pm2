@@ -110,7 +110,7 @@ any_t consumer(any_t arg) {
 	unsigned long sum;
 	while (n--) {
 		marcel_sem_P(&reader[group][me-1]);
-		datar = data[group][me]+buffer_read*DATASIZE;
+		datar = data[group][me-1]+buffer_read*DATASIZE;
 		sum = 0;
 		for (i=0;i<DATASIZE;i++)
 			sum+=datar[i]+random();
@@ -130,7 +130,7 @@ any_t piper(any_t arg) {
 	unsigned char *datar, *dataw;
 	while (n--) {
 		marcel_sem_P(&reader[group][me-1]);
-		datar = data[group][me]+buffer_read*DATASIZE;
+		datar = data[group][me-1]+buffer_read*DATASIZE;
 		marcel_sem_P(&writer[group][me]);
 		dataw = data[group][me]+buffer_write*DATASIZE;
 		for (i=0;i<DATASIZE;i++)

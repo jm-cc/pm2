@@ -34,8 +34,11 @@
 /* choose between tree and bubble representation */
 #undef BUBBLES
 
+#if 0
 #define TREES
-//#define BUBBLES
+#else
+#define BUBBLES
+#endif
 
 /* bubbles / threads aspect */
 
@@ -375,6 +378,8 @@ static inline bubble_t * bubble_of_entity(entity_t *e) {
 
 bubble_t *newBubble (int prio, rq_t *initrq) {
 	bubble_t *b = malloc(sizeof(*b));
+	b->entity.x = b->entity.y = -1;
+	b->entity.lastx = b->entity.lasty = -1;
 #ifdef BUBBLES
 	b->entity.width = CURVE*3;
 	b->entity.height = CURVE*5;
@@ -385,19 +390,23 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->entity.height = CURVE;
 	b->nextX = 0;
 #endif
+	b->entity.lastwidth = b->entity.lastheight = -1;
 	b->entity.thick = BUBBLETHICK;
-	b->entity.lastx = -1;
 	b->entity.prio = prio;
-	INIT_LIST_HEAD(&b->heldentities);
+	//b->entity.rq
+	//b->entity.entity_list
 	b->entity.type = BUBBLE;
 	b->entity.lastitem = NULL;
-	b->morph = NULL;
-	b->morphRecurse = 0;
+	b->entity.lastshape = NULL;
 	b->entity.holder = NULL;
+	b->entity.lastholder = NULL;
 	b->entity.bubble_holder = NULL;
 	b->entity.leaving_holder = 0;
 	b->entity.nospace = 0;
+	INIT_LIST_HEAD(&b->heldentities);
 	b->exploded = 0;
+	b->morph = NULL;
+	b->morphRecurse = 0;
 	b->insertion = NULL;
 	if (initrq)
 		addToRunqueue(initrq, &b->entity);
@@ -466,14 +475,20 @@ void setThread(SWFShape shape, unsigned thick, float width, float height, int pr
 
 thread_t *newThread (int prio, rq_t *initrq) {
 	thread_t *t = malloc(sizeof(*t));
+	t->entity.x = t->entity.y = -1;
+	t->entity.lastx = t->entity.lasty = -1;
 	t->entity.width = CURVE;
 	t->entity.height = CURVE*3;
+	t->entity.lastwidth = t->entity.lastheight = -1;
 	t->entity.thick = THREADTHICK;
-	t->entity.lastx = -1;
 	t->entity.prio = prio;
+	//b->entity.rq
+	//b->entity.entity_list
 	t->entity.type = THREAD;
 	t->entity.lastitem = NULL;
+	t->entity.lastshape = NULL;
 	t->entity.holder = NULL;
+	t->entity.lastholder = NULL;
 	t->entity.bubble_holder = NULL;
 	t->entity.leaving_holder = 0;
 	t->entity.nospace = 0;
@@ -1192,7 +1207,10 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 		}
 
 #ifdef TREES
+		if (e->bubble_holder)
+			gasp();
 		list_add_tail(&e->entity_list,&b->heldentities);
+		e->bubble_holder = b;
 #endif
 		bubbleMorphBegin2(b);
 		removeFromHolderBegin2(e);
@@ -1241,9 +1259,11 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 			growInHolderEnd(&b->entity);
 		bubbleMorphEnd(b);
 #ifdef BUBBLES
+		if (e->bubble_holder)
+			gasp();
 		list_add_tail(&e->entity_list,&b->heldentities);
-#endif
 		e->bubble_holder = b;
+#endif
 		e->holder = &b->entity;
 	}
 #ifdef TREES
@@ -1620,10 +1640,10 @@ int main(int argc, char *argv[]) {
 				printf("bubble %p(%p) priority set to %"PRIx64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
 				break;
 			}
-#ifdef BUBBLE_SCHED_CLOSED
-			case BUBBLE_SCHED_CLOSED: {
+#ifdef BUBBLE_SCHED_CLOSE
+			case BUBBLE_SCHED_CLOSE: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) closed\n", (void *)(intptr_t)ev.ev64.param[0],b);
+				printf("bubble %p(%p) close\n", (void *)(intptr_t)ev.ev64.param[0],b);
 				break;
 			}
 #endif
@@ -1631,6 +1651,13 @@ int main(int argc, char *argv[]) {
 			case BUBBLE_SCHED_CLOSING: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
 				printf("bubble %p(%p) closing\n", (void *)(intptr_t)ev.ev64.param[0],b);
+				break;
+			}
+#endif
+#ifdef BUBBLE_SCHED_CLOSED
+			case BUBBLE_SCHED_CLOSED: {
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				printf("bubble %p(%p) closed\n", (void *)(intptr_t)ev.ev64.param[0],b);
 				break;
 			}
 #endif
@@ -1654,7 +1681,10 @@ int main(int argc, char *argv[]) {
 				thread_t *e = getThread(ev.ev64.param[0]);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printf("thread %p(%p) going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
+#ifndef TREES
+				/* n'a pas de sens en représentation arbresque */
 				bubbleInsertThread(b,e);
+#endif
 				break;
 			}
 #endif
@@ -1714,8 +1744,9 @@ int main(int argc, char *argv[]) {
 				unsigned rqlevel = ev.ev64.param[0];
 				unsigned rqnum;
 				if (rqlevel == -1) {
+					rqnum = 0;
 					newPtr(ev.ev64.param[1],norq);
-					printf("dontsched runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],norq);
+					printf("dontsched runqueue %u.%u at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],norq);
 				} else {
 					rqnum = rqnums[rqlevel]++;
 					newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
@@ -1767,7 +1798,7 @@ int main(int argc, char *argv[]) {
 					delThread(t);
 					pause(DELAYTIME);
 					delPtr(ev.ev64.param[0]);
-					free(t);
+					// on peut en avoir encore besoin... free(t);
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE:
@@ -1840,7 +1871,7 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				default:
-					printf("%16llu %p %010lx %1u" ,ev.ev64.time ,ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
+					 printf("%16llu %llx %p %010lx %1u" ,ev.ev64.time ,ev.ev64.code, ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
 					for (i=0;i<ev.ev64.nb_params;i++)
 						printf(" %010lx", ev.ev64.param[i]);
 					printf("\n");
@@ -1849,6 +1880,10 @@ int main(int argc, char *argv[]) {
 		}
 
 		fflush(stdout);
+		{ static int pair = 0;
+		// Sauvegarde régulière, pour détecter rapidement les problèmes
+		//SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
+		}
 	}
 	switch(ret) {
 		case FXT_EV_EOT: break;

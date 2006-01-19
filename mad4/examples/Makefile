@@ -16,6 +16,7 @@ export FLAVOR_DEFAULT:=mad4
 PROGS :=			\
 mad_ping			\
 mad_simple			\
+mad_basic_random		\
 mad_micro_direct
 
 include $(PM2_ROOT)/make/apps.mak

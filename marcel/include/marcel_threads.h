@@ -20,10 +20,6 @@
 #section macros
 
 #define MARCEL_ONCE_INIT 0
-#ifdef __USE_XOPEN2K
-/* -1 is distinct from 0 and all errno constants */
-# define MARCEL_BARRIER_SERIAL_THREAD -1
-#endif
 
 
 #section types

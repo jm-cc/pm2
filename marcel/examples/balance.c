@@ -27,49 +27,6 @@ unsigned long works[]  = { 5000, 7000 };
 unsigned long delays[] = { 5000, 7000 };
 int iterations = 3;
 
-/* implémentation en 2s des barrières */
-typedef struct {
-	marcel_cond_t cond;
-	marcel_mutex_t mutex;
-	int num;
-	int curwait;
-} marcel_barrier_t;
-typedef struct { int foo; } marcel_barrier_attr_t;
-
-void marcel_barrier_init(marcel_barrier_t * __restrict b,
-		marcel_barrier_attr_t * __restrict attr, int num) {
-	marcel_cond_init(&b->cond, NULL);
-	marcel_mutex_init(&b->mutex, NULL);
-	b->num = num;
-	b->curwait = 0;
-}
-int marcel_barrier_begin(marcel_barrier_t *b) {
-	int num;
-	marcel_mutex_lock(&b->mutex);
-	if ((num = ++b->curwait) == b->num) {
-		b->curwait = 0;
-		marcel_cond_broadcast(&b->cond);
-	}
-	marcel_mutex_unlock(&b->mutex);
-	return num;
-}
-void marcel_barrier_end(marcel_barrier_t *b, int num) {
-	marcel_mutex_lock(&b->mutex);
-	if (num != b->num)
-		marcel_cond_wait(&b->cond,&b->mutex);
-	marcel_mutex_unlock(&b->mutex);
-}
-void marcel_barrier_wait(marcel_barrier_t *b) {
-	marcel_mutex_lock(&b->mutex);
-	if (++b->curwait == b->num) {
-		b->curwait = 0;
-		marcel_cond_broadcast(&b->cond);
-	} else
-		marcel_cond_wait(&b->cond,&b->mutex);
-	marcel_mutex_unlock(&b->mutex);
-}
-/* fin */
-
 marcel_barrier_t barrier[NWORKS];
 #ifdef MA__BUBBLES
 marcel_bubble_t bubbles[

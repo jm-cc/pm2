@@ -111,6 +111,8 @@
 #include <fxt/fut.h>
 #include <stdint.h>
 #include <inttypes.h>
+//#include <string.h>
+char *strdup(const char*s);
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"
@@ -440,6 +442,7 @@ typedef enum {
 typedef struct {
 	entity_t entity;
 	state_t state;
+	char *name;
 } thread_t;
 
 static inline thread_t * thread_of_entity(entity_t *e) {
@@ -493,6 +496,7 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.leaving_holder = 0;
 	t->entity.nospace = 0;
 	t->state = THREAD_BLOCKED;
+	t->name = NULL;
 	if (initrq)
 		addToRunqueue(initrq, &t->entity);
 	return t;
@@ -502,6 +506,13 @@ thread_t *newThreadPtr (uint64_t ptr, rq_t *initrq) {
 	thread_t *t = newThread(0, initrq);
 	newPtr(ptr,t);
 	return t;
+}
+
+void printfThread(uint64_t ptr, thread_t *t) {
+	printf("thread ");
+	if (t->name)
+		printf("%s ",t->name);
+	printf("(%"PRIx64":%p)",ptr,t);
 }
 
 thread_t *getThread (uint64_t ptr) {
@@ -664,6 +675,7 @@ void delThread(thread_t *t) {
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &t->entity);
 	list_del(&t->entity.rq);
+	t->entity.holder = NULL;
 	if (t->entity.bubble_holder) {
 		list_del(&t->entity.entity_list);
 		t->entity.bubble_holder = NULL;
@@ -681,6 +693,7 @@ void delBubble(bubble_t *b) {
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &b->entity);
 	list_del(&b->entity.rq);
+	b->entity.holder = NULL;
 	if (b->entity.bubble_holder) {
 		list_del(&b->entity.entity_list);
 		b->entity.bubble_holder = NULL;
@@ -900,13 +913,18 @@ void addToRunqueueAtBegin2(rq_t *rq, entity_t *e) {
 
 void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 	entityMoveEnd(e);
+	if (e->holder)
+		gasp();
 	list_add_tail(&e->rq,&rq->entities);
 	e->holder = &rq->entity;
 }
 
 void addToRunqueueAtEnd(rq_t *rq, entity_t *e, entity_t *after) {
 	entityMoveEnd(e);
+	if (e->holder)
+		gasp();
 	list_add(&e->rq,&after->rq);
+	e->holder = &rq->entity;
 }
 
 void addToRunqueueStep(rq_t *rq, entity_t *e, float step) {
@@ -956,6 +974,7 @@ void removeFromRunqueueEnd(rq_t *rq, entity_t *e) {
 			entityMoveEnd(el);
 	}
 	list_del(&e->rq);
+	e->holder = NULL;
 	e->leaving_holder = 0;
 }
 
@@ -1296,6 +1315,7 @@ void bubbleExplodeBegin(bubble_t *b) {
 
 	//growInRunqueueBegin(rq,&b->entity,-b->nextX,0);
 	list_for_each_entry(el,&b->heldentities,entity_list) {
+		fprintf(stderr,"entity %p to rq %p\n",el,rq);
 		el->nospace = 1;
 		addToRunqueueAtBegin(rq,el,el->x);
 	}
@@ -1678,9 +1698,11 @@ int main(int argc, char *argv[]) {
 #endif
 #ifdef BUBBLE_SCHED_GOINGBACK
 			case BUBBLE_SCHED_GOINGBACK: {
-				thread_t *e = getThread(ev.ev64.param[0]);
+				uint64_t t = ev.ev64.param[0];
+				thread_t *e = getThread(t);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
-				printf("thread %p(%p) going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
+				printfThread(t,e);
+				printf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 #ifndef TREES
 				/* n'a pas de sens en représentation arbresque */
 				bubbleInsertThread(b,e);
@@ -1696,9 +1718,11 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			case BUBBLE_SCHED_INSERT_THREAD: {
-				thread_t *e = getThread(ev.ev64.param[0]);
+				uint64_t t = ev.ev64.param[0];
+				thread_t *e = getThread(t);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
-				printf("thread %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
+				printfThread(t,e);
+				printf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertThread(b,e);
 				break;
 			}
@@ -1787,27 +1811,47 @@ int main(int argc, char *argv[]) {
 			default:
 			if (keymask) switch (ev.ev64.code) {
 				case FUT_THREAD_BIRTH_CODE: {
-					thread_t *t = newThreadPtr(ev.ev64.param[0], norq);
-					printf("new thread %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], t);
+					uint64_t th = ev.ev64.param[0];
+					thread_t *t = newThreadPtr(th, norq);
+					printf("new ");
+					printfThread(th,t);
+					printf("\n");
 					showEntity(&t->entity);
 					break;
 				}
 				case FUT_THREAD_DEATH_CODE: {
-					thread_t *t = getThread(ev.ev64.param[0]);
-					printf("thread death %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], t);
+					uint64_t th = ev.ev64.param[0];
+					thread_t *t = getThread(th);
+					printfThread(th,t);
+					printf(" death\n");
 					delThread(t);
 					pause(DELAYTIME);
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
+					// penser à free(t->name) aussi
 					break;
 				}
-				case FUT_SET_THREAD_NAME_CODE:
-					/* TODO */
+				case FUT_SET_THREAD_NAME_CODE: {
+					uint64_t th = ev.ev64.user.tid;
+					thread_t *t = getThread(th);
+					unsigned char name[16];
+					uint32_t *ptr = (uint32_t *) name;
+					ptr[0] = ev.ev64.param[0];
+					ptr[1] = ev.ev64.param[1];
+					ptr[2] = ev.ev64.param[2];
+					ptr[3] = ev.ev64.param[3];
+					name[15] = 0;
+					printfThread(th,t);
+					printf(" named %s\n", name);
+					t->name=strdup(name);
 					break;
+				}
 				case SCHED_THREAD_BLOCKED: {
-					thread_t *t = getThread(ev.ev64.user.tid);
+					uint64_t th = ev.ev64.user.tid;
+					thread_t *t = getThread(th);
 					if (t->entity.type!=THREAD) gasp();
-					printf("thread %p(%p) going to sleep\n",(void*)(intptr_t)ev.ev64.user.tid,t);
+					printfThread(th,t);
+					printf(" going to sleep\n");
 					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
@@ -1815,9 +1859,15 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
-					thread_t *t = getThread(ev.ev64.param[0]);
+					uint64_t th = ev.ev64.user.tid;
+					thread_t *t = getThread(th);
+					uint64_t thw = ev.ev64.param[0];
+					thread_t *tw = getThread(thw);
 					if (t->entity.type!=THREAD) gasp();
-					printf("thread %p(%p) waking up\n",(void*)(intptr_t)ev.ev64.user.tid,t);
+					printfThread(th,t);
+					printf(" waking up\n");
+					printfThread(thw,tw);
+					printf("\n");
 					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
@@ -1832,12 +1882,18 @@ int main(int argc, char *argv[]) {
 				}
 #endif
 				case FUT_SWITCH_TO_CODE: {
-					thread_t *tprev = getThread(ev.ev64.user.tid);
-					thread_t *tnext = getThread(ev.ev64.param[0]);
+					uint64_t thprev = ev.ev64.user.tid;
+					thread_t *tprev = getThread(thprev);
+					uint64_t thnext = ev.ev64.param[0];
+					thread_t *tnext = getThread(thnext);
 					if (tprev==tnext) gasp();
 					if (tprev->entity.type!=THREAD) gasp();
 					if (tnext->entity.type!=THREAD) gasp();
-					printf("switch from thread %p(%p) to thread %p(%p)\n",(void *)(intptr_t)ev.ev64.user.tid,tprev,(void *)(intptr_t)ev.ev64.param[0],tnext);
+					printf("switch from ");
+					printfThread(thprev,tprev);
+					printf(" to ");
+					printfThread(thnext,tnext);
+					printf("\n");
 					if (tprev->state == THREAD_RUNNING) {
 						tprev->state = THREAD_SLEEPING;
 						updateEntity(&tprev->entity);
@@ -1880,10 +1936,12 @@ int main(int argc, char *argv[]) {
 		}
 
 		fflush(stdout);
+#if 0
 		{ static int pair = 0;
 		// Sauvegarde régulière, pour détecter rapidement les problèmes
-		//SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
+		SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
 		}
+#endif
 	}
 	switch(ret) {
 		case FXT_EV_EOT: break;

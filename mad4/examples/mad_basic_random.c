@@ -18,6 +18,14 @@
  * ==================
  */
 
+
+/*
+ * Note: This program interleaves packets construction and extraction
+ * solely for the pupose of testing Madeleine's internals. Such an
+ * interleaving MUST NOT be used in user applications as it may lead
+ * to distributed dead-locks.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

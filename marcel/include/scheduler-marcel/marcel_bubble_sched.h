@@ -29,6 +29,10 @@ typedef struct marcel_bubble marcel_bubble_t;
 #section variables
 extern marcel_bubble_t marcel_root_bubble;
 
+#section marcel_variables
+extern int ma_idle_scheduler;
+extern ma_rwlock_t ma_idle_scheduler_lock;
+
 #section functions
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_bubble_sched.h[types]"

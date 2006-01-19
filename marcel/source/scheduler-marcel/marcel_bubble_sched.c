@@ -17,7 +17,8 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
-static int idle_scheduler = 1;
+int ma_idle_scheduler = 1;
+ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
 
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
@@ -613,7 +614,7 @@ static int total_nr_running(marcel_bubble_t *b) {
 	return nr_running;
 }
 
-static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power, int locked) {
+static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power) {
 	int i, nbrun;
 	// TODO: partir plutôt de la bulle "root" et descendre dedans ?
 	// Le problème, c'est qu'en ne regardant que les bubbles dans les
@@ -626,17 +627,17 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power,
 	for (i = 0; i < MA_MAX_PRIO; i++) {
 		e = NULL;
 		if (!list_empty(ma_array_queue(rq->active,i)))
-			e = list_entry(ma_array_queue(rq->active,i)->next, marcel_entity_t, run_list);
+			e = list_entry(ma_array_queue(rq->active,i)->prev, marcel_entity_t, run_list);
 #if 0
 		else if (!list_empty(ma_array_queue(rq->expired, i)))
-			e = list_entry(ma_array_queue(rq->expired,i)->next, marcel_entity_t, run_list);
+			e = list_entry(ma_array_queue(rq->expired,i)->prev, marcel_entity_t, run_list);
 #endif
 		if (!e || e->type == MA_TASK_ENTITY)
 			continue;
 		b = ma_bubble_entity(e);
 		if ((nbrun = total_nr_running(b)) >= up_power) {
 		//if (b->hold.nr_running >= up_power) {
-			bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d (%slocked)\n", b, nbrun, rq->father->name, up_power, locked?"":"un");
+			bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
 			return b;
 		}
 	}
@@ -658,9 +659,9 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	if (!rq)
 		return 0;
 	ma_preempt_disable();
-	if (find_interesting_bubble(rq, up_power, 0)) {
+	//if (find_interesting_bubble(rq, up_power, 0)) {
 		ma_holder_rawlock(&rq->hold);
-		b = find_interesting_bubble(rq, up_power, 1);
+		b = find_interesting_bubble(rq, up_power);
 		if (!b)
 			ma_holder_rawunlock(&rq->hold);
 		else {
@@ -773,7 +774,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				ma_holder_rawunlock(&rq2->hold);
 			}
 		}
-	}
+	//}
 	ma_preempt_enable();
 	return 0;
 }
@@ -810,12 +811,15 @@ static int see_up(struct marcel_topo_level *level) {
 
 int marcel_bubble_steal_work(void) {
 #ifdef MA__LWPS
-	if (idle_scheduler) {
+	ma_read_lock(&ma_idle_scheduler_lock);
+	if (ma_idle_scheduler) {
 		struct marcel_topo_level *me =
 			&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
 		/* couln't find work on local runqueue, go see elsewhere */
+		ma_read_unlock(&ma_idle_scheduler_lock);
 		return see_up(me);
 	}
+	ma_read_unlock(&ma_idle_scheduler_lock);
 #endif
 	return 0;
 }
@@ -829,7 +833,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 	marcel_bubble_t *b;
 	ma_runqueue_t *rq;
 	struct list_head *queue;
-	idle_scheduler = 0;
+	ma_idle_scheduler = 0;
 	while(1) {
 		marcel_delay(1);
 		rq = &ma_main_runqueue;

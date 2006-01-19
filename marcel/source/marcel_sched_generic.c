@@ -236,8 +236,12 @@ void marcel_gensched_shutdown(void)
 	marcel_vpmask_t mask = MARCEL_VPMASK_ALL_BUT_VP(0);
 
 	LOG_IN();
-	
+
 	wait_all_tasks_end();
+
+	ma_write_lock(&ma_idle_scheduler_lock);
+	ma_idle_scheduler = 0;
+	ma_write_unlock(&ma_idle_scheduler_lock);
 
 	// Si nécessaire, on bascule sur le LWP(0)
 	marcel_change_vpmask(&mask);

@@ -22,12 +22,18 @@
 #define GANGS 6
 #define THREADS 16
 
+marcel_barrier_t barrier[GANGS];
+
 any_t work(any_t arg) {
   int i;
   int n = (int) arg;
+  int num;
   for (i=0;i<1000000000;i++)
-	  if (!(i%10000000))
-  		printf("%d %d\n",n,i);
+	  if (!(i%10000000)) {
+		num = marcel_barrier_begin(&barrier[n/100]);
+  		printf("%d %d (%d)\n",n,i,num);
+		marcel_barrier_end(&barrier[n/100],num);
+	  }
   marcel_printf("%d done\n",n);
   return NULL;
 }
@@ -67,6 +73,7 @@ int marcel_main(int argc, char **argv)
   marcel_attr_setprio(&attr, MA_DEF_PRIO);
 
   for (i=0; i<GANGS; i++) {
+    marcel_barrier_init(&barrier[i], NULL, (i+1)%THREADS);
     marcel_bubble_init(&gang[i]);
     marcel_attr_setinitbubble(&attr, &gang[i]);
     for (j=0; j<(i+1)%THREADS; j++) {

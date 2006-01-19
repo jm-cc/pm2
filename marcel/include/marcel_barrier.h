@@ -23,7 +23,7 @@ struct marcel_barrier {
 	marcel_cond_t cond;
 	marcel_mutex_t mutex;
 	unsigned num;
-	int curwait;
+	unsigned curwait;
 };
 struct marcel_barrierattr { int foo; };
 
@@ -35,11 +35,11 @@ typedef marcel_barrierattr_t pmarcel_barrierattr_t;
 
 #section functions
 int marcel_barrier_init(marcel_barrier_t * __restrict b,
-		const marcel_barrierattr_t * __restrict attr, int num);
+		const marcel_barrierattr_t * __restrict attr, unsigned num);
 int pmarcel_barrier_init(pmarcel_barrier_t * __restrict b,
-		const pmarcel_barrierattr_t * __restrict attr, int num);
-int marcel_barrier_begin(marcel_barrier_t *b);
-void marcel_barrier_end(marcel_barrier_t *b, int num);
+		const pmarcel_barrierattr_t * __restrict attr, unsigned num);
+unsigned marcel_barrier_begin(marcel_barrier_t *b);
+void marcel_barrier_end(marcel_barrier_t *b, unsigned num);
 int marcel_barrier_wait(marcel_barrier_t *b);
 int pmarcel_barrier_wait(pmarcel_barrier_t *b);
 static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b);

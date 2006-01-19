@@ -25,8 +25,8 @@ DEF_MARCEL_POSIX(int, barrier_init, (marcel_barrier_t * __restrict b,
 	b->curwait = 0;
 	return 0;
 }
-int marcel_barrier_begin(marcel_barrier_t *b) {
-	int num;
+unsigned marcel_barrier_begin(marcel_barrier_t *b) {
+	unsigned num;
 	marcel_mutex_lock(&b->mutex);
 	if ((num = ++b->curwait) == b->num) {
 		b->curwait = 0;
@@ -35,7 +35,7 @@ int marcel_barrier_begin(marcel_barrier_t *b) {
 	marcel_mutex_unlock(&b->mutex);
 	return num;
 }
-void marcel_barrier_end(marcel_barrier_t *b, int num) {
+void marcel_barrier_end(marcel_barrier_t *b, unsigned num) {
 	marcel_mutex_lock(&b->mutex);
 	if (num != b->num)
 		marcel_cond_wait(&b->cond,&b->mutex);

@@ -75,7 +75,7 @@ void __memory_barrier(void);
 #  define TBX_NOINST      __attribute__ ((__no_instrument_function__))
 #endif
 #define TBX_WEAK        __attribute__ ((__weak__))
-#if defined(DARWIN_SYS)
+#if defined(DARWIN_SYS) || defined(OSF_SYS)
 #  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
      ret name proto { return alias args; }
 #  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \

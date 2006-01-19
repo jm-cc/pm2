@@ -1518,6 +1518,8 @@ int main(int argc, char *argv[]) {
 
 	/* used font */
 	font = (SWFFont) loadSWFFontFromFile(f);
+	if (!font)
+		perror("can't load font");
 
 	/* movie */
 	movie = newSWFMovie();

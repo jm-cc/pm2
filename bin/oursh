@@ -1,6 +1,6 @@
 #!/bin/sh
 # Essayer d'exécuter un shell connu pour avoir ce dont on a besoin
-[ -x /bin/ksh ] && exec /bin/ksh "$@"
 [ -x /bin/bash ] && exec /bin/bash "$@"
+[ -x /bin/ksh ] && exec /bin/ksh "$@"
 # Sinon, prions
 exec /bin/sh "$@"

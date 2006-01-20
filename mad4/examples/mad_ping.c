@@ -28,7 +28,7 @@
 #define NB_LOOPS 1000
 #define WARMUP_LOOPS 10
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  (2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  32768 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -98,42 +98,39 @@ client(p_mad_channel_t channel){
     tbx_tick_t        t4;
     double            sum = 0.0;
     LOG_IN();
-    //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
-        //DISP("Identification de la connexion en émission\n");
         connection1 = mad_begin_packing(channel, 0);
+       //DISP("begin_packing : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
-            //DISP("Dépot d'une émission");
             mad_pack(connection1,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-            //DISP("Attente d'émission");
+           //DISP("pack : OK");
             mad_wait_packs(connection1);
-            //DISP("FIN émission\n");
+           //DISP("wait pack : OK\n");
 
             if (counter == 1) {
-                //DISP("Identification de la connexion en réception\n");
                 connection2 = mad_begin_unpacking(channel);
+               //DISP("begin unpacking : OK\n");
             }
 
-            //DISP("Dépot d'une réception");
             mad_unpack(connection2,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-            //DISP("Attente de réception");
+           //DISP("unpack : OK");
             mad_wait_unpacks(connection2);
-            //DISP("FIN réception\n");
+           //DISP("wait unpack : OK\n");
         }
 
-        //DISP("---->FIN WARMUP");
+       //DISP("---->FIN WARMUP");
 
         counter = 0;
 
@@ -154,7 +151,7 @@ client(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection1);
 
-            //DISP("PACK");
+           //DISP("PACK");
 
             TBX_GET_TICK(t4);
 
@@ -165,7 +162,7 @@ client(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection2);
 
-            //DISP("UNPACK");
+           //DISP("UNPACK");
 
             counter++;
 
@@ -215,42 +212,39 @@ server(p_mad_channel_t channel){
     unsigned int cur_length = BUFFER_LENGTH_MIN;
 
     LOG_IN();
-    //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
-        //DISP("Identification de la connexion en réception\n");
         connection1 = mad_begin_unpacking(channel);
+       //DISP("begin unpacking : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
-            //DISP("Dépot d'une réception");
             mad_unpack(connection1,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-            //DISP("Attente de réception");
+           //DISP("unpack : OK");
             mad_wait_unpacks(connection1);
-            //DISP("FIN réception\n");
+           //DISP("wait un pack : OK\n");
 
             if (counter == 1) {
-                //DISP("Identification de la connexion en émission\n");
                 connection2 = mad_begin_packing(channel, 1);
+               //DISP("begin packing : OK\n");
             }
 
-            //DISP("Dépot d'une émission");
             mad_pack(connection2,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-            //DISP("Attente d'émission");
+           //DISP("pack : OK");
             mad_wait_packs(connection2);
-            //DISP("FIN émission\n");
+           //DISP("wait packs : ok\n");
         }
 
-        //DISP("---->FIN WARMUP");
+       //DISP("---->FIN WARMUP");
 
         counter = 0;
 
@@ -276,7 +270,7 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
 
-            //DISP("PACK");
+           //DISP("PACK");
 
             mad_unpack(connection1,
                        buffer_r,
@@ -285,7 +279,7 @@ server(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection1);
 
-            //DISP("UNPACK");
+           //DISP("UNPACK");
 
             counter++;
         }

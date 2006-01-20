@@ -1352,6 +1352,7 @@ mad_iovec_print_msg_ligth(void * msg){
             break;
 
         default:
+            DISP_VAL("type", type);
             FAILURE("invalid mad_iovec header");
         }
     }

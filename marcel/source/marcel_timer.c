@@ -272,7 +272,7 @@ static void timer_interrupt(int sig)
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
-	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
+	if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock))
 #endif
 		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef SA_SIGINFO

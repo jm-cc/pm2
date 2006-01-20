@@ -38,18 +38,18 @@
 #define MA_LOCK_SECTION_END			\
 	".previous\n\t"
 
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[marcel_macros]"
+#define ma_spin_is_locked_nofail(x) ma_spin_is_locked(x)
 #endif
 
 #section types
 /*
  * If MA__LWPS is set, pull in the _raw_* definitions
  */
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[types]"
-#endif
-#ifndef MA__LWPS
+#else
 #ifdef MARCEL_DEBUG_SPINLOCK
 typedef struct {
         unsigned long magic;
@@ -73,7 +73,7 @@ typedef struct {
 #endif /* MARCEL_DEBUG_SPINLOCK */
 #endif /* MA__LWPS */
 #section marcel_macros
-#ifndef MA__LWPS
+#if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
 
 //#define SPIN_ABORT()
@@ -131,6 +131,12 @@ typedef struct {
                 0; \
         })
 
+#define ma_spin_is_locked_nofail(x) \
+        ({ \
+                MA_CHECK_LOCK(x); \
+                (x)->lock; \
+	 })
+
 /* without debugging, spin_trylock on UP always says
  * TRUE. --> printk if already locked. */
 #define _ma_raw_spin_trylock(x) \
@@ -178,12 +184,15 @@ typedef struct {
  */
 #define ma_spin_lock_init(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_spin_lock(lock)	do { (void)(lock); } while(0)
-#define ma_spin_is_locked(lock)	((void)(lock), 0)
+#define ma_spin_is_locked_nofail(lock) ((void)(lock), 0)
+#define ma_spin_is_locked(lock)	ma_spin_is_locked_nofail(lock)
 #define _ma_raw_spin_trylock(lock)	((void)(lock), 1)
 #define ma_spin_unlock_wait(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_spin_unlock(lock)	do { (void)(lock); } while(0)
 #endif /* MARCEL_DEBUG_SPINLOCK */
+#endif /* MA__LWPS */
 
+#ifndef MA__LWPS
 /* RW spinlocks: No debug version */
 
 #if (__GNUC__ > 2)
@@ -217,7 +226,7 @@ typedef struct {
 
 /* Where's read_trylock? */
 #section functions
-#if defined(MA__LWPS)
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[types]"
 MARCEL_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 #endif
@@ -230,28 +239,29 @@ MARCEL_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock);
 
 #section marcel_macros
 #depend "linux_interrupt.h[marcel_macros]"
-#if defined(MA__LWPS)
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #define ma_spin_lock(lock) \
 do { \
 	ma_preempt_disable(); \
 	if (tbx_unlikely(!_ma_raw_spin_trylock(lock))) \
 		__ma_preempt_spin_lock(lock); \
 } while (0)
-
-#define ma_write_lock(lock) \
-do { \
-	ma_preempt_disable(); \
-	if (tbx_unlikely(!_ma_raw_write_trylock(lock))) \
-		__ma_preempt_write_lock(lock); \
-} while (0)
-
 #else
 #define ma_spin_lock(lock)	\
 do { \
 	ma_preempt_disable(); \
 	_ma_raw_spin_lock(lock); \
 } while(0)
+#endif
 
+#ifdef MA__LWPS
+#define ma_write_lock(lock) \
+do { \
+	ma_preempt_disable(); \
+	if (tbx_unlikely(!_ma_raw_write_trylock(lock))) \
+		__ma_preempt_write_lock(lock); \
+} while (0)
+#else
 #define ma_write_lock(lock) \
 do { \
 	ma_preempt_disable(); \
@@ -444,7 +454,7 @@ do { \
 extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
 
 #section marcel_inline
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[marcel_inline]"
 #endif
 /*

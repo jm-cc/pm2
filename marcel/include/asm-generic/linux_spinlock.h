@@ -25,7 +25,7 @@
  * Your basic SMP spinlocks, allowing only a single CPU anywhere
  */
 
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/marcel_testandset.h[macros]"
 #ifdef MA_HAVE_TESTANDSET
 typedef volatile unsigned ma_spinlock_t;
@@ -41,7 +41,7 @@ typedef pthread_mutex_t ma_spinlock_t;
 #endif
 
 #section macros
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/marcel_testandset.h[macros]"
 #ifdef MA_HAVE_TESTANDSET
 #define MA_SPIN_LOCK_UNLOCKED 0
@@ -62,7 +62,7 @@ typedef pthread_mutex_t ma_spinlock_t;
  * We make no fairness assumptions. They have a cost.
  */
 
-#ifdef MA__LWPS
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 
 #depend "asm/marcel_testandset.h[macros]"
 #ifdef MA_HAVE_TESTANDSET

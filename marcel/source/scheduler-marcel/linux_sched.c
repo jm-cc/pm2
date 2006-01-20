@@ -3348,7 +3348,7 @@ EXPORT_SYMBOL(__might_sleep);
 #endif
 #endif /* 0 */
 
-#if defined(MA__LWPS)
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 /*
  * This could be a long-held lock.  If another CPU holds it for a long time,
  * and that CPU is not asked to reschedule then *this* CPU will spin on the
@@ -3372,7 +3372,9 @@ void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 		ma_preempt_disable();
 	} while (!_ma_raw_spin_trylock(lock));
 }
+#endif
 
+#if defined(MA__LWPS)
 TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {

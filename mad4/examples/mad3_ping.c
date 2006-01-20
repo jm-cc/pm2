@@ -40,12 +40,12 @@
 //......................
 typedef struct s_mad_ping_result
 {
-  ntbx_process_lrank_t lrank_src;
-  ntbx_process_lrank_t lrank_dst;
-  int                  size;
-  double               latency;
-  double               bandwidth_mbit;
-  double               bandwidth_mbyte;
+        ntbx_process_lrank_t lrank_src;
+        ntbx_process_lrank_t lrank_dst;
+        int                  size;
+        double               latency;
+        double               bandwidth_mbit;
+        double               bandwidth_mbyte;
 } mad_ping_result_t, *p_mad_ping_result_t;
 
 // Static variables
@@ -85,653 +85,626 @@ static void
 mark_buffer(int len);
 
 static void
-mark_buffer(int len)
-{
-  unsigned int n = 0;
-  int          i = 0;
+mark_buffer(int len) {
+        unsigned int n = 0;
+        int          i = 0;
 
-  for (i = 0; i < len; i++)
-    {
-      unsigned char c = 0;
+        for (i = 0; i < len; i++) {
+                unsigned char c = 0;
 
-      n += 7;
-      c = (unsigned char)(n % 256);
+                n += 7;
+                c = (unsigned char)(n % 256);
 
-      main_buffer[i] = c;
-    }
+                main_buffer[i] = c;
+        }
 }
 
 static void
 clear_buffer(void);
 
 static void
-clear_buffer(void)
-{
-  memset(main_buffer, 0, param_max_size);
+clear_buffer(void) {
+        memset(main_buffer, 0, param_max_size);
 }
 
 static void
-fill_buffer(void)
-{
-  memset(main_buffer, param_fill_buffer_value, param_max_size);
+fill_buffer(void) {
+        memset(main_buffer, param_fill_buffer_value, param_max_size);
 }
 
 static void
 control_buffer(int len);
 
 static void
-control_buffer(int len)
-{
-  tbx_bool_t   ok = tbx_true;
-  unsigned int n  = 0;
-  int          i  = 0;
+control_buffer(int len) {
+        tbx_bool_t   ok = tbx_true;
+        unsigned int n  = 0;
+        int          i  = 0;
 
-  for (i = 0; i < len; i++)
-    {
-      unsigned char c = 0;
+        for (i = 0; i < len; i++) {
+                unsigned char c = 0;
 
-      n += 7;
-      c = (unsigned char)(n % 256);
+                n += 7;
+                c = (unsigned char)(n % 256);
 
-      if (main_buffer[i] != c)
-	{
-	  int v1 = 0;
-	  int v2 = 0;
+                if (main_buffer[i] != c) {
+                        int v1 = 0;
+                        int v2 = 0;
 
-	  v1 = c;
-	  v2 = main_buffer[i];
-	  DISP("Bad data at byte %X: expected %X, received %X", i, v1, v2);
-	  ok = tbx_false;
-	}
-    }
+                        v1 = c;
+                        v2 = main_buffer[i];
+                        DISP("Bad data at byte %X: expected %X, received %X", i, v1, v2);
+                        ok = tbx_false;
+                }
+        }
 
-  if (!ok)
-    {
-      DISP("%d bytes reception failed", len);
-      FAILURE("data corruption");
-    }
-  else
-    {
-      DISP("ok");
-    }
+        if (!ok) {
+                DISP("%d bytes reception failed", len);
+                FAILURE("data corruption");
+        } else {
+                DISP("ok");
+        }
 }
 
 static
 void
 process_results(p_mad_channel_t     channel,
-		p_mad_ping_result_t results)
-{
-  LOG_IN();
-  if (process_lrank == master_lrank)
-    {
-      mad_ping_result_t tmp_results = { 0, 0, 0, 0.0, 0.0, 0.0 };
+		p_mad_ping_result_t results) {
+        LOG_IN();
+        if (process_lrank == master_lrank) {
+                mad_ping_result_t tmp_results = { 0, 0, 0, 0.0, 0.0, 0.0 };
 
-      if (!results)
-	{
-	  p_mad_connection_t in = NULL;
-	  ntbx_pack_buffer_t buffer;
+                if (!results) {
+                        p_mad_connection_t in = NULL;
+                        ntbx_pack_buffer_t b1;
+                        ntbx_pack_buffer_t b2;
+                        ntbx_pack_buffer_t b3;
+                        ntbx_pack_buffer_t b4;
+                        ntbx_pack_buffer_t b5;
+                        ntbx_pack_buffer_t b6;
 
-	  in = mad_begin_unpacking(channel);
+                        in = mad_begin_unpacking(channel);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.lrank_src       = ntbx_unpack_int(&buffer);
+                        mad_unpack(in, &b1, sizeof(b1),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.lrank_dst       = ntbx_unpack_int(&buffer);
+                        mad_unpack(in, &b2, sizeof(b2),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.size            = ntbx_unpack_int(&buffer);
+                        mad_unpack(in, &b3, sizeof(b3),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.latency         = ntbx_unpack_double(&buffer);
+                        mad_unpack(in, &b4, sizeof(b4),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.bandwidth_mbit  = ntbx_unpack_double(&buffer);
+                        mad_unpack(in, &b5, sizeof(b5),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  tmp_results.bandwidth_mbyte = ntbx_unpack_double(&buffer);
+                        mad_unpack(in, &b6, sizeof(b6),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
 
-	  mad_end_unpacking(in);
+                        mad_end_unpacking(in);
 
-	  results = &tmp_results;
-	}
+                        tmp_results.lrank_src       = ntbx_unpack_int(&b1);
+                        tmp_results.lrank_dst       = ntbx_unpack_int(&b2);
+                        tmp_results.size            = ntbx_unpack_int(&b3);
+                        tmp_results.latency         = ntbx_unpack_double(&b4);
+                        tmp_results.bandwidth_mbit  = ntbx_unpack_double(&b5);
+                        tmp_results.bandwidth_mbyte = ntbx_unpack_double(&b6);
 
-      LDISP("%3d %3d %12d %12.3f %8.3f %8.3f",
-	    results->lrank_src,
-	    results->lrank_dst,
-	    results->size,
-	    results->latency,
-	    results->bandwidth_mbit,
-	    results->bandwidth_mbyte);
-    }
-  else if (results)
-    {
-      p_mad_connection_t out = NULL;
-      ntbx_pack_buffer_t buffer;
+                        results = &tmp_results;
+                }
 
-      out = mad_begin_packing(channel, master_lrank);
+                LDISP("%3d %3d %12d %12.3f %8.3f %8.3f",
+                      results->lrank_src,
+                      results->lrank_dst,
+                      results->size,
+                      results->latency,
+                      results->bandwidth_mbit,
+                      results->bandwidth_mbyte);
+        } else if (results) {
+                p_mad_connection_t out = NULL;
+                ntbx_pack_buffer_t b1;
+                ntbx_pack_buffer_t b2;
+                ntbx_pack_buffer_t b3;
+                ntbx_pack_buffer_t b4;
+                ntbx_pack_buffer_t b5;
+                ntbx_pack_buffer_t b6;
 
-      ntbx_pack_int(results->lrank_src, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                ntbx_pack_int(results->lrank_src, &b1);
+                ntbx_pack_int(results->lrank_dst, &b2);
+                ntbx_pack_int(results->size, &b3);
+                ntbx_pack_double(results->latency, &b4);
+                ntbx_pack_double(results->bandwidth_mbit, &b5);
+                ntbx_pack_double(results->bandwidth_mbyte, &b6);
 
-      ntbx_pack_int(results->lrank_dst, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                out = mad_begin_packing(channel, master_lrank);
 
-      ntbx_pack_int(results->size, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                mad_pack(out, &b1, sizeof(b1),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
 
-      ntbx_pack_double(results->latency, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                mad_pack(out, &b2, sizeof(b2),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
 
-      ntbx_pack_double(results->bandwidth_mbit, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                mad_pack(out, &b3, sizeof(b3),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
 
-      ntbx_pack_double(results->bandwidth_mbyte, &buffer);
-      mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_SAFER, mad_receive_EXPRESS);
+                mad_pack(out, &b4, sizeof(b4),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
 
-      mad_end_packing(out);
-    }
+                mad_pack(out, &b5, sizeof(b5),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
 
-  LOG_OUT();
+                mad_pack(out, &b6, sizeof(b6),
+                         mad_send_CHEAPER, mad_receive_CHEAPER);
+
+                mad_end_packing(out);
+        }
+
+        LOG_OUT();
 }
 
 static
 void
 cond_alloc_main_buffer(size_t size) {
-  if (param_dynamic_allocation) {
-    main_buffer = tbx_aligned_malloc(size, MAD_ALIGNMENT);
-  }
+        if (param_dynamic_allocation) {
+                main_buffer = tbx_aligned_malloc(size, MAD_ALIGNMENT);
+        }
 }
 
 static
 void
 cond_free_main_buffer(void) {
-  if (param_dynamic_allocation) {
-    tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
-  }
+        if (param_dynamic_allocation) {
+                tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
+        }
 }
 
 
 static
 void
 ping(p_mad_channel_t      channel,
-     ntbx_process_lrank_t lrank_dst)
-{
-  int size = 0;
+     ntbx_process_lrank_t lrank_dst) {
+        int size = 0;
 
-  LOG_IN();
-  DISP_VAL("ping with", lrank_dst);
+        LOG_IN();
+        DISP_VAL("ping with", lrank_dst);
 
-  if (!param_dynamic_allocation && param_fill_buffer)
-    {
-      fill_buffer();
-    }
+        if (!param_dynamic_allocation && param_fill_buffer) {
+                fill_buffer();
+        }
 
-  if (param_warmup)
-    {
-      p_mad_connection_t connection = NULL;
+        if (param_warmup) {
+                p_mad_connection_t connection = NULL;
 
 
-      cond_alloc_main_buffer(param_max_size);
-      connection = mad_begin_packing(channel, lrank_dst);
-      mad_pack(connection, main_buffer, param_max_size,
-               param_send_mode, param_receive_mode);
+                cond_alloc_main_buffer(param_max_size);
+                connection = mad_begin_packing(channel, lrank_dst);
+                mad_pack(connection, main_buffer, param_max_size,
+                         param_send_mode, param_receive_mode);
 
-      mad_end_packing(connection);
-      cond_free_main_buffer();
+                mad_end_packing(connection);
+                cond_free_main_buffer();
 
-      cond_alloc_main_buffer(param_max_size);
-      connection = mad_begin_unpacking(channel);
-      mad_unpack(connection, main_buffer, param_max_size,
-		 param_send_mode, param_receive_mode);
-      mad_end_unpacking(connection);
-      cond_free_main_buffer();
-    }
-
-  for (size = param_min_size;
-       size <= param_max_size;
-       size = param_step?size + param_step:size * 2)
-    {
-      const int         _size   = (!size && param_no_zero)?1:size;
-      int               dummy   = 0;
-      mad_ping_result_t results = { 0, 0, 0, 0.0, 0.0, 0.0 };
-      double            sum     = 0.0;
-      tbx_tick_t        t1;
-      tbx_tick_t        t2;
-
-      sum = 0;
-
-      if (param_one_way)
-	{
-	  p_mad_connection_t connection = NULL;
-	  int                nb_tests   = param_nb_tests * param_nb_samples;
-
-	  TBX_GET_TICK(t1);
-	  while (nb_tests--)
-	    {
-              cond_alloc_main_buffer(_size);
-	      connection = mad_begin_packing(channel, lrank_dst);
-              mad_pack(connection, main_buffer, _size,
-                       param_send_mode, param_receive_mode);
-
-	      mad_end_packing(connection);
-              cond_free_main_buffer();
-	    }
-
-	  connection = mad_begin_unpacking(channel);
-	  mad_unpack(connection, &dummy, sizeof(dummy),
-		     param_send_mode, param_receive_mode);
-	  mad_end_unpacking(connection);
-	  TBX_GET_TICK(t2);
-
-	  sum += TBX_TIMING_DELAY(t1, t2);
-	}
-      else
-	{
-	  int nb_tests = param_nb_tests;
-
-	  while (nb_tests--)
-	    {
-	      int nb_samples = param_nb_samples;
-
-	      TBX_GET_TICK(t1);
-	      while (nb_samples--)
-		{
-		  p_mad_connection_t connection = NULL;
-
-                  cond_alloc_main_buffer(_size);
-		  connection = mad_begin_packing(channel, lrank_dst);
-                  if (param_control_receive) {
-                          mark_buffer(_size);
-                  }
-
-                  mad_pack(connection, main_buffer, _size,
+                cond_alloc_main_buffer(param_max_size);
+                connection = mad_begin_unpacking(channel);
+                mad_unpack(connection, main_buffer, param_max_size,
                            param_send_mode, param_receive_mode);
+                mad_end_unpacking(connection);
+                cond_free_main_buffer();
+        }
 
-		  mad_end_packing(connection);
+        for (size = param_min_size;
+             size <= param_max_size;
+             size = param_step?size + param_step:size * 2) {
+                const int         _size   = (!size && param_no_zero)?1:size;
+                int               dummy   = 0;
+                mad_ping_result_t results = { 0, 0, 0, 0.0, 0.0, 0.0 };
+                double            sum     = 0.0;
+                tbx_tick_t        t1;
+                tbx_tick_t        t2;
 
-                  if (param_control_receive) {
-                    clear_buffer();
-                  }
+                sum = 0;
 
-		  connection = mad_begin_unpacking(channel);
-		  mad_unpack(connection, main_buffer, _size,
-			     param_send_mode, param_receive_mode);
-		  mad_end_unpacking(connection);
-                  if (param_control_receive) {
-                    control_buffer(_size);
-                  }
-                  cond_free_main_buffer();
-		}
-	      TBX_GET_TICK(t2);
+                if (param_one_way) {
+                        p_mad_connection_t connection = NULL;
+                        int                nb_tests   = param_nb_tests * param_nb_samples;
 
-	      sum += TBX_TIMING_DELAY(t1, t2);
-	    }
-	}
+                        TBX_GET_TICK(t1);
+                        while (nb_tests--) {
+                                cond_alloc_main_buffer(_size);
+                                connection = mad_begin_packing(channel, lrank_dst);
+                                mad_pack(connection, main_buffer, _size,
+                                         param_send_mode, param_receive_mode);
 
-      results.lrank_src       = process_lrank;
-      results.lrank_dst       = lrank_dst;
-      results.size            = _size;
-      results.bandwidth_mbit  =
-	(_size * (double)param_nb_tests * (double)param_nb_samples)
-	/ (sum / (2 - param_one_way));
+                                mad_end_packing(connection);
+                                cond_free_main_buffer();
+                        }
 
-      results.bandwidth_mbyte = results.bandwidth_mbit / 1.048576;
-      results.latency         =
-	sum / param_nb_tests / param_nb_samples / (2 - param_one_way);
+                        connection = mad_begin_unpacking(channel);
+                        mad_unpack(connection, &dummy, sizeof(dummy),
+                                   param_send_mode, param_receive_mode);
+                        mad_end_unpacking(connection);
+                        TBX_GET_TICK(t2);
 
-      process_results(channel, &results);
-    }
-  LOG_OUT();
+                        sum += TBX_TIMING_DELAY(t1, t2);
+                } else {
+                        int nb_tests = param_nb_tests;
+
+                        while (nb_tests--) {
+                                int nb_samples = param_nb_samples;
+
+                                TBX_GET_TICK(t1);
+                                while (nb_samples--) {
+                                        p_mad_connection_t connection = NULL;
+
+                                        DISP("ping\t %d\t %d\t %d", nb_samples, nb_tests, _size);
+
+                                        cond_alloc_main_buffer(_size);
+                                        connection = mad_begin_packing(channel, lrank_dst);
+                                        if (param_control_receive) {
+                                                mark_buffer(_size);
+                                        }
+
+                                        mad_pack(connection, main_buffer, _size,
+                                                 param_send_mode, param_receive_mode);
+
+                                        mad_end_packing(connection);
+
+                                        if (param_control_receive) {
+                                                clear_buffer();
+                                        }
+
+                                        connection = mad_begin_unpacking(channel);
+                                        mad_unpack(connection, main_buffer, _size,
+                                                   param_send_mode, param_receive_mode);
+                                        mad_end_unpacking(connection);
+                                        if (param_control_receive) {
+                                                control_buffer(_size);
+                                        }
+                                        cond_free_main_buffer();
+                                }
+                                TBX_GET_TICK(t2);
+
+                                sum += TBX_TIMING_DELAY(t1, t2);
+                        }
+                }
+
+                results.lrank_src       = process_lrank;
+                results.lrank_dst       = lrank_dst;
+                results.size            = _size;
+                results.bandwidth_mbit  =
+                        (_size * (double)param_nb_tests * (double)param_nb_samples)
+                        / (sum / (2 - param_one_way));
+
+                results.bandwidth_mbyte = results.bandwidth_mbit / 1.048576;
+                results.latency         =
+                        sum / param_nb_tests / param_nb_samples / (2 - param_one_way);
+
+                process_results(channel, &results);
+        }
+        LOG_OUT();
 }
 
 static
 void
 pong(p_mad_channel_t      channel,
-     ntbx_process_lrank_t lrank_dst)
-{
-  int size = 0;
+     ntbx_process_lrank_t lrank_dst) {
+        int size = 0;
 
-  LOG_IN();
-  DISP_VAL("pong with", lrank_dst);
+        LOG_IN();
+        DISP_VAL("pong with", lrank_dst);
 
-  if (!param_dynamic_allocation && param_fill_buffer)
-    {
-      fill_buffer();
-    }
+        if (!param_dynamic_allocation && param_fill_buffer) {
+                fill_buffer();
+        }
 
-  if (param_warmup)
-    {
-      p_mad_connection_t connection = NULL;
+        if (param_warmup) {
+                p_mad_connection_t connection = NULL;
 
-      cond_alloc_main_buffer(param_max_size);
-      connection = mad_begin_unpacking(channel);
-      mad_unpack(connection, main_buffer, param_max_size,
-		 param_send_mode, param_receive_mode);
-      mad_end_unpacking(connection);
-      cond_free_main_buffer();
-
-      cond_alloc_main_buffer(param_max_size);
-      connection = mad_begin_packing(channel, lrank_dst);
-      mad_pack(connection, main_buffer, param_max_size,
-               param_send_mode, param_receive_mode);
-
-      mad_end_packing(connection);
-      cond_free_main_buffer();
-    }
-
-  for (size = param_min_size;
-       size <= param_max_size;
-       size = param_step?size + param_step:size * 2)
-    {
-      const int _size = (!size && param_no_zero)?1:size;
-
-      if (param_one_way)
-	{
-	  p_mad_connection_t connection = NULL;
-	  int                nb_tests   =
-	    param_nb_tests * param_nb_samples;
-          int                dummy      = 0;
-
-	  while (nb_tests--)
-	    {
-              cond_alloc_main_buffer(_size);
-	      connection = mad_begin_unpacking(channel);
-	      mad_unpack(connection, main_buffer, _size,
-			 param_send_mode, param_receive_mode);
-	      mad_end_unpacking(connection);
-              cond_free_main_buffer();
-	    }
-
-	  connection = mad_begin_packing(channel, lrank_dst);
-
-          mad_pack(connection, &dummy, sizeof(dummy),
-                   param_send_mode, param_receive_mode);
-
-	  mad_end_packing(connection);
-	}
-      else
-	{
-	  int nb_tests = param_nb_tests;
-
-	  while (nb_tests--)
-	    {
-	      int nb_samples = param_nb_samples;
-
-	      while (nb_samples--)
-		{
-		  p_mad_connection_t connection = NULL;
-
-                  cond_alloc_main_buffer(_size);
-		  connection = mad_begin_unpacking(channel);
-		  mad_unpack(connection, main_buffer, _size,
-			     param_send_mode, param_receive_mode);
-		  mad_end_unpacking(connection);
-
-		  connection = mad_begin_packing(channel, lrank_dst);
-                  mad_pack(connection, main_buffer, _size,
+                cond_alloc_main_buffer(param_max_size);
+                connection = mad_begin_unpacking(channel);
+                mad_unpack(connection, main_buffer, param_max_size,
                            param_send_mode, param_receive_mode);
+                mad_end_unpacking(connection);
+                cond_free_main_buffer();
 
-		  mad_end_packing(connection);
-                  cond_free_main_buffer();
-		}
-	    }
-	}
+                cond_alloc_main_buffer(param_max_size);
+                connection = mad_begin_packing(channel, lrank_dst);
+                mad_pack(connection, main_buffer, param_max_size,
+                         param_send_mode, param_receive_mode);
 
-      process_results(channel, NULL);
-    }
-  LOG_OUT();
+                mad_end_packing(connection);
+                cond_free_main_buffer();
+        }
+
+        for (size = param_min_size;
+             size <= param_max_size;
+             size = param_step?size + param_step:size * 2) {
+                const int _size = (!size && param_no_zero)?1:size;
+
+                if (param_one_way) {
+                        p_mad_connection_t connection = NULL;
+                        int                nb_tests   =
+                                param_nb_tests * param_nb_samples;
+                        int                dummy      = 0;
+
+                        while (nb_tests--) {
+                                cond_alloc_main_buffer(_size);
+                                connection = mad_begin_unpacking(channel);
+                                mad_unpack(connection, main_buffer, _size,
+                                           param_send_mode, param_receive_mode);
+                                mad_end_unpacking(connection);
+                                cond_free_main_buffer();
+                        }
+
+                        connection = mad_begin_packing(channel, lrank_dst);
+
+                        mad_pack(connection, &dummy, sizeof(dummy),
+                                 param_send_mode, param_receive_mode);
+
+                        mad_end_packing(connection);
+                } else {
+                        int nb_tests = param_nb_tests;
+
+                        while (nb_tests--) {
+                                int nb_samples = param_nb_samples;
+
+                                while (nb_samples--) {
+                                        p_mad_connection_t connection = NULL;
+
+                                        DISP("pong\t %d\t %d\t %d", nb_samples, nb_tests, _size);
+                                        cond_alloc_main_buffer(_size);
+                                        connection = mad_begin_unpacking(channel);
+                                        mad_unpack(connection, main_buffer, _size,
+                                                   param_send_mode, param_receive_mode);
+                                        mad_end_unpacking(connection);
+
+                                        connection = mad_begin_packing(channel, lrank_dst);
+                                        mad_pack(connection, main_buffer, _size,
+                                                 param_send_mode, param_receive_mode);
+
+                                        mad_end_packing(connection);
+                                        cond_free_main_buffer();
+                                }
+                        }
+                }
+
+                process_results(channel, NULL);
+        }
+        LOG_OUT();
 }
 
 static
 void
-master_loop(p_mad_channel_t channel)
-{
-  int size = 0;
+master_loop(p_mad_channel_t channel) {
+        int size = 0;
 
-  LOG_IN();
-  for (size = param_min_size;
-       size <= param_max_size;
-       size = param_step?size + param_step:size * 2)
-    {
-      process_results(channel, NULL);
-    }
-  LOG_OUT();
+        LOG_IN();
+        for (size = param_min_size;
+             size <= param_max_size;
+             size = param_step?size + param_step:size * 2) {
+                process_results(channel, NULL);
+        }
+        LOG_OUT();
 }
 
 static
 void
 play_with_channel(p_mad_madeleine_t  madeleine,
-		  char              *name)
-{
-  p_mad_channel_t            channel = NULL;
-  p_ntbx_process_container_t pc      = NULL;
-  tbx_bool_t                 status  = tbx_false;
-  ntbx_pack_buffer_t         buffer;
+		  char              *name) {
+        p_mad_channel_t            channel = NULL;
+        p_ntbx_process_container_t pc      = NULL;
+        tbx_bool_t                 status  = tbx_false;
 
-  DISP_STR("Channel", name);
-  channel = tbx_htable_get(madeleine->channel_htable, name);
-  if (!channel)
-    {
-      DISP("I don't belong to this channel");
+        DISP_STR("Channel", name);
+        channel = tbx_htable_get(madeleine->channel_htable, name);
+        if (!channel) {
+                DISP("I don't belong to this channel");
 
-      return;
-    }
+                return;
+        }
 
-  pc = channel->pc;
+        pc = channel->pc;
 
-  status = ntbx_pc_first_local_rank(pc, &master_lrank);
-  if (!status)
-    return;
+        status = ntbx_pc_first_local_rank(pc, &master_lrank);
+        if (!status)
+                return;
 
-  process_lrank = ntbx_pc_global_to_local(pc, process_grank);
-  DISP_VAL("My local channel rank is", process_lrank);
+        process_lrank = ntbx_pc_global_to_local(pc, process_grank);
+        DISP_VAL("My local channel rank is", process_lrank);
 
-  if (process_lrank == master_lrank)
-    {
-      // Master
-	   ntbx_process_lrank_t lrank_src = -1;
+        if (process_lrank == master_lrank) {
+                // Master
+                ntbx_process_lrank_t lrank_src = -1;
 
-      LDISP_STR("Channel", name);
-      LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
+                LDISP_STR("Channel", name);
+                LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
 
-      ntbx_pc_first_local_rank(pc, &lrank_src);
-      do
-	{
-	  ntbx_process_lrank_t lrank_dst = -1;
+                ntbx_pc_first_local_rank(pc, &lrank_src);
+                do {
+                        ntbx_process_lrank_t lrank_dst = -1;
 
-	  if (param_one_way)
-	    {
-	      ntbx_pc_first_local_rank(pc, &lrank_dst);
-	    }
-	  else
-	    {
-	      lrank_dst = lrank_src;
+                        if (param_one_way) {
+                                ntbx_pc_first_local_rank(pc, &lrank_dst);
+                        } else {
+                                lrank_dst = lrank_src;
 
-	      if (!ntbx_pc_next_local_rank(pc, &lrank_dst))
-		break;
-	    }
+                                if (!ntbx_pc_next_local_rank(pc, &lrank_dst))
+                                        break;
+                        }
 
-	  do
-	    {
-	      if (lrank_dst == lrank_src)
-		continue;
+                        do {
+                                if (lrank_dst == lrank_src)
+                                        continue;
 
-	      if (lrank_src == master_lrank)
-		{
-		  p_mad_connection_t out = NULL;
-		  p_mad_connection_t in  = NULL;
+                                if (lrank_src == master_lrank) {
+                                        p_mad_connection_t out = NULL;
+                                        p_mad_connection_t in  = NULL;
+                                        ntbx_pack_buffer_t b1;
+                                        ntbx_pack_buffer_t b2;
 
-		  out = mad_begin_packing(channel, lrank_dst);
-		  ntbx_pack_int(lrank_src, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  ntbx_pack_int(0, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  mad_end_packing(out);
+                                        ntbx_pack_int(lrank_src, &b1);
+                                        ntbx_pack_int(0, &b2);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
+                                        out = mad_begin_packing(channel, lrank_dst);
+                                        mad_pack(out, &b1, sizeof(b1),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_pack(out, &b2, sizeof(b2),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_packing(out);
 
-		  ping(channel, lrank_dst);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
-		}
-	      else if (lrank_dst == master_lrank)
-		{
-		  p_mad_connection_t out = NULL;
-		  p_mad_connection_t in  = NULL;
+                                        ping(channel, lrank_dst);
 
-		  out = mad_begin_packing(channel, lrank_src);
-		  ntbx_pack_int(lrank_dst, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  ntbx_pack_int(1, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  mad_end_packing(out);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
+                                } else if (lrank_dst == master_lrank) {
+                                        p_mad_connection_t out = NULL;
+                                        p_mad_connection_t in  = NULL;
+                                        ntbx_pack_buffer_t b1;
+                                        ntbx_pack_buffer_t b2;
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
+                                        ntbx_pack_int(lrank_dst, &b1);
+                                        ntbx_pack_int(1, &b2);
 
-		  pong(channel, lrank_src);
+                                        out = mad_begin_packing(channel, lrank_src);
+                                        mad_pack(out, &b1, sizeof(b1),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_pack(out, &b2, sizeof(b2),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_packing(out);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
-		}
-	      else
-		{
-		  p_mad_connection_t out = NULL;
-		  p_mad_connection_t in  = NULL;
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
 
-		  out = mad_begin_packing(channel, lrank_dst);
-		  ntbx_pack_int(lrank_src, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  ntbx_pack_int(0, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  mad_end_packing(out);
+                                        pong(channel, lrank_src);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
+                                } else {
+                                        p_mad_connection_t out = NULL;
+                                        p_mad_connection_t in  = NULL;
+                                        ntbx_pack_buffer_t b1;
+                                        ntbx_pack_buffer_t b2;
 
-		  out = mad_begin_packing(channel, lrank_src);
-		  ntbx_pack_int(lrank_dst, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  ntbx_pack_int(1, &buffer);
-		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_SAFER, mad_receive_EXPRESS);
-		  mad_end_packing(out);
+                                        ntbx_pack_int(lrank_src, &b1);
+                                        ntbx_pack_int(0, &b2);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
+                                        out = mad_begin_packing(channel, lrank_dst);
+                                        mad_pack(out, &b1, sizeof(b1),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_pack(out, &b2, sizeof(b2),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_packing(out);
 
-		  master_loop(channel);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
+                                        ntbx_pack_int(lrank_dst, &b1);
+                                        ntbx_pack_int(1, &b2);
 
-		  in = mad_begin_unpacking(channel);
-		  mad_unpack(in, &buffer, sizeof(buffer),
-			     mad_send_CHEAPER, mad_receive_EXPRESS);
-		  mad_end_unpacking(in);
-		}
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &lrank_dst));
-	}
-      while (ntbx_pc_next_local_rank(pc, &lrank_src));
+                                        out = mad_begin_packing(channel, lrank_src);
+                                        mad_pack(out, &b1, sizeof(b1),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_pack(out, &b2, sizeof(b2),
+                                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_packing(out);
 
-      DISP("test series completed");
-      ntbx_pc_first_local_rank(pc, &lrank_src);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
 
-      while (ntbx_pc_next_local_rank(pc, &lrank_src))
-	{
-	  p_mad_connection_t out = NULL;
+                                        master_loop(channel);
 
-	  out = mad_begin_packing(channel, lrank_src);
-	  ntbx_pack_int(lrank_src, &buffer);
-	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_SAFER, mad_receive_EXPRESS);
-	  ntbx_pack_int(0, &buffer);
-	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_SAFER, mad_receive_EXPRESS);
-	  mad_end_packing(out);
-	}
-    }
-  else
-    {
-      /* Slaves */
-      while (1)
-	{
-	  p_mad_connection_t   out            = NULL;
-	  p_mad_connection_t   in             = NULL;
-	  ntbx_process_lrank_t its_local_rank =   -1;
-	  int                  direction      =    0;
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
 
-	  in = mad_begin_unpacking(channel);
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  its_local_rank = ntbx_unpack_int(&buffer);
-	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_SAFER, mad_receive_EXPRESS);
-	  direction = ntbx_unpack_int(&buffer);
-	  mad_end_unpacking(in);
+                                        in = mad_begin_unpacking(channel);
+                                        mad_unpack(in, &b1, sizeof(b1),
+                                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                                        mad_end_unpacking(in);
+                                }
+                        }
+                        while (ntbx_pc_next_local_rank(pc, &lrank_dst));
+                }
+                while (ntbx_pc_next_local_rank(pc, &lrank_src));
 
-	  if (its_local_rank == process_lrank)
-	    return;
+                DISP("test series completed");
+                ntbx_pc_first_local_rank(pc, &lrank_src);
 
-	  out = mad_begin_packing(channel, 0);
-	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_CHEAPER, mad_receive_EXPRESS);
-	  mad_end_packing(out);
+                while (ntbx_pc_next_local_rank(pc, &lrank_src)) {
+                        p_mad_connection_t out = NULL;
+                        ntbx_pack_buffer_t b1;
+                        ntbx_pack_buffer_t b2;
 
-	  if (direction)
-	    {
-	      /* Ping */
-	      ping(channel, its_local_rank);
-	    }
-	  else
-	    {
-	      /* Pong */
-	      pong(channel, its_local_rank);
-	    }
+                        ntbx_pack_int(lrank_src, &b1);
+                        ntbx_pack_int(0, &b2);
 
-	  out = mad_begin_packing(channel, 0);
-	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_CHEAPER, mad_receive_EXPRESS);
-	  mad_end_packing(out);
-	}
-    }
+                        out = mad_begin_packing(channel, lrank_src);
+                        mad_pack(out, &b1, sizeof(b1),
+                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_pack(out, &b2, sizeof(b2),
+                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_end_packing(out);
+                }
+        } else {
+                /* Slaves */
+                while (1) {
+                        p_mad_connection_t   out            = NULL;
+                        p_mad_connection_t   in             = NULL;
+                        ntbx_process_lrank_t its_local_rank =   -1;
+                        int                  direction      =    0;
+                        ntbx_pack_buffer_t   b1;
+                        ntbx_pack_buffer_t   b2;
+
+                        in = mad_begin_unpacking(channel);
+                        mad_unpack(in, &b1, sizeof(b1),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_unpack(in, &b2, sizeof(b2),
+                                   mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_end_unpacking(in);
+
+                        its_local_rank = ntbx_unpack_int(&b1);
+                        direction = ntbx_unpack_int(&b2);
+
+                        if (its_local_rank == process_lrank)
+                                return;
+
+                        out = mad_begin_packing(channel, 0);
+                        mad_pack(out, &b1, sizeof(b1),
+                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_end_packing(out);
+
+                        if (direction) {
+                                /* Ping */
+                                ping(channel, its_local_rank);
+                        } else {
+                                /* Pong */
+                                pong(channel, its_local_rank);
+                        }
+
+                        out = mad_begin_packing(channel, 0);
+                        mad_pack(out, &b1, sizeof(b1),
+                                 mad_send_CHEAPER, mad_receive_CHEAPER);
+                        mad_end_packing(out);
+                }
+        }
 }
 #endif // STARTUP_ONLY
 
@@ -752,65 +725,61 @@ working_thread(void *arg) {
 
 void *
 pseudo_main(void *_madeleine) {
-  p_mad_madeleine_t madeleine = _madeleine;
-  p_mad_session_t   session   = NULL;
+        p_mad_madeleine_t madeleine = _madeleine;
+        p_mad_session_t   session   = NULL;
 #ifndef STARTUP_ONLY
-  p_tbx_slist_t     slist     = NULL;
+        p_tbx_slist_t     slist     = NULL;
 #endif // STARTUP_ONLY
 
-  session       = madeleine->session;
-  process_grank = session->process_rank;
-  {
-    char host_name[1024] = "";
+        session       = madeleine->session;
+        process_grank = session->process_rank;
 
-    SYSCALL(gethostname(host_name, 1023));
-    DISP("(%s): My global rank is %d", host_name, process_grank);
-  }
+        {
+                char host_name[1024] = "";
 
-  DISP_VAL("The configuration size is",
-	   tbx_slist_get_length(madeleine->dir->process_slist));
+                SYSCALL(gethostname(host_name, 1023));
+                DISP("(%s): My global rank is %d", host_name, process_grank);
+        }
+
+        DISP_VAL("The configuration size is",
+                 tbx_slist_get_length(madeleine->dir->process_slist));
 
 #ifdef MARCEL
-  if (param_nb_working_threads > 0) {
-          int i = 0;
+        if (param_nb_working_threads > 0) {
+                int i = 0;
 
-          for (i = 0; i < param_nb_working_threads; i++) {
-                  marcel_t t;
-                  marcel_create(&t, NULL, working_thread, NULL);
-          }
-  }
+                for (i = 0; i < param_nb_working_threads; i++) {
+                        marcel_t t;
+                        marcel_create(&t, NULL, working_thread, NULL);
+                }
+        }
 #endif /* MARCEL */
 
 #ifndef STARTUP_ONLY
-  slist = madeleine->public_channel_slist;
-  if (!tbx_slist_is_nil(slist))
-    {
-      if (!param_dynamic_allocation) {
-        main_buffer = tbx_aligned_malloc(param_max_size, MAD_ALIGNMENT);
-      }
+        slist = madeleine->public_channel_slist;
+        if (!tbx_slist_is_nil(slist)) {
+                if (!param_dynamic_allocation) {
+                        main_buffer = tbx_aligned_malloc(param_max_size, MAD_ALIGNMENT);
+                }
 
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  char *name = NULL;
+                tbx_slist_ref_to_head(slist);
+                do {
+                        char *name = NULL;
 
-	  name = tbx_slist_ref_get(slist);
+                        name = tbx_slist_ref_get(slist);
 
-	  play_with_channel(madeleine, name);
-	}
-      while (tbx_slist_ref_forward(slist));
+                        play_with_channel(madeleine, name);
+                } while (tbx_slist_ref_forward(slist));
 
-      if (!param_dynamic_allocation) {
-        tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
-      }
-    }
-  else
-    {
-      DISP("No channels");
-    }
+                if (!param_dynamic_allocation) {
+                        tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
+                }
+        } else {
+                DISP("No channels");
+        }
 #endif // STARTUP_ONLY
 
-  return NULL;
+        return NULL;
 }
 
 
@@ -822,37 +791,37 @@ int
 main(int    argc,
      char **argv)
 {
-  p_mad_madeleine_t madeleine = NULL;
+        p_mad_madeleine_t madeleine = NULL;
 
 #ifdef USE_MAD_INIT
-  madeleine = mad_init(&argc, argv);
-  TRACE("Returned from mad_init");
+        madeleine = mad_init(&argc, argv);
+        TRACE("Returned from mad_init");
 #else // USE_MAD_INIT
-  common_pre_init(&argc, argv, NULL);
-  common_post_init(&argc, argv, NULL);
-  TRACE("Returned from common_init");
-  madeleine = mad_get_madeleine();
+        common_pre_init(&argc, argv, NULL);
+        common_post_init(&argc, argv, NULL);
+        TRACE("Returned from common_init");
+        madeleine = mad_get_madeleine();
 #endif // USE_MAD_INIT
 
 #ifdef MARCEL
- {
-   marcel_attr_t attr;
-   marcel_t t;
+        {
+                marcel_attr_t attr;
+                marcel_t t;
 
-   marcel_attr_init(&attr);
-   //marcel_attr_setrealtime(&attr, 1);
-   marcel_create(&t, &attr, pseudo_main, madeleine);
-   marcel_join(t, NULL);
- }
+                marcel_attr_init(&attr);
+                //marcel_attr_setrealtime(&attr, 1);
+                marcel_create(&t, &attr, pseudo_main, madeleine);
+                marcel_join(t, NULL);
+        }
 #else /* MARCEL */
-  pseudo_main(madeleine);
+        pseudo_main(madeleine);
 #endif /* MARCEL */
 
 
-  DISP("Exiting");
+        DISP("Exiting");
 
-  // mad_exit(madeleine);
-  common_exit(NULL);
+        // mad_exit(madeleine);
+        common_exit(NULL);
 
-  return 0;
+        return 0;
 }

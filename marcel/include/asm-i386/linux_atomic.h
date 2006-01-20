@@ -62,6 +62,7 @@ typedef struct { volatile int counter; } ma_atomic_t;
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
 #define ma_atomic_set(v,i)		(((v)->counter) = (i))
+#define ma_atomic_init(v,i)		ma_atomic_set((v), (i))
 
 #section marcel_functions
 /**

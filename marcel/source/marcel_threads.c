@@ -84,6 +84,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->not_migratable = attr->not_migratable;
 	t->not_deviatable = attr->not_deviatable;
 	marcel_sem_init(&t->suspend_sem, 0);
+	ma_atomic_init(&t->top_utime, 0);
 
 	//t->__errno=0;
 	//t->__h_errno=0;

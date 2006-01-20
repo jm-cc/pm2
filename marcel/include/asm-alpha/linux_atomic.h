@@ -58,6 +58,9 @@ typedef struct { volatile long counter; } ma_atomic64_t;
 #define ma_atomic_set(v,i)	((v)->counter = (i))
 #define ma_atomic64_set(v,i)	((v)->counter = (i))
 
+#define ma_atomic_init(v,i)	ma_atomic_set((v),(i))
+#define ma_atomic64_init(v,i)	ma_atomic64_set((v),(i))
+
 /*
  * To get proper branch prediction for the main line, we must branch
  * forward to code at the end of this object's .text section, then

@@ -63,6 +63,9 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 #define ma_atomic_set(v,i)	(((v)->counter) = (i))
 #define ma_atomic64_set(v,i)	(((v)->counter) = (i))
 
+#define ma_atomic_init(v,i)	ma_atomic_set((v),(i))
+#define ma_atomic64_init(v,i)	ma_atomic64_set((v),(i))
+
 #section marcel_functions
 static __tbx_inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v);

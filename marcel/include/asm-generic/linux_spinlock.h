@@ -66,7 +66,7 @@ typedef pthread_mutex_t ma_spinlock_t;
 
 #depend "asm/marcel_testandset.h[macros]"
 #ifdef MA_HAVE_TESTANDSET
-#define ma_spin_is_locked(x)	(*(x) == 1)
+#define ma_spin_is_locked(x)	(!!*(x))
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
 
 #define _ma_raw_spin_unlock(x) pm2_spinlock_release(x)

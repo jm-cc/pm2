@@ -35,7 +35,7 @@
 #ifdef PM2_DEV
 #warning XXX: est-ce vraiment ça ?
 #endif
-#  define TOP_STACK_FREE_AREA     (SPARC_MAXREGWINDOW*8+128)
+#  define TOP_STACK_FREE_AREA     (MAL(SPARC_MAXREGWINDOW*8)+128)
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
 #endif
 

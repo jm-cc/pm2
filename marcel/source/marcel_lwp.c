@@ -209,6 +209,8 @@ unsigned marcel_lwp_add_vp(void)
   /* initialiser le lwp *avant* de l'enregistrer */
   memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
 
+  MA_WARN_ON(__ma_per_lwp_size == 0);
+
   lwp->polling_list = NULL;
   
   SET_LWP_NB(num, lwp);

@@ -292,7 +292,7 @@ typedef struct {
 	
 
 #define _ADD_INIT_SECTION(number, text) \
-  TBX_INTERNAL int __ma_init_info_##number \
+  TBX_INTERNAL const int __ma_init_info_##number \
     TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #number) = number; \
   TBX_INTERNAL const __ma_init_index_t __ma_init_index_##number \
     TBX_SECTION(__MA_INIT_SECTION "ind." #number) \
@@ -333,13 +333,13 @@ ADD_INIT_SECTION(MA_INIT_START_LWPS, "Init LWPs");
 #endif
 ADD_INIT_SECTION(5, "No more init part");
 
-extern __ma_init_index_t __ma_init_start[];
+extern const __ma_init_index_t __ma_init_start[];
 
 static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 
 void marcel_init_section(int sec)
 {
-	__ma_init_info_t *infos, *last;
+	const __ma_init_info_t *infos, *last;
 	int section;
 
 	/* Quick registration */

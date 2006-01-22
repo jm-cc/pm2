@@ -189,19 +189,15 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 		ret=__marcel_register_spinlocked(lock, self, &c);
 
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
-		TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(
-			INTERRUPTIBLE,
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
 			marcel_lock_release(&lock->__spinlock),
-			marcel_lock_acquire(&lock->__spinlock);
-			if (lock->__status != 0)
-				mdebug("lock %p still held by %p\n",lock,lock->__status);
-			, 10000);
+			marcel_lock_acquire(&lock->__spinlock));
 		marcel_lock_release(&lock->__spinlock);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 		
 	} else { /* was free */
-		lock->__status = (unsigned long)self;
+		lock->__status = 1;
 		marcel_lock_release(&lock->__spinlock);
 	}
 	mdebug("getting lock %p in lock %p\n", self, lock);

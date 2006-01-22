@@ -113,7 +113,7 @@ pm2config_remove_dupplicates_keep_first() # list
 pm2config_build_uppercase() # list
 {
     _list=$*
-    _LIST=`echo $_list | tr a-z A-Z`
+    _LIST=`echo $_list | tr '[a-z]' '[A-Z]'`
     while [ -n "$_list" ] ; do
 	set $_LIST
 	_big=$1
@@ -615,7 +615,7 @@ pm2config_parse_cmdline() # args
 		    echo $_PM2CONFIG_LIB_STAMP_FILES
 		else
 		    for _lib in $_libs; do
-			_LIB=`echo $_lib | tr 'a-z' 'A-Z'`
+			_LIB=`echo $_lib | tr '[a-z]' '[A-Z]'`
 			eval _libname=\$PM2_${_LIB}_LIBNAME
 			eval echo \$_PM2CONFIG_${_libname}_STAMP_FILES
 		    done
@@ -641,7 +641,7 @@ pm2config_parse_cmdline() # args
 	fi
 	case " $PM2_LIBS " in
 	    *\ $_libs\ *)
-		_d=`echo $_dirtoshow | tr a-z A-Z`
+		_d=`echo $_dirtoshow | tr '[a-z]' '[A-Z]'`
 		eval echo \$_PM2CONFIG_${_libs}_${_d}_DIR
 		;;
 	    *)

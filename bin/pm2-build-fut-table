@@ -101,7 +101,7 @@ for c in \
     FUT_MAIN_EXIT_CODE
     do
     code="`grep $c /usr/local/include/fxt/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
-    label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr A-Z a-z`"
+    label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr '[A-Z]' '[a-z]'`"
     echo "{ $c, \"$label\" }," >> $printfile
 done
 
@@ -129,7 +129,7 @@ for mod in $THE_MODULES ; do
 	    num=$(($value + $base))
 	    xnum=`printf "0x%x" $num`
 	    name=`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`
-	    upname=`echo $name | tr a-z A-Z`
+	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile
@@ -138,7 +138,7 @@ for mod in $THE_MODULES ; do
 	    num=$(($value + $base + 256))
 	    xnum=`printf "0x%x" $num`
 	    name=`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`
-	    upname=`echo $name | tr a-z A-Z`
+	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile
@@ -152,7 +152,7 @@ for mod in $THE_MODULES ; do
         *single_code)
 	    xnum=`printf "0x%x" $other`
 	    name=`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`
-	    upname=`echo $name | tr a-z A-Z`
+	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile
@@ -162,7 +162,7 @@ for mod in $THE_MODULES ; do
         *single1_code)
 	    xnum=`printf "0x%x" $other`
 	    name=`echo $e | sed -e 's/fut_\(.*\)_single1_code/\1/'`
-	    upname=`echo $name | tr a-z A-Z`
+	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile
@@ -172,7 +172,7 @@ for mod in $THE_MODULES ; do
         *single2_code)
 	    xnum=`printf "0x%x" $other`
 	    name=`echo $e | sed -e 's/fut_\(.*\)_single2_code/\1/'`
-	    upname=`echo $name | tr a-z A-Z`
+	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile

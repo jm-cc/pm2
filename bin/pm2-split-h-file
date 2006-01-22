@@ -5,7 +5,7 @@ use diagnostics;
 
 use Getopt::Long;
 Getopt::Long::Configure("permute");
-use Pod::Usage;
+#use Pod::Usage;
 
 my($use_line_preproc)=1;
 
@@ -736,14 +736,14 @@ sub openfile {
     }
     if ($mfile) {
 	print "      Creating Makefile $file\n";
-	open(MAKEFILE, ">", $file) or die "Unable to write file $file: $!\n";
+	open(MAKEFILE, ">$file") or die "Unable to write file $file: $!\n";
     } else {
 	if (defined ($section)) {
 	    $show and print "[$section" if $show_section;
 	} else {
 	    $show and print "[";
 	}
-	open(OUT, ">", $file.$new_ext) or die "Unable to write file $file$new_ext: $!\n";
+	open(OUT, ">$file$new_ext") or die "Unable to write file $file$new_ext: $!\n";
 	chmod 0444, $file.$new_ext;
 	openfile_make($hashkey);
     }

@@ -24,20 +24,10 @@ typedef struct __marcel_attr_s marcel_attr_t;
 
 #section structures
 
-#if defined(LINUX_SYS) || defined(DARWIN_SYS) || defined(WIN_SYS) || defined(OSF_SYS) || defined(GNU_SYS)
-#include <sched.h>
-#else // AD: fake Linux-like structures on other systems
-#include <sys/signal.h>
-struct sched_param
-{
-  int __sched_priority;
-};
-typedef sigset_t __sigset_t;
-#endif
-
 #include <sys/types.h> /* pour size_t */
 #depend "marcel_sched_generic.h[types]"
 #depend "marcel_topology.h[types]"
+#depend "scheduler/marcel_sched.h[types]"
 
 /* Attributes for threads.  */
 struct __marcel_attr_s
@@ -45,7 +35,7 @@ struct __marcel_attr_s
   /* begin of pthread */
   int __detachstate;
   int __schedpolicy;
-  struct sched_param __schedparam;
+  struct marcel_sched_param __schedparam;
   int __inheritsched;
   int __scope;
   size_t __guardsize;

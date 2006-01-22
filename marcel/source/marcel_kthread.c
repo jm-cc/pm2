@@ -188,9 +188,21 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	/* On ne peut pas savoir combien la libpthread veut que cela soit
 	 * aligné, donc on aligne au maximum */
 	stack_size=1<<(ma_fls(sp-stack_base)-1);
-	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size))) {
+#ifdef SOLARIS_SYS
+	if ((err=pthread_attr_setstackaddr (&attr, stack_base))
+	  ||(err=pthread_attr_setstacksize (&attr, stack_size))
+			)
+#else
+	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size)))
+#endif
+	{
+#ifdef SOLARIS_SYS
+		char *s;
+		s = strerror(err);
+#else
 		char s[256];
 		strerror_r(err,s,256);
+#endif
 		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %p, %#zx):"
 			" (%d)%s\n", &attr, sp, stack_base, stack_size, err, s);
 #ifdef PTHREAD_STACK_MIN

@@ -48,15 +48,15 @@ typedef unsigned short __ma_u16;
 typedef __signed__ int __ma_s32;
 typedef unsigned int __ma_u32;
 
-typedef __signed__ long __ma_s64;
-typedef unsigned long __ma_u64;
+typedef __signed__ long long __ma_s64;
+typedef unsigned long long __ma_u64;
 
 //#endif /* __ASSEMBLY__ */
 
 //#ifdef __KERNEL__
 
 #section macros
-#define MA_BITS_PER_LONG 64
+#define MA_BITS_PER_LONG 32
 #section marcel_types
 
 //#ifndef __ASSEMBLY__
@@ -70,11 +70,11 @@ typedef unsigned short ma_u16;
 typedef __signed__ int ma_s32;
 typedef unsigned int ma_u32;
 
-typedef __signed__ long ma_s64;
-typedef unsigned long ma_u64;
+typedef __signed__ long long ma_s64;
+typedef unsigned long long ma_u64;
 
 //typedef u32 dma_addr_t;
-//typedef u64 dma64_addr_t;
+//typedef u32 dma64_addr_t;
 
 //#endif /* __ASSEMBLY__ */
 

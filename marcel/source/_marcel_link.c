@@ -22,10 +22,10 @@
 #include "tbx_macros.h"
 #include "tbx_compiler.h"
 
-TBX_SECTION(".ma.runqueues") TBX_ALIGN(4096)	const int __ma_runqueues[0]={};
-TBX_SECTION(".ma.main.lwp") TBX_ALIGN(4096)	const int __ma_main_lwp_start[0]={};
-TBX_SECTION(".ma.per.lwp.main")			const int __ma_per_lwp_main[0]={};
-TBX_SECTION(".ma.main.lwp.end")			const int __ma_main_lwp_end[0]={};
+TBX_SECTION(".ma.runqueues") TBX_ALIGN(4096)	int __ma_runqueues[0]={};
+TBX_SECTION(".ma.main.lwp") TBX_ALIGN(4096)	int __ma_main_lwp_start[0]={};
+TBX_SECTION(".ma.per.lwp.main")			int __ma_per_lwp_main[0]={};
+TBX_SECTION(".ma.main.lwp.end")			int __ma_main_lwp_end[0]={};
 
 TBX_SECTION(".ma.debug.start") TBX_ALIGN(4096)	const int __ma_debug_start[0]={};
 TBX_SECTION(".ma.debug.var")			const int __ma_debug_var[0]={};

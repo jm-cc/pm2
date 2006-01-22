@@ -251,7 +251,7 @@ static void timer_interrupt(int sig)
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
 #ifdef CHAINED_SIGALRM
-	if (info->si_code > 0) {
+	if (!info || info->si_code > 0) {
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
@@ -276,7 +276,7 @@ static void timer_interrupt(int sig)
 #endif
 		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef SA_SIGINFO
-	if (info->si_code > 0)
+	if (!info || info->si_code > 0)
 #endif
 		/* kernel timer signal */
 #ifndef CHAINED_SIGALRM

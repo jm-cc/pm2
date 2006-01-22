@@ -4654,7 +4654,8 @@ sub input_from_fxt {
 
 ################################################################
 # Programme principal
-use Getopt::Long qw(:config permute);
+use Getopt::Long;
+Getopt::Long::Configure ("permute");
 use Pod::Usage;
 
 sub disp {

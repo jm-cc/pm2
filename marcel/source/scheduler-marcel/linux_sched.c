@@ -37,10 +37,8 @@
 
 /* Pour avoir pmarcel_yield */
 #define _GNU_SOURCE
-#ifndef DARWIN_SYS
-#ifndef OSF_SYS
+#if defined(LINUX_SYS) || defined(GNU_SYS) || defined(FREEBSD_SYS)
 #  include <features.h>
-#endif
 #endif
 
 

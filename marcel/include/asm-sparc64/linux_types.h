@@ -15,6 +15,68 @@
  */
 
 #section common
-#depend "asm-generic/linux_types.h[]"
-#section macros
+/*
+ * similar to:
+ * include/asm-sparc/types.h
+ */
+
 #section marcel_types
+
+/*
+ * _xx is ok: it doesn't pollute the POSIX namespace. Use these in the
+ * header files exported to user space.
+ */
+
+/*
+ * This file is never included by application software unless
+ * explicitly requested (e.g., via linux/types.h) in which case the
+ * application is Linux specific so (user-) name space pollution is
+ * not a major issue.  However, for interoperability, libraries still
+ * need to be careful to avoid a name clashes.
+ */
+
+//#ifndef __ASSEMBLY__
+
+//typedef unsigned short umode_t;
+
+typedef __signed__ char __ma_s8;
+typedef unsigned char __ma_u8;
+
+typedef __signed__ short __ma_s16;
+typedef unsigned short __ma_u16;
+
+typedef __signed__ int __ma_s32;
+typedef unsigned int __ma_u32;
+
+typedef __signed__ long long __ma_s64;
+typedef unsigned long long __ma_u64;
+
+//#endif /* __ASSEMBLY__ */
+
+//#ifdef __KERNEL__
+
+#section macros
+#define MA_BITS_PER_LONG 32
+#section marcel_types
+
+//#ifndef __ASSEMBLY__
+
+typedef __signed__ char ma_s8;
+typedef unsigned char ma_u8;
+
+typedef __signed__ short ma_s16;
+typedef unsigned short ma_u16;
+
+typedef __signed__ int ma_s32;
+typedef unsigned int ma_u32;
+
+typedef __signed__ long long ma_s64;
+typedef unsigned long long ma_u64;
+
+//typedef u32 dma_addr_t;
+//typedef u32 dma64_addr_t;
+
+//#endif /* __ASSEMBLY__ */
+
+//#endif /* __KERNEL__ */
+

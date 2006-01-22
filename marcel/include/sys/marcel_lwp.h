@@ -37,6 +37,8 @@ struct marcel_lwp {
 #endif
 	/*Polling par LWP*/
 	struct marcel_per_lwp_polling_s* polling_list;
+	/*Il y a des variables par lwp qui ont besoin d'un tel alignement*/
+	unsigned long long align[0];
 };
 
 #section marcel_variables

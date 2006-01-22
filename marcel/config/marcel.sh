@@ -8,6 +8,7 @@ case " $PM2_LIBS " in
 esac
 
 if [ "$PM2_SYS" = SOLARIS_SYS ]; then
+    PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lsocket"
     if [ "$PM2_ARCH" = X86_ARCH ]; then
 	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lrt"
     else

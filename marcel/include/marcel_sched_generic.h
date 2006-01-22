@@ -73,6 +73,14 @@ void marcel_snapshot(snapshot_func_t f);
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 #section macros
+#define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
+	while((cond)) { \
+		ma_set_current_state(MA_TASK_##STATE); \
+		release; \
+		ma_schedule_timeout(timeout*1000/marcel_gettimeslice()); \
+		get; \
+	}
+
 #define SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get) \
 	while((cond)) { \
 		ma_set_current_state(MA_TASK_##STATE); \

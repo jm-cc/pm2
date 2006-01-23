@@ -41,9 +41,6 @@ __TBX_BEGIN_DECLS
 //#  include "marcel_pthread.h"
 #endif
 
-#ifdef MA__IFACE_PMARCEL
-#  include "marcel_pmarcel.h"
-#endif
 #ifdef MA__LIBPTHREAD
 #  include "pthread_libc-symbols.h"
 #endif
@@ -59,6 +56,10 @@ __TBX_BEGIN_DECLS
 #include "asm/marcel-master___structures.h"
 #include "marcel-master___structures.h"
 #include "scheduler/marcel-master___structures.h"
+
+#ifdef MA__IFACE_PMARCEL
+#  include "marcel_pmarcel.h"
+#endif
 
 TBX_VISIBILITY_PUSH_DEFAULT
 //#include "asm/marcel-master___functions.h"

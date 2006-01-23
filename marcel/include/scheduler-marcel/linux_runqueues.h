@@ -132,8 +132,12 @@ typedef struct ma_runqueue ma_runqueue_t;
 typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define MA_DEFINE_RUNQUEUE(name) \
 	TBX_SECTION(".ma.runqueues") ma_runqueue_t name
+#else
+#define MA_DEFINE_RUNQUEUE(name) ma_runqueue_t name
+#endif
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
@@ -169,7 +173,9 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
 #define ma_queue_empty(queue)	list_empty(queue)
 #define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, run_list)
+
 #define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, run_list)
+/* Safe version against current item removal: prefetches the next item in ee. */
 #define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, run_list)
 
 /*

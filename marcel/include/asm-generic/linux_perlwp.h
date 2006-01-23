@@ -56,7 +56,6 @@ extern unsigned long __ma_main_lwp_start;
 #else /* ! MA__LWPS */
 
 #define MA_DEFINE_PER_LWP_SUBSEC(subsec, type, name) \
-    TBX_SECTION(__MA_PERLWP_SECTION ".main" subsec) \
        __typeof__(type) ma_per_lwp__##name
 
 #define ma_per_lwp(var, lwp)		(*((void)lwp, &ma_per_lwp__##var))

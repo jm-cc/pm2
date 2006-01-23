@@ -18,9 +18,11 @@
 #include "marcel.h"
 #include "tbx_compiler.h"
 
-#ifdef PM2DEBUG
-
+#ifndef OSF_SYS
 MA_DEBUG_DEFINE_NAME_DEPEND(default, &marcel_mdebug);
+#endif
+
+#ifdef PM2DEBUG
 MA_DEBUG_DEFINE_STANDARD(marcel_default, "marcel-default");
 
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug=

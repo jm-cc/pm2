@@ -21,7 +21,7 @@
  * General Public License for more details.
  */
 
-#ifndef PM2DEBUG
+#ifdef PM2DEBUG
 #define PM2DEBUG
 #endif
 
@@ -328,30 +328,6 @@ static void pm2debug_register_real(debug_type_t *type, int option)
 	print_register(type);
 }
 
-void pm2debug_register(debug_type_t *type)
-{
-	pm2debug_register_real(type, 0);
-}
-
-inline static void pm2debug_register_auto(debug_type_t *type)
-{
-	pm2debug_register_real(type, REG_AUTO);
-}
-
-void pm2debug_setup(debug_type_t* type, debug_action_t action, 
-		    int value)
-{
-	if (!type) {
-		pm2debug("Arghhh: NULL debug type for pm2debug_setup\n");
-		return;
-	}
-	pm2debug_register_real(type, REG_DEPEND);
-	type->actions[action]=value;
-	if (action==PM2DEBUG_SHOW) {
-		update_show();
-	}
-}
-
 void pm2debug_init_base()
 {
 	static int called=0;
@@ -400,6 +376,33 @@ void pm2debug_init_base()
 
 }
 
+#undef pm2debug_register
+void pm2debug_register(debug_type_t *type)
+{
+	pm2debug_register_real(type, 0);
+}
+
+inline static void pm2debug_register_auto(debug_type_t *type)
+{
+	pm2debug_register_real(type, REG_AUTO);
+}
+
+#undef pm2debug_setup
+void pm2debug_setup(debug_type_t* type, debug_action_t action, 
+		    int value)
+{
+	if (!type) {
+		pm2debug("Arghhh: NULL debug type for pm2debug_setup\n");
+		return;
+	}
+	pm2debug_register_real(type, REG_DEPEND);
+	type->actions[action]=value;
+	if (action==PM2DEBUG_SHOW) {
+		update_show();
+	}
+}
+
+#undef pm2debug_init_ext
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 {
 	static int op_done=0;
@@ -501,6 +504,7 @@ void pm2debug_printf_state(int state)
 
 #define marcel_printf_allowed() (__pm2debug_printf_state == PM2DEBUG_MARCEL_PRINTF_ALLOWED)
 
+#undef pm2debug_printf
 int pm2debug_printf(debug_type_t *type, int level, int line, const char* file, 
 		    const char *format, ...)
 {

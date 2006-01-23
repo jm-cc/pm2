@@ -94,10 +94,11 @@ enum {
 
 void pm2debug_printf_state(int state);
 
+#define PM2DEBUG_MAXLINELEN 512
+
 #ifdef PM2DEBUG
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
-#define PM2DEBUG_MAXLINELEN 512
 int TBX_FORMAT (printf, 5, 6) 
 pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		const char *format, ...);
@@ -128,8 +129,6 @@ void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 #define pm2debug_init(argc, argv) \
    pm2debug_init_ext((argc), (argv), PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
 
-
-#ifdef PM2DEBUG
 
 #ifndef DEBUG_NAME_MODULE
 #  ifndef MODULE
@@ -162,6 +161,8 @@ extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
 
+#ifdef PM2DEBUG
+
 #define DEBUG_DECLARE(DEBUG_NAME) \
 debug_type_t DEBUG_NAME_DISP(DEBUG_NAME)= \
   NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-disp: ", \
@@ -172,16 +173,16 @@ debug_type_t DEBUG_NAME_LOG(DEBUG_NAME)= \
 debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
   NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-trace: ", \
 		        #DEBUG_NAME "-trace", &debug_trace);
-#define DEBUG_INIT(DEBUG_NAME) \
-  { pm2debug_register(&DEBUG_NAME_DISP(DEBUG_NAME)); \
-    pm2debug_register(&DEBUG_NAME_LOG(DEBUG_NAME)); \
-    pm2debug_register(&DEBUG_NAME_TRACE(DEBUG_NAME)); }
-
 #else /* PM2DEBUG */
 
 #define DEBUG_DECLARE(DEBUG_NAME)
 
 #endif /* PM2DEBUG */
+
+#define DEBUG_INIT(DEBUG_NAME) \
+  { pm2debug_register(&DEBUG_NAME_DISP(DEBUG_NAME)); \
+    pm2debug_register(&DEBUG_NAME_LOG(DEBUG_NAME)); \
+    pm2debug_register(&DEBUG_NAME_TRACE(DEBUG_NAME)); }
 
 /*
  * Display  macros  _________________________________________________

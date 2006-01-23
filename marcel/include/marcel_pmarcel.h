@@ -35,7 +35,6 @@
 #define __need_sigset_t
 #include <signal.h>
 #undef __need_sigset_t
-#include <bits/pmarceltypes.h>
 
 #include "tbx_compiler.h"
 
@@ -132,12 +131,13 @@ enum
 #define PMARCEL_ONCE_INIT 0
 
 
-#ifdef __USE_XOPEN2K
+//#ifdef __USE_XOPEN2K
 /* Value returned by 'pmarcel_barrier_wait' for one of the threads after
    the required number of threads have called this function.
    -1 is distinct from 0 and all errno constants */
-# define PMARCEL_BARRIER_SERIAL_THREAD -1
-#endif
+// defined in marcel/include/marcel_barrier.h
+//# define PMARCEL_BARRIER_SERIAL_THREAD -1
+//#endif
 
 
 __BEGIN_DECLS
@@ -479,9 +479,11 @@ extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 /********************************************************/
 
 
-#ifdef __USE_XOPEN2K
+//#ifdef __USE_XOPEN2K
 /* Functions to handle spinlocks.  */
 
+#if 0
+// not implemented yet
 /* Initialize the spinlock LOCK.  If PSHARED is nonzero the spinlock can
    be shared between different processes.  */
 extern int pmarcel_spin_init (pmarcel_spinlock_t *__lock, int __pshared)
@@ -498,6 +500,7 @@ extern int pmarcel_spin_trylock (pmarcel_spinlock_t *__lock) __THROW;
 
 /* Release spinlock LOCK.  */
 extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
+#endif
 
 
 /* Functions to handle barriers.  */
@@ -529,7 +532,7 @@ extern int pmarcel_barrierattr_getpshared (__const pmarcel_barrierattr_t *
 /* Set the process-shared flag of the barrier attribute ATTR.  */
 extern int pmarcel_barrierattr_setpshared (pmarcel_barrierattr_t *__attr,
                                            int __pshared) __THROW;
-#endif
+//#endif
 
 
 /* Functions for handling thread-specific data.  */

@@ -32,7 +32,7 @@
 
 #section types
 /* Keys for thread-specific data */
-typedef unsigned int marcel_key_t;
+typedef unsigned int marcel_key_t,  pmarcel_key_t;
 typedef void (*marcel_key_destructor_t)(any_t);
 
 #section marcel_variables

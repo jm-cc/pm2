@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #section types
-typedef struct __marcel_attr_s marcel_attr_t;
+typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
 #section macros
 #define MARCEL_MAXNAMESIZE 32

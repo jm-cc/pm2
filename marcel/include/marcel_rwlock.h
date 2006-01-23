@@ -38,7 +38,7 @@ typedef struct _marcel_rwlock_t
   p_marcel_task_t __rw_write_waiting;  /* Threads waiting for writing */
   int __rw_kind;                      /* Reader/Writer preference selection */
   int __rw_pshared;                   /* Shared between processes or not */
-} marcel_rwlock_t;
+} marcel_rwlock_t, pmarcel_rwlock_t;
 
 
 /* Attribute for read-write locks.  */
@@ -46,7 +46,7 @@ typedef struct
 {
   int __lockkind;
   int __pshared;
-} marcel_rwlockattr_t;
+} marcel_rwlockattr_t, pmarcel_rwlockattr_t;
 
 #section functions
 #depend "marcel_alias.h[macros]"

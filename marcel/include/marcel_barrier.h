@@ -28,20 +28,16 @@ struct marcel_barrier {
 struct marcel_barrierattr { int foo; };
 
 #section types
-typedef struct marcel_barrier marcel_barrier_t;
-typedef struct marcel_barrierattr marcel_barrierattr_t;
-typedef marcel_barrier_t pmarcel_barrier_t;
-typedef marcel_barrierattr_t pmarcel_barrierattr_t;
+#depend "[structures]"
+typedef struct marcel_barrier marcel_barrier_t, pmarcel_barrier_t;
+typedef struct marcel_barrierattr marcel_barrierattr_t, pmarcel_barrierattr_t;
 
 #section functions
-int marcel_barrier_init(marcel_barrier_t * __restrict b,
-		const marcel_barrierattr_t * __restrict attr, unsigned num);
-int pmarcel_barrier_init(pmarcel_barrier_t * __restrict b,
-		const pmarcel_barrierattr_t * __restrict attr, unsigned num);
+DEC_MARCEL_POSIX(int, barrier_init, (marcel_barrier_t * __restrict b,
+		const marcel_barrierattr_t * __restrict attr, unsigned num));
 unsigned marcel_barrier_begin(marcel_barrier_t *b);
 void marcel_barrier_end(marcel_barrier_t *b, unsigned num);
-int marcel_barrier_wait(marcel_barrier_t *b);
-int pmarcel_barrier_wait(pmarcel_barrier_t *b);
+DEC_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b));
 static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b);
 int pmarcel_barrier_destroy(marcel_barrier_t *b);
 #define pmarcel_barrier_destroy(b) marcel_barrier_destroy(b)

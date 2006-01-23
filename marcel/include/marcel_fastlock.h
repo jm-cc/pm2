@@ -22,7 +22,7 @@
 typedef int __marcel_atomic_lock_t;
 
 #section structures
-#depend "linux_spinlock.h[marcel_structures]"
+#depend "linux_spinlock.h[types]"
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _marcel_fastlock
 {

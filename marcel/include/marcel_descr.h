@@ -22,7 +22,7 @@
 #section types
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;
-typedef p_marcel_task_t marcel_t;
+typedef p_marcel_task_t marcel_t, pmarcel_t;
 
 #section marcel_macros
 

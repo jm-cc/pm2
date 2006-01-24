@@ -56,7 +56,7 @@ ma_set_bit (int nr, volatile void *addr);
 static __tbx_inline__ void
 ma_set_bit (int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, new;
+	__ma_u32 bit, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -65,8 +65,8 @@ ma_set_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old | bit;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old | bit;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 }
 
 /**
@@ -112,7 +112,7 @@ ma_clear_bit (int nr, volatile void *addr);
 static __tbx_inline__ void
 ma_clear_bit (int nr, volatile void *addr)
 {
-	__ma_u32 mask, old, new;
+	__ma_u32 mask, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -121,8 +121,8 @@ ma_clear_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old & mask;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old & mask;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 }
 
 /**
@@ -157,7 +157,7 @@ ma_change_bit (int nr, volatile void *addr);
 static __tbx_inline__ void
 ma_change_bit (int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, new;
+	__ma_u32 bit, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -166,8 +166,8 @@ ma_change_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old ^ bit;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old ^ bit;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 }
 
 /**
@@ -204,7 +204,7 @@ ma_test_and_set_bit (int nr, volatile void *addr);
 static __tbx_inline__ int
 ma_test_and_set_bit (int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, new;
+	__ma_u32 bit, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -213,8 +213,8 @@ ma_test_and_set_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old | bit;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old | bit;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 	return (old & bit) != 0;
 }
 
@@ -257,7 +257,7 @@ ma_test_and_clear_bit (int nr, volatile void *addr);
 static __tbx_inline__ int
 ma_test_and_clear_bit (int nr, volatile void *addr)
 {
-	__ma_u32 mask, old, new;
+	__ma_u32 mask, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -266,8 +266,8 @@ ma_test_and_clear_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old & mask;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old & mask;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 	return (old & ~mask) != 0;
 }
 
@@ -311,7 +311,7 @@ ma_test_and_change_bit (int nr, volatile void *addr);
 static __tbx_inline__ int
 ma_test_and_change_bit (int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, new;
+	__ma_u32 bit, old, repl;
 	volatile __ma_u32 *m;
 	MA_CMPXCHG_BUGCHECK_DECL
 
@@ -320,8 +320,8 @@ ma_test_and_change_bit (int nr, volatile void *addr)
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
-		new = old ^ bit;
-	} while (ma_cmpxchg_acq(m, old, new) != old);
+		repl = old ^ bit;
+	} while (ma_cmpxchg_acq(m, old, repl) != old);
 	return (old & bit) != 0;
 }
 

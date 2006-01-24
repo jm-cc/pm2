@@ -140,7 +140,7 @@ extern void ma_ia64_xchg_called_with_bad_pointer (void);
 extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
 
 #section marcel_macros
-#define ma_ia64_cmpxchg(sem,ptr,old,new,size)						\
+#define ma_ia64_cmpxchg(sem,ptr,old,repl,size)						\
 ({											\
 	__ma_u64 _o_, _r_;									\
 											\
@@ -153,19 +153,19 @@ extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
 	}										\
 	switch (size) {									\
 	      case 1:									\
-	      	_r_ = ma_ia64_cmpxchg1_##sem((__ma_u8 *) ptr, new, _o_);			\
+	      	_r_ = ma_ia64_cmpxchg1_##sem((__ma_u8 *) ptr, repl, _o_);			\
 		break;									\
 											\
 	      case 2:									\
-	       _r_ = ma_ia64_cmpxchg2_##sem((__ma_u16 *) ptr, new, _o_);			\
+	       _r_ = ma_ia64_cmpxchg2_##sem((__ma_u16 *) ptr, repl, _o_);			\
 		break;									\
 											\
 	      case 4:									\
-	      	_r_ = ma_ia64_cmpxchg4_##sem((__ma_u32 *) ptr, new, _o_);			\
+	      	_r_ = ma_ia64_cmpxchg4_##sem((__ma_u32 *) ptr, repl, _o_);			\
 		break;									\
 											\
 	      case 8:									\
-		_r_ = ma_ia64_cmpxchg8_##sem((__ma_u64 *) ptr, new, _o_);			\
+		_r_ = ma_ia64_cmpxchg8_##sem((__ma_u64 *) ptr, repl, _o_);			\
 		break;									\
 											\
 	      default:									\

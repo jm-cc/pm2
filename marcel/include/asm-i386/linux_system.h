@@ -128,26 +128,26 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
  */
 
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
-				      unsigned long new, int size)
+				      unsigned long repl, int size)
 {
 	unsigned long prev;
 	switch (size) {
 	case 1:
 		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgb %b1,%2"
 				     : "=a"(prev)
-				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
 				     : "memory");
 		return prev;
 	case 2:
 		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgw %w1,%2"
 				     : "=a"(prev)
-				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
 				     : "memory");
 		return prev;
 	case 4:
 		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgl %1,%2"
 				     : "=a"(prev)
-				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
 				     : "memory");
 		return prev;
 	default:

@@ -29,7 +29,7 @@
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 #define SET_MARCEL_SELF_FROM_SP(sp) ((void)0)
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
 ({ \
   register unsigned long sp asm("rsp"); \

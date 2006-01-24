@@ -54,7 +54,7 @@ static __tbx_inline__ long get_gs(void)
     return gs;
 }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
 ({ \
   register unsigned long sp asm("esp"); \

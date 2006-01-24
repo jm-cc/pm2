@@ -29,7 +29,7 @@
 
 #define call_ST_FLUSH_WINDOWS()  
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
 ({ \
   register unsigned long sp asm(""); \

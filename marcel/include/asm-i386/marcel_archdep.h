@@ -54,11 +54,16 @@ static __tbx_inline__ long get_gs(void)
     return gs;
 }
 
+#ifdef __GNUC__
 #define get_sp() \
 ({ \
   register unsigned long sp asm("esp"); \
   sp; \
 })
+#else
+#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif
+
 
 #define get_bp() \
 ({ \

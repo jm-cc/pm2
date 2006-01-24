@@ -29,11 +29,15 @@
 
 #define call_ST_FLUSH_WINDOWS()  
 
+#ifdef __GNUC__
 #define get_sp() \
 ({ \
   register unsigned long sp asm(""); \
   sp; \
 })
+#else
+#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif
 
 #define set_sp(val)
 

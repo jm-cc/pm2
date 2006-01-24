@@ -45,11 +45,15 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
+#ifdef __GNUC__
 #define get_sp() \
 ({ \
   register unsigned long sp asm("$30"); \
   sp; \
 })
+#else
+#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif
 
 #  define set_sp(val) \
   __asm__ __volatile__("addq %0, $31, $sp" \

@@ -312,77 +312,77 @@ extern void ia64_bad_param_for_getreg (void);
 	ia64_intri_res;							\
 })
 
-#define ma_ia64_cmpxchg1_acq(ptr, new, old)						\
+#define ma_ia64_cmpxchg1_acq(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg1.acq %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg1_rel(ptr, new, old)						\
+#define ma_ia64_cmpxchg1_rel(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg1.rel %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg2_acq(ptr, new, old)						\
+#define ma_ia64_cmpxchg2_acq(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg2.acq %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg2_rel(ptr, new, old)						\
+#define ma_ia64_cmpxchg2_rel(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 											\
 	asm volatile ("cmpxchg2.rel %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg4_acq(ptr, new, old)						\
+#define ma_ia64_cmpxchg4_acq(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg4.acq %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg4_rel(ptr, new, old)						\
+#define ma_ia64_cmpxchg4_rel(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg4.rel %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg8_acq(ptr, new, old)						\
+#define ma_ia64_cmpxchg8_acq(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg8.acq %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 
-#define ma_ia64_cmpxchg8_rel(ptr, new, old)						\
+#define ma_ia64_cmpxchg8_rel(ptr, repl, old)						\
 ({											\
 	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 											\
 	asm volatile ("cmpxchg8.rel %0=[%1],%2,ar.ccv":					\
-			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
+			      "=r"(ia64_intri_res) : "r"(ptr), "r"(repl) : "memory");	\
 	ia64_intri_res;									\
 })
 

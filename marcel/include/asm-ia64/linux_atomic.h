@@ -74,15 +74,15 @@ ma_ia64_atomic_add (int i, ma_atomic_t *v);
 static __tbx_inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v)
 {
-	__ma_s32 old, new;
+	__ma_s32 old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
-		new = old + i;
-	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
-	return new;
+		repl = old + i;
+	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
+	return repl;
 }
 
 #section marcel_functions
@@ -92,15 +92,15 @@ ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
 static __tbx_inline__ int
 ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 {
-	__ma_s64 old, new;
+	__ma_s64 old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
-		new = old + i;
-	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
-	return new;
+		repl = old + i;
+	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
+	return repl;
 }
 
 #section marcel_functions
@@ -110,15 +110,15 @@ ma_ia64_atomic_sub (int i, ma_atomic_t *v);
 static __tbx_inline__ int
 ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 {
-	__ma_s32 old, new;
+	__ma_s32 old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
-		new = old - i;
-	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
-	return new;
+		repl = old - i;
+	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
+	return repl;
 }
 
 #section marcel_functions
@@ -128,15 +128,15 @@ ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
 static __tbx_inline__ int
 ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 {
-	__ma_s64 old, new;
+	__ma_s64 old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
-		new = old - i;
-	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
-	return new;
+		repl = old - i;
+	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
+	return repl;
 }
 
 #section marcel_macros

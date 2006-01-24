@@ -43,14 +43,14 @@
 #section marcel_macros
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \
-	unsigned long	mask, old, new, ret; \
+	unsigned long	mask, old, repl, ret; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
 	mask = 1UL << (nr % MA_BITS_PER_LONG); \
 	old = *addr; \
 	while (1) { \
-		new = old op mask; \
-		ret = pm2_compareexchange(addr,old,new,sizeof(*addr)); \
+		repl = old op mask; \
+		ret = pm2_compareexchange(addr,old,repl,sizeof(*addr)); \
 		if (tbx_likely(ret == old)) \
 			return retexpr; \
 		old = ret; \

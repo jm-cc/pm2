@@ -25,14 +25,14 @@ extern ma_spinlock_t ma_compareexchange_spinlock;
 #section marcel_functions
 static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,
-		unsigned long new, int size) ;
+		unsigned long repl, int size) ;
 #section marcel_inline
 #depend "linux_spinlock.h[marcel_macros]"
 #depend "asm/linux_types.h[marcel_types]"
 #include <stdlib.h>
 static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,
-		unsigned long new, int size)
+		unsigned long repl, int size)
 {
 	unsigned long prev;
 	ma_spin_lock_softirq(&ma_compareexchange_spinlock);
@@ -40,27 +40,27 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 	case 1: {
 			volatile ma_u8 *p = ptr;
 			if (old == (prev=*p))
-				*p = new;
+				*p = repl;
 			break;
 		}
 	case 2: {
 			volatile ma_u16 *p = ptr;
 			if (old == (prev=*p))
-				*p = new;
+				*p = repl;
 			break;
 		}
 	case 4:
 		{
 			volatile ma_u32 *p = ptr;
 			if (old == (prev=*p))
-				*p = new;
+				*p = repl;
 			break;
 		}
         case 8:
                 {
                         volatile ma_u64 *p = ptr;
                         if (old == (prev=*p))
-                                *p = new;
+                                *p = repl;
                         break;
                 }
 	default:

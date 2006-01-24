@@ -77,11 +77,11 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_ADD_RETURN(test) \
-	int old, new, ret; \
+	int old, repl, ret; \
 	old = ma_atomic_read(v); \
 	while (1) { \
-		new = old + i; \
-		ret = pm2_compareexchange(&v->counter,old,new,sizeof(v->counter)); \
+		repl = old + i; \
+		ret = pm2_compareexchange(&v->counter,old,repl,sizeof(v->counter)); \
 		if (tbx_likely(ret == old)) \
 			return test; \
 		old = ret; \
@@ -90,11 +90,11 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #depend "linux_spinlock.h[marcel_macros]"
 #depend "linux_spinlock.h[marcel_inline]"
 #define MA_ATOMIC_ADD_RETURN(test) \
-	int old, new; \
+	int old, repl; \
 	ma_spin_lock_softirq(&v->lock); \
 	old = ma_atomic_read(v); \
-	new = old + i; \
-	ma_atomic_set(v, new); \
+	repl = old + i; \
+	ma_atomic_set(v, repl); \
 	ma_spin_unlock_softirq(&v->lock); \
 	return test;
 #endif
@@ -141,7 +141,7 @@ static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
 #section marcel_inline
 static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
 {
-	MA_ATOMIC_ADD_RETURN(new == 0);
+	MA_ATOMIC_ADD_RETURN(repl == 0);
 }
 
 #section marcel_macros
@@ -213,14 +213,14 @@ static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 #section marcel_inline
 static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
-	MA_ATOMIC_ADD_RETURN(new < 0);
+	MA_ATOMIC_ADD_RETURN(repl < 0);
 }
 
 static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
 #section marcel_inline
 static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 {
-	MA_ATOMIC_ADD_RETURN(new);
+	MA_ATOMIC_ADD_RETURN(repl);
 }
 
 #define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))

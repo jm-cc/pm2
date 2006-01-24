@@ -87,7 +87,7 @@ static __tbx_inline__ unsigned long get_bsp(void)
   } while (0)
 #else /* __INTEL_COMPILER */
 #define _MA_IA64_REG_SP		1036	/* R12 */
-__u64 __getReg(const int whichReg);
+__ma_u64 __getReg(const int whichReg);
 #define get_sp() ((unsigned long)__getReg(_MA_IA64_REG_SP))
 #endif /* __INTEL_COMPILER */
 #else /* neither gcc nor icc */

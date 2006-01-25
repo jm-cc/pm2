@@ -617,7 +617,7 @@ tbx_environment_free(p_tbx_environment_t env)
 
   tbx_slist_free(env->slist);
   env->slist = NULL;
-  tbx_htable_free(env->htable);
+  tbx_htable_cleanup_and_free(env->htable);
   env->htable = NULL;
   
   TBX_FREE(env);

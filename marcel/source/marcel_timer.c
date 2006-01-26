@@ -165,8 +165,7 @@ MA_DEFINE_LWP_NOTIFIER_ONOFF(fault_catcher, "Fault catcher",
 			     fault_catcher_init, "Start fault catcher",
 			     fault_catcher_exit, "Stop fault catcher");
 
-//MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
-//				 MA_INIT_FAULT_CATCHER_PRIO);
+//MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER, MA_INIT_FAULT_CATCHER_PRIO);
 
 #ifdef PROFILE
 static void int_catcher_exit(ma_lwp_t lwp)
@@ -192,8 +191,7 @@ MA_DEFINE_LWP_NOTIFIER_ONOFF(int_catcher, "Int catcher",
 			     int_catcher_init, "Start int catcher",
 			     int_catcher_exit, "Stop int catcher");
 
-MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER,
-				 MA_INIT_INT_CATCHER_PRIO);
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_CATCHER_PRIO);
 
 #endif
 

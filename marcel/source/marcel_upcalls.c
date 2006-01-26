@@ -380,9 +380,7 @@ void __marcel_init init_upcalls(void)
 	LOG_OUT();
 }
 
-__ma_initfunc_prio(init_upcalls, MA_INIT_UPCALL_START, 
-		   MA_INIT_UPCALL_START_PRIO,
-		   "Démarrage des upcalls");
+__ma_initfunc_prio(init_upcalls, MA_INIT_UPCALL_START, MA_INIT_UPCALL_START_PRIO, "Démarrage des upcalls");
 
 static void *upcall_no_func(void* p)
 {

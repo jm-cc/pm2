@@ -393,8 +393,7 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(generic_sched, 100, "Sched generic",
 				  marcel_sched_lwp_start, "Réveil de idle et démarrage de la préemption");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(generic_sched, MA_INIT_GENSCHED_IDLE);
-MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT,
-				 MA_INIT_GENSCHED_PREEMPT_PRIO);
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT, MA_INIT_GENSCHED_PREEMPT_PRIO);
 
 #ifdef MA__LWPS
 void __marcel_init marcel_gensched_start_lwps(void)
@@ -408,6 +407,5 @@ void __marcel_init marcel_gensched_start_lwps(void)
 	LOG_OUT();
 }
 
-__ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS,
-	       "Création et démarrage des LWPs");
+__ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");
 #endif /* MA__LWPS */

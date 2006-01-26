@@ -496,6 +496,5 @@ void __marcel_init marcel_io_init(void)
 	LOG_OUT();
 }
 
-__ma_initfunc(marcel_io_init, MA_INIT_IO,
-		   "standard I/O polling");
+__ma_initfunc(marcel_io_init, MA_INIT_IO, "standard I/O polling");
 

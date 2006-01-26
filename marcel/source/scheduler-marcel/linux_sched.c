@@ -3320,8 +3320,7 @@ static void __marcel_init sched_init(void)
 	LOG_OUT();
 }
 
-__ma_initfunc_prio(sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO,
-	      "Scheduler Linux 2.6");
+__ma_initfunc_prio(sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO, "Scheduler Linux 2.6");
 
 #if 0
 #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP

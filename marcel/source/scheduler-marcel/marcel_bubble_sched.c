@@ -890,6 +890,5 @@ static void __marcel_init bubble_sched_init() {
 	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
 }
 
-__ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,
-		MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");
+__ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED, MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");
 #endif /* MA__BUBBLES */

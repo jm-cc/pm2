@@ -85,7 +85,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_st
   *argc = j;
   argv[j] = NULL;
 
-  if(do_not_strip) {	
+  if(do_not_strip) {
 #ifdef MA__LWPS
     marcel_lwp_fix_nb_vps(__nb_lwp);
     mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
@@ -245,8 +245,8 @@ int main(int argc, char *argv[])
 					   MAL(sizeof(marcel_task_t)));
 
 		mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
-		
-		__argc = argc; __argv = argv;
+
+                __argc = argc; __argv = argv;
 
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
@@ -255,13 +255,13 @@ int main(int argc, char *argv[])
 		win_stack_allocate(get_sp() - new_sp);
 #endif
 		set_sp(new_sp);
-		
+
 #ifdef ENABLE_STACK_JUMPING
 		*((marcel_t *)((char *)__main_thread + MAL(sizeof(marcel_task_t)) - 
 			       sizeof(void *))) =  __main_thread;
 #endif
-		
-		__main_ret = marcel_main(__argc, __argv);
+
+                __main_ret = marcel_main(__argc, __argv);
 
 #ifdef MA__ACTIVATION
 		marcel_upcalls_disallow();
@@ -276,7 +276,6 @@ int main(int argc, char *argv[])
 #endif // STANDARD_MAIN
 
 typedef struct {
-	__ma_init_info_t *infos;
 	int prio;
 	char* debug;
 } TBX_ALIGNED __ma_init_index_t;
@@ -289,87 +288,153 @@ typedef struct {
 		__ma_init_info_t infos[2];
 	} b TBX_ALIGNED;
 } TBX_ALIGNED __ma_init_section_index_t;
-	
-
-#define _ADD_INIT_SECTION(number, text) \
-  TBX_INTERNAL const int __ma_init_info_##number \
-    TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #number) = number; \
-  TBX_INTERNAL const __ma_init_index_t __ma_init_index_##number \
-    TBX_SECTION(__MA_INIT_SECTION "ind." #number) \
-    = { .infos=(tbx_container_of(&__ma_init_info_##number, \
-			     __ma_init_section_index_t, a.section_number) \
-    		->b.infos), \
-        .prio=number, .debug=text }
-
-#define ADD_INIT_SECTION(number, text) _ADD_INIT_SECTION(number, text)
-
-#if MA_INIT_SELF != 0
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(MA_INIT_SELF, "Init self");
-
-#if MA_INIT_TLS != 1
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(MA_INIT_TLS, "Init TLS");
-
-#if MA_INIT_MAIN_LWP != 2
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(MA_INIT_MAIN_LWP, "Init main lwp");
-
-#if MA_INIT_SCHEDULER != 3
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(MA_INIT_SCHEDULER, "Init scheduler");
-
-#if MA_INIT_START_LWPS != 4
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(MA_INIT_START_LWPS, "Init LWPs");
-
-#if MA_INIT_MAX_PARTS != 4
-#error Adapte init.h and init.c to be in sync
-#endif
-ADD_INIT_SECTION(5, "No more init part");
-
-extern const __ma_init_index_t __ma_init_start[];
 
 static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 
-void marcel_init_section(int sec)
-{
-	const __ma_init_info_t *infos, *last;
+// Section MA_INIT_SELF
+#ifdef MA_LWPS
+extern const __ma_init_info_t ma_init_info_topo_discover;
+extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
+#endif // MA_LWPS
+extern const __ma_init_info_t ma_init_info_main_thread_init;
+
+// Section MA_INIT_MAIN_LWP
+extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
+extern const __ma_init_info_t ma_init_info_marcel_slot_init;
+extern const __ma_init_info_t ma_init_info_sched_init;
+extern const __ma_init_info_t ma_init_info_bubble_sched_init;
+extern const __ma_init_info_t ma_init_info_softirq_init;
+extern const __ma_init_info_t ma_init_info_marcel_io_init;
+extern const __ma_init_info_t ma_init_info_sig_init;
+extern const __ma_init_info_t ma_init_info_timer_start;
+extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
+extern const __ma_init_info_t ma_init_info_marcel_lwp_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_random_lwp_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_generic_sched_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_postexit_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_linux_sched_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_timers_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_lwp_call_ONLINE;
+extern const __ma_init_info_t ma_init_info_marcel_lwp_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_random_lwp_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_postexit_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_linux_sched_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_timers_call_UP_PREPARE;
+#ifdef PROFILE
+extern const __ma_init_info_t ma_init_info_marcel_int_catcher_call_ONLINE;
+#endif // PROFILE
+
+// Section MA_INIT_SCHEDULER
+#ifdef MA__ACTIVATION
+extern const __ma_init_info_t ma_init_info_marcel_upcall_call_UP_PREPARE;
+#endif // MA__ACTIVATION
+extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_ONLINE;
+extern const __ma_init_info_t ma_init_info_marcel_postexit_call_ONLINE;
+extern const __ma_init_info_t ma_init_info_marcel_sig_timer_call_ONLINE;
+extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_UP_PREPARE;
+extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
+
+// Section MA_INIT_START_LWPS
+#ifdef MA_LWPS
+extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
+#endif
+#ifdef MA__ACTIVATION
+extern const __ma_init_info_t ma_init_info_init_upcalls;
+#endif // MA__ACTIVATION
+
+__ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS+1] = {{MA_INIT_SELF, "Init self"},
+                                                        {MA_INIT_TLS,  "Init TLS"},
+                                                        {MA_INIT_MAIN_LWP, "Init Main LWP"},
+                                                        {MA_INIT_SCHEDULER, "Init scheduler"},
+                                                        {MA_INIT_START_LWPS, "Init LWPS"}};
+
+static void call_init_function(const __ma_init_info_t *infos) {
+	mdebug("Init launching for prio %i: %s (%s)\n",
+               (int)(MA_INIT_PRIO_BASE-infos->prio),
+               *infos->debug, infos->file);
+        infos->func();
+}
+
+void marcel_init_section(int sec) {
 	int section;
 
 	/* Quick registration */
 	pm2debug_register(&MA_DEBUG_VAR_NAME(MA_FILE_DEBUG));
 	//pm2debug_setup(&marcel_mdebug,PM2DEBUG_SHOW,PM2DEBUG_ON);
 
-	mdebug("Init running level %d (%s) start\n",
-	       __ma_init_start[sec].prio,
-	       __ma_init_start[sec].debug);
+	mdebug("Asked for level %d (%s)\n",
+	       ma_init_start[sec].prio,
+	       ma_init_start[sec].debug);
 	for (section=0; section<=sec; section++) {
 		if (init_done[section])
 			continue;
 		mdebug("Init running level %d (%s)\n",
-		       __ma_init_start[section].prio,
-		       __ma_init_start[section].debug);
-		
-		infos=__ma_init_start[section].infos;
-		last= (__ma_init_start[section+1].infos)-1;
-		
-		while (infos < last) {
-			mdebug("Init launching for prio %i: %s (%s)\n",
-			       (int)(MA_INIT_PRIO_BASE-infos->prio), 
-			      *infos->debug, infos->file);
-			(*infos->func)();
-			infos++;
-		}
+		       ma_init_start[section].prio,
+		       ma_init_start[section].debug);
+
+                if (section == MA_INIT_SELF) {
+#ifdef MA_LWPS
+                  call_init_function(&ma_init_info_topo_discover);
+                  call_init_function(&ma_init_info_marcel_topology_notifier_register);
+#endif // MA_LWPS
+                  call_init_function(&ma_init_info_main_thread_init);
+                }
+                else if (section == MA_INIT_MAIN_LWP) {
+#ifdef PROFILE
+                  call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
+#endif // PROFILE
+                  call_init_function(&ma_init_info_marcel_debug_init_auto);
+                  call_init_function(&ma_init_info_marcel_slot_init);
+                  call_init_function(&ma_init_info_sched_init);
+                  call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_marcel_random_lwp_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_marcel_lwp_call_ONLINE);
+                  call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_timer_start);
+                  call_init_function(&ma_init_info_sig_init);
+                  call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_bubble_sched_init);
+                  call_init_function(&ma_init_info_softirq_init);
+                  call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
+                  call_init_function(&ma_init_info_marcel_io_init);
+                  call_init_function(&ma_init_info_marcel_random_lwp_notifier_register);
+                  call_init_function(&ma_init_info_marcel_lwp_notifier_register);
+                  call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
+                  call_init_function(&ma_init_info_marcel_postexit_notifier_register);
+                  call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
+                  call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
+                  call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
+                  call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);
+                  call_init_function(&ma_init_info_marcel_timers_notifier_register);
+                  call_init_function(&ma_init_info_marcel_lwp_finished);
+                }
+                else if (section == MA_INIT_SCHEDULER) {
+#ifdef MA__ACTIVATION
+                  call_init_function(&ma_init_info_marcel_upcall_call_UP_PREPARE)
+#endif // MA__ACTIVATION
+                    call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
+                    call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
+                    call_init_function(&ma_init_info_marcel_sig_timer_call_ONLINE);
+                    call_init_function(&ma_init_info_marcel_ksoftirqd_call_UP_PREPARE);
+                    call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
+                }
+                else if (section == MA_INIT_START_LWPS) {
+#ifdef MA_LWPS
+                  call_init_function(&ma_init_info_marcel_gensched_start_lwps);
+#endif // MA_LWPS
+#ifdef MA__ACTIVATION
+                  call_init_function(&ma_init_info_init_upcalls);
+#endif //MA__ACTIVATION
+                }
+
 		init_done[section]=1;
 	}
 	mdebug("Init running level %d (%s) done\n",
-	       __ma_init_start[sec].prio,
-	       __ma_init_start[sec].debug);
+	       ma_init_start[sec].prio,
+	       ma_init_start[sec].debug);
 }
-

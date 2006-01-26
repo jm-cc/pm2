@@ -59,8 +59,7 @@ static void __marcel_init marcel_slot_init(void)
 	LOG_OUT();
 }
 
-__ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO,
-		   "Initialise memory slot system");
+__ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO, "Initialise memory slot system");
 
 static volatile unsigned long threads_created_in_cache;
 

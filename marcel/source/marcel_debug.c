@@ -89,5 +89,4 @@ void __marcel_init marcel_debug_init_auto(void)
 #endif
 }
 
-__ma_initfunc_prio(marcel_debug_init_auto, MA_INIT_DEBUG, MA_INIT_DEBUG_PRIO, 
-	      "Register debug variables");
+__ma_initfunc_prio(marcel_debug_init_auto, MA_INIT_DEBUG, MA_INIT_DEBUG_PRIO, "Register debug variables");

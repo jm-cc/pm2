@@ -867,8 +867,7 @@ TODO: vieux code
 	LOG_OUT();
 }
 
-__ma_initfunc(main_thread_init, MA_INIT_THREADS_MAIN,
-	      "Initialise the main thread structure");
+__ma_initfunc(main_thread_init, MA_INIT_THREADS_MAIN, "Initialise the main thread structure");
 
 #ifdef STANDARD_MAIN
 marcel_task_t __main_thread_struct;

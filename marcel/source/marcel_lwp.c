@@ -441,6 +441,5 @@ void __marcel_init marcel_lwp_finished(void)
 	__ma_get_lwp_var(online)=1;
 }
 
-__ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED,
-		   MA_INIT_LWP_FINISHED_PRIO, "Tell __main_lwp is online");
+__ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED, MA_INIT_LWP_FINISHED_PRIO, "Tell __main_lwp is online");
 

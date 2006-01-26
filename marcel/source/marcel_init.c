@@ -309,7 +309,9 @@ extern const __ma_init_info_t ma_init_info_sig_init;
 extern const __ma_init_info_t ma_init_info_timer_start;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_notifier_register;
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 extern const __ma_init_info_t ma_init_info_marcel_random_lwp_notifier_register;
+#endif // LINUX_SYS || GNU_SYS
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_postexit_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
@@ -319,7 +321,9 @@ extern const __ma_init_info_t ma_init_info_marcel_timers_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_UP_PREPARE;
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 extern const __ma_init_info_t ma_init_info_marcel_random_lwp_call_UP_PREPARE;
+#endif // LINUX_SYS || GNU_SYS
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_UP_PREPARE;
 extern const __ma_init_info_t ma_init_info_marcel_postexit_call_UP_PREPARE;
 extern const __ma_init_info_t ma_init_info_marcel_linux_sched_call_UP_PREPARE;
@@ -391,7 +395,9 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_marcel_slot_init);
                   call_init_function(&ma_init_info_sched_init);
                   call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
+#if defined(LINUX_SYS) || defined(GNU_SYS)
                   call_init_function(&ma_init_info_marcel_random_lwp_call_UP_PREPARE);
+#endif // LINUX_SYS || GNU_SYS
                   call_init_function(&ma_init_info_marcel_lwp_call_ONLINE);
                   call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
@@ -402,7 +408,9 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_softirq_init);
                   call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_io_init);
+#if defined(LINUX_SYS) || defined(GNU_SYS)
                   call_init_function(&ma_init_info_marcel_random_lwp_notifier_register);
+#endif // LINUX_SYS || GNU_SYS
                   call_init_function(&ma_init_info_marcel_lwp_notifier_register);
                   call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
                   call_init_function(&ma_init_info_marcel_postexit_notifier_register);

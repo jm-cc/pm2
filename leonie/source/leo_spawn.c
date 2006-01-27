@@ -65,6 +65,34 @@ find_process(p_tbx_htable_t    node_htable,
       goto found;
     }
 
+  TRACE("client provided hostname not found, trying client remote host");
+    {
+
+      char *alias = client->remote_host;
+      TRACE_STR("trying", alias);
+
+      slist = tbx_htable_get(node_htable, alias);
+      if (slist)
+        {
+          TBX_FREE(*p_host_name);
+          *p_host_name = tbx_strdup(alias);
+          goto found;
+        }
+
+      true_name = ntbx_true_name(alias);
+      TRACE_STR("trying", true_name);
+      slist = tbx_htable_get(node_htable, true_name);
+      if (slist)
+        {
+          TBX_FREE(*p_host_name);
+          *p_host_name = true_name;
+          true_name = NULL;
+          goto found;
+        }
+
+      TRACE("alias mismatched");
+    }
+
   if (tbx_slist_is_nil(client->remote_alias))
     FAILURE("invalid client answer");
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env pm2sh
 ###########
 
 progname="`basename $0`"
@@ -108,7 +108,7 @@ if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a -n "$X" ] ; then
 
 else
 
-    if [ -n "$LEO_DEBUG" ] && [ "$progname" == "leonie" ] ; then
+    if [ "$LEO_DEBUG" == "1" ] && [ "$progname" == "leonie" ] ; then
 
         file=/tmp/leo_debug.$$
 

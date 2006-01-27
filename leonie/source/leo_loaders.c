@@ -94,8 +94,16 @@ leo_default_loader(p_leo_settings_t settings,
 	    tbx_arguments_append_arguments(args, settings->args);
 	  }
 
-	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
-						 net_server->local_host);
+	if (settings->leonie_host)
+	  {
+	    tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
+					     settings->leonie_host);
+	  }
+	else
+	  {
+	    tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
+					     net_server->local_host);
+	  }
 
 	tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 					      net_server->

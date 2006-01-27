@@ -87,6 +87,15 @@ process_command_line(int    argc,
 	      else
 		leo_terminate("duplicate application name definition");
 	    }
+	  else if (tbx_argit_vopt_equals("--leonie-host"))
+	    {
+	      if (!settings->leonie_host)
+		{
+		  settings->leonie_host = tbx_argit_vopt_value_cstr();
+		}
+	      else
+		leo_terminate("duplicate application name definition");
+	    }
 	  else if (tbx_argit_vopt_equals("--net"))
 	    {
 	      char *network_file = NULL;

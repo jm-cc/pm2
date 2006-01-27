@@ -169,6 +169,7 @@ typedef struct s_leo_settings
 {
   char              *name;
   char              *flavor;
+  char              *leonie_host;
   p_tbx_arguments_t  args;
   char              *config_file;
   char              *env; //GM 

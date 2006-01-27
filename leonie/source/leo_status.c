@@ -154,8 +154,9 @@ leo_help(void)
 
   __leo_option_help("", "--flavor=FLAVOR",
 		    "Select FLAVOR as the application flavor");
+  DISP("");
   __leo_option_help("", "--leonie-host=HOSTNAME",
-		    "Force HOSTNAME to be the name of the machine which leonie is started on (default: gethostname/gethostbyname)");
+		    "Force HOSTNAME to be the name of the    machine which leonie is started on      (default: gethostname/gethostbyname)");
   DISP("");
   __leo_option_help("-l", "",
 		    "Log session processes output to files");

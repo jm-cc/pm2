@@ -318,7 +318,7 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_server_init: gethostbyname: %s", msg);
+                FAILUREF("ntbx_tcp_server_init: gethostbyname(%s): %s", server->local_host, msg);
         }
 
         server->local_host_ip =

@@ -294,7 +294,9 @@ static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 // Section MA_INIT_SELF
 #ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_topo_discover;
+#ifdef MA__NUMA
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
+#endif // MA__NUMA
 #endif // MA__LWPS
 extern const __ma_init_info_t ma_init_info_main_thread_init;
 
@@ -383,7 +385,9 @@ void marcel_init_section(int sec) {
                 if (section == MA_INIT_SELF) {
 #ifdef MA__LWPS
                   call_init_function(&ma_init_info_topo_discover);
-                  call_init_function(&ma_init_info_marcel_topology_notifier_register);
+#ifdef MA__NUMA
+		  call_init_function(&ma_init_info_marcel_topology_notifier_register);
+#endif // MA__NUMA
 #endif // MA__LWPS
                   call_init_function(&ma_init_info_main_thread_init);
                 }

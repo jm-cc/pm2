@@ -838,6 +838,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 		marcel_delay(1);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
+		ma_holder_rawlock(&gang_rq->hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -847,9 +848,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 				ma_activate_entity(&b->sched, &gang_rq.hold);
 			}
 		}
-		ma_holder_rawunlock(&rq->hold);
 		rq = &gang_rq;
-		ma_holder_rawlock(&rq->hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		if (!ma_queue_empty(queue)) {
 			e = ma_queue_entry(queue);
@@ -860,6 +859,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 			ma_activate_entity(&b->sched, &ma_main_runqueue.hold);
 		}
 		ma_holder_unlock_softirq(&rq->hold);
+		ma_holder_unlock_softirq(&ma_main_runqueue->hold);
 	}
 	return NULL;
 }

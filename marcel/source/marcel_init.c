@@ -292,10 +292,10 @@ typedef struct {
 static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 
 // Section MA_INIT_SELF
-#ifdef MA_LWPS
+#ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_topo_discover;
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
-#endif // MA_LWPS
+#endif // MA__LWPS
 extern const __ma_init_info_t ma_init_info_main_thread_init;
 
 // Section MA_INIT_MAIN_LWP
@@ -343,7 +343,7 @@ extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_UP_PREPARE;
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 
 // Section MA_INIT_START_LWPS
-#ifdef MA_LWPS
+#ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
 #endif
 #ifdef MA__ACTIVATION
@@ -381,10 +381,10 @@ void marcel_init_section(int sec) {
 		       ma_init_start[section].debug);
 
                 if (section == MA_INIT_SELF) {
-#ifdef MA_LWPS
+#ifdef MA__LWPS
                   call_init_function(&ma_init_info_topo_discover);
                   call_init_function(&ma_init_info_marcel_topology_notifier_register);
-#endif // MA_LWPS
+#endif // MA__LWPS
                   call_init_function(&ma_init_info_main_thread_init);
                 }
                 else if (section == MA_INIT_MAIN_LWP) {
@@ -432,9 +432,9 @@ void marcel_init_section(int sec) {
                     call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
                 }
                 else if (section == MA_INIT_START_LWPS) {
-#ifdef MA_LWPS
+#ifdef MA__LWPS
                   call_init_function(&ma_init_info_marcel_gensched_start_lwps);
-#endif // MA_LWPS
+#endif // MA__LWPS
 #ifdef MA__ACTIVATION
                   call_init_function(&ma_init_info_init_upcalls);
 #endif //MA__ACTIVATION

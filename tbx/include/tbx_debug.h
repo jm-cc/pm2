@@ -161,7 +161,7 @@ extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
 
-#ifdef PM2DEBUG
+#if defined(PM2DEBUG) || defined(TBX_KERNEL)
 
 #define DEBUG_DECLARE(DEBUG_NAME) \
 debug_type_t DEBUG_NAME_DISP(DEBUG_NAME)= \

@@ -465,6 +465,9 @@ void marcel_sig_exit(void)
 	return;
 }
 
+// TODO: sur un vrai système POSIX, les traitants de signaux sont par processus.
+// Il n'est donc pas utile de les redéfinir pour chaque LWP... Sauf pour linux
+// 2.4 (hem...)
 MA_DEFINE_LWP_NOTIFIER_ONOFF(sig_timer, "Signal timer",
 			     sig_start_timer, "Start signal timer",
 			     sig_stop_timer, "Stop signal timer");

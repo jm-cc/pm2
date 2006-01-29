@@ -296,6 +296,7 @@ static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 extern const __ma_init_info_t ma_init_info_topo_discover;
 #ifdef MA__NUMA
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
+extern const __ma_init_info_t ma_init_info_marcel_topology_call_UP_PREPARE;
 #endif // MA__NUMA
 #endif // MA__LWPS
 extern const __ma_init_info_t ma_init_info_main_thread_init;
@@ -304,10 +305,14 @@ extern const __ma_init_info_t ma_init_info_main_thread_init;
 extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
 extern const __ma_init_info_t ma_init_info_marcel_slot_init;
 extern const __ma_init_info_t ma_init_info_sched_init;
+#ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
+#endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;
+#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_sig_init;
+#endif // MA__TIMER
 extern const __ma_init_info_t ma_init_info_timer_start;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_notifier_register;
@@ -388,6 +393,7 @@ void marcel_init_section(int sec) {
 #ifdef MA__NUMA
 		  call_init_function(&ma_init_info_marcel_topology_notifier_register);
 #endif // MA__NUMA
+		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif // MA__LWPS
                   call_init_function(&ma_init_info_main_thread_init);
                 }
@@ -406,9 +412,13 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
                   call_init_function(&ma_init_info_timer_start);
+#ifdef MA__TIMER
                   call_init_function(&ma_init_info_sig_init);
+#endif // MA__TIMER
                   call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
+#ifdef MA__BUBBLES
                   call_init_function(&ma_init_info_bubble_sched_init);
+#endif // MA__BUBBLES
                   call_init_function(&ma_init_info_softirq_init);
                   call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_io_init);

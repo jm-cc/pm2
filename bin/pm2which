@@ -87,9 +87,9 @@ pm2which_do_search() # file
 	_fifo="$*"
 
 	for _f in $_rep/* ; do
-	    if [ -d $_f ] ; then
+	    if [ -d "$_f" ] ; then
 		_fifo="$_fifo $_f"
-	    elif [ $_rep/$_file = $_f -a -x $_f ] ; then
+	    elif [ "$_rep/$_file" = "$_f" -a -x "$_f" ] ; then
 		_PM2WHICH_RESULT="${_PM2WHICH_RESULT:+$_PM2WHICH_RESULT }$_f"
 	    #else : ni un sous-répertoire, ni le fichier que l'on cherche
 	    fi

@@ -21,13 +21,22 @@
 //#undef MA__BUBBLES
 
 #define NWORKS 2
-#define NWORKERS_POW 3
+#define NWORKERS_POW 1
 #define NWORKERS (1<<NWORKERS_POW)
 #define TREE
-#if 0
+#if 1
+
 #define BARRIER
+#if 1
+#define CACHEMISS
 #else
+#define CACHESHARE
+#endif
+
+#else
+
 #define PIPE
+
 #endif
 
 int iterations = 3;
@@ -58,25 +67,61 @@ static marcel_sem_t writer[NWORKS][NWORKERS-1];
 #endif
 
 #ifdef BARRIER
+#ifdef CACHEMISS
+#define CACHESIZE (900<<10)
+static volatile int data[NWORKS][CACHESIZE];
+#else
+static volatile double data[NWORKS][NWORKERS];
+#endif
+
 any_t work(any_t arg) {
 	int i = (int) arg;
+	int group = i/NWORKERS;
+	int me = i%NWORKERS;
 	unsigned long start;
 	int n = iterations;
 	int num;
+#ifdef CACHEMISS
+	double sum = 0;
+	long ind;
+#endif
 	while (n--) {
-		tprintf("group %d begin\n",i);
-		num = marcel_barrier_begin(&barrier[i]);
+		tprintf("group %d (%d) begin\n",group,me);
+		num = marcel_barrier_begin(&barrier[group]);
 		start = marcel_clock();
-		marcel_barrier_end(&barrier[i], num);
-		tprintf("group %d do\n",i);
-		while(marcel_clock() < start + works[i]);
-		tprintf("group %d done\n",i);
-		marcel_barrier_wait(&barrier[i]);
-		tprintf("group %d wait\n",i);
-		marcel_delay(delays[i]);
-		tprintf("group %d done\n",i);
+		marcel_barrier_end(&barrier[group], num);
+		tprintf("group %d (%d) do\n",group,me);
+#ifdef CACHEMISS
+		ind = 0;
+#else
+		data[group][me] = 0;
+#endif
+		while(marcel_clock() < start + works[group])
+			for (i=0;i<100000;i++)
+#ifdef CACHEMISS
+			sum+=data[group][(ind++)%CACHESIZE];
+#else
+			{ data[group][me]++; }
+#endif
+		tprintf("group %d (%d) done ("
+#ifdef CACHEMISS
+				"%lu"
+#else
+				"%lf"
+#endif
+				"Ml)\n",group,me,
+#ifdef CACHEMISS
+				ind>>20
+#else
+				data[group][me]/1048756.
+#endif
+				);
+		marcel_barrier_wait(&barrier[group]);
+		tprintf("group %d (%d) wait\n",group,me);
+		marcel_delay(delays[group]);
+		tprintf("group %d (%d) done\n",group,me);
 	}
-	tprintf("group %d finished\n",i);
+	tprintf("group %d (%d) finished\n",group,me);
 	return NULL;
 }
 #endif
@@ -195,9 +240,11 @@ int marcel_main(int argc, char *argv[]) {
 #endif
 		for (j=0;j<NWORKERS;j++) {
 			if (j < NWORKERS-1) {
+#ifdef PIPE
 				data[i][j] = malloc(NBBUFS*DATASIZE);
 				marcel_sem_init(&reader[i][j],0);
 				marcel_sem_init(&writer[i][j],NBBUFS);
+#endif
 			}
 			snprintf(s,sizeof(s),"%d-%d",i,j);
 			marcel_attr_setname(&attr,s);
@@ -211,9 +258,13 @@ int marcel_main(int argc, char *argv[]) {
 					);
 #endif
 			marcel_create(NULL,&attr,
+#ifdef BARRIER
+					work,
+#else
 					j ?
 						j<NWORKERS-1?piper:consumer
 						: producer,
+#endif
 					(any_t) (i*NWORKERS+j));
 		}
 #ifdef MA__BUBBLES

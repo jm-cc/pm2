@@ -860,8 +860,6 @@ any_t marcel_gang_scheduler(any_t foo) {
 		}
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock_softirq(&ma_main_runqueue.hold);
-		ma_holder_unlock_softirq(&ma_main_runqueue->hold);
-		ma_holder_unlock_softirq(&ma_main_runqueue->hold);
 	}
 	return NULL;
 }

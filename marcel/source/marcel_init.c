@@ -388,6 +388,7 @@ void marcel_init_section(int sec) {
 		       ma_init_start[section].debug);
 
                 if (section == MA_INIT_SELF) {
+                  call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
                   call_init_function(&ma_init_info_topo_discover);
 #ifdef MA__NUMA
@@ -395,7 +396,6 @@ void marcel_init_section(int sec) {
 		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif // MA__NUMA
 #endif // MA__LWPS
-                  call_init_function(&ma_init_info_main_thread_init);
                 }
                 else if (section == MA_INIT_MAIN_LWP) {
 #ifdef PROFILE

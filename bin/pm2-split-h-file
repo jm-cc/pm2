@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/env pm2perl
+###########
 
 use strict;
 use diagnostics;

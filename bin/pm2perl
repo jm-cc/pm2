@@ -1,0 +1,5 @@
+#!/bin/sh
+# Essayer d'exécuter un perl specifique
+[ -x "$PM2_PERL" ] && exec $PM2_PERL "$@"
+# Sinon, on utilise le perl par defaut
+exec /usr/bin/perl "$@"

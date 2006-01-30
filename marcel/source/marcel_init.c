@@ -79,6 +79,25 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_st
 	i += 2;
       continue;
     } else
+    if(!strcmp(argv[i], "--marcel-cpustride")) {
+      if(i == *argc-1) {
+	fprintf(stderr,
+		"Fatal error: --marcel-cpustride option must be followed "
+		"by <nb_of_processors_to_seek>.\n");
+	exit(1);
+      }
+      if(do_not_strip) {
+	marcel_cpu_stride = atoi(argv[i+1]);
+	if(marcel_cpu_stride < 0) {
+	  fprintf(stderr, "Error: CPU stride should be positive\n");
+	  exit(1);
+	}
+	argv[j++] = argv[i++];
+	argv[j++] = argv[i++];
+      } else
+	i += 2;
+      continue;
+    } else
 #endif
       argv[j++] = argv[i++];
   }
@@ -88,7 +107,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_st
   if(do_not_strip) {
 #ifdef MA__LWPS
     marcel_lwp_fix_nb_vps(__nb_lwp);
-    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
+    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d>\n", __nb_lwp, marcel_cpu_stride);
 #endif
   }
 }

@@ -21,10 +21,6 @@
  * General Public License for more details.
  */
 
-#ifdef PM2DEBUG
-#define PM2DEBUG
-#endif
-
 /* On a besoin de partie de marcel non exportées */
 #define MARCEL_INTERNAL_INCLUDE
 

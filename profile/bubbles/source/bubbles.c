@@ -1832,14 +1832,14 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE: {
-					uint64_t th = ev.ev64.user.tid;
+					uint64_t th = ev.ev64.param[0];
 					thread_t *t = getThread(th);
 					unsigned char name[16];
 					uint32_t *ptr = (uint32_t *) name;
-					ptr[0] = ev.ev64.param[0];
-					ptr[1] = ev.ev64.param[1];
-					ptr[2] = ev.ev64.param[2];
-					ptr[3] = ev.ev64.param[3];
+					ptr[0] = ev.ev64.param[1];
+					ptr[1] = ev.ev64.param[2];
+					ptr[2] = ev.ev64.param[3];
+					ptr[3] = ev.ev64.param[4];
 					name[15] = 0;
 					printfThread(th,t);
 					printf(" named %s\n", name);

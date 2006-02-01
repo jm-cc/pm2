@@ -235,20 +235,8 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, vo
 void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg);
 
 #section functions
-static __tbx_inline__ void marcel_setname(marcel_t __restrict pid, const char * __restrict name);
-static __tbx_inline__ void marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
-#section inline
-#include <string.h>
-static __tbx_inline__ void marcel_setname(marcel_t __restrict pid, const char * __restrict name) {
-	strncpy(pid->name, name, MARCEL_MAXNAMESIZE-1);
-	pid->name[MARCEL_MAXNAMESIZE-1]='\0';
-}
-static __tbx_inline__ void marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n) {
-	strncpy(name, pid->name, n);
-	if (MARCEL_MAXNAMESIZE>n)
-		name[n-1]='0';
-}
-
+int marcel_setname(marcel_t __restrict pid, const char * __restrict name);
+int marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
 
 /* Install a cleanup handler: ROUTINE will be called with arguments ARG
    when the thread is cancelled or calls marcel_exit.  ROUTINE will also

@@ -78,7 +78,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->static_stack
 	//t->initial_sp
 	//t->depl
-	marcel_attr_getname(attr,t->name,MARCEL_MAXNAMESIZE);
+	strncpy(t->name,attr->name,MARCEL_MAXNAMESIZE);
+	t->id = attr->id;
 	//t->number
 	t->timer = NULL;
 	t->not_migratable = attr->not_migratable;
@@ -863,7 +864,7 @@ TODO: vieux code
 #ifdef PM2DEBUG
 	pm2debug_printf_state(PM2DEBUG_MARCEL_PRINTF_ALLOWED);
 #endif
-	PROF_SET_THREAD_NAME();
+	PROF_SET_THREAD_NAME(__main_thread);
 	LOG_OUT();
 }
 

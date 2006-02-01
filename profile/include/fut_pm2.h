@@ -143,15 +143,15 @@
 #else
 #define PROF_IN()					\
   do {							\
-    extern void fun(void) asm(__FUNCTION__);		\
+    /*extern void fun(void) asm(__FUNCTION__);		*/\
     /*__cyg_profile_func_enter(fun,NULL);	*/	\
-    FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_ENTRY_CODE, fun);	\
+    /*FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_ENTRY_CODE, fun);	*/\
   } while(0)
 #define PROF_OUT()					\
   do {							\
-    extern void fun(void) asm(__FUNCTION__);		\
+    /*extern void fun(void) asm(__FUNCTION__);		*/\
     /*__cyg_profile_func_exit(fun,NULL);	*/	\
-    FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_EXIT_CODE, fun);	\
+    /*FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_EXIT_CODE, fun);	*/\
   } while(0)
 #endif
 
@@ -222,10 +222,11 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
   FUT_DO_PROBE1(FUT_THREAD_DEATH_CODE, MA_PROFILE_TID(thr));        \
  PROF_END
 
-#define PROF_SET_THREAD_NAME()                                      \
+#define PROF_SET_THREAD_NAME(thr)                                   \
  PROF_START                                                         \
-      unsigned long *__name = (unsigned long *) &MARCEL_SELF->name; \
-      FUT_DO_PROBE4(FUT_SET_THREAD_NAME_CODE,                       \
+      unsigned long *__name = (unsigned long *) &thr->name;         \
+      FUT_DO_PROBE5(FUT_SET_THREAD_NAME_CODE,                       \
+		 thr,                                               \
                  __name[0],                                         \
                  __name[1],                                         \
                  __name[2],                                         \

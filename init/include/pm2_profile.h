@@ -43,7 +43,7 @@
 #  define PROF_NEW_LWP(num, thr)                (void)0
 #  define PROF_THREAD_BIRTH(thr)                (void)0
 #  define PROF_THREAD_DEATH(thr)                (void)0
-#  define PROF_SET_THREAD_NAME()                (void)0
+#  define PROF_SET_THREAD_NAME(thr)             (void)0
 
 #endif // PROFILE
 

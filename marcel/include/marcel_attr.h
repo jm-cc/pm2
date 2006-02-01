@@ -58,6 +58,7 @@ struct __marcel_attr_s
   marcel_vpmask_t vpmask;
   int flags;
   char name[MARCEL_MAXNAMESIZE];
+  int id;
   marcel_sched_attr_t sched;
 };
 
@@ -95,6 +96,7 @@ struct __marcel_attr_s
   .vpmask= MARCEL_VPMASK_EMPTY, \
   .flags= 0, \
   .name= "user_task", \
+  .id = 0, \
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
 }
 
@@ -158,6 +160,10 @@ int marcel_attr_setname(marcel_attr_t * __restrict attr,
 		const char * __restrict name);
 int marcel_attr_getname(__const marcel_attr_t * __restrict attr,
 		char * __restrict name, size_t n);
+
+int marcel_attr_setid(marcel_attr_t * attr, int id);
+int marcel_attr_getid(__const marcel_attr_t * __restrict attr,
+		int * __restrict id);
 
 int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible);
 int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,

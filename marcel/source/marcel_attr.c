@@ -203,20 +203,55 @@ int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
   return 0;
 }
 
+static void setname(char * __restrict dest, const char * __restrict src)
+{
+  strncpy(dest,src,MARCEL_MAXNAMESIZE-1);
+  dest[MARCEL_MAXNAMESIZE-1]='\0';
+}
+
+static void getname(char * __restrict dest, const char * __restrict src, size_t n)
+{
+  strncpy(dest, src, n);
+  if (MARCEL_MAXNAMESIZE>n)
+    dest[n-1]='0';
+}
+
 int marcel_attr_setname(marcel_attr_t * __restrict attr,
 		const char * __restrict name)
 {
-  strncpy(attr->name,name,MARCEL_MAXNAMESIZE-1);
-  attr->name[MARCEL_MAXNAMESIZE-1]='\0';
+  setname(attr->name, name);
   return 0;
 }
 
 int marcel_attr_getname(__const marcel_attr_t * __restrict attr,
 		char * __restrict name, size_t n)
 {
-  strncpy(name,attr->name,n);
-  if (MARCEL_MAXNAMESIZE>n)
-    name[n-1]='\0';
+  getname(name, attr->name, n);
+  return 0;
+}
+
+int marcel_setname(marcel_t __restrict pid, const char * __restrict name)
+{
+  setname(pid->name, name);
+  PROF_SET_THREAD_NAME(pid);
+  return 0;
+}
+
+int marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n)
+{
+  getname(name, pid->name, n);
+  return 0;
+}
+
+int marcel_attr_setid(marcel_attr_t * attr, int id)
+{
+  attr->id = id;
+  return 0;
+}
+
+int marcel_attr_getid(__const marcel_attr_t * __restrict attr, int * __restrict id)
+{
+  *id = attr->id;
   return 0;
 }
 

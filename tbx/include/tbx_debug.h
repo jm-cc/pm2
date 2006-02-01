@@ -124,6 +124,8 @@ void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 
 #endif /* PM2DEBUG */
 
+int pm2debug_backtrace(void ** array, int size);
+
 #define debug_printf(type, fmt, ...) \
    debug_printfl(type, PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
 #define pm2debug_init(argc, argv) \

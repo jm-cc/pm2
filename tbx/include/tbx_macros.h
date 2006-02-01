@@ -168,7 +168,7 @@
 #    define TBX_BACKTRACE_DEPTH 10
 #  endif /* TBX_BACKTRACE_DEPTH */
 
-#  define __TBX_RECORD_SOME_TRACE(array, size) backtrace(array, size);
+#  define __TBX_RECORD_SOME_TRACE(array, size) pm2debug_backtrace(array, size);
 #  define __TBX_PRINT_SOME_TRACE(array, size) \
 do { \
        size_t   i;\

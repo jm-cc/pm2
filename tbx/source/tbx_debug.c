@@ -559,3 +559,17 @@ do_write:
 
 	return 0;
 }
+
+#ifdef HAVE_BACKTRACE
+int pm2debug_backtrace(void ** array, int size) {
+	int ret;
+#ifdef MARCEL
+	marcel_extlib_protect();
+#endif
+	ret = backtrace(array,size);
+#ifdef MARCEL
+	marcel_extlib_unprotect();
+#endif
+	return ret;
+}
+#endif /* HAVE_BACKTRACE */

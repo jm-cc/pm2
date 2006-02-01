@@ -25,8 +25,10 @@
 /* SoftIRQ primitives.  */
 #define ma_local_bh_disable() \
 		do { \
-			ma_record_preempt_backtrace(); \
-			ma_preempt_count() += MA_SOFTIRQ_OFFSET; ma_barrier();  \
+			if ((ma_preempt_count() += MA_SOFTIRQ_OFFSET) \
+					== MA_SOFTIRQ_OFFSET) \
+				ma_record_preempt_backtrace(); \
+			ma_barrier();  \
 		} while (0)
 
 #define __ma_local_bh_enable() \

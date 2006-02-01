@@ -84,7 +84,6 @@ tbx_aligned_free (void *ptr,
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN  (TBX_MALLOC_BTRACE_DEPTH*sizeof(void *))
 #else
-   /* no backtrace function in Darwin C library */
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN     0
 #endif /* !DARWIN_SYS */

@@ -80,7 +80,7 @@ tbx_aligned_free (void *ptr,
 #  define TBX_MALLOC_DEBUG_NAME NULL
 #endif
 
-#if !defined(DARWIN_SYS)
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN  (TBX_MALLOC_BTRACE_DEPTH*sizeof(void *))
 #else

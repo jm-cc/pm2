@@ -18,6 +18,6 @@
 
 #define get_sp() \
 ({ \
-   unsigned long long __var; \
-  (unsigned long) &__var; \
+	unsigned long long __var; \
+	(unsigned long) (&__var + 1); \
 })

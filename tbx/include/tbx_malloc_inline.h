@@ -21,6 +21,7 @@
 #define DEFAULT_BLOCK_NUMBER 1024
 
 #include "tbx_compiler.h"
+#include "tbx_macros.h"
 
 /*
  * Aligned block allocation
@@ -80,13 +81,13 @@ tbx_aligned_free (void *ptr,
 #  define TBX_MALLOC_DEBUG_NAME NULL
 #endif
 
-#if defined(LINUX_SYS) || defined(GNU_SYS)
+#ifdef HAVE_BACKTRACE
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN  (TBX_MALLOC_BTRACE_DEPTH*sizeof(void *))
 #else
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN     0
-#endif /* !DARWIN_SYS */
+#endif /* HAVE_BACKTRACE */
 
 static
 __inline__

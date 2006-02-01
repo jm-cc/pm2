@@ -36,14 +36,13 @@
 /* TRACING: main trace flag */
 /* #define TRACING */
 
-/* TBX_BACKTRACE_ON_FAILURE: controls usage of the backtracing features
+/* HAVE_BACKTRACE: controls usage of the backtracing features
  * provided by the GNU C library
  */
 #if defined(LINUX_SYS) || defined(GNU_SYS)
-#  define TBX_BACKTRACE_ON_FAILURE
-#  define TBX_BACKTRACE_DEPTH 15
+#  define HAVE_BACKTRACE
 #else
-#  undef  TBX_BACKTRACE_ON_FAILURE
+#  undef  HAVE_BACKTRACE
 #endif
 
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
@@ -160,7 +159,7 @@
 #  endif /* OOPS */
 #endif /* FAILURE_CLEANUP */
 
-#ifdef TBX_BACKTRACE_ON_FAILURE
+#ifdef HAVE_BACKTRACE
 #  include <execinfo.h>
 #  include <stdio.h>
 #  include <stdlib.h>
@@ -169,14 +168,11 @@
 #    define TBX_BACKTRACE_DEPTH 10
 #  endif /* TBX_BACKTRACE_DEPTH */
 
-#  define __TBX_PRINT_TRACE()\
-     ({\
-       void    *array[TBX_BACKTRACE_DEPTH];\
-       size_t   size;\
-       char   **strings;\
+#  define __TBX_RECORD_SOME_TRACE(array, size) backtrace(array, size);
+#  define __TBX_PRINT_SOME_TRACE(array, size) \
+do { \
        size_t   i;\
-\
-       size    = backtrace (array, TBX_BACKTRACE_DEPTH);\
+       char   **strings;\
        strings = backtrace_symbols (array, size);\
 \
        pm2debug("Obtained %zu stack frames.\n", size);\
@@ -185,10 +181,25 @@
           pm2debug ("%s\n", strings[i]);\
 \
        free (strings);\
+} while(0)
+
+#else  /* HAVE_BACKTRACE */
+#  ifdef TBX_BACKTRACE_DEPTH
+#    undef TBX_BACKTRACE_DEPTH
+#    define TBX_BACKTRACE_DEPTH 0
+#  endif /* TBX_BACKTRACE_DEPTH */
+#  define __TBX_RECORD_SOME_TRACE(array, size) 0
+#  define __TBX_PRINT_SOME_TRACE(array, size) (void)(0)
+#endif /* HAVE_BACKTRACE */
+
+#  define __TBX_PRINT_TRACE()\
+     ({\
+       void    *array[TBX_BACKTRACE_DEPTH];\
+       size_t   size;\
+\
+       size    = __TBX_RECORD_SOME_TRACE (array, TBX_BACKTRACE_DEPTH);\
+       __TBX_PRINT_SOME_TRACE (array, size); \
      })
-#else  /* TBX_BACKTRACE_ON_FAILURE */
-#  define __TBX_PRINT_TRACE() (void)(0)
-#endif /* TBX_BACKTRACE_ON_FAILURE */
 
 #ifndef FAILURE_CONTEXT
 #  define FAILURE_CONTEXT

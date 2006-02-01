@@ -16,6 +16,7 @@
 
 #section common
 #include "tbx_compiler.h"
+#include "tbx_macros.h"
 /*
  * similar to:
  * include/linux/spinlock.h - generic locking declarations
@@ -58,6 +59,8 @@ typedef struct {
         const char *module;
         char *owner;
         int oline;
+	void *bt[TBX_BACKTRACE_DEPTH];
+	size_t btsize;
 } ma_spinlock_t;
 #else /* MARCEL_DEBUG_SPINLOCK */
 /*
@@ -109,11 +112,13 @@ typedef struct {
                         pm2debug("%s:%d: spin_lock(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
                 (x)->oline = __LINE__; \
+		(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
         } while (0)
 
 /* without debugging, spin_is_locked on UP always says
@@ -126,6 +131,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_is_locked(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 0; \
@@ -147,11 +153,13 @@ typedef struct {
                         pm2debug("%s:%d: spin_trylock(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
                 (x)->oline = __LINE__; \
+		(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
                 1; \
         })
 
@@ -163,6 +171,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_unlock_wait(%s:%p) owned by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, (x), \
                                         (x)->owner, (x)->oline); \
+			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 }\
         } while (0)

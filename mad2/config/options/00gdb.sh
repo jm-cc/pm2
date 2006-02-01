@@ -4,3 +4,8 @@ if [ "${PM2_ARCH}" = IA64_ARCH -o "${PM2_ARCH}" = X86_64_ARCH ]; then
 else
   PM2_MAD2_CFLAGS_KERNEL="$PM2_MAD2_CFLAGS_KERNEL -ggdb2 -fno-omit-frame-pointer"
 fi
+if [ "$PM2_MAD2_BUILD_DYNAMIC" = yes ]; then
+	PM2_MAD2_EARLY_LDFLAGS_KERNEL="$PM2_MAD2_EARLY_LDFLAGS_KERNEL -rdynamic"
+else
+	PM2_MAD2_EARLY_LDFLAGS="$PM2_MAD2_EARLY_LDFLAGS -rdynamic"
+fi

@@ -45,8 +45,18 @@ asmlinkage MARCEL_PROTECTED void ma_preempt_schedule(void);
 #section marcel_macros
 #depend "linux_thread_info.h[]"
 #depend "marcel_compiler.h[marcel_compiler]"
+#ifdef MARCEL_DEBUG_SPINLOCK
+#define ma_record_preempt_backtrace() \
+do { \
+	if (!ma_preempt_count()) \
+		SELF_GETMEM(preempt_backtrace_size) = __TBX_RECORD_SOME_TRACE(SELF_GETMEM(preempt_backtrace), TBX_BACKTRACE_DEPTH); \
+} while (0)
+#else
+#define ma_record_preempt_backtrace() (void)0
+#endif
 #define ma_preempt_disable() \
 do { \
+	ma_record_preempt_backtrace(); \
         ma_preempt_count_inc(); \
         ma_barrier(); \
 } while (0)

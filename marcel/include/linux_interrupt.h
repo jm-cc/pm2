@@ -24,7 +24,10 @@
 #section marcel_macros
 /* SoftIRQ primitives.  */
 #define ma_local_bh_disable() \
-		do { ma_preempt_count() += MA_SOFTIRQ_OFFSET; ma_barrier(); } while (0)
+		do { \
+			ma_record_preempt_backtrace(); \
+			ma_preempt_count() += MA_SOFTIRQ_OFFSET; ma_barrier();  \
+		} while (0)
 
 #define __ma_local_bh_enable() \
 		do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)

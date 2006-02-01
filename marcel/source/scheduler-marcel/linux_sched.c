@@ -1604,6 +1604,9 @@ asmlinkage TBX_PROTECTED void ma_schedule(void)
 	if (tbx_likely(!(SELF_GETMEM(sched).state & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
+#ifdef MARCEL_DEBUG_SPINLOCK
+			__TBX_PRINT_SOME_TRACE(SELF_GETMEM(preempt_backtrace), SELF_GETMEM(preempt_backtrace_size));
+#endif
 			MA_BUG();
 		}
 	}

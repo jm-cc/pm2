@@ -19,6 +19,7 @@
 
 #section common
 #include "tbx_compiler.h"
+#include "tbx_macros.h"
 #section types
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;
@@ -145,6 +146,11 @@ struct marcel_task {
 
 	/*         list of all threads */
 	struct list_head all_threads;
+
+#ifdef MARCEL_DEBUG_SPINLOCK
+	void *preempt_backtrace[TBX_BACKTRACE_DEPTH];
+	size_t preempt_backtrace_size;
+#endif
 
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; // Doit rester le _dernier_ champ

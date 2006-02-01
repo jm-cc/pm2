@@ -1578,7 +1578,7 @@ void ma_scheduling_functions_start_here(void) { }
 /*
  * schedule() is the main scheduler function.
  */
-asmlinkage TBX_PROTECTED void ma_schedule(void)
+asmlinkage TBX_PROTECTED int ma_schedule(void)
 {
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
@@ -1593,6 +1593,10 @@ asmlinkage TBX_PROTECTED void ma_schedule(void)
 	int idx;
 	int max_prio, prev_as_prio;
 	int go_to_sleep;
+	int didswitch;
+#ifndef MA__LWPS
+	int didpoll = 0;
+#endif
 	LOG_IN();
 
 	/*
@@ -1724,7 +1728,19 @@ restart:
 		 * thread */
 		currently_idle = 1;
 		ma_local_bh_enable();
-		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {
+			marcel_sig_pause();
+		} else {
+#ifdef MARCEL_IDLE_PAUSE
+			if (didpoll)
+				/* already polled a bit, sleep a bit before
+				 * polling again */
+				marcel_sig_pause();
+#endif
+			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+			didpoll = 1;
+		}
+		ma_set_need_resched();
 		ma_local_bh_disable();
 		currently_idle = 0;
 		go_to_sleep = 0;
@@ -1813,7 +1829,7 @@ switch_tasks:
 //	}
 	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
 
-	if (tbx_likely(prev != next)) {
+	if (tbx_likely(didswitch = (prev != next))) {
 #ifdef MA__LWPS
 		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
 			PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
@@ -1853,7 +1869,7 @@ switch_tasks:
 		goto need_resched;
 	}
 	sched_debug("switched\n");
-	LOG_OUT();
+	LOG_RETURN(didswitch);
 }
 
 int marcel_yield_to(marcel_t next)

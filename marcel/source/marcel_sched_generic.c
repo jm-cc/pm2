@@ -303,20 +303,25 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		RAISE(PROGRAM_ERROR);
 	}
 	for(;;) {
-//		marcel_yield();
-	  marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {
+			if (!marcel_yield_intern())
+				marcel_sig_pause();
+		} else {
+		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+			if (!marcel_yield_intern())
 #ifdef MARCEL_IDLE_PAUSE
-	  marcel_sig_pause();
+				marcel_sig_pause();
 #endif
-	  marcel_yield_intern();
+					;
+		}
 	}
 }
 #ifndef MA__ACT
 static any_t TBX_NORETURN idle_func(any_t hlwp)
 {
 	for(;;) {
-	  pause();
-	  marcel_yield_intern();
+		marcel_sig_pause();
+		marcel_yield_intern();
 	}
 }
 #endif

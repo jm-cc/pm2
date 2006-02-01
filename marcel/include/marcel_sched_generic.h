@@ -184,11 +184,11 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 }
 
 #section marcel_functions
-__tbx_inline__ static void marcel_yield_intern();
+__tbx_inline__ static int marcel_yield_intern();
 #section marcel_inline
-__tbx_inline__ static void marcel_yield_intern(){
+__tbx_inline__ static int marcel_yield_intern(){
   ma_set_need_resched();
-  ma_schedule(); 
+  return ma_schedule(); 
 }
 
 /****************************************************************/

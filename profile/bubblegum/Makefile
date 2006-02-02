@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-FLAVOR_DEFAULT:=marcel-prof
+FLAVOR_DEFAULT:=marcel-bubblegum
 CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} $(shell pkg-config gtk+-2.0 --cflags)
 LDFLAGS += -lfxt $(shell pkg-config gtk+-2.0 --libs)
 

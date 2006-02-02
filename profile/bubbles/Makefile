@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-FLAVOR_DEFAULT:=marcel-prof
+FLAVOR_DEFAULT:=marcel-bubbles
 CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} -I/usr/local/include
 LDFLAGS += -lming -lfxt -lm
 

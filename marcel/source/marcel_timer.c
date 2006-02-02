@@ -19,6 +19,7 @@
 #include "tbx_compiler.h"
 #include <signal.h>
 #include <errno.h>
+#include <time.h>
 
 /* pour déboggage seulement */
 //#define MA_DO_NOT_LAUNCH_SIGNAL_TIMER
@@ -308,6 +309,16 @@ void marcel_sig_pause(void)
 {
 #ifndef USE_VIRTUAL_TIMER
 	sigsuspend(&sigeptset);
+#else
+	SCHED_YIELD();
+#endif
+}
+
+void marcel_sig_nanosleep(void)
+{
+#ifndef USE_VIRTUAL_TIMER
+	struct timespec time = { .tv_sec = 0, .tv_nsec = 1 };
+	nanosleep(&time, NULL);
 #else
 	SCHED_YIELD();
 #endif

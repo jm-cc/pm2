@@ -52,6 +52,7 @@ unsigned long marcel_clock(void);
 #section marcel_functions
 void marcel_sig_exit(void);
 void marcel_sig_pause(void);
+void marcel_sig_nanosleep(void);
 void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
 

@@ -1735,7 +1735,7 @@ restart:
 			if (didpoll)
 				/* already polled a bit, sleep a bit before
 				 * polling again */
-				marcel_sig_pause();
+				marcel_sig_nanosleep();
 #endif
 			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
 			didpoll = 1;

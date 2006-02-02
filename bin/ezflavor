@@ -12,8 +12,11 @@ case "$progname" in
 	ezflavor)
 		X=yes
 		;;
-	bubbles|bubblegum)
-		[ -n "$PM2_FLAVOR" ] && flavor=$PM2_FLAVOR || flavor=marcel-prof
+	bubbles)
+		[ -n "$PM2_FLAVOR" ] && flavor=$PM2_FLAVOR || flavor=marcel-bubbles
+		;;
+	bubblegum)
+		[ -n "$PM2_FLAVOR" ] && flavor=$PM2_FLAVOR || flavor=marcel-bubblegum
 		;;
 esac
 

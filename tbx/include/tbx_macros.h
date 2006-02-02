@@ -188,8 +188,8 @@ do { \
 #    undef TBX_BACKTRACE_DEPTH
 #  endif /* TBX_BACKTRACE_DEPTH */
 #  define TBX_BACKTRACE_DEPTH 0
-#  define __TBX_RECORD_SOME_TRACE(array, size) 0
-#  define __TBX_PRINT_SOME_TRACE(array, size) (void)(0)
+#  define __TBX_RECORD_SOME_TRACE(array, size) ((void)(array), (void)(size), 0)
+#  define __TBX_PRINT_SOME_TRACE(array, size) ((void)(array), (void)(size))
 #endif /* HAVE_BACKTRACE */
 
 #  define __TBX_PRINT_TRACE()\

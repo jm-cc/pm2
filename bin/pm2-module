@@ -24,7 +24,7 @@ fi
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
-EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|ezflavor|sigmund|sigmundlib|sigmunddps|supertrace|xsigmund|stackalign|bubbles"
+EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|ezflavor|sigmund|sigmundlib|sigmunddps|supertrace|xsigmund|stackalign|bubbles|bubblegum"
 
 # aide
 usage() # exit_code section

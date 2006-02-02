@@ -43,7 +43,7 @@ registering_flavors() {
 	--marcel=mono --marcel=marcel_main
 
     register_flavor marcel-prof \
-	--modules="marcel profile tbx init bubbles" $COMMON_OPTIONS \
+	--modules="marcel profile tbx init bubbles bubblegum" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main \
 	--marcel=profile
 

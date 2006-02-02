@@ -186,8 +186,8 @@ do { \
 #else  /* HAVE_BACKTRACE */
 #  ifdef TBX_BACKTRACE_DEPTH
 #    undef TBX_BACKTRACE_DEPTH
-#    define TBX_BACKTRACE_DEPTH 0
 #  endif /* TBX_BACKTRACE_DEPTH */
+#  define TBX_BACKTRACE_DEPTH 0
 #  define __TBX_RECORD_SOME_TRACE(array, size) 0
 #  define __TBX_PRINT_SOME_TRACE(array, size) (void)(0)
 #endif /* HAVE_BACKTRACE */

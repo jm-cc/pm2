@@ -318,7 +318,11 @@ void marcel_sig_nanosleep(void)
 {
 #ifndef USE_VIRTUAL_TIMER
 	struct timespec time = { .tv_sec = 0, .tv_nsec = 1 };
+#ifdef OSF_SYS
+	nanosleep_d9(&time, NULL);
+#else // ! OSF_SYS
 	nanosleep(&time, NULL);
+#endif // OSF_SYS
 #else
 	SCHED_YIELD();
 #endif

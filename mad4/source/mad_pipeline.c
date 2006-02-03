@@ -43,7 +43,7 @@ mad_pipeline_index_get(p_mad_pipeline_t pipeline,
     void * object = NULL;
     LOG_IN();
     //if(index <= pipeline->end)
-        object =  pipeline->pipeline[(pipeline->begin + index) % pipeline->length];
+    object =  pipeline->pipeline[(pipeline->begin + index) % pipeline->length];
     LOG_OUT();
     return object;
 }

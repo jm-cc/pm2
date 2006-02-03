@@ -102,11 +102,8 @@ typedef struct s_mad_connection{
     // Current sequence of the packs
     sequence_t     sequence;
 
-    // True if the nb_unexpected > 
-    tbx_bool_t     blocked;
-    uint32_t       nb_unexpected;
+    //int  needed_receptions; // ensure the reception of the acknowlegment even if there is no pending pack
 
-    int            need_reception;
     /*-----------------------------*/
 
     /* Driver specific data */

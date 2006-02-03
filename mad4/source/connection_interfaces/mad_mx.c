@@ -246,12 +246,7 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 #endif // MX_NO_STARTUP_INFO
 
     /** contrôle de flux sur le nombre des unexpected stockés **/
-    // nombre maximal de messages unexpected
-    d->max_unexpected = 10;
-    // tolérance sur le nb d'unexpected
-    d->unexpected_delta = 4;
-    // déblocage à partir de ce seuil
-    d->unexpected_recovery_threshold = 4;
+    d->nb_unexpecteds = 10; //nombre maximal de messages unexpected
 
     LOG_OUT();
 }
@@ -260,7 +255,9 @@ void
 mad_mx_adapter_init(p_mad_adapter_t a) {
     p_mad_mx_adapter_specific_t	as = NULL;
     p_mad_driver_t driver          = NULL;
-    int total                    = 0;
+    int nb_unexpected = 0;
+    p_mad_madeleine_t madeleine = NULL;
+    int nb_dest = 0;
     p_mad_iovec_t mad_iovec = NULL;
     void *unexpected_area   = NULL;
     int   i = 0;
@@ -270,15 +267,18 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     LOG_IN();
     as     = TBX_MALLOC(sizeof(mad_mx_adapter_specific_t));
     driver = a->driver;
-    total  = driver->max_unexpected + driver->unexpected_delta;
+
+    madeleine = mad_get_madeleine();
+    nb_dest = tbx_slist_get_length(madeleine->dir->process_slist);
+    nb_unexpected  = driver->nb_unexpecteds * nb_dest;
 
     // Réservation des zones de données à pré-poster
-    tbx_malloc_init(&mad_mx_unexpected_key, MAD_MX_PRE_POSTED_SIZE, total, "mx_pre_posted");
+    tbx_malloc_init(&mad_mx_unexpected_key, MAD_MX_PRE_POSTED_SIZE, nb_unexpected, "mx_pre_posted");
 
     // Initialistaion des mad_iovecs à pré-poster
-    a->pre_posted  = mad_pipeline_create(total);
+    a->pre_posted  = mad_pipeline_create(nb_unexpected);
 
-    for(i = 0; i < total; i++){
+    for(i = 0; i < nb_unexpected; i++){
         unexpected_area = tbx_malloc(mad_mx_unexpected_key);
 
         mad_iovec = mad_iovec_create(-1, NULL, 0, tbx_false, 0, 0);
@@ -287,7 +287,7 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
                            MAD_MX_PRE_POSTED_SIZE);
         mad_pipeline_add(a->pre_posted, mad_iovec);
     }
-    as->nb_pre_posted_areas = total;
+    as->nb_pre_posted_areas = nb_unexpected;
 
     // Identifiant de la carte
     if (strcmp(a->dir_adapter->name, "default")) {

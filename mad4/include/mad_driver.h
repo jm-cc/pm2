@@ -51,24 +51,17 @@ typedef struct s_mad_driver
 
     ntbx_process_lrank_t        process_lrank;
 
-    /*  p_ntbx_process_container_t  process_container; */
 
     /*-----------------------------*/
     // Packets which have to be send by this driver
-    // TODO : split the list by destination
     p_tbx_slist_t  s_msg_slist;
 
-
     // For the flow control of the unexpected data
-    // TODO : changer le sens du contrôle de flux : il doit être fait
-    // par l'émetteur et non pas le récepteur pour que ce soit réactif!
-    int max_unexpected; // number of tolerated unexpected data
-    int unexpected_delta; // tolérance on the number of unexpected data
-    int unexpected_recovery_threshold; // recovery threshold
+    int nb_unexpecteds; // number of tolerated unexpected data
 
-
-    int nb_pack_to_send; // = packs in the pack list + large waiting
-                         // ackowlegment or ackowledged but waiting a transmission
+    int nb_packs_to_send; // nb packs waiting for a sending
+      // = packs in the pack list + large waiting
+      // ackowlegment or ackowledged but waiting a transmission
     /*-----------------------------*/
 
     /* Driver specific */

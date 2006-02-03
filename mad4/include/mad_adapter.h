@@ -41,11 +41,12 @@ typedef struct s_mad_adapter
     p_tbx_htable_t           channel_htable;
     p_mad_dir_adapter_t      dir_adapter;
 
+
+
+    /*-----------------------------*/
     /* pending communications */
     p_mad_track_set_t s_track_set;
     p_mad_track_set_t r_track_set;
-
-    p_tbx_htable_t established_connection_htable;
 
     /* msg waiting for a transmission */
     p_tbx_slist_t s_ready_msg_list;
@@ -53,17 +54,21 @@ typedef struct s_mad_adapter
     /* msg waiting for an acknowlegment */
     p_tbx_slist_t waiting_acknowlegment_list;
 
-    p_tbx_slist_t rdv;
+    /* received rdv */
+    p_tbx_slist_t rdv_to_treat;
 
-    /* unexpected msg */
+    /* prepared buffer to pre-post */
     p_mad_pipeline_t pre_posted;
 
+    /* for the flow control of the unexpected */
+    int nb_released_unexpecteds;
+    p_mad_pipeline_t unexpecteds;   // all the unexpected
+    int *nb_authorized_sendings; //for each destination
 
-    p_mad_pipeline_t    unexpected;
-    uint32_t      unexpected_total_nb; //plusieurs pack/mad_iovec
-    tbx_bool_t        **blocked_cnx;
+    int needed_sendings; // ensure the sending of the acknowlegment even if there is no pending unpack
+    int  needed_receptions; // ensure the reception of the acknowlegment even if there is no pending pack
 
-
+    /*-----------------------------*/
 
     p_mad_driver_specific_t  specific;
 } mad_adapter_t;

@@ -152,12 +152,8 @@ mad_tcp_driver_init(p_mad_driver_t driver, int *argc, char ***argv) {
     driver->buffer_alignment = 32;
 
     /** contrôle de flux sur le nombre des unexpected stockés **/
-     // nombre maximal de messages unexpected
-    driver->max_unexpected                = 10;
-    // tolérance sur le nb d'unexpected
-    driver->unexpected_delta      = 4;
-    // déblocage à partir de ce seuil
-    driver->unexpected_recovery_threshold = 4;
+    // nombre maximal de messages unexpected
+    driver->nb_unexpecteds                = 10;
     /*****/
 
     LOG_OUT();
@@ -194,7 +190,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter) {
 
 
     /** Préparation des mad_iovecs destinés aux messages unexpected **/
-    total = driver->max_unexpected + driver->unexpected_delta;
+    total = driver->nb_unexpecteds;
     // Réservation des zones de données à pré-poster
     tbx_malloc_init(&mad_tcp_unexpected_key, MAD_TCP_PRE_POSTED_SIZE, total, "tcp_pre_posted");
 
@@ -300,7 +296,7 @@ mad_tcp_track_init(p_mad_adapter_t adapter,
         r_port_s->desc = -1;
         r_port_s->waiting_length = 0;
         r_port_s->nb_treated_bytes = 0;
-        r_port_s->unexpected_len = 43290;
+        r_port_s->unexpected_len = 4329;
     }
 
     r_ts                 = TBX_MALLOC(sizeof(mad_tcp_track_specific_t));
@@ -363,7 +359,7 @@ mad_tcp_accept(p_mad_connection_t   in,
         s_ts         = s_track->specific;
         s_port_s     = s_track->local_ports[remote]->specific;
 
-        DISP_VAL("s_ts - unexpectde_len", s_ts->unexpected_len);
+        //DISP_VAL("s_ts - unexpectde_len", s_ts->unexpected_len);
 
 
 
@@ -885,22 +881,23 @@ mad_tcp_s_test(p_mad_track_set_t track_set) {
 
 
         DISP_VAL("###############WRITE : len ", *((int *)port_s->iovec[0].iov_base));
-
+        DISP_VAL("###############WRITE : nb_seg ", port_s->nb_seg);
 
         //DISP("WRITE");
         SYSCALL(written = writev(port_s->desc, port_s->iovec, port_s->nb_seg));
 
         if(written){
-            DISP_VAL("s_test - written    ", written);
-            DISP_VAL("s_test - déjà ecrits", port_s->nb_treated_bytes);
-            DISP_VAL("s_test - attendus   ", port_s->waiting_length);
-            DISP("");
+            //DISP_VAL("s_test - written    ", written);
+            //DISP_VAL("s_test - déjà ecrits", port_s->nb_treated_bytes);
+            //DISP_VAL("s_test - attendus   ", port_s->waiting_length);
+            //DISP("");
 
             port_s->nb_treated_bytes += written;
 
             if(port_s->nb_treated_bytes == port_s->waiting_length){
                 port_s->nb_treated_bytes = 0;
                 port_s->nb_seg = 0;
+                port_s->current_seg_id = 0;
                 //DISP("ENVOYE!!!!");
                 return tbx_true;
 
@@ -929,6 +926,64 @@ mad_tcp_s_test(p_mad_track_set_t track_set) {
 }
 
 
+static p_mad_iovec_t
+mad_tcp_receive_data(p_mad_port_t  port){
+    p_mad_tcp_port_specific_t port_s = NULL;
+    int nb_read = 0;
+    int current_seg_id = 0;
+    LOG_IN();
+
+    port_s = port->specific;
+    current_seg_id = port_s->current_seg_id;
+
+    //DISP("READ");
+    SYSCALL(nb_read = readv(port_s->desc,
+                            port_s->iovec,
+                            port_s->nb_seg));
+
+    if(nb_read){
+        //DISP("on a lu");
+        //DISP_VAL("r_test - read    ", nb_read);
+        //DISP_VAL("r_test - déjà lus", port_s->nb_treated_bytes);
+        //DISP_VAL("r_test - attendus   ", port_s->waiting_length);
+        //DISP("");
+
+        port_s->nb_treated_bytes += nb_read;
+
+        if(port_s->nb_treated_bytes == port_s->waiting_length){
+            //DISP("RECU!!!!");
+            port_s->nb_treated_bytes = 0;
+            port_s->nb_seg = 0;
+            port_s->waiting_length = 0;
+            port_s->current_seg_id = 0;
+
+            return port_s->mad_iovec;
+        } else {
+            int to_read = 0;
+
+            // passe au prochain segment si ca deborde
+            to_read = port_s->iovec[current_seg_id].iov_len;
+            while(nb_read >= to_read){
+                port_s->iovec[current_seg_id].iov_len = 0;
+
+                nb_read = nb_read - to_read;
+                current_seg_id++;
+                to_read = port_s->iovec[current_seg_id].iov_len;
+            }
+
+            port_s->iovec[current_seg_id].iov_base += nb_read;
+            port_s->iovec[current_seg_id].iov_len  -= nb_read;
+
+            return NULL;
+        }
+    }
+    LOG_OUT();
+    return NULL;
+}
+
+
+
+
 p_mad_iovec_t
 mad_tcp_r_test(p_mad_track_t track) {
     p_mad_tcp_track_specific_t ts = NULL;
@@ -952,7 +1007,12 @@ mad_tcp_r_test(p_mad_track_t track) {
     nb_dest   = track->nb_dest;
     nb_polled_sock = ts->nb_polled_sock;
 
+
     SYSCALL(nb_revents = poll(ts->to_poll, nb_polled_sock, ts->delay));
+
+    //if(nb_revents)
+    //    DISP_VAL("tcp_r_test - nb_revents", nb_revents);
+    //DISP_VAL("           - nb_polled_sock", nb_polled_sock);
 
     for(i = 0, j = (ts->last_polled_idx + 1) % nb_polled_sock;
         i < nb_polled_sock && nb_revents;
@@ -960,13 +1020,14 @@ mad_tcp_r_test(p_mad_track_t track) {
 
         polled = ts->to_poll[j];
 
-        if(polled.revents & POLLNVAL){
-            continue;
-        }
-
         // si revents de la structure pollfd == POLLIN
         // alors je peux lire sur la socket
         if(polled.revents & POLLIN){
+            //DISP_VAL("           - id de la socket pollée", j);
+
+            nb_revents--;
+            ts->last_polled_idx = j;
+
             port   = track->local_ports[j];
             port_s = port->specific;
             current_seg_id = port_s->current_seg_id;
@@ -974,49 +1035,35 @@ mad_tcp_r_test(p_mad_track_t track) {
             // si on n'a pas initialisé la taille à recevoir
             if(track->pre_posted && port_s->waiting_length == 0){
 
-                //DEBUG!!
-                int tmp = * ((int*)port_s->iovec[0].iov_base);
-                //DISP_PTR("r_test : iovec[0].iov_base", port_s->iovec[0].iov_base);
+                //DISP_VAL("port_s->iovec[0].iov_len",
+                //port_s->iovec[0].iov_len);
+                //DISP_VAL("port_s->iovec[1].iov_len",
+                //port_s->iovec[1].iov_len);
 
 
                 // Je lis ce qui est nécessaire pour récupérer la taille
                 SYSCALL(nb_read = readv(port_s->desc, port_s->iovec, 1));
-
-                //int tmp2 = * ((int*)port_s->iovec[0].iov_base);
-
-                //DISP_VAL("tmp", tmp);
-                //DISP_VAL("tmp2", tmp2);
-
-
+                
                 if(nb_read){
-
-                     DISP_PTR("r_test : iovec[0].iov_base", port_s->iovec[0].iov_base);
-
                     port_s->nb_treated_bytes += nb_read;
 
-                    if(port_s->nb_treated_bytes > port_s->iovec[0].iov_len)
-                        FAILURE("r_test : trop recu");
-
-
-                    if(port_s->nb_treated_bytes == port_s->iovec[0].iov_len){ // == sizeof(int)){
+                    if(port_s->nb_treated_bytes == port_s->iovec[0].iov_len){
                         int len = * ((int*)port_s->iovec[0].iov_base);
-
                         DISP_VAL("RECV - len recue", len);
-                        DISP_VAL("RECV - len avant", tmp);
-
-                        if(len == 0){
-                            DISP_VAL("port_s->nb_treated_bytes", port_s->nb_treated_bytes);
-                            DISP_VAL("port_s->iovec[0].iov_len", port_s->iovec[0].iov_len);
-                        }
-
 
                         port_s->waiting_length = len;
-
+                        DISP_VAL("port_s->iovec[0].iov_len", port_s->iovec[0].iov_len);
                         port_s->iovec[0].iov_len = 0;
                         port_s->iovec[1].iov_len = len;
-
                         port_s->current_seg_id++;
                         port_s->nb_treated_bytes = 0;
+
+                        // on lit les données
+                        SYSCALL(nb_revents = poll(ts->to_poll, nb_polled_sock, ts->delay));
+                        if(nb_revents && polled.revents & POLLIN)
+                            return mad_tcp_receive_data(port);
+                        else
+                            return NULL;
 
                     } else {
                         port_s->iovec[0].iov_base += nb_read;
@@ -1025,59 +1072,15 @@ mad_tcp_r_test(p_mad_track_t track) {
                         return NULL;
                     }
                 }
-            }
 
-
-            // si revents de la structure pollfd == POLLIN
-            // alors je peux lire sur la socket
-            if(polled.revents & POLLIN){
-                //DISP("READ");
-                SYSCALL(nb_read = readv(port_s->desc, port_s->iovec, port_s->nb_seg));
-
-                if(nb_read){
-                    //DISP("on a lu");
-                    DISP_VAL("r_test - read    ", nb_read);
-                    DISP_VAL("r_test - déjà lus", port_s->nb_treated_bytes);
-                    DISP_VAL("r_test - attendus   ", port_s->waiting_length);
-                    DISP("");
-
-                    port_s->nb_treated_bytes += nb_read;
-
-                    if(port_s->nb_treated_bytes == port_s->waiting_length){
-                        //DISP("RECU!!!!");
-                        port_s->nb_treated_bytes = 0;
-                        ts->last_polled_idx = j;
-                        port_s->nb_seg = 0;
-                        port_s->waiting_length = 0;
-
-                        return port_s->mad_iovec;
-                    } else {
-                        int to_read = 0;
-
-                        // passe au prochain segment si ca deborde
-                        to_read = port_s->iovec[current_seg_id].iov_len;
-                        while(nb_read >= to_read){
-                            port_s->iovec[current_seg_id].iov_len = 0;
-
-                            nb_read = nb_read - to_read;
-                            current_seg_id++;
-                            to_read = port_s->iovec[current_seg_id].iov_len;
-                        }
-
-                        port_s->iovec[current_seg_id].iov_base += nb_read;
-                        port_s->iovec[current_seg_id].iov_len  -= nb_read;
-
-                        ts->last_polled_idx = j;
-                        return NULL;
-                    }
-
-                } else {
-                    nb_revents--;
-                }
+            } else { // on lit les données
+                //DISP("on ne lit que les données");
+                //DISP_VAL("port_s->waiting_length", port_s->waiting_length);
+                return mad_tcp_receive_data(port);
             }
         }
-        ts->last_polled_idx = (1 + ts->last_polled_idx) % nb_polled_sock;
     }
+    ts->last_polled_idx = (1 + ts->last_polled_idx) % nb_polled_sock;
 
     //DISP("<--r_test");
     LOG_OUT();
@@ -1093,11 +1096,12 @@ mad_tcp_isend(p_mad_track_t track,
     p_mad_tcp_port_specific_t port_specific    = NULL;
     struct iovec *iovec = NULL;
     int i = 0;
-    p_mad_tcp_track_specific_t ts = track->specific;
+    p_mad_tcp_track_specific_t ts = NULL;
     LOG_IN();
 
 
     //DISP("--->tcp_isend");
+    ts = track->specific;
     port          = track->local_ports[mad_iovec->remote_rank];
     port_specific = port->specific;
     iovec         = port_specific->iovec;
@@ -1108,7 +1112,7 @@ mad_tcp_isend(p_mad_track_t track,
         iovec[0].iov_base = &ts->unexpected_len;
         iovec[0].iov_len  = sizeof(int);
 
-        DISP_VAL("longueur envoyée", * ((int *)iovec[0].iov_base));
+        DISP_VAL("ISEND - longueur envoyée", * ((int *)iovec[0].iov_base));
 
         for(i = 0; i < mad_iovec->total_nb_seg; i++){
             iovec[i+1].iov_base = mad_iovec->data[i].iov_base;
@@ -1143,24 +1147,22 @@ mad_tcp_irecv(p_mad_track_t track,
               p_mad_iovec_t mad_iovec){
     p_mad_port_t              port             = NULL;
     p_mad_tcp_port_specific_t port_specific    = NULL;
-    struct iovec *iovec = NULL;
     int i = 0;
 
     LOG_IN();
     //DISP("--->tcp_irecv");
     port          = track->local_ports[mad_iovec->remote_rank];
     port_specific = port->specific;
-    iovec         = port_specific->iovec;
 
     if(track->pre_posted){
         port_specific->unexpected_len = 15768;
 
-        iovec[0].iov_base = &port_specific->unexpected_len;
-        iovec[0].iov_len  = sizeof(int);
+        port_specific->iovec[0].iov_base = &port_specific->unexpected_len;
+        port_specific->iovec[0].iov_len  = sizeof(int);
 
         for(i = 0; i < mad_iovec->total_nb_seg; i++){
-            iovec[i+1].iov_base = mad_iovec->data[i].iov_base;
-            iovec[i+1].iov_len  = mad_iovec->data[i].iov_len;
+            port_specific->iovec[i+1].iov_base = mad_iovec->data[i].iov_base;
+            port_specific->iovec[i+1].iov_len  = mad_iovec->data[i].iov_len;
 
             //DISP_VAL("mad_iovec->data[i].iov_len", mad_iovec->data[i].iov_len);
         }
@@ -1170,8 +1172,8 @@ mad_tcp_irecv(p_mad_track_t track,
 
     } else {
         for(i = 0; i < mad_iovec->total_nb_seg; i++){
-            iovec[i].iov_base = mad_iovec->data[i].iov_base;
-            iovec[i].iov_len  = mad_iovec->data[i].iov_len;
+            port_specific->iovec[i].iov_base = mad_iovec->data[i].iov_base;
+            port_specific->iovec[i].iov_len  = mad_iovec->data[i].iov_len;
         }
 
         port_specific->nb_seg = mad_iovec->total_nb_seg;
@@ -1188,8 +1190,13 @@ mad_tcp_irecv(p_mad_track_t track,
     track->nb_pending_reception++;
     track->track_set->reception_tracks_in_use[track->id] = tbx_true;
 
-    DISP_PTR("irecv : iovec[0].iov_base", port_specific->iovec[0].iov_base);
-    DISP_VAL("      : iovec[0].contenu ", *((int *)port_specific->iovec[0].iov_base));
+
+    DISP_VAL("irecv - port_s->iovec[0].iov_len", port_specific->iovec[0].iov_len);
+    DISP_VAL("irecv - port_s->iovec[1].iov_len", port_specific->iovec[1].iov_len);
+
+
+    //DISP_PTR("irecv : iovec[0].iov_base", port_specific->iovec[0].iov_base);
+    //DISP_VAL("      : iovec[0].contenu ", *((int *)port_specific->iovec[0].iov_base));
 
     //DISP("<---tcp_irecv");
     LOG_OUT();
@@ -1254,7 +1261,7 @@ mad_tcp_replace_pre_posted(p_mad_adapter_t adapter,
 
     r_track_set = adapter->r_track_set;
 
-    mad_iovec   = mad_pipeline_remove(adapter->pre_posted);
+    mad_iovec              = mad_pipeline_remove(adapter->pre_posted);
     mad_iovec->track       = track;
     mad_iovec->remote_rank = port_id;
 

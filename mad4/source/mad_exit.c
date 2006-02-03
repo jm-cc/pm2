@@ -1046,8 +1046,6 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  tbx_htable_free(mad_adapter->channel_htable);
 	  mad_adapter->channel_htable = NULL;
 
-          tbx_htable_cleanup_and_free(mad_adapter->established_connection_htable);
-
           tbx_slist_free(mad_adapter->s_ready_msg_list);
           mad_adapter->s_ready_msg_list = NULL;
 

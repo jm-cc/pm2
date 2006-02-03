@@ -25,10 +25,10 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
-#define NB_LOOPS 1000
-#define WARMUP_LOOPS 10
+#define NB_LOOPS 1
+#define WARMUP_LOOPS 1
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  32768 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  4 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -103,7 +103,7 @@ client(p_mad_channel_t channel){
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
         connection1 = mad_begin_packing(channel, 0);
-       //DISP("begin_packing : OK\n");
+        DISP("begin_packing : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
             mad_pack(connection1,
@@ -111,13 +111,13 @@ client(p_mad_channel_t channel){
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-           //DISP("pack : OK");
+            DISP("pack : OK");
             mad_wait_packs(connection1);
-           //DISP("wait pack : OK\n");
+            DISP("wait pack : OK\n");
 
             if (counter == 1) {
                 connection2 = mad_begin_unpacking(channel);
-               //DISP("begin unpacking : OK\n");
+                DISP("begin unpacking : OK\n");
             }
 
             mad_unpack(connection2,
@@ -125,12 +125,12 @@ client(p_mad_channel_t channel){
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-           //DISP("unpack : OK");
+            DISP("unpack : OK");
             mad_wait_unpacks(connection2);
-           //DISP("wait unpack : OK\n");
+            DISP("wait unpack : OK\n");
         }
 
-       //DISP("---->FIN WARMUP");
+       DISP("---->FIN WARMUP");
 
         counter = 0;
 
@@ -217,7 +217,7 @@ server(p_mad_channel_t channel){
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
         connection1 = mad_begin_unpacking(channel);
-       //DISP("begin unpacking : OK\n");
+        DISP("begin unpacking : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
             mad_unpack(connection1,
@@ -225,13 +225,13 @@ server(p_mad_channel_t channel){
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-           //DISP("unpack : OK");
+            DISP("unpack : OK");
             mad_wait_unpacks(connection1);
-           //DISP("wait un pack : OK\n");
+            DISP("wait un pack : OK\n");
 
             if (counter == 1) {
                 connection2 = mad_begin_packing(channel, 1);
-               //DISP("begin packing : OK\n");
+                DISP("begin packing : OK\n");
             }
 
             mad_pack(connection2,
@@ -239,12 +239,12 @@ server(p_mad_channel_t channel){
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-           //DISP("pack : OK");
+            DISP("pack : OK");
             mad_wait_packs(connection2);
-           //DISP("wait packs : ok\n");
+            DISP("wait packs : ok\n");
         }
 
-       //DISP("---->FIN WARMUP");
+       DISP("---->FIN WARMUP");
 
         counter = 0;
 

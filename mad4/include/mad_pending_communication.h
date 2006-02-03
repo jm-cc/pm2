@@ -1,7 +1,7 @@
 #ifndef MAD_PENDING_COMMUNICATION_H
 #define MAD_PENDING_COMMUNICATION_H
 
-#define NB_ENTRIES 32
+#define NB_ENTRIES 33
 #define NB_DEST    32
 
 typedef struct s_mad_track_t *p_mad_track_t ;
@@ -11,18 +11,18 @@ typedef struct s_mad_iovec{
     ntbx_process_lrank_t    my_rank;
     ntbx_process_lrank_t    remote_rank;
 
-    p_mad_channel_t         channel; // pour retrouver la
-                                     // liste des unpack
-
-    p_mad_connection_t      connection; // pour les unexpected
-
     sequence_t              sequence;
-
     size_t                  length;       // entêtes + données
- 
+
     unsigned int            nb_packs; // nb d'entrées relatives
                                       // à des données
     unsigned int            total_nb_seg; // données + contrôles
+
+
+    p_mad_track_t           track;
+
+    p_mad_channel_t         channel; // pour retrouver la
+                                     // liste des unpack
 
     tbx_bool_t              need_rdv;
 
@@ -30,24 +30,15 @@ typedef struct s_mad_iovec{
     mad_receive_mode_t      receive_mode;
     int                     matrix_entrie;
 
-    p_mad_track_t           track;
-
     struct iovec            data [NB_ENTRIES];
 
     p_mad_driver_specific_t specific;
 } mad_iovec_t, *p_mad_iovec_t;
 
 
-
-
 typedef struct s_mad_port_t{
-
     p_mad_driver_specific_t specific;
-
 }mad_port_t, *p_mad_port_t;
-
-
-
 
 
 typedef struct s_mad_track_t{

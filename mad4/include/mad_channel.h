@@ -76,10 +76,14 @@ typedef struct s_mad_channel
     marcel_t                    polling_thread;
 #endif // MARCEL
 
+
+    /*-----------------------------*/
     p_tbx_slist_t     unpacks_list;
     unsigned int      sequence;
 
-    int               need_send; //ack en cours d'envoi
+    //int               needed_sendings; // ensure the sending of the acknowlegment even if there is no pending unpack
+
+    /*-----------------------------*/
 
     p_mad_driver_specific_t specific;
 } mad_channel_t;

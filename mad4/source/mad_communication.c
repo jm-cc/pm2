@@ -82,6 +82,9 @@ mad_pack(p_mad_connection_t   connection,
 
     connection->sequence++;
 
+    if(channel == NULL)
+        FAILURE("CHANNEL NULL");
+
     // create a mad_iovec
     mad_iovec = mad_iovec_create(remote_rank, channel,
                                  seq, need_rdv,
@@ -98,7 +101,7 @@ mad_pack(p_mad_connection_t   connection,
     // Add the data to the associated message
     tbx_slist_append(connection->packs_list, mad_iovec);
 
-    driver->nb_pack_to_send++;
+    driver->nb_packs_to_send++;
     LOG_OUT();
 }
 
@@ -158,7 +161,7 @@ mad_wait_packs(p_mad_connection_t connection){
     while(connection->packs_list->length){
         mad_s_make_progress(adapter);
 
-        if(connection->need_reception){
+        if(adapter->needed_receptions){
             mad_r_make_progress(adapter);
         }
     }
@@ -297,22 +300,25 @@ mad_wait_unpacks(p_mad_connection_t connection){
 
     //DISP("------------>wait_unpack");
 
+    DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
+
 
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
 
-        //{
-        //    static int nb_channel = 0;
-        //
-        //    if(!nb_channel){
-        //        DISP_PTR("channel du wait unpack", channel);
-        //        nb_channel++;
-        //    }
-        //}
+        {
+            static int nb_channel = 0;
+
+            if(!nb_channel){
+                //DISP_PTR("channel du wait unpack", channel);
+                DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
+                nb_channel++;
+            }
+        }
 
 
 
-        if(channel->need_send){
+        if(adapter->needed_sendings){
             mad_s_make_progress(adapter);
         }
     }

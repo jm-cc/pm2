@@ -54,9 +54,11 @@ mad_send_cur(p_mad_adapter_t adapter,
             goto end;
         }
     }
-    driver->nb_pack_to_send -= s_track_set->cur->nb_packs;
 
-    if(driver->nb_pack_to_send)
+    // on considère les packs constituant l'iovec comme envoyé
+    driver->nb_packs_to_send -= s_track_set->cur->nb_packs;
+
+    if(driver->nb_packs_to_send)
         mad_search_next(adapter, s_track_set);
 
     cur = s_track_set->cur;
@@ -92,7 +94,8 @@ mad_s_make_progress(p_mad_adapter_t adapter){
 
 
     // amorce
-    if(status == MAD_MKP_NOTHING_TO_DO){
+    //if(status == MAD_MKP_NOTHING_TO_DO){
+    if(!cur){
         mad_send_cur(adapter, s_track_set);
     } else {
         s_track_set->status = s_mad_make_progress(adapter);
@@ -127,14 +130,13 @@ mad_s_make_progress(p_mad_adapter_t adapter){
 
             } else {
                 //DISP("ENVOI d'un petit");
-
                 mad_iovec_s_check(adapter, cur);
                 s_track_set->cur = NULL;
                 //DISP("s_check OK!");
             }
 
             // envoi du suivant
-            if(driver->nb_pack_to_send){
+            if(driver->nb_packs_to_send){
                 mad_send_cur(adapter, s_track_set);
             } else {
                 s_track_set->status = MAD_MKP_NOTHING_TO_DO;
@@ -149,31 +151,29 @@ mad_s_make_progress(p_mad_adapter_t adapter){
 
 static void
 treat_unexpected(p_mad_adapter_t adapter){
-    p_mad_pipeline_t    unexpected = NULL;
-    int cur_nb_unexpected             = 0;
+    p_mad_pipeline_t    unexpecteds = NULL;
+    int unexpected_idx             = 0;
     int unexpected_total_nb           = 0;
-
-    p_mad_iovec_t            cur            = NULL;
-
+    p_mad_iovec_t current_unexpected = NULL;
 
     LOG_IN();
-    unexpected_total_nb = adapter->unexpected_total_nb;
-    unexpected          = adapter->unexpected;
+    unexpecteds         = adapter->unexpecteds;
+    unexpected_total_nb = unexpecteds->cur_nb_elm;
 
-    while(cur_nb_unexpected < unexpected_total_nb){
-        cur = mad_pipeline_index_get(unexpected, cur_nb_unexpected);
+    for(unexpected_idx = 0; unexpected_idx < unexpected_total_nb; unexpected_idx++){
+        //DISP("-->treat_unexpected");
 
-        if(mad_iovec_exploit_msg(adapter, cur->data[0].iov_base)){
+        current_unexpected = mad_pipeline_index_get(unexpecteds, unexpected_idx);
+
+        if(mad_iovec_exploit_msg(adapter, current_unexpected->data[0].iov_base)){
             // le mad_iovec est entièrement traité,
             // donc retrait de la liste des "unexpected"
-            mad_pipeline_extract(unexpected, cur_nb_unexpected);
+            mad_pipeline_extract(unexpecteds, unexpected_idx);
 
             // libération du mad_iovec pré_posté
-            mad_pipeline_add(adapter->pre_posted, cur);
-
-            break;
+            mad_pipeline_add(adapter->pre_posted, current_unexpected);
+            return;
         }
-        cur_nb_unexpected++;
     }
     LOG_OUT();
 }
@@ -191,11 +191,11 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     int nb_pending_reception = 0;
     tbx_bool_t *reception_tracks_in_use = NULL;
     LOG_IN();
-    driver = adapter->driver;
-    interface = driver->interface;
-    r_track_set = adapter->r_track_set;
-    nb_track = r_track_set->nb_track;
-    nb_pending_reception = r_track_set->nb_pending_reception;
+    driver                  = adapter->driver;
+    interface               = driver->interface;
+    r_track_set             = adapter->r_track_set;
+    nb_track                = r_track_set->nb_track;
+    nb_pending_reception    = r_track_set->nb_pending_reception;
     reception_tracks_in_use = r_track_set->reception_tracks_in_use;
 
 
@@ -217,7 +217,6 @@ mad_r_make_progress(p_mad_adapter_t adapter){
         //DISP_VAL("reception_tracks_in_use : i", i);
         //DISP_VAL("in use?", reception_tracks_in_use[i]);
 
-
         if(reception_tracks_in_use[i]){
             j++;
 
@@ -229,7 +228,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 track->pending_reception[mad_iovec->remote_rank] = NULL;
 
                 if(track->pre_posted){
-                    //DISP("r_mkp : RECEPTION d'un petit");
+                    DISP("r_mkp : RECEPTION d'un petit");
                     // dépot d'une nouvelle zone pré-postée
                     interface->replace_pre_posted(adapter, track,
                                                   mad_iovec->remote_rank);
@@ -239,11 +238,14 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                                                         mad_iovec->data[0].iov_base);
 
                     if(exploit_msg){
+                        DISP("r_mkp : RECEPTION d'un petit TRAITE");
                         // on rend le mad_iovec pré_posté
                         mad_pipeline_add(adapter->pre_posted,
                                          mad_iovec);
+
                     } else { // unexpected
-                        mad_pipeline_add(adapter->unexpected, mad_iovec);
+                        DISP("r_mkp : RECEPTION d'un petit UNEXPECTED");
+                        mad_pipeline_add(adapter->unexpecteds, mad_iovec);
                     }
 
                 } else {
@@ -263,7 +265,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                     //DISP("");
 
                     // cherche un nouveau à envoyer
-                    if(adapter->rdv->length)
+                    if(adapter->rdv_to_treat->length)
                         mad_iovec_search_rdv(adapter, track);
                 }
             }

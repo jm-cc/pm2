@@ -54,12 +54,8 @@ mad_iovec_add_data_at_index(p_mad_iovec_t mad_iovec,
                             int index);
 
 void
-mad_iovec_add_blocked(p_mad_iovec_t mad_iovec,
-                      channel_id_t msg_channel_id);
-
-void
-mad_iovec_add_unblocked(p_mad_iovec_t mad_iovec,
-                        channel_id_t msg_channel_id);
+mad_iovec_add_authorized_sendings(p_mad_iovec_t mad_iovec,
+                                  int nb_authorized_sendings);
 
 void
 mad_iovec_update_global_header(p_mad_iovec_t);
@@ -107,5 +103,11 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
 /** Fonctions d'affichage **/
 void
 mad_iovec_print(p_mad_iovec_t mad_iovec);
+
+
+void
+mad_iovec_send_control(p_mad_adapter_t adapter,
+                       p_mad_iovec_t  control);
+
 
 #endif /* MAD_IOVEC_BUILDER_H */

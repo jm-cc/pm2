@@ -55,6 +55,11 @@ mad_send_cur(p_mad_adapter_t adapter,
         }
     }
 
+    mad_iovec_update_global_header(s_track_set->cur);
+    mad_iovec_add_authorized_sendings(s_track_set->cur,
+                                      adapter->nb_released_unexpecteds);
+    mad_iovec_update_global_header(s_track_set->cur);
+
     // on considère les packs constituant l'iovec comme envoyé
     driver->nb_packs_to_send -= s_track_set->cur->nb_packs;
 
@@ -228,7 +233,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 track->pending_reception[mad_iovec->remote_rank] = NULL;
 
                 if(track->pre_posted){
-                    DISP("r_mkp : RECEPTION d'un petit");
+                   //DISP("r_mkp : RECEPTION d'un petit");
                     // dépot d'une nouvelle zone pré-postée
                     interface->replace_pre_posted(adapter, track,
                                                   mad_iovec->remote_rank);
@@ -238,13 +243,13 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                                                         mad_iovec->data[0].iov_base);
 
                     if(exploit_msg){
-                        DISP("r_mkp : RECEPTION d'un petit TRAITE");
+                       //DISP("r_mkp : RECEPTION d'un petit TRAITE");
                         // on rend le mad_iovec pré_posté
                         mad_pipeline_add(adapter->pre_posted,
                                          mad_iovec);
 
                     } else { // unexpected
-                        DISP("r_mkp : RECEPTION d'un petit UNEXPECTED");
+                       //DISP("r_mkp : RECEPTION d'un petit UNEXPECTED");
                         mad_pipeline_add(adapter->unexpecteds, mad_iovec);
                     }
 

@@ -19,6 +19,7 @@ mad_simple			\
 mad_basic_random		\
 mad3_ping			\
 mad3_multi_ping			\
+mad_micro_ping			\
 mad_micro_direct
 
 include $(PM2_ROOT)/make/apps.mak

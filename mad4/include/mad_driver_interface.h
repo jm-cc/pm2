@@ -86,17 +86,9 @@ typedef struct s_mad_driver_interface
     // **** Primitives Bas Niveau **** //
     void (*isend)(p_mad_track_t, p_mad_iovec_t);
     void (*irecv)(p_mad_track_t, p_mad_iovec_t);
-
-    void (*send)(p_mad_track_t,
-                 p_mad_connection_t,
-                 struct iovec *, uint32_t);
-    void (*recv)(p_mad_track_t,
-                 struct iovec *, uint32_t);
     tbx_bool_t    (*s_test)(p_mad_track_set_t);
     p_mad_iovec_t (*r_test)(p_mad_track_t);
-    void          (*wait)(p_mad_track_t);
-
-
+    
     // ??
     p_mad_channel_t (*get_sub_channel)(p_mad_channel_t,
                                        unsigned int);

@@ -134,11 +134,8 @@ mad_tcp_register(p_mad_driver_interface_t interface)
 
     interface->isend                      = mad_tcp_isend;
     interface->irecv                      = mad_tcp_irecv;
-    interface->send                       = NULL;
-    interface->recv                       = NULL;
     interface->s_test                     = mad_tcp_s_test;
     interface->r_test                     = mad_tcp_r_test;
-    interface->wait                       = NULL;
 
     LOG_OUT();
     return "tcp";
@@ -1043,7 +1040,7 @@ mad_tcp_r_test(p_mad_track_t track) {
 
                 // Je lis ce qui est nécessaire pour récupérer la taille
                 SYSCALL(nb_read = readv(port_s->desc, port_s->iovec, 1));
-                
+
                 if(nb_read){
                     port_s->nb_treated_bytes += nb_read;
 
@@ -1052,7 +1049,6 @@ mad_tcp_r_test(p_mad_track_t track) {
                         DISP_VAL("RECV - len recue", len);
 
                         port_s->waiting_length = len;
-                        DISP_VAL("port_s->iovec[0].iov_len", port_s->iovec[0].iov_len);
                         port_s->iovec[0].iov_len = 0;
                         port_s->iovec[1].iov_len = len;
                         port_s->current_seg_id++;

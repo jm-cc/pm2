@@ -53,6 +53,9 @@ mad_iovec_add_data_at_index(p_mad_iovec_t mad_iovec,
                             size_t length,
                             int index);
 
+void *
+mad_iovec_create_authorized_sendings(int nb_authorized_sendings);
+
 void
 mad_iovec_add_authorized_sendings(p_mad_iovec_t mad_iovec,
                                   int nb_authorized_sendings);
@@ -107,7 +110,8 @@ mad_iovec_print(p_mad_iovec_t mad_iovec);
 
 void
 mad_iovec_send_control(p_mad_adapter_t adapter,
-                       p_mad_iovec_t  control);
-
-
+                       //p_mad_iovec_t  control);
+                       int dest,
+                       void *control,
+                       size_t lentgh);
 #endif /* MAD_IOVEC_BUILDER_H */

@@ -216,11 +216,8 @@ mad_mx_register(p_mad_driver_interface_t interface) {
     interface->buffer_need_rdv            = mad_mx_buffer_need_rdv;
     interface->isend               = mad_mx_isend;
     interface->irecv               = mad_mx_irecv;
-    interface->send                = NULL;
-    interface->recv                = NULL;
     interface->s_test              = mad_mx_s_test;
     interface->r_test              = mad_mx_r_test;
-    interface->wait                = NULL; //mad_mx_wait;
 
     LOG_OUT();
     return "mx";
@@ -831,7 +828,7 @@ mad_mx_s_test(p_mad_track_set_t track_set){
     //DISP("-------------->s_test");
 
     mad_iovec = track_set->cur;
-    track       = mad_iovec->track;
+    track     = mad_iovec->track;
 
     ps = track->local_ports[mad_iovec->remote_rank]->specific;
 
@@ -942,6 +939,9 @@ mad_mx_isend(p_mad_track_t track, p_mad_iovec_t mad_iovec){
 
     //DISP_PTR("endpoint", endpoint);
     //DISP_PTR("request", request);
+
+    track->track_set->cur = mad_iovec;
+
 
     rc = mx_isend(*endpoint,
                   seg_list, nb_seg,

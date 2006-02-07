@@ -244,12 +244,10 @@ mad_iovec_add_rdv(p_mad_iovec_t mad_iovec,
     LOG_OUT();
 }
 
-void
-mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
-                  channel_id_t msg_channel_id,
-                  sequence_t msg_seq){
+void *
+mad_iovec_create_ack(channel_id_t msg_channel_id,
+                                     sequence_t msg_seq){
     p_mad_iovec_header_t header = NULL;
-    unsigned int index = 0;
     LOG_IN();
     header    = tbx_malloc(mad_iovec_header_key);
 
@@ -257,6 +255,25 @@ mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
     set_type(header, MAD_IOVEC_ACK);
     set_channel_id(header, msg_channel_id);
     set_sequence(header, msg_seq);
+    LOG_OUT();
+    return header;
+}
+
+void
+mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
+                  channel_id_t msg_channel_id,
+                  sequence_t msg_seq){
+    p_mad_iovec_header_t header = NULL;
+    unsigned int index = 0;
+    LOG_IN();
+    //header    = tbx_malloc(mad_iovec_header_key);
+    //
+    //reset(header);
+    //set_type(header, MAD_IOVEC_ACK);
+    //set_channel_id(header, msg_channel_id);
+    //set_sequence(header, msg_seq);
+
+    header = mad_iovec_create_ack(msg_channel_id, msg_seq);
 
     index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_base = header;
@@ -294,6 +311,21 @@ mad_iovec_add_data_at_index(p_mad_iovec_t mad_iovec,
 
 
 // Pour le contrôle de flux sur les unexpected
+void *
+mad_iovec_create_authorized_sendings(int nb_authorized_sendings){
+    p_mad_iovec_header_t header = NULL;
+    LOG_IN();
+    header    = tbx_malloc(mad_iovec_header_key);
+
+    reset(header);
+    set_type(header, MAD_IOVEC_AUTHORIZED_SENDINGS);
+    set_nb_authorized_sendings(header, nb_authorized_sendings);
+
+    LOG_OUT();
+    return header;
+}
+
+
 void
 mad_iovec_add_authorized_sendings(p_mad_iovec_t mad_iovec,
                                   int nb_authorized_sendings){
@@ -301,11 +333,12 @@ mad_iovec_add_authorized_sendings(p_mad_iovec_t mad_iovec,
     unsigned int index = 0;
 
     LOG_IN();
-    header    = tbx_malloc(mad_iovec_header_key);
-
-    reset(header);
-    set_type(header, MAD_IOVEC_AUTHORIZED_SENDINGS);
-    set_nb_authorized_sendings(header, nb_authorized_sendings);
+    //header    = tbx_malloc(mad_iovec_header_key);
+    //
+    //reset(header);
+    //set_type(header, MAD_IOVEC_AUTHORIZED_SENDINGS);
+    //set_nb_authorized_sendings(header, nb_authorized_sendings);
+    header = mad_iovec_create_authorized_sendings(nb_authorized_sendings);
 
     index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_base = header;
@@ -425,39 +458,119 @@ mad_iovec_search(p_tbx_slist_t list,
 /*************************************************/
 /*************************************************/
 /*************************************************/
+//void
+//mad_iovec_send_control(p_mad_adapter_t adapter,
+//                       p_mad_iovec_t  control){
+//    p_mad_track_set_t        s_track_set   = NULL;
+//    p_mad_driver_t           driver        = NULL;
+//    LOG_IN();
+//    s_track_set = adapter->s_track_set;
+//    driver = adapter->driver;
+//
+//    DISP("--->mad_iovec_send_control");
+//
+//
+//    if(!s_track_set->cur){ // immediate sending
+//        DISP("Envoi immediat du controle");
+//        s_track_set->cur = control;
+//        driver->interface->isend(control->track, control);
+//        s_track_set->status = MAD_MKP_PROGRESS;
+//    } else if (s_track_set->next
+//               && (s_track_set->next->remote_rank
+//                   == control->remote_rank)) {
+//        DISP("ajout au next");
+//        mad_iovec_add_data(s_track_set->next,
+//                           control->data[1].iov_base,
+//                           control->data[1].iov_len);
+//        mad_iovec_update_global_header(s_track_set->next);
+//
+//        goto end;
+//
+//    } else { // store because the track_set is busy
+//        DISP("STOCK control");
+//        tbx_slist_append(adapter->s_ready_msg_list, control);
+//        driver->nb_packs_to_send++;
+//    }
+//
+//    /** Signale à l'émetteur qu'il a du travail
+//        (pour le cas où il n'y a pas de mad_pack
+//        qui l'active) **/
+//    adapter->needed_sendings++;
+//    adapter->needed_receptions++;
+//
+//    adapter->nb_authorized_sendings[control->remote_rank]--;
+//    //DISP_VAL("send_control - authorized_sendings --", adapter->nb_authorized_sendings[control->remote_rank]);
+//
+// end:
+//    DISP("<---mad_iovec_send_control");
+//
+//    LOG_OUT();
+//}
 
 void
 mad_iovec_send_control(p_mad_adapter_t adapter,
-                       p_mad_iovec_t  control){
+                       int dest,
+                       void *control,
+                       size_t length){
     p_mad_track_set_t        s_track_set   = NULL;
     p_mad_driver_t           driver        = NULL;
     LOG_IN();
     s_track_set = adapter->s_track_set;
     driver = adapter->driver;
 
-    DISP("--->mad_iovec_send_control");
-
+    TRACE("--->mad_iovec_send_control");
 
     if(!s_track_set->cur){ // immediate sending
-        DISP("Envoi immediat du controle");
-        s_track_set->cur = control;
-        driver->interface->isend(control->track, control);
+        p_mad_iovec_t  mad_iovec = NULL;
+        //DISP("Envoi immediat du controle");
+
+        // création de l'iovec
+        mad_iovec = mad_iovec_create(dest,
+                                     NULL, 0, tbx_false, 0, 0);
+        mad_iovec_begin_struct_iovec(mad_iovec);
+
+        mad_iovec_add_data(mad_iovec,
+                           control, length);
+        mad_iovec_update_global_header(mad_iovec);
+        mad_iovec->track = s_track_set->cpy_track;
+
+        s_track_set->cur = mad_iovec;
+        driver->interface->isend(mad_iovec->track, mad_iovec);
         s_track_set->status = MAD_MKP_PROGRESS;
+
+        //DISP_PTR("Envoi immediat du controle sur la track", mad_iovec->track);
+
+
     } else if (s_track_set->next
-               && (s_track_set->next->remote_rank
-                   == control->remote_rank)) {
-        DISP("ajout au next");
-        mad_iovec_add_data(s_track_set->next,
-                           control->data[1].iov_base,
-                           control->data[1].iov_len);
+               && (s_track_set->next->remote_rank == dest)) {
+        //TRACE("ajout au next");
         mad_iovec_update_global_header(s_track_set->next);
+        mad_iovec_add_data(s_track_set->next,
+                           control, length);
+        mad_iovec_update_global_header(s_track_set->next);
+
+        //DISP_PTR("ajout du controle sur la track",
+        //         s_track_set->next);
 
         goto end;
 
     } else { // store because the track_set is busy
-        DISP("STOCK control");
-        tbx_slist_append(adapter->s_ready_msg_list, control);
+        p_mad_iovec_t  mad_iovec = NULL;
+
+        //DISP("STOCK control");
+        mad_iovec = mad_iovec_create(dest,
+                                     NULL, 0, tbx_false, 0, 0);
+        mad_iovec_begin_struct_iovec(mad_iovec);
+        mad_iovec_add_data(mad_iovec,
+                           control, length);
+        mad_iovec_update_global_header(mad_iovec);
+        mad_iovec->track = s_track_set->cpy_track;
+
+        tbx_slist_append(adapter->s_ready_msg_list, mad_iovec);
         driver->nb_packs_to_send++;
+
+        //DISP_PTR("stock du controle sur la track",
+        //         mad_iovec->track);
     }
 
     /** Signale à l'émetteur qu'il a du travail
@@ -466,14 +579,15 @@ mad_iovec_send_control(p_mad_adapter_t adapter,
     adapter->needed_sendings++;
     adapter->needed_receptions++;
 
-    adapter->nb_authorized_sendings[control->remote_rank]--;
+    adapter->nb_authorized_sendings[dest]--;
     //DISP_VAL("send_control - authorized_sendings --", adapter->nb_authorized_sendings[control->remote_rank]);
 
  end:
-    DISP("<---mad_iovec_send_control");
+    TRACE("<---mad_iovec_send_control");
 
     LOG_OUT();
 }
+
 
 static tbx_bool_t
 mad_iovec_treat_data_header(p_mad_adapter_t adapter,
@@ -557,7 +671,6 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
     mad_iovec->track     = rdv_track;
 
     cur = s_track_set->cur;
-
     // si la piste est libre, on envoie directement
     if(!cur){
         s_track_set->cur = mad_iovec;
@@ -593,7 +706,7 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
     p_mad_track_set_t        s_track_set   = NULL;
     p_mad_track_t            rdv_track         = NULL;
     p_mad_iovec_t  large_iov = NULL;
-    p_mad_iovec_t  ack       = NULL;
+    //p_mad_iovec_t  ack       = NULL;
     rank_t         my_rank   = 0;
     channel_id_t   msg_channel_id = 0;
     sequence_t     msg_seq        = 0;
@@ -626,23 +739,29 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
                                  destination,
                                  msg_seq);
     if(large_iov){
+        p_mad_iovec_header_t ack = NULL;
+
         // dépot de la réception associée
         large_iov->track = rdv_track;
         rdv_track->pending_reception[destination] = large_iov;
         interface->irecv(rdv_track, large_iov);
 
         // création de l'acquittement
-        ack = mad_iovec_create(destination,
-                               large_iov->channel,
-                               0, tbx_false, 0, 0);
-        mad_iovec_begin_struct_iovec(ack);
-        mad_iovec_add_ack(ack, msg_channel_id, msg_seq);
-        mad_iovec_update_global_header(ack);
-        ack->track = s_track_set->cpy_track;
+        //ack = mad_iovec_create(destination,
+        //                       large_iov->channel,
+        //                       0, tbx_false, 0, 0);
+        //mad_iovec_begin_struct_iovec(ack);
+        //mad_iovec_add_ack(ack, msg_channel_id, msg_seq);
+        //mad_iovec_update_global_header(ack);
+        //ack->track = s_track_set->cpy_track;
+        //
+        ////DISP("envoi controle depuis treat_rdv : ack");
+        //mad_iovec_send_control(adapter, ack);
 
-        //DISP("envoi controle depuis treat_rdv : ack");
-        mad_iovec_send_control(adapter, ack);
+        ack = mad_iovec_create_ack(msg_channel_id, msg_seq);
 
+        mad_iovec_send_control(adapter, destination,
+                               ack, MAD_IOVEC_ACK_SIZE);
 
         goto finalize;
     }
@@ -798,7 +917,7 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
 /*************************************************/
 /*************************************************/
 /*************************************************/
-void mad_iovec_print_msg_ligth(void * msg);
+void mad_iovec_print_msg(void * msg);
 
 tbx_bool_t
 mad_iovec_exploit_msg(p_mad_adapter_t a,
@@ -810,11 +929,10 @@ mad_iovec_exploit_msg(p_mad_adapter_t a,
     unsigned int nb_seg_not_treated = 0;
     tbx_bool_t treated = tbx_true;
     tbx_bool_t only_authorized_sendings = tbx_true;
-
     LOG_IN();
 
     //DEBUG!!
-    //mad_iovec_print_msg_ligth(msg);
+    //mad_iovec_print_msg(msg);
 
     header = (p_mad_iovec_header_t)msg;
 
@@ -903,30 +1021,16 @@ mad_iovec_exploit_msg(p_mad_adapter_t a,
 
     a->nb_released_unexpecteds++;
 
-    if((treated && !only_authorized_sendings)
-       || (treated && only_authorized_sendings
-           && a->unexpecteds->cur_nb_elm == a->unexpecteds->length)){
-        // envoi d'un message de déblocage
-        p_mad_iovec_t  control = NULL;
-        int nb_authorized_sendings =
-            a->nb_released_unexpecteds;
-
-        // création du msg de controle pour les unexpected
-        control = mad_iovec_create(source,
-                                   NULL, 0, tbx_false, 0, 0);
-        mad_iovec_begin_struct_iovec(control);
-        mad_iovec_add_authorized_sendings(control,
-                                          nb_authorized_sendings);
-        mad_iovec_update_global_header(control);
-        control->track = a->s_track_set->cpy_track;
-
+    if(a->nb_released_unexpecteds >= (a->unexpecteds->length - 1)){
+        p_mad_iovec_header_t  control =
+            mad_iovec_create_authorized_sendings(a->nb_released_unexpecteds);
         // envoi
         //DISP("envoi controle depuis treat_unexpected");
-        mad_iovec_send_control(a, control);
+        mad_iovec_send_control(a, source, control,
+                               MAD_IOVEC_AUTHORIZED_SENDINGS);
 
         a->nb_released_unexpecteds = 0;
     }
-
     LOG_OUT();
     return treated;
 }
@@ -1074,6 +1178,13 @@ mad_iovec_print_msg(void * msg){
 
            header += MAD_IOVEC_ACK_NB_ELM;
            break;
+
+        case MAD_IOVEC_AUTHORIZED_SENDINGS:
+            DISP("RECEPTION: AUTHORIZED_SENDINGS");
+            DISP_VAL("-> type ", get_type(header));
+            DISP_VAL("->nb++", get_nb_authorized_sendings(header));
+            header += MAD_IOVEC_AUTHORIZED_SENDINGS_NB_ELM;
+            break;
 
         case MAD_IOVEC_DATA_TREATED:
             DISP("RECEPTION : TREATED");

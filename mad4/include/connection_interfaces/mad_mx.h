@@ -76,9 +76,6 @@ tbx_bool_t mad_mx_buffer_need_rdv(size_t);
 uint32_t   mad_mx_gather_scatter_length_max(void);
 uint32_t   mad_mx_cpy_limit_size(void);
 
-
-
-
 // **** Primitives Bas Niveau **** //
 void mad_mx_isend(p_mad_track_t, p_mad_iovec_t);
 void mad_mx_irecv(p_mad_track_t, p_mad_iovec_t);

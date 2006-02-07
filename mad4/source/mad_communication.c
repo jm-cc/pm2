@@ -300,21 +300,21 @@ mad_wait_unpacks(p_mad_connection_t connection){
 
     //DISP("------------>wait_unpack");
 
-    DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
+    //DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
 
 
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
 
-        {
-            static int nb_channel = 0;
-
-            if(!nb_channel){
-                //DISP_PTR("channel du wait unpack", channel);
-                DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
-                nb_channel++;
-            }
-        }
+        //{
+        //    static int nb_channel = 0;
+        //
+        //    if(!nb_channel){
+        //        //DISP_PTR("channel du wait unpack", channel);
+        //        DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
+        //        nb_channel++;
+        //    }
+        //}
 
 
 

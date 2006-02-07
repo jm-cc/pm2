@@ -25,10 +25,10 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
-#define NB_LOOPS 1
+#define NB_LOOPS 10000
 #define WARMUP_LOOPS 1
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  4 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  32000 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -103,7 +103,7 @@ client(p_mad_channel_t channel){
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
         connection1 = mad_begin_packing(channel, 0);
-        DISP("begin_packing : OK\n");
+       TRACE("begin_packing : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
             mad_pack(connection1,
@@ -111,13 +111,13 @@ client(p_mad_channel_t channel){
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-            DISP("pack : OK");
+           TRACE("pack : OK");
             mad_wait_packs(connection1);
-            DISP("wait pack : OK\n");
+           TRACE("wait pack : OK\n");
 
             if (counter == 1) {
                 connection2 = mad_begin_unpacking(channel);
-                DISP("begin unpacking : OK\n");
+               TRACE("begin unpacking : OK\n");
             }
 
             mad_unpack(connection2,
@@ -125,19 +125,19 @@ client(p_mad_channel_t channel){
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-            DISP("unpack : OK");
+           TRACE("unpack : OK");
             mad_wait_unpacks(connection2);
-            DISP("wait unpack : OK\n");
+           TRACE("wait unpack : OK\n");
         }
 
-       DISP("---->FIN WARMUP");
+      TRACE("---->FIN WARMUP");
 
         counter = 0;
 
-        //DISP("------------------------------");
+        TRACE("------------------------------");
         TBX_GET_TICK(t1);
         while (counter < NB_LOOPS) {
-            //DISP_VAL("counter", counter);
+            TRACE_VAL("counter", counter);
 
 
             buffer_e[0] += 1;
@@ -151,7 +151,7 @@ client(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection1);
 
-           //DISP("PACK");
+           TRACE("PACK");
 
             TBX_GET_TICK(t4);
 
@@ -162,7 +162,7 @@ client(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection2);
 
-           //DISP("UNPACK");
+           TRACE("UNPACK");
 
             counter++;
 
@@ -170,11 +170,11 @@ client(p_mad_channel_t channel){
             //TBX_GET_TICK(t5);
             //sum = TBX_TIMING_DELAY(t1, t3);
 
-            //DISP("sum", sum);
+            TRACE("sum", sum);
 
         }
 
-        //DISP("Juste avant les end");
+        TRACE("Juste avant les end");
         mad_end_packing(connection1);
         mad_end_unpacking(connection2);
 
@@ -190,8 +190,8 @@ client(p_mad_channel_t channel){
         counter = 0;
         connection1 = NULL;
         connection2 = NULL;
-        //DISP("--------------------------------------------");
-        //DISP("--------------------------------------------");
+        TRACE("--------------------------------------------");
+        TRACE("--------------------------------------------");
     }
 
     TBX_FREE(buffer_e);
@@ -217,7 +217,7 @@ server(p_mad_channel_t channel){
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
         connection1 = mad_begin_unpacking(channel);
-        DISP("begin unpacking : OK\n");
+       TRACE("begin unpacking : OK\n");
 
         while (counter++ < WARMUP_LOOPS) {
             mad_unpack(connection1,
@@ -225,13 +225,13 @@ server(p_mad_channel_t channel){
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-            DISP("unpack : OK");
+           TRACE("unpack : OK");
             mad_wait_unpacks(connection1);
-            DISP("wait un pack : OK\n");
+           TRACE("wait un pack : OK\n");
 
             if (counter == 1) {
                 connection2 = mad_begin_packing(channel, 1);
-                DISP("begin packing : OK\n");
+               TRACE("begin packing : OK\n");
             }
 
             mad_pack(connection2,
@@ -239,16 +239,16 @@ server(p_mad_channel_t channel){
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-            DISP("pack : OK");
+           TRACE("pack : OK");
             mad_wait_packs(connection2);
-            DISP("wait packs : ok\n");
+           TRACE("wait packs : ok\n");
         }
 
-       DISP("---->FIN WARMUP");
+      TRACE("---->FIN WARMUP");
 
         counter = 0;
 
-        //DISP("------------------------------");
+        TRACE("------------------------------");
         mad_unpack(connection1,
                    buffer_r,
                    cur_length,
@@ -256,13 +256,13 @@ server(p_mad_channel_t channel){
                    mad_receive_CHEAPER);
         mad_wait_unpacks(connection1);
 
-        //DISP("UNPACK");
+        TRACE("UNPACK");
 
         while (counter < NB_LOOPS - 1) {
 
             buffer_e[0] += 1;
 
-            //DISP_VAL("counter", counter);
+            TRACE_VAL("counter", counter);
             mad_pack(connection2,
                      buffer_e,
                      cur_length,
@@ -270,7 +270,7 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
 
-           //DISP("PACK");
+           TRACE("PACK");
 
             mad_unpack(connection1,
                        buffer_r,
@@ -279,7 +279,7 @@ server(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection1);
 
-           //DISP("UNPACK");
+           TRACE("UNPACK");
 
             counter++;
         }
@@ -291,7 +291,7 @@ server(p_mad_channel_t channel){
                  mad_receive_CHEAPER);
         mad_wait_packs(connection2);
 
-        //DISP("PACK");
+        TRACE("PACK");
 
         mad_end_unpacking(connection1);
         mad_end_packing(connection2);
@@ -302,8 +302,8 @@ server(p_mad_channel_t channel){
         connection1 = NULL;
         connection2 = NULL;
 
-        //DISP("--------------------------------------------");
-        //DISP("--------------------------------------------");
+        TRACE("--------------------------------------------");
+        TRACE("--------------------------------------------");
     }
 
     TBX_FREE(buffer_e);

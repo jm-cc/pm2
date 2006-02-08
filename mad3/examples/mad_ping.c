@@ -52,14 +52,14 @@ typedef struct s_mad_ping_result
 //......................
 
 static const int param_control_receive   = 0;
-static const int param_warmup            = 1;
+static const int param_warmup            = 0;
 static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
-static const int param_nb_samples        = 1000;
+static const int param_nb_samples        = 1;
 static const int param_min_size          = MAD_LENGTH_ALIGNMENT;
-static const int param_max_size          = 1024*1024*2;
+static const int param_max_size          = 4;
 static const int param_step              = 0; /* 0 = progression log. */
-static const int param_nb_tests          = 5;
+static const int param_nb_tests          = 1;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
@@ -162,6 +162,7 @@ void
 process_results(p_mad_channel_t     channel,
 		p_mad_ping_result_t results)
 {
+  DISP("process results -->");
   LOG_IN();
   if (process_lrank == master_lrank)
     {
@@ -246,6 +247,7 @@ process_results(p_mad_channel_t     channel,
     }
 
   LOG_OUT();
+  DISP("process results <--");
 }
 
 static
@@ -274,6 +276,7 @@ ping(p_mad_channel_t      channel,
 
   LOG_IN();
   DISP_VAL("ping with", lrank_dst);
+  LDISP_VAL("ping with", lrank_dst);
 
   if (!param_dynamic_allocation && param_fill_buffer)
     {
@@ -449,6 +452,7 @@ pong(p_mad_channel_t      channel,
 
   LOG_IN();
   DISP_VAL("pong with", lrank_dst);
+  LDISP_VAL("pong with", lrank_dst);
 
   if (!param_dynamic_allocation && param_fill_buffer)
     {
@@ -649,6 +653,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 	  do
 	    {
+              DISP("src = %d, dst = %d", lrank_src, lrank_dst);
 	      if (lrank_dst == lrank_src)
 		continue;
 
@@ -657,6 +662,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  p_mad_connection_t out = NULL;
 		  p_mad_connection_t in  = NULL;
 
+                  /* commande */
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -666,6 +672,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
+                  /* synchro avant test */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -673,6 +680,14 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 		  ping(channel, lrank_dst);
 
+
+                  /* synchro apres process result */
+		  out = mad_begin_packing(channel, lrank_dst);
+		  mad_pack(out, &buffer, sizeof(buffer),
+			   mad_send_SAFER, mad_receive_EXPRESS);
+		  mad_end_packing(out);
+
+                  /* synchro esclave */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -683,6 +698,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  p_mad_connection_t out = NULL;
 		  p_mad_connection_t in  = NULL;
 
+                 /* commande */
 		  out = mad_begin_packing(channel, lrank_src);
 		  ntbx_pack_int(lrank_dst, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -692,6 +708,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
+                  /* synchro avant test */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -699,6 +716,15 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 		  pong(channel, lrank_src);
 
+
+                  /* synchro apres process result */
+		  out = mad_begin_packing(channel, lrank_src);
+		  mad_pack(out, &buffer, sizeof(buffer),
+			   mad_send_SAFER, mad_receive_EXPRESS);
+		  mad_end_packing(out);
+
+
+                  /* synchro esclave */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -709,6 +735,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  p_mad_connection_t out = NULL;
 		  p_mad_connection_t in  = NULL;
 
+                  /* commande ping */
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -718,11 +745,13 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
+                  /* synchro ping avant test */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
 		  mad_end_unpacking(in);
 
+                  /* commande pong */
 		  out = mad_begin_packing(channel, lrank_src);
 		  ntbx_pack_int(lrank_dst, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -732,6 +761,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
+                  /* synchro pong avant test */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -739,11 +769,25 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 		  master_loop(channel);
 
+                  /* synchro apres process result */
+		  out = mad_begin_packing(channel, lrank_dst);
+		  mad_pack(out, &buffer, sizeof(buffer),
+			   mad_send_SAFER, mad_receive_EXPRESS);
+		  mad_end_packing(out);
+
+                  /* synchro apres process result */
+		  out = mad_begin_packing(channel, lrank_src);
+		  mad_pack(out, &buffer, sizeof(buffer),
+			   mad_send_SAFER, mad_receive_EXPRESS);
+		  mad_end_packing(out);
+
+                  /* synchro esclave 1 */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
 		  mad_end_unpacking(in);
 
+                  /* synchro esclave 2 */
 		  in = mad_begin_unpacking(channel);
 		  mad_unpack(in, &buffer, sizeof(buffer),
 			     mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -781,6 +825,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  ntbx_process_lrank_t its_local_rank =   -1;
 	  int                  direction      =    0;
 
+          /* commande */
 	  in = mad_begin_unpacking(channel);
 	  mad_unpack(in, &buffer, sizeof(buffer),
 		     mad_send_SAFER, mad_receive_EXPRESS);
@@ -793,6 +838,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  if (its_local_rank == process_lrank)
 	    return;
 
+          /* synchro avant test */
 	  out = mad_begin_packing(channel, 0);
 	  mad_pack(out, &buffer, sizeof(buffer),
 		   mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -809,6 +855,13 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	      pong(channel, its_local_rank);
 	    }
 
+          /* synchro apres process result */
+	  in = mad_begin_unpacking(channel);
+	  mad_unpack(in, &buffer, sizeof(buffer),
+		     mad_send_SAFER, mad_receive_EXPRESS);
+	  mad_end_unpacking(in);
+
+          /* synchro esclave */
 	  out = mad_begin_packing(channel, 0);
 	  mad_pack(out, &buffer, sizeof(buffer),
 		   mad_send_CHEAPER, mad_receive_EXPRESS);

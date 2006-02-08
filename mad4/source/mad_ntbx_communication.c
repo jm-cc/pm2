@@ -164,7 +164,6 @@ mad_leonie_send_int(const int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  TRACE_VAL("[BOOTSTRAP PROCESS] Sending", data);
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
@@ -200,7 +199,6 @@ mad_leonie_receive_int(void)
     FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
-  TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
   LOG_OUT();
 
   return data;
@@ -213,7 +211,6 @@ mad_leonie_send_unsigned_int(const unsigned int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  TRACE_VAL("[BOOTSTRAP PROCESS] Sending", data);
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
@@ -249,7 +246,6 @@ mad_leonie_receive_unsigned_int(void)
     FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
-  TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
   LOG_OUT();
 
   return data;
@@ -261,7 +257,6 @@ mad_leonie_send_string(const char *string)
   int status = ntbx_failure;
 
   LOG_IN();
-  TRACE_STR("[BOOTSTRAP PROCESS] Sending", string);
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -292,7 +287,6 @@ mad_leonie_receive_string(void)
   if (status == ntbx_failure)
     FAILURE("control link failure");
 
-  TRACE_STR("[BOOTSTRAP PROCESS] Receiving", result);
   LOG_OUT();
 
   return result;
@@ -307,7 +301,6 @@ mad_leonie_send_int_nolock(const int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  TRACE_VAL("[BOOTSTRAP PROCESS] Sending", data);
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
@@ -339,7 +332,6 @@ mad_leonie_receive_int_nolock(void)
     FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
-  TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
   LOG_OUT();
 
   return data;
@@ -352,7 +344,6 @@ mad_leonie_send_unsigned_int_nolock(const unsigned int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  TRACE_VAL("[BOOTSTRAP PROCESS] Sending", data);
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
@@ -384,7 +375,6 @@ mad_leonie_receive_unsigned_int_nolock(void)
     FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
-  TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
   LOG_OUT();
 
   return data;
@@ -396,7 +386,6 @@ mad_leonie_send_string_nolock(const char *string)
   int status = ntbx_failure;
 
   LOG_IN();
-  TRACE_STR("[BOOTSTRAP PROCESS] Sending", string);
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -423,7 +412,6 @@ mad_leonie_receive_string_nolock(void)
   if (status == ntbx_failure)
     FAILURE("control link failure");
 
-  TRACE_STR("[BOOTSTRAP PROCESS] Receiving", result);
   LOG_OUT();
 
   return result;

@@ -52,14 +52,14 @@ typedef struct s_mad_ping_result
 //......................
 
 static const int param_control_receive   = 0;
-static const int param_warmup            = 0;
+static const int param_warmup            = 1;
 static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
-static const int param_nb_samples        = 1;
+static const int param_nb_samples        = 1000;
 static const int param_min_size          = MAD_LENGTH_ALIGNMENT;
-static const int param_max_size          = 4;
+static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
-static const int param_nb_tests          = 1;
+static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
@@ -162,7 +162,6 @@ void
 process_results(p_mad_channel_t     channel,
 		p_mad_ping_result_t results)
 {
-  DISP("process results -->");
   LOG_IN();
   if (process_lrank == master_lrank)
     {
@@ -247,7 +246,6 @@ process_results(p_mad_channel_t     channel,
     }
 
   LOG_OUT();
-  DISP("process results <--");
 }
 
 static
@@ -276,7 +274,6 @@ ping(p_mad_channel_t      channel,
 
   LOG_IN();
   DISP_VAL("ping with", lrank_dst);
-  LDISP_VAL("ping with", lrank_dst);
 
   if (!param_dynamic_allocation && param_fill_buffer)
     {
@@ -452,7 +449,6 @@ pong(p_mad_channel_t      channel,
 
   LOG_IN();
   DISP_VAL("pong with", lrank_dst);
-  LDISP_VAL("pong with", lrank_dst);
 
   if (!param_dynamic_allocation && param_fill_buffer)
     {
@@ -653,7 +649,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 	  do
 	    {
-              DISP("src = %d, dst = %d", lrank_src, lrank_dst);
 	      if (lrank_dst == lrank_src)
 		continue;
 

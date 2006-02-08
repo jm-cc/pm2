@@ -453,9 +453,22 @@ send_fchannels(p_leo_directory_t dir,
   void _send_fchannel_data(void *_dir_fchannel) {
     p_leo_dir_fchannel_t dir_fchannel = _dir_fchannel;
 
+    void _f(ntbx_process_lrank_t l, void *_cnx) {
+      p_leo_dir_connection_t cnx = _cnx;
+      ntbx_process_grank_t                 g   = -1;
+
+      g = ntbx_pc_local_to_global(dir_fchannel->pc, l);
+      leo_send_int(client, g);
+      leo_send_int(client, l);
+      leo_send_string(client, "default");
+    }
+
     TRACE_STR("Fchannel", dir_fchannel->name);
     leo_send_string(client, dir_fchannel->name);
     leo_send_string(client, dir_fchannel->channel_name);
+
+    do_pc_local_s(dir_fchannel->pc, _f);
+    leo_send_int(client, -1);
   }
 
   int len = 0;

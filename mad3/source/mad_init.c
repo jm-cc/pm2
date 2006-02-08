@@ -597,14 +597,17 @@ regular_connection_init(p_mad_driver_interface_t  interface,
 tbx_bool_t
 connection_init(p_mad_channel_t mad_channel)
 {
-  p_mad_driver_t           mad_driver  = NULL;
-  p_mad_driver_interface_t interface   = NULL;
-  p_tbx_darray_t           in_darray   = NULL;
-  p_tbx_darray_t           out_darray  = NULL;
-  int                      command     =   -1;
-  ntbx_process_lrank_t     remote_rank =   -1;
+  p_mad_driver_t            mad_driver  = NULL;
+  p_mad_driver_interface_t  interface   = NULL;
+  p_tbx_darray_t            in_darray   = NULL;
+  p_tbx_darray_t            out_darray  = NULL;
+  int                       command     =   -1;
+  ntbx_process_lrank_t      remote_rank =   -1;
+ p_ntbx_process_container_t pc          = NULL;
 
   LOG_IN();
+  pc = (mad_channel->cloned_dir_channel)?mad_channel->cloned_dir_channel->pc:mad_channel->dir_channel->pc;
+
   command = mad_leonie_receive_int();
   if (command == -1)
     {
@@ -688,7 +691,7 @@ connection_init(p_mad_channel_t mad_channel)
     char                                 *tmp = NULL;
     p_mad_dir_connection_t  dir_connection = NULL;
 
-    dir_connection = ntbx_pc_get_local_specific(mad_channel->pc, remote_rank);
+    dir_connection = ntbx_pc_get_local_specific(pc, remote_rank);
 
     tmp = mad_leonie_receive_string();
     TRACE_STR("remote channel parameter", tmp);
@@ -736,11 +739,13 @@ get_adapter_info(p_mad_channel_t      ch,
   p_mad_dir_connection_t dir_connection = NULL;
   p_mad_dir_driver_process_specific_t  dps = NULL;
   p_mad_adapter_info_t                 ai  = NULL;
+  p_ntbx_process_container_t           pc  = NULL;
 
   LOG_IN();
   d = ch->adapter->driver;
 
-  rpi = ntbx_pc_get_local(ch->dir_channel->pc, remote_rank);
+  pc = (ch->cloned_dir_channel)?ch->cloned_dir_channel->pc:ch->dir_channel->pc;
+  rpi = ntbx_pc_get_local(pc, remote_rank);
   rp  = rpi->process;
   dir_connection = rpi->specific;
   dps =
@@ -790,7 +795,7 @@ connection_open(p_mad_channel_t mad_channel)
   interface  = mad_driver->interface;
   in_darray  = mad_channel->in_connection_darray;
   out_darray = mad_channel->out_connection_darray;
-  pc         = mad_channel->pc;
+  pc = (mad_channel->cloned_dir_channel)?mad_channel->cloned_dir_channel->pc:mad_channel->dir_channel->pc;
 
   remote_rank = mad_leonie_receive_int();
   TRACE_VAL("Pass 2 - remote_rank", remote_rank);

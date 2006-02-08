@@ -733,6 +733,9 @@ mad_mx_channel_init(p_mad_channel_t ch) {
         mad_mx_unlock();
         mad_mx_check_return("mx_open_endpoint", return_code);
 
+        //DISP("mad_mx_channel_init[%s]: e = %p", ch->name, e);
+        //DISP_VAL("mad_mx_channel_init: eid", e_id);
+
         mad_mx_lock();
         return_code	= mx_get_endpoint_addr(e, &e_addr);
         mad_mx_unlock();
@@ -749,6 +752,7 @@ mad_mx_channel_init(p_mad_channel_t ch) {
         ch->parameter	= tbx_string_to_cstring(param_str);
         tbx_string_free(param_str);
         param_str	= NULL;
+        //DISP_STR("mad_mx_channel_init: parameter", ch->parameter);
         LOG_OUT();
 }
 
@@ -774,7 +778,8 @@ mad_mx_connection_init(p_mad_connection_t in,
 void
 mad_mx_link_init(p_mad_link_t lnk) {
         LOG_IN();
-        lnk->link_mode   = mad_link_mode_buffer_group;
+        /*lnk->link_mode   = mad_link_mode_buffer_group;*/
+        lnk->link_mode   = mad_link_mode_buffer;
         lnk->buffer_mode = mad_buffer_mode_dynamic;
         lnk->group_mode  = mad_group_mode_split;
         LOG_OUT();
@@ -801,6 +806,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         r_hostname	= TBX_MALLOC(r_hostname_len + 1);
         strcpy(r_hostname, ai->dir_adapter->parameter);
 
+        //DISP_STR("mad_mx_accept_connect: parameter", ai->channel_parameter);
         {
                 char *ptr = NULL;
 
@@ -819,6 +825,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         r_hostname_len	= 0;
 
         mad_mx_lock();
+        //DISP_VAL("mx_connect_accept: remote eid", cs->remote_endpoint_id);
         return_code	= mx_connect(chs->endpoint,
                                      r_nic_id,
                                      cs->remote_endpoint_id,
@@ -944,11 +951,13 @@ mad_mx_receive_message(p_mad_channel_t ch) {
         LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
-        match_info	= (uint64_t)ch->id <<32;
+        //match_info	= (uint64_t)ch->id <<32;
+        match_info	= 0;
 
         s.segment_ptr	= chs->first_packet;
         s.segment_length	= FIRST_PACKET_THRESHOLD;
 
+        //DISP("MX[%s]: receive_message, e = %p", ch->name, chs->endpoint);
         chs->first_packet_length = mad_mx_recv(ch, &s, 1, &match_info, MX_MATCH_MASK_BC);
 
         in	= tbx_darray_get(in_darray, match_info & 0xFFFFFFFF);
@@ -972,7 +981,9 @@ mad_mx_send_buffer(p_mad_link_t     lnk,
         out	= lnk->connection;
         os	= out->specific;
 
-        match_info	= (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
+        //DISP("MX[%s]: sending %d bytes to %d, e = %p", lnk->connection->channel->name, b->bytes_written - b->bytes_read, lnk->connection->remote_rank, ((p_mad_mx_channel_specific_t)out->channel->specific)->endpoint);
+        //match_info	= (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
+        match_info	= (uint64_t)out->channel->process_lrank;
 
         if (os->first_outgoing_packet_flag) {
                 uint32_t length = 0;
@@ -1017,6 +1028,7 @@ mad_mx_receive_buffer(p_mad_link_t    lnk,
         mx_segment_t			s;
 
         LOG_IN();
+        //DISP("MX[%s]: receiving %d bytes from %d", lnk->connection->channel->name, (*_buffer)->length - (*_buffer)->bytes_written, lnk->connection->remote_rank);
         in	= lnk->connection;
         is	= in->specific;
         ch	= in->channel;
@@ -1047,7 +1059,8 @@ mad_mx_receive_buffer(p_mad_link_t    lnk,
 
         b->bytes_written += s.segment_length;
 
-        match_info = (uint64_t)in->channel->id <<32 | in->remote_rank;
+        //match_info = (uint64_t)in->channel->id <<32 | in->remote_rank;
+        match_info = (uint64_t) in->remote_rank;
 
         mad_mx_recv(ch, &s, 1, &match_info, MX_MATCH_MASK_NONE);
 
@@ -1368,7 +1381,7 @@ void
 mad_mx_send_buffer_group(p_mad_link_t         lnk,
                          p_mad_buffer_group_t buffer_group) {
         LOG_IN();
-        mad_mx_send_buffer_group_2(lnk, buffer_group);
+        mad_mx_send_buffer_group_1(lnk, buffer_group);
         LOG_OUT();
 }
 
@@ -1378,6 +1391,6 @@ mad_mx_receive_sub_buffer_group(p_mad_link_t         lnk,
                                 __attribute__ ((unused)),
                                 p_mad_buffer_group_t buffer_group) {
         LOG_IN();
-        mad_mx_receive_sub_buffer_group_2(lnk, buffer_group);
+        mad_mx_receive_sub_buffer_group_1(lnk, buffer_group);
         LOG_OUT();
 }

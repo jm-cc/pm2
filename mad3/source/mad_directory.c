@@ -479,13 +479,22 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
 
   while (number--)
     {
-      p_mad_dir_channel_t  dir_fchannel            = NULL;
+      p_mad_dir_channel_t  dir_fchannel           = NULL;
+      char                *channel_reference_name = NULL;
 
       dir_fchannel               = mad_dir_channel_cons();
       dir_fchannel->id           = tbx_htable_get_size(dir->channel_htable);
       dir_fchannel->name         = mad_leonie_receive_string();
       dir_fchannel->cloned_channel_name = mad_leonie_receive_string();
       TRACE_STR("Forwarding channel name", dir_fchannel->name);
+
+      channel_reference_name =
+        mad_dir_build_reference_name("channel", dir_fchannel->name);
+
+      while (mad_dir_channel_get_adapters(dir_fchannel,
+                                          dir->process_darray,
+                                          channel_reference_name))
+        ;
 
       tbx_htable_add(dir->channel_htable, dir_fchannel->name, dir_fchannel);
       tbx_slist_append(dir->fchannel_slist, dir_fchannel);

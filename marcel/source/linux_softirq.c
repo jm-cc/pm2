@@ -504,7 +504,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	marcel_create_special(&kthread, &attr, (void*)ksoftirqd, lwp);
+	marcel_create_special(&kthread, &attr, (void*(*)(void*))ksoftirqd, lwp);
 	LOG_RETURN(kthread);
 }
 

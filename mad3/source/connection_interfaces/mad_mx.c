@@ -1381,7 +1381,7 @@ void
 mad_mx_send_buffer_group(p_mad_link_t         lnk,
                          p_mad_buffer_group_t buffer_group) {
         LOG_IN();
-        mad_mx_send_buffer_group_1(lnk, buffer_group);
+        mad_mx_send_buffer_group_2(lnk, buffer_group);
         LOG_OUT();
 }
 
@@ -1391,6 +1391,6 @@ mad_mx_receive_sub_buffer_group(p_mad_link_t         lnk,
                                 __attribute__ ((unused)),
                                 p_mad_buffer_group_t buffer_group) {
         LOG_IN();
-        mad_mx_receive_sub_buffer_group_1(lnk, buffer_group);
+        mad_mx_receive_sub_buffer_group_2(lnk, buffer_group);
         LOG_OUT();
 }

@@ -3265,7 +3265,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 	};
 
 	level->sched = rq;
-	if (level->sons[0]->type == MARCEL_LEVEL_LAST) {
+	if (!level->arity || level->sons[0]->type == MARCEL_LEVEL_LAST) {
 		return;
 	}
 

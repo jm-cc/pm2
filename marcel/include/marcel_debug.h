@@ -174,7 +174,7 @@ extern debug_type_t marcel_mtrace_timer;
             marcel_sleepingthreads(), \
             marcel_blockedthreads(), \
             marcel_frozenthreads(), \
-            marcel_nbthreads() + 1) : (void)0)
+            marcel_nbthreads() + 1) : 0)
 #  define MTRACE_TIMER(msg, pid) \
     debug_printf(&marcel_mtrace_timer, \
             "[%-14s:%3d (pid=%p(%-15s):%2lX)." \

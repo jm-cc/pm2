@@ -454,7 +454,6 @@ send_fchannels(p_leo_directory_t dir,
     p_leo_dir_fchannel_t dir_fchannel = _dir_fchannel;
 
     void _f(ntbx_process_lrank_t l, void *_cnx) {
-      p_leo_dir_connection_t cnx = _cnx;
       ntbx_process_grank_t                 g   = -1;
 
       g = ntbx_pc_local_to_global(dir_fchannel->pc, l);

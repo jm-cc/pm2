@@ -34,7 +34,7 @@
 /* choose between tree and bubble representation */
 #undef BUBBLES
 
-#if 0
+#if 1
 #define TREES
 #else
 #define BUBBLES
@@ -62,7 +62,7 @@
 #define MOVIEX 1400.
 
 /* Y */
-#define MOVIEY 600.
+#define MOVIEY 900.
 
 
 
@@ -727,7 +727,7 @@ void bubbleMorphBegin(bubble_t *b) {
 }
 
 void bubbleMorphBegin2(bubble_t *b) {
-	if (b->entity.lastitem) {
+	if (b->morphRecurse) {
 		if (!(--b->morphRecurse))
 			setBubbleRecur(SWFMorph_getShape2(b->morph),b);
 	}
@@ -1172,6 +1172,7 @@ void removeFromBubbleEnd(bubble_t *b, entity_t *e) {
 	list_del(&e->entity_list);
 	e->bubble_holder = NULL;
 #endif
+	e->holder = NULL;
 }
 
 /*******************************************************************************

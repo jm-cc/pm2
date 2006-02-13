@@ -213,10 +213,14 @@ mad_pack2(p_mad_connection_t cnx, p_mad_iovec_t mad_iovec){
 
 void
 mad_unpack2(p_mad_connection_t cnx, p_mad_iovec_t mad_iovec){
+    p_mad_channel_t channel = NULL;
     p_mad_driver_interface_t interface = NULL;
 
     LOG_IN();
-    interface = cnx->channel->adapter->driver->interface;
+    channel = cnx->channel;
+    interface = channel->adapter->driver->interface;
+
+    tbx_slist_append(channel->unpacks_list, mad_iovec);
 
     interface->irecv(mad_iovec->track,
                      mad_iovec);
@@ -236,7 +240,7 @@ mad_wait_pack(p_mad_adapter_t adapter, p_mad_track_t track){
 }
 
 void
-mad_wait_unpack(p_mad_adapter_t adapter, p_mad_track_t track){
+mad_wait_unpack(p_mad_channel_t channel){
     mad_mkp_status_t status = MAD_MKP_NO_PROGRESS;
 
     LOG_IN();

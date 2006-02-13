@@ -297,26 +297,9 @@ mad_wait_unpacks(p_mad_connection_t connection){
     adapter = channel->adapter;
     driver = adapter->driver;
 
-
     //DISP("------------>wait_unpack");
-
-    //DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
-
-
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
-
-        //{
-        //    static int nb_channel = 0;
-        //
-        //    if(!nb_channel){
-        //        //DISP_PTR("channel du wait unpack", channel);
-        //        DISP_VAL("unpacks_list->length", channel->unpacks_list->length);
-        //        nb_channel++;
-        //    }
-        //}
-
-
 
         if(adapter->needed_sendings){
             mad_s_make_progress(adapter);
@@ -324,8 +307,6 @@ mad_wait_unpacks(p_mad_connection_t connection){
     }
 
     //DISP("<------------wait_unpack");
-
-
     LOG_OUT();
 }
 
@@ -344,23 +325,4 @@ mad_wait_unexpected(p_mad_connection_t connection){
     }
     LOG_OUT();
 }
-
-
-//void
-//mad_wait_all(p_mad_connection_t connection){
-//    p_mad_channel_t channel = NULL;
-//    p_mad_adapter_t adapter = NULL;
-//
-//    LOG_IN();
-//    channel = connection->channel;
-//    adapter = channel->adapter;
-//
-//
-//    while(connection->packs_list->length
-//          || channel->unpacks_list->length){
-//        mad_s_make_progress(adapter);
-//        mad_r_make_progress(adapter);
-//    }
-//    LOG_OUT();
-//}
 

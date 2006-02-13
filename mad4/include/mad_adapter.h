@@ -68,6 +68,8 @@ typedef struct s_mad_adapter
     int needed_sendings; // ensure the sending of the acknowlegment even if there is no pending unpack
     int  needed_receptions; // ensure the reception of the acknowlegment even if there is no pending pack
 
+    p_tbx_memory_t unexpected_key;
+
     /*-----------------------------*/
 
     p_mad_driver_specific_t  specific;

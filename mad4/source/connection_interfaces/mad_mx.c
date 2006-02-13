@@ -79,10 +79,10 @@ typedef struct s_mad_mx_port_specific{
 
 }mad_mx_port_specific_t, *p_mad_mx_port_specific_t;
 
-#define MAD_MX_GATHER_SCATTER_THRESHOLD  32768
+//#define MAD_MX_GATHER_SCATTER_THRESHOLD  32768
 #define MAD_MX_PRE_POSTED_SIZE           32000
 
-static p_tbx_memory_t mad_mx_unexpected_key;
+//static p_tbx_memory_t mad_mx_unexpected_key;
 
 static
 void
@@ -206,14 +206,14 @@ mad_mx_register(p_mad_driver_interface_t interface) {
     interface->remove_all_pre_posted = mad_mx_remove_all_pre_posted;
 
 
-    interface->rdma_available             = NULL;
-    interface->gather_scatter_available   = NULL;
-    interface->get_max_nb_ports           = NULL;
-    interface->msg_length_max             = NULL;
-    interface->copy_length_max            = mad_mx_cpy_limit_size;
-    interface->gather_scatter_length_max  = mad_mx_gather_scatter_length_max;
-    interface->need_rdv                   = mad_mx_need_rdv;
-    interface->buffer_need_rdv            = mad_mx_buffer_need_rdv;
+    //interface->rdma_available             = NULL;
+    //interface->gather_scatter_available   = NULL;
+    //interface->get_max_nb_ports           = NULL;
+    //interface->msg_length_max             = NULL;
+    //interface->copy_length_max            = mad_mx_cpy_limit_size;
+    //interface->gather_scatter_length_max  = mad_mx_gather_scatter_length_max;
+    //interface->need_rdv                   = mad_mx_need_rdv;
+    //interface->buffer_need_rdv            = mad_mx_buffer_need_rdv;
     interface->isend               = mad_mx_isend;
     interface->irecv               = mad_mx_irecv;
     interface->s_test              = mad_mx_s_test;
@@ -231,6 +231,16 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
     d->connection_type  = mad_bidirectional_connection;
     d->buffer_alignment = 32;
 
+    /** contrôle de flux sur le nombre des unexpected stockés **/
+    d->nb_unexpecteds = 10; //nombre maximal de messages unexpected
+    d->cpy_threshold = MAD_MX_PRE_POSTED_SIZE;
+    d->max_nb_ports = 4;
+    d->need_new_msg = tbx_true;
+    d->need_recv_msg = tbx_true;
+    d->gather_scatter_available = tbx_true;
+    d->rdma_available = tbx_false;
+
+
     TRACE("Initializing MX driver");
     mx_set_error_handler(MX_ERRORS_RETURN);
 
@@ -242,8 +252,7 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
     mad_mx_startup_info();
 #endif // MX_NO_STARTUP_INFO
 
-    /** contrôle de flux sur le nombre des unexpected stockés **/
-    d->nb_unexpecteds = 10; //nombre maximal de messages unexpected
+
 
     LOG_OUT();
 }
@@ -255,9 +264,9 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     int nb_unexpected = 0;
     p_mad_madeleine_t madeleine = NULL;
     int nb_dest = 0;
-    p_mad_iovec_t mad_iovec = NULL;
-    void *unexpected_area   = NULL;
-    int   i = 0;
+    //p_mad_iovec_t mad_iovec = NULL;
+    //void *unexpected_area   = NULL;
+    //int   i = 0;
     uint64_t                        nic_id;
     char                            hostname[MX_MAX_HOSTNAME_LEN];
 
@@ -269,21 +278,22 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     nb_dest = tbx_slist_get_length(madeleine->dir->process_slist);
     nb_unexpected  = driver->nb_unexpecteds * nb_dest;
 
-    // Réservation des zones de données à pré-poster
-    tbx_malloc_init(&mad_mx_unexpected_key, MAD_MX_PRE_POSTED_SIZE, nb_unexpected, "mx_pre_posted");
+    //// Réservation des zones de données à pré-poster
+    //tbx_malloc_init(&mad_mx_unexpected_key, MAD_MX_PRE_POSTED_SIZE, nb_unexpected, "mx_pre_posted");
+    //
+    //// Initialistaion des mad_iovecs à pré-poster
+    //a->pre_posted  = mad_pipeline_create(nb_unexpected);
+    //
+    //for(i = 0; i < nb_unexpected; i++){
+    //    unexpected_area = tbx_malloc(mad_mx_unexpected_key);
+    //
+    //    mad_iovec = mad_iovec_create(-1, NULL, 0, tbx_false, 0, 0);
+    //    mad_iovec_add_data(mad_iovec,
+    //                       unexpected_area,
+    //                       MAD_MX_PRE_POSTED_SIZE);
+    //    mad_pipeline_add(a->pre_posted, mad_iovec);
+    //}
 
-    // Initialistaion des mad_iovecs à pré-poster
-    a->pre_posted  = mad_pipeline_create(nb_unexpected);
-
-    for(i = 0; i < nb_unexpected; i++){
-        unexpected_area = tbx_malloc(mad_mx_unexpected_key);
-
-        mad_iovec = mad_iovec_create(-1, NULL, 0, tbx_false, 0, 0);
-        mad_iovec_add_data(mad_iovec,
-                           unexpected_area,
-                           MAD_MX_PRE_POSTED_SIZE);
-        mad_pipeline_add(a->pre_posted, mad_iovec);
-    }
     as->nb_pre_posted_areas = nb_unexpected;
 
     // Identifiant de la carte
@@ -628,31 +638,31 @@ mad_mx_channel_exit(p_mad_channel_t ch) {
 
 void
 mad_mx_adapter_exit(p_mad_adapter_t a) {
-    p_mad_mx_adapter_specific_t as = NULL;
-    p_mad_pipeline_t pre_posted    = NULL;
-    p_mad_iovec_t    mad_iovec     = NULL;
-    int              nb_elm        = 0;
-    int i = 0;
-    LOG_IN();
-
-    as         = a->specific;
-    pre_posted = a->pre_posted;
-    nb_elm     = as->nb_pre_posted_areas;
-
-    // Libération des structures à pré-poster
-    for(i = 0; i < nb_elm; i++){
-        mad_iovec = mad_pipeline_remove(pre_posted);
-
-        tbx_free(mad_mx_unexpected_key, mad_iovec->data[0].iov_base);
-        mad_iovec_free(mad_iovec);
-    }
-    tbx_malloc_clean(mad_mx_unexpected_key);
-
-    as	= a->specific;
-    TBX_FREE(as);
-    a->specific	  = NULL;
-    a->parameter  = NULL;
-    LOG_OUT();
+    //p_mad_mx_adapter_specific_t as = NULL;
+    //p_mad_pipeline_t pre_posted    = NULL;
+    //p_mad_iovec_t    mad_iovec     = NULL;
+    //int              nb_elm        = 0;
+    //int i = 0;
+    //LOG_IN();
+    //
+    //as         = a->specific;
+    //pre_posted = a->pre_posted;
+    //nb_elm     = as->nb_pre_posted_areas;
+    //
+    //// Libération des structures à pré-poster
+    //for(i = 0; i < nb_elm; i++){
+    //    mad_iovec = mad_pipeline_remove(pre_posted);
+    //
+    //    tbx_free(mad_mx_unexpected_key, mad_iovec->data[0].iov_base);
+    //    mad_iovec_free(mad_iovec);
+    //}
+    //tbx_malloc_clean(mad_mx_unexpected_key);
+    //
+    //as	= a->specific;
+    //TBX_FREE(as);
+    //a->specific	  = NULL;
+    //a->parameter  = NULL;
+    //LOG_OUT();
 }
 
 void
@@ -779,33 +789,33 @@ mad_mx_receive_message(p_mad_channel_t ch) {
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
-tbx_bool_t
-mad_mx_need_rdv(p_mad_iovec_t mad_iovec){
-    LOG_IN();
-    if(mad_iovec->length > MAD_MX_PRE_POSTED_SIZE)
-        return tbx_true;
-    LOG_OUT();
-    return tbx_false;
-}
-
-tbx_bool_t
-mad_mx_buffer_need_rdv(size_t buffer_length){
-    LOG_IN();
-    if(buffer_length > MAD_MX_PRE_POSTED_SIZE)
-        return tbx_true;
-    LOG_OUT();
-    return tbx_false;
-}
-
-uint32_t
-mad_mx_gather_scatter_length_max(void){
-    return MAD_MX_GATHER_SCATTER_THRESHOLD;
-}
-
-uint32_t
-mad_mx_cpy_limit_size(void){
-    return MAD_MX_PRE_POSTED_SIZE;
-}
+//tbx_bool_t
+//mad_mx_need_rdv(p_mad_iovec_t mad_iovec){
+//    LOG_IN();
+//    if(mad_iovec->length > MAD_MX_PRE_POSTED_SIZE)
+//        return tbx_true;
+//    LOG_OUT();
+//    return tbx_false;
+//}
+//
+//tbx_bool_t
+//mad_mx_buffer_need_rdv(size_t buffer_length){
+//    LOG_IN();
+//    if(buffer_length > MAD_MX_PRE_POSTED_SIZE)
+//        return tbx_true;
+//    LOG_OUT();
+//    return tbx_false;
+//}
+//
+//uint32_t
+//mad_mx_gather_scatter_length_max(void){
+//    return MAD_MX_GATHER_SCATTER_THRESHOLD;
+//}
+//
+//uint32_t
+//mad_mx_cpy_limit_size(void){
+//    return MAD_MX_PRE_POSTED_SIZE;
+//}
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/

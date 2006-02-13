@@ -53,6 +53,16 @@ typedef struct s_mad_driver
 
 
     /*-----------------------------*/
+    tbx_bool_t need_new_msg;
+    tbx_bool_t need_recv_msg;
+    int cpy_threshold;
+    tbx_bool_t gather_scatter_available;
+    tbx_bool_t rdma_available;
+    int max_nb_ports;
+
+
+
+
     // Packets which have to be send by this driver
     p_tbx_slist_t  s_msg_slist;
 

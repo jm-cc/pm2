@@ -65,6 +65,9 @@ mad_pack(p_mad_connection_t   connection,
     ntbx_process_lrank_t      remote_rank = -1;
     unsigned int              seq         = -1;
     tbx_bool_t                need_rdv = tbx_false;
+
+    int cpy_threshold;
+
     LOG_IN();
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
@@ -74,11 +77,15 @@ mad_pack(p_mad_connection_t   connection,
     seq         = connection->sequence;
 
     // flag the pack if it needs a rdv
-    if(interface->buffer_need_rdv){
-        need_rdv    = interface->buffer_need_rdv(buffer_length);
-    } else {
-        need_rdv = tbx_false;
-    }
+    //if(interface->buffer_need_rdv){
+    //    need_rdv    = interface->buffer_need_rdv(buffer_length);
+    //} else {
+    //    need_rdv = tbx_false;
+    //}
+
+    cpy_threshold =  driver->cpy_threshold;;
+    if(buffer_length > cpy_threshold)
+        need_rdv = tbx_true;
 
     connection->sequence++;
 
@@ -214,9 +221,11 @@ mad_unpack(p_mad_connection_t    connection,
     p_mad_iovec_t             mad_iovec   = NULL;
     unsigned int              seq         = -1;
     tbx_bool_t need_rdv = tbx_false;
+
+    int cpy_threshold;
+
     LOG_IN();
     //DISP("------------------->unpack");
-
 
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
@@ -224,11 +233,17 @@ mad_unpack(p_mad_connection_t    connection,
     driver      = adapter->driver;
     interface   = driver->interface;
     seq         = channel->sequence;
-    if(interface->buffer_need_rdv){
-        need_rdv = interface->buffer_need_rdv(buffer_length);
-    } else {
-        need_rdv = tbx_false;
-    }
+
+    //if(interface->buffer_need_rdv){
+    //    need_rdv = interface->buffer_need_rdv(buffer_length);
+    //} else {
+    //    need_rdv = tbx_false;
+    //}
+
+    cpy_threshold =  driver->cpy_threshold;;
+    if(buffer_length > cpy_threshold)
+        need_rdv = tbx_true;
+
 
     channel->sequence++;
 

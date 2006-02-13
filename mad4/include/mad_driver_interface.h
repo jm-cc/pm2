@@ -71,15 +71,15 @@ typedef struct s_mad_driver_interface
     void (*remove_all_pre_posted)(p_mad_adapter_t);
 
 
-    // **** Heuristiques **** //
-    tbx_bool_t (*rdma_available)();
-    tbx_bool_t (*gather_scatter_available)();
-    int (*get_max_nb_ports)();
-    uint32_t (*msg_length_max)();
-    uint32_t (*copy_length_max)();
-    uint32_t (*gather_scatter_length_max)();
-    tbx_bool_t (*need_rdv)(p_mad_iovec_t);
-    tbx_bool_t (*buffer_need_rdv)(size_t);
+    //// **** Heuristiques **** //
+    //tbx_bool_t (*rdma_available)();
+    //tbx_bool_t (*gather_scatter_available)();
+    //int (*get_max_nb_ports)();
+    //uint32_t (*msg_length_max)();
+    //uint32_t (*copy_length_max)();
+    //uint32_t (*gather_scatter_length_max)();
+    //tbx_bool_t (*need_rdv)(p_mad_iovec_t);
+    //tbx_bool_t (*buffer_need_rdv)(size_t);
 
 
 
@@ -88,7 +88,7 @@ typedef struct s_mad_driver_interface
     void (*irecv)(p_mad_track_t, p_mad_iovec_t);
     tbx_bool_t    (*s_test)(p_mad_track_set_t);
     p_mad_iovec_t (*r_test)(p_mad_track_t);
-    
+
     // ??
     p_mad_channel_t (*get_sub_channel)(p_mad_channel_t,
                                        unsigned int);

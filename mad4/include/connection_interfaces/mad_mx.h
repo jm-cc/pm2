@@ -70,11 +70,11 @@ void mad_mx_replace_pre_posted(p_mad_adapter_t, p_mad_track_t, int);
 void mad_mx_remove_all_pre_posted(p_mad_adapter_t);
 
 
-/** Informations spécifiques **/
-tbx_bool_t mad_mx_need_rdv(p_mad_iovec_t);
-tbx_bool_t mad_mx_buffer_need_rdv(size_t);
-uint32_t   mad_mx_gather_scatter_length_max(void);
-uint32_t   mad_mx_cpy_limit_size(void);
+///** Informations spécifiques **/
+//tbx_bool_t mad_mx_need_rdv(p_mad_iovec_t);
+//tbx_bool_t mad_mx_buffer_need_rdv(size_t);
+//uint32_t   mad_mx_gather_scatter_length_max(void);
+//uint32_t   mad_mx_cpy_limit_size(void);
 
 // **** Primitives Bas Niveau **** //
 void mad_mx_isend(p_mad_track_t, p_mad_iovec_t);

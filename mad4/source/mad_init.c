@@ -103,11 +103,7 @@ adapter_init(p_mad_driver_t mad_driver,
   mad_leonie_send_unsigned_int(mad_adapter->mtu);
 
   /***/
-  mad_adapter->s_track_set                = NULL;
-  mad_adapter->s_ready_msg_list           = tbx_slist_nil();
-  mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
-  mad_adapter->rdv_to_treat               = tbx_slist_nil();
-  mad_adapter->nb_released_unexpecteds = 0;
+
   mad_adapter->unexpecteds = mad_pipeline_create(mad_driver->nb_unexpecteds);
 
   // Initialisation du nb d'unexpecteds authorisés par le driver
@@ -121,10 +117,48 @@ adapter_init(p_mad_driver_t mad_driver,
       mad_adapter->nb_authorized_sendings = TBX_MALLOC(nb_dest * sizeof(int));
 
       for(i = 0; i < nb_dest; i++)
-           mad_adapter->nb_authorized_sendings[i] = mad_adapter->driver->nb_unexpecteds;
+          mad_adapter->nb_authorized_sendings[i] = mad_adapter->driver->nb_unexpecteds;
+  }
 
+
+
+  /* Initialisation of the area for the unexpecteds */
+  {
+      p_mad_madeleine_t madeleine = mad_get_madeleine();
+      int nb_dest = tbx_slist_get_length(madeleine->dir->process_slist);
+      int nb_unexpected = mad_driver->nb_unexpecteds * nb_dest;
+
+      void *unexpected_area   = NULL;
+      p_mad_iovec_t mad_iovec = NULL;
+      int i = 0;
+
+      // Réservation des zones de données à pré-poster
+      tbx_malloc_init(&mad_adapter->unexpected_key,
+                      mad_driver->cpy_threshold,
+                      nb_unexpected,
+                      "pre_posted");
+
+      mad_adapter->pre_posted = mad_pipeline_create(nb_unexpected);
+
+      for(i = 0; i < nb_unexpected; i++){
+          unexpected_area = tbx_malloc(mad_adapter->unexpected_key);
+
+          mad_iovec = mad_iovec_create(-1, NULL, 0, tbx_false, 0, 0);
+          mad_iovec_add_data(mad_iovec,
+                             unexpected_area,
+                             mad_driver->cpy_threshold);
+          mad_pipeline_add(mad_adapter->pre_posted, mad_iovec);
+      }
 
   }
+
+
+
+  mad_adapter->s_track_set                = NULL;
+  mad_adapter->s_ready_msg_list           = tbx_slist_nil();
+  mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
+  mad_adapter->rdv_to_treat               = tbx_slist_nil();
+  mad_adapter->nb_released_unexpecteds = 0;
   mad_adapter->needed_receptions = 0;
   mad_adapter->needed_sendings = 0;
   /***/

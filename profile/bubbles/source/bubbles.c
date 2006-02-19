@@ -131,6 +131,8 @@ struct fxt_code_name fut_code_table [] =
 #define max(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a>_b?_a:_b; })
 #endif
 
+#include <signal.h>
+
 /* several useful macros */
 
 #define tbx_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
@@ -1520,9 +1522,9 @@ void bubbleInsertThread(thread_t *bubble, thread_t *thread);
  * Main
  */
 
-bubble_t *bigb;
+static bubble_t *bigb;
 
-void error(const char *msg, ...) {
+static void error(const char *msg, ...) {
 	va_list args;
 	static int recur = 0;
 
@@ -1534,6 +1536,10 @@ void error(const char *msg, ...) {
 		fprintf(stderr,"saved to rescue.swf\n");
 	}
 	abort();
+}
+
+static void sig(int sig) {
+	error("got signal %d\n", sig);
 }
 
 int main(int argc, char *argv[]) {
@@ -1552,6 +1558,8 @@ int main(int argc, char *argv[]) {
 	Ming_init();
 
 	Ming_setErrorFunction(error);
+	signal(SIGSEGV,sig);
+	signal(SIGINT,sig);
 	f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
 
 	/* pause macro */
@@ -1658,7 +1666,7 @@ int main(int argc, char *argv[]) {
 			case BUBBLE_SCHED_SETPRIO: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
 				b->entity.prio = ev.ev64.param[1];
-				printf("bubble %p(%p) priority set to %"PRIx64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
+				printf("bubble %p(%p) priority set to %"PRIi64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
 				break;
 			}
 #ifdef BUBBLE_SCHED_CLOSE

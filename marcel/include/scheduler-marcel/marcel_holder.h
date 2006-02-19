@@ -326,7 +326,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder);
-	MA_BUG_ON(e->sched_holder && MA_HOLDER_TYPE(h) != MA_HOLDER_TYPE(e->sched_holder));
+	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
 	h->nr_running++;
 }

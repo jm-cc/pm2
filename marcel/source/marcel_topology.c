@@ -423,6 +423,10 @@ static void topo_discover(void) {
 
 	marcel_topo_nblevels=discovering_level;
 
+	l = marcel_topo_nblevels-1;
+	for (i=0; marcel_topo_levels[l][i].vpset; i++)
+		marcel_topo_levels[l][i].type = MARCEL_LEVEL_LWP;
+
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 
@@ -432,19 +436,21 @@ static void topo_discover(void) {
 					~(marcel_topo_levels[l][i].vpset)))
 					marcel_topo_levels[l][i].arity++;
 
-			mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
-			MA_BUG_ON(!(marcel_topo_levels[l][i].sons=
-				TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
+			if (marcel_topo_levels[l][i].arity) {
+				mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
+				MA_BUG_ON(!(marcel_topo_levels[l][i].sons=
+					TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
 
-			m=0;
-			for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
-				if (!(marcel_topo_levels[l+1][j].vpset &
-					~(marcel_topo_levels[l][i].vpset))) {
-					marcel_topo_levels[l][i].sons[m]=
-						&marcel_topo_levels[l+1][j];
-					marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
-					marcel_topo_levels[l+1][j].index = m++;
-				}
+				m=0;
+				for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
+					if (!(marcel_topo_levels[l+1][j].vpset &
+						~(marcel_topo_levels[l][i].vpset))) {
+						marcel_topo_levels[l][i].sons[m]=
+							&marcel_topo_levels[l+1][j];
+						marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
+						marcel_topo_levels[l+1][j].index = m++;
+					}
+			}
 		}
 	}
 }

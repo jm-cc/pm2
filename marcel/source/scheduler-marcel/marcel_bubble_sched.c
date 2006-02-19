@@ -915,7 +915,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&gang_rq);
 	while(1) {
-		marcel_delay(1);
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&gang_rq.hold);

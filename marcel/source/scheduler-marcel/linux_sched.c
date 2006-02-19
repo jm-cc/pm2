@@ -337,7 +337,7 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 
 	if (!need_resched && !nrpolling && lwp != LWP_SELF) {
 		PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
-		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
+		marcel_kthread_kill(lwp->pid, MARCEL_RESCHED_SIGNAL);
 	}
 	ma_preempt_enable();
 #else
@@ -1823,6 +1823,7 @@ switch_tasks:
 
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
+	ma_clear_tsk_need_togo(prev);
 //Pour quand on voudra ce mécanisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
 

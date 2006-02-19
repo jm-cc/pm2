@@ -53,6 +53,7 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
   
   sigemptyset(&signals);
   sigaddset(&signals, MARCEL_TIMER_SIGNAL);
+  sigaddset(&signals, MARCEL_RESCHED_SIGNAL);
   sigaddset(&signals, SIGSEGV);
   sigprocmask(SIG_UNBLOCK, &signals, NULL);
 

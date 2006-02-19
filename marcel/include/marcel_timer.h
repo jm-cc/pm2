@@ -36,6 +36,7 @@ typedef int marcel_time_t;
 #  define MARCEL_TIMER_SIGNAL   SIGALRM
 #  define MARCEL_ITIMER_TYPE    ITIMER_REAL
 #endif
+#  define MARCEL_RESCHED_SIGNAL SIGUSR2
 
 #else
 

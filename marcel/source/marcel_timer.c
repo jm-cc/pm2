@@ -250,7 +250,7 @@ static void timer_interrupt(int sig)
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
 #ifdef CHAINED_SIGALRM
-	if (!info || info->si_code > 0) {
+	if (sig == MARCEL_TIMER_SIGNAL && (!info || info->si_code > 0)) {
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
@@ -262,35 +262,38 @@ static void timer_interrupt(int sig)
 		goto out;
 
 #ifdef MA__DEBUG
-	if (++tick == TICK_RATE) {
-		mdebugl(7,"\t\t\t<<Sig handler>>\n");
-		tick = 0;
-	}
+	if (sig == MARCEL_TIMER_SIGNAL)
+		if (++tick == TICK_RATE) {
+			mdebugl(7,"\t\t\t<<Sig handler>>\n");
+			tick = 0;
+		}
 #endif
 	ma_irq_enter();
+	if (sig == MARCEL_TIMER_SIGNAL) {
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
-	if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock))
+		if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock))
 #endif
-		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
+			ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef SA_SIGINFO
-	if (!info || info->si_code > 0)
+		if (!info || info->si_code > 0)
 #endif
 		/* kernel timer signal */
 #ifndef CHAINED_SIGALRM
-		if (IS_FIRST_LWP(LWP_SELF))
+			if (IS_FIRST_LWP(LWP_SELF))
 #endif
-		{
-			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
-			__milliseconds += time_slice/1000;
-		}
+			{
+				ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
+				__milliseconds += time_slice/1000;
+			}
+	}
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-	sigrelse(MARCEL_TIMER_SIGNAL);
+	sigrelse(sig);
 #else
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
@@ -431,6 +434,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 	
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
 	marcel_sig_enable_interrupts();
@@ -468,6 +472,7 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	sa.sa_flags = 0;
 
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
 	LOG_OUT();
@@ -494,6 +499,7 @@ static void __marcel_init sig_init(void)
 	sigemptyset(&sigeptset);
 	sigemptyset(&sigalrmset);
 	sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
+	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
 

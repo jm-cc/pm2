@@ -123,6 +123,7 @@ _dsm_sig_handler(int sig, char *addr, dsm_access_t access) {
 
     sigemptyset(&signals);
     sigaddset(&signals, MARCEL_TIMER_SIGNAL);
+    sigaddset(&signals, MARCEL_RESCHED_SIGNAL);
     sigprocmask(SIG_BLOCK, &signals, 0);
 
 #ifdef DSM_ALTSTACK
@@ -356,6 +357,7 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
   act.sa_handler = (void (*)(int))_internal_sig_handler;
   sigemptyset(&act.sa_mask);
   sigaddset(&act.sa_mask, MARCEL_TIMER_SIGNAL);
+  sigaddset(&act.sa_mask, MARCEL_RESCHED_SIGNAL);
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS)
   act.sa_flags = SA_SIGINFO | SA_RESTART;
 #else

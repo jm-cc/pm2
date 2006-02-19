@@ -37,6 +37,11 @@ extern unsigned long ma_nr_running(void);
 //extern unsigned long ma_nr_uninterruptible(void);
 //extern unsigned long nr_iowait(void);
 
+#section marcel_macros
+/* TODO: utiliser la priorité pour le calculer */
+#define MARCEL_TASK_TIMESLICE 4
+#define MARCEL_BUBBLE_TIMESLICE 10
+
 /*
  * Scheduling policies
  */

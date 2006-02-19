@@ -538,11 +538,11 @@ les #ifdef dans les arguments de macro...
 #else
 #  define _TIME_SLICE 1
 #endif
-	ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
+	ma_atomic_set(&bubble->sched.time_slice, MARCEL_BUBBLE_TIMESLICE*_TIME_SLICE);
 #undef _TIME_SLICE
 	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
 	__do_bubble_explode(bubble,rq);
-	ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
+	ma_atomic_set(&bubble->sched.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
 
 	ma_holder_rawunlock(&bubble->hold);
 	sched_debug("unlock(%p)\n", rq);
@@ -835,7 +835,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 	struct list_head *queue;
 	ma_idle_scheduler = 0;
 	while(1) {
-		marcel_delay(1);
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&gang_rq.hold);

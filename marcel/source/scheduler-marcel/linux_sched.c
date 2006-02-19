@@ -1506,12 +1506,12 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 #endif
 	if (preemption_enabled() && ma_thread_preemptible()) {
-		MA_BUG_ON(ma_atomic_read(&p->sched.internal.time_slice)>10);
+		MA_BUG_ON(ma_atomic_read(&p->sched.internal.time_slice)>MARCEL_TASK_TIMESLICE);
 		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
 			ma_set_tsk_need_resched(p);
 			sched_debug("scheduler_tick: time slice expired\n");
 			//p->prio = effective_prio(p);
-			ma_atomic_set(&p->sched.internal.time_slice,2); /* TODO: utiliser la priorité pour le calculer */
+			ma_atomic_set(&p->sched.internal.time_slice,MARCEL_TASK_TIMESLICE);
 					//task_timeslice(p);
 			//p->first_time_slice = 0;
 

@@ -122,9 +122,11 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
+	MA_BUG_ON(e->type != MA_TASK_ENTITY);
 	return tbx_container_of(e, marcel_task_t, sched.internal);
 }
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
+	MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 	return tbx_container_of(e, marcel_bubble_t, sched);
 }
 
@@ -324,7 +326,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder);
-	MA_BUG_ON(e->sched_holder && h->type != e->sched_holder->type);
+	MA_BUG_ON(e->sched_holder && MA_HOLDER_TYPE(h) != MA_HOLDER_TYPE(e->sched_holder));
 	e->run_holder = h;
 	h->nr_running++;
 }

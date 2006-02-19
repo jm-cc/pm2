@@ -257,7 +257,7 @@ void marcel_start_playing(void) {
 static MA_DEFINE_PER_LWP(struct drand48_data, random_buffer, {{0}});
 
 static int rand_lwp_init(ma_lwp_t lwp) {
-	memset(&ma_per_lwp(random_buffer, lwp), 0, sizeof(ma_per_lwp(random_buffer, lwp)));
+	srand48_r(LWP_NUMBER(lwp), &ma_per_lwp(random_buffer, lwp));
 	return 0;
 }
 
@@ -275,7 +275,7 @@ long marcel_random(void) {
 	long res;
 	ma_local_bh_disable();
 	ma_preempt_disable();
-	lrand48_r(&ma_per_lwp(random_buffer, LWP_SELF), &res);
+	lrand48_r(&__ma_get_lwp_var(random_buffer), &res);
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 	return res;

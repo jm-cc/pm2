@@ -212,6 +212,7 @@ static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 #define TIF_NEED_RESCHED        0       /* rescheduling necessary */
 #define TIF_WORKPENDING         1       /* work pending */
 #define TIF_POLLING_NRFLAG      2       /* true if idle() is polling TIF_NEED_RESCHED */
+#define TIF_NEED_TOGO           3       /* rescheduling necessary, no affinity */
 #define TIF_DEBUG_IN_PROGRESS   16      /* true if pm2debug is in execution */
 #define TIF_BLOCK_HARDIRQ       17      /* true if softirq can be raised in hardirq */
 

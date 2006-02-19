@@ -51,6 +51,10 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 #define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->sched.internal,level)
 
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
+int marcel_bubble_sleep_locked(marcel_bubble_t *bubble);
+int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble);
+int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
+int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
@@ -195,15 +199,9 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
-	if (list_empty(&b->runningentities) && b->sched.run_holder && !b->sched.holder_data) {
-		ma_holder_t *h;
+	if (list_empty(&b->runningentities) && b->sched.prio == MA_NOSCHED_PRIO) {
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
-		h = b->sched.run_holder;
-		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		if (h && b->sched.run_holder && !b->sched.holder_data && list_empty(&b->runningentities))
-			ma_enqueue_entity_rq(&b->sched, ma_rq_holder(h));
-		else
-			bubble_sched_debugl(7,"Mmm, %p was actually not empty\n", b);
+		marcel_bubble_wake_rq_locked(b);
 	}
 	list_add_tail(&e->run_list, &b->runningentities);
 #endif
@@ -214,15 +212,9 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	list_del(&e->run_list);
-	if (list_empty(&b->runningentities) && b->sched.run_holder && b->sched.holder_data) {
-		ma_holder_t *h;
+	if (list_empty(&b->runningentities) && b->sched.prio != MA_NOSCHED_PRIO) {
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
-		h = b->sched.run_holder;
-		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		if (h && b->sched.run_holder && b->sched.holder_data && list_empty(&b->runningentities))
-			ma_dequeue_entity_rq(&b->sched, ma_rq_holder(h));
-		else
-			bubble_sched_debugl(7,"Mmm, %p was actually not empty\n", b);
+		marcel_bubble_sleep_rq_locked(b);
 	}
 #endif
 	MA_BUG_ON(!e->holder_data);
@@ -232,18 +224,9 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
-	if (list_empty(&b->runningentities) && b->sched.run_holder && !b->sched.holder_data) {
-		ma_holder_t *h;
+	if (list_empty(&b->runningentities) && b->sched.prio == MA_NOSCHED_PRIO) {
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
-		ma_holder_rawunlock(&b->hold);
-		h = ma_entity_holder_rawlock(&b->sched);
-		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		ma_holder_rawlock(&b->hold);
-		if (h && b->sched.run_holder && !b->sched.holder_data && list_empty(&b->runningentities))
-			ma_enqueue_entity_rq(&b->sched, ma_rq_holder(h));
-		else
-			bubble_sched_debugl(7,"Mmm, %p was actually not empty\n", b);
-		ma_entity_holder_rawunlock(h);
+		marcel_bubble_wake_locked(b);
 	}
 	list_add_tail(&e->run_list, &b->runningentities);
 #endif
@@ -254,18 +237,9 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	list_del(&e->run_list);
-	if (list_empty(&b->runningentities) && b->sched.run_holder && b->sched.holder_data) {
-		ma_holder_t *h;
+	if (list_empty(&b->runningentities) && b->sched.prio != MA_NOSCHED_PRIO) {
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
-		ma_holder_rawunlock(&b->hold);
-		h = ma_entity_holder_rawlock(&b->sched);
-		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		ma_holder_rawlock(&b->hold);
-		if (h && b->sched.run_holder && b->sched.holder_data && list_empty(&b->runningentities))
-			ma_dequeue_entity_rq(&b->sched, ma_rq_holder(h));
-		else
-			bubble_sched_debugl(7,"Mmm, %p was actually not empty\n", b);
-		ma_entity_holder_rawunlock(h);
+		marcel_bubble_sleep_locked(b);
 	}
 #endif
 	MA_BUG_ON(!e->holder_data);

@@ -45,9 +45,85 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 	return 0;
 }
 
+#define VARS \
+	int running; \
+	ma_holder_t *h
+#define CHECK_HOLDER() \
+	MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER); \
+	running = h && bubble->sched.run_holder && bubble->sched.holder_data
+#define RAWLOCK_HOLDER() \
+	h = ma_entity_holder_rawlock(&bubble->sched); \
+	CHECK_HOLDER()
+#define HOLDER() \
+	h = bubble->sched.run_holder; \
+	CHECK_HOLDER()
+#define SETPRIO(_prio); \
+	if (running) \
+		ma_dequeue_entity_rq(&bubble->sched, ma_rq_holder(h)); \
+	PROF_EVENT2(bubble_sched_setprio,bubble,_prio); \
+	MA_BUG_ON(bubble->sched.prio == _prio); \
+	bubble->sched.prio = _prio; \
+	if (running) \
+		ma_enqueue_entity_rq(&bubble->sched, ma_rq_holder(h));
+
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
-	PROF_EVENT2(bubble_sched_setprio,bubble,prio);
-	bubble->sched.prio = prio;
+	if (prio == bubble->sched.prio) return 0;
+	VARS;
+	ma_preempt_disable();
+	ma_local_bh_disable();
+	RAWLOCK_HOLDER();
+	SETPRIO(prio);
+	ma_entity_holder_unlock(h);
+	return 0;
+}
+
+#define DOSLEEP() do { \
+	SETPRIO(MA_NOSCHED_PRIO); \
+} while(0)
+
+int marcel_bubble_sleep_locked(marcel_bubble_t *bubble) {
+	VARS;
+	ma_holder_rawunlock(&bubble->hold);
+	RAWLOCK_HOLDER();
+	ma_holder_rawlock(&bubble->hold);
+	if (list_empty(&bubble->runningentities)) {
+		if (bubble->sched.prio != MA_NOSCHED_PRIO)
+			DOSLEEP();
+	} else
+		bubble_sched_debugl(7,"Mmm, %p actually still awake\n", bubble);
+	ma_entity_holder_rawunlock(h);
+	return 0;
+}
+
+int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble) {
+	VARS;
+	HOLDER();
+	DOSLEEP();
+	return 0;
+}
+
+#define DOWAKE() do { \
+	/* XXX erases real bubble prio */ \
+	SETPRIO(MA_BATCH_PRIO); \
+} while(0)
+int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
+	VARS;
+	ma_holder_rawunlock(&bubble->hold);
+	RAWLOCK_HOLDER();
+	ma_holder_rawlock(&bubble->hold);
+	if (list_empty(&bubble->runningentities)) {
+		if (bubble->sched.prio == MA_NOSCHED_PRIO)
+			DOWAKE();
+	} else
+		bubble_sched_debugl(7,"Mmm, %p actually still sleeping\n", bubble);
+	ma_entity_holder_rawunlock(h);
+	return 0;
+}
+
+int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble) {
+	VARS;
+	HOLDER();
+	DOWAKE();
 	return 0;
 }
 
@@ -576,7 +652,9 @@ les #ifdef dans les arguments de macro...
 	/* en général, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
 		bubble_sched_debugl(7,"warning: bubble %p empty\n", bubble);
-		ma_dequeue_entity_rq(&bubble->sched, rq);
+		/* on ne devrait jamais ordonnancer une bulle de priorité NOSCHED ! */
+ 		MA_BUG_ON(bubble->sched.prio == MA_NOSCHED_PRIO);
+		marcel_bubble_sleep_rq_locked(bubble);
 		sched_debug("unlock(%p)\n", rq);
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock(&bubble->hold);
@@ -834,12 +912,23 @@ any_t marcel_gang_scheduler(any_t foo) {
 	ma_runqueue_t *rq;
 	struct list_head *queue;
 	ma_idle_scheduler = 0;
+	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&gang_rq);
 	while(1) {
-		marcel_delay(MARCEL_BUBBLE_TIMESLICE);
+		marcel_delay(1);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&gang_rq.hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
+		ma_queue_for_each_entry_safe(e, ee, queue) {
+			if (e->type == MA_BUBBLE_ENTITY) {
+				b = ma_bubble_entity(e);
+				ma_deactivate_entity(&b->sched, &rq->hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &gang_rq);
+				ma_activate_entity(&b->sched, &gang_rq.hold);
+			}
+		}
+		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
@@ -860,6 +949,15 @@ any_t marcel_gang_scheduler(any_t foo) {
 		}
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+		ma_lwp_t lwp;
+		for_each_lwp_begin(lwp)
+			if (lwp != LWP_SELF) {
+				ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
+				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
+				ma_resched_task(ma_per_lwp(current_thread,lwp),lwp);
+				ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
+			}
+		for_each_lwp_end();
 	}
 	return NULL;
 }
@@ -887,7 +985,6 @@ static void __marcel_init bubble_sched_init() {
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
 	ma_dequeue_entity_rq(&marcel_root_bubble.sched, &ma_main_runqueue);
 #endif
-	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
 }
 
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED, MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");

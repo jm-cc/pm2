@@ -556,9 +556,19 @@ static __tbx_inline__ void ma_set_tsk_need_resched(marcel_task_t *tsk)
 	ma_set_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
 }
 
+static __tbx_inline__ void ma_set_tsk_need_togo(marcel_task_t *tsk)
+{
+	ma_set_tsk_thread_flag(tsk,TIF_NEED_TOGO);
+}
+
 static __tbx_inline__ void ma_clear_tsk_need_resched(marcel_task_t *tsk)
 {
 	ma_clear_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
+}
+
+static __tbx_inline__ void ma_clear_tsk_need_togo(marcel_task_t *tsk)
+{
+	ma_clear_tsk_thread_flag(tsk,TIF_NEED_TOGO);
 }
 
 static __tbx_inline__ int ma_signal_pending(marcel_task_t *p)
@@ -569,6 +579,11 @@ static __tbx_inline__ int ma_signal_pending(marcel_task_t *p)
 static __tbx_inline__ int ma_need_resched(void)
 {
 	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED));
+}
+
+static __tbx_inline__ int ma_need_togo(void)
+{
+	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_TOGO));
 }
 
 extern MARCEL_PROTECTED void __ma_cond_resched(void);

@@ -46,7 +46,8 @@
 #define MA_DEF_PRIO		(MA_RT_PRIO+MA_MAX_NICE+1)
 #define MA_BATCH_PRIO		(MA_DEF_PRIO+1)
 #define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)
-#define MA_MAX_PRIO		(MA_IDLE_PRIO+1)
+#define MA_NOSCHED_PRIO		(MA_IDLE_PRIO+1)
+#define MA_MAX_PRIO		(MA_NOSCHED_PRIO+1)
 
 #define ma_rt_task(p)		((p)->sched.internal.prio < MA_RT_PRIO)
 
@@ -263,7 +264,8 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *p, ma_prio_arra
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
-	array->nr_active--;
+	if (e->prio != MA_NOSCHED_PRIO)
+		array->nr_active--;
 	list_del(&e->run_list);
 	if (list_empty(ma_array_queue(array, e->prio))) {
 		sched_debug("array %p (prio %d) empty\n",array, e->prio);
@@ -287,7 +289,8 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_prio_arra
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
 	list_add_tail(&e->run_list, ma_array_queue(array, e->prio));
 	__ma_set_bit(e->prio, array->bitmap);
-	array->nr_active++;
+	if (e->prio != MA_NOSCHED_PRIO)
+		array->nr_active++;
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = array;
 }

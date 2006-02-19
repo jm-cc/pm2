@@ -318,13 +318,13 @@ static void recalc_task_prio(marcel_task_t *p, unsigned long long now)
 #endif /* 0 */
 
 /*
- * resched_task - mark a task 'to be rescheduled now'.
+ * ma_resched_task - mark a task 'to be rescheduled now'.
  *
  * On UP this means the setting of the need_resched flag, on SMP it
  * might also involve a LWP killing to trigger the scheduler on
  * the target LWP.
  */
-static inline void resched_task(marcel_task_t *p, ma_lwp_t lwp)
+void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 {
 #ifdef MA__LWPS
 	int need_resched, nrpolling;
@@ -466,7 +466,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 		}
 	for_each_lwp_from_end();
 	if (chosen)
-		resched_task(ma_per_lwp(current_thread, chosen), chosen);
+		ma_resched_task(ma_per_lwp(current_thread, chosen), chosen);
 }
 
 /***
@@ -543,7 +543,7 @@ repeat_lock_task:
 			if (rq && ma_rq_covers(rq, LWP_SELF) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
-					resched_task(MARCEL_SELF, LWP_SELF);
+					ma_resched_task(MARCEL_SELF, LWP_SELF);
 			} else try_to_resched(p, h);
 			success = 1;
 		}
@@ -1640,10 +1640,13 @@ need_resched_atomic:
 	prev_as_next = prev;
 	prev_as_h = prevh;
 #ifdef MARCEL_BUBBLE_STEAL
-	if (prev_as_h->type != MA_RUNQUEUE_HOLDER)
+	if (prev_as_h->type != MA_RUNQUEUE_HOLDER) {
 		/* the real priority is the holding bubble's */
 		prev_as_prio = ma_bubble_holder(prev_as_h)->sched.prio;
-	else
+		if (prev_as_prio == MA_NOSCHED_PRIO)
+			/* the bubble just has no content */
+			prev_as_prio = MA_BATCH_PRIO;
+	} else
 #endif
 		prev_as_prio = prev->sched.internal.prio;
 
@@ -1664,9 +1667,11 @@ need_resched_atomic:
 		go_to_sleep = 1;
 #endif
 
-	if (go_to_sleep) {
-		sched_debug("schedule: go to sleep\n");
-		PROF_EVENT(sched_thread_blocked);
+	if (ma_need_togo() || go_to_sleep) {
+		if (go_to_sleep) {
+			sched_debug("schedule: go to sleep\n");
+			PROF_EVENT(sched_thread_blocked);
+		}
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(LWP_SELF)->hold;
 		prev_as_prio = MA_IDLE_PRIO;
@@ -2250,7 +2255,7 @@ void set_user_nice(task_t *p, long nice)
 		 */
 		// TODO: plus de curr
 		if (delta < 0 || (delta > 0 && ma_task_running(rq, p)))
-			resched_task(rq->curr);
+			ma_resched_task(rq->curr);
 	}
 out_unlock:
 	task_rq_unlock(rq, &flags);
@@ -2444,9 +2449,9 @@ static int setscheduler(pid_t pid, int policy, struct sched_param __user *param)
 		// todo: plus de cur
 		if if (ma_task_running(rq, p)) {
 			if (p->prio > oldprio)
-				resched_task(rq->curr);
+				ma_resched_task(rq->curr);
 		} else if (p->prio < rq->curr->prio)
-			resched_task(rq->curr);
+			ma_resched_task(rq->curr);
 	}
 
 out_unlock:
@@ -2997,7 +3002,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
 		activate_task(p, rq_dest);
 		// TODO: plus de curr
 		if (p->prio < rq_dest->curr->prio)
-			resched_task(rq_dest->curr);
+			ma_resched_task(rq_dest->curr);
 	}
 	p->timestamp = rq_dest->timestamp_last_tick;
 

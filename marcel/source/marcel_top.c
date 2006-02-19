@@ -26,6 +26,8 @@
 #include <signal.h>
 #include <sys/socket.h>
 
+#define TOP_SEC 10
+
 static int top_pid;
 static int top_file=-1;
 static unsigned long lastms, lastjiffies, djiffies;
@@ -125,7 +127,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		printtask(pids[nbpids-1]);
 	marcel_unfreeze_sched();
 
-	timer.expires += JIFFIES_FROM_US(1000000);
+	timer.expires += JIFFIES_FROM_US(TOP_SEC * 1000000);
 	ma_add_timer(&timer);
 }
 

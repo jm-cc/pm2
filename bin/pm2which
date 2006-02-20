@@ -182,7 +182,7 @@ pm2which_calc()
                 ;;
         esac
 
-        if [ $_PM2WHICH_NB_FOUND -gt 0 ]; then
+        if [ -n "$_PM2WHICH_NB_FOUND" ] && [ $_PM2WHICH_NB_FOUND -gt 0 ]; then
             break
         fi
 
@@ -239,12 +239,12 @@ shift
 
 pm2which_calc "$_PM2WHICH_PROG"
 if [ $_PM2WHICH_SOURCE_MODE = no ]; then
-    if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
+    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
         echo "pm2which: '${_PROG}' exec file not found" 1>&2
     else
         pm2which_prettyprint $_PM2WHICH_RESULT
     fi
-    if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
+    if [ -n "$_PM2WHICH_NB_FOUND" ] && [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
 	exit 0
     else
 	exit 1

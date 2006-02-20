@@ -77,6 +77,7 @@ int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
 	return 0;
 }
 
+#ifdef MARCEL_BUBBLE_STEAL
 #define DOSLEEP() do { \
 	SETPRIO(MA_NOSCHED_PRIO); \
 } while(0)
@@ -126,6 +127,7 @@ int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble) {
 	DOWAKE();
 	return 0;
 }
+#endif /* MARCEL_BUBBLE_STEAL */
 
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio) {
 	*prio = bubble->sched.prio;

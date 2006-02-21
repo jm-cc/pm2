@@ -178,8 +178,8 @@ void prof_dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int
 
   process_req = TBX_TIMING_DELAY(t_start_server, t_start_send_page);
   process_req_avg+=process_req;
-  process_req_min = min(process_req, process_req_min);
-  process_req_max = max(process_req, process_req_max);
+  process_req_min = tbx_min(process_req, process_req_min);
+  process_req_max = tbx_max(process_req, process_req_max);
 }
 
 
@@ -460,18 +460,18 @@ int pm2_main(int argc, char **argv)
 	    {
 	      total = TBX_TIMING_DELAY(t_start, t_end);
 	      total_avg+=total;
-	      total_min = min(total, total_min);
-	      total_max = max(total, total_max);
+	      total_min = tbx_min(total, total_min);
+	      total_max = tbx_max(total, total_max);
 	      
 	      segv = TBX_TIMING_DELAY(t_start, t_enter_handler);
 	      segv_avg+=segv;
-	      segv_min = min(segv, segv_min);
-	      segv_max = max(segv, segv_max);
+	      segv_min = tbx_min(segv, segv_min);
+	      segv_max = tbx_max(segv, segv_max);
 	      
 	      prepare_req = TBX_TIMING_DELAY(t_enter_handler, t_start_send_req);
 	      prepare_req_avg+=prepare_req;
-	      prepare_req_min = min(prepare_req, prepare_req_min);
-	      prepare_req_max = max(prepare_req, prepare_req_max);
+	      prepare_req_min = tbx_min(prepare_req, prepare_req_min);
+	      prepare_req_max = tbx_max(prepare_req, prepare_req_max);
 	    }
 	  else
 	    {
@@ -484,8 +484,8 @@ int pm2_main(int argc, char **argv)
 	    {
 	      receive_page = TBX_TIMING_DELAY(t_start_receive_server, t_end);
 	      receive_page_avg+=receive_page;
-	      receive_page_min = min(receive_page, receive_page_min);
-	      receive_page_max = max(receive_page, receive_page_max);
+	      receive_page_min = tbx_min(receive_page, receive_page_min);
+	      receive_page_max = tbx_max(receive_page, receive_page_max);
 	    }
 	  else
 	    receive_page_min = 0.0;

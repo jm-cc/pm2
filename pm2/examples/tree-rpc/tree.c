@@ -22,13 +22,13 @@ unsigned cur_proc = 0;
 
 static __inline__ int next_proc(void)
 {
-  lock_task();
+  marcel_thread_preemption_disable();
 
   do {
     cur_proc = (cur_proc+1) % pm2_config_size();
   } while(cur_proc == pm2_self());
 
-  unlock_task();
+  marcel_thread_preemption_enable();
   return cur_proc;
 }
 

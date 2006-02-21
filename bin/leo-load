@@ -179,4 +179,8 @@ fi
 
 # echo "### Leonie loader ###"
 # echo exec $prefix "$_PM2WHICH_RESULT" "$@"
+if [ -z "$_PM2WHICH_RESULT" ] ; then
+    echo Executable $prog not found 
+    exit 1
+fi
 exec $ADD_WRAPPER $prefix "$_PM2WHICH_RESULT" "$@"

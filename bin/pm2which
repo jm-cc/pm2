@@ -250,10 +250,10 @@ if [ $_PM2WHICH_SOURCE_MODE = no ]; then
 	exit 1
     fi
 else
-    if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
+    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
         pm2which_error "pm2which: '${_PROG}' exec file not found"
     fi
-    if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
         pm2which_error "pm2which: multiple ${_PROG} example binaries found"
     fi
 fi

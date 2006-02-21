@@ -87,6 +87,7 @@ endif # $(MAKECMDGOALS)
 $(MOD_OBJECTS): $(MOD_GEN_OBJ)/%.o: $(COMMON_DEPS)
 $(MOD_PICS): $(MOD_GEN_OBJ)/%.pic: $(COMMON_DEPS)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%.i: $(COMMON_DEPS)
+$(MOD_CXX_PREPROC): $(MOD_GEN_CPP)/%.Ci: $(COMMON_DEPS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%.si: $(COMMON_DEPS)
 ifeq ($(DEP_ON_FLY),false)
 $(MOD_DEPENDS): $(MOD_GEN_DEP)/%.d: $(COMMON_DEPS)
@@ -103,6 +104,16 @@ $(filter %.pic.d, $(MOD_C_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.o.d, $(MOD_CXX_DEPENDS)): CXXFLAGS+=$(MOD_CXXFLAGS)
+$(filter %.o.d, $(MOD_CXX_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).o.d: %.C
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CC_DEPFLAGS) $(CXXFLAGS) $< | \
+		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.pic.d, $(MOD_CXX_DEPENDS)): CXXFLAGS+=$(MOD_CXXFLAGS)
+$(filter %.pic.d, $(MOD_CXX_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.C
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CC_DEPFLAGS) $(CXXFLAGS) $< | \
+		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
 $(filter %.o.d, $(MOD_S_DEPENDS)): CFLAGS+=$(MOD_CFLAGS)
 $(filter %.o.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).o.d: %.S
 	$(COMMON_BUILD)
@@ -117,6 +128,11 @@ $(MOD_I_DEPENDS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_I_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.i
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS)  -DPREPROC $(CFLAGS) $< | \
+		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d $$(MOD_GEN_CPP)/\1:|' > $@
+$(MOD_CI_DEPENDS): CXXFLAGS+=$(MOD_CXXFLAGS)
+$(MOD_CI_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.Ci
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CC_DEPFLAGS)  -DPREPROC $(CXXFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d $$(MOD_GEN_CPP)/\1:|' > $@
 $(MOD_SI_DEPENDS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_SI_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.si
@@ -144,6 +160,23 @@ $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: $(MOD_GEN_C_INC)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
+
+# Dependances vers *.C
+#---------------------------------------------------------------------
+$(MOD_CXX_OBJECTS): CXXFLAGS+=$(MOD_CXXFLAGS) $(MOD_CXXFLAGS)
+$(MOD_CXX_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.C
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(MOD_CXX_PICS): CXXFLAGS+=$(MOD_CXXFLAGS) $(MOD_CXXFLAGS)
+$(MOD_CXX_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.C
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -fPIC
+
+$(MOD_CXX_PREPROC): CXXFLAGS+=$(MOD_CXXFLAGS) $(MOD_CXXFLAGS)
+$(MOD_CXX_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).Ci: %.C
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) -E -DPREPROC $(CXXFLAGS) $< > $@
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
@@ -260,12 +293,14 @@ targethelplibs:
 # permet de rajouter facilement d'autres répertoires sources (cf mad2) 
 #---------------------------------------------------------------------
 vpath %.c $(MOD_SRC)
+vpath %.C $(MOD_SRC)
 vpath %.c $(MOD_GEN_SRC)
 vpath %.S $(MOD_SRC)
 vpath %.o $(MOD_GEN_OBJ)
 vpath %.pic $(MOD_GEN_OBJ)
 vpath %.d $(MOD_GEN_DEP)
 vpath %.i $(MOD_GEN_CPP)
+vpath %.Ci $(MOD_GEN_CPP)
 vpath %.si $(MOD_GEN_CPP)
 vpath %.l $(MOD_SRC)
 vpath %.y $(MOD_SRC)

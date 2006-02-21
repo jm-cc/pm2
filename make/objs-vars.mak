@@ -70,6 +70,7 @@ MOD_REP_TO_BUILD := \
 # Sources
 #---------------------------------------------------------------------
 MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
+MOD_CXX_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.C))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
@@ -118,26 +119,30 @@ MOD_GEN_C_INC   = $(MOD_GEN_C_Y_INC)
 #---------------------------------------------------------------------
 MOD_C_BASE = $(foreach I, $(MOD_GEN_C_SOURCES) $(MOD_C_SOURCES), \
 			$(notdir $(basename $I)))
+MOD_CXX_BASE = $(foreach I, $(MOD_CXX_SOURCES), $(notdir $(basename $I)))
 MOD_S_BASE = $(foreach I, $(MOD_S_SOURCES), $(notdir $(basename $I)))
-MOD_BASE   = $(MOD_C_BASE) $(MOD_S_BASE)
+MOD_BASE   = $(MOD_C_BASE) $(MOD_CXX_BASE) $(MOD_S_BASE)
 
 # Objets
 #---------------------------------------------------------------------
 MOD_C_OBJECTS = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
+MOD_CXX_OBJECTS = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
 MOD_S_OBJECTS = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
-MOD_OBJECTS   = $(MOD_C_OBJECTS) $(MOD_S_OBJECTS)
+MOD_OBJECTS   = $(MOD_C_OBJECTS) $(MOD_CXX_OBJECTS) $(MOD_S_OBJECTS)
 
 # PICS - librairies dynamiques
 #---------------------------------------------------------------------
 MOD_C_PICS =  $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
+MOD_CXX_PICS =  $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
 MOD_S_PICS =  $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
-MOD_PICS   =  $(MOD_C_PICS) $(MOD_S_PICS)
+MOD_PICS   =  $(MOD_C_PICS) $(MOD_CXX_PICS) $(MOD_S_PICS)
 
 # Preprocs
 #---------------------------------------------------------------------
 MOD_C_PREPROC = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).i)
+MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).Ci)
 MOD_S_PREPROC = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).si)
-MOD_PREPROC   = $(MOD_C_PREPROC) $(MOD_S_PREPROC)
+MOD_PREPROC   = $(MOD_C_PREPROC) $(MOD_CXX_PREPROC) $(MOD_S_PREPROC)
 
 # FUT entries
 #---------------------------------------------------------------------
@@ -149,10 +154,14 @@ MOD_FUT   = $(MOD_C_FUT)
 #---------------------------------------------------------------------
 MOD_C_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
 			$(notdir $(MOD_C_OBJECTS) $(MOD_C_PICS))))
+MOD_CXX_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
+			$(notdir $(MOD_CXX_OBJECTS) $(MOD_CXX_PICS))))
 MOD_S_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
 			$(notdir $(MOD_S_OBJECTS) $(MOD_S_PICS))))
 MOD_I_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
 			$(notdir $(MOD_C_PREPROC))))
+MOD_CI_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
+			$(notdir $(MOD_CXX_PREPROC))))
 MOD_SI_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
 			$(notdir $(MOD_S_PREPROC))))
 MOD_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \

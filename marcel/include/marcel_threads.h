@@ -144,11 +144,11 @@ void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
-#section marcel_functions
+#section functions
 extern __tbx_inline__ void marcel_thread_preemption_enable(void);
 extern __tbx_inline__ void marcel_thread_preemption_disable(void);
 
-#section marcel_inline
+#section inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
 static __tbx_inline__ void __marcel_thread_preemption_enable(void)

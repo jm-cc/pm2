@@ -26,7 +26,7 @@ dsm_mutex_t L;
 pm2_completion_t c;
 
 BEGIN_DSM_DATA
-atomic_t a = {0};
+//atomic_t a = {0};
 DSM_NEWPAGE
 int toto1 = 0;
 DSM_NEWPAGE

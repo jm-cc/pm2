@@ -204,6 +204,9 @@ void
 mad_leonie_print(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
 
 void
+mad_leonie_print_without_nl(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
+
+void
 mad_leonie_barrier(void);
 
 void

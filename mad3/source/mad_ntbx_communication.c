@@ -487,6 +487,52 @@ mad_leonie_print(char *fmt, ...)
 
   TBX_LOCK_SHARED(mad_leo_client);
   mad_leonie_send_int_nolock(mad_leo_command_print);
+  mad_leonie_send_int_nolock(1); // the string will be printed with a newline character
+  mad_leonie_send_string_nolock(mad_print_buffer);
+  TBX_UNLOCK_SHARED(mad_leo_client);
+  TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_print);
+  LOG_OUT();
+}
+
+void
+mad_leonie_print_without_nl(char *fmt, ...)
+{
+  va_list ap;
+  int     len = 0;
+
+  LOG_IN();
+  TBX_CRITICAL_SECTION_ENTER(mad_ntbx_cs_print);
+  if (!mad_leo_client)
+    FAILURE("leonie command module uninitialized");
+
+  len = strlen(fmt);
+
+  if (mad_print_buffer_size < len)
+    {
+      mad_print_buffer_size = 1 + 2 * len;
+      mad_print_buffer      =
+	TBX_REALLOC(mad_print_buffer, mad_print_buffer_size);
+    }
+
+  while (1)
+    {
+      int status;
+
+      va_start(ap, fmt);
+      status = vsnprintf(mad_print_buffer, mad_print_buffer_size, fmt, ap);
+      va_end(ap);
+
+      if (status != -1)
+	break;
+
+      mad_print_buffer_size *= 2;
+      mad_print_buffer       =
+	TBX_REALLOC(mad_print_buffer, mad_print_buffer_size);
+    }
+
+  TBX_LOCK_SHARED(mad_leo_client);
+  mad_leonie_send_int_nolock(mad_leo_command_print);
+  mad_leonie_send_int_nolock(0); // the string will be printed without a newline character
   mad_leonie_send_string_nolock(mad_print_buffer);
   TBX_UNLOCK_SHARED(mad_leo_client);
   TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_print);

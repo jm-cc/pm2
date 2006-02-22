@@ -491,11 +491,18 @@ exit_session(p_leonie_t leonie)
         } break;
 
         case leo_command_print: {
+	  int with_newline = 0;
           char *string = NULL;
 
           TRACE("leo_command_print");
+	  with_newline = leo_receive_int(client);
           string = leo_receive_string(client);
-          DISP("%s", string);
+	  if (with_newline) {
+	    DISP("%s", string);
+	  }
+	  else {
+	    DISP_NO_NL("%s", string);
+	  }
           free(string);
           string = NULL;
           status--;

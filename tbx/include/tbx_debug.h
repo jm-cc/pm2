@@ -194,6 +194,9 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define DISP(str, ...)       debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
                                            PM2DEBUG_DISPLEVEL, \
 					   str "\n" , ## __VA_ARGS__)
+#define DISP_NO_NL(str, ...) debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
+					   str , ## __VA_ARGS__)
 #define DISP_IN()            debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
                                            PM2DEBUG_DISPLEVEL, \
 					   __TBX_FUNCTION__": -->\n")
@@ -214,13 +217,14 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 
-#define DISP(str, ...)      fprintf(stderr, str "\n" , ## __VA_ARGS__)
-#define DISP_IN()           fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
-#define DISP_OUT()          fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
-#define DISP_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
-#define DISP_CHAR(val)      fprintf(stderr, "%c" , (char)(val))
-#define DISP_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
-#define DISP_STR(str, str2) fprintf(stderr, str ": %s\n" , (char *)(str2))
+#define DISP(str, ...)       fprintf(stderr, str "\n" , ## __VA_ARGS__)
+#define DISP_NO_NL(str, ...) fprintf(stderr, str, ## __VA_ARGS__)
+#define DISP_IN()            fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
+#define DISP_OUT()           fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
+#define DISP_VAL(str, val)   fprintf(stderr, str " = %d\n" , (int)(val))
+#define DISP_CHAR(val)       fprintf(stderr, "%c" , (char)(val))
+#define DISP_PTR(str, ptr)   fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define DISP_STR(str, str2)  fprintf(stderr, str ": %s\n" , (char *)(str2))
 
 #endif /* PM2DEBUG */
 

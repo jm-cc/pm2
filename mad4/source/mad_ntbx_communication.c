@@ -487,6 +487,7 @@ mad_leonie_print(char *fmt, ...)
 
   TBX_LOCK_SHARED(mad_leo_client);
   mad_leonie_send_int_nolock(mad_leo_command_print);
+  mad_leonie_send_int_nolock(1); // the string will be printed with a newline character
   mad_leonie_send_string_nolock(mad_print_buffer);
   TBX_UNLOCK_SHARED(mad_leo_client);
   TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_print);

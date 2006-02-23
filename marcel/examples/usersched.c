@@ -36,13 +36,15 @@ any_t writer(any_t arg)
 }
 
 /* Sample (reverse) cyclic distribution */
-static __lwp_t *my_sched_func(marcel_t pid, __lwp_t *current_lwp)
+static unsigned my_sched_func(marcel_t pid, unsigned current_lwp)
 {
-  static __lwp_t *lwp = &__main_lwp;
+  static unsigned lwp = 0;
+  unsigned nbvps = marcel_nbvps();
 
-  mdebug("User scheduler called for thread %p\n", pid);
+  lwp = (lwp + nbvps - 1) % nbvps;
 
-  lwp = prev_lwp(lwp);
+  tprintf("User scheduler called on lwp %d for thread %p -> lwp %d\n", current_lwp, pid, lwp);
+
   return lwp;
 }
 

@@ -153,7 +153,9 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
+	ma_runqueue_t *rq;
 	LOG_IN();
+	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	internal->type = MA_TASK_ENTITY;
 	if (attr->sched.init_holder)
 		h = attr->sched.init_holder;
@@ -162,16 +164,75 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		h = ma_task_init_holder(MARCEL_SELF);
 	} else if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 		h = &(marcel_sched_vpmask_init_rq(&attr->vpmask)->hold);
+	internal->sched_policy = attr->__schedpolicy;
 	if (h) {
 		internal->sched_holder = internal->init_holder = h;
 	} else {
 		internal->init_holder = NULL;
-		internal->sched_holder = &ma_main_runqueue.hold;
+#ifdef MA__LWPS
+		rq = NULL;
+		switch (internal->sched_policy) {
+			case MARCEL_SCHED_SHARED:
+				rq = &ma_main_runqueue;
+				break;
+/* TODO: vpmask ? */
+			case MARCEL_SCHED_OTHER: {
+				ma_lwp_t lwp;
+				for_each_lwp_from_begin(lwp, cur_lwp)
+					rq = ma_lwp_rq(lwp);
+					break;
+				for_each_lwp_from_end()
+				break;
+			}
+			case MARCEL_SCHED_AFFINITY: {
+				// Le cas echeant, retourne un LWP fortement
+				// sous-charge (nb de threads running <
+				// THREAD_THRESHOLD_LOW), ou alors retourne le
+				// LWP "courant".
+
+				ma_lwp_t lwp;
+				ma_runqueue_t *rq2;
+				for_each_lwp_from_begin(lwp, cur_lwp)
+					rq2 = ma_lwp_rq(lwp);
+					if (rq2->hold.nr_running < THREAD_THRESHOLD_LOW) {
+						rq = rq2;
+						break;
+					}
+				for_each_lwp_from_end()
+				if (!rq)
+					rq = ma_lwp_rq(cur_lwp);
+				break;
+			}
+			case MARCEL_SCHED_BALANCE: {
+				// Retourne le LWP le moins charge (ce qui
+				// oblige a parcourir toute la liste)
+				unsigned best = ma_lwp_rq(cur_lwp)->hold.nr_running;
+				ma_lwp_t lwp;
+				ma_runqueue_t *rq2;
+				rq = ma_lwp_rq(cur_lwp);
+				for_each_lwp_from_begin(lwp, cur_lwp)
+					rq2 = ma_lwp_rq(lwp);
+					if (rq2->hold.nr_running < best) {
+						rq = rq2;
+						best = rq2->hold.nr_running;
+					}
+				for_each_lwp_from_end()
+				break;
+			}
+			default: {
+				unsigned num = ma_user_policy[internal->sched_policy - __MARCEL_SCHED_AVAILABLE](t, LWP_NUMBER(cur_lwp));
+				rq = ma_lwp_rq(GET_LWP_BY_NUM(num));
+				break;
+			}
+		}
+		if (!rq)
+#endif
+			rq = &ma_main_runqueue;
+		internal->sched_holder = &rq->hold;
 	}
 	internal->run_holder=NULL;
 	internal->holder_data=NULL;
 	INIT_LIST_HEAD(&internal->run_list);
-	internal->sched_policy = attr->__schedpolicy;
 	internal->prio=attr->sched.prio;
 	//timestamp, last_ran
 	ma_atomic_init(&internal->time_slice,MARCEL_TASK_TIMESLICE);
@@ -199,17 +260,19 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 #define MARCEL_MAX_USER_SCHED    16
 
-#define MARCEL_SCHED_OTHER       0
-#define MARCEL_SCHED_AFFINITY    1
-#define MARCEL_SCHED_BALANCE     2
-#define __MARCEL_SCHED_AVAILABLE 3
+#define MARCEL_SCHED_SHARED      0
+#define MARCEL_SCHED_OTHER       1
+#define MARCEL_SCHED_AFFINITY    2
+#define MARCEL_SCHED_BALANCE     3
+#define __MARCEL_SCHED_AVAILABLE 4
 
-#section marcel_types
-#depend "sys/marcel_lwp.h[marcel_types]"
+#section types
 #depend "marcel_threads.h[types]"
-typedef marcel_lwp_t *(*marcel_schedpolicy_func_t)(marcel_t pid,
-						   marcel_lwp_t *current_lwp);
-#section marcel_functions
+typedef unsigned (*marcel_schedpolicy_func_t)(marcel_t pid,
+						   unsigned current_lwp);
+#section marcel_variables
+extern marcel_schedpolicy_func_t ma_user_policy[MARCEL_MAX_USER_SCHED];
+#section functions
 void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
 
 /* ==== scheduling policies ==== */
@@ -308,17 +371,10 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #ifdef MA__LWPS
 		// On ne peut pas placer ce thread sur le LWP courant
 		|| (!lwp_isset(LWP_NUMBER(LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
-#ifdef PM2_DEV
-#warning TODO: MARCEL_SCHED_OTHER
-#endif
-#if 0
-#ifndef MA__ONE_QUEUE
 		// Si la politique est du type 'placer sur le LWP le moins
 		// chargé', alors on ne peut pas placer ce thread sur le LWP
 		// courant
-		|| (new_task->sched_policy != MARCEL_SCHED_OTHER)
-#endif
-#endif
+		|| (new_task->sched.internal.sched_policy != MARCEL_SCHED_OTHER)
 #endif
 #ifdef MA__BUBBLES
 		// on est placé dans une bulle (on ne sait donc pas si l'on a

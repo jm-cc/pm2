@@ -15,10 +15,6 @@
  * General Public License for more details.
  */
 
-#ifdef PM2DEBUG
-//#define DO_NOT_DISPLAY_IN_IDLE
-#endif
-
 #include "marcel.h"
 #include "tbx_compiler.h"
 
@@ -86,30 +82,6 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
   return 0;
 }
 
-#define work_pending(thread) (0)
-
-// Restriction d'affichage de debug lorsque l'on est la tâche idle
-#ifdef DO_NOT_DISPLAY_IN_IDLE
-
-#define IDLE_LOG_IN() \
-  do { \
-    if (!IS_TASK_TYPE_IDLE(marcel_self())) \
-      LOG_IN(); \
-  } while(0)
-
-#define IDLE_LOG_OUT() \
-  do { \
-    if (!IS_TASK_TYPE_IDLE(marcel_self())) \
-      LOG_OUT(); \
-  } while(0)
-
-#else
-
-#define IDLE_LOG_IN()    LOG_IN()
-#define IDLE_LOG_OUT()   LOG_OUT()
-
-#endif
-
 static volatile unsigned __active_threads,
   __sleeping_threads,
   __blocked_threads,
@@ -127,30 +99,18 @@ static LIST_HEAD(__delayed_tasks);
 //static marcel_lock_t __delayed_lock = MARCEL_LOCK_INIT;
 //static marcel_lock_t __blocking_lock = MARCEL_LOCK_INIT;
 
-#if 0 //TODO
+static unsigned next_schedpolicy_available = __MARCEL_SCHED_AVAILABLE;
+marcel_schedpolicy_func_t ma_user_policy[MARCEL_MAX_USER_SCHED];
 void marcel_schedpolicy_create(int *policy,
 			       marcel_schedpolicy_func_t func)
 {
-  if(next_schedpolicy_available <
+  if(next_schedpolicy_available >=
      MARCEL_MAX_USER_SCHED + __MARCEL_SCHED_AVAILABLE)
     RAISE(CONSTRAINT_ERROR);
 
-  user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] = func;
+  ma_user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] = func;
   *policy = next_schedpolicy_available++;
 }
-#endif
-
-#if 0
-inline static marcel_t next_task(marcel_t task)
-{
-  return list_entry(task->sched.internal.run_list.next, marcel_task_t, sched.internal.run_list);
-}
-
-inline static marcel_t prev_task(marcel_t task)
-{
-  return list_entry(task->sched.internal.run_list.prev, marcel_task_t, sched.internal.run_list);
-}
-#endif
 
 int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p) {
 	return ma_sched_change_prio(t,p->sched_priority);
@@ -197,151 +157,6 @@ unsigned marcel_frozenthreads(void)
 {
   return __frozen_threads;
 }
-
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/*              Choix des lwp, choix des threads, etc.                    */
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-#if 0
-static __inline__ int CAN_RUN(marcel_lwp_t *lwp, marcel_t pid)
-{
-  return
-    ( 1
-#ifdef MA__MULTIPLE_RUNNING
-      && (pid->sched.internal.ext_state != MARCEL_RUNNING)
-#endif
-#ifdef MA__LWPS
-      && (!marcel_vpmask_vp_ismember(&pid->sched.vpmask, lwp->number))
-#endif
-      );
-}
-
-static __inline__ int CANNOT_RUN(marcel_lwp_t *lwp, marcel_t pid)
-{
-  return !CAN_RUN(lwp, pid);
-}
-#endif
-
-#if 0
-#ifndef MA__ONE_QUEUE
-
-// On cherche le premier LWP compatible avec le 'vpmask' de la tâche
-// en commençant par 'first'.
-static __inline__ marcel_lwp_t *__find_first_lwp(marcel_t pid, marcel_lwp_t *first)
-{
-  marcel_lwp_t *lwp = first;
-
-  do {
-    if(!marcel_vpmask_vp_ismember(&pid->vpmask, lwp->number))
-      return lwp;
-    lwp = next_lwp(lwp);
-  } while(lwp != first);
-
-  // Si on arrive ici, c'est une erreur de l'application
-  RAISE(CONSTRAINT_ERROR);
-  return NULL;
-}
-
-static __inline__ marcel_lwp_t *find_first_lwp(marcel_t pid, marcel_lwp_t *first)
-{
-  marcel_lwp_t *lwp;
-
-  lwp_list_lock();
-
-  lwp = __find_first_lwp(pid, first);
-
-  lwp_list_unlock();
-
-  return lwp;
-}
-
-static __inline__ marcel_lwp_t *find_next_lwp(marcel_t pid, marcel_lwp_t *first)
-{
-  marcel_lwp_t *lwp;
-
-  lwp_list_lock();
-
-  lwp = __find_first_lwp(pid, next_lwp(first));
-
-  lwp_list_unlock();
-
-  return lwp;
-}
-
-// Le cas echeant, retourne un LWP fortement sous-charge (nb de
-// threads running < THREAD_THRESHOLD_LOW), ou alors retourne le LWP
-// "suggested".
-static __inline__ marcel_lwp_t *find_good_lwp(marcel_t pid, marcel_lwp_t *suggested)
-{
-  marcel_lwp_t *first = find_first_lwp(pid, suggested);
-  marcel_lwp_t *lwp = first;
-
-  for(;;) {
-    if(SCHED_DATA(lwp).running_tasks < THREAD_THRESHOLD_LOW)
-      return lwp;
-
-    // On avance au prochain possible
-    lwp = find_next_lwp(pid, lwp);
-
-    // Si on a fait le tour de la liste sans succès, on prend le
-    // premier...
-    if(lwp == first)
-      return first;
-  }
-}
-
-// Retourne le LWP le moins charge (ce qui oblige a parcourir toute la
-// liste)
-static __inline__ marcel_lwp_t *find_best_lwp(marcel_t pid)
-{
-  marcel_lwp_t *first = find_first_lwp(pid, &__main_lwp);
-  unsigned nb = SCHED_DATA(first).running_tasks;
-  marcel_lwp_t *best, *lwp;
-
-  lwp = best = first;
-  for(;;) {
-    // On avance au prochain possible
-    lwp = find_next_lwp(pid, lwp);
-
-    if(lwp == first)
-      return best;
-
-    if(SCHED_DATA(lwp).running_tasks < nb) {
-      nb = SCHED_DATA(lwp).running_tasks;
-      best = lwp;
-    }
-  }
-}
-
-static __inline__ marcel_lwp_t *choose_lwp(marcel_t t)
-{
-  marcel_t cur = marcel_self();
-  DEFINE_CUR_LWP(, =, GET_LWP(cur));
-
-  switch(t->sched_policy)
-    {
-    case MARCEL_SCHED_OTHER :
-      return find_first_lwp(t, cur_lwp);
-    case MARCEL_SCHED_AFFINITY :
-      return find_good_lwp(t, t->previous_lwp ? : cur_lwp);
-    case MARCEL_SCHED_BALANCE :
-      return find_best_lwp(t);
-    default:
-      /* MARCEL_SCHED_USER_... */
-      return (*user_policy[t->sched_policy - __MARCEL_SCHED_AVAILABLE])
-	(t, cur_lwp);
-    }
-
-  RAISE(PROGRAM_ERROR);
-  return NULL;
-}
-
-#endif /* MA__ONE_QUEUE */
-#endif
 
 /**************************************************************************/
 /**************************************************************************/

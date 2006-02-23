@@ -39,6 +39,7 @@ end
 define marcel-continue
   handle SIGALRM pass
   handle SIGVTALRM pass
+  handle SIGUSR2 pass
   if $marcel_saved==1
     __rest-ctx
   end
@@ -47,6 +48,7 @@ end
 define marcel-step
   handle SIGALRM nopass
   handle SIGVTALRM nopass
+  handle SIGUSR2 pass
   if $marcel_saved==1
     __rest-ctx
   end

@@ -4,6 +4,12 @@
 <TEXT>
 
 <P>
+<NOTE>
+  Nathalie: Parler de Madeleine et Marcel
+</NOTE>
+</P>
+
+<P>
 This chapter aims at illustrating the basic features of PM2 through
 some very simple programs. The next chapters present more advanced
 features that may be needed when developing <EM>real</EM> parallel

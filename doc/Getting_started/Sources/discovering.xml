@@ -72,7 +72,8 @@ Let us start our PM2 tour by writing the traditional ``<EM>Hello
 main functionalities provided by the PM2 programming interface.
 </P>
 
-<SUBSUBSECTION TITLE="The minimal PM2 program">
+<SUBSUBSECTION>
+<TITLE>The minimal <MU/>PM2 program</TITLE>
 
 <PROGRAM FILE="./Progs/hello.c" TITLE="Minimal PM2 program" LABEL="prog:hello"/>
 
@@ -84,6 +85,7 @@ example of a minimal PM2 code. Compile it and run it:
 
 </P>
 
+<IGNORE>
 <WARNING>
 Compilation using the Makefile given in Program <REF
 LABEL="prog:Makefile1"/> creates the executable file in the current
@@ -92,11 +94,22 @@ machines, you need to make sure your current directory is in the
 <TT>PATH</TT> or to move the executable <TT>hello</TT> into a
 directory available in the <TT>PATH</TT>.
 </WARNING>
+</IGNORE>
 
 <P>
 Though it looks simple, this is a full-fledged SPMD parallel program
 that spawns on several processing nodes during execution! Let's
 examine it step by step.
+</P>
+
+<P>
+Compilation using the Makefile given in Program <REF
+LABEL="prog:Makefile1"/> creates the executable file in the
+appropriate PM2 build directory, e.g
+<TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
+program will be located using the utility <TT>pm2which</TT>.
+
+<CODE FILE="./Sources/code/pm2which.txt"/>
 </P>
 
 <SUBSUBSUBSECTION TITLE="Header files">

@@ -14,11 +14,25 @@ CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)
 EXEFILES	:= $(CFILES:%.c=%)
 
+ifdef PM2_BUILD_DIR
+TARGET	:=	${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin
+else
+ifdef PM2_HOME
+TARGET	:=	${PM2_HOME}/build/${PM2_FLAVOR}/examples/bin
+else
+TARGET	:=	${HOME}/build/${PM2_FLAVOR}/examples/bin
+endif
+endif
+
 all: ${EXEFILES}
 
-${EXEFILES}: %: %.c
+${TARGET}:
+	-@mkdir ${TARGET}
+
+${EXEFILES}: %: %.c ${TARGET}
 	@echo "Compiling $< for flavor '${PM2_FLAVOR}'..."
-	@${CC} ${CFLAGS} $< ${LDFLAGS} -o $@
+	make -C ${PM2_ROOT}
+	@${CC} ${CFLAGS} $< ${LDFLAGS} -o ${TARGET}/$@
 
 clean:
 	-rm ${EXEFILES} ${OFILES}

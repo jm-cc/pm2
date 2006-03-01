@@ -1,0 +1,32 @@
+% cd ${PM2_ROOT}/mad3/examples/
+% make clean
+% make mad_ping
+...
+<<< Generating libraries: done
+    building mad_ping.o
+    linking mad_ping
+% pm2conf ravel debussy
+The current PM2 configuration contains 2 host(s) :
+0 : ravel
+1: debussy
+% pm2load mad_ping
+##### ravel
+##### debussy
+(ravel): My global rank is 0
+(debussy): My global rank is 1
+The configuration size is = 2
+Channel: pm2
+The configuration size is = 2
+Channel: pm2
+My local channel rank is = 0
+Channel: pm2
+My local channel rank is = 1
+ping with = 1
+pong with = 0
+src|dst|size        |latency     |10^6 B/s|MB/s    |
+  0   1            4       10.964    0.365    0.348
+...
+  0   1      2097152    33431.436   62.730   59.824
+Exiting
+test series completed
+Exiting

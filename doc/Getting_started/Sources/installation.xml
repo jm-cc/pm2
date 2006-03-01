@@ -221,13 +221,13 @@ files generated within the compilation process such as the binary file
 <P>
 By default, configuration files are stored in the
 <TT>${PM2_HOME}/.pm2</TT> directory. You can change this by setting
-the variable <TT>PM2_CONF_DIR</TT> to another directory.
+the <TT>PM2_CONF_DIR</TT> variable to another directory.
 </P>
 <P>
 All the files generated within the compilation process will be placed by 
 default in the <TT>${PM2_HOME}/build</TT> directory. Though this may
 be convenient in a first place, you may wish to keep these files in a
-more dedicated place. Just define the <TT>PM2_BUILD_DIR</TT> shell
+more dedicated place. Just define the <TT>PM2_BUILD_DIR</TT> environment
 variable to the desired value.
 </P>
 <P>
@@ -283,6 +283,7 @@ the various flavors. You can list them by
 <CODE FILE="./Sources/code/flavorList.txt"/>
 </P>
 
+<IGNORE>
 <P>
 In the following, we advise you to use the <TT>pm2</TT> standard
 flavor. Just have a look at it to get a feeling of its different parameters.
@@ -294,6 +295,7 @@ You will probably never dare to do it again!
 The <TT>pm2-flavor</TT> command offers several other functionalities. See
 <TT>pm2-flavor -h</TT> for the extensive on-line help.
 </P>
+</IGNORE>
 
 </SUBSECTION>
 
@@ -314,15 +316,28 @@ by hand.
 <P>
 The only interesting setting at this time is the underlying network
 protocol selection, for which the auto-detection by the
-Madeleine<SPACE/>III communication library of PM2 is not recommended.
-By default, the network protocol is set to TCP in the <TT>pm2</TT>
-flavor, which should fit your needs at least for the first runs.
+Madeleine<SPACE/>III communication library is not recommended.  By
+default, the network protocol is set to TCP in the flavors, which
+should fit your needs at least for the first runs.
+
+<IGNORE>
+<CODE FILE="./Sources/code/setPm2Flavor.txt"/>
+</IGNORE>
+</P>
+
+<P>
+In the following, we will use different flavors of PM2 depending on
+which aspect of PM2 we wish to use. Selecting a flavor is done by
+setting the environment variable <TT>PM2_FLAVOR</TT> to the name of
+the flavor one wishes to use.
 
 <CODE FILE="./Sources/code/setPm2Flavor.txt"/>
+
 </P>
 
 </SUBSECTION>
 
+<IGNORE>
 <SUBSECTION TITLE="Compiling the library">
 
 <P>
@@ -387,69 +402,25 @@ be removed by hand.
 </P>
 
 </SUBSECTION>
-
-<SUBSECTION TITLE="Solving problems">
-
-<P>
-If something goes wrong at any point, you can always activate the
-emergency repair tool provided by PM2.
-
-<CODE FILE="./Sources/code/makeSos.txt"/>
-</P>
-
-<P>
-This results into a listing of your current configuration, attempts to
-rebuild the flavor database and clears the compiled PM2 library as
-cleanly as possible. It should then restore a fresh and safe
-configuration for you, ready to restart the whole compilation. The
-output of the command may look like:
-
-<CODE FILE="./Sources/code/makeSos2.txt"/>
-
-</P>
-
-<P>
-Note that the final message is automatically generated!
-</P>
-
-</SUBSECTION>
-
-<SUBSECTION TITLE="Compiling your first PM2 program">
-
-<WARNING>
-  Please, make sure that your flavor is actually set to <TT>pm2</TT>:
-
-  <CODE FILE="./Sources/code/echoFlavor.txt"/>
-</WARNING>
-
-<P>
-The PM2 library should now be fully configured.  You are ready to
-compile and execute the example programs of the distribution.  Let's
-start with the simplest one: <EM>Hello world!</EM>, located the in file
-<TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
-
-<CODE FILE="./Sources/code/makeHello.txt"/>
-</P>
-
-<P>
-The compiled version of the program is automatically placed into your
-own <TT>build/${PM2_FLAVOR}</TT> directory, but you do need not bother with
-this detail at this point: PM2 cares about it for you! Use the
-<TT>pm2which</TT> command to learn where a file is physically located;
-<CODE FILE="./Sources/code/whichHello.txt"/>
-</P>
-
-</SUBSECTION>
+</IGNORE>
 
 <SUBSECTION TITLE="Specifying the configuration for execution">
 
 <P>
-The final step before execution is to specify the list of host names
-on which the PM2 application is going to run. For this, use the
-<TT>pm2conf</TT> command. Here I want to use my local machine called
-<TT>ravel</TT>, and two neighboring ones called <TT>debussy</TT> and
-<TT>faure</TT> (well, this should actually read <EM>Fauré</EM>!).
+Before executing a PM2 application, it is needed to specify the list
+of host names on which the application is going to run. For this,
+use the <TT>pm2conf</TT> command. Here I want to use my local machine
+called <TT>ravel</TT>, and two neighboring ones called
+<TT>debussy</TT> and <TT>faure</TT> (well, this should actually read
+<EM>Fauré</EM>!).
+
 <CODE FILE="./Sources/code/pm2conf.txt"/>
+</P>
+
+<P>
+Note that a configuration is specific to a specific flavor. Using a
+new flavor will require the setting of a configuration for this
+flavor.
 </P>
 
 <P>
@@ -544,15 +515,35 @@ This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Loading the program">
+<SUBSECTION>
+<TITLE>Compiling your first <MU/>PM2 program</TITLE>
+
+<WARNING>
+  Please, make sure that your flavor is actually set to <TT>pm2</TT>:
+
+  <CODE FILE="./Sources/code/setPm2Flavor.txt"/>
+</WARNING>
+
+<P>
+The PM2 library should now be fully configured.  You are ready to
+compile and execute the example programs of the distribution.  Let's
+start with the simplest one: <EM>Hello world!</EM>, located the in file
+<TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
+
+<CODE FILE="./Sources/code/makeHello.txt"/>
+</P>
+
+<P>
+The compiled version of the program is automatically placed into your
+own <TT>build/${PM2_FLAVOR}</TT> directory, but you do need not bother with
+this detail at this point: PM2 cares about it for you! Use the
+<TT>pm2which</TT> command to learn where a file is physically located;
+<CODE FILE="./Sources/code/whichHello.txt"/>
+</P>
 
 <P>
 It remains to actually load and run the program.
 <CODE FILE="./Sources/code/pm2load.txt"/>
-</P>
-
-<P>
-Congratulations, you've run your first PM2 program! <TT>;-)</TT>
 </P>
 
 <P>
@@ -576,6 +567,62 @@ different from node<SPACE/>0 does not show up at the terminal. We will see
 later how to get them.
 </P>
 </IGNORE>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Compiling your first Marcel program">
+
+<WARNING>
+  Please, make sure that your flavor is actually set to <TT>marcel</TT>:
+
+  <CODE FILE="./Sources/code/setMarcelFlavor.txt"/>
+</WARNING>
+
+<P>
+You can now compile and execute a sample Marcel application.
+<CODE FILE="./Sources/code/checkPm2-2.txt"/>
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Compiling your first Madeleine program">
+
+<WARNING>
+  Please, make sure that your flavor is actually set to <TT>mad3</TT>:
+
+  <CODE FILE="./Sources/code/setMadFlavor.txt"/>
+</WARNING>
+
+<P>
+You can now compile and execute a sample Madeleine application.
+<CODE FILE="./Sources/code/checkPm2-3.txt"/>
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Solving problems">
+
+<P>
+If something goes wrong at any point, you can always activate the
+emergency repair tool provided by PM2.
+
+<CODE FILE="./Sources/code/makeSos.txt"/>
+</P>
+
+<P>
+This results into a listing of your current configuration, attempts to
+rebuild the flavor database and clears the compiled PM2 library as
+cleanly as possible. It should then restore a fresh and safe
+configuration for you, ready to restart the whole compilation. The
+output of the command may look like:
+
+<CODE FILE="./Sources/code/makeSos2.txt"/>
+
+</P>
+
+<P>
+Note that the final message is automatically generated!
+</P>
 
 </SUBSECTION>
 

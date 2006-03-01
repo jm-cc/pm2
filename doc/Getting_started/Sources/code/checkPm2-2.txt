@@ -1,0 +1,16 @@
+% cd ${PM2_ROOT}/marcel/examples
+% make clean
+...
+% make sumtime
+...
+<<< Generating libraries: done
+    building sumtime.o
+    linking sumtime
+% pm2conf ravel debussy faure
+The current PM2 configuration contains 3 host(s) :
+0 : ravel
+1: debussy
+2: faure
+% pm2load sumtime 1000
+Sum from 1 to 1000 = 500500
+time = 4.829ms

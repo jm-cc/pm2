@@ -7,16 +7,17 @@
 PM2 is developed at LaBRI (<EM>Laboratoire Bordelais de Recherche en
 Informatique</EM>), a research laboratory located in Bordeaux, France,
 jointly supported by the INRIA, the CNRS, and the University of
-Bordeaux I. Before that, PM2 was developed at LIP (<EM>Laboratoire de
+Bordeaux 1. Before that, PM2 was developed at LIP (<EM>Laboratoire de
 l'Informatique du Parallélisme</EM>), a research laboratory located at
-the ENS Lyon (<EM>Ecole Normale Supérieure de Lyon</EM>) France,
-jointly supported by the INRIA and CNRS institutions. PM2 was
-originally designed at LIFL, University of Lille, France.
+the ENS Lyon (<EM>Ecole Normale Supérieure de Lyon</EM>), France,
+jointly supported by the INRIA, the CNRS and the University Claude
+Bernard Lyon 1. PM2 was originally designed at LIFL, University of
+Lille, France.
 </P>
 
 <P>
 PM2 (<EM>Parallel Multithreaded Machine</EM>) is a distributed
-multithreaded programming environment designed to efficiently support
+multithreaded programming environment designed to support efficiently
 irregular parallel applications on distributed architectures of SMP
 nodes. PM2 is primarily designed for medium-size clusters of commodity
 processing nodes interconnected by high-performance networks. However,
@@ -28,6 +29,7 @@ heterogeneous networking configurations, such as sets of
 interconnected clusters.
 </P>
 
+<IGNORE>
 <P>
 The thread management subsystem of PM2 is called Marcel. It is
 designed to manage several hundreds of threads on each available
@@ -46,17 +48,128 @@ for Linux by introducing specific support into the operating system.
 
 <P>
 The communication subsystem of PM2 is called Madeleine. It is
-specifically designed to provide PM2 threads with efficient RPC
-facilities on modern high-performance networks. In particular,
-Madeleine strives at providing zero-copy communication in user-space
-to obtain a minimal latency and a maximal bandwidth: less than
-10 <MICROSECOND/> latency and Gigabit/s bandwidth have been reported for
-Myrinet networks.  Yet, the design has been careful enough to keep
-Madeleine portable across a wide range of communication interfaces,
-including TCP and MPI. This makes PM2 portable on most Unix
-platforms.
+specifically designed to provide PM2 threads with efficient
+communication facilities on modern high-performance networks. In
+particular, Madeleine strives at providing zero-copy communication in
+user-space to obtain a minimal latency and a maximal bandwidth: less
+than 10 <MICROSECOND/> latency and Gigabit/s bandwidth have been
+reported for Myrinet networks.  Yet, the design has been careful
+enough to keep Madeleine portable across a wide range of communication
+interfaces, including TCP and MPI. This makes PM2 portable on most
+Unix platforms.
+</P>
+</IGNORE>
+
+<P>
+The PM2 software suite is composed of different software components
+for clusters and clusters of clusters presented in the following sections.
 </P>
 
+
+<SUBSECTION TITLE="Runtime Systems">
+
+<SUBSUBSECTION>
+<TITLE><MU/>PM2</TITLE>
+
+<P>
+<MU/>PM2 is a low level generic runtime system which integrates
+multithreading management, communication management and elementary
+shared memory management. Its interface is reduced to simple RPC
+paradigm as well as the classical multithreading primitives. Its
+implementation is somewhat a software glue in-between the Marcel and
+Madeleine libraries and a iso-adress memory management module. The PM2
+environment was rewritten to rely exclusively on this runtime system.
+</P>
+
+</SUBSUBSECTION>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Communication Libraries">
+
+<SUBSUBSECTION TITLE="Madeleine">
+
+<P>
+Madeleine is a communication multi-cluster library which implements a
+concept of communication channel that can be either physical (an
+abstraction of a physical network) or virtual. In that later case, it
+is possible to build heterogeneous virtual networks. Madeleine
+provides a forwarding mechanism relying onto gateways when the
+configuration allows it (nodes which belong to several physical
+networks with different technologies). Madeleine is able to
+dynamically select the best way to transmit data according to the
+underlying network technology (multi-paradigm). This is made possible
+by specifying constraints upon data to be sent (concept of programming
+by contract) and enables to keep a good level of performance on top of
+technologies with very differing functioning.  Madeleine is available
+on top of various network hardware: Myrinet, SCI, Ethernet or even VIA
+and runs on the following architectures: Linux/IA32, Linux/Alpha,
+Linux/Sparc, Linux/PowerPC, Solaris/Sparc, Solaris/IA32, AIX/PowerPC,
+WindowsNT/IA32.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="MPICH/Madeleine">
+
+<P>
+MPICH/Madeleine is an implementation of the MPI (Message Passing Interface) communication standard. This standard is widely used in scientific parallel computing applications. This library is an adaptation of the well known MPICH (MPI CHameleon), which has the property to be relatively easily adaptable on top of new network technologies thanks to a well defined layered architecture.
+</P>
+
+<P>
+To have more information about MPICH/Madeleine, please consult the
+following URL: <URL>http://runtime.futurs.inria.fr/mpi/</URL>.
+</P>
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="PadicoTM">
+
+<P>
+PadicoTM is a communication framework for grids, built upon Madeleine. It is able to make a large spectrum of middleware systems (MPI, CORBA, JXTA, SOAP, HLA, JVM, etc.) work over Madeleine.
+</P>
+
+<P>
+To have more information about PadicoTM, please consult the following URL: <URL>http://runtime.futurs.inria.fr/PadicoTM/</URL>
+</P>
+</SUBSUBSECTION>
+</SUBSECTION>
+
+<SUBSECTION TITLE="Multithreading Libraries">
+
+<SUBSUBSECTION TITLE="Marcel">
+
+<P>
+Marcel is a user-level multithreading library. It is available as
+several flavors in accordance with the platform and programmer
+needs. In order to be able to benefit from SMP machines, Marcel is
+able to use a two-level scheduler based on kernel threads provided by
+the operating system. With the Linux system, Marcel is also able to
+use activations (see LinuxActivations below) which provide a remedy to
+the classical limitation of user level multithreading libraries,
+namely the blocking system calls. Marcel also has good scheduling
+behavior on NUMA machines thanks to a powerful mecanism that lets the
+programmer express the structure of his application. All these flavors
+are based on top of a unique multithreading management kernel and are
+specialized during compilation.
+</P>
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="LinuxActivations">
+
+<P>
+LinuxActivations is a software component that can be used conjointly
+with the Marcel multithreading library. It is an kind of extension to
+the Linux kernel which enables to precisely control the user-level
+thread scheduling when they perform blocking input/output operations
+in the kernel. LinuxActivations is based on an extension of the
+SchedulerActivations proposed by Anderson and uses a mechanism which
+is the opposite of a system call (named upcall) in order to inform the
+user level scheduler about events generated by the kernel.
+</P>
+</SUBSUBSECTION>
+</SUBSECTION>
+
+<IGNORE>
 <SUBSECTION TITLE="The PM2 Programming model">
 
 <P>
@@ -292,6 +405,7 @@ this level within a few hundreds of lines.
 </P>
 
 </SUBSECTION>
+</IGNORE>
 
 </TEXT>
 

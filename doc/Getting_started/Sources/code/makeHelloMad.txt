@@ -1,0 +1,3 @@
+ravel% setenv PM2_FLAVOR mad3
+ravel% make hello
+[...]   # Normally, no warning whatsoever!

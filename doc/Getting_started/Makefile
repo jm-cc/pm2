@@ -52,7 +52,7 @@ $(WWW)/resources/$(TARGET).pdf: $(THISDIR)/$(TARGET).ps
 wml: $(BUILD)/wml/$(TARGET)/index.wml
 
 $(BUILD)/wml/$(TARGET)/%.wml: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
-	$(XML2HTML)/bin/shell/xml2wml.sh $(TARGET).xml $(BUILD)/wml/$(TARGET)
+	$(XML2HTML)/bin/shell/xml2wml.sh $(TARGET).xml $(BUILD)/wml/$(TARGET) $(SECTIONS)
 
 ps: $(THISDIR)/$(TARGET).ps
 
@@ -66,7 +66,7 @@ $(THISDIR)/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
 
 $(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/ps
-	$(XML2HTML)/bin/shell/xml2latex.sh $(TARGET).xml $(BUILD)/ps
+	$(XML2HTML)/bin/shell/xml2latex.sh $(TARGET).xml $(BUILD)/ps $(SECTIONS)
 
 inria: $(BUILD)/inria/$(TARGET).ps
 
@@ -80,7 +80,7 @@ $(BUILD)/inria/$(TARGET).ps: $(BUILD)/inria/$(TARGET).tex
 
 $(BUILD)/inria/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/inria
-	$(XML2HTML)/bin/shell/xml2inriaReport.sh $(TARGET).xml $(BUILD)/inria
+	$(XML2HTML)/bin/shell/xml2inriaReport.sh $(TARGET).xml $(BUILD)/inria $(SECTIONS)
 
 labri: $(BUILD)/labri/$(TARGET).ps
 
@@ -94,7 +94,7 @@ $(BUILD)/labri/$(TARGET).ps: $(BUILD)/labri/$(TARGET).tex
 
 $(BUILD)/labri/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/labri
-	$(XML2HTML)/bin/shell/xml2labriReport.sh $(TARGET).xml $(BUILD)/labri
+	$(XML2HTML)/bin/shell/xml2labriReport.sh $(TARGET).xml $(BUILD)/labri $(SECTIONS)
 
 emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 $(EMPHCFILES_PS): %-emph-ps: %

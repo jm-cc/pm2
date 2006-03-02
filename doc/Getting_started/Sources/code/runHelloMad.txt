@@ -1,0 +1,9 @@
+ravel% pm2conf ravel debussy
+The current PM2 configuration contains 2 host(s) :
+0 : ravel
+1 : debussy
+
+ravel% pm2load hello
+##### ravel
+##### debussy
+Hello World from ravel

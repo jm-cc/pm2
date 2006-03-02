@@ -1,7 +1,6 @@
 ravel% setenv PM2_FLAVOR pm2
 ravel% make hello
 [...]   # Normally, no warning whatsoever!
-
 ravel% pm2conf ravel debussy faure
 The current PM2 configuration contains 3 host(s) :
 0 : ravel

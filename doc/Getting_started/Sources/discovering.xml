@@ -62,28 +62,190 @@ current value of the flavor, as specified by the <TT>PM2_FLAVOR</TT>
 shell variable.
 </P>
 
-</SUBSECTION>
-
-<SUBSECTION TITLE="Hello World!">
-
 <P>
 Let us start our PM2 tour by writing the traditional ``<EM>Hello
-  World!</EM>'' program. Then, we will extend it step by step to cover the
-main functionalities provided by the PM2 programming interface.
+World!</EM>'' program. Then, we will extend it step by step to cover
+the main functionalities provided by the different PM2 programming interfaces. We
+will in the following sections present the Hello World! program
+written on top of Madeleine, Marcel, and <MU/>PM2.
 </P>
 
-<SUBSUBSECTION>
-<TITLE>The minimal <MU/>PM2 program</TITLE>
+</SUBSECTION>
 
-<PROGRAM FILE="./Progs/hello.c" TITLE="Minimal PM2 program" LABEL="prog:hello"/>
+<SUBSECTION TITLE="The minimal Madeleine program: Hello World!">
 
 <P>
-Program <REF LABEL="prog:hello"/> shows an
-example of a minimal PM2 code. Compile it and run it:
+Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile it:
+
+<CODE FILE="./Sources/code/makeHelloMad.txt"/>
+</P>
+
+<PROGRAM FILE="./Progs/mad-hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
+
+<P>
+Compilation using the Makefile given in Program <REF
+LABEL="prog:Makefile1"/> creates the executable file in the
+appropriate PM2 build directory, e.g
+<TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
+program will be located using the utility <TT>pm2which</TT>.
+
+<CODE FILE="./Sources/code/pm2which.txt"/>
+</P>
+
+<P>
+You can now execute the application:
+
+<CODE FILE="./Sources/code/runHelloMad.txt"/>
+</P>
+
+<SUBSUBSECTION TITLE="The packing/unpacking API">
+
+<P>
+The packing model of PM2 has been carefully designed so as to enable
+high-performance communication on modern Gigabit network interfaces
+such as BIP/Myrinet, SISCI/SCI, VIA, etc. In this context, it is of
+uttermost significance to avoid copies: actually, the time for copying
+a buffer within a node is of the same order of magnitude as the time
+for sending it over the network to some remote node!  The key for
+performance is therefore to allow for <EM>zero-copy</EM>
+communication: the message has to be directly taken from its initial
+location in user-space, and directly placed into its final destination
+in user-space, without any additional copy. Designing communication
+interfaces which can efficiently deal with messages featuring a
+complex structure, or messages of unpredictable size, is a
+difficult task. The approach of PM2, or more accurately of the
+underlying communication library called Madeleine, is to control the
+packing and unpacking operations with additional <EM>flags</EM>.
+</P>
+
+<P>
+A Madeleine message consists of several pieces of data, located
+anywhere in user-space. It is constructed (resp. de-constructed)
+incrementally using <EM>packing</EM> (resp. <EM>unpacking</EM>)
+routines, possibly at multiple software levels without losing
+efficiency. The following example illustrates the power of the
+Madeleine interface. Let us consider a remote procedure call which
+takes an array of unpredictable size as a parameter. When the request
+reaches the destination node, the header is examined both by the
+multithreaded runtime (to allocate the appropriate thread stack and
+then to spawn the server thread) and by the user application (to
+allocate the memory where the array should be stored).
+</P>
+
+<P>
+The critical point of a sending operation is obviously the series of
+<EM>packing</EM> calls. Such packing operations simply <EM>virtually</EM>
+append the piece of data to a message under construction. In addition
+to the address of data and its size, the packing primitive features a
+<EM>flag</EM> parameter which specifies the semantics of the operation.
+Available sending flags are defined as follows:
+
+<DL>
+    
+<DT><TT>mad_send_SAFER</TT></DT>
+<DD> This flag indicates that PM2 should pack the data
+  in a way that further modifications to the corresponding memory area
+  should not corrupt the message. This is particularly mandatory if
+  the data location is reused before the message is actually sent.
+</DD>
+
+<DT><TT>mad_send_LATER</TT></DT>
+<DD> This flag indicates that PM2 should not consider
+  accessing the value of the corresponding data until the
+  <TT>mad_end_packing</TT> primitive is called. This means that any
+  modification of these data between their packing and their sending
+  shall actually update the message contents.
+</DD>
+
+<DT><TT>mad_send_CHEAPER</TT></DT>
+<DD> This is the default flag. It allows PM2 to do
+  its best to handle the data as efficiently as possible. The
+  counterpart is that no assumption should be made about the way PM2
+  will access the data. Thus, the corresponding data should be left
+  unchanged until the send operation has completed. Note that most
+  data transmissions involved in parallel applications can accommodate
+  this <TT>mad_send_CHEAPER</TT> semantics.
+</DD>
+</DL>
+</P>
+
+<P>
+The following flags control the reception of user data packets:
+<DL>
+    
+<DT><TT>mad_receive_EXPRESS</TT></DT>
+<DD> This flag forces PM2 to guarantee that the
+  corresponding data are immediately available after the the
+  <EM>unpacking</EM> operation. Typically, this flag is mandatory the
+  data is needed to determine the next forthcoming <EM>unpacking</EM>
+  calls.  On some network protocols, this functionality may be
+  available for free. On some others, it could penalize the latency and
+  the bandwidth. Users should therefore extract data using this semantics 
+  only when necessary.
+</DD>
+
+<DT><TT>receive_CHEAPER</TT></DT>
+<DD> This flag allows PM2 to defer the extraction of
+  the corresponding data until the execution of the
+  <TT>mad_end_unpacking</TT> routine.  Thus, no assumption can be made
+  about the exact moment at which the data will be extracted.
+  Depending on the underlying network protocol, PM2 will do its best
+  to minimize the overall message transmission time. If combined with
+  <TT>mad_send_CHEAPER</TT>, this flag always guarantees that the corresponding
+  data is transmitted as efficiently as possible.
+</DD>
+</DL>
+</P>
+
+<P>
+Observe that the emission and reception flags should be <EM>both</EM>
+specified  by the matching packing/unpacking calls, and these
+specifications should be identical. Again, unspecified behavior would
+result from mismatching flags.
+</P>
+
+<P>
+<PROGRAM FILE="Progs/mad-params.c" TITLE="Sending and receiving data with Madeleine" LABEL="prog:mad-params"/>
+</P>
+
+<P>
+In Program <REF LABEL="prog:mad-params"/>, everything is sent
+<TT>CHEAPER</TT>, so as to save time. The user must be careful not to
+corrupt the variables <TT>len</TT>, <TT>s</TT> and <TT>s2</TT> before calling
+<TT>mad_end_packing</TT>. On the reception side, the variable
+<TT>len</TT> <EM>must</EM> be received <TT>EXPRESS</TT>, as its value
+is needed to allocate the buffer for the unpacking of the variables
+<TT>s</TT> and <TT>s2</TT>.  Then, these two variables can be received
+<TT>CHEAPER</TT>. If the underlying operating system and the network
+interface permit, then this (possibly large) message will thus be
+directly installed into the reception buffer without any extra copy,
+providing the user with optimal performances.
+</P>
+
+<CLEARPAGE/>
+</SUBSUBSECTION>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="The minimal Marcel program: Hello World!">
+<P>
+</P>
+</SUBSECTION>
+
+<SUBSECTION>
+<TITLE>The minimal <MU/>PM2 program: Hello World!</TITLE>
+
+<P>
+Program <REF LABEL="prog:hello"/> shows an example of a minimal <MU/>PM2
+code. Compile it and run it:
 
 <CODE FILE="./Sources/code/makeHello2.txt"/>
 
 </P>
+
+<PROGRAM FILE="./Progs/hello.c" LABEL="prog:hello">
+<TITLE>Minimal <MU/>PM2 program</TITLE>
+</PROGRAM>
 
 <IGNORE>
 <WARNING>
@@ -102,31 +264,21 @@ that spawns on several processing nodes during execution! Let's
 examine it step by step.
 </P>
 
-<P>
-Compilation using the Makefile given in Program <REF
-LABEL="prog:Makefile1"/> creates the executable file in the
-appropriate PM2 build directory, e.g
-<TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
-program will be located using the utility <TT>pm2which</TT>.
-
-<CODE FILE="./Sources/code/pm2which.txt"/>
-</P>
-
-<SUBSUBSUBSECTION TITLE="Header files">
+<SUBSUBSECTION TITLE="Header files">
 
 <P>
-A PM2 program must always include the PM2-specific <TT>pm2.h</TT> header
+A <MU/>PM2 program must always include the PM2-specific <TT>pm2.h</TT> header
 file, along with other standard header files.  Note that this is the
-<EM>only</EM> PM2 header file that has to be included by user
+<EM>only</EM> <MU/>PM2 header file that has to be included by user
 applications.
 </P>
 
-</SUBSUBSUBSECTION>
+</SUBSUBSECTION>
 
-<SUBSUBSUBSECTION TITLE="The pm2_main function">
+<SUBSUBSECTION TITLE="The pm2_main function">
 
 <P>
-The main function of the PM2 program is named <TT>pm2_main</TT>, in contrast
+The main function of the <MU/>PM2 program is named <TT>pm2_main</TT>, in contrast
 to traditional C<SPACE/>programs which use the well-known <TT>main</TT>
 function name. In fact, the <EM>real</EM> <TT>main</TT> function of the
 program is provided by the PM2 libraries. It has to set up the
@@ -145,12 +297,12 @@ code (<EM>e.g.</EM>, Fortran code).  In this case, please refer to
 Section <REF LABEL="sec:tradimain"/> for details.
 </P>
 
-</SUBSUBSUBSECTION>
+</SUBSUBSECTION>
 
-<SUBSUBSUBSECTION TITLE="PM2 initialization">
+<SUBSUBSECTION TITLE="Initialization">
 
 <P>
-A PM2 program has to call <TT>pm2_init</TT> to effectively initialize the
+A <MU/>PM2 program has to call <TT>pm2_init</TT> to effectively initialize the
 PM2 runtime system. Moreover, this step involves a global
 synchronization phase (actually, a global synchronization barrier)
 among all the PM2 nodes so that each process is assigned a unique
@@ -197,9 +349,9 @@ during execution.
 </IGNORE>
 </P>
 
-</SUBSUBSUBSECTION>
+</SUBSUBSECTION>
 
-<SUBSUBSUBSECTION TITLE="Who's who?" LABEL="sec:rank">
+<SUBSUBSECTION TITLE="Who's who?" LABEL="sec:rank">
 
 <P>
 Each processing node (that is, Unix process) taking part in a given
@@ -223,15 +375,15 @@ test on the rank of the current process: if the current process is the
 main process, then the <TT>pm2_halt</TT> routine is called.
 </P>
 
-</SUBSUBSUBSECTION>
+</SUBSUBSECTION>
 
-<SUBSUBSUBSECTION TITLE="How to terminate?">
+<SUBSUBSECTION TITLE="How to terminate?">
 
 <P>
-The termination of a PM2 program is a tricky task as PM2 does not perform
-any automatic termination detection. Thus, the termination decision
-must be made at the application level. The termination phase is
-split in two steps.
+The termination of a <MU/>PM2 program is a tricky task as <MU/>PM2
+does not perform any automatic termination detection. Thus, the
+termination decision must be made at the application level. The
+termination phase is split in two steps.
 </P>
 
 <OL>
@@ -262,7 +414,7 @@ normal execution in a <EM>standalone</EM> mode: <EM>halting</EM> is no
 
 <LI>
 <P>
-To exit from a PM2 session, each node must call the <TT>pm2_exit</TT>
+To exit from a <MU/>PM2 session, each node must call the <TT>pm2_exit</TT>
 routine.  This call blocks the calling thread until all other threads
 (belonging to the same node) terminate. In our example, no other
 application thread except from the main one is running. Thus, <TT>pm2_exit</TT>
@@ -284,7 +436,7 @@ may in fact be irrelevant.
 </OL>
 
 <P>
-From the user point of view, the PM2 program terminates as soon as the
+From the user point of view, the <MU/>PM2 program terminates as soon as the
 shell prompts for the next command from the terminal. This corresponds
 to the end of the main node. However, note that some nodes may
 actually keep running after the main node has completed.  In our example,
@@ -303,7 +455,6 @@ further discuss this termination problem in Section <REF LABEL="sec:output"/>.
   section, I suggest that it is not relevant!
 </NOTE>
 
-</SUBSUBSUBSECTION>
 </SUBSUBSECTION>
 
 <IGNORE>
@@ -529,133 +680,21 @@ Let us now run the program.
 
 <SUBSUBSECTION TITLE="The packing/unpacking API">
 
-<P>
-The packing model of PM2 has been carefully designed so as to enable
-high-performance communication on modern Gigabit network interfaces
-such as BIP/Myrinet, SISCI/SCI, VIA, etc. In this context, it is of
-uttermost significance to avoid copies: actually, the time for copying
-a buffer within a node is of the same order of magnitude as the time
-for sending it over the network to some remote node!  The key for
-performance is therefore to allow for <EM>zero-copy</EM>
-communication: the message has to be directly taken from its initial
-location in user-space, and directly placed into its final destination
-in user-space, without any additional copy. Designing communication
-interfaces which can efficiently deal with messages featuring a
-complex structure, or messages of unpredictable size, is a
-difficult task. The approach of PM2, or more accurately of the
-underlying communication library called Madeleine, is to control the
-packing and unpacking operations with additional <EM>flags</EM>.
-</P>
-
-<P>
-A Madeleine message consists of several pieces of data, located
-anywhere in user-space. It is constructed (resp. de-constructed)
-incrementally using <EM>packing</EM> (resp. <EM>unpacking</EM>)
-routines, possibly at multiple software levels without losing
-efficiency. The following example illustrates the power of the
-Madeleine interface. Let us consider a remote procedure call which
-takes an array of unpredictable size as a parameter. When the request
-reaches the destination node, the header is examined both by the
-multithreaded runtime (to allocate the appropriate thread stack and
-then to spawn the server thread) and by the user application (to
-allocate the memory where the array should be stored).
-</P>
-
-<P>
-Program <REF LABEL="prog:mad-params"/> presents a similar code to Program <REF
+<NOTE>
+TODO: similaire a celle de madeleine
+similar code to Program <REF
 LABEL="prog:rpc-params"/> written directly using the Madeleine interface. Note that
 the PM2 primitives to send data to a remote service are written on top
 of these Madeleine primitives.
 
-<PROGRAM FILE="Progs/mad-params.c" TITLE="Sending and receiving data with Madeleine" LABEL="prog:mad-params"/>
-</P>
-
-<P>
-The critical point of a sending operation is obviously the series of
-<EM>packing</EM> calls. Such packing operations simply <EM>virtually</EM>
-append the piece of data to a message under construction. In addition
-to the address of data and its size, the packing primitive features a
-<EM>flag</EM> parameter which specifies the semantics of the operation.
-Available sending flags are defined as follows:
-
-<DL>
-    
-<DT><TT>mad_send_SAFER</TT> (resp. <TT>SEND_SAFER</TT>)</DT>
-<DD> This flag indicates that PM2 should pack the data
-  in a way that further modifications to the corresponding memory area
-  should not corrupt the message. This is particularly mandatory if
-  the data location is reused before the message is actually sent.
-</DD>
-
-<DT><TT>mad_send_LATER</TT> (resp. <TT>SEND_LATER</TT>)</DT>
-<DD> This flag indicates that PM2 should not consider
-  accessing the value of the corresponding data until the
-  <TT>mad_end_packing</TT> (resp. <TT>pm2_rawrpc_end</TT>) primitive is called. This means that any
-  modification of these data between their packing and their sending
-  shall actually update the message contents.
-</DD>
-
-<DT><TT>mad_send_CHEAPER</TT> (resp. <TT>SEND_CHEAPER</TT>)</DT>
-<DD> This is the default flag. It allows PM2 to do
-  its best to handle the data as efficiently as possible. The
-  counterpart is that no assumption should be made about the way PM2
-  will access the data. Thus, the corresponding data should be left
-  unchanged until the send operation has completed. Note that most
-  data transmissions involved in parallel applications can accommodate
-  this <TT>mad_send_CHEAPER</TT> semantics.
-</DD>
-</DL>
-</P>
-
-<P>
-The following flags control the reception of user data packets:
-<DL>
-    
-<DT><TT>mad_receive_EXPRESS</TT> (resp. <TT>RECV_EXPRESS</TT>)</DT>
-<DD> This flag forces PM2 to guarantee that the
-  corresponding data are immediately available after the the
-  <EM>unpacking</EM> operation. Typically, this flag is mandatory the
-  data is needed to determine the next forthcoming <EM>unpacking</EM>
-  calls.  On some network protocols, this functionality may be
-  available for free. On some others, it could penalize the latency and
-  the bandwidth. Users should therefore extract data using this semantics 
-  only when necessary.
-</DD>
-
-<DT><TT>receive_CHEAPER</TT> (resp. <TT>RECV_CHEAPER</TT>)</DT>
-<DD> This flag allows PM2 to defer the extraction of
-  the corresponding data until the execution of the
-  <TT>mad_end_unpacking</TT> (resp. <TT>pm2_rawrpc_waitdata</TT>)routine.  Thus, no assumption can be made
-  about the exact moment at which the data will be extracted.
-  Depending on the underlying network protocol, PM2 will do its best
-  to minimize the overall message transmission time. If combined with
-  <TT>mad_send_CHEAPER</TT>, this flag always guarantees that the corresponding
-  data is transmitted as efficiently as possible.
-</DD>
-</DL>
-</P>
-
-<P>
-Observe that the emission and reception flags should be <EM>both</EM>
-specified  by the matching packing/unpacking calls, and these
-specifications should be identical. Again, unspecified behavior would
-result from mismatching flags.
-</P>
-
-<P>
-In Programs <REF LABEL="prog:rpc-params"/> and <REF
-LABEL="prog:mad-params"/>, everything is sent <TT>CHEAPER</TT>, so as
-to save time. The user must be careful not to corrupt the
-variables <TT>len</TT> and <TT>s</TT> before calling
-<TT>pm2_rawrpc_end</TT>. On the reception side, the variable
-<TT>len</TT> <EM>must</EM> be received <TT>EXPRESS</TT>, as its value
-is needed to allocate the buffer for the unpacking of variable
-<TT>s</TT>.  Then, the variable <TT>s</TT> can be received
-<TT>CHEAPER</TT>. If the underlying operating system and the network
-interface permit, then this (possibly large) message will thus be
-directly installed into the reception buffer without any extra copy,
-providing the user with optimal performances.
-</P>
+(resp. <TT>SEND_SAFER</TT>)
+ (resp. <TT>SEND_LATER</TT>)
+(resp. <TT>pm2_rawrpc_end</TT>)
+ (resp. <TT>SEND_CHEAPER</TT>)
+(resp. <TT>RECV_EXPRESS</TT>)
+ (resp. <TT>RECV_CHEAPER</TT>)
+ (resp. <TT>pm2_rawrpc_waitdata</TT>)
+</NOTE>
 
 </SUBSUBSECTION>
 
@@ -737,10 +776,6 @@ shown in Program <REF LABEL="prog:rpc-threads"/>, a simple way-out is to let
 the service thread issue the call to the <TT>pm2_halt</TT> routine, as it is
 guaranteed that this thread issues the inter-thread last interaction.
 </P>
-
-<NOTE>
-STOP RELECTURE ICI
-</NOTE>
 
 <P>
 Let us now run the program.

@@ -52,7 +52,6 @@ def send(client, b):
     """Sent a string over a client socket."""
     client = client_wrapper(client)
     (cs, addr) = client
-    #print "sending:", b
     o = 0
     s = len(b)
     while s > 0:
@@ -188,8 +187,6 @@ def wait_for_specific_ack(client, ack_value):
     ack = receive_int(client)
     if not ack == ack_value:
         print 'invalid ack value:', ack, 'expected:', ack_value
-    else:
-        print 'got expected ack:', ack
 
 def mcast(ps_list, f, *a, **b):
     for ps in ps_list:

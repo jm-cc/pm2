@@ -169,23 +169,23 @@ def channels_exit(s):
 
 def drivers_exit(s):
     # pass 1
-    for driver_name, driver in s.driver_dict.iteritems():
-        leo_comm.mcast_string(driver.processes, driver_name)
-        for ps in driver.processes:
-            for adapter_name in ps.driver_dict[driver_name].keys():
+    for net_name, net in s.net_dict.iteritems():
+        leo_comm.mcast_string(net.processes, net_name)
+        for ps in net.processes:
+            for adapter_name in ps.driver_dict[net_name].adapter_dict.keys():
                 leo_comm.send_string(ps.client, adapter_name)
                 leo_comm.wait_for_ack(ps.client)
 
             leo_comm.send_string(ps.client, '-')
             
-        # leo_comm.mcast(driver.processes, lambda x: leo_comm.wait_for_specific_ack(x, -2))
+        # leo_comm.mcast(net.processes, lambda x: leo_comm.wait_for_specific_ack(x, -2))
     
     leo_comm.bcast_string(s, '-')
 
     # pass 2
-    for driver_name, driver in s.driver_dict.iteritems():
-        leo_comm.mcast_string(driver.processes, driver_name)
-        leo_comm.mcast(driver.processes, leo_comm.wait_for_ack)
+    for net_name, net in s.net_dict.iteritems():
+        leo_comm.mcast_string(net.processes, net_name)
+        leo_comm.mcast(net.processes, leo_comm.wait_for_ack)
 
     leo_comm.bcast_string(s, '-')
 

@@ -39,15 +39,19 @@ def send_adapters(s, cl):
     leo_comm.send_string(cl, '-')       # adapter selector
 
 def send_drivers(s, cl):
-    l = len(s.driver_dict)
+    l = len(s.net_dict)
     leo_comm.send_int(cl, l)
     
-    for driver_name, driver in s.driver_dict.iteritems():
-        leo_comm.send_string(cl, driver_name)
-        for id, process in enumerate(driver.processes):
+    for net_name, net in s.net_dict.iteritems():
+        leo_comm.send_string(cl, net_name)
+        leo_comm.send_string(cl, net.dev_name)
+        for id, process in enumerate(net.processes):
             leo_comm.send_int(cl, process.global_rank)
             leo_comm.send_int(cl, id)
             send_adapters(s, cl)
+            # Driver parameter (for Quadrics)
+            # not supported for now            
+            leo_comm.send_string(cl, '-')
 
         leo_comm.send_int(cl, -1)
 
@@ -69,7 +73,7 @@ def send_channels(s, cl):
 	else:
 	    leo_comm.send_uint(cl, 0)
         
-	leo_comm.send_string(cl, s.net_name_to_dev_name(channel.net_name))
+	leo_comm.send_string(cl, channel.net_name)
 	    
         # processes
         ps_l = channel.processes

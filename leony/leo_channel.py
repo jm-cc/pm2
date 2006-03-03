@@ -1,6 +1,9 @@
 import leo_comm
 import leo_pp
 
+class NetProcess:
+    pass
+
 class Process:
 
     def __init__(self, session, hostname, id):
@@ -10,21 +13,18 @@ class Process:
         session.leo.next_global_rank  = session.leo.next_global_rank + 1
         self.driver_dict	      = {}
 
-class Driver:
-
-    def __init__(self, session, driver_name):
-        self.name	= driver_name
-        self.processes	= []
-
 class Net:
 
     def __init__(self, session, cfg_dict):
         self.name	= cfg_dict['name']
-        self.hosts	= cfg_dict['hosts']
+        self.dynamic_hosts	= cfg_dict.has_key('hosts');
+        if self.dynamic_hosts:
+            self.hosts	= cfg_dict['hosts']
         self.dev_name	= cfg_dict['dev']
         self.driver	= None
         self.session	= session
-        
+        self.processes	= []
+
         if cfg_dict.has_key('mandatory_loader'):
             loader_name	= cfg_dict['mandatory_loader']
             loader_priority	= 'mandatory'
@@ -38,12 +38,11 @@ class Net:
         self.loader_name	= loader_name
         self.loader_priority	= loader_priority
 
-    def get_driver(self):
-        if self.driver is None:
-            self.driver	= Driver(self.session, self.dev_name)
-            self.session.driver_dict[self.driver.name] = self.driver
+    def get_device(self):
+        if not self.session.dev_dict.has_key(self.dev_name):
+            self.session.dev_dict[self.dev_name] = self
 
-        return self.driver
+        return self
 
 class Adapter:
 
@@ -67,7 +66,7 @@ class Channel:
             host = (host, [0])
 
         (hostname, id_range_list) = host
-    
+
         id_range_list	= map(self._id_range_normalize, id_range_list)
         hostname	= leo_comm.hostname_normalize(hostname)
 
@@ -78,17 +77,17 @@ class Channel:
 
         self.name	= cfg_dict['name']
         self.net_name	= cfg_dict['net']
-	
+
 	if cfg_dict.has_key('merge'):
 	    self.merge      = cfg_dict['merge']
-	
+
 	    if self.merge == 'yes' :
 		self.mergeable = True
 	    else:
 		self.mergeable = False
 	else:
 	    self.mergeable = False
-			
+
         normalized_list	= leo_pp.list_normalize(cfg_dict['hosts'])
         self.hosts	= map(self._host_normalize, normalized_list)
 
@@ -96,48 +95,42 @@ class Channel:
         self.public	= True
 
         loader_ps_l	= session.loader_process_list_get(self.net_name)
-        driver_ps_l	= session.driver_process_list_get(self.net_name)
+        device_ps_l	= session.device_process_list_get(self.net_name)
         dev_name	= session.net_name_to_dev_name(self.net_name)
 
-	for k,v in enumerate(driver_ps_l):
-	    print 'Driver ps list:', k, v
-	
         for host in self.hosts:
             (hostname, id_range_l) = host
             node_ps_dict = session.node_process_dict_get(hostname)
-    
-	    for k,v in node_ps_dict.iteritems():
-		print 'NODE ps list:', k, v
-	    
+
             for id_range in id_range_l:
                 for id in id_range:
-		    
-		    print 'ID', id
-		    
+
                     if node_ps_dict.has_key(id):
                         ps = node_ps_dict[id]
-			print 'PS :', ps
                     else:
                         ps = Process(session, hostname, id)
-			node_ps_dict[id] = ps			
-			session.process_list.append(ps)		    		   		    			
-			loader_ps_l.append(ps) 				
-			driver_ps_l.append(ps)
-                    
+			node_ps_dict[id] = ps
+			session.process_list.append(ps)
+			loader_ps_l.append(ps)
+			device_ps_l.append(ps)
+
 		    adapter	= Adapter('default')
                     adapter_dict 	= {}
                     adapter_dict[adapter.name] = adapter
-                        
-                    ps.driver_dict[dev_name] = adapter_dict
-    
+                    
+                    nps	=	NetProcess()
+                    nps.adapter_dict	= adapter_dict
+                    nps.parameter	= '-' # TODO
+                    ps.driver_dict[self.net_name] = nps
+
                     self.processes.append(ps)
-	
+
 def channels_process(s):
     """Channel list processing."""
 
     channel_l = leo_pp.channel_list_get(s)
-    
-    for channel_cfg in channel_l:	
+
+    for channel_cfg in channel_l:
         channel	= Channel(s, channel_cfg)
         s.channel_dict[channel.name] = channel
-	
+

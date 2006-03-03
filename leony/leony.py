@@ -41,6 +41,7 @@ else:
     settings	= Settings()
     leo_args.cmdline_parse(settings, sys.argv[1:], 'main')
     leo_log.log_init(settings.options.trace, leo.compatibility_mode)
+
 leo_loop.loop(leo)
 
 # end

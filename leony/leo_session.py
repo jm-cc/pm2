@@ -20,7 +20,8 @@ class Session:
 	self.session_id         = leo.session_number
         self.process_list	= []
         self.node_dict		= {}
-        self.driver_dict	= {}
+        self.dev_dict		= {}
+        self.net_dict		= {}
         self.loader_dict	= {}
         self.channel_dict	= {}
         self.fchannel_dict	= {}
@@ -49,10 +50,9 @@ class Session:
         net		= self.net_dict[net_name]
         return net.dev_name
 
-    def driver_process_list_get(self, net_name):
+    def device_process_list_get(self, net_name):
         net	= self.net_dict[net_name]
-        driver	= net.get_driver()
-        return driver.processes
+        return net.processes
 
     def init(self):
         logger.info('0% - parsing configuration file')

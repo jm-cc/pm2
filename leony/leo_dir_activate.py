@@ -10,43 +10,40 @@ def cnx_graph_traversal(series_dict, f, g):
     for name, series in series_dict.iteritems():
 
         # on applique f à toutes les connexions de la série
-        print 'pass 1 of series', name
         for cnx in series:
-            print cnx.sl, cnx.dl
             f(cnx)
 
         # on applique g à toutes les connexions de la série
-        print 'pass 2 of series', name
         for cnx in series:
-            print cnx.sl, cnx.dl
             g(cnx)
 
 
 def driver_init(s):
-    for driver_name, driver in s.driver_dict.iteritems():
+    for net_name, net in s.net_dict.iteritems():
 	
-	print 'Driver.processes : ', driver_name,  len(driver.processes)
-	
-        leo_comm.mcast_string(driver.processes, driver_name)
-        leo_comm.mcast(driver.processes, leo_comm.wait_for_ack)
+	# update to take into account network/devices
+        leo_comm.mcast_string(net.processes, net_name)
+        leo_comm.mcast(net.processes, leo_comm.wait_for_ack)
 
-        for ps in driver.processes:
-            for adapter_name, adapter in (ps.driver_dict[driver_name].iteritems()):
+        for ps in net.processes:
+            for adapter_name, adapter in (ps.driver_dict[net_name].adapter_dict.iteritems()):
 
                 leo_comm.send_string(ps.client, adapter_name) # adapter_name
                 adapter.parameter	= leo_comm.receive_string(ps.client) # param
                 adapter.mtu	= leo_comm.receive_uint(ps.client)      # mtu
 
+            # End of adapter list
             leo_comm.send_string(ps.client, '-')
+
 
     leo_comm.bcast_string(s, '-')
 
     for ps in s.process_list:
         cl = ps.client
-        for driver_name, driver in s.driver_dict.iteritems():
-            leo_comm.send_string(cl, driver_name)
-            for driver_ps in driver.processes:
-                for adapter_name, adapter in (driver_ps.driver_dict[driver_name].iteritems()):
+        for net_name, net in s.net_dict.iteritems():
+            leo_comm.send_string(cl, net_name)
+            for driver_ps in net.processes:
+                for adapter_name, adapter in (driver_ps.driver_dict[net_name].adapter_dict.iteritems()):
                     leo_comm.send_int(cl, driver_ps.global_rank)
                     leo_comm.send_string(cl, adapter_name)      # adapter_name
                     leo_comm.send_string(cl, adapter.parameter) # param
@@ -132,7 +129,6 @@ def channel_init_2(s, channel_name, channel):
         ref_count_dict[l]	= 0
 
     # construction de l'ordonnancement des établissements de connexion
-    print 'connection series generation'
     series_dict	= {}
 
     processes = channel.processes
@@ -146,7 +142,6 @@ def channel_init_2(s, channel_name, channel):
         cnx.ps_src	= processes[src]
         cnx.dl		= dst
         cnx.ps_dst	= processes[dst]
-        print 'series:', num, 'src:', src, 'dst:', dst
 
         if not series_dict.has_key(num):
             series	= [ cnx ]
@@ -157,10 +152,8 @@ def channel_init_2(s, channel_name, channel):
 
     if (n % 2) == 0:
         # Pair
-        print 'even case'
         for i in range(n/2):            
             # Connexions impaires
-            print 'odd connections'
             src = (0 + i) % n
             dst = (n - 1 + i) %n
             
@@ -172,7 +165,6 @@ def channel_init_2(s, channel_name, channel):
                 dst = (dst + n - 1) %n
                 
             # Connexions paires
-            print 'even connections'
             src = (1 + i) % n
             dst = (n - 1 + i) %n
 
@@ -185,7 +177,6 @@ def channel_init_2(s, channel_name, channel):
 
     else:
         # Impair
-        print 'odd case'
         for i in range(n):
             if n > 2:
                 src = (0 + i) % n
@@ -198,9 +189,6 @@ def channel_init_2(s, channel_name, channel):
                     src = (src + 1) % n
                     dst = (dst + n - 1) %n
             #
-
-    print 'connection series generation complete'
-
 
     def send_command(cnx):
         leo_comm.send_int(cnx.ps_src.client,  0)
@@ -229,19 +217,15 @@ def channel_init_2(s, channel_name, channel):
         leo_comm.send_string(cnx.ps_dst.client, param_src)
 
     # connexion, passe 1
-    print 'xchange_param, receive_ack'
     cnx_graph_traversal(series_dict, xchange_param, receive_ack)
 
     # synchro, passe 1
-    print 'barrier 1'
     leo_comm.barrier(channel.processes)
 
     # connexion, passe 2
-    print 'send_param, receive_ack'
     cnx_graph_traversal(series_dict, send_command, receive_ack)
 
     # synchro, passe 2
-    print 'barrier 2'
     leo_comm.barrier(channel.processes)
 
 

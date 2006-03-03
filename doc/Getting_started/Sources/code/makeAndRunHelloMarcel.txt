@@ -1,0 +1,5 @@
+ravel% setenv PM2_FLAVOR marcel
+ravel% make sum
+[...]   # Normally, no warning whatsoever!
+ravel% pm2load sum
+Sum from 1 to 1000 = 500500

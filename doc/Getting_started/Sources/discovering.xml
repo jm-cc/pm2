@@ -98,7 +98,68 @@ You can now execute the application:
 <CODE FILE="./Sources/code/runHelloMad.txt"/>
 </P>
 
-<SUBSUBSECTION TITLE="The packing/unpacking API">
+<SUBSUBSECTION TITLE="The header files">
+
+<P>
+A Madeleine program must always include the PM2-specific
+<TT>pm2_common.h</TT> header file, along with other standard header
+files.  Note that this is the <EM>only</EM> PM2 header file that
+has to be included by user applications.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Initialization">
+
+<P>
+A Madeleine PM2 program has to call the two functions
+<TT>common_pre_init</TT> and <TT>common_post_init</TT> to effectively
+initialize the PM2 runtime system. Moreover, this step involves a
+global synchronization phase (actually, a global synchronization
+barrier) among all the PM2 nodes so that each process is assigned a
+unique <EM>rank number</EM> on return from the functions. In
+consequence, it makes no sense to call functions concerned with the
+global execution environment (such as node numbers, etc.)
+<EM>before</EM> this point.
+</P>
+
+<P>
+The first two arguments of the function are the usual pair
+<TT>argc/argv</TT> of the C <TT>main</TT> function. The type of the
+last argument is <TT>common_attr_t</TT>, it is used to specify
+parameters for the configuration of the application, in most cases,
+the value <TT>NULL</TT> will do.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Informations about the application">
+
+<P>
+In order to have a global view of the application, each node needs to
+retrieve the Madeleine object which contains for example informations
+about the communication channel, the set of processes in this
+channel. These informations will allow each node to retrieve its local
+rank in the current channel. Here a set of instructions showing how to
+get these informations:
+</P>
+
+<P>
+<PROGRAM FILE="./Progs/mad-init.c"/>
+</P>
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Ending">
+
+<P>
+To exit from a Madeleine session, each node must call the
+<TT>common_exit</TT> routine. The parameter is similar to the one for
+the <TT>common_pre_init</TT> function.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Packing and unpacking messages">
 
 <P>
 The packing model of PM2 has been carefully designed so as to enable
@@ -222,9 +283,33 @@ directly installed into the reception buffer without any extra copy,
 providing the user with optimal performances.
 </P>
 
-<CLEARPAGE/>
 </SUBSUBSECTION>
 
+<SUBSUBSECTION TITLE="Sending and receiving messages">
+
+<P>
+In order to sent a message to another node, you need to know the
+channel it belongs to, and its local rank within this channel. You can
+then open an outgoing connection with this node by calling
+<TT>mad_begin_packing</TT>, pack data in the message as explained in
+the previous section, and finalize the message by calling
+<TT>mad_end_packing</TT>.
+</P>
+
+<P>
+Nodes can receive messages sent on a specific channel by calling
+<TT>mad_begin_unpacking</TT>. Note here that is not possible to specify
+which node you want to receive a message from. If two nodes belonging
+to the same channel send a message to a third node, then receiving a
+message on this third node will either read the message from the first
+or the second node. After calling <TT>mad_begin_unpacking</TT>, data
+have to be unpacked as explained in the previous section, a call to
+<TT>mad_end_unpacking</TT> will finalize the reception of the message.
+</P>
+
+</SUBSUBSECTION>
+
+<CLEARPAGE/>
 </SUBSECTION>
 
 <SUBSECTION TITLE="The minimal Marcel program: Hello World!">

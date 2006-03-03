@@ -1,11 +1,9 @@
-#include <pm2.h>
-
 void sendData() {
   char s[]  = "A la recherche du temps perdu.";
   char s2[] = "Les carottes sont tres cuites.";
   int len;
 
-  len = strlen (s) + 1;
+  len = strlen(s) + 1;
 
   mad_begin_packing(...);
   mad_pack(..., &len, sizeof(int), mad_send_CHEAPER, mad_receive_EXPRESS);	/* Here! */

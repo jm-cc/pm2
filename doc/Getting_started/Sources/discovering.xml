@@ -314,9 +314,25 @@ have to be unpacked as explained in the previous section, a call to
 
 <SUBSECTION TITLE="A minimal Marcel program: Sum of the first n integers">
 
+<P>
+Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile it and run it:
+
+<CODE FILE="./Sources/code/makeAndRunHelloMarcel.txt"/>
+</P>
+
 <PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
 
 <SUBSUBSECTION TITLE="The header files">
+
+<P>
+As for Madeleine, a Marcel program must always include the
+PM2-specific <TT>pm2_common.h</TT> header file, along with other
+standard header files.  Note that this is the <EM>only</EM> PM2 header
+file that has to be included by user applications. The
+<TT>pm2_common.h</TT> header file will include the appropriate set of
+PM2 include files according to the current flavor.
+</P>
+
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Initialization">

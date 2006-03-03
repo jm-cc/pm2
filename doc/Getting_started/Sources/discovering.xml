@@ -72,7 +72,7 @@ written on top of Madeleine, Marcel, and <MU/>PM2.
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="The minimal Madeleine program: Hello World!">
+<SUBSECTION TITLE="A minimal Madeleine program: Hello World!">
 
 <P>
 Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile it:
@@ -112,7 +112,7 @@ has to be included by user applications.
 <SUBSUBSECTION TITLE="Initialization">
 
 <P>
-A Madeleine PM2 program has to call the two functions
+A Madeleine program has to call the two functions
 <TT>common_pre_init</TT> and <TT>common_post_init</TT> to effectively
 initialize the PM2 runtime system. Moreover, this step involves a
 global synchronization phase (actually, a global synchronization
@@ -149,7 +149,7 @@ get these informations:
 </P>
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Ending">
+<SUBSUBSECTION TITLE="Termination">
 
 <P>
 To exit from a Madeleine session, each node must call the
@@ -312,13 +312,24 @@ have to be unpacked as explained in the previous section, a call to
 <CLEARPAGE/>
 </SUBSECTION>
 
-<SUBSECTION TITLE="The minimal Marcel program: Hello World!">
-<P>
-</P>
+<SUBSECTION TITLE="A minimal Marcel program: Sum of the first n integers">
+
+<PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
+
+<SUBSUBSECTION TITLE="The header files">
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Initialization">
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Termination">
+</SUBSUBSECTION>
+
+<CLEARPAGE/>
 </SUBSECTION>
 
 <SUBSECTION>
-<TITLE>The minimal <MU/>PM2 program: Hello World!</TITLE>
+<TITLE>A minimal <MU/>PM2 program: Hello World!</TITLE>
 
 <P>
 Program <REF LABEL="prog:hello"/> shows an example of a minimal <MU/>PM2
@@ -349,7 +360,7 @@ that spawns on several processing nodes during execution! Let's
 examine it step by step.
 </P>
 
-<SUBSUBSECTION TITLE="Header files">
+<SUBSUBSECTION TITLE="The header files">
 
 <P>
 A <MU/>PM2 program must always include the PM2-specific <TT>pm2.h</TT> header
@@ -462,7 +473,7 @@ main process, then the <TT>pm2_halt</TT> routine is called.
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="How to terminate?">
+<SUBSUBSECTION TITLE="Termination">
 
 <P>
 The termination of a <MU/>PM2 program is a tricky task as <MU/>PM2

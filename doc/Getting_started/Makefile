@@ -4,7 +4,7 @@ XML2HTML		:=	/net/cvs/runtime/usr/xml2html
 
 TARGET			:=	start
 
-CFILES			:= $(wildcard Progs/*.c)
+CFILES			:= $(wildcard Progs/*.c Progs/*.txt)
 EMPHCFILES_PS		:= $(CFILES:%=%-emph-ps) Progs/Makefile1-emph-ps
 EMPHCFILES_HTML		:= $(CFILES:%=%-emph-html) Progs/Makefile1-emph-html
 
@@ -59,6 +59,8 @@ ps: $(THISDIR)/$(TARGET).ps
 $(THISDIR)/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
 	cd $(BUILD)/ps/ && ln -sf ../../Figures
 	cd $(BUILD)/ps/ && ln -sf ../../Progs
+	-mkdir $(BUILD)/ps/Sources
+	cd $(BUILD)/ps/Sources && ln -sf ../../../Sources/code
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)

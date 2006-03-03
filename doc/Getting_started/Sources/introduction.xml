@@ -182,7 +182,7 @@ it is up to this common program text to include branching so as to
 differentiate between the processing nodes, based on a programming
 scheme like
 
-<CODE FILE="./Sources/code/init.c"/>
+<CODE FILE="./Progs/init.c"/>
 </P>
 
 <P>

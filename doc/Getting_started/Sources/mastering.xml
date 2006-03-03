@@ -137,7 +137,7 @@ the incoming thread will be unpacked and restarted on the destination
 node.
 </P>
 
-<CODE FILE="./Sources/code/migration.txt"/>
+<CODE FILE="./Progs/migration.txt"/>
 
 <P>
 As usual, there is no restriction whatsoever on the association
@@ -145,7 +145,7 @@ between the physical machine and the logical nodes of PM2. For
 instance, you could try to run the program on the same physical node.
 It works just as well!
 
-<CODE FILE="./Sources/code/migration2.txt"/>
+<CODE FILE="./Progs/migration2.txt"/>
 </P>
 
 </SUBSUBSECTION>
@@ -212,7 +212,7 @@ the completion is passed as an argument to the thread creation
 function. The spawned thread allocate storage locally for a
 completion, and copies the argument completion into its personal
 resources using the <TT>pm2_completion_copy</TT> routine:
-  <CODE FILE="./Sources/code/completionCopy2.c"/>
+  <CODE FILE="./Progs/completionCopy2.c"/>
 </P>
 
 <P>
@@ -267,7 +267,7 @@ issues a RPC to node<SPACE/>1 to set the variable <TT>barrier</TT> to 1, and doe
 for its own node. Finally, the master thread calls the <TT>halt</TT> routine
 to stop all daemon service threads.
 
-<CODE FILE="./Sources/code/migration3.txt"/>
+<CODE FILE="./Progs/migration3.txt"/>
 </P>
 
 <P>
@@ -297,7 +297,7 @@ Consider now how the master thread can migrate the children threads.
 The first step is to store the children threads to be migrated into an
 array.  This can be done by hand, but PM2 provides a specialized
 routine to do the work. A call 
-<CODE FILE="./Sources/code/threadslist.c"/>
+<CODE FILE="./Progs/threadslist.c"/>
 takes as parameters an array of threads
 <TT>threads[N]</TT> (a PM2 thread has the type <TT>marcel_t</TT>) and a selection
 condition. A number of condition are available, which can be or-ed and
@@ -399,7 +399,7 @@ of <TT>x</TT> <EM>and its address</EM> are left unchanged.
 
 <PROGRAM FILE="./Progs/iso-alloc.c" TITLE="Iso-allocation enables unlimited use of pointers in migrating threads" LABEL="prog:iso-alloc"/>
 
-<CODE FILE="./Sources/code/isoalloc.txt"/>
+<CODE FILE="./Progs/isoalloc.txt"/>
 </P>
 
 <P>
@@ -451,7 +451,7 @@ value <EM>after</EM> the migration, as before.
 
 <PROGRAM FILE="./Progs/isomalloc.c" TITLE="Allocating dynamic storage which migrates together with the thread" LABEL="prog:isomalloc"/>
 
-<CODE FILE="./Sources/code/isomalloc.txt"/>
+<CODE FILE="./Progs/isomalloc.txt"/>
 </P>
 
 <P>
@@ -501,7 +501,7 @@ increments at the master node.
 
 <PROGRAM FILE="./Progs/dsm.c" TITLE="Distributed shared memory in PM2" LABEL="prog:dsm"/>
 
-<CODE FILE="./Sources/code/dsm.txt"/>
+<CODE FILE="./Progs/dsm.txt"/>
 </P>
 
 <P>
@@ -544,7 +544,7 @@ variable.
 
 <PROGRAM FILE="./Progs/dsm1.c" TITLE="Distributed shared memory in PM2, using the 'MIGRATE_THREAD' sequential consistency protocol" LABEL="prog:dsm1"/>
 
-<CODE FILE="./Sources/code/dsm1.txt"/>
+<CODE FILE="./Progs/dsm1.txt"/>
 </P>
 
 <P>
@@ -557,7 +557,7 @@ incrementing instruction <TT>shvar++</TT> is compiled into an
 <EM>sequence</EM> of elementary, atomic machine instructions, something
 like:
 
-<CODE FILE="./Sources/code/tmp.c"/>
+<CODE FILE="./Progs/tmp.c"/>
 </P>
 
 <P>
@@ -570,7 +570,7 @@ mutexes, which are local to a PM2 node.
 
 <PROGRAM FILE="./Progs/dsm2.c" TITLE="Distributed shared memory in PM2, with concurrent access to shared variables" LABEL="prog:dsm2"/>
 
-<CODE FILE="./Sources/code/dsm2.txt"/>
+<CODE FILE="./Progs/dsm2.txt"/>
 </P>
 
 <P>

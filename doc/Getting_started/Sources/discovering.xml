@@ -37,7 +37,7 @@ and <TT>pm2-config --libs</TT> generates the list of libraries to be searched on
 
 Thus, the standard command line to compile a PM2 program <TT>hello.c</TT> looks like:
 
-<CODE FILE="./Sources/code/compileHello.c"/>
+<CODE FILE="./Progs/compileHello.c"/>
 </P>
 
 <P>
@@ -77,7 +77,7 @@ written on top of Madeleine, Marcel, and <MU/>PM2.
 <P>
 Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile it:
 
-<CODE FILE="./Sources/code/makeHelloMad.txt"/>
+<CODE FILE="./Progs/makeHelloMad.txt"/>
 </P>
 
 <PROGRAM FILE="./Progs/mad-hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
@@ -89,13 +89,13 @@ appropriate PM2 build directory, e.g
 <TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
 program will be located using the utility <TT>pm2which</TT>.
 
-<CODE FILE="./Sources/code/pm2which.txt"/>
+<CODE FILE="./Progs/pm2which.txt"/>
 </P>
 
 <P>
 You can now execute the application:
 
-<CODE FILE="./Sources/code/runHelloMad.txt"/>
+<CODE FILE="./Progs/runHelloMad.txt"/>
 </P>
 
 <SUBSUBSECTION TITLE="The header files">
@@ -317,7 +317,7 @@ have to be unpacked as explained in the previous section, a call to
 <P>
 Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile it and run it:
 
-<CODE FILE="./Sources/code/makeAndRunHelloMarcel.txt"/>
+<CODE FILE="./Progs/makeAndRunHelloMarcel.txt"/>
 </P>
 
 <PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
@@ -351,7 +351,7 @@ PM2 include files according to the current flavor.
 Program <REF LABEL="prog:hello"/> shows an example of a minimal <MU/>PM2
 code. Compile it and run it:
 
-<CODE FILE="./Sources/code/makeHello2.txt"/>
+<CODE FILE="./Progs/makeHello2.txt"/>
 
 </P>
 
@@ -506,11 +506,11 @@ termination phase is split in two steps.
 this call.  Actually, any process could have been selected. For
 instance, we could replace 
 
-<CODE FILE="./Sources/code/pm2self.c"/>
+<CODE FILE="./Progs/pm2self.c"/>
 
 by any other test selecting exactly one node, for instance:
 
-<CODE FILE="./Sources/code/pm2self2.c"/>
+<CODE FILE="./Progs/pm2self2.c"/>
 </P>
 
 <P>
@@ -581,7 +581,7 @@ charge of retrieving and displaying logs from each slave node of the
 session configuration. Observe that such requests are quite slow, as
 they use <TT>rsh</TT> connections:
 
-<CODE FILE="./Sources/code/pm2logs.txt"/>
+<CODE FILE="./Progs/pm2logs.txt"/>
 </P>
 
 <PROGRAM FILE="./Progs/hello1.c" TITLE="Output redirection, Example 1" LABEL="prog:hello1"/>
@@ -593,7 +593,7 @@ Observe that there is no reason why all the nodes should make the
 message.  Also, just to show you that any node can force termination,
 node<SPACE/>2 is this time in charge of it!
 
-<CODE FILE="./Sources/code/makeHello1.txt"/>
+<CODE FILE="./Progs/makeHello1.txt"/>
 </P>
 
 <SUBSUBSUBSECTION TITLE="Redirecting output to the terminal">
@@ -616,7 +616,7 @@ immediately printed on the terminal attached to the master node. The
 convention, outputs from node<SPACE/>0 have no label, so as to mimic the
 behavior of the original <TT>printf</TT> function.
 
-<CODE FILE="./Sources/code/pm2load2.txt"/>
+<CODE FILE="./Progs/pm2load2.txt"/>
 </P>
 
 </SUBSUBSUBSECTION>
@@ -646,7 +646,7 @@ Nodes are specified through their numbers, as allocated by the
 <TT>pm2conf</TT> command. In this part, we consider our usual 3-node
 configuration:
 
-<CODE FILE="./Sources/code/pm2conf1.txt"/>
+<CODE FILE="./Progs/pm2conf1.txt"/>
 </P>
 
 <PROGRAM FILE="./Progs/rpc.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
@@ -694,7 +694,7 @@ call <TT>pm2_halt</TT> to force the termination of the distributed program.
 <P>
 It is now time to run the program:
 
-<CODE FILE="./Sources/code/pm2loadrpc.txt"/>
+<CODE FILE="./Progs/pm2loadrpc.txt"/>
 </P>
 
 <IGNORE>
@@ -712,7 +712,7 @@ two distinct machines for the sake of clarity.  However, the machine
 running the server node may well be the same as the one running the
 client node:
 
-<CODE FILE="./Sources/code/pm2conf2.txt"/>
+<CODE FILE="./Progs/pm2conf2.txt"/>
 </P>
 
 <P>
@@ -773,7 +773,7 @@ routine.
 <P>
 Let us now run the program.
 
-<CODE FILE="./Sources/code/pm2load3.txt"/>
+<CODE FILE="./Progs/pm2load3.txt"/>
 
 </P>
 
@@ -785,7 +785,7 @@ Let us now run the program.
   be aligned to a proper boundary. This can be done for instance as
   follows using the specific attributes of <TT>gcc</TT>:
 
-  <CODE FILE="./Sources/code/aligned.c"/>
+  <CODE FILE="./Progs/aligned.c"/>
 </WARNING>
 
 </SUBSUBSECTION>
@@ -896,7 +896,7 @@ Let us now run the program.
 created on node<SPACE/>1, instead of the regular<SPACE/>2.
 </IGNORE>
 
-<CODE FILE="./Sources/code/pm2loadrpc2.txt"/>
+<CODE FILE="./Progs/pm2loadrpc2.txt"/>
 </P>
 
 <P>
@@ -915,7 +915,7 @@ the string to the standard output and triggers termination.
 <P>
 Executing this program should produce a output as follow
 
-<CODE FILE="./Sources/code/pm2loadrpc3.txt"/>
+<CODE FILE="./Progs/pm2loadrpc3.txt"/>
 </P>
 
 <P>
@@ -929,7 +929,7 @@ nodes may be located at any physical nodes. The association between
 PM2 virtual and physical node is done using the <TT>pm2conf</TT>
 command. For instance, saying
 
-<CODE FILE="./Sources/code/pm2conf4.txt"/>
+<CODE FILE="./Progs/pm2conf4.txt"/>
 </P>
 
 <P>
@@ -941,14 +941,14 @@ makes no difference.
 <P>
 You may even start all the processes on the same machine!
 
-<CODE FILE="./Sources/code/pm2conf5.txt"/>
+<CODE FILE="./Progs/pm2conf5.txt"/>
 </P>
 
 <P>
 Also, the running machine does not have to be the one you are logged
 on. Any machine you have access to can do it as well!
 
-<CODE FILE="./Sources/code/pm2conf6.txt"/>
+<CODE FILE="./Progs/pm2conf6.txt"/>
 </P>
 
 </SUBSUBSECTION>

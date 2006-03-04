@@ -21,7 +21,7 @@ registering_flavors() {
     COMMON_OPTIONS="--all=opt --all=build_static --common=static"
 
     register_flavor default \
-	--modules="pm2 dsm marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
+	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main \
 	--mad3=tcp
 
@@ -67,7 +67,7 @@ registering_flavors() {
 	--mad3=tcp --marcel=mono --marcel=marcel_main
 
     register_flavor pm2 \
-	--modules="pm2 dsm marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
+	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main \
 	--mad3=tcp
 

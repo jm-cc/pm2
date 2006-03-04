@@ -26,7 +26,11 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <assert.h>
+#ifndef DARWIN_SYS
 #include <malloc.h>
+#else
+#include <sys/malloc.h>
+#endif
 #include <stdarg.h>
 
 #include "marcel.h"
@@ -42,7 +46,7 @@
 
 
 #define _SLOT_SIZE       DSM_PAGE_SIZE /* 4 Ko */
-#define ALIGN_TO_SLOT(x) (ALIGN(x, _SLOT_SIZE))
+#define ALIGN_TO_SLOT(x) (ISOADDR_ALIGN(x, _SLOT_SIZE))
 
 static unsigned _local_node_rank = 0;
 static node_t  _nb_nodes = 1;

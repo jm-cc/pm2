@@ -22,12 +22,10 @@
 #include "tbx_compiler.h"
 
 #define ALIGN_UNIT 32
-#define ALIGN(x, unit) ((((unsigned long)x) + ((unit) - 1)) & ~((unit) - 1))
+#define ISOADDR_ALIGN(x, unit) ((((unsigned long)x) + ((unit) - 1)) & ~((unit) - 1))
 #define ISOMALLOC_USE_MACROS
 
 #define THREAD_STACK_SIZE 0
-
-/*#define DEBUG*/
 
 void isoaddr_init(unsigned myrank, unsigned confsize);
 

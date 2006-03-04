@@ -17,8 +17,6 @@
 #ifndef SLOT_ALLOC_IS_DEF
 #define SLOT_ALLOC_IS_DEF
 
-/*#define DEBUG*/
-
 #include <sys/types.h>
 #include "isoaddr.h"
 #include "tbx_compiler.h"
@@ -76,11 +74,10 @@ slot_header_t *slot_detach(void *addr);
 
 void slot_attach(slot_descr_t *descr, slot_header_t *header_ptr);
 
-#define ALIGN_UNIT 32
+//#define ALIGN_UNIT 32
+//#define ISOADDR_ALIGN(x, unit) ((((unsigned long)x) + ((unit) - 1)) & ~((unit) - 1))
 
-#define ALIGN(x, unit) ((((unsigned long)x) + ((unit) - 1)) & ~((unit) - 1))
-
-#define SLOT_HEADER_SIZE (ALIGN(sizeof(slot_header_t), ALIGN_UNIT))
+#define SLOT_HEADER_SIZE (ISOADDR_ALIGN(sizeof(slot_header_t), ALIGN_UNIT))
 
 #define ISOMALLOC_USE_MACROS
 

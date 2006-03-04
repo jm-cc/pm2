@@ -29,8 +29,8 @@
 #include "pm2.h"
 
 #define BLOCK_ALIGN_UNIT 32
-#define BLOCK_HEADER_SIZE (ALIGN(sizeof(block_header_t), BLOCK_ALIGN_UNIT))
-#define BLOCK_ALIGN(s) (ALIGN(s,BLOCK_ALIGN_UNIT))
+#define BLOCK_HEADER_SIZE (ISOADDR_ALIGN(sizeof(block_header_t), BLOCK_ALIGN_UNIT))
+#define BLOCK_ALIGN(s) (ISOADDR_ALIGN(s,BLOCK_ALIGN_UNIT))
 #define MIN_BLOCK_SIZE 32
 
 

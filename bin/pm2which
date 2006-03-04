@@ -104,13 +104,6 @@ pm2which_do_search() # file
     fi
 }
 
-# pm2which_do_search() # file
-# {
-#     pm2which_find_exec $1
-# 
-#     [ $_PM2WHICH_NB_FOUND -eq 0 ] && pm2which_error "Error: no \"$1\" exec file found under \"${_PM2WHICH_EXDIR}\""
-# }
-
 pm2which_calc()
 {
     _PM2WHICH_ARGS="$*"
@@ -128,7 +121,7 @@ pm2which_calc()
     _prog="$1"
 
 
-    DIRS=$_PM2CONFIG_BUILD/examples
+    DIRS=$_PM2CONFIG_BUILD
     if [ -n "$PATH" ]; then
         DIRS="$DIRS:$PATH"
     fi

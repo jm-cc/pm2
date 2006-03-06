@@ -4,7 +4,7 @@ XML2HTML		:=	/net/cvs/runtime/usr/xml2html
 
 TARGET			:=	start
 
-CFILES			:= $(wildcard Progs/*.c Progs/*.txt)
+CFILES			:= $(wildcard Progs/*.c Progs/*.txt Progs/*.cfg)
 EMPHCFILES_PS		:= $(CFILES:%=%-emph-ps) Progs/Makefile1-emph-ps
 EMPHCFILES_HTML		:= $(CFILES:%=%-emph-html) Progs/Makefile1-emph-html
 

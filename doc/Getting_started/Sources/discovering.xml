@@ -4,12 +4,6 @@
 <TEXT>
 
 <P>
-<NOTE>
-  Nathalie: Parler de Madeleine et Marcel
-</NOTE>
-</P>
-
-<P>
 This chapter aims at illustrating the basic features of PM2 through
 some very simple programs. The next chapters present more advanced
 features that may be needed when developing <EM>real</EM> parallel
@@ -72,6 +66,98 @@ written on top of Madeleine, Marcel, and <MU/>PM2.
 
 </SUBSECTION>
 
+<SUBSECTION TITLE="Initializing and terminating a PM2 program">
+
+Initialization and termination phases are similar to all PM2 programs,
+whatever the programming interface you wish to use: Marcel, Madeleine
+or <MU/>PM2. This section will explain these two phases.
+
+<SUBSUBSECTION TITLE="The header files">
+
+<P>
+A PM2 program must always include the PM2-specific
+<TT>pm2_common.h</TT> header file, along with other standard header
+files.  Note that this is the <EM>only</EM> PM2 header file that
+has to be included by user applications.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Initialization">
+
+<P>
+A PM2 program has to call the two functions
+<TT>common_pre_init</TT> and <TT>common_post_init</TT> to effectively
+initialize the PM2 runtime system. Moreover, this step involves a
+global synchronization phase (actually, a global synchronization
+barrier) among all the PM2 nodes so that each process is assigned a
+unique <EM>rank number</EM> on return from the functions. In
+consequence, it makes no sense to call functions concerned with the
+global execution environment (such as node numbers, etc.)
+<EM>before</EM> this point.
+</P>
+
+<P>
+The first two arguments of the function are the usual pair
+<TT>argc/argv</TT> of the C <TT>main</TT> function. The type of the
+last argument is <TT>common_attr_t</TT>, it is used to specify
+parameters for the configuration of the application, in most cases,
+the value <TT>NULL</TT> will do.
+</P>
+
+<P>
+The PM2 initialization step involves a global synchronization phase
+(actually, a global synchronization barrier) among all the PM2 nodes
+so that each process is assigned a unique <EM>rank number</EM>. In
+consequence, it makes no sense to call functions concerned with the
+global execution environment (such as node numbers, etc.)
+<EM>before</EM> this point.  Please, refer to Section <REF
+LABEL="sec:rank"/> for details.
+</P>
+
+<P>
+Most importantly, the initialization functions spawn a number of
+internal <EM>thread daemons</EM> that are in charge of listening to
+the network and answering to external requests such as RPCs, incoming
+thread migrations, etc. A node should be ready to handle all possible
+incoming requests from any other node at this point. As a consequence,
+it is not safe to do any initialization <EM>after</EM> this point, as
+the user has no control about the interleaving of requests and the
+relative speed of the nodes. Even though the initialization call would
+be placed just after the initialization functions call, an arbitrary
+delay may occur between the two successive instructions! It follows
+that if some initialization code needs to be performed before any
+thread is started, then this code <EM>must</EM> be called
+<EM>before</EM> calling the initialization functions.
+</P>
+
+<P>
+Also note that the Unix standard input/output streams may not be
+correctly initialized before the call to the initialization
+functions. Thus, the behavior of programs using I/O operations before
+the initialization is not defined.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Termination">
+
+<P>
+To exit from a PM2 session, each node must call the
+<TT>common_exit</TT> routine. The parameter is similar to the one for
+the <TT>common_pre_init</TT> function.
+</P>
+
+<P>
+Note that the termination of any PM2 program is a tricky task as PM2
+does not perform any automatic termination detection. Thus, the
+termination decision must be made at the application level.
+</P>
+
+</SUBSUBSECTION>
+
+</SUBSECTION>
+
 <SUBSECTION TITLE="A minimal Madeleine program: Hello World!">
 
 <P>
@@ -98,41 +184,6 @@ You can now execute the application:
 <CODE FILE="./Progs/runHelloMad.txt"/>
 </P>
 
-<SUBSUBSECTION TITLE="The header files">
-
-<P>
-A Madeleine program must always include the PM2-specific
-<TT>pm2_common.h</TT> header file, along with other standard header
-files.  Note that this is the <EM>only</EM> PM2 header file that
-has to be included by user applications.
-</P>
-
-</SUBSUBSECTION>
-
-<SUBSUBSECTION TITLE="Initialization">
-
-<P>
-A Madeleine program has to call the two functions
-<TT>common_pre_init</TT> and <TT>common_post_init</TT> to effectively
-initialize the PM2 runtime system. Moreover, this step involves a
-global synchronization phase (actually, a global synchronization
-barrier) among all the PM2 nodes so that each process is assigned a
-unique <EM>rank number</EM> on return from the functions. In
-consequence, it makes no sense to call functions concerned with the
-global execution environment (such as node numbers, etc.)
-<EM>before</EM> this point.
-</P>
-
-<P>
-The first two arguments of the function are the usual pair
-<TT>argc/argv</TT> of the C <TT>main</TT> function. The type of the
-last argument is <TT>common_attr_t</TT>, it is used to specify
-parameters for the configuration of the application, in most cases,
-the value <TT>NULL</TT> will do.
-</P>
-
-</SUBSUBSECTION>
-
 <SUBSUBSECTION TITLE="Informations about the application">
 
 <P>
@@ -149,17 +200,7 @@ get these informations:
 </P>
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Termination">
-
-<P>
-To exit from a Madeleine session, each node must call the
-<TT>common_exit</TT> routine. The parameter is similar to the one for
-the <TT>common_pre_init</TT> function.
-</P>
-
-</SUBSUBSECTION>
-
-<SUBSUBSECTION TITLE="Packing and unpacking messages">
+<SUBSUBSECTION TITLE="Packing and unpacking messages" LABEL="sec:mad-pack">
 
 <P>
 The packing model of PM2 has been carefully designed so as to enable
@@ -322,23 +363,37 @@ Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile
 
 <PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
 
-<SUBSUBSECTION TITLE="The header files">
+<SUBSUBSECTION TITLE="The marcel_main function">
 
 <P>
-As for Madeleine, a Marcel program must always include the
-PM2-specific <TT>pm2_common.h</TT> header file, along with other
-standard header files.  Note that this is the <EM>only</EM> PM2 header
-file that has to be included by user applications. The
-<TT>pm2_common.h</TT> header file will include the appropriate set of
-PM2 include files according to the current flavor.
+The main function of a Marcel program is named <TT>marcel_main</TT>,
+in contrast to traditional C<SPACE/>programs which use the well-known
+<TT>main</TT> function name. In fact, the <EM>real</EM> <TT>main</TT>
+function of the program is provided by the PM2 libraries. It has to
+set up the execution environment before calling the user
+<TT>marcel_main</TT> function.  This allows PM2 to greatly enhance the
+performance of various thread management functions.  The arguments
+remain the regular <TT>argc</TT>/<TT>argv</TT> pair, with their usual
+meaning.
+</P>
+
+<P>
+Although most programs (or rather, programmers!) can accommodate such a
+violation of the usual <EM>C<SPACE/>convention</EM>, there exists some
+applications that require to use the regular <TT>main</TT> function name. In
+particular, it may be the case with applications linked with non-C
+code (<EM>e.g.</EM>, Fortran code).  In this case, please refer to
+Section <REF LABEL="foo"/> for details.
 </P>
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Initialization">
+<SUBSUBSECTION TITLE="Thread management">
+<NOTE>TODO...</NOTE>
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Termination">
+<SUBSUBSECTION TITLE="Semaphores and mutexes">
+<NOTE>TODO...</NOTE>
 </SUBSUBSECTION>
 
 <CLEARPAGE/>
@@ -355,7 +410,7 @@ code. Compile it and run it:
 
 </P>
 
-<PROGRAM FILE="./Progs/hello.c" LABEL="prog:hello">
+<PROGRAM FILE="./Progs/pm2-hello.c" LABEL="prog:hello">
 <TITLE>Minimal <MU/>PM2 program</TITLE>
 </PROGRAM>
 
@@ -370,22 +425,13 @@ directory available in the <TT>PATH</TT>.
 </WARNING>
 </IGNORE>
 
+<IGNORE>
 <P>
 Though it looks simple, this is a full-fledged SPMD parallel program
 that spawns on several processing nodes during execution! Let's
 examine it step by step.
 </P>
-
-<SUBSUBSECTION TITLE="The header files">
-
-<P>
-A <MU/>PM2 program must always include the PM2-specific <TT>pm2.h</TT> header
-file, along with other standard header files.  Note that this is the
-<EM>only</EM> <MU/>PM2 header file that has to be included by user
-applications.
-</P>
-
-</SUBSUBSECTION>
+</IGNORE>
 
 <SUBSUBSECTION TITLE="The pm2_main function">
 
@@ -411,41 +457,60 @@ Section <REF LABEL="sec:tradimain"/> for details.
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Initialization">
+<SUBSUBSECTION TITLE="Termination">
 
 <P>
-A <MU/>PM2 program has to call <TT>pm2_init</TT> to effectively initialize the
-PM2 runtime system. Moreover, this step involves a global
-synchronization phase (actually, a global synchronization barrier)
-among all the PM2 nodes so that each process is assigned a unique
-<EM>rank number</EM> on return from <TT>pm2_init</TT>. In consequence, it
-makes no sense to call functions concerned with the global execution
-environment (such as node numbers, etc.)  <EM>before</EM> this point.
-Please, refer to Section <REF LABEL="sec:rank"/> for details.
+In the case of <MU/>PM2, it is important to have a synchronization
+phase before stopping the nodes. This synchronization phase is
+achieved by calling the <TT>pm2_halt</TT> routine, it should be
+called by exactly one node of the application. It performs a broadcast
+that requires all nodes to stop answering to requests from the outside
+world. In fact, this step cuts the links between nodes: it stops the
+internal daemon threads that are in charge of polling the network.
+Note that after a node receives this order, it still continues its
+normal execution in a <EM>standalone</EM> mode: <EM>halting</EM> is no
+<EM>killing</EM>!
 </P>
 
 <P>
-Most importantly, the <TT>pm2_init</TT> function spawns a number of internal
-<EM>thread daemons</EM> that are in charge of listening to the network and
-answering to external requests such as RPCs, incoming thread
-migrations, etc. A node should be ready to handle all possible
-incoming requests from any other node at this point. As a consequence,
-it is not safe to do any initialization <EM>after</EM> this point, as
-the user has no control about the interleaving of requests and the
-relative speed of the nodes. Even though the initialization call would be
-placed just after <TT>pm2_init</TT>, an arbitrary delay may occur between
-the two successive instructions! It follows that if some
-initialization code needs to be performed before any thread is
-started, then this code <EM>must</EM> be called <EM>before</EM>
-<TT>pm2_init</TT>.
+In a second step, all the nodes can then call the usual
+<TT>common_exit</TT> routine. That will block the calling thread until
+all other threads (belonging to the same node) terminate. In our
+example, no other application thread except from the main one is
+running. Thus, this second step completes as soon as the internal
+daemon threads are stopped. Without the first step being performed,
+all nodes would remain hanging, waiting for ever for external
+requests!
 </P>
 
 <P>
-Also note that the Unix standard input/output streams may not be
-correctly initialized before the call to <TT>pm2_init</TT>. Thus, the
-behavior of programs using I/O operations before <TT>pm2_init</TT> is not
-defined.
+As the call to <TT>common_exit</TT> is potentially blocking, the thread in
+charge of calling <TT>pm2_halt</TT> should do it first. However, observe
+that it may well be the case that at a node, some thread is in charge
+of calling <TT>pm2_halt</TT> and another one <TT>common_exit</TT>, so that the order
+may in fact be irrelevant.
 </P>
+
+<P>
+From the user point of view, the <MU/>PM2 program terminates as soon as the
+shell prompts for the next command from the terminal. This corresponds
+to the end of the main node. However, note that some nodes may
+actually keep running after the main node has completed.  
+</P>
+
+<IGNORE>
+In our example,
+the main node can even terminate before any other node has started
+executing <TT>tprintf</TT>! Fortunately, this is not a problem here, since
+<TT>tprintf</TT> does not involve any communication with other nodes.
+
+We will further discuss this termination problem in Section <REF LABEL="sec:output"/>.
+</IGNORE>
+
+</SUBSUBSECTION>
+
+<IGNORE>
+<SUBSUBSECTION TITLE="Main code">
 
 <P>
 Going back to our example program, note the call to the <TT>tprintf</TT>
@@ -462,6 +527,7 @@ during execution.
 </P>
 
 </SUBSUBSECTION>
+</IGNORE>
 
 <SUBSUBSECTION TITLE="Who's who?" LABEL="sec:rank">
 
@@ -486,86 +552,6 @@ As an example on how to use <TT>pm2_self</TT>, the program performs a
 test on the rank of the current process: if the current process is the
 main process, then the <TT>pm2_halt</TT> routine is called.
 </P>
-
-</SUBSUBSECTION>
-
-<SUBSUBSECTION TITLE="Termination">
-
-<P>
-The termination of a <MU/>PM2 program is a tricky task as <MU/>PM2
-does not perform any automatic termination detection. Thus, the
-termination decision must be made at the application level. The
-termination phase is split in two steps.
-</P>
-
-<OL>
-<LI>
-<P>
-<EM>Exactly one</EM> node must perform an explicit call to
-<TT>pm2_halt</TT>. In our example, the main process was chosen to execute
-this call.  Actually, any process could have been selected. For
-instance, we could replace 
-
-<CODE FILE="./Progs/pm2self.c"/>
-
-by any other test selecting exactly one node, for instance:
-
-<CODE FILE="./Progs/pm2self2.c"/>
-</P>
-
-<P>
-At least conceptually, the <TT>pm2_halt</TT> routine performs a broadcast
-that requires all nodes to stop answering to requests from the outside
-world. In fact, this step cuts the links between nodes: it stops the
-internal daemon threads that are in charge of polling the network.
-Note that after a node receives this order, it still continues its
-normal execution in a <EM>standalone</EM> mode: <EM>halting</EM> is no
-<EM>killing</EM>!
-</P>
-</LI>
-
-<LI>
-<P>
-To exit from a <MU/>PM2 session, each node must call the <TT>pm2_exit</TT>
-routine.  This call blocks the calling thread until all other threads
-(belonging to the same node) terminate. In our example, no other
-application thread except from the main one is running. Thus, <TT>pm2_exit</TT>
-completes as soon as the internal daemon threads are stopped. Had we
-removed the call to <TT>pm2_halt</TT>, then all nodes would remain hanging,
-waiting for ever for external requests!
-</P>
-
-<IGNORE>
-<P>
-As the call to <TT>pm2_exit</TT> is potentially blocking, the thread in
-charge of calling <TT>pm2_halt</TT> should do it first. However, observe
-that it may well be the case that at a node, some thread is in charge
-of calling <TT>pm2_halt</TT> and another one <TT>pm2_exit</TT>, so that the order
-may in fact be irrelevant.
-</P>
-</IGNORE>
-</LI>
-</OL>
-
-<P>
-From the user point of view, the <MU/>PM2 program terminates as soon as the
-shell prompts for the next command from the terminal. This corresponds
-to the end of the main node. However, note that some nodes may
-actually keep running after the main node has completed.  In our example,
-the main node can even terminate before any other node has started
-executing <TT>tprintf</TT>! Fortunately, this is not a problem here, since
-<TT>tprintf</TT> does not involve any communication with other nodes.
-
-<IGNORE>
-We will
-further discuss this termination problem in Section <REF LABEL="sec:output"/>.
-</IGNORE>
-</P>
-
-<NOTE>
-  LB: Is there a specific ordering to call halt and exit? In this
-  section, I suggest that it is not relevant!
-</NOTE>
 
 </SUBSUBSECTION>
 
@@ -626,12 +612,13 @@ behavior of the original <TT>printf</TT> function.
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Remote Procedure Calls">
+<SUBSECTION>
+<TITLE>A minimal <MU/>PM2 program: Hello World! using Remote Procedure Calls</TITLE>
 
 <P>
 The goal of this section is to let you issue a <EM>Remote Procedure
-Call</EM> in PM2. We start with a basic scheme, and we refine it step
-by step so as to demonstrate the versatility of PM2.
+Call</EM> in <MU/>PM2. We start with a basic scheme, and we refine it step
+by step so as to demonstrate the versatility of <MU/>PM2.
 </P>
 
 <SUBSUBSECTION TITLE="Invoking a remote service">
@@ -649,7 +636,7 @@ configuration:
 <CODE FILE="./Progs/pm2conf1.txt"/>
 </P>
 
-<PROGRAM FILE="./Progs/rpc.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
+<PROGRAM FILE="./Progs/rpc-hello.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
 
 <P>
 In Program <REF LABEL="prog:rpc"/>, a basic service is defined. Its behavior is
@@ -663,7 +650,7 @@ Observe that the service function takes no argument.
 Of course, all the available servers have to be registered
 <EM>before</EM> they may be invoked. The association between the service
 identifier and the service function has thus to be set up
-<EM>before</EM> calling the <TT>pm2_init</TT> routine. Doing otherwise will
+<EM>before</EM> calling the PM2 initialization routines. Doing otherwise will
 result in unspecified behavior, probably depending on the relative
 speed of the nodes. The user is therefore <EM>strongly advised</EM> to
 give extra attention to this requirement.
@@ -704,7 +691,6 @@ hosts <TT>debussy</TT> and <TT>faure</TT>. In fact, the service function has bee
 registered on all 3 nodes, including root node<SPACE/>0.  Yet, only 
 node<SPACE/>1 has been used as a server for the request of node<SPACE/>0.
 </P>
-</IGNORE>
 
 <P>
 In this example, the two processing nodes of PM2 have been launched on
@@ -714,6 +700,7 @@ client node:
 
 <CODE FILE="./Progs/pm2conf2.txt"/>
 </P>
+</IGNORE>
 
 <P>
 The careful reader will have noticed that the definition of the
@@ -790,23 +777,26 @@ Let us now run the program.
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="The packing/unpacking API">
+<SUBSUBSECTION TITLE="Packing and unpacking data">
 
-<NOTE>
-TODO: similaire a celle de madeleine
-similar code to Program <REF
-LABEL="prog:rpc-params"/> written directly using the Madeleine interface. Note that
-the PM2 primitives to send data to a remote service are written on top
-of these Madeleine primitives.
+<P>
+The packing/unpacking API of <MU/>PM2 is identical to the Madeleine
+API presented in Section <REF LABEL="sec:mad-pack"/>. The sending and
+receiving flags for <MU/>PM2 are as follows:
+<TT>SEND_SAFER</TT>, <TT>SEND_LATER</TT>, <TT>SEND_CHEAPER</TT>, <TT>RECV_EXPRESS</TT>, <TT>RECV_CHEAPER</TT>. 
+</P>
 
-(resp. <TT>SEND_SAFER</TT>)
- (resp. <TT>SEND_LATER</TT>)
-(resp. <TT>pm2_rawrpc_end</TT>)
- (resp. <TT>SEND_CHEAPER</TT>)
-(resp. <TT>RECV_EXPRESS</TT>)
- (resp. <TT>RECV_CHEAPER</TT>)
- (resp. <TT>pm2_rawrpc_waitdata</TT>)
-</NOTE>
+<P>
+On the sender side, <TT>pm2_rawrpc_end</TT> is used to signal the end
+of the data to be packed, and on the receiver side,
+<TT>pm2_rawrpc_waitdata</TT> signals the end of the reception of the
+data.
+</P>
+
+<P>
+Note that the PM2 primitives to send data to a remote service are written on top
+of the Madeleine primitives.
+</P>
 
 </SUBSUBSECTION>
 

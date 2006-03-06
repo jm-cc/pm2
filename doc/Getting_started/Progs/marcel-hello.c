@@ -39,7 +39,8 @@ any_t sum(any_t arg) {
 int marcel_main(int argc, char **argv) {/* Here! */
   job j;
 
-  marcel_init(&argc, argv);/* Here! */
+  common_pre_init(&argc, argv, NULL);/* Here! */
+  common_post_init(&argc, argv, NULL);/* Here! */
 
   marcel_sem_init(&j.sem, 0);/* Here! */
   j.inf = 1;
@@ -49,6 +50,6 @@ int marcel_main(int argc, char **argv) {/* Here! */
   marcel_sem_P(&j.sem);/* Here! */
   printf("Sum from 1 to %d = %d\n", j.sup, j.res);
 
-  marcel_end();/* Here! */
+  common_exit(NULL);/* Here! */
   return 0;
 }

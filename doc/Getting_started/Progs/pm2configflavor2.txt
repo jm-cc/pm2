@@ -1,6 +1,7 @@
 Options for module pm2 (type help for help)
-Permited s: debug gcc_instrument gdb noinline opt profile netthreads one_vp_per_netthread
-realtime_netthreads isoaddr_trace build_static build_dynamic build_both
+Permited s: debug gcc_instrument gdb noinline opt profile netthreads
+one_vp_per_netthread realtime_netthreads isoaddr_trace build_static
+build_dynamic build_both
 Current selection: opt build_static
 add debug gdb
 Current selection: debug gdb opt build_static

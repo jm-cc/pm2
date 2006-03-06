@@ -1,0 +1,13 @@
+% echo "r" > ~/.leo_gdb_init
+% leonie --x --p --appli=mad_ping appli.cfg
+GNU gdb 6.3-debian
+...
+
+##### joe
+##### joe
+(joe): My global rank is 1
+(joe): My global rank is 0
+test series completed
+...
+Program exited normally.
+(gdb) 

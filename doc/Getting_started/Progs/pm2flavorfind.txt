@@ -1,5 +1,5 @@
-ravel% pm2-flavor find --flavor=pm2
-/usr/labri/furmento/.pm2/flavors/pm2
-ravel% cat `pm2-flavor find --flavor=pm2`
-# Flavor pm2
+ravel% pm2-flavor find --flavor=mad3
+/usr/labri/furmento/.pm2/flavors/mad3
+ravel% more `pm2-flavor find --flavor=mad3`
+# Flavor mad3
 ... a very long file

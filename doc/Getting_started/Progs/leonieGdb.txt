@@ -1,0 +1,1 @@
+% leonie -d --appli=mad_ping appli.cfg

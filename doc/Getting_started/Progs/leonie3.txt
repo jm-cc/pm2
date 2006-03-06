@@ -1,0 +1,5 @@
+% leonie --x --p --appli=mad_ping appli.cfg --debug:mad3-log
+% leonie --x --p --appli=mad_ping appli.cfg --debug:mad3-trace
+%
+% leonie -l --p --appli=mad_ping appli.cfg --debug:mad3-trace
+% leonie -l --p --appli=mad_ping appli.cfg --debug:mad3-log

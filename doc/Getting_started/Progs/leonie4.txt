@@ -1,0 +1,2 @@
+% leonie -l --p --debug:leonie-trace --appli=mad_ping appli.cfg --debug:mad3-trace
+% leonie -l --p --debug:ntbx-trace --appli=mad_ping appli.cfg --debug:ntbx-trace

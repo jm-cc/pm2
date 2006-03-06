@@ -3,12 +3,6 @@
 
 <TEXT>
 
-<P>
-<NOTE>
-  Nathalie: Parler de Leonie --debug ...
-</NOTE>
-</P>
-
 <SUBSECTION TITLE="Introducing PM2 flavors">
 
 <P>
@@ -545,6 +539,140 @@ following table provides the some useful translations.
 </TR>
 </TABLE>
 </P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Using the debug facilities of Leonie">
+
+<P>
+The PM2 bootstrap code, <TT>leonie</TT>, is used by <TT>pm2load</TT>
+to launch the application on the requested nodes. <TT>leonie</TT>
+accepts different parameters for debug purpose. It is possible to
+trace or log any of the modules used by PM2. The general syntax of
+<TT>leonie</TT> is:
+
+<PROGRAM FILE="./Progs/leonieSyntax.txt"/>
+</P>
+
+<P>
+A simple call of <TT>leonie</TT> would be:
+
+<PROGRAM FILE="./Progs/leonie1.txt"/>
+</P>
+
+<P>
+where the option <TT>--x</TT> indicates that session processes should
+not be started within a new graphical console (i.e. <TT>xterm</TT>),
+and the option <TT>--p</TT> indicates there should be no pause
+following the termination of the session processes. Start
+<TT>leonie</TT> without these options to fully understand their
+behavior. The call <TT>leonie --help</TT> shows the list of
+all the available options.
+</P>
+
+<P>
+Debug parameters allow to trace specific modules. The general format
+of a debug parameter is
+<TT>--debug:&lt;MODULE_NAME&gt;-&lt;TRACE_LEVEL&gt;</TT>. For example,
+the debug parameter <TT>--debug:ntbx-trace</TT> will display all the
+trace messages within the module <TT>ntbx</TT> either made by
+<TT>leonie</TT> or by the processes started by <TT>leonie</TT>
+(depending on the parameter is specified as a <TT>leonie</TT>
+parameter or as a application parameter). <B>Note that the module
+must have been compiled with the option <TT>debug</TT></B>. More
+debug parameters are available, you can print the list as follows:
+
+<PROGRAM FILE="./Progs/debugregister.txt"/>
+</P>
+
+<P>
+The <TT>leonie</TT> parameter <TT>-l</TT> indicates the output of the
+debug should be redirected to a file in the default temporary
+directory. On a typical Unix system, the name of the file will be
+similar to <TT>/tmp/pm2log-$USER-x</TT>.
+</P>
+
+<P>
+When executing a Madeleine application, the flavor <TT>leonie</TT> is
+used by <TT>leonie</TT> itself, and the flavor <TT>mad3</TT> is used
+for the application started by <TT>leonie</TT>. The following command
+will print the list of modules for a specific flavor:
+
+<PROGRAM FILE="./Progs/leonie5.txt"/>
+</P>
+
+<P>
+The debug parameters can be specified directly for <TT>leonie</TT>:
+
+<PROGRAM FILE="./Progs/leonie2.txt"/>
+</P>
+
+<P>
+
+or for the processes started by <TT>leonie</TT>:
+
+<PROGRAM FILE="./Progs/leonie3.txt"/>
+</P>
+
+<P>
+or for both <TT>leonie</TT> and the processes started by <TT>leonie</TT>:
+
+<PROGRAM FILE="./Progs/leonie4.txt"/>
+
+</P>
+
+<SUBSUBSECTION TITLE="Debugging PM2 processes">
+
+<P>
+When starting <TT>leonie</TT>, you can specify processes should be
+started under the debugger by using the option <TT>-d</TT> as in the
+following example:
+
+<PROGRAM FILE="./Progs/leonieGdb.txt"/>
+
+</P>
+
+<P>
+This command will start the processes under the GNU debugger, each
+within a new graphical console. If you do not have the option of
+starting graphical tools, you should try the following command:
+
+<PROGRAM FILE="./Progs/leonieGdb2.txt"/>
+
+</P>
+
+<P>
+If your system allows users to create core files, this command will
+dump the execution of the faulty processes into a core file. You can
+then use the GNU debugger to examine the execution in more detail.
+
+<PROGRAM FILE="./Progs/leonieGdb3.txt"/>
+
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Debugging Leonie">
+
+<P>
+You might need to start <TT>leonie</TT> itself under the debugger. To
+do so, you need to set the environment variable <TT>LEO_DEBUG</TT> to
+the value <TT>1</TT> before starting <TT>leonie</TT>.
+
+<PROGRAM FILE="./Progs/debugLeonie.txt"/>
+</P>
+
+<P>
+The debugger then waits for some user input, you can for example set
+breakpoints or start the application. The file
+<TT>$HOME/.leo_gdb_init</TT> can be used to define a list of GDB
+commands to execute when starting the debugger. You can for example
+automatically start the execution of the application.
+
+<PROGRAM FILE="./Progs/debugLeonie2.txt"/>
+</P>
+
+</SUBSUBSECTION>
 
 </SUBSECTION>
 

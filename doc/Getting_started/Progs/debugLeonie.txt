@@ -1,0 +1,6 @@
+% export LEO_DEBUG=1
+% leonie --x --p --appli=mad_ping appli.cfg
+GNU gdb 6.3-debian
+...
+
+(gdb) 

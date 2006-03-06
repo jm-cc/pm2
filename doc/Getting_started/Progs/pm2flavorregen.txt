@@ -1,2 +1,2 @@
-ravel% pm2-flavor regenerate --flavor=pm2
-flavor 'pm2' unmodified
+ravel% pm2-flavor regenerate --flavor=mad3
+flavor 'mad3' unmodified

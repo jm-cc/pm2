@@ -57,7 +57,7 @@ operations. (Observe that the variable <TT>tmp</TT> has been registered as
 <TT>volatile</TT> to prevent the wise compiler to optimize our
 trick!). The expected final value for <TT>counter</TT> is<SPACE/>0.  
 
-<CODE FILE="./Progs/freeze.txt"/>
+<PROGRAM FILE="./Progs/freeze.txt"/>
 </P>
 
 <P>
@@ -65,7 +65,7 @@ It is interesting to run the program without the calls to
 <TT>pm2_freeze</TT> and <TT>pm2_unfreeze</TT> routines, and see what happens.
 At least on my current workstation, this yields the following result:
 
-<CODE FILE="./Progs/freeze2.txt"/>
+<PROGRAM FILE="./Progs/freeze2.txt"/>
 </P>
 
 <P>

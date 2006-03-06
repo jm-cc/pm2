@@ -21,19 +21,19 @@ this unless explicitly required.
 
 <SUBSUBSECTION TITLE="pm2conf">
 
-<CODE FILE="./Progs/pm2confhelp.txt"/>
+<PROGRAM FILE="./Progs/pm2confhelp.txt"/>
 
 <P>
 A typical use of the extended options could thus be:
 
-<CODE FILE="./Progs/pm2confhelp2.txt"/>
+<PROGRAM FILE="./Progs/pm2confhelp2.txt"/>
 </P>
 
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="pm2load">
 
-<CODE FILE="./Progs/pm2loadhelp.txt"/>
+<PROGRAM FILE="./Progs/pm2loadhelp.txt"/>
 
 </SUBSUBSECTION>
 

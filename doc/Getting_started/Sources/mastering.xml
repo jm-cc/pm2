@@ -137,7 +137,7 @@ the incoming thread will be unpacked and restarted on the destination
 node.
 </P>
 
-<CODE FILE="./Progs/migration.txt"/>
+<PROGRAM FILE="./Progs/migration.txt"/>
 
 <P>
 As usual, there is no restriction whatsoever on the association
@@ -145,7 +145,7 @@ between the physical machine and the logical nodes of PM2. For
 instance, you could try to run the program on the same physical node.
 It works just as well!
 
-<CODE FILE="./Progs/migration2.txt"/>
+<PROGRAM FILE="./Progs/migration2.txt"/>
 </P>
 
 </SUBSUBSECTION>
@@ -212,7 +212,7 @@ the completion is passed as an argument to the thread creation
 function. The spawned thread allocate storage locally for a
 completion, and copies the argument completion into its personal
 resources using the <TT>pm2_completion_copy</TT> routine:
-  <CODE FILE="./Progs/completionCopy2.c"/>
+  <PROGRAM FILE="./Progs/completionCopy2.c"/>
 </P>
 
 <P>
@@ -267,7 +267,7 @@ issues a RPC to node<SPACE/>1 to set the variable <TT>barrier</TT> to 1, and doe
 for its own node. Finally, the master thread calls the <TT>halt</TT> routine
 to stop all daemon service threads.
 
-<CODE FILE="./Progs/migration3.txt"/>
+<PROGRAM FILE="./Progs/migration3.txt"/>
 </P>
 
 <P>
@@ -300,7 +300,7 @@ routine to do the work. A call
 </P>
 
 <P>
-<CODE FILE="./Progs/threadslist.c"/>
+<PROGRAM FILE="./Progs/threadslist.c"/>
 </P>
 
 <P>
@@ -405,7 +405,7 @@ of <TT>x</TT> <EM>and its address</EM> are left unchanged.
 
 <PROGRAM FILE="./Progs/iso-alloc.c" TITLE="Iso-allocation enables unlimited use of pointers in migrating threads" LABEL="prog:iso-alloc"/>
 
-<CODE FILE="./Progs/isoalloc.txt"/>
+<PROGRAM FILE="./Progs/isoalloc.txt"/>
 </P>
 
 <P>
@@ -457,7 +457,7 @@ value <EM>after</EM> the migration, as before.
 
 <PROGRAM FILE="./Progs/isomalloc.c" TITLE="Allocating dynamic storage which migrates together with the thread" LABEL="prog:isomalloc"/>
 
-<CODE FILE="./Progs/isomalloc.txt"/>
+<PROGRAM FILE="./Progs/isomalloc.txt"/>
 </P>
 
 <P>
@@ -507,7 +507,7 @@ increments at the master node.
 
 <PROGRAM FILE="./Progs/dsm.c" TITLE="Distributed shared memory in PM2" LABEL="prog:dsm"/>
 
-<CODE FILE="./Progs/dsm.txt"/>
+<PROGRAM FILE="./Progs/dsm.txt"/>
 </P>
 
 <P>
@@ -550,7 +550,7 @@ variable.
 
 <PROGRAM FILE="./Progs/dsm1.c" TITLE="Distributed shared memory in PM2, using the 'MIGRATE_THREAD' sequential consistency protocol" LABEL="prog:dsm1"/>
 
-<CODE FILE="./Progs/dsm1.txt"/>
+<PROGRAM FILE="./Progs/dsm1.txt"/>
 </P>
 
 <P>
@@ -563,7 +563,7 @@ incrementing instruction <TT>shvar++</TT> is compiled into an
 <EM>sequence</EM> of elementary, atomic machine instructions, something
 like:
 
-<CODE FILE="./Progs/tmp.c"/>
+<PROGRAM FILE="./Progs/tmp.c"/>
 </P>
 
 <P>
@@ -576,7 +576,7 @@ mutexes, which are local to a PM2 node.
 
 <PROGRAM FILE="./Progs/dsm2.c" TITLE="Distributed shared memory in PM2, with concurrent access to shared variables" LABEL="prog:dsm2"/>
 
-<CODE FILE="./Progs/dsm2.txt"/>
+<PROGRAM FILE="./Progs/dsm2.txt"/>
 </P>
 
 <P>

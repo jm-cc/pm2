@@ -32,7 +32,7 @@ features, such as thread migration.  Marcel is currently available on
 the following platforms, listed in the <TT>ARCHITECTURES</TT> file of the
 distribution:
 
-<CODE FILE="./Progs/archi.txt"/>
+<PROGRAM FILE="./Progs/archi.txt"/>
 </P>
 
 </SUBSUBSECTION>
@@ -129,7 +129,7 @@ your problem is not already listed in the <EM>Frequently Asked
 <P>
 The PM2 archive can be extracted with one of the following commands
 entered at the shell prompt:
-<CODE FILE="./Progs/pm2extract.txt"/>
+<PROGRAM FILE="./Progs/pm2extract.txt"/>
 </P>
 
 <P>
@@ -242,7 +242,7 @@ directory could for example not be suitable!
 <P>
 You may wish to insert the following lines in your <TT>.cshrc</TT> file (if
 your default shell is <TT>csh</TT>):
-<CODE FILE="./Progs/settingVariables.txt"/>
+<PROGRAM FILE="./Progs/settingVariables.txt"/>
 </P>
 
 <WARNING>
@@ -273,14 +273,14 @@ turned off for performance.
   environment variables and the new search <TT>PATH</TT>.
 </WARNING>
 
-<CODE FILE="./Progs/makeInit.txt"/>
+<PROGRAM FILE="./Progs/makeInit.txt"/>
 </P>
 
 <P>
 This checks the whole source hierarchy for consistency extracting the
 option sets for each PM2 module if necessary. It then creates
 the various flavors. You can list them by
-<CODE FILE="./Progs/flavorList.txt"/>
+<PROGRAM FILE="./Progs/flavorList.txt"/>
 </P>
 
 <IGNORE>
@@ -288,7 +288,7 @@ the various flavors. You can list them by
 In the following, we advise you to use the <TT>pm2</TT> standard
 flavor. Just have a look at it to get a feeling of its different parameters.
 You will probably never dare to do it again!
-<CODE FILE="./Progs/flavorGet.txt"/>
+<PROGRAM FILE="./Progs/flavorGet.txt"/>
 </P>
 
 <P>
@@ -321,7 +321,7 @@ default, the network protocol is set to TCP in the flavors, which
 should fit your needs at least for the first runs.
 
 <IGNORE>
-<CODE FILE="./Progs/setPm2Flavor.txt"/>
+<PROGRAM FILE="./Progs/setPm2Flavor.txt"/>
 </IGNORE>
 </P>
 
@@ -331,7 +331,7 @@ which aspect of PM2 we wish to use. Selecting a flavor is done by
 setting the environment variable <TT>PM2_FLAVOR</TT> to the name of
 the flavor one wishes to use.
 
-<CODE FILE="./Progs/setPm2Flavor.txt"/>
+<PROGRAM FILE="./Progs/setPm2Flavor.txt"/>
 
 </P>
 
@@ -370,13 +370,13 @@ specification). Only recent GNU versions will work!
 </WARNING>
 
 <P>
-<CODE FILE="./Progs/make.txt"/>
+<PROGRAM FILE="./Progs/make.txt"/>
 
 You may wish to follow precisely the compilation process, to do so,
 set the <TT>VERB</TT> variable of the makefile process to
 <TT>verbose</TT>.
 
-<CODE FILE="./Progs/makeVerbose.txt"/>
+<PROGRAM FILE="./Progs/makeVerbose.txt"/>
 </P>
 
 </SUBSECTION>
@@ -390,7 +390,7 @@ This may be needed to free some disk space when PM2 is not in use or
 to force the whole PM2 distribution to be completely recreated by a
 subsequent <TT>make</TT> call.
 
-<CODE FILE="./Progs/makeClean.txt"/>
+<PROGRAM FILE="./Progs/makeClean.txt"/>
 </P>
 
 <P>
@@ -414,7 +414,7 @@ called <TT>ravel</TT>, and two neighboring ones called
 <TT>debussy</TT> and <TT>faure</TT> (well, this should actually read
 <EM>Fauré</EM>!).
 
-<CODE FILE="./Progs/pm2conf.txt"/>
+<PROGRAM FILE="./Progs/pm2conf.txt"/>
 </P>
 
 <P>
@@ -441,7 +441,7 @@ preferably outside the configuration.
   machine in the configuration, and that the directory <TT>${PM2_ROOT}</TT>
   is actually shared by all of them. You can for example try the following command:
 
-  <CODE FILE="./Progs/pm2all.txt"/>
+  <PROGRAM FILE="./Progs/pm2all.txt"/>
   </P>
 
   <P>
@@ -464,14 +464,14 @@ By default, PM2 is connecting to machines using the <TT>ssh</TT>
 command. To use another command or to specify parameters for the
 <TT>ssh</TT> command, you can set the <TT>PM2_RSH</TT> variable.
 
-<CODE FILE="./Progs/pm2rsh.txt"/>
+<PROGRAM FILE="./Progs/pm2rsh.txt"/>
 </P>
 
 <IGNORE>
 <P>
 If <TT>rsh</TT> does not work because of right permissions, a possible
 turnaround is to use <TT>ssh</TT> instead of <TT>rsh</TT>:
-<CODE FILE="./Progs/setPm2Rsh.txt"/>
+<PROGRAM FILE="./Progs/setPm2Rsh.txt"/>
 </P>
 </IGNORE>
 
@@ -488,7 +488,7 @@ is on the local one.
 However if it is not possible to correct such problems, it is still
 possible to run all three PM2 <EM>virtual nodes</EM> as three processes
 on your local machine:
-<CODE FILE="./Progs/pm2conflocal.txt"/>
+<PROGRAM FILE="./Progs/pm2conflocal.txt"/>
 </P>
 
 </SUBSECTION>
@@ -502,7 +502,7 @@ involved in the execution. In our case, we suppose our 3 machines are
 connected using the TCP network. The network configuration file can be
 created as follows:
 
-<CODE FILE="./Progs/hellonetworks.txt"/>
+<PROGRAM FILE="./Progs/hellonetworks.txt"/>
 
 </P>
 
@@ -510,7 +510,7 @@ created as follows:
 You then need to tell PM2 to use your new network configuration file instead of the default one.
 This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
 
-<CODE FILE="./Progs/sethellonetworks.txt"/>
+<PROGRAM FILE="./Progs/sethellonetworks.txt"/>
 </P>
 
 </SUBSECTION>
@@ -521,7 +521,7 @@ This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
 <WARNING>
   Please, make sure that your flavor is actually set to <TT>pm2</TT>:
 
-  <CODE FILE="./Progs/setPm2Flavor.txt"/>
+  <PROGRAM FILE="./Progs/setPm2Flavor.txt"/>
 </WARNING>
 
 <P>
@@ -530,7 +530,7 @@ compile and execute the example programs of the distribution.  Let's
 start with the simplest one: <EM>Hello world!</EM>, located the in file
 <TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
 
-<CODE FILE="./Progs/makeHello.txt"/>
+<PROGRAM FILE="./Progs/makeHello.txt"/>
 </P>
 
 <P>
@@ -538,12 +538,12 @@ The compiled version of the program is automatically placed into your
 own <TT>build/${PM2_FLAVOR}</TT> directory, but you do need not bother with
 this detail at this point: PM2 cares about it for you! Use the
 <TT>pm2which</TT> command to learn where a file is physically located;
-<CODE FILE="./Progs/whichHello.txt"/>
+<PROGRAM FILE="./Progs/whichHello.txt"/>
 </P>
 
 <P>
 It remains to actually load and run the program.
-<CODE FILE="./Progs/pm2load.txt"/>
+<PROGRAM FILE="./Progs/pm2load.txt"/>
 </P>
 
 <P>
@@ -575,12 +575,12 @@ later how to get them.
 <WARNING>
   Please, make sure that your flavor is actually set to <TT>marcel</TT>:
 
-  <CODE FILE="./Progs/setMarcelFlavor.txt"/>
+  <PROGRAM FILE="./Progs/setMarcelFlavor.txt"/>
 </WARNING>
 
 <P>
 You can now compile and execute a sample Marcel application.
-<CODE FILE="./Progs/checkPm2-2.txt"/>
+<PROGRAM FILE="./Progs/checkPm2-2.txt"/>
 </P>
 
 </SUBSECTION>
@@ -590,12 +590,12 @@ You can now compile and execute a sample Marcel application.
 <WARNING>
   Please, make sure that your flavor is actually set to <TT>mad3</TT>:
 
-  <CODE FILE="./Progs/setMadFlavor.txt"/>
+  <PROGRAM FILE="./Progs/setMadFlavor.txt"/>
 </WARNING>
 
 <P>
 You can now compile and execute a sample Madeleine application.
-<CODE FILE="./Progs/checkPm2-3.txt"/>
+<PROGRAM FILE="./Progs/checkPm2-3.txt"/>
 </P>
 
 </SUBSECTION>
@@ -606,7 +606,7 @@ You can now compile and execute a sample Madeleine application.
 If something goes wrong at any point, you can always activate the
 emergency repair tool provided by PM2.
 
-<CODE FILE="./Progs/makeSos.txt"/>
+<PROGRAM FILE="./Progs/makeSos.txt"/>
 </P>
 
 <P>
@@ -616,7 +616,7 @@ cleanly as possible. It should then restore a fresh and safe
 configuration for you, ready to restart the whole compilation. The
 output of the command may look like:
 
-<CODE FILE="./Progs/makeSos2.txt"/>
+<PROGRAM FILE="./Progs/makeSos2.txt"/>
 
 </P>
 

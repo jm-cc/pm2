@@ -493,7 +493,7 @@ on your local machine:
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Creating the Network configuration file">
+<SUBSECTION TITLE="Creating the Network configuration file" LABEL="sec:network-conf">
 
 <P>
 When loading a PM2 program, a network configuration file is read to

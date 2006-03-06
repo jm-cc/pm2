@@ -943,6 +943,188 @@ on. Any machine you have access to can do it as well!
 
 </SUBSUBSECTION>
 
+<CLEARPAGE/>
+</SUBSECTION>
+
+<SUBSECTION TITLE="Leonie">
+
+<P>
+So far, we used the tools <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use <TT>leonie</TT>, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. <TT>leonie</TT> uses two configuration files:
+
+<OL>
+<LI>
+<P>
+<EM>The application configuration file</EM> which describes the machines to use for the application,
+</P>
+</LI>
+
+<LI>
+<P>
+<EM>The network configuration file</EM>, as explained in Section <REF LABEL="sec:network-conf"/>.
+</P>
+</LI>
+
+</OL>
+
+</P>
+
+<SUBSUBSECTION TITLE="The configuration files">
+
+<P>
+Let's explain these concepts using a realistic example. Let's suppose that two clusters
+are available:
+
+<IMAGE FILE="./Figures/config-small" TITLE="Example of interconnected clusters" SCALE="0.5" LABEL="fig:config-small"/>
+
+<UL>
+<LI>
+the first cluster named <TT>foo</TT>, is composed of 3 nodes, named
+<TT>foo0</TT>, <TT>foo1</TT> and <TT>foo2</TT>, linked by a Myrinet network;
+</LI>
+
+<LI>
+the second cluster named <TT>goo</TT>, is composed of 4 nodes, named
+<TT>goo0</TT>, <TT>goo1</TT>, <TT>goo2</TT>, <TT>goo3</TT>, linked by a SCI network.
+</LI>
+</UL>
+
+Both clusters also feature an Ethernet network (TCP) which links
+together all the machines of each cluster. The clusters can be seen on
+Figure <REF LABEL="fig:config-small"/>.
+
+</P>
+
+<P>
+Leonie uses objects called <EM>channels</EM> in order to virtualize
+the available networks in a given configuration. There are basically
+two types of channels:
+<OL>
+<LI> <EM>physical channels</EM> which are simple abstractions of real
+existing networks and; </LI>
+
+<LI> <EM>virtual channels</EM> which are build above physical channels
+and can be used to create <EM>heterogeneous networks</EM>. </LI>
+</OL>
+
+With our simple example, we can build three physical channels:
+<OL> 
+<LI> a channel build above the Myrinet network. This channel
+encompasses the nodes {<TT>foo0</TT>, <TT>foo1</TT>, <TT>foo2</TT>};
+</LI>
+
+<LI> a channel build above the SCI network. This channel
+encompasses the nodes {<TT>goo0</TT>, <TT>goo1</TT>, <TT>goo2</TT>, <TT>goo3</TT>};
+</LI>
+
+<LI> a channel build above the  TCP network. This channel
+encompasses all the nodes of both clusters. </LI>
+</OL>
+
+On top of these three different physical channels, we can build a
+virtual channel which encompasses all the nodes of the
+configuration. One may think that there is no difference with the TCP
+physical channel, but in fact the behavior of a program using the
+virtual channel will be totally different as Leonie will
+automatically select the best available network to communicate between
+two nodes of this virtual channel.
+</P>
+
+<P>
+Indeed, all communications occurring within the <TT>foo</TT> cluster
+will use the Myrinet network, all communications occurring within the
+<TT>goo</TT> cluster will use the SCI network.  And if two nodes
+belonging to different clusters want to exchange messages, the TCP
+network will be used.
+</P>
+
+<P>
+More complicate configurations can be expressed: if we suppose now
+that the node <TT>goo3</TT> features a SCI NIC, we can build a virtual
+channel over the physical channels corresponding to the Myrinet and
+SCI networks. In that case, we do not need (and most important: use)
+the TCP network. In fact, with that new configuration, from the
+application's point of view, all the nodes can communicate with each
+other. Indeed even if a node <TT>A</TT> is not <EM>physically</EM>
+connected to a node <TT>B</TT>, it can in any case send messages to
+it. Internally, the node <TT>goo3</TT>, which features both Myrinet
+and SCI NICs, will <B>forward</B> the Madeleine message from
+<TT>A</TT> to <TT>B</TT>.
+</P>
+
+<IMAGE FILE="./Figures/config" TITLE="Example of configuration" SCALE="0.7" LABEL="fig:config"/>
+
+<P>
+How is this information given to Leonie/Madeleine? The library uses
+configuration files (the following example files describe the
+configuration shown in Figure <REF LABEL="fig:config"/> with the node
+<TT>goo3</TT> featuring a SCI NIC):
+
+<UL>
+<LI>
+<P>
+the first file, the network configuration file, named
+<TT>localnet.cfg</TT>, describes the different available networks.
+<CODE FILE="./Progs/localnet.cfg"/>
+</P>
+<P>
+A network is defined with its name (tag <TT>name</TT>), a list of
+machines it includes (tag <TT>hosts</TT>), and the identifier of the
+device connecting these machines (tag <TT>dev</TT>, should be one of
+the predefined identifiers recognized by Madeleine).
+</P>
+</LI>
+
+<LI>
+<P>
+the second file, the application configuration file, named
+<TT>appli.cfg</TT>, describes the application and the channel mapping
+over the different nodes.
+<CODE FILE="./Progs/appli.cfg"/>
+</P>
+<P>
+A application is defined with a flavor (tag <TT>flavor</TT>), a
+network configuration file (tag <TT>include</TT>), a list of physical
+channel and a virtual channel.
+</P>
+<P>
+A physical channel is defined with its name (tag <TT>name</TT>), the
+identifier of the network is based on (tag <TT>net</TT> which has to
+be defined in the network configuration file), and a list of machines
+it encompasses (tag <TT>hosts</TT>).
+</P>
+<P>
+A virtual channel is defined with its name (tag <TT>name</TT>) and the
+list of physical channels it is build upon (tag <TT>channels</TT>).
+</P>
+</LI>
+</UL>
+
+Once a virtual channel is build, the physical channels below it are no
+longer visible by the application. However, it is possible to create
+several different Madeleine physical channels over the same physical
+network. Hence a physical channel can truly be seen as a <EM>logical
+network</EM> or a <EM>network abstraction</EM>.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Starting a PM2 application using Leonie">
+
+<P>
+Once the configuration files describing your machines are written, a
+simple call of <TT>leonie</TT> to start an application would be:
+
+<PROGRAM FILE="./Progs/leonie1.txt"/>
+
+</P>
+
+<P>
+<TT>leonie</TT> accepts different parameters. The call <TT>leonie
+--help</TT> shows the list of all these parameters.
+</P>
+
+
+</SUBSUBSECTION>
 </SUBSECTION>
 
 </TEXT>

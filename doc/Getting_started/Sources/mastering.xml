@@ -297,7 +297,13 @@ Consider now how the master thread can migrate the children threads.
 The first step is to store the children threads to be migrated into an
 array.  This can be done by hand, but PM2 provides a specialized
 routine to do the work. A call 
+</P>
+
+<P>
 <CODE FILE="./Progs/threadslist.c"/>
+</P>
+
+<P>
 takes as parameters an array of threads
 <TT>threads[N]</TT> (a PM2 thread has the type <TT>marcel_t</TT>) and a selection
 condition. A number of condition are available, which can be or-ed and

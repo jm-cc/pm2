@@ -550,7 +550,7 @@ It remains to actually load and run the program.
 You can see that our program generates several times the same message
 <TT>Hello world</TT>. Each of the nodes involved in the execution
 displays once the message with a call to the <TT>printf</TT> Unix
-routime. The output from all the nodes has been redirected to the
+routine. The output from all the nodes has been redirected to the
 console of the starting process.
 </P>
 

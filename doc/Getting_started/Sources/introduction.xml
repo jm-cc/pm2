@@ -147,7 +147,7 @@ the operating system. With the Linux system, Marcel is also able to
 use activations (see LinuxActivations below) which provide a remedy to
 the classical limitation of user level multithreading libraries,
 namely the blocking system calls. Marcel also has good scheduling
-behavior on NUMA machines thanks to a powerful mecanism that lets the
+behavior on NUMA machines thanks to a powerful mechanism that lets the
 programmer express the structure of his application. All these flavors
 are based on top of a unique multithreading management kernel and are
 specialized during compilation.

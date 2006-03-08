@@ -43,10 +43,6 @@ all the libraries from scratch. This is a not trivial operation, as it
 consumes time and resources.
 </P>
 
-<NOTE>
-  LB to RN: Is the name of the C compiler included in the flavor?
-</NOTE>
-
 <P>
 All these motivations have led to the notion of <EM>PM2 flavors</EM>. A PM2
 flavor is simply a set of compiling and linking options for the user
@@ -530,12 +526,6 @@ following table provides the some useful translations.
 </TR>
 <TR>
 <TD><TT>tfprintf</TT></TD>     <TD><TT>marcel_fprintf</TT></TD>     <TD><TT>tbx</TT></TD>
-</TR>
-<TR>
-<TD><TT>lock_task</TT></TD>    <TD><TT>ma_lock_task</TT></TD>       <TD><TT>marcel</TT></TD>
-</TR>
-<TR>
-<TD><TT>unlock_task</TT></TD>  <TD><TT>ma_unlock_task</TT></TD>     <TD><TT>marcel</TT></TD>
 </TR>
 </TABLE>
 </P>

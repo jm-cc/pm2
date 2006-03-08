@@ -1,0 +1,73 @@
+#
+# Property file mapping DOM nodes to Java class names.
+#
+# NOTE:  Special tag name "*Element" defines the default class to be used,
+# instead of com.sun.xml.tree.ElementNode, when no explicit entry exists.
+# The name "*Document" is used similarly for the document itself.
+#
+#*Element		= org.runtime.manuals.DefaultElement
+
+DOCUMENT		= org.runtime.manuals.latex.DocumentElement
+ABSTRACT		= org.runtime.manuals.latex.AbstractElement
+KEYWORD			= org.runtime.manuals.latex.KeywordsElement
+LABRI			= org.runtime.manuals.latex.EmptyElement
+INRIA			= org.runtime.manuals.latex.EmptyElement
+SECTION			= org.runtime.manuals.latex.SectionElement
+SUBSECTION		= org.runtime.manuals.latex.SubSectionElement
+SUBSUBSECTION		= org.runtime.manuals.latex.SubSubSectionElement
+SUBSUBSUBSECTION	= org.runtime.manuals.latex.SubSubSubSectionElement
+APPENDIX		= org.runtime.manuals.latex.AppendixElement
+
+IGNORE			= org.runtime.manuals.latex.EmptyElement
+CLEARPAGE		= org.runtime.manuals.latex.ClearPageElement
+
+TITLE			= org.runtime.manuals.latex.EmptyElement
+TEXT			= org.runtime.manuals.latex.TextElement
+P			= org.runtime.manuals.latex.PElement
+REF			= org.runtime.manuals.latex.RefElement
+CODE			= org.runtime.manuals.latex.ProgramElement
+IMAGE			= org.runtime.manuals.latex.ImageElement
+PROGRAM			= org.runtime.manuals.latex.ProgramElement
+
+WARNING			= org.runtime.manuals.latex.WarningElement
+NOTE			= org.runtime.manuals.latex.NoteElement
+
+HYPHEN			= org.runtime.manuals.latex.HyphenElement
+EM			= org.runtime.manuals.latex.emElement
+TT			= org.runtime.manuals.latex.ttElement
+B			= org.runtime.manuals.latex.bElement
+VERBATIM		= org.runtime.manuals.latex.VerbatimElement
+SMALL			= org.runtime.manuals.latex.SmallElement
+POUND			= org.runtime.manuals.latex.PoundElement
+AMPERSAND		= org.runtime.manuals.latex.AmpersandElement
+PERCENT			= org.runtime.manuals.latex.PercentElement
+LDOTS			= org.runtime.manuals.latex.LdotsElement
+BACKSLASH		= org.runtime.manuals.latex.BackslashElement
+MICROSECOND		= org.runtime.manuals.latex.MicroSecondElement
+SPACE			= org.runtime.manuals.latex.UnbreakableSpaceElement
+SHARP			= org.runtime.manuals.latex.SharpElement
+UNDERSCORE		= org.runtime.manuals.latex.UnderscoreElement
+MU			= org.runtime.manuals.latex.MuElement
+
+FOOTNOTE		= org.runtime.manuals.latex.FootnoteElement
+
+LI			= org.runtime.manuals.latex.LIElement
+OL			= org.runtime.manuals.latex.OLElement
+UL			= org.runtime.manuals.latex.ULElement
+DL			= org.runtime.manuals.latex.DLElement
+DT			= org.runtime.manuals.latex.DTElement
+DD			= org.runtime.manuals.latex.LatexElement
+
+BIBLIOGRAPHY		= org.runtime.manuals.latex.BibliographyElement
+BIBITEM			= org.runtime.manuals.latex.BibItemElement
+CITE			= org.runtime.manuals.latex.CiteElement
+
+URL			= org.runtime.manuals.latex.URLElement
+EMAIL			= org.runtime.manuals.latex.URLElement
+
+TABLE			= org.runtime.manuals.latex.TableElement
+TR			= org.runtime.manuals.latex.TrElement
+TH			= org.runtime.manuals.latex.bElement
+TD			= org.runtime.manuals.latex.LatexElement
+
+BR			= org.runtime.manuals.latex.ReturnElement

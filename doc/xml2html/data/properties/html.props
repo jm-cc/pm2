@@ -1,0 +1,63 @@
+#
+# Property file mapping DOM nodes to Java class names.
+#
+# NOTE:  Special tag name "*Element" defines the default class to be used,
+# instead of com.sun.xml.tree.ElementNode, when no explicit entry exists.
+# The name "*Document" is used similarly for the document itself.
+#
+*Element		= org.runtime.manuals.html.HTMLElement
+DOCUMENT		= org.runtime.manuals.html.DocumentElement
+ABSTRACT		= org.runtime.manuals.html.AbstractElement
+KEYWORD			= org.runtime.manuals.html.KeywordsElement
+LABRI			= org.runtime.manuals.html.EmptyElement
+INRIA			= org.runtime.manuals.html.EmptyElement
+SECTION			= org.runtime.manuals.html.SectionElement
+SUBSECTION		= org.runtime.manuals.html.SubSectionElement
+SUBSUBSECTION		= org.runtime.manuals.html.SubSubSectionElement
+SUBSUBSUBSECTION	= org.runtime.manuals.html.SubSubSubSectionElement
+APPENDIX		= org.runtime.manuals.html.AppendixElement
+
+IGNORE			= org.runtime.manuals.html.EmptyElement
+CLEARPAGE		= org.runtime.manuals.html.EmptyElement
+
+#TEXT			= org.runtime.manuals.html.TextElement
+#P			= org.runtime.manuals.html.PElement
+REF			= org.runtime.manuals.html.RefElement
+CODE			= org.runtime.manuals.html.ProgramElement
+IMAGE			= org.runtime.manuals.html.ImageElement
+PROGRAM			= org.runtime.manuals.html.ProgramElement
+
+NOTE			= org.runtime.manuals.html.NoteElement
+WARNING			= org.runtime.manuals.html.WarningElement
+
+HYPHEN			= org.runtime.manuals.html.HyphenElement
+#EM			= org.runtime.manuals.html.emElement
+#TT			= org.runtime.manuals.html.ttElement
+#B			= org.runtime.manuals.html.bElement
+#VERBATIM		= org.runtime.manuals.html.VerbatimElement
+SMALL			= org.runtime.manuals.html.SmallElement
+POUND			= org.runtime.manuals.html.PoundElement
+AMPERSAND		= org.runtime.manuals.html.AmpersandElement
+PERCENT			= org.runtime.manuals.html.PercentElement
+LDOTS			= org.runtime.manuals.html.LdotsElement
+BACKSLASH		= org.runtime.manuals.html.BackslashElement
+MICROSECOND		= org.runtime.manuals.html.MicroSecondElement
+SPACE			= org.runtime.manuals.html.UnbreakableSpaceElement
+SHARP			= org.runtime.manuals.html.SharpElement
+UNDERSCORE		= org.runtime.manuals.html.UnderscoreElement
+MU			= org.runtime.manuals.html.MuElement
+
+#LI			= org.runtime.manuals.html.LIElement
+#OL			= org.runtime.manuals.html.OLElement
+#UL			= org.runtime.manuals.html.ULElement
+DL			= org.runtime.manuals.html.DLElement
+
+BIBLIOGRAPHY		= org.runtime.manuals.html.BibliographyElement
+BIBITEM			= org.runtime.manuals.html.BibItemElement
+CITE			= org.runtime.manuals.html.CiteElement
+
+URL			= org.runtime.manuals.html.URLElement
+EMAIL			= org.runtime.manuals.html.EmailElement
+
+TABLE			= org.runtime.manuals.html.TableElement
+

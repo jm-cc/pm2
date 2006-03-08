@@ -1,0 +1,10 @@
+
+\catcode`\^^A=\active
+\catcode`\^^B=\active
+
+\def\@startverbatimemph{\fontseries{b}\selectfont}
+\def\@endverbatimemph{\fontseries{m}\selectfont}
+
+\let^^A=\@startverbatimemph
+\let^^B=\@endverbatimemph
+

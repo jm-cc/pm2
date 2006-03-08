@@ -1,0 +1,16 @@
+%
+%% Heure courante (inserer \protect\timestamp)
+%
+\newcount\minutes
+\newcount\scratch
+
+\def\timestamp{%
+  \scratch=\time
+  \divide \scratch by 60
+  \edef\hours{\the\scratch}
+  \multiply \scratch by 60
+  \minutes=\time
+  \advance\minutes by -\scratch
+  \hours:\null
+  \ifnum \minutes < 10 0\fi
+  \the\minutes}

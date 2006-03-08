@@ -1,6 +1,6 @@
 .PHONY: all upload wml-upload pdf-upload wml ps inria labri emph clean emph-clean wml-clean ps-clean labri-clean inria-clean
 
-XML2HTML		:=	/net/cvs/runtime/usr/xml2html
+XML2HTML		:=	../xml2html
 
 TARGET			:=	start
 

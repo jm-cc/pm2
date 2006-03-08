@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE DOCUMENT SYSTEM "file:///net/cvs/runtime/usr/xml2html/data/xml/DOCUMENT.dtd">
+<!DOCTYPE DOCUMENT SYSTEM "file:../xml2html/data/xml/DOCUMENT.dtd">
 <DOCUMENT TITLE="Getting started with PM2"
           AUTHOR="The PM2 Team" EMAIL="runtime@labri.fr">
 <!-- AUTHOR="Olivier Aumage and Gabriel Antoniu and Luc Bougé and Vincent Danjean and Raymond Namyst" EMAIL="runtime@labri.fr" -->

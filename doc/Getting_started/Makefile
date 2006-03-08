@@ -59,8 +59,7 @@ ps: $(THISDIR)/$(TARGET).ps
 $(THISDIR)/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
 	cd $(BUILD)/ps/ && ln -sf ../../Figures
 	cd $(BUILD)/ps/ && ln -sf ../../Progs
-	-mkdir $(BUILD)/ps/Sources
-	cd $(BUILD)/ps/Sources && ln -sf ../../../Sources/code
+	cd $(BUILD)/ps/ && ln -sf ../../$(XML2HTML)/data/latex/* .
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
@@ -75,6 +74,7 @@ inria: $(BUILD)/inria/$(TARGET).ps
 $(BUILD)/inria/$(TARGET).ps: $(BUILD)/inria/$(TARGET).tex
 	cd $(BUILD)/inria/ && ln -sf ../../Figures
 	cd $(BUILD)/inria/ && ln -sf ../../Progs
+	cd $(BUILD)/inria/ && ln -sf ../../$(XML2HTML)/data/latex/* .
 	cd $(BUILD)/inria/ && latex $(TARGET)
 	cd $(BUILD)/inria/ && latex $(TARGET)
 	cd $(BUILD)/inria/ && latex $(TARGET)
@@ -89,6 +89,7 @@ labri: $(BUILD)/labri/$(TARGET).ps
 $(BUILD)/labri/$(TARGET).ps: $(BUILD)/labri/$(TARGET).tex
 	cd $(BUILD)/labri/ && ln -sf ../../Figures
 	cd $(BUILD)/labri/ && ln -sf ../../Progs
+	cd $(BUILD)/labri/ && ln -sf ../../$(XML2HTML)/data/latex/* .
 	cd $(BUILD)/labri/ && latex $(TARGET)
 	cd $(BUILD)/labri/ && latex $(TARGET)
 	cd $(BUILD)/labri/ && latex $(TARGET)

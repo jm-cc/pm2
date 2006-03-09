@@ -294,6 +294,18 @@ sos:
 		exit 1 ; \
 	fi ; \
 	echo "PM2_BUILD_DIR = $(PM2_BUILD_DIR)" ; \
+	echo "********* Checking source *********" ; \
+	for i in modules/* ; do \
+		echo $$i ; \
+		if [ ! -L $$i ] ; then \
+			echo "$$i is a directory" ; \
+			echo "ERROR: the modules/ directory should only contain symlinks." ; \
+			echo "please correctly get sources:" ; \
+			echo "- when using cp, add the -a option" ; \
+			echo "- when using scp, build a tar file first" ; \
+			exit 1 ; \
+		fi ; \
+	done ; \
 	echo "********* Refreshing files for current flavor *********" ; \
 	$(MAKE) -C . refresh ; \
 	echo "********* Checking correctness for current flavor *********" ; \

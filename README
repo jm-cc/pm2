@@ -92,4 +92,8 @@ You can run all processes under the gdb debugger by simply typing:
 
 V . Miscellaneous ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Please send an email pm2-users@listes.ens-lyon.fr for any problem.
+For any problem, please first run
+
+make sos
+
+To perform a few checks, and then send an email pm2-users@listes.ens-lyon.fr.

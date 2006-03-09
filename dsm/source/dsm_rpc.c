@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define PM2_DSM_RPC_C
 #include "pm2.h"
 
 #include "token_lock.h"

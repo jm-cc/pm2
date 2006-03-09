@@ -21,6 +21,7 @@
 //#define ISOADDR_INFO_TRACE
 //#define ASSERT
 
+#define PM2_ISOADDR_C
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -43,6 +44,7 @@
 #include "dsm_page_size.h"
 #include "isoaddr.h"
 #include "slot_alloc.h"
+#include "sys/isomalloc_rpc.h"
 
 
 #define _SLOT_SIZE       DSM_PAGE_SIZE /* 4 Ko */
@@ -51,17 +53,6 @@
 static unsigned _local_node_rank = 0;
 static node_t  _nb_nodes = 1;
 
-
-BEGIN_LRPC_LIST
-  LRPC_ISOMALLOC_GLOBAL_LOCK,
-  LRPC_ISOMALLOC_GLOBAL_UNLOCK,
-  LRPC_ISOMALLOC_LOCAL_LOCK,
-  LRPC_ISOMALLOC_LOCAL_UNLOCK,
-  LRPC_ISOMALLOC_SYNC,
-  LRPC_ISOMALLOC_SEND_SLOT_STATUS,
-  ISOADDR_LRPC_INFO_REQ,
-  ISOADDR_LRPC_INFO
-END_LRPC_LIST
 
 #define SLOT_INDEX(addr) \
         ((long)(((long)ISOADDR_AREA_TOP  - ((long)addr & ~(_SLOT_SIZE - 1))) / _SLOT_SIZE) - 1) // big bug out 5/05/00 !

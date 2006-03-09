@@ -26,6 +26,9 @@ typedef struct {
 	pointer box;
 } actor_ref;
 
+#ifndef PM2_RPC_DEFS_C
+extern
+#endif
 BEGIN_LRPC_LIST
 	CREATE_ACTOR,
 	SEND_MESSAGE,

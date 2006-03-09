@@ -21,6 +21,9 @@
 #include "dsm_mutex.h"
 
 
+#ifndef PM2_DSM_RPC_C
+extern
+#endif
 BEGIN_LRPC_LIST
   DSM_LRPC_READ_PAGE_REQ,
   DSM_LRPC_WRITE_PAGE_REQ,

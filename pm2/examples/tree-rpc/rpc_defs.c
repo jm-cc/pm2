@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define PM2_RPC_DEFS_C
 #include "rpc_defs.h"
 
 /* FAC */

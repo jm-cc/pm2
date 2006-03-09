@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define PM2_CONSOLE_C
 #include "pm2.h"
 
 #include <ctype.h>

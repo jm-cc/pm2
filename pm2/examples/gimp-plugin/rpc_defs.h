@@ -21,6 +21,9 @@
 #include "libgimp/gimp.h"
 #include "libgimp/gimpui.h"
 
+#ifndef PM2_RPC_DEFS_C
+extern
+#endif
 BEGIN_LRPC_LIST
   TILE,
   RESULT,

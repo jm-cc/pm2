@@ -19,6 +19,9 @@
 
 #include "pm2.h"
 
+#ifndef PM2_RPC_DEFS_C
+extern
+#endif
 BEGIN_LRPC_LIST
 	SAMPLE,
         INFO,

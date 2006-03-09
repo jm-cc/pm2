@@ -17,6 +17,9 @@
 
 /*******************************************************/
 
+#ifndef PM2_CONSOLE_C
+extern
+#endif
 BEGIN_LRPC_LIST
         LRPC_CONSOLE_THREADS,
         LRPC_CONSOLE_PING,

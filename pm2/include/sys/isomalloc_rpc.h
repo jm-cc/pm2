@@ -23,13 +23,18 @@
 /* #define DEBUG_NEGOCIATION  */
 
 
+#ifndef PM2_ISOADDR_C
+extern
+#endif
 BEGIN_LRPC_LIST
   LRPC_ISOMALLOC_GLOBAL_LOCK,
   LRPC_ISOMALLOC_GLOBAL_UNLOCK,
   LRPC_ISOMALLOC_LOCAL_LOCK,
   LRPC_ISOMALLOC_LOCAL_UNLOCK,
   LRPC_ISOMALLOC_SYNC,
-  LRPC_ISOMALLOC_SEND_SLOT_STATUS
+  LRPC_ISOMALLOC_SEND_SLOT_STATUS,
+  ISOADDR_LRPC_INFO_REQ,
+  ISOADDR_LRPC_INFO
 END_LRPC_LIST
 
 
@@ -54,7 +59,7 @@ LRPC_DECL_RES(LRPC_ISOMALLOC_LOCAL_LOCK,);
  
 /*******************************************************/
  
-LRPC_DECL_REQ(LRPC_ISOMALLOC_LOCAL_UNLOCK, bitmap_t slot_map;);
+//LRPC_DECL_REQ(LRPC_ISOMALLOC_LOCAL_UNLOCK, bitmap_t slot_map;);
 LRPC_DECL_RES(LRPC_ISOMALLOC_LOCAL_UNLOCK,);
  
 /*******************************************************/
@@ -64,7 +69,7 @@ LRPC_DECL_RES(LRPC_ISOMALLOC_SYNC,);
 
 /*******************************************************/
 
-LRPC_DECL_REQ(LRPC_ISOMALLOC_SEND_SLOT_STATUS, bitmap_t slot_map; unsigned int sender;);
+//LRPC_DECL_REQ(LRPC_ISOMALLOC_SEND_SLOT_STATUS, bitmap_t slot_map; unsigned int sender;);
 LRPC_DECL_RES(LRPC_ISOMALLOC_SEND_SLOT_STATUS,);
   
 /*******************************************************/

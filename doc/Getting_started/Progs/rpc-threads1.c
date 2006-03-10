@@ -18,7 +18,7 @@ static void f(void *arg) {
     pm2_halt();
   }
   else {
-    sprintf(sent_msg, "%s %d", rec_msg, pm2_self ());
+    sprintf(sent_msg, "%s %d", rec_msg, pm2_self());
     tprintf("Passing on string: %s\n", sent_msg);
 
     pm2_rawrpc_begin(next, service_id, NULL);	/* Here! */

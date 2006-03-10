@@ -23,7 +23,7 @@ int pm2_main(int argc, char *argv[]) {
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
 
-  if (pm2_self () == 0) {
+  if (pm2_self() == 0) {
       strcpy(msg, "Hello world!");
 
       pm2_rawrpc_begin(1, service_id, NULL);

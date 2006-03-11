@@ -424,6 +424,38 @@ tbx_slist_remove_from_tail(p_tbx_slist_t slist)
     FAILURE("empty slist");
 }
 
+void *
+tbx_slist_peek_from_head(p_tbx_slist_t slist)
+{
+  LOG_IN();
+  if (!tbx_slist_is_nil(slist))
+    {
+      p_tbx_slist_element_t  element = slist->head;
+      void                  *object  = element->object;
+
+      LOG_OUT();
+      return object;
+    }
+  else
+    FAILURE("empty slist");
+}
+
+void *
+tbx_slist_peek_from_tail(p_tbx_slist_t slist)
+{
+  LOG_IN();
+  if (!tbx_slist_is_nil(slist))
+    {
+      p_tbx_slist_element_t  element = slist->tail;
+      void                  *object  = element->object;
+
+      LOG_OUT();
+      return object;
+    }
+  else
+    FAILURE("empty slist");
+}
+
 
 /*
  * Queue access functions
@@ -1388,7 +1420,11 @@ tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object)
 	  slist->ref = slist->ref->next;
 	  result = (slist->ref != NULL);
 
-          *p_object = __tbx_slist_free_element(slist, element);
+          if (p_object) {
+                  *p_object = __tbx_slist_free_element(slist, element);
+          } else {
+                  __tbx_slist_free_element(slist, element);
+          }
 	}
       else
 	FAILURE("empty list");
@@ -1416,7 +1452,11 @@ tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object)
 	  slist->ref = slist->ref->previous;
 	  result = (slist->ref != NULL);
 
-          *p_object = __tbx_slist_free_element(slist, element);
+          if (p_object) {
+                  *p_object = __tbx_slist_free_element(slist, element);
+          } else {
+                  __tbx_slist_free_element(slist, element);
+          }
 	}
       else
 	FAILURE("empty list");

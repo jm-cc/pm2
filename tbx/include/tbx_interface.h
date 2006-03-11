@@ -297,6 +297,12 @@ tbx_slist_remove_from_head(p_tbx_slist_t slist);
 void *
 tbx_slist_remove_from_tail(p_tbx_slist_t slist);
 
+void *
+tbx_slist_peek_from_head(p_tbx_slist_t slist);
+
+void *
+tbx_slist_peek_from_tail(p_tbx_slist_t slist);
+
 void
 tbx_slist_enqueue(p_tbx_slist_t  slist,
 		  void          *object);

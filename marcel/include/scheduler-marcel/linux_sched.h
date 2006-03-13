@@ -39,7 +39,7 @@ extern unsigned long ma_nr_running(void);
 
 #section marcel_macros
 /* TODO: utiliser la priorité pour le calculer */
-#define MARCEL_TASK_TIMESLICE 4
+#define MARCEL_TASK_TIMESLICE 1
 #define MARCEL_BUBBLE_TIMESLICE 10
 
 /*

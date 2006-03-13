@@ -799,7 +799,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 						if (b2 || ready) {
 							ma_activate_running_entity(e, &rq->hold);
 							if (b2 || blocked)
-								ma_enqueue_entity(e, &rq->hold);
+								ma_rq_enqueue_entity(e, rq);
 						}
 						if (b2) {
 							PROF_EVENT2(bubble_sched_switchrq, b2, rq);
@@ -811,7 +811,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				ma_holder_rawunlock(&b->hold);
 				/* enlever b de rq */
 				if (b->sched.holder_data)
-					ma_dequeue_entity(&b->sched,&rq->hold);
+					ma_rq_dequeue_entity(&b->sched,rq);
 				ma_deactivate_running_entity(&b->sched, &rq->hold);
 				ma_holder_rawunlock(&rq->hold);
 				ma_holder_rawlock(&rq2->hold);
@@ -841,7 +841,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 						if (b2 || ready) {
 							ma_activate_running_entity(e, &rq2->hold);
 							if (b2 || blocked)
-								ma_enqueue_entity(e, &rq2->hold);
+								ma_rq_enqueue_entity(e, rq2);
 						}
 						if (b2) {
 							PROF_EVENT2(bubble_sched_switchrq, b2, rq2);

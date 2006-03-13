@@ -158,7 +158,7 @@ SWFFont font;
 
 static int playing =
 #ifdef FUT_START_PLAYING
-	1
+	0
 #else
 	1
 #endif

@@ -94,6 +94,7 @@ tbx_darray_reset(p_tbx_darray_t darray)
 }
 
 static
+__inline__
 void
 __tbx_darray_grow(p_tbx_darray_t     darray,
 		  tbx_darray_index_t idx)

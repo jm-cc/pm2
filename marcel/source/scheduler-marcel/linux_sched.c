@@ -1423,6 +1423,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	LOG_IN();
 
+	PROF_EVENT(sched_tick);
+
 #ifdef PM2_DEV
 #warning rcu not yet implemented (utile pour les numa ?)
 #endif

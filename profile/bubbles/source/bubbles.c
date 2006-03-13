@@ -56,13 +56,15 @@
 
 #define BSIZE 30 /* Button size */
 
+#define DISPPRIO 0
+
 /* movie size */
 
 /* X */
-#define MOVIEX 1400.
+#define MOVIEX 1024.
 
 /* Y */
-#define MOVIEY 900.
+#define MOVIEY 400.
 
 
 
@@ -472,7 +474,7 @@ void setThread(SWFShape shape, unsigned thick, float width, float height, int pr
 	SWFShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	SWFShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
 	SWFShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
-	if (prio) {
+	if (DISPPRIO && prio) {
 		SWFShape_movePen(shape,xStep,yStep);
 		SWFShape_drawSizedGlyph(shape,font,'0'+prio,CURVE);
 	}
@@ -536,7 +538,7 @@ void setBubble(SWFShape shape, float width, float height, int prio) {
 	SWFShape_drawCurve(shape,-CURVE,0,0,-CURVE);
 	SWFShape_drawLine(shape,0,-height+2*CURVE);
 	SWFShape_drawCurve(shape,0,-CURVE,CURVE,0);
-	if (prio) {
+	if (DISPPRIO && prio) {
 		SWFShape_movePen(shape,5*width/2+10-CURVE,5*height/2+10);
 		SWFShape_drawSizedGlyph(shape,font,'0'+prio,CURVE);
 	}
@@ -575,7 +577,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	SWFShape_setLine(shape,b->entity.thick,0,0,0,255);
 	SWFShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 	SWFShape_drawCircle(shape,CURVE/2);
-	if (b->entity.prio) {
+	if (DISPPRIO && b->entity.prio) {
 		SWFShape_movePenTo(shape,2.57*b->entity.x-CURVE,2.57*b->entity.y-CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+b->entity.prio,CURVE);
 	}
@@ -1853,6 +1855,10 @@ int main(int argc, char *argv[]) {
 					printfThread(th,t);
 					printf(" named %s\n", name);
 					t->name=strdup(name);
+					break;
+				}
+				case SCHED_TICK: {
+					pause(DELAYTIME);
 					break;
 				}
 				case SCHED_THREAD_BLOCKED: {

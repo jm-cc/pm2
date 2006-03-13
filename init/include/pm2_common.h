@@ -43,7 +43,7 @@ typedef struct _struct_common_attr_t common_attr_t;
  */
 #ifdef __GNUC__
 int
-main(int, char**) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
+main() __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #endif /* __GNUC__ */
 
 

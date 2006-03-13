@@ -57,6 +57,8 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
 int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
+int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
+
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
 int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
 int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);

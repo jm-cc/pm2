@@ -28,6 +28,11 @@ int marcel_bubble_init(marcel_bubble_t *bubble) {
 	return 0;
 }
 
+int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
+	bubble->sched.init_holder = bubble->sched.sched_holder = &rq->hold;
+	return 0;
+}
+
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level) {
 #ifdef MA__LWPS
 	if (level>marcel_topo_nblevels-1)
@@ -59,12 +64,12 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 	CHECK_HOLDER()
 #define SETPRIO(_prio); \
 	if (running) \
-		ma_dequeue_entity_rq(&bubble->sched, ma_rq_holder(h)); \
+		ma_rq_dequeue_entity(&bubble->sched, ma_rq_holder(h)); \
 	PROF_EVENT2(bubble_sched_setprio,bubble,_prio); \
 	MA_BUG_ON(bubble->sched.prio == _prio); \
 	bubble->sched.prio = _prio; \
 	if (running) \
-		ma_enqueue_entity_rq(&bubble->sched, ma_rq_holder(h));
+		ma_rq_enqueue_entity(&bubble->sched, ma_rq_holder(h));
 
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
 	if (prio == bubble->sched.prio) return 0;
@@ -906,7 +911,7 @@ int marcel_bubble_steal_work(void) {
 #endif
 #endif
 
-static ma_runqueue_t gang_rq;
+ma_runqueue_t ma_gang_rq;
 
 any_t marcel_gang_scheduler(any_t foo) {
 	marcel_entity_t *e, *ee;
@@ -914,20 +919,20 @@ any_t marcel_gang_scheduler(any_t foo) {
 	ma_runqueue_t *rq;
 	struct list_head *queue;
 	ma_idle_scheduler = 0;
-	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&gang_rq);
+	init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	while(1) {
-		marcel_delay(MARCEL_BUBBLE_TIMESLICE);
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
-		ma_holder_rawlock(&gang_rq.hold);
+		ma_holder_rawlock(&ma_gang_rq.hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
 				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &gang_rq);
-				ma_activate_entity(&b->sched, &gang_rq.hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
+				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
 		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
@@ -935,11 +940,11 @@ any_t marcel_gang_scheduler(any_t foo) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
 				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &gang_rq);
-				ma_activate_entity(&b->sched, &gang_rq.hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
+				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
-		rq = &gang_rq;
+		rq = &ma_gang_rq;
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		if (!ma_queue_empty(queue)) {
 			e = ma_queue_entry(queue);
@@ -981,11 +986,11 @@ static void __marcel_init bubble_sched_init() {
 	PROF_EVENT2_ALWAYS(bubble_sched_switchrq,&marcel_root_bubble,&ma_main_runqueue);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
 	/* and fake main thread restart */
-	ma_dequeue_entity_rq(&SELF_GETMEM(sched).internal, &ma_main_runqueue);
+	ma_rq_dequeue_entity(&SELF_GETMEM(sched).internal, &ma_main_runqueue);
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
-	ma_dequeue_entity_rq(&marcel_root_bubble.sched, &ma_main_runqueue);
+	ma_rq_dequeue_entity(&marcel_root_bubble.sched, &ma_main_runqueue);
 #endif
 }
 

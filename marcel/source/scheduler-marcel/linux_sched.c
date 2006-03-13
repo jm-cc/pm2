@@ -2914,7 +2914,7 @@ void __marcel_init init_idle(task_t *idle, int cpu)
 	unsigned long flags;
 
 	local_irq_save(flags);
-	double_rq_lock(idle_rq, rq);
+	ma_double_rq_lock(idle_rq, rq);
 
 	// supprimé
 	//idle_rq->curr = idle_rq->idle = idle;
@@ -2923,7 +2923,7 @@ void __marcel_init init_idle(task_t *idle, int cpu)
 	idle->prio = MA_MAX_PRIO;
 	idle->state = TASK_RUNNING;
 	set_task_cpu(idle, cpu);
-	double_rq_unlock(idle_rq, rq);
+	ma_double_rq_unlock(idle_rq, rq);
 	set_tsk_need_resched(idle);
 	local_irq_restore(flags);
 
@@ -2995,7 +2995,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
 
 	rq_dest = cpu_rq(dest_cpu);
 
-	double_rq_lock(ma_this_rq(), rq_dest);
+	ma_double_rq_lock(ma_this_rq(), rq_dest);
 	if (task_cpu(p) != smp_processor_id())
 		goto out; /* Already moved */
 
@@ -3010,7 +3010,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
 	p->timestamp = rq_dest->timestamp_last_tick;
 
  out:
-	double_rq_unlock(ma_this_rq(), rq_dest);
+	ma_double_rq_unlock(ma_this_rq(), rq_dest);
 	local_irq_restore(flags);
 }
 

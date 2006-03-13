@@ -19,8 +19,14 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#define GANGS 6
+#ifndef MARCEL_BUBBLE_STEAL
+#error I need the bubble_steal option
+#endif
+
+#define GANGS 5
 #define THREADS 16
+
+extern ma_runqueue_t ma_gang_rq;
 
 marcel_barrier_t barrier[GANGS];
 
@@ -28,12 +34,7 @@ any_t work(any_t arg) {
   int i;
   int n = (int) arg;
   int num;
-  for (i=0;i<1000000000;i++)
-	  if (!(i%10000000)) {
-		num = marcel_barrier_begin(&barrier[n/100]);
-  		printf("%d %d (%d)\n",n,i,num);
-		marcel_barrier_end(&barrier[n/100],num);
-	  }
+  while(1);
   marcel_printf("%d done\n",n);
   return NULL;
 }
@@ -75,6 +76,7 @@ int marcel_main(int argc, char **argv)
   for (i=0; i<GANGS; i++) {
     marcel_barrier_init(&barrier[i], NULL, (i+1)%THREADS);
     marcel_bubble_init(&gang[i]);
+    marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
     marcel_attr_setinitbubble(&attr, &gang[i]);
     for (j=0; j<(i+1)%THREADS; j++) {
       snprintf(name,sizeof(name),"%d-%d",i,j);

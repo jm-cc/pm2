@@ -26,7 +26,7 @@
 #include <signal.h>
 #include <sys/socket.h>
 
-#define TOP_SEC 10
+#define TOP_SEC 3
 
 static int top_pid;
 static int top_file=-1;

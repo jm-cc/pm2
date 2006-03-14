@@ -120,8 +120,10 @@ extern int __zero_fd;
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANON)
-#elif defined(AIX_SYS) && defined(RS6K_ARCH)
-#    define ISOADDR_AREA_TOP       0xcfff0000
+#elif defined(AIX_SYS)
+#    if defined(RS6K_ARCH) || defined(PPC_ARCH)
+#      define ISOADDR_AREA_TOP       0xcfff0000
+#    endif
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #elif defined(IRIX_SYS) && defined(MIPS_ARCH)

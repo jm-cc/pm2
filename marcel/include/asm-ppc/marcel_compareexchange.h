@@ -30,15 +30,39 @@ static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, uns
   if (size == 4) {
     volatile int *p = ptr;
     __asm__ __volatile__(
-  		       "1:    lwarx %0,0,%2 ;"
-  		       "      cmpw 0,%0,%3;"
-  		       "      bne 2f;"
-  		       "      stwcx. %4,0,%2;"
-  		       "      bne- 1b;"
-#ifdef MA__LWPS
-		       "      sync;"
+#ifdef AIX_SYS
+		    "Lma%=1"
+#else
+  		       "1"
 #endif
-  		       "2:    "
+		       ":\n    lwarx %0,0,%2 ;\n"
+  		       "      cmpw 0,%0,%3;\n"
+  		       "      bne "
+#ifdef AIX_SYS
+		       "Lma%=2"
+#else
+		       "2f"
+#endif
+		       ";\n"
+  		       "      stwcx. %4,0,%2;\n"
+  		       "      bne- "
+#ifdef AIX_SYS
+		       "Lma%=1"
+#else
+		       "1b"
+#endif
+		       ";\n"
+#ifdef MA__LWPS
+		       "      sync;\n"
+#endif
+#ifdef AIX_SYS
+		    "Lma%=2"
+#undef CMPXCHGBEGIN
+#undef CMPXCHGEND
+#else
+  		       "2"
+#endif
+		       ":\n"
   	: "=&r"(prev), "=m" (*p)
   	: "r"(p), "r" (old), "r"(repl), "m" (*p)
   	: "cc", "memory");

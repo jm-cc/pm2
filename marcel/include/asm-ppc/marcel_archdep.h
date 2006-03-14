@@ -19,16 +19,20 @@
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 
+#  define TOP_STACK_FREE_AREA     256
+
 /* Linux PPC */
 #if defined(LINUX_SYS)
-#  define TOP_STACK_FREE_AREA     256
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_GPR1])
 #endif
 
 /* Darwin PPC (Mac OS X) */
 #if defined(DARWIN_SYS)
 #  define STACK_INFO
-#  define TOP_STACK_FREE_AREA     256
+#  define SP_FIELD(buf)           ((buf)[0])
+#endif
+
+#if defined(AIX_SYS)
 #  define SP_FIELD(buf)           ((buf)[0])
 #endif
 

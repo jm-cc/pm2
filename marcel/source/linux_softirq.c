@@ -24,6 +24,7 @@
  */
 
 #include "marcel.h"
+#include <stdio.h>
 
 /*
    - No shared variables, all the data are CPU local.

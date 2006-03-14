@@ -70,6 +70,11 @@ $(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/ps
 	$(XML2HTML)/bin/shell/xml2latex.sh $(TARGET).xml $(BUILD)/ps $(SECTIONS)
 
+html: $(BUILD)/html/$(TARGET)/index.html
+
+$(BUILD)/html/$(TARGET)/%.html: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
+	$(XML2HTML)/bin/shell/xml2html.sh $(TARGET).xml $(BUILD)/html/$(TARGET) $(SECTIONS)
+
 inria: $(BUILD)/inria/$(TARGET).ps
 
 $(BUILD)/inria/$(TARGET).ps: $(BUILD)/inria/$(TARGET).tex
@@ -106,11 +111,13 @@ $(EMPHCFILES_PS): %-emph-ps: %
 $(EMPHCFILES_HTML): %-emph-html: %
 	@perl -w emph.pl $< $@ html
 
-clean: wml-clean ps-clean inria-clean labri-clean emph-clean
+clean: wml-clean html-clean ps-clean inria-clean labri-clean emph-clean
 	rm -rf $(BUILD)
 
 emph-clean:; rm -f $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 wml-clean:; rm -rf $(BUILD)/wml
+
+html-clean:; rm -rf $(BUILD)/html
 
 ps-clean:; rm -rf $(BUILD)/ps $(THISDIR)/$(TARGET).ps
 

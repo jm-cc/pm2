@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-#if defined(LINUX_SYS)
+#if defined(LINUX_SYS) || defined(AIX_SYS)
 
 /* long get_sp() */
 	.globl get_sp
@@ -47,9 +47,7 @@ set_fp:
 .set_fp:
 	mr 31, 3
 	blr
-#endif
-
-#if defined(DARWIN_SYS)
+#elif defined(DARWIN_SYS)
 
 /* long get_sp() */
 	.globl _get_sp
@@ -83,6 +81,8 @@ set_fp:
 	mr r31, r3
 	blr
 
+#else
+#error Need get_sp/set_sp/get_fp/set_fp definitions for this system
 #endif
 
 /* void setjmp(jmp_buf) */

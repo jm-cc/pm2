@@ -36,7 +36,7 @@ static inline int isdigit(int c) {
 	return (c>='0' && c<='9');
 }
 
-static size_t strnlen(const char *s, size_t count) {
+static size_t my_strnlen(const char *s, size_t count) {
 	const char *sc;
 
 	for (sc = s; count-- && *sc != '\0'; ++sc)
@@ -309,7 +309,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 				if ((unsigned long)s < /*PAGE_SIZE*/ 4096)
 					s = "<NULL>";
 
-				len = strnlen(s, precision);
+				len = my_strnlen(s, precision);
 
 				if (!(flags & LEFT)) {
 					while (len < field_width--) {

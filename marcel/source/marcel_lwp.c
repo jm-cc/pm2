@@ -45,6 +45,9 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #ifdef OSF_SYS
 #include <sys/cpuset.h>
 #endif
+#ifdef AIX_SYS
+#include <sys/processor.h>
+#endif
 #endif
 
 #ifdef MA__LWPS
@@ -399,6 +402,8 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 		perror("pthread_use_only_cpu");
 		exit(1);
 	}
+#elif defined(AIX_SYS)
+	bindprocessor(BINDTHREAD, thread_self(), target);
 #else
 #warning "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif

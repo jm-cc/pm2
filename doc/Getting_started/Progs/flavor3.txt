@@ -3,7 +3,7 @@ ravel% setenv PM2_FLAVOR pm2-debug
 ravel% make hello
 [...]
 ravel% % ls $PM2_BUILD_DIR/$PM2_FLAVOR/examples/simple/bin/hello
-/home/bordeaux/nfurmento/build/pm2-debug/examples/simple/bin/hello
+/home/nfurmento/build/pm2-debug/examples/simple/bin/hello
 ravel% pm2conf ravel ravel
 The current PM2 configuration contains 2 host(s) :
 0 : ravel

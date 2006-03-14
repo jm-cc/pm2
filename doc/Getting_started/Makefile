@@ -12,6 +12,7 @@ XML_FILES		:=	$(wildcard ./Sources/*.xml)
 DEPS			:=	$(XML_FILES)
 DEPS			+=	$(wildcard ./Sources/code/*)
 DEPS			+=	$(XML2HTML)/lib/xml2html.jar
+DEPS			+=	$(XML2HTML)/data/xml/DOCUMENT.dtd
 
 WWW			:=	/net/cvs/runtime/site/www/pm2-doc
 BUILD			:=	./build

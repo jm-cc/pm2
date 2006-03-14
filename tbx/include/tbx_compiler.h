@@ -96,10 +96,12 @@ void __memory_barrier(void);
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
-#define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
-#define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
-#define TBX_VISIBILITY_PUSH_INTERNAL _Pragma("GCC visibility push(internal)")
-#define TBX_VISIBILITY_POP _Pragma("GCC visibility pop")
+#ifndef AIX_SYS
+#  define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
+#  define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
+#  define TBX_VISIBILITY_PUSH_INTERNAL _Pragma("GCC visibility push(internal)")
+#  define TBX_VISIBILITY_POP _Pragma("GCC visibility pop")
+#endif
 
 #elif __GNUC__ == 3
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
@@ -126,10 +128,6 @@ void __memory_barrier(void);
 #  endif
 
 #  define __tbx_attribute_pure__	__attribute__((__pure__))
-#  define TBX_VISIBILITY(vis)
-#  define TBX_VISIBILITY_PUSH_DEFAULT
-#  define TBX_VISIBILITY_PUSH_INTERNAL
-#  define TBX_VISIBILITY_POP
 #elif __GNUC__ == 2
 #  define __TBX_FUNCTION__		__FUNCTION__
 #  if __GNUC_MINOR__ < 96
@@ -148,10 +146,6 @@ void __memory_barrier(void);
 #  endif
 
 #  define __restrict
-#  define TBX_VISIBILITY(vis)
-#  define TBX_VISIBILITY_PUSH_DEFAULT
-#  define TBX_VISIBILITY_PUSH_INTERNAL
-#  define TBX_VISIBILITY_POP
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif
@@ -159,6 +153,12 @@ void __memory_barrier(void);
 #  error Sorry, your compiler is too old/not recognized.
 #endif
 
+#ifndef TBX_VISIBILITY
+#define TBX_VISIBILITY(vis)
+#define TBX_VISIBILITY_PUSH_DEFAULT
+#define TBX_VISIBILITY_PUSH_INTERNAL
+#define TBX_VISIBILITY_POP
+#endif
 #define TBX_EXTERN TBX_VISIBILITY("default")
 #define TBX_PROTECTED TBX_VISIBILITY("protected")
 #define TBX_INTERNAL TBX_VISIBILITY("internal")

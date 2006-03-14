@@ -139,6 +139,7 @@ MOD_PICS   =  $(MOD_C_PICS) $(MOD_CXX_PICS) $(MOD_S_PICS)
 
 # Preprocs
 #---------------------------------------------------------------------
+MOD_C_PREPROCESSED = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).C)
 MOD_C_PREPROC = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).i)
 MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).Ci)
 MOD_S_PREPROC = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).si)

@@ -12,7 +12,7 @@
 </P>
 
 <P>
-Some application may require to use the traditional <TT>main</TT> function
+Some applications may require to use the traditional <TT>main</TT> function
 name instead of <TT>pm2_main</TT>. This can be enabled through
 the <TT>standard_main</TT> option of the Marcel flavor. This option
 defines the <TT>STANDARD_MAIN</TT> compilation flag, to be used for each of

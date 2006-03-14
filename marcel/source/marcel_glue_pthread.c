@@ -179,6 +179,7 @@ int usleep_divert (__useconds_t __useconds)
 }
 versioned_symbol (libpthread, usleep_divert, usleep, GLIBC_2_2);
 
+/*
 int __libc_sigaction (int sig, const struct sigaction *act, struct sigaction *oact);
 int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
 {
@@ -194,6 +195,7 @@ int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
 }
 //libc_hidden_weak (__sigaction)
 weak_alias (__sigaction, sigaction)
+*/
 
 #ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire

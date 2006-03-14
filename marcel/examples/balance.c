@@ -17,8 +17,9 @@
 #include "marcel.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-//#undef MA__BUBBLES
+#undef MA__BUBBLES
 
 #define NWORKS 2
 #define NWORKERS_POW 1
@@ -42,12 +43,12 @@
 int iterations = 3;
 
 #ifdef BARRIER
-unsigned long works[]  = { 5000, 7000 };
-unsigned long delays[] = { 5000, 7000 };
+unsigned long works[]  = { 5000, 5000 };
+unsigned long delays[] = { 0, 0 };
 marcel_barrier_t barrier[NWORKS];
 #endif
 #ifdef PIPE
-#define DATASIZE (512<<10)
+#define DATASIZE (3000<<10)
 #endif
 
 #ifdef MA__BUBBLES
@@ -68,10 +69,12 @@ static marcel_sem_t writer[NWORKS][NWORKERS-1];
 
 #ifdef BARRIER
 #ifdef CACHEMISS
-#define CACHESIZE (900<<10)
-static volatile int data[NWORKS][CACHESIZE];
+#define MULT 1U
+#define CACHESIZE ((MULT*128U)<<10)
+typedef int data_t;
+static volatile data_t data[NWORKS][CACHESIZE/sizeof(data_t)];
 #else
-static volatile double data[NWORKS][NWORKERS];
+static volatile float data[NWORKS][128];
 #endif
 
 any_t work(any_t arg) {
@@ -80,42 +83,46 @@ any_t work(any_t arg) {
 	int me = i%NWORKERS;
 	unsigned long start;
 	int n = iterations;
-	int num;
+	unsigned num,num2;
 #ifdef CACHEMISS
-	double sum = 0;
-	long ind;
+	data_t f,g;
+	data_t sum = 0;
+	data_t gold = (data_t) fmod(((float)(CACHESIZE/sizeof(*data)))*((sqrt(5)+1.)/2.) , (float)(CACHESIZE/sizeof(*data)));
 #endif
 	while (n--) {
-		tprintf("group %d (%d) begin\n",group,me);
-		num = marcel_barrier_begin(&barrier[group]);
+		tprintf("group %d (%d) begin %p\n",group,me,&data[group][me]);
+		//num = marcel_barrier_begin(&barrier[group]);
 		start = marcel_clock();
-		marcel_barrier_end(&barrier[group], num);
+		//marcel_barrier_end(&barrier[group], num);
 		tprintf("group %d (%d) do\n",group,me);
+		i = 0;
+		sum = 0;
+		g = 0;
+		while(marcel_clock() < start + works[group]) {
 #ifdef CACHEMISS
-		ind = 0;
-#else
-		data[group][me] = 0;
+#if 0
+			for (num2=0;num2<128U/MULT;num2++)
+			for (num=0;num<CACHESIZE;num++)
+				sum += data[group][(num*gold)%(CACHESIZE/sizeof(char))];
 #endif
-		while(marcel_clock() < start + works[group])
-			for (i=0;i<100000;i++)
-#ifdef CACHEMISS
-			sum+=data[group][(ind++)%CACHESIZE];
+			for (f=0;f< 1<<20;f++) {
+				g=g+gold;
+				if (g>CACHESIZE/sizeof(*data)) g-= CACHESIZE/sizeof(*data);
+				//for (g=CACHESIZE/sizeof(*data);g>0;g-=64/sizeof(*data))
+				//for (g=0;g!=CACHESIZE/sizeof(*data);g+=64/sizeof(*data))
+				//for (g=0;g<CACHESIZE/sizeof(*data);g+=87*64/sizeof(*data))
+					sum+=data[group][(int)(g)];
+			}
 #else
-			{ data[group][me]++; }
+			data[group][me] = 10000.;
+			while(data[group][me]>1.) {
+				data[group][me]*=1.00001;
+				data[group][me]/=1.0001;
+			}
 #endif
-		tprintf("group %d (%d) done ("
-#ifdef CACHEMISS
-				"%lu"
-#else
-				"%lf"
-#endif
-				"Ml)\n",group,me,
-#ifdef CACHEMISS
-				ind>>20
-#else
-				data[group][me]/1048756.
-#endif
-				);
+			i++;
+		}
+		tprintf("group %d (%d) done (%ul)\n", group, me, i);
 		marcel_barrier_wait(&barrier[group]);
 		tprintf("group %d (%d) wait\n",group,me);
 		marcel_delay(delays[group]);

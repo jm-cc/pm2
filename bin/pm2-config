@@ -435,7 +435,7 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" ] ; then
+    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" -o $PM2_SYS = "AIX_SYS" ] ; then
     # repeating libs twice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)
     	_PM2CONFIG_LD_LIBS="$_scripts $_PM2CONFIG_LD_LIBS $_PM2CONFIG_LD_LIBS $_extra"
     else

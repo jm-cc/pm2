@@ -8,7 +8,7 @@
 
 <LABRI/> <!-- NUMBER="RR-1375-05" -->
 
-<ABSTRACT>
+<ABSTRACT TABLEOFPROGRAMS="true">
 <P>
 PM2 (<EM>Parallel Multithreaded Machine</EM>) is a distributed
 multithreaded programming environment designed to efficiently support

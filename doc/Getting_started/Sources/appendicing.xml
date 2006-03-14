@@ -3,13 +3,13 @@
 
 <TEXT>
 
+<SUBSECTION TITLE="Using a standard main" LABEL="sec:tradimain">
+
 <P>
 <NOTE>
-  A mettre a jour
+  A mettre a jour. Parler de stackalign? 
 </NOTE>
 </P>
-
-<SUBSECTION TITLE="Using a standard main" LABEL="sec:tradimain">
 
 <P>
 Some application may require to use the traditional <TT>main</TT> function

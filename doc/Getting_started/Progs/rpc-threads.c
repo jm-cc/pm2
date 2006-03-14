@@ -24,13 +24,13 @@ int pm2_main(int argc, char *argv[]) {
   common_post_init(&argc, argv, NULL);
 
   if (pm2_self() == 0) {
-      strcpy(msg, "Hello world!");
+    strcpy(msg, "Hello world!");
 
-      pm2_rawrpc_begin(1, service_id, NULL);
-      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, SIZE);
-      pm2_rawrpc_end();
+    pm2_rawrpc_begin(1, service_id, NULL);
+    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, SIZE);
+    pm2_rawrpc_end();
 
-      /* pm2_halt(); Incorrect!!! */
+    /* pm2_halt(); Incorrect!!! */
   }
 
   common_exit(NULL);

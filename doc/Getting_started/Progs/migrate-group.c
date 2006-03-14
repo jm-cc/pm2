@@ -58,7 +58,7 @@ int pm2_main(int argc, char *argv[]) {
 
   pm2_init(&argc, argv);
 
-  tprintf("Initialization completed on node %d\n", pm2_self ());
+  tprintf("Initialization completed on node %d\n", pm2_self());
 
   if (pm2_self() == 0) {
     /* Master process */
@@ -68,7 +68,7 @@ int pm2_main(int argc, char *argv[]) {
       pm2_completion_init(&c, NULL, NULL);
       arg.cp = &c;
       arg.i = i;
-      pm2_thread_create(f, (void *) (&arg));
+      pm2_thread_create(f, (void *)(&arg));
       pm2_completion_wait(&c);
     }
 

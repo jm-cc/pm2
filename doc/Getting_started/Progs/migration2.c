@@ -32,7 +32,7 @@ int pm2_main(int argc, char *argv[]) {
     pm2_completion_t c;
     pm2_completion_init(&c, NULL, NULL);
 
-    pm2_thread_create(f, (void *) (&c));	/* Here! */
+    pm2_thread_create(f, (void *)(&c));	/* Here! */
 
     pm2_completion_wait(&c);
     pm2_halt();

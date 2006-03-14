@@ -12,7 +12,7 @@ void f(void *arg) {
   pm2_enable_migration();
 
   proc = pm2_self();
-  for (i = 0; i < (2 * pm2_config_size () + 1); i++) {
+  for (i = 0; i < (2 * pm2_config_size() + 1); i++) {
     tprintf("Hop %d: I am on node %d, host %s...\n",
 	    i, pm2_self(), hostname);
 

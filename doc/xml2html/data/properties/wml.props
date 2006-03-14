@@ -27,8 +27,8 @@ CODE			= org.runtime.manuals.html.ProgramElement
 IMAGE			= org.runtime.manuals.html.ImageElement
 PROGRAM			= org.runtime.manuals.html.ProgramElement
 
-WARNING			= org.runtime.manuals.wml.WarningElement
-NOTE			= org.runtime.manuals.wml.NoteElement
+WARNING			= org.runtime.manuals.html.WarningElement
+NOTE			= org.runtime.manuals.html.NoteElement
 
 HYPHEN			= org.runtime.manuals.html.HyphenElement
 #EM			= org.runtime.manuals.html.emElement

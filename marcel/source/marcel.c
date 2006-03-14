@@ -162,7 +162,7 @@ static unsigned marcel_last_key=0;
 */
 
 DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
-				   marcel_key_destructor_t func), (key, func))
+				   marcel_key_destructor_t func), (key, func),
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    marcel_lock_acquire(&marcel_key_lock);
@@ -189,13 +189,13 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
    marcel_key_destructor[marcel_last_key]=func;
    marcel_lock_release(&marcel_key_lock);
    return 0;
-}
+})
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, 
 				   void (*func)(void *)), (key, func))
 DEF___PTHREAD(int, key_create, (pthread_key_t *key, 
 				   void (*func)(void *)), (key, func))
 
-DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
+DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    marcel_lock_acquire(&marcel_key_lock);
@@ -206,7 +206,7 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
    }
    marcel_lock_release(&marcel_key_lock);
    return 0;
-}
+})
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 //DEF___PTHREAD(int, key_delete, (pthread_key_t key), (key))
 

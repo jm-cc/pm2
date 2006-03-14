@@ -160,23 +160,20 @@
     MARCEL_NAME(name), proto, args);
 
 
-#define DEF_MARCEL_POSIX(rtype, name, proto, args) \
-  rtype LOCAL_MARCEL_NAME(name) proto; \
+#define DEF_MARCEL_POSIX(rtype, name, proto, args, code) \
+  rtype LOCAL_MARCEL_NAME(name) proto code \
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
   DEF_ALIAS_POSIX(rtype, name, proto, args) \
-  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
-  rtype LOCAL_MARCEL_NAME(name) proto
+  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args)
 
-#define DEF_MARCEL(rtype, name, proto, args) \
-  rtype LOCAL_MARCEL_NAME(name) proto; \
+#define DEF_MARCEL(rtype, name, proto, args, code) \
+  rtype LOCAL_MARCEL_NAME(name) proto code \
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
-  rtype LOCAL_MARCEL_NAME(name) proto
 
 #ifdef MA__IFACE_PMARCEL
 #define DEF_POSIX(rtype, name, proto, args, code) \
-  rtype LOCAL_POSIX_NAME(name) proto; \
-  DEF_ALIAS_POSIX(rtype, name, proto, args) \
-  rtype LOCAL_POSIX_NAME(name) proto code
+  rtype LOCAL_POSIX_NAME(name) proto code \
+  DEF_ALIAS_POSIX(rtype, name, proto, args)
 #else
 #define DEF_POSIX(rtype, name, proto, args, code)
 #endif

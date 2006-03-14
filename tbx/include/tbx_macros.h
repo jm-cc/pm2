@@ -490,3 +490,17 @@ do { \
  */
 #define TBX_STR(s) #s
 #define TBX_MACRO_TO_STR(s) TBX_STR(s)
+
+/*
+ * Assembly   _______________________________________________________
+ * __________////////////////////////////////////////////////////////
+ */
+#ifdef AIX_SYS
+#define TBX_LOCAL_LBL(num) "Lma%=" #num
+#define TBX_LOCAL_LBLF(num) TBX_LOCAL_LBL(num)
+#define TBX_LOCAL_LBLB(num) TBX_LOCAL_LBL(num)
+#else
+#define TBX_LOCAL_LBL(num) #num
+#define TBX_LOCAL_LBLF(num) TBX_LOCAL_LBL(num) "f"
+#define TBX_LOCAL_LBLB(num) TBX_LOCAL_LBL(num) "b"
+#endif

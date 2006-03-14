@@ -383,7 +383,7 @@ violation of the usual <EM>C<SPACE/>convention</EM>, there exists some
 applications that require to use the regular <TT>main</TT> function
 name. In particular, it may be the case with applications linked with
 non-C code (<EM>e.g.</EM>, Fortran code).  In this case, you must use the
-<TT>stackalign</TT> module, please refer to Section <REF LABEL="foo"/> for
+<TT>stackalign</TT> module, please refer to Section <REF LABEL="sec:tradimain"/> for
 details.
 </P>
 

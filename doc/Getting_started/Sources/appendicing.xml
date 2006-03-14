@@ -45,7 +45,7 @@ A typical use of the extended options could thus be:
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Common Pitfalls" LABEL="sec:commonpitfalls">
+<SUBSECTION TITLE="Frequently asked questions" LABEL="sec:faq">
 
 <P>
 Table <REF LABEL="tbl:pitfalls"/> sums up the symptoms together with
@@ -57,23 +57,10 @@ possible solutions.
 <TH>Symptoms</TH> <TH>Solutions</TH>
 </TR>
 <TR>
-<TD> <TT>Permission denied</TT> error at load time </TD>
+<TD> <EM><TT>Permission denied</TT> error at load time </EM></TD>
 <TD> Each configuration node must be made accessible by <TT>ssh</TT> from the local host. Check you can issue a <TT>ssh</TT> call to the nodes.</TD>
 </TR>
 </TABLE>
-
-</SUBSECTION>
-
-<SUBSECTION TITLE="Frequently asked questions" LABEL="sec:faq">
-
-<P>
-<EM>
-  Why do I get the message "Permission denied" when running pm2load?
-  
-  Why does my program crash the entire cluster?
-</EM>
-
-</P>
 
 </SUBSECTION>
 

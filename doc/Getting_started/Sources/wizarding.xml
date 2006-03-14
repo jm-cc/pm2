@@ -12,7 +12,7 @@
 
 <P>
 We have gathered in this section some advanced material as a reference
-for the advanced user. Beginners should probably skip this section on
+for advanced users. Beginners should probably skip this section on
 a first reading. 
 </P>
 
@@ -31,7 +31,7 @@ synchronization facilities are provided by PM2.
 <P>
 The lowest level of synchronization is to temporarily disable the scheduler
 at the local node. This guarantees that the successive
-instructions will be issued atomically. This is done using the
+instructions will be issued atomically. This is done by using the
 <TT>pm2_freeze</TT>/<TT>pm2_unfreeze</TT> routines. These are simply wrappers for
 two essential Marcel routines respectively called <TT>lock_task</TT> and
 <TT>unlock_task</TT>. The <TT>lock_task</TT> routine locks a Marcel thread within
@@ -72,7 +72,7 @@ At least on my current workstation, this yields the following result:
 <P>
 It shows that getting interrupted in the middle of the critical section
 is a relatively frequent event, which should definitely not be
-overlooked by the PM2 programmer! 
+overlooked by PM2 programmers!
 </P>
 
 </SUBSUBSECTION>

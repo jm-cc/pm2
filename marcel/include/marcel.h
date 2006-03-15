@@ -19,6 +19,8 @@
 
 #define MARCEL_VERSION 0x020000 /* Version 2.0000 */
 
+#include <sys/types.h>
+
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
 #include "marcel_alloc___macros.h"

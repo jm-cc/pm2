@@ -36,6 +36,8 @@ int main(int argc, char *argv[]) {
 	marcel_attr_init(&attr);
 	marcel_attr_setinitbubble(&attr, &b);
 	marcel_create(&t5, &attr, f, (any_t)5);
+
+	marcel_wake_up_bubble(&b);
 	
 	marcel_printf("ok\n");
 	profile_stop();

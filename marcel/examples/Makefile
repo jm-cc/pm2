@@ -30,6 +30,8 @@ tsp-main-cflags := -DMT
 tsp-job-cflags := -DMT
 tsp-ldflags := -lm
 
+balance-ldflags := -lm
+
 # Applications dont le nom n'a pas de .c correspondant
 #----------------------------------------------------------------------
 APPS :=

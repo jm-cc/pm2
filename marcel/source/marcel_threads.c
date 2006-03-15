@@ -294,11 +294,6 @@ int marcel_create_special(marcel_t * __restrict pid,
  *                Thread helper
  */
 
-static MA_DEFINE_PER_LWP(marcel_postexit_func_t, postexit_func, NULL);
-static MA_DEFINE_PER_LWP(any_t, postexit_arg, NULL);
-static MA_DEFINE_PER_LWP(marcel_sem_t, postexit_thread, {0});
-static MA_DEFINE_PER_LWP(marcel_sem_t, postexit_space, {0});
-
 static void postexit_thread_atexit_func(any_t arg) {
 
 	marcel_lwp_t *lwp TBX_UNUSED =(marcel_lwp_t*)arg;

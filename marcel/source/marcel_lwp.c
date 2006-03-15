@@ -51,11 +51,6 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #endif
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(unsigned, number, 0);
-#endif
-MA_DEFINE_PER_LWP(int, online, 0);
-
-#ifdef MA__LWPS
 static MA_DEFINE_NOTIFIER_CHAIN(lwp_chain, "LWP");
 
 /* Need to know about LWPs going up/down? */
@@ -155,8 +150,6 @@ static void* lwp_start_func(void* arg)
 	marcel_exit_special(0);
 	return NULL; /* For gcc */
 }
-
-MA_DEFINE_PER_LWP(marcel_task_t *, run_task, NULL);
 
 #ifdef MA__LWPS
 #ifdef MA__SMP

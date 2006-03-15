@@ -21,8 +21,19 @@
  * include/linux/timer.h
  */
 
+#section marcel_macros
+/*
+ * per-LWP timer vector definitions:
+ */
+#define TVN_BITS 6
+#define TVR_BITS 8
+#define TVN_SIZE (1 << TVN_BITS)
+#define TVR_SIZE (1 << TVR_BITS)
+#define TVN_MASK (TVN_SIZE - 1)
+#define TVR_MASK (TVR_SIZE - 1)
+
 #section marcel_types
-struct ma_tvec_t_base_s;
+typedef struct ma_tvec_t_base_s ma_tvec_base_t;
 
 #section marcel_structures
 struct ma_timer_list {
@@ -37,6 +48,25 @@ struct ma_timer_list {
 
 	struct ma_tvec_t_base_s *base;
 };
+
+typedef struct ma_tvec_s {
+	struct list_head vec[TVN_SIZE];
+} ma_tvec_t;
+
+typedef struct ma_tvec_root_s {
+	struct list_head vec[TVR_SIZE];
+} ma_tvec_root_t;
+
+struct ma_tvec_t_base_s {
+	ma_spinlock_t lock;
+	unsigned long timer_jiffies;
+	struct ma_timer_list *running_timer;
+	ma_tvec_root_t tv1;
+	ma_tvec_t tv2;
+	ma_tvec_t tv3;
+	ma_tvec_t tv4;
+	ma_tvec_t tv5;
+};// ____cacheline_aligned_in_smp;
 
 #section marcel_macros
 #define MA_TIMER_MAGIC	0x4b87ad6e

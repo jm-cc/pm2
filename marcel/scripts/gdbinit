@@ -127,7 +127,7 @@ define marcel-printthread
   printf "%p %16s %2d %c", \
     $arg0, $arg0->name, $arg0->sched.internal.prio, $state
   if $arg0->sched.lwp
-    printf " %2d", *(unsigned *)((char*)$arg0->sched.lwp+((char*)&ma_per_lwp__number-(char*)&__main_lwp))
+    printf " %2d", $arg0->sched.lwp->number
   end
   ma-printholder $arg0->sched.internal.init_holder
   ma-printholder $arg0->sched.internal.sched_holder
@@ -143,7 +143,7 @@ define marcel-threads
   while $num<ma__nb_lwp
     set $lwp=addr_lwp[$num]
     if ($lwp)
-      set $all_threads=(struct list_head *)((char *)$lwp+((char *)&ma_per_lwp__all_threads-(char*)&__main_lwp))
+      set $all_threads=&$lwp->all_threads
       set $threade=$all_threads->next
       while $threade!=$all_threads
         set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))

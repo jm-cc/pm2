@@ -46,9 +46,6 @@
 
 static struct ma_softirq_action softirq_vec[32] /*__cacheline_aligned_in_smp*/;
 
-static MA_DEFINE_PER_LWP(marcel_task_t *, ksoftirqd, NULL);
-MA_DEFINE_PER_LWP(unsigned long, softirq_pending, 0);
-
 /*
  * we cannot loop indefinitely here to avoid userspace starvation,
  * but we also don't want to introduce a worst case 1/HZ latency
@@ -236,17 +233,6 @@ TBX_PROTECTED void ma_open_softirq(int nr, void (*action)(struct ma_softirq_acti
 	softirq_vec[nr].data = data;
 	softirq_vec[nr].action = action;
 }
-
-/* Tasklets */
-struct tasklet_head
-{
-	struct ma_tasklet_struct *list;
-};
-
-/* Some compilers disobey section attribute on statics when not
-   initialized -- RR */
-static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_vec, { NULL });
-static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_hi_vec, { NULL });
 
 fastcall TBX_PROTECTED void __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {

@@ -104,14 +104,9 @@ void ma_set_processors(void) {
 #ifdef MA__NUMA
 
 #ifdef MARCEL_SMT_IDLE
-MA_DEFINE_PER_LWP(struct marcel_topo_level *, core_level, NULL);
 static struct marcel_topo_level *marcel_topo_core_level;
 #endif
-
-static MA_DEFINE_PER_LWP(struct marcel_topo_level *, node_level, NULL);
 static struct marcel_topo_level *marcel_topo_node_level;
-
-static MA_DEFINE_PER_LWP(struct marcel_topo_level *, cpu_level, NULL);
 static struct marcel_topo_level *marcel_topo_cpu_level;
 
 int ma_lwp_node[MA_NR_LWPS];

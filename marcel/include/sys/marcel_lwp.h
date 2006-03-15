@@ -25,6 +25,12 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_sem.h[structures]"
 #depend "sys/marcel_kthread.h[marcel_types]"
+#depend "linux_timer.h[marcel_types]"
+#depend "linux_softirq.h[marcel_structures]"
+#depend "scheduler/linux_runqueues.h[types]"
+#depend "scheduler/linux_runqueues.h[marcel_structures]"
+#depend "marcel_topology.h[structures]"
+#include <stdlib.h>
 
 struct marcel_lwp {
 	struct list_head lwp_list;
@@ -37,9 +43,78 @@ struct marcel_lwp {
 #endif
 	/*Polling par LWP*/
 	struct marcel_per_lwp_polling_s* polling_list;
-	/*Il y a des variables par lwp qui ont besoin d'un tel alignement*/
-	unsigned long long align[0];
+
+	marcel_task_t *current_thread;
+	struct ma_lwp_usage_stat lwp_usage;
+
+#ifdef MA__LWPS
+	ma_runqueue_t runqueue;
+	ma_runqueue_t dontsched_runqueue;
+#endif
+
+#ifdef MARCEL_SMT_IDLE
+	struct marcel_topo_level *core_level;
+#endif
+
+#if defined(LINUX_SYS) || defined(GNU_SYS)
+	struct drand48_data random_buffer;
+#endif
+
+	marcel_task_t *previous_thread;
+	boolean main_is_waiting;
+	unsigned nb_tasks;
+// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
+	ma_spinlock_t threadlist_lock;
+
+	volatile sig_atomic_t task_number;
+	struct list_head all_threads;
+
+#ifdef MA__LWPS
+	marcel_task_t *idle_task;
+#endif
+
+	marcel_postexit_func_t postexit_func;
+	any_t postexit_arg;
+	marcel_sem_t postexit_thread;
+	marcel_sem_t postexit_space;
+
+#ifdef MA__ACTIVATION
+	marcel_task_t *upcall_new_task;
+#endif
+
+#ifdef MA__LWPS
+#ifdef IA64_ARCH
+	unsigned long ma_ia64_tp;
+#endif
+#endif
+	ma_tvec_base_t tvec_bases;
+
+#ifdef MA__TIMER
+	int _no_interrupt;
+#endif
+
+	marcel_task_t *ksoftirqd;
+	unsigned long softirq_pending;
+	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
+
+#ifdef MA__LWPS
+	unsigned number;
+#endif
+	unsigned online;
+	marcel_task_t *run_task;
+
+	//unsigned long process_counts;
+	
+#ifdef MA__NUMA
+	struct marcel_topo_level *node_level, *cpu_level;
+#endif
 };
+
+#define MA_LWP_INITIALIZER(lwp) { \
+	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.task_number = 1, \
+	.tvec_bases.lock = MA_SPIN_LOCK_UNLOCKED, \
+}
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"

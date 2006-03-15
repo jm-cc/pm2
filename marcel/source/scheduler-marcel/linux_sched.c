@@ -189,8 +189,6 @@
 //	return BASE_TIMESLICE(p);
 //}
 
-MA_DEFINE_PER_LWP(marcel_task_t *, current_thread, NULL);
-MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage, {0});
 #ifndef MA__LWPS
 /* mono: pas de thread idle, mais on a besoin d'une variable pour savoir si on
  * est dans la boucle idle */
@@ -3329,7 +3327,7 @@ static void __marcel_init sched_init(void)
 	 * thread right in SMP mode.
 	 */
 #ifndef MA__LWPS
-	ma_per_lwp__current_thread = MARCEL_SELF;
+	ma_per_lwp(current_thread,&__main_lwp) = MARCEL_SELF;
 #endif
 	marcel_wake_up_created_thread(MARCEL_SELF);
 	/* since it is actually already running */

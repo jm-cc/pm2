@@ -39,47 +39,13 @@
 #define MA_FILE_DEBUG linux_timer
 #include "marcel.h"
 
-/*
- * per-LWP timer vector definitions:
- */
-#define TVN_BITS 6
-#define TVR_BITS 8
-#define TVN_SIZE (1 << TVN_BITS)
-#define TVR_SIZE (1 << TVR_BITS)
-#define TVN_MASK (TVN_SIZE - 1)
-#define TVR_MASK (TVR_SIZE - 1)
-
-typedef struct tvec_s {
-	struct list_head vec[TVN_SIZE];
-} tvec_t;
-
-typedef struct tvec_root_s {
-	struct list_head vec[TVR_SIZE];
-} tvec_root_t;
-
-struct ma_tvec_t_base_s {
-	ma_spinlock_t lock;
-	unsigned long timer_jiffies;
-	struct ma_timer_list *running_timer;
-	tvec_root_t tv1;
-	tvec_t tv2;
-	tvec_t tv3;
-	tvec_t tv4;
-	tvec_t tv5;
-} ____cacheline_aligned_in_smp;
-
-typedef struct ma_tvec_t_base_s tvec_base_t;
-
-static inline void set_running_timer(tvec_base_t *base,
+static inline void set_running_timer(ma_tvec_base_t *base,
 				     struct ma_timer_list *timer)
 {
 #ifdef MA__LWPS
 	base->running_timer = timer;
 #endif
 }
-
-/* Fake initialization */
-static MA_DEFINE_PER_LWP(tvec_base_t, tvec_bases, { MA_SPIN_LOCK_UNLOCKED });
 
 static void check_timer_failed(struct ma_timer_list *timer)
 {
@@ -106,7 +72,7 @@ static inline void check_timer(struct ma_timer_list *timer)
 }
 
 
-static void internal_add_timer(tvec_base_t *base, struct ma_timer_list *timer)
+static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer)
 {
 	unsigned long expires = timer->expires;
 	unsigned long idx = expires - base->timer_jiffies;
@@ -152,7 +118,7 @@ static void internal_add_timer(tvec_base_t *base, struct ma_timer_list *timer)
 
 TBX_PROTECTED int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
-	tvec_base_t *old_base, *new_base;
+	ma_tvec_base_t *old_base, *new_base;
 	int ret = 0;
 
 	MA_BUG_ON(!timer->function);
@@ -224,7 +190,7 @@ repeat:
  */
 void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
 {
-	tvec_base_t *base = &ma_per_lwp(tvec_bases, lwp);
+	ma_tvec_base_t *base = &ma_per_lwp(tvec_bases, lwp);
   	//unsigned long flags;
   
   	MA_BUG_ON(ma_timer_pending(timer) || !timer->function);
@@ -288,7 +254,7 @@ TBX_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expire
 TBX_PROTECTED int ma_del_timer(struct ma_timer_list *timer)
 {
 	//unsigned long flags;
-	tvec_base_t *base;
+	ma_tvec_base_t *base;
 
 	check_timer(timer);
 
@@ -328,7 +294,7 @@ repeat:
  */
 TBX_PROTECTED int ma_del_timer_sync(struct ma_timer_list *timer)
 {
-	tvec_base_t *base;
+	ma_tvec_base_t *base;
 	int ret = 0;
 	ma_lwp_t lwp;
 
@@ -356,7 +322,7 @@ del_again:
 }
 #endif
 
-static int cascade(tvec_base_t *base, tvec_t *tv, int index)
+static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 {
 	/* cascade all the timers from tv up one level */
 	struct list_head *head, *curr;
@@ -389,7 +355,7 @@ static int cascade(tvec_base_t *base, tvec_t *tv, int index)
  */
 #define INDEX(N) (base->timer_jiffies >> (TVR_BITS + N * TVN_BITS)) & TVN_MASK
 
-static inline void __run_timers(tvec_base_t *base)
+static inline void __run_timers(ma_tvec_base_t *base)
 {
 	struct ma_timer_list *timer;
 
@@ -812,7 +778,7 @@ EXPORT_SYMBOL(xtime_lock);
  */
 static void run_timer_softirq(struct ma_softirq_action *h)
 {
-	tvec_base_t *base = &__ma_get_lwp_var(tvec_bases);
+	ma_tvec_base_t *base = &__ma_get_lwp_var(tvec_bases);
 
 	mdebugl(8, "Running Softirq Timers (next at %li, current : %li)\n",
 		base->timer_jiffies, ma_jiffies);
@@ -1231,7 +1197,7 @@ asmlinkage long sys_sysinfo(struct sysinfo __user *info)
 static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 {
 	int j;
-	tvec_base_t *base;
+	ma_tvec_base_t *base;
        
 	base = &ma_per_lwp(tvec_bases, lwp);
 	ma_spin_lock_init(&base->lock);
@@ -1252,7 +1218,7 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
-static int migrate_timer_list(tvec_base_t *new_base, struct list_head *head)
+static int migrate_timer_list(ma_tvec_base_t *new_base, struct list_head *head)
 {
 	struct timer_list *timer;
 
@@ -1272,8 +1238,8 @@ static int migrate_timer_list(tvec_base_t *new_base, struct list_head *head)
 
 static void __devinit migrate_timers(int cpu)
 {
-	tvec_base_t *old_base;
-	tvec_base_t *new_base;
+	ma_tvec_base_t *old_base;
+	ma_tvec_base_t *new_base;
 	int i;
 
 	BUG_ON(cpu_online(cpu));

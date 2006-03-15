@@ -32,11 +32,6 @@ MA_DEFINE_RUNQUEUE(ma_cpu_runqueue)[MARCEL_NBMAXCPUS];
 ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_die_runqueue, ma_core_runqueue, ma_cpu_runqueue};
 #endif
 
-#ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {{0}});
-MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue, {{0}});
-#endif
-
 void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 {
 	int j, k;

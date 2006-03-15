@@ -229,7 +229,6 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
 static sigset_t sigalrmset, sigeptset;
 
 #ifdef CHAINED_SIGALRM
-static MA_DEFINE_PER_LWP(int, _no_interrupt, 0);
 #define no_interrupt __ma_get_lwp_var(_no_interrupt)
 #else
 #define no_interrupt 0

@@ -254,8 +254,6 @@ void marcel_start_playing(void) {
 }
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
-static MA_DEFINE_PER_LWP(struct drand48_data, random_buffer, {{0}});
-
 static int rand_lwp_init(ma_lwp_t lwp) {
 	srand48_r(LWP_NUMBER(lwp), &ma_per_lwp(random_buffer, lwp));
 	return 0;

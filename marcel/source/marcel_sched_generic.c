@@ -34,7 +34,7 @@ void marcel_delay(unsigned long millisecs)
 #ifdef MA__LWPS
 TBX_SECTION(".ma.main.lwp")
 #endif
-marcel_lwp_t __main_lwp = {};
+marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 
 /**************************************************************************/
 /**************************************************************************/
@@ -44,14 +44,7 @@ marcel_lwp_t __main_lwp = {};
 /**************************************************************************/
 /**************************************************************************/
 
-MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread, NULL);
-
-static MA_DEFINE_PER_LWP(boolean, main_is_waiting, FALSE);
-static MA_DEFINE_PER_LWP(unsigned, nb_tasks, 0);
 static boolean a_new_thread;
-
-// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
-static MA_DEFINE_PER_LWP(ma_spinlock_t, threadlist_lock, MA_SPIN_LOCK_UNLOCKED);
 
 unsigned marcel_nbthreads(void)
 {
@@ -62,10 +55,6 @@ unsigned marcel_nbthreads(void)
    for_each_lwp_end();
    return num + 1;   /* + 1 pour le main */
 }
-
-static volatile MA_DEFINE_PER_LWP(sig_atomic_t, task_number, 1);
-
-static MA_DEFINE_PER_LWP(struct list_head, all_threads, {0});
 
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
 #define MA_MAX_LWP_THREADS 1000000
@@ -325,8 +314,6 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 	}
 }
 #endif
-
-MA_DEFINE_PER_LWP(marcel_task_t *,idle_task, NULL);
 #endif
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)

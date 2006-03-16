@@ -79,14 +79,19 @@ $(STAMP_BUILD_LIB_SO): $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 
 VERSION_SCRIPT_OPT=-Xlinker --version-script=
 
+SONAME=$(notdir $(LIB_LIB_SO_MAJ))
 # AIX doesn't support sonames
 ifeq ($(MOD_SYS),AIX_SYS)
-SONAME=
+  SONAMEFLAGS=
 else
-SONAME=-Xlinker --soname=$(notdir $(LIB_LIB_SO_MAJ))
+  ifeq ($(MOD_SYS),OSF_SYS)
+    SONAMEFLAGS=-Xlinker -soname -Xlinker $(SONAME)
+  else
+    SONAMEFLAGS=-Xlinker --soname=$(SONAME)
+  endif
 endif
 
-LINK_CMD=$(LD) $(SONAME)\
+LINK_CMD=$(LD) $(SONAMEFLAGS)\
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
 		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBRARY)_link.pic, $(filter %.pic, $(MOD_PICS)))

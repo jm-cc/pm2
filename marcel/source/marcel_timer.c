@@ -436,6 +436,11 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
+#ifdef MA__SMP
+#ifdef CHAINED_SIGALRM
+	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+#endif
+#endif
 	marcel_sig_enable_interrupts();
 
 #ifdef CHAINED_SIGALRM
@@ -499,6 +504,11 @@ static void __marcel_init sig_init(void)
 	sigemptyset(&sigalrmset);
 	sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
 	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
+#ifdef MA__SMP
+	/* bloquer les signaux avant de lancer les lwps, pour que les lwps
+	 * lancés par la librairie de threads n'en recoivent pas */
+	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
+#endif
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
 

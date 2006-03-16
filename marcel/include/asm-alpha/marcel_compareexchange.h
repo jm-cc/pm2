@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section common
+#ifdef OSF_SYS
+#depend "asm-generic/marcel_compareexchange.h[]"
 #section macros
 #section marcel_variables
 #section marcel_macros

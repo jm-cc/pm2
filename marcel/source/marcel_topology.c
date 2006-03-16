@@ -81,7 +81,8 @@ unsigned marcel_lwps_per_cpu = 1;
 
 void ma_set_nbprocessors(void) {
 	// Détermination du nombre de processeurs disponibles
-#if defined(SOLARIS_SYS) || defined(LINUX_SYS) || defined(OSF_SYS) || defined(WIN_SYS)
+	
+#if defined(SOLARIS_SYS) || defined(LINUX_SYS) || defined(OSF_SYS) || defined(WIN_SYS) || defined(AIX_SYS)
 	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(IRIX_SYS)
 	marcel_nbprocessors = sysconf(_SC_NPROC_CONF);

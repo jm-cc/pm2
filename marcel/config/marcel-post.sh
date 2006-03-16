@@ -15,6 +15,8 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
 		PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$PM2_ROOT/lib/$PM2_SYS/$PM2_ARCH/libpthread.so"
 	    fi
 	fi
+	# For being able to bind kernel threads to cpus.
+	[ "$PM2_SYS" = OSF_SYS ] && PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lnuma"
     fi
 fi
 

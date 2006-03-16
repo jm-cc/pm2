@@ -42,6 +42,10 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #ifdef WIN_SYS
 #include <windows.h>
 #endif
+#ifdef OSF_SYS
+#include <radset.h>
+#include <numa.h>
+#endif
 #ifdef AIX_SYS
 #include <sys/processor.h>
 #endif
@@ -388,10 +392,15 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 	DWORD mask = 1UL<<target;
 	SetThreadAffinityMask(GetCurrentThread(), mask);
 #elif defined(OSF_SYS)
-	if (pthread_use_only_cpu(pthread_self(), target, 0)) {
-		perror("pthread_use_only_cpu");
+	radset_t radset;
+	radsetcreate(&radset);
+	rademptyset(radset);
+	radaddset(radset, target);
+	if (pthread_rad_bind(pthread_self(), radset, RAD_INSIST)) {
+		perror("pthread_rad_attach");
 		exit(1);
 	}
+	radsetdestroy(&radset);
 #elif defined(AIX_SYS)
 	bindprocessor(BINDTHREAD, thread_self(), target);
 #else

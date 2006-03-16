@@ -79,7 +79,6 @@
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
-#ifndef OSF_SYS
 static __tbx_inline__ unsigned long
 __ma_cmpxchg_u8(volatile char *m, long old, long repl)
 {
@@ -217,4 +216,3 @@ __ma_cmpxchg(volatile void *ptr, unsigned long old, unsigned long repl, int size
 				    (unsigned long)_n_, sizeof(*(ptr))); \
   })
 
-#endif

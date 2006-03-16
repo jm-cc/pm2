@@ -892,8 +892,10 @@ unsigned long ma_nr_running(void)
 {
 	unsigned long i, sum = 0;
 
+#ifdef PM2_DEV
 #ifdef MARCEL_BUBBLE_STEAL
 #warning TODO: descendre dans les bulles ...
+#endif
 #endif
 	for (i = 0; i < MA_NR_LWPS; i++)
 		sum += ma_lwp_rq(GET_LWP_BY_NUMBER(i))->hold.nr_running;

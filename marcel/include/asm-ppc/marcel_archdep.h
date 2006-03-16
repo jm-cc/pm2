@@ -33,7 +33,7 @@
 #endif
 
 #if defined(AIX_SYS)
-#  define SP_FIELD(buf)           ((buf)[0])
+#  define SP_FIELD(buf)           ((buf)[3])
 #endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)

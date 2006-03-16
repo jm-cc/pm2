@@ -42,9 +42,6 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #ifdef WIN_SYS
 #include <windows.h>
 #endif
-#ifdef OSF_SYS
-#include <sys/cpuset.h>
-#endif
 #ifdef AIX_SYS
 #include <sys/processor.h>
 #endif

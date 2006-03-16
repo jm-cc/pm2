@@ -31,9 +31,6 @@ void marcel_delay(unsigned long millisecs)
 #endif
 }
 
-#ifdef MA__LWPS
-TBX_SECTION(".ma.main.lwp")
-#endif
 marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 
 /**************************************************************************/

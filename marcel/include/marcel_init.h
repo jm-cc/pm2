@@ -69,8 +69,6 @@ typedef struct __ma_init_info {
 } TBX_ALIGNED __ma_init_info_t;
 
 #section marcel_macros
-#define __MA_INIT_SECTION ".ma.init."
-
 #define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
   TBX_INTERNAL const __ma_init_info_t ma_init_info_##_func \
     TBX_ALIGNED = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};

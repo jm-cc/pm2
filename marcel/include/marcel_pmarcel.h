@@ -26,7 +26,7 @@
  * pmarcel_ declarations
  */
 
-#ifndef DARWIN_SYS
+#ifdef LINUX_SYS
 #include <features.h>
 #endif
 #include <sched.h>

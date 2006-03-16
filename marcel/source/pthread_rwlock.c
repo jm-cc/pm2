@@ -202,7 +202,7 @@ rwlock_have_already(marcel_descr *pself, marcel_rwlock_t *rwlock,
   if (rwlock->__rw_kind == MARCEL_RWLOCK_PREFER_WRITER_NP)
     {
       if (!self)
-	*pself = self = thread_self();
+	*pself = self = __thread_self();
 
       existing = rwlock_is_in_list(self, rwlock);
 
@@ -287,7 +287,7 @@ DEF_MARCEL_POSIX(int,
 					  &existing, &out_of_mem);
 
   if (self == NULL)
-    self = thread_self ();
+    self = __thread_self ();
 
   for (;;)
     {
@@ -337,7 +337,7 @@ DEF_MARCEL_POSIX(int,
 					  &existing, &out_of_mem);
 
   if (self == NULL)
-    self = thread_self ();
+    self = __thread_self ();
 
   /* Set up extrication interface */
   //VD:extr.pu_object = rwlock;
@@ -396,7 +396,7 @@ DEF_MARCEL_POSIX(int,
 DEF_MARCEL_POSIX(int,
 		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock), (rwlock),
 {
-  marcel_descr self = thread_self();
+  marcel_descr self = __thread_self();
   marcel_readlock_info *existing;
   int out_of_mem, have_lock_already;
   int retval = EBUSY;
@@ -441,7 +441,7 @@ DEF___PTHREAD(int, rwlock_tryrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX(int,
 		 rwlock_wrlock, (marcel_rwlock_t *rwlock), (rwlock),
 {
-  marcel_descr self = thread_self ();
+  marcel_descr self = __thread_self ();
 
   while(1)
     {
@@ -476,7 +476,7 @@ __marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
   if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
     return EINVAL;
 
-  self = thread_self ();
+  self = __thread_self ();
 
   /* Set up extrication interface */
   //VD:extr.pu_object = rwlock;
@@ -531,7 +531,7 @@ DEF_MARCEL_POSIX(int,
   __pmarcel_lock (&rwlock->__rw_lock, NULL);
   if (rwlock->__rw_readers == 0 && rwlock->__rw_writer == NULL)
     {
-      rwlock->__rw_writer = (marcel_descr)thread_self ();
+      rwlock->__rw_writer = (marcel_descr)__thread_self ();
       result = 0;
     }
   __pmarcel_unlock (&rwlock->__rw_lock);
@@ -553,7 +553,7 @@ DEF_MARCEL_POSIX(int,
   if (rwlock->__rw_writer != NULL)
     {
       /* Unlocking a write lock.  */
-      if (rwlock->__rw_writer != (marcel_descr)thread_self ())
+      if (rwlock->__rw_writer != (marcel_descr)__thread_self ())
 	{
 	  __pmarcel_unlock (&rwlock->__rw_lock);
 	  return EPERM;
@@ -602,7 +602,7 @@ DEF_MARCEL_POSIX(int,
 
       if (rwlock->__rw_kind == MARCEL_RWLOCK_PREFER_WRITER_NP)
 	{
-	  marcel_descr self = thread_self();
+	  marcel_descr self = __thread_self();
 	  marcel_readlock_info *victim = rwlock_remove_from_list(self, rwlock);
 
 	  if (victim != NULL)

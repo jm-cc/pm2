@@ -27,7 +27,7 @@ dnl  ***************************/
 #endif
 
 #include "marcel_fastlock.h"
-//#include "marcel_restart.h" // pour thread_self()
+//#include "marcel_restart.h" // pour __thread_self()
 
 /****************************************************************
  * MUTEX
@@ -278,7 +278,7 @@ DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
     __pmarcel_lock(&mutex->__m_lock, NULL);
     return 0;
   case MARCEL_MUTEX_RECURSIVE_NP:
-    self = thread_self();
+    self = __thread_self();
     if (mutex->__m_owner == self) {
       mutex->__m_count++;
       return 0;
@@ -288,7 +288,7 @@ DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
     mutex->__m_count = 0;
     return 0;
   case MARCEL_MUTEX_ERRORCHECK_NP:
-    self = thread_self();
+    self = __thread_self();
     if (mutex->__m_owner == self) return EDEADLK;
     res = __pmarcel_alt_timedlock(&mutex->__m_lock, self, abstime);
     if (res != 0)

@@ -16,7 +16,7 @@
 
 typedef marcel_task_t *marcel_descr;
 
-static inline marcel_t thread_self() {
+static inline marcel_t __thread_self() {
   return marcel_self();
 }
 

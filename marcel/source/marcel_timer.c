@@ -134,7 +134,7 @@ static void TBX_NORETURN fault_catcher(int sig)
 
 static void fault_catcher_init(ma_lwp_t lwp)
 {
-	static struct sigaction sa;
+	struct sigaction sa;
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 
 	LOG_IN();

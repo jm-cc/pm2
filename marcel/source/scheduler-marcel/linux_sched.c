@@ -806,7 +806,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		int remove_from_bubble;
 #ifdef MARCEL_BUBBLE_EXPLODE
-		int close_bubble;
+		int close_bubble = 0;
 		int wake_bubble;
 #endif
 		if ((remove_from_bubble = (prev->sched.state & MA_TASK_DEAD)))

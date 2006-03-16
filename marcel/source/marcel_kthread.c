@@ -185,6 +185,7 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
 	/* Contraintes d'alignement (16 pour l'IA64) */
 	stack_base=(void*)(((unsigned long int)stack_base+15)&(~0xF));
+	sp=(void*)(((unsigned long int)sp)&(~0xF));
 	/* On ne peut pas savoir combien la libpthread veut que cela soit
 	 * aligné, donc on aligne au maximum */
 	stack_size=1<<(ma_fls(sp-stack_base)-1);
@@ -193,7 +194,14 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	  ||(err=pthread_attr_setstacksize (&attr, stack_size))
 			)
 #else
-	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size)))
+	if ((err=pthread_attr_setstack (&attr, 
+#ifdef AIX_SYS
+					/* violation claire de posix, hum... */
+					sp,
+#else
+					stack_base, 
+#endif
+					stack_size)))
 #endif
 	{
 #ifdef SOLARIS_SYS
@@ -203,8 +211,8 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 		char s[256];
 		strerror_r(err,s,256);
 #endif
-		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %p, %#zx):"
-			" (%d)%s\n", &attr, sp, stack_base, stack_size, err, s);
+		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p-%p (%#zx)):"
+			" (%d) %s\n", &attr, stack_base, sp, stack_size, err, s);
 #ifdef PTHREAD_STACK_MIN
 		fprintf(stderr, "PTHREAD_STACK_MIN: %#x\n", PTHREAD_STACK_MIN);
 #endif

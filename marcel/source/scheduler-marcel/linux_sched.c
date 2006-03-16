@@ -1585,9 +1585,12 @@ asmlinkage TBX_PROTECTED int ma_schedule(void)
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
 	marcel_entity_t *nextent;
+#ifdef MARCEL_BUBBLE_EXPLODE
 	marcel_bubble_t *bubble;
+	ma_holder_t *h;
+#endif
 	ma_runqueue_t *rq, *currq;
-	ma_holder_t *prevh, *nexth, *h, *prev_as_h;
+	ma_holder_t *prevh, *nexth, *prev_as_h;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;

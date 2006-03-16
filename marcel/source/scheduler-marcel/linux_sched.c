@@ -3259,7 +3259,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 #ifdef MA__NUMA
 static int level_rq_num[MARCEL_LEVEL_LAST-2];
 static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
-	unsigned i,n;
+	unsigned i;
 	char name[16];
 	ma_runqueue_t *newrqs = ma_level_runqueues[levelnum-1]+level_rq_num[levelnum-1];
 	static const char *base[] = {

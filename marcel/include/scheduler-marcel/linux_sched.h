@@ -77,6 +77,7 @@ extern MARCEL_PROTECTED void ma_scheduler_tick(int user_tick, int system);
 int marcel_yield_to(marcel_t next);
 
 #section marcel_functions
+void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp);
 extern MARCEL_PROTECTED signed long FASTCALL(ma_schedule_timeout(signed long timeout));
 asmlinkage MARCEL_PROTECTED int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);

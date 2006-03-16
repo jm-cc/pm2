@@ -20,13 +20,24 @@
 #include <time.h>
 #include <errno.h>
 
+static marcel_kthread_mutex_t kthread_mutex = MARCEL_KTHREAD_MUTEX_INITIALIZER;
+
 any_t blocker(any_t arg)
 {
-  struct timespec t = { .tv_sec = 1, .tv_nsec = 0};
+  struct timespec t = { .tv_sec = 2, .tv_nsec = 0};
   marcel_setname(marcel_self(),"blocker");
-  marcel_printf("blocker sleeping 1s\n");
+  printf("  sleeping %lds\n", marcel_self(), t.tv_sec);
   while (nanosleep(&t,&t) == -1 && errno == EINTR);
-  marcel_printf("blocker slept, done\n");
+  printf("  slept, trying taking kthread_mutex\n");
+  if (marcel_kthread_mutex_trylock(&kthread_mutex)) {
+    printf("  not free, trying harder\n");
+    marcel_kthread_mutex_lock(&kthread_mutex);
+  }
+  printf("  got kthread_mutex, sleeping %lds\n", t.tv_sec = 3);
+  while (nanosleep(&t,&t) == -1 && errno == EINTR);
+  printf("  releasing kthread_mutex\n");
+  marcel_kthread_mutex_unlock(&kthread_mutex);
+  printf("  released kthread_mutex\n");
   return NULL;
 }
 
@@ -40,7 +51,7 @@ int marcel_main(int argc, char **argv)
   marcel_init(&argc, argv);
 
   marcel_setname(marcel_self(),"main");
-  marcel_printf("wait a bit\n");
+  marcel_printf("wait a bit (%p)\n",marcel_self());
   marcel_delay(1000);
   lwp = marcel_add_lwp();
   marcel_printf("created additionnal LWP, wait a bit\n");
@@ -53,6 +64,20 @@ int marcel_main(int argc, char **argv)
   start = marcel_clock();
   while(marcel_clock() < start + 2000);
   marcel_printf("done busy\n");
+
+  marcel_printf("taking kthread_mutex\n");
+  marcel_kthread_mutex_lock(&kthread_mutex);
+  marcel_printf("got kthread_mutex, busy a bit\n");
+  start = marcel_clock();
+  while(marcel_clock() < start + 1000);
+  marcel_printf("releasing kthread_mutex\n");
+  marcel_kthread_mutex_unlock(&kthread_mutex);
+  marcel_printf("released kthread_mutex, busy a bit\n");
+  start = marcel_clock();
+  while(marcel_clock() < start + 2000);
+  marcel_printf("taking kthread_mutex again\n");
+  marcel_kthread_mutex_lock(&kthread_mutex);
+  marcel_printf("got kthread_mutex\n");
 
   fflush(stdout);
   marcel_end();

@@ -249,6 +249,9 @@ static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
 #define ma_atomic_dec(v) ma_atomic_sub(1,(v))
 #define ma_atomic64_dec(v) ma_atomic64_sub(1,(v))
 
+#define ma_atomic_xchg(o,r,v) ma_cmpxchg(&(v)->counter,o,r)
+#define ma_atomic64_xchg(o,r,v) ma_cmpxchg(&(v)->counter,o,r)
+
 #define ma_smp_mb__before_atomic_dec()	ma_smp_mb()
 #define ma_smp_mb__after_atomic_dec()	ma_smp_mb()
 #define ma_smp_mb__before_atomic_inc()	ma_smp_mb()

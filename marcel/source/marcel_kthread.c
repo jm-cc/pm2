@@ -155,6 +155,39 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 	kill(pid, sig);
 }
 
+void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
+{
+	ma_atomic_set(lock,1);
+}
+
+void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock)
+{
+	int newval;
+	if ((newval = ma_atomic_dec_return(lock)) == 0)
+		return;
+	while(1) {
+		if (syscall(__NR_futex, lock, FUTEX_WAIT, newval, NULL) == 0)
+			return;
+		if (errno == EWOULDBLOCK)
+			newval = ma_atomic_read(lock);
+		else if (errno != EINTR)
+			MA_BUG();
+	}
+}
+
+void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
+{
+	if (ma_atomic_inc_return(lock) <= 0)
+		syscall(__NR_futex, lock, FUTEX_WAKE, 1, NULL);
+}
+
+int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
+{
+	int newval;
+	if ((newval = ma_atomic_xchg(1,0,lock)) == 1)
+		return 0;
+	return EBUSY;
+}
 #else
 
 #error NOT YET IMPLEMENTED
@@ -256,6 +289,25 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 	pthread_kill(pid, sig);
 }
 
+void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
+{
+	pthread_mutex_init(lock,NULL);
+}
+
+void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock)
+{
+	pthread_mutex_lock(lock);
+}
+
+void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
+{
+	pthread_mutex_unlock(lock);
+}
+
+int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
+{
+	return pthread_mutex_trylock(lock);
+}
 #endif
 
 #endif // MA__SMP

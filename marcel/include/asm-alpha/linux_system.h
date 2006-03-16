@@ -79,3 +79,140 @@
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+static __tbx_inline__ unsigned long
+__ma_cmpxchg_u8(volatile char *m, long old, long repl)
+{
+	unsigned long prev, tmp, cmp, addr64;
+
+	__asm__ __volatile__(
+	"	andnot	%5,7,%4\n"
+	"	insbl	%1,%5,%1\n"
+	"1:	ldq_l	%2,0(%4)\n"
+	"	extbl	%2,%5,%0\n"
+	"	cmpeq	%0,%6,%3\n"
+	"	beq	%3,2f\n"
+	"	mskbl	%2,%5,%2\n"
+	"	or	%1,%2,%2\n"
+	"	stq_c	%2,0(%4)\n"
+	"	beq	%2,3f\n"
+#ifdef CONFIG_SMP
+	"	mb\n"
+#endif
+	"2:\n"
+	".subsection 2\n"
+	"3:	br	1b\n"
+	".previous"
+	: "=&r" (prev), "=&r" (repl), "=&r" (tmp), "=&r" (cmp), "=&r" (addr64)
+	: "r" ((long)m), "Ir" (old), "1" (repl) : "memory");
+
+	return prev;
+}
+
+static __tbx_inline__ unsigned long
+__ma_cmpxchg_u16(volatile short *m, long old, long repl)
+{
+	unsigned long prev, tmp, cmp, addr64;
+
+	__asm__ __volatile__(
+	"	andnot	%5,7,%4\n"
+	"	inswl	%1,%5,%1\n"
+	"1:	ldq_l	%2,0(%4)\n"
+	"	extwl	%2,%5,%0\n"
+	"	cmpeq	%0,%6,%3\n"
+	"	beq	%3,2f\n"
+	"	mskwl	%2,%5,%2\n"
+	"	or	%1,%2,%2\n"
+	"	stq_c	%2,0(%4)\n"
+	"	beq	%2,3f\n"
+#ifdef CONFIG_SMP
+	"	mb\n"
+#endif
+	"2:\n"
+	".subsection 2\n"
+	"3:	br	1b\n"
+	".previous"
+	: "=&r" (prev), "=&r" (repl), "=&r" (tmp), "=&r" (cmp), "=&r" (addr64)
+	: "r" ((long)m), "Ir" (old), "1" (repl) : "memory");
+
+	return prev;
+}
+
+static __tbx_inline__ unsigned long
+__ma_cmpxchg_u32(volatile int *m, int old, int repl)
+{
+	unsigned long prev, cmp;
+
+	__asm__ __volatile__(
+	"1:	ldl_l %0,%5\n"
+	"	cmpeq %0,%3,%1\n"
+	"	beq %1,2f\n"
+	"	mov %4,%1\n"
+	"	stl_c %1,%2\n"
+	"	beq %1,3f\n"
+#ifdef CONFIG_SMP
+	"	mb\n"
+#endif
+	"2:\n"
+	".subsection 2\n"
+	"3:	br 1b\n"
+	".previous"
+	: "=&r"(prev), "=&r"(cmp), "=m"(*m)
+	: "r"((long) old), "r"(repl), "m"(*m) : "memory");
+
+	return prev;
+}
+
+static __tbx_inline__ unsigned long
+__ma_cmpxchg_u64(volatile long *m, unsigned long old, unsigned long repl)
+{
+	unsigned long prev, cmp;
+
+	__asm__ __volatile__(
+	"1:	ldq_l %0,%5\n"
+	"	cmpeq %0,%3,%1\n"
+	"	beq %1,2f\n"
+	"	mov %4,%1\n"
+	"	stq_c %1,%2\n"
+	"	beq %1,3f\n"
+#ifdef CONFIG_SMP
+	"	mb\n"
+#endif
+	"2:\n"
+	".subsection 2\n"
+	"3:	br 1b\n"
+	".previous"
+	: "=&r"(prev), "=&r"(cmp), "=m"(*m)
+	: "r"((long) old), "r"(repl), "m"(*m) : "memory");
+
+	return prev;
+}
+
+/* This function doesn't exist, so you'll get a linker error
+   if something tries to do an invalid cmpxchg().  */
+extern void __ma_cmpxchg_called_with_bad_pointer(void);
+
+static __tbx_inline__ unsigned long
+__ma_cmpxchg(volatile void *ptr, unsigned long old, unsigned long repl, int size)
+{
+	switch (size) {
+		case 1:
+			return __ma_cmpxchg_u8(ptr, old, repl);
+		case 2:
+			return __ma_cmpxchg_u16(ptr, old, repl);
+		case 4:
+			return __ma_cmpxchg_u32(ptr, old, repl);
+		case 8:
+			return __ma_cmpxchg_u64(ptr, old, repl);
+	}
+	__ma_cmpxchg_called_with_bad_pointer();
+	return old;
+}
+
+#define ma_cmpxchg(ptr,o,n)						 \
+  ({									 \
+     __typeof__(*(ptr)) _o_ = (o);					 \
+     __typeof__(*(ptr)) _n_ = (n);					 \
+     (__typeof__(*(ptr))) __ma_cmpxchg((ptr), (unsigned long)_o_,	 \
+				    (unsigned long)_n_, sizeof(*(ptr))); \
+  })
+

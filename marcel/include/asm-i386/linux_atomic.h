@@ -256,10 +256,13 @@ static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t *v)
 	return ma_atomic_add_return(-i,v);
 }
 
+#section marcel_macros
 #define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))
 #define ma_atomic_dec_return(v)  (ma_atomic_sub_return(1,v))
 
-#section marcel_macros
+#define ma_atomic_xchg(o,r,v) ma_cmpxchg(&(v)->counter,o,r)
+
+
 /* These are x86-specific, used by some header files */
 #define ma_atomic_clear_mask(mask, addr) \
 __asm__ __volatile__(MA_LOCK_PREFIX "andl %0,%1" \

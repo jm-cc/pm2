@@ -223,6 +223,24 @@ static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 	MA_ATOMIC_ADD_RETURN(repl);
 }
 
+static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v);
+#section marcel_inline
+static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v)
+{
+#ifdef MA_HAVE_COMPAREEXCHANGE
+	return pm2_compareexchange(&v->counter,old,repl,sizeof(v->counter));
+#else
+	int cur;
+	ma_spin_lock_softirq(&v->lock);
+	cur = ma_atomic_read(v);
+	if (cur == old)
+		ma_atomic_set(v, repl);
+	ma_spin_unlock_softirq(&v->lock);
+	return cur;
+#endif
+}
+
+#section marcel_macros
 #define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))
 
 #define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))

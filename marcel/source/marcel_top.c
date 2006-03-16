@@ -80,7 +80,7 @@ static void printtask(marcel_task_t *t) {
 	}
 	utime = ma_atomic_read(&t->top_utime);
 	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("%#*p %*s %2d %3lu.%1lu %c %2d %10s %10s %10s\r\n", (int) (2*sizeof(void*)), t,
+	top_printf("%#*lx %*s %2d %3lu.%1lu %c %2d %10s %10s %10s\r\n", (int) (2*sizeof(void*)), (unsigned long) t,
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),

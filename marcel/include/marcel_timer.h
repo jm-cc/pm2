@@ -26,17 +26,31 @@ typedef int marcel_time_t;
 #ifdef MA__TIMER
 #include <signal.h>
 
+#ifdef OSF_SYS
+#define MA_BOGUS_SIGINFO_CODE
+#endif
+
 #define JIFFIES_FROM_US(microsecs) \
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 // Signal utilis pour la premption automatique
 #ifdef USE_VIRTUAL_TIMER
-#  define MARCEL_TIMER_SIGNAL   SIGVTALRM
-#  define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
+#  define MARCEL_TIMER_SIGNAL       SIGVTALRM
+#  ifdef MA_BOGUS_SIGINFO_CODE
+#    define MARCEL_TIMER_USERSIGNAL SIGALRM
+#  else
+#    define MARCEL_TIMER_USERSIGNAL MARCEL_TIMER_SIGNAL
+#  endif
+#  define MARCEL_ITIMER_TYPE        ITIMER_VIRTUAL
 #else
-#  define MARCEL_TIMER_SIGNAL   SIGALRM
-#  define MARCEL_ITIMER_TYPE    ITIMER_REAL
+#  define MARCEL_TIMER_SIGNAL       SIGALRM
+#  ifdef MA_BOGUS_SIGINFO_CODE
+#    define MARCEL_TIMER_USERSIGNAL SIGVTALRM
+#  else
+#    define MARCEL_TIMER_USERSIGNAL MARCEL_TIMER_SIGNAL
+#  endif
+#  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif
-#  define MARCEL_RESCHED_SIGNAL SIGUSR2
+#  define MARCEL_RESCHED_SIGNAL     SIGUSR2
 
 #else
 

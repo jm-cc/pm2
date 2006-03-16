@@ -253,7 +253,7 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
-			marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
+			marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
 		for_each_lwp_from_end()
 	}
 #endif
@@ -261,14 +261,14 @@ static void timer_interrupt(int sig)
 		goto out;
 
 #ifdef MA__DEBUG
-	if (sig == MARCEL_TIMER_SIGNAL)
+	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)
 		if (++tick == TICK_RATE) {
 			mdebugl(7,"\t\t\t<<Sig handler>>\n");
 			tick = 0;
 		}
 #endif
 	ma_irq_enter();
-	if (sig == MARCEL_TIMER_SIGNAL) {
+	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL) {
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
@@ -433,6 +433,9 @@ static void sig_start_timer(ma_lwp_t lwp)
 	
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
+#endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
@@ -476,6 +479,9 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	sa.sa_flags = 0;
 
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
@@ -503,6 +509,9 @@ static void __marcel_init sig_init(void)
 	sigemptyset(&sigeptset);
 	sigemptyset(&sigalrmset);
 	sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	sigaddset(&sigalrmset, MARCEL_TIMER_USERSIGNAL);
+#endif
 	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
 #ifdef MA__SMP
 	/* bloquer les signaux avant de lancer les lwps, pour que les lwps

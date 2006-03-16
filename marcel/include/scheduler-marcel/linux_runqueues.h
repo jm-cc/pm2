@@ -132,14 +132,6 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 typedef struct ma_runqueue ma_runqueue_t;
 typedef ma_runqueue_t ma_topo_level_schedinfo;
 
-#section marcel_macros
-#ifdef MA__LWPS
-#define MA_DEFINE_RUNQUEUE(name) \
-	TBX_SECTION(".ma.runqueues") ma_runqueue_t name
-#else
-#define MA_DEFINE_RUNQUEUE(name) ma_runqueue_t name
-#endif
-
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
 #depend "[marcel_macros]"

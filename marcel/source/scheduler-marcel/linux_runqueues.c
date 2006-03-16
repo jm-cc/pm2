@@ -21,13 +21,13 @@
 
 #include "marcel.h"
 
-MA_DEFINE_RUNQUEUE(ma_main_runqueue);
-MA_DEFINE_RUNQUEUE(ma_dontsched_runqueue);
+ma_runqueue_t ma_main_runqueue;
+ma_runqueue_t ma_dontsched_runqueue;
 #ifdef MA__NUMA
-MA_DEFINE_RUNQUEUE(ma_node_runqueue)[MARCEL_NBMAXNODES];
-MA_DEFINE_RUNQUEUE(ma_die_runqueue)[MARCEL_NBMAXDIES];
-MA_DEFINE_RUNQUEUE(ma_core_runqueue)[MARCEL_NBMAXCORES];
-MA_DEFINE_RUNQUEUE(ma_cpu_runqueue)[MARCEL_NBMAXCPUS];
+ma_runqueue_t ma_node_runqueue[MARCEL_NBMAXNODES];
+ma_runqueue_t ma_die_runqueue[MARCEL_NBMAXDIES];
+ma_runqueue_t ma_core_runqueue[MARCEL_NBMAXCORES];
+ma_runqueue_t ma_cpu_runqueue[MARCEL_NBMAXCPUS];
 
 ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_die_runqueue, ma_core_runqueue, ma_cpu_runqueue};
 #endif

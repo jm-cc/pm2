@@ -22,8 +22,6 @@
 #include "tbx_macros.h"
 #include "tbx_compiler.h"
 
-TBX_SECTION(".ma.runqueues") TBX_ALIGN(4096)	int __ma_runqueues[0]={};
-
 TBX_SECTION(".ma.debug.start") TBX_ALIGN(4096)	const int __ma_debug_start[0]={};
 TBX_SECTION(".ma.debug.var")			const int __ma_debug_var[0]={};
 TBX_SECTION(".ma.debug.end")			const int __ma_debug_end[0]={};

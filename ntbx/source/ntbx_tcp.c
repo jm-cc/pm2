@@ -288,9 +288,20 @@ ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 
 /*...Initialisation.....................*/
 
-/* Setup a server socket */
+/* Setup a server socket.  */
 void
 ntbx_tcp_server_init(p_ntbx_server_t server)
+{
+        LOG_IN();
+        ntbx_tcp_server_init_ext(server, 0);
+        LOG_OUT();
+}
+
+
+/* Setup a server socket. If the port number is 0, it is automatically assigned, otherwise the given value is used */
+void
+ntbx_tcp_server_init_ext(p_ntbx_server_t server,
+                         unsigned short int port)
 {
         p_ntbx_tcp_server_specific_t tcp_specific = NULL;
         struct hostent              *local_host_entry = NULL;
@@ -345,7 +356,7 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
         CTRL_ALLOC(tcp_specific);
         server->specific = tcp_specific;
 
-        tcp_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
+        tcp_specific->descriptor = ntbx_tcp_socket_create(&address, port);
         SYSCALL(listen(tcp_specific->descriptor, tbx_min(5, SOMAXCONN)));
 
         ntbx_tcp_socket_setup(tcp_specific->descriptor);

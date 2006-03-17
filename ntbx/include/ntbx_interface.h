@@ -274,6 +274,10 @@ void
 ntbx_tcp_server_init(p_ntbx_server_t server);
 
 void
+ntbx_tcp_server_init_ext(p_ntbx_server_t     server,
+                         unsigned short int  port);
+
+void
 ntbx_tcp_client_init(p_ntbx_client_t client);
 
 void

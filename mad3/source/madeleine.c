@@ -37,6 +37,10 @@
 #include "madeleine.h"
 #include "pm2_common.h"
 
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 256
+#endif /* MAXHOSTNAMELEN */
+
 /*
  * Driver registration
  * -------------------
@@ -173,6 +177,58 @@ mad_object_init(int    argc TBX_UNUSED,
   return madeleine;
 }
 
+void 
+mad_cmd_line_init_from_file(p_mad_settings_t settings,
+			    tbx_flag_t       *host_ok,
+			    tbx_flag_t       *port_ok,
+			    tbx_flag_t       *dyn_set) {
+  char *host_name = NULL;
+  FILE *f = NULL;
+  char *filename = NULL;
+
+  host_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
+  gethostname(host_name, MAXHOSTNAMELEN);
+  filename = TBX_MALLOC(MAXHOSTNAMELEN+10);
+  filename = strcpy(filename, "/tmp/");
+  filename = strcat(filename, host_name);
+  f = fopen(filename, "r");
+  if (f == NULL) {
+    FAILUREF("Cannot read file <%s> with configuration parameters", filename);
+  }
+  else {
+    char *line = NULL;
+    int reading=0;
+
+    line = TBX_MALLOC(MAXHOSTNAMELEN + 1);
+    while (fgets(line, MAXHOSTNAMELEN, f) != NULL) {
+      line[strlen(line)-1] = '\0';
+      if (strncmp(line, "--mad_leonie", 12) == 0) {
+	reading=1;
+      }
+      else if (strncmp(line, "--mad_link", 10) == 0) {
+	reading=2;
+      }
+      else {
+	if (reading == 1) {
+	  if (!tbx_flag_toggle(host_ok))
+	    FAILURE("Leonie server host name specified twice");
+	  settings->leonie_server_host_name = tbx_strdup(line);
+	  reading=0;
+	}
+	else if (reading == 2) {
+	  if (!tbx_flag_toggle(port_ok))
+	    FAILURE("Leonie server port specified twice");
+	  settings->leonie_server_port = tbx_strdup(line);
+	  reading=0;
+	}
+	else {
+	  FAILUREF("Unexpected line <%s> in configuration parameters file <%s>", line, filename);
+	}
+      }
+    }
+  }
+}
+
 void
 mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 		  int                 argc,
@@ -226,6 +282,11 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 
       argc--; argv++;
     }
+
+#ifdef READ_CONFIG_FILES
+  if (tbx_flag_is_clear(&host_ok) && tbx_flag_is_clear(&port_ok))
+    mad_cmd_line_init_from_file(settings, &host_ok, &port_ok, &dyn_set);
+#endif // READ_CONFIG_FILES
 
   if (tbx_flag_is_clear(&host_ok))
     FAILURE("Leonie server host name unspecified");

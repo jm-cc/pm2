@@ -135,24 +135,21 @@
 
 #endif // PREPROC
 
-#if 0
-/* __FUNCTION__ can't be catenated with strings litterals, since it may be a
- * variable */
-#define PROF_IN()            GEN_PREPROC(__FUNCTION__ "_entry")
-#define PROF_OUT()           GEN_PREPROC(__FUNCTION__ "_exit")
-#else
-#define PROF_IN()					\
-  do {							\
-    /*extern void fun(void) asm(__FUNCTION__);		*/\
-    /*__cyg_profile_func_enter(fun,NULL);	*/	\
-    /*FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_ENTRY_CODE, fun);	*/\
-  } while(0)
-#define PROF_OUT()					\
-  do {							\
-    /*extern void fun(void) asm(__FUNCTION__);		*/\
-    /*__cyg_profile_func_exit(fun,NULL);	*/	\
-    /*FUT_PROBE1(PROFILE_KEYMASK, FUT_GCC_INSTRUMENT_EXIT_CODE, fun);	*/\
-  } while(0)
+#ifdef __GNUC__
+#  if __GNUC__ >= 4
+#    define PROF_IN()		__builtin_profile_func_enter()
+#    define PROF_OUT()		__builtin_profile_func_exit()
+#  elif (__GNUC__ == 3 && __GNUC_MINOR__ < 4) || (__GNUC__ <= 2)
+/* Starting from gcc 3.4, __FUNCTION__ really can't be catenated with string litterals */
+#    define PROF_IN()		GEN_PREPROC(__FUNCTION__ "_entry")
+#    define PROF_OUT()		GEN_PREPROC(__FUNCTION__ "_exit")
+#  endif
+#endif
+
+#ifndef PROF_IN
+#warning "No way to set profiling probes with your compiler. Please use gcc <= 3.3 or gcc >= 4.0"
+#define PROF_IN() (void) 0
+#define PROF_OUT() (void) 0
 #endif
 
 #define PROF_IN_EXT(name)             GEN_PREPROC(#name "_entry")

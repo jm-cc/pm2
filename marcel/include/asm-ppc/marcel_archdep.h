@@ -61,3 +61,8 @@
 #define set_fp(val) \
   __asm__ __volatile__("mr 31, %0\n" \
 		  : : "r" (val) : "memory", "r31")
+
+#define set_sp_fp(sp,fp) \
+  __asm__ __volatile__("mr 1, %0\n" \
+		       "mr 31, %1\n" \
+		  : : "r" (sp), "r" (fp) : "memory", "r1")

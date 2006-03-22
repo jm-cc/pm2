@@ -225,6 +225,8 @@ struct marcel_topo_level {
 #endif
 
 	ma_topo_level_schedinfo *sched;
+
+	char data[128];
 };
 
 #section variables
@@ -290,16 +292,22 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #section functions
 #depend "tbx_compiler.h"
 
-TBX_FMALLOC extern void *ma_malloc_node(unsigned size, int node, char *file,
+TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
 		unsigned line);
-extern void ma_free_node(void *ptr, unsigned size, int node,
+extern void ma_free_node(void *ptr, size_t size, int node,
 		char * __restrict file,  unsigned line);
-TBX_FMALLOC extern void *marcel_malloc_node(unsigned size, int node);
-extern void marcel_free_node(void *ptr, unsigned size, int node);
+TBX_FMALLOC extern void *marcel_malloc_node(size_t size, int node);
+extern void marcel_free_node(void *ptr, size_t size, int node);
 #ifndef MA__NUMA
 #define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
 #define ma_free_node(ptr, size, node, file, line) marcel_free(ptr, file, line)
 #endif
 #define marcel_malloc_node(size, node)	ma_malloc_node(size, node, __FILE__, __LINE__)
 #define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, node, __FILE__, __LINE__)
-#section marcel_types
+
+#section marcel_functions
+extern unsigned ma_topo_level_malloc(size_t size);
+#define ma_topo_level_data(l, i) (&(l)->data[i])
+
+// Pour l'instant...
+#define ma_topo_level_malloc(s) 0

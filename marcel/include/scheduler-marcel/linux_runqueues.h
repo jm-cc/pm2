@@ -93,7 +93,6 @@ enum ma_rq_type {
 #section marcel_structures
 #depend "[types]"
 #depend "marcel_topology.h[types]"
-#depend "marcel_topology.h[marcel_types]"
 #depend "scheduler/marcel_holder.h[marcel_structures]"
 struct ma_runqueue {
 	struct ma_holder hold;

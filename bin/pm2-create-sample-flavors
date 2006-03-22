@@ -48,7 +48,7 @@ registering_flavors() {
 	--marcel=profile
 
     register_flavor marcel-bubblegum \
-	--modules="marcel profile tbx init bubblegum" $COMMON_OPTIONS \
+	--modules="marcel profile tbx init bubbles bubblegum" $COMMON_OPTIONS \
 	--marcel=smp --marcel=marcel_main \
 	--marcel=profile
 

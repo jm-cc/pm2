@@ -51,6 +51,13 @@
   register unsigned long sp asm("$30"); \
   sp; \
 })
+#ifdef UNICOS_SYS
+#define get_fp() \
+({ \
+ register unsigned long fp asm("$15"); \
+  fp; \
+})
+#endif
 #else
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
@@ -58,3 +65,14 @@
 #  define set_sp(val) \
   __asm__ __volatile__("addq %0, $31, $sp" \
                        : : "r" (val) : "memory", "$30")
+
+#ifdef UNICOS_SYS
+#  define set_fp(val) \
+  __asm__ __volatile__("addq %0, $31, $15" \
+                       : : "r" (val) : "memory", "$15")
+
+#define set_sp_fp(sp,fp) \
+  __asm__ __volatile__("addq %0, $31, $sp\n" \
+		       "addq %1, $31, $15\n" \
+		  : : "r" (sp), "r" (fp) : "memory", "$30")
+#endif

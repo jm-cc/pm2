@@ -30,8 +30,6 @@ typedef int marcel_time_t;
 #define MA_BOGUS_SIGINFO_CODE
 #endif
 
-#define JIFFIES_FROM_US(microsecs) \
-  ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 // Signal utilis pour la premption automatique
 #ifdef USE_VIRTUAL_TIMER
 #  define MARCEL_TIMER_SIGNAL       SIGVTALRM
@@ -50,19 +48,23 @@ typedef int marcel_time_t;
 #  endif
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif
-#  define MARCEL_RESCHED_SIGNAL     SIGUSR2
+#define MARCEL_RESCHED_SIGNAL     SIGUSR2
 
 #else
 
-#define JIFFIES_FROM_US(microsecs) \
-  ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/10000)
-
 #endif
+
+#define JIFFIES_FROM_US(microsecs) \
+  ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 
 #section functions
 void marcel_settimeslice(unsigned long microsecs);
 unsigned long marcel_gettimeslice();
 unsigned long marcel_clock(void);
+
+#ifndef MA__TIMER
+#define marcel_gettimeslice() 10000L
+#endif
 
 #section marcel_functions
 void marcel_sig_exit(void);
@@ -70,6 +72,11 @@ void marcel_sig_pause(void);
 void marcel_sig_nanosleep(void);
 void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
+#ifndef MA__TIMER
+#define marcel_sig_pause() (void)0
+#define marcel_sig_enable_interrupts() (void)0
+#define marcel_sig_disable_interrupts() (void)0
+#endif
 
 #section marcel_functions
 static __tbx_inline__ void disable_preemption(void);

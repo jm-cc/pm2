@@ -344,7 +344,9 @@ extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_registe
 extern const __ma_init_info_t ma_init_info_marcel_linux_sched_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_timers_notifier_register;
+#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
+#endif
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_UP_PREPARE;
 #if defined(LINUX_SYS) || defined(GNU_SYS)
@@ -364,7 +366,9 @@ extern const __ma_init_info_t ma_init_info_marcel_upcall_call_UP_PREPARE;
 #endif // MA__ACTIVATION
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_postexit_call_ONLINE;
+#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_call_ONLINE;
+#endif
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_UP_PREPARE;
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 
@@ -448,7 +452,9 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
                   call_init_function(&ma_init_info_marcel_postexit_notifier_register);
                   call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
+#ifdef MA__TIMER
                   call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
+#endif
                   call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
                   call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);
                   call_init_function(&ma_init_info_marcel_timers_notifier_register);
@@ -460,7 +466,9 @@ void marcel_init_section(int sec) {
 #endif // MA__ACTIVATION
                     call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
                     call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
+#ifdef MA__TIMER
                     call_init_function(&ma_init_info_marcel_sig_timer_call_ONLINE);
+#endif
                     call_init_function(&ma_init_info_marcel_ksoftirqd_call_UP_PREPARE);
                     call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
                 }

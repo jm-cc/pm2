@@ -333,10 +333,12 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	need_resched = ma_test_and_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
 	nrpolling |= ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
 
+#ifdef MA__TIMER
 	if (!need_resched && !nrpolling && lwp != LWP_SELF) {
 		PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
 		marcel_kthread_kill(lwp->pid, MARCEL_RESCHED_SIGNAL);
 	}
+#endif
 	ma_preempt_enable();
 #else
 	ma_set_tsk_need_resched(p);

@@ -13,6 +13,7 @@ file=/tmp/pm2debug.$num
 prog=$1
 shift
 
+echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`
 args=""
 while [ $# -gt 0 ] ; do
     args="$args '$1'"

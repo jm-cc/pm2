@@ -26,7 +26,8 @@ typedef int marcel_time_t;
 #ifdef MA__TIMER
 #include <signal.h>
 
-#ifdef OSF_SYS
+#if defined(OSF_SYS) || defined(AIX_SYS)
+/* don't give a negative si_code for user-generated signals */
 #define MA_BOGUS_SIGINFO_CODE
 #endif
 

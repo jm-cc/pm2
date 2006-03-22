@@ -89,5 +89,3 @@ static __tbx_inline__ long get_gs(void)
                        : : "r" (__sp), "r" (__bp) : "memory", "esp" ); \
   } while (0)
 
-
-#section marcel_variables

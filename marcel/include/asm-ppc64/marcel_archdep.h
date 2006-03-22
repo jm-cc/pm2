@@ -19,22 +19,45 @@
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 
+#  define TOP_STACK_FREE_AREA     256
+
 /* Linux PPC */
 #if defined(LINUX_SYS)
-#  define TOP_STACK_FREE_AREA     256
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_GPR1])
 #endif
 
 /* Darwin PPC (Mac OS X) */
 #if defined(DARWIN_SYS)
 #  define STACK_INFO
-#  define TOP_STACK_FREE_AREA     256
 #  define SP_FIELD(buf)           ((buf)[0])
+#endif
+
+#if defined(AIX_SYS)
+#  define SP_FIELD(buf)           ((buf)[3])
 #endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-extern void set_sp(unsigned long);
-extern unsigned long get_sp(void);
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#define get_sp() \
+({ \
+  register unsigned long sp asm("r1"); \
+  sp; \
+})
 
-#section marcel_variables
+#define get_fp() \
+({ \
+  register unsigned long sp asm("r31"); \
+  sp; \
+})
+#else
+#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif
+
+#define set_sp(val) \
+  __asm__ __volatile__("mr 1, %0\n" \
+		  : : "r" (val) : "memory", "r1")
+
+#define set_fp(val) \
+  __asm__ __volatile__("mr 31, %0\n" \
+		  : : "r" (val) : "memory", "r31")

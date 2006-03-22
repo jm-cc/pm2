@@ -54,5 +54,3 @@ extern void call_ST_FLUSH_WINDOWS(void);
 #  define set_sp(val) \
     __asm__ __volatile__("mov %0, %%sp\n\t" \
                          : : "r" (val) : "memory", "sp")
-
-#section marcel_variables

@@ -93,5 +93,3 @@ __ma_u64 __getReg(const int whichReg);
 #else /* neither gcc nor icc */
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
-
-#section marcel_variables

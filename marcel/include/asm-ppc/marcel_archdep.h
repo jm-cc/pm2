@@ -38,9 +38,26 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-extern void set_sp(unsigned long);
-extern unsigned long get_sp(void);
-extern void set_fp(unsigned long);
-extern unsigned long get_fp(void);
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#define get_sp() \
+({ \
+  register unsigned long sp asm("r1"); \
+  sp; \
+})
 
-#section marcel_variables
+#define get_fp() \
+({ \
+  register unsigned long sp asm("r31"); \
+  sp; \
+})
+#else
+#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif
+
+#define set_sp(val) \
+  __asm__ __volatile__("mr 1, %0\n" \
+		  : : "r" (val) : "memory", "r1")
+
+#define set_fp(val) \
+  __asm__ __volatile__("mr 31, %0\n" \
+		  : : "r" (val) : "memory", "r31")

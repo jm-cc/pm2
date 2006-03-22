@@ -61,6 +61,3 @@
 			 "movq %1, %%rbp;" \
                        : : "r" (__sp), "r" (__bp) : "memory", "rsp" ); \
   } while (0)
-
-
-#section marcel_variables

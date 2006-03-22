@@ -40,5 +40,3 @@
 #endif
 
 #define set_sp(val)
-
-#section marcel_variables

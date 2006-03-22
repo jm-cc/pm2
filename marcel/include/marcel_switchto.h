@@ -15,6 +15,13 @@
 
 #section common
 #include "tbx_compiler.h"
+
+#section marcel_types
+enum {
+	FIRST_RETURN,
+	NORMAL_RETURN
+};
+
 #section marcel_macros
 #depend "asm/marcel_arch_switchto.h[]"
 
@@ -46,30 +53,8 @@
 
 
 #section marcel_functions
-static __tbx_setjmp_inline__
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
-
-#section marcel_inline
-#depend "asm-generic/marcel_ctx_types.h[marcel_types]"
-static __tbx_setjmp_inline__
-marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
-{
-	MA_BUG_ON(!ma_in_atomic());
-	if (cur != next) {
-		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			MA_THR_RESTARTED(cur, "Switch_to");
-			MA_BUG_ON(!ma_in_atomic());
-			return __ma_get_lwp_var(previous_thread);
-		}
-		debug_printf(&MA_DEBUG_VAR_NAME(default),
-			     "switchto(%p, %p) on LWP(%d)\n",
-		       cur, next, LWP_NUMBER(GET_LWP(cur)));
-		__ma_get_lwp_var(previous_thread)=cur;
-		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
-	}
-	return cur;
-}
 

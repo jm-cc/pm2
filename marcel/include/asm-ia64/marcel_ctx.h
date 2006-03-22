@@ -14,9 +14,6 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "asm-generic/marcel_ctx_types.h[types]"
-
 #section structures
 #include <ucontext.h>
 typedef struct __marcel_ctx_tag { /* C++ doesn't like tagless structs.  */

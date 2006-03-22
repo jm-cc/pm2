@@ -16,9 +16,6 @@
 
 /* Note: ce fichier est aussi utilisé pour x86_64 */
 
-#section common
-#depend "asm-generic/marcel_ctx_types.h[types]"
-
 #section structures
 #include "sys/marcel_archsetjmp.h"
 typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */

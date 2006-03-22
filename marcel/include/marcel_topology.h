@@ -307,7 +307,7 @@ extern void marcel_free_node(void *ptr, size_t size, int node);
 
 #section marcel_functions
 extern unsigned ma_topo_level_malloc(size_t size);
-extern void *ma_topo_level_data(ma_topo_level *level, unsigned i);
+extern void *ma_topo_level_data(struct marcel_topo_level *level, unsigned i);
 #define ma_topo_level_data(l, i) (&(l)->data[i])
 
 // Pour l'instant...

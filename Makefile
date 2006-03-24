@@ -53,7 +53,7 @@ endif
 # Regle par defaut : construction des librairies
 # ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-link: ARCHITECTURES dot_h fut libs
+link: ARCHITECTURES dot_h_all dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -134,6 +134,11 @@ fut-app: dot_h fut-print
 #-------------------------------------------------------------------------
 $(eval $(call RECURSIVE_template, dot_h, $(DOT_H_GEN_LIBS), flavors, \
 	">>> Generating specific header files"))
+
+# dot_h_all: descente recursive dans chaque module pour génération des `headers'
+#-------------------------------------------------------------------------
+$(eval $(call RECURSIVE_template, dot_h_all, $(DOT_H_GEN_LIBS), flavors, \
+	">>> Generating all header files"))
 
 # Nettoyage
 #---------------------------------------------------------------------

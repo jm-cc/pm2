@@ -71,8 +71,13 @@ endef
 #ifeq ($(SCHED_NAME),)
 #$(warning SCHED_NAME not defined)
 #endif
+ifeq ($(findstring dot_h_all, $(MAKECMDGOALS)),dot_h_all)
+$(foreach ASM,$(subst include/,,$(wildcard include/asm-*)),\
+	$(eval $(call ADD_SUBDIR,$(ASM),ARCH-$(ASM))))
+else
 $(eval $(call ADD_SUBDIR,asm-generic,ARCH_GENERIC))
 $(if $(MOD_ARCH),$(eval $(call ADD_SUBDIR,asm-$(MOD_ARCH),ARCH)))
+endif
 $(if $(SCHED_NAME),$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED)))
 
 .PHONY: symlinks

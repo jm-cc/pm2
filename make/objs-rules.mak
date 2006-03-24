@@ -42,7 +42,7 @@ fut: $(MOD_FUT)
 
 # Regles de génération des .h
 #---------------------------------------------------------------------
-.PHONY: dot_h
+.PHONY: dot_h dot_h_all
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -216,6 +216,7 @@ $(MOD_FUT): $(MOD_GEN_CPP)/%.fut: $(MOD_GEN_CPP)/%.i
 #---------------------------------------------------------------------
 #ifneq ($(strip $(MOD_HSPLITS_PARTS)),)
 dot_h: $(MOD_HSPLITS_MAKEFILES)
+dot_h_all: dot_h
 #endif
 
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))

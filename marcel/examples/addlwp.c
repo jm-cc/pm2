@@ -43,7 +43,7 @@ any_t blocker(any_t arg)
   printf("  released kthread_mutex\n");
   return NULL;
 }
-#enidf
+#endif
 
 int marcel_main(int argc, char **argv)
 {

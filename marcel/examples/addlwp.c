@@ -20,6 +20,9 @@
 #include <time.h>
 #include <errno.h>
 
+#ifndef MA__LWPS
+#warning add needs SMP or NUMA option
+#else
 static marcel_kthread_mutex_t kthread_mutex = MARCEL_KTHREAD_MUTEX_INITIALIZER;
 
 any_t blocker(any_t arg)
@@ -40,9 +43,11 @@ any_t blocker(any_t arg)
   printf("  released kthread_mutex\n");
   return NULL;
 }
+#enidf
 
 int marcel_main(int argc, char **argv)
 {
+#ifdef MA__LWPS
   marcel_attr_t attr;
   unsigned lwp;
   marcel_t t;
@@ -81,6 +86,7 @@ int marcel_main(int argc, char **argv)
 
   fflush(stdout);
   marcel_end();
+#endif
   return 0;
 }
 

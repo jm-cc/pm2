@@ -306,9 +306,9 @@ extern void marcel_free_node(void *ptr, size_t size, int node);
 #define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, node, __FILE__, __LINE__)
 
 #section marcel_functions
-extern unsigned ma_topo_level_malloc(size_t size);
-extern void *ma_topo_level_data(struct marcel_topo_level *level, unsigned i);
-#define ma_topo_level_data(l, i) (&(l)->data[i])
+extern unsigned ma_per_level_malloc(size_t size);
+extern void *ma_per_level_data(struct marcel_topo_level *level, unsigned i);
+#define ma_per_level_data(l, i) (&(l)->data[i])
 
 // Pour l'instant...
-#define ma_topo_level_malloc(s) 0
+#define ma_per_level_malloc(s) 0

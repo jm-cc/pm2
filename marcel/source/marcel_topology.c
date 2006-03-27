@@ -509,7 +509,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 
 #ifdef MA__NUMA
 #ifdef LINUX_SYS
-void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
+void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
 	if (node < 0 || numa_not_available)
 		return marcel_malloc(size, file, line);
@@ -520,7 +520,7 @@ void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 		return marcel_malloc(size, file, line);
 	return p;
 }
-void ma_free_node(void *ptr, unsigned size, int node, char * __restrict file, unsigned line) {
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
 	if (node < 0 || numa_not_available)
 		return marcel_free(ptr, file, line);
 	marcel_extlib_protect();

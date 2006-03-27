@@ -183,15 +183,24 @@ mad_cmd_line_init_from_file(p_mad_settings_t settings,
 			    tbx_flag_t       *port_ok,
 			    tbx_flag_t       *dyn_set) {
   char *host_name = NULL;
+  char *user_name = NULL;
   FILE *f = NULL;
   char *filename = NULL;
 
   host_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   gethostname(host_name, MAXHOSTNAMELEN);
-  filename = TBX_MALLOC(MAXHOSTNAMELEN+10);
+  user_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
+  getlogin_r(user_name, MAXHOSTNAMELEN);
+
+  filename = TBX_MALLOC(MAXHOSTNAMELEN+100);
   filename = strcpy(filename, "/tmp/");
   filename = strcat(filename, host_name);
+  filename = strcat(filename, "_");
+  filename = strcat(filename, user_name);
+
   f = fopen(filename, "r");
+  TBX_FREE(host_name);
+  TBX_FREE(user_name);
   if (f == NULL) {
     FAILUREF("Cannot read file <%s> with configuration parameters", filename);
   }

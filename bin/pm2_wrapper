@@ -14,7 +14,7 @@ else
 	ulimit -c unlimited
     fi
 #    echo $prog ${@:+"$@"}
-    echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`
+    echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
     $prog ${@:+"$@"}
 fi
 

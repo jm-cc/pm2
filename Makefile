@@ -53,7 +53,7 @@ endif
 # Regle par defaut : construction des librairies
 # ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-link: ARCHITECTURES dot_h_all dot_h fut libs
+link: ARCHITECTURES dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------

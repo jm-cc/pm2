@@ -133,6 +133,10 @@ struct fxt_code_name fut_code_table [] =
 #define max(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a>_b?_a:_b; })
 #endif
 
+#ifdef __ia64
+#define _SYS_UCONTEXT_H 1
+#define _BITS_SIGCONTEXT_H 1
+#endif
 #include <signal.h>
 
 /* several useful macros */
@@ -237,7 +241,7 @@ void newPtr(uint64_t ptr, void *data) {
 	ENTRY *item = malloc(sizeof(*item)), *found;
 	item->key = buf;
 	item->data = data;
-	snprintf(buf,32,"%llx",ptr);
+	snprintf(buf,32,"%"PRIx64,ptr);
 	found=hsearch(*item, ENTER);
 	if (!found) {
 		perror("hsearch");
@@ -1845,7 +1849,7 @@ int main(int argc, char *argv[]) {
 				case FUT_SET_THREAD_NAME_CODE: {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = getThread(th);
-					unsigned char name[16];
+					char name[16];
 					uint32_t *ptr = (uint32_t *) name;
 					ptr[0] = ev.ev64.param[1];
 					ptr[1] = ev.ev64.param[2];
@@ -1942,9 +1946,9 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				default:
-					 printf("%16llu %llx %p %010lx %1u" ,ev.ev64.time ,ev.ev64.code, ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
+					printf("%16"PRIu64" %"PRIx64" %p %010"PRIx64" %1u",ev.ev64.time ,ev.ev64.code, (void*)ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
 					for (i=0;i<ev.ev64.nb_params;i++)
-						printf(" %010lx", ev.ev64.param[i]);
+						printf(" %010"PRIx64, ev.ev64.param[i]);
 					printf("\n");
 					break;
 			}

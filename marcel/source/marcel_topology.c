@@ -114,51 +114,64 @@ int ma_lwp_node[MA_NR_LWPS];
 
 #ifdef LINUX_SYS
 #define PROCESSOR	"processor\t: "
-#define PHYSID		"physical id\t: "
+#define PROCESSOR2	"processor  : "
+#define PHYSID		"physical id: "
+#define COREID		"core id\t: "
+#define COREID2		"core id    : "
+//#define THREADID	"thread id  : "
 
 static void __marcel_init look_cpuinfo(void) {
 	FILE *fd;
 	char string[strlen(PHYSID)+1+9+1+1];
 	char *endptr;
-	long processor=-1, physid, maxphysid=-1;
+	long processor=-1, physid, maxphysid=-1, coreid, maxcoreid=-1;
 	int i,j,k;
-	unsigned proc_physid[MARCEL_NBMAXCPUS];
+	unsigned proc_physid[MARCEL_NBMAXCPUS],proc_coreid[MARCEL_NBMAXCPUS];
 
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
 		fprintf(stderr,"could not open /proc/cpuinfo\n");
 		return;
 	}
 
+	memset(proc_physid,0,sizeof(proc_physid));
+	memset(proc_coreid,0,sizeof(proc_coreid));
+
 	while (fgets(string,sizeof(string),fd)!=NULL) {
-		if (!strncmp(PROCESSOR,string,strlen(PROCESSOR))) {
-			processor = strtol(string+strlen(PROCESSOR),&endptr,0);
-			if (endptr==string+strlen(PROCESSOR)) {
-				fprintf(stderr,"no number in processor field of /proc/cpuinfo\n");
-				break;
-			} else if (processor<0) {
-				fprintf(stderr,"too small processor number in /proc/cpuinfo\n");
-				break;
-			} else if (processor>=MARCEL_NBMAXCPUS) {
-				fprintf(stderr,"too big processor number in /proc/cpuinfo\n");
-				break;
-			}
+#define getprocnb_begin(field, var) \
+		if ( !strncmp(field,string,strlen(field))) { \
+			var = strtol(string+strlen(field),&endptr,0); \
+			if (endptr==string+strlen(field)) { \
+				fprintf(stderr,"no number in "field" field of /proc/cpuinfo\n"); \
+				break; \
+			} else if (var==LONG_MIN) { \
+				fprintf(stderr,"too small "field" number in /proc/cpuinfo\n"); \
+				break; \
+			} else if (processor==LONG_MAX) { \
+				fprintf(stderr,"too big "field" number in /proc/cpuinfo\n"); \
+				break; \
+			} \
+			mdebug(field " %ld\n", var)
+#define getprocnb_end() \
 		}
-		if (!strncmp(PHYSID,string,strlen(PHYSID))) {
-			physid = strtol(string+strlen(PHYSID),&endptr,0);
-			if (endptr==string+strlen(PHYSID)) {
-				fprintf(stderr,"no number in physical id field of /proc/cpuinfo\n");
-				break;
-			} else if (physid==LONG_MIN) {
-				fprintf(stderr,"too small physical id %ld in /proc/cpuinfo\n",physid);
-				break;
-			} else if (physid==LONG_MAX) {
-				fprintf(stderr,"too big physical id %ld in /proc/cpuinfo\n",physid);
-				break;
-			}
+		getprocnb_begin(PROCESSOR,processor);
+		getprocnb_end() else
+		getprocnb_begin(PROCESSOR2,processor);
+		getprocnb_end() else
+		getprocnb_begin(PHYSID,physid);
 			proc_physid[processor]=physid;
 			if (physid>maxphysid)
 				maxphysid=physid;
-		}
+		getprocnb_end() else
+		getprocnb_begin(COREID,coreid);
+			proc_coreid[processor]=coreid;
+			if (coreid>maxcoreid)
+				maxcoreid=coreid;
+		getprocnb_end() else
+		getprocnb_begin(COREID2,coreid);
+			proc_coreid[processor]=coreid;
+			if (coreid>maxcoreid)
+				maxcoreid=coreid;
+		getprocnb_end()
 		if (string[strlen(string)-1]!='\n') {
 			fscanf(fd,"%*[^\n]");
 			getc(fd);
@@ -166,42 +179,100 @@ static void __marcel_init look_cpuinfo(void) {
 	}
 	fclose(fd);
 
-	if (maxphysid>=0) {
-		/* normalize core numbers */
-		unsigned corenum[maxphysid+1];
-		ma_cpu_set_t corecpus[maxphysid+1];
-		struct marcel_topo_level *core_level;
-		unsigned numcores=0;
-		int really_useful=0;
-		ma_cpu_set_t cpuset;
-		unsigned cpu;
+	mdebug("%ld processors\n", processor+1);
 
-		memset(corenum,0,sizeof(corenum));
-		memset(corecpus,0,sizeof(corecpus));
+	unsigned cpu, cpu2;
 
-		MA_CPU_ZERO(&cpuset);
+	int dienum[maxphysid+1];
+	ma_cpu_set_t diecpus[maxphysid+1];
+	struct marcel_topo_level *die_level;
+	unsigned numdies=0;
+	int really_dies=0;
 
-		for (cpu=0; cpu <= processor; cpu++) {
-			if (!corenum[proc_physid[cpu]]) {
-				corenum[proc_physid[cpu]] = 1;
-				numcores++;
-			} else really_useful=1;
-			MA_CPU_SET(cpu,&corecpus[proc_physid[cpu]]);
+	memset(dienum,0,sizeof(dienum));
+	memset(diecpus,0,sizeof(diecpus));
+
+	if (maxphysid == -1)
+		proc_physid[0] = maxphysid = 0;
+
+	/* normalize die numbers */
+	for (cpu=0; cpu <= processor; cpu++) {
+		if (!dienum[proc_physid[cpu]]) {
+			dienum[proc_physid[cpu]] = -(++numdies);
+		} else
+			really_dies=1;
+		MA_CPU_SET(cpu,&diecpus[proc_physid[cpu]]);
+		mdebug("%d on die %d\n", cpu, -dienum[proc_physid[cpu]]-1);
+	}
+
+	mdebug("%d dies\n", numdies);
+
+	int diedone[numdies];
+
+	if (really_dies) {
+		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+1)*sizeof(*die_level))));
+
+		for (cpu=0, j=0; cpu <= processor; cpu++) {
+			i = proc_physid[cpu];
+			if (dienum[i] < 0) {
+				dienum[i] = -dienum[i]-1;
+				die_level[j].type = MARCEL_LEVEL_DIE;
+				die_level[j].number = j;
+				marcel_vpmask_empty(&die_level[j].vpset);
+				for (k=0; k <= get_nb_lwps(); k++) {
+					cpu2 = ma_cpu_of_lwp_num(k);
+					if (MA_CPU_ISSET(cpu2,&diecpus[i]))
+						marcel_vpmask_add_vp(&die_level[j].vpset,k);
+				}
+				die_level[j].sched = NULL;
+				mdebug("die %d has vpset %lx\n",j,die_level[j].vpset);
+				j++;
+			}
 		}
+	}
 
-		if (!really_useful)
-			return;
+	marcel_vpmask_empty(&die_level[j].vpset);
 
+	marcel_topo_levels[discovering_level++]=die_level;
+
+	int corenum[numdies*(maxcoreid+1)];
+	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
+	struct marcel_topo_level *core_level;
+	unsigned numcores=0;
+	int really_cores=0;
+
+	memset(corenum,0,sizeof(corenum));
+	memset(corecpus,0,sizeof(corecpus));
+
+	if (maxcoreid == -1)
+		proc_coreid[0] = maxcoreid = 0;
+
+	/* normalize core numbers */
+	for (cpu=0; cpu <= processor; cpu++) {
+		physid = proc_physid[cpu];
+		i = dienum[physid]+proc_coreid[cpu]*numdies;
+		if (!corenum[i])
+			corenum[i] = -(++numcores);
+		else
+			really_cores=1;
+		MA_CPU_SET(cpu,&corecpus[i]);
+	}
+	mdebug("%d cores\n", numcores);
+
+	if (really_cores) {
 		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+1)*sizeof(*core_level))));
 
-		for (i=0, j=0; i<= maxphysid; i++) {
-			if (corenum[i]) {
+		for (cpu=0, j=0; cpu <= processor; cpu++) {
+			physid = proc_physid[cpu];
+			i = dienum[physid]+proc_coreid[cpu]*numdies;
+			if (corenum[i] < 0) {
+				corenum[i] = -corenum[i]-1;
 				core_level[j].type = MARCEL_LEVEL_CORE;
 				core_level[j].number = j;
 				marcel_vpmask_empty(&core_level[j].vpset);
 				for (k=0; k <= get_nb_lwps(); k++) {
-					cpu = ma_cpu_of_lwp_num(k);
-					if (MA_CPU_ISSET(cpu,&corecpus[i]))
+					cpu2 = ma_cpu_of_lwp_num(k);
+					if (MA_CPU_ISSET(cpu2,&corecpus[i]))
 						marcel_vpmask_add_vp(&core_level[j].vpset,k);
 				}
 				core_level[j].sched = NULL;
@@ -212,14 +283,14 @@ static void __marcel_init look_cpuinfo(void) {
 				j++;
 			}
 		}
+	}
 
-		marcel_vpmask_empty(&core_level[j].vpset);
+	marcel_vpmask_empty(&core_level[j].vpset);
 
 #ifdef MARCEL_SMT_IDLE
-		marcel_topo_core_level =
+	marcel_topo_core_level =
 #endif
-		marcel_topo_levels[discovering_level++]=core_level;
-	}
+	marcel_topo_levels[discovering_level++]=core_level;
 }
 #endif
 

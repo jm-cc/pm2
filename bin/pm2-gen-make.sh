@@ -72,8 +72,8 @@ gen_main() {
     echo "LIBS := $LIBRARIES"
     echo "PROF_LIBS := $_PM2CONFIG_PROF_MODULES"
     echo "DOT_H_GEN_LIBS := $_PM2CONFIG_HEADGEN_MODULES"
-    case " $_PM2CONFIG_CFLAGS " in
-	*\ -DAPPLI_PROFILE\ *)
+    case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
+	*\ -DDO_PROFILE\ *)
 	    echo "APP_PROFILE := yes"
 	    ;;
 	*)
@@ -237,8 +237,8 @@ CC := $_PM2CONFIG_CC
 
 EOF
 
-    case " $_PM2CONFIG_CFLAGS " in
-	*\ -DAPPLI_PROFILE\ *)
+    case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
+	*\ -DDO_PROFILE\ *)
             echo "APP_PROFILE := yes" ;;
 	*)
 	    echo "APP_PROFILE := no" ;;

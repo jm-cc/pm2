@@ -110,8 +110,8 @@ value=0
 other=15728640 # 0xf00000
 
 THE_MODULES="$_PM2CONFIG_PROF_MODULES"
-case " $_PM2CONFIG_CFLAGS " in
-    *\ -DAPPLI_PROFILE\ *)
+case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
+    *\ -DDO_PROFILE\ *)
 	THE_MODULES="${THE_MODULES} examples"
 	;;
 esac

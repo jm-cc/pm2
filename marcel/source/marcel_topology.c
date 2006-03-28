@@ -192,9 +192,10 @@ static void __marcel_init look_cpuinfo(void) {
 	memset(dienum,0,sizeof(dienum));
 	memset(diecpus,0,sizeof(diecpus));
 
-	if (maxphysid == -1)
+	if (maxphysid == -1) {
+		numdies = 1;
 		proc_physid[0] = maxphysid = 0;
-
+	} else
 	/* normalize die numbers */
 	for (cpu=0; cpu <= processor; cpu++) {
 		if (!dienum[proc_physid[cpu]]) {
@@ -205,7 +206,8 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("%d on die %d\n", cpu, -dienum[proc_physid[cpu]]-1);
 	}
 
-	mdebug("%d dies\n", numdies);
+	if (numdies>1)
+		mdebug("%d dies\n", numdies);
 
 	int diedone[numdies];
 
@@ -229,11 +231,11 @@ static void __marcel_init look_cpuinfo(void) {
 				j++;
 			}
 		}
+
+		marcel_vpmask_empty(&die_level[j].vpset);
+
+		marcel_topo_levels[discovering_level++]=die_level;
 	}
-
-	marcel_vpmask_empty(&die_level[j].vpset);
-
-	marcel_topo_levels[discovering_level++]=die_level;
 
 	int corenum[numdies*(maxcoreid+1)];
 	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
@@ -244,9 +246,10 @@ static void __marcel_init look_cpuinfo(void) {
 	memset(corenum,0,sizeof(corenum));
 	memset(corecpus,0,sizeof(corecpus));
 
-	if (maxcoreid == -1)
+	if (maxcoreid == -1) {
+		numcores = 1;
 		proc_coreid[0] = maxcoreid = 0;
-
+	} else
 	/* normalize core numbers */
 	for (cpu=0; cpu <= processor; cpu++) {
 		physid = proc_physid[cpu];
@@ -257,7 +260,9 @@ static void __marcel_init look_cpuinfo(void) {
 			really_cores=1;
 		MA_CPU_SET(cpu,&corecpus[i]);
 	}
-	mdebug("%d cores\n", numcores);
+
+	if (numcores>1)
+		mdebug("%d cores\n", numcores);
 
 	if (really_cores) {
 		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+1)*sizeof(*core_level))));
@@ -283,14 +288,14 @@ static void __marcel_init look_cpuinfo(void) {
 				j++;
 			}
 		}
-	}
 
-	marcel_vpmask_empty(&core_level[j].vpset);
+		marcel_vpmask_empty(&core_level[j].vpset);
 
 #ifdef MARCEL_SMT_IDLE
-	marcel_topo_core_level =
+		marcel_topo_core_level =
 #endif
-	marcel_topo_levels[discovering_level++]=core_level;
+		marcel_topo_levels[discovering_level++]=core_level;
+	}
 }
 #endif
 

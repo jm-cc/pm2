@@ -19,9 +19,11 @@ APPENDIX		= org.runtime.manuals.html.AppendixElement
 
 IGNORE			= org.runtime.manuals.html.EmptyElement
 CLEARPAGE		= org.runtime.manuals.html.EmptyElement
+TITLE			= org.runtime.manuals.html.EmptyElement
 
-#TEXT			= org.runtime.manuals.html.TextElement
-#P			= org.runtime.manuals.html.PElement
+TEXT			= org.runtime.manuals.html.TextElement
+P			= org.runtime.manuals.html.PElement
+BR			= org.runtime.manuals.html.PElement
 REF			= org.runtime.manuals.html.RefElement
 CODE			= org.runtime.manuals.html.ProgramElement
 IMAGE			= org.runtime.manuals.html.ImageElement

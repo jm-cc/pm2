@@ -30,9 +30,9 @@ and <TT>pm2-config --libs</TT> generates the list of libraries to be searched on
 </UL>
 
 Thus, the standard command line to compile a PM2 program <TT>hello.c</TT> looks like:
+</P>
 
 <PROGRAM FILE="./Progs/compileHello.c"/>
-</P>
 
 <P>
 Observe that the source file <TT>hello.c</TT> should be mentioned
@@ -162,9 +162,9 @@ termination decision must be made at the application level.
 
 <P>
 Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile it:
+</P>
 
 <PROGRAM FILE="./Progs/makeHelloMad.txt"/>
-</P>
 
 <PROGRAM FILE="./Progs/mad-hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
 
@@ -174,15 +174,15 @@ LABEL="prog:Makefile1"/> creates the executable file in the
 appropriate PM2 build directory, e.g
 <TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
 program will be located using the utility <TT>pm2which</TT>.
+</P>
 
 <PROGRAM FILE="./Progs/pm2which.txt"/>
-</P>
 
 <P>
 You can now execute the application:
+</P>
 
 <PROGRAM FILE="./Progs/runHelloMad.txt"/>
-</P>
 
 <SUBSUBSECTION TITLE="Informations about the application">
 
@@ -195,9 +195,8 @@ rank in the current channel. Here a set of instructions showing how to
 get these informations:
 </P>
 
-<P>
 <PROGRAM FILE="./Progs/mad-init.c"/>
-</P>
+
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Packing and unpacking messages" LABEL="sec:mad-pack">
@@ -306,9 +305,7 @@ specifications should be identical. Again, unspecified behavior would
 result from mismatching flags.
 </P>
 
-<P>
 <PROGRAM FILE="Progs/mad-params.c" TITLE="Sending and receiving data with Madeleine" LABEL="prog:mad-params"/>
-</P>
 
 <P>
 In Program <REF LABEL="prog:mad-params"/>, everything is sent
@@ -357,9 +354,9 @@ have to be unpacked as explained in the previous section, a call to
 
 <P>
 Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile it and run it:
+</P>
 
 <PROGRAM FILE="./Progs/makeAndRunHelloMarcel.txt"/>
-</P>
 
 <PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
 
@@ -390,11 +387,11 @@ details.
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Thread management">
-<NOTE>TODO...</NOTE>
+<NOTE><EM>TODO...</EM></NOTE>
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Semaphores and mutexes">
-<NOTE>TODO...</NOTE>
+<NOTE><EM>TODO...</EM></NOTE>
 </SUBSUBSECTION>
 
 <CLEARPAGE/>
@@ -406,10 +403,9 @@ details.
 <P>
 Program <REF LABEL="prog:hello"/> shows an example of a minimal <MU/>PM2
 code. Compile it and run it:
+</P>
 
 <PROGRAM FILE="./Progs/makeHello2.txt"/>
-
-</P>
 
 <PROGRAM FILE="./Progs/pm2-hello.c" LABEL="prog:hello">
 <TITLE>Minimal <MU/>PM2 program</TITLE>
@@ -417,12 +413,14 @@ code. Compile it and run it:
 
 <IGNORE>
 <WARNING>
+  <EM>
 Compilation using the Makefile given in Program <REF
 LABEL="prog:Makefile1"/> creates the executable file in the current
 directory. For PM2 to locate the executable when connecting to remote
 machines, you need to make sure your current directory is in the
 <TT>PATH</TT> or to move the executable <TT>hello</TT> into a
 directory available in the <TT>PATH</TT>.
+  </EM>
 </WARNING>
 </IGNORE>
 
@@ -567,9 +565,9 @@ logs are easily accessible using the command <TT>pm2logs</TT> which is in
 charge of retrieving and displaying logs from each slave node of the
 session configuration. Observe that such requests are quite slow, as
 they use <TT>rsh</TT> connections:
+</P>
 
 <PROGRAM FILE="./Progs/pm2logs.txt"/>
-</P>
 
 <PROGRAM FILE="./Progs/hello1.c" TITLE="Output redirection, Example 1" LABEL="prog:hello1"/>
 
@@ -579,9 +577,9 @@ Observe that there is no reason why all the nodes should make the
 <TT>hello</TT> program on Program <REF LABEL="prog:hello1"/>. Only node<SPACE/>1 outputs a
 message.  Also, just to show you that any node can force termination,
 node<SPACE/>2 is this time in charge of it!
+</P>
 
 <PROGRAM FILE="./Progs/makeHello1.txt"/>
-</P>
 
 <SUBSUBSUBSECTION TITLE="Redirecting output to the terminal">
 
@@ -602,9 +600,9 @@ immediately printed on the terminal attached to the master node. The
 <TT>[t1]</TT> label is inserted to identify the outputting node. By
 convention, outputs from node<SPACE/>0 have no label, so as to mimic the
 behavior of the original <TT>printf</TT> function.
+</P>
 
 <PROGRAM FILE="./Progs/pm2load2.txt"/>
-</P>
 
 </SUBSUBSUBSECTION>
 
@@ -633,9 +631,9 @@ some remote one. All of this is fully transparent for PM2 users.
 Nodes are specified through their numbers, as allocated by the
 <TT>pm2conf</TT> command. In this part, we consider our usual 3-node
 configuration:
+</P>
 
 <PROGRAM FILE="./Progs/pm2conf1.txt"/>
-</P>
 
 <PROGRAM FILE="./Progs/rpc-hello.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
 
@@ -681,9 +679,9 @@ call <TT>pm2_halt</TT> to force the termination of the distributed program.
 
 <P>
 It is now time to run the program:
+</P>
 
 <PROGRAM FILE="./Progs/pm2loadrpc.txt"/>
-</P>
 
 <IGNORE>
 <P>
@@ -698,9 +696,9 @@ In this example, the two processing nodes of PM2 have been launched on
 two distinct machines for the sake of clarity.  However, the machine
 running the server node may well be the same as the one running the
 client node:
+</P>
 
 <PROGRAM FILE="./Progs/pm2conf2.txt"/>
-</P>
 </IGNORE>
 
 <P>
@@ -760,18 +758,19 @@ routine.
 
 <P>
 Let us now run the program.
+</P>
 
 <PROGRAM FILE="./Progs/pm2load3.txt"/>
 
-</P>
-
 <WARNING>
+  <EM>
   Program <REF LABEL="prog:rpc-params"/> and similar programs may not work
   properly when used with communication interfaces which require some
   specific alignment for communication buffers: for instance,
   BIP/Myrinet and SISCI/SCI. In this case, variable <TT>s</TT> should
   be aligned to a proper boundary. This can be done for instance as
   follows using the specific attributes of <TT>gcc</TT>:
+  </EM>
 
   <PROGRAM FILE="./Progs/aligned.c"/>
 </WARNING>
@@ -835,9 +834,11 @@ actually not make sense: it may raise a run-time error.
 </P>
 
 <NOTE>
+  <EM>
   Luc to Olivier + Raymond: Is it right? A sentence should probably be
   inserted here to warn that this behavior may be revised in the
   future versions.
+  </EM>
 </NOTE>
 
 <P>
@@ -886,9 +887,9 @@ Let us now run the program.
  Observe that 3 threads have been
 created on node<SPACE/>1, instead of the regular<SPACE/>2.
 </IGNORE>
+</P>
 
 <PROGRAM FILE="./Progs/pm2loadrpc2.txt"/>
-</P>
 
 <P>
 To have a bit more fun on closing this part, let us design a slightly
@@ -898,16 +899,15 @@ request consists in spawning a fresh thread and re-issuing the request
 to node<SPACE/>2 after having signed it with its name.  Similarly for node<SPACE/>2
 with respect to node<SPACE/>0. Finally, node<SPACE/>0 serves the request by printing
 the string to the standard output and triggers termination.
+</P>
 
 <PROGRAM FILE="./Progs/rpc-threads1.c" TITLE="Spawning threads to serve requests, an extended example" LABEL="prog:rpc-threads1"/>
 
-</P>
-
 <P>
 Executing this program should produce a output as follow
+</P>
 
 <PROGRAM FILE="./Progs/pm2loadrpc3.txt"/>
-</P>
 
 <P>
 Now is a good point to clarify the notion of <EM>node</EM> used
@@ -919,9 +919,9 @@ together. However nothing in PM2 requires such practice. PM2 virtual
 nodes may be located at any physical nodes. The association between
 PM2 virtual and physical node is done using the <TT>pm2conf</TT>
 command. For instance, saying
+</P>
 
 <PROGRAM FILE="./Progs/pm2conf4.txt"/>
-</P>
 
 <P>
 is fully correct. Two PM2 processes will be launched on each
@@ -931,16 +931,16 @@ makes no difference.
 
 <P>
 You may even start all the processes on the same machine!
+</P>
 
 <PROGRAM FILE="./Progs/pm2conf5.txt"/>
-</P>
 
 <P>
 Also, the running machine does not have to be the one you are logged
 on. Any machine you have access to can do it as well!
+</P>
 
 <PROGRAM FILE="./Progs/pm2conf6.txt"/>
-</P>
 
 </SUBSUBSECTION>
 
@@ -1065,8 +1065,8 @@ configuration shown in Figure <REF LABEL="fig:config"/> with the node
 <P>
 the first file, the network configuration file, named
 <TT>localnet.cfg</TT>, describes the different available networks.
-<PROGRAM FILE="./Progs/localnet.cfg"/>
 </P>
+<PROGRAM FILE="./Progs/localnet.cfg"/>
 <P>
 A network is defined with its name (tag <TT>name</TT>), a list of
 machines it includes (tag <TT>hosts</TT>), and the identifier of the
@@ -1080,8 +1080,8 @@ the predefined identifiers recognized by Madeleine).
 the second file, the application configuration file, named
 <TT>appli.cfg</TT>, describes the application and the channel mapping
 over the different nodes.
-<PROGRAM FILE="./Progs/appli.cfg"/>
 </P>
+<PROGRAM FILE="./Progs/appli.cfg"/>
 <P>
 A application is defined with a flavor (tag <TT>flavor</TT>), a
 network configuration file (tag <TT>include</TT>), a list of physical
@@ -1114,10 +1114,9 @@ network</EM> or a <EM>network abstraction</EM>.
 <P>
 Once the configuration files describing your machines are written, a
 simple call of <TT>leonie</TT> to start an application would be:
+</P>
 
 <PROGRAM FILE="./Progs/leonie1.txt"/>
-
-</P>
 
 <P>
 <TT>leonie</TT> accepts different parameters. The call <TT>leonie

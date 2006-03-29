@@ -3,12 +3,12 @@
 
 <TEXT>
 
-<P>
 <NOTE>
+  <EM>
   A mettre a jour
   Nathalie: Parler de Madeleine et Marcel
+  </EM>
 </NOTE>
-</P>
 
 <P>
 Congratulations! You are now knowledgeable in PM2, ready to write your
@@ -77,8 +77,10 @@ occur.
 </P>
 
 <NOTE>
+  <EM>
   LB to RN: Please, proofread and expand the last paragraph. I am not
   sure about the (probably many) pitfalls here...
+  </EM>
 </NOTE>
 
 </SUBSECTION>
@@ -145,9 +147,9 @@ As usual, there is no restriction whatsoever on the association
 between the physical machine and the logical nodes of PM2. For
 instance, you could run the program on the same physical node.
 It works just as well!
+</P>
 
 <PROGRAM FILE="./Progs/migration2.txt"/>
-</P>
 
 </SUBSUBSECTION>
 
@@ -190,17 +192,19 @@ resources. This uses a special routine called <TT>pm2_completion_copy</TT>.
 </P>
 
 <WARNING>
+  <EM>
   You are strongly advised not to copy completion directly as in
   <TT>new<UNDERSCORE/>c = old<UNDERSCORE/>c</TT>, though it works in
   the current version of PM2.  Instead, you should say 
   <TT>pm2<UNDERSCORE/>completion<UNDERSCORE/>copy(<AMPERSAND/>new<UNDERSCORE/>c, <AMPERSAND/>old<UNDERSCORE/>c)</TT>
   to guarantee that a
-  <EM>physical</EM> copy of the relevant information is properly
+  <B>physical</B> copy of the relevant information is properly
   stored into the completion.  Unfortunately for oblivious users,
   PM2 does very little verification about the proper use of such
   auxiliary routines. It also provides few facilities to debug them.
   Just believe me: You'd better write a correct code at the first
   attempt!
+  </EM>
 </WARNING>
 
 <PROGRAM FILE="./Progs/migration2.c" TITLE="Passing completions as parameters" LABEL="prog:migration2"/>
@@ -213,8 +217,9 @@ the completion is passed as an argument to the thread creation
 function. The spawned thread allocates storage locally for a
 completion, and copies the argument completion into its personal
 resources using the <TT>pm2_completion_copy</TT> routine:
-  <PROGRAM FILE="./Progs/completionCopy2.c"/>
 </P>
+
+<PROGRAM FILE="./Progs/completionCopy2.c"/>
 
 <P>
 This saves the allocation of some global storage and it is much
@@ -267,9 +272,9 @@ threads, and requests the migration of all of them to node<SPACE/>1. Then, it
 issues a RPC on node<SPACE/>1 to set the variable <TT>barrier</TT> to 1, and does so
 for its own node. Finally, the master thread calls the <TT>halt</TT> routine
 to stop all daemon service threads.
+</P>
 
 <PROGRAM FILE="./Progs/migration3.txt"/>
-</P>
 
 <P>
 Let's now look more closely at the program. First, observe how the
@@ -284,13 +289,15 @@ unpacked by the thread.
 </P>
 
 <WARNING>
-  This scheme is correct <EM>only</EM> because of the synchronization
+  <EM>
+  This scheme is correct <B>only</B> because of the synchronization
   implemented by the completion token: the master thread cannot spawn
   another thread before the current thread has unpacked the structure.
   Once the completion token has been received from each children
   thread, then the master thread is guaranteed that all of them have
   been created, and have decided upon whether they enable their own
   migration or not.
+  </EM>
 </WARNING>
 
 <P>
@@ -300,9 +307,7 @@ array.  This can be done by hand, but PM2 provides a specialized
 routine to do the work. A call 
 </P>
 
-<P>
 <PROGRAM FILE="./Progs/threadslist.c"/>
-</P>
 
 <P>
 takes as parameters an array of threads
@@ -387,7 +392,9 @@ distributed algorithm: it is called a <EM>stable condition</EM>.
 </P>
 
 <NOTE>
+  <EM>
   LB to RN: Difficult section. Please, proofread!
+  </EM>
 </NOTE>
 
 </SUBSUBSECTION>
@@ -403,11 +410,11 @@ migrating thread. This is exemplified in
 Program <REF LABEL="prog:iso-alloc"/>. The variable <TT>x</TT> is allocated in the
 private stack of the thread on node<SPACE/>1. After migration to node<SPACE/>2, the value
 of <TT>x</TT> <EM>and its address</EM> are left unchanged.
+</P>
 
 <PROGRAM FILE="./Progs/iso-alloc.c" TITLE="Iso-allocation enables unlimited use of pointers in migrating threads" LABEL="prog:iso-alloc"/>
 
 <PROGRAM FILE="./Progs/isoalloc.txt"/>
-</P>
 
 <P>
 This amazing feature is made possible thanks to the
@@ -440,7 +447,9 @@ the private stack and the storage areas.
 </P>
 
 <NOTE>
+  <EM>
   LB to GA: Please, review this carefully!
+  </EM>
 </NOTE>
 
 <P>
@@ -455,11 +464,11 @@ areas are packed together with its descriptors and its stack. They are
 unpacked on the destination node, and installed at the same virtual
 address as in the origin node. This is why <TT>**p</TT> returns the same
 value <EM>after</EM> the migration, as before. 
+</P>
 
 <PROGRAM FILE="./Progs/isomalloc.c" TITLE="Allocating dynamic storage which migrates together with the thread" LABEL="prog:isomalloc"/>
 
 <PROGRAM FILE="./Progs/isomalloc.txt"/>
-</P>
 
 <P>
 A thread may allocate as many such dynamic storage areas as
@@ -505,11 +514,11 @@ initial and the final value it observed.  Finally, the master node
 prints the value of the variable.  As expected, the final value of the
 variable is exactly as it would have been with a sequence of
 increments on the master node.
+</P>
 
 <PROGRAM FILE="./Progs/dsm.c" TITLE="Distributed shared memory in PM2" LABEL="prog:dsm"/>
 
 <PROGRAM FILE="./Progs/dsm.txt"/>
-</P>
 
 <P>
 DSM-PM2 implements a complex protocol to guarantee that the final
@@ -536,9 +545,13 @@ of <TT>LI_HUDAK</TT>, this protocol is based on dynamic thread
 migration: each time a thread attempts to access a globally shared
 variable, to read it or to write it, then it silently migrates to the
 home node of the variable. 
+</P>
+
 <NOTE>
 <P>
+  <EM>
 NF: It looks like threads migrate back to the first node? The following text seems to be incorrect.
+  </EM>
 </P>
 <P>
 <EM>
@@ -552,7 +565,6 @@ variable.
 <PROGRAM FILE="./Progs/dsm1.c" TITLE="Distributed shared memory in PM2, using the 'MIGRATE_THREAD' sequential consistency protocol" LABEL="prog:dsm1"/>
 
 <PROGRAM FILE="./Progs/dsm1.txt"/>
-</P>
 
 <P>
 In the two above examples, each thread accessing the shared variable
@@ -563,9 +575,9 @@ threatened. What if the thread attempt to increment the variable
 incrementing instruction <TT>shvar++</TT> is compiled into an
 <EM>sequence</EM> of elementary, atomic machine instructions, something
 like:
+</P>
 
 <PROGRAM FILE="./Progs/tmp.c"/>
-</P>
 
 <P>
 Thus, we have to add extra synchronization objects to guarantee that
@@ -574,11 +586,11 @@ exclusion, as if it was a single instruction. DSM-PM2 provides
 <EM>global</EM> mutexes for this purpose, as shown in Program <REF LABEL="prog:dsm2"/> .
 Observe that this mutexes are much more powerful than the regular PM2
 mutexes, which are local to a PM2 node.
+</P>
 
 <PROGRAM FILE="./Progs/dsm2.c" TITLE="Distributed shared memory in PM2, with concurrent access to shared variables" LABEL="prog:dsm2"/>
 
 <PROGRAM FILE="./Progs/dsm2.txt"/>
-</P>
 
 <P>
 Just for fun, you may wish to try out this last program

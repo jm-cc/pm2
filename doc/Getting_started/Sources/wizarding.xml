@@ -3,12 +3,12 @@
 
 <TEXT>
 
-<P>
 <NOTE>
+  <EM>
   A mettre a jour
   Nathalie: Parler de Madeleine et Marcel
+  </EM>
 </NOTE>
-</P>
 
 <P>
 We have gathered in this section some advanced material as a reference
@@ -57,17 +57,17 @@ code, we have written it explicitly as a Load/Add/Store series of
 operations. (Observe that the variable <TT>tmp</TT> has been registered as
 <TT>volatile</TT> to prevent the wise compiler to optimize our
 trick!). The expected final value for <TT>counter</TT> is<SPACE/>0.  
+</P>
 
 <PROGRAM FILE="./Progs/freeze.txt"/>
-</P>
 
 <P>
 It is interesting to run the program without the calls to
 <TT>pm2_freeze</TT> and <TT>pm2_unfreeze</TT> routines, and see what happens.
 At least on my current workstation, this yields the following result:
+</P>
 
 <PROGRAM FILE="./Progs/freeze2.txt"/>
-</P>
 
 <P>
 It shows that getting interrupted in the middle of the critical section
@@ -181,7 +181,9 @@ specify delay.
 </P>
 
 <NOTE>
+  <EM>
   LB to RN: Please check carefully!
+  </EM>
 </NOTE>
 
 </SUBSUBSECTION>
@@ -191,7 +193,9 @@ specify delay.
 <SUBSECTION TITLE="Profiling PM2 programs" LABEL="sec:profiling">
 
 <NOTE>
+  <EM>
   LB: Yet to do. 
+  </EM>
 </NOTE>
 
 </SUBSECTION>
@@ -201,7 +205,9 @@ specify delay.
 <SUBSUBSECTION TITLE="Application initialization with PM2" LABEL="sec:startupfunc">
 
 <NOTE>
+  <EM>
   LB: Yet to do. Describe <TT>pm2_set_startup_func</TT>?
+  </EM>
 </NOTE>
 
 </SUBSUBSECTION>

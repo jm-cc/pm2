@@ -44,6 +44,7 @@ while (defined ($line = <IN>)) {
 
     if ($mode eq "html") {
       $line =~ s/</&lt;/g;
+      $line =~ s/&/&amp;/g;
     }
 
 ## Line emphasize: start + line + end + EOL

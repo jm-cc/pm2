@@ -5,11 +5,11 @@
 
 <SUBSECTION TITLE="Using a standard main" LABEL="sec:tradimain">
 
-<P>
 <NOTE>
+  <EM>
   A mettre a jour. Parler de stackalign? 
+  </EM>
 </NOTE>
-</P>
 
 <P>
 Some applications may require to use the traditional <TT>main</TT> function
@@ -31,9 +31,9 @@ this unless explicitly required.
 
 <P>
 A typical use of the extended options could thus be:
+</P>
 
 <PROGRAM FILE="./Progs/pm2confhelp2.txt"/>
-</P>
 
 </SUBSUBSECTION>
 

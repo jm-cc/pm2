@@ -17,6 +17,8 @@ You may compile you own PM2 program just as a usual
 C<SPACE/>program. You just need to make sure the necessary definitions
 and libraries are included. As the command line is rather complex,
 PM2 provides a simple utility to generate it online:
+</P>
+
 <UL>
 <LI>
 <TT>pm2-config --cc</TT> generates the name of the adequate C<SPACE/>compiler (most probably, <TT>gcc</TT>),
@@ -29,6 +31,7 @@ and <TT>pm2-config --libs</TT> generates the list of libraries to be searched on
 </LI>
 </UL>
 
+<P>
 Thus, the standard command line to compile a PM2 program <TT>hello.c</TT> looks like:
 </P>
 
@@ -240,6 +243,7 @@ append the piece of data to a message under construction. In addition
 to the address of data and its size, the packing primitive features a
 <EM>flag</EM> parameter which specifies the semantics of the operation.
 Available sending flags are defined as follows:
+</P>
 
 <DL>
     
@@ -268,10 +272,11 @@ Available sending flags are defined as follows:
   this <TT>mad_send_CHEAPER</TT> semantics.
 </DD>
 </DL>
-</P>
 
 <P>
 The following flags control the reception of user data packets:
+</P>
+
 <DL>
     
 <DT><TT>mad_receive_EXPRESS</TT></DT>
@@ -296,7 +301,6 @@ The following flags control the reception of user data packets:
   data is transmitted as efficiently as possible.
 </DD>
 </DL>
-</P>
 
 <P>
 Observe that the emission and reception flags should be <EM>both</EM>
@@ -951,6 +955,7 @@ on. Any machine you have access to can do it as well!
 
 <P>
 So far, we used the tools <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use <TT>leonie</TT>, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. <TT>leonie</TT> uses two configuration files:
+</P>
 
 <OL>
 <LI>
@@ -967,13 +972,12 @@ So far, we used the tools <TT>pm2-conf</TT> to specify which machines to run app
 
 </OL>
 
-</P>
-
 <SUBSUBSECTION TITLE="The configuration files">
 
 <P>
 Let's explain these concepts using a realistic example. Let's suppose that two clusters
 are available:
+</P>
 
 <IMAGE FILE="./Figures/config-small" TITLE="Example of interconnected clusters" SCALE="0.5" LABEL="fig:config-small"/>
 
@@ -989,16 +993,18 @@ the second cluster named <TT>goo</TT>, is composed of 4 nodes, named
 </LI>
 </UL>
 
+<P>
 Both clusters also feature an Ethernet network (TCP) which links
 together all the machines of each cluster. The clusters can be seen on
 Figure <REF LABEL="fig:config-small"/>.
-
 </P>
 
 <P>
 Leonie uses objects called <EM>channels</EM> in order to virtualize
 the available networks in a given configuration. There are basically
 two types of channels:
+</P>
+
 <OL>
 <LI> <EM>physical channels</EM> which are simple abstractions of real
 existing networks and; </LI>
@@ -1007,7 +1013,10 @@ existing networks and; </LI>
 and can be used to create <EM>heterogeneous networks</EM>. </LI>
 </OL>
 
+<P>
 With our simple example, we can build three physical channels:
+</P>
+
 <OL> 
 <LI> a channel build above the Myrinet network. This channel
 encompasses the nodes {<TT>foo0</TT>, <TT>foo1</TT>, <TT>foo2</TT>};
@@ -1021,6 +1030,7 @@ encompasses the nodes {<TT>goo0</TT>, <TT>goo1</TT>, <TT>goo2</TT>, <TT>goo3</TT
 encompasses all the nodes of both clusters. </LI>
 </OL>
 
+<P>
 On top of these three different physical channels, we can build a
 virtual channel which encompasses all the nodes of the
 configuration. One may think that there is no difference with the TCP
@@ -1059,6 +1069,7 @@ How is this information given to Leonie/Madeleine? The library uses
 configuration files (the following example files describe the
 configuration shown in Figure <REF LABEL="fig:config"/> with the node
 <TT>goo3</TT> featuring a SCI NIC):
+</P>
 
 <UL>
 <LI>
@@ -1100,6 +1111,7 @@ list of physical channels it is build upon (tag <TT>channels</TT>).
 </LI>
 </UL>
 
+<P>
 Once a virtual channel is build, the physical channels below it are no
 longer visible by the application. However, it is possible to create
 several different Madeleine physical channels over the same physical

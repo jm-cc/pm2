@@ -70,6 +70,8 @@ top of SCI) and SBP (on top of Fast-Ethernet).
 As previously mentioned, PM2 has been designed to be easily portable
 and only relies on the availability of the two following development
 tools:
+</P>
+
 <UL>
 <LI>
 <P>
@@ -86,7 +88,6 @@ latest patch on <URL>http://ftp.debian.org/debian/pool/main/m/make</URL>.
 </P>
 </LI>
 </UL>
-</P>
 
 <P>
 Also, PM2 includes a large number of shell scripts, which are assumed
@@ -142,6 +143,7 @@ entered at the shell prompt:
 <P>
 Once extracted, the PM2 distribution should be available under the
 <TT>./pm2/</TT> directory. The PM2 distribution is organized as follows:
+</P>
 
 <DL>
 <DT><TT>appli</TT> </DT>       <DD>Application configuration</DD>
@@ -170,7 +172,6 @@ Once extracted, the PM2 distribution should be available under the
 <DT><TT>stackalign</TT> </DT>  <DD>Stack initialization for Marcel</DD>
 <DT><TT>tbx</TT> </DT>         <DD>Generic PM2 utility toolbox </DD>
 </DL>
-</P>
 
 <P>
 The <TT>mad1</TT> and <TT>mad2</TT> directories contain obsolete
@@ -185,6 +186,8 @@ reference, they should no longer be used and can be safely ignored.
 <P>
 Several environment variables have to be set so that PM2 correctly
 works.
+</P>
+
 <UL>
   
 <LI>
@@ -240,7 +243,6 @@ directory could for example not be suitable!
 </P>
 </LI>
 </UL>
-</P>
 
 <P>
 You may wish to insert the following lines in your <TT>.cshrc</TT> file (if

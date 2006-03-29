@@ -267,6 +267,7 @@ difficult problem, which requires much attention from the programmer
 as it is a never-ending source of subtle failures (the writer has
 painfully experienced it!). The execution of a PM2 program can be
 divided in three phases.
+</P>
 
 <DL>
   
@@ -304,7 +305,6 @@ divided in three phases.
   necessarily be done by the initial thread.
 </DD>
 </DL>
-</P>
 
 <P>
 Of course, such a scheme does not fully meet our needs: the system

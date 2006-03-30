@@ -209,8 +209,6 @@ static void __marcel_init look_cpuinfo(void) {
 	if (numdies>1)
 		mdebug("%d dies\n", numdies);
 
-	int diedone[numdies];
-
 	if (really_dies) {
 		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+1)*sizeof(*die_level))));
 
@@ -602,6 +600,22 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 	marcel_extlib_protect();
 	numa_free(ptr, size);
 	marcel_extlib_unprotect();
+}
+
+#include <numaif.h>
+#ifndef MPOL_MF_MOVE
+#define MPOL_MF_MOVE (1<<1)
+#endif
+#ifndef MPOL_MF_MOVE_ALL
+#define MPOL_MF_MOVE_ALL (1<<2)
+#endif
+
+void ma_migrate_mem(void *ptr, size_t size, int node) {
+	unsigned long mask = 1<<node;
+	if (node < 0 || numa_not_available)
+		return;
+	if (mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask), MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+		mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask), MPOL_MF_MOVE);
 }
 #else
 #warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"

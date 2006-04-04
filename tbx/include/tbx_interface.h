@@ -254,242 +254,369 @@ tbx_slist_manager_init(void);
 void
 tbx_slist_manager_exit(void);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_nil(void);
 
+static
+__inline__
 void
 tbx_slist_free(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_clear(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_clear_and_free(p_tbx_slist_t slist);
 
+static
+__inline__
 TBX_FMALLOC
 p_tbx_slist_element_t
 tbx_slist_alloc_element(void *object);
 
+static
+__inline__
 tbx_slist_length_t
 tbx_slist_get_length(const p_tbx_slist_t slist);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_is_nil(const p_tbx_slist_t slist);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_dup_ext(const p_tbx_slist_t    source,
 		  p_tbx_slist_dup_func_t dfunc);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_dup(const p_tbx_slist_t source);
 
+static
+__inline__
 void
 tbx_slist_add_at_head(p_tbx_slist_t  slist,
 		      void          *object);
 
+static
+__inline__
 void
 tbx_slist_add_at_tail(p_tbx_slist_t  slist,
 		      void          *object);
 
+static
+__inline__
 void *
 tbx_slist_remove_from_head(p_tbx_slist_t slist);
 
+static
+__inline__
 void *
 tbx_slist_remove_from_tail(p_tbx_slist_t slist);
 
+static
+__inline__
 void *
 tbx_slist_peek_from_head(p_tbx_slist_t slist);
 
+static
+__inline__
 void *
 tbx_slist_peek_from_tail(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_enqueue(p_tbx_slist_t  slist,
 		  void          *object);
 
+static
+__inline__
 void *
 tbx_slist_dequeue(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_push(p_tbx_slist_t  slist,
 	       void          *object);
 
+static
+__inline__
 void *
 tbx_slist_pop(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_append(p_tbx_slist_t  slist,
 		 void          *object);
 
+static
+__inline__
 void *
 tbx_slist_extract(p_tbx_slist_t slist);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_cons(void                *object,
 	       const p_tbx_slist_t  source);
 
+static
+__inline__
 void
 tbx_slist_merge_before_ext(p_tbx_slist_t          destination,
 			   const p_tbx_slist_t    source,
 			   p_tbx_slist_dup_func_t dfunc);
 
+static
+__inline__
 void
 tbx_slist_merge_after_ext(p_tbx_slist_t          destination,
 			  const p_tbx_slist_t    source,
 			  p_tbx_slist_dup_func_t dfunc);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_merge_ext(const p_tbx_slist_t    destination,
 		    const p_tbx_slist_t    source,
 		    p_tbx_slist_dup_func_t dfunc);
 
+static
+__inline__
 void
 tbx_slist_merge_before(      p_tbx_slist_t destination,
 		       const p_tbx_slist_t source);
 
+static
+__inline__
 void
 tbx_slist_merge_after(p_tbx_slist_t destination,
 		      const p_tbx_slist_t source);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_merge(const p_tbx_slist_t destination,
 		const p_tbx_slist_t source);
 
+static
+__inline__
 void
 tbx_slist_reverse_list(p_tbx_slist_t slist);
 
+static
+__inline__
 p_tbx_slist_t
 tbx_slist_reverse(const p_tbx_slist_t source);
 
+static
+__inline__
 void *
 tbx_slist_index_get(const p_tbx_slist_t slist,
 		    tbx_slist_index_t   indx);
 
+static
+__inline__
 void *
 tbx_slist_index_extract(p_tbx_slist_t     slist,
 			tbx_slist_index_t indx);
 
+static
+__inline__
 void
 tbx_slist_index_set_ref(p_tbx_slist_t     slist,
 			tbx_slist_index_t indx);
 
+static
+__inline__
 void
 tbx_slist_index_set_nref(p_tbx_slist_nref_t nref,
 			 tbx_slist_index_t  idx);
 
+static
+__inline__
 tbx_slist_index_t
 tbx_slist_search_get_index(const p_tbx_slist_t              slist,
 			   const p_tbx_slist_search_func_t  sfunc,
 			   void                            *object);
 
+static
+__inline__
 void *
 tbx_slist_search_and_extract(p_tbx_slist_t                    slist,
 			     const p_tbx_slist_search_func_t  sfunc,
 			     void                            *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_forward_set_ref(p_tbx_slist_t                    slist,
 				 const p_tbx_slist_search_func_t  sfunc,
 				 void                            *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_backward_set_ref(p_tbx_slist_t                    slist,
 				  const p_tbx_slist_search_func_t  sfunc,
 				  void                            *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_next_set_ref(p_tbx_slist_t                    slist,
 			      const p_tbx_slist_search_func_t  sfunc,
 			      void                            *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_previous_set_ref(p_tbx_slist_t                    slist,
 				  const p_tbx_slist_search_func_t  sfunc,
 				  void                            *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
 				  p_tbx_slist_search_func_t  sfunc,
 				  void                      *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t        nref,
 				   p_tbx_slist_search_func_t  sfunc,
 				   void                      *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
 			       p_tbx_slist_search_func_t  sfunc,
 			       void                      *object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
 				   p_tbx_slist_search_func_t  sfunc,
 				   void                      *object);
 
+static
+__inline__
 tbx_slist_index_t
 tbx_slist_ref_get_index(const p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_ref_to_head(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_ref_to_tail(p_tbx_slist_t slist);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_forward(p_tbx_slist_t slist);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_backward(p_tbx_slist_t slist);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 			   p_tbx_slist_offset_t offset);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
 			    p_tbx_slist_offset_t offset);
 
+static
+__inline__
 void *
 tbx_slist_ref_get(const p_tbx_slist_t slist);
 
-
+static
+__inline__
 TBX_FMALLOC
 p_tbx_slist_nref_t
 tbx_slist_nref_alloc(p_tbx_slist_t slist);
 
+static
+__inline__
 void
 tbx_slist_nref_free(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 tbx_slist_index_t
 tbx_slist_nref_get_index(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 void
 tbx_slist_nref_to_head(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 void
 tbx_slist_nref_to_tail(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_nref_forward(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_nref_backward(p_tbx_slist_nref_t nref);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_nref_step_forward(p_tbx_slist_nref_t   nref,
 			    p_tbx_slist_offset_t offset);
 
+static
+__inline__
 tbx_bool_t
 tbx_slist_nref_step_backward(p_tbx_slist_nref_t   nref,
 			     p_tbx_slist_offset_t offset);
 
+static
+__inline__
 void *
 tbx_slist_nref_get(p_tbx_slist_nref_t nref);
 

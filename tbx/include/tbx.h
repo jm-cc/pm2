@@ -84,7 +84,7 @@
 #include "tbx_interface.h"
 
 #include "tbx_malloc_inline.h"
-//#include "tbx_slist_inline.h"
+#include "tbx_slist_inline.h"
 #include "tbx_list_inline.h"
 //#include "tbx_htable_inline.h"
 //#include "tbx_string_inline.h"

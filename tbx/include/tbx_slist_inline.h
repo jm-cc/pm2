@@ -37,7 +37,7 @@ tbx_slist_nil(void)
   p_tbx_slist_t slist = NULL;
 
   LOG_IN();
-  slist = tbx_malloc(tbx_slist_struct_manager_memory);
+  slist = (p_tbx_slist_t)tbx_malloc(tbx_slist_struct_manager_memory);
   TBX_INIT_SHARED(slist);
   slist->length    = 0;
   slist->head      = NULL;
@@ -119,7 +119,7 @@ tbx_slist_alloc_element(void *object)
   p_tbx_slist_element_t slist_element = NULL;
 
   LOG_IN();
-  slist_element = tbx_malloc(tbx_slist_element_manager_memory);
+  slist_element = (p_tbx_slist_element_t)tbx_malloc(tbx_slist_element_manager_memory);
   slist_element->previous = NULL;
   slist_element->next     = NULL;
   slist_element->object   = object;
@@ -226,7 +226,7 @@ tbx_slist_is_nil(p_tbx_slist_t slist)
   tbx_bool_t test = tbx_false;
 
   LOG_IN();
-  test = (slist->length == 0);
+  test = (tbx_bool_t)(slist->length == 0);
   LOG_OUT();
 
   return test;
@@ -728,7 +728,7 @@ tbx_slist_reverse_list(p_tbx_slist_t slist)
 
   while (ptr)
     {
-      void *temp = NULL;
+      p_tbx_slist_element_t temp = NULL;
 
       temp          = ptr->next;
       ptr->next     = ptr->previous;
@@ -1414,7 +1414,7 @@ tbx_slist_ref_forward(p_tbx_slist_t slist)
       if (!tbx_slist_is_nil(slist))
 	{
 	  slist->ref = slist->ref->next;
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1439,7 +1439,7 @@ tbx_slist_ref_backward(p_tbx_slist_t slist)
       if (!tbx_slist_is_nil(slist))
 	{
 	  slist->ref = slist->ref->previous;
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1467,7 +1467,7 @@ tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object)
 
           element = slist->ref;
 	  slist->ref = slist->ref->next;
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 
           if (p_object) {
                   *p_object = __tbx_slist_free_element(slist, element);
@@ -1501,7 +1501,7 @@ tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object)
 
           element = slist->ref;
 	  slist->ref = slist->ref->previous;
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 
           if (p_object) {
                   *p_object = __tbx_slist_free_element(slist, element);
@@ -1538,7 +1538,7 @@ tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 	      slist->ref = slist->ref->next;
 	    }
 
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1569,7 +1569,7 @@ tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
 	      slist->ref = slist->ref->previous;
 	    }
 
-	  result = (slist->ref != NULL);
+	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1618,7 +1618,7 @@ tbx_slist_nref_alloc(p_tbx_slist_t slist)
   p_tbx_slist_nref_t nref = NULL;
 
   LOG_IN();
-  nref = tbx_malloc(tbx_slist_nref_manager_memory);
+  nref = (p_tbx_slist_nref_t)tbx_malloc(tbx_slist_nref_manager_memory);
   nref->element  = NULL;
   nref->previous = NULL;
   nref->next     = NULL;
@@ -1745,7 +1745,7 @@ tbx_slist_nref_forward(p_tbx_slist_nref_t nref)
       if (!tbx_slist_is_nil( nref->slist))
 	{
 	  nref->element = nref->element->next;
-	  result = (nref->element != NULL);
+	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1770,7 +1770,7 @@ tbx_slist_nref_backward(p_tbx_slist_nref_t nref)
       if (!tbx_slist_is_nil(nref->slist))
 	{
 	  nref->element = nref->element->previous;
-	  result = (nref->element != NULL);
+	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1801,7 +1801,7 @@ tbx_slist_nref_step_forward(p_tbx_slist_nref_t   nref,
 	      nref->element = nref->element->next;
 	    }
 
-	  result = (nref->element != NULL);
+	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
 	FAILURE("empty list");
@@ -1832,7 +1832,7 @@ tbx_slist_nref_step_backward(p_tbx_slist_nref_t   nref,
 	      nref->element = nref->element->previous;
 	    }
 
-	  result = (nref->element != NULL);
+	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
 	FAILURE("empty list");

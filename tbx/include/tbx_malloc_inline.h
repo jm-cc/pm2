@@ -78,7 +78,7 @@ tbx_aligned_free (void *ptr,
 #if 0
 #  define TBX_MALLOC_DEBUG_NAME ("iovecs")
 #else
-#  define TBX_MALLOC_DEBUG_NAME NULL
+#  undef  TBX_MALLOC_DEBUG_NAME
 #endif
 
 #ifdef HAVE_BACKTRACE
@@ -103,9 +103,11 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   CTRL_ALLOC(temp_mem);
 
   TBX_INIT_SHARED(temp_mem);
-  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, name))) {
+#ifdef TBX_MALLOC_DEBUG_NAME
+  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, name)) {
     pm2debug("tbx_malloc_init: %s\n", name);
   }
+#endif /* TBX_MALLOC_DEBUG_NAME */
 
   if (initial_block_number <= 0)
     {
@@ -169,10 +171,11 @@ tbx_malloc(p_tbx_memory_t mem)
       ptr = (char*)mem->current_mem + ((mem->block_len+TBX_MALLOC_DEBUG_LEN) * mem->first_new);
       mem->first_new++;
     }
-
-  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+#ifdef TBX_MALLOC_DEBUG_NAME
+  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
     pm2debug("tbx_malloc(%s): 0x%p\n", mem->name, ptr);
   }
+#endif /* TBX_MALLOC_DEBUG_NAME */
 
 #if TBX_MALLOC_BTRACE_DEPTH
   backtrace(ptr, TBX_MALLOC_BTRACE_DEPTH);
@@ -197,10 +200,11 @@ tbx_free(p_tbx_memory_t  mem,
   memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
 #endif /* TBX_MALLOC_BTRACE_DEPTH */
 
-  if ((TBX_MALLOC_DEBUG_NAME != NULL) && 
-      (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+#ifdef TBX_MALLOC_DEBUG_NAME
+  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
     pm2debug("tbx_free(%s): 0x%p\n", mem->name, ptr);
   }
+#endif /* TBX_MALLOC_DEBUG_NAME */
   *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) = mem->first_free ;
   mem->first_free = ptr;
   mem->nb_allocated--;
@@ -215,9 +219,11 @@ tbx_malloc_clean(p_tbx_memory_t mem)
   void *block_mem = NULL;
 
   TBX_LOCK_SHARED(mem);
-  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+#ifdef TBX_MALLOC_DEBUG_NAME
+  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
     pm2debug("tbx_malloc_clean: %s\n", mem->name);
   }
+#endif /* TBX_MALLOC_DEBUG_NAME */
   if (mem->nb_allocated) {
     int n = mem->nb_allocated;
 

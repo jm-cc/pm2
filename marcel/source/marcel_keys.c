@@ -18,10 +18,7 @@
 DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 				    __const void* value), (key, value),
 {
-#ifdef MA__DEBUG
-   if((key < 0) || (key >= marcel_nb_keys))
-      RAISE(CONSTRAINT_ERROR);
-#endif
+   MA_BUG_ON((key < 0) || (key >= marcel_nb_keys));
    SELF_GETMEM(key)[key] = (any_t)value;
    return 0;
 })
@@ -32,10 +29,7 @@ DEF___PTHREAD(int, setspecific, (pthread_key_t key,
 
 DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key),
 {
-#ifdef MA__DEBUG
-   if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
-      RAISE(CONSTRAINT_ERROR);
-#endif
+   MA_BUG_ON((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]));
    return SELF_GETMEM(key)[key];
 })
 DEF_PTHREAD(any_t, getspecific, (pthread_key_t key), (key))

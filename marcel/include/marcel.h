@@ -28,7 +28,7 @@
 #include "marcel_valgrind.h"
 
 #ifdef MARCEL_KERNEL
-#define MARCEL_PROTECTED TBX_PROTECTED
+#define MARCEL_PROTECTED TBX_HIDDEN
 #else
 #define MARCEL_PROTECTED
 #endif

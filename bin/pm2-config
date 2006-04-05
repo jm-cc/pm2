@@ -654,13 +654,17 @@ pm2config_parse_cmdline() # args
 	_libs="common appli $PM2_LIBS"
     fi
 
+    # On demande des flags pour un module précis
+    if [ "$_kernel" = true ] ; then
+        if [ -z "${_libs/* *}" ]; then
+	    echo "This option needs exactly ONE lib" 1>&2
+	    exit 1
+	fi
+    fi
+
     # On a demandé les CFLAGS
     if [ "$_cflags" = true ] ; then
 	if [ "$_kernel" = true ] ; then
-	    if [ -z "${_libs/* *}" ]; then
-		echo "This option needs exactly ONE lib" 1>&2
-		exit 1
-	    fi
 	    eval echo \$_PM2CONFIG_${_libs}_KERNEL_CFLAGS
 	else
 	    echo $_PM2CONFIG_CFLAGS
@@ -669,14 +673,22 @@ pm2config_parse_cmdline() # args
     fi
 
     # on a demandé les LDFLAGS
-    _libs=""
+    _flags=""
     if [ "$_libs_L" = true ] ; then
-	_libs="$_PM2CONFIG_LD_PATH"
+	if [ "$_kernel" = true ] ; then
+	    :
+	else
+	    _flags="$_PM2CONFIG_LD_PATH"
+	fi
     fi
     if [ "$_libs_l" = true ]; then
-	_libs="$_libs $_PM2CONFIG_EARLY_LDFLAGS $_PM2CONFIG_LD_LIBS"
+        if [ "$_kernel" = true ] ; then
+	    eval _flags="\${_PM2CONFIG_${_libs}_LIBS}"
+	else
+	    _flags="$_flags $_PM2CONFIG_EARLY_LDFLAGS $_PM2CONFIG_LD_LIBS"
+	fi
     fi
-    echo $_libs
+    echo $_flags
     exit 0
 }
 

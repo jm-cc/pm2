@@ -28,10 +28,6 @@ extern volatile unsigned default_stack;
 DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 {
     *attr = marcel_attr_default;
-#ifdef MA__IFACE_PMARCEL
-    /* VD: Je ne sais pas pourquoi j'avais mis ça là ! */
-    attr->__guardsize = MARCEL_STACKSGUARD;
-#endif
     return 0;
 })
 #ifdef MA__LIBPTHREAD

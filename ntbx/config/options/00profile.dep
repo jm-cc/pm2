@@ -1,1 +1,2 @@
 Depend: profile
+Provide: NTBX_profile

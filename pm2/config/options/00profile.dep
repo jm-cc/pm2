@@ -1,1 +1,2 @@
 Depend: profile
+Provide: PM2_profile

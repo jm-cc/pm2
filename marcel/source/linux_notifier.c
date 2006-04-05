@@ -126,10 +126,10 @@ TBX_PROTECTED int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned l
 		{
 			mdebug("Chain [%s]: calling notifiers aborted\n",
 				n->name);
-			return ret;
+		LOG_RETURN(ret);
 		}
 		nb=nb->next;
 	}
-	return ret;
+	LOG_RETURN(ret);
 }
 

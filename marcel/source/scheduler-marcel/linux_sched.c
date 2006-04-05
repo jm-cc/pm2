@@ -553,7 +553,7 @@ repeat_lock_task:
 	return success;
 }
 
-TBX_PROTECTED int fastcall ma_wake_up_thread(marcel_task_t * p)
+MARCEL_PROTECTED int fastcall ma_wake_up_thread(marcel_task_t * p)
 {
 	return try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
 			      MA_TASK_UNINTERRUPTIBLE, 0);
@@ -598,7 +598,7 @@ void fastcall ma_unfreeze_thread(marcel_task_t *p)
 	try_to_wake_up(p, MA_TASK_FROZEN, 0);
 }
 
-void fastcall TBX_PROTECTED marcel_freeze_sched(void)
+void fastcall MARCEL_PROTECTED marcel_freeze_sched(void)
 {
 	ma_holder_lock_softirq(&ma_main_runqueue.hold);
 	/* TODO: other levels */
@@ -612,7 +612,7 @@ void fastcall TBX_PROTECTED marcel_freeze_sched(void)
 	frozen_scheduler=1;
 }
 
-void fastcall TBX_PROTECTED marcel_unfreeze_sched(void)
+void fastcall MARCEL_PROTECTED marcel_unfreeze_sched(void)
 {
 	frozen_scheduler=0;
 #ifdef MA__LWPS
@@ -1582,7 +1582,7 @@ void ma_scheduling_functions_start_here(void) { }
 /*
  * schedule() is the main scheduler function.
  */
-asmlinkage TBX_PROTECTED int ma_schedule(void)
+asmlinkage MARCEL_PROTECTED int ma_schedule(void)
 {
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
@@ -2334,7 +2334,7 @@ int task_prio(marcel_task_t *p)
  * task_nice - return the nice value of a given task.
  * @p: the task in question.
  */
-TBX_PROTECTED int task_nice(marcel_task_t *p)
+MARCEL_PROTECTED int task_nice(marcel_task_t *p)
 {
 	return TASK_NICE(p);
 }
@@ -2685,7 +2685,7 @@ asmlinkage long sys_sched_yield(void)
 }
 #endif
 
-TBX_PROTECTED void __ma_cond_resched(void)
+MARCEL_PROTECTED void __ma_cond_resched(void)
 {
 	ma_set_current_state(MA_TASK_RUNNING);
 	ma_schedule();
@@ -3404,7 +3404,7 @@ void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 #endif
 
 #if defined(MA__LWPS)
-TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock)
+MARCEL_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {
 		_ma_raw_write_lock(lock);

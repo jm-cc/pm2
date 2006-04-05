@@ -116,7 +116,7 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
 	list_add_tail(&timer->entry, vec);
 }
 
-TBX_PROTECTED int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+MARCEL_PROTECTED int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
 	ma_tvec_base_t *old_base, *new_base;
 	int ret = 0;
@@ -222,7 +222,7 @@ void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
  * (ie. mod_timer() of an inactive timer returns 0, mod_timer() of an
  * active timer returns 1.)
  */
-TBX_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+MARCEL_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
 	MA_BUG_ON(!timer->function);
 
@@ -251,7 +251,7 @@ TBX_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expire
  * (ie. del_timer() of an inactive timer returns 0, del_timer() of an
  * active timer returns 1.)
  */
-TBX_PROTECTED int ma_del_timer(struct ma_timer_list *timer)
+MARCEL_PROTECTED int ma_del_timer(struct ma_timer_list *timer)
 {
 	//unsigned long flags;
 	ma_tvec_base_t *base;
@@ -292,7 +292,7 @@ repeat:
  *
  * The function returns whether it has deactivated a pending timer or not.
  */
-TBX_PROTECTED int ma_del_timer_sync(struct ma_timer_list *timer)
+MARCEL_PROTECTED int ma_del_timer_sync(struct ma_timer_list *timer)
 {
 	ma_tvec_base_t *base;
 	int ret = 0;
@@ -984,7 +984,7 @@ static void process_timeout(unsigned long __data)
  *
  * In all cases the return value is guaranteed to be non-negative.
  */
-fastcall TBX_PROTECTED signed long ma_schedule_timeout(signed long timeout)
+fastcall MARCEL_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 {
 	struct ma_timer_list timer;
 	unsigned long expire;

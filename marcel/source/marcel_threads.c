@@ -612,10 +612,7 @@ DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
 {
 	LOG_IN();
 
-#ifdef MA__DEBUG
-	if(pid->detached)
-		RAISE(PROGRAM_ERROR);
-#endif
+	MA_BUG_ON(pid->detached);
 
 	marcel_sem_P(&pid->client);
 	if(status)

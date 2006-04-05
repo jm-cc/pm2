@@ -418,8 +418,10 @@ pm2config_set_vars()
 	eval _LIB='$'${_lib}_to_upper
 	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
+	eval _extra=\"\$_extra \$PM2_${_LIB}_LD_PATH\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
 	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
+	eval _PM2CONFIG_${_lib}_LD_PATH=\"\$PM2_${_LIB}_LD_PATH\"
 	eval _PM2CONFIG_${_lib}_LIBS=\"\$PM2_${_LIB}_LIBS\"
 	eval export _PM2CONFIG_${_lib}_LIBS
     done
@@ -676,14 +678,14 @@ pm2config_parse_cmdline() # args
     _flags=""
     if [ "$_libs_L" = true ] ; then
 	if [ "$_kernel" = true ] ; then
-	    :
+	    eval _flags=\"\${_PM2CONFIG_${_libs}_LD_PATH}\"
 	else
 	    _flags="$_PM2CONFIG_LD_PATH"
 	fi
     fi
     if [ "$_libs_l" = true ]; then
         if [ "$_kernel" = true ] ; then
-	    eval _flags="\${_PM2CONFIG_${_libs}_LIBS}"
+	    eval _flags=\"\$_flags \${_PM2CONFIG_${_libs}_LIBS}\"
 	else
 	    _flags="$_flags $_PM2CONFIG_EARLY_LDFLAGS $_PM2CONFIG_LD_LIBS"
 	fi

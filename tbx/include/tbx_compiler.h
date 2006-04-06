@@ -63,7 +63,7 @@ void __memory_barrier(void);
 #define TBX_ALIGNED     __attribute__ ((__aligned__))
 #define TBX_PACKED      __attribute__ ((__packed__))
 #define TBX_UNUSED      __attribute__ ((__unused__))
-#define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
+#define TBX_NORETURN    __attribute__ ((__noreturn__)) TBX_NOINST
 #define TBX_CONST       __attribute__ ((__const__))
 #if defined(__cplusplus)
 #  if defined(PM2_INSTRUMENT)
@@ -250,9 +250,11 @@ void __memory_barrier(void);
 
 /* Static named initialization can't be done the same in C and C++ */
 #if defined __cplusplus
-#define TBX_INIT(var,value) var: (value),
+#define TBX_INIT(var,value) var: value
+#define TBX_INIT_USELESS(var,value) var: value
 #else
-#define TBX_INIT(var,value) .var = (value),
+#define TBX_INIT(var,value) .var = value
+#define TBX_INIT_USELESS(var,value)
 #endif
 
 /* Not all systems define __THROW */

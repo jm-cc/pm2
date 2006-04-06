@@ -140,7 +140,7 @@ enum
 //#endif
 
 
-__BEGIN_DECLS
+__TBX_BEGIN_DECLS
 
 /* Create a new thread, starting with execution of START-ROUTINE
    getting passed ARG.  Creation attributed come from ATTR.  The new
@@ -624,6 +624,6 @@ extern int pmarcel_atfork (void (*__prepare) (void),
 			   void (*__parent) (void),
 			   void (*__child) (void)) __THROW;
 
-__END_DECLS
+__TBX_END_DECLS
 
 #endif	/* pmarcel.h */

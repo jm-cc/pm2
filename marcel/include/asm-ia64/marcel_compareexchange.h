@@ -17,6 +17,7 @@
 #section macros
 #define MA_HAVE_COMPAREEXCHANGE 1
 #define MA_HAVE_FULLCOMPAREEXCHANGE 1
+#section marcel_variables
 #section marcel_macros
 #depend "asm/linux_intrinsics.h[marcel_functions]"
 #depend "asm/linux_intrinsics.h[marcel_macros]"

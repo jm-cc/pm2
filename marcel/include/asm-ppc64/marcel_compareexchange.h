@@ -19,6 +19,7 @@
 #section macros
 #define MA_HAVE_COMPAREEXCHANGE 1
 
+#section marcel_variables
 #section marcel_macros
 #ifdef MA__LWPS
 #define MA_EIEIO_ON_SMP "eieio;"

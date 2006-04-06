@@ -248,6 +248,22 @@ void __memory_barrier(void);
         1; \
 })
 
+/* Static named initialization can't be done the same in C and C++ */
+#if defined __cplusplus
+#define TBX_INIT(var,value) var: (value),
+#else
+#define TBX_INIT(var,value) .var = (value),
+#endif
+
+/* Not all systems define __THROW */
+#if !defined(__THROW)
+# if defined __cplusplus && (__GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8))
+#  define __THROW throw ()
+# else
+#  define __THROW
+# endif
+#endif
+
 /* C++ needs to know that types and declarations are C, not C++.  */
 #ifdef  __cplusplus
 # define __TBX_BEGIN_DECLS  extern "C" {

@@ -36,7 +36,7 @@
 __TBX_BEGIN_DECLS
 
 //#include "asm/marcel-master___compiler.h"
-#include "marcel-master___compiler.h"
+//#include "marcel-master___compiler.h"
 //#include "scheduler/marcel-master___compiler.h"
 
 #ifdef MA__LIBPTHREAD

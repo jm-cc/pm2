@@ -27,7 +27,7 @@
 #include <features.h>
 #endif
 
-__BEGIN_DECLS
+__TBX_BEGIN_DECLS
 
 /* These may be used to determine what facilities are present at compile time.
    Their values can be obtained at run time from `sysconf'.  */
@@ -987,6 +987,6 @@ extern int pthread_atfork (void (*__prepare) (void),
 			   void (*__child) (void)) __THROW;
 #endif
 
-__END_DECLS
+__TBX_END_DECLS
 
 #endif /* unistd.h  */

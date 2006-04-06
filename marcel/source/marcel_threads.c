@@ -262,7 +262,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 int marcel_create(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr,
-		  marcel_func_t func, any_t __restrict arg)
+		  marcel_func_t func, any_t __restrict arg) __THROW
 {
 	return marcel_create_internal(pid, attr, func, arg, 
 				      0, (unsigned long)&arg);
@@ -270,7 +270,7 @@ int marcel_create(marcel_t * __restrict pid,
 
 int marcel_create_dontsched(marcel_t * __restrict pid,
 			    __const marcel_attr_t * __restrict attr,
-			    marcel_func_t func, any_t __restrict arg)
+			    marcel_func_t func, any_t __restrict arg) __THROW
 {
 	return marcel_create_internal(pid, attr, func, arg,
 				      1, (unsigned long)&arg);
@@ -278,7 +278,7 @@ int marcel_create_dontsched(marcel_t * __restrict pid,
 
 int marcel_create_special(marcel_t * __restrict pid,
 			  __const marcel_attr_t * __restrict attr,
-			  marcel_func_t func, any_t __restrict arg)
+			  marcel_func_t func, any_t __restrict arg) __THROW
 {
 	return marcel_create_internal(pid, attr, func, arg, 
 				      2, (unsigned long)&arg);
@@ -533,13 +533,13 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	abort(); // For security
 }
 	
-DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
+DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val) __THROW, (val),
 {
 	marcel_exit_internal(val, 0);
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 
-void TBX_NORETURN marcel_exit_special(any_t val)
+void TBX_NORETURN marcel_exit_special(any_t val) __THROW
 {
 	marcel_exit_internal(val, 1);
 }
@@ -608,7 +608,7 @@ inline static
 void marcel_postexit_internal(marcel_t __restrict cur,
 			      marcel_postexit_func_t func, any_t __restrict arg);
 
-DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
+DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status) __THROW, (pid, status),
 {
 	LOG_IN();
 
@@ -633,7 +633,7 @@ DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
 DEF_PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 
 
-DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid),
+DEF_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW, (pid),
 {
   if(pid == marcel_self()) {
     marcel_exit(NULL);
@@ -646,7 +646,7 @@ DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid),
 })
 DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
 
-DEF_MARCEL_POSIX(int, detach, (marcel_t pid), (pid),
+DEF_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW, (pid),
 {
    pid->detached = TRUE;
    return 0;
@@ -677,7 +677,7 @@ void marcel_resume(marcel_t pid)
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
-				     cleanup_func_t func, any_t __restrict arg),
+				     cleanup_func_t func, any_t __restrict arg) __THROW,
 		(__buffer, func, arg),
 {
 	marcel_t cur = marcel_self();
@@ -691,7 +691,7 @@ DEF_PTHREAD(void, cleanup_push,(struct _pthread_cleanup_buffer *__buffer,
 		(__buffer, __routine, __arg))
 
 DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute), (__buffer, execute),
+				    boolean execute) __THROW, (__buffer, execute),
 {
 	marcel_t cur = marcel_self();
 	

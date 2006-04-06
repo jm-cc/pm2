@@ -79,6 +79,12 @@ static __tbx_inline__ long get_gs(void)
                        : : "m" (value) : "memory", "esp" ); \
   } while (0)
 
+#ifdef PROFILE
+#define CLOBBER_EBP , "ebp"
+#else
+#define CLOBBER_EBP
+#endif
+
 #define set_sp_bp(sp, bp) \
   do { \
     unsigned long __sp = (unsigned long)(sp); \
@@ -86,6 +92,6 @@ static __tbx_inline__ long get_gs(void)
     SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movl %0, %%esp;\n\t" \
 			 "movl %1, %%ebp;" \
-                       : : "r" (__sp), "r" (__bp) : "memory", "esp" ); \
+                       : : "r" (__sp), "r" (__bp) : "memory", "esp" CLOBBER_EBP ); \
   } while (0)
 

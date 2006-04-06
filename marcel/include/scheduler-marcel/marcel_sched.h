@@ -344,8 +344,19 @@ int marcel_sched_internal_create(marcel_task_t *cur,
 					       __const marcel_attr_t *attr,
 					       __const int dont_schedule,
 					       __const unsigned long base_stack);
-#section sched_marcel_inline
+int marcel_sched_internal_create_dontstart(marcel_task_t *cur, 
+					       marcel_task_t *new_task,
+					       __const marcel_attr_t *attr,
+					       __const int dont_schedule,
+					       __const unsigned long base_stack);
 
+int marcel_sched_internal_create_start(marcel_task_t *cur, 
+					       marcel_task_t *new_task,
+					       __const marcel_attr_t *attr,
+					       __const int dont_schedule,
+					       __const unsigned long base_stack);
+
+#section sched_marcel_inline
 static __tbx_setjmp_inline__
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const marcel_attr_t *attr,
@@ -353,9 +364,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const unsigned long base_stack)
 { 
 	LOG_IN();
-	ma_holder_t *bh;
-
 #ifdef MA__BUBBLES
+	ma_holder_t *bh;
 	if ((bh=ma_task_init_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
 		bh = NULL;
 #endif
@@ -383,134 +393,10 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// bulles si l'on veut strictement respecter cela :(
 		|| bh
 #endif
-		) {
-		// Ici, le père _ne_doit_pas_ donner la main au fils
-		// immédiatement car : 
-		// - ou bien ma_preempt_disable() a été appelé,
-		// - ou bien le fils va être inséré sur un autre LWP,
-		// La conséquence est que le thread fils est créé et
-		// initialisé, mais pas "inséré" dans une quelconque
-		// file pour l'instant.
-
-		//PROF_IN_EXT(newborn_thread);
-
-
-		/* on ne doit pas démarrer nous-même les processus spéciaux */
-		new_task->father->child = (dont_schedule?
-					   NULL: /* On ne fait rien */
-					   new_task); /* insert asap */
-
-		ma_preempt_disable();
-		/* On sauve l'état du père sachant qu'on va y revenir
-		 * tout de suite
-		 *
-		 * On ne modifie pas l'état enregistré des activations
-		 * car les appels bloquants sont déjà désactivés
-		 */
-		if(marcel_ctx_setjmp(cur->ctx_yield) == NORMAL_RETURN) {
-			/* retour dans le père*/
-			ma_preempt_enable();
-			MTRACE("Father Restart", cur);
-			LOG_OUT();
-			return 0;
-		}
-		
-		ma_set_task_lwp(new_task, LWP_SELF);
-		/* Ne pas oublier de laisser de la place pour les
-		 * variables locales/empilement de fonctions On prend
-		 * la taille entre le plus haut argument de cette
-		 * fonction dans la pile et la position courante
-		 */
-		PROF_SWITCH_TO(cur->number, new_task);
-		marcel_ctx_set_new_stack(new_task, 
-					 new_task->initial_sp,
-					 base_stack);
-		/* départ du fils, en mode interruption */
-		MTRACE("On new stack", marcel_self());
-		
-		//PROF_OUT_EXT(newborn_thread);
-		PROF_SET_THREAD_NAME(MARCEL_SELF);
-
-		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
-			// On rend la main au père
-			PROF_SWITCH_TO(SELF_GETMEM(number), SELF_GETMEM(father));
-			call_ST_FLUSH_WINDOWS();
-			marcel_ctx_longjmp(SELF_GETMEM(father)->ctx_yield,
-					   NORMAL_RETURN);
-		}
-		MA_THR_RESTARTED(MARCEL_SELF, "Start");
-		/* Drop preempt_count with ma_spin_unlock_softirq */
-		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
-	} else {
-		ma_holder_t *h;
-		// Cas le plus favorable (sur le plan de
-		// l'efficacité) : le père sauve son contexte et on
-		// démarre le fils immédiatement.
-		// Note : si le thread est un 'real-time thread', cela
-		// ne change rien ici...
-
-		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			ma_schedule_tail(__ma_get_lwp_var(previous_thread));
-			MA_THR_RESTARTED(cur, "Father Preemption");
-			LOG_OUT();
-			return 0;
-		}
-
-		/* le fils sera déjà démarré */
-		new_task->father->child = NULL;
-
-		if (bh)
-			marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
-
-		PROF_SWITCH_TO(cur->number, new_task);
-		//PROF_IN_EXT(newborn_thread);
-		
-		/* activer le fils */
-		h = ma_task_sched_holder(new_task);
-		ma_holder_lock_softirq(h); // passage en mode interruption
-		ma_set_task_lwp(new_task, LWP_SELF);
-		MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
-		new_task->sched.internal.timestamp = marcel_clock();
-		ma_set_task_state(new_task, MA_TASK_RUNNING);
-#ifdef MA__BUBBLES
-#ifdef MARCEL_BUBBLE_EXPLODE
-		if (bh)
-			/* le fils est déjà activé par l'insertion de la bulle, le rendre runnable */
-			ma_dequeue_task(new_task,h);
-		else
-#endif
-#endif
-		{
-			ma_activate_running_task(new_task,h);
-			h->nr_scheduled++;
-		}
-		ma_holder_rawunlock(h);
-
-		marcel_ctx_set_new_stack(new_task,
-					 new_task->initial_sp,
-					 base_stack);
-		/* départ du fils, en mode interruption */
-
-		/* Signaler le changement de thread aux activations */
-		MA_ACT_SET_THREAD(MARCEL_SELF);
-
-		/* ré-enqueuer le père */
-		h = ma_task_sched_holder(SELF_GETMEM(father));
-		ma_holder_rawlock(h);
-		ma_enqueue_task(SELF_GETMEM(father), h);
-		h->nr_scheduled--;
-		ma_holder_unlock_softirq(h); // sortie du mode interruption
-
-		MTRACE("Early start", marcel_self());
-		
-		//PROF_OUT_EXT(newborn_thread);
-		PROF_SET_THREAD_NAME(MARCEL_SELF);
-	}
-	
-	/* pas de ma_preempt_enable ici : le preempt a déjà été mangé dans ma_schedule_tail */
-	//ma_preempt_enable();
-	LOG_OUT();
-	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
+		)
+		LOG_RETURN(marcel_sched_internal_create_dontstart(cur, new_task, attr, dont_schedule, base_stack));
+	else
+		LOG_RETURN(marcel_sched_internal_create_start(cur, new_task, attr, dont_schedule, base_stack));
 }
 
 #section marcel_structures

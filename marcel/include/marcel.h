@@ -105,7 +105,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "marcel-master___marcel_functions.h"
 #  include "scheduler/marcel-master___marcel_functions.h"
 
-//#  include "asm/marcel-master___marcel_variables.h"
+#  include "asm/marcel-master___marcel_variables.h"
 #  include "marcel-master___marcel_variables.h"
 #  include "scheduler/marcel-master___marcel_variables.h"
 

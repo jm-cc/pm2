@@ -84,7 +84,7 @@ void breakpoint()
 }
 
 /* =========== specifs =========== */
-int marcel_cancel(marcel_t pid);
+int marcel_cancel(marcel_t pid) __THROW;
 
 /* returns the amount of mem between the base of the current thread stack and
    its stack pointer */
@@ -162,7 +162,7 @@ static unsigned marcel_last_key=0;
 */
 
 DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
-				   marcel_key_destructor_t func), (key, func),
+				   marcel_key_destructor_t func) __THROW, (key, func),
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    marcel_lock_acquire(&marcel_key_lock);
@@ -195,7 +195,7 @@ DEF_PTHREAD(int, key_create, (pthread_key_t *key,
 DEF___PTHREAD(int, key_create, (pthread_key_t *key, 
 				   void (*func)(void *)), (key, func))
 
-DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
+DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key) __THROW, (key),
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    marcel_lock_acquire(&marcel_key_lock);

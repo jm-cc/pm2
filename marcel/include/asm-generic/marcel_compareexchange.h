@@ -29,6 +29,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 #section marcel_inline
 #depend "linux_spinlock.h[marcel_macros]"
 #depend "asm/linux_types.h[marcel_types]"
+#depend "[marcel_variables]"
 #include <stdlib.h>
 static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,

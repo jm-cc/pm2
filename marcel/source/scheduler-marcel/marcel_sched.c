@@ -28,19 +28,19 @@ int marcel_sched_attr_init(marcel_sched_attr_t *attr)
   return 0;
 }
 
-int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW
+int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h)
 {
   attr->init_holder = h;
   return 0;
 }
 
-int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW
+int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h)
 {
   *h = attr->init_holder;
   return 0;
 }
 
-int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW
+int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq)
 {
   ma_holder_t *h = attr->init_holder;
   MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
@@ -49,7 +49,7 @@ int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t
 }
 
 #ifdef MA__BUBBLES
-int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **b) __THROW
+int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **b)
 {
   ma_holder_t *h = attr->init_holder;
   MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
@@ -58,25 +58,25 @@ int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bu
 }
 #endif
 
-int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio) __THROW
+int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio)
 {
   attr->prio = prio;
   return 0;
 }
 
-int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio) __THROW
+int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio)
 {
   *prio = attr->prio;
   return 0;
 }
 
-int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes)
 {
   attr->inheritholder = yes;
   return 0;
 }
 
-int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes)
 {
   *yes = attr->inheritholder;
   return 0;

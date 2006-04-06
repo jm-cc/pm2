@@ -1950,7 +1950,7 @@ need_resched:
 
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
-DEF_MARCEL_POSIX(int, yield, (void) __THROW, (),
+DEF_MARCEL_POSIX(int, yield, (void), (),
 {
   LOG_IN();
 

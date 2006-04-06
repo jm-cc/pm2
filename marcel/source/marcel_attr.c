@@ -25,7 +25,7 @@ marcel_attr_t marcel_attr_default = MARCEL_ATTR_INITIALIZER;
 /* Déclaré dans marcel.c : */
 extern volatile unsigned default_stack;
 
-DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr) __THROW, (attr),
+DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 {
     *attr = marcel_attr_default;
     return 0;
@@ -42,7 +42,7 @@ int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
 versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
 #endif
 
-DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack) __THROW, (attr, stack),
+DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack),
 {
    if (stack > THREAD_SLOT_SIZE) {
       errno = EINVAL;
@@ -54,7 +54,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack) __T
 DEF_PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
 DEF___PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
 
-DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict attr, size_t * __restrict stack) __THROW, (attr, stack),
+DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict attr, size_t * __restrict stack), (attr, stack),
 {
   *stack = attr->__stacksize;
   return 0;
@@ -62,7 +62,7 @@ DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict att
 DEF_PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack), (attr, stack))
 DEF___PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack), (attr, stack))
 
-DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr) __THROW, (attr, addr),
+DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
    attr->__stackaddr_set = 1;
    attr->__stackaddr = addr;
@@ -71,7 +71,7 @@ DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr) __THR
 DEF_PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 DEF___PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 
-DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr) __THROW, (attr, addr),
+DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr), (attr, addr),
 {
    *addr = attr->__stackaddr;
    return 0;
@@ -79,7 +79,7 @@ DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict att
 DEF_PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
 DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
 
-DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached) __THROW, (attr, detached),
+DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached), (attr, detached),
 {
    attr->__detachstate = detached;
    return 0;
@@ -87,7 +87,7 @@ DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detache
 DEF_PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
 DEF___PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
 
-DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached) __THROW, (attr, detached),
+DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached), (attr, detached),
 {
    *detached = attr->__detachstate;
    return 0;
@@ -159,14 +159,14 @@ int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
    return 0;
 }
 
-int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW
+int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
 {
   attr->__schedpolicy = policy;
   return 0;
 }
 
 int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
-		int * __restrict policy) __THROW
+		int * __restrict policy)
 {
   *policy = attr->__schedpolicy;
   return 0;

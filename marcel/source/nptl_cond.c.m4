@@ -45,7 +45,7 @@ DEF___LIBPTHREAD(int, condattr_init,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_condattr_init (prefix_condattr_t *attr) __THROW
+int prefix_condattr_init (prefix_condattr_t *attr)
 {
 	memset (attr, '\0', sizeof (*attr));
 #if MA__MODE == MA__MODE_LPT
@@ -68,7 +68,7 @@ DEF___LIBPTHREAD(int, condattr_destroy,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_condattr_destroy (prefix_condattr_t *attr) __THROW
+int prefix_condattr_destroy (prefix_condattr_t *attr)
 {
         /* Nothing to be done.  */
         return 0;
@@ -139,7 +139,7 @@ compat_symbol (libpthread, __old_pthread_cond_init, pthread_cond_init,
 
 REPLICATE_CODE([[dnl
 int prefix_cond_init (prefix_cond_t * __restrict cond,
-	const prefix_condattr_t * __restrict attr) __THROW
+	const prefix_condattr_t * __restrict attr)
 {
   cond->__data.__lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
   cond->__data.__waiting = NULL;
@@ -172,7 +172,7 @@ compat_symbol (libpthread, __old_pthread_cond_destroy, pthread_cond_destroy,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_destroy (prefix_cond_t *cond) __THROW
+int prefix_cond_destroy (prefix_cond_t *cond)
 {
   if (cond->__data.__waiting != NULL) {
     /* TODO: pas très POSIX ça. Voir l'implémentation dans nptl */
@@ -195,7 +195,7 @@ compat_symbol (libpthread, __old_pthread_cond_signal, pthread_cond_signal,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_signal (prefix_cond_t *cond) __THROW
+int prefix_cond_signal (prefix_cond_t *cond)
 {
   __prefix_unlock(&cond->__data.__lock);
   return 0;
@@ -215,7 +215,7 @@ compat_symbol (libpthread, __old_pthread_cond_broadcast,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_broadcast (prefix_cond_t *cond) __THROW
+int prefix_cond_broadcast (prefix_cond_t *cond)
 {
   prefix_lock_acquire(&cond->__data.__lock.__spinlock);
   do {} while (__prefix_unlock_spinlocked(&cond->__data.__lock));

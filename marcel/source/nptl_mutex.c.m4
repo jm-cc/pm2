@@ -47,7 +47,7 @@ DEF___LIBPTHREAD(int, mutex_init,
 
 REPLICATE_CODE([[dnl
 int prefix_mutex_init (prefix_mutex_t *mutex, 
-		       const prefix_mutexattr_t * mutexattr) __THROW
+		       const prefix_mutexattr_t * mutexattr)
 {
 	mdebug("initializing mutex %p by %p\n", 
 	       mutex, marcel_self());
@@ -104,7 +104,7 @@ DEF___LIBPTHREAD(int, mutex_destroy, (pthread_mutex_t * mutex), (mutex))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_destroy(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_destroy(prefix_mutex_t * mutex)
 {
 #if MA__MODE == MA__MODE_LPT || MA__MODE == MA__MODE_PMARCEL
   if (mutex->__data.__nusers != 0)
@@ -124,7 +124,7 @@ DEF___LIBPTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_lock(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_lock(prefix_mutex_t * mutex)
 {
 	struct marcel_task *id = MARCEL_SELF;
         __marcel_lock(&mutex->__data.__lock, id);
@@ -133,7 +133,7 @@ int prefix_mutex_lock(prefix_mutex_t * mutex) __THROW
 ]], [[MARCEL]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_lock(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_lock(prefix_mutex_t * mutex)
 {
 	struct marcel_task *id = MARCEL_SELF;
 
@@ -199,14 +199,14 @@ DEF___LIBPTHREAD(int, mutex_trylock, (pthread_mutex_t * mutex), (mutex))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_trylock(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_trylock(prefix_mutex_t * mutex)
 {
         return __marcel_trylock(&mutex->__data.__lock);
 }
 ]], [[MARCEL]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_trylock(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_trylock(prefix_mutex_t * mutex)
 {
 	struct marcel_task *id;
 
@@ -322,7 +322,7 @@ DEF___LIBPTHREAD(int, mutex_unlock, (pthread_mutex_t * mutex), (mutex))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutex_unlock(prefix_mutex_t * mutex) __THROW
+int prefix_mutex_unlock(prefix_mutex_t * mutex)
 {
         return __marcel_unlock(&mutex->__data.__lock);
 }
@@ -386,14 +386,14 @@ DEF___LIBPTHREAD(int, mutexattr_init, (pthread_mutexattr_t *attr), (attr))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutexattr_init(prefix_mutexattr_t * attr) __THROW
+int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 {
         return 0;
 }
 ]], [[MARCEL]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutexattr_init(prefix_mutexattr_t * attr) __THROW
+int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 {
 #if MA__MODE == MA__MODE_LPT
 	if (sizeof (struct prefix_mutexattr) != sizeof (prefix_mutexattr_t))
@@ -418,7 +418,7 @@ DEF___LIBPTHREAD(int, mutexattr_destroy, (pthread_mutexattr_t *attr), (attr))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutexattr_destroy(prefix_mutexattr_t * attr) __THROW
+int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 {
         return 0;
 }
@@ -562,7 +562,7 @@ enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
 
 static void marcel_once_cancelhandler(void *arg)
 {
-    marcel_once_t *once_control = (marcel_once_t *) arg;
+    marcel_once_t *once_control = arg;
 
     marcel_mutex_lock(&once_masterlock);
     *once_control = NEVER;
@@ -572,7 +572,7 @@ static void marcel_once_cancelhandler(void *arg)
 
 REPLICATE_CODE([[dnl
 int prefix_once(prefix_once_t * once_control, 
-	void (*init_routine)(void)) __THROW
+	void (*init_routine)(void))
 {
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;

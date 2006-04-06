@@ -33,6 +33,7 @@ Compilation support options
   --libs	print library linking information
   --libs-only-L	only print the -L/-R part of --libs
   --libs-only-l only print the -l part of --libs
+
   --kernel      print flags to compile the libs themselves
 
 Directories pm2-libs was configured to

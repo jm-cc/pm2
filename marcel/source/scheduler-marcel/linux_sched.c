@@ -495,8 +495,8 @@ repeat_lock_task:
 	old_state = p->sched.state;
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
+		PROF_EVENT2(sched_thread_wake, p, old_state);
 		p->sched.state = MA_TASK_RUNNING;
-		PROF_EVENT1(sched_thread_wake, p);
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			/*
 			 * Fast-migrate the task if it's not running or runnable
@@ -1601,6 +1601,7 @@ asmlinkage MARCEL_PROTECTED int ma_schedule(void)
 	int max_prio, prev_as_prio;
 	int go_to_sleep;
 	int didswitch;
+	int go_to_sleep_traced;
 #ifndef MA__LWPS
 	int didpoll = 0;
 #endif
@@ -1642,6 +1643,7 @@ need_resched:
 	MA_BUG_ON(!prevh);
 
 	go_to_sleep = 0;
+	go_to_sleep_traced = 0;
 need_resched_atomic:
 	/* by default, reschedule this thread */
 	prev_as_next = prev;
@@ -1675,9 +1677,10 @@ need_resched_atomic:
 #endif
 
 	if (ma_need_togo() || go_to_sleep) {
-		if (go_to_sleep) {
+		if (go_to_sleep && !go_to_sleep_traced) {
 			sched_debug("schedule: go to sleep\n");
 			PROF_EVENT(sched_thread_blocked);
+			go_to_sleep_traced = 1;
 		}
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(LWP_SELF)->hold;

@@ -306,10 +306,9 @@ out:
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
 
-
 void marcel_sig_pause(void)
 {
-#ifndef USE_VIRTUAL_TIMER
+#if defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER)
 	sigsuspend(&sigeptset);
 #else
 	SCHED_YIELD();
@@ -318,7 +317,7 @@ void marcel_sig_pause(void)
 
 void marcel_sig_nanosleep(void)
 {
-#ifndef USE_VIRTUAL_TIMER
+#if defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER)
 	struct timespec time = { .tv_sec = 0, .tv_nsec = 1 };
 #ifdef OSF_SYS
 	nanosleep_d9(&time, NULL);

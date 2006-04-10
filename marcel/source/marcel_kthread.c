@@ -61,8 +61,6 @@ int marcel_gettid(void) {
 #include <stdlib.h>
 #include <sys/syscall.h>
 
-#define __STACK_SIZE  (1024 * 1024)
-
 
 
 static int dummy;
@@ -90,12 +88,9 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 #endif
 
   LOG_IN();
-  //stack = mmap(NULL, __STACK_SIZE, PROT_READ | PROT_WRITE,
-  //	       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS | MAP_GROWSDOWN,
-  //	       -1, 0);
   if (!sp) {
-	  stack_base = malloc(__STACK_SIZE);
-	  sp = stack_base + __STACK_SIZE;
+	  stack_base = marcel_slot_alloc();
+	  sp = stack_base + THREAD_SLOT_SIZE;
 	  mdebug("Allocating stack for kthread at %p\n", stack_base);
   }
   sp -= 64;

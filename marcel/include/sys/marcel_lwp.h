@@ -110,10 +110,12 @@ struct marcel_lwp {
 #endif
 };
 
-#define MA_LWP_INITIALIZER(lwp) { \
+#define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
 	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.task_number = 1, \
-	.tvec_bases.lock = MA_SPIN_LOCK_UNLOCKED, \
+	.all_threads = LIST_HEAD_INIT((lwp)->all_threads), \
+	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
+	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
 }
 
 #section marcel_macros

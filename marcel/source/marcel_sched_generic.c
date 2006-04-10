@@ -339,14 +339,10 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	LOG_IN();
 
-	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));
-
-	if (!IS_FIRST_LWP(lwp)) {
+	if (!IS_FIRST_LWP(lwp))
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
-		ma_per_lwp(task_number, lwp) = 1;
-		ma_spin_lock_init(&ma_per_lwp(threadlist_lock, lwp));
-	} else
+	else
 		/* ajout du thread principal à la liste des threads */
 		list_add(&SELF_GETMEM(all_threads),&__ma_get_lwp_var(all_threads));
 

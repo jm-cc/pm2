@@ -328,8 +328,6 @@ static void* postexit_thread_func(any_t arg)
 
 void marcel_threads_postexit_init(marcel_lwp_t *lwp)
 {
-	marcel_sem_init(&ma_per_lwp(postexit_thread, lwp), 0);
-	marcel_sem_init(&ma_per_lwp(postexit_space, lwp), 1);
 }
 
 void marcel_threads_postexit_start(marcel_lwp_t *lwp)

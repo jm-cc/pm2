@@ -201,10 +201,9 @@ unsigned marcel_lwp_add_vp(void)
   if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
     RAISE("Too many lwp\n");
 
-  lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t),
-		  ma_lwp_node[num]);
+  lwp = marcel_malloc_node(sizeof(*lwp), ma_lwp_node[num]);
   /* initialiser le lwp *avant* de l'enregistrer */
-  memset(lwp,0,sizeof(marcel_lwp_t));
+  *lwp = MA_LWP_INITIALIZER(lwp);
 
   lwp->polling_list = NULL;
   

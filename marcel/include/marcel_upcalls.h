@@ -25,11 +25,6 @@
 #  include "asm/act.h"
 #endif
 
-#section marcel_variables
-#ifdef MA__ACTIVATION
-MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
-#endif
-
 #section marcel_macros
 #ifdef MA__DEBUG
 #define MA_ACT_SET_THREAD_DEBUG(thread) \

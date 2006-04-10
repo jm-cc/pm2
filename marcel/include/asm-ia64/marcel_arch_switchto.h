@@ -22,8 +22,6 @@
 #section marcel_macros
 #ifdef MA__INTERRUPT_FIX_LWP
 
-MA_DECLARE_PER_LWP(unsigned long *, ma_ia64_tp);
-
 #define MA_ARCH_SWITCHTO_LWP_FIX(current) \
   do { \
 	unsigned long *p_tp=__ma_get_lwp_var(ma_ia64_tp); \

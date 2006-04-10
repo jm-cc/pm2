@@ -116,14 +116,6 @@ struct marcel_lwp {
 	.tvec_bases.lock = MA_SPIN_LOCK_UNLOCKED, \
 }
 
-#section marcel_variables
-#depend "linux_perlwp.h[marcel_macros]"
-#ifdef MA__LWPS
-MA_DECLARE_PER_LWP(unsigned, number);
-#endif
-#depend "marcel_descr.h[types]"
-MA_DECLARE_PER_LWP(marcel_task_t *, run_task);
-
 #section marcel_macros
 
 #define MARCEL_LWP_EST_DEF
@@ -334,10 +326,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define ma_local_softirq_pending() \
    (__ma_get_lwp_var(softirq_pending))
 
-#section marcel_variables
-#depend "linux_perlwp.h[marcel_macros]"
-MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
-
 #section marcel_macros
 
 #define MA_DEFINE_LWP_NOTIFIER_START(name, help, \
@@ -445,8 +433,6 @@ static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb)
 static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb)
 {
 }
-#else /* MA__LWPS */
-MA_DECLARE_PER_LWP(int, online);
 #endif /* MA__LWPS */
 
 static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp)

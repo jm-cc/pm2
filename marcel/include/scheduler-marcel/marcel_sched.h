@@ -303,14 +303,6 @@ unsigned marcel_frozenthreads(void);
 
 
 
-#section marcel_variables
-/* ==== Scheduler locking ==== */
-
-#ifdef MARCEL_RT
-extern unsigned __rt_task_exist;
-#endif
-
-
 #section marcel_functions
 
 /* ==== miscelaneous private defs ==== */
@@ -409,8 +401,3 @@ struct ma_lwp_usage_stat {
 	unsigned long long idle;
 	unsigned long long iowait;
 };
-
-#section marcel_variables
-#depend "asm-generic/linux_perlwp.h[marcel_macros]"
-MA_DECLARE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);
-#section inline

@@ -54,7 +54,3 @@ enum {
 
 #section marcel_functions
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
-
-#section marcel_variables
-MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
-

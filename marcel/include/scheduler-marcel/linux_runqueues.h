@@ -145,11 +145,6 @@ extern ma_runqueue_t ma_cpu_runqueue[MARCEL_NBMAXCPUS];
 extern ma_runqueue_t *ma_level_runqueues[];
 #endif
 
-#ifdef MA__LWPS
-MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
-MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
-#endif
-
 #section marcel_macros
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))

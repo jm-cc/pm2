@@ -234,11 +234,6 @@ extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
 extern struct marcel_topo_level *marcel_topo_levels[MARCEL_LEVEL_LAST+1];
 
-#section marcel_variables
-#ifdef MARCEL_SMT_IDLE
-MA_DECLARE_PER_LWP(struct marcel_topo_level *, core_level);
-#endif
-
 #section functions
 #depend "[variables]"
 static __tbx_inline__ unsigned marcel_topo_arity(unsigned level) {

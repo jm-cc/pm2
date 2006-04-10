@@ -201,12 +201,10 @@ unsigned marcel_lwp_add_vp(void)
   if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
     RAISE("Too many lwp\n");
 
-  lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t)
-		  + __ma_per_lwp_size, ma_lwp_node[num]);
+  lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t),
+		  ma_lwp_node[num]);
   /* initialiser le lwp *avant* de l'enregistrer */
-  memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
-
-  MA_WARN_ON(__ma_per_lwp_size == 0);
+  memset(lwp,0,sizeof(marcel_lwp_t));
 
   lwp->polling_list = NULL;
   
@@ -262,8 +260,8 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
 	  /* La structure devrait être libérée ainsi que
 	   * les piles des threads résidents... 
 	   */
-	  marcel_free_node(lwp, sizeof(marcel_lwp_t)
-		  + __ma_per_lwp_size, ma_lwp_node[LWP_NUMBER(lwp)]);
+	  marcel_free_node(lwp, sizeof(marcel_lwp_t),
+			  ma_lwp_node[LWP_NUMBER(lwp)]);
   }
 
   LOG_OUT();

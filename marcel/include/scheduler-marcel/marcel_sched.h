@@ -147,6 +147,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #depend "scheduler/linux_runqueues.h[marcel_variables]"
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
+#depend "[marcel_variables]"
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
 		marcel_sched_internal_task_t *internal,

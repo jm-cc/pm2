@@ -43,7 +43,7 @@ $(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
 
 #$(APP_CPP)/%$(LIB_EXT).i: $(SRC_DIR)/%.c
 #	$(COMMON_BUILD)
-#	$(COMMON_MAIN) $(CC) -E -DPREPROC $(CFLAGS) $< > $@
+#	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
 
 #$(APP_CPP)/%.fut: $(APP_CPP)/%.i
 #	$(COMMON_BUILD)

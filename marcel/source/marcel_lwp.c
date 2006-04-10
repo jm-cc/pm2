@@ -205,8 +205,6 @@ unsigned marcel_lwp_add_vp(void)
   /* initialiser le lwp *avant* de l'enregistrer */
   *lwp = MA_LWP_INITIALIZER(lwp);
 
-  lwp->polling_list = NULL;
-  
   SET_LWP_NB(num, lwp);
 
   // Initialisation de la structure marcel_lwp_t

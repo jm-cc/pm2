@@ -34,3 +34,8 @@ do { \
 #endif // MA__LWP
 
 #define cpu_relax() SCHED_YIELD()
+
+#section marcel_functions
+#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSOR)
+void ma_bind_on_processor(unsigned target);
+#endif

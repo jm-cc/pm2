@@ -22,7 +22,7 @@
  * How to bind a thread on a given processor
  */
 
-#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSOR)
+#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
 #ifdef LINUX_SYS
 #include <sched.h>
 #ifndef CPU_SET

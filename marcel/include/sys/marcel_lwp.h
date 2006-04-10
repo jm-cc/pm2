@@ -259,6 +259,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 
 #section marcel_macros
 #include "tbx_compiler.h"
+#depend "asm/linux_perlwp.h[marcel_macros]"
 /****************************************************************
  * Accès aux LWP
  */

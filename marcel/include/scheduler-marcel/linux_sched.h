@@ -521,69 +521,6 @@ static __tbx_inline__ void ma_task_unlock(marcel_task_t *p)
 }
 #endif 
 
-/* set thread flags in other task's structures
- * - see asm/thread_info.h for TIF_xxxx flags available
- */
-static __tbx_inline__ void ma_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
-{
-	ma_set_ti_thread_flag(tsk,flag);
-}
-
-static __tbx_inline__ void ma_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
-{
-	ma_clear_ti_thread_flag(tsk,flag);
-}
-
-static __tbx_inline__ int ma_test_and_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
-{
-	return ma_test_and_set_ti_thread_flag(tsk,flag);
-}
-
-static __tbx_inline__ int ma_test_and_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
-{
-	return ma_test_and_clear_ti_thread_flag(tsk,flag);
-}
-
-static __tbx_inline__ int ma_test_tsk_thread_flag(marcel_task_t *tsk, int flag)
-{
-	return ma_test_ti_thread_flag(tsk,flag);
-}
-
-static __tbx_inline__ void ma_set_tsk_need_resched(marcel_task_t *tsk)
-{
-	ma_set_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
-}
-
-static __tbx_inline__ void ma_set_tsk_need_togo(marcel_task_t *tsk)
-{
-	ma_set_tsk_thread_flag(tsk,TIF_NEED_TOGO);
-}
-
-static __tbx_inline__ void ma_clear_tsk_need_resched(marcel_task_t *tsk)
-{
-	ma_clear_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
-}
-
-static __tbx_inline__ void ma_clear_tsk_need_togo(marcel_task_t *tsk)
-{
-	ma_clear_tsk_thread_flag(tsk,TIF_NEED_TOGO);
-}
-
-static __tbx_inline__ int ma_signal_pending(marcel_task_t *p)
-{
-	return tbx_unlikely(ma_test_tsk_thread_flag(p,TIF_WORKPENDING));
-}
-  
-static __tbx_inline__ int ma_need_resched(void)
-{
-	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED));
-}
-
-static __tbx_inline__ int ma_need_togo(void)
-{
-	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_TOGO));
-}
-
 extern MARCEL_PROTECTED void __ma_cond_resched(void);
 static __tbx_inline__ void ma_cond_resched(void)
 {

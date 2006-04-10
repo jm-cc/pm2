@@ -302,29 +302,40 @@ void marcel_gensched_shutdown(void)
 #ifdef MA__LWPS
 static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 {
+	int dopoll;
 	if (hlwp == NULL) {
 		/* upcall_new_task est venue ici ? */
 		RAISE(PROGRAM_ERROR);
 	}
+	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
-		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {
-			if (!marcel_yield_intern())
-				marcel_sig_pause();
-		} else {
+		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
+		if (dopoll)
 		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-			if (!marcel_yield_intern())
 #ifdef MARCEL_IDLE_PAUSE
-				marcel_sig_nanosleep();
+		/* let wakers now that we will shortly poll need_resched and
+		 * thus they don't need to send a kill */
+		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+		ma_smp_mb__after_clear_bit();
 #endif
-					;
+		if (!marcel_yield_intern()) {
+#ifdef MARCEL_IDLE_PAUSE
+			if (dopoll)
+				marcel_sig_nanosleep();
+			else
+				marcel_sig_pause();
+#endif
 		}
+#ifdef MARCEL_IDLE_PAUSE
+		ma_set_thread_flag(TIF_POLLING_NRFLAG);
+#endif
 	}
 }
 #ifndef MA__ACT
 static any_t TBX_NORETURN idle_func(any_t hlwp)
 {
 	for(;;) {
-		marcel_sig_pause();
+		pause();
 		marcel_yield_intern();
 	}
 }

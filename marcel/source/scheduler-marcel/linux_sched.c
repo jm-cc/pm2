@@ -328,17 +328,25 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	int need_resched, nrpolling;
 
 	ma_preempt_disable();
-	/* minimise the chance of sending an interrupt to poll_idle() */
-	nrpolling = ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
-	need_resched = ma_test_and_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
-	nrpolling |= ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
+	
+	if (tbx_unlikely(ma_test_tsk_thread_flag(p, TIF_NEED_RESCHED))) goto out;
+
+	ma_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
+
+	if (lwp == LWP_SELF)
+		goto out;
 
 #ifdef MA__TIMER
-	if (!need_resched && !nrpolling && lwp != LWP_SELF) {
+	/* NEED_RESCHED must be visible before we test POLLING_NRFLAG */
+	ma_smp_mb();
+	/* minimise the chance of sending an interrupt to poll_idle() */
+	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
+
 		PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
 		marcel_kthread_kill(lwp->pid, MARCEL_RESCHED_SIGNAL);
 	}
 #endif
+out:
 	ma_preempt_enable();
 #else
 	ma_set_tsk_need_resched(p);

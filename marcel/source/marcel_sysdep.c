@@ -181,7 +181,7 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	memalloc_attr_t mattr;
 	memset(&mattr, 0, sizeof(mattr));
 	mattr.mattr_policy = MPOL_DIRECTED;
-	mattr.mattr_rad = RAD_NONE;
+	mattr.mattr_rad = node;
 	radsetcreate(&mattr.mattr_radset);
 	rademptyset(mattr.mattr_radset);
 	radaddset(mattr.mattr_radset,node);

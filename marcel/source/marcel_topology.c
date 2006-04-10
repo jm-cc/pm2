@@ -398,7 +398,7 @@ static void __marcel_init look_libnuma(void) {
 		mdebug("node %d has vpset %lx\n",i,vpset);
 		for (j=0;j<get_nb_lwps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))
-				ma_lwp_node[j]=i;
+				ma_lwp_node[j]=radid;
 	}
 
 	marcel_vpmask_empty(&node_level[i].vpset);

@@ -366,8 +366,6 @@ static void __marcel_init look_libnuma(void) {
 	struct marcel_topo_level *node_level;
 	marcel_vpmask_t vpset;
 
-	numa_exit_on_error=1;
-
 	nbnodes=rad_get_num();
 	if (nbnodes==1) {
 		nbnodes=0;
@@ -407,8 +405,6 @@ static void __marcel_init look_libnuma(void) {
 
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
-
-	TBX_FREE(buffer);
 }
 #endif
 

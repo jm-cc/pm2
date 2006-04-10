@@ -16,6 +16,7 @@
 
 #define _GNU_SOURCE /* pour sched_setaffinity sous linux */
 #include "marcel.h"
+#include <errno.h>
 
 #if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSOR)
 #ifdef LINUX_SYS
@@ -52,7 +53,7 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #endif
 #endif
 
-#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSOR)
+#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
 void ma_bind_on_processor(unsigned target) {
 #if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,
@@ -104,4 +105,63 @@ void ma_bind_on_processor(unsigned target) {
 #warning "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif
 }
+#endif
+
+#ifdef MA__LWPS
+unsigned ma_nbprocessors(void) {
+#if defined(SOLARIS_SYS) || defined(LINUX_SYS) || defined(OSF_SYS) || defined(WIN_SYS) || defined(AIX_SYS)
+	return sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(IRIX_SYS)
+	return sysconf(_SC_NPROC_CONF);
+#else
+#warning No known way to discover number of available processors on this system
+#warning ma_nbprocessors will default to 1
+#warning use the --marcel-nvp option to set it by hand when running your program
+	return 1;
+#endif
+}
+#endif
+
+#ifdef MA__NUMA
+#ifdef LINUX_SYS
+#include <numa.h>
+int ma_numa_not_available;
+
+void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
+	void *p;
+	if (node < 0 || ma_numa_not_available)
+		return marcel_malloc(size, file, line);
+	marcel_extlib_protect();
+	p = numa_alloc_onnode(size, node);
+	marcel_extlib_unprotect();
+	if (p == NULL)
+		return marcel_malloc(size, file, line);
+	return p;
+}
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
+	if (node < 0 || ma_numa_not_available)
+		return marcel_free(ptr, file, line);
+	marcel_extlib_protect();
+	numa_free(ptr, size);
+	marcel_extlib_unprotect();
+}
+
+#include <numaif.h>
+#ifndef MPOL_MF_MOVE
+#define MPOL_MF_MOVE (1<<1)
+#endif
+#ifndef MPOL_MF_MOVE_ALL
+#define MPOL_MF_MOVE_ALL (1<<2)
+#endif
+
+void ma_migrate_mem(void *ptr, size_t size, int node) {
+	unsigned long mask = 1<<node;
+	if (node < 0 || ma_numa_not_available)
+		return;
+	if (mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask), MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+		mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask), MPOL_MF_MOVE);
+}
+#else
+#warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"
+#endif
 #endif

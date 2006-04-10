@@ -39,3 +39,24 @@ do { \
 #if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSOR)
 void ma_bind_on_processor(unsigned target);
 #endif
+
+#ifdef MA__LWPS
+unsigned ma_nbprocessors(void);
+#endif
+
+TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
+		unsigned line);
+extern void ma_free_node(void *ptr, size_t size, int node,
+		char * __restrict file,  unsigned line);
+extern void ma_migrate_mem(void *ptr, size_t size, int node);
+
+#ifndef MA__NUMA
+#define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
+#define ma_free_node(ptr, size, node, file, line) marcel_free(ptr, file, line)
+#define ma_migrate_mem(ptr, size, node) (void)0
+#endif
+
+#section marcel_variables
+#ifdef MA__NUMA
+extern int ma_numa_not_available;
+#endif

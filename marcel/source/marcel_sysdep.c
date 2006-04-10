@@ -183,7 +183,7 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	mattr.mattr_policy = MPOL_DIRECTED;
 	mattr.mattr_rad = RAD_NONE;
 	radsetcreate(&mattr.mattr_radset);
-	rademptyset(mattr,mattr_radset);
+	rademptyset(mattr.mattr_radset);
 	radaddset(mattr.mattr_radset,node);
 	return nmmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0, &mattr);
 }

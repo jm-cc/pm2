@@ -421,7 +421,6 @@ pm2config_set_vars()
 	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
 	eval _extra_ld_path=\"\$_extra_ld_path \$PM2_${_LIB}_LD_PATH\"
-	eval _extra=\"\$_extra \$PM2_${_LIB}_LD_PATH\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
 	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
 	eval _PM2CONFIG_${_lib}_LD_PATH=\"\$PM2_${_LIB}_LD_PATH\"

@@ -414,11 +414,13 @@ pm2config_set_vars()
     # LDFLAGS
     _requested=""
     _extra=""
+    _extra_ld_path=""
     _PM2CONFIG_LD_PATH=""
     for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
+	eval _extra_ld_path=\"\$_extra_ld_path \$PM2_${_LIB}_LD_PATH\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LD_PATH\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
 	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
@@ -426,6 +428,7 @@ pm2config_set_vars()
 	eval _PM2CONFIG_${_lib}_LIBS=\"\$PM2_${_LIB}_LIBS\"
 	eval export _PM2CONFIG_${_lib}_LIBS
     done
+    _PM2CONFIG_LD_PATH="$_PM2CONFIG_LD_PATH $_extra_ld_path"
     export _PM2CONFIG_LD_PATH
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_LD_PATH
 

@@ -20,6 +20,10 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
     fi
 fi
 
+if defined_in MARCEL_NUMA PM2_MARCEL_CFLAGS; then
+    PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lm"
+fi
+
 case "$PM2_SYS" in
     WIN*_SYS|FREEBSD_SYS)
 	PREFIX=_

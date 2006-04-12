@@ -73,6 +73,7 @@ enum ma_rq_type {
 	MA_DONTSCHED_RQ,
 	MA_MACHINE_RQ,
 #ifdef MA__LWPS
+	MA_FAKE_RQ,
 #ifdef MA__NUMA
 	MA_NODE_RQ,
 	MA_DIE_RQ,
@@ -138,11 +139,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 extern ma_runqueue_t ma_main_runqueue;
 extern ma_runqueue_t ma_dontsched_runqueue;
 #ifdef MA__NUMA
-extern ma_runqueue_t ma_node_runqueue[MARCEL_NBMAXNODES];
-extern ma_runqueue_t ma_die_runqueue[MARCEL_NBMAXDIES];
-extern ma_runqueue_t ma_core_runqueue[MARCEL_NBMAXCORES];
-extern ma_runqueue_t ma_cpu_runqueue[MARCEL_NBMAXCPUS];
-extern ma_runqueue_t *ma_level_runqueues[];
+extern ma_runqueue_t ma_level_runqueues[2*MA_BITS_PER_LONG];
 #endif
 
 #section marcel_macros

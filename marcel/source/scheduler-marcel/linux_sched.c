@@ -3273,7 +3273,8 @@ static int level_rq_num[MARCEL_LEVEL_LAST-2];
 static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
 	unsigned i;
 	char name[16];
-	ma_runqueue_t *newrqs = ma_level_runqueues[levelnum-1]+level_rq_num[levelnum-1];
+	static int allocated;
+	ma_runqueue_t *newrqs = &ma_level_runqueues[allocated++];
 	static const char *base[] = {
 		[MARCEL_LEVEL_NODE]	= "node",
 		[MARCEL_LEVEL_DIE]	= "die",
@@ -3281,11 +3282,13 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		[MARCEL_LEVEL_PROC]	= "proc",
 	};
 	static const enum ma_rq_type rqtypes[] = {
+		[MARCEL_LEVEL_FAKE]	= MA_FAKE_RQ,
 		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
 		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
 		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
 		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
 	};
+	MA_BUG_ON(allocated == sizeof(ma_level_runqueues)/sizeof(*ma_level_runqueues));
 
 	level->sched = rq;
 	if (!level->arity || level->sons[0]->type == MARCEL_LEVEL_LAST) {
@@ -3294,8 +3297,12 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 
 	for (i=0;i<level->arity;i++) {
 		level_rq_num[levelnum-1]++;
-		snprintf(name,sizeof(name),"%s%d",
-			base[level->sons[i]->type],level->sons[i]->number);
+		if (level->sons[i]->type == MARCEL_LEVEL_FAKE)
+			snprintf(name, sizeof(name), "fake%d-%d",
+				levelnum, level->sons[i]->number);
+		else
+			snprintf(name,sizeof(name), "%s%d",
+				base[level->sons[i]->type], level->sons[i]->number);
 		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
 		newrqs[i].level = levelnum;
 		newrqs[i].father = rq;

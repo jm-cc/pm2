@@ -21,6 +21,9 @@
 extern unsigned marcel_nbprocessors;
 extern unsigned marcel_cpu_stride;
 extern unsigned marcel_lwps_per_cpu;
+#ifdef MA__NUMA
+extern unsigned marcel_topo_max_arity;
+#endif
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
 #define marcel_cpu_stride 1
@@ -48,6 +51,7 @@ enum marcel_topo_level_t {
 #ifndef MA__LWPS
 #define MARCEL_LEVEL_LAST MARCEL_LEVEL_MACHINE
 #else
+	MARCEL_LEVEL_FAKE,
 #ifdef MA__NUMA
 	MARCEL_LEVEL_NODE,
 	MARCEL_LEVEL_DIE,
@@ -232,7 +236,7 @@ struct marcel_topo_level {
 #section variables
 extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
-extern struct marcel_topo_level *marcel_topo_levels[MARCEL_LEVEL_LAST+1];
+extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST];
 
 #section functions
 #depend "[variables]"

@@ -98,7 +98,42 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_st
 	i += 2;
       continue;
     } else
+#ifdef MA__NUMA
+    if(!strcmp(argv[i], "--marcel-maxarity")) {
+      if(i == *argc-1) {
+	fprintf(stderr,
+		"Fatal error: --marcel-maxarity option must be followed "
+		"by <maximum_topology_arity>.\n");
+	exit(1);
+      }
+      if(do_not_strip) {
+	marcel_topo_max_arity = atoi(argv[i+1]);
+	if(marcel_topo_max_arity < 0) {
+	  fprintf(stderr, "Error: Maximum topology arity should be positive\n");
+	  exit(1);
+	}
+	argv[j++] = argv[i++];
+	argv[j++] = argv[i++];
+      } else
+	i += 2;
+      continue;
+    } else
 #endif
+#endif
+    if(!strncmp(argv[i], "--marcel", 8)) {
+#ifdef MA__LWPS
+      fprintf(stderr,"--marcel flags are:\n"
+	  "--marcel-nvp n		Force number of VPs to n\n"
+	  "--marcel-cpustride stride	Allocate VPs every stride cpus\n"
+#ifdef MA__NUMA
+	  "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
+#endif
+      );
+#else
+      fprintf(stderr,"no --marcel flags are defined in mono flavors\n");
+#endif
+      exit(1);
+    }
       argv[j++] = argv[i++];
   }
   *argc = j;

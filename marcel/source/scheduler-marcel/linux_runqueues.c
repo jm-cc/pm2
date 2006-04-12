@@ -24,12 +24,8 @@
 ma_runqueue_t ma_main_runqueue;
 ma_runqueue_t ma_dontsched_runqueue;
 #ifdef MA__NUMA
-ma_runqueue_t ma_node_runqueue[MARCEL_NBMAXNODES];
-ma_runqueue_t ma_die_runqueue[MARCEL_NBMAXDIES];
-ma_runqueue_t ma_core_runqueue[MARCEL_NBMAXCORES];
-ma_runqueue_t ma_cpu_runqueue[MARCEL_NBMAXCPUS];
-
-ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_die_runqueue, ma_core_runqueue, ma_cpu_runqueue};
+/* XXX berk */
+ma_runqueue_t ma_level_runqueues[2*MA_BITS_PER_LONG];
 #endif
 
 void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)

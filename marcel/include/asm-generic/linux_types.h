@@ -14,6 +14,36 @@
  * General Public License for more details.
  */
 
+#section common
+#ifdef IRIX_SYS
+
+#section marcel_types
+
+typedef signed char __ma_s8, ma_s8;
+typedef unsigned char __ma_u8, ma_u8;
+
+typedef signed short __ma_s16, ma_s16;
+typedef unsigned short __ma_u16, ma_u16;
+
+typedef signed int __ma_s32, ma_s32;
+typedef unsigned int __ma_u32, ma_u32;
+
+typedef signed long long __ma_s64, ma_s64;
+typedef unsigned long long __ma_u64, ma_u64;
+
+#section marcel_macros
+#include <limits.h>
+#ifdef MIPS_ARCH
+#define MA_BITS_PER_LONG _MIPS_SZLONG
+#else
+#error "unknown arch for Irix"
+#endif
+
+#section common
+
+#else /* IRIX_SYS */
+
+
 #section marcel_types
 
 #include <stdint.h>
@@ -52,3 +82,7 @@ typedef uint64_t __ma_u64, ma_u64;
 #else
 #error "unknown size for unsigned long."
 #endif
+
+#section common
+
+#endif /* IRIX_SYS */

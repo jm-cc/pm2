@@ -54,11 +54,45 @@
  * sequential memory pages only.
  */
 
-#error "to write !"
+#ifdef IRIX_SYS
 /* dans le noyau linux, ils disent que cela dépend du processeur: utiliser sync ou wb */
-#define ma_mb()
-#define ma_rmb()	ma_mb()
-#define ma_wmb()	ma_mb()
+#define __ma_sync() \
+	__asm__ __volatile__(			\
+		".set	push\n\t"		\
+		".set	noreorder\n\t"		\
+		".set	mips2\n\t"		\
+		"sync\n\t"			\
+		".set	pop"			\
+		: /* no output */		\
+		: /* no input */		\
+		: "memory")
+
+#define __ma_fast_iob()				\
+	__asm__ __volatile__(			\
+		".set	push\n\t"		\
+		".set	noreorder\n\t"		\
+		"lw	$0,%0\n\t"		\
+		"nop\n\t"			\
+		".set	pop"			\
+		: /* no output */		\
+		: "m" (*(int *)CKSEG1)		\
+		: "memory")
+
+#define ma_fast_wmb()	__ma_sync()
+#define ma_fast_rmb()	__ma_sync()
+#define ma_fast_mb()	__ma_sync()
+#define ma_fast_iob()				\
+	do {					\
+		__ma_sync();			\
+		__ma_fast_iob();			\
+	} while (0)
+
+extern void wbflush(void);
+
+#define ma_mb()		ma_fast_wmb()
+#define ma_rmb()	ma_fast_rmb()
+#define ma_wmb()	wbflush()
+#define ma_iob()	wbflush()
 #define ma_read_barrier_depends()	do { } while(0)
 
 #ifdef MA__LWPS
@@ -73,11 +107,89 @@
 # define ma_smp_read_barrier_depends()	do { } while(0)
 #endif
 
-/*
- * XXX check on these---I suspect what Linus really wants here is
- * acquire vs release semantics but we can't discuss this stuff with
- * Linus just yet.  Grrr...
- */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m, unsigned long old,
+	unsigned long new)
+{
+	__ma_u32 retval;
+
+	/* XXX assume this */
+	//if (cpu_has_llsc && R10000_LLSC_WAR) {
+		__asm__ __volatile__(
+		"	.set	push					\n"
+		"	.set	noat					\n"
+		"	.set	mips3					\n"
+		"1:	ll	%0, %2			# __cmpxchg_u32	\n"
+		"	bne	%0, %z3, 2f				\n"
+		"	.set	mips0					\n"
+		"	move	$1, %z4					\n"
+		"	.set	mips3					\n"
+		"	sc	$1, %1					\n"
+		"	beqzl	$1, 1b					\n"
+#ifdef MA__LWPS
+		"	sync						\n"
+#endif
+		"2:							\n"
+		"	.set	pop					\n"
+		: "=&r" (retval), "=R" (*m)
+		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "memory");
+#if 0
+	} else if (cpu_has_llsc) {
+		__asm__ __volatile__(
+		"	.set	push					\n"
+		"	.set	noat					\n"
+		"	.set	mips3					\n"
+		"1:	ll	%0, %2			# __cmpxchg_u32	\n"
+		"	bne	%0, %z3, 2f				\n"
+		"	.set	mips0					\n"
+		"	move	$1, %z4					\n"
+		"	.set	mips3					\n"
+		"	sc	$1, %1					\n"
+		"	beqz	$1, 1b					\n"
+#ifdef CONFIG_SMP
+		"	sync						\n"
+#endif
+		"2:							\n"
+		"	.set	pop					\n"
+		: "=&r" (retval), "=R" (*m)
+		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "memory");
+	} else {
+		unsigned long flags;
+
+		local_irq_save(flags);
+		retval = *m;
+		if (retval == old)
+			*m = new;
+		local_irq_restore(flags);	/* implies memory barrier  */
+	}
+#endif
+
+	return retval;
+}
+
+/* This function doesn't exist, so you'll get a linker error
+   if something tries to do an invalid xchg().  */
+extern void __ma_cmpxchg_called_with_bad_pointer(void);
+
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr, unsigned long old,
+	unsigned long new, int size)
+{
+	switch (size) {
+	case 4:
+		return __ma_cmpxchg_u32(ptr, old, new);
+	//case 8:
+		//return __ma_cmpxchg_u64(ptr, old, new);
+	}
+	__ma_cmpxchg_called_with_bad_pointer();
+	return old;
+}
+
+#define ma_cmpxchg(ptr,old,new) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(new),sizeof(*(ptr))))
+
+#else /* IRIX_SYS */
+#error "to write !"
+#endif /* IRIX_SYS */

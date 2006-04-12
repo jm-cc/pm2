@@ -236,7 +236,7 @@ struct marcel_topo_level {
 #section variables
 extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
-extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST];
+extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 
 #section functions
 #depend "[variables]"

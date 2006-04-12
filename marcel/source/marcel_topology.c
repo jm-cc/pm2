@@ -519,6 +519,7 @@ static void topo_discover(void) {
 		if (j==i && !marcel_topo_levels[l+1][j].vpset) {
 			/* TODO: merge level types */
 			mdebug("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");
+#ifdef MA__NUMA
 			if (marcel_topo_levels[l+1] == marcel_topo_cpu_level)
 				marcel_topo_cpu_level = marcel_topo_levels[l];
 #ifdef MARCEL_SMT_IDLE
@@ -527,6 +528,7 @@ static void topo_discover(void) {
 #endif
 			else if (marcel_topo_levels[l+1] == marcel_topo_node_level)
 				marcel_topo_node_level = marcel_topo_levels[l];
+#endif
 			TBX_FREE(marcel_topo_levels[l+1]);
 			memmove(&marcel_topo_levels[l+1],&marcel_topo_levels[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_levels));
 			marcel_topo_nblevels--;

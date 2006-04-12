@@ -439,7 +439,7 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    if [ $PM2_SYS = "LINUX_SYS" -o $PM2_SYS = "GNU_SYS" ]
+    if [ $PM2_SYS = "LINUX_SYS" -o $PM2_SYS = "GNU_SYS" ]; then
     	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
     else
     # repeating libs twice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)

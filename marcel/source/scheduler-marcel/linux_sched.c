@@ -715,7 +715,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	/* quand on le voudra, il faudra faire attention que dequeue_task peut
 	 * vouloir déverouiller la bulle pour pouvoir verrouiller la runqueue */
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
-	PROF_EVENT2(sched_setprio,&t->sched.internal,prio);
+	PROF_EVENT2(sched_setprio,t,prio);
 	h = ma_task_holder_lock_softirq(t);
 	if ((requeue = (MA_TASK_IS_SLEEPING(t) &&
 			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))

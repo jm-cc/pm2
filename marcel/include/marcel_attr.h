@@ -96,7 +96,7 @@ struct __marcel_attr_s
   .vpmask= MARCEL_VPMASK_EMPTY, \
   .flags= 0, \
   .name= "user_task", \
-  .id = 0, \
+  .id = -1, \
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
 }
 

@@ -25,6 +25,7 @@ marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubbl
 int marcel_bubble_init(marcel_bubble_t *bubble) {
 	PROF_EVENT1(bubble_sched_new,bubble);
 	*bubble = (marcel_bubble_t) MARCEL_BUBBLE_INITIALIZER(*bubble);
+	PROF_EVENT2(sched_setprio,bubble,bubble->sched.prio); \
 	return 0;
 }
 

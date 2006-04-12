@@ -71,7 +71,7 @@ struct marcel_topo_level marcel_machine_level[] = {
 };
 
 
-struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST] = {
+struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 	marcel_machine_level
 };
 

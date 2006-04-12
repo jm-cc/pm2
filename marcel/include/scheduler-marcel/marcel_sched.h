@@ -235,6 +235,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->holder_data=NULL;
 	INIT_LIST_HEAD(&internal->run_list);
 	internal->prio=attr->sched.prio;
+	PROF_EVENT2(sched_setprio,internal,internal->prio);
 	//timestamp, last_ran
 	ma_atomic_init(&internal->time_slice,MARCEL_TASK_TIMESLICE);
 	//entity_list

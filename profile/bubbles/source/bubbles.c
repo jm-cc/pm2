@@ -451,6 +451,7 @@ typedef struct {
 	entity_t entity;
 	state_t state;
 	char *name;
+	int id;
 } thread_t;
 
 static inline thread_t * thread_of_entity(entity_t *e) {
@@ -505,6 +506,7 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.nospace = 0;
 	t->state = THREAD_BLOCKED;
 	t->name = NULL;
+	t->id = -1;
 	if (initrq)
 		addToRunqueue(initrq, &t->entity);
 	return t;
@@ -1528,7 +1530,7 @@ void bubbleInsertThread(thread_t *bubble, thread_t *thread);
  * Main
  */
 
-static bubble_t *bigb;
+//static bubble_t *bigb;
 
 static void error(const char *msg, ...) {
 	va_list args;
@@ -1669,7 +1671,7 @@ int main(int argc, char *argv[]) {
 				showEntity(&b->entity);
 				break;
 			}
-			case BUBBLE_SCHED_SETPRIO: {
+			case SCHED_SETPRIO: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
 				b->entity.prio = ev.ev64.param[1];
 				printf("bubble %p(%p) priority set to %"PRIi64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
@@ -1861,6 +1863,15 @@ int main(int argc, char *argv[]) {
 					t->name=strdup(name);
 					break;
 				}
+				case SET_THREAD_ID: {
+					uint64_t th = ev.ev64.param[0];
+					thread_t *t = getThread(th);
+					int id = ev.ev64.param[1];
+					printfThread(th,t);
+					printf(" id %d\n", id);
+					t->id=id;
+					break;
+				}
 				case SCHED_TICK: {
 					pause(DELAYTIME);
 					break;
@@ -1946,7 +1957,7 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				default:
-					printf("%16"PRIu64" %"PRIx64" %p %010"PRIx64" %1u",ev.ev64.time ,ev.ev64.code, (void*)ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
+					printf("%16"PRIu64" %"PRIx64" %p %010"PRIx64" %1u",ev.ev64.time ,ev.ev64.code, (void*)(uintptr_t)ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
 					for (i=0;i<ev.ev64.nb_params;i++)
 						printf(" %010"PRIx64, ev.ev64.param[i]);
 					printf("\n");

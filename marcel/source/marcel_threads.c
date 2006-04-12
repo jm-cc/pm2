@@ -80,6 +80,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->depl
 	strncpy(t->name,attr->name,MARCEL_MAXNAMESIZE);
 	t->id = attr->id;
+	PROF_EVENT2(set_thread_id,t,t->id);
 	//t->number
 	t->timer = NULL;
 	t->not_migratable = attr->not_migratable;
@@ -208,6 +209,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 		static_stack = FALSE;
 	} /* fin (attr->stack_base) */
 
+	PROF_THREAD_BIRTH(new_task);
+	
 	init_marcel_thread(new_task, attr);
 	new_task->stack_base = stack_base;
 	new_task->static_stack = static_stack;
@@ -242,8 +245,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task->number = ma_atomic_dec_return(&norun_pid);
 	}
 	MTRACE("Creation", new_task);
-	
-	PROF_THREAD_BIRTH(new_task);
 	
 	//PROF_IN_EXT(newborn_thread);
 

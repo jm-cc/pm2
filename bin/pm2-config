@@ -422,7 +422,6 @@ pm2config_set_vars()
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
 	eval _extra_ld_path=\"\$_extra_ld_path \$PM2_${_LIB}_LD_PATH\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
-	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
 	eval _PM2CONFIG_${_lib}_LD_PATH=\"\$PM2_${_LIB}_LD_PATH\"
 	eval _PM2CONFIG_${_lib}_LIBS=\"\$PM2_${_LIB}_LIBS\"
 	eval export _PM2CONFIG_${_lib}_LIBS
@@ -440,11 +439,11 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" -o $PM2_SYS = "AIX_SYS" ] ; then
-    # repeating libs twice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)
-    	_PM2CONFIG_LD_LIBS="$_scripts $_PM2CONFIG_LD_LIBS $_PM2CONFIG_LD_LIBS $_extra"
+    if [ $PM2_SYS = "LINUX_SYS" -o $PM2_SYS = "GNU_SYS" ]
+    	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
     else
-    	_PM2CONFIG_LD_LIBS="$_scripts -Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
+    # repeating libs twice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)
+    	_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_PM2CONFIG_LD_LIBS $_extra"
     fi
 
     export _PM2CONFIG_LD_LIBS

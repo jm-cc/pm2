@@ -536,7 +536,7 @@ static void topo_discover(void) {
 		}
 	}
 
-	for (l=0; l<marcel_topo_nblevels; l++) {
+	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 			marcel_topo_levels[l][i].arity=0;
 			for (j=0; marcel_topo_levels[l+1][j].vpset; j++)

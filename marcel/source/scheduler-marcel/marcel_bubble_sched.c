@@ -65,7 +65,7 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 #define SETPRIO(_prio); \
 	if (running) \
 		ma_rq_dequeue_entity(&bubble->sched, ma_rq_holder(h)); \
-	PROF_EVENT2(bubble_sched_setprio,bubble,_prio); \
+	PROF_EVENT2(sched_setprio,&bubble->sched,_prio); \
 	MA_BUG_ON(bubble->sched.prio == _prio); \
 	bubble->sched.prio = _prio; \
 	if (running) \

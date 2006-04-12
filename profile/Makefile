@@ -25,7 +25,7 @@ ifneq ($(MAKECMDGOALS),fut)
 $(MOD_GEN_OBJ)/profile.o: $(MOD_GEN_INC)/fut_entries.h
 endif
 
-.PHONY: default libs fut_files
+.PHONY: default libs
 
 libs: $(MOD_GEN_INC)/fut_entries.h
 

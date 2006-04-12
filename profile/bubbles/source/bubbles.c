@@ -1672,9 +1672,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			case SCHED_SETPRIO: {
-				bubble_t *b = getBubble(ev.ev64.param[0]);
-				b->entity.prio = ev.ev64.param[1];
-				printf("bubble %p(%p) priority set to %"PRIi64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
+				entity_t *e = getEntity(ev.ev64.param[0]);
+				e->prio = ev.ev64.param[1];
+				printf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
 				break;
 			}
 #ifdef BUBBLE_SCHED_CLOSE
@@ -1701,7 +1701,7 @@ int main(int argc, char *argv[]) {
 			case BUBBLE_SCHED_SWITCHRQ: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				rq_t *rq = getRunqueue(ev.ev64.param[1]);
-				printf("entity %p(%p) switching to %p (%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
+				printf("%s %p(%p) switching to %p (%p)\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
 				switchRunqueues(rq, e);
 				break;
 			}

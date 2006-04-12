@@ -47,7 +47,7 @@ for m in ${modules} ; do
 				mkdir ${categ}.${suffix}
 				cd ${categ}.${suffix}
 				for f in ../options/${categ}*; do
-					ln -s $f
+					ln -s $f .
 				done
 				cd ..
 				echo "${categ}.${suffix} done."

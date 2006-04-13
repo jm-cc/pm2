@@ -96,7 +96,7 @@ void pm2debug_printf_state(int state);
 
 #define PM2DEBUG_MAXLINELEN 512
 
-#ifdef PM2DEBUG
+#if defined(PM2DEBUG) || defined(TBX_KERNEL)
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
 int TBX_FORMAT (printf, 5, 6) 

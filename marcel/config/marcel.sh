@@ -1,3 +1,4 @@
+[ "$PM2_SYS" = IRIX_SYS ] && PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -fno-omit-frame-pointer"
 PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -I${PM2_ROOT}/marcel/autogen-include -D__STDC_LIMIT_MACROS"
 
 case " $PM2_LIBS " in

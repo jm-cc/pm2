@@ -26,8 +26,10 @@ usage() # exit_code
 Usage: $PROGNAME { option }
 
   option:
-    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -m name : Use module named "name" (default=profile)
+    -f name      : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -m name      : Use module named "name" (default=profile)
+    -t type      : Generate "type" files (default=pm2, app or pad)
+    -s searchdir : Search for fut files in the searchdir directory (default=./)
     -h : Display this help message
 EOF
     exit $1
@@ -36,6 +38,11 @@ EOF
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 MODULE=profile
+TYPE=pm2
+SEARCHDIR=./
+
+
+export FXT_ROOT=/usr/local/include/fxt
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -47,6 +54,16 @@ while [ $# -gt 0 ]; do
 	-m)
 	    shift
 	    MODULE="$1"
+	    shift
+	    ;;
+	-t)
+	    shift
+	    TYPE="$1"
+	    shift
+	    ;;
+	-s)
+	    shift
+	    SEARCHDIR="$1"
 	    shift
 	    ;;
 	-h)
@@ -62,68 +79,98 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-#echo "Building fut_entries.h & fut_print.h for flavor $PM2_FLAVOR..."
+echo "Building fut_entries.h & fut_print.h for flavor $PM2_FLAVOR (type is $TYPE)..."
+echo "SearchPath : $SEARCHDIR"
 
 set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-config
 
-BUILDDIR=$_PM2CONFIG_BUILD
+BUILDDIR=`echo $_PM2CONFIG_BUILD | sed -e 's/\/\//\//'` # pour eviter les // dans le #include
 
 RECORD_SIZE=1
 
-GENDIR=${BUILDDIR}/${MODULE}/include
+export GENDIR=${BUILDDIR}/${MODULE}/include
 
 if [ ! -d ${GENDIR} ] ; then
     mkdir -p ${GENDIR}
 fi
 
-deffile=${GENDIR}/fut_entries.h
+
+deffile=${GENDIR}/${TYPE}_fut_entries.h
+printfile=${GENDIR}/${TYPE}_fut_print.h
+
+case $TYPE in
+    pm2)
+	base=$((4096 + 256)) # 0x1100
+	other=15728640 # 0xf00000
+	deffile=${GENDIR}/fut_entries.h
+	printfile=${GENDIR}/fut_print.h
+	;;
+    app)
+	base=$((8192 + 256)) # 0x2100
+	other=15990784 # 0xf40000
+	;;
+    pad)
+	base=$((12544 + 256)) # 0x3100
+	other=16252928 # 0xf80000
+	;;
+esac
+
+value=0
+
 echo "#ifndef FUT_ENTRIES_IS_DEF" > $deffile
 echo "#define FUT_ENTRIES_IS_DEF" >> $deffile
 echo >> $deffile
 
-printfile=${GENDIR}/fut_print.h
 > $printfile
 
-for c in \
-    FUT_SETUP_CODE \
-    FUT_KEYCHANGE_CODE \
-    FUT_RESET_CODE \
-    FUT_CALIBRATE0_CODE \
-    FUT_CALIBRATE1_CODE \
-    FUT_CALIBRATE2_CODE \
-    FUT_SWITCH_TO_CODE \
-    FUT_NEW_LWP_CODE \
-    FUT_THREAD_BIRTH_CODE \
-    FUT_THREAD_DEATH_CODE \
-    FUT_SET_THREAD_NAME_CODE \
-    FUT_MAIN_ENTRY_CODE \
-    FUT_MAIN_EXIT_CODE
-    do
-    code="`grep $c /usr/local/include/fxt/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
-    label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr '[A-Z]' '[a-z]'`"
-    echo "{ $c, \"$label\" }," >> $printfile
-done
 
-base=$((4096 + 256)) # 0x1100
-value=0
-other=15728640 # 0xf00000
+case $TYPE in
+    pm2)
 
-THE_MODULES="$_PM2CONFIG_PROF_MODULES"
-case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
-    *\ -DDO_PROFILE\ *)
-	THE_MODULES="${THE_MODULES} examples"
+	for c in \
+	    FUT_SETUP_CODE \
+	    FUT_KEYCHANGE_CODE \
+	    FUT_RESET_CODE \
+	    FUT_CALIBRATE0_CODE \
+	    FUT_CALIBRATE1_CODE \
+	    FUT_CALIBRATE2_CODE \
+	    FUT_SWITCH_TO_CODE \
+	    FUT_NEW_LWP_CODE \
+	    FUT_THREAD_BIRTH_CODE \
+	    FUT_THREAD_DEATH_CODE \
+	    FUT_SET_THREAD_NAME_CODE \
+	    FUT_MAIN_ENTRY_CODE \
+	    FUT_MAIN_EXIT_CODE
+	  do
+	  code="`grep $c ${FXT_ROOT}/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
+	  label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr '[A-Z]' '[a-z]'`"
+	  echo "{ $c, \"$label\" }," >> $printfile
+	done
+
+	THE_MODULES="$_PM2CONFIG_PROF_MODULES"
+	case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
+	    *\ -DDO_PROFILE\ *)
+	    THE_MODULES="${THE_MODULES} examples"
+	    ;;
+	esac
+
+	echo "#include  <$BUILDDIR/${MODULE}/include/app_fut_print.h>" >> $printfile
+	echo "#include  <$BUILDDIR/${MODULE}/include/pad_fut_print.h>" >> $printfile
+	echo "#include  <$BUILDDIR/${MODULE}/include/app_fut_entries.h>" >> $deffile
+	echo "#include  <$BUILDDIR/${MODULE}/include/pad_fut_entries.h>" >> $deffile
+	for mod in $THE_MODULES ; do
+            # Ugly!!! We should use --cppdir <mod> instead of --buildir!
+	    FUT_FILES="$FUT_FILES `find ${BUILDDIR}/$mod -name '*.fut'`"
+	done
 	;;
+    *)
+	FUT_FILES=`find ${SEARCHDIR}/ -name '*.fut'`
+        ;;
 esac
 
-for mod in $THE_MODULES ; do
 
-    # Ugly!!! We should use --cppdir <mod> instead of --buildir!
-    FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
-    if [ -z "$FUT_FILES" ] ; then
-	continue
-    fi
-    for e in `cat $FUT_FILES | sort | uniq`; do
+for e in `cat $FUT_FILES | sort | uniq`; do
     case $e in
         *entry_code)
 	    num=$(($value + $base))
@@ -142,8 +189,7 @@ for mod in $THE_MODULES ; do
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
             echo "unsigned $e = $xnum ;" >> $deffile
-
-            value=$(($value + 1))
+            value=$(($value + 1))	    
 	    if [ $value = 256 ]; then
 		base=$(($base + 512))
 		value=0
@@ -184,9 +230,9 @@ for mod in $THE_MODULES ; do
 	    exit 1
 	    ;;
     esac
-    done
 done
+
 echo >> $deffile
 echo "#endif" >> $deffile
 
-exit 0
+#exit 0

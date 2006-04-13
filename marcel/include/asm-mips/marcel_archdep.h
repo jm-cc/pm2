@@ -36,6 +36,13 @@
   register unsigned long sp asm("$sp"); \
   sp; \
 })
+#ifdef IRIX_SYS
+#define get_fp() \
+({ \
+ register unsigned long fp asm("$fp"); \
+  fp; \
+})
+#endif
 #else
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
@@ -43,3 +50,14 @@
 #  define set_sp(val) \
   __asm__ __volatile__("move $sp, %0" \
                        : : "r" (val) : "memory", "sp" )
+
+#ifdef IRIX_SYS
+#  define set_fp(val) \
+  __asm__ __volatile__("move $fp, %0" \
+                       : : "r" (val) : "memory", "fp")
+
+#define set_sp_fp(sp,fp) \
+  __asm__ __volatile__("move $sp, %0\n" \
+		       "move $fp, %1\n" \
+		  : : "r" (sp), "r" (fp) : "memory", "sp", "fp")
+#endif

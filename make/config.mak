@@ -19,9 +19,9 @@ MAKEFILE_FILE := Makefile
 
 # CC, AS, LD -> Commandes de construction
 #---------------------------------------------------------------------
-#CC := gcc #set with "pm2-config --cc"
-AS := gcc # needed for some gcc specific flags
-LD := gcc # needed for some gcc specific flags
+CC := $(shell pm2-config --cc)
+AS := $(CC) # needed for some gcc specific flags
+LD := $(CC) # needed for some gcc specific flags
 
 LEX  :=  flex
 YACC :=  bison -y -d --locations

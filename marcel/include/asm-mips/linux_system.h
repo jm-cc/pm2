@@ -244,8 +244,10 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr,
 	switch (size) {
 	case 4:
 		return __ma_cmpxchg_u32(ptr, old, new);
+#if MA_BITS_PER_LONG == 64
 	case 8:
 		return __ma_cmpxchg_u64(ptr, old, new);
+#endif
 	}
 	__ma_cmpxchg_called_with_bad_pointer();
 	return old;

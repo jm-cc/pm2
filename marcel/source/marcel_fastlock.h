@@ -247,7 +247,7 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
     mdebug("releasing lock %p in lock %p to %p\n", marcel_self(), lock, 
 	   first->task);
     first->blocked=0;
-    ma_wmb();
+    ma_smp_wmb();
     ma_wake_up_thread(first->task);
     ret=1;
   } else {
@@ -275,7 +275,7 @@ __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
     mdebug("releasing lock %p in lock %p to %p\n", marcel_self(), lock, 
 	   first->task);
     first->blocked=0;
-    ma_wmb();
+    ma_smp_wmb();
     ma_wake_up_thread(first->task);
     ret=1;
   } else {

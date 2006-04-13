@@ -172,7 +172,7 @@ void marcel_sem_V(marcel_sem_t *s)
     s->first = c->next;
     ma_spin_unlock_bh(&s->lock);
     c->blocked = 0;
-    ma_wmb();
+    ma_smp_wmb();
     ma_wake_up_thread(c->task);
   } else {
     ma_spin_unlock_bh(&s->lock);

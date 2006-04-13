@@ -151,7 +151,7 @@ restart:
 		if (pending) {
 			/* On remet les pending en place... */
 			ma_local_softirq_pending() |= pending;
-			ma_wmb();
+			ma_smp_wmb();
 			ma_wakeup_softirqd();
 		}
 		//__ma_local_bh_enable();

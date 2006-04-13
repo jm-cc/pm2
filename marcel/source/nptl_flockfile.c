@@ -205,7 +205,7 @@ __tbx_inline__ static void _lpt_IO_lock_unlock(_lpt_IO_lock_t *_name)
           mdebug("releasing reclock %p in lock %p to %p\n", marcel_self(), 
 		 _name, first->task);
           first->blocked=0;
-          ma_wmb();
+          ma_smp_wmb();
           ma_wake_up_thread(first->task);
         } else {
           mdebug("releasing reclock %p in lock %p\n", marcel_self(), _name);

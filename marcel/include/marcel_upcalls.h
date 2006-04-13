@@ -45,7 +45,7 @@
   do { \
         __ma_get_lwp_var(act_info).current_act_id=(unsigned long)(thread); \
         __ma_get_lwp_var(act_info).critical_section=&(thread)->preempt_count;\
-	ma_mb(); \
+	ma_smp_mb(); \
   } while (0)
 #else
 #define MA_ACT_SET_THREAD(thread) ((void)0)

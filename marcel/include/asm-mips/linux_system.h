@@ -54,7 +54,6 @@
  * sequential memory pages only.
  */
 
-#ifdef IRIX_SYS
 /* dans le noyau linux, ils disent que cela dépend du processeur: utiliser sync ou wb */
 #define __ma_sync() \
 	__asm__ __volatile__(			\
@@ -87,12 +86,17 @@
 		__ma_fast_iob();			\
 	} while (0)
 
+#ifdef IRIX_SYS
 extern void cacheflush(void);
+#define ma_cacheflush cacheflush
+#else /* IRIX_SYS */
+#error "to write !"
+#endif /* IRIX_SYS */
 
 #define ma_mb()		ma_fast_wmb()
 #define ma_rmb()	ma_fast_rmb()
-#define ma_wmb()	cacheflush()
-#define ma_iob()	cacheflush()
+#define ma_wmb()	ma_cacheflush()
+#define ma_iob()	ma_cacheflush()
 #define ma_read_barrier_depends()	do { } while(0)
 
 #ifdef MA__LWPS
@@ -171,6 +175,65 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 	return retval;
 }
 
+#if MA_BITS_PER_LONG == 64
+static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned long old,
+	unsigned long new)
+{
+	__ma_u64 retval;
+
+	/* XXX assume this */
+//	if (cpu_has_llsc) {
+		__asm__ __volatile__(
+		"	.set	push					\n"
+		"	.set	noat					\n"
+		"	.set	mips3					\n"
+		"1:	lld	%0, %2			# __cmpxchg_u64	\n"
+		"	bne	%0, %z3, 2f				\n"
+		"	move	$1, %z4					\n"
+		"	scd	$1, %1					\n"
+		"	beqzl	$1, 1b					\n"
+#ifdef MA__LWPS
+		"	sync						\n"
+#endif
+		"2:							\n"
+		"	.set	pop					\n"
+		: "=&r" (retval), "=R" (*m)
+		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "memory");
+#if 0
+	} else if (cpu_has_llsc) {
+		__asm__ __volatile__(
+		"	.set	push					\n"
+		"	.set	noat					\n"
+		"	.set	mips3					\n"
+		"1:	lld	%0, %2			# __cmpxchg_u64	\n"
+		"	bne	%0, %z3, 2f				\n"
+		"	move	$1, %z4					\n"
+		"	scd	$1, %1					\n"
+		"	beqz	$1, 1b					\n"
+#ifdef CONFIG_SMP
+		"	sync						\n"
+#endif
+		"2:							\n"
+		"	.set	pop					\n"
+		: "=&r" (retval), "=R" (*m)
+		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "memory");
+	} else {
+		unsigned long flags;
+
+		local_irq_save(flags);
+		retval = *m;
+		if (retval == old)
+			*m = new;
+		local_irq_restore(flags);	/* implies memory barrier  */
+	}
+#endif
+
+	return retval;
+}
+#endif
+
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 extern void __ma_cmpxchg_called_with_bad_pointer(void);
@@ -181,15 +244,11 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr,
 	switch (size) {
 	case 4:
 		return __ma_cmpxchg_u32(ptr, old, new);
-	//case 8:
-		//return __ma_cmpxchg_u64(ptr, old, new);
+	case 8:
+		return __ma_cmpxchg_u64(ptr, old, new);
 	}
 	__ma_cmpxchg_called_with_bad_pointer();
 	return old;
 }
 
 #define ma_cmpxchg(ptr,old,new) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(new),sizeof(*(ptr))))
-
-#else /* IRIX_SYS */
-#error "to write !"
-#endif /* IRIX_SYS */

@@ -123,6 +123,20 @@ static void __marcel_init look_cpuinfo(void) {
 	int i,j,k;
 	unsigned proc_physid[MARCEL_NBMAXCPUS],proc_coreid[MARCEL_NBMAXCPUS];
 
+	unsigned cpu, cpu2;
+
+	int dienum[maxphysid+1];
+	ma_cpu_set_t diecpus[maxphysid+1];
+	struct marcel_topo_level *die_level;
+	unsigned numdies=0;
+	int really_dies=0;
+
+	int corenum[numdies*(maxcoreid+1)];
+	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
+	struct marcel_topo_level *core_level;
+	unsigned numcores=0;
+	int really_cores=0;
+
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
 		fprintf(stderr,"could not open /proc/cpuinfo\n");
 		return;
@@ -176,14 +190,6 @@ static void __marcel_init look_cpuinfo(void) {
 
 	mdebug("%ld processors\n", processor+1);
 
-	unsigned cpu, cpu2;
-
-	int dienum[maxphysid+1];
-	ma_cpu_set_t diecpus[maxphysid+1];
-	struct marcel_topo_level *die_level;
-	unsigned numdies=0;
-	int really_dies=0;
-
 	memset(dienum,0,sizeof(dienum));
 	memset(diecpus,0,sizeof(diecpus));
 
@@ -229,12 +235,6 @@ static void __marcel_init look_cpuinfo(void) {
 
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
-
-	int corenum[numdies*(maxcoreid+1)];
-	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
-	struct marcel_topo_level *core_level;
-	unsigned numcores=0;
-	int really_cores=0;
 
 	memset(corenum,0,sizeof(corenum));
 	memset(corecpus,0,sizeof(corecpus));

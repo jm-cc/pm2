@@ -155,8 +155,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 {
 	ma_holder_t *h = NULL;
 	ma_runqueue_t *rq;
-	LOG_IN();
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
+	LOG_IN();
 	internal->type = MA_TASK_ENTITY;
 	if (attr->sched.init_holder)
 		h = attr->sched.init_holder;
@@ -357,9 +357,11 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const int dont_schedule,
 				 __const unsigned long base_stack)
 { 
-	LOG_IN();
 #ifdef MA__BUBBLES
 	ma_holder_t *bh;
+#endif
+	LOG_IN();
+#ifdef MA__BUBBLES
 	if ((bh=ma_task_init_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
 		bh = NULL;
 #endif

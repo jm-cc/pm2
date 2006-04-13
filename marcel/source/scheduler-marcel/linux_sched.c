@@ -1536,13 +1536,15 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
 #ifdef MARCEL_BUBBLE_EXPLODE
-		marcel_bubble_t *b;
-		if ((h = ma_task_init_holder(p)) && 
-				ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
-			b = ma_bubble_holder(h);
-			if (b!=&marcel_root_bubble
-				&& ma_atomic_dec_and_test(&b->sched.time_slice))
-				ma_bubble_tick(b);
+		{
+			marcel_bubble_t *b;
+			if ((h = ma_task_init_holder(p)) && 
+					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
+				b = ma_bubble_holder(h);
+				if (b!=&marcel_root_bubble
+					&& ma_atomic_dec_and_test(&b->sched.time_slice))
+					ma_bubble_tick(b);
+			}
 		}
 #endif
 	}

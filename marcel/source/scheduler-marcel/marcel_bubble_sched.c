@@ -73,8 +73,8 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 		ma_rq_enqueue_entity(&bubble->sched, ma_rq_holder(h));
 
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
-	if (prio == bubble->sched.prio) return 0;
 	VARS;
+	if (prio == bubble->sched.prio) return 0;
 	ma_preempt_disable();
 	ma_local_bh_disable();
 	RAWLOCK_HOLDER();

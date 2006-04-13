@@ -462,6 +462,9 @@ static void sig_stop_itimer(void)
 
 static void sig_stop_timer(ma_lwp_t lwp)
 {
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+	struct sigaction sa;
+#endif
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
@@ -472,7 +475,6 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	 * désactivant simplement l'interruption.
 	 *
 	 * Et puis on en a besoin dans le cas CHAINED_SIGALRM. */
-	struct sigaction sa;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;

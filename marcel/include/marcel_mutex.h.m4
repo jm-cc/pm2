@@ -24,7 +24,7 @@ dnl  ***************************/
 
 #section macros
 #define MARCEL_MUTEX_INITIALIZER \
-  {.__data.__lock=MA_FASTLOCK_UNLOCKED}
+  {.__data = {.__lock=MA_FASTLOCK_UNLOCKED}}
 
 
 #section macros

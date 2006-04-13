@@ -59,5 +59,5 @@
 #define set_sp_fp(sp,fp) \
   __asm__ __volatile__("move $sp, %0\n" \
 		       "move $fp, %1\n" \
-		  : : "r" (sp), "r" (fp) : "memory", "sp", "fp")
+		  : : "r" (sp), "r" (fp) : "memory", "sp" /*, "fp" */)
 #endif

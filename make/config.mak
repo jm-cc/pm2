@@ -19,7 +19,7 @@ MAKEFILE_FILE := Makefile
 
 # CC, AS, LD -> Commandes de construction
 #---------------------------------------------------------------------
-CC := $(shell pm2-config --cc)
+CC := gcc
 AS := $(CC) # needed for some gcc specific flags
 LD := $(CC) # needed for some gcc specific flags
 

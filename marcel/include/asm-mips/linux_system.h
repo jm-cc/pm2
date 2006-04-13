@@ -87,12 +87,12 @@
 		__ma_fast_iob();			\
 	} while (0)
 
-extern void wbflush(void);
+extern void cacheflush(void);
 
 #define ma_mb()		ma_fast_wmb()
 #define ma_rmb()	ma_fast_rmb()
-#define ma_wmb()	wbflush()
-#define ma_iob()	wbflush()
+#define ma_wmb()	cacheflush()
+#define ma_iob()	cacheflush()
 #define ma_read_barrier_depends()	do { } while(0)
 
 #ifdef MA__LWPS

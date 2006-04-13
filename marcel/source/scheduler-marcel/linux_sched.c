@@ -3205,10 +3205,12 @@ EXPORT_SYMBOL(kernel_flag);
 
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
+#ifdef MA__LWPS
+	unsigned num = LWP_NUMBER(lwp);
+#endif
 	LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
-	unsigned num = LWP_NUMBER(lwp);
 	{
 	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	char name[16];

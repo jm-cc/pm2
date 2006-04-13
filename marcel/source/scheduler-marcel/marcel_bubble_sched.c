@@ -540,12 +540,14 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_holder_t *prevh, ma_runqueue_t *rq,
 		ma_holder_t **nexth, int idx) {
 	marcel_bubble_t *bubble;
-	LOG_IN();
-
 #ifdef MA__LWPS
 	int max_prio;
 	ma_runqueue_t *currq;
+#endif
 
+	LOG_IN();
+
+#ifdef MA__LWPS
 	/* sur smp, descendre l'entité si besoin est */
 	if (nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une

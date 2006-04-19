@@ -85,3 +85,25 @@ tbx_tick2usec(long long t)
 {
   return (double)(t)*scale;
 }
+
+char *
+tbx_tick2str(long long t)
+{
+  long long h = 0, m=0, s=0, ms=0, micros=0;
+  long long t2 = 0;
+  char *result;
+
+  result = (char *) malloc(100 * sizeof(char));
+  t2 = t;
+  h = t2 / 1000 / 1000 / 60 / 60;
+  t2 = t2 - (h * 60 * 60 * 1000 * 1000);
+  m = t2 / 1000 / 1000 / 60;
+  t2 = t2 - (m * 60 * 1000 * 1000);
+  s = t2 / 1000 / 1000;
+  t2 = t2 - (s * 1000 * 1000);
+  ms = t2 / 1000;
+  t2 = t2 - (ms * 1000);
+  micros = t2;
+  sprintf(result, "%lld:%lld:%lld:%lld:%lld", h, m, s, ms, micros);
+  return result;
+}

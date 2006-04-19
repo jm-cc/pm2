@@ -100,4 +100,7 @@ typedef struct timeval tbx_tick_t, *p_tbx_tick_t;
 extern unsigned long long tbx_residual;
 extern tbx_tick_t         tbx_new_event;
 extern tbx_tick_t         tbx_last_event;
+
+char *tbx_tick2str(long long t);
+
 #endif /* TBX_TIMING_H */

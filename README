@@ -66,6 +66,10 @@ To compile an application, just go to the right directory and type
 	cd ${PM2_ROOT}/pm2/examples/simple
 	make simple
 
+For configuring flavors, just run
+
+	ezflavor
+
 III . Running a PM2 application ++++++++++++++++++++++++++++++++++++++
 
 To run a PM2 application, you first have give the list of machines

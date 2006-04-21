@@ -112,7 +112,9 @@ static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
 static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
-	MA_ATOMIC_ADD_RETURN();
+#define __rien
+	MA_ATOMIC_ADD_RETURN(__rien);
+#undef __rien
 }
 
 #section marcel_macros

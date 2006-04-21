@@ -76,6 +76,9 @@ use three machines named riri, fifi and loulou, just type:
 
 Please refer to the help (pm2conf -h) for a list of possible inputs.
 
+Note: this configuration is per-flavor. If you set PM2_FLAVOR to
+another flavor, remember to re-run pm2conf.
+
 Once your configuration is set, make sure to set PM2_RSH to your remote
 shell tool:
 

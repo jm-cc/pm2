@@ -186,8 +186,8 @@ distcleandoc:
 init: checkmake linksinit optionsinit flavorinit
 
 checkmake:
-	@if ( expr $(MAKE_VERSION) \< 3.80 >> /dev/null ) then \
-	echo "Wrong make version. Upgrade to version 3.80"; exit 1;\
+	@if ( expr $(MAKE_VERSION) \< 3.81 >> /dev/null ) then \
+	echo "Wrong make version. Upgrade to version 3.81"; exit 1;\
 	fi
 
 bkco:

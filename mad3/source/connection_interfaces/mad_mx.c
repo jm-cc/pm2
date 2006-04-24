@@ -106,230 +106,15 @@ static tbx_bool_t mad_mx_ev_server_started = tbx_false;
 #define MAD_MX_GROUP_MALLOC_THRESHOLD   256
 
 /*
- * Malloc protection hooks
- * -----------------------
- */
-
-/* Prototypes */
-
-#ifdef MARCEL
-static
-void *
-mad_mx_malloc_hook(size_t len, const void *caller);
-
-static
-void *
-mad_mx_memalign_hook(size_t alignment, size_t len, const void *caller);
-
-static
-void
-mad_mx_free_hook(void *ptr, const void *caller);
-
-static
-void *
-mad_mx_realloc_hook(void *ptr, size_t len, const void *caller);
-
-static
-void
-mad_mx_malloc_initialize_hook(void);
-
-
-/* Previous handlers */
-static
-void *
-(*mad_mx_old_malloc_hook)(size_t len, const void *caller) = NULL;
-
-static
-void *
-(*mad_mx_old_memalign_hook)(size_t alignment, size_t len, const void *caller) = NULL;
-
-static
-void
-(*mad_mx_old_free_hook)(void *PTR, const void *CALLER) = NULL;
-
-static
-void *
-(*mad_mx_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
-
-#endif /* MARCEL */
-
-#if 0
-/*
- * Malloc hooks installation is delayed to mad_mx_driver_init because
- * __malloc_initialize_hook is already defined by the MX library.
- *
- * This is expected to be safe because at the time mad_mx_driver_init is called,
- * no polling request should already be pending.
- */
-
-/* Entry point */
-void (*__malloc_initialize_hook) (void) = mad_mx_malloc_initialize_hook;
-#endif /* 0 */
-
-#ifdef MARCEL
-/* Flag to prevent multiple hooking */
-static
-int mad_mx_malloc_hooked = 0;
-#endif /* MARCEL */
-
-
-/*
  * static functions
  * ----------------
  */
 static
 inline
 void
-__mad_mx_hook_lock(void) {
-#ifdef MARCEL
-        marcel_ev_lock(&mad_mx_ev_server);
-        //DISP("<mx hook LOCK>");
-#endif /* MARCEL */
-}
-
-static
-inline
-void
-__mad_mx_hook_unlock(void) {
-#ifdef MARCEL
-        //DISP("<mx hook UNLOCK>");
-        marcel_ev_unlock(&mad_mx_ev_server);
-#endif /* MARCEL */
-}
-
-#ifdef MARCEL
-static
-void
-mad_mx_install_hooks(void) {
-        LOG_IN();
-        mad_mx_old_malloc_hook		= __malloc_hook;
-        mad_mx_old_memalign_hook	= __memalign_hook;
-        mad_mx_old_free_hook		= __free_hook;
-        mad_mx_old_realloc_hook		= __realloc_hook;
-
-        if (__malloc_hook == mad_mx_malloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__memalign_hook == mad_mx_memalign_hook)
-                FAILURE("hooks corrupted");
-
-        if (__realloc_hook == mad_mx_realloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__free_hook == mad_mx_free_hook)
-                FAILURE("hooks corrupted");
-
-        __malloc_hook		= mad_mx_malloc_hook;
-        __memalign_hook		= mad_mx_memalign_hook;
-        __free_hook		= mad_mx_free_hook;
-        __realloc_hook		= mad_mx_realloc_hook;
-        LOG_OUT();
-}
-
-static
-void
-mad_mx_remove_hooks(void) {
-        LOG_IN();
-        if (__malloc_hook == mad_mx_old_malloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__memalign_hook == mad_mx_old_memalign_hook)
-                FAILURE("hooks corrupted");
-
-        if (__realloc_hook == mad_mx_old_realloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__free_hook == mad_mx_old_free_hook)
-                FAILURE("hooks corrupted");
-
-        __malloc_hook		= mad_mx_old_malloc_hook;
-        __memalign_hook		= mad_mx_old_memalign_hook;
-        __free_hook		= mad_mx_old_free_hook;
-        __realloc_hook		= mad_mx_old_realloc_hook;
-        LOG_OUT();
-}
-
-
-static
-void *
-mad_mx_malloc_hook(size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_mx_hook_lock();
-        mad_mx_remove_hooks();
-        LOG_IN();
-        new_ptr = malloc(len);
-        LOG_OUT();
-        mad_mx_install_hooks();
-        __mad_mx_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void *
-mad_mx_memalign_hook(size_t alignment, size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_mx_hook_lock();
-        mad_mx_remove_hooks();
-        LOG_IN();
-        new_ptr = memalign(alignment, len);
-        LOG_OUT();
-        mad_mx_install_hooks();
-        __mad_mx_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void *
-mad_mx_realloc_hook(void *ptr, size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_mx_hook_lock();
-        mad_mx_remove_hooks();
-        LOG_IN();
-        new_ptr = realloc(ptr, len);
-        LOG_OUT();
-        mad_mx_install_hooks();
-        __mad_mx_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void
-mad_mx_free_hook(void *ptr, const void *caller) {
-
-        __mad_mx_hook_lock();
-        mad_mx_remove_hooks();
-        LOG_IN();
-        free(ptr);
-        LOG_OUT();
-        mad_mx_install_hooks();
-        __mad_mx_hook_unlock();
-}
-
-
-static
-void
-mad_mx_malloc_initialize_hook(void) {
-        mad_mx_malloc_hooked = 1;
-        mad_mx_install_hooks();
-}
-#endif /* MARCEL */
-
-static
-inline
-void
 mad_mx_lock(void) {
 #ifdef MARCEL
-       __mad_mx_hook_lock();
-        mad_mx_remove_hooks();
+        marcel_extlib_protect();
         //DISP("<mx LOCK>");
 #endif /* MARCEL */
 }
@@ -340,8 +125,7 @@ void
 mad_mx_unlock(void) {
 #ifdef MARCEL
         //DISP("<mx UNLOCK>");
-        mad_mx_install_hooks();
-        __mad_mx_hook_unlock();
+        marcel_extlib_unprotect();
 #endif /* MARCEL */
 }
 
@@ -442,12 +226,10 @@ mad_mx_do_poll(marcel_ev_server_t	server,
         LOG_IN();
 	p_ev = struct_up(req, mad_mx_ev_t, inst);
 
-        mad_mx_remove_hooks();
         *(p_ev->p_rc)	= mx_test(p_ev->endpoint, p_ev->p_request, p_ev->p_status, p_ev->p_result);
         if (!(*(p_ev->p_rc) == MX_SUCCESS && !*(p_ev->p_result))) {
                 MARCEL_EV_REQ_SUCCESS(&(p_ev->inst));
         }
-        mad_mx_install_hooks();
         LOG_OUT();
 
         return 0;
@@ -650,11 +432,6 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         d->connection_type  = mad_bidirectional_connection;
 
         TRACE("Initializing MX driver");
-#ifdef MARCEL
-        if (!mad_mx_malloc_hooked) {
-                mad_mx_malloc_initialize_hook();
-        }
-#endif /* MARCEL */
         ds  		= TBX_MALLOC(sizeof(mad_mx_driver_specific_t));
         d->specific	= ds;
 

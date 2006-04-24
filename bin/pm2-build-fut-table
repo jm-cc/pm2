@@ -41,8 +41,7 @@ MODULE=profile
 TYPE=pm2
 SEARCHDIR=./
 
-
-export FXT_ROOT=/usr/local/include/fxt
+export FXT_ROOT=/home/ftrahay/sources/FxT/tools/
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -126,6 +125,12 @@ echo >> $deffile
 
 
 case $TYPE in
+    app)
+	THE_MODULES="profile"
+	;;
+    pad)
+	THE_MODULES="profile" 
+	;;
     pm2)
 
 	for c in \
@@ -154,23 +159,32 @@ case $TYPE in
 	    THE_MODULES="${THE_MODULES} examples"
 	    ;;
 	esac
-
-	echo "#include  <$BUILDDIR/${MODULE}/include/app_fut_print.h>" >> $printfile
-	echo "#include  <$BUILDDIR/${MODULE}/include/pad_fut_print.h>" >> $printfile
-	echo "#include  <$BUILDDIR/${MODULE}/include/app_fut_entries.h>" >> $deffile
-	echo "#include  <$BUILDDIR/${MODULE}/include/pad_fut_entries.h>" >> $deffile
-	for mod in $THE_MODULES ; do
-            # Ugly!!! We should use --cppdir <mod> instead of --buildir!
-	    FUT_FILES="$FUT_FILES `find ${BUILDDIR}/$mod -name '*.fut'`"
-	done
 	;;
-    *)
-	FUT_FILES=`find ${SEARCHDIR}/ -name '*.fut'`
-        ;;
+esac
+case $TYPE in
+    pm2)
+	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $printfile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $printfile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_entries.h\"" >> $deffile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_entries.h\"" >> $deffile
+	;;
 esac
 
+for mod in $THE_MODULES ; do
 
-for e in `cat $FUT_FILES | sort | uniq`; do
+    # Ugly!!! We should use --cppdir <mod> instead of --buildir!
+    case $TYPE in
+	pm2)
+	    FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
+	    ;;
+	*)
+	    FUT_FILES=`find ${SEARCHDIR}/ -name '*.fut'`
+	    ;;
+    esac
+    if [ -z "$FUT_FILES" ] ; then
+	continue
+    fi
+    for e in `cat $FUT_FILES | sort | uniq`; do
     case $e in
         *entry_code)
 	    num=$(($value + $base))
@@ -230,8 +244,8 @@ for e in `cat $FUT_FILES | sort | uniq`; do
 	    exit 1
 	    ;;
     esac
+    done
 done
-
 echo >> $deffile
 echo "#endif" >> $deffile
 

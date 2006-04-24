@@ -79,8 +79,6 @@ static void timer_action(struct ma_softirq_action *a)
 	
 	MTRACE_TIMER("TimerSig", MARCEL_SELF);
 		
-	//marcel_check_sleeping();
-	//marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
 	ma_update_process_times(1);
 		
 	LOG_OUT();

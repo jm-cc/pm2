@@ -41,6 +41,12 @@ typedef ma_spinlock_t marcel_lock_t;
 #define unlock_task() ma_preempt_enable()
 #define locked() ma_preempt_count()
 
+/****************************************************************
+ * À appeler autour de _tout_ appel à fonctions de librairies externes
+ *
+ * Cela désactive la préemption et les traitants de signaux
+ */
+
 #section functions
 #ifdef MA__LIBPTHREAD
 #define marcel_extlib_protect()

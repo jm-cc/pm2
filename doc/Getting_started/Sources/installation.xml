@@ -82,9 +82,7 @@ to uncomment the last line in the <TT>pm2/make/config</TT>.
 </LI>
 <LI>
 <P>
-GNU <TT>make</TT> (version <TT>3.80</TT>). Note that PM2 does not
-compile with the original 3.80 version of make. You may use debian's
-latest patch on <URL>http://ftp.debian.org/debian/pool/main/m/make</URL>.
+GNU <TT>make</TT> (version <TT>3.81</TT> and higher).
 </P>
 </LI>
 </UL>

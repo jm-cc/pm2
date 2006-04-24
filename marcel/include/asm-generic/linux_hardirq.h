@@ -95,8 +95,7 @@ do {									\
 		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;			\
 		if (!ma_in_interrupt() && ma_softirq_pending(LWP_SELF)) \
 			ma_do_softirq();					\
-		/*ma_preempt_enable_no_resched();*/				\
-		ma_preempt_enable();				\
+		ma_preempt_enable_no_resched();				\
 } while (0)
 
 #ifdef MA__LWPS

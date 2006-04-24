@@ -348,8 +348,8 @@ extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
 
 #section functions
 extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
-extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched());
-extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched());
+extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched(void));
+extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched(void));
 
 #section marcel_functions
 

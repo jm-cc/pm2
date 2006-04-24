@@ -121,7 +121,7 @@ int marcel_per_lwp_polling_register(int *data,
                                     void (*func) (void *),
                                     void *arg);
 
-void marcel_per_lwp_polling_proceed();
+void marcel_per_lwp_polling_proceed(void);
 
 /* Un raccourci pratique des fonctions suivantes, utile si l'on ne
  * soumet la requête qu'une seule fois. Les opérations suivantes sont

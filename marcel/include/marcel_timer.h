@@ -60,7 +60,7 @@ typedef int marcel_time_t;
 
 #section functions
 void marcel_settimeslice(unsigned long microsecs);
-unsigned long marcel_gettimeslice();
+unsigned long marcel_gettimeslice(void);
 unsigned long marcel_clock(void);
 
 #ifndef MA__TIMER

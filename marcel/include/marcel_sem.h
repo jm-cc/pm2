@@ -64,6 +64,7 @@ static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline
 static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s)
 {
+  (void)s;
   return 0;
 }
 

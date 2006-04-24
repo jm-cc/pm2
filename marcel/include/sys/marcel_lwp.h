@@ -199,11 +199,11 @@ static __tbx_inline__ void lwp_list_unlock_write(void)
 }
 
 #section functions
-static __tbx_inline__ unsigned get_nb_lwps();
+static __tbx_inline__ unsigned get_nb_lwps(void);
 unsigned marcel_nbvps(void);
 #section inline
 #depend "[marcel_variables]"
-static __tbx_inline__ unsigned get_nb_lwps()
+static __tbx_inline__ unsigned get_nb_lwps(void)
 {
 #ifdef MA__LWPS
   return ma__nb_lwp;
@@ -213,9 +213,9 @@ static __tbx_inline__ unsigned get_nb_lwps()
 }
 
 #section functions
-static __tbx_inline__ unsigned marcel_get_nb_lwps_np();
+static __tbx_inline__ unsigned marcel_get_nb_lwps_np(void);
 #section inline
-static __tbx_inline__ unsigned marcel_get_nb_lwps_np()
+static __tbx_inline__ unsigned marcel_get_nb_lwps_np(void)
 {
    return get_nb_lwps();
 }

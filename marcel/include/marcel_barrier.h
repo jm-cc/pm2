@@ -44,6 +44,7 @@ int pmarcel_barrier_destroy(marcel_barrier_t *b);
 #section inline
 static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b)
 {
+	(void)b;
 	return 0;
 }
 

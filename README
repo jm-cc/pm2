@@ -2,10 +2,7 @@
 
 To be compiled, pm2 software needs:
 
-* make (GNU version > 3.80)
-    Note: PM2 does not compile with the original 3.80
-    version of make. You may use debian's latest patch on
-    http://ftp.debian.org/debian/pool/main/m/make
+* make (GNU version >= 3.81)
 * gcc (version >= 3.2)
     gcc-2.95 can be used, but you need to uncomment the last line in the
     pm2/make/config file

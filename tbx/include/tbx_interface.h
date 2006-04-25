@@ -670,6 +670,15 @@ tbx_htable_manager_exit(void);
 p_tbx_slist_t
 tbx_htable_get_key_slist(const p_tbx_htable_t htable);
 
+void
+tbx_htable_dump_keys(const p_tbx_htable_t htable);
+
+void
+tbx_htable_dump_keys_strvals(p_tbx_htable_t htable);
+
+void
+tbx_htable_dump_keys_ptrvals(p_tbx_htable_t htable);
+
 /*
  * String management
  * -----------------

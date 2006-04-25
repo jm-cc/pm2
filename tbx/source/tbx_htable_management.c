@@ -379,3 +379,75 @@ tbx_htable_get_key_slist(p_tbx_htable_t htable)
 
   return slist;
 }
+
+void
+tbx_htable_dump_keys(p_tbx_htable_t htable)
+{
+  LOG_IN();
+  if (htable->nb_element)
+    {
+      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+
+      while (bucket--)
+	{
+	  p_tbx_htable_element_t element = NULL;
+
+	  element = htable->bucket_array[bucket];
+
+	  while (element)
+	    {
+	      DISP("%s", element->key);
+	      element = element->next;
+	    }
+	}
+    }
+  LOG_OUT();
+}
+
+void
+tbx_htable_dump_keys_strvals(p_tbx_htable_t htable)
+{
+  LOG_IN();
+  if (htable->nb_element)
+    {
+      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+
+      while (bucket--)
+	{
+	  p_tbx_htable_element_t element = NULL;
+
+	  element = htable->bucket_array[bucket];
+
+	  while (element)
+	    {
+	      DISP("%s: '%s'", element->key, (char *)(element->object));
+	      element = element->next;
+	    }
+	}
+    }
+  LOG_OUT();
+}
+
+void
+tbx_htable_dump_keys_ptrvals(p_tbx_htable_t htable)
+{
+  LOG_IN();
+  if (htable->nb_element)
+    {
+      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+
+      while (bucket--)
+	{
+	  p_tbx_htable_element_t element = NULL;
+
+	  element = htable->bucket_array[bucket];
+
+	  while (element)
+	    {
+	      DISP("%s: %p", element->key, element->object);
+	      element = element->next;
+	    }
+	}
+    }
+  LOG_OUT();
+}

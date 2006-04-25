@@ -246,4 +246,13 @@ leoparse_write_range(p_tbx_htable_t      htable,
 		     const char         *key,
 		     p_leoparse_range_t  range);
 
+
+void
+leoparse_dump_object_slist(p_tbx_slist_t l);
+
+void
+leoparse_dump_object_htable(p_tbx_htable_t h);
+
+void
+leoparse_dump_object(p_leoparse_object_t object);
 #endif /* LEOPARSE_INTERFACE_H */

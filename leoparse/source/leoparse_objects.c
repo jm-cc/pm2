@@ -977,4 +977,110 @@ leoparse_write_range(p_tbx_htable_t      htable,
   LOG_OUT();
 }
 
+void
+leoparse_dump_object_slist(p_tbx_slist_t l) {
+        p_leoparse_object_t _o;
 
+        if (tbx_slist_is_nil(l))
+                return;
+
+        tbx_slist_ref_to_head(l);
+        _o = tbx_slist_ref_get(l);
+        leoparse_dump_object(_o);
+
+        while (tbx_slist_ref_forward(l)) {
+                fprintf(stderr, ", ");
+                _o = tbx_slist_ref_get(l);
+                leoparse_dump_object(_o);
+        }
+}
+
+void
+leoparse_dump_object_htable(p_tbx_htable_t h) {
+        p_tbx_slist_t  const l = tbx_htable_get_key_slist(h);
+        char                *_k;
+        p_leoparse_object_t  _o;
+
+        if (tbx_slist_is_nil(l))
+                goto out;
+
+        _k = tbx_slist_extract(l);
+        fprintf(stderr, "%s: ", _k);
+
+        _o = tbx_htable_get(h, _k);
+        TBX_FREE(_k);
+        leoparse_dump_object(_o);
+        fprintf(stderr, ";");
+
+        while (!tbx_slist_is_nil(l)) {
+                _k = tbx_slist_extract(l);
+                fprintf(stderr, " %s: ", _k);
+
+                _o = tbx_htable_get(h, _k);
+                TBX_FREE(_k);
+                leoparse_dump_object(_o);
+                fprintf(stderr, ";");
+        }
+
+ out:
+        tbx_slist_free(l);
+}
+
+void
+leoparse_dump_object(p_leoparse_object_t object) {
+        switch (object->type) {
+        case  leoparse_o_id: {
+                fprintf(stderr, "'%s'", object->id);
+        }
+                break;
+        case leoparse_o_string: {
+                fprintf(stderr, "\"%s\"", object->string);
+        }
+                break;
+        case leoparse_o_htable: {
+                p_tbx_htable_t const h = object->htable;
+
+                fprintf(stderr, "{");
+                leoparse_dump_object_htable(h);
+                fprintf(stderr, "}");
+        }
+                break;
+        case leoparse_o_integer: {
+                fprintf(stderr, "%d", object->val);
+        }
+                break;
+        case leoparse_o_range: {
+                fprintf(stderr, "%d..%d", object->range->begin, object->range->end);
+        }
+                break;
+        case leoparse_o_slist: {
+                p_tbx_slist_t const l = object->slist;
+                fprintf(stderr, "(");
+                leoparse_dump_object_slist(l);
+                fprintf(stderr, ")");
+        }
+                break;
+
+        default:
+                FAILURE("unknown object type");
+        }
+
+        if (object->modifier) {
+                switch (object->modifier->type) {
+                case leoparse_m_sbracket: {
+                        fprintf(stderr, "[");
+                        leoparse_dump_object_slist(object->modifier->sbracket);
+                        fprintf(stderr, "]");
+                }
+                        break;
+                case leoparse_m_parenthesis: {
+                        fprintf(stderr, "(");
+                        leoparse_dump_object_slist(object->modifier->parenthesis);
+                        fprintf(stderr, ")");
+                }
+                        break;
+                default:
+                        FAILURE("unknown object modifier type");
+                }
+        }
+}

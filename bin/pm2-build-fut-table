@@ -163,6 +163,15 @@ case $TYPE in
 esac
 case $TYPE in
     pm2)
+	if [ ! -f $BUILDDIR/${MODULE}/include/app_fut_print.h ]; then
+	    touch $BUILDDIR/${MODULE}/include/app_fut_print.h
+	    touch $BUILDDIR/${MODULE}/include/app_fut_entries.h
+	fi
+	if [ ! -f $BUILDDIR/${MODULE}/include/pad_fut_print.h ]; then
+	    touch $BUILDDIR/${MODULE}/include/pad_fut_print.h
+	    touch $BUILDDIR/${MODULE}/include/pad_fut_entries.h
+	fi
+	
 	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $printfile
 	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $printfile
 	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_entries.h\"" >> $deffile

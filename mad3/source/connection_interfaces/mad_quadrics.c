@@ -40,7 +40,6 @@
 
 #define MAD_QUADRICS_CONTEXT_ID_OFFSET	2
 #define MAD_QUADRICS_MAX_ASYNC_PACKETS	1000
-/* #define USE_RX_PROBE */
 
 #ifndef MARCEL
 #  define USE_PUT_NOTIFICATION
@@ -805,9 +804,7 @@ mad_quadrics_new_message(p_mad_connection_t out){
         os	= out->specific;
         chs	= out->channel->specific;
 
-#ifndef USE_RX_PROBE
         os->first_outgoing_packet_flag	= tbx_true;
-#endif /* USE_RX_PROBE */
         LOG_OUT();
 }
 
@@ -878,38 +875,6 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         }
 
 #else /* USE_PUT_NOTIFICATION */
-#ifdef USE_RX_PROBE
-#if 1
-        /* 8us min latency */
-
-        mad_quadrics_lock();
-        event = elan_tportRxStart(chs->port	/* port 	*/,
-                                  ELAN_TPORT_RXANY|ELAN_TPORT_RXPROBE	/* flags	*/,
-                                  0		/* sender mask	*/,
-                                  0		/* sender sel	*/,
-                                  0		/* tag mask	*/,
-                                  0		/* tag sel	*/,
-                                  NULL	/* base	*/,
-                                  0	/* size	 */);
-        mad_quadrics_unlock();
-        mad_quadrics_blocking_rx_test(event, &sender, &size);
-#else
-        /* 11.6 us min latency */
-
-#ifdef MARCEL
-#error invalid conditional compilation directives set
-#endif
-        while (!elan_tportRxPoll(chs->port	/* port 	*/,
-                                 0		/* sender mask	*/,
-                                 0		/* sender sel	*/,
-                                 0		/* tag mask	*/,
-                                 0		/* tag sel	*/,
-                                 &sender	/* sender	*/,
-                                 &tag		/* tag	 	*/,
-                                 &size		/* size		*/))
-                ;
-#endif
-#else /* USE_RX_PROBE */
         /* 3.7 us min latency */
 
         mad_quadrics_lock();
@@ -925,7 +890,6 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         chs->sys_buffer = mad_quadrics_blocking_rx_test(event, &sender, &size);
 
         chs->first_packet_length = size;
-#endif /* USE_RX_PROBE */
 #endif /* USE_PUT_NOTIFICATION */
         remote_lrank = chs->lranks[sender];
 
@@ -962,7 +926,6 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
         ds	= out->channel->adapter->driver->specific;
 
 
-#ifndef USE_RX_PROBE
         if (os->first_outgoing_packet_flag) {
                 os->first_outgoing_packet_flag = tbx_false;
 
@@ -1016,7 +979,6 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
 #ifdef USE_PUT_NOTIFICATION
 #endif /* USE_PUT_NOTIFICATION */
         }
-#endif /* USE_RX_PROBE */
 
         length = b->bytes_written - b->bytes_read;
         //DISP_VAL("sb: length", length);
@@ -1037,11 +999,9 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
 
         b->bytes_read += length;
 
-#ifndef USE_RX_PROBE
  no_more_data:
         ;
         //DISP("sb: ok");
-#endif /* USE_RX_PROBE */
 
 #ifdef  USE_PUT_NOTIFICATION
         if (first_event) {
@@ -1073,7 +1033,6 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
         ch	= in->channel;
         chs	= ch->specific;
 
-#ifndef USE_RX_PROBE
         if (is->first_incoming_packet_flag) {
                 is->first_incoming_packet_flag = tbx_false;
 
@@ -1128,7 +1087,6 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
                 if (mad_buffer_full(b))
                         goto no_more_data;
         }
-#endif /* USE_RX_PROBE */
 
         data_ptr	= b->buffer + b->bytes_written;
         data_length	= b->length - b->bytes_written;
@@ -1152,10 +1110,8 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
 
         b->bytes_written	+= data_length;
 
-#ifndef USE_RX_PROBE
  no_more_data:
         ;
-#endif /* USE_RX_PROBE */
         LOG_OUT();
 }
 

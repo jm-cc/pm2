@@ -215,10 +215,6 @@ mad_quadrics_blocking_tx_test(ELAN_EVENT *event){
 
                 marcel_ev_wait(&mad_quadrics_ev_server, &(ev.inst), &ev_w, 0);
         }
-#else /* MARCEL */
-#if 0
-        while (!elan_tportTxDone(event)) ;
-#endif
 #endif /* MARCEL */
         mad_quadrics_lock();
         elan_tportTxWait(event);
@@ -244,10 +240,6 @@ mad_quadrics_blocking_rx_test(ELAN_EVENT *event,
 
                 marcel_ev_wait(&mad_quadrics_ev_server, &(ev.inst), &ev_w, 0);
         }
-#else /* MARCEL */
-#if 0
-        while (!elan_tportRxDone(event)) ;
-#endif
 #endif /* MARCEL */
 
         mad_quadrics_lock();
@@ -826,54 +818,7 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         in_darray	= ch->in_connection_darray;
 #ifdef USE_PUT_NOTIFICATION
         /* 3us min latency */
-        {
-                const    uint_t proc	= chs->proc;
-                const    uint_t nproc	= chs->nproc;
-
-                volatile unsigned char	* const global_notify	= chs->global_notify;
-                volatile unsigned char	* const global_ack	= chs->global_ack;
-                volatile unsigned char 		c		= 1;
-                unsigned char			r		= 0;
-                tbx_bool_t * const		ack_required	= chs->ack_required;
-
-                for (sender = 0; sender < nproc; sender++) {
-                        if (sender == proc)
-                                continue;
-
-                        if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
-                                goto found;
-
-                        if (ack_required[sender]) {
-                                elan_wait(elan_put(elan_base->state, &c, global_ack+proc, 1, sender), elan_base->waitType);
-                                ack_required[sender] = 0;
-                        }
-                }
-
-                PAUSE();
-
-                while (1) {
-                        for (sender = 0; sender < nproc; sender++) {
-                                if (sender == proc)
-                                        continue;
-
-                                if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
-                                        goto found;
-                        }
-
-                        PAUSE();
-                }
-
-        found:
-                chs->global_ack[sender]	= 1;
-                chs->first_packet_length = *(int*)(global_notify + sender*PUT_BUF_LENGTH);
-                MEMBAR_LOADLOAD();
-                r = global_notify[sender*(1+FIRST_PACKET_THRESHOLD)];
-                global_notify[sender*(1+FIRST_PACKET_THRESHOLD)] = 0;
-                MEMBAR_STORESTORE();
-
-                TBX_ASSERT(r <= 1);
-        }
-
+        sender = mad_quadrics_wait_msg_notification(chs);
 #else /* USE_PUT_NOTIFICATION */
         /* 3.7 us min latency */
 

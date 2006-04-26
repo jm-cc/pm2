@@ -46,16 +46,9 @@
 #  define USE_PUT_NOTIFICATION
 #endif /* MARCEL */
 
-#ifdef USE_PUT_NOTIFICATION
-#  define FIRST_PACKET_THRESHOLD		32768
-#  define SPLIT_PACKET_THRESHOLD		 1024
-#else /* USE_PUT_NOTIFICATION */
-#  define FIRST_PACKET_THRESHOLD		32768
-#endif /* USE_PUT_NOTIFICATION */
-
-#ifdef USE_PUT_NOTIFICATION
-#  define PUT_BUF_LENGTH (2*sizeof(int)+FIRST_PACKET_THRESHOLD)
-#endif /* USE_PUT_NOTIFICATION */
+#define FIRST_PACKET_THRESHOLD		32768
+#define SPLIT_PACKET_THRESHOLD		 1024
+#define PUT_BUF_LENGTH (2*sizeof(int)+FIRST_PACKET_THRESHOLD)
 
 
 #if defined(__i386) && !defined(MARCEL)
@@ -106,9 +99,7 @@ typedef struct s_mad_quadrics_channel_specific
         ntbx_process_lrank_t	*lranks;
         volatile unsigned char	*global_notify;
         volatile unsigned char	*global_ack;
-#ifdef USE_PUT_NOTIFICATION
         tbx_bool_t	 	*ack_required;
-#endif /* USE_PUT_NOTIFICATION */
 } mad_quadrics_channel_specific_t, *p_mad_quadrics_channel_specific_t;
 
 typedef struct s_mad_quadrics_connection_specific
@@ -145,235 +136,17 @@ static struct marcel_ev_server mad_quadrics_ev_server = MARCEL_EV_SERVER_INIT(ma
 #endif /* MARCEL */
 
 
-
-/*
- * Malloc protection hooks
- * -----------------------
- */
-
-/* Prototypes */
-
-#ifdef MARCEL
-static
-void *
-mad_quadrics_malloc_hook(size_t len, const void *caller);
-
-static
-void *
-mad_quadrics_memalign_hook(size_t alignment, size_t len, const void *caller);
-
-static
-void
-mad_quadrics_free_hook(void *ptr, const void *caller);
-
-static
-void *
-mad_quadrics_realloc_hook(void *ptr, size_t len, const void *caller);
-
-static
-void
-mad_quadrics_malloc_initialize_hook(void);
-
-
-/* Previous handlers */
-static
-void *
-(*mad_quadrics_old_malloc_hook)(size_t len, const void *caller) = NULL;
-
-static
-void *
-(*mad_quadrics_old_memalign_hook)(size_t alignment, size_t len, const void *caller) = NULL;
-
-static
-void
-(*mad_quadrics_old_free_hook)(void *PTR, const void *CALLER) = NULL;
-
-static
-void *
-(*mad_quadrics_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
-
-#endif /* MARCEL */
-
-#if 0
-/*
- * Malloc hooks installation is delayed to mad_quadrics_driver_init because
- * __malloc_initialize_hook is already defined by the QUADRICS library.
- *
- * This is expected to be safe because at the time mad_quadrics_driver_init is called,
- * no polling request should already be pending.
- */
-
-/* Entry point */
-void (*__malloc_initialize_hook) (void) = mad_quadrics_malloc_initialize_hook;
-#endif /* 0 */
-
-#ifdef MARCEL
-/* Flag to prevent multiple hooking */
-static
-int mad_quadrics_malloc_hooked = 0;
-#endif /* MARCEL */
-
-
-
-
 /*
  * static functions
  * ----------------
  */
-#if 1
-static
-inline
-void
-__mad_quadrics_hook_lock(void) {
-#ifdef MARCEL
-        marcel_ev_lock(&mad_quadrics_ev_server);
-        //DISP("<quadrics hook LOCK>");
-#endif /* MARCEL */
-}
-
-static
-inline
-void
-__mad_quadrics_hook_unlock(void) {
-#ifdef MARCEL
-        //DISP("<quadrics hook UNLOCK>");
-        marcel_ev_unlock(&mad_quadrics_ev_server);
-#endif /* MARCEL */
-}
-
-#ifdef MARCEL
-static
-void
-mad_quadrics_install_hooks(void) {
-        LOG_IN();
-        mad_quadrics_old_malloc_hook		= __malloc_hook;
-        mad_quadrics_old_memalign_hook	= __memalign_hook;
-        mad_quadrics_old_free_hook		= __free_hook;
-        mad_quadrics_old_realloc_hook		= __realloc_hook;
-
-        if (__malloc_hook == mad_quadrics_malloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__memalign_hook == mad_quadrics_memalign_hook)
-                FAILURE("hooks corrupted");
-
-        if (__realloc_hook == mad_quadrics_realloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__free_hook == mad_quadrics_free_hook)
-                FAILURE("hooks corrupted");
-
-        __malloc_hook		= mad_quadrics_malloc_hook;
-        __memalign_hook		= mad_quadrics_memalign_hook;
-        __free_hook		= mad_quadrics_free_hook;
-        __realloc_hook		= mad_quadrics_realloc_hook;
-        LOG_OUT();
-}
-
-static
-void
-mad_quadrics_remove_hooks(void) {
-        LOG_IN();
-        if (__malloc_hook == mad_quadrics_old_malloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__memalign_hook == mad_quadrics_old_memalign_hook)
-                FAILURE("hooks corrupted");
-
-        if (__realloc_hook == mad_quadrics_old_realloc_hook)
-                FAILURE("hooks corrupted");
-
-        if (__free_hook == mad_quadrics_old_free_hook)
-                FAILURE("hooks corrupted");
-
-        __malloc_hook		= mad_quadrics_old_malloc_hook;
-        __memalign_hook		= mad_quadrics_old_memalign_hook;
-        __free_hook		= mad_quadrics_old_free_hook;
-        __realloc_hook		= mad_quadrics_old_realloc_hook;
-        LOG_OUT();
-}
-
-
-static
-void *
-mad_quadrics_malloc_hook(size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_quadrics_hook_lock();
-        mad_quadrics_remove_hooks();
-        LOG_IN();
-        new_ptr = malloc(len);
-        LOG_OUT();
-        mad_quadrics_install_hooks();
-        __mad_quadrics_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void *
-mad_quadrics_memalign_hook(size_t alignment, size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_quadrics_hook_lock();
-        mad_quadrics_remove_hooks();
-        LOG_IN();
-        new_ptr = memalign(alignment, len);
-        LOG_OUT();
-        mad_quadrics_install_hooks();
-        __mad_quadrics_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void *
-mad_quadrics_realloc_hook(void *ptr, size_t len, const void *caller) {
-        void *new_ptr = NULL;
-
-        __mad_quadrics_hook_lock();
-        mad_quadrics_remove_hooks();
-        LOG_IN();
-        new_ptr = realloc(ptr, len);
-        LOG_OUT();
-        mad_quadrics_install_hooks();
-        __mad_quadrics_hook_unlock();
-
-        return new_ptr;
-}
-
-
-static
-void
-mad_quadrics_free_hook(void *ptr, const void *caller) {
-
-        __mad_quadrics_hook_lock();
-        mad_quadrics_remove_hooks();
-        LOG_IN();
-        free(ptr);
-        LOG_OUT();
-        mad_quadrics_install_hooks();
-        __mad_quadrics_hook_unlock();
-}
-
-
-static
-void
-mad_quadrics_malloc_initialize_hook(void) {
-        mad_quadrics_malloc_hooked = 1;
-        mad_quadrics_install_hooks();
-}
-#endif /* MARCEL */
 
 static
 inline
 void
 mad_quadrics_lock(void) {
 #ifdef MARCEL
-       __mad_quadrics_hook_lock();
-        mad_quadrics_remove_hooks();
+        marcel_extlib_protect();
         //DISP("<quadrics LOCK>");
 #endif /* MARCEL */
 }
@@ -384,31 +157,9 @@ void
 mad_quadrics_unlock(void) {
 #ifdef MARCEL
         //DISP("<quadrics UNLOCK>");
-        mad_quadrics_install_hooks();
-        __mad_quadrics_hook_unlock();
+        marcel_extlib_unprotect();
 #endif /* MARCEL */
 }
-#else
-static
-inline
-void
-mad_quadrics_lock(void) {
-#ifdef MARCEL
-        marcel_ev_lock(&mad_quadrics_ev_server);
-        //DISP("<quadrics LOCK>");
-#endif /* MARCEL */
-}
-
-static
-inline
-void
-mad_quadrics_unlock(void) {
-#ifdef MARCEL
-        //DISP("<quadrics UNLOCK>");
-        marcel_ev_unlock(&mad_quadrics_ev_server);
-#endif /* MARCEL */
-}
-#endif
 
 #ifdef MARCEL
 static
@@ -508,6 +259,60 @@ mad_quadrics_blocking_rx_test(ELAN_EVENT *event,
         return ptr;
 }
 
+static
+inline
+int
+mad_quadrics_wait_msg_notification(p_mad_quadrics_channel_specific_t	 chs) {
+        const    uint_t 		proc		= chs->proc;
+        const    uint_t 		nproc		= chs->nproc;
+        volatile unsigned char	* const global_notify	= chs->global_notify;
+        volatile unsigned char	* const global_ack	= chs->global_ack;
+        volatile unsigned char 		c		= 1;
+        tbx_bool_t * const		ack_required	= chs->ack_required;
+        int                             sender		= 0;
+        unsigned char			r		= 0;
+
+        for (sender = 0; sender < nproc; sender++) {
+                if (sender == proc)
+                        continue;
+
+                if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
+                        goto found;
+
+                if (ack_required[sender]) {
+                        elan_wait(elan_put(elan_base->state, &c, global_ack+proc, 1, sender), elan_base->waitType);
+                        ack_required[sender] = 0;
+                }
+        }
+
+        PAUSE();
+
+        while (1) {
+                for (sender = 0; sender < nproc; sender++) {
+                        if (sender == proc)
+                                continue;
+
+                        if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
+                                goto found;
+                }
+
+                PAUSE();
+        }
+
+ found:
+        chs->global_ack[sender]	= 1;
+        chs->first_packet_length = *(int*)(global_notify + sender*PUT_BUF_LENGTH);
+        MEMBAR_LOADLOAD();
+        r = global_notify[sender*(1+FIRST_PACKET_THRESHOLD)];
+        global_notify[sender*(1+FIRST_PACKET_THRESHOLD)] = 0;
+        MEMBAR_STORESTORE();
+
+        TBX_ASSERT(r <= 1);
+
+        return sender;
+}
+
+
 /*
  * Registration function
  * ---------------------
@@ -581,11 +386,6 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 
         LOG_IN();
         TRACE("Initializing QUADRICS driver");
-#ifdef MARCEL
-        if (!mad_quadrics_malloc_hooked) {
-                mad_quadrics_malloc_initialize_hook();
-        }
-#endif /* MARCEL */
         d->connection_type  = mad_bidirectional_connection;
         d->buffer_alignment = 32;
 
@@ -1023,9 +823,6 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
 #endif /* USE_PUT_NOTIFICATION */
         int                                      sender		=    0;
         ntbx_process_lrank_t			 remote_lrank	=   -1;
-#ifdef USE_PUT_NOTIFICATION
-        unsigned char r = 0;
-#endif /* USE_PUT_NOTIFICATION */
 
         LOG_IN();
         chs		= ch->specific;
@@ -1039,6 +836,7 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
                 volatile unsigned char	* const global_notify	= chs->global_notify;
                 volatile unsigned char	* const global_ack	= chs->global_ack;
                 volatile unsigned char 		c		= 1;
+                unsigned char			r		= 0;
                 tbx_bool_t * const		ack_required	= chs->ack_required;
 
                 for (sender = 0; sender < nproc; sender++) {

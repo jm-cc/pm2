@@ -1,5 +1,4 @@
-//#include "pm2.h"
-#include "pm2_common.h"
+#include "pm2.h"
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -20,13 +19,10 @@
 
 #define STRING_SIZE  16
 
-/*
 static char msg[STRING_SIZE] __ALIGNED__;
 
 static int SAMPLE;
 
-*/
-#if 0
 static void SAMPLE_service(void)
 {
   char msg[STRING_SIZE];
@@ -39,27 +35,23 @@ static void SAMPLE_service(void)
   pm2_halt();
 }
 
-#endif
-int main(int argc, char **argv)
+int pm2_main(int argc, char **argv)
 {
-  //pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
+  pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
-	profile_init();
+  pm2_init(&argc, argv);
 
-#if 0
   if(pm2_config_size() < 2) {
       fprintf(stderr,
 	      "This program requires at least two processes.\n"
 	      "Please rerun pm2conf.\n");
       exit(1);
   }
-#endif
 
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, FUT_KEYMASKALL, 0);
 #endif
 
-#if 0
   if(pm2_self() == 0) {
     strcpy(msg, "Hello world!   ");
     pm2_rawrpc_begin(1, SAMPLE, NULL);
@@ -68,7 +60,6 @@ int main(int argc, char **argv)
   }
 
   pm2_exit();
-#endif
 
 #ifdef PROFILE
   profile_stop();

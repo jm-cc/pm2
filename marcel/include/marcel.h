@@ -33,10 +33,12 @@
 #define MARCEL_PROTECTED
 #endif
 
+/* pour les fonctions que l'on veut "extern inline" pour l'application, il
+ * faut aussi fournir un symbole, dans marcel_extern.o */
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
 #  define MARCEL_INLINE
 #else
-#  define MARCEL_INLINE __tbx_inline__
+#  define MARCEL_INLINE inline
 #endif
 
 /* ========== customization =========== */

@@ -34,7 +34,7 @@ void marcel_postexit_internal(marcel_t cur,
 static __inline__ void init_marcel_thread(marcel_t __restrict t, 
 					  __const marcel_attr_t * __restrict attr)
 {
-	PROF_THREAD_BIRTH(new_task);
+	PROF_THREAD_BIRTH(t);
 
 	/* Free within schedule_tail */
 	t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET;

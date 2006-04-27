@@ -28,6 +28,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <netdb.h>
+#include <sys/types.h>
+#include <pwd.h>
 #ifdef PM2
 #include <sys/wait.h>
 #endif /* PM2 */
@@ -183,24 +185,24 @@ mad_cmd_line_init_from_file(p_mad_settings_t settings,
 			    tbx_flag_t       *port_ok,
 			    tbx_flag_t       *dyn_set) {
   char *host_name = NULL;
-  char *user_name = NULL;
   FILE *f = NULL;
   char *filename = NULL;
+  struct passwd *s_passwd;
+  uid_t uid;
 
   host_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   gethostname(host_name, MAXHOSTNAMELEN);
-  user_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
-  getlogin_r(user_name, MAXHOSTNAMELEN);
+  uid = geteuid();
+  s_passwd = getpwuid(uid);
 
   filename = TBX_MALLOC(MAXHOSTNAMELEN+100);
   filename = strcpy(filename, "/tmp/");
   filename = strcat(filename, host_name);
   filename = strcat(filename, "_");
-  filename = strcat(filename, user_name);
+  filename = strcat(filename, s_passwd->pw_name);
 
   f = fopen(filename, "r");
   TBX_FREE(host_name);
-  TBX_FREE(user_name);
   if (f == NULL) {
     FAILUREF("Cannot read file <%s> with configuration parameters", filename);
   }

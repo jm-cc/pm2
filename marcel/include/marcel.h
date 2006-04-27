@@ -39,6 +39,23 @@
 #  define MARCEL_INLINE inline
 #endif
 
+/* ========== customization =========== */
+
+#define MAX_KEY_SPECIFIC	20
+
+#define MAX_STACK_CACHE		1024
+
+#define THREAD_THRESHOLD_LOW    1
+
+/* ============ constants ============= */
+
+#define NO_TIME_OUT		-1
+
+#define NO_TIME_SLICE		0
+
+#define DEFAULT_STACK		0
+
+
 __TBX_BEGIN_DECLS
 
 //#include "asm/marcel-master___compiler.h"
@@ -128,23 +145,6 @@ __TBX_END_DECLS
 //#endif
 
 #include "tbx_debug.h"
-
-/* ========== customization =========== */
-
-#define MAX_KEY_SPECIFIC	20
-
-#define MAX_STACK_CACHE		1024
-
-#define THREAD_THRESHOLD_LOW    1
-
-/* ============ constants ============= */
-
-#define NO_TIME_OUT		-1
-
-#define NO_TIME_SLICE		0
-
-#define DEFAULT_STACK		0
-
 
 /* ================= included files ================= */
 

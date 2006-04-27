@@ -59,7 +59,7 @@ marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 /**************************************************************************/
 /**************************************************************************/
 
-static boolean a_new_thread;
+static tbx_bool_t a_new_thread;
 
 unsigned marcel_nbthreads(void)
 {
@@ -101,7 +101,7 @@ void marcel_one_more_task(marcel_t pid)
 	oldnbtasks = __ma_get_lwp_var(nb_tasks)++;
 
 	if (!oldnbtasks && &__ma_get_lwp_var(main_is_waiting))
-		a_new_thread = TRUE;
+		a_new_thread = tbx_true;
 
 	_ma_raw_spin_unlock(&__ma_get_lwp_var(threadlist_lock));
 	ma_preempt_enable_no_resched();
@@ -214,10 +214,10 @@ static void wait_all_tasks_end(void)
 #endif 
 
 	for_each_lwp_begin(lwp)
-		ma_per_lwp(main_is_waiting, lwp) = TRUE;
+		ma_per_lwp(main_is_waiting, lwp) = tbx_true;
 	for_each_lwp_end();
 retry:
-	a_new_thread = FALSE;
+	a_new_thread = tbx_false;
 	for_each_lwp_begin(lwp)//, lwp_first_wait)
 		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 		if (ma_per_lwp(nb_tasks, lwp)) {
@@ -338,6 +338,7 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 		pause();
 		marcel_yield_intern();
 	}
+	return NULL;
 }
 #endif
 #endif
@@ -364,7 +365,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_POLL | /*MA_SF_NOSCHEDLOCK |*/
 			     MA_SF_NORUN);

@@ -123,9 +123,7 @@ struct fxt_code_name fut_code_table [] =
 #endif
 
 #include <stdlib.h>
-#define __KERNEL__
-#include <linux/list.h>
-#undef __KERNEL__
+#include "pm2_list.h"
 #ifndef min
 #define min(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a<_b?_a:_b; })
 #endif

@@ -44,6 +44,8 @@ typedef p_marcel_task_t marcel_t, pmarcel_t;
 #depend "sys/marcel_work.h[marcel_structures]"
 #depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_attr.h[macros]"
+#depend "marcel_sem.h[structures]"
+#depend "marcel_exception.h[structures]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
@@ -158,7 +160,8 @@ struct marcel_task {
 };
 
 #section inline
-#depend "[marcel_inline]"
+#depend "[types]"
+#depend "[marcel_functions]"
 /* ==== get current thread or LWP id ==== */
 extern MARCEL_INLINE marcel_t marcel_self(void)
 {
@@ -171,13 +174,14 @@ extern MARCEL_INLINE marcel_t marcel_self(void)
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
 #section marcel_functions
+#depend "[types]"
 static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void);
 #section marcel_inline
+#depend "[types]"
+#depend "[marcel_macros]"
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h[marcel_macros]"
 #depend "marcel_threads.h[marcel_macros]"
-#depend "[marcel_structures]"
-#depend "[marcel_macros]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
 static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 {

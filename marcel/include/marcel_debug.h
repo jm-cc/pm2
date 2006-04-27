@@ -72,9 +72,9 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
 		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE)
 
-/* Une variable de debug à définir pour ce fichier C */
+/* Une variable de debug ï¿½dï¿½inir pour ce fichier C */
 #  ifndef MA_DEBUG_NO_DEFINE
-/* On peut avoir envie de le définir nous même (à 1 par exemple) */
+/* On peut avoir envie de le dï¿½inir nous mï¿½e (ï¿½1 par exemple) */
 MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
 MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
 #  endif

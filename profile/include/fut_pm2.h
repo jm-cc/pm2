@@ -17,6 +17,8 @@
 #ifndef FUT_PM2_IS_DEF
 #define FUT_PM2_IS_DEF
 
+#include "tbx.h"
+
 #define MARCEL_PROF_MASK  0x01
 #define MAD_PROF_MASK     0x02
 #define PM2_PROF_MASK     0x04
@@ -241,6 +243,6 @@ void profile_stop(void);
 
 void profile_exit(void);
 
-extern volatile unsigned __pm2_profile_active;
+extern volatile tbx_bool_t __pm2_profile_active;
 
 #endif

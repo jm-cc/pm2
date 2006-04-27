@@ -774,7 +774,7 @@ void execute_file(FILE *f)
 { char comd[1024];
   pm2_cmd instructions;
   int len;
-  boolean expanded;
+  tbx_bool_t expanded;
 
    LOOP(bcl)
       if(f == stdin) {
@@ -786,7 +786,7 @@ void execute_file(FILE *f)
       if(len > 0) {
          if(comd[len-1] == '\n')
             comd[len-1] = '\0';
-         expanded = FALSE;
+         expanded = tbx_false;
          while(1) {
             alias_list l;
             char tempo[1024];
@@ -800,7 +800,7 @@ void execute_file(FILE *f)
                   printf("%s\n", comd);
                break;
             }
-            expanded = TRUE;
+            expanded = tbx_true;
             strcpy(tempo, l->command);
             for(i=0; i<instructions.nb_parametre; i++) {
                strcat(tempo, " ");

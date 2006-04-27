@@ -631,7 +631,7 @@ typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
 
 typedef void *(*marcel_fastpoll_func_t)(marcel_pollid_t id,
 					any_t arg,
-					boolean first_call);
+					tbx_bool_t first_call);
 
 #section macros
 #define MARCEL_POLL_AT_TIMER_SIG  MARCEL_EV_POLL_AT_TIMER_SIG

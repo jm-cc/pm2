@@ -53,7 +53,7 @@ BEGIN_SERVICE(CREATE_ACTOR)
    mailbox *box;
 
    marcel_attr_init(&attr);
-   marcel_attr_setdetachstate(&attr, TRUE);
+   marcel_attr_setdetachstate(&attr, tbx_true);
    marcel_attr_setuserspace_np(&attr, sizeof(mailbox));
 #ifdef GLOBAL_ADDRESSING
   {

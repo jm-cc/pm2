@@ -27,7 +27,7 @@ void marcel_create_np(void *(*func)(void)) {
   marcel_attr_t attr;
 
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
   /* marcel_attr_setvp_np(&attr, MARCEL_BEST_VP); */
   marcel_create(&t, &attr, (marcel_func_t)func, NULL);
 }

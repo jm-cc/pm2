@@ -192,7 +192,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 			RAISE(CONSTRAINT_ERROR); /* Not big enough */
 		stack_base = attr->__stackaddr;
 		
-		static_stack = TRUE;
+		static_stack = tbx_true;
 	} else { /* (!attr->stack_base) */
 		char *bottom;
 
@@ -208,7 +208,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 				      MAL(sizeof(marcel_task_t)));
 
 		stack_base = bottom;
-		static_stack = FALSE;
+		static_stack = tbx_false;
 	} /* fin (attr->stack_base) */
 
 	init_marcel_thread(new_task, attr);
@@ -343,7 +343,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
@@ -648,7 +648,7 @@ DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
 
 DEF_MARCEL_POSIX(int, detach, (marcel_t pid), (pid),
 {
-   pid->detached = TRUE;
+   pid->detached = tbx_true;
    return 0;
 })
 DEF_PTHREAD(int, detach, (pthread_t pid), (pid))
@@ -691,7 +691,7 @@ DEF_PTHREAD(void, cleanup_push,(struct _pthread_cleanup_buffer *__buffer,
 		(__buffer, __routine, __arg))
 
 DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute), (__buffer, execute),
+				tbx_bool_t execute), (__buffer, execute),
 {
 	marcel_t cur = marcel_self();
 	
@@ -730,7 +730,7 @@ void marcel_unfreeze(marcel_t *pids, int nb)
 
 // TODO : Vérifier le code avec les activations
 void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, 
-			      void * __restrict arg, boolean fork)
+			void * __restrict arg, tbx_bool_t fork)
 {
   unsigned long depl, blk;
   unsigned long bottom, top;
@@ -836,7 +836,7 @@ static void __marcel_init main_thread_init(void)
 	marcel_attr_init(&attr);
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
-	marcel_attr_setmigrationstate(&attr, FALSE);
+	marcel_attr_setmigrationstate(&attr, tbx_false);
 	marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);

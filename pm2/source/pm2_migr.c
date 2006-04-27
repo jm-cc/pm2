@@ -28,7 +28,7 @@ typedef struct {
   int dest;
   int nb;
   marcel_t *pids;
-  boolean do_send;
+  tbx_bool_t do_send;
 } migration_arg;
 
 static void netserver_migration(void)
@@ -111,7 +111,7 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
 { 
   migration_arg arg;
   int i;
-  boolean me_too = FALSE;
+  tbx_bool_t me_too = tbx_false;
 
   if(module == __pm2_self) {
     for(i=0; i<nb; i++) {
@@ -131,7 +131,7 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     marcel_freeze(pids, nb);
     pm2_unfreeze();
 
-    arg.do_send = FALSE;
+    arg.do_send = tbx_false;
     arg.pids = pids;
     arg.nb = nb;
     arg.dest = module;
@@ -142,18 +142,18 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
 
     for(i=0; i<nb; i++) {
       if(pids[i] == marcel_self())
-	me_too = TRUE;
+	me_too = tbx_true;
       else
       /* 
        * On met le flag "fork" à VRAI parce qu'il faut maintenir ces threads
        * en vie tant que le message n'est pas envoyé (IN_PLACE).
        */
-      marcel_begin_hibernation(pids[i], migrate_func, &arg, TRUE);
+      marcel_begin_hibernation(pids[i], migrate_func, &arg, tbx_true);
     }
 
     if(me_too) {
-      arg.do_send = TRUE;
-      marcel_begin_hibernation(marcel_self(), migrate_func, &arg, FALSE);
+      arg.do_send = tbx_true;
+      marcel_begin_hibernation(marcel_self(), migrate_func, &arg, tbx_false);
       pm2_enable_migration();
     } else {
       pm2_rawrpc_end();

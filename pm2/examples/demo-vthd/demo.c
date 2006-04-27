@@ -23,7 +23,7 @@
 #define BUF_SIZE  (16*MEGA)
 
 static int TRANSFERT, STOP, ACK, INFO;
-static volatile boolean finished = FALSE;
+static volatile tbx_bool_t finished = tbx_false;
 
 static char buffer[BUF_SIZE];
 static unsigned msg_size = BUF_SIZE;
@@ -56,7 +56,7 @@ static void stop_service(void)
   pm2_rawrpc_begin(0, ACK, NULL);
   pm2_rawrpc_end();
 
-  finished = TRUE;
+  finished = tbx_true;
 }
 
 static long long total_received = -1;
@@ -129,7 +129,7 @@ static void the_master_node(int argc, char *argv[])
 
   wait_keystroke();
 
-  finished = TRUE;
+  finished = tbx_true;
 
   for(i=pm2_config_size()/2+1; i<pm2_config_size(); i++) {
     pm2_rawrpc_begin(i, STOP, NULL);

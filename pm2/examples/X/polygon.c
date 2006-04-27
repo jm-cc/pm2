@@ -81,7 +81,7 @@ char *color_names[] = {
 Xv_singlecolor colors[] = TABLEAU_COULEURS;
 
 couleur_t les_couleurs[NB_COULEURS] = TABLEAU_COULEURS;
-int finished = FALSE;
+tbx_bool_t finished = tbx_false;
 
 marcel_mutex_t X_mutex;
 
@@ -279,7 +279,7 @@ static void color_notify(Panel_item p, int choice)
 
 static void quit(void)
 {
-  finished = TRUE;
+  finished = tbx_true;
 }
 
 static void ma_main_loop(void)

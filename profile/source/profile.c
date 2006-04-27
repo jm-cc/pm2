@@ -26,6 +26,7 @@
 #include "pm2_profile.h"
 #include "fxt/fxt.h"
 #include "pm2_fxt-tools.h"
+#include "tbx.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"
@@ -50,7 +51,7 @@
 
 #define PROF_BUFFER_SIZE  (16*1024*1024)
 
-volatile unsigned __pm2_profile_active = FALSE;
+volatile tbx_bool_t __pm2_profile_active = tbx_false;
 int fkt_ok;
 
 
@@ -60,8 +61,8 @@ static char PROF_FILE_USER[1024];
 static char PROF_FILE_KERNEL[1024];
 #endif
 
-static boolean profile_initialized = FALSE;
-static boolean activate_called_before_init = FALSE;
+static tbx_bool_t profile_initialized = tbx_false;
+static tbx_bool_t activate_called_before_init = tbx_false;
 static struct {
   int how;
   unsigned user_keymask, kernel_keymask;
@@ -72,8 +73,8 @@ void profile_init(void)
 {
   if(!profile_initialized) {
 
-    profile_initialized = TRUE;
-    __pm2_profile_active = TRUE;
+    profile_initialized = tbx_true;
+    __pm2_profile_active = tbx_true;
 
     // Initialisation de FUT
 
@@ -128,7 +129,7 @@ void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
     activate_params.kernel_keymask = kernel_keymask;
     activate_params.thread_id = PROF_THREAD_ID();
 
-    activate_called_before_init = TRUE;
+    activate_called_before_init = tbx_true;
 
   }
 
@@ -169,7 +170,7 @@ void profile_stop(void)
   if (__pm2_profile_active)
     fut_endup(PROF_FILE_USER);
 
-  __pm2_profile_active = FALSE;
+  __pm2_profile_active = tbx_false;
 }
 
 void profile_exit(void)

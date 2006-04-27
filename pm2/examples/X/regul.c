@@ -26,7 +26,7 @@
 static unsigned local_load = 0, other_load = 0;
 static int module_precedent, module_suivant;
 
-static boolean do_regulate = FALSE, finished = FALSE;
+static tbx_bool_t do_regulate = tbx_false, finished = tbx_false;
 
 static int LOAD;
 
@@ -121,16 +121,16 @@ void regul_init(void)
 
 void regul_start(void)
 {
-  do_regulate = TRUE;
+  do_regulate = tbx_true;
 }
 
 void regul_stop(void)
 {
-  do_regulate = FALSE;
+  do_regulate = tbx_false;
 }
 
 void regul_exit()
 {
-  finished = TRUE;
+  finished = tbx_true;
 }
 

@@ -489,7 +489,7 @@ static void _ISOADDR_INFO_threaded_func(void)
   isoaddr_page_info_lock(index);
   
   if (status == ISO_SHARED)
-    dsm_enable_page_entry(dsm_isoaddr_page_index(index), dsm_owner, prot, isoaddr_page_addr(master), nb_pages*DSM_PAGE_SIZE, TRUE);
+    dsm_enable_page_entry(dsm_isoaddr_page_index(index), dsm_owner, prot, isoaddr_page_addr(master), nb_pages*DSM_PAGE_SIZE, tbx_true);
 
   _isoaddr_page_remove_pending_req(index);
 
@@ -1546,7 +1546,7 @@ void LRPC_ISOMALLOC_LOCAL_UNLOCK_func(void)
        }
 #ifdef DSM
      if(status == ISO_SHARED)
-       dsm_enable_page_entry(dsm_isoaddr_page_index(start_index), sender, prot, isoaddr_page_addr(start_index + nb_slots - 1), DSM_PAGE_SIZE * nb_slots, TRUE);
+       dsm_enable_page_entry(dsm_isoaddr_page_index(start_index), sender, prot, isoaddr_page_addr(start_index + nb_slots - 1), DSM_PAGE_SIZE * nb_slots, tbx_true);
 #endif
    }
  else
@@ -1566,7 +1566,7 @@ void LRPC_ISOMALLOC_LOCAL_UNLOCK_func(void)
 	 isoaddr_page_info_unlock(start_index + i);
 #ifdef DSM
 	 if(status == ISO_SHARED)
-	   dsm_enable_page_entry(dsm_isoaddr_page_index(start_index + i), sender, prot, isoaddr_page_addr(start_index + i), DSM_PAGE_SIZE, TRUE);
+	   dsm_enable_page_entry(dsm_isoaddr_page_index(start_index + i), sender, prot, isoaddr_page_addr(start_index + i), DSM_PAGE_SIZE, tbx_true);
 #endif
        }
    }

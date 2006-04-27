@@ -235,7 +235,7 @@ void prof_dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_nod
   if (copyset_size > 0)
     {
       dsm_node_t node;
-      boolean new_owner_is_in_copyset = FALSE;
+      tbx_bool_t new_owner_is_in_copyset = tbx_false;
 
       for (i = 0; i < copyset_size; i++) 
 	{
@@ -248,7 +248,7 @@ void prof_dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_nod
 	      dsm_send_invalidate_req(node, index, dsm_self(), new_owner);
 	    }
 	  else
-	    new_owner_is_in_copyset = TRUE;
+	    new_owner_is_in_copyset = tbx_true;
 	}
 	  // the copyset is empty now
       dsm_wait_ack(index, new_owner_is_in_copyset?copyset_size - 1: copyset_size);

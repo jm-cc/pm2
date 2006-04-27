@@ -59,7 +59,7 @@ int marcel_main(int argc, char **argv)
   marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
-  //marcel_attr_setdetachstate(&attr, TRUE);
+  //marcel_attr_setdetachstate(&attr, tbx_true);
   //marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
 
   size = atoi(argv[1]);

@@ -175,11 +175,11 @@ struct itimerval refresh_timer;
 /* refreshing period in seconds : */
 #define REFRESH_INTERVAL	5
 
-int automatic_refresh = FALSE;
+tbx_bool_t automatic_refresh = tbx_false;
 
 void stop_timer()
 {
-	automatic_refresh = FALSE;
+	automatic_refresh = tbx_false;
 	notify_set_itimer_func(racine, NOTIFY_FUNC_NULL,
 		ITIMER_REAL,	NULL,
 		NULL);
@@ -1678,7 +1678,7 @@ void mode_console(Panel_item item, int value)
 void mode_refresh(Panel_item item, int value)
 {
 	if(value) { /* Automatic refresh */
-		automatic_refresh = TRUE;
+		automatic_refresh = tbx_true;
 		timerclear(&refresh_timer.it_value);
 		refresh_timer.it_value.tv_sec = REFRESH_INTERVAL;
 		refresh_timer.it_interval = refresh_timer.it_value;
@@ -1686,7 +1686,7 @@ void mode_refresh(Panel_item item, int value)
 			ITIMER_REAL, &refresh_timer,
 			NULL);
 	} else {
-		automatic_refresh = FALSE;
+		automatic_refresh = tbx_false;
 		notify_set_itimer_func(racine, NOTIFY_FUNC_NULL,
 			ITIMER_REAL,	NULL,
 			NULL);

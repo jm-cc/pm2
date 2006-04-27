@@ -44,7 +44,7 @@ marcel_test_activity(void)
  * ------------------
  */
 
-static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_strip)
+static void marcel_parse_cmdline_early(int *argc, char **argv, tbx_bool_t do_not_strip)
 {
   int i, j;
 #ifdef MA__LWPS
@@ -147,7 +147,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_st
   }
 }
 
-static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_strip)
+static void marcel_parse_cmdline_lastly(int *argc, char **argv, tbx_bool_t do_not_strip)
 {
   int i, j;
 
@@ -194,26 +194,26 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_s
 
 void marcel_strip_cmdline(int *argc, char *argv[])
 {
-  marcel_parse_cmdline_early(argc, argv, FALSE);
+  marcel_parse_cmdline_early(argc, argv, tbx_false);
 
   marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
 
-  marcel_parse_cmdline_lastly(argc, argv, FALSE);
+  marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 }
 
 // Cannot start some internal threads or activations.
 // When completed, fork calls are still allowed.
 void marcel_init_data(int *argc, char *argv[])
 {
-  static volatile boolean already_called = FALSE;
+  static volatile tbx_bool_t already_called = tbx_false;
 
   // Only execute this function once
   if(already_called)
     return;
-  already_called = TRUE;
+  already_called = tbx_true;
 
   // Parse command line
-  marcel_parse_cmdline_early(argc, argv, TRUE);
+  marcel_parse_cmdline_early(argc, argv, tbx_true);
 
   // Windows/Cygwin specific stuff
   marcel_win_sys_init(argc, argv);
@@ -223,7 +223,7 @@ void marcel_init_data(int *argc, char *argv[])
   // Initialize debug facilities
   marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
-  marcel_parse_cmdline_lastly(argc, argv, TRUE);
+  marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
 // When completed, some threads/activations may be started
@@ -237,14 +237,14 @@ void marcel_start_sched(int *argc, char *argv[])
 
 void marcel_purge_cmdline(int *argc, char *argv[])
 {
-  static volatile boolean already_called = FALSE;
+  static volatile tbx_bool_t already_called = tbx_false;
 
   marcel_init_section(MA_INIT_MAX_PARTS);
 
   // Only execute this function once
   if(already_called)
     return;
-  already_called = TRUE;
+  already_called = tbx_true;
 
   // Remove marcel-specific arguments from command line
   marcel_strip_cmdline(argc, argv);

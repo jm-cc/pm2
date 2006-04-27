@@ -46,6 +46,8 @@
 
 #include "tbx_compiler.h"
 
+#include "tbx_types.h"
+
 #include "tbx_snprintf.h"
 #include "tbx_debug.h"
 
@@ -62,7 +64,6 @@
 #include "tbx_timing.h"
 #include "tbx_macros.h"
 #include "tbx_pointers.h"
-#include "tbx_types.h"
 
 //#ifdef TBX_KERNEL
 /* Inclusion de marcel.h uniquement si on compile les sources de tbx 

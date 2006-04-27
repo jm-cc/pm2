@@ -465,7 +465,7 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 
 static void* mad_sisci_marcel_fast_poll(marcel_pollid_t id,
 					any_t arg,
-					boolean first_call)
+					tbx_bool_t first_call)
 {
   LOG_IN();
   if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) arg)) {

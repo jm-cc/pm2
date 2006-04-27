@@ -62,7 +62,7 @@ int marcel_main(int argc, char **argv)
   marcel_printf("created additionnal LWP, wait a bit\n");
   marcel_delay(1000);
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp));
   marcel_create(&t, &attr, blocker, NULL);
   marcel_printf("created blocker thread, busy a bit\n");

@@ -52,7 +52,7 @@ static void eval_thread_creation(void)
   void *stack;
 
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
 
   fprintf(stderr, "With isomalloc :\n");
   temps = ~0L;

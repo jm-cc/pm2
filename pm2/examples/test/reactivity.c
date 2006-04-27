@@ -18,7 +18,7 @@
 
 static int SAMPLE, START_BUSY, STOP_BUSY;
 
-static volatile boolean stay_busy = TRUE;
+static volatile tbx_bool_t stay_busy = tbx_true;
 
 void busy_thread(void *arg)
 {
@@ -41,7 +41,7 @@ static void STOP_BUSY_service(void)
 {
   pm2_rawrpc_waitdata();
 
-  stay_busy = FALSE;
+  stay_busy = tbx_false;
 }
 
 void sample_thread(void *arg)

@@ -307,7 +307,7 @@ static
 void *
 mad_vrp_level2_marcel_fast_poll(marcel_pollid_t id,
                          any_t           req,
-                         boolean         first_call)
+                         tbx_bool_t         first_call)
 {
   void *status = MARCEL_POLL_FAILED;
 
@@ -408,7 +408,7 @@ static
 void *
 mad_vrp_level1_marcel_fast_poll(marcel_pollid_t id,
                                 any_t           req,
-                                boolean         first_call)
+                                tbx_bool_t         first_call)
 {
   void *status = MARCEL_POLL_FAILED;
 

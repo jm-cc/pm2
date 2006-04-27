@@ -79,9 +79,9 @@ static struct pm2_thread_arg *__thread_alloc(void)
     unlock_task();
 
     marcel_attr_init(&res->attr);
-    marcel_attr_setdetachstate(&res->attr, TRUE);
+    marcel_attr_setdetachstate(&res->attr, tbx_true);
     marcel_attr_setuserspace(&res->attr, sizeof(block_descr_t));
-    marcel_attr_setactivation(&res->attr, TRUE);
+    marcel_attr_setactivation(&res->attr, tbx_true);
   }
 
   marcel_attr_setstackaddr(&res->attr, pm2_thread_stack_alloc());

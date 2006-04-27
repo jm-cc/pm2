@@ -195,7 +195,7 @@ struct _marcel_cleanup_buffer
 DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
 				     cleanup_func_t func, any_t __restrict arg) __THROW);
 DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute) __THROW);
+				    tbx_bool_t execute) __THROW);
 #undef NAME_PREFIX
 #define NAME_PREFIX
 
@@ -230,7 +230,7 @@ static __tbx_inline__ void marcel_enablemigration(marcel_t pid)
 }
 
 #section functions
-void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, void * __restrict arg, boolean fork);
+void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, void * __restrict arg, tbx_bool_t fork);
 
 void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg);
 
@@ -260,7 +260,7 @@ extern void _marcel_cleanup_push (struct _marcel_cleanup_buffer *__buffer,
     _marcel_cleanup_pop (&_buffer, (execute)); }
 
 extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
-				  int __execute) __THROW;
+		tbx_bool_t __execute) __THROW;
 
 /* Install a cleanup handler as marcel_cleanup_push does, but also
    saves the current cancellation type and set it to deferred cancellation.  */

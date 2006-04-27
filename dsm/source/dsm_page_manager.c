@@ -174,13 +174,13 @@ dsm_node_t dsm_self()
 
 #define dsm_pseudo_static_addr(addr) (pseudo_static_dsm_base_addr <= (char *)(addr) && (char *)(addr) < pseudo_static_dsm_end_addr)
 
-/*boolean dsm_addr(void *addr)
+/*tbx_bool_t dsm_addr(void *addr)
 {
   return (dsm_true_static_addr(addr) || dsm_pseudo_static_addr(addr) || (isoaddr_addr(addr) && isoaddr_page_get_status(isoaddr_page_index(addr)) == ISO_SHARED));
 }
 */
 
-boolean dsm_static_addr(void *addr)
+tbx_bool_t dsm_static_addr(void *addr)
 {
   return (dsm_true_static_addr(addr) || dsm_pseudo_static_addr(addr));
 }
@@ -797,7 +797,7 @@ dsm_node_t dsm_get_next_pending_request(dsm_page_index_t index)
 }
 
 
-boolean dsm_next_owner_is_set(dsm_page_index_t index)
+tbx_bool_t dsm_next_owner_is_set(dsm_page_index_t index)
 {
   return (dsm_page_table[index]->next_owner != NOBODY);
 }
@@ -813,7 +813,7 @@ void dsm_set_access(dsm_page_index_t index, dsm_access_t access)
 }
 
 
-static void dsm_enable_access(dsm_page_index_t index, dsm_access_t access, boolean map)
+static void dsm_enable_access(dsm_page_index_t index, dsm_access_t access, tbx_bool_t map)
 {
   if (map)
     dsm_map_page(dsm_page_table[index]->addr, access);
@@ -836,7 +836,7 @@ dsm_access_t dsm_get_access(dsm_page_index_t index)
 }
 
 
-boolean dsm_pending_invalidation(dsm_page_index_t index)
+tbx_bool_t dsm_pending_invalidation(dsm_page_index_t index)
 {
   return dsm_page_table[index]->pending_inv;
 }
@@ -1124,7 +1124,7 @@ void dsm_set_twin(dsm_page_index_t index, void *addr)
 }
 /********************************************************************/
 
-boolean dsm_empty_page_entry(dsm_page_index_t index)
+tbx_bool_t dsm_empty_page_entry(dsm_page_index_t index)
 {
   return !dsm_page_table[index];
 }
@@ -1143,7 +1143,7 @@ void dsm_alloc_page_entry(dsm_page_index_t index)
 }
 
 
-void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, boolean map)
+void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, tbx_bool_t map)
 {
 #ifdef DSM_TABLE_TRACE
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
@@ -1339,7 +1339,7 @@ void *dsm_get_next_modified_data(dsm_page_index_t index, int *size)
 }
 
 
-boolean dsm_page_bitmap_is_empty(dsm_page_index_t index) 
+tbx_bool_t dsm_page_bitmap_is_empty(dsm_page_index_t index) 
 {
 #ifdef DSM_TABLE_TRACE
 tfprintf(stderr, "dsm_bitmap_is_empty(%ld)\n", index);
@@ -1357,7 +1357,7 @@ tfprintf(stderr, "dsm_page_bitmap_clear(%ld) called\n", index);
 }
 
 /* pjh: to avoid repeated allocation */
-boolean dsm_page_bitmap_is_allocated(dsm_page_index_t index)
+tbx_bool_t dsm_page_bitmap_is_allocated(dsm_page_index_t index)
 {
   return (dsm_page_table[index]->bitmap != NULL);
 }

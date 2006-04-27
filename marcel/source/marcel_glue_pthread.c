@@ -22,7 +22,7 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
       memcpy (&new_attr, attr,
               (size_t) &(((marcel_attr_t*)NULL)->user_space));
       new_attr.user_space = 0;
-      new_attr.immediate_activation = FALSE;
+      new_attr.immediate_activation = tbx_false;
       new_attr.not_migratable = 1;
       new_attr.not_deviatable = 0;
       new_attr.sched = marcel_sched_attr_default;

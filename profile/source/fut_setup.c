@@ -53,10 +53,10 @@
 volatile unsigned int fut_active = 0;
 
 /*	points to next unused byte in buffer (multiple of 4) */
-volatile unsigned long *fut_next_slot = NULL;
+unsigned long * volatile fut_next_slot = NULL;
 
 /*	points to byte beyond end of buffer (multiple of 4) */
-volatile unsigned long *fut_last_slot = NULL;
+unsigned long * volatile fut_last_slot = NULL;
 
 fxt_t fut;
 static struct fxt_infos *fut_infos;

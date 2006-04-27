@@ -305,7 +305,7 @@ static struct itimerval refresh_timer ;
 /* refreshing period in seconds : */
 #define REFRESH_INTERVAL	5
 
-static int automatic_refresh = FALSE ;
+static tbx_bool_t automatic_refresh = tbx_false ;
 
 static f_host_view_func host_view_func	= &host_by_name ;
 static f_task_view_func task_view_func	= &task_by_tid ;
@@ -329,7 +329,7 @@ static int offset = 0;
 
 void stop_timer()
 {
-  automatic_refresh = FALSE;
+  automatic_refresh = tbx_true;
 
   notify_set_itimer_func
     (racine,
@@ -3230,7 +3230,7 @@ void mode_refresh(Panel_item item, int value)
 {
   if (value != 0)
     { /* Automatic refresh */
-      automatic_refresh = TRUE ;
+      automatic_refresh = tbx_true ;
       timerclear(&refresh_timer.it_value) ;
       refresh_timer.it_value.tv_sec = REFRESH_INTERVAL ;
       refresh_timer.it_interval = refresh_timer.it_value ;
@@ -3241,7 +3241,7 @@ void mode_refresh(Panel_item item, int value)
     }
   else
     {
-      automatic_refresh = FALSE;
+      automatic_refresh = tbx_false;
       notify_set_itimer_func(racine,
 			     NOTIFY_FUNC_NULL,
 			     ITIMER_REAL, NULL,

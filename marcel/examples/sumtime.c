@@ -122,15 +122,15 @@ int marcel_main(int argc, char **argv)
   marcel_setname(marcel_self(), "sumtime");
 
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
-  marcel_attr_setinheritholder(&attr, TRUE);
+  marcel_attr_setinheritholder(&attr, tbx_true);
 #ifdef CPU0ONLY
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif
 
   marcel_attr_init(&commattr);
-  marcel_attr_setdetachstate(&commattr, TRUE);
+  marcel_attr_setdetachstate(&commattr, tbx_true);
   marcel_attr_setschedpolicy(&commattr, MARCEL_SCHED_AFFINITY);
 #ifdef CPU0ONLY
   marcel_attr_setvpmask(&commattr, MARCEL_VPMASK_ALL_BUT_VP(0));

@@ -164,7 +164,7 @@ void pm2_register_service(int *num, rpc_func_t func,
   _pm2_optimize[service_number] = optimize_if_local;
 
   marcel_attr_init(&_pm2_lrpc_attr[service_number]);
-  marcel_attr_setdetachstate(&_pm2_lrpc_attr[service_number], TRUE);
+  marcel_attr_setdetachstate(&_pm2_lrpc_attr[service_number], tbx_true);
   marcel_attr_setuserspace(&_pm2_lrpc_attr[service_number], sizeof(rpc_args));
 
   *num = service_number++;
@@ -208,8 +208,8 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     arg->num = num;
     arg->tid = __pm2_self;
     arg->req = args;
-    arg->quick = FALSE;
-    arg->sync = TRUE;
+    arg->quick = tbx_false;
+    arg->sync = tbx_true;
 
     to_pointer(att, &arg->ptr_att);
 
@@ -281,8 +281,8 @@ static void netserver_lrpc(void)
 
   args->num = num;
   args->tid = tid;
-  args->quick = FALSE;
-  args->sync = TRUE;
+  args->quick = tbx_false;
+  args->sync = tbx_true;
 
   args->sem = &sem;
   marcel_sem_init(&sem, 0);
@@ -315,8 +315,8 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     arg.num = num;
     arg.tid = __pm2_self;
-    arg.sync = TRUE;
-    arg.quick = TRUE;
+    arg.sync = tbx_true;
+    arg.quick = tbx_true;
     arg.req = args;
     arg.sem = &sem;
     arg.true_ptr_att = att;
@@ -370,8 +370,8 @@ static void netserver_quick_lrpc(void)
   old_mad_unpack_pointer(MAD_IN_HEADER, &args.ptr_att, 1);
 
   args.sem = &sem;
-  args.sync = TRUE;
-  args.quick = TRUE;
+  args.sync = tbx_true;
+  args.quick = tbx_true;
   marcel_sem_init(&sem, 0);
 
   (*_pm2_rpc_funcs[args.num])(&args);
@@ -414,8 +414,8 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     arg->num = num;
     arg->tid = __pm2_self;
     arg->req = args;
-    arg->sync = FALSE;
-    arg->quick = FALSE;
+    arg->sync = tbx_false;
+    arg->quick = tbx_false;
 
     arg->sem = &sem;
     marcel_sem_init(&sem, 0);
@@ -480,8 +480,8 @@ static void netserver_async_lrpc(void)
   marcel_getuserspace(pid, (void *)&args);
   args->num = num;
   args->tid = tid;
-  args->quick = FALSE;
-  args->sync = FALSE;
+  args->quick = tbx_false;
+  args->sync = tbx_false;
 
   args->sem = &sem;
   marcel_sem_init(&sem, 0);
@@ -532,8 +532,8 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	arg->num = num;
 	arg->req = args;
 	arg->tid = __pm2_self;
-	arg->quick = FALSE;
-	arg->sync = FALSE;
+	arg->quick = tbx_false;
+	arg->sync = tbx_false;
 
 	arg->sem = &sem;
 	marcel_sem_init(&sem, 0);
@@ -594,8 +594,8 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
     arg.num = num;
     arg.tid = __pm2_self;
     arg.req = args;
-    arg.sync = FALSE;
-    arg.quick = TRUE;
+    arg.sync = tbx_false;
+    arg.quick = tbx_true;
     arg.sem = &sem;
     marcel_sem_init(&sem, 0);
 
@@ -641,8 +641,8 @@ static void netserver_quick_async_lrpc(void)
   old_mad_unpack_int(MAD_IN_HEADER, &args.num, 1);
 
   args.sem = &sem;
-  args.sync = FALSE;
-  args.quick = TRUE;
+  args.sync = tbx_false;
+  args.quick = tbx_true;
   marcel_sem_init(&sem, 0);
 
   (*_pm2_rpc_funcs[args.num])(&args);
@@ -672,8 +672,8 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 	arg.num = num;
 	arg.tid = __pm2_self;
 	arg.req = args;
-	arg.sync = FALSE;
-	arg.quick = TRUE;
+	arg.sync = tbx_false;
+	arg.quick = tbx_true;
 	arg.sem = &sem;
 	marcel_sem_init(&sem, 0);
 

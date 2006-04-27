@@ -20,12 +20,12 @@
 static marcel_sem_t sem1;
 static marcel_sem_t sem2;
 
-static volatile boolean stay_busy = TRUE;
+static volatile tbx_bool_t stay_busy = tbx_true;
 
 void deviation0(void *arg)
 {
   marcel_fprintf(stderr, "Deviation of a busy thread : %s\n", (char *)arg);
-  stay_busy = FALSE;
+  stay_busy = tbx_false;
 }
 
 void deviation1(void *arg)

@@ -61,7 +61,7 @@ void marcel_sem_P(marcel_sem_t *s)
 
   if(--(s->value) < 0) {
     c.next = NULL;
-    c.blocked = TRUE;
+    c.blocked = tbx_true;
     c.task = marcel_self();
     if(s->first == NULL)
       s->first = s->last = &c;
@@ -136,7 +136,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       RAISE(TIME_OUT);
     }
     c.next = NULL;
-    c.blocked = TRUE;
+    c.blocked = tbx_true;
     c.task = marcel_self();
     if(s->first == NULL)
       s->first = s->last = &c;

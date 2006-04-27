@@ -37,7 +37,7 @@ typedef struct marcel_per_lwp_polling_s{
 	void (*func) (void *);
 	void *arg;
 	marcel_t task;
-	boolean blocked;
+	tbx_bool_t blocked;
 	struct marcel_per_lwp_polling_s* next;
 }marcel_per_lwp_polling_t;
 
@@ -67,7 +67,7 @@ int marcel_per_lwp_polling_register(int *data,
 	cell.func = func;
 	cell.arg = arg;
 	cell.task = task;
-	cell.blocked = TRUE;
+	cell.blocked = tbx_true;
 	
 	/*Insertion de la donnée*/
 	cell.next = lwp->polling_list;
@@ -124,11 +124,11 @@ static int compat_poll_one(marcel_ev_server_t server,
 {
 	marcel_pollinst_t inst=struct_up(req, poll_cell_t, inst);
 	marcel_pollid_t ps=struct_up(server, struct poll_struct, server);
-	int first_call=TRUE;
+	tbx_bool_t first_call=tbx_true;
 
 	ps->cur_cell = inst;
 	if (option & MARCEL_EV_OPT_REQ_IS_GROUPED) {
-		first_call=FALSE;
+		first_call=tbx_false;
 	}
 	if ((*ps->fastfunc)(ps, inst->arg, first_call)) {
 		MARCEL_EV_REQ_SUCCESS(req);

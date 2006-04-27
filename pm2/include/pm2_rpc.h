@@ -245,7 +245,7 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 
 _PRIVATE_ typedef struct {
   int tid, num, not_migratable;
-  boolean sync, quick;
+  tbx_bool_t sync, quick;
   any_t req;
   marcel_sem_t *sem;
   pointer ptr_att;
@@ -264,7 +264,7 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 
 #define BEGIN_SERVICE(name) \
 	void _##name##_func(rpc_args *_arg) { \
-	boolean _sync, _quick, _local = FALSE; \
+	tbx_bool_t _sync, _quick, _local = tbx_false; \
 	LRPC_REQ(name) req; \
 	LRPC_RES(name) res; \
         _sync = _arg->sync; \
@@ -279,7 +279,7 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 	if(_arg->tid == pm2_self() && _pm2_optimize[name]) { \
 		if(_quick) {\
 			_arg->not_migratable = marcel_self()->not_migratable; \
-			_local = TRUE; \
+			_local = tbx_true; \
 		} \
 		memcpy(&req, _arg->req, sizeof(LRPC_REQ(name))); \
 	} else { \

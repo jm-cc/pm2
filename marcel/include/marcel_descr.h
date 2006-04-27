@@ -94,7 +94,7 @@ struct marcel_task {
 	marcel_sem_t sem_marcel_run;
 	char *user_space_ptr;
 	/* Gestion de la terminaison */
-	boolean detached;
+	tbx_bool_t detached;
 	marcel_sem_t client, thread;
 	any_t ret_val; /* exit/join/cancel */
 	/*         postexit stuff */

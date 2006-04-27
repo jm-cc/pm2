@@ -18,7 +18,7 @@
 
 #include "marcel.h"
 
-volatile boolean have_to_work = TRUE;
+volatile tbx_bool_t have_to_work = tbx_true;
 
 any_t sample(any_t arg)
 {
@@ -54,7 +54,7 @@ int marcel_main(int argc, char *argv[])
 
    tprintf("active threads = %d\n", marcel_activethreads());
 
-   have_to_work = FALSE;
+   have_to_work = tbx_false;
 
    marcel_join(pid, &status);
 

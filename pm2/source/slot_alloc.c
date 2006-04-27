@@ -486,7 +486,7 @@ void slot_set_shared(void *addr)
        
        dsm_enable_page_entry(dsm_isoaddr_page_index(master), pm2_self(), 
 			     header_ptr->prot, isoaddr_page_addr(master), 
-			     (master - i)*DSM_PAGE_SIZE, FALSE);
+			     (master - i)*DSM_PAGE_SIZE, tbx_false);
      }
    else
      {
@@ -494,7 +494,7 @@ void slot_set_shared(void *addr)
        {
 	 dsm_enable_page_entry(dsm_isoaddr_page_index(i), pm2_self(), 
 			       header_ptr->prot, isoaddr_page_addr(i), 
-			       DSM_PAGE_SIZE, FALSE);
+			       DSM_PAGE_SIZE, tbx_false);
 	 i--;
        }
      }

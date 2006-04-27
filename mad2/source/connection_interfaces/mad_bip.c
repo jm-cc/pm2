@@ -121,7 +121,7 @@ typedef struct {
 #ifdef USE_MARCEL_POLL
   marcel_pollid_t ack_pollid, cred_pollid, reg_pollid;
   marcel_pollinst_t *ack_poller;
-  boolean *ack_was_received;
+  tbx_bool_t *ack_was_received;
 #endif
 #endif
 } mad_bip_channel_specific_t, *p_mad_bip_channel_specific_t;
@@ -178,7 +178,7 @@ static void ack_group_func(marcel_pollid_t id)
 
 static void *ack_fastpoll_func(marcel_pollid_t id,
 			       any_t arg,
-			       boolean first_call)
+			       tbx_bool_t first_call)
 {
   unsigned host = ((ack_poll_arg_t *)arg)->host, tmphost;
   int status;
@@ -191,7 +191,7 @@ static void *ack_fastpoll_func(marcel_pollid_t id,
   if(first_call) {
 
     if(p->ack_was_received[host]) {
-      p->ack_was_received[host] = FALSE;
+      p->ack_was_received[host] = tbx_false;
       LOG_OUT();
       return MARCEL_POLL_OK;
     }
@@ -222,7 +222,7 @@ static void *ack_fastpoll_func(marcel_pollid_t id,
 	} else {
 	  poller = p->ack_poller[tmphost];
 	  if(!poller) {
-	    p->ack_was_received[tmphost] = TRUE;
+	    p->ack_was_received[tmphost] = tbx_true;
 	  } else {
 	    p->ack_poller[tmphost] = NULL;
 	    LOG_OUT();
@@ -264,7 +264,7 @@ static void *ack_poll_func(marcel_pollid_t id,
 
       poller = p->ack_poller[host];
       if(!poller) {
-	p->ack_was_received[host] = TRUE;
+	p->ack_was_received[host] = tbx_true;
       } else {
 	p->ack_poller[host] = NULL;
 	return MARCEL_POLL_SUCCESS_FOR(poller);
@@ -827,7 +827,7 @@ mad_bip_channel_init(p_mad_channel_t channel)
 			    channel_specific);
 
   channel_specific->ack_was_received =
-    (boolean *)TBX_MALLOC(size*sizeof(boolean));
+    (tbx_bool_t *)TBX_MALLOC(size*sizeof(tbx_bool_t));
   channel_specific->ack_poller =
     (marcel_pollinst_t *)TBX_MALLOC(size*sizeof(marcel_pollinst_t));
 #endif
@@ -841,7 +841,7 @@ mad_bip_channel_init(p_mad_channel_t channel)
     marcel_cond_init(&channel_specific->cond_cred[i], NULL);
     marcel_sem_init(&channel_specific->sem_ack[i], 0);
 #ifdef USE_MARCEL_POLL
-    channel_specific->ack_was_received[i] = FALSE;
+    channel_specific->ack_was_received[i] = tbx_false;
     channel_specific->ack_poller[i] = NULL;
 #endif
 #endif

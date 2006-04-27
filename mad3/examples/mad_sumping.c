@@ -560,7 +560,7 @@ void* sum_thread(thread_infos_t * info)
   unsigned long temps;
   int i;
 
-  marcel_attr_setdetachstate(&sum_attr, TRUE);
+  marcel_attr_setdetachstate(&sum_attr, tbx_true);
   //marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
 
   marcel_sem_init(&j.sem, 0);
@@ -620,7 +620,7 @@ void *main_thread(thread_infos_t * info)
     p_tbx_slist_t     slist_head  = slist;
     marcel_attr_t attr;
     marcel_attr_init(&attr);
-    marcel_attr_setrealtime(&attr, TRUE);
+    marcel_attr_setrealtime(&attr, tbx_true);
 
     main_buffer = tbx_aligned_malloc(param_size, MAD_ALIGNMENT);
     thread_params_tbl = tbx_aligned_malloc(nb_channel*2*
@@ -782,7 +782,7 @@ tbx_main(int argc, char *argv[])
     thread_params.madeleine = madeleine;
 
     marcel_attr_init(&attr);
-    marcel_attr_setrealtime(&attr, TRUE);
+    marcel_attr_setrealtime(&attr, tbx_true);
 
     marcel_create(&thread_params.tid, &attr, (void*) main_thread,
 		  &thread_params);

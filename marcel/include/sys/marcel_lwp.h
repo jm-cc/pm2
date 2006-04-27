@@ -61,7 +61,7 @@ struct marcel_lwp {
 #endif
 
 	marcel_task_t *previous_thread;
-	boolean main_is_waiting;
+	tbx_bool_t main_is_waiting;
 	unsigned nb_tasks;
 // Utilise par les fonctions one_more_task, wait_all_tasks, etc.
 	ma_spinlock_t threadlist_lock;

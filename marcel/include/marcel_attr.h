@@ -47,14 +47,14 @@ struct __marcel_attr_s
   /* marcel attributes */
   //unsigned stack_size;
   //char *stack_base;
-  //int /*boolean*/ detached;
+  //int /*tbx_bool_t*/ detached;
   unsigned user_space;
-  /*boolean*/int immediate_activation;
+  /*tbx_bool_t*/int immediate_activation;
   unsigned not_migratable;
   unsigned not_deviatable;
   int not_preemptible;
   //int sched_policy;
-  /*boolean int rt_thread; On utilise la priorité maintenant */
+  /*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
   marcel_vpmask_t vpmask;
   int flags;
   char name[MARCEL_MAXNAMESIZE];
@@ -89,7 +89,7 @@ struct __marcel_attr_s
   .__stackaddr= NULL, \
   .__stacksize= THREAD_SLOT_SIZE, \
   .user_space= 0, \
-  .immediate_activation= FALSE, \
+  .immediate_activation= tbx_false, \
   .not_migratable= 1, \
   .not_deviatable= 0, \
   .not_preemptible= 0, \
@@ -99,11 +99,6 @@ struct __marcel_attr_s
   .id = -1, \
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
 }
-
-/* detachstate */
-/*#define MARCEL_CREATE_JOINABLE    FALSE
-#define MARCEL_CREATE_DETACHED    TRUE
-*/
 
 /* realtime */
 #define MARCEL_CLASS_REGULAR      FALSE
@@ -125,32 +120,32 @@ DEC_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict att
 
 // TODO: XOPEN2K défini attr_[sg]etstack() pour préciser la taille aussi.
 
-DEC_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached) __THROW);
-DEC_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached) __THROW);
+DEC_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached) __THROW);
+DEC_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, int *detached) __THROW);
 
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space);
 int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
 		unsigned * __restrict space);
 
-int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate);
+int marcel_attr_setactivation(marcel_attr_t *attr, tbx_bool_t immediate);
 int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict immediate);
+		tbx_bool_t * __restrict immediate);
 
-int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable);
+int marcel_attr_setmigrationstate(marcel_attr_t *attr, tbx_bool_t migratable);
 int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict migratable);
+		tbx_bool_t * __restrict migratable);
 
-int marcel_attr_setdeviationstate(marcel_attr_t *attr, boolean deviatable);
+int marcel_attr_setdeviationstate(marcel_attr_t *attr, tbx_bool_t deviatable);
 int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict deviatable);
+		tbx_bool_t * __restrict deviatable);
 
 int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
 int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
 		int * __restrict policy) __THROW;
 
-int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime);
+int marcel_attr_setrealtime(marcel_attr_t *attr, tbx_bool_t realtime);
 int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict realtime);
+		tbx_bool_t * __restrict realtime);
 
 int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
 int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,

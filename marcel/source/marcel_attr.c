@@ -79,21 +79,21 @@ DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict att
 DEF_PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
 DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
 
-DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached), (attr, detached),
+DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr, detached),
 {
    attr->__detachstate = detached;
    return 0;
 })
-DEF_PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
-DEF___PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
+DEF_PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, int detached), (attr, detached))
+DEF___PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, int detached), (attr, detached))
 
-DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached), (attr, detached),
+DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, int *detached), (attr, detached),
 {
    *detached = attr->__detachstate;
    return 0;
 })
-DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
-DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
+DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
+DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
 
 #ifdef MA__LIBPTHREAD
 int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize)
@@ -120,42 +120,42 @@ int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
    return 0;
 }
 
-int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate)
+int marcel_attr_setactivation(marcel_attr_t *attr, tbx_bool_t immediate)
 {
   attr->immediate_activation = immediate;
   return 0;
 }
 
 int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict immediate)
+		tbx_bool_t * __restrict immediate)
 {
   *immediate = attr->immediate_activation;
   return 0;
 }
 
-int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable)
+int marcel_attr_setmigrationstate(marcel_attr_t *attr, tbx_bool_t migratable)
 {
    attr->not_migratable = (migratable ? 0 : 1);
    return 0;
 }
 
 int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict migratable)
+		tbx_bool_t * __restrict migratable)
 {
-   *migratable = (attr->not_migratable ? FALSE : TRUE);
+   *migratable = (attr->not_migratable ? tbx_false : tbx_true);
    return 0;
 }
 
-int marcel_attr_setdeviationstate(marcel_attr_t *attr, boolean deviatable)
+int marcel_attr_setdeviationstate(marcel_attr_t *attr, tbx_bool_t deviatable)
 {
    attr->not_deviatable = (deviatable ? 0 : 1);
    return 0;
 }
 
 int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
-		boolean *__restrict deviatable)
+		tbx_bool_t *__restrict deviatable)
 {
-   *deviatable = (attr->not_deviatable ? FALSE : TRUE);
+   *deviatable = (attr->not_deviatable ? tbx_false : tbx_true);
    return 0;
 }
 
@@ -172,13 +172,13 @@ int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
   return 0;
 }
 
-int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
+int marcel_attr_setrealtime(marcel_attr_t *attr, tbx_bool_t realtime)
 {
   return marcel_attr_setprio(attr, realtime ? MA_RT_PRIO : MA_DEF_PRIO);
 }
 
 int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
-		boolean * __restrict realtime)
+		tbx_bool_t * __restrict realtime)
 {
   int prio;
   marcel_attr_getprio(attr, &prio);

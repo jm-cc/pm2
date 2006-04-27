@@ -44,7 +44,7 @@ dsm_set_twin_ptr (const dsm_page_index_t, void * const);
 extern dsm_node_t
 dsm_self (void);
 
-extern boolean
+extern tbx_bool_t
 dsm_static_addr (void *addr);
 
 extern void *
@@ -113,7 +113,7 @@ dsm_store_pending_request (dsm_page_index_t index, dsm_node_t owner);
 extern dsm_node_t
 dsm_get_next_pending_request (dsm_page_index_t index);
 
-extern boolean
+extern tbx_bool_t
 dsm_next_owner_is_set (dsm_page_index_t index);
 
 extern void
@@ -167,7 +167,7 @@ dsm_lock_inv (dsm_page_index_t index);
 extern void
 dsm_unlock_inv (dsm_page_index_t index);
 
-extern boolean
+extern tbx_bool_t
 dsm_pending_invalidation (dsm_page_index_t index);
 
 extern void
@@ -262,7 +262,7 @@ dsm_set_user_data2_init_func (dsm_user_data2_init_func_t func);
 extern void
 dsm_set_pseudo_static_area_size (unsigned size);
 
-extern boolean
+extern tbx_bool_t
 dsm_empty_page_entry (dsm_page_index_t index);
 
 extern void
@@ -272,7 +272,7 @@ extern void
 dsm_validate_page_entry (dsm_page_index_t index);
 
 extern void
-dsm_enable_page_entry (dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, boolean map);
+dsm_enable_page_entry (dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, tbx_bool_t map);
 
 extern void
 dsm_set_page_protocol (dsm_page_index_t index, dsm_proto_t protocol);
@@ -309,13 +309,13 @@ dsm_mark_dirty (void *addr, int length);
 extern void *
 dsm_get_next_modified_data (dsm_page_index_t index, int *size);
 
-extern boolean
+extern tbx_bool_t
 dsm_page_bitmap_is_empty (dsm_page_index_t index);
 
 extern void
 dsm_page_bitmap_clear (dsm_page_index_t index) ;
 
-extern boolean
+extern tbx_bool_t
 dsm_page_bitmap_is_allocated (dsm_page_index_t index);
 
 /* user code to migrate to hyperion files: */

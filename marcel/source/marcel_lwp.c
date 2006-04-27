@@ -283,7 +283,7 @@ static void lwp_init(ma_lwp_t lwp)
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
 	/* Elle doit prendre la main sur toute autre tâche de ce LWP */

@@ -27,7 +27,7 @@
 #define ACT_NEW_WITH_LOCK 1
 
 marcel_t marcel_next[ACT_NB_MAX_CPU];
-//volatile boolean has_new_tasks=0;
+//volatile tbx_bool_t has_new_tasks=0;
 volatile int act_nb_unblocked=0;
 
 
@@ -395,7 +395,7 @@ static void marcel_upcall_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
 #ifdef PM2

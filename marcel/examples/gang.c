@@ -65,7 +65,7 @@ int marcel_main(int argc, char **argv)
 #endif
 
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
 
   marcel_attr_setprio(&attr, MA_DEF_PRIO-1);
   marcel_attr_setname(&attr, "gang scheduler");

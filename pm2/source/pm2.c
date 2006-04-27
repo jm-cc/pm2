@@ -138,7 +138,7 @@ void pm2_init_purge_cmdline(int *argc, char *argv[])
 static void pm2_wait_end(void)
 {
   char mess[128];
-  static boolean already_called = FALSE;
+  static tbx_bool_t already_called = tbx_false;
 
   if(!already_called) {
 
@@ -155,7 +155,7 @@ static void pm2_wait_end(void)
 	    marcel_cachedthreads());
 
     fprintf(stderr, mess);
-    already_called = TRUE;
+    already_called = tbx_true;
 
     LOG_OUT();
   }

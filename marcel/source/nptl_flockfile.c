@@ -133,7 +133,7 @@ __tbx_inline__ static void _lpt_IO_lock_lock(_lpt_IO_lock_t *_name)
                 blockcell c, *first;
 
 		c.next = NULL;
-		c.blocked = TRUE;
+		c.blocked = tbx_true;
 		c.task = (self)?:marcel_self();
 		first=(blockcell*)(_name->__status & ~1);
 		if(first == NULL) {

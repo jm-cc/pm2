@@ -39,7 +39,7 @@ typedef struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
   struct blockcell_struct *last; /* Valide uniquement dans la cellule de tête */
-  boolean blocked;
+  tbx_bool_t blocked;
 } blockcell;
 
 __tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)
@@ -65,7 +65,7 @@ __tbx_inline__ static int __marcel_register_spinlocked(struct _marcel_fastlock *
 
   //LOG_IN();
   c->next = NULL;
-  c->blocked = TRUE;
+  c->blocked = tbx_true;
   c->task = (self)?:marcel_self();
   first=(blockcell*)(lock->__status & ~1);
   if(first == NULL) {
@@ -88,7 +88,7 @@ __tbx_inline__ static int __lpt_register_spinlocked(struct _lpt_fastlock * lock,
 
   //LOG_IN();
   c->next = NULL;
-  c->blocked = TRUE;
+  c->blocked = tbx_true;
   c->task = (self)?:marcel_self();
   first=(blockcell*)(lock->__status & ~1);
   if(first == NULL) {

@@ -42,7 +42,7 @@ typedef struct marcel_sched_attr marcel_sched_attr_t;
 struct marcel_sched_attr {
 	ma_holder_t *init_holder;
 	int prio;
-	int inheritholder;
+	tbx_bool_t inheritholder;
 };
 
 #section variables
@@ -52,7 +52,7 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
 	.init_holder = NULL, \
 	.prio = MA_DEF_PRIO, \
-	.inheritholder = FALSE, \
+	.inheritholder = tbx_false, \
 }
 
 #section functions
@@ -313,7 +313,7 @@ unsigned marcel_frozenthreads(void);
 extern void breakpoint();
 #endif
 
-int __marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
+int __marcel_tempo_give_hand(unsigned long timeout, tbx_bool_t *blocked, marcel_sem_t *s);
 
 marcel_t marcel_unchain_task_and_find_next(marcel_t t, 
 						     marcel_t find_next);

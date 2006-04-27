@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-static boolean finished = FALSE;
+static tbx_bool_t finished = tbx_false;
 
 any_t looper(any_t arg)
 {
@@ -57,7 +57,7 @@ any_t main_thread(void *arg)
   //  marcel_current_vp());
 
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, TRUE);
+  marcel_attr_setdetachstate(&attr, tbx_true);
 #ifdef SMP
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
 
@@ -93,7 +93,7 @@ any_t main_thread(void *arg)
     }
   }
 
-  finished = TRUE;
+  finished = tbx_true;
   return NULL;
 }
 

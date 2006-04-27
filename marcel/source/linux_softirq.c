@@ -480,7 +480,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);

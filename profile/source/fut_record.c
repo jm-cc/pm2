@@ -162,6 +162,13 @@ fut_header (unsigned long code, ... )
 
 #else /* PROFILE_NEW_FORMAT */
 
+#ifndef MARCEL
+/* poor man's cmpxchg, à supprimer lorsque tbx implémentera cmpxchg lui-même */
+static void * volatile cursp;
+#define ma_cmpxchg(ptr,o,n) \
+	(*(ptr) = (n), (o))
+#endif
+
 static unsigned long trash_buffer[8];
 
 unsigned long* TBX_NOINST fut_getstampedbuffer(unsigned long code, 
@@ -169,11 +176,21 @@ unsigned long* TBX_NOINST fut_getstampedbuffer(unsigned long code,
 {
 	unsigned long *prev_slot, *next_slot;
 
+#ifndef MARCEL
+	do {
+		cursp = &prev_slot;
+#endif
+
 	do {
 		prev_slot=(unsigned long *)fut_next_slot;
 		next_slot=(unsigned long*)((unsigned long)prev_slot+size);
 	} while (prev_slot != ma_cmpxchg(&fut_next_slot, 
 					 prev_slot, next_slot));
+
+#ifndef MARCEL
+	/* pour se prémunir des signaux */
+	} while (cursp != &prev_slot);
+#endif
 
 	if (tbx_unlikely(next_slot > fut_last_slot)) {
 		fut_active=0;

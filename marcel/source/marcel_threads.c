@@ -34,6 +34,8 @@ void marcel_postexit_internal(marcel_t cur,
 static __inline__ void init_marcel_thread(marcel_t __restrict t, 
 					  __const marcel_attr_t * __restrict attr)
 {
+	PROF_THREAD_BIRTH(new_task);
+
 	/* Free within schedule_tail */
 	t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET;
 	marcel_sched_init_marcel_thread(t, attr);
@@ -209,8 +211,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 		static_stack = FALSE;
 	} /* fin (attr->stack_base) */
 
-	PROF_THREAD_BIRTH(new_task);
-	
 	init_marcel_thread(new_task, attr);
 	new_task->stack_base = stack_base;
 	new_task->static_stack = static_stack;

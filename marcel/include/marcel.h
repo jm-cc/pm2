@@ -33,6 +33,12 @@
 #define MARCEL_PROTECTED
 #endif
 
+#ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
+#  define MARCEL_INLINE
+#else
+#  define MARCEL_INLINE inline
+#endif
+
 __TBX_BEGIN_DECLS
 
 //#include "asm/marcel-master___compiler.h"
@@ -72,12 +78,6 @@ TBX_VISIBILITY_POP
 //#include "asm/marcel-master___variables.h"
 #include "marcel-master___variables.h"
 #include "scheduler/marcel-master___variables.h"
-
-#ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
-#  define MARCEL_INLINE
-#else
-#  define MARCEL_INLINE inline
-#endif
 
 //#include "asm/marcel-master___inline.h"
 #include "marcel-master___inline.h"

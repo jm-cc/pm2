@@ -17,7 +17,7 @@
 #ifndef FUT_PM2_IS_DEF
 #define FUT_PM2_IS_DEF
 
-#include "tbx.h"
+#include "tbx_types.h"
 
 #define MARCEL_PROF_MASK  0x01
 #define MAD_PROF_MASK     0x02

@@ -36,7 +36,7 @@
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
 #  define MARCEL_INLINE
 #else
-#  define MARCEL_INLINE inline
+#  define MARCEL_INLINE __tbx_inline__
 #endif
 
 /* ========== customization =========== */

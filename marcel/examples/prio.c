@@ -28,7 +28,7 @@ any_t sample(any_t arg)
       for (i=0;i<10000000;i++);
       marcel_printf("I'm %ld\n",me);
    }
-   tprintf("%d finished\n", me);
+   tprintf("%ld finished\n", me);
    return NULL;
 }
 

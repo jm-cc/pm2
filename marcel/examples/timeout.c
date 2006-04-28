@@ -22,15 +22,15 @@ marcel_sem_t sem;
 
 any_t f(any_t arg)
 {
-  LOOP(b)
-    BEGIN
+  MARCEL_LOOP(b)
+    MARCEL_EXCEPTION_BEGIN
       marcel_sem_timed_P(&sem, 500);
-      EXIT_LOOP(b);
-    EXCEPTION
-      WHEN(TIME_OUT)
+      MARCEL_EXIT_LOOP(b);
+    MARCEL_EXCEPTION
+      MARCEL_EXCEPTION_WHEN(TIME_OUT)
         tprintf("What a boring job, isn't it ?\n");
-    END
-  END_LOOP(b)
+    MARCEL_EXCEPTION_END
+  MARCEL_END_LOOP(b)
   tprintf("What a relief !\n");
 
   return 0;

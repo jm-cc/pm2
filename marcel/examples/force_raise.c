@@ -20,22 +20,22 @@ marcel_exception_t USER_ERROR = "USER_ERROR";
 
 void deviation(void *arg)
 {
-   RAISE(USER_ERROR);
+   MARCEL_EXCEPTION_RAISE(USER_ERROR);
 }
 
 any_t func(any_t arg)
 { int i;
 
-   BEGIN
+   MARCEL_EXCEPTION_BEGIN
      for(i=0; i<10; i++) {
        marcel_delay(100);
-       tprintf("Hi %s!\n", arg);
+       tprintf("Hi %s!\n", (char *)arg);
      }
-   EXCEPTION
-     WHEN(USER_ERROR)
+   MARCEL_EXCEPTION
+     MARCEL_EXCEPTION_WHEN(USER_ERROR)
        tprintf("God! I have been disturbed!\n");
        return NULL;
-   END
+   MARCEL_EXCEPTION_END
    tprintf("Ok, I was not disturbed.\n");
    return NULL;
 }

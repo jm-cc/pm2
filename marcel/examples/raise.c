@@ -20,7 +20,7 @@ marcel_exception_t USER_ERROR = "USER_ERROR";
 
 any_t func(any_t arg)
 {
-   RAISE(USER_ERROR);
+   MARCEL_EXCEPTION_RAISE(USER_ERROR);
 
    return NULL;
 }

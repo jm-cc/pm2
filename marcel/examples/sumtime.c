@@ -151,13 +151,13 @@ int marcel_main(int argc, char **argv)
 #endif
   } else {
     // Execution interactive
-    LOOP(bcle)
+    MARCEL_LOOP(bcle)
       printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup <= 0)
-	EXIT_LOOP(bcle);
+	MARCEL_EXIT_LOOP(bcle);
       compute(j);
-    END_LOOP(bcle)
+    MARCEL_END_LOOP(bcle)
   }
 
   fflush(stdout);

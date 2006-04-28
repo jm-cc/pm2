@@ -41,13 +41,8 @@
 #define MAD_QUADRICS_CONTEXT_ID_OFFSET	2
 #define MAD_QUADRICS_MAX_ASYNC_PACKETS	1000
 
-#ifndef MARCEL
-#  define USE_PUT_NOTIFICATION
-#endif /* MARCEL */
 
 #define FIRST_PACKET_THRESHOLD		32768
-#define SPLIT_PACKET_THRESHOLD		 1024
-#define PUT_BUF_LENGTH (2*sizeof(int)+FIRST_PACKET_THRESHOLD)
 
 
 #if defined(__i386) && !defined(MARCEL)
@@ -248,59 +243,6 @@ mad_quadrics_blocking_rx_test(ELAN_EVENT *event,
         LOG_OUT();
 
         return ptr;
-}
-
-static
-inline
-int
-mad_quadrics_wait_msg_notification(p_mad_quadrics_channel_specific_t	 chs) {
-        const    uint_t 		proc		= chs->proc;
-        const    uint_t 		nproc		= chs->nproc;
-        volatile unsigned char	* const global_notify	= chs->global_notify;
-        volatile unsigned char	* const global_ack	= chs->global_ack;
-        volatile unsigned char 		c		= 1;
-        tbx_bool_t * const		ack_required	= chs->ack_required;
-        int                             sender		= 0;
-        unsigned char			r		= 0;
-
-        for (sender = 0; sender < nproc; sender++) {
-                if (sender == proc)
-                        continue;
-
-                if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
-                        goto found;
-
-                if (ack_required[sender]) {
-                        elan_wait(elan_put(elan_base->state, &c, global_ack+proc, 1, sender), elan_base->waitType);
-                        ack_required[sender] = 0;
-                }
-        }
-
-        PAUSE();
-
-        while (1) {
-                for (sender = 0; sender < nproc; sender++) {
-                        if (sender == proc)
-                                continue;
-
-                        if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
-                                goto found;
-                }
-
-                PAUSE();
-        }
-
- found:
-        chs->global_ack[sender]	= 1;
-        chs->first_packet_length = *(int*)(global_notify + sender*PUT_BUF_LENGTH);
-        MEMBAR_LOADLOAD();
-        r = global_notify[sender*(1+FIRST_PACKET_THRESHOLD)];
-        global_notify[sender*(1+FIRST_PACKET_THRESHOLD)] = 0;
-        MEMBAR_STORESTORE();
-
-        TBX_ASSERT(r <= 1);
-
-        return sender;
 }
 
 
@@ -588,9 +530,7 @@ mad_quadrics_channel_init(p_mad_channel_t ch) {
 
         chs->queue			= NULL;
         chs->port			= NULL;
-#ifndef USE_PUT_NOTIFICATION
         chs->first_packet		= TBX_MALLOC(FIRST_PACKET_THRESHOLD);
-#endif /* USE_PUT_NOTIFICATION */
 
         chs->sys_buffer			= NULL;
         chs->first_packet_length	= 0;
@@ -603,21 +543,6 @@ mad_quadrics_channel_init(p_mad_channel_t ch) {
         ch->parameter	= tbx_string_to_cstring(param_str);
         tbx_string_free(param_str);
         param_str	= NULL;
-
-#ifdef USE_PUT_NOTIFICATION
-        {
-                chs->ack_required	= TBX_CALLOC(ds->nproc, sizeof(tbx_bool_t));
-                chs->global_notify	= elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc * PUT_BUF_LENGTH);
-                if (!chs->global_notify)
-                        FAILURE("elan_gallocMain");
-
-                memset((void *)chs->global_notify, 0, ds->nproc * PUT_BUF_LENGTH);
-                chs->global_ack = elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc);
-                if (!chs->global_ack)
-                        FAILURE("elan_gallocMain");
-                memset((void *)chs->global_ack, 1, ds->nproc);
-        }
-#endif /* USE_PUT_NOTIFICATION */
         elan_gsync(elan_base->allGroup);
         LOG_OUT();
 }
@@ -806,22 +731,14 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         p_mad_connection_t			 in		= NULL;
         p_mad_quadrics_connection_specific_t	 is		= NULL;
         p_tbx_darray_t				 in_darray	= NULL;
-#ifndef USE_PUT_NOTIFICATION
         ELAN_EVENT				*event		= NULL;
         size_t					 size		=    0;
-#endif /* USE_PUT_NOTIFICATION */
         int                                      sender		=    0;
         ntbx_process_lrank_t			 remote_lrank	=   -1;
 
         LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
-#ifdef USE_PUT_NOTIFICATION
-        /* 3us min latency */
-        sender = mad_quadrics_wait_msg_notification(chs);
-#else /* USE_PUT_NOTIFICATION */
-        /* 3.7 us min latency */
-
         mad_quadrics_lock();
         event = elan_tportRxStart(chs->port	/* port 	*/,
                                   ELAN_TPORT_RXANY /*|ELAN_TPORT_RXBUF*/	/* flags	*/,
@@ -835,7 +752,6 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         chs->sys_buffer = mad_quadrics_blocking_rx_test(event, &sender, &size);
 
         chs->first_packet_length = size;
-#endif /* USE_PUT_NOTIFICATION */
         remote_lrank = chs->lranks[sender];
 
         in	= tbx_darray_get(in_darray, remote_lrank);
@@ -855,14 +771,7 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
         p_mad_quadrics_driver_specific_t	 ds		= NULL;
         size_t					 length		=    0;
         ELAN_EVENT				*event		= NULL;
-#ifdef  USE_PUT_NOTIFICATION
-        ELAN_EVENT				*first_event	= NULL;
-#endif /* USE_PUT_NOTIFICATION */
         ELAN_FLAGS				 tx_flags	=    0;
-#ifdef  USE_PUT_NOTIFICATION
-        volatile unsigned char _first_packet[PUT_BUF_LENGTH];
-#endif /*  USE_PUT_NOTIFICATION */
-
 
         LOG_IN();
         out	= lnk->connection;
@@ -870,34 +779,10 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
         chs	= out->channel->specific;
         ds	= out->channel->adapter->driver->specific;
 
-
         if (os->first_outgoing_packet_flag) {
                 os->first_outgoing_packet_flag = tbx_false;
 
 
-#ifdef USE_PUT_NOTIFICATION
-                if (chs->ack_required[os->remote_proc]) {
-                        chs->ack_required[os->remote_proc]	= tbx_false;
-                }
-
-                length = b->bytes_written - b->bytes_read;
-
-                if (length > FIRST_PACKET_THRESHOLD) {
-                        length = tbx_min(length, SPLIT_PACKET_THRESHOLD);
-                }
-
-                *((int *)_first_packet) = length;
-                *(int *)(_first_packet+sizeof(int)+length) = 1;
-                memcpy(_first_packet+sizeof(int), b->buffer + b->bytes_read, length);
-                while (!chs->global_ack[os->remote_proc])
-                        PAUSE();
-
-                MEMBAR_LOADLOAD();
-                chs->global_ack[os->remote_proc] = 0;
-                MEMBAR_STORESTORE();
-
-                first_event	= elan_put(elan_base->state, _first_packet, chs->global_notify+(chs->proc*PUT_BUF_LENGTH), tbx_aligned((length+2*sizeof(int)), 8), os->remote_proc);
-#else /* USE_PUT_NOTIFICATION */
                 length	= tbx_min(b->bytes_written - b->bytes_read,
                                   FIRST_PACKET_THRESHOLD);
 
@@ -915,14 +800,10 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
 
                 mad_quadrics_unlock();
                 mad_quadrics_blocking_tx_test(event);
-#endif /* USE_PUT_NOTIFICATION */
                 b->bytes_read += length;
 
                 if (!mad_more_data(b))
                         goto no_more_data;
-
-#ifdef USE_PUT_NOTIFICATION
-#endif /* USE_PUT_NOTIFICATION */
         }
 
         length = b->bytes_written - b->bytes_read;
@@ -947,14 +828,6 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
  no_more_data:
         ;
         //DISP("sb: ok");
-
-#ifdef  USE_PUT_NOTIFICATION
-        if (first_event) {
-                elan_wait(first_event, elan_base->waitType);
-                first_event = NULL;
-        }
-#endif /*  USE_PUT_NOTIFICATION */
-
         LOG_OUT();
 }
 
@@ -982,34 +855,8 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
                 is->first_incoming_packet_flag = tbx_false;
 
                 data_ptr	= b->buffer + b->bytes_written;
-#ifdef USE_PUT_NOTIFICATION
-                data_length	= b->length - b->bytes_written;
-
-                if (data_length > FIRST_PACKET_THRESHOLD) {
-                        data_length = tbx_min(data_length, SPLIT_PACKET_THRESHOLD);
-                }
-#else /* USE_PUT_NOTIFICATION */
                 data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
-#endif /* USE_PUT_NOTIFICATION */
 
-#ifdef USE_PUT_NOTIFICATION
-                TBX_ASSERT(data_length == chs->first_packet_length);
-
-                {
-                        volatile unsigned char * const notify = chs->global_notify+is->remote_proc*PUT_BUF_LENGTH;
-                        volatile int * const ptr = (int *)(notify+sizeof(int)+chs->first_packet_length);
-
-                        while (!*ptr)
-                                PAUSE();
-
-                        MEMBAR_LOADLOAD();
-                        memcpy(data_ptr, notify + sizeof(int), data_length);
-                        memset(notify, 0, tbx_aligned((2*sizeof(int) + data_length), 8));
-                        chs->ack_required[is->remote_proc] = tbx_true;
-                        MEMBAR_STORESTORE();
-                }
-
-#else /* USE_PUT_NOTIFICATION */
                 if (chs->first_packet_length != data_length)
                         FAILURE("invalid first packet length");
 
@@ -1025,7 +872,6 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
                 //DISP_VAL("rb: first length", data_length);
 
                 chs->sys_buffer 	 = NULL;
-#endif /* USE_PUT_NOTIFICATION */
 
                 b->bytes_written	+= data_length;
 

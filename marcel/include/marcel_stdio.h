@@ -27,14 +27,14 @@
 #define tfprintf marcel_fprintf
 
 TBX_FORMAT(printf,1,2)
-int marcel_printf(char * __restrict format, ...);
+int marcel_printf(const char * __restrict format, ...);
 TBX_FORMAT(printf,2,3)
-int marcel_fprintf(FILE * __restrict stream, char * __restrict format, ...);
+int marcel_fprintf(FILE * __restrict stream, const char * __restrict format, ...);
 TBX_FORMAT(printf,2,3)
-int marcel_sprintf(char * __restrict string, char * __restrict format, ...);
+int marcel_sprintf(char * __restrict string, const char * __restrict format, ...);
 TBX_FORMAT(printf,3,4)
-int marcel_snprintf(char * __restrict string, size_t size, char * __restrict format,...);
-FILE *marcel_fopen(char * __restrict path, char * __restrict mode);
+int marcel_snprintf(char * __restrict string, size_t size, const char * __restrict format,...);
+FILE *marcel_fopen(const char * __restrict path, const char * __restrict mode);
 int marcel_fclose(FILE *stream);
 int marcel_fflush(FILE *stream);
 #endif

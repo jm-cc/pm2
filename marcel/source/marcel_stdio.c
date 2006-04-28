@@ -43,7 +43,7 @@ static __inline__ void io_unlock()
   //marcel_lock_release(&__io_lock);
 }
 
-int marcel_printf(char * __restrict format, ...)
+int marcel_printf(const char * __restrict format, ...)
 {
   va_list args;
   int retour;
@@ -59,7 +59,7 @@ int marcel_printf(char * __restrict format, ...)
   return retour;
 }
 
-int marcel_fprintf(FILE * __restrict stream, char * __restrict format, ...)
+int marcel_fprintf(FILE * __restrict stream, const char * __restrict format, ...)
 {
   va_list args;
   int retour;
@@ -74,7 +74,7 @@ int marcel_fprintf(FILE * __restrict stream, char * __restrict format, ...)
   return retour;
 }
 
-int marcel_sprintf(char * __restrict string, char * __restrict format, ...)
+int marcel_sprintf(char * __restrict string, const char * __restrict format, ...)
  {
   va_list args;
   int retour;
@@ -89,7 +89,7 @@ int marcel_sprintf(char * __restrict string, char * __restrict format, ...)
   return retour;
 } 
   
-int marcel_snprintf(char * __restrict string, size_t size, char * __restrict format, ...)
+int marcel_snprintf(char * __restrict string, size_t size, const char * __restrict format, ...)
  {
   va_list args;
   int retour;
@@ -104,7 +104,7 @@ int marcel_snprintf(char * __restrict string, size_t size, char * __restrict for
   return retour;
 } 
 
-FILE *marcel_fopen(char * __restrict path, char * __restrict mode)
+FILE *marcel_fopen(const char * __restrict path, const char * __restrict mode)
  {
     FILE *file;
     

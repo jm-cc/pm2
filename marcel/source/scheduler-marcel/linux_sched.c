@@ -1967,6 +1967,7 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
   LOG_IN();
 
   marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
+  ma_set_need_resched();
   marcel_yield_intern();
 
   LOG_OUT();

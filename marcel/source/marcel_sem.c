@@ -133,7 +133,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->value++;
       ma_spin_unlock_bh(&s->lock);
       LOG_OUT();
-      RAISE(TIME_OUT);
+      MARCEL_EXCEPTION_RAISE(TIME_OUT);
     }
     c.next = NULL;
     c.blocked = tbx_true;
@@ -148,7 +148,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 #ifdef PM2_DEV
 #warning timeout to manage
 #endif
-    RAISE(NOT_IMPLEMENTED);
+    MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
     //__marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {
     ma_spin_unlock_bh(&s->lock);
@@ -202,13 +202,13 @@ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {
 	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
 		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
-	RAISE(NOT_IMPLEMENTED);
+	MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 }
 
 void marcel_sem_unlock_all(marcel_sem_t *s)
 {
 	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
 		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
-	RAISE(NOT_IMPLEMENTED);
+	MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 }
 

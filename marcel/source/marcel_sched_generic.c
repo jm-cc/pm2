@@ -168,7 +168,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 		((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
 		((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
 		((which & SLEEPING_ONLY) && (which & NOT_SLEEPING_ONLY)))
-		RAISE(CONSTRAINT_ERROR);
+		MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 
 	for_each_lwp_begin(lwp)
 		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
@@ -209,7 +209,7 @@ static void wait_all_tasks_end(void)
 
 #ifdef MA__DEBUG
 	if (marcel_self() != __main_thread) {
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 	}
 #endif 
 
@@ -257,7 +257,7 @@ void marcel_gensched_shutdown(void)
 
 
 	if(LWP_SELF != &__main_lwp)
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 
 	//lwp = next_lwp(&__main_lwp);
 
@@ -305,7 +305,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 	int dopoll;
 	if (hlwp == NULL) {
 		/* upcall_new_task est venue ici ? */
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 	}
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {

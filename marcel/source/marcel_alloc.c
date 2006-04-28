@@ -135,7 +135,7 @@ retry:
 					marcel_yield();
 					goto retry;
 				}
-				RAISE(STORAGE_ERROR);
+				MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
 			}
 #endif
 			ptr=next_slot;
@@ -165,7 +165,7 @@ retry:
 				fprintf(stderr,"args %p, %lx, %u, %d", 
 						next_slot, THREAD_SLOT_SIZE,
 						MMAP_MASK, FILE_TO_MAP);
-				RAISE(CONSTRAINT_ERROR);
+				MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 			}
 		}
 	}
@@ -194,7 +194,7 @@ void marcel_slot_free(void *addr)
 	} else if(!slot_cache_put(addr, stack_cache_mapped)) {
 		if(slot_cache_put(addr, stack_cache_unmapped)) {
 			if(munmap(addr, THREAD_SLOT_SIZE) == -1)
-				RAISE(CONSTRAINT_ERROR);
+				MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 		} else {
 			slot_cache_init(addr, stack_cache_unmapped);
 			stack_cache_unmapped=addr;
@@ -212,12 +212,12 @@ void marcel_slot_exit(void)
         int main_slot=0;
 	while((ptr=slot_cache_get(&stack_cache_mapped,NULL))!=NULL) {
 		if(munmap(ptr, THREAD_SLOT_SIZE) == -1)
-			RAISE(CONSTRAINT_ERROR);
+			MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 	}
 	while((ptr=slot_cache_get(&stack_cache_mapped,&main_slot))!=NULL) {
 		if (main_slot) {
 			if(munmap(ptr, THREAD_SLOT_SIZE) == -1)
-				RAISE(CONSTRAINT_ERROR);
+				MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 			main_slot=0;
 		}
 	}

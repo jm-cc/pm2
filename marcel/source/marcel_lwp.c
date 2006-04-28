@@ -97,7 +97,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
         if (ret == MA_NOTIFY_BAD) {
                 pm2debug("%s: attempt to bring up LWP %p failed\n",
                                 __FUNCTION__, lwp);
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
         }
 
 	__ma_get_lwp_var(online)=1;
@@ -164,7 +164,7 @@ unsigned marcel_lwp_add_vp(void)
   LOG_IN();
 
   if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
-    RAISE("Too many lwp\n");
+    MARCEL_EXCEPTION_RAISE("Too many lwp\n");
 
   lwp = marcel_malloc_node(sizeof(*lwp), ma_lwp_node[num]);
   /* initialiser le lwp *avant* de l'enregistrer */

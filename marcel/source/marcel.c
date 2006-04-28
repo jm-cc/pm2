@@ -104,7 +104,7 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
                 p = __TBX_MALLOC(size, file, line);
 		marcel_extlib_unprotect();
                 if(p == NULL)
-                        RAISE(STORAGE_ERROR);
+                        MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
         } else {
                 return NULL;
         }
@@ -120,7 +120,7 @@ void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned 
         p = __TBX_REALLOC(ptr, size, file, line);
 	marcel_extlib_unprotect();
         if(p == NULL)
-                RAISE(STORAGE_ERROR);
+                MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
 
         return p;
 }
@@ -134,7 +134,7 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
                 p = __TBX_CALLOC(nelem, elsize, file, line);
 		marcel_extlib_unprotect();
                 if(p == NULL)
-                        RAISE(STORAGE_ERROR);
+                        MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
         } else {
                 return NULL;
         }
@@ -173,14 +173,14 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
      /* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
 	des threads existants */
       marcel_lock_release(&marcel_key_lock);
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 /*        marcel_last_key=0; */
 /*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
 /*  	     (marcel_key_present[marcel_last_key])) { */
 /*        } */
 /*        if(new_key == MAX_KEY_SPECIFIC) { */
 /*  	 marcel_lock_release(&marcel_key_lock); */
-/*  	 RAISE(CONSTRAINT_ERROR); */
+/*  	 MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR); */
 /*        } */
    }
    *key = marcel_last_key;

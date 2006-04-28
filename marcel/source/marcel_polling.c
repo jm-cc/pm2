@@ -172,7 +172,7 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 	LOG_IN();
 
 	if ((index = ma_atomic_inc_return(&nb_poll_structs)) == MAX_POLL_IDS) {
-		RAISE(CONSTRAINT_ERROR);
+		MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 	}
 
 #ifdef PM2_DEV
@@ -627,7 +627,7 @@ static void check_polling_for(marcel_ev_server_t server)
 		}
 	} else {
 		/* Pas de méthode disponible ! */
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 	}
 
 	__manage_ready(server);
@@ -820,7 +820,7 @@ int marcel_req_attr_set(marcel_ev_req_t req, int attr)
 		req->state |= MARCEL_EV_STATE_NO_WAKE_SERVER;
 	}
 	if (attr & (~(MARCEL_EV_ATTR_ONE_SHOT|MARCEL_EV_ATTR_NO_WAKE_SERVER))) {
-		RAISE(CONSTRAINT_ERROR);
+		MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 	}
 	LOG_RETURN(0);
 }
@@ -886,7 +886,7 @@ inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 	LOG_IN();
 
 	if (timeout) {
-		RAISE(NOT_IMPLEMENTED);
+		MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 	}
 
 	list_add(&wait->chain_wait, &req->list_wait);
@@ -945,7 +945,7 @@ int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout)
 	verify_server_state(server);
 
 	if (timeout) {
-		RAISE(NOT_IMPLEMENTED);
+		MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 	}
 	
 	list_add(&wait.chain_wait, &server->list_id_waiters);
@@ -1064,7 +1064,7 @@ int marcel_ev_server_start(marcel_ev_server_t server)
 	if (!server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE]
 	    && !server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLANY]) {
 		mdebug("One poll function needed for [%s]\n", server->name);
-		RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 	}
 	server->state=MA_EV_SERVER_STATE_LAUNCHED;
 	return 0;

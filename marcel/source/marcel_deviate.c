@@ -35,7 +35,7 @@ static deviate_record_t *deviate_record_alloc(void)
     next_free = next_free->next;
   } else {
     if(next_unalloc == MAX_RECORDS)
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
     res = &deviate_records[next_unalloc];
     next_unalloc++;
   }
@@ -154,7 +154,7 @@ void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
     (*relai_func)(f_to_call, argument);
 
-    RAISE(PROGRAM_ERROR); // on ne doit jamais arriver ici !
+    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR); // on ne doit jamais arriver ici !
   }
 }
 
@@ -208,7 +208,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   return;
 #else
 	// Tant pis !
-  RAISE(NOT_IMPLEMENTED);
+  MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 #endif
 
   LOG_OUT();

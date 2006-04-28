@@ -139,8 +139,6 @@ TBX_VISIBILITY_POP
 //#  include "scheduler/marcel-master___all.h"
 #endif
 
-__TBX_END_DECLS
-
 //#include "marcel_alias.h"
 
 //#ifdef AIX_SYS
@@ -192,5 +190,7 @@ void marcel_start_playing(void);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 long marcel_random(void);
 #endif
+
+__TBX_END_DECLS
 
 #endif // MARCEL_EST_DEF

@@ -40,9 +40,22 @@
 
 #define MAD_QUADRICS_CONTEXT_ID_OFFSET	2
 #define MAD_QUADRICS_MAX_ASYNC_PACKETS	1000
+/* #define USE_RX_PROBE */
 
+#ifndef MARCEL
+#  define USE_PUT_NOTIFICATION
+#endif /* MARCEL */
 
-#define FIRST_PACKET_THRESHOLD		32768
+#ifdef USE_PUT_NOTIFICATION
+#  define FIRST_PACKET_THRESHOLD		32768
+#  define SPLIT_PACKET_THRESHOLD		 1024
+#else /* USE_PUT_NOTIFICATION */
+#  define FIRST_PACKET_THRESHOLD		32768
+#endif /* USE_PUT_NOTIFICATION */
+
+#ifdef USE_PUT_NOTIFICATION
+#  define PUT_BUF_LENGTH (2*sizeof(int)+FIRST_PACKET_THRESHOLD)
+#endif /* USE_PUT_NOTIFICATION */
 
 
 #if defined(__i386) && !defined(MARCEL)
@@ -93,7 +106,9 @@ typedef struct s_mad_quadrics_channel_specific
         ntbx_process_lrank_t	*lranks;
         volatile unsigned char	*global_notify;
         volatile unsigned char	*global_ack;
+#ifdef USE_PUT_NOTIFICATION
         tbx_bool_t	 	*ack_required;
+#endif /* USE_PUT_NOTIFICATION */
 } mad_quadrics_channel_specific_t, *p_mad_quadrics_channel_specific_t;
 
 typedef struct s_mad_quadrics_connection_specific
@@ -130,17 +145,235 @@ static struct marcel_ev_server mad_quadrics_ev_server = MARCEL_EV_SERVER_INIT(ma
 #endif /* MARCEL */
 
 
+
+/*
+ * Malloc protection hooks
+ * -----------------------
+ */
+
+/* Prototypes */
+
+#ifdef MARCEL
+static
+void *
+mad_quadrics_malloc_hook(size_t len, const void *caller);
+
+static
+void *
+mad_quadrics_memalign_hook(size_t alignment, size_t len, const void *caller);
+
+static
+void
+mad_quadrics_free_hook(void *ptr, const void *caller);
+
+static
+void *
+mad_quadrics_realloc_hook(void *ptr, size_t len, const void *caller);
+
+static
+void
+mad_quadrics_malloc_initialize_hook(void);
+
+
+/* Previous handlers */
+static
+void *
+(*mad_quadrics_old_malloc_hook)(size_t len, const void *caller) = NULL;
+
+static
+void *
+(*mad_quadrics_old_memalign_hook)(size_t alignment, size_t len, const void *caller) = NULL;
+
+static
+void
+(*mad_quadrics_old_free_hook)(void *PTR, const void *CALLER) = NULL;
+
+static
+void *
+(*mad_quadrics_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
+
+#endif /* MARCEL */
+
+#if 0
+/*
+ * Malloc hooks installation is delayed to mad_quadrics_driver_init because
+ * __malloc_initialize_hook is already defined by the QUADRICS library.
+ *
+ * This is expected to be safe because at the time mad_quadrics_driver_init is called,
+ * no polling request should already be pending.
+ */
+
+/* Entry point */
+void (*__malloc_initialize_hook) (void) = mad_quadrics_malloc_initialize_hook;
+#endif /* 0 */
+
+#ifdef MARCEL
+/* Flag to prevent multiple hooking */
+static
+int mad_quadrics_malloc_hooked = 0;
+#endif /* MARCEL */
+
+
+
+
 /*
  * static functions
  * ----------------
  */
+#if 1
+static
+inline
+void
+__mad_quadrics_hook_lock(void) {
+#ifdef MARCEL
+        marcel_ev_lock(&mad_quadrics_ev_server);
+        //DISP("<quadrics hook LOCK>");
+#endif /* MARCEL */
+}
+
+static
+inline
+void
+__mad_quadrics_hook_unlock(void) {
+#ifdef MARCEL
+        //DISP("<quadrics hook UNLOCK>");
+        marcel_ev_unlock(&mad_quadrics_ev_server);
+#endif /* MARCEL */
+}
+
+#ifdef MARCEL
+static
+void
+mad_quadrics_install_hooks(void) {
+        LOG_IN();
+        mad_quadrics_old_malloc_hook		= __malloc_hook;
+        mad_quadrics_old_memalign_hook	= __memalign_hook;
+        mad_quadrics_old_free_hook		= __free_hook;
+        mad_quadrics_old_realloc_hook		= __realloc_hook;
+
+        if (__malloc_hook == mad_quadrics_malloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__memalign_hook == mad_quadrics_memalign_hook)
+                FAILURE("hooks corrupted");
+
+        if (__realloc_hook == mad_quadrics_realloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__free_hook == mad_quadrics_free_hook)
+                FAILURE("hooks corrupted");
+
+        __malloc_hook		= mad_quadrics_malloc_hook;
+        __memalign_hook		= mad_quadrics_memalign_hook;
+        __free_hook		= mad_quadrics_free_hook;
+        __realloc_hook		= mad_quadrics_realloc_hook;
+        LOG_OUT();
+}
+
+static
+void
+mad_quadrics_remove_hooks(void) {
+        LOG_IN();
+        if (__malloc_hook == mad_quadrics_old_malloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__memalign_hook == mad_quadrics_old_memalign_hook)
+                FAILURE("hooks corrupted");
+
+        if (__realloc_hook == mad_quadrics_old_realloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__free_hook == mad_quadrics_old_free_hook)
+                FAILURE("hooks corrupted");
+
+        __malloc_hook		= mad_quadrics_old_malloc_hook;
+        __memalign_hook		= mad_quadrics_old_memalign_hook;
+        __free_hook		= mad_quadrics_old_free_hook;
+        __realloc_hook		= mad_quadrics_old_realloc_hook;
+        LOG_OUT();
+}
+
+
+static
+void *
+mad_quadrics_malloc_hook(size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_quadrics_hook_lock();
+        mad_quadrics_remove_hooks();
+        LOG_IN();
+        new_ptr = malloc(len);
+        LOG_OUT();
+        mad_quadrics_install_hooks();
+        __mad_quadrics_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void *
+mad_quadrics_memalign_hook(size_t alignment, size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_quadrics_hook_lock();
+        mad_quadrics_remove_hooks();
+        LOG_IN();
+        new_ptr = memalign(alignment, len);
+        LOG_OUT();
+        mad_quadrics_install_hooks();
+        __mad_quadrics_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void *
+mad_quadrics_realloc_hook(void *ptr, size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_quadrics_hook_lock();
+        mad_quadrics_remove_hooks();
+        LOG_IN();
+        new_ptr = realloc(ptr, len);
+        LOG_OUT();
+        mad_quadrics_install_hooks();
+        __mad_quadrics_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void
+mad_quadrics_free_hook(void *ptr, const void *caller) {
+
+        __mad_quadrics_hook_lock();
+        mad_quadrics_remove_hooks();
+        LOG_IN();
+        free(ptr);
+        LOG_OUT();
+        mad_quadrics_install_hooks();
+        __mad_quadrics_hook_unlock();
+}
+
+
+static
+void
+mad_quadrics_malloc_initialize_hook(void) {
+        mad_quadrics_malloc_hooked = 1;
+        mad_quadrics_install_hooks();
+}
+#endif /* MARCEL */
 
 static
 inline
 void
 mad_quadrics_lock(void) {
 #ifdef MARCEL
-        marcel_extlib_protect();
+       __mad_quadrics_hook_lock();
+        mad_quadrics_remove_hooks();
         //DISP("<quadrics LOCK>");
 #endif /* MARCEL */
 }
@@ -151,9 +384,31 @@ void
 mad_quadrics_unlock(void) {
 #ifdef MARCEL
         //DISP("<quadrics UNLOCK>");
-        marcel_extlib_unprotect();
+        mad_quadrics_install_hooks();
+        __mad_quadrics_hook_unlock();
 #endif /* MARCEL */
 }
+#else
+static
+inline
+void
+mad_quadrics_lock(void) {
+#ifdef MARCEL
+        marcel_ev_lock(&mad_quadrics_ev_server);
+        //DISP("<quadrics LOCK>");
+#endif /* MARCEL */
+}
+
+static
+inline
+void
+mad_quadrics_unlock(void) {
+#ifdef MARCEL
+        //DISP("<quadrics UNLOCK>");
+        marcel_ev_unlock(&mad_quadrics_ev_server);
+#endif /* MARCEL */
+}
+#endif
 
 #ifdef MARCEL
 static
@@ -210,6 +465,10 @@ mad_quadrics_blocking_tx_test(ELAN_EVENT *event){
 
                 marcel_ev_wait(&mad_quadrics_ev_server, &(ev.inst), &ev_w, 0);
         }
+#else /* MARCEL */
+#if 0
+        while (!elan_tportTxDone(event)) ;
+#endif
 #endif /* MARCEL */
         mad_quadrics_lock();
         elan_tportTxWait(event);
@@ -235,6 +494,10 @@ mad_quadrics_blocking_rx_test(ELAN_EVENT *event,
 
                 marcel_ev_wait(&mad_quadrics_ev_server, &(ev.inst), &ev_w, 0);
         }
+#else /* MARCEL */
+#if 0
+        while (!elan_tportRxDone(event)) ;
+#endif
 #endif /* MARCEL */
 
         mad_quadrics_lock();
@@ -244,7 +507,6 @@ mad_quadrics_blocking_rx_test(ELAN_EVENT *event,
 
         return ptr;
 }
-
 
 /*
  * Registration function
@@ -319,6 +581,11 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 
         LOG_IN();
         TRACE("Initializing QUADRICS driver");
+#ifdef MARCEL
+        if (!mad_quadrics_malloc_hooked) {
+                mad_quadrics_malloc_initialize_hook();
+        }
+#endif /* MARCEL */
         d->connection_type  = mad_bidirectional_connection;
         d->buffer_alignment = 32;
 
@@ -530,7 +797,9 @@ mad_quadrics_channel_init(p_mad_channel_t ch) {
 
         chs->queue			= NULL;
         chs->port			= NULL;
+#ifndef USE_PUT_NOTIFICATION
         chs->first_packet		= TBX_MALLOC(FIRST_PACKET_THRESHOLD);
+#endif /* USE_PUT_NOTIFICATION */
 
         chs->sys_buffer			= NULL;
         chs->first_packet_length	= 0;
@@ -543,6 +812,21 @@ mad_quadrics_channel_init(p_mad_channel_t ch) {
         ch->parameter	= tbx_string_to_cstring(param_str);
         tbx_string_free(param_str);
         param_str	= NULL;
+
+#ifdef USE_PUT_NOTIFICATION
+        {
+                chs->ack_required	= TBX_CALLOC(ds->nproc, sizeof(tbx_bool_t));
+                chs->global_notify	= elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc * PUT_BUF_LENGTH);
+                if (!chs->global_notify)
+                        FAILURE("elan_gallocMain");
+
+                memset((void *)chs->global_notify, 0, ds->nproc * PUT_BUF_LENGTH);
+                chs->global_ack = elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc);
+                if (!chs->global_ack)
+                        FAILURE("elan_gallocMain");
+                memset((void *)chs->global_ack, 1, ds->nproc);
+        }
+#endif /* USE_PUT_NOTIFICATION */
         elan_gsync(elan_base->allGroup);
         LOG_OUT();
 }
@@ -721,7 +1005,9 @@ mad_quadrics_new_message(p_mad_connection_t out){
         os	= out->specific;
         chs	= out->channel->specific;
 
+#ifndef USE_RX_PROBE
         os->first_outgoing_packet_flag	= tbx_true;
+#endif /* USE_RX_PROBE */
         LOG_OUT();
 }
 
@@ -731,14 +1017,103 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         p_mad_connection_t			 in		= NULL;
         p_mad_quadrics_connection_specific_t	 is		= NULL;
         p_tbx_darray_t				 in_darray	= NULL;
+#ifndef USE_PUT_NOTIFICATION
         ELAN_EVENT				*event		= NULL;
         size_t					 size		=    0;
+#endif /* USE_PUT_NOTIFICATION */
         int                                      sender		=    0;
         ntbx_process_lrank_t			 remote_lrank	=   -1;
+#ifdef USE_PUT_NOTIFICATION
+        unsigned char r = 0;
+#endif /* USE_PUT_NOTIFICATION */
 
         LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
+#ifdef USE_PUT_NOTIFICATION
+        /* 3us min latency */
+        {
+                const    uint_t proc	= chs->proc;
+                const    uint_t nproc	= chs->nproc;
+
+                volatile unsigned char	* const global_notify	= chs->global_notify;
+                volatile unsigned char	* const global_ack	= chs->global_ack;
+                volatile unsigned char 		c		= 1;
+                tbx_bool_t * const		ack_required	= chs->ack_required;
+
+                for (sender = 0; sender < nproc; sender++) {
+                        if (sender == proc)
+                                continue;
+
+                        if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
+                                goto found;
+
+                        if (ack_required[sender]) {
+                                elan_wait(elan_put(elan_base->state, &c, global_ack+proc, 1, sender), elan_base->waitType);
+                                ack_required[sender] = 0;
+                        }
+                }
+
+                PAUSE();
+
+                while (1) {
+                        for (sender = 0; sender < nproc; sender++) {
+                                if (sender == proc)
+                                        continue;
+
+                                if (*(int*)(global_notify + sender*PUT_BUF_LENGTH))
+                                        goto found;
+                        }
+
+                        PAUSE();
+                }
+
+        found:
+                chs->global_ack[sender]	= 1;
+                chs->first_packet_length = *(int*)(global_notify + sender*PUT_BUF_LENGTH);
+                MEMBAR_LOADLOAD();
+                r = global_notify[sender*(1+FIRST_PACKET_THRESHOLD)];
+                global_notify[sender*(1+FIRST_PACKET_THRESHOLD)] = 0;
+                MEMBAR_STORESTORE();
+
+                TBX_ASSERT(r <= 1);
+        }
+
+#else /* USE_PUT_NOTIFICATION */
+#ifdef USE_RX_PROBE
+#if 1
+        /* 8us min latency */
+
+        mad_quadrics_lock();
+        event = elan_tportRxStart(chs->port	/* port 	*/,
+                                  ELAN_TPORT_RXANY|ELAN_TPORT_RXPROBE	/* flags	*/,
+                                  0		/* sender mask	*/,
+                                  0		/* sender sel	*/,
+                                  0		/* tag mask	*/,
+                                  0		/* tag sel	*/,
+                                  NULL	/* base	*/,
+                                  0	/* size	 */);
+        mad_quadrics_unlock();
+        mad_quadrics_blocking_rx_test(event, &sender, &size);
+#else
+        /* 11.6 us min latency */
+
+#ifdef MARCEL
+#error invalid conditional compilation directives set
+#endif
+        while (!elan_tportRxPoll(chs->port	/* port 	*/,
+                                 0		/* sender mask	*/,
+                                 0		/* sender sel	*/,
+                                 0		/* tag mask	*/,
+                                 0		/* tag sel	*/,
+                                 &sender	/* sender	*/,
+                                 &tag		/* tag	 	*/,
+                                 &size		/* size		*/))
+                ;
+#endif
+#else /* USE_RX_PROBE */
+        /* 3.7 us min latency */
+
         mad_quadrics_lock();
         event = elan_tportRxStart(chs->port	/* port 	*/,
                                   ELAN_TPORT_RXANY /*|ELAN_TPORT_RXBUF*/	/* flags	*/,
@@ -752,6 +1127,8 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
         chs->sys_buffer = mad_quadrics_blocking_rx_test(event, &sender, &size);
 
         chs->first_packet_length = size;
+#endif /* USE_RX_PROBE */
+#endif /* USE_PUT_NOTIFICATION */
         remote_lrank = chs->lranks[sender];
 
         in	= tbx_darray_get(in_darray, remote_lrank);
@@ -771,7 +1148,14 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
         p_mad_quadrics_driver_specific_t	 ds		= NULL;
         size_t					 length		=    0;
         ELAN_EVENT				*event		= NULL;
+#ifdef  USE_PUT_NOTIFICATION
+        ELAN_EVENT				*first_event	= NULL;
+#endif /* USE_PUT_NOTIFICATION */
         ELAN_FLAGS				 tx_flags	=    0;
+#ifdef  USE_PUT_NOTIFICATION
+        volatile unsigned char _first_packet[PUT_BUF_LENGTH];
+#endif /*  USE_PUT_NOTIFICATION */
+
 
         LOG_IN();
         out	= lnk->connection;
@@ -779,10 +1163,35 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
         chs	= out->channel->specific;
         ds	= out->channel->adapter->driver->specific;
 
+
+#ifndef USE_RX_PROBE
         if (os->first_outgoing_packet_flag) {
                 os->first_outgoing_packet_flag = tbx_false;
 
 
+#ifdef USE_PUT_NOTIFICATION
+                if (chs->ack_required[os->remote_proc]) {
+                        chs->ack_required[os->remote_proc]	= tbx_false;
+                }
+
+                length = b->bytes_written - b->bytes_read;
+
+                if (length > FIRST_PACKET_THRESHOLD) {
+                        length = tbx_min(length, SPLIT_PACKET_THRESHOLD);
+                }
+
+                *((int *)_first_packet) = length;
+                *(int *)(_first_packet+sizeof(int)+length) = 1;
+                memcpy(_first_packet+sizeof(int), b->buffer + b->bytes_read, length);
+                while (!chs->global_ack[os->remote_proc])
+                        PAUSE();
+
+                MEMBAR_LOADLOAD();
+                chs->global_ack[os->remote_proc] = 0;
+                MEMBAR_STORESTORE();
+
+                first_event	= elan_put(elan_base->state, _first_packet, chs->global_notify+(chs->proc*PUT_BUF_LENGTH), tbx_aligned((length+2*sizeof(int)), 8), os->remote_proc);
+#else /* USE_PUT_NOTIFICATION */
                 length	= tbx_min(b->bytes_written - b->bytes_read,
                                   FIRST_PACKET_THRESHOLD);
 
@@ -800,11 +1209,16 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
 
                 mad_quadrics_unlock();
                 mad_quadrics_blocking_tx_test(event);
+#endif /* USE_PUT_NOTIFICATION */
                 b->bytes_read += length;
 
                 if (!mad_more_data(b))
                         goto no_more_data;
+
+#ifdef USE_PUT_NOTIFICATION
+#endif /* USE_PUT_NOTIFICATION */
         }
+#endif /* USE_RX_PROBE */
 
         length = b->bytes_written - b->bytes_read;
         //DISP_VAL("sb: length", length);
@@ -825,9 +1239,19 @@ mad_quadrics_send_buffer(p_mad_link_t     lnk,
 
         b->bytes_read += length;
 
+#ifndef USE_RX_PROBE
  no_more_data:
         ;
         //DISP("sb: ok");
+#endif /* USE_RX_PROBE */
+
+#ifdef  USE_PUT_NOTIFICATION
+        if (first_event) {
+                elan_wait(first_event, elan_base->waitType);
+                first_event = NULL;
+        }
+#endif /*  USE_PUT_NOTIFICATION */
+
         LOG_OUT();
 }
 
@@ -851,12 +1275,39 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
         ch	= in->channel;
         chs	= ch->specific;
 
+#ifndef USE_RX_PROBE
         if (is->first_incoming_packet_flag) {
                 is->first_incoming_packet_flag = tbx_false;
 
                 data_ptr	= b->buffer + b->bytes_written;
-                data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
+#ifdef USE_PUT_NOTIFICATION
+                data_length	= b->length - b->bytes_written;
 
+                if (data_length > FIRST_PACKET_THRESHOLD) {
+                        data_length = tbx_min(data_length, SPLIT_PACKET_THRESHOLD);
+                }
+#else /* USE_PUT_NOTIFICATION */
+                data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
+#endif /* USE_PUT_NOTIFICATION */
+
+#ifdef USE_PUT_NOTIFICATION
+                TBX_ASSERT(data_length == chs->first_packet_length);
+
+                {
+                        volatile unsigned char * const notify = chs->global_notify+is->remote_proc*PUT_BUF_LENGTH;
+                        volatile int * const ptr = (int *)(notify+sizeof(int)+chs->first_packet_length);
+
+                        while (!*ptr)
+                                PAUSE();
+
+                        MEMBAR_LOADLOAD();
+                        memcpy(data_ptr, notify + sizeof(int), data_length);
+                        memset(notify, 0, tbx_aligned((2*sizeof(int) + data_length), 8));
+                        chs->ack_required[is->remote_proc] = tbx_true;
+                        MEMBAR_STORESTORE();
+                }
+
+#else /* USE_PUT_NOTIFICATION */
                 if (chs->first_packet_length != data_length)
                         FAILURE("invalid first packet length");
 
@@ -872,12 +1323,14 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
                 //DISP_VAL("rb: first length", data_length);
 
                 chs->sys_buffer 	 = NULL;
+#endif /* USE_PUT_NOTIFICATION */
 
                 b->bytes_written	+= data_length;
 
                 if (mad_buffer_full(b))
                         goto no_more_data;
         }
+#endif /* USE_RX_PROBE */
 
         data_ptr	= b->buffer + b->bytes_written;
         data_length	= b->length - b->bytes_written;
@@ -901,8 +1354,10 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
 
         b->bytes_written	+= data_length;
 
+#ifndef USE_RX_PROBE
  no_more_data:
         ;
+#endif /* USE_RX_PROBE */
         LOG_OUT();
 }
 

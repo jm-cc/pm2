@@ -101,8 +101,8 @@ struct __marcel_attr_s
 }
 
 /* realtime */
-#define MARCEL_CLASS_REGULAR      FALSE
-#define MARCEL_CLASS_REALTIME     TRUE
+#define MARCEL_CLASS_REGULAR      tbx_false
+#define MARCEL_CLASS_REALTIME     tbx_true
 
 #section functions
 #depend "marcel_utils.h[types]"

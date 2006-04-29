@@ -14,8 +14,17 @@
 # General Public License for more details.
 
 FLAVOR_DEFAULT:=marcel-bubblegum
-CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} $(shell pkg-config gtk+-2.0 --cflags)
-LDFLAGS += -lfxt $(shell pkg-config gtk+-2.0 --libs)
+CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} \
+	$(shell pkg-config gtk+-2.0 --cflags) \
+	$(shell pkg-config gtkglext-1.0 --cflags) \
+	$(shell freetype-config --cflags) \
+	$(shell sdl-config --cflags)
+LDFLAGS += -lfxt \
+	$(shell pkg-config gtk+-2.0 --libs) \
+	$(shell pkg-config gtkglext-1.0 --libs) \
+	$(shell freetype-config --libs) \
+	$(shell sdl-config --libs) \
+	-lSDL_image
 
 .PHONY: default
 include $(PM2_ROOT)/make/progs.mak

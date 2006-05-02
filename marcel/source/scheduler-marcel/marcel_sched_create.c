@@ -107,7 +107,9 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 		 __const int dont_schedule,
 		 __const unsigned long base_stack) {
 	ma_holder_t *h;
+#ifdef MA__BUBBLES
 	ma_holder_t *bh;
+#endif
 	LOG_IN();
 
 #ifdef MA__BUBBLES
@@ -131,8 +133,10 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	/* le fils sera déjà démarré */
 	new_task->father->child = NULL;
 
+#ifdef MA__BUBBLES
 	if (bh)
 		marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
+#endif
 
 	PROF_SWITCH_TO(cur->number, new_task);
 	//PROF_IN_EXT(newborn_thread);

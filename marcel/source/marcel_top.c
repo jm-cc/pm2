@@ -52,8 +52,12 @@ static char *get_holder_name(ma_holder_t *h, char *buf, int size) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		return ma_rq_holder(h)->name;
 
+#ifdef MA__BUBBLES
 	snprintf(buf,size,"%p",ma_bubble_holder(h));
 	return buf;
+#else
+	return "??";
+#endif
 }
 
 static void printtask(marcel_task_t *t) {

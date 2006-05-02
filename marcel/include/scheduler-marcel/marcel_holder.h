@@ -118,17 +118,21 @@ struct ma_sched_entity {
 typedef struct ma_sched_entity marcel_entity_t;
 
 #section marcel_functions
-static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
+#ifdef MA__BUBBLES
+static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
+#endif
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
 	MA_BUG_ON(e->type != MA_TASK_ENTITY);
 	return tbx_container_of(e, marcel_task_t, sched.internal);
 }
+#ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 	return tbx_container_of(e, marcel_bubble_t, sched);
 }
+#endif
 
 #section macros
 #ifdef MA__LWPS

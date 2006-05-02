@@ -38,6 +38,13 @@ registering_flavors() {
 	    --marcel=smp_bind_proc --marcel=smp_smt_idle
     done
 
+    for i in numa actnuma; do
+	register_flavor marcel-$i \
+	    --modules="marcel tbx init" $COMMON_OPTIONS \
+	    --marcel=$i --marcel=smp_multiple_queues --marcel=marcel_main \
+	    --marcel=smp_bind_proc --marcel=smp_smt_idle
+    done
+
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main

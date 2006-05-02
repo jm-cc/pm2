@@ -16,10 +16,10 @@
 
 #include "marcel.h"
 
-#ifdef MA__BUBBLES
 int ma_idle_scheduler = 1;
 ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
 
+#ifdef MA__BUBBLES
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 int marcel_bubble_init(marcel_bubble_t *bubble) {

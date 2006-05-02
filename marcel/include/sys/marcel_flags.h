@@ -202,8 +202,10 @@
  * */
 #define MA__FUT_RECORD_TID
 
-/* Pour l'instant, toujours activer les bulles */
-#define MA__BUBBLES
+/* Pour l'instant, toujours activer les bulles en NUMA */
+#ifdef MA__NUMA
+#  define MA__BUBBLES
+#endif
 
 #ifdef MA__BUBBLES
 #if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)

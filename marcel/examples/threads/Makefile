@@ -11,9 +11,11 @@ CC := gcc
 
 CFLAGS = -Wall -O3 -D_GNU_SOURCE=1
 
-TYPES=linuxthread nptl unix clone #pth
+TYPES_ALL=nptl linuxthread unix clone pth
 
-FLAVORS=marcel-mono marcel-smp
+TYPES=nptl #linuxthread #unix #clone #pth
+
+FLAVORS=marcel-mono marcel-smp marcel-numa
 
 DEPENDS= thread.h utils.h
 
@@ -55,14 +57,17 @@ CFLAGS_clone = -DLINUX_CLONE
 CFLAGS_unix = -DREGULAR_UNIX
 
 TYPES_EXT=$(addprefix -,$(TYPES))
+TYPES_EXT_ALL=$(addprefix -,$(TYPES_ALL))
 GEN_PROGS=$(filter-out $(NO_GEN), \
 	$(foreach ext, $(TYPES_EXT), $(addsuffix $(ext), $(PROGS))))
+GEN_PROGS_ALL=$(filter-out $(NO_GEN), \
+	$(foreach ext, $(TYPES_EXT_ALL), $(addsuffix $(ext), $(PROGS))))
 
 
 all: $(GEN_PROGS)
 
 clean::
-	$(RM) -- *.o  $(GEN_PROGS) core*
+	$(RM) -- *.o  $(GEN_PROGS_ALL) core*
 
 define PROGRAM_template
 $(1)-$(2): LDFLAGS += $$($(1)-ldflags) $$(LDLIBS_$(2))

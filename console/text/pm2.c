@@ -776,12 +776,12 @@ void execute_file(FILE *f)
   int len;
   tbx_bool_t expanded;
 
-   LOOP(bcl)
+   MARCEL_LOOP(bcl)
       if(f == stdin) {
          tprintf("%s", "pm2>"); fflush(stdout);
       }
       if(fgets(comd, 1024, f) == NULL)
-         EXIT_LOOP(bcl);
+         MARCEL_EXIT_LOOP(bcl);
       len = strlen(comd);
       if(len > 0) {
          if(comd[len-1] == '\n')
@@ -814,7 +814,7 @@ void execute_file(FILE *f)
          executer_commande(instructions);
          liberer_objet(&instructions);
       }
-   END_LOOP(bcl);
+   MARCEL_END_LOOP(bcl);
 }
 
 /*----------------------------------------------*/

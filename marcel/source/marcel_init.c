@@ -57,6 +57,15 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, tbx_bool_t do_not
   i = j = 1;
 
   while(i < *argc) {
+    if(!strcmp(argv[i], "--marcel-top")) {
+      argv[j++] = argv[i++];
+      argv[j++] = argv[i++];
+      continue;
+    } else
+    if(!strcmp(argv[i], "--marcel-xtop")) {
+      argv[j++] = argv[i++];
+      continue;
+    } else
 #ifdef MA__LWPS
     if(!strcmp(argv[i], "--marcel-nvp")) {
       if(i == *argc-1) {
@@ -121,19 +130,20 @@ static void marcel_parse_cmdline_early(int *argc, char **argv, tbx_bool_t do_not
 #endif
 #endif
     if(!strncmp(argv[i], "--marcel", 8)) {
-#ifdef MA__LWPS
       fprintf(stderr,"--marcel flags are:\n"
+	  "--marcel-top file		Dump a top-like output to file\n"
+	  "--marcel-top |cmd		Same as above, but to command cmd via a pipe\n"
+	  "--marcel-xtop		Same as above, in a freshly created xterm\n"
+#ifdef MA__LWPS
 	  "--marcel-nvp n		Force number of VPs to n\n"
 	  "--marcel-cpustride stride	Allocate VPs every stride cpus\n"
 #ifdef MA__NUMA
 	  "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
 #endif
-      );
-#else
-      fprintf(stderr,"no --marcel flags are defined in mono flavors\n");
 #endif
+      );
       exit(1);
-    }
+    } else
       argv[j++] = argv[i++];
   }
   *argc = j;

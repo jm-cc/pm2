@@ -27,9 +27,6 @@
 #depend "[marcel_variables]"
 #section marcel_variables [no-depend-previous]
 
-#section macros
-#define MAX_KEY_SPECIFIC	20
-
 #section types
 /* Keys for thread-specific data */
 typedef unsigned int marcel_key_t,  pmarcel_key_t;

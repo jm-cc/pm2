@@ -21,11 +21,6 @@
 
 #section marcel_macros
 #depend "asm/linux_perlwp.h[marcel_macros]"
-/* Enough to cover all DEFINE_PER_LWPs in marcel. */
-#ifndef MA_PERLWP_ENOUGH_ROOM
-#define MA_PERLWP_ENOUGH_ROOM 32768
-#endif
-
 /* Must be an lvalue. */
 #define ma_get_lwp_var(var) (*({ ma_preempt_disable(); &__ma_get_lwp_var(var); }))
 #define ma_put_lwp_var(var) ma_preempt_enable()

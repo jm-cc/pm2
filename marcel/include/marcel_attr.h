@@ -19,9 +19,6 @@
 #section types
 typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
-#section macros
-#define MARCEL_MAXNAMESIZE 32
-
 #section structures
 
 #include <sys/types.h> /* pour size_t */

@@ -230,7 +230,7 @@ struct marcel_topo_level {
 
 	ma_topo_level_schedinfo *sched;
 
-	char data[128];
+	char data[MA_PER_LEVEL_ROOM];
 };
 
 #section variables
@@ -276,16 +276,6 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 	if ((level = ma_per_lwp(core_level,lwp)))
 		ma_atomic_dec(&level->nbidle);
 }
-#endif
-
-#section marcel_macros
-#ifdef MA__LWPS
-#define MARCEL_NBMAXCPUS	(sizeof(unsigned long)*8)
-#ifdef MA__NUMA
-#define MARCEL_NBMAXCORES	16
-#define MARCEL_NBMAXDIES	8
-#define MARCEL_NBMAXNODES	8
-#endif
 #endif
 
 #section functions

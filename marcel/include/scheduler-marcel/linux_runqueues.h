@@ -36,10 +36,6 @@
  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
  */
 
-#define MA_MAX_USER_RT_PRIO	32
-#define MA_MAX_SYS_RT_PRIO	9
-#define MA_MAX_NICE		0
-
 #define MA_SYS_RT_PRIO		MA_MAX_SYS_RT_PRIO
 #define MA_MAX_RT_PRIO		(MA_SYS_RT_PRIO+1)
 #define MA_RT_PRIO		(MA_MAX_RT_PRIO+MA_MAX_USER_RT_PRIO)
@@ -139,7 +135,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 extern ma_runqueue_t ma_main_runqueue;
 extern ma_runqueue_t ma_dontsched_runqueue;
 #ifdef MA__NUMA
-extern ma_runqueue_t ma_level_runqueues[2*MA_BITS_PER_LONG];
+extern ma_runqueue_t ma_level_runqueues[2*MARCEL_NBMAXCPUS];
 #endif
 
 #section marcel_macros

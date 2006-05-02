@@ -169,7 +169,6 @@ extern MARCEL_INLINE marcel_t marcel_self(void)
 }
 
 #section marcel_macros
-#define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 

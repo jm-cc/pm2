@@ -19,12 +19,6 @@
 
 #include "tbx_compiler.h"
 
-#define MARCEL_ALIGN    64L
-#define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
-#define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
-
-//typedef marcel_t marcel_descr;
-
 extern marcel_task_t __main_thread_struct;
 
 #ifdef ENABLE_STACK_JUMPING

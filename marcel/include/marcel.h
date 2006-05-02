@@ -26,6 +26,7 @@
 #include "tbx_types.h"
 #include "marcel_alloc___macros.h"
 #include "sys/marcel_flags.h"
+#include "marcel_config.h"
 #include "marcel_valgrind.h"
 
 #ifdef MARCEL_KERNEL
@@ -41,14 +42,6 @@
 #else
 #  define MARCEL_INLINE inline
 #endif
-
-/* ========== customization =========== */
-
-#define MAX_KEY_SPECIFIC	20
-
-#define MAX_STACK_CACHE		1024
-
-#define THREAD_THRESHOLD_LOW    1
 
 /* ============ constants ============= */
 

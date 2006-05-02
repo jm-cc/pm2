@@ -260,8 +260,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #section marcel_macros
 /* ==== SMP scheduling policies ==== */
 
-#define MARCEL_MAX_USER_SCHED    16
-
 #define MARCEL_SCHED_SHARED      0
 #define MARCEL_SCHED_OTHER       1
 #define MARCEL_SCHED_AFFINITY    2

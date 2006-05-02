@@ -108,6 +108,7 @@ struct marcel_lwp {
 #ifdef MA__NUMA
 	struct marcel_topo_level *node_level, *cpu_level;
 #endif
+	char data[MA_PER_LWP_ROOM];
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
@@ -131,7 +132,7 @@ struct marcel_lwp {
 #    undef MAX_LWP
 #    define MAX_LWP ACT_NB_MAX_CPU
 #  else
-#    define MA_NR_LWPS (sizeof(unsigned long)*8)
+#    define MA_NR_LWPS MARCEL_NBMAXCPUS
 #  endif
 #else
 #  define MA_NR_LWPS 1

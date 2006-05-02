@@ -23,38 +23,6 @@ typedef int marcel_time_t;
 #define MA_JIFFIES_PER_TIMER_TICK 1
 
 #section macros
-#ifdef MA__TIMER
-#include <signal.h>
-
-#if defined(OSF_SYS) || defined(AIX_SYS)
-/* don't give a negative si_code for user-generated signals */
-#define MA_BOGUS_SIGINFO_CODE
-#endif
-
-// Signal utilis pour la premption automatique
-#ifdef USE_VIRTUAL_TIMER
-#  define MARCEL_TIMER_SIGNAL       SIGVTALRM
-#  ifdef MA_BOGUS_SIGINFO_CODE
-#    define MARCEL_TIMER_USERSIGNAL SIGALRM
-#  else
-#    define MARCEL_TIMER_USERSIGNAL MARCEL_TIMER_SIGNAL
-#  endif
-#  define MARCEL_ITIMER_TYPE        ITIMER_VIRTUAL
-#else
-#  define MARCEL_TIMER_SIGNAL       SIGALRM
-#  ifdef MA_BOGUS_SIGINFO_CODE
-#    define MARCEL_TIMER_USERSIGNAL SIGVTALRM
-#  else
-#    define MARCEL_TIMER_USERSIGNAL MARCEL_TIMER_SIGNAL
-#  endif
-#  define MARCEL_ITIMER_TYPE        ITIMER_REAL
-#endif
-#define MARCEL_RESCHED_SIGNAL     SIGUSR2
-
-#else
-
-#endif
-
 #define JIFFIES_FROM_US(microsecs) \
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 

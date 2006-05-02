@@ -318,7 +318,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
 		ma_smp_mb__after_clear_bit();
 #endif
-		if (!marcel_yield_intern()) {
+		if (!ma_need_resched() || !ma_schedule()) {
 #ifdef MARCEL_IDLE_PAUSE
 			if (dopoll)
 				marcel_sig_nanosleep();
@@ -335,8 +335,14 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 static any_t idle_func(any_t hlwp)
 {
 	for(;;) {
+		/* let wakers now that we will shortly poll need_resched and
+		 * thus they don't need to send a kill */
+		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+		ma_smp_mb__after_clear_bit();
 		pause();
-		marcel_yield_intern();
+		ma_set_thread_flag(TIF_POLLING_NRFLAG);
+		if (ma_need_resched())
+			ma_schedule();
 	}
 	return NULL;
 }

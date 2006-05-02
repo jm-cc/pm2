@@ -177,15 +177,6 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 						dont_schedule, base_stack));
 }
 
-#section marcel_functions
-__tbx_inline__ static int marcel_yield_intern();
-#section marcel_inline
-__tbx_inline__ static int marcel_yield_intern(){
-  if (!ma_need_resched())
-	  return 0;
-  return ma_schedule(); 
-}
-
 /****************************************************************/
 /*               Scheduler et TIF                               */
 /****************************************************************/
@@ -263,3 +254,4 @@ __tbx_inline__ static int marcel_yield_intern(){
    ma_test_ti_thread_flag(task, TIF_RT_THREAD)
 
 #section types
+#section marcel_inline

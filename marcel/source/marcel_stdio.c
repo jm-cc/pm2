@@ -23,7 +23,7 @@
 static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
 #endif
 
-static __inline__ void io_lock()
+static __tbx_inline__ void io_lock()
 {
   //marcel_lock_acquire(&__io_lock);
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
@@ -33,7 +33,7 @@ static __inline__ void io_lock()
 #endif
 }
 
-static __inline__ void io_unlock()
+static __tbx_inline__ void io_unlock()
 {
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
   marcel_mutex_unlock(&ma_io_lock);

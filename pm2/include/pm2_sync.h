@@ -50,7 +50,7 @@ static __inline__ void pm2_thread_barrier_attr_register_protocol(pm2_thread_barr
 {
   fprintf(stderr, "nb prot = %d\n", attr->nb_prot);
   if (attr->nb_prot >= _MAX_PROT_PER_BARRIER)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   attr->prot[attr->nb_prot++] = prot;
 }
 

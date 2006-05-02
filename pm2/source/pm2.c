@@ -66,7 +66,7 @@ void pm2_push_startup_func(pm2_startup_func_t f, void *args)
       startup_args[nb_startup_funcs++] = args;
     }
   else
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 }
 
 static void pm2_completion_service(void)
@@ -204,7 +204,7 @@ void pm2_rawrpc_begin(int module, int num,
      && !mad_can_send_to_self()
 #endif
 	  )
-	  RAISE(NOT_IMPLEMENTED);
+	  MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
   if(pm2_attr == NULL)
@@ -295,11 +295,11 @@ void *pm2_malloc(size_t size, isoaddr_attr_t *attr)
 #ifdef DSM
   case ISO_SHARED: return dsm_slot_alloc(size, NULL, NULL, attr); break;
 #else
-  case ISO_SHARED: RAISE(PROGRAM_ERROR);break;
+  case ISO_SHARED: MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);break;
 #endif
   case ISO_PRIVATE:
   case ISO_DEFAULT:return block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size, attr); break;
-  default: RAISE(NOT_IMPLEMENTED);
+  default: MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
   }
   return (void *)NULL;
 }

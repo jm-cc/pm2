@@ -80,7 +80,7 @@ typedef struct {
 #ifdef MARCEL_DEBUG_SPINLOCK
 
 //#define SPIN_ABORT()
-#define SPIN_ABORT() RAISE(PROGRAM_ERROR) 
+#define SPIN_ABORT() MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR) 
 	
 #define MA_SPINLOCK_MAGIC  0x1D244B3C
 #define MA_SPIN_LOCK_UNLOCKED { .magic=MA_SPINLOCK_MAGIC, .lock=0, .babble=10, .module=__FILE__ , .owner=NULL , .oline=0}

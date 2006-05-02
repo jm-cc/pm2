@@ -803,7 +803,7 @@ void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func()
 
        extra = malloc(size);
        if (!extra)
-	 RAISE(STORAGE_ERROR);
+	 MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
        /* unpack the extra data */
        pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&extra, size);
        

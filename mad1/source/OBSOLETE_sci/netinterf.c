@@ -716,7 +716,7 @@ void network_send(int dest_node, struct iovec *vector, size_t count)
 
   TRACE(log("  Sending %d vectors to #%d\n",count,dest_node));
   #ifdef MARCEL
-    if (count==0) RAISE(PROGRAM_ERROR);
+    if (count==0) MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
     pthread_sem_P(&mutex_send[dest_node]);
   #endif
   #ifdef HEADER

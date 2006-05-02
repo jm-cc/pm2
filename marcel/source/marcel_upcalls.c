@@ -77,7 +77,7 @@ int upcall_new(act_proc_t new_proc, act_id_t old,
 	       act_register_placeholder_t regs)
 {
 	DISP_UPCALL(new);
-	RAISE(NOT_IMPLEMENTED);
+	MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 }
 
 int upcall_restart(act_proc_t new_proc, act_id_t old,
@@ -85,7 +85,7 @@ int upcall_restart(act_proc_t new_proc, act_id_t old,
 		   act_register_placeholder_t regs)
 {
 	DISP_UPCALL(restart);
-	RAISE(NOT_IMPLEMENTED);
+	MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 
 
 	/* on veut empiler l'adresse de retour ret */
@@ -110,7 +110,7 @@ int upcall_event(act_proc_t new_proc, act_id_t old,
 	//handle unblocked
 	if (event.events & (ACT_EVENT_NEW | ACT_EVENT_RESTART |
 			    ACT_EVENT_BLOCKED | ACT_EVENT_UNBLOCKED)) {
-		RAISE(NOT_IMPLEMENTED);
+		MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
 	}
 	// On restaure l'ancien masque
 	cur_info->disallowed_events=event.old_disallowed_events;		
@@ -216,7 +216,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			MTRACE("Restarting from upcall_new", current);
 			break;
 		default:
-			RAISE("invalid parameter");
+			MARCEL_EXCEPTION_RAISE("invalid parameter");
 		}
 		unlock_task();
   	} else if (k_param & ACT_EVENT_UNBLK_IDLE) {
@@ -300,7 +300,7 @@ void upcall_new(act_proc_t proc)
 	marcel_give_hand_from_upcall_new(new_task, lwp);
 
 	/** Never there normally */	
-	RAISE("Aie, aie aie !\n");
+	MARCEL_EXCEPTION_RAISE("Aie, aie aie !\n");
 }
 
 void locked_end() {}
@@ -380,7 +380,7 @@ __ma_initfunc_prio(init_upcalls, MA_INIT_UPCALL_START, MA_INIT_UPCALL_START_PRIO
 
 static void *upcall_no_func(void* p)
 {
-       RAISE(PROGRAM_ERROR);
+       MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
 }
 
 static void marcel_upcall_lwp_init(marcel_lwp_t* lwp)

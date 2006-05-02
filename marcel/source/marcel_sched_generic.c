@@ -127,7 +127,7 @@ void marcel_one_task_less(marcel_t pid)
 	ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 }
 
-static __inline__ int want_to_see(marcel_t t, int which)
+static __tbx_inline__ int want_to_see(marcel_t t, int which)
 {
   if(t->detached) {
     if(which & NOT_DETACHED_ONLY)

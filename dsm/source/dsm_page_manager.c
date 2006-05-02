@@ -414,7 +414,7 @@ static __inline__ void _dsm_page_ownership_init()
      case DSM_UNIFORM_PROTECT:
        dsm_set_uniform_access((dsm_access_t)_dsm_page_protect_arg);break;
      case DSM_CUSTOM_PROTECT:
-       RAISE(NOT_IMPLEMENTED);break;
+       MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);break;
      }
 }
 
@@ -551,7 +551,7 @@ static __inline__ void _dsm_pseudo_static_page_ownership_init()
      case DSM_UNIFORM_PROTECT:
        dsm_pseudo_static_set_uniform_access((dsm_access_t)_dsm_page_protect_arg);break;
      case DSM_CUSTOM_PROTECT:
-       RAISE(NOT_IMPLEMENTED);break;
+       MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);break;
      }
 }
 
@@ -580,7 +580,7 @@ void dsm_page_table_init(int my_rank, int confsize)
     dsm_page_table = (dsm_page_table_t)calloc(1, (nb_static_dsm_pages + nb_pseudo_static_dsm_pages + ISOADDR_PAGES) * sizeof(dsm_page_table_entry_t *));
 
   if (dsm_page_table == NULL)
-    RAISE(STORAGE_ERROR);
+    MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
 
   /* Common initializations for all nodes */
 
@@ -590,7 +590,7 @@ void dsm_page_table_init(int my_rank, int confsize)
       dsm_page_table[i]->next_owner = NOBODY;
       fifo_init(&dsm_page_table[i]->pending_req, 2 * dsm_nb_nodes - 1);
       if ((dsm_page_table[i]->copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
-	RAISE(STORAGE_ERROR);
+	MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
       dsm_page_table[i]->copyset_size = 0;
       dsm_page_table[i]->pending_access = NO_ACCESS;
       marcel_mutex_init(&dsm_page_table[i]->mutex, NULL);
@@ -1031,7 +1031,7 @@ void dsm_remove_from_copyset(dsm_page_index_t index, dsm_node_t node)
 int dsm_get_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   
   return dsm_page_table[index]->user_data1[rank];
 }
@@ -1040,7 +1040,7 @@ int dsm_get_user_data1(dsm_page_index_t index, int rank)
 void dsm_set_user_data1(dsm_page_index_t index, int rank, int value)
 {
   if (rank >= USER_DATA_SIZE)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   
   dsm_page_table[index]->user_data1[rank] = value;
 }
@@ -1049,7 +1049,7 @@ void dsm_set_user_data1(dsm_page_index_t index, int rank, int value)
 void dsm_increment_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   
   dsm_page_table[index]->user_data1[rank]++;
 }
@@ -1058,7 +1058,7 @@ void dsm_increment_user_data1(dsm_page_index_t index, int rank)
 void dsm_decrement_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   
   dsm_page_table[index]->user_data1[rank]--;
 }
@@ -1154,7 +1154,7 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, dsm_proto_t
   dsm_page_table[index]->next_owner = NOBODY;
   fifo_init(&dsm_page_table[index]->pending_req, 2 * dsm_nb_nodes - 1);
   if ((dsm_page_table[index]->copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
-    RAISE(STORAGE_ERROR);
+    MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
   dsm_page_table[index]->copyset_size = 0;
   dsm_page_table[index]->pending_access = NO_ACCESS;
   marcel_mutex_init(&dsm_page_table[index]->mutex, NULL);
@@ -1180,7 +1180,7 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, dsm_proto_t
   switch (_dsm_page_protect_mode) {
   case DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS: dsm_enable_access(index, (owner == dsm_local_node_rank)?WRITE_ACCESS:NO_ACCESS, map);break;
   case DSM_UNIFORM_PROTECT: dsm_enable_access(index, (dsm_access_t)_dsm_page_protect_arg, map);break;
-  case DSM_CUSTOM_PROTECT: RAISE(NOT_IMPLEMENTED);break;
+  case DSM_CUSTOM_PROTECT: MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);break;
   }
   /* Perform protocol-specific initializations. */
    if (dsm_get_page_add_func(protocol) != NULL)
@@ -1374,7 +1374,7 @@ void dsm_set_page_ownership(void *addr, dsm_node_t owner)
 
   /* checking status implicitly enables page entry if necessary */
   if (isoaddr_page_get_status(isoaddr_page_index(addr)) != ISO_SHARED)
-    RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
   
   index = dsm_page_index(addr);
 

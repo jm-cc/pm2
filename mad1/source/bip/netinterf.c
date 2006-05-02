@@ -217,7 +217,7 @@ void mad_bip_network_send (int dest_node, struct iovec *vector, size_t count)
 
 #ifdef PM2
  if (count == 0)
-   RAISE(PROGRAM_ERROR) ;
+   MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR) ;
 
  marcel_sem_P (&mutex_send [dest_node]) ;
 #endif

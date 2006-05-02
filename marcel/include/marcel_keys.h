@@ -67,7 +67,7 @@ static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_ke
 {
 #ifdef MA__DEBUG
    if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 #endif
    return &pid->key[key];
 }

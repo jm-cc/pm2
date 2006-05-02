@@ -588,7 +588,7 @@ void slot_attach(slot_descr_t *descr, slot_header_t *header_ptr)
 
   }
   else
-    RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
   header_ptr->prev = NULL;
 }
 

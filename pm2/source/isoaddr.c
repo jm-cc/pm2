@@ -200,7 +200,7 @@ static void _isoaddr_page_info_init()
 #endif
   _info_table = (page_info_table_t)tmalloc(sizeof(page_info_entry_t) * ISOADDR_PAGES);
   if (!_info_table)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   
   for(i = 0; i < ISOADDR_PAGES ; i++)
     {
@@ -615,7 +615,7 @@ static void _internal_isoaddr_config_slot_map()
       break;
     }
   case CYCLIC: _pm2_set_uniform_slot_distribution(_page_distrib_arg, -1); break;
-  case CUSTOM: RAISE(NOT_IMPLEMENTED); break;
+  case CUSTOM: MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED); break;
   case BLOCK: _pm2_set_uniform_slot_distribution(ISOADDR_PAGES/_nb_nodes, 1); break;
   }
 //  end_slot_distribution();
@@ -686,7 +686,7 @@ static __inline__ void  _buy_slots_and_redistribute(unsigned int n, unsigned int
  /* search for the contiguous slots in the global slot_map */
  i = FIRST_AVAILABLE_ALIGNED_CONTIGUOUS_SLOTS(n, aux_slot_map, align); 
  if (i == -1) 
-   RAISE(STORAGE_ERROR); 
+   MARCEL_EXCEPTION_RAISE(STORAGE_ERROR); 
 
  /* mark these slots as busy on all nodes */
  for (j = 0; j < _nb_nodes; j++) 
@@ -931,7 +931,7 @@ void isoaddr_add_busy_slot(void *addr)
   fprintf(stderr, "add busy_slot (%d)\n", SLOT_INDEX(addr));
 #endif
   if(busy_slot.nb == MAX_BUSY_SLOTS)
-    RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
   else {
     busy_slot.addr[busy_slot.nb] = addr;
     busy_slot.signal[busy_slot.nb++] = NULL;
@@ -1082,7 +1082,7 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 			MMAP_MASK,
 			FILE_TO_MAP, 0);
 	     if(ptr == (void *)-1) 
-	       RAISE(STORAGE_ERROR);
+	       MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
 
 	   }
 	//	isoaddr_page_set_status(SLOT_INDEX(ptr), status);
@@ -1126,7 +1126,7 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 			FILE_TO_MAP, 0);
 	     if(ptr == (void *)-1) {
 	       fprintf(stderr, "addr = %p\n", ptr);
-	       RAISE(STORAGE_ERROR);
+	       MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
 	     }
 	   }
        }

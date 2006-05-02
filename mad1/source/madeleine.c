@@ -41,7 +41,7 @@ char *ALIGN_ERROR = "ALIGNMENT ERROR", *CONSTRAINT_ERROR = "CONSTRAINT_ERROR";
 #define tmalloc MALLOC
 #define tfree   FREE
 
-#define RAISE(e) fprintf(stderr, "%s\n", e), exit(1)
+#define MARCEL_EXCEPTION_RAISE(e) fprintf(stderr, "%s\n", e), exit(1)
 
 #endif
 
@@ -270,7 +270,7 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 
 #ifndef NOCHECK
 	 if(MAX_HEADER - cur_buf->s_head_size < nb)
-	   RAISE(CONSTRAINT_ERROR);
+	   MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 #endif
 
 	 memcpy(&cur_buf->s_header[cur_buf->s_head_size], data, nb);
@@ -285,10 +285,10 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 
 #ifndef NOCHECK
 	 if(cur_buf->s_vec_size == MAX_IOVECS)
-	   RAISE(CONSTRAINT_ERROR);
+	   MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 
 	 if(NOT_ALIGNED(data))
-	   RAISE(ALIGN_ERROR);
+	   MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
 #endif
 	 vec->iov_base = data;
 	 vec->iov_len  = nb;
@@ -307,7 +307,7 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 	 } else {
 #ifndef NOCHECK
 	   if(cur_buf->s_vec_size == MAX_IOVECS)
-	     RAISE(CONSTRAINT_ERROR);
+	     MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 #endif
 	   memcpy((cur_buf->s_vector[cur_buf->s_vec_size].iov_base = tmalloc(nb)), data, nb);
 	   cur_buf->s_vector[cur_buf->s_vec_size].iov_len = nb;
@@ -335,7 +335,7 @@ void old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
        case MAD_IN_PLACE_N_FREE : {
 #ifndef NOCHECK
 	 if(NOT_ALIGNED(data))
-	   RAISE(ALIGN_ERROR);
+	   MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
 #endif
 	 r_vector[r_vec_size].iov_base = data;
 	 r_vector[r_vec_size++].iov_len = nb;
@@ -352,7 +352,7 @@ void old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
 	 } else {
 #ifndef NOCHECK
 	   if(NOT_ALIGNED(data))
-	     RAISE(ALIGN_ERROR);
+	     MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
 #endif
 	   r_vector[r_vec_size].iov_base = data;
 	   r_vector[r_vec_size].iov_len = nb;
@@ -435,7 +435,7 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(MAX_HEADER - cur_buf->s_head_size < nb)
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 #endif
 
     memcpy(&cur_buf->s_header[cur_buf->s_head_size], data, nb);
@@ -448,10 +448,10 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(cur_buf->s_vec_size == MAX_IOVECS)
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 
     if(NOT_ALIGNED(data))
-      RAISE(ALIGN_ERROR);
+      MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
 #endif
 
     *((int *)&cur_buf->s_header[cur_buf->s_head_size]) = nb;
@@ -466,7 +466,7 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(cur_buf->s_vec_size == MAX_IOVECS)
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
 #endif
 
     *((int *)&cur_buf->s_header[cur_buf->s_head_size]) = nb;
@@ -495,7 +495,7 @@ void old_mad_unpack_str(madeleine_part where, char *data)
     case MAD_BY_COPY : {
 #ifndef NOCHECK
       if(NOT_ALIGNED(data))
-	RAISE(ALIGN_ERROR);
+	MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
 #endif
       nb = *((int *)&r_header[r_head_size]);
       r_head_size = ALIGN(r_head_size + sizeof(int));

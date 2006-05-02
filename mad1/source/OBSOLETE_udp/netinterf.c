@@ -544,7 +544,7 @@ void mad_udp_network_receive(network_handler func)
 	      write(send_sock[i], entete, HEAD_OF_HEADER*sizeof(long));
 	      request_sent = TRUE;
 #else
-	      RAISE(PROGRAM_ERROR); /* this should never happen ! */
+	      MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR); /* this should never happen ! */
 #endif
 	    }
 	  }

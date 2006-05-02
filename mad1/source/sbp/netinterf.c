@@ -449,7 +449,7 @@ void mad_sbp_network_send (int dest_node, struct iovec *vector, size_t count)
 
  if (count == 0)
 #ifdef PM2
-   RAISE(PROGRAM_ERROR) ;
+   MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR) ;
 #else
    {
     fprintf (stderr, "Error in network send zero number of parameters %d\n", count) ;

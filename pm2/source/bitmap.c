@@ -690,7 +690,7 @@ void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned i
   int j;
  
   if (bits_to_1 > period)
-    RAISE(PROGRAM_ERROR); 
+    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR); 
 
   /* Do not go beyond _bitmap_size */ 
   if (start + bits_to_1 > _bitmap_size)

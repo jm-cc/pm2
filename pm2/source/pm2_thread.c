@@ -73,7 +73,7 @@ static struct pm2_thread_arg *__thread_alloc(void)
 
   } else {
     if(next_unalloc == MAX_PARAMS)
-      RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
     res = &thread_param[next_unalloc];
     next_unalloc++;
     unlock_task();

@@ -428,21 +428,21 @@ int ping_cmd(pm2_cmd instr)
        QUICK_LRP_CALL(i, LRPC_CONSOLE_PING,
 		      &_ping_req, &res, &_ping_rpc_wait);
        for(cpt_tent=1;cpt_tent<=nb_try;cpt_tent++) { 
-	 BEGIN
+	 MARCEL_EXCEPTION_BEGIN
 	   marcel_sem_timed_P(&_ping_sem, 500);
 	 
 	 tprintf("\tTry number (%d/%d) : task alive\n", cpt_tent, nb_try);
 	 cpt_tent = nb_try+1; /* Aie, que c'est moche ! */
 	 
-	 EXCEPTION
-	   WHEN(TIME_OUT)  
+	 MARCEL_EXCEPTION_EXCEPTION
+	   MARCEL_EXCEPTION_WHEN(TIME_OUT)  
 	   if(cpt_tent < nb_try)
 	     strcpy(s,"still trying...");
 	   else
 	     strcpy(s,"aborting.");
 	 tprintf("\tTry number (%d/%d) : failed ...%s\n",
 		 cpt_tent, nb_try, s);
-	 END 
+	 MARCEL_EXCEPTION_END 
 	   }
        _ping_req.version++;
      }

@@ -19,7 +19,7 @@ void * f(void * arg)
 	}
 	GET_TICK(t2);
 	
-	printf("time =  %fus\n", TIMING_DELAY(t1, t2));
+	printf("time =  %fus\n", TIMING_DELAY(t1, t2)/(int)arg);
 	return NULL;
 }
 

@@ -117,7 +117,7 @@ static inline int pth_sem_post(pth_sem_t * sem)
 #  define marcel_attr_t              pth_attr_t
 #  define marcel_attr_init(a)        (*(a)=pth_attr_new())
 #  define marcel_attr_setdetachstate(a, v) pth_attr_set(*(a), PTH_ATTR_JOINABLE, (v))
-#  define MARCEL_CREATE_DETACHED     FLASE
+#  define MARCEL_CREATE_DETACHED     FALSE
 #  define marcel_attr_setschedpolicy(attr, val)
 
 static inline int pth_create(pth_t  *  thread, 

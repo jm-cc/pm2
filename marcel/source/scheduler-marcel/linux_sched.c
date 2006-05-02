@@ -776,7 +776,7 @@ void fastcall sched_exit(task_t * p)
  * with the lock held can cause deadlocks; see schedule() for
  * details.)
  */
-static inline void finish_task_switch(marcel_task_t *prev)
+static void finish_task_switch(marcel_task_t *prev)
 {
 	/* note: pas de softirq ici, on est déjà en mode interruption */
 	ma_holder_t *prevh = ma_task_holder_rawlock(prev);

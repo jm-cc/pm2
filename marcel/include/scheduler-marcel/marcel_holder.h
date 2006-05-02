@@ -277,9 +277,9 @@ static __tbx_inline__ ma_holder_t *ma_this_holder_lock() {
 }
 
 #section marcel_functions
-static inline void ma_entity_holder_rawunlock(ma_holder_t *h);
-static inline void ma_entity_holder_unlock(ma_holder_t *h);
-static inline void ma_entity_holder_unlock_softirq(ma_holder_t *h);
+static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h);
+static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h);
+static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h);
 void ma_task_holder_rawunlock(ma_holder_t *h);
 void ma_task_holder_unlock(ma_holder_t *h);
 void ma_task_holder_unlock_softirq(ma_holder_t *h);
@@ -287,19 +287,19 @@ void ma_task_holder_unlock_softirq(ma_holder_t *h);
 #define ma_task_holder_unlock(h) ma_entity_holder_unlock(h)
 #define ma_task_holder_unlock_softirq(h) ma_entity_holder_unlock_softirq(h)
 #section marcel_inline
-static inline void ma_entity_holder_rawunlock(ma_holder_t *h) {
+static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_rawunlock(%p)\n",h);
 	if (h)
 		ma_holder_rawunlock(h);
 }
-static inline void ma_entity_holder_unlock(ma_holder_t *h) {
+static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock(%p)\n",h);
 	if (h)
 		ma_holder_unlock(h);
 	else
 		ma_preempt_enable();
 }
-static inline void ma_entity_holder_unlock_softirq(ma_holder_t *h) {
+static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock_softirq(%p)\n",h);
 	if (h)
 		ma_holder_unlock_softirq(h);
@@ -349,9 +349,9 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 }
 
 #section marcel_functions
-static inline void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
+static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
+static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_array_enqueue_entity(e, rq->active);
 }
 
@@ -463,9 +463,9 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 }
 
 #section marcel_functions
-static inline void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
+static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
+static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->holder_data);
 }
 

@@ -73,7 +73,7 @@ static void timer_action(struct ma_softirq_action *a)
 	if(LWP_SELF == NULL) {
 		pm2debug("WARNING!!! LWP_SELF == NULL in thread %p!\n",
 			 MARCEL_SELF);
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 #endif
 	

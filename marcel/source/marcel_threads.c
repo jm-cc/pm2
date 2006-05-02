@@ -189,7 +189,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
 		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t)));
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
-			MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR); /* Not big enough */
+			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
 		stack_base = attr->__stackaddr;
 		
 		static_stack = tbx_true;
@@ -198,7 +198,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 #ifdef MA__DEBUG
 		if(attr->__stacksize > THREAD_SLOT_SIZE)
-			MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
+			MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif
 		bottom = marcel_slot_alloc();
 		
@@ -301,7 +301,7 @@ static void postexit_thread_atexit_func(any_t arg) {
 	marcel_lwp_t *lwp TBX_UNUSED =(marcel_lwp_t*)arg;
 
 	TRACE("postexit thread killed on lwp %i\n", LWP_NUMBER(LWP_SELF));
-	MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+	MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
 
 static void* postexit_thread_func(any_t arg)
@@ -374,7 +374,7 @@ void marcel_postexit_internal(marcel_t __restrict cur,
 {
 	LOG_IN();
 	if (cur->postexit_func) {
-		MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 	cur->postexit_func=func;
 	cur->postexit_arg=arg;
@@ -393,7 +393,7 @@ void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 	LOG_IN();
 
 	if(cur->next_atexit_func == MAX_ATEXIT_FUNCS)
-		MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	
 	cur->atexit_args[cur->next_atexit_func] = arg;
 	cur->atexit_funcs[cur->next_atexit_func++] = func;
@@ -696,7 +696,7 @@ DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 	marcel_t cur = marcel_self();
 	
 	if(cur->last_cleanup != __buffer)
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 
 	cur->last_cleanup=__buffer->__prev;
 	if(execute)

@@ -40,7 +40,7 @@ void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
   fprintf(stderr, "-----> isomalloc_addr returned: ptr = %p, gsize = %d\n", ptr, gsize);
 #endif
   if (!ptr)
-    MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
   
   base = dsm_isoaddr_page_index(isoaddr_page_index(ptr));
 

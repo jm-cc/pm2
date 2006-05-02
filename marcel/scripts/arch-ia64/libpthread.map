@@ -1,7 +1,7 @@
 MARCEL {
     *_ERROR;
-    NOT_IMPLEMENTED;
-    TIME_OUT;
+    MARCEL_NOT_IMPLEMENTED;
+    MARCEL_TIME_OUT;
     __main_lwp;
     __main_thread_struct;
     cur_lwp;

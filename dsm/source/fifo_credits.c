@@ -23,7 +23,7 @@
 void fifo_init(fifo_t *fifo, int fifo_size)
 {
   if ((fifo->head = fifo->end = (fifo_item_t *)tmalloc(fifo_size * sizeof(fifo_item_t))) == NULL)
-    MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
   fifo->start = NULL;
   marcel_sem_init(&fifo->sem, fifo_size);
   fifo->size = fifo_size;
@@ -49,7 +49,7 @@ void fifo_set_next(fifo_t *fifo, dsm_node_t node)
     Here we know there is at least one case available in the array.
   */
   if (fifo->end == NULL)
-    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 
   *(fifo->end) = node;
 

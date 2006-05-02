@@ -102,7 +102,7 @@ static __inline__ void dsm_begin_send_multiple_page_req(dsm_node_t dest_node, ds
       break;
     }
   default:
-    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
  }
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
@@ -136,7 +136,7 @@ static __inline__ void dsm_begin_send_multiple_pages(dsm_node_t dest_node, dsm_a
       break;
     }
   default:
-    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
  }
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&reply_node, sizeof(dsm_node_t));
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));

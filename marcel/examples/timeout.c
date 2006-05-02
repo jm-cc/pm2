@@ -27,7 +27,7 @@ any_t f(any_t arg)
       marcel_sem_timed_P(&sem, 500);
       MARCEL_EXIT_LOOP(b);
     MARCEL_EXCEPTION
-      MARCEL_EXCEPTION_WHEN(TIME_OUT)
+      MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)
         tprintf("What a boring job, isn't it ?\n");
     MARCEL_EXCEPTION_END
   MARCEL_END_LOOP(b)

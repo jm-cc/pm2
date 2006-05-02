@@ -124,7 +124,7 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     for(i=0; i<nb; i++) {
       if(pids[i]->not_migratable > ((pids[i] == marcel_self()) ? 1 : 0)
 	 || !pids[i]->detached) {
-	MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+	MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
       }
     }
 

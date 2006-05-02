@@ -106,7 +106,7 @@ void marcel_schedpolicy_create(int *policy,
 {
   if(next_schedpolicy_available >=
      MARCEL_MAX_USER_SCHED + __MARCEL_SCHED_AVAILABLE)
-    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
   ma_user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] = func;
   *policy = next_schedpolicy_available++;

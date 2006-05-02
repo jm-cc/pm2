@@ -57,7 +57,7 @@ void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr)
 void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, dsm_proto_t prot)
 {
   if (attr->nb_prot >= _MAX_PROT_PER_LOCK)
-    MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
   attr->prot[attr->nb_prot++] = prot;
 }
 

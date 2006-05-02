@@ -435,7 +435,7 @@ int ping_cmd(pm2_cmd instr)
 	 cpt_tent = nb_try+1; /* Aie, que c'est moche ! */
 	 
 	 MARCEL_EXCEPTION_EXCEPTION
-	   MARCEL_EXCEPTION_WHEN(TIME_OUT)  
+	   MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)  
 	   if(cpt_tent < nb_try)
 	     strcpy(s,"still trying...");
 	   else

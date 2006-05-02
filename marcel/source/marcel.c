@@ -66,15 +66,15 @@ void LONGJMP(jmp_buf buf, int val)
 #endif
 
 marcel_exception_t
-   TASKING_ERROR = "TASKING_ERROR: A non-handled exception occurred in a task",
-   DEADLOCK_ERROR = "DEADLOCK_ERROR: Global Blocking Situation Detected",
-   STORAGE_ERROR = "STORAGE_ERROR: No space left on the heap",
-   CONSTRAINT_ERROR = "CONSTRAINT_ERROR",
-   PROGRAM_ERROR = "PROGRAM_ERROR",
-   STACK_ERROR = "STACK_ERROR: Stack Overflow",
-   TIME_OUT = "TIME OUT while being blocked on a semaphor",
-   NOT_IMPLEMENTED = "NOT_IMPLEMENTED (sorry)",
-   USE_ERROR = "USE_ERROR: Marcel was not compiled to enable this functionality";
+   MARCEL_TASKING_ERROR = "MARCEL_TASKING_ERROR: A non-handled exception occurred in a task",
+   MARCEL_DEADLOCK_ERROR = "MARCEL_DEADLOCK_ERROR: Global Blocking Situation Detected",
+   MARCEL_STORAGE_ERROR = "MARCEL_STORAGE_ERROR: No space left on the heap",
+   MARCEL_CONSTRAINT_ERROR = "MARCEL_CONSTRAINT_ERROR",
+   MARCEL_PROGRAM_ERROR = "MARCEL_PROGRAM_ERROR",
+   MARCEL_STACK_ERROR = "MARCEL_STACK_ERROR: Stack Overflow",
+   MARCEL_TIME_OUT = "TIME OUT while being blocked on a semaphor",
+   MARCEL_NOT_IMPLEMENTED = "MARCEL_NOT_IMPLEMENTED (sorry)",
+   MARCEL_USE_ERROR = "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
@@ -104,7 +104,7 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
                 p = __TBX_MALLOC(size, file, line);
 		marcel_extlib_unprotect();
                 if(p == NULL)
-                        MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
         } else {
                 return NULL;
         }
@@ -120,7 +120,7 @@ void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned 
         p = __TBX_REALLOC(ptr, size, file, line);
 	marcel_extlib_unprotect();
         if(p == NULL)
-                MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
+                MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 
         return p;
 }
@@ -134,7 +134,7 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
                 p = __TBX_CALLOC(nelem, elsize, file, line);
 		marcel_extlib_unprotect();
                 if(p == NULL)
-                        MARCEL_EXCEPTION_RAISE(STORAGE_ERROR);
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
         } else {
                 return NULL;
         }
@@ -173,14 +173,14 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
      /* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
 	des threads existants */
       marcel_lock_release(&marcel_key_lock);
-      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 /*        marcel_last_key=0; */
 /*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
 /*  	     (marcel_key_present[marcel_last_key])) { */
 /*        } */
 /*        if(new_key == MAX_KEY_SPECIFIC) { */
 /*  	 marcel_lock_release(&marcel_key_lock); */
-/*  	 MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR); */
+/*  	 MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); */
 /*        } */
    }
    *key = marcel_last_key;

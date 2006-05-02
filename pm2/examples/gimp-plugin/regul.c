@@ -71,7 +71,7 @@ static void reguler()
 
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
       if(nb >= MAX_THREADS)
-         MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+         MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
       quantite_a_migrer = (local_load - other_load) / 2;
 

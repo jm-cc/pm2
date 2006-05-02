@@ -97,7 +97,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
         if (ret == MA_NOTIFY_BAD) {
                 pm2debug("%s: attempt to bring up LWP %p failed\n",
                                 __FUNCTION__, lwp);
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
         }
 
 	__ma_get_lwp_var(online)=1;

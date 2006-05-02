@@ -25,7 +25,7 @@ void ma_do_work(marcel_t self)
     return;
   }
 
-  MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+  MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
 
 #endif

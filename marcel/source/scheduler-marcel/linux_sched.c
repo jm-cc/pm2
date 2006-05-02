@@ -583,12 +583,12 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 	if (MA_TASK_IS_FROZEN(p)) {
 		if (!frozen_scheduler)
 			ma_task_holder_unlock_softirq(h);
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 	if (MA_TASK_IS_RUNNING(p)) {
 		if (!frozen_scheduler)
 			ma_task_holder_unlock_softirq(h);
-		MARCEL_EXCEPTION_RAISE(NOT_IMPLEMENTED);
+		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 	}
 
 	if (!MA_TASK_IS_BLOCKED(p))

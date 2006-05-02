@@ -35,7 +35,7 @@
 #else
 #define mpi_lock()
 #define mpi_unlock()
-static char *PROGRAM_ERROR = "PROGRAM_ERROR";
+static char *MARCEL_PROGRAM_ERROR = "MARCEL_PROGRAM_ERROR";
 #define MARCEL_EXCEPTION_RAISE(e) fprintf(stderr, "%s\n", e), exit(1)
 #endif
 
@@ -296,7 +296,7 @@ void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
   LOG_IN();
 
   if(count == 0)
-    MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 
 #ifdef PM2
   marcel_mutex_lock(&mutex[dest_node]);

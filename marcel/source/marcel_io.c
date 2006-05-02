@@ -113,7 +113,7 @@ static int unix_io_group(marcel_ev_server_t server,
 			break;
 		}
 		default :
-			MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+			MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 		}
 	}
 	return 0;
@@ -168,7 +168,7 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 		break;
 	}
 	default :
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 }
 
@@ -219,7 +219,7 @@ static int unix_io_poll(marcel_ev_server_t server,
 				break;
 			}
 			default :
-				MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+				MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 			}
 			if (!found) {
 				pm2debug("IO poll with bad fd not detected.\n"
@@ -276,7 +276,7 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 		break;
 	}
 	default :
-		MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 
 	timerclear(&tv);

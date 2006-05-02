@@ -35,7 +35,7 @@ static marcel_key_t buffer_key;
 
 #else
 
-char *ALIGN_ERROR = "ALIGNMENT ERROR", *CONSTRAINT_ERROR = "CONSTRAINT_ERROR";
+char *ALIGN_ERROR = "ALIGNMENT ERROR", *MARCEL_CONSTRAINT_ERROR = "MARCEL_CONSTRAINT_ERROR";
 #include "safe_malloc.h"
 #define CUR_BUF buffer_pool
 #define tmalloc MALLOC
@@ -270,7 +270,7 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 
 #ifndef NOCHECK
 	 if(MAX_HEADER - cur_buf->s_head_size < nb)
-	   MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+	   MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 #endif
 
 	 memcpy(&cur_buf->s_header[cur_buf->s_head_size], data, nb);
@@ -285,7 +285,7 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 
 #ifndef NOCHECK
 	 if(cur_buf->s_vec_size == MAX_IOVECS)
-	   MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+	   MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
 	 if(NOT_ALIGNED(data))
 	   MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
@@ -307,7 +307,7 @@ void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 	 } else {
 #ifndef NOCHECK
 	   if(cur_buf->s_vec_size == MAX_IOVECS)
-	     MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+	     MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 #endif
 	   memcpy((cur_buf->s_vector[cur_buf->s_vec_size].iov_base = tmalloc(nb)), data, nb);
 	   cur_buf->s_vector[cur_buf->s_vec_size].iov_len = nb;
@@ -435,7 +435,7 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(MAX_HEADER - cur_buf->s_head_size < nb)
-      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 #endif
 
     memcpy(&cur_buf->s_header[cur_buf->s_head_size], data, nb);
@@ -448,7 +448,7 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(cur_buf->s_vec_size == MAX_IOVECS)
-      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
     if(NOT_ALIGNED(data))
       MARCEL_EXCEPTION_RAISE(ALIGN_ERROR);
@@ -466,7 +466,7 @@ void old_mad_pack_str(madeleine_part where, char *data)
 
 #ifndef NOCHECK
     if(cur_buf->s_vec_size == MAX_IOVECS)
-      MARCEL_EXCEPTION_RAISE(CONSTRAINT_ERROR);
+      MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 #endif
 
     *((int *)&cur_buf->s_header[cur_buf->s_head_size]) = nb;

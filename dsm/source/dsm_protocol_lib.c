@@ -377,7 +377,7 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 	   }
 	 else
 	   {
-	     MARCEL_EXCEPTION_RAISE (PROGRAM_ERROR);
+	     MARCEL_EXCEPTION_RAISE (MARCEL_PROGRAM_ERROR);
 	   }
        }
      dsm_signal_page_ready(index);

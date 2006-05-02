@@ -88,7 +88,7 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
     switch(access){
     case READ_ACCESS: (*dsm_get_read_fault_action(dsm_get_page_protocol(index)))(index);break;
     case WRITE_ACCESS:  (*dsm_get_write_fault_action(dsm_get_page_protocol(index)))(index);break;
-    default: MARCEL_EXCEPTION_RAISE(PROGRAM_ERROR); break;
+    default: MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR); break;
 				     }
 
  LOG_OUT();

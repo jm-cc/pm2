@@ -97,7 +97,9 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 #depend "asm/linux_atomic.h[marcel_types]"
 struct ma_sched_entity {
 	enum marcel_entity type;
+#ifdef MA__BUBBLES
 	ma_holder_t *init_holder;
+#endif
 	ma_holder_t *sched_holder;
 	ma_holder_t *run_holder;
 	void *holder_data;
@@ -140,10 +142,16 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #else
 #define SCHED_LEVEL_INIT
 #endif
+#ifdef MA__BUBBLES
+#define SCHED_INITHOLDER_INIT .init_holder = NULL,
+#else
+#define SCHED_INITHOLDER_INIT
+#endif
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
-	.init_holder = NULL,.sched_holder = NULL, .run_holder = NULL, \
+	SCHED_INITHOLDER_INIT \
+	.sched_holder = NULL, .run_holder = NULL, \
 	.holder_data = NULL, \
 	.run_list = LIST_HEAD_INIT((e).run_list), \
 	/*.sched_policy = */ \
@@ -154,7 +162,9 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 }
 
 #section marcel_macros
+#ifdef MA__BUBBLES
 #define ma_task_init_holder(p)	(THREAD_GETMEM(p,sched.internal.init_holder))
+#endif
 #define ma_task_sched_holder(p)	(THREAD_GETMEM(p,sched.internal.sched_holder))
 #define ma_task_run_holder(p)	(THREAD_GETMEM(p,sched.internal.run_holder))
 #define ma_this_holder()	(ma_task_run_holder(MARCEL_SELF))
@@ -188,11 +198,14 @@ static __tbx_inline__ ma_holder_t *ma_entity_some_holder(marcel_entity_t *e)
                 return holder;
 	/* not ready, current runqueue */
         sched_debug("using current queue for blocked %p\n",e);
+#ifdef MA__BUBBLES
 	if ((holder = e->sched_holder))
 		return holder;
         sched_debug("using default queue for %p\n",e);
         return e->init_holder;
-
+#else
+        return e->sched_holder;
+#endif
 }
 
 #section marcel_functions

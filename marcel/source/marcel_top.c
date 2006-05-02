@@ -88,7 +88,9 @@ static void printtask(marcel_task_t *t) {
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),
+#ifdef MA__BUBBLES
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+#endif
 		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 	ma_atomic_sub(utime, &t->top_utime);

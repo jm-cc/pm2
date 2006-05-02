@@ -158,18 +158,26 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	LOG_IN();
 	internal->type = MA_TASK_ENTITY;
-	if (attr->sched.init_holder)
+	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
-	else if (attr->sched.inheritholder) {
+#ifdef MA__BUBBLES
+	} else if (attr->sched.inheritholder) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		h = ma_task_init_holder(MARCEL_SELF);
+#endif
 	} else if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 		h = &(marcel_sched_vpmask_init_rq(&attr->vpmask)->hold);
 	internal->sched_policy = attr->__schedpolicy;
 	if (h) {
-		internal->sched_holder = internal->init_holder = h;
+		internal->sched_holder =
+#ifdef MA__BUBBLES
+			internal->init_holder =
+#endif
+			h;
 	} else {
+#ifdef MA__BUBBLES
 		internal->init_holder = NULL;
+#endif
 #ifdef MA__LWPS
 		rq = NULL;
 		switch (internal->sched_policy) {

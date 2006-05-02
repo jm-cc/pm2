@@ -332,7 +332,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 	}
 }
 #ifndef MA__ACT
-static any_t TBX_NORETURN idle_func(any_t hlwp)
+static any_t idle_func(any_t hlwp)
 {
 	for(;;) {
 		pause();

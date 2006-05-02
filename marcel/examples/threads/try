@@ -18,12 +18,18 @@ if [ -x ./$prog-unix ]; then
   echo "************** Clone"
   ./$prog-clone "$@"
 fi
-echo "************** LinuxThread"
-LD_ASSUME_KERNEL=2.4.5 ./$prog-linuxthread "$@"
-echo "************** NPTL"
-./$prog-nptl "$@"
-echo "************** GNUPth"
-#./$prog-pth "$@"
+if [ -x ./$prog-linuxthread ] ; then
+  echo "************** LinuxThread"
+  LD_ASSUME_KERNEL=2.4.5 ./$prog-linuxthread "$@"
+fi
+if [ -x ./$prog-nptl ] ; then
+  echo "************** NPTL"
+  ./$prog-nptl "$@"
+fi
+if [ -x ./$prog-pth ] ; then
+  echo "************** GNUPth"
+  ./$prog-pth "$@"
+fi
 echo "************** NGPT"
 #LD_LIBRARY_PATH=/home/vdanjean/opt/libc-2.2.5/lib:/home/vdanjean/opt/ngpt-2.2.2/lib /home/vdanjean/opt/libc-2.2.5/lib/ld-linux.so.2 ./$prog-ngpt  "$@"
 #echo "************** Marcel-libpthread"
@@ -34,4 +40,6 @@ echo "************** Marcel-smp"
 #LD_PRELOAD=$PM2_ROOT/lib/LINUX_SYS/X86_ARCH/libpthread.so ./$prog-marcel-smp "$@"
 ./$prog-marcel-smp "$@" --marcel-nvp 2
 
+echo "************** Marcel-numa"
+./$prog-marcel-numa "$@" --marcel-nvp 2
 

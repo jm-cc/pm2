@@ -15,7 +15,11 @@ else
     fi
 #    echo $prog ${@:+"$@"}
     echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
-    $prog ${@:+"$@"}
+    if [ -n "$PM2_VALGRIND" ] ; then
+	valgrind -v --leak-check=yes $prog ${@:+"$@"}
+    else
+	$prog ${@:+"$@"}
+    fi
 fi
 
 code=$?

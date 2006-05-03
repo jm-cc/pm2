@@ -234,7 +234,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			MTRACE("ActSched", current);
 			marcel_update_time(current);
 			lock_task();
-			marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
+			marcel_check_polling(MARCEL_EV_POLL_AT_TIMER_SIG);
 			ma__marcel_yield();
 			unlock_task();
 		}

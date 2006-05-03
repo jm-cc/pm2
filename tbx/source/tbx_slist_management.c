@@ -77,9 +77,9 @@ void
 tbx_slist_manager_exit(void)
 {
   LOG_IN();
-  //tbx_malloc_clean(tbx_slist_element_manager_memory);
-  //tbx_malloc_clean(tbx_slist_nref_manager_memory);
-  //tbx_malloc_clean(tbx_slist_struct_manager_memory);
+  tbx_malloc_clean(tbx_slist_element_manager_memory);
+  tbx_malloc_clean(tbx_slist_nref_manager_memory);
+  tbx_malloc_clean(tbx_slist_struct_manager_memory);
   LOG_OUT();
 }
 

@@ -15,7 +15,7 @@ TYPES_ALL=nptl linuxthread unix clone pth
 
 TYPES=nptl #linuxthread #unix #clone #pth
 
-FLAVORS=marcel-mono marcel-smp marcel-numa
+FLAVORS=marcel-mono marcel-smp marcel-numa marcel-smpdbg
 
 DEPENDS= thread.h utils.h
 
@@ -26,6 +26,7 @@ NO_GEN=$(foreach ext,-clone -unix, $(addsuffix $(ext), $(PROGS_THREAD)))
 ################################################"
 
 TYPES += $(FLAVORS)
+TYPES_ALL += $(FLAVORS)
 
 define FLAVOR_template
 CFLAGS_$(1) = $(shell pm2-config --flavor=$(1) --cflags)

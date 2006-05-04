@@ -59,12 +59,12 @@ process_command_line(int    argc,
       do
 	{
 	  if (tbx_argit_vopt_equals("--env")) //GM
-	    {		
+	    {
 	      if (!settings->env)
 		{
 		  settings->env_mode = tbx_true;
 		  settings->env = tbx_argit_vopt_value_cstr();
-		}		
+		}
 	      else
 		leo_terminate("duplicate environment");
 	    }
@@ -279,6 +279,33 @@ parse_application_file(p_leonie_t leonie)
   LOG_OUT();
 }
 
+
+void
+sigint_handler(int sig)
+{
+  static volatile sig_atomic_t sigint_in_progress = 0;
+
+  if (sigint_in_progress)
+    raise (sig);
+
+  sigint_in_progress = 1;
+  leonie_processes_cleanup();
+
+  signal (sig, SIG_DFL);
+  raise (sig);
+}
+
+static
+install_signal_handler(void)
+{
+  struct sigaction sa =
+    {
+      .sa_handler = sigint_handler
+    };
+
+  sigaction(SIGINT, &sa, NULL);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -286,6 +313,8 @@ main(int    argc,
   p_leonie_t leonie = NULL;
 
   LOG_IN();
+  install_signal_handler();
+
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
 

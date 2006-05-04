@@ -645,6 +645,7 @@ send_directory(p_leonie_t leonie)
       TRACE_VAL("Transmitting to", process->global_rank);
 
       client = process_to_client(process);
+      ntbx_tcp_client_setup_delay(client);
 
       // Processes
       send_processes(dir, client);
@@ -666,6 +667,8 @@ send_directory(p_leonie_t leonie)
 
       // MultipleXing channels
       send_xchannels(dir, client);
+
+      ntbx_tcp_client_setup_nodelay(client);
 
       // End
       leo_send_string(client, "end{directory}");

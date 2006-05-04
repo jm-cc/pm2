@@ -56,14 +56,7 @@ extern int __zero_fd;
 #    define ISOADDR_AREA_TOP       0x40000000
 #    define SLOT_AREA_BOTTOM       0x10000000
 #    define MAIN_STACK_BOT         0xb8000000
-#ifdef ENABLE_STACK_JUMPING
-#ifdef PM2VALGRIND
-#warning "valgrind doesn't work with stack jumping enabled"
-#endif
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#else
-#    define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
-#endif
 #  elif defined(X86_64_ARCH)
 #    define ISOADDR_AREA_TOP       0x2000000000
 #    define SLOT_AREA_BOTTOM       0x1000000000
@@ -141,6 +134,18 @@ extern void *ISOADDR_AREA_TOP;
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
 #else
 #  error Sorry. This system/architecture is not yet supported.
+#endif
+
+#ifdef PM2VALGRIND
+#    ifdef ENABLE_STACK_JUMPING
+#	error "valgrind doesn't work with stack jumping enabled"
+#    endif
+#    ifdef SLOT_AREA_BOTTOM
+#       undef IS_ON_MAIN_STACK
+#	define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP || (sp) < SLOT_AREA_BOTTOM )
+#    else
+#	error "IS_ON_MAIN_STACK needs to be fixed for valgrind support on this architecture"
+#    endif
 #endif
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)

@@ -210,6 +210,9 @@ void
 mad_leonie_barrier(void);
 
 void
+mad_leonie_beat(void);
+
+void
 mad_command_thread_init(p_mad_madeleine_t madeleine);
 
 void

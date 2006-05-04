@@ -532,6 +532,12 @@ exit_session(p_leonie_t leonie)
           j++;
         } break;
 
+        case leo_command_beat:
+          TRACE("leo_command_beat");
+          leo_send_int(client, leo_command_beat_ack);
+          status--;
+          j++;
+
         default:
           FAILURE("unknown command or synchronization error");
         }

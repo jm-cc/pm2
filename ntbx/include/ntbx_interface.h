@@ -266,6 +266,18 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc);
 void
 ntbx_tcp_nb_socket_setup(ntbx_tcp_socket_t desc);
 
+void
+ntbx_tcp_socket_setup_delay(ntbx_tcp_socket_t desc);
+
+void
+ntbx_tcp_socket_setup_nodelay(ntbx_tcp_socket_t desc);
+
+void
+ntbx_tcp_client_setup_delay(p_ntbx_client_t  client);
+
+void
+ntbx_tcp_client_setup_nodelay(p_ntbx_client_t  client);
+
 ntbx_tcp_socket_t
 ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 		       ntbx_tcp_port_t      port);

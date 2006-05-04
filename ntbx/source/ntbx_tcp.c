@@ -259,6 +259,51 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc) {
         LOG_OUT();
 }
 
+void
+ntbx_tcp_socket_setup_delay(ntbx_tcp_socket_t desc) {
+        int           val    = 0;
+        socklen_t     len    = sizeof(int);
+
+        LOG_IN();
+        SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+        LOG_OUT();
+}
+
+void
+ntbx_tcp_socket_setup_nodelay(ntbx_tcp_socket_t desc) {
+        int           val    = 1;
+        socklen_t     len    = sizeof(int);
+
+        LOG_IN();
+        SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+        LOG_OUT();
+}
+
+
+void
+ntbx_tcp_client_setup_delay(p_ntbx_client_t  client) {
+        p_ntbx_tcp_client_specific_t client_specific = client->specific;
+        ntbx_tcp_socket_t desc	= client_specific->descriptor;
+        int           val    = 0;
+        socklen_t     len    = sizeof(int);
+
+        LOG_IN();
+        SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+        LOG_OUT();
+}
+
+void
+ntbx_tcp_client_setup_nodelay(p_ntbx_client_t  client) {
+        p_ntbx_tcp_client_specific_t client_specific = client->specific;
+        ntbx_tcp_socket_t desc	= client_specific->descriptor;
+        int           val    = 1;
+        socklen_t     len    = sizeof(int);
+
+        LOG_IN();
+        SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+        LOG_OUT();
+}
+
 ntbx_tcp_socket_t
 ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 		       ntbx_tcp_port_t      port) {

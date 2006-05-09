@@ -7,8 +7,8 @@ Program received signal SIGINT, Interrupt.
 #1  0x0804dc6d in idle_func (arg=0x0) at marcel_archdep.h:41
 #2  0x0804973a in marcel_create (pid=0x0, attr=0x3ffe0000, func=0, arg=0x0)
     at marcel_sched.h:35
-(gdb) set-ctx  __main_thread
-switching to __main_thread(0xbffefc40)
+(gdb) set-ctx  __main_thread_struct
+switching to __main_thread_struct(0xbffefc40)
 (gdb) bt
 #0  0x0804d5d8 in marcel_give_hand (blocked=0xbffefb6c)
     at source/marcel_sched.c:1173

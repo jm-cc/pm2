@@ -97,9 +97,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 #depend "asm/linux_atomic.h[marcel_types]"
 struct ma_sched_entity {
 	enum marcel_entity type;
-#ifdef MA__BUBBLES
 	ma_holder_t *init_holder;
-#endif
 	ma_holder_t *sched_holder;
 	ma_holder_t *run_holder;
 	void *holder_data;

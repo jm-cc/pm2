@@ -546,6 +546,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
 
+ retry:
   if (!channel_specific->active_number)
     {
       int status = -1;
@@ -589,6 +590,19 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 
       if (FD_ISSET(in_specific->socket, &channel_specific->active_fds))
 	{
+	  /* detect EOS */
+	  const int fd = in_specific->socket;
+	  char c;
+	  int rc = recv(fd, &c, sizeof(c), MSG_PEEK);
+	  if(rc == 0)
+	    {
+	      DISP("mad_tcp: lost connection #%d (fd=%d)", in->remote_rank, fd);
+	      channel_specific->active_number--;
+	      FD_CLR(fd, &channel_specific->active_fds);
+	      FD_CLR(fd, &channel_specific->read_fds);
+	      goto retry;
+	    }
+
 	  channel_specific->active_number--;
 
 	  LOG_OUT();

@@ -29,7 +29,8 @@ Usage: $PROGNAME { option } command
 
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -d      : Run command in debug mode (not supported by all implementations)
+    -d      : Run command through gdb
+    -vg     : Run command through valgrind
     -t      : Run command through strace
     -s      : Run scripts in debug mode
     -c name : Use console named "name"
@@ -124,6 +125,8 @@ mad3()
     pm2load_args=""
     [ "$PM2_DEBUG" = "on" ]           && pm2load_args="${pm2load_args} -d"
     [ "$PM2_DEBUG" = "off" ]          && pm2load_args="${pm2load_args} --d"
+    [ "$PM2_VALGRIND" = "on" ]        && pm2load_args="${pm2load_args} -vg"
+    [ "$PM2_VALGRIND" = "off" ]       && pm2load_args="${pm2load_args} --vg"
     [ "$PM2_XMODE" = "on" ]           && pm2load_args="${pm2load_args} -x"
     [ "$PM2_XMODE" = "off" ]          && pm2load_args="${pm2load_args} --x"
     [ "$PM2_PMODE" = "on" ]           && pm2load_args="${pm2load_args} -p"
@@ -145,6 +148,7 @@ export PM2_FLAVOR
 PM2_CONSOLE=""
 
 PM2_DEBUG=off
+PM2_VALGRIND=off
 PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
 PM2_XMODE=off
@@ -160,6 +164,10 @@ while [ $# -gt 0 ]; do
 	-d|--debug)
 	    shift
 	    PM2_DEBUG=on
+	    ;;
+	-vg|--valgrind)
+	    shift
+	    PM2_VALGRIND=on
 	    ;;
 	-t|--trace)
 	    shift
@@ -190,6 +198,10 @@ while [ $# -gt 0 ]; do
 	--d) # Debug off
 	    shift
 	    PM2_DEBUG=off
+	    ;;
+	--vg) # Valgrind off
+	    shift
+	    PM2_VALGRIND=off
 	    ;;
 	--t) # Strace off
 	    shift
@@ -330,6 +342,10 @@ esac
 # Debug
 if [ "$PM2_DEBUG" = on ]; then
     _prescript_args="$_prescript_args --debug"
+fi
+
+if [ "$PM2_VALGRIND" = on ]; then
+    _prescript_args="$_prescript_args --valgrind"
 fi
 
 if [ "$PM2_STRACE" = on ]; then

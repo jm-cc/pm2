@@ -32,6 +32,7 @@ PM2_CMD_PREFIX="pm2-pre-script.sh"
 #echo "[ pm2-pre-script.sh " ${@:+"$@"} " ]"
 
 debug_file=""
+valgrind=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -76,8 +77,9 @@ while [ $# -gt 0 ]; do
 	    fi
 	    log "Exporting [$var] set to [$value]"
 	    ;;
-	--debug)
+	--debug|--valgrind)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
+	    [ "$1" == --valgrind ] && valgrind=yes
 	    shift
 	    # tempo file
 	    num=0
@@ -203,6 +205,17 @@ if [ -n "$debug_file" ]; then
     echo "set args " ${@:+"$@"} >> $debug_file
 
     title="$prog.$HOST"
+fi
+
+if [ -n "$valgrind" ]; then
+
+    log "Executing: valgrind -v --leak-check=yes --db-attach=yes --db-command=\"gdb -x $debug_file -nw %f %p\" $prog $*"
+    valgrind -v --leak-check=yes --db-attach=yes --db-command="gdb -x $debug_file -nw %f %p" $prog $*
+
+    rm -f $debug_file
+
+elif [ -n "$debug_file" ]; then
+
     log "Executing: xterm -title $title -e gdb -x $debug_file $prog"
     xterm -title $title -e gdb -x $debug_file $prog
 

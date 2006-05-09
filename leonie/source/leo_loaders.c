@@ -168,6 +168,11 @@ leo_default_loader(p_leo_settings_t settings,
 	    tbx_arguments_append_cstring(args, "-d");
 	  }
 
+	if (settings->valgrind_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-vg");
+	  }
+
 	if (settings->xterm_mode)
 	  {
 	    tbx_arguments_append_cstring(args, "-x");
@@ -413,6 +418,11 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	if (settings->gdb_mode)
 	  {
 	    tbx_arguments_append_cstring(args, "-d");
+	  }
+
+	if (settings->valgrind_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-vg");
 	  }
 
 	if (settings->xterm_mode)
@@ -810,6 +820,11 @@ leo_bipload_loader(p_leo_settings_t settings,
       if (settings->gdb_mode)
 	{
 	  tbx_arguments_append_cstring(args, "-d");
+	}
+
+      if (settings->valgrind_mode)
+	{
+	  tbx_arguments_append_cstring(args, "-vg");
 	}
 
       if (settings->xterm_mode)

@@ -144,8 +144,14 @@ leo_help(void)
   DISP("");
   __leo_option_help("-d", "",
 		    "Open session processes in gdb           (implies  -x)");
+  __leo_option_help("-vg", "",
+		    "Open session processes in valgrind      (implies  -x)");
   __leo_option_help("[--d]", "",
 		    "Do not open session processes in gdb");
+  __leo_option_help("-vg", "",
+		    "Open session processes in valgrind      (implies  -x)");
+  __leo_option_help("[--vg]", "",
+		    "Do not open session processes in valgrind");
   DISP("");
   __leo_option_help("-e", "",
 		    "Export PATH, PM2_ROOT and LEO_XTERM     to client nodes");

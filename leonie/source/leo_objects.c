@@ -36,14 +36,15 @@ leo_settings_init(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(leo_settings_t));
 
-  object->gdb_mode    = tbx_false;
-  object->xterm_mode  = tbx_true;
-  object->log_mode    = tbx_false;
-  object->pause_mode  = tbx_true;
-  object->smp_mode    = tbx_false;
-  object->export_mode = tbx_false;
-  object->wait_mode   = tbx_false;
-  object->env_mode    = tbx_false; //GM
+  object->gdb_mode      = tbx_false;
+  object->xterm_mode    = tbx_true;
+  object->log_mode      = tbx_false;
+  object->pause_mode    = tbx_true;
+  object->smp_mode      = tbx_false;
+  object->export_mode   = tbx_false;
+  object->wait_mode     = tbx_false;
+  object->env_mode      = tbx_false; //GM
+  object->valgrind_mode = tbx_false;
   LOG_OUT();
 
   return object;

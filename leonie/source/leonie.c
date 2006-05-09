@@ -172,6 +172,17 @@ process_command_line(int    argc,
 	      settings->log_mode   = tbx_false;
 	      settings->pause_mode = tbx_false;
 	    }
+	  else if (tbx_argit_arg_equals("-vg"))
+	    {
+	      settings->valgrind_mode = tbx_true;
+	      settings->xterm_mode    = tbx_true;
+	      settings->log_mode      = tbx_false;
+	      settings->pause_mode    = tbx_false;
+	    }
+	  else if (tbx_argit_arg_equals("--vg"))
+	    {
+	      settings->valgrind_mode = tbx_false;
+	    }
 	  else if (tbx_argit_arg_equals("--d"))
 	    {
 	      settings->gdb_mode    = tbx_false;
@@ -353,7 +364,7 @@ main(int    argc,
   TRACE("== Freeing data structures");
   directory_exit(leonie);
 
-  if (leonie->settings->pause_mode || leonie->settings->gdb_mode)
+  if (leonie->settings->pause_mode || leonie->settings->gdb_mode || leonie->settings->valgrind_mode)
     {
       DISP("Session cleaned");
       getchar();

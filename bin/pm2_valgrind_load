@@ -1,0 +1,46 @@
+#!/bin/sh
+##########
+
+# Re-ajoute dans le CVS pour compatibilite avec Leonie/MadIII
+
+# $1... = command and arguments
+
+num=0
+while [ -f /tmp/pm2debug.$num ] ; do
+    num=`expr $num + 1`
+done
+file=/tmp/pm2debug.$num
+prog=$1
+shift
+
+echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
+args=""
+while [ $# -gt 0 ] ; do
+    args="$args '$1'"
+    save_args="$save_args $1"
+    shift
+done
+
+DISPLAY=${DISPLAY:-':0'}
+export DISPLAY
+
+LEO_XTERM=${LEO_XTERM:-'xterm'}
+
+echo "set args $args" > $file
+title="$prog.$HOST"
+echo "set environment DISPLAY $DISPLAY" >> $file
+
+#. "$PM2_ROOT/bin/pm2_arch" --source-mode
+for i in $_PM2CONFIG_MODULES ; do
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+done
+
+[ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
+
+${LEO_XTERM} -title $title -e valgrind -v --leak-check=yes --db-attach=yes --db-command="gdb -x $file -nw %f %p" $prog $save_args
+
+rm -f $file
+

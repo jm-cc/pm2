@@ -86,7 +86,7 @@ unsigned marcel_topo_max_arity = 0;
 #endif
 
 void ma_set_nbprocessors(void) {
-	// Détermination du nombre de processeurs disponibles
+	// Dï¿½ermination du nombre de processeurs disponibles
 	marcel_nbprocessors = ma_nbprocessors();
 	mdebug("%d processors available\n", marcel_nbprocessors);
 }
@@ -197,6 +197,13 @@ static void __marcel_init look_cpuinfo(void) {
 		numdies = 1;
 		proc_physid[0] = maxphysid = 0;
 	} else
+
+	memset(dienum,0,sizeof(dienum));
+	memset(diecpus,0,sizeof(diecpus));
+
+	if (maxphysid == -1)
+		proc_physid[0] = maxphysid = 0;
+
 	/* normalize die numbers */
 	for (cpu=0; cpu <= processor; cpu++) {
 		if (!dienum[proc_physid[cpu]]) {
@@ -209,6 +216,8 @@ static void __marcel_init look_cpuinfo(void) {
 
 	if (numdies>1)
 		mdebug("%d dies\n", numdies);
+
+	int diedone[numdies];
 
 	if (really_dies) {
 		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+1)*sizeof(*die_level))));
@@ -230,11 +239,14 @@ static void __marcel_init look_cpuinfo(void) {
 				j++;
 			}
 		}
+	}
 
 		marcel_vpmask_empty(&die_level[j].vpset);
 
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
+	int corenum[numdies*(maxcoreid+1)];
+	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
 
 	memset(corenum,0,sizeof(corenum));
 	memset(corecpus,0,sizeof(corecpus));
@@ -281,14 +293,14 @@ static void __marcel_init look_cpuinfo(void) {
 				j++;
 			}
 		}
+	}
 
-		marcel_vpmask_empty(&core_level[j].vpset);
+	marcel_vpmask_empty(&core_level[j].vpset);
 
 #ifdef MARCEL_SMT_IDLE
-		marcel_topo_core_level =
+	marcel_topo_core_level =
 #endif
-		marcel_topo_levels[discovering_level++]=core_level;
-	}
+	marcel_topo_levels[discovering_level++]=core_level;
 }
 #endif
 

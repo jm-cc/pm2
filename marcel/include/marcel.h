@@ -134,10 +134,6 @@ TBX_VISIBILITY_POP
 
 //#include "marcel_alias.h"
 
-//#ifdef AIX_SYS
-//#include <time.h>
-//#endif
-
 #include "tbx_debug.h"
 
 /* ================= included files ================= */

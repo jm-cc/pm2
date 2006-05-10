@@ -645,7 +645,7 @@ mad_tcp_receive_buffer(p_mad_link_t    lnk,
 
 void
 mad_tcp_send_buffer_group_1(p_mad_link_t         lnk,
-			  p_mad_buffer_group_t buffer_group)
+			    p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
@@ -667,7 +667,7 @@ mad_tcp_send_buffer_group_1(p_mad_link_t         lnk,
 
 void
 mad_tcp_receive_sub_buffer_group_1(p_mad_link_t         lnk,
-				 p_mad_buffer_group_t buffer_group)
+				   p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
@@ -758,7 +758,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
 
 void
 mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
-				 p_mad_buffer_group_t buffer_group)
+				   p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))

@@ -17,7 +17,7 @@
 /*
  * This file is used as linker script, needs be included first while linking.
  */
-#if !defined(LINUX_SYS) && !defined(GNU_SYS)
+#if !defined(LINUX_SYS) && !defined(GNU_SYS) && !defined(OSF_SYS)
 #include <sys/types.h>
 #include "tbx_macros.h"
 #include "tbx_compiler.h"

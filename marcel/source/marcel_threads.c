@@ -244,7 +244,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
 		new_task->number = ma_atomic_dec_return(&norun_pid);
 	}
-	PROF_EVENT2(set_thread_number,new_task,new_task->number);
+	PROF_EVENT2_ALWAYS(set_thread_number,new_task,new_task->number);
 	MTRACE("Creation", new_task);
 	
 	//PROF_IN_EXT(newborn_thread);

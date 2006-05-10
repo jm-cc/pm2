@@ -42,30 +42,31 @@
 
 /* bubbles / threads aspect */
 
-#define CURVE 20.
 #define RQ_XMARGIN 20.
 #define RQ_YMARGIN 10.
 
 #define RATE 16. /* frame rate */
-#define OPTIME 0.5 /* Operation time */
-#define DELAYTIME 0.2 /* FXT delay between switches */
-
-#define BUBBLETHICK 4
-#define THREADTHICK 4
-#define RQTHICK 4
 
 #define BSIZE 30 /* Button size */
 
 #define DISPPRIO 0
 
+static float thick = 4.;
+static float CURVE = 20.;
+static float OPTIME = 0.5; /* Operation time */
+#define DELAYTIME (OPTIME/2.) /* FXT delay between switches */
+#define BUBBLETHICK thick
+#define THREADTHICK thick
+#define RQTHICK thick
+
 /* movie size */
 
-/* X */
-#define MOVIEX 1024.
+static int MOVIEX = 1024;
+static int MOVIEY = 400;
 
-/* Y */
-#define MOVIEY 400.
-
+static int playing = 1, verbose = 0;
+static char *fontfile = "/usr/share/libming/fonts/Timmons.fdb";
+#define verbprintf(fmt,...) do { if (verbose) printf(fmt, ## __VA_ARGS__); } while(0);
 
 
 /*******************************************************************************
@@ -104,6 +105,7 @@
 #include <ming.h>
 #include <math.h>
 #include <search.h>
+#include <getopt.h>
 
 #ifdef FXT
 #define FUT
@@ -158,13 +160,6 @@ SWFMovie movie;
 SWFAction stop;
 SWFFont font;
 
-static int playing =
-#ifdef FUT_START_PLAYING
-	0
-#else
-	1
-#endif
-;
 
 void nextFrame(SWFMovie movie) {
 	if (playing)
@@ -517,10 +512,10 @@ thread_t *newThreadPtr (uint64_t ptr, rq_t *initrq) {
 }
 
 void printfThread(uint64_t ptr, thread_t *t) {
-	printf("thread ");
+	verbprintf("thread ");
 	if (t->name)
-		printf("%s ",t->name);
-	printf("(%"PRIx64":%p)",ptr,t);
+		verbprintf("%s ",t->name);
+	verbprintf("(%"PRIx64":%p)",ptr,t);
 }
 
 thread_t *getThread (uint64_t ptr) {
@@ -1548,25 +1543,77 @@ static void sig(int sig) {
 	error("got signal %d\n", sig);
 }
 
+static void usage(const char *argv0) {
+	fprintf(stderr,"usage: %s [options] [ prof_file ]\n", argv0);
+	fprintf(stderr,"  -f fontfile		use the specified fontfile\n");
+	fprintf(stderr,"  -d			delay the animation start to the START_PLAYING event\n");
+	fprintf(stderr,"  -v			verbose log\n");
+	fprintf(stderr,"  -x width		movie width\n");
+	fprintf(stderr,"  -y height		movie height\n");
+	fprintf(stderr,"  -t thickness		thread/bubble/runqueue thickness\n");
+	fprintf(stderr,"  -c curve		curve size\n");
+	fprintf(stderr,"  -o optime		operation time (in sec.)\n");
+}
+
 int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
-	/* choose whatever font you want */
 	FILE *f;
 	int i;
+	char c;
 
-#ifdef FXT
-	if (argc<=1) {
-		fprintf(stderr,"I need a profile trace file name as argument\n");
-		exit(1);
-	}
-#endif
-	
+	while((c=getopt(argc,argv,":fdvx:y:t:c:o:h")) != EOF)
+		switch(c) {
+		case 'f':
+			fontfile = optarg;
+			break;
+		case 'd':
+			// delayed start
+			playing = 0;
+			break;
+		case 'v':
+			verbose = 1;
+			break;
+
+#define GETVAL(var, f) \
+			if ((var = ato##f(optarg)) <= 0) { \
+				fprintf(stderr,"bad "#var" '%s'\n", optarg); \
+				exit(1); \
+			}
+		case 'x':
+			GETVAL(MOVIEX,i)
+			break;
+		case 'y':
+			GETVAL(MOVIEY,i)
+			break;
+		case 't':
+			GETVAL(thick,f)
+			break;
+		case 'c':
+			GETVAL(CURVE,f)
+			break;
+		case 'o':
+			GETVAL(OPTIME,f)
+			break;
+		case ':':
+			fprintf(stderr,"missing parameter to switch %c\n", optopt);
+		case '?':
+			usage(argv[0]);
+			exit(1);
+		case 'h':
+			usage(argv[0]);
+			exit(0);
+		}
+
 	Ming_init();
 
 	Ming_setErrorFunction(error);
 	signal(SIGSEGV,sig);
 	signal(SIGINT,sig);
-	f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
+	f = fopen(fontfile,"r");
+	if (!f) {
+		perror("could not open font file");
+		fprintf(stderr,"(tried %s. Use -f option for changing this)\n",fontfile);
+	}
 
 	/* pause macro */
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
@@ -1645,6 +1692,7 @@ int main(int argc, char *argv[]) {
  * FXT: automatically generated from trace
  */
 #ifdef FXT
+if (optind != argc) {
 	fxt_t fut;
 	struct fxt_ev ev;
 	unsigned nrqlevels = 0, *rqnums = NULL;
@@ -1652,7 +1700,13 @@ int main(int argc, char *argv[]) {
 	unsigned keymask = 0;
 	int ret;
 
-	if (!(fut = fxt_open(argv[1]))) {
+	if (optind != argc-1) {
+		fprintf(stderr,"too many files, only one accepted\n");
+		usage(argv[0]);
+		exit(1);
+	}
+
+	if (!(fut = fxt_open(argv[optind]))) {
 		perror("fxt_open");
 		exit(1);
 	}
@@ -1663,61 +1717,47 @@ int main(int argc, char *argv[]) {
 		if (ev.ev64.code == FUT_KEYCHANGE_CODE)
 			keymask = ev.ev64.param[0];
 		switch (ev.ev64.code) {
+#ifdef BUBBLE_SCHED_NEW
 			case BUBBLE_SCHED_NEW: {
 				bubble_t *b = newBubblePtr(ev.ev64.param[0], norq);
-				printf("new bubble %p -> %p\n", (void *)(intptr_t)ev.ev64.param[0], b);
+				verbprintf("new bubble %p -> %p\n", (void *)(intptr_t)ev.ev64.param[0], b);
 				showEntity(&b->entity);
 				break;
 			}
 			case SCHED_SETPRIO: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				e->prio = ev.ev64.param[1];
-				printf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
-				break;
-			}
-#ifdef BUBBLE_SCHED_CLOSE
-			case BUBBLE_SCHED_CLOSE: {
-				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) close\n", (void *)(intptr_t)ev.ev64.param[0],b);
-				break;
-			}
-#endif
-#ifdef BUBBLE_SCHED_CLOSING
-			case BUBBLE_SCHED_CLOSING: {
-				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) closing\n", (void *)(intptr_t)ev.ev64.param[0],b);
-				break;
-			}
-#endif
-#ifdef BUBBLE_SCHED_CLOSED
-			case BUBBLE_SCHED_CLOSED: {
-				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) closed\n", (void *)(intptr_t)ev.ev64.param[0],b);
-				break;
-			}
-#endif
-			case BUBBLE_SCHED_SWITCHRQ: {
-				entity_t *e = getEntity(ev.ev64.param[0]);
-				rq_t *rq = getRunqueue(ev.ev64.param[1]);
-				printf("%s %p(%p) switching to %p (%p)\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
-				switchRunqueues(rq, e);
+				verbprintf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
 				break;
 			}
 #ifdef BUBBLE_SCHED_EXPLODE
+			case BUBBLE_SCHED_CLOSE: {
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				verbprintf("bubble %p(%p) close\n", (void *)(intptr_t)ev.ev64.param[0],b);
+				break;
+			}
+			case BUBBLE_SCHED_CLOSING: {
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				verbprintf("bubble %p(%p) closing\n", (void *)(intptr_t)ev.ev64.param[0],b);
+				break;
+			}
+			case BUBBLE_SCHED_CLOSED: {
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				verbprintf("bubble %p(%p) closed\n", (void *)(intptr_t)ev.ev64.param[0],b);
+				break;
+			}
 			case BUBBLE_SCHED_EXPLODE: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) exploding on rq %p\n", (void *)(intptr_t)ev.ev64.param[0],b,b->entity.holder);
+				verbprintf("bubble %p(%p) exploding on rq %p\n", (void *)(intptr_t)ev.ev64.param[0],b,b->entity.holder);
 				bubbleExplode(b);
 				break;
 			}
-#endif
-#ifdef BUBBLE_SCHED_GOINGBACK
 			case BUBBLE_SCHED_GOINGBACK: {
 				uint64_t t = ev.ev64.param[0];
 				thread_t *e = getThread(t);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
-				printf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
+				verbprintf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 #ifndef TREES
 				/* n'a pas de sens en représentation arbresque */
 				bubbleInsertThread(b,e);
@@ -1725,10 +1765,17 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 #endif
+			case BUBBLE_SCHED_SWITCHRQ: {
+				entity_t *e = getEntity(ev.ev64.param[0]);
+				rq_t *rq = getRunqueue(ev.ev64.param[1]);
+				verbprintf("%s %p(%p) switching to %p (%p)\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
+				switchRunqueues(rq, e);
+				break;
+			}
 			case BUBBLE_SCHED_INSERT_BUBBLE: {
 				bubble_t *e = getBubble(ev.ev64.param[0]);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
-				printf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
+				verbprintf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertBubble(b,e);
 				break;
 			}
@@ -1737,23 +1784,24 @@ int main(int argc, char *argv[]) {
 				thread_t *e = getThread(t);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
-				printf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
+				verbprintf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertThread(b,e);
 				break;
 			}
 			case BUBBLE_SCHED_WAKE: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
 				rq_t *rq = getRunqueue(ev.ev64.param[1]);
-				printf("bubble %p(%p) waking up on runqueue %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], b, (void *)(intptr_t)ev.ev64.param[1], rq);
+				verbprintf("bubble %p(%p) waking up on runqueue %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], b, (void *)(intptr_t)ev.ev64.param[1], rq);
 				switchRunqueues(rq, &b->entity);
 				break;
 			}
 			case BUBBLE_SCHED_JOIN: {
 				bubble_t *b = getBubble(ev.ev64.param[0]);
-				printf("bubble %p(%p) join\n", (void *)(intptr_t)ev.ev64.param[0], b);
+				verbprintf("bubble %p(%p) join\n", (void *)(intptr_t)ev.ev64.param[0], b);
 				delBubble(b);
 				break;
 			}
+#endif
 			case FUT_RQS_NEWLEVEL: {
 				unsigned num = ev.ev64.param[0];
 				unsigned rqlevel = nrqlevels++;
@@ -1768,7 +1816,7 @@ int main(int argc, char *argv[]) {
 						,MOVIEX,150);
 				for (i=0;i<num;i++)
 					showEntity(&rqs[rqlevel][i].entity);
-				printf("new runqueue level %u with %d rqs\n", rqlevel, num);
+				verbprintf("new runqueue level %u with %d rqs\n", rqlevel, num);
 				break;
 			}
 			case FUT_RQS_NEWLWPRQ: {
@@ -1776,7 +1824,7 @@ int main(int argc, char *argv[]) {
 				unsigned rqlevel = nrqlevels-1;
 				/* eux peuvent être dans le désordre */
 				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
-				printf("new lwp runqueue %d at %p -> %p\n",rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+				verbprintf("new lwp runqueue %d at %p -> %p\n",rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
 			}
 			case FUT_RQS_NEWRQ: {
@@ -1785,11 +1833,11 @@ int main(int argc, char *argv[]) {
 				if (rqlevel == -1) {
 					rqnum = 0;
 					newPtr(ev.ev64.param[1],norq);
-					printf("dontsched runqueue %u.%u at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],norq);
+					verbprintf("dontsched runqueue %u.%u at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],norq);
 				} else {
 					rqnum = rqnums[rqlevel]++;
 					newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
-					printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+					verbprintf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				}
 				break;
 			}
@@ -1819,7 +1867,7 @@ int main(int argc, char *argv[]) {
 #ifdef FUT_START_PLAYING
 			case FUT_START_PLAYING: {
 				playing = 1;
-				printf("start playing\n");
+				verbprintf("start playing\n");
 				break;
 			}
 #endif
@@ -1828,9 +1876,9 @@ int main(int argc, char *argv[]) {
 				case FUT_THREAD_BIRTH_CODE: {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = newThreadPtr(th, norq);
-					printf("new ");
+					verbprintf("new ");
 					printfThread(th,t);
-					printf("\n");
+					verbprintf("\n");
 					showEntity(&t->entity);
 					break;
 				}
@@ -1838,7 +1886,7 @@ int main(int argc, char *argv[]) {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = getThread(th);
 					printfThread(th,t);
-					printf(" death\n");
+					verbprintf(" death\n");
 					delThread(t);
 					pause(DELAYTIME);
 					delPtr(ev.ev64.param[0]);
@@ -1857,7 +1905,7 @@ int main(int argc, char *argv[]) {
 					ptr[3] = ev.ev64.param[4];
 					name[15] = 0;
 					printfThread(th,t);
-					printf(" named %s\n", name);
+					verbprintf(" named %s\n", name);
 					t->name=strdup(name);
 					break;
 				}
@@ -1866,7 +1914,7 @@ int main(int argc, char *argv[]) {
 					thread_t *t = getThread(th);
 					int id = ev.ev64.param[1];
 					printfThread(th,t);
-					printf(" id %d\n", id);
+					verbprintf(" id %d\n", id);
 					t->id=id;
 					break;
 				}
@@ -1879,7 +1927,7 @@ int main(int argc, char *argv[]) {
 					thread_t *t = getThread(th);
 					if (t->entity.type!=THREAD) gasp();
 					printfThread(th,t);
-					printf(" going to sleep\n");
+					verbprintf(" going to sleep\n");
 					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
@@ -1893,9 +1941,9 @@ int main(int argc, char *argv[]) {
 					thread_t *tw = getThread(thw);
 					if (t->entity.type!=THREAD) gasp();
 					printfThread(th,t);
-					printf(" waking up\n");
+					verbprintf(" waking up\n");
 					printfThread(thw,tw);
-					printf("\n");
+					verbprintf("\n");
 					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
@@ -1906,7 +1954,7 @@ int main(int argc, char *argv[]) {
 				case SCHED_RESCHED_LWP: {
 					int from = ev.ev64.param[0];
 					int to = ev.ev64.param[1];
-					printf("lwp %d rescheduling lwp %d\n",from,to);
+					verbprintf("lwp %d rescheduling lwp %d\n",from,to);
 				}
 #endif
 				case FUT_SWITCH_TO_CODE: {
@@ -1917,11 +1965,11 @@ int main(int argc, char *argv[]) {
 					if (tprev==tnext) gasp();
 					if (tprev->entity.type!=THREAD) gasp();
 					if (tnext->entity.type!=THREAD) gasp();
-					printf("switch from ");
+					verbprintf("switch from ");
 					printfThread(thprev,tprev);
-					printf(" to ");
+					verbprintf(" to ");
 					printfThread(thnext,tnext);
-					printf("\n");
+					verbprintf("\n");
 					if (tprev->state == THREAD_RUNNING) {
 						tprev->state = THREAD_SLEEPING;
 						updateEntity(&tprev->entity);
@@ -1955,10 +2003,10 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				default:
-					printf("%16"PRIu64" %"PRIx64" %p %010"PRIx64" %1u",ev.ev64.time ,ev.ev64.code, (void*)(uintptr_t)ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
+					verbprintf("%16"PRIu64" %"PRIx64" %p %010"PRIx64" %1u",ev.ev64.time ,ev.ev64.code, (void*)(uintptr_t)ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
 					for (i=0;i<ev.ev64.nb_params;i++)
-						printf(" %010"PRIx64, ev.ev64.param[i]);
-					printf("\n");
+						verbprintf(" %010"PRIx64, ev.ev64.param[i]);
+					verbprintf("\n");
 					break;
 			}
 		}
@@ -1977,8 +2025,10 @@ int main(int argc, char *argv[]) {
 		case FXT_EV_TYPEERROR: fprintf(stderr,"wrong trace word size\n"); break;
 	}
 	SWFMovie_save(movie,"autobulles.swf");
-	exit(0);
-#else
+} else
+#endif /* FXT */
+{
+
 
 /*******************************************************************************
  * Manual build
@@ -2184,7 +2234,7 @@ int main(int argc, char *argv[]) {
 #endif /* SHOWPRIO */
 	}
 	SWFMovie_save(movie,"bulles.swf");
+}
 
 	return 0;
-#endif /* FXT */
 }

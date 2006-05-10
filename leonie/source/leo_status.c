@@ -149,7 +149,7 @@ leo_help(void)
   __leo_option_help("[--d]", "",
 		    "Do not open session processes in gdb");
   __leo_option_help("-vg", "",
-		    "Open session processes in valgrind      (implies  -x)");
+		    "Open session processes in valgrind      (implies  -x and -p)");
   __leo_option_help("[--vg]", "",
 		    "Do not open session processes in valgrind");
   DISP("");

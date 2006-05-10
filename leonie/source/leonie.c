@@ -177,7 +177,7 @@ process_command_line(int    argc,
 	      settings->valgrind_mode = tbx_true;
 	      settings->xterm_mode    = tbx_true;
 	      settings->log_mode      = tbx_false;
-	      settings->pause_mode    = tbx_false;
+	      settings->pause_mode    = tbx_true;
 	    }
 	  else if (tbx_argit_arg_equals("--vg"))
 	    {

@@ -40,7 +40,7 @@ done
 
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
 
-${LEO_XTERM} -title $title -e valgrind -v --leak-check=yes --db-attach=yes --db-command="gdb -x $file -nw %f %p" $prog $save_args
+${LEO_XTERM} -title $title -e pm2_wrapper_valgrind valgrind -v --leak-check=yes --db-attach=yes --db-command="gdb -x $file -nw %f %p" $prog $save_args
 
 rm -f $file
 

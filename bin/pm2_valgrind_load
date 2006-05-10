@@ -40,7 +40,14 @@ done
 
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
 
-${LEO_XTERM} -title $title -e pm2_wrapper_valgrind valgrind -v --show-reachable=yes --leak-check=yes --db-attach=yes --db-command="gdb -x $file -nw %f %p" $prog $save_args
+VALGRIND_OPTIONS=${PM2_VALGRIND_OPTIONS:--v --show-reachable=yes --leak-check=yes --db-attach=yes}
+if [ "$PM2_XMODE" == on ] ; then
+    ${LEO_XTERM} -title $title -e pm2_wrapper_valgrind valgrind --db-command="gdb -x $file -nw %f %p" $VALGRIND_OPTIONS $prog $save_args
+elif [ "${PM2_LOGMODE}" == on ]; then
+    pm2_logload valgrind $VALGRIND_OPTIONS $prog $save_args
+else
+    pm2_wrapper_valgrind valgrind --db-command="gdb -x $file -nw %f %p" $VALGRIND_OPTIONS $prog $save_args
+fi
 
 rm -f $file
 

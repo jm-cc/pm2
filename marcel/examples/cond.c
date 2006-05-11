@@ -24,7 +24,7 @@ marcel_sem_t sem;
 
 any_t f(any_t arg)
 {
-  register int n = (int)arg;
+  register int n = (int)(intptr_t)arg;
   tbx_tick_t t1, t2;
 
   marcel_mutex_lock(&mutex);
@@ -37,7 +37,7 @@ any_t f(any_t arg)
   TBX_GET_TICK(t2);
   marcel_mutex_unlock(&mutex);
 
-  printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(int)arg);
+  printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(intptr_t)arg);
   return NULL;
 }
 
@@ -59,7 +59,7 @@ void bench_cond(unsigned nb)
   marcel_cond_init(&cond, NULL);
   marcel_mutex_init(&mutex, NULL);
   marcel_sem_init(&sem, 0);
-  marcel_create(&pid, NULL, f, (any_t)n);
+  marcel_create(&pid, NULL, f, (any_t)(intptr_t)n);
 
   marcel_sem_P(&sem);
   marcel_mutex_lock(&mutex);

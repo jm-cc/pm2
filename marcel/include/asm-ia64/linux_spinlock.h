@@ -44,7 +44,7 @@ typedef struct {
 
 #section marcel_macros
 
-#define MA_SPIN_LOCK_UNLOCKED			(ma_spinlock_t) { 0 }
+#define MA_SPIN_LOCK_UNLOCKED			{ 0 }
 #define ma_spin_lock_init(x)			((x)->lock = 0)
 
 

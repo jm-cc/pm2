@@ -20,6 +20,8 @@
 #define MA_FILE_DEBUG init
 #include "marcel.h"
 #include "tbx_compiler.h"
+#include <sys/utsname.h>
+#include <string.h>
 
 /*
  * Begin: added by O.A.
@@ -296,6 +298,16 @@ int main(int argc, char *argv[])
 	static int __argc;
 	static char **__argv;
 	unsigned long new_sp;
+
+#ifdef LINUX_SYS
+	struct utsname utsname;
+
+	uname(&utsname);
+	if (strncmp(utsname.release, LINUX_VERSION, strlen(LINUX_VERSION))) {
+		fprintf(stderr,"Marcel was compiled for Linux "LINUX_VERSION", but you are running Linux %s, can't continue\n",utsname.version);
+		exit(1);
+	}
+#endif
 
 #ifdef MAD2
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);

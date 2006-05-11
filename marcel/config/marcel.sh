@@ -15,5 +15,9 @@ if [ "$PM2_SYS" = SOLARIS_SYS ]; then
     fi
 fi
 
-PM2_MARCEL_GENERATE_INCLUDE=true
+if [ "$PM2_SYS" = LINUX_SYS ]; then
+    VERSION=`uname -r | cut -d . -f 1-2`
+    PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -DLINUX_VERSION=\"\\\"$VERSION\\\"\""
+fi
 
+PM2_MARCEL_GENERATE_INCLUDE=true

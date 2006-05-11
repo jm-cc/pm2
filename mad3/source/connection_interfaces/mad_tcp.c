@@ -76,6 +76,68 @@ typedef struct s_mad_tcp_link_specific
 
 
 /*
+ * forward declarations of driver functions
+ * ----------------------------------------
+ */
+static void
+mad_tcp_driver_init(p_mad_driver_t, int *, char ***);
+
+static void
+mad_tcp_adapter_init(p_mad_adapter_t);
+
+static void
+mad_tcp_channel_init(p_mad_channel_t);
+
+static void
+mad_tcp_before_open_channel(p_mad_channel_t);
+
+static void
+mad_tcp_connection_init(p_mad_connection_t,
+			p_mad_connection_t);
+
+static void
+mad_tcp_link_init(p_mad_link_t);
+
+static void
+mad_tcp_accept(p_mad_connection_t,
+	       p_mad_adapter_info_t);
+
+static void
+mad_tcp_connect(p_mad_connection_t,
+	       p_mad_adapter_info_t);
+
+static void
+mad_tcp_after_open_channel(p_mad_channel_t);
+
+static void
+mad_tcp_disconnect(p_mad_connection_t);
+
+#ifdef MAD_MESSAGE_POLLING
+static p_mad_connection_t
+mad_tcp_poll_message(p_mad_channel_t);
+#endif /* MAD_MESSAGE_POLLING */
+
+static p_mad_connection_t
+mad_tcp_receive_message(p_mad_channel_t);
+
+static void
+mad_tcp_send_buffer(p_mad_link_t,
+		    p_mad_buffer_t);
+  
+static void
+mad_tcp_receive_buffer(p_mad_link_t,
+		       p_mad_buffer_t *);
+
+static void
+mad_tcp_send_buffer_group(p_mad_link_t,
+			  p_mad_buffer_group_t);
+
+static void
+mad_tcp_receive_sub_buffer_group(p_mad_link_t,
+				 tbx_bool_t,
+				 p_mad_buffer_group_t);
+
+/*
  * static functions
  * ----------------
  */
@@ -268,7 +330,7 @@ mad_tcp_register(p_mad_driver_interface_t interface)
 }
 
 
-void
+static void
 mad_tcp_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   p_mad_tcp_driver_specific_t driver_specific = NULL;
@@ -282,7 +344,7 @@ mad_tcp_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_adapter_init(p_mad_adapter_t adapter)
 {
   p_mad_tcp_adapter_specific_t adapter_specific = NULL;
@@ -319,7 +381,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_channel_init(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
@@ -330,7 +392,7 @@ mad_tcp_channel_init(p_mad_channel_t channel)
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_connection_init(p_mad_connection_t in,
 			p_mad_connection_t out)
 {
@@ -344,7 +406,7 @@ mad_tcp_connection_init(p_mad_connection_t in,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
@@ -355,7 +417,7 @@ mad_tcp_link_init(p_mad_link_t lnk)
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_before_open_channel(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific;
@@ -367,7 +429,7 @@ mad_tcp_before_open_channel(p_mad_channel_t channel)
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_accept(p_mad_connection_t   in,
 	       p_mad_adapter_info_t adapter_info TBX_UNUSED)
 {
@@ -387,7 +449,7 @@ mad_tcp_accept(p_mad_connection_t   in,
 
 }
 
-void
+static void
 mad_tcp_connect(p_mad_connection_t   out,
 		p_mad_adapter_info_t adapter_info)
 {
@@ -419,7 +481,7 @@ mad_tcp_connect(p_mad_connection_t   out,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_after_open_channel(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t  channel_specific = NULL;
@@ -467,7 +529,7 @@ mad_tcp_disconnect(p_mad_connection_t connection)
 }
 
 #ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t
+static p_mad_connection_t
 mad_tcp_poll_message(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
@@ -535,7 +597,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 }
 #endif // MAD_MESSAGE_POLLING
 
-p_mad_connection_t
+static p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
@@ -616,7 +678,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   FAILURE("invalid channel state");
 }
 
-void
+static void
 mad_tcp_send_buffer(p_mad_link_t     lnk,
 		    p_mad_buffer_t   buffer)
 {
@@ -630,7 +692,7 @@ mad_tcp_send_buffer(p_mad_link_t     lnk,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_receive_buffer(p_mad_link_t    lnk,
 		       p_mad_buffer_t *buffer)
 {
@@ -643,7 +705,7 @@ mad_tcp_receive_buffer(p_mad_link_t    lnk,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_send_buffer_group_1(p_mad_link_t         lnk,
 			    p_mad_buffer_group_t buffer_group)
 {
@@ -665,7 +727,7 @@ mad_tcp_send_buffer_group_1(p_mad_link_t         lnk,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_receive_sub_buffer_group_1(p_mad_link_t         lnk,
 				   p_mad_buffer_group_t buffer_group)
 {
@@ -688,7 +750,7 @@ mad_tcp_receive_sub_buffer_group_1(p_mad_link_t         lnk,
 }
 
 
-void
+static void
 mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
 			    p_mad_buffer_group_t buffer_group)
 {
@@ -756,7 +818,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
 				   p_mad_buffer_group_t buffer_group)
 {
@@ -827,7 +889,7 @@ mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
 
 
 
-void
+static void
 mad_tcp_send_buffer_group(p_mad_link_t         lnk,
 			  p_mad_buffer_group_t buffer_group)
 {
@@ -836,7 +898,7 @@ mad_tcp_send_buffer_group(p_mad_link_t         lnk,
   LOG_OUT();
 }
 
-void
+static void
 mad_tcp_receive_sub_buffer_group(p_mad_link_t         lnk,
 				 tbx_bool_t           first_sub_group
 				   __attribute__ ((unused)),

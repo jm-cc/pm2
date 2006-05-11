@@ -72,7 +72,7 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 		       "movl 16(%0), %%esp\n\t"
 		       "movl 20(%0), %0\n\t"
 		       "jmp *%0"
-		       : : "c,d" (buf), "a" (val));
+		       : : "c,d" (buf), "a,a" (val));
   // to make gcc believe us that the above statement doesn't return
   for(;;);
 }

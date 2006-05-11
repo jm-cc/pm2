@@ -106,6 +106,7 @@ static char *fontfile = "/usr/share/libming/fonts/Timmons.fdb";
 #include <math.h>
 #include <search.h>
 #include <getopt.h>
+#include <libgen.h>
 
 #ifdef FXT
 #define FUT
@@ -1543,8 +1544,8 @@ static void sig(int sig) {
 	error("got signal %d\n", sig);
 }
 
-static void usage(const char *argv0) {
-	fprintf(stderr,"usage: %s [options] [ prof_file ]\n", argv0);
+static void usage(char *argv0) {
+	fprintf(stderr,"usage: %s [options] [ prof_file ]\n", basename(argv0));
 	fprintf(stderr,"  -f fontfile		use the specified fontfile\n");
 	fprintf(stderr,"  -d			delay the animation start to the START_PLAYING event\n");
 	fprintf(stderr,"  -v			verbose log\n");

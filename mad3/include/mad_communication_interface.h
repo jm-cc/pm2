@@ -90,107 +90,107 @@ mad_forward_memory_manager_init(int    argc,
 void
 mad_forward_memory_manager_exit(void);
 
-char *
+TBX_INTERNAL char *
 mad_forward_register(p_mad_driver_interface_t driver_interface);
 
-void
+TBX_INTERNAL void
 mad_forward_driver_init(p_mad_driver_t   driver,
                         int              *argc,
                         char           ***argv);
 
-void
+TBX_INTERNAL void
 mad_forward_channel_init(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_connection_init(p_mad_connection_t in,
 			    p_mad_connection_t out);
 
-void
+TBX_INTERNAL void
 mad_forward_link_init(p_mad_link_t lnk);
 
-void
+TBX_INTERNAL void
 mad_forward_before_open_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_after_open_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_disconnect(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_forward_new_message(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_forward_finalize_message(p_mad_connection_t connection);
 
 #ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t
+TBX_INTERNAL p_mad_connection_t
 mad_forward_poll_message(p_mad_channel_t channel);
 #endif // MAD_MESSAGE_POLLING
 
-p_mad_connection_t
+TBX_INTERNAL p_mad_connection_t
 mad_forward_receive_message(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_message_received(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_forward_before_close_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_after_close_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_link_exit(p_mad_link_t link);
 
-void
+TBX_INTERNAL void
 mad_forward_connection_exit(p_mad_connection_t in,
 			    p_mad_connection_t out);
 
-void
+TBX_INTERNAL void
 mad_forward_channel_exit(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_driver_exit(p_mad_driver_t driver);
 
-p_mad_link_t
+TBX_INTERNAL p_mad_link_t
 mad_forward_choice(p_mad_connection_t connection,
 		   size_t             size,
 		   mad_send_mode_t    send_mode,
 		   mad_receive_mode_t receive_mode);
 
-p_mad_buffer_t
+TBX_INTERNAL p_mad_buffer_t
 mad_forward_get_static_buffer(p_mad_link_t lnk);
 
 
-void
+TBX_INTERNAL void
 mad_forward_return_static_buffer(p_mad_link_t   lnk,
 				 p_mad_buffer_t buffer);
 
-void
+TBX_INTERNAL void
 mad_forward_send_buffer(p_mad_link_t   lnk,
 			p_mad_buffer_t buffer);
 
-void
+TBX_INTERNAL void
 mad_forward_receive_buffer(p_mad_link_t    lnk,
 			   p_mad_buffer_t *buffer);
 
-void
+TBX_INTERNAL void
 mad_forward_send_buffer_group(p_mad_link_t         lnk,
 			      p_mad_buffer_group_t buffer_group);
 
-void
+TBX_INTERNAL void
 mad_forward_receive_sub_buffer_group(p_mad_link_t         lnk,
 				     tbx_bool_t __attribute__ ((unused)) first_sub_group,
 				     p_mad_buffer_group_t buffer_group);
 
-void
+TBX_INTERNAL void
 mad_forward_stop_direct_retransmit(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_stop_indirect_retransmit(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_forward_stop_reception(p_mad_channel_t      vchannel,
 			   p_mad_channel_t      channel,
 			   ntbx_process_lrank_t lrank);
@@ -203,114 +203,114 @@ mad_mux_memory_manager_init(int    argc,
 void
 mad_mux_memory_manager_exit(void);
 
-char *
+TBX_INTERNAL char *
 mad_mux_register(p_mad_driver_interface_t interface);
 
-void
+TBX_INTERNAL void
 mad_mux_driver_init(p_mad_driver_t driver,
                     int              *argc,
                     char           ***argv);
 
-void
+TBX_INTERNAL void
 mad_mux_channel_init(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_connection_init(p_mad_connection_t in,
 			    p_mad_connection_t out);
 
-void
+TBX_INTERNAL void
 mad_mux_link_init(p_mad_link_t lnk);
 
-void
+TBX_INTERNAL void
 mad_mux_before_open_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_after_open_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_disconnect(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_mux_new_message(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_mux_finalize_message(p_mad_connection_t connection);
 
 #ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t
+TBX_INTERNAL p_mad_connection_t
 mad_mux_poll_message(p_mad_channel_t channel);
 #endif // MAD_MESSAGE_POLLING
 
-p_mad_connection_t
+TBX_INTERNAL p_mad_connection_t
 mad_mux_receive_message(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_message_received(p_mad_connection_t connection);
 
-void
+TBX_INTERNAL void
 mad_mux_before_close_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_after_close_channel(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_link_exit(p_mad_link_t link);
 
-void
+TBX_INTERNAL void
 mad_mux_connection_exit(p_mad_connection_t in,
 			    p_mad_connection_t out);
 
-void
+TBX_INTERNAL void
 mad_mux_channel_exit(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_driver_exit(p_mad_driver_t driver);
 
-p_mad_link_t
+TBX_INTERNAL p_mad_link_t
 mad_mux_choice(p_mad_connection_t connection,
 		   size_t             size,
 		   mad_send_mode_t    send_mode,
 		   mad_receive_mode_t receive_mode);
 
-p_mad_buffer_t
+TBX_INTERNAL p_mad_buffer_t
 mad_mux_get_static_buffer(p_mad_link_t lnk);
 
 
-void
+TBX_INTERNAL void
 mad_mux_return_static_buffer(p_mad_link_t   lnk,
 				 p_mad_buffer_t buffer);
 
-void
+TBX_INTERNAL void
 mad_mux_send_buffer(p_mad_link_t   lnk,
 			p_mad_buffer_t buffer);
 
-void
+TBX_INTERNAL void
 mad_mux_receive_buffer(p_mad_link_t    lnk,
 			   p_mad_buffer_t *buffer);
 
-void
+TBX_INTERNAL void
 mad_mux_send_buffer_group(p_mad_link_t         lnk,
 			      p_mad_buffer_group_t buffer_group);
 
-void
+TBX_INTERNAL void
 mad_mux_receive_sub_buffer_group(p_mad_link_t         lnk,
                                  tbx_bool_t __attribute__ ((unused))
                                  first_sub_group,
                                  p_mad_buffer_group_t buffer_group);
 
-void
+TBX_INTERNAL void
 mad_mux_stop_indirect_retransmit(p_mad_channel_t channel);
 
-void
+TBX_INTERNAL void
 mad_mux_stop_reception(p_mad_channel_t      xchannel,
 		       p_mad_channel_t      channel,
 		       ntbx_process_lrank_t lrank);
 
-p_mad_channel_t
+TBX_INTERNAL p_mad_channel_t
 mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 			unsigned int    sub);
 
-void
+TBX_INTERNAL void
 mad_mux_add_named_sub_channels(p_mad_channel_t xchannel);
 
 #endif // MARCEL

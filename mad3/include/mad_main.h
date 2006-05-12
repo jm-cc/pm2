@@ -200,7 +200,7 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 TBX_INTERNAL void
 mad_leonie_command_exit(p_mad_madeleine_t   madeleine);
 
-TBX_INTERNAL void
+void
 mad_leonie_print(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
 
 TBX_INTERNAL void

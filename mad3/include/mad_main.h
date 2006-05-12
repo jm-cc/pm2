@@ -146,50 +146,50 @@ mad_pmi_init(p_mad_madeleine_t madeleine);
 #endif /* MAD3_PMI */
 
 // NTBX data transmission wrappers
-void
+TBX_INTERNAL void
 mad_ntbx_send_int(p_ntbx_client_t client,
 		  const int       data);
 
-int
+TBX_INTERNAL int
 mad_ntbx_receive_int(p_ntbx_client_t client);
 
-void
+TBX_INTERNAL void
 mad_ntbx_send_unsigned_int(p_ntbx_client_t    client,
 			   const unsigned int data);
 
-unsigned int
+TBX_INTERNAL unsigned int
 mad_ntbx_receive_unsigned_int(p_ntbx_client_t client);
 
-void
+TBX_INTERNAL void
 mad_ntbx_send_string(p_ntbx_client_t  client,
 		     const char      *string);
 
-char *
+TBX_INTERNAL char *
 mad_ntbx_receive_string(p_ntbx_client_t client);
 
 
-void
+TBX_INTERNAL void
 mad_leonie_send_int(const int data);
 
-int
+TBX_INTERNAL int
 mad_leonie_receive_int(void);
 
-void
+TBX_INTERNAL void
 mad_leonie_send_unsigned_int(const unsigned int data);
 
-unsigned int
+TBX_INTERNAL unsigned int
 mad_leonie_receive_unsigned_int(void);
 
-void
+TBX_INTERNAL void
 mad_leonie_send_string(const char *string);
 
-char *
+TBX_INTERNAL char *
 mad_leonie_receive_string(void);
 
-void
+TBX_INTERNAL void
 mad_leonie_send_string_nolock(const char *string);
 
-char *
+TBX_INTERNAL char *
 mad_leonie_receive_string_nolock(void);
 
 void
@@ -197,16 +197,16 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 			int                 argc,
 			char              **argv);
 
-void
+TBX_INTERNAL void
 mad_leonie_command_exit(p_mad_madeleine_t   madeleine);
 
-void
+TBX_INTERNAL void
 mad_leonie_print(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
 
-void
+TBX_INTERNAL void
 mad_leonie_print_without_nl(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
 
-void
+TBX_INTERNAL void
 mad_leonie_barrier(void);
 
 void
@@ -228,19 +228,19 @@ mad_command_thread_exit(p_mad_madeleine_t madeleine);
 #define LDISP_STR(str, str2) mad_leonie_print(str ": %s" , (char *)(str2))
 
 // Directory transmission
-void
+TBX_INTERNAL void
 mad_dir_directory_get(p_mad_madeleine_t madeleine);
 
-void
-  mad_new_directory_from_leony(p_mad_madeleine_t madeleine);
+TBX_INTERNAL void
+mad_new_directory_from_leony(p_mad_madeleine_t madeleine);
 
-void
-  mad_directory_update(p_mad_madeleine_t madeleine);
+TBX_INTERNAL void
+mad_directory_update(p_mad_madeleine_t madeleine);
 
-void
-  mad_directory_rollback(p_mad_madeleine_t madeleine);
+TBX_INTERNAL void
+mad_directory_rollback(p_mad_madeleine_t madeleine);
 
-int
-  mad_directory_is_updated(p_mad_madeleine_t madeleine);
+TBX_INTERNAL int
+mad_directory_is_updated(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_MAIN_H */

@@ -321,7 +321,7 @@ struct ma_alt_instr {
 #define ma_smp_rmb()	ma_rmb()
 #define ma_smp_wmb()	ma_wmb()
 #define ma_smp_read_barrier_depends()	ma_read_barrier_depends()
-#define ma_set_mb(var, value) do { ma_xchg(&var, value); } while (0)
+#define ma_set_mb(var, value) do { (void) ma_xchg(&var, value); } while (0)
 #else
 #define ma_smp_mb()	ma_barrier()
 #define ma_smp_rmb()	ma_barrier()

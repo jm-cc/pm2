@@ -150,36 +150,47 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 	kill(pid, sig);
 }
 
-void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
+void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
 {
-	ma_atomic_set(lock,1);
+	ma_atomic_set(sem,value);
 }
 
-void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock)
+void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
+{
+	marcel_kthread_sem_init(lock,0,1);
+}
+
+void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 {
 	int newval;
-	if ((newval = ma_atomic_dec_return(lock)) == 0)
+	if ((newval = ma_atomic_dec_return(sem)) >= 0)
 		return;
 	while(1) {
-		if (syscall(__NR_futex, lock, FUTEX_WAIT, newval, NULL) == 0)
+		if (syscall(__NR_futex, sem, FUTEX_WAIT, newval, NULL) == 0)
 			return;
 		if (errno == EWOULDBLOCK)
-			newval = ma_atomic_read(lock);
+			newval = ma_atomic_read(sem);
 		else if (errno != EINTR)
 			MA_BUG();
 	}
 }
+TBX_FUN_ALIAS(void, marcel_kthread_mutex_lock, marcel_kthread_sem_wait, (marcel_kthread_mutex_t *lock), (lock));
 
-void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
+void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
-	if (ma_atomic_inc_return(lock) <= 0)
-		syscall(__NR_futex, lock, FUTEX_WAKE, 1, NULL);
+	if (ma_atomic_inc_return(sem) <= 0)
+		syscall(__NR_futex, sem, FUTEX_WAKE, 1, NULL);
 }
 
-int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
+TBX_FUN_ALIAS(void, marcel_kthread_mutex_unlock, marcel_kthread_sem_post, (marcel_kthread_mutex_t *lock), (lock));
+
+int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 {
+	int oldval = ma_atomic_read(sem);
 	int newval;
-	if ((newval = ma_atomic_xchg(1,0,lock)) == 1)
+	if (oldval <= 0)
+		return EBUSY;
+	if ((newval = ma_atomic_xchg(oldval,oldval-1,sem)) == oldval)
 		return 0;
 	return EBUSY;
 }
@@ -302,6 +313,26 @@ void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
 int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
 {
 	return pthread_mutex_trylock(lock);
+}
+
+void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
+{
+	sem_init(sem,pshared,value);
+}
+
+void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
+{
+	sem_wait(sem);
+}
+
+void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
+{
+	sem_post(sem);
+}
+
+int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
+{
+	return sem_trywait(sem);
 }
 #endif
 

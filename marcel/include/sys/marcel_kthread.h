@@ -20,8 +20,10 @@ typedef void * (*marcel_kthread_func_t)(void *arg);
 
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <pthread.h>
+#   include <semaphore.h>
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;
+typedef sem_t marcel_kthread_sem_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 # else
 #   ifdef SOLARIS_SYS
@@ -32,7 +34,8 @@ typedef thread_t marcel_kthread_t;
 #     include <unistd.h>
 typedef pid_t marcel_kthread_t;
 #depend "asm/linux_atomic.h[marcel_types]"
-typedef ma_atomic_t marcel_kthread_mutex_t;
+typedef ma_atomic_t marcel_kthread_sem_t;
+typedef marcel_kthread_sem_t marcel_kthread_mutex_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER MA_ATOMIC_INIT(1)
 #   else
 #     error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
@@ -64,6 +67,11 @@ void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock);
 void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock);
 void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock);
 int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock);
+
+void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value);
+void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem);
+void marcel_kthread_sem_post(marcel_kthread_sem_t *sem);
+int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem);
 #endif // MA__SMP
 
 

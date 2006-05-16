@@ -19,11 +19,16 @@
 #depend "linux_spinlock.h[types]"
 
 #section marcel_types
+#ifdef MA__LWPS
+#define POLICY_EQUIV
+#else
+#define POLICY_EQUIV = POLICY_GLOBAL
+#endif
 enum policy_t {
 	POLICY_GLOBAL,
-	POLICY_LOCAL,
-	POLICY_HIERARCHICAL,
-	POLICY_BALANCE
+	POLICY_LOCAL POLICY_EQUIV,
+	POLICY_HIERARCHICAL POLICY_EQUIV,
+	POLICY_BALANCE POLICY_EQUIV
 };
 
 typedef struct _ma_allocator_t {

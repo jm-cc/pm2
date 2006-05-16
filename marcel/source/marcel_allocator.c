@@ -121,7 +121,9 @@ void ma_obj_free(ma_allocator_t * allocator, void * obj)
 
 void ma_obj_allocator_fini(ma_allocator_t * allocator)
 {  
+#ifdef MA__LWPS
    int i,j;  
+#endif
 
   switch(allocator->policy) {
   case POLICY_GLOBAL:
@@ -131,6 +133,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
     }
     break;
  
+#ifdef MA__LWPS
  case POLICY_LOCAL:
     for(i=0; i < marcel_nbvps(); ++i)
       {
@@ -149,6 +152,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
       }
     ma_obj_free(level_container_allocator, allocator->container);
     break;
+#endif
   default:
     printf("la politique est mal choisie\n");
     break;    
@@ -157,7 +161,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 
 void ma_obj_allocator_init(ma_allocator_t * allocator)
 {
+#ifdef MA__LWPS
   int i, j;
+#endif
 
   if (!allocator) return;
 
@@ -170,6 +176,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 	ma_container_init(allocator->container, allocator->conservative, allocator->max_size);
 	break;
 
+#ifdef MA__LWPS
       case POLICY_LOCAL: {
 	ma_lwp_t lwp;
 	allocator->container = ma_obj_alloc(lwp_container_allocator);
@@ -193,6 +200,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 	  }
 
 	break;
+#endif
 
       default:
 	printf("La politique n'est pas bien choisie\n");
@@ -220,6 +228,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       return allocator->container;
     }
   
+#ifdef MA__LWPS
   if (allocator->policy == POLICY_LOCAL)
     {
       return ma_per_lwp_self_data((long)allocator->container);
@@ -272,6 +281,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       /* trop-plein, libérer */
       return NULL;
     }
+#endif
   return NULL;
 }
 

@@ -641,8 +641,8 @@ void ma_topo_exit(void) {
 
 __ma_initfunc(topo_discover, MA_INIT_TOPOLOGY, "Finding Topology");
 
-#ifdef MA__NUMA
 static void topology_lwp_init(ma_lwp_t lwp) {
+#ifdef MA__NUMA
 	int i;
 	if (marcel_topo_node_level) {
 		for (i=0; marcel_topo_node_level[i].vpset; i++) {
@@ -670,6 +670,8 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 			}
 		}
 	}
+#endif /* MA__NUMA */
+	ma_per_lwp(lwp_level, lwp) = &marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(lwp)];
 }
 
 static void topology_lwp_start(ma_lwp_t lwp) {
@@ -680,6 +682,5 @@ MA_DEFINE_LWP_NOTIFIER_START(topology, "Topology",
 				  topology_lwp_start, "Activation de la topologie");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
-#endif /* MA__NUMA */
 
 #endif /* MA__LWPS */

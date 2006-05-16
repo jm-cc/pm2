@@ -52,10 +52,6 @@ struct marcel_lwp {
 	ma_runqueue_t dontsched_runqueue;
 #endif
 
-#ifdef MARCEL_SMT_IDLE
-	struct marcel_topo_level *core_level;
-#endif
-
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 	struct drand48_data random_buffer;
 #endif
@@ -105,9 +101,15 @@ struct marcel_lwp {
 
 	//unsigned long process_counts;
 	
+	struct marcel_topo_level
 #ifdef MA__NUMA
-	struct marcel_topo_level *node_level, *cpu_level;
+		*node_level,
+#ifdef MARCEL_SMT_IDLE
+		*core_level,
 #endif
+		*cpu_level,
+#endif
+		*lwp_level;
 	char data[MA_PER_LWP_ROOM];
 };
 

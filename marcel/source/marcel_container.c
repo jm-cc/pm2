@@ -51,39 +51,40 @@ void * ma_container_get(ma_container_t * container)
   ma_node_t * node;
   void * obj;
 
+  if (!container->first_node)
+    return NULL;
+
   ma_lock_container(container);
 
-  /* Si la liste n'est pas vide */
-  if(container->first_node)
+  node = container->first_node;
+
+  if (!node)
     {
-      /* Recupere le premier noeud et le retire de la liste */
-      node = container->first_node;
-
-      container->first_node = node->next_node;
-      obj = node->obj;
-
-      if(container->conservative == 1)
-        {
-          ma_obj_free(ma_node_allocator, node);
-        }
-
-      container->nb_element--;
-
       ma_unlock_container(container);
-      /* Retourne l'objet */
-      return obj;
+      return NULL;
     }
 
-  ma_unlock_container(container);
+  /* Si la liste n'est pas vide */
+  /* Recupere le premier noeud et le retire de la liste */
 
-  /* Aucun objet trouve */
-  return NULL;
+  container->first_node = node->next_node;
+  obj = node->obj;
+
+  if(container->conservative == 1)
+    ma_obj_free(ma_node_allocator, node);
+
+  container->nb_element--;
+
+  ma_unlock_container(container);
+  /* Retourne l'objet */
+  return obj;
 }
 
 void ma_container_fini(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg )
 {
   void * ptr1, * ptr2;
 
+  ma_lock_container(container);
 
   ptr1 = container->first_node;
   

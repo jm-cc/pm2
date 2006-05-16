@@ -372,8 +372,8 @@ static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 extern const __ma_init_info_t ma_init_info_topo_discover;
 #ifdef MA__NUMA
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
-extern const __ma_init_info_t ma_init_info_marcel_topology_call_UP_PREPARE;
 #endif // MA__NUMA
+extern const __ma_init_info_t ma_init_info_marcel_topology_call_UP_PREPARE;
 #endif // MA__LWPS
 extern const __ma_init_info_t ma_init_info_main_thread_init;
 
@@ -473,11 +473,12 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_topo_discover);
 #ifdef MA__NUMA
 		  call_init_function(&ma_init_info_marcel_topology_notifier_register);
-		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif // MA__NUMA
+		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif // MA__LWPS
                 }
                 else if (section == MA_INIT_MAIN_LWP) {
+		  ma_allocator_init();
 #ifdef PROFILE
                   call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
 #endif // PROFILE

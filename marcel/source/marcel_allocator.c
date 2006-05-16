@@ -29,7 +29,6 @@ ma_per_sth_cur_t ma_per_level_cur = MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM
 
 void ma_allocator_init(void)
 {
-
   lwp_container_allocator = ma_new_obj_allocator(1,
                                          (void*(*)(void*)) ma_per_lwp_alloc,
 					 (void *)sizeof(ma_container_t),
@@ -76,7 +75,7 @@ ma_allocator_t * ma_new_obj_allocator(int conservative,
 				       )
 {
   /* Initialisation de la structure de l'allocateur selon les parametres*/
-  ma_allocator_t * allocator = malloc(sizeof(ma_allocator_t));
+  ma_allocator_t * allocator = TBX_MALLOC(sizeof(ma_allocator_t));
   allocator->create = create;
   allocator->create_arg = create_arg;
   allocator->policy = policy;
@@ -92,21 +91,20 @@ ma_allocator_t * ma_new_obj_allocator(int conservative,
 
 void * ma_obj_alloc(ma_allocator_t * allocator) 
 {
-  void * obj;
+  void * obj = NULL;
   ma_container_t * container;
   container = ma_get_container(allocator, ALLOC_METHOD);
   
+  if (container)
   /* Essaye d'obtenir un objet du container */
-  obj = ma_container_get(container);
+    obj = ma_container_get(container);
 
-  if (obj)
-    /* Si on en trouve un c'est bon */
-    return obj;
-  else
-    /* Sinon on doit en allouer un nouveau */
-    return allocator->create(allocator->create_arg);
+  /* Si on en trouve un c'est bon */
+  /* Sinon on doit en allouer un nouveau */
+  if (!obj)
+    obj = allocator->create(allocator->create_arg);
 
-  return NULL;
+  return obj;
 }
 
 void ma_obj_free(ma_allocator_t * allocator, void * obj) 
@@ -115,8 +113,10 @@ void ma_obj_free(ma_allocator_t * allocator, void * obj)
   container = ma_get_container(allocator, FREE_METHOD);
   if (container)
     ma_container_add(container, obj);
-  else
+  else if (allocator->destroy)
     allocator->destroy(obj, allocator->destroy_arg);
+  else
+    MA_WARN_ON(1);
 }
 
 void ma_obj_allocator_fini(ma_allocator_t * allocator)
@@ -142,9 +142,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
   case POLICY_HIERARCHICAL:
     for(j=0; j < marcel_topo_nblevels; ++j)
       {
-        for(i=0; marcel_topo_levels[marcel_topo_nblevels-j-1][i].vpset; ++i)
+        for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	  {
-	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[marcel_topo_nblevels-j-1][i], (long)(allocator->container)),allocator->destroy, allocator->destroy_arg);
+	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[j][i], (long)(allocator->container)),allocator->destroy, allocator->destroy_arg);
 	  }
       }
     ma_obj_free(level_container_allocator, allocator->container);
@@ -159,12 +159,14 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 {
   int i, j;
 
+  if (!allocator) return;
+
   if(!(allocator->init))
     {
 
       switch(allocator->policy) {
       case POLICY_GLOBAL: 
-	allocator->container = malloc(sizeof(ma_container_t));
+	allocator->container = TBX_MALLOC(sizeof(ma_container_t));
 	ma_container_init(allocator->container, allocator->conservative, allocator->max_size);
 	break;
 
@@ -184,9 +186,9 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
        	//allocator->container = (void*)ma_per_level_alloc(sizeof(ma_container_t));	
 	for(j=0; j < marcel_topo_nblevels; ++j)
 	  {
-            for(i=0; marcel_topo_levels[marcel_topo_nblevels-j-1][i].vpset; ++i)
+            for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	      {
-		ma_container_init(ma_per_level_data(&marcel_topo_levels[marcel_topo_nblevels-j-1][i], (long)(allocator->container)), allocator->conservative, allocator->max_size);
+		ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], (long)(allocator->container)), allocator->conservative, allocator->max_size);
 	      }
 	  }
 
@@ -231,8 +233,8 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 
   if (allocator->policy == POLICY_HIERARCHICAL && mode == ALLOC_METHOD)
     {
-     struct marcel_topo_level* niveau_courant = ma_per_lwp(lwp_level, LWP_SELF);
-      do
+      struct marcel_topo_level* niveau_courant = ma_per_lwp(lwp_level, LWP_SELF);
+      while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
 	  container_courant = ma_per_level_data(niveau_courant, (long)allocator->container);
@@ -240,8 +242,8 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 	    return container_courant;
 	  else
 	    niveau_courant = niveau_courant->father;
-	} while(niveau_courant);
-      return ma_per_level_data(ma_per_lwp(lwp_level, LWP_SELF),(long)allocator->container);
+	}
+      return NULL;
     }
   
 
@@ -256,7 +258,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
   if (allocator->policy == POLICY_HIERARCHICAL && mode == FREE_METHOD)
     {
       struct marcel_topo_level* niveau_courant = ma_per_lwp(lwp_level, LWP_SELF);
-      do 
+      while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
 	  container_courant = ma_per_level_data(niveau_courant, (long)allocator->container);
@@ -266,10 +268,9 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 	    }
 	  else
 	    niveau_courant = niveau_courant->father;
-	} while(niveau_courant);
+	}
       /* trop-plein, libérer */
       return NULL;
-	//return ma_per_level_data(ma_per_lwp(lwp_level, LWP_SELF), (long)allocator->container);
     }
   return NULL;
 }
@@ -277,7 +278,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 void * ma_obj_allocator_malloc(void * arg) 
 {
   void * res;
-  res = malloc((size_t)(intptr_t)arg);
+  res = TBX_MALLOC((size_t)(intptr_t)arg);
   return res;
 }
 

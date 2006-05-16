@@ -29,7 +29,7 @@ any_t blocker(any_t arg)
 {
   struct timespec t = { .tv_sec = 2, .tv_nsec = 0};
   marcel_setname(marcel_self(),"blocker");
-  printf("  sleeping %lds\n", marcel_self(), t.tv_sec);
+  printf("  sleeping %lds\n", t.tv_sec);
   while (nanosleep(&t,&t) == -1 && errno == EINTR);
   printf("  slept, trying taking kthread_mutex\n");
   if (marcel_kthread_mutex_trylock(&kthread_mutex)) {

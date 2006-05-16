@@ -166,7 +166,7 @@ unsigned marcel_lwp_add_vp(void)
   if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
     MARCEL_EXCEPTION_RAISE("Too many lwp\n");
 
-  lwp = marcel_malloc_node(sizeof(*lwp), ma_lwp_node[num]);
+  lwp = marcel_malloc_node(sizeof(*lwp) + MA_PER_LWP_ROOM, ma_lwp_node[num]);
   /* initialiser le lwp *avant* de l'enregistrer */
   *lwp = MA_LWP_INITIALIZER(lwp);
 

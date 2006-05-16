@@ -27,6 +27,11 @@ _syscall0(pid_t,gettid)
 #  else
 #    define gettid() syscall(__NR_gettid)
 #  endif
+#  ifdef _syscall2
+_syscall2(int,tkill,pid_t,tid,int,sig)
+#  else
+#    define tkill() syscall(__NR_tkill)
+#  endif
 #endif
 int marcel_gettid(void) {
 #ifdef __NR_gettid
@@ -147,7 +152,7 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-	kill(pid, sig);
+	tkill(pid, sig);
 }
 
 void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
@@ -181,7 +186,6 @@ void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 	if (ma_atomic_inc_return(sem) <= 0)
 		syscall(__NR_futex, sem, FUTEX_WAKE, 1, NULL);
 }
-
 TBX_FUN_ALIAS(void, marcel_kthread_mutex_unlock, marcel_kthread_sem_post, (marcel_kthread_mutex_t *lock), (lock));
 
 int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
@@ -194,6 +198,7 @@ int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 		return 0;
 	return EBUSY;
 }
+TBX_FUN_ALIAS(void, marcel_kthread_mutex_trylock, marcel_kthread_sem_trywait, (marcel_kthread_mutex_t *lock), (lock));
 #else
 
 #error NOT YET IMPLEMENTED

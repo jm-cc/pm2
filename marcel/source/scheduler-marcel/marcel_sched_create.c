@@ -30,6 +30,8 @@ static volatile unsigned * volatile __pm2_profile_active_p = &__pm2_profile_acti
 #define __pm2_profile_active (*__pm2_profile_active_p)
 #endif
 
+void marcel_sched_internal_create_dontstart_son(void) TBX_NORETURN;
+
 int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 		marcel_task_t *new_task,
 		 __const marcel_attr_t *attr,
@@ -78,6 +80,10 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 	marcel_ctx_set_new_stack(new_task, 
 				 new_task->initial_sp,
 				 base_stack);
+
+	marcel_sched_internal_create_dontstart_son();
+}
+void marcel_sched_internal_create_dontstart_son (void) {
 	/* départ du fils, en mode interruption */
 	MTRACE("On new stack", marcel_self());
 	
@@ -101,6 +107,7 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
 
+void marcel_sched_internal_create_start_son(void) TBX_NORETURN;
 int marcel_sched_internal_create_start(marcel_task_t *cur,
 		marcel_task_t *new_task,
 		 __const marcel_attr_t *attr,
@@ -138,7 +145,6 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 		marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
 #endif
 
-	PROF_SWITCH_TO(cur->number, new_task);
 	//PROF_IN_EXT(newborn_thread);
 	
 	/* activer le fils */
@@ -162,11 +168,16 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	}
 	ma_holder_rawunlock(h);
 
+	PROF_SWITCH_TO(cur->number, new_task);
 	marcel_ctx_set_new_stack(new_task,
 				 new_task->initial_sp,
 				 base_stack);
-	/* départ du fils, en mode interruption */
 
+	marcel_sched_internal_create_start_son();
+}
+void marcel_sched_internal_create_start_son(void) {
+	ma_holder_t *h;
+	/* départ du fils, en mode interruption */
 	/* Signaler le changement de thread aux activations */
 	MA_ACT_SET_THREAD(MARCEL_SELF);
 

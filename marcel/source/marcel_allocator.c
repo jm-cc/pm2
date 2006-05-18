@@ -189,8 +189,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
       case POLICY_HIERARCHICAL:
 
-	allocator->container = ma_obj_alloc(level_container_allocator);
-       	//allocator->container = (void*)ma_per_level_alloc(sizeof(ma_container_t));	
+       	allocator->container = (void*)ma_per_level_alloc(sizeof(ma_container_t));	
 	for(j=0; j < marcel_topo_nblevels; ++j)
 	  {
             for(i=0; marcel_topo_levels[j][i].vpset; ++i)

@@ -256,6 +256,7 @@ void marcel_gensched_shutdown(void)
 
 #ifdef MA__SMP
 
+	marcel_sig_stop_itimer();
 
 	if(LWP_SELF != &__main_lwp)
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);

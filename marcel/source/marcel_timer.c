@@ -328,7 +328,7 @@ void marcel_sig_nanosleep(void)
 #endif
 }
 
-static void sig_reset_timer(void)
+void marcel_sig_reset_timer(void)
 {
 	struct itimerval value;
 
@@ -355,7 +355,7 @@ void marcel_settimeslice(unsigned long microsecs)
 		time_slice = microsecs;
 	}
 	marcel_extlib_protect();
-	sig_reset_timer();
+	marcel_sig_reset_timer();
 	marcel_extlib_unprotect();
 	
 	LOG_OUT();
@@ -447,12 +447,12 @@ static void sig_start_timer(ma_lwp_t lwp)
 #ifdef CHAINED_SIGALRM
 	if (IS_FIRST_LWP(lwp))
 #endif
-		sig_reset_timer();
+		marcel_sig_reset_timer();
 	
 	LOG_OUT();
 }
 
-static void sig_stop_itimer(void)
+void marcel_sig_stop_itimer(void)
 {
 	struct itimerval value;
 	memset(&value,0,sizeof(value));
@@ -467,7 +467,9 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-	sig_stop_itimer();
+#ifndef CHAINED_SIGALRM
+	marcel_sig_stop_itimer();
+#endif
 
 	/* à part avec linux <= 2.4, les traitants de signaux ne sont _pas_
 	 * par thread, il faut donc garder le traitant commun jusqu'au bout, en

@@ -41,6 +41,8 @@ void marcel_sig_pause(void);
 void marcel_sig_nanosleep(void);
 void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
+void marcel_sig_reset_timer(void);
+void marcel_sig_stop_timer(void);
 #ifndef MA__TIMER
 #define marcel_sig_pause() (void)0
 #define marcel_sig_enable_interrupts() (void)0

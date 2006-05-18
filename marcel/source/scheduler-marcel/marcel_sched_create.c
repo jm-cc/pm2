@@ -64,6 +64,7 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 	 */
 	if(marcel_ctx_setjmp(cur->ctx_yield) == NORMAL_RETURN) {
 		/* retour dans le père*/
+		marcel_ctx_destroyjmp(cur->ctx_yield);
 		ma_preempt_enable();
 		MTRACE("Father Restart", cur);
 		LOG_OUT();
@@ -97,6 +98,7 @@ void marcel_sched_internal_create_dontstart_son (void) {
 		marcel_ctx_longjmp(SELF_GETMEM(father)->ctx_yield,
 				   NORMAL_RETURN);
 	}
+	MA_THR_DESTROYJMP(marcel_self());
 	MA_THR_RESTARTED(MARCEL_SELF, "Start");
 	/* Drop preempt_count with ma_spin_unlock_softirq */
 	ma_schedule_tail(__ma_get_lwp_var(previous_thread));
@@ -131,6 +133,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	// ne change rien ici...
 
 	if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+		MA_THR_DESTROYJMP(cur);
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
 		MA_THR_RESTARTED(cur, "Father Preemption");
 		LOG_OUT();

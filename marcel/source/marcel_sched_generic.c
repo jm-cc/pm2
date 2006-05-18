@@ -36,6 +36,7 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 	MA_BUG_ON(!ma_in_atomic());
 	if (cur != next) {
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+			MA_THR_DESTROYJMP(cur);
 			MA_THR_RESTARTED(cur, "Switch_to");
 			MA_BUG_ON(!ma_in_atomic());
 			return __ma_get_lwp_var(previous_thread);

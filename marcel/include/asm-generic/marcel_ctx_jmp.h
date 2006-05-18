@@ -32,6 +32,14 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
   longjmp(ctx[0].jbuf, ret)
 #define marcel_ctx_longjmp(ctx, ret) marcel_ctx_setcontext(ctx, ret)
 
+#ifdef MA__DEBUG
+#define marcel_ctx_destroycontext(ctx) \
+  memset(&ctx[0].jbuf, 0, sizeof(ctx[0].jbuf))
+#else
+#define marcel_ctx_destroycontext(ctx)
+#endif
+#define marcel_ctx_destroyjmp(ctx) marcel_ctx_destroycontext(ctx)
+
 #define marcel_ctx_get_sp(ctx) \
   (SP_FIELD(ctx[0].jbuf))
 

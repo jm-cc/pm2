@@ -52,5 +52,10 @@ enum {
   } while(0)
 
 
+/* détruit le contexte en mettant des valeurs empoisonnées.
+ * Utile pour le débuggage. */
+#define MA_THR_DESTROYJMP(current) \
+  marcel_ctx_destroyjmp(current->ctx_yield);
+
 #section marcel_functions
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);

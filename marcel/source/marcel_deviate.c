@@ -120,6 +120,7 @@ static void insertion_relai(handler_func_t f, void *arg)
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
     marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
   } else {
+    MA_THR_DESTROYJMP(cur);
     MA_THR_RESTARTED(cur, "Deviation");
     MA_BUG_ON(!ma_in_atomic());
     ma_preempt_enable();
@@ -156,6 +157,7 @@ void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
     MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR); // on ne doit jamais arriver ici !
   }
+  marcel_ctx_destroyjmp(SELF_GETMEM(ctx_yield));
 }
 
 void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)

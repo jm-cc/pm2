@@ -21,6 +21,39 @@ struct fxt_code_name fut_code_table2 [] =
    {0, NULL }
 };
 
+static int dbg_printf(const char* format, ...)
+{
+   int ret = 0;
+   
+   va_list ap;
+   va_start(ap, format);
+   
+#ifdef VERBOSE_DEBUG
+   ret = vprintf(format, ap);
+#endif
+
+   va_end(ap);
+   return ret;
+}
+
+// todo: jarter cte craderie
+static int GetNumInStr(char* str)
+{
+   int len = strlen(str);
+   int i;
+   for (i = 0; i < len; ++i)
+   {
+      if (str[i] >= 48 && str[i] < 58)
+         break;
+   }
+   int ret = -1;
+   if (i < len)
+   {
+      ret = atoi(str + i);
+   }
+   return ret;
+}
+
 // initialisation
 AnimElements* AnimationNew(GtkWidget* drawzone)
 {
@@ -39,21 +72,19 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
    newobj->links = NULL;
    newobj->runQueues.levels = NULL;
    newobj->runQueues.level_num = 0;
+   // création obligatoire d'une runqueue level -1
+   CreateRunQueue(&newobj->runQueues, 0, -1);
 
    LoadScene(newobj);
 
    return newobj;
 }
 
-
-// charger les elements graphiques de la scene avec leur propriétés
+// charger les elements graphiques de la scène avec leur propriétés
 int LoadScene(AnimElements* anim)
 {
-   gchar buf[1024];
-
-   g_snprintf(buf, sizeof(buf), "%s/profile/bubblegum/source/tracefile_multi", pm2_root());
-
-   ev_t* myEvents = malloc_tracetab(buf);
+   char* tracefile = ConfigGetTraceFileName(CONFIG_FILE_NAME);
+   ev_t* myEvents = malloc_tracetab(tracefile);
 
    int i = 0;
    printf("\n");
@@ -96,25 +127,24 @@ int LoadScene(AnimElements* anim)
    anim->animation.frames = malloc(sizeof(Frame) * frames);
    anim->animation.num = frames;
    
-   i = 0;
-   int ind = 0, ind2, ind3;
-   int adr, adr2;
+   int ind = 0, ind2;
+   long adr, adr2;
    ev_t* evt_i;
    char* thename;
    int id, rpos, lvl;
-   int frame = 0;
+   // boucle de création des objets
+   i = 0;
    while (!GetFin_Ev(GetEv(myEvents, i)))
    {
       evt_i = GetEv(myEvents, i);
+      i++;
       switch (GetCode_Ev(evt_i))
       {
          case BUBBLE_SCHED_NEW:
             adr = GetAdr_Bulle_Ev(evt_i);
             AddPair(anim->ht_bubbles, adr, ind);
 
-#ifdef VERBOSE_DEBUG
-            printf("ajout de bulle %lx\n", adr);
-#endif
+            dbg_printf("ajout de bulle %lx\n", adr);
 
             anim->scene.objects[ind].color = ARGB(200, 200, 100, 255);
             anim->scene.objects[ind].pos.x = (ind % 5) * 100;
@@ -126,7 +156,9 @@ int LoadScene(AnimElements* anim)
             anim->scene.objects[ind].prop.prior = -1;
             anim->scene.objects[ind].description = NULL;
 
-            ++ind;
+            AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind], 0, -1);
+            
+            ind++;
             break;
          case SCHED_SETPRIO:
             adr = GetAdr_Bulle_Ev(evt_i);  // indifférent pour les threads ou les bulles
@@ -137,7 +169,7 @@ int LoadScene(AnimElements* anim)
             {  // ah ben c'etait un thread :)
                ind2 = GetData(anim->ht_threads, adr);
                if (ind2 == -1)
-                  printf("erreur : sched_setprio : objet non trouvé\n");
+                  wprintf(L"erreur : sched_setprio : objet non trouvé\n");
             }
             anim->scene.objects[ind2].prop.prior = GetPrio_Ev(evt_i);
             break;
@@ -146,9 +178,7 @@ int LoadScene(AnimElements* anim)
             adr = GetAdr_Bulle_Ev(evt_i);
             adr2 = GetMere_Bulle_Ev(evt_i);
 
-#ifdef VERBOSE_DEBUG            
-            printf("lier adr: %lx et %lx\n", adr, adr2);
-#endif
+            dbg_printf("lier adr: %lx et %lx\n", adr, adr2);
             
             anim->links = CreateLink(anim->links, GetData(anim->ht_bubbles, adr2), GetData(anim->ht_bubbles, adr));            
             break;
@@ -166,10 +196,14 @@ int LoadScene(AnimElements* anim)
             anim->scene.objects[ind].prop.name = "haricot";
             anim->scene.objects[ind].prop.id = -1;
             anim->scene.objects[ind].prop.prior = -1;
-            anim->scene.objects[ind].state = SLEEPING;
+            anim->scene.objects[ind].prop.number = -1;
+            anim->scene.objects[ind].state = SLEEPING_STT;
             anim->scene.objects[ind].description = NULL;
 
-            ++ind;
+            // ajout immédiat du thread né en runqueue -1
+            AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind], 0, -1);
+
+            ind++;
             break;
          case BUBBLE_SCHED_INSERT_THREAD:   // nouvelle liaison d'un thread dans une bulle
 
@@ -186,71 +220,146 @@ int LoadScene(AnimElements* anim)
 
             anim->scene.objects[ind2].prop.id = id;            
             break;
+         case FUT_RQS_NEWRQ:   // apparition d'une run queue
+         case FUT_RQS_NEWLWPRQ:
+
+            dbg_printf("event rq en + :   ");
+            
+            rpos = GetPlace_Rq_Ev(evt_i);
+            lvl = GetLevel_Rq_Ev(evt_i);
+            adr = GetAdr_Rq_Ev(evt_i);
+
+            dbg_printf("pos: %d level: %d\n", rpos, lvl);
+
+            if (lvl >= 0)  // la création du lvl -1 est forcée à l'initialisation de toute façon
+            {
+               CreateRunQueue(&anim->runQueues, rpos, lvl);            
+               AddPair(anim->ht_rqslvl, adr, lvl);
+               AddPair(anim->ht_rqspos, adr, rpos);
+            }
+            break;
+      }
+   }
+
+   int frame = 0;
+   int ind3, nb;
+   // boucle de chargement de l'animation
+   i = 0;
+   while (!GetFin_Ev(GetEv(myEvents, i)))
+   {
+      evt_i = GetEv(myEvents, i);
+      i++;
+      switch (GetCode_Ev(evt_i))
+      {
+         case SET_THREAD_NUMBER:  // information classe du thread, n<0: appartien pm2, n>0 utilisateur
+
+            adr = GetAdr_Thread_Ev(evt_i);
+            nb = GetNb_Thread_Ev(evt_i);
+            ind2 = GetData(anim->ht_threads, adr);
+
+            if (ind2 >= 0 && ind2 < anim->scene.num)
+            {
+               anim->scene.objects[ind2].prop.number = nb;
+            }
+               
+            break;
          case FUT_SET_THREAD_NAME_CODE:  // nommage d'un thread
 
             thename = GetNom_Thread_Ev(evt_i);
             adr = GetAdr_Thread_Ev(evt_i);
             ind2 = GetData(anim->ht_threads, adr);
 
-            anim->scene.objects[ind2].prop.name = thename;            
+            if (ind2 >= 0)
+            {
+               int proc;
+               proc = GetNumInStr(thename);
+               if (proc != -1)
+               {
+                  AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind2], proc, anim->runQueues.level_num - 2);
+               }
+               anim->scene.objects[ind2].prop.name = thename;
+            }
             break;
-         case FUT_RQS_NEWRQ:   // apparition d'une run queue
-         case FUT_RQS_NEWLWPRQ:
 
-#ifdef VERBOSE_DEBUG
-            printf("rq en +\n");
-#endif
-            
-            rpos = GetPlace_Rq_Ev(evt_i);
-            lvl = GetLevel_Rq_Ev(evt_i);
-            adr = GetAdr_Rq_Ev(evt_i);
-
-#ifdef VERBOSE_DEBUG
-            printf("pos: %d level: %d\n", rpos, lvl);
-#endif
-            
-            CreateRunQueue(&anim->runQueues, rpos, lvl);
-            AddPair(anim->ht_rqslvl, adr, lvl);
-            AddPair(anim->ht_rqspos, adr, rpos);
-            break;
          case FUT_SWITCH_TO_CODE:  // changement d'activité de thread
+            
             adr = GetAdr_Thread_Ev(evt_i);
             adr2 = GetNext_Thread_Ev(evt_i);
 
             ind2 = GetData(anim->ht_threads, adr);
             ind3 = GetData(anim->ht_threads, adr2);
 
-            // todo: voir quand les indices sont -1 (i.e. adresses pas trouvée)
-#ifdef VERBOSE_DEBUG
-            printf("ind1: %d, ind2: %d\n", ind2, ind3);
-#endif
-            
-            if (frame % KEYFRAME_SPACING == 0)
+            dbg_printf("switch adr %lx, ind1: %d, adr %lx, ind2: %d frame %d\n", adr, ind2, adr2, ind3, frame);
+
+            // code final:
+            if (ind2 == -1 || ind3 == -1)  // thread jamais né
             {
-               anim->animation.frames[frame].keyframe = malloc(sizeof(KeyFrame));
-               // todo: remplir le total en reparcourant les dernieres frames
+               break;
             }
-            else  // cas normal: frame relative
+
+            if (frame >= 0 && frame < frames)
             {
-               anim->animation.frames[frame].keyframe = NULL;
-               anim->animation.frames[frame].objChanges[0].index = ind;
-               anim->animation.frames[frame].objChanges[1].index = ind2;
-               // todo: continuer de remplir
+               /*
+               if (frame % KEYFRAME_SPACING == 0)  // cas initial et cas keyframe
+               {
+                  anim->animation.frames[frame].keyframe = malloc(sizeof(KeyFrame));
+                  // todo: retrouver l'absolue a partir des précedentes
+                  
+               }
+               else  // cas normal: frame relative, frame - 1 existe
+               {
+               */
+                  anim->animation.frames[frame].keyframe = NULL;
+                  anim->animation.frames[frame].objChanges[0].index = ind2; 
+                  anim->animation.frames[frame].objChanges[1].index = ind3;
+                     
+                  // passage à l'état dormant
+                  anim->animation.frames[frame].objChanges[0].color = SLEEPING_COLOR;
+                  anim->animation.frames[frame].objChanges[0].stt = SLEEPING_STT;
+                  // retourne dormir
+                  anim->animation.frames[frame].objChanges[0].newRQ = 0;
+                  anim->animation.frames[frame].objChanges[0].newLvl = -1;
+                  // et inversement:
+                  anim->animation.frames[frame].objChanges[1].color = WORKING_COLOR;
+                  anim->animation.frames[frame].objChanges[1].stt = WORKING_STT;
+                  // determine l'ancienne position du thread qui travaillait pour l'échanger
+                  int lv, rq, ob;
+                  GetRQCoord(&anim->runQueues, &anim->scene.objects[ind2], &lv, &rq, &ob);
+                  if (lv == -2)
+                     wprintf(L"PROBLEME: thread travaillant non trouvé, ind %d\n", ind2);
+                  // va bosser               
+                  anim->animation.frames[frame].objChanges[1].newRQ = rq;
+                  anim->animation.frames[frame].objChanges[1].newLvl = lv;
+                  // applique les changements à la structure générale:
+                  ReadFrame(anim, frame);
+               //}
+               frame++;
             }
-            frame++;
             break;
-         case BUBBLE_SCHED_SWITCHRQ:   // déplacement d'une bulle
+         case BUBBLE_SCHED_SWITCHRQ:   // déplacement d'un objet
 
             adr = GetAdr_Bulle_Ev(evt_i);
             adr2 = GetAdr_Rq_Ev(evt_i);
 
-            // todo : faire pareil qu'au dessus
+            ind2 = GetData(anim->ht_bubbles, adr);
+
+            if (ind2 == -1)
+            {
+               ind2 = GetData(anim->ht_threads, adr);
+            }
+            if (ind2 == -1)
+            {
+               break;
+            }
+
+            rpos = GetData(anim->ht_rqspos, adr2);
+            lvl = GetData(anim->ht_rqslvl, adr2);
+
+            AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind2], rpos, lvl);
             
             frame++;
             break;
       }
-
-      ++i;
    }
 
    free_tracetab(myEvents);
@@ -287,7 +396,7 @@ int LoadScene(AnimElements* anim)
    anim->scene.objects[0].prop.name = "bulle de test";
    anim->scene.objects[0].prop.id = 1;
    anim->scene.objects[0].prop.prior = 45;
-   anim->scene.objects[0].state = WORKING;
+   anim->scene.objects[0].state = WORKING_STT;
    anim->scene.objects[0].description = NULL;
 
    anim->scene.objects[1].color = ARGB(240, 255, 0, 0);
@@ -299,7 +408,7 @@ int LoadScene(AnimElements* anim)
    anim->scene.objects[1].prop.name = "thread de test";
    anim->scene.objects[1].prop.id = 2;
    anim->scene.objects[1].prop.prior = 90;
-   anim->scene.objects[1].state = WORKING;
+   anim->scene.objects[1].state = WORKING_STT;
    anim->scene.objects[1].description = NULL;
 
    anim->scene.objects[2].color = ARGB(240, 0, 255, 0);
@@ -311,7 +420,7 @@ int LoadScene(AnimElements* anim)
    anim->scene.objects[2].prop.name = "haricot vert";
    anim->scene.objects[2].prop.id = 3;
    anim->scene.objects[2].prop.prior = 20;
-   anim->scene.objects[2].state = SLEEPING;
+   anim->scene.objects[2].state = SLEEPING_STT;
    anim->scene.objects[2].description = NULL;
 
    // le premier lien modifie le pointeur
@@ -320,20 +429,16 @@ int LoadScene(AnimElements* anim)
    anim->links = CreateLink(anim->links, 0, 2);
    
    DeleteAllRQ(&anim->runQueues);
-   
+
    CreateRunQueue(&anim->runQueues, 0, 0);
    CreateRunQueue(&anim->runQueues, 1, 0);
    CreateRunQueue(&anim->runQueues, 0, 2);
    CreateRunQueue(&anim->runQueues, 1, 2);
 
 */
-   for (i = 0; i < anim->scene.num; i++)
-   {
-      AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[i], 0, 0);
-   }
 
    
-   /* CreateRunQueue(&anim->runQueues, 0, 4); */
+/*    CreateRunQueue(&anim->runQueues, 0, 4); */
 /*    CreateRunQueue(&anim->runQueues, 0, 1); */
 /*    CreateRunQueue(&anim->runQueues, 1, 2); */
 /*    CreateRunQueue(&anim->runQueues, 2, 2); */
@@ -365,9 +470,51 @@ int LoadScene(AnimElements* anim)
    return 0;
 }
 
-void DrawScene(AnimElements* anim)
+// permet de répercuter les changements sur certains objets répertoriés dans une frame sur la scène 'globale'
+void ReadFrame(AnimElements* anim, int frame)
 {
-   Texture* tex;
+   /* règles:
+     dans une frame si le pointeur vers keyframe
+     est non nul, les deux structures objets ne veulent
+     rien dire.
+     si le pointeur est nul, alors au moins le premier objet
+     est significatif. si l'indice de l'objet 2 est différent
+     de -1 alors il est significatif lui aussi.
+   */
+
+   ScnObj* pobj;
+   ScnObjLightInfos* pchgs;
+   
+   if (frame < 0 || frame >= anim->animation.num) // l'indice ne peut pas etre egal au max
+      return;
+   if (anim->animation.frames[frame].keyframe != NULL) // cas keyframe
+   {
+   }
+   else
+   {
+      // répercution du premier objet
+      pchgs = &anim->animation.frames[frame].objChanges[0];
+      pobj = &anim->scene.objects[ pchgs->index ];
+      AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
+
+      pobj->color = pchgs->color;
+      pobj->state = pchgs->stt;
+
+      // deuxième objet, si il y a lieu
+      pchgs = &anim->animation.frames[frame].objChanges[1];
+      if (pchgs->index != -1)
+      {
+         pobj = &anim->scene.objects[ pchgs->index ];
+         AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
+         pobj->color = pchgs->color;
+         pobj->state = pchgs->stt;
+      }
+   }
+}
+
+void DrawFixedScene(AnimElements* anim)
+{
+   Texture* tex = NULL;
    int i;
 
    DrawRunQueues(anim);
@@ -375,6 +522,10 @@ void DrawScene(AnimElements* anim)
    
    for (i = 0; i < anim->scene.num; ++i)  // on dessine toute la scène
    {
+#ifndef DRAW_HIDDEN
+      if (anim->scene.objects[i].prop.number < 0)  // ne dessine pas les objets internes a pm2
+         continue;
+#endif
       switch (anim->scene.objects[i].type)
       {
          case THREAD_OBJ:
@@ -432,9 +583,9 @@ char* GetDescription(ScnObj* obj)
       strcat(obj->description, "\n");
       // état
       strcat(obj->description, "\xE9tat : ");
-      if (obj->state == WORKING)
+      if (obj->state == WORKING_STT)
          strcat(obj->description, "working\n");
-      else if (obj->state == SLEEPING)
+      else if (obj->state == SLEEPING_STT)
          strcat(obj->description, "sleeping\n");
       // charge
       strcat(obj->description, "charge : ");
@@ -474,6 +625,7 @@ Links* CreateLink(Links* lnk, int obj1, int obj2)
    return first;
 }
 
+// je sais même plus si j'ai testé cette fonction
 Links* DeleteLink(Links* first, int obj1, int obj2)
 {
    Links* prev = NULL;
@@ -547,8 +699,8 @@ void DrawLinks(AnimElements* anim)
       vect.y = norm.y * (dist - diminution);
 
       // vecteur orthogonal
-      vect2.x = norm.y * 11;
-      vect2.y = -norm.x * 11;
+      vect2.x = norm.y * ARROW_WIDTH;
+      vect2.y = -norm.x * ARROW_WIDTH;
 
       glBegin(GL_TRIANGLES);
       
@@ -571,29 +723,43 @@ void DrawLinks(AnimElements* anim)
 // appartenance aux runqueues
 void SetPositions(AnimElements* anim)
 {
-   int lv, rq, ob, offset;
+   int lv, rq, ob, offset = 0, num, sob;
    Queue* q;
    for (lv = 0; lv < anim->runQueues.level_num; ++lv)
    {
       for (rq = 0; rq < anim->runQueues.levels[lv].num; ++rq)
       {
          q = &anim->runQueues.levels[lv].queues[rq];  // chaque queues
+#ifndef DRAW_HIDDEN
+         num = 0;   // comptage du vrai nombre d'objets a afficher
+         for (ob = 0; ob < q->num_obj; ++ob)
+            if (q->objects[ob]->prop.number >= 0)
+               num++;
+#else
+         num = q->num_obj;
+#endif
+         sob = 0;
          for (ob = 0; ob < q->num_obj; ++ob)   // chaque objet
          {
+#ifndef DRAW_HIDDEN
+            if (q->objects[ob]->prop.number < 0)
+               continue;
+#endif
             switch (q->objects[ob]->type)
             {
                case THREAD_OBJ:
-                  offset = -q->objects[ob]->size.y / 2;
+                  offset = -q->objects[ob]->size.y / 2;  // les threads sont dessinés sous les runqueues
                   break;
                case BUBBLE_OBJ:
-                  offset = q->objects[ob]->size.y / 2;
+                  offset = q->objects[ob]->size.y / 2;   // les bulles dessus
                   break;
             }
-            if (q->num_obj == 1)
+            if (num == 1)
                q->objects[ob]->pos.x = q->rect1.x + (q->rect2.x - q->rect1.x) / 2 - q->objects[ob]->size.x / 2;
             else
-               q->objects[ob]->pos.x = (float)ob / (q->num_obj - 1) * (q->rect2.x - q->rect1.x) + q->rect1.x - q->objects[ob]->size.x / 2;
+               q->objects[ob]->pos.x = (float)sob / (num - 1) * (q->rect2.x - q->rect1.x) + q->rect1.x - q->objects[ob]->size.x / 2;
             q->objects[ob]->pos.y = (q->rect1.y + q->rect2.y) / 2 - q->objects[ob]->size.y / 2 + offset;
+            sob++;
          }         
       }
    }
@@ -617,13 +783,11 @@ void CreateRunQueue(RQueues* rqs, int rqpos, int level)
                 .
                 .
    */
+   // eldidou, stp ne fais pas indent-region :-s
    
    int i, num;
-   if (level < 0)
-   {
-      
-   }
-   else if (rqs->level_num <= level)  // nouveau level
+   level++;
+   if (rqs->level_num <= level)  // nouveau level
    {
       // reallocation des levels:
       rqs->levels = realloc(rqs->levels, sizeof(QueueContainer) * (level + 1));
@@ -644,11 +808,9 @@ void CreateRunQueue(RQueues* rqs, int rqpos, int level)
       }
       rqs->levels[level].queues[rqpos].exist = true;
 
-#ifdef VERBOSE_DEBUG
-      printf("nouvelle rq %d niouw lvl %d\n", rqpos, level);
-#endif      
+      dbg_printf("nouvelle rq %d niouw lvl %d\n", rqpos, level);  
    }
-   else  // level existe déjà
+   else if (level >= 0)  // level existe déjà
    {
       if (rqpos + 1 >= rqs->levels[level].num)
       {
@@ -665,17 +827,16 @@ void CreateRunQueue(RQueues* rqs, int rqpos, int level)
       }
       rqs->levels[level].queues[rqpos].exist = true;
 
-#ifdef VERBOSE_DEBUG      
-      printf("nouvelle rq %d lvl %d\n", rqpos, level);
-#endif      
+      dbg_printf("nouvelle rq %d lvl %d\n", rqpos, level);  
    }
 }
 
 bool CheckRunQExists(RQueues* rqs, int rq, int level)
 {
-   if (rqs != NULL)
+   level++;
+   if (rqs != NULL && level >= 0)
    {
-      if (rqs->level_num >= level)
+      if (rqs->level_num > level)
       {
          if (rqs->levels[level].num > rq)
          {
@@ -689,34 +850,56 @@ bool CheckRunQExists(RQueues* rqs, int rq, int level)
 
 void* DelArrayElement(void* begin, size_t elem_szt, int size, int pos)
 {
-   int i;
    char* ptr = (char*)begin;
-   
-   for (i = pos; i < size - 1; ++i)
-   {
-      ptr[i * elem_szt] = ptr[(i + 1) * elem_szt];
-   }
+
+   // lent, bousilleur de pipeline
+/*    for (i = pos; i < size - 1; ++i) */
+/*    { */
+/*       for (j = 0; j < elem_szt; ++j) */
+/*          ptr[i * elem_szt + j] = ptr[(i + 1) * elem_szt + j]; */
+/*    } */
+
+   // rapide: burst power
+   memmove(ptr + pos * elem_szt, ptr + (pos + 1) * elem_szt, elem_szt * (size - pos - 1));
+
    begin = realloc(begin, elem_szt * (size - 1));
    return begin;
 }
 
-void DeleteObjOfRQs(RQueues* rqs, ScnObj* obj)
+void GetRQCoord(RQueues* rqs, ScnObj* obj, int* lv, int* rq, int* rqpos)
 {
-   int lv, rq, ob;
+   int lvi, rqi, ob;
    // recherche voir si l'objet est déjà contenu qq part
-   for (lv = 0; lv < rqs->level_num; ++lv)
+   for (lvi = 0; lvi < rqs->level_num; ++lvi)
    {
-      for (rq = 0; rq < rqs->levels[lv].num; ++rq)
+      for (rqi = 0; rqi < rqs->levels[lvi].num; ++rqi)
       {
-         for (ob = 0; ob < rqs->levels[lv].queues[rq].num_obj; ++ob)
+         for (ob = 0; ob < rqs->levels[lvi].queues[rqi].num_obj; ++ob)
          {
-            if (rqs->levels[lv].queues[rq].objects[ob] == obj) // trouvé !!
-            {  // on va le jarter
-               rqs->levels[lv].queues[rq].objects = DelArrayElement(rqs->levels[lv].queues[rq].objects, sizeof(ScnObj*), rqs->levels[lv].queues[rq].num_obj, ob);
-               rqs->levels[lv].queues[rq].num_obj--;
+            if (rqs->levels[lvi].queues[rqi].objects[ob] == obj) // trouvé !!
+            {
+               // on renseigne les champs et on quitte
+               *lv = lvi - 1;
+               *rq = rqi;
+               *rqpos = ob;
+               return;
             }
          }
       }
+   }
+}
+
+void DeleteObjOfRQs(RQueues* rqs, ScnObj* obj)
+{
+   int lv = -2, rq, ob;
+   
+   // recherche voir si l'objet est déjà contenu qq part
+   GetRQCoord(rqs, obj, &lv, &rq, &ob);
+   lv++;
+   if (lv >= 0)     // si trouvé, on va le jarter
+   {
+      rqs->levels[lv].queues[rq].objects = DelArrayElement(rqs->levels[lv].queues[rq].objects, sizeof(ScnObj*), rqs->levels[lv].queues[rq].num_obj, ob);
+      rqs->levels[lv].queues[rq].num_obj--;
    }
 }
 
@@ -727,7 +910,7 @@ void AddObjectToRunQueue(RQueues* rqs, ScnObj* obj, int rq, int level)
       return;
    }
    DeleteObjOfRQs(rqs, obj);
-
+   level++;
    int nm = rqs->levels[level].queues[rq].num_obj;
    // reallocation du tableau d'objets sur cette runqueue
    rqs->levels[level].queues[rq].objects = realloc(rqs->levels[level].queues[rq].objects, (nm + 1) * sizeof(ScnObj*));
@@ -758,7 +941,6 @@ void DrawRunQueues(AnimElements* anim)
    vspacing = anim->area.y / (levels + 1);
 
    // dessin séparé de chaque niveau:
-
    int numrq;
    int white;
    Queue* q;
@@ -781,7 +963,10 @@ void DrawRunQueues(AnimElements* anim)
          q->rect2.x = -white + (j + 1) * hspacing;
          q->rect2.y = vspacing * (levels - i) + 5;
          
-         glColor4f(0, 0, 1, alpha);
+         if (i == 0)
+            glColor4f(1, 1, 0, alpha);
+         else
+            glColor4f(0, 0, 1, alpha);
          glVertex3f(q->rect1.x, q->rect1.y, 0);
          glVertex3f(q->rect2.x, q->rect1.y, 0);
          glVertex3f(q->rect2.x, q->rect2.y, 0);
@@ -840,7 +1025,7 @@ void WorkOnAnimation(AnimElements* anim)
    /*** OpenGL BEGIN ***/
    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
    {
-      // printf("attention : problème de dessin ogl\n");    // un printf ici risque de flooder
+      // wprintf(L"attention : problème de dessin ogl\n");    // un printf ici risque de flooder
       return;
    }
 
@@ -850,7 +1035,8 @@ void WorkOnAnimation(AnimElements* anim)
    // affichage des infobulles:
    // si le curseur est sur un objet, afficher ses propriétés
 
-   DrawScene(anim);
+   ReadFrame(anim, (int)time);
+   DrawFixedScene(anim);
 
    // la souris est-elle au dessus d'un objet ? si oui afficher les infos
    int ind;
@@ -931,7 +1117,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    
    if (firstcall)  // premier appel a la fonction
    {
-      corner = open_texture("imgs/corner.png");  // on tente de charger
+      corner = LoadTextureFromFile("imgs/corner.png");  // on tente de charger
       firstcall = false;  // ce n'est plus le premier appel
    }
    if (corner == NULL)  // si le chargement a foiré
@@ -974,6 +1160,11 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    rect.x = maxpixlen;
    rect.y = lines * 12;
 
+   if (rect.x + x + 32 > res.x)  // la bulle va sortir des bords
+      x -= rect.x + 32;
+   if (rect.y + y + 32 > res.y)
+      y -= rect.y + 32;
+      
    // commencons a dessiner
    // d'abord préparer le terrain
    glPushAttrib(GL_TEXTURE_BIT | GL_TRANSFORM_BIT);
@@ -1036,7 +1227,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    free(str_offsets);  // ces free là sont super importants
    free(message2);
    glPopMatrix();
-   glPopAttrib();   
+   glPopAttrib();
 }
 
 long ARGB(byte a, byte r, byte g, byte b)
@@ -1062,4 +1253,25 @@ byte Green(long c)
 byte Blue(long c)
 {
    return c & 0x0000ff;
+}
+
+char* ConfigGetTraceFileName(char* configfile)
+{
+   FILE* f = NULL;
+   static char str[512];
+   int n;
+
+   f = fopen(configfile, "r");
+   if (f == NULL)
+      return NULL;
+   do
+   {
+      fgets(str, 512, f);
+   } while (str[0] == '#');
+   
+   n = strlen(str);
+   if (str[n-1] == '\n')
+	   str[n-1] = '\0';
+
+   return str;
 }

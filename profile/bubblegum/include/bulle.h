@@ -7,6 +7,7 @@
 
 #include<stdlib.h>
 #include<stdio.h>
+#include <wchar.h>
 #include"bulle.h"
 #include <string.h>
 

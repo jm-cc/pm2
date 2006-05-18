@@ -48,7 +48,7 @@ GPFont* InitGPFont(const char* fontName, int ptSize)
       PreparePixMap(gpfont, ch, face);    // pour chaque char son sprite
 
 #ifdef VERBOSE_GPF
-   printf("police chargée. %ld glyphes.\n", face->num_glyphs);
+   wprintf(L"police chargée. %ld glyphes.\n", face->num_glyphs);
 #endif
    
    FT_Done_Face(face);

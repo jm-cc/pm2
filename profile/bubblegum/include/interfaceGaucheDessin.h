@@ -1,6 +1,7 @@
 #ifndef INTERFACEGAUCHEDESSIN_H
 #define INTERFACEGAUCHEDESSIN_H
 
+#include <wchar.h>
 #include <math.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
@@ -14,10 +15,12 @@
 #include "zone.h"
 #include "rearangement.h"
 
+#define MODE_AUTO_ON 1
+#define MODE_AUTO_OFF 0
+
 typedef struct interfaceGaucheVars_tag
 {
-/*       Chrono* time; */
-
+      int mode_auto;
       int area_left_x;
       int area_left_y;
       int mousePos_left_x;

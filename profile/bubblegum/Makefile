@@ -18,7 +18,7 @@ CFLAGS += -Wall -ggdb2 -I${MOD_GEN_INC} \
 	$(shell pkg-config gtk+-2.0 --cflags) \
 	$(shell pkg-config gtkglext-1.0 --cflags) \
 	$(shell freetype-config --cflags) \
-	$(shell sdl-config --cflags)
+	$(shell sdl-config --cflags) -finput-charset=utf-8
 LDFLAGS += -lfxt \
 	$(shell pkg-config gtk+-2.0 --libs) \
 	$(shell pkg-config gtkglext-1.0 --libs) \

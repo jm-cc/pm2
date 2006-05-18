@@ -8,9 +8,12 @@
 #ifndef ANIMATEUR_H
 #define ANIMATEUR_H 1
 
+#include <wchar.h>
+#include <string.h>
 #include <math.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <gtk/gtkgl.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -36,6 +39,15 @@ typedef unsigned char bool;
 // la diminuer augmentera la réactivité de rafraichissement
 // lors de sauts dans la timeline.
 #define KEYFRAME_SPACING 20
+
+#define SLEEPING_COLOR ARGB(200, 0, 255, 0)
+#define WORKING_COLOR ARGB(200, 0, 0, 255)
+
+#define CONFIG_FILE_NAME "animateur.conf"
+
+#define ARROW_WIDTH 7
+
+//#define DRAW_HIDDEN
 
 // décomenter pour activer la sortie debug
 //#define VERBOSE_DEBUG
@@ -77,8 +89,8 @@ typedef enum OBJTYPE_tag
 
 typedef enum STATE_tag
 {
-   WORKING,
-   SLEEPING
+   WORKING_STT,
+   SLEEPING_STT
 } STATE;
 
 typedef struct Properties_tag
@@ -87,6 +99,7 @@ typedef struct Properties_tag
       int id;
       int prior;
       int load;
+      int number;
 } Properties;
 
 typedef struct ScnObj_tag  // objet de scene
@@ -133,8 +146,9 @@ typedef struct RQueues_tag
 typedef struct ScnObjLightInfos_tag
 {
       int index;
-      long color;
-      Vecteur pos;
+      long color;      
+      int newRQ;  // nouvelle position
+      int newLvl;      
       STATE stt;
 } ScnObjLightInfos;
 
@@ -205,7 +219,7 @@ void DrawSprite(Texture* texture, int x, int y, int w, int h, long color);
 void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft);
 
 int LoadScene(AnimElements* anim);
-void DrawScene(AnimElements* anim);
+void DrawFixedScene(AnimElements* anim);
 
 char* GetDescription(ScnObj* obj);
 int GetObjUnderMouse(AnimElements* anim);
@@ -220,10 +234,13 @@ void AddObjectToRunQueue(RQueues* rqs, ScnObj* obj, int rq, int level);
 void DrawRunQueues(AnimElements* anim);
 bool CheckRunQExists(RQueues* rqs, int rq, int level);
 void DeleteObjOfRQs(RQueues* rqs, ScnObj* obj);
+void GetRQCoord(RQueues* rqs, ScnObj* obj, int* lv, int* rq, int* rqpos);
 
 void* DelArrayElement(void* begin, size_t elem_szt, int size, int pos);
 
 void SetPositions(AnimElements* anim);
+
+void ReadFrame(AnimElements* anim, int frame);
 
 long ARGB(byte a, byte r, byte g, byte b);
 byte Alpha(long c);
@@ -231,5 +248,6 @@ byte Red(long c);
 byte Green(long c);
 byte Blue(long c);
 
+char* ConfigGetTraceFileName(char* configfile);
 
 #endif

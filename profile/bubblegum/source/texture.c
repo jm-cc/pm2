@@ -12,7 +12,7 @@ Texture* LoadTextureFromSurface(SDL_Surface* image)
 {
    Texture* tex = (Texture*) malloc(sizeof(Texture));
    if (tex == NULL)
-      fprintf(stderr, "LoadTexture : Impossible d'allouer de la mémoire\n");
+      fwprintf(stderr, L"LoadTexture : Impossible d'allouer de la mÃ©moire\n");
    else 
    {
       GLfloat texcoord[4];

@@ -71,8 +71,6 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
       iGaucheVars->echelle *= 0.95;
    }
 
-/*    printf("%f\n",iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale)); */
-
    if(420 > iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale))
    {
       glScalef(1.05,1.05,1.05);
@@ -417,12 +415,12 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
    }
    if (glconf == NULL)
    {
-      printf("aie : problème de configuration opengl !\n");
+      wprintf(L"aie : problème de configuration opengl !\n");
    }
    
    if (!gtk_widget_set_gl_capability(drawzone, glconf, NULL, TRUE, GDK_GL_RGBA_TYPE))
    { /* ok, ya un truc qui n'a pas marché */
-      printf("aie : La promotion au rang de widget OpenGL à faillie lamentablement.\n");
+      printf("aie : La promotion au rang de widget OpenGL a faillie lamentablement.\n");
    }
 
 
@@ -569,30 +567,14 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 
    iGaucheVars->mousePos_left_x = (ev->x) / iGaucheVars->echelle;
    iGaucheVars->mousePos_left_y = (iGaucheVars->area_left_y - ev->y) / iGaucheVars->echelle;
-/*    printf("%d\n",LireZoneHauteur(iGaucheVars->zonePrincipale)); */
-/*    rearanger(iGaucheVars->zonePrincipale); */
-
-/*    printf("****************************\n"); */
    
    p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
-/*    traceParcours(p); */
-
 
    nouvelleZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
 
    iGaucheVars->zoneSelectionnee = nouvelleZoneSelectionnee;
 
-/*    printf("////// zone selectionnee %p\n", iGaucheVars->zoneSelectionnee); */
-/*    traceZone(iGaucheVars->zoneSelectionnee,1,1); */
-
-/*    printf("//////\n"); */
-
    elementSelectionne = LireElementParcours(iGaucheVars->bullePrincipale, p);
-/*    PrintElement(elementSelectionne,1,1); */
-/*    printf("****************************\n"); */
-
-/*    printf("element selectionne : %p\n",elementSelectionne); */
-/*    printf("zone selectionnee : %p\n",nouvelleZoneSelectionnee); */
 
    EffacerParcours(p);
 

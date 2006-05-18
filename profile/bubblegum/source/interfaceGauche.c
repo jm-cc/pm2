@@ -20,6 +20,7 @@ interfaceGaucheVars* interfaceGauche()
    iGaucheVars = malloc(sizeof(interfaceGaucheVars));
 
    iGaucheVars->interfaceGauche = gtk_vbox_new(FALSE, 0);
+   iGaucheVars->mode_auto = MODE_AUTO_ON;
 
    make_left_drawable_zone(iGaucheVars);
 
@@ -50,13 +51,13 @@ interfaceGaucheVars* interfaceGauche()
 
    /* ajout de boutons dans la barre d'outil */
    toolbar_item = gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                             NULL, NULL, "Nouvelle bulle", NULL, b_addBulle, G_CALLBACK(addBulle), iGaucheVars);
+                                             NULL, NULL, "Nouvelle bulle", NULL, b_addBulle, G_CALLBACK(addBulleAutoOnOff), iGaucheVars);
    toolbar_item = gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                             NULL, NULL, "Nouveau thread", NULL, b_addThread, G_CALLBACK(addThread), iGaucheVars);
-   toolbar_item = gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                             NULL, NULL, "Supprimer l'element", NULL, b_delete, G_CALLBACK(delete), iGaucheVars);
+                                             NULL, NULL, "Nouveau thread", NULL, b_addThread, G_CALLBACK(addThreadAutoOnOff), iGaucheVars);
    toolbar_item = gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                              NULL, NULL, "Supprimer l'element recursivement", NULL, b_deleteRec, G_CALLBACK(deleteRec), iGaucheVars);
+   toolbar_item = gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_TOGGLEBUTTON,
+                                             NULL, NULL, "mode automatique", NULL, b_delete, G_CALLBACK(switchModeAuto), iGaucheVars);
 
 
    gtk_box_pack_end(GTK_BOX(iGaucheVars->interfaceGauche), toolbar, FALSE, FALSE, 0);
@@ -66,11 +67,53 @@ interfaceGaucheVars* interfaceGauche()
 }
 
 
+void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data)
+{
+   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
+   DataAddBulle* dataAddBulle;
 
+
+   if (iGaucheVars->mode_auto == MODE_AUTO_OFF)
+   {
+      addBulleAutoOff(data);
+   }
+   else
+   {
+      dataAddBulle = malloc(sizeof (DataAddBulle));
+      dataAddBulle->popup = NULL;
+      dataAddBulle->pScrollbar = NULL;
+      dataAddBulle->iGaucheVars = (interfaceGaucheVars*) data;
+      AddBulle(NULL, dataAddBulle);
+   }
+
+   return;
+}
+
+void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
+{
+   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
+   DataAddThread* dataAddThread;
+
+   if (iGaucheVars->mode_auto == MODE_AUTO_OFF)
+      addThreadAutoOff(data);
+   else
+   {
+      dataAddThread = malloc( sizeof (DataAddThread) );
+      dataAddThread->prioriteScrollbar = NULL;
+      dataAddThread->chargeScrollbar = NULL;
+      dataAddThread->nomEntry = NULL;
+      dataAddThread->idEntry = NULL;
+      dataAddThread->popup = NULL;
+      dataAddThread->iGaucheVars = (interfaceGaucheVars*) data;
+      AddThread(NULL, dataAddThread);
+   }
+
+   return;
+}
 
 /* fonction qui affiche une fenêtre popup pour rentrer les attributs
  * d'une bulle */
-void addBulle(GtkWidget *pWidget, gpointer data)
+void addBulleAutoOff(interfaceGaucheVars* data)
 {
 
    GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -121,7 +164,7 @@ void addBulle(GtkWidget *pWidget, gpointer data)
    
 
       g_signal_connect(G_OBJECT(boutonOk), "clicked",
-                       G_CALLBACK(traceAddBulle), dataAddBulle);
+                       G_CALLBACK(AddBulle), dataAddBulle);
 
       gtk_container_add(GTK_CONTAINER(popup), pVBox);
 
@@ -137,7 +180,7 @@ void addBulle(GtkWidget *pWidget, gpointer data)
 
 /* fonction qui affiche une fenêtre popup pour rentrer les attributs
  * d'un thread */
-void addThread(GtkWidget *pWidget, gpointer data)
+void addThreadAutoOff(interfaceGaucheVars* data)
 {
    GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
    GtkWidget *pVBox = gtk_vbox_new(FALSE, 0);
@@ -162,8 +205,8 @@ void addThread(GtkWidget *pWidget, gpointer data)
 
    GtkWidget *boutonOk = gtk_button_new_with_mnemonic("OK");
 
-   /* création de la structure servant à stocker les donnees pour les
-    * CallBack */
+/*    création de la structure servant à stocker les donnees pour les */
+/*    CallBack */
    DataAddThread* dataAddThread = malloc( sizeof (DataAddThread) );
    dataAddThread->prioriteScrollbar = prioriteScrollbar;
    dataAddThread->chargeScrollbar = chargeScrollbar;
@@ -189,11 +232,11 @@ void addThread(GtkWidget *pWidget, gpointer data)
 
 
       /* saisie du nom */
-      gtk_container_add(GTK_CONTAINER(nomFrame), nomEntry);   
+      gtk_container_add(GTK_CONTAINER(nomFrame), nomEntry);
 
 
       /* saisie de l'identifiant */
-      gtk_container_add(GTK_CONTAINER(idFrame), idEntry);   
+      gtk_container_add(GTK_CONTAINER(idFrame), idEntry);
 
 
       /* saisie de la priorite (avec un ascenseur) */
@@ -214,7 +257,7 @@ void addThread(GtkWidget *pWidget, gpointer data)
 
 
       g_signal_connect(G_OBJECT(boutonOk), "clicked",
-                       G_CALLBACK(traceAddThread), dataAddThread);
+                       G_CALLBACK(AddThread), dataAddThread);
 
       /* ajout de tout les éléments dans la popup */
       gtk_box_pack_start(GTK_BOX(pVBox), nomFrame, FALSE, FALSE, 20);
@@ -233,17 +276,16 @@ void addThread(GtkWidget *pWidget, gpointer data)
 }
 
 
-void delete(GtkWidget* pWidget, gpointer data)
+void switchModeAuto(GtkWidget* pWidget, gpointer data)
 {
    interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
 
-   if(iGaucheVars->zonePrincipale != iGaucheVars->zoneSelectionnee)
+   if(iGaucheVars->mode_auto == MODE_AUTO_OFF)
    {
-
+      iGaucheVars->mode_auto = MODE_AUTO_ON;
    }   
-/*    void RemoveElement(Element* conteneur, int position); */
-   
-/*    void RemoveElementOnCascade(Element* conteneur, int position); */
+   else
+      iGaucheVars->mode_auto = MODE_AUTO_OFF;
 
    return;
 }
@@ -268,7 +310,7 @@ void deleteRec(GtkWidget* pWidget, gpointer data)
 
 
 
-void traceAddBulle(GtkWidget* widget, DataAddBulle* data)
+void AddBulle(GtkWidget* widget, DataAddBulle* data)
 {
    interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data->iGaucheVars);
 
@@ -276,44 +318,72 @@ void traceAddBulle(GtkWidget* widget, DataAddBulle* data)
    p = TrouverParcours(iGaucheVars->zonePrincipale, LireZoneX(iGaucheVars->zoneSelectionnee) + 1, LireZoneY(iGaucheVars->zoneSelectionnee) + 1);
    Element* bulleParent = LireElementParcours(iGaucheVars->bullePrincipale, p);
 
-   if(GetTypeElement(bulleParent) == BULLE)
+   if (data->popup != NULL)
    {
-
-      if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
-         printf("erreur dans TraceAddBulle!!!!!!!\n");
-
-
-/*    printf("traceAddBulle p->taille%d %p\n",LireParcoursTaille(p), iGaucheVars->zoneSelectionnee); */
-
-      if (bulleParent != NULL)
+      if(GetTypeElement(bulleParent) == BULLE)
       {
-         EffacerParcours(p);
+
+         if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
+            printf("erreur dans AddBulle!!!!!!!\n");
+
+
+         if (bulleParent != NULL)
+         {
+            EffacerParcours(p);
    
-         Element *nouvelleBulle;
+            Element *nouvelleBulle;
       
-         gint val;
+            gint val;
    
-         if (widget == NULL)
-            return;
+            if (widget == NULL)
+               return;
    
-         /* Recuperation de la valeur de la scrollbar */
-         val = gtk_range_get_value(GTK_RANGE((DataAddBulle*)data->pScrollbar));
+            /* Recuperation de la valeur de la scrollbar */
+            val = gtk_range_get_value(GTK_RANGE((DataAddBulle*)data->pScrollbar));
    
-         nouvelleBulle = CreateBulle(val);
+            nouvelleBulle = CreateBulle(val);
 
-         AddElement(bulleParent, nouvelleBulle);
+            AddElement(bulleParent, nouvelleBulle);
 
-         AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_B, HAUTEUR_B));
+            AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_B, HAUTEUR_B));
 
-         Rearanger(iGaucheVars->zonePrincipale);
+            Rearanger(iGaucheVars->zonePrincipale);
 
+         }
+
+         gtk_widget_destroy((GtkWidget*)(DataAddThread*)data->popup);
+
+         free(data);
       }
-
-      gtk_widget_destroy((GtkWidget*)(DataAddThread*)data->popup);
-
-      free(data);
    }
+   else
+   {
+      if(GetTypeElement(bulleParent) == BULLE)
+      {
 
+         if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
+            printf("erreur dans AddBulle!!!!!!!\n");
+
+         if (bulleParent != NULL)
+         {
+            EffacerParcours(p);
+   
+            Element *nouvelleBulle;
+
+            nouvelleBulle = CreateBulle(10);
+
+            AddElement(bulleParent, nouvelleBulle);
+
+            AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_B, HAUTEUR_B));
+
+            Rearanger(iGaucheVars->zonePrincipale);
+
+         }
+
+         free(data);
+      
+      }
+   }
    return;
 }
 
@@ -321,7 +391,7 @@ void traceAddBulle(GtkWidget* widget, DataAddBulle* data)
 
 /* fonction qui ne fait pour l'instant que récupérer les données
  * necéssaires à la création d'un thread et qui ferme la fenêtre */
-void traceAddThread(GtkWidget* widget, DataAddThread* data)
+void AddThread(GtkWidget* widget, DataAddThread* data)
 {
    char *nom = malloc(50*sizeof(char));
 
@@ -332,41 +402,74 @@ void traceAddThread(GtkWidget* widget, DataAddThread* data)
    p = TrouverParcours(iGaucheVars->zonePrincipale, LireZoneX(iGaucheVars->zoneSelectionnee) + 1, LireZoneY(iGaucheVars->zoneSelectionnee)+1);
    bulleParent = LireElementParcours(iGaucheVars->bullePrincipale, p);
 
-   if(GetTypeElement(bulleParent) == BULLE)
+
+
+   if (data->popup != NULL)
    {
+      if(GetTypeElement(bulleParent) == BULLE)
+      {
+         if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
+            printf("erreur dans AddThread!!!!!!!--\n");
 
-      if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
-         printf("erreur dans traceAddThread!!!!!!!--\n");
+         EffacerParcours(p);
 
-      EffacerParcours(p);
+         Element *nouveauThread;
 
-      Element *nouveauThread;
+         if (widget == NULL)
+            return;
 
-      if (widget == NULL)
-         return;
+         gint val1;
+         gint val2;
+         const gchar *text1= gtk_entry_get_text(GTK_ENTRY((DataAddThread*)data->nomEntry));
 
-      gint val1;
-      gint val2;
-      const gchar *text1= gtk_entry_get_text(GTK_ENTRY((DataAddThread*)data->nomEntry));
+         strcpy(nom, text1);
 
-      strcpy(nom, text1);
+         /* Recuperation de la valeur de la scrollbar */
+         val1 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->prioriteScrollbar));
+         val2 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->chargeScrollbar));
 
-      /* Recuperation de la valeur de la scrollbar */
-      val1 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->prioriteScrollbar));
-      val2 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->chargeScrollbar));
-
-      nouveauThread = CreateThread(0, 0, nom, 0);
+         nouveauThread = CreateThread(val1, val2, nom, 0);
    
-      AddElement(bulleParent, nouveauThread);
+         AddElement(bulleParent, nouveauThread);
 
-      AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_T, HAUTEUR_T));
+         AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_T, HAUTEUR_T));
 
-      Rearanger(iGaucheVars->zonePrincipale);
+         Rearanger(iGaucheVars->zonePrincipale);
 
-      gtk_widget_destroy((GtkWidget*)(DataAddThread*)data->popup);
+         gtk_widget_destroy((GtkWidget*)(DataAddThread*)data->popup);
 
-      free(data);
+         free(data);
 
+      }
+   }
+   else
+   {
+      if(GetTypeElement(bulleParent) == BULLE)
+      {
+
+         if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != iGaucheVars->zoneSelectionnee)
+            printf("erreur dans AddThread!!!!!!!--\n");
+
+         EffacerParcours(p);
+
+         Element *nouveauThread;
+
+         strcpy(nom, "thread");
+
+         /* Recuperation de la valeur de la scrollbar */
+
+         nouveauThread = CreateThread(0, 0, nom, 0);
+   
+         AddElement(bulleParent, nouveauThread);
+
+         AjouterSousZones(iGaucheVars->zoneSelectionnee, CreerZone(0,0,LARGEUR_T, HAUTEUR_T));
+
+         Rearanger(iGaucheVars->zonePrincipale);
+
+         free(data);
+
+      }
+      
    }
    return;
 }
@@ -408,3 +511,4 @@ void imprimer_rep (gchar *string) {
    g_print ("%s\n",string);
 }
 
+   

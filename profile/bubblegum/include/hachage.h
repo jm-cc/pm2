@@ -16,26 +16,26 @@ typedef struct PairNode_tag PairNode;
 
 struct PairNode_tag
 {
-      int data;
-      int key;
+      long data;
+      long key;
       PairNode* next;
 };
 
 typedef struct HashTable_tag
 {
-      int size;
-      int xor;
+      long size;
+      long xor;
       PairNode** table;
 } HashTable;
 
 
 // retourne un indice haché à partir d'une donnée
-int HashFunction(HashTable* ht, int key);
+long HashFunction(HashTable* ht, long key);
 
-HashTable* NewHashTable(int size);
+HashTable* NewHashTable(long size);
 void DeleteHashTable(HashTable* ht);
 
-int GetData(HashTable* ht, int key);
-void AddPair(HashTable* ht, int key, int data);
+long GetData(HashTable* ht, long key);
+void AddPair(HashTable* ht, long key, long data);
 
 #endif

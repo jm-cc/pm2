@@ -76,7 +76,7 @@ void A_Propos(GtkWidget *widget, gpointer data)
    infos = gtk_label_new("Gestion des bulles et des treads\n\n"
                          "This program is free software and may be distributed according\n"
                          "to the terms of the GNU General Public License\n\n"
-                         "Beta Version 0.7 - 2006 PFAG6 Team");
+                         "Beta Version 0.8 - 2006 PFAG6 Team");
     
    gtk_box_pack_start(GTK_BOX(hbox), infos, FALSE, FALSE, 10);
  

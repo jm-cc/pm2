@@ -8,6 +8,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include <wchar.h>
 #include <stdlib.h>
 #include <GL/gl.h>
 #include <SDL/SDL.h>

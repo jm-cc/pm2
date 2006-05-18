@@ -6,15 +6,7 @@
  *********************************************************************/
 
 
-#include <stdlib.h>
-#include <gtk/gtk.h>
 #include "mainwindow.h"
-#include "menus.h"
-#include "actions.h"
-#include "toolbars.h"
-#include "raccourcis.h"
-#include "rightwindow.h"
-#include "interfaceGauche.h"
 
 int main(int argc, char **argv)
 {
@@ -87,17 +79,16 @@ int main(int argc, char **argv)
    left_frame = gtk_frame_new("Interface Gauche");
    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(left_viewport), iGauche);
 
-   /*Création viewport de droite */
+   /* Création viewport de droite */
    right_viewport = gtk_scrolled_window_new(NULL, NULL);
    gtk_paned_pack2(GTK_PANED(hpane), right_viewport, TRUE, TRUE);
    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(right_viewport), GTK_POLICY_AUTOMATIC,
                                   GTK_POLICY_AUTOMATIC);
-
+   
    /* Récupération de la vbox de droite par la fonction right_window() */
 
    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(right_viewport), make_right_window(main_window));
 
-        
    /* Création de la barre d'état */
    /*    statusbar = gtk_statusbar_new(); */
    /*    gtk_box_pack_end(GTK_BOX(vbox), statusbar, FALSE, FALSE, 0); */
@@ -105,7 +96,7 @@ int main(int argc, char **argv)
    
    /* Affiche tous les Widgets de la fenêtre principale*/
    gtk_widget_show_all(main_window);
-   
+
    /* Boucle principale */
    gtk_main();
    

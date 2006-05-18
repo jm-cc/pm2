@@ -41,12 +41,12 @@ void make_drawable_zone(GtkWidget* vb_right_interface)
    }
    if (glconf == NULL)
    {
-      printf("aie : problème de configuration opengl !\n");
+      wprintf(L"aie : problème de configuration opengl !\n");
    }
    
    if (!gtk_widget_set_gl_capability(drawzone, glconf, NULL, TRUE, GDK_GL_RGBA_TYPE))
    { /* ok, ya un truc qui n'a pas marché */
-      printf("aie : La promotion au rang de widget OpenGL à faillie lamentablement.\n");
+      printf("aie : La promotion au rang de widget OpenGL a failli lamentablement.\n");
    }
 
    AnimElements* anim = AnimationNew(drawzone);  // creation des objets necessaires pour l'animateur
@@ -122,7 +122,7 @@ void Realize_dz(GtkWidget *widget, gpointer data)
       anim->pIfont = InitGPFont(buf, 10);
       if (anim->pIfont == NULL)
       {
-         printf("le chargement de ./font/font.ttf à échoué\n");
+         wprintf(L"le chargement de ./font/font.ttf à échoué\n");
          exit(1);
       }
       

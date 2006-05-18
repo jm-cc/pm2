@@ -23,15 +23,17 @@ typedef struct DataAddBulle_tag
 
 interfaceGaucheVars* interfaceGauche();
 
-void addBulle(GtkWidget* pWidget, gpointer data);
-void addThread(GtkWidget* pWidget, gpointer data);
-void delete(GtkWidget* pWidget, gpointer data);
+void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data);
+void addBulleAutoOff(interfaceGaucheVars* data);
+void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data);
+void addThreadAutoOff(interfaceGaucheVars* data);
+void switchModeAuto(GtkWidget* pWidget, gpointer data);
 void deleteRec(GtkWidget* pWidget, gpointer data);
 
 void OnScrollbarChange(GtkWidget *pWidget, gpointer data);
 
-void traceAddBulle(GtkWidget* widget, DataAddBulle* data);
-void traceAddThread(GtkWidget* widget, DataAddThread* data);
+void AddBulle(GtkWidget* widget, DataAddBulle* data);
+void AddThread(GtkWidget* widget, DataAddThread* data);
 
 int menuitem_rep(GtkWidget *widget,GdkEvent *event);
 

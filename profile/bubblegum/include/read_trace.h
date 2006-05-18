@@ -1,37 +1,38 @@
 /* structure d'infos concernant chaque événements */
 
-#define PARCOURS 0
-#define ANALYSE 1
+#define DECOMPTE 0 //simple préparcours de la trace
+#define ANALYSE 1 //parcours avec analyse
 
 struct infos_tr {
-  int nb_evts;
-  int nb_levels;
+	  int nb_evts;
+	  int nb_levels;
 };
 
 struct etat_ev {
-  int code_ev; 					/* code evenemnt */
-  int time;
-  int fin_trace;				/* est-on à la fin de la trace ? */
+	  int code_ev; 					/* code evenemnt */
+	  int time;
+	  int fin_trace;				/* est-on à la fin de la trace ? */
 
-  /* thread */
-  int adr_thread;			
-  char * nom_thread;
-  int id_thread;
-  int next_thread; 
+	  /* thread */
+	  long adr_thread;			
+	  char * nom_thread;
+	  int id_thread;
+	  int nb_thread;
+	  long next_thread; 
 
-  /* bulle */
-  int adr_bulle;
-  int mere_bulle;
-
+	  /* bulle */
+	  long adr_bulle;
+	  long mere_bulle;
+	  
   /* runqueue */
-  int nb_levels;
-  int level_rq;
-  int taille_lv;
-  int adr_rq;
-  int place_rq;
-
-  /**/
-  int prio;
+	  int nb_levels;
+	  int level_rq;
+	  int taille_lv;
+	  long adr_rq;
+	  int place_rq;
+	  
+	  /**/
+	  int prio;
 };
 
 typedef struct etat_ev ev_t;
@@ -52,13 +53,14 @@ int GetCode_Ev(ev_t *);
 int GetTime_Ev(ev_t *);
 int GetFin_Ev(ev_t *);
 
-int GetAdr_Thread_Ev(ev_t *);
+long GetAdr_Thread_Ev(ev_t *);
 char * GetNom_Thread_Ev(ev_t *);
 int GetId_Thread_Ev(ev_t *);
-int GetNext_Thread_Ev(ev_t *);
+int GetNb_Thread_Ev(ev_t *);
+long GetNext_Thread_Ev(ev_t *);
 
-int GetAdr_Bulle_Ev(ev_t *);
-int GetMere_Bulle_Ev(ev_t *);
+long GetAdr_Bulle_Ev(ev_t *);
+long GetMere_Bulle_Ev(ev_t *);
 
 int GetPrio_Ev(ev_t *);
 
@@ -66,7 +68,7 @@ int GetNombre_Lvs_Ev(ev_t *);
 int GetLevel_Rq_Ev(ev_t *);
 int GetPlace_Rq_Ev(ev_t *);
 int GetTaille_Lv_Ev(ev_t *);
-int GetAdr_Rq_Ev(ev_t *);
+long GetAdr_Rq_Ev(ev_t *);
 
-int my_printf(const char* format, ...);
-int my_printf_2(const char* format, ...);
+int my_printf(const wchar_t* format, ...);
+int my_printf_2(const wchar_t* format, ...);

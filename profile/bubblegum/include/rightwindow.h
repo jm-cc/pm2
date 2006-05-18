@@ -7,6 +7,7 @@
 #ifndef RIGHT_WINDOW_H
 #define RIGHT_WINDOW_H
 
+#include <wchar.h>
 #include <math.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>

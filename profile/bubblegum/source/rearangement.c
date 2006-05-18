@@ -8,19 +8,21 @@ void printTab(int* tab, int taille);
 /* { */
 /*    zone* zone1 = CreerZone(0,0,2,1); */
 
-/*    zone* zone2 = CreerZone(0,0,10,10); */
-/*    zone* zone3 = CreerZone(0,0,10,10); */
-/*    zone* zone4 = CreerZone(0,0,10,10); */
-/*    zone* zone5 = CreerZone(0,0,10,10); */
-/*    zone* zone6 = CreerZone(0,0,10,10); */
-/*    zone* zone7 = CreerZone(0,0,10,10); */
+/*    zone* zone2 = CreerZone(0,0,50,50); */
+/*    zone* zone3 = CreerZone(0,0,50,50); */
+/*    zone* zone4 = CreerZone(0,0,50,50); */
+/*    zone* zone5 = CreerZone(0,0,50,50); */
+/*    zone* zone6 = CreerZone(0,0,50,50); */
+/*    zone* zone7 = CreerZone(0,0,50,50); */
+/*    zone* zone8 = CreerZone(0,0,50,50); */
 
 /*    AjouterSousZones(zone1, zone2); */
 /*    AjouterSousZones(zone1, zone3); */
 /*    AjouterSousZones(zone1, zone4); */
 /*    AjouterSousZones(zone1, zone5); */
-/*    AjouterSousZones(zone2, zone6); */
-/*    AjouterSousZones(zone2, zone7); */
+/*    AjouterSousZones(zone3, zone6); */
+/*    AjouterSousZones(zone4, zone7); */
+/*    AjouterSousZones(zone5, zone8); */
 
 /*    Rearanger(zone1); */
 
@@ -135,11 +137,11 @@ int Rearanger(zone * zone1)
 
          Translater(LireSousZones(zone1,j),
                     tabX[nMin] - LireZoneX(LireSousZones(zone1,j)),
-                    tabY[nMin] - LireZoneY(LireSousZones(zone1,j)));
+                    minY - LireZoneY(LireSousZones(zone1,j)));
 
          if (LireZoneX(LireSousZones(zone1,j)) +
              LireZoneLargeur(LireSousZones(zone1,j)) >
-            largeurMax)
+             largeurMax)
             largeurMax = LireZoneX(LireSousZones(zone1,j)) +
                LireZoneLargeur(LireSousZones(zone1,j));
 
@@ -149,10 +151,10 @@ int Rearanger(zone * zone1)
                                   LireSousZones(zone1, j), zone1, minY);
 
          /* debug */
-         /* printTab(tabX,nPlateau); */
-         /* printf("_"); */
-         /* printTab(tabY,nPlateau); */
-         /* printf("\n"); */
+/*          printTab(tabX,nPlateau); */
+/*          printf("_"); */
+/*          printTab(tabY,nPlateau); */
+/*          printf("\n"); */
 
          ChangerZoneLargeur(zone1, largeurMax + MARGE);
          
@@ -202,11 +204,13 @@ int TesterPositionnerZone(int* tabX, int *tabY,
 
    /* si la zone à insérer est trop à droite, on retourne l'infini */
    if (largeurZoneP - MARGE < largeurSousZone + tabX[plateau])
+   {
       return 2147483647;
+   }
 
    /* sinon, on test pour chacun des plateaux qui sont au niveau de la
-    * sous zone lequel gène le plus la zone (est le plus bas) pour
-    * déterminer à quelle hauteur maximale peut on placer la sous
+    * sous zone lequel gène le plus la zone (est le plus haut) pour
+    * déterminer à quelle hauteur minimale peut on placer la sous
     * zone*/ 
    for(i = plateau + 1;
        (tabX[i] < largeurSousZone + tabX[plateau]) &&
@@ -252,6 +256,17 @@ int MAJTabPlateau(int* tabX, int *tabY,
       tabX[plateau] + LireZoneLargeur(SousZone))
       NbPlateauACreer = 0;
 
+   /* on décale les plateaux vers la gauche dans le tableau */
+   for(k = plateau + 1 + NbPlateauACreer;
+       k < nPlateau - NbPlateauACreer - NbPlateauASupr;
+       k++)
+   {
+      tabX[k] = tabX[k + NbPlateauASupr];
+      tabY[k] = tabY[k + NbPlateauASupr];
+   }
+
+   nPlateau -= NbPlateauASupr;
+
    /* si on doit creer un nouveau plateau */
    if (NbPlateauACreer == 1)
    {
@@ -266,18 +281,10 @@ int MAJTabPlateau(int* tabX, int *tabY,
       }
 
       /* et on insere un nouveau plateau */
-      tabY[plateau + 1] = tabY[i - 1];
+      tabY[plateau + 1] = Y;
       tabX[plateau + 1] = tabX[plateau] + LireZoneLargeur(SousZone);
    }
 
-   /* on décale les plateaux vers la gauche dans le tableau */
-   for(k = plateau + 1 + NbPlateauACreer;
-       k < nPlateau - NbPlateauACreer - NbPlateauASupr;
-       k++)
-   {
-      tabX[k] = tabX[k + NbPlateauASupr];
-      tabY[k] = tabY[k + NbPlateauASupr];
-   }
 
    tabY[plateau] = Y + LireZoneHauteur(SousZone);
 

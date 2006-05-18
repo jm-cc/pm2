@@ -185,7 +185,7 @@ void RemoveElement(Element* conteneur, int position)
       conteneur->bulle.taille --;      
    }
    else
-      printf("mauvais paramêtre dans RemoveElement\n");
+      wprintf(L"mauvais paramêtre dans RemoveElement\n");
 
    return;
 }
@@ -234,7 +234,7 @@ void RemoveElementOnCascade(Element* conteneur, int position)
       conteneur->bulle.taille --;      
    }
    else
-      printf("mauvais paramêtre dans RemoveElementOnCascade %d \n",conteneur->bulle.taille);
+      wprintf(L"mauvais paramêtre dans RemoveElementOnCascade %d \n",conteneur->bulle.taille);
 
    return;
 }

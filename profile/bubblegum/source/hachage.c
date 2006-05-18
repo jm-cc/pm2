@@ -7,13 +7,13 @@
 
 #include "hachage.h"
 
-int HashFunction(HashTable* ht, int key)
+long HashFunction(HashTable* ht, long key)
 {
    key = key < 0 ? -key : key;
    return (key ^ ht->xor) % ht->size;
 }
 
-HashTable* NewHashTable(int size)
+HashTable* NewHashTable(long size)
 {
    HashTable* ht = malloc(sizeof(HashTable));
 
@@ -28,7 +28,7 @@ HashTable* NewHashTable(int size)
 
 void DeleteHashTable(HashTable* ht)
 {
-   int i;
+   long i;
    PairNode* pn, *pno;
    
    for (i = 0; i < ht->size; ++i)
@@ -47,9 +47,9 @@ void DeleteHashTable(HashTable* ht)
    free(ht);
 }
 
-int GetData(HashTable* ht, int key)
+long GetData(HashTable* ht, long key)
 {
-   int ind = HashFunction(ht, key);
+   long ind = HashFunction(ht, key);
    PairNode* pn;
 
    if (ht->table[ind] == NULL)
@@ -71,9 +71,9 @@ int GetData(HashTable* ht, int key)
    return pn->data;
 }
 
-void AddPair(HashTable* ht, int key, int data)
+void AddPair(HashTable* ht, long key, long data)
 {
-   int ind = HashFunction(ht, key);
+   long ind = HashFunction(ht, key);
    PairNode* pn;
    
    if (ht->table[ind] == NULL)
@@ -88,6 +88,8 @@ void AddPair(HashTable* ht, int key, int data)
       pn = ht->table[ind];
       while (pn->next != NULL)
       {
+         if (pn->data == data)  // la donnée existe déjà
+            return;
          pn = pn->next;
       }
       pn->next = malloc(sizeof(PairNode));

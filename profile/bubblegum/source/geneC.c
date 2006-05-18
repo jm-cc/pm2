@@ -1,140 +1,135 @@
 #include "geneC.h"
 
-#define VISITE 0
-#define GENERE 1
-
 FILE * fw;
 static int bid = 0;
+static int faux_bid = 0;
 static int tid = 0;
 
 /* Fonction de parcours de bulle
-   si mode est placé à GENERE, écriture dans le fichier généré
+   si mode est placÃ© Ã  GENERE, Ã©criture dans le fichier gÃ©nÃ©rÃ©
    sinon VISITE our simple parcours */
 
-int parcourir_bulle(Element* bulle, int where, int mode)
+int parcourir_bulle(Element* bulle, int where, int mode) 
 {
-  int i;
-  int faux_bid;
-  Element * element_i;
-  TypeElement type;
+   int i;
+   Element * element_i;
+   TypeElement type;
 
-  if (where == 0)
-	{
+   if (where == 0)
+   {
 	  if (mode == 1)
-		{
-		  fprintf(fw,"   //création de la bulle %d :\n",bid);
-		  fprintf(fw,"   marcel_bubble_init(&b%d);\n",bid);
-		  fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(bulle));
-		}
+      {
+         fwprintf(fw,L"   //crÃ©ation de la bulle %d :\n",bid);
+	 fprintf(fw,"   marcel_bubble_init(&b%d);\n",bid);
+	 fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(bulle));
+      }
 	  if (mode == 2)
-		{
-		  fprintf(fw,"marcel_bubble_t b0;\n");
-		}
+      {
+         fprintf(fw,"marcel_bubble_t b0;\n");
+      }
 	  faux_bid = 0;
-	}
-
-  for (i = 0; i < GetNbElement(bulle); i++)
-	{
-	  element_i = GetElement(bulle,i);
+   }
+   int taillebulle = GetNbElement(bulle);
+   for (i = 1; i <= taillebulle; i++)
+   {
+	  element_i = GetElement(bulle, i);
 	  type = GetTypeElement(element_i);
 	  if (type == BULLE)
-		{
-		  bid ++;
-		  if(mode == 1)
-			{
-			  fprintf(fw,"   //création de la bulle %d :\n",bid);
-			  fprintf(fw,"   marcel_bubble_init(&b%d);\n",bid);
-			  fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",where,bid);
-			  fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(element_i));
-			}
-		  if(mode == 2)
-			{
-			  fprintf(fw,"marcel_bubble_t b%d;\n",bid);
-			}
-		}  
+      {
+         bid ++;
+         if(mode == 1)
+         {
+            fwprintf(fw,L"   //crÃ©ation de la bulle %d :\n",bid);
+            fprintf(fw,"   marcel_bubble_init(&b%d);\n",bid);
+            fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",where,bid);
+            fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(element_i));
+         }
+         if(mode == 2)
+         {
+            fprintf(fw,"marcel_bubble_t b%d;\n",bid);
+         }
+      }  
 	  if (type == THREAD)
-		{
-		  if(mode == 1)
-			{
-			  fprintf(fw,"   //création du thread id = %d :\n",GetId(element_i));
-			  fprintf(fw,"   {\n");
-			  fprintf(fw,"      marcel_attr_t attr;\n");
-			  fprintf(fw,"      marcel_attr_init(&attr);\n");
-			  fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",where);
-			  fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
-			  fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
-			  fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
-			  fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)%d);\n",GetId(element_i),GetId(element_i));
-			  fprintf(fw,"   }\n\n");
-			}
-		  if(mode == 2)
-			{
-			  fprintf(fw,"marcel_t t%d;\n",GetId(element_i)); 
-			}
-		  tid ++;
-		}
-	}
-  for(i = 0; i < GetNbElement(bulle); i++)
-	{
+      {
+         if(mode == 1)
+         {
+            fwprintf(fw,L"   //crÃ©ation du thread id = %d :\n",GetId(element_i));
+            fprintf(fw,"   {\n");
+            fprintf(fw,"      marcel_attr_t attr;\n");
+            fprintf(fw,"      marcel_attr_init(&attr);\n");
+            fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",where);
+            fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
+            fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
+            fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
+            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)%d);\n",GetId(element_i),GetId(element_i));
+            fprintf(fw,"   }\n\n");
+         }
+         if(mode == 2)
+         {
+            fprintf(fw,"marcel_t t%d;\n",GetId(element_i)); 
+         }
+         tid ++;
+      }
+   }
+   for(i = 1; i <= taillebulle; i++)
+   {
 	  element_i = GetElement(bulle,i);
 	  type = GetTypeElement(element_i);
 	  if (BULLE == GetTypeElement(element_i))
-		{
-		  faux_bid ++;
-		  parcourir_bulle(element_i,faux_bid,mode);
-		}
-	}
-  return 0;
+      {
+         faux_bid ++;
+         parcourir_bulle(element_i,faux_bid,mode);
+      }
+   }
+   return 0;
 }
 
-/* Fonction principale de génération du fichier .C */
+/* Fonction principale de gÃ©nÃ©ration du fichier .C */
 
 int gen_fichier_C(Element * bullemere)
 {
-  if (GetTypeElement(bullemere) != BULLE)
-	{
-	  printf("Le fichier entré en paramètre n'est pas une BULLE\n"); 
+   if (GetTypeElement(bullemere) != BULLE)
+   {
+	  wprintf(L"Le fichier entrÃ© en paramÃ¨tre n'est pas une BULLE\n"); 
 	  return -1;
-	}
-  fw = fopen("to_pm2.c","w");
-  if (fw == NULL)
-	{
-	  printf("Erreur lors de l'ouverture du fichier en écriture\n"); 
+   }
+   fw = fopen("to_pm2.c","w");
+   if (fw == NULL)
+   {
+	  wprintf(L"Erreur lors de l'ouverture du fichier en Ã©criture\n"); 
 	  return -1;
-	}
+   }
 
-  printf("**** Démarrage de la génération du fichier .C ****\n");
+   wprintf(L"**** DÃ©marrage de la gÃ©nÃ©ration du fichier .C ****\n");
 
-  fprintf(fw,"#include \"marcel.h\"\n\n");
-  fprintf(fw,"any_t f(any_t foo) {\n");
-  fprintf(fw,"   int i = (int)foo;\n");
-  fprintf(fw,"   marcel_printf(\"some work in %%d\\n\",i);\n");
-  fprintf(fw,"   return NULL;\n}\n\n");
+   fprintf(fw,"#include \"marcel.h\"\n\n");
+   fprintf(fw,"any_t f(any_t foo) {\n");
+   fprintf(fw,"   int i = (int)foo;\n");
+   fprintf(fw,"   marcel_printf(\"some work in %%d\\n\",i);\n");
+   fprintf(fw,"   return NULL;\n}\n\n");
 
-  //parcourir_bulle(bullemere,0,VISITE);
-  parcourir_bulle(bullemere,0,2);
-  //generer_decl(tid,bid);
+   parcourir_bulle(bullemere,0,2);
   
-  fprintf(fw,"\nint main(int argc, char *argv[]) {");
-  fprintf(fw,"\n\n   marcel_init(&argc,argv);");
-  fprintf(fw,"\n   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);");
-  fprintf(fw,"\n   marcel_printf(\"started\\n\");\n\n");
+   fprintf(fw,"\nint main(int argc, char *argv[]) {");
+   fprintf(fw,"\n\n   marcel_init(&argc,argv);");
+   fprintf(fw,"\n   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);");
+   fprintf(fw,"\n   marcel_printf(\"started\\n\");\n\n");
   
-  bid = 0;
-  tid = 1;
+   bid = 0;
+   tid = 1;
   
-  parcourir_bulle(bullemere,0,GENERE);
+   parcourir_bulle(bullemere,0,1);
   
-  fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
+   fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
   
-  fprintf(fw,"\n   marcel_printf(\"ok\\n\");");
-  fprintf(fw,"\n   profile_stop();\n");
-  fprintf(fw,"   marcel_end();\n\n");
-  fprintf(fw,"   return 0;\n}\n");
+   fprintf(fw,"\n   marcel_printf(\"ok\\n\");");
+   //   fprintf(fw,"\n   profile_stop();\n");
+   fprintf(fw,"   marcel_end();\n\n");
+   fprintf(fw,"   return 0;\n}\n");
 
-  fclose(fw);
+   fclose(fw);
   
-  printf("**** Fichier .C généré :) ****\n\n");
+   wprintf(L"**** Fichier .C gÃ©nÃ©rÃ© :) ****\n\n");
 
-  return 0;
+   return 0;
 }

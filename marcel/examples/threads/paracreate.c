@@ -17,7 +17,7 @@ void * run(void * arg) {
 	marcel_t pid;
 	int my_nb;
 	int essais = 3;
-	tick_t t1, t2, t3;
+	tick_t t1, t2, t3, t4, t5;
 	int num = (int) arg;
 	marcel_vpmask_t mask = ~(1<<num);
 
@@ -30,6 +30,7 @@ void * run(void * arg) {
 		
 		my_nb = nb;
 
+		GET_TICK(t4);
 		while(my_nb--) {
 			
 			GET_TICK(t1);
@@ -38,8 +39,10 @@ void * run(void * arg) {
 			GET_TICK(t2);
 				
 		}
-		marcel_printf("creation  time =  %fus\n", TIMING_DELAY(t1, t3));
-		marcel_printf("execution time =  %fus\n", TIMING_DELAY(t1, t2));
+		GET_TICK(t5);
+		marcel_printf("last creation  time =  %fus\n", TIMING_DELAY(t1, t3));
+		marcel_printf("last execution time =  %fus\n", TIMING_DELAY(t1, t2));
+		marcel_printf("mean execution time =  %fus\n", TIMING_DELAY(t4, t5)/(float)nb);
 		marcel_fflush(stdout);
 	}
 	return NULL;

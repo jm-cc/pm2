@@ -471,9 +471,7 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
                   call_init_function(&ma_init_info_topo_discover);
-#ifdef MA__NUMA
 		  call_init_function(&ma_init_info_marcel_topology_notifier_register);
-#endif // MA__NUMA
 		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif // MA__LWPS
                 }

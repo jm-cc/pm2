@@ -19,7 +19,7 @@ void * run(void * arg) {
 	int essais = 3;
 	tick_t t1, t2, t3;
 	int num = (int) arg;
-	marcel_vpmask_t mask = 1<<num;
+	marcel_vpmask_t mask = ~(1<<num);
 
 	if(nb == 0)
 		return NULL;
@@ -54,22 +54,25 @@ int marcel_main(int argc, char *argv[])
 
 	marcel_init(&argc, argv);
 
-	if(argc != 2) {
+	if(argc < 2) {
 		fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
 		exit(1);
 	}
 
 	nb = atoi(argv[1]);
 
-	ncpus = marcel_nbvps();
+	if (argc==3)
+		ncpus = atoi(argv[2]);
+	else
+		ncpus = marcel_nbvps();
 
 	{
 		marcel_t pids[ncpus];
 
-		for (i=0; i<marcel_nbvps(); i++)
-			marcel_create(&pids[i], NULL, run, (void *)i);
+		for (i=0; i<ncpus; i++)
+			marcel_create(&pids[i], NULL, run, (void *)(i));
 
-		for (i=0; i<marcel_nbvps(); i++)
+		for (i=0; i<ncpus; i++)
 			marcel_join(pids[i], NULL);
 	}
 	

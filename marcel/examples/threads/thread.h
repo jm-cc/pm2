@@ -44,7 +44,7 @@
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
-#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #  define marcel_vpmask_t            unsigned long
 
 #  define TRUE 1
@@ -205,7 +205,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
-#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #  define marcel_vpmask_t            unsigned long
 
 #elif defined(REGULAR_UNIX)
@@ -257,7 +257,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
-#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #  define marcel_vpmask_t            unsigned long
 
 #elif defined(MARCEL)

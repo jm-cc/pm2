@@ -129,7 +129,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
   case POLICY_GLOBAL:
     {
       ma_container_fini(ma_get_container(allocator, ALLOC_METHOD), allocator->destroy, allocator->destroy_arg);
-      free(allocator->container);
+      TBX_FREE(allocator->container);
     }
     break;
  
@@ -293,7 +293,7 @@ void * ma_obj_allocator_malloc(void * arg)
 
 void ma_obj_allocator_free(void * obj, void * foo) 
 {
-  free(obj);
+  TBX_FREE(obj);
 }
 
 unsigned long ma_per_sth_alloc(ma_per_sth_cur_t *cur, size_t size)

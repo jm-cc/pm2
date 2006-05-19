@@ -51,11 +51,23 @@ static void *unmapped_slot_alloc(void *foo)
 
 static void *mapped_slot_alloc(void *foo)
 {
-	void *ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
+	void *ptr;
 	void *res;
 	int nb_try_left=1000;
 
+
 retry:
+	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
+	if (!ptr) {
+		if (!ma_in_atomic() && nb_try_left--) {
+			/* On tente de faire avancer les autres
+			 * threads */
+			mdebugl(PM2DEBUG_DISPLEVEL,
+				"Trying to wait for mmap.\n");
+			marcel_yield();
+			goto retry;
+		}
+	}
 	res = mmap(ptr,
 		   THREAD_SLOT_SIZE,
 		   PROT_READ | PROT_WRITE | PROT_EXEC,

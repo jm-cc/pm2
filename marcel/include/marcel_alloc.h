@@ -24,6 +24,8 @@ extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_alloc
 TBX_FMALLOC void *marcel_slot_alloc(void);
 void marcel_slot_free(void *addr);
 void marcel_slot_exit(void);
+
+#section marcel_macros
 #define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
 #define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)
 

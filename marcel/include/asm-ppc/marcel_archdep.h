@@ -54,15 +54,21 @@
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
 
+#ifdef AIX_SYS
+#define MA_ASM_R
+#else
+#define MA_ASM_R "r"
+#endif
+
 #define set_sp(val) \
-  __asm__ __volatile__("mr 1, %0\n" \
+  __asm__ __volatile__("mr "MA_ASM_R"1, %0\n" \
 		  : : "r" (val) : "memory", "r1")
 
 #define set_fp(val) \
-  __asm__ __volatile__("mr 31, %0\n" \
+  __asm__ __volatile__("mr "MA_ASM_R"31, %0\n" \
 		  : : "r" (val) : "memory", "r31")
 
 #define set_sp_fp(sp,fp) \
-  __asm__ __volatile__("mr 1, %0\n" \
-		       "mr 31, %1\n" \
+  __asm__ __volatile__("mr "MA_ASM_R"1, %0\n" \
+		       "mr "MA_ASM_R"31, %1\n" \
 		  : : "r" (sp), "r" (fp) : "memory", "r1")

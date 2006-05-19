@@ -36,6 +36,7 @@ void marcel_slot_exit(void);
 #define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
 #define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
 
+#section functions
 TBX_FMALLOC void *marcel_malloc(unsigned size, char *file, unsigned line);
 TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line);
 TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);

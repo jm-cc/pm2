@@ -24,6 +24,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 } marcel_ctx_t[1];
 
 #section macros
+#depend "asm/marcel_archdep.h[marcel_macros]"
 #define marcel_ctx_getcontext(ctx) \
   setjmp(ctx[0].jbuf)
 #define marcel_ctx_setjmp(ctx) marcel_ctx_getcontext(ctx)

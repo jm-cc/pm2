@@ -26,6 +26,7 @@
 #  include <sys/stack.h>
 #  define TOP_STACK_FREE_AREA     (WINDOWSIZE+128)
 #  define SP_FIELD(buf)           ((buf)[1])
+#  define FP_FIELD(buf)           ((buf)[3])
 #endif
 
 /* Linux sparc */
@@ -37,6 +38,7 @@
 #endif
 #  define TOP_STACK_FREE_AREA     (MAL(SPARC_MAXREGWINDOW*4)+128)
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
+#  define FP_FIELD(buf)           ((buf)->__jmpbuf[JB_FP])
 #endif
 
 extern void call_ST_FLUSH_WINDOWS(void);
@@ -47,6 +49,11 @@ extern void call_ST_FLUSH_WINDOWS(void);
   register unsigned long sp asm("%sp"); \
   sp; \
 })
+#define get_fp() \
+({ \
+  register unsigned long fp asm("%fp"); \
+  fp; \
+})
 #else
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
@@ -54,3 +61,12 @@ extern void call_ST_FLUSH_WINDOWS(void);
 #  define set_sp(val) \
     __asm__ __volatile__("mov %0, %%sp\n\t" \
                          : : "r" (val) : "memory", "sp")
+
+#  define set_fp(val) \
+    __asm__ __volatile__("mov %0, %%fp\n\t" \
+                         : : "r" (val) : "memory", "fp")
+
+#  define set_sp_fp(sp,fp) \
+    __asm__ __volatile__("mov %0, %%sp\n\t" \
+		    	 "mov %1, %%fp\n\t" \
+                         : : "r" (sp), "r" (fp) : "memory", "sp")

@@ -38,10 +38,11 @@ any_t master(any_t arg)
     CLONE_BEGIN(&clone_var);
 
     fprintf(stderr,
-	    "Je suis en section parallele "
-	    "(delta = %lx, i = %d)\n",
+	    "Je (%p) suis en section parallele "
+	    "(delta = %lx, &i = %p/%p, i = %d)\n", marcel_self(),
 	    clone_my_delta(),
-	    ++(*((int *)((char *)&i - clone_my_delta()))));
+	    &i, (int*)(((unsigned long)&i) - clone_my_delta()),
+	    ++(*((int *)(((unsigned long)&i) - clone_my_delta()))));
 
     marcel_delay(1000);
 

@@ -51,7 +51,7 @@
   register unsigned long sp asm("$30"); \
   sp; \
 })
-#ifdef UNICOS_SYS
+#ifndef OSF_SYS
 #define get_fp() \
 ({ \
  register unsigned long fp asm("$15"); \
@@ -66,7 +66,7 @@
   __asm__ __volatile__("addq %0, $31, $sp" \
                        : : "r" (val) : "memory", "$30")
 
-#ifdef UNICOS_SYS
+#ifndef OSF_SYS
 #  define set_fp(val) \
   __asm__ __volatile__("addq %0, $31, $15" \
                        : : "r" (val) : "memory", "$15")

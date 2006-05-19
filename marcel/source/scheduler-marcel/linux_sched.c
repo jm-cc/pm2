@@ -1484,8 +1484,9 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	/* Task might have expired already, but not scheduled off yet */
 	//if (p->sched.internal.array != rq->active) {
 	if (!MA_TASK_IS_RUNNING(p)) {
-		pm2debug("Strange: %s running, but on an array !, report or look at it (%s:%i)\n",
-				p->name, __FILE__, __LINE__);
+		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
+				p->name, ma_task_run_holder(p),
+				ma_task_holder_data(p), __FILE__, __LINE__);
 		ma_set_tsk_need_resched(p);
 		goto out;
 	}

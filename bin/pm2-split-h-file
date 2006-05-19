@@ -2,7 +2,7 @@
 ###########
 
 use strict;
-use diagnostics;
+#use diagnostics;
 
 use Getopt::Long;
 Getopt::Long::Configure("permute");

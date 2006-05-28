@@ -1,0 +1,16 @@
+.TH "ma_container_init"
+.SH NOM
+ma_container_init
+.SH SYNOPSYS
+#include "marcel_container.h"
+
+void ma_container_init(ma_container_t * container, int conservative, int max_size)
+
+.SH DESCRIPTION
+Initialise le réservoir avec les paramètres passés en arguments.
+Crée un mutex pour protéger l'accès au réservoir (mais il n'est pas initialisé).
+
+.SS ARGUMENTS
+ma_container_t * container : le réservoir à initialiser.
+int conservative : la politique à appliquer.
+int max_size : la taille maximale du réservoir.

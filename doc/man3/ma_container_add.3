@@ -1,0 +1,15 @@
+.TH "ma_container_add"
+.SH NOM
+ma_container_add
+.SH SYNOPSYS
+#include "marcel_allocator.h"
+
+void ma_container_add(ma_container_t* container, void* obj);
+
+.SH DESCRIPTION
+Ajoute un objet dans le réservoir.
+
+.SS ARGUMENTS
+ma_container_t* container : le réservoir qui va être modifié
+.br
+void* obj : l'objet à rajouter dans le réservoir

@@ -1,0 +1,13 @@
+.TH "ma_obj_alloc"
+.SH NOM
+ma_obj_alloc
+.SH SYNOPSYS
+#include "marcel_container.h"
+
+void * ma_obj_alloc(ma_allocator_t* allocator);
+
+.SH DESCRIPTION
+Essaie d'obtenir un objet de l'allocateur passé en paramètres. S'il n'en trouve pas, alors un nouvel objet est alloué selon la fonction d'allocation propre à ce dernier.
+
+.SS ARGUMENTS
+ma_allocator_t * allocator: pointeur vers l'allocateur ou l'on souhaite récupérer l'objet.

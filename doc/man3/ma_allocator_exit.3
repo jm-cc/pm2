@@ -1,0 +1,13 @@
+.TH "ma_allocator_exit"
+.SH NOM
+ma_allocator_exit
+.SH SYNOPSYS
+#include "marcel_allocator.h"
+
+void ma_allocator_exit(void) 
+
+.SH DESCRIPTION
+Cette fonction permet d'afficher les infos de debug (si elles ont été choisies lors de la compilation),
+nombre de locks, nombre d'objet alloués.
+Ensuite elle supprime les allocateurs de noeuds et les allocateurs de réservoir par lwp / level.
+

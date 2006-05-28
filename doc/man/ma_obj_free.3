@@ -1,0 +1,14 @@
+.TH "ma_obj_free"
+.SH NOM
+ma_obj_free
+.SH SYNOPSIS
+#include "marcel_container.h"
+
+void ma_obj_free(ma_allocator_t * allocator, void * obj);
+
+.SH DESCRIPTION
+Ajoute l'objet obj à un réservoir de l'allocateur passé en paramètres.
+
+.SS ARGUMENTS
+ma_allocator_t * allocator : l'allocateur dans lequel on souhaite ajouter l'objet.
+void * obj : l'objet à ajouter au réservoir

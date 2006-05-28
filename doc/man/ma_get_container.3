@@ -1,0 +1,41 @@
+.TH "ma_get_container"
+.SH NOM
+ma_get_container
+.SH SYNOPSYS
+#include "marcel_allocator.h"
+
+ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
+
+.SH DESCRIPTION
+Permet de récuperer un réservoir selon la politique de l'allocateur :
+Politique globale : le réservoir retourné est le réservoir global.
+Politique locale : le réservoir retourné est celui qui est propre au thread.
+Politique hiérarchique : le réservoir à retourner dépend du mode choisi :
+
+mode FREE_METHOD : le réservoir retourné est le réservoir (non vide) le plus proche du processeur dans 
+l'arborescence hiérarchique, si tous les réservoirs de niveau supérieur sont vides,
+le réservoir retourné est le réservoir le plus proche du processeur. 
+.br
+mode ALLOC_METHOD : le réservoir retourné est le réservoir (non plein) le plus proche du processeur dans 
+l'arborescence hiérarchique, si tous les réservoirs de niveau supérieur sont pleins,
+le réservoir retourné est le réservoir le plus proche du processeur, il faut alors noté qu'il va déborder.
+Mais de toutes façon on le test sur le remplissage d'un réservoir n'est utilisé que dans cette fonction,
+donc le débordement ne produit en réalité aucun problème...
+.br
+mode FREE_METHOD_PER_BLOCk : le réservoir retourné est toujours le réservoir le plus proche du processeur.
+Cependant si celui-ci est plein on transfère une partie de son contenu dans le réservoir non plein le plus proche hiérarchiquement.
+Si tous les réservoirs supérieurs sont également pleins on ne transfère rien et on laisse déborder le réservoir le plus proche du processeur.
+.br
+mode ALLOC_METHOD_PER_BLOCK : le réservoir retourné est toujours le réservoir le plus proche du processeur.
+Cependant si celui-ci est vide on transfère une partie du réservoir non vide le plus proche hiérarchiquement dans le réservoir le plus proche du processeur.
+Si tous les réservoirs supérieurs sont également vide on ne transfère rien et on retourne le réservoir le plus proche du processeur.
+.br
+Important : ma_get_container ne bloque pas les containers, donc il se peut que en réalité un réservoir marqué comme vide soit plein lorsqu'on appelle
+ma_container_move_per_block, c'est pour celà que le nombre d'éléments à déplacer n'est calculé que dans ma_container_move_per_block (qui elle est bloquante).
+
+.SS ARGUMENTS
+ma_allocator_t * allocator : allocateur dans lequel on va récupérer un réservoir.
+int mode : Ce mode n'est utilisé que si la politique est hiérarchique, 
+valeurs possibles : FREE_METHOD, ALLOC_METHOD, FREE_METHOD_PER_BLOCk ou ALLOC_METHOD_PER_BLOCK (Voir plus haut pour les explications). 
+
+ma_container_t* container : le réservoir qui va être libéré

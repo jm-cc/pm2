@@ -1,0 +1,52 @@
+/*
+ * NewMadeleine
+ * Copyright (C) 2006 (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+
+struct nm_proto;
+struct nm_pkt_wrap;
+struct nm_proto_ops {
+        /* protocol commands */
+
+        int (*init)		(struct nm_proto 	* const p_proto);
+
+        /* handlers called when a packet is received for this protocol
+           - scheduler call these handlers when it no longer has any
+           processing to perform on the packet
+           - the scheduler code is responsible for discarding the
+           pkt_wrap structure when the handlers return, so the handlers
+           must not free it */
+
+        /* successful outgoing request
+         */
+        int (*out_success)	(struct nm_proto 	* const p_proto,
+                                 struct nm_pkt_wrap	*p_pw);
+
+        /* failed outgoing request
+         */
+        int (*out_failed)	(struct nm_proto 	* const p_proto,
+                                 struct nm_pkt_wrap	*p_pw,
+                                 int			_err);
+
+        /* successful incoming request
+         */
+        int (*in_success)	(struct nm_proto 	* const p_proto,
+                                 struct nm_pkt_wrap	*p_pw);
+
+        /* failed incoming request
+         */
+        int (*in_failed)	(struct nm_proto 	* const p_proto,
+                                 struct nm_pkt_wrap	*p_pw,
+                                 int			_err);
+};

@@ -1,0 +1,59 @@
+
+# -*-makefile-*-
+
+# NewMadeleine
+# Copyright (C) 2006 (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+SRC_D		:= src
+SRC_F		:= $(wildcard $(SRC_D)/*.c)
+
+vpath	%.c	$(SRC_D)
+
+.PHONY:	all build clean
+
+ifneq ($(CONFIG_VERBOSE), y)
+.SILENT:
+endif
+
+build:	$(LIB_A)($(SRC_F:src/%.c=%.o))
+
+ifneq ($(CONFIG_VERBOSE), y)
+$(LIB_A)($(SRC_F:src/%.c=%.o)): $(SRC_F:src/%.c=%.o)
+	@echo -e "  [AR]\t  " $(LIB_A) $*.o
+	@$(AR) cr $@ $*.o
+endif
+
+ifeq ($(CONFIG_VERBOSE), y)
+%.o:	src/%.c %.d
+else
+%.o:	src/%.c %.d
+	@echo -e "  [CC]\t  "$@
+	@$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
+endif
+
+%.d:	src/%.c
+	@set -e; rm -f $@; \
+	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
+	sed -i 's,:,: $(MAKE_CONF) ,' $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+ifeq ($(CONFIG_VERBOSE), y)
+clean:
+	rm -vf $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d) *.d.*
+else
+clean:
+	rm -f $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d) *.d.*
+endif
+
+-include $(SRC_F:src/%.c=%.d)

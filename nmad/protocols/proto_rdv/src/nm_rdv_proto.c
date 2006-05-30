@@ -40,7 +40,7 @@ get_and_extract(p_tbx_slist_t list,
         p_pw = tbx_slist_ref_get(list);
 
         if(p_pw->proto_id == proto_id && p_pw->seq == seq){
-            tbx_slist_ref_extract_and_forward(list, &p_pw);
+            tbx_slist_ref_extract_and_forward(list, NULL);
             goto end;
         }
     }while(tbx_slist_ref_forward(list));
@@ -457,7 +457,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
 
             //printf("-->DEStockage du rdv\n");
             tbx_slist_ref_extract_and_forward(waiting_rdv,
-                                              &rdv);
+                                              NULL);
 
             large_pw = get_and_extract(p_sched->submit_aux_recv_req, proto_id, seq);
 

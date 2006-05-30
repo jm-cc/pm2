@@ -43,7 +43,15 @@ struct nm_so_gate {
     struct nm_pkt_wrap * next_pw;
 };
 
+struct nm_so_trk{
+    /* pour les stream -> premier envoi */
+    //struct nm_pkt_wrap *intro;
+    tbx_bool_t pending_stream_intro;
+};
+
+
 struct nm_so_sched {
+    struct nm_so_trk so_trks[255];
     p_tbx_slist_t trks_to_update;
 
     // prêts à être pré-postés en réception
@@ -68,11 +76,6 @@ struct nm_so_sched {
     struct nm_pkt_wrap *acks;
 };
 
-struct nm_so_trk{
-    /* pour les stream -> premier envoi */
-    //struct nm_pkt_wrap *intro;
-    tbx_bool_t pending_stream_intro;
-};
 
 struct nm_so_pkt_wrap{
     struct nm_pkt_wrap **agregated_pws;

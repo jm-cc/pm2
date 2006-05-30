@@ -143,7 +143,7 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
 
         if(p_dest_pw){
             tbx_slist_ref_extract_and_forward(unexpected_list,
-                                              &unexpected);
+                                              NULL);
 
             memcpy(p_dest_pw->v[0].iov_base, unexpected->data,
                    unexpected->len);
@@ -198,7 +198,6 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
     p_tbx_slist_t trks_to_update = p_so_sched->trks_to_update;
     struct nm_trk *trk = NULL;
     struct nm_pkt_wrap *p_pw = NULL;
-    tbx_bool_t forward = tbx_false;
     int err;
 
 #ifdef CHRONO
@@ -226,16 +225,13 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
     TBX_GET_TICK(t4);
 #endif
 
-
-
-    if(!trks_to_update->length)
-        goto end;
-    tbx_slist_ref_to_head(trks_to_update);
-    while(1){
-        forward = tbx_slist_ref_extract_and_forward(trks_to_update, &trk);
+    while(!tbx_slist_is_nil(trks_to_update)){
+        trk = tbx_slist_remove_from_head(trks_to_update);
 
         if(trk->cap.rq_type == nm_trk_rq_stream){
-            struct nm_so_trk *so_trk = trk->priv;
+            struct nm_so_trk *so_trk =
+                &(p_so_sched->so_trks[trk->id]);
+
             assert(!so_trk->pending_stream_intro);
 
             so_trk->pending_stream_intro = tbx_true;
@@ -250,8 +246,8 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
 
             tbx_slist_append(p_sched->post_perm_recv_req, p_pw);
 
-            DISP_VAL("in_schedule (entete)- LOngueur des données à recevoir", p_pw->v[0].iov_len);
-            DISP_VAL("in_schedule (entet) - NB de seg de données à recevoir", p_pw->v_size);
+            //DISP_VAL("in_schedule (entete)- LOngueur des données à recevoir", p_pw->v[0].iov_len);
+            //DISP_VAL("in_schedule (entete) - NB de seg de données à recevoir", p_pw->v_size);
 
 
         } else if(trk->cap.rq_type == nm_trk_rq_dgram){
@@ -272,12 +268,9 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
             FAILURE("nm_so_in_schedule - type de track not supported");
         }
 
-        if(!forward)
-            break;
         trk = NULL;
     }
 
- end:
     err	= NM_ESUCCESS;
 
 #ifdef CHRONO
@@ -493,14 +486,14 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     struct nm_core *p_core = p_sched->p_core;
     struct nm_so_sched *p_so_sched = p_sched->sch_private;
     struct nm_trk *p_trk = p_pw->p_trk;
-    struct nm_so_trk *so_trk = p_trk->priv;
+    struct nm_so_trk *so_trk = &(p_so_sched->so_trks[p_trk->id]);
     struct nm_so_pkt_wrap * so_wrap = NULL;
 
     void * data = p_pw->v[p_pw->v_first].iov_base;
 
     if(p_trk->cap.rq_type == nm_trk_rq_stream){
         if(so_trk->pending_stream_intro){ // on attend l'entete
-            DISP("-------------ENTETE----------------");
+            //DISP("-------------ENTETE----------------");
 
             so_trk->pending_stream_intro = tbx_false;
 
@@ -510,13 +503,13 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             struct nm_so_sched_header * header
                 = (struct nm_so_sched_header *)data;
 
-            len = header->len;
+            len = header->len - sizeof(struct nm_so_sched_header);
 
             so_wrap = TBX_MALLOC(sizeof(struct nm_so_pkt_wrap));
-            so_wrap->nb_seg = header->nb_seg;
+            so_wrap->nb_seg = header->nb_seg - 1;
 
-            DISP_VAL("Longueur des données à recevoir", len);
-            DISP_VAL("nb seg à recevoir", header->nb_seg);
+            //DISP_VAL("Longueur des données à recevoir", len);
+            //DISP_VAL("nb seg à recevoir", header->nb_seg);
 
             // remise du wrapper d'intro
             nm_so_release_pre_posted_pw(p_sched, p_pw);
@@ -528,15 +521,15 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
             p_data_pw->v[p_data_pw->v_first].iov_len = len;
 
-            DISP_VAL("in_process_success (data)- LOngueur des données à recevoir", len);
-            DISP_VAL("in_process_success (data)- NB de seg de données à recevoir", p_data_pw->v_size);
+            //DISP_VAL("in_process_success (data)- LOngueur des données à recevoir", len);
+            //DISP_VAL("in_process_success (data)- NB de seg de données à recevoir", p_data_pw->v_size);
 
             p_data_pw->sched_priv = so_wrap;
 
             tbx_slist_append(p_sched->post_aux_recv_req, p_data_pw);
 
         } else { // on attend les données
-            DISP("-------------DONNEES----------------");
+            //DISP("-------------DONNEES----------------");
 
             so_wrap = p_pw->sched_priv;
 
@@ -617,6 +610,7 @@ int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
                            int		_err) {
+    FAILURE("nm_so_in_process_failed_rq");
     return nm_so_in_process_success_rq(p_sched, p_pw);
 }
 

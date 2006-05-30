@@ -71,7 +71,7 @@ nm_so_search_next(struct nm_gate *p_gate){
         // envoi direct
         if(cur_pw->length < SMALL_THRESHOLD){
             if(cur_pw->length + pw_len < AGREGATED_PW_MAX_SIZE){
-                forward = tbx_slist_ref_extract_and_forward(pre, &cur_pw);
+                forward = tbx_slist_ref_extract_and_forward(pre, NULL);
 
                 if(!p_pw){
                     p_pw = nm_so_take_agregation_pw(p_gate->p_sched);
@@ -99,7 +99,7 @@ nm_so_search_next(struct nm_gate *p_gate){
                   + nm_rdv_rdv_rq_size()
                   < AGREGATED_PW_MAX_SIZE) {
 
-            forward = tbx_slist_ref_extract_and_forward(pre, &cur_pw);
+            forward = tbx_slist_ref_extract_and_forward(pre, NULL);
             if(!p_pw){
                 p_pw = nm_so_take_agregation_pw(p_gate->p_sched);
 
@@ -140,11 +140,9 @@ nm_so_search_next(struct nm_gate *p_gate){
             break;
     }while(tbx_slist_ref_forward(pre));
 
-    //
+
     if(p_pw){
         nm_so_update_global_header(p_pw, p_pw->v_nb, p_pw->length);
-
-        DISP_VAL("Longueur des données envoyée", p_pw->length);
 
         /* je mets le wrap sur la piste des petits (la n°0)*/
         struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
@@ -160,13 +158,11 @@ nm_so_search_next(struct nm_gate *p_gate){
     }
     //printf("<--nm_so_search_next\n");
 
-    // end:
 #ifdef CHRONO
      TBX_GET_TICK(t2);
      chrono_search_next += TBX_TIMING_DELAY(t1, t2);
      nb_search_next++;
 #endif
-     //printf("\n");
      return p_pw;
 }
 
@@ -413,12 +409,6 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
     if(p_pw->sched_priv){
         printf("PETIT PACK ENVOYé \n\n");
 
-        //{
-        //    nm_so_sched_header_t *gh = p_pw->v[idx].iov_base;
-        //    DISP_VAL("gh->nb_seg", gh->nb_seg);
-        //    DISP_VAL("gh->len", gh->len);
-        //}
-
         idx++;
         v_nb--;
 
@@ -501,5 +491,6 @@ int
 nm_so_out_process_failed_rq(struct nm_sched		*p_sched,
                             struct nm_pkt_wrap	*p_pw,
                             int		 	_err) {
+    FAILURE("nm_so_out_process_failed_rq");
     return nm_so_out_process_success_rq(p_sched,p_pw);
 }

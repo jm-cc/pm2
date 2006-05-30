@@ -248,7 +248,6 @@ nm_ns_network_sampling(struct nm_drv *driver,
 double
 nm_ns_evaluate(struct nm_drv *driver,
                int length){
-    int nb_sampling = driver->cap.nb_sampling;
     double * samplings = driver->cap.network_sampling_latency;
     int sampling_id = 0;
     double coef = 0;

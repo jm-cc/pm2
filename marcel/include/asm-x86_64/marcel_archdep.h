@@ -22,6 +22,18 @@
 
 #define TOP_STACK_FREE_AREA     128
 #include <setjmp.h>
+#ifdef LINUX_SYS
+/* Some distributions don't provide these numbers... */
+#  ifndef JB_RSP
+#    define JB_RSP 6
+#  endif
+#  ifndef JB_RBP
+#    define JB_RBP 1
+#  endif
+#  ifndef JB_PC
+#    define JB_PC 7
+#  endif
+#endif
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_RSP])
 #define FP_FIELD(buf)           ((buf)->__jmpbuf[JB_RBP])
 #define PC_FIELD(buf)           ((buf)->__jmpbuf[JB_PC])

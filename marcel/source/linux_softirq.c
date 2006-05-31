@@ -507,6 +507,7 @@ static void ksoftirqd_init(ma_lwp_t lwp)
 
 	MA_BUG_ON(ma_per_lwp(vp_level, lwp)->tasklet_vec.list);
 	MA_BUG_ON(ma_per_lwp(vp_level, lwp)->tasklet_hi_vec.list);
+	ma_local_softirq_pending() = 0;
 #if 0
 	p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
 	if (MA_IS_ERR(p)) {

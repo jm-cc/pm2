@@ -298,31 +298,31 @@ int marcel_create_special(marcel_t * __restrict pid,
 
 static void postexit_thread_atexit_func(any_t arg) {
 
-	marcel_lwp_t *lwp TBX_UNUSED =(marcel_lwp_t*)arg;
+	struct marcel_topo_level *vp TBX_UNUSED = arg;
 
-	TRACE("postexit thread killed on lwp %i\n", LWP_NUMBER(LWP_SELF));
+	TRACE("postexit thread killed on lwp %i\n", vp->number);
 	MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
 
 static void* postexit_thread_func(any_t arg)
 {
-	marcel_lwp_t *lwp=(marcel_lwp_t*)arg;
+	struct marcel_topo_level *vp = arg;
 
 	LOG_IN();
 	MTRACE("Start Postexit", marcel_self());
-	marcel_atexit(postexit_thread_atexit_func, lwp);
+	marcel_atexit(postexit_thread_atexit_func, vp);
 	for(;;) {
-		marcel_sem_P(&ma_per_lwp(postexit_thread, lwp));
+		marcel_sem_P(&vp->postexit_thread);
 		MTRACE("Postexit", marcel_self());
-		if (!ma_per_lwp(postexit_func, lwp)) {
+		if (!vp->postexit_func) {
 			mdebug("postexit with NULL function!\n"
 				"Who will desalocate the stack!!!\n");
 		} else {
-			(*ma_per_lwp(postexit_func,lwp))
-				(ma_per_lwp(postexit_arg,lwp));
-			ma_per_lwp(postexit_func,lwp)=NULL;
+			(*vp->postexit_func)
+				(vp->postexit_arg);
+			vp->postexit_func=NULL;
 		}
-		marcel_sem_V(&ma_per_lwp(postexit_space,lwp));
+		marcel_sem_V(&vp->postexit_space);
 	}
 	LOG_OUT();
 	abort(); /* For security */
@@ -340,6 +340,10 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 
 	LOG_IN();
 	/* Démarrage du thread responsable des terminaisons */
+	if (LWP_NUMBER(lwp) == -1)  {
+		LOG_OUT();
+		return;
+	}
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
@@ -354,7 +358,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);
+	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp->vp_level);
 	marcel_wake_up_created_thread(postexit);
 	LOG_OUT();
 }
@@ -440,7 +444,7 @@ static void detach_func(any_t arg) {
 static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 {
 	marcel_t cur = marcel_self();
-	DEFINE_CUR_LWP(register, , );
+	struct marcel_topo_level *vp;
 #ifdef MA__LWPS
 	marcel_vpmask_t mask;
 #endif
@@ -483,13 +487,13 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	//}
 
 	ma_preempt_disable();
-	SET_CUR_LWP(GET_LWP(cur));
+	vp = GET_LWP(cur)->vp_level;
 
 #ifdef MA__LWPS
 	/* Durant cette fonction, il ne faut pas que le thread soit
 	   "déplacé" intempestivement (e.g. après avoir acquis
 	   stack_mutex) sur un autre LWP. */
-	mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp));
+	mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
 	marcel_change_vpmask(&mask);
 #endif
 	ma_preempt_enable();
@@ -498,13 +502,13 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 
 	// Il faut acquérir le sémaphore pour postexit avant
 	// de désactiver la préemption
-	marcel_sem_P(&ma_per_lwp(postexit_space,cur_lwp));
+	marcel_sem_P(&vp->postexit_space);
 	if (!cur->detached) {
-		ma_per_lwp(postexit_func,cur_lwp)=detach_func;
-		ma_per_lwp(postexit_arg,cur_lwp)=cur;
+		vp->postexit_func=detach_func;
+		vp->postexit_arg=cur;
 	} else {
-		ma_per_lwp(postexit_func,cur_lwp)=cur->postexit_func;
-		ma_per_lwp(postexit_arg,cur_lwp)=cur->postexit_arg;
+		vp->postexit_func=cur->postexit_func;
+		vp->postexit_arg=cur->postexit_arg;
 	}
 
 	ma_preempt_disable();
@@ -517,7 +521,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	// car sinon la tâche idle risquerait d'être réveillée (par
 	// unchain_task) alors que sem_V réveillerait par ailleurs une
 	// autre tâche du programme !
-	marcel_sem_V(&ma_per_lwp(postexit_thread, cur_lwp)); /* idem ci-dessus */
+	marcel_sem_V(&vp->postexit_thread); /* idem ci-dessus */
 
 	// Même remarque que précédemment : main_thread peut être
 	// réveillé à cet endroit, donc il ne faut appeler

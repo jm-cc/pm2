@@ -134,13 +134,14 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
     break;
  
 #ifdef MA__LWPS
- case POLICY_LOCAL:
-    for(i=0; i < marcel_nbvps(); ++i)
-      {
-	ma_container_fini(ma_per_lwp_self_data((long)allocator->container),allocator->destroy, allocator->destroy_arg);
+ case POLICY_LOCAL: {
+    struct marcel_topo_level *vp;
+    for_all_vp(vp) {
+	    ma_container_fini(ma_per_level_data(vp, (long)allocator->container),allocator->destroy, allocator->destroy_arg);
       }
     ma_obj_free(lwp_container_allocator, allocator->container);
     break;
+  }
 
   case POLICY_HIERARCHICAL:
     for(j=0; j < marcel_topo_nblevels; ++j)
@@ -178,11 +179,11 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
 #ifdef MA__LWPS
       case POLICY_LOCAL: {
-	ma_lwp_t lwp;
-	allocator->container = ma_obj_alloc(lwp_container_allocator);
+        struct marcel_topo_level *vp;
+	allocator->container = ma_obj_alloc(level_container_allocator);
 
-	for_all_lwp(lwp) {
-	     ma_container_init(ma_per_lwp_data(lwp,(long)(allocator->container)), allocator->conservative, allocator->max_size);
+	for_all_vp(vp) {
+		ma_container_init(ma_per_level_data(vp,(long)(allocator->container)), allocator->conservative, allocator->max_size);
 	}
 	break;
       }
@@ -241,7 +242,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 
   if (allocator->policy == POLICY_HIERARCHICAL && mode == ALLOC_METHOD)
     {
-      struct marcel_topo_level* niveau_courant = ma_per_lwp(lwp_level, LWP_SELF);
+      struct marcel_topo_level* niveau_courant = ma_per_lwp(vp_level, LWP_SELF);
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
@@ -265,7 +266,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 
   if (allocator->policy == POLICY_HIERARCHICAL && mode == FREE_METHOD)
     {
-      struct marcel_topo_level* niveau_courant = ma_per_lwp(lwp_level, LWP_SELF);
+      struct marcel_topo_level* niveau_courant = ma_per_lwp(vp_level, LWP_SELF);
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	

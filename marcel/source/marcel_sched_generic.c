@@ -65,23 +65,21 @@ static tbx_bool_t a_new_thread;
 unsigned marcel_nbthreads(void)
 {
    unsigned num = 0;
-   ma_lwp_t lwp;
-   for_each_lwp_begin(lwp)
-      num += ma_per_lwp(nb_tasks,lwp)-1;
-   for_each_lwp_end();
+   struct marcel_topo_level *vp;
+   for_all_vp(vp)
+      num += vp->nb_tasks-1;
    return num + 1;   /* + 1 pour le main */
 }
 
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
-#define MA_MAX_LWP_THREADS 1000000
+#define MAX_MAX_VP_THREADS 1000000
 
 unsigned long marcel_createdthreads(void)
 {
    unsigned long num = 0;
-   ma_lwp_t lwp;
-   for_each_lwp_begin(lwp)
-      num += ma_per_lwp(task_number,lwp)-1;
-   for_each_lwp_end();
+   struct marcel_topo_level *vp;
+   for_all_vp(vp)
+      num += vp->task_number-1;
    return num;
 }
 
@@ -90,21 +88,23 @@ unsigned long marcel_createdthreads(void)
 void marcel_one_more_task(marcel_t pid)
 {
 	unsigned oldnbtasks;
+	struct marcel_topo_level *vp;
 
 	/* record this thread on _this_ lwp */
 	ma_local_bh_disable();
 	ma_preempt_disable();
-	_ma_raw_spin_lock(&__ma_get_lwp_var(threadlist_lock));
+	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
+	_ma_raw_spin_lock(&vp->threadlist_lock);
 
-	pid->number = LWP_NUMBER(LWP_SELF)*MA_MAX_LWP_THREADS+__ma_get_lwp_var(task_number)++;
-	MA_BUG_ON(__ma_get_lwp_var(task_number) == MA_MAX_LWP_THREADS);
-	list_add(&pid->all_threads,&__ma_get_lwp_var(all_threads));
-	oldnbtasks = __ma_get_lwp_var(nb_tasks)++;
+	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + vp->task_number++;
+	MA_BUG_ON(vp->task_number == MAX_MAX_VP_THREADS);
+	list_add(&pid->all_threads,&vp->all_threads);
+	oldnbtasks = vp->nb_tasks++;
 
-	if (!oldnbtasks && &__ma_get_lwp_var(main_is_waiting))
+	if (!oldnbtasks && vp->main_is_waiting)
 		a_new_thread = tbx_true;
 
-	_ma_raw_spin_unlock(&__ma_get_lwp_var(threadlist_lock));
+	_ma_raw_spin_unlock(&vp->threadlist_lock);
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
@@ -112,20 +112,19 @@ void marcel_one_more_task(marcel_t pid)
 // Appele a chaque fois qu'une tache est terminee.
 void marcel_one_task_less(marcel_t pid)
 {
-	unsigned lwpnum = pid->number/MA_MAX_LWP_THREADS;
-	ma_lwp_t lwp;
+	unsigned vpnum = pid->number/MAX_MAX_VP_THREADS;
+	struct marcel_topo_level *vp;
 
-	MA_BUG_ON(lwpnum >= get_nb_lwps());
+	MA_BUG_ON(vpnum >= marcel_nbvps());
+	vp = &marcel_topo_vp_level[vpnum];
 
-	lwp = GET_LWP_BY_NUMBER(lwpnum);
-
-	ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+	ma_spin_lock_softirq(&vp->threadlist_lock);
 
 	list_del(&pid->all_threads);
-	if(((--(ma_per_lwp(nb_tasks,lwp))) == 0) && (ma_per_lwp(main_is_waiting, lwp)))
+	if(((--(vp->nb_tasks)) == 0) && (vp->main_is_waiting))
 		ma_wake_up_thread(__main_thread);
 
-	ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+	ma_spin_unlock_softirq(&vp->threadlist_lock);
 }
 
 static __tbx_inline__ int want_to_see(marcel_t t, int which)
@@ -161,8 +160,8 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 {
 	marcel_t t;
 	int nb_pids = 0;
-	ma_lwp_t lwp;
 	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
+	struct marcel_topo_level *vp;
 
 
 	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
@@ -171,9 +170,9 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 		((which & SLEEPING_ONLY) && (which & NOT_SLEEPING_ONLY)))
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
-	for_each_lwp_begin(lwp)
-		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads) {
+	for_all_vp(vp) {
+		ma_spin_lock_softirq(&vp->threadlist_lock);
+		list_for_each_entry(t, &vp->all_threads, all_threads) {
 			if (want_to_see(t, which)) {
 				if (nb_pids < max)
 					pids[nb_pids++] = t;
@@ -181,31 +180,31 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 					nb_pids++;
 			}
 		}
-		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-	for_each_lwp_end();
+		ma_spin_unlock_softirq(&vp->threadlist_lock);
+	}
 	*nb = nb_pids;
 }
 
 void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
-	ma_lwp_t lwp;
+	struct marcel_topo_level *vp;
 	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
 
-	for_each_lwp_begin(lwp)
-		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads)
+	for_all_vp(vp) {
+		ma_spin_lock_softirq(&vp->threadlist_lock);
+		list_for_each_entry(t, &vp->all_threads, all_threads)
 			(*f)(t);
-		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-	for_each_lwp_end()
+		ma_spin_unlock_softirq(&vp->threadlist_lock);
+	}
 }
 
 // Attend que toutes les taches soient terminees. Cette fonction
 // _doit_ etre appelee par la tache "main".
 static void wait_all_tasks_end(void)
 {
-	ma_lwp_t lwp_first_wait = &__main_lwp;
-	ma_lwp_t lwp;
+	struct marcel_topo_level *vp_first_wait = NULL;
+	struct marcel_topo_level *vp;
 	LOG_IN();
 
 #ifdef MA__DEBUG
@@ -214,22 +213,21 @@ static void wait_all_tasks_end(void)
 	}
 #endif 
 
-	for_each_lwp_begin(lwp)
-		ma_per_lwp(main_is_waiting, lwp) = tbx_true;
-	for_each_lwp_end();
+	for_all_vp(vp)
+		vp->main_is_waiting = tbx_true;
 retry:
 	a_new_thread = tbx_false;
-	for_each_lwp_begin(lwp)//, lwp_first_wait)
-		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-		if (ma_per_lwp(nb_tasks, lwp)) {
+	for_all_vp(vp) {//, vp_first_wait)
+		ma_spin_lock_softirq(&vp->threadlist_lock);
+		if (vp->nb_tasks) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+			ma_spin_unlock_softirq(&vp->threadlist_lock);
 			ma_schedule();
-			lwp_first_wait = lwp;
+			vp_first_wait = vp;
 			goto retry;
 		}
-		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
-	for_each_lwp_end();
+		ma_spin_unlock_softirq(&vp->threadlist_lock);
+	}
 	if (a_new_thread)
 		goto retry;
 
@@ -241,9 +239,13 @@ void marcel_gensched_shutdown(void)
 #ifdef MA__SMP
 	marcel_lwp_t *lwp, *lwp_found;
 #endif
-	marcel_vpmask_t mask = MARCEL_VPMASK_ALL_BUT_VP(0);
+	marcel_vpmask_t mask;
 
 	LOG_IN();
+
+	if(MARCEL_SELF != __main_thread)
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+	MA_BUG_ON(ma_in_atomic());
 
 	wait_all_tasks_end();
 
@@ -251,37 +253,47 @@ void marcel_gensched_shutdown(void)
 	ma_idle_scheduler = 0;
 	ma_write_unlock(&ma_idle_scheduler_lock);
 
-	// Si nécessaire, on bascule sur le LWP(0)
-	marcel_change_vpmask(&mask);
-
 #ifdef MA__SMP
 
 	marcel_sig_stop_itimer();
 
-	if(LWP_SELF != &__main_lwp)
-		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+	mdebug("blocking this LWP\n");
+	ma_lwp_block();
 
-	//lwp = next_lwp(&__main_lwp);
+	mdebug("stopping LWPs from %p\n", LWP_SELF);
+	while ((lwp = ma_lwp_wait_vp_active())) {
+		if (lwp == &__main_lwp) {
+			mdebug("main LWP is active, jumping to it\n");
+			mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(&__main_lwp));
+			marcel_change_vpmask(&mask);
+			lwp = LWP_SELF;
+			marcel_leave_blocking_section();
+			MA_BUG_ON(LWP_SELF != &__main_lwp);
+			mdebug("block it too\n");
+			ma_lwp_block();
+		} else marcel_lwp_stop_lwp(lwp);
+	}
 
-	ma_preempt_disable();
+	MA_BUG_ON(LWP_SELF != &__main_lwp);
+
+	mdebug("stopping LWPs for supplementary VPs\n");
 	for(;;) {
 		lwp_found=NULL;
 		lwp_list_lock_read();
 		for_all_lwp(lwp) {
-			if (lwp != LWP_SELF) {
+			if (lwp != &__main_lwp) {
 				lwp_found=lwp;
 				break;
 			}
 		}
 		lwp_list_unlock_read();
-		ma_preempt_enable();
-
 		if (!lwp_found) {
 			break;
 		}
 		marcel_lwp_stop_lwp(lwp_found);
-		ma_preempt_disable();
 	}
+	ma_preempt_enable();
+
 #elif defined(MA__ACTIVATION)
 	// TODO : arrêter les autres activations...
 
@@ -309,17 +321,19 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		/* upcall_new_task est venue ici ? */
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
-	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
+		ma_lwp_wait_active();
+		/* we are the active LWP of this VP */
+
+		/* let wakers now that we will shortly poll need_resched and
+		 * thus they don't need to send a kill */
+		ma_set_thread_flag(TIF_POLLING_NRFLAG);
 		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
 		if (dopoll)
 		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-#ifdef MARCEL_IDLE_PAUSE
-		/* let wakers now that we will shortly poll need_resched and
-		 * thus they don't need to send a kill */
 		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+		/* make sure people see that we won't poll it afterwards */
 		ma_smp_mb__after_clear_bit();
-#endif
 		if (!ma_need_resched() || !ma_schedule()) {
 #ifdef MARCEL_IDLE_PAUSE
 			if (dopoll)
@@ -328,9 +342,6 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 				marcel_sig_pause();
 #endif
 		}
-#ifdef MARCEL_IDLE_PAUSE
-		ma_set_thread_flag(TIF_POLLING_NRFLAG);
-#endif
 	}
 }
 #ifndef MA__ACT
@@ -364,7 +375,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	else
 		/* ajout du thread principal à la liste des threads */
-		list_add(&SELF_GETMEM(all_threads),&__ma_get_lwp_var(all_threads));
+		list_add(&SELF_GETMEM(all_threads),&marcel_topo_vp_level[0].all_threads);
 
 #ifdef MA__LWPS
 	/*****************************************/
@@ -374,7 +385,6 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_POLL | /*MA_SF_NOSCHEDLOCK |*/
 			     MA_SF_NORUN);
 #ifdef PM2
@@ -387,7 +397,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
 	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
-			LWP_NUMBER(lwp)<get_nb_lwps()?idle_poll_func:idle_func,
+			LWP_NUMBER(lwp) == -1 || LWP_NUMBER(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
 			(void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 #endif
@@ -426,10 +436,10 @@ void __marcel_init marcel_gensched_start_lwps(void)
 {
 	int i;
 	LOG_IN();
-	for(i=1; i<get_nb_lwps(); i++)
+	for(i=1; i<marcel_nbvps(); i++)
 		marcel_lwp_add_vp();
 	
-	mdebug("marcel_sched_init  : %i lwps created\n", get_nb_lwps());
+	mdebug("marcel_sched_init  : %i lwps created\n", marcel_nbvps());
 	LOG_OUT();
 }
 

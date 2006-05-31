@@ -23,8 +23,10 @@ typedef void * (*marcel_kthread_func_t)(void *arg);
 #   include <semaphore.h>
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;
-typedef sem_t marcel_kthread_sem_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+typedef sem_t marcel_kthread_sem_t;
+typedef pthread_cond_t marcel_kthread_cond_t;
+#define MARCEL_KTHREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 # else
 #   ifdef SOLARIS_SYS
 #     include <thread.h>
@@ -37,6 +39,8 @@ typedef pid_t marcel_kthread_t;
 typedef ma_atomic_t marcel_kthread_sem_t;
 typedef marcel_kthread_sem_t marcel_kthread_mutex_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER MA_ATOMIC_INIT(1)
+typedef int marcel_kthread_cond_t;
+#define MARCEL_KTHREAD_COND_INITIALIZER 0
 #   else
 #     error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
 #   endif
@@ -72,6 +76,10 @@ void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned in
 void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem);
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem);
 int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem);
+void marcel_kthread_cond_init(marcel_kthread_cond_t *cond);
+void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond);
+void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond);
+void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex);
 #endif // MA__SMP
 
 

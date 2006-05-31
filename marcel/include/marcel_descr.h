@@ -85,7 +85,7 @@ struct marcel_task {
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
 	/* utilisé pour marquer les task idle, upcall, idle, ... */
-	unsigned long flags;
+	volatile unsigned long flags;
 	/* Pour la création des threads */
 	marcel_t child, father;
 	marcel_func_t f_to_call;

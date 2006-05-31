@@ -328,7 +328,7 @@ static void init_act(int proc, act_param_t *param)
 void __marcel_init init_upcalls(void)
 {
 	act_param_t param;
-	int nb_act=get_nb_lwps();
+	int nb_act=marcel_nbvps();
 #ifdef MA__LWPS
 	int proc;
 #endif

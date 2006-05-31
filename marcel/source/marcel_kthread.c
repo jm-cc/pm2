@@ -27,11 +27,6 @@ _syscall0(pid_t,gettid)
 #  else
 #    define gettid() syscall(__NR_gettid)
 #  endif
-#  ifdef _syscall2
-_syscall2(int,tkill,pid_t,tid,int,sig)
-#  else
-#    define tkill() syscall(__NR_tkill)
-#  endif
 #endif
 int marcel_gettid(void) {
 #ifdef __NR_gettid
@@ -152,7 +147,8 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-	tkill(pid, sig);
+	if (syscall(__NR_tkill, pid, sig) == -1 && errno == ENOSYS)
+		kill(pid, sig);
 }
 
 void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
@@ -199,6 +195,38 @@ int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 	return EBUSY;
 }
 TBX_FUN_ALIAS(void, marcel_kthread_mutex_trylock, marcel_kthread_sem_trywait, (marcel_kthread_mutex_t *lock), (lock));
+
+void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
+{
+	*cond = 0;
+}
+
+void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
+{
+	syscall(__NR_futex, cond, FUTEX_WAKE, 1, NULL);
+}
+
+void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
+{
+	syscall(__NR_futex, cond, FUTEX_WAKE, *cond, NULL);
+}
+
+void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
+{
+	int val;
+	val = ++(*cond);
+	marcel_kthread_mutex_unlock(&mutex);
+	while(1) {
+		if (syscall(__NR_futex, cond, FUTEX_WAIT, val, NULL) == 0)
+			break;
+		if (errno == EWOULDBLOCK)
+			val = *cond;
+		else if (errno != EINTR)
+			MA_BUG();
+	}
+	marcel_kthread_mutex_lock(&mutex);
+	*cond--;
+}
 #else
 
 #error NOT YET IMPLEMENTED
@@ -327,7 +355,7 @@ void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned in
 
 void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 {
-	sem_wait(sem);
+	while(sem_wait(sem) == -1 && errno == EINTR);
 }
 
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
@@ -338,6 +366,26 @@ void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 {
 	return sem_trywait(sem);
+}
+
+void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
+{
+	pthread_cond_init(cond, NULL);
+}
+
+void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
+{
+	pthread_cond_signal(cond);
+}
+
+void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
+{
+	pthread_cond_broadcast(cond);
+}
+
+void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
+{
+	while (pthread_cond_wait(cond, mutex) == EINTR);
 }
 #endif
 

@@ -133,7 +133,7 @@ marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask)
 		MA_BUG_ON(*mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 		//on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps
 		//MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
-		return ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
+		return &marcel_topo_vp_level[first_vp].sched;
 	}
 }
 
@@ -144,6 +144,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
+#depend "marcel_topology.h[structures]"
 #depend "scheduler/linux_runqueues.h[marcel_variables]"
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
@@ -186,11 +187,11 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				break;
 /* TODO: vpmask ? */
 			case MARCEL_SCHED_OTHER: {
-				ma_lwp_t lwp;
-				for_each_lwp_from_begin(lwp, cur_lwp)
-					rq = ma_lwp_rq(lwp);
+				struct marcel_topo_level *vp;
+				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					rq = &vp->sched;
 					break;
-				for_each_lwp_from_end()
+				}
 				break;
 			}
 			case MARCEL_SCHED_AFFINITY: {
@@ -199,15 +200,15 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				// THREAD_THRESHOLD_LOW), ou alors retourne le
 				// LWP "courant".
 
-				ma_lwp_t lwp;
+				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
-				for_each_lwp_from_begin(lwp, cur_lwp)
-					rq2 = ma_lwp_rq(lwp);
+				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					rq2 = &vp->sched;
 					if (rq2->hold.nr_running < THREAD_THRESHOLD_LOW) {
 						rq = rq2;
 						break;
 					}
-				for_each_lwp_from_end()
+				}
 				if (!rq)
 					rq = ma_lwp_rq(cur_lwp);
 				break;
@@ -216,16 +217,16 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				// Retourne le LWP le moins charge (ce qui
 				// oblige a parcourir toute la liste)
 				unsigned best = ma_lwp_rq(cur_lwp)->hold.nr_running;
-				ma_lwp_t lwp;
+				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
 				rq = ma_lwp_rq(cur_lwp);
-				for_each_lwp_from_begin(lwp, cur_lwp)
-					rq2 = ma_lwp_rq(lwp);
+				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					rq2 = &vp->sched;
 					if (rq2->hold.nr_running < best) {
 						rq = rq2;
 						best = rq2->hold.nr_running;
 					}
-				for_each_lwp_from_end()
+				}
 				break;
 			}
 			default: {

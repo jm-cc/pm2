@@ -39,6 +39,8 @@
 #endif
 #endif
 
+#define MARCEL_NBMAXVPSUP	1
+
 #if defined(MA__IFACE_PMARCEL) || defined(MA__IFACE_PTHREAD)
 #define MA_MAX_USER_RT_PRIO	32
 #else

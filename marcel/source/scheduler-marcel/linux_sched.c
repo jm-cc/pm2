@@ -459,18 +459,23 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
 	marcel_lwp_t *lwp, *chosen = NULL;
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
-	int max_preempt = 0, preempt;
+	int max_preempt = 0, preempt, i;
 	if (!rq)
 		return;
-	for_each_lwp_from_begin(lwp, LWP_SELF)
-		if (ma_rq_covers(rq, lwp)) {
+	for (i=0; i<marcel_nbvps()+MARCEL_NBMAXVPSUP; i++) {
+		if (ma_vp_lwp[i] && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(ma_vp_lwp[i]))) {
+			lwp = GET_LWP_BY_NUM(i);
+			if (!lwp)
+				/* No luck: still no lwp or being replaced by
+				 * another one */
+				continue;
 			preempt = TASK_CURR_PREEMPT(p, lwp);
 			if (preempt > max_preempt) {
 				max_preempt = preempt;
 				chosen = lwp;
 			}
 		}
-	for_each_lwp_from_end();
+	}
 	if (chosen)
 		ma_resched_task(ma_per_lwp(current_thread, chosen), chosen);
 }
@@ -546,7 +551,7 @@ repeat_lock_task:
 			 * to be considered on this CPU.)
 			 */
 			rq = ma_to_rq_holder(h);
-			if (rq && ma_rq_covers(rq, LWP_SELF) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
+			if (rq && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
 					ma_resched_task(MARCEL_SELF, LWP_SELF);
@@ -907,7 +912,7 @@ unsigned long ma_nr_running(void)
 #endif
 #endif
 	for (i = 0; i < MA_NR_LWPS; i++)
-		sum += ma_lwp_rq(GET_LWP_BY_NUMBER(i))->hold.nr_running;
+		sum += ma_lwp_rq(GET_LWP_BY_NUM(i))->hold.nr_running;
 	sum += ma_main_runqueue.hold.nr_running;
 
 	return sum;
@@ -1672,7 +1677,8 @@ need_resched_atomic:
 	if (prev->sched.state &&
 			/* garde-fou pour éviter de s'endormir
 			 * par simple préemption */
-			!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+			((prev->sched.state == MA_TASK_DEAD) ||
+			!(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
 		//switch_count = &prev->nvcsw;
 		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
@@ -2015,7 +2021,7 @@ void marcel_change_vpmask(marcel_vpmask_t *mask)
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);
 	/* On teste si le LWP courant est interdit ou pas */
-	if (marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
+	if (LWP_NUMBER(LWP_SELF) != -1 && marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
@@ -2927,33 +2933,6 @@ void show_state(void)
 	read_unlock(&tasklist_lock);
 }
 
-void __marcel_init init_idle(task_t *idle, int cpu)
-{
-	ma_runqueue_t *idle_rq = cpu_rq(cpu), *rq = cpu_rq(task_cpu(idle));
-	unsigned long flags;
-
-	local_irq_save(flags);
-	ma_double_rq_lock(idle_rq, rq);
-
-	// supprimé
-	//idle_rq->curr = idle_rq->idle = idle;
-	deactivate_task(idle, rq);
-	idle->array = NULL;
-	idle->prio = MA_MAX_PRIO;
-	idle->state = TASK_RUNNING;
-	set_task_cpu(idle, cpu);
-	ma_double_rq_unlock(idle_rq, rq);
-	set_tsk_need_resched(idle);
-	local_irq_restore(flags);
-
-	/* Set the preempt count _outside_ the spinlocks! */
-#ifdef CONFIG_PREEMPT
-	idle->thread_info->preempt_count = (idle->lock_depth >= 0);
-#else
-	idle->thread_info->preempt_count = 0;
-#endif
-}
-
 #ifdef CONFIG_SMP
 /*
  * This is how migration works:
@@ -3006,32 +2985,6 @@ int set_cpus_allowed(task_t *p, cpumask_t new_mask)
 }
 
 EXPORT_SYMBOL_GPL(set_cpus_allowed);
-
-/* Move (not current) task off this cpu, onto dest cpu. */
-static void move_task_away(struct task_struct *p, int dest_cpu)
-{
-	ma_runqueue_t *rq_dest;
-
-	rq_dest = cpu_rq(dest_cpu);
-
-	ma_double_rq_lock(ma_this_rq(), rq_dest);
-	if (task_cpu(p) != smp_processor_id())
-		goto out; /* Already moved */
-
-	set_task_cpu(p, dest_cpu);
-	if (p->array) {
-		deactivate_task(p, ma_this_rq());
-		activate_task(p, rq_dest);
-		// TODO: plus de curr
-		if (p->prio < rq_dest->curr->prio)
-			ma_resched_task(rq_dest->curr);
-	}
-	p->timestamp = rq_dest->timestamp_last_tick;
-
- out:
-	ma_double_rq_unlock(ma_this_rq(), rq_dest);
-	local_irq_restore(flags);
-}
 
 /*
  * migration_thread - this is a highprio system thread that performs
@@ -3209,42 +3162,29 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 #ifdef MA__LWPS
 	unsigned num = LWP_NUMBER(lwp);
+	char name[16];
+	ma_runqueue_t *rq;
 #endif
 	LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
-	{
-	ma_runqueue_t *rq = ma_lwp_rq(lwp);
-	char name[16];
+	rq = ma_lwp_rq(lwp);
 	snprintf(name,sizeof(name),"lwp%d",num);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
+	init_rq(rq, name, MA_VP_RQ);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
-	init_rq(rq, name, MA_LWP_RQ);
-	if (num>=get_nb_lwps())
+	if (num == -1)
 		/* "extra" LWPs are apart */
 		rq->father=NULL;
 	else {
-#ifdef MA__NUMA
-		if (marcel_topo_nblevels>2) {
-			int level,i;
-			level = marcel_topo_nblevels-2;
-			for (i=0; marcel_vpmask_weight(&marcel_topo_levels[level][i].vpset)
-				&& !(marcel_vpmask_vp_ismember(
-				  &marcel_topo_levels[level][i].vpset, num));
-					i++);
-			// should find somebody holding us !
-			MA_BUG_ON(!marcel_vpmask_weight(&marcel_topo_levels[level][i].vpset));
-			rq->father=marcel_topo_levels[level][i].sched;
-		} else
-#endif
-			rq->father=&ma_main_runqueue;
-		marcel_topo_levels[marcel_topo_nblevels-1][num].sched = rq;
+		rq->father=&marcel_topo_vp_level[num].sched;
 #ifdef MA__SMP
 		marcel_vpmask_add_vp(&ma_main_runqueue.vpset,num);
 		marcel_vpmask_add_vp(&ma_dontsched_runqueue.vpset,num);
 #endif
 	}
-	mdebug("runqueue %s has father %s\n",name,rq->father->name);
+	if (rq->father)
+		mdebug("runqueue %s has father %s\n",name,rq->father->name);
 	snprintf(name,sizeof(name),"dontsched%d",num);
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
 	rq->level = marcel_topo_nblevels-1;
@@ -3253,6 +3193,15 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	marcel_vpmask_only_vp(&(rq->vpset),num);
 	marcel_vpmask_only_vp(&(ma_per_lwp(dontsched_runqueue,lwp).vpset),num);
 #endif
+	if (num != -1 && num >= marcel_nbvps()) {
+		snprintf(name,sizeof(name), "vp%d", num);
+		rq = &marcel_topo_vp_level[num].sched;
+		init_rq(rq, name, MA_VP_RQ);
+		rq->level = marcel_topo_nblevels-1;
+		rq->father = NULL;
+		marcel_vpmask_only_vp(&rq->vpset, num);
+		mdebug("runqueue %s is a supplementary runqueue\n", name);
+		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
 	}
 #endif
 	LOG_OUT();
@@ -3274,48 +3223,50 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 
-#ifdef MA__NUMA
-static int level_rq_num[MARCEL_LEVEL_LAST-2];
+#ifdef MA__SMP
 static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
 	unsigned i;
 	char name[16];
-	static int allocated;
-	ma_runqueue_t *newrqs = &ma_level_runqueues[allocated++];
+	ma_runqueue_t *newrq;
 	static const char *base[] = {
+#ifdef MA__NUMA
 		[MARCEL_LEVEL_NODE]	= "node",
 		[MARCEL_LEVEL_DIE]	= "die",
 		[MARCEL_LEVEL_CORE]	= "core",
 		[MARCEL_LEVEL_PROC]	= "proc",
+#endif /* MA__NUMA */
+		[MARCEL_LEVEL_VP]	= "vp",
 	};
 	static const enum ma_rq_type rqtypes[] = {
+#ifdef MA__NUMA
 		[MARCEL_LEVEL_FAKE]	= MA_FAKE_RQ,
 		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
 		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
 		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
 		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
+#endif /* MA__NUMA */
+		[MARCEL_LEVEL_VP]	= MA_VP_RQ,
 	};
-	MA_BUG_ON(allocated == sizeof(ma_level_runqueues)/sizeof(*ma_level_runqueues));
 
-	level->sched = rq;
-	if (!level->arity || level->sons[0]->type == MARCEL_LEVEL_LAST) {
+	if (!level->arity || level->type == MARCEL_LEVEL_LAST) {
 		return;
 	}
 
 	for (i=0;i<level->arity;i++) {
-		level_rq_num[levelnum-1]++;
 		if (level->sons[i]->type == MARCEL_LEVEL_FAKE)
 			snprintf(name, sizeof(name), "fake%d-%d",
 				levelnum, level->sons[i]->number);
 		else
 			snprintf(name,sizeof(name), "%s%d",
 				base[level->sons[i]->type], level->sons[i]->number);
-		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
-		newrqs[i].level = levelnum;
-		newrqs[i].father = rq;
-		newrqs[i].vpset = level->sons[i]->vpset;
+		newrq = &level->sons[i]->sched;
+		init_rq(newrq, name, rqtypes[level->sons[i]->type]);
+		newrq->level = levelnum;
+		newrq->father = rq;
+		newrq->vpset = level->sons[i]->vpset;
 		mdebug("runqueue %s has father %s\n", name, rq->name);
-		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,&newrqs[i]);
-		init_subrunqueues(level->sons[i],&newrqs[i],levelnum+1);
+		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,newrq);
+		init_subrunqueues(level->sons[i],newrq,levelnum+1);
 	}
 }
 #endif
@@ -3330,7 +3281,6 @@ static void __marcel_init sched_init(void)
 	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
-	marcel_topo_levels[0][0].sched = &ma_main_runqueue;
 #endif
 	init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
@@ -3338,18 +3288,20 @@ static void __marcel_init sched_init(void)
 	marcel_vpmask_empty(&ma_dontsched_runqueue.vpset);
 #endif
 
-#ifdef MA__NUMA
+#ifdef MA__SMP
 	if (marcel_topo_nblevels>1) {
+#ifdef MA__NUMA
 		unsigned i,j;
 		for (i=1;i<marcel_topo_nblevels-1;i++) {
 			for (j=0; marcel_topo_levels[i][j].vpset; j++);
 			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),j);
 		}
+#endif
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 	}
 #endif
 #ifdef MA__LWPS
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), get_nb_lwps());
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), marcel_nbvps());
 #endif
 
 	/*

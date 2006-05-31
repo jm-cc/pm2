@@ -26,7 +26,6 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "marcel_sem.h[structures]"
 #depend "sys/marcel_kthread.h[marcel_types]"
 #depend "linux_timer.h[marcel_types]"
-#depend "linux_softirq.h[marcel_structures]"
 #depend "scheduler/linux_runqueues.h[types]"
 #depend "scheduler/linux_runqueues.h[marcel_structures]"
 #depend "marcel_topology.h[structures]"
@@ -57,22 +56,10 @@ struct marcel_lwp {
 #endif
 
 	marcel_task_t *previous_thread;
-	tbx_bool_t main_is_waiting;
-	unsigned nb_tasks;
-// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
-	ma_spinlock_t threadlist_lock;
-
-	volatile sig_atomic_t task_number;
-	struct list_head all_threads;
 
 #ifdef MA__LWPS
 	marcel_task_t *idle_task;
 #endif
-
-	marcel_postexit_func_t postexit_func;
-	any_t postexit_arg;
-	marcel_sem_t postexit_thread;
-	marcel_sem_t postexit_space;
 
 #ifdef MA__ACTIVATION
 	marcel_task_t *upcall_new_task;
@@ -89,12 +76,8 @@ struct marcel_lwp {
 	int _no_interrupt;
 #endif
 
-	marcel_task_t *ksoftirqd;
-	unsigned long softirq_pending;
-	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
-
 #ifdef MA__LWPS
-	unsigned number;
+	int number;
 #endif
 	unsigned online;
 	marcel_task_t *run_task;
@@ -109,16 +92,13 @@ struct marcel_lwp {
 #endif
 		*cpu_level,
 #endif
-		*lwp_level;
+		*vp_level;
+
 	char data[];
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
-	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
-	.task_number = 1, \
-	.all_threads = LIST_HEAD_INIT((lwp)->all_threads), \
-	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
-	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
+	.vp_level = &marcel_machine_level[0], \
 }
 
 #section marcel_macros
@@ -142,7 +122,7 @@ struct marcel_lwp {
 
 #section marcel_variables
 #ifdef MA__LWPS
-extern marcel_lwp_t* addr_lwp[MA_NR_LWPS];
+extern marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS];
 #endif
 
 extern marcel_lwp_t __main_lwp;
@@ -154,8 +134,7 @@ extern marcel_lwp_t __main_lwp;
 extern ma_rwlock_t __lwp_list_lock;
 extern struct list_head list_lwp_head;
 
-extern unsigned  ma__nb_lwp;
-//extern marcel_lwp_t* addr_lwp[MA__MAX_LWPS];
+extern unsigned  ma__nb_vp;
 
 #endif
 
@@ -202,34 +181,15 @@ static __tbx_inline__ void lwp_list_unlock_write(void)
 }
 
 #section functions
-static __tbx_inline__ unsigned get_nb_lwps(void);
-unsigned marcel_nbvps(void);
+extern MARCEL_INLINE unsigned marcel_nbvps(void);
 #section inline
 #depend "[marcel_variables]"
-static __tbx_inline__ unsigned get_nb_lwps(void)
+extern MARCEL_INLINE unsigned marcel_nbvps(void)
 {
 #ifdef MA__LWPS
-  return ma__nb_lwp;
+  return ma__nb_vp;
 #else
   return 1;
-#endif
-}
-
-#section functions
-static __tbx_inline__ unsigned marcel_get_nb_lwps_np(void);
-#section inline
-static __tbx_inline__ unsigned marcel_get_nb_lwps_np(void)
-{
-   return get_nb_lwps();
-}
-
-#section marcel_functions
-static __tbx_inline__ void set_nb_lwps(unsigned value);
-#section marcel_inline
-static __tbx_inline__ void set_nb_lwps(unsigned value)
-{
-#ifdef MA__LWPS
-  ma__nb_lwp=value;
 #endif
 }
 
@@ -259,7 +219,22 @@ void marcel_lwp_fix_nb_vps(unsigned nb_lwp);
 
 #ifdef MA__SMP
 unsigned marcel_lwp_add_vp(void);
+unsigned marcel_lwp_add_lwp(int num);
 void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
+void ma_lwp_wait_active(void);
+int ma_lwp_block(void);
+marcel_lwp_t *ma_lwp_wait_vp_active(void);
+#else
+#define ma_lwp_wait_active() (void)0
+#endif
+
+#section functions
+#ifdef MA__SMP
+void marcel_enter_blocking_section(void);
+void marcel_leave_blocking_section(void);
+#else
+#define marcel_enter_blocking_section() (void)0
+#define marcel_leave_blocking_section() (void)0
 #endif
 
 #section marcel_macros
@@ -272,17 +247,42 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define GET_LWP_NUMBER(current)             (LWP_NUMBER(THREAD_GETMEM(current,sched.lwp)))
 #ifdef MA__LWPS
 #  define LWP_NUMBER(lwp)                     (ma_per_lwp(number, lwp))
-#  define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
+#  define GET_LWP_BY_NUM(proc)                (ma_vp_lwp[proc])
 #  define GET_LWP(current)                    ((current)->sched.lwp)
 #  define SET_LWP(current, value)             ((current)->sched.lwp=(value))
 #  define GET_CUR_LWP()                       (cur_lwp)
 #  define SET_CUR_LWP(value)                  (cur_lwp=(value))
-#  define SET_LWP_NB(number, lwp)             (addr_lwp[number]=(lwp), \
-	                                       LWP_NUMBER(lwp)=number)
-#  define GET_LWP_BY_NUMBER(number)           (addr_lwp[number])
+#  define INIT_LWP_NB(number, lwp)	      do { \
+	if ((number) == -1) { \
+		LWP_NUMBER(lwp) = -1; \
+		ma_lwp_rq(lwp)->father = NULL; \
+	} else { \
+		ma_vp_lwp[number] = (lwp); \
+	        LWP_NUMBER(lwp)=number; \
+		ma_lwp_rq(lwp)->father = &marcel_topo_vp_level[number].sched; \
+		ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[number]; \
+	} \
+} while(0)
+#  define CLR_LWP_NB(lwp)		      do { \
+	MA_BUG_ON(LWP_NUMBER(lwp) == -1); \
+	MA_BUG_ON(!ma_vp_lwp[LWP_NUMBER(lwp)]); \
+	MA_BUG_ON(!ma_lwp_rq(lwp)->father); \
+	ma_vp_lwp[LWP_NUMBER(lwp)] = NULL; \
+	INIT_LWP_NB(-1, lwp); \
+} while(0)
+#  define SET_LWP_NB(number, lwp)             do { \
+	if ((number) == -1) { \
+		CLR_LWP_NB(lwp); \
+	} else { \
+		MA_BUG_ON(ma_vp_lwp[number]); \
+		MA_BUG_ON(LWP_NUMBER(lwp) > 0); \
+		MA_BUG_ON(ma_lwp_rq(lwp)->father); \
+		INIT_LWP_NB(number, lwp); \
+	} \
+} while(0)
 #  define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
      OPTIONS marcel_lwp_t *cur_lwp signe lwp
-#  define IS_FIRST_LWP(lwp)                   (LWP_NUMBER(lwp)==0)
+#  define IS_FIRST_LWP(lwp)                   (lwp == &__main_lwp)
 
 #  define for_all_lwp(lwp) \
      list_for_each_entry(lwp, &list_lwp_head, lwp_list)
@@ -291,6 +291,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define for_all_lwp_from_end() \
      list_for_each_entry_from_end()
 #  define lwp_isset(num, map) ma_test_bit(num, &map)
+#  define lwp_vpaffinity_level(lwp)	      (&marcel_machine_level[0])
 #else
 #  define cur_lwp                             (&__main_lwp)
 #  define LWP_NUMBER(lwp)                     ((void)(lwp),0)
@@ -299,8 +300,8 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define SET_LWP(current, value)             ((void)0)
 #  define GET_CUR_LWP()                       (cur_lwp)
 #  define SET_CUR_LWP(value)                  ((void)0)
+#  define CLR_LWP_NB(proc, value)             ((void)0)
 #  define SET_LWP_NB(proc, value)             ((void)0)
-#  define GET_LWP_BY_NUMBER(number)           (cur_lwp)
 #  define DEFINE_CUR_LWP(OPTIONS, signe, current) \
      int __cur_lwp_unused__ TBX_UNUSED
 #  define IS_FIRST_LWP(lwp)                   (1)
@@ -328,9 +329,9 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define LWP_GETMEM(lwp, member) ((lwp)->member)
 #define LWP_SELF                (GET_LWP(MARCEL_SELF))
 #define ma_softirq_pending(lwp) \
-   (ma_per_lwp(softirq_pending,(lwp)))
+	(ma_per_lwp(vp_level, (lwp))->softirq_pending)
 #define ma_local_softirq_pending() \
-   (__ma_get_lwp_var(softirq_pending))
+	(__ma_get_lwp_var(vp_level)->softirq_pending)
 
 #section marcel_macros
 

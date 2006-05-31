@@ -46,14 +46,9 @@ LIST_HEAD(list_lwp_head);
 // Verrou protégeant la liste chaînée des LWPs
 ma_rwlock_t __lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
-marcel_lwp_t* addr_lwp[MA_NR_LWPS]={&__main_lwp,};
+marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
 
 //#endif
-
-unsigned marcel_nbvps(void)
-{
-  return get_nb_lwps();
-}
 
 /**************************************************************************/
 /**************************************************************************/
@@ -63,19 +58,19 @@ unsigned marcel_nbvps(void)
 /**************************************************************************/
 /**************************************************************************/
 
-unsigned  ma__nb_lwp = 1;
+unsigned  ma__nb_vp = 1;
 
 #if defined(MA__LWPS)
 
-void marcel_lwp_fix_nb_vps(unsigned nb_lwp)
+void marcel_lwp_fix_nb_vps(unsigned nb_vp)
 {
 	ma_set_nbprocessors();
 
 	// Choix du nombre de LWP
 #ifdef MA__ACTSMP
-	set_nb_lwps(nb_lwp ? nb_lwp : ACT_NB_MAX_CPU);
+	ma__nb_vp = (nb_vp ? nb_vp : ACT_NB_MAX_CPU);
 #else
-	set_nb_lwps(nb_lwp ? nb_lwp : marcel_nbprocessors);
+	ma__nb_vp = (nb_vp ? nb_vp : marcel_nbprocessors);
 #endif
 
 	ma_set_processors();
@@ -125,7 +120,9 @@ static void* lwp_start_func(void* arg)
  */
 static void *lwp_kthread_start_func(void *arg)
 {
+	struct marcel_topo_level *level;
 	marcel_lwp_t *lwp = (marcel_lwp_t *)arg;
+	int vpnum;
 
 	LOG_IN();
 
@@ -139,7 +136,29 @@ static void *lwp_kthread_start_func(void *arg)
 
 	marcel_sem_P(&lwp->kthread_stop);
 
-	mdebug("\t\t\t<LWP %d exiting>\n", ma_per_lwp(number,lwp));
+	ma_local_bh_disable();
+	ma_preempt_disable();
+
+	vpnum = LWP_NUMBER(lwp);
+	mdebug("\t\t\t<LWP %d exiting>\n", vpnum);
+
+#ifdef MA__SMP
+	if (vpnum != -1) {
+		mdebug("we were the active LWP of VP %d\n", vpnum);
+		level = lwp_vpaffinity_level(lwp);
+		marcel_kthread_mutex_lock(&level->kmutex);
+		CLR_LWP_NB(LWP_SELF);
+		if (level->spare) {
+			mdebug("and there are still %d spare LWPs, waking one\n", level->spare);
+			/* we don't care about overwrites */
+			level->needed = vpnum;
+			marcel_kthread_cond_signal(&level->kneed);
+		}
+		marcel_kthread_mutex_unlock(&level->kmutex);
+	}
+#endif /* MA__SMP */
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
 
 	lwp_list_lock_write();
 	list_del(&lwp->lwp_list);	
@@ -155,22 +174,17 @@ static void *lwp_kthread_start_func(void *arg)
 //static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
 //static struct ma_notifier_block lwp_nb;
 
-unsigned marcel_lwp_add_vp(void)
+unsigned marcel_lwp_add_lwp(int num)
 {
   marcel_lwp_t *lwp;
-  static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
-  unsigned num;
 
   LOG_IN();
 
-  if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
-    MARCEL_EXCEPTION_RAISE("Too many lwp\n");
-
-  lwp = marcel_malloc_node(sizeof(*lwp) + MA_PER_LWP_ROOM, ma_lwp_node[num]);
+  lwp = marcel_malloc_node(sizeof(*lwp) + MA_PER_LWP_ROOM, ma_vp_node[num==-1?0:num]);
   /* initialiser le lwp *avant* de l'enregistrer */
   *lwp = MA_LWP_INITIALIZER(lwp);
 
-  SET_LWP_NB(num, lwp);
+  INIT_LWP_NB(num, lwp);
 
   // Initialisation de la structure marcel_lwp_t
   ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
@@ -198,6 +212,22 @@ unsigned marcel_lwp_add_vp(void)
   LOG_OUT();
 }
 
+unsigned marcel_lwp_add_vp(void)
+{
+  unsigned num;
+  static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
+
+  num = ma_atomic_inc_return(&nb_lwp);
+
+  if (num >= marcel_nbvps() + MARCEL_NBMAXVPSUP)
+    MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");
+
+  if (num >= MA_NR_LWPS)
+    MARCEL_EXCEPTION_RAISE("Too many lwp\n");
+
+  return marcel_lwp_add_lwp(num);
+}
+
 #endif // MA__LWPS
 
 #ifdef MA__SMP
@@ -209,6 +239,7 @@ unsigned marcel_lwp_add_vp(void)
 void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
 {
   LOG_IN();
+  mdebug("stopping LWP %p\n",lwp);
 
   if (IS_FIRST_LWP(lwp)) {
 	  pm2debug("Arghh, trying to kill main_lwp\n");
@@ -216,6 +247,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
   }
   marcel_sem_V(&lwp->kthread_stop);
 
+  mdebug("joining LWP %p\n",lwp);
   marcel_kthread_join(&lwp->pid);
 
   {
@@ -223,10 +255,112 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
 	   * les piles des threads résidents... 
 	   */
 	  marcel_free_node(lwp, sizeof(marcel_lwp_t),
-			  ma_lwp_node[LWP_NUMBER(lwp)]);
+			  ma_vp_node[LWP_NUMBER(lwp)]);
   }
 
   LOG_OUT();
+}
+
+/* wait for ourself to become the active LWP of a VP */
+void ma_lwp_wait_active(void) {
+	struct marcel_topo_level *level;
+	int vpnum;
+	/* TODO: bind */
+	ma_local_bh_disable();
+	ma_preempt_disable();
+	vpnum = LWP_NUMBER(LWP_SELF);
+	if (vpnum == -1) {
+		mdebug("we are a spare LWP\n");
+		level = lwp_vpaffinity_level(lwp);
+		marcel_kthread_mutex_lock(&level->kmutex);
+		level->spare++;
+		mdebug("now %d spare LWPs\n", level->spare);
+		while ((vpnum = level->needed) == -1) {
+			mdebug("waiting\n");
+			marcel_kthread_cond_wait(&level->kneed, &level->kmutex);
+		}
+		marcel_kthread_cond_signal(&level->kneeddone);
+		mdebug("becoming VP %d\n", vpnum);
+		level->needed = -1;
+		level->spare--;
+		SET_LWP_NB(vpnum, LWP_SELF);
+		mdebug("now %d spare LWPs\n", level->spare);
+		marcel_kthread_mutex_unlock(&level->kmutex);
+	}
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+}
+
+/* become a blocked LWP */
+int ma_lwp_block(void) {
+	int vpnum;
+	struct marcel_topo_level *level;
+	int start_one = 0;
+
+	ma_preempt_disable();
+	vpnum = LWP_NUMBER(LWP_SELF);
+	mdebug("we are the active LWP of VP %d\n", vpnum);
+	MA_BUG_ON(vpnum == -1);
+	level = lwp_vpaffinity_level(lwp);
+
+	mdebug("we get blocked, and wake another LWP\n");
+	marcel_kthread_mutex_lock(&level->kmutex);
+	CLR_LWP_NB(LWP_SELF);
+	while (level->needed != -1) {
+		mdebug("Oops, some other CPU already needed an LWP, signaling");
+		marcel_kthread_cond_signal(&level->kneed);
+		marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
+	}
+	level->needed = vpnum;
+	if (level->spare)
+		marcel_kthread_cond_signal(&level->kneed);
+	else
+		start_one = 1;
+	/* PB: il y a toutes les chances que ceci ordonnance tout de suite l'autre... */
+	marcel_kthread_mutex_unlock(&level->kmutex);
+	return start_one;
+}
+
+void marcel_enter_blocking_section(void) {
+	if (ma_lwp_block()) {
+		mdebug("need to start another LWP\n");
+		marcel_lwp_add_lwp(-1);
+	}
+}
+
+/* become a spare LWP */
+void marcel_leave_blocking_section(void) {
+	mdebug("we get spare\n");
+	ma_set_current_state(MA_TASK_MOVING);
+	ma_preempt_enable();
+	ma_schedule();
+	mdebug("we're on an active LWP again\n");
+}
+
+/* wait for at least one VP to become active, lwp is a hint of a still running LWP */
+marcel_lwp_t *ma_lwp_wait_vp_active(void) {
+	struct marcel_topo_level *level;
+	marcel_lwp_t *lwp;
+	unsigned vp;
+	for (vp = 0; vp < marcel_nbvps(); vp++)
+		if ((lwp = ma_vp_lwp[vp]))
+			return lwp;
+
+	/* TODO: walk vpaffinity levels */
+	level = lwp_vpaffinity_level(NULL);
+	marcel_kthread_mutex_lock(&level->kmutex);
+	for (vp = 0; vp < marcel_nbvps(); vp++)
+		if ((lwp = ma_vp_lwp[vp]))
+			break;
+	if (!lwp && level->spare && level->needed) {
+		marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
+		for (vp = 0; vp < marcel_nbvps(); vp++)
+			if ((lwp = ma_vp_lwp[vp]))
+				break;
+		MA_BUG_ON(!lwp);
+	}
+	marcel_kthread_mutex_unlock(&level->kmutex);
+	return lwp;
 }
 #endif // MA__SMP
 
@@ -284,10 +418,10 @@ static void lwp_init(ma_lwp_t lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
 	/* Elle doit prendre la main sur toute autre tâche de ce LWP */
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+	marcel_attr_setinitrq(&attr, ma_lwp_rq(lwp));
 #ifdef PM2
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
@@ -317,8 +451,8 @@ static int lwp_start(ma_lwp_t lwp)
 	PROF_NEW_LWP(LWP_NUMBER(lwp), ma_per_lwp(run_task,lwp));
 
 #if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
-	if (LWP_NUMBER(lwp)<get_nb_lwps()) {
-		unsigned long target = ma_cpu_of_lwp_num(LWP_NUMBER(lwp));
+	if (LWP_NUMBER(lwp)<marcel_nbvps()) {
+		unsigned long target = ma_cpu_of_vp_num(LWP_NUMBER(lwp));
 		ma_bind_on_processor(target);
 		mdebug("LWP %u bound to processor %lu\n",
 				LWP_NUMBER(lwp), target);

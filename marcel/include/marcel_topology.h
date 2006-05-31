@@ -20,20 +20,22 @@
 #section variables
 extern unsigned marcel_nbprocessors;
 extern unsigned marcel_cpu_stride;
-extern unsigned marcel_lwps_per_cpu;
+extern unsigned marcel_vps_per_cpu;
 #ifdef MA__NUMA
 extern unsigned marcel_topo_max_arity;
 #endif
+extern struct marcel_topo_level *marcel_topo_vp_level;
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
 #define marcel_cpu_stride 1
-#define marcel_lwps_per_cpu 1
+#define marcel_vps_per_cpu 1
+#define marcel_topo_vp_level marcel_machine_level
 #endif
-#define ma_cpu_of_lwp_num(num) (((num)/marcel_lwps_per_cpu)*marcel_cpu_stride)
+#define ma_cpu_of_vp_num(num) (((num)/marcel_vps_per_cpu)*marcel_cpu_stride)
 
 #section marcel_variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
-extern int ma_lwp_node[MA_NR_LWPS];
+extern int ma_vp_node[MA_NR_LWPS];
 
 #section functions
 extern void ma_set_nbprocessors(void);
@@ -50,6 +52,8 @@ enum marcel_topo_level_t {
 	MARCEL_LEVEL_MACHINE,
 #ifndef MA__LWPS
 #define MARCEL_LEVEL_LAST MARCEL_LEVEL_MACHINE
+#define MARCEL_LEVEL_VP MARCEL_LEVEL_MACHINE
+#define MARCEL_LEVEL_NODE MARCEL_LEVEL_MACHINE
 #else
 	MARCEL_LEVEL_FAKE,
 #ifdef MA__NUMA
@@ -58,8 +62,8 @@ enum marcel_topo_level_t {
 	MARCEL_LEVEL_CORE,
 	MARCEL_LEVEL_PROC,
 #endif
-	MARCEL_LEVEL_LWP,
-#define MARCEL_LEVEL_LAST MARCEL_LEVEL_LWP
+	MARCEL_LEVEL_VP,
+#define MARCEL_LEVEL_LAST MARCEL_LEVEL_VP
 #endif
 };
 
@@ -208,11 +212,15 @@ static __tbx_inline__ unsigned marcel_current_vp(void)
 #ifdef PM2_DEV
 // #warning il ne faudrait pas dépendre d un scheduler particulier
 #endif
+#depend "scheduler-marcel/linux_runqueues.h[marcel_structures]"
 #depend "scheduler-marcel/linux_runqueues.h[types]"
+#depend "linux_softirq.h[marcel_structures]"
 #depend "[types]"
 #ifdef MARCEL_SMT_IDLE
 #depend "asm/linux_atomic.h[marcel_types]"
 #endif
+#depend "linux_spinlock.h[types]"
+#depend "sys/marcel_kthread.h[marcel_types]"
 struct marcel_topo_level {
 	enum marcel_topo_level_t type;
 	unsigned number; /* for whole machine */
@@ -228,7 +236,33 @@ struct marcel_topo_level {
 	ma_atomic_t nbidle;
 #endif
 
-	ma_topo_level_schedinfo *sched;
+	ma_runqueue_t sched;
+
+#ifdef MA__SMP
+	/* for VPs */
+	marcel_kthread_mutex_t kmutex;
+	marcel_kthread_cond_t kneed;
+	marcel_kthread_cond_t kneeddone;
+	unsigned spare;
+	int needed;
+#endif
+
+	/* for VPs */
+	marcel_task_t *ksoftirqd;
+	unsigned long softirq_pending;
+	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
+
+// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
+	tbx_bool_t main_is_waiting;
+	unsigned nb_tasks;
+	ma_spinlock_t threadlist_lock;
+	int task_number;
+	struct list_head all_threads;
+
+	marcel_postexit_func_t postexit_func;
+	any_t postexit_arg;
+	marcel_sem_t postexit_thread;
+	marcel_sem_t postexit_space;
 
 	char data[MA_PER_LEVEL_ROOM];
 };
@@ -237,6 +271,18 @@ struct marcel_topo_level {
 extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
 extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
+
+#section marcel_macros
+#define for_all_vp(vp) \
+	for (vp = &marcel_topo_vp_level[0]; \
+			vp < &marcel_topo_vp_level[marcel_nbvps()+MARCEL_NBMAXVPSUP]; \
+			vp++)
+
+#define for_vp_from(vp, number) \
+	for (vp = &marcel_topo_vp_level[(number+1)%marcel_nbvps()]; \
+			vp != &marcel_topo_vp_level[number]; \
+			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = 0; }))
+#define ma_per_vp(vp, field) (marcel_topo_vp[vp].(field))
 
 #section functions
 #depend "[variables]"

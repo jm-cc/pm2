@@ -21,12 +21,7 @@
 
 #include "marcel.h"
 
-ma_runqueue_t ma_main_runqueue;
 ma_runqueue_t ma_dontsched_runqueue;
-#ifdef MA__NUMA
-/* XXX berk */
-ma_runqueue_t ma_level_runqueues[2*MA_BITS_PER_LONG];
-#endif
 
 void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 {

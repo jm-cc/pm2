@@ -128,7 +128,7 @@ extern debug_type_t marcel_mtrace_timer;
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("BUG at %s:%u\n", __FILE__, __LINE__); \
+		mdebug("BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
 		raise(SIGABRT); \
 	} \
   } while (0)

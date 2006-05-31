@@ -76,7 +76,7 @@ enum ma_rq_type {
 	MA_CORE_RQ,
 	MA_PROC_RQ,
 #endif
-	MA_LWP_RQ,
+	MA_VP_RQ,
 #endif
 };
 
@@ -132,21 +132,18 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #depend "linux_perlwp.h[marcel_macros]"
 #depend "[marcel_macros]"
 
-extern ma_runqueue_t ma_main_runqueue;
+#define ma_main_runqueue (marcel_machine_level[0].sched)
 extern ma_runqueue_t ma_dontsched_runqueue;
-#ifdef MA__NUMA
-extern ma_runqueue_t ma_level_runqueues[2*MARCEL_NBMAXCPUS];
-#endif
 
 #section marcel_macros
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
-#define ma_rq_covers(rq,lwp)	(marcel_vpmask_vp_ismember(&rq->vpset, LWP_NUMBER(lwp)))
+#define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpmask_vp_ismember(&rq->vpset, vpnum))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
-#define ma_rq_covers(rq,lwp)	((void)(rq),(void)(lwp),1)
+#define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
 #endif
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 #define ma_array_queue(array,prio)	((array)->queue + (prio))
@@ -157,81 +154,6 @@ extern ma_runqueue_t ma_level_runqueues[2*MARCEL_NBMAXCPUS];
 #define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, run_list)
 /* Safe version against current item removal: prefetches the next item in ee. */
 #define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, run_list)
-
-/*
- * ma_double_rq_lock - safely lock two runqueues
- *
- * Note this does not disable interrupts like task_rq_lock,
- * you need to do so manually before calling.
- *
- * Note: runqueues order is 
- * main_runqueue < node_runqueue < core_runqueue < lwp_runqueue
- * so that once main_runqueue locked, one can lock lwp runqueues for instance.
- */
-#section marcel_functions
-static __tbx_inline__ void ma_double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static __tbx_inline__ void ma_double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	if (rq1 == rq2)
-		ma_holder_lock(&rq1->hold);
-	else {
-		if (rq1 < rq2) {
-			ma_holder_lock(&rq1->hold);
-			ma_holder_rawlock(&rq2->hold);
-		} else {
-			ma_holder_lock(&rq2->hold);
-			ma_holder_rawlock(&rq1->hold);
-		}
-	}
-}
-#section marcel_functions
-static __tbx_inline__ void ma_double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static __tbx_inline__ void ma_double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_local_bh_disable();
-
-	ma_double_rq_lock(rq1, rq2);
-}
-
-/*
- * ma_lock_second_rq: locks another runqueue. Of course, addresses must be in
- * proper order
- */
-#section marcel_functions
-static __tbx_inline__ void ma_lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static __tbx_inline__ void ma_lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	MA_BUG_ON(rq1 > rq2);
-	if (rq1 != rq2)
-		ma_holder_rawlock(&rq2->hold);
-}
-
-/*
- * ma_double_rq_unlock - safely unlock two runqueues
- *
- * Note this does not restore interrupts like task_rq_unlock,
- * you need to do so manually after calling.
- */
-#section marcel_functions
-static __tbx_inline__ void ma_double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static __tbx_inline__ void ma_double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	if (rq1 != rq2)
-		ma_holder_rawunlock(&rq2->hold);
-	ma_holder_unlock(&rq1->hold);
-}
-#section marcel_functions
-static __tbx_inline__ void ma_double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static __tbx_inline__ void ma_double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_double_rq_unlock(rq1, rq2);
-	ma_local_bh_enable();
-}
 
 /*
  * Adding/removing a task to/from a priority array:

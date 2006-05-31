@@ -1,3 +1,4 @@
+handle SIGUSR2 noprint nostop
 set $marcel_saved=0
 
 define save-ctx
@@ -39,7 +40,6 @@ end
 define marcel-continue
   handle SIGALRM pass
   handle SIGVTALRM pass
-  handle SIGUSR2 pass
   if $marcel_saved==1
     __rest-ctx
   end
@@ -48,7 +48,6 @@ end
 define marcel-step
   handle SIGALRM nopass
   handle SIGVTALRM nopass
-  handle SIGUSR2 pass
   if $marcel_saved==1
     __rest-ctx
   end
@@ -140,16 +139,14 @@ end
 
 define marcel-threads
   set $num=0
-  while $num<ma__nb_lwp
-    set $lwp=addr_lwp[$num]
-    if ($lwp)
-      set $all_threads=&$lwp->all_threads
-      set $threade=$all_threads->next
-      while $threade!=$all_threads
-        set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))
-        marcel-printthread $thread
-        set $threade=$threade->next
-      end
+  while $num<ma__nb_vp
+    set $vp=&marcel_topo_vp_level[$num]
+    set $all_threads=&$vp->all_threads
+    set $threade=$all_threads->next
+    while $threade!=$all_threads
+      set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))
+      marcel-printthread $thread
+      set $threade=$threade->next
     end
     set $num = $num + 1
   end

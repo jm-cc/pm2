@@ -56,7 +56,7 @@ static inline void ma_wakeup_softirqd(void)
 {
 	/* Interrupts are disabled: no need to stop preemption */
 	/* Avec marcel, seul la preemption est supprimée */
-	marcel_task_t *tsk = __ma_get_lwp_var(ksoftirqd);
+	marcel_task_t *tsk = __ma_get_lwp_var(vp_level)->ksoftirqd;
 
 	if (tsk && tsk->sched.state != MA_TASK_RUNNING)
 		ma_wake_up_thread(tsk);
@@ -106,6 +106,9 @@ asmlinkage MARCEL_PROTECTED void ma_do_softirq(void)
 	//unsigned long flags;
 
 	if (ma_in_interrupt())
+		return;
+
+	if (LWP_NUMBER(LWP_SELF) == -1)
 		return;
 
 	//local_irq_save(flags);
@@ -240,8 +243,8 @@ fastcall MARCEL_PROTECTED void __ma_tasklet_schedule(struct ma_tasklet_struct *t
 
 	//local_irq_save(flags);
 	ma_local_bh_disable();
-	t->next = __ma_get_lwp_var(tasklet_vec).list;
-	__ma_get_lwp_var(tasklet_vec).list = t;
+	t->next = __ma_get_lwp_var(vp_level)->tasklet_vec.list;
+	__ma_get_lwp_var(vp_level)->tasklet_vec.list = t;
 	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 	//local_irq_restore(flags);
 	ma_local_bh_enable();
@@ -253,8 +256,8 @@ fastcall MARCEL_PROTECTED void __ma_tasklet_hi_schedule(struct ma_tasklet_struct
 
 	//local_irq_save(flags);
 	ma_local_bh_disable();
-	t->next = __ma_get_lwp_var(tasklet_hi_vec).list;
-	__ma_get_lwp_var(tasklet_hi_vec).list = t;
+	t->next = __ma_get_lwp_var(vp_level)->tasklet_hi_vec.list;
+	__ma_get_lwp_var(vp_level)->tasklet_hi_vec.list = t;
 	ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
 	//local_irq_restore(flags);
 	ma_local_bh_enable();
@@ -266,8 +269,8 @@ static void tasklet_action(struct ma_softirq_action *a)
 
 	//local_irq_disable();
 	ma_local_bh_disable();
-	list = __ma_get_lwp_var(tasklet_vec).list;
-	__ma_get_lwp_var(tasklet_vec).list = NULL;
+	list = __ma_get_lwp_var(vp_level)->tasklet_vec.list;
+	__ma_get_lwp_var(vp_level)->tasklet_vec.list = NULL;
 	//local_irq_enable();
 	ma_local_bh_enable();
 
@@ -289,8 +292,8 @@ static void tasklet_action(struct ma_softirq_action *a)
 
 		//local_irq_disable();
 		ma_local_bh_disable();
-		t->next = __ma_get_lwp_var(tasklet_vec).list;
-		__ma_get_lwp_var(tasklet_vec).list = t;
+		t->next = __ma_get_lwp_var(vp_level)->tasklet_vec.list;
+		__ma_get_lwp_var(vp_level)->tasklet_vec.list = t;
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 		//local_irq_enable();
 		ma_local_bh_enable();
@@ -303,8 +306,8 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 
 	//local_irq_disable();
 	ma_local_bh_disable();
-	list = __ma_get_lwp_var(tasklet_hi_vec).list;
-	__ma_get_lwp_var(tasklet_hi_vec).list = NULL;
+	list = __ma_get_lwp_var(vp_level)->tasklet_hi_vec.list;
+	__ma_get_lwp_var(vp_level)->tasklet_hi_vec.list = NULL;
 	//local_irq_enable();
 	ma_local_bh_enable();
 
@@ -326,8 +329,8 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 
 		//local_irq_disable();
 		ma_local_bh_disable();
-		t->next = __ma_get_lwp_var(tasklet_hi_vec).list;
-		__ma_get_lwp_var(tasklet_hi_vec).list = t;
+		t->next = __ma_get_lwp_var(vp_level)->tasklet_hi_vec.list;
+		__ma_get_lwp_var(vp_level)->tasklet_hi_vec.list = t;
 		__ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
 		//local_irq_enable();
 		ma_local_bh_enable();
@@ -499,8 +502,11 @@ static void ksoftirqd_init(ma_lwp_t lwp)
 {
 	//marcel_task_t *p;
 
-	MA_BUG_ON(ma_per_lwp(tasklet_vec, lwp).list);
-	MA_BUG_ON(ma_per_lwp(tasklet_hi_vec, lwp).list);
+	if (LWP_NUMBER(lwp) == -1)
+		return;
+
+	MA_BUG_ON(ma_per_lwp(vp_level, lwp)->tasklet_vec.list);
+	MA_BUG_ON(ma_per_lwp(vp_level, lwp)->tasklet_hi_vec.list);
 #if 0
 	p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
 	if (MA_IS_ERR(p)) {
@@ -516,9 +522,11 @@ static void ksoftirqd_start(ma_lwp_t lwp)
 {
 	marcel_task_t *p;
 
+	if (LWP_NUMBER(lwp) == -1)
+		return;
 	p=ksofirqd_start(lwp);
 	marcel_wake_up_created_thread(p);
-	ma_per_lwp(ksoftirqd, lwp) = p;
+	ma_per_lwp(vp_level, lwp)->ksoftirqd = p;
 }
 
 #if 0

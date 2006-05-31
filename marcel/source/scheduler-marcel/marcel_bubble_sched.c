@@ -902,7 +902,7 @@ int marcel_bubble_steal_work(void) {
 	ma_read_lock(&ma_idle_scheduler_lock);
 	if (ma_idle_scheduler) {
 		struct marcel_topo_level *me =
-			&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
+			&marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
 		/* couln't find work on local runqueue, go see elsewhere */
 		ma_read_unlock(&ma_idle_scheduler_lock);
 		return see_up(me);

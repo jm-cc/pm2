@@ -312,17 +312,17 @@ static void* postexit_thread_func(any_t arg)
 	MTRACE("Start Postexit", marcel_self());
 	marcel_atexit(postexit_thread_atexit_func, vp);
 	for(;;) {
-		marcel_sem_P(&vp->postexit_thread);
+		marcel_sem_P(&ma_topo_vpdata(vp,postexit_thread));
 		MTRACE("Postexit", marcel_self());
-		if (!vp->postexit_func) {
+		if (!ma_topo_vpdata(vp,postexit_func)) {
 			mdebug("postexit with NULL function!\n"
 				"Who will desalocate the stack!!!\n");
 		} else {
-			(*vp->postexit_func)
-				(vp->postexit_arg);
-			vp->postexit_func=NULL;
+			(*ma_topo_vpdata(vp,postexit_func))
+				(ma_topo_vpdata(vp,postexit_arg));
+			ma_topo_vpdata(vp,postexit_func)=NULL;
 		}
-		marcel_sem_V(&vp->postexit_space);
+		marcel_sem_V(&ma_topo_vpdata(vp,postexit_space));
 	}
 	LOG_OUT();
 	abort(); /* For security */
@@ -502,13 +502,13 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 
 	// Il faut acquérir le sémaphore pour postexit avant
 	// de désactiver la préemption
-	marcel_sem_P(&vp->postexit_space);
+	marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
 	if (!cur->detached) {
-		vp->postexit_func=detach_func;
-		vp->postexit_arg=cur;
+		ma_topo_vpdata(vp,postexit_func)=detach_func;
+		ma_topo_vpdata(vp,postexit_arg)=cur;
 	} else {
-		vp->postexit_func=cur->postexit_func;
-		vp->postexit_arg=cur->postexit_arg;
+		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
+		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
 	}
 
 	ma_preempt_disable();
@@ -521,7 +521,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	// car sinon la tâche idle risquerait d'être réveillée (par
 	// unchain_task) alors que sem_V réveillerait par ailleurs une
 	// autre tâche du programme !
-	marcel_sem_V(&vp->postexit_thread); /* idem ci-dessus */
+	marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread)); /* idem ci-dessus */
 
 	// Même remarque que précédemment : main_thread peut être
 	// réveillé à cet endroit, donc il ne faut appeler

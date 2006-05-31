@@ -70,11 +70,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 		.spare = 0,
 		.needed = -1,
 #endif
-		.threadlist_lock = MA_SPIN_LOCK_UNLOCKED,
-		.task_number = 1,
-		.all_threads = LIST_HEAD_INIT(marcel_machine_level[0].all_threads),
-		.postexit_thread = MARCEL_SEM_INITIALIZER(0),
-		.postexit_space = MARCEL_SEM_INITIALIZER(1),
+		.leveldata.vpdata = MARCEL_TOPO_VPDATA_INITIALIZER(&marcel_machine_level[0].leveldata.vpdata),
 	},
 	{
 		.vpset = MARCEL_VPMASK_EMPTY,
@@ -647,13 +643,8 @@ static void topo_discover(void) {
 	}
 	marcel_vpmask_empty(&marcel_topo_vp_level[i].vpset);
 
-	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++) {
-		ma_spin_lock_init(&level->threadlist_lock);
-		level->task_number = 1;
-		INIT_LIST_HEAD(&level->all_threads);
-		marcel_sem_init(&level->postexit_thread, 0);
-		marcel_sem_init(&level->postexit_space, 1);
-	}
+	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
+		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);
 }
 
 void ma_topo_exit(void) {

@@ -67,7 +67,7 @@ unsigned marcel_nbthreads(void)
    unsigned num = 0;
    struct marcel_topo_level *vp;
    for_all_vp(vp)
-      num += vp->nb_tasks-1;
+      num += ma_topo_vpdata(vp,nb_tasks)-1;
    return num + 1;   /* + 1 pour le main */
 }
 
@@ -79,7 +79,7 @@ unsigned long marcel_createdthreads(void)
    unsigned long num = 0;
    struct marcel_topo_level *vp;
    for_all_vp(vp)
-      num += vp->task_number-1;
+      num += ma_topo_vpdata(vp,task_number)-1;
    return num;
 }
 
@@ -94,17 +94,17 @@ void marcel_one_more_task(marcel_t pid)
 	ma_local_bh_disable();
 	ma_preempt_disable();
 	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
-	_ma_raw_spin_lock(&vp->threadlist_lock);
+	_ma_raw_spin_lock(&ma_topo_vpdata(vp,threadlist_lock));
 
-	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + vp->task_number++;
-	MA_BUG_ON(vp->task_number == MAX_MAX_VP_THREADS);
-	list_add(&pid->all_threads,&vp->all_threads);
-	oldnbtasks = vp->nb_tasks++;
+	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + ma_topo_vpdata(vp,task_number)++;
+	MA_BUG_ON(ma_topo_vpdata(vp,task_number) == MAX_MAX_VP_THREADS);
+	list_add(&pid->all_threads,&ma_topo_vpdata(vp,all_threads));
+	oldnbtasks = ma_topo_vpdata(vp,nb_tasks)++;
 
-	if (!oldnbtasks && vp->main_is_waiting)
+	if (!oldnbtasks && ma_topo_vpdata(vp,main_is_waiting))
 		a_new_thread = tbx_true;
 
-	_ma_raw_spin_unlock(&vp->threadlist_lock);
+	_ma_raw_spin_unlock(&ma_topo_vpdata(vp,threadlist_lock));
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
@@ -118,13 +118,13 @@ void marcel_one_task_less(marcel_t pid)
 	MA_BUG_ON(vpnum >= marcel_nbvps());
 	vp = &marcel_topo_vp_level[vpnum];
 
-	ma_spin_lock_softirq(&vp->threadlist_lock);
+	ma_spin_lock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 
 	list_del(&pid->all_threads);
-	if(((--(vp->nb_tasks)) == 0) && (vp->main_is_waiting))
+	if(((--(ma_topo_vpdata(vp,nb_tasks))) == 0) && (ma_topo_vpdata(vp,main_is_waiting)))
 		ma_wake_up_thread(__main_thread);
 
-	ma_spin_unlock_softirq(&vp->threadlist_lock);
+	ma_spin_unlock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 }
 
 static __tbx_inline__ int want_to_see(marcel_t t, int which)
@@ -171,8 +171,8 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
 	for_all_vp(vp) {
-		ma_spin_lock_softirq(&vp->threadlist_lock);
-		list_for_each_entry(t, &vp->all_threads, all_threads) {
+		ma_spin_lock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
+		list_for_each_entry(t, &ma_topo_vpdata(vp,all_threads), all_threads) {
 			if (want_to_see(t, which)) {
 				if (nb_pids < max)
 					pids[nb_pids++] = t;
@@ -180,7 +180,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 					nb_pids++;
 			}
 		}
-		ma_spin_unlock_softirq(&vp->threadlist_lock);
+		ma_spin_unlock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 	}
 	*nb = nb_pids;
 }
@@ -192,10 +192,10 @@ void marcel_snapshot(snapshot_func_t f)
 	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
 
 	for_all_vp(vp) {
-		ma_spin_lock_softirq(&vp->threadlist_lock);
-		list_for_each_entry(t, &vp->all_threads, all_threads)
+		ma_spin_lock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
+		list_for_each_entry(t, &ma_topo_vpdata(vp,all_threads), all_threads)
 			(*f)(t);
-		ma_spin_unlock_softirq(&vp->threadlist_lock);
+		ma_spin_unlock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 	}
 }
 
@@ -214,19 +214,19 @@ static void wait_all_tasks_end(void)
 #endif 
 
 	for_all_vp(vp)
-		vp->main_is_waiting = tbx_true;
+		ma_topo_vpdata(vp,main_is_waiting) = tbx_true;
 retry:
 	a_new_thread = tbx_false;
 	for_all_vp(vp) {//, vp_first_wait)
-		ma_spin_lock_softirq(&vp->threadlist_lock);
-		if (vp->nb_tasks) {
+		ma_spin_lock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
+		if (ma_topo_vpdata(vp,nb_tasks)) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_softirq(&vp->threadlist_lock);
+			ma_spin_unlock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 			ma_schedule();
 			vp_first_wait = vp;
 			goto retry;
 		}
-		ma_spin_unlock_softirq(&vp->threadlist_lock);
+		ma_spin_unlock_softirq(&ma_topo_vpdata(vp,threadlist_lock));
 	}
 	if (a_new_thread)
 		goto retry;
@@ -238,8 +238,8 @@ void marcel_gensched_shutdown(void)
 {
 #ifdef MA__SMP
 	marcel_lwp_t *lwp, *lwp_found;
-#endif
 	marcel_vpmask_t mask;
+#endif
 
 	LOG_IN();
 
@@ -375,7 +375,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	else
 		/* ajout du thread principal à la liste des threads */
-		list_add(&SELF_GETMEM(all_threads),&marcel_topo_vp_level[0].all_threads);
+		list_add(&SELF_GETMEM(all_threads),&ma_topo_vpdata(&marcel_topo_vp_level[0],all_threads));
 
 #ifdef MA__LWPS
 	/*****************************************/

@@ -209,6 +209,7 @@ static __tbx_inline__ unsigned marcel_current_vp(void)
 }
 
 #section structures
+
 #ifdef PM2_DEV
 // #warning il ne faudrait pas dépendre d un scheduler particulier
 #endif
@@ -221,6 +222,37 @@ static __tbx_inline__ unsigned marcel_current_vp(void)
 #endif
 #depend "linux_spinlock.h[types]"
 #depend "sys/marcel_kthread.h[marcel_types]"
+
+struct marcel_topo_vpdata {
+	/* for VPs */
+	marcel_task_t *ksoftirqd;
+	unsigned long softirq_pending;
+	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
+
+// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
+	tbx_bool_t main_is_waiting;
+	unsigned nb_tasks;
+	ma_spinlock_t threadlist_lock;
+	int task_number;
+	struct list_head all_threads;
+
+	marcel_postexit_func_t postexit_func;
+	any_t postexit_arg;
+	marcel_sem_t postexit_thread;
+	marcel_sem_t postexit_space;
+};
+
+#section marcel_macros
+#define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
+	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.task_number = 1, \
+	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
+	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
+	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
+}
+
+#section structures
+
 struct marcel_topo_level {
 	enum marcel_topo_level_t type;
 	unsigned number; /* for whole machine */
@@ -239,7 +271,7 @@ struct marcel_topo_level {
 	ma_runqueue_t sched;
 
 #ifdef MA__SMP
-	/* for VPs */
+	/* for LWPs/VPs management */
 	marcel_kthread_mutex_t kmutex;
 	marcel_kthread_cond_t kneed;
 	marcel_kthread_cond_t kneeddone;
@@ -247,25 +279,15 @@ struct marcel_topo_level {
 	int needed;
 #endif
 
-	/* for VPs */
-	marcel_task_t *ksoftirqd;
-	unsigned long softirq_pending;
-	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
-
-// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
-	tbx_bool_t main_is_waiting;
-	unsigned nb_tasks;
-	ma_spinlock_t threadlist_lock;
-	int task_number;
-	struct list_head all_threads;
-
-	marcel_postexit_func_t postexit_func;
-	any_t postexit_arg;
-	marcel_sem_t postexit_thread;
-	marcel_sem_t postexit_space;
+	union {
+		struct marcel_topo_vpdata vpdata;
+	} leveldata;
 
 	char data[MA_PER_LEVEL_ROOM];
 };
+
+#section marcel_macros
+#define ma_topo_vpdata(vp, field) ((vp)->leveldata.vpdata.field)
 
 #section variables
 extern unsigned marcel_topo_nblevels;

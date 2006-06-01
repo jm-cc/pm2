@@ -39,7 +39,12 @@
 #endif
 #endif
 
+#ifdef MA__LWPS
 #define MARCEL_NBMAXVPSUP	1
+#else
+/* don't change this */
+#define MARCEL_NBMAXVPSUP	0
+#endif
 
 #if defined(MA__IFACE_PMARCEL) || defined(MA__IFACE_PTHREAD)
 #define MA_MAX_USER_RT_PRIO	32

@@ -286,7 +286,7 @@ static void timer_interrupt(int sig)
 	 */
 	ma_irq_exit();
 	ma_preempt_check_resched();
-out:
+
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
 

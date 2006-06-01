@@ -245,64 +245,64 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         tbx_slist_append(trks_to_update, trk_rq_0.p_trk);
     }
 
-    ///* Track 1 - piste pour les longs*/
-    //struct nm_trk_rq trk_rq_1 = {
-    //    .p_trk	= NULL,
-    //    .cap	= {
-    //        .rq_type			= nm_trk_rq_rdv,
-    //        .iov_type			= nm_trk_iov_unspecified,
-    //        .max_pending_send_request	= 0,
-    //        .max_pending_recv_request	= 0,
-    //        .min_single_request_length	= 0,
-    //        .max_single_request_length	= 0,
-    //        .max_iovec_request_length	= 0,
-    //        .max_iovec_size		= 0
-    //    },
-    //    .flags	= 0
-    //};
-    //
-    //err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_1.p_trk);
-    //if (err != NM_ESUCCESS)
-    //    goto out_free;
-    //
-    //err = p_drv->ops.open_trk(&trk_rq_1);
-    //if (err != NM_ESUCCESS) {
-    //    goto out_free_2;
-    //}
-    //
-    //so_sched->so_trks[1].pending_stream_intro = tbx_false;
-    //
-    //trk_rq_1.p_trk->cap.rq_type = nm_trk_rq_rdv;
-    //
-    //
-    ///* Track 2 - piste pour les longs*/
-    //struct nm_trk_rq trk_rq_2 = {
-    //    .p_trk	= NULL,
-    //    .cap	= {
-    //        .rq_type			= nm_trk_rq_rdv,
-    //        .iov_type			= nm_trk_iov_unspecified,
-    //        .max_pending_send_request	= 0,
-    //        .max_pending_recv_request	= 0,
-    //        .min_single_request_length	= 0,
-    //        .max_single_request_length	= 0,
-    //        .max_iovec_request_length	= 0,
-    //        .max_iovec_size		= 0
-    //    },
-    //    .flags	= 0
-    //};
-    //
-    //err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_2.p_trk);
-    //if (err != NM_ESUCCESS)
-    //    goto out_free;
-    //
-    //err = p_drv->ops.open_trk(&trk_rq_2);
-    //if (err != NM_ESUCCESS) {
-    //    goto out_free_3;
-    //}
-    //
-    //so_sched->so_trks[2].pending_stream_intro = tbx_false;
-    //
-    //trk_rq_2.p_trk->cap.rq_type = nm_trk_rq_rdv;
+    /* Track 1 - piste pour les longs*/
+    struct nm_trk_rq trk_rq_1 = {
+        .p_trk	= NULL,
+        .cap	= {
+            .rq_type			= nm_trk_rq_rdv,
+            .iov_type			= nm_trk_iov_unspecified,
+            .max_pending_send_request	= 0,
+            .max_pending_recv_request	= 0,
+            .min_single_request_length	= 0,
+            .max_single_request_length	= 0,
+            .max_iovec_request_length	= 0,
+            .max_iovec_size		= 0
+        },
+        .flags	= 0
+    };
+
+    err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_1.p_trk);
+    if (err != NM_ESUCCESS)
+        goto out_free;
+
+    err = p_drv->ops.open_trk(&trk_rq_1);
+    if (err != NM_ESUCCESS) {
+        goto out_free_2;
+    }
+
+    so_sched->so_trks[1].pending_stream_intro = tbx_false;
+
+    trk_rq_1.p_trk->cap.rq_type = nm_trk_rq_rdv;
+
+
+    /* Track 2 - piste pour les longs*/
+    struct nm_trk_rq trk_rq_2 = {
+        .p_trk	= NULL,
+        .cap	= {
+            .rq_type			= nm_trk_rq_rdv,
+            .iov_type			= nm_trk_iov_unspecified,
+            .max_pending_send_request	= 0,
+            .max_pending_recv_request	= 0,
+            .min_single_request_length	= 0,
+            .max_single_request_length	= 0,
+            .max_iovec_request_length	= 0,
+            .max_iovec_size		= 0
+        },
+        .flags	= 0
+    };
+
+    err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_2.p_trk);
+    if (err != NM_ESUCCESS)
+        goto out_free;
+
+    err = p_drv->ops.open_trk(&trk_rq_2);
+    if (err != NM_ESUCCESS) {
+        goto out_free_3;
+    }
+
+    so_sched->so_trks[2].pending_stream_intro = tbx_false;
+
+    trk_rq_2.p_trk->cap.rq_type = nm_trk_rq_rdv;
 
     ///* Track 3 - piste pour les longs*/
     //struct nm_trk_rq trk_rq_3 = {
@@ -341,11 +341,11 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
 // out_free_4:
 //    p_core->ops.trk_free(p_core, trk_rq_3.p_trk);
 
-// out_free_3:
-//    p_core->ops.trk_free(p_core, trk_rq_2.p_trk);
-//
-// out_free_2:
-//    p_core->ops.trk_free(p_core, trk_rq_1.p_trk);
+ out_free_3:
+    p_core->ops.trk_free(p_core, trk_rq_2.p_trk);
+
+ out_free_2:
+    p_core->ops.trk_free(p_core, trk_rq_1.p_trk);
 
  out_free:
     p_core->ops.trk_free(p_core, trk_rq_0.p_trk);

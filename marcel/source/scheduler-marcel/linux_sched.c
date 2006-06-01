@@ -1948,13 +1948,7 @@ asmlinkage void ma_preempt_schedule(void)
 {
         marcel_task_t *ti = MARCEL_SELF;
 
-        /*
-         * If there is a non-zero preempt_count or interrupts are disabled,
-         * we do not want to preempt the current task.  Just return..
-         */
-        if (tbx_unlikely(ti->preempt_count)) { // || irqs_disabled()))
-                return;
-	}
+	MA_BUG_ON(ti->preempt_count);
 
 need_resched:
         ti->preempt_count = MA_PREEMPT_ACTIVE;

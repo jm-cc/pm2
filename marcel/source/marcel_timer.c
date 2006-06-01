@@ -198,39 +198,25 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  * Le signal TIMER
  *
  * dans la norme posix, setitimer(ITIMER_REAL) envoie régulièrement un SIGALRM
- * au _processus_ (donc à un seul des threads), il est partagé entre tous les
- * threads; par contre setitimer(ITIMER_VIRTUAL) est "par thread".
+ * au _processus_ (donc à un seul des threads), ce thread renvoie donc SIGALRM
+ * aux autres threads.
+ *
+ * par contre setitimer(ITIMER_VIRTUAL) est "par thread".
  *
  * Il se trouve que linux <= 2.4 voire un peu plus, solaris <= je ne sais
  * pas,... ont un ITIMER_REAL "par thread" !
- *
- * La manière sûre d'utiliser ITIMER_REAL est donc de l'appeler seulement pour
- * le LWP0 et bloquer SIGALRM sur les autres threads, chaque LWP s'occupant de
- * propager le signal au suivant.
- *
- * Si l'utilisateur sait avoir une ancienne sémantique, il peut activer
- * l'option old real timer.
  *
  * On préfèrerait donc ITIMER_VIRTUAL, où c'est le noyau qui s'occupe de
  * distribuer (bien, a priori). Seul problème, c'est qu'il n'expire que si on
  * consomme du cpu...
  */
 #if defined(MA__SMP) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
-#ifndef SA_SIGINFO
-#error "Can't chain SIGALRM when siginfo is not available"
-#endif
-#define CHAINED_SIGALRM
+#define DISTRIBUTE_SIGALRM
 #endif
 
 #ifdef MA__TIMER
 
 static sigset_t sigalrmset, sigeptset;
-
-#ifdef CHAINED_SIGALRM
-#define no_interrupt __ma_get_lwp_var(_no_interrupt)
-#else
-#define no_interrupt 0
-#endif
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
@@ -246,17 +232,16 @@ static void timer_interrupt(int sig)
 
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
-#ifdef CHAINED_SIGALRM
+#ifdef DISTRIBUTE_SIGALRM
 	if (sig == MARCEL_TIMER_SIGNAL && (!info || info->si_code > 0)) {
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
-			marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+			if (lwp->number != -1)
+				marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
 		for_each_lwp_from_end()
 	}
 #endif
-	if (no_interrupt)
-		goto out;
 
 #ifdef MA__DEBUG
 	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)
@@ -277,7 +262,7 @@ static void timer_interrupt(int sig)
 		if (!info || info->si_code > 0)
 #endif
 		/* kernel timer signal */
-#ifndef CHAINED_SIGALRM
+#ifndef DISTRIBUTE_SIGALRM
 			if (IS_FIRST_LWP(LWP_SELF))
 #endif
 			{
@@ -374,11 +359,7 @@ unsigned long marcel_gettimeslice(void)
 void marcel_sig_enable_interrupts(void)
 {
 #ifdef MA__SMP
-#ifdef CHAINED_SIGALRM
-	no_interrupt = 0;
-#else
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
 #else
 	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
@@ -387,11 +368,7 @@ void marcel_sig_enable_interrupts(void)
 void marcel_sig_disable_interrupts(void)
 {
 #ifdef MA__SMP
-#ifdef CHAINED_SIGALRM
-	no_interrupt = 1;
-#else
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
-#endif
 #else
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
 #endif
@@ -438,13 +415,13 @@ static void sig_start_timer(ma_lwp_t lwp)
 #endif
 
 #ifdef MA__SMP
-#ifdef CHAINED_SIGALRM
+#ifdef DISTRIBUTE_SIGALRM
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
 #endif
 	marcel_sig_enable_interrupts();
 
-#ifdef CHAINED_SIGALRM
+#ifdef DISTRIBUTE_SIGALRM
 	if (IS_FIRST_LWP(lwp))
 #endif
 		marcel_sig_reset_timer();
@@ -467,7 +444,7 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-#ifndef CHAINED_SIGALRM
+#ifndef DISTRIBUTE_SIGALRM
 	marcel_sig_stop_itimer();
 #endif
 
@@ -475,7 +452,7 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	 * par thread, il faut donc garder le traitant commun jusqu'au bout, en
 	 * désactivant simplement l'interruption.
 	 *
-	 * Et puis on en a besoin dans le cas CHAINED_SIGALRM. */
+	 * Et puis on en a besoin dans le cas DISTRIBUTE_SIGALRM. */
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;

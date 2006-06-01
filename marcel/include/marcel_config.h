@@ -60,12 +60,12 @@
 
 /* ========== timer =================== */
 
+#include <signal.h>
 #ifdef MA__TIMER
-#if defined(OSF_SYS) || defined(AIX_SYS)
-/* don't give a negative si_code for user-generated signals */
+#if !defined(SA_SIGINFO) || defined(OSF_SYS) || defined(AIX_SYS)
+/* no way to distinguish between a signal from the kernel or from another LWP */
 #define MA_BOGUS_SIGINFO_CODE
 #endif
-#include <signal.h>
 // Signal utilis pour la premption automatique
 #ifdef USE_VIRTUAL_TIMER
 #  define MARCEL_TIMER_SIGNAL       SIGVTALRM
@@ -85,4 +85,4 @@
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif
 #define MARCEL_RESCHED_SIGNAL     SIGUSR2
-#endif
+#endif /* MA__TIMER */

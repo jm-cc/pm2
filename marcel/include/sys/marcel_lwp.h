@@ -72,10 +72,6 @@ struct marcel_lwp {
 #endif
 	ma_tvec_base_t tvec_bases;
 
-#ifdef MA__TIMER
-	int _no_interrupt;
-#endif
-
 #ifdef MA__LWPS
 	int number;
 #endif

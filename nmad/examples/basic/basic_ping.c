@@ -276,7 +276,7 @@ ping(void) {
 
                         sum += TBX_TIMING_DELAY(t1, t2);
                 } else {
-                        int nb_tests	= param_nb_tests+1;
+                        int nb_tests	= param_nb_tests+param_test_warmup;
                         int flag	= !param_test_warmup;
 
                         while (nb_tests--) {

@@ -53,6 +53,7 @@ static
 void
 usage(void) {
         fprintf(stderr, "usage: basic [[-h <remote_hostname>] <remote url>]\n");
+        exit(EXIT_FAILURE);
 }
 
 int

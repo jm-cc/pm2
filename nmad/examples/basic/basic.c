@@ -49,6 +49,12 @@
 
 const char *msg	= "hello, world";
 
+static
+void
+usage(void) {
+        fprintf(stderr, "usage: basic [[-h <remote_hostname>] <remote url>]\n");
+}
+
 int
 main(int	  argc,
      char	**argv) {
@@ -60,6 +66,7 @@ main(int	  argc,
         uint8_t			 drv_id		=    0;
         uint8_t			 gate_id	=    0;
         char			*buf		= NULL;
+        char			*hostname	= "localhost";
         uint64_t		 len;
         int err;
 
@@ -79,12 +86,27 @@ main(int	  argc,
         argv++;
 
         if (argc) {
-                r_url	= *argv;
-                printf("running as client using remote url: [%s]\n", r_url);
+                /* client */
+                while (argc) {
+                        if (!strcmp(*argv, "-h")) {
+                                argc--;
+                                argv++;
 
-                argc--;
-                argv++;
+                                if (!argc)
+                                        usage();
+
+                                hostname = *argv;
+                        } else {
+                                r_url	= *argv;
+                        }
+
+                        argc--;
+                        argv++;
+                }
+
+                printf("running as client using remote url: %s[%s]\n", hostname, r_url);
         } else {
+                /* no args: server */
                 printf("running as server\n");
         }
 
@@ -139,7 +161,7 @@ main(int	  argc,
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                           "localhost", r_url);
+                                           hostname, r_url);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         goto out;

@@ -22,6 +22,7 @@
 #include "marcel.h" //VD:
 #include "marcel_for_pthread.h"
 
+#ifdef __USE_UNIX98
 #ifdef MA__LIBPTHREAD // ST:
 
 #ifdef LINUX_SYS // AD:
@@ -715,3 +716,4 @@ DEF_PTHREAD(int, rwlockattr_setkind_np, (pthread_rwlockattr_t *attr, int pref),
 
 
 #endif // MA__LIBPTHREAD (ST:)
+#endif // __USE_UNIX98

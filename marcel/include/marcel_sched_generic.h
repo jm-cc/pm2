@@ -255,3 +255,4 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 
 #section types
 #section marcel_inline
+#section variables

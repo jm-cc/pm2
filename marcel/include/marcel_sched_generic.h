@@ -37,7 +37,8 @@
 #section functions
 /* ==== `sleep' functions ==== */
 
-void marcel_delay(unsigned long millisecs);
+int marcel_usleep(unsigned long usec);
+#define marcel_delay(millisec) marcel_usleep((millisec)*1000)
 
 /* ==== scheduler status ==== */
 

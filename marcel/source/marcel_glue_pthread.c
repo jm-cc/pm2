@@ -173,12 +173,6 @@ int pthread_equal(pthread_t thread1, pthread_t thread2)
   return thread1 == thread2;
 }
 
-int usleep_divert (__useconds_t __useconds)
-{
-  return 0;
-}
-versioned_symbol (libpthread, usleep_divert, usleep, GLIBC_2_2);
-
 /*
 int __libc_sigaction (int sig, const struct sigaction *act, struct sigaction *oact);
 int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)

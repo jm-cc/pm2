@@ -17,19 +17,23 @@
 #include "tbx_compiler.h"
 #include <signal.h>
 
-void marcel_delay(unsigned long millisecs)
+int marcel_usleep(unsigned long usec)
 {
 #ifdef MA__ACTIVATION
-	usleep(millisecs*1000);
+	return usleep(usec);
 #else
 	LOG_IN();
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	ma_schedule_timeout(millisecs*1000/marcel_gettimeslice());
+	ma_schedule_timeout(usec/marcel_gettimeslice());
 
-	LOG_OUT();
+	LOG_RETURN(0);
 #endif
 }
+
+#if defined(MA__LIBPTHREAD) && !defined(MA__ACTIVATION)
+versioned_symbol (libpthread, marcel_usleep, usleep, GLIBC_2_2);
+#endif
 
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {

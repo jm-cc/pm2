@@ -3173,8 +3173,10 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	else {
 		rq->father=&marcel_topo_vp_level[num].sched;
 #ifdef MA__SMP
-		marcel_vpmask_add_vp(&ma_main_runqueue.vpset,num);
-		marcel_vpmask_add_vp(&ma_dontsched_runqueue.vpset,num);
+		if (num < marcel_nbvps()) {
+			marcel_vpmask_add_vp(&ma_main_runqueue.vpset,num);
+			marcel_vpmask_add_vp(&ma_dontsched_runqueue.vpset,num);
+		}
 #endif
 	}
 	if (rq->father)

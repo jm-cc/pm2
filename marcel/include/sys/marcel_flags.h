@@ -188,7 +188,6 @@
 
 #ifdef MARCEL_LIBPTHREAD
 #  define MA__IFACE_LPT
-#  define MA__IFACE_PTHREAD
 #  define MA__LIBPTHREAD
 #endif
 

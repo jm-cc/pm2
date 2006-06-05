@@ -198,6 +198,8 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   // d'état
   //state_lock(pid);
 
+  // TODO: quand le thread n'est pas actif, utiliser marcel_do_deviate()
+  // (plus efficace)
 #ifdef MA__WORK
   marcel_deviate_record(pid, h, arg);
   

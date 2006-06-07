@@ -18,6 +18,7 @@
 
 #define MAX_RECORDS    1024
 
+/* TODO: utiliser marcel_allocator */
 static deviate_record_t deviate_records[MAX_RECORDS];
 
 static deviate_record_t *next_free = NULL;

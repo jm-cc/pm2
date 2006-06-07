@@ -77,6 +77,8 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	}
 };
 
+#undef marcel_topo_vp_level
+struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
 
 struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 	marcel_machine_level
@@ -103,8 +105,6 @@ void ma_set_processors(void) {
 	mdebug("%d LWP%s per cpu, stride %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride);
 	// TODO: stride = 2 si HT et que suffisament peu de LWPs.
 }
-
-struct marcel_topo_level *marcel_topo_vp_level;
 
 #ifdef MA__NUMA
 

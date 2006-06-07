@@ -27,7 +27,6 @@ dnl  ***************************/
 #endif
 
 #include "marcel_fastlock.h"
-//#include "marcel_restart.h" // pour __thread_self()
 
 /****************************************************************
  * MUTEX

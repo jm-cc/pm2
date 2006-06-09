@@ -18,6 +18,7 @@
 #depend "sys/isomalloc_archdep.h"
 
 #ifdef DO_PROFILE
-#define MA_PROFILE_ASM_GET_TID(reg)
-#error "to write !"
+#define MA_PROFILE_ASM_GET_TID(reg) \
+	movq    %rsp,%reg ; \
+	andq    $(~(ASM_THREAD_SLOT_SIZE-1)),%reg ;
 #endif

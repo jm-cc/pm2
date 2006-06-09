@@ -330,10 +330,10 @@ ma_test_and_change_bit (int nr, volatile void *addr)
  */
 #section marcel_functions
 static __tbx_inline__ int
-__ma_test_and_change_bit (int nr, void *addr);
+__ma_test_and_change_bit (int nr, volatile void *addr);
 #section marcel_inline
 static __tbx_inline__ int
-__ma_test_and_change_bit (int nr, void *addr)
+__ma_test_and_change_bit (int nr, volatile void *addr)
 {
 	__ma_u32 old, bit = (1 << (nr & 31));
 	__ma_u32 *m = (__ma_u32 *) addr + (nr >> 5);

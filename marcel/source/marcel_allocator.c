@@ -27,7 +27,7 @@ static ma_allocator_t * level_container_allocator = NULL;
 ma_per_sth_cur_t ma_per_lwp_cur = MA_PER_STH_CUR_INITIALIZER(MA_PER_LWP_ROOM);
 ma_per_sth_cur_t ma_per_level_cur = MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM);
 
-void ma_allocator_init(void)
+void __marcel_init ma_allocator_init(void)
 {
   lwp_container_allocator = ma_new_obj_allocator(1,
                                          (void*(*)(void*)) ma_per_lwp_alloc,
@@ -137,9 +137,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
  case POLICY_LOCAL: {
     struct marcel_topo_level *vp;
     for_all_vp(vp) {
-	    ma_container_fini(ma_per_level_data(vp, (long)allocator->container),allocator->destroy, allocator->destroy_arg);
+	    ma_container_fini(ma_per_level_data(vp, allocator->container_offset),allocator->destroy, allocator->destroy_arg);
       }
-    ma_obj_free(lwp_container_allocator, allocator->container);
+    ma_obj_free(lwp_container_allocator, (void*) allocator->container_offset);
     break;
   }
 
@@ -148,10 +148,10 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
       {
         for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	  {
-	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[j][i], (long)(allocator->container)),allocator->destroy, allocator->destroy_arg);
+	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container_offset)),allocator->destroy, allocator->destroy_arg);
 	  }
       }
-    ma_obj_free(level_container_allocator, allocator->container);
+    ma_obj_free(level_container_allocator, (void*) allocator->container_offset);
     break;
 #endif
   default:
@@ -180,22 +180,22 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 #ifdef MA__LWPS
       case POLICY_LOCAL: {
         struct marcel_topo_level *vp;
-	allocator->container = ma_obj_alloc(level_container_allocator);
+	allocator->container_offset = (unsigned long) ma_obj_alloc(lwp_container_allocator);
 
 	for_all_vp(vp) {
-		ma_container_init(ma_per_level_data(vp,(long)(allocator->container)), allocator->conservative, allocator->max_size);
+		ma_container_init(ma_per_level_data(vp,(allocator->container_offset)), allocator->conservative, allocator->max_size);
 	}
 	break;
       }
 
       case POLICY_HIERARCHICAL:
 
-       	allocator->container = (void*)ma_per_level_alloc(sizeof(ma_container_t));	
+	allocator->container_offset = (unsigned long) ma_obj_alloc(level_container_allocator);
 	for(j=0; j < marcel_topo_nblevels; ++j)
 	  {
             for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	      {
-		ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], (long)(allocator->container)), allocator->conservative, allocator->max_size);
+		ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container_offset)), allocator->conservative, allocator->max_size);
 	      }
 	  }
 
@@ -231,7 +231,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 #ifdef MA__LWPS
   if (allocator->policy == POLICY_LOCAL)
     {
-      return ma_per_lwp_self_data((long)allocator->container);
+      return ma_per_lwp_self_data(allocator->container_offset);
     }
 
 
@@ -246,7 +246,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
-	  container_courant = ma_per_level_data(niveau_courant, (long)allocator->container);
+	  container_courant = ma_per_level_data(niveau_courant, allocator->container_offset);
 	  if (ma_container_nb_element(container_courant) > 0)
 	    return container_courant;
 	  else
@@ -270,7 +270,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
-	  container_courant = ma_per_level_data(niveau_courant, (long)allocator->container);
+	  container_courant = ma_per_level_data(niveau_courant, allocator->container_offset);
 	  if(!ma_container_plein(container_courant))
 	    {
 	    return container_courant;

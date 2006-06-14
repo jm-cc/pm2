@@ -28,14 +28,10 @@ void __marcel_init ma_deviate_init(void) {
 		      POLICY_HIERARCHICAL, 0);
 }
 
-// Attention: cette fonction n'est pas directement thread-safe
-#define deviate_record_alloc() ma_obj_alloc(deviate_records)
-#define deviate_record_free(rec) ma_obj_free(deviate_records, rec)
-
 // préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 {
-  deviate_record_t *ptr = deviate_record_alloc();
+  deviate_record_t *ptr = ma_obj_alloc(deviate_records);
 
   ptr->func = h;
   ptr->arg = arg;
@@ -59,7 +55,7 @@ static void do_execute_deviate_work(void)
     any_t arg = ptr->arg;
 
     cur->work.deviate_work = ptr->next;
-    deviate_record_free(ptr);
+    ma_obj_free(deviate_records, ptr);
 
     marcel_lock_release(&deviate_lock);
     ma_preempt_enable();

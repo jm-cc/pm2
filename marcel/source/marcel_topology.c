@@ -102,8 +102,10 @@ void ma_set_nbprocessors(void) {
 
 void ma_set_processors(void) {
 	marcel_vps_per_cpu = (marcel_nbvps()+marcel_nbprocessors-1)/marcel_nbprocessors;
+	if (marcel_vps_per_cpu == 1)
+		/* no more vps than cpus, distribute them */
+		marcel_cpu_stride = marcel_nbprocessors / marcel_nbvps();
 	mdebug("%d LWP%s per cpu, stride %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride);
-	// TODO: stride = 2 si HT et que suffisament peu de LWPs.
 }
 
 #ifdef MA__NUMA

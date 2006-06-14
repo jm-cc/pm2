@@ -705,7 +705,7 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
 
         TBX_FREE(tcp_specific);
         client->specific = NULL;
-        free(client->remote_host);
+        TBX_FREE(client->remote_host);
         client->remote_host = NULL;
         LOG_OUT();
 }

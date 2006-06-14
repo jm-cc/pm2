@@ -31,10 +31,10 @@
                                             __cur->cur_exception == ex2 || \
                                             __cur->cur_exception == ex3) {
 #define MARCEL_EXCEPTION_WHEN_OTHERS    } else if(1) {
-#define MARCEL_EXCEPTION_END            } else _marcel_raise(NULL); }}
+#define MARCEL_EXCEPTION_END            } else _marcel_raise_exception(NULL); }}
 
-#define MARCEL_EXCEPTION_RAISE(ex) (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise(ex))
-#define MARCEL_EXCEPTION_RRAISE    (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise(NULL))
+#define MARCEL_EXCEPTION_RAISE(ex) (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise_exception(ex))
+#define MARCEL_EXCEPTION_RRAISE    (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise_exception(NULL))
 
 /* =================== Quelques definitions utiles ==================== */
 
@@ -49,7 +49,7 @@
 
 #define MARCEL_END_LOOP(name) } } \
 	SELF_GETMEM(cur_excep_blk)=_##name##_excep_blk.old_blk; \
-	if(_##name##_val == 1) _marcel_raise(NULL); }
+	if(_##name##_val == 1) _marcel_raise_exception(NULL); }
 
 #section types
 typedef char *marcel_exception_t;
@@ -77,6 +77,6 @@ extern marcel_exception_t
 
 #section functions
 #include "tbx_compiler.h"
-int TBX_NORETURN _marcel_raise(marcel_exception_t ex);
+int TBX_NORETURN _marcel_raise_exception(marcel_exception_t ex);
 
 

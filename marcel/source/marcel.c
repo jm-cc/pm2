@@ -212,7 +212,7 @@ DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 
 /* ================== Gestion des exceptions : ================== */
 
-int _marcel_raise(marcel_exception_t ex)
+int _marcel_raise_exception(marcel_exception_t ex)
 {
   marcel_t cur = marcel_self();
 

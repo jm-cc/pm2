@@ -18,38 +18,19 @@
 
 #define MAX_RECORDS    1024
 
-/* TODO: utiliser marcel_allocator */
-static deviate_record_t deviate_records[MAX_RECORDS];
-
-static deviate_record_t *next_free = NULL;
-static unsigned next_unalloc = 0;
-
+static ma_allocator_t * deviate_records;
 static marcel_lock_t deviate_lock = MARCEL_LOCK_INIT;
 
-// Attention: cette fonction n'est pas directement thread-safe
-static deviate_record_t *deviate_record_alloc(void)
-{
-  deviate_record_t *res;
-
-  if(next_free != NULL) {
-    res = next_free;
-    next_free = next_free->next;
-  } else {
-    if(next_unalloc == MAX_RECORDS)
-      MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
-    res = &deviate_records[next_unalloc];
-    next_unalloc++;
-  }
-
-  return res;
+void __marcel_init ma_deviate_init(void) {
+  deviate_records = ma_new_obj_allocator(0,
+		      ma_obj_allocator_malloc, (void*) sizeof(ma_allocator_t),
+		      ma_obj_allocator_free, NULL,
+		      POLICY_HIERARCHICAL, 0);
 }
 
 // Attention: cette fonction n'est pas directement thread-safe
-static void deviate_record_free(deviate_record_t *rec)
-{
-  rec->next = next_free;
-  next_free = rec;
-}
+#define deviate_record_alloc() ma_obj_alloc(deviate_records)
+#define deviate_record_free(rec) ma_obj_free(deviate_records, rec)
 
 // préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)

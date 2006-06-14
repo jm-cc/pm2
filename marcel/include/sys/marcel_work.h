@@ -29,6 +29,7 @@ void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg);
 
 #section marcel_functions
 
+void ma_deviate_init(void);
 void marcel_execute_deviate_work(void);
 
 #section marcel_types

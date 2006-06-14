@@ -475,6 +475,7 @@ void marcel_init_section(int sec) {
                 }
                 else if (section == MA_INIT_MAIN_LWP) {
 		  ma_allocator_init();
+		  ma_deviate_init();
 #ifdef PROFILE
                   call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
 #endif // PROFILE

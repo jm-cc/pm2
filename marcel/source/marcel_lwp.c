@@ -340,7 +340,7 @@ void marcel_leave_blocking_section(void) {
 /* wait for at least one VP to become active, lwp is a hint of a still running LWP */
 marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	struct marcel_topo_level *level;
-	marcel_lwp_t *lwp;
+	marcel_lwp_t *lwp = NULL;
 	unsigned vp;
 	for (vp = 0; vp < marcel_nbvps(); vp++)
 		if ((lwp = ma_vp_lwp[vp]))

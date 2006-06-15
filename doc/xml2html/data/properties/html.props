@@ -11,6 +11,7 @@ ABSTRACT		= org.runtime.manuals.html.AbstractElement
 KEYWORD			= org.runtime.manuals.html.KeywordsElement
 LABRI			= org.runtime.manuals.html.EmptyElement
 INRIA			= org.runtime.manuals.html.EmptyElement
+WML			= org.runtime.manuals.html.EmptyElement
 SECTION			= org.runtime.manuals.html.SectionElement
 SUBSECTION		= org.runtime.manuals.html.SubSectionElement
 SUBSUBSECTION		= org.runtime.manuals.html.SubSubSectionElement

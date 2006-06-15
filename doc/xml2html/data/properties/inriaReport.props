@@ -12,6 +12,7 @@ ABSTRACT		= org.runtime.manuals.inriaReport.AbstractElement
 KEYWORD			= org.runtime.manuals.inriaReport.KeywordsElement
 LABRI			= org.runtime.manuals.latex.EmptyElement
 INRIA			= org.runtime.manuals.inriaReport.InriaElement
+WML			= org.runtime.manuals.latex.EmptyElement
 RESUME			= org.runtime.manuals.inriaReport.AbstractElement
 MOTCLE			= org.runtime.manuals.inriaReport.KeywordsElement
 SECTION			= org.runtime.manuals.latex.SectionElement

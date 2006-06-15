@@ -6,6 +6,8 @@
 
 <!-- DATE="December 2005" -->
 
+<WML INCLUDE="my_macros.txt"/>
+
 <LABRI/> <!-- NUMBER="RR-1375-05" -->
 
 <ABSTRACT TABLEOFPROGRAMS="true">

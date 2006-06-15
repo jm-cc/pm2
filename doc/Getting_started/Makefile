@@ -27,6 +27,7 @@ WML_DEST		=	$(WWW)/index.wml
 WML_DEST		+=	$(WWW)/footnote.wml
 WML_DEST		+=	$(WWW)/undefined.wml
 WML_DEST		+=	$(patsubst %.wml,$(WWW)/%.wml,$(XML_WML_FILES))
+WML_DEST		+=	$(WWW)/my_macros.txt
 
 WML_FIGURES_DEST	:=	$(patsubst ./Figures/%.png,$(WWW)/Figures/%.png,$(FIGURES_HTML))
 
@@ -43,6 +44,9 @@ $(WWW)/%.wml: $(BUILD)/wml/$(TARGET)/%.wml
 	cp $< $@
 
 $(WWW)/Figures/%.png: ./Figures/%.png
+	cp $< $@
+
+$(WWW)/my_macros.txt: ./Sources/wml/my_macros.txt
 	cp $< $@
 
 pdf-upload: $(WWW)/resources/$(TARGET).pdf

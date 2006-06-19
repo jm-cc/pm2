@@ -290,7 +290,7 @@ parse_application_file(p_leonie_t leonie)
   LOG_OUT();
 }
 
-
+static
 void
 sigint_handler(int sig)
 {
@@ -307,7 +307,8 @@ sigint_handler(int sig)
 }
 
 static
-void install_signal_handler(void)
+void
+install_signal_handler(void)
 {
   struct sigaction sa =
     {

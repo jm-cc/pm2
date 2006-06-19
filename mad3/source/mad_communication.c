@@ -456,10 +456,10 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
 	      if (last_link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
 		{
-		  interface->
-		    receive_buffer(last_link,
-				   (p_mad_buffer_t *)&buffer_group.
-				   buffer_list.first->object);
+                  p_mad_buffer_t buffer = buffer_group.
+                    buffer_list.first->object;
+
+		  interface->receive_buffer(last_link, &buffer);
 		}
 	      else
 		{
@@ -546,10 +546,9 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
 	      if (lnk->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
 		{
-		  interface->
-		    receive_buffer(lnk,
-				   (p_mad_buffer_t *)&buffer_group.
-				   buffer_list.first->object);
+                  p_mad_buffer_t buffer = buffer_group.buffer_list.first->object;
+
+		  interface->receive_buffer(lnk, &buffer);
 		}
 	      else
 		{
@@ -1396,9 +1395,9 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		  if (last_link->group_mode == mad_group_mode_split
 		      && buffer_group.buffer_list.length == 1)
 		    {
-		      interface->
-			receive_buffer(last_link,
-				       (p_mad_buffer_t *)&buffer_group.buffer_list.first->object);
+                      p_mad_buffer_t buffer = buffer_group.buffer_list.first->object;
+
+		      interface->receive_buffer(last_link, &buffer);
 		    }
 		  else
 		    {
@@ -1571,10 +1570,10 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		  if (lnk->group_mode == mad_group_mode_split
 		      && buffer_group.buffer_list.length == 1)
 		    {
-		      interface->
-			receive_buffer(lnk,
-				       (p_mad_buffer_t *)&buffer_group.
-				       buffer_list.first->object);
+                      p_mad_buffer_t buffer = buffer_group.
+                        buffer_list.first->object;
+
+		      interface->receive_buffer(lnk, &buffer);
 		    }
 		  else
 		    {

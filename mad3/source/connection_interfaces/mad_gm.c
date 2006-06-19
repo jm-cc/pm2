@@ -887,7 +887,7 @@ mad_gm_fill_header(void       *_hdr,
 
 #ifdef MARCEL
 
-/* Mad/GM lock must be hold when calling this function */
+/* Mad/GM lock must be held when calling this function */
 static
 int
 mad_gm_process_event(p_mad_gm_port_t port, int may_block) {

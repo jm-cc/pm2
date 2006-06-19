@@ -45,6 +45,7 @@ typedef tbx_htable_element_count_t *p_tbx_htable_element_count_t;
 typedef struct s_tbx_htable_element
 {
   char                   *key;
+  size_t		  key_len;
   void                   *object;
   p_tbx_htable_element_t  next;
 } tbx_htable_element_t;

@@ -195,6 +195,15 @@
 #  define MA__INTERRUPTS_FIX_LWP
 #endif
 
+/* On peut ne pas vouloir de signaux quand même */
+#ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#ifdef PM2_DEV
+#warning NO SIGNAL TIMER ENABLE
+#warning I hope you are debugging
+#endif
+#  undef MA__TIMER
+#endif
+
 /* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter
  * les interruptions entre l'enregistrement du switch_to et le switch_to
  * effectif 

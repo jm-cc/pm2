@@ -21,16 +21,6 @@
 #include <errno.h>
 #include <time.h>
 
-/* pour déboggage seulement */
-//#define MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-
-#ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-#ifdef PM2_DEV
-#warning NO SIGNAL TIMER ENABLE
-#warning I hope you are debugging
-#endif
-#endif
-
 ma_atomic_t __preemption_disabled = MA_ATOMIC_INIT(0);
 
 /* Unité : microsecondes */
@@ -214,8 +204,6 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
 #define DISTRIBUTE_SIGALRM
 #endif
 
-#ifdef MA__TIMER
-
 static sigset_t sigalrmset, sigeptset;
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
@@ -319,7 +307,7 @@ void marcel_sig_reset_timer(void)
 
 	LOG_IN();
 
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#ifdef MA__TIMER
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
@@ -381,7 +369,6 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 	LOG_IN();
 
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigemptyset(&sa.sa_mask);
 #ifdef SA_RESTART
 	sa.sa_flags = SA_RESTART;
@@ -406,13 +393,14 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sa.sa_handler = timer_interrupt;
 #endif
 	
+#ifdef MA__TIMER
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
 	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
 #endif
-	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
+	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
 #ifdef MA__SMP
 #ifdef DISTRIBUTE_SIGALRM
@@ -431,19 +419,18 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 void marcel_sig_stop_itimer(void)
 {
+#ifdef MA__TIMER
 	struct itimerval value;
 	memset(&value,0,sizeof(value));
 	setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
+#endif
 }
 
 static void sig_stop_timer(ma_lwp_t lwp)
 {
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	struct sigaction sa;
-#endif
 	LOG_IN();
 
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 #ifndef DISTRIBUTE_SIGALRM
 	marcel_sig_stop_itimer();
 #endif
@@ -457,12 +444,13 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;
 
+#ifdef MA__TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
-	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
+	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
 	LOG_OUT();
 }
@@ -499,5 +487,3 @@ static void __marcel_init sig_init(void)
 #endif
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
-
-#endif /* MA__TIMER */

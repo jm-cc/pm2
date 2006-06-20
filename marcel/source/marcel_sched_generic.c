@@ -25,7 +25,7 @@ int marcel_usleep(unsigned long usec)
 	LOG_IN();
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	ma_schedule_timeout(usec/marcel_gettimeslice());
+	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
 
 	LOG_RETURN(0);
 #endif

@@ -23,6 +23,7 @@ extern unsigned marcel_cpu_stride;
 extern unsigned marcel_vps_per_cpu;
 #ifdef MA__NUMA
 extern unsigned marcel_topo_max_arity;
+extern struct marcel_topo_level *marcel_topo_node_level;
 #endif
 extern struct marcel_topo_level *marcel_topo_vp_level;
 #ifndef MA__LWPS
@@ -30,6 +31,9 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 #define marcel_cpu_stride 1
 #define marcel_vps_per_cpu 1
 #define marcel_topo_vp_level marcel_machine_level
+#endif
+#ifndef MA__NUMA
+#define marcel_topo_node_level marcel_machine_level
 #endif
 #define ma_cpu_of_vp_num(num) (((num)/marcel_vps_per_cpu)*marcel_cpu_stride)
 
@@ -292,6 +296,7 @@ struct marcel_topo_level {
 #section variables
 extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
+extern unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
 extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 
 #section marcel_macros

@@ -80,6 +80,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #undef marcel_topo_vp_level
 struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
 
+unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1] = { 1 };
 struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 	marcel_machine_level
 };
@@ -113,7 +114,8 @@ void ma_set_processors(void) {
 #ifdef MARCEL_SMT_IDLE
 static struct marcel_topo_level *marcel_topo_core_level;
 #endif
-static struct marcel_topo_level *marcel_topo_node_level;
+#undef marcel_topo_node_level
+struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
 
 int ma_vp_node[MA_NR_LWPS];
@@ -243,6 +245,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 		marcel_vpmask_empty(&die_level[j].vpset);
 
+		marcel_topo_level_nbitems[discovering_level]=numdies;
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
 
@@ -296,6 +299,7 @@ static void __marcel_init look_cpuinfo(void) {
 #ifdef MARCEL_SMT_IDLE
 		marcel_topo_core_level =
 #endif
+		marcel_topo_level_nbitems[discovering_level]=numcores;
 		marcel_topo_levels[discovering_level++]=core_level;
 	}
 }
@@ -360,6 +364,7 @@ static void __marcel_init look_libnuma(void) {
 
 	marcel_vpmask_empty(&node_level[i].vpset);
 
+	marcel_topo_level_nbitems[discovering_level]=nbnodes;
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
 
@@ -417,6 +422,7 @@ static void __marcel_init look_libnuma(void) {
 
 	marcel_vpmask_empty(&node_level[i].vpset);
 
+	marcel_topo_level_nbitems[discovering_level]=nbnodes;
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
 }
@@ -447,6 +453,7 @@ static void look_cpu(void) {
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++)
 		mdebug("cpu %d has vpset %lx\n",cpu,cpu_level[cpu].vpset);
 
+	marcel_topo_level_nbitems[discovering_level]=marcel_nbprocessors;
 	marcel_topo_levels[discovering_level++]=
 		marcel_topo_cpu_level = cpu_level;
 }
@@ -472,6 +479,7 @@ static void look_vp(void) {
 	}
 	marcel_vpmask_empty(&vp_level[i].vpset);
 
+	marcel_topo_level_nbitems[discovering_level]=marcel_nbvps();
 	marcel_topo_levels[discovering_level++] = vp_level;
 }
 
@@ -538,6 +546,7 @@ static void topo_discover(void) {
 				marcel_topo_node_level = marcel_topo_levels[l];
 #endif
 			TBX_FREE(marcel_topo_levels[l+1]);
+			memmove(&marcel_topo_level_nbitems[l+1],&marcel_topo_level_nbitems[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_level_nbitems));
 			memmove(&marcel_topo_levels[l+1],&marcel_topo_levels[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_levels));
 			marcel_topo_nblevels--;
 			l--;
@@ -570,7 +579,9 @@ static void topo_discover(void) {
 				levelsize += nbsublevels;
 			}
 			if (dosplit) {
+				memmove(&marcel_topo_level_nbitems[l+2],&marcel_topo_level_nbitems[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_level_nbitems));
 				memmove(&marcel_topo_levels[l+2],&marcel_topo_levels[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_levels));
+				marcel_topo_level_nbitems[l+1] = levelsize;
 				marcel_topo_levels[l+1] = TBX_MALLOC((levelsize+1)*sizeof(**marcel_topo_levels));
 				for (i=0,j=0; marcel_topo_levels[l][i].vpset; i++) {
 					split(marcel_topo_levels[l][i].arity,&sublevelsize,&nbsublevels);

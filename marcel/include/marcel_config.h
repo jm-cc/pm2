@@ -84,5 +84,6 @@
 #  endif
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif
-#define MARCEL_RESCHED_SIGNAL     SIGUSR2
 #endif /* MA__TIMER */
+
+#define MARCEL_RESCHED_SIGNAL     SIGUSR2

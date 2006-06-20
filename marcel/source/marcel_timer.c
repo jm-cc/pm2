@@ -200,7 +200,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  * distribuer (bien, a priori). Seul problème, c'est qu'il n'expire que si on
  * consomme du cpu...
  */
-#if defined(MA__SMP) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
+#if defined(MA__SMP) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
 #define DISTRIBUTE_SIGALRM
 #endif
 
@@ -214,8 +214,10 @@ static void timer_interrupt(int sig, siginfo_t *info, void *uc)
 static void timer_interrupt(int sig)
 #endif
 {
+#ifdef MA__TIMER
 #ifdef MA__DEBUG
 	static unsigned long tick = 0;
+#endif
 #endif
 
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
@@ -231,6 +233,7 @@ static void timer_interrupt(int sig)
 	}
 #endif
 
+#ifdef MA__TIMER
 #ifdef MA__DEBUG
 	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)
 		if (++tick == TICK_RATE) {
@@ -238,7 +241,9 @@ static void timer_interrupt(int sig)
 			tick = 0;
 		}
 #endif
+#endif
 	ma_irq_enter();
+#ifdef MA__TIMER
 	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL) {
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
@@ -258,6 +263,7 @@ static void timer_interrupt(int sig)
 				__milliseconds += time_slice/1000;
 			}
 	}
+#endif
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
@@ -303,7 +309,9 @@ void marcel_sig_nanosleep(void)
 
 void marcel_sig_reset_timer(void)
 {
+#ifdef MA__TIMER
 	struct itimerval value;
+#endif
 
 	LOG_IN();
 
@@ -334,6 +342,7 @@ void marcel_settimeslice(unsigned long microsecs)
 	LOG_OUT();
 }
 
+#ifdef MA__TIMER
 /* Retour en microsecondes */
 unsigned long marcel_gettimeslice(void)
 {
@@ -342,6 +351,7 @@ unsigned long marcel_gettimeslice(void)
 	LOG_OUT();
 	return time_slice;
 }
+#endif
 
 
 void marcel_sig_enable_interrupts(void)
@@ -475,9 +485,11 @@ static void __marcel_init sig_init(void)
 {
 	sigemptyset(&sigeptset);
 	sigemptyset(&sigalrmset);
+#ifdef MA__TIMER
 	sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
 	sigaddset(&sigalrmset, MARCEL_TIMER_USERSIGNAL);
+#endif
 #endif
 	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
 #ifdef MA__SMP

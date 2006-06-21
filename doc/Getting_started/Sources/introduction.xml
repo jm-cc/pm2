@@ -110,14 +110,14 @@ WindowsNT/IA32.
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="MPICH/Madeleine">
+<SUBSUBSECTION TITLE="MPICH-Madeleine">
 
 <P>
-MPICH/Madeleine is an implementation of the MPI (Message Passing Interface) communication standard. This standard is widely used in scientific parallel computing applications. This library is an adaptation of the well known MPICH (MPI CHameleon), which has the property to be relatively easily adaptable on top of new network technologies thanks to a well defined layered architecture.
+MPICH-Madeleine is an implementation of the MPI (Message Passing Interface) communication standard. This standard is widely used in scientific parallel computing applications. This library is an adaptation of the well known MPICH (MPI CHameleon), which has the property to be relatively easily adaptable on top of new network technologies thanks to a well defined layered architecture.
 </P>
 
 <P>
-To have more information about MPICH/Madeleine, please consult the
+To have more information about MPICH-Madeleine, please consult the
 following URL: <URL>http://runtime.futurs.inria.fr/mpi/</URL>.
 </P>
 </SUBSUBSECTION>

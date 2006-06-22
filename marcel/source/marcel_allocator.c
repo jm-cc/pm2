@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include <stdlib.h>
+#include <stdint.h>
 
 #define FREE_METHOD 0
 #define ALLOC_METHOD 1

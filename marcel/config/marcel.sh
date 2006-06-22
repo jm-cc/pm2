@@ -15,6 +15,10 @@ if [ "$PM2_SYS" = SOLARIS_SYS ]; then
     fi
 fi
 
+if [ "$PM2_SYS" = OSF_SYS ]; then
+    PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lrt"
+fi
+
 if [ "$PM2_SYS" = LINUX_SYS ]; then
     VERSION=`uname -r | cut -d . -f 1`
     PATCHLEVEL=`uname -r | cut -d . -f 2`

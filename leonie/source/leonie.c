@@ -283,7 +283,7 @@ parse_application_file(p_leonie_t leonie)
     leoparse_extract_htable(application_file_htable, "application");
 
   if (!tbx_htable_empty(application_file_htable))
-    FAILURE("unexpected datas in application configuration file");
+    TBX_FAILURE("unexpected datas in application configuration file");
 
   tbx_htable_free(application_file_htable);
   application_file_htable = NULL;

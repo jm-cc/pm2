@@ -351,7 +351,7 @@ receiver_thread(void *_arg)
 
 						if (cumulative_check) {
 							DISP("#### data check failed for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld/%lx bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, i_pack+1, nb_packs, length, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value]);
-							FAILURE("data corruption");
+							TBX_FAILURE("data corruption");
 #if (DISP_LEVEL > 3)
 							for (i = 0; i < length; i++) {
 								unsigned char received = 0;

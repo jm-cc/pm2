@@ -804,13 +804,13 @@ tbx_cstr_to_long(const char *s) {
         val = strtol(s, &p, 0);
 
         if (p == s)
-                FAILUREF("failed to convert string '%s' to <long>", s);
+                TBX_FAILUREF("failed to convert string '%s' to <long>", s);
 
         if (val == LONG_MIN  &&  errno == ERANGE)
-                FAILUREF("underflow error while converting string '%s' to <long>", s);
+                TBX_FAILUREF("underflow error while converting string '%s' to <long>", s);
 
         if (val == LONG_MAX  &&  errno == ERANGE)
-                FAILUREF("overflow error while converting string '%s' to <long>", s);
+                TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
 
         LOG_OUT();
 
@@ -826,10 +826,10 @@ tbx_cstr_to_unsigned_long(const char *s) {
         val = strtoul(s, &p, 0);
 
         if (p == s)
-                FAILUREF("failed to convert string '%s' to <long>", s);
+                TBX_FAILUREF("failed to convert string '%s' to <long>", s);
 
         if (val == LONG_MAX  &&  errno == ERANGE)
-                FAILUREF("overflow error while converting string '%s' to <long>", s);
+                TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
 
         LOG_OUT();
 

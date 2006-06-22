@@ -94,7 +94,7 @@
 #define mad_sisci_toggle(s) tbx_flag_toggle(&((s)->flag))
 #define mad_sisci_test(s)   tbx_flag_test(&((s)->flag))
 #define mad_sisci_control() if (sisci_error != SCI_ERR_OK)\
- {mad_sisci_display_error(sisci_error);FAILURE("Aborting");} else {}
+ {mad_sisci_display_error(sisci_error);TBX_FAILURE("Aborting");} else {}
 
 /*
  * local types
@@ -568,7 +568,7 @@ static int mad_sisci_ev_pollone(marcel_ev_server_t	server,
       channel_specific->next = next;
     }
   else
-    FAILURE("unknown polling operation");
+    TBX_FAILURE("unknown polling operation");
 
   LOG_OUT();
 
@@ -612,7 +612,7 @@ mad_sisci_wait_for(p_mad_link_t         link,
     TBX_YIELD();
 
   if (*(int*)flag != 1)
-    FAILURE("suspicious flag value");
+    TBX_FAILURE("suspicious flag value");
 
 }
 
@@ -2315,7 +2315,7 @@ mad_sisci_send_buffer(p_mad_link_t   lnk,
       mad_sisci_send_sci_buffer(lnk, buffer);
     }
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -2333,7 +2333,7 @@ mad_sisci_receive_buffer(p_mad_link_t   lnk,
       mad_sisci_receive_sci_buffer(lnk, *buffer);
     }
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -2348,7 +2348,7 @@ mad_sisci_send_buffer_group(p_mad_link_t         lnk,
       mad_sisci_send_sci_buffer_group_2(lnk, buffer_group);
     }
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -2365,7 +2365,7 @@ mad_sisci_receive_sub_buffer_group(p_mad_link_t           lnk,
       mad_sisci_receive_sci_buffer_group_2(lnk, buffer_group);
     }
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 

@@ -58,7 +58,7 @@ mad_ntbx_send_int(p_ntbx_client_t client,
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -75,7 +75,7 @@ mad_ntbx_receive_int(p_ntbx_client_t client)
   status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-   FAILURE("control link failure");
+   TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
   LOG_OUT();
@@ -96,7 +96,7 @@ mad_ntbx_send_unsigned_int(p_ntbx_client_t    client,
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -113,7 +113,7 @@ mad_ntbx_receive_unsigned_int(p_ntbx_client_t client)
   status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
   LOG_OUT();
@@ -131,7 +131,7 @@ mad_ntbx_send_string(p_ntbx_client_t  client,
   status = ntbx_tcp_write_string(client, string);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -146,7 +146,7 @@ mad_ntbx_receive_string(p_ntbx_client_t client)
   status = ntbx_tcp_read_string(client, &result);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 
@@ -166,7 +166,7 @@ mad_leonie_send_int(const int data)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   ntbx_pack_int(data, &buffer);
   TBX_LOCK_SHARED(mad_leo_client);
@@ -174,7 +174,7 @@ mad_leonie_send_int(const int data)
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -189,14 +189,14 @@ mad_leonie_receive_int(void)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   TBX_LOCK_SHARED(mad_leo_client);
   status = ntbx_tcp_read_pack_buffer(mad_leo_client, &buffer);
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
   LOG_OUT();
@@ -213,7 +213,7 @@ mad_leonie_send_unsigned_int(const unsigned int data)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   ntbx_pack_unsigned_int(data, &buffer);
   TBX_LOCK_SHARED(mad_leo_client);
@@ -221,7 +221,7 @@ mad_leonie_send_unsigned_int(const unsigned int data)
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -236,14 +236,14 @@ mad_leonie_receive_unsigned_int(void)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   TBX_LOCK_SHARED(mad_leo_client);
   status = ntbx_tcp_read_pack_buffer(mad_leo_client, &buffer);
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
   LOG_OUT();
@@ -258,14 +258,14 @@ mad_leonie_send_string(const char *string)
 
   LOG_IN();
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   TBX_LOCK_SHARED(mad_leo_client);
   status = ntbx_tcp_write_string(mad_leo_client, string);
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -278,14 +278,14 @@ mad_leonie_receive_string(void)
 
   LOG_IN();
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   TBX_LOCK_SHARED(mad_leo_client);
   status = ntbx_tcp_read_string(mad_leo_client, &result);
   TBX_UNLOCK_SHARED(mad_leo_client);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 
@@ -303,13 +303,13 @@ mad_leonie_send_int_nolock(const int data)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   ntbx_pack_int(data, &buffer);
   status = ntbx_tcp_write_pack_buffer(mad_leo_client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -324,12 +324,12 @@ mad_leonie_receive_int_nolock(void)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   status = ntbx_tcp_read_pack_buffer(mad_leo_client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
   LOG_OUT();
@@ -346,13 +346,13 @@ mad_leonie_send_unsigned_int_nolock(const unsigned int data)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   ntbx_pack_unsigned_int(data, &buffer);
   status = ntbx_tcp_write_pack_buffer(mad_leo_client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -367,12 +367,12 @@ mad_leonie_receive_unsigned_int_nolock(void)
   LOG_IN();
   memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   status = ntbx_tcp_read_pack_buffer(mad_leo_client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
   LOG_OUT();
@@ -387,12 +387,12 @@ mad_leonie_send_string_nolock(const char *string)
 
   LOG_IN();
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   status = ntbx_tcp_write_string(mad_leo_client, string);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -405,12 +405,12 @@ mad_leonie_receive_string_nolock(void)
 
   LOG_IN();
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   status = ntbx_tcp_read_string(mad_leo_client, &result);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 
@@ -458,7 +458,7 @@ mad_leonie_print(char *fmt, ...)
   LOG_IN();
   TBX_CRITICAL_SECTION_ENTER(mad_ntbx_cs_print);
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   len = strlen(fmt);
 
@@ -502,7 +502,7 @@ mad_leonie_barrier(void)
   LOG_IN();
   TBX_CRITICAL_SECTION_ENTER(mad_ntbx_cs_barrier);
   if (!mad_leo_client)
-    FAILURE("leonie command module uninitialized");
+    TBX_FAILURE("leonie command module uninitialized");
 
   TBX_LOCK_SHARED(mad_leo_client);
   mad_ntbx_send_int(mad_leo_client, mad_leo_command_barrier);
@@ -518,7 +518,7 @@ mad_leonie_barrier(void)
   TBX_LOCK_SHARED(mad_leo_client);
   result = mad_ntbx_receive_int(mad_leo_client);
   if (result != mad_leo_command_barrier_passed)
-    FAILURE("synchronization error");
+    TBX_FAILURE("synchronization error");
 
   TBX_UNLOCK_SHARED(mad_leo_client);
 #ifdef MARCEL
@@ -624,7 +624,7 @@ mad_command_thread(void *_madeleine)
       }
       break;
     default:
-       FAILURE("invalid command from Leonie server");
+       TBX_FAILURE("invalid command from Leonie server");
     }
   }
 

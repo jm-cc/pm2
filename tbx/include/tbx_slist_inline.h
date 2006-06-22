@@ -71,9 +71,9 @@ tbx_slist_free(p_tbx_slist_t slist)
 {
   LOG_IN();
   if (slist->length)
-    FAILURE("slist not empty");
+    TBX_FAILURE("slist not empty");
   if (slist->nref_head)
-    FAILURE("nrefs still exist");
+    TBX_FAILURE("nrefs still exist");
   __tbx_slist_free_struct(slist);
   LOG_OUT();
 }
@@ -102,7 +102,7 @@ tbx_slist_clear_and_free(p_tbx_slist_t slist)
       tbx_slist_extract(slist);
     }
   if (slist->nref_head)
-    FAILURE("nrefs still exist");
+    TBX_FAILURE("nrefs still exist");
   __tbx_slist_free_struct(slist);
   LOG_IN();
 }
@@ -372,7 +372,7 @@ tbx_slist_remove_from_head(p_tbx_slist_t slist)
       return object;
     }
   else
-    FAILURE("empty slist");
+    TBX_FAILURE("empty slist");
 }
 
 static
@@ -392,7 +392,7 @@ tbx_slist_remove_from_tail(p_tbx_slist_t slist)
       return object;
     }
   else
-    FAILURE("empty slist");
+    TBX_FAILURE("empty slist");
 }
 
 static
@@ -410,7 +410,7 @@ tbx_slist_peek_from_head(p_tbx_slist_t slist)
       return object;
     }
   else
-    FAILURE("empty slist");
+    TBX_FAILURE("empty slist");
 }
 
 static
@@ -428,7 +428,7 @@ tbx_slist_peek_from_tail(p_tbx_slist_t slist)
       return object;
     }
   else
-    FAILURE("empty slist");
+    TBX_FAILURE("empty slist");
 }
 
 
@@ -790,10 +790,10 @@ tbx_slist_index_get(p_tbx_slist_t     slist,
 	    }
 	}
 
-      FAILURE("out-of-bound index");
+      TBX_FAILURE("out-of-bound index");
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 static
@@ -842,7 +842,7 @@ tbx_slist_index_extract(p_tbx_slist_t     slist,
       object = __tbx_slist_free_element(slist, element);
     }
   else
-    FAILURE("out-of-bound index");
+    TBX_FAILURE("out-of-bound index");
 
   LOG_OUT();
 
@@ -879,10 +879,10 @@ tbx_slist_index_set_ref(p_tbx_slist_t     slist,
 	    }
 	}
 
-      FAILURE("out-of-bound index");
+      TBX_FAILURE("out-of-bound index");
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 static
@@ -918,10 +918,10 @@ tbx_slist_index_set_nref(p_tbx_slist_nref_t nref,
 	    }
 	}
 
-      FAILURE("out-of-bound index");
+      TBX_FAILURE("out-of-bound index");
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 /*
@@ -970,7 +970,7 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
   idx = -1;
 
@@ -1009,7 +1009,7 @@ tbx_slist_search_and_extract(p_tbx_slist_t              slist,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
  end:
   LOG_OUT();
@@ -1044,7 +1044,7 @@ tbx_slist_search_forward_set_ref(p_tbx_slist_t              slist,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
  end:
   LOG_OUT();
@@ -1080,7 +1080,7 @@ tbx_slist_search_backward_set_ref(p_tbx_slist_t              slist,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
  end:
   LOG_OUT();
@@ -1116,10 +1116,10 @@ tbx_slist_search_next_set_ref(p_tbx_slist_t              slist,
 	    }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 
  end:
   LOG_OUT();
@@ -1156,10 +1156,10 @@ tbx_slist_search_previous_set_ref(p_tbx_slist_t              slist,
 	    }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 
  end:
   LOG_OUT();
@@ -1200,7 +1200,7 @@ tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
  end:
   LOG_OUT();
@@ -1242,7 +1242,7 @@ tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t         nref,
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 
  end:
   LOG_OUT();
@@ -1284,10 +1284,10 @@ tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
 	    }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 
  end:
   LOG_OUT();
@@ -1330,10 +1330,10 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
 	    }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 
  end:
   LOG_OUT();
@@ -1382,7 +1382,7 @@ tbx_slist_ref_to_head(p_tbx_slist_t slist)
       slist->ref = slist->head;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
   LOG_OUT();
 }
 
@@ -1397,7 +1397,7 @@ tbx_slist_ref_to_tail(p_tbx_slist_t slist)
       slist->ref = slist->tail;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
   LOG_OUT();
 }
 
@@ -1417,10 +1417,10 @@ tbx_slist_ref_forward(p_tbx_slist_t slist)
 	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1442,10 +1442,10 @@ tbx_slist_ref_backward(p_tbx_slist_t slist)
 	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1476,10 +1476,10 @@ tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object)
           }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1510,10 +1510,10 @@ tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object)
           }
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1541,10 +1541,10 @@ tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1572,10 +1572,10 @@ tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
 	  result = (tbx_bool_t)(slist->ref != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1600,10 +1600,10 @@ tbx_slist_ref_get(p_tbx_slist_t slist)
 	  return object;
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 }
 
 /*
@@ -1709,7 +1709,7 @@ tbx_slist_nref_to_head(p_tbx_slist_nref_t nref)
       nref->element = slist->head;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
   LOG_OUT();
 }
 
@@ -1728,7 +1728,7 @@ tbx_slist_nref_to_tail(p_tbx_slist_nref_t nref)
       nref->element = slist->tail;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
   LOG_OUT();
 }
 
@@ -1748,10 +1748,10 @@ tbx_slist_nref_forward(p_tbx_slist_nref_t nref)
 	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1773,10 +1773,10 @@ tbx_slist_nref_backward(p_tbx_slist_nref_t nref)
 	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1804,10 +1804,10 @@ tbx_slist_nref_step_forward(p_tbx_slist_nref_t   nref,
 	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1835,10 +1835,10 @@ tbx_slist_nref_step_backward(p_tbx_slist_nref_t   nref,
 	  result = (tbx_bool_t)(nref->element != NULL);
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
   LOG_OUT();
 
   return result;
@@ -1862,9 +1862,9 @@ tbx_slist_nref_get(p_tbx_slist_nref_t nref)
 	  return object;
 	}
       else
-	FAILURE("empty list");
+	TBX_FAILURE("empty list");
     }
   else
-    FAILURE("uninitialized reference");
+    TBX_FAILURE("uninitialized reference");
 }
 

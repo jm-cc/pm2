@@ -478,7 +478,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("rank argument not found");
+	    TBX_FAILURE("rank argument not found");
 
 	  configuration->local_host_id = atoi(*argv);
 	}
@@ -487,7 +487,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("conf argument not found");
+	    TBX_FAILURE("conf argument not found");
 
 	  if (settings->configuration_file)
 	    {
@@ -504,10 +504,10 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("mad_app_cmd argument not found");
+	    TBX_FAILURE("mad_app_cmd argument not found");
 
 	  if (settings->app_cmd)
-	    FAILURE("application command specified more than once");
+	    TBX_FAILURE("application command specified more than once");
 
 	  settings->app_cmd = TBX_MALLOC(strlen(*argv) + 1);
 	  CTRL_ALLOC(settings->app_cmd);
@@ -520,10 +520,10 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("url argument not found");
+	    TBX_FAILURE("url argument not found");
 
 	  if (settings->url)
-	    FAILURE("url specified more than once");
+	    TBX_FAILURE("url specified more than once");
 
 	  settings->url = TBX_MALLOC(strlen(*argv) + 1);
 	  CTRL_ALLOC(settings->url);
@@ -536,7 +536,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("device argument not found");
+	    TBX_FAILURE("device argument not found");
 
 	  adapter->master_parameter = TBX_MALLOC(strlen(*argv) + 1);
 	  CTRL_ALLOC(adapter->master_parameter);
@@ -549,7 +549,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("cwd argument not found");
+	    TBX_FAILURE("cwd argument not found");
 
 	  chdir(*argv);
 	}
@@ -559,7 +559,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 
 #ifndef LEONIE_SPAWN
   if (configuration->local_host_id == -1)
-    FAILURE("could not determine the node rank");
+    TBX_FAILURE("could not determine the node rank");
 #endif // LEONIE_SPAWN
 
   LOG_OUT();
@@ -588,7 +588,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
       f = fopen(settings->configuration_file, "r");
     
       if (!f)
-	ERROR("fopen");
+	TBX_ERROR("fopen");
 
       for (;;)
 	{
@@ -598,14 +598,14 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 	    {
 	      if (ferror(f))
 		{
-		  ERROR("fread");
+		  TBX_ERROR("fread");
 		}
 	      else if (feof(f))
 		{
 		  break;
 		}
 	      else
-		FAILURE("fread: unknown state");
+		TBX_FAILURE("fread: unknown state");
 	    }
 
 	  if (tbx_flag_test(&state))
@@ -667,7 +667,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 	    }
 	}
       else
-	FAILURE("undefined configuration size");
+	TBX_FAILURE("undefined configuration size");
     }
 #endif /* EXTERNAL_SPAWN */  
   LOG_OUT();
@@ -700,7 +700,7 @@ mad_output_redirection_init(p_mad_madeleine_t   madeleine,
 
       user = getenv("USER");
       if (!user)
-	FAILURE("USER environment variable not defined");
+	TBX_FAILURE("USER environment variable not defined");
 
       len = strlen(fmt) + strlen(user) + strlen(MAD2_LOGNAME);
       
@@ -713,13 +713,13 @@ mad_output_redirection_init(p_mad_madeleine_t   madeleine,
 
 	f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 	if (f < 0)
-	  ERROR("open");
+	  TBX_ERROR("open");
       
 	if (dup2(f, STDOUT_FILENO) < 0)
-	  ERROR("dup2");
+	  TBX_ERROR("dup2");
 
 	if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0)
-	  ERROR("dup2");
+	  TBX_ERROR("dup2");
       }
     }
   LOG_OUT();
@@ -773,7 +773,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("rank argument disappeared");
+	    TBX_FAILURE("rank argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 
@@ -783,7 +783,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("conf argument disappeared");
+	    TBX_FAILURE("conf argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -792,7 +792,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("mad_app_cmd argument disappeared");
+	    TBX_FAILURE("mad_app_cmd argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -801,7 +801,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("url argument disappeared");
+	    TBX_FAILURE("url argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -810,7 +810,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("device argument disappeared");
+	    TBX_FAILURE("device argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -819,7 +819,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("leonie argument disappeared");
+	    TBX_FAILURE("leonie argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -828,7 +828,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("link argument disappeared");
+	    TBX_FAILURE("link argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}
@@ -837,7 +837,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("cwd argument disappeared");
+	    TBX_FAILURE("cwd argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}

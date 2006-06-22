@@ -40,10 +40,10 @@ mad_get_channel(p_mad_madeleine_t  madeleine,
   LOG_IN();
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
-    FAILUREF("channel <%s> not found", name);
+    TBX_FAILUREF("channel <%s> not found", name);
 
   if (!channel->not_private)
-    FAILUREF("invalid channel <%s>", name);
+    TBX_FAILUREF("invalid channel <%s>", name);
 
   LOG_OUT();
 
@@ -62,7 +62,7 @@ mad_get_sub_channel(p_mad_channel_t channel,
 
   TBX_LOCK_SHARED(darray);
   if (sub >= channel->max_sub)
-    FAILURE("not enough resources to allocate anonymous sub channel");
+    TBX_FAILURE("not enough resources to allocate anonymous sub channel");
 
   sub_channel = tbx_darray_expand_and_get(darray, sub);
 
@@ -77,7 +77,7 @@ mad_get_sub_channel(p_mad_channel_t channel,
 	  sub_channel = interface->get_sub_channel(channel, sub);
 	}
       else
-	FAILURE("anonymous sub channels unsupported by the driver");
+	TBX_FAILURE("anonymous sub channels unsupported by the driver");
 
       tbx_darray_set(darray, sub, sub_channel);
     }
@@ -118,16 +118,16 @@ tbx_bool_t
 
    dir_channel = tbx_htable_get(madeleine->dir->channel_htable, channel_name);
    if (!dir_channel)
-     FAILURE("channel not found");
+     TBX_FAILURE("channel not found");
 
    old_channel = tbx_htable_extract(madeleine->channel_htable, channel_name);
      if (!old_channel)
-       FAILURE("Old channel not found");
+       TBX_FAILURE("Old channel not found");
 
    mad_driver =
      tbx_htable_get(madeleine->network_htable, dir_channel->driver->network_name);
    if (!mad_driver)
-     FAILURE("driver not found");
+     TBX_FAILURE("driver not found");
 
 
    dir_driver = mad_driver->dir_driver;
@@ -139,7 +139,7 @@ tbx_bool_t
 	mad_adapter = tbx_htable_get(mad_driver->adapter_htable,
 				     dir_connection->adapter_name);
 	if (!mad_adapter)
-	  FAILURE("adapter not found");
+	  TBX_FAILURE("adapter not found");
      }
 
    mad_channel                = mad_channel_cons();

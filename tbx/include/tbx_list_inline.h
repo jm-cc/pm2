@@ -96,7 +96,7 @@ tbx_append_list(p_tbx_list_t   list,
   p_tbx_list_element_t list_element ;
 
   if (list->read_only)
-    FAILURE("attempted to modify a read only list");
+    TBX_FAILURE("attempted to modify a read only list");
 
   list_element = (p_tbx_list_element_t)tbx_malloc(tbx_list_manager_memory);
 
@@ -137,7 +137,7 @@ tbx_get_list_object(p_tbx_list_t list)
       return list->last->object;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 
@@ -205,7 +205,7 @@ tbx_extract_sub_list(p_tbx_list_t   source,
       destination->read_only     = tbx_true;
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 /*
@@ -282,7 +282,7 @@ tbx_get_list_reference_object(p_tbx_list_reference_t ref)
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 /*
@@ -334,7 +334,7 @@ tbx_forward_list_reference(p_tbx_list_reference_t ref)
 	}
     }
   else
-    FAILURE("empty list");
+    TBX_FAILURE("empty list");
 }
 
 static

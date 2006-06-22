@@ -48,7 +48,7 @@ mad_dir_sync(const char *s)
   command_string = mad_leonie_receive_string();
 
   if (!tbx_streq(command_string, s))
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
 
   TBX_FREE(command_string);
   command_string = NULL;
@@ -86,7 +86,7 @@ mad_dir_process_get(p_mad_madeleine_t madeleine)
   LOG_IN();
   number = mad_leonie_receive_int();
   if (number <= 0)
-    FAILURE("invalid number of processes");
+    TBX_FAILURE("invalid number of processes");
 
   TRACE_VAL("Number of processes", number);
 
@@ -160,7 +160,7 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number <= 0)
-    FAILURE("invalid number of nodes");
+    TBX_FAILURE("invalid number of nodes");
 
   TRACE_VAL("Number of nodes", number);
 
@@ -300,7 +300,7 @@ mad_dir_driver_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number <= 0)
-    FAILURE("invalid number of driver");
+    TBX_FAILURE("invalid number of driver");
 
   TRACE_VAL("Number of driver", number);
 
@@ -420,7 +420,7 @@ mad_dir_channel_get_channel(p_mad_madeleine_t madeleine)
   driver_name = mad_leonie_receive_string();
   dir_channel->driver = tbx_htable_get(dir->driver_htable, driver_name);
   if (!dir_channel->driver)
-    FAILURE("driver not found");
+    TBX_FAILURE("driver not found");
 
   TRACE_STR("Channel driver", dir_channel->driver->device_name);
   TBX_FREE(driver_name);
@@ -454,7 +454,7 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number <= 0)
-    FAILURE("invalid number of channels");
+    TBX_FAILURE("invalid number of channels");
 
   TRACE_VAL("Number of channels", number);
 
@@ -480,7 +480,7 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number < 0)
-    FAILURE("invalid number of forwarding channels");
+    TBX_FAILURE("invalid number of forwarding channels");
 
   TRACE_VAL("Number of forwarding channels", number);
 
@@ -523,7 +523,7 @@ mad_dir_vchannel_receive_channel_list(p_mad_dir_channel_t dir_vchannel,
       dir_channel_name	= mad_leonie_receive_string();
       dir_channel	= tbx_htable_get(channel_htable, dir_channel_name);
       if (!dir_channel)
-        FAILURE("channel not found");
+        TBX_FAILURE("channel not found");
 
       TRACE_STR("- Channel", dir_channel->name);
 
@@ -555,7 +555,7 @@ mad_dir_vchannel_receive_fchannel_list(p_mad_dir_channel_t dir_vchannel,
       dir_fchannel_name = mad_leonie_receive_string();
       dir_fchannel = tbx_htable_get(fchannel_htable, dir_fchannel_name);
       if (!dir_fchannel)
-        FAILURE("channel not found");
+        TBX_FAILURE("channel not found");
 
       TRACE_STR("- Forwarding channel", dir_fchannel->name);
 
@@ -705,7 +705,7 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number < 0)
-    FAILURE("invalid number of virtual channels");
+    TBX_FAILURE("invalid number of virtual channels");
 
   TRACE_VAL("Number of virtual channels", number);
 
@@ -740,7 +740,7 @@ mad_dir_xchannel_receive_channel_list(p_mad_dir_channel_t dir_xchannel,
       dir_channel = tbx_htable_get(channel_htable,
                                    dir_channel_name);
       if (!dir_channel)
-        FAILURE("channel not found");
+        TBX_FAILURE("channel not found");
 
       TRACE_STR("- Channel", dir_channel->name);
 
@@ -861,7 +861,7 @@ mad_dir_xchannel_get(p_mad_madeleine_t madeleine)
   number = mad_leonie_receive_int();
 
   if (number < 0)
-    FAILURE("invalid number of virtual channels");
+    TBX_FAILURE("invalid number of virtual channels");
 
   TRACE_VAL("Number of virtual channels", number);
 

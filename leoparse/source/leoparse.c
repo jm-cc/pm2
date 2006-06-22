@@ -96,12 +96,12 @@ leoparse_yy_input(char         *buffer,
 	      else
 		{
 		  perror("fread");
-		  FAILURE("leoparse_yy_input failed");
+		  TBX_FAILURE("leoparse_yy_input failed");
 		}
 	    }
 	}
       else
-	FAILURE("invalid local file ptr");
+	TBX_FAILURE("invalid local file ptr");
 
 #ifdef LEOPARSE_REMOTE
     }
@@ -111,7 +111,7 @@ leoparse_yy_input(char         *buffer,
       int             len        = 0;
 
       if (parser_file_ptr)
-	FAILURE("invalid local file ptr");
+	TBX_FAILURE("invalid local file ptr");
 
       if (parser_buf_bytes_read < parser_buf_bytes_written)
 	{
@@ -164,11 +164,11 @@ leoparse_open_local_parser_file(const char *file_name)
 {
   LOG_IN();
   if (parser_file_ptr)
-    FAILURE("invalid file ptr");
+    TBX_FAILURE("invalid file ptr");
 
 #ifdef LEOPARSE_REMOTE  
   if (parser_file_handle)
-    FAILURE("invalid file handle");
+    TBX_FAILURE("invalid file handle");
 #endif /* LEOPARSE_REMOTE */
 
   do
@@ -179,7 +179,7 @@ leoparse_open_local_parser_file(const char *file_name)
 	{
 	  fprintf(stderr, "Unable to open file : %s\n", file_name);
 	  perror("fopen");
-	  FAILURE("could not open a file for parsing");
+	  TBX_FAILURE("could not open a file for parsing");
 	}
     }
   while(!parser_file_ptr);
@@ -196,7 +196,7 @@ leoparse_close_local_parser_file(void)
   
   LOG_IN();
   if (!parser_file_ptr)
-    FAILURE("invalid file ptr");
+    TBX_FAILURE("invalid file ptr");
   
   do
     {
@@ -204,7 +204,7 @@ leoparse_close_local_parser_file(void)
       if (status && errno != EINTR)
 	{
 	  perror("fclose");
-	  FAILURE("could not close file");
+	  TBX_FAILURE("could not close file");
 	}
     }
   while(status);
@@ -228,7 +228,7 @@ leoparse_parse_local_file(const char* filename)
   leoparse_open_local_parser_file(filename);  
 
   if (yyparse())
-    FAILURE("parse error");
+    TBX_FAILURE("parse error");
 
   leoparse_close_local_parser_file();
 

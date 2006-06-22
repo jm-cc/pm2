@@ -303,7 +303,7 @@ ping(void) {
                     break;
 
                 default:
-                    FAILURE("invalid state");
+                    TBX_FAILURE("invalid state");
                 }
             }
 

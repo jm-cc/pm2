@@ -44,7 +44,7 @@ process_status_slist(p_tbx_slist_t status_slist)
                         if (status->opcode == mad_os_lost_block) {
                                 nb_lost_msgs++;
                         } else
-                                FAILURE("invalid or unknown status opcode");
+                                TBX_FAILURE("invalid or unknown status opcode");
 
                 } while (tbx_slist_ref_forward(status_slist));
         }

@@ -94,7 +94,7 @@ find_process(p_tbx_htable_t    node_htable,
     }
 
   if (tbx_slist_is_nil(client->remote_alias))
-    FAILURE("invalid client answer");
+    TBX_FAILURE("invalid client answer");
 
   TRACE("client provided hostname not found, trying aliases");
   tbx_slist_ref_to_head(client->remote_alias);
@@ -128,7 +128,7 @@ find_process(p_tbx_htable_t    node_htable,
     }
   while (tbx_slist_ref_forward(client->remote_alias));
 
-  FAILURE("client hostname not found");
+  TBX_FAILURE("client hostname not found");
 
  found:
   TRACE_STR("retained host name", *p_host_name);
@@ -193,7 +193,7 @@ connect_processes(p_leonie_t    leonie,
       ntbx_tcp_client_init(client);
       status = ntbx_tcp_server_accept(net_server, client);
       if (status == ntbx_failure)
-	FAILURE("client failed to connect");
+	TBX_FAILURE("client failed to connect");
 
       TRACE("Incoming connection detected");
       host_name = leo_receive_string(client);
@@ -250,7 +250,7 @@ spawn_processes(p_leonie_t leonie)
 
       loader = tbx_htable_get(loaders, spawn_group->loader_name);
       if (!loader)
-	FAILURE("loader unavailable");
+	TBX_FAILURE("loader unavailable");
 
       loader->loader_func(settings,
 			  net_server,
@@ -282,7 +282,7 @@ send_processes(p_leo_directory_t dir,
   TRACE("Sending processes");
   len = tbx_slist_get_length(dir->process_slist);
   if (len <= 0)
-    FAILURE("invalid number of processes");
+    TBX_FAILURE("invalid number of processes");
 
   leo_send_int(client, len);
   do_slist(dir->process_slist, _send_data);
@@ -317,7 +317,7 @@ send_nodes(p_leo_directory_t dir,
   TRACE("Sending nodes");
   len = tbx_slist_get_length(dir->node_slist);
   if (len <= 0)
-    FAILURE("invalid number of nodes");
+    TBX_FAILURE("invalid number of nodes");
 
   leo_send_int(client, len);
   do_slist(dir->node_slist, _send_data);
@@ -385,7 +385,7 @@ send_drivers(p_leo_directory_t dir,
   len = tbx_slist_get_length(dir->driver_slist);
 
   if (len <= 0)
-    FAILURE("invalid number of drivers");
+    TBX_FAILURE("invalid number of drivers");
 
   leo_send_int(client, len);
   do_slist(dir->driver_slist, _send_driver_data);
@@ -438,7 +438,7 @@ send_channels(p_leo_directory_t dir,
   len = tbx_slist_get_length(dir->channel_slist);
 
   if (len <= 0)
-    FAILURE("invalid number of channels");
+    TBX_FAILURE("invalid number of channels");
 
   leo_send_int(client, len);
   do_slist(dir->channel_slist, _send_channel_data);
@@ -477,7 +477,7 @@ send_fchannels(p_leo_directory_t dir,
   len = tbx_slist_get_length(dir->fchannel_slist);
 
   if (len < 0)
-    FAILURE("invalid number of forwarding channels");
+    TBX_FAILURE("invalid number of forwarding channels");
 
   leo_send_int(client, len);
   do_slist(dir->fchannel_slist, _send_fchannel_data);
@@ -561,7 +561,7 @@ send_vchannels(p_leo_directory_t dir,
   len = tbx_slist_get_length(dir->vchannel_slist);
 
   if (len < 0)
-    FAILURE("invalid number of virtual channels");
+    TBX_FAILURE("invalid number of virtual channels");
 
   leo_send_int(client, len);
   do_slist(dir->vchannel_slist, _send_vchannel_data);
@@ -611,7 +611,7 @@ send_xchannels(p_leo_directory_t dir,
   len = tbx_slist_get_length(dir->xchannel_slist);
 
   if (len < 0)
-    FAILURE("invalid number of mux channels");
+    TBX_FAILURE("invalid number of mux channels");
 
   leo_send_int(client, len);
   do_slist(dir->xchannel_slist, _send_xchannel_data);

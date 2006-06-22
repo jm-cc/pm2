@@ -140,7 +140,7 @@ tbx_darray_get(p_tbx_darray_t     darray,
     }
 
   if (idx < 0)
-    FAILURE("out-of-bounds index");
+    TBX_FAILURE("out-of-bounds index");
 
   if (idx < darray->length)
     {
@@ -165,7 +165,7 @@ tbx_darray_set(p_tbx_darray_t      darray,
     }
 
   if (idx < 0 || idx >= darray->length)
-    FAILURE("out-of-bounds index");
+    TBX_FAILURE("out-of-bounds index");
 
   darray->data[idx] = object;
   LOG_OUT();
@@ -180,7 +180,7 @@ tbx_darray_expand_and_set(p_tbx_darray_t      darray,
 {
   LOG_IN();
   if (idx < 0)
-    FAILURE("invalid index");
+    TBX_FAILURE("invalid index");
 
   if (idx >= darray->length)
     {
@@ -209,7 +209,7 @@ tbx_darray_expand_and_get(p_tbx_darray_t     darray,
 
   LOG_IN();
   if (idx < 0)
-    FAILURE("invalid index");
+    TBX_FAILURE("invalid index");
 
   if (idx >= darray->length)
     {

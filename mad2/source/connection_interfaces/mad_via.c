@@ -666,7 +666,7 @@ mad_via_adapter_init(p_mad_adapter_t adapter)
 
   if (adapter->name == NULL)
     {
-      FAILURE("VIA adapter selector must not be NULL");
+      TBX_FAILURE("VIA adapter selector must not be NULL");
     }
 
   driver_specific->nb_adapter++;

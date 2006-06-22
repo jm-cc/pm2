@@ -38,7 +38,7 @@ wait_for_ack(p_ntbx_client_t client)
 
   data = leo_receive_int(client);
   if (data != -1)
-    FAILURE("synchronization error");
+    TBX_FAILURE("synchronization error");
 }
 
 static

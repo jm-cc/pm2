@@ -105,7 +105,7 @@ mad_mux_write_block_header(p_mad_connection_t    out,
       interface->send_buffer(lnk, xbh_buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   if (!xbh->data_available)
     goto end;
@@ -139,7 +139,7 @@ mad_mux_write_block_header(p_mad_connection_t    out,
 	  interface->send_buffer(data_lnk, xbh->block);
 	}
       else
-	FAILURE("invalid block type");
+	TBX_FAILURE("invalid block type");
     }
   else if (data_lnk->buffer_mode == mad_buffer_mode_dynamic)
     {
@@ -155,10 +155,10 @@ mad_mux_write_block_header(p_mad_connection_t    out,
 	  mad_free_buffer(xbh->block);
 	}
       else
-	FAILURE("invalid block type");
+	TBX_FAILURE("invalid block type");
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
  end:
   mad_free_buffer_struct(xbh_buffer);
@@ -292,7 +292,7 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
       interface->receive_buffer(lnk, &xbh_buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   data = xbh->data;
   xbh->length        =
@@ -453,7 +453,7 @@ mad_mux_read_block_data(p_mad_channel_t       mad_xchannel,
 		      xbh->buffer_type = mad_xblock_buffer_type_dynamic;
 		    }
 		  else
-		    FAILURE("invalid link mode");
+		    TBX_FAILURE("invalid link mode");
 		}
 	      else
 		{
@@ -470,10 +470,10 @@ mad_mux_read_block_data(p_mad_channel_t       mad_xchannel,
 	  interface->receive_buffer(data_lnk, &(xbh->block));
 	}
       else
-	FAILURE("invalid link mode");
+	TBX_FAILURE("invalid link mode");
     }
   else
-    FAILURE("no data");
+    TBX_FAILURE("no data");
 
   LOG_OUT();
 }
@@ -603,7 +603,7 @@ mad_mux_receive_block(void *arg)
 	      block_to_forward = &(out->something_to_forward);
 	    }
 	  else
-	    FAILURE("invalid connection nature");
+	    TBX_FAILURE("invalid connection nature");
 
 	  if (xbh->is_a_group)
 	    {
@@ -948,7 +948,7 @@ mad_mux_send_bytes(p_mad_connection_t  out,
       interface->send_buffer(lnk, buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   mad_free_buffer_struct(buffer);
   LOG_OUT();
@@ -998,7 +998,7 @@ mad_mux_receive_bytes(p_mad_connection_t  in,
       interface->receive_buffer(lnk, &buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   mad_free_buffer_struct(buffer);
   LOG_OUT();
@@ -1570,7 +1570,7 @@ mad_mux_return_static_buffer(p_mad_link_t   lnk,
 				 p_mad_buffer_t buffer)
 {
   LOG_IN();
-  FAILURE("invalid function call");
+  TBX_FAILURE("invalid function call");
   LOG_OUT();
 }
 
@@ -1580,7 +1580,7 @@ mad_mux_get_static_buffer(p_mad_link_t lnk)
   p_mad_buffer_t buffer = NULL;
 
   LOG_IN();
-  FAILURE("invalid function call");
+  TBX_FAILURE("invalid function call");
   LOG_OUT();
 
   return buffer;
@@ -1687,7 +1687,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
       }
 
     if (!last_block_len)
-      FAILURE("no data");
+      TBX_FAILURE("no data");
 
     {
       unsigned char *_data          = data;
@@ -1785,7 +1785,7 @@ mad_mux_extract_buffer(p_mad_link_t            lnk,
 	      mad_free_buffer(xbh->block);
 	    }
 	  else
-	    FAILURE("invalid block type");
+	    TBX_FAILURE("invalid block type");
 
 	  tbx_free(mad_xbheader_memory, xbh);
 	  xbh = NULL;
@@ -1809,7 +1809,7 @@ mad_mux_extract_buffer(p_mad_link_t            lnk,
 	  mad_free_buffer(xbh->block);
 	}
       else
-	FAILURE("invalid block type");
+	TBX_FAILURE("invalid block type");
 
       tbx_free(mad_xbheader_memory, xbh);
       xbh = NULL;
@@ -2304,7 +2304,7 @@ mad_mux_add_named_sub_channels(p_mad_channel_t xchannel)
 	  name = tbx_slist_ref_get(slist);
 	  mux++;
 	  if (mux >= xchannel->max_mux)
-	    FAILURE("not enough resources to  allocate named sub channel");
+	    TBX_FAILURE("not enough resources to  allocate named sub channel");
 
 	  channel = __mad_mux_generate_sub_channel_skel(xchannel);
 

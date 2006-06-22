@@ -121,7 +121,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine)
       p_mad_adapter_t current_adapter = NULL;
       
       if (ad >= madeleine->nb_adapter)
-	FAILURE("too much parameters");
+	TBX_FAILURE("too much parameters");
 
       current_adapter = &madeleine->adapter[ad];
 
@@ -129,7 +129,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine)
       c = strchr(tag, '=');
       
       if (!c)
-	FAILURE("invalid cgi string");
+	TBX_FAILURE("invalid cgi string");
 
       *c = '\0';
       c++;
@@ -143,7 +143,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine)
 	}
 
       if (strcmp(tag, "device"))
-	FAILURE("invalid parameter tag");
+	TBX_FAILURE("invalid parameter tag");
 
       current_adapter->master_parameter = TBX_MALLOC(strlen(param) + 1);
       CTRL_ALLOC(current_adapter->master_parameter);
@@ -153,7 +153,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine)
   while(c);
   
   if (ad != madeleine->nb_adapter)
-    FAILURE("not enough parameters");
+    TBX_FAILURE("not enough parameters");
   LOG_OUT();
 }
 

@@ -199,7 +199,7 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
     p_tbx_slist_t ranges = modifier->sbracket;
 
     if (!ranges || tbx_slist_is_nil(ranges))
-      FAILURE("parse error : no range list");
+      TBX_FAILURE("parse error : no range list");
 
     tbx_slist_ref_to_head(ranges);
 
@@ -219,7 +219,7 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
           list_append_int(slist, val);
         }
       } else
-        FAILURE("parse error : invalid object type");
+        TBX_FAILURE("parse error : invalid object type");
     } while (tbx_slist_ref_forward(ranges));
   } else {
     list_append_int(slist, default_value);
@@ -373,7 +373,7 @@ process_channel(p_leonie_t     leonie,
 
   network_htable = tbx_htable_get(networks->htable, channel_network);
   if (!network_htable)
-    FAILURE("unknown network");
+    TBX_FAILURE("unknown network");
 
   network_name        = leoparse_read_id(network_htable, "name");
   network_device_name = leoparse_read_id(network_htable, "dev");
@@ -472,7 +472,7 @@ process_channel(p_leonie_t     leonie,
           tbx_htable_add(network_host_htable, "host_name", host_name);
           tbx_htable_add(hosts_htable, host_name, network_host_htable);
         } else
-          FAILURE("unknown hostname");
+          TBX_FAILURE("unknown hostname");
       }
 
       if (dynamic_host_list) {
@@ -504,7 +504,7 @@ process_channel(p_leonie_t     leonie,
 
         if (!(dir_node->device_host_names =
               tbx_htable_get(device_hosts_htable, host_name)))
-          FAILURE("invalid state");
+          TBX_FAILURE("invalid state");
 
         dir_node->channel_host_names = leo_htable_init();
         tbx_htable_add(dir_node->channel_host_names,
@@ -580,7 +580,7 @@ process_channel(p_leonie_t     leonie,
             } else if (network_loader_priority == leo_loader_priority_high
                        &&
                        strcmp(nps->current_loader_name, network_loader))
-              FAILURE("conflicting loaders");
+              TBX_FAILURE("conflicting loaders");
           }
         }
 
@@ -616,15 +616,15 @@ process_channel(p_leonie_t     leonie,
                                                        ntbx_topology_full,
                                                        NULL);
       } else if (tbx_streq(type, "star")) {
-        FAILUREF("unimplemented topology type: '%s'", type);
+        TBX_FAILUREF("unimplemented topology type: '%s'", type);
       } else if (tbx_streq(type, "ring")) {
-        FAILUREF("unimplemented topology type: '%s'", type);
+        TBX_FAILUREF("unimplemented topology type: '%s'", type);
       } else if (tbx_streq(type, "grid")) {
-        FAILUREF("unimplemented topology type: '%s'", type);
+        TBX_FAILUREF("unimplemented topology type: '%s'", type);
       } else if (tbx_streq(type, "torus")) {
-        FAILUREF("unimplemented topology type: '%s'", type);
+        TBX_FAILUREF("unimplemented topology type: '%s'", type);
       } else if (tbx_streq(type, "hypercube")) {
-        FAILUREF("unimplemented topology type: '%s'", type);
+        TBX_FAILUREF("unimplemented topology type: '%s'", type);
       } else if (tbx_streq(type, "node")) {
         p_ntbx_process_container_t pc = dir_channel->pc;
 
@@ -647,11 +647,11 @@ process_channel(p_leonie_t     leonie,
 
           nsrc	= tbx_htable_get(psrc->ref, "node");
           if (!nsrc)
-            FAILURE("invalid state");
+            TBX_FAILURE("invalid state");
 
           ndst	= tbx_htable_get(pdst->ref, "node");
           if (!ndst)
-            FAILURE("invalid state");
+            TBX_FAILURE("invalid state");
 
           return nsrc == ndst;
         }
@@ -660,7 +660,7 @@ process_channel(p_leonie_t     leonie,
                                                        ntbx_topology_function,
                                                        _f_node);
       } else
-        FAILUREF("unknown topology type: '%s'", type);
+        TBX_FAILUREF("unknown topology type: '%s'", type);
     }
 
   tbx_htable_add(dir->channel_htable, dir_channel->name, dir_channel);
@@ -723,12 +723,12 @@ process_vchannel(p_leonie_t     leonie,
 
       dir_channel = tbx_htable_get(dir->channel_htable, channel_name);
       if (!dir_channel)
-	FAILURE("real channel not found");
+	TBX_FAILURE("real channel not found");
 
       TRACE("real channel found");
 
       if (!dir_channel->public)
-	FAILURE("real channel already in use");
+	TBX_FAILURE("real channel already in use");
 
       dir_channel->public = tbx_false;
       TRACE("real channel locked");
@@ -1152,12 +1152,12 @@ process_xchannel(p_leonie_t     leonie,
 
       dir_channel = tbx_htable_get(dir->channel_htable, channel_name);
       if (!dir_channel)
-	FAILURE("real channel not found");
+	TBX_FAILURE("real channel not found");
 
       TRACE("real channel found");
 
       if (!dir_channel->public)
-	FAILURE("real channel already in use");
+	TBX_FAILURE("real channel already in use");
 
       dir_channel->public = tbx_false;
       TRACE("real channel locked");

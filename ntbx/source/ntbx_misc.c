@@ -133,7 +133,7 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 
   if (   pc->local_index[local_rank]
 	 || pc->global_index[process->global_rank])
-    FAILURE("process_container slot already in use");
+    TBX_FAILURE("process_container slot already in use");
 
   pc->local_index[local_rank]            = process_info;
   pc->global_index[process->global_rank] = process_info;
@@ -478,7 +478,7 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
       switch (topology)
 	{
 	default:
-	  FAILURE("unknown topology");
+	  TBX_FAILURE("unknown topology");
 	  break;
 	case ntbx_topology_empty:
 	  break;
@@ -519,27 +519,27 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	  break;
 	case ntbx_topology_star:
 	  {
-	    FAILURE("unimplemented");
+	    TBX_FAILURE("unimplemented");
 	  }
 	  break;
 	case ntbx_topology_ring:
 	  {
-	    FAILURE("unimplemented");
+	    TBX_FAILURE("unimplemented");
 	  }
 	  break;
 	case ntbx_topology_grid:
 	  {
-	    FAILURE("unimplemented");
+	    TBX_FAILURE("unimplemented");
 	  }
 	  break;
 	case ntbx_topology_torus:
 	  {
-	    FAILURE("unimplemented");
+	    TBX_FAILURE("unimplemented");
 	  }
 	  break;
 	case ntbx_topology_hypercube:
 	  {
-	    FAILURE("unimplemented");
+	    TBX_FAILURE("unimplemented");
 	  }
 	  break;
 	case ntbx_topology_function:
@@ -581,10 +581,10 @@ ntbx_topology_table_set(p_ntbx_topology_table_t ttable,
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
-    FAILURE("invalid parameters");
+    TBX_FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
-    FAILURE("out-of-bound parameters");
+    TBX_FAILURE("out-of-bound parameters");
 
   if (!ttable->table[size * src + dst])
     {
@@ -606,10 +606,10 @@ ntbx_topology_table_clear(p_ntbx_topology_table_t ttable,
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
-    FAILURE("invalid parameters");
+    TBX_FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
-    FAILURE("out-of-bound parameters");
+    TBX_FAILURE("out-of-bound parameters");
 
   element = ttable->table[size * src + dst];
   if (element)
@@ -634,10 +634,10 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
-    FAILURE("invalid parameters");
+    TBX_FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
-    FAILURE("out-of-bound parameters");
+    TBX_FAILURE("out-of-bound parameters");
 
   element = ttable->table[size * src + dst];
   LOG_OUT();
@@ -696,7 +696,7 @@ ntbx_true_name(char *host_name)
 
       if (!host_entry)
 	{
-          FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
+          TBX_FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
 	  __TBX_PRINT_TRACE();
 	  _TBX_EXIT_FAILURE();
 	}
@@ -709,7 +709,7 @@ ntbx_true_name(char *host_name)
 
       if (!host_entry)
 	{
-          FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
+          TBX_FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
 	  __TBX_PRINT_TRACE();
 	  _TBX_EXIT_FAILURE();
 	}

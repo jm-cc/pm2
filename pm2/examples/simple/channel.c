@@ -51,7 +51,7 @@ int pm2_main(int argc, char **argv)
   common_post_init(&argc, argv, NULL);
 
   if (pm2_config_size() < 2) {
-      FAILURE("This program requires at least two processes.\n"
+      TBX_FAILURE("This program requires at least two processes.\n"
 	      "Please rerun pm2conf.\n");
   }
 

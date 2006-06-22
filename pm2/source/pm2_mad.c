@@ -60,11 +60,11 @@ pm2_begin_packing(p_mad_channel_t channel,
   local_rank = ntbx_pc_global_to_local(pc, global_rank);
 
   if (local_rank == -1)
-    FAILURE("connection unavailable");
+    TBX_FAILURE("connection unavailable");
   
   out = mad_begin_packing(channel, local_rank);
   if (!out)
-    FAILURE("invalid connection");
+    TBX_FAILURE("invalid connection");
   marcel_setspecific(pm2_mad_send_key, out);
   LOG_OUT();
 }
@@ -318,7 +318,7 @@ pm2_pack_str(mad_send_mode_t     send_mode,
   len = strlen(data);
 
   if (send_mode == mad_send_LATER)
-    FAILURE("unimplemented feature");
+    TBX_FAILURE("unimplemented feature");
 
   pm2_pack_byte(send_mode, mad_receive_EXPRESS, &len, sizeof(size_t));
   pm2_pack_byte(send_mode, receive_mode, data, len + 1);
@@ -334,7 +334,7 @@ pm2_unpack_str(mad_send_mode_t     send_mode,
 
   LOG_IN();
   if (send_mode == mad_send_LATER)
-    FAILURE("unimplemented feature");
+    TBX_FAILURE("unimplemented feature");
   
   pm2_unpack_byte(send_mode, mad_receive_EXPRESS, &len, sizeof(int));
   pm2_unpack_byte(send_mode, receive_mode, data, len + 1);
@@ -365,7 +365,7 @@ old_mad_pack_byte(madeleine_part  where,
 	break;
       }
     default: 
-      FAILURE("Unknown pack mode");
+      TBX_FAILURE("Unknown pack mode");
     }
   LOG_OUT();
 }
@@ -394,7 +394,7 @@ old_mad_unpack_byte(madeleine_part  where,
 	break;
       }
     default:
-      FAILURE("Unknown pack mode");
+      TBX_FAILURE("Unknown pack mode");
     }
   LOG_OUT();
 }

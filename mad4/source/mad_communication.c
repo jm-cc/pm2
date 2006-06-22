@@ -37,7 +37,7 @@ mad_begin_packing(p_mad_channel_t      channel,
 
     // lock the connection
     if (connection->lock == tbx_true)
-        FAILURE("mad_begin_packing: connection dead lock");
+        TBX_FAILURE("mad_begin_packing: connection dead lock");
     connection->lock = tbx_true;
 
     // initialize transmission of the message
@@ -90,7 +90,7 @@ mad_pack(p_mad_connection_t   connection,
     connection->sequence++;
 
     if(channel == NULL)
-        FAILURE("CHANNEL NULL");
+        TBX_FAILURE("CHANNEL NULL");
 
     // create a mad_iovec
     mad_iovec = mad_iovec_create(remote_rank, channel,
@@ -188,13 +188,13 @@ mad_begin_unpacking(p_mad_channel_t channel){
 
     // lock the channel
     if (channel->reception_lock == tbx_true)
-        FAILURE("mad_begin_unpacking: reception dead lock");
+        TBX_FAILURE("mad_begin_unpacking: reception dead lock");
     channel->reception_lock = tbx_true;
 
     interface = channel->adapter->driver->interface;
     connection = interface->receive_message(channel);
     if (!connection)
-        FAILURE("message reception failed");
+        TBX_FAILURE("message reception failed");
 
     // initialize the sequence
     channel->sequence = 1;

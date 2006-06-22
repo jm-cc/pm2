@@ -272,7 +272,7 @@ connection_exit(p_mad_channel_t ch)
         goto connection_freed;
 
       if (!in || !out)
-        FAILURE("incoherent behaviour");
+        TBX_FAILURE("incoherent behaviour");
 
       links_exit(in);
       links_exit(out);
@@ -340,7 +340,7 @@ connection_exit(p_mad_channel_t ch)
       cnx_darray = command?out_darray:in_darray;
       cnx = tbx_darray_get(cnx_darray, remote_rank);
       if (!cnx)
-        FAILURE("invalid connection");
+        TBX_FAILURE("invalid connection");
 
       links_exit(cnx);
 
@@ -597,11 +597,11 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 #ifdef MARCEL
       vchannel = tbx_htable_get(channel_htable, vchannel_name);
       if (!vchannel)
-	FAILURE("channel not found");
+	TBX_FAILURE("channel not found");
 
       channel = tbx_htable_get(channel_htable, channel_name);
       if (!channel)
-	FAILURE("channel not found");
+	TBX_FAILURE("channel not found");
 
       mad_forward_stop_reception(vchannel, channel, lrank);
 #endif // MARCEL
@@ -647,7 +647,7 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
 
       if (!mad_channel)
-	FAILURE("vchannel not found");
+	TBX_FAILURE("vchannel not found");
 
       TRACE_STR("Vchannel", channel_name);
       common_channel_exit(mad_channel);
@@ -761,11 +761,11 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
 #ifdef MARCEL
       xchannel = tbx_htable_get(channel_htable, xchannel_name);
       if (!xchannel)
-	FAILURE("channel not found");
+	TBX_FAILURE("channel not found");
 
       channel = tbx_htable_get(channel_htable, channel_name);
       if (!channel)
-	FAILURE("channel not found");
+	TBX_FAILURE("channel not found");
 
       mad_mux_stop_reception(xchannel, channel, lrank);
 #endif // MARCEL
@@ -811,7 +811,7 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
 
       if (!mad_channel)
-	FAILURE("xchannel not found");
+	TBX_FAILURE("xchannel not found");
 
       TRACE_STR("Xchannel", channel_name);
 
@@ -869,7 +869,7 @@ mad_dir_channel_exit(p_mad_madeleine_t madeleine)
 
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
       if (!mad_channel)
-	FAILURE("channel not found");
+	TBX_FAILURE("channel not found");
 
       TRACE_STR("Channel", channel_name);
 
@@ -989,7 +989,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
       mad_driver = tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver instance not found");
+	TBX_FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down adapters of driver", driver_name);
       interface = mad_driver->interface;
@@ -1012,7 +1012,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_adapter =
 	    tbx_htable_extract(mad_adapter_htable, adapter_name);
 	  if (!mad_adapter)
-	    FAILURE("adapter not found");
+	    TBX_FAILURE("adapter not found");
 
 	  TRACE_STR("Shutting down adapter", adapter_name);
 
@@ -1094,7 +1094,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       mad_driver =
 	tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver instance not found");
+	TBX_FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down driver", driver_name);
       interface = mad_driver->interface;
@@ -1204,7 +1204,7 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
     } else {
     data = mad_ntbx_receive_int(client);
     if (data != 1)
-      FAILURE("synchronization error");
+      TBX_FAILURE("synchronization error");
 
   }
   LOG_OUT();

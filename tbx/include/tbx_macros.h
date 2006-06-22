@@ -45,7 +45,7 @@
 #  undef  HAVE_BACKTRACE
 #endif
 
-/* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
+/* OOPS: causes TBX_FAILURE to generate a segfault instead of a call to exit */
 #define OOPS
 
 /* TBX_MALLOC_CTRL: causes TBX to perform additional memory allocation
@@ -142,22 +142,22 @@
 
 
 /*
- * FAILURE: display an error message and abort the program
+ * TBX_FAILURE: display an error message and abort the program
  * -------------------------------------------------------
  */
-#ifdef FAILURE_CLEANUP
+#ifdef TBX_FAILURE_CLEANUP
 #  ifdef OOPS
-#    define _TBX_EXIT_FAILURE() FAILURE_CLEANUP(),abort()
+#    define _TBX_EXIT_FAILURE() TBX_FAILURE_CLEANUP(),abort()
 #  else /* OOPS */
-#    define _TBX_EXIT_FAILURE() FAILURE_CLEANUP(),exit(1)
+#    define _TBX_EXIT_FAILURE() TBX_FAILURE_CLEANUP(),exit(1)
 #  endif /* OOPS */
-#else /* FAILURE_CLEANUP */
+#else /* TBX_FAILURE_CLEANUP */
 #  ifdef OOPS
 #    define _TBX_EXIT_FAILURE() abort()
 #  else /* OOPS */
 #    define _TBX_EXIT_FAILURE() exit(1)
 #  endif /* OOPS */
-#endif /* FAILURE_CLEANUP */
+#endif /* TBX_FAILURE_CLEANUP */
 
 #ifdef HAVE_BACKTRACE
 #  include <execinfo.h>
@@ -201,27 +201,27 @@ do { \
        __TBX_PRINT_SOME_TRACE (array, size); \
      })
 
-#ifndef FAILURE_CONTEXT
-#  define FAILURE_CONTEXT
-#endif /* FAILURE_CONTEXT */
+#ifndef TBX_FAILURE_CONTEXT
+#  define TBX_FAILURE_CONTEXT
+#endif /* TBX_FAILURE_CONTEXT */
 
-#define FAILURE(str) \
-     (pm2debug("FAILURE(%s:%d): " FAILURE_CONTEXT "%s\n", __FILE__, __LINE__, (str)), \
+#define TBX_FAILURE(str) \
+     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT "%s\n", __FILE__, __LINE__, (str)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
-#define FAILUREF(fmt, ...) \
-     (pm2debug("FAILURE(%s:%d): " FAILURE_CONTEXT fmt "\n" , __FILE__, __LINE__, ## __VA_ARGS__), \
+#define TBX_FAILUREF(fmt, ...) \
+     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT fmt "\n" , __FILE__, __LINE__, ## __VA_ARGS__), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
-#define ERROR(str) \
-     (pm2debug("FAILURE(%s:%d): " FAILURE_CONTEXT "%s: %s\n\n", __FILE__, __LINE__, (str), strerror(errno)), \
+#define TBX_ERROR(str) \
+     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT "%s: %s\n\n", __FILE__, __LINE__, (str), strerror(errno)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
-#define ERRORF(fmt, ...) \
-     (pm2debug("FAILURE(%s:%d): " FAILURE_CONTEXT ": %s" fmt "\n", __FILE__, __LINE__, strerror(errno) , ## __VA_ARGS__), \
+#define TBX_ERRORF(fmt, ...) \
+     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT ": %s" fmt "\n", __FILE__, __LINE__, strerror(errno) , ## __VA_ARGS__), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
@@ -233,7 +233,7 @@ do { \
   { \
     if ((ptr) == NULL) \
       { \
-	FAILURE("not enough memory"); \
+	TBX_FAILURE("not enough memory"); \
       } \
   }
 
@@ -378,10 +378,10 @@ do { \
 
     /* Regular allocation macro */
 #ifdef TBX_MALLOC_CTRL
-#  define TBX_MALLOC(s)     ((__TBX_MALLOC_OP  ((s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
-#  define TBX_CALLOC(n, s)  ((__TBX_CALLOC_OP  ((n)?:(FAILURE("attempt to alloc 0 bytes"), 0), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
-#  define TBX_REALLOC(p, s) ((__TBX_REALLOC_OP ((p)?:(FAILURE("attempt to realloc a NULL area"), NULL), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory reallocation error"), NULL))
-#  define TBX_FREE(s)       (__TBX_FREE_OP    ((s)?:(FAILURE("attempt to free a NULL area"), NULL)))
+#  define TBX_MALLOC(s)     ((__TBX_MALLOC_OP  ((s)?:(TBX_FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
+#  define TBX_CALLOC(n, s)  ((__TBX_CALLOC_OP  ((n)?:(TBX_FAILURE("attempt to alloc 0 bytes"), 0), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
+#  define TBX_REALLOC(p, s) ((__TBX_REALLOC_OP ((p)?:(TBX_FAILURE("attempt to realloc a NULL area"), NULL), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory reallocation error"), NULL))
+#  define TBX_FREE(s)       (__TBX_FREE_OP    ((s)?:(TBX_FAILURE("attempt to free a NULL area"), NULL)))
 #else /* TBX_MALLOC_CTRL */
 #  define TBX_MALLOC(s)     (__TBX_MALLOC_OP  ((s)))
 #  define TBX_CALLOC(n, s)  (__TBX_CALLOC_OP  ((n), (s)))
@@ -464,7 +464,7 @@ do { \
     if (errno != EINTR) \
       { \
 	perror(#op); \
-	FAILURE("system call failed"); \
+	TBX_FAILURE("system call failed"); \
       } \
   }
 
@@ -478,7 +478,7 @@ do { \
     if (errno != EINTR) \
       { \
 	perror(#op); \
-	FAILURE("system call failed"); \
+	TBX_FAILURE("system call failed"); \
       } \
   }
 

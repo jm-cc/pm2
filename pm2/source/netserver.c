@@ -443,7 +443,7 @@ pm2_channel_alloc(pm2_channel_t *channel,
   else
     {
       if (tbx_htable_get(pm2_net_channel_htable, name))
-	FAILURE("duplicate channel allocation");
+	TBX_FAILURE("duplicate channel allocation");
     }
 
     name = tbx_strdup(name);
@@ -453,7 +453,7 @@ pm2_channel_alloc(pm2_channel_t *channel,
 #else // MAD2
   {
     if (name)
-      FAILURE("channel naming unsupported with MadII");
+      TBX_FAILURE("channel naming unsupported with MadII");
   }
 #endif // MAD2
 

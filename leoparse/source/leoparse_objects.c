@@ -149,7 +149,7 @@ leoparse_get_slist(p_leoparse_object_t object)
       result = object->slist;
     }
   else
-    FAILURE("parse error: list expected");
+    TBX_FAILURE("parse error: list expected");
 
   LOG_OUT();
 
@@ -187,7 +187,7 @@ leoparse_get_htable(p_leoparse_object_t object)
       result = object->htable;
     }
   else
-    FAILURE("parse error: table expected");
+    TBX_FAILURE("parse error: table expected");
 
   LOG_OUT();
 
@@ -205,7 +205,7 @@ leoparse_get_string(p_leoparse_object_t object)
       result = object->string;
     }
   else
-    FAILURE("parse error: string expected");
+    TBX_FAILURE("parse error: string expected");
 
   LOG_OUT();
 
@@ -223,7 +223,7 @@ leoparse_get_id(p_leoparse_object_t object)
       result = object->id;
     }
   else
-    FAILURE("parse error: id expected");
+    TBX_FAILURE("parse error: id expected");
 
   LOG_OUT();
 
@@ -241,7 +241,7 @@ leoparse_get_val(p_leoparse_object_t object)
       result = object->val;
     }
   else
-    FAILURE("parse error: integer expected");
+    TBX_FAILURE("parse error: integer expected");
 
   LOG_OUT();
 
@@ -259,7 +259,7 @@ leoparse_get_range(p_leoparse_object_t object)
       result = object->range;
     }
   else
-    FAILURE("parse error: range expected");
+    TBX_FAILURE("parse error: range expected");
 
   LOG_OUT();
 
@@ -834,7 +834,7 @@ leoparse_convert_to_slist(p_tbx_htable_t  htable,
       tbx_htable_add(htable, key, object);
     }
   else
-    FAILURE("nothing to convert");
+    TBX_FAILURE("nothing to convert");
 
   LOG_OUT();
 }
@@ -857,7 +857,7 @@ leoparse_write_slist(p_tbx_htable_t  htable,
       object->slist = slist;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -880,7 +880,7 @@ leoparse_write_id(p_tbx_htable_t  htable,
       object->id   = id;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -903,7 +903,7 @@ leoparse_write_string(p_tbx_htable_t  htable,
       object->string = string;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -926,7 +926,7 @@ leoparse_write_htable(p_tbx_htable_t  htable,
       object->htable = table;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -949,7 +949,7 @@ leoparse_write_val(p_tbx_htable_t  htable,
       object->val  = val;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -972,7 +972,7 @@ leoparse_write_range(p_tbx_htable_t      htable,
       object->range = range;
     }
   else
-    FAILURE("trying to overwrite an object");
+    TBX_FAILURE("trying to overwrite an object");
 
   LOG_OUT();
 }
@@ -1062,7 +1062,7 @@ leoparse_dump_object(p_leoparse_object_t object) {
                 break;
 
         default:
-                FAILURE("unknown object type");
+                TBX_FAILURE("unknown object type");
         }
 
         if (object->modifier) {
@@ -1080,7 +1080,7 @@ leoparse_dump_object(p_leoparse_object_t object) {
                 }
                         break;
                 default:
-                        FAILURE("unknown object modifier type");
+                        TBX_FAILURE("unknown object modifier type");
                 }
         }
 }

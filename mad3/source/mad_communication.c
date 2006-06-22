@@ -66,7 +66,7 @@ mad_begin_packing(p_mad_channel_t      channel,
   marcel_mutex_lock(&(connection->lock_mutex));
 #else /* MARCEL */
   if (connection->lock == tbx_true)
-    FAILURE("mad_begin_packing: connection dead lock");
+    TBX_FAILURE("mad_begin_packing: connection dead lock");
   connection->lock = tbx_true;
 #endif /* MARCEL */
 
@@ -118,7 +118,7 @@ mad_message_ready(p_mad_channel_t channel)
     }
 #else /* MARCEL */
   if (channel->reception_lock == tbx_true)
-    FAILURE("mad_begin_unpacking: reception dead lock");
+    TBX_FAILURE("mad_begin_unpacking: reception dead lock");
   channel->reception_lock = tbx_true;
 #endif /* MARCEL */
 
@@ -179,14 +179,14 @@ mad_begin_unpacking(p_mad_channel_t channel)
   marcel_mutex_lock(&(channel->reception_lock_mutex));
 #else /* MARCEL */
   if (channel->reception_lock == tbx_true)
-    FAILURE("mad_begin_unpacking: reception dead lock");
+    TBX_FAILURE("mad_begin_unpacking: reception dead lock");
   channel->reception_lock = tbx_true;
 #endif /* MARCEL */
 
   TRACE("Receiving message");
   connection = interface->receive_message(channel);
   if (!connection)
-    FAILURE("message reception failed");
+    TBX_FAILURE("message reception failed");
 
   TRACE("Message received");
 
@@ -259,7 +259,7 @@ mad_end_packing(p_mad_connection_t connection)
 		}
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 	}
       else
 	{
@@ -272,7 +272,7 @@ mad_end_packing(p_mad_connection_t connection)
 	      tbx_append_list(connection->buffer_group_list, buffer_group);
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 	}
 
       connection->flushed = tbx_true;
@@ -484,7 +484,7 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
 					  tbx_get_list_object(src_list));
 	}
       else
-	FAILURE("invalid link mode");
+	TBX_FAILURE("invalid link mode");
 
       tbx_mark_list(src_list);
       connection->more_data              = tbx_false;
@@ -757,10 +757,10 @@ mad_pack_ext(p_mad_connection_t   connection,
 
 #if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
-    FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
+    TBX_FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
 
   if (user_buffer_length & (MAD_LENGTH_ALIGNMENT - 1))
-    FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
+    TBX_FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
 #endif
 
   if (interface->choice)
@@ -852,7 +852,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 		}
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 	}
       else
 	{
@@ -865,7 +865,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 	      tbx_append_list(buffer_group_list, buffer_group);
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 	}
 
       connection->flushed = tbx_true;
@@ -897,10 +897,10 @@ mad_pack_ext(p_mad_connection_t   connection,
         TRACE_VAL("param->opcode", param->opcode);
 
         if (param->offset >= source->length)
-          FAILURE("invalid buffer slice parameter offset");
+          TBX_FAILURE("invalid buffer slice parameter offset");
 
         if (param->length+param->offset > source->length)
-          FAILURE("invalid buffer slice parameter length");
+          TBX_FAILURE("invalid buffer slice parameter length");
 
         param->base = source->buffer;
         tbx_slist_append(slist, param);
@@ -915,7 +915,7 @@ mad_pack_ext(p_mad_connection_t   connection,
       /* B U F F E R   mode
 	 -----------        */
       if (connection->delayed_send == tbx_true)
-	FAILURE("cannot send data in buffer mode when delayed send is on");
+	TBX_FAILURE("cannot send data in buffer mode when delayed send is on");
 
       if (   (receive_mode == mad_receive_EXPRESS)
 	  || (receive_mode == mad_receive_CHEAPER))
@@ -970,15 +970,15 @@ mad_pack_ext(p_mad_connection_t   connection,
 		  tbx_mark_list(dest_list);
 		}
 	      else
-		FAILURE("unknown buffer mode");
+		TBX_FAILURE("unknown buffer mode");
 	    }
 	  else if (send_mode == mad_send_LATER)
-	    FAILURE("send_LATER data cannot be sent in buffer mode");
+	    TBX_FAILURE("send_LATER data cannot be sent in buffer mode");
 	  else
-	    FAILURE("unknown send mode");
+	    TBX_FAILURE("unknown send mode");
 	}
       else
-	FAILURE("unknown receive mode");
+	TBX_FAILURE("unknown receive mode");
 
       connection->last_link      = lnk;
       connection->last_link_mode = link_mode;
@@ -1003,7 +1003,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 		  tbx_append_list(dest_list, source);
 		}
 	      else
-		FAILURE("unknown send mode");
+		TBX_FAILURE("unknown send mode");
 	    }
 	  else if (buffer_mode == mad_buffer_mode_static)
 	    {
@@ -1065,13 +1065,13 @@ mad_pack_ext(p_mad_connection_t   connection,
 		  connection->pair_list_used = tbx_true;
 		}
 	      else
-		FAILURE("unknown send mode");
+		TBX_FAILURE("unknown send mode");
 	    }
 	  else
-	    FAILURE("unknown buffer mode");
+	    TBX_FAILURE("unknown buffer mode");
 	}
       else
-	FAILURE("unknown receive mode");
+	TBX_FAILURE("unknown receive mode");
 
       connection->flushed        = tbx_false;
       connection->last_link      = lnk;
@@ -1175,7 +1175,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 		  connection->pair_list_used = tbx_true;
 		}
 	      else
-		FAILURE("unknown send mode");
+		TBX_FAILURE("unknown send mode");
 	    }
 	  else if (buffer_mode == mad_buffer_mode_dynamic)
 	    {
@@ -1190,18 +1190,18 @@ mad_pack_ext(p_mad_connection_t   connection,
 		  tbx_append_list(dest_list, source);
 		}
 	      else
-		FAILURE("unknown send mode");
+		TBX_FAILURE("unknown send mode");
 	    }
 	  else
-	    FAILURE("unknown buffer mode");
+	    TBX_FAILURE("unknown buffer mode");
 	}
       else if (receive_mode == mad_receive_EXPRESS)
-	FAILURE("Express data cannot be sent in group mode");
+	TBX_FAILURE("Express data cannot be sent in group mode");
       else
-	FAILURE("unknown receive mode");
+	TBX_FAILURE("unknown receive mode");
     }
   else
-    FAILURE("unknown link mode");
+    TBX_FAILURE("unknown link mode");
 
   if (free_source) {
           mad_free_buffer_struct(source);
@@ -1263,10 +1263,10 @@ mad_unpack_ext(p_mad_connection_t   connection,
 
 #if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
-    FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
+    TBX_FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
 
   if (user_buffer_length & (MAD_LENGTH_ALIGNMENT - 1))
-    FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
+    TBX_FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
 #endif
 
   if (interface->choice)
@@ -1414,7 +1414,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
 					   tbx_get_list_object(src_list));
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 
 	  tbx_mark_list(src_list);
 	  connection->more_data = tbx_false;
@@ -1431,7 +1431,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
       /* B U F F E R   mode
 	 -----------        */
       if (connection->delayed_send == tbx_true)
-	FAILURE("cannot receive data in buffer mode when delayed send is on");
+	TBX_FAILURE("cannot receive data in buffer mode when delayed send is on");
 
       if (   (receive_mode == mad_receive_EXPRESS)
           || (receive_mode == mad_receive_CHEAPER))
@@ -1537,15 +1537,15 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		  mad_free_buffer_struct(destination);
 		}
 	      else
-		FAILURE("unknown buffer mode");
+		TBX_FAILURE("unknown buffer mode");
 	    }
 	  else if (send_mode == mad_send_LATER)
-	    FAILURE("send_LATER data cannot be received in buffer mode");
+	    TBX_FAILURE("send_LATER data cannot be received in buffer mode");
 	  else
-	    FAILURE("unknown send mode");
+	    TBX_FAILURE("unknown send mode");
 	}
       else
-	FAILURE("unknown receive mode");
+	TBX_FAILURE("unknown receive mode");
 
       connection->last_link      = lnk;
       connection->last_link_mode = link_mode;
@@ -1595,7 +1595,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		      connection->first_sub_buffer_group = tbx_false;
 		    }
 		  else
-		    FAILURE("unknown group mode");
+		    TBX_FAILURE("unknown group mode");
 
 		  tbx_mark_list(src_list);
 		}
@@ -1647,7 +1647,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		    }
 		}
 	      else
-		FAILURE("unknown buffer mode");
+		TBX_FAILURE("unknown buffer mode");
 
               if (destination->parameter_slist)
                 {
@@ -1656,12 +1656,12 @@ mad_unpack_ext(p_mad_connection_t   connection,
                 }
 	    }
 	  else
-	    FAILURE("unknown send mode");
+	    TBX_FAILURE("unknown send mode");
 	}
       else
 	{
 	  if (connection->delayed_send == tbx_true)
-	    FAILURE("Cheaper data is not received in buffer_group mode "
+	    TBX_FAILURE("Cheaper data is not received in buffer_group mode "
 		    "when delayed send is on");
 
 	  if (   (send_mode == mad_send_SAFER)
@@ -1678,7 +1678,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		}
 	    }
 	  else
-	    FAILURE("unknown send mode");
+	    TBX_FAILURE("unknown send mode");
 
 	  connection->flushed   = tbx_false;
 	  connection->more_data = tbx_false;
@@ -1706,18 +1706,18 @@ mad_unpack_ext(p_mad_connection_t   connection,
 		  tbx_append_list(lnk->user_buffer_list, destination);
 		}
 	      else
-		FAILURE("unknown buffer mode");
+		TBX_FAILURE("unknown buffer mode");
 	    }
 	  else
-	    FAILURE("unknown send mode");
+	    TBX_FAILURE("unknown send mode");
 	}
       else if (receive_mode == mad_receive_EXPRESS)
-	FAILURE("Express data cannot be received in group mode");
+	TBX_FAILURE("Express data cannot be received in group mode");
       else
-	FAILURE("unknown receive mode");
+	TBX_FAILURE("unknown receive mode");
     }
   else
-    FAILURE("unknown link mode");
+    TBX_FAILURE("unknown link mode");
 
   LOG_OUT();
 

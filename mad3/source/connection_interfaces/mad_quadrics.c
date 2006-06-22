@@ -252,16 +252,16 @@ mad_quadrics_install_hooks(void) {
         mad_quadrics_old_realloc_hook		= __realloc_hook;
 
         if (__malloc_hook == mad_quadrics_malloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__memalign_hook == mad_quadrics_memalign_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__realloc_hook == mad_quadrics_realloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__free_hook == mad_quadrics_free_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         __malloc_hook		= mad_quadrics_malloc_hook;
         __memalign_hook		= mad_quadrics_memalign_hook;
@@ -275,16 +275,16 @@ void
 mad_quadrics_remove_hooks(void) {
         LOG_IN();
         if (__malloc_hook == mad_quadrics_old_malloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__memalign_hook == mad_quadrics_old_memalign_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__realloc_hook == mad_quadrics_old_realloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__free_hook == mad_quadrics_old_free_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         __malloc_hook		= mad_quadrics_old_malloc_hook;
         __memalign_hook		= mad_quadrics_old_memalign_hook;
@@ -441,7 +441,7 @@ mad_quadrics_do_poll(marcel_ev_server_t	server,
                 }
 
                 default :
-                        FAILURE("unknown request type");
+                        TBX_FAILURE("unknown request type");
 
         }
 
@@ -604,7 +604,7 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         nb_lranks	= ntbx_pc_local_max(dpc)+1;
 
         if (nb_lranks < 1)
-                FAILURE("invalid state");
+                TBX_FAILURE("invalid state");
 
         node_ids	= TBX_CALLOC(nb_lranks, sizeof(int));
         ctx_ids		= TBX_CALLOC(nb_lranks, sizeof(int));
@@ -612,7 +612,7 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         /* First pass: get the Quadrics node id of each process */
         TRACE("Quadrics driver - node ids processing: first pass");
         if (!ntbx_pc_first_local_rank(dpc, &i_lrank))
-                FAILURE("invalid state");
+                TBX_FAILURE("invalid state");
 
         do {
                 p_mad_dir_driver_process_specific_t	dps 		= NULL;
@@ -624,7 +624,7 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 
                 i_node_id	= (int)tbx_cstr_to_long(dps->parameter);
                 if (i_node_id < 0)
-                        FAILURE("invalid Quadrics node id");
+                        TBX_FAILURE("invalid Quadrics node id");
 
                 nb_processes++;
                 TRACE("Quadrics driver - process %d: node id = %d", i_grank, i_node_id);
@@ -659,7 +659,7 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         }
 
         if (!ntbx_pc_first_local_rank(dpc, &i_lrank))
-                FAILURE("invalid state");
+                TBX_FAILURE("invalid state");
 
         do {
                 ntbx_process_lrank_t	i_grank		= -1;
@@ -691,7 +691,7 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         TRACE_VAL("Quadrics driver - nb_nodes * nb_ctxs", nb_nodes * nb_ctxs);
 
         if (nb_nodes * nb_ctxs != nb_processes)
-                FAILURE("invalid configuration for Quadrics");
+                TBX_FAILURE("invalid configuration for Quadrics");
 
         TBX_FREE(next_node_ctx);
         next_node_ctx	= NULL;
@@ -731,11 +731,11 @@ mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         /* Quadrics initialization */
         mad_quadrics_lock();
         if (elan_generateCapability (capability_str) < 0)
-                ERROR("elan_generateCapability");
+                TBX_ERROR("elan_generateCapability");
         mad_quadrics_unlock();
 
         if (!(base = elan_baseInit(0)))
-                ERROR("elan_baseInit");
+                TBX_ERROR("elan_baseInit");
 
 
         proc	= base->state->vp;
@@ -775,7 +775,7 @@ mad_quadrics_adapter_init(p_mad_adapter_t a) {
         as		= TBX_MALLOC(sizeof(mad_quadrics_adapter_specific_t));
 
         if (strcmp(a->dir_adapter->name, "default")) {
-                FAILURE("unsupported adapter");
+                TBX_FAILURE("unsupported adapter");
         }
 
         // unimplemented
@@ -818,12 +818,12 @@ mad_quadrics_channel_init(p_mad_channel_t ch) {
                 chs->ack_required	= TBX_CALLOC(ds->nproc, sizeof(tbx_bool_t));
                 chs->global_notify	= elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc * PUT_BUF_LENGTH);
                 if (!chs->global_notify)
-                        FAILURE("elan_gallocMain");
+                        TBX_FAILURE("elan_gallocMain");
 
                 memset((void *)chs->global_notify, 0, ds->nproc * PUT_BUF_LENGTH);
                 chs->global_ack = elan_gallocMain (elan_base, elan_base->allGroup, 1, ds->nproc);
                 if (!chs->global_ack)
-                        FAILURE("elan_gallocMain");
+                        TBX_FAILURE("elan_gallocMain");
                 memset((void *)chs->global_ack, 1, ds->nproc);
         }
 #endif /* USE_PUT_NOTIFICATION */
@@ -847,7 +847,7 @@ mad_quadrics_before_open_channel(p_mad_channel_t ch) {
 
         mad_quadrics_lock();
         if (!(q = elan_gallocQueue(base, base->allGroup)))
-                ERROR("elan_gallocQueue");
+                TBX_ERROR("elan_gallocQueue");
 
         if (!(p = elan_tportInit(base->state,
                                  q,
@@ -857,7 +857,7 @@ mad_quadrics_before_open_channel(p_mad_channel_t ch) {
                                  base->waitType, base->retryCount,
                                  &base->shm_key, base->shm_fifodepth,
                                  base->shm_fragsize, 0)))
-                ERROR("elan_tportInit");
+                TBX_ERROR("elan_tportInit");
 
         mad_quadrics_unlock();
         chs->queue			= q;
@@ -1309,7 +1309,7 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
 
 #else /* USE_PUT_NOTIFICATION */
                 if (chs->first_packet_length != data_length)
-                        FAILURE("invalid first packet length");
+                        TBX_FAILURE("invalid first packet length");
 
                 if (chs->sys_buffer == chs->first_packet) {
                         memcpy(data_ptr, chs->first_packet, data_length);
@@ -1348,7 +1348,7 @@ mad_quadrics_receive_buffer(p_mad_link_t    lnk,
         mad_quadrics_blocking_rx_test(event, &sender, &size);
 
         if (size != data_length)
-                FAILUREF("invalid packet length: expected %zu bytes, got %zu bytes", data_length, size);
+                TBX_FAILUREF("invalid packet length: expected %zu bytes, got %zu bytes", data_length, size);
 
         //DISP_VAL("rb: length", data_length);
 

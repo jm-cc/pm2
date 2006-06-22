@@ -101,13 +101,13 @@ mad_rand_write(int            sock,
 
                         if (param->opcode == mad_op_optional_block) {
                                 if (rand_threshold)
-                                        FAILURE("duplicate rand 'optional block' parameter");
+                                        TBX_FAILURE("duplicate rand 'optional block' parameter");
 
                                 if (param->value > 100 || param->value < 0)
-                                        FAILURE("rand 'optional block' parameter value out of [0-100] range");
+                                        TBX_FAILURE("rand 'optional block' parameter value out of [0-100] range");
                                 rand_threshold = param->value;
                         } else
-                                FAILURE("invalid rand parameter opcode");
+                                TBX_FAILURE("invalid rand parameter opcode");
                 } while(tbx_slist_ref_forward(b->parameter_slist));
         }
 
@@ -244,7 +244,7 @@ mad_rand_adapter_init(p_mad_adapter_t adapter)
 
         LOG_IN();
         if (strcmp(adapter->dir_adapter->name, "default"))
-                FAILURE("unsupported adapter");
+                TBX_FAILURE("unsupported adapter");
 
         adapter_specific	= TBX_MALLOC(sizeof(mad_rand_adapter_specific_t));
 
@@ -447,7 +447,7 @@ mad_rand_receive_message(p_mad_channel_t channel)
 
                         if ((status == -1) && (errno != EINTR)) {
                                 perror("select");
-                                FAILURE("system call failed");
+                                TBX_FAILURE("system call failed");
                         }
                 } while (status <= 0);
 
@@ -474,7 +474,7 @@ mad_rand_receive_message(p_mad_channel_t channel)
                 in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
         }
 
-        FAILURE("invalid channel state");
+        TBX_FAILURE("invalid channel state");
 }
 
 void

@@ -634,7 +634,7 @@ tbx_environment_append_variable(p_tbx_environment_t          env,
   name = tbx_string_to_cstring(var->name);
 
   if (tbx_htable_get(env->htable, name))
-    FAILURE("argument already exist");
+    TBX_FAILURE("argument already exist");
   
   tbx_htable_add(env->htable, name, var);
   tbx_slist_append(env->slist, var);

@@ -81,7 +81,7 @@ adapter_init(p_mad_driver_t mad_driver,
 
   dir_adapter = tbx_htable_get(dir_adapter_htable, adapter_name);
   if (!dir_adapter)
-    FAILURE("adapter not found");
+    TBX_FAILURE("adapter not found");
 
   TRACE_STR("Initializing adapter", adapter_name);
   mad_adapter = mad_adapter_cons();
@@ -196,19 +196,19 @@ driver_init_1(p_mad_madeleine_t      madeleine,
 
   dir_driver = tbx_htable_get(dir_driver_htable, network_name);
   if (!dir_driver)
-    FAILURE("driver instance not found");
+    TBX_FAILURE("driver instance not found");
 
   mad_driver = tbx_htable_get(mad_network_htable, network_name);
 
   if (mad_driver)
-    FAILUREF("driver instance %s already initialized", network_name);
+    TBX_FAILUREF("driver instance %s already initialized", network_name);
 
   device_name = dir_driver->device_name;
 
   TRACE("Initializing driver instance %s of %s", network_name, device_name);
   interface = tbx_htable_get(mad_device_htable, device_name);
   if (!interface)
-    FAILUREF("driver %s not available", device_name);
+    TBX_FAILUREF("driver %s not available", device_name);
 
   mad_driver = mad_driver_cons();
 
@@ -269,7 +269,7 @@ driver_init_2(p_tbx_htable_t dir_driver_htable){
 
   dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
   if (!dir_driver)
-    FAILURE("driver not found");
+    TBX_FAILURE("driver not found");
 
   TRACE_STR("Initializing driver", driver_name);
   while (1){
@@ -298,7 +298,7 @@ driver_init_2(p_tbx_htable_t dir_driver_htable){
 
       dir_adapter = tbx_htable_get(adapter_htable, adapter_name);
       if (!dir_adapter)
-        FAILURE("adapter not found");
+        TBX_FAILURE("adapter not found");
 
       TRACE_STR("Adapter", adapter_name);
       dir_adapter->parameter = mad_leonie_receive_string();
@@ -306,7 +306,7 @@ driver_init_2(p_tbx_htable_t dir_driver_htable){
       dir_adapter->mtu = mad_leonie_receive_unsigned_int();
       TRACE_VAL("- mtu", dir_adapter->mtu);
       if (!dir_adapter->mtu)
-        FAILURE("invalid mtu");
+        TBX_FAILURE("invalid mtu");
       TBX_FREE(adapter_name);
     }
   }
@@ -407,7 +407,7 @@ connection_mtu(p_mad_dir_channel_t  channel,
 
     src_mtu = adapter->mtu;
     if (!src_mtu)
-      FAILURE("invalid mtu");
+      TBX_FAILURE("invalid mtu");
   }
 
   {
@@ -421,7 +421,7 @@ connection_mtu(p_mad_dir_channel_t  channel,
 
     dst_mtu = adapter->mtu;
     if (!dst_mtu)
-      FAILURE("invalid mtu");
+      TBX_FAILURE("invalid mtu");
   }
 
   mtu = tbx_min(src_mtu, dst_mtu);
@@ -573,7 +573,7 @@ regular_connection_init(p_mad_driver_interface_t  interface,
       interface->connection_init(in, out);
       if ((in->nb_link  <= 0)
           || (in->nb_link != out->nb_link))
-        FAILURE("mad_open_channel: invalid link number");
+        TBX_FAILURE("mad_open_channel: invalid link number");
     }else{
       in->nb_link  = 1;
       out->nb_link = 1;
@@ -589,7 +589,7 @@ regular_connection_init(p_mad_driver_interface_t  interface,
     p_mad_connection_t cnx = NULL;
 
     if (!p_in && !p_out)
-      FAILURE("invalid state");
+      TBX_FAILURE("invalid state");
 
     w = (p_out != NULL);
 
@@ -616,7 +616,7 @@ regular_connection_init(p_mad_driver_interface_t  interface,
       }
 
       if (cnx->nb_link <= 0)
-        FAILURE("mad_open_channel: invalid link number");
+        TBX_FAILURE("mad_open_channel: invalid link number");
     }else{
       cnx->nb_link = 1;
     }
@@ -772,7 +772,7 @@ get_adapter_info(p_mad_channel_t      ch,
                                    dir_connection->adapter_name);
 
   if (!ai->dir_adapter)
-    FAILURE("adapter not found");
+    TBX_FAILURE("adapter not found");
 
   LOG_OUT();
   return ai;
@@ -817,7 +817,7 @@ connection_open(p_mad_channel_t mad_channel){
 
   dir_connection = ntbx_pc_get_local_specific(pc, remote_rank);
   if (!dir_connection)
-    FAILURE("unknown connection");
+    TBX_FAILURE("unknown connection");
 
   rai->channel_parameter = dir_connection->channel_parameter;
 
@@ -900,12 +900,12 @@ channel_open(p_mad_madeleine_t  madeleine,
 
   dir_channel = tbx_htable_get(madeleine->dir->channel_htable, channel_name);
   if (!dir_channel)
-    FAILURE("channel not found");
+    TBX_FAILURE("channel not found");
 
   mad_driver =
     tbx_htable_get(madeleine->network_htable, dir_channel->driver->network_name);
   if (!mad_driver)
-    FAILURE("driver not found");
+    TBX_FAILURE("driver not found");
 
   dir_driver = mad_driver->dir_driver;
   interface  = mad_driver->interface;
@@ -916,7 +916,7 @@ channel_open(p_mad_madeleine_t  madeleine,
     dir_connection = ntbx_pc_get_global_specific(dir_channel->pc, g);
     mad_adapter = tbx_htable_get(mad_driver->adapter_htable, dir_connection->adapter_name);
     if (!mad_adapter)
-      FAILURE("adapter not found");
+      TBX_FAILURE("adapter not found");
   }
 
   mad_channel                = mad_channel_cons();
@@ -1011,7 +1011,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
 
   dir_fchannel = tbx_htable_get(madeleine->dir->channel_htable, channel_name);
   if (!dir_fchannel)
-    FAILURE("channel not found");
+    TBX_FAILURE("channel not found");
 
   dir_channel =
     tbx_htable_get(madeleine->dir->channel_htable, dir_fchannel->cloned_channel_name);
@@ -1019,7 +1019,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   mad_driver  = tbx_htable_get(madeleine->network_htable,
                                dir_channel->driver->network_name);
   if (!mad_driver)
-    FAILURE("driver not found");
+    TBX_FAILURE("driver not found");
 
   dir_driver = mad_driver->dir_driver;
   interface  = mad_driver->interface;
@@ -1031,7 +1031,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
     mad_adapter = tbx_htable_get(mad_driver->adapter_htable, dir_connection->adapter_name);
 
     if (!mad_adapter)
-      FAILURE("adapter not found");
+      TBX_FAILURE("adapter not found");
   }
 
   mad_channel                = mad_channel_cons();
@@ -1142,13 +1142,13 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
     in->regular = tbx_darray_get(ch->in_connection_darray, l_rt);
 
     if (!in->regular)
-      FAILURE("invalid connection");
+      TBX_FAILURE("invalid connection");
   }
 
   // out->regular
   out->mtu = compute_mtu(madeleine->dir, pc, g, g_dst, tbx_true);
   if (!out->mtu)
-    FAILURE("invalid MTU");
+    TBX_FAILURE("invalid MTU");
 
   cdata = ntbx_pc_get_global_specific(ppc, g_dst);
 
@@ -1173,7 +1173,7 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
     interface->connection_init(in, out);
 
     if ((in->nb_link != out->nb_link)||(in->nb_link <= 0))
-      FAILURE("mad_open_channel: invalid link number");
+      TBX_FAILURE("mad_open_channel: invalid link number");
   }else{
     in->nb_link  = 1;
     out->nb_link = 1;
@@ -1222,15 +1222,15 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 
   dir_vchannel = tbx_htable_get(madeleine->dir->channel_htable, vchannel_name);
   if (!dir_vchannel)
-    FAILURE("virtual channel not found");
+    TBX_FAILURE("virtual channel not found");
 
   mad_driver  = tbx_htable_get(madeleine->network_htable, "forward_network");
   if (!mad_driver)
-    FAILURE("forwarding driver not found");
+    TBX_FAILURE("forwarding driver not found");
 
   mad_adapter = tbx_htable_get(mad_driver->adapter_htable, "forward");
   if (!mad_adapter)
-    FAILURE("forwarding adapter not found");
+    TBX_FAILURE("forwarding adapter not found");
 
   pc                          = dir_vchannel->pc;
   mad_channel                 = mad_channel_cons();
@@ -1373,14 +1373,14 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
     in->regular = tbx_darray_get(ch->in_connection_darray, l_rt);
 
     if (!in->regular)
-      FAILURE("invalid connection");
+      TBX_FAILURE("invalid connection");
   }
 
   // out->regular
   out->mtu = compute_mtu(madeleine->dir, pc, g, g_dst, tbx_false);
 
   if (!out->mtu)
-    FAILURE("invalid MTU");
+    TBX_FAILURE("invalid MTU");
 
   cdata = ntbx_pc_get_global_specific(ppc, g_dst);
 
@@ -1398,7 +1398,7 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
     interface->connection_init(in, out);
 
     if ((in->nb_link != out->nb_link)||(in->nb_link <= 0))
-      FAILURE("mad_open_channel: invalid link number");
+      TBX_FAILURE("mad_open_channel: invalid link number");
   }else{
     in->nb_link  = 1;
     out->nb_link = 1;
@@ -1446,15 +1446,15 @@ xchannel_open(p_mad_madeleine_t  madeleine,
 
   dir_xchannel = tbx_htable_get(madeleine->dir->channel_htable, xchannel_name);
   if (!dir_xchannel)
-    FAILURE("mux channel not found");
+    TBX_FAILURE("mux channel not found");
 
   mad_driver  = tbx_htable_get(madeleine->network_htable, "mux_network");
   if (!mad_driver)
-    FAILURE("mux driver not found");
+    TBX_FAILURE("mux driver not found");
 
   mad_adapter = tbx_htable_get(mad_driver->adapter_htable, "mux");
   if (!mad_adapter)
-    FAILURE("mux adapter not found");
+    TBX_FAILURE("mux adapter not found");
 
   pc                              = dir_xchannel->pc;
   mad_channel                     = mad_channel_cons();

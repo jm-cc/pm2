@@ -58,7 +58,7 @@ main(int argc, char **argv) {
                 lnk		= out->link_array[0];
 
                 if (lnk->buffer_mode != mad_buffer_mode_dynamic)
-                        FAILURE("unsupported buffer mode");
+                        TBX_FAILURE("unsupported buffer mode");
 
                 if (interface->new_message) {
                         interface->new_message(out);
@@ -93,7 +93,7 @@ main(int argc, char **argv) {
                 lnk		= in->link_array[0];
 
                 if (lnk->buffer_mode != mad_buffer_mode_dynamic)
-                        FAILURE("unsupported buffer mode");
+                        TBX_FAILURE("unsupported buffer mode");
 
                 buffer_1 = mad_get_user_receive_buffer(&len, sizeof(len));
                 interface->receive_buffer(lnk, &buffer_1);

@@ -67,7 +67,7 @@ mad_alloc_buffer(size_t length)
   buffer->buffer = tbx_aligned_malloc(length, MAD_ALIGNMENT);
   
   if (!buffer->buffer)
-    FAILURE("not enough memory");
+    TBX_FAILURE("not enough memory");
   
   buffer->length        = length;
   buffer->bytes_read    = 0;

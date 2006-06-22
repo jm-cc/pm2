@@ -180,34 +180,34 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
       if (!strcmp(*argv, "--mad_leonie"))
 	{
 	  if (!tbx_flag_toggle(&host_ok))
-	    FAILURE("Leonie server host name specified twice");
+	    TBX_FAILURE("Leonie server host name specified twice");
 
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("mad_leonie argument not found");
+	    TBX_FAILURE("mad_leonie argument not found");
 
 	  settings->leonie_server_host_name = tbx_strdup(*argv);
 	}
       else if (!strcmp(*argv, "--mad_link"))
 	{
 	  if (!tbx_flag_toggle(&port_ok))
-	    FAILURE("Leonie server port specified twice");
+	    TBX_FAILURE("Leonie server port specified twice");
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("mad_link argument not found");
+	    TBX_FAILURE("mad_link argument not found");
 
 	  settings->leonie_server_port = tbx_strdup(*argv);
 	}
       else if (!strcmp(*argv, "--mad_dyn_mode"))
 	{
 	  if (!tbx_flag_toggle(&dyn_set))
-	    FAILURE("Madeleine's dynamic mode specified twice");
+	    TBX_FAILURE("Madeleine's dynamic mode specified twice");
 
           settings->leonie_dynamic_mode	= tbx_true;
 #ifndef MARCEL
-          FAILURE("Madeleine's dynamic mode requires Marcel");
+          TBX_FAILURE("Madeleine's dynamic mode requires Marcel");
 #endif /* MARCEL */
 	}
 
@@ -215,10 +215,10 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
     }
 
   if (tbx_flag_is_clear(&host_ok))
-    FAILURE("Leonie server host name unspecified");
+    TBX_FAILURE("Leonie server host name unspecified");
 
   if (tbx_flag_is_clear(&port_ok))
-    FAILURE("Leonie server port unspecified");
+    TBX_FAILURE("Leonie server port unspecified");
 
   LOG_OUT();
 }
@@ -243,7 +243,7 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   status =
     ntbx_tcp_client_connect(client, settings->leonie_server_host_name, &data);
   if (status == ntbx_failure)
-    FAILURE("could not setup the Leonie link");
+    TBX_FAILURE("could not setup the Leonie link");
 
   TRACE("Leonie link is up");
 
@@ -290,7 +290,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("leonie argument disappeared");
+	    TBX_FAILURE("leonie argument disappeared");
 
 	  _argv++; (*_argc)--;
 	}
@@ -299,7 +299,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("link argument disappeared");
+	    TBX_FAILURE("link argument disappeared");
 
 	  _argv++; (*_argc)--;
 	}

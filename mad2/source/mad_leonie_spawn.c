@@ -57,35 +57,35 @@ mad_master_link_init(p_mad_madeleine_t   madeleine,
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("leonie argument not found");
+	    TBX_FAILURE("leonie argument not found");
 
 	  if (!leonie_server_host_name)
 	    {
 	      leonie_server_host_name = *argv;
 	    }
 	  else
-	    FAILURE("too much leonie arguments");
+	    TBX_FAILURE("too much leonie arguments");
 	}
       else if (!strcmp(*argv, "-link"))
 	{
 	  argc--; argv++;
 
 	  if (!argc)
-	    FAILURE("link argument not found");
+	    TBX_FAILURE("link argument not found");
 
 	  if (!leonie_server_port)
 	    {
 	      leonie_server_port = *argv;
 	    }
 	  else
-	    FAILURE("too much link arguments");
+	    TBX_FAILURE("too much link arguments");
 	}
       
       argc--; argv++;
     }
 
   if (!leonie_server_host_name && !leonie_server_port)
-    FAILURE("leonie server connect information unavailable");
+    TBX_FAILURE("leonie server connect information unavailable");
   
   // Master link setup
   {
@@ -99,7 +99,7 @@ mad_master_link_init(p_mad_madeleine_t   madeleine,
 				     &data);
 
     if (status == ntbx_failure)
-      FAILURE("could not setup the master link");
+      TBX_FAILURE("could not setup the master link");
 
     DISP("Master link is up");
   }
@@ -121,7 +121,7 @@ mad_master_link_get_info(p_mad_madeleine_t   madeleine,
   // Get the configuration size
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
   if (status == ntbx_failure)
-    FAILURE("master link failure");
+    TBX_FAILURE("master link failure");
 
   configuration->size = ntbx_unpack_int(&buffer);
   DISP_VAL("Received configuration size", configuration->size);
@@ -129,7 +129,7 @@ mad_master_link_get_info(p_mad_madeleine_t   madeleine,
   // Get the node rank
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
   if (status == ntbx_failure)
-    FAILURE("master link failure");
+    TBX_FAILURE("master link failure");
   
   configuration->local_host_id = ntbx_unpack_int(&buffer);
   DISP_VAL("Received configuration rank", configuration->local_host_id);
@@ -150,7 +150,7 @@ mad_master_link_get_adapters(p_mad_madeleine_t   madeleine,
   LOG_IN();
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
   if (status == ntbx_failure)
-    FAILURE("master link failure");
+    TBX_FAILURE("master link failure");
 
   nb_adapters = ntbx_unpack_int(&buffer);
   DISP_VAL("Received adapter number", nb_adapters);
@@ -175,21 +175,21 @@ mad_master_link_get_adapters(p_mad_madeleine_t   madeleine,
 
       status = ntbx_btcp_read_string(client, &name);
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
       
       DISP_STR("Received an adapter name", name);
       TBX_FREE(name);
 
       status = ntbx_btcp_read_pack_buffer(client, &buffer);
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
 
       size = ntbx_unpack_int(&buffer);
       DISP_VAL("Adapter - configuration size", size);
 
       status = ntbx_btcp_read_pack_buffer(client, &buffer);
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
 
       rank = ntbx_unpack_int(&buffer);
       DISP_VAL("Adapter - node rank", rank);
@@ -198,7 +198,7 @@ mad_master_link_get_adapters(p_mad_madeleine_t   madeleine,
       status = ntbx_btcp_write_pack_buffer(client, &buffer);
 
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
     }
   LOG_OUT();
 }
@@ -217,7 +217,7 @@ mad_master_link_get_channels(p_mad_madeleine_t   madeleine,
   LOG_IN();
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
   if (status == ntbx_failure)
-    FAILURE("master link failure");
+    TBX_FAILURE("master link failure");
 
   nb_channels = ntbx_unpack_int(&buffer);
   DISP_VAL("Received channels number", nb_channels);
@@ -243,28 +243,28 @@ mad_master_link_get_channels(p_mad_madeleine_t   madeleine,
 
       status = ntbx_btcp_read_string(client, &name);
       if (status == ntbx_failure)
-	FAILURE("master link failure");      
+	TBX_FAILURE("master link failure");      
       
       DISP_STR("Received the channel name", name);
       TBX_FREE(name);
 
       status = ntbx_btcp_read_pack_buffer(client, &buffer);
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
 
       size = ntbx_unpack_int(&buffer);
       DISP_VAL("Channel - configuration size", size);
 
       status = ntbx_btcp_read_pack_buffer(client, &buffer);
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
 
       rank = ntbx_unpack_int(&buffer);
       DISP_VAL("Channel - node rank", rank);
 
       status = ntbx_btcp_read_string(client, &dev);
       if (status == ntbx_failure)
-	FAILURE("master link failure");      
+	TBX_FAILURE("master link failure");      
       
       DISP_STR("Received the channel device", dev);
       TBX_FREE(name);
@@ -273,7 +273,7 @@ mad_master_link_get_channels(p_mad_madeleine_t   madeleine,
       status = ntbx_btcp_write_pack_buffer(client, &buffer);
 
       if (status == ntbx_failure)
-	FAILURE("master link failure");
+	TBX_FAILURE("master link failure");
     }
   LOG_OUT();
 }

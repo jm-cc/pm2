@@ -148,7 +148,7 @@ nm_so_search_next(struct nm_gate *p_gate){
         struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
         struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
         if(p_gtrk == NULL)
-            FAILURE("p_gtrk NULL");
+            TBX_FAILURE("p_gtrk NULL");
 
         p_pw->p_gate = p_gate;
         p_pw->p_drv  = p_gdrv->p_drv;
@@ -234,7 +234,7 @@ nm_so_search_next(struct nm_gate *p_gate){
     struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
     struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
     if(p_gtrk == NULL)
-        FAILURE("p_gtrk NULL");
+        TBX_FAILURE("p_gtrk NULL");
 
     p_pw->p_gate = p_gate;
     p_pw->p_drv  = p_gdrv->p_drv;
@@ -304,7 +304,7 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
         err = NM_ESUCCESS;
 
     } else {
-        FAILURE("Track request type is invalid");
+        TBX_FAILURE("Track request type is invalid");
     }
 
  reload:
@@ -491,6 +491,6 @@ int
 nm_so_out_process_failed_rq(struct nm_sched		*p_sched,
                             struct nm_pkt_wrap	*p_pw,
                             int		 	_err) {
-    FAILURE("nm_so_out_process_failed_rq");
+    TBX_FAILURE("nm_so_out_process_failed_rq");
     return nm_so_out_process_success_rq(p_sched,p_pw);
 }

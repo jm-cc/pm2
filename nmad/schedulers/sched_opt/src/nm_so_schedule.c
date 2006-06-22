@@ -554,7 +554,7 @@ nm_so_search_and_extract_pw(p_tbx_slist_t list,
     do{
         p_pw = tbx_slist_ref_get(list);
         if(!p_pw)
-            FAILURE("nm_so_search_and_extract_pw - p_pw NULL");
+            TBX_FAILURE("nm_so_search_and_extract_pw - p_pw NULL");
 
         if(p_pw->proto_id == proto_id && p_pw->seq == seq){
             tbx_slist_ref_extract_and_forward(list, NULL);

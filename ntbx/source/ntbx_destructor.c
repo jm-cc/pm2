@@ -58,7 +58,7 @@ ntbx_client_dest_ext(p_ntbx_client_t            object,
 	  dest_func(object->specific);
 	}
       else
-	FAILURE("don't know how to destroy specific field");
+	TBX_FAILURE("don't know how to destroy specific field");
 
       object->specific = NULL;
     }
@@ -101,7 +101,7 @@ ntbx_server_dest_ext(p_ntbx_server_t            object,
 	  dest_func(object->specific);
 	}
       else
-	FAILURE("don't know how to destroy specific field");
+	TBX_FAILURE("don't know how to destroy specific field");
 
       object->specific = NULL;
     }
@@ -134,7 +134,7 @@ ntbx_process_info_dest(p_ntbx_process_info_t      object,
 	  dest_func(object->specific);
 	}
       else
-	FAILURE("don't know how to destroy specific field");
+	TBX_FAILURE("don't know how to destroy specific field");
 
       object->specific = NULL;
     }
@@ -196,7 +196,7 @@ ntbx_process_dest(p_ntbx_process_t           object,
 	  dest_func(object->specific);
 	}
       else
-	FAILURE("don't know how to destroy specific field");
+	TBX_FAILURE("don't know how to destroy specific field");
 
       object->specific = NULL;
     }
@@ -217,7 +217,7 @@ ntbx_topology_element_dest(p_ntbx_topology_element_t  object,
 	  dest_func(object->specific);
 	}
       else
-	FAILURE("don't know how to destroy specific field");
+	TBX_FAILURE("don't know how to destroy specific field");
 
       object->specific = NULL;
     }

@@ -53,7 +53,7 @@ DEBUG_DECLARE(udp)
 
 #ifdef PM2DEBUG
 #define CHECK(cd,msg) \
-        if (!(cd)) FAILURE((msg))
+        if (!(cd)) TBX_FAILURE((msg))
 #else  // PM2DEBUG
 #define CHECK(cd,msg)
 #endif // PM2DEBUG
@@ -493,10 +493,10 @@ mad_udp_recvfrom(p_mad_udp_socket_t  socket,
 			      (struct sockaddr *)p_addr, &addr_lg));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP recvfrom");
+	TBX_ERROR("UDP recvfrom");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       LOG_OUT();
       return result;
@@ -533,10 +533,10 @@ mad_udp_recvmsg(p_mad_udp_socket_t  socket,
     SYSTEST(result = recvmsg(socket->desc, &msghdr, 0));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP recvfrom");
+	TBX_ERROR("UDP recvfrom");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       //LOG_OUT();
       return result;
@@ -589,7 +589,7 @@ _mad_udp_nb_select(p_mad_udp_marcel_poll_arg_t poll_arg)
     } else if (poll_arg->mode == POLL_SELECT_FOR_WRITE) {
       SYSTEST(result = select(max_fd + 1, NULL, &fds, NULL, &tv));
     } else {
-      FAILURE("_mad_udp_nb_select: wrong mode.");
+      TBX_FAILURE("_mad_udp_nb_select: wrong mode.");
     }
     if (result > 0) {
       for (st = REQUEST; st < NB_SOCKET; st++) {
@@ -682,10 +682,10 @@ mad_udp_nb_sendto(p_mad_udp_marcel_poll_arg_t poll_arg,
     //marcel_mutex_unlock(&(socket->mutex));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP sendto");
+	TBX_ERROR("UDP sendto");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       LOG_OUT();
       return result;
@@ -739,10 +739,10 @@ mad_udp_nb_sendmsg(p_mad_udp_marcel_poll_arg_t poll_arg,
     //marcel_mutex_unlock(&(socket->mutex));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP sendmsg");
+	TBX_ERROR("UDP sendmsg");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       LOG_OUT();
       return result;
@@ -805,10 +805,10 @@ mad_udp_sendto(p_mad_udp_socket_t socket, const void         *ptr,
 			    sizeof(mad_udp_address_t)));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP sendto");
+	TBX_ERROR("UDP sendto");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       //LOG_OUT();
       return result;
@@ -845,10 +845,10 @@ mad_udp_sendmsg(p_mad_udp_socket_t  socket,
     SYSTEST(result = sendmsg(socket->desc, &msghdr, 0));
     if (result == -1) {
       if ((errno != EAGAIN) && (errno != EINTR)) {
-	ERROR("UDP sendto");
+	TBX_ERROR("UDP sendto");
       }
     } else if (result == 0) {
-      FAILURE("connection closed");
+      TBX_FAILURE("connection closed");
     } else {
       //LOG_OUT();
       return result;
@@ -1718,7 +1718,7 @@ mad_udp_adapter_init(p_mad_adapter_t adapter)
   
   //LOG_IN();
   if (strcmp(adapter->dir_adapter->name, "default"))
-    FAILURE("unsupported adapter");
+    TBX_FAILURE("unsupported adapter");
   
   specific = TBX_MALLOC(sizeof(mad_udp_adapter_specific_t));
   specific->tcp_socket = -1;

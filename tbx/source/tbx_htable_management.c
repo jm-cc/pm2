@@ -325,7 +325,7 @@ tbx_htable_free(p_tbx_htable_t htable)
 {
   LOG_IN();
   if (htable->nb_element)
-    FAILURE("htable is not empty");
+    TBX_FAILURE("htable is not empty");
 
   TBX_FREE(htable->bucket_array);
   htable->bucket_array = NULL;
@@ -368,7 +368,7 @@ tbx_htable_cleanup_and_free(p_tbx_htable_t htable)
     }
 
   if (htable->nb_element)
-    FAILURE("inconsistent htable state");
+    TBX_FAILURE("inconsistent htable state");
 
   TBX_FREE(htable->bucket_array);
   htable->bucket_array = NULL;

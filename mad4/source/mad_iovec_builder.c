@@ -664,7 +664,7 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
                               remote_rank,
                               msg_seq);
     if(!mad_iovec)
-        FAILURE("mad_iovec with rdv not found");
+        TBX_FAILURE("mad_iovec with rdv not found");
 
     // choix de la piste à emprunter
     rdv_track            = s_track_set->rdv_track;
@@ -870,7 +870,7 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
                                 sequence);
 
             if(!tmp)
-                FAILURE("iovec envoyé non retrouvé");
+                TBX_FAILURE("iovec envoyé non retrouvé");
 
             tbx_free(mad_iovec_header_key, header);
 
@@ -904,7 +904,7 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
 
         default:
             //DISP_VAL("type", type);
-            FAILURE("invalid mad_iovec header");
+            TBX_FAILURE("invalid mad_iovec header");
         }
     }
     LOG_OUT();
@@ -1015,7 +1015,7 @@ mad_iovec_exploit_msg(p_mad_adapter_t a,
             break;
 
         default:
-            FAILURE("exploit_msg : invalid mad_iovec header");
+            TBX_FAILURE("exploit_msg : invalid mad_iovec header");
         }
     }
 
@@ -1214,7 +1214,7 @@ mad_iovec_print_msg(void * msg){
             DISP_VAL("-> type ", get_type(header));
             DISP_VAL("-> ch id", get_channel_id(header));
             DISP_VAL("-> seq  ", get_sequence(header));
-            FAILURE("invalid mad_iovec header");
+            TBX_FAILURE("invalid mad_iovec header");
         }
     }
     LOG_OUT();
@@ -1295,7 +1295,7 @@ mad_iovec_print_msg_ligth(void * msg){
 
         default:
             DISP_VAL("type", type);
-            FAILURE("invalid mad_iovec header");
+            TBX_FAILURE("invalid mad_iovec header");
         }
     }
     LOG_OUT();
@@ -1381,7 +1381,7 @@ mad_iovec_print_iovec(struct iovec *iovec){
 
         default:
             DISP_VAL("INVALID-> type ", get_type(header));
-            FAILURE("invalid iovec header");
+            TBX_FAILURE("invalid iovec header");
 
         }
     }

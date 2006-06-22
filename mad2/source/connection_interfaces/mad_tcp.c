@@ -122,7 +122,7 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 	      channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	      
 	      if (channel_id != channel->id)
-		FAILURE("wrong channel id");
+		TBX_FAILURE("wrong channel id");
 
 	      ntbx_pack_int((int)rank, &pack_buffer);
 	      ntbx_tcp_write(connection_specific->socket,
@@ -157,7 +157,7 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 	  host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	  
 	  if (host_id != i)
-	    FAILURE("wrong host id");
+	    TBX_FAILURE("wrong host id");
 	}
     }
   LOG_OUT();
@@ -216,7 +216,7 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	      host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 
 	      if (host_id != j)
-		FAILURE("wrong host id");
+		TBX_FAILURE("wrong host id");
 	    }
 	}
       else
@@ -241,7 +241,7 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	  channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	      
 	  if (channel_id != channel->id)
-	    FAILURE("wrong channel id");
+	    TBX_FAILURE("wrong channel id");
 
 	  ntbx_pack_int((int)rank, &pack_buffer);
 	  ntbx_tcp_write(connection_specific->socket,
@@ -278,7 +278,7 @@ mad_tcp_write(int            sock,
 	  buffer->bytes_read += result;
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
       
 #ifdef MARCEL
       if (mad_more_data(buffer)) TBX_YIELD();
@@ -313,7 +313,7 @@ mad_tcp_read(int            sock,
 	  buffer->bytes_written += result;
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
      
 #ifdef MARCEL
       if (!mad_buffer_full(buffer))
@@ -413,7 +413,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter->specific = adapter_specific;
 
   if (driver_specific->nb_adapter)
-    FAILURE("TCP adapter already initialized");
+    TBX_FAILURE("TCP adapter already initialized");
 
   if (!adapter->name)
     {
@@ -422,7 +422,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
       sprintf(adapter->name, "TCP%d", driver_specific->nb_adapter);
     }
   else
-    FAILURE("Adapter selection currently unimplemented on top of TCP");
+    TBX_FAILURE("Adapter selection currently unimplemented on top of TCP");
 
   driver_specific->nb_adapter++;  
   adapter_specific->remote_connection_port = NULL;

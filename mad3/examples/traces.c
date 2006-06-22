@@ -111,7 +111,7 @@ send_token(p_mad_channel_t       channel,
   out = select_next_process_connection(channel, my_local_rank);
 
   if (!out)
-    FAILURE("invalid state");
+    TBX_FAILURE("invalid state");
 
   /* Make sure the buffer is fully initialized before we use it, in
      order to avoid 'Valgrind' complaining */
@@ -164,7 +164,7 @@ receive_token(p_mad_channel_t   channel,
   mad_unpack(in, &pb, sizeof(pb), mad_send_SAFER, mad_receive_EXPRESS);
   len = ntbx_unpack_int(&pb);
   if ((len < 1) || (len > BUFFER_SIZE))
-    FAILURE("invalid message length");
+    TBX_FAILURE("invalid message length");
 
   mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
 
@@ -172,7 +172,7 @@ receive_token(p_mad_channel_t   channel,
   mad_unpack(in, &pb, sizeof(pb), mad_send_SAFER, mad_receive_EXPRESS);
   dyn_len = ntbx_unpack_int(&pb);
   if (dyn_len < 1)
-    FAILURE("invalid message length");
+    TBX_FAILURE("invalid message length");
   dyn_buf = TBX_CALLOC(1, dyn_len);
 
   mad_unpack(in, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
@@ -235,14 +235,14 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     if (!tbx_darray_first_idx(channel->in_connection_darray, &idx)
         || (idx == my_local_rank && !tbx_darray_next_idx(channel->in_connection_darray, &idx)))
       {
-        FAILURE("The ring is broken, "
+        TBX_FAILURE("The ring is broken, "
                 "I do not have any incoming connection on this channel");
       }
 
     if (!tbx_darray_first_idx(channel->out_connection_darray, &idx)
         || (idx == my_local_rank && !tbx_darray_next_idx(channel->out_connection_darray, &idx)))
       {
-        FAILURE("The ring is broken, "
+        TBX_FAILURE("The ring is broken, "
                 "I do not have any outgoing connection on this channel");
       }
   }

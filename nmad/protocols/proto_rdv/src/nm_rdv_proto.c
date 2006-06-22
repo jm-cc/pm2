@@ -337,7 +337,7 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
         }
 
     } else {
-        FAILURE("nm_rdv_treat_rdv_rq - incorrect proto_id");
+        TBX_FAILURE("nm_rdv_treat_rdv_rq - incorrect proto_id");
     }
 
  end:
@@ -373,7 +373,7 @@ nm_rdv_treat_ack_rq(struct nm_proto *p_proto,
 
     large_pw = get_and_extract(large_waiting_ack, proto_id, seq);
     if(!large_pw)
-        FAILURE("Large non retrouvé");
+        TBX_FAILURE("Large non retrouvé");
 
     // on envoie le large
     struct nm_gate *p_gate = large_pw->p_gate;

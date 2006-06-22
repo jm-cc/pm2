@@ -121,7 +121,7 @@ mad_open_channel(p_mad_madeleine_t  madeleine,
 	}
       
       if (user_channel_id == NB_CHANNELS)
-	FAILURE("mad_open_channel: unknown channel name");
+	TBX_FAILURE("mad_open_channel: unknown channel name");
     }
   else
     user_channel_id = 0;
@@ -342,7 +342,7 @@ mad_open_real_channel(p_mad_madeleine_t  madeleine,
 		     || (out->nb_link <= 0)
 		     || (in->nb_link  != out->nb_link))
 		{
-		  FAILURE("mad_open_real_channel: invalid link number");
+		  TBX_FAILURE("mad_open_real_channel: invalid link number");
 		}
 	    }
 	  else
@@ -535,7 +535,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	      || (out->nb_link <= 0)
 	      || (in->nb_link  != out->nb_link))
 	    {
-	      FAILURE("mad_open_channel: invalid link number");
+	      TBX_FAILURE("mad_open_channel: invalid link number");
 	    }
 	}
       else

@@ -71,7 +71,7 @@ mad_pipeline_extract(p_mad_pipeline_t pipeline,
     LOG_IN();
     //DISP("-->pipeline_extract");
     if(index >= pipeline->cur_nb_elm)
-        FAILURE("mad_pipeline : index > nb of elm");
+        TBX_FAILURE("mad_pipeline : index > nb of elm");
 
     if(index == 0){
         object = mad_pipeline_remove(pipeline);
@@ -100,7 +100,7 @@ mad_pipeline_remove(p_mad_pipeline_t pipeline){
     LOG_IN();
     //DISP("-->pipeline_remove");
     if(!pipeline->cur_nb_elm)
-        FAILURE("empty mad_pipeline");
+        TBX_FAILURE("empty mad_pipeline");
 
     object = pipeline->pipeline[pipeline->begin];
     pipeline->pipeline[pipeline->begin] = NULL;

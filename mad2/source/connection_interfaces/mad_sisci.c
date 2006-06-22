@@ -78,7 +78,7 @@
 #define mad_sisci_toggle(s) tbx_flag_toggle(&((s)->flag))
 #define mad_sisci_test(s)   tbx_flag_test(&((s)->flag))
 #define mad_sisci_control() if (sisci_error != SCI_ERR_OK)\
- {mad_sisci_display_error(sisci_error);FAILURE("Aborting");} else {}
+ {mad_sisci_display_error(sisci_error);TBX_FAILURE("Aborting");} else {}
 
 /*
  * local types
@@ -2949,7 +2949,7 @@ mad_sisci_send_buffer(p_mad_link_t   lnk,
     }
 #endif /* MAD_SISCI_DMA */
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -2973,7 +2973,7 @@ mad_sisci_receive_buffer(p_mad_link_t   lnk,
     }
 #endif /* MAD_SISCI_DMA */
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -2994,7 +2994,7 @@ mad_sisci_send_buffer_group(p_mad_link_t         lnk,
     }
 #endif /* MAD_SISCI_DMA */
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -3017,7 +3017,7 @@ mad_sisci_receive_sub_buffer_group(p_mad_link_t           lnk,
     }
 #endif /* MAD_SISCI_DMA */
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 

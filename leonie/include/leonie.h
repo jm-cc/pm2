@@ -32,7 +32,7 @@
 void
 leonie_failure_cleanup(void);
 
-#define FAILURE_CLEANUP() leonie_failure_cleanup()
+#define TBX_FAILURE_CLEANUP() leonie_failure_cleanup()
 
 #include "tbx.h"
 #include "ntbx.h"

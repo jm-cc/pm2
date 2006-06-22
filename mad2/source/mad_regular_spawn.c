@@ -101,7 +101,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     {
       if (errno != EINTR)
 	{
-	  ERROR("getcwd");
+	  TBX_ERROR("getcwd");
 	}
     }
 
@@ -109,7 +109,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
   prefix = getenv("PM2_CMD_PREFIX");
 
   if (!prefix)
-    FAILURE("PM2_CMD_PREFIX variable undefined");
+    TBX_FAILURE("PM2_CMD_PREFIX variable undefined");
 
   arg_str[0] = '\0';
 

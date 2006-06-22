@@ -286,7 +286,7 @@ control_buffer(int len)
 
         if (!ok) {
                 DISP("%d bytes reception failed", len);
-                FAILURE("data corruption");
+                TBX_FAILURE("data corruption");
         } else {
                 DISP("ok");
         }

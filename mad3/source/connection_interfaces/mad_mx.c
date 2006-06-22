@@ -151,7 +151,7 @@ mad_mx_check_return(char *msg, mx_return_t return_code) {
                 msg_mx = mx_strerror(return_code);
 
                 DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
-                FAILURE("mx error");
+                TBX_FAILURE("mx error");
         }
 }
 
@@ -468,7 +468,7 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
         as		= TBX_MALLOC(sizeof(mad_mx_adapter_specific_t));
 
         if (strcmp(a->dir_adapter->name, "default")) {
-                FAILURE("unsupported adapter");
+                TBX_FAILURE("unsupported adapter");
         } else {
                 as->board_id	= MX_ANY_NIC;
         }
@@ -589,7 +589,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
 
                 cs->remote_endpoint_id = strtol(ai->channel_parameter, &ptr, 0);
                 if (ai->channel_parameter == ptr)
-                        FAILURE("invalid channel parameter");
+                        TBX_FAILURE("invalid channel parameter");
         }
 
         mad_mx_lock();
@@ -822,7 +822,7 @@ mad_mx_receive_buffer(p_mad_link_t    lnk,
 
 
                 if (chs->first_packet_length != data_length)
-                        FAILURE("invalid first packet length");
+                        TBX_FAILURE("invalid first packet length");
 
                 memcpy(data_ptr, chs->first_packet, data_length);
                 b->bytes_written	+= data_length;
@@ -1044,7 +1044,7 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
       data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
 
       if (chs->first_packet_length != data_length)
-        FAILURE("invalid first packet length");
+        TBX_FAILURE("invalid first packet length");
 
       memcpy(data_ptr, chs->first_packet, data_length);
 

@@ -105,7 +105,7 @@ mad_forward_write_block_header(p_mad_connection_t    out,
       interface->send_buffer(lnk, fbh_buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   if (fbh->is_a_group || fbh->is_an_eof_msg
 #ifdef MAD_FORWARD_FLOW_CONTROL
@@ -144,7 +144,7 @@ mad_forward_write_block_header(p_mad_connection_t    out,
 	  interface->send_buffer(data_lnk, fbh->block);
 	}
       else
-	FAILURE("invalid block type");
+	TBX_FAILURE("invalid block type");
     }
   else if (data_lnk->buffer_mode == mad_buffer_mode_dynamic)
     {
@@ -160,10 +160,10 @@ mad_forward_write_block_header(p_mad_connection_t    out,
 	  mad_free_buffer(fbh->block);
 	}
       else
-	FAILURE("invalid block type");
+	TBX_FAILURE("invalid block type");
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
  end:
   mad_free_buffer_struct(fbh_buffer);
@@ -413,7 +413,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
       interface->receive_buffer(lnk, &fbh_buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   data = fbh->data;
   fbh->length        =
@@ -524,7 +524,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
 	      fbh->type  = mad_fblock_type_dynamic;
 	    }
 	  else
-	    FAILURE("invalid link mode");
+	    TBX_FAILURE("invalid link mode");
 
 	  if (fbh->block->length > fbh->length)
 	    {
@@ -534,7 +534,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
 	  interface->receive_buffer(data_lnk, &(fbh->block));
 	}
       else
-	FAILURE("invalid link mode");
+	TBX_FAILURE("invalid link mode");
     }
 
   mad_free_buffer_struct(fbh_buffer);
@@ -735,7 +735,7 @@ mad_forward_receive_block(void *arg)
 	  block_to_forward = &(out->something_to_forward);
 	}
       else
-	FAILURE("invalid connection nature");
+	TBX_FAILURE("invalid connection nature");
 
       if (fbh->is_a_group)
 	{
@@ -883,7 +883,7 @@ mad_forward_send_bytes(p_mad_connection_t  out,
       interface->send_buffer(lnk, buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   mad_free_buffer_struct(buffer);
   LOG_OUT();
@@ -927,7 +927,7 @@ mad_forward_receive_bytes(p_mad_connection_t  in,
       interface->receive_buffer(lnk, &buffer);
     }
   else
-    FAILURE("invalid link mode");
+    TBX_FAILURE("invalid link mode");
 
   mad_free_buffer_struct(buffer);
   LOG_OUT();
@@ -1153,7 +1153,7 @@ mad_forward_connection_init(p_mad_connection_t in,
 	  in->nb_link = 1;
 	}
       else
-	FAILURE("invalid connection nature");
+	TBX_FAILURE("invalid connection nature");
     }
 
   if (out)
@@ -1173,7 +1173,7 @@ mad_forward_connection_init(p_mad_connection_t in,
 	  out->nb_link = 1;
 	}
       else
-	FAILURE("invalid connection nature");
+	TBX_FAILURE("invalid connection nature");
     }
   LOG_OUT();
 }
@@ -1204,7 +1204,7 @@ mad_forward_link_init(p_mad_link_t lnk)
       lnk->group_mode  = mad_group_mode_split;
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
   LOG_OUT();
 }
 
@@ -1452,7 +1452,7 @@ mad_forward_poll_message(p_mad_channel_t channel)
 	  out = vout->regular;
 	}
       else
-	FAILURE("invalid connection nature");
+	TBX_FAILURE("invalid connection nature");
 
       interface = out->channel->adapter->driver->interface;
 
@@ -1529,7 +1529,7 @@ mad_forward_receive_message(p_mad_channel_t channel)
 	  out = vout->regular;
 	}
       else
-	FAILURE("invalid connection nature");
+	TBX_FAILURE("invalid connection nature");
 
       interface = out->channel->adapter->driver->interface;
 
@@ -1649,7 +1649,7 @@ mad_forward_choice(p_mad_connection_t connection,
       lnk = connection->link_array[0];
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
 
   LOG_OUT();
 
@@ -1677,7 +1677,7 @@ mad_forward_return_static_buffer(p_mad_link_t   lnk,
       interface->return_static_buffer(regular_lnk, buffer);
     }
   else if (vin->nature == mad_connection_nature_indirect_virtual)
-    FAILURE("invalid function call");
+    TBX_FAILURE("invalid function call");
 
   LOG_OUT();
 }
@@ -1703,7 +1703,7 @@ mad_forward_get_static_buffer(p_mad_link_t lnk)
       buffer = interface->get_static_buffer(regular_lnk);
     }
   else if (vout->nature == mad_connection_nature_indirect_virtual)
-    FAILURE("invalid function call");
+    TBX_FAILURE("invalid function call");
 
   LOG_OUT();
 
@@ -1795,7 +1795,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
 	}
 
       if (!last_block_len)
-	FAILURE("no data");
+	TBX_FAILURE("no data");
 
       mad_forward_fill_fbh_data(data, src, dst, last_block_len,
 				tbx_false, is_a_new_msg,
@@ -1814,7 +1814,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
       marcel_mutex_unlock(&(out->lock_mutex));
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
 
   LOG_OUT();
 }
@@ -1917,7 +1917,7 @@ mad_forward_receive_buffer(p_mad_link_t    lnk,
       buf->bytes_written = (size_t)bytes_written;
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
 
   LOG_OUT();
 }
@@ -1961,7 +1961,7 @@ mad_forward_send_buffer_group(p_mad_link_t         lnk,
 	}
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
 
   LOG_OUT();
 }
@@ -2009,7 +2009,7 @@ p_mad_connection_t vin = NULL;
 	}
     }
   else
-    FAILURE("invalid connection nature");
+    TBX_FAILURE("invalid connection nature");
 
   LOG_OUT();
 }

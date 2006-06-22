@@ -80,7 +80,7 @@ nm_ns_print_errno(char *msg,
         break;
 
     default:
-        FAILURE("Sortie d'erreur incorrecte");
+        TBX_FAILURE("Sortie d'erreur incorrecte");
     }
 }
 

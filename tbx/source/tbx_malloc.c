@@ -229,7 +229,7 @@ tbx_safe_free(void *ptr, const char *file, const unsigned  line)
   void                       *base = p;
 
   if (!p)
-    FAILURE("cannot free NULL ptr");
+    TBX_FAILURE("cannot free NULL ptr");
 
   tbx_safe_malloc_check_chunk(p);
 

@@ -527,7 +527,7 @@ static int flavor_do_check(void)
   if(ret == 0) {
     statusbar_concat_message("OK.");
   } else {
-    statusbar_concat_message("FAILURE: see /tmp/ezflavor.errlog.");
+    statusbar_concat_message("TBX_FAILURE: see /tmp/ezflavor.errlog.");
   }
 
   free_flavor_fields(cur_flavor);
@@ -560,7 +560,7 @@ static int flavor_save(void)
     flavor_never_saved = FALSE;
     statusbar_concat_message("Done.");
   } else {
-    statusbar_concat_message("FAILURE: see /tmp/ezflavor.errlog.");
+    statusbar_concat_message("TBX_FAILURE: see /tmp/ezflavor.errlog.");
     return ret;
   }
 

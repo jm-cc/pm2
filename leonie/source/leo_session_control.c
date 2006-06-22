@@ -37,7 +37,7 @@ wait_for_ack(p_ntbx_client_t client) {
 
   data = leo_receive_int(client);
   if (data != -1)
-    FAILURE("synchronization error");
+    TBX_FAILURE("synchronization error");
 }
 
 static
@@ -476,7 +476,7 @@ exit_session(p_leonie_t leonie)
 
         read_status = ntbx_tcp_read_pack_buffer(client, &pack_buffer);
         if (read_status == -1)
-          FAILURE("control link failure");
+          TBX_FAILURE("control link failure");
 
         data = ntbx_unpack_int(&pack_buffer);
 
@@ -512,7 +512,7 @@ exit_session(p_leonie_t leonie)
         case leo_command_barrier: {
           TRACE("leo_command_barrier");
           if (finishing)
-            FAILURE("barrier request during session clean-up");
+            TBX_FAILURE("barrier request during session clean-up");
 
           barrier_count++;
 
@@ -525,7 +525,7 @@ exit_session(p_leonie_t leonie)
               with_all_processes(dir, _barrier_passed);
               barrier_count = 0;
             } else
-              FAILURE("incoherent behaviour");
+              TBX_FAILURE("incoherent behaviour");
           }
 
           status --;
@@ -540,12 +540,12 @@ exit_session(p_leonie_t leonie)
           break;
 
         default:
-          FAILUREF("unknown command [%d] or synchronization error", data);
+          TBX_FAILUREF("unknown command [%d] or synchronization error", data);
         }
       }
 
       if (status)
-        FAILURE("incoherent behaviour");
+        TBX_FAILURE("incoherent behaviour");
     }
   }
   LOG_OUT();

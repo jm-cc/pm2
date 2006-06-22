@@ -357,7 +357,7 @@ main(int argc, char **argv) {
     my_global_rank = madeleine->session->process_rank;
     channel = tbx_htable_get(madeleine->channel_htable, "test");
     if(channel == NULL)
-        FAILURE("main : channel not found");
+        TBX_FAILURE("main : channel not found");
 
     pc             = channel->pc;
     my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);

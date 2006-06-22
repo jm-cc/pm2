@@ -389,7 +389,7 @@ static void *recv_msg_fastpoll_func(marcel_pollid_t id,
 	  break;
 	}
       default:
-	FAILURE("mad_bip ERROR: message with unknown tag received.");
+	TBX_FAILURE("mad_bip TBX_ERROR: message with unknown tag received.");
       } // switch
 
     } // if(status != -1)
@@ -568,7 +568,7 @@ static void *recv_msg_poll_func(marcel_pollid_t id,
 	  break;
 	}
       default:
-	FAILURE("mad_bip ERROR: message with unknown tag received.");
+	TBX_FAILURE("mad_bip TBX_ERROR: message with unknown tag received.");
       } // switch
 
     } // if(status != -1)
@@ -1071,7 +1071,7 @@ mad_bip_adapter_init(p_mad_adapter_t adapter)
   /* Adapter initialization code 
      Note: called once for each adapter */
   if (strcmp(adapter->dir_adapter->name, "default"))
-    FAILURE("unsupported adapter");
+    TBX_FAILURE("unsupported adapter");
   
   adapter_specific = TBX_MALLOC(sizeof(mad_bip_adapter_specific_t));
   adapter->specific = adapter_specific;
@@ -1336,7 +1336,7 @@ mad_bip_poll_message(p_mad_channel_t channel)
 
   LOG_IN();
 
-  FAILURE("NOT IMPLEMENTED");
+  TBX_FAILURE("NOT IMPLEMENTED");
 
   LOG_OUT();
 
@@ -1679,7 +1679,7 @@ mad_bip_send_buffer(p_mad_link_t   lnk,
   LOG_IN();
   if ((buffer->bytes_written - buffer->bytes_read) &
       MAD_BIP_SIZE_ALIGNMENT_MASK)
-    FAILURE("BIP requires buffer length to be aligned on 4B");
+    TBX_FAILURE("BIP requires buffer length to be aligned on 4B");
 
   if (lnk->id == 0)
     {
@@ -1701,7 +1701,7 @@ mad_bip_send_buffer(p_mad_link_t   lnk,
     }
 #endif // GROUP_SMALL_PACKS
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -1740,7 +1740,7 @@ mad_bip_receive_buffer(p_mad_link_t   lnk,
     }
 #endif // GROUP_SMALL_PACKS
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
 
   LOG_OUT();  
 }

@@ -152,10 +152,10 @@ ntbx_tcp_read(int     socket_fd,
                                 continue;
                         } else {
                                 perror("read");
-                                FAILURE("system call failed");
+                                TBX_FAILURE("system call failed");
                         }
                 } else if (status == 0) {
-                        FAILURE("connection closed");
+                        TBX_FAILURE("connection closed");
                 } else {
                         bytes_read += status;
                 }
@@ -183,10 +183,10 @@ ntbx_tcp_write(int           socket_fd,
                                 continue;
                         } else {
                                 perror("write");
-                                FAILURE("system call failed");
+                                TBX_FAILURE("system call failed");
                         }
                 } else if (status == 0) {
-                        FAILURE("connection closed");
+                        TBX_FAILURE("connection closed");
                 } else {
                         bytes_written += status;
                 }
@@ -209,7 +209,7 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_address_fill: gethostbyname: %s", msg);
+                TBX_FAILUREF("ntbx_tcp_address_fill: gethostbyname: %s", msg);
         }
 
         address->sin_family = AF_INET;
@@ -234,7 +234,7 @@ ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address,
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_address_fill_ip: gethostbyaddr: %s", msg);
+                TBX_FAILUREF("ntbx_tcp_address_fill_ip: gethostbyaddr: %s", msg);
         }
 
         address->sin_family = AF_INET;
@@ -377,7 +377,7 @@ ntbx_tcp_server_init_ext(p_ntbx_server_t server,
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_server_init: gethostbyname(%s): %s", server->local_host, msg);
+                TBX_FAILUREF("ntbx_tcp_server_init: gethostbyname(%s): %s", server->local_host, msg);
         }
 
         server->local_host_ip =
@@ -433,7 +433,7 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_client_init: gethostbyname: %s", msg);
+                TBX_FAILUREF("ntbx_tcp_client_init: gethostbyname: %s", msg);
         }
 
 #ifdef LEO_IP
@@ -557,7 +557,7 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
         else if (server_host_name)
                 ntbx_tcp_address_fill(&server_address, server_port, server_host_name);
         else
-                FAILURE("TCP client connect failed");
+                TBX_FAILURE("TCP client connect failed");
 
         while (connect(client_specific->descriptor,
                        (struct sockaddr *)&server_address,
@@ -566,7 +566,7 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
                         continue;
                 } else {
                         perror("connect");
-                        FAILURE("ntbx_tcp_client_connect failed");
+                        TBX_FAILURE("ntbx_tcp_client_connect failed");
                 }
         }
 
@@ -577,7 +577,7 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_client_connect_body: %s: %s", ((server_ip)?"gethostbyaddr":"gethostbyname"), msg);
+                TBX_FAILUREF("ntbx_tcp_client_connect_body: %s: %s", ((server_ip)?"gethostbyaddr":"gethostbyname"), msg);
         }
         client->remote_host = tbx_strdup(remote_host_entry->h_name);
 
@@ -637,7 +637,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
                         continue;
                 } else {
                         perror("accept");
-                        FAILURE("ntbx_tcp_server_accept");
+                        TBX_FAILURE("ntbx_tcp_server_accept");
                 }
         }
 
@@ -656,7 +656,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
                 char *msg = NULL;
 
                 msg = ntbx_tcp_h_errno_to_str();
-                FAILUREF("ntbx_tcp_server_accept: gethostbyaddr: %s", msg);
+                TBX_FAILUREF("ntbx_tcp_server_accept: gethostbyaddr: %s", msg);
         }
 
         client->remote_host = tbx_strdup(remote_host_entry->h_name);
@@ -777,7 +777,7 @@ ntbx_tcp_read_poll(int              nb_clients,
                                 continue;
                         } else {
                                 perror("select");
-                                FAILURE("ntbx_tcp_read_poll failed");
+                                TBX_FAILURE("ntbx_tcp_read_poll failed");
                         }
                 } else if (status == 0) {
                         return ntbx_failure;
@@ -795,7 +795,7 @@ ntbx_tcp_read_poll(int              nb_clients,
                 }
         }
 
-        FAILURE("invalid path");
+        TBX_FAILURE("invalid path");
 }
 
 
@@ -840,7 +840,7 @@ ntbx_tcp_write_poll(int              nb_clients,
                                 continue;
                         } else {
                                 perror("select");
-                                FAILURE("ntbx_tcp_write_poll failed");
+                                TBX_FAILURE("ntbx_tcp_write_poll failed");
                         }
                 } else if (status == 0) {
                         continue;
@@ -861,7 +861,7 @@ ntbx_tcp_write_poll(int              nb_clients,
                 }
         }
 
-        FAILURE("invalid path");
+        TBX_FAILURE("invalid path");
 }
 
 
@@ -904,7 +904,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
                                 continue;
                         } else {
                                 perror("read");
-                                FAILURE("ntbx_tcp_read_block");
+                                TBX_FAILURE("ntbx_tcp_read_block");
                         }
                 } else if (status == 0) {
                         return ntbx_failure;
@@ -958,7 +958,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
                                 continue;
                         } else {
                                 perror("write");
-                                FAILURE("ntbx_tcp_write_block");
+                                TBX_FAILURE("ntbx_tcp_write_block");
                         }
                 } else if (status == 0) {
                         return ntbx_failure;
@@ -1061,7 +1061,7 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
                 TRACE("read string[%zu] len = '%d'", client->read_rq, len);
         }
         if (len < 0)
-                FAILURE("synchronization error");
+                TBX_FAILURE("synchronization error");
 
         *string = TBX_MALLOC((size_t)len);
         CTRL_ALLOC(*string);

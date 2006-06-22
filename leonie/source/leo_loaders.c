@@ -71,7 +71,7 @@ leo_default_loader(p_leo_settings_t settings,
       // host_name = tbx_htable_get(dir_node->channel_host_names, "mon_canal");
 
       if (!host_name) {
-              FAILURE("host name not found");
+              TBX_FAILURE("host name not found");
       }
 
       /* Main command */
@@ -81,7 +81,7 @@ leo_default_loader(p_leo_settings_t settings,
 	p_tbx_environment_t env          = NULL;
 
         if (!settings->name)
-                FAILURE("no command name specified");
+                TBX_FAILURE("no command name specified");
 
 	main_command =
 	  tbx_command_init_to_cstring(settings->name);
@@ -179,7 +179,7 @@ leo_default_loader(p_leo_settings_t settings,
 	  }
 
         if (!settings->flavor)
-                FAILURE("no flavor specified");
+                TBX_FAILURE("no flavor specified");
 
 	tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 
@@ -331,7 +331,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
       // host_name = tbx_htable_get(dir_node->channel_host_names, "mon_canal");
 
       if (!host_name) {
-              FAILURE("host name not found");
+              TBX_FAILURE("host name not found");
       }
 
       /* Main command */
@@ -341,7 +341,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	p_tbx_environment_t env          = NULL;
 
         if (!settings->name)
-                FAILURE("no command name specified");
+                TBX_FAILURE("no command name specified");
 
 	main_command =
                 tbx_command_init_to_cstring(settings->name);
@@ -431,7 +431,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	  }
 
         if (!settings->flavor)
-                FAILURE("no flavor specified");
+                TBX_FAILURE("no flavor specified");
 
 	tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 
@@ -721,7 +721,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 		}
 	    }
 	  else
-	    FAILURE("unexpected behaviour");
+	    TBX_FAILURE("unexpected behaviour");
 	}
     }
   }
@@ -742,7 +742,7 @@ leo_bipload_loader(p_leo_settings_t settings,
       p_tbx_arguments_t args         = NULL;
 
       if (!settings->name)
-              FAILURE("no command name specified");
+              TBX_FAILURE("no command name specified");
       main_command = tbx_command_init_to_cstring(settings->name);
 
       args = main_command->arguments;
@@ -833,7 +833,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 	}
 
         if (!settings->flavor)
-                FAILURE("no flavor specified");
+                TBX_FAILURE("no flavor specified");
 
       tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 

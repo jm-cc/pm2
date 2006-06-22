@@ -234,7 +234,7 @@ nm_gm_callback(struct gm_port *p_gm_port,
 
 	if (gms != GM_SUCCESS) {
 	  __gmerror__(gms);
-	  FAILURE("send request failed");
+	  TBX_FAILURE("send request failed");
 	}
 
         p_rq		= ptr;
@@ -327,7 +327,7 @@ nm_gm_extract_info(char			 *trk_url,
         return;
 
  error:
-        FAILURE("mad_gm_extract_info failed");
+        TBX_FAILURE("mad_gm_extract_info failed");
 }
 
 static
@@ -371,7 +371,7 @@ nm_gm_init			(struct nm_drv *p_drv) {
 	return err;
 
  error:
-        FAILURE("nm_gm_init failed");
+        TBX_FAILURE("nm_gm_init failed");
 }
 
 static
@@ -495,7 +495,7 @@ nm_gm_open_trk		(struct nm_trk_rq	*p_trk_rq) {
 	return err;
 
  error:
-        FAILURE("nm_gm_open_trk failed");
+        TBX_FAILURE("nm_gm_open_trk failed");
 }
 
 static
@@ -602,7 +602,7 @@ nm_gm_connect		(struct nm_cnx_rq *p_crq) {
 	return err;
 
  error:
-        FAILURE("nm_gm_connect failed");
+        TBX_FAILURE("nm_gm_connect failed");
 }
 
 static
@@ -711,7 +711,7 @@ nm_gm_accept			(struct nm_cnx_rq *p_crq) {
 	return err;
 
  error:
-        FAILURE("nm_gm_accept failed");
+        TBX_FAILURE("nm_gm_accept failed");
 }
 
 static
@@ -785,7 +785,7 @@ nm_gm_post_send_iov		(struct nm_pkt_wrap *p_pw) {
 	return err;
 
  error:
-        FAILURE("nm_gm_post_send_iov");
+        TBX_FAILURE("nm_gm_post_send_iov");
 }
 
 static
@@ -839,7 +839,7 @@ nm_gm_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
 	return err;
 
  error:
-        FAILURE("nm_gm_post_recv_iov");
+        TBX_FAILURE("nm_gm_post_recv_iov");
 }
 
 static
@@ -880,7 +880,7 @@ nm_gm_poll_send_iov    	(struct nm_pkt_wrap *p_pw) {
 	return err;
 
  error:
-        FAILURE("nm_gm_poll_send_iov");
+        TBX_FAILURE("nm_gm_poll_send_iov");
 }
 
 static
@@ -959,7 +959,7 @@ nm_gm_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
 	return err;
 
  error:
-        FAILURE("nm_gm_poll_recv_iov");
+        TBX_FAILURE("nm_gm_poll_recv_iov");
 }
 
 

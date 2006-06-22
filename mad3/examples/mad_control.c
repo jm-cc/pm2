@@ -301,7 +301,7 @@ process_results(p_mad_channel_t     channel,
 	  break;
 
 	default:
-	  FAILURE(" unknown send mode");
+	  TBX_FAILURE(" unknown send mode");
 	}
 
 	  switch (results->recv)
@@ -315,7 +315,7 @@ process_results(p_mad_channel_t     channel,
 	      break;
 
 	    default:
-	      FAILURE("unknown receive mode");
+	      TBX_FAILURE("unknown receive mode");
 	    }
 
 
@@ -330,7 +330,7 @@ process_results(p_mad_channel_t     channel,
 		  break;
 
 		default:
-		  FAILURE("invalid test mode");
+		  TBX_FAILURE("invalid test mode");
 		}
 
 

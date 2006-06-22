@@ -375,7 +375,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
             interface->track_set_init(track_set);
 
     } else {
-        FAILURE("pilote réseau non supporté");
+        TBX_FAILURE("pilote réseau non supporté");
     }
 
     //DISP("<--initialize_tracks_part1");
@@ -559,7 +559,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
     do{
         mad_iovec_cur = (p_mad_iovec_t)s_msg_slist->ref->object;
         if(mad_iovec_cur == NULL)
-            FAILURE("mad_iovec_cur == NULL");
+            TBX_FAILURE("mad_iovec_cur == NULL");
 
 
         nb_authorized_sendings = adapter->nb_authorized_sendings[mad_iovec_cur->remote_rank];

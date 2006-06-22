@@ -213,16 +213,16 @@ mad_mpi_install_hooks(void) {
         mad_mpi_old_realloc_hook		= __realloc_hook;
 
         if (__malloc_hook == mad_mpi_malloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__memalign_hook == mad_mpi_memalign_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__realloc_hook == mad_mpi_realloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__free_hook == mad_mpi_free_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         __malloc_hook		= mad_mpi_malloc_hook;
         __memalign_hook		= mad_mpi_memalign_hook;
@@ -236,16 +236,16 @@ void
 mad_mpi_remove_hooks(void) {
         LOG_IN();
         if (__malloc_hook == mad_mpi_old_malloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__memalign_hook == mad_mpi_old_memalign_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__realloc_hook == mad_mpi_old_realloc_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         if (__free_hook == mad_mpi_old_free_hook)
-                FAILURE("hooks corrupted");
+                TBX_FAILURE("hooks corrupted");
 
         __malloc_hook		= mad_mpi_old_malloc_hook;
         __memalign_hook		= mad_mpi_old_memalign_hook;
@@ -467,7 +467,7 @@ mad_mpi_adapter_init(p_mad_adapter_t a)
         as = TBX_MALLOC(sizeof(mad_mpi_adapter_specific_t));
 
         if (strcmp(a->dir_adapter->name, "default")) {
-                FAILURE("unsupported adapter");
+                TBX_FAILURE("unsupported adapter");
         }
 
         a->parameter = tbx_strdup("-");
@@ -881,7 +881,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           l,
         chs	= ch->specific;
 
         if (!first_sub_group)
-                FAILURE("group split error");
+                TBX_FAILURE("group split error");
 
         if (tbx_empty_list(&(bg->buffer_list)))
                 goto end;

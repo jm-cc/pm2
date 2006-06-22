@@ -240,7 +240,7 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 		}
 #endif /* SOFTWARE_FLOW_CONTROL */
 	      else
-		FAILURE("invalid message type");
+		TBX_FAILURE("invalid message type");
 	  
 	      if ((!probe_only) && (tmp_connection == connection))
 		{
@@ -394,7 +394,7 @@ mad_sbp_adapter_init(p_mad_adapter_t adapter)
   driver          = adapter->driver;
   driver_specific = driver->specific;
   if (driver_specific->nb_adapter)
-    FAILURE("SBP adapter already initialized");
+    TBX_FAILURE("SBP adapter already initialized");
   
   if (adapter->name == NULL)
     {
@@ -500,7 +500,7 @@ mad_sbp_after_open_channel(p_mad_channel_t channel)
 	    }
 #endif /* SOFTWARE_FLOW_CONTROL */
 	  else
-	    FAILURE("invalid message type");
+	    TBX_FAILURE("invalid message type");
 	
 
 	  tmp_connection_specific = tmp_connection->specific;
@@ -736,7 +736,7 @@ mad_sbp_send_buffer(p_mad_link_t     lnk,
 	    mad_sbp_receive_sbp_frame(connection, tbx_false);
 
 	  if (ack_sbp_frame->mad_header.message_type != mad_sbp_ACK)
-	    FAILURE("unexpected message type");
+	    TBX_FAILURE("unexpected message type");
 	  
 	  connection_specific->acknowledgement_status = tbx_true;
 	}
@@ -786,12 +786,12 @@ mad_sbp_receive_buffer(p_mad_link_t     lnk,
   if (!connection_specific->request_status)
     {
       if (sbp_frame->mad_header.message_type != mad_sbp_REQUEST)
-	FAILURE("unexpected message type");
+	TBX_FAILURE("unexpected message type");
       
       connection_specific->request_status = tbx_true;
     }
   else if (sbp_frame->mad_header.message_type != mad_sbp_DATA)
-    FAILURE("unexpected message type");
+    TBX_FAILURE("unexpected message type");
       
   buffer = mad_alloc_buffer_struct();
   
@@ -1024,7 +1024,7 @@ mad_sbp_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
   
   LOG_IN();
   if (length >= MAD_SBP_PAYLOAD_SIZE)
-    FAILURE("parameter string too long");
+    TBX_FAILURE("parameter string too long");
   
   sbp_frame->sbp_header.cookie.destn_node   = remote_host_id;
   sbp_frame->sbp_header.cookie.origin       = 0;

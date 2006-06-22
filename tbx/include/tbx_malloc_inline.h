@@ -124,7 +124,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   CTRL_ALLOC(temp_mem->first_mem);
 
   if (temp_mem->first_mem == NULL)
-    FAILURE("not enough memory");
+    TBX_FAILURE("not enough memory");
 
   temp_mem->current_mem = temp_mem->first_mem;
 
@@ -254,7 +254,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
                                + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
       }
 
-    FAILUREF("attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
+    TBX_FAILUREF("attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
   }
 
   block_mem = mem->first_mem;

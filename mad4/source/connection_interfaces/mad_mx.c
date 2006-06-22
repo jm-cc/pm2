@@ -109,7 +109,7 @@ mad_mx_check_return(char *msg, mx_return_t return_code) {
         msg_mx = mx_strerror(return_code);
 
         DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
-        FAILURE("mx error");
+        TBX_FAILURE("mx error");
     }
     LOG_OUT();
 }
@@ -298,7 +298,7 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
 
     // Identifiant de la carte
     if (strcmp(a->dir_adapter->name, "default")) {
-        FAILURE("unsupported adapter");
+        TBX_FAILURE("unsupported adapter");
     } else {
         as->board_id	= MX_ANY_NIC;
     }
@@ -539,7 +539,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
 
         endpoint_id = strtok(param, " ");
         if (!endpoint_id || endpoint_id == ptr)
-            FAILURE("invalid channel parameter");
+            TBX_FAILURE("invalid channel parameter");
 
         remote_ps = TBX_MALLOC(sizeof(mad_mx_port_specific_t));
         remote_ps->endpoint_id = strtol(endpoint_id, &ptr, 0);
@@ -563,7 +563,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
             /* extract string from string sequence */
             endpoint_id = strtok(NULL, " ");
             if (endpoint_id == ptr)
-                FAILURE("invalid channel parameter");
+                TBX_FAILURE("invalid channel parameter");
             /* check if there is nothing else to extract */
             if (!endpoint_id)
                 break;
@@ -776,7 +776,7 @@ mad_mx_receive_message(p_mad_channel_t ch) {
     match_info = status.match_info;
     in	= tbx_darray_get(in_darray, match_info & 0xFFFFFFFF);
     if(!in){
-        FAILURE("mad_mx_receive_message : connection not found");
+        TBX_FAILURE("mad_mx_receive_message : connection not found");
     }
 
     //DISP("<--------------receive_message");

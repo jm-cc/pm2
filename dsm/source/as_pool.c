@@ -103,7 +103,7 @@ void* dsm_as_setup_altstack() {
     sprintf(tmp,"Glooops : sigaltstack return %d for base=%p sp=%p size=%d\n",
 	    r,base_altstack, s.ss_sp, s.ss_size);
 			
-    FAILURE(tmp);
+    TBX_FAILURE(tmp);
   }
 
   return os.ss_sp;

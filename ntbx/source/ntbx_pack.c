@@ -57,12 +57,12 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'i')
-	FAILURE("synchronisation error");
+	TBX_FAILURE("synchronisation error");
     }
 
   data = (int)strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -101,12 +101,12 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'l')
-	FAILURE("synchronisation error");
+	TBX_FAILURE("synchronisation error");
     }
 
   data = strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -145,12 +145,12 @@ ntbx_unpack_unsigned_int(p_ntbx_pack_buffer_t pack_buffer)
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'I')
-	FAILURE("synchronisation error");
+	TBX_FAILURE("synchronisation error");
     }
 
   data = (unsigned int)strtoul(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -189,12 +189,12 @@ ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'L')
-	FAILURE("synchronisation error");
+	TBX_FAILURE("synchronisation error");
     }
 
   data = strtoul(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -243,18 +243,18 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'D')
-	FAILURE("synchronisation error");
+	TBX_FAILURE("synchronisation error");
     }
 
   exponent = (int)strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
 
   end_ptr++;
 
   mantissa = strtod(end_ptr, &end_ptr);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");
+    TBX_FAILURE("synchronisation error");
 
   data = ldexp(mantissa, exponent);
   LOG_OUT();

@@ -600,7 +600,7 @@ mad_gm_extract_info(p_mad_adapter_info_t ai,
         return;
 
  error:
-        FAILURE("mad_gm_extract_info failed");
+        TBX_FAILURE("mad_gm_extract_info failed");
         LOG_OUT();
 }
 
@@ -737,7 +737,7 @@ mad_gm_register_block(p_mad_gm_port_t    port,
         return 0;
 
  error:
-        FAILURE("mad_gm_register_block");
+        TBX_FAILURE("mad_gm_register_block");
 }
 
 static
@@ -791,7 +791,7 @@ mad_gm_deregister_block(p_mad_gm_port_t  port,
         return 0;
 
  error:
-        FAILURE("mad_gm_deregister_block failed");
+        TBX_FAILURE("mad_gm_deregister_block failed");
 }
 
 static
@@ -805,7 +805,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
         LOG_IN();
 	if (gms != GM_SUCCESS) {
 	  __gmerror__(gms);
-	  FAILURE("send request failed");
+	  TBX_FAILURE("send request failed");
 	}
 
         rq         = ptr;
@@ -854,7 +854,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
         return;
 
  error:
-        FAILURE("mad_gm_callback failed");
+        TBX_FAILURE("mad_gm_callback failed");
         LOG_OUT();
 }
 
@@ -951,7 +951,7 @@ mad_gm_process_event(p_mad_gm_port_t port, int may_block) {
                                 } else {
                                         if (!may_block) {
                                                 if (port->pending)
-                                                        FAILURE("invalid state");
+                                                        TBX_FAILURE("invalid state");
 
                                                 port->pending = 1;
                                                 marcel_sem_V(&is->sem);
@@ -1072,7 +1072,7 @@ mad_gm_process_event(p_mad_gm_port_t port, int may_block) {
                                 } else {
                                         if (!may_block) {
                                                 if (port->pending)
-                                                        FAILURE("invalid state");
+                                                        TBX_FAILURE("invalid state");
 
                                                 port->pending = 1;
                                                 marcel_sem_V(&is->sem);
@@ -1172,7 +1172,7 @@ mad_gm_process_event(p_mad_gm_port_t port, int may_block) {
         return active;
 
  error:
-        FAILURE("mad_gm_event_processing failed");
+        TBX_FAILURE("mad_gm_event_processing failed");
         LOG_OUT();
 
         return 0;
@@ -1467,7 +1467,7 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
         return;
 
  error:
-        FAILURE("mad_gm_port_poll failed");
+        TBX_FAILURE("mad_gm_port_poll failed");
         LOG_OUT();
 }
 #endif /* MARCEL */
@@ -1538,7 +1538,7 @@ mad_gm_do_poll(marcel_ev_server_t	server,
                         MARCEL_EV_REQ_SUCCESS(&(p_ev->inst));
                 }
         } else
-                FAILURE("invalid operation");
+                TBX_FAILURE("invalid operation");
 
         LOG_OUT();
 
@@ -1620,7 +1620,7 @@ mad_gm_port_open(int device_id) {
         return port;
 
  error:
-        FAILURE("mad_gm_port_open failed");
+        TBX_FAILURE("mad_gm_port_open failed");
         return NULL;
 }
 
@@ -1685,7 +1685,7 @@ mad_gm_port_close(p_mad_gm_port_t port) {
         return;
 
  error:
-        FAILURE("mad_gm_port_close failed");
+        TBX_FAILURE("mad_gm_port_close failed");
 }
 
 
@@ -1792,7 +1792,7 @@ mad_gm_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         return;
 
  error:
-        FAILURE("mad_gm_driver_init failed");
+        TBX_FAILURE("mad_gm_driver_init failed");
 }
 
 void
@@ -1863,7 +1863,7 @@ mad_gm_adapter_init(p_mad_adapter_t a) {
         return;
 
  error:
-        FAILURE("mad_gm_adapter_init failed");
+        TBX_FAILURE("mad_gm_adapter_init failed");
         LOG_OUT();
 }
 
@@ -2019,7 +2019,7 @@ mad_gm_connection_init(p_mad_connection_t in,
         return;
 
  error:
-        FAILURE("mad_gm_connection_init failed");
+        TBX_FAILURE("mad_gm_connection_init failed");
 }
 
 void
@@ -2042,7 +2042,7 @@ mad_gm_link_init(p_mad_link_t l) {
                 l->buffer_mode = mad_buffer_mode_dynamic;
                 l->group_mode  = mad_group_mode_split;
         } else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }
@@ -2088,7 +2088,7 @@ mad_gm_connect(p_mad_connection_t   out,
 void
 mad_gm_disconnect(p_mad_connection_t cnx) {
         LOG_IN();
-        //FAILURE("unimplemented");
+        //TBX_FAILURE("unimplemented");
         LOG_OUT();
 }
 
@@ -2112,7 +2112,7 @@ mad_gm_connection_exit(p_mad_connection_t in,
                 is = in->specific;
 
                 if (!tbx_slist_is_nil(is->cpy_buffer_slist))
-                        FAILURE("input copy buffer list not empty");
+                        TBX_FAILURE("input copy buffer list not empty");
 
                 tbx_slist_free(is->cpy_buffer_slist);
                 TBX_FREE(is);
@@ -2123,7 +2123,7 @@ mad_gm_connection_exit(p_mad_connection_t in,
                 p_mad_gm_connection_specific_t os = NULL;
                 os = out->specific;
                 if (!tbx_slist_is_nil(os->cpy_buffer_slist))
-                        FAILURE("input copy buffer list not empty");
+                        TBX_FAILURE("input copy buffer list not empty");
 
                 tbx_slist_free(os->cpy_buffer_slist);
                 TBX_FREE(os);
@@ -2208,7 +2208,7 @@ mad_gm_new_message(p_mad_connection_t out) {
 
         LOG_IN();
         os = out->specific;
-        FAILURE("unimplemented");
+        TBX_FAILURE("unimplemented");
         LOG_OUT();
 }
 #endif
@@ -2217,7 +2217,7 @@ mad_gm_new_message(p_mad_connection_t out) {
 p_mad_connection_t
 mad_gm_poll_message(p_mad_channel_t channel) {
         LOG_IN();
-        FAILURE("unimplemented");
+        TBX_FAILURE("unimplemented");
         LOG_OUT();
 }
 #endif // MAD_MESSAGE_POLLING
@@ -2299,7 +2299,7 @@ mad_gm_message_received(p_mad_connection_t in) {
         LOG_IN();
         ch  = in->channel;
         chs = ch->specific;
-        FAILURE("unimplemented");
+        TBX_FAILURE("unimplemented");
         LOG_OUT();
 }
 #endif
@@ -2502,7 +2502,7 @@ mad_gm_get_static_buffer_cpy(p_mad_link_t l)
         return b;
 
  error:
-        FAILURE("mad_gm_get_static_buffer_cpy failed");
+        TBX_FAILURE("mad_gm_get_static_buffer_cpy failed");
 
         LOG_OUT();
 
@@ -2822,7 +2822,7 @@ mad_gm_send_buffer(p_mad_link_t   l,
                         mad_gm_send_buffer_rdv(l, buffer);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }
@@ -2841,7 +2841,7 @@ mad_gm_receive_buffer(p_mad_link_t    l,
                         mad_gm_receive_buffer_rdv(l, pbuffer);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }
@@ -2861,7 +2861,7 @@ mad_gm_send_buffer_group(p_mad_link_t         l,
                         mad_gm_send_buffer_group_rdv(l, buffer_group);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }
@@ -2881,7 +2881,7 @@ mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
                         mad_gm_receive_sub_buffer_group_rdv(l, first_subgroup, buffer_group);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }
@@ -2897,7 +2897,7 @@ mad_gm_get_static_buffer(p_mad_link_t l)
                         b = mad_gm_get_static_buffer_cpy(l);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 
@@ -2914,7 +2914,7 @@ mad_gm_return_static_buffer(p_mad_link_t   l,
                         mad_gm_return_static_buffer_cpy(l, b);
                 }
         else
-                FAILURE("invalid link id");
+                TBX_FAILURE("invalid link id");
 
         LOG_OUT();
 }

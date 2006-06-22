@@ -169,7 +169,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter) {
     int   i = 0;
     LOG_IN();
     if (strcmp(adapter->dir_adapter->name, "default"))
-        FAILURE("unsupported adapter");
+        TBX_FAILURE("unsupported adapter");
 
 
     driver = adapter->driver;
@@ -800,7 +800,7 @@ mad_tcp_receive_message(p_mad_channel_t ch) {
 
     in = tbx_darray_get(in_darray, j);
     if(!in){
-        FAILURE("mad_tcp_receive_message : connection not found");
+        TBX_FAILURE("mad_tcp_receive_message : connection not found");
     }
 
     mad_iovec->data[0].iov_base = data;

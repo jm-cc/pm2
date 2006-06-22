@@ -164,7 +164,7 @@ mad_tcp_write(int            sock,
 	  buffer->bytes_read += result;
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
     }
   LOG_OUT();
 }
@@ -192,7 +192,7 @@ mad_tcp_read(int            sock,
 	  buffer->bytes_written += result;
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
     }
   LOG_OUT();
 }
@@ -234,7 +234,7 @@ mad_tcp_writev(int           sock,
 	  while (result);
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
     }
   LOG_OUT();
 }
@@ -276,7 +276,7 @@ mad_tcp_readv(int           sock,
 	  while (result);
 	}
       else
-	FAILURE("connection closed");
+	TBX_FAILURE("connection closed");
     }
   LOG_OUT();
 }
@@ -353,7 +353,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
 
   LOG_IN();
   if (strcmp(adapter->dir_adapter->name, "default"))
-    FAILURE("unsupported adapter");
+    TBX_FAILURE("unsupported adapter");
 
   adapter_specific  = TBX_MALLOC(sizeof(mad_tcp_adapter_specific_t));
   adapter_specific->connection_port   = -1;
@@ -557,7 +557,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
       if ((status == -1) && (errno != EINTR))
 	{
 	  perror("select");
-	  FAILURE("system call failed");
+	  TBX_FAILURE("system call failed");
 	}
 
       if (status <= 0)
@@ -593,7 +593,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
       in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
     }
 
-  FAILURE("invalid channel state");
+  TBX_FAILURE("invalid channel state");
 }
 #endif // MAD_MESSAGE_POLLING
 
@@ -630,7 +630,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	  if ((status == -1) && (errno != EINTR))
 	    {
 	      perror("select");
-	      FAILURE("system call failed");
+	      TBX_FAILURE("system call failed");
 	    }
 	}
       while (status <= 0);
@@ -675,7 +675,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
       in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
     }
 
-  FAILURE("invalid channel state");
+  TBX_FAILURE("invalid channel state");
 }
 
 static void
@@ -775,7 +775,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
               p_mad_buffer_t buffer = NULL;
 
               if (i >= length)
-                FAILURE("index out of bounds");
+                TBX_FAILURE("index out of bounds");
 
               buffer = tbx_get_list_reference_object(&ref);
               array[i].iov_base = buffer->buffer;
@@ -799,7 +799,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
               p_mad_buffer_t buffer = NULL;
 
               if (i >= length)
-                FAILURE("index out of bounds");
+                TBX_FAILURE("index out of bounds");
 
               buffer = tbx_get_list_reference_object(&ref);
               array[i].iov_base = buffer->buffer;
@@ -844,7 +844,7 @@ mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
               p_mad_buffer_t buffer = NULL;
 
               if (i >= length)
-                FAILURE("index out of bounds");
+                TBX_FAILURE("index out of bounds");
 
               buffer = tbx_get_list_reference_object(&ref);
               array[i].iov_base = buffer->buffer;
@@ -868,7 +868,7 @@ mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
               p_mad_buffer_t buffer = NULL;
 
               if (i >= length)
-                FAILURE("index out of bounds");
+                TBX_FAILURE("index out of bounds");
 
               buffer = tbx_get_list_reference_object(&ref);
               array[i].iov_base = buffer->buffer;

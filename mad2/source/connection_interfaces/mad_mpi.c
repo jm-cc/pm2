@@ -308,7 +308,7 @@ mad_mpi_adapter_init(p_mad_adapter_t adapter)
   driver          = adapter->driver;
   driver_specific = driver->specific;
   if (driver_specific->nb_adapter)
-    FAILURE("MPI adapter already initialized");
+    TBX_FAILURE("MPI adapter already initialized");
   
   if (adapter->name == NULL)
     {
@@ -635,7 +635,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
   LOG_IN();
 
   if (!first_sub_group)
-    FAILURE("group split error");
+    TBX_FAILURE("group split error");
 
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {

@@ -290,7 +290,7 @@ mad_shmem_adapter_init(p_mad_adapter_t adapter)
 
         LOG_IN();
         if (!tbx_streq(adapter->dir_adapter->name, "default"))
-                FAILURE("unsupported adapter");
+                TBX_FAILURE("unsupported adapter");
 
         adapter_specific	= TBX_MALLOC(sizeof(mad_shmem_adapter_specific_t));
         adapter->specific	= adapter_specific;
@@ -346,22 +346,22 @@ mad_shmem_connection_init(p_mad_connection_t in,
 
         v	= shm_open(_filename, O_CREAT|O_TRUNC|O_RDWR, 0600);
         if (v < 0)
-                ERROR("shm_open");
+                TBX_ERROR("shm_open");
 
         fd	= v;
 
         v	= ftruncate(fd, (off_t)MAD_SHMEM_BUFFER);
         if (v < 0)
-                ERROR("ftruncate");
+                TBX_ERROR("ftruncate");
 
         cs->in_ptr	= mmap(0, (size_t)MAD_SHMEM_BUFFER,
                                PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
         if (!cs->in_ptr)
-                ERROR("mmap");
+                TBX_ERROR("mmap");
 
         v	= close(fd);
         if (v < 0)
-                ERROR("close");
+                TBX_ERROR("close");
 
         in->specific	= out->specific = cs;
         in->nb_link	= 1;
@@ -429,22 +429,22 @@ mad_shmem_connect(p_mad_connection_t   out,
 
         v	= shm_open(_filename, O_RDWR, 0600);
         if (v < 0)
-                ERROR("shm_open");
+                TBX_ERROR("shm_open");
 
         fd	= v;
 
         v	= shm_unlink(_filename);
         if (v < 0)
-                ERROR("shm_unlink");
+                TBX_ERROR("shm_unlink");
 
         cs->out_ptr	= mmap(0, (size_t)MAD_SHMEM_BUFFER,
                                PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
         if (!cs->out_ptr)
-                ERROR("mmap");
+                TBX_ERROR("mmap");
 
         v	= close(fd);
         if (v < 0)
-                ERROR("close");
+                TBX_ERROR("close");
         LOG_OUT();
 }
 
@@ -458,7 +458,7 @@ mad_shmem_disconnect(p_mad_connection_t cnx)
         if (cs->in_ptr) {
                 v	= munmap(cs->in_ptr, MAD_SHMEM_BUFFER);
                 if (v < 0)
-                        ERROR("munmap");
+                        TBX_ERROR("munmap");
 
                 cs->in_ptr	= NULL;
         }
@@ -466,7 +466,7 @@ mad_shmem_disconnect(p_mad_connection_t cnx)
         if (cs->out_ptr) {
                 v	= munmap(cs->out_ptr, MAD_SHMEM_BUFFER);
                 if (v < 0)
-                        ERROR("munmap");
+                        TBX_ERROR("munmap");
 
                 cs->out_ptr	= NULL;
         }

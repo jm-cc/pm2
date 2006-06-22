@@ -386,13 +386,13 @@ mad_vrp_level1_do_poll(p_mad_vrp_select_req_t req)
         }
 
       perror("select");
-      FAILURE("system call failed");
+      TBX_FAILURE("system call failed");
     }
 
   if (status > 0)
     {
       if (!FD_ISSET(fd, &fds))
-        FAILURE("invalid state");
+        TBX_FAILURE("invalid state");
 
       r = 1;
     }
@@ -530,7 +530,7 @@ mad_vrp_adapter_init(p_mad_adapter_t a)
 
   LOG_IN();
   if (strcmp(a->dir_adapter->name, "default"))
-    FAILURE("unsupported adapter");
+    TBX_FAILURE("unsupported adapter");
 
   as = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
   ns = ntbx_server_cons();
@@ -699,7 +699,7 @@ mad_vrp_disconnect(p_mad_connection_t c)
       TBX_FREE(os->vrp_out);
     }
   else
-    FAILURE("invalid connection way");
+    TBX_FAILURE("invalid connection way");
 
   LOG_OUT();
 }
@@ -825,7 +825,7 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
               loss_rate = 100;
             }
           else
-            FAILURE("invalid vrp parameter opcode");
+            TBX_FAILURE("invalid vrp parameter opcode");
         }
       while(tbx_slist_ref_forward(b->parameter_slist));
     }
@@ -870,7 +870,7 @@ mad_vrp_receive_buffer(p_mad_link_t    lnk,
       if (len <= MAD_VRP_MAX_FIRST_PACKET_LENGTH)
         {
           if (len != is->first_packet_length)
-            FAILURE("stream out of sync");
+            TBX_FAILURE("stream out of sync");
 
           memcpy(b->buffer+b->bytes_written, is->first_packet_data, len);
           b->bytes_written += len;

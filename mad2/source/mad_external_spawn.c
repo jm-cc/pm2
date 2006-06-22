@@ -221,7 +221,7 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 	}
     }
   else
-    FAILURE("undefined configuration size");
+    TBX_FAILURE("undefined configuration size");
 }
 
 void

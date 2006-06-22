@@ -43,7 +43,7 @@ leo_send_int(p_ntbx_client_t client,
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -59,7 +59,7 @@ leo_receive_int(p_ntbx_client_t client)
   status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_int(&buffer);
   TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
@@ -82,7 +82,7 @@ leo_send_unsigned_int(p_ntbx_client_t    client,
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -98,7 +98,7 @@ leo_receive_unsigned_int(p_ntbx_client_t client)
   status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   data = ntbx_unpack_unsigned_int(&buffer);
   TRACE_VAL("[BOOTSTRAP PROCESS] Receiving", data);
@@ -118,7 +118,7 @@ leo_send_string(p_ntbx_client_t  client,
   status = ntbx_tcp_write_string(client, string);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   LOG_OUT();
 }
@@ -133,7 +133,7 @@ leo_receive_string(p_ntbx_client_t client)
   status = ntbx_tcp_read_string(client, &result);
 
   if (status == ntbx_failure)
-    FAILURE("control link failure");
+    TBX_FAILURE("control link failure");
 
   TRACE_STR("[BOOTSTRAP PROCESS] Receiving", result);
   LOG_OUT();

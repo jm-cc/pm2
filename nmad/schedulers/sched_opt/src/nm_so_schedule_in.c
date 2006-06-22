@@ -43,7 +43,7 @@ take_pre_posted(struct nm_sched *p_sched,
     struct nm_pkt_wrap	*p_pw
         = nm_so_take_pre_posted_pw(p_sched);
     if(!p_pw)
-        FAILURE("pre_posted NULL");
+        TBX_FAILURE("pre_posted NULL");
 
     /* mise sur la piste demandée */
     p_pw->p_drv  = trk->p_drv;
@@ -94,7 +94,7 @@ push_acks(struct nm_gate *p_gate){
     struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
     struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
     if(p_gtrk == NULL)
-        FAILURE("p_gtrk NULL");
+        TBX_FAILURE("p_gtrk NULL");
     acks->p_gate = p_gate;
     acks->p_drv  = p_gdrv->p_drv;
     acks->p_trk  = p_gtrk->p_trk;
@@ -239,7 +239,7 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
             // réception de la taille des données
             p_pw = take_pre_posted(p_sched, trk);
             if(!p_pw)
-                FAILURE("pre_posted not created");
+                TBX_FAILURE("pre_posted not created");
 
             p_pw->v[p_pw->v_first].iov_len
                 = sizeof(nm_so_sched_header_t);
@@ -253,19 +253,19 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
         } else if(trk->cap.rq_type == nm_trk_rq_dgram){
             p_pw = take_pre_posted(p_sched, trk);
             if(!p_pw)
-                FAILURE("pre_posted not created");
+                TBX_FAILURE("pre_posted not created");
 
             tbx_slist_append(p_sched->post_perm_recv_req, p_pw);
 
 
         } else if (trk->cap.rq_type == nm_trk_rq_rdv) {
-            FAILURE("nm_so_in_schedule - prendre en cpte les rdv non traités");
+            TBX_FAILURE("nm_so_in_schedule - prendre en cpte les rdv non traités");
         } else if(trk->cap.rq_type ==  nm_trk_rq_put){
-            FAILURE("nm_so_in_schedule - PUT not implemented");
+            TBX_FAILURE("nm_so_in_schedule - PUT not implemented");
         } else if(trk->cap.rq_type ==  nm_trk_rq_get){
-            FAILURE("nm_so_in_schedule - GET not implemented");
+            TBX_FAILURE("nm_so_in_schedule - GET not implemented");
         } else {
-            FAILURE("nm_so_in_schedule - type de track not supported");
+            TBX_FAILURE("nm_so_in_schedule - type de track not supported");
         }
 
         trk = NULL;
@@ -430,7 +430,7 @@ open_data(struct nm_sched *p_sched,
 
         } else {
             printf("proto_id failed = %d\n", proto_id);
-            FAILURE("Entête non supportée");
+            TBX_FAILURE("Entête non supportée");
         }
     }
     if(so_sched->acks)
@@ -517,7 +517,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             // on dépose la réception des données
             p_data_pw = take_pre_posted(p_sched, p_trk);
             if(!p_data_pw)
-                FAILURE("pre_posted not created");
+                TBX_FAILURE("pre_posted not created");
 
             p_data_pw->v[p_data_pw->v_first].iov_len = len;
 
@@ -587,11 +587,11 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
 
     } else if(p_trk->cap.rq_type ==  nm_trk_rq_put){
-        FAILURE("nm_so_in_process_success_rq - PUT not implemented");
+        TBX_FAILURE("nm_so_in_process_success_rq - PUT not implemented");
     } else if(p_trk->cap.rq_type ==  nm_trk_rq_get){
-        FAILURE("nm_so_in_process_success_rq - GET not implemented");
+        TBX_FAILURE("nm_so_in_process_success_rq - GET not implemented");
     } else {
-        FAILURE("nm_so_in_process_success_rq - type de track not supported");
+        TBX_FAILURE("nm_so_in_process_success_rq - type de track not supported");
     }
 
  end:
@@ -610,7 +610,7 @@ int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
                            int		_err) {
-    FAILURE("nm_so_in_process_failed_rq");
+    TBX_FAILURE("nm_so_in_process_failed_rq");
     return nm_so_in_process_success_rq(p_sched, p_pw);
 }
 

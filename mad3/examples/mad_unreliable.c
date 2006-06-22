@@ -257,7 +257,7 @@ main(int argc, char **argv) {
                                                 DISP("lost block slice: base = %p, offset = %u, length = %u",
                                                      status->base, status->offset, status->length);
                                         } else
-                                                FAILURE("invalid or unknown status opcode");
+                                                TBX_FAILURE("invalid or unknown status opcode");
 
                                 /*
                                  * On avance le curseur d'un pas.

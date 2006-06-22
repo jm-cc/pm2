@@ -90,7 +90,7 @@ int senddata(p_mad_channel_t channel, ntbx_process_lrank_t dest, int i) {
 
   /* Take the out connection */
   out = mad_begin_packing(channel, dest);
-  if (!out) FAILURE("invalid state");
+  if (!out) TBX_FAILURE("invalid state");
 
   /* Send the data */
   ntbx_pack_int(i, &buffer);

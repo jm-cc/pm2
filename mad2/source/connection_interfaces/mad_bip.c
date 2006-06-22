@@ -768,7 +768,7 @@ mad_bip_adapter_init(p_mad_adapter_t adapter)
   driver          = adapter->driver;
   driver_specific = driver->specific;
   if (driver_specific->nb_adapter)
-    FAILURE("BIP adapter already initialized");
+    TBX_FAILURE("BIP adapter already initialized");
 
   if (adapter->name == NULL)
     {
@@ -1483,7 +1483,7 @@ mad_bip_send_buffer(p_mad_link_t   lnk,
     }
 #endif
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
 }
 
@@ -1530,7 +1530,7 @@ mad_bip_receive_buffer(p_mad_link_t   lnk,
     }
 #endif
   else
-    FAILURE("Invalid link ID");
+    TBX_FAILURE("Invalid link ID");
   LOG_OUT();
   
 }

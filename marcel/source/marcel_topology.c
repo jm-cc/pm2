@@ -413,7 +413,6 @@ static void __marcel_init look_libnuma(void) {
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
 			marcel_vpmask_add_vp(&node_level[radid].vpset,cpuid);
 		vpset = node_level[radid].vpset;
-		node_level[radid].sched = NULL;
 		mdebug("node %d has vpset %lx\n",i,vpset);
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))

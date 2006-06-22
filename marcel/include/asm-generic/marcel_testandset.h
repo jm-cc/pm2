@@ -25,7 +25,7 @@
 #depend "asm/marcel_compareexchange.h[macros]"
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define pm2_spinlock_testandset(spinlock) ma_cmpxchg(spinlock, 0, 1)
-#define pm2_spinlock_release(spinlock) ma_cmpxchg(spinlock, 1, 0)
+#define pm2_spinlock_release(spinlock) (void)ma_cmpxchg(spinlock, 1, 0)
 #endif
 #section marcel_variables
 #ifndef MA_HAVE_COMPAREEXCHANGE

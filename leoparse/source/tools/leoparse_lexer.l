@@ -212,7 +212,7 @@ INTEGER        {DIGIT}+
 . {
   fflush(stdout);
   fprintf(stderr, "invalid token at %s:%d:%d\n", parser_filename, parser_line_num, parser_column_num);
-  FAILURE("lexical error");
+  TBX_FAILURE("lexical error");
 }
 %%
 //.                                   {

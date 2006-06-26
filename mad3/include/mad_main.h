@@ -197,7 +197,7 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 			int                 argc,
 			char              **argv);
 
-TBX_INTERNAL void
+void
 mad_leonie_command_exit(p_mad_madeleine_t   madeleine);
 
 void

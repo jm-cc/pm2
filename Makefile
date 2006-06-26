@@ -126,9 +126,9 @@ $(eval $(call RECURSIVE_template, fut, $(PROF_LIBS), dot_h, \
 fut: fut-app
 .PHONY: fut-app
 fut-app: dot_h fut-print
-	$(COMMON_HIDE) if [ $(APP_PROFILE) = yes ] ; then \
-		$(MAKE) -C $(APP_DIR) APP_RECURSIF=true TARGET=$(APP_TARGET) fut ; \
-	fi
+#	$(COMMON_HIDE) if [ $(APP_PROFILE) = yes ] ; then \
+#		$(MAKE) -C $(APP_DIR) APP_RECURSIF=true TARGET=$(APP_TARGET) fut ; \
+#	fi
 
 # dot_h: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------

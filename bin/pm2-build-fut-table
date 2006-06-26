@@ -41,6 +41,7 @@ MODULE=profile
 TYPE=pm2
 SEARCHDIR=./
 
+# TODO : trouver FXT_ROOT tout seul...
 export FXT_ROOT=/home/ftrahay/sources/FxT/tools/
 
 while [ $# -gt 0 ]; do
@@ -97,6 +98,8 @@ fi
 
 deffile=${GENDIR}/${TYPE}_fut_entries.h
 printfile=${GENDIR}/${TYPE}_fut_print.h
+mainprintfile=${GENDIR}/main_fut_print.h
+deffile=${GENDIR}/main_fut_entries.h
 
 case $TYPE in
     pm2)
@@ -171,11 +174,13 @@ case $TYPE in
 	    touch $BUILDDIR/${MODULE}/include/pad_fut_print.h
 	    touch $BUILDDIR/${MODULE}/include/pad_fut_entries.h
 	fi
-	
-	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $printfile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $printfile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_entries.h\"" >> $deffile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_entries.h\"" >> $deffile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_print.h\"" >> $mainprintfile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $mainprintfile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $mainprintfile
+
+	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_entries.h\"" >> $maindeffile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_entries.h\"" >> $maindeffile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_entries.h\"" >> $maindeffile
 	;;
 esac
 

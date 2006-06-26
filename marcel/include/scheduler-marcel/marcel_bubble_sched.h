@@ -116,20 +116,16 @@ struct marcel_bubble {
 	int nbrunning; /* number of entities released by the bubble (i.e. currently in runqueues) */
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
-	/* number of LWPs running a thread in bubble */
-	int nr_active;
 	/* next entity to try to run in this bubble */
 	struct ma_sched_entity *next;
-	/* holding bubble that has some of our content as next entity to
-	 * try to run in it */
-	struct marcel_bubble *next_user;
-	///* first holding bubble that is on a runqueue */
-	//struct marcel_bubble *rq_bubble;
-	//en fait non: c'est sched_holder
 	/* list of running entities */
 	struct list_head runningentities;
 	int settled;
 #endif
+	/* statistics */
+	unsigned cputime;
+	unsigned memory;
+	unsigned running;
 };
 
 #section macros
@@ -146,7 +142,6 @@ struct marcel_bubble {
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
-	.nr_active = 0, \
 	.next = NULL, \
 	.runningentities = LIST_HEAD_INIT((b).runningentities), \
 	.settled = 0,
@@ -158,6 +153,9 @@ struct marcel_bubble {
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
 	.join = MARCEL_SEM_INITIALIZER(1), \
 	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
+	.cputime = 0, \
+	.memory = 0, \
+	.running = 0, \
 }
 
 

@@ -70,6 +70,9 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 	}
 	return x;
 }
+
+#define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
+
 /*
  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
  * store NEW in MEM.  Return the initial value in MEM.  Success is

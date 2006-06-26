@@ -114,6 +114,138 @@ extern void cacheflush(void);
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int val)
+{
+	__u32 retval;
+
+	//if (cpu_has_llsc && R10000_LLSC_WAR) {
+		unsigned long dummy;
+
+		__asm__ __volatile__(
+		"	.set	mips3					\n"
+		"1:	ll	%0, %3			# xchg_u32	\n"
+		"	.set	mips0					\n"
+		"	move	%2, %z4					\n"
+		"	.set	mips3					\n"
+		"	sc	%2, %1					\n"
+		"	beqzl	%2, 1b					\n"
+#ifdef MA__LWPS
+		"	sync						\n"
+#endif
+		"	.set	mips0					\n"
+		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
+		: "R" (*m), "Jr" (val)
+		: "memory");
+#if 0
+	} else if (cpu_has_llsc) {
+		unsigned long dummy;
+
+		__asm__ __volatile__(
+		"	.set	mips3					\n"
+		"1:	ll	%0, %3			# xchg_u32	\n"
+		"	.set	mips0					\n"
+		"	move	%2, %z4					\n"
+		"	.set	mips3					\n"
+		"	sc	%2, %1					\n"
+		"	beqz	%2, 1b					\n"
+#ifdef MA__LWPS
+		"	sync						\n"
+#endif
+		"	.set	mips0					\n"
+		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
+		: "R" (*m), "Jr" (val)
+		: "memory");
+	} else {
+		unsigned long flags;
+
+		local_irq_save(flags);
+		retval = *m;
+		*m = val;
+		local_irq_restore(flags);	/* implies memory barrier  */
+	}
+#endif
+
+	return retval;
+}
+
+#if MA_BITS_PER_LONG == 64
+static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long * m, unsigned long val)
+{
+	__ma_u64 retval;
+
+	//if (cpu_has_llsc && R10000_LLSC_WAR) {
+		unsigned long dummy;
+
+		__asm__ __volatile__(
+		"	.set	mips3					\n"
+		"1:	lld	%0, %3			# xchg_u64	\n"
+		"	move	%2, %z4					\n"
+		"	scd	%2, %1					\n"
+		"	beqzl	%2, 1b					\n"
+#ifdef MA__LWPS
+		"	sync						\n"
+#endif
+		"	.set	mips0					\n"
+		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
+		: "R" (*m), "Jr" (val)
+		: "memory");
+#if 0
+	} else if (cpu_has_llsc) {
+		unsigned long dummy;
+
+		__asm__ __volatile__(
+		"	.set	mips3					\n"
+		"1:	lld	%0, %3			# xchg_u64	\n"
+		"	move	%2, %z4					\n"
+		"	scd	%2, %1					\n"
+		"	beqz	%2, 1b					\n"
+#ifdef CONFIG_SMP
+		"	sync						\n"
+#endif
+		"	.set	mips0					\n"
+		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
+		: "R" (*m), "Jr" (val)
+		: "memory");
+	} else {
+		unsigned long flags;
+
+		local_irq_save(flags);
+		retval = *m;
+		*m = val;
+		local_irq_restore(flags);	/* implies memory barrier  */
+	}
+#endif
+
+	return retval;
+}
+#endif
+
+/* This function doesn't exist, so you'll get a linker error
+   if something tries to do an invalid xchg().  */
+extern void __ma_xchg_called_with_bad_pointer(void);
+extern unsigned long __ma_xchg_u8(volatile unsigned long * m, unsigned long val)
+extern unsigned long __ma_xchg_u16(volatile unsigned long * m, unsigned long val)
+
+static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
+{
+	switch (size) {
+	case 1:
+		return __ma_xchg_u32(ptr, x);
+	case 2:
+		return __ma_xchg_u32(ptr, x);
+	case 4:
+		return __ma_xchg_u32(ptr, x);
+#if MA_BITS_PER_LONG == 64
+	case 8:
+		return __ma_xchg_u64(ptr, x);
+#endif
+	}
+	__ma_xchg_called_with_bad_pointer();
+	return x;
+}
+
+#define ma_xchg(ptr,x) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m, unsigned long old,
 	unsigned long new)
 {

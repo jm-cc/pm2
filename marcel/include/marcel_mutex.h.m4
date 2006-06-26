@@ -75,7 +75,7 @@ enum
   PREFIX_PROCESS_SHARED
 #define PREFIX_PROCESS_SHARED  PREFIX_PROCESS_SHARED
 };
-]], [[PMARCEL LPT]])/* pas MARCEL car il n'a pas ces modes */
+]], [[MARCEL PMARCEL LPT]])
 
 #include <asm/linux_types.h>
 REPLICATE([[dnl
@@ -157,12 +157,10 @@ extern int prefix_mutex_trylock (prefix_mutex_t *_mutex) __THROW;
 /* Lock a mutex.  */
 extern int prefix_mutex_lock (prefix_mutex_t *__mutex) __THROW;
 
-#ifdef __USE_XOPEN2K
 /* Wait until lock becomes available, or specified time passes. */
 extern int prefix_mutex_timedlock (prefix_mutex_t *__restrict __mutex,
                                     __const struct timespec *__restrict
                                     __abstime) __THROW;
-#endif
 
 /* Unlock a mutex.  */
 extern int prefix_mutex_unlock (prefix_mutex_t *__mutex) __THROW;
@@ -197,7 +195,6 @@ extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
 extern int prefix_mutexattr_settype (prefix_mutexattr_t *__attr, int __kind)
      __THROW;
 //#endif
-
 /* Functions for handling initialization.  */
 
 /* Guarantee that the initialization function INIT_ROUTINE will be called

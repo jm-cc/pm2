@@ -429,8 +429,8 @@ int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
      /****************************/
 PRINT_PTHREAD([[dnl
 weak_alias (lpt_mutexattr_settype, pthread_mutexattr_setkind_np)
-strong_alias (lpt_mutexattr_settype, pthread_mutexattr_settype)
-strong_alias (lpt_mutexattr_settype, __pthread_mutexattr_settype)
+DEF_LIBPTHREAD(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind), (attr, kind))
+DEF___LIBPTHREAD(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind), (attr, kind))
 ]])
 
 REPLICATE_CODE([[dnl
@@ -457,8 +457,9 @@ int prefix_mutexattr_settype(prefix_mutexattr_t * attr, int kind)
      /* mutex_gettype/getkind_np */
      /****************************/
 PRINT_PTHREAD([[dnl
-strong_alias (lpt_mutexattr_gettype, pthread_mutexattr_gettype)
 weak_alias (lpt_mutexattr_gettype, pthread_mutexattr_getkind_np)
+DEF_LIBPTHREAD(int, mutexattr_gettype, (pthread_mutexattr_t *attr, int kind), (attr, kind))
+DEF___LIBPTHREAD(int, mutexattr_gettype, (pthread_mutexattr_t *attr, int kind), (attr, kind))
 ]])
 
 REPLICATE_CODE([[dnl

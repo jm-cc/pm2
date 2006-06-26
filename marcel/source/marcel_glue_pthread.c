@@ -3,6 +3,7 @@
 #ifdef MA__LIBPTHREAD
 
 #include "pm2_common.h"
+#include <errno.h>
 
 
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
@@ -70,10 +71,29 @@ compat_symbol (libpthread, __pthread_create_2_0, pthread_create, GLIBC_2_0);
 
 versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
-pthread_t pthread_self(void)
+/* pthread_t pthread_self(void) */
+/* { */
+/* 	return (pthread_t)marcel_self(); */
+/* } */
+
+/*********************pthread_self***************************/
+
+DEF_POSIX(pmarcel_t, self, (void), (), 
 {
-	return (pthread_t)marcel_self();
+   return (pmarcel_t)marcel_self();
+})
+
+lpt_t lpt_self(void)
+{
+   return (lpt_t)pmarcel_self();
 }
+
+DEF_PTHREAD(pthread_t, self, (void), ())
+DEF___PTHREAD(pthread_t, self, (void), ())
+
+
+
+/********************************************************/
 
 static int _first_errno;
 static int _initialized;
@@ -283,5 +303,16 @@ __pthread_disable_asynccancel (int oldtype)
 #endif
 }
 
+int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
+	/* Extension Real-Time non supportée */
+	errno = ENOTSUP;
+	return -1;
+}
+
+int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
+	/* Extension Real-Time non supportée */
+	errno = ENOTSUP;
+	return -1;
+}
 
 #endif /* MA__LIBPTHREAD */

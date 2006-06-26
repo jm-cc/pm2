@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define __USE_GNU
 #include <dlfcn.h>
 
 extern int toto;

@@ -16,6 +16,7 @@
 
 
 /****************************************************************/
+#include"time.h"
 
 #section macros
 
@@ -31,6 +32,8 @@ enum
 #define MARCEL_CREATE_DETACHED	MARCEL_CREATE_DETACHED
 };
 
+#define MARCEL_CREATE_DETACHSTATE_INVALID -1
+
 enum
 {
   MARCEL_INHERIT_SCHED,
@@ -39,20 +42,14 @@ enum
 #define MARCEL_EXPLICIT_SCHED	MARCEL_EXPLICIT_SCHED
 };
 
+#define MARCEL_INHERITSCHED_INVALID -1
+
 enum
 {
   MARCEL_SCOPE_SYSTEM,
 #define MARCEL_SCOPE_SYSTEM	MARCEL_SCOPE_SYSTEM
   MARCEL_SCOPE_PROCESS
 #define MARCEL_SCOPE_PROCESS	MARCEL_SCOPE_PROCESS
-};
-
-enum
-{
-  MARCEL_PROCESS_PRIVATE,
-#define MARCEL_PROCESS_PRIVATE	MARCEL_PROCESS_PRIVATE
-  MARCEL_PROCESS_SHARED
-#define MARCEL_PROCESS_SHARED	MARCEL_PROCESS_SHARED
 };
 
 /* Cancellation */
@@ -79,8 +76,7 @@ enum
 
 
 /****************************************************************/
-/* 
- */
+
 #section types
 #depend "marcel_utils.h[types]"
 #depend "tbx_compiler.h"
@@ -129,6 +125,22 @@ static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 }
 
 #section functions
+
+/**********************set/getconcurrency**********************/
+DEC_MARCEL_POSIX(int, setconcurrency, (int newlevel) __THROW);
+DEC_MARCEL_POSIX(int, getconcurrency, (void) __THROW);
+/******************set/testcancelstate/type/  *****************/
+DEC_MARCEL_POSIX(int, setcancelstate,(int state, int *oldstate) __THROW);
+DEC_MARCEL_POSIX(int, setcanceltype,(int type, int *oldtype) __THROW);
+DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
+/******************set/getschedparam*****************/
+DEC_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
+                                     __const struct marcel_sched_param *__restrict param) __THROW);
+DEC_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
+                                     struct marcel_sched_param *__restrict param) __THROW);
+/******************getcpuclockid*******************************/
+DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
+
 void marcel_freeze(marcel_t *pids, int nb);
 void marcel_unfreeze(marcel_t *pids, int nb);
 
@@ -178,6 +190,11 @@ __tbx_extern_inline_body__(
 
 #section marcel_macros
 #define ma_thread_preemptible() (!SELF_GETMEM(not_preemptible))
+
+/****************************types thread************************/
+#define pthread_t lpt_t 
+#define lpt_t pmarcel_t
+#define pmarcel_t marcel_t
 
 #section structures
 /* Cleanup buffers */
@@ -283,7 +300,9 @@ extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,
 
 extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
-//#endif
+//#endif//int pthread_setconcurrency(int new_level); 
+
+
 
 /* Guarantee that the initialization function INIT_ROUTINE will be called
    only once, even if marcel_once is executed several times with the

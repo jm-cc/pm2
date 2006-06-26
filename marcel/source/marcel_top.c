@@ -15,7 +15,6 @@
  */
 
 
-#define _GNU_SOURCE
 #include "marcel.h"
 #include "tbx_compiler.h"
 
@@ -63,7 +62,9 @@ static char *get_holder_name(ma_holder_t *h, char *buf, int size) {
 static void printtask(marcel_task_t *t) {
 	unsigned long utime;
 	char state;
+#ifdef MA__BUBBLES
 	char buf1[32];
+#endif
 	char buf2[32];
 	char buf3[32];
 	unsigned long cpu; /* en pour mille */

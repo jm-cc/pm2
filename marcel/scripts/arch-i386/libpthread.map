@@ -146,6 +146,14 @@ GLIBC_2.3.4 {
     pthread_getaffinity_np; pthread_setaffinity_np;
     pthread_setschedprio;
 } GLIBC_2.3.3;
+GLIBC_2.4 {
+  global:
+    pthread_mutexattr_getrobust_np; pthread_mutexattr_setrobust_np;
+    pthread_mutex_consistent_np;
+    pthread_mutexattr_getprotocol; pthread_mutexattr_setprotocol;
+    pthread_mutexattr_getprioceiling; pthread_mutexattr_setprioceiling;
+    pthread_mutex_getprioceiling; pthread_mutex_setprioceiling;
+} GLIBC_2.3.4;
 GLIBC_PRIVATE {
   global:
     __pthread_clock_gettime; __pthread_clock_settime;

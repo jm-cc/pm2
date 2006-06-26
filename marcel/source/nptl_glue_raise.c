@@ -22,11 +22,11 @@ static inline _syscall0(pid_t,gettid)
 static inline _syscall2(int, tkill, int, tid, int, sig)
 //_syscall3(int, tgkill, int, tgid, int, tid, int, sig)
 
-int raise (int sig)
-{
-	//pid_t pid=getpid();
-	pid_t selftid=gettid();
-	return tkill(selftid, sig);
-}
+/* int raise (int sig) */
+/* { */
+/* 	//pid_t pid=getpid(); */
+/* 	pid_t selftid=gettid(); */
+/* 	return tkill(selftid, sig); */
+/* } */
 
 #endif /* MA__LIBPTHREAD */

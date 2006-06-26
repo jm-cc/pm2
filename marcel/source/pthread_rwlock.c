@@ -22,12 +22,8 @@
 #include "marcel.h" //VD:
 #include "marcel_for_pthread.h"
 
-#ifdef __USE_UNIX98
 #ifdef MA__LIBPTHREAD // ST:
 
-#ifdef LINUX_SYS // AD:
-#include <bits/libc-lock.h>
-#endif
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -250,10 +246,10 @@ DEF_MARCEL_POSIX(int,
 })
 //VD:strong_alias (__marcel_rwlock_init, marcel_rwlock_init)
 DEF_PTHREAD(int, rwlock_init, (pthread_rwlock_t * __restrict rwlock,
-			       const pthread_rwlockattr_t * __restrict attr),
+			       __const pthread_rwlockattr_t * __restrict attr),
 		(rwlock, attr))
 DEF___PTHREAD(int, rwlock_init, (pthread_rwlock_t * __restrict rwlock,
-			       const pthread_rwlockattr_t * __restrict attr),
+			       __const pthread_rwlockattr_t * __restrict attr),
 		(rwlock, attr))
 
 
@@ -282,7 +278,8 @@ DEF_MARCEL_POSIX(int,
 {
   marcel_descr self = NULL;
   marcel_readlock_info *existing;
-  int out_of_mem, have_lock_already;
+  int out_of_mem;
+  int have_lock_already;
 
   have_lock_already = rwlock_have_already(&self, rwlock,
 					  &existing, &out_of_mem);
@@ -368,7 +365,7 @@ DEF_MARCEL_POSIX(int,
 	  if (was_on_queue)
 	    {
 	      //VD:__marcel_set_own_extricate_if (self, 0);
-	      return ETIMEDOUT;
+          return ETIMEOUT;
 	    }
 
 	  /* Eat the outstanding restart() from the signaller */
@@ -392,14 +389,18 @@ DEF_MARCEL_POSIX(int,
   return 0;
 })
 //VD:strong_alias (__marcel_rwlock_timedrdlock, marcel_rwlock_timedrdlock)
+DEF_PTHREAD(int, rwlock_timedrdlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_timedrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 #endif
+
 
 DEF_MARCEL_POSIX(int,
 		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock), (rwlock),
 {
   marcel_descr self = __thread_self();
   marcel_readlock_info *existing;
-  int out_of_mem, have_lock_already;
+  int out_of_mem;
+  int have_lock_already;
   int retval = EBUSY;
 
   have_lock_already = rwlock_have_already(&self, rwlock,
@@ -513,7 +514,7 @@ __marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
 	  if (was_on_queue)
 	    {
 	      //VD:__marcel_set_own_extricate_if (self, 0);
-	      return ETIMEDOUT;
+          return ETIMEDOUT;
 	    }
 
 	  /* Eat the outstanding restart() from the signaller */
@@ -521,6 +522,9 @@ __marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
 	}
     }
 }
+DEF_PTHREAD(int, rwlock_timedwrlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_timedwrlock, (pthread_rwlock_t *rwlock), (rwlock))
+
 strong_alias (__marcel_rwlock_timedwrlock, marcel_rwlock_timedwrlock)
 #endif
 
@@ -639,8 +643,8 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-DEF_PTHREAD(int, rwlockattr_init, (pthread_rwlockattr_t *attr), (attr))
 
+DEF_PTHREAD(int, rwlockattr_init, (pthread_rwlockattr_t *attr), (attr))
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr),
@@ -661,11 +665,11 @@ DEF_MARCEL_POSIX(int,
   *pshared = attr->__pshared;
   return 0;
 })
+
 DEF_PTHREAD(int, rwlockattr_getpshared,
 		 (const pthread_rwlockattr_t * __restrict attr,
 		  int * __restrict pshared),
 		 (attr, pshared))
-
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_setpshared,
@@ -682,9 +686,9 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
+
 DEF_PTHREAD(int, rwlockattr_setpshared,
 		 (pthread_rwlockattr_t *attr, int pshared), (attr, pshared))
-
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_getkind_np,
@@ -693,9 +697,9 @@ DEF_MARCEL_POSIX(int,
   *pref = attr->__lockkind;
   return 0;
 })
+
 DEF_PTHREAD(int, rwlockattr_getkind_np,
 		 (const pthread_rwlockattr_t *attr, int *pref), (attr, pref))
-
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref),
@@ -711,9 +715,8 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
+
 DEF_PTHREAD(int, rwlockattr_setkind_np, (pthread_rwlockattr_t *attr, int pref),
 		 (attr, pref))
 
-
 #endif // MA__LIBPTHREAD (ST:)
-#endif // __USE_UNIX98

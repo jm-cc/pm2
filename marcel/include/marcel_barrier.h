@@ -25,7 +25,9 @@ struct marcel_barrier {
 	unsigned num;
 	unsigned curwait;
 };
-struct marcel_barrierattr { int foo; };
+struct marcel_barrierattr { 
+      int __pshared;
+};
 
 #section types
 #depend "[structures]"
@@ -34,13 +36,21 @@ typedef struct marcel_barrierattr marcel_barrierattr_t, pmarcel_barrierattr_t;
 
 #section functions
 DEC_MARCEL_POSIX(int, barrier_init, (marcel_barrier_t * __restrict b,
-		const marcel_barrierattr_t * __restrict attr, unsigned num));
+                                     const marcel_barrierattr_t * __restrict attr, unsigned num));
+DEC_POSIX(int, barrier_destroy, (marcel_barrier_t *b));
+static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b);
 unsigned marcel_barrier_begin(marcel_barrier_t *b);
 void marcel_barrier_end(marcel_barrier_t *b, unsigned num);
 DEC_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b));
-static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b);
-int pmarcel_barrier_destroy(marcel_barrier_t *b);
-#define pmarcel_barrier_destroy(b) marcel_barrier_destroy(b)
+
+/************************barrierattr*****************************/
+DEC_MARCEL_POSIX(int,barrierattr_init,(marcel_barrierattr_t *attr));
+DEC_MARCEL_POSIX(int,barrierattr_destroy,(marcel_barrierattr_t *attr));
+DEC_MARCEL_POSIX(int,barrierattr_setpshared,(marcel_barrierattr_t *attr,int pshared));
+DEC_MARCEL_POSIX(int, barrierattr_getpshared,(const marcel_barrierattr_t *__restrict attr, 
+                 int *__restrict pshared));
+/****************************************************************/
+
 #section inline
 static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b)
 {
@@ -52,3 +62,4 @@ static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b)
 /* -1 is distinct from 0 and all errno constants */
 #define MARCEL_BARRIER_SERIAL_THREAD (-1)
 #define PMARCEL_BARRIER_SERIAL_THREAD MARCEL_BARRIER_SERIAL_THREAD
+

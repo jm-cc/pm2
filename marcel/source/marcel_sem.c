@@ -35,7 +35,7 @@ DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
   marcel_sem_init(s, initial);
   return 0;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_init), sem_init, (sem_t *s, int pshared, unsigned int initial), (pshared, initial))
+DEF_C(int,sem_init, (sem_t *s, int pshared, unsigned int initial), (pshared, initial))
 
 DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
 {
@@ -48,7 +48,7 @@ DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
   ma_spin_unlock_bh(&s->lock);
   return res;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_destroy), sem_destroy, (sem_t *s), (s))
+DEF_C(int, sem_destroy, (sem_t *s), (s))
 
 void marcel_sem_P(marcel_sem_t *s)
 {
@@ -85,7 +85,7 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
   marcel_sem_P(s);
   return 0;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_wait), sem_wait, (sem_t *s), (s))
+DEF_C(int, sem_wait, (sem_t *s), (s))
 
 int marcel_sem_try_P(marcel_sem_t *s)
 {
@@ -117,7 +117,7 @@ DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
   }
   return 0;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_trywait), sem_trywait, (sem_t *s), (s))
+DEF_C(int, sem_trywait, (sem_t *s), (s))
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
@@ -156,7 +156,34 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 
   LOG_OUT();
 }
-// TODO: pmarcel_sem_timedwait
+
+/*******************sem_timedwait**********************/
+DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict sem,
+   const struct timespec *__restrict abs_timeout),(sem,abs_timeout),
+{
+#ifdef MA_DEBUG
+   if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000)
+   {
+      errno = EINVAL;
+      return -1;
+   }
+#endif
+   MARCEL_EXCEPTION_BEGIN
+     marcel_sem_timed_P(sem,(abs_timeout->tv_nsec/1000000)+(abs_timeout->tv_sec*1000));
+   MARCEL_EXCEPTION
+     MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)
+       errno = ETIMEDOUT;
+       return -1;
+   MARCEL_EXCEPTION_END
+   return 0;
+})
+
+DEF_C(int,sem_timedwait,(sem_t *__restrict sem,
+      const struct timespec *__restrict abs_timeout),(sem,abs_timeout));
+DEF___C(int,sem_timedwait,(sem_t *__restrict sem,
+      const struct timespec *__restrict abs_timeout),(sem,abs_timeout));
+
+
 
 void marcel_sem_V(marcel_sem_t *s)
 {
@@ -187,7 +214,7 @@ DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
   marcel_sem_V(s);
   return 0;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_post), sem_post, (sem_t *s), (s))
+DEF_C(int, sem_post, (sem_t *s), (s))
 
 DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
 {
@@ -196,7 +223,7 @@ DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sva
   ma_spin_unlock_bh(&s->lock);
   return 0;
 })
-DEF_STRONG_T(int, POSIX_NAME(sem_getvalue), sem_getvalue, (sem_t * __restrict s, int * __restrict sval), (s, sval))
+DEF_C(int, sem_getvalue, (sem_t * __restrict s, int * __restrict sval), (s, sval))
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {
@@ -211,4 +238,34 @@ void marcel_sem_unlock_all(marcel_sem_t *s)
 		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
 	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 }
+
+/********************sem_close**************************/
+DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem),(sem),
+{
+   errno = ENOTSUP;
+   return -1;
+})
+
+DEF_C(int,sem_close,(sem_t *sem),(sem))
+DEF___C(int,sem_close,(sem_t *sem),(sem))
+
+/********************sem_open***************************/
+DEF_POSIX(int,sem_open,(const char *name, int flags,...),(name,flags,...),
+{
+   errno = ENOTSUP;
+   return -1;
+})
+
+DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
+DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
+
+/*******************sem_unlink**************************/
+DEF_POSIX(int,sem_unlink,(const char *name, int flags),(name,flags,...),
+{
+   errno = ENOTSUP;
+   return -1;
+})
+
+DEF_C(int,sem_unlink,(const char *name),(name))
+DEF___C(int,sem_unlink,(const char *name),(name))
 

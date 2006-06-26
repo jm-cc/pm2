@@ -39,6 +39,8 @@
 #define LPT_NAME(symbol) PREFIX_SYMBOL(symbol, LPT_PREFIX, )
 #define PTHREAD_NAME(symbol) PREFIX_SYMBOL(symbol, PTHREAD_PREFIX, )
 #define __PTHREAD_NAME(symbol) PREFIX_SYMBOL(symbol, PTHREAD_PREFIX, __)
+#define LIBC_NAME(symbol) PREFIX_SYMBOL(symbol, , )
+#define __LIBC_NAME(symbol) PREFIX_SYMBOL(symbol, , __)
 
 #define PREFIX_SYMBOL(symbol, p3, p1) _PREFIX_SYMBOL(symbol, p1, NAME_PREFIX, p3)
 #define _PREFIX_SYMBOL(symbol, p1, p2, p3) __PREFIX_SYMBOL(symbol, p1, p2, p3)
@@ -231,6 +233,30 @@
 #define DEF___PTHREAD(rtype, name, proto, args) \
   DEF___PTHREAD_STRONG(rtype, name, proto, args)
 
+#ifdef MA__LIBPTHREAD
+#define DEF_C_STRONG(rtype, name, proto, args) \
+  DEF_STRONG_T(rtype, POSIX_NAME(name), LIBC_NAME(name), proto, args)
+#define DEF_C_WEAK(rtype, name, proto, args) \
+  DEF_WEAK_T(rtype, POSIX_NAME(name), LIBC_NAME(name), proto, args)
+#define DEF___C_STRONG(rtype, name, proto, args) \
+  extern __typeof__(POSIX_NAME(name)) __LIBC_NAME(name); \
+  DEF_STRONG_T(rtype, POSIX_NAME(name), __LIBC_NAME(name), proto, args)
+#define DEF___C_WEAK(rtype, name, proto, args) \
+  extern __typeof__(POSIX_NAME(name)) __LIBC_NAME(name); \
+  DEF_WEAK_T(rtype, POSIX_NAME(name), __LIBC_NAME(name), proto, args)
+#else
+#define DEF_C_STRONG(rtype, name, proto, args)
+#define DEF_C_WEAK(rtype, name, proto, args)
+#define DEF___C_STRONG(rtype, name, proto, args)
+#define DEF___C_WEAK(rtype, name, proto, args)
+#endif
+
+#define DEF_C(rtype, name, proto, args) \
+  DEF_C_STRONG(rtype, name, proto, args)
+#define DEF___C(rtype, name, proto, args) \
+  DEF___C_STRONG(rtype, name, proto, args)
+
+#ifdef MA__LIBPTHREAD
 #define DEF_LIBPTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF_LIBPTHREAD_WEAK(rtype, name, proto, args) \
@@ -241,11 +267,40 @@
 #define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args) \
   extern __typeof__(LPT_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
+#else
+#define DEF_LIBPTHREAD_STRONG(rtype, name, proto, args)
+#define DEF_LIBPTHREAD_WEAK(rtype, name, proto, args)
+#define DEF___LIBPTHREAD_STRONG(rtype, name, proto, args)
+#define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args)
+#endif
 
 #define DEF_LIBPTHREAD(rtype, name, proto, args) \
   DEF_LIBPTHREAD_STRONG(rtype, name, proto, args)
 #define DEF___LIBPTHREAD(rtype, name, proto, args) \
   DEF___LIBPTHREAD_STRONG(rtype, name, proto, args)
+
+#ifdef MA__LIBPTHREAD
+#define DEF_LIBC_STRONG(rtype, name, proto, args) \
+  DEF_STRONG_T(rtype, LPT_NAME(name), LIBC_NAME(name), proto, args)
+#define DEF_LIBC_WEAK(rtype, name, proto, args) \
+  DEF_WEAK_T(rtype, LPT_NAME(name), LIBC_NAME(name), proto, args)
+#define DEF___LIBC_STRONG(rtype, name, proto, args) \
+  extern __typeof__(LPT_NAME(name)) __LIBC_NAME(name); \
+  DEF_STRONG_T(rtype, LPT_NAME(name), __LIBC_NAME(name), proto, args)
+#define DEF___LIBC_WEAK(rtype, name, proto, args) \
+  extern __typeof__(LPT_NAME(name)) __LIBC_NAME(name); \
+  DEF_WEAK_T(rtype, LPT_NAME(name), __LIBC_NAME(name), proto, args)
+#else
+#define DEF_LIBC_STRONG(rtype, name, proto, args)
+#define DEF_LIBC_WEAK(rtype, name, proto, args)
+#define DEF___LIBC_STRONG(rtype, name, proto, args)
+#define DEF___LIBC_WEAK(rtype, name, proto, args)
+#endif
+
+#define DEF_LIBC(rtype, name, proto, args) \
+  DEF_LIBC_STRONG(rtype, name, proto, args)
+#define DEF___LIBC(rtype, name, proto, args) \
+  DEF___LIBC_STRONG(rtype, name, proto, args)
 
 /****************************************************************/
 /* Fonctions internes à marcel

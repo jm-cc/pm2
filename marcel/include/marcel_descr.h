@@ -24,6 +24,7 @@
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;
 typedef p_marcel_task_t marcel_t, pmarcel_t;
+typedef struct marcel_sched_param marcel_sched_param_t;
 
 #section marcel_macros
 
@@ -37,6 +38,7 @@ typedef p_marcel_task_t marcel_t, pmarcel_t;
 
 #define MARCEL_SELF (__marcel_self())
 #define marcel_current (__marcel_self())
+
 
 #section marcel_structures
 #depend "asm/linux_atomic.h[marcel_types]"
@@ -157,6 +159,13 @@ struct marcel_task {
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; // Doit rester le _dernier_ champ
 #endif
+
+/*********signaux***********/
+      sigset_t sigpending;
+      sigset_t curmask;
+/*********attributs*********/
+      int cancelstate;
+      int canceltype;
 };
 
 #section inline

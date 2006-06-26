@@ -14,7 +14,6 @@
  * General Public License for more details.
  */
 
-#define _GNU_SOURCE /* pour sched_setaffinity sous linux */
 #include "marcel.h"
 #include <errno.h>
 

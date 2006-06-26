@@ -55,6 +55,11 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 	.inheritholder = tbx_false, \
 }
 
+#define MARCEL_SCHED_ATTR_DESTROYER { \
+	.init_holder = NULL, \
+	.prio = -1, \
+	.inheritholder = tbx_false, \
+}
 #section functions
 int marcel_sched_attr_init(marcel_sched_attr_t *attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0
@@ -292,6 +297,8 @@ struct marcel_sched_param {
 #ifndef sched_priority
 #define sched_priority __sched_priority
 #endif
+
+//#define sched_param marcel_sched_param
 
 #section functions
 int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p);

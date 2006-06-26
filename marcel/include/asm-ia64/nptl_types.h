@@ -103,7 +103,6 @@ typedef unsigned int lpt_key_t;
 typedef int lpt_once_t;
 
 
-#if defined __USE_UNIX98 || defined __USE_XOPEN2K
 /* Data structure for read-write lock variable handling.  The
    structure of the attribute type is not exposed on purpose.  */
 typedef union
@@ -133,10 +132,8 @@ typedef union
   char __size[__SIZEOF_LPT_RWLOCKATTR_T];
   long int __align;
 } lpt_rwlockattr_t;
-#endif
 
 
-#ifdef __USE_XOPEN2K
 /* POSIX spinlock data type.  */
 typedef volatile int lpt_spinlock_t;
 
@@ -154,6 +151,5 @@ typedef union
   char __size[__SIZEOF_LPT_BARRIERATTR_T];
   int __align;
 } lpt_barrierattr_t;
-#endif
 
 

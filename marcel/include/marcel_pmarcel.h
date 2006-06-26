@@ -131,13 +131,13 @@ enum
 #define PMARCEL_ONCE_INIT 0
 
 
-//#ifdef __USE_XOPEN2K
+#ifdef __USE_XOPEN2K
 /* Value returned by 'pmarcel_barrier_wait' for one of the threads after
    the required number of threads have called this function.
    -1 is distinct from 0 and all errno constants */
 // defined in marcel/include/marcel_barrier.h
 //# define PMARCEL_BARRIER_SERIAL_THREAD -1
-//#endif
+#endif
 
 
 __TBX_BEGIN_DECLS
@@ -275,7 +275,6 @@ extern int pmarcel_attr_getstacksize (__const pmarcel_attr_t *__restrict
 extern int pmarcel_attr_setstacksize (pmarcel_attr_t *__attr,
 				      size_t __stacksize) __THROW;
 
-#ifdef __USE_XOPEN2K
 /* Return the previously set address for the stack.  */
 extern int pmarcel_attr_getstack (__const pmarcel_attr_t *__restrict __attr,
 				  void **__restrict __stackaddr,
@@ -286,7 +285,6 @@ extern int pmarcel_attr_getstack (__const pmarcel_attr_t *__restrict __attr,
    address will make the implementation on some architectures impossible.  */
 extern int pmarcel_attr_setstack (pmarcel_attr_t *__attr, void *__stackaddr,
 				  size_t __stacksize) __THROW;
-#endif
 
 #ifdef __USE_GNU
 /* Get thread attributes corresponding to the already running thread TH.  */
@@ -309,13 +307,13 @@ extern int pmarcel_getschedparam (pmarcel_t __target_thread,
      __THROW;
 
 
-#ifdef __USE_UNIX98
+//#ifdef __USE_UNIX98
 /* Determine level of concurrency.  */
 extern int pmarcel_getconcurrency (void) __THROW;
 
 /* Set new concurrency level to LEVEL.  */
 extern int pmarcel_setconcurrency (int __level) __THROW;
-#endif
+//#endif
 
 #ifdef __USE_GNU
 /* Yield the processor to another thread or process.
@@ -332,8 +330,8 @@ extern int pmarcel_yield (void) __THROW;
    only once, even if pmarcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to PMARCEL_ONCE_INIT.  */
-//extern int pmarcel_once (pmarcel_once_t *__once_control,
-//			 void (*__init_routine) (void)) __THROW;
+extern int pmarcel_once (pmarcel_once_t *__once_control,
+			 void (*__init_routine) (void)) __THROW;
 
 
 /* Functions for handling cancellation.  */
@@ -404,7 +402,7 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 /* Les mutex sont déclarés dans marcel_mutex.h.m4 */
 /**************************************************/
 
-#ifdef __USE_UNIX98
+//#ifdef __USE_UNIX98
 /* Functions for handling read-write locks.  */
 
 /* Initialize read-write lock RWLOCK using attributes ATTR, or use
@@ -471,7 +469,7 @@ extern int pmarcel_rwlockattr_getkind_np (__const pmarcel_rwlockattr_t *
 /* Set reader/write preference.  */
 extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 					  int __pref) __THROW;
-#endif
+//#endif
 
 
 /********************************************************/
@@ -482,7 +480,6 @@ extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 //#ifdef __USE_XOPEN2K
 /* Functions to handle spinlocks.  */
 
-#if 0
 // not implemented yet
 /* Initialize the spinlock LOCK.  If PSHARED is nonzero the spinlock can
    be shared between different processes.  */
@@ -500,7 +497,6 @@ extern int pmarcel_spin_trylock (pmarcel_spinlock_t *__lock) __THROW;
 
 /* Release spinlock LOCK.  */
 extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
-#endif
 
 
 /* Functions to handle barriers.  */

@@ -116,10 +116,39 @@ GLIBC_2.2.6 {
   global:
     __nanosleep;
 } GLIBC_2.2.3;
+GLIBC_2.3.2 {
+  global:
+    pthread_cond_init; pthread_cond_destroy;
+    pthread_cond_signal; pthread_cond_broadcast;
+    pthread_cond_wait; pthread_cond_timedwait;
+} GLIBC_2.2.6;
 GLIBC_2.3.3 {
   global:
     __nanosleep;
-} GLIBC_2.2.6;
+    __pthread_cleanup_routine;
+    __pthread_register_cancel; __pthread_unregister_cancel;
+    __pthread_register_cancel_defer; __pthread_unregister_cancel_restore;
+    __pthread_unwind_next;
+    pthread_attr_getaffinity_np; pthread_attr_setaffinity_np;
+    pthread_barrierattr_getpshared;
+    pthread_condattr_getclock; pthread_condattr_setclock;
+    pthread_getaffinity_np; pthread_setaffinity_np;
+    pthread_tryjoin_np; pthread_timedjoin_np;
+} GLIBC_2.3.2;
+GLIBC_2.3.4 {
+  global:
+    pthread_attr_getaffinity_np; pthread_attr_setaffinity_np;
+    pthread_getaffinity_np; pthread_setaffinity_np;
+    pthread_setschedprio;
+} GLIBC_2.3.3;
+GLIBC_2.4 {
+  global:
+    pthread_mutexattr_getrobust_np; pthread_mutexattr_setrobust_np;
+    pthread_mutex_consistent_np;
+    pthread_mutexattr_getprotocol; pthread_mutexattr_setprotocol;
+    pthread_mutexattr_getprioceiling; pthread_mutexattr_setprioceiling;
+    pthread_mutex_getprioceiling; pthread_mutex_setprioceiling;
+} GLIBC_2.3.4;
 GLIBC_PRIVATE {
   global:
     __libc_internal_tsd_address; __libc_alloca_cutoff;

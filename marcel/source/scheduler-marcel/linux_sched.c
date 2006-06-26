@@ -35,12 +35,6 @@
  */
 
 
-/* Pour avoir pmarcel_yield */
-#define _GNU_SOURCE
-#if defined(LINUX_SYS) || defined(GNU_SYS) || defined(FREEBSD_SYS)
-#  include <features.h>
-#endif
-
 
 #include "marcel.h"
 
@@ -1963,6 +1957,7 @@ need_resched:
 
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
+
 DEF_MARCEL_POSIX(int, yield, (void), (),
 {
   LOG_IN();

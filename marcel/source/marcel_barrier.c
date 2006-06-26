@@ -15,6 +15,7 @@
  */
 
 #include "marcel.h"
+#include <errno.h>
 
 DEF_MARCEL_POSIX(int, barrier_init, (marcel_barrier_t * __restrict b,
 		const marcel_barrierattr_t * __restrict attr, unsigned num),
@@ -26,6 +27,20 @@ DEF_MARCEL_POSIX(int, barrier_init, (marcel_barrier_t * __restrict b,
 	b->curwait = 0;
 	return 0;
 })
+
+DEF_POSIX(int, barrier_destroy, (pmarcel_barrier_t *b),(b),
+{
+#ifdef MA__DEBUG
+    if (b->curwait == 1)
+    {
+        errno = EBUSY;
+        return -1;
+    }
+#endif
+    return marcel_barrier_destroy(b);
+})
+
+
 unsigned marcel_barrier_begin(marcel_barrier_t *b) {
 	unsigned num;
 	marcel_mutex_lock(&b->mutex);
@@ -42,6 +57,7 @@ void marcel_barrier_end(marcel_barrier_t *b, unsigned num) {
 		marcel_cond_wait(&b->cond,&b->mutex);
 	marcel_mutex_unlock(&b->mutex);
 }
+
 DEF_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b), (b),
 {
 	int ret = 0;
@@ -54,4 +70,65 @@ DEF_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b), (b),
 		marcel_cond_wait(&b->cond,&b->mutex);
 	marcel_mutex_unlock(&b->mutex);
 	return ret;
+})
+
+
+/************************barrierattr*****************************/
+DEF_POSIX(int,barrierattr_init,(marcel_barrierattr_t *attr),(attr),
+{
+    attr->__pshared = PTHREAD_PROCESS_PRIVATE; 
+    return 0; 
+})
+
+DEF_POSIX(int,barrierattr_destroy,(marcel_barrierattr_t *attr),(attr),
+{
+    attr->__pshared = -1;
+    return 0;
+})
+
+
+DEF_POSIX(int,barrierattr_setpshared,(marcel_barrierattr_t *attr,
+                 int pshared),(attr,pshared),
+{
+#ifdef MA__DEBUG
+    if ((pshared != PTHREAD_PROCESS_SHARED)
+      &&(pshared != PTHREAD_PROCESS_PRIVATE))
+    {
+        errno = EINVAL;
+        return -1;
+    } 
+#endif
+    if (pshared != PTHREAD_PROCESS_PRIVATE)
+    {
+        errno = ENOTSUP;
+        return -1;
+    } 
+    attr->__pshared = pshared;
+    return 0;
+}) 
+
+
+DEF_POSIX(int, barrierattr_getpshared,(const marcel_barrierattr_t *
+                 __restrict attr, int *__restrict pshared),(attr,pshared),
+{
+#ifdef MA__DEBUG
+    if (pshared == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    if ((attr->__pshared != PTHREAD_PROCESS_SHARED)
+      &&(attr->__pshared != PTHREAD_PROCESS_PRIVATE))
+    {
+        errno = EINVAL;
+        return -1;
+    } 
+    if (attr->__pshared != PTHREAD_PROCESS_PRIVATE)
+    {
+        errno = ENOTSUP;
+        return -1;
+    } 
+#endif 
+    *pshared = attr-> __pshared;
+    return 0;
 })

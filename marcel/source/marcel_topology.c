@@ -77,6 +77,8 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	}
 };
 
+int ma_vp_node[MA_NR_LWPS];
+
 #undef marcel_topo_vp_level
 struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
 
@@ -117,8 +119,6 @@ static struct marcel_topo_level *marcel_topo_core_level;
 #undef marcel_topo_node_level
 struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
-
-int ma_vp_node[MA_NR_LWPS];
 
 #ifdef LINUX_SYS
 #define PROCESSOR	"processor\t: "

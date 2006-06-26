@@ -329,6 +329,8 @@ void marcel_leave_blocking_section(void);
 #define ma_local_softirq_pending() \
 	ma_topo_vpdata(__ma_get_lwp_var(vp_level),softirq_pending)
 
+#define ma_lwp_node(lwp)	ma_vp_node[LWP_NUMBER(lwp)]
+
 #section marcel_macros
 
 #define MA_DEFINE_LWP_NOTIFIER_START(name, help, \

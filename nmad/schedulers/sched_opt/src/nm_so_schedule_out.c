@@ -124,7 +124,7 @@ nm_so_search_next(struct nm_gate *p_gate){
             nm_iov_append_buf(p_core, p_pw, so_rdv,
                               sizeof(struct nm_so_header));
 
-            //printf("--->ajout du rdv du protocole\n");
+            ///printf("--->ajout du rdv du protocole\n");
             nm_iov_append_buf(p_core, p_pw, p_rdv,
                               nm_rdv_rdv_rq_size());
 
@@ -407,7 +407,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 #endif
 
     if(p_pw->sched_priv){
-        printf("PETIT PACK ENVOYé \n\n");
+        //printf("PETIT PACK ENVOYé \n\n");
 
         idx++;
         v_nb--;
@@ -416,7 +416,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
             nm_so_header_t * header = p_pw->v[idx].iov_base;
 
             if(header->proto_id == nm_pi_rdv_req){
-                //printf("-->Envoi d'un rdv\n");
+                printf("--------------->Envoi d'un rdv\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_req];
 
                 idx++;
@@ -427,7 +427,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
                 v_nb-=2;
 
             } else if(header->proto_id == nm_pi_rdv_ack){
-                //printf("-->Envoi d'un ack\n");
+                printf("------------->Envoi d'un ack\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_ack];
 
                 idx++;
@@ -451,7 +451,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 
 
     } else {
-        //printf("LARGE PACK ENVOYé - p_pw = %p\n\n", p_pw);
+        printf("----------------LARGE PACK ENVOYé - p_pw = %p\n\n", p_pw);
 
         p_proto	= p_core->p_proto_array[p_pw->proto_id];
         if (!p_proto) {

@@ -13,6 +13,11 @@
  * General Public License for more details.
  */
 
+#ifndef NM_SO_PUBLIC_H
+#define NM_SO_PUBLIC_H
 
 int
 nm_so_load(struct nm_sched_ops *p_ops);
+
+#endif
+

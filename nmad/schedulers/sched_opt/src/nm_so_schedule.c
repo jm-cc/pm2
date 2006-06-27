@@ -62,7 +62,7 @@ nm_so_init_pre_posted(struct nm_core *p_core,
 
     p_priv->nb_ready_pre_posted_wraps = nb_pre_posted;
     p_priv->ready_pre_posted_wraps
-        = nm_so_heap_create(nb_pre_posted);
+        = nm_so_stack_create(nb_pre_posted);
 
     for(i = 0; i < nb_pre_posted; i++){
         /* Allocation of the packet wrapper */
@@ -77,7 +77,7 @@ nm_so_init_pre_posted(struct nm_core *p_core,
         nm_iov_append_buf(p_core, p_pw,
                           buffer, AGREGATED_PW_MAX_SIZE);
 
-        nm_so_heap_push(p_priv->ready_pre_posted_wraps, p_pw);
+        nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
     }
 }
 
@@ -144,13 +144,13 @@ nm_so_init_agregation_pw(struct nm_core *p_core,
     int i;
 
     p_priv->nb_ready_wraps = nb_pw;
-    p_priv->ready_wraps = nm_so_heap_create(nb_pw);
+    p_priv->ready_wraps = nm_so_stack_create(nb_pw);
 
     for(i = 0; i < nb_pw; i++){
         p_pw = nm_so_init_pw(p_core, p_priv,
-                             NB_ENTRIES_IN_AGREGATED_PW);
+                             AGREGATED_PW_MAX_NB_SEG);
 
-        nm_so_heap_push(p_priv->ready_wraps, p_pw);
+        nm_so_stack_push(p_priv->ready_wraps, p_pw);
     }
 }
 
@@ -397,8 +397,8 @@ struct nm_pkt_wrap *
 nm_so_take_agregation_pw(struct nm_sched *p_sched){
     struct nm_so_sched *p_priv = p_sched->sch_private;
 
-    //printf("nm_so_take_agregation_pw - heap_pop\n");
-    return nm_so_heap_pop(p_priv->ready_wraps);
+    //printf("nm_so_take_agregation_pw - stack_pop\n");
+    return nm_so_stack_pop(p_priv->ready_wraps);
 }
 
 void
@@ -437,18 +437,18 @@ nm_so_release_agregation_pw(struct nm_sched *p_sched,
 
     so_pw->nb_agregated_pws = 0;
 
-    //printf("nm_so_release_agregation_pw - heap_push\n");
+    //printf("nm_so_release_agregation_pw - stack_push\n");
 
-    nm_so_heap_push(p_priv->ready_wraps, p_pw);
+    nm_so_stack_push(p_priv->ready_wraps, p_pw);
 }
 
 struct nm_pkt_wrap *
 nm_so_take_pre_posted_pw(struct nm_sched *p_sched){
     struct nm_so_sched *p_priv = p_sched->sch_private;
 
-    //printf("nm_so_take_pre_posted_pw - heap_pop\n");
+    //printf("nm_so_take_pre_posted_pw - stack_pop\n");
 
-    return nm_so_heap_pop(p_priv->ready_pre_posted_wraps);
+    return nm_so_stack_pop(p_priv->ready_pre_posted_wraps);
 }
 
 #ifdef CHRONO
@@ -491,9 +491,9 @@ nm_so_release_pre_posted_pw(struct nm_sched *p_sched,
     TBX_GET_TICK(t2);
 #endif
 
-    //printf("nm_so_release_pre_posted_pw - heap_push\n");
+    //printf("nm_so_release_pre_posted_pw - stack_push\n");
 
-    nm_so_heap_push(p_priv->ready_pre_posted_wraps, p_pw);
+    nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
 
 #ifdef CHRONO
     TBX_GET_TICK(t4);

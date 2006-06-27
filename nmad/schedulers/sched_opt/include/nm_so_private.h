@@ -14,13 +14,16 @@
  */
 
 
+#ifndef NM_SO_PRIVATE_H
+#define NM_SO_PRIVATE_H
+
 #include <stdint.h>
 
 #include "nm_protected.h"
-#include "nm_so_heap.h"
+#include "nm_so_stack.h"
 
 #define AGREGATED_PW_MAX_SIZE 32768
-#define NB_ENTRIES_IN_AGREGATED_PW 200
+#define AGREGATED_PW_MAX_NB_SEG 200
 #define SMALL_THRESHOLD 32000
 
 #define NB_CREATED_PRE_POSTED 10
@@ -56,11 +59,11 @@ struct nm_so_sched {
 
     // prêts à être pré-postés en réception
     int nb_ready_pre_posted_wraps;
-    nm_so_heap_t ready_pre_posted_wraps;
+    nm_so_stack_t ready_pre_posted_wraps;
 
     // prêts à être utiliser en émission
     int nb_ready_wraps;
-    nm_so_heap_t ready_wraps;
+    nm_so_stack_t ready_wraps;
 
     // headers
     p_tbx_memory_t sched_header_key;
@@ -154,4 +157,4 @@ nm_so_search_and_extract_pw(p_tbx_slist_t list,
                             uint8_t proto_id, uint8_t seq);
 
 
-
+#endif

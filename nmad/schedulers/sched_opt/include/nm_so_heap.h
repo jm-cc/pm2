@@ -13,18 +13,21 @@
  * General Public License for more details.
  */
 
+#ifndef NM_SO_HEAP_H
+#define NM_SO_HEAP_H
 
 typedef struct nm_so_heap * nm_so_heap_t;
 
 struct nm_so_heap *
-nm_so_heap_create(int nb_entries);
+nm_so_stack_create(int nb_entries);
 
 void
-nm_so_heap_push(struct nm_so_heap *heap, void *obj);
+nm_so_stack_push(struct nm_so_heap *heap, void *obj);
 
 void *
-nm_so_heap_pop(struct nm_so_heap *heap);
+nm_so_stack_pop(struct nm_so_heap *heap);
 
 int
-nm_so_heap_length(struct nm_so_heap *heap);
+nm_so_stack_length(struct nm_so_heap *heap);
 
+#endif

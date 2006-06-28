@@ -292,8 +292,8 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
         sum = TBX_TIMING_DELAY(t1, t2);
 
         ns_lat[i] = sum / 2 / param_nb_samples;
-        DISP("(size = %d) ns_lat[%d] = %lf\n",
-             size, i,  ns_lat[i]);
+        //DISP("(size = %d) ns_lat[%d] = %lf\n",
+        //     size, i,  ns_lat[i]);
 
         nb_samples = 0;
         sum = 0.0;
@@ -421,8 +421,8 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
         sum = TBX_TIMING_DELAY(t1, t2);
         ns_lat[i] = sum / 2 /param_nb_samples;
 
-        DISP("(size = %d) ns_lat[%d] = %lf\n",
-             size, i, ns_lat[i]);
+        //DISP("(size = %d) ns_lat[%d] = %lf\n",
+        //     size, i, ns_lat[i]);
 
         nb_samples = 0;
         sum = 0.0;

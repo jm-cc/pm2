@@ -13,31 +13,12 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SO_STACK_H
-#define NM_SO_STACK_H
+#ifndef NM_SO_STRATEGIES_H
+#define NM_SO_STRATEGIES_H
 
-typedef struct nm_so_stack * nm_so_stack_t;
-
-struct nm_so_stack *
-nm_so_stack_create(int nb_entries);
-
-void
-nm_so_stack_free(struct nm_so_stack *stack);
-
-
-void
-nm_so_stack_push(struct nm_so_stack *stack, void *obj);
-
-void *
-nm_so_stack_pop(struct nm_so_stack *stack);
-
-int
-nm_so_stack_size(struct nm_so_stack *stack);
-
-void *
-nm_so_stack_top(struct nm_so_stack *stack);
-
-void *
-nm_so_stack_down(struct nm_so_stack *stack);
+struct nm_pkt_wrap *
+nm_so_strategy_application(struct nm_gate *p_gate,
+                           struct nm_drv *driver,
+                           p_tbx_slist_t pre_list);
 
 #endif

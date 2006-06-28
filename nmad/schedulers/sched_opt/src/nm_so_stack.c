@@ -34,6 +34,12 @@ nm_so_stack_create(int nb_entries){
 }
 
 void
+nm_so_stack_free(struct nm_so_stack *stack){
+    TBX_FREE(stack->obj);
+    TBX_FREE(stack);
+}
+
+void
 nm_so_stack_push(struct nm_so_stack *stack, void *obj){
     assert(stack->next_to_add < stack->nb_entries);
     stack->obj[stack->next_to_add] = obj;
@@ -42,14 +48,27 @@ nm_so_stack_push(struct nm_so_stack *stack, void *obj){
 
 void *
 nm_so_stack_pop(struct nm_so_stack *stack){
-    assert(stack->next_to_add > 0);
+    assert(stack->next_to_add);
     void * obj = stack->obj[stack->next_to_add - 1];
     stack->next_to_add--;
     return obj;
 }
 
 int
-nm_so_stack_length(struct nm_so_stack *stack){
+nm_so_stack_size(struct nm_so_stack *stack){
     return stack->next_to_add;
 }
 
+void *
+nm_so_stack_top(struct nm_so_stack *stack){
+    DISP_VAL("nm_so_stack_top - next_to_add", stack->next_to_add);
+    assert(stack->next_to_add);
+    return stack->obj[stack->next_to_add - 1];
+}
+
+
+void *
+nm_so_stack_down(struct nm_so_stack *stack){
+    assert(stack->next_to_add);
+    return stack->obj[0];
+}

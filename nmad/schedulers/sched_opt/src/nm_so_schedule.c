@@ -73,9 +73,9 @@ nm_so_init_pre_posted(struct nm_core *p_core,
         nm_iov_alloc(p_core, p_pw, 1);
 
         /* Allocation of the reception area */
-        void * buffer = TBX_MALLOC(AGREGATED_PW_MAX_SIZE);
+        void * buffer = TBX_MALLOC(AGGREGATED_PW_MAX_SIZE);
         nm_iov_append_buf(p_core, p_pw,
-                          buffer, AGREGATED_PW_MAX_SIZE);
+                          buffer, AGGREGATED_PW_MAX_SIZE);
 
         nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
     }
@@ -120,15 +120,15 @@ nm_so_init_pw(struct nm_core *p_core,
         NM_DISPF("nm_iov_append_buf returned %d", err);
     }
 
-    struct nm_pkt_wrap **agregated_pws =
+    struct nm_pkt_wrap **aggregated_pws =
         TBX_MALLOC(nb_iov_entries * sizeof(struct nm_pkt_wrap *));
     int i;
     for(i = 0; i < nb_iov_entries; i++)
-        agregated_pws[i] = NULL;
+        aggregated_pws[i] = NULL;
 
     struct nm_so_pkt_wrap * pw_priv = TBX_MALLOC(sizeof(struct nm_so_pkt_wrap));
-    pw_priv->agregated_pws = agregated_pws;
-    pw_priv->nb_agregated_pws = 0;
+    pw_priv->aggregated_pws = aggregated_pws;
+    pw_priv->nb_aggregated_pws = 0;
 
     p_pw->sched_priv = pw_priv;
 
@@ -137,7 +137,7 @@ nm_so_init_pw(struct nm_core *p_core,
 }
 
 static void
-nm_so_init_agregation_pw(struct nm_core *p_core,
+nm_so_init_aggregation_pw(struct nm_core *p_core,
                          struct nm_so_sched *p_priv,
                          int nb_pw){
     struct nm_pkt_wrap *p_pw = NULL;
@@ -148,7 +148,7 @@ nm_so_init_agregation_pw(struct nm_core *p_core,
 
     for(i = 0; i < nb_pw; i++){
         p_pw = nm_so_init_pw(p_core, p_priv,
-                             AGREGATED_PW_MAX_NB_SEG);
+                             AGGREGATED_PW_MAX_NB_SEG);
 
         nm_so_stack_push(p_priv->ready_wraps, p_pw);
     }
@@ -182,7 +182,7 @@ nm_so_schedule_init (struct nm_sched *p_sched) {
                     NB_CREATED_HEADER, "so_header");
 
     // initialisation de pack d'agrégation à envoyer
-    nm_so_init_agregation_pw(p_core, p_priv, NB_AGREGATION_PW);
+    nm_so_init_aggregation_pw(p_core, p_priv, NB_AGGREGATION_PW);
 
     /* Enregistrement de protocole de rdv */
     err = nm_core_proto_init(p_core, nm_rdv_load,
@@ -394,15 +394,15 @@ nm_so_load		(struct nm_sched_ops	*p_ops) {
 
 /******* Utilitaires **********/
 struct nm_pkt_wrap *
-nm_so_take_agregation_pw(struct nm_sched *p_sched){
+nm_so_take_aggregation_pw(struct nm_sched *p_sched){
     struct nm_so_sched *p_priv = p_sched->sch_private;
 
-    //printf("nm_so_take_agregation_pw - stack_pop\n");
+    //printf("nm_so_take_aggregation_pw - stack_pop\n");
     return nm_so_stack_pop(p_priv->ready_wraps);
 }
 
 void
-nm_so_release_agregation_pw(struct nm_sched *p_sched,
+nm_so_release_aggregation_pw(struct nm_sched *p_sched,
                             struct nm_pkt_wrap *p_pw){
     struct nm_so_sched *p_priv = p_sched->sch_private;
     struct nm_so_pkt_wrap * so_pw = p_pw->sched_priv;
@@ -435,9 +435,9 @@ nm_so_release_agregation_pw(struct nm_sched *p_sched,
     p_pw->v_nb = 1;
     p_pw->nm_v = NULL;
 
-    so_pw->nb_agregated_pws = 0;
+    so_pw->nb_aggregated_pws = 0;
 
-    //printf("nm_so_release_agregation_pw - stack_push\n");
+    //printf("nm_so_release_aggregation_pw - stack_push\n");
 
     nm_so_stack_push(p_priv->ready_wraps, p_pw);
 }

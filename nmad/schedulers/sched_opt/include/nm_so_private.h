@@ -22,14 +22,14 @@
 #include "nm_protected.h"
 #include "nm_so_stack.h"
 
-#define AGREGATED_PW_MAX_SIZE 32768
-#define AGREGATED_PW_MAX_NB_SEG 200
+#define AGGREGATED_PW_MAX_SIZE 32768
+#define AGGREGATED_PW_MAX_NB_SEG 200
 #define SMALL_THRESHOLD 32000
 
 #define NB_CREATED_PRE_POSTED 10
 #define NB_CREATED_SCHED_HEADER 10
 #define NB_CREATED_HEADER 10
-#define NB_AGREGATION_PW 10
+#define NB_AGGREGATION_PW 10
 
 /*********** Unexpecteds *************/
 struct nm_so_unexpected{
@@ -81,8 +81,8 @@ struct nm_so_sched {
 
 
 struct nm_so_pkt_wrap{
-    struct nm_pkt_wrap **agregated_pws;
-    int nb_agregated_pws;
+    struct nm_pkt_wrap **aggregated_pws;
+    int nb_aggregated_pws;
 
     uint8_t  nb_seg;
     //uint32_t len;
@@ -131,9 +131,9 @@ nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
 
 /******* Utilitaires **********/
 struct nm_pkt_wrap *
-nm_so_take_agregation_pw(struct nm_sched *p_sched);
+nm_so_take_aggregation_pw(struct nm_sched *p_sched);
 void
-nm_so_release_agregation_pw(struct nm_sched *p_sched,
+nm_so_release_aggregation_pw(struct nm_sched *p_sched,
                             struct nm_pkt_wrap *p_pw);
 
 struct nm_pkt_wrap *

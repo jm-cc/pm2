@@ -65,7 +65,7 @@ schedule_ack(struct nm_core *p_core,
     struct nm_so_sched *so_sched = p_sched->sch_private;
 
     if(!so_sched->acks){
-        so_sched->acks = nm_so_take_agregation_pw(p_sched);
+        so_sched->acks = nm_so_take_aggregation_pw(p_sched);
     }
 
 

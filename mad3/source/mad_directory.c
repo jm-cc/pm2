@@ -294,7 +294,7 @@ mad_dir_driver_get(p_mad_madeleine_t madeleine)
   LOG_IN();
   number = mad_leonie_receive_int();
 
-  if (number <= 0)
+  if (number < 0)
     TBX_FAILURE("invalid number of driver");
 
   TRACE_VAL("Number of driver", number);
@@ -446,7 +446,7 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
 
   number = mad_leonie_receive_int();
 
-  if (number <= 0)
+  if (number < 0)
     TBX_FAILURE("invalid number of channels");
 
   TRACE_VAL("Number of channels", number);

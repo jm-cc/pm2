@@ -329,6 +329,115 @@ set_channel_process_info(p_leo_dir_channel_t  dir_channel,
   LOG_OUT();
 }
 
+// process_dummy_channel: analyses a channel description returned by
+// Leoparse from the application configuration file parsing and builds
+// the corresponding directory data structures.
+void
+process_dummy_channel(p_leonie_t    leonie,
+                      p_tbx_slist_t channel_host_slist)
+{
+  p_leo_spawn_groups_t   spawn_groups            = NULL;
+  p_leo_spawn_group_t    spawn_group             = NULL;
+  p_leo_directory_t      dir                     = NULL;
+
+  LOG_IN();
+  spawn_groups = leonie->spawn_groups;
+  dir          = leonie->directory;
+
+  spawn_group = tbx_htable_get(spawn_groups->htable, "dummy");
+
+  if (!spawn_group) {
+    spawn_group = leo_spawn_group_init();
+    spawn_group->loader_name = strdup("default");
+    tbx_htable_add(spawn_groups->htable, "dummy", spawn_group);
+    tbx_slist_append(spawn_groups->slist, spawn_group);
+  }
+
+  tbx_slist_ref_to_head(channel_host_slist);
+  do {
+      p_leoparse_object_t  object              = NULL;
+      char                *host_name           = NULL;
+      char                *channel_host_name   = NULL;
+      p_leo_dir_node_t     dir_node            = NULL;
+      p_tbx_slist_t        process_slist       = NULL;
+
+      object = tbx_slist_ref_get(channel_host_slist);
+
+      channel_host_name = tbx_strdup(leoparse_get_id(object));
+      TRACE_STR("expected name", channel_host_name);
+
+      host_name = ntbx_true_name(channel_host_name);
+      TRACE_STR("true name", host_name);
+
+      TRACE_STR("====== node hostname", host_name);
+
+      dir_node = tbx_htable_get(dir->node_htable, host_name);
+
+      if (!dir_node) {
+        dir_node       = leo_dir_node_init();
+        dir_node->name = strdup(host_name);
+
+        dir_node->device_host_names = NULL;
+        dir_node->channel_host_names = leo_htable_init();
+        tbx_htable_add(dir_node->channel_host_names,
+                       "dummy", channel_host_name);
+        tbx_htable_add(dir->node_htable, host_name, dir_node);
+        tbx_slist_append(dir->node_slist, dir_node);
+      }
+
+      process_slist = expand_sbracket_modifier(object->modifier, 0);
+
+      tbx_slist_ref_to_head(process_slist);
+      do {
+        p_ntbx_process_t     process         = NULL;
+        ntbx_process_lrank_t node_local_rank =   -1;
+
+        {
+          int *p_val = NULL;
+
+          p_val = tbx_slist_ref_get(process_slist);
+          node_local_rank = *p_val;
+
+          TRACE_VAL("======== Process number", node_local_rank);
+        }
+
+        {
+          p_ntbx_process_info_t node_process_info = NULL;
+
+          node_process_info = ntbx_pc_get_local(dir_node->pc,
+                                                node_local_rank);
+
+          if (!node_process_info) {
+            p_leo_process_specific_t nps = NULL;
+
+            nps = leo_process_specific_init();
+            ntbx_tcp_client_init(nps->client);
+            nps->current_loader_name      = strdup("default");
+            nps->current_spawn_group_name = strdup("dummy");
+            nps->current_loader_priority  = leo_loader_priority_low;
+
+            process              = ntbx_process_cons();
+            process->ref         = leo_htable_init();
+            process->specific    = nps;
+            process->global_rank = tbx_slist_get_length(dir->process_slist);
+
+            tbx_slist_append(dir->process_slist, process);
+
+            ntbx_pc_add(dir_node->pc, process, node_local_rank,
+                        dir_node, "node", NULL);
+
+            tbx_slist_append(spawn_group->process_slist, process);
+          }
+        }
+
+      } while (tbx_slist_ref_forward(process_slist));
+
+      TBX_FREE(host_name);
+    } while (tbx_slist_ref_forward(channel_host_slist));
+
+  LOG_OUT();
+}
+
 // process_channel: analyses a channel description returned by Leoparse from
 // the application configuration file parsing and builds the corresponding
 // directory data structures.
@@ -1501,13 +1610,14 @@ process_xchannel(p_leonie_t     leonie,
 void
 process_application(p_leonie_t leonie)
 {
-  p_tbx_htable_t   application    = NULL;
-  p_leo_settings_t settings       = NULL;
-  p_tbx_slist_t    include_slist  = NULL;
-  p_tbx_slist_t    channel_slist  = NULL;
-  p_tbx_slist_t    vchannel_slist = NULL;
-  p_tbx_slist_t    xchannel_slist = NULL;
-  p_leo_networks_t networks       = NULL;
+  p_tbx_htable_t   application         = NULL;
+  p_leo_settings_t settings            = NULL;
+  p_tbx_slist_t    include_slist       = NULL;
+  p_tbx_slist_t    channel_slist       = NULL;
+  p_tbx_slist_t    dummy_host_slist    = NULL;
+  p_tbx_slist_t    vchannel_slist      = NULL;
+  p_tbx_slist_t    xchannel_slist      = NULL;
+  p_leo_networks_t networks            = NULL;
 
   LOG_IN();
   networks    = leonie->networks;
@@ -1552,27 +1662,44 @@ process_application(p_leonie_t leonie)
   TRACE("==== Including Network configuration files");
   include_network_files(networks, include_slist);
 
+  dummy_host_slist =
+    leoparse_read_as_slist(leonie->application_networks, "hosts");
+
+  if (!dummy_host_slist || tbx_slist_is_nil(dummy_host_slist))
+    goto no_dummy_channel;
+  tbx_slist_ref_to_head(dummy_host_slist);
+  process_dummy_channel(leonie, dummy_host_slist);
+
+ no_dummy_channel:
   channel_slist =
     leoparse_read_as_slist(leonie->application_networks, "channels");
 
-  if (!channel_slist || tbx_slist_is_nil(channel_slist))
+  if ((!channel_slist || tbx_slist_is_nil(channel_slist)) && (!dummy_host_slist || tbx_slist_is_nil(dummy_host_slist)))
     {
-      leo_terminate("parse error : no channel list");
+      leo_terminate("parse error : no channel list, and no dummy channel list");
     }
 
-  tbx_slist_ref_to_head(channel_slist);
-
-  do
+  if (channel_slist)
     {
-      p_leoparse_object_t object  = NULL;
-      p_tbx_htable_t      channel = NULL;
+      if (tbx_slist_is_nil(channel_slist))
+	{
+	  leo_terminate("parse error : empty channel list");
+	}
 
-      object  = tbx_slist_ref_get(channel_slist);
-      channel = leoparse_get_htable(object);
+      tbx_slist_ref_to_head(channel_slist);
 
-      process_channel(leonie, channel);
-    }
-  while (tbx_slist_ref_forward(channel_slist));
+      do
+        {
+          p_leoparse_object_t object  = NULL;
+          p_tbx_htable_t      channel = NULL;
+
+          object  = tbx_slist_ref_get(channel_slist);
+          channel = leoparse_get_htable(object);
+
+          process_channel(leonie, channel);
+        }
+      while (tbx_slist_ref_forward(channel_slist));
+  }
 
   vchannel_slist =
     leoparse_read_as_slist(leonie->application_networks, "vchannels");

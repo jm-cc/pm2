@@ -384,7 +384,7 @@ send_drivers(p_leo_directory_t dir,
   TRACE("Sending drivers");
   len = tbx_slist_get_length(dir->driver_slist);
 
-  if (len <= 0)
+  if (len < 0)
     TBX_FAILURE("invalid number of drivers");
 
   leo_send_int(client, len);
@@ -437,7 +437,7 @@ send_channels(p_leo_directory_t dir,
   TRACE("Sending channels");
   len = tbx_slist_get_length(dir->channel_slist);
 
-  if (len <= 0)
+  if (len < 0)
     TBX_FAILURE("invalid number of channels");
 
   leo_send_int(client, len);

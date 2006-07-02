@@ -116,7 +116,7 @@ extern void cacheflush(void);
 
 static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int val)
 {
-	__u32 retval;
+	__ma_u32 retval;
 
 	//if (cpu_has_llsc && R10000_LLSC_WAR) {
 		unsigned long dummy;
@@ -223,16 +223,16 @@ static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long * m, un
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 extern void __ma_xchg_called_with_bad_pointer(void);
-extern unsigned long __ma_xchg_u8(volatile unsigned long * m, unsigned long val)
-extern unsigned long __ma_xchg_u16(volatile unsigned long * m, unsigned long val)
+extern unsigned long __ma_xchg_u8(volatile unsigned long * m, unsigned long val);
+extern unsigned long __ma_xchg_u16(volatile unsigned long * m, unsigned long val);
 
 static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
 {
 	switch (size) {
 	case 1:
-		return __ma_xchg_u32(ptr, x);
+		return __ma_xchg_u8(ptr, x);
 	case 2:
-		return __ma_xchg_u32(ptr, x);
+		return __ma_xchg_u16(ptr, x);
 	case 4:
 		return __ma_xchg_u32(ptr, x);
 #if MA_BITS_PER_LONG == 64
@@ -247,7 +247,7 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 #define ma_xchg(ptr,x) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
 
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m, unsigned long old,
-	unsigned long new)
+	unsigned long replace)
 {
 	__ma_u32 retval;
 
@@ -275,7 +275,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 #else
 			"=m" (*m)
 #endif
-		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
 #if 0
 	} else if (cpu_has_llsc) {
@@ -301,7 +301,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 #else
 			"=m" (*m)
 #endif
-		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
 	} else {
 		unsigned long flags;
@@ -309,7 +309,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 		local_irq_save(flags);
 		retval = *m;
 		if (retval == old)
-			*m = new;
+			*m = replace;
 		local_irq_restore(flags);	/* implies memory barrier  */
 	}
 #endif
@@ -319,7 +319,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 
 #if MA_BITS_PER_LONG == 64
 static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned long old,
-	unsigned long new)
+	unsigned long replace)
 {
 	__ma_u64 retval;
 
@@ -345,7 +345,7 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 #else
 			"=m" (*m)
 #endif
-		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
 #if 0
 	} else if (cpu_has_llsc) {
@@ -369,7 +369,7 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 #else
 			"=m" (*m)
 #endif
-		: "R" (*m), "Jr" (old), "Jr" (new)
+		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
 	} else {
 		unsigned long flags;
@@ -377,7 +377,7 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 		local_irq_save(flags);
 		retval = *m;
 		if (retval == old)
-			*m = new;
+			*m = replace;
 		local_irq_restore(flags);	/* implies memory barrier  */
 	}
 #endif
@@ -389,26 +389,26 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 extern void __ma_cmpxchg_called_with_bad_pointer(void);
-extern unsigned long __ma_cmpxchg_u8(volatile int *m, unsigned long old, unsigned long new);
-extern unsigned long __ma_cmpxchg_u16(volatile int *m, unsigned long old, unsigned long new);
+extern unsigned long __ma_cmpxchg_u8(volatile int *m, unsigned long old, unsigned long replace);
+extern unsigned long __ma_cmpxchg_u16(volatile int *m, unsigned long old, unsigned long replace);
 
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr, unsigned long old,
-	unsigned long new, int size)
+	unsigned long replace, int size)
 {
 	switch (size) {
 	case 1:
-		return __ma_cmpxchg_u8(ptr, old, new);
+		return __ma_cmpxchg_u8(ptr, old, replace);
 	case 2:
-		return __ma_cmpxchg_u16(ptr, old, new);
+		return __ma_cmpxchg_u16(ptr, old, replace);
 	case 4:
-		return __ma_cmpxchg_u32(ptr, old, new);
+		return __ma_cmpxchg_u32(ptr, old, replace);
 #if MA_BITS_PER_LONG == 64
 	case 8:
-		return __ma_cmpxchg_u64(ptr, old, new);
+		return __ma_cmpxchg_u64(ptr, old, replace);
 #endif
 	}
 	__ma_cmpxchg_called_with_bad_pointer();
 	return old;
 }
 
-#define ma_cmpxchg(ptr,old,new) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(new),sizeof(*(ptr))))
+#define ma_cmpxchg(ptr,old,replace) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(replace),sizeof(*(ptr))))

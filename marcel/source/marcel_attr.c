@@ -342,6 +342,7 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 }
 
 /****************************destroy******************************/
+#undef marcel_attr_destroy
 DEF_MARCEL_POSIX(int,attr_destroy,(marcel_attr_t * attr),(attr),
 {
    *attr = marcel_attr_destroyer;

@@ -181,9 +181,10 @@ distcleandoc:
 
 # Initialisation de la distribution PM2
 #---------------------------------------------------------------------
-.PHONY: init checkmake bkco optionsinit bkinit \
+.PHONY: init initnoflavor checkmake bkco optionsinit bkinit \
 	cvsinit linksinit flavorinit bkclean
 init: checkmake linksinit optionsinit flavorinit
+initnoflavor: checkmake linksinit optionsinit
 
 checkmake:
 	@if ( expr $(MAKE_VERSION) \< 3.81 >> /dev/null ) then \

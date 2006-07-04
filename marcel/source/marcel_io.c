@@ -315,6 +315,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 	LOG_RETURN(n);
 }
 
+#ifndef __MINGW32__
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
@@ -332,6 +333,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 	LOG("IO readving fd %i", fildes);
 	LOG_RETURN(readv(fildes, iov, iovcnt));
 }
+#endif
 
 int marcel_write(int fildes, const void *buf, size_t nbytes)
 {
@@ -356,6 +358,7 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 	LOG_RETURN(n);
 }
 
+#ifndef __MINGW32__
 int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
@@ -373,6 +376,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 	LOG("IO writving fd %i", fildes);
 	LOG_RETURN(writev(fildes, iov, iovcnt));
 }
+#endif
 
 int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds)
 {
@@ -412,10 +416,12 @@ int marcel_read_exactly(int fildes, void *buf, size_t nbytes)
 	LOG_RETURN(nbytes);
 }
 
+#ifndef __MINGW32__
 int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
 {
 	return marcel_readv(fildes, iov, iovcnt);
 }
+#endif
 
 int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
@@ -433,10 +439,12 @@ int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 	LOG_RETURN(nbytes);
 }
 
+#ifndef __MINGW32__
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 {
 	return marcel_writev(fildes, iov, iovcnt);
 }
+#endif
 
 /* =============== Gestion des E/S non bloquantes =============== */
 

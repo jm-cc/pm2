@@ -21,9 +21,10 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <termios.h>
 #include <signal.h>
+#ifndef WIN_SYS
 #include <sys/socket.h>
+#endif
 
 #define TOP_SEC 3
 
@@ -190,8 +191,10 @@ int marcel_init_top(char *outfile) {
 }
 
 void marcel_exit_top(void) {
+#ifndef WIN_SYS
 	if (top_pid) {
 		mdebug("killing top program %d\n", top_pid);
 		kill(-top_pid, SIGTERM);
 	}
+#endif
 }

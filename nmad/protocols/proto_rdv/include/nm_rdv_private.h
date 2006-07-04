@@ -13,10 +13,14 @@
  * General Public License for more details.
  */
 
+#ifndef NM_RDV_PRIVATE_H
+#define NM_RDV_PRIVATE_H
 
-#include "nm_protected.h"
-
+//#include "nm_public.h"
 #define NB_EDP 4
+
+
+struct nm_sched;
 
 struct nm_rdv_rdv_rq {
     uint8_t  proto_id;
@@ -41,3 +45,5 @@ struct nm_rdv {
 
     int out_req_nb[NB_EDP];
 };
+
+#endif

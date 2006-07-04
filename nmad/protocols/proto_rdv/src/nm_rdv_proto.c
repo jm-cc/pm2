@@ -20,18 +20,23 @@
 
 #include <tbx.h>
 
-#include <nm_public.h>
+
+#include "nm_protected.h"
 #include "nm_rdv_private.h"
+
+
 
 #define NB_RDV_RQ 100
 #define NB_ACK_RQ 100
 
 #define CHRONO
 
-static struct nm_pkt_wrap *
-get_and_extract(p_tbx_slist_t list,
-                uint8_t proto_id, uint8_t seq){
+static int
+nm_rdv_get_and_extract(p_tbx_slist_t list,
+                       uint8_t proto_id, uint8_t seq,
+                       struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap * p_pw = NULL;
+    int err;
 
     if(!list->length){
         goto end;
@@ -43,33 +48,44 @@ get_and_extract(p_tbx_slist_t list,
 
         if(p_pw->proto_id == proto_id && p_pw->seq == seq){
             tbx_slist_ref_extract_and_forward(list, NULL);
+            *pp_pw = p_pw;
             goto end;
         }
     }while(tbx_slist_ref_forward(list));
 
-    p_pw = NULL;
+    *pp_pw = NULL;
 
  end:
-    return p_pw;
+    err = NM_ESUCCESS;
+    return err;
 }
 
-static struct nm_pkt_wrap *
-extract_from_ref(p_tbx_slist_t list,
-                 p_tbx_slist_element_t ref){
+static int
+nm_rdv_extract_from_ref(p_tbx_slist_t list,
+                        p_tbx_slist_element_t ref,
+                        struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap * p_pw = NULL;
+    int err;
 
     list->ref = ref;
-    tbx_slist_ref_extract_and_forward(list, &p_pw);
+    tbx_slist_ref_extract_and_forward(list, (void **)&p_pw);
     assert(p_pw);
-    return p_pw;
+
+    *pp_pw = p_pw;
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 
-static struct nm_pkt_wrap *
-get(p_tbx_slist_t list,
-    uint8_t proto_id, uint8_t seq,
-    p_tbx_slist_element_t *ref){
+static int
+nm_rdv_get(p_tbx_slist_t list,
+           uint8_t proto_id, uint8_t seq,
+           p_tbx_slist_element_t *ref,
+           struct nm_pkt_wrap **pp_pw){
+
     struct nm_pkt_wrap * p_pw = NULL;
+    int err;
 
     *ref = NULL;
 
@@ -83,14 +99,16 @@ get(p_tbx_slist_t list,
 
         if(p_pw->proto_id == proto_id && p_pw->seq == seq){
             *ref = list->ref;
+            *pp_pw = p_pw;
             goto end;
         }
     }while(tbx_slist_ref_forward(list));
 
-    p_pw = NULL;
+    *pp_pw = NULL;
 
  end:
-    return p_pw;
+    err = NM_ESUCCESS;
+    return err;
 }
 
 
@@ -99,11 +117,12 @@ int nb_generate_rdv = 0;
 double chrono_generate_rdv = 0;
 #endif
 
-void
+int
 nm_rdv_generate_rdv(struct nm_proto *p_proto,
                     struct nm_pkt_wrap *p_pw,
                     struct nm_rdv_rdv_rq **pp_rdv_rq){
     struct nm_rdv * nm_rdv = p_proto->priv;
+    int err;
 
 #ifdef CHRONO
     tbx_tick_t t1, t2;
@@ -114,6 +133,11 @@ nm_rdv_generate_rdv(struct nm_proto *p_proto,
     // génére la demande de rdv
     struct nm_rdv_rdv_rq *p_rdv_rq
         = tbx_malloc(nm_rdv->rdv_key);
+    if(!p_rdv_rq){
+        err = -NM_ENOMEM;
+        goto out;
+    }
+
     p_rdv_rq->proto_id = p_pw->proto_id;
     p_rdv_rq->seq = p_pw->seq;
     p_rdv_rq->len = p_pw->length;
@@ -130,6 +154,10 @@ nm_rdv_generate_rdv(struct nm_proto *p_proto,
      chrono_generate_rdv += TBX_TIMING_DELAY(t1, t2);
      nb_generate_rdv++;
 #endif
+
+     err = NM_ESUCCESS;
+ out:
+     return err;
 }
 
 #ifdef CHRONO
@@ -212,7 +240,7 @@ tbx_tick_t t333, t444;
 #endif
 
 
-void
+int
 nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
                     struct nm_rdv_rdv_rq *p_rdv_rq,
                     struct nm_rdv_ack_rq **pp_ack){
@@ -223,6 +251,7 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
 
     struct nm_rdv *nm_rdv= p_proto->priv;
     struct nm_sched *p_sched = nm_rdv->p_sched;
+    int err;
 
 #ifdef CHRONO
     tbx_tick_t t1, t2;
@@ -245,8 +274,11 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
 #endif
         //large_pw = get(p_sched->submit_aux_recv_req,
         //               proto_id, seq);
-        large_pw = get(p_sched->submit_aux_recv_req,
-                       proto_id, seq, &ref);
+        err = nm_rdv_get(p_sched->submit_aux_recv_req,
+                         proto_id, seq, &ref, &large_pw);
+        if (err != NM_ESUCCESS){
+            NM_DISPF("nm_rdv_get returned %d", err);
+        }
 
 
 #ifdef CHRONO
@@ -289,8 +321,10 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
                 //large_pw = get_and_extract(p_sched->submit_aux_recv_req,
                 //                           proto_id, seq);
 
-                large_pw = extract_from_ref(p_sched->submit_aux_recv_req, ref);
-
+                err = nm_rdv_extract_from_ref(p_sched->submit_aux_recv_req, ref, &large_pw);
+                if (err != NM_ESUCCESS){
+                    NM_DISPF("nm_rdv_extract_from_ref returned %d", err);
+                }
 #ifdef CHRONO
                 TBX_GET_TICK(t8);
                 nb_get_and_extract++;
@@ -300,6 +334,11 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
                 // création de l'ack
                 struct nm_rdv_ack_rq *p_ack
                     = tbx_malloc(nm_rdv->ack_key);
+                if(!p_ack){
+                    err = -NM_ENOMEM;
+                    goto end;
+                }
+
                 p_ack->proto_id = proto_id;
                 p_ack->seq = seq;
                 p_ack->track_id = track_id;
@@ -340,12 +379,16 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
         TBX_FAILURE("nm_rdv_treat_rdv_rq - incorrect proto_id");
     }
 
+
+    err = NM_ESUCCESS;
  end:
 #ifdef CHRONO
     TBX_GET_TICK(t2);
     chrono_treat_rdv_rq += TBX_TIMING_DELAY(t1, t2);
     nb_treat_rdv_rq++;
 #endif
+
+    return err;
 }
 
 #ifdef CHRONO
@@ -354,16 +397,18 @@ double chrono_treat_ack_rq = 0;
 #endif
 
 
-void
+int
 nm_rdv_treat_ack_rq(struct nm_proto *p_proto,
                     struct nm_rdv_ack_rq *p_ack){
-    struct nm_rdv *nm_rdv = p_proto->priv;
+    struct nm_rdv *nm_rdv           = p_proto->priv;
     p_tbx_slist_t large_waiting_ack = nm_rdv->large_waiting_ack;
-    struct nm_pkt_wrap * large_pw = NULL;
+    struct nm_pkt_wrap * large_pw   = NULL;
 
     uint8_t proto_id = p_ack->proto_id;
-    uint8_t seq = p_ack->seq;
+    uint8_t seq       = p_ack->seq;
     uint8_t track_id = p_ack->track_id;
+
+    int err;
 
 #ifdef CHRONO
     tbx_tick_t t1, t2;
@@ -371,8 +416,9 @@ nm_rdv_treat_ack_rq(struct nm_proto *p_proto,
 #endif
 
 
-    large_pw = get_and_extract(large_waiting_ack, proto_id, seq);
-    if(!large_pw)
+    err = nm_rdv_get_and_extract(large_waiting_ack, proto_id, seq,
+                                 &large_pw);
+    if(err != NM_ESUCCESS)
         TBX_FAILURE("Large non retrouvé");
 
     // on envoie le large
@@ -396,6 +442,9 @@ nm_rdv_treat_ack_rq(struct nm_proto *p_proto,
     chrono_treat_ack_rq += TBX_TIMING_DELAY(t1, t2);
     nb_treat_ack_rq++;
 #endif
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 #ifdef CHRONO
@@ -403,9 +452,10 @@ int    nb_treat_waiting_rdv = 0;
 double chrono_treat_waiting_rdv = 0;
 #endif
 
-struct nm_gate *
+int
 nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
-                         struct nm_rdv_ack_rq **pp_ack){
+                         struct nm_rdv_ack_rq **pp_ack,
+                         struct nm_gate **pp_gate){
     struct nm_rdv *nm_rdv = p_proto->priv;
     p_tbx_slist_t waiting_rdv = nm_rdv->waiting_rdv;
     struct nm_rdv_rdv_rq * rdv = NULL;
@@ -418,6 +468,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
     struct nm_gate *p_gate = NULL;
 
     p_tbx_slist_element_t ref = NULL;
+    int err;
 
 #ifdef CHRONO
     tbx_tick_t t1, t2;
@@ -425,7 +476,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
 #endif
 
     if(!waiting_rdv->length)
-        return NULL;
+        goto end;
 
     tbx_slist_ref_to_head(waiting_rdv);
     do{
@@ -434,15 +485,18 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
         proto_id = rdv->proto_id;
         seq  = rdv->seq;
 
-        large_pw = get(p_sched->submit_aux_recv_req,
-                       proto_id, seq, &ref);
+        err = nm_rdv_get(p_sched->submit_aux_recv_req,
+                         proto_id, seq, &ref, &large_pw);
+        if (err != NM_ESUCCESS){
+            NM_DISPF("nm_rdv_get returned %d", err);
+        }
 
         // si le unpack est prêt
         if(large_pw){
             DISP("LA");
 
             // initialisation de la réception
-            struct nm_gate *p_gate = large_pw->p_gate;
+            p_gate = large_pw->p_gate;
             struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
 
             // recupère l'id de la 1ere piste libre
@@ -463,12 +517,19 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
             tbx_slist_ref_extract_and_forward(waiting_rdv,
                                               NULL);
 
-            //large_pw = get_and_extract(p_sched->submit_aux_recv_req, proto_id, seq);
-            large_pw = extract_from_ref(p_sched->submit_aux_recv_req, ref);
+            err = nm_rdv_extract_from_ref(p_sched->submit_aux_recv_req, ref, &large_pw);
+            if (err != NM_ESUCCESS){
+                NM_DISPF("nm_rdv_extract_from_ref returned %d", err);
+            }
 
             // création de l'ack
             struct nm_rdv_ack_rq *p_ack
                 = tbx_malloc(nm_rdv->ack_key);
+            if(!p_ack){
+                err = -NM_ENOMEM;
+                goto end;
+            }
+
             p_ack->proto_id = proto_id;
             p_ack->seq = seq;
             p_ack->track_id = track_id;
@@ -479,6 +540,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
                              large_pw);
 
             p_gate = large_pw->p_gate;
+            *pp_gate = p_gate;
             goto end;
         }
 
@@ -490,7 +552,9 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
     chrono_treat_waiting_rdv += TBX_TIMING_DELAY(t1, t2);
     nb_treat_waiting_rdv++;
 #endif
-    return p_gate;
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 #ifdef CHRONO
@@ -498,13 +562,14 @@ int    nb_free_rdv = 0;
 double chrono_free_rdv = 0;
 #endif
 
-void
+int
 nm_rdv_free_rdv(struct nm_proto *p_proto,
                 struct nm_rdv_rdv_rq *rdv){
 #ifdef CHRONO
     tbx_tick_t t1, t2;
     TBX_GET_TICK(t1);
 #endif
+    int err;
 
     struct nm_rdv *nm_rdv = p_proto->priv;
     tbx_free(nm_rdv->rdv_key, rdv);
@@ -514,20 +579,33 @@ nm_rdv_free_rdv(struct nm_proto *p_proto,
     chrono_free_rdv += TBX_TIMING_DELAY(t1, t2);
     nb_free_rdv++;
 #endif
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
-void
+int
 nm_rdv_free_ack(struct nm_proto *p_proto,
                 struct nm_rdv_ack_rq *ack){
+    int err;
+
     struct nm_rdv *nm_rdv = p_proto->priv;
     tbx_free(nm_rdv->ack_key, ack);
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
-void
+int
 nm_rdv_free_track(struct nm_proto *p_proto,
                   uint8_t trk_id){
+    int err;
+
     struct nm_rdv *nm_rdv = p_proto->priv;
     nm_rdv->out_req_nb[trk_id]--;
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 int

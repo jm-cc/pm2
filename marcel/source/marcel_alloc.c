@@ -17,7 +17,9 @@
 #include "marcel.h"
 
 #include <unistd.h>
+#ifndef __MINGW32__
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 
 static void *next_slot;

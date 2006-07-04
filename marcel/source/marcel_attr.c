@@ -18,7 +18,11 @@
 
 #include <string.h>
 #include <errno.h>
+#ifdef __MINGW32__
+#define SCHED_RR (-1)
+#else
 #include <sched.h>
+#endif
 #include <stdint.h>
 #include <inttypes.h>
 

@@ -23,16 +23,17 @@
 
 #include "marcel.h"
 
+#include <windows.h>
+
 void *ISOADDR_AREA_TOP;
 static void *ISOADDR_AREA_BOTTOM;
 
-caddr_t win_mmap(caddr_t __addr, size_t __len, int __prot, int __flags,
-		    int __fd, off_t __off)
+void* win_mmap(void* __addr, size_t __len)
 {
   return __addr;
 }
 
-int win_munmap(caddr_t __addr, size_t __len)
+int win_munmap(void* __addr, size_t __len)
 {
   return 0;
 }
@@ -42,6 +43,7 @@ int win_munmap(caddr_t __addr, size_t __len)
 void marcel_win_sys_init(int *argc, char *argv[])
 {
 #ifdef WIN_SYS
+#ifdef __CYGWIN__
   ISOADDR_AREA_BOTTOM = mmap(NULL,
 	     ISOADDR_AREA_SIZE,
 	     PROT_READ | PROT_WRITE,
@@ -52,6 +54,13 @@ void marcel_win_sys_init(int *argc, char *argv[])
     perror("mmap");
     exit(1);
   }
+#else
+  ISOADDR_AREA_BOTTOM = HeapAlloc(GetProcessHeap(), 0, ISOADDR_AREA_SIZE);
+  if(! ISOADDR_AREA_BOTTOM) {
+    fprintf(stderr,"HeapAlloc() failed (%ld)",GetLastError());
+    exit(1);
+  }
+#endif
 
   ISOADDR_AREA_TOP = ISOADDR_AREA_BOTTOM + ISOADDR_AREA_SIZE;
 

@@ -131,7 +131,11 @@ extern void *ISOADDR_AREA_TOP;
 #    define ISOADDR_AREA_SIZE      (512 * THREAD_SLOT_SIZE)
 #    define FILE_TO_MAP            -1
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#    define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
+#    ifdef __MINGW32__
+#      define MMAP_MASK              0
+#    else
+#      define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
+#    endif
 #else
 #  error Sorry. This system/architecture is not yet supported.
 #endif

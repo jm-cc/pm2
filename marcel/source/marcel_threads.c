@@ -18,7 +18,11 @@
 #include "marcel_sched_generic___sched_marcel_inline.h"
 #include "tbx_compiler.h"
 
+#ifdef __MINGW32__
+#define SCHED_RR (-1)
+#else
 #include <sched.h>
+#endif
 #include <errno.h>
 
 inline static 

@@ -20,7 +20,9 @@
 #define MA_FILE_DEBUG init
 #include "marcel.h"
 #include "tbx_compiler.h"
+#ifdef LINUX_SYS
 #include <sys/utsname.h>
+#endif
 #include <string.h>
 
 /*
@@ -295,8 +297,8 @@ int go_marcel_main(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif // MARCEL_MAIN_AS_FUNC
 {
-	static int __argc;
-	static char **__argv;
+	static int __ma_argc;
+	static char **__ma_argv;
 	unsigned long new_sp;
 
 #ifdef LINUX_SYS
@@ -322,7 +324,7 @@ int main(int argc, char *argv[])
 
 		mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
-                __argc = argc; __argv = argv;
+                __ma_argc = argc; __ma_argv = argv;
 
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
@@ -337,7 +339,7 @@ int main(int argc, char *argv[])
 			       sizeof(void *))) =  __main_thread;
 #endif
 
-                __main_ret = marcel_main(__argc, __argv);
+                __main_ret = marcel_main(__ma_argc, __ma_argv);
 
 #ifdef MA__ACTIVATION
 		marcel_upcalls_disallow();
@@ -384,9 +386,15 @@ extern const __ma_init_info_t ma_init_info_bubble_sched_init;
 #endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;
+#ifndef __MINGW32__
 #ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_sig_init;
 #endif // MA__TIMER
+extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
+#ifdef MA__TIMER
+extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
+#endif
+#endif
 extern const __ma_init_info_t ma_init_info_timer_start;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_notifier_register;
@@ -395,13 +403,9 @@ extern const __ma_init_info_t ma_init_info_marcel_random_lwp_notifier_register;
 #endif // LINUX_SYS || GNU_SYS
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_postexit_notifier_register;
-extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_linux_sched_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_timers_notifier_register;
-#ifdef MA__TIMER
-extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
-#endif
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_call_UP_PREPARE;
 #if defined(LINUX_SYS) || defined(GNU_SYS)
@@ -490,9 +494,11 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
                   call_init_function(&ma_init_info_timer_start);
+#ifndef __MINGW32__
 #ifdef MA__TIMER
                   call_init_function(&ma_init_info_sig_init);
 #endif // MA__TIMER
+#endif
                   call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
 #ifdef MA__BUBBLES
                   call_init_function(&ma_init_info_bubble_sched_init);
@@ -506,9 +512,11 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_marcel_lwp_notifier_register);
                   call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
                   call_init_function(&ma_init_info_marcel_postexit_notifier_register);
+#ifndef __MINGW32__
                   call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
 #ifdef MA__TIMER
                   call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
+#endif
 #endif
                   call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
                   call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);

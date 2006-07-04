@@ -17,29 +17,32 @@
 #ifndef MARCEL_WIN_SYS_IS_DEF
 #define MARCEL_WIN_SYS_IS_DEF
 
+#ifdef __MINGW32__
+#define ENOTSUP ENOSYS
+#define ETIMEDOUT EAGAIN
+#endif
+
 void marcel_win_sys_init(int *argc, char *argv[]);
 
 #ifdef WIN_SYS
 
 #include <sys/time.h>
 
-#define	timerclear(tvp)		((tvp)->tv_sec = (tvp)->tv_usec = 0)
-#define	timercmp(a, b, CMP) 						      \
-  (((a)->tv_sec == (b)->tv_sec) ? 					      \
-   ((a)->tv_usec CMP (b)->tv_usec) : 					      \
-   ((a)->tv_sec CMP (b)->tv_sec))
-
+#ifdef __CYGWIN__
 #include <sys/mman.h>
+#else
 
+#define MAP_FAILED NULL
 #ifndef __WIN_MMAP_KERNEL__
-#define mmap(a, l, p, f, fd, o)    win_mmap(a, l, p, f, fd, o)
+#define mmap(a, l, p, f, fd, o)    win_mmap(a, l)
 #define munmap(a, l)               win_munmap(a, l)
 #endif
 
-extern caddr_t win_mmap(caddr_t __addr, size_t __len, int __prot, int __flags,
-		    int __fd, off_t __off);
+extern void * win_mmap(void * __addr, size_t __len);
 
-extern int win_munmap(caddr_t __addr, size_t __len);
+extern int win_munmap(void * __addr, size_t __len);
+
+#endif
 
 #endif
 

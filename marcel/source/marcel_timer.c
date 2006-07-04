@@ -82,6 +82,7 @@ static void __marcel_init timer_start(void)
 __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
 
 
+#ifndef __MINGW32__
 /****************************************************************
  * Trappeur de SIGSEGV, de manière à obtenir des indications sur le
  * thread fautif (ça aide pour le debug !)
@@ -183,6 +184,7 @@ MA_DEFINE_LWP_NOTIFIER_ONOFF(int_catcher, "Int catcher",
 MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_CATCHER_PRIO);
 
 #endif
+#endif
 
 /****************************************************************
  * Le signal TIMER
@@ -200,6 +202,8 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  * distribuer (bien, a priori). Seul problème, c'est qu'il n'expire que si on
  * consomme du cpu...
  */
+#ifndef __MINGW32__
+
 #if defined(MA__SMP) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
 #define DISTRIBUTE_SIGALRM
 #endif
@@ -283,6 +287,7 @@ static void timer_interrupt(int sig)
 
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
+#endif
 
 void marcel_sig_pause(void)
 {
@@ -354,6 +359,7 @@ unsigned long marcel_gettimeslice(void)
 #endif
 
 
+#ifndef __MINGW32__
 void marcel_sig_enable_interrupts(void)
 {
 #ifdef MA__SMP
@@ -499,3 +505,4 @@ static void __marcel_init sig_init(void)
 #endif
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
+#endif

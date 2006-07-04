@@ -22,12 +22,10 @@ struct nm_so_shorter_pw{
     struct nm_pkt_wrap *src_pw;
 };
 
-
 struct nm_so_pending_tab{
     struct nm_so_shorter_pw *tab[PENDING_PW_WINDOW_SIZE];
     int nb_pending_pw;
 };
-
 
 enum nm_so_operation_type{
     nm_so_aggregation,
@@ -45,13 +43,10 @@ struct nm_so_operation{
     int altitude;
 };
 
-
 struct nm_so_op_stack{
     struct nm_so_stack *op_stack;
     double score;
 };
-
-
 
 typedef int (*strategy) (struct nm_drv *,
                          struct nm_so_pending_tab *,
@@ -81,18 +76,12 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
 
     int i, j;
 
-    DISP_VAL("nb_pending_pw", nb_pending_pw);
     for(i = 0; i < nb_pending_pw; i++){
-        DISP_VAL("i", i);
-
         cur_spw = pw_tab->tab[i];
 
         if(len + cur_spw->len < SMALL_THRESHOLD
            && len + cur_spw->len < AGGREGATED_PW_MAX_SIZE
            && nb_seg + cur_spw->nb_seg < AGGREGATED_PW_MAX_NB_SEG){
-
-            DISP("ICI");
-
             if(!op){
                 op = TBX_MALLOC(sizeof(struct nm_so_operation));
                 op->operation_type = nm_so_aggregation;
@@ -100,7 +89,6 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
                 op->altitude = tree_altitude;
 
                 spw = cur_spw;
-                //spw->index = -1;
                 spw->src_pw = NULL;
 
             } else {
@@ -122,16 +110,13 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
     }
 
     if(op){
-        DISP_PTR("stack_push(op) dans", op_stack);
         nm_so_stack_push(op_stack->op_stack, op);
-
-        DISP_VAL("nm_so_strategy1_aggregation, type de l'op", op->operation_type);
 
         op_stack->score += nm_ns_evaluate(driver, spw->len);
 
         pw_tab->nb_pending_pw =  nb_pending_pw;
 
-        // maj indices des shoter
+        // maj indices des shorter_pw
         for(i = 0; i < nb_pending_pw; i++){
             pw_tab->tab[i]->index = i;
         }
@@ -147,8 +132,8 @@ nm_so_strategy2_aggregation(struct nm_drv *driver,
                            struct nm_so_op_stack *op_stack,
                            int tree_altitude){
     DISP("-->nm_so_strategy2_aggregation");
-    return 0;
     DISP("<--nm_so_strategy2_aggregation");
+    return 0;
 }
 
 
@@ -164,22 +149,25 @@ strategy strategy_tab[NB_STRATEGIES] =
 static void
 nm_so_cpy_down_op(struct nm_so_op_stack *op_stack,
                   struct nm_so_op_stack *op_stack_ref){
+    int err;
 
     if(nm_so_stack_size(op_stack_ref->op_stack)){
-        nm_so_stack_pop(op_stack_ref->op_stack);
+        err = nm_so_stack_pop(op_stack_ref->op_stack, NULL);
     }
 
-    nm_so_stack_push(op_stack_ref->op_stack,
-                     nm_so_stack_down(op_stack->op_stack));
+    struct nm_so_operation *op = NULL;
+    err = nm_so_stack_down(op_stack->op_stack, (void **)&op);
+#warning ERR
+
+    err = nm_so_stack_push(op_stack_ref->op_stack, op);
+#warning ERR
 
     op_stack_ref->score = op_stack->score;
 }
 
 static struct nm_so_pending_tab *
 nm_so_cpy_tab(struct nm_so_pending_tab * pw_tab){
-    DISP("-->nm_so_cpy_tab");
     int i;
-
     struct nm_so_pending_tab *cpy = TBX_MALLOC(sizeof(struct nm_so_pending_tab));
 
     cpy->nb_pending_pw = pw_tab->nb_pending_pw;
@@ -190,7 +178,6 @@ nm_so_cpy_tab(struct nm_so_pending_tab * pw_tab){
         cpy->tab[i]->nb_seg = pw_tab->tab[i]->nb_seg;
         cpy->tab[i]->src_pw = pw_tab->tab[i]->src_pw;
     }
-    DISP("<--nm_so_cpy_tab");
     return cpy;
 }
 
@@ -208,16 +195,21 @@ nm_so_path_tree(int strategy_no,
     struct nm_so_pending_tab *pw_tab_to_use = NULL;
 
     int score = 0;
+    int i;
+    int err;
 
-    DISP_VAL("nm_so_path_tree - essai de la strategie n°", strategy_no);
+    if(strategy_no == -1)
+        goto down;
+
+    //DISP_VAL("nm_so_path_tree - essai de la strategie n°", strategy_no);
     score = strategy_tab[strategy_no](drv, pw_tab, op_stack,
                                       tree_altitude);
 
     if(score){
-        DISP("Ajout d'une opération");
+        //DISP("Ajout d'une opération");
         empty_application_nb = 0;
     } else {
-        DISP("PAS d'Ajout d'opération");
+        //DISP("PAS d'Ajout d'opération");
         empty_application_nb++;
     }
 
@@ -234,16 +226,18 @@ nm_so_path_tree(int strategy_no,
             nm_so_cpy_down_op(op_stack, op_stack_ref);
         }
 
-        DISP_VAL("nb_op empilées", nm_so_stack_size(op_stack->op_stack));
         // on dépile
         struct nm_so_operation *op = NULL;
         while(nm_so_stack_size(op_stack->op_stack)){
 
-            op = nm_so_stack_top(op_stack->op_stack);
+            err = nm_so_stack_top(op_stack->op_stack,
+                                  (void **)&op);
+#warning ERR
 
             if(op->altitude == tree_altitude){
-                DISP_PTR("stack_pop(op) de", op_stack);
-                nm_so_stack_pop(op_stack->op_stack);
+                err = nm_so_stack_pop(op_stack->op_stack, NULL);
+#warning ERR
+
             } else {
                 break;
             }
@@ -252,8 +246,8 @@ nm_so_path_tree(int strategy_no,
         return;
     }
 
+ down:
     // application aux fils
-    int i;
     for(i = 0; i < NB_STRATEGIES; i++){
 
         if(i == strategy_no)
@@ -283,16 +277,20 @@ struct nm_pkt_wrap *
 nm_so_strategy_application(struct nm_gate *p_gate,
                            struct nm_drv *driver,
                            p_tbx_slist_t pre_list){
+    int err;
     int i;
 
     struct nm_so_op_stack *op_stack =
         TBX_MALLOC(sizeof(struct nm_so_op_stack));
-    op_stack->op_stack = nm_so_stack_create(MAX_NB_OP);
+    err = nm_so_stack_create(&op_stack->op_stack, MAX_NB_OP);
+#warning ERR
     op_stack->score = 0;
 
     struct nm_so_op_stack *op_stack_ref =
         TBX_MALLOC(sizeof(struct nm_so_op_stack));
-    op_stack_ref->op_stack = nm_so_stack_create(NB_PACK_BY_OPT);
+    err = nm_so_stack_create(&op_stack_ref->op_stack,
+                             NB_PACK_BY_OPT);
+#warning ERR
     op_stack_ref->score = 0;
 
     int pre_list_len = tbx_slist_get_length(pre_list);
@@ -329,7 +327,7 @@ nm_so_strategy_application(struct nm_gate *p_gate,
 
 
     // construction de la suite optimale d'operations à appliquer
-    nm_so_path_tree(0, pw_tab,
+    nm_so_path_tree(-1, pw_tab,
                     0, 0,
                     op_stack, op_stack_ref,
                     driver);
@@ -342,16 +340,14 @@ nm_so_strategy_application(struct nm_gate *p_gate,
     struct nm_so_pkt_wrap  *so_pw = NULL;
     struct nm_so_operation *op = NULL;
 
-    DISP_VAL("nm_so_strategy_application - ref_stack_size", nm_so_stack_size(op_stack_ref->op_stack));
-
     while(nm_so_stack_size(op_stack_ref->op_stack)){
-        op = nm_so_stack_pop(op_stack_ref->op_stack);
-
-        DISP_VAL("nm_so_strategy_application, type de l'op", op->operation_type);
+        err = nm_so_stack_pop(op_stack_ref->op_stack, 
+                              (void **)&op);
+#warning ERR
 
         switch(op->operation_type){
         case nm_so_aggregation:
-            p_pw = nm_so_take_aggregation_pw(p_gate->p_sched);
+            err = nm_so_take_aggregation_pw(p_gate->p_sched, &p_pw);
             so_pw = p_pw->sched_priv;
 
             for(i = 0; i < op->nb_pw; i++){
@@ -366,7 +362,7 @@ nm_so_strategy_application(struct nm_gate *p_gate,
             break;
 
         case nm_so_split:
-
+            TBX_FAILURE("split operation not supported");
         default:
             TBX_FAILURE("strategy_application failed");
         }

@@ -18,26 +18,26 @@
 
 typedef struct nm_so_stack * nm_so_stack_t;
 
-struct nm_so_stack *
-nm_so_stack_create(int nb_entries);
-
-void
-nm_so_stack_free(struct nm_so_stack *stack);
-
-
-void
-nm_so_stack_push(struct nm_so_stack *stack, void *obj);
-
-void *
-nm_so_stack_pop(struct nm_so_stack *stack);
+int
+nm_so_stack_create(struct nm_so_stack **pp_stack, int nb_entries);
 
 int
-nm_so_stack_size(struct nm_so_stack *stack);
+nm_so_stack_free(struct nm_so_stack *p_stack);
 
-void *
-nm_so_stack_top(struct nm_so_stack *stack);
 
-void *
-nm_so_stack_down(struct nm_so_stack *stack);
+int
+nm_so_stack_push(struct nm_so_stack *p_stack, void *p_obj);
+
+int
+nm_so_stack_pop(struct nm_so_stack *p_stack, void **pp_obj);
+
+int
+nm_so_stack_size(struct nm_so_stack *p_stack);
+
+int
+nm_so_stack_top(struct nm_so_stack *p_stack, void **pp_obj);
+
+int
+nm_so_stack_down(struct nm_so_stack *p_stack, void **pp_obj);
 
 #endif

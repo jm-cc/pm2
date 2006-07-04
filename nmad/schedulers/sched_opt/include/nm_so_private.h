@@ -130,31 +130,38 @@ nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
 
 
 /******* Utilitaires **********/
-struct nm_pkt_wrap *
-nm_so_take_aggregation_pw(struct nm_sched *p_sched);
-void
-nm_so_release_aggregation_pw(struct nm_sched *p_sched,
-                            struct nm_pkt_wrap *p_pw);
+int
+nm_so_take_aggregation_pw(struct nm_sched *p_sched,
+                          struct nm_pkt_wrap **pp_pw);
 
-struct nm_pkt_wrap *
-nm_so_take_pre_posted_pw(struct nm_sched *p_sched);
-void
+int
+nm_so_release_aggregation_pw(struct nm_sched *p_sched,
+                             struct nm_pkt_wrap *p_pw);
+
+int
+nm_so_take_pre_posted_pw(struct nm_sched *p_sched,
+                         struct nm_pkt_wrap ** pp_pw);
+
+int
 nm_so_release_pre_posted_pw(struct nm_sched *p_sched,
                             struct nm_pkt_wrap *p_pw);
 
-void
+int
 nm_so_update_global_header(struct nm_pkt_wrap *p_pw,
                            uint8_t nb_seg,
                            uint32_t len);
 
-void
+int
 nm_so_add_data(struct nm_core *p_core,
                struct nm_pkt_wrap *p_pw,
                int proto_id, int len, int seq, void * data);
 
-struct nm_pkt_wrap *
+int
 nm_so_search_and_extract_pw(p_tbx_slist_t list,
-                            uint8_t proto_id, uint8_t seq);
+                            uint8_t proto_id, uint8_t seq,
+                            struct nm_pkt_wrap **pp_pw);
 
+void
+nm_so_control_error(char *fct_name, int err);
 
 #endif

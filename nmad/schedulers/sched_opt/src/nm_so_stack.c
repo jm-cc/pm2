@@ -16,6 +16,10 @@
 
 #include <assert.h>
 #include <tbx.h>
+#include <stdint.h>
+#include <sys/uio.h>
+
+#include "nm_protected.h"
 
 struct nm_so_stack{
     int nb_entries;
@@ -23,52 +27,104 @@ struct nm_so_stack{
     int next_to_add;
 };
 
-struct nm_so_stack *
-nm_so_stack_create(int nb_entries){
-    struct nm_so_stack * stack
-        = TBX_MALLOC(sizeof(struct nm_so_stack));
-    stack->nb_entries = nb_entries;
-    stack->obj = TBX_MALLOC(nb_entries * sizeof(void *));
-    stack->next_to_add = 0;
-    return stack;
-}
+int
+nm_so_stack_create(struct nm_so_stack **pp_stack, int nb_entries){
+    struct nm_so_stack * p_stack = NULL;
+    int err;
 
-void
-nm_so_stack_free(struct nm_so_stack *stack){
-    TBX_FREE(stack->obj);
-    TBX_FREE(stack);
-}
+    assert(nb_entries);
 
-void
-nm_so_stack_push(struct nm_so_stack *stack, void *obj){
-    assert(stack->next_to_add < stack->nb_entries);
-    stack->obj[stack->next_to_add] = obj;
-    stack->next_to_add++;
-}
+    p_stack = TBX_MALLOC(sizeof(struct nm_so_stack));
+    if(!p_stack){
+        err = -NM_ENOMEM;
+        goto out;
+    }
 
-void *
-nm_so_stack_pop(struct nm_so_stack *stack){
-    assert(stack->next_to_add);
-    void * obj = stack->obj[stack->next_to_add - 1];
-    stack->next_to_add--;
-    return obj;
+    p_stack->nb_entries = nb_entries;
+    p_stack->next_to_add = 0;
+    p_stack->obj = TBX_MALLOC(nb_entries * sizeof(void *));
+    if(!p_stack->obj){
+        TBX_FREE(p_stack);
+        err = -NM_ENOMEM;
+        goto out;
+    }
+
+    *pp_stack = p_stack;
+    err = NM_ESUCCESS;
+
+ out:
+    return err;
 }
 
 int
-nm_so_stack_size(struct nm_so_stack *stack){
-    return stack->next_to_add;
+nm_so_stack_free(struct nm_so_stack *p_stack){
+    int err;
+
+    assert(p_stack);
+
+    TBX_FREE(p_stack->obj);
+    TBX_FREE(p_stack);
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
-void *
-nm_so_stack_top(struct nm_so_stack *stack){
-    DISP_VAL("nm_so_stack_top - next_to_add", stack->next_to_add);
-    assert(stack->next_to_add);
-    return stack->obj[stack->next_to_add - 1];
+int
+nm_so_stack_push(struct nm_so_stack *p_stack, void *obj){
+    int err;
+
+    assert(p_stack);
+    assert(p_stack->next_to_add < p_stack->nb_entries);
+
+    p_stack->obj[p_stack->next_to_add] = obj;
+    p_stack->next_to_add++;
+
+    err = NM_ESUCCESS;
+    return err;
+}
+
+int
+nm_so_stack_pop(struct nm_so_stack *p_stack, void ** pp_obj){
+    void * p_obj = NULL;
+    int err;
+
+    assert(p_stack->next_to_add);
+
+    p_obj = p_stack->obj[p_stack->next_to_add - 1];
+    p_stack->next_to_add--;
+
+    *pp_obj = p_obj;
+    err = NM_ESUCCESS;
+
+    return err;
+}
+
+int
+nm_so_stack_size(struct nm_so_stack *p_stack){
+    return p_stack->next_to_add;
+}
+
+int
+nm_so_stack_top(struct nm_so_stack *p_stack, void **pp_obj){
+    int err;
+
+    assert(p_stack->next_to_add);
+
+    *pp_obj = p_stack->obj[p_stack->next_to_add - 1];
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 
-void *
-nm_so_stack_down(struct nm_so_stack *stack){
-    assert(stack->next_to_add);
-    return stack->obj[0];
+int
+nm_so_stack_down(struct nm_so_stack *p_stack, void ** pp_obj){
+    int err;
+
+    assert(p_stack->next_to_add);
+
+    *pp_obj = p_stack->obj[0];
+
+    err = NM_ESUCCESS;
+    return err;
 }

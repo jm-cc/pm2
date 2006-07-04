@@ -31,64 +31,96 @@ double chrono_take_pre_posted = 0.0;
 int    nb_take_pre_posted = 0;
 #endif
 
-static struct nm_pkt_wrap *
-take_pre_posted(struct nm_sched *p_sched,
-                struct nm_trk *trk){
+static int
+nm_so_take_pre_posted(struct nm_sched *p_sched,
+                      struct nm_trk *trk,
+                      struct nm_pkt_wrap **pp_pw){
 #ifdef CHRONO
     tbx_tick_t      t1, t2;
     nb_take_pre_posted ++;
     TBX_GET_TICK(t1);
 #endif
 
-    struct nm_pkt_wrap	*p_pw
-        = nm_so_take_pre_posted_pw(p_sched);
-    if(!p_pw)
-        TBX_FAILURE("pre_posted NULL");
+    struct nm_pkt_wrap	*p_pw = NULL;
+    int err;
+
+    err = nm_so_take_pre_posted_pw(p_sched, &p_pw);
+    nm_so_control_error("nm_so_take_pre_posted", err);
 
     /* mise sur la piste demandée */
     p_pw->p_drv  = trk->p_drv;
     p_pw->p_trk  = trk;
+
+    *pp_pw = p_pw;
 
 #ifdef CHRONO
     TBX_GET_TICK(t2);
     chrono_take_pre_posted += TBX_TIMING_DELAY(t1, t2);
 #endif
 
-    return p_pw;
+    err = NM_ESUCCESS;
+    return err;
 }
 
-static void
-schedule_ack(struct nm_core *p_core,
-             struct nm_gate *p_gate,
-             struct nm_rdv_ack_rq *p_ack){
-    struct nm_sched *p_sched = p_core->p_sched;
+static int
+nm_so_schedule_ack(struct nm_core *p_core,
+                   struct nm_gate *p_gate,
+                   struct nm_rdv_ack_rq *p_ack){
+    struct nm_sched    *p_sched = p_core->p_sched;
     struct nm_so_sched *so_sched = p_sched->sch_private;
+    int err;
 
     if(!so_sched->acks){
-        so_sched->acks = nm_so_take_aggregation_pw(p_sched);
+        err = nm_so_take_aggregation_pw(p_sched,
+                                        &so_sched->acks);
+        nm_so_control_error("nm_so_take_aggregation_pw", err);
     }
 
 
     // ajout de l'ack du scheduler
     struct nm_so_header *so_ack
         = tbx_malloc(so_sched->header_key);
+    if(!so_ack){
+        err = nm_so_release_aggregation_pw(p_sched, so_sched->acks);
+        if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_release_aggregation_pw returned %d", err);
+        }
+        err = -NM_ENOMEM;
+        goto out;
+    }
+
     so_ack->proto_id = nm_pi_rdv_ack;
-    nm_iov_append_buf(p_core, so_sched->acks, so_ack,
-                      sizeof(struct nm_so_header));
+    err = nm_iov_append_buf(p_core, so_sched->acks, so_ack,
+                            sizeof(struct nm_so_header));
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_iov_append_buf returned %d", err);
+    }
 
     //ajout de l'ack du protocole
-    nm_iov_append_buf(p_core, so_sched->acks, p_ack,
-                      nm_rdv_ack_rq_size());
+    err = nm_iov_append_buf(p_core, so_sched->acks, p_ack,
+                            nm_rdv_ack_rq_size());
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_iov_append_buf returned %d", err);
+    }
+
+    err = NM_ESUCCESS;
+ out:
+    return err;
 }
 
 
 
-static void
-push_acks(struct nm_gate *p_gate){
+static int
+nm_so_push_acks(struct nm_gate *p_gate){
     struct nm_so_sched *so_sched = p_gate->p_sched->sch_private;
     struct nm_pkt_wrap *acks = so_sched->acks;
+    int err;
 
-    nm_so_update_global_header(acks, acks->v_nb, acks->length);
+    err = nm_so_update_global_header(acks,
+                                     acks->v_nb, acks->length);
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_so_update_global_header returned %d", err);
+    }
 
     /* mise sur la piste des petits */
     struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
@@ -103,6 +135,9 @@ push_acks(struct nm_gate *p_gate){
 
     tbx_slist_append(p_gate->post_sched_out_list, acks);
     so_sched->acks = NULL;
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 
@@ -112,7 +147,7 @@ double chrono_treat_unexpected = 0.0;
 int    nb_treat_unexpected = 0;
 #endif
 
-static void
+static int
 nm_so_treat_unexpected(struct nm_sched *p_sched){
 #ifdef CHRONO
     tbx_tick_t      t1;
@@ -122,10 +157,11 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
 #endif
 
     struct nm_so_sched *p_so_sched = p_sched->sch_private;
-    p_tbx_slist_t unexpected_list = p_so_sched->unexpected_list;
+    p_tbx_slist_t unexpected_list  = p_so_sched->unexpected_list;
+    int err;
 
     if(!tbx_slist_get_length(unexpected_list))
-        return;
+        goto end;
 
     struct nm_so_unexpected *unexpected = NULL;
     uint8_t proto_id  = 0;
@@ -135,11 +171,16 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
     tbx_slist_ref_to_head(unexpected_list);
     do{
         unexpected = tbx_slist_ref_get(unexpected_list);
-        proto_id  = unexpected->proto_id;
-        seq       = unexpected->seq;
+        proto_id   = unexpected->proto_id;
+        seq        = unexpected->seq;
 
-        p_dest_pw = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
-                                                proto_id, seq);
+        err = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
+                                          proto_id, seq,
+                                          &p_dest_pw);
+        if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_search_and_extract_pw returned %d", err);
+        }
+
 
         if(p_dest_pw){
             tbx_slist_ref_extract_and_forward(unexpected_list,
@@ -149,15 +190,14 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
                    unexpected->len);
 
             // appel au handler de succès du protocole associé
-            int err;
             struct nm_proto * p_proto
                 = p_sched->p_core->p_proto_array[p_dest_pw->proto_id];
             if (!p_proto) {
                 NM_TRACEF("unregistered protocol: %d", p_proto->id);
-                return;
+                goto end;
             }
             if (!p_proto->ops.in_success)
-                return;
+                goto end;
 
             err = p_proto->ops.in_success(p_proto, p_dest_pw);
             if (err != NM_ESUCCESS) {
@@ -181,6 +221,10 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
     TBX_GET_TICK(t2);
     chrono_treat_unexpected += TBX_TIMING_DELAY(t1, t2);
 #endif
+
+ end:
+    err = NM_ESUCCESS;
+    return err;
 }
 
 #ifdef CHRONO
@@ -216,10 +260,22 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
     // traitement de rdv mis en attente
     struct nm_proto *p_proto = p_core->p_proto_array[nm_pi_rdv_req];
     struct nm_rdv_ack_rq *p_ack = NULL;
-    struct nm_gate *ack_gate = nm_rdv_treat_waiting_rdv(p_proto, &p_ack);
+    struct nm_gate *ack_gate = NULL;
+    err = nm_rdv_treat_waiting_rdv(p_proto, &p_ack, &ack_gate);
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_rdv_treat_waiting_rdv returned %d", err);
+    }
+
     if(p_ack && ack_gate){
-        schedule_ack(p_core, ack_gate, p_ack);
-        push_acks(ack_gate);
+        err = nm_so_schedule_ack(p_core, ack_gate, p_ack);
+        if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_schedule_ack returned %d", err);
+        }
+
+        err = nm_so_push_acks(ack_gate);
+        if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_push_acks returned %d", err);
+        }
     }
 #ifdef CHRONO
     TBX_GET_TICK(t4);
@@ -237,9 +293,10 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
             so_trk->pending_stream_intro = tbx_true;
 
             // réception de la taille des données
-            p_pw = take_pre_posted(p_sched, trk);
-            if(!p_pw)
-                TBX_FAILURE("pre_posted not created");
+            err = nm_so_take_pre_posted(p_sched, trk, &p_pw);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_so_take_pre_posted returned %d", err);
+            }
 
             p_pw->v[p_pw->v_first].iov_len
                 = sizeof(nm_so_sched_header_t);
@@ -251,9 +308,10 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
 
 
         } else if(trk->cap.rq_type == nm_trk_rq_dgram){
-            p_pw = take_pre_posted(p_sched, trk);
-            if(!p_pw)
-                TBX_FAILURE("pre_posted not created");
+            err = nm_so_take_pre_posted(p_sched, trk, &p_pw);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_so_take_pre_posted returned %d", err);
+            }
 
             tbx_slist_append(p_sched->post_perm_recv_req, p_pw);
 
@@ -293,11 +351,11 @@ double chrono_data = 0.0;
 int    nb_data = 0;
 #endif
 
-static void
-open_data(struct nm_sched *p_sched,
-          struct nm_gate *p_gate,
-          uint8_t  nb_seg,
-          void * data){
+static int
+nm_so_open_data(struct nm_sched *p_sched,
+                struct nm_gate *p_gate,
+                uint8_t  nb_seg,
+                void * data){
     struct nm_core *p_core = p_sched->p_core;
     struct nm_so_sched *so_sched = p_sched->sch_private;
     struct nm_pkt_wrap *p_dest_pw = NULL;
@@ -306,6 +364,7 @@ open_data(struct nm_sched *p_sched,
     nm_so_header_t *header = NULL;
     struct nm_proto *p_proto = NULL;
     uint8_t proto_id = -1;
+    int err;
 
 #ifdef CHRONO
     tbx_tick_t      t1, t2, t3, t4;
@@ -332,11 +391,18 @@ open_data(struct nm_sched *p_sched,
 
             assert(p_proto);
 
-            nm_rdv_treat_rdv_rq(p_proto,
-                                data + sizeof(nm_so_header_t),
-                                &p_ack);
+            err = nm_rdv_treat_rdv_rq(p_proto,
+                                      data + sizeof(nm_so_header_t),
+                                      &p_ack);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_rdv_treat_rdv_rq returned %d", err);
+            }
+
             if(p_ack){
-                schedule_ack(p_core, p_gate, p_ack);
+                err = nm_so_schedule_ack(p_core, p_gate, p_ack);
+                if(err != NM_ESUCCESS){
+                    NM_DISPF("nm_so_schedule_ack returned %d", err);
+                }
             }
 
             data += sizeof(nm_so_header_t) +
@@ -355,8 +421,11 @@ open_data(struct nm_sched *p_sched,
 
             assert(p_proto);
 
-            nm_rdv_treat_ack_rq(p_proto,
-                                data + sizeof(nm_so_header_t));
+            err = nm_rdv_treat_ack_rq(p_proto,
+                                      data + sizeof(nm_so_header_t));
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_rdv_treat_ack_rq returned %d", err);
+            }
 
             data += sizeof(nm_so_header_t) +
                 nm_rdv_ack_rq_size();
@@ -372,8 +441,13 @@ open_data(struct nm_sched *p_sched,
             len = header->len;
 
             //printf(" nm_so_search_and_extract_pw - open_data\n");
-            p_dest_pw = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
-                                                    proto_id, seq);
+            err = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
+                                              proto_id, seq,
+                                              &p_dest_pw);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_so_search_and_extract_pw returned %d", err);
+            }
+
             data += sizeof(nm_so_header_t);
 
             if(p_dest_pw){
@@ -418,7 +492,6 @@ open_data(struct nm_sched *p_sched,
                                  unexpected);
             }
 
-
             data += len;
 
             nb_seg -= 2;
@@ -433,23 +506,28 @@ open_data(struct nm_sched *p_sched,
             TBX_FAILURE("Entête non supportée");
         }
     }
-    if(so_sched->acks)
-        push_acks(p_gate);
+    if(so_sched->acks){
+        err = nm_so_push_acks(p_gate);
+        if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_push_acks returned %d", err);
+        }
+    }
+
 
 #ifdef CHRONO
     TBX_GET_TICK(t2);
     chrono_open_data += TBX_TIMING_DELAY(t1, t2);
 #endif
     //printf("<--open_received_data_complete\n");
+    err = NM_ESUCCESS;
+    return err;
 }
 
-
-
-static void
-open_received_data_complete(struct nm_sched *p_sched,
-                            struct nm_gate *p_gate,
-                            void * data){
-
+static int
+nm_so_open_received_data_complete(struct nm_sched *p_sched,
+                                  struct nm_gate *p_gate,
+                                  void * data){
+    int err;
     nm_so_sched_header_t * global_header
         = (nm_so_sched_header_t *)data;
 
@@ -463,7 +541,13 @@ open_received_data_complete(struct nm_sched *p_sched,
     data += sizeof(nm_so_sched_header_t);
 
 
-    open_data(p_sched, p_gate, nb_seg, data);
+    err = nm_so_open_data(p_sched, p_gate, nb_seg, data);
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_so_open_data returned %d", err);
+    }
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 
@@ -490,6 +574,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     struct nm_so_pkt_wrap * so_wrap = NULL;
 
     void * data = p_pw->v[p_pw->v_first].iov_base;
+    int err;
 
     if(p_trk->cap.rq_type == nm_trk_rq_stream){
         if(so_trk->pending_stream_intro){ // on attend l'entete
@@ -506,18 +591,27 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             len = header->len - sizeof(struct nm_so_sched_header);
 
             so_wrap = TBX_MALLOC(sizeof(struct nm_so_pkt_wrap));
+            if(!so_wrap){
+                err = -NM_ENOMEM;
+                goto end;
+            }
+
             so_wrap->nb_seg = header->nb_seg - 1;
 
             //DISP_VAL("Longueur des données à recevoir", len);
             //DISP_VAL("nb seg à recevoir", header->nb_seg);
 
             // remise du wrapper d'intro
-            nm_so_release_pre_posted_pw(p_sched, p_pw);
+            err = nm_so_release_pre_posted_pw(p_sched, p_pw);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
+            }
 
             // on dépose la réception des données
-            p_data_pw = take_pre_posted(p_sched, p_trk);
-            if(!p_data_pw)
-                TBX_FAILURE("pre_posted not created");
+            err = nm_so_take_pre_posted(p_sched, p_trk, &p_data_pw);
+            if(err != NM_ESUCCESS){
+                NM_DISPF("nm_so_take_pre_posted returned %d", err);
+            }
 
             p_data_pw->v[p_data_pw->v_first].iov_len = len;
 
@@ -534,12 +628,19 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             so_wrap = p_pw->sched_priv;
 
             // déballage des données
-            open_data(p_sched, p_pw->p_gate,
-                      so_wrap->nb_seg, data);
+            err = nm_so_open_data(p_sched, p_pw->p_gate,
+                                  so_wrap->nb_seg, data);
+            if (err != NM_ESUCCESS){
+                NM_DISPF("nm_so_open_data returned %d", err);
+            }
+
             // piste à mettre à jour
             tbx_slist_append(p_so_sched->trks_to_update, p_pw->p_trk);
             // remise du wrapper
-            nm_so_release_pre_posted_pw(p_sched, p_pw);
+            err = nm_so_release_pre_posted_pw(p_sched, p_pw);
+            if (err != NM_ESUCCESS){
+                NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
+            }
 
             TBX_FREE(so_wrap);
         }
@@ -549,24 +650,34 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
         //printf("-------------PETIT Pack RECU----------------\n\n");
         // déballage des données
-        open_received_data_complete(p_sched, p_pw->p_gate, data);
-        // piste à mettre à jour
+        err = nm_so_open_received_data_complete(p_sched, p_pw->p_gate, data);
+        if (err != NM_ESUCCESS){
+            NM_DISPF("nm_so_open_received_data_complete returned %d", err);
+        }
 
+        // piste à mettre à jour
         tbx_slist_append(p_so_sched->trks_to_update, p_pw->p_trk);
 
         // remise du wrapper
-        nm_so_release_pre_posted_pw(p_sched, p_pw);
+        err = nm_so_release_pre_posted_pw(p_sched, p_pw);
+        if (err != NM_ESUCCESS){
+            NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
+        }
+
 
     } else if (p_trk->cap.rq_type == nm_trk_rq_rdv) {
         printf("-------------LARGE Pack RECU----------------\n\n");
         // signal au protocole de rdv que la piste est libérée
          struct nm_proto * p_proto_rdv
              = p_core->p_proto_array[nm_pi_rdv_req];
-        nm_rdv_free_track(p_proto_rdv, p_trk->id);
+         err = nm_rdv_free_track(p_proto_rdv, p_trk->id);
+         if (err != NM_ESUCCESS){
+             NM_DISPF("nm_rdv_free_track returned %d", err);
+         }
+
 
         // appel au handler de succès du protocole associé
-        int err;
-        struct nm_proto * p_proto = p_core->p_proto_array[p_pw->proto_id];
+         struct nm_proto * p_proto = p_core->p_proto_array[p_pw->proto_id];
         if (!p_proto) {
             NM_TRACEF("unregistered protocol: %d", p_proto->id);
             goto end;
@@ -594,13 +705,14 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
         TBX_FAILURE("nm_so_in_process_success_rq - type de track not supported");
     }
 
+    err = NM_ESUCCESS;
  end:
 #ifdef CHRONO
     TBX_GET_TICK(t2);
     chrono_success_in += TBX_TIMING_DELAY(t1, t2);
 #endif
 
-    return NM_ESUCCESS;
+    return err;
 }
 
 

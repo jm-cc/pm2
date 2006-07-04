@@ -41,7 +41,7 @@ pm2which_prettyprint() # path path...
     do
 	if [ $_PM2WHICH_SHOW_PREFIX = yes ]; then
 	    case "$PM2_SYS" in
-		WIN*_SYS)
+		CYGWIN*_SYS|MINGWIN*_SYS)
 		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|' -e 's|\.exe$||g'
 		    ;;
 		*)
@@ -110,7 +110,7 @@ pm2which_calc()
     # On regarde si le nom de la commande est relatif/absolu
 
     case "$PM2_SYS" in
-	WIN*_SYS)
+	CYGWIN*_SYS|MINGWIN*_SYS)
 	    _ext=".exe"
 	    ;;
 	*)

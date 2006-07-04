@@ -1,0 +1,9 @@
+#!/bin/bash
+###########
+
+if [ -r build.cfg ]; then
+    config=$(cat build.cfg)
+fi
+
+make $config "$@" && (cd examples/basic && make $config "$@")
+#

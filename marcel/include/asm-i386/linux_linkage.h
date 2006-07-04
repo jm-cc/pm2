@@ -22,9 +22,9 @@
 #section marcel_macros
 
 #ifdef WIN_SYS
-#define asmlinkage CPP_ASMLINKAGE __attribute__((stdcall))
-#define FASTCALL(x)	x __attribute__((fastcall))
-#define fastcall	__attribute__((fastcall))
+#define asmlinkage CPP_ASMLINKAGE __attribute__((__stdcall__))
+#define FASTCALL(x)	x __attribute__((__fastcall__))
+#define fastcall	__attribute__((__fastcall__))
 #else
 #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
 #define FASTCALL(x)	x __attribute__((regparm(3)))

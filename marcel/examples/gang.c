@@ -20,8 +20,9 @@
 #include <limits.h>
 
 #ifndef MARCEL_BUBBLE_STEAL
-#error I need the bubble_steal option
-#endif
+#warning I need the bubble_steal option
+int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the bubble_steal option\n"); }
+#else
 
 #define GANGS 5
 #define THREADS 16
@@ -102,3 +103,4 @@ int marcel_main(int argc, char **argv)
 
 
 
+#endif

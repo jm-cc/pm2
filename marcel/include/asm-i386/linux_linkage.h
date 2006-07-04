@@ -21,9 +21,15 @@
  */
 #section marcel_macros
 
+#ifdef WIN_SYS
+#define asmlinkage CPP_ASMLINKAGE __attribute__((stdcall))
+#define FASTCALL(x)	x __attribute__((fastcall))
+#define fastcall	__attribute__((fastcall))
+#else
 #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
 #define FASTCALL(x)	x __attribute__((regparm(3)))
 #define fastcall	__attribute__((regparm(3)))
+#endif
 
 //#ifdef CONFIG_X86_ALIGNMENT_16
 //#define __ALIGN .align 16,0x90

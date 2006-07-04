@@ -15,7 +15,9 @@
  */
 
 #include "marcel.h"
+#ifdef MA__LIBPTHREAD
 #include <semaphore.h>
+#endif
 #include <errno.h>
 
 void marcel_sem_init(marcel_sem_t *s, int initial)

@@ -59,7 +59,11 @@ tbx_timing_init()
 
     TBX_GET_TICK(t1);
     gettimeofday(&tv1,0);
+#ifdef __MINGW32__
+    Sleep(50);
+#else
     usleep(50000);
+#endif
     TBX_GET_TICK(t2);
     gettimeofday(&tv2,0);
     scale = ((tv2.tv_sec*1e6 + tv2.tv_usec) -

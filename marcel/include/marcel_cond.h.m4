@@ -22,6 +22,14 @@ dnl  ***************************/
 
 #depend "linux_spinlock.h[macros]"
 
+#section types
+#ifdef __MINGW32__
+struct timespec {
+  time_t tv_sec;
+  long tv_nsec;
+};
+#endif
+
 #section macros
 
 REPLICATE([[dnl

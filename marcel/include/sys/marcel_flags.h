@@ -196,7 +196,7 @@
 #endif
 
 /* On peut ne pas vouloir de signaux quand même */
-#ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#if defined(MA_DO_NOT_LAUNCH_SIGNAL_TIMER) || defined(__MINGW32__)
 #ifdef PM2_DEV
 #warning NO SIGNAL TIMER ENABLE
 #warning I hope you are debugging

@@ -72,6 +72,7 @@ nm_mini_alt_make_ctrl_pkt(struct nm_sched		 *p_sched,
         if (!p_mini_alt_ctrl) {
                 nm_iov_free(p_core, p_pw);
                 nm_pkt_wrap_free(p_core, p_pw);
+                err	= -NM_ENOMEM;
                 goto out;
         }
 

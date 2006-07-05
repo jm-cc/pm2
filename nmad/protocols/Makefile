@@ -18,6 +18,10 @@ ifeq ($(CONFIG_SCHED_OPT), y)
 SUBDIRS	+= proto_rdv
 endif
 
+ifeq ($(CONFIG_PROTO_MAD3), y)
+SUBDIRS	+= proto_mad3
+endif
+
 NM_PATH		:= ..
 MAKE_CONF	:= $(NM_PATH)/make.conf
 MAKE_TREE	:= $(NM_PATH)/make.tree

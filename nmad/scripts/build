@@ -5,5 +5,5 @@ if [ -r build.cfg ]; then
     config=$(cat build.cfg)
 fi
 
-make $config "$@" && (cd examples/basic && make $config "$@")
+make $config "$@" && (for i in examples/*; do test -d $i && (cd $i && make $config "$@"); done)
 #

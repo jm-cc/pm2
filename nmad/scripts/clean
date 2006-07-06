@@ -5,5 +5,5 @@ if [ -r build.cfg ]; then
     config=$(cat build.cfg)
 fi
 
-make $config clean && (cd examples/basic && make $config clean)
+make $config clean && (for i in examples/*; do test -d $i && (cd $i && make $config clean); done)
 #

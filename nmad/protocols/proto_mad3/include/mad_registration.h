@@ -27,25 +27,22 @@
  */
 typedef enum
 {
-#ifdef DRV_TCP
   mad_NMAD_TCP,
-#endif // DRV_TCP
-
-#ifdef DRV_SCTP
+#ifdef CONFIG_SCTP
   mad_NMAD_SCTP,
-#endif // DRV_SCTP
+#endif
 
-#ifdef DRV_GM
+#ifdef CONFIG_GM
   mad_NMAD_GM,
-#endif // DRV_GM
+#endif
 
-#ifdef DRV_MX
+#ifdef CONFIG_MX
   mad_NMAD_MX,
-#endif // DRV_MX
+#endif
 
-#ifdef DRV_QUADRICS
-  mad_NMAD_QUADRICS,
-#endif // DRV_QUADRICS
+#ifdef CONFIG_QSNET
+  mad_NMAD_QSNET,
+#endif
 
   mad_driver_number // Must be the last element of the enum declaration
 } mad_driver_id_t, *p_mad_driver_id_t;

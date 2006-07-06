@@ -1181,6 +1181,28 @@ mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
   LOG_OUT();
 }
 
+void
+mad_exit(p_mad_madeleine_t madeleine) 
+{
+  mad_leonie_sync(madeleine);
+  mad_dir_channels_exit(madeleine);
+  mad_dir_driver_exit(madeleine);
+  mad_directory_exit(madeleine);
+  mad_leonie_link_exit(madeleine);
+  mad_leonie_command_exit(madeleine);
+  mad_object_exit(madeleine);
+  madeleine = NULL;
+  mad_memory_manager_exit();
+
+#if 0
+  /* TODO: enable common_exit cleanup
+   */
+#warning TODO
+  common_exit(NULL);
+#endif
+}
+
+
 /*
  * Local variables:
  *  c-basic-offset: 2

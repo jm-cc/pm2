@@ -46,5 +46,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine);
 void
 mad_directory_exit(p_mad_madeleine_t madeleine);
 
+void
+mad_exit(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_EXIT_H */

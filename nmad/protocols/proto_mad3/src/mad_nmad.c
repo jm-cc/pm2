@@ -1,6 +1,6 @@
 /*
- * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * NewMadeleine
+ * Copyright (C) 2006 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,33 @@
  */
 
 
+#include <stdint.h>
+#include <sys/uio.h>
+#include <assert.h>
+
+#include <tbx.h>
+
+#include <nm_public.h>
+#if defined CONFIG_SCHED_MINI_ALT
+#  include <nm_mini_alt_public.h>
+#else
+#  error mad_nmad.c requires the mini alt scheduler for now
+#endif
+
+#if defined CONFIG_MX
+#  include <nm_mx_public.h>
+#elif defined CONFIG_GM
+#  include <nm_gm_public.h>
+#elif defined CONFIG_QSNET
+#  include <nm_qsnet_public.h>
+#else
+#  include <nm_tcp_public.h>
+#endif
+
+#include "nm_mad3_private.h"
+
 #include "madeleine.h"
 
-#include <stdlib.h>
-#include <sys/uio.h>
 #include <errno.h>
 
 
@@ -33,12 +56,12 @@
  * ----------------
  */
 typedef struct s_mad_nmad_driver_specific {
-        struct nm_core		*p_core;
-        struct nm_proto		*p_proto;
+        uint8_t			 drv_id;
+        char			*l_url;
 } mad_nmad_driver_specific_t, *p_mad_nmad_driver_specific_t;
 
 typedef struct s_mad_nmad_adapter_specific {
-        uint8_t			 drv_id;
+        int dummy;
 } mad_nmad_adapter_specific_t, *p_mad_nmad_adapter_specific_t;
 
 typedef struct s_mad_nmad_channel_specific {
@@ -116,6 +139,188 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t,
                                   tbx_bool_t,
                                   p_mad_buffer_group_t);
 
+/* Macros
+ */
+#define INITIAL_RQ_NUM		4
+
+
+/* static vars
+ */
+/* fast allocator structs */
+static p_tbx_memory_t	 nm_mad3_rq_mem	= NULL;
+
+/* core and proto objects */
+static struct nm_core	*p_core		= NULL;
+static struct nm_proto	*p_proto	= NULL;
+
+/* main madeleine object
+ */
+static p_mad_madeleine_t	p_madeleine	= NULL;
+
+
+
+/*
+ * Driver private functions
+ * ------------------------
+ */
+/* successful outgoing request
+ */
+static
+int
+nm_mad3_out_success	(struct nm_proto 	* const p_proto,
+                         struct nm_pkt_wrap	*p_pw) {
+        struct nm_mad3_rq	 *p_rq	= NULL;
+	int err;
+
+        p_rq	= p_pw->proto_priv;
+        p_rq->lock	= 0;
+        p_rq->status	= NM_ESUCCESS;
+	err = NM_ESUCCESS;
+
+	return err;
+}
+
+/* failed outgoing request
+ */
+static
+int
+nm_mad3_out_failed	(struct nm_proto 	* const p_proto,
+                         struct nm_pkt_wrap	*p_pw,
+                         int			_err) {
+        struct nm_mad3_rq	 *p_rq	= NULL;
+	int err;
+
+        p_rq	= p_pw->proto_priv;
+        p_rq->lock	= 0;
+        p_rq->status	= _err;
+	err = NM_ESUCCESS;
+
+	return err;
+}
+
+/* successful incoming request
+ */
+static
+int
+nm_mad3_in_success	(struct nm_proto 	* const p_proto,
+                         struct nm_pkt_wrap	*p_pw) {
+        struct nm_mad3_rq	 *p_rq	= NULL;
+	int err;
+
+        p_rq	= p_pw->proto_priv;
+        p_rq->lock	= 0;
+        p_rq->status	= NM_ESUCCESS;
+	err = NM_ESUCCESS;
+
+	return err;
+}
+
+/* failed incoming request
+ */
+static
+int
+nm_mad3_in_failed	(struct nm_proto 	* const p_proto,
+                         struct nm_pkt_wrap	*p_pw,
+                         int			_err) {
+        struct nm_mad3_rq	 *p_rq	= NULL;
+	int err;
+
+        p_rq	= p_pw->proto_priv;
+        p_rq->lock	= 0;
+        p_rq->status	= _err;
+	err = NM_ESUCCESS;
+
+	return err;
+}
+
+/* protocol initialisation
+ */
+static
+int
+nm_mad3_proto_init	(struct nm_proto 	* const p_proto) {
+        struct nm_core	 *p_core	= NULL;
+        struct nm_mad3	 *p_mad3	= NULL;
+        int i;
+	int err;
+
+        p_core	= p_proto->p_core;
+
+        /* check if protocol may be registered
+         */
+        for (i = 0; i < 127; i++) {
+                if (p_core->p_proto_array[128+i]) {
+                        NM_DISPF("nm_mad3_proto_init: protocol entry %d already used",
+                             128+i);
+
+                        err	= -NM_EALREADY;
+                        goto out;
+                }
+        }
+
+        /* allocate private protocol part
+         */
+        p_mad3	= TBX_MALLOC(sizeof(struct nm_mad3));
+        if (!p_mad3) {
+                err = -NM_ENOMEM;
+                goto out;
+        }
+
+        /* TODO: allocate the madeleine object wrapper
+         */
+#warning TODO
+        p_mad3->p_madeleine	= NULL;
+
+        /* setup allocator for request structs
+         */
+        tbx_malloc_init(&nm_mad3_rq_mem,   sizeof(struct nm_mad3_rq),
+                        INITIAL_RQ_NUM,   "nmad/mad3/rq");
+
+        /* register protocol
+         */
+        p_proto->priv	= p_mad3;
+        for (i = 0; i < 127; i++) {
+                p_core->p_proto_array[128+i] = p_proto;
+        }
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+static
+int
+nm_mad3_load		(struct nm_proto_ops	*p_ops) {
+        p_ops->init		= nm_mad3_proto_init;
+
+        p_ops->out_success	= nm_mad3_out_success;
+        p_ops->out_failed	= nm_mad3_out_failed;
+
+        p_ops->in_success	= nm_mad3_in_success;
+        p_ops->in_failed	= nm_mad3_in_failed;
+
+        return NM_ESUCCESS;
+}
+
+static
+void
+nm_mad3_init_core(int	 *argc,
+                  char	**argv) {
+        int err;
+
+        TRACE("Initializing NMAD driver");
+        err = nm_core_init(argc, argv, &p_core, nm_mini_alt_load);
+        if (err != NM_ESUCCESS) {
+                DISP("nm_core_init returned err = %d\n", err);
+                TBX_FAILURE("newmad error");
+        }
+        err = nm_core_proto_init(p_core, nm_mad3_load, &p_proto);
+        if (err != NM_ESUCCESS) {
+                DISP("nm_core_proto_init returned err = %d\n", err);
+                TBX_FAILURE("newmad error");
+        }
+}
+
 /*
  * Registration function
  * ---------------------
@@ -168,13 +373,50 @@ void
 mad_nmad_driver_init(p_mad_driver_t	   d,
                      int		  *argc,
                      char		***argv) {
-        p_mad_nmad_driver_specific_t ds	= NULL;
+        p_mad_nmad_driver_specific_t	 ds		= NULL;
+        uint8_t			 	 drv_id		=    0;
+        char				*l_url		= NULL;
+        int err;
 
         LOG_IN();
-        TRACE("Initializing NMAD driver");
+        if (!p_core) {
+                nm_mad3_init_core(argc, *argv);
+        }
+
+        if (tbx_streq(d->device_name, "tcp")) {
+                err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
+                goto found;
+        }
+
+#ifdef CONFIG_GM
+        if (tbx_streq(d->device_name, "gm")) {
+                err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
+                goto found;
+        }
+#endif
+
+#ifdef CONFIG_MX
+        if (tbx_streq(d->device_name, "mx")) {
+                err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
+                goto found;
+        }
+#endif
+
+#ifdef CONFIG_QSNET
+        if (tbx_streq(d->device_name, "quadrics")) {
+                err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
+                goto found;
+        }
+#endif
+
+        TBX_FAILURE("driver unavailable");
+
+found:
         d->connection_type	= mad_bidirectional_connection;
         d->buffer_alignment	= 32;
         ds			= TBX_MALLOC(sizeof(mad_nmad_driver_specific_t));
+        ds->drv_id	= drv_id;
+        ds->l_url	= l_url;
         d->specific	= ds;
         LOG_OUT();
 }
@@ -182,19 +424,18 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 static
 void
 mad_nmad_adapter_init(p_mad_adapter_t	a) {
+        p_mad_nmad_driver_specific_t	ds	= NULL;
         p_mad_nmad_adapter_specific_t	as	= NULL;
-        p_tbx_string_t		param	= NULL;
 
         LOG_IN();
         if (strcmp(a->dir_adapter->name, "default"))
                 TBX_FAILURE("unsupported adapter");
 
-        as	= TBX_MALLOC(sizeof(mad_nmad_adapter_specific_t));
-        a->specific		= as;
+        ds	= a->driver->specific;
 
-        param		= tbx_string_init_to_int(1234);	/* dummy param */
-        a->parameter	= tbx_string_to_cstring(param);
-        tbx_string_free(param);
+        as	= TBX_MALLOC(sizeof(mad_nmad_adapter_specific_t));
+        a->specific	= as;
+        a->parameter	= tbx_strdup(ds->l_url);
         LOG_OUT();
 }
 

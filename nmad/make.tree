@@ -21,7 +21,7 @@ build:
 	for d in $(SUBDIRS); do make -C $$d build || exit; done
 else
 build:
-	@for d in $(SUBDIRS); do echo "  [$$d/]";make --no-print-directory -C $$d build || exit; done
+	@cur=`basename \`pwd\``;for d in $(SUBDIRS); do echo "  [$$cur/$$d/]";make --no-print-directory -C $$d build || exit; done
 endif
 
 ifeq ($(CONFIG_VERBOSE), y)
@@ -29,6 +29,6 @@ clean:
 	for d in $(SUBDIRS); do make -C $$d clean; done
 else
 clean:
-	@for d in $(SUBDIRS); do echo "  [$$d/]";make --no-print-directory -C $$d clean; done
+	@cur=`basename \`pwd\``;for d in $(SUBDIRS); do echo "  [$$cur/$$d/]";make --no-print-directory -C $$d clean; done
 endif
 #

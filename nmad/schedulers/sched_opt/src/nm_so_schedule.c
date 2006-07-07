@@ -64,13 +64,18 @@ nm_so_init_pre_posted(struct nm_core *p_core,
     p_priv->nb_ready_pre_posted_wraps = nb_pre_posted;
     err = nm_so_stack_create(&p_priv->ready_pre_posted_wraps,
                              nb_pre_posted);
-#warning TODO
+    if(err != NM_ESUCCESS){
+        NM_DISPF("nm_so_stack_create returned %d", err);
+        goto out;
+    }
+
 
     for(i = 0; i < nb_pre_posted; i++){
         /* Allocation of the packet wrapper */
         err = nm_pkt_wrap_alloc(p_core, &p_pw,
                                 nm_pi_sched, 0);
         if (err != NM_ESUCCESS){
+            NM_DISPF("nm_pkt_wrap_alloc returned %d", err);
             goto free;
         }
 
@@ -78,6 +83,7 @@ nm_so_init_pre_posted(struct nm_core *p_core,
         /* Allocation of the iovec */
         err = nm_iov_alloc(p_core, p_pw, 1);
         if (err != NM_ESUCCESS){
+            NM_DISPF("nm_iov_alloc returned %d", err);
             nm_pkt_wrap_free(p_core, p_pw);
             goto free;
         }
@@ -94,11 +100,11 @@ nm_so_init_pre_posted(struct nm_core *p_core,
 
         err = nm_iov_append_buf(p_core, p_pw,
                                 buffer, AGGREGATED_PW_MAX_SIZE);
-        if (err != NM_ESUCCESS){
-            NM_DISPF("nm_iov_append_buf returned %d", err);
-        }
+        nm_so_control_error("nm_iov_append_buf", err);
 
-        nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
+        err = nm_so_stack_push(p_priv->ready_pre_posted_wraps,
+                               p_pw);
+        nm_so_control_error("nm_so_stack_push", err);
     }
 
     err = NM_ESUCCESS;
@@ -108,10 +114,13 @@ nm_so_init_pre_posted(struct nm_core *p_core,
     while(nm_so_stack_size(p_priv->ready_pre_posted_wraps)){
         err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps,
                               (void **)&p_pw);
-#warning TODO
+        nm_so_control_error("nm_so_stack_pop", err);
 
-        nm_iov_free(p_core, p_pw);
-        nm_pkt_wrap_free(p_core, p_pw);
+        err = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err);
+
+        err = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err);
     }
 
  out:
@@ -124,21 +133,27 @@ nm_so_init_pw(struct nm_core *p_core,
               int nb_iov_entries,
               struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap	*p_pw = NULL;
-    int err;
+    int err, err2;
     int i;
 
     /* allocate packet wrapper */
     err = nm_pkt_wrap_alloc(p_core, &p_pw,
                             nm_pi_sched, 0);
-    if (err != NM_ESUCCESS)
+    if (err != NM_ESUCCESS){
+        NM_DISPF("nm_pkt_wrap_alloc returned %d", err);
         goto out;
+    }
 
     p_pw->v_first = 0;
 
     /* allocate iovec */
     err = nm_iov_alloc(p_core, p_pw, nb_iov_entries);
     if (err != NM_ESUCCESS) {
-        nm_pkt_wrap_free(p_core, p_pw);
+        NM_DISPF("nm_iov_alloc returned %d", err);
+
+        err2 = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err2);
+
         goto out;
     }
 
@@ -147,8 +162,12 @@ nm_so_init_pw(struct nm_core *p_core,
         tbx_malloc(p_priv->sched_header_key);
 
     if (!global_header) {
-        nm_iov_free(p_core, p_pw);
-        nm_pkt_wrap_free(p_core, p_pw);
+        err2 = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err2);
+
+        err2 = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err2);
+
         err = -NM_ENOMEM;
         goto out;
     }
@@ -156,15 +175,17 @@ nm_so_init_pw(struct nm_core *p_core,
     global_header->nb_seg = 1;
     err = nm_iov_append_buf(p_core, p_pw, global_header,
                             sizeof(nm_so_sched_header_t));
-    if (err != NM_ESUCCESS){
-        NM_DISPF("nm_iov_append_buf returned %d", err);
-    }
+    nm_so_control_error("nm_iov_append_buf", err);
 
     struct nm_pkt_wrap **aggregated_pws =
         TBX_MALLOC(nb_iov_entries * sizeof(struct nm_pkt_wrap *));
     if(!aggregated_pws){
-        nm_iov_free(p_core, p_pw);
-        nm_pkt_wrap_free(p_core, p_pw);
+        err2 = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err2);
+
+        err2 = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err2);
+
         err = -NM_ENOMEM;
         goto out;
     }
@@ -175,8 +196,12 @@ nm_so_init_pw(struct nm_core *p_core,
 
     struct nm_so_pkt_wrap * pw_priv = TBX_MALLOC(sizeof(struct nm_so_pkt_wrap));
     if(!pw_priv){
-        nm_iov_free(p_core, p_pw);
-        nm_pkt_wrap_free(p_core, p_pw);
+        err2 = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err2);
+
+        err2 = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err2);
+
         err = -NM_ENOMEM;
         goto out;
     }
@@ -203,16 +228,18 @@ nm_so_init_aggregation_pw(struct nm_core *p_core,
 
     p_priv->nb_ready_wraps = nb_pw;
     err = nm_so_stack_create(&p_priv->ready_wraps, nb_pw);
-#warning TODO
+    nm_so_control_error("nm_so_stack_create", err);
 
     for(i = 0; i < nb_pw; i++){
         err = nm_so_init_pw(p_core, p_priv,
                             AGGREGATED_PW_MAX_NB_SEG, &p_pw);
         if(err != NM_ESUCCESS){
+            NM_DISPF("nm_so_init_pw returned %d", err);
             goto free;
         }
 
-        nm_so_stack_push(p_priv->ready_wraps, p_pw);
+        err = nm_so_stack_push(p_priv->ready_wraps, p_pw);
+        nm_so_control_error("nm_so_stack_push", err);
     }
 
     err = NM_ESUCCESS;
@@ -221,9 +248,13 @@ nm_so_init_aggregation_pw(struct nm_core *p_core,
  free:
     while(nm_so_stack_size(p_priv->ready_wraps)){
         err = nm_so_stack_pop(p_priv->ready_wraps, (void **)&p_pw);
+        nm_so_control_error("nm_so_stack_pop", err);
 
-        nm_iov_free(p_core, p_pw);
-        nm_pkt_wrap_free(p_core, p_pw);
+        err = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err);
+
+        err = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err);
     }
 
  out:
@@ -249,7 +280,7 @@ nm_so_schedule_init (struct nm_sched *p_sched) {
                                 NB_CREATED_PRE_POSTED);
 
     if(err != NM_ESUCCESS){
-        printf("nm_so_init_pre_posted returned err = %d\n", err);
+        NM_DISPF("nm_so_init_pre_posted returned err = %d\n", err);
         goto out;
     }
 
@@ -266,8 +297,8 @@ nm_so_schedule_init (struct nm_sched *p_sched) {
     err = nm_so_init_aggregation_pw(p_core, p_priv,
                                     NB_AGGREGATION_PW);
     if(err != NM_ESUCCESS){
-        printf("nm_so_init_aggregation_pw returned err = %d\n",
-               err);
+        NM_DISPF("nm_so_init_aggregation_pw returned err = %d\n",
+                 err);
         goto out;
     }
 
@@ -275,7 +306,7 @@ nm_so_schedule_init (struct nm_sched *p_sched) {
     err = nm_core_proto_init(p_core, nm_rdv_load,
                              &p_priv->p_proto_rdv);
     if (err != NM_ESUCCESS) {
-        printf("nm_core_proto_init returned err = %d\n", err);
+        NM_DISPF("nm_core_proto_init returned err = %d\n", err);
         goto out;
     }
 
@@ -485,6 +516,7 @@ nm_so_take_aggregation_pw(struct nm_sched *p_sched,
     int err;
 
     err = nm_so_stack_pop(p_priv->ready_wraps, (void **)pp_pw);
+    nm_so_control_error("nm_so_stack_pop", err);
 
     err = NM_ESUCCESS;
     return err;
@@ -505,9 +537,7 @@ nm_so_release_aggregation_pw(struct nm_sched *p_sched,
 
     //reset
     err = nm_so_update_global_header(p_pw, 1, sizeof(struct nm_so_sched_header));
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_so_update_global_header returned %d", err);
-    }
+    nm_so_control_error("nm_so_update_global_header", err);
 
     p_pw->v_nb = 1;
     p_pw->length = sizeof(struct nm_so_sched_header);
@@ -533,7 +563,8 @@ nm_so_release_aggregation_pw(struct nm_sched *p_sched,
 
     //printf("nm_so_release_aggregation_pw - stack_push\n");
 
-    nm_so_stack_push(p_priv->ready_wraps, p_pw);
+    err = nm_so_stack_push(p_priv->ready_wraps, p_pw);
+    nm_so_control_error("nm_so_stack_push", err);
 
     err = NM_ESUCCESS;
     return err;
@@ -548,6 +579,8 @@ nm_so_take_pre_posted_pw(struct nm_sched *p_sched,
     //printf("nm_so_take_pre_posted_pw - stack_pop\n");
 
     err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps, (void **)pp_pw);
+    nm_so_control_error("nm_so_stack_pop", err);
+
     assert(*pp_pw);
 
     err = NM_ESUCCESS;
@@ -597,7 +630,8 @@ nm_so_release_pre_posted_pw(struct nm_sched *p_sched,
 
     //printf("nm_so_release_pre_posted_pw - stack_push\n");
 
-    nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
+    err = nm_so_stack_push(p_priv->ready_pre_posted_wraps, p_pw);
+    nm_so_control_error("nm_so_stack_push", err);
 
 #ifdef CHRONO
     TBX_GET_TICK(t4);
@@ -644,15 +678,11 @@ nm_so_add_data(struct nm_core *p_core,
 
     /* Ajout de l'entête */
     err = nm_iov_append_buf(p_core, p_pw, data_header, sizeof(nm_so_header_t));
-    if (err != NM_ESUCCESS){
-        NM_DISPF("nm_iov_append_buf returned %d", err);
-    }
+    nm_so_control_error("nm_iov_append_buf", err);
 
     /* Ajout des données */
     err = nm_iov_append_buf(p_core, p_pw, data, len);
-    if (err != NM_ESUCCESS){
-        NM_DISPF("nm_iov_append_buf returned %d", err);
-    }
+    nm_so_control_error("nm_iov_append_buf", err);
 
     err = NM_ESUCCESS;
 
@@ -696,6 +726,7 @@ void
 nm_so_control_error(char *fct_name, int err){
     if(err != NM_ESUCCESS){
         NM_DISPF("%s returned %d", fct_name, err);
+        TBX_FAILURE("err != NM_ESUCCESS");
     }
 }
 

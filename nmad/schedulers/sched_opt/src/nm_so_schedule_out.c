@@ -45,7 +45,13 @@ nm_so_search_next(struct nm_gate *p_gate,
         TBX_FAILURE("p_gtrk NULL");
 
     /* construction de prochain pack à émettre */
-    p_pw = nm_so_strategy_application(p_gate, p_drv, pre);
+    err = nm_so_strategy_application(p_gate, p_drv, pre, &p_pw);
+    nm_so_control_error("nm_so_strategy_application", err);
+
+    if(!p_pw){
+        err = -NM_ENOTFOUND;
+        goto out;
+    }
 
     /* je mets le wrap sur la piste des petits (la n°0)*/
     p_pw->p_gate = p_gate;
@@ -56,6 +62,7 @@ nm_so_search_next(struct nm_gate *p_gate,
 
     *pp_pw = p_pw;
 
+ out:
     err = NM_ESUCCESS;
     return err;
 }
@@ -99,10 +106,9 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
         }
 
         err = nm_so_search_next(p_gate, &p_pw);
-        nm_so_print_error("nm_so_schedule_gate", err);
+        nm_so_control_error("nm_so_schedule_gate", err);
 
-        if(!p_pw){
-            err = -NM_ENOTFOUND;
+        if(err == -NM_ENOTFOUND){
             goto out;
         }
 
@@ -121,7 +127,7 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
     //a-t-on un next?
     if(!tbx_slist_is_nil(pre) && !so_gate->next_pw){
         err = nm_so_search_next(p_gate, &so_gate->next_pw);
-        nm_so_print_error("nm_so_search_next", err);
+        nm_so_control_error("nm_so_search_next", err);
     }
 
     err = NM_ESUCCESS;
@@ -173,13 +179,15 @@ nm_so_free_aggregated_pw(struct nm_core *p_core,
             continue;
 
         err = p_proto->ops.out_success(p_proto, cur_pw);
-        nm_so_print_error("proto.ops.out_success", err);
+        nm_so_control_error("proto.ops.out_success", err);
 
         /* free iovec */
-        nm_iov_free(p_core, cur_pw);
+        err = nm_iov_free(p_core, cur_pw);
+        nm_so_control_error("nm_iov_free", err);
 
         /* free pkt_wrap */
-        nm_pkt_wrap_free(p_core, cur_pw);
+        err = nm_pkt_wrap_free(p_core, cur_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err);
 
     }
     //printf("<--nm_so_free_aggregated_pw\n");
@@ -207,6 +215,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
     struct nm_proto    *p_proto  = NULL;
     struct nm_so_sched *so_sched = p_sched->sch_private;
 
+    struct nm_so_header  *header = NULL;
     struct nm_rdv_rdv_rq *rdv = NULL;
     struct nm_rdv_ack_rq *ack = NULL;
 
@@ -228,17 +237,22 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
         v_nb--;
 
         while(v_nb > 0){
-            nm_so_header_t * header = p_pw->v[idx].iov_base;
+            header = p_pw->v[idx].iov_base;
 
             if(header->proto_id == nm_pi_rdv_req){
                 printf("--------------->Envoi d'un rdv\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_req];
+                if (!p_proto) {
+                    NM_TRACEF("unregistered protocol: %d",
+                              p_proto->id);
+                    continue;
+                }
 
                 idx++;
 
                 rdv = p_pw->v[idx].iov_base;
                 err = nm_rdv_free_rdv(p_proto, rdv);
-                nm_so_print_error("nm_rdv_free_rdv", err);
+                nm_so_control_error("nm_rdv_free_rdv", err);
 
                 tbx_free(so_sched->header_key, header);
                 idx++;
@@ -247,12 +261,17 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
             } else if(header->proto_id == nm_pi_rdv_ack){
                 printf("------------->Envoi d'un ack\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_ack];
+                if (!p_proto) {
+                    NM_TRACEF("unregistered protocol: %d",
+                              p_proto->id);
+                    continue;
+                }
 
                 idx++;
 
                 ack = p_pw->v[idx].iov_base;
                 err = nm_rdv_free_ack(p_proto, ack);
-                nm_so_print_error("nm_rdv_free_ack", err);
+                nm_so_control_error("nm_rdv_free_ack", err);
 
                 tbx_free(so_sched->header_key, header);
                 idx++;
@@ -266,10 +285,10 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
         }
 
         err = nm_so_free_aggregated_pw(p_core, p_pw);
-        nm_so_print_error("nm_so_free_aggregated_pw", err);
+        nm_so_control_error("nm_so_free_aggregated_pw", err);
 
         err = nm_so_release_aggregation_pw(p_sched, p_pw);
-        nm_so_print_error("nm_so_release_aggregation_pw", err);
+        nm_so_control_error("nm_so_release_aggregation_pw", err);
 
     } else {
         printf("----------------LARGE PACK ENVOYé - p_pw = %p\n\n", p_pw);
@@ -283,14 +302,16 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
             goto free;
 
         err = p_proto->ops.out_success(p_proto, p_pw);
-        nm_so_print_error("proto.ops.out_success", err);
+        nm_so_control_error("proto.ops.out_success", err);
 
     free:
         /* free iovec */
-        nm_iov_free(p_core, p_pw);
+        err = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err);
 
         /* free pkt_wrap */
-        nm_pkt_wrap_free(p_core, p_pw);
+        err = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err);
 
     }
     //printf("<--nm_so_out_process_success_rq\n");

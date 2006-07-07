@@ -75,6 +75,7 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
     int nb_seg = 0;
 
     int i, j;
+    int err;
 
     for(i = 0; i < nb_pending_pw; i++){
         cur_spw = pw_tab->tab[i];
@@ -84,6 +85,8 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
            && nb_seg + cur_spw->nb_seg < AGGREGATED_PW_MAX_NB_SEG){
             if(!op){
                 op = TBX_MALLOC(sizeof(struct nm_so_operation));
+#warning MALLOC_A_ERADIQUER
+
                 op->operation_type = nm_so_aggregation;
                 op->nb_pw = 0;
                 op->altitude = tree_altitude;
@@ -110,7 +113,8 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
     }
 
     if(op){
-        nm_so_stack_push(op_stack->op_stack, op);
+        err = nm_so_stack_push(op_stack->op_stack, op);
+        nm_so_control_error("nm_so_stack_push", err);
 
         op_stack->score += nm_ns_evaluate(driver, spw->len);
 
@@ -123,6 +127,8 @@ nm_so_strategy1_aggregation(struct nm_drv *driver,
     }
 
     DISP_VAL("<--nm_so_strategy1_aggregation - score", op_stack->score);
+    //err = NM_ESUCCESS;
+
     return op_stack->score;
 }
 
@@ -146,23 +152,27 @@ strategy strategy_tab[NB_STRATEGIES] =
 /**************************************************************/
 
 
-static void
+static int
 nm_so_cpy_down_op(struct nm_so_op_stack *op_stack,
                   struct nm_so_op_stack *op_stack_ref){
     int err;
 
     if(nm_so_stack_size(op_stack_ref->op_stack)){
         err = nm_so_stack_pop(op_stack_ref->op_stack, NULL);
+        nm_so_control_error("nm_so_stack_pop", err);
     }
 
     struct nm_so_operation *op = NULL;
     err = nm_so_stack_down(op_stack->op_stack, (void **)&op);
-#warning ERR
+    nm_so_control_error("nm_so_stack_down", err);
 
     err = nm_so_stack_push(op_stack_ref->op_stack, op);
-#warning ERR
+    nm_so_control_error("nm_so_stack_push", err);
 
     op_stack_ref->score = op_stack->score;
+
+    err = NM_ESUCCESS;
+    return err;
 }
 
 static struct nm_so_pending_tab *
@@ -232,11 +242,11 @@ nm_so_path_tree(int strategy_no,
 
             err = nm_so_stack_top(op_stack->op_stack,
                                   (void **)&op);
-#warning ERR
+            nm_so_control_error("nm_so_stack_top", err);
 
             if(op->altitude == tree_altitude){
                 err = nm_so_stack_pop(op_stack->op_stack, NULL);
-#warning ERR
+                nm_so_control_error("nm_so_stack_pop", err);
 
             } else {
                 break;
@@ -273,32 +283,35 @@ nm_so_path_tree(int strategy_no,
 }
 
 ////////////// Point d'entrée //////////////////////////////
-struct nm_pkt_wrap *
+int
 nm_so_strategy_application(struct nm_gate *p_gate,
                            struct nm_drv *driver,
-                           p_tbx_slist_t pre_list){
+                           p_tbx_slist_t pre_list,
+                           struct nm_pkt_wrap **pp_pw){
     int err;
     int i;
 
     struct nm_so_op_stack *op_stack =
         TBX_MALLOC(sizeof(struct nm_so_op_stack));
     err = nm_so_stack_create(&op_stack->op_stack, MAX_NB_OP);
-#warning ERR
+    nm_so_control_error("nm_so_stack_create", err);
     op_stack->score = 0;
 
     struct nm_so_op_stack *op_stack_ref =
         TBX_MALLOC(sizeof(struct nm_so_op_stack));
     err = nm_so_stack_create(&op_stack_ref->op_stack,
                              NB_PACK_BY_OPT);
-#warning ERR
+    nm_so_control_error("nm_so_stack_create", err);
     op_stack_ref->score = 0;
+
 
     int pre_list_len = tbx_slist_get_length(pre_list);
 
     struct nm_so_pending_tab *cpy_pw_tab = NULL;
     struct nm_so_pending_tab *pw_tab = NULL;
-    pw_tab = TBX_MALLOC(sizeof(struct nm_so_pending_tab));
+    pw_tab  = TBX_MALLOC(sizeof(struct nm_so_pending_tab));
     cpy_pw_tab = TBX_MALLOC(sizeof(struct nm_so_pending_tab));
+#warning ERR_MALLOC
 
     pw_tab->nb_pending_pw =
         (pre_list_len < PENDING_PW_WINDOW_SIZE ?
@@ -309,6 +322,8 @@ nm_so_strategy_application(struct nm_gate *p_gate,
     for(i = 0; i < pw_tab->nb_pending_pw; i++){
 
         pw_tab->tab[i] = TBX_MALLOC(sizeof(struct nm_so_shorter_pw));
+#warning MALLOC
+
         pw_tab->tab[i]->index = i;
         pw_tab->tab[i]->src_pw = tbx_slist_ref_get(pre_list);
         assert(pw_tab->tab[i]->src_pw);
@@ -317,6 +332,8 @@ nm_so_strategy_application(struct nm_gate *p_gate,
 
 
         cpy_pw_tab->tab[i] = TBX_MALLOC(sizeof(struct nm_so_shorter_pw));
+#warning MALLOC
+
         cpy_pw_tab->tab[i]->index  = pw_tab->tab[i]->index ;
         cpy_pw_tab->tab[i]->src_pw = pw_tab->tab[i]->src_pw;
         cpy_pw_tab->tab[i]->len    = pw_tab->tab[i]->len   ;
@@ -341,21 +358,23 @@ nm_so_strategy_application(struct nm_gate *p_gate,
     struct nm_so_operation *op = NULL;
 
     while(nm_so_stack_size(op_stack_ref->op_stack)){
-        err = nm_so_stack_pop(op_stack_ref->op_stack, 
+        err = nm_so_stack_pop(op_stack_ref->op_stack,
                               (void **)&op);
-#warning ERR
+        nm_so_control_error("nm_so_stack_pop", err);
 
         switch(op->operation_type){
         case nm_so_aggregation:
             err = nm_so_take_aggregation_pw(p_gate->p_sched, &p_pw);
+            nm_so_control_error("nm_so_take_aggregation_pw", err);
             so_pw = p_pw->sched_priv;
 
             for(i = 0; i < op->nb_pw; i++){
                 cur_pw = cpy_pw_tab->tab[op->pw_idx[i]]->src_pw;
 
-                nm_so_add_data(p_core, p_pw,
-                               cur_pw->proto_id, cur_pw->length,
-                               cur_pw->seq, cur_pw->v[0].iov_base);
+                err = nm_so_add_data(p_core, p_pw,
+                                     cur_pw->proto_id, cur_pw->length,
+                                     cur_pw->seq, cur_pw->v[0].iov_base);
+                nm_so_control_error("nm_so_add_data", err);
 
                 so_pw->aggregated_pws[so_pw->nb_aggregated_pws++] = cur_pw;
             }
@@ -368,7 +387,12 @@ nm_so_strategy_application(struct nm_gate *p_gate,
         }
     }
 
-    nm_so_update_global_header(p_pw, p_pw->v_nb, p_pw->length);
+    err = nm_so_update_global_header(p_pw, p_pw->v_nb, p_pw->length);
+    nm_so_control_error("nm_so_update_global_header", err);
 
-    return p_pw;
+    *pp_pw = p_pw;
+
+    err = NM_ESUCCESS;
+
+    return err;
 }

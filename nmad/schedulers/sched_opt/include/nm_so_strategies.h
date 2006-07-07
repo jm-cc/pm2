@@ -16,9 +16,10 @@
 #ifndef NM_SO_STRATEGIES_H
 #define NM_SO_STRATEGIES_H
 
-struct nm_pkt_wrap *
+int
 nm_so_strategy_application(struct nm_gate *p_gate,
                            struct nm_drv *driver,
-                           p_tbx_slist_t pre_list);
+                           p_tbx_slist_t pre_list,
+                           struct nm_pkt_wrap **pp_pw);
 
 #endif

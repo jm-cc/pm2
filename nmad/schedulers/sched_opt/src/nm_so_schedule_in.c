@@ -82,9 +82,7 @@ nm_so_schedule_ack(struct nm_core *p_core,
         = tbx_malloc(so_sched->header_key);
     if(!so_ack){
         err = nm_so_release_aggregation_pw(p_sched, so_sched->acks);
-        if(err != NM_ESUCCESS){
-            NM_DISPF("nm_so_release_aggregation_pw returned %d", err);
-        }
+        nm_so_control_error("nm_so_release_aggregation_pw", err);
         err = -NM_ENOMEM;
         goto out;
     }
@@ -92,16 +90,13 @@ nm_so_schedule_ack(struct nm_core *p_core,
     so_ack->proto_id = nm_pi_rdv_ack;
     err = nm_iov_append_buf(p_core, so_sched->acks, so_ack,
                             sizeof(struct nm_so_header));
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_iov_append_buf returned %d", err);
-    }
+    nm_so_control_error("nm_iov_append_buf", err);
+
 
     //ajout de l'ack du protocole
     err = nm_iov_append_buf(p_core, so_sched->acks, p_ack,
                             nm_rdv_ack_rq_size());
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_iov_append_buf returned %d", err);
-    }
+    nm_so_control_error("nm_iov_append_buf", err);
 
     err = NM_ESUCCESS;
  out:
@@ -118,15 +113,14 @@ nm_so_push_acks(struct nm_gate *p_gate){
 
     err = nm_so_update_global_header(acks,
                                      acks->v_nb, acks->length);
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_so_update_global_header returned %d", err);
-    }
+    nm_so_control_error("nm_so_update_global_header", err);
 
     /* mise sur la piste des petits */
     struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
     struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
     if(p_gtrk == NULL)
         TBX_FAILURE("p_gtrk NULL");
+
     acks->p_gate = p_gate;
     acks->p_drv  = p_gdrv->p_drv;
     acks->p_trk  = p_gtrk->p_trk;
@@ -177,9 +171,7 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
         err = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
                                           proto_id, seq,
                                           &p_dest_pw);
-        if(err != NM_ESUCCESS){
-            NM_DISPF("nm_so_search_and_extract_pw returned %d", err);
-        }
+        nm_so_control_error("nm_so_search_and_extract_pw", err);
 
 
         if(p_dest_pw){
@@ -200,15 +192,15 @@ nm_so_treat_unexpected(struct nm_sched *p_sched){
                 goto end;
 
             err = p_proto->ops.in_success(p_proto, p_dest_pw);
-            if (err != NM_ESUCCESS) {
-                NM_DISPF("proto.ops.in_success returned: %d", err);
-            }
+            nm_so_control_error("proto.ops.in_success", err);
 
             /* free iovec */
-            nm_iov_free(p_sched->p_core, p_dest_pw);
+            err = nm_iov_free(p_sched->p_core, p_dest_pw);
+            nm_so_control_error("nm_iov_free", err);
 
             /* free pkt_wrap */
-            nm_pkt_wrap_free(p_sched->p_core, p_dest_pw);
+            err= nm_pkt_wrap_free(p_sched->p_core, p_dest_pw);
+            nm_so_control_error("nm_pkt_wrap_free", err);
 
             TBX_FREE(unexpected->data);
             TBX_FREE(unexpected);
@@ -251,7 +243,8 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
 
     // manage the unexpected
     if(tbx_slist_get_length(p_so_sched->unexpected_list)){
-        nm_so_treat_unexpected(p_sched);
+        err = nm_so_treat_unexpected(p_sched);
+        nm_so_control_error("nm_so_treat_unexpected", err);
     }
 
 #ifdef CHRONO
@@ -259,28 +252,29 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
 #endif
     // traitement de rdv mis en attente
     struct nm_proto *p_proto = p_core->p_proto_array[nm_pi_rdv_req];
-    struct nm_rdv_ack_rq *p_ack = NULL;
-    struct nm_gate *ack_gate = NULL;
-    err = nm_rdv_treat_waiting_rdv(p_proto, &p_ack, &ack_gate);
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_rdv_treat_waiting_rdv returned %d", err);
+    if (!p_proto) {
+        NM_TRACEF("unregistered protocol: %d", p_proto->id);
+        goto next_step;
     }
+
+    struct nm_rdv_ack_rq *p_ack = NULL;
+    struct nm_gate       *ack_gate = NULL;
+    err = nm_rdv_treat_waiting_rdv(p_proto, &p_ack, &ack_gate);
+    nm_so_control_error("nm_rdv_treat_waiting_rdv", err);
 
     if(p_ack && ack_gate){
         err = nm_so_schedule_ack(p_core, ack_gate, p_ack);
-        if(err != NM_ESUCCESS){
-            NM_DISPF("nm_so_schedule_ack returned %d", err);
-        }
+        nm_so_control_error("nm_so_schedule_ack", err);
 
         err = nm_so_push_acks(ack_gate);
-        if(err != NM_ESUCCESS){
-            NM_DISPF("nm_so_push_acks returned %d", err);
-        }
+        nm_so_control_error("nm_so_push_acks", err);
+
     }
 #ifdef CHRONO
     TBX_GET_TICK(t4);
 #endif
 
+ next_step:
     while(!tbx_slist_is_nil(trks_to_update)){
         trk = tbx_slist_remove_from_head(trks_to_update);
 
@@ -294,24 +288,17 @@ nm_so_in_schedule(struct nm_sched *p_sched) {
 
             // réception de la taille des données
             err = nm_so_take_pre_posted(p_sched, trk, &p_pw);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_so_take_pre_posted returned %d", err);
-            }
+            nm_so_control_error("nm_so_take_pre_posted", err);
 
             p_pw->v[p_pw->v_first].iov_len
                 = sizeof(nm_so_sched_header_t);
 
             tbx_slist_append(p_sched->post_perm_recv_req, p_pw);
 
-            //DISP_VAL("in_schedule (entete)- LOngueur des données à recevoir", p_pw->v[0].iov_len);
-            //DISP_VAL("in_schedule (entete) - NB de seg de données à recevoir", p_pw->v_size);
-
 
         } else if(trk->cap.rq_type == nm_trk_rq_dgram){
             err = nm_so_take_pre_posted(p_sched, trk, &p_pw);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_so_take_pre_posted returned %d", err);
-            }
+            nm_so_control_error("nm_so_take_pre_posted", err);
 
             tbx_slist_append(p_sched->post_perm_recv_req, p_pw);
 
@@ -389,20 +376,19 @@ nm_so_open_data(struct nm_sched *p_sched,
 
             p_proto = p_core->p_proto_array[nm_pi_rdv_req];
 
-            assert(p_proto);
+            if (!p_proto) {
+                TBX_FAILURE("unregistered protocol");
+            }
+
 
             err = nm_rdv_treat_rdv_rq(p_proto,
                                       data + sizeof(nm_so_header_t),
                                       &p_ack);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_rdv_treat_rdv_rq returned %d", err);
-            }
+            nm_so_control_error("nm_rdv_treat_rdv_rq", err);
 
             if(p_ack){
                 err = nm_so_schedule_ack(p_core, p_gate, p_ack);
-                if(err != NM_ESUCCESS){
-                    NM_DISPF("nm_so_schedule_ack returned %d", err);
-                }
+                nm_so_control_error("nm_so_schedule_ack", err);
             }
 
             data += sizeof(nm_so_header_t) +
@@ -418,14 +404,13 @@ nm_so_open_data(struct nm_sched *p_sched,
         } else if (proto_id == nm_pi_rdv_ack) {
             printf("------------> Reception d'un ack\n");
             p_proto = p_core->p_proto_array[nm_pi_rdv_req];
-
-            assert(p_proto);
+            if (!p_proto) {
+                TBX_FAILURE("unregistered protocol");
+            }
 
             err = nm_rdv_treat_ack_rq(p_proto,
                                       data + sizeof(nm_so_header_t));
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_rdv_treat_ack_rq returned %d", err);
-            }
+            nm_so_control_error("nm_rdv_treat_ack_rq", err);
 
             data += sizeof(nm_so_header_t) +
                 nm_rdv_ack_rq_size();
@@ -440,13 +425,10 @@ nm_so_open_data(struct nm_sched *p_sched,
             seq = header->seq;
             len = header->len;
 
-            //printf(" nm_so_search_and_extract_pw - open_data\n");
             err = nm_so_search_and_extract_pw(p_sched->submit_aux_recv_req,
                                               proto_id, seq,
                                               &p_dest_pw);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_so_search_and_extract_pw returned %d", err);
-            }
+            nm_so_control_error("nm_so_search_and_extract_pw", err);
 
             data += sizeof(nm_so_header_t);
 
@@ -466,21 +448,25 @@ nm_so_open_data(struct nm_sched *p_sched,
 
 
                 err = p_proto->ops.in_success(p_proto, p_dest_pw);
-                if (err != NM_ESUCCESS) {
-                    NM_DISPF("proto.ops.in_success returned: %d", err);
-                }
+                nm_so_control_error("proto.ops.in_success", err);
+
             discard:
 
                 /* free iovec */
-                nm_iov_free(p_core, p_dest_pw);
+                err = nm_iov_free(p_core, p_dest_pw);
+                nm_so_control_error("nm_iov_free", err);
 
                 /* free pkt_wrap */
-                nm_pkt_wrap_free(p_core, p_dest_pw);
+                err = nm_pkt_wrap_free(p_core, p_dest_pw);
+                nm_so_control_error("nm_pkt_wrap_free", err);
 
             } else {
                 //printf("Pack NON Trouvé\n");
                 struct nm_so_unexpected *unexpected
                     = TBX_MALLOC(sizeof(struct nm_so_unexpected));
+                if(!unexpected){
+                    TBX_FAILURE("TBX_MALLOC of unexpected failed");
+                }
 
                 unexpected->proto_id = proto_id;
                 unexpected->seq = seq;
@@ -508,9 +494,7 @@ nm_so_open_data(struct nm_sched *p_sched,
     }
     if(so_sched->acks){
         err = nm_so_push_acks(p_gate);
-        if(err != NM_ESUCCESS){
-            NM_DISPF("nm_so_push_acks returned %d", err);
-        }
+        nm_so_control_error("nm_so_push_acks", err);
     }
 
 
@@ -542,9 +526,7 @@ nm_so_open_received_data_complete(struct nm_sched *p_sched,
 
 
     err = nm_so_open_data(p_sched, p_gate, nb_seg, data);
-    if(err != NM_ESUCCESS){
-        NM_DISPF("nm_so_open_data returned %d", err);
-    }
+    nm_so_control_error("nm_so_open_data", err);
 
     err = NM_ESUCCESS;
     return err;
@@ -595,29 +577,17 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
                 err = -NM_ENOMEM;
                 goto end;
             }
-
             so_wrap->nb_seg = header->nb_seg - 1;
-
-            //DISP_VAL("Longueur des données à recevoir", len);
-            //DISP_VAL("nb seg à recevoir", header->nb_seg);
 
             // remise du wrapper d'intro
             err = nm_so_release_pre_posted_pw(p_sched, p_pw);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
-            }
+            nm_so_control_error("nm_so_release_pre_posted_pw", err);
 
             // on dépose la réception des données
-            err = nm_so_take_pre_posted(p_sched, p_trk, &p_data_pw);
-            if(err != NM_ESUCCESS){
-                NM_DISPF("nm_so_take_pre_posted returned %d", err);
-            }
+            err=nm_so_take_pre_posted(p_sched, p_trk, &p_data_pw);
+            nm_so_control_error("nm_so_take_pre_posted", err);
 
             p_data_pw->v[p_data_pw->v_first].iov_len = len;
-
-            //DISP_VAL("in_process_success (data)- LOngueur des données à recevoir", len);
-            //DISP_VAL("in_process_success (data)- NB de seg de données à recevoir", p_data_pw->v_size);
-
             p_data_pw->sched_priv = so_wrap;
 
             tbx_slist_append(p_sched->post_aux_recv_req, p_data_pw);
@@ -630,17 +600,15 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             // déballage des données
             err = nm_so_open_data(p_sched, p_pw->p_gate,
                                   so_wrap->nb_seg, data);
-            if (err != NM_ESUCCESS){
-                NM_DISPF("nm_so_open_data returned %d", err);
-            }
+            nm_so_control_error("nm_so_open_data", err);
 
             // piste à mettre à jour
-            tbx_slist_append(p_so_sched->trks_to_update, p_pw->p_trk);
+            tbx_slist_append(p_so_sched->trks_to_update,
+                             p_pw->p_trk);
+
             // remise du wrapper
             err = nm_so_release_pre_posted_pw(p_sched, p_pw);
-            if (err != NM_ESUCCESS){
-                NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
-            }
+            nm_so_control_error("nm_so_release_pre_posted_pw", err);
 
             TBX_FREE(so_wrap);
         }
@@ -650,33 +618,30 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
         //printf("-------------PETIT Pack RECU----------------\n\n");
         // déballage des données
-        err = nm_so_open_received_data_complete(p_sched, p_pw->p_gate, data);
-        if (err != NM_ESUCCESS){
-            NM_DISPF("nm_so_open_received_data_complete returned %d", err);
-        }
+        err = nm_so_open_received_data_complete(p_sched,
+                                                p_pw->p_gate, data);
+        nm_so_control_error("nm_so_open_received_data_complete", err);
 
         // piste à mettre à jour
         tbx_slist_append(p_so_sched->trks_to_update, p_pw->p_trk);
 
         // remise du wrapper
         err = nm_so_release_pre_posted_pw(p_sched, p_pw);
-        if (err != NM_ESUCCESS){
-            NM_DISPF("nm_so_release_pre_posted_pw returned %d", err);
-        }
-
+        nm_so_control_error("nm_so_release_pre_posted_pw", err);
 
     } else if (p_trk->cap.rq_type == nm_trk_rq_rdv) {
         printf("-------------LARGE Pack RECU----------------\n\n");
         // signal au protocole de rdv que la piste est libérée
          struct nm_proto * p_proto_rdv
              = p_core->p_proto_array[nm_pi_rdv_req];
-         err = nm_rdv_free_track(p_proto_rdv, p_trk->id);
-         if (err != NM_ESUCCESS){
-             NM_DISPF("nm_rdv_free_track returned %d", err);
+         if(!p_proto_rdv){
+             TBX_FAILURE("unregistered protocol");
          }
 
+         err = nm_rdv_free_track(p_proto_rdv, p_trk->id);
+         nm_so_control_error("nm_rdv_free_track", err);
 
-        // appel au handler de succès du protocole associé
+         // appel au handler de succès du protocole associé
          struct nm_proto * p_proto = p_core->p_proto_array[p_pw->proto_id];
         if (!p_proto) {
             NM_TRACEF("unregistered protocol: %d", p_proto->id);
@@ -686,15 +651,15 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             goto end;
 
         err = p_proto->ops.in_success(p_proto, p_pw);
-        if (err != NM_ESUCCESS) {
-            NM_DISPF("proto.ops.in_success returned: %d", err);
-        }
+        nm_so_control_error("proto.ops.in_success", err);
 
         /* free iovec */
-        nm_iov_free(p_core, p_pw);
+        err = nm_iov_free(p_core, p_pw);
+        nm_so_control_error("nm_iov_free", err);
 
         /* free pkt_wrap */
-        nm_pkt_wrap_free(p_core, p_pw);
+        err = nm_pkt_wrap_free(p_core, p_pw);
+        nm_so_control_error("nm_pkt_wrap_free", err);
 
 
     } else if(p_trk->cap.rq_type ==  nm_trk_rq_put){

@@ -31,6 +31,15 @@
 
 #define CHRONO
 
+
+static void
+nm_rdv_control_error(char *fct_name, int err){
+    if(err != NM_ESUCCESS){
+        NM_DISPF("%s returned %d", fct_name, err);
+        TBX_FAILURE("err != NM_ESUCCESS");
+    }
+}
+
 static int
 nm_rdv_get_and_extract(p_tbx_slist_t list,
                        uint8_t proto_id, uint8_t seq,
@@ -255,7 +264,7 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
 
 #ifdef CHRONO
     tbx_tick_t t1, t2;
-    tbx_tick_t t3, t4, t5, t6, t7, t8, t9, t10, t11;
+    tbx_tick_t t3, t4, t7, t8, t9, t10, t11;
     TBX_GET_TICK(t1);
 #endif
 
@@ -276,9 +285,7 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
         //               proto_id, seq);
         err = nm_rdv_get(p_sched->submit_aux_recv_req,
                          proto_id, seq, &ref, &large_pw);
-        if (err != NM_ESUCCESS){
-            NM_DISPF("nm_rdv_get returned %d", err);
-        }
+        nm_rdv_control_error("nm_rdv_get", err);
 
 
 #ifdef CHRONO
@@ -322,9 +329,8 @@ nm_rdv_treat_rdv_rq(struct nm_proto *p_proto,
                 //                           proto_id, seq);
 
                 err = nm_rdv_extract_from_ref(p_sched->submit_aux_recv_req, ref, &large_pw);
-                if (err != NM_ESUCCESS){
-                    NM_DISPF("nm_rdv_extract_from_ref returned %d", err);
-                }
+                nm_rdv_control_error("nm_rdv_extract_from_ref returned %d", err);
+
 #ifdef CHRONO
                 TBX_GET_TICK(t8);
                 nb_get_and_extract++;
@@ -487,9 +493,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
 
         err = nm_rdv_get(p_sched->submit_aux_recv_req,
                          proto_id, seq, &ref, &large_pw);
-        if (err != NM_ESUCCESS){
-            NM_DISPF("nm_rdv_get returned %d", err);
-        }
+        nm_rdv_control_error("nm_rdv_get", err);
 
         // si le unpack est prêt
         if(large_pw){
@@ -518,9 +522,7 @@ nm_rdv_treat_waiting_rdv(struct nm_proto *p_proto,
                                               NULL);
 
             err = nm_rdv_extract_from_ref(p_sched->submit_aux_recv_req, ref, &large_pw);
-            if (err != NM_ESUCCESS){
-                NM_DISPF("nm_rdv_extract_from_ref returned %d", err);
-            }
+            nm_rdv_control_error("nm_rdv_extract_from_ref", err);
 
             // création de l'ack
             struct nm_rdv_ack_rq *p_ack

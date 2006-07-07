@@ -37,6 +37,10 @@ for i in $_PM2CONFIG_MODULES ; do
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
 done
 
+if [ -n "${LEO_LD_PRELOAD}" ]; then
+    echo "set environment LD_PRELOAD ${LEO_LD_PRELOAD}" >> $file
+fi
+
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
 
 ${LEO_XTERM} -title $title -e gdb -x $file $prog

@@ -42,6 +42,8 @@
 #  include <nm_tcp_public.h>
 #endif
 
+#include <nm_basic_public.h>
+
 #include "nm_mad3_private.h"
 
 #include "madeleine.h"
@@ -65,7 +67,7 @@ typedef struct s_mad_nmad_adapter_specific {
 } mad_nmad_adapter_specific_t, *p_mad_nmad_adapter_specific_t;
 
 typedef struct s_mad_nmad_channel_specific {
-        uint8_t			 proto_id;
+        uint8_t			 tag_id;
 } mad_nmad_channel_specific_t, *p_mad_nmad_channel_specific_t;
 
 typedef struct s_mad_nmad_connection_specific {
@@ -119,6 +121,9 @@ static p_mad_connection_t
 mad_nmad_poll_message(p_mad_channel_t);
 #endif /* MAD_MESSAGE_POLLING */
 
+static void
+mad_nmad_new_message(p_mad_connection_t);
+
 static p_mad_connection_t
 mad_nmad_receive_message(p_mad_channel_t);
 
@@ -139,15 +144,8 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t,
                                   tbx_bool_t,
                                   p_mad_buffer_group_t);
 
-/* Macros
- */
-#define INITIAL_RQ_NUM		4
-
-
 /* static vars
  */
-/* fast allocator structs */
-static p_tbx_memory_t	 nm_mad3_rq_mem	= NULL;
 
 /* core and proto objects */
 static struct nm_core	*p_core		= NULL;
@@ -163,144 +161,6 @@ static p_mad_madeleine_t	p_madeleine	= NULL;
  * Driver private functions
  * ------------------------
  */
-/* successful outgoing request
- */
-static
-int
-nm_mad3_out_success	(struct nm_proto 	* const p_proto,
-                         struct nm_pkt_wrap	*p_pw) {
-        struct nm_mad3_rq	 *p_rq	= NULL;
-	int err;
-
-        p_rq	= p_pw->proto_priv;
-        p_rq->lock	= 0;
-        p_rq->status	= NM_ESUCCESS;
-	err = NM_ESUCCESS;
-
-	return err;
-}
-
-/* failed outgoing request
- */
-static
-int
-nm_mad3_out_failed	(struct nm_proto 	* const p_proto,
-                         struct nm_pkt_wrap	*p_pw,
-                         int			_err) {
-        struct nm_mad3_rq	 *p_rq	= NULL;
-	int err;
-
-        p_rq	= p_pw->proto_priv;
-        p_rq->lock	= 0;
-        p_rq->status	= _err;
-	err = NM_ESUCCESS;
-
-	return err;
-}
-
-/* successful incoming request
- */
-static
-int
-nm_mad3_in_success	(struct nm_proto 	* const p_proto,
-                         struct nm_pkt_wrap	*p_pw) {
-        struct nm_mad3_rq	 *p_rq	= NULL;
-	int err;
-
-        p_rq	= p_pw->proto_priv;
-        p_rq->lock	= 0;
-        p_rq->status	= NM_ESUCCESS;
-	err = NM_ESUCCESS;
-
-	return err;
-}
-
-/* failed incoming request
- */
-static
-int
-nm_mad3_in_failed	(struct nm_proto 	* const p_proto,
-                         struct nm_pkt_wrap	*p_pw,
-                         int			_err) {
-        struct nm_mad3_rq	 *p_rq	= NULL;
-	int err;
-
-        p_rq	= p_pw->proto_priv;
-        p_rq->lock	= 0;
-        p_rq->status	= _err;
-	err = NM_ESUCCESS;
-
-	return err;
-}
-
-/* protocol initialisation
- */
-static
-int
-nm_mad3_proto_init	(struct nm_proto 	* const p_proto) {
-        struct nm_core	 *p_core	= NULL;
-        struct nm_mad3	 *p_mad3	= NULL;
-        int i;
-	int err;
-
-        p_core	= p_proto->p_core;
-
-        /* check if protocol may be registered
-         */
-        for (i = 0; i < 127; i++) {
-                if (p_core->p_proto_array[128+i]) {
-                        NM_DISPF("nm_mad3_proto_init: protocol entry %d already used",
-                             128+i);
-
-                        err	= -NM_EALREADY;
-                        goto out;
-                }
-        }
-
-        /* allocate private protocol part
-         */
-        p_mad3	= TBX_MALLOC(sizeof(struct nm_mad3));
-        if (!p_mad3) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
-
-        /* TODO: allocate the madeleine object wrapper
-         */
-#warning TODO
-        p_mad3->p_madeleine	= NULL;
-
-        /* setup allocator for request structs
-         */
-        tbx_malloc_init(&nm_mad3_rq_mem,   sizeof(struct nm_mad3_rq),
-                        INITIAL_RQ_NUM,   "nmad/mad3/rq");
-
-        /* register protocol
-         */
-        p_proto->priv	= p_mad3;
-        for (i = 0; i < 127; i++) {
-                p_core->p_proto_array[128+i] = p_proto;
-        }
-
-	err = NM_ESUCCESS;
-
- out:
-	return err;
-}
-
-static
-int
-nm_mad3_load		(struct nm_proto_ops	*p_ops) {
-        p_ops->init		= nm_mad3_proto_init;
-
-        p_ops->out_success	= nm_mad3_out_success;
-        p_ops->out_failed	= nm_mad3_out_failed;
-
-        p_ops->in_success	= nm_mad3_in_success;
-        p_ops->in_failed	= nm_mad3_in_failed;
-
-        return NM_ESUCCESS;
-}
 
 static
 void
@@ -312,12 +172,12 @@ nm_mad3_init_core(int	 *argc,
         err = nm_core_init(argc, argv, &p_core, nm_mini_alt_load);
         if (err != NM_ESUCCESS) {
                 DISP("nm_core_init returned err = %d\n", err);
-                TBX_FAILURE("newmad error");
+                TBX_FAILURE("nmad error");
         }
-        err = nm_core_proto_init(p_core, nm_mad3_load, &p_proto);
+        err = nm_core_proto_init(p_core, nm_basic_load, &p_proto);
         if (err != NM_ESUCCESS) {
                 DISP("nm_core_proto_init returned err = %d\n", err);
-                TBX_FAILURE("newmad error");
+                TBX_FAILURE("nmad error");
         }
 }
 
@@ -328,7 +188,7 @@ nm_mad3_init_core(int	 *argc,
 
 char *
 mad_nmad_register(p_mad_driver_interface_t interface) {
-        LOG_IN();
+        NM_LOG_IN();
         TRACE("Registering NMAD driver");
 
         interface->driver_init                = mad_nmad_driver_init;
@@ -356,13 +216,14 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
 #ifdef MAD_MESSAGE_POLLING
         interface->poll_message               = mad_nmad_poll_message;
 #endif // MAD_MESSAGE_POLLING
+        interface->new_message                = mad_nmad_new_message;
         interface->receive_message            = mad_nmad_receive_message;
         interface->message_received           = NULL;
         interface->send_buffer                = mad_nmad_send_buffer;
         interface->receive_buffer             = mad_nmad_receive_buffer;
         interface->send_buffer_group          = mad_nmad_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_nmad_receive_sub_buffer_group;
-        LOG_OUT();
+        NM_LOG_OUT();
 
         return "nmad";
 }
@@ -378,7 +239,7 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
         char				*l_url		= NULL;
         int err;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (!p_core) {
                 nm_mad3_init_core(argc, *argv);
         }
@@ -418,7 +279,7 @@ found:
         ds->drv_id	= drv_id;
         ds->l_url	= l_url;
         d->specific	= ds;
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -427,7 +288,7 @@ mad_nmad_adapter_init(p_mad_adapter_t	a) {
         p_mad_nmad_driver_specific_t	ds	= NULL;
         p_mad_nmad_adapter_specific_t	as	= NULL;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (strcmp(a->dir_adapter->name, "default"))
                 TBX_FAILURE("unsupported adapter");
 
@@ -436,7 +297,7 @@ mad_nmad_adapter_init(p_mad_adapter_t	a) {
         as	= TBX_MALLOC(sizeof(mad_nmad_adapter_specific_t));
         a->specific	= as;
         a->parameter	= tbx_strdup(ds->l_url);
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -444,10 +305,11 @@ void
 mad_nmad_channel_init(p_mad_channel_t ch) {
         p_mad_nmad_channel_specific_t chs	= NULL;
 
-        LOG_IN();
+        NM_LOG_IN();
         chs		= TBX_MALLOC(sizeof(mad_nmad_channel_specific_t));
+        chs->tag_id	= ch->dir_channel->id;
         ch->specific	= chs;
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -455,23 +317,29 @@ void
 mad_nmad_connection_init(p_mad_connection_t in,
                          p_mad_connection_t out) {
         p_mad_nmad_connection_specific_t cs	= NULL;
+        int err;
 
-        LOG_IN();
+        NM_LOG_IN();
         cs	= TBX_MALLOC(sizeof(mad_nmad_connection_specific_t));
+        err = nm_core_gate_init(p_core, &cs->gate_id);
+        if (err != NM_ESUCCESS) {
+                printf("nm_core_gate_init returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
         in->specific	= out->specific	= cs;
         in->nb_link	= 1;
         out->nb_link	= 1;
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
 void
 mad_nmad_link_init(p_mad_link_t lnk) {
-        LOG_IN();
+        NM_LOG_IN();
         lnk->link_mode	= mad_link_mode_buffer;
         lnk->buffer_mode	= mad_buffer_mode_dynamic;
         lnk->group_mode	= mad_group_mode_split;
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -484,13 +352,21 @@ static
 void
 mad_nmad_accept(p_mad_connection_t   in,
                 p_mad_adapter_info_t ai TBX_UNUSED) {
-        p_mad_nmad_adapter_specific_t    as	= NULL;
-        p_mad_nmad_connection_specific_t cs	= NULL;
+        p_mad_nmad_driver_specific_t		ds	= NULL;
+        p_mad_nmad_connection_specific_t	cs	= NULL;
+        int err;
 
-        LOG_IN();
+        NM_LOG_IN();
         cs	= in->specific;
-        as	= in->channel->adapter->specific;
-        LOG_OUT();
+        ds	= in->channel->adapter->driver->specific;
+
+        err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL, NULL);
+        if (err != NM_ESUCCESS) {
+                printf("nm_core_gate_accept returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+        DISP("gate_accept: connection established");
+        NM_LOG_OUT();
 
 }
 
@@ -498,15 +374,26 @@ static
 void
 mad_nmad_connect(p_mad_connection_t   out,
                  p_mad_adapter_info_t ai) {
-        p_mad_nmad_connection_specific_t	cs		= NULL;
-        p_mad_dir_node_t			r_node		= NULL;
-        p_mad_dir_adapter_t			r_adapter	= NULL;
+        p_mad_nmad_driver_specific_t		ds	= NULL;
+        p_mad_nmad_connection_specific_t	cs	= NULL;
+        p_mad_dir_node_t			r_n	= NULL;
+        p_mad_dir_adapter_t			r_a	= NULL;
+        int err;
 
-        LOG_IN();
-        cs		= out->specific;
-        r_node		= ai->dir_node;
-        r_adapter	= ai->dir_adapter;
-        LOG_OUT();
+        NM_LOG_IN();
+        cs	= out->specific;
+        ds	= out->channel->adapter->driver->specific;
+
+        r_a	= ai->dir_adapter;
+        r_n	= ai->dir_node;
+        err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id,
+                                   r_n->name, r_a->parameter);
+        if (err != NM_ESUCCESS) {
+                printf("nm_core_gate_connect returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+        DISP("gate_connect: connection established");
+        NM_LOG_OUT();
 }
 
 static
@@ -518,9 +405,9 @@ mad_nmad_after_open_channel(p_mad_channel_t channel) {
 void
 mad_nmad_disconnect(p_mad_connection_t cnx) {
 
-        LOG_IN();
+        NM_LOG_IN();
         /* TODO */
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 #ifdef MAD_MESSAGE_POLLING
@@ -532,32 +419,83 @@ mad_nmad_poll_message(p_mad_channel_t ch) {
         p_tbx_darray_t			in_darray	= NULL;
         p_mad_connection_t		in		= NULL;
 
-        LOG_IN();
+        NM_LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
 
         /* TODO */
 
-        LOG_OUT();
+        NM_LOG_OUT();
 
         return in;
 }
 #endif // MAD_MESSAGE_POLLING
 
 static
+void
+mad_nmad_new_message(p_mad_connection_t out) {
+        p_mad_channel_t				 ch	= NULL;
+        p_mad_nmad_channel_specific_t		 chs	= NULL;
+        p_mad_nmad_connection_specific_t	 cs	= NULL;
+        struct nm_basic_rq			*p_rq	= NULL;
+        void					*buf	= NULL;
+        uint64_t				 len;
+        int err;
+
+        NM_LOG_IN();
+        ch	= out->channel;
+        chs	= ch->specific;
+        cs	= out->specific;
+        buf	= &ch->process_lrank;
+        len	= sizeof(ch->process_lrank);
+
+        err	= nm_basic_isend(p_proto, cs->gate_id, chs->tag_id, buf, len, &p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_isend returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        err = nm_basic_wait(p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_schedule returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+        NM_LOG_OUT();
+}
+
+static
 p_mad_connection_t
 mad_nmad_receive_message(p_mad_channel_t ch) {
-        p_mad_nmad_channel_specific_t	chs		= NULL;
-        p_tbx_darray_t			in_darray	= NULL;
-        p_mad_connection_t		in		= NULL;
+        p_mad_nmad_channel_specific_t		 chs		= NULL;
+        p_tbx_darray_t				 in_darray	= NULL;
+        p_mad_connection_t			 in		= NULL;
+        struct nm_basic_rq			*p_rq		= NULL;
+        void					*buf		= NULL;
+        uint64_t				 len;
+        int remote_process_lrank	= -1;
+        int err;
 
-        LOG_IN();
+        NM_LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
+        buf		= &remote_process_lrank;
+        len		= sizeof(remote_process_lrank);
 
         /* TODO */
+        err	= nm_basic_irecv_any(p_proto, chs->tag_id, buf, len, &p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_irecv returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
 
-        LOG_OUT();
+        err = nm_basic_wait(p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_wait returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        in 	= tbx_darray_get(in_darray, remote_process_lrank);
+        NM_LOG_OUT();
 
         return in;
 }
@@ -566,20 +504,66 @@ static
 void
 mad_nmad_send_buffer(p_mad_link_t     lnk,
                      p_mad_buffer_t   b) {
+        p_mad_nmad_channel_specific_t		 chs	= NULL;
+        p_mad_nmad_connection_specific_t	 cs	= NULL;
+        struct nm_basic_rq			*p_rq	= NULL;
+        char					*buf	= NULL;
+        uint64_t				 len;
+        int err;
 
-        LOG_IN();
-        /* TODO */
-        LOG_OUT();
+        NM_LOG_IN();
+        chs	= lnk->connection->channel->specific;
+        cs	= lnk->connection->specific;
+        buf	= b->buffer + b->bytes_read;
+        len	= b->bytes_written - b->bytes_read;
+
+        err	= nm_basic_isend(p_proto, cs->gate_id, chs->tag_id, buf, len, &p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_isend returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        err = nm_basic_wait(p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_wait returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        b->bytes_read	+= len;
+        NM_LOG_OUT();
 }
 
 static
 void
-mad_nmad_receive_buffer(p_mad_link_t    lnk,
-                        p_mad_buffer_t *b) {
+mad_nmad_receive_buffer(p_mad_link_t     lnk,
+                        p_mad_buffer_t *_b) {
+        p_mad_buffer_t				 b	= *_b;
+        p_mad_nmad_channel_specific_t		 chs	= NULL;
+        p_mad_nmad_connection_specific_t	 cs	= NULL;
+        struct nm_basic_rq			*p_rq	= NULL;
+        char					*buf	= NULL;
+        uint64_t				 len;
+        int err;
 
-        LOG_IN();
-        /* TODO */
-        LOG_OUT();
+        NM_LOG_IN();
+        chs	= lnk->connection->channel->specific;
+        cs	= lnk->connection->specific;
+        buf	= b->buffer + b->bytes_written;
+        len	= b->length - b->bytes_written;
+        err	= nm_basic_irecv(p_proto, cs->gate_id, chs->tag_id, buf, len, &p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_isend returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        err = nm_basic_wait(p_rq);
+        if (err != NM_ESUCCESS) {
+                printf("nm_basic_wait returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+
+        b->bytes_written	+= len;
+        NM_LOG_OUT();
 }
 
 static
@@ -590,7 +574,7 @@ mad_nmad_send_buffer_group_1(p_mad_link_t         lnk,
         p_mad_nmad_connection_specific_t	cs	= NULL;
         tbx_list_reference_t			ref;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (tbx_empty_list(&(bg->buffer_list)))
                 goto out;
 
@@ -603,7 +587,7 @@ mad_nmad_send_buffer_group_1(p_mad_link_t         lnk,
         } while(tbx_forward_list_reference(&ref));
 
  out:
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -613,7 +597,7 @@ mad_nmad_receive_sub_buffer_group_1(p_mad_link_t         lnk,
         p_mad_nmad_connection_specific_t	cs	= NULL;
         tbx_list_reference_t			ref;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (tbx_empty_list(&(bg->buffer_list)))
                 goto out;
 
@@ -626,7 +610,7 @@ mad_nmad_receive_sub_buffer_group_1(p_mad_link_t         lnk,
         } while(tbx_forward_list_reference(&ref));
 
  out:
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -637,7 +621,7 @@ mad_nmad_send_buffer_group_2(p_mad_link_t         lnk,
         tbx_list_length_t               	len;
         tbx_list_reference_t            	ref;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (tbx_empty_list(&(bg->buffer_list)))
                 goto out;
 
@@ -687,7 +671,7 @@ mad_nmad_send_buffer_group_2(p_mad_link_t         lnk,
         }
 
  out:
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 static
@@ -698,7 +682,7 @@ mad_nmad_receive_sub_buffer_group_2(p_mad_link_t         lnk,
         tbx_list_length_t               	len;
         tbx_list_reference_t            	ref;
 
-        LOG_IN();
+        NM_LOG_IN();
         if (tbx_empty_list(&(bg->buffer_list)))
                 goto out;
 
@@ -748,7 +732,7 @@ mad_nmad_receive_sub_buffer_group_2(p_mad_link_t         lnk,
         }
 
  out:
-        LOG_OUT();
+        NM_LOG_OUT();
 }
 
 
@@ -758,9 +742,9 @@ static
 void
 mad_nmad_send_buffer_group(p_mad_link_t         lnk,
                            p_mad_buffer_group_t bg) {
-        LOG_IN();
-        mad_nmad_send_buffer_group_2(lnk, bg);
-        LOG_OUT();
+        NM_LOG_IN();
+        mad_nmad_send_buffer_group_1(lnk, bg);
+        NM_LOG_OUT();
 }
 
 static
@@ -769,8 +753,8 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t         lnk,
                                   tbx_bool_t           first_sub_group
                                   __attribute__ ((unused)),
                                   p_mad_buffer_group_t bg) {
-        LOG_IN();
-        mad_nmad_receive_sub_buffer_group_2(lnk, bg);
-        LOG_OUT();
+        NM_LOG_IN();
+        mad_nmad_receive_sub_buffer_group_1(lnk, bg);
+        NM_LOG_OUT();
 }
 

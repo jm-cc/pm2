@@ -17,14 +17,4 @@
 #include "nm_protected.h"
 #include "madeleine.h"
 
-struct nm_mad3_rq {
-        struct nm_pkt_wrap	*p_pw;
-        volatile int		 lock;
-        int			 status;
-        p_mad_connection_t	*p_cnx;
-
-};
-
-struct nm_mad3 {
-        p_mad_madeleine_t	*p_madeleine;
-};
+/* nothing for now */

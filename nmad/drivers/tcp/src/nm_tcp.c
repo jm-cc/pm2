@@ -496,8 +496,10 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                         goto poll_not_needed;
                 } else {
                         if (p_gate_pollfd->revents & POLLHUP) {
-                                err = -NM_ECLOSED;
+                                NM_TRACEF("tcp incoming single poll: pollhup");
+                               err = -NM_ECLOSED;
                         } else if (p_gate_pollfd->revents & POLLNVAL) {
+                                NM_TRACEF("tcp incoming single poll: pollnval");
                                 err = -NM_EINVAL;
                         } else {
                                 err = -NM_EBROKEN;
@@ -512,6 +514,8 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         pollfd.fd	= p_tcp_gate->fd[p_pw->p_trk->id];
         pollfd.events	= POLLIN;
         pollfd.revents	= 0;
+
+        NM_TRACE_VAL("tcp incoming single poll: pollfd", pollfd.fd);
 
  poll_single_again:
         ret	= poll(&pollfd, 1, 0);
@@ -540,8 +544,10 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         /* fd ready, check condition				*/
         if (pollfd.revents != POLLIN) {
                 if (pollfd.revents & POLLHUP) {
+                        NM_TRACEF("tcp incoming single poll: pollhup");
                         err = -NM_ECLOSED;
                 } else if (pollfd.revents & POLLNVAL) {
+                        NM_TRACEF("tcp incoming single poll: pollnval");
                         err = -NM_EINVAL;
                 } else {
                         err = -NM_EBROKEN;
@@ -602,6 +608,12 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
         NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
         NM_TRACE_VAL("tcp outgoing cur len", p_cur->iov_len);
+
+        if (!p_vi->v_cur_size) {
+                err	= NM_ESUCCESS;
+
+                goto out;
+        }
 
  writev_again:
         ret	= writev(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
@@ -700,6 +712,18 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         /* get a pointer to the current entry
          */
         p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
+
+        NM_TRACE_VAL("tcp incoming trk id", p_pw->p_trk->id);
+        NM_TRACE_VAL("tcp incoming fd", p_tcp_gate->fd[p_pw->p_trk->id]);
+        NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
+        NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
+        NM_TRACE_VAL("tcp incoming cur len", p_cur->iov_len);
+
+        if (!p_vi->v_cur_size) {
+                err	= NM_ESUCCESS;
+
+                goto out;
+        }
 
  readv_again:
         ret	= readv(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);

@@ -416,7 +416,7 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	debug_flags &= (~op_done);
 	op_done |= (debug_flags & PM2DEBUG_DO_OPT);
 
-	while ((opt<=(*argc)) && (argv[opt])) {
+	while ((opt<(*argc)) && (argv[opt])) {
 	  
 #ifdef LEONIE
 		// If the TBX lib is included as part of Leonie 

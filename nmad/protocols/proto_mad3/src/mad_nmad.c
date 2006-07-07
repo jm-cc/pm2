@@ -151,11 +151,6 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t,
 static struct nm_core	*p_core		= NULL;
 static struct nm_proto	*p_proto	= NULL;
 
-/* main madeleine object
- */
-static p_mad_madeleine_t	p_madeleine	= NULL;
-
-
 
 /*
  * Driver private functions

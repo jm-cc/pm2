@@ -1,0 +1,1 @@
+leonie -d --appli=`pwd`/$1 $2

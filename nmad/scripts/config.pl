@@ -84,13 +84,14 @@ sub process ($) {
                 die "${$var}{'name'} is not a boolean\n";
             }
 
-            process ($_group)
+            process (${$_group}{'name'})
                 if ${$var}{'value'};
         }
     }
 
   set:
     for my $var (@{${$group}{'sets'}}) {
+        print "set var ${$var}{'name'}\n";
         next set
             if exists ${$var}{'user_value'};
 
@@ -109,7 +110,7 @@ sub process ($) {
                 die "${$var}{'name'} is not a boolean\n";
             }
 
-            process ($_group)
+            process (${$_group}{'name'})
                 if ${$var}{'value'};
         }
     }

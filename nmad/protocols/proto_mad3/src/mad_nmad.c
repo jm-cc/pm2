@@ -34,16 +34,18 @@
 
 #if defined CONFIG_MX
 #  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#else
-#  include <nm_tcp_public.h>
 #endif
 
-#include <nm_basic_public.h>
+#if defined CONFIG_GM
+#  include <nm_gm_public.h>
+#endif
 
+#if defined CONFIG_QSNET
+#  include <nm_qsnet_public.h>
+#endif
+
+#include <nm_tcp_public.h>
+#include <nm_basic_public.h>
 #include "nm_mad3_private.h"
 
 #include "madeleine.h"

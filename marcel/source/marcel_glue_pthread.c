@@ -142,6 +142,7 @@ __res_state (void)
 
 //static void pthread_initialize() __attribute__((constructor));
 
+/* Appelé par la libc. Non utilisée par marcel */
 void __pthread_initialize_minimal(void)
 {
 	//marcel_init_section(MA_INIT_MAIN_LWP);
@@ -150,6 +151,7 @@ void __pthread_initialize_minimal(void)
 #endif
 }
 
+/* Appelé par la libc. Non utilisée par marcel */
 void __pthread_initialize(int* argc, char**argv)
 {
 	//marcel_init_section(MA_INIT_MAIN_LWP);
@@ -159,6 +161,8 @@ void __pthread_initialize(int* argc, char**argv)
 	
 }
 
+/* Initialisation minimale appelée par stackalign : uniquement les
+ * variables pour que par exemple marcel_self fonctionne */
 void marcel_pthread_initialize(int* argc, char**argv)
 {
 	if (!_initialized) {

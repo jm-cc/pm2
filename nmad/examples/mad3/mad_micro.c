@@ -23,6 +23,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#ifdef CONFIG_PROTO_MAD3
 #include <madeleine.h>
 
 int
@@ -170,3 +172,10 @@ main(int argc, char **argv) {
         mad_exit(madeleine);
         return 0;
 }
+#else	/* CONFIG_PROTO_MAD3 */
+int
+main(int argc, char **argv) {
+        printf("This program requires the proto_mad3 module\n");
+        return 0;
+}
+#endif	/* CONFIG_PROTO_MAD3 */

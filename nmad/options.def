@@ -15,6 +15,7 @@ bool CONFIG_SCHED_OPT		= n
 bool CONFIG_QSNET	= n
 bool CONFIG_MX		= n
 bool CONFIG_GM		= n
+bool CONFIG_SISCI	= n
 bool CONFIG_DUMMY	= n
 
 [protocols]
@@ -35,6 +36,11 @@ string MX_LIBS		= myriexpress
 string GM_INC_PATH	= /opt/gm/include
 string GM_LD_PATH	= /opt/gm/lib
 string GM_LIBS		= gm
+
+[sisci: CONFIG_SISCI]
+string SISCI_INC_PATH	= /opt/DIS/include
+string SISCI_LD_PATH	= /opt/DIS/lib
+string SISCI_LIBS	= sisci
 
 [dummy: CONFIG_DUMMY]
 string DUMMY_INC_PATH

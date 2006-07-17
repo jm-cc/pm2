@@ -26,6 +26,10 @@ ifeq ($(CONFIG_GM), y)
 SUBDIRS	+= gm
 endif
 
+ifeq ($(CONFIG_SISCI), y)
+SUBDIRS	+= sisci
+endif
+
 ifeq ($(CONFIG_DUMMY), y)
 SUBDIRS	+= dummy
 endif

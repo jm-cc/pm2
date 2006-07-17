@@ -15,4 +15,4 @@
 
 
 int
-nm_mx_load(struct nm_drv_ops *p_ops);
+nm_dummy_load(struct nm_drv_ops *p_ops);

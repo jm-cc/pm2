@@ -9,7 +9,7 @@ bool CONFIG_PROFILE	= n
 
 [schedulers]
 bool CONFIG_SCHED_MINI_ALT	= n
-bool CONFIG_SCHED_SCHED_OPT	= n
+bool CONFIG_SCHED_OPT		= n
 
 [drivers]
 bool CONFIG_QSNET	= n

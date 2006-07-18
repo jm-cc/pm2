@@ -296,10 +296,10 @@ static void __marcel_init look_cpuinfo(void) {
 
 		marcel_vpmask_empty(&core_level[j].vpset);
 
+		marcel_topo_level_nbitems[discovering_level]=numcores;
 #ifdef MARCEL_SMT_IDLE
 		marcel_topo_core_level =
 #endif
-		marcel_topo_level_nbitems[discovering_level]=numcores;
 		marcel_topo_levels[discovering_level++]=core_level;
 	}
 }

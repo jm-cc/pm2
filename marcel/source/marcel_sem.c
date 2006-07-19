@@ -123,7 +123,11 @@ DEF_C(int, sem_trywait, (sem_t *s), (s))
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
+  unsigned long jiffies_timeout = timeout ?
+  	(timeout*1000 + marcel_gettimeslice()-1)/marcel_gettimeslice() :
+	0;
   semcell c;
+  semcell **prev;
 
   LOG_IN();
   LOG_PTR("semaphore",s);
@@ -131,7 +135,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
   ma_spin_lock_bh(&s->lock);
 
   if(--(s->value) < 0) {
-    if(timeout == 0) {
+    if(jiffies_timeout == 0) {
       s->value++;
       ma_spin_unlock_bh(&s->lock);
       LOG_OUT();
@@ -146,12 +150,20 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last->next = &c;
       s->last = &c;
     }
-    ma_spin_unlock_bh(&s->lock);
-#ifdef PM2_DEV
-#warning timeout to manage
-#endif
-    MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-    //__marcel_tempo_give_hand(timeout, &c.blocked, s);
+    while(c.blocked) {
+      if(jiffies_timeout == 0) {
+        for (prev = &s->first; *prev != &c; prev = &(*prev)->next);
+	*prev = c.next;
+        s->value++;
+        ma_spin_unlock_bh(&s->lock);
+        LOG_OUT();
+        MARCEL_EXCEPTION_RAISE(MARCEL_TIME_OUT);
+      }
+      ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+      ma_spin_unlock_bh(&s->lock);
+      jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
+      ma_spin_lock_bh(&s->lock);
+    }
   } else {
     ma_spin_unlock_bh(&s->lock);
   }

@@ -13,7 +13,6 @@
  * General Public License for more details.
  */
 
-
 #include "nm_log.h"
 #include "nm_errno.h"
 #include "nm_sched_ops.h"
@@ -41,6 +40,8 @@
 
 #include "nm_core_ops.h"
 #include "nm_core.h"
+
+#include <assert.h>
 
 #include "nm_core_inline.h"
 

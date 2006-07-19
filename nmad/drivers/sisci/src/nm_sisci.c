@@ -27,8 +27,18 @@
 #define NO_CALLBACK	0
 #define NO_ARG		0
 
+struct nm_sisci_cnx_seg {
+        uint32_t		flags;
+        uint32_t		padding;
+        uint32_t		node_id;
+        uint32_t		seg_id;
+};
+
 struct nm_sisci_drv {
-        sci_desc_t	sci_dev;
+        sci_desc_t		sci_dev;
+        sci_local_segment_t	sci_l_cnx_seg;
+        unsigned int		l_node_id;
+        int			next_seg_id;
 };
 
 struct nm_sisci_trk {
@@ -52,20 +62,48 @@ int
 nm_sisci_init			(struct nm_drv *p_drv) {
         struct nm_sisci_drv	*p_sisci_drv	= NULL;
         sci_desc_t		 sci_dev;
+        unsigned int		 l_node_id;
+        sci_query_adapter_t	 query;
+        sci_local_segment_t	 sci_l_seg;
         sci_error_t		 sci_err;
 	int err;
 
-        SCIInitialize(NO_FLAGS, &sci_err);
-        if (sci_err	!= SCI_ERR_OK) {
-                err = -NM_ESCFAILD;
-                goto out;
-        }
+#define _CHK_ \
+	do {						\
+        	if (sci_err	!= SCI_ERR_OK) {	\
+        	        err = -NM_ESCFAILD;     	\
+        	        goto out;               	\
+        	}					\
+	} while (0)
 
+        /* SiSCI runtime initialization
+         */
+        SCIInitialize(NO_FLAGS, &sci_err);
+        _CHK_;
+
+        /* SCI device opening
+         */
         SCIOpen(&sci_dev, NO_FLAGS, &sci_err);
-        if (sci_err	!= SCI_ERR_OK) {
-                err = -NM_ESCFAILD;
-                goto out;
-        }
+        _CHK_;
+
+        /* Node id of the local adapter 0
+         */
+        query.subcommand	= SCI_Q_ADAPTER_NODEID;
+        query.localAdapterNo	= 0;
+        query.data		= &l_node_id;
+
+        SCIQuery(SCI_Q_ADAPTER, &query, NO_FLAGS, &sci_err);
+        _CHK_;
+
+        /* Connection segment setup
+         */
+        SCICreateSegment(sci_dev, &sci_l_seg, 0, sizeof(struct nm_sisci_cnx_seg),
+                         NO_CALLBACK, NO_ARG, NO_FLAGS, &sci_err);
+        _CHK_;
+        SCIPrepareSegment(sci_l_seg, 0, NO_FLAGS, &sci_err);
+        _CHK_;
+
+#undef _CHK_
 
         /* private data							*/
 	p_sisci_drv	= TBX_MALLOC(sizeof (struct nm_sisci_drv));
@@ -75,7 +113,10 @@ nm_sisci_init			(struct nm_drv *p_drv) {
         }
 
         memset(p_sisci_drv, 0, sizeof (struct nm_sisci_drv));
-        p_sisci_drv->sci_dev	= sci_dev;
+        p_sisci_drv->sci_dev		= sci_dev;
+        p_sisci_drv->sci_l_cnx_seg	= sci_l_seg;
+        p_sisci_drv->l_node_id		= l_node_id;
+        p_sisci_drv->next_seg_id	= 1;
 
         p_drv->priv	= p_sisci_drv;
 
@@ -102,11 +143,20 @@ nm_sisci_exit			(struct nm_drv *p_drv) {
 
         p_sisci_drv	= p_drv->priv;
 
+#define _CHK_ \
+	do {						\
+        	if (sci_err	!= SCI_ERR_OK) {	\
+        	        err = -NM_ESCFAILD;     	\
+        	        goto out;               	\
+        	}					\
+	} while (0)
+
+        SCIRemoveSegment(p_sisci_drv->sci_l_cnx_seg, NO_FLAGS, &sci_err);
+        _CHK_;
         SCIClose(p_sisci_drv->sci_dev, NO_FLAGS, &sci_err);
-        if (sci_err	!= SCI_ERR_OK) {
-                err = -NM_ESCFAILD;
-                goto out;
-        }
+        _CHK_;
+
+#undef _CHK_
 
         TBX_FREE(p_drv->url);
         TBX_FREE(p_sisci_drv);
@@ -173,15 +223,40 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
+        struct nm_sisci_drv	*p_sisci_drv	= NULL;
         struct nm_sisci_trk	*p_sisci_trk	= NULL;
+
+        sci_desc_t		 sci_dev;
+
+        unsigned int		 l_node_id;
+        sci_local_segment_t	 sci_l_cnx_seg;
+        sci_map_t		 sci_l_cnx_map;
+        struct nm_sisci_cnx_seg *l_cnx_seg;
+
+        unsigned int		 r_node_id;
+        sci_remote_segment_t	 sci_r_cnx_seg;
+        sci_map_t	 	 sci_r_cnx_map;
+        sci_sequence_t		 sci_r_seq;
+        volatile struct nm_sisci_cnx_seg *r_cnx_seg;
+
+        sci_error_t		 sci_err;
 	int err;
 
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
+        p_sisci_drv	= p_drv->priv;
         p_sisci_trk	= p_trk->priv;
 
-        /* private data				*/
+        sci_dev		= p_sisci_drv->sci_dev;
+        sci_l_cnx_seg	= p_sisci_drv->sci_l_cnx_seg;
+        l_node_id	= p_sisci_drv->l_node_id;
+        r_node_id	= strtoul(p_crq->remote_drv_url, (char **)NULL, 10);
+
+        NM_TRACE_VAL("sisci connect remote node id", (int)r_node_id);
+
+        /* private data
+         */
         p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
         if (!p_sisci_gate) {
                 p_sisci_gate	= TBX_MALLOC(sizeof (struct nm_sisci_gate));
@@ -192,9 +267,72 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
 
                 memset(p_sisci_gate, 0, sizeof(struct nm_sisci_gate));
 
-                /* update gate private data		*/
+                /* update gate private data
+                 */
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_sisci_gate;
         }
+
+#define _CHK_ \
+	do {						\
+        	if (sci_err	!= SCI_ERR_OK) {	\
+        	        err = -NM_ESCFAILD;     	\
+        	        goto out;               	\
+        	}					\
+	} while (0)
+
+        /* map and clear local segment
+         */
+        l_cnx_seg	=
+                SCIMapLocalSegment(sci_l_cnx_seg, &sci_l_cnx_map,
+                                   0, sizeof(struct nm_sisci_cnx_seg), NULL,
+                                   NO_FLAGS, &sci_err);
+        _CHK_;
+        memset(l_cnx_seg, 0, sizeof(struct nm_sisci_cnx_seg));
+
+        /* unlock local segment
+         */
+        SCISetSegmentAvailable(sci_l_cnx_seg, 0, NO_FLAGS, &sci_err);
+        _CHK_;
+
+        /* connect to the remote segment
+         */
+        SCIConnectSegment(sci_dev, &sci_r_cnx_seg, r_node_id, 0,
+                          0, NO_CALLBACK, NO_ARG, SCI_INFINITE_TIMEOUT,
+                          NO_FLAGS, &sci_err);
+        _CHK_;
+        r_cnx_seg	=
+                SCIMapRemoteSegment(sci_r_cnx_seg, &sci_r_cnx_map,
+                                    0, sizeof(struct nm_sisci_cnx_seg), NULL,
+                                    NO_FLAGS, &sci_err);
+        _CHK_;
+        SCICreateMapSequence(sci_r_cnx_map, &sci_r_seq, NO_FLAGS, &sci_err);
+        _CHK_;
+
+
+        /* ... exchange data   ... */
+        r_cnx_seg->node_id	= l_node_id;
+        r_cnx_seg->seg_id	= p_sisci_drv->next_seg_id;
+        SCIStoreBarrier(sci_r_seq, NO_FLAGS);
+
+        r_cnx_seg->flags	= 1;
+        SCIStoreBarrier(sci_r_seq, NO_FLAGS);
+
+        /* --- end of exchange --- */
+
+        /* unmap segments
+         */
+        SCIUnmapSegment(sci_r_cnx_map, NO_FLAGS, &sci_err);
+        _CHK_;
+        SCIUnmapSegment(sci_l_cnx_map, NO_FLAGS, &sci_err);
+        _CHK_;
+
+        /* lock cnx segment
+         */
+        SCISetSegmentUnavailable(p_sisci_drv->sci_l_cnx_seg, 0, NO_FLAGS,
+                                 &sci_err);
+        _CHK_;
+
+#undef _CHK_
 
 	err = NM_ESUCCESS;
 

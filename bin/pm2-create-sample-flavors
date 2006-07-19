@@ -95,6 +95,9 @@ registering_flavors() {
 	--modules="sigmundlib sigmund sigmundps xsigmund supertrace" \
 	--all=build_dynamic
 
+    register_flavor tbx \
+        --modules="init tbx ntbx" $COMMON_OPTIONS
+
 #########################################################
 # END OF LIST OF SAMPLE FLAVORS
 #########################################################

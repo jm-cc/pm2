@@ -21,6 +21,7 @@
 #include <sys/poll.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <errno.h>
 #include <assert.h>
 
@@ -55,6 +56,60 @@ struct nm_tcp_gate {
 struct nm_tcp_pkt_wrap {
         struct nm_iovec_iter vi;
 };
+
+#define PROFILE_TCP
+
+#ifdef PROFILE_TCP
+#define NB_SAMPLES	20000
+enum profile_op {
+        po_init		= 0,
+
+        po_out_poll,
+        po_in_mpoll,
+        po_in_spoll,
+        po_send,
+        po_recv,
+        po_send_write,
+        po_recv_read,
+
+        po_out_poll_done,
+        po_in_mpoll_done,
+        po_in_spoll_done,
+        po_send_done,
+        po_recv_done,
+        po_send_write_done,
+        po_recv_read_done,
+};
+
+static char *profile_str[] = {
+        "init",
+
+        "out_poll",
+        "in_mpoll",
+        "in_spoll",
+        "send",
+        "recv",
+        "send_write",
+        "recv_read",
+
+        "out_poll_done",
+        "in_mpoll_done",
+        "in_spoll_done",
+        "send_done",
+        "recv_done",
+        "send_write_done",
+        "recv_read_done",
+};
+
+
+static tbx_tick_t	sample_array[NB_SAMPLES];
+static enum profile_op	op_array[NB_SAMPLES];
+static int		next_sample	= 0;
+
+#  define SAMPLE(op) do {if (next_sample < NB_SAMPLES){TBX_GET_TICK(sample_array[next_sample]);op_array[next_sample]=(op);next_sample++;}} while (0)
+#else /* PROFILE_TCP */
+#  define SAMPLE(op)
+#endif /* PROFILE_TCP */
 
 static
 char *
@@ -156,6 +211,8 @@ nm_tcp_init		(struct nm_drv *p_drv) {
         p_drv->cap.has_selective_receive		= 1;
         p_drv->cap.has_concurrent_selective_receive	= 1;
 
+        SAMPLE(po_init);
+
         err = NM_ESUCCESS;
 
         return err;
@@ -233,6 +290,8 @@ nm_tcp_connect_accept	(struct nm_cnx_rq	*p_crq,
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_tcp_trk	*p_tcp_trk	= NULL;
+        int			 val    	=    1;
+        socklen_t		 len    	= sizeof(int);
         int			 n;
         int			 err;
 
@@ -240,6 +299,8 @@ nm_tcp_connect_accept	(struct nm_cnx_rq	*p_crq,
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
         p_tcp_trk	= p_trk->priv;
+
+        SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
 
         NM_TRACE_VAL("tcp connect/accept trk id", p_trk->id);
         NM_TRACE_VAL("tcp connect/accept new socket on fd", fd);
@@ -352,7 +413,9 @@ nm_tcp_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         pollfd.revents	= 0;
 
  poll_again:
+        SAMPLE(po_out_poll);
         ret	= poll(&pollfd, 1, 0);
+        SAMPLE(po_out_poll_done);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -427,7 +490,9 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                         NM_TRACE_VAL("tcp incoming multi poll: gate 0 fd", p_tcp_trk->poll_array[0].fd);
 
                 multi_poll_again:
+                        SAMPLE(po_in_mpoll);
                         ret	= poll(p_tcp_trk->poll_array, p_drv->nb_gates, 0);
+                        SAMPLE(po_in_mpoll_done);
                         if (ret < 0) {
                                 if (errno == EINTR)
                                         goto multi_poll_again;
@@ -518,7 +583,9 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         NM_TRACE_VAL("tcp incoming single poll: pollfd", pollfd.fd);
 
  poll_single_again:
+        SAMPLE(po_in_spoll);
         ret	= poll(&pollfd, 1, 0);
+        SAMPLE(po_in_spoll_done);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -574,6 +641,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         int			 ret;
         int			 err;
 
+        SAMPLE(po_send);
         err	= nm_tcp_outgoing_poll(p_pw);
         if (err < 0)
                 goto out;
@@ -616,7 +684,9 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
  writev_again:
+        SAMPLE(po_send_write);
         ret	= writev(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
+        SAMPLE(po_send_write_done);
         NM_TRACE_VAL("tcp outgoing writev ret", ret);
 
         if (ret < 0) {
@@ -667,6 +737,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         err	= -NM_EAGAIN;
 
  out:
+        SAMPLE(po_send_done);
         return err;
 }
 
@@ -681,6 +752,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         int			 ret;
         int			 err;
 
+        SAMPLE(po_recv);
         err	= nm_tcp_incoming_poll(p_pw);
         if (err < 0)
                 goto out;
@@ -726,7 +798,9 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
  readv_again:
+        SAMPLE(po_recv_read);
         ret	= readv(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
+        SAMPLE(po_recv_read_done);
 
         if (ret < 0) {
                 if (errno == EINTR)
@@ -777,6 +851,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         err	= -NM_EAGAIN;
 
  out:
+        SAMPLE(po_recv_done);
         return err;
 }
 
@@ -797,3 +872,28 @@ nm_tcp_load(struct nm_drv_ops *p_ops) {
         return NM_ESUCCESS;
 }
 
+#ifdef PROFILE_TCP
+void
+disp_stats(void) {
+        int i;
+
+        if (next_sample < 2)
+                return;
+
+        fprintf(stderr, "%06d, %03.2lf, %02d - %s\n", 0, 0.0, op_array[0], profile_str[op_array[0]]);
+
+        for (i = 1; i < next_sample; i++) {
+                tbx_tick_t      t1;
+                tbx_tick_t      t2;
+                int	op;
+                double	d;
+
+                t1	= sample_array[i-1];
+                t2	= sample_array[i];
+                op	= op_array[i];
+                d	= TBX_TIMING_DELAY(t1, t2);
+                fprintf(stderr, "%06d, %03.2lf, %02d - %s\n", i, d, op, profile_str[op]);
+        }
+}
+
+#endif /* PROFILE_TCP */

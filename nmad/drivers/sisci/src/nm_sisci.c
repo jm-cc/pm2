@@ -19,10 +19,16 @@
 #include <sys/uio.h>
 #include <tbx.h>
 
+#include <sisci_api.h>
+
 #include "nm_sisci_private.h"
 
+#define NO_FLAGS	0
+#define NO_CALLBACK	0
+#define NO_ARG		0
+
 struct nm_sisci_drv {
-        int sisci;
+        sci_desc_t	sci_dev;
 };
 
 struct nm_sisci_trk {
@@ -45,7 +51,21 @@ static
 int
 nm_sisci_init			(struct nm_drv *p_drv) {
         struct nm_sisci_drv	*p_sisci_drv	= NULL;
+        sci_desc_t		 sci_dev;
+        sci_error_t		 sci_err;
 	int err;
+
+        SCIInitialize(NO_FLAGS, &sci_err);
+        if (sci_err	!= SCI_ERR_OK) {
+                err = -NM_ESCFAILD;
+                goto out;
+        }
+
+        SCIOpen(&sci_dev, NO_FLAGS, &sci_err);
+        if (sci_err	!= SCI_ERR_OK) {
+                err = -NM_ESCFAILD;
+                goto out;
+        }
 
         /* private data							*/
 	p_sisci_drv	= TBX_MALLOC(sizeof (struct nm_sisci_drv));
@@ -55,6 +75,8 @@ nm_sisci_init			(struct nm_drv *p_drv) {
         }
 
         memset(p_sisci_drv, 0, sizeof (struct nm_sisci_drv));
+        p_sisci_drv->sci_dev	= sci_dev;
+
         p_drv->priv	= p_sisci_drv;
 
         /* driver url encoding						*/
@@ -75,15 +97,24 @@ static
 int
 nm_sisci_exit			(struct nm_drv *p_drv) {
         struct nm_sisci_drv	*p_sisci_drv	= NULL;
+        sci_error_t		 sci_err;
 	int err;
 
         p_sisci_drv	= p_drv->priv;
 
+        SCIClose(p_sisci_drv->sci_dev, NO_FLAGS, &sci_err);
+        if (sci_err	!= SCI_ERR_OK) {
+                err = -NM_ESCFAILD;
+                goto out;
+        }
+
         TBX_FREE(p_drv->url);
         TBX_FREE(p_sisci_drv);
+        SCITerminate();
 
 	err = NM_ESUCCESS;
 
+ out:
 	return err;
 }
 

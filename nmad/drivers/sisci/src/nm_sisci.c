@@ -32,6 +32,8 @@
 #define FLAGS_AREA_SIZE		 4096
 #define DATA_AREA_SIZE		(DATA_SEG_SIZE - FLAGS_AREA_SIZE)
 
+#define INITIAL_PW_NUM		16
+
 struct nm_sisci_cnx_seg {
         uint32_t		flags;
         uint32_t		padding;
@@ -82,10 +84,15 @@ struct nm_sisci_drv {
         sci_local_segment_t	sci_l_cnx_seg;
         unsigned int		l_node_id;
         int			next_seg_id;
+        p_tbx_memory_t 		sci_pw_mem;
 };
 
 struct nm_sisci_trk {
-        int sisci;
+        uint8_t			  next_cnx_id;
+
+        /* gate id reverse mapping */
+        struct nm_gate		**gate_map;
+        struct nm_sisci_cnx	**cnx_map;
 };
 
 struct nm_sisci_segment {
@@ -97,6 +104,7 @@ struct nm_sisci_segment {
         sci_map_t	 	 sci_r_map;
         sci_sequence_t		 sci_r_seq;
         volatile struct nm_sisci_seg	*r_seg;
+        volatile int		 write_flag_flushed;
 };
 
 struct nm_sisci_cnx {
@@ -108,7 +116,9 @@ struct nm_sisci_gate {
 };
 
 struct nm_sisci_pkt_wrap {
-        int sisci;
+        struct nm_iovec_iter	 vi;
+        int			 next_seg;
+        struct nm_sisci_cnx	*p_sisci_cnx;
 };
 
 static
@@ -171,6 +181,10 @@ nm_sisci_init			(struct nm_drv *p_drv) {
         p_sisci_drv->sci_l_cnx_seg	= sci_l_seg;
         p_sisci_drv->l_node_id		= l_node_id;
         p_sisci_drv->next_seg_id	= 1;
+
+        tbx_malloc_init(&(p_sisci_drv->sci_pw_mem),
+                        sizeof(struct nm_sisci_pkt_wrap),
+                        INITIAL_PW_NUM,   "nmad/sisci/pw");
 
         p_drv->priv	= p_sisci_drv;
 
@@ -353,6 +367,7 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
                  */
                 r_seg->w	= 1;
                 SCIStoreBarrier(sci_r_seq, NO_FLAGS);
+                p_sisci_cnx->seg_array[i].write_flag_flushed	= 1;
         }
 
 #undef _CHK_
@@ -421,6 +436,26 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
                  */
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_sisci_gate;
         }
+
+        if (p_sisci_trk->next_cnx_id) {
+                p_sisci_trk->gate_map	=
+                        TBX_REALLOC(p_sisci_trk->gate_map,
+                                    sizeof(struct nm_gate *)
+                                    * (p_sisci_trk->next_cnx_id+1));
+                p_sisci_trk->cnx_map	=
+                        TBX_REALLOC(p_sisci_trk->gate_map,
+                                    sizeof(struct nm_sisci_cnx *)
+                                    * (p_sisci_trk->next_cnx_id+1));
+        } else {
+                p_sisci_trk->gate_map	= TBX_MALLOC(sizeof(struct nm_gate *));
+                p_sisci_trk->cnx_map	=
+                        TBX_MALLOC(sizeof(struct nm_sisci_cnx *));
+        }
+
+        p_sisci_trk->gate_map[p_sisci_trk->next_cnx_id]	= p_gate;
+        p_sisci_trk->cnx_map[p_sisci_trk->next_cnx_id]	=
+                p_sisci_gate->cnx_array + p_trk->id;
+        p_sisci_trk->next_cnx_id++;
 
 #define _CHK_ \
 	do {						\
@@ -502,6 +537,8 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
 
 #undef _CHK_
 
+        p_sisci_drv->next_seg_id = p_sisci_drv->next_seg_id + 2;
+
 	err = NM_ESUCCESS;
 
  out:
@@ -559,6 +596,26 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_sisci_gate;
         }
+
+        if (p_sisci_trk->next_cnx_id) {
+                p_sisci_trk->gate_map	=
+                        TBX_REALLOC(p_sisci_trk->gate_map,
+                                    sizeof(struct nm_gate *)
+                                    * (p_sisci_trk->next_cnx_id+1));
+                p_sisci_trk->cnx_map	=
+                        TBX_REALLOC(p_sisci_trk->gate_map,
+                                    sizeof(struct nm_sisci_cnx *)
+                                    * (p_sisci_trk->next_cnx_id+1));
+        } else {
+                p_sisci_trk->gate_map	= TBX_MALLOC(sizeof(struct nm_gate *));
+                p_sisci_trk->cnx_map	=
+                        TBX_MALLOC(sizeof(struct nm_sisci_cnx *));
+        }
+
+        p_sisci_trk->gate_map[p_sisci_trk->next_cnx_id]	= p_gate;
+        p_sisci_trk->cnx_map[p_sisci_trk->next_cnx_id]	=
+                p_sisci_gate->cnx_array + p_trk->id;
+        p_sisci_trk->next_cnx_id++;
 
 #define _CHK_ \
 	do {						\
@@ -643,6 +700,8 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
 
 #undef _CHK_
 
+        p_sisci_drv->next_seg_id = p_sisci_drv->next_seg_id + 2;
+
 	err = NM_ESUCCESS;
 
  out:
@@ -654,6 +713,9 @@ int
 nm_sisci_disconnect		(struct nm_cnx_rq *p_crq) {
 	int err;
 
+        /* TODO: add disconnect code
+         */
+#warning TODO
 	err = NM_ESUCCESS;
 
 	return err;
@@ -661,8 +723,72 @@ nm_sisci_disconnect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_sisci_post_send_iov		(struct nm_pkt_wrap *p_pw) {
+nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
+        struct nm_gate			*p_gate		= NULL;
+        struct nm_drv			*p_drv		= NULL;
+        struct nm_trk			*p_trk		= NULL;
+        struct nm_sisci_gate		*p_sisci_gate	= NULL;
+        struct nm_sisci_drv		*p_sisci_drv	= NULL;
+        struct nm_sisci_trk		*p_sisci_trk	= NULL;
+        struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
+        struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
+        struct nm_sisci_segment		*p_sisci_seg	= NULL;
+        int i;
 	int err;
+
+        p_gate		= p_pw->p_gate;
+        p_drv		= p_pw->p_drv;
+        p_trk		= p_pw->p_trk;
+
+        p_sisci_drv	= p_drv->priv;
+        p_sisci_trk	= p_trk->priv;
+
+
+        if (!p_pw->gate_priv) {
+                /* first call */
+
+                p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+                p_pw->gate_priv	= p_sisci_gate;
+
+                p_sisci_pw	= tbx_malloc(p_sisci_drv->sci_pw_mem);
+                p_sisci_pw->next_seg	= 0;
+
+                /* current entry num is first entry num
+                 */
+                p_sisci_pw->vi.v_cur	= p_pw->v_first;
+
+                /* save a copy of current entry
+                 */
+                p_sisci_pw->vi.cur_copy	= p_pw->v[p_pw->v_first];
+
+                /* current vector size is full vector size
+                 */
+                p_sisci_pw->vi.v_cur_size	= p_pw->v_nb;
+
+                p_pw->drv_priv	= p_sisci_pw;
+
+                p_sisci_cnx		= p_sisci_gate->cnx_array + p_trk->id;
+                p_sisci_pw->p_sisci_cnx	= p_sisci_cnx;
+        } else {
+                p_sisci_gate	= p_pw->gate_priv;
+                p_sisci_pw	= p_pw->drv_priv;
+                p_sisci_cnx	= p_sisci_pw->p_sisci_cnx;
+        }
+
+        i = p_sisci_pw->next_seg;
+        p_sisci_seg	= p_sisci_cnx->seg_array + i;
+
+        /* wait for authorization to write
+         */
+        if (!p_sisci_seg->l_seg->w) {
+                err = -NM_EAGAIN;
+        }
+
+        /* reset write flag */
+        p_sisci_seg->l_seg->w	= 0;
+
+        /* -=- send data -=-
+         */
 
 	err = NM_ESUCCESS;
 
@@ -672,17 +798,21 @@ nm_sisci_post_send_iov		(struct nm_pkt_wrap *p_pw) {
 static
 int
 nm_sisci_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
+        struct nm_gate			*p_gate		= NULL;
+        struct nm_drv			*p_drv		= NULL;
+        struct nm_trk			*p_trk		= NULL;
+        struct nm_sisci_gate		*p_sisci_gate	= NULL;
+        struct nm_sisci_drv		*p_sisci_drv	= NULL;
+        struct nm_sisci_trk		*p_sisci_trk	= NULL;
+        struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
+        struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
 	int err;
 
-	err = NM_ESUCCESS;
+        p_drv		= p_pw->p_drv;
+        p_trk		= p_pw->p_trk;
 
-	return err;
-}
-
-static
-int
-nm_sisci_poll_send_iov    	(struct nm_pkt_wrap *p_pw) {
-	int err;
+        p_sisci_drv	= p_drv->priv;
+        p_sisci_trk	= p_trk->priv;
 
 	err = NM_ESUCCESS;
 
@@ -692,6 +822,14 @@ nm_sisci_poll_send_iov    	(struct nm_pkt_wrap *p_pw) {
 static
 int
 nm_sisci_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
+        struct nm_gate			*p_gate		= NULL;
+        struct nm_drv			*p_drv		= NULL;
+        struct nm_trk			*p_trk		= NULL;
+        struct nm_sisci_gate		*p_sisci_gate	= NULL;
+        struct nm_sisci_drv		*p_sisci_drv	= NULL;
+        struct nm_sisci_trk		*p_sisci_trk	= NULL;
+        struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
+        struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
 	int err;
 
 	err = NM_ESUCCESS;
@@ -711,10 +849,10 @@ nm_sisci_load(struct nm_drv_ops *p_ops) {
         p_ops->accept		= nm_sisci_accept       ;
         p_ops->disconnect       = nm_sisci_disconnect   ;
 
-        p_ops->post_send_iov	= nm_sisci_post_send_iov;
+        p_ops->post_send_iov	= nm_sisci_send_iov     ;
         p_ops->post_recv_iov    = nm_sisci_post_recv_iov;
 
-        p_ops->poll_send_iov    = nm_sisci_poll_send_iov;
+        p_ops->poll_send_iov    = nm_sisci_send_iov     ;
         p_ops->poll_recv_iov    = nm_sisci_poll_recv_iov;
 
         return NM_ESUCCESS;

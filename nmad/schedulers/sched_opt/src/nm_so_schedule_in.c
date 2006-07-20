@@ -23,7 +23,7 @@
 #include "nm_so_private.h"
 #include <nm_rdv_public.h>
 
-#define CHRONO
+//#define CHRONO
 
 
 #ifdef CHRONO
@@ -55,7 +55,7 @@ nm_so_take_pre_posted(struct nm_sched *p_sched,
 
 #ifdef CHRONO
     TBX_GET_TICK(t2);
-    chrono_take_pre_posted += TBX_TIMING_ELAY(t1, t2);
+    chrono_take_pre_posted += TBX_TIMING_DELAY(t1, t2);
 #endif
 
     err = NM_ESUCCESS;

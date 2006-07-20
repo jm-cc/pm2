@@ -64,7 +64,11 @@ tbx_timing_init()
 #ifdef __MINGW32__
     Sleep(50);
 #else
+#ifdef MA__LIBPTHREAD
     syscall(SYS_nanosleep,&ts,NULL);
+#else
+    nanosleep(&ts,NULL);
+#endif
 #endif
     TBX_GET_TICK(t2);
     gettimeofday(&tv2,0);

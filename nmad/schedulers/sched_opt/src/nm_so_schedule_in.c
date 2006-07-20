@@ -55,7 +55,7 @@ nm_so_take_pre_posted(struct nm_sched *p_sched,
 
 #ifdef CHRONO
     TBX_GET_TICK(t2);
-    chrono_take_pre_posted += TBX_TIMING_DELAY(t1, t2);
+    chrono_take_pre_posted += TBX_TIMING_ELAY(t1, t2);
 #endif
 
     err = NM_ESUCCESS;
@@ -371,7 +371,7 @@ nm_so_open_data(struct nm_sched *p_sched,
             TBX_GET_TICK(t3);
 #endif
 
-            printf("------------> Reception d'un rdv\n");
+            //printf("------------> Reception d'un rdv\n");
             struct nm_rdv_ack_rq *p_ack = NULL;
 
             p_proto = p_core->p_proto_array[nm_pi_rdv_req];
@@ -402,7 +402,7 @@ nm_so_open_data(struct nm_sched *p_sched,
 
 
         } else if (proto_id == nm_pi_rdv_ack) {
-            printf("------------> Reception d'un ack\n");
+            //printf("------------> Reception d'un ack\n");
             p_proto = p_core->p_proto_array[nm_pi_rdv_req];
             if (!p_proto) {
                 TBX_FAILURE("unregistered protocol");
@@ -630,7 +630,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
         nm_so_control_error("nm_so_release_pre_posted_pw", err);
 
     } else if (p_trk->cap.rq_type == nm_trk_rq_rdv) {
-        printf("-------------LARGE Pack RECU----------------\n\n");
+        //printf("-------------LARGE Pack RECU----------------\n\n");
         // signal au protocole de rdv que la piste est libérée
          struct nm_proto * p_proto_rdv
              = p_core->p_proto_array[nm_pi_rdv_req];

@@ -269,7 +269,8 @@ nm_so_search_next(struct nm_gate *p_gate,
 
     }
 
-    err = nm_so_update_global_header(p_pw, p_pw->v_nb, p_pw->length);
+    err = nm_so_update_global_header(p_pw, p_pw->v_nb,
+                                     p_pw->length);
     nm_so_control_error("nm_so_update_global_header", err);
 
     /* je mets le wrap sur la piste des petits (la n°0)*/
@@ -521,7 +522,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
             header = p_pw->v[idx].iov_base;
 
             if(header->proto_id == nm_pi_rdv_req){
-                printf("--------------->Envoi d'un rdv\n");
+                //printf("--------------->Envoi d'un rdv\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_req];
                 if (!p_proto) {
                     NM_TRACEF("unregistered protocol: %d",
@@ -540,7 +541,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
                 v_nb-=2;
 
             } else if(header->proto_id == nm_pi_rdv_ack){
-                printf("------------->Envoi d'un ack\n");
+                //printf("------------->Envoi d'un ack\n");
                 p_proto = p_core->p_proto_array[nm_pi_rdv_ack];
                 if (!p_proto) {
                     NM_TRACEF("unregistered protocol: %d",
@@ -572,7 +573,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
         nm_so_control_error("nm_so_release_aggregation_pw", err);
 
     } else {
-        printf("----------------LARGE PACK ENVOYé - p_pw = %p\n\n", p_pw);
+        //printf("----------------LARGE PACK ENVOYé - p_pw = %p\n\n", p_pw);
 
         p_proto	= p_core->p_proto_array[p_pw->proto_id];
         if (!p_proto) {
@@ -595,7 +596,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
         nm_so_control_error("nm_pkt_wrap_free", err);
 
     }
-    //printf("<--nm_so_out_process_success_rq\n");
+    //pritnf("<--nm_so_out_process_success_rq\n");
     err	= NM_ESUCCESS;
 
 #ifdef CHRONO

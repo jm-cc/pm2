@@ -279,6 +279,11 @@ compat_symbol (libpthread, __old_pthread_cond_timedwait,
                pthread_cond_timedwait, GLIBC_2_0);
 ]])
 
+#define ma_timercmp(a, b, CMP) \
+  (((a)->tv_sec != (b)->tv_sec)? \
+   ((a)->tv_sec CMP (b)->tv_sec): \
+   ((a)->tv_usec CMP (b)->tv_usec))
+
 REPLICATE_CODE([[dnl
 int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 	prefix_mutex_t * __restrict mutex,
@@ -294,7 +299,7 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 	
 	gettimeofday(&now, NULL);
 	
-	if(timercmp(&tv, &now, <=)) {
+	if(ma_timercmp(&tv, &now, <=)) {
 		LOG_OUT();
 		return ETIMEDOUT;
 	}

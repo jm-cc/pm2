@@ -20,6 +20,13 @@
 #endif
 #include <errno.h>
 
+/* Portage libpthread:
+ * -        sem_t fait 16 octets sur x86, 32 sur ia64,
+ * - marcel_sem_t fait 16 octets sur x86, 24 sur ia64.
+ *
+ * donc ça tient.
+ */
+
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {
   s->value = initial;
@@ -37,7 +44,11 @@ DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
   marcel_sem_init(s, initial);
   return 0;
 })
-DEF_C(int,sem_init, (sem_t *s, int pshared, unsigned int initial), (pshared, initial))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_init, sem_init, GLIBC_2_1);
+strong_alias(pmarcel_sem_init, __old_sem_init);
+compat_symbol(libpthread, __old_sem_init, sem_init, GLIBC_2_0);
+#endif
 
 DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
 {
@@ -50,7 +61,11 @@ DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
   ma_spin_unlock_bh(&s->lock);
   return res;
 })
-DEF_C(int, sem_destroy, (sem_t *s), (s))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_destroy, sem_destroy, GLIBC_2_1);
+strong_alias(pmarcel_sem_destroy, __old_sem_destroy);
+compat_symbol(libpthread, __old_sem_destroy, sem_destroy, GLIBC_2_0);
+#endif
 
 void marcel_sem_P(marcel_sem_t *s)
 {
@@ -84,10 +99,52 @@ void marcel_sem_P(marcel_sem_t *s)
 
 DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
 {
-  marcel_sem_P(s);
+  semcell c;
+  semcell **prev;
+
+  LOG_IN();
+  LOG_PTR("semaphore",s);
+
+  ma_spin_lock_bh(&s->lock);
+
+  if(--(s->value) < 0) {
+    c.next = NULL;
+    c.blocked = tbx_true;
+    c.task = marcel_self();
+    if(s->first == NULL)
+      s->first = s->last = &c;
+    else {
+      s->last->next = &c;
+      s->last = &c;
+    }
+    
+    SELF_GETMEM(interrupted) = 0;
+    while(c.blocked) {
+      ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+      ma_spin_unlock_bh(&s->lock);
+      ma_schedule();
+      ma_spin_lock_bh(&s->lock);
+      if(SELF_GETMEM(interrupted)) {
+        for (prev = &s->first; *prev != &c; prev = &(*prev)->next);
+	*prev = c.next;
+        s->value++;
+        ma_spin_unlock_bh(&s->lock);
+        LOG_OUT();
+	errno = EINTR;
+        return -1;
+      }
+    }
+  }
+  ma_spin_unlock_bh(&s->lock);
+
+  LOG_OUT();
   return 0;
 })
-DEF_C(int, sem_wait, (sem_t *s), (s))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_wait, sem_wait, GLIBC_2_1);
+strong_alias(pmarcel_sem_wait, __old_sem_wait);
+compat_symbol(libpthread, __old_sem_wait, sem_wait, GLIBC_2_0);
+#endif
 
 int marcel_sem_try_P(marcel_sem_t *s)
 {
@@ -119,7 +176,11 @@ DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
   }
   return 0;
 })
-DEF_C(int, sem_trywait, (sem_t *s), (s))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_trywait, sem_trywait, GLIBC_2_1);
+strong_alias(pmarcel_sem_trywait, __old_sem_trywait);
+compat_symbol(libpthread, __old_sem_trywait, sem_trywait, GLIBC_2_0);
+#endif
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
@@ -150,7 +211,11 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last->next = &c;
       s->last = &c;
     }
-    while(c.blocked) {
+    do {
+      ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+      ma_spin_unlock_bh(&s->lock);
+      jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
+      ma_spin_lock_bh(&s->lock);
       if(jiffies_timeout == 0) {
         for (prev = &s->first; *prev != &c; prev = &(*prev)->next);
 	*prev = c.next;
@@ -159,11 +224,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
         LOG_OUT();
         MARCEL_EXCEPTION_RAISE(MARCEL_TIME_OUT);
       }
-      ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-      ma_spin_unlock_bh(&s->lock);
-      jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
-      ma_spin_lock_bh(&s->lock);
-    }
+    } while(c.blocked);
   } else {
     ma_spin_unlock_bh(&s->lock);
   }
@@ -172,29 +233,78 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 }
 
 /*******************sem_timedwait**********************/
-DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict sem,
+DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
    const struct timespec *__restrict abs_timeout),(sem,abs_timeout),
 {
+  struct timeval tv;
+  long long timeout;	// usec
+  unsigned long jiffies_timeout;
+  semcell c;
+  semcell **prev;
+
+  LOG_IN();
+  LOG_PTR("semaphore",s);
+
 #ifdef MA_DEBUG
-   if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000)
-   {
-      errno = EINVAL;
-      return -1;
-   }
+  if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000)
+  {
+    errno = EINVAL;
+    return -1;
+  }
 #endif
-   MARCEL_EXCEPTION_BEGIN
-     marcel_sem_timed_P(sem,(abs_timeout->tv_nsec/1000000)+(abs_timeout->tv_sec*1000));
-   MARCEL_EXCEPTION
-     MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)
-       errno = ETIMEDOUT;
-       return -1;
-   MARCEL_EXCEPTION_END
-   return 0;
+
+  gettimeofday(&tv, NULL);
+  timeout = (abs_timeout->tv_sec - tv.tv_sec)*1000000 +
+  	(abs_timeout->tv_nsec/1000 - tv.tv_usec);
+  if (timeout < 0)
+    jiffies_timeout = 0;
+  else
+    jiffies_timeout = (timeout + marcel_gettimeslice()-1)/marcel_gettimeslice();
+
+  ma_spin_lock_bh(&s->lock);
+
+  if(--(s->value) < 0) {
+    if(jiffies_timeout == 0) {
+      s->value++;
+      ma_spin_unlock_bh(&s->lock);
+      LOG_OUT();
+      errno = ETIMEDOUT;
+      return -1;
+    }
+    c.next = NULL;
+    c.blocked = tbx_true;
+    c.task = marcel_self();
+    if(s->first == NULL)
+      s->first = s->last = &c;
+    else {
+      s->last->next = &c;
+      s->last = &c;
+    }
+    SELF_GETMEM(interrupted) = 0;
+    do {
+      ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+      ma_spin_unlock_bh(&s->lock);
+      jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
+      ma_spin_lock_bh(&s->lock);
+      if(jiffies_timeout == 0 || SELF_GETMEM(interrupted)) {
+        for (prev = &s->first; *prev != &c; prev = &(*prev)->next);
+	*prev = c.next;
+        s->value++;
+        ma_spin_unlock_bh(&s->lock);
+        LOG_OUT();
+        errno = jiffies_timeout?EINTR:ETIMEDOUT;
+        return -1;
+      }
+    } while(c.blocked);
+  } else {
+    ma_spin_unlock_bh(&s->lock);
+  }
+
+  LOG_OUT();
+  return 0;
 })
 
 DEF_C(int,sem_timedwait,(sem_t *__restrict sem,
-      const struct timespec *__restrict abs_timeout),(sem,abs_timeout));
-DEF___C(int,sem_timedwait,(sem_t *__restrict sem,
       const struct timespec *__restrict abs_timeout),(sem,abs_timeout));
 
 
@@ -228,7 +338,11 @@ DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
   marcel_sem_V(s);
   return 0;
 })
-DEF_C(int, sem_post, (sem_t *s), (s))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_post, sem_post, GLIBC_2_1);
+strong_alias(pmarcel_sem_post, __old_sem_post);
+compat_symbol(libpthread, __old_sem_post, sem_post, GLIBC_2_0);
+#endif
 
 DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
 {
@@ -237,7 +351,11 @@ DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sva
   ma_spin_unlock_bh(&s->lock);
   return 0;
 })
-DEF_C(int, sem_getvalue, (sem_t * __restrict s, int * __restrict sval), (s, sval))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sem_getvalue, sem_getvalue, GLIBC_2_1);
+strong_alias(pmarcel_sem_getvalue, __old_sem_getvalue);
+compat_symbol(libpthread, __old_sem_getvalue, sem_getvalue, GLIBC_2_0);
+#endif
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {

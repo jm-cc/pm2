@@ -23,7 +23,7 @@
 #section types
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;
-typedef p_marcel_task_t marcel_t, pmarcel_t;
+typedef p_marcel_task_t marcel_t, pmarcel_t, lpt_t;
 typedef struct marcel_sched_param marcel_sched_param_t;
 
 #section marcel_macros
@@ -48,6 +48,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #depend "marcel_attr.h[macros]"
 #depend "marcel_sem.h[structures]"
 #depend "marcel_exception.h[structures]"
+#depend "marcel_signal.h[marcel_types]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
@@ -154,18 +155,26 @@ struct marcel_task {
 #ifdef MARCEL_DEBUG_SPINLOCK
 	void *preempt_backtrace[TBX_BACKTRACE_DEPTH];
 	size_t preempt_backtrace_size;
+	int spinlock_backtrace;
 #endif
+
+/*********signaux***********/
+      ma_spinlock_t siglock;
+      marcel_sigset_t sigpending;
+      marcel_sigset_t curmask;
+      int interrupted;
+      int delivering_sig;
+      int restart_deliver_sig;
+/********sigwait**********/
+      marcel_sigset_t waitset;
+      int *waitsig;
+/*********attributs*********/
+      int cancelstate;
+      int canceltype;
 
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; // Doit rester le _dernier_ champ
 #endif
-
-/*********signaux***********/
-      sigset_t sigpending;
-      sigset_t curmask;
-/*********attributs*********/
-      int cancelstate;
-      int canceltype;
 };
 
 #section inline
@@ -208,7 +217,7 @@ static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
     self = *((marcel_t *)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *))));
 #else
     self = (marcel_t)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE) -
-		      MAL(sizeof(marcel_task_t)));
+		      MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
 #endif
   MA_BUG_ON(sp>=(unsigned long)self && sp<(unsigned long)(self+1));
 #endif

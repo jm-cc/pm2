@@ -62,7 +62,9 @@
    HAVE_GNU_LD without HAVE_ELF implies a.out.  */
 
 #if defined HAVE_ASM_WEAK_DIRECTIVE || defined HAVE_ASM_WEAKEXT_DIRECTIVE
-# define HAVE_WEAK_SYMBOLS
+# ifndef HAVE_WEAK_SYMBOLS
+#  define HAVE_WEAK_SYMBOLS
+# endif
 #endif
 
 #ifndef __SYMBOL_PREFIX

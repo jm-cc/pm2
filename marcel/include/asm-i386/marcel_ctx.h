@@ -17,6 +17,17 @@
 /* Note: ce fichier est aussi utilisé pour x86_64 */
 
 #section marcel_macros
+
+#ifdef MA__PROVIDE_TLS
+#define marcel_ctx_set_tls_reg(new_task) \
+  do {
+    unsigned short val = ((((unsigned long)(new_task)) & ~THREAD_SLOT_SIZE) / THREAD_SLOT_SIZE - 1) * 8 | 0x4;
+    asm volatile ("movw %w0, %%gs" : : "q" (val));
+  } while(0)
+#else
+#define marcel_ctx_set_tls_reg(new_task) (void)0
+#endif
+
 /* marcel_create : passage père->fils */
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \
   do { \
@@ -26,6 +37,7 @@
     unsigned long _sp = ((unsigned long)_bp) - _local; \
     /* marqueur de fin de pile */ \
     *_bp = 0; \
+    marcel_ctx_set_tls_reg(new_task); \
     set_sp_bp(_sp, _bp); \
   } while (0)
 

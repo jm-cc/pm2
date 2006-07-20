@@ -21,18 +21,11 @@
 #ifdef MA__LWPS
 #ifdef LINUX_SYS
 #include <linux/unistd.h>
-#ifdef __NR_gettid
-#  ifdef _syscall0
-_syscall0(pid_t,gettid)
-#  else
-#    define gettid() syscall(__NR_gettid)
-#  endif
-#endif
 int marcel_gettid(void) {
-#ifdef __NR_gettid
-	int ret;
-/* 2.6 linux kernels and above have tids */
-	if ((ret=gettid())!=-1 || errno != ENOSYS)
+#ifdef SYS_gettid
+	/* 2.6 linux kernels and above have tids */
+	int ret = syscall(SYS_gettid);
+	if (ret>=0 || ret != -ENOSYS)
 		return ret;
 	else
 		return getpid();

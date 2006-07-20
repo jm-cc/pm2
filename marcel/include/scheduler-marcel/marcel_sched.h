@@ -274,6 +274,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #section marcel_macros
 /* ==== SMP scheduling policies ==== */
 
+#define MARCEL_SCHED_INVALID	-1
 #define MARCEL_SCHED_SHARED      0
 #define MARCEL_SCHED_OTHER       1
 #define MARCEL_SCHED_AFFINITY    2
@@ -297,8 +298,6 @@ struct marcel_sched_param {
 #ifndef sched_priority
 #define sched_priority __sched_priority
 #endif
-
-//#define sched_param marcel_sched_param
 
 #section functions
 int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p);

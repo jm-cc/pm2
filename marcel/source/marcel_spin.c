@@ -1,0 +1,83 @@
+
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+
+#include "marcel.h"
+#include <errno.h>
+
+#if defined(MA__LIBPTHREAD) && !defined(MA__LWPS)
+#warning "marcel/pmarcel/pthread_spin_lock won't work in mono mode"
+#endif
+
+DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared),(lock,pshared),
+{
+#ifdef MA__DEBUG
+   if ((pshared != MARCEL_PROCESS_SHARED)&&(pshared != MARCEL_PROCESS_PRIVATE))
+   {
+      return EINVAL;
+   }
+#endif
+   if (pshared == MARCEL_PROCESS_SHARED)
+   {
+      fprintf(stderr,"%s not yet implemented\n", __func__);
+      return ENOTSUP;
+   }
+   ma_spin_lock_init(&lock->lock);
+   return 0;
+})
+
+DEF_PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF___PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+
+
+DEF_MARCEL_POSIX(int, spin_destroy,(marcel_spinlock_t *lock),(lock),
+{
+   return 0;
+})
+
+DEF_PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF___PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+
+
+DEF_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock),(lock),
+{
+   _ma_raw_spin_lock(&lock->lock);
+   return 0;
+})
+
+DEF_PTHREAD(int, spin_lock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+
+
+DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
+{
+   if(!_ma_raw_spin_trylock(&lock->lock))
+      return EBUSY;
+   return 0;
+})
+
+DEF_PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF___PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+
+
+DEF_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock),(lock),
+{
+   _ma_raw_spin_unlock(&lock->lock);
+   return 0;
+})
+
+DEF_PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF___PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));

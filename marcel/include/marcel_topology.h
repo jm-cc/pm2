@@ -305,10 +305,20 @@ extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 			vp < &marcel_topo_vp_level[marcel_nbvps()+MARCEL_NBMAXVPSUP]; \
 			vp++)
 
+#define for_all_vp_from_begin(vp, number) \
+	vp = &marcel_topo_vp_level[number]; \
+	do {
+
+#define for_all_vp_from_end(vp, number) \
+		vp ++; \
+		if (vp == &marcel_topo_vp_level[marcel_nbvps()]) \
+			vp = &marcel_topo_vp_level[0]; \
+	} while (vp != &marcel_topo_vp_level[number]);
+
 #define for_vp_from(vp, number) \
 	for (vp = &marcel_topo_vp_level[(number+1)%marcel_nbvps()]; \
 			vp != &marcel_topo_vp_level[number]; \
-			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = 0; }))
+			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = &marcel_topo_vp_level[0]; }))
 #define ma_per_vp(vp, field) (marcel_topo_vp[vp].(field))
 
 #section functions

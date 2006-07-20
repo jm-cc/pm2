@@ -22,6 +22,12 @@
 #endif
 #include <fcntl.h>
 
+#if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <asm/ldt.h>
+#endif
+
 static void *next_slot;
 static ma_spinlock_t next_slot_lock = MA_SPIN_LOCK_UNLOCKED;
 
@@ -95,6 +101,28 @@ retry:
 	}
 
 	MA_BUG_ON(res != ptr);
+
+#if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
+	{
+		struct user_desc desc = {
+			.entry_number = (SLOT_AREA_TOP - (unsigned long) res) / THREAD_SLOT_SIZE - 1,
+			.base_addr = (unsigned long) res + THREAD_SLOT_SIZE - TLS_AREA_SIZE,
+			.limit = TLS_AREA_SIZE-1,
+			.seg_32bit = 1,
+			.contents = MODIFY_LDT_CONTENTS_DATA,
+			.read_exec_only = 0,
+			.limit_in_pages = 1,
+			.seg_not_present = 0,
+			.useable = 1,
+		};
+		int ret = syscall(SYS_modify_ldt, 0x11, &desc, sizeof(desc));
+		if (ret != 0) {
+			fprintf(stderr,"entry #%u address %lx failed: %s", desc.entry_number, desc.base_addr, strerror(ret));
+			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
+		}
+	}
+#endif
+
 	return ptr;
 }
 

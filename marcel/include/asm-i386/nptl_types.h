@@ -31,7 +31,8 @@
 #section types
 /* Thread identifiers.  The structure of the attribute type is not
    exposed on purpose.  */
-typedef unsigned long int lpt_t;
+// On n'exporte pas cela: on utilise des pointeurs, qui sont abi-compatibles avec cela.
+//typedef unsigned long int lpt_t;
 
 #section structures
 #depend "marcel_fastlock.h[structures]"

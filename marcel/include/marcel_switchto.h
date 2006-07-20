@@ -1,3 +1,4 @@
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -48,6 +49,7 @@ enum {
   do {                                     \
     PROF_SWITCH_TO(cur_num, next); \
     call_ST_FLUSH_WINDOWS();               \
+    marcel_ctx_set_tls_reg(next); \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)
 

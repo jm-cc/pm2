@@ -191,11 +191,6 @@ __tbx_extern_inline_body__(
 #section marcel_macros
 #define ma_thread_preemptible() (!SELF_GETMEM(not_preemptible))
 
-/****************************types thread************************/
-#define pthread_t lpt_t 
-#define lpt_t pmarcel_t
-#define pmarcel_t marcel_t
-
 #section structures
 /* Cleanup buffers */
 struct _marcel_cleanup_buffer
@@ -300,7 +295,7 @@ extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,
 
 extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
-//#endif//int pthread_setconcurrency(int new_level); 
+//#endif
 
 
 

@@ -1429,7 +1429,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	ma_runqueue_t *rq;
 	marcel_task_t *p = MARCEL_SELF;
 
-	LOG_IN();
+	//LOG_IN();
 
 	PROF_EVENT(sched_tick);
 
@@ -1583,7 +1583,7 @@ out_unlock:
 #endif
 out:
 	rebalance_tick(rq, 0);
-	LOG_OUT();
+	//LOG_OUT();
 }
 
 void ma_scheduling_functions_start_here(void) { }
@@ -1625,9 +1625,7 @@ asmlinkage MARCEL_PROTECTED int ma_schedule(void)
 	if (tbx_likely(!(SELF_GETMEM(sched).state & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
-#ifdef MARCEL_DEBUG_SPINLOCK
-			__TBX_PRINT_SOME_TRACE(SELF_GETMEM(preempt_backtrace), SELF_GETMEM(preempt_backtrace_size));
-#endif
+			ma_show_preempt_backtrace();
 			MA_BUG();
 		}
 	}
@@ -1765,6 +1763,7 @@ restart:
 			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
 			didpoll = 1;
 		}
+		ma_check_work();
 		ma_set_need_resched();
 		ma_local_bh_disable();
 		currently_idle = 0;

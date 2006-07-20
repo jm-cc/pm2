@@ -63,9 +63,6 @@ struct __marcel_attr_s
 #define lpt_attr_t pmarcel_attr_t
 
 #section macros
-/**********************************/
-#define PTHREAD_STACK_MIN 16384
-/**********************************/
 
 // MARCEL_CREATE_JOINABLE
 #depend "marcel_threads.h[types]"
@@ -103,21 +100,6 @@ struct __marcel_attr_s
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
 }
 
-/* valeurs invalides */
-#define MARCEL_SCHED_INVALID -1
-#define MARCEL_SCHED_PARAM_INVALID {-1,}
-#define MARCEL_SCOPE_INVALID -1
-#define MARCEL_STACKSGUARD_INVALID -1
-#define MARCEL_STACKADDR_SET_INVALID -1
-#define MARCEL_STACKADDR_INVALID NULL
-#define THREAD_SLOT_SIZE_INVALID -1
-#define USER_SPACE_INVALID -1
-#define MARCEL_MIGRATABLE_INVALID -1
-#define MARCEL_DEVIATABLE_INVALID -1
-#define MARCEL_PREEMPTIBLE_INVALID -1
-#define MARCEL_VPMASK_INVALID -1
-#define FLAGS_INVALID -1
-#define MARCEL_ATTR_ID_INVALID -2
 /* #define MARCEL_SCHED_ATTR_DESTROYER { \ */
 /* 	.init_holder = NULL, \ /\* à voir *\/ */
 /* 	.prio = -1, \ */
@@ -125,24 +107,24 @@ struct __marcel_attr_s
 /* } */
 
 #define MARCEL_ATTR_DESTROYER { \
-  .__detachstate= MARCEL_CREATE_DETACHSTATE_INVALID, \
+  .__detachstate= -1, \
   .__schedpolicy= MARCEL_SCHED_INVALID, \
-  .__schedparam= MARCEL_SCHED_PARAM_INVALID, \
-  .__inheritsched= MARCEL_INHERITSCHED_INVALID, \
-  .__scope= MARCEL_SCOPE_INVALID, \
-  .__guardsize= MARCEL_STACKSGUARD_INVALID, \
-  .__stackaddr_set= MARCEL_STACKADDR_SET_INVALID, \
-  .__stackaddr= MARCEL_STACKADDR_INVALID, \
-  .__stacksize= THREAD_SLOT_SIZE_INVALID, \
-  .user_space= USER_SPACE_INVALID, \
+  .__schedparam= {-1,}, \
+  .__inheritsched= -1, \
+  .__scope= -1, \
+  .__guardsize= -1, \
+  .__stackaddr_set= -1, \
+  .__stackaddr= NULL, \
+  .__stacksize= -1, \
+  .user_space= -1, \
   .immediate_activation= tbx_false, \
-  .not_migratable= MARCEL_MIGRATABLE_INVALID, \
-  .not_deviatable= MARCEL_DEVIATABLE_INVALID, \
-  .not_preemptible= MARCEL_PREEMPTIBLE_INVALID, \
-  .vpmask= MARCEL_VPMASK_INVALID, \
-  .flags= FLAGS_INVALID, \
+  .not_migratable= -1, \
+  .not_deviatable= -1, \
+  .not_preemptible= -1, \
+  .vpmask= -1, \
+  .flags= -1, \
   .name= "invalid", \
-  .id = MARCEL_ATTR_ID_INVALID, \
+  .id = -2, \
 }
 
 /* realtime */
@@ -212,13 +194,6 @@ int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
                          int * __restrict flags);
-
-#ifdef MA__LIBPTHREAD
-int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
-int pthread_attr_getguardsize(__const pthread_attr_t * __restrict attr,
-                              size_t * __restrict guardsize);
-#endif
-
 #ifdef PM2STACKSGUARD
 #define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)
 #define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = THREAD_SLOT_SIZE, 0)

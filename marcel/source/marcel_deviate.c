@@ -93,11 +93,16 @@ static void insertion_relai(handler_func_t f, void *arg)
   marcel_ctx_t back;
   marcel_t cur = marcel_self();
 
+  /* save the way back to the thread's normal path */
   memcpy(back, cur->ctx_yield, sizeof(marcel_ctx_t));
 
+  /* set the current path to here */
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
+    /* and return at once to father */
+    marcel_ctx_set_tls_reg(cur->father);
     marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
   } else {
+    /* later on, actually do the work */
     MA_THR_DESTROYJMP(cur);
     MA_THR_RESTARTED(cur, "Deviation");
     MA_BUG_ON(!ma_in_atomic());
@@ -106,6 +111,7 @@ static void insertion_relai(handler_func_t f, void *arg)
     (*f)(arg);
 
     ma_preempt_disable();
+    /* and return to normal path */
     marcel_ctx_longjmp(back, NORMAL_RETURN);
   }
 }
@@ -144,7 +150,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
   ma_preempt_disable();
   if (pid == marcel_self()) {
-    if (pid->not_deviatable) {
+    if (!ma_last_preempt() || pid->not_deviatable) {
       marcel_lock_acquire(&deviate_lock);
       marcel_deviate_record(pid, h, arg);
       marcel_lock_release(&deviate_lock);

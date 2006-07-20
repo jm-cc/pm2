@@ -33,8 +33,7 @@ DEF_POSIX(int, barrier_destroy, (pmarcel_barrier_t *b),(b),
 #ifdef MA__DEBUG
     if (b->curwait == 1)
     {
-        errno = EBUSY;
-        return -1;
+        return EBUSY;
     }
 #endif
     return marcel_barrier_destroy(b);
@@ -94,14 +93,12 @@ DEF_POSIX(int,barrierattr_setpshared,(marcel_barrierattr_t *attr,
     if ((pshared != PTHREAD_PROCESS_SHARED)
       &&(pshared != PTHREAD_PROCESS_PRIVATE))
     {
-        errno = EINVAL;
-        return -1;
+        return EINVAL;
     } 
 #endif
     if (pshared != PTHREAD_PROCESS_PRIVATE)
     {
-        errno = ENOTSUP;
-        return -1;
+        return ENOTSUP;
     } 
     attr->__pshared = pshared;
     return 0;
@@ -114,19 +111,16 @@ DEF_POSIX(int, barrierattr_getpshared,(const marcel_barrierattr_t *
 #ifdef MA__DEBUG
     if (pshared == NULL)
     {
-        errno = EINVAL;
-        return -1;
+        return EINVAL;
     }
     if ((attr->__pshared != PTHREAD_PROCESS_SHARED)
       &&(attr->__pshared != PTHREAD_PROCESS_PRIVATE))
     {
-        errno = EINVAL;
-        return -1;
+        return EINVAL;
     } 
     if (attr->__pshared != PTHREAD_PROCESS_PRIVATE)
     {
-        errno = ENOTSUP;
-        return -1;
+        return ENOTSUP;
     } 
 #endif 
     *pshared = attr-> __pshared;

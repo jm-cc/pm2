@@ -15,9 +15,9 @@
  */
 
 #section types
-#define marcel_spinlock_t ma_spinlock_t
-#define pmarcel_spinlock_t marcel_spinlock_t
-#define pthread_spinlock_t pmarcel_spinlock_t
+typedef struct {
+	ma_spinlock_t lock;
+} marcel_spinlock_t, pmarcel_spinlock_t;
 
 #section functions
 DEC_MARCEL_POSIX(int, spin_init, (marcel_spinlock_t *lock, int pshared) __THROW);

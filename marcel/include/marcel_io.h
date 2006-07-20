@@ -20,8 +20,10 @@
 #ifdef __MINGW32__
 #include <winsock.h>
 #else
+#include <sys/types.h>
 #include <sys/uio.h>
 #endif
+#include <sys/select.h>
 #include "tbx_compiler.h"
 
 int marcel_read(int fildes, void *buf, size_t nbytes);

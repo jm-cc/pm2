@@ -385,7 +385,6 @@ extern __useconds_t ualarm (__useconds_t __value, __useconds_t __interval)
 extern int usleep (__useconds_t __useconds) __THROW;
 #endif
 
-
 /* Suspend the process until a signal arrives.
    This always returns -1 and sets `errno' to EINTR.  */
 extern int pause (void) __THROW;

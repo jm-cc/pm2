@@ -53,6 +53,9 @@
 
 #section marcel_functions
 void marcel_upcalls_disallow(void);
+#ifndef MA__ACTIVATION
+#define marcel_upcalls_disallow() ((void)0)
+#endif
 
 #section marcel_types
 enum {

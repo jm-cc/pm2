@@ -55,7 +55,7 @@ versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_
 /**********************attr_set/getstacksize***********************/
 DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack),
 {
-   if ((stack < sizeof(marcel_task_t)) || (stack > THREAD_SLOT_SIZE))
+   if ((stack < sizeof(marcel_task_t) + TLS_AREA_SIZE) || (stack > THREAD_SLOT_SIZE))
    {
       errno = EINVAL;
       return 1;
@@ -106,7 +106,7 @@ DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr
 DEF_MARCEL_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t stacksize), 
                     (attr, stackaddr, stacksize),
 {
-   if ((stacksize < sizeof(marcel_task_t)) || (stacksize > THREAD_SLOT_SIZE))
+   if ((stacksize < sizeof(marcel_task_t) + TLS_AREA_SIZE) || (stacksize > THREAD_SLOT_SIZE))
    {
       errno = EINVAL;
       return 1;
@@ -371,15 +371,13 @@ DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr
 #ifdef MA__DEBUG
    if ((inheritsched != PTHREAD_INHERIT_SCHED)&&(inheritsched != PTHREAD_EXPLICIT_SCHED))
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    if (inheritsched == PTHREAD_INHERIT_SCHED)
    {
       attr->__inheritsched = -1;
-      errno = ENOTSUP;
-      return -1;
+      return ENOTSUP;
    }
    attr->__inheritsched = PTHREAD_EXPLICIT_SCHED;
    return 0;
@@ -393,9 +391,8 @@ DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * attr,int * inherits
 #ifdef MA__DEBUG
    if (attr->__inheritsched == -1)
    {
-      errno == EINVAL;  
-      *inheritsched = MARCEL_INHERITSCHED_INVALID;
-      return -1;
+      *inheritsched = -1;
+      return EINVAL;  
    }
 #endif
    *inheritsched = PTHREAD_EXPLICIT_SCHED;
@@ -412,15 +409,13 @@ DEF_POSIX(int,attr_setscope,(pmarcel_attr_t *__restrict attr, int contentionscop
    if ((contentionscope != PTHREAD_SCOPE_SYSTEM)
        &&(contentionscope != PTHREAD_SCOPE_PROCESS))
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    if (contentionscope == PTHREAD_SCOPE_SYSTEM)
    {
-      errno = ENOTSUP;
-      attr->__scope = MARCEL_SCOPE_INVALID;
-      return -1;
+      attr->__scope = -1;
+      return ENOTSUP;
    }
    attr->__scope = PTHREAD_SCOPE_PROCESS;
    return 0;
@@ -432,11 +427,10 @@ DEF___PTHREAD(int,attr_setscope,(pthread_attr_t *__restrict attr, int contention
 DEF_POSIX(int,attr_getscope,(__const pmarcel_attr_t *__restrict attr, int *contentionscope),(attr,contentionscope),
 {
 #ifdef MA__DEBUG
-   if (attr->__scope == MARCEL_SCOPE_INVALID)
+   if (attr->__scope == -1)
    {
-      errno == EINVAL;  
       *contentionscope = -1;
-      return -1;
+      return EINVAL;  
    } 
 #endif
    *contentionscope = PTHREAD_SCOPE_PROCESS;
@@ -453,15 +447,13 @@ DEF_POSIX(int,attr_setschedpolicy,(pmarcel_attr_t *__restrict attr, int policy),
       if ((policy != SCHED_FIFO)&&(policy != SCHED_RR)
         &&(policy != SCHED_OTHER))
       {
-         errno = EINVAL;
-         return -1;
+         return EINVAL;
       }
 #endif
       if (policy != SCHED_RR)
       {
-         errno = ENOTSUP;
-         attr->__schedpolicy = MARCEL_SCHED_INVALID;
-         return -1;
+         attr->__schedpolicy = -1;
+         return ENOTSUP;
       }
       attr->__schedpolicy = SCHED_RR;
       return 0;
@@ -473,11 +465,10 @@ DEF___PTHREAD(int,attr_setschedpolicy,(pthread_attr_t *__restrict attr, int poli
 DEF_POSIX(int,attr_getschedpolicy,(__const pmarcel_attr_t *__restrict attr, int *policy),(attr,policy),
 {
 #ifdef MA__DEBUG
-   if (attr->__schedpolicy == MARCEL_SCHED_INVALID)
+   if (attr->__schedpolicy == -1)
    {
-      errno == EINVAL;  
       *policy = -1;
-      return -1;
+      return EINVAL;  
    } 
 #endif
    *policy = SCHED_RR;
@@ -493,8 +484,7 @@ DEF_MARCEL_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct mar
 #ifdef MA__DEBUG
    if (param == NULL)   
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
    if (attr->__schedpolicy != SCHED_RR)
       return -1;

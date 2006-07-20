@@ -83,6 +83,7 @@ typedef struct __ma_init_info {
 
 /* Procédure de lancement de marcel */
 
+#section macros
 /****************************************************************
  * MARCEL_SELF et LWP_SELF deviennent utilisable
  * - Si on utilise la pile, celle-ci doit être correctement positionnée
@@ -128,7 +129,7 @@ typedef struct __ma_init_info {
 
 #define MA_INIT_MAX_PARTS  MA_INIT_START_LWPS
 
-
+#section marcel_macros
 /* A besoin de MARCEL_SELF et LWP_SELF */
 #define MA_INIT_PRIO_BASE                          5
 
@@ -171,3 +172,5 @@ typedef struct __ma_init_info {
 #define MA_INIT_UPCALL_START	      MA_INIT_START_LWPS
 #define MA_INIT_UPCALL_START_PRIO		    6
 
+#section variables
+extern int ma_init_done[MA_INIT_MAX_PARTS+1];

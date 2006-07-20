@@ -108,9 +108,24 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	marcel_sem_init(&t->pthread_sync, 0);  
 #endif
 
-	
+#ifdef MARCEL_DEBUG_SPINLOCK
+	t->preempt_backtrace_size = 0;
+	t->spinlock_backtrace = 0;
+#endif
+
+        ma_spin_lock_init(&t->siglock);
+	marcel_sigemptyset(&t->sigpending);
+        t->delivering_sig = 0;
+        t->restart_deliver_sig = 0;
+        marcel_sigemptyset(&t->waitset);
+	t->waitsig = 0;
+        // vérifier ceci:
+	t->curmask = MARCEL_SELF->curmask;
+	t->cancelstate = MARCEL_CANCEL_ENABLE;
+	t->canceltype = MARCEL_CANCEL_DEFERRED;
+
 #ifdef ENABLE_STACK_JUMPING
-	*((marcel_t *)((char *)t + MAL(sizeof(marcel_task_t))
+	*((marcel_t *)((char *)t + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE)
 		       - sizeof(void *))) = t;
 #endif
 	
@@ -194,7 +209,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		register unsigned long top = ((unsigned long)attr->__stackaddr +
 				attr->__stacksize) & ~(THREAD_SLOT_SIZE-1);
 		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
-		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t)));
+		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
 		stack_base = attr->__stackaddr;
@@ -212,7 +227,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		PROF_EVENT(thread_stack_allocated);
 		
 		new_task= (marcel_t)(MAL_BOT((unsigned long)bottom + THREAD_SLOT_SIZE) -
-				      MAL(sizeof(marcel_task_t)));
+				      MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
 
 		stack_base = bottom;
 		static_stack = tbx_false;
@@ -583,7 +598,7 @@ void print_thread(marcel_t pid)
 	 ,
 	 pid,
 	 pid->stack_base,
-	 (unsigned long)pid + MAL(sizeof(marcel_task_t)),
+	 (unsigned long)pid + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE),
 	 pid->user_space_ptr,
 	 pid->initial_sp,
 	 sp
@@ -771,7 +786,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
     if(marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
       call_ST_FLUSH_WINDOWS();
-      top = (unsigned long)cur + ALIGNED_32(sizeof(marcel_task_t));
+      top = (unsigned long)cur + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE);
       bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
       blk = top - bottom;
       depl = bottom - (unsigned long)cur->stack_base;
@@ -802,7 +817,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 	    t->remaining_sleep_time = t->timer->expires - ma_jiffies;
     }
 
-    top = (unsigned long)t + ALIGNED_32(sizeof(marcel_task_t));
+    top = (unsigned long)t + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE);
     bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
     blk = top - bottom;
     depl = bottom - (unsigned long)t->stack_base;
@@ -857,8 +872,17 @@ static void __marcel_init main_thread_init(void)
 	char *name="main";
 
 	LOG_IN();
+	if (!__main_thread) {
+		fprintf(stderr,"Couldn't find main thread's marcel_t, i.e. Marcel's main was not called yet. Please either load the stackalign module early, or use the STANDARD_MAIN option (but this will decrease performance)");
+		abort();
+	}
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
+#ifdef ENABLE_STACK_JUMPING
+	*((marcel_t *)((char *)__main_thread + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE) - 
+		       sizeof(void *))) =  __main_thread;
+#endif
+
 	marcel_attr_init(&attr);
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
@@ -897,8 +921,7 @@ DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
 #ifdef MA__DEBUG
    if (new_level < 0)
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    if (new_level == 0)
@@ -928,8 +951,7 @@ DEF_POSIX(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
 #ifdef MA__DEBUG
    if ((state != PTHREAD_CANCEL_ENABLE)&&(state != PTHREAD_CANCEL_DISABLE))
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    if (oldstate == NULL)
@@ -951,8 +973,7 @@ DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
 #ifdef MA__DEBUG
    if ((type != PTHREAD_CANCEL_ENABLE)&&(type != PTHREAD_CANCEL_DISABLE))
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    *oldtype = cthread->canceltype;
@@ -997,14 +1018,12 @@ DEF_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
    marcel_sched_setscheduler(thread,-1,&param_init);
    if (param == NULL)
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    if (policy != SCHED_RR)
    {
-      errno = ENOTSUP;
-      return -1;
+      return ENOTSUP;
    }
    marcel_sched_setscheduler(thread,policy,param);
    return 0;
@@ -1022,17 +1041,15 @@ DEF_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
 #ifdef MA__DEBUG
    if (param == NULL)
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    } 
 #endif
    *policy = marcel_sched_getscheduler(thread);
 #ifdef MA__DEBUG
    if (*policy != SCHED_RR)
    {
-      errno = ENOTSUP;
       *policy = -1;
-      return -1;
+      return ENOTSUP;
    } 
 #endif   
    marcel_sched_getparam(thread,param);

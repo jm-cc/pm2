@@ -93,6 +93,7 @@ typedef struct {
                 (x)->module = __FILE__; \
                 (x)->owner = NULL; \
                 (x)->oline = 0; \
+		(x)->btsize = 0; \
         } while (0)
 
 #define MA_CHECK_LOCK(x) \
@@ -109,16 +110,20 @@ typedef struct {
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_lock(%s:%p) already locked by %s/%d\n", \
+                        pm2debug("%s:%d: spin_lock(%s:%p) already locked by %s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
-			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
+			if ((x)->btsize) \
+				__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
                 (x)->oline = __LINE__; \
-		(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
+		if (!SELF_GETMEM(spinlock_backtrace) && ma_init_done[MA_INIT_SCHEDULER]) { \
+			SELF_GETMEM(spinlock_backtrace) = 1; \
+			(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
+		} \
         } while (0)
 
 /* without debugging, spin_is_locked on UP always says
@@ -128,10 +133,11 @@ typedef struct {
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_is_locked(%s:%p) already locked by %s/%d\n", \
+                        pm2debug("%s:%d: spin_is_locked(%s:%p) already locked by %s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
-			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
+			if ((x)->btsize) \
+				__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 0; \
@@ -150,16 +156,20 @@ typedef struct {
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_trylock(%s:%p) already locked by %s/%d\n", \
+                        pm2debug("%s:%d: spin_trylock(%s:%p) already locked by %s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
-			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
+			if ((x)->btsize) \
+				__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
                 (x)->oline = __LINE__; \
-		(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
+		if (!SELF_GETMEM(spinlock_backtrace) && ma_init_done[MA_INIT_SCHEDULER]) { \
+			SELF_GETMEM(spinlock_backtrace) = 1; \
+			(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
+		} \
                 1; \
         })
 
@@ -168,12 +178,17 @@ typedef struct {
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_unlock_wait(%s:%p) owned by %s/%d\n", \
+                        pm2debug("%s:%d: spin_unlock_wait(%s:%p) owned by %s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, (x), \
                                         (x)->owner, (x)->oline); \
-			__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
+			if ((x)->btsize) \
+				__TBX_PRINT_SOME_TRACE((x)->bt, (x)->btsize); \
 			SPIN_ABORT(); \
                 }\
+		if ((x)->btsize) { \
+			(x)->btsize = 0; \
+			SELF_GETMEM(spinlock_backtrace) = 0; \
+		} \
         } while (0)
 
 #define _ma_raw_spin_unlock(x) \

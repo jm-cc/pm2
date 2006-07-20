@@ -9,7 +9,8 @@ PROGS_THREAD := sumtime semblock mutexunblock prodmat
 
 CC := gcc
 
-CFLAGS = -Wall -O3 -D_GNU_SOURCE=1
+CFLAGS = -Wall -O3 -D_GNU_SOURCE=1 
+LDLIBS = -lpthread
 
 TYPES_ALL=nptl linuxthread unix clone pth
 

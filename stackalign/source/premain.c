@@ -3,12 +3,8 @@
 
 #include <dlfcn.h>
 
-extern int toto;
 extern int __attribute__ ((weak)) go_marcel_main();
 int __attribute__ ((weak)) marcel_pthread_initialize();
-//{
-//  printf("toto\n");
-//}
 
 int  __attribute__ ((weak)) marcel_a_demare=0;
 

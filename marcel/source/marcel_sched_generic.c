@@ -1,3 +1,4 @@
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -17,7 +18,7 @@
 #include "tbx_compiler.h"
 #include <signal.h>
 
-int marcel_usleep(unsigned long usec)
+DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
 {
 #ifdef MA__ACTIVATION
 	return usleep(usec);
@@ -29,10 +30,13 @@ int marcel_usleep(unsigned long usec)
 
 	LOG_RETURN(0);
 #endif
-}
+})
+
+//DEF_C(int,usleep,(unsigned long usec),(usec));
+DEF___C(int,usleep,(unsigned long usec),(usec));
 
 #if defined(MA__LIBPTHREAD) && !defined(MA__ACTIVATION)
-versioned_symbol (libpthread, marcel_usleep, usleep, GLIBC_2_2);
+versioned_symbol (libpthread, marcel_usleep, usleep, GLIBC_2_0);
 #endif
 
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)

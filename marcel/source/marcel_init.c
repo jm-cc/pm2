@@ -290,9 +290,6 @@ static marcel_ctx_t __initial_main_ctx;
 
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[])
-#ifdef PM2_DEV
-#warning go_marcel_main defined
-#endif
 #else
 int main(int argc, char *argv[])
 #endif // MARCEL_MAIN_AS_FUNC
@@ -320,7 +317,7 @@ int main(int argc, char *argv[])
 
 		__main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
 					    ~(THREAD_SLOT_SIZE-1)) -
-					   MAL(sizeof(marcel_task_t)));
+					   MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
 
 		mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
@@ -334,16 +331,9 @@ int main(int argc, char *argv[])
 #endif
 		set_sp(new_sp);
 
-#ifdef ENABLE_STACK_JUMPING
-		*((marcel_t *)((char *)__main_thread + MAL(sizeof(marcel_task_t)) - 
-			       sizeof(void *))) =  __main_thread;
-#endif
-
                 __main_ret = marcel_main(__ma_argc, __ma_argv);
 
-#ifdef MA__ACTIVATION
 		marcel_upcalls_disallow();
-#endif
 		marcel_ctx_longjmp(__initial_main_ctx, 1);
 	}
 
@@ -367,7 +357,7 @@ typedef struct {
 	} b TBX_ALIGNED;
 } TBX_ALIGNED __ma_init_section_index_t;
 
-static int init_done[MA_INIT_MAX_PARTS+1]={0,};
+int ma_init_done[MA_INIT_MAX_PARTS+1]={0,};
 
 // Section MA_INIT_SELF
 #ifdef MA__LWPS
@@ -463,7 +453,7 @@ void marcel_init_section(int sec) {
 	       ma_init_start[sec].prio,
 	       ma_init_start[sec].debug);
 	for (section=0; section<=sec; section++) {
-		if (init_done[section])
+		if (ma_init_done[section])
 			continue;
 		mdebug("Init running level %d (%s)\n",
 		       ma_init_start[section].prio,
@@ -480,6 +470,7 @@ void marcel_init_section(int sec) {
                 else if (section == MA_INIT_MAIN_LWP) {
 		  ma_allocator_init();
 		  ma_deviate_init();
+		  ma_signals_init();
 #ifdef PROFILE
                   call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
 #endif // PROFILE
@@ -544,7 +535,7 @@ void marcel_init_section(int sec) {
 #endif //MA__ACTIVATION
                 }
 
-		init_done[section]=1;
+		ma_init_done[section]=1;
 	}
 	mdebug("Init running level %d (%s) done\n",
 	       ma_init_start[sec].prio,

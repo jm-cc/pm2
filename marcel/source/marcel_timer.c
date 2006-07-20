@@ -20,6 +20,15 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+#ifdef MA__LIBPTHREAD
+#define sigaction kernel_sigaction
+#define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)
+#define sigprocmask(how,set,oset) syscall(SYS_sigprocmask,how,set,oset)
+#define nanosleep(t1,t2) syscall(SYS_nanosleep,t1,t2)
+#endif
 
 ma_atomic_t __preemption_disabled = MA_ATOMIC_INIT(0);
 
@@ -50,7 +59,7 @@ static void timer_action(struct ma_softirq_action *a)
 	static unsigned long tick = 0;
 #endif
 
-	LOG_IN();
+	//LOG_IN();
 
 #ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
@@ -71,7 +80,7 @@ static void timer_action(struct ma_softirq_action *a)
 		
 	ma_update_process_times(1);
 		
-	LOG_OUT();
+	//LOG_OUT();
 }
 
 static void __marcel_init timer_start(void)
@@ -134,6 +143,7 @@ static void fault_catcher_init(ma_lwp_t lwp)
 	sa.sa_flags = SA_SIGINFO;
 #else
 	sa.sa_handler = fault_catcher;
+	sa.sa_flags = 0;
 #endif
 	sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
 	LOG_OUT();

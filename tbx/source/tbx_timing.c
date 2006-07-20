@@ -31,6 +31,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "tbx.h"
+#include <sys/syscall.h>
 
 static double      scale        = 0.0;
 unsigned long long tbx_residual = 0;
@@ -56,13 +57,14 @@ tbx_timing_init()
 #else
   {
     struct timeval tv1,tv2;
+    struct timespec ts = {0,50000000};
 
     TBX_GET_TICK(t1);
     gettimeofday(&tv1,0);
 #ifdef __MINGW32__
     Sleep(50);
 #else
-    usleep(50000);
+    syscall(SYS_nanosleep,&ts,NULL);
 #endif
     TBX_GET_TICK(t2);
     gettimeofday(&tv2,0);

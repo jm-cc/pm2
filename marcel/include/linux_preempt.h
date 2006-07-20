@@ -23,6 +23,19 @@
 
 #section marcel_macros
 
+#ifdef MARCEL_DEBUG_SPINLOCK
+#define ma_record_preempt_backtrace() do { \
+	if (ma_init_done[MA_INIT_SCHEDULER]) \
+		SELF_GETMEM(preempt_backtrace_size) = __TBX_RECORD_SOME_TRACE(SELF_GETMEM(preempt_backtrace), TBX_BACKTRACE_DEPTH); \
+} while(0)
+#define ma_show_preempt_backtrace() do { \
+	if (SELF_GETMEM(preempt_backtrace_size)) \
+		__TBX_PRINT_SOME_TRACE(SELF_GETMEM(preempt_backtrace), SELF_GETMEM(preempt_backtrace_size)); \
+} while(0)
+#else
+#define ma_record_preempt_backtrace() (void)0
+#define ma_show_preempt_backtrace() (void)0
+#endif
 #define ma_preempt_count() (SELF_GETMEM(preempt_count))
 
 #define ma_preempt_count_inc() \
@@ -34,7 +47,10 @@ do { \
 #define ma_preempt_count_dec() \
 do { \
         ma_preempt_count()--; \
-	MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
+	if (ma_preempt_count() & MA_PREEMPT_BUGMASK) { \
+		ma_show_preempt_backtrace(); \
+		MA_BUG(); \
+	} \
 } while (0)
 
 #section functions
@@ -46,12 +62,6 @@ asmlinkage MARCEL_PROTECTED void ma_preempt_schedule(void);
 #section marcel_macros
 #depend "linux_thread_info.h[]"
 #depend "marcel_compiler.h[marcel_compiler]"
-#ifdef MARCEL_DEBUG_SPINLOCK
-#define ma_record_preempt_backtrace() \
-	SELF_GETMEM(preempt_backtrace_size) = __TBX_RECORD_SOME_TRACE(SELF_GETMEM(preempt_backtrace), TBX_BACKTRACE_DEPTH);
-#else
-#define ma_record_preempt_backtrace() (void)0
-#endif
 #define ma_preempt_disable() \
 do { \
         ma_preempt_count_inc(); \

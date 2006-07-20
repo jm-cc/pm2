@@ -1,0 +1,10 @@
+#!/bin/sh
+BUILDDIR=`${PM2_ROOT}/bin/pm2-config --builddir`
+LD_LIBRARY_PATH=$BUILDDIR/lib
+case `${PM2_ROOT}/bin/pm2-config --modules` in
+	*stackalign*)
+		LD_PRELOAD=libstackalign.so
+		;;
+esac
+export LD_LIBRARY_PATH LD_PRELOAD
+exec "$@"

@@ -59,8 +59,10 @@ GLIBC_2.0 {
     pthread_sigmask; pthread_kill;
     raise;
     sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
-    sigwait; sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
+    sigwait; signal; sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
+    setjmp; sigsetjmp; __sigsetjmp;
     system; wait; __wait; waitpid;
+    usleep;
   local:
     *;
 };
@@ -159,4 +161,4 @@ GLIBC_PRIVATE {
     __pthread_clock_gettime; __pthread_clock_settime;
     __pthread_initialize_minimal;
     __pthread_unwind;
-} GLIBC_2.3.4;
+} GLIBC_2.4;

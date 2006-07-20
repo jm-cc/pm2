@@ -57,13 +57,13 @@ struct nm_sisci_seg {
                                 struct {
                                         /* read flag */
                                         union {
-                                                int r;
+                                                volatile int r;
                                                 uint8_t	__r_dummy[FLAG_AREA_SIZE];
                                         };
 
                                         /* write flag */
                                         union {
-                                                int w;
+                                                volatile int w;
                                                 uint8_t __w_dummy[FLAG_AREA_SIZE];
                                         };
                                 };
@@ -89,6 +89,7 @@ struct nm_sisci_drv {
 
 struct nm_sisci_trk {
         uint8_t			  next_cnx_id;
+        uint8_t			  last_active_id;
 
         /* gate id reverse mapping */
         struct nm_gate		**gate_map;
@@ -727,14 +728,17 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
         struct nm_gate			*p_gate		= NULL;
         struct nm_drv			*p_drv		= NULL;
         struct nm_trk			*p_trk		= NULL;
+
         struct nm_sisci_gate		*p_sisci_gate	= NULL;
         struct nm_sisci_drv		*p_sisci_drv	= NULL;
         struct nm_sisci_trk		*p_sisci_trk	= NULL;
+
         struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
         struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
         struct nm_sisci_segment		*p_sisci_seg	= NULL;
-        struct nm_iovec_iter	*p_vi		= NULL;
-        struct iovec		*p_cur		= NULL;
+
+        struct nm_iovec_iter		*p_vi		= NULL;
+        struct iovec			*p_cur		= NULL;
 
         uint8_t *dst;
         size_t   seg_avail;
@@ -796,15 +800,15 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
         NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
         NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
 
+        i = p_sisci_pw->next_seg;
+
+ next_seg:
         if (!p_vi->v_cur_size) {
                 err	= NM_ESUCCESS;
 
                 goto out;
         }
 
-        i = p_sisci_pw->next_seg;
-
- next_seg:
         p_sisci_seg	= p_sisci_cnx->seg_array + i;
 
         /* wait for authorization to write
@@ -848,7 +852,7 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_vi->v_cur_size--;
 
                 if (!p_vi->v_cur_size) {
-                        
+
                         /* flush data
                          */
                         SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
@@ -858,6 +862,9 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
                         /* set read flag */
                         p_sisci_seg->r_seg->r	= 1;
+
+                        /* the reverse write flag is implicitely flushed here */
+                        p_sisci_seg->write_flag_flushed	= 1;
 
                         /* flush flags
                          */
@@ -870,8 +877,10 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                 }
 
                 p_cur++;
-                p_vi->cur_copy = *p_cur;
-                seg_avail -= len;
+                p_vi->cur_copy	 = *p_cur;
+
+                seg_avail	-= len;
+                dst		+= len;
         } while (seg_avail);
 
         /* flush data
@@ -883,6 +892,9 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         /* set read flag */
         p_sisci_seg->r_seg->r	= 1;
+
+        /* the reverse write flag is implicitely flushed here */
+        p_sisci_seg->write_flag_flushed	= 1;
 
         /* flush flags
          */
@@ -897,15 +909,26 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_sisci_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
+nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
         struct nm_gate			*p_gate		= NULL;
         struct nm_drv			*p_drv		= NULL;
         struct nm_trk			*p_trk		= NULL;
+
         struct nm_sisci_gate		*p_sisci_gate	= NULL;
         struct nm_sisci_drv		*p_sisci_drv	= NULL;
         struct nm_sisci_trk		*p_sisci_trk	= NULL;
+
         struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
         struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
+        struct nm_sisci_segment		*p_sisci_seg	= NULL;
+
+        struct nm_iovec_iter		*p_vi		= NULL;
+        struct iovec			*p_cur		= NULL;
+
+        uint8_t *src;
+        size_t   seg_avail;
+
+        int i;
 	int err;
 
         p_drv		= p_pw->p_drv;
@@ -914,26 +937,199 @@ nm_sisci_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
         p_sisci_drv	= p_drv->priv;
         p_sisci_trk	= p_trk->priv;
 
-	err = NM_ESUCCESS;
+        if (!p_pw->p_gate) {
+                /* permissive request, no gate selected yet
+                   --> try to find an active one
+                 */
 
-	return err;
-}
+                uint8_t j; /* loop counter	*/
+                uint8_t k; /* cnx index		*/
 
-static
-int
-nm_sisci_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
-        struct nm_gate			*p_gate		= NULL;
-        struct nm_drv			*p_drv		= NULL;
-        struct nm_trk			*p_trk		= NULL;
-        struct nm_sisci_gate		*p_sisci_gate	= NULL;
-        struct nm_sisci_drv		*p_sisci_drv	= NULL;
-        struct nm_sisci_trk		*p_sisci_trk	= NULL;
-        struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
-        struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
-	int err;
+                /* which cnx should we poll first?
+                 */
+                if (p_sisci_trk->last_active_id < p_sisci_trk->next_cnx_id) {
+                        k = p_sisci_trk->last_active_id;
+                } else {
+                        k = 0;
+                        p_sisci_trk->last_active_id	= 0;
+                }
 
-	err = NM_ESUCCESS;
+                /* loop on each cnx
+                 */
+                for (j = 0; j < p_sisci_trk->next_cnx_id; j++) {
+                        p_sisci_cnx	= p_sisci_trk->cnx_map[k];
+                        p_sisci_seg	= p_sisci_cnx->seg_array + 0;
 
+                        /* if read flag is set, the gate is active*/
+                        if (p_sisci_seg->l_seg->r)
+                                goto active_gate_found;
+
+                        /* if the write flag was not flushed, do it now */
+                        if (!p_sisci_seg->write_flag_flushed) {
+                                SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
+                                p_sisci_seg->write_flag_flushed	= 1;
+                        }
+
+                        /* if read flag is set, the gate is active*/
+                        if (p_sisci_seg->l_seg->r)
+                                goto active_gate_found;
+
+                        k = (k+1) % p_sisci_trk->next_cnx_id;
+                }
+
+                err = -NM_EAGAIN;
+                goto out;
+
+        active_gate_found:
+                p_pw->p_gate	= p_sisci_trk->gate_map[k];
+
+                /* next initialization steps are done in common with the
+                   selective request initialization code below */
+        }
+
+        if (!p_pw->gate_priv) {
+                /* first call */
+
+                p_gate		= p_pw->p_gate;
+                p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+                p_pw->gate_priv	= p_sisci_gate;
+
+                p_sisci_pw	= tbx_malloc(p_sisci_drv->sci_pw_mem);
+
+                /* we always start sending new pkts on segment 0, at least for now
+                 */
+                p_sisci_pw->next_seg	= 0;
+
+                /* current entry num is first entry num
+                 */
+                p_sisci_pw->vi.v_cur	= p_pw->v_first;
+
+                /* save a copy of current entry
+                 */
+                p_sisci_pw->vi.cur_copy	= p_pw->v[p_pw->v_first];
+
+                /* current vector size is full vector size
+                 */
+                p_sisci_pw->vi.v_cur_size	= p_pw->v_nb;
+
+                p_pw->drv_priv	= p_sisci_pw;
+
+                p_sisci_cnx		= p_sisci_gate->cnx_array + p_trk->id;
+                p_sisci_pw->p_sisci_cnx	= p_sisci_cnx;
+        } else {
+                p_gate		= p_pw->p_gate;
+                p_sisci_gate	= p_pw->gate_priv;
+                p_sisci_pw	= p_pw->drv_priv;
+                p_sisci_cnx	= p_sisci_pw->p_sisci_cnx;
+        }
+
+        /* get a pointer to the iterator
+         */
+        p_vi	= &(p_sisci_pw->vi);
+
+        /* get a pointer to the current entry
+         */
+        p_cur	= p_pw->v + p_sisci_pw->vi.v_cur;
+
+        NM_TRACE_VAL("sisci outgoing cur size",	p_vi->v_cur_size);
+        NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
+        NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
+
+        i = p_sisci_pw->next_seg;
+
+ next_seg:
+        if (!p_vi->v_cur_size) {
+                err	= NM_ESUCCESS;
+
+                goto out;
+        }
+
+        p_sisci_seg	= p_sisci_cnx->seg_array + i;
+
+        /* wait for authorization to read
+           note: for permissive requests, the first test of the read flag
+           is uselessly done twice */
+        if (!p_sisci_seg->l_seg->r) {
+                if (!p_sisci_seg->write_flag_flushed) {
+                        SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
+                        p_sisci_seg->write_flag_flushed	= 1;
+                }
+
+                if (!p_sisci_seg->l_seg->r) {
+                        p_sisci_pw->next_seg	= i;
+                        err = -NM_EAGAIN;
+                        goto out;
+                }
+        }
+
+        /* -=- read data -=-
+         */
+        seg_avail	= DATA_AREA_SIZE;
+        src		= (uint8_t*)p_sisci_seg->r_seg->d;
+
+        do {
+                uint64_t len	= tbx_min(p_cur->iov_len, seg_avail);
+
+                /* copy iov_base...iov_base+len-1 */
+
+                memcpy(p_cur->iov_base, src, len);
+
+                p_cur->iov_base	+= len;
+                p_cur->iov_len	-= len;
+
+                /* still something to send for this vector entry?
+                 */
+                if (p_cur->iov_len)
+                        break;
+
+                /* restore vector entry
+                 */
+                *p_cur = p_vi->cur_copy;
+
+                /* increment cursors
+                 */
+                p_vi->v_cur++;
+                p_vi->v_cur_size--;
+
+                if (!p_vi->v_cur_size) {
+
+                        /* reset read flag */
+                        p_sisci_seg->l_seg->r	= 0;
+
+                        /* set write flag */
+                        p_sisci_seg->r_seg->w	= 1;
+
+                        /* do not flush flags
+                         */
+                        p_sisci_seg->write_flag_flushed	= 0;
+
+                        tbx_free(p_sisci_drv->sci_pw_mem, p_sisci_pw);
+                        err	= NM_ESUCCESS;
+
+                        goto out;
+                }
+
+                p_cur++;
+                p_vi->cur_copy	 = *p_cur;
+
+                seg_avail	-= len;
+                src		+= len;
+        } while (seg_avail);
+
+        /* reset read flag */
+        p_sisci_seg->l_seg->r	= 0;
+
+        /* set write flag */
+        p_sisci_seg->r_seg->w	= 1;
+
+        /* do not flush flags
+         */
+        p_sisci_seg->write_flag_flushed	= 0;
+
+        i = !i;
+        goto next_seg;
+
+ out:
 	return err;
 }
 
@@ -950,10 +1146,10 @@ nm_sisci_load(struct nm_drv_ops *p_ops) {
         p_ops->disconnect       = nm_sisci_disconnect   ;
 
         p_ops->post_send_iov	= nm_sisci_send_iov     ;
-        p_ops->post_recv_iov    = nm_sisci_post_recv_iov;
+        p_ops->post_recv_iov    = nm_sisci_recv_iov	;
 
         p_ops->poll_send_iov    = nm_sisci_send_iov     ;
-        p_ops->poll_recv_iov    = nm_sisci_poll_recv_iov;
+        p_ops->poll_recv_iov    = nm_sisci_recv_iov	;
 
         return NM_ESUCCESS;
 }

@@ -157,7 +157,7 @@ int marcel_init_top(char *outfile) {
 	if (*outfile=='|') {
 		int fds[2];
 		outfile++;
-		if (socketpair(PF_UNIX,SOCK_STREAM,0,fds)<0) {
+		if (socketpair(AF_UNIX,SOCK_STREAM,0,fds)<0) {
 			perror("socketpair");
 			return -1;
 		}

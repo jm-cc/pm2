@@ -58,6 +58,7 @@ struct kernel_sigaction {
 
 #section functions
 #include <signal.h>
+#include <setjmp.h>
 typedef void (*sighandler_t)(int);
 
 int pmarcel_pause(void);

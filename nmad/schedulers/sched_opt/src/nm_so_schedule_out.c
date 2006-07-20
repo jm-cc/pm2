@@ -25,9 +25,264 @@
 
 #include <nm_rdv_public.h>
 
+
+//#define OPTIMISE
+//#define PAS_SAUT
+
+//#define CHRONO
+
+#ifdef CHRONO
+int nb_search_next = 0;
+double chrono_search_next = 0;
+#endif
+
+//#ifdef OPTIMISE
 static int
 nm_so_search_next(struct nm_gate *p_gate,
                   struct nm_pkt_wrap **pp_pw){
+    struct nm_core *p_core = p_gate->p_core;
+    p_tbx_slist_t   pre    = p_gate->pre_sched_out_list;
+
+    struct nm_pkt_wrap *p_pw = NULL;
+    int pw_len =  sizeof(struct nm_so_sched_header);
+    struct nm_pkt_wrap *cur_pw = NULL;
+    int idx = 0;
+    tbx_bool_t forward = tbx_false;
+
+    struct nm_so_pkt_wrap *so_pw = NULL;
+    struct nm_pkt_wrap **aggregated_pws = NULL;
+
+    int pre_len = pre->length;
+    int err;
+
+
+
+    //printf("-->nm_so_search_next\n");
+
+#ifdef CHRONO
+    tbx_tick_t t1, t2;
+
+    TBX_GET_TICK(t1);
+#endif
+
+    assert(pre_len);
+
+    tbx_slist_ref_to_head(pre);
+    do{
+        cur_pw = tbx_slist_ref_get(pre);
+
+        // envoi direct
+        if(cur_pw->length < SMALL_THRESHOLD){
+            if(cur_pw->length + pw_len < AGGREGATED_PW_MAX_SIZE){
+                forward = tbx_slist_ref_extract_and_forward(pre, NULL);
+
+                if(!p_pw){
+                    err = nm_so_take_aggregation_pw(p_gate->p_sched, &p_pw);
+                    nm_so_control_error("nm_so_take_aggregation_pw", err);
+
+                    so_pw = p_pw->sched_priv;
+                    aggregated_pws = so_pw->aggregated_pws;
+                    //printf("-----------Construction du pack à  envoyer-----------\n");
+                }
+                //printf("----------->Ajout de données\n");
+                err = nm_so_add_data(p_core, p_pw,
+                                     cur_pw->proto_id,
+                                     cur_pw->length,
+                                     cur_pw->seq,
+                                     cur_pw->v[0].iov_base);
+                nm_so_control_error("nm_so_add_data", err);
+
+                aggregated_pws[so_pw->nb_aggregated_pws++] = cur_pw;
+                pw_len += cur_pw->length;
+
+            } else {
+                break;
+            }
+
+
+
+
+        // envoi par rdv
+        } else if(pw_len
+                  + sizeof(struct nm_so_header)
+                  + nm_rdv_rdv_rq_size()
+                  < AGGREGATED_PW_MAX_SIZE) {
+
+            forward = tbx_slist_ref_extract_and_forward(pre, NULL);
+            if(!p_pw){
+                err = nm_so_take_aggregation_pw(p_gate->p_sched, &p_pw);
+                nm_so_control_error("nm_so_take_aggregation_pw", err);
+
+                so_pw = p_pw->sched_priv;
+                aggregated_pws = so_pw->aggregated_pws;
+                //printf("-----------Construction du pack-----------\n");
+            }
+
+            struct nm_proto *p_proto
+                = p_core->p_proto_array[nm_pi_rdv_ack];
+            struct nm_rdv_rdv_rq *p_rdv = NULL;
+
+            err = nm_rdv_generate_rdv(p_proto, cur_pw, &p_rdv);
+            nm_so_control_error("nm_rdv_generate_rdv", err);
+
+            struct nm_so_sched *so_sched
+                = p_gate->p_sched->sch_private;
+
+            //printf("--->ajout du rdv du scheduler\n");
+            struct nm_so_header *so_rdv
+                = tbx_malloc(so_sched->header_key);
+            if(!so_rdv){
+                err = -NM_ENOMEM;
+                goto out;
+            }
+
+
+            so_rdv->proto_id = nm_pi_rdv_req;
+            err = nm_iov_append_buf(p_core, p_pw, so_rdv,
+                                    sizeof(struct nm_so_header));
+            nm_so_control_error("nm_iov_append_buf", err);
+
+            ///printf("--->ajout du rdv du protocole\n");
+            err = nm_iov_append_buf(p_core, p_pw, p_rdv,
+                                    nm_rdv_rdv_rq_size());
+            nm_so_control_error("nm_iov_append_buf", err);
+
+            pw_len += sizeof(struct nm_so_header) +  nm_rdv_rdv_rq_size();
+
+
+        } else { // le pw courant ne rentre pas
+            break; //forward = tbx_slist_ref_forward(pre);
+        }
+
+        idx++;
+        if(!forward)
+            break;
+    }while(tbx_slist_ref_forward(pre));
+
+
+    if(p_pw){
+        err = nm_so_update_global_header(p_pw, p_pw->v_nb, p_pw->length);
+        nm_so_control_error("nm_so_update_global_header", err);
+
+        /* je mets le wrap sur la piste des petits (la n°0)*/
+        struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
+        struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
+        if(p_gtrk == NULL)
+            TBX_FAILURE("p_gtrk NULL");
+
+        p_pw->p_gate = p_gate;
+        p_pw->p_drv  = p_gdrv->p_drv;
+        p_pw->p_trk  = p_gtrk->p_trk;
+        p_pw->p_gdrv = p_gdrv;
+        p_pw->p_gtrk = p_gtrk;
+    }
+    //printf("<--nm_so_search_next\n");
+
+    *pp_pw = p_pw;
+    err = NM_ESUCCESS;
+
+ out:
+
+#ifdef CHRONO
+     TBX_GET_TICK(t2);
+     chrono_search_next += TBX_TIMING_DELAY(t1, t2);
+     nb_search_next++;
+#endif
+     return err;
+}
+
+//#else // On prend le premier dans la liste
+//
+//static struct nm_pkt_wrap *
+//nm_so_search_next(struct nm_gate *p_gate){
+//    struct nm_core *p_core   = p_gate->p_core;
+//    p_tbx_slist_t pre  = p_gate->pre_sched_out_list;
+//
+//    struct nm_pkt_wrap *p_pw = NULL;
+//    struct nm_pkt_wrap *cur_pw = NULL;
+//
+//    struct nm_so_pkt_wrap *so_pw = NULL;
+//
+//
+//    int pre_len = pre->length;
+//
+//#ifdef CHRONO
+//    tbx_tick_t t1, t2;
+//
+//    TBX_GET_TICK(t1);
+//#endif
+//
+//    //printf("-->nm_so_search_next\n");
+//    if(!pre_len)
+//        goto end;
+//
+//    p_pw = nm_so_take_aggregation_pw(p_gate->p_sched);
+//    so_pw = p_pw->sched_priv;
+//
+//
+//    tbx_slist_ref_to_head(pre);
+//
+//    //cur_pw = tbx_slist_remove_from_head(pre);
+//    tbx_slist_ref_extract_and_forward(pre, &cur_pw);
+//    if(cur_pw->length < SMALL_THRESHOLD){
+//       //printf("-->Ajout de données\n");
+//
+//        nm_so_add_data(p_core, p_pw,
+//                       cur_pw->proto_id, cur_pw->length,
+//                       cur_pw->seq, cur_pw->v[0].iov_base);
+//
+//        so_pw->aggregated_pws[so_pw->nb_aggregated_pws++] = cur_pw;
+//
+//    } else {
+//        struct nm_proto *p_proto
+//            = p_core->p_proto_array[nm_pi_rdv_ack];
+//        struct nm_rdv_rdv_rq *p_rdv = NULL;
+//
+//        nm_rdv_generate_rdv(p_proto, cur_pw, &p_rdv);
+//
+//        //printf("--->ajout du rdv du scheduler\n");
+//        struct nm_so_header *so_rdv
+//            = TBX_MALLOC(sizeof(struct nm_so_header));
+//        so_rdv->proto_id = nm_pi_rdv_req;
+//        nm_iov_append_buf(p_core, p_pw, so_rdv,
+//                          sizeof(struct nm_so_header));
+//
+//        //printf("--->ajout du rdv du protocole\n");
+//        nm_iov_append_buf(p_core, p_pw, p_rdv,
+//                          nm_rdv_rdv_rq_size());
+//
+//    }
+//
+//    nm_so_update_global_header(p_pw, p_pw->v_nb);
+//
+//    /* je mets le wrap sur la piste des petits (la n°0)*/
+//    struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[0];
+//    struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[0];
+//    if(p_gtrk == NULL)
+//        TBX_FAILURE("p_gtrk NULL");
+//
+//    p_pw->p_gate = p_gate;
+//    p_pw->p_drv  = p_gdrv->p_drv;
+//    p_pw->p_trk  = p_gtrk->p_trk;
+//    p_pw->p_gdrv = p_gdrv;
+//    p_pw->p_gtrk = p_gtrk;
+//
+//   //printf("<--nm_so_search_next\n");
+//
+// end:
+//#ifdef CHRONO
+//    TBX_GET_TICK(t2);
+//    chrono_search_next += TBX_TIMING_DELAY(t1, t2);
+//    nb_search_next++;
+//#endif
+//
+//    return p_pw;
+//}
+//#endif
+
+static int
+nm_so_search_next2(struct nm_gate *p_gate,
+                   struct nm_pkt_wrap **pp_pw){
 
     p_tbx_slist_t       pre    = NULL;
     struct nm_gate_drv *p_gdrv = NULL;
@@ -35,6 +290,8 @@ nm_so_search_next(struct nm_gate *p_gate,
     struct nm_gate_trk *p_gtrk = NULL;
     struct nm_pkt_wrap *p_pw   = NULL;
     int err;
+
+    DISP("-->nm_so_search_next2");
 
     pre     = p_gate->pre_sched_out_list;
     p_gdrv  = p_gate->p_gate_drv_array[0];
@@ -62,8 +319,10 @@ nm_so_search_next(struct nm_gate *p_gate,
 
     *pp_pw = p_pw;
 
- out:
     err = NM_ESUCCESS;
+ out:
+    DISP("<--nm_so_search_next2");
+
     return err;
 }
 
@@ -90,6 +349,9 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
     TBX_GET_TICK(t1);
 #endif
 
+    if(tbx_slist_is_nil(pre))
+        goto out;
+
     //printf("-->nm_so_out_schedule_gate\n");
     /* already one pending request or something to send */
     if(p_gate->out_req_nb || !tbx_slist_is_nil(post))
@@ -105,7 +367,7 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
             goto out;
         }
 
-        err = nm_so_search_next(p_gate, &p_pw);
+        err = nm_so_search_next2(p_gate, &p_pw);
         nm_so_control_error("nm_so_schedule_gate", err);
 
         if(err == -NM_ENOTFOUND){
@@ -126,11 +388,10 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
  reload:
     //a-t-on un next?
     if(!tbx_slist_is_nil(pre) && !so_gate->next_pw){
-        err = nm_so_search_next(p_gate, &so_gate->next_pw);
+        err = nm_so_search_next2(p_gate, &so_gate->next_pw);
         nm_so_control_error("nm_so_search_next", err);
     }
 
-    err = NM_ESUCCESS;
  out:
     //printf("<--nm_so_out_schedule_gate\n");
 
@@ -140,6 +401,7 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate) {
     nb_sched_out++;
 #endif
 
+    err = NM_ESUCCESS;
     return err;
 }
 

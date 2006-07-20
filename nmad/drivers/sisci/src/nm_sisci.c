@@ -733,6 +733,12 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
         struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
         struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
         struct nm_sisci_segment		*p_sisci_seg	= NULL;
+        struct nm_iovec_iter	*p_vi		= NULL;
+        struct iovec		*p_cur		= NULL;
+
+        uint8_t *dst;
+        size_t   seg_avail;
+
         int i;
 	int err;
 
@@ -751,6 +757,9 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_pw->gate_priv	= p_sisci_gate;
 
                 p_sisci_pw	= tbx_malloc(p_sisci_drv->sci_pw_mem);
+
+                /* we always start sending new pkts on segment 0, at least for now
+                 */
                 p_sisci_pw->next_seg	= 0;
 
                 /* current entry num is first entry num
@@ -775,23 +784,114 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_sisci_cnx	= p_sisci_pw->p_sisci_cnx;
         }
 
+        /* get a pointer to the iterator
+         */
+        p_vi	= &(p_sisci_pw->vi);
+
+        /* get a pointer to the current entry
+         */
+        p_cur	= p_pw->v + p_sisci_pw->vi.v_cur;
+
+        NM_TRACE_VAL("sisci outgoing cur size",	p_vi->v_cur_size);
+        NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
+        NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
+
+        if (!p_vi->v_cur_size) {
+                err	= NM_ESUCCESS;
+
+                goto out;
+        }
+
         i = p_sisci_pw->next_seg;
+
+ next_seg:
         p_sisci_seg	= p_sisci_cnx->seg_array + i;
 
         /* wait for authorization to write
          */
         if (!p_sisci_seg->l_seg->w) {
+                p_sisci_pw->next_seg	= i;
                 err = -NM_EAGAIN;
+                goto out;
         }
+
+        /* -=- send data -=-
+         */
+        seg_avail	= DATA_AREA_SIZE;
+        dst		= (uint8_t*)p_sisci_seg->r_seg->d;
+
+        do {
+                uint64_t len	= tbx_min(p_cur->iov_len, seg_avail);
+
+                /* copy iov_base...iov_base+len-1 */
+
+                /* TODO: use SCIMemCpy instead of memcpy for sending
+                 */
+#warning TODO
+                memcpy(dst, p_cur->iov_base, len);
+
+                p_cur->iov_base	+= len;
+                p_cur->iov_len	-= len;
+
+                /* still something to send for this vector entry?
+                 */
+                if (p_cur->iov_len)
+                        break;
+
+                /* restore vector entry
+                 */
+                *p_cur = p_vi->cur_copy;
+
+                /* increment cursors
+                 */
+                p_vi->v_cur++;
+                p_vi->v_cur_size--;
+
+                if (!p_vi->v_cur_size) {
+                        
+                        /* flush data
+                         */
+                        SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
+
+                        /* reset write flag */
+                        p_sisci_seg->l_seg->w	= 0;
+
+                        /* set read flag */
+                        p_sisci_seg->r_seg->r	= 1;
+
+                        /* flush flags
+                         */
+                        SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
+
+                        tbx_free(p_sisci_drv->sci_pw_mem, p_sisci_pw);
+                        err	= NM_ESUCCESS;
+
+                        goto out;
+                }
+
+                p_cur++;
+                p_vi->cur_copy = *p_cur;
+                seg_avail -= len;
+        } while (seg_avail);
+
+        /* flush data
+         */
+        SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
 
         /* reset write flag */
         p_sisci_seg->l_seg->w	= 0;
 
-        /* -=- send data -=-
+        /* set read flag */
+        p_sisci_seg->r_seg->r	= 1;
+
+        /* flush flags
          */
+        SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
 
-	err = NM_ESUCCESS;
+        i = !i;
+        goto next_seg;
 
+ out:
 	return err;
 }
 

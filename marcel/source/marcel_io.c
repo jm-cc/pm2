@@ -172,6 +172,7 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 	}
 }
 
+#define ma_timerclear(tv) ((tv)->tv_sec = (tv)->tv_usec = 0)
 static int unix_io_poll(marcel_ev_server_t server, 
 			marcel_ev_op_t _op,
 			marcel_ev_req_t req, 
@@ -189,7 +190,7 @@ static int unix_io_poll(marcel_ev_server_t server,
 	       marcel_current_vp());
 #endif
 
-	timerclear(&tv);
+	ma_timerclear(&tv);
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 	ptv = &tv;
@@ -279,7 +280,7 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 
-	timerclear(&tv);
+	ma_timerclear(&tv);
 	
 	errno = 0;
 	r = select(nb, &rfds, &wfds, NULL, &tv);
@@ -464,7 +465,7 @@ int tselect(int width, fd_set * __restrict readfds,
 		if(writefds) wfds = *writefds;
 		if(exceptfds) efds = *exceptfds;
 		
-		timerclear(&timeout);
+		ma_timerclear(&timeout);
 		res = select(width, &rfds, &wfds, &efds, &timeout);
 		if(res <= 0) {
 			if (res < 0 && (errno != EINTR))

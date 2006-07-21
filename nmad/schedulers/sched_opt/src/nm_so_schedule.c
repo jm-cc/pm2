@@ -27,7 +27,7 @@
 
 //#define CHRONO
 
-static void 
+static void
 print_wrap(struct nm_pkt_wrap* p_pw)
 {
     printf("p_pw->p_drv    = %p\n", p_pw->p_drv);
@@ -60,6 +60,7 @@ nm_so_init_pre_posted(struct nm_core *p_core,
                       struct nm_so_sched *p_priv,
                       int nb_pre_posted){
     struct nm_pkt_wrap * p_pw = NULL;
+    void *ptr = NULL;
     int err;
     int i;
 
@@ -114,9 +115,9 @@ nm_so_init_pre_posted(struct nm_core *p_core,
 
  free:
     while(nm_so_stack_size(p_priv->ready_pre_posted_wraps)){
-        err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps,
-                              (void **)&p_pw);
+        err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps, &ptr);
         nm_so_control_error("nm_so_stack_pop", err);
+        p_pw = ptr;
 
         err = nm_iov_free(p_core, p_pw);
         nm_so_control_error("nm_iov_free", err);
@@ -225,6 +226,7 @@ nm_so_init_aggregation_pw(struct nm_core *p_core,
                          struct nm_so_sched *p_priv,
                          int nb_pw){
     struct nm_pkt_wrap *p_pw = NULL;
+    void *ptr= NULL;
     int err;
     int i;
 
@@ -249,8 +251,9 @@ nm_so_init_aggregation_pw(struct nm_core *p_core,
 
  free:
     while(nm_so_stack_size(p_priv->ready_wraps)){
-        err = nm_so_stack_pop(p_priv->ready_wraps, (void **)&p_pw);
+        err = nm_so_stack_pop(p_priv->ready_wraps, &ptr);
         nm_so_control_error("nm_so_stack_pop", err);
+        p_pw = ptr;
 
         err = nm_iov_free(p_core, p_pw);
         nm_so_control_error("nm_iov_free", err);

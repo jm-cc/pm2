@@ -19,7 +19,7 @@
 #include "nm_so_strategies_private.h"
 
 typedef int nm_so_tactic (struct nm_drv *driver,
-                           struct nm_so_se_pending_tab *pw_tab,
-                           struct nm_so_se_op_stack *op_stack,
-                           int tree_altitude);
+                          struct nm_so_se_pending_tab *pw_tab,
+                          struct nm_so_se_op_stack *op_stack,
+                          int tree_altitude);
 #endif

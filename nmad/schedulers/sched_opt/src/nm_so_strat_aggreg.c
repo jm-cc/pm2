@@ -178,8 +178,11 @@ nm_so_search_next(struct nm_gate *p_gate,
     int pre_len = pre->length;
     int err;
 
-    if(!pre_len)
+    if(!pre_len){
+        err = -NM_ENOTFOUND;
         goto end;
+    }
+
 
     err = nm_so_take_aggregation_pw(p_gate->p_sched, &p_pw);
     nm_so_control_error("nm_so_take_aggregation_pw", err);
@@ -256,7 +259,7 @@ nm_so_search_next(struct nm_gate *p_gate,
 
 //=======================================================================
 
-// Compute and apply the best possible packet rearrangement, 
+// Compute and apply the best possible packet rearrangement,
 // then return next packet to send
 static int try_and_commit(nm_so_strategy *strat,
 			  struct nm_gate *p_gate,

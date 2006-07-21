@@ -30,7 +30,7 @@
 #define MAX_NB_OP 10
 #define NB_PACK_BY_OPT 1
 
-#define NB_STRATEGIES 2
+
 
 struct nm_so_strat_exhaustive{
     // allocateur rapide pour les operations
@@ -47,6 +47,8 @@ struct nm_so_strat_exhaustive{
     struct nm_so_se_op_stack *op_stack_ref;
 };
 
+
+#define NB_STRATEGIES 2
 static nm_so_tactic *tactics[] = {
     &nm_so_tactic_aggreg,
     NULL

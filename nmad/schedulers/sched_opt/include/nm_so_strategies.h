@@ -16,10 +16,43 @@
 #ifndef NM_SO_STRATEGIES_H
 #define NM_SO_STRATEGIES_H
 
-int
-nm_so_strategy_application(struct nm_gate *p_gate,
-                           struct nm_drv *driver,
-                           p_tbx_slist_t pre_list,
-                           struct nm_pkt_wrap **pp_pw);
+typedef struct nm_so_strategy_struct nm_so_strategy;
+
+// Initialization
+typedef int (*nm_so_strategy_init_func)(nm_so_strategy *strat);
+
+// Compute the best possible packet rearrangement
+// with no side-effect on pre_list
+typedef int (*nm_so_strategy_try_func)(nm_so_strategy *strat,
+				       struct nm_gate *p_gate,
+				       struct nm_drv *driver,
+				       p_tbx_slist_t pre_list,
+				       unsigned *score);
+
+// Apply the "already computed" strategy on pre_list
+// and return next packet to send
+typedef int (*nm_so_strategy_commit_func)(nm_so_strategy *strat,
+					  p_tbx_slist_t pre_list,
+					  struct nm_pkt_wrap **pp_pw);
+
+// Compute and apply the best possible packet rearrangement, 
+// then return next packet to send
+typedef int (*nm_so_strategy_try_and_commit_func)(nm_so_strategy *strat,
+						  struct nm_gate *p_gate,
+						  struct nm_drv *driver,
+						  p_tbx_slist_t pre_list,
+						  struct nm_pkt_wrap **pp_pw);
+
+// Forget the pre-computed stuff
+typedef int (*nm_so_strategy_cancel_func)(nm_so_strategy *strat);
+
+struct nm_so_strategy_struct {
+  nm_so_strategy_init_func init;
+  nm_so_strategy_try_func try;
+  nm_so_strategy_commit_func commit;
+  nm_so_strategy_try_and_commit_func try_and_commit;
+  nm_so_strategy_cancel_func cancel;
+  void *priv;
+};
 
 #endif

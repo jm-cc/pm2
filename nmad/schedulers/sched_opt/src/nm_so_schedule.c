@@ -23,11 +23,13 @@
 #include <nm_public.h>
 #include <nm_rdv_public.h>
 #include "nm_so_private.h"
+#include "nm_so_optimizer.h"
 
-#define CHRONO
+//#define CHRONO
 
-static void
-print_wrap(struct nm_pkt_wrap* p_pw){
+static void 
+print_wrap(struct nm_pkt_wrap* p_pw)
+{
     printf("p_pw->p_drv    = %p\n", p_pw->p_drv);
     printf("p_pw->p_trk    = %p\n", p_pw->p_trk);
     printf("p_pw->p_gate   = %p\n", p_pw->p_gate);
@@ -262,16 +264,21 @@ nm_so_init_aggregation_pw(struct nm_core *p_core,
 }
 
 static int
-nm_so_schedule_init (struct nm_sched *p_sched) {
-    struct nm_core *p_core = p_sched->p_core;
-    int	err;
+nm_so_schedule_init (struct nm_sched *p_sched)
+{
+  struct nm_core *p_core = p_sched->p_core;
+  int err;
+  struct nm_so_sched *p_priv = NULL;
 
-    struct nm_so_sched *p_priv = TBX_MALLOC(sizeof(struct nm_so_sched));
-    if (!p_priv) {
-        err = -NM_ENOMEM;
-        goto out;
-    }
-    memset(p_priv, 0, sizeof(struct nm_so_sched));
+  // Initialize optimizer
+  nm_so_optimizer_init();
+
+  p_priv = TBX_MALLOC(sizeof(struct nm_so_sched));
+  if (!p_priv) {
+    err = -NM_ENOMEM;
+    goto out;
+  }
+  memset(p_priv, 0, sizeof(struct nm_so_sched));
 
     p_priv->trks_to_update = tbx_slist_nil();
 
@@ -491,7 +498,8 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 }
 
 int
-nm_so_load		(struct nm_sched_ops	*p_ops) {
+nm_so_load		(struct nm_sched_ops	*p_ops)
+{
     p_ops->init			= nm_so_schedule_init;
 
     p_ops->init_trks		= nm_so_init_trks;
@@ -729,4 +737,3 @@ nm_so_control_error(char *fct_name, int err){
         TBX_FAILURE("err != NM_ESUCCESS");
     }
 }
-

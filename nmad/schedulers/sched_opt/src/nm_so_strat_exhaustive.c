@@ -1,10 +1,27 @@
+/*
+ * NewMadeleine
+ * Copyright (C) 2006 (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include <tbx.h>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
 
 #include "nm_so_private.h"
+#include "nm_so_strategies/nm_so_strat_exhaustive.h"
 
+//=======================================================================
 
 #define PENDING_PW_WINDOW_SIZE 10
 #define MAX_NB_OP 10
@@ -283,7 +300,7 @@ nm_so_path_tree(int strategy_no,
 }
 
 ////////////// Point d'entrée //////////////////////////////
-int
+static int
 nm_so_strategy_application(struct nm_gate *p_gate,
                            struct nm_drv *driver,
                            p_tbx_slist_t pre_list,
@@ -396,3 +413,31 @@ nm_so_strategy_application(struct nm_gate *p_gate,
 
     return err;
 }
+
+//=======================================================================
+
+// Compute and apply the best possible packet rearrangement, 
+// then return next packet to send
+static int try_and_commit(nm_so_strategy *strat,
+			  struct nm_gate *p_gate,
+			  struct nm_drv *driver,
+			  p_tbx_slist_t pre_list,
+			  struct nm_pkt_wrap **pp_pw)
+{
+  return nm_so_strategy_application(p_gate, driver, pre_list, pp_pw);
+}
+
+// Initialization
+static int init(nm_so_strategy *strat)
+{
+  return NM_ESUCCESS;
+}
+
+nm_so_strategy nm_so_strat_exhaustive = {
+  .init = init,
+  .try = NULL,
+  .commit = NULL,
+  .try_and_commit = try_and_commit,
+  .cancel = NULL,
+  .priv = NULL,
+};

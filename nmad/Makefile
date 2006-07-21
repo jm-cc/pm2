@@ -18,6 +18,7 @@ SUBDIRS	+= protocols
 SUBDIRS	+= schedulers
 
 NM_PATH		:= .
+M		:= .
 MAKE_CONF	:= $(NM_PATH)/make.conf
 MAKE_TREE	:= $(NM_PATH)/make.tree
 

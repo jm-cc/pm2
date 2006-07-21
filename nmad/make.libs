@@ -29,7 +29,7 @@ build:	$(LIB_A)($(SRC_F:src/%.c=%.o))
 
 ifneq ($(CONFIG_VERBOSE), y)
 $(LIB_A)(%.o): %.o
-	@echo -e "  [AR]\t  " $(LIB_A) $*.o
+	@echo -e "  [AR]\t  "$(LIB_A) $*.o
 	@$(AR) cr $@ $*.o
 endif
 

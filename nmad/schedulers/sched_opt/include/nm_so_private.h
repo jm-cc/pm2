@@ -79,7 +79,6 @@ struct nm_so_sched {
     struct nm_pkt_wrap *acks;
 };
 
-
 struct nm_so_pkt_wrap{
     struct nm_pkt_wrap **aggregated_pws;
     int nb_aggregated_pws;

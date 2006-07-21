@@ -42,7 +42,7 @@ nm_so_stack_create(struct nm_so_stack **pp_stack, int nb_entries){
 
     p_stack->nb_entries = nb_entries;
     p_stack->next_to_add = 0;
-    p_stack->obj = TBX_MALLOC(nb_entries * sizeof(void *));
+    p_stack->obj = TBX_MALLOC(nb_entries * sizeof(*p_stack->obj));
     if(!p_stack->obj){
         TBX_FREE(p_stack);
         err = -NM_ENOMEM;

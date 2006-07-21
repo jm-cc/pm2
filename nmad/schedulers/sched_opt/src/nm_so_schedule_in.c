@@ -361,7 +361,7 @@ nm_so_open_data(struct nm_sched *p_sched,
 
 
     while(nb_seg){
-        header = (nm_so_header_t *)data;
+        header = data;
 
         proto_id = header->proto_id;
 
@@ -512,8 +512,7 @@ nm_so_open_received_data_complete(struct nm_sched *p_sched,
                                   struct nm_gate *p_gate,
                                   void * data){
     int err;
-    nm_so_sched_header_t * global_header
-        = (nm_so_sched_header_t *)data;
+    nm_so_sched_header_t * global_header = data;
 
     uint8_t proto_id = global_header->proto_id;
     assert(proto_id == nm_pi_sched);
@@ -567,8 +566,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
             struct nm_pkt_wrap	*p_data_pw = NULL;
             int len = 0;
 
-            struct nm_so_sched_header * header
-                = (struct nm_so_sched_header *)data;
+            struct nm_so_sched_header * header = data;
 
             len = header->len - sizeof(struct nm_so_sched_header);
 

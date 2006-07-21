@@ -189,9 +189,6 @@ nm_so_search_next(struct nm_gate *p_gate,
 
     so_pw = p_pw->sched_priv;
 
-    //tbx_slist_ref_to_head(pre);
-    //tbx_slist_ref_extract_and_forward(pre, (void *)&cur_pw);
-
     cur_pw = tbx_slist_remove_from_head(pre);
 
     if(cur_pw->length < SMALL_THRESHOLD){

@@ -181,7 +181,7 @@ nm_so_init_pw(struct nm_core *p_core,
     nm_so_control_error("nm_iov_append_buf", err);
 
     struct nm_pkt_wrap **aggregated_pws =
-        TBX_MALLOC(nb_iov_entries * sizeof(struct nm_pkt_wrap *));
+        TBX_MALLOC(nb_iov_entries * sizeof(*aggregated_pws));
     if(!aggregated_pws){
         err2 = nm_iov_free(p_core, p_pw);
         nm_so_control_error("nm_iov_free", err2);
@@ -526,7 +526,7 @@ nm_so_take_aggregation_pw(struct nm_sched *p_sched,
     struct nm_so_sched *p_priv = p_sched->sch_private;
     int err;
 
-    err = nm_so_stack_pop(p_priv->ready_wraps, (void **)pp_pw);
+    err = nm_so_stack_pop(p_priv->ready_wraps, pp_pw);
     nm_so_control_error("nm_so_stack_pop", err);
 
     err = NM_ESUCCESS;
@@ -589,7 +589,7 @@ nm_so_take_pre_posted_pw(struct nm_sched *p_sched,
 
     //printf("nm_so_take_pre_posted_pw - stack_pop\n");
 
-    err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps, (void **)pp_pw);
+    err = nm_so_stack_pop(p_priv->ready_pre_posted_wraps, pp_pw);
     nm_so_control_error("nm_so_stack_pop", err);
 
     assert(*pp_pw);

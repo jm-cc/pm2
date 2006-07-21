@@ -19,22 +19,30 @@
 all: $(APP)
 
 ifeq ($(CONFIG_VERBOSE), y)
-%:	%.c  %.d $(LIBS_DEP)
+%:	%.o  %.d $(LIBS_DEP)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
 else
-%:	%.c  %.d $(LIBS_DEP)
+%:	%.o  %.d $(LIBS_DEP)
 	@echo -e "  [CC]\t  "$@
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
 endif
 
+ifeq ($(CONFIG_VERBOSE), y)
+%.o:	%.c  %.d
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+else
+%.o:	%.c  %.d
+	@echo -e "  [CC]\t  "$@
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+endif
+
 %.d:	%.c
 	@set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
-	sed -i 's,:,: $(MAKE_CONF) ,' $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	$(CC) -MM $(CPPFLAGS) $< | \
+	sed 's,:,: $(MAKE_CONF) $(BUILD_CFG),' | \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@;
 
 clean:
-	rm -f $(APP) *.o $(APP:%=%.d) $(APP:%=%.d.*)
+	rm -f $(APP) $(APP:%=%.o) $(APP:%=%.d)
 
 -include $(APP:%=%.d)

@@ -28,7 +28,7 @@ endif
 build:	$(LIB_A)($(SRC_F:src/%.c=%.o))
 
 ifneq ($(CONFIG_VERBOSE), y)
-$(LIB_A)($(SRC_F:src/%.c=%.o)): $(SRC_F:src/%.c=%.o)
+$(LIB_A)(%.o): %.o
 	@echo -e "  [AR]\t  " $(LIB_A) $*.o
 	@$(AR) cr $@ $*.o
 endif
@@ -43,17 +43,16 @@ endif
 
 %.d:	src/%.c
 	@set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
-	sed -i 's,:,: $(MAKE_CONF) ,' $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+	$(CC) -MM $(CPPFLAGS) $< | \
+	sed 's,:,: $(MAKE_CONF) $(BUILD_CFG),' | \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@;
 
 ifeq ($(CONFIG_VERBOSE), y)
 clean:
-	rm -vf $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d) *.d.*
+	rm -vf $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d)
 else
 clean:
-	rm -f $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d) *.d.*
+	rm -f $(LIB_A) $(SRC_F:src/%.c=%.o) $(SRC_F:src/%.c=%.d)
 endif
 
 -include $(SRC_F:src/%.c=%.d)

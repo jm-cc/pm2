@@ -74,10 +74,12 @@ nm_rdv_extract_from_ref(p_tbx_slist_t list,
                         p_tbx_slist_element_t ref,
                         struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap * p_pw = NULL;
+    void *ptr = NULL;
     int err;
 
     list->ref = ref;
-    tbx_slist_ref_extract_and_forward(list, (void **)&p_pw);
+    tbx_slist_ref_extract_and_forward(list, &ptr);
+    p_pw = ptr;
     assert(p_pw);
 
     *pp_pw = p_pw;

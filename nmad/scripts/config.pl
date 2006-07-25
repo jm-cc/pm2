@@ -4,10 +4,47 @@
 use strict;
 use Getopt::Std;
 
+# conditional readline use
+my $rl_mod = "Term::ReadLine";
+my $term;
+
+if (eval "require $rl_mod") {
+    $term = new Term::ReadLine 'NewMad config';    
+} else {
+    print "warning: Perl/Readline lib not found, using regular prompt\n";
+}
+
 # sets
 my %vars;
 my %groups;
 my @master_group_list;
+
+sub cmdline ($);
+sub cmdline ($) {
+        s/\s+//g;
+
+        my ($var_name, $op, $user_value) = /^([^\=]+)(=(.+)?)?$/;
+
+        unless (defined $var_name) {
+            print "syntax error\n";
+            return;
+        }
+
+        unless (exists $vars{$var_name}) {
+            print "unknown variable ${var_name}\n;";
+            return;
+        }
+
+        if (defined $user_value) {
+            ${$vars{$var_name}}{'value'}	= $user_value;
+            ${$vars{$var_name}}{'user_value'}	= $user_value;
+        } elsif (defined $op) {
+            ${$vars{$var_name}}{'value'}	= '';
+            ${$vars{$var_name}}{'user_value'}	= '';
+        } else {
+            print "$var_name: ${$vars{$var_name}}{'value'}\n";
+        }
+}
 
 sub disp ($);
 sub disp ($) {
@@ -127,7 +164,11 @@ sub update {
         disp $group_name;
     }
 
-    print "\n> ";
+    if (defined $term) {
+        print "\n";
+    } else {
+        print "\n> ";
+    }
 }
 
 # command line processing
@@ -306,36 +347,22 @@ if (-r $build_cfg_filename) {
 }
 
 update;
-user_line:
-    while (<>) {
-        chomp;
-        s/\s+//g;
 
-        my ($var_name, $op, $user_value) = /^([^\=]+)(=(.+)?)?$/;
-
-        unless (defined $var_name) {
-            print "syntax error\n";
-            next user_line;
-        }
-
-        unless (exists $vars{$var_name}) {
-            print "unknown variable ${var_name}\n;";
-            next user_line;
-        }
-
-        if (defined $user_value) {
-            ${$vars{$var_name}}{'value'}	= $user_value;
-            ${$vars{$var_name}}{'user_value'}	= $user_value;
-        } elsif (defined $op) {
-            ${$vars{$var_name}}{'value'}	= '';
-            ${$vars{$var_name}}{'user_value'}	= '';
-        } else {
-            print "$var_name: ${$vars{$var_name}}{'value'}\n";
-        }
+if (defined $term) {
+    while ( defined ($_ = $term->readline('nm config> ')) ) {
+        cmdline $_;
     } continue {
         print "\n";
         update;
     }
-
+} else {
+    while (<>) {
+        chomp;
+        cmdline $_;
+    } continue {
+        print "\n";
+        update;
+    }
+}
 gen_script($build_cfg_filename);
 print "configuration file saved in: ${build_cfg_filename}\n";

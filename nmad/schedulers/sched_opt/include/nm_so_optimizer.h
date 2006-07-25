@@ -29,6 +29,6 @@ int
 nm_so_optimizer_schedule_out(struct nm_gate *p_gate,
 			     struct nm_drv *driver,
 			     p_tbx_slist_t pre_list,
-			     struct nm_pkt_wrap **pp_pw);
+			     struct nm_so_pkt_wrap **pp_so_pw);
 
 #endif

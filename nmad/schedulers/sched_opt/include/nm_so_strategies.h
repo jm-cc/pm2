@@ -33,7 +33,7 @@ typedef int (*nm_so_strategy_try_func)(nm_so_strategy *strat,
 // and return next packet to send
 typedef int (*nm_so_strategy_commit_func)(nm_so_strategy *strat,
 					  p_tbx_slist_t pre_list,
-					  struct nm_pkt_wrap **pp_pw);
+					  struct nm_so_pkt_wrap **pp_so_pw);
 
 // Compute and apply the best possible packet rearrangement, 
 // then return next packet to send
@@ -41,7 +41,7 @@ typedef int (*nm_so_strategy_try_and_commit_func)(nm_so_strategy *strat,
 						  struct nm_gate *p_gate,
 						  struct nm_drv *driver,
 						  p_tbx_slist_t pre_list,
-						  struct nm_pkt_wrap **pp_pw);
+						  struct nm_so_pkt_wrap **pp_so_pw);
 
 // Forget the pre-computed stuff
 typedef int (*nm_so_strategy_cancel_func)(nm_so_strategy *strat);

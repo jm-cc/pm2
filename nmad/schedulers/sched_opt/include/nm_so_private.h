@@ -26,10 +26,8 @@
 #define AGGREGATED_PW_MAX_NB_SEG 200
 #define SMALL_THRESHOLD 32000
 
-#define NB_CREATED_PRE_POSTED 10
-#define NB_CREATED_SCHED_HEADER 10
-#define NB_CREATED_HEADER 10
-#define NB_AGGREGATION_PW 10
+//#define NB_CREATED_PRE_POSTED 10
+//#define NB_AGGREGATION_PW 10
 
 /*********** Unexpecteds *************/
 struct nm_so_unexpected{
@@ -39,16 +37,13 @@ struct nm_so_unexpected{
     void *data;
 };
 
-
-
 struct nm_so_gate {
     // next p_pw to schedule - one in advance
-    struct nm_pkt_wrap * next_pw;
+    struct nm_so_pkt_wrap * next_pw;
 };
 
 struct nm_so_trk{
     /* pour les stream -> premier envoi */
-    //struct nm_pkt_wrap *intro;
     tbx_bool_t pending_stream_intro;
 };
 
@@ -76,30 +71,9 @@ struct nm_so_sched {
     p_tbx_slist_t unexpected_list;
 
     // ack wrapper en cours de construction
-    struct nm_pkt_wrap *acks;
+    //struct nm_pkt_wrap *acks;
+    struct nm_so_pkt_wrap *acks;
 };
-
-struct nm_so_pkt_wrap{
-    struct nm_pkt_wrap **aggregated_pws;
-    int nb_aggregated_pws;
-
-    uint8_t  nb_seg;
-    //uint32_t len;
-};
-
-/*********** Headers *************/
-typedef struct nm_so_sched_header{
-    uint8_t  proto_id;
-    uint8_t  nb_seg;
-    uint32_t len;
-}nm_so_sched_header_t, *p_nm_so_sched_header_t;
-
-typedef struct nm_so_header{
-    uint8_t  proto_id;
-    uint8_t  seq;
-    uint32_t len;
-}nm_so_header_t, *p_nm_so_header_t;
-
 
 /************ Methods ************/
 int
@@ -126,40 +100,7 @@ nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
                            int		 _err);
 
-
-
 /******* Utilitaires **********/
-int
-nm_so_take_aggregation_pw(struct nm_sched *p_sched,
-                          struct nm_pkt_wrap **pp_pw);
-
-int
-nm_so_release_aggregation_pw(struct nm_sched *p_sched,
-                             struct nm_pkt_wrap *p_pw);
-
-int
-nm_so_take_pre_posted_pw(struct nm_sched *p_sched,
-                         struct nm_pkt_wrap ** pp_pw);
-
-int
-nm_so_release_pre_posted_pw(struct nm_sched *p_sched,
-                            struct nm_pkt_wrap *p_pw);
-
-int
-nm_so_update_global_header(struct nm_pkt_wrap *p_pw,
-                           uint8_t nb_seg,
-                           uint32_t len);
-
-int
-nm_so_add_data(struct nm_core *p_core,
-               struct nm_pkt_wrap *p_pw,
-               int proto_id, int len, int seq, void * data);
-
-int
-nm_so_search_and_extract_pw(p_tbx_slist_t list,
-                            uint8_t proto_id, uint8_t seq,
-                            struct nm_pkt_wrap **pp_pw);
-
 void
 nm_so_control_error(char *fct_name, int err);
 

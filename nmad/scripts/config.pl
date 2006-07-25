@@ -4,19 +4,26 @@
 use strict;
 use Getopt::Std;
 
+## Global variables
+
 # conditional readline use
-my $rl_mod = "Term::ReadLine";
-my $use_rl;
-my $term;
+my $rl_mod = "Term::ReadLine";	# Readline generic module name
+my $use_rl;			# defined if RL is in use
+my $rl;				# actual RL implementation
+my $term;			# RL terminal object
 
 # sets
-my %vars;
-my %groups;
-my @master_group_list;
-my @completion_matches;
-my $completion_i;
-my $completion_var_name;
-my $completion_var;
+my %vars;			# variables
+my %groups;			# groups of variables
+my @master_group_list;		# list of top level groups
+
+# RL command line completion data
+my @completion_matches;		# list of current cmpl matches
+my $completion_i;		# current cmpl match
+my $completion_var_name;	# current cmpl var name
+my $completion_var;		# current cmpl var
+
+## Routines
 
 sub varname_completion_f (){
     my($text, $state) = @_;
@@ -64,9 +71,6 @@ sub var_completion_f (){
 
     return undef;
 }
-sub eq_completion_f (){
-    return undef;
-}
 
 sub attempt_completion_f ($$$$);
 sub attempt_completion_f ($$$$) {
@@ -76,11 +80,6 @@ sub attempt_completion_f ($$$$) {
     if ($begin =~ /^\s*$/ and $text =~ /^(?:\w|_)*$/) {
         return $term->completion_matches($text,
 					 \&varname_completion_f);
-    }
-
-    if ($begin =~ /^\s*(?:\w|_)\s*$/ and $text eq '=') {
-        return $term->completion_matches($text,
-					 \&eq_completion_f);
     }
 
     if ($begin =~ /^\s*(?:\w|_)[^=]+=\s*$/) {
@@ -101,29 +100,23 @@ sub attempt_completion_f ($$$$) {
     return undef;
 }
 
-if (eval "require $rl_mod") {
-    $term	= new Term::ReadLine 'NewMad config';
-    $term->Attribs->{attempted_completion_function}	= \&attempt_completion_f;
-    $term->Attribs->{completion_append_character}	= undef;
-    $use_rl	= 1;
-} else {
-    print "warning: Perl/Readline lib not found, using regular prompt\n";
-}
-
 sub cmdline ($);
 sub cmdline ($) {
     s/\s+//g;
+
+    return 0
+        if /^$/;
 
     my ($var_name, $op, $user_value) = /^([^\=]+)(=(.+)?)?$/;
 
     unless (defined $var_name) {
         print "syntax error\n";
-        return;
+        return 0;
     }
 
     unless (exists $vars{$var_name}) {
-        print "unknown variable ${var_name}\n;";
-        return;
+        print "unknown variable ${var_name}\n";
+        return 0;
     }
 
     my $var = $vars{$var_name};
@@ -132,17 +125,24 @@ sub cmdline ($) {
         $user_value	= lc $user_value;
         print "invalid argument\n"
             unless $user_value =~ /[yn]/;
+
+        return 0
     }
 
     if (defined $user_value) {
         ${$var}{'value'}	= $user_value;
         ${$var}{'user_value'}	= $user_value;
+
+        return 1;
     } elsif (defined $op) {
         ${$var}{'value'}	= '';
         ${$var}{'user_value'}	= '';
-    } else {
-        print "$var_name: ${$vars{$var_name}}{'value'}\n";
+
+        return 1;
     }
+
+    print "$var_name: ${$vars{$var_name}}{'value'}\n";
+    return 0;
 }
 
 sub disp ($);
@@ -269,32 +269,56 @@ sub update {
     }
 }
 
-# command line processing
+## Main program
 my %opts;
-$opts{'o'} = 'options.def';
-
-getopts('o:', \%opts);
-my $opt_filename = $opts{'o'};
-
-print "using option file: ${opt_filename}\n";
-
+my $opt_filename;
+my $opt_desc;
 my $build_cfg_filename;
-if (@ARGV) {
-    $build_cfg_filename	= shift @ARGV;
-} else {
-    $build_cfg_filename	= 'build.cfg';
-}
-
-print "using build cfg file: ${build_cfg_filename}\n";
-
-# option definition file
-open my $opt_desc, $opt_filename or die "could not open ${opt_filename}: $!\n";
 
 # current group and dependency
 my $group;
 my $group_name;
 my $dep_name;
 my $dep;
+
+print "NewMadeleine configurator\n";
+print "-------------------------\n";
+
+# command line processor initialization
+if (eval "require $rl_mod") {
+    # use RL if available
+
+    $term	= new Term::ReadLine 'NewMad config';
+    $term->Attribs->{attempted_completion_function}	= \&attempt_completion_f;
+    $term->Attribs->{completion_append_character}	= '';
+
+    if (exists $term->Features->{'ornaments'}) {
+        $term->ornaments('md,me,,');
+    }
+    $use_rl	= 1;
+    $rl		= $term->ReadLine;
+
+    print "using ${rl} module for input management\n";
+} else {
+    print "warning: no Perl/Readline lib found, using regular prompt\n";
+}
+
+# command line arguments
+$opts{'o'}	= 'options.def';
+getopts('o:', \%opts);
+$opt_filename	= $opts{'o'};
+
+if (@ARGV) {
+    $build_cfg_filename	= shift @ARGV;
+} else {
+    $build_cfg_filename	= 'build.cfg';
+}
+
+print "using option file: ${opt_filename}\n";
+print "using build cfg file: ${build_cfg_filename}\n";
+
+# load option definition file
+open $opt_desc, $opt_filename or die "could not open ${opt_filename}: $!\n";
 
 line:
 while (<$opt_desc>) {
@@ -411,6 +435,7 @@ while (<$opt_desc>) {
     }
 }
 
+# load configuration file if exists
 if (-r $build_cfg_filename) {
     print "loading ${build_cfg_filename}\n";
     open my $build_cfg_desc, "$build_cfg_filename"
@@ -444,23 +469,25 @@ if (-r $build_cfg_filename) {
         or die "could not close ${build_cfg_filename}: $!\n";
 }
 
+# update variable state
 update;
 
+# command line processing
 if (defined $use_rl) {
     while ( defined ($_ = $term->readline('nm config> ')) ) {
-        cmdline $_;
-    } continue {
-        print "\n";
-        update;
+        if (cmdline $_) {
+            print "\n";
+            update;
+        }
     }
     print "\n";
 } else {
     while (<>) {
         chomp;
-        cmdline $_;
-    } continue {
-        print "\n";
-        update;
+        if (cmdline $_) {
+            print "\n";
+            update;
+        }
     }
 }
 gen_script($build_cfg_filename);

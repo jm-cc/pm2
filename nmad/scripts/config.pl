@@ -6,44 +6,143 @@ use Getopt::Std;
 
 # conditional readline use
 my $rl_mod = "Term::ReadLine";
+my $use_rl;
 my $term;
-
-if (eval "require $rl_mod") {
-    $term = new Term::ReadLine 'NewMad config';    
-} else {
-    print "warning: Perl/Readline lib not found, using regular prompt\n";
-}
 
 # sets
 my %vars;
 my %groups;
 my @master_group_list;
+my @completion_matches;
+my $completion_i;
+my $completion_var_name;
+my $completion_var;
+
+sub varname_completion_f (){
+    my($text, $state) = @_;
+
+    # print "looking for a var starting with [$text]\n";
+
+    if ($state) {
+        $completion_i++;
+    } else {
+        $completion_i = 0;
+        @completion_matches = sort keys %vars;
+    }
+
+    for (; $completion_i <= $#completion_matches; $completion_i++) {
+        if ($completion_matches[$completion_i] =~ /^\Q$text/i) {
+            return $completion_matches[$completion_i];
+        }
+    }
+
+    return undef;
+}
+
+sub var_completion_f (){
+    my($text, $state) = @_;
+
+    # print "looking for a var starting with [$text]\n";
+
+    if ($state) {
+        $completion_i++;
+    } else {
+        $completion_i = 0;
+
+        if (${$completion_var}{'type'} eq 'bool') {
+            @completion_matches = ('y', 'n');
+        } else {
+            return undef;
+        }
+    }
+
+    for (; $completion_i <= $#completion_matches; $completion_i++) {
+        if ($completion_matches[$completion_i] =~ /^\Q$text/) {
+            return $completion_matches[$completion_i];
+        }
+    }
+
+    return undef;
+}
+sub eq_completion_f (){
+    return undef;
+}
+
+sub attempt_completion_f ($$$$);
+sub attempt_completion_f ($$$$) {
+    my ($text, $line, $start, $end) = @_;
+    my $begin = substr($line, 0, $start);
+
+    if ($begin =~ /^\s*$/ and $text =~ /^(?:\w|_)*$/) {
+        return $term->completion_matches($text,
+					 \&varname_completion_f);
+    }
+
+    if ($begin =~ /^\s*(?:\w|_)\s*$/ and $text eq '=') {
+        return $term->completion_matches($text,
+					 \&eq_completion_f);
+    }
+
+    if ($begin =~ /^\s*(?:\w|_)[^=]+=\s*$/) {
+        ($completion_var_name) = ($begin =~ /^\s*(\S+)\s*=/);
+
+        return undef
+            unless defined $completion_var_name;
+
+        return undef
+            unless exists $vars{$completion_var_name};
+
+        $completion_var = $vars{$completion_var_name};
+
+        return $term->completion_matches($text,
+					 \&var_completion_f);
+    }
+
+    return undef;
+}
+
+if (eval "require $rl_mod") {
+    $term	= new Term::ReadLine 'NewMad config';
+    $term->Attribs->{attempted_completion_function}	= \&attempt_completion_f;
+    $term->Attribs->{completion_append_character}	= undef;
+    $use_rl	= 1;
+} else {
+    print "warning: Perl/Readline lib not found, using regular prompt\n";
+}
 
 sub cmdline ($);
 sub cmdline ($) {
-        s/\s+//g;
+    s/\s+//g;
 
-        my ($var_name, $op, $user_value) = /^([^\=]+)(=(.+)?)?$/;
+    my ($var_name, $op, $user_value) = /^([^\=]+)(=(.+)?)?$/;
 
-        unless (defined $var_name) {
-            print "syntax error\n";
-            return;
-        }
+    unless (defined $var_name) {
+        print "syntax error\n";
+        return;
+    }
 
-        unless (exists $vars{$var_name}) {
-            print "unknown variable ${var_name}\n;";
-            return;
-        }
+    unless (exists $vars{$var_name}) {
+        print "unknown variable ${var_name}\n;";
+        return;
+    }
 
-        if (defined $user_value) {
-            ${$vars{$var_name}}{'value'}	= $user_value;
-            ${$vars{$var_name}}{'user_value'}	= $user_value;
-        } elsif (defined $op) {
-            ${$vars{$var_name}}{'value'}	= '';
-            ${$vars{$var_name}}{'user_value'}	= '';
-        } else {
-            print "$var_name: ${$vars{$var_name}}{'value'}\n";
-        }
+    my $var = $vars{$var_name};
+
+    if (${$var}{'type'} eq 'bool') {
+        $user_value	= lc $user_value;
+        print "invalid argument\n"
+            unless $user_value =~ /[yn]/;
+    }
+
+    if (defined $user_value) {
+        ${$var}{'value'}	= $user_value;
+        ${$var}{'user_value'}	= $user_value;
+    } elsif (defined $op) {
+        ${$var}{'value'}	= '';
+        ${$var}{'user_value'}	= '';
+    } else {
+        print "$var_name: ${$vars{$var_name}}{'value'}\n";
+    }
 }
 
 sub disp ($);
@@ -164,7 +263,7 @@ sub update {
         disp $group_name;
     }
 
-    if (defined $term) {
+    if (defined $use_rl) {
         print "\n";
     } else {
         print "\n> ";
@@ -348,13 +447,14 @@ if (-r $build_cfg_filename) {
 
 update;
 
-if (defined $term) {
+if (defined $use_rl) {
     while ( defined ($_ = $term->readline('nm config> ')) ) {
         cmdline $_;
     } continue {
         print "\n";
         update;
     }
+    print "\n";
 } else {
     while (<>) {
         chomp;

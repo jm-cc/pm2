@@ -227,7 +227,6 @@ sub process ($) {
 
   set:
     for my $var (@{${$group}{'sets'}}) {
-        print "set var ${$var}{'name'}\n";
         next set
             if exists ${$var}{'user_value'};
 

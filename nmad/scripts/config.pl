@@ -123,10 +123,10 @@ sub cmdline ($) {
 
     if (${$var}{'type'} eq 'bool') {
         $user_value	= lc $user_value;
-        print "invalid argument\n"
-            unless $user_value =~ /[yn]/;
-
-        return 0
+        unless ($user_value =~ /[yn]/) {
+            print "invalid argument\n";
+            return 0;
+        }
     }
 
     if (defined $user_value) {
@@ -476,7 +476,6 @@ update;
 if (defined $use_rl) {
     while ( defined ($_ = $term->readline('nm config> ')) ) {
         if (cmdline $_) {
-            print "\n";
             update;
         }
     }
@@ -485,7 +484,6 @@ if (defined $use_rl) {
     while (<>) {
         chomp;
         if (cmdline $_) {
-            print "\n";
             update;
         }
     }

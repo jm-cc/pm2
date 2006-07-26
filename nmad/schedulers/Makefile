@@ -18,6 +18,10 @@ ifeq ($(CONFIG_SCHED_MINI_ALT), y)
 SUBDIRS	+= sched_mini_alt
 endif
 
+ifeq ($(CONFIG_SCHED_NULL), y)
+SUBDIRS	+= sched_null
+endif
+
 ifeq ($(CONFIG_SCHED_OPT), y)
 SUBDIRS	+= sched_opt
 endif

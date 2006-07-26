@@ -12,37 +12,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-SUBDIRS	:= tcp
+LIB_A		= libnmsched_null.a
 
-ifeq ($(CONFIG_QSNET), y)
-SUBDIRS	+= qsnet
-endif
-
-ifeq ($(CONFIG_MX), y)
-SUBDIRS	+= mx
-endif
-
-ifeq ($(CONFIG_GM), y)
-SUBDIRS	+= gm
-endif
-
-ifeq ($(CONFIG_SISCI), y)
-SUBDIRS	+= sisci
-endif
-
-ifeq ($(CONFIG_DISK), y)
-SUBDIRS	+= disk
-endif
-
-ifeq ($(CONFIG_DUMMY), y)
-SUBDIRS	+= dummy
-endif
-
-
-NM_PATH		:= ..
+NM_PATH		:= ../..
 MAKE_CONF	:= $(NM_PATH)/make.conf
-MAKE_TREE	:= $(NM_PATH)/make.tree
+MAKE_LIBS	:= $(NM_PATH)/make.libs
 
 include $(MAKE_CONF)
-include $(MAKE_TREE)
-
+include $(MAKE_LIBS)

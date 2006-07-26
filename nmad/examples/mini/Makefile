@@ -12,7 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-APP		:= mini
+APP		:= mini mini_disk
 
 NM_PATH		:= ../..
 MAKE_CONF	:= $(NM_PATH)/make.conf

@@ -644,7 +644,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         SAMPLE(po_send);
         err	= nm_tcp_outgoing_poll(p_pw);
         if (err < 0)
-                goto out;
+                goto out_complete;
 
 	p_tcp_gate	= p_pw->gate_priv;
         p_tcp_pw	= p_pw->drv_priv;
@@ -680,7 +680,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         if (!p_vi->v_cur_size) {
                 err	= NM_ESUCCESS;
 
-                goto out;
+                goto out_complete;
         }
 
  writev_again:
@@ -695,13 +695,13 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
 
                 perror("writev");
                 err = -NM_ESCFAILD;
-                goto out;
+                goto out_complete;
         }
 
         if (ret	== 0) {
                 NM_TRACEF("connection closed");
                 err = -NM_ECLOSED;
-                goto out;
+                goto out_complete;
         }
 
         do {
@@ -726,7 +726,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
                 if (!p_vi->v_cur_size) {
                         err	= NM_ESUCCESS;
 
-                        goto out;
+                        goto out_complete;
                 }
 
                 p_cur++;
@@ -739,6 +739,14 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
  out:
         SAMPLE(po_send_done);
         return err;
+
+ out_complete:
+        if (p_pw->drv_priv) {
+                TBX_FREE(p_pw->drv_priv);
+                p_pw->drv_priv	= NULL;
+        }
+
+        goto out;
 }
 
 /* used for post and poll */
@@ -755,7 +763,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         SAMPLE(po_recv);
         err	= nm_tcp_incoming_poll(p_pw);
         if (err < 0)
-                goto out;
+                goto out_complete;
 
         p_tcp_gate	= p_pw->gate_priv;
 
@@ -794,7 +802,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         if (!p_vi->v_cur_size) {
                 err	= NM_ESUCCESS;
 
-                goto out;
+                goto out_complete;
         }
 
  readv_again:
@@ -809,13 +817,13 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 perror("readv");
 
                 err = -NM_ESCFAILD;
-                goto out;
+                goto out_complete;
         }
 
         if (ret	== 0) {
                 NM_TRACEF("connection closed");
                 err = -NM_ECLOSED;
-                goto out;
+                goto out_complete;
         }
 
         do {
@@ -840,7 +848,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 if (!p_vi->v_cur_size) {
                         err	= NM_ESUCCESS;
 
-                        goto out;
+                        goto out_complete;
                 }
 
                 p_cur++;
@@ -853,6 +861,14 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
  out:
         SAMPLE(po_recv_done);
         return err;
+
+ out_complete:
+        if (p_pw->drv_priv) {
+                TBX_FREE(p_pw->drv_priv);
+                p_pw->drv_priv	= NULL;
+        }
+
+        goto out;
 }
 
 int

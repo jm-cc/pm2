@@ -239,16 +239,31 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define LOG(str, ...)         debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
                                            str "\n" , ## __VA_ARGS__)
+
+#ifdef __PROF_APP__
+#define LOG_IN()              do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
+					   "%s: -->\n", __TBX_FUNCTION__); \
+                              } while(0)
+
+#define LOG_OUT()             do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
+					   "%s: <--\n", __TBX_FUNCTION__); \
+                              } while(0)
+#else // __PROF_APP__
 #define LOG_IN()              do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__); \
                                    PROF_IN(); \
                               } while(0)
+
 #define LOG_OUT()             do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%s: <--\n", __TBX_FUNCTION__); \
                                    PROF_OUT(); \
                               } while(0)
+#endif // __PROF_APP__
+
 #define LOG_RETURN(val)       do { __typeof__(val) _ret=(val) ; \
                                    LOG_OUT() ;\
                                    return _ret; \
@@ -267,11 +282,16 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 					   str ": %s\n" , (char *)(str2))
 
 #else // else if not PM2DEBUG
-
-#define LOG(str, ...)      (void)(0)
+#define LOG(str, ...)      
+#ifdef __PROF_APP__
+#define LOG_IN()           (void)(0)
+#define LOG_OUT()          (void)(0)
+#define LOG_RETURN(val)    return (val)
+#else
 #define LOG_IN()           PROF_IN()
 #define LOG_OUT()          PROF_OUT()
 #define LOG_RETURN(val)    do { PROF_OUT(); return (val); } while (0)
+#endif
 #define LOG_CHAR(val)      (void)(0)
 #define LOG_VAL(str, val)  (void)(0)
 #define LOG_PTR(str, ptr)  (void)(0)

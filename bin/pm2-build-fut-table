@@ -99,8 +99,8 @@ fi
 deffile=${GENDIR}/${TYPE}_fut_entries.h
 printfile=${GENDIR}/${TYPE}_fut_print.h
 mainprintfile=${GENDIR}/main_fut_print.h
-deffile=${GENDIR}/main_fut_entries.h
-
+maindeffile=${GENDIR}/main_fut_entries.h
+fxt_file=${GENDIR}/fxt_fut_print.h
 case $TYPE in
     pm2)
 	base=$((4096 + 256)) # 0x1100
@@ -157,15 +157,17 @@ case $TYPE in
 	done
 
 	THE_MODULES="$_PM2CONFIG_PROF_MODULES"
-	case " $_PM2CONFIG_appli_KERNEL_CFLAGS " in
-	    *\ -DDO_PROFILE\ *)
-	    THE_MODULES="${THE_MODULES} examples"
-	    ;;
-	esac
 	;;
 esac
+
 case $TYPE in
     pm2)
+	touch $fxt_file;
+	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_print.h\"" > $fxt_file
+	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $fxt_file
+	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $fxt_file
+
+
 	if [ ! -f $BUILDDIR/${MODULE}/include/app_fut_print.h ]; then
 	    touch $BUILDDIR/${MODULE}/include/app_fut_print.h
 	    touch $BUILDDIR/${MODULE}/include/app_fut_entries.h
@@ -174,31 +176,25 @@ case $TYPE in
 	    touch $BUILDDIR/${MODULE}/include/pad_fut_print.h
 	    touch $BUILDDIR/${MODULE}/include/pad_fut_entries.h
 	fi
-	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_print.h\"" >> $mainprintfile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_print.h\"" >> $mainprintfile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_print.h\"" >> $mainprintfile
-
-	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_entries.h\"" >> $maindeffile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/app_fut_entries.h\"" >> $maindeffile
-	echo "#include  \"$BUILDDIR/${MODULE}/include/pad_fut_entries.h\"" >> $maindeffile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_print.h\"" > $mainprintfile
+	echo "#include  \"$BUILDDIR/${MODULE}/include/fut_entries.h\"" > $maindeffile
 	;;
 esac
 
-for mod in $THE_MODULES ; do
+case $TYPE in
+    pm2)
+	FUT_FILES=
+	for mod in $THE_MODULES ; do
+	    # Ugly!!! We should use --cppdir <mod> instead of --buildir!
+	    FUT_FILES="$FUT_FILES `find ${BUILDDIR}/$mod -name '*.fut'`"
+	done
+	;;
+    *)
+	FUT_FILES="$FUT_FILES `find ${SEARCHDIR}/ -name '*.fut'`"
+	;;
+esac
 
-    # Ugly!!! We should use --cppdir <mod> instead of --buildir!
-    case $TYPE in
-	pm2)
-	    FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
-	    ;;
-	*)
-	    FUT_FILES=`find ${SEARCHDIR}/ -name '*.fut'`
-	    ;;
-    esac
-    if [ -z "$FUT_FILES" ] ; then
-	continue
-    fi
-    for e in `cat $FUT_FILES | sort | uniq`; do
+    for e in `cat $FUT_FILES < /dev/null | sort | uniq`; do
     case $e in
         *entry_code)
 	    num=$(($value + $base))
@@ -259,7 +255,6 @@ for mod in $THE_MODULES ; do
 	    ;;
     esac
     done
-done
 echo >> $deffile
 echo "#endif" >> $deffile
 

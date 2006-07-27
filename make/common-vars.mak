@@ -161,3 +161,4 @@ endif
 endif
 
 CTAGS ?= ctags
+ETAGS ?= etags

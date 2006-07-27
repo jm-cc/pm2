@@ -386,6 +386,21 @@ void common_pre_init(int *argc, char *argv[],
 	}
     }
 #endif /* MAD2 && APPLICATION_SPAWN */
+ 
+#ifdef XPAULETTE
+  /*
+   * XPaulette IO initialization
+   * -----------------------------------------
+   *
+   * Provides:
+   * - TCP xpaul_server creation and initialization
+   *
+   * Requires:
+   * - nothing ? (to be tested)
+   */
+  fprintf(stderr, "initialisation de xpaul\n");
+  xpaul_io_init();
+#endif // XPAULETTE
 }
 
 void common_post_init(int *argc, char *argv[],
@@ -510,6 +525,22 @@ void common_post_init(int *argc, char *argv[],
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
 
+#ifdef XPAULETTE
+  /*
+   * TCP XPaul initialization
+   * --------------------------------
+   *
+   * Provides:
+   * - Create communications specialized LWP
+   *
+   * Requires:
+   * - Marcel's LWPs
+   * - Marcel's threads
+   * - Marcel's semaphores
+   */
+  xpaul_init_receiver();
+#endif /* XPAULETTE */
+  
 #ifdef NTBX
   ntbx_purge_cmd_line(argc, argv);
 #endif /* NTBX */
@@ -517,6 +548,7 @@ void common_post_init(int *argc, char *argv[],
 #ifdef TBX
   tbx_purge_cmd_line(argc, argv);
 #endif /* TBX */
+
 
 #ifdef PM2DEBUG
 /*
@@ -546,6 +578,10 @@ common_exit(common_attr_t *attr)
   pm2_net_request_end();
   pm2_net_wait_end();
 #endif // PM2
+
+#ifdef EV_SERV
+  // TODO : comms LWP finalization
+#endif // EV_SERV
 
 #if defined (MAD3) || defined (MAD4)
   //

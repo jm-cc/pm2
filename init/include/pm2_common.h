@@ -36,7 +36,9 @@ typedef struct _struct_common_attr_t common_attr_t;
 #include "tbx.h"
 #endif /* TBX */
 
-
+#ifdef XPAULETTE
+#include "xpaul.h"
+#endif /* XPAULETTE */
 /*
  * If compiler is GNU C, we rename the application 'main'
  * to the expanded value of tbx_main
@@ -60,6 +62,10 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #ifdef MAD
 #include "madeleine.h"
 #endif /* MAD */
+
+#ifdef XPAULETTE
+#include "xpaul.h"
+#endif /* XPAULETTE */
 
 #ifdef PM2
 #include "pm2.h"

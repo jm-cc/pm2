@@ -80,6 +80,9 @@ DEBUG_DECLARE(init)
 #ifdef MARCEL
 DEBUG_DECLARE(marcel)
 #endif
+#ifdef XPAULETTE
+DEBUG_DECLARE(xpaulette)
+#endif
 #ifdef MAD1
 DEBUG_DECLARE(mad1)
 #endif

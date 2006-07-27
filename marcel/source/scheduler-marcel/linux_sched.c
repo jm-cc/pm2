@@ -334,9 +334,9 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	/* minimise the chance of sending an interrupt to poll_idle() */
 	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
 
-		PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
+               PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
 		marcel_kthread_kill(lwp->pid, MARCEL_RESCHED_SIGNAL);
-	}
+	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, LWP_NUMBER(lwp));
 #endif
 out:
 	ma_preempt_enable();
@@ -548,7 +548,7 @@ repeat_lock_task:
 			if (rq && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
-					ma_resched_task(MARCEL_SELF, LWP_SELF);
+                                       ma_resched_task(MARCEL_SELF, LWP_SELF);
 			} else try_to_resched(p, h);
 			success = 1;
 		}
@@ -1751,7 +1751,12 @@ restart:
 		 * thread */
 		currently_idle = 1;
 		ma_local_bh_enable();
-		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {
+#ifdef EV_SERV
+		if (!ev_polling_is_required(EV_POLL_AT_IDLE)) {	
+		  PROF_EVENT(ev_poll_not_requiered);
+#else
+		  if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
+#endif
 			marcel_sig_pause();
 		} else {
 #ifdef MARCEL_IDLE_PAUSE
@@ -1760,7 +1765,12 @@ restart:
 				 * polling again */
 				marcel_sig_nanosleep();
 #endif
+#ifdef EV_SERV
+			PROF_EVENT(ev_poll_is_requiered);
+			__ev_check_polling(EV_POLL_AT_IDLE);
+#else
 			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+#endif
 			didpoll = 1;
 		}
 		ma_check_work();

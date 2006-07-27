@@ -40,7 +40,7 @@
 #endif
 
 #ifdef MA__LWPS
-#define MARCEL_NBMAXVPSUP	1
+#define MARCEL_NBMAXVPSUP	2
 #else
 /* don't change this */
 #define MARCEL_NBMAXVPSUP	0

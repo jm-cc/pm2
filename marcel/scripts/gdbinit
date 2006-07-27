@@ -1,3 +1,4 @@
+set environment LD_PRELOAD /usr/local/lib/lib_af_myri.so
 handle SIGUSR2 noprint nostop
 set $marcel_saved=0
 

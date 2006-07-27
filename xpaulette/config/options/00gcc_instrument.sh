@@ -1,0 +1,3 @@
+# auto generated from generic/config/options/*
+PM2_XPAULETTE_CFLAGS_KERNEL="$PM2_XPAULETTE_CFLAGS_KERNEL -finstrument-functions -DPM2_INSTRUMENT"
+PM2_XPAULETTE_MODULE_DEPEND_LIB="${PM2_XPAULETTE_MODULE_DEPEND_LIB} profile"

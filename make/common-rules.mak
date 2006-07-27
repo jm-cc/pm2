@@ -81,6 +81,7 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 #---------------------------------------------------------------------
 tags:
 	$(CTAGS) --recurse=yes --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
+	$(ETAGS) --recurse=yes --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
 
 # Annulation de la règle implicite avec SCCS (pose des problèmes avec marcel.lds)
 #---------------------------------------------------------------------

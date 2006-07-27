@@ -15,6 +15,7 @@
  */
 
 #include "marcel.h"
+#include "xpaul.h"
 #include "tbx_compiler.h"
 #include <signal.h>
 
@@ -75,6 +76,17 @@ unsigned marcel_nbthreads(void)
    unsigned num = 0;
    struct marcel_topo_level *vp;
    for_all_vp(vp)
+      num += ma_topo_vpdata(vp,nb_tasks)-1;
+   return num + 1;   /* + 1 pour le main */
+}
+
+int marcel_per_lwp_nbthreads()
+{
+   unsigned num = 0;
+   struct marcel_lwp *lwp;
+   struct marcel_topo_level *vp;
+
+   vp=GET_LWP(MARCEL_SELF)->vp_level;
       num += ma_topo_vpdata(vp,nb_tasks)-1;
    return num + 1;   /* + 1 pour le main */
 }
@@ -336,13 +348,26 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		/* let wakers now that we will shortly poll need_resched and
 		 * thus they don't need to send a kill */
 		ma_set_thread_flag(TIF_POLLING_NRFLAG);
+#ifdef XPAULETTE
+		dopoll = xpaul_polling_is_required(XPAUL_POLL_AT_IDLE);
+		if (dopoll) {
+			PROF_EVENT(xpaul_idle_does_poll);
+		        __xpaul_check_polling(XPAUL_POLL_AT_IDLE);
+		}
+#else
 		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
-		if (dopoll)
+		if (dopoll) {
+			PROF_EVENT(idle_does_poll);
 		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		}
+
+#endif
 		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
 		/* make sure people see that we won't poll it afterwards */
 		ma_smp_mb__after_clear_bit();
-		if (!ma_need_resched() || !ma_schedule()) {
+		if (!ma_need_resched() || 
+			({PROF_EVENT(idle_does_schedule); 0; })
+					|| !ma_schedule()) {
 #ifdef MARCEL_IDLE_PAUSE
 			if (dopoll)
 				marcel_sig_nanosleep();

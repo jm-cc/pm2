@@ -15,7 +15,9 @@
  */
 
 #include "marcel.h"
+#ifdef XPAULETTE
 #include "xpaul.h"
+#endif /* XPAULETTE */
 #include "tbx_compiler.h"
 #include <signal.h>
 

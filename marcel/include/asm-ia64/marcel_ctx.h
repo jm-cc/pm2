@@ -54,7 +54,18 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 
 
 #section marcel_macros
+#ifdef MA__PROVIDE_TLS \
+#define marcel_ctx_set_tls_reg(new_task) \
+  do { \
+    __asm__ __volatile__( \
+      ";; \n\t" \
+      "mov r13 = %0 \n\t" \
+      ";; \n\t" \
+        : : "r" (((char*)new_task)+sizeof(marcel_task_t)) : "r13" ); \
+  } while (0)
+#else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
+#endif
 /* marcel_create : passage père->fils */
 /* marcel_exit : déplacement de pile */
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \

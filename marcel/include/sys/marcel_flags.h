@@ -64,12 +64,12 @@
 #endif
 
 #if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) == 0)
-#  error No MARCEL_... defined. Choose between MONO SMP NUMA ACT ACTSMP and ACTNUMA
+#  error No MARCEL_... defined. Choose between MONO SMP NUMA ACT ACTSMP and ACTNUMA Marcel options in the flavor
 //#define MARCEL_MONO 1
 #endif
 
 #if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) > 1)
-#  error You must define at most one of MARCEL_MONO, MARCEL_SMP, MARCEL_NUMA, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_ACTNUMA
+#  error You must define at most one of MARCEL_MONO, MARCEL_SMP, MARCEL_NUMA, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_ACTNUMA Marcel options in the flavor
 #endif
 
 /* MA__LWPS : indique que l'on a plusieurs entités ordonnancées par

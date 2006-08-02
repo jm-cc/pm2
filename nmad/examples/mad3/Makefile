@@ -13,10 +13,8 @@
 # General Public License for more details.
 
 APP		:= mad_ping mad_mini mad_micro
-
 NM_PATH		:= ../..
-MAKE_CONF	:= $(NM_PATH)/make.conf
-MAKE_APPS	:= $(NM_PATH)/make.apps
 
-include $(MAKE_CONF)
-include $(MAKE_APPS)
+include $(NM_PATH)/Makefile
+
+#

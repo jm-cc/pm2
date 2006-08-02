@@ -12,16 +12,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-SUBDIRS	:= core
-SUBDIRS	+= drivers
-SUBDIRS	+= protocols
-SUBDIRS	+= schedulers
+ifdef NM_PATH
+        NM_MK_PREFIX	:= $(NM_PATH)/
+else
+        NM_MK_PREFIX	:= 
+endif
 
-NM_PATH		:= .
-M		:= .
-MAKE_CONF	:= $(NM_PATH)/make.conf
-MAKE_TREE	:= $(NM_PATH)/make.tree
-
-include $(MAKE_CONF)
-include $(MAKE_TREE)
+include $(NM_MK_PREFIX)make.vars
+include $(NM_MK_PREFIX)make.rules
 

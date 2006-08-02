@@ -13,25 +13,8 @@
 # General Public License for more details.
 
 APP		:= basic basic_ping
-
 NM_PATH		:= ../..
-MAKE_CONF	:= $(NM_PATH)/make.conf
-MAKE_APPS	:= $(NM_PATH)/make.apps
 
-include $(MAKE_CONF)
+include $(NM_PATH)/Makefile
 
-# examples that compile only with sched_opt
-ifeq ($(CONFIG_SCHED_OPT), y)
-APP		+= basic_multithreaded_ping basic_ping_entrelace basic_any basic_ping_any
-endif
-
-ifeq ($(CONFIG_PTHREAD), y)
-AUX_CPPFLAGS	+= 
-AUX_CFLAGS	+=
-AUX_LDFLAGS	+=
-AUX_LIBS	+= 
-LIBS	        += -lpthread
-MODULES		+= 
-endif
-
-include $(MAKE_APPS)
+#

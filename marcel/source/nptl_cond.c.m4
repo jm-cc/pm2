@@ -319,9 +319,6 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 		
 		mdebug("blocking %p (cell %p) in prefix_cond_timedwait %p\n",
 		       marcel_self(), &c, cond);
-#ifdef PM2_DEV
-#warning not managing work in cond_timedwait
-#endif
 		while(c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			prefix_lock_release(&cond->__data.__lock.__spinlock);

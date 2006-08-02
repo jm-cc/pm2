@@ -70,7 +70,7 @@ ifeq ($(CONFIG_VERBOSE), y)
 # single file application building rule
 # ----
 #
-# Note: "%:%.o" and "%:c" disables the corresponding implicit rules
+# Note: "%:%.o" and "%:%.c" disables the corresponding implicit rules
 %:	%.c
 %:	%.o
 %:	%.o $(LIBS_DEP)
@@ -114,7 +114,7 @@ else
 # single file application building rule
 # ----
 #
-# Note: "%:%.o" and "%:c" disables the corresponding implicit rules
+# Note: "%:%.o" and "%:%.c" disables the corresponding implicit rules
 %:	%.c
 %:	%.o
 %:	%.o  $(LIBS_DEP)

@@ -661,12 +661,16 @@ static void topo_discover(void) {
 
 void ma_topo_exit(void) {
 	unsigned l,i;
-	for (l=0; l<marcel_topo_nblevels; l++) {
+	/* Last level is not freed because we need it in various places */
+	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 			TBX_FREE(marcel_topo_levels[l][i].sons);
+			marcel_topo_levels[l][i].sons = NULL;
 		}
-		if (l)
+		if (l) {
 			TBX_FREE(marcel_topo_levels[l]);
+			marcel_topo_levels[l] = NULL;
+		}
 	}
 }
 

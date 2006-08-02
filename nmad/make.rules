@@ -58,7 +58,7 @@ vars:
 # - second loop is on the source dirs of each module
 # the list of .o is generated out of the .c files found in each directory
 #
-libs: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),libnm$(M).a($(patsubst %.c,%.o,$(wildcard $(D)/*.c)))))
+libs: $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(NM_PREFIX)lib$(NM_$(M)_LIB).a($(patsubst %.c,%.o,$(wildcard $(D)/*.c))))))
 
 ifeq ($(CONFIG_VERBOSE), y)
 #/////////////////////////////| Verbose version |/////////////////////////////#
@@ -99,7 +99,7 @@ ifeq ($(CONFIG_VERBOSE), y)
 clean:
 	rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
 	rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
-	rm -vf $(foreach M,$(EMODULES),libnm$(M).a)
+	rm -vf $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).a))
 	rm -vf $(APP) $(patsubst %,%.o,$(APP)) $(patsubst %,%.d,$(APP))
 
 else
@@ -144,10 +144,10 @@ else
 # cleaning rule
 # ----
 clean:
-	@rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
-	@rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
-	@rm -vf $(foreach M,$(EMODULES),libnm$(M).a)
-	@rm -vf $(APP) $(patsubst %,%.o,$(APP)) $(patsubst %,%.d,$(APP))
+	@rm -f $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
+	@rm -f $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
+	@rm -f $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).a))
+	@rm -f $(APP) $(patsubst %,%.o,$(APP)) $(patsubst %,%.d,$(APP))
 
 #/////////////////////////////////////////////////////////////////////////////#
 endif
@@ -176,12 +176,14 @@ echo_NM_PREFIX:
 # disabling of automatic intermediate file deletion
 # ----
 .SECONDARY: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
-
 .SECONDARY: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
+.SECONDARY: $(APP:%=%.d)
 
 # include the dependency files
 # ====
--include $(APP:%=%.d) $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.d))))
+ifneq ($(MAKECMDGOALS),clean)
+-include $(APP:%=%.d) $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
+endif
 
 #====================================================================
 

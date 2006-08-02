@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-.PHONY: all vars shlibs libs clean
+.PHONY: all vars shlibs libs so_deps clean
 
 # toplevel rule
 # ----
@@ -63,6 +63,11 @@ libs: $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(foreach D,$(NM_$(M)_PATH)/sr
 # main rule for building shared version of all selected libs
 # ----
 shlibs: $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).so))
+
+# example rule for replacing 'eval' if the version of Make does not support it
+# ----
+so_deps:
+	@echo -e "$(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),\n$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(NM_PREFIX)lib$(NM_$(M)_LIB).so: $(patsubst %.c,%.lo,$(wildcard $(D)/*.c))\n\t\$\$$(LD) -shared -o \$\$$@ \$\$$^)))"
 
 ifeq ($(CONFIG_VERBOSE), y)
 #/////////////////////////////| Verbose version |/////////////////////////////#

@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-.PHONY: all vars libs clean
+.PHONY: all vars shlibs libs clean
 
 # toplevel rule
 # ----
@@ -60,12 +60,30 @@ vars:
 #
 libs: $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(NM_PREFIX)lib$(NM_$(M)_LIB).a($(patsubst %.c,%.o,$(wildcard $(D)/*.c))))))
 
+# main rule for building shared version of all selected libs
+# ----
+shlibs: $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).so))
+
 ifeq ($(CONFIG_VERBOSE), y)
 #/////////////////////////////| Verbose version |/////////////////////////////#
 # library making rule
 # ----
-(%): %
+(%.o): %.o
 	$(AR) cr $@ $<
+
+# shared library making rules (generated, needs 'eval' func)
+# ----
+#
+# arg 1: module
+define SHLIB_verb_tmpl
+ifndef RULE_$(1)
+RULE_$(1):=1
+$(NM_PREFIX)lib$(NM_$(1)_LIB).so: $(foreach D,$(NM_$(1)_PATH)/src $(NM_$(1)_SRCPATH),$(patsubst %.c,%.lo,$(wildcard $(D)/*.c)))
+	$(LD) -shared -o $$@  $$^
+endif
+endef
+
+$(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_verb_tmpl,$(M)))))
 
 # single file application building rule
 # ----
@@ -86,6 +104,9 @@ ifeq ($(CONFIG_VERBOSE), y)
 %.o:	%.c %.d
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
+%.lo:	%.c %.d
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ $<
+
 # dependency generation rule
 # ----
 %.d:	%.c
@@ -97,9 +118,11 @@ ifeq ($(CONFIG_VERBOSE), y)
 # cleaning rule
 # ----
 clean:
+	rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.lo,$(wildcard $(D)/*.c))))
 	rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
 	rm -vf $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
 	rm -vf $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).a))
+	rm -vf $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).so))
 	rm -vf $(APP) $(patsubst %,%.o,$(APP)) $(patsubst %,%.d,$(APP))
 
 else
@@ -107,9 +130,24 @@ else
 
 # library making rule
 # ----
-(%): %
+(%.o): %.o
 	@echo -e "  [AR]\t  "$@ $<
 	@$(AR) cr $@ $<
+
+# shared library making rules (generated, needs 'eval' func)
+# ----
+#
+# arg 1: module
+define SHLIB_tmpl
+ifndef RULE_$(1)
+RULE_$(1):=1
+$(NM_PREFIX)lib$(NM_$(1)_LIB).so: $(foreach D,$(NM_$(1)_PATH)/src $(NM_$(1)_SRCPATH),$(patsubst %.c,%.lo,$(wildcard $(D)/*.c)))
+	@echo -e "  [LD]\t  "$$@ $$^
+	@$(LD) -shared -o $$@  $$^
+endif
+endef
+
+$(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_tmpl,$(M)))))
 
 # single file application building rule
 # ----
@@ -132,6 +170,10 @@ else
 	@echo -e "  [CC]\t  "$@
 	@$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
+%.lo:	%.c %.d
+	@echo -e "  [CC]\t  "$@
+	@$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ $<
+
 # dependency generation rule
 # ----
 %.d:	%.c
@@ -145,7 +187,9 @@ else
 # ----
 clean:
 	@rm -f $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
+	@rm -f $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.lo,$(wildcard $(D)/*.c))))
 	@rm -f $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
+	@rm -f $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).so))
 	@rm -f $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(NM_PREFIX)lib$(NM_$(M)_LIB).a))
 	@rm -f $(APP) $(patsubst %,%.o,$(APP)) $(patsubst %,%.d,$(APP))
 
@@ -176,6 +220,7 @@ echo_NM_PREFIX:
 # disabling of automatic intermediate file deletion
 # ----
 .SECONDARY: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.o,$(wildcard $(D)/*.c))))
+.SECONDARY: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.lo,$(wildcard $(D)/*.c))))
 .SECONDARY: $(foreach M,$(EMODULES),$(foreach D,$(NM_$(M)_PATH)/src $(NM_$(M)_SRCPATH),$(patsubst %.c,%.d,$(wildcard $(D)/*.c))))
 .SECONDARY: $(APP:%=%.d)
 

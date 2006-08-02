@@ -735,7 +735,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 /* TODO: add penality when crossing NUMA levels */
 static int see(struct marcel_topo_level *level, int up_power) {
 	/* have a look at work worth stealing from here */
-	ma_runqueue_t *rq = level->sched, *rq2;
+	ma_runqueue_t *rq = &level->sched, *rq2;
 	ma_holder_t *h;
 	marcel_bubble_t *b, *b2;
 	marcel_task_t *t;
@@ -868,7 +868,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 }
 static int see_down(struct marcel_topo_level *level, 
 		struct marcel_topo_level *me) {
-	ma_runqueue_t *rq = level->sched;
+	ma_runqueue_t *rq = &level->sched;
 	int power = 0;
 	int i = 0, n = level->arity;
 	if (rq) {

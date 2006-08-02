@@ -90,7 +90,7 @@ struct marcel_lwp {
 #endif
 		*vp_level;
 
-	char data[];
+	char data[MA_PER_LWP_ROOM];
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \

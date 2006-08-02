@@ -180,7 +180,7 @@ unsigned marcel_lwp_add_lwp(int num)
 
   LOG_IN();
 
-  lwp = marcel_malloc_node(sizeof(*lwp) + MA_PER_LWP_ROOM, ma_vp_node[num==-1?0:num]);
+  lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node[num==-1?0:num]);
   /* initialiser le lwp *avant* de l'enregistrer */
   *lwp = MA_LWP_INITIALIZER(lwp);
 

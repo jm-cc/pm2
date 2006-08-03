@@ -233,6 +233,7 @@ nm_mini_alt_in_schedule_data_aux(struct nm_sched		*p_sched,
         skip_match:
                 ;
 
+                NM_TRACE_PTR("adding a data pkt to expected pkt list", p_pw);
                 tbx_slist_append(pkt_list, p_pw);
 
         next_pkt:
@@ -438,6 +439,7 @@ nm_mini_alt_in_process_success_ctrl(struct nm_sched	*p_sched,
 
         /* control pkt */
         p_ctrl	= p_pw->data;
+        NM_TRACEF("control pkt - proto %d, seq %d", p_ctrl->proto_id, p_ctrl->seq);
 
 
         /* First check permissive pkts

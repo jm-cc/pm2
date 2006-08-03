@@ -47,6 +47,8 @@
 #  include <nm_gm_public.h>
 #elif defined CONFIG_QSNET
 #  include <nm_qsnet_public.h>
+#elif defined CONFIG_SISCI
+#  include <nm_sisci_public.h>
 #else
 #  include <nm_tcp_public.h>
 #endif
@@ -408,7 +410,7 @@ session_init(int    argc,
 
         if (argc) {
                 r_url	= *argv;
-                printf("running as client using remote url: [%s]\n", r_url);
+                printf("running as client using remote url: \"%s\"\n", r_url);
 
                 argc--;
                 argv++;
@@ -428,6 +430,8 @@ session_init(int    argc,
         err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
 #elif defined CONFIG_QSNET
         err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
+#elif defined CONFIG_SISCI
+        err = nm_core_driver_init(p_core, nm_sisci_load, &drv_id, &l_url);
 #else
         err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
 #endif
@@ -445,7 +449,7 @@ session_init(int    argc,
         if (!r_url) {
                 /* server
                  */
-                printf("local url: [%s]\n", l_url);
+                printf("local url: \"%s\"\n", l_url);
 
                 err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
                 if (err != NM_ESUCCESS) {

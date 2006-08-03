@@ -44,6 +44,10 @@
 #  include <nm_qsnet_public.h>
 #endif
 
+#if defined CONFIG_SISCI
+#  include <nm_sisci_public.h>
+#endif
+
 #include <nm_tcp_public.h>
 #include <nm_basic_public.h>
 #include "nm_mad3_private.h"
@@ -263,6 +267,13 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #ifdef CONFIG_QSNET
         if (tbx_streq(d->device_name, "quadrics")) {
                 err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
+                goto found;
+        }
+#endif
+
+#ifdef CONFIG_SISCI
+        if (tbx_streq(d->device_name, "sisci")) {
+                err = nm_core_driver_init(p_core, nm_sisci_load, &drv_id, &l_url);
                 goto found;
         }
 #endif

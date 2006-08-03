@@ -98,6 +98,8 @@ struct nm_sisci_trk {
 };
 
 struct nm_sisci_segment {
+        sci_desc_t		 sci_dev;
+
         sci_local_segment_t	 sci_l_seg;
         sci_map_t		 sci_l_map;
         struct nm_sisci_seg	*l_seg;
@@ -481,7 +483,7 @@ nm_sisci_close_trk		(struct nm_trk *p_trk) {
 static
 int
 nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
-                                 sci_desc_t		 sci_dev,
+                                 unsigned int		 l_seg_id,
                                  unsigned int		 r_node_id,
                                  unsigned int		 r_seg_id) {
         sci_error_t	sci_err;
@@ -502,19 +504,30 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
                 sci_map_t		 sci_l_map;
                 struct nm_sisci_seg 	*l_seg;
 
+                sci_desc_t		 sci_dev;
                 sci_remote_segment_t	 sci_r_seg;
                 sci_map_t	 	 sci_r_map;
                 sci_sequence_t		 sci_r_seq;
                 volatile struct nm_sisci_seg *r_seg;
 
+                /* open a new device */
+                SCIOpen(&sci_dev, 0, &sci_err);
+                _CHK_;
+                NM_TRACEF("SCIOpen(%d) done", i);
+
+                NM_TRACEF("preparing cnx data segment %d (id=%d)", i, l_seg_id+i);
+
                 /* create local */
-                SCICreateSegment(sci_dev, &sci_l_seg, 0,
-                                 sizeof(struct nm_sisci_cnx_seg),
+                SCICreateSegment(sci_dev, &sci_l_seg, l_seg_id+i,
+                                 sizeof(struct nm_sisci_seg),
                                  NO_CALLBACK, NO_ARG, NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCICreateSegment(%d) done", i);
+
                 /* prepare local */
                 SCIPrepareSegment(sci_l_seg, 0, NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCIPrepareSegment(%d) done", i);
 
                 /* map local */
                 l_seg	=
@@ -522,12 +535,14 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
                                    0, sizeof(struct nm_sisci_seg), NULL,
                                    NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCIMapLocalSegment(%d) done", i);
                 /* clear local */
                 memset(l_seg, 0, sizeof(struct nm_sisci_seg));
 
                 /* unlock local */
                 SCISetSegmentAvailable(sci_l_seg, 0, NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCISetSegmentAvailable(%d) done", i);
 
 
                 /* connect remote */
@@ -541,8 +556,15 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
                         sleep(1);
                         NM_TRACEF("making new attempt to connect...");
                         goto connect_again;
+                } else if (sci_err == SCI_ERR_NO_SUCH_SEGMENT) {
+                        /* sleep a bit and retry */
+                        NM_TRACEF("no such segment %d, sleeping...", r_seg_id+i);
+                        sleep(1);
+                        NM_TRACEF("making new attempt to connect...");
+                        goto connect_again;
                 }
                 _CHK_;
+                NM_TRACEF("SCIConnectSegment(%d) done", i);
 
                 /* map remote */
                 r_seg	=
@@ -550,13 +572,16 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
                                     0, sizeof(struct nm_sisci_seg), NULL,
                                     NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCIMapRemoteSegment(%d) done", i);
 
                 /* sequence remote */
                 SCICreateMapSequence(sci_r_map, &sci_r_seq, NO_FLAGS, &sci_err);
                 _CHK_;
+                NM_TRACEF("SCICreateMapSequence(%d) done", i);
 
 
                 /* fill gate struct */
+                p_sisci_cnx->seg_array[i].sci_dev	= sci_dev;
                 p_sisci_cnx->seg_array[i].sci_l_seg	= sci_l_seg;
                 p_sisci_cnx->seg_array[i].sci_l_map	= sci_l_map;
                 p_sisci_cnx->seg_array[i].l_seg    	= l_seg    ;
@@ -719,16 +744,18 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
         r_cnx_seg->flags	= 1;
         SCIStoreBarrier(sci_r_cnx_seq, NO_FLAGS);
 
+        NM_TRACEF("Waiting for a connection");
         /* ... read ... */
         while (!(volatile int)l_cnx_seg->flags)
-                ;
+                sleep(1);
 
+        NM_TRACEF("Got a connection");
         r_seg_id	= l_cnx_seg->seg_id;
         /* --- end of exchange --- */
 
 
         p_sisci_cnx	= p_sisci_gate->cnx_array + p_trk->id;
-        err = nm_sisci_cnx_setup(p_sisci_cnx, sci_dev, r_node_id, r_seg_id);
+        err = nm_sisci_cnx_setup(p_sisci_cnx, p_sisci_drv->next_seg_id, r_node_id, r_seg_id);
         if (err != NM_ESUCCESS)
                 goto out;
 
@@ -860,14 +887,17 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
         _CHK_;
         NM_TRACEF("SCISetSegmentAvailable(cnx) done");
 
+        NM_TRACEF("Waiting for a connection");
         /* ... read ... */
         while (!(volatile int)l_cnx_seg->flags)
                 sleep(1);
 
+        NM_TRACEF("Got a connection");
         r_node_id	= l_cnx_seg->node_id;
         r_seg_id	= l_cnx_seg->seg_id;
 
         NM_TRACE_VAL("sisci accept remote node id", (int)r_node_id);
+        NM_TRACE_VAL("sisci accept remote seg id", (int)r_seg_id);
 
         /* connect to the remote segment
          */
@@ -889,6 +919,7 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
                                     0, sizeof(struct nm_sisci_cnx_seg), NULL,
                                     NO_FLAGS, &sci_err);
         _CHK_;
+        NM_TRACEF("SCIMapRemoteSegment(cnx) done");
         SCICreateMapSequence(sci_r_cnx_map, &sci_r_cnx_seq, NO_FLAGS, &sci_err);
         _CHK_;
         NM_TRACEF("SCICreateMapSequence(cnx) done");
@@ -904,7 +935,7 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
 
 
         p_sisci_cnx	= p_sisci_gate->cnx_array + p_trk->id;
-        err = nm_sisci_cnx_setup(p_sisci_cnx, sci_dev, r_node_id, r_seg_id);
+        err = nm_sisci_cnx_setup(p_sisci_cnx, p_sisci_drv->next_seg_id, r_node_id, r_seg_id);
         if (err != NM_ESUCCESS)
                 goto out;
 
@@ -1026,16 +1057,12 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
          */
         p_cur	= p_pw->v + p_sisci_pw->vi.v_cur;
 
-        NM_TRACE_VAL("sisci outgoing cur size",	p_vi->v_cur_size);
-        NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
-        NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
-
         i = p_sisci_pw->next_seg;
 
  next_seg:
         if (!p_vi->v_cur_size) {
+                NM_TRACEF("no more iov entry, send complete");
                 err	= NM_ESUCCESS;
-
                 goto out;
         }
 
@@ -1044,6 +1071,7 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
         /* wait for authorization to write
          */
         if (!p_sisci_seg->l_seg->w) {
+                NM_TRACEF("waiting for W flag");
                 p_sisci_pw->next_seg	= i;
                 err = -NM_EAGAIN;
                 goto out;
@@ -1067,6 +1095,9 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_cur->iov_base	+= len;
                 p_cur->iov_len	-= len;
 
+                NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
+                NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
+
                 /* still something to send for this vector entry?
                  */
                 if (p_cur->iov_len)
@@ -1080,6 +1111,7 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                  */
                 p_vi->v_cur++;
                 p_vi->v_cur_size--;
+                NM_TRACE_VAL("sisci outgoing cur size",	p_vi->v_cur_size);
 
                 if (!p_vi->v_cur_size) {
 
@@ -1101,6 +1133,7 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
                         SCIStoreBarrier(p_sisci_seg->sci_r_seq, NO_FLAGS);
 
                         tbx_free(p_sisci_drv->sci_pw_mem, p_sisci_pw);
+                        NM_TRACEF("last iov entry sent, send complete");
                         err	= NM_ESUCCESS;
 
                         goto out;
@@ -1119,9 +1152,11 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         /* reset write flag */
         p_sisci_seg->l_seg->w	= 0;
+        NM_TRACEF("reset local W flag");
 
         /* set read flag */
         p_sisci_seg->r_seg->r	= 1;
+        NM_TRACEF("set remote R flag");
 
         /* the reverse write flag is implicitely flushed here */
         p_sisci_seg->write_flag_flushed	= 1;
@@ -1207,6 +1242,7 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
                         k = (k+1) % p_sisci_trk->next_cnx_id;
                 }
 
+                NM_TRACEF("no active cnx");
                 err = -NM_EAGAIN;
                 goto out;
 
@@ -1261,14 +1297,15 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
          */
         p_cur	= p_pw->v + p_sisci_pw->vi.v_cur;
 
-        NM_TRACE_VAL("sisci outgoing cur size",	p_vi->v_cur_size);
-        NM_TRACE_PTR("sisci outgoing cur base",	p_cur->iov_base);
-        NM_TRACE_VAL("sisci outgoing cur len",	p_cur->iov_len);
+        NM_TRACE_VAL("sisci incoming cur size",	p_vi->v_cur_size);
+        NM_TRACE_PTR("sisci incoming cur base",	p_cur->iov_base);
+        NM_TRACE_VAL("sisci incoming cur len",	p_cur->iov_len);
 
         i = p_sisci_pw->next_seg;
 
  next_seg:
         if (!p_vi->v_cur_size) {
+                NM_TRACEF("no more iov entry, recv complete");
                 err	= NM_ESUCCESS;
 
                 goto out;
@@ -1287,15 +1324,18 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
                 if (!p_sisci_seg->l_seg->r) {
                         p_sisci_pw->next_seg	= i;
+                        NM_TRACEF("waiting for R flag");
                         err = -NM_EAGAIN;
                         goto out;
                 }
         }
 
+        NM_TRACEF("got R flag");
+
         /* -=- read data -=-
          */
         seg_avail	= DATA_AREA_SIZE;
-        src		= (uint8_t*)p_sisci_seg->r_seg->d;
+        src		= (uint8_t*)p_sisci_seg->l_seg->d;
 
         do {
                 uint64_t len	= tbx_min(p_cur->iov_len, seg_avail);
@@ -1306,6 +1346,9 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
                 p_cur->iov_base	+= len;
                 p_cur->iov_len	-= len;
+
+                NM_TRACE_PTR("sisci incoming cur base",	p_cur->iov_base);
+                NM_TRACE_VAL("sisci incoming cur len",	p_cur->iov_len);
 
                 /* still something to send for this vector entry?
                  */
@@ -1321,6 +1364,8 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
                 p_vi->v_cur++;
                 p_vi->v_cur_size--;
 
+                NM_TRACE_VAL("sisci incoming cur size",	p_vi->v_cur_size);
+
                 if (!p_vi->v_cur_size) {
 
                         /* reset read flag */
@@ -1334,6 +1379,7 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
                         p_sisci_seg->write_flag_flushed	= 0;
 
                         tbx_free(p_sisci_drv->sci_pw_mem, p_sisci_pw);
+                        NM_TRACEF("last iov entry received, received complete");
                         err	= NM_ESUCCESS;
 
                         goto out;
@@ -1348,9 +1394,11 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
         /* reset read flag */
         p_sisci_seg->l_seg->r	= 0;
+        NM_TRACEF("reset local R flag");
 
         /* set write flag */
         p_sisci_seg->r_seg->w	= 1;
+        NM_TRACEF("set remote W flag");
 
         /* do not flush flags
          */

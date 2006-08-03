@@ -42,6 +42,7 @@ nm_basic_isend(struct nm_proto		 *p_proto,
         struct nm_pkt_wrap	*p_pw	= NULL;
 	int err;
 
+        NM_TRACEF("nm_basic_isend(gate_id = %u, tag_id = %u, ptr = %p, len = %llu)", gate_id, tag_id, ptr, len);
         if (tag_id > 126) {
                 err = -NM_EINVAL;
                 goto out;
@@ -97,6 +98,7 @@ nm_basic_irecv(struct nm_proto		 *p_proto,
         struct nm_pkt_wrap	*p_pw	= NULL;
 	int err;
 
+        NM_TRACEF("nm_basic_irecv(gate_id = %u, tag_id = %u, ptr = %p, len = %llu)", gate_id, tag_id, ptr, len);
         if (tag_id > 126) {
                 err = -NM_EINVAL;
                 goto out;
@@ -149,6 +151,8 @@ nm_basic_irecv_any(struct nm_proto	 *p_proto,
         struct nm_basic_rq	*p_rq	= NULL;
         struct nm_pkt_wrap	*p_pw	= NULL;
 	int err;
+
+        NM_TRACEF("nm_basic_any(tag_id = %d, ptr = %p, len = %llu)", tag_id, ptr, len);
 
         if (tag_id > 126) {
                 err = -NM_EINVAL;
@@ -209,6 +213,7 @@ nm_basic_wait(struct nm_basic_rq	 *p_rq) {
                 }
         }
 
+        NM_TRACEF("nm_basic_wait success");
         tbx_free(nm_basic_rq_mem, p_rq);
 	err = NM_ESUCCESS;
 

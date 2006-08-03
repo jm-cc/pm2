@@ -114,7 +114,7 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_verb_tmpl,$(M)))
 
 # dependency generation rule
 # ----
-%.d:	%.c
+%.d:	%.c $(BUILD_CFG)
 	set -e; rm -f $@; \
 	$(CC) -MM $(CPPFLAGS) $< | \
 	sed 's,:,: $(MAKE_CONF) $(BUILD_CFG),' | \
@@ -181,7 +181,7 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_tmpl,$(M)))))
 
 # dependency generation rule
 # ----
-%.d:	%.c
+%.d:	%.c $(BUILD_CFG)
 	@echo -e "  [DEP]\t  "$@
 	@set -e; rm -f $@; \
 	$(CC) -MM $(CPPFLAGS) $< | \

@@ -33,8 +33,10 @@ void marcel_slot_exit(void);
 #section marcel_macros
 #ifdef MA__PROVIDE_TLS
 #  define marcel_tls_slot_alloc() ma_obj_alloc(marcel_tls_slot_allocator)
+#  define marcel_tls_slot_free(addr) ma_obj_free(marcel_tls_slot_allocator, addr)
 #else
 #  define marcel_tls_slot_alloc() marcel_slot_alloc()
+#  define marcel_tls_slot_free(addr) marcel_slot_free(addr)
 #endif
 #define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
 #define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)

@@ -88,17 +88,6 @@ static volatile unsigned __active_threads,
   __frozen_threads;
 
 
-#ifndef DO_NOT_CHAIN_BLOCKED_THREADS
-static LIST_HEAD(__waiting_tasks);
-#endif
-static LIST_HEAD(__delayed_tasks);
-
-/* These two locks must be acquired before accessing the corresponding
-   global queue.  They should only encapsulate *non-blocking* code
-   sections. */
-//static marcel_lock_t __delayed_lock = MARCEL_LOCK_INIT;
-//static marcel_lock_t __blocking_lock = MARCEL_LOCK_INIT;
-
 static unsigned next_schedpolicy_available = __MARCEL_SCHED_AVAILABLE;
 marcel_schedpolicy_func_t ma_user_policy[MARCEL_MAX_USER_SCHED];
 void marcel_schedpolicy_create(int *policy,

@@ -1,0 +1,20 @@
+sigpending : bizarre avec le read
+sigmain : usleep erreur ma_schedule_timeout : un main peut-il dormir ?
+
+
+questions : read ? usleep et pause dans main ?
+
+les sigactions fonctionnent.
+signal : test fonctionnel
+sigwait : fonctionnel
+sigpause : fonctionnel
+sigraise1 : fonctionnel
+sigraise2 : fonctionnel meme 10000 fois, sort du traitant meme nodefer
+sigsuspend : fonctionnel, les signaux sont bien masqués
+sigthread : fonctionnel
+sigtrombe1 : fonctionnel mais ne reçoit pas USR2
+sigtrombe2 : fonctionnel mais ne recoit pas USR2
+sigtrombe3 : fonctionnel mais main reprend la main et termine avant de traiter
+sigusleep : fonctionnel, ne reçoit pas USR2
+sigsleep : fonctionnel
+siglongjump : fonctionnel

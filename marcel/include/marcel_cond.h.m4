@@ -74,7 +74,6 @@ typedef union
 
 #section functions
 #include <time.h>
-#depend "marcel_alias.h[macros]"
 #depend "marcel_mutex.h[types]"
 
 REPLICATE([[dnl

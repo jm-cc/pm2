@@ -86,6 +86,10 @@ registering_flavors() {
 	--modules="ezflavor" $COMMON_OPTIONS \
 	--ezflavor=gtk2
 
+    register_flavor pmarcel \
+	--modules="marcel tbx init stackalign" --all=opt --all=build_static \
+	--marcel=numa --marcel=marcel_main --marcel=pmarcel
+
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
 	--marcel=mono --marcel=main_as_func \

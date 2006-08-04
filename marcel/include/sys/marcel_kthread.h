@@ -19,7 +19,6 @@
 typedef void * (*marcel_kthread_func_t)(void *arg);
 
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
-#   include <pthread.h>
 #   include <semaphore.h>
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;

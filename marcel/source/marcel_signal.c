@@ -20,11 +20,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-
-// TODO: mettre des LOG_IN / LOG_OUT plutôt (on le fait afficher avec --debug:marcel-log)
-// et mettre des PROF_EVENT(bidule) / PROF_EVENT1(bidule, val) / PROF_EVENT2(bidule, val1, val2)
-
-
 /*********************MA__DEBUG******************************/
 #define MA__DEBUG
 /*********************variables globales*********************/
@@ -36,16 +31,18 @@ static marcel_sigset_t gsigpending;
 static ma_spinlock_t gsiglock = MA_SPIN_LOCK_UNLOCKED;
 static ma_twblocked_t *list_wthreads;
 
+int marcel_deliver_sig(void);
+
 /*********************pause**********************************/
 DEF_MARCEL_POSIX(int,pause,(void),(),
 {
-   LOG_IN();
+  LOG_IN();
    PROF_EVENT(pause);
    marcel_sigset_t set;
    marcel_sigemptyset(&set);
    marcel_sigmask(SIG_BLOCK,NULL,&set);
-   return marcel_sigsuspend(&set);
    LOG_OUT();
+	return marcel_sigsuspend(&set);
 })
 
 DEF_C(int,pause,(void),())
@@ -59,16 +56,16 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
    marcel_t t;
    int sig;
    int deliver;
-
+   
    ma_spin_lock_softirq(&gsiglock);
    for (sig = 1; sig < MARCEL_NSIG;sig++)
    {
-      if (ksigpending[sig] == 1)
-      {
-         marcel_sigaddset(&gsigpending,sig); 
-         ksigpending[sig] = 0;
+   if (ksigpending[sig] == 1)
+      { 
+            marcel_sigaddset(&gsigpending,sig); 
+            ksigpending[sig] = 0;
       }
-   }
+   }  
 
    PROF_EVENT(sigtransfer);
 
@@ -83,8 +80,8 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
          ma_spin_lock_softirq(&t->siglock);
          deliver = 0;
          for(sig = 1; sig < MARCEL_NSIG ; sig++)
-	 {
-	    if (marcel_sigomnislash(&t->curmask,&gsigpending,&t->sigpending,sig))
+	      {
+            if (marcel_sigomnislash(&t->curmask,&gsigpending,&t->sigpending,sig))//&(!1,2,!3)
             {
                marcel_sigaddset(&t->sigpending,sig);
                marcel_sigdelset(&gsigpending,sig);
@@ -92,8 +89,8 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
             }
          }
          if (deliver)
-	    marcel_deviate(t,(handler_func_t)marcel_deliver_sig,NULL);
-	 ma_spin_unlock_softirq(&t->siglock);
+	         marcel_deviate(t,(handler_func_t)marcel_deliver_sig,NULL);
+         ma_spin_unlock_softirq(&t->siglock);
          if (marcel_sigisemptyset(&gsigpending))
             break;
       }
@@ -112,7 +109,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 DEF_MARCEL_POSIX(int, raise, (int sig), (sig),
 {
    LOG_IN();
- #ifdef MA__DEBUG
+#ifdef MA__DEBUG
    if ((sig < 0) || (sig >= MARCEL_NSIG))
    {
       errno = EINVAL;
@@ -120,7 +117,8 @@ DEF_MARCEL_POSIX(int, raise, (int sig), (sig),
    }
 #endif
    PROF_EVENT1(raise, sig);
-   ksigpending[sig] = 1;
+   if (!marcel_distribwait_sigext(sig))
+      ksigpending[sig] = 1;
    ma_raise_softirq(MA_SIGNAL_SOFTIRQ);
    
    LOG_OUT();
@@ -135,15 +133,18 @@ DEF___C(int,raise,(int sig),(sig))
 static void marcel_pidkill(int sig)
 {
    LOG_IN();
+
    if ((sig < 0) || (sig >= MARCEL_NSIG))
      return;
    ma_irq_enter();
 #ifdef MA__DEBUG
-   fprintf(stderr,"** external signal %d\n",sig);
+	fprintf(stderr,"marcel_pidkill --> external signal %d !!\n",sig);
 #endif
-   PROF_EVENT(pidkill);
-
-   ksigpending[sig] = 1;
+   PROF_EVENT1(pidkill,sig);
+   if (!marcel_distribwait_sigext(sig))
+   {
+      ksigpending[sig] = 1;  
+   }
    ma_raise_softirq_from_hardirq(MA_SIGNAL_SOFTIRQ);
    ma_irq_exit();
    /* TODO: check preempt */
@@ -165,13 +166,15 @@ DEF_MARCEL_POSIX(int, kill, (marcel_t thread, int sig), (thread,sig),
    }
 #endif
 
-   PROF_EVENT(kill);
+   PROF_EVENT2(kill,thread,sig);
 
-   ma_spin_lock_softirq(&thread->siglock);
-   marcel_sigaddset(&thread->sigpending,sig);
-   ma_spin_unlock_softirq(&thread->siglock);
-   marcel_deviate(thread,(handler_func_t)marcel_deliver_sig,NULL);
- 
+   if (!marcel_distribwait_thread(sig,thread))
+   {
+      ma_spin_lock_softirq(&thread->siglock);
+		marcel_sigaddset(&thread->sigpending,sig);
+      ma_spin_unlock_softirq(&thread->siglock);
+      marcel_deviate(thread,(handler_func_t)marcel_deliver_sig,NULL);
+   }
    LOG_OUT();
    return 0;
 })
@@ -200,15 +203,14 @@ restart:
    for (sig = 1; sig < MARCEL_NSIG ; sig++)
       if ((marcel_signandismember(&cthread->sigpending,&cthread->curmask,sig)))
       {
-         fprintf(stderr,"for : if : signal %d \n",sig);
-	 marcel_sigdelset(&cthread->sigpending, sig);
+	      marcel_sigdelset(&cthread->sigpending, sig);
          ma_spin_unlock_softirq(&cthread->siglock);   
          ma_set_current_state(MA_TASK_RUNNING);
          marcel_call_function(sig);
          goto restart;
       }
 
-   PROF_EVENT(sigmask);
+   PROF_EVENT1(sigmask,how);
 
    /*********modifs des masques******/
    if (oset != NULL) 
@@ -225,11 +227,13 @@ restart:
    if (how == SIG_BLOCK)
       marcel_sigorset(&cset,&cset,set);
    else if (how == SIG_SETMASK)
-     cset = *set;
-   else if (how == SIG_UNBLOCK)
+	   cset = *set;
+	else if (how == SIG_UNBLOCK)
+   {
       for(sig=1 ; sig < MARCEL_NSIG ; sig++)
          if (marcel_sigismember(set,sig))
             marcel_sigdelset(&cset,sig);
+   }
    else fprintf(stderr,"pas de how\n");
 
    /* SIGKILL et SIGSTOP ne doivent pas être masqués */
@@ -238,21 +242,15 @@ restart:
    if (marcel_sigismember(&cset,SIGSTOP))
       marcel_sigdelset(&cset,SIGSTOP);
 
-   /* si on le masque est le meme, on retourne */
-   if (marcel_sigequalset(&cset,set))
-   {
-      ma_spin_unlock_softirq(&cthread->siglock);
-      LOG_OUT();
-      return 0;
-   }
+	/* si le nouveau masque est le meme que le masque courant, on retourne */
+   if (marcel_sigequalset(&cset,&cthread->curmask))
+      {
+         ma_spin_unlock_softirq(&cthread->siglock);
+         LOG_OUT();
+         return 0;
+      }
 
    cthread->curmask = cset;
-
-#ifdef MA__DEBUG
-   for(sig=1 ; sig < MARCEL_NSIG ; sig++)
-      if (marcel_sigismember(&cthread->curmask,sig))
-         fprintf(stderr,"** signal numero %d maintenant bloque\n",sig);
-#endif
 
    /***************traitement des signaux************/
    if (!marcel_signandisempty(&gsigpending,&cset))
@@ -271,19 +269,19 @@ restart:
          }
       ma_spin_unlock_softirq(&gsiglock);
    }
+   
    while (!marcel_signandisempty(&cthread->sigpending,&cset))
    {
-      ma_spin_unlock_softirq(&cthread->siglock);
-      for (sig = 1; sig < MARCEL_NSIG; sig++)
       {
          if (marcel_signandismember(&cthread->sigpending,&cset,sig))
          {    
 	    marcel_sigdelset(&cthread->sigpending, sig);
+            ma_spin_unlock_softirq(&cthread->siglock);
             ma_set_current_state(MA_TASK_RUNNING);
             marcel_call_function(sig);
+            ma_spin_lock_softirq(&cthread->siglock);
          }
       }
-      ma_spin_lock_softirq(&cthread->siglock);
    }
    ma_spin_unlock_softirq(&cthread->siglock);
    
@@ -387,18 +385,20 @@ DEF___LIBC(int,sigpending,(sigset_t *set),(set))
 /******************************sigwait*****************************/
 DEF_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__restrict sig), (set,sig),
 {
+
    LOG_IN();
 
    int signo;
-   marcel_t cthread;
-   cthread = marcel_self();  
-   
+   marcel_t cthread = marcel_self();  
+
+   //fprintf(stderr,"thread %p entre dans le sigwait\n",cthread);
+
 #ifdef MA__DEBUG
    if ((set == NULL)||(sig == NULL))
       return EINVAL;
 #endif
 
-   PROF_EVENT(sigwait);
+   PROF_EVENT1(sigwait,sig);
 
    ma_spin_lock_softirq(&gsiglock);
    ma_spin_lock_softirq(&cthread->siglock);
@@ -417,14 +417,40 @@ DEF_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__re
             return 0;
          }
    
+   /* ajout d'un thread en attente d'un signal en début de liste */ 
+   ma_twblocked_t wthread;
+   wthread.t = cthread;
+   marcel_sigemptyset(&wthread.waitset);
+   marcel_sigorset(&wthread.waitset,&wthread.waitset,set);
+   wthread.waitsig = sig;
+   wthread.next_twblocked = list_wthreads;
+   list_wthreads = &wthread;
+
+   /* pour le thread lui-meme */
+   marcel_sigemptyset(&cthread->waitset);
+   marcel_sigorset(&cthread->waitset,&cthread->waitset,set);
+   cthread->waitsig = sig;
+   
+   *sig = -1;
+
+waiting:
+   /* puis on attend */
    ma_set_current_state(MA_TASK_INTERRUPTIBLE);  
    ma_spin_unlock_softirq(&gsiglock);
    ma_spin_unlock_softirq(&cthread->siglock);     
+ 
    ma_schedule();     
+   if(*sig == -1)
+  	{
+      ma_spin_lock_softirq(&gsiglock);
+      ma_spin_lock_softirq(&cthread->siglock);     
+      goto waiting; 
+   }
    signo = 0;
 
    LOG_OUT();
-   return 0;
+
+	return 0;
 })
 
 #ifdef MA__LIBPTHREAD
@@ -443,15 +469,16 @@ int lpt_sigwait(const sigset_t *__restrict set,int *__restrict sig)
 
 DEF_LIBC(int, sigwait, (const sigset_t *__restrict set, int *__restrict sig),(set,sig))
 DEF___LIBC(int, sigwait, (const sigset_t *__restrict set, int *__restrict sig),(set,sig))
-
 /************************distrib****************************/
-int marcel_distrib_sigext(int sig)
+int marcel_distribwait_sigext(int sig)
 {
-   fprintf(stderr,"* marcel_distrib_sigext\n");
+   LOG_IN();
    ma_spin_lock_softirq(&gsiglock);
 
    ma_twblocked_t *wthread = list_wthreads;
    ma_twblocked_t *prec_wthread = NULL;
+
+   PROF_EVENT1(marcel_distribwait_sigext,sig);   
    
    for (wthread = list_wthreads, prec_wthread = NULL; 
 		   wthread != NULL;
@@ -459,34 +486,60 @@ int marcel_distrib_sigext(int sig)
       if (marcel_sigismember(&wthread->waitset,sig))
       {
          *wthread->waitsig = sig;
-         prec_wthread->next_twblocked = wthread->next_twblocked;
-	 ma_wake_up_state(wthread->t, MA_TASK_INTERRUPTIBLE);
+         if (prec_wthread != NULL)
+         {
+			   prec_wthread->next_twblocked = wthread->next_twblocked;
+         }
+         else /*prec_wthread == NULL */
+			{
+   		   list_wthreads = wthread->next_twblocked;
+			}
+	      ma_wake_up_state(wthread->t, MA_TASK_INTERRUPTIBLE);
          ma_spin_unlock_softirq(&gsiglock);
          return 1;
       }  
    }
    ma_spin_unlock_softirq(&gsiglock);
-   fprintf(stderr,"** pas de thread en attente\n");
    
+   LOG_OUT();
+
    return 0;
 }
 
-int marcel_distrib_thread(int sig,marcel_t thread)
+int marcel_distribwait_thread(int sig,marcel_t thread)
 {
+   LOG_IN();
    int ret = 0;
-   fprintf(stderr,"* marcel_distrib_thread : %p\n",thread);  
    ma_spin_lock_softirq(&thread->siglock);
+
+   PROF_EVENT2(marcel_distribwait_thread,sig,thread);
 
    if (marcel_sigismember(&thread->waitset,sig))
    {
       *thread->waitsig = sig;
       marcel_sigemptyset(&thread->waitset);
-      fprintf(stderr,"** sig sigwait delivre : %d\n",sig);
       ma_wake_up_state(thread, MA_TASK_INTERRUPTIBLE);
-      ret = 1;
+      ret = 1; 
+   
+      /* il faut enlever le thread en fin d'attente de la liste */   
+      ma_twblocked_t *wthread = list_wthreads;
+      ma_twblocked_t *prec_wthread = NULL;
+      
+      while (thread != wthread->t)
+		{
+		   prec_wthread = wthread;
+         wthread = wthread->next_twblocked;
+		}
+      if (prec_wthread == NULL)
+ 		   list_wthreads = wthread->next_twblocked;
+      else 
+		  prec_wthread->next_twblocked = wthread->next_twblocked;
+
    }
    ma_spin_unlock_softirq(&thread->siglock);
   
+   LOG_OUT();
+
    return ret;
 }
 
@@ -495,20 +548,18 @@ DEF_MARCEL_POSIX(int,sigsuspend,(const marcel_sigset_t *sigmask),(sigmask),
 {
    LOG_IN();
 
-   marcel_t cthread;   
-   cthread = marcel_self();
    marcel_sigset_t oldmask;
 
    PROF_EVENT(sigsuspend);
+   
    /* dormir avant de changer le masque */
    ma_set_current_state(MA_TASK_INTERRUPTIBLE);
    marcel_sigmask(SIG_SETMASK,sigmask,&oldmask);
    ma_schedule();
-
    marcel_sigmask(SIG_SETMASK,&oldmask,NULL);
- 
    errno = EINTR;
    LOG_OUT();
+
    return -1;
 })
 
@@ -521,7 +572,7 @@ int lpt_sigsuspend(const sigset_t *sigmask)
    for (signo = 1;signo < MARCEL_NSIG; signo ++)
      if (sigismember(sigmask,signo))
         marcel_sigaddset(&marcel_set,signo);
-   
+
    return marcel_sigsuspend(&marcel_set);
 }
 #endif
@@ -532,13 +583,14 @@ DEF___LIBC(int,sigsuspend,(const sigset_t *sigmask),(sigmask));
 /***********************sigjmps******************************/
 #ifdef MA__LIBPTHREAD
 #if LINUX_SYS
-DEF_MARCEL_POSIX(int, sigsetjmp, (sigjmp_buf env, int savemask), (env,savemask),
+int ma_savesigs (sigjmp_buf env, int savemask)
 {
    LOG_IN();
 
-   marcel_t cthread;   
-   cthread = marcel_self();
-   int valjmp;
+   marcel_t cthread = marcel_self();
+   
+	fprintf(stderr,"thread %p entre dans ma_savesigs\n",cthread);
+ 
 #ifdef MA__DEBUG
    if (env == NULL)
    {
@@ -548,7 +600,7 @@ DEF_MARCEL_POSIX(int, sigsetjmp, (sigjmp_buf env, int savemask), (env,savemask),
 #endif
    env->__mask_was_saved = savemask;
  
-   PROF_EVENT(sigsetjmp);
+   PROF_EVENT(ma_savesigs);
   
    if (savemask != 0)
    {
@@ -557,31 +609,42 @@ DEF_MARCEL_POSIX(int, sigsetjmp, (sigjmp_buf env, int savemask), (env,savemask),
       lpt_sigmask(SIG_BLOCK, &set, &env->__saved_mask);
    }
    
-   valjmp = setjmp(env->__jmpbuf);
-
-   if (valjmp && env->__mask_was_saved)
-      lpt_sigmask(SIG_SETMASK, &env->__saved_mask, NULL);
-
    LOG_OUT();
-   return valjmp;
-})
 
-//la glibc ne fournit pas sigsetjmp, seulement __sigsetjmp
-//DEF_C(int, sigsetjmp,(sigjmp_buf env, int savemask),(env,savemask))
-DEF___C(int, sigsetjmp,(sigjmp_buf env, int savemask),(env,savemask))
+	//fprintf(stderr,"thread %p sort du ma_savesigs\n",marcel_self());
+	
+   return 0;
+}
 
 DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 {
    LOG_IN();
 
-   marcel_t cthread;   
-   cthread = marcel_self();
+   marcel_t cthread = marcel_self();
+
+   //fprintf(stderr,"thread %p entre dans marcel_siglongjump\n",cthread);
+
 #ifdef MA__DEBUG
    if (env == NULL)
       errno = EINVAL;
 #endif
 
    PROF_EVENT(siglongjmp);
+
+	//fprintf(stderr,"thread %p change de masque dans marcel_siglongjump\n",cthread);
+
+   if (env->__mask_was_saved)
+      lpt_sigmask(SIG_SETMASK, &env->__saved_mask, NULL);
+
+   if (cthread->delivering_sig)
+   { 
+      cthread->delivering_sig = 0;
+      marcel_deliver_sig();
+   }
+
+	// TODO: vérifier qu'on longjumpe bien dans le même thread !!
+
+	//fprintf(stderr,"thread %p sort du marcel_siglongjump\n",cthread);
 
    longjmp(env->__jmpbuf,val);
 
@@ -608,7 +671,7 @@ DEF_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handle
       return SIG_ERR;
    }
 
-   PROF_EVENT(signal);
+   PROF_EVENT2(signal,sig,handler);
    
    act.marcel_sa_handler = handler;
    marcel_sigemptyset(&act.marcel_sa_mask);
@@ -639,12 +702,19 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
       return -1;
    } 
 #endif
+   if ((sig == MARCEL_TIMER_SIGNAL)||(sig == MARCEL_RESCHED_SIGNAL))
+   {
+      fprintf(stderr,"!! signal %d not supported\n",sig);
+      errno = ENOTSUP;
+      return -1;
+   }
+
    ma_read_lock(&rwlock);
    if (oact != NULL) 
       *oact = csigaction[sig];
    ma_read_unlock(&rwlock);
 
-   PROF_EVENT(sigaction);
+   PROF_EVENT1(sigaction,sig);
 
    if (!act) 
    {
@@ -706,29 +776,31 @@ int lpt_sigaction(int sig, const struct sigaction *act,
    struct marcel_sigaction marcel_oact;
    
    /* changement de structure act en marcel_act */
-   marcel_act.marcel_sa_handler = act->sa_handler;
-   marcel_act.marcel_sa_flags = act->sa_flags;
-   marcel_act.marcel_sa_sigaction = act->sa_sigaction;  
-   /* a cause du passage de sigset_t a marcel_sigset_t */
-   marcel_sigemptyset(&marcel_act.marcel_sa_mask);
-   for (signo = 1;signo < MARCEL_NSIG; signo ++)
-     if (sigismember(&act->sa_mask,signo))
-        marcel_sigaddset(&marcel_act.marcel_sa_mask,signo);
+   if (act) {
+      marcel_act.marcel_sa_handler = act->sa_handler;
+      marcel_act.marcel_sa_flags = act->sa_flags;
+      marcel_act.marcel_sa_sigaction = act->sa_sigaction;  
+      /* a cause du passage de sigset_t a marcel_sigset_t */
+      marcel_sigemptyset(&marcel_act.marcel_sa_mask);
+      for (signo = 1;signo < MARCEL_NSIG; signo ++)
+        if (sigismember(&act->sa_mask,signo))
+           marcel_sigaddset(&marcel_act.marcel_sa_mask,signo);
+   }
    
    /* appel de marcel_sigaction */
-   ret = marcel_sigaction(sig,&marcel_act,&marcel_oact);
+   ret = marcel_sigaction(sig,act?&marcel_act:NULL,oact?&marcel_oact:NULL);
    
    /* on rechange tout a l'envers */
    if (oact) {
       oact->sa_handler = marcel_oact.marcel_sa_handler; 
       oact->sa_flags = marcel_oact.marcel_sa_flags; 
       oact->sa_sigaction = marcel_oact.marcel_sa_sigaction; 
+      for (signo = 1;signo < MARCEL_NSIG; signo ++)
+        if (marcel_sigismember(&marcel_oact.marcel_sa_mask,signo))
+           sigaddset(&oact->sa_mask,signo);
+  
    }
    
-   for (signo = 1;signo < MARCEL_NSIG; signo ++)
-     if (marcel_sigismember(&marcel_oact.marcel_sa_mask,signo))
-        sigaddset(&oact->sa_mask,signo);
-  
    return ret;
 }
 #endif
@@ -742,16 +814,14 @@ DEF___LIBC(int,sigaction,(int sig, const struct sigaction *act,
 int marcel_deliver_sig(void)
 {
    LOG_IN();
-   
+
    int sig;
-   int ret;
    marcel_t cthread = marcel_self();
 
    PROF_EVENT(deliver_sig);
 
    ma_spin_lock_softirq(&cthread->siglock);
-deliver:
-   if (cthread->delivering_sig == 1) 
+   if (cthread->delivering_sig)//== 1 
    {
       cthread->restart_deliver_sig = 1;
       ma_spin_unlock_softirq(&cthread->siglock);
@@ -764,35 +834,28 @@ deliver:
       cthread->delivering_sig = 1;      
       cthread->restart_deliver_sig = 0;
    }
+deliver:
    ma_spin_unlock_softirq(&cthread->siglock);
 
    cthread = marcel_self();
 
    ma_spin_lock_softirq(&cthread->siglock);
    for (sig = 1 ; sig < MARCEL_NSIG ; sig++)
-      if (marcel_sigismember(&cthread->sigpending,sig) == 1)
+     if (marcel_sigismember(&cthread->sigpending,sig))//== 1
       {
-         ret = marcel_sigismember(&cthread->curmask,sig);
-         
-#ifdef MA__DEBUG
-         if (ret == 1)
-               fprintf(stderr,"** signal numero %d dans mask -> on ne peut pas encore le delivrer\n",sig);
-#endif
-         if (ret == 0)
+         if (!marcel_sigismember(&cthread->curmask,sig))
          {
             /* signal non bloqué */
-#ifdef MA__DEBUG
-            fprintf(stderr,"** signal numero %d non dans mask -> on peut le delivrer\n",sig);
-#endif
-	    marcel_sigdelset(&cthread->sigpending,sig);
-	    ma_spin_unlock_softirq(&cthread->siglock);
+
+	         marcel_sigdelset(&cthread->sigpending,sig);
+  	         ma_spin_unlock_softirq(&cthread->siglock);
             ma_set_current_state(MA_TASK_RUNNING);
             marcel_call_function(sig);
             ma_spin_lock_softirq(&cthread->siglock);
          }
       }
    /* on regarde s'il reste des signaux à délivrer */
-   if (cthread->restart_deliver_sig == 1)
+   if (cthread->restart_deliver_sig)// == 1
    {
       cthread->restart_deliver_sig = 0;
       goto deliver;
@@ -801,7 +864,8 @@ deliver:
    ma_spin_unlock_softirq(&cthread->siglock);
 
    LOG_OUT();
-   return 0;     
+
+	return 0;     
 }
 
 /*************************marcel_call_function******************/
@@ -821,13 +885,13 @@ int marcel_call_function(int sig)
    cact = csigaction[sig];
    ma_read_unlock(&rwlock);   
 
-   PROF_EVENT(call_function);
+   PROF_EVENT1(call_function,sig);
   
    /* le signal courant doit etre masqué sauf avec SA_NODEFER */
-   if ((cact.marcel_sa_flags & SA_NODEFER) == 0)
+   if (!(cact.marcel_sa_flags & SA_NODEFER))//==0
       marcel_sigaddset(&cact.marcel_sa_mask,sig);   
-    
-   if (cact.marcel_sa_handler == SIG_IGN)
+
+	if (cact.marcel_sa_handler == SIG_IGN)
    {
       LOG_OUT();
       return 0;
@@ -844,13 +908,14 @@ int marcel_call_function(int sig)
    marcel_sigset_t oldmask;
    marcel_sigmask(SIG_BLOCK,&cact.marcel_sa_mask,&oldmask);
 
-   if (!(cact.marcel_sa_flags & SA_RESTART))
+	if (!(cact.marcel_sa_flags & SA_RESTART))
       SELF_GETMEM(interrupted) = 1;
 
    if (!(cact.marcel_sa_flags & SA_SIGINFO))
    {
       /* appel de la fonction */
       cact.marcel_sa_handler(sig); 
+      /* voir si SIGINT reprend bien son comportement par defaut ds la norme */
    }
    else if((cact.marcel_sa_flags & SA_SIGINFO))
    {
@@ -871,5 +936,20 @@ int marcel_call_function(int sig)
 /*******************ma_signals_init***********************/
 __marcel_init void ma_signals_init(void)
 {
-    ma_open_softirq(MA_SIGNAL_SOFTIRQ, marcel_sigtransfer, NULL);
+   LOG_IN(); 
+   ma_open_softirq(MA_SIGNAL_SOFTIRQ, marcel_sigtransfer, NULL);
+   LOG_OUT();
+}
+
+/***************testset*********/
+void testset(marcel_sigset_t * set,char *what)
+{
+   int i;
+   fprintf(stderr,"signaux du set %s : ",what);
+   for (i=1;i<MARCEL_NSIG;i++)
+	   if (marcel_sigismember(set,i))
+		   fprintf(stderr,"1");
+      else
+         fprintf(stderr,"0");
+	fprintf(stderr,"\n");
 }

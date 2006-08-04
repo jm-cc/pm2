@@ -133,14 +133,24 @@ typedef union
 /* POSIX spinlock data type.  */
 typedef volatile int lpt_spinlock_t;
 
-
-/* POSIX barriers data type.  The structure of the type is
-   deliberately not exposed.  */
+/* POSIX barriers data type. */
+  struct lpt_barrier
+  {
+    unsigned int curr_event;
+    int lock;
+    unsigned int left;
+    unsigned int init_count;
+  };
 typedef union
 {
   char __size[__SIZEOF_LPT_BARRIER_T];
   long int __align;
 } lpt_barrier_t;
+
+  struct lpt_barrierattr
+  {
+    int pshared;
+  };
 
 typedef union
 {

@@ -48,8 +48,8 @@ DEF_MARCEL_POSIX(int, spin_destroy,(marcel_spinlock_t *lock),(lock),
    return 0;
 })
 
-DEF_PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
-DEF___PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF_PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock),(lock));
+DEF___PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock),(lock));
 
 
 DEF_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock),(lock),
@@ -58,8 +58,8 @@ DEF_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock),(lock),
    return 0;
 })
 
-DEF_PTHREAD(int, spin_lock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
-DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF_PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
+DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
 
 
 DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
@@ -69,8 +69,8 @@ DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
    return 0;
 })
 
-DEF_PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
-DEF___PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF_PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock),(lock,pshared));
+DEF___PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock),(lock,pshared));
 
 
 DEF_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock),(lock),
@@ -79,5 +79,5 @@ DEF_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock),(lock),
    return 0;
 })
 
-DEF_PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
-DEF___PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
+DEF_PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock),(lock));
+DEF___PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock),(lock));

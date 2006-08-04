@@ -172,6 +172,9 @@ struct marcel_task {
       int cancelstate;
       int canceltype;
 
+#ifdef MA__PROVIDE_TLS
+      char tls[MA_TLS_AREA_SIZE];
+#endif
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; // Doit rester le _dernier_ champ
 #endif
@@ -217,7 +220,7 @@ static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
     self = *((marcel_t *)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *))));
 #else
     self = (marcel_t)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE) -
-		      MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
+		      MAL(sizeof(marcel_task_t)));
 #endif
   MA_BUG_ON(sp>=(unsigned long)self && sp<(unsigned long)(self+1));
 #endif

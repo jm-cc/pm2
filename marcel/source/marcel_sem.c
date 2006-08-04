@@ -35,7 +35,7 @@ void marcel_sem_init(marcel_sem_t *s, int initial)
 }
 
 DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
-		(pshared, initial),
+		(s,pshared, initial),
 {
   if (pshared) {
     errno = ENOSYS;
@@ -44,11 +44,8 @@ DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
   marcel_sem_init(s, initial);
   return 0;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_init, sem_init, GLIBC_2_1);
-strong_alias(pmarcel_sem_init, __old_sem_init);
-compat_symbol(libpthread, __old_sem_init, sem_init, GLIBC_2_0);
-#endif
+DEF_C(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
+		(s,pshared, initial));
 
 DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
 {
@@ -61,11 +58,7 @@ DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
   ma_spin_unlock_bh(&s->lock);
   return res;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_destroy, sem_destroy, GLIBC_2_1);
-strong_alias(pmarcel_sem_destroy, __old_sem_destroy);
-compat_symbol(libpthread, __old_sem_destroy, sem_destroy, GLIBC_2_0);
-#endif
+DEF_C(int, sem_destroy, (pmarcel_sem_t *s), (s));
 
 void marcel_sem_P(marcel_sem_t *s)
 {
@@ -140,11 +133,7 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
   LOG_OUT();
   return 0;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_wait, sem_wait, GLIBC_2_1);
-strong_alias(pmarcel_sem_wait, __old_sem_wait);
-compat_symbol(libpthread, __old_sem_wait, sem_wait, GLIBC_2_0);
-#endif
+DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s));
 
 int marcel_sem_try_P(marcel_sem_t *s)
 {
@@ -176,11 +165,7 @@ DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
   }
   return 0;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_trywait, sem_trywait, GLIBC_2_1);
-strong_alias(pmarcel_sem_trywait, __old_sem_trywait);
-compat_symbol(libpthread, __old_sem_trywait, sem_trywait, GLIBC_2_0);
-#endif
+DEF_C(int, sem_trywait, (pmarcel_sem_t *s), (s));
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
@@ -338,11 +323,7 @@ DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
   marcel_sem_V(s);
   return 0;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_post, sem_post, GLIBC_2_1);
-strong_alias(pmarcel_sem_post, __old_sem_post);
-compat_symbol(libpthread, __old_sem_post, sem_post, GLIBC_2_0);
-#endif
+DEF_C(int, sem_post, (pmarcel_sem_t *s), (s));
 
 DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
 {
@@ -351,11 +332,7 @@ DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sva
   ma_spin_unlock_bh(&s->lock);
   return 0;
 })
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel_sem_getvalue, sem_getvalue, GLIBC_2_1);
-strong_alias(pmarcel_sem_getvalue, __old_sem_getvalue);
-compat_symbol(libpthread, __old_sem_getvalue, sem_getvalue, GLIBC_2_0);
-#endif
+DEF_C(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval));
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {
@@ -392,7 +369,7 @@ DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 
 /*******************sem_unlink**************************/
-DEF_POSIX(int,sem_unlink,(const char *name, int flags),(name,flags,...),
+DEF_POSIX(int,sem_unlink,(const char *name),(name),
 {
    errno = ENOTSUP;
    return -1;

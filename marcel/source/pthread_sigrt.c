@@ -15,6 +15,8 @@
 
 /* Thread creation, initialization, and basic low-level routines */
 
+#include "marcel.h"
+
 #ifdef MA__LIBPTHREAD
 #include <errno.h>
 #include <stddef.h>
@@ -49,6 +51,8 @@
    platform does not support any real-time signals we will define the
    values to some unreasonable value which will signal failing of all
    the functions below.  */
+#if 0
+// bazar LinuxThread
 #ifndef __SIGRTMIN
 static int current_rtmin = -1;
 static int current_rtmax = -1;
@@ -107,6 +111,15 @@ init_rtsigs (void)
     }
 
   rtsigs_initialized = 1;
+}
+#endif
+#else
+static const int rtsigs_initialized = 1;
+static int current_rtmin = -1;
+static int current_rtmax = -1;
+static void
+init_rtsigs (void)
+{
 }
 #endif
 

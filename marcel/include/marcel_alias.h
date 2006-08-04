@@ -210,6 +210,7 @@
 #  define DEF_WEAK_T(rtype, name, aliasname, proto, args)
 #endif
 
+#section marcel_macros
 #ifdef MA__LIBPTHREAD
 #define DEF_PTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
@@ -309,18 +310,54 @@
 
 
 #ifdef MA__LIBPTHREAD
+
+#if defined(X86_ARCH)
+#define MA_GLIBC_VERSION_MINIMUM	20000
+#define GLIBC_MINI			GLIBC_2.0
+#elif defined(IA64_ARCH)
+#define MA_GLIBC_VERSION_MINIMUM	20200
+#define GLIBC_MINI			GLIBC_2.2
+#elif defined(X86_64_ARCH)
+#define MA_GLIBC_VERSION_MINIMUM	20205
+#define GLIBC_MINI			GLIBC_2.2.5
+#endif
+
+#if MA_GLIBC_VERSION_MINIMUM <= 20000
 #define VERSION_libpthread_GLIBC_2_0    GLIBC_2.0
 #define VERSION_libpthread_GLIBC_2_1    GLIBC_2.1
 #define VERSION_libpthread_GLIBC_2_1_1  GLIBC_2.1.1
 #define VERSION_libpthread_GLIBC_2_1_2  GLIBC_2.1.2
+#endif
+#if MA_GLIBC_VERSION_MINIMUM <= 20200
 #define VERSION_libpthread_GLIBC_2_2    GLIBC_2.2
 #define VERSION_libpthread_GLIBC_2_2_3  GLIBC_2.2.3
+#endif
+#define VERSION_libpthread_GLIBC_2_2_5  GLIBC_2.2.5
 #define VERSION_libpthread_GLIBC_2_2_6  GLIBC_2.2.6
 #define VERSION_libpthread_GLIBC_2_3_2  GLIBC_2.3.2
 #define VERSION_libpthread_GLIBC_2_3_3  GLIBC_2.3.3
 #define VERSION_libpthread_GLIBC_2_3_4  GLIBC_2.3.4
 #define VERSION_libpthread_GLIBC_2_4    GLIBC_2.4
 #define VERSION_libpthread_GLIBC_PRIVATE        GLIBC_PRIVATE
+
+#ifndef VERSION_libpthread_GLIBC_2_0
+#define VERSION_libpthread_GLIBC_2_0    GLIBC_MINI
+#endif
+#ifndef VERSION_libpthread_GLIBC_2_1
+#define VERSION_libpthread_GLIBC_2_1    GLIBC_MINI
+#endif
+#ifndef VERSION_libpthread_GLIBC_2_1_1
+#define VERSION_libpthread_GLIBC_2_1_1    GLIBC_MINI
+#endif
+#ifndef VERSION_libpthread_GLIBC_2_1_2
+#define VERSION_libpthread_GLIBC_2_1_2    GLIBC_MINI
+#endif
+#ifndef VERSION_libpthread_GLIBC_2_2
+#define VERSION_libpthread_GLIBC_2_2    GLIBC_MINI
+#endif
+#ifndef VERSION_libpthread_GLIBC_2_2_3
+#define VERSION_libpthread_GLIBC_2_2_3  GLIBC_MINI
+#endif
 
 /* That header also defines symbols like `VERSION_libm_GLIBC_2_1' to
    the version set name to use for e.g. symbols first introduced into

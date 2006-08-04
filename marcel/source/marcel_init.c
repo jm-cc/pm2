@@ -48,6 +48,26 @@ marcel_test_activity(void)
  * ------------------
  */
 
+#ifdef STACKALIGN
+static int _initialized;
+
+void marcel_initialize(int* argc, char**argv)
+{
+	if (!_initialized) {
+		LOG_IN();
+		marcel_init_section(MA_INIT_MAIN_LWP);
+		marcel_init_data(argc, argv);
+		tbx_init(*argc, argv);
+		/* TODO: A reporter : */
+                //TODO__on_exit (pthread_onexit_process, NULL);
+		/* TODO: à la création du premier thread */
+	
+		_initialized=1;
+		LOG_OUT();
+	}
+}
+#endif
+
 static void marcel_parse_cmdline_early(int *argc, char **argv, tbx_bool_t do_not_strip)
 {
   int i, j;
@@ -285,8 +305,8 @@ void win_stack_allocate(unsigned n)
 }
 #endif // WIN_SYS
 
-static volatile int __main_ret;
-static marcel_ctx_t __initial_main_ctx;
+volatile int __marcel_main_ret;
+marcel_ctx_t __ma_initial_main_ctx;
 
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[])
@@ -313,11 +333,11 @@ int main(int argc, char *argv[])
 #else
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
 #endif
-	if(!marcel_ctx_setjmp(__initial_main_ctx)) {
+	if(!marcel_ctx_setjmp(__ma_initial_main_ctx)) {
 
 		__main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
 					    ~(THREAD_SLOT_SIZE-1)) -
-					   MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
+					   MAL(sizeof(marcel_task_t)));
 
 		mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
@@ -331,13 +351,13 @@ int main(int argc, char *argv[])
 #endif
 		set_sp(new_sp);
 
-                __main_ret = marcel_main(__ma_argc, __ma_argv);
+                __marcel_main_ret = marcel_main(__ma_argc, __ma_argv);
 
 		marcel_upcalls_disallow();
-		marcel_ctx_longjmp(__initial_main_ctx, 1);
+		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
 	}
 
-	return __main_ret;
+	return __marcel_main_ret;
 }
 
 

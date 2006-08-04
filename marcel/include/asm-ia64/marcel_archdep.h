@@ -93,3 +93,26 @@ __ma_u64 __getReg(const int whichReg);
 #else /* neither gcc nor icc */
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
+
+#ifdef MA__PROVIDE_TLS
+typedef struct {
+  void *dtv;
+  void *__private;
+  char padding[128]; //pour la structure thread de nptl...
+} lpt_tcb_t;
+
+// Variante I
+#define marcel_tcb(new_task) \
+  ((void*)(&(new_task)->tls))
+
+#define marcel_ctx_set_tls_reg(new_task) \
+  do { \
+    __asm__ __volatile__( \
+      ";; \n\t" \
+      "mov r13 = %0 \n\t" \
+      ";; \n\t" \
+        : : "r" (marcel_tcb(new_task)) : "r13" ); \
+  } while (0)
+#else
+#define marcel_ctx_set_tls_reg(new_task) (void)0
+#endif

@@ -75,7 +75,7 @@ DEF_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b), (b),
 /************************barrierattr*****************************/
 DEF_POSIX(int,barrierattr_init,(marcel_barrierattr_t *attr),(attr),
 {
-    attr->__pshared = PTHREAD_PROCESS_PRIVATE; 
+    attr->__pshared = PMARCEL_PROCESS_PRIVATE; 
     return 0; 
 })
 
@@ -90,13 +90,13 @@ DEF_POSIX(int,barrierattr_setpshared,(marcel_barrierattr_t *attr,
                  int pshared),(attr,pshared),
 {
 #ifdef MA__DEBUG
-    if ((pshared != PTHREAD_PROCESS_SHARED)
-      &&(pshared != PTHREAD_PROCESS_PRIVATE))
+    if ((pshared != PMARCEL_PROCESS_SHARED)
+      &&(pshared != PMARCEL_PROCESS_PRIVATE))
     {
         return EINVAL;
     } 
 #endif
-    if (pshared != PTHREAD_PROCESS_PRIVATE)
+    if (pshared != PMARCEL_PROCESS_PRIVATE)
     {
         return ENOTSUP;
     } 
@@ -113,12 +113,12 @@ DEF_POSIX(int, barrierattr_getpshared,(const marcel_barrierattr_t *
     {
         return EINVAL;
     }
-    if ((attr->__pshared != PTHREAD_PROCESS_SHARED)
-      &&(attr->__pshared != PTHREAD_PROCESS_PRIVATE))
+    if ((attr->__pshared != PMARCEL_PROCESS_SHARED)
+      &&(attr->__pshared != PMARCEL_PROCESS_PRIVATE))
     {
         return EINVAL;
     } 
-    if (attr->__pshared != PTHREAD_PROCESS_PRIVATE)
+    if (attr->__pshared != PMARCEL_PROCESS_PRIVATE)
     {
         return ENOTSUP;
     } 

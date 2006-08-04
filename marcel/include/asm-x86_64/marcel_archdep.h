@@ -73,3 +73,35 @@
 			 "movq %1, %%rbp;" \
                        : : "r" (__sp), "r" (__bp) : "memory", "rsp" ); \
   } while (0)
+
+extern unsigned short __main_thread_desc;
+
+#ifdef MA__PROVIDE_TLS
+#include <stdint.h>
+typedef struct {
+  void *tcb;
+  void *dtv;
+  void *self;
+  int multiple_threads;
+  uintptr_t sysinfo;
+  uintptr_t stack_guard;
+  uintptr_t pointer_guard;
+  char padding[128]; //pour la structure thread de nptl...
+} lpt_tcb_t;
+
+// Variante II
+#define marcel_tcb(new_task) \
+  ((void*)(&(new_task)->tls[MA_TLS_AREA_SIZE - sizeof(lpt_tcb_t)]))
+#define marcel_ctx_set_tls_reg(new_task) \
+  do { \
+    unsigned short val; \
+    if (new_task == __main_thread) \
+      val = __main_thread_desc; \
+    else \
+      val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~THREAD_SLOT_SIZE)) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
+    asm volatile ("movw %w0, %%fs" : : "q" (val)); \
+  } while(0)
+#else
+#define marcel_ctx_set_tls_reg(new_task) (void)0
+#endif
+

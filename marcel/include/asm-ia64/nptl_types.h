@@ -50,9 +50,11 @@ typedef union
 {
   struct
   {
-    int __dummy;
+  // replaced the two ints by our marcel_t
+    //int __dummy;
     unsigned int __count;
-    int __owner;
+    //int __owner;
+    marcel_t __owner;
     unsigned int __nusers;
     /* KIND must stay at this position in the structure to maintain
        binary compatibility.  */
@@ -65,7 +67,7 @@ typedef union
 
 struct lpt_mutexattr
 {       
-        int __mutexkind;
+        int mutexkind;
 };
 
 typedef union

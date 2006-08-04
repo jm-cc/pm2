@@ -18,6 +18,7 @@
 
 #section marcel_types
 typedef struct marcel_lwp marcel_lwp_t;
+#section types
 typedef struct marcel_lwp *ma_lwp_t;
 
 #section marcel_structures
@@ -28,7 +29,7 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "linux_timer.h[marcel_types]"
 #depend "scheduler/linux_runqueues.h[types]"
 #depend "scheduler/linux_runqueues.h[marcel_structures]"
-#depend "marcel_topology.h[structures]"
+#depend "marcel_topology.h[marcel_structures]"
 #include <stdlib.h>
 
 struct marcel_lwp {
@@ -97,7 +98,7 @@ struct marcel_lwp {
 	.vp_level = &marcel_machine_level[0], \
 }
 
-#section marcel_macros
+#section macros
 
 #define MARCEL_LWP_EST_DEF
 #ifdef MA__LWPS
@@ -116,10 +117,13 @@ struct marcel_lwp {
 #  define MA_NR_LWPS 1
 #endif
 
-#section marcel_variables
+#section variables
 #ifdef MA__LWPS
-extern marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS];
+extern ma_lwp_t ma_vp_lwp[MA_NR_LWPS];
+extern unsigned  ma__nb_vp;
 #endif
+
+#section marcel_variables
 
 extern marcel_lwp_t __main_lwp;
 
@@ -129,8 +133,6 @@ extern marcel_lwp_t __main_lwp;
 // Verrou protégeant la liste chaînée des LWPs
 extern ma_rwlock_t __lwp_list_lock;
 extern struct list_head list_lwp_head;
-
-extern unsigned  ma__nb_vp;
 
 #endif
 
@@ -179,7 +181,7 @@ static __tbx_inline__ void lwp_list_unlock_write(void)
 #section functions
 extern MARCEL_INLINE unsigned marcel_nbvps(void);
 #section inline
-#depend "[marcel_variables]"
+#depend "[variables]"
 extern MARCEL_INLINE unsigned marcel_nbvps(void)
 {
 #ifdef MA__LWPS

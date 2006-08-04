@@ -40,22 +40,22 @@ DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 })
 
 #ifdef MA__LIBPTHREAD
-
-   int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
+int lpt_attr_init (pthread_attr_t *__attr)
 {
-int ret;
-marcel_attr_t attr;
-ret=marcel_attr_init(&attr);
-memcpy(__attr, &attr, sizeof(pthread_attr_t));   // changement d'ABI, on adapte taille struct
-return ret;
+   int ret;
+   marcel_attr_t attr;
+   ret=marcel_attr_init(&attr);
+   memcpy(__attr, &attr, sizeof(pthread_attr_t));   // changement d'ABI, on adapte taille struct
+   return ret;
 }
-versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
+DEF_PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
+DEF___PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
 #endif
 
 /**********************attr_set/getstacksize***********************/
 DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack),
 {
-   if ((stack < sizeof(marcel_task_t) + TLS_AREA_SIZE) || (stack > THREAD_SLOT_SIZE))
+   if ((stack < sizeof(marcel_task_t)) || (stack > THREAD_SLOT_SIZE))
    {
       errno = EINVAL;
       return 1;
@@ -106,7 +106,7 @@ DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr
 DEF_MARCEL_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t stacksize), 
                     (attr, stackaddr, stacksize),
 {
-   if ((stacksize < sizeof(marcel_task_t) + TLS_AREA_SIZE) || (stacksize > THREAD_SLOT_SIZE))
+   if ((stacksize < sizeof(marcel_task_t)) || (stacksize > THREAD_SLOT_SIZE))
    {
       errno = EINVAL;
       return 1;
@@ -369,17 +369,16 @@ DEF___LIBPTHREAD(int,attr_destroy,(pthread_attr_t * attr),(attr))
 DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr,inheritsched),
 {
 #ifdef MA__DEBUG
-   if ((inheritsched != PTHREAD_INHERIT_SCHED)&&(inheritsched != PTHREAD_EXPLICIT_SCHED))
+   if ((inheritsched != PMARCEL_INHERIT_SCHED)&&(inheritsched != PMARCEL_EXPLICIT_SCHED))
    {
       return EINVAL;
    }
 #endif
-   if (inheritsched == PTHREAD_INHERIT_SCHED)
+   if (inheritsched == PMARCEL_INHERIT_SCHED)
    {
-      attr->__inheritsched = -1;
       return ENOTSUP;
    }
-   attr->__inheritsched = PTHREAD_EXPLICIT_SCHED;
+   attr->__inheritsched = PMARCEL_EXPLICIT_SCHED;
    return 0;
 })
 
@@ -391,11 +390,10 @@ DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * attr,int * inherits
 #ifdef MA__DEBUG
    if (attr->__inheritsched == -1)
    {
-      *inheritsched = -1;
       return EINVAL;  
    }
 #endif
-   *inheritsched = PTHREAD_EXPLICIT_SCHED;
+   *inheritsched = PMARCEL_EXPLICIT_SCHED;
    return 0;
 })
 
@@ -406,18 +404,17 @@ DEF___PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *in
 DEF_POSIX(int,attr_setscope,(pmarcel_attr_t *__restrict attr, int contentionscope),(attr,contentionscope),
 {
 #ifdef MA__DEBUG
-   if ((contentionscope != PTHREAD_SCOPE_SYSTEM)
-       &&(contentionscope != PTHREAD_SCOPE_PROCESS))
+   if ((contentionscope != PMARCEL_SCOPE_SYSTEM)
+       &&(contentionscope != PMARCEL_SCOPE_PROCESS))
    {
       return EINVAL;
    }
 #endif
-   if (contentionscope == PTHREAD_SCOPE_SYSTEM)
+   if (contentionscope == PMARCEL_SCOPE_SYSTEM)
    {
-      attr->__scope = -1;
       return ENOTSUP;
    }
-   attr->__scope = PTHREAD_SCOPE_PROCESS;
+   attr->__scope = PMARCEL_SCOPE_PROCESS;
    return 0;
 })
 
@@ -429,11 +426,10 @@ DEF_POSIX(int,attr_getscope,(__const pmarcel_attr_t *__restrict attr, int *conte
 #ifdef MA__DEBUG
    if (attr->__scope == -1)
    {
-      *contentionscope = -1;
       return EINVAL;  
    } 
 #endif
-   *contentionscope = PTHREAD_SCOPE_PROCESS;
+   *contentionscope = PMARCEL_SCOPE_PROCESS;
    return 0;
 })
 
@@ -452,7 +448,6 @@ DEF_POSIX(int,attr_setschedpolicy,(pmarcel_attr_t *__restrict attr, int policy),
 #endif
       if (policy != SCHED_RR)
       {
-         attr->__schedpolicy = -1;
          return ENOTSUP;
       }
       attr->__schedpolicy = SCHED_RR;
@@ -467,7 +462,6 @@ DEF_POSIX(int,attr_getschedpolicy,(__const pmarcel_attr_t *__restrict attr, int 
 #ifdef MA__DEBUG
    if (attr->__schedpolicy == -1)
    {
-      *policy = -1;
       return EINVAL;  
    } 
 #endif
@@ -486,8 +480,6 @@ DEF_MARCEL_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct mar
    {
       return EINVAL;
    }
-   if (attr->__schedpolicy != SCHED_RR)
-      return -1;
 #endif
    attr->__schedparam.__sched_priority = param->__sched_priority;
    return 0;
@@ -498,13 +490,6 @@ DEF___PTHREAD(int,attr_setschedparam,(pthread_attr_t *__restrict attr, const str
  
 DEF_MARCEL_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param),(attr,param),
 {
-#ifdef MA__DEBUG
-   if (attr->__schedpolicy != SCHED_RR)
-   {   
-      errno = ENOTSUP;
-      return -1;
-   }
-#endif
       param->__sched_priority = attr->__schedparam.__sched_priority;
       return 0;
    })

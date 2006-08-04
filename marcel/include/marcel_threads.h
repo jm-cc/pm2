@@ -20,6 +20,7 @@
 
 #section macros
 
+//#define STANDARD_MAIN
 #define MARCEL_ONCE_INIT 0
 
 
@@ -90,9 +91,9 @@ void marcel_create_init_marcel_thread(marcel_t __restrict t,
 				      __const marcel_attr_t * __restrict attr);
 #section functions
 
-int marcel_create(marcel_t * __restrict pid,
+DEC_MARCEL_POSIX(int,create,(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr, 
-		  marcel_func_t func, any_t __restrict arg) __THROW;
+		  marcel_func_t func, any_t __restrict arg) __THROW);
 
 int marcel_create_dontsched(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr, 

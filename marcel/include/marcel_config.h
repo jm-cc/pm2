@@ -30,6 +30,8 @@
 #define MA_PER_LWP_ROOM		32768
 #define MA_PER_LEVEL_ROOM	4096
 
+#define MA_TLS_AREA_SIZE        ((unsigned long) 4096)
+
 #ifdef MA__LWPS
 #define MARCEL_NBMAXCPUS	(sizeof(unsigned long)*8)
 #ifdef MA__NUMA

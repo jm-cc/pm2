@@ -4,7 +4,7 @@
 #include <dlfcn.h>
 
 extern int __attribute__ ((weak)) go_marcel_main();
-int __attribute__ ((weak)) marcel_pthread_initialize();
+extern int __attribute__ ((weak)) marcel_initialize();
 
 int  __attribute__ ((weak)) marcel_a_demare=0;
 
@@ -80,11 +80,11 @@ int marcel_main(int argc, char** argv)
 #ifdef PM2DEBUG
 	printf("on the good stack\n");
 #endif
-	if(marcel_pthread_initialize) {
+	if(marcel_initialize) {
 #ifdef PM2DEBUG
 		printf("initialising marcel\n");
 #endif
-		marcel_pthread_initialize(&argc, argv);
+		marcel_initialize(&argc, argv);
 		marcel_a_demare=1;
 	}
 #ifdef PM2DEBUG
@@ -135,8 +135,10 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 		exit(1);    
 	} else {
 #ifdef PM2DEBUG
-		printf("starting direct. go_marcel_main=%p\n", go_marcel_main);
+		printf("starting direct. go_marcel_main=%p, marcel_initialize=%p\n", go_marcel_main, marcel_initialize);
 #endif
+		if (marcel_initialize)
+			marcel_initialize(&global_argc, global_ubp_av);
 		launch_libc_start_main();
 	}
 }

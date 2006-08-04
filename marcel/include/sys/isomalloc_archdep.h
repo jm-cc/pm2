@@ -28,7 +28,6 @@
    dans un source assembleur */
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
-#define TLS_AREA_SIZE                 ((unsigned long) 128)
 #define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM
@@ -59,9 +58,15 @@ extern int __zero_fd;
 #    define MAIN_STACK_BOT         0xb8000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(X86_64_ARCH)
-#    define ISOADDR_AREA_TOP       0x2000000000
-#    define SLOT_AREA_BOTTOM       0x1000000000
-#    define MAIN_STACK_BOT         0x7000000000
+#    ifdef MA__PROVIDE_TLS
+#      define ISOADDR_AREA_TOP       0x100000000
+#      define SLOT_AREA_BOTTOM       0x10000000
+#      define MAIN_STACK_BOT         0xffffffff
+#    else
+#      define ISOADDR_AREA_TOP       0x2000000000
+#      define SLOT_AREA_BOTTOM       0x1000000000
+#      define MAIN_STACK_BOT         0x7000000000
+#    endif
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(IA64_ARCH)
 #    undef ASM_THREAD_SLOT_SIZE

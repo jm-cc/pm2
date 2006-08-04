@@ -204,15 +204,18 @@ static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask)
 }
 
 #section functions
-static __tbx_inline__ unsigned marcel_current_vp(void);
-#section inline
-#depend "sys/marcel_lwp.h[marcel_variables]"
-static __tbx_inline__ unsigned marcel_current_vp(void)
+unsigned marcel_current_vp(void);
+#section marcel_functions
+static __tbx_inline__ unsigned __marcel_current_vp(void);
+#section marcel_inline
+#depend "sys/marcel_lwp.h[variables]"
+static __tbx_inline__ unsigned __marcel_current_vp(void)
 {
   return LWP_NUMBER(LWP_SELF);
 }
+#define marcel_current_vp __marcel_current_vp
 
-#section structures
+#section marcel_structures
 
 #ifdef PM2_DEV
 // #warning il ne faudrait pas dépendre d un scheduler particulier
@@ -255,7 +258,7 @@ struct marcel_topo_vpdata {
 	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
 }
 
-#section structures
+#section marcel_structures
 
 struct marcel_topo_level {
 	enum marcel_topo_level_t type;
@@ -293,7 +296,7 @@ struct marcel_topo_level {
 #section marcel_macros
 #define ma_topo_vpdata(vp, field) ((vp)->leveldata.vpdata.field)
 
-#section variables
+#section marcel_variables
 extern unsigned marcel_topo_nblevels;
 extern struct marcel_topo_level marcel_machine_level[];
 extern unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
@@ -321,8 +324,10 @@ extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = &marcel_topo_vp_level[0]; }))
 #define ma_per_vp(vp, field) (marcel_topo_vp[vp].(field))
 
-#section functions
-#depend "[variables]"
+#section marcel_functions
+static __tbx_inline__ unsigned marcel_topo_arity(unsigned level);
+#section marcel_inline
+#depend "[marcel_variables]"
 static __tbx_inline__ unsigned marcel_topo_arity(unsigned level) {
 	return marcel_topo_levels[level][0].arity;
 }

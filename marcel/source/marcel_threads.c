@@ -119,14 +119,12 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
         t->restart_deliver_sig = 0;
         marcel_sigemptyset(&t->waitset);
 	t->waitsig = 0;
-        // vérifier ceci:
 	t->curmask = MARCEL_SELF->curmask;
 	t->cancelstate = MARCEL_CANCEL_ENABLE;
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
 
 #ifdef ENABLE_STACK_JUMPING
-	*((marcel_t *)((char *)t + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE)
-		       - sizeof(void *))) = t;
+	*((marcel_t *)(ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif
 	
 }
@@ -209,12 +207,13 @@ marcel_create_internal(marcel_t * __restrict pid,
 		register unsigned long top = ((unsigned long)attr->__stackaddr +
 				attr->__stacksize) & ~(THREAD_SLOT_SIZE-1);
 		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
-		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
+		new_task = ma_slot_top_task(top);
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
 		stack_base = attr->__stackaddr;
 		
 		static_stack = tbx_true;
+		/* TODO: Initialize TLS */
 	} else { /* (!attr->stack_base) */
 		char *bottom;
 
@@ -222,12 +221,11 @@ marcel_create_internal(marcel_t * __restrict pid,
 		if(attr->__stacksize > THREAD_SLOT_SIZE)
 			MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif
-		bottom = marcel_slot_alloc();
+		bottom = marcel_tls_slot_alloc();
 		
 		PROF_EVENT(thread_stack_allocated);
 		
-		new_task= (marcel_t)(MAL_BOT((unsigned long)bottom + THREAD_SLOT_SIZE) -
-				      MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE));
+		new_task = ma_slot_task(bottom);
 
 		stack_base = bottom;
 		static_stack = tbx_false;
@@ -238,7 +236,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	new_task->static_stack = static_stack;
 	
 	if (!attr->__stackaddr_set) {
-		marcel_postexit_internal(new_task, marcel_slot_free, 
+		marcel_postexit_internal(new_task, marcel_tls_slot_free, 
 					 marcel_stackbase(new_task));
 	}
 	
@@ -284,13 +282,13 @@ marcel_create_internal(marcel_t * __restrict pid,
 	
 }
 
-int marcel_create(marcel_t * __restrict pid,
+DEF_MARCEL_POSIX(int,create,(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr,
-		  marcel_func_t func, any_t __restrict arg)
+									  marcel_func_t func, any_t __restrict arg),(pid,attr,func,arg),
 {
 	return marcel_create_internal(pid, attr, func, arg, 
 				      0, (unsigned long)&arg);
-}
+})
 
 int marcel_create_dontsched(marcel_t * __restrict pid,
 			    __const marcel_attr_t * __restrict attr,
@@ -561,7 +559,16 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	
 DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 {
-	marcel_exit_internal(val, 0);
+	if (marcel_self() == __main_thread) {
+		marcel_end();
+#ifdef STANDARD_MAIN
+		exit(0);
+#else
+		__marcel_main_ret = 0;
+		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
+#endif
+	} else
+		marcel_exit_internal(val, 0);
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 
@@ -598,7 +605,7 @@ void print_thread(marcel_t pid)
 	 ,
 	 pid,
 	 pid->stack_base,
-	 (unsigned long)pid + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE),
+	 ma_task_slot_top(pid),
 	 pid->user_space_ptr,
 	 pid->initial_sp,
 	 sp
@@ -664,6 +671,7 @@ DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
 	return 0;
 })
 DEF_PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
+DEF___PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 
 
 DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid),
@@ -715,6 +723,8 @@ void marcel_resume(marcel_t pid)
   marcel_deviate(pid, suspend_handler, (any_t)0);
 }
 
+#define __NO_WEAK_PTHREAD_ALIASES
+#include <bits/libc-lock.h>
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
@@ -786,7 +796,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
     if(marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
       call_ST_FLUSH_WINDOWS();
-      top = (unsigned long)cur + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE);
+      top = ma_task_slot_top(cur);
       bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
       blk = top - bottom;
       depl = bottom - (unsigned long)cur->stack_base;
@@ -817,7 +827,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 	    t->remaining_sleep_time = t->timer->expires - ma_jiffies;
     }
 
-    top = (unsigned long)t + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE);
+    top = ma_task_slot_top(t);
     bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
     blk = top - bottom;
     depl = bottom - (unsigned long)t->stack_base;
@@ -879,8 +889,7 @@ static void __marcel_init main_thread_init(void)
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
 #ifdef ENABLE_STACK_JUMPING
-	*((marcel_t *)((char *)__main_thread + MAL(sizeof(marcel_task_t) + TLS_AREA_SIZE) - 
-		       sizeof(void *))) =  __main_thread;
+	*((marcel_t *)(ma_task_slot_top(__main_thread) - sizeof(void *))) = __main_thread;
 #endif
 
 	marcel_attr_init(&attr);
@@ -949,7 +958,7 @@ DEF_POSIX(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
    marcel_t cthread;
    cthread = marcel_self();
 #ifdef MA__DEBUG
-   if ((state != PTHREAD_CANCEL_ENABLE)&&(state != PTHREAD_CANCEL_DISABLE))
+   if ((state != PMARCEL_CANCEL_ENABLE)&&(state != PMARCEL_CANCEL_DISABLE))
    {
       return EINVAL;
    }
@@ -971,7 +980,7 @@ DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
    marcel_t cthread;
    cthread = marcel_self();
 #ifdef MA__DEBUG
-   if ((type != PTHREAD_CANCEL_ENABLE)&&(type != PTHREAD_CANCEL_DISABLE))
+   if ((type != PMARCEL_CANCEL_ENABLE)&&(type != PMARCEL_CANCEL_DISABLE))
    {
       return EINVAL;
    }
@@ -989,15 +998,15 @@ DEF_POSIX(void, testcancel,(void),(),
 {
    marcel_t cthread;
    cthread = marcel_self();
-   if (cthread->cancelstate == PTHREAD_CANCEL_DISABLE)
+   if (cthread->cancelstate == PMARCEL_CANCEL_DISABLE)
    {}
-   else if (cthread->cancelstate == PTHREAD_CANCEL_ENABLE)
+   else if (cthread->cancelstate == PMARCEL_CANCEL_ENABLE)
    {
-      if (cthread->canceltype == PTHREAD_CANCEL_ASYNCHRONOUS)
+      if (cthread->canceltype == PMARCEL_CANCEL_ASYNCHRONOUS)
       {
          marcel_cancel(cthread);
       }
-      else if (cthread->canceltype == PTHREAD_CANCEL_DEFERRED)
+      else if (cthread->canceltype == PMARCEL_CANCEL_DEFERRED)
       {
          printf("not yet implemented\n");    
       }
@@ -1025,7 +1034,7 @@ DEF_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
    {
       return ENOTSUP;
    }
-   marcel_sched_setscheduler(thread,policy,param);
+   marcel_sched_setscheduler(thread,MARCEL_SCHED_SHARED,param);
    return 0;
 })
 
@@ -1044,14 +1053,7 @@ DEF_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
       return EINVAL;
    } 
 #endif
-   *policy = marcel_sched_getscheduler(thread);
-#ifdef MA__DEBUG
-   if (*policy != SCHED_RR)
-   {
-      *policy = -1;
-      return ENOTSUP;
-   } 
-#endif   
+   *policy = SCHED_RR;
    marcel_sched_getparam(thread,param);
    return 0;
 })
@@ -1064,7 +1066,7 @@ DEF___PTHREAD(int, getschedparam, (pthread_t thread, int *__restrict policy,
 /**********************getcpuclockid****************************/
 DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id),(thread_id,clock_id),
 {
-   clock_getcpuclockid(thread_id, clock_id);
+   clock_getcpuclockid(0, clock_id);
    return 0;
 })
 

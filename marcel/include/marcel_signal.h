@@ -97,13 +97,14 @@ DEC_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 
 int marcel_deliver_sig(void);
 int marcel_call_function(int sig);
-
+int marcel_distribwait_sigext(int sig);
+int marcel_distribwait_thread(int sig,marcel_t thread);
 void ma_signals_init(void);
 
 /**************************marcel_sigset_t*********************/
 
 #section types
-typedef unsigned int marcel_sigset_t;
+typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 
 #section marcel_macros
 
@@ -174,7 +175,7 @@ typedef unsigned int marcel_sigset_t;
      marcel_sigismember(&nand,(sig)); })
 
 #define marcel_sigequalset(left,right)        \
-  (*(left)-*(right)== 0) 
+  (*(left)==*(right)) 
 
 #define marcel_sig_omnislash_ismember(feu,glace,foudre,sig) \
   ({ marcel_sigset_t antifeu;                      \
@@ -199,11 +200,10 @@ typedef unsigned int marcel_sigset_t;
 #define pmarcel_signotset       marcel_signotset
 #define pmarcel_sigandset       marcel_sigandset
 #define pmarcel_sigorset        marcel_sigorset
-#define pmarcel_sigorismember marcel_sigorismember
+#define pmarcel_sigorismember   marcel_sigorismember
 #define pmarcel_signandset      marcel_signandset
 #define pmarcel_signandisempty  marcel_signandisempty
 #define pmarcel_signandismember marcel_signandismember
 #define pmarcel_sigequalset     marcel_sigequalset
 
-#section marcel_functions
-void testset(marcel_sigset_t *set);
+void testset(marcel_sigset_t * set,char *what);

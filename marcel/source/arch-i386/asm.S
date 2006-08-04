@@ -14,11 +14,15 @@
  * General Public License for more details.
  */
 
+#include <sys/marcel_flags.h>
+		  
 	.text
 	.align 4
 	
 #if defined(FREEBSD_SYS) || defined(WIN_SYS)
 #define ma_setjmp _ma_setjmp
+#define __sigsetjmp ___sigsetjmp
+#define ma_savesigs _ma_savesigs
 #endif
 	.globl ma_setjmp
 ma_setjmp:
@@ -37,6 +41,26 @@ ma_setjmp:
 .size ma_setjmp,.-ma_setjmp
 #endif
 
+#ifdef MA__LIBPTHREAD
+	.globl __sigsetjmp
+__sigsetjmp:
+        movl    4(%esp), %ecx
+        movl    %ebx, 0(%ecx)
+        movl    %esi, 4(%ecx)
+        movl    %edi, 8(%ecx)
+        movl    %ebp, 12(%ecx)
+        popl    %edx        
+		  movl    %edx, 20(%ecx)
+        movl    %esp, 16(%ecx)
+        xorl    %eax, %eax
+		  pushl   %edx
+        jmp     ma_savesigs
+
+#ifndef WIN_SYS
+.size __sigsetjmp,.-__sigsetjmp
+#endif
+#endif
+		  
 #ifdef WIN_SYS
 	.globl ma_i386_spinlock_contention
 ma_i386_spinlock_contention:

@@ -144,6 +144,11 @@
 #  undef MA__FUT_RECORD_TID
 #endif
 
+/* MA__PROVIDE_TLS : définit si on fournit le mécanisme de TLS pour l'application (et la glibc) */
+#ifndef MA__PROVIDE_TLS
+#  define MA__PROVIDE_TLS
+#endif
+
 #ifdef MARCEL_MONO /* Marcel Mono */
 #  define MA__MONO
 #  define MA__TIMER
@@ -189,6 +194,7 @@
 #ifdef MARCEL_LIBPTHREAD
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD
+#  define MA__PROVIDE_TLS
 #endif
 
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)

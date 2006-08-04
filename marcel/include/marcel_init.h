@@ -174,3 +174,7 @@ typedef struct __ma_init_info {
 
 #section variables
 extern int ma_init_done[MA_INIT_MAX_PARTS+1];
+
+#section marcel_variables
+extern marcel_ctx_t __ma_initial_main_ctx;
+extern volatile int __marcel_main_ret;

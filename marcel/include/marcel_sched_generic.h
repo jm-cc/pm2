@@ -40,6 +40,8 @@
 
 int pmarcel_usleep(unsigned long usec);
 DEC_MARCEL_POSIX(int,usleep,(unsigned long usec));
+int pmarcel_sleep(unsigned long sec);
+DEC_MARCEL_POSIX(int,sleep,(unsigned long sec));
 
 #define marcel_delay(millisec) marcel_usleep((millisec)*1000)
 

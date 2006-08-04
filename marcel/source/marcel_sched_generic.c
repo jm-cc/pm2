@@ -32,15 +32,30 @@ DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
 	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
 
 	LOG_RETURN(0);
+
 #endif
 })
 
-//DEF_C(int,usleep,(unsigned long usec),(usec));
+DEF_C(int,usleep,(unsigned long usec),(usec));
 DEF___C(int,usleep,(unsigned long usec),(usec));
 
-#if defined(MA__LIBPTHREAD) && !defined(MA__ACTIVATION)
-versioned_symbol (libpthread, marcel_usleep, usleep, GLIBC_2_0);
+DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
+{
+#ifdef MA__ACTIVATION
+	return sleep(sec);
+#else
+	LOG_IN();
+
+	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+	ma_schedule_timeout((1000000*sec)/marcel_gettimeslice());
+
+	LOG_RETURN(0);
+
 #endif
+})
+
+DEF_C(int,sleep,(unsigned long sec),(sec));
+DEF___C(int,sleep,(unsigned long sec),(sec));
 
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {

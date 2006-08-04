@@ -149,7 +149,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-#depend "marcel_topology.h[structures]"
+#depend "marcel_topology.h[marcel_structures]"
 #depend "scheduler/linux_runqueues.h[marcel_variables]"
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"

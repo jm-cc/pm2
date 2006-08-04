@@ -132,9 +132,11 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_init,
                   pthread_cond_init, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_init, __old_pthread_cond_init)
 compat_symbol (libpthread, __old_pthread_cond_init, pthread_cond_init,
                GLIBC_2_0);
+#endif
 ]])
 
 REPLICATE_CODE([[dnl
@@ -166,9 +168,11 @@ int prefix_cond_init (prefix_cond_t * __restrict cond,
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_destroy,
                   pthread_cond_destroy, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_destroy, __old_pthread_cond_destroy)
 compat_symbol (libpthread, __old_pthread_cond_destroy, pthread_cond_destroy,
                GLIBC_2_0);
+#endif
 ]])
 
 REPLICATE_CODE([[dnl
@@ -189,9 +193,11 @@ int prefix_cond_destroy (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_signal,
                   pthread_cond_signal, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_signal, __old_pthread_cond_signal)
 compat_symbol (libpthread, __old_pthread_cond_signal, pthread_cond_signal,
                GLIBC_2_0);
+#endif
 ]])
 
 REPLICATE_CODE([[dnl
@@ -209,9 +215,11 @@ int prefix_cond_signal (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_broadcast,
                   pthread_cond_broadcast, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_broadcast, __old_pthread_cond_broadcast)
 compat_symbol (libpthread, __old_pthread_cond_broadcast,
                pthread_cond_broadcast, GLIBC_2_0);
+#endif
 ]])
 
 REPLICATE_CODE([[dnl
@@ -231,9 +239,11 @@ int prefix_cond_broadcast (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_wait,
                   pthread_cond_wait, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_wait, __old_pthread_cond_wait)
 compat_symbol (libpthread, __old_pthread_cond_wait, pthread_cond_wait,
                GLIBC_2_0);
+#endif
 ]])
 
 REPLICATE_CODE([[dnl
@@ -274,9 +284,11 @@ int prefix_cond_wait (prefix_cond_t * __restrict cond,
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_timedwait,
                   pthread_cond_timedwait, GLIBC_2_3_2);
+#if MA_GLIBC_VERSION_MINIMUM < 20302
 strong_alias (lpt_cond_timedwait, __old_pthread_cond_timedwait)
 compat_symbol (libpthread, __old_pthread_cond_timedwait,
                pthread_cond_timedwait, GLIBC_2_0);
+#endif
 ]])
 
 #define ma_timercmp(a, b, CMP) \

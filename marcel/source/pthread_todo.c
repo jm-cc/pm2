@@ -47,7 +47,7 @@ static int infile=0;
 /*ND(__write)*/ 
 /*ND(_pthread_cleanup_pop) ND(_pthread_cleanup_pop_restore) ND(_pthread_cleanup_push)*/ 
 /*ND(_pthread_cleanup_push_defer) */
-     /*ND(accept) ND(close) ND(connect) ND(fcntl) ND(fork) ND(fsync)*/ ND(longjmp) /*ND(lseek) ND(msync)*/ 
+     /*ND(accept) ND(close) ND(connect) ND(fcntl) ND(fork) ND(fsync)*//* ND(longjmp) *//*ND(lseek) ND(msync)*/ 
 /*ND(flockfile) ND(funlockfile) ND(ftrylockfile) 
 ND(nanosleep) ND(open) ND(pause)*/ /* ND2(raise) */ /*ND(read) ND(recv) ND(recvfrom)*/ ND(recvmsg) /*ND(send) 
 ND(pthread_atfork)*//*  ND(pthread_attr_destroy) */ /*ND(pthread_attr_getdetachstate) */

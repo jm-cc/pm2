@@ -35,7 +35,6 @@ typedef volatile unsigned ma_spinlock_t;
 #warning "Please define pm2_compareexchange in marcel/include/asm-yourarch/marcel_compareexchange.h"
 #error "or define pm2_spinlock_testandset in marcel/include/asm-yourarch/marcel_testandset.h"
 #endif
-#include <pthread.h>
 typedef pthread_mutex_t ma_spinlock_t;
 #endif
 #endif
@@ -48,7 +47,6 @@ typedef pthread_mutex_t ma_spinlock_t;
 
 #define ma_spin_lock_init(x)	do { *(x) = (ma_spinlock_t) MA_SPIN_LOCK_UNLOCKED; } while(0)
 #else
-#include <pthread.h>
 #define MA_SPIN_LOCK_UNLOCKED PTHREAD_MUTEX_INITIALIZER
 #define ma_spin_lock_init(x) pthread_mutex_init(x,NULL);
 #endif

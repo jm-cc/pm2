@@ -19,6 +19,8 @@
 
 #include "pm2_common.h"
 #include <errno.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
@@ -53,41 +55,23 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
 			start_routine, arg);
 }
 
-#include <sys/shm.h>
-#ifndef STACK_SIZE
-#define STACK_SIZE  (2 * 1024 * 1024)
-#endif
-int __pthread_create_2_0(pthread_t *thread, const pthread_attr_t *attr,
-                         void * (*start_routine)(void *), void *arg)
-{
-  /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
-     the old size and access to the new members might crash the program.
-     We convert the struct now.  */
-  pthread_attr_t new_attr;
-
-  if (attr != NULL)
-    {
-      size_t ps = __getpagesize ();
-
-      memcpy (&new_attr, attr,
-              (size_t) &(((pthread_attr_t*)NULL)->__guardsize));
-      new_attr.__guardsize = ps;
-      new_attr.__stackaddr_set = 0;
-      new_attr.__stackaddr = NULL;
-      new_attr.__stacksize = STACK_SIZE - ps;
-      attr = &new_attr;
-    }
-  return __pthread_create_2_1 (thread, attr, start_routine, arg);
-}
-compat_symbol (libpthread, __pthread_create_2_0, pthread_create, GLIBC_2_0);
-
-
 versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
-/* pthread_t pthread_self(void) */
-/* { */
-/* 	return (pthread_t)marcel_self(); */
-/* } */
+/*********************lseek***************************/
+
+off_t __lseek(int fd, off_t offset, int whence) {
+	return syscall(SYS_lseek, fd, offset, whence);
+}
+strong_alias(__lseek, lseek)
+
+#if MA_BITS_PER_LONG < 64
+off64_t __lseek64(int fd, off64_t offset, int whence) {
+	off64_t res;
+	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+	return ret ? ret : res;
+}
+strong_alias(__lseek64, lseek64)
+#endif
 
 /*********************pthread_self***************************/
 
@@ -105,53 +89,6 @@ DEF_PTHREAD(pthread_t, self, (void), ())
 DEF___PTHREAD(pthread_t, self, (void), ())
 
 
-
-/********************************************************/
-
-static int _first_errno;
-static int _initialized;
-
-int * __errno_location()
-{
-	int * res;
-
-	if (_initialized) {
-		res=&SELF_GETMEM(__errno);
-	} else {
-		res=&_first_errno;
-	}
-	return res;
-}
-
-static int _first_h_errno;
-
-int * __h_errno_location()
-{
-	int * res;
-
-	if (_initialized) {
-		res=&SELF_GETMEM(__h_errno);
-	} else {
-		res=&_first_h_errno;
-	}
-	return res;
-}
-
-static struct __res_state _fisrt_res_state;
-
-/* Return thread specific resolver state.  */
-struct __res_state *
-__res_state (void)
-{
-	struct __res_state * res;
-
-	if (_initialized) {
-		res=&SELF_GETMEM(__res_state);
-	} else {
-		res=&_fisrt_res_state;
-	}
-	return res;
-}
 
 //static void pthread_initialize() __attribute__((constructor));
 
@@ -174,27 +111,6 @@ void __pthread_initialize(int* argc, char**argv)
 	
 }
 
-/* Initialisation minimale appelée par stackalign : uniquement les
- * variables pour que par exemple marcel_self fonctionne */
-void marcel_pthread_initialize(int* argc, char**argv)
-{
-	if (!_initialized) {
-#ifdef PM2DEBUG
-		//printf("Initialisation libpthread marcel-based\n");
-#endif
-		marcel_init_section(MA_INIT_MAIN_LWP);
-		marcel_init_data(argc, argv);
-		tbx_init(*argc, argv);
-		/* TODO: A reporter : */
-                //TODO__on_exit (pthread_onexit_process, NULL);
-		/* TODO: à la création du premier thread */
-#ifdef PM2DEBUG
-		printf("Initialisation libpthread marcel-init done (and launched :-()\n");
-#endif
-	
-		_initialized=1;
-	}
-}
 //strong_alias(pthread_initialize,__pthread_initialize);
 //static void pthread_finalize() __attribute__((destructor));
 /*
@@ -330,6 +246,63 @@ int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
 	/* Extension Real-Time non supportée */
 	errno = ENOTSUP;
 	return -1;
+}
+
+/********************************************************/
+
+int * __errno_location()
+{
+	int * res;
+
+#ifdef MA__PROVIDE_TLS
+#undef errno
+	extern __thread int errno;
+	res=&errno;
+#else
+	static int _first_errno;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__errno);
+	} else {
+		res=&_first_errno;
+	}
+#endif
+	return res;
+}
+
+int * __h_errno_location()
+{
+	int * res;
+
+#ifdef MA__PROVIDE_TLS
+#undef h_errno
+	extern __thread int h_errno;
+	res=&h_errno;
+#else
+	static int _first_h_errno;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__h_errno);
+	} else {
+		res=&_first_h_errno;
+	}
+#endif
+	return res;
+}
+
+/* Return thread specific resolver state.  */
+struct __res_state *
+__res_state (void)
+{
+	struct __res_state * res;
+	static struct __res_state _fisrt_res_state;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__res_state);
+	} else {
+		res=&_fisrt_res_state;
+	}
+	return res;
 }
 
 #endif /* MA__LIBPTHREAD */

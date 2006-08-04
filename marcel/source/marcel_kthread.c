@@ -117,14 +117,14 @@ void marcel_kthread_join(marcel_kthread_t *pid)
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		while (syscall(__NR_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1 && errno == EINTR);
+		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1 && errno == EINTR);
 	LOG_OUT();
 }
 
 void marcel_kthread_exit(void *retval)
 {
 	LOG_IN();
-	syscall(__NR_exit,(int)(long)retval);
+	syscall(SYS_exit,(int)(long)retval);
 	LOG_OUT();
 }
 
@@ -140,7 +140,7 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-	if (syscall(__NR_tkill, pid, sig) == -1 && errno == ENOSYS)
+	if (syscall(SYS_tkill, pid, sig) == -1 && errno == ENOSYS)
 		kill(pid, sig);
 }
 
@@ -160,7 +160,7 @@ void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 	if ((newval = ma_atomic_dec_return(sem)) >= 0)
 		return;
 	while(1) {
-		if (syscall(__NR_futex, sem, FUTEX_WAIT, newval, NULL) == 0)
+		if (syscall(SYS_futex, sem, FUTEX_WAIT, newval, NULL) == 0)
 			return;
 		if (errno == EWOULDBLOCK)
 			newval = ma_atomic_read(sem);
@@ -173,7 +173,7 @@ TBX_FUN_ALIAS(void, marcel_kthread_mutex_lock, marcel_kthread_sem_wait, (marcel_
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
 	if (ma_atomic_inc_return(sem) <= 0)
-		syscall(__NR_futex, sem, FUTEX_WAKE, 1, NULL);
+		syscall(SYS_futex, sem, FUTEX_WAKE, 1, NULL);
 }
 TBX_FUN_ALIAS(void, marcel_kthread_mutex_unlock, marcel_kthread_sem_post, (marcel_kthread_mutex_t *lock), (lock));
 
@@ -196,29 +196,29 @@ void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
 
 void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
 {
-	syscall(__NR_futex, cond, FUTEX_WAKE, 1, NULL);
+	syscall(SYS_futex, cond, FUTEX_WAKE, 1, NULL);
 }
 
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 {
-	syscall(__NR_futex, cond, FUTEX_WAKE, *cond, NULL);
+	syscall(SYS_futex, cond, FUTEX_WAKE, *cond, NULL);
 }
 
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
 {
 	int val;
 	val = ++(*cond);
-	marcel_kthread_mutex_unlock(&mutex);
+	marcel_kthread_mutex_unlock(mutex);
 	while(1) {
-		if (syscall(__NR_futex, cond, FUTEX_WAIT, val, NULL) == 0)
+		if (syscall(SYS_futex, cond, FUTEX_WAIT, val, NULL) == 0)
 			break;
 		if (errno == EWOULDBLOCK)
 			val = *cond;
 		else if (errno != EINTR)
 			MA_BUG();
 	}
-	marcel_kthread_mutex_lock(&mutex);
-	*cond--;
+	marcel_kthread_mutex_lock(mutex);
+	(*cond)--;
 }
 #else
 

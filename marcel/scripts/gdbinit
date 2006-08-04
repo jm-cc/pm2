@@ -19,7 +19,7 @@ define set-ctx
   if $marcel_saved==0
     save-ctx
   end
-  printf "switching to $arg0(%p)\n", $arg0
+  printf "switching to $arg0(0x%lx)\n", $arg0
   __set-ctx $arg0
 end
 document set-ctx
@@ -97,7 +97,7 @@ define ma-printholder
     set $rq = ((ma_runqueue_t *)(((char*)$arg0)+(unsigned)(&(((ma_runqueue_t *)0)->hold))))
     ma-printrq $rq
   else
-    printf " %p", $arg0
+    printf " 0x%lx", $arg0
   end
 end
 
@@ -124,7 +124,7 @@ define marcel-printthread
   if $arg0->sched.state == 256
     set $state='B'
   end
-  printf "%p %16s %2d %c", \
+  printf "0x%lx %16s %2d %c", \
     $arg0, $arg0->name, $arg0->sched.internal.prio, $state
   if $arg0->sched.lwp
     printf " %2d", $arg0->sched.lwp->number

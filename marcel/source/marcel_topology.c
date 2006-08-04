@@ -87,6 +87,12 @@ struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 	marcel_machine_level
 };
 
+#undef marcel_current_vp
+unsigned marcel_current_vp(void)
+{
+	return __marcel_current_vp();
+}
+
 #ifdef MA__LWPS
 
 static int discovering_level = 1;

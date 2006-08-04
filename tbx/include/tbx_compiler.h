@@ -97,7 +97,7 @@ void __memory_barrier(void);
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
-#ifndef AIX_SYS
+#if !defined(AIX_SYS) && !defined(DARWIN_SYS)
 #  define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
 #  define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
 #  define TBX_VISIBILITY_PUSH_INTERNAL _Pragma("GCC visibility push(internal)")

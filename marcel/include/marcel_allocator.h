@@ -34,9 +34,9 @@ enum policy_t {
 typedef struct _ma_allocator_t {
   enum policy_t policy;
   union {
-	  ma_container_t * container;
-	  unsigned long container_offset;
-  };
+	  ma_container_t * obj;
+	  unsigned long offset;
+  } container;
   void *(*create)(void *);
   void *create_arg;
 

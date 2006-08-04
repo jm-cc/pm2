@@ -89,7 +89,7 @@ ma_allocator_t * ma_new_obj_allocator(int conservative,
   allocator->conservative = conservative;
   allocator->max_size = max_size;
   allocator->init = 0;
-  allocator->container = NULL;
+  allocator->container.obj = NULL;
   ma_obj_allocator_init(allocator);
   return allocator;
 }
@@ -134,7 +134,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
   case POLICY_GLOBAL:
     {
       ma_container_fini(ma_get_container(allocator, ALLOC_METHOD), allocator->destroy, allocator->destroy_arg);
-      TBX_FREE(allocator->container);
+      TBX_FREE(allocator->container.obj);
     }
     break;
  
@@ -142,9 +142,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
  case POLICY_LOCAL: {
     struct marcel_topo_level *vp;
     for_all_vp(vp) {
-	    ma_container_fini(ma_per_level_data(vp, allocator->container_offset),allocator->destroy, allocator->destroy_arg);
+	    ma_container_fini(ma_per_level_data(vp, allocator->container.offset),allocator->destroy, allocator->destroy_arg);
       }
-    ma_obj_free(lwp_container_allocator, (void*) allocator->container_offset);
+    ma_obj_free(lwp_container_allocator, (void*) allocator->container.offset);
     break;
   }
 
@@ -153,10 +153,10 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
       {
         for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	  {
-	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container_offset)),allocator->destroy, allocator->destroy_arg);
+	    ma_container_fini(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container.offset)),allocator->destroy, allocator->destroy_arg);
 	  }
       }
-    ma_obj_free(level_container_allocator, (void*) allocator->container_offset);
+    ma_obj_free(level_container_allocator, (void*) allocator->container.offset);
     break;
 #endif
   default:
@@ -178,29 +178,29 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
       switch(allocator->policy) {
       case POLICY_GLOBAL: 
-	allocator->container = TBX_MALLOC(sizeof(ma_container_t));
-	ma_container_init(allocator->container, allocator->conservative, allocator->max_size);
+	allocator->container.obj = TBX_MALLOC(sizeof(ma_container_t));
+	ma_container_init(allocator->container.obj, allocator->conservative, allocator->max_size);
 	break;
 
 #ifdef MA__LWPS
       case POLICY_LOCAL: {
         struct marcel_topo_level *vp;
-	allocator->container_offset = (unsigned long) ma_obj_alloc(lwp_container_allocator);
+	allocator->container.offset = (unsigned long) ma_obj_alloc(lwp_container_allocator);
 
 	for_all_vp(vp) {
-		ma_container_init(ma_per_level_data(vp,(allocator->container_offset)), allocator->conservative, allocator->max_size);
+		ma_container_init(ma_per_level_data(vp,(allocator->container.offset)), allocator->conservative, allocator->max_size);
 	}
 	break;
       }
 
       case POLICY_HIERARCHICAL:
 
-	allocator->container_offset = (unsigned long) ma_obj_alloc(level_container_allocator);
+	allocator->container.offset = (unsigned long) ma_obj_alloc(level_container_allocator);
 	for(j=0; j < marcel_topo_nblevels; ++j)
 	  {
             for(i=0; marcel_topo_levels[j][i].vpset; ++i)
 	      {
-		ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container_offset)), allocator->conservative, allocator->max_size);
+		ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], (allocator->container.offset)), allocator->conservative, allocator->max_size);
 	      }
 	  }
 
@@ -230,13 +230,13 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
 
   if (allocator->policy == POLICY_GLOBAL) 
     {
-      return allocator->container;
+      return allocator->container.obj;
     }
   
 #ifdef MA__LWPS
   if (allocator->policy == POLICY_LOCAL)
     {
-      return ma_per_lwp_self_data(allocator->container_offset);
+      return ma_per_lwp_self_data(allocator->container.offset);
     }
 
 
@@ -251,7 +251,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
-	  container_courant = ma_per_level_data(niveau_courant, allocator->container_offset);
+	  container_courant = ma_per_level_data(niveau_courant, allocator->container.offset);
 	  if (ma_container_nb_element(container_courant) > 0)
 	    return container_courant;
 	  else
@@ -275,7 +275,7 @@ ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode)
       while(niveau_courant)
 	{
 	  ma_container_t* container_courant;	
-	  container_courant = ma_per_level_data(niveau_courant, allocator->container_offset);
+	  container_courant = ma_per_level_data(niveau_courant, allocator->container.offset);
 	  if(!ma_container_plein(container_courant))
 	    {
 	    return container_courant;

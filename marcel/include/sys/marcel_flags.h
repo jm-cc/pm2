@@ -145,8 +145,8 @@
 #endif
 
 /* MA__PROVIDE_TLS : définit si on fournit le mécanisme de TLS pour l'application (et la glibc) */
-#ifndef MA__PROVIDE_TLS
-#  define MA__PROVIDE_TLS
+#ifdef MA__PROVIDE_TLS
+#  undef MA__PROVIDE_TLS
 #endif
 
 #ifdef MARCEL_MONO /* Marcel Mono */

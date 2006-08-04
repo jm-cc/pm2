@@ -23,7 +23,9 @@
 #else
 #include <sched.h>
 #endif
+#ifndef SOLARIS_SYS
 #include <stdint.h>
+#endif
 #include <inttypes.h>
 
 /* Déclaré non statique car utilisé dans marcel.c : */

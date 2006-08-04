@@ -54,7 +54,6 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 
 
 #section marcel_macros
-#define marcel_ctx_set_tls_reg(new_task) (void)0
 /* marcel_create : passage père->fils */
 /* marcel_exit : déplacement de pile */
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \

@@ -16,7 +16,10 @@
 
 #include "marcel.h"
 #include <stdlib.h>
+#include <sys/types.h>
+#ifndef SOLARIS_SYS
 #include <stdint.h>
+#endif
 #include <inttypes.h>
 
 #define FREE_METHOD 0

@@ -724,7 +724,9 @@ void marcel_resume(marcel_t pid)
 }
 
 #define __NO_WEAK_PTHREAD_ALIASES
+#ifdef MA__LIBPTHREAD
 #include <bits/libc-lock.h>
+#endif
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,

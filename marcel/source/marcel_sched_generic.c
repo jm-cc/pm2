@@ -100,7 +100,6 @@ unsigned marcel_nbthreads(void)
 int marcel_per_lwp_nbthreads()
 {
    unsigned num = 0;
-   struct marcel_lwp *lwp;
    struct marcel_topo_level *vp;
 
    vp=GET_LWP(MARCEL_SELF)->vp_level;

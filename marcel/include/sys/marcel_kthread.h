@@ -14,12 +14,23 @@
  * General Public License for more details.
  */
 
+#section functions
+# ifndef MARCEL_DONT_USE_POSIX_THREADS
+#   include <semaphore.h>
+# else
+#   ifdef SOLARIS_SYS
+#     include <thread.h>
+#   elif LINUX_SYS
+#     include <sys/types.h>
+#     include <unistd.h>
+#   endif
+# endif
+
 #section marcel_types
 #ifdef MA__SMP
 typedef void * (*marcel_kthread_func_t)(void *arg);
 
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
-#   include <semaphore.h>
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
@@ -28,11 +39,8 @@ typedef pthread_cond_t marcel_kthread_cond_t;
 #define MARCEL_KTHREAD_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 # else
 #   ifdef SOLARIS_SYS
-#     include <thread.h>
 typedef thread_t marcel_kthread_t;
 #   elif LINUX_SYS
-#     include <sys/types.h>
-#     include <unistd.h>
 typedef pid_t marcel_kthread_t;
 #depend "asm/linux_atomic.h[marcel_types]"
 typedef ma_atomic_t marcel_kthread_sem_t;

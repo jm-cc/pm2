@@ -13,6 +13,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
+#section types
+#include <stdlib.h>
 #section common
 #depend "tbx_compiler.h"
 
@@ -30,7 +32,6 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "scheduler/linux_runqueues.h[types]"
 #depend "scheduler/linux_runqueues.h[marcel_structures]"
 #depend "marcel_topology.h[marcel_structures]"
-#include <stdlib.h>
 
 struct marcel_lwp {
 	struct list_head lwp_list;

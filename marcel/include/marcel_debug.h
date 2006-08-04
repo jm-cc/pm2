@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section functions
+#include <signal.h>
+
 #section marcel_macros
 #include "tbx_compiler.h"
 
@@ -120,7 +123,6 @@ extern debug_type_t marcel_mtrace_timer;
 #define mdebug_sched_q(fmt, ...) \
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 
-#include <signal.h>
 #ifdef PM2_OPT
 #define MA_BUG_ON(cond) (void)(cond)
 #define MA_WARN_ON(cond) (void)(cond)

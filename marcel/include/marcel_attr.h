@@ -14,14 +14,15 @@
  * General Public License for more details.
  */
 
+#section functions
 #include <stdlib.h>
 
 #section types
+#include <sys/types.h> /* pour size_t */
 typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
 #section structures
 
-#include <sys/types.h> /* pour size_t */
 #depend "marcel_sched_generic.h[types]"
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_sched.h[types]"

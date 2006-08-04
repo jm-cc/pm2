@@ -16,7 +16,8 @@
 
 
 /****************************************************************/
-#include"time.h"
+#section types
+#include <time.h>
 
 #section macros
 

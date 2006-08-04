@@ -64,7 +64,7 @@
 
 #include <signal.h>
 #ifdef MA__TIMER
-#if !defined(SA_SIGINFO) || defined(OSF_SYS) || defined(AIX_SYS)
+#if defined(MA__LWPS) && (!defined(SA_SIGINFO) || defined(OSF_SYS) || defined(AIX_SYS) || defined(DARWIN_SYS))
 /* no way to distinguish between a signal from the kernel or from another LWP */
 #define MA_BOGUS_SIGINFO_CODE
 #endif

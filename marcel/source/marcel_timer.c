@@ -214,7 +214,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  */
 #ifndef __MINGW32__
 
-#if defined(MA__SMP) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
+#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
 #define DISTRIBUTE_SIGALRM
 #endif
 
@@ -262,10 +262,13 @@ static void timer_interrupt(int sig)
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
-		if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock))
+		if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock)) {
 #endif
 			ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
-#ifdef SA_SIGINFO
+#ifndef MA_HAVE_COMPAREEXCHANGE
+		}
+#endif
+#if defined(MA__LWPS) && !defined(MA_BOGUS_SIGINFO_CODE)
 		if (!info || info->si_code > 0)
 #endif
 		/* kernel timer signal */
@@ -334,8 +337,11 @@ void marcel_sig_reset_timer(void)
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
-	setitimer(MARCEL_ITIMER_TYPE, &value, 
-		  (struct itimerval *)NULL);
+	if (setitimer(MARCEL_ITIMER_TYPE, &value, 
+		  (struct itimerval *)NULL)) {
+		perror("can't start itimer");
+		exit(1);
+	}
 #endif
 	
 	LOG_OUT();
@@ -473,7 +479,7 @@ static void sig_stop_timer(ma_lwp_t lwp)
 #ifdef MA__TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
-	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 #endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);

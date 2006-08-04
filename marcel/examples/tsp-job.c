@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-#include <malloc.h>
+#include <stdlib.h>
 
 #ifdef	MARCEL
 # ifdef	MT

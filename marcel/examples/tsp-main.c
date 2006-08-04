@@ -31,11 +31,10 @@
 #endif	/* MARCEL */
 
 static struct timeval _t1, _t2;
-static struct timezone _tz;
 static unsigned long _temps_residuel = 0;
 
-#define top1() gettimeofday(&_t1, &_tz)
-#define top2() gettimeofday(&_t2, &_tz)
+#define top1() gettimeofday(&_t1, NULL)
+#define top2() gettimeofday(&_t2, NULL)
 
 void init_cpu_time(void)
 {

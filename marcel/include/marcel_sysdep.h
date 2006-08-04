@@ -14,18 +14,25 @@
  * General Public License for more details.
  */
 
+#section functions
+#ifdef MA__LWPS
+#  if defined(SOLARIS_SYS)
+#    include <thread.h>
+#  else // pas SOLARIS
+#    include <sched.h>
+#  endif
+#endif // MA__LWP
+
 #section marcel_macros
 #ifndef MA__LWPS
 #  define SCHED_YIELD()  do {} while(0)
 #else // MA__LWP
 #  if defined(SOLARIS_SYS)
-#    include <thread.h>
 #    define SCHED_YIELD() \
 do { \
 	thr_yield(); \
 } while (0)
 #  else // pas SOLARIS
-#    include <sched.h>
 #    define SCHED_YIELD() \
 do { \
 	sched_yield(); \

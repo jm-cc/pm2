@@ -32,11 +32,6 @@
 
 #section marcel_functions
 #include <stdlib.h>
-#ifdef MA__LWPS
-#define MA_LOCK_PREFIX "lock ; "
-#else
-#define MA_LOCK_PREFIX ""
-#endif
 
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
@@ -48,25 +43,25 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 {
 	switch (size) {
 		case 1:
-			__asm__ __volatile__(MA_LOCK_PREFIX "xchgb %b0,%1"
+			__asm__ __volatile__("xchgb %b0,%1"
 				:"=q" (x)
 				:"m" (*__ma_xg(ptr)), "0" (x)
 				:"memory");
 			break;
 		case 2:
-			__asm__ __volatile__(MA_LOCK_PREFIX "xchgw %w0,%1"
+			__asm__ __volatile__("xchgw %w0,%1"
 				:"=r" (x)
 				:"m" (*__ma_xg(ptr)), "0" (x)
 				:"memory");
 			break;
 		case 4:
-			__asm__ __volatile__(MA_LOCK_PREFIX "xchgl %k0,%1"
+			__asm__ __volatile__("xchgl %k0,%1"
 				:"=r" (x)
 				:"m" (*__ma_xg(ptr)), "0" (x)
 				:"memory");
 			break;
 		case 8:
-			__asm__ __volatile__(MA_LOCK_PREFIX "xchgq %0,%1"
+			__asm__ __volatile__("xchgq %0,%1"
 				:"=r" (x)
 				:"m" (*__ma_xg(ptr)), "0" (x)
 				:"memory");
@@ -79,13 +74,19 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
 
+#ifdef MA__LWPS
+#define MA_LOCK_PREFIX "lock ; "
+#else
+#define MA_LOCK_PREFIX ""
+#endif
+
 /*
  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
 
-static __tbx_inline__ unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
 				      unsigned long repl, int size)
 {
 	unsigned long prev;

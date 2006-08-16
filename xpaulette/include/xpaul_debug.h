@@ -60,7 +60,6 @@
 XPAUL_DECLARE_DEBUG_NAME(default);
 
 #ifdef XPAUL_FILE_DEBUG
-#  depend "tbx_debug.h"
 
 #  undef DEBUG_NAME
 #  define DEBUG_NAME CONCAT3(MODULE,_,XPAUL_FILE_DEBUG)
@@ -86,31 +85,27 @@ XPAUL_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
 /* Une variable de debug �d�inir pour ce fichier C */
 #  ifndef XPAUL_DEBUG_NO_DEFINE
 /* On peut avoir envie de le d�inir nous m�e (�1 par exemple) */
-XPAUL_DEBUG_DEFINE_NAME_DEPEND(XPAUL_FILE_DEBUG, &xpaul_mdebug);
+XPAUL_DEBUG_DEFINE_NAME_DEPEND(XPAUL_FILE_DEBUG, &xpaul_xdebug);
 XPAUL_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
 #  endif
-#  undef mdebugl
-#  define mdebugl(level, fmt, ...) \
+#  undef xdebugl
+#  define xdebugl(level, fmt, ...) \
   xpaul_debugl(XPAUL_FILE_DEBUG, level, fmt , ##__VA_ARGS__)
 #endif
-#endif /* PM2DEBUG */
 
-
-#ifdef PM2DEBUG
 extern debug_type_t xpaul_debug;
-extern debug_type_t xpaul_mdebug;
+extern debug_type_t xpaul_xdebug;
 extern debug_type_t xpaul_debug_state;
 extern debug_type_t xpaul_debug_work;
 extern debug_type_t xpaul_debug_deviate;
-extern debug_type_t xpaul_mdebug_sched_q;
+extern debug_type_t xpaul_xdebug_sched_q;
 
 extern debug_type_t xpaul_mtrace;
 extern debug_type_t xpaul_mtrace_timer;
-#endif
 
 #ifndef xdebugl
 #  define xdebugl(level, fmt, ...) \
-      debug_printfl(&xpaul_mdebug, level, fmt , ##__VA_ARGS__)
+      debug_printfl(&xpaul_xdebug, level, fmt , ##__VA_ARGS__)
 #endif
 #define xdebug(fmt, ...) \
     xdebugl(PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
@@ -121,7 +116,20 @@ extern debug_type_t xpaul_mtrace_timer;
 #define xdebug_deviate(fmt, ...) \
     debug_printf(&xpaul_debug_deviate, fmt , ##__VA_ARGS__)
 #define xdebug_sched_q(fmt, ...) \
-    debug_printf(&xpaul_mdebug_sched_q, fmt , ##__VA_ARGS__)
+    debug_printf(&xpaul_xdebug_sched_q, fmt , ##__VA_ARGS__)
+
+#else  /* PM2DEBUG */
+#ifndef xdebugl
+#  define xdebugl(level, fmt, ...) (void) 0
+#endif
+#define xdebug(fmt, ...) (void) 0
+#define xdebug_state(fmt, ...) (void) 0
+#define xdebug_work(fmt, ...) (void) 0
+#define xdebug_deviate(fmt, ...) (void) 0
+#define xdebug_sched_q(fmt, ...) (void) 0
+
+#endif /* PM2DEBUG */
+
 
 #include <signal.h>
 #ifdef PM2_OPT
@@ -131,14 +139,14 @@ extern debug_type_t xpaul_mtrace_timer;
 #define XPAUL_BUG_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
+		xdebug("BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
 		raise(SIGABRT); \
 	} \
   } while (0)
 #define XPAUL_WARN_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
+		xdebug("%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
   } while (0)
 #endif

@@ -525,7 +525,7 @@ void common_post_init(int *argc, char *argv[],
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
 
-#ifdef XPAULETTE
+#if defined(XPAULETTE) && defined(MA__LWPS)
   /*
    * TCP XPaul initialization
    * --------------------------------
@@ -539,7 +539,7 @@ void common_post_init(int *argc, char *argv[],
    * - Marcel's semaphores
    */
   xpaul_init_receiver();
-#endif /* XPAULETTE */
+#endif /* XPAULETTE && MA__LWPS*/
   
 #ifdef NTBX
   ntbx_purge_cmd_line(argc, argv);

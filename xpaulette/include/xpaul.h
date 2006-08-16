@@ -21,6 +21,6 @@
 #include "xpaul_debug.h"
 #include "xpaul_io.h"
 #include "xpaul_ev_serv.h"
-
+#include "tbx.h"
 
 #endif // XPAUL_EST_DEF

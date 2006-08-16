@@ -15,9 +15,16 @@
  */
 
 #define MA_FILE_DEBUG xpaul_io
+#include "xpaul.h"
+
+#ifdef MARCEL
 #include "marcel.h"
 #include "marcel_timer.h"
+#endif // MARCEL
+
 #include "xpaul_ev_serv.h"
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -205,13 +212,13 @@ int xpaul_ask_for_select(int n, fd_set *readfds, fd_set *writefds,
 {
   PROF_IN();
   int i,ok=0;
+  int res=0;
 
-#ifdef MARCEL
   struct marcel_sched_param param,backup;
   param.__sched_priority=MA_MAX_RT_PRIO;
   marcel_sched_getparam(marcel_self(), &backup);
   marcel_sched_setparam(marcel_self(), &param);
-#endif //MARCEL
+
 
   marcel_sem_P(&req_sem);
   for(i=0;i<n;i++)
@@ -229,6 +236,7 @@ int xpaul_ask_for_select(int n, fd_set *readfds, fd_set *writefds,
   reqs.n=(reqs.n>n)?reqs.n:n;
   marcel_sem_V(&req_sem);
 
+  // TODO : remplacer par un signal (quand cela sera possible)
   i=write(fds[1], &i,sizeof(i)); // on envoi n'importe quoi pour reveiller
   sched_yield();
     do {
@@ -264,18 +272,21 @@ int xpaul_ask_for_select(int n, fd_set *readfds, fd_set *writefds,
 	      {
 		FD_SET(i,readfds);
 		FD_CLR(i,res_req.readfds);
+		res++;
 	      }
 	  if(writefds)
 	    if(FD_ISSET(i,res_req.writefds))
 	      {
 		FD_SET(i,writefds);
 		FD_CLR(i,res_req.writefds);
+		res++;
 	      }
 	  if(exceptfds)
 	    if(FD_ISSET(i,res_req.exceptfds))
 	      {
 		FD_SET(i,exceptfds);
 		FD_CLR(i,res_req.exceptfds);
+		res++;
 	      }
 	}
       for(i=0;i<res_req.n;i++) 
@@ -289,7 +300,7 @@ int xpaul_ask_for_select(int n, fd_set *readfds, fd_set *writefds,
     marcel_sched_setparam(marcel_self(), &backup);
     PROF_OUT();
 
-    return 1;
+    return res;
 }
 
 static int xpaul_io_block(xpaul_server_t server, 
@@ -348,7 +359,7 @@ static int xpaul_io_block(xpaul_server_t server,
 	PROF_EVENT(xpaul_io_block_exit);
 	return 0;
 }
-#endif
+#endif // MA__LWPS
 
 static int xpaul_io_poll(xpaul_server_t server, 
 			xpaul_op_t _op,
@@ -362,9 +373,11 @@ static int xpaul_io_poll(xpaul_server_t server,
 	fd_set rfds, wfds;
 	struct timeval tv, *ptv;
   
+#ifdef MARCEL
 	// Trop de messages avec les activations
 	xdebugl(6, "Polling function called on LWP %d\n",
 		marcel_current_vp());
+#endif // MARCEL
 
 	timerclear(&tv);
 	tv.tv_sec = 0;
@@ -426,10 +439,11 @@ static int xpaul_io_fast_poll(xpaul_server_t server,
 	unsigned nb = 0;
 	struct timeval tv;
 	int r;
-
+#ifdef MARCEL
 	// Trop de messages avec les activations
 	xdebugl(6, "Fast Polling function called on LWP %d\n",
 	       marcel_current_vp());
+#endif // MARCEL
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
@@ -625,7 +639,9 @@ int xpaul_tselect(int width, fd_set * __restrict readfds,
 		if(res <= 0) {
 			if (res < 0 && (errno != EINTR))
 				break;
+#ifdef MARCEL
 			marcel_yield();
+#endif
 		}
 	} while(res <= 0);
 	
@@ -767,7 +783,7 @@ any_t xpaul_receiver()
       }
   }
 }
-#endif
+#endif // MA__LWPS
 
 
 void xpaul_io_init(void)

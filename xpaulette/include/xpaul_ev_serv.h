@@ -16,6 +16,7 @@
 
 #ifndef XPAUL_EV_SERV
 #define XPAUL_EV_SERV
+#include "pm2_list.h"
 // THESE: INTERFACE START
 /****************************************************************
  * Certains commentaires sont étiquetés par U/S/C/I signifiant
@@ -132,7 +133,9 @@ enum {
 	XPAUL_SERVER_STATE_HALTED=3,
 };
 
+#ifdef MARCEL
 #include "marcel.h"
+#endif
 
 /****************************************************************
  * Structure serveur d'événements
@@ -145,7 +148,12 @@ struct xpaul_server {
 	/* Thread propriétaire du lock (pour le locking applicatif) */
         // TODO inutile sans marcel ? 
 	marcel_task_t *lock_owner;
+#else
+        // foo
+        void *lock;
+        void *lock_owner;
 #endif // MARCEL
+
 	/* Liste des requêtes soumises */
 	struct list_head list_req_registered;
 	/* Liste des requêtes signalées prêtes par les call-backs */
@@ -157,6 +165,8 @@ struct xpaul_server {
 #ifdef MARCEL
 	/* Spinlock régissant l'accès à la liste précédente */
 	ma_spinlock_t req_success_lock;
+#else
+        void *req_success_lock; // foo
 #endif // MARCEL
 	/* Polling events registered but not yet polled */
 	int registered_req_not_yet_polled;
@@ -256,6 +266,9 @@ enum {
 
 /* void xpaul_per_lwp_polling_proceed(void); */
 
+#ifndef MARCEL
+#define marcel_time_t int
+#endif // MARCEL
 // TODO supprimer marcel_time_t (compatibilité sans Marcel)
 int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 		   xpaul_wait_t wait, marcel_time_t timeout);
@@ -356,13 +369,14 @@ enum {
 /* Nombre de threads de communication */
 static int nb_comm_threads;
 
-
+#ifdef MARCEL
 /* Nombre de threads actifs */
 __tbx_inline__ static int NB_RUNNING_THREADS(void){
   int res;
   marcel_threadslist(0,NULL, &res, NOT_BLOCKED_ONLY);  
   return res-nb_comm_threads;
 }
+#endif // MARCEL
 
 /*[C]****************************************************************
  * Itérateurs pour les call-backs
@@ -517,14 +531,14 @@ __tbx_inline__ static int xpaul_server_add_callback(xpaul_server_t server,
 						 xpaul_op_t op,
 						 xpaul_pcallback_t func)
 {
-#ifdef MA__DEBUG
+#ifdef XPAUL_FILE_DEBUG
 	/* Cette fonction doit être appelée entre l'initialisation et
 	 * le démarrage de ce serveur d'événements */
-	MA_BUG_ON(server->state != MA_XPAUL_SERV_STATE_INIT);
+	XPAUL_BUG_ON(server->state != XPAUL_SERVER_STATE_INIT);
 	/* On vérifie que l'index est correct */
-	MA_BUG_ON(op>=XPAUL_FUNCTYPE_SIZE || op<0);
+	XPAUL_BUG_ON(op>=XPAUL_FUNCTYPE_SIZE || op<0);
 	/* On vérifie que la fonction n'est pas déjà là */
-	MA_BUG_ON(server->funcs[op].func!=NULL);
+	XPAUL_BUG_ON(server->funcs[op].func!=NULL);
 #endif
 	server->funcs[op]=func;
 	return 0;
@@ -538,6 +552,8 @@ void xpaul_poll_timer(unsigned long id);
 
 #define XPAUL_SERVER_DECLARE(var) \
   const xpaul_server_t var
+
+#ifdef MARCEL
 #define XPAUL_SERVER_INIT(var, sname) \
   { \
     .lock=MA_SPIN_LOCK_UNLOCKED, \
@@ -562,6 +578,24 @@ void xpaul_poll_timer(unsigned long id);
     .state=XPAUL_SERVER_STATE_INIT, \
     .name=sname, \
   }
+#else
+#define XPAUL_SERVER_INIT(var, sname) \
+  { \
+    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered), \
+    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready), \
+    .list_req_success=LIST_HEAD_INIT((var).list_req_success), \
+    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters), \
+    .registered_req_not_yet_polled=0, \
+    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+    .req_poll_grouped_nb=0, \
+    .poll_points=0, \
+    .frequency=0, \
+    .max_poll=-1, \
+    .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
+    .state=XPAUL_SERVER_STATE_INIT, \
+    .name=sname, \
+  }
+#endif // MARCEL
 
 
 enum {
@@ -619,14 +653,15 @@ struct xpaul_wait {
 	/* Chaine des événements groupé en attente */
 	struct list_head chain_wait;
 
+#ifdef MARCEL
         // TODO inutile sans marcel ? 
         marcel_sem_t sem;
+	marcel_task_t *task;
+#endif
 	/* 0: event
 	   -ECANCELED: marcel_unregister called
 	*/
 	int ret;
-        // TODO inutile sans marcel ? 
-	marcel_task_t *task;
 };
 
 

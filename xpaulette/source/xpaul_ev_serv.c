@@ -16,10 +16,11 @@
 
 #define XPAUL_FILE_DEBUG xpaul_ev_serv
 #include "xpaul.h"
+#ifdef MARCEL
 #include "marcel.h"
 #include "linux_spinlock.h"
 #include "linux_interrupt.h"
-
+#endif // MARCEL
 
 #include <errno.h>
 
@@ -45,7 +46,7 @@ typedef struct per_lwp_polling_s{
 	tbx_bool_t blocked;
 	struct xpaul_per_lwp_polling_s* next;
 }xpaul_per_lwp_polling_t;
-
+#endif // MARCEL
 /****************************************************************
  * Implémentation courante
  ****************************************************************/
@@ -55,8 +56,9 @@ typedef struct per_lwp_polling_s{
  * Le lock permet de protéger le parcours/modification de la liste
  */
 LIST_HEAD(xpaul_list_poll);
+#ifdef MARCEL
 static ma_rwlock_t xpaul_poll_lock = MA_RW_LOCK_UNLOCKED;
-
+#endif
 /****************************************************************
  * Gestion de l'exclusion mutuelle
  *
@@ -73,7 +75,7 @@ static ma_rwlock_t xpaul_poll_lock = MA_RW_LOCK_UNLOCKED;
  *        . la tasklet doit être désactivées
  *     (exemple marcel_xpaul_wait())
  */
-
+#ifdef MARCEL
 inline static void __xpaul_lock_server(xpaul_server_t server, marcel_task_t *owner)
 {
 	ma_spin_lock_softirq(&server->lock);
@@ -144,6 +146,36 @@ int xpaul_unlock(xpaul_server_t server)
 	return 0;
 }
 
+#define xpaul_spin_lock_softirq(lock) ma_spin_lock_softirq(lock)
+#define xpaul_spin_unlock_softirq(lock) ma_spin_unlock_softirq(lock)
+#define xpaul_write_lock_softirq(lock) ma_write_lock_softirq(lock)
+#define xpaul_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
+#define xpaul_read_lock_softirq(lock) ma_read_lock_softirq(&xpaul_poll_lock)
+#define xpaul_read_unlock_softirq(lock) ma_read_unlock_softirq(&xpaul_poll_lock)
+
+#define xpaul_spin_lock(lock) ma_spin_lock(lock)
+#define xpaul_spin_unlock(lock) ma_spin_unlock(lock)
+
+#else
+
+#define __xpaul_lock_server(server, owner) (void) 0
+#define __xpaul_unlock_server(server) (void) 0
+#define xpaul_ensure_lock_server(server) (void) 0
+#define xpaul_lock_server_owner(server, owner) (void) 0
+#define xpaul_restore_lock_server_locked(server, old_owner) (void) 0
+#define xpaul_restore_lock_server_unlocked(server, old_owner) (void) 0
+#define xpaul_lock(server) (void) 0
+#define xpaul_unlock(server) (void) 0
+
+#define xpaul_spin_lock_softirq(lock) (void) 0
+#define xpaul_spin_unlock_softirq(lock) (void) 0
+#define xpaul_write_lock_softirq(lock) (void) 0
+#define xpaul_write_unlock_softirq(lock) (void) 0
+#define xpaul_read_lock_softirq(lock) (void) 0
+#define xpaul_read_unlock_softirq(lock) (void) 0
+
+#define xpaul_spin_lock(lock) (void) 0
+#define xpaul_spin_unlock(lock) (void) 0
 #endif // MARCEL
 /****************************************************************
  * Gestion des événements signalés OK par les call-backs
@@ -154,18 +186,16 @@ xpaul_req_t xpaul_get_success(xpaul_server_t server)
 {
 	LOG_IN();
 	xpaul_req_t req=NULL;
-#ifdef MARCEL
-	ma_spin_lock_softirq(&server->req_success_lock);
-#endif // MARCEL
+	xpaul_spin_lock_softirq(&server->req_success_lock);
+
 	if (!list_empty(&server->list_req_success)) {
 		req=list_entry(server->list_req_success.next, 
 			      struct xpaul_req, chain_req_success);
 		list_del_init(&req->chain_req_success);
 		xdebug("Getting success req %p pour [%s]\n", req, server->name);
 	}
-#ifdef MARCEL
-	ma_spin_unlock_softirq(&server->req_success_lock);
-#endif // MARCEL
+
+	xpaul_spin_unlock_softirq(&server->req_success_lock);
 	LOG_RETURN(req);
 }
 
@@ -177,14 +207,10 @@ inline static int __xpaul_del_success_req(xpaul_server_t server,
 		/* On n'est pas enregistré */
 		LOG_RETURN(0);
 	}
-#ifdef MARCEL
-	ma_spin_lock(&server->req_success_lock);
-#endif // MARCEL
+	xpaul_spin_lock(&server->req_success_lock);
 	list_del_init(&req->chain_req_success);
 	xdebug("Removing success ev %p pour [%s]\n", req, server->name);
-#ifdef MARCEL
-	ma_spin_unlock(&server->req_success_lock);	
-#endif // MARCEL
+	xpaul_spin_unlock(&server->req_success_lock);	
 	
 	LOG_RETURN(0);
 }
@@ -197,14 +223,12 @@ inline static int __xpaul_add_success_req(xpaul_server_t server,
 		/* On est déjà enregistré */
 		LOG_RETURN(0);
 	}
-#ifdef MARCEL
-	ma_spin_lock(&server->req_success_lock);
-#endif // MARCEL
+	xpaul_spin_lock(&server->req_success_lock);
+
 	xdebug("Adding success req %p pour [%s]\n", req, server->name);
 	list_add_tail(&req->chain_req_success, &server->list_req_success);
-#ifdef MARCEL
-	ma_spin_unlock(&server->req_success_lock);
-#endif // MARCEL
+	xpaul_spin_unlock(&server->req_success_lock);
+
 	LOG_RETURN(0);
 }
 
@@ -268,9 +292,7 @@ extern unsigned long volatile ma_jiffies;
  */
 inline static void __xpaul_poll_start(xpaul_server_t server)
 {
-#ifdef MARCEL
-	ma_write_lock_softirq(&xpaul_poll_lock);
-#endif // MARCEL
+	xpaul_write_lock_softirq(&xpaul_poll_lock);
 	xdebug("Starting polling for %s\n", server->name);
 	XPAUL_BUG_ON(!list_empty(&server->chain_poll));
 	list_add(&server->chain_poll, &xpaul_list_poll);
@@ -279,11 +301,12 @@ inline static void __xpaul_poll_start(xpaul_server_t server)
 		       server->name, server->frequency);
 		/* ma_mod_timer des fois qu'un ancien soit toujours
 		 * pending... */
-		ma_mod_timer(&server->poll_timer, ma_jiffies+server->frequency);
-	}
 #ifdef MARCEL
-	ma_write_unlock_softirq(&xpaul_poll_lock);
+		// TODO: support du timer
+		ma_mod_timer(&server->poll_timer, ma_jiffies+server->frequency);
 #endif // MARCEL
+	}
+	xpaul_write_unlock_softirq(&xpaul_poll_lock);
 }
 
 /* Plus rien à scruter 
@@ -293,19 +316,17 @@ inline static void __xpaul_poll_start(xpaul_server_t server)
  */
 inline static void __xpaul_poll_stop(xpaul_server_t server)
 {
-#ifdef MARCEL
-	ma_write_lock_softirq(&xpaul_poll_lock);
-#endif // MARCEL
+	xpaul_write_lock_softirq(&xpaul_poll_lock);
 	xdebug("Stopping polling for [%s]\n", server->name);
 	list_del_init(&server->chain_poll);
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
 		xdebug("Stopping timer polling for [%s]\n", server->name);
-		// TODO: support sans Marcel
-		ma_del_timer(&server->poll_timer);
-	}
 #ifdef MARCEL
-	ma_write_unlock_softirq(&xpaul_poll_lock);
+		// TODO: support du timer sans Marcel
+		ma_del_timer(&server->poll_timer);
 #endif // MARCEL
+	}
+	xpaul_write_unlock_softirq(&xpaul_poll_lock);
 }
 
 /* Réveils du serveur */
@@ -467,7 +488,9 @@ inline static void __xpaul_update_timer(xpaul_server_t server)
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
 		xdebugl(7, "Update timer polling for [%s] at frequency %i\n",
 			server->name, server->frequency);
+#ifdef MARCEL
 		ma_mod_timer(&server->poll_timer, ma_jiffies+server->frequency);
+#endif
 	}
 }
 
@@ -515,7 +538,7 @@ static void xpaul_check_polling_for(xpaul_server_t server)
 		}
 	} else {
 		/* Pas de méthode disponible ! */
-		XPAUL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}
 
 	__xpaul_manage_ready(server);
@@ -562,9 +585,7 @@ void __xpaul_check_polling(unsigned polling_point)
 	xpaul_server_t server;
 	
 	//debug("Checking polling at %i\n", polling_point);
-#ifdef MARCEL
-	ma_read_lock_softirq(&xpaul_poll_lock);
-#endif // MARCEL
+	xpaul_read_lock_softirq(&xpaul_poll_lock);
 	list_for_each_entry(server, &xpaul_list_poll, chain_poll) {
 		if (server->poll_points & polling_point) {
 			xdebugl(7, "Scheduling polling for [%s] at point %i\n",
@@ -576,9 +597,7 @@ void __xpaul_check_polling(unsigned polling_point)
 #endif // MARCEL
 		}
 	}
-#ifdef MARCEL
-	ma_read_unlock_softirq(&xpaul_poll_lock);
-#endif // MARCEL
+	xpaul_read_unlock_softirq(&xpaul_poll_lock);
 	PROF_OUT();
 }
 
@@ -731,14 +750,48 @@ inline static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t req,
 	list_add(&wait->chain_wait, &req->list_wait);
 #ifdef MARCEL
 	marcel_sem_init(&wait->sem, 0);
+	wait->task=MARCEL_SELF;
 #endif
 	wait->ret=0;
-	wait->task=MARCEL_SELF;
+
 
 	__xpaul_unlock_server(server);
 #ifdef MARCEL
 	// TODO: utiliser pmarcel_sem_P qui peut renvoyer -1 avec errno EINT (support posix)
 	marcel_sem_P(&wait->sem);
+#else
+	// while (!fini) fast_poll;
+	int waken_up=0;
+	int checked=0;
+	do {
+	  req->state |= XPAUL_STATE_ONE_SHOT|XPAUL_STATE_NO_WAKE_SERVER;
+
+	  if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func && req->func_to_use != XPAUL_FUNC_SYSCALL) {
+	    xdebug("Using Immediate POLL_ONE\n");
+	    (*server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
+	      (server, XPAUL_FUNCTYPE_POLL_POLLONE,
+	       req, server->req_poll_grouped_nb, 0);
+	    waken_up=__xpaul_need_poll(server);
+	    __xpaul_manage_ready(server);
+	    waken_up -= __xpaul_need_poll(server);
+	    checked=1;
+	  }
+	
+	  if (req->state & XPAUL_STATE_OCCURED) {
+	    if (waken_up) {
+	      /* Le nombre de tache en cours de polling a varié */
+	      if (__xpaul_need_poll(server)) {
+		__xpaul_poll_group(server, NULL);
+	      } else {
+		__xpaul_poll_stop(server);
+	      }
+	    }
+	    /* Pas update_timer(id) car on a fait un poll_one et
+	     * pas poll_all */
+	    LOG_RETURN(0);
+	  }
+	} while(!(req->state & XPAUL_STATE_OCCURED));
+
 #endif
 	LOG_RETURN(wait->ret);
 }
@@ -829,6 +882,9 @@ int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req, xpaul_wait_t wai
    *   - priorité de la requête, du thread ?
    *   - changement de méthode
    *********************************************/
+#ifndef MARCEL
+  return 0;
+#else
   /* requête terminée */
   if(req->state & XPAUL_STATE_OCCURED)
     return 0;
@@ -838,7 +894,7 @@ int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req, xpaul_wait_t wai
   /* force le polling */
   if (req->func_to_use == XPAUL_FUNC_POLLING)
     return 0;
-#ifdef MARCEL
+
   /* pas d'autres threads */
   PROF_EVENT1(running_threads, marcel_per_lwp_nbthreads() );
   if(marcel_per_lwp_nbthreads()<2)
@@ -866,7 +922,9 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 	__xpaul_init_req(req);
 	__xpaul_register(server, req);
 
+#ifdef MARCEL
 	xdebug("Marcel_poll (thread %p)...\n", marcel_self());
+#endif // MARCEL
 	xdebug("using pollid [%s]\n", server->name);
 
 	req->state |= XPAUL_STATE_ONE_SHOT|XPAUL_STATE_NO_WAKE_SERVER;
@@ -928,7 +986,6 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 		xpaul_lock_server_owner(server, lock);
 #endif // MARCEL
 	}
-
 	__xpaul_unregister(server, req);
 #ifdef MARCEL
 	xpaul_restore_lock_server_locked(server, lock);
@@ -960,7 +1017,7 @@ int xpaul_server_set_poll_settings(xpaul_server_t server,
 	if (poll_points & XPAUL_POLL_AT_TIMER_SIG) {
 		frequency=frequency?:1;
 		//TODO : virer l'horloge de Marcel
-		server->frequency = frequency * MA_JIFFIES_PER_TIMER_TICK;
+		//		server->frequency = frequency * MA_JIFFIES_PER_TIMER_TICK;
 	}
 	return 0;	
 }
@@ -973,7 +1030,7 @@ int xpaul_server_start(xpaul_server_t server)
 	if (!server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
 	    && !server->funcs[XPAUL_FUNCTYPE_POLL_POLLANY].func) {
 		xdebug("One poll function needed for [%s]\n", server->name);
-		XPAUL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}
 	server->state=XPAUL_SERVER_STATE_LAUNCHED;
 	return 0;

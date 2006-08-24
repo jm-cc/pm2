@@ -456,9 +456,6 @@ static int lwp_start(ma_lwp_t lwp)
 		ma_bind_on_processor(target);
 		mdebug("LWP %u bound to processor %lu\n",
 				LWP_NUMBER(lwp), target);
-	} else {
-		unsigned long mask;
-		sched_getaffinity(0, sizeof(mask), &mask);
 	}
 #endif
 	LOG_OUT();

@@ -27,6 +27,8 @@
 #ifndef TBX_MACROS_H
 #define TBX_MACROS_H
 
+#include "tbx_debug.h"
+
 /* DEBUG: main debug flag */
 /* #define DEBUG */
 

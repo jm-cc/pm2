@@ -207,8 +207,8 @@ unsigned marcel_frozenthreads(void)
 /**************************************************************************/
 /**************************************************************************/
 
-// Pour le debug. ATTENTION : sched_lock/unlock doivent être appelés
-// avant et après !
+// Pour le debug. ATTENTION : sched_lock/unlock doivent ï¿½re appelï¿½
+// avant et aprï¿½ !
 #if 0
 static __inline__ void display_sched_queue(marcel_lwp_t *lwp)
 {
@@ -253,45 +253,6 @@ static __inline__ void display_sched_queue(marcel_lwp_t *lwp)
   }
 #endif
   LOG_OUT();
-}
-#endif
-
-
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/*         Changement de contexte                                         */
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-#if 0
-static int nr_running=0;
-
-#define task_has_lwp(tsk) ((tsk)->sched.internal.entity.cpus_runnable != ~0UL)
-
-static inline void task_set_lwp(marcel_task_t *tsk, marcel_lwp_t *lwp)
-{
-        tsk->sched.lwp = lwp;
-        tsk->sched.internal.entity.lwps_runnable = 1UL << LWP_NUMBER(lwp);
-}
-
-static inline void task_release_cpu(marcel_task_t *tsk)
-{
-        tsk->sched.internal.entity.lwps_runnable = ~0UL;
-}
-
-static inline void del_from_runqueue(marcel_task_t * p)
-{
-        nr_running--;
-        //p->sleep_time = jiffies;
-        list_del(&p->sched.internal.entity.run_list);
-        p->sched.internal.entity.run_list.next = NULL;
-}
-
-static inline int task_on_runqueue(marcel_task_t *p)
-{
-        return (p->sched.internal.entity.run_list.next != NULL);
 }
 #endif
 

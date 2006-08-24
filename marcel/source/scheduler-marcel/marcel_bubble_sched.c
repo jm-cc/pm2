@@ -209,6 +209,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
 	}
 	list_add_tail(&entity->entity_list, &bubble->heldentities);
+	marcel_barrier_addcount(&bubble->barrier, 1);
 	entity->init_holder = &bubble->hold;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	entity->sched_holder = entity->init_holder;
@@ -312,6 +313,7 @@ int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entit
 	MA_BUG_ON(entity->run_holder);
 	entity->run_holder = NULL;
 	list_del(&entity->entity_list);
+	marcel_barrier_addcount(&bubble->barrier, -1);
 	return (list_empty(&bubble->heldentities));
 }
 
@@ -392,6 +394,11 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 		marcel_bubble_removeentity(ma_bubble_holder(h), &bubble->sched);
 	PROF_EVENT1(bubble_sched_join,bubble);
 	LOG_OUT();
+}
+
+#undef marcel_bubble_barrier
+int marcel_bubble_barrier(marcel_bubble_t *bubble) {
+	return marcel_barrier_wait(&bubble->barrier);
 }
 
 /******************************************************************************
@@ -989,7 +996,7 @@ static void __marcel_init bubble_sched_init() {
 	PROF_EVENT2_ALWAYS(bubble_sched_switchrq,&marcel_root_bubble,&ma_main_runqueue);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
 	/* and fake main thread restart */
-	ma_rq_dequeue_entity(&SELF_GETMEM(sched).internal, &ma_main_runqueue);
+	ma_rq_dequeue_entity(&SELF_GETMEM(sched).internal.entity, &ma_main_runqueue);
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);

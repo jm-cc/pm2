@@ -71,6 +71,10 @@ DEF_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b), (b),
 	return ret;
 })
 
+void marcel_barrier_addcount(marcel_barrier_t *b, int count)
+{
+	b->num += count;
+}
 
 /************************barrierattr*****************************/
 DEF_POSIX(int,barrierattr_init,(marcel_barrierattr_t *attr),(attr),

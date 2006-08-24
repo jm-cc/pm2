@@ -106,17 +106,17 @@ int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p) {
 }
 
 int marcel_sched_getparam(marcel_t t, struct marcel_sched_param *p) {
-	p->sched_priority=t->sched.internal.prio;
+	p->sched_priority=t->sched.internal.entity.prio;
 	return 0;
 }
 
 int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_param *p) {
-	t->sched.internal.sched_policy=policy;
+	t->sched.internal.entity.sched_policy=policy;
 	return ma_sched_change_prio(t,p->sched_priority);
 }
 
 int marcel_sched_getscheduler(marcel_t t) {
-	return t->sched.internal.sched_policy;
+	return t->sched.internal.entity.sched_policy;
 }
 
 /**************************************************************************/
@@ -222,7 +222,7 @@ static __inline__ void display_sched_queue(marcel_lwp_t *lwp)
     do {
 #ifdef MA__MULTIPLE_RUNNING
       mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, ext_state %.8x, sf %.8lx)\n",
-	     t, t->number, LWP_NUMBER(GET_LWP(t)), t->sched.internal.ext_state, t->flags);
+	     t, t->number, LWP_NUMBER(GET_LWP(t)), t->sched.internal.entity.ext_state, t->flags);
 #else
       mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, fl %.8lx)\n" ,
              t, t->number, LWP_NUMBER(GET_LWP(t)), t->flags);
@@ -242,7 +242,7 @@ static __inline__ void display_sched_queue(marcel_lwp_t *lwp)
     do {
 #ifdef MA__MULTIPLE_RUNNING
       mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, ext_state %.8x, sf %.8lx)\n",
-	     t, t->number, LWP_NUMBER(GET_LWP(t)), t->sched.internal.ext_state, t->flags);
+	     t, t->number, LWP_NUMBER(GET_LWP(t)), t->sched.internal.entity.ext_state, t->flags);
 #else
       mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, sf %.8lx)\n" ,
              t, t->number, LWP_NUMBER(GET_LWP(t)), t->flags);
@@ -268,30 +268,30 @@ static __inline__ void display_sched_queue(marcel_lwp_t *lwp)
 #if 0
 static int nr_running=0;
 
-#define task_has_lwp(tsk) ((tsk)->sched.internal.cpus_runnable != ~0UL)
+#define task_has_lwp(tsk) ((tsk)->sched.internal.entity.cpus_runnable != ~0UL)
 
 static inline void task_set_lwp(marcel_task_t *tsk, marcel_lwp_t *lwp)
 {
         tsk->sched.lwp = lwp;
-        tsk->sched.internal.lwps_runnable = 1UL << LWP_NUMBER(lwp);
+        tsk->sched.internal.entity.lwps_runnable = 1UL << LWP_NUMBER(lwp);
 }
 
 static inline void task_release_cpu(marcel_task_t *tsk)
 {
-        tsk->sched.internal.lwps_runnable = ~0UL;
+        tsk->sched.internal.entity.lwps_runnable = ~0UL;
 }
 
 static inline void del_from_runqueue(marcel_task_t * p)
 {
         nr_running--;
         //p->sleep_time = jiffies;
-        list_del(&p->sched.internal.run_list);
-        p->sched.internal.run_list.next = NULL;
+        list_del(&p->sched.internal.entity.run_list);
+        p->sched.internal.entity.run_list.next = NULL;
 }
 
 static inline int task_on_runqueue(marcel_task_t *p)
 {
-        return (p->sched.internal.run_list.next != NULL);
+        return (p->sched.internal.entity.run_list.next != NULL);
 }
 #endif
 

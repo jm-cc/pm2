@@ -125,13 +125,13 @@ define marcel-printthread
     set $state='B'
   end
   printf "0x%lx %16s %2d %c", \
-    $arg0, $arg0->name, $arg0->sched.internal.prio, $state
+    $arg0, $arg0->name, $arg0->sched.internal.entity.prio, $state
   if $arg0->sched.lwp
     printf " %2d", $arg0->sched.lwp->number
   end
-  ma-printholder $arg0->sched.internal.init_holder
-  ma-printholder $arg0->sched.internal.sched_holder
-  ma-printholder $arg0->sched.internal.run_holder
+  ma-printholder $arg0->sched.internal.entity.init_holder
+  ma-printholder $arg0->sched.internal.entity.sched_holder
+  ma-printholder $arg0->sched.internal.entity.run_holder
   printf "\n"
 end
 document marcel-printthread

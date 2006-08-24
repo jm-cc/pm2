@@ -154,7 +154,7 @@
 	((p)->interactive_credit < -CREDIT_LIMIT)
 
 #define TASK_TASK_PREEMPT(p, q) \
-	((q)->sched.internal.prio - (p)->sched.internal.prio)
+	((q)->sched.internal.entity.prio - (p)->sched.internal.entity.prio)
 #define TASK_PREEMPTS_TASK(p, q) \
 	TASK_TASK_PREEMPT(p, q) > 0
 #define TASK_PREEMPTS_CURR(p, lwp) \
@@ -218,7 +218,7 @@ static int effective_prio(marcel_task_t *p)
 	int bonus, prio;
 
 	if (rt_task(p))
-		return p->sched.internal.prio;
+		return p->sched.internal.entity.prio;
 
 	bonus = CURRENT_BONUS(p) - MAX_BONUS / 2;
 
@@ -647,12 +647,12 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	p->sched.internal.timestamp = marcel_clock();
 	ma_set_task_state(p, MA_TASK_RUNNING);
 
-	h = ma_task_sched_holder(p);
-
 #ifdef MA__BUBBLES
-	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
+	h = ma_task_init_holder(p);
+
+	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
-		if (!p->sched.internal.entity_list.next)
+		if (!p->sched.internal.entity.entity_list.next)
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 #ifdef MARCEL_BUBBLE_EXPLODE
 		return;
@@ -684,17 +684,17 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
-//	if (tbx_unlikely(!SELF_GETMEM(sched).internal.array))
+//	if (tbx_unlikely(!SELF_GETMEM(sched).internal.entity.array))
 	if (MA_TASK_IS_BLOCKED(p))
 		ma_activate_task(p, h);
 //	else {
-//		p->sched.internal.prio = SELF_GETMEM(sched).internal.prio;
-//		list_add_tail(&p->sched.internal.run_list,
-//			      &SELF_GETMEM(sched).internal.run_list);
-//		p->sched.internal.data = SELF_GETMEM(sched).internal.data;
-//		p->sched.internal.data->nr_active++;
+//		p->sched.internal.entity.prio = SELF_GETMEM(sched).internal.entity.prio;
+//		list_add_tail(&p->sched.internal.entity.run_list,
+//			      &SELF_GETMEM(sched).internal.entity.run_list);
+//		p->sched.internal.entity.data = SELF_GETMEM(sched).internal.entity.data;
+//		p->sched.internal.entity.data->nr_active++;
 //#ifdef MA__LWPS
-//		p->sched.internal.cur_holder = &rq.hold;
+//		p->sched.internal.entity.cur_holder = &rq.hold;
 //#endif
 //		rq->hold.running++;
 //	}
@@ -719,7 +719,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	if ((requeue = (MA_TASK_IS_SLEEPING(t) &&
 			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))
 		ma_dequeue_task(t,h);
-	t->sched.internal.prio=prio;
+	t->sched.internal.entity.prio=prio;
 	if (requeue)
 		ma_enqueue_task(t,h);
 	ma_task_holder_unlock_softirq(h);
@@ -1473,7 +1473,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 	}
 	//if (TASK_NICE(p) > 0)
-	if (p->sched.internal.prio >= MA_BATCH_PRIO)
+	if (p->sched.internal.entity.prio >= MA_BATCH_PRIO)
 		lwpstat->nice += user_ticks;
 	else
 		lwpstat->user += user_ticks;
@@ -1481,7 +1481,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #undef sys_ticks
 
 	/* Task might have expired already, but not scheduled off yet */
-	//if (p->sched.internal.array != rq->active) {
+	//if (p->sched.internal.entity.array != rq->active) {
 	if (!MA_TASK_IS_RUNNING(p)) {
 		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
 				p->name, ma_task_run_holder(p),
@@ -1517,12 +1517,12 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 #endif
 	if (preemption_enabled() && ma_thread_preemptible()) {
-		MA_BUG_ON(ma_atomic_read(&p->sched.internal.time_slice)>MARCEL_TASK_TIMESLICE);
-		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
+		MA_BUG_ON(ma_atomic_read(&p->sched.internal.entity.time_slice)>MARCEL_TASK_TIMESLICE);
+		if (ma_atomic_dec_and_test(&p->sched.internal.entity.time_slice)) {
 			ma_set_tsk_need_resched(p);
 			sched_debug("scheduler_tick: time slice expired\n");
 			//p->prio = effective_prio(p);
-			ma_atomic_set(&p->sched.internal.time_slice,MARCEL_TASK_TIMESLICE);
+			ma_atomic_set(&p->sched.internal.entity.time_slice,MARCEL_TASK_TIMESLICE);
 					//task_timeslice(p);
 			//p->first_time_slice = 0;
 
@@ -1665,7 +1665,7 @@ need_resched_atomic:
 			prev_as_prio = MA_BATCH_PRIO;
 	} else
 #endif
-		prev_as_prio = prev->sched.internal.prio;
+		prev_as_prio = prev->sched.internal.entity.prio;
 
 	if (prev->sched.state &&
 			/* garde-fou pour éviter de s'endormir
@@ -2364,7 +2364,7 @@ asmlinkage long sys_nice(int increment)
  */
 int task_prio(marcel_task_t *p)
 {
-	return p->sched.internal.prio - MA_MAX_RT_PRIO;
+	return p->sched.internal.entity.prio - MA_MAX_RT_PRIO;
 }
 
 #if 0

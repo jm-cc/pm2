@@ -112,7 +112,11 @@ unsigned marcel_add_lwp(void);
 
 #section marcel_types
 #depend "scheduler/marcel_holder.h[marcel_structures]"
-typedef struct ma_sched_entity marcel_sched_internal_task_t;
+typedef struct {
+	struct ma_sched_entity entity;
+	unsigned long timestamp, last_ran;
+	marcel_bubble_t bubble;
+} marcel_sched_internal_task_t;
 
 #section marcel_functions
 int ma_wake_up_task(marcel_task_t * p);
@@ -163,7 +167,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	ma_runqueue_t *rq;
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	LOG_IN();
-	internal->type = MA_TASK_ENTITY;
+	internal->entity.type = MA_TASK_ENTITY;
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
 #ifdef MA__BUBBLES
@@ -171,22 +175,34 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		h = ma_task_init_holder(MARCEL_SELF);
 #endif
-	} else if (attr->vpmask != MARCEL_VPMASK_EMPTY)
-		h = &(marcel_sched_vpmask_init_rq(&attr->vpmask)->hold);
-	internal->sched_policy = attr->__schedpolicy;
+	}
+	internal->entity.sched_policy = attr->__schedpolicy;
 	if (h) {
-		internal->sched_holder =
+		internal->entity.sched_holder =
 #ifdef MA__BUBBLES
-			internal->init_holder =
+			internal->entity.init_holder =
 #endif
 			h;
 	} else {
 #ifdef MA__BUBBLES
-		internal->init_holder = NULL;
+		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
+		if (!b->sched.init_holder) {
+#ifdef MA__BUBBLES
+			marcel_bubble_init(&internal->bubble);
 #endif
+			h = ma_task_init_holder(MARCEL_SELF);
+			b->sched.init_holder = h;
+			if (h->type != MA_RUNQUEUE_HOLDER)
+				marcel_bubble_insertbubble(ma_bubble_holder(h), b);
+		}
+		internal->entity.init_holder = &b->hold;
+#endif
+		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
+			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
+		else {
 #ifdef MA__LWPS
 		rq = NULL;
-		switch (internal->sched_policy) {
+		switch (internal->entity.sched_policy) {
 			case MARCEL_SCHED_SHARED:
 				rq = &ma_main_runqueue;
 				break;
@@ -235,7 +251,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				break;
 			}
 			default: {
-				unsigned num = ma_user_policy[internal->sched_policy - __MARCEL_SCHED_AVAILABLE](t, LWP_NUMBER(cur_lwp));
+				unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, LWP_NUMBER(cur_lwp));
 				rq = ma_lwp_rq(GET_LWP_BY_NUM(num));
 				break;
 			}
@@ -243,26 +259,31 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		if (!rq)
 #endif
 			rq = &ma_main_runqueue;
-		internal->sched_holder = &rq->hold;
+		}
+		internal->entity.sched_holder = &rq->hold;
 	}
-	internal->run_holder=NULL;
-	internal->holder_data=NULL;
-	INIT_LIST_HEAD(&internal->run_list);
-	internal->prio=attr->sched.prio;
-	PROF_EVENT2(sched_setprio,ma_task_entity(internal),internal->prio);
+	internal->entity.run_holder=NULL;
+	internal->entity.holder_data=NULL;
+	INIT_LIST_HEAD(&internal->entity.run_list);
+	internal->entity.prio=attr->sched.prio;
+	PROF_EVENT2(sched_setprio,ma_task_entity(internal.entity),internal->entity.prio);
 	//timestamp, last_ran
-	ma_atomic_init(&internal->time_slice,MARCEL_TASK_TIMESLICE);
+	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 	//entity_list
 #ifdef MA__BUBBLES
-	internal->entity_list.next = NULL;
+	internal->entity.entity_list.next = NULL;
 #endif
 #ifdef MA__LWPS
-	internal->sched_level=MARCEL_LEVEL_DEFAULT;
+	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
-	if (ma_holder_type(internal->sched_holder) == MA_RUNQUEUE_HOLDER)
-		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->sched_holder)->name, internal->prio);
+	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
+		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else
-		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->sched_holder), internal->prio);
+		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
+#ifdef MA__BUBBLES
+	// bulle non initialisée
+	internal->bubble.sched.init_holder = NULL;
+#endif
 	LOG_OUT();
 }
 
@@ -393,7 +414,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// Si la politique est du type 'placer sur le LWP le moins
 		// chargé', alors on ne peut pas placer ce thread sur le LWP
 		// courant
-		|| (new_task->sched.internal.sched_policy != MARCEL_SCHED_OTHER)
+		|| (new_task->sched.internal.entity.sched_policy != MARCEL_SCHED_OTHER)
 #endif
 #ifdef MA__BUBBLES
 		// on est placé dans une bulle (on ne sait donc pas si l'on a

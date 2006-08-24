@@ -47,8 +47,8 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 #define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->sched,level)
 #define marcel_bubble_getschedlevel(bubble,level) marcel_entity_getschedlevel(&(bubble)->sched,level)
-#define marcel_task_setschedlevel(task,level) marcel_entity_setschedlevel(&(task)->sched.internal,level)
-#define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->sched.internal,level)
+#define marcel_task_setschedlevel(task,level) marcel_entity_setschedlevel(&(task)->sched.internal.entity,level)
+#define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->sched.internal.entity,level)
 
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
 int marcel_bubble_sleep_locked(marcel_bubble_t *bubble);
@@ -68,21 +68,24 @@ int marcel_bubble_removebubble(marcel_bubble_t *bubble, marcel_bubble_t *little_
 int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
 
 #define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->sched)
-#define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->sched.internal)
+#define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->sched.internal.entity)
 
 #define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->sched)
-#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->sched.internal)
+#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->sched.internal.entity)
 
 void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 
 void marcel_bubble_join(marcel_bubble_t *bubble);
+
+int marcel_bubble_barrier(marcel_bubble_t *bubble);
+#define marcel_bubble_barrier(b) marcel_barrier_wait(&(b)->barrier)
 
 marcel_bubble_t *marcel_bubble_holding_task(marcel_task_t *task);
 marcel_bubble_t *marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
 marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
-#define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal)
+#define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 void marcel_close_bubble(marcel_bubble_t *bubble);
@@ -126,6 +129,7 @@ struct marcel_bubble {
 	unsigned cputime;
 	unsigned memory;
 	unsigned running;
+	marcel_barrier_t barrier;
 };
 
 #section macros
@@ -156,6 +160,7 @@ struct marcel_bubble {
 	.cputime = 0, \
 	.memory = 0, \
 	.running = 0, \
+	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
 }
 
 
@@ -185,12 +190,12 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_enqueue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
-#define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal,b)
+#define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal.entity,b)
 #define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->sched,b)
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
-#define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal,b)
+#define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal.entity,b)
 #define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->sched,b)
 #endif
 

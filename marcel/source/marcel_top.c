@@ -92,7 +92,7 @@ static void printtask(marcel_task_t *t) {
 #endif
 			"%10s %10s\r\n", (int) (2*sizeof(void*)), (unsigned long) t,
         	MARCEL_MAXNAMESIZE, t->name,
-		t->sched.internal.prio, cpu/10UL, cpu%10UL,
+		t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),
 #ifdef MA__BUBBLES
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),

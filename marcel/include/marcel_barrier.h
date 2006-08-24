@@ -43,6 +43,8 @@ unsigned marcel_barrier_begin(marcel_barrier_t *b);
 void marcel_barrier_end(marcel_barrier_t *b, unsigned num);
 DEC_MARCEL_POSIX(int, barrier_wait, (marcel_barrier_t *b));
 
+void marcel_barrier_addcount(marcel_barrier_t *b, int count);
+
 /************************barrierattr*****************************/
 DEC_MARCEL_POSIX(int,barrierattr_init,(marcel_barrierattr_t *attr));
 DEC_MARCEL_POSIX(int,barrierattr_destroy,(marcel_barrierattr_t *attr));
@@ -62,4 +64,9 @@ static __tbx_inline__ int marcel_barrier_destroy(marcel_barrier_t *b)
 /* -1 is distinct from 0 and all errno constants */
 #define MARCEL_BARRIER_SERIAL_THREAD (-1)
 #define PMARCEL_BARRIER_SERIAL_THREAD MARCEL_BARRIER_SERIAL_THREAD
-
+#define MARCEL_BARRIER_INITIALIZER(count) { \
+	.cond = MARCEL_COND_INITIALIZER, \
+	.mutex = MARCEL_MUTEX_INITIALIZER, \
+	.num = count, \
+	.curwait = 0, \
+}

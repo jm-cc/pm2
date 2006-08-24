@@ -107,7 +107,7 @@ struct ma_sched_entity {
 	int prio;
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
-	struct list_head entity_list;
+	struct list_head bubble_entity_list;
 #endif
 #ifdef MA__LWPS
 	int sched_level;
@@ -136,32 +136,30 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 
 #section macros
 #ifdef MA__LWPS
-#define SCHED_LEVEL_INIT .sched_level = MARCEL_LEVEL_DEFAULT,
+#define MA_SCHED_LEVEL_INIT .sched_level = MARCEL_LEVEL_DEFAULT,
 #else
-#define SCHED_LEVEL_INIT
+#define MA_SCHED_LEVEL_INIT
 #endif
 #ifdef MA__BUBBLES
-#define SCHED_INITHOLDER_INIT .init_holder = NULL,
+#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) .bubble_entity_list = LIST_HEAD_INIT((e).bubble_entity_list),
 #else
-#define SCHED_INITHOLDER_INIT
+#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
-	SCHED_INITHOLDER_INIT \
-	.sched_holder = NULL, .run_holder = NULL, \
+	.init_holder = NULL, .sched_holder = NULL, .run_holder = NULL, \
 	.holder_data = NULL, \
 	.run_list = LIST_HEAD_INIT((e).run_list), \
 	/*.sched_policy = */ \
 	.prio = p, \
 	.time_slice = MA_ATOMIC_INIT(0), \
-	SCHED_LEVEL_INIT \
+	MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) \
+	MA_SCHED_LEVEL_INIT \
 }
 
 #section marcel_macros
-#ifdef MA__BUBBLES
 #define ma_task_init_holder(p)	(THREAD_GETMEM(p,sched.internal.entity.init_holder))
-#endif
 #define ma_task_sched_holder(p)	(THREAD_GETMEM(p,sched.internal.entity.sched_holder))
 #define ma_task_run_holder(p)	(THREAD_GETMEM(p,sched.internal.entity.run_holder))
 #define ma_this_holder()	(ma_task_run_holder(MARCEL_SELF))

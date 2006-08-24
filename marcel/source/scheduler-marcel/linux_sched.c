@@ -652,7 +652,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
-		if (!p->sched.internal.entity.entity_list.next)
+		if (list_empty(&p->sched.internal.entity.bubble_entity_list))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 #ifdef MARCEL_BUBBLE_EXPLODE
 		return;
@@ -660,7 +660,6 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	}
 #endif
 
-	/* l'insertion a pu changer le holder */
 	h = ma_task_sched_holder(p);
 
 	MA_BUG_ON(!h);
@@ -2707,8 +2706,7 @@ asmlinkage long sys_sched_yield(void)
 		dequeue_task(current, array);
 		enqueue_task(current, rq->expired);
 	} else {
-		list_del(&current->run_list);
-		list_add_tail(&current->run_list, array->queue + current->prio);
+		list_move_tail(&current->run_list, array->queue + current->prio);
 	}
 	/*
 	 * Since we are going to call schedule() anyway, there's
@@ -3294,6 +3292,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 static void __marcel_init sched_init(void)
 {
 	LOG_IN();
+	ma_holder_t *h;
 
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_dontsched_runqueue);
@@ -3333,9 +3332,9 @@ static void __marcel_init sched_init(void)
 #endif
 	marcel_wake_up_created_thread(MARCEL_SELF);
 	/* since it is actually already running */
-	ma_holder_lock(&ma_main_runqueue.hold);
-	ma_dequeue_task(MARCEL_SELF, &ma_main_runqueue.hold);
-	ma_holder_unlock(&ma_main_runqueue.hold);
+	h = ma_task_holder_lock(MARCEL_SELF);
+	ma_dequeue_task(MARCEL_SELF, h);
+	ma_task_holder_unlock(h);
 
 //	init_timers();
 

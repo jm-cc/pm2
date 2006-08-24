@@ -177,6 +177,11 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #endif
 	}
 	internal->entity.sched_policy = attr->__schedpolicy;
+	internal->entity.run_holder=NULL;
+	internal->entity.holder_data=NULL;
+#ifdef MA__BUBBLES
+	INIT_LIST_HEAD(&internal->entity.bubble_entity_list);
+#endif
 	if (h) {
 		internal->entity.sched_holder =
 #ifdef MA__BUBBLES
@@ -185,17 +190,19 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			h;
 	} else {
 #ifdef MA__BUBBLES
+#ifdef MARCEL_BUBBLE_STEAL
 		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
 		if (!b->sched.init_holder) {
-#ifdef MA__BUBBLES
-			marcel_bubble_init(&internal->bubble);
-#endif
+			marcel_bubble_init(b);
 			h = ma_task_init_holder(MARCEL_SELF);
+			if (!h)
+				h = &ma_main_runqueue.hold;
 			b->sched.init_holder = h;
 			if (h->type != MA_RUNQUEUE_HOLDER)
 				marcel_bubble_insertbubble(ma_bubble_holder(h), b);
 		}
-		internal->entity.init_holder = &b->hold;
+		marcel_bubble_insertentity(b, &internal->entity);
+#endif
 #endif
 		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
@@ -262,17 +269,11 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		}
 		internal->entity.sched_holder = &rq->hold;
 	}
-	internal->entity.run_holder=NULL;
-	internal->entity.holder_data=NULL;
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->sched.prio;
-	PROF_EVENT2(sched_setprio,ma_task_entity(internal.entity),internal->entity.prio);
+	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
 	//timestamp, last_ran
 	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
-	//entity_list
-#ifdef MA__BUBBLES
-	internal->entity.entity_list.next = NULL;
-#endif
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif

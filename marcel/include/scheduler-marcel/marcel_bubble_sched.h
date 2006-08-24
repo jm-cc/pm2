@@ -77,6 +77,11 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 
 void marcel_bubble_join(marcel_bubble_t *bubble);
 
+void marcel_sched_exit(marcel_t t);
+#ifndef MA__BUBBLES
+#define marcel_sched_exit(t)
+#endif
+
 int marcel_bubble_barrier(marcel_bubble_t *bubble);
 #define marcel_bubble_barrier(b) marcel_barrier_wait(&(b)->barrier)
 

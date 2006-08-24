@@ -518,6 +518,9 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 #endif
 	ma_preempt_enable();
 
+	// attendre que l'ordonnanceur soit prêt
+	marcel_sched_exit(MARCEL_SELF);
+
 	// Ici, la pile a été allouée par le noyau Marcel
 
 	// Il faut acquérir le sémaphore pour postexit avant
@@ -899,6 +902,11 @@ static void __marcel_init main_thread_init(void)
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
 	marcel_attr_setmigrationstate(&attr, tbx_false);
 	marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
+#ifdef MA__BUBBLES
+	marcel_attr_setinitbubble(&attr, &marcel_root_bubble);
+#else
+	marcel_attr_setinitrq(&attr, &ma_main_runqueue);
+#endif
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);
 	marcel_create_init_marcel_thread(__main_thread, &attr);

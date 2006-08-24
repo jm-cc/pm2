@@ -98,17 +98,29 @@ static void printtask(marcel_task_t *t) {
 	ma_atomic_sub(utime, &t->top_utime);
 }
 
-static void printbubbles(marcel_bubble_t *b, int indent) {
+#ifdef MA__BUBBLES
+static void printbubble(marcel_bubble_t *b, int indent) {
 	marcel_entity_t *e;
+	char buf1[32];
+	char buf2[32];
+	char buf3[32];
+	top_printf("%#*lx %*s %2d            %10s %10s %10s\r\n",
+		(int) (2*sizeof(void*)), (unsigned long) b,
+        	MARCEL_MAXNAMESIZE, "bubble",
+		b->sched.prio,
+		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
+		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
+		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_TASK_ENTITY) {
 			top_printf("%*s", indent, "");
 			printtask(ma_task_entity(e));
 		} else {
-			printbubbles(ma_bubble_entity(e), indent+1);
+			printbubble(ma_bubble_entity(e), indent+1);
 		}
 	}
 }
+#endif
 
 static void marcel_top_tick(unsigned long foo) {
 	marcel_lwp_t *lwp;
@@ -165,7 +177,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	marcel_freeze_sched();
 #ifdef MA__BUBBLES
 	if (bubbles)
-		printbubbles(&marcel_root_bubble, 0);
+		printbubble(&marcel_root_bubble, 0);
 	else
 #endif
 	{

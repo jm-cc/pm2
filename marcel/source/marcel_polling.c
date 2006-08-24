@@ -415,7 +415,7 @@ inline static int __wake_req_waiters(marcel_ev_server_t server,
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		list_del(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
@@ -437,7 +437,7 @@ inline static int __wake_id_waiters(marcel_ev_server_t server, int code)
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		list_del(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
@@ -474,7 +474,7 @@ inline static int __manage_ready(marcel_ev_server_t server)
 			nb_req_ask_wake_server++;
 		}
 
-		list_del_init(&req->chain_req_ready);
+		list_del(&req->chain_req_ready);
 		if (req->state & MARCEL_EV_STATE_ONE_SHOT) {
 			nb_grouped_req_removed+=__unregister_poll(server, req);
 			__unregister(server, req);
@@ -733,9 +733,6 @@ inline static void verify_server_state(marcel_ev_server_t server) {
 inline static void __init_req(marcel_ev_req_t req)
 {
 	mdebug("Clearing Grouping request %p\n", req);
-	INIT_LIST_HEAD(&req->chain_req_registered);
-	INIT_LIST_HEAD(&req->chain_req_grouped);
-	INIT_LIST_HEAD(&req->chain_req_ready);
 	INIT_LIST_HEAD(&req->chain_req_success);
 	req->state=0;
 	req->server=NULL;
@@ -763,7 +760,7 @@ inline static int __unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 	mdebug("Unregister request %p for [%s]\n", req, server->name);
 	__del_success_req(server, req);
 
-	list_del_init(&req->chain_req_registered);
+	list_del(&req->chain_req_registered);
 	req->state &= ~MARCEL_EV_STATE_REGISTERED;
 	LOG_RETURN(0);
 }
@@ -793,7 +790,7 @@ inline static int __unregister_poll(marcel_ev_server_t server,
 	LOG_IN();
 	if (req->state & MARCEL_EV_STATE_GROUPED) {
 		mdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
-		list_del_init(&req->chain_req_grouped);
+		list_del(&req->chain_req_grouped);
 		server->req_poll_grouped_nb--;
 		req->state &= ~MARCEL_EV_STATE_GROUPED;
 		LOG_RETURN(1);

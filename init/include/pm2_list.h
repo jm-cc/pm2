@@ -18,6 +18,7 @@
 #define PM2_LIST_H
 
 #include "tbx_compiler.h"
+#include "tbx_macros.h"
 
 #ifndef prefetch
 #define prefetch(x) ((void)0)
@@ -47,6 +48,15 @@ struct list_head {
 	(ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
 
+/**
+ * list_empty - tests whether a list is empty
+ * @head: the list to test.
+ */
+static __tbx_inline__ int list_empty(struct list_head *head)
+{
+	return head->next == head;
+}
+
 /*
  * Insert a new entry between two known consecutive entries. 
  *
@@ -57,6 +67,10 @@ static __tbx_inline__ void __list_add(struct list_head * lnew,
 	struct list_head * prev,
 	struct list_head * next)
 {
+#ifdef PM2DEBUG
+	if (!list_empty(lnew))
+		TBX_FAILURE("list element already on a list");
+#endif
 	next->prev = lnew;
 	lnew->next = next;
 	lnew->prev = prev;
@@ -112,6 +126,9 @@ static __tbx_inline__ void __list_del(struct list_head * prev,
 static __tbx_inline__ void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
+#ifdef PM2DEBUG
+	INIT_LIST_HEAD(entry);
+#endif
 }
 
 /**
@@ -132,6 +149,9 @@ static __tbx_inline__ void list_del_init(struct list_head *entry)
 static __tbx_inline__ void list_move(struct list_head *list, struct list_head *head)
 {
         __list_del(list->prev, list->next);
+#ifdef PM2DEBUG
+	INIT_LIST_HEAD(list);
+#endif
         list_add(list, head);
 }
 
@@ -144,16 +164,10 @@ static __tbx_inline__ void list_move_tail(struct list_head *list,
                                   struct list_head *head)
 {
         __list_del(list->prev, list->next);
+#ifdef PM2DEBUG
+	INIT_LIST_HEAD(list);
+#endif
         list_add_tail(list, head);
-}
-
-/**
- * list_empty - tests whether a list is empty
- * @head: the list to test.
- */
-static __tbx_inline__ int list_empty(struct list_head *head)
-{
-	return head->next == head;
 }
 
 static __tbx_inline__ void __list_splice(struct list_head *list,
@@ -177,8 +191,12 @@ static __tbx_inline__ void __list_splice(struct list_head *list,
  */
 static __tbx_inline__ void list_splice(struct list_head *list, struct list_head *head)
 {
-        if (!list_empty(list))
+        if (!list_empty(list)) {
                 __list_splice(list, head);
+#ifdef PM2DEBUG
+                INIT_LIST_HEAD(list);
+#endif
+	}
 }
 
 /**

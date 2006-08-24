@@ -497,8 +497,7 @@ __tbx_inline__ static int NB_RUNNING_THREADS(void){
 */
 #define XPAUL_REQ_SUCCESS(req) \
   do { \
-        list_del(&(req)->chain_req_ready); \
-        list_add(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
+        list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
   } while(0)
  
 

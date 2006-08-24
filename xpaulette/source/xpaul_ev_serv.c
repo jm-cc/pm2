@@ -249,7 +249,7 @@ inline static int __xpaul_wake_req_waiters(xpaul_server_t server,
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		list_del(&wait->chain_wait);
 #ifdef MARCEL
 		marcel_sem_V(&wait->sem);
 #endif // MARCEL
@@ -345,7 +345,7 @@ inline static int __xpaul_wake_id_waiters(xpaul_server_t server, int code)
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		list_del(&wait->chain_wait);
 #ifdef MARCEL
 		marcel_sem_V(&wait->sem);
 #endif  // MARCEL
@@ -357,9 +357,6 @@ inline static int __xpaul_wake_id_waiters(xpaul_server_t server, int code)
 inline static void __xpaul_init_req(xpaul_req_t req)
 {
 	xdebug("Clearing Grouping request %p\n", req);
-	INIT_LIST_HEAD(&req->chain_req_registered);
-	INIT_LIST_HEAD(&req->chain_req_grouped);
-	INIT_LIST_HEAD(&req->chain_req_ready);
 	INIT_LIST_HEAD(&req->chain_req_success);
 	req->state=0;
 	req->server=NULL;
@@ -385,7 +382,7 @@ inline static int __xpaul_unregister(xpaul_server_t server, xpaul_req_t req)
 	xdebug("Unregister request %p for [%s]\n", req, server->name);
 	__xpaul_del_success_req(server, req);
 
-	list_del_init(&req->chain_req_registered);
+	list_del(&req->chain_req_registered);
 	req->state &= ~XPAUL_STATE_REGISTERED;
 	LOG_RETURN(0);
 }
@@ -414,7 +411,7 @@ inline static int __xpaul_unregister_poll(xpaul_server_t server,
 	LOG_IN();
 	if (req->state & XPAUL_STATE_GROUPED) {
 		xdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
-		list_del_init(&req->chain_req_grouped);
+		list_del(&req->chain_req_grouped);
 		server->req_poll_grouped_nb--;
 		req->state &= ~XPAUL_STATE_GROUPED;
 		LOG_RETURN(1);
@@ -451,7 +448,7 @@ inline static int __xpaul_manage_ready(xpaul_server_t server)
 			nb_req_ask_wake_server++;
 		}
 		
-		list_del_init(&req->chain_req_ready);
+		list_del(&req->chain_req_ready);
 		if (req->state & XPAUL_STATE_ONE_SHOT) {
 			nb_grouped_req_removed+=__xpaul_unregister_poll(server, req);
 			__xpaul_unregister(server, req);

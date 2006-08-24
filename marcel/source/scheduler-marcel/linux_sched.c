@@ -1594,7 +1594,7 @@ void ma_scheduling_functions_start_here(void) { }
 asmlinkage MARCEL_PROTECTED int ma_schedule(void)
 {
 //	long *switch_count;
-	marcel_task_t *prev, *next, *prev_as_next;
+	marcel_task_t *prev, *cur, *next, *prev_as_next;
 	marcel_entity_t *nextent;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	marcel_bubble_t *bubble;
@@ -1614,6 +1614,7 @@ asmlinkage MARCEL_PROTECTED int ma_schedule(void)
 #ifndef MA__LWPS
 	int didpoll = 0;
 #endif
+	int hard_preempt;
 	LOG_IN();
 
 	/*
@@ -1698,9 +1699,10 @@ need_resched_atomic:
 #ifdef MA__LWPS
 restart:
 #endif
-	next = prev_as_next;
+	cur = prev_as_next;
 	nexth = prev_as_h;
 	max_prio = prev_as_prio;
+	hard_preempt = 0;
 
 #ifdef MA__LWPS
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
@@ -1717,16 +1719,18 @@ restart:
 		idx = ma_sched_find_first_bit(currq->active->bitmap);
 		if (idx < max_prio) {
 			sched_debug("found better prio %d in rq %s\n",idx,currq->name);
-			next = NULL;
+			cur = NULL;
 			max_prio = idx;
 			nexth = &currq->hold;
+			/* let polling know that this context switch is urging */
+			hard_preempt = 1;
 		}
-		if (next && ma_need_resched() && idx == prev_as_prio) {
+		if (cur && ma_need_resched() && idx == prev_as_prio) {
 		/* still wanted to schedule prev, but it needs resched
 		 * and this is same prio
 		 */
 			sched_debug("found same prio %d in rq %s\n",idx,currq->name);
-			next = NULL;
+			cur = NULL;
 			nexth = &currq->hold;
 		}
 #ifdef MA__LWPS
@@ -1745,7 +1749,7 @@ restart:
 		if (marcel_bubble_steal_work())
 			goto need_resched_atomic;
 #endif
-		next = __ma_get_lwp_var(idle_task);
+		cur = __ma_get_lwp_var(idle_task);
 #else
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
@@ -1785,8 +1789,10 @@ restart:
 	ma_holder_lock(nexth);
 	sched_debug("locked(%p)\n",nexth);
 
-	if (next) /* either prev or idle */
+	if (cur) /* either prev or idle */ {
+	        next = cur;
 		goto switch_tasks;
+	}
 
 	/* nexth can't be a bubble here */
 	MA_BUG_ON(nexth->type != MA_RUNQUEUE_HOLDER);
@@ -1810,10 +1816,26 @@ restart:
 	}
 
 	idx = ma_sched_find_first_bit(array->bitmap);
+#ifdef MA__LWPS
+	if (idx > max_prio) {
+	        /* We had seen a high-priority task, but it's not there any more */
+		sched_debug("someone stole the high-priority task we saw, restart\n");
+		ma_holder_unlock(&rq->hold);
+		goto restart;
+	}
+#endif
 	queue = ma_array_queue(array, idx);
 	/* we may here see ourselves, if someone awoked us */
 	nextent = ma_queue_entry(queue);
 	
+#ifdef MA__BUBBLES
+	if (!(nextent = ma_bubble_sched(nextent, prevh, rq, &nexth, idx)))
+		/* ma_bubble_sched aura libéré prevrq */
+		goto need_resched_atomic;
+#endif
+	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
+	next = ma_task_entity(nextent);
+
 //	if (next->activated > 0) {
 //		unsigned long long delta = now - next->timestamp;
 
@@ -1827,13 +1849,6 @@ restart:
 //	}
 //	next->activated = 0;
 
-#ifdef MA__BUBBLES
-	if (!(nextent = ma_bubble_sched(nextent, prevh, rq, &nexth, idx)))
-		/* ma_bubble_sched aura libéré prevrq */
-		goto need_resched_atomic;
-#endif
-	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
-	next = ma_task_entity(nextent);
 switch_tasks:
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
 		sched_debug("prio %d in %s, next %p(%s)\n",idx,ma_rq_holder(nexth)->name,next,next->name);
@@ -1887,6 +1902,7 @@ switch_tasks:
 		ma_barrier();
 
 		ma_schedule_tail(prev);
+		/* TODO: si !hard_preempt, appeler le polling */
 	} else {
 		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
@@ -1894,7 +1910,11 @@ switch_tasks:
 		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
 			&& !ma_topology_lwp_idle_core(LWP_SELF))
 			marcel_sig_pause();
+		else
 #endif
+		  {
+		    /* TODO: appeler le polling pour lui faire faire un peu de poll */
+		  }
 	}
 
 //	reacquire_kernel_lock(current);

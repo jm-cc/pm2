@@ -32,6 +32,9 @@ static int top_pid;
 static int top_file=-1;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
+#ifdef MA__BUBBLES
+static int bubbles;
+#endif
 
 static int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
 static int top_printf (char *fmt, ...) {
@@ -63,9 +66,7 @@ static char *get_holder_name(ma_holder_t *h, char *buf, int size) {
 static void printtask(marcel_task_t *t) {
 	unsigned long utime;
 	char state;
-#ifdef MA__BUBBLES
 	char buf1[32];
-#endif
 	char buf2[32];
 	char buf3[32];
 	unsigned long cpu; /* en pour mille */
@@ -86,20 +87,27 @@ static void printtask(marcel_task_t *t) {
 	}
 	utime = ma_atomic_read(&t->top_utime);
 	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("%#*lx %*s %2d %3lu.%1lu %c %2d "
-#ifdef MA__BUBBLES
-			"%10s "
-#endif
-			"%10s %10s\r\n", (int) (2*sizeof(void*)), (unsigned long) t,
+	top_printf("%#*lx %*s %2d %3lu.%1lu %c %2d %10s %10s %10s\r\n",
+		(int) (2*sizeof(void*)), (unsigned long) t,
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),
-#ifdef MA__BUBBLES
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
-#endif
 		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 	ma_atomic_sub(utime, &t->top_utime);
+}
+
+static void printbubbles(marcel_bubble_t *b, int indent) {
+	marcel_entity_t *e;
+	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
+		if (e->type == MA_TASK_ENTITY) {
+			top_printf("%*s", indent, "");
+			printtask(ma_task_entity(e));
+		} else {
+			printbubbles(ma_bubble_entity(e), indent+1);
+		}
+	}
 }
 
 static void marcel_top_tick(unsigned long foo) {
@@ -108,13 +116,34 @@ static void marcel_top_tick(unsigned long foo) {
 #define NBPIDS 22
 	marcel_t pids[NBPIDS];
 	int nbpids;
+	unsigned char cmd;
+
+	top_printf("\e[H\e[J");
+	while (read(top_file,&cmd,1)==1)
+		switch(cmd) {
+#ifdef MA__BUBBLES
+		case 'b':
+			bubbles = !bubbles;
+			top_printf("bubble view %sactivated\r\n",bubbles?"":"de");
+			break;
+#endif
+		case 'h':
+		case '?':
+#ifdef MA__BUBBLES
+			top_printf("b:\ttoggle bubble / lwp view\r\n");
+#endif
+			top_printf("h/?:\thelp\r\n");
+			break;
+		default:
+			top_printf("unknown command %c\r\n",cmd);
+			break;
+		}
 
 	lastms = marcel_clock();
 	now = ma_jiffies;
 	djiffies = now - lastjiffies;
 	lastjiffies = now;
 
-	top_printf("\e[H\e[J");
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
 
 	for_all_lwp(lwp) {
@@ -130,21 +159,22 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
 	}
-	top_printf("  %*s %*s %2s %4s%% %s %2s "
-#ifdef MA__BUBBLES
-			"%10s "
-#endif
-			"%10s %10s\r\n", (int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE, "name", "pr", "cpu", "s", "lc", 
-#ifdef MA__BUBBLES
-			"init", 
-#endif
-			"sched", "run");
+	top_printf("  %*s %*s %2s %4s%% %s %2s %10s %10s %10s\r\n",
+		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
+		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 	marcel_freeze_sched();
-	marcel_threadslist(NBPIDS,pids,&nbpids,0);
-	if (nbpids > NBPIDS)
-		nbpids = NBPIDS;
-	for (;nbpids;nbpids--)
-		printtask(pids[nbpids-1]);
+#ifdef MA__BUBBLES
+	if (bubbles)
+		printbubbles(&marcel_root_bubble, 0);
+	else
+#endif
+	{
+		marcel_threadslist(NBPIDS,pids,&nbpids,0);
+		if (nbpids > NBPIDS)
+			nbpids = NBPIDS;
+		for (;nbpids;nbpids--)
+			printtask(pids[nbpids-1]);
+	}
 	marcel_unfreeze_sched();
 
 	timer.expires += JIFFIES_FROM_US(TOP_SEC * 1000000);
@@ -152,6 +182,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 }
 
 int marcel_init_top(char *outfile) {
+	int fl;
 	mdebug("marcel_init_top(%s)\n",outfile);
 #ifndef WIN_SYS
 	if (*outfile=='|') {
@@ -167,7 +198,7 @@ int marcel_init_top(char *outfile) {
 			close(top_file);
 			dup2(fds[1],STDIN_FILENO);
 			dup2(fds[1],STDOUT_FILENO);
-			dup2(fds[1],STDERR_FILENO);
+			//dup2(fds[1],STDERR_FILENO);
 			if (system(outfile) == -1) {
 				perror("system");
 				fprintf(stderr,"couldn't execute %s\n", outfile);
@@ -182,6 +213,9 @@ int marcel_init_top(char *outfile) {
 		perror("opening top file");
 		return -1;
 	}
+
+	fl = fcntl(top_file, F_GETFL);
+	fcntl(top_file, F_SETFL, fl | O_NONBLOCK);
 
 	ma_init_timer(&timer);
 	timer.expires = ma_jiffies + JIFFIES_FROM_US(1000000);

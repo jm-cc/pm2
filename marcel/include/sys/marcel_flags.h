@@ -223,7 +223,7 @@
 
 #ifdef MA__BUBBLES
 #if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
-#  define MARCEL_BUBBLE_EXPLODE
+#  define MARCEL_BUBBLE_STEAL
 #endif
 #else
 #undef MARCEL_BUBBLE_EXPLODE

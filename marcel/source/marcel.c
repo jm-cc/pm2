@@ -76,7 +76,7 @@ marcel_exception_t
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
-void breakpoint()
+void marcel_breakpoint()
 {
   /* Lieu ideal ;-) pour un point d'arret */
 }

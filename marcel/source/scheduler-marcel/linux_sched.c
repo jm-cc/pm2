@@ -349,7 +349,7 @@ out:
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.
  */
-int task_curr(marcel_task_t *p)
+int marcel_task_curr(marcel_task_t *p)
 {
 	return ma_lwp_curr(ma_task_lwp(p)) == p;
 }
@@ -2361,7 +2361,7 @@ asmlinkage long sys_nice(int increment)
  * RT tasks are offset by -200. Normal tasks are centered
  * around 0, value goes from -16 to +15.
  */
-int task_prio(marcel_task_t *p)
+int marcel_task_prio(marcel_task_t *p)
 {
 	return p->sched.internal.entity.prio - MA_MAX_RT_PRIO;
 }
@@ -2378,11 +2378,11 @@ MARCEL_PROTECTED int task_nice(marcel_task_t *p)
 #endif
 
 /**
- * idle_lwp - is a given cpu idle currently?
+ * marcel_idle_lwp - is a given cpu idle currently?
  * @lwp: the processor in question.
  */
 #ifdef MA__LWPS
-int idle_lwp(ma_lwp_t lwp)
+int marcel_idle_lwp(ma_lwp_t lwp)
 {
 	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);
 }
@@ -3187,7 +3187,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq = ma_lwp_rq(lwp);
 	snprintf(name,sizeof(name),"lwp%d",num);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
-	init_rq(rq, name, MA_VP_RQ);
+	ma_init_rq(rq, name, MA_VP_RQ);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
 	if (num == -1)
 		/* "extra" LWPs are apart */
@@ -3204,7 +3204,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	if (rq->father)
 		mdebug("runqueue %s has father %s\n",name,rq->father->name);
 	snprintf(name,sizeof(name),"dontsched%d",num);
-	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
@@ -3214,7 +3214,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
 		rq = &marcel_topo_vp_level[num].sched;
-		init_rq(rq, name, MA_VP_RQ);
+		ma_init_rq(rq, name, MA_VP_RQ);
 		rq->level = marcel_topo_nblevels-1;
 		rq->father = NULL;
 		marcel_vpmask_only_vp(&rq->vpset, num);
@@ -3278,7 +3278,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 			snprintf(name,sizeof(name), "%s%d",
 				base[level->sons[i]->type], level->sons[i]->number);
 		newrq = &level->sons[i]->sched;
-		init_rq(newrq, name, rqtypes[level->sons[i]->type]);
+		ma_init_rq(newrq, name, rqtypes[level->sons[i]->type]);
 		newrq->level = levelnum;
 		newrq->father = rq;
 		newrq->vpset = level->sons[i]->vpset;
@@ -3297,11 +3297,11 @@ static void __marcel_init sched_init(void)
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_dontsched_runqueue);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
-	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
+	ma_init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
 #endif
-	init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
 	marcel_vpmask_empty(&ma_main_runqueue.vpset);
 	marcel_vpmask_empty(&ma_dontsched_runqueue.vpset);

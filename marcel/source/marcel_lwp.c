@@ -41,10 +41,10 @@ static int ma_call_lwp_notifier(unsigned long val, ma_lwp_t lwp)
 
 #endif
 
-LIST_HEAD(list_lwp_head);
+LIST_HEAD(ma_list_lwp_head);
 
 // Verrou protégeant la liste chaînée des LWPs
-ma_rwlock_t __lwp_list_lock = MA_RW_LOCK_UNLOCKED;
+ma_rwlock_t __ma_lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
 marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
 
@@ -192,7 +192,7 @@ unsigned marcel_lwp_add_lwp(int num)
   lwp_list_lock_write();
   {
     // Ajout dans la liste globale des LWP
-    list_add_tail(&lwp->lwp_list,&list_lwp_head);
+    list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
   }
   lwp_list_unlock_write();
 
@@ -398,7 +398,7 @@ static void lwp_init(ma_lwp_t lwp)
 		ma_per_lwp(run_task, lwp)=MARCEL_SELF;
 
 		lwp_list_lock_write();
-		list_add_tail(&lwp->lwp_list,&list_lwp_head);
+		list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
 		lwp_list_unlock_write();
 
 		LOG_OUT();

@@ -949,7 +949,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 	ma_runqueue_t *rq;
 	struct list_head *queue;
 	ma_idle_scheduler = 0;
-	init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	while(1) {
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);

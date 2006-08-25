@@ -590,7 +590,7 @@ void TBX_NORETURN marcel_exit_special(any_t val)
 
 #ifdef MA__DEBUG
 
-void print_thread(marcel_t pid)
+void marcel_print_thread(marcel_t pid)
 {
   long sp;
 
@@ -616,7 +616,7 @@ void print_thread(marcel_t pid)
 	 );
 }
 
-void print_jmp_buf(char *name, jmp_buf buf)
+void marcel_print_jmp_buf(char *name, jmp_buf buf)
 {
   int i;
 
@@ -824,7 +824,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 	marcel_exit(NULL);
     } else {
 #ifdef MA__DEBUG
-      breakpoint();
+      marcel_breakpoint();
 #endif
       MA_THR_RESTARTED(MARCEL_SELF,"End of hibernation");
       ma_schedule_tail(__ma_get_lwp_var(previous_thread));
@@ -940,7 +940,7 @@ marcel_t __main_thread;
 /*************************set/getconcurrency**********************/
 /*The implementation shall use this as a hint, not a requirement.*/
 
-int concurrency = 0;
+static int concurrency = 0;
 DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
 {
 #ifdef MA__DEBUG

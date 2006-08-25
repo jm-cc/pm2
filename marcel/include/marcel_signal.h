@@ -215,4 +215,4 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 #define pmarcel_signandismember marcel_signandismember
 #define pmarcel_sigequalset     marcel_sigequalset
 
-void testset(marcel_sigset_t * set,char *what);
+void marcel_testset(marcel_sigset_t * set,char *what);

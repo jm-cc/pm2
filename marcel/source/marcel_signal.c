@@ -1059,7 +1059,7 @@ __marcel_init void ma_signals_init(void)
 }
 
 /***************testset*********/
-void testset(marcel_sigset_t * set,char *what)
+void marcel_testset(marcel_sigset_t * set,char *what)
 {
    int i;
    fprintf(stderr,"signaux du set %s : ",what);

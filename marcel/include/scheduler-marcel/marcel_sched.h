@@ -345,7 +345,7 @@ unsigned marcel_frozenthreads(void);
 /* ==== miscelaneous private defs ==== */
 
 #ifdef MA__DEBUG
-extern void breakpoint();
+extern void marcel_breakpoint();
 #endif
 
 int __marcel_tempo_give_hand(unsigned long timeout, tbx_bool_t *blocked, marcel_sem_t *s);

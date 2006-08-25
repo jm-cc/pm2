@@ -318,7 +318,7 @@ extern void node_nr_running_init(void);
 /* Move tasks off this (offline) CPU onto another. */
 //extern void migrate_all_tasks(void);
 //extern void set_user_nice(task_t *p, long nice);
-//extern int task_prio(task_t *p);
+//extern int marcel_task_prio(task_t *p);
 //extern MARCEL_PROTECTED int task_nice(task_t *p);
 //extern int task_curr(task_t *p);
 //extern int idle_cpu(int cpu);
@@ -567,6 +567,6 @@ static __tbx_inline__ void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
 
 
 #section marcel_functions
-int idle_lwp(ma_lwp_t lwp);
-int task_prio(marcel_task_t *p);
-int task_curr(marcel_task_t *p);
+int marcel_idle_lwp(ma_lwp_t lwp);
+int marcel_task_prio(marcel_task_t *p);
+int marcel_task_curr(marcel_task_t *p);

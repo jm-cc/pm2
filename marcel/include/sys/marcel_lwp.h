@@ -132,8 +132,8 @@ extern marcel_lwp_t __main_lwp;
 
 #depend "asm/linux_rwlock.h[marcel_types]"
 // Verrou protégeant la liste chaînée des LWPs
-extern ma_rwlock_t __lwp_list_lock;
-extern struct list_head list_lwp_head;
+extern ma_rwlock_t __ma_lwp_list_lock;
+extern struct list_head ma_list_lwp_head;
 
 #endif
 
@@ -145,7 +145,7 @@ static __tbx_inline__ void lwp_list_lock_read(void);
 static __tbx_inline__ void lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS
-  ma_read_lock(&__lwp_list_lock);
+  ma_read_lock(&__ma_lwp_list_lock);
 #endif
 }
 
@@ -155,7 +155,7 @@ static __tbx_inline__ void lwp_list_unlock_read(void);
 static __tbx_inline__ void lwp_list_unlock_read(void)
 {
 #ifdef MA__LWPS
-  ma_read_unlock(&__lwp_list_lock);
+  ma_read_unlock(&__ma_lwp_list_lock);
 #endif
 }
 
@@ -165,7 +165,7 @@ static __tbx_inline__ void lwp_list_lock_write(void);
 static __tbx_inline__ void lwp_list_lock_write(void)
 {
 #ifdef MA__LWPS
-  ma_write_lock(&__lwp_list_lock);
+  ma_write_lock(&__ma_lwp_list_lock);
 #endif
 }
 
@@ -175,7 +175,7 @@ static __tbx_inline__ void lwp_list_unlock_write(void);
 static __tbx_inline__ void lwp_list_unlock_write(void)
 {
 #ifdef MA__LWPS
-  ma_write_unlock(&__lwp_list_lock);
+  ma_write_unlock(&__ma_lwp_list_lock);
 #endif
 }
 
@@ -284,9 +284,9 @@ void marcel_leave_blocking_section(void);
 #  define IS_FIRST_LWP(lwp)                   (lwp == &__main_lwp)
 
 #  define for_all_lwp(lwp) \
-     list_for_each_entry(lwp, &list_lwp_head, lwp_list)
+     list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
 #  define for_all_lwp_from_begin(lwp, lwp_start) \
-     list_for_each_entry_from_begin(lwp, &list_lwp_head, lwp_start, lwp_list)
+     list_for_each_entry_from_begin(lwp, &ma_list_lwp_head, lwp_start, lwp_list)
 #  define for_all_lwp_from_end() \
      list_for_each_entry_from_end()
 #  define lwp_isset(num, map) ma_test_bit(num, &map)

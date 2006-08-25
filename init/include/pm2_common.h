@@ -26,6 +26,7 @@ typedef struct _struct_common_attr_t common_attr_t;
     !defined(MAD3_KERNEL)   && \
     !defined(MAD2_KERNEL)   && \
     !defined(PM2_KERNEL)    && \
+    !defined(XPAUL_KERNEL)   && \
     !defined(TBX_KERNEL)    && \
     !defined(NTBX_KERNEL)   && \
     !defined(DSM_KERNEL)    && \

@@ -195,5 +195,13 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 #else
 	/* TODO: SOLARIS_SYS, AIX_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 #warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"
+void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
+	return marcel_malloc(size, file, line);
+}
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
+	return marcel_free(ptr, file, line);
+}
+void ma_migrate_mem(void *ptr, size_t size, int node) {
+}
 #endif
 #endif

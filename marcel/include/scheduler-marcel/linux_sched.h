@@ -331,10 +331,9 @@ void ma_yield(void);
 //extern unsigned long itimer_next;
 //extern void do_timer(struct pt_regs *);
 
+extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
 extern MARCEL_PROTECTED int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
-extern void FASTCALL(ma_freeze_thread(marcel_task_t * tsk));
-extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else
@@ -343,8 +342,6 @@ extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
 
 #section functions
 extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
-extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched(void));
-extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched(void));
 
 #section marcel_functions
 

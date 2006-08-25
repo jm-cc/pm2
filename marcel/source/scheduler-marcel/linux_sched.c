@@ -475,7 +475,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 }
 
 /***
- * try_to_wake_up - wake up a thread
+ * ma_try_to_wake_up - wake up a thread
  * @p: the to-be-woken-up thread
  * @state: the mask of task states that can be woken
  * @sync: do a synchronous wakeup?
@@ -488,7 +488,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
  *
  * returns failure only if the task is already active.
  */
-static int try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
+int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
 {
 	int success = 0;
 	long old_state;
@@ -560,74 +560,13 @@ repeat_lock_task:
 
 MARCEL_PROTECTED int fastcall ma_wake_up_thread(marcel_task_t * p)
 {
-	return try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
+	return ma_try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
 			      MA_TASK_UNINTERRUPTIBLE, 0);
 }
 
 int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 {
-	return try_to_wake_up(p, state, 0);
-}
-
-static int frozen_scheduler;
-
-void fastcall ma_freeze_thread(marcel_task_t *p)
-{
-	ma_holder_t *h;
-	if (!frozen_scheduler)
-		h = ma_task_holder_lock_softirq(p);
-	else
-		h = ma_task_run_holder(p);
-
-	if (MA_TASK_IS_FROZEN(p)) {
-		if (!frozen_scheduler)
-			ma_task_holder_unlock_softirq(h);
-		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
-	}
-	if (MA_TASK_IS_RUNNING(p)) {
-		if (!frozen_scheduler)
-			ma_task_holder_unlock_softirq(h);
-		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-	}
-
-	if (!MA_TASK_IS_BLOCKED(p))
-		ma_deactivate_task(p,h);
-	MA_BUG_ON(!MA_TASK_IS_BLOCKED(p));
-	if (!frozen_scheduler)
-		ma_task_holder_unlock_softirq(h);
-	__ma_set_task_state(p, MA_TASK_FROZEN);
-}
-
-void fastcall ma_unfreeze_thread(marcel_task_t *p)
-{
-	try_to_wake_up(p, MA_TASK_FROZEN, 0);
-}
-
-void fastcall MARCEL_PROTECTED marcel_freeze_sched(void)
-{
-	ma_holder_lock_softirq(&ma_main_runqueue.hold);
-	/* TODO: other levels */
-#ifdef MA__LWPS
-	{
-		ma_lwp_t lwp;
-		for_all_lwp(lwp)
-			ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
-	}
-#endif
-	frozen_scheduler=1;
-}
-
-void fastcall MARCEL_PROTECTED marcel_unfreeze_sched(void)
-{
-	frozen_scheduler=0;
-#ifdef MA__LWPS
-	{
-		ma_lwp_t lwp;
-		for_all_lwp(lwp)
-			ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
-	}
-#endif
-	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+	return ma_try_to_wake_up(p, state, 0);
 }
 
 /*
@@ -2055,7 +1994,7 @@ void marcel_change_vpmask(marcel_vpmask_t *mask)
 int ma_default_wake_function(wait_queue_t *curr, unsigned mode, int sync)
 {
 	marcel_task_t *p = curr->task;
-	return try_to_wake_up(p, mode, sync);
+	return ma_try_to_wake_up(p, mode, sync);
 }
 
 EXPORT_SYMBOL(ma_default_wake_function);
@@ -2066,7 +2005,7 @@ EXPORT_SYMBOL(ma_default_wake_function);
  * number) then we wake all the non-exclusive tasks and one exclusive task.
  *
  * There are circumstances in which we can try to wake a task which has already
- * started to run but is not in state TASK_RUNNING.  try_to_wake_up() returns
+ * started to run but is not in state TASK_RUNNING.  ma_try_to_wake_up() returns
  * zero in this (rare) case, and we handle it by continuing to scan the queue.
  */
 static void __wake_up_common(wait_queue_head_t *q, unsigned int mode, int nr_exclusive, int sync)

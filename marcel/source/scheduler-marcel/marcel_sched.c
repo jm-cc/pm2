@@ -262,3 +262,66 @@ unsigned marcel_add_lwp(void) {
 	return marcel_lwp_add_vp();
 }
 #endif
+
+static int frozen_scheduler;
+
+void fastcall ma_freeze_thread(marcel_task_t *p)
+{
+	ma_holder_t *h;
+	if (!frozen_scheduler)
+		h = ma_task_holder_lock_softirq(p);
+	else
+		h = ma_task_run_holder(p);
+
+	if (MA_TASK_IS_FROZEN(p)) {
+		if (!frozen_scheduler)
+			ma_task_holder_unlock_softirq(h);
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+	}
+	if (MA_TASK_IS_RUNNING(p)) {
+		if (!frozen_scheduler)
+			ma_task_holder_unlock_softirq(h);
+		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
+	}
+
+	if (!MA_TASK_IS_BLOCKED(p))
+		ma_deactivate_task(p,h);
+	MA_BUG_ON(!MA_TASK_IS_BLOCKED(p));
+	if (!frozen_scheduler)
+		ma_task_holder_unlock_softirq(h);
+	__ma_set_task_state(p, MA_TASK_FROZEN);
+}
+
+void fastcall ma_unfreeze_thread(marcel_task_t *p)
+{
+	ma_try_to_wake_up(p, MA_TASK_FROZEN, 0);
+}
+
+void fastcall MARCEL_PROTECTED marcel_freeze_sched(void)
+{
+	ma_holder_lock_softirq(&ma_main_runqueue.hold);
+	/* TODO: other levels */
+#ifdef MA__LWPS
+	{
+		ma_lwp_t lwp;
+		for_all_lwp(lwp)
+			ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
+	}
+#endif
+	frozen_scheduler++;
+}
+
+void fastcall MARCEL_PROTECTED marcel_unfreeze_sched(void)
+{
+	MA_BUG_ON(!frozen_scheduler);
+	frozen_scheduler--;
+#ifdef MA__LWPS
+	{
+		ma_lwp_t lwp;
+		for_all_lwp(lwp)
+			ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
+	}
+#endif
+	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+}
+

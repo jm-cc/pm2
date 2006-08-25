@@ -339,8 +339,12 @@ unsigned marcel_blockedthreads(void);
 unsigned marcel_frozenthreads(void);
 
 
+extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched(void));
+extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched(void));
 
 #section marcel_functions
+extern void FASTCALL(ma_freeze_thread(marcel_task_t * tsk));
+extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
 
 /* ==== miscelaneous private defs ==== */
 

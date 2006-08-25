@@ -675,16 +675,17 @@ DEF_MARCEL_POSIX(int,
 		 rwlockattr_setpshared,
 		 (marcel_rwlockattr_t *attr, int pshared), (attr, pshared),
 {
+  LOG_IN();
   if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)
-    return EINVAL;
+    LOG_RETURN(EINVAL);
 
   /* For now it is not possible to shared a conditional variable.  */
   if (pshared != MARCEL_PROCESS_PRIVATE)
-    return ENOSYS;
+    LOG_RETURN(ENOTSUP);
 
   attr->__pshared = pshared;
 
-  return 0;
+  LOG_RETURN(0);
 })
 
 DEF_PTHREAD(int, rwlockattr_setpshared,

@@ -37,12 +37,13 @@ void marcel_sem_init(marcel_sem_t *s, int initial)
 DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
 		(s,pshared, initial),
 {
+  LOG_IN();
   if (pshared) {
-    errno = ENOSYS;
-    return -1;
+    errno = ENOTSUP;
+    LOG_RETURN(-1);
   }
   marcel_sem_init(s, initial);
-  return 0;
+  LOG_RETURN(0);
 })
 DEF_C(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
 		(s,pshared, initial));
@@ -351,8 +352,9 @@ void marcel_sem_unlock_all(marcel_sem_t *s)
 /********************sem_close**************************/
 DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem),(sem),
 {
+   LOG_IN();
    errno = ENOTSUP;
-   return -1;
+   LOG_RETURN(-1);
 })
 
 DEF_C(int,sem_close,(sem_t *sem),(sem))
@@ -361,8 +363,9 @@ DEF___C(int,sem_close,(sem_t *sem),(sem))
 /********************sem_open***************************/
 DEF_POSIX(int,sem_open,(const char *name, int flags,...),(name,flags,...),
 {
+   LOG_IN();
    errno = ENOTSUP;
-   return -1;
+   LOG_RETURN(-1);
 })
 
 DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
@@ -371,8 +374,9 @@ DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 /*******************sem_unlink**************************/
 DEF_POSIX(int,sem_unlink,(const char *name),(name),
 {
+   LOG_IN();
    errno = ENOTSUP;
-   return -1;
+   LOG_RETURN(-1);
 })
 
 DEF_C(int,sem_unlink,(const char *name),(name))

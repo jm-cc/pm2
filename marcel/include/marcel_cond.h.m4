@@ -34,7 +34,7 @@ struct timespec {
 
 REPLICATE([[dnl
 #define PREFIX_COND_INITIALIZER \
-  {.__data = {.__lock=MA_FASTLOCK_UNLOCKED, .__waiting=0} }
+  {.__data = {.__lock=MA_PREFIX_FASTLOCK_UNLOCKED, .__waiting=0} }
 ]], [[MARCEL PMARCEL]])/* pas LPT car dépendant de l'archi */
 
 #section structures

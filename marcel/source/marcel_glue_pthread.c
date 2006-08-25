@@ -26,10 +26,6 @@
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
                          void * (*start_routine)(void *), void *arg)
 {
-  /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
-     the old size and access to the new members might crash the program.
-     We convert the struct now.  */
-  marcel_attr_t new_attr;
   static int _launched=0;
 
   if (__builtin_expect(_launched, 1)==0) {
@@ -37,15 +33,12 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
   }
   if (attr != NULL)
     {
+  /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
+     the old size and access to the new members might crash the program.
+     We convert the struct now.  */
+      marcel_attr_t new_attr = marcel_attr_default;
       memcpy (&new_attr, attr,
               (size_t) &(((marcel_attr_t*)NULL)->user_space));
-      new_attr.user_space = 0;
-      new_attr.immediate_activation = tbx_false;
-      new_attr.not_migratable = 1;
-      new_attr.not_deviatable = 0;
-      new_attr.sched = marcel_sched_attr_default;
-      new_attr.vpmask = MARCEL_VPMASK_EMPTY;
-      new_attr.flags = 0;
       // Le cast par (void*) est demandé par gcc pour respecter la norme C
       // sinon, on a:
       // warning: dereferencing type-punned pointer will break strict-aliasing rules
@@ -237,15 +230,17 @@ __pthread_disable_asynccancel (int oldtype)
 }
 
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
+	LOG_IN();
 	/* Extension Real-Time non supportée */
 	errno = ENOTSUP;
-	return -1;
+	LOG_RETURN(-1);
 }
 
 int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
+	LOG_IN();
 	/* Extension Real-Time non supportée */
 	errno = ENOTSUP;
-	return -1;
+	LOG_RETURN(-1);
 }
 
 /********************************************************/

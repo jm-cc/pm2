@@ -20,7 +20,8 @@ GLIBC_2.2 {
 
     pthread_getschedparam; pthread_setschedparam;
 
-    pthread_attr_init; pthread_attr_destroy;
+    #pthread_attr_init; 
+    pthread_attr_destroy;
     pthread_attr_getdetachstate; pthread_attr_setdetachstate;
     pthread_attr_getschedparam; pthread_attr_setschedparam;
     pthread_attr_getschedpolicy; pthread_attr_setschedpolicy;
@@ -69,7 +70,7 @@ GLIBC_2.2 {
     #_pthread_cleanup_push_defer;
 
     # Semaphores.
-    sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
+    #sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
 
     # Special fork handling.
     fork; __fork; vfork;
@@ -96,7 +97,7 @@ GLIBC_2.2 {
     # défini dans libc, mais on écrase
     sigsuspend; signal;
     setjmp; sigsetjmp; __sigsetjmp;
-    usleep; sleep;
+    usleep; sleep; alarm; getitimer; setitimer;
 
 
 

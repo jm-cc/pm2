@@ -43,8 +43,12 @@ DEF_PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshared
 DEF___PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
 
 
+/* POSIX destroy :The pthread_spin_destroy() function shall destroy the spin lock referenced by lock and release any resources used by the lock. The effect of subsequent use of the lock is undefined until the lock is reinitialized by another call to pthread_spin_init().
+ */
+
 DEF_MARCEL_POSIX(int, spin_destroy,(marcel_spinlock_t *lock),(lock),
 {
+   memset(lock,0x7E,sizeof(*lock));
    return 0;
 })
 
@@ -64,6 +68,7 @@ DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
 
 DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
 {
+   /*TODO : posixtestsuite veut un EINVAL si lock non initialisé */
    if(!_ma_raw_spin_trylock(&lock->lock))
       return EBUSY;
    return 0;

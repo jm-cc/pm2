@@ -204,13 +204,14 @@ marcel_create_internal(marcel_t * __restrict pid,
 	}
 
 	if(attr->__stackaddr_set) {
-		register unsigned long top = ((unsigned long)attr->__stackaddr +
-				attr->__stacksize) & ~(THREAD_SLOT_SIZE-1);
-		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
+		register unsigned long top = ((unsigned long)attr->__stackaddr)
+				& ~(THREAD_SLOT_SIZE-1);
+		mdebug("top=%lx, stack_top=%p\n", top, attr->__stackaddr);
 		new_task = ma_slot_top_task(top);
-		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
+		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr
+				- attr->__stacksize)
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
-		stack_base = attr->__stackaddr;
+		stack_base = attr->__stackaddr - attr->__stacksize;
 		
 		static_stack = tbx_true;
 		/* TODO: Initialize TLS */
@@ -646,21 +647,24 @@ void marcel_postexit_internal(marcel_t __restrict cur,
 
 DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
 {
+   LOG_IN();
 #ifdef MA__DEBUG
+  /* The pthread_join() function shall fail if:
+     [ESRCH]
+     No thread could be found corresponding to that specified by the given thread ID. */
    if (pid->detached == 1)
    {
-      errno = EINVAL;
-      return -1;
+	   return EINVAL;
    }
 #endif
-    LOG_IN();
-
+   
 	MA_BUG_ON(pid->detached);
 
 	marcel_sem_P(&pid->client);
 	if(status)
 		*status = pid->ret_val;
 	
+	pid->detached = 1;
 	/* Exécution de la fonction post_mortem */
 	(*pid->postexit_func)(pid->postexit_arg);
 /* 	{  */
@@ -676,6 +680,8 @@ DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
 DEF_PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 DEF___PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 
+/*************pthread_cancel**********************************/
+//TODO : s'occupe t'on vraiment des état et type d'annulation du thread
 
 DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid),
 {
@@ -696,8 +702,7 @@ DEF_MARCEL_POSIX(int, detach, (marcel_t pid), (pid),
 #ifdef MA__DEBUG
    if (pid->detached == 1)
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
 #endif
    pid->detached = tbx_true;
@@ -933,6 +938,7 @@ marcel_t __main_thread;
 
 
 /*************************set/getconcurrency**********************/
+/*The implementation shall use this as a hint, not a requirement.*/
 
 int concurrency = 0;
 DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
@@ -943,7 +949,7 @@ DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
       return EINVAL;
    }
 #endif
-   if (new_level == 0)
+   if (!new_level) //==0
    {
       return 0;
    }
@@ -973,10 +979,8 @@ DEF_POSIX(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
       return EINVAL;
    }
 #endif
-   if (oldstate == NULL)
-      *oldstate = -1;
-   else
-      *oldstate = cthread->cancelstate;
+if (oldstate)//!=NULL
+	  *oldstate = cthread->cancelstate;
    cthread->cancelstate = state;
    return 0;
 })
@@ -995,7 +999,8 @@ DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
       return EINVAL;
    }
 #endif
-   *oldtype = cthread->canceltype;
+   if (oldtype)//!=NULL
+      *oldtype = cthread->canceltype;
    cthread->canceltype = type;
    return 0;
 })
@@ -1003,7 +1008,11 @@ DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
 DEF_PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
 DEF___PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
 
-/*****************************testcancel**************************/
+/*****************************testcancel***************************/
+//TODO : test_cancel shall create a cancellation point in the calling
+//       thread. The pthread_testcancel() function shall have no effect 
+//       if cancelability is disabled.
+
 DEF_POSIX(void, testcancel,(void),(),
 {
    marcel_t cthread;
@@ -1025,27 +1034,27 @@ DEF_POSIX(void, testcancel,(void),(),
    errno = EINVAL;
 #endif
 }) 
+DEF_PTHREAD(void, testcancel,(void),());
+DEF___PTHREAD(void, testcancel,(void),());
 
 /*************************set/getchedparam************************/
 DEF_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
                                      const struct marcel_sched_param *__restrict param),
                  (thread,policy,param),
 {
+   LOG_IN();
 #ifdef MA__DEBUG
-   struct marcel_sched_param param_init;
-   param_init.__sched_priority = -1;
-   marcel_sched_setscheduler(thread,-1,&param_init);
    if (param == NULL)
    {
-      return EINVAL;
+      LOG_RETURN(EINVAL);
    }
 #endif
    if (policy != SCHED_RR)
    {
-      return ENOTSUP;
+      LOG_RETURN(ENOTSUP);
    }
    marcel_sched_setscheduler(thread,MARCEL_SCHED_SHARED,param);
-   return 0;
+   LOG_RETURN(0);
 })
 
 DEF_PTHREAD(int, setschedparam, (pthread_t thread, int policy, 
@@ -1082,3 +1091,6 @@ DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id),(thread_i
 
 DEF_PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));
 DEF___PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));
+
+/* TODO : several functions may fail if: [ESRCH]
+No thread could be found corresponding to that specified by the given thread ID.pthread_detach, pthread_getschedparam, pthread_join, pthread_kill, pthread_cancel, pthread_setschedparam, pthread_setschedprio */

@@ -151,7 +151,7 @@ static void *tls_slot_alloc(void *foo) {
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 #ifdef X86_64_ARCH
 	/* because else we can't use ldt */
-	MA_BUG_ON(ptr > (1ul<<32));
+	MA_BUG_ON((unsigned long) ptr > (1ul<<32));
 #endif
 	struct user_desc desc = {
 		.entry_number = (SLOT_AREA_TOP - (unsigned long) ptr) / THREAD_SLOT_SIZE - 1,
@@ -253,6 +253,64 @@ static void __marcel_init marcel_slot_init(void)
 			POLICY_HIERARCHICAL, 0);
 #endif
 	LOG_OUT();
+}
+
+/* marcel_malloc, marcel_calloc, marcel_free:
+   avoid locking penalty on trivial requests */
+void *marcel_malloc(unsigned size, char *file, unsigned line)
+{
+        void *p;
+
+        if (size) {
+		marcel_extlib_protect();
+                p = __TBX_MALLOC(size, file, line);
+		marcel_extlib_unprotect();
+                if(p == NULL)
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
+}
+
+void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line)
+{
+        void *p;
+
+	marcel_extlib_protect();
+        p = __TBX_REALLOC(ptr, size, file, line);
+	marcel_extlib_unprotect();
+        if(p == NULL)
+                MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+
+        return p;
+}
+
+void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
+{
+        void *p;
+
+        if (nelem && elsize) {
+		marcel_extlib_protect();
+                p = __TBX_CALLOC(nelem, elsize, file, line);
+		marcel_extlib_unprotect();
+                if(p == NULL)
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
+}
+
+void marcel_free(void *ptr, char * __restrict file, unsigned line)
+{
+        if(ptr) {
+		marcel_extlib_protect();
+                __TBX_FREE((char *)ptr, file, line);
+		marcel_extlib_unprotect();
+        }
 }
 
 __ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO, "Initialise memory slot system");

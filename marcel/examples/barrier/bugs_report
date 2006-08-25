@@ -1,0 +1,5 @@
+mon_test-barrier1-nptl :
+(b7f83040:  0:main           ) 
+source/marcel_sem.c:69: spin_is_locked on uninitialized 
+spinlock 3ff4eb02.
+

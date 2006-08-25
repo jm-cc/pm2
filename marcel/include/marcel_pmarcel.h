@@ -499,36 +499,36 @@ extern int pmarcel_spin_trylock (pmarcel_spinlock_t *__lock) __THROW;
 extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
 
 
-/* Functions to handle barriers.  */
+/* /\* Functions to handle barriers.  *\/ */
 
-/* Initialize BARRIER with the attributes in ATTR.  The barrier is
-   opened when COUNT waiters arrived.  */
-extern int pmarcel_barrier_init (pmarcel_barrier_t *__restrict __barrier,
-				 __const pmarcel_barrierattr_t *__restrict
-				 __attr, unsigned int __count) __THROW;
+/* /\* Initialize BARRIER with the attributes in ATTR.  The barrier is */
+/*    opened when COUNT waiters arrived.  *\/ */
+/* extern int pmarcel_barrier_init (pmarcel_barrier_t *__restrict __barrier, */
+/* 				 __const pmarcel_barrierattr_t *__restrict */
+/* 				 __attr, unsigned int __count) __THROW; */
 
-/* Destroy a previously dynamically initialized barrier BARRIER.  */
-extern int pmarcel_barrier_destroy (pmarcel_barrier_t *__barrier) __THROW;
+/* /\* Destroy a previously dynamically initialized barrier BARRIER.  *\/ */
+/* extern int pmarcel_barrier_destroy (pmarcel_barrier_t *__barrier) __THROW; */
 
-/* Wait on barrier BARRIER.  */
-extern int pmarcel_barrier_wait (pmarcel_barrier_t *__barrier) __THROW;
+/* /\* Wait on barrier BARRIER.  *\/ */
+/* extern int pmarcel_barrier_wait (pmarcel_barrier_t *__barrier) __THROW; */
 
 
-/* Initialize barrier attribute ATTR.  */
-extern int pmarcel_barrierattr_init (pmarcel_barrierattr_t *__attr) __THROW;
+/* /\* Initialize barrier attribute ATTR.  *\/ */
+/* extern int pmarcel_barrierattr_init (pmarcel_barrierattr_t *__attr) __THROW; */
 
-/* Destroy previously dynamically initialized barrier attribute ATTR.  */
-extern int pmarcel_barrierattr_destroy (pmarcel_barrierattr_t *__attr) __THROW;
+/* /\* Destroy previously dynamically initialized barrier attribute ATTR.  *\/ */
+/* extern int pmarcel_barrierattr_destroy (pmarcel_barrierattr_t *__attr) __THROW; */
 
-/* Get the process-shared flag of the barrier attribute ATTR.  */
-extern int pmarcel_barrierattr_getpshared (__const pmarcel_barrierattr_t *
-					   __restrict __attr,
-					   int *__restrict __pshared) __THROW;
+/* /\* Get the process-shared flag of the barrier attribute ATTR.  *\/ */
+/* extern int pmarcel_barrierattr_getpshared (__const pmarcel_barrierattr_t * */
+/* 					   __restrict __attr, */
+/* 					   int *__restrict __pshared) __THROW; */
 
-/* Set the process-shared flag of the barrier attribute ATTR.  */
-extern int pmarcel_barrierattr_setpshared (pmarcel_barrierattr_t *__attr,
-                                           int __pshared) __THROW;
-//#endif
+/* /\* Set the process-shared flag of the barrier attribute ATTR.  *\/ */
+/* extern int pmarcel_barrierattr_setpshared (pmarcel_barrierattr_t *__attr, */
+/*                                            int __pshared) __THROW; */
+/* //#endif */
 
 
 /* Functions for handling thread-specific data.  */

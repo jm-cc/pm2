@@ -42,16 +42,13 @@ DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 })
 
 #ifdef MA__LIBPTHREAD
-int lpt_attr_init (pthread_attr_t *__attr)
+int lpt_attr_init (lpt_attr_t *__attr)
 {
-   int ret;
-   marcel_attr_t attr;
-   ret=marcel_attr_init(&attr);
-   memcpy(__attr, &attr, sizeof(pthread_attr_t));   // changement d'ABI, on adapte taille struct
-   return ret;
+   memcpy(__attr, &marcel_attr_default, sizeof(pthread_attr_t));   // changement d'ABI, on adapte taille struct
+   return 0;
 }
-DEF_PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
-DEF___PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
+versioned_symbol (libpthread, lpt_attr_init,
+                  pthread_attr_init, GLIBC_2_1);
 #endif
 
 /**********************attr_set/getstacksize***********************/
@@ -59,8 +56,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 {
    if ((stack < sizeof(marcel_task_t)) || (stack > THREAD_SLOT_SIZE))
    {
-      errno = EINVAL;
-      return 1;
+      return EINVAL;
    }
    attr->__stacksize = stack;
    return 0;
@@ -79,14 +75,26 @@ DEF_PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack
 DEF___PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack), (attr, stack))
 
 /**********************attr_set/getstackaddr***********************/
-DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
+DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
    if ((uintptr_t)addr %THREAD_SLOT_SIZE != 0)
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
    attr->__stackaddr_set = 1;
+   /* addr est le bas de la pile */
+   attr->__stackaddr = addr + THREAD_SLOT_SIZE;
+   return 0;
+})
+
+DEF_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
+{
+   if ((uintptr_t)addr %THREAD_SLOT_SIZE != 0)
+   {
+      return EINVAL;
+   }
+   attr->__stackaddr_set = 1;
+   /* addr est le haut de la pile */
    attr->__stackaddr = addr;
    return 0;
 })
@@ -94,7 +102,7 @@ DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (att
 DEF_PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 DEF___PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 
-DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr), (attr, addr),
+DEF_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr), (attr, addr),
 {
    *addr = attr->__stackaddr;
    return 0;
@@ -105,22 +113,21 @@ DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr
 
 /****************************get/setstack*************************/
 
-DEF_MARCEL_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t stacksize), 
+DEF_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t stacksize), 
                     (attr, stackaddr, stacksize),
 {
    if ((stacksize < sizeof(marcel_task_t)) || (stacksize > THREAD_SLOT_SIZE))
    {
-      errno = EINVAL;
-      return 1;
+      return EINVAL;
    }
    if ((uintptr_t)stackaddr %THREAD_SLOT_SIZE != 0) 
    {
-      errno = EINVAL;
-      return -1;
+      return EINVAL;
    }
+   /* stackaddr est le bas de la pile */
    attr->__stacksize = stacksize;
    attr->__stackaddr_set = 1;
-   attr->__stackaddr = stackaddr;
+   attr->__stackaddr = stackaddr + stacksize;
    return 0;
 })
    
@@ -129,12 +136,13 @@ DEF_PTHREAD(int, attr_setstack, (pthread_attr_t *attr, void* stackaddr, size_t s
 DEF___PTHREAD(int, attr_setstack, (pthread_attr_t *attr, void* stackaddr, size_t stacksize), 
                  (attr, stackaddr, stacksize))
 
-DEF_MARCEL_POSIX(int, attr_getstack, (__const marcel_attr_t * __restrict attr, 
+DEF_POSIX(int, attr_getstack, (__const marcel_attr_t * __restrict attr, 
       void* *__restrict stackaddr, size_t * __restrict stacksize), 
       (attr, stackaddr, stacksize),
 {
+   /* stackaddr est le bas de la pile */
    *stacksize = attr->__stacksize;
-   *stackaddr = attr->__stackaddr;
+   *stackaddr = attr->__stackaddr - attr->__stacksize;
    return 0;
 })
 
@@ -147,6 +155,12 @@ DEF___PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackadd
 
 DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr, detached),
 {
+#ifdef MA__DEBUG
+   if ((detached != PMARCEL_CREATE_DETACHED)&&(detached != PMARCEL_CREATE_JOINABLE))
+   {
+      LOG_RETURN(EINVAL);
+   }
+#endif
    attr->__detachstate = detached;
    return 0;
 })
@@ -370,18 +384,19 @@ DEF___LIBPTHREAD(int,attr_destroy,(pthread_attr_t * attr),(attr))
 /***********************get/setinheritsched***********************/
 DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr,inheritsched),
 {
+   LOG_IN();
 #ifdef MA__DEBUG
    if ((inheritsched != PMARCEL_INHERIT_SCHED)&&(inheritsched != PMARCEL_EXPLICIT_SCHED))
    {
-      return EINVAL;
+      LOG_RETURN(EINVAL);
    }
 #endif
    if (inheritsched == PMARCEL_INHERIT_SCHED)
    {
-      return ENOTSUP;
+      LOG_RETURN(ENOTSUP);
    }
    attr->__inheritsched = PMARCEL_EXPLICIT_SCHED;
-   return 0;
+   LOG_RETURN(0);
 })
 
 DEF_PTHREAD(int,attr_setinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
@@ -405,19 +420,20 @@ DEF___PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *in
 /***************************get/setscope**************************/
 DEF_POSIX(int,attr_setscope,(pmarcel_attr_t *__restrict attr, int contentionscope),(attr,contentionscope),
 {
+   LOG_IN();
 #ifdef MA__DEBUG
    if ((contentionscope != PMARCEL_SCOPE_SYSTEM)
        &&(contentionscope != PMARCEL_SCOPE_PROCESS))
    {
-      return EINVAL;
+      LOG_RETURN(EINVAL);
    }
 #endif
    if (contentionscope == PMARCEL_SCOPE_SYSTEM)
    {
-      return ENOTSUP;
+      LOG_RETURN(ENOTSUP);
    }
    attr->__scope = PMARCEL_SCOPE_PROCESS;
-   return 0;
+   LOG_RETURN(0);
 })
 
 DEF_PTHREAD(int,attr_setscope,(pthread_attr_t *__restrict attr, int contentionscope),(attr,contentionscope))
@@ -441,19 +457,20 @@ DEF___PTHREAD(int,attr_getscope,(pthread_attr_t *__restrict attr, int *contentio
 /************************get/setschedpolicy***********************/
 DEF_POSIX(int,attr_setschedpolicy,(pmarcel_attr_t *__restrict attr, int policy),(attr,policy),
    {
+   LOG_IN();
 #ifdef MA__DEBUG
       if ((policy != SCHED_FIFO)&&(policy != SCHED_RR)
         &&(policy != SCHED_OTHER))
       {
-         return EINVAL;
+         LOG_RETURN(EINVAL);
       }
 #endif
       if (policy != SCHED_RR)
       {
-         return ENOTSUP;
+         LOG_RETURN(ENOTSUP);
       }
       attr->__schedpolicy = SCHED_RR;
-      return 0;
+      LOG_RETURN(0);
    })
 
 DEF_PTHREAD(int,attr_setschedpolicy,(pthread_attr_t *__restrict attr, int policy),(attr,policy))
@@ -499,9 +516,18 @@ DEF_MARCEL_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr,
 DEF_PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *param),(attr,param))
 DEF___PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *param),(attr,param))
 
-   
-   
-   
-   
-   
-   
+/*************************getattr_np***********************/
+#ifdef MA__LIBPTHREAD
+int lpt_getattr_np(lpt_t t,lpt_attr_t *__attr)
+{
+marcel_attr_t *attr = (marcel_attr_t *)__attr;
+   lpt_attr_init(__attr);
+   attr->__detachstate = t->detached;     
+   attr->__stackaddr_set = t->static_stack;
+   attr->__stackaddr = t;
+   attr->__stacksize = THREAD_SLOT_SIZE - MAL(sizeof(*t));
+   return 0;
+}
+versioned_symbol (libpthread, lpt_getattr_np,
+                  pthread_getattr_np, GLIBC_2_2_3);
+#endif

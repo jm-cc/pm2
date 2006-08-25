@@ -24,7 +24,6 @@
 //#define STANDARD_MAIN
 #define MARCEL_ONCE_INIT 0
 
-
 #section types
 enum
 {
@@ -54,6 +53,8 @@ enum
 #define MARCEL_SCOPE_PROCESS	MARCEL_SCOPE_PROCESS
 };
 
+#define MARCEL_SCOPE_INVALID -1
+
 /* Cancellation */
 
 enum
@@ -75,6 +76,9 @@ enum
 
 #section macros
 #define MAX_ATEXIT_FUNCS	5
+
+#define MARCEL_THREAD_ISALIVE(thread) \
+   (((thread)->sched.state != MA_TASK_DEAD)||(!(thread)->detached))
 
 
 /****************************************************************/

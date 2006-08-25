@@ -15,7 +15,8 @@
  */
 
 #section macros
-#define MA_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=MA_SPIN_LOCK_UNLOCKED}
+#define MA_MARCEL_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=MA_SPIN_LOCK_UNLOCKED}
+#define MA_PMARCEL_FASTLOCK_UNLOCKED MA_MARCEL_FASTLOCK_UNLOCKED
 #define MA_LPT_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=0}
 
 #section types
@@ -30,6 +31,8 @@ struct _marcel_fastlock
   ma_spinlock_t __spinlock;  /* Used by compare_and_swap emulation. Also,
 			  adaptive SMP lock stores spin count here. */
 };
+
+#define _pmarcel_fastlock _marcel_fastlock
 
 struct _lpt_fastlock
 {

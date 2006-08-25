@@ -28,6 +28,8 @@
 #define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)
 #define sigprocmask(how,set,oset) syscall(SYS_rt_sigprocmask,how,set,oset,_NSIG/8)
 #define nanosleep(t1,t2) syscall(SYS_nanosleep,t1,t2)
+#define signal(sig,handler) syscall(SYS_signal,sig,handler)
+#define setitimer(which,val,oval) syscall(SYS_setitimer,which,val,oval)
 #endif
 
 ma_atomic_t __preemption_disabled = MA_ATOMIC_INIT(0);

@@ -43,7 +43,12 @@ void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
 void marcel_sig_reset_timer(void);
 void marcel_sig_stop_itimer(void);
-void marcel_sig_stop_timer(void);
+#ifndef MA__TIMER
+#define marcel_sig_pause() (void)0
+#define marcel_sig_enable_interrupts() (void)0
+#define marcel_sig_disable_interrupts() (void)0
+#define marcel_sig_stop_itimer() (void)0
+#endif
 
 #section marcel_functions
 static __tbx_inline__ void disable_preemption(void);

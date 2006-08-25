@@ -127,17 +127,18 @@ extern debug_type_t marcel_mtrace_timer;
 #define MA_BUG_ON(cond) (void)(cond)
 #define MA_WARN_ON(cond) (void)(cond)
 #else
+#include <sys/syscall.h>
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		raise(SIGABRT); \
+		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
+		syscall(SYS_kill,getpid(),SIGABRT); \
 	} \
   } while (0)
 #define MA_WARN_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
+		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
   } while (0)
 #endif

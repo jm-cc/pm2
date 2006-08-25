@@ -55,9 +55,13 @@ void marcel_initialize(int* argc, char**argv)
 {
 	if (!_initialized) {
 		LOG_IN();
+#ifdef PROFILE
+		profile_init();
+#endif
 		marcel_init_section(MA_INIT_MAIN_LWP);
 		marcel_init_data(argc, argv);
 		tbx_init(*argc, argv);
+		tbx_purge_cmd_line(argc, argv);
 		/* TODO: A reporter : */
                 //TODO__on_exit (pthread_onexit_process, NULL);
 		/* TODO: à la création du premier thread */

@@ -87,5 +87,4 @@
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif
 #endif /* MA__TIMER */
-
-#define MARCEL_RESCHED_SIGNAL     SIGUSR2
+#define MARCEL_RESCHED_SIGNAL     SIGXFSZ

@@ -55,7 +55,7 @@ extern int __zero_fd;
 #  ifdef X86_ARCH
 #    define ISOADDR_AREA_TOP       0x40000000
 #    define SLOT_AREA_BOTTOM       0x10000000
-#    define MAIN_STACK_BOT         0xb8000000
+#    define MAIN_STACK_BOT         0xa8000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(X86_64_ARCH)
 #    ifdef MA__PROVIDE_TLS

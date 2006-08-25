@@ -113,7 +113,7 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
 		pm2debug("Argh: shared condition requested!\n");
-		return ENOSYS;
+		return ENOTSUP;
 	}
 
         int *valuep = &((struct prefix_condattr *) attr)->value;
@@ -143,23 +143,12 @@ REPLICATE_CODE([[dnl
 int prefix_cond_init (prefix_cond_t * __restrict cond,
 	const prefix_condattr_t * __restrict attr)
 {
-  cond->__data.__lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
+  cond->__data.__lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
   cond->__data.__waiting = NULL;
 
   return 0;
 }
-]], [[MARCEL PMARCEL]])
-
-REPLICATE_CODE([[dnl
-int prefix_cond_init (prefix_cond_t * __restrict cond,
-	const prefix_condattr_t * __restrict attr)
-{
-  cond->__data.__lock = (struct _prefix_fastlock) MA_LPT_FASTLOCK_UNLOCKED;
-  cond->__data.__waiting = NULL;
-
-  return 0;
-}
-]], [[LPT]])
+]])
 
 /****************/
 /* cond_destroy */
@@ -252,6 +241,9 @@ int prefix_cond_wait (prefix_cond_t * __restrict cond,
 {
   prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
   prefix_lock_acquire(&cond->__data.__lock.__spinlock);
+#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
+  mutex->__data.__owner = 0;
+#endif
   __prefix_unlock_spinlocked(&mutex->__data.__lock);
   prefix_lock_release(&mutex->__data.__lock.__spinlock);
   {
@@ -321,6 +313,9 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 	
 	prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
 	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
+#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
+	mutex->__data.__owner = 0;
+#endif
 	__prefix_unlock_spinlocked(&mutex->__data.__lock);
 	prefix_lock_release(&mutex->__data.__lock.__spinlock);
 	{

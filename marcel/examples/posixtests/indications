@@ -1,0 +1,8 @@
+- validité du thread -> ESRCH dans pthread_kill 6-1
+- valeur magic du spinlock dans test 8-1
+- sem_post problèmes : sem_open nom implémenté
+- pthread_condattr_setpshared : normal car shared enotsup
+- spin_trylock 1-1 : veut son EINVAL pour spin non initialisé (may)
+- spin_trylock 4-1 : veut son EINVAL pour spin non initialisé (may)
+- spin_lock 1-1 : 
+- spin_lock 1-2 : déjà locked (le système lui attend un peu)

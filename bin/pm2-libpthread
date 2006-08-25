@@ -1,4 +1,19 @@
 #!/bin/bash
+GDB=""
+if [ "$1" = -d ]
+then
+	shift
+	GDB=gdb
+	. $PM2_ROOT/bin/pm2_arch --source-mode
+	for mod in $(pm2-config --modules)
+	do
+		gdbinit_arch=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH
+		[ -r $gdbinit_arch ] && GDB="$GDB -x $gdbinit_arch"
+		gdbinit=$PM2_ROOT/modules/$mod/scripts/gdbinit
+		[ -r $gdbinit ] && GDB="$GDB -x $gdbinit"
+	done
+	GDB="$GDB --args"
+fi
 BUILDDIR=`${PM2_ROOT}/bin/pm2-config --builddir`
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH${LD_LIBRARY_PATH:+:}$BUILDDIR/lib"
 case `${PM2_ROOT}/bin/pm2-config --modules` in
@@ -7,4 +22,4 @@ case `${PM2_ROOT}/bin/pm2-config --modules` in
 		;;
 esac
 export LD_LIBRARY_PATH LD_PRELOAD
-exec "$@"
+exec $GDB "$@"

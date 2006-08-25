@@ -61,8 +61,6 @@ struct __marcel_attr_s
 
 };
 
-#define lpt_attr_t pmarcel_attr_t
-
 #section macros
 
 // MARCEL_CREATE_JOINABLE
@@ -84,7 +82,7 @@ struct __marcel_attr_s
   .__schedpolicy= MARCEL_SCHED_OTHER, \
   .__schedparam= {0,}, \
   .__inheritsched= 0, \
-  .__scope= 0, \
+  .__scope= MARCEL_SCOPE_PROCESS, \
   .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
@@ -112,7 +110,7 @@ struct __marcel_attr_s
   .__schedpolicy= MARCEL_SCHED_INVALID, \
   .__schedparam= {-1,}, \
   .__inheritsched= -1, \
-  .__scope= -1, \
+  .__scope= MARCEL_SCOPE_INVALID, \
   .__guardsize= -1, \
   .__stackaddr_set= -1, \
   .__stackaddr= NULL, \
@@ -213,7 +211,7 @@ DEC_POSIX(int, attr_setschedpolicy, (pmarcel_attr_t *__restrict attr, int policy
 DEC_POSIX(int, attr_getschedpolicy, (__const pmarcel_attr_t *__restrict attr, int *policy) __THROW);
 DEC_MARCEL_POSIX(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_sched_param *param) __THROW);
 DEC_MARCEL_POSIX(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
-
+DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;
 extern marcel_attr_t marcel_attr_destroyer;

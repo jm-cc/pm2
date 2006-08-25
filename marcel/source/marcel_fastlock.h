@@ -45,7 +45,7 @@ typedef struct blockcell_struct {
 __tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
-  *lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
+  *lock = (struct _marcel_fastlock) MA_MARCEL_FASTLOCK_UNLOCKED;
   //LOG_OUT();
   return 0;
 }

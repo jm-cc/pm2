@@ -501,7 +501,7 @@ int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
 		pm2debug("Argh: shared mutex requested!\n");
-		return ENOSYS;
+		return ENOTSUP;
 	}
 
 	iattr = (struct prefix_mutexattr *) attr;
@@ -577,7 +577,11 @@ int prefix_once(prefix_once_t * once_control,
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
-	marcel_init_section(MA_INIT_MAIN_LWP);
+	static int _inited = 0;
+	if (!_inited) {
+		marcel_init_section(MA_INIT_MAIN_LWP);
+		_inited = 1;
+	}
 
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {

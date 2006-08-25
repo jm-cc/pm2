@@ -112,6 +112,7 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 				      void (*rtld_fini) (void),
 				      void *__unbounded stack_end)
 {
+	int ret;
 #ifdef PM2DEBUG
 	printf("changing main\n");
 #endif
@@ -128,11 +129,11 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 #ifdef PM2DEBUG
 		printf("running go_marcel_main at %p\n", go_marcel_main);
 #endif
-		go_marcel_main(argc, ubp_av);
+		ret = go_marcel_main(argc, ubp_av);
 #ifdef PM2DEBUG
-		printf("__libc_start_main error: comming back from marcel\n");
+		printf("coming back from marcel\n");
 #endif
-		exit(1);    
+		exit(ret);
 	} else {
 #ifdef PM2DEBUG
 		printf("starting direct. go_marcel_main=%p, marcel_initialize=%p\n", go_marcel_main, marcel_initialize);

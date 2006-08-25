@@ -36,7 +36,7 @@ int marcel_deliver_sig(void);
 /*********************pause**********************************/
 DEF_MARCEL_POSIX(int,pause,(void),(),
 {
-  LOG_IN();
+   LOG_IN();
    PROF_EVENT(pause);
    marcel_sigset_t set;
    marcel_sigemptyset(&set);
@@ -47,6 +47,57 @@ DEF_MARCEL_POSIX(int,pause,(void),(),
 
 DEF_C(int,pause,(void),())
 DEF___C(int,pause,(void),())
+
+/*********************alarm**********************************/
+static void alarm_timeout(unsigned long data)
+{
+   /* alarme expirée, signaler le programme */
+   if (!marcel_distribwait_sigext(SIGALRM)) {
+      ksigpending[SIGALRM] = 1;  
+      ma_raise_softirq(MA_SIGNAL_SOFTIRQ);
+   }
+}
+
+static struct ma_timer_list alarm_timer = MA_TIMER_INITIALIZER(alarm_timeout, 0, 0);
+
+DEF_MARCEL_POSIX(unsigned int, alarm, (unsigned int nb_sec), (nb_sec),
+{
+   unsigned int ret = 0;
+
+   ma_del_timer_sync(&alarm_timer);
+
+   if (alarm_timer.expires > ma_jiffies) {
+      ret = ((alarm_timer.expires - ma_jiffies) * marcel_gettimeslice()) / 1000000;
+   }
+
+   if (nb_sec) {
+      ma_init_timer(&alarm_timer);
+      alarm_timer.expires = ma_jiffies + (nb_sec * 1000000) / marcel_gettimeslice();
+      ma_add_timer(&alarm_timer);
+   }
+
+   return ret;
+})
+DEF_C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
+DEF___C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
+
+DEF_POSIX(int, getitimer, (int which, struct itimerval *value), (which, value),
+{
+   fprintf(stderr,"!! getitimer(%d) not supported\n",which);
+   errno = ENOSYS;
+   return -1;
+})
+DEF_C(int, getitimer, (int which, struct itimerval *value), (which, value))
+DEF___C(int, getitimer, (int which, struct itimerval *value), (which, value))
+
+DEF_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue),
+{
+   fprintf(stderr,"!! setitimer(%d) not supported\n",which);
+   errno = ENOSYS;
+   return -1;
+})
+DEF_C(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue))
+DEF___C(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue))
 
 /*********************marcel_sigtransfer*********************/
 static void marcel_sigtransfer(struct ma_softirq_action *action)
@@ -116,11 +167,9 @@ DEF_MARCEL_POSIX(int, raise, (int sig), (sig),
       return -1;
    }
 #endif
-   PROF_EVENT1(raise, sig);
-   if (!marcel_distribwait_sigext(sig))
-      ksigpending[sig] = 1;
-   ma_raise_softirq(MA_SIGNAL_SOFTIRQ);
-   
+  
+   marcel_kill(marcel_self(),sig);
+
    LOG_OUT();
    return 0;
 })
@@ -130,12 +179,34 @@ DEF___C(int,raise,(int sig),(sig))
 
 
 /*********************marcel_pidkill*************************/
+#ifdef SA_SIGINFO
+static void marcel_pidkill(int sig, siginfo_t *info, void *uc)
+#else
 static void marcel_pidkill(int sig)
+#endif
 {
    LOG_IN();
 
    if ((sig < 0) || (sig >= MARCEL_NSIG))
      return;
+
+   if (sig == SIGABRT || sig == SIGBUS || sig == SIGILL || sig == SIGFPE || sig == SIGPIPE || sig == SIGSEGV) {
+#ifdef SA_SIGINFO
+      if (csigaction[sig].marcel_sa_flags & SA_SIGINFO) {
+	 if (csigaction[sig].marcel_sa_sigaction != (void*) SIG_DFL &&
+	     csigaction[sig].marcel_sa_sigaction != (void*) SIG_IGN) {
+	    csigaction[sig].marcel_sa_sigaction(sig, info, uc);
+	    return;
+	 }
+      } else
+#endif
+	 if (csigaction[sig].marcel_sa_handler != SIG_DFL &&
+	     csigaction[sig].marcel_sa_handler != SIG_IGN) {
+	    csigaction[sig].marcel_sa_handler(sig);
+	    return;
+	 }
+   }
+
    ma_irq_enter();
 #ifdef MA__DEBUG
 	fprintf(stderr,"marcel_pidkill --> external signal %d !!\n",sig);
@@ -144,8 +215,8 @@ static void marcel_pidkill(int sig)
    if (!marcel_distribwait_sigext(sig))
    {
       ksigpending[sig] = 1;  
+      ma_raise_softirq_from_hardirq(MA_SIGNAL_SOFTIRQ);
    }
-   ma_raise_softirq_from_hardirq(MA_SIGNAL_SOFTIRQ);
    ma_irq_exit();
    /* TODO: check preempt */
 
@@ -157,11 +228,13 @@ DEF_MARCEL_POSIX(int, kill, (marcel_t thread, int sig), (thread,sig),
   LOG_IN();
 
 #ifdef MA__DEBUG
+   /* le test 6-1 ne passe pas car la validité du thread n'est pas vérifié */
+   /* il faudra renvoyer ESRCH */
    if ((sig < 0) || (sig >= MARCEL_NSIG))
       return EINVAL;
    if (sig == 0)
    {
-      fprintf(stderr,"** case not yet implemented \n");
+      fprintf(stderr,"** error checking shall be performed \n");
       return 0;
    }
 #endif
@@ -370,12 +443,15 @@ int lpt_sigpending(sigset_t *set)
 {
    int signo;
    marcel_sigset_t marcel_set;
-   marcel_sigemptyset(&marcel_set);
-   for (signo = 1;signo < MARCEL_NSIG; signo ++)
-     if (sigismember(set,signo))
-        marcel_sigaddset(&marcel_set,signo);
    
-   return marcel_sigsuspend(&marcel_set);
+   int ret = marcel_sigpending(&marcel_set);
+    
+   marcel_sigemptyset(&set);
+   for (signo = 1;signo < MARCEL_NSIG; signo ++)
+     if (marcel_sigismember(&marcel_set,signo))
+        sigaddset(set,signo);
+
+	return ret;
 }
 #endif
 
@@ -616,6 +692,7 @@ int ma_savesigs (sigjmp_buf env, int savemask)
    return 0;
 }
 
+extern void __libc_longjmp(jmp_buf env, int val);
 DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 {
    LOG_IN();
@@ -646,13 +723,21 @@ DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 
 	//fprintf(stderr,"thread %p sort du marcel_siglongjump\n",cthread);
 
+#ifdef X86_ARCH
    longjmp(env->__jmpbuf,val);
+#else
+   __libc_longjmp(env->__jmpbuf,val);
+#endif
 
    LOG_OUT();
 })
 
 DEF_C(void,siglongjmp,(sigjmp_buf env, int val),(env,val))
 DEF___C(void,siglongjmp,(sigjmp_buf env, int val),(env,val))
+#undef longjmp
+#ifdef MA__LIBPTHREAD
+weak_alias (siglongjmp, longjmp);
+#endif
 #endif // LINUX_SYS
 #endif
 
@@ -694,6 +779,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 {
    LOG_IN();
    struct kernel_sigaction kact;
+   void *handler;
 
 #ifdef MA__DEBUG
    if ((sig < 1)||(sig >= MARCEL_NSIG))
@@ -702,12 +788,12 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
       return -1;
    } 
 #endif
-   if ((sig == MARCEL_TIMER_SIGNAL)||(sig == MARCEL_RESCHED_SIGNAL))
-   {
-      fprintf(stderr,"!! signal %d not supported\n",sig);
-      errno = ENOTSUP;
-      return -1;
-   }
+   if (
+#ifdef MARCEL_TIMER_SIGNAL
+   	(sig == MARCEL_TIMER_SIGNAL)||
+#endif
+   	(sig == MARCEL_RESCHED_SIGNAL))
+      fprintf(stderr,"!! warning: signal %d only partially supported\n", sig);
 
    ma_read_lock(&rwlock);
    if (oact != NULL) 
@@ -722,22 +808,31 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
       return 0;
    }
  
-   if (act->marcel_sa_handler == SIG_IGN)
+#ifdef SA_SIGINFO
+   if (act->marcel_sa_flags & SA_SIGINFO)
+      handler = act->marcel_sa_sigaction;
+   else
+#endif
+      handler = act->marcel_sa_handler;
+
+   if (handler == SIG_IGN)
    {
       if ((sig == SIGKILL)||(sig==SIGSTOP))
       {
 #ifdef MA__DEBUG
          fprintf(stderr,"!! signal %d ne peut etre ignore\n",sig);
 #endif
+         errno = EINVAL;
          return -1;
       }
    }
-   else if (act->marcel_sa_handler != SIG_DFL)
+   else if (handler != SIG_DFL)
       if ((sig == SIGKILL)||(sig==SIGSTOP))
       {
 #ifdef MA__DEBUG
          fprintf(stderr,"!! signal %d ne peut etre capture\n",sig);
 #endif
+         errno = EINVAL;
          return -1;
       }
    
@@ -745,12 +840,36 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
    csigaction[sig] = *act;
    ma_write_unlock(&rwlock);
 
+   /* don't modify kernel handling for signals that we use */
+   if (
+#ifdef MARCEL_TIMER_SIGNAL
+   	(sig == MARCEL_TIMER_SIGNAL)||
+#endif
+   	(sig == MARCEL_RESCHED_SIGNAL))
+   {
+      LOG_OUT();
+      return 0;
+   }
+
+   /* else, set the kernel handler */
    sigemptyset(&kact.sa_mask);
-   if (act->marcel_sa_handler == SIG_IGN || act->marcel_sa_handler == SIG_DFL)
-      kact.sa_handler = act->marcel_sa_handler;
+   if (handler == SIG_IGN || handler == SIG_DFL)
+#ifdef SA_SIGINFO
+      kact.sa_sigaction = handler;
+#else
+      kact.sa_handler = handler;
+#endif
    else
+#ifdef SA_SIGINFO
+      kact.sa_sigaction = marcel_pidkill;
+#else
       kact.sa_handler = marcel_pidkill;
-   kact.sa_flags = SA_NODEFER | (act->marcel_sa_flags & SA_RESTART);
+#endif
+   kact.sa_flags = SA_NODEFER |
+#ifdef SA_SIGINFO
+                   SA_SIGINFO |
+#endif
+                   (act->marcel_sa_flags & SA_RESTART);
 
    if(kernel_sigaction(sig,&kact,NULL) == -1)
    {
@@ -919,9 +1038,7 @@ int marcel_call_function(int sig)
    }
    else if((cact.marcel_sa_flags & SA_SIGINFO))
    {
-#ifdef MA__DEBUG
       fprintf(stderr,"** SA_SIGINFO == 1, ENOTSUP\n");
-#endif
       errno = ENOTSUP;
       return -1;
    }

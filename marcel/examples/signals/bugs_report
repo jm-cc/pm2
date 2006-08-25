@@ -1,4 +1,4 @@
-sigpending : bizarre avec le read
+
 sigmain : usleep erreur ma_schedule_timeout : un main peut-il dormir ?
 
 
@@ -18,3 +18,4 @@ sigtrombe3 : fonctionnel mais main reprend la main et termine avant de traiter
 sigusleep : fonctionnel, ne reçoit pas USR2
 sigsleep : fonctionnel
 siglongjump : fonctionnel
+sigpending : fonctionnel (le SIGALARM est en attente en plus des autres voulus)

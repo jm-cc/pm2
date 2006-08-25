@@ -20,8 +20,9 @@
 #endif /* XPAULETTE */
 #include "tbx_compiler.h"
 #include <signal.h>
+#include <errno.h>
 
-DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
+DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
 #ifdef MA__ACTIVATION
 	return usleep(usec);
@@ -35,6 +36,17 @@ DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
 
 #endif
 })
+
+DEF_POSIX(int,usleep,(unsigned long usec),(usec),
+{
+	if (usec>1000000)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	return marcel_usleep(usec);
+});
+
 
 DEF_C(int,usleep,(unsigned long usec),(usec));
 DEF___C(int,usleep,(unsigned long usec),(usec));

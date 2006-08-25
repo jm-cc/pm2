@@ -98,6 +98,9 @@ TBX_VISIBILITY_POP
 
 #if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
 /* pthread.h est inclu _ici_ pour qu'il soit inclut avec une visibilité normale par défaut, car sinon notre libpthread.so aurait les symboles pthread_* en interne seulement ! */
+#ifdef MA__LIBPTHREAD
+#include <pthread.h>
+#endif
 TBX_VISIBILITY_PUSH_INTERNAL
 //#  include "asm/marcel-master___marcel_compiler.h"
 #  include "marcel-master___marcel_compiler.h"

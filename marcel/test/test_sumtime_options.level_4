@@ -29,7 +29,7 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"standard_main\" \
 	--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
-	--marcel=\"pmarcel\" --marcel=\"pthread\" \
+	--marcel=\"pmarcel\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"gdb\" --all=\"opt\" \
 	--all=\"build_static\" --marcel=\"build_dynamic\" \

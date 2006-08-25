@@ -118,7 +118,7 @@ extern debug_type_t xpaul_mtrace_timer;
 #define xdebug_sched_q(fmt, ...) \
     debug_printf(&xpaul_xdebug_sched_q, fmt , ##__VA_ARGS__)
 
-#else  /* PM2DEBUG */
+#else				/* PM2DEBUG */
 #ifndef xdebugl
 #  define xdebugl(level, fmt, ...) (void) 0
 #endif
@@ -128,7 +128,7 @@ extern debug_type_t xpaul_mtrace_timer;
 #define xdebug_deviate(fmt, ...) (void) 0
 #define xdebug_sched_q(fmt, ...) (void) 0
 
-#endif /* PM2DEBUG */
+#endif				/* PM2DEBUG */
 
 
 #include <signal.h>
@@ -200,5 +200,4 @@ extern debug_type_t xpaul_mtrace_timer;
 #  define xpaul_trace_off() pm2debug_setup(&xpaul_mtrace, PM2DEBUG_SHOW, 0)
 #endif
 
-void xpaul_debug_init(int* argc, char** argv, int debug_flags);
-
+void xpaul_debug_init(int *argc, char **argv, int debug_flags);

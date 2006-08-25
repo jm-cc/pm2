@@ -27,7 +27,8 @@ int xpaul_read(int fildes, void *buf, size_t nbytes);
 
 int xpaul_write(int fildes, const void *buf, size_t nbytes);
 
-int xpaul_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds);
+int xpaul_select(int nfds, fd_set * __restrict rfds,
+		 fd_set * __restrict wfds);
 
 #ifndef __MINGW32__
 int xpaul_readv(int fildes, const struct iovec *iov, int iovcnt);
@@ -49,5 +50,3 @@ int xpaul_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
 void xpaul_io_init(void);
 void xpaul_init_receiver(void);
-
-

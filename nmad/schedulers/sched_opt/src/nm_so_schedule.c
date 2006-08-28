@@ -42,7 +42,7 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   nm_so_pw_init(p_core);
 
   /* Set up active strategy */
-  //active_strategy = &nm_so_strat_aggreg;
+  //  active_strategy = &nm_so_strat_aggreg;
   // active_strategy = &nm_so_strat_exhaustive
 
   /* Initialize strategy */

@@ -172,31 +172,10 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
   int err;
   struct iovec *vec;
 
-  if(tbx_unlikely(flags & NM_SO_DATA_DONT_USE_HEADER)) {
-    /* Data chunk added 'as is': simply use a new iovec entry */
-
-    // TODO: realloc iov dynamically!
-    if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-      err = -NM_ENOMEM;
-      goto out;
-    }
-
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-    nm_so_iov_flags(p_so_pw, p_so_pw->pw.v_nb) = NM_SO_ALLOC_STATIC;
-#endif
-    vec = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
-    vec->iov_base = data;
-    vec->iov_len = len;
-
-    p_so_pw->pw.proto_id = proto_id;
-    p_so_pw->pw.seq = seq;
-
-    p_so_pw->pw.length += len;
-
-  } else {
+  if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) {
     /* Add data with header */
 
-    if(tbx_unlikely(p_so_pw->uncompleted_header)) {
+    if(p_so_pw->uncompleted_header) {
 
       struct nm_so_data_header *h = p_so_pw->uncompleted_header;
       uint32_t gap = nm_so_aligned(h->len) - h->len;
@@ -238,23 +217,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
       vec = p_so_pw->pw.v + p_so_pw->header_index;
     }
 
-    if(tbx_unlikely(flags & NM_SO_DATA_IS_CTRL_HEADER)) {
-
-      /* Data actually references a ctrl header. We simply append it
-	 to the previous other headers. */
-      union nm_so_generic_ctrl_header *src, *dst;
-
-      src = data;
-      dst = vec->iov_base + vec->iov_len;
-
-      /* Copy ctrl header */
-      *dst = *src;
-
-      vec->iov_len += NM_SO_CTRL_HEADER_SIZE;
-
-      p_so_pw->pw.length += NM_SO_CTRL_HEADER_SIZE;
-
-    } else {
+    if(!(flags & NM_SO_DATA_IS_CTRL_HEADER)) {
 
       /* Small data case */
       struct nm_so_data_header *h;
@@ -268,6 +231,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
       vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 
       if(flags & NM_SO_DATA_USE_COPY) {
+
 	/* Data immediately follows its header */
 	uint32_t size;
 
@@ -322,8 +286,47 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + len;
 
 	p_so_pw->pw.v_nb++;
+
       }
+
+    } else {
+	
+      /* Data actually references a ctrl header. We simply append it
+	 to the previous other headers. */
+      union nm_so_generic_ctrl_header *src, *dst;
+
+      src = data;
+      dst = vec->iov_base + vec->iov_len;
+
+      /* Copy ctrl header */
+      *dst = *src;
+
+      vec->iov_len += NM_SO_CTRL_HEADER_SIZE;
+
+      p_so_pw->pw.length += NM_SO_CTRL_HEADER_SIZE;
+
     }
+
+  } else {
+    /* Data chunk added 'as is': simply use a new iovec entry */
+
+    // TODO: realloc iov dynamically!
+    if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
+      err = -NM_ENOMEM;
+      goto out;
+    }
+
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
+    nm_so_iov_flags(p_so_pw, p_so_pw->pw.v_nb) = NM_SO_ALLOC_STATIC;
+#endif
+    vec = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
+    vec->iov_base = data;
+    vec->iov_len = len;
+
+    p_so_pw->pw.proto_id = proto_id;
+    p_so_pw->pw.seq = seq;
+
+    p_so_pw->pw.length += len;
 
   }
 

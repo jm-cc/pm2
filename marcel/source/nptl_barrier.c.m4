@@ -218,6 +218,7 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
 
   /* Initialize the individual fields.  */
   ibarrier->lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
+  ibarrier->init_count = count;
   ibarrier->leftB = count;
   ibarrier->leftE = 0;
   //ibarrier->curr_event = 0;
@@ -346,7 +347,7 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
      /* voir si cest bon, je pense que ça termine la boucle si on a l'événement */
      INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
         //(event == ibarrier->curr_event), 
-        (ibarrier->leftE),
+        (!ibarrier->leftE),
         prefix_lock_release(&ibarrier->lock.__spinlock),
 	     prefix_lock_acquire(&ibarrier->lock.__spinlock));
 	

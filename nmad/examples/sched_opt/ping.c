@@ -40,7 +40,7 @@
 #endif
 
 #define MAX     (16 * 1024)
-#define LOOPS   1000
+#define LOOPS   2000
 
 static
 void

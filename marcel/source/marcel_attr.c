@@ -156,7 +156,7 @@ DEF___PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackadd
 DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr, detached),
 {
 #ifdef MA__DEBUG
-   if ((detached != PMARCEL_CREATE_DETACHED)&&(detached != PMARCEL_CREATE_JOINABLE))
+   if ((detached != MARCEL_CREATE_DETACHED)&&(detached != MARCEL_CREATE_JOINABLE))
    {
       LOG_RETURN(EINVAL);
    }

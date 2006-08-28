@@ -297,7 +297,7 @@ int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
 
   if (!ibarrier->leftB)
   {
-     fprintf(stderr,"le thread %p arrive a la barrière begin : on en a assez\n",marcel_self());
+     //fprintf(stderr,"le thread %p arrive a la barrière begin : on en a assez\n",marcel_self());
       
      /* Yes. Increment the event counter to avoid invalid wake-ups and
 	     tell the current waiters that it is their turn.  */
@@ -333,7 +333,7 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
   while (!ibarrier->leftE)
   {
 
-     fprintf(stderr,"le thread %p arrive a la barrier_end : il en reste %d\n",marcel_self(),ibarrier->leftE);
+     //fprintf(stderr,"le thread %p arrive a la barrier_end : il en reste %d\n",marcel_self(),ibarrier->leftE);
       
      /* The number of the event we are waiting for.  The barrier's event
 	  number must be bumped before we continue.  */

@@ -138,28 +138,7 @@ int marcel_barrier_setcount(marcel_barrier_t *barrier, unsigned int count)
   
   ibarrier->init_count = count;
   ibarrier->leftB = count;
-
-  marcel_lock_release(&ibarrier->lock.__spinlock);
-
-  LOG_RETURN(0);
-}
-
-/***************************/
-/* marcel_barrier_addcount */
-/***************************/
-
-int marcel_barrier_addcount(marcel_barrier_t *barrier, unsigned int count)
-{
-  struct marcel_barrier *ibarrier;
-
-  LOG_IN();
-  
-  ibarrier = (struct marcel_barrier *)barrier;
-
-  marcel_lock_acquire(&ibarrier->lock.__spinlock);
-  
-  ibarrier->init_count += count;
-  ibarrier->leftB += count;
+  ibarrier->leftE = 0;
 
   marcel_lock_release(&ibarrier->lock.__spinlock);
 
@@ -178,6 +157,29 @@ int marcel_barrier_getcount(const marcel_barrier_t *barrier, unsigned int *count
   
   LOG_RETURN(0);
 }
+
+/***************************/
+/* marcel_barrier_addcount */
+/***************************/
+
+int marcel_barrier_addcount(marcel_barrier_t *barrier, int addcount)
+{
+  struct marcel_barrier *ibarrier;
+
+  LOG_IN();
+  
+  ibarrier = (struct marcel_barrier *)barrier;
+
+  marcel_lock_acquire(&ibarrier->lock.__spinlock);
+  
+  ibarrier->init_count += addcount;
+  ibarrier->leftB += addcount;
+
+  marcel_lock_release(&ibarrier->lock.__spinlock);
+
+  LOG_RETURN(0);
+}
+
 /*************/
 /* barrier_init */
 /*************/
@@ -221,7 +223,6 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
   ibarrier->init_count = count;
   ibarrier->leftB = count;
   ibarrier->leftE = 0;
-  //ibarrier->curr_event = 0;
 
   LOG_RETURN(0);
 }
@@ -312,6 +313,7 @@ int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
      ibarrier->leftB = ibarrier->init_count;
      ibarrier->leftE = ibarrier->init_count;
   }
+
   prefix_lock_release(&ibarrier->lock.__spinlock);
 
   return ret;
@@ -346,7 +348,6 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
      /* Wait for the event counter of the barrier to change.  */
      /* voir si cest bon, je pense que ça termine la boucle si on a l'événement */
      INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-        //(event == ibarrier->curr_event), 
         (!ibarrier->leftE),
         prefix_lock_release(&ibarrier->lock.__spinlock),
 	     prefix_lock_acquire(&ibarrier->lock.__spinlock));

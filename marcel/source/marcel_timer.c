@@ -178,6 +178,7 @@ static void int_catcher_exit(ma_lwp_t lwp)
 }
 static void int_catcher(int signo)
 {
+	fprintf(stderr,"SIGINT caught, saving profile\n");
 	profile_stop();
 	profile_exit();
 	int_catcher_exit(NULL);

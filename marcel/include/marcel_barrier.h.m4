@@ -66,7 +66,7 @@ typedef struct prefix_barrier
 #section functions
 
 int marcel_barrier_setcount(marcel_barrier_t *barrier, unsigned int count);
-int marcel_barrier_addcount(marcel_barrier_t *barrier, unsigned int count);
+int marcel_barrier_addcount(marcel_barrier_t *barrier, int addcount);
 int marcel_barrier_getcount(__const marcel_barrier_t *barrier, unsigned int *count);
 
 REPLICATE([[dnl 

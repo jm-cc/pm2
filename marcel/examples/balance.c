@@ -21,8 +21,8 @@
 
 #undef MA__BUBBLES
 
-#define NWORKS 2
-#define NWORKERS_POW 1
+#define NWORKS 4
+#define NWORKERS_POW 2
 #define NWORKERS (1<<NWORKERS_POW)
 #define TREE
 #if 1
@@ -43,8 +43,8 @@
 int iterations = 3;
 
 #ifdef BARRIER
-unsigned long works[]  = { 5000, 5000 };
-unsigned long delays[] = { 0, 0 };
+unsigned long works[]  = { 5000, 7000, 12000, 5000 };
+unsigned long delays[] = { 0, 0, 0, 5000 };
 marcel_barrier_t barrier[NWORKS];
 #endif
 #ifdef PIPE

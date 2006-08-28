@@ -522,4 +522,54 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 	ma_deactivate_running_task(p,h);
 }
 
+#section common
+#ifdef MARCEL_BUBBLE_STEAL
+#section marcel_macros
+#define MA_ENTITY_RUNNING 2
+#define MA_ENTITY_BLOCKED 1
+#define MA_ENTITY_SLEEPING 0
+#section marcel_functions
+void ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
+static __tbx_inline__ int ma_get_entity(marcel_entity_t *e);
+#section marcel_inline
+/* prendre une entité de son conteneur (qui doit être déjà verrouillé) */
+static __tbx_inline__ int ma_get_entity(marcel_entity_t *e) {
+	int ret;
+	ma_holder_t *h;
+
+	ret = MA_ENTITY_SLEEPING;
+	if ((h = e->run_holder)) {
+		sched_debug("getting entity %p from holder %p\n", e, h);
+
+		if (e->holder_data) {
+			ret = MA_ENTITY_BLOCKED;
+			ma_dequeue_entity(e, h);
+		} else
+			ret = MA_ENTITY_RUNNING;
+		ma_deactivate_running_entity(e, h);
+	}
+
+	if (e->type == MA_BUBBLE_ENTITY) {
+		ret = MA_ENTITY_RUNNING;
+		ma_set_sched_holder(e, ma_bubble_entity(e));
+	}
+	return ret;
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
+#section marcel_inline
+/* mettre une entité dans un conteneur (qui doit être déjà verrouillé) */
+static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+	e->sched_holder = h;
+	if (state == MA_ENTITY_SLEEPING)
+		return;
+
+	ma_activate_running_entity(e, h);
+	if (state == MA_ENTITY_BLOCKED)
+		ma_enqueue_entity(e, h);
+}
+#section common
+#endif
+
 #section marcel_structures

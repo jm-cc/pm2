@@ -16,83 +16,59 @@
 #ifndef NM_SO_HEADERS_H
 #define NM_SO_HEADERS_H
 
-struct nm_so_sched_header;
-struct nm_so_header;
+#include <tbx_macros.h>
 
-int
-nm_so_header_init(struct nm_core *p_core);
+#define NM_SO_PROTO_DATA_FIRST   128
+#define NM_SO_PROTO_RDV          11
+#define NM_SO_PROTO_ACK          12
 
-/*********************************/
+#define NM_SO_PROTO_DATA_UNUSED 0
+#define NM_SO_PROTO_CTRL_UNUSED 1
 
-int
-nm_so_header_alloc_sched_header(struct nm_so_sched *so_sched,
-                                uint8_t nb_seg, uint32_t len,
-                                struct nm_so_sched_header **h);
-int
-nm_so_header_free_sched_header(struct nm_so_sched *so_sched,
-                               struct nm_so_sched_header *h);
-int
-nm_so_header_sizeof_sched_header(int *size);
+struct nm_so_global_header {
+  uint32_t len;
+};
 
-/*********************************/
+// Warning : All header structs (except the global one) _MUST_ begin 
+// with the 'proto_id' field
 
-int
-nm_so_header_alloc_data_header(struct nm_so_sched *so_sched,
-                               uint8_t proto_id,
-                               uint8_t seq, uint32_t len,
-                               struct nm_so_header **header);
-int
-nm_so_header_alloc_control_header(struct nm_so_sched *so_sched,
-                                  uint8_t proto_id,
-                                  struct nm_so_header **header);
-int
-nm_so_header_free_header(struct nm_so_sched *so_sched,
-                         struct nm_so_header *header);
+struct nm_so_data_header {
+  uint8_t  proto_id;
+  uint8_t  seq;
+  uint16_t skip;
+  uint32_t len;
+};
 
-int
-nm_so_header_sizeof_header(int *size);
+struct nm_so_ctrl_rdv_header {
+  uint8_t proto_id;
+  uint8_t tag_id;
+  uint8_t seq;
+};
 
-/*********************************/
+struct nm_so_ctrl_ack_header {
+  uint8_t proto_id;
+  uint8_t tag_id;
+  uint8_t seq;
+  uint8_t track_id;
+};
 
-int
-nm_so_header_get_sched_proto_id(struct nm_so_sched_header *head,
-                                uint8_t *proto_id);
-int
-nm_so_header_get_v_nb(struct nm_so_sched_header *header,
-                      uint8_t *v_nb);
-int
-nm_so_header_get_total_len(struct nm_so_sched_header *header,
-                           uint32_t *len);
-int
-nm_so_header_set_sched_proto_id(struct nm_so_sched_header *head,
-                                uint8_t proto_id);
-int
-nm_so_header_set_v_nb(struct nm_so_sched_header *header,
-                      uint8_t v_nb);
-int
-nm_so_header_set_total_len(struct nm_so_sched_header *header,
-                           uint32_t len);
+// The following definition is useful for handling a uniform ctrl header size
+union nm_so_generic_ctrl_header {
+  struct nm_so_ctrl_rdv_header r;
+  struct nm_so_ctrl_ack_header a;
+};
 
-/*********************************/
+#define NM_SO_ALIGN_TYPE      uint32_t
+#define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)
+#define nm_so_aligned(x)      tbx_aligned(x, NM_SO_ALIGN_FRONTIER)
 
-int
-nm_so_header_get_proto_id(struct nm_so_header *head,
-                          uint8_t *proto_id);
-int
-nm_so_header_get_seq(struct nm_so_header *header,
-                     uint8_t *seq);
-int
-nm_so_header_get_len(struct nm_so_header *header,
-                     uint32_t *len);
-int
-nm_so_header_set_proto_id(struct nm_so_header *header,
-                          uint8_t proto_id);
-int
-nm_so_header_set_seq(struct nm_so_header *header,
-                     uint8_t seq);
-int
-nm_so_header_set_len(struct nm_so_header *header,
-                      uint32_t len);
-/*********************************/
+#define NM_SO_GLOBAL_HEADER_SIZE \
+  nm_so_aligned(sizeof(struct nm_so_global_header))
+
+#define NM_SO_DATA_HEADER_SIZE \
+  nm_so_aligned(sizeof(struct nm_so_data_header))
+
+#define NM_SO_CTRL_HEADER_SIZE \
+  nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
 #endif

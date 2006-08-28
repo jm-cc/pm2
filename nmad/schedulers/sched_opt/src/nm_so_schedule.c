@@ -22,87 +22,51 @@
 
 #include <nm_public.h>
 #include <nm_rdv_public.h>
+
 #include "nm_so_private.h"
-#include "nm_so_optimizer.h"
 #include "nm_so_pkt_wrap.h"
 
-//#define CHRONO
+#include "nm_so_strategies/nm_so_strat_aggreg.h"
 
-
-
+nm_so_strategy *active_strategy = NULL;
 
 static int
 nm_so_schedule_init (struct nm_sched *p_sched)
 {
   struct nm_core *p_core = p_sched->p_core;
   int err;
+
   struct nm_so_sched *p_priv = NULL;
 
-  // Initialize optimizer
-  nm_so_optimizer_init();
+  /* Initialize "Lightning Fast" Packet Wrappers Manager */
+  nm_so_pw_init(p_core);
+
+  /* Set up active strategy */
+  //active_strategy = &nm_so_strat_aggreg;
+  // active_strategy = &nm_so_strat_exhaustive
+
+  /* Initialize strategy */
+  if(active_strategy)
+    active_strategy->init();
 
   p_priv = TBX_MALLOC(sizeof(struct nm_so_sched));
   if (!p_priv) {
     err = -NM_ENOMEM;
     goto out;
   }
-  memset(p_priv, 0, sizeof(struct nm_so_sched));
 
-    p_priv->trks_to_update = tbx_slist_nil();
+  p_sched->sch_private	= p_priv;
 
-    //// initialisation des à pré-poster
-    //err = nm_so_init_pre_posted(p_core, p_priv,
-    //                            NB_CREATED_PRE_POSTED);
-    //
-    //if(err != NM_ESUCCESS){
-    //    NM_DISPF("nm_so_init_pre_posted returned err = %d\n", err);
-    //    goto out;
-    //}
-
-    // allocateur rapide des entetes globales et de données
-    //tbx_malloc_init(&p_priv->sched_header_key,
-    //                sizeof(struct nm_so_sched_header),
-    //                NB_CREATED_SCHED_HEADER, "so_sched_header");
-    //
-    //tbx_malloc_init(&p_priv->header_key,
-    //                sizeof(struct nm_so_header),
-    //                NB_CREATED_HEADER, "so_header");
-
-    //// initialisation de pack d'agrégation à envoyer
-    //err = nm_so_init_aggregation_pw(p_core, p_priv,
-    //                                NB_AGGREGATION_PW);
-    //if(err != NM_ESUCCESS){
-    //    NM_DISPF("nm_so_init_aggregation_pw returned err = %d\n",
-    //             err);
-    //    goto out;
-    //}
-
-    /* Enregistrement de protocole de rdv */
-    err = nm_core_proto_init(p_core, nm_rdv_load,
-                             &p_priv->p_proto_rdv);
-    if (err != NM_ESUCCESS) {
-        NM_DISPF("nm_core_proto_init returned err = %d\n", err);
-        goto out;
-    }
-
-    p_priv->unexpected_list = tbx_slist_nil();
-
-    p_priv->acks = NULL;
-
-    p_sched->sch_private	= p_priv;
-
-    err	= NM_ESUCCESS;
+  err = NM_ESUCCESS;
 
  out:
-    return err;
+  return err;
 }
 
 static int
 nm_so_init_trks	(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
     struct nm_core *p_core	= p_sched->p_core;
-    struct nm_so_sched *so_sched = p_sched->sch_private;
-    p_tbx_slist_t trks_to_update = so_sched->trks_to_update;
     int	err;
 
     /* Track 0 - piste réservée aux unexpected */
@@ -130,13 +94,6 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         goto out_free;
     }
 
-    so_sched->so_trks[0].pending_stream_intro = tbx_false;
-
-    if(trk_rq_0.p_trk->cap.rq_type == nm_trk_rq_stream
-       || trk_rq_0.p_trk->cap.rq_type == nm_trk_rq_dgram){
-        tbx_slist_append(trks_to_update, trk_rq_0.p_trk);
-    }
-
     /* Track 1 - piste pour les longs*/
     struct nm_trk_rq trk_rq_1 = {
         .p_trk	= NULL,
@@ -161,11 +118,6 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
     if (err != NM_ESUCCESS) {
         goto out_free_2;
     }
-
-    so_sched->so_trks[1].pending_stream_intro = tbx_false;
-
-    trk_rq_1.p_trk->cap.rq_type = nm_trk_rq_rdv;
-
 
     /* Track 2 - piste pour les longs*/
     struct nm_trk_rq trk_rq_2 = {
@@ -192,46 +144,10 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         goto out_free_3;
     }
 
-    so_sched->so_trks[2].pending_stream_intro = tbx_false;
-
-    trk_rq_2.p_trk->cap.rq_type = nm_trk_rq_rdv;
-
-    ///* Track 3 - piste pour les longs*/
-    //struct nm_trk_rq trk_rq_3 = {
-    //    .p_trk	= NULL,
-    //    .cap	= {
-    //        .rq_type			= nm_trk_rq_rdv,
-    //        .iov_type			= nm_trk_iov_unspecified,
-    //        .max_pending_send_request	= 0,
-    //        .max_pending_recv_request	= 0,
-    //        .min_single_request_length	= 0,
-    //        .max_single_request_length	= 0,
-    //        .max_iovec_request_length	= 0,
-    //        .max_iovec_size		= 0
-    //    },
-    //    .flags	= 0
-    //};
-    //
-    //err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_3.p_trk);
-    //if (err != NM_ESUCCESS)
-    //    goto out_free;
-    //
-    //err = p_drv->ops.open_trk(&trk_rq_3);
-    //if (err != NM_ESUCCESS) {
-    //    goto out_free_4;
-    //}
-    //
-    //so_sched->so_trks[3].pending_stream_intro = tbx_false;
-    //
-    //trk_rq_3.p_trk->cap.rq_type = nm_trk_rq_rdv;
-
     err	= NM_ESUCCESS;
 
  out:
     return err;
-
-// out_free_4:
-//    p_core->ops.trk_free(p_core, trk_rq_3.p_trk);
 
  out_free_3:
     p_core->ops.trk_free(p_core, trk_rq_2.p_trk);
@@ -247,17 +163,24 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
 static int
 nm_so_init_gate	(struct nm_sched	*p_sched,
                  struct nm_gate		*p_gate) {
-    struct nm_so_gate	*p_gate_priv	=	NULL;
+    struct nm_so_gate	*p_so_gate	=	NULL;
     int	err;
 
-    p_gate_priv	= TBX_MALLOC(sizeof(struct nm_so_gate));
-    if (!p_gate_priv) {
+    p_so_gate = TBX_MALLOC(sizeof(struct nm_so_gate));
+    if (!p_so_gate) {
         err = -NM_ENOMEM;
         goto out;
     }
-    p_gate_priv->next_pw = NULL;
 
-    p_gate->sch_private	= p_gate_priv;
+    memset(p_so_gate->active_recv, 0, sizeof(p_so_gate->active_recv));
+    memset(p_so_gate->status, 0, sizeof(p_so_gate->status));
+    memset(p_so_gate->recv, 0, sizeof(p_so_gate->recv));
+
+    p_so_gate->pending_unpacks = 0;
+
+    INIT_LIST_HEAD(&p_so_gate->out_list);
+
+    p_gate->sch_private	= p_so_gate;
 
     err	= NM_ESUCCESS;
 
@@ -282,14 +205,4 @@ nm_so_load		(struct nm_sched_ops	*p_ops)
     p_ops->in_process_failed_rq	 = nm_so_in_process_failed_rq;
 
     return NM_ESUCCESS;
-}
-
-/******* Utilitaires **********/
-
-void
-nm_so_control_error(char *fct_name, int err){
-    if(err != NM_ESUCCESS){
-        NM_DISPF("%s returned %d", fct_name, err);
-        TBX_FAILURE("err != NM_ESUCCESS");
-    }
 }

@@ -14,68 +14,63 @@
  */
 
 
-#ifndef NM_SO_PRIVATE_H
-#define NM_SO_PRIVATE_H
+#ifndef _NM_SO_PRIVATE_H_
+#define _NM_SO_PRIVATE_H_
 
 #include <stdint.h>
 
-#include "nm_protected.h"
-#include "nm_so_stack.h"
+#include <pm2_list.h>
 
-#define AGGREGATED_PW_MAX_SIZE 32768
-#define AGGREGATED_PW_MAX_NB_SEG 200
-#define SMALL_THRESHOLD 32000
+#include <nm_protected.h>
+#include "nm_so_parameters.h"
+#include "nm_so_pkt_wrap.h"
+#include "nm_so_strategies.h"
 
-//#define NB_CREATED_PRE_POSTED 10
-//#define NB_AGGREGATION_PW 10
+extern nm_so_strategy *active_strategy;
 
-/*********** Unexpecteds *************/
-struct nm_so_unexpected{
-    uint8_t  proto_id;
-    uint8_t  seq;
-    uint32_t len;
-    void *data;
-};
+
+/* Status flags contents */
+#define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
+#define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
+#define NM_SO_STATUS_PACKET_HERE     ((uint8_t)4)
+#define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)8)
+
+
+#define NM_SO_MAX_TRACKS   3
 
 struct nm_so_gate {
-    // next p_pw to schedule - one in advance
-    struct nm_so_pkt_wrap * next_pw;
-};
+  /* list of raw outgoing packets */
+  struct list_head out_list;
 
-struct nm_so_trk{
-    /* pour les stream -> premier envoi */
-    tbx_bool_t pending_stream_intro;
-};
+  /* Actually counts the number of expected small messages, including
+     RdV requests for large messages */
+  unsigned pending_unpacks;
 
+  unsigned active_recv[NM_SO_MAX_TRACKS];
+
+  /* WARNING: better replace the following array by two separate
+     bitmaps, to save space and avoid false sharing between send and
+     recv operations. status[tag_id][seq] */
+  volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+
+  union recv_info {
+    struct {
+      void *data;
+      struct nm_so_pkt_wrap *p_so_pw;
+    } pkt_here;
+    struct {
+      void *data;
+      uint32_t len;
+    } unpack_here;
+  } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+
+};
 
 struct nm_so_sched {
-    struct nm_so_trk so_trks[255];
-    p_tbx_slist_t trks_to_update;
-
-    // prêts à être pré-postés en réception
-    int nb_ready_pre_posted_wraps;
-    nm_so_stack_t ready_pre_posted_wraps;
-
-    // prêts à être utiliser en émission
-    int nb_ready_wraps;
-    nm_so_stack_t ready_wraps;
-
-    // headers
-    p_tbx_memory_t sched_header_key;
-    p_tbx_memory_t header_key;
-
-    // protocole de rdv
-    struct nm_proto *p_proto_rdv;
-
-    // unexpecteds
-    p_tbx_slist_t unexpected_list;
-
-    // ack wrapper en cours de construction
-    //struct nm_pkt_wrap *acks;
-    struct nm_so_pkt_wrap *acks;
+  int dummy;
 };
 
-/************ Methods ************/
+
 int
 nm_so_out_schedule_gate(struct nm_gate *p_gate);
 
@@ -86,7 +81,7 @@ nm_so_out_process_success_rq(struct nm_sched	*p_sched,
 int
 nm_so_out_process_failed_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw,
-                            int		 _err);
+                            int		         _err);
 
 int
 nm_so_in_schedule(struct nm_sched *p_sched);
@@ -98,10 +93,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
-                           int		 _err);
+                           int		         _err);
 
-/******* Utilitaires **********/
-void
-nm_so_control_error(char *fct_name, int err);
 
 #endif

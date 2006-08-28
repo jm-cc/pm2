@@ -18,36 +18,34 @@
 
 typedef struct nm_so_strategy_struct nm_so_strategy;
 
-// Initialization
-typedef int (*nm_so_strategy_init_func)(nm_so_strategy *strat);
+/* Initialization */
+typedef int (*nm_so_strategy_init_func)(void);
 
-// Compute the best possible packet rearrangement
-// with no side-effect on pre_list
-typedef int (*nm_so_strategy_try_func)(nm_so_strategy *strat,
-				       struct nm_gate *p_gate,
-				       struct nm_drv *driver,
-				       p_tbx_slist_t pre_list,
+/* Handle the arrival of a new packet. The strategy may already apply
+   some optimizations at this point */
+typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
+					uint8_t tag, uint8_t seq,
+					void *data, uint32_t len);
+
+/* Compute the best possible packet rearrangement with no side-effect
+   on pre_list */
+typedef int (*nm_so_strategy_try_func)(struct nm_gate *p_gate,
 				       unsigned *score);
 
-// Apply the "already computed" strategy on pre_list
-// and return next packet to send
-typedef int (*nm_so_strategy_commit_func)(nm_so_strategy *strat,
-					  p_tbx_slist_t pre_list,
-					  struct nm_so_pkt_wrap **pp_so_pw);
+/* Apply the "already computed" strategy on pre_list and return next
+   packet to send */
+typedef int (*nm_so_strategy_commit_func)(void);
 
-// Compute and apply the best possible packet rearrangement, 
-// then return next packet to send
-typedef int (*nm_so_strategy_try_and_commit_func)(nm_so_strategy *strat,
-						  struct nm_gate *p_gate,
-						  struct nm_drv *driver,
-						  p_tbx_slist_t pre_list,
-						  struct nm_so_pkt_wrap **pp_so_pw);
+/* Compute and apply the best possible packet rearrangement, then
+   return next packet to send */
+typedef int (*nm_so_strategy_try_and_commit_func)(struct nm_gate *p_gate);
 
-// Forget the pre-computed stuff
-typedef int (*nm_so_strategy_cancel_func)(nm_so_strategy *strat);
+/* Forget the pre-computed stuff */
+typedef int (*nm_so_strategy_cancel_func)(void);
 
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
+  nm_so_strategy_pack_func pack;
   nm_so_strategy_try_func try;
   nm_so_strategy_commit_func commit;
   nm_so_strategy_try_and_commit_func try_and_commit;

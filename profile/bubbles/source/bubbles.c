@@ -194,10 +194,13 @@ void pause(float sec) {
 
 		nextFrame(movie);
 		SWFDisplayItem_remove(item);
-	} else 
-		for (i=0; i<sec*RATE;i++) {
+	} else {
+		int n = sec*RATE;
+		if (!n) n = 1;
+		for (i=0; i<n;i++) {
 			nextFrame(movie);
 		}
+	}
 }
 
 /* Draw an arrow */
@@ -1746,6 +1749,8 @@ if (optind != argc) {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				e->prio = ev.ev64.param[1];
 				verbprintf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
+				updateEntity(e);
+				pause(0.001);
 				break;
 			}
 #ifdef BUBBLE_SCHED_EXPLODE
@@ -1925,6 +1930,8 @@ if (optind != argc) {
 					printfThread(th,t);
 					verbprintf(" named %s\n", name);
 					t->name=strdup(name);
+					updateEntity(&t->entity);
+					pause(0.001);
 					break;
 				}
 				case SET_THREAD_ID: {
@@ -1934,6 +1941,8 @@ if (optind != argc) {
 					printfThread(th,t);
 					verbprintf(" id %d\n", id);
 					t->id=id;
+					updateEntity(&t->entity);
+					pause(0.001);
 					break;
 				}
 				case SCHED_TICK: {

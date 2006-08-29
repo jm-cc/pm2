@@ -368,7 +368,7 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 
 #section functions
 #depend "tbx_compiler.h"
-#depend "marcel_sysdep.h[marcel_functions]"
+#depend "marcel_sysdep.h[functions]"
 
 TBX_FMALLOC extern void *marcel_malloc_node(size_t size, int node);
 extern void marcel_free_node(void *ptr, size_t size, int node);

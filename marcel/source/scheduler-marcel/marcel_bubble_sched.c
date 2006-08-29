@@ -581,7 +581,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		 * telle priorité (ou encore plus forte) avant nous */
 		bubble_sched_debugl(7,"%p should go down\n", nextent);
 		max_prio = idx;
-		for (currq = ma_lwp_rq(LWP_SELF); currq != rq; currq = currq->father) {
+		for (currq = ma_lwp_vprq(LWP_SELF); currq != rq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx <= max_prio) {
 				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
@@ -608,7 +608,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_holder_rawunlock(&rq->hold);
 
 		/* trouver une runqueue qui va bien */
-		for (currq = ma_lwp_rq(LWP_SELF); currq &&
+		for (currq = ma_lwp_vprq(LWP_SELF); currq &&
 			nextent->sched_level < currq->level;
 			currq = currq->father);
 
@@ -668,7 +668,7 @@ les #ifdef dans les arguments de macro...
 
 	/* bulle fraîche, on l'amène près de nous */
 	if (ma_idle_scheduler && !bubble->settled) {
-		ma_runqueue_t *rq2 = ma_lwp_rq(LWP_SELF);
+		ma_runqueue_t *rq2 = ma_lwp_vprq(LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);
@@ -688,7 +688,7 @@ les #ifdef dans les arguments de macro...
 
 	/* en général, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
-		bubble_sched_debugl(7,"warning: bubble %p empty\n", bubble);
+		bubble_sched_debug("warning: bubble %p empty\n", bubble);
 		/* on ne devrait jamais ordonnancer une bulle de priorité NOSCHED ! */
  		MA_BUG_ON(bubble->sched.prio == MA_NOSCHED_PRIO);
 		marcel_bubble_sleep_rq_locked(bubble);
@@ -740,20 +740,21 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 	if (!rq->hold.nr_running)
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
-		e = NULL;
-		if (!list_empty(ma_array_queue(rq->active,i)))
-			e = list_entry(ma_array_queue(rq->active,i)->prev, marcel_entity_t, run_list);
+		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), run_list) {
 #if 0
-		else if (!list_empty(ma_array_queue(rq->expired, i)))
-			e = list_entry(ma_array_queue(rq->expired,i)->prev, marcel_entity_t, run_list);
-#endif
-		if (!e || e->type == MA_TASK_ENTITY)
-			continue;
-		b = ma_bubble_entity(e);
-		if ((nbrun = total_nr_running(b)) >= up_power) {
-		//if (b->hold.nr_running >= up_power) {
-			bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
-			return b;
+			else if (!list_empty(ma_array_queue(rq->expired, i)))
+				e = list_entry(ma_array_queue(rq->expired,i)->prev, marcel_entity_t, run_list);
+	#endif
+			fprintf(stderr,"entity %p\n",e);
+			if (e->type == MA_TASK_ENTITY)
+				continue;
+			b = ma_bubble_entity(e);
+			fprintf(stderr,"found bubble %p\n",b);
+			if ((nbrun = total_nr_running(b)) >= up_power) {
+			//if (b->hold.nr_running >= up_power) {
+				bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
+				return b;
+			}
 		}
 	}
 	return NULL;
@@ -768,15 +769,17 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	marcel_entity_t *e;
 	int first = 1;
 	int nbrun;
+	bubble_sched_debugl(7,"see %d %d\n", level->type, level->number);
 	if (!rq)
 		return 0;
 	ma_preempt_disable();
 	//if (find_interesting_bubble(rq, up_power, 0)) {
 		ma_holder_rawlock(&rq->hold);
 		b = find_interesting_bubble(rq, up_power);
-		if (!b)
+		if (!b) {
 			ma_holder_rawunlock(&rq->hold);
-		else {
+			bubble_sched_debugl(7,"no interesting bubble\n");
+		} else {
 			// XXX: calcul dupliqué ici
 			nbrun = total_nr_running(b);
 			for (rq2 = rq;
@@ -875,6 +878,7 @@ static int see_down(struct marcel_topo_level *level,
 	ma_runqueue_t *rq = &level->sched;
 	int power = 0;
 	int i = 0, n = level->arity;
+	bubble_sched_debugl(7,"see_down from %d %d\n", level->type, level->number);
 	if (rq) {
 		power = marcel_vpmask_weight(&rq->vpset);
 	}
@@ -887,17 +891,20 @@ static int see_down(struct marcel_topo_level *level,
 			return 1;
 		i = (i+1) % level->arity;
 	}
+	bubble_sched_debugl(7,"down done\n");
 	return 0;
 }
 
 static int see_up(struct marcel_topo_level *level) {
 	struct marcel_topo_level *father = level->father;
+	bubble_sched_debugl(7,"see_up from %d %d\n", level->type, level->number);
 	if (!father)
 		return 0;
 	if (see_down(father, level))
 		return 1;
 	if (see_up(father))
 		return 1;
+	bubble_sched_debugl(7,"up done\n");
 	return 0;
 }
 
@@ -907,6 +914,7 @@ int marcel_bubble_steal_work(void) {
 	if (ma_idle_scheduler) {
 		struct marcel_topo_level *me =
 			&marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
+		bubble_sched_debugl(7,"bubble steal on %d\n", LWP_NUMBER(LWP_SELF));
 		/* couln't find work on local runqueue, go see elsewhere */
 		ma_read_unlock(&ma_idle_scheduler_lock);
 		return see_up(me);
@@ -966,10 +974,10 @@ any_t marcel_gang_scheduler(any_t foo) {
 		ma_lwp_t lwp;
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF) {
-				ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
+				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
 				ma_resched_task(ma_per_lwp(current_thread,lwp),lwp);
-				ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
+				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
 	}

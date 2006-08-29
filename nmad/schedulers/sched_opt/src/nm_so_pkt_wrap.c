@@ -526,7 +526,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	/* Retrieve data location */
 	data = ptr;
 
-	if(dh->skip) {
+	{
 	  uint16_t skip = dh->skip;
 	  uint32_t rlen;
 	  struct iovec *v;

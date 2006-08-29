@@ -475,11 +475,11 @@ void setThread(SWFShape shape, unsigned thick, float width, float height, int pr
 	SWFShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
 	SWFShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	if (DISPPRIO && prio) {
-		SWFShape_movePenTo(shape,width,height+CURVE);
+		SWFShape_movePen(shape,xStep,CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+prio,CURVE);
 	}
 	if (DISPNAME && name) {
-		SWFShape_movePenTo(shape,width,height+2*CURVE);
+		SWFShape_movePen(shape,0,CURVE);
 		while (*name) {
 			SWFShape_drawSizedGlyph(shape,font,*name,CURVE);
 			SWFShape_movePen(shape,CURVE,0);

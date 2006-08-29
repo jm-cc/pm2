@@ -22,6 +22,12 @@
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_pkt_wrap.h"
 
+struct nm_so_strat_default_gate {
+  /* list of raw outgoing packets */
+  struct list_head out_list;
+};
+
+
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 static int pack(struct nm_gate *p_gate,
@@ -46,7 +52,8 @@ static int pack(struct nm_gate *p_gate,
     goto out;
   }
 
-  list_add_tail(&p_so_pw->link,	&p_so_gate->out_list);
+  list_add_tail(&p_so_pw->link,
+                &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list);
 
   p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
 
@@ -59,8 +66,9 @@ static int pack(struct nm_gate *p_gate,
    return next packet to send */
 static int try_and_commit(struct nm_gate *p_gate)
 {
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct list_head *out_list =
-    &((struct nm_so_gate *)p_gate->sch_private)->out_list;
+    &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
 
   if(!tbx_slist_is_nil(p_gate->post_sched_out_list))
@@ -99,8 +107,21 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
+static int init_gate(struct nm_gate *p_gate)
+{
+  struct nm_so_strat_default_gate *priv
+    = TBX_MALLOC(sizeof(struct nm_so_strat_default_gate));
+
+  INIT_LIST_HEAD(&priv->out_list);
+
+  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = priv;
+
+  return NM_ESUCCESS;
+}
+
 nm_so_strategy nm_so_strat_default = {
   .init = init,
+  .init_gate = init_gate,
   .pack = pack,
   .try = NULL,
   .commit = NULL,

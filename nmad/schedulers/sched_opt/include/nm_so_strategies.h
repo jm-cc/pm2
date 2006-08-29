@@ -21,6 +21,8 @@ typedef struct nm_so_strategy_struct nm_so_strategy;
 /* Initialization */
 typedef int (*nm_so_strategy_init_func)(void);
 
+typedef int (*nm_so_strategy_init_gate)(struct nm_gate *p_gate);
+
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
@@ -43,8 +45,10 @@ typedef int (*nm_so_strategy_try_and_commit_func)(struct nm_gate *p_gate);
 /* Forget the pre-computed stuff */
 typedef int (*nm_so_strategy_cancel_func)(void);
 
+
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
+  nm_so_strategy_init_gate init_gate;
   nm_so_strategy_pack_func pack;
   nm_so_strategy_try_func try;
   nm_so_strategy_commit_func commit;

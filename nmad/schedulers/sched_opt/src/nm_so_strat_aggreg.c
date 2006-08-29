@@ -22,6 +22,13 @@
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_pkt_wrap.h"
 
+struct nm_so_strat_aggreg_gate {
+  /* list of raw outgoing packets */
+  struct list_head out_list;
+};
+
+
+
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 static int pack(struct nm_gate *p_gate,
@@ -29,14 +36,16 @@ static int pack(struct nm_gate *p_gate,
 		void *data, uint32_t len)
 {
   struct nm_so_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_strat_aggreg_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
   int flags = 0;
   int err;
 
   p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
 
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &p_so_gate->out_list, link) {
+  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
     uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
     uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
     uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
@@ -73,7 +82,7 @@ static int pack(struct nm_gate *p_gate,
     goto out;
   }
 
-  list_add_tail(&p_so_pw->link, &p_so_gate->out_list);
+  list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
 
   err = NM_ESUCCESS;
 
@@ -85,8 +94,9 @@ static int pack(struct nm_gate *p_gate,
    return next packet to send */
 static int try_and_commit(struct nm_gate *p_gate)
 {
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct list_head *out_list =
-    &((struct nm_so_gate *)p_gate->sch_private)->out_list;
+    &((struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv)->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
 
   if(!tbx_slist_is_nil(p_gate->post_sched_out_list))
@@ -125,8 +135,22 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
+static int init_gate(struct nm_gate *p_gate)
+{
+  struct nm_so_strat_aggreg_gate *priv
+    = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_gate));
+
+  INIT_LIST_HEAD(&priv->out_list);
+
+  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = priv;
+
+  return NM_ESUCCESS;
+}
+
+
 nm_so_strategy nm_so_strat_aggreg = {
   .init = init,
+  .init_gate = init_gate,
   .pack = pack,
   .try = NULL,
   .commit = NULL,

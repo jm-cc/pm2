@@ -39,9 +39,6 @@ extern nm_so_strategy *active_strategy;
 #define NM_SO_MAX_TRACKS   3
 
 struct nm_so_gate {
-  /* list of raw outgoing packets */
-  struct list_head out_list;
-
   /* Actually counts the number of expected small messages, including
      RdV requests for large messages */
   unsigned pending_unpacks;
@@ -64,6 +61,7 @@ struct nm_so_gate {
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
+  void *strat_priv;
 };
 
 struct nm_so_sched {

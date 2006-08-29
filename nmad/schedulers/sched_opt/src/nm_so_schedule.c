@@ -179,9 +179,10 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
     p_so_gate->pending_unpacks = 0;
 
-    INIT_LIST_HEAD(&p_so_gate->out_list);
-
     p_gate->sch_private	= p_so_gate;
+
+    if(active_strategy->init_gate)
+      active_strategy->init_gate(p_gate);
 
     err	= NM_ESUCCESS;
 
@@ -192,8 +193,8 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
-  active_strategy = &nm_so_strat_default;
-  //  active_strategy = &nm_so_strat_aggreg;
+  // active_strategy = &nm_so_strat_default;
+  active_strategy = &nm_so_strat_aggreg;
   // active_strategy = &nm_so_strat_exhaustive;
 
   __nm_so_pack = active_strategy->pack;

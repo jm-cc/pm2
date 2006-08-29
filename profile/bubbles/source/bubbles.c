@@ -49,7 +49,8 @@
 
 #define BSIZE 30 /* Button size */
 
-#define DISPPRIO 0
+static int DISPPRIO = 0;
+static int DISPNAME = 0;
 
 static float thick = 4.;
 static float CURVE = 20.;
@@ -452,7 +453,7 @@ static inline thread_t * thread_of_entity(entity_t *e) {
 	return tbx_container_of(e,thread_t,entity);
 }
 
-void setThread(SWFShape shape, unsigned thick, float width, float height, int prio, state_t state) {
+void setThread(SWFShape shape, unsigned thick, float width, float height, int prio, state_t state, char *name) {
 	float xStep = width/3, yStep = height/9;
 
 	switch (state) {
@@ -474,8 +475,16 @@ void setThread(SWFShape shape, unsigned thick, float width, float height, int pr
 	SWFShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
 	SWFShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	if (DISPPRIO && prio) {
-		SWFShape_movePen(shape,xStep,yStep);
+		SWFShape_movePenTo(shape,width,height+CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+prio,CURVE);
+	}
+	if (DISPNAME && name) {
+		SWFShape_movePenTo(shape,width,height+2*CURVE);
+		while (*name) {
+			SWFShape_drawSizedGlyph(shape,font,*name,CURVE);
+			SWFShape_movePen(shape,CURVE,0);
+			name++;
+		}
 	}
 }
 
@@ -539,7 +548,7 @@ void setBubble(SWFShape shape, float width, float height, int prio) {
 	SWFShape_drawLine(shape,0,-height+2*CURVE);
 	SWFShape_drawCurve(shape,0,-CURVE,CURVE,0);
 	if (DISPPRIO && prio) {
-		SWFShape_movePen(shape,5*width/2+10-CURVE,5*height/2+10);
+		SWFShape_movePen(shape,-2*CURVE,-CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+prio,CURVE);
 	}
 }
@@ -562,7 +571,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	SWFDisplayItem_moveTo(b->entity.lastitem,b->entity.x,b->entity.y);
 }
 void setThreadRecur(SWFShape shape, thread_t *t) {
-	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->state);
+	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->state,t->name);
 }
 
 float nextX;
@@ -578,7 +587,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	SWFShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 	SWFShape_drawCircle(shape,CURVE/2);
 	if (DISPPRIO && b->entity.prio) {
-		SWFShape_movePenTo(shape,2.57*b->entity.x-CURVE,2.57*b->entity.y-CURVE);
+		SWFShape_movePenTo(shape,b->entity.x-CURVE,b->entity.y-CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+b->entity.prio,CURVE);
 	}
 	list_for_each_entry(e,&b->heldentities,entity_list) {
@@ -598,7 +607,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	}
 }
 void setThreadRecur(SWFShape shape, thread_t *t) {
-	setThread(shape, t->entity.thick, t->entity.width, t->entity.height, t->entity.prio, t->state);
+	setThread(shape, t->entity.thick, t->entity.width, t->entity.height, t->entity.prio, t->state, t->name);
 }
 void setEntityRecur(SWFShape shape, entity_t *e) {
 	switch(e->type) {
@@ -1554,6 +1563,8 @@ static void usage(char *argv0) {
 	fprintf(stderr,"  -t thickness		thread/bubble/runqueue thickness\n");
 	fprintf(stderr,"  -c curve		curve size\n");
 	fprintf(stderr,"  -o optime		operation time (in sec.)\n");
+	fprintf(stderr,"  -p			display priorities\n");
+	fprintf(stderr,"  -n			display thread names\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -1562,7 +1573,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	char c;
 
-	while((c=getopt(argc,argv,":fdvx:y:t:c:o:h")) != EOF)
+	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpn")) != EOF)
 		switch(c) {
 		case 'f':
 			fontfile = optarg;
@@ -1594,6 +1605,12 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'o':
 			GETVAL(OPTIME,f)
+			break;
+		case 'p':
+			DISPPRIO = 1;
+			break;
+		case 'n':
+			DISPNAME = 1;
 			break;
 		case ':':
 			fprintf(stderr,"missing parameter to switch %c\n", optopt);

@@ -78,7 +78,7 @@ nm_so_post_regular_pw(struct nm_gate *p_gate)
     goto out;
 
   _nm_so_post_pw(p_gate, p_so_pw);
-  
+
   err = NM_ESUCCESS;
  out:
   return err;
@@ -99,7 +99,7 @@ nm_so_post_optimistic_pw(struct nm_gate *p_gate,
     goto out;
 
   _nm_so_post_pw(p_gate, p_so_pw);
-  
+
   err = NM_ESUCCESS;
  out:
   return err;
@@ -162,7 +162,7 @@ nm_so_in_schedule(struct nm_sched *p_sched)
   return NM_ESUCCESS;
 }
 
-static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw, 
+static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
 				    uint8_t proto_id, uint8_t seq,
 				    void *arg)
@@ -242,7 +242,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       }
     }
 #endif
-    
+
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
 				  NULL,
@@ -259,7 +259,9 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
   err = NM_ESUCCESS;
 
+#ifdef NM_SO_OPTIMISTIC_RECV
  out:
+#endif
   return err;
 }
 

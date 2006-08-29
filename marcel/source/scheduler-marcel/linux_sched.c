@@ -515,7 +515,7 @@ repeat_lock_task:
 				)) {
 
 				//ma_deactivate_task(p,h);
-				//ma_activate_task(p,&ma_lwp_rq(LWP_SELF)->hold);
+				//ma_activate_task(p,&ma_lwp_vprq(LWP_SELF)->hold);
 
 				//réalisé par ma_schedule()
 				//ma_set_task_lwp(p, LWP_SELF);

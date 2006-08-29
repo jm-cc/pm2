@@ -138,10 +138,12 @@ extern ma_runqueue_t ma_dontsched_runqueue;
 #section marcel_macros
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
+#define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->sched)
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
 #define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpmask_vp_ismember(&rq->vpset, vpnum))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
+#define ma_lwp_vprq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
 #define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
 #endif

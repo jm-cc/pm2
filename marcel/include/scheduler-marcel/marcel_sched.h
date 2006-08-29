@@ -238,16 +238,16 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 					}
 				}
 				if (!rq)
-					rq = ma_lwp_rq(cur_lwp);
+					rq = ma_lwp_vprq(cur_lwp);
 				break;
 			}
 			case MARCEL_SCHED_BALANCE: {
 				// Retourne le LWP le moins charge (ce qui
 				// oblige a parcourir toute la liste)
-				unsigned best = ma_lwp_rq(cur_lwp)->hold.nr_running;
+				unsigned best = ma_lwp_vprq(cur_lwp)->hold.nr_running;
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
-				rq = ma_lwp_rq(cur_lwp);
+				rq = ma_lwp_vprq(cur_lwp);
 				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
 					rq2 = &vp->sched;
 					if (rq2->hold.nr_running < best) {
@@ -259,7 +259,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			}
 			default: {
 				unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, LWP_NUMBER(cur_lwp));
-				rq = ma_lwp_rq(GET_LWP_BY_NUM(num));
+				rq = ma_lwp_vprq(GET_LWP_BY_NUM(num));
 				break;
 			}
 		}

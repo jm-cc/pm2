@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#undef MA__BUBBLES
+//#undef MA__BUBBLES
 
-#define NWORKS 4
+#define NWORKS 2
 #define NWORKERS_POW 2
 #define NWORKERS (1<<NWORKERS_POW)
 #define TREE

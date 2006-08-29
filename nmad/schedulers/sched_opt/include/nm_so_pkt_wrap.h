@@ -37,7 +37,7 @@ struct nm_so_pkt_wrap {
 
   struct nm_pkt_wrap pw;
 
-  uint32_t           header_index;
+  struct iovec      *header_index;
 
   int                header_ref_count;
 
@@ -48,16 +48,16 @@ struct nm_so_pkt_wrap {
   /* Used on the receiving side */
   int                optimistic_recv;
 
-  struct list_head link;
+  struct list_head   link;
 
-  struct iovec    v[NM_SO_PREALLOC_IOV_LEN];
+  struct iovec       v[NM_SO_PREALLOC_IOV_LEN];
 
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-  struct nm_iovec nm_v[NM_SO_PREALLOC_IOV_LEN];
+  struct nm_iovec    nm_v[NM_SO_PREALLOC_IOV_LEN];
 #endif
 
   /* The following field MUST be the LAST within the structure */
-  NM_SO_ALIGN_TYPE        buf[1];
+  NM_SO_ALIGN_TYPE   buf[1];
 };
 
 #define nm_pw2so(p_pw) \
@@ -71,7 +71,7 @@ struct nm_so_pkt_wrap {
 static __inline__
 uint32_t nm_so_pw_remaining_header_area(struct nm_so_pkt_wrap *p_so_pw)
 {
-  struct iovec *vec = p_so_pw->pw.v + p_so_pw->header_index;
+  register struct iovec *vec = p_so_pw->header_index;
 
   return NM_SO_PREALLOC_BUF_LEN -
            ((vec->iov_base + vec->iov_len) - (void *)p_so_pw->buf);

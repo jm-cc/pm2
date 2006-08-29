@@ -117,8 +117,9 @@ __nm_so_unpack(struct nm_gate *p_gate,
   if(*status & NM_SO_STATUS_PACKET_HERE) {
     /* Wow! Data already in! */
 
-    /* Copy data to its final destination */
-    memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, len);
+    if(len)
+      /* Copy data to its final destination */
+      memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, len);
 
     /* Decrement the packet wrapper reference counter. If no other
        chunks are still in use, the pw will be destroyed. */
@@ -176,10 +177,11 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
 
-    /* Copy data to its final destination */
-    memcpy(p_so_gate->recv[tag][seq].unpack_here.data,
-	   ptr,
-	   p_so_gate->recv[tag][seq].unpack_here.len);
+    if(len)
+      /* Copy data to its final destination */
+      memcpy(p_so_gate->recv[tag][seq].unpack_here.data,
+	     ptr,
+	     p_so_gate->recv[tag][seq].unpack_here.len);
 
     p_so_gate->pending_unpacks--;
 

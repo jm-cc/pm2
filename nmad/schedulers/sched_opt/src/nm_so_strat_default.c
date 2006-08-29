@@ -19,7 +19,7 @@
 #include <assert.h>
 
 #include "nm_so_private.h"
-#include "nm_so_strategies/nm_so_strat_aggreg.h"
+#include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_pkt_wrap.h"
 
 /* Handle the arrival of a new packet. The strategy may already apply
@@ -33,37 +33,10 @@ static int pack(struct nm_gate *p_gate,
   int flags = 0;
   int err;
 
-  p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
-
-  /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &p_so_gate->out_list, link) {
-    uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-    uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
-    uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
-    if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
-      /* There's not enough room to add our data to this paquet */
-      goto next;
-
-    if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
-      /* We can copy data into the header zone */
-      flags = NM_SO_DATA_USE_COPY;
-    else
-      if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
-	goto next;
-
-    err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-    goto out;
-
-  next:
-    ;
-  }
-
   if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
     flags = NM_SO_DATA_USE_COPY;
 
-  /* We didn't have a chance to form an aggregate, so simply form a
-     new packet wrapper and add it to the out_list */
+  /* Simply form a new packet wrapper and add it to the out_list */
   err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
 					  data, len,
 					  flags,
@@ -73,10 +46,11 @@ static int pack(struct nm_gate *p_gate,
     goto out;
   }
 
-  list_add_tail(&p_so_pw->link, &p_so_gate->out_list);
+  list_add_tail(&p_so_pw->link,	&p_so_gate->out_list);
+
+  p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
 
   err = NM_ESUCCESS;
-
  out:
   return err;
 }
@@ -125,7 +99,7 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
-nm_so_strategy nm_so_strat_aggreg = {
+nm_so_strategy nm_so_strat_default = {
   .init = init,
   .pack = pack,
   .try = NULL,

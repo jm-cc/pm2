@@ -38,10 +38,10 @@ int
 nm_so_begin_packing(struct nm_core *p_core,
 		    uint16_t gate_id, uint8_t tag,
 		    struct nm_so_cnx **cnx);
-int
-__nm_so_pack(struct nm_gate *p_gate,
-	     uint8_t tag, uint8_t seq,
-	     void *data, uint32_t len);
+extern int
+(*__nm_so_pack)(struct nm_gate *p_gate,
+		uint8_t tag, uint8_t seq,
+		void *data, uint32_t len);
 
 static __inline__
 int

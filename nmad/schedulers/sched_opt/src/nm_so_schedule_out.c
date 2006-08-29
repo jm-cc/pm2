@@ -38,96 +38,17 @@ __nm_so_wait_send_range(struct nm_core *p_core,
 
   do {
     while(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED))
-      if(p_so_gate->active_recv)
+
+      if(p_so_gate->active_recv[0])
+	/* We need to schedule in new packets (typically ACKs) */
 	nm_schedule(p_core);
       else
-	nm_schedule_out(p_gate);
+	/* We just need to schedule out data on this gate */
+	nm_sched_out_gate(p_gate);
+
   } while(seq++ != seq_sup);
 
   return NM_ESUCCESS;
-}
-
-int
-__nm_so_pack(struct nm_gate *p_gate,
-	     uint8_t tag, uint8_t seq,
-	     void *data, uint32_t len)
-{
-  int err;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_pkt_wrap *p_so_pw;
-  int flags = 0;
-
-
-  if(!active_strategy) {
-
-    /* Simply form a new packet wrapper and add it to the out_list */
-
-    if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
-      flags = NM_SO_DATA_USE_COPY;
-
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
-    if(err != NM_ESUCCESS) {
-      printf("nm_so_pw_alloc failed: err = %d\n", err);
-      goto out;
-    }
-
-    list_add_tail(&p_so_pw->link, &p_so_gate->out_list);
-
-    err = NM_ESUCCESS;
-  } else
-    err =  active_strategy->pack(p_gate, tag, seq, data, len);
-
-  p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
-
- out:
-  return err;
-}
-
-/* schedule and post new outgoing buffers */
-int
-nm_so_out_schedule_gate(struct nm_gate *p_gate)
-{
-  p_tbx_slist_t post = p_gate->post_sched_out_list;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_pkt_wrap *p_so_pw = NULL;
-
-  int err = NM_ESUCCESS;
-
-  if(!tbx_slist_is_nil(post))
-    /* We're done */
-    goto out;
-
-  if(!active_strategy) {
-
-    if(list_empty(&p_so_gate->out_list))
-      /* We're done */
-      goto out;
-
-    /* Simply take the head of the list */
-    p_so_pw = nm_l2so(p_so_gate->out_list.next);
-    list_del(p_so_gate->out_list.next);
-
-    /* Finalize packet wrapper */
-    nm_so_pw_finalize(p_so_pw);
-
-    p_so_pw->pw.p_gate = p_gate;
-
-    /* WARNING (HARDCODED): packet is assigned to track 0 */
-    p_so_pw->pw.p_drv = (p_so_pw->pw.p_gdrv =
-			 p_gate->p_gate_drv_array[0])->p_drv;
-    p_so_pw->pw.p_trk = (p_so_pw->pw.p_gtrk =
-			 p_so_pw->pw.p_gdrv->p_gate_trk_array[0])->p_trk;
-
-    /* append pkt to scheduler post list */
-    tbx_slist_append(post, &p_so_pw->pw);
-  } else
-    return active_strategy->try_and_commit(p_gate);
-
- out:
-    return err;
 }
 
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw, 

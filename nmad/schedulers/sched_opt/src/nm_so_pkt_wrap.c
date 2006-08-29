@@ -39,7 +39,7 @@
 
 /* fast packet allocator */
 #define INITIAL_PKT_NUM  16
-static p_tbx_memory_t nm_so_pw_mem = NULL;
+static p_tbx_memory_t nm_so_pw_send_mem = NULL;
 static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 
 /* Some ugly macros (for convenience only) */
@@ -48,7 +48,7 @@ static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 int
 nm_so_pw_init(struct nm_core *p_core)
 {
-  tbx_malloc_init(&nm_so_pw_mem,
+  tbx_malloc_init(&nm_so_pw_send_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_PREALLOC_BUF_LEN,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
 
@@ -63,13 +63,13 @@ nm_so_pw_init(struct nm_core *p_core)
 int
 nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 {
-  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  struct nm_so_pkt_wrap *p_so_pw;
   int err = NM_ESUCCESS;
 
   if(flags & NM_SO_DATA_PREPARE_RECV)
     p_so_pw = tbx_malloc(nm_so_pw_recv_mem);
   else
-    p_so_pw = tbx_malloc(nm_so_pw_mem);
+    p_so_pw = tbx_malloc(nm_so_pw_send_mem);
 
   if (!p_so_pw) {
     err = -NM_ENOMEM;
@@ -120,7 +120,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 
     p_so_pw->pw.length = NM_SO_GLOBAL_HEADER_SIZE;
 
-    p_so_pw->header_index = 0;
+    p_so_pw->header_index = p_so_pw->v;
     p_so_pw->uncompleted_header = NULL;
     p_so_pw->pending_skips = 0;
   }
@@ -158,7 +158,7 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   if(flags & NM_SO_RECV_PW)
     tbx_free(nm_so_pw_recv_mem, p_so_pw);
   else
-    tbx_free(nm_so_pw_mem, p_so_pw);
+    tbx_free(nm_so_pw_send_mem, p_so_pw);
 
   err = NM_ESUCCESS;
   return err;
@@ -170,7 +170,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  void *data, uint32_t len, int flags)
 {
   int err;
-  struct iovec *vec;
+  register struct iovec *vec;
 
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) {
     /* Add data with header */
@@ -189,9 +189,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
       }
 
       /* Use a new iovec entry for upcoming headers */
-      p_so_pw->header_index = p_so_pw->pw.v_nb++;
-
-      vec = p_so_pw->pw.v + p_so_pw->header_index;
+      vec = p_so_pw->header_index = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
 
       if(gap) {
 
@@ -214,7 +212,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
     } else {
 
-      vec = p_so_pw->pw.v + p_so_pw->header_index;
+      vec = p_so_pw->header_index;
     }
 
     if(!(flags & NM_SO_DATA_IS_CTRL_HEADER)) {
@@ -235,12 +233,15 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	/* Data immediately follows its header */
 	uint32_t size;
 
-	memcpy(vec->iov_base + vec->iov_len, data, len);
-
 	h->skip = 0;
 	size = nm_so_aligned(len);
 	h->len = size;
-	vec->iov_len += size;
+
+	if(len) {
+	  memcpy(vec->iov_base + vec->iov_len, data, len);
+	  vec->iov_len += size;
+	}
+
 	p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + size;
 
       } else {
@@ -455,8 +456,12 @@ nm_so_pw_check_optimistic(struct nm_so_pkt_wrap *p_so_pw,
 
     h = p_so_pw->pw.v->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
 
-    if(h->proto_id != p_so_pw->pw.proto_id || h->seq != p_so_pw->pw.seq) {
+    if(h->proto_id != p_so_pw->pw.proto_id || h->seq != p_so_pw->pw.seq || h->skip) {
       /* Bad luck! We have to copy the data back into the header zone !*/
+
+      /* TODO: check if an unpack was already posted for this data (if
+	 proto > 128 of course) and copy data directly to its final
+	 destination. Maybe we need a data callback to do this. */
 
       memcpy((void *)h + NM_SO_DATA_HEADER_SIZE,
 	     p_so_pw->pw.v[1].iov_base,

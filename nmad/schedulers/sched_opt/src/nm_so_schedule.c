@@ -26,9 +26,15 @@
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
 
+#include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 
 nm_so_strategy *active_strategy = NULL;
+
+int
+(*__nm_so_pack)(struct nm_gate *p_gate,
+		uint8_t tag, uint8_t seq,
+		void *data, uint32_t len);
 
 static int
 nm_so_schedule_init (struct nm_sched *p_sched)
@@ -41,13 +47,8 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   /* Initialize "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_init(p_core);
 
-  /* Set up active strategy */
-  //  active_strategy = &nm_so_strat_aggreg;
-  // active_strategy = &nm_so_strat_exhaustive
-
   /* Initialize strategy */
-  if(active_strategy)
-    active_strategy->init();
+  active_strategy->init();
 
   p_priv = TBX_MALLOC(sizeof(struct nm_so_sched));
   if (!p_priv) {
@@ -191,18 +192,24 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
-    p_ops->init			= nm_so_schedule_init;
+  active_strategy = &nm_so_strat_default;
+  //  active_strategy = &nm_so_strat_aggreg;
+  // active_strategy = &nm_so_strat_exhaustive;
 
-    p_ops->init_trks		= nm_so_init_trks;
-    p_ops->init_gate		= nm_so_init_gate;
+  __nm_so_pack = active_strategy->pack;
 
-    p_ops->out_schedule_gate	  = nm_so_out_schedule_gate;
-    p_ops->out_process_success_rq = nm_so_out_process_success_rq;
-    p_ops->out_process_failed_rq  = nm_so_out_process_failed_rq;
+  p_ops->init			= nm_so_schedule_init;
 
-    p_ops->in_schedule		 = nm_so_in_schedule;
-    p_ops->in_process_success_rq = nm_so_in_process_success_rq;
-    p_ops->in_process_failed_rq	 = nm_so_in_process_failed_rq;
+  p_ops->init_trks		= nm_so_init_trks;
+  p_ops->init_gate		= nm_so_init_gate;
 
-    return NM_ESUCCESS;
+  p_ops->out_schedule_gate	  = active_strategy->try_and_commit;
+  p_ops->out_process_success_rq = nm_so_out_process_success_rq;
+  p_ops->out_process_failed_rq  = nm_so_out_process_failed_rq;
+
+  p_ops->in_schedule		 = nm_so_in_schedule;
+  p_ops->in_process_success_rq = nm_so_in_process_success_rq;
+  p_ops->in_process_failed_rq	 = nm_so_in_process_failed_rq;
+
+  return NM_ESUCCESS;
 }

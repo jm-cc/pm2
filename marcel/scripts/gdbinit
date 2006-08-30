@@ -1,4 +1,4 @@
-handle SIGUSR2 noprint nostop
+handle SIGXFSZ noprint nostop
 set $marcel_saved=0
 
 define save-ctx

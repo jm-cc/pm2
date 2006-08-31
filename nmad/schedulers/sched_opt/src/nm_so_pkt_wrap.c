@@ -39,6 +39,7 @@
 
 /* fast packet allocator */
 #define INITIAL_PKT_NUM  16
+static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
 static p_tbx_memory_t nm_so_pw_send_mem = NULL;
 static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 
@@ -48,6 +49,10 @@ static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 int
 nm_so_pw_init(struct nm_core *p_core)
 {
+  tbx_malloc_init(&nm_so_pw_nohd_mem,
+		  sizeof(struct nm_so_pkt_wrap),
+		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
+
   tbx_malloc_init(&nm_so_pw_send_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_PREALLOC_BUF_LEN,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
@@ -66,51 +71,69 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
   struct nm_so_pkt_wrap *p_so_pw;
   int err = NM_ESUCCESS;
 
-  if(flags & NM_SO_DATA_PREPARE_RECV)
-    p_so_pw = tbx_malloc(nm_so_pw_recv_mem);
-  else
-    p_so_pw = tbx_malloc(nm_so_pw_send_mem);
-
-  if (!p_so_pw) {
-    err = -NM_ENOMEM;
-    goto out;
-  }
-
-  p_so_pw->pw.v = p_so_pw->v;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-  p_so_pw->pw.nm_v = p_so_pw->nm_v;
-#endif
-  p_so_pw->pw.v_first = 0;
-  p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
-
-  if(tbx_unlikely(flags & NM_SO_DATA_DONT_USE_HEADER)) {
-
-    p_so_pw->pw.pkt_priv_flags |= NM_SO_NO_HEADER;
+  if(flags & NM_SO_DATA_DONT_USE_HEADER) {
 
     if(flags & NM_SO_DATA_PREPARE_RECV) {
 
+      p_so_pw = tbx_malloc(nm_so_pw_recv_mem);
+      if (!p_so_pw) {
+	err = -NM_ENOMEM;
+	goto out;
+      }
+
+      p_so_pw->pw.v = p_so_pw->v;
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
+      p_so_pw->pw.nm_v = p_so_pw->nm_v;
+#endif
+      p_so_pw->pw.v_first = 0;
+      p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
       p_so_pw->pw.v_nb = 1;
-      p_so_pw->v->iov_base = p_so_pw->buf;
-      p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED +
-			     NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE);
 
       p_so_pw->pw.pkt_priv_flags = NM_SO_RECV_PW;
 
       p_so_pw->optimistic_recv = 0;
 
+      p_so_pw->v->iov_base = p_so_pw->buf;
+      p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED +
+			     NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE);
+
     } else {
+
+      p_so_pw = tbx_malloc(nm_so_pw_nohd_mem);
+      if (!p_so_pw) {
+	err = -NM_ENOMEM;
+	goto out;
+      }
+
+      p_so_pw->pw.v = p_so_pw->v;
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
+      p_so_pw->pw.nm_v = p_so_pw->nm_v;
+#endif
+      p_so_pw->pw.v_first = 0;
+      p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
+      p_so_pw->pw.v_nb = 0;
 
       p_so_pw->pw.pkt_priv_flags = NM_SO_NO_HEADER;
 
-      p_so_pw->pw.v_nb = 0;
       p_so_pw->pw.length = 0;
     }
 
   } else {
 
-    p_so_pw->pw.pkt_priv_flags = 0;
+    p_so_pw = tbx_malloc(nm_so_pw_send_mem);
+    if (!p_so_pw) {
+      err = -NM_ENOMEM;
+      goto out;
+    }
 
+    p_so_pw->pw.v = p_so_pw->v;
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
+    p_so_pw->pw.nm_v = p_so_pw->nm_v;
+#endif
+    p_so_pw->pw.v_first = 0;
+    p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
     p_so_pw->pw.v_nb = 1;
+
     p_so_pw->v->iov_base = p_so_pw->buf;
     p_so_pw->v->iov_len = NM_SO_GLOBAL_HEADER_SIZE;
 
@@ -119,6 +142,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 #endif
 
     p_so_pw->pw.length = NM_SO_GLOBAL_HEADER_SIZE;
+
+    p_so_pw->pw.pkt_priv_flags = 0;
 
     p_so_pw->header_index = p_so_pw->v;
     p_so_pw->uncompleted_header = NULL;
@@ -157,6 +182,8 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   /* Finally clean packet wrapper itself */
   if(flags & NM_SO_RECV_PW)
     tbx_free(nm_so_pw_recv_mem, p_so_pw);
+  else if(flags & NM_SO_NO_HEADER)
+    tbx_free(nm_so_pw_nohd_mem, p_so_pw);
   else
     tbx_free(nm_so_pw_send_mem, p_so_pw);
 

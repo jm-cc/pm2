@@ -144,14 +144,15 @@ struct fxt_code_name fut_code_table [] =
 
 /* several useful macros */
 
+#include "tbx_compiler.h"
 #include "tbx_macros.h"
 
 #define list_for_each_entry_after(pos,head,member,start)		   \
 	for (pos = list_entry((start)->member.next, typeof(*pos), member), \
-			prefetch(pos->member.next);			   \
+			tbx_prefetch(pos->member.next);			   \
 		&pos->member != (head);					   \
 		pos = list_entry(pos->member.next, typeof(*pos), member),  \
-			prefetch(pos->member.next))
+			tbx_prefetch(pos->member.next))
 
 /*******************************************************************************
  * SWF Stuff
@@ -221,7 +222,7 @@ SWFShape newArrow(float width, float height, int right) {
 }
 
 void gasp() {
-	/* essaie quand même de sauver ce qu'on peut */
+	/* essaie quand mï¿½e de sauver ce qu'on peut */
 	SWFMovie_save(movie,"rescue.swf");
 	fprintf(stderr,"written on rescue.swf\n");
 	abort();
@@ -695,7 +696,7 @@ void delThread(thread_t *t) {
 		list_del(&t->entity.entity_list);
 		t->entity.bubble_holder = NULL;
 	}
-	// XXX: berk. Ça marche pour l'instant car on est le dernier sur la liste
+	// XXX: berk. ï¿½ marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= t->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }
@@ -713,7 +714,7 @@ void delBubble(bubble_t *b) {
 		list_del(&b->entity.entity_list);
 		b->entity.bubble_holder = NULL;
 	}
-	// XXX: berk. Ça marche pour l'instant car on est le dernier sur la liste
+	// XXX: berk. ï¿½ marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= b->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }
@@ -1785,7 +1786,7 @@ if (optind != argc) {
 				printfThread(t,e);
 				verbprintf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 #ifndef TREES
-				/* n'a pas de sens en représentation arbresque */
+				/* n'a pas de sens en reprï¿½entation arbresque */
 				bubbleInsertThread(b,e);
 #endif
 				break;
@@ -1850,7 +1851,7 @@ if (optind != argc) {
 			case FUT_RQS_NEWLWPRQ: {
 				unsigned rqnum = ev.ev64.param[0];
 				unsigned rqlevel = nrqlevels-1;
-				/* eux peuvent être dans le désordre */
+				/* eux peuvent ï¿½re dans le dï¿½ordre */
 				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				verbprintf("new lwp runqueue %d at %p -> %p\n",rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
@@ -1921,7 +1922,7 @@ if (optind != argc) {
 					}
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
-					// penser à free(t->name) aussi
+					// penser ï¿½free(t->name) aussi
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE: {
@@ -2067,7 +2068,7 @@ if (optind != argc) {
 		fflush(stdout);
 #if 0
 		{ static int pair = 0;
-		// Sauvegarde régulière, pour détecter rapidement les problèmes
+		// Sauvegarde rï¿½uliï¿½e, pour dï¿½ecter rapidement les problï¿½es
 		SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
 		}
 #endif
@@ -2113,7 +2114,7 @@ if (optind != argc) {
 
 	{
 #ifndef SHOWPRIO
-		/* démonstration bulles simples */
+		/* dï¿½onstration bulles simples */
 		bubble_t *b1, *b2, *b;
 		thread_t *t1, *t2, *t3, *t4, *t5;
 		t1 = newThread(0, norq);
@@ -2172,7 +2173,7 @@ if (optind != argc) {
 #ifdef SHOWEVOLUTION
 
 #if 1
-		/* Évolution de vol */
+		/* ï¿½olution de vol */
 		pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
 		pause(1);
@@ -2196,7 +2197,7 @@ if (optind != argc) {
 		switchRunqueuesEnd(&rqs[1][1], &b->entity);
 		pause(1);
 
-		/* Évolution d'explosion */
+		/* ï¿½olution d'explosion */
 #else
 		pause(1);
 		bubbleExplode(b);
@@ -2242,7 +2243,7 @@ if (optind != argc) {
 
 #else /* SHOWPRIO */
 
-		/* démonstration des priorités */
+		/* dï¿½onstration des prioritï¿½ */
 #define N 5
 		bubble_t *b[N];
 		thread_t *t[2*N], *comm;

@@ -103,16 +103,20 @@ void __memory_barrier(void);
 #  define TBX_VISIBILITY_PUSH_INTERNAL _Pragma("GCC visibility push(internal)")
 #  define TBX_VISIBILITY_POP _Pragma("GCC visibility pop")
 #endif
+#  define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
 
 #elif __GNUC__ == 3
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  if __GNUC_MINOR__ >= 1
 #    define __tbx_inline__	__inline__ __attribute__((always_inline))
+#    define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
 #    if __GNUC_MINOR < 4
 #      define __tbx_setjmp_inline__	__inline__ __attribute__((always_inline))
 #    else
 #      define __tbx_setjmp_inline__	__inline__
 #    endif
+#  else
+#    define tbx_prefetch(a,...)		(void)0
 #  endif
 
 #  if __GNUC_MINOR__ > 0
@@ -147,6 +151,7 @@ void __memory_barrier(void);
 #  endif
 
 #  define __restrict
+#  define tbx_prefetch(a,...)		(void)0
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif

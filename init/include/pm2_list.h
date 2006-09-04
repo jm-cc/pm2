@@ -20,9 +20,6 @@
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
 
-#ifndef prefetch
-#define prefetch(x) ((void)0)
-#endif
 /* Come from linux kernel */
 
 /*
@@ -213,8 +210,8 @@ static __tbx_inline__ void list_splice_init(struct list_head *list,
  * @head:       the head for your list.
  */
 #define list_for_each(pos, head) \
-        for (pos = (head)->next, prefetch(pos->next); pos != (head); \
-                pos = pos->next, prefetch(pos->next))
+        for (pos = (head)->next, tbx_prefetch(pos->next); pos != (head); \
+                pos = pos->next, tbx_prefetch(pos->next))
 
 /**
  * __list_for_each      -       iterate over a list
@@ -235,8 +232,8 @@ static __tbx_inline__ void list_splice_init(struct list_head *list,
  * @head:       the head for your list.
  */
 #define list_for_each_prev(pos, head) \
-        for (pos = (head)->prev, prefetch(pos->prev); pos != (head); \
-                pos = pos->prev, prefetch(pos->prev))
+        for (pos = (head)->prev, tbx_prefetch(pos->prev); pos != (head); \
+                pos = pos->prev, tbx_prefetch(pos->prev))
                 
 /**
  * list_for_each_safe   -       iterate over a list safe against removal of list
@@ -257,10 +254,10 @@ static __tbx_inline__ void list_splice_init(struct list_head *list,
  */
 #define list_for_each_entry(pos, head, member)                          \
         for (pos = list_entry((head)->next, typeof(*pos), member),      \
-                     prefetch(pos->member.next);                        \
+                     tbx_prefetch(pos->member.next);                        \
              &pos->member != (head);                                    \
              pos = list_entry(pos->member.next, typeof(*pos), member),  \
-                     prefetch(pos->member.next))
+                     tbx_prefetch(pos->member.next))
 
 /**
  * list_for_each_entry_from  -  iterate over list of given type, starting at some point
@@ -272,10 +269,10 @@ static __tbx_inline__ void list_splice_init(struct list_head *list,
  */
 #define list_for_each_entry_from_begin(pos, head, start, member)        \
         for (pos = list_entry((start)->member.next, typeof(*pos), member),     \
-                     prefetch(pos->member.next);                        \
+                     tbx_prefetch(pos->member.next);                        \
              pos != (start);                                            \
              pos = list_entry(pos->member.next, typeof(*pos), member),  \
-                     prefetch(pos->member.next))                        \
+                     tbx_prefetch(pos->member.next))                        \
 		if (&pos->member != head) {
 #define list_for_each_entry_from_end() }
 
@@ -287,10 +284,10 @@ static __tbx_inline__ void list_splice_init(struct list_head *list,
  */
 #define list_for_each_entry_reverse(pos, head, member)                  \
         for (pos = list_entry((head)->prev, typeof(*pos), member),      \
-                     prefetch(pos->member.prev);                        \
+                     tbx_prefetch(pos->member.prev);                        \
              &pos->member != (head);                                    \
              pos = list_entry(pos->member.prev, typeof(*pos), member),  \
-                     prefetch(pos->member.prev))
+                     tbx_prefetch(pos->member.prev))
 
 
 /**
@@ -393,7 +390,7 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
 
 /* Cannot easily do prefetch unfortunately */
 #define hlist_for_each(pos, head) \
-        for (pos = (head)->first; pos && ({ prefetch(pos->next); 1; }); \
+        for (pos = (head)->first; pos && ({ tbx_prefetch(pos->next); 1; }); \
              pos = pos->next) 
 
 #define hlist_for_each_safe(pos, n, head) \
@@ -409,7 +406,7 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
  */
 #define hlist_for_each_entry(tpos, pos, head, member)                    \
         for (pos = (head)->first;                                        \
-             pos && ({ prefetch(pos->next); 1;}) &&                      \
+             pos && ({ tbx_prefetch(pos->next); 1;}) &&                      \
                 ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
              pos = pos->next)
 
@@ -421,7 +418,7 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
  */
 #define hlist_for_each_entry_continue(tpos, pos, member)                 \
         for (pos = (pos)->next;                                          \
-             pos && ({ prefetch(pos->next); 1;}) &&                      \
+             pos && ({ tbx_prefetch(pos->next); 1;}) &&                      \
                 ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
              pos = pos->next)
 
@@ -432,7 +429,7 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
  * @member:     the name of the hlist_node within the struct.
  */
 #define hlist_for_each_entry_from(tpos, pos, member)                     \
-        for (; pos && ({ prefetch(pos->next); 1;}) &&                    \
+        for (; pos && ({ tbx_prefetch(pos->next); 1;}) &&                    \
                 ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
              pos = pos->next)
 

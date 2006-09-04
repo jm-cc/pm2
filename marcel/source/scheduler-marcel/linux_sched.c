@@ -1803,7 +1803,7 @@ switch_tasks:
 		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
 
-	prefetch(next);
+	tbx_prefetch(next);
 	ma_clear_tsk_need_resched(prev);
 	ma_clear_tsk_need_togo(prev);
 //Pour quand on voudra ce mécanisme...

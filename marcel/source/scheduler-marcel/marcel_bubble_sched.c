@@ -745,11 +745,9 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 			else if (!list_empty(ma_array_queue(rq->expired, i)))
 				e = list_entry(ma_array_queue(rq->expired,i)->prev, marcel_entity_t, run_list);
 	#endif
-			fprintf(stderr,"entity %p\n",e);
 			if (e->type == MA_TASK_ENTITY)
 				continue;
 			b = ma_bubble_entity(e);
-			fprintf(stderr,"found bubble %p\n",b);
 			if ((nbrun = total_nr_running(b)) >= up_power) {
 			//if (b->hold.nr_running >= up_power) {
 				bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
@@ -797,7 +795,6 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				/* todo: le faire quand même ? */
 				ma_holder_rawunlock(&rq->hold);
 			} else {
-		fprintf(stderr,"steal\n");
 				bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->name, b);
 				PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 				/* laisser d'abord ce qui est ordonnancé sur place */

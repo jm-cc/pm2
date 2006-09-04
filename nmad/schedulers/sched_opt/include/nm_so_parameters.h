@@ -17,6 +17,8 @@
 #ifndef _NM_SO_PARAMETERS_H_
 #define _NM_SO_PARAMETERS_H_
 
+#include "nm_so_headers.h"
+
 /* Maximum number of tags (e.g. logical channels) the application can
    use. 128 means [0..127]. A value smaller than 128 saves space! */
 #define NM_SO_MAX_TAGS                      16
@@ -26,8 +28,12 @@
    of the previous ones. */
 #define NM_SO_PENDING_PACKS_WINDOW          256
 
+#define NM_SO_MAX_UNEXPECTED                (32 * 1024)
+
 /* Maximum size of a small message */
-#define NM_SO_MAX_UNEXPECTED                (16 * 1024)
+#define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED - \
+					     NM_SO_GLOBAL_HEADER_SIZE - \
+					     NM_SO_DATA_HEADER_SIZE)
 
 /* Maximum size of the (preallocated) header zone within packet wrappers */
 #define NM_SO_PREALLOC_BUF_LEN              (2 * 1024)

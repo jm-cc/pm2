@@ -22,7 +22,6 @@
 
 #include <nm_public.h>
 
-#include "nm_rdv_public.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 
@@ -58,8 +57,7 @@ nm_so_pw_init(struct nm_core *p_core)
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
 
   tbx_malloc_init(&nm_so_pw_recv_mem,
-		  sizeof(struct nm_so_pkt_wrap) + NM_SO_MAX_UNEXPECTED +
-		  NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE,
+		  sizeof(struct nm_so_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
 
   return NM_ESUCCESS;
@@ -94,8 +92,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->optimistic_recv = 0;
 
       p_so_pw->v->iov_base = p_so_pw->buf;
-      p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED +
-			     NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE);
+      p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED);
 
     } else {
 
@@ -463,7 +460,8 @@ nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
                       NM_SO_GLOBAL_HEADER_SIZE +
                       NM_SO_DATA_HEADER_SIZE +
                       len;
-  vec[2].iov_len = NM_SO_MAX_UNEXPECTED - len;
+  vec[2].iov_len = NM_SO_MAX_UNEXPECTED - len -
+    NM_SO_GLOBAL_HEADER_SIZE - NM_SO_DATA_HEADER_SIZE;
 
   p_so_pw->pw.v_nb = 3;
 
@@ -494,8 +492,7 @@ nm_so_pw_check_optimistic(struct nm_so_pkt_wrap *p_so_pw,
 	     p_so_pw->pw.v[1].iov_base,
 	     p_so_pw->pw.v[1].iov_len);
 
-      p_so_pw->pw.v[0].iov_len = NM_SO_MAX_UNEXPECTED +
-	NM_SO_GLOBAL_HEADER_SIZE + NM_SO_DATA_HEADER_SIZE;
+      p_so_pw->pw.v[0].iov_len = NM_SO_MAX_UNEXPECTED;
 
       p_so_pw->pw.v_nb = 1;
 

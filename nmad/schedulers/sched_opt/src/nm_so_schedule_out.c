@@ -40,7 +40,7 @@ __nm_so_wait_send_range(struct nm_core *p_core,
     while(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED))
 
       if(p_so_gate->active_recv[0])
-	/* We need to schedule in new packets (typically ACKs) */
+	/* We also need to schedule in new packets (typically ACKs) */
 	nm_schedule(p_core);
       else
 	/* We just need to schedule out data on this gate */
@@ -61,7 +61,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   //  printf("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //  	 ptr, len, proto_id-128, seq);
 
-  p_so_gate->status[proto_id-128][seq] |= NM_SO_STATUS_SEND_COMPLETED;
+  p_so_gate->status[proto_id - 128][seq] |= NM_SO_STATUS_SEND_COMPLETED;
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -74,16 +74,24 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
   struct nm_so_pkt_wrap *p_so_pw = nm_pw2so(p_pw);
   struct nm_so_gate *p_so_gate = p_so_pw->pw.p_gate->sch_private;
 
-  //  printf("Packet %p sent completely!\n",
-  //	 p_so_pw);
+  if(p_pw->p_trk->id == 0) {
+    /* Track 0 */
 
-  nm_so_pw_iterate_over_headers(p_so_pw,
-				data_completion_callback,
-				NULL,
-				NULL,
-				p_so_gate);
+    p_so_gate->active_send[0]--;
 
-  err	= NM_ESUCCESS;
+    nm_so_pw_iterate_over_headers(p_so_pw,
+				  data_completion_callback,
+				  NULL,
+				  NULL,
+				  p_so_gate);
+  } else if(p_pw->p_trk->id == 1) {
+
+    p_so_gate->status[p_pw->proto_id - 128][p_pw->seq] |=
+      NM_SO_STATUS_SEND_COMPLETED;
+
+  }
+
+  err = NM_ESUCCESS;
   return err;
 }
 

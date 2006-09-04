@@ -24,6 +24,7 @@
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
+#include "nm_so_tracks.h"
 
 //#define NM_SO_OPTIMISTIC_RECV
 
@@ -44,68 +45,6 @@ __nm_so_wait_recv_range(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
-static __inline__
-void
-_nm_so_post_pw(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw)
-{
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
-  p_so_pw->pw.p_gate = p_gate;
-
-  /* Packet is assigned to track 0 */
-  p_so_pw->pw.p_drv = (p_so_pw->pw.p_gdrv =
-		       p_gate->p_gate_drv_array[0])->p_drv;
-  p_so_pw->pw.p_trk = (p_so_pw->pw.p_gtrk
-		       = p_so_pw->pw.p_gdrv->p_gate_trk_array[0])->p_trk;
-
-  /* append pkt to scheduler post list */
-  tbx_slist_append(p_gate->p_sched->post_aux_recv_req, &p_so_pw->pw);
-
-  p_so_gate->active_recv[0] = 1;
-}
-
-static __inline__
-int
-nm_so_post_regular_pw(struct nm_gate *p_gate)
-{
-  int err;
-  struct nm_so_pkt_wrap *p_so_pw;
-
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER |
-		       NM_SO_DATA_PREPARE_RECV,
-		       &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  _nm_so_post_pw(p_gate, p_so_pw);
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
-
-#ifdef NM_SO_OPTIMISTIC_RECV
-static __inline__
-int
-nm_so_post_optimistic_pw(struct nm_gate *p_gate,
-			 uint8_t tag, uint8_t seq,
-			 void *data, uint32_t len)
-{
-  int err;
-  struct nm_so_pkt_wrap *p_so_pw;
-
-  err = nm_so_pw_alloc_optimistic(tag, seq, data, len, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  _nm_so_post_pw(p_gate, p_so_pw);
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
-#endif
-
 int
 __nm_so_unpack(struct nm_gate *p_gate,
 	       uint8_t tag, uint8_t seq,
@@ -113,46 +52,110 @@ __nm_so_unpack(struct nm_gate *p_gate,
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  int err;
 
-  if(*status & NM_SO_STATUS_PACKET_HERE) {
-    /* Wow! Data already in! */
+  if(len <= NM_SO_MAX_SMALL) {
+    /* Small packet */
 
-    if(len)
-      /* Copy data to its final destination */
-      memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, len);
+    if(*status & NM_SO_STATUS_PACKET_HERE) {
+      /* Wow! Data already in! */
 
-    /* Decrement the packet wrapper reference counter. If no other
-       chunks are still in use, the pw will be destroyed. */
-    nm_so_pw_dec_header_ref_count(p_so_gate->recv[tag][seq].pkt_here.p_so_pw);
+      if(len)
+	/* Copy data to its final destination */
+	memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, len);
 
-    *status &= ~NM_SO_STATUS_PACKET_HERE;
-    *status |= NM_SO_STATUS_RECV_COMPLETED;
+      /* Decrement the packet wrapper reference counter. If no other
+	 chunks are still in use, the pw will be destroyed. */
+      nm_so_pw_dec_header_ref_count(p_so_gate->recv[tag][seq].pkt_here.p_so_pw);
+
+      *status &= ~NM_SO_STATUS_PACKET_HERE;
+      *status |= NM_SO_STATUS_RECV_COMPLETED;
+
+    } else {
+      /* Data not yet received */
+
+      /* Add the unpack info into the recv array */
+      p_so_gate->recv[tag][seq].unpack_here.data = data;
+      p_so_gate->recv[tag][seq].unpack_here.len = len;
+
+      *status |= NM_SO_STATUS_UNPACK_HERE;
+      *status &= ~NM_SO_STATUS_RECV_COMPLETED;
+
+      p_so_gate->pending_unpacks++;
+
+      /* Check if we should post a new recv packet */
+      if(!p_so_gate->active_recv[0])
+#ifdef NM_SO_OPTIMISTIC_RECV
+	nm_so_post_optimistic_recv(p_gate, tag, seq, data, len);
+#else
+        nm_so_post_regular_recv(p_gate);
+#endif
+    }
 
   } else {
-    /* Data not yet received */
+    /* Large packet */
 
-    /* WARNING! We currently ONLY support SMALL messages, so only
-       track 0 is used! */
-
-    /* Add the unpack info into the recv array */
-    p_so_gate->recv[tag][seq].unpack_here.data = data;
-    p_so_gate->recv[tag][seq].unpack_here.len = len;
-
-    *status |= NM_SO_STATUS_UNPACK_HERE;
     *status &= ~NM_SO_STATUS_RECV_COMPLETED;
 
-    p_so_gate->pending_unpacks++;
+    /* Check if the RdV request is already in */
+    if(*status & NM_SO_STATUS_RDV_HERE) {
+      /* A RdV request has already been received for this chunk */
 
-    /* Check if we should post a new recv packet */
-    if(!p_so_gate->active_recv[0])
-#ifdef NM_SO_OPTIMISTIC_RECV
-      nm_so_post_optimistic_pw(p_gate, tag, seq, data, len);
-#else
-      nm_so_post_regular_pw(p_gate);
-#endif
+      *status &= ~NM_SO_STATUS_RDV_HERE;
+
+      /* Is the large data track available? */
+      if(!p_so_gate->active_recv[1]) {
+	/* Cool! Track 1 is available, so let's post the receive and
+	   send an ACK */
+	union nm_so_generic_ctrl_header ctrl;
+
+	nm_so_post_large_recv(p_gate, tag + 128, seq, data, len);
+
+	nm_so_init_ack(&ctrl, tag + 128, seq, 1);
+
+	err = active_strategy->pack_ctrl(p_gate, &ctrl);
+
+	/* We're done! */
+	goto out;
+
+      } else {
+	/* Track 1 is not available : postpone the receive */
+	struct nm_so_pkt_wrap *p_so_pw;
+
+	err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+						data, len,
+						NM_SO_DATA_DONT_USE_HEADER,
+						&p_so_pw);
+	if(err != NM_ESUCCESS)
+	  goto out;
+
+	list_add_tail(&p_so_pw->link, &p_so_gate->pending_large_recv);
+      }
+
+    } else {
+      /* No RdV request has been received */
+
+      p_so_gate->pending_unpacks++;
+
+      /* Add the unpack info into the recv array */
+      p_so_gate->recv[tag][seq].unpack_here.data = data;
+      p_so_gate->recv[tag][seq].unpack_here.len = len;
+
+      *status |= NM_SO_STATUS_UNPACK_HERE;
+
+      /* Check if we should post a new recv packet
+         in order to receive the rdv request */
+      if(!p_so_gate->active_recv[0])
+        nm_so_post_regular_recv(p_gate);
+
+    }
+
   }
 
-  return NM_ESUCCESS;
+  err = NM_ESUCCESS;
+
+ out:
+  return err;
 }
 
 /* schedule and post new incoming buffers */
@@ -204,6 +207,89 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 
 }
 
+static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
+                        uint8_t tag_id, uint8_t seq,
+                        void *arg)
+{
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  uint8_t tag = tag_id - 128;
+  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  int err;
+
+  if(*status & NM_SO_STATUS_UNPACK_HERE) {
+    /* Application is already ready! */
+    p_so_gate->pending_unpacks--;
+
+    *status &= ~NM_SO_STATUS_UNPACK_HERE;
+
+    if(!p_so_gate->active_recv[1]) {
+      /* Track 1 is available */
+	union nm_so_generic_ctrl_header ctrl;
+
+	/* Post the data reception */
+	nm_so_post_large_recv(p_gate, tag_id, seq,
+			      p_so_gate->recv[tag][seq].unpack_here.data,
+			      p_so_gate->recv[tag][seq].unpack_here.len);
+
+	nm_so_init_ack(&ctrl, tag_id, seq, 1);
+
+	err = active_strategy->pack_ctrl(p_gate, &ctrl);
+
+    } else {
+      /* Argh! Track 1 is currently not available */
+      struct nm_so_pkt_wrap *p_so_large_pw;
+
+      err = nm_so_pw_alloc_and_fill_with_data(tag_id, seq,
+                                              p_so_gate->recv[tag][seq].unpack_here.data,
+                                              p_so_gate->recv[tag][seq].unpack_here.len,
+                                              NM_SO_DATA_DONT_USE_HEADER,
+                                              &p_so_large_pw);
+
+      /* WARNING!! We should probably "panic" here! */
+      if(err != NM_ESUCCESS)
+        return err;
+
+      /* Postpone receive */
+      list_add_tail(&p_so_large_pw->link,
+                    &p_so_gate->pending_large_recv);
+
+    }
+
+  } else {
+    /* Store rdv request */
+    p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
+  }
+
+  return NM_SO_HEADER_MARK_READ;
+}
+
+static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
+                        uint8_t tag_id, uint8_t seq,
+                        uint8_t track_id,
+                        void *arg)
+{
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  struct nm_gate * p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_pkt_wrap *p_so_large_pw;
+  uint8_t tag = tag_id - 128;
+
+  p_so_gate->pending_unpacks--;
+
+  assert(!list_empty(&p_so_gate->pending_large_send[tag]));
+
+  p_so_large_pw = nm_l2so(p_so_gate->pending_large_send[tag].next);
+  list_del(p_so_gate->pending_large_send[tag].next);
+
+  assert(seq == p_so_large_pw->pw.seq);
+
+  /* Send the data */
+  _nm_so_post_send(p_gate, p_so_large_pw, track_id);
+
+  return NM_SO_HEADER_MARK_READ;
+}
+
+
 /* process complete successful incoming request */
 int
 nm_so_in_process_success_rq(struct nm_sched	*p_sched,
@@ -245,13 +331,45 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
-				  NULL,
-				  NULL,
+				  rdv_callback,
+				  ack_callback,
 				  p_so_gate);
 
     if(p_so_gate->pending_unpacks)
       /* Check if we should post a new recv packet */
-      nm_so_post_regular_pw(p_so_pw->pw.p_gate);
+      nm_so_post_regular_recv(p_so_pw->pw.p_gate);
+
+  } else if(p_pw->p_trk->id == 1) {
+    /* This is the completion of a large message. */
+    volatile uint8_t *status =
+      &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
+
+    *status |= NM_SO_STATUS_RECV_COMPLETED;
+
+    p_so_gate->active_recv[1] = 0;
+
+    /* Check if some recv requests were postponed */
+    if(!list_empty(&p_so_gate->pending_large_recv)) {
+      union nm_so_generic_ctrl_header ctrl;
+      struct nm_so_pkt_wrap *p_so_large_pw
+        = nm_l2so(p_so_gate->pending_large_recv.next);
+
+      list_del(p_so_gate->pending_large_recv.next);
+
+      /* Post the data reception */
+      nm_so_direct_post_large_recv(p_so_large_pw);
+
+      /* Send an ACK */
+      nm_so_init_ack(&ctrl,
+		     p_so_large_pw->pw.proto_id,
+		     p_so_large_pw->pw.seq,
+		     1);
+
+      err = active_strategy->pack_ctrl(p_so_pw->pw.p_gate, &ctrl);
+      if(err != NM_ESUCCESS)
+	goto out;
+
+    }
 
   }
 
@@ -259,9 +377,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
   err = NM_ESUCCESS;
 
-#ifdef NM_SO_OPTIMISTIC_RECV
  out:
-#endif
   return err;
 }
 

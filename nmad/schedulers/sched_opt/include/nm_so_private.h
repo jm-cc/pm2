@@ -34,6 +34,7 @@ extern nm_so_strategy *active_strategy;
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 #define NM_SO_STATUS_PACKET_HERE     ((uint8_t)4)
 #define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)8)
+#define NM_SO_STATUS_RDV_HERE        ((uint8_t)16)
 
 
 #define NM_SO_MAX_TRACKS   3
@@ -44,6 +45,7 @@ struct nm_so_gate {
   unsigned pending_unpacks;
 
   unsigned active_recv[NM_SO_MAX_TRACKS];
+  unsigned active_send[NM_SO_MAX_TRACKS];
 
   /* WARNING: better replace the following array by two separate
      bitmaps, to save space and avoid false sharing between send and
@@ -60,6 +62,12 @@ struct nm_so_gate {
       uint32_t len;
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+
+  /* For large messages waiting for ACKs */
+  struct list_head pending_large_send[NM_SO_MAX_TAGS];
+
+  /* For large messages waiting for Track 1 (or 2) to be free */
+  struct list_head pending_large_recv;
 
   void *strat_priv;
 };

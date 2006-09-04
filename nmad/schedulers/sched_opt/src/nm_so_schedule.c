@@ -21,7 +21,6 @@
 #include <tbx.h>
 
 #include <nm_public.h>
-#include <nm_rdv_public.h>
 
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
@@ -163,38 +162,47 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
 
 static int
 nm_so_init_gate	(struct nm_sched	*p_sched,
-                 struct nm_gate		*p_gate) {
-    struct nm_so_gate	*p_so_gate	=	NULL;
-    int	err;
+                 struct nm_gate		*p_gate)
+{
+  struct nm_so_gate *p_so_gate = NULL;
+  int i;
+  int err;
 
-    p_so_gate = TBX_MALLOC(sizeof(struct nm_so_gate));
-    if (!p_so_gate) {
-        err = -NM_ENOMEM;
-        goto out;
-    }
+  p_so_gate = TBX_MALLOC(sizeof(struct nm_so_gate));
+  if (!p_so_gate) {
+    err = -NM_ENOMEM;
+    goto out;
+  }
 
-    memset(p_so_gate->active_recv, 0, sizeof(p_so_gate->active_recv));
-    memset(p_so_gate->status, 0, sizeof(p_so_gate->status));
-    memset(p_so_gate->recv, 0, sizeof(p_so_gate->recv));
+  memset(p_so_gate->active_recv, 0, sizeof(p_so_gate->active_recv));
+  memset(p_so_gate->active_send, 0, sizeof(p_so_gate->active_send));
 
-    p_so_gate->pending_unpacks = 0;
+  memset(p_so_gate->status, 0, sizeof(p_so_gate->status));
 
-    p_gate->sch_private	= p_so_gate;
+  memset(p_so_gate->recv, 0, sizeof(p_so_gate->recv));
 
-    if(active_strategy->init_gate)
-      active_strategy->init_gate(p_gate);
+  p_so_gate->pending_unpacks = 0;
 
-    err	= NM_ESUCCESS;
+  p_gate->sch_private = p_so_gate;
+
+  for(i = 0; i < NM_SO_MAX_TAGS; i++)
+    INIT_LIST_HEAD(&p_so_gate->pending_large_send[i]);
+
+  INIT_LIST_HEAD(&p_so_gate->pending_large_recv);
+
+  active_strategy->init_gate(p_gate);
+
+  err = NM_ESUCCESS;
 
  out:
-    return err;
+  return err;
 }
 
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
-  // active_strategy = &nm_so_strat_default;
-  active_strategy = &nm_so_strat_aggreg;
+  active_strategy = &nm_so_strat_default;
+  // active_strategy = &nm_so_strat_aggreg;
   // active_strategy = &nm_so_strat_exhaustive;
 
   __nm_so_pack = active_strategy->pack;
@@ -204,12 +212,12 @@ nm_so_load		(struct nm_sched_ops	*p_ops)
   p_ops->init_trks		= nm_so_init_trks;
   p_ops->init_gate		= nm_so_init_gate;
 
-  p_ops->out_schedule_gate	  = active_strategy->try_and_commit;
+  p_ops->out_schedule_gate      = active_strategy->try_and_commit;
   p_ops->out_process_success_rq = nm_so_out_process_success_rq;
   p_ops->out_process_failed_rq  = nm_so_out_process_failed_rq;
 
   p_ops->in_schedule		 = nm_so_in_schedule;
-  p_ops->in_process_success_rq = nm_so_in_process_success_rq;
+  p_ops->in_process_success_rq   = nm_so_in_process_success_rq;
   p_ops->in_process_failed_rq	 = nm_so_in_process_failed_rq;
 
   return NM_ESUCCESS;

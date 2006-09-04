@@ -71,4 +71,19 @@ union nm_so_generic_ctrl_header {
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
+#define nm_so_init_rdv(p_ctrl, _tag, _seq)	\
+  do { \
+    (p_ctrl)->r.proto_id = NM_SO_PROTO_RDV;	\
+    (p_ctrl)->r.tag_id = (_tag);		\
+    (p_ctrl)->r.seq = (_seq);			\
+  } while(0)
+
+#define nm_so_init_ack(p_ctrl, _tag, _seq, _track) \
+  do { \
+    (p_ctrl)->a.proto_id = NM_SO_PROTO_ACK;	\
+    (p_ctrl)->a.tag_id = (_tag);		\
+    (p_ctrl)->a.seq = (_seq);			\
+    (p_ctrl)->a.track_id = (_track);		\
+  } while(0)
+
 #endif

@@ -97,40 +97,11 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
 		  void *data, uint32_t len, int flags);
 
-static __inline__
-int
-nm_so_pw_add_rdv(struct nm_so_pkt_wrap *p_so_pw,
-		 uint8_t tag_id, uint8_t seq)
-{
-  union nm_so_generic_ctrl_header u;
-
-  u.r.proto_id = NM_SO_PROTO_RDV;
-  u.r.tag_id = tag_id;
-  u.r.seq = seq;
-
-  return nm_so_pw_add_data(p_so_pw,
-			   0, 0,
-			   &u, sizeof(u),
-			   NM_SO_DATA_IS_CTRL_HEADER);
-}
-
-static __inline__
-int
-nm_so_pw_add_ack(struct nm_so_pkt_wrap *p_so_pw,
-		 uint8_t tag_id, uint8_t seq, uint8_t track_id)
-{
-  union nm_so_generic_ctrl_header u;
-
-  u.a.proto_id = NM_SO_PROTO_ACK;
-  u.a.tag_id = tag_id;
-  u.a.seq = seq;
-  u.a.track_id = track_id;
-
-  return nm_so_pw_add_data(p_so_pw,
-			   0, 0,
-			   &u, sizeof(u),
-			   NM_SO_DATA_IS_CTRL_HEADER);
-}
+#define nm_so_pw_add_control(p_so_pw, p_ctrl) \
+  nm_so_pw_add_data((p_so_pw), \
+		    0, 0, \
+		    (p_ctrl), sizeof(*(p_ctrl)), \
+		    NM_SO_DATA_IS_CTRL_HEADER)
 
 static __inline__
 int
@@ -160,8 +131,8 @@ nm_so_pw_alloc_and_fill_with_data(uint8_t proto_id, uint8_t seq,
 
 static __inline__
 int
-nm_so_pw_alloc_and_fill_with_rdv(uint8_t tag_id, uint8_t seq,
-				 struct nm_so_pkt_wrap **pp_so_pw)
+nm_so_pw_alloc_and_fill_with_control(union nm_so_generic_ctrl_header *ctrl,
+				     struct nm_so_pkt_wrap **pp_so_pw)
 {
   int err;
   struct nm_so_pkt_wrap *p_so_pw;
@@ -170,32 +141,7 @@ nm_so_pw_alloc_and_fill_with_rdv(uint8_t tag_id, uint8_t seq,
   if(err != NM_ESUCCESS)
     goto out;
 
-  err = nm_so_pw_add_rdv(p_so_pw, tag_id, seq);
-  if(err != NM_ESUCCESS)
-    goto free;
-
-  *pp_so_pw = p_so_pw;
-
- out:
-    return err;
- free:
-    nm_so_pw_free(p_so_pw);
-    goto out;
-}
-
-static __inline__
-int
-nm_so_pw_alloc_and_fill_with_ack(uint8_t tag_id, uint8_t seq, uint8_t track_id,
-				 struct nm_so_pkt_wrap **pp_so_pw)
-{
-  int err;
-  struct nm_so_pkt_wrap *p_so_pw;
-
-  err = nm_so_pw_alloc(0, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  err = nm_so_pw_add_ack(p_so_pw, tag_id, seq, track_id);
+  err = nm_so_pw_add_control(p_so_pw, ctrl);
   if(err != NM_ESUCCESS)
     goto free;
 

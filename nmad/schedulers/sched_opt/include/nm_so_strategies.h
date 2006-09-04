@@ -16,6 +16,8 @@
 #ifndef NM_SO_STRATEGIES_H
 #define NM_SO_STRATEGIES_H
 
+#include "nm_so_headers.h"
+
 typedef struct nm_so_strategy_struct nm_so_strategy;
 
 /* Initialization */
@@ -28,6 +30,9 @@ typedef int (*nm_so_strategy_init_gate)(struct nm_gate *p_gate);
 typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
 					uint8_t tag, uint8_t seq,
 					void *data, uint32_t len);
+
+typedef int (*nm_so_strategy_pack_ctrl_func)(struct nm_gate *gate,
+					     union nm_so_generic_ctrl_header *p_ctrl);
 
 /* Compute the best possible packet rearrangement with no side-effect
    on pre_list */
@@ -50,6 +55,7 @@ struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
   nm_so_strategy_init_gate init_gate;
   nm_so_strategy_pack_func pack;
+  nm_so_strategy_pack_ctrl_func pack_ctrl;
   nm_so_strategy_try_func try;
   nm_so_strategy_commit_func commit;
   nm_so_strategy_try_and_commit_func try_and_commit;

@@ -124,6 +124,8 @@ static void *lwp_kthread_start_func(void *arg)
 	marcel_lwp_t *lwp = (marcel_lwp_t *)arg;
 	int vpnum;
 
+	PROF_NEW_LWP(LWP_NUMBER(lwp), ma_per_lwp(run_task,lwp));
+
 	LOG_IN();
 
 	/* Le unlock du changement de contexte */
@@ -448,7 +450,6 @@ static void lwp_init(ma_lwp_t lwp)
 static int lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
-	PROF_NEW_LWP(LWP_NUMBER(lwp), ma_per_lwp(run_task,lwp));
 
 #if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
 	if (LWP_NUMBER(lwp)<marcel_nbvps()) {

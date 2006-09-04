@@ -3255,11 +3255,9 @@ static void __marcel_init sched_init(void)
 			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),j);
 		}
 #endif
+		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), marcel_nbvps());
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 	}
-#endif
-#ifdef MA__LWPS
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), marcel_nbvps());
 #endif
 
 	/*

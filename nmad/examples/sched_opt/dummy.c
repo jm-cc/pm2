@@ -98,12 +98,18 @@ main(int	  argc,
       printf("nm_so_pw_alloc failed: err = %d\n", err);
       goto out;
     }
-   
+
     nm_so_pw_add_data(p_so_pw, TAG1, 0, "d", 2, NM_SO_DATA_FORCE_CONTIGUOUS);
 
     nm_so_pw_add_data(p_so_pw, TAG0, 1, "efgh", 5, 0);
 
-    nm_so_pw_add_rdv(p_so_pw, TAG0, 2);
+    {
+      union nm_so_generic_ctrl_header ctrl;
+
+      nm_so_init_rdv(&ctrl, TAG0, 2);
+
+      nm_so_pw_add_control(p_so_pw, &ctrl);
+    }
 
     nm_so_pw_finalize(p_so_pw);
 
@@ -121,7 +127,7 @@ main(int	  argc,
 				  NULL,
 				  NULL);
 
-    /* Simulation d'un envoi + réception dans un tampon 'unexpected' */
+
     vec = p_so_pw->pw.v;
     ptr = buf;
     for(i=0; i<p_so_pw->pw.v_nb; i++) {

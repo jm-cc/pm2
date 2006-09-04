@@ -550,7 +550,7 @@ static __tbx_inline__ int ma_get_entity(marcel_entity_t *e) {
 	}
 
 	if (e->type == MA_BUBBLE_ENTITY) {
-		ret = MA_ENTITY_RUNNING;
+		ret = MA_ENTITY_BLOCKED;
 		ma_set_sched_holder(e, ma_bubble_entity(e));
 	}
 	return ret;

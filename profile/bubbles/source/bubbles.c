@@ -51,6 +51,7 @@
 
 static int DISPPRIO = 0;
 static int DISPNAME = 0;
+static int showSystem = 0;
 
 static float thick = 4.;
 static float CURVE = 20.;
@@ -63,7 +64,7 @@ static float OPTIME = 0.5; /* Operation time */
 /* movie size */
 
 static int MOVIEX = 1024;
-static int MOVIEY = 400;
+static int MOVIEY = 600;
 
 static int playing = 1, verbose = 0;
 static char *fontfile = "/usr/share/libming/fonts/Timmons.fdb";
@@ -143,10 +144,7 @@ struct fxt_code_name fut_code_table [] =
 
 /* several useful macros */
 
-#define tbx_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#define tbx_container_of(ptr, type, member) \
-        ((type *)((char *)(typeof (&((type *)0)->member))(ptr)- \
-                  tbx_offset_of(type,member)))
+#include "tbx_macros.h"
 
 #define list_for_each_entry_after(pos,head,member,start)		   \
 	for (pos = list_entry((start)->member.next, typeof(*pos), member), \
@@ -449,7 +447,8 @@ typedef struct {
 	entity_t entity;
 	state_t state;
 	char *name;
-	int id;
+	int id, number;
+	rq_t *initrq;
 } thread_t;
 
 static inline thread_t * thread_of_entity(entity_t *e) {
@@ -513,8 +512,8 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->state = THREAD_BLOCKED;
 	t->name = NULL;
 	t->id = -1;
-	if (initrq)
-		addToRunqueue(initrq, &t->entity);
+	t->number = -1;
+	t->initrq = initrq;
 	return t;
 }
 
@@ -1568,6 +1567,7 @@ static void usage(char *argv0) {
 	fprintf(stderr,"  -o optime		operation time (in sec.)\n");
 	fprintf(stderr,"  -p			display priorities\n");
 	fprintf(stderr,"  -n			display thread names\n");
+	fprintf(stderr,"  -s			display system threads\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -1576,7 +1576,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	char c;
 
-	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpn")) != EOF)
+	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpns")) != EOF)
 		switch(c) {
 		case 'f':
 			fontfile = optarg;
@@ -1614,6 +1614,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'n':
 			DISPNAME = 1;
+			break;
+		case 's':
+			showSystem = 1;
 			break;
 		case ':':
 			fprintf(stderr,"missing parameter to switch %c\n", optopt);
@@ -1750,7 +1753,7 @@ if (optind != argc) {
 				e->prio = ev.ev64.param[1];
 				verbprintf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
 				updateEntity(e);
-				pause(0.001);
+				nextFrame(movie);
 				break;
 			}
 #ifdef BUBBLE_SCHED_EXPLODE
@@ -1792,7 +1795,8 @@ if (optind != argc) {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				rq_t *rq = getRunqueue(ev.ev64.param[1]);
 				verbprintf("%s %p(%p) switching to %p (%p)\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
-				switchRunqueues(rq, e);
+				if (showSystem || e->type!=THREAD || thread_of_entity(e)->number >= 0)
+					switchRunqueues(rq, e);
 				break;
 			}
 			case BUBBLE_SCHED_INSERT_BUBBLE: {
@@ -1808,7 +1812,8 @@ if (optind != argc) {
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
 				verbprintf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
-				bubbleInsertThread(b,e);
+				if (showSystem || e->number>=0)
+					bubbleInsertThread(b,e);
 				break;
 			}
 			case BUBBLE_SCHED_WAKE: {
@@ -1902,7 +1907,7 @@ if (optind != argc) {
 					verbprintf("new ");
 					printfThread(th,t);
 					verbprintf("\n");
-					showEntity(&t->entity);
+					//showEntity(&t->entity);
 					break;
 				}
 				case FUT_THREAD_DEATH_CODE: {
@@ -1910,8 +1915,10 @@ if (optind != argc) {
 					thread_t *t = getThread(th);
 					printfThread(th,t);
 					verbprintf(" death\n");
-					delThread(t);
-					pause(DELAYTIME);
+					if (showSystem || t->number >= 0) {
+						delThread(t);
+						pause(DELAYTIME);
+					}
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
 					// penser à free(t->name) aussi
@@ -1931,7 +1938,9 @@ if (optind != argc) {
 					verbprintf(" named %s\n", name);
 					t->name=strdup(name);
 					updateEntity(&t->entity);
-					pause(0.001);
+					if (showSystem || t->number >= 0) {
+						nextFrame(movie);
+					}
 					break;
 				}
 				case SET_THREAD_ID: {
@@ -1941,8 +1950,22 @@ if (optind != argc) {
 					printfThread(th,t);
 					verbprintf(" id %d\n", id);
 					t->id=id;
-					updateEntity(&t->entity);
-					pause(0.001);
+					break;
+				}
+				case SET_THREAD_NUMBER: {
+					uint64_t th = ev.ev64.param[0];
+					thread_t *t = getThread(th);
+					int number = ev.ev64.param[1];
+					printfThread(th,t);
+					verbprintf(" number %d\n", number);
+					t->number=number;
+					if (showSystem || number >= 0) {
+						if (t->initrq && !t->entity.holder)
+							addToRunqueue(t->initrq, &t->entity);
+						showEntity(&t->entity);
+						nextFrame(movie);
+					} else
+						updateEntity(&t->entity);
 					break;
 				}
 				case SCHED_TICK: {
@@ -1958,7 +1981,8 @@ if (optind != argc) {
 					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
-					pause(DELAYTIME);
+					if (showSystem || t->number >= 0)
+						pause(DELAYTIME);
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
@@ -1974,7 +1998,8 @@ if (optind != argc) {
 					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
-					pause(DELAYTIME);
+					if (showSystem || t->number >= 0)
+						pause(DELAYTIME);
 					break;
 				}
 #ifdef SCHED_RESCHED_LWP
@@ -2005,7 +2030,8 @@ if (optind != argc) {
 						tnext->state = THREAD_RUNNING;
 						updateEntity(&tnext->entity);
 					}
-					pause(DELAYTIME);
+					if (showSystem || tprev->number>=0 || tnext->number>=0)
+						pause(DELAYTIME);
 #if 0
 					if (tprev->active) {
 						entityMoveDeltaBegin(&tprev->entity,0,0);

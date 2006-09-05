@@ -26,24 +26,24 @@
 #depend "asm-generic/linux_perlwp.h[marcel_macros]"
 #depend "marcel_descr.h[types]"
 extern int nr_threads;
-//extern int last_tid;
+/* extern int last_tid; */
 
 #section marcel_functions
-//extern int ma_nr_threads(void);
+/* extern int ma_nr_threads(void); */
 extern unsigned long ma_nr_running(void);
-//extern unsigned long ma_nr_uninterruptible(void);
-//extern unsigned long nr_iowait(void);
+/* extern unsigned long ma_nr_uninterruptible(void); */
+/* extern unsigned long nr_iowait(void); */
 
 /*
  * Scheduling policies
  */
-//#define SCHED_NORMAL		0
-//#define SCHED_FIFO		1
-//#define SCHED_RR		2
+/* #define SCHED_NORMAL		0 */
+/* #define SCHED_FIFO		1 */
+/* #define SCHED_RR		2 */
 
-//struct sched_param {
-//	int sched_priority;
-//};
+/* struct sched_param { */
+/* 	int sched_priority; */
+/* }; */
 
 #section marcel_variables
 #depend "asm/linux_rwlock.h[marcel_types]"
@@ -55,14 +55,14 @@ extern unsigned long ma_nr_running(void);
  */
 extern ma_rwlock_t tasklist_lock;
 
-//void io_schedule(void);
-//long io_schedule_timeout(long timeout);
+/* void io_schedule(void); */
+/* long io_schedule_timeout(long timeout); */
 
-//extern void update_process_times(int user);
-//extern void update_one_process(marcel_task_t *p, unsigned long user,
-//			       unsigned long system, int cpu);
+/* extern void update_process_times(int user); */
+/* extern void update_one_process(marcel_task_t *p, unsigned long user, */
+/* 			       unsigned long system, int cpu); */
 extern MARCEL_PROTECTED void ma_scheduler_tick(int user_tick, int system);
-//extern unsigned long cache_decay_ticks;
+/* extern unsigned long cache_decay_ticks; */
 
 #section marcel_macros
 #include <limits.h>
@@ -77,11 +77,11 @@ extern MARCEL_PROTECTED signed long FASTCALL(ma_schedule_timeout(signed long tim
 asmlinkage MARCEL_PROTECTED int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 
-//struct sighand_struct {
-//	atomic_t		count;
-//	struct k_sigaction	action[_NSIG];
-//	spinlock_t		siglock;
-//};
+/* struct sighand_struct { */
+/* 	atomic_t		count; */
+/* 	struct k_sigaction	action[_NSIG]; */
+/* 	spinlock_t		siglock; */
+/* }; */
 
 /*
  * NOTE! "signal_struct" does not have it's own
@@ -90,29 +90,29 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev);
  * sighand_struct is always a proper superset of
  * the locking of signal_struct.
  */
-//struct signal_struct {
-//	atomic_t		count;
+/* struct signal_struct { */
+/* 	atomic_t		count; */
 
 	/* current thread group signal load-balancing target: */
-//	task_t			*curr_target;
+/* 	task_t			*curr_target; */
 
 	/* shared signal handling: */
-//	struct sigpending	shared_pending;
+/* 	struct sigpending	shared_pending; */
 
 	/* thread group exit support */
-//	int			group_exit;
-//	int			group_exit_code;
+/* 	int			group_exit; */
+/* 	int			group_exit_code; */
 	/* overloaded:
 	 * - notify group_exit_task when ->count is equal to notify_count
 	 * - everyone except group_exit_task is stopped during signal delivery
 	 *   of fatal signals, group_exit_task processes the signal.
 	 */
-//	struct task_struct	*group_exit_task;
-//	int			notify_count;
+/* 	struct task_struct	*group_exit_task; */
+/* 	int			notify_count; */
 
 	/* thread group stop support, overloads group_exit_code too */
-//	int			group_stop_count;
-//};
+/* 	int			group_stop_count; */
+/* }; */
 
 #section marcel_structures
 #if 0
@@ -271,10 +271,10 @@ struct task_struct {
 };
 #endif
 
-//#section marcel_functions
-//extern void __ma_put_task_struct(marcel_task_t *tsk);
-//#section marcel_macros
-//#define ma_get_task_struct(tsk) do { ma_atomic_inc(&(tsk)->usage); } while(0)
+/* #section marcel_functions */
+/* extern void __ma_put_task_struct(marcel_task_t *tsk); */
+/* #section marcel_macros */
+/* #define ma_get_task_struct(tsk) do { ma_atomic_inc(&(tsk)->usage); } while(0) */
 #if 0
 #define ma_put_task_struct(tsk) \
 do { if (ma_atomic_dec_and_test(&(tsk)->usage)) __ma_put_task_struct(tsk); } while(0)
@@ -283,13 +283,13 @@ do { if (ma_atomic_dec_and_test(&(tsk)->usage)) __ma_put_task_struct(tsk); } whi
 /*
  * Per process flags
  */
-//#define PF_STARTING	0x00000002	/* being created */
-//#define PF_EXITING	0x00000004	/* getting shut down */
-//#define PF_DEAD		0x00000008	/* Dead */
+/* #define PF_STARTING	0x00000002*/	/* being created */
+/* #define PF_EXITING	0x00000004*/	/* getting shut down */
+/* #define PF_DEAD		0x00000008*/	/* Dead */
 
-//#define PF_FREEZE	0x00004000	/* this task should be frozen for suspend */
-//#define PF_IOTHREAD	0x00008000	/* this thread is needed for doing I/O to swap */
-//#define PF_FROZEN	0x00010000	/* frozen for system suspend */
+/* #define PF_FREEZE	0x00004000*/	/* this task should be frozen for suspend */
+/* #define PF_IOTHREAD	0x00008000*/	/* this thread is needed for doing I/O to swap */
+/* #define PF_FROZEN	0x00010000*/	/* frozen for system suspend */
 
 #section marcel_functions
 #if 0
@@ -303,7 +303,7 @@ static __tbx_inline__ int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new
 #endif
 #endif
 
-//extern unsigned long long ma_sched_clock(void);
+/* extern unsigned long long ma_sched_clock(void); */
 
 #if 0
 #ifdef CONFIG_NUMA
@@ -316,20 +316,20 @@ extern void node_nr_running_init(void);
 #endif
 
 /* Move tasks off this (offline) CPU onto another. */
-//extern void migrate_all_tasks(void);
-//extern void set_user_nice(task_t *p, long nice);
-//extern int marcel_task_prio(task_t *p);
-//extern MARCEL_PROTECTED int task_nice(task_t *p);
-//extern int task_curr(task_t *p);
-//extern int idle_cpu(int cpu);
+/* extern void migrate_all_tasks(void); */
+/* extern void set_user_nice(task_t *p, long nice); */
+/* extern int marcel_task_prio(task_t *p); */
+/* extern MARCEL_PROTECTED int task_nice(task_t *p); */
+/* extern int task_curr(task_t *p); */
+/* extern int idle_cpu(int cpu); */
 
 void ma_yield(void);
 
-//extern marcel_task_t *find_task_by_pid(int pid);
+/* extern marcel_task_t *find_task_by_pid(int pid); */
 
-//extern unsigned long itimer_ticks;
-//extern unsigned long itimer_next;
-//extern void do_timer(struct pt_regs *);
+/* extern unsigned long itimer_ticks; */
+/* extern unsigned long itimer_next; */
+/* extern void do_timer(struct pt_regs *); */
 
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
@@ -347,8 +347,8 @@ extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
 
 int ma_sched_change_prio(marcel_t t, int prio);
 
-//extern void FASTCALL(ma_sched_fork(marcel_task_t * p));
-//extern void FASTCALL(ma_sched_exit(marcel_task_t * p));
+/* extern void FASTCALL(ma_sched_fork(marcel_task_t * p)); */
+/* extern void FASTCALL(ma_sched_exit(marcel_task_t * p)); */
 
 #if 0
 extern void ma_proc_caches_init(void);
@@ -358,7 +358,7 @@ extern int ma_dequeue_signal(marcel_task_t *tsk, sigset_t *mask, siginfo_t *info
 
 static __tbx_inline__ int ma_dequeue_signal_lock(marcel_task_t *tsk, sigset_t *mask, siginfo_t *info)
 {
-	//unsigned long flags;
+	/* unsigned long flags; */
 	int ret;
 
 	ma_spin_lock_softirq(&tsk->sighand->siglock);

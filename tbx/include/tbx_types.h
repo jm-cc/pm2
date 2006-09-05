@@ -41,8 +41,8 @@
  */
 typedef enum e_tbx_bool
 {
-  tbx_false = 0, //!< condition is false
-  tbx_true       //!< condition is true
+  tbx_false = 0, /* !< condition is false */
+  tbx_true       /* !< condition is true */
 } tbx_bool_t, *p_tbx_bool_t;
 
 
@@ -60,8 +60,8 @@ typedef enum e_tbx_bool
  */
 typedef enum e_tbx_flag
 {
-  tbx_flag_clear = 0, //!< flag is cleared
-  tbx_flag_set   = 1  //!< flag is set
+  tbx_flag_clear = 0, /* !< flag is cleared */
+  tbx_flag_set   = 1  /* !< flag is set */
 } tbx_flag_t, *p_tbx_flag_t;
 
 
@@ -79,9 +79,9 @@ typedef enum e_tbx_flag
  */
 typedef enum e_tbx_cmp
 {
-  tbx_cmp_eq =  0, //!< objects are equal
-  tbx_cmp_gt =  1, //!< object 1 is greater than object 2
-  tbx_cmp_lt = -1  //!< object 1 is lower than object 2
+  tbx_cmp_eq =  0, /* !< objects are equal */
+  tbx_cmp_gt =  1, /* !< object 1 is greater than object 2 */
+  tbx_cmp_lt = -1  /* !< object 1 is lower than object 2 */
 } tbx_cmp_t, *p_tbx_cmp_t;
 
 

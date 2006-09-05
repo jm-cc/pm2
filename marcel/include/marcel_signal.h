@@ -37,7 +37,7 @@ struct marcel_sigaction {
 #define MARCEL_NSIG 32
 
 #ifdef LINUX_SYS
-// L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc !
+/*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */
 #define kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
 struct kernel_sigaction {
       union {

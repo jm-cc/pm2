@@ -1,8 +1,8 @@
 #ifndef MAD_LEONIE_COMMANDS_H
 #define MAD_LEONIE_COMMANDS_H
 
-// Commands
-//----------///////////////////////////////////////////////////////////////
+/*  Commands */
+/* ----------/////////////////////////////////////////////////////////////// */
 
 typedef enum e_mad_leo_command
 {
@@ -20,4 +20,4 @@ typedef enum e_mad_leo_command
   mad_leo_command_shutdown_channel,
 } mad_leo_command_t, *p_mad_leo_command_t;
 
-#endif // MAD_LEONIE_COMMANDS_H
+#endif /*  MAD_LEONIE_COMMANDS_H */

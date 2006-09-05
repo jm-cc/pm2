@@ -49,9 +49,9 @@ typedef struct s_mad_channel
   char                       *parameter;
 #ifdef MARCEL
   marcel_mutex_t              reception_lock_mutex;
-#else // MARCEL
+#else /*  MARCEL */
   volatile tbx_bool_t         reception_lock;
-#endif // MARCEL
+#endif /*  MARCEL */
 
   unsigned int                max_sub;
   unsigned int                sub;
@@ -74,7 +74,7 @@ typedef struct s_mad_channel
   volatile tbx_bool_t         a_message_is_ready;
   p_mad_connection_t          active_connection;
   marcel_t                    polling_thread;
-#endif // MARCEL
+#endif /*  MARCEL */
 
   p_mad_driver_specific_t specific;
 } mad_channel_t;

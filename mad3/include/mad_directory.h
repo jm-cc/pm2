@@ -29,7 +29,7 @@
 typedef struct s_mad_dir_node
 {
   char                       *name;
-  unsigned long               ip; // network form !
+  unsigned long               ip; /*  network form ! */
   p_ntbx_process_container_t  pc;
 } mad_dir_node_t;
 
@@ -78,21 +78,21 @@ typedef struct s_mad_dir_channel
   p_ntbx_process_container_t  pc;
   p_mad_dir_driver_t          driver;
 
-  // Regular channel
+  /*  Regular channel */
   tbx_bool_t                  not_private;
   tbx_bool_t                  mergeable; 
   p_ntbx_topology_table_t     ttable;
 
-  // Forwarding channel
+  /*  Forwarding channel */
   char                       *cloned_channel_name;
 
-  // Virtual/Mux
+  /*  Virtual/Mux */
   p_tbx_slist_t               dir_channel_slist;
 
-  // Virtual
+  /*  Virtual */
   p_tbx_slist_t               dir_fchannel_slist;
 
-  // Mux
+  /*  Mux */
   p_tbx_slist_t               sub_channel_name_slist;
 } mad_dir_channel_t;
 

@@ -85,12 +85,12 @@ typedef unsigned marcel_vpmask_t;
 
 #section macros
 
-// Primitives & macros de construction de "masques" de processeurs
-// virtuels. 
+/*  Primitives & macros de construction de "masques" de processeurs */
+/*  virtuels.  */
 
-// ATTENTION : le placement d un thread est autorise sur un 'vp' si le
-// bit correspondant est a _ZERO_ dans le masque (similitude avec
-// sigset_t pour la gestion des masques de signaux).
+/*  ATTENTION : le placement d un thread est autorise sur un 'vp' si le */
+/*  bit correspondant est a _ZERO_ dans le masque (similitude avec */
+/*  sigset_t pour la gestion des masques de signaux). */
 
 #ifdef MA__LWPS
 #define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0UL)
@@ -218,7 +218,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #section marcel_structures
 
 #ifdef PM2_DEV
-// #warning il ne faudrait pas dépendre d un scheduler particulier
+/*  #warning il ne faudrait pas dépendre d un scheduler particulier */
 #endif
 #depend "scheduler-marcel/linux_runqueues.h[marcel_structures]"
 #depend "scheduler-marcel/linux_runqueues.h[types]"
@@ -236,7 +236,7 @@ struct marcel_topo_vpdata {
 	unsigned long softirq_pending;
 	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
 
-// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
+/*  Utilise par les fonctions one_more_task, wait_all_tasks, etc. */
 	tbx_bool_t main_is_waiting;
 	unsigned nb_tasks;
 	ma_spinlock_t threadlist_lock;
@@ -334,7 +334,7 @@ static __tbx_inline__ unsigned marcel_topo_arity(unsigned level) {
 
 #section marcel_functions
 #ifdef MARCEL_SMT_IDLE
-// return whether one should sleep (because other siblings are working)
+/*  return whether one should sleep (because other siblings are working) */
 static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp);
 static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp);
 static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);

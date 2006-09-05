@@ -44,7 +44,7 @@
    compiled as part of the C library.  We must define this before including
    config.h, because it makes some definitions conditional on whether libc
    itself is being compiled, or just some generator program.  */
-//#define _LIBC	1 VD
+/* #define _LIBC	1 VD */
 
 /* Enable declarations of GNU extensions, since we are compiling them.  */
 #ifndef _GNU_SOURCE
@@ -55,8 +55,8 @@
 #define _REENTRANT	1
 #endif
 
-//VD: #include <config.h>
-#include <pthread_config.h> //VD:
+/* VD: #include <config.h> */
+#include <pthread_config.h> /* VD: */
 
 /* The symbols in all the user (non-_) macros are C symbols.
    HAVE_GNU_LD without HAVE_ELF implies a.out.  */

@@ -16,21 +16,21 @@
 
 #section macros
 
-//#ifdef __USE_UNIX98
+/* #ifdef __USE_UNIX98 */
 # define MARCEL_RWLOCK_INITIALIZER \
   { .__rw_lock=MA_SPIN_LOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
     .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
     .__rw_kind=MARCEL_RWLOCK_DEFAULT_NP, .__rw_pshared=MARCEL_PROCESS_PRIVATE }
-//#endif
-//#ifdef __USE_GNU
+/* #endif */
+/* #ifdef __USE_GNU */
 # define MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP \
   { .__rw_lock=MA_SPIN_LOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
     .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
     .__rw_kind=MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, 		      \
     .__rw_pshared=MARCEL_PROCESS_PRIVATE }
-//#endif
+/* #endif */
 
-//#ifdef __USE_UNIX98
+/* #ifdef __USE_UNIX98 */
 enum
 {
   MARCEL_RWLOCK_PREFER_READER_NP,
@@ -38,7 +38,7 @@ enum
   MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP,
   MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
 };
-//#endif	/* Unix98 */
+/* #endif */
 
 #section structures
 #depend "marcel_threads.h[types]"

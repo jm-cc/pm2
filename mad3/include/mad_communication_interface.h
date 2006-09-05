@@ -126,7 +126,7 @@ mad_forward_finalize_message(p_mad_connection_t connection);
 #ifdef MAD_MESSAGE_POLLING
 TBX_INTERNAL p_mad_connection_t
 mad_forward_poll_message(p_mad_channel_t channel);
-#endif // MAD_MESSAGE_POLLING
+#endif /*  MAD_MESSAGE_POLLING */
 
 TBX_INTERNAL p_mad_connection_t
 mad_forward_receive_message(p_mad_channel_t channel);
@@ -239,7 +239,7 @@ mad_mux_finalize_message(p_mad_connection_t connection);
 #ifdef MAD_MESSAGE_POLLING
 TBX_INTERNAL p_mad_connection_t
 mad_mux_poll_message(p_mad_channel_t channel);
-#endif // MAD_MESSAGE_POLLING
+#endif /*  MAD_MESSAGE_POLLING */
 
 TBX_INTERNAL p_mad_connection_t
 mad_mux_receive_message(p_mad_channel_t channel);
@@ -313,6 +313,6 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 TBX_INTERNAL void
 mad_mux_add_named_sub_channels(p_mad_channel_t xchannel);
 
-#endif // MARCEL
+#endif /*  MARCEL */
 
 #endif /* MAD_COMMUNICATION_INTERFACE_H */

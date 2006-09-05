@@ -97,15 +97,15 @@ struct ma_runqueue {
 	char name[16];
 	unsigned long expired_timestamp, timestamp_last_tick;
 	ma_prio_array_t *active, *expired, arrays[2];
-//	int best_expired_prio, prev_cpu_load[NR_CPUS];
-//#ifdef CONFIG_NUMA
-//	atomic_t *node_nr_running;
-//	int prev_node_load[MAX_NUMNODES];
-//#endif
-//	marcel_task_t *migration_thread;
-//	struct list_head migration_queue;
+/* 	int best_expired_prio, prev_cpu_load[NR_CPUS]; */
+/* #ifdef CONFIG_NUMA */
+/* 	atomic_t *node_nr_running; */
+/* 	int prev_node_load[MAX_NUMNODES]; */
+/* #endif */
+/* 	marcel_task_t *migration_thread; */
+/* 	struct list_head migration_queue; */
 
-//	ma_atomic_t nr_iowait;
+/* 	ma_atomic_t nr_iowait; */
 
 #ifdef MA__LWPS
 	struct ma_runqueue *father;
@@ -238,7 +238,7 @@ static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 	rq->expired = array;
 	array = rq->active;
 	rq->expired_timestamp = 0;
-//	rq->best_expired_prio = MA_MAX_PRIO;
+/* 	rq->best_expired_prio = MA_MAX_PRIO; */
 }
 
 /*

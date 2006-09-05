@@ -22,7 +22,7 @@
 
 #include "tbx_compiler.h"
 
-// For compatibility purposes :
+/*  For compatibility purposes : */
 #define tprintf  marcel_printf
 #define tfprintf marcel_fprintf
 

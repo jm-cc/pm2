@@ -50,6 +50,6 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 #endif
 
-// Still here, but do not use it!
+/*  Still here, but do not use it! */
 int __tbx_deprecated__ tselect(int width, fd_set * __restrict readfds, fd_set * __restrict writefds, fd_set * __restrict exceptfds);
 

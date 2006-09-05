@@ -65,14 +65,14 @@
 #include "tbx_macros.h"
 #include "tbx_pointers.h"
 
-//#ifdef TBX_KERNEL
+/* #ifdef TBX_KERNEL */
 /* Inclusion de marcel.h uniquement si on compile les sources de tbx 
  * Les autres modules doivent l'inclure si nécesaire
  */
 #ifdef MARCEL
 #include "marcel.h"
 #endif
-//#endif
+/* #endif */
 
 #include "tbx_malloc.h"
 #include "tbx_slist.h"
@@ -87,9 +87,9 @@
 #include "tbx_malloc_inline.h"
 #include "tbx_slist_inline.h"
 #include "tbx_list_inline.h"
-//#include "tbx_htable_inline.h"
-//#include "tbx_string_inline.h"
+/* #include "tbx_htable_inline.h" */
+/* #include "tbx_string_inline.h" */
 #include "tbx_darray_inline.h"
-//#include "tbx_parameter_inline.h"
+/* #include "tbx_parameter_inline.h" */
 
 #endif /* TBX_H */

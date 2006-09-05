@@ -86,4 +86,4 @@ mad_link_cons(void);
 p_mad_madeleine_t
 mad_madeleine_cons(void);
 
-#endif // MAD_CONSTRUCTOR_H
+#endif /*  MAD_CONSTRUCTOR_H */

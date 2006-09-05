@@ -38,7 +38,7 @@
 #define MA_ACT_SET_THREAD_DEBUG(thread)
 #endif
 
-//        MA_ACT_SET_THREAD_DEBUG(lwp, thread);
+/*         MA_ACT_SET_THREAD_DEBUG(lwp, thread); */
 
 #ifdef MA__ACTIVATION
 #define MA_ACT_SET_THREAD(thread) \

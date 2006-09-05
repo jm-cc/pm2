@@ -71,8 +71,8 @@ typedef struct s_mad_connection
   unsigned int             first_block_is_a_group;
 #ifdef MAD_FORWARD_FLOW_CONTROL
   marcel_sem_t             ack;
-#endif // MAD_FORWARD_FLOW_CONTROL
-#endif // MARCEL
+#endif /*  MAD_FORWARD_FLOW_CONTROL */
+#endif /*  MARCEL */
 
   /* Internal use fields */
   int                      nb_link;
@@ -89,9 +89,9 @@ typedef struct s_mad_connection
   /* Flags */
 #ifdef MARCEL
   marcel_mutex_t           lock_mutex;
-#else // MARCEL
+#else /*  MARCEL */
   volatile tbx_bool_t      lock;
-#endif // MARCEL
+#endif /*  MARCEL */
   tbx_bool_t               delayed_send;
   tbx_bool_t               flushed;
   tbx_bool_t               pair_list_used;

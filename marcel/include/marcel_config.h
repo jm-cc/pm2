@@ -68,7 +68,7 @@
 /* no way to distinguish between a signal from the kernel or from another LWP */
 #define MA_BOGUS_SIGINFO_CODE
 #endif
-// Signal utilis pour la premption automatique
+/*  Signal utilis pour la premption automatique */
 #ifdef USE_VIRTUAL_TIMER
 #  define MARCEL_TIMER_SIGNAL       SIGVTALRM
 #  ifdef MA_BOGUS_SIGINFO_CODE

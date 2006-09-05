@@ -66,7 +66,7 @@ struct ma_tvec_t_base_s {
 	ma_tvec_t tv3;
 	ma_tvec_t tv4;
 	ma_tvec_t tv5;
-};// ____cacheline_aligned_in_smp;
+};/*  ____cacheline_aligned_in_smp; */
 
 #section marcel_macros
 #define MA_TIMER_MAGIC	0x4b87ad6e
@@ -145,6 +145,6 @@ static __tbx_inline__ void ma_add_timer(struct ma_timer_list * timer)
 
 extern void ma_init_timers(void);
 extern void ma_run_local_timers(void);
-//extern void ma_it_real_fn(unsigned long);
+/* extern void ma_it_real_fn(unsigned long); */
 extern void ma_update_process_times(int user_tick);
 

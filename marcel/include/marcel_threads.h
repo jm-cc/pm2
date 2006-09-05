@@ -21,7 +21,7 @@
 
 #section macros
 
-//#define STANDARD_MAIN
+/* #define STANDARD_MAIN */
 #define MARCEL_ONCE_INIT 0
 
 #section types
@@ -283,7 +283,7 @@ extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
 /* Install a cleanup handler as marcel_cleanup_push does, but also
    saves the current cancellation type and set it to deferred cancellation.  */
 
-//#ifdef __USE_GNU
+/* #ifdef __USE_GNU */
 # define marcel_cleanup_push_defer_np(routine,arg) \
   { struct _marcel_cleanup_buffer _buffer;				      \
     _marcel_cleanup_push_defer (&_buffer, (routine), (arg));
@@ -301,7 +301,7 @@ extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,
 
 extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
-//#endif
+/* #endif */
 
 
 
@@ -309,8 +309,8 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
    only once, even if marcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to MARCEL_ONCE_INIT.  */
-//extern int marcel_once (marcel_once_t *__once_control,
-//			 void (*__init_routine) (void)) __THROW;
+/* extern int marcel_once (marcel_once_t *__once_control, */
+/* 			 void (*__init_routine) (void)) __THROW; */
 
 
 #section marcel_macros

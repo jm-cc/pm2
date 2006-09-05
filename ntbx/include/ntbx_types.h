@@ -98,7 +98,7 @@ typedef enum
 typedef struct s_ntbx_client
 {
   TBX_SHARED;
-  unsigned long        local_host_ip; // network form !
+  unsigned long        local_host_ip; /*  network form ! */
   char                *local_host;
   p_tbx_slist_t        local_alias;
   char                *remote_host;
@@ -114,7 +114,7 @@ typedef struct s_ntbx_client
 
 typedef struct s_ntbx_server
 {
-  unsigned long           local_host_ip; // network form !
+  unsigned long           local_host_ip; /*  network form ! */
   char                   *local_host;
   p_tbx_slist_t           local_alias;
   ntbx_connection_data_t  connection_data;
@@ -126,7 +126,7 @@ typedef struct s_ntbx_server
  * ---------------------
  */
 
-// A process container element
+/*  A process container element */
 typedef struct s_ntbx_process_info
 {
   ntbx_process_lrank_t local_rank;
@@ -134,7 +134,7 @@ typedef struct s_ntbx_process_info
   void                *specific;
 } ntbx_process_info_t;
 
-// A process container
+/*  A process container */
 typedef struct s_ntbx_process_container
 {
   ntbx_process_lrank_t   local_array_size;
@@ -144,7 +144,7 @@ typedef struct s_ntbx_process_container
   int                    count;
 } ntbx_process_container_t;
 
-// A routing table
+/*  A routing table */
 /*...Topology Constants ...................*/
 typedef enum
 {
@@ -170,19 +170,19 @@ typedef struct s_ntbx_topology_table
   ntbx_process_lrank_t       size;
 } ntbx_topology_table_t;
 
-// A processus
+/*  A processus */
 typedef struct s_ntbx_process
 {
-  // Global internal id
+  /*  Global internal id */
   ntbx_process_grank_t  global_rank;
 
-  // Objects referencing that process
+  /*  Objects referencing that process */
   p_tbx_htable_t        ref;
 
-  // Pid
+  /*  Pid */
   pid_t                 pid;
 
-  // Module-specific data
+  /*  Module-specific data */
   void                 *specific;
 
 } ntbx_process_t;

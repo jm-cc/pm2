@@ -135,8 +135,8 @@ enum
 /* Value returned by 'pmarcel_barrier_wait' for one of the threads after
    the required number of threads have called this function.
    -1 is distinct from 0 and all errno constants */
-// defined in marcel/include/marcel_barrier.h
-//# define PMARCEL_BARRIER_SERIAL_THREAD -1
+/*  defined in marcel/include/marcel_barrier.h */
+/* # define PMARCEL_BARRIER_SERIAL_THREAD -1 */
 #endif
 
 
@@ -307,13 +307,13 @@ extern int pmarcel_getschedparam (pmarcel_t __target_thread,
      __THROW;
 
 
-//#ifdef __USE_UNIX98
+/* #ifdef __USE_UNIX98 */
 /* Determine level of concurrency.  */
 extern int pmarcel_getconcurrency (void) __THROW;
 
 /* Set new concurrency level to LEVEL.  */
 extern int pmarcel_setconcurrency (int __level) __THROW;
-//#endif
+/* #endif */
 
 #ifdef __USE_GNU
 /* Yield the processor to another thread or process.
@@ -402,7 +402,7 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 /* Les mutex sont déclarés dans marcel_mutex.h.m4 */
 /**************************************************/
 
-//#ifdef __USE_UNIX98
+/* #ifdef __USE_UNIX98 */
 /* Functions for handling read-write locks.  */
 
 /* Initialize read-write lock RWLOCK using attributes ATTR, or use
@@ -469,7 +469,7 @@ extern int pmarcel_rwlockattr_getkind_np (__const pmarcel_rwlockattr_t *
 /* Set reader/write preference.  */
 extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 					  int __pref) __THROW;
-//#endif
+/* #endif */
 
 
 /********************************************************/
@@ -477,10 +477,10 @@ extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 /********************************************************/
 
 
-//#ifdef __USE_XOPEN2K
+/* #ifdef __USE_XOPEN2K */
 /* Functions to handle spinlocks.  */
 
-// not implemented yet
+/*  not implemented yet */
 /* Initialize the spinlock LOCK.  If PSHARED is nonzero the spinlock can
    be shared between different processes.  */
 extern int pmarcel_spin_init (pmarcel_spinlock_t *__lock, int __pshared)
@@ -528,7 +528,7 @@ extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
 /* /\* Set the process-shared flag of the barrier attribute ATTR.  *\/ */
 /* extern int pmarcel_barrierattr_setpshared (pmarcel_barrierattr_t *__attr, */
 /*                                            int __pshared) __THROW; */
-/* //#endif */
+/* #endif */
 
 
 /* Functions for handling thread-specific data.  */

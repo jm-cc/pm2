@@ -29,69 +29,69 @@ typedef enum
 {
 #ifdef DRV_TCP
   mad_TCP,
-#endif // DRV_TCP
+#endif /*  DRV_TCP */
 
 #ifdef DRV_SCTP
   mad_SCTP,
-#endif // DRV_SCTP
+#endif /*  DRV_SCTP */
 
 #ifdef DRV_RAND
   mad_RAND,
-#endif // DRV_RAND
+#endif /*  DRV_RAND */
 
 #ifdef DRV_VRP
   mad_VRP,
-#endif // DRV_VRP
+#endif /*  DRV_VRP */
 
 #ifdef DRV_UDP
   mad_UDP,
-#endif // DRV_UDP
+#endif /*  DRV_UDP */
 
 #ifdef DRV_VIA
   mad_VIA,
-#endif // DRV_VIA
+#endif /*  DRV_VIA */
 
 #ifdef DRV_SISCI
   mad_SISCI,
-#endif // DRV_SISCI
+#endif /*  DRV_SISCI */
 
 #ifdef DRV_SBP
   mad_SBP,
-#endif // DRV_SBP
+#endif /*  DRV_SBP */
 
 #ifdef DRV_MPI
   mad_MPI,
-#endif // DRV_MPI
+#endif /*  DRV_MPI */
 
 #ifdef DRV_BIP
   mad_BIP,
-#endif // DRV_BIP
+#endif /*  DRV_BIP */
 
 #ifdef DRV_GM
   mad_GM,
-#endif // DRV_GM
+#endif /*  DRV_GM */
 
 #ifdef DRV_MX
   mad_MX,
-#endif // DRV_MX
+#endif /*  DRV_MX */
 
 #ifdef DRV_MADICO
   mad_MADICO,
-#endif // DRV_MADICO
+#endif /*  DRV_MADICO */
 
 #ifdef DRV_QUADRICS
   mad_QUADRICS,
-#endif // DRV_QUADRICS
+#endif /*  DRV_QUADRICS */
 
 #ifdef MARCEL
   mad_FORWARD,
-#endif // MARCEL
+#endif /*  MARCEL */
 
 #ifdef MARCEL
   mad_MUX,
-#endif // MARCEL
+#endif /*  MARCEL */
 
-  mad_driver_number // Must be the last element of the enum declaration
+  mad_driver_number /*  Must be the last element of the enum declaration */
 } mad_driver_id_t, *p_mad_driver_id_t;
 
 #define mad_DRIVER_DEFAULT 0

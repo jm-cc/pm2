@@ -48,23 +48,23 @@
   p1##p2##p3##symbol
 
 
-  /* Difficile à réaliser de manière portable...
-#define LOCAL_SYMBOL(local_symbol, symbol) \
+/* Difficile à réaliser de manière portable...*/
+/*#define LOCAL_SYMBOL(local_symbol, symbol) \
   extern __typeof__(symbol) local_symbol \
-    TBX_ALIAS(#symbol)
-// l'attribut visibility n'est pas encore disponible...
-//    TBX_ALIAS(#symbol) TBX_VISIBILITY("hidden")
-
-#define ALIAS_SYMBOL(alias_symbol, symbol) \
+  TBX_ALIAS(#symbol)
+*/
+/*  l'attribut visibility n'est pas encore disponible... */
+/*     TBX_ALIAS(#symbol) TBX_VISIBILITY("hidden") */
+/*#define ALIAS_SYMBOL(alias_symbol, symbol) \
   extern __typeof__(symbol) alias_symbol \
     TBX_ALIAS(#symbol)
-    */
+*/
 
 
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
 #define LOCAL_ATTRIBUTE TBX_VISIBILITY("hidden")
 #else
-#define LOCAL_ATTRIBUTE //WEAK_ATTRIBUTE
+#define LOCAL_ATTRIBUTE /* WEAK_ATTRIBUTE */
 #endif
 
 #define ADD_WEAK_ATTRIBUTE ,weak
@@ -148,8 +148,8 @@
 # define DEF_ALIAS_POSIX(rtype, name, proto, args) \
     TBX_FUN_ALIAS(rtype, POSIX_NAME(name), \
       LOCAL_POSIX_NAME(name), proto, args);
-    //TBX_FUN_WEAKALIAS(rtype, POSIX_NAME(name),
-    //  LOCAL_POSIX_NAME(name), proto, args);
+    /* TBX_FUN_WEAKALIAS(rtype, POSIX_NAME(name), */
+    /*   LOCAL_POSIX_NAME(name), proto, args); */
 #else
 # define DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args)
 # define DEF_ALIAS_POSIX(rtype, name, proto, args)

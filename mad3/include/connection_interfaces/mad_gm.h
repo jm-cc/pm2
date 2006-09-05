@@ -65,7 +65,7 @@ mad_gm_new_message(p_mad_connection_t out);
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_gm_poll_message(p_mad_channel_t channel);
-#endif // MAD_MESSAGE_POLLING
+#endif /*  MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_gm_receive_message(p_mad_channel_t ch);

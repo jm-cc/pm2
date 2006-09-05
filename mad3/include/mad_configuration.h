@@ -37,12 +37,12 @@ typedef struct s_mad_configuration
   mad_configuration_size_t   local_process_count;
   ntbx_host_id_t             local_process_num;
   ntbx_host_id_t             local_process_id;
-  char                     **host_name;    // configuration host name list
+  char                     **host_name;    /*  configuration host name list */
   */
 /*
 #ifndef LEONIE_SPAWN
-  char                     **program_name; // program name list
-#endif // LEONIE_SPAWN
+  char                     **program_name; /*  program name list */
+#endif /*  LEONIE_SPAWN */
 } mad_configuration_t;
 */
 #endif /* MAD_CONFIGURATION_H */

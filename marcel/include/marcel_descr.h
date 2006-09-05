@@ -176,7 +176,7 @@ struct marcel_task {
       char tls[MA_TLS_AREA_SIZE];
 #endif
 #ifdef ENABLE_STACK_JUMPING
-	void *dummy; // Doit rester le _dernier_ champ
+	void *dummy; /*  Doit rester le _dernier_ champ */
 #endif
 };
 

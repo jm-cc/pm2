@@ -909,7 +909,7 @@ tbx_parameter_manager_init(void);
 void
 tbx_parameter_manager_exit(void);
 
-// ... Argument option ................................................. //
+/*  ... Argument option ................................................. // */
 p_tbx_argument_option_t
 tbx_argument_option_init_to_cstring_ext(const char *option,
 					 const char  separator,
@@ -935,7 +935,7 @@ tbx_argument_option_free(p_tbx_argument_option_t arg);
 p_tbx_string_t
 tbx_argument_option_to_string(const p_tbx_argument_option_t arg);
 
-// ... Arguments ....................................................... //
+/*  ... Arguments ....................................................... // */
 p_tbx_arguments_t
 tbx_arguments_init(void);
 
@@ -976,7 +976,7 @@ p_tbx_string_t
 tbx_arguments_to_string(p_tbx_arguments_t args,
 			const int         IFS);
 
-// ... Argument set .................................................... //
+/*  ... Argument set .................................................... // */
 p_tbx_argument_set_t
 tbx_argument_set_build(const p_tbx_arguments_t args);
 
@@ -991,7 +991,7 @@ p_tbx_argument_set_t
 tbx_argument_set_build_ext_c_command(const p_tbx_arguments_t  args,
 				     const char              *command);
 
-// ... Environment variable ............................................ //
+/*  ... Environment variable ............................................ // */
 p_tbx_environment_variable_t
 tbx_environment_variable_init(const p_tbx_string_t name,
 			      const p_tbx_string_t value);
@@ -1024,7 +1024,7 @@ tbx_environment_variable_set_to_cstring(p_tbx_environment_variable_t variable,
 					 const char                  *value);
 
 
-// ... Environments .................................................... //
+/*  ... Environments .................................................... // */
 p_tbx_environment_t
 tbx_environment_init(void);
 
@@ -1039,7 +1039,7 @@ p_tbx_string_t
 tbx_environment_to_string(const p_tbx_environment_t env);
 
 
-// ... Command ......................................................... //
+/*  ... Command ......................................................... // */
 p_tbx_command_t
 tbx_command_init(const p_tbx_string_t command_name);
 

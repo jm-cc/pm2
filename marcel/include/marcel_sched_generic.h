@@ -129,11 +129,11 @@ struct marcel_sched_task {
 #define MA_TASK_RUNNING		0 /* _doit_ rester 0 */
 #define MA_TASK_INTERRUPTIBLE	1
 #define MA_TASK_UNINTERRUPTIBLE	2
-//#define MA_TASK_STOPPED	4 pas utilisé
-//#define MA_TASK_TRACED	  pas utilisé
-//#define MA_TASK_ZOMBIE	8 pas utilisé
+/* #define MA_TASK_STOPPED	4 pas utilisé */
+/* #define MA_TASK_TRACED	  pas utilisé */
+/* #define MA_TASK_ZOMBIE	8 pas utilisé */
 #define MA_TASK_DEAD		16
-//#define MA_TASK_GHOST		32 pas utilisé
+/* #define MA_TASK_GHOST		32 pas utilisé */
 #define MA_TASK_MOVING		64
 #define MA_TASK_FROZEN		128
 #define MA_TASK_BORNING		256
@@ -159,7 +159,7 @@ __tbx_inline__ static void
 marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 				const marcel_attr_t* __restrict attr)
 {
-	//t->lwp
+	/* t->lwp */
 	t->sched.lwps_allowed = ~attr->vpmask; 
 	ma_set_task_state(t, MA_TASK_BORNING);
 	marcel_sched_internal_init_marcel_thread(t, &t->sched.internal, attr);
@@ -214,25 +214,25 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 #define _TIF_RUNTASK            (1<<TIF_RUNTASK)
 
 
-// NORMAL : Thread marcel "tout bete"
-//#define MA_SF_NORMAL       0
-// UPCALL_NEW : no comment
+/*  NORMAL : Thread marcel "tout bete" */
+/* #define MA_SF_NORMAL       0 */
+/*  UPCALL_NEW : no comment */
 #define MA_SF_UPCALL_NEW   _TIF_UPCALL_NEW
-// POLL : le thread "idle_task" qui fait plein de choses
+/*  POLL : le thread "idle_task" qui fait plein de choses */
 #define MA_SF_POLL         _TIF_POLL
-// IDLE : le thread "wait_and_yield" ne consomme pas de CPU...
+/*  IDLE : le thread "wait_and_yield" ne consomme pas de CPU... */
 #define MA_SF_IDLE         _TIF_IDLE
-// NORUN : ne pas prendre en compte ce thread dans le calcul des
-// taches actives
+/*  NORUN : ne pas prendre en compte ce thread dans le calcul des */
+/*  taches actives */
 #define MA_SF_NORUN        _TIF_NORUN
-// NOSCHEDLOCK : ne pas appeler "sched_lock" dans insert_task...
-//#define MA_SF_NOSCHEDLOCK  16
-// RT_THREAD : ce thread doit être ordonnancé en tant que thread "Real Time"
+/*  NOSCHEDLOCK : ne pas appeler "sched_lock" dans insert_task... */
+/* #define MA_SF_NOSCHEDLOCK  16 */
+/*  RT_THREAD : ce thread doit être ordonnancé en tant que thread "Real Time" */
 #define MA_SF_RT_THREAD    _TIF_RT_THREAD
-// RUNTASK : ce thread démarre un lwp
+/*  RUNTASK : ce thread démarre un lwp */
 #define MA_SF_RUNTASK      _TIF_RUNTASK
 
-//#define MA_TASK_TYPE_NORMAL       MA_SF_NORMAL
+/* #define MA_TASK_TYPE_NORMAL       MA_SF_NORMAL */
 #define MA_TASK_TYPE_UPCALL_NEW   MA_SF_UPCALL_NEW
 #define MA_TASK_TYPE_POLL         MA_SF_POLL
 #define MA_TASK_TYPE_IDLE         MA_SF_IDLE

@@ -560,10 +560,10 @@ really_do:
 		print OUT "#define __SPLIT_SECTION_NAME__ ",$mainsection,"\n";
 		$use_line_preproc && 
 		    print OUT "#line $line \"", $srcfilename, "\"\n";
-		print OUT "// INCLUDING [$section]\n";
+		print OUT "/* INCLUDING [$section] */\n";
 		$print=1;
 	    } else {
-		print OUT "// SKIPPING [$section] at line $line\n";
+		print OUT "/* SKIPPING [$section] at line $line */\n";
 		$print=0;
 	    }
 	};
@@ -594,7 +594,7 @@ really_do:
 		if (/$depend_ligne/) {
 		    my($include)=$5;
 		    my(%sections, $sec);
-		    print OUT "// $_\n";
+		    print OUT "/* $_ */\n";
 		    if ($include =~ /^(["<]?)([$f]*)\s*\[\s*(.*)\s*\]([">]?)$/) {
 			my($start)=$1;
 			my($end)=$4;
@@ -639,7 +639,7 @@ really_do:
 				}
 				$use_line_preproc &&
 				    print OUT "#line $line \"", $srcfilename, "\"\n";
-				print OUT "// skipped section $sec because target empty\n";
+				print OUT "/* skipped section $sec because target empty */\n";
 				delete $sections{$sec};
 really_do:
 			    }
@@ -830,12 +830,12 @@ sub gen_master {
     for $section (@{$key->{"list_sections"}}) {
 	my($secname)=filename($sections->{$section}{"filekey"});
 	if ($sections->{$section}{"skip"} == 1) {
-	    print OUT "// \"$secname\" skipped since empty\n";
+	    print OUT "/* \"$secname\" skipped since empty */\n";
 	} elsif (test_option($sections, $section, "write-section", 0)) {
-	    print OUT "// \"$secname\" not generated as requested\n";
+	    print OUT "/* \"$secname\" not generated as requested */\n";
 	} else {
 	    if (test_option($sections, $section, "include-in-main", 0)) {
-		print OUT "// not including \"$secname\" as requested\n";
+		print OUT "/* not including \"$secname\" as requested */\n";
 	    } else {
 		print OUT "#include \"$secname\"\n";	
 	    }

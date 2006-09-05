@@ -145,7 +145,7 @@ void
 mad_pmi_init(p_mad_madeleine_t madeleine);
 #endif /* MAD3_PMI */
 
-// NTBX data transmission wrappers
+/*  NTBX data transmission wrappers */
 TBX_INTERNAL void
 mad_ntbx_send_int(p_ntbx_client_t client,
 		  const int       data);
@@ -227,7 +227,7 @@ mad_command_thread_exit(p_mad_madeleine_t madeleine);
 #define LDISP_PTR(str, ptr)  mad_leonie_print(str " = %p" , (void *)(ptr))
 #define LDISP_STR(str, str2) mad_leonie_print(str ": %s" , (char *)(str2))
 
-// Directory transmission
+/*  Directory transmission */
 TBX_INTERNAL void
 mad_dir_directory_get(p_mad_madeleine_t madeleine);
 

@@ -55,7 +55,7 @@ REPLICATE([[dnl
 /* Barrier data structure : internaltypes.h */
 typedef struct prefix_barrier
 {
-  //unsigned int curr_event;
+  /* unsigned int curr_event; */
   unsigned int init_count;
   struct _prefix_fastlock lock;
   unsigned int leftB;

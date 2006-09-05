@@ -24,15 +24,15 @@
  * Constants
  * ---------
  */
-// typedef enum e_mad_rand_parameter_opcode
-//   {
-//     mad_rand_op_optional_block,
-//   } mad_rand_parameter_opcode_t, *p_mad_rand_parameter_opcode_t;
-// 
-// typedef enum e_mad_rand_status_opcode
-//   {
-//     mad_rand_os_lost_block,
-//   } mad_rand_status_opcode_t, *p_mad_rand_status_opcode_t;
+/*  typedef enum e_mad_rand_parameter_opcode */
+/*    { */
+/*      mad_rand_op_optional_block, */
+/*    } mad_rand_parameter_opcode_t, *p_mad_rand_parameter_opcode_t; */
+/*   */
+/*  typedef enum e_mad_rand_status_opcode */
+/*    { */
+/*      mad_rand_os_lost_block, */
+/*    } mad_rand_status_opcode_t, *p_mad_rand_status_opcode_t; */
 
 /*
  * Structures

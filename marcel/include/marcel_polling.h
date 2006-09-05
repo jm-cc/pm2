@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-// THESE: INTERFACE START
+/*  THESE: INTERFACE START */
 /****************************************************************
  * Certains commentaires sont étiquetés par U/S/C/I signifiant
  * User       : utile aux threads applicatifs pour exploiter ces mécanismes
@@ -76,9 +76,9 @@ typedef struct marcel_ev_wait *marcel_ev_wait_t;
 
 #section functions
 /* Idem, mais dynamique */
-//#ifndef __cplusplus
+/* #ifndef __cplusplus */
 void marcel_ev_server_init(marcel_ev_server_t server, char* name);
-//#endif
+/* #endif */
 
 /* Enregistrement des call-backs utilisables */
 __tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
@@ -99,7 +99,7 @@ int marcel_ev_server_start(marcel_ev_server_t server);
  */
 int marcel_ev_server_stop(marcel_ev_server_t server);
 
-// THESE: PROTO_EV_WAIT START
+/*  THESE: PROTO_EV_WAIT START */
 /*[U]****************************************************************
  * Fonctions à l'usage des threads applicatifs
  */
@@ -158,7 +158,7 @@ int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout);
  * est également retirée de cette file (donc n'est plus consultable) */
 marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
 
-// THESE: PROTO_EV_WAIT STOP
+/*  THESE: PROTO_EV_WAIT STOP */
 /* Exclusion mutuelle pour un serveur d'événements
  *
  * - les call-backs sont TOUJOURS appelés à l'intérieur de cette
@@ -388,10 +388,10 @@ enum {
         (wait)->ret_code=(code); \
   } while(0)
  
-// THESE: INTERFACE STOP
+/*  THESE: INTERFACE STOP */
 
 
-// =============== PRIVATE ===============
+/*  =============== PRIVATE =============== */
 /****************************************************************
  * Ce qui suit n'a pas vocation à être utilisé hors de Marcel
  */
@@ -400,12 +400,12 @@ enum {
 #depend "[marcel_structures]"
 
 #section inline
-// #ifndef __cplusplus
-// __tbx_inline__ static void marcel_ev_server_init(marcel_ev_server_t server, char* name)
-// {
-// 	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name);
-// }
-// #endif
+/*  #ifndef __cplusplus */
+/*  __tbx_inline__ static void marcel_ev_server_init(marcel_ev_server_t server, char* name) */
+/*  { */
+/*  	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name); */
+/*  } */
+/*  #endif */
 
 __tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,
@@ -656,10 +656,10 @@ marcel_pollid_create_X(marcel_pollgroup_func_t g,
 #define MARCEL_POLL_SUCCESS_FOR(pollinst) ({MARCEL_EV_REQ_SUCCESS(&(pollinst)->inst); (void*)1;})
 
 
-// ATTENTION : changement d interface
-// Remplacer : "FOREACH_POLL(id, _arg) { ..."
-// par : "FOREACH_POLL(id) { GET_ARG(id, _arg); ..."
-// Ou mieux: utiliser FOREACH_EV_POLL[_BASE]
+/*  ATTENTION : changement d interface */
+/*  Remplacer : "FOREACH_POLL(id, _arg) { ..." */
+/*  par : "FOREACH_POLL(id) { GET_ARG(id, _arg); ..." */
+/*  Ou mieux: utiliser FOREACH_EV_POLL[_BASE] */
 #define FOREACH_POLL(id) \
   FOREACH_REQ_POLL((id)->cur_cell, &(id)->server, inst)
 #define GET_ARG(id, _arg) \

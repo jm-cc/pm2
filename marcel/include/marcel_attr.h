@@ -43,15 +43,15 @@ struct __marcel_attr_s
       /* end of pthread */
 
       /* marcel attributes */
-      //unsigned stack_size;
-      //char *stack_base;
-      //int /*tbx_bool_t*/ detached;
+      /* unsigned stack_size; */
+      /* char *stack_base; */
+      /*int tbx_bool_t detached; */
       unsigned user_space;
       /*tbx_bool_t*/int immediate_activation;
       unsigned not_migratable;
       unsigned not_deviatable;
       int not_preemptible;
-      //int sched_policy;
+      /* int sched_policy; */
       /*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
       marcel_vpmask_t vpmask;
       int flags;
@@ -63,13 +63,13 @@ struct __marcel_attr_s
 
 #section macros
 
-// MARCEL_CREATE_JOINABLE
+/*  MARCEL_CREATE_JOINABLE */
 #depend "marcel_threads.h[types]"
-// MARCEL_SCHED_OTHER
-// MARCEL_SCHED_ATTR_INITIALIZER
+/*  MARCEL_SCHED_OTHER */
+/*  MARCEL_SCHED_ATTR_INITIALIZER */
 #define MARCEL_SCHED_INTERNAL_INCLUDE
 #depend "scheduler/marcel_sched.h[marcel_macros]"
-// MARCEL_VPMASK_EMPTY
+/*  MARCEL_VPMASK_EMPTY */
 #depend "marcel_sched_generic.h[macros]"
 
 #ifdef PM2STACKSGUARD
@@ -189,7 +189,7 @@ int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible);
 int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,
                                int * __restrict preemptible);
 
-// only for internal use
+/*  only for internal use */
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
                          int * __restrict flags);

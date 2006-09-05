@@ -18,27 +18,27 @@
 #ifdef MA__LWPS
 #  if defined(SOLARIS_SYS)
 #    include <thread.h>
-#  else // pas SOLARIS
+#  else /*  pas SOLARIS */
 #    include <sched.h>
 #  endif
-#endif // MA__LWP
+#endif /*  MA__LWP */
 
 #section marcel_macros
 #ifndef MA__LWPS
 #  define SCHED_YIELD()  do {} while(0)
-#else // MA__LWP
+#else /*  MA__LWP */
 #  if defined(SOLARIS_SYS)
 #    define SCHED_YIELD() \
 do { \
 	thr_yield(); \
 } while (0)
-#  else // pas SOLARIS
+#  else /*  pas SOLARIS */
 #    define SCHED_YIELD() \
 do { \
 	sched_yield(); \
 } while (0)
 #  endif
-#endif // MA__LWP
+#endif /*  MA__LWP */
 
 #define cpu_relax() SCHED_YIELD()
 

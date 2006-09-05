@@ -68,7 +68,7 @@ struct ma_softirq_action
 asmlinkage MARCEL_PROTECTED void ma_do_softirq(void);
 extern MARCEL_PROTECTED void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data);
 extern void ma_softirq_init(void);
-//#define __ma_raise_softirq_irqoff(nr) do { ma_local_softirq_pending() |= 1UL << (nr); } while (0)
+/* #define __ma_raise_softirq_irqoff(nr) do { ma_local_softirq_pending() |= 1UL << (nr); } while (0) */
 extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
 extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
 extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq(unsigned int nr));

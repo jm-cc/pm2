@@ -79,7 +79,7 @@ typedef struct {
 #if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
 
-//#define SPIN_ABORT()
+/* #define SPIN_ABORT() */
 #define SPIN_ABORT() MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR) 
 	
 #define MA_SPINLOCK_MAGIC  0x1D244B3C

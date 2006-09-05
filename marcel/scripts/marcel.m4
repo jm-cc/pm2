@@ -5,7 +5,7 @@ dnl
 dnl
 define([[PRINT_MARCEL]], [[dnl
 /* PART MARCEL */
-//#line __line__ "__file__"
+/*#line __line__ "__file__"*/
 patsubst([[patsubst([[$1]], [[prefix]],[[marcel]])]], 
 	    [[PREFIX]],[[MARCEL]])dnl
 ]])dnl
@@ -14,7 +14,7 @@ dnl
 dnl
 define([[PRINT_PMARCEL]], [[dnl
 /* PART PMARCEL */
-//#line __line__ "__file__"
+/*#line __line__ "__file__"*/
 #ifdef MA__IFACE_PMARCEL
 patsubst([[patsubst([[$1]], [[prefix]],[[pmarcel]])]], 
 	    [[PREFIX]],[[PMARCEL]])dnl
@@ -25,7 +25,7 @@ dnl
 dnl
 define([[PRINT_LPT]], [[dnl
 /* PART LPT */
-//#line __line__ "__file__"
+/*#line __line__ "__file__"*/
 #ifdef MA__IFACE_LPT
 patsubst([[patsubst([[$1]], [[prefix]],[[lpt]])]],
 	    [[PREFIX]],[[LPT]])dnl
@@ -37,7 +37,7 @@ dnl
 define([[PRINT_PTHREAD]], [[dnl
 /* PART PTHREAD */
 #ifdef MA__LIBPTHREAD
-//#line __line__ "__file__"
+/*#line __line__ "__file__"*/
 patsubst([[patsubst([[$1]], [[prefix]],[[pthread]])]],
 	    [[PREFIX]],[[PTHREAD]])dnl
 #endif

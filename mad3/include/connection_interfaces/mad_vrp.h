@@ -24,15 +24,15 @@
  * Constants
  * ---------
  */
-// typedef enum e_mad_vrp_parameter_opcode
-//   {
-//     // NONE
-//   } mad_vrp_parameter_opcode_t, *p_mad_vrp_parameter_opcode_t;
-// 
-// typedef enum e_mad_vrp_status_opcode
-//   {
-//     // NONE
-//   } mad_vrp_status_opcode_t, *p_mad_vrp_status_opcode_t;
+/*  typedef enum e_mad_vrp_parameter_opcode */
+/*    { */
+/*      // NONE */
+/*    } mad_vrp_parameter_opcode_t, *p_mad_vrp_parameter_opcode_t; */
+/*   */
+/*  typedef enum e_mad_vrp_status_opcode */
+/*    { */
+/*      // NONE */
+/*    } mad_vrp_status_opcode_t, *p_mad_vrp_status_opcode_t; */
 
 /*
  * Structures

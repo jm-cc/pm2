@@ -31,7 +31,7 @@ typedef struct s_mad_adapter_info
 
 typedef struct s_mad_adapter
 {
-  // Common use fields
+  /*  Common use fields */
   TBX_SHARED;
   p_mad_driver_t           driver;
   mad_adapter_id_t         id;

@@ -138,9 +138,9 @@ struct marcel_bubble {
 };
 
 #section macros
-// LIST_HEAD_INIT
+/*  LIST_HEAD_INIT */
 #depend "pm2_list.h"
-// MA_ATOMIC_INIT
+/*  MA_ATOMIC_INIT */
 #depend "asm/linux_atomic.h"
 #depend "scheduler/marcel_holder.h[macros]"
 

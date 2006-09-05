@@ -23,12 +23,12 @@
 #define marcel_init(argc, argv) common_init(argc, argv, NULL)
 #define marcel_end() common_exit(NULL)
 
-// When completed, calls to marcel_self() are ok, etc.
-// So do calls to the Unix Fork primitive.
+/*  When completed, calls to marcel_self() are ok, etc. */
+/*  So do calls to the Unix Fork primitive. */
 void marcel_init_data(int *argc, char *argv[]);
 
-// May start some internal threads or activations.
-// When completed, fork calls are prohibited.
+/*  May start some internal threads or activations. */
+/*  When completed, fork calls are prohibited. */
 void marcel_start_sched(int *argc, char *argv[]);
 
 void marcel_init_section(int section);
@@ -48,7 +48,7 @@ int go_marcel_main(int argc, char *argv[]);
 #endif
 #ifdef MARCEL_KERNEL
 extern int marcel_main(int argc, char *argv[]);
-#endif // MARCEL_KERNEL
+#endif /*  MARCEL_KERNEL */
 #endif
 
 #section marcel_macros

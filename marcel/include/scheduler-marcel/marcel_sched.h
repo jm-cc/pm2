@@ -140,8 +140,8 @@ marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask)
 		first_vp=ma_ffs(~*mask)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(*mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
-		//on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps
-		//MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
+		/* on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps */
+		/* MA_BUG_ON(first_vp && first_vp>=marcel_nbvps()); */
 		return &marcel_topo_vp_level[first_vp].sched;
 	}
 }
@@ -223,10 +223,10 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				break;
 			}
 			case MARCEL_SCHED_AFFINITY: {
-				// Le cas echeant, retourne un LWP fortement
-				// sous-charge (nb de threads running <
-				// THREAD_THRESHOLD_LOW), ou alors retourne le
-				// LWP "courant".
+   			        /* Le cas echeant, retourne un LWP fortement
+				   sous-charge (nb de threads running <
+				   THREAD_THRESHOLD_LOW), ou alors retourne le
+				   LWP "courant". */
 
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
@@ -242,8 +242,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				break;
 			}
 			case MARCEL_SCHED_BALANCE: {
-				// Retourne le LWP le moins charge (ce qui
-				// oblige a parcourir toute la liste)
+			        /* Retourne le LWP le moins charge (ce qui
+				   oblige a parcourir toute la liste) */
 				unsigned best = ma_lwp_vprq(cur_lwp)->hold.nr_running;
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
@@ -272,7 +272,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->sched.prio;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
-	//timestamp, last_ran
+	/* timestamp, last_ran */
 	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
@@ -282,7 +282,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	else
 		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
 #ifdef MA__BUBBLES
-	// bulle non initialisée
+	/* bulle non initialisée */
 	internal->bubble.sched.init_holder = NULL;
 #endif
 	LOG_OUT();
@@ -291,7 +291,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 
 #section marcel_functions
-//unsigned marcel_sched_add_vp(void);
+/* unsigned marcel_sched_add_vp(void); */
 
 #section marcel_macros
 /* ==== SMP scheduling policies ==== */
@@ -407,25 +407,25 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 	/* On est encore dans le père. On doit démarrer le fils */
 	if(
-		// On ne peut pas céder la main maintenant
+	        /* On ne peut pas céder la main maintenant */
 		(ma_in_atomic())
-		// ou bien on ne veut pas
+		/* ou bien on ne veut pas  */
 		|| !ma_thread_preemptible()
-		// On n'a pas encore de scheduler...
+		/* On n'a pas encore de scheduler... */
 		|| dont_schedule
 #ifdef MA__LWPS
-		// On ne peut pas placer ce thread sur le LWP courant
+		/* On ne peut pas placer ce thread sur le LWP courant */
 		|| (!lwp_isset(LWP_NUMBER(LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
-		// Si la politique est du type 'placer sur le LWP le moins
-		// chargé', alors on ne peut pas placer ce thread sur le LWP
-		// courant
+		/* Si la politique est du type 'placer sur le LWP le moins
+		   chargé', alors on ne peut pas placer ce thread sur le LWP
+		   courant */
 		|| (new_task->sched.internal.entity.sched_policy != MARCEL_SCHED_OTHER)
 #endif
 #ifdef MA__BUBBLES
-		// on est placé dans une bulle (on ne sait donc pas si l'on a
-		// le droit d'être ordonnancé tout de suite)
-		// XXX: ça veut dire qu'on n'a pas de création rapide avec les
-		// bulles si l'on veut strictement respecter cela :(
+		/* on est placé dans une bulle (on ne sait donc pas si l'on a
+		   le droit d'être ordonnancé tout de suite)
+		   XXX: ça veut dire qu'on n'a pas de création rapide avec les
+		   bulles si l'on veut strictement respecter cela :( */
 		|| bh
 #endif
 		)

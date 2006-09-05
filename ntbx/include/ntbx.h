@@ -27,7 +27,7 @@
  */
 #ifndef __GNUC__
 #error The GNU C Compiler is required to build the library
-#endif // __GNUC__
+#endif /*  __GNUC__ */
 
 /*
  * Headers

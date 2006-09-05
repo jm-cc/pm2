@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef _NM_PKT_WRAP_H_
+#define _NM_PKT_WRAP_H_
 
 struct nm_iovec {
     /* io vector entry meta-data	*/
@@ -167,3 +169,5 @@ struct nm_pkt_wrap {
          */
         struct nm_iovec		*nm_v;
 };
+
+#endif /* _NM_PKT_WRAP_H_ */

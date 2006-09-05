@@ -39,6 +39,22 @@ static int pack_ctrl(struct nm_gate *p_gate,
     = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
   int err;
 
+  /* We first try to find an existing packet to form an aggregate */
+  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
+
+    uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+
+    if(h_rlen < NM_SO_CTRL_HEADER_SIZE)
+      /* There's not enough room to add our ctrl header to this paquet */
+      goto next;
+
+    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+    goto out;
+
+  next:
+    ;
+  }
+
   /* Simply form a new packet wrapper */
   err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
 					     &p_so_pw);

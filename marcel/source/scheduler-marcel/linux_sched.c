@@ -817,13 +817,17 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 	finish_task_switch(prev);
 
 #ifdef MA__LWPS
+#ifdef MARCEL_SMT_IDLE
 	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
+		marcel_sig_disable_interrupts();
 		PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
 		if (prev != MARCEL_SELF)
 			ma_topology_lwp_idle_start(LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
 			marcel_sig_pause();
+		marcel_sig_enable_interrupts();
 	}
+#endif
 #endif
 }
 
@@ -1695,11 +1699,13 @@ restart:
 		ma_local_bh_enable();
 #ifdef EV_SERV
 		if (!ev_polling_is_required(EV_POLL_AT_IDLE)) {	
-		  PROF_EVENT(ev_poll_not_requiered);
+		  PROF_EVENT(ev_poll_not_required);
 #else
 		  if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
 #endif
+			marcel_sig_disable_interrupts();
 			marcel_sig_pause();
+			marcel_sig_enable_interrupts();
 		} else {
 #ifdef MARCEL_IDLE_PAUSE
 			if (didpoll)
@@ -1845,10 +1851,12 @@ switch_tasks:
 		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
 #ifdef MA__LWPS
-		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
-			&& !ma_topology_lwp_idle_core(LWP_SELF))
-			marcel_sig_pause();
-		else
+		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
+			marcel_sig_disable_interrupts();
+			if (!ma_topology_lwp_idle_core(LWP_SELF))
+				marcel_sig_pause();
+			marcel_sig_enable_interrupts();
+		} else
 #endif
 		  {
 		    /* TODO: appeler le polling pour lui faire faire un peu de poll */

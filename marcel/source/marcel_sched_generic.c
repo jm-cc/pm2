@@ -373,9 +373,14 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		ma_lwp_wait_active();
 		/* we are the active LWP of this VP */
 
-		/* let wakers now that we will shortly poll need_resched and
-		 * thus they don't need to send a kill */
-		ma_set_thread_flag(TIF_POLLING_NRFLAG);
+		/* schedule threads */
+		if (ma_need_resched()) {
+			PROF_EVENT(idle_does_schedule);
+			if (ma_schedule())
+				continue;
+		}
+
+		/* no more threads, now poll */
 #ifdef XPAULETTE
 		dopoll = xpaul_polling_is_required(XPAUL_POLL_AT_IDLE);
 		if (dopoll) {
@@ -390,19 +395,25 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		}
 
 #endif
+		marcel_sig_disable_interrupts();
 		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
 		/* make sure people see that we won't poll it afterwards */
 		ma_smp_mb__after_clear_bit();
-		if (!ma_need_resched() || 
-			({PROF_EVENT(idle_does_schedule); 0; })
-					|| !ma_schedule()) {
-#ifdef MARCEL_IDLE_PAUSE
-			if (dopoll)
-				marcel_sig_nanosleep();
-			else
-				marcel_sig_pause();
-#endif
+
+		if (ma_need_resched()) {
+			marcel_sig_enable_interrupts();
+			continue;
 		}
+#ifdef MARCEL_IDLE_PAUSE
+		if (dopoll)
+			marcel_sig_nanosleep();
+		else
+			marcel_sig_pause();
+#endif
+		/* let wakers now that we will shortly poll need_resched and
+		 * thus they don't need to send a kill */
+		ma_set_thread_flag(TIF_POLLING_NRFLAG);
+		marcel_sig_enable_interrupts();
 	}
 }
 #ifndef MA__ACT
@@ -411,12 +422,17 @@ static any_t idle_func(any_t hlwp)
 	for(;;) {
 		/* let wakers now that we will shortly poll need_resched and
 		 * thus they don't need to send a kill */
+		if (ma_need_resched()) {
+			PROF_EVENT(idle_does_schedule);
+			if (ma_schedule())
+				continue;
+		}
+		marcel_sig_disable_interrupts();
 		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
 		ma_smp_mb__after_clear_bit();
-		pause();
+		marcel_sig_pause();
 		ma_set_thread_flag(TIF_POLLING_NRFLAG);
-		if (ma_need_resched())
-			ma_schedule();
+		marcel_sig_enable_interrupts();
 	}
 	return NULL;
 }

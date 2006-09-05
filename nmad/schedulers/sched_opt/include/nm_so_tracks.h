@@ -117,11 +117,11 @@ nm_so_post_large_recv(struct nm_gate *p_gate,
 
 static __inline__
 int
-nm_so_direct_post_large_recv(struct nm_so_pkt_wrap *p_so_pw)
+nm_so_direct_post_large_recv(struct nm_gate *p_gate,
+                             struct nm_so_pkt_wrap *p_so_pw)
 {
   int err;
-  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
-
+  
   _nm_so_post_recv(p_gate, p_so_pw, 1);
 
   err = NM_ESUCCESS;

@@ -357,7 +357,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       list_del(p_so_gate->pending_large_recv.next);
 
       /* Post the data reception */
-      nm_so_direct_post_large_recv(p_so_large_pw);
+      nm_so_direct_post_large_recv(p_so_pw->pw.p_gate,
+                                   p_so_large_pw);
 
       /* Send an ACK */
       nm_so_init_ack(&ctrl,

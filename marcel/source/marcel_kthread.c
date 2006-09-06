@@ -130,12 +130,12 @@ void marcel_kthread_exit(void *retval)
 
 marcel_kthread_t marcel_kthread_self(void)
 {
-  return marcel_gettid();
+	return marcel_gettid();
 }
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
-  sigprocmask(how, newmask, oldmask);
+	sigprocmask(how, newmask, oldmask);
 }
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)

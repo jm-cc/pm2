@@ -398,7 +398,6 @@ void common_pre_init(int *argc, char *argv[],
    * Requires:
    * - nothing ? (to be tested)
    */
-  fprintf(stderr, "initialisation de xpaul\n");
   xpaul_io_init();
 #endif // XPAULETTE
 }

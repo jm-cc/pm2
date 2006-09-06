@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
 
 #ifndef max
 #define max(a, b) \
@@ -84,12 +85,14 @@ static struct xpaul_io_server xpaul_io_server = {
 
 #ifdef MA__LWPS
 
+#define MAX_REQS 50
 typedef struct {
 	int n;
 	fd_set *readfds;
 	fd_set *writefds;
 	fd_set *exceptfds;
 	struct timeval *timeout;	/* not used (TODO?) */
+	struct list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
 } requete;
 
 static int fds[2];
@@ -218,13 +221,14 @@ inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
 }
 
 #ifdef MA__LWPS
-/* Ask another LWR to do a select syscall to avoid blocking
+
+/* Ask another LWP to do a select syscall to avoid blocking
  *  every threads in the current LWP */
 int xpaul_ask_for_select(int n, fd_set * readfds, fd_set * writefds,
 			 fd_set * exceptfds, struct timeval *timeout)
 {
 	PROF_IN();
-	int i, ok = 0;
+	int i;
 	int res = 0;
 
 	struct marcel_sched_param param, backup;
@@ -232,78 +236,53 @@ int xpaul_ask_for_select(int n, fd_set * readfds, fd_set * writefds,
 	marcel_sched_getparam(marcel_self(), &backup);
 	marcel_sched_setparam(marcel_self(), &param);
 
-
+	struct xpaul_wait wait;
+	INIT_LIST_HEAD(&wait.chain_wait);
+	marcel_sem_init(&wait.sem, 0);
 	marcel_sem_P(&req_sem);
 	for (i = 0; i < n; i++) {
 		if (readfds)
-			if (FD_ISSET(i, readfds))
+			if (FD_ISSET(i, readfds)){
+				list_add(&wait.chain_wait, &reqs.lwait[i][0]);
+				PROF_EVENT1(ask_for_new_read,i);
 				FD_SET(i, reqs.readfds);
+			}
 		if (writefds)
-			if (FD_ISSET(i, writefds))
+			if (FD_ISSET(i, writefds)){
+				list_add(&wait.chain_wait, &reqs.lwait[i][1]);
+				PROF_EVENT1(ask_for_new_write,i);
 				FD_SET(i, reqs.writefds);
-		if (exceptfds)
-			if (FD_ISSET(i, exceptfds))
-				FD_SET(i, reqs.exceptfds);
+			}
 	}
 	reqs.n = (reqs.n > n) ? reqs.n : n;
 	marcel_sem_V(&req_sem);
 
 	/* TODO :  change to a signal (when available) */
+	PROF_EVENT1(xpaul_exporting,&wait.sem);
 	i = write(fds[1], &i, sizeof(i));	/* send anything to wake up the communication LWP */
+	PROF_EVENT(xpaul_export_done);
 	sched_yield();
-	do {
-		marcel_sem_P(&recved_sem);
-
-		for (i = 0; i < n; i++) {
-			/* Verifies whether our query was completed */
-			/* TODO : wake up only one thread */
-			if (readfds)
-				if (FD_ISSET(i, readfds)
-				    && FD_ISSET(i, res_req.readfds)) {
-					ok = 1;
-					break;
-				}
-			if (writefds)
-				if (FD_ISSET(i, writefds)
-				    && FD_ISSET(i, res_req.writefds)) {
-					ok = 1;
-					break;
-				}
-			if (exceptfds)
-				if (FD_ISSET(i, exceptfds)
-				    && FD_ISSET(i, res_req.exceptfds)) {
-					ok = 1;
-					break;
-				}
-		}
-		for (i = 0; i < n; i++) {
-			if (readfds)
-				if (FD_ISSET(i, res_req.readfds)) {
-					FD_SET(i, readfds);
-					FD_CLR(i, res_req.readfds);
-					res++;
-				}
-			if (writefds)
-				if (FD_ISSET(i, res_req.writefds)) {
-					FD_SET(i, writefds);
-					FD_CLR(i, res_req.writefds);
-					res++;
-				}
-			if (exceptfds)
-				if (FD_ISSET(i, res_req.exceptfds)) {
-					FD_SET(i, exceptfds);
-					FD_CLR(i, res_req.exceptfds);
-					res++;
-				}
-		}
-		for (i = 0; i < res_req.n; i++)
-			if (FD_ISSET(i, res_req.readfds)
-			    || FD_ISSET(i, res_req.writefds)
-			    || FD_ISSET(i, res_req.exceptfds)) {
-				marcel_sem_V(&recved_sem);	/* Others threads have to be woken up */
+	marcel_sem_P(&wait.sem);
+	for (i = 0; i < n; i++) {
+		if (readfds){
+			if (FD_ISSET(i, res_req.readfds)) {
+				PROF_EVENT1(ask_got_read,i);
+				FD_SET(i, readfds);
+				FD_CLR(i, res_req.readfds);
+				res++;
 			}
-
-	} while (!ok);
+			list_del_init(&wait.chain_wait);
+		}
+		if (writefds){
+			if (FD_ISSET(i, res_req.writefds)) {
+				PROF_EVENT1(ask_got_write,i);
+				FD_SET(i, writefds);
+				FD_CLR(i, res_req.writefds);
+				res++;
+			}
+			list_del_init(&wait.chain_wait);
+		}
+	}
 
 	marcel_sched_setparam(marcel_self(), &backup);
 	PROF_OUT();
@@ -679,11 +658,16 @@ any_t xpaul_receiver()
 	int i, j;
 	requete cur_req, bak_req;
 	struct sched_param param;
+	xpaul_wait_t wait, tmp;
+
+	/* waiter associé a fds[0] */
+	struct xpaul_wait foo;
+	INIT_LIST_HEAD(&foo.chain_wait);
+	marcel_sem_init(&foo.sem, 0);
+
+	list_add(&foo.chain_wait, &reqs.lwait[fds[0]][0]);
 
 	ma_bind_on_processor(0);
-
-	/* Ignore SIGALARM to keep a high priority */
-	marcel_sig_disable_interrupts();
 
 	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
 	if (!pthread_setschedparam(pthread_self(), SCHED_FIFO, &param)) {	/* Might works sometimes */
@@ -707,27 +691,26 @@ any_t xpaul_receiver()
 
 	FD_SET(fds[0], cur_req.readfds);
 	cur_req.n = fds[0] + 1;
+
 	FD_SET(fds[0], bak_req.readfds);
 	bak_req.n = fds[0] + 1;
 
+
+	PROF_EVENT1(reciever_fds, fds[0]);
+	fprintf(stderr, "Lancement du receiver\n");
 	for (;;) {
 		marcel_sem_P(&req_sem);
 
 		for (i = 0; i < reqs.n; i++) {
 			if (FD_ISSET(i, reqs.readfds)) {
+				PROF_EVENT1(recv_new_req_read,i);
 				FD_SET(i, cur_req.readfds);
-				FD_SET(i, bak_req.readfds);
-				FD_CLR(i, reqs.readfds);
+				FD_SET(i, bak_req.readfds);								
 			}
 			if (FD_ISSET(i, reqs.writefds)) {
+				PROF_EVENT1(recv_new_req_write,i);
 				FD_SET(i, cur_req.writefds);
 				FD_SET(i, bak_req.writefds);
-				FD_CLR(i, reqs.writefds);
-			}
-			if (FD_ISSET(i, reqs.exceptfds)) {
-				FD_SET(i, cur_req.exceptfds);
-				FD_SET(i, bak_req.exceptfds);
-				FD_CLR(i, reqs.exceptfds);
 			}
 		}
 
@@ -735,7 +718,8 @@ any_t xpaul_receiver()
 		cur_req.n = (reqs.n > (fds[0] + 1)) ? reqs.n : fds[0] + 1;
 		bak_req.n = cur_req.n;
 
-		marcel_sem_V(&req_sem);
+		marcel_sem_V(&req_sem);	
+
 		PROF_EVENT(xpaul_entering_select);
 		res = select(cur_req.n,
 			     cur_req.readfds,
@@ -747,20 +731,7 @@ any_t xpaul_receiver()
 			perror("select");
 			TBX_FAILURE("system call failed");
 		}
-
-		if (res > 0) {
-			for (i = 0; i < cur_req.n; i++) {
-				if (FD_ISSET(i, cur_req.readfds)) {
-					FD_SET(i, res_req.readfds);
-				}
-				if (FD_ISSET(i, cur_req.writefds))
-					FD_SET(i, res_req.writefds);
-				if (FD_ISSET(i, cur_req.exceptfds))
-					FD_SET(i, res_req.exceptfds);
-			}
-			res_req.n = cur_req.n;
-		}
-
+		
 		if (res > 0) {	/* Don't wake up a thread since we received a new query */
 			if (FD_ISSET(fds[0], cur_req.readfds)) {
 				PROF_EVENT(xpaul_order_received);
@@ -771,28 +742,52 @@ any_t xpaul_receiver()
 		}
 
 		if (res > 0) {
-			PROF_EVENT(xpaul_waking_up_a_thread);
-			marcel_sem_V(&recved_sem);	// TODO : choose the thread to wake up
+			PROF_EVENT1(thread_a_debloquer, res);
+			marcel_sem_P(&recved_sem);
+			res=0;
+/* prépare les résultats et supprime les fd terminés */
+			for (i = 0; i < cur_req.n; i++) { 
+				if (FD_ISSET(i, cur_req.readfds)){
+					res++;
+					FD_SET(i, res_req.readfds);
+					FD_CLR(i, reqs.readfds);
+					FD_CLR(i, bak_req.readfds);
+					tmp=list_entry(reqs.lwait[i][0].next, typeof(*wait), chain_wait);
+					PROF_EVENT2(waikingup_read, &tmp->sem,i);
+					marcel_sem_V(&tmp->sem);
+				}
+				if (FD_ISSET(i, cur_req.writefds)){
+					res++;
+					FD_SET(i, res_req.writefds);
+					FD_CLR(i, reqs.writefds);
+					FD_CLR(i, bak_req.writefds);
+					tmp=list_entry(reqs.lwait[i][1].next, typeof(*wait), chain_wait);
+					PROF_EVENT2(waikingup_write, &tmp->sem, i);
+					marcel_sem_V(&tmp->sem);
+				}
+			}
+			res_req.n = cur_req.n;
+			marcel_sem_V(&recved_sem);
+			PROF_EVENT1(threads_debloques, res);
 		}
-		for (i = 0; i < bak_req.n; i++) {
+
+		
+		/* recupere les fd encore en attente */
+		for (i = 0; i < bak_req.n; i++) { 
 			if (FD_ISSET(i, bak_req.readfds)
 			    && !FD_ISSET(i, cur_req.readfds)) {
 				cur_req.n = i + 1;
+				PROF_EVENT1(recv_bak_read, i);
 				FD_SET(i, cur_req.readfds);
 			} else
 				FD_CLR(i, cur_req.readfds);
 			if (FD_ISSET(i, bak_req.writefds)
 			    && !FD_ISSET(i, cur_req.writefds)) {
+				PROF_EVENT1(recv_bak_write, i);
 				cur_req.n = i + 1;
 				FD_SET(i, cur_req.writefds);
 			} else
 				FD_CLR(i, cur_req.writefds);
-			if (FD_ISSET(i, bak_req.exceptfds)
-			    && !FD_ISSET(i, cur_req.exceptfds)) {
-				cur_req.n = i + 1;
-				FD_SET(i, cur_req.exceptfds);
-			} else
-				FD_CLR(i, cur_req.exceptfds);
 		}
 	}
 }
@@ -881,6 +876,7 @@ void xpaul_io_init(void)
 /* Communication LWP creation */
 void xpaul_init_receiver(void)
 {
+	int i;
 	vp_nb = marcel_add_lwp();
 	marcel_attr_t attr;
 
@@ -891,8 +887,9 @@ void xpaul_init_receiver(void)
 		exit(EXIT_FAILURE);
 	}
 
-	marcel_sem_init(&recved_sem, 0);
+	marcel_sem_init(&recved_sem, 1);
 	marcel_sem_init(&req_sem, 1);
+//	marcel_sem_init(&req_send, 0);
 
 	res_req.readfds = (fd_set *) malloc(sizeof(fd_set));
 	res_req.writefds = (fd_set *) malloc(sizeof(fd_set));
@@ -907,11 +904,15 @@ void xpaul_init_receiver(void)
 	FD_ZERO(reqs.readfds);
 	FD_ZERO(reqs.writefds);
 	FD_ZERO(reqs.exceptfds);
+	for(i=0;i<MAX_REQS;i++) {
+		INIT_LIST_HEAD(&(reqs.lwait[i][0]));
+		INIT_LIST_HEAD(&(reqs.lwait[i][1]));
+	}
 
 	marcel_attr_init(&attr);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp_nb));
-	marcel_attr_setname(&attr, "receiver");
+	marcel_attr_setname(&attr, "xpaul_receiver");
 
 	marcel_create(&recv_pid, &attr, xpaul_receiver, NULL);
 	nb_comm_threads = 1;

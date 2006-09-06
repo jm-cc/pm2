@@ -78,7 +78,7 @@ void marcel_snapshot(snapshot_func_t f);
 #section functions
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 void marcel_per_lwp_threadslist(int max, marcel_t *pids, int *nb, int which);
-
+int marcel_per_lwp_nbthreads();
 #section macros
 #define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
 	while((cond)) { \

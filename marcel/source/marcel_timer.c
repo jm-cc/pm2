@@ -244,7 +244,7 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
-			if (lwp->number != -1)
+			if (lwp->number != -1 && lwp->number < marcel_nbvps())
 				marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
 		for_each_lwp_from_end()
 	}

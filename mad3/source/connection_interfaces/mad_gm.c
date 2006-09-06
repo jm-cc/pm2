@@ -18,6 +18,7 @@
  * ========
  */
 
+/* TODO : Utilisation de XPaulette */
 
 #include "madeleine.h"
 

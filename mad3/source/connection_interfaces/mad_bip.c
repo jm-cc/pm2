@@ -17,7 +17,7 @@
  * Mad_bip.c
  * =========
  */
-
+/* TODO : Utilisation de XPaulette */
 #ifndef MARCEL
 #error This driver needs the MARCEL module.
 #endif

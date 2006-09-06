@@ -384,13 +384,11 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 #ifdef XPAULETTE
 		dopoll = xpaul_polling_is_required(XPAUL_POLL_AT_IDLE);
 		if (dopoll) {
-			PROF_EVENT(xpaul_idle_does_poll);
 		        __xpaul_check_polling(XPAUL_POLL_AT_IDLE);
 		}
 #else
 		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
 		if (dopoll) {
-			PROF_EVENT(idle_does_poll);
 		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
 		}
 

@@ -116,7 +116,7 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_verb_tmpl,$(M)))
 # ----
 %.d:	%.c $(BUILD_CFG)
 	set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $< | \
+	$(CC) -MT $(patsubst %.c,%.o,$<) -MP -MM $(CPPFLAGS) $< | \
 	sed 's,:,: $(MAKE_CONF) $(BUILD_CFG),' | \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@;
 
@@ -184,7 +184,7 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_tmpl,$(M)))))
 %.d:	%.c $(BUILD_CFG)
 	@echo -e "  [DEP]\t  "$@
 	@set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $< | \
+	$(CC) -MT $(patsubst %.c,%.o,$<) -MP -MM $(CPPFLAGS) $< | \
 	sed 's,:,: $(MAKE_CONF) $(BUILD_CFG),' | \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@;
 

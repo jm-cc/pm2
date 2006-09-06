@@ -1031,6 +1031,21 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 /****************************************************************
  * Fonctions d'initialisation/terminaison
  */
+
+static tbx_flag_t xpaul_activity = tbx_flag_clear;
+
+int
+xpaul_test_activity(void)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  result = tbx_flag_test(&xpaul_activity);
+  LOG_OUT();
+
+  return result;
+}
+
 void xpaul_server_init(xpaul_server_t server, char *name)
 {
 	*server = (struct xpaul_server) XPAUL_SERVER_INIT(*server, name);
@@ -1066,6 +1081,7 @@ int xpaul_server_start(xpaul_server_t server)
 		       server->name);
 		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}
+	xpaul_activity = tbx_flag_set;
 	server->state = XPAUL_SERVER_STATE_LAUNCHED;
 	return 0;
 }
@@ -1103,3 +1119,5 @@ int xpaul_server_stop(xpaul_server_t server)
 
 	return 0;
 }
+
+

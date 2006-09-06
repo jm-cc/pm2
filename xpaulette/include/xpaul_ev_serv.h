@@ -557,6 +557,7 @@ __tbx_inline__ static int NB_RUNNING_THREADS(void)
 /********************************************************************
  *  FUNCTIONS PROTOTYPES 
  */
+int xpaul_test_activity(void);
 /* Static initialization
  * var : the constant var xpaul_server_t
  * name: for debug messages

@@ -93,6 +93,7 @@ static int
 nm_ns_initialize_pw(struct nm_core *p_core,
                     struct nm_drv  *p_drv,
                     uint8_t gate_id,
+                    unsigned char *ptr,
                     struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap *p_pw = NULL;
     int err;
@@ -113,8 +114,7 @@ nm_ns_initialize_pw(struct nm_core *p_core,
         goto out;
     }
 
-    unsigned char * data = TBX_MALLOC(param_max_size);
-    err = nm_iov_append_buf(p_core, p_pw, data, param_min_size);
+    err = nm_iov_append_buf(p_core, p_pw, ptr, param_min_size);
     if (err != NM_ESUCCESS) {
         nm_ns_print_errno("nm_ns_initialize_pw - nm_iov_append_buf",
                           err);
@@ -148,8 +148,9 @@ nm_ns_fill_pw_data(struct nm_pkt_wrap *p_pw){
 }
 
 static void
-nm_ns_update_pw(struct nm_pkt_wrap *p_pw, int len){
-    p_pw->v[0].iov_len = len;
+nm_ns_update_pw(struct nm_pkt_wrap *p_pw, unsigned char *ptr, int len){
+    p_pw->v[0].iov_base	= ptr;
+    p_pw->v[0].iov_len	= len;
 
     p_pw->drv_priv   = NULL;
     p_pw->gate_priv  = NULL;
@@ -157,7 +158,6 @@ nm_ns_update_pw(struct nm_pkt_wrap *p_pw, int len){
 
 static void
 nm_ns_free(struct nm_core *p_core, struct nm_pkt_wrap *p_pw){
-    TBX_FREE(p_pw->v[0].iov_base);
 
     /* free iovec */
     nm_iov_free(p_core, p_pw);
@@ -198,16 +198,13 @@ control_buffer(struct nm_pkt_wrap *p_pw, int len) {
     }
 }
 
-static void
-nm_ns_reset_pw(struct nm_pkt_wrap *p_pw){
-    p_pw->drv_priv   = NULL;
-    p_pw->gate_priv  = NULL;
-}
-
-
 static int
 nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
     struct nm_drv_ops drv_ops = driver->ops;
+    struct nm_pkt_wrap * sending_pw = NULL;
+    struct nm_pkt_wrap * receiving_pw = NULL;
+    unsigned char *data_send	= NULL;
+    unsigned char *data_recv 	= NULL;
     int nb_samples = 0;
     int size = 0;
     int err;
@@ -215,8 +212,8 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
 
     double *ns_lat = driver->cap.network_sampling_latency;
 
-    struct nm_pkt_wrap * sending_pw = NULL;
-    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id,
+    data_send = TBX_MALLOC(param_max_size);
+    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id, data_send,
                               &sending_pw);
     if(err != NM_ESUCCESS){
         nm_ns_print_errno("nm_ns_ping - nm_ns_initialize_sending_pw",
@@ -226,8 +223,8 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
 
     nm_ns_fill_pw_data(sending_pw);
 
-    struct nm_pkt_wrap * receiving_pw = NULL;
-    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id,
+    data_recv = TBX_MALLOC(param_max_size);
+    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id, data_recv,
                               &receiving_pw);
     if(err != NM_ESUCCESS){
         nm_ns_print_errno("nm_ns_ping - nm_ns_initialize_receiving_pw",
@@ -243,8 +240,8 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
          size <= param_max_size;
          i++, size *= 2) {
 
-        nm_ns_update_pw(sending_pw, size);
-        nm_ns_update_pw(receiving_pw, size);
+        nm_ns_update_pw(sending_pw, data_send, size);
+        nm_ns_update_pw(receiving_pw, data_recv, size);
 
         TBX_GET_TICK(t1);
         while (nb_samples++ < param_nb_samples) {
@@ -266,7 +263,7 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
                     goto out;
                 }
             }
-            nm_ns_reset_pw(sending_pw);
+            nm_ns_update_pw(sending_pw,  data_send, size);
 
 
             err = drv_ops.post_recv_iov(receiving_pw);
@@ -284,7 +281,7 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
                     goto out;
                 }
             }
-            nm_ns_reset_pw(receiving_pw);
+            nm_ns_update_pw(receiving_pw, data_recv, size);
             //control_buffer(receiving_pw, size);
 
         }
@@ -310,6 +307,10 @@ nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){
 static int
 nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
     struct nm_drv_ops drv_ops = driver->ops;
+    struct nm_pkt_wrap * sending_pw = NULL;
+    struct nm_pkt_wrap * receiving_pw = NULL;
+    unsigned char *data_send          = NULL;
+    unsigned char *data_recv          = NULL;
     int nb_samples = 0;
     int size = 0;
     int err;
@@ -317,8 +318,8 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
 
     double *ns_lat = driver->cap.network_sampling_latency;
 
-    struct nm_pkt_wrap * sending_pw = NULL;
-    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id,
+    data_send = TBX_MALLOC(param_max_size);
+    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id, data_send,
                               &sending_pw);
     if(err != NM_ESUCCESS){
         nm_ns_print_errno("nm_ns_pong - nm_ns_initialize_sending_pw",
@@ -328,8 +329,8 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
 
     nm_ns_fill_pw_data(sending_pw);
 
-    struct nm_pkt_wrap * receiving_pw = NULL;
-    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id,
+    data_recv = TBX_MALLOC(param_max_size);
+    err = nm_ns_initialize_pw(driver->p_core, driver, gate_id, data_recv,
                               &receiving_pw);
     if(err != NM_ESUCCESS){
         nm_ns_print_errno("nm_ns_pong - nm_ns_initialize_receiving_pw",
@@ -344,8 +345,8 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
          size <= param_max_size;
          i++, size *= 2) {
 
-        nm_ns_update_pw(sending_pw,   size);
-        nm_ns_update_pw(receiving_pw, size);
+        nm_ns_update_pw(sending_pw,    data_send, size);
+        nm_ns_update_pw(receiving_pw, data_recv, size);
 
         TBX_GET_TICK(t1);
 
@@ -362,7 +363,7 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
                                   err);
             }
         }
-        nm_ns_reset_pw(receiving_pw);
+        nm_ns_update_pw(receiving_pw, data_recv, size);
         //control_buffer(receiving_pw, size);
 
         while (nb_samples++ < param_nb_samples - 1) {
@@ -380,7 +381,7 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
                     goto out;
                 }
             }
-            nm_ns_reset_pw(sending_pw);
+            nm_ns_update_pw(sending_pw,  data_send, size);
 
             err = drv_ops.post_recv_iov(receiving_pw);
             if(err != NM_ESUCCESS && err != -NM_EAGAIN){
@@ -396,7 +397,7 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
                     goto out;
                 }
             }
-            nm_ns_reset_pw(receiving_pw);
+            nm_ns_update_pw(receiving_pw, data_recv, size);
             //control_buffer(receiving_pw, size);
         }
 
@@ -414,7 +415,7 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
                 goto out;
             }
         }
-        nm_ns_reset_pw(sending_pw);
+        nm_ns_update_pw(sending_pw,  data_send, size);
 
 
         TBX_GET_TICK(t2);
@@ -430,6 +431,8 @@ nm_ns_pong(struct nm_drv *driver, uint8_t gate_id){
 
     nm_ns_free(driver->p_core, sending_pw);
     nm_ns_free(driver->p_core, receiving_pw);
+    TBX_FREE(data_send);
+    TBX_FREE(data_recv);
 
     err = NM_ESUCCESS;
 
@@ -445,6 +448,8 @@ nm_ns_network_sampling(struct nm_drv *driver,
     int err;
     unsigned int n = 1;
     int min = param_min_size;
+
+    DISP("- Network sampling ---------------");
     while(min <= param_max_size){
         n++;
         min *= 2;

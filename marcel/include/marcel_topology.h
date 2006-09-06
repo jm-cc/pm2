@@ -193,7 +193,7 @@ static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
 #section marcel_functions
 static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask);
 #section marcel_inline
-#depend "linux_bitops.h[marcel_inline]"
+#depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask)
 {
 #ifdef MA__LWPS

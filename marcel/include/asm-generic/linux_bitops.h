@@ -192,7 +192,6 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 #section marcel_functions
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);
 #section marcel_inline
-#depend "linux_bitops.h[inline]"
 #include <stdlib.h>
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {

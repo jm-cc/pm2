@@ -153,11 +153,13 @@ mad_tcp_write(int            sock,
       void	*ptr	= buffer->buffer        + buffer->bytes_read;
       size_t	 len	= buffer->bytes_written - buffer->bytes_read;
 
-#ifdef MARCEL
+#ifdef XPAULETTE
+      SYSTEST(result = xpaul_write(sock, ptr, len));
+#elif defined(MARCEL)
       SYSTEST(result = marcel_write(sock, ptr, len));
-#else /* MARCEL */
+#else 
       SYSTEST(result = write(sock, ptr, len));
-#endif /* MARCEL */
+#endif /* XPAULETTE */
 
       if (result > 0)
 	{
@@ -181,11 +183,13 @@ mad_tcp_read(int            sock,
       void	*ptr	= buffer->buffer + buffer->bytes_written;
       size_t	 len	= buffer->length - buffer->bytes_written;
 
-#ifdef MARCEL
+#ifdef XPAULETTE
+      SYSTEST(result = xpaul_read(sock, ptr, len));
+#elif defined(MARCEL)
       SYSTEST(result = marcel_read(sock, ptr, len));
-#else /* MARCEL */
+#else
       SYSTEST(result = read(sock, ptr, len));
-#endif /* MARCEL */
+#endif /* XPAULETTE */
 
       if (result > 0)
 	{
@@ -208,11 +212,13 @@ mad_tcp_writev(int           sock,
     {
       ssize_t result;
 
-#ifdef MARCEL
+#ifdef XPAULETTE
+      SYSTEST(result = xpaul_writev(sock, array, count));
+#elif defined(MARCEL)
       SYSTEST(result = marcel_writev(sock, array, count));
-#else /* MARCEL */
+#else 
       SYSTEST(result = writev(sock, array, count));
-#endif /* MARCEL */
+#endif /* XPAULETTE */
 
       if (result > 0)
 	{
@@ -250,11 +256,13 @@ mad_tcp_readv(int           sock,
     {
       ssize_t result;
 
-#ifdef MARCEL
+#ifdef XPAULETTE
+      SYSTEST(result = xpaul_readv(sock, array, count));
+#elif defined(MARCEL)
       SYSTEST(result = marcel_readv(sock, array, count));
-#else /* MARCEL */
+#else 
       SYSTEST(result = readv(sock, array, count));
-#endif /* MARCEL */
+#endif /* XPAULETTE */
 
       if (result > 0)
 	{
@@ -617,15 +625,19 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	{
 	  channel_specific->active_fds = channel_specific->read_fds;
 
-#ifdef MARCEL
+#ifdef XPAULETTE
+	  status = xpaul_select(channel_specific->max_fds + 1,
+				 &channel_specific->active_fds,
+				 NULL);
+#elif defined(MARCEL)
 	  status = marcel_select(channel_specific->max_fds + 1,
 				 &channel_specific->active_fds,
 				 NULL);
-#else // MARCEL
+#else
 	  status = select(channel_specific->max_fds + 1,
 			  &channel_specific->active_fds,
 			  NULL, NULL, NULL);
-#endif // MARCEL
+#endif /* XPAULETTE */
 
 	  if ((status == -1) && (errno != EINTR))
 	    {

@@ -294,6 +294,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 /* unsigned marcel_sched_add_vp(void); */
 
 #section marcel_macros
+#section macros
 /* ==== SMP scheduling policies ==== */
 
 #define MARCEL_SCHED_INVALID	-1
@@ -339,12 +340,12 @@ unsigned marcel_blockedthreads(void);
 unsigned marcel_frozenthreads(void);
 
 
-extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched(void));
-extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched(void));
+extern MARCEL_PROTECTED void marcel_freeze_sched(void);
+extern MARCEL_PROTECTED void marcel_unfreeze_sched(void);
 
 #section marcel_functions
-extern void FASTCALL(ma_freeze_thread(marcel_task_t * tsk));
-extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
+extern void ma_freeze_thread(marcel_task_t * tsk);
+extern void ma_unfreeze_thread(marcel_task_t * tsk);
 
 /* ==== miscelaneous private defs ==== */
 

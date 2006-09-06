@@ -25,7 +25,7 @@ extern marcel_task_t __main_thread_struct;
 static __tbx_inline__ void marcel_prepare_stack_jump(void *stack)
 {
   char *s = (char *)stack;
-  *(marcel_t *)(s + THREAD_SLOT_SIZE - sizeof(char *)) = __marcel_self();
+  *(marcel_t *)(s + THREAD_SLOT_SIZE - sizeof(char *)) = marcel_self();
 }
 
 static __tbx_inline__ void marcel_set_stack_jump(marcel_t m)

@@ -1913,7 +1913,7 @@ int marcel_yield_to(marcel_t next)
 	return 0;
 }
 
-asmlinkage void ma_preempt_schedule(void)
+void ma_preempt_schedule(void)
 {
         marcel_task_t *ti = MARCEL_SELF;
 

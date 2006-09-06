@@ -55,9 +55,7 @@ do { \
 
 #section functions
 #depend "tbx_compiler.h"
-#depend "asm/linux_linkage.h[marcel_macros]"
-#depend "asm-generic/linux_linkage.h[marcel_macros]"
-asmlinkage MARCEL_PROTECTED void ma_preempt_schedule(void);
+MARCEL_PROTECTED void ma_preempt_schedule(void);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"

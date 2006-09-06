@@ -14,9 +14,6 @@
  * General Public License for more details.
  */
 
-#section functions
-#include <stdlib.h>
-
 #section types
 #include <sys/types.h> /* pour size_t */
 typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
@@ -68,7 +65,7 @@ struct __marcel_attr_s
 /*  MARCEL_SCHED_OTHER */
 /*  MARCEL_SCHED_ATTR_INITIALIZER */
 #define MARCEL_SCHED_INTERNAL_INCLUDE
-#depend "scheduler/marcel_sched.h[marcel_macros]"
+#depend "scheduler/marcel_sched.h[macros]"
 /*  MARCEL_VPMASK_EMPTY */
 #depend "marcel_sched_generic.h[macros]"
 

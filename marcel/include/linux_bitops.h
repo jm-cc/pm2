@@ -31,7 +31,7 @@
 
 #section marcel_functions
 static __tbx_inline__ long ma_generic_ffs(long x);
-#section inline
+#section marcel_inline
 static __tbx_inline__ long ma_generic_ffs(long x)
 {
 #if (__GNUC__ > 3)

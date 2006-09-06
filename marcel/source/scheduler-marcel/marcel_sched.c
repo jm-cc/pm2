@@ -265,7 +265,7 @@ unsigned marcel_add_lwp(void) {
 
 static int frozen_scheduler;
 
-void fastcall ma_freeze_thread(marcel_task_t *p)
+void ma_freeze_thread(marcel_task_t *p)
 {
 	ma_holder_t *h;
 	if (!frozen_scheduler)
@@ -292,12 +292,12 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 	__ma_set_task_state(p, MA_TASK_FROZEN);
 }
 
-void fastcall ma_unfreeze_thread(marcel_task_t *p)
+void ma_unfreeze_thread(marcel_task_t *p)
 {
 	ma_try_to_wake_up(p, MA_TASK_FROZEN, 0);
 }
 
-void fastcall MARCEL_PROTECTED marcel_freeze_sched(void)
+void MARCEL_PROTECTED marcel_freeze_sched(void)
 {
 	ma_holder_lock_softirq(&ma_main_runqueue.hold);
 	/* TODO: other levels */
@@ -311,7 +311,7 @@ void fastcall MARCEL_PROTECTED marcel_freeze_sched(void)
 	frozen_scheduler++;
 }
 
-void fastcall MARCEL_PROTECTED marcel_unfreeze_sched(void)
+void MARCEL_PROTECTED marcel_unfreeze_sched(void)
 {
 	MA_BUG_ON(!frozen_scheduler);
 	frozen_scheduler--;

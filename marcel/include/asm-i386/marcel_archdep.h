@@ -34,16 +34,7 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-#ifdef MARCEL_SELF_IN_REG
-//register marcel_t __marcel_self_in_reg asm ("%%gs");
-#  define SET_MARCEL_SELF_FROM_SP(sp) \
-       __asm__ __volatile__("movl %0, %%gs" \
-                         : : "m" ( \
-       ((((sp) & ~(SLOT_SIZE-1)) + SLOT_SIZE) - MAL(sizeof(task_desc)))\
-        ) : "memory" )
-#else
-#    define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
-#endif
+#define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 
 #include "tbx_compiler.h"
 static __tbx_inline__ long get_gs(void)

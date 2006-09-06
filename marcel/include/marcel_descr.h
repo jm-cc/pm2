@@ -36,8 +36,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #define SELF_GETMEM(field)	THREAD_GETMEM(MARCEL_SELF, field)
 #define SELF_SETMEM(field, value) THREAD_SETMEM(MARCEL_SELF, field, value)
 
-#define MARCEL_SELF (__marcel_self())
-#define marcel_current (__marcel_self())
+#define MARCEL_SELF (marcel_self())
 
 
 #section marcel_structures
@@ -180,30 +179,25 @@ struct marcel_task {
 #endif
 };
 
-#section inline
-#depend "[types]"
-#depend "[marcel_functions]"
+#section functions
+#ifndef MARCEL_INTERNAL_INCLUDE
 /* ==== get current thread or LWP id ==== */
-extern MARCEL_INLINE marcel_t marcel_self(void)
-{
-  return __marcel_self();
-}
+extern marcel_t marcel_self(void);
+#endif
 
 #section marcel_macros
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
 #section marcel_functions
-#depend "[types]"
-static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void);
+MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 #section marcel_inline
-#depend "[types]"
 #depend "[marcel_macros]"
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h[marcel_macros]"
 #depend "marcel_threads.h[marcel_macros]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
-static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
+MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 {
   marcel_t self;
 #ifdef MARCEL_SELF_IN_REG

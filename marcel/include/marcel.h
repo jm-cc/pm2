@@ -40,7 +40,7 @@
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
 #  define MARCEL_INLINE
 #else
-#  define MARCEL_INLINE inline
+#  define MARCEL_INLINE extern inline
 #endif
 
 /* ============ constants ============= */

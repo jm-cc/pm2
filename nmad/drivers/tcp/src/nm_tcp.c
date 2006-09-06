@@ -649,7 +649,11 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
 	p_tcp_gate	= p_pw->gate_priv;
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
+                NM_TRACEF("setup vector iterator");
+
                 p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
+                p_pw->drv_priv	= p_tcp_pw;
+
                 /* current entry num is first entry num
                  */
                 p_tcp_pw->vi.v_cur	= p_pw->v_first;
@@ -684,6 +688,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
  writev_again:
+        NM_TRACEF("tcp outgoing writev %d, %p, %u", p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
         SAMPLE(po_send_write);
         ret	= writev(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
         SAMPLE(po_send_write_done);
@@ -769,6 +774,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
+                NM_TRACEF("setup vector iterator");
                 p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
                 p_pw->drv_priv	= p_tcp_pw;
 
@@ -806,9 +812,11 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
  readv_again:
+        NM_TRACEF("tcp incoming readv %d, %p, %u", p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
         SAMPLE(po_recv_read);
         ret	= readv(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
         SAMPLE(po_recv_read_done);
+        NM_TRACE_VAL("tcp incoming readv ret", ret);
 
         if (ret < 0) {
                 if (errno == EINTR)

@@ -24,7 +24,7 @@
     /* on a besoin d'avoir un 0 à *ebp */ \
     unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
     unsigned long *_bp = (unsigned long *)(((unsigned long)(top)) - 2*sizeof(unsigned long)); \
-    unsigned long _sp = ((unsigned long)_bp) - _local; \
+    unsigned long _sp = ((unsigned long)_bp) - MAL(_local); \
     /* marqueur de fin de pile */ \
     *_bp = 0; \
     marcel_ctx_set_tls_reg(new_task); \

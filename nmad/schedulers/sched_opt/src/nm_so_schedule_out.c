@@ -51,7 +51,7 @@ __nm_so_wait_send_range(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
-static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw, 
+static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
 				    uint8_t proto_id, uint8_t seq,
 				    void *arg)
@@ -86,9 +86,11 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 				  p_so_gate);
   } else if(p_pw->p_trk->id == 1) {
 
+    /* Free the wrapper */
+    nm_so_pw_free(p_so_pw);
+
     p_so_gate->status[p_pw->proto_id - 128][p_pw->seq] |=
       NM_SO_STATUS_SEND_COMPLETED;
-
   }
 
   err = NM_ESUCCESS;

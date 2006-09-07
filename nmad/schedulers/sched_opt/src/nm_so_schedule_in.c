@@ -344,6 +344,9 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     volatile uint8_t *status =
       &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
 
+    /* Free the wrapper */
+    nm_so_pw_free(p_so_pw);
+
     *status |= NM_SO_STATUS_RECV_COMPLETED;
 
     p_so_gate->active_recv[1] = 0;

@@ -50,8 +50,24 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	esac
 fi
 
-if [ "$1" != --source-mode ] ; then
-    echo $PM2_ARCH
+case "$1" in
+    --source-mode)
+	# do nothing
+	;;
+    --pm2-arch)
+	echo $PM2_ARCH
+	exit 0
+	;;
+    --pm2-asm)
+	echo $PM2_ASM
+	exit 0
+	;;
+    "")
+	echo $PM2_ARCH
+	exit 0
+	;;
+    *)
+	exit 1
+	;;
+esac
 
-    exit 0
-fi

@@ -38,6 +38,9 @@
 
 #include "marcel.h"
 
+#ifdef XPAULETTE
+#include "xpaul.h"
+#endif /* XPAULETTE */
 #ifdef CONFIG_NUMA
 #define cpu_to_node_mask(cpu) node_to_cpumask(cpu_to_node(cpu))
 #else
@@ -1697,12 +1700,11 @@ restart:
 		 * thread */
 		currently_idle = 1;
 		ma_local_bh_enable();
-#ifdef EV_SERV
-		if (!ev_polling_is_required(EV_POLL_AT_IDLE)) {	
-		  PROF_EVENT(ev_poll_not_required);
+#ifdef XPAULETTE
+		if (!xpaul_polling_is_required(XPAUL_POLL_AT_IDLE)) {	
 #else
 		  if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
-#endif
+#endif /* XPAULETTE */
 			marcel_sig_disable_interrupts();
 			marcel_sig_pause();
 			marcel_sig_enable_interrupts();
@@ -1713,12 +1715,11 @@ restart:
 				 * polling again */
 				marcel_sig_nanosleep();
 #endif
-#ifdef EV_SERV
-			PROF_EVENT(ev_poll_is_requiered);
-			__ev_check_polling(EV_POLL_AT_IDLE);
+#ifdef XPAULETTE
+			__xpaul_check_polling(XPAUL_POLL_AT_IDLE);
 #else
 			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-#endif
+#endif /* XPAULETTE */
 			didpoll = 1;
 		}
 		ma_check_work();

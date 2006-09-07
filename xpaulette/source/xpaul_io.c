@@ -481,16 +481,22 @@ int xpaul_read(int fildes, void *buf, size_t nbytes)
 	struct xpaul_tcp_ev ev;
 	struct xpaul_wait wait;
 	LOG_IN();
-	do {
-		ev.op = XPAUL_POLL_READ;
-		ev.FD = fildes;
-		xdebug("Reading in fd %i\n", fildes);
-		xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
-		LOG("IO reading fd %i", fildes);
-		n = read(fildes, buf, nbytes);
-	} while (n == -1 && errno == EINTR);
-
-	LOG_RETURN(n);
+	/* Pour eviter de demander à un serveur qui n'est pas lancé */
+	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
+	{
+		
+		do {
+			ev.op = XPAUL_POLL_READ;
+			ev.FD = fildes;
+			xdebug("Reading in fd %i\n", fildes);
+			xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
+			LOG("IO reading fd %i", fildes);
+			n = read(fildes, buf, nbytes);
+		} while (n == -1 && errno == EINTR);
+		
+		LOG_RETURN(n);
+	}else
+		LOG_RETURN(read(fildes, buf, nbytes));
 }
 
 #ifndef __MINGW32__
@@ -515,17 +521,24 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 	struct xpaul_tcp_ev ev;
 	struct xpaul_wait wait;
 	LOG_IN();
-	do {
-		ev.op = XPAUL_POLL_WRITE;
-		ev.FD = fildes;
-		xdebug("Writing in fd %i\n", fildes);
-		xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
+	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
+	{
+       
+		do {
 
-		LOG("IO writing fd %i", fildes);
-		n = write(fildes, buf, nbytes);
-	} while (n == -1 && errno == EINTR);
+			ev.op = XPAUL_POLL_WRITE;
+			ev.FD = fildes;
+			xdebug("Writing in fd %i\n", fildes);
+			xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 
-	LOG_RETURN(n);
+			LOG("IO writing fd %i", fildes);
+			n = write(fildes, buf, nbytes);
+		} while (n == -1 && errno == EINTR);
+
+		LOG_RETURN(n);
+	} else
+		LOG_RETURN(write(fildes, buf, nbytes));
+
 }
 
 #ifndef __MINGW32__
@@ -550,14 +563,18 @@ int xpaul_select(int nfds, fd_set * __restrict rfds,
 	struct xpaul_wait wait;
 
 	LOG_IN();
-	ev.op = XPAUL_POLL_SELECT;
-	ev.RFDS = rfds;
-	ev.WFDS = wfds;
-	ev.NFDS = nfds;
-	xdebug("Selecting within %i fds\n", nfds);
-	xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
-	LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
-		   (errno = -ev.ret_val, -1));
+	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
+	{
+		ev.op = XPAUL_POLL_SELECT;
+		ev.RFDS = rfds;
+		ev.WFDS = wfds;
+		ev.NFDS = nfds;
+		xdebug("Selecting within %i fds\n", nfds);
+		xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
+		LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
+			   (errno = -ev.ret_val, -1));
+	}
+	return select(nfds, rfds, wfds, NULL, NULL);
 }
 
 /* To force the reading/writing of an exact number of bytes */

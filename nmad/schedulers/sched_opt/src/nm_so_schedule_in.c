@@ -296,7 +296,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw)
 {
   struct nm_so_pkt_wrap *p_so_pw = nm_pw2so(p_pw);
-  struct nm_so_gate *p_so_gate = p_so_pw->pw.p_gate->sch_private;
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int err;
 
   //printf("Packet %p received completely (on track %d)!\n",
@@ -360,7 +361,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       list_del(p_so_gate->pending_large_recv.next);
 
       /* Post the data reception */
-      nm_so_direct_post_large_recv(p_so_pw->pw.p_gate,
+      nm_so_direct_post_large_recv(p_gate,
                                    p_so_large_pw);
 
       /* Send an ACK */
@@ -369,7 +370,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 		     p_so_large_pw->pw.seq,
 		     1);
 
-      err = active_strategy->pack_ctrl(p_so_pw->pw.p_gate, &ctrl);
+      err = active_strategy->pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
 	goto out;
 

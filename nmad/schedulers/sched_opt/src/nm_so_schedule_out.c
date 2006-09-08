@@ -86,11 +86,11 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 				  p_so_gate);
   } else if(p_pw->p_trk->id == 1) {
 
-    /* Free the wrapper */
-    nm_so_pw_free(p_so_pw);
-
     p_so_gate->status[p_pw->proto_id - 128][p_pw->seq] |=
       NM_SO_STATUS_SEND_COMPLETED;
+
+    /* Free the wrapper */
+    nm_so_pw_free(p_so_pw);
   }
 
   err = NM_ESUCCESS;

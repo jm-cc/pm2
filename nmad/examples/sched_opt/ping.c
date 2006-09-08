@@ -132,7 +132,7 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 4; len <= MAX; len *= 2) {
+		for(len = 0; len <= MAX; len = (len ? len << 1 : 4)) {
 		  for(k = 0; k < LOOPS; k++) {
 		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
 		    nm_so_unpack(cnx, buf, len);
@@ -156,7 +156,7 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 4; len <= MAX; len *= 2) {
+		for(len = 0; len <= MAX; len = (len ? len << 1 : 4)) {
 
 		  TBX_GET_TICK(t1);
 

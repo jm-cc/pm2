@@ -65,12 +65,10 @@ void
 mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group);
 
 static
-__inline__
 void
 mad_foreach_free_buffer_group_struct(void *object);
 
 static
-__inline__
 void
 mad_foreach_free_buffer(void *object);
 
@@ -86,7 +84,6 @@ void
 mad_free_buffer_pair_struct(p_mad_buffer_pair_t buffer_pair);
 
 static
-__inline__
 void
 mad_foreach_free_buffer_pair_struct(void *object);
 

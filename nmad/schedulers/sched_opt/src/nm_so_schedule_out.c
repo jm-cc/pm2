@@ -74,16 +74,17 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
   struct nm_so_pkt_wrap *p_so_pw = nm_pw2so(p_pw);
   struct nm_so_gate *p_so_gate = p_so_pw->pw.p_gate->sch_private;
 
+  p_so_gate->active_send[p_pw->p_trk->id]--;
+
   if(p_pw->p_trk->id == 0) {
     /* Track 0 */
-
-    p_so_gate->active_send[0]--;
 
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
 				  NULL,
 				  NULL,
 				  p_so_gate);
+
   } else if(p_pw->p_trk->id == 1) {
 
     p_so_gate->status[p_pw->proto_id - 128][p_pw->seq] |=

@@ -50,4 +50,6 @@
    operation may be attempted */
 #define NM_SO_OPTIMISTIC_RECV_LOW_THRESHOLD 32
 
+#define NM_SO_MAX_ACTIVE_SEND_PER_TRACK     1
+
 #endif

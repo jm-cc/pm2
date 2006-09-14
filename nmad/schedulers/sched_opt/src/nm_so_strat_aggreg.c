@@ -42,9 +42,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
   /* We first try to find an existing packet to form an aggregate */
   list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
 
-    uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-
-    if(h_rlen < NM_SO_CTRL_HEADER_SIZE)
+    if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE)
       /* There's not enough room to add our ctrl header to this paquet */
       goto next;
 
@@ -155,7 +153,8 @@ static int pack(struct nm_gate *p_gate,
 	goto out;
     }
 
-    /* Check if we should post a new recv packet */
+    /* Check if we should post a new recv packet: we're waiting for an
+       ACK! */
     if(!p_so_gate->active_recv[0])
       nm_so_post_regular_recv(p_gate);
 
@@ -176,7 +175,7 @@ static int try_and_commit(struct nm_gate *p_gate)
     &((struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv)->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
 
-  if(!tbx_slist_is_nil(p_gate->post_sched_out_list))
+  if(p_so_gate->active_send[0] == NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
     /* We're done */
     goto out;
 

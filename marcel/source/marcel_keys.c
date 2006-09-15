@@ -161,9 +161,9 @@ extern int *__h_errno_location(void);
 DEF_C(int *, __h_errno_location,(void),());
 DEF___C(int *, __h_errno_location,(void),());
 
+#ifdef MA__LIBPTHREAD
 /* Return thread specific resolver state.  */
-DEF_POSIX(struct __res_state *,
-__res_state, (void), (),
+struct __res_state *lpt___res_state(void)
 {
 	struct __res_state * res;
 	static struct __res_state _fisrt_res_state;
@@ -174,7 +174,8 @@ __res_state, (void), (),
 		res=&_fisrt_res_state;
 	}
 	return res;
-})
+}
 extern struct __res_state *__res_state(void);
-DEF_C(struct __res_state *, __res_state, (void), ());
-DEF___C(struct __res_state *, __res_state, (void), ());
+DEF_LIBC(struct __res_state *, __res_state, (void), ());
+DEF___LIBC(struct __res_state *, __res_state, (void), ());
+#endif /* MA__LIBPTHREAD */

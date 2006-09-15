@@ -81,14 +81,14 @@ typedef ma_atomic_t ma_rwlock_t;
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
 
 #ifdef MA__LWPS
-extern void __ma_read_lock_failed(ma_rwlock_t *rw);
+extern TBX_EXTERN void __ma_read_lock_failed(ma_rwlock_t *rw);
 static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
 	if (ma_atomic_add_negative(-1,rw))
 		__ma_read_lock_failed(rw);
 }
 
-extern void __ma_write_lock_failed(ma_rwlock_t *rw);
+extern TBX_EXTERN void __ma_write_lock_failed(ma_rwlock_t *rw);
 static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 {
 	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))

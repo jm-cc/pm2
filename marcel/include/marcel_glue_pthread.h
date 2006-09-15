@@ -15,6 +15,3 @@
  */
 
 #section marcel_functions
-int fastcall __pthread_enable_asynccancel (void);
-void fastcall __pthread_disable_asynccancel(int old);
-

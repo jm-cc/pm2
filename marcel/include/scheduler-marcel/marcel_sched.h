@@ -40,6 +40,7 @@ typedef struct marcel_sched_attr marcel_sched_attr_t;
 #section structures
 #depend "scheduler/marcel_holder.h[types]"
 struct marcel_sched_attr {
+	int sched_policy;
 	ma_holder_t *init_holder;
 	tbx_bool_t inheritholder;
 };
@@ -49,11 +50,13 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 
 #section macros
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
+	.sched_policy = MARCEL_SCHED_OTHER, \
 	.init_holder = NULL, \
 	.inheritholder = tbx_false, \
 }
 
 #define MARCEL_SCHED_ATTR_DESTROYER { \
+   .sched_policy = -1, \
 	.init_holder = NULL, \
 	.inheritholder = tbx_false, \
 }
@@ -77,6 +80,10 @@ int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bu
 int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
 int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
 
+int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t *attr, int policy) __THROW;
+int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t * __restrict attr,
+                               int * __restrict policy) __THROW;
+
 #section macros
 #define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
 #define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
@@ -89,6 +96,9 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
 
 #define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
+
+#define marcel_attr_setschedpolicy(attr,policy) marcel_sched_attr_setschedpolicy(&(attr)->sched,policy)
+#define marcel_attr_getschedpolicy(attr,policy) marcel_sched_attr_getschedpolicy(&(attr)->sched,policy)
 
 #section functions
 #ifdef MA__LWPS
@@ -167,7 +177,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		h = ma_task_init_holder(MARCEL_SELF);
 #endif
 	}
-	internal->entity.sched_policy = attr->__schedpolicy;
+	internal->entity.sched_policy = attr->sched.sched_policy;
 	internal->entity.run_holder=NULL;
 	internal->entity.holder_data=NULL;
 #ifdef MA__BUBBLES

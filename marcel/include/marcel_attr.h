@@ -76,7 +76,7 @@ struct __marcel_attr_s
 #endif
 #define MARCEL_ATTR_INITIALIZER { \
   .__detachstate= MARCEL_CREATE_JOINABLE, \
-  .__schedpolicy= MARCEL_SCHED_OTHER, \
+  .__schedpolicy= SCHED_OTHER, \
   .__schedparam= {MA_DEF_PRIO,}, \
   .__inheritsched= 0, \
   .__scope= MARCEL_SCOPE_PROCESS, \
@@ -160,10 +160,6 @@ int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setdeviationstate(marcel_attr_t *attr, tbx_bool_t deviatable);
 int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
                                   tbx_bool_t * __restrict deviatable);
-
-int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
-int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
-                               int * __restrict policy) __THROW;
 
 int marcel_attr_setprio(marcel_attr_t *attr, int prio);
 int marcel_attr_getprio(__const marcel_attr_t * __restrict attr,

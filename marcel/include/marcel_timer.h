@@ -58,19 +58,19 @@ static __tbx_inline__ void disable_preemption(void);
 static __tbx_inline__ void enable_preemption(void);
 static __tbx_inline__ unsigned int preemption_enabled(void);
 #section marcel_variables
-extern ma_atomic_t __preemption_disabled;
+extern TBX_EXTERN ma_atomic_t __ma_preemption_disabled;
 #section marcel_inline
 static __tbx_inline__ void disable_preemption(void)
 {
-	ma_atomic_inc(&__preemption_disabled);
+	ma_atomic_inc(&__ma_preemption_disabled);
 }
 
 static __tbx_inline__ void enable_preemption(void)
 {
-	ma_atomic_dec(&__preemption_disabled);
+	ma_atomic_dec(&__ma_preemption_disabled);
 }
 
 static __tbx_inline__ unsigned int preemption_enabled(void)
 {
-	return ma_atomic_read(&__preemption_disabled) == 0;
+	return ma_atomic_read(&__ma_preemption_disabled) == 0;
 }

@@ -36,7 +36,7 @@ static ma_rwlock_t notifier_lock = MA_RW_LOCK_UNLOCKED;
  *	Currently always returns zero.
  */
  
-MARCEL_PROTECTED int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n)
+int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
 	struct ma_notifier_block **list=&c->chain;
 	LOG_IN();
@@ -68,7 +68,7 @@ MARCEL_PROTECTED int ma_notifier_chain_register(struct ma_notifier_chain *c, str
  *	Returns zero on success, or %-ENOENT on failure.
  */
  
-MARCEL_PROTECTED int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n)
+int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
 	struct ma_notifier_block **nl=&c->chain;
 	LOG_IN();
@@ -107,7 +107,7 @@ MARCEL_PROTECTED int ma_notifier_chain_unregister(struct ma_notifier_chain *c, s
  *	of the last notifier function called.
  */
  
-MARCEL_PROTECTED int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void *v)
+int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void *v)
 {
 	int ret=MA_NOTIFY_DONE;
 	struct ma_notifier_block *nb = n->chain;

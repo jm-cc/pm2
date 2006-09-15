@@ -3,6 +3,7 @@ conformance/interfaces/aio_write/11-1: execution: UNTESTED
 conformance/interfaces/aio_write/10-1: execution: UNTESTED 
 conformance/interfaces/pthread_condattr_setpshared/1-2: execution: FAILED 
 conformance/interfaces/sigrelse/1-1: execution: UNRESOLVED 
+conformance/interfaces/pthread_spin_lock/3-1: execution: INTERRUPTED 
 conformance/interfaces/pthread_rwlock_timedwrlock/6-2: execution: UNRESOLVED 
 conformance/interfaces/pthread_rwlock_timedwrlock/5-1: execution: UNRESOLVED 
 conformance/interfaces/pthread_rwlock_timedwrlock/1-1: execution: UNRESOLVED 
@@ -10,7 +11,8 @@ conformance/interfaces/pthread_rwlock_timedwrlock/6-1: execution: FAILED
 conformance/interfaces/pthread_rwlock_timedwrlock/2-1: execution: UNRESOLVED 
 conformance/interfaces/pthread_create/14-1: execution: INTERRUPTED 
 conformance/interfaces/pthread_create/1-5: execution: INTERRUPTED 
-conformance/interfaces/pthread_create/3-2: execution: UNRESOLVED 
+conformance/interfaces/pthread_create/10-1: execution: INTERRUPTED 
+conformance/interfaces/pthread_create/3-2: execution: FAILED 
 conformance/interfaces/pthread_atfork/2-2: execution: INTERRUPTED 
 conformance/interfaces/pthread_atfork/4-1: execution: INTERRUPTED 
 conformance/interfaces/pthread_atfork/3-2: execution: INTERRUPTED 
@@ -168,11 +170,7 @@ conformance/interfaces/sigaction/22-17: execution: UNRESOLVED
 conformance/interfaces/timer_settime/speculative/12-2: execution: UNRESOLVED 
 conformance/interfaces/timer_settime/5-2: execution: UNRESOLVED 
 conformance/interfaces/pthread_attr_setschedpolicy/5-1: execution: UNRESOLVED 
-conformance/interfaces/pthread_attr_setschedpolicy/1-1: execution: FAILED 
 conformance/interfaces/pthread_setschedparam/4-1: execution: FAILED 
-conformance/interfaces/pthread_setschedparam/1-1: execution: FAILED 
-conformance/interfaces/pthread_setschedparam/1-2: execution: FAILED 
-conformance/interfaces/pthread_getschedparam/1-2: execution: UNRESOLVED 
 conformance/interfaces/sigqueue/5-1: execution: UNRESOLVED 
 conformance/interfaces/sigqueue/4-1: execution: UNRESOLVED 
 conformance/interfaces/sigqueue/1-1: execution: UNRESOLVED 
@@ -230,20 +228,13 @@ conformance/interfaces/sigwaitinfo/7-1: execution: FAILED
 conformance/interfaces/sigwaitinfo/8-1: execution: FAILED 
 conformance/interfaces/sigwaitinfo/2-1: execution: UNRESOLVED 
 conformance/interfaces/sigwaitinfo/3-1: execution: UNRESOLVED 
-conformance/interfaces/pthread_detach/4-3: execution: INTERRUPTED 
 conformance/interfaces/sigsuspend/4-1: execution: UNRESOLVED 
 conformance/interfaces/sigsuspend/1-1: execution: UNRESOLVED 
 conformance/interfaces/sigsuspend/6-1: execution: UNRESOLVED 
 conformance/interfaces/sigsuspend/3-1: execution: UNRESOLVED 
-conformance/interfaces/pthread_attr_getschedpolicy/2-1: execution: UNRESOLVED 
 conformance/interfaces/sigwait/6-1: execution: INTERRUPTED 
 conformance/interfaces/sigwait/7-1: execution: UNRESOLVED 
 conformance/interfaces/sigwait/2-1: execution: UNRESOLVED 
-conformance/interfaces/pthread_attr_setschedparam/speculative/3-1: execution: FAILED 
-conformance/interfaces/pthread_attr_setschedparam/1-3: execution: UNRESOLVED 
-conformance/interfaces/pthread_attr_setschedparam/1-1: execution: FAILED 
-conformance/interfaces/pthread_attr_setschedparam/1-2: execution: FAILED 
-conformance/interfaces/pthread_attr_setschedparam/1-4: execution: UNRESOLVED 
 conformance/interfaces/aio_cancel/4-1: execution: UNRESOLVED 
 conformance/interfaces/aio_cancel/9-1: execution: UNRESOLVED 
 conformance/interfaces/aio_cancel/3-1: execution: UNRESOLVED 
@@ -280,7 +271,6 @@ conformance/interfaces/fork/7-1: execution: UNRESOLVED
 conformance/interfaces/fork/21-1: execution: UNRESOLVED 
 conformance/interfaces/pthread_mutex_destroy/2-2: execution: UNRESOLVED 
 conformance/interfaces/pthread_mutex_destroy/5-2: execution: UNRESOLVED 
-conformance/interfaces/pthread_attr_getschedparam/1-1: execution: UNRESOLVED 
 conformance/interfaces/aio_suspend/5-1: execution: UNSUPPORTED 
 conformance/interfaces/aio_suspend/2-1: execution: UNTESTED 
 conformance/interfaces/shm_open/19-1: execution: UNTESTED 
@@ -339,6 +329,7 @@ conformance/interfaces/sched_setscheduler/16-1: execution: UNRESOLVED
 conformance/interfaces/sched_setscheduler/2-1: execution: UNTESTED 
 conformance/interfaces/sched_setscheduler/19-4: execution: UNSUPPORTED 
 conformance/interfaces/sem_init/7-1: execution: UNTESTED 
+conformance/interfaces/sem_init/3-1: execution: INTERRUPTED 
 conformance/interfaces/sigpause/1-1: execution: FAILED 
 conformance/interfaces/sigpause/1-2: execution: FAILED 
 conformance/interfaces/sigpause/2-1: execution: UNRESOLVED 
@@ -350,6 +341,7 @@ conformance/interfaces/sched_getparam/2-1: execution: FAILED
 conformance/interfaces/sched_getparam/3-1: execution: FAILED 
 conformance/interfaces/mq_unlink/2-3: execution: UNTESTED 
 conformance/interfaces/pthread_attr_getinheritsched/1-1: execution: UNRESOLVED 
+conformance/interfaces/difftime/1-1: execution: FAILED 
 conformance/interfaces/lio_listio/17-1: execution: UNTESTED 
 conformance/interfaces/lio_listio/19-1: execution: UNTESTED 
 conformance/interfaces/lio_listio/24-1: execution: UNTESTED 
@@ -386,7 +378,6 @@ conformance/interfaces/strftime/1-1: execution: INTERRUPTED
 conformance/interfaces/strftime/2-1: execution: INTERRUPTED 
 conformance/interfaces/pthread_mutexattr_gettype/speculative/3-1: execution: FAILED 
 conformance/interfaces/pthread_attr_setinheritsched/2-4: execution: FAILED 
-conformance/interfaces/pthread_attr_setinheritsched/2-2: execution: UNRESOLVED 
 conformance/interfaces/pthread_attr_setinheritsched/1-1: execution: UNRESOLVED 
 conformance/interfaces/pthread_attr_setinheritsched/2-3: execution: UNRESOLVED 
 conformance/interfaces/pthread_attr_setinheritsched/2-1: execution: UNRESOLVED 
@@ -421,6 +412,7 @@ conformance/interfaces/pthread_rwlock_timedrdlock/5-1: execution: UNRESOLVED
 conformance/interfaces/pthread_rwlock_timedrdlock/1-1: execution: UNRESOLVED 
 conformance/interfaces/pthread_rwlock_timedrdlock/6-1: execution: FAILED 
 conformance/interfaces/pthread_rwlock_timedrdlock/2-1: execution: UNRESOLVED 
+conformance/interfaces/sem_destroy/3-1: execution: INTERRUPTED 
 conformance/interfaces/pthread_rwlock_trywrlock/speculative/3-1: execution: INTERRUPTED 
 conformance/interfaces/aio_fsync/1-1: execution: UNTESTED 
 conformance/interfaces/aio_fsync/11-1: execution: UNTESTED 

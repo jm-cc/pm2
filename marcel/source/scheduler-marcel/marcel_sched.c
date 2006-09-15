@@ -70,6 +70,19 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
   return 0;
 }
 
+int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t *attr, int policy)
+{
+   attr->sched_policy = policy;
+   return 0;
+}
+
+int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t * __restrict attr,
+                               int * __restrict policy)
+{
+   *policy = attr->sched_policy;
+   return 0;
+}
+
 static volatile unsigned __active_threads,
   __sleeping_threads,
   __blocked_threads,

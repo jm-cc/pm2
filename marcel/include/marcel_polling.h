@@ -569,7 +569,7 @@ struct marcel_ev_wait {
 /* Liste des serveurs en cours de polling 
  * (state == 2 et tâches en attente de polling) 
  */
-extern struct list_head ma_ev_list_poll;
+extern TBX_EXTERN struct list_head ma_ev_list_poll;
 
 #section marcel_functions
 static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
@@ -577,7 +577,7 @@ TBX_UNUSED;
 static __tbx_inline__ void marcel_check_polling(unsigned polling_point)
 TBX_UNUSED;
 #section marcel_inline
-void __marcel_check_polling(unsigned polling_point);
+void TBX_EXTERN __marcel_check_polling(unsigned polling_point);
 
 static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
 {

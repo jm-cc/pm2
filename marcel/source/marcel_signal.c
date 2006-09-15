@@ -533,6 +533,7 @@ restart:
    
    while (!marcel_signandisempty(&cthread->sigpending,&cset))
    {
+      for (sig = 1; sig < MARCEL_NSIG; sig++)
       {
          if (marcel_signandismember(&cthread->sigpending,&cset,sig))
          {    
@@ -599,7 +600,8 @@ DEF___LIBPTHREAD(int, sigmask, (int how, __const sigset_t *set, sigset_t *oset),
 
 /***************************sigprocmask*************************/
 #ifdef MA__LIBPTHREAD
-int sigprocmask(int how, __const sigset_t *set, sigset_t *oset)
+
+int lpt_sigprocmask(int how, __const sigset_t *set, sigset_t *oset)
 {
    if (marcel_createdthreads() == 0)
 	{
@@ -621,7 +623,11 @@ int sigprocmask(int how, __const sigset_t *set, sigset_t *oset)
    }
    return -1;
 }
-#endif
+
+DEF_LIBC(int,sigprocmask,(int how, __const sigset_t *set, sigset_t *oset),(how, set, oset));
+DEF___LIBC(int,sigprocmask,(int how, __const sigset_t *set, sigset_t *oset),(how, set, oset));
+
+#endif /*  MA__LIBPTHREAD */
 
 /****************************sigpending**************************/
 static int check_sigpending(marcel_sigset_t *set)
@@ -1009,7 +1015,7 @@ DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 #ifdef X86_ARCH
    longjmp(env->__jmpbuf,val);
 #else
-   __libc_longjmp(env->__jmpbuf,val);
+   __libc_longjmp(env,val);
 #endif
 
    LOG_OUT();

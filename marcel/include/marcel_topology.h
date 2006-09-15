@@ -297,10 +297,10 @@ struct marcel_topo_level {
 #define ma_topo_vpdata(vp, field) ((vp)->leveldata.vpdata.field)
 
 #section marcel_variables
-extern unsigned marcel_topo_nblevels;
-extern struct marcel_topo_level marcel_machine_level[];
-extern unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
-extern struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
+extern TBX_EXTERN unsigned marcel_topo_nblevels;
+extern TBX_EXTERN struct marcel_topo_level marcel_machine_level[];
+extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
+extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 
 #section marcel_macros
 #define for_all_vp(vp) \

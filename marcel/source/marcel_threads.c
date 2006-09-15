@@ -648,7 +648,7 @@ static int TBX_UNUSED check_join(marcel_t tid, any_t *status)
   }  
 
   if (MARCEL_THREAD_ISALIVE(tid)
-	 &&(tid->detached == PTHREAD_CREATE_DETACHED))
+	 &&(tid->detached == MARCEL_CREATE_DETACHED))
   {
 #ifdef MA__DEBUG
     fprintf(stderr,"(p)marcel_join : thread %p detached\n",tid);
@@ -777,7 +777,7 @@ static int TBX_UNUSED check_detach(marcel_t tid)
   }  
 
   if (MARCEL_THREAD_ISALIVE(tid)
-	 &&(tid->detached == PTHREAD_CREATE_DETACHED))
+	 &&(tid->detached == MARCEL_CREATE_DETACHED))
   {
 #ifdef MA__DEBUG
     fprintf(stderr,"(p)marcel_detach : thread %p already detached\n",tid);
@@ -795,7 +795,7 @@ DEF_MARCEL(int, detach, (marcel_t pid), (pid),
      return err;
 #endif
 
-   pid->detached =  PTHREAD_CREATE_DETACHED;
+   pid->detached =  MARCEL_CREATE_DETACHED;
    return 0;
 })
 
@@ -807,7 +807,7 @@ DEF_POSIX(int, detach, (marcel_t pid), (pid),
      return err;
 	/* fin codes d'erreur */
 
-   pid->detached =  PTHREAD_CREATE_DETACHED;
+   pid->detached = PMARCEL_CREATE_DETACHED;
    return 0;
 })
 
@@ -1189,14 +1189,8 @@ strong_alias(__pmarcel_disable_asynccancel, __pthread_disable_asynccancel);
 static int setprio_posix2marcel(marcel_t thread,int prio,int policy)
 {
   /* on passe de prio posix a prio marcel */
-
-   if (policy == SCHED_FIFO)
-   {
-      fprintf(stderr,"setprio_posix2marcel : sched_fifo not supported\n");
-      LOG_RETURN(ENOTSUP);
-   }
    
-   if (policy == SCHED_RR)
+   if ((policy == SCHED_RR)||(policy == SCHED_FIFO))
    {
       if ((prio >= 0)&&(prio <= MA_RT_PRIO))
          ma_sched_change_prio(thread,MA_RT_PRIO - prio);
@@ -1223,7 +1217,22 @@ DEF_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio),(thread,prio),
 {
    LOG_IN(); 
 
-   int policy = thread->sched.internal.entity.sched_policy;
+   int policy;   
+   
+   /* détermination de la police POSIX d'après la priorité Marcel et la préemption */
+   int mprio = thread->sched.internal.entity.prio;
+   if (mprio >= MA_DEF_PRIO)
+	{
+	  policy = SCHED_OTHER;
+	}
+	else if (mprio <= MA_RT_PRIO)
+	{
+	  if (marcel_some_thread_is_preemption_disabled(thread))
+		 policy = SCHED_FIFO;
+	  else
+		 policy = SCHED_RR;
+	}
+   /* policy déterminée */
 
    int ret = setprio_posix2marcel(thread,prio,policy);
    if (ret)
@@ -1244,7 +1253,7 @@ DEF_MARCEL(int, setschedparam,(marcel_t thread, int policy,
    if (param == NULL)
    {
 #ifdef MA__DEBUG
-      fprintf(stderr,"(p)marcel_setschedparam : valeur attr ou param NULL\n");
+      fprintf(stderr,"marcel_setschedparam : valeur attr ou param NULL\n");
 #endif
       LOG_RETURN(EINVAL);
    }
@@ -1252,11 +1261,11 @@ DEF_MARCEL(int, setschedparam,(marcel_t thread, int policy,
      &&(policy != SCHED_OTHER))
    {
 #ifdef MA__DEBUG
-      fprintf(stderr,"(p)marcel_setschedparam : valeur policy(%d) invalide\n",policy);
+      fprintf(stderr,"marcel_setschedparam : valeur policy(%d) invalide\n",policy);
 #endif
       LOG_RETURN(EINVAL);
    }
-
+  
    marcel_sched_setscheduler(thread,policy,param);
       
    LOG_RETURN(0);
@@ -1270,7 +1279,7 @@ DEF_POSIX(int, setschedparam,(marcel_t thread, int policy,
    if (param == NULL)
    {
 #ifdef MA__DEBUG
-      fprintf(stderr,"(p)marcel_setschedparam : valeur attr ou param NULL\n");
+      fprintf(stderr,"pmarcel_setschedparam : valeur attr ou param NULL\n");
 #endif
       LOG_RETURN(EINVAL);
    }
@@ -1278,12 +1287,22 @@ DEF_POSIX(int, setschedparam,(marcel_t thread, int policy,
      &&(policy != SCHED_OTHER))
    {
 #ifdef MA__DEBUG
-      fprintf(stderr,"(p)marcel_setschedparam : valeur policy(%d) invalide\n",policy);
+      fprintf(stderr,"pmarcel_setschedparam : valeur policy(%d) invalide\n",policy);
 #endif
       LOG_RETURN(EINVAL);
    }
 
-   thread->sched.internal.entity.sched_policy=policy;
+   /* (dés)activation de la préemption en fonction de SCHED_FIFO */ 
+   if (policy == SCHED_FIFO)
+	{
+      if (!marcel_some_thread_is_preemption_disabled(thread))
+	      marcel_some_thread_preemption_disable(thread);
+	}
+	else
+	{
+      if (marcel_some_thread_is_preemption_disabled(thread))
+	      marcel_some_thread_preemption_enable(thread);
+   }
 
    int ret = setprio_posix2marcel(thread,param->__sched_priority,policy);
    if (ret)
@@ -1304,7 +1323,7 @@ DEF_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
    if ((param == NULL)||(policy == NULL))
    {
 #ifdef MA__DEBUG      
-      fprintf(stderr,"(p)marcel_setschedparam : valeur policy ou param NULL\n");
+      fprintf(stderr,"pmarcel_getschedparam : valeur policy ou param NULL\n");
 #endif
       return EINVAL;
    } 
@@ -1321,29 +1340,30 @@ DEF_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
    if ((param == NULL)||(policy == NULL))
    {
 #ifdef MA__DEBUG      
-      fprintf(stderr,"(p)marcel_setschedparam : valeur policy ou param NULL\n");
+      fprintf(stderr,"pmarcel_getschedparam : valeur policy ou param NULL\n");
 #endif
       return EINVAL;
    } 
-
-// a enlever
+   
+   /* détermination de la police et priority POSIX d'après la priorité Marcel et la préemption */
    int mprio = thread->sched.internal.entity.prio;
 
-   if (mprio > MA_DEF_PRIO)
+   if (mprio >= MA_DEF_PRIO)
    {
       param->__sched_priority = 0;
       *policy = SCHED_OTHER;
-   } 
+   }
    else if (mprio <= MA_RT_PRIO)
-   { 
-      param->__sched_priority = MA_RT_PRIO - mprio;
-      *policy = SCHED_RR;
-   }
-   else
    {
-      fprintf(stderr,"(p)marcel_setschedparam : prio ?? ; policy %d\n",*policy);
-   }
-
+      param->__sched_priority = MA_RT_PRIO - mprio;
+      if (marcel_some_thread_is_preemption_disabled(thread))
+         *policy = SCHED_FIFO;
+      else
+	      *policy = SCHED_RR;
+	}
+   /* policy et priority POSIX déterminées */
+   fprintf(stderr,"getschedparam: policy %d, prio %d\n",*policy, param->__sched_priority);
+   
    return 0;
 })
 

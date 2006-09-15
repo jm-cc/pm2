@@ -143,10 +143,10 @@ typedef volatile int lpt_spinlock_t;
 /* POSIX barriers data type. */
   struct lpt_barrier
   {
-    unsigned int curr_event;
-    struct _lpt_fastlock lock;
-    unsigned int left;
     unsigned int init_count;
+    struct _lpt_fastlock lock;
+    unsigned int leftB;
+    unsigned int leftE;
   };
 
 /* POSIX barriers data type.  The structure of the type is

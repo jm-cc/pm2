@@ -312,6 +312,17 @@ int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
   struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
   prefix_lock_acquire(&ibarrier->lock.__spinlock);
+
+  /* Are these all?  */
+  while (ibarrier->leftE){    
+     blockcell c;
+     __prefix_register_spinlocked(&ibarrier->lock, marcel_self(), &c);
+     INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
+       c.blocked,
+       prefix_lock_release(&ibarrier->lock.__spinlock),
+	    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	
+  }
   
   ibarrier->leftB --;
   int ret = ibarrier->leftB; 
@@ -360,6 +371,14 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
   ibarrier->leftE --;
   int ret = ibarrier->leftE;
 
+  if (!ibarrier->leftE)
+  {   
+     /* Wake up everybody.  */
+     do 
+     {} 
+     while (__prefix_unlock_spinlocked(&ibarrier->lock));
+  }
+ 
   prefix_lock_release(&ibarrier->lock.__spinlock);
 
   return ret;

@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
 
 DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
@@ -568,32 +569,29 @@ void __marcel_init marcel_gensched_start_lwps(void)
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");
 #endif /* MA__LWPS */
 
-int sched_get_priority_max(int policy)
+DEF_MARCEL_POSIX(int,sched_get_priority_max,(int policy),(policy),
 {
-   if (policy == SCHED_RR)
+   if ((policy == SCHED_RR)||(policy == SCHED_FIFO))
 	   return MA_MAX_USER_RT_PRIO;
 	else if (policy == SCHED_OTHER)
 	   return 0;
-	else if (policy == SCHED_FIFO)
-   {
-      errno = ENOTSUP;
-      return -1;
-   } 
-	fprintf(stderr,"sched_get_priority_max : valeur policy(%d) invalide\n",policy);
-   errno = EINVAL;
-   return -1;
-}
 
-int sched_get_priority_min(int policy)
+	fprintf(stderr,"sched_get_priority_max : valeur policy(%d) invalide\n",policy);
+	errno = EINVAL;
+	return -1;
+})
+
+DEF_C(int,sched_get_priority_max,(int policy),(policy));
+DEF___C(int,sched_get_priority_max,(int policy),(policy));
+
+DEF_MARCEL_POSIX(int,sched_get_priority_min,(int policy),(policy),
 {
-   if ((policy == SCHED_RR)||(policy == SCHED_OTHER))
+   if ((policy == SCHED_RR)||(policy == SCHED_OTHER)||(policy == SCHED_FIFO))
 	   return 0;
-	else if (policy == SCHED_FIFO)
-   {
-      errno = ENOTSUP;
-      return -1;
-   } 
 	fprintf(stderr,"sched_get_priority_min : valeur policy(%d) invalide\n",policy);
    errno = EINVAL;
    return -1;
-}
+})
+
+DEF_C(int,sched_get_priority_min,(int policy),(policy));
+DEF___C(int,sched_get_priority_min,(int policy),(policy));

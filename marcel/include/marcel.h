@@ -30,9 +30,9 @@
 #include "marcel_valgrind.h"
 
 #ifdef MARCEL_KERNEL
-#define MARCEL_PROTECTED /* TBX_PROTECTED */
+#define MARCEL_PROTECTED TBX_EXTERN /* TBX_PROTECTED */
 #else
-#define MARCEL_PROTECTED
+#define MARCEL_PROTECTED TBX_EXTERN
 #endif
 
 /* pour les fonctions que l'on veut "extern inline" pour l'application, il

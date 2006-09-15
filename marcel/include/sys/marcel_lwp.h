@@ -132,7 +132,7 @@ extern marcel_lwp_t __main_lwp;
 
 #depend "asm/linux_rwlock.h[marcel_types]"
 // Verrou protégeant la liste chaînée des LWPs
-extern ma_rwlock_t __ma_lwp_list_lock;
+extern TBX_EXTERN ma_rwlock_t __ma_lwp_list_lock;
 extern struct list_head ma_list_lwp_head;
 
 #endif

@@ -112,7 +112,7 @@ void compute(job j) {
   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 }
 
-int marcel_main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   job j;
 

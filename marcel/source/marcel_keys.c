@@ -16,7 +16,6 @@
 
 #include "marcel.h"
 #include <errno.h>
-#include <resolv.h>
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
 int marcel_key_present[MAX_KEY_SPECIFIC]={0};

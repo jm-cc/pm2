@@ -55,9 +55,6 @@ void marcel_initialize(int* argc, char**argv)
 {
 	if (!_initialized) {
 		LOG_IN();
-#ifdef PROFILE
-		profile_init();
-#endif
 		marcel_init_data(argc, argv);
 		tbx_init(*argc, argv);
 		tbx_purge_cmd_line(argc, argv);
@@ -487,6 +484,9 @@ void marcel_init_section(int sec) {
 		       ma_init_start[section].debug);
 
                 if (section == MA_INIT_SELF) {
+#ifdef PROFILE
+		profile_init();
+#endif
 		  ma_sched_init0();
 #ifdef MA__LIBPTHREAD
 		  ma_check_lpt_sizes();

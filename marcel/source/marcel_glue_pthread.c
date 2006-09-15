@@ -26,7 +26,10 @@
 
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
                          void * (*start_routine)(void *), void *arg)
-{
+{ 
+  int policy;
+  pmarcel_attr_getschedpolicy((pmarcel_attr_t*)attr,&policy);
+
   static int _launched=0;
   marcel_attr_t new_attr;
 
@@ -36,11 +39,6 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
 
   if (attr != NULL)
     {
-		if (attr->__stacksize == -1)
-		{
-		   fprintf(stderr,"pthread_create : attr non initialisé\n");
-         return EINVAL;
-		}
    /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
      the old size and access to the new members might crash the program.
      We convert the struct now.  */
@@ -50,6 +48,11 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
       // Le cast par (void*) est demandé par gcc pour respecter la norme C
       // sinon, on a:
       // warning: dereferencing type-punned pointer will break strict-aliasing rules
+
+		/* désactivation de la préemption */
+      if (policy == SCHED_FIFO)
+	       marcel_attr_setpreemptible(&new_attr,0);
+
       attr = (pthread_attr_t*)(void*)&new_attr;
     }
   return marcel_create ((marcel_t*)thread, (marcel_attr_t*)attr,
@@ -212,7 +215,9 @@ cancellable_call_ext(int, open64, SYS_open, GLIBC_2_2, (const char *path, int fl
 cancellable_call_ext(ssize_t, pread64, SYS_pwrite64, GLIBC_2_2, (int fd, void *buf, size_t count, off64_t pos), fd, buf, count, pos)
 cancellable_call_ext(ssize_t, pwrite64, SYS_pwrite64, GLIBC_2_2, (int fd, const void *buf, size_t count, off64_t pos), fd, buf, count, pos)
 cancellable_call(ssize_t, read, (int fd, void *buf, size_t count), fd, buf, count)
+#ifdef SYS_waitpid
 cancellable_call(pid_t, waitpid, (pid_t pid, int *status, int options), pid, status, options)
+#endif
 cancellable_call(ssize_t, write, (int fd, const void *buf, size_t count), fd, buf, count)
 
 #endif /* MA__LIBPTHREAD */

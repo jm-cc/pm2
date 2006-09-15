@@ -56,9 +56,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 {
    if ((stack < sizeof(marcel_task_t)) || (stack > THREAD_SLOT_SIZE))
    {
-#ifdef MA__DEBUG
-	  fprintf(stderr,"(p)marcel_attr_setstacksize : stack size error\n");
-#endif
+	   fprintf(stderr,"(p)marcel_attr_setstacksize : stack size error\n");
       return EINVAL;
    }
 
@@ -278,19 +276,6 @@ int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
                                   tbx_bool_t *__restrict deviatable)
 {
    *deviatable = (attr->not_deviatable ? tbx_false : tbx_true);
-   return 0;
-}
-
-int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
-{
-   attr->__schedpolicy = policy;
-   return 0;
-}
-
-int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
-                               int * __restrict policy)
-{
-   *policy = attr->__schedpolicy;
    return 0;
 }
 
@@ -535,13 +520,7 @@ DEF_POSIX(int,attr_setschedpolicy,(pmarcel_attr_t *__restrict attr, int policy),
       fprintf(stderr,"pthread_attr_setschedpolicy : police d'ordonnancement invalide!\n");
       LOG_RETURN(EINVAL);
    }
-
-   if (policy == SCHED_FIFO)
-   {
-      fprintf(stderr,"pthread_attr_setschedpolicy : sched_fifo not supported\n");
-      LOG_RETURN(ENOTSUP);
-   }
-   marcel_attr_setschedpolicy(attr,policy);
+   attr->__schedpolicy = policy;
    LOG_RETURN(0);
 })
 
@@ -552,28 +531,17 @@ DEF_POSIX(int,attr_getschedpolicy,(__const pmarcel_attr_t *__restrict attr, int 
 {
    if (!attr)
    {
-      fprintf(stderr,"pthread_attr_setschedpolicy : valeur attr NULL !\n");
+      fprintf(stderr,"pthread_attr_getschedpolicy : valeur attr NULL !\n");
       errno = EINVAL;
       return -1;
    }
    if (!policy)
    {
-      fprintf(stderr,"pthread_attr_setschedpolicy : valeur policy NULL !\n");
+      fprintf(stderr,"pthread_attr_getschedpolicy : valeur policy NULL !\n");
       errno = EINVAL;
       return -1;
    }
-
-//a enlever
-   int mprio = marcel_self()->sched.internal.entity.prio;
-   
-   if (mprio >= MA_DEF_PRIO)
-   {
-      *policy = SCHED_OTHER;
-   } 
-   else if (mprio <= MA_RT_PRIO)
-   { 
-      *policy = SCHED_RR;
-   }
+   *policy = attr->__schedpolicy;
    return 0;
 })
 
@@ -590,7 +558,7 @@ DEF_MARCEL(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sc
 #endif
       return EINVAL;
    }
-   
+
    marcel_attr_setprio(attr, param->__sched_priority);
    
    fprintf(stderr,"! setpriority : %d\n",param->__sched_priority);
@@ -616,26 +584,22 @@ DEF_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sch
       return -1;
    }    
 
-   if (policy == SCHED_FIFO)
-   {
-      fprintf(stderr,"pmarcel_attr_setschedparam : sched_fifo not supported\n");
-      LOG_RETURN(ENOTSUP);
-   }
-  
-   if (policy == SCHED_RR)
-   {
+   /* détermination de la priority Marcel en fonction de la priority et policy POSIX */
+   if ((policy == SCHED_RR)||(policy == SCHED_FIFO))
+   { 
       if ((param->__sched_priority >= 0) 
-        &&(param->__sched_priority <= MA_RT_PRIO))
-         marcel_attr_setprio(attr,MA_RT_PRIO - param->__sched_priority);
-      else
-		   return EINVAL;
+	  &&(param->__sched_priority <= MA_RT_PRIO)) {
+	  marcel_attr_setprio(attr,MA_RT_PRIO - param->__sched_priority);//somme limitée (de 110 à 10), ne peut rétablir la priorité
+      fprintf(stderr,"-> pmarcel_attr_setschedparam : attr prio %d = MA_RT_PRIO %d - param prio %d\n",attr->__schedparam.__sched_priority,MA_RT_PRIO,param->__sched_priority);
+       } else
+ 		return EINVAL;//pas sur
    }
    else if (policy == SCHED_OTHER)
    {
       if (param->__sched_priority == 0)
 	      marcel_attr_setprio(attr,MA_DEF_PRIO);
-	   else
-	      return EINVAL;
+ 	   else
+ 		return EINVAL;//pas sur
    }
 
    return 0;
@@ -674,14 +638,15 @@ DEF_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct
       fprintf(stderr,"et quelle police ?\n");
       return -1;
    }
-    
+
    if (policy == SCHED_OTHER)
    {
       param->__sched_priority = 0;
    }
-   else if (policy == SCHED_RR)
+   else if ((policy == SCHED_RR)||(policy == SCHED_FIFO))
    {
       param->__sched_priority = MA_RT_PRIO - attr->__schedparam.__sched_priority;
+   fprintf(stderr,"-> pmarcel_attr_getschedparam : param prio %d = MA_RT_PRIO %d - attr prio %d\n", param->__sched_priority,MA_RT_PRIO,attr->__schedparam.__sched_priority);
    }
    else
    {

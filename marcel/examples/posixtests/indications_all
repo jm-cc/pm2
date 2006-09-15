@@ -1,36 +1,11 @@
-/*******************************failed*****************************************/
+/*******************************smp******************************************/
+all ok !!!
 
-pthread_spin_unlock/1-2:  FAILED ---> mono mode
-pthread_spin_trylock/1-1:  FAILED ---> mono mode
-pthread_spin_lock/1-1:  FAILED ---> mono mode
-pthread_spin_lock/1-2:  FAILED ---> mono mode
-
-pthread_create/1-5:  INTERRUPTED ---> ???
-pthread_create/3-2:  FAILED ---> td.param.sched_priority != param_ori.sched_priority : (a retester)
-
-pthread_exit/6-1:  UNRESOLVED ---> ???
-
+/*******************************failed***************************************/
 pthread_rwlock_rdlock/2-3:  FAILED ---> rd_thread blocked on read lock
-pthread_rwlock_unlock/3-1:  FAILED ---> SCHED_FIFO (peut etre autre chose aussi)
+pthread_rwlock_unlock/3-1:  FAILED --->  writer did not get write lock, when main release the lock
 
-pthread_attr_setstack/4-1:  UNRESOLVED ---> pile non alignée
-pthread_attr_setstack/1-1:  UNRESOLVED ---> pile non alignée
-pthread_attr_setstack/2-1:  UNRESOLVED ---> pile non alignée
-pthread_attr_getstack/1-1:  UNRESOLVED ---> pile non alignée
-pthread_attr_setstacksize/4-1:  FAILED ---> got the wrong return value (histoire sombre d'EINVAL)
-pthread_attr_setstacksize/2-1:  FAILED ---> got the wrong return value(histoire sombre d'EINVAL)
-
-pthread_attr_setschedparam/speculative/3-2:  FAILED --->  pthread_attr_setschedparam did not fail (priorité sensée être invalide) : retester
-pthread_attr_setschedparam/speculative/3-1:  FAILED --->  pthread_attr_setschedparam did not fail (priorité sensée être invalide) : retester
-
-pthread_key_create/speculative/5-1:  INTERRUPTED ---> trop de keys (choix d'implementation)
-
-sigwait/6-1:  INTERRUPTED ---> pthread_sigmask ne supporte pas les signaux avec SIG_DFL pour sa_handler
-
-marcel : sem_post/8-1: NOPASS ---> error at sched_setscheduler() - erreur de segmentation (sem(_1) is used uninitialized in this function)
-
-/*****************************not supported**************************************/
-
+/*****************************not supported**********************************/
 sigwait/7-1:  UNRESOLVED ---> signaux rt not supported
 sigwait/2-1:  UNRESOLVED ---> signaux rt not supported
 
@@ -54,16 +29,18 @@ pthread_attr_getinheritsched/1-1:  UNRESOLVED ---> SCHED_INHERIT not supported
 pthread_attr_setinheritsched/1-1:  UNRESOLVED ---> SCHED_INHERIT not supported
 pthread_attr_setinheritsched/2-3:  UNRESOLVED ---> SCHED_INHERIT not supported
 pthread_attr_setinheritsched/2-4:  FAILED ---> SCHED_INHERIT not supported
+pthread_attr_setinheritsched/2-1:  UNRESOLVED ---> SCHED_INHERIT not supported
 
-pthread_attr_getschedparam/1-1:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_setschedpolicy/1-1:  FAILED ---> SCHED_FIFO not supported
-pthread_setschedparam/1-1:  FAILED ---> SCHED_FIFO not supported
-pthread_getschedparam/1-2:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_getschedpolicy/2-1:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_setinheritsched/2-2:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_setinheritsched/2-1:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_setschedparam/1-3:  UNRESOLVED ---> SCHED_FIFO not supported
-pthread_attr_setschedparam/1-1:  FAILED ---> SCHED_FIFO not supported
+pthread_attr_setstack/4-1:  U ---> pile non alignée, Interrupted system call
+pthread_attr_setstack/1-1:  U ---> pile non alignée, Interrupted system call
+pthread_attr_setstack/2-1:  U ---> pile non alignée, Interrupted system call
+pthread_attr_getstack/1-1:  U ---> pile non alignée, Interrupted system call
+
+pthread_key_create/speculative/5-1:  I ---> trop de keys (choix d'implementation)
+pthread_exit/6-1:  UNRESOLVED ---> fork (trop difficile)
+sem_post/8-1: INTERRUPTED ---> (fork)
+sigwait/6-1:  INTERRUPTED ---> signaux avec SIG_DFL pour sa_handler enotsup pour pthread_sigmask
+pthread_attr_setstacksize/4-1:  FAILED ---> pinaillage sur PTHREAD_STACK_MIN
 
 /*****************************not implemented*****************************/
 
@@ -289,15 +266,18 @@ pthread_attr_setscope/5-1:  UNTESTED ---> non testé (idem nptl)
 sem_init/7-1:  UNTESTED ---> non testé (idem nptl)
 pthread_mutex_init/speculative/5-2:  UNSUPPORTED ---> non testé (idem nptl)
 
+/*******************************douteux******************************/
+
 pthread_mutexattr_gettype/speculative/3-1:  FAILED ---> le test est faux - comportement normal
 pthread_rwlock_wrlock/3-1:  INTERRUPTED ---> le test est faux - comportement normal
 pthread_rwlock_unlock/4-1:  FAILED ---> le test est faux - comportement normal
 pthread_attr_setdetachstate/2-1:  FAILED ---> le test est faux - comportement normal
 pthread_attr_setschedpolicy/5-1:  le test est faux - comportement normal
+pthread_attr_setstacksize/2-1:  get_attr_np bizarre
 
 /*******************************conclusion****************************/
 
-atfork/wait, siginfo(sigwaitinfo,...), PROCESS_SHARED, SIGRT : difficile
-SCHED_INHERIT, SCHED_FIFO : difficile mais faisable (todo)  
+tests appelant fork, atfork/wait, siginfo(sigwaitinfo,...), PROCESS_SHARED, SIGRT : difficile
+SCHED_INHERIT : difficile mais faisable (todo)  
 SCOPE_SYSTEM : todo
 

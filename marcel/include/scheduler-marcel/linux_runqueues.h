@@ -133,7 +133,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #depend "[marcel_macros]"
 
 #define ma_main_runqueue (marcel_machine_level[0].sched)
-extern ma_runqueue_t ma_dontsched_runqueue;
+extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 #ifdef MA__LWPS

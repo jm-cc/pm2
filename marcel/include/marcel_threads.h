@@ -177,37 +177,43 @@ void marcel_atexit(marcel_atexit_func_t, any_t);
 MARCEL_INLINE void marcel_thread_preemption_enable(void);
 MARCEL_INLINE void marcel_thread_preemption_disable(void);
 MARCEL_INLINE int marcel_thread_is_preemption_disabled(void);
+MARCEL_INLINE void marcel_some_thread_preemption_enable(marcel_t t);
+MARCEL_INLINE void marcel_some_thread_preemption_disable(marcel_t t);
+MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t);
+#define	marcel_thread_preemption_enable() marcel_some_thread_preemption_enable(MARCEL_SELF)
+#define	marcel_thread_preemption_disable() marcel_some_thread_preemption_disable(MARCEL_SELF)
+#define	marcel_thread_is_preemption_disabled() marcel_some_thread_is_preemption_disabled(MARCEL_SELF)
 
 #section inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
-static __tbx_inline__ void __marcel_thread_preemption_enable(void)
+static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
 {
 #ifdef MA__DEBUG
-	MA_BUG_ON(!SELF_GETMEM(not_preemptible));
+	MA_BUG_ON(!THREAD_GETMEM(t, not_preemptible));
 #endif
         ma_barrier();
-	SELF_GETMEM(not_preemptible)--;
+	THREAD_GETMEM(t, not_preemptible)--;
 }
-MARCEL_INLINE void marcel_thread_preemption_enable(void) {
-	__marcel_thread_preemption_enable();
+MARCEL_INLINE void marcel_some_thread_preemption_enable(marcel_t t) {
+	__marcel_some_thread_preemption_enable(t);
 }
 
-static __tbx_inline__ void __marcel_thread_preemption_disable(void) {
-	SELF_GETMEM(not_preemptible)++;
+static __tbx_inline__ void __marcel_some_thread_preemption_disable(marcel_t t) {
+	THREAD_GETMEM(t, not_preemptible)++;
         ma_barrier();
 }
 
-MARCEL_INLINE void marcel_thread_preemption_disable(void) {
-	__marcel_thread_preemption_disable();
+MARCEL_INLINE void marcel_some_thread_preemption_disable(marcel_t t) {
+	__marcel_some_thread_preemption_disable(t);
 }
 
-static __tbx_inline__ int __marcel_thread_is_preemption_disabled(void) {
-	return SELF_GETMEM(not_preemptible) != 0;
+static __tbx_inline__ int __marcel_some_thread_is_preemption_disabled(marcel_t t) {
+	return THREAD_GETMEM(t, not_preemptible) != 0;
 }
 
-MARCEL_INLINE int marcel_thread_is_preemption_disabled(void) {
-	return __marcel_thread_is_preemption_disabled();
+MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t) {
+	return __marcel_some_thread_is_preemption_disabled(t);
 }
 
 

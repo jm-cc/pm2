@@ -32,7 +32,7 @@
 #define setitimer(which,val,oval) syscall(SYS_setitimer,which,val,oval)
 #endif
 
-ma_atomic_t __preemption_disabled = MA_ATOMIC_INIT(0);
+ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
 
 /* Unité : microsecondes */
 #define MIN_TIME_SLICE		10000

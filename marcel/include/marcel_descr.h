@@ -169,7 +169,7 @@ struct marcel_task {
 /********sigwait**********/
       marcel_sigset_t waitset;
       int *waitsig;
-#ifdef MA__LIBPTHREAD
+#ifdef MA__IFACE_PMARCEL
 /*********attributs*********/
       ma_spinlock_t cancellock;
       int cancelstate;

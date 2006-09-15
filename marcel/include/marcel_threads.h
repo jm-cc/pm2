@@ -150,7 +150,7 @@ void fastcall __pmarcel_disable_asynccancel(int old);
 #endif
 /******************set/getschedparam/prio*****************/
 DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
-int pthread_setschedprio(marcel_t thread,int prio);
+int pthread_setschedprio(pthread_t thread, int prio) __THROW;
 DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
 DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,

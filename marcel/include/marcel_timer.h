@@ -35,12 +35,15 @@ unsigned long marcel_clock(void);
 #define marcel_gettimeslice() 10000L
 #endif
 
+#section functions
+/* always call disable_interrupts before calling exec*() */
+void marcel_sig_enable_interrupts(void);
+void marcel_sig_disable_interrupts(void);
+
 #section marcel_functions
 void marcel_sig_exit(void);
 void marcel_sig_pause(void);
 void marcel_sig_nanosleep(void);
-void marcel_sig_enable_interrupts(void);
-void marcel_sig_disable_interrupts(void);
 void marcel_sig_reset_timer(void);
 void marcel_sig_stop_itimer(void);
 #ifndef MA__TIMER

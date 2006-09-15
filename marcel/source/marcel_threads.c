@@ -1283,7 +1283,7 @@ DEF_POSIX(int, setschedparam,(marcel_t thread, int policy,
       LOG_RETURN(EINVAL);
    }
 
-   thread->sched.internal.sched_policy=policy;
+   thread->sched.internal.entity.sched_policy=policy;
 
    int ret = setprio_posix2marcel(thread,param->__sched_priority,policy);
    if (ret)
@@ -1327,7 +1327,7 @@ DEF_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
    } 
 
 // a enlever
-   int mprio = thread->sched.internal.prio;
+   int mprio = thread->sched.internal.entity.prio;
 
    if (mprio > MA_DEF_PRIO)
    {

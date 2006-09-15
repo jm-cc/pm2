@@ -106,13 +106,18 @@ DEF_LIBPTHREAD(int, condattr_setpshared,
 REPLICATE_CODE([[dnl
 int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 {
-        if (pshared != PTHREAD_PROCESS_PRIVATE
-            && __builtin_expect (pshared != PTHREAD_PROCESS_SHARED, 0))
-                return EINVAL;
+    if (pshared != PTHREAD_PROCESS_PRIVATE
+        && __builtin_expect (pshared != PTHREAD_PROCESS_SHARED, 0))
+    {
+#ifdef MA__DEBUG
+	    fprintf(stderr,"prefix_condattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
+#endif
+	    LOG_RETURN(EINVAL);
+    }
 
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
-		pm2debug("Argh: shared condition requested!\n");
+		pm2debug("prefix_condattr_setpshared : shared condition requested!\n");
 		return ENOTSUP;
 	}
 

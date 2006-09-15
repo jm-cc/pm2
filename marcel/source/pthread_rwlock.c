@@ -244,7 +244,6 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-//VD:strong_alias (__marcel_rwlock_init, marcel_rwlock_init)
 DEF_PTHREAD(int, rwlock_init, (pthread_rwlock_t * __restrict rwlock,
 			       __const pthread_rwlockattr_t * __restrict attr),
 		(rwlock, attr))
@@ -269,7 +268,6 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-//VD:strong_alias (__marcel_rwlock_destroy, marcel_rwlock_destroy)
 DEF_PTHREAD(int, rwlock_destroy, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_destroy, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -312,7 +310,6 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-//VD:strong_alias (__marcel_rwlock_rdlock, marcel_rwlock_rdlock)
 DEF_PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -329,7 +326,12 @@ DEF_MARCEL_POSIX(int,
   //VD:marcel_extricate_if extr;
 
   if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
-    return EINVAL;
+  {
+#ifdef MA__DEBUG
+     fprintf(stderr,"pthread_rwlock_timedrdlock : valeur nsec(%d) invalide\n",abstime->tv_nsec);
+#endif
+     return EINVAL;
+  }
 
   have_lock_already = rwlock_have_already(&self, rwlock,
 					  &existing, &out_of_mem);
@@ -388,7 +390,6 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-//VD:strong_alias (__marcel_rwlock_timedrdlock, marcel_rwlock_timedrdlock)
 DEF_PTHREAD(int, rwlock_timedrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_timedrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 #endif
@@ -435,7 +436,6 @@ DEF_MARCEL_POSIX(int,
 
   return retval;
 })
-//VD:strong_alias (__marcel_rwlock_tryrdlock, marcel_rwlock_tryrdlock)
 DEF_PTHREAD(int, rwlock_tryrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_tryrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -445,6 +445,7 @@ DEF_MARCEL_POSIX(int,
 {
   marcel_descr self = __thread_self ();
 
+  /* TODO: EDEADLCK */
   while(1)
     {
       __pmarcel_lock (&rwlock->__rw_lock, self);
@@ -461,7 +462,6 @@ DEF_MARCEL_POSIX(int,
       suspend (self); /* This is not a cancellation point */
     }
 })
-//VD:strong_alias (__marcel_rwlock_wrlock, marcel_rwlock_wrlock)
 DEF_PTHREAD(int, rwlock_wrlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_wrlock, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -476,7 +476,13 @@ __marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
   //VD:marcel_extricate_if extr;
 
   if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
-    return EINVAL;
+  {
+#ifdef MA__DEBUG
+     fprintf(stderr,"pthread_rwlock_timedrdlock : valeur nsec(%d) invalide\n",abstime->tv_nsec);
+#endif
+     return EINVAL;
+  }
+
 
   self = __thread_self ();
 
@@ -522,10 +528,9 @@ __marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
 	}
     }
 }
+
 DEF_PTHREAD(int, rwlock_timedwrlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_timedwrlock, (pthread_rwlock_t *rwlock), (rwlock))
-
-strong_alias (__marcel_rwlock_timedwrlock, marcel_rwlock_timedwrlock)
 #endif
 
 DEF_MARCEL_POSIX(int,
@@ -543,7 +548,6 @@ DEF_MARCEL_POSIX(int,
 
   return result;
 })
-//VD:strong_alias (__marcel_rwlock_trywrlock, marcel_rwlock_trywrlock)
 DEF_PTHREAD(int, rwlock_trywrlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_trywrlock, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -629,7 +633,6 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 })
-//VD:strong_alias (__marcel_rwlock_unlock, marcel_rwlock_unlock)
 DEF_PTHREAD(int, rwlock_unlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_unlock, (pthread_rwlock_t *rwlock), (rwlock))
 
@@ -651,7 +654,6 @@ DEF_MARCEL_POSIX(int,
 {
   return 0;
 })
-//VD:strong_alias (__marcel_rwlockattr_destroy, marcel_rwlockattr_destroy)
 DEF_PTHREAD(int, rwlockattr_destroy, (pthread_rwlockattr_t *attr), (attr))
 DEF___PTHREAD(int, rwlockattr_destroy, (pthread_rwlockattr_t *attr), (attr))
 
@@ -677,12 +679,19 @@ DEF_MARCEL_POSIX(int,
 {
   LOG_IN();
   if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)
-    LOG_RETURN(EINVAL);
+  {
+#ifdef MA__DEBUG
+		fprintf(stderr,"pthread_rwlockattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
+#endif
+		LOG_RETURN(EINVAL);
+  }
 
   /* For now it is not possible to shared a conditional variable.  */
   if (pshared != MARCEL_PROCESS_PRIVATE)
-    LOG_RETURN(ENOTSUP);
-
+  {
+     fprintf(stderr,"pthread_rwlockattr : PROCESS_SHARED non supporté\n");
+     LOG_RETURN(ENOTSUP);
+  }
   attr->__pshared = pshared;
 
   LOG_RETURN(0);
@@ -710,7 +719,12 @@ DEF_MARCEL_POSIX(int,
       && pref != MARCEL_RWLOCK_PREFER_WRITER_NP
       && pref != MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
       && pref != MARCEL_RWLOCK_DEFAULT_NP)
-    return EINVAL;
+  {
+#ifdef MA__DEBUG
+		fprintf(stderr,"(p)marcel_rwlockattr_setkind_np : valeur pref(%d) invalide\n",pref);
+#endif
+      return EINVAL;
+  }
 
   attr->__lockkind = pref;
 

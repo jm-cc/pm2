@@ -12,6 +12,7 @@ MARCEL {
     ma_*;
     __ma_*;
     tselect;
+    main;
 };
 GLIBC_2.0 {
   global:
@@ -95,10 +96,11 @@ GLIBC_2.0 {
     raise;
 
     # défini dans libc, mais on écrase
-    sigsuspend; signal;
+    sigsuspend; signal; __signal; __sysv_signal; sigpending; __sigpending;
+    sigprocmask;
     setjmp; sigsetjmp; __sigsetjmp;
     usleep; sleep; alarm; getitimer; setitimer;
-
+    sched_get_prority_min; sched_get_prority_max;
   local:
     *;
 };
@@ -172,6 +174,7 @@ GLIBC_2.2 {
     __pthread_rwlock_rdlock; __pthread_rwlock_tryrdlock;
     __pthread_rwlock_wrlock; __pthread_rwlock_trywrlock;
     __pthread_rwlock_unlock;
+    __pthread_mutex_timedlock;
 
     __res_state;
 

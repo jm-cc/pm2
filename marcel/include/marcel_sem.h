@@ -16,7 +16,7 @@
 
 #section common
 #include "tbx_compiler.h"
-
+#include <semaphore.h>
 
 #section types
 typedef struct semcell_struct semcell;
@@ -74,8 +74,8 @@ static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s)
 int marcel_sem_close(marcel_sem_t *sem);
 int pmarcel_sem_close(pmarcel_sem_t *sem);
 
-int marcel_sem_open(const char *name, int flags, ...);
-int pmarcel_sem_open(const char *name, int flags, ...);
+marcel_sem_t* marcel_sem_open(const char *name, int flags, ...);
+marcel_sem_t* pmarcel_sem_open(const char *name, int flags, ...);
 
 int marcel_sem_unlink(const char *name);
 int pmarcel_sem_unlink(const char *name);

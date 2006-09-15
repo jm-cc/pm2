@@ -62,12 +62,21 @@ static char PROF_FILE_KERNEL[1024];
 #endif
 
 static tbx_bool_t profile_initialized = tbx_false;
-static tbx_bool_t activate_called_before_init = tbx_true;
+static tbx_bool_t activate_called_before_init =
+#ifdef PROFILE_AUTOSTART
+	tbx_true;
+#else
+	tbx_false;
+#endif
 static struct {
   int how;
   unsigned user_keymask, kernel_keymask;
   unsigned thread_id;
-} activate_params = {FUT_ENABLE, MARCEL_PROF_MASK, 0};
+} activate_params
+#ifdef PROFILE_AUTOSTART
+	= { FUT_ENABLE, ~0, 0 };
+#endif
+	;
 
 void profile_init(void)
 {

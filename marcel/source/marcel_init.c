@@ -58,7 +58,6 @@ void marcel_initialize(int* argc, char**argv)
 #ifdef PROFILE
 		profile_init();
 #endif
-		marcel_init_section(MA_INIT_MAIN_LWP);
 		marcel_init_data(argc, argv);
 		tbx_init(*argc, argv);
 		tbx_purge_cmd_line(argc, argv);
@@ -384,6 +383,9 @@ typedef struct {
 int ma_init_done[MA_INIT_MAX_PARTS+1]={0,};
 
 // Section MA_INIT_SELF
+#ifdef MA__LIBPTHREAD
+extern void ma_check_lpt_sizes(void);
+#endif
 #ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_topo_discover;
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
@@ -395,6 +397,7 @@ extern const __ma_init_info_t ma_init_info_main_thread_init;
 extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
 extern const __ma_init_info_t ma_init_info_marcel_slot_init;
 extern const __ma_init_info_t ma_init_info_sched_init;
+extern void ma_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
 #endif // MA__BUBBLES
@@ -484,6 +487,10 @@ void marcel_init_section(int sec) {
 		       ma_init_start[section].debug);
 
                 if (section == MA_INIT_SELF) {
+		  ma_sched_init0();
+#ifdef MA__LIBPTHREAD
+		  ma_check_lpt_sizes();
+#endif
                   call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
                   call_init_function(&ma_init_info_topo_discover);

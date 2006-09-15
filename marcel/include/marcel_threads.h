@@ -73,6 +73,8 @@ enum
 };
 #define MARCEL_CANCELED ((void *) -1)
 
+#define MARCEL_IS_CANCELED 1
+#define MARCEL_NOT_CANCELED 0
 
 #section macros
 #define MAX_ATEXIT_FUNCS	5
@@ -139,10 +141,19 @@ DEC_MARCEL_POSIX(int, getconcurrency, (void) __THROW);
 DEC_MARCEL_POSIX(int, setcancelstate,(int state, int *oldstate) __THROW);
 DEC_MARCEL_POSIX(int, setcanceltype,(int type, int *oldtype) __THROW);
 DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
-/******************set/getschedparam*****************/
-DEC_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
+#depend "asm/linux_linkage.h[marcel_macros]"
+int fastcall __pmarcel_enable_asynccancel (void);
+void fastcall __pmarcel_disable_asynccancel(int old);
+#ifndef MA__IFACE_PMARCEL
+#define __pmarcel_enable_asynccancel() 0
+#define __pmarcel_disable_asynccancel(old) (void)0
+#endif
+/******************set/getschedparam/prio*****************/
+DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
+int pthread_setschedprio(marcel_t thread,int prio);
+DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
-DEC_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
+DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
 /******************getcpuclockid*******************************/
 DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
@@ -163,8 +174,9 @@ void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
 #section functions
-extern __tbx_inline__ void marcel_thread_preemption_enable(void);
-extern __tbx_inline__ void marcel_thread_preemption_disable(void);
+MARCEL_INLINE void marcel_thread_preemption_enable(void);
+MARCEL_INLINE void marcel_thread_preemption_disable(void);
+MARCEL_INLINE int marcel_thread_is_preemption_disabled(void);
 
 #section inline
 /* Pour ma_barrier */
@@ -177,21 +189,26 @@ static __tbx_inline__ void __marcel_thread_preemption_enable(void)
         ma_barrier();
 	SELF_GETMEM(not_preemptible)--;
 }
-extern __tbx_inline__ void marcel_thread_preemption_enable(void)
-__tbx_extern_inline_body__(
+MARCEL_INLINE void marcel_thread_preemption_enable(void) {
 	__marcel_thread_preemption_enable();
-)
+}
 
-static __tbx_inline__ void __marcel_thread_preemption_disable(void)
-{
+static __tbx_inline__ void __marcel_thread_preemption_disable(void) {
 	SELF_GETMEM(not_preemptible)++;
         ma_barrier();
 }
 
-extern __tbx_inline__ void marcel_thread_preemption_disable(void)
-__tbx_extern_inline_body__(
+MARCEL_INLINE void marcel_thread_preemption_disable(void) {
 	__marcel_thread_preemption_disable();
-)
+}
+
+static __tbx_inline__ int __marcel_thread_is_preemption_disabled(void) {
+	return SELF_GETMEM(not_preemptible) != 0;
+}
+
+MARCEL_INLINE int marcel_thread_is_preemption_disabled(void) {
+	return __marcel_thread_is_preemption_disabled();
+}
 
 
 #section marcel_macros

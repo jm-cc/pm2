@@ -109,10 +109,18 @@ int prefix_barrierattr_setpshared (prefix_barrierattr_t *attr, int pshared)
 
   if (pshared != PREFIX_PROCESS_PRIVATE
       && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0))
-    LOG_RETURN(EINVAL);
+  {
+#ifdef MA__DEBUG
+	  fprintf(stderr,"prefix_barrierattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
+#endif
+	  LOG_RETURN(EINVAL);
+  }
 
   if (pshared == PREFIX_PROCESS_SHARED)
-	 LOG_RETURN(ENOTSUP);   
+  {
+	  pm2debug("prefix_barrierattr_setpshared : shared mutex requested!\n");
+	  LOG_RETURN(ENOTSUP);   
+  }
   
   iattr = (struct prefix_barrierattr *)attr;
 
@@ -199,7 +207,12 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
   LOG_IN();
 
   if (__builtin_expect (count == 0, 0))
-    LOG_RETURN(EINVAL);
+  {
+#ifdef MA__DEBUG
+	  fprintf(stderr,"prefix_barrier_init : valeur count(%d)  invalide\n",count);
+#endif
+	  LOG_RETURN(EINVAL);
+  }
 
   if (attr != NULL)
   {
@@ -210,7 +223,12 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
     if (iattr->pshared != PREFIX_PROCESS_PRIVATE
    	 && __builtin_expect (iattr->pshared != PREFIX_PROCESS_SHARED, 0))
 	    /* Invalid attribute.  */
+	 {
+#ifdef MA__DEBUG
+	    fprintf(stderr,"prefix_barrier_init : valeur attr->pshared(%d) invalide\n",iattr->pshared);
+#endif
 	    LOG_RETURN(EINVAL);
+    }
   
 	 if (iattr->pshared == PREFIX_PROCESS_SHARED)
 	    LOG_RETURN(ENOTSUP);
@@ -274,6 +292,7 @@ REPLICATE_CODE([[dnl
 int prefix_barrier_wait(prefix_barrier_t *barrier)
 {
   int result = 0;
+
   prefix_barrier_wait_begin(barrier);
 
   if (!prefix_barrier_wait_end(barrier))
@@ -293,27 +312,22 @@ int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
   struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
   prefix_lock_acquire(&ibarrier->lock.__spinlock);
-
+  
   ibarrier->leftB --;
   int ret = ibarrier->leftB; 
 
   if (!ibarrier->leftB)
-  {
-     //fprintf(stderr,"le thread %p arrive a la barrière begin : on en a assez\n",marcel_self());
-      
-     /* Yes. Increment the event counter to avoid invalid wake-ups and
-	     tell the current waiters that it is their turn.  */
-     //++ibarrier->curr_event;
-
+  {   
      /* Wake up everybody.  */
      do 
      {} 
      while (__prefix_unlock_spinlocked(&ibarrier->lock));
-
+ 
      ibarrier->leftB = ibarrier->init_count;
      ibarrier->leftE = ibarrier->init_count;
+     
   }
-
+  
   prefix_lock_release(&ibarrier->lock.__spinlock);
 
   return ret;
@@ -333,32 +347,19 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
   prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
   /* Are these all?  */
-  while (!ibarrier->leftE)
-  {
-
-     //fprintf(stderr,"le thread %p arrive a la barrier_end : il en reste %d\n",marcel_self(),ibarrier->leftE);
-      
-     /* The number of the event we are waiting for.  The barrier's event
-	  number must be bumped before we continue.  */
-     //unsigned int event = ibarrier->curr_event;
-
-     /* Before suspending, make the barrier available to others.  */
-     //prefix_lock_release(&ibarrier->lock.__spinlock);
-
-     /* Wait for the event counter of the barrier to change.  */
-     /* voir si cest bon, je pense que ça termine la boucle si on a l'événement */
+  while (!ibarrier->leftE){    
+     blockcell c;
+     __prefix_register_spinlocked(&ibarrier->lock, marcel_self(), &c);
      INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-        (!ibarrier->leftE),
-        prefix_lock_release(&ibarrier->lock.__spinlock),
-	     prefix_lock_acquire(&ibarrier->lock.__spinlock));
+       c.blocked,
+       prefix_lock_release(&ibarrier->lock.__spinlock),
+	    prefix_lock_acquire(&ibarrier->lock.__spinlock));
 	
-    }
+  }
     
-  /* If this was the last woken thread, unlock.  */
-  
   ibarrier->leftE --;
   int ret = ibarrier->leftE;
-  /* We are done.  */
+
   prefix_lock_release(&ibarrier->lock.__spinlock);
 
   return ret;

@@ -124,7 +124,7 @@ typedef struct {
 			SELF_GETMEM(spinlock_backtrace) = 1; \
 			(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
 		} \
-        } while (0)
+          } while (0)
 
 /* without debugging, spin_is_locked on UP always says
  * FALSE. --> printk if already locked. */
@@ -336,9 +336,9 @@ do { \
 
 #define ma_spin_lock_bh(lock) \
 do { \
-	ma_local_bh_disable(); \
-	ma_preempt_disable(); \
-	_ma_raw_spin_lock(lock); \
+	  ma_local_bh_disable(); \
+	  ma_preempt_disable(); \
+	  _ma_raw_spin_lock(lock); \
 } while (0)
 
 /*

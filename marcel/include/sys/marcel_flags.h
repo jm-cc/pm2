@@ -195,6 +195,9 @@
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD
 #  define MA__PROVIDE_TLS
+#  if defined(MA__LWPS) && !defined(MARCEL_DONT_USE_POSIX_THREADS)
+#    error "can't build a SMP libpthread when using posix threads for LWPs. Please activate Marcel's dont_use_pthread option"
+#  endif
 #endif
 
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)

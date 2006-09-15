@@ -37,7 +37,8 @@
 #section functions
 
 /* ==== `sleep' functions ==== */
-
+int pmarcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp);
+DEC_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp));
 int pmarcel_usleep(unsigned long usec);
 DEC_MARCEL_POSIX(int,usleep,(unsigned long usec));
 int pmarcel_sleep(unsigned long sec);
@@ -79,6 +80,9 @@ void marcel_snapshot(snapshot_func_t f);
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 void marcel_per_lwp_threadslist(int max, marcel_t *pids, int *nb, int which);
 int marcel_per_lwp_nbthreads();
+int sched_get_priority_max(int policy);
+int sched_get_priority_min(int policy);
+
 #section macros
 #define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
 	while((cond)) { \

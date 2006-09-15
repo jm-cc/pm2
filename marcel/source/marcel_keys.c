@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include <errno.h>
+#include <resolv.h>
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
 int marcel_key_present[MAX_KEY_SPECIFIC]={0};
@@ -29,6 +30,9 @@ DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
    int ret = 0;
    if ((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key])) {
       MA_WARN_ON(1);
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setspecific : valeur key(%d) invalide\n",key);
+#endif
       ret = EINVAL;
    } else
       SELF_GETMEM(key)[key] = (any_t)value;
@@ -44,6 +48,9 @@ DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key),
    any_t ret;
    if ((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key])) {
       MA_WARN_ON(1);
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setspecific : valeur key(%d) invalide\n",key);
+#endif
       errno = EINVAL;
       ret = NULL;
    } else
@@ -107,3 +114,67 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 //DEF___PTHREAD(int, key_delete, (pthread_key_t key), (key))
 
+#undef errno
+#pragma weak errno
+DEF_MARCEL_POSIX(int *, __errno_location,(void),(),
+{
+	int * res;
+
+#ifdef MA__PROVIDE_TLS
+	extern __thread int errno;
+	res=&errno;
+#else
+	static int _first_errno;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__errno);
+	} else {
+		res=&_first_errno;
+	}
+#endif
+	return res;
+})
+DEF_C(int *, __errno_location,(void),());
+DEF___C(int *, __errno_location,(void),());
+
+#undef h_errno
+#pragma weak h_errno
+DEF_MARCEL_POSIX(int *, __h_errno_location,(void),(),
+{
+	int * res;
+
+#ifdef MA__PROVIDE_TLS
+	extern __thread int h_errno;
+	res=&h_errno;
+#else
+	static int _first_h_errno;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__h_errno);
+	} else {
+		res=&_first_h_errno;
+	}
+#endif
+	return res;
+})
+extern int *__h_errno_location(void);
+DEF_C(int *, __h_errno_location,(void),());
+DEF___C(int *, __h_errno_location,(void),());
+
+/* Return thread specific resolver state.  */
+DEF_POSIX(struct __res_state *,
+__res_state, (void), (),
+{
+	struct __res_state * res;
+	static struct __res_state _fisrt_res_state;
+
+	if (ma_init_done[MA_INIT_TLS]) {
+		res=&SELF_GETMEM(__res_state);
+	} else {
+		res=&_fisrt_res_state;
+	}
+	return res;
+})
+extern struct __res_state *__res_state(void);
+DEF_C(struct __res_state *, __res_state, (void), ());
+DEF___C(struct __res_state *, __res_state, (void), ());

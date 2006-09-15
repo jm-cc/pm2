@@ -21,22 +21,30 @@
 #include <errno.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
                          void * (*start_routine)(void *), void *arg)
 {
   static int _launched=0;
+  marcel_attr_t new_attr;
 
   if (__builtin_expect(_launched, 1)==0) {
     marcel_start_sched(NULL, NULL);
   }
+
   if (attr != NULL)
     {
-  /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
+		if (attr->__stacksize == -1)
+		{
+		   fprintf(stderr,"pthread_create : attr non initialisé\n");
+         return EINVAL;
+		}
+   /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
      the old size and access to the new members might crash the program.
      We convert the struct now.  */
-      marcel_attr_t new_attr = marcel_attr_default;
+      new_attr = marcel_attr_default;
       memcpy (&new_attr, attr,
               (size_t) &(((marcel_attr_t*)NULL)->user_space));
       // Le cast par (void*) est demandé par gcc pour respecter la norme C
@@ -49,22 +57,6 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
 }
 
 versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
-
-/*********************lseek***************************/
-
-off_t __lseek(int fd, off_t offset, int whence) {
-	return syscall(SYS_lseek, fd, offset, whence);
-}
-strong_alias(__lseek, lseek)
-
-#if MA_BITS_PER_LONG < 64
-off64_t __lseek64(int fd, off64_t offset, int whence) {
-	off64_t res;
-	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
-	return ret ? ret : res;
-}
-strong_alias(__lseek64, lseek64)
-#endif
 
 /*********************pthread_self***************************/
 
@@ -119,24 +111,6 @@ int pthread_equal(pthread_t thread1, pthread_t thread2)
   return thread1 == thread2;
 }
 
-/*
-int __libc_sigaction (int sig, const struct sigaction *act, struct sigaction *oact);
-int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
-{
-#if 0
-  if (__builtin_expect (sig == SIGCANCEL || sig == SIGSETXID, 0))
-    {
-      __set_errno (EINVAL);
-      return -1;
-    }
-#endif
-
-  return __libc_sigaction (sig, act, oact);
-}
-//libc_hidden_weak (__sigaction)
-weak_alias (__sigaction, sigaction)
-*/
-
 #ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire
 #endif
@@ -158,77 +132,6 @@ void _pthread_cleanup_pop(struct _pthread_cleanup_buffer * buffer,
 }
 #endif
 
-int
-//attribute_hidden
-__pthread_enable_asynccancel (void)
-{
-#if 0
-// FIXME
-  struct marcel_task *self = MARCEL_SELF;
-  int oldval = THREAD_GETMEM (self, cancelhandling);
-
-  while (1)
-    {
-      int newval = oldval | CANCELTYPE_BITMASK;
-
-      if (newval == oldval)
-        break;
-
-      int curval = THREAD_ATOMIC_CMPXCHG_VAL (self, cancelhandling, newval,
-                                              oldval);
-      if (__builtin_expect (curval == oldval, 1))
-        {
-          if (CANCEL_ENABLED_AND_CANCELED_AND_ASYNCHRONOUS (newval))
-            {
-              THREAD_SETMEM (self, result, PTHREAD_CANCELED);
-              __do_cancel ();
-            }
-
-          break;
-        }
-
-      /* Prepare the next round.  */
-      oldval = curval;
-    }
-
-  return oldval;
-#endif
-  return 0;
-}
-
-
-void
-//internal_function attribute_hidden
-__pthread_disable_asynccancel (int oldtype)
-{
-#if 0
-// FIXME
-  /* If asynchronous cancellation was enabled before we do not have
- *      anything to do.  */
-  if (oldtype & CANCELTYPE_BITMASK)
-    return;
-
-  struct marcel_task *self = MARCEL_SELF;
-  int oldval = THREAD_GETMEM (self, cancelhandling);
-
-  while (1)
-    {
-      int newval = oldval & ~CANCELTYPE_BITMASK;
-
-      if (newval == oldval)
-        break;
-
-      int curval = THREAD_ATOMIC_CMPXCHG_VAL (self, cancelhandling, newval,
-                                              oldval);
-      if (__builtin_expect (curval == oldval, 1))
-        break;
-
-      /* Prepare the next round.  */
-      oldval = curval;
-    }
-#endif
-}
-
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
 	LOG_IN();
 	/* Extension Real-Time non supportée */
@@ -245,59 +148,71 @@ int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
 
 /********************************************************/
 
-int * __errno_location()
-{
-	int * res;
+void ma_check_lpt_sizes(void) {
+	MA_BUG_ON(sizeof(pmarcel_sem_t) > sizeof(sem_t));
+	MA_BUG_ON(sizeof(lpt_attr_t) > sizeof(pthread_attr_t));
+	MA_BUG_ON(sizeof(lpt_mutex_t) > sizeof(pthread_mutex_t));
+	MA_BUG_ON(sizeof(lpt_mutexattr_t) > sizeof(pthread_mutexattr_t));
+	MA_BUG_ON(sizeof(lpt_cond_t) > sizeof(pthread_cond_t));
+	MA_BUG_ON(sizeof(lpt_condattr_t) > sizeof(pthread_condattr_t));
+	MA_BUG_ON(sizeof(lpt_key_t) > sizeof(pthread_key_t));
+	MA_BUG_ON(sizeof(lpt_once_t) > sizeof(pthread_once_t));
+	MA_BUG_ON(sizeof(lpt_rwlock_t) > sizeof(pthread_rwlock_t));
+	MA_BUG_ON(sizeof(lpt_rwlockattr_t) > sizeof(pthread_rwlockattr_t));
+	MA_BUG_ON(sizeof(lpt_spinlock_t) > sizeof(pthread_spinlock_t));
+	MA_BUG_ON(sizeof(lpt_barrier_t) > sizeof(pthread_barrier_t));
+	MA_BUG_ON(sizeof(lpt_barrierattr_t) > sizeof(pthread_barrierattr_t));
+}
 
-#ifdef MA__PROVIDE_TLS
-#undef errno
-	extern __thread int errno;
-	res=&errno;
-#else
-	static int _first_errno;
+#define cancellable_call_ext(ret, name, sysnr, ver, proto, ...) \
+ret lpt_##name proto {\
+	if (tbx_unlikely(!marcel_createdthreads())) { \
+		return syscall(sysnr, ##__VA_ARGS__); \
+	} else { \
+		int old = __pmarcel_enable_asynccancel(); \
+		ret res; \
+		res = syscall(sysnr, ##__VA_ARGS__); \
+		__pmarcel_disable_asynccancel(old); \
+		return res; \
+	} \
+} \
+versioned_symbol(libpthread, LPT_NAME(name), LIBC_NAME(name), ver); \
+DEF___LIBC(ret, name, proto, (args))
 
-	if (ma_init_done[MA_INIT_TLS]) {
-		res=&SELF_GETMEM(__errno);
-	} else {
-		res=&_first_errno;
-	}
+#define cancellable_call(ret, name, proto, ...) \
+	cancellable_call_ext(ret, name, SYS_##name, GLIBC_2_0, proto, ##__VA_ARGS__)
+
+/*********************lseek***************************/
+
+#if MA_BITS_PER_LONG < 64
+off64_t __lseek64(int fd, off64_t offset, int whence) {
+	off64_t res;
+	int old = __pmarcel_enable_asynccancel();
+	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+	__pmarcel_disable_asynccancel(old);
+	return ret ? ret : res;
+}
+strong_alias(__lseek64, lseek64)
+loff_t __llseek(int fd, loff_t offset, int whence) {
+	loff_t res;
+	int old = __pmarcel_enable_asynccancel();
+	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+	__pmarcel_disable_asynccancel(old);
+	return ret ? ret : res;
+}
+strong_alias(__llseek, llseek)
 #endif
-	return res;
-}
 
-int * __h_errno_location()
-{
-	int * res;
-
-#ifdef MA__PROVIDE_TLS
-#undef h_errno
-	extern __thread int h_errno;
-	res=&h_errno;
-#else
-	static int _first_h_errno;
-
-	if (ma_init_done[MA_INIT_TLS]) {
-		res=&SELF_GETMEM(__h_errno);
-	} else {
-		res=&_first_h_errno;
-	}
-#endif
-	return res;
-}
-
-/* Return thread specific resolver state.  */
-struct __res_state *
-__res_state (void)
-{
-	struct __res_state * res;
-	static struct __res_state _fisrt_res_state;
-
-	if (ma_init_done[MA_INIT_TLS]) {
-		res=&SELF_GETMEM(__res_state);
-	} else {
-		res=&_fisrt_res_state;
-	}
-	return res;
-}
+cancellable_call(int, close, (int fd), (fd))
+cancellable_call(int, fcntl, (int fd, int cmd, long arg), fd, cmd, arg)
+cancellable_call(int, fsync, (int fd), (fd))
+cancellable_call(off_t, lseek, (int fd, off_t offset, int whence), fd, offset, whence)
+cancellable_call(int, open, (const char *path, int flags, mode_t mode), path, flags, mode)
+cancellable_call_ext(int, open64, SYS_open, GLIBC_2_2, (const char *path, int flags, mode_t mode), path, flags, mode)
+cancellable_call_ext(ssize_t, pread64, SYS_pwrite64, GLIBC_2_2, (int fd, void *buf, size_t count, off64_t pos), fd, buf, count, pos)
+cancellable_call_ext(ssize_t, pwrite64, SYS_pwrite64, GLIBC_2_2, (int fd, const void *buf, size_t count, off64_t pos), fd, buf, count, pos)
+cancellable_call(ssize_t, read, (int fd, void *buf, size_t count), fd, buf, count)
+cancellable_call(pid_t, waitpid, (pid_t pid, int *status, int options), pid, status, options)
+cancellable_call(ssize_t, write, (int fd, const void *buf, size_t count), fd, buf, count)
 
 #endif /* MA__LIBPTHREAD */

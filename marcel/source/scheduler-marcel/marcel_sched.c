@@ -58,18 +58,6 @@ int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bu
 }
 #endif
 
-int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio)
-{
-  attr->prio = prio;
-  return 0;
-}
-
-int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio)
-{
-  *prio = attr->prio;
-  return 0;
-}
-
 int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes)
 {
   attr->inheritholder = yes;

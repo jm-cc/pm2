@@ -41,7 +41,6 @@ typedef struct marcel_sched_attr marcel_sched_attr_t;
 #depend "scheduler/marcel_holder.h[types]"
 struct marcel_sched_attr {
 	ma_holder_t *init_holder;
-	int prio;
 	tbx_bool_t inheritholder;
 };
 
@@ -51,13 +50,11 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 #section macros
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
 	.init_holder = NULL, \
-	.prio = MA_DEF_PRIO, \
 	.inheritholder = tbx_false, \
 }
 
 #define MARCEL_SCHED_ATTR_DESTROYER { \
 	.init_holder = NULL, \
-	.prio = -1, \
 	.inheritholder = tbx_false, \
 }
 #section functions
@@ -77,9 +74,6 @@ int marcel_sched_attr_setinitbubble(marcel_sched_attr_t *attr, marcel_bubble_t *
 int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
 #endif
 
-int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio) __THROW;
-int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio) __THROW;
-
 int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
 int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
 
@@ -92,9 +86,6 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
 #define marcel_attr_setinitbubble(attr,bubble) marcel_sched_attr_setinitbubble(&(attr)->sched,bubble)
 #define marcel_attr_getinitbubble(attr,bubble) marcel_sched_attr_getinitbubble(&(attr)->sched,bubble)
 #endif
-
-#define marcel_attr_setprio(attr,prio) marcel_sched_attr_setprio(&(attr)->sched,prio)
-#define marcel_attr_getprio(attr,prio) marcel_sched_attr_getprio(&(attr)->sched,prio)
 
 #define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
@@ -268,9 +259,10 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			rq = &ma_main_runqueue;
 		}
 		internal->entity.sched_holder = &rq->hold;
+		MA_BUG_ON(!rq->name[0]);
 	}
 	INIT_LIST_HEAD(&internal->entity.run_list);
-	internal->entity.prio=attr->sched.prio;
+	internal->entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
 	/* timestamp, last_ran */
 	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);

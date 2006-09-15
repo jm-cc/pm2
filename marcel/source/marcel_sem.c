@@ -15,9 +15,6 @@
  */
 
 #include "marcel.h"
-#ifdef MA__LIBPTHREAD
-#include <semaphore.h>
-#endif
 #include <errno.h>
 
 /* Portage libpthread:
@@ -29,6 +26,8 @@
 
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {
+  //fprintf(stderr,"* sem_init(%p,%d)\n",s,initial);
+  
   s->value = initial;
   s->first = NULL;
   ma_spin_lock_init(&s->lock);
@@ -39,6 +38,7 @@ DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
 {
   LOG_IN();
   if (pshared) {
+    fprintf(stderr,"PROCESS_PSHARED not supported\n");
     errno = ENOTSUP;
     LOG_RETURN(-1);
   }
@@ -111,7 +111,7 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
       s->last->next = &c;
       s->last = &c;
     }
-    
+  
     SELF_GETMEM(interrupted) = 0;
     while(c.blocked) {
       ma_set_current_state(MA_TASK_INTERRUPTIBLE);
@@ -129,6 +129,7 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
       }
     }
   }
+  
   ma_spin_unlock_bh(&s->lock);
 
   LOG_OUT();
@@ -231,13 +232,14 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
   LOG_IN();
   LOG_PTR("semaphore",s);
 
-#ifdef MA_DEBUG
   if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000)
   {
-    errno = EINVAL;
-    return -1;
-  }
+#ifdef MA__DEBUG
+	 fprintf(stderr,"pmarcel_semtimedwait : valeur nsec(%ld) invalide\n",abs_timeout->tv_nsec);
 #endif
+     errno = EINVAL;
+     return -1;
+  }
 
   gettimeofday(&tv, NULL);
   timeout = (abs_timeout->tv_sec - tv.tv_sec)*1000000 +
@@ -303,7 +305,7 @@ void marcel_sem_V(marcel_sem_t *s)
   LOG_PTR("semaphore",s);
 
   ma_spin_lock_bh(&s->lock);
-
+  
   if(++(s->value) <= 0) {
     c = s->first;
     s->first = c->next;
@@ -314,7 +316,7 @@ void marcel_sem_V(marcel_sem_t *s)
   } else {
     ma_spin_unlock_bh(&s->lock);
   }
-    
+
   LOG_OUT();
 }
 
@@ -353,6 +355,7 @@ void marcel_sem_unlock_all(marcel_sem_t *s)
 DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem),(sem),
 {
    LOG_IN();
+   fprintf(stderr,"!! sem_close not implemented\n");
    errno = ENOTSUP;
    LOG_RETURN(-1);
 })
@@ -361,11 +364,12 @@ DEF_C(int,sem_close,(sem_t *sem),(sem))
 DEF___C(int,sem_close,(sem_t *sem),(sem))
 
 /********************sem_open***************************/
-DEF_POSIX(int,sem_open,(const char *name, int flags,...),(name,flags,...),
+DEF_POSIX(sem_t*,sem_open,(const char *name, int flags,...),(name,flags,...),
 {
    LOG_IN();
+   fprintf(stderr,"!! sem_open not implemented\n");
    errno = ENOTSUP;
-   LOG_RETURN(-1);
+   LOG_RETURN(SEM_FAILED);
 })
 
 DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
@@ -375,6 +379,7 @@ DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 DEF_POSIX(int,sem_unlink,(const char *name),(name),
 {
    LOG_IN();
+   fprintf(stderr,"!! sem_unlink not implemented\n");
    errno = ENOTSUP;
    LOG_RETURN(-1);
 })

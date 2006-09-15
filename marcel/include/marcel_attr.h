@@ -77,7 +77,7 @@ struct __marcel_attr_s
 #define MARCEL_ATTR_INITIALIZER { \
   .__detachstate= MARCEL_CREATE_JOINABLE, \
   .__schedpolicy= MARCEL_SCHED_OTHER, \
-  .__schedparam= {0,}, \
+  .__schedparam= {MA_DEF_PRIO,}, \
   .__inheritsched= 0, \
   .__scope= MARCEL_SCOPE_PROCESS, \
   .__guardsize= MARCEL_STACKSGUARD, \
@@ -165,6 +165,10 @@ int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
 int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
                                int * __restrict policy) __THROW;
 
+int marcel_attr_setprio(marcel_attr_t *attr, int prio);
+int marcel_attr_getprio(__const marcel_attr_t * __restrict attr,
+                            int * __restrict prio);
+
 int marcel_attr_setrealtime(marcel_attr_t *attr, tbx_bool_t realtime);
 int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
                             tbx_bool_t * __restrict realtime);
@@ -206,8 +210,8 @@ DEC_POSIX(int, attr_setscope, (pmarcel_attr_t *__restrict attr, int contentionsc
 DEC_POSIX(int, attr_getscope, (__const pmarcel_attr_t *__restrict attr, int *contentionscope) __THROW);
 DEC_POSIX(int, attr_setschedpolicy, (pmarcel_attr_t *__restrict attr, int policy) __THROW);
 DEC_POSIX(int, attr_getschedpolicy, (__const pmarcel_attr_t *__restrict attr, int *policy) __THROW);
-DEC_MARCEL_POSIX(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_sched_param *param) __THROW);
-DEC_MARCEL_POSIX(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
+DEC_MARCEL(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_sched_param *param) __THROW);
+DEC_MARCEL(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
 DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;

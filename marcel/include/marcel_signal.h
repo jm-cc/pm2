@@ -68,10 +68,10 @@ unsigned int pmarcel_alarm(unsigned int nb_sec);
 DEC_MARCEL_POSIX(unsigned int, alarm,(unsigned int nb_sec));
 
 int pmarcel_getitimer(int which, struct itimerval *value);
-DEC_POSIX(int, getitimer, (int which, struct itimerval *value));
+DEC_MARCEL_POSIX(int, getitimer, (int which, struct itimerval *value));
 
 int pmarcel_setitimer(int which, const struct itimerval *value, struct itimerval *ovalue);
-DEC_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue));
+DEC_MARCEL_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue));
 
 int pmarcel_kill(pmarcel_t thread, int sig);
 DEC_MARCEL_POSIX(int, kill, (marcel_t thread, int sig) __THROW);

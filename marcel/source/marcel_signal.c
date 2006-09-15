@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 /*********************MA__DEBUG******************************/
@@ -81,20 +82,126 @@ DEF_MARCEL_POSIX(unsigned int, alarm, (unsigned int nb_sec), (nb_sec),
 DEF_C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
 DEF___C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
 
-DEF_POSIX(int, getitimer, (int which, struct itimerval *value), (which, value),
+
+/***********************get/setitimer**********************/
+static void itimer_timeout(unsigned long data);
+
+static struct ma_timer_list itimer_timer = MA_TIMER_INITIALIZER(itimer_timeout, 0, 0);
+unsigned long interval;
+unsigned long valeur;
+
+static void itimer_timeout(unsigned long data)
 {
-   fprintf(stderr,"!! getitimer(%d) not supported\n",which);
-   errno = ENOSYS;
-   return -1;
+   /* alarme expirée, signaler le programme */
+   if (!marcel_distribwait_sigext(SIGALRM)) {
+      ksigpending[SIGALRM] = 1;  
+      ma_raise_softirq(MA_SIGNAL_SOFTIRQ);
+   }
+   if (interval)
+   {
+      ma_init_timer(&itimer_timer);
+      itimer_timer.expires = ma_jiffies + interval / marcel_gettimeslice();
+      ma_add_timer(&itimer_timer);
+   }
+}
+
+static int check_itimer(int which)
+{
+   if ((which != ITIMER_REAL)&&(which != ITIMER_VIRTUAL)
+	  &&(which != ITIMER_PROF))
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"set/getitimer : valeur which invalide !\n");
+#endif
+      errno = EINVAL;
+      return -1;
+   }
+   if (which != ITIMER_REAL)
+	{
+#ifdef MA__DEBUG
+      fprintf(stderr,"set/getitimer : valeur which non supportee !\n");
+#endif
+      errno = ENOTSUP;
+      return -1;
+   }
+   return 0;
+}
+
+static int check_setitimer(int which,const struct itimerval *value)
+{
+   int ret = check_itimer(which);
+   if (ret)
+	   return ret;
+   if (value)
+	{
+	   if ((value->it_value.tv_usec > 999999)
+		  ||(value->it_interval.tv_usec > 999999))
+		{
+#ifdef MA__DEBUG
+			fprintf(stderr,"setitimer : valeur temporelle trop elevee !\n");
+#endif
+         errno = EINVAL;
+			return -1;
+		}
+   }
+   return 0;
+}
+/***********************getitimer**********************/
+
+DEF_MARCEL_POSIX(int, getitimer, (int which, struct itimerval *value), (which, value),
+{
+  /* error checking */
+  int ret = check_itimer(which);
+  if (ret)
+	 return ret;
+  /* error checking end */
+  
+  value->it_interval.tv_sec = interval / 1000000;
+  value->it_interval.tv_usec = interval % 1000000;
+  value->it_value.tv_sec = (itimer_timer.expires - ma_jiffies) / 1000000;
+  value->it_value.tv_usec = (itimer_timer.expires - ma_jiffies) % 1000000;
+  
+  return 0;
 })
+
 DEF_C(int, getitimer, (int which, struct itimerval *value), (which, value))
 DEF___C(int, getitimer, (int which, struct itimerval *value), (which, value))
 
-DEF_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue),
+/************************setitimer***********************/
+
+DEF_MARCEL_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue),
 {
-   fprintf(stderr,"!! setitimer(%d) not supported\n",which);
-   errno = ENOSYS;
-   return -1;
+  /* error checking */
+  unsigned int ret = check_setitimer(which,value);
+  if (ret)
+	 return ret;
+  /* error checking end */
+
+  ma_del_timer_sync(&itimer_timer);
+ 
+  if (ovalue)
+  {
+     ovalue->it_interval.tv_sec = interval / 1000000;
+     ovalue->it_interval.tv_usec = interval % 1000000;
+     ovalue->it_value.tv_sec = valeur / 1000000;
+     ovalue->it_value.tv_usec = valeur % 1000000;
+  }
+  
+  if (itimer_timer.expires > ma_jiffies) 
+  {
+     ret = ((itimer_timer.expires - ma_jiffies) * marcel_gettimeslice()) / 1000000;
+  }
+  
+  interval = value->it_interval.tv_sec * 1000000 + value->it_interval.tv_usec;
+  valeur = value->it_value.tv_sec * 1000000 + value->it_value.tv_usec;
+
+  if (valeur)
+  {
+      ma_init_timer(&itimer_timer);
+      itimer_timer.expires = ma_jiffies + valeur / marcel_gettimeslice();
+      ma_add_timer(&itimer_timer);
+  }
+  return ret;
 })
 DEF_C(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue))
 DEF___C(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue))
@@ -157,16 +264,44 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 }
 
 /*****************************raise****************************/
-DEF_MARCEL_POSIX(int, raise, (int sig), (sig),
+static int check_raise(int sig)
 {
-   LOG_IN();
-#ifdef MA__DEBUG
    if ((sig < 0) || (sig >= MARCEL_NSIG))
    {
+#ifdef MA__DEBUG
+      fprintf(stderr,"raise : numero de signal invalide !\n");
+#endif
       errno = EINVAL;
       return -1;
    }
+   return 0;
+}
+
+DEF_MARCEL(int, raise, (int sig), (sig),
+{
+   LOG_IN();
+
+#ifdef MA__DEBUG
+   int ret = check_raise(sig);
+   if (ret)
+	  return ret;
 #endif
+  
+   marcel_kill(marcel_self(),sig);
+
+   LOG_OUT();
+   return 0;
+})
+
+DEF_POSIX(int, raise, (int sig), (sig),
+{
+   LOG_IN();
+
+   /* error checking */
+   int ret = check_raise(sig);
+   if (ret)
+	  return ret;
+   /* error checking end */
   
    marcel_kill(marcel_self(),sig);
 
@@ -223,21 +358,56 @@ static void marcel_pidkill(int sig)
    LOG_OUT();
 }
 /*********************pthread_kill***************************/
-DEF_MARCEL_POSIX(int, kill, (marcel_t thread, int sig), (thread,sig),
+static int check_kill(marcel_t thread, int sig)
+{
+   if (!MARCEL_THREAD_ISALIVE(thread))
+	  return ESRCH; 
+   if ((sig < 0) || (sig >= MARCEL_NSIG))
+	{
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_kill : numero de signal invalide !\n");
+#endif
+      return EINVAL;
+   }
+   return 0;
+}
+
+DEF_MARCEL(int, kill, (marcel_t thread, int sig), (thread,sig),
 {
   LOG_IN();
 
 #ifdef MA__DEBUG
-   /* le test 6-1 ne passe pas car la validité du thread n'est pas vérifié */
-   /* il faudra renvoyer ESRCH */
-   if ((sig < 0) || (sig >= MARCEL_NSIG))
-      return EINVAL;
-   if (sig == 0)
-   {
-      fprintf(stderr,"** error checking shall be performed \n");
-      return 0;
-   }
+   int err = check_kill(thread,sig);
+   if (err)
+     return err;
 #endif
+   if (!sig)
+	  return 0;
+
+   PROF_EVENT2(kill,thread,sig);
+
+   if (!marcel_distribwait_thread(sig,thread))
+   {
+      ma_spin_lock_softirq(&thread->siglock);
+		marcel_sigaddset(&thread->sigpending,sig);
+      ma_spin_unlock_softirq(&thread->siglock);
+      marcel_deviate(thread,(handler_func_t)marcel_deliver_sig,NULL);
+   }
+   LOG_OUT();
+   return 0;
+})
+
+DEF_POSIX(int, kill, (marcel_t thread, int sig), (thread,sig),
+{
+   LOG_IN();   
+
+   /* codes d'erreur */
+   int err = check_kill(thread,sig);
+   if (err)
+     return err;
+	/* fin codes d'erreur */
+	if (!sig)
+	  return 0;
 
    PROF_EVENT2(kill,thread,sig);
 
@@ -256,18 +426,31 @@ DEF_PTHREAD(int, kill, (pthread_t thread, int sig), (thread,sig))
 DEF___PTHREAD(int, kill, (pthread_t thread, int sig), (thread,sig))
 
 /*************************pthread_sigmask***********************/
+static int check_sigmask(int how)
+{
+   if ((how != SIG_BLOCK)&&(how != SIG_UNBLOCK)
+     &&(how != SIG_SETMASK)) 
+   {
+#ifdef MA__DEBUG
+     fprintf(stderr,"p&marcel_sigmask : valeur how invalide !\n");
+#endif
+     return EINVAL;
+   }
+   return 0;
+}
+
 int marcel_sigmask(int how, __const marcel_sigset_t *set, marcel_sigset_t *oset)
 {
    LOG_IN();
-
+   
    int sig;
    marcel_t cthread = marcel_self();
    marcel_sigset_t cset = cthread->curmask;
 
 #ifdef MA__DEBUG
-   if ((how != SIG_BLOCK)&&(how != SIG_UNBLOCK)
-     &&(how != SIG_SETMASK)) 
-      return EINVAL;
+	int ret = check_sigmask(how);
+   if (ret)
+     return ret;
 #endif
 
 restart:
@@ -307,7 +490,7 @@ restart:
          if (marcel_sigismember(set,sig))
             marcel_sigdelset(&cset,sig);
    }
-   else fprintf(stderr,"pas de how\n");
+   else fprintf(stderr,"sigmask : pas de how\n");
 
    /* SIGKILL et SIGSTOP ne doivent pas être masqués */
    if (marcel_sigismember(&cset,SIGKILL))
@@ -322,6 +505,11 @@ restart:
          LOG_OUT();
          return 0;
       }
+
+   for(sig=1 ; sig < MARCEL_NSIG ; sig++)
+      if (marcel_sigismember(&cset,sig))
+         if (csigaction[sig].marcel_sa_handler == SIG_DFL)
+	         fprintf(stderr,"pthread_sigmask ne supporte pas les signaux avec SIG_DFL pour sa_handler\n");   
 
    cthread->curmask = cset;
 
@@ -348,7 +536,7 @@ restart:
       {
          if (marcel_signandismember(&cthread->sigpending,&cset,sig))
          {    
-	    marcel_sigdelset(&cthread->sigpending, sig);
+	         marcel_sigdelset(&cthread->sigpending, sig);
             ma_spin_unlock_softirq(&cthread->siglock);
             ma_set_current_state(MA_TASK_RUNNING);
             marcel_call_function(sig);
@@ -364,6 +552,12 @@ restart:
 
 int pmarcel_sigmask(int how, __const marcel_sigset_t *set, marcel_sigset_t *oset) 
 {
+   /* error checking */
+   int ret = check_sigmask(how);
+   if (ret)
+      return ret;
+   /*error checking end */
+   
    return marcel_sigmask(how, set, oset);
 }
 
@@ -375,17 +569,27 @@ int lpt_sigmask(int how,__const sigset_t *set, sigset_t *oset)
    marcel_sigset_t marcel_oset;
    
    marcel_sigemptyset(&marcel_set);
-   for (signo = 1;signo < MARCEL_NSIG; signo ++)
-     if (sigismember(set,signo))
-        marcel_sigaddset(&marcel_set,signo);
    
-   ret = marcel_sigmask(how,&marcel_set,&marcel_oset);
+   if (set)
+	{
+      for (signo = 1;signo < MARCEL_NSIG; signo ++)
+        if (sigismember(set,signo))
+           marcel_sigaddset(&marcel_set,signo);
+      ret = pmarcel_sigmask(how,&marcel_set,&marcel_oset);
+   }
+   else
+	{
+  	   ret = pmarcel_sigmask(how,NULL,&marcel_oset);
+	}
    
-   sigemptyset(oset);
-   for (signo = 1;signo < MARCEL_NSIG; signo ++)
-     if (marcel_sigismember(&marcel_oset,signo))
-        sigaddset(oset,signo);
-   
+   if (oset)
+   {
+      sigemptyset(oset);
+      for (signo = 1;signo < MARCEL_NSIG; signo ++)
+        if (marcel_sigismember(&marcel_oset,signo))
+           sigaddset(oset,signo);
+   }
+
    return ret;
 }
 #endif
@@ -393,29 +597,105 @@ int lpt_sigmask(int how,__const sigset_t *set, sigset_t *oset)
 DEF_LIBPTHREAD(int, sigmask, (int how, __const sigset_t *set, sigset_t *oset), (how, set, oset))
 DEF___LIBPTHREAD(int, sigmask, (int how, __const sigset_t *set, sigset_t *oset), (how, set, oset))
 
-/****************************sigpending**************************/
-DEF_MARCEL_POSIX(int, sigpending, (marcel_sigset_t *set), (set),
+/***************************sigprocmask*************************/
+#ifdef MA__LIBPTHREAD
+int sigprocmask(int how, __const sigset_t *set, sigset_t *oset)
 {
-   LOG_IN();
-   
-   marcel_t cthread;
-   cthread = marcel_self();
-   int sig;
-
+   if (marcel_createdthreads() == 0)
+	{
+	   int ret = lpt_sigmask(how,set,oset);
+      if (ret)
+		{
+	   	errno = ret;
+         return -1;
+		}
+      return 0;
+   }
+	else
+   {
 #ifdef MA__DEBUG
+     fprintf(stderr,"sigprocmask : multithreading here !!!\n");
+#endif
+     errno = EPERM;
+     return -1;
+   }
+   return -1;
+}
+#endif
+
+/****************************sigpending**************************/
+static int check_sigpending(marcel_sigset_t *set)
+{
+   marcel_t cthread = marcel_self();
    if (set == NULL)
    {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_sigpending : valeur set NULL !!!\n");
+#endif
       errno = EINVAL;
       return -1;
    }
    ma_spin_lock_softirq(&cthread->siglock);
    if (&cthread->sigpending == NULL)
    {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_sigpending : valeur de champ des signaux en suspend  NULL !!!\n");
       errno = EINVAL;
+#endif
       return -1;
    }
    ma_spin_unlock_softirq(&cthread->siglock);
+   return 0;
+}
+
+DEF_MARCEL(int, sigpending, (marcel_sigset_t *set), (set),
+{
+   LOG_IN();
+
+   marcel_t cthread;
+   cthread = marcel_self();
+   int sig;
+
+#ifdef MA__DEBUG
+   int ret = check_sigpending(set);
+   if (ret)
+	  return ret;
 #endif
+   
+   PROF_EVENT(sigpending);
+
+   marcel_sigemptyset(set);
+   ma_spin_lock_softirq(&gsiglock);
+   ma_spin_lock_softirq(&cthread->siglock);
+
+   for (sig=1 ; sig < MARCEL_NSIG ; sig++)
+   {
+      if (marcel_sigorismember(&cthread->sigpending,&gsigpending,sig))
+      {
+		  //MA_BUG_ON(!marcel_sigismember(&cthread->curmask,sig));
+         marcel_sigaddset(set,sig);
+      }
+   }
+
+   ma_spin_unlock_softirq(&cthread->siglock);
+   ma_spin_unlock_softirq(&gsiglock);
+ 
+   LOG_OUT();
+   return 0;
+})
+
+DEF_POSIX(int, sigpending, (marcel_sigset_t *set), (set),
+{
+   LOG_IN();
+   
+   marcel_t cthread = marcel_self();
+   int sig;
+
+   /* error checking */
+   int ret = check_sigpending(set);
+   if (ret)
+	  return ret;
+	/* error checking end */
    
    PROF_EVENT(sigpending);
 
@@ -445,13 +725,13 @@ int lpt_sigpending(sigset_t *set)
    marcel_sigset_t marcel_set;
    
    int ret = marcel_sigpending(&marcel_set);
-    
-   marcel_sigemptyset(&set);
+
+   sigemptyset(set);
    for (signo = 1;signo < MARCEL_NSIG; signo ++)
      if (marcel_sigismember(&marcel_set,signo))
         sigaddset(set,signo);
 
-	return ret;
+ 	return ret;
 }
 #endif
 
@@ -467,21 +747,24 @@ DEF_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__re
    int signo;
    marcel_t cthread = marcel_self();  
 
-   //fprintf(stderr,"thread %p entre dans le sigwait\n",cthread);
-
-#ifdef MA__DEBUG
    if ((set == NULL)||(sig == NULL))
-      return EINVAL;
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_sigwait : valeur set ou sig invalide !!!\n");
 #endif
-
+      return EINVAL;
+	}
    PROF_EVENT1(sigwait,sig);
+
+   int old;
+   old = __pmarcel_enable_asynccancel();
 
    ma_spin_lock_softirq(&gsiglock);
    ma_spin_lock_softirq(&cthread->siglock);
    for (signo = 1 ; signo < MARCEL_NSIG ; signo ++)
       if (marcel_sigismember(set,signo))
          if (marcel_sigorismember(&gsigpending,&cthread->sigpending,signo))
-         {
+         {  
             if (marcel_sigismember(&cthread->sigpending,signo))
                marcel_sigdelset(&cthread->sigpending,signo);
             marcel_sigdelset(&gsigpending,signo);
@@ -492,7 +775,7 @@ DEF_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__re
             LOG_OUT();
             return 0;
          }
-   
+ 
    /* ajout d'un thread en attente d'un signal en début de liste */ 
    ma_twblocked_t wthread;
    wthread.t = cthread;
@@ -509,7 +792,7 @@ DEF_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__re
    
    *sig = -1;
 
-waiting:
+ waiting:
    /* puis on attend */
    ma_set_current_state(MA_TASK_INTERRUPTIBLE);  
    ma_spin_unlock_softirq(&gsiglock);
@@ -524,8 +807,9 @@ waiting:
    }
    signo = 0;
 
+   __pmarcel_disable_asynccancel(old);
    LOG_OUT();
-
+ 
 	return 0;
 })
 
@@ -623,17 +907,20 @@ int marcel_distribwait_thread(int sig,marcel_t thread)
 DEF_MARCEL_POSIX(int,sigsuspend,(const marcel_sigset_t *sigmask),(sigmask),
 {
    LOG_IN();
+   int old;
 
    marcel_sigset_t oldmask;
 
    PROF_EVENT(sigsuspend);
    
+   old = __pmarcel_enable_asynccancel();
    /* dormir avant de changer le masque */
    ma_set_current_state(MA_TASK_INTERRUPTIBLE);
    marcel_sigmask(SIG_SETMASK,sigmask,&oldmask);
    ma_schedule();
    marcel_sigmask(SIG_SETMASK,&oldmask,NULL);
    errno = EINTR;
+   __pmarcel_disable_asynccancel(old);
    LOG_OUT();
 
    return -1;
@@ -670,6 +957,7 @@ int ma_savesigs (sigjmp_buf env, int savemask)
 #ifdef MA__DEBUG
    if (env == NULL)
    {
+      fprintf(stderr,"ma_savesigs : valeur env invalide !!!\n");
       errno = EINVAL;
       return -1;
    }
@@ -687,9 +975,7 @@ int ma_savesigs (sigjmp_buf env, int savemask)
    
    LOG_OUT();
 
-	//fprintf(stderr,"thread %p sort du ma_savesigs\n",marcel_self());
-	
-   return 0;
+	return 0;
 }
 
 extern void __libc_longjmp(jmp_buf env, int val);
@@ -699,18 +985,17 @@ DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 
    marcel_t cthread = marcel_self();
 
-   //fprintf(stderr,"thread %p entre dans marcel_siglongjump\n",cthread);
-
+	if (env == NULL)
+	{
 #ifdef MA__DEBUG
-   if (env == NULL)
-      errno = EINVAL;
+      fprintf(stderr,"(p)marcel_siglongjump : valeur env NULL\n");
 #endif
+      errno = EINVAL;
+	}
 
    PROF_EVENT(siglongjmp);
 
-	//fprintf(stderr,"thread %p change de masque dans marcel_siglongjump\n",cthread);
-
-   if (env->__mask_was_saved)
+	if (env->__mask_was_saved)
       lpt_sigmask(SIG_SETMASK, &env->__saved_mask, NULL);
 
    if (cthread->delivering_sig)
@@ -720,8 +1005,6 @@ DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
    }
 
 	// TODO: vérifier qu'on longjumpe bien dans le même thread !!
-
-	//fprintf(stderr,"thread %p sort du marcel_siglongjump\n",cthread);
 
 #ifdef X86_ARCH
    longjmp(env->__jmpbuf,val);
@@ -752,6 +1035,9 @@ DEF_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handle
    /* Check signal extents to protect __sigismember.  */
    if (handler == SIG_ERR || sig < 0 || sig >= MARCEL_NSIG)
    {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_signal : handler (%p) ou sig (%d) invalide\n",handler,sig);
+#endif
       errno = EINVAL;
       return SIG_ERR;
    }
@@ -767,11 +1053,47 @@ DEF_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handle
      return SIG_ERR;
 
    LOG_OUT();
-   return oact.marcel_sa_handler;
+
+	return oact.marcel_sa_handler;
 })
+
+sighandler_t lpt___sysv_signal(int sig, sighandler_t handler)
+{
+   LOG_IN();
+  
+   struct marcel_sigaction act;
+   struct marcel_sigaction oact;
+
+   /* Check signal extents to protect __sigismember.  */
+   if (handler == SIG_ERR || sig < 0 || sig >= MARCEL_NSIG)
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"lpt___sysv_signal : handler (%p) ou sig (%d) invalide\n",handler,sig);
+#endif
+      errno = EINVAL;
+      return SIG_ERR;
+   }
+
+   PROF_EVENT2(signal,sig,handler);
+   
+   act.marcel_sa_handler = handler;
+   marcel_sigemptyset(&act.marcel_sa_mask);
+   marcel_sigaddset(&act.marcel_sa_mask,sig);
+
+   act.marcel_sa_flags = SA_RESETHAND|SA_NODEFER;//attention au siginfo ; NODEFER est juste là pour optimiser: deliver_sig n'a pas besoin de re-ajouter sig à sa_mask
+   if (marcel_sigaction(sig, &act, &oact) < 0)
+     return SIG_ERR;
+
+   LOG_OUT();
+
+   return oact.marcel_sa_handler;
+}
 
 DEF_C(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handler))
 DEF___C(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handler))
+
+DEF_LIBC(sighandler_t,__sysv_signal,(int sig, sighandler_t handler),(sig,handler))
+DEF___LIBC(sighandler_t,__sysv_signal,(int sig, sighandler_t handler),(sig,handler))
 
 /***************************sigaction*****************************/
 DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
@@ -781,22 +1103,20 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
    struct kernel_sigaction kact;
    void *handler;
 
-#ifdef MA__DEBUG
    if ((sig < 1)||(sig >= MARCEL_NSIG))
    {
+#ifdef MA__DEBUG
+  	   fprintf(stderr,"(p)marcel_sigaction : valeur sig (%d) invalide\n",sig);
+#endif
       errno = EINVAL;
       return -1;
    } 
-#endif
-   if (
-#ifdef MARCEL_TIMER_SIGNAL
-   	(sig == MARCEL_TIMER_SIGNAL)||
-#endif
-   	(sig == MARCEL_RESCHED_SIGNAL))
-      fprintf(stderr,"!! warning: signal %d only partially supported\n", sig);
+
+   if (sig == MARCEL_RESCHED_SIGNAL)
+      fprintf(stderr,"!! warning: signal %d not supported\n", sig);
 
    ma_read_lock(&rwlock);
-   if (oact != NULL) 
+		if (oact != NULL)
       *oact = csigaction[sig];
    ma_read_unlock(&rwlock);
 
@@ -814,7 +1134,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
    else
 #endif
       handler = act->marcel_sa_handler;
-
+  
    if (handler == SIG_IGN)
    {
       if ((sig == SIGKILL)||(sig==SIGSTOP))
@@ -896,9 +1216,15 @@ int lpt_sigaction(int sig, const struct sigaction *act,
    
    /* changement de structure act en marcel_act */
    if (act) {
-      marcel_act.marcel_sa_handler = act->sa_handler;
+   
       marcel_act.marcel_sa_flags = act->sa_flags;
+#ifdef SA_SIGINFO
+   if (act->sa_flags & SA_SIGINFO)
       marcel_act.marcel_sa_sigaction = act->sa_sigaction;  
+	else
+#endif
+      marcel_act.marcel_sa_handler = act->sa_handler;
+   
       /* a cause du passage de sigset_t a marcel_sigset_t */
       marcel_sigemptyset(&marcel_act.marcel_sa_mask);
       for (signo = 1;signo < MARCEL_NSIG; signo ++)
@@ -911,10 +1237,17 @@ int lpt_sigaction(int sig, const struct sigaction *act,
    
    /* on rechange tout a l'envers */
    if (oact) {
-      oact->sa_handler = marcel_oact.marcel_sa_handler; 
+      
       oact->sa_flags = marcel_oact.marcel_sa_flags; 
+#ifdef SA_SIGINFO
+   if (oact->sa_flags & SA_SIGINFO)
       oact->sa_sigaction = marcel_oact.marcel_sa_sigaction; 
-      for (signo = 1;signo < MARCEL_NSIG; signo ++)
+	else
+#endif
+      oact->sa_handler = marcel_oact.marcel_sa_handler; 
+   
+   sigemptyset(&oact->sa_mask);
+   for (signo = 1;signo < MARCEL_NSIG; signo ++)
         if (marcel_sigismember(&marcel_oact.marcel_sa_mask,signo))
            sigaddset(&oact->sa_mask,signo);
   
@@ -940,25 +1273,11 @@ int marcel_deliver_sig(void)
    PROF_EVENT(deliver_sig);
 
    ma_spin_lock_softirq(&cthread->siglock);
-   if (cthread->delivering_sig)//== 1 
-   {
-      cthread->restart_deliver_sig = 1;
-      ma_spin_unlock_softirq(&cthread->siglock);
-      
-      LOG_OUT();
-      return 0;     
-   }
-   else
-   {
-      cthread->delivering_sig = 1;      
-      cthread->restart_deliver_sig = 0;
-   }
+ 
+	cthread->delivering_sig = 1;      
+	cthread->restart_deliver_sig = 0;
+
 deliver:
-   ma_spin_unlock_softirq(&cthread->siglock);
-
-   cthread = marcel_self();
-
-   ma_spin_lock_softirq(&cthread->siglock);
    for (sig = 1 ; sig < MARCEL_NSIG ; sig++)
      if (marcel_sigismember(&cthread->sigpending,sig))//== 1
       {
@@ -974,7 +1293,7 @@ deliver:
          }
       }
    /* on regarde s'il reste des signaux à délivrer */
-   if (cthread->restart_deliver_sig)// == 1
+   if (cthread->restart_deliver_sig)
    {
       cthread->restart_deliver_sig = 0;
       goto deliver;
@@ -991,13 +1310,15 @@ deliver:
 int marcel_call_function(int sig)
 {
    LOG_IN();
-#ifdef MA__DEBUG
+
    if ((sig < 0)||(sig >= MARCEL_NSIG))
    {
+#ifdef MA__DEBUG
+  	   fprintf(stderr,"marcel_call_function : valeur sig (%d) invalide\n",sig);
+#endif
       errno = EINVAL;
       return -1;
    }
-#endif
 
    struct marcel_sigaction cact;
    ma_read_lock(&rwlock);   
@@ -1038,7 +1359,7 @@ int marcel_call_function(int sig)
    }
    else if((cact.marcel_sa_flags & SA_SIGINFO))
    {
-      fprintf(stderr,"** SA_SIGINFO == 1, ENOTSUP\n");
+      fprintf(stderr,"** SA_SIGINFO == 1 for signal %d, ENOTSUP\n", sig);
       errno = ENOTSUP;
       return -1;
    }

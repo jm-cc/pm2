@@ -40,7 +40,7 @@ int main(void)
       return 1;
     }
 
-  if (pthread_barrier_init (&b, NULL, 1) != 0)
+  if (pthread_barrier_init (&b, NULL, 5) != 0)
     {
       fprintf(stderr,"real barrier_init failed");
       return 1;
@@ -52,7 +52,7 @@ int main(void)
 
       if (e != PTHREAD_BARRIER_SERIAL_THREAD)
 	{
-	  fprintf(stderr,"barrier_wait didn't return PTHREAD_BARRIER_SERIAL_THREAD");
+	  fprintf(stderr,"barrier_wait didn't return PTHREAD_BARRIER_SERIAL_THREAD\n");
 	  return 1;
 	}
     }

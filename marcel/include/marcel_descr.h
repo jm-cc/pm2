@@ -131,8 +131,10 @@ struct marcel_task {
 	
 	ma_atomic_t top_utime/*, top_stime*/;
 
+#ifndef MA__PROVIDE_TLS
 	int __errno;
 	int __h_errno;
+#endif
 
 #ifdef MA__LIBPTHREAD
 	/* Pour le code provenant de la libpthread */
@@ -167,9 +169,13 @@ struct marcel_task {
 /********sigwait**********/
       marcel_sigset_t waitset;
       int *waitsig;
+#ifdef MA__LIBPTHREAD
 /*********attributs*********/
+      ma_spinlock_t cancellock;
       int cancelstate;
       int canceltype;
+      int canceled;
+#endif
 
 #ifdef MA__PROVIDE_TLS
       char tls[MA_TLS_AREA_SIZE];

@@ -17,6 +17,7 @@
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
+#include "sys/marcel_flags.h"
 /* SLOT_AREA_TOP doit Ítre un multiple de THREAD_SLOT_SIZE
  * et THREAD_SLOT_SIZE doit Ítre une puissance de deux */
 
@@ -26,7 +27,11 @@
  * PTHREAD_STACK_MIN */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilis√©e
    dans un source assembleur */
+#ifdef MA__LIBPTHREAD
+#define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 Mo */
+#else
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
+#endif
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
 #define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 

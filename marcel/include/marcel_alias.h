@@ -282,7 +282,7 @@
 
 #ifdef MA__LIBPTHREAD
 #define DEF_LIBC_STRONG(rtype, name, proto, args) \
-  DEF_STRONG_T(rtype, LPT_NAME(name), LIBC_NAME(name), proto, args)
+  versioned_symbol(libpthread, LPT_NAME(name), LIBC_NAME(name), GLIBC_2_0);
 #define DEF_LIBC_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, LPT_NAME(name), LIBC_NAME(name), proto, args)
 #define DEF___LIBC_STRONG(rtype, name, proto, args) \

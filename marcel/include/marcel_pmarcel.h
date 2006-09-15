@@ -294,6 +294,10 @@ extern int pmarcel_getattr_np (pmarcel_t __th, pmarcel_attr_t *__attr) __THROW;
 
 /* Functions for scheduling control.  */
 
+/* Set the priority for TARGET_THREAD according to PRIO */
+extern int pmarcel_setschedprio(pmarcel_t thread,int prio)
+     __THROW;
+
 /* Set the scheduling parameters for TARGET_THREAD according to POLICY
    and *PARAM.  */
 extern int pmarcel_setschedparam (pmarcel_t __target_thread, int __policy,

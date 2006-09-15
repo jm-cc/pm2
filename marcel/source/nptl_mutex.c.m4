@@ -50,8 +50,8 @@ int prefix_mutex_init (prefix_mutex_t *mutex,
 {
 	mdebug("initializing mutex %p by %p\n", 
 	       mutex, marcel_self());
-
-        __marcel_init_lock(&mutex->__data.__lock);
+   
+	__marcel_init_lock(&mutex->__data.__lock);
 	return 0;
 }
 ]], [[MARCEL]])
@@ -125,9 +125,9 @@ DEF___LIBPTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 REPLICATE_CODE([[dnl
 int prefix_mutex_lock(prefix_mutex_t * mutex)
 {
-	struct marcel_task *id = MARCEL_SELF;
-        __marcel_lock(&mutex->__data.__lock, id);
-        return 0;
+   struct marcel_task *id = MARCEL_SELF;
+   __marcel_lock(&mutex->__data.__lock, id);
+   return 0;
 }
 ]], [[MARCEL]])
 
@@ -304,12 +304,12 @@ DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
     return EINVAL;
   }
 })
-DEF_PTHREAD(int, mutex_timedlock, (pthread_mutex_t *mutex,
-				 const struct timespec *abstime),
-		(mutex, abstime))
-DEF___PTHREAD(int, mutex_timedlock, (pthread_mutex_t *mutex,
-				 const struct timespec *abstime),
-		(mutex, abstime))
+
+PRINT_PTHREAD([[dnl
+versioned_symbol(libpthread, lpt_mutex_timedlock,
+	              pthread_mutex_timedlock, GLIBC_2_2);
+]])
+
 #endif
 
      /****************/
@@ -425,7 +425,7 @@ int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 
 
      /****************************/
-     /* mutex_settype/setkind_np */
+     /* mutex_attrsettype/setkind_np */
      /****************************/
 PRINT_PTHREAD([[dnl
 weak_alias (lpt_mutexattr_settype, pthread_mutexattr_setkind_np)
@@ -440,8 +440,12 @@ int prefix_mutexattr_settype(prefix_mutexattr_t * attr, int kind)
 	struct prefix_mutexattr *iattr;
 
 	if (kind < PREFIX_MUTEX_NORMAL || kind > PREFIX_MUTEX_ADAPTIVE_NP)
-		return EINVAL;
-
+	{
+#ifdef MA__DEBUG
+		fprintf(stderr,"prefix_mutexattr_settype : valeur kind(%d)  invalide\n",kind);
+#endif
+      return EINVAL;
+	}
 	iattr = (struct prefix_mutexattr *) attr;
 
 	/* We use bit 31 to signal whether the mutex is going to be
@@ -454,7 +458,7 @@ int prefix_mutexattr_settype(prefix_mutexattr_t * attr, int kind)
 
 
      /****************************/
-     /* mutex_gettype/getkind_np */
+     /* mutex_attrgettype/getkind_np */
      /****************************/
 PRINT_PTHREAD([[dnl
 weak_alias (lpt_mutexattr_gettype, pthread_mutexattr_getkind_np)
@@ -468,7 +472,6 @@ int prefix_mutexattr_gettype(const prefix_mutexattr_t * __restrict attr,
 {
 {
 	const struct prefix_mutexattr *iattr;
-
 	iattr = (const struct prefix_mutexattr *) attr;
 
 	/* We use bit 31 to signal whether the mutex is going to be
@@ -481,7 +484,7 @@ int prefix_mutexattr_gettype(const prefix_mutexattr_t * __restrict attr,
 
 
      /********************/
-     /* mutex_setpshared */
+     /* mutex_attrsetpshared */
      /********************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
@@ -496,11 +499,15 @@ int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 
 	if (pshared != PREFIX_PROCESS_PRIVATE
 	    && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0))
-		return EINVAL;
-
+   {
+#ifdef MA__DEBUG
+		 fprintf(stderr,"prefix_mutexattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
+#endif
+		 return EINVAL;
+   }
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
-		pm2debug("Argh: shared mutex requested!\n");
+		pm2debug("prefix_mutexattr_setpshared : shared mutex requested!\n");
 		return ENOTSUP;
 	}
 
@@ -518,7 +525,7 @@ int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 ]], [[PMARCEL LPT]])
 
      /********************/
-     /* mutex_getpshared */
+     /* mutex_attrgetpshared */
      /********************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, mutexattr_getpshared, (pthread_mutexattr_t * __restrict attr,

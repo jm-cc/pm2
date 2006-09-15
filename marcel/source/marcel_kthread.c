@@ -40,6 +40,11 @@ int marcel_gettid(void) {
 
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 
+#ifdef MA__LIBPTHREAD
+#define sigprocmask(how,set,oset) syscall(SYS_rt_sigprocmask,how,set,oset,_NSIG/8)
+#define kill(pid,sig) syscall(SYS_kill,pid,sig)
+#endif
+
 #ifdef LINUX_SYS
 
 // XXX: for getting rid of u32/__user of debian sarge's futex.h

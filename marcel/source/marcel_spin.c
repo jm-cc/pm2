@@ -27,6 +27,7 @@ DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared),(lock,psh
 #ifdef MA__DEBUG
    if ((pshared != MARCEL_PROCESS_SHARED)&&(pshared != MARCEL_PROCESS_PRIVATE))
    {
+	   fprintf(stderr,"(p)marcel_spin_init : valeur pshared(%d) invalide",pshared);
       return EINVAL;
    }
 #endif

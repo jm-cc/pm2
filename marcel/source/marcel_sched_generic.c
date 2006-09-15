@@ -20,14 +20,68 @@
 #endif /* XPAULETTE */
 #include "tbx_compiler.h"
 #include <signal.h>
+#include <sys/time.h>
 #include <errno.h>
 
-DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
+DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
+{
+#ifdef MA__ACTIVATION
+	return nanosleep(rqtp, rmtp);
+#else
+	LOG_IN();
+
+   unsigned long long nsec;
+
+   nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
+
+   if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0))
+   {
+#ifdef MA__DEBUG
+	  fprintf(stderr,"(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
+#endif
+  	   errno = EINVAL;
+      return -1;
+   }
+
+	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+   int todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
+
+   if (rmtp)
+	{
+	   nsec = todosleep*(1000*marcel_gettimeslice());
+      rmtp->tv_sec = nsec/1000000000;
+      rmtp->tv_nsec = nsec%1000000000;
+	}
+
+   if (todosleep)
+	{
+	   errno = EINTR;
+      return -1;
+	}
+   else
+      LOG_RETURN(0);
+
+#endif
+})
+
+DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
+DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
+
+DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
 {
 #ifdef MA__ACTIVATION
 	return usleep(usec);
 #else
 	LOG_IN();
+
+   if ((usec<0)||(usec>1000000))
+   {
+#ifdef MA__DEBUG
+	   fprintf(stderr,"(p)marcel_usleep : valeur usec(%ld) invalide\n",usec);
+#endif
+      errno = EINVAL;
+      return -1;
+   }
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
@@ -293,7 +347,11 @@ void marcel_gensched_shutdown(void)
 
 	if(MARCEL_SELF != __main_thread)
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
-	MA_BUG_ON(ma_in_atomic());
+	if (ma_in_atomic()) {
+		pm2debug("bad: shutdown while atomic (%06x)!\n", ma_preempt_count());
+		ma_show_preempt_backtrace();
+		MA_BUG();
+	}
 
 	wait_all_tasks_end();
 
@@ -520,3 +578,33 @@ void __marcel_init marcel_gensched_start_lwps(void)
 
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");
 #endif /* MA__LWPS */
+
+int sched_get_priority_max(int policy)
+{
+   if (policy == SCHED_RR)
+	   return MA_MAX_USER_RT_PRIO;
+	else if (policy == SCHED_OTHER)
+	   return 0;
+	else if (policy == SCHED_FIFO)
+   {
+      errno = ENOTSUP;
+      return -1;
+   } 
+	fprintf(stderr,"sched_get_priority_max : valeur policy(%d) invalide\n",policy);
+   errno = EINVAL;
+   return -1;
+}
+
+int sched_get_priority_min(int policy)
+{
+   if ((policy == SCHED_RR)||(policy == SCHED_OTHER))
+	   return 0;
+	else if (policy == SCHED_FIFO)
+   {
+      errno = ENOTSUP;
+      return -1;
+   } 
+	fprintf(stderr,"sched_get_priority_min : valeur policy(%d) invalide\n",policy);
+   errno = EINVAL;
+   return -1;
+}

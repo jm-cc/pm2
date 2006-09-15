@@ -65,7 +65,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 		t->user_space_ptr = NULL;
 
 	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
-	if(!attr->__detachstate) {
+
+   if(!attr->__detachstate) {
 		marcel_sem_init(&t->client, 0);
 		marcel_sem_init(&t->thread, 0);
 	}
@@ -120,9 +121,13 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
         marcel_sigemptyset(&t->waitset);
 	t->waitsig = 0;
 	t->curmask = MARCEL_SELF->curmask;
-	t->cancelstate = MARCEL_CANCEL_ENABLE;
+#ifdef MA__LIBPTHREAD
+	ma_spin_lock_init(&t->cancellock); 
+   t->cancelstate = MARCEL_CANCEL_ENABLE;
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
-
+   t->canceled = MARCEL_NOT_CANCELED;
+#endif
+ 
 #ifdef ENABLE_STACK_JUMPING
 	*((marcel_t *)(ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif
@@ -209,8 +214,10 @@ marcel_create_internal(marcel_t * __restrict pid,
 		mdebug("top=%lx, stack_top=%p\n", top, attr->__stackaddr);
 		new_task = ma_slot_top_task(top);
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr
-				- attr->__stacksize)
+				- attr->__stacksize) {
+			fprintf(stderr,"size = %d, not big enough\n",attr->__stacksize);
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
+		}
 		stack_base = attr->__stackaddr - attr->__stacksize;
 		
 		static_stack = tbx_true;
@@ -427,22 +434,6 @@ void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 }
 
 /****************************************************************
- *                Préemption
- */
-
-
-void marcel_thread_preemption_enable(void)
-{
-	__marcel_thread_preemption_enable();
-}
-
-void marcel_thread_preemption_disable(void)
-{
-	__marcel_thread_preemption_disable();
-}
-
-
-/****************************************************************
  *                Terminaison
  */
 /* Les fonctions de fin */
@@ -645,18 +636,66 @@ inline static
 void marcel_postexit_internal(marcel_t __restrict cur,
 			      marcel_postexit_func_t func, any_t __restrict arg);
 
-DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
+/************************join****************************/
+static int TBX_UNUSED check_join(marcel_t tid, any_t *status)
+{
+  /* conflit entre ESRCH et EINVAL selon l'ordre */
+  /* en effet ESRCH regarde aussi le champ detached */
+  if (!MARCEL_THREAD_ISALIVE(tid))
+  {
+	 //task_dead && detached
+    return ESRCH;
+  }  
+
+  if (MARCEL_THREAD_ISALIVE(tid)
+	 &&(tid->detached == PTHREAD_CREATE_DETACHED))
+  {
+#ifdef MA__DEBUG
+    fprintf(stderr,"(p)marcel_join : thread %p detached\n",tid);
+#endif
+	 return EINVAL;
+  }
+  return 0;
+}
+
+DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 {
    LOG_IN();
 #ifdef MA__DEBUG
-  /* The pthread_join() function shall fail if:
-     [ESRCH]
-     No thread could be found corresponding to that specified by the given thread ID. */
-   if (pid->detached == 1)
-   {
-	   return EINVAL;
-   }
+   int err = check_join(pid,status);
+   if (err)
+     return err;
 #endif
+   
+	MA_BUG_ON(pid->detached);
+
+	marcel_sem_P(&pid->client);
+	if(status)
+		*status = pid->ret_val;
+	
+	pid->detached = 1;
+	/* Exécution de la fonction post_mortem */
+	(*pid->postexit_func)(pid->postexit_arg);
+/* 	{  */
+/* 		DEFINE_CUR_LWP(register, =, GET_LWP(pid)); */
+/* 		marcel_sem_P(&cur_lwp->postexit_space); */
+/* 		cur_lwp->postexit_func=pid->postexit_func; */
+/* 		cur_lwp->postexit_arg=pid->postexit_arg; */
+/* 		marcel_sem_V(&cur_lwp->postexit_thread); */
+/* 	} */
+	LOG_OUT();
+	return 0;
+})
+
+DEF_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status),
+{
+   LOG_IN();
+   
+   /* codes d'erreur */
+   int err = check_join(pid,status);
+   if (err)
+     return err;
+	/* fin codes d'erreur */
    
 	MA_BUG_ON(pid->detached);
 
@@ -683,9 +722,9 @@ DEF___PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 /*************pthread_cancel**********************************/
 //TODO : s'occupe t'on vraiment des état et type d'annulation du thread
 
-DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid),
+DEF_MARCEL(int, cancel, (marcel_t pid), (pid),
 {
-if(pid == marcel_self()) {
+  if(pid == marcel_self()) {
     marcel_exit(NULL);
   } else {
     pid->ret_val = NULL;
@@ -695,19 +734,83 @@ if(pid == marcel_self()) {
   return 0;
 })
 
-DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
-
-DEF_MARCEL_POSIX(int, detach, (marcel_t pid), (pid),
+DEF_POSIX(int, cancel, (marcel_t tid), (pid),
 {
-#ifdef MA__DEBUG
-   if (pid->detached == 1)
+   ma_spin_lock(&tid->cancellock);
+   tid->canceled = MARCEL_IS_CANCELED;
+   if ((tid->cancelstate == MARCEL_CANCEL_ENABLE)
+    &&(tid->canceltype == MARCEL_CANCEL_ASYNCHRONOUS))
    {
-      return EINVAL;
+      
+      if (tid == marcel_self()) 
+      {
+	      ma_spin_unlock(&tid->cancellock);	   
+         marcel_exit(NULL);
+      }
+      else 
+      {
+         tid->ret_val = NULL;
+         mdebug("marcel %i kill %i\n", marcel_self()->number, tid->number);
+         marcel_deviate(tid, (handler_func_t)marcel_exit, NULL);
+         ma_spin_unlock(&tid->cancellock);
+      }
    }
-#endif
-   pid->detached = tbx_true;
+   else
+   {
+      ma_spin_unlock(&tid->cancellock);
+   }
    return 0;
 })
+
+DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
+
+/************************detach*********************/
+
+static int TBX_UNUSED check_detach(marcel_t tid)
+{
+  /* conflit entre ESRCH et EINVAL selon l'ordre */
+  /* en effet ESRCH regarde aussi le champ detached */
+  if (!MARCEL_THREAD_ISALIVE(tid))
+  {
+	 //task_dead && detached
+    return ESRCH;
+  }  
+
+  if (MARCEL_THREAD_ISALIVE(tid)
+	 &&(tid->detached == PTHREAD_CREATE_DETACHED))
+  {
+#ifdef MA__DEBUG
+    fprintf(stderr,"(p)marcel_detach : thread %p already detached\n",tid);
+#endif
+	 return EINVAL;
+  }
+  return 0;
+}
+
+DEF_MARCEL(int, detach, (marcel_t pid), (pid),
+{
+#ifdef MA__DEBUG
+   int err = check_detach(pid);
+   if (err)
+     return err;
+#endif
+
+   pid->detached =  PTHREAD_CREATE_DETACHED;
+   return 0;
+})
+
+DEF_POSIX(int, detach, (marcel_t pid), (pid),
+{
+   /* codes d'erreur */
+   int err = check_detach(pid);
+   if (err)
+     return err;
+	/* fin codes d'erreur */
+
+   pid->detached =  PTHREAD_CREATE_DETACHED;
+   return 0;
+})
+
 DEF_PTHREAD(int, detach, (pthread_t pid), (pid))
 
 static void suspend_handler(any_t arg)
@@ -943,13 +1046,15 @@ marcel_t __main_thread;
 static int concurrency = 0;
 DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
 {
-#ifdef MA__DEBUG
    if (new_level < 0)
    {
+#ifdef MA__DEBUG
+	   fprintf(stderr,"(p)marcel_setconcurrency : invalid newlevel (%d)",new_level);
+#endif     
       return EINVAL;
    }
-#endif
-   if (!new_level) //==0
+
+   if (!new_level)
    {
       return 0;
    }
@@ -969,19 +1074,33 @@ DEF_PTHREAD(int,getconcurrency,(void),())
 DEF___PTHREAD(int,getconcurrency,(void),())
 
 /***************************setcancelstate************************/
+static int TBX_UNUSED check_setcancelstate(int state, int *oldstate)
+{
+   if ((state != MARCEL_CANCEL_ENABLE)&&(state != MARCEL_CANCEL_DISABLE))
+   {
+      fprintf(stderr,"pmarcel_setcancelstate : valeur state (%d) invalide !\n",state);
+      return EINVAL;
+   }
+   return 0;
+}
+
 DEF_POSIX(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
 {
    marcel_t cthread;
    cthread = marcel_self();
-#ifdef MA__DEBUG
-   if ((state != PMARCEL_CANCEL_ENABLE)&&(state != PMARCEL_CANCEL_DISABLE))
-   {
-      return EINVAL;
-   }
-#endif
-if (oldstate)//!=NULL
+
+   /* error checking */
+   int ret =  check_setcancelstate(state, oldstate);
+   if (ret)
+	  return ret;
+   /* error checking end */
+
+   ma_spin_lock(&cthread->cancellock);
+   if (oldstate)
 	  *oldstate = cthread->cancelstate;
    cthread->cancelstate = state;
+   ma_spin_unlock(&cthread->cancellock);
+
    return 0;
 })
 
@@ -989,20 +1108,34 @@ DEF_PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
 DEF___PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
 
 /****************************setcanceltype************************/
+static int TBX_UNUSED check_setcanceltype(int type, int *oldtype)
+{
+   if ((type != MARCEL_CANCEL_ASYNCHRONOUS)&&(type != MARCEL_CANCEL_DEFERRED))
+   {
+      fprintf(stderr,"pmarcel_setcanceltype : valeur type invalide : %d !\n",type);
+      return EINVAL;
+   }
+   return 0;
+}
+
 DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
 {
    marcel_t cthread;
    cthread = marcel_self();
-#ifdef MA__DEBUG
-   if ((type != PMARCEL_CANCEL_ENABLE)&&(type != PMARCEL_CANCEL_DISABLE))
-   {
-      return EINVAL;
-   }
-#endif
-   if (oldtype)//!=NULL
+
+   /* error checking */
+   int ret =  check_setcanceltype(type, oldtype);
+   if (ret)
+	  return ret;
+   /* error checking end */
+
+   ma_spin_lock(&cthread->cancellock);
+   if (oldtype)
       *oldtype = cthread->canceltype;
    cthread->canceltype = type;
-   return 0;
+   ma_spin_unlock(&cthread->cancellock);
+
+    return 0;
 })
 
 DEF_PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
@@ -1015,45 +1148,147 @@ DEF___PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
 
 DEF_POSIX(void, testcancel,(void),(),
 {
-   marcel_t cthread;
-   cthread = marcel_self();
-   if (cthread->cancelstate == PMARCEL_CANCEL_DISABLE)
-   {}
-   else if (cthread->cancelstate == PMARCEL_CANCEL_ENABLE)
-   {
-      if (cthread->canceltype == PMARCEL_CANCEL_ASYNCHRONOUS)
-      {
-         marcel_cancel(cthread);
-      }
-      else if (cthread->canceltype == PMARCEL_CANCEL_DEFERRED)
-      {
-         printf("not yet implemented\n");    
-      }
-   }
-#ifdef MA__DEBUG
-   errno = EINVAL;
-#endif
-}) 
-DEF_PTHREAD(void, testcancel,(void),());
-DEF___PTHREAD(void, testcancel,(void),());
+  marcel_t cthread = marcel_self();
+  ma_spin_lock(&cthread->cancellock);
+  if ((cthread->cancelstate == MARCEL_CANCEL_ENABLE)
+    &&(cthread->canceled == MARCEL_IS_CANCELED))
+  {
+    ma_spin_unlock(&cthread->cancellock);
+    cthread->ret_val = NULL;
+    mdebug("thread %i s'annule et exit\n", cthread->number);
+    marcel_exit(NULL);
+  }
+  else
+  {
+    ma_spin_unlock(&cthread->cancellock);
+  }
+})
+ 
+DEF_PTHREAD(void, testcancel,(void),())
+DEF___PTHREAD(void, testcancel,(void),())
 
-/*************************set/getchedparam************************/
-DEF_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
-                                     const struct marcel_sched_param *__restrict param),
-                 (thread,policy,param),
-{
-   LOG_IN();
-#ifdef MA__DEBUG
-   if (param == NULL)
-   {
-      LOG_RETURN(EINVAL);
-   }
+
+#ifdef MA__IFACE_PMARCEL
+int fastcall __pmarcel_enable_asynccancel (void) {
+	int old;
+	pmarcel_setcanceltype(PMARCEL_CANCEL_ASYNCHRONOUS, &old);
+	return old;
+}
+
+void fastcall __pmarcel_disable_asynccancel(int old) {
+	pmarcel_setcanceltype(old, NULL);
+	pmarcel_testcancel();
+}
+#ifdef MA__LIBPTHREAD
+strong_alias(__pmarcel_enable_asynccancel, __pthread_enable_asynccancel);
+strong_alias(__pmarcel_disable_asynccancel, __pthread_disable_asynccancel);
 #endif
-   if (policy != SCHED_RR)
+#endif
+
+/***********************setprio_posix2marcel******************/
+static int setprio_posix2marcel(marcel_t thread,int prio,int policy)
+{
+  /* on passe de prio posix a prio marcel */
+
+   if (policy == SCHED_FIFO)
    {
+      fprintf(stderr,"setprio_posix2marcel : sched_fifo not supported\n");
       LOG_RETURN(ENOTSUP);
    }
-   marcel_sched_setscheduler(thread,MARCEL_SCHED_SHARED,param);
+   
+   if (policy == SCHED_RR)
+   {
+      if ((prio >= 0)&&(prio <= MA_RT_PRIO))
+         ma_sched_change_prio(thread,MA_RT_PRIO - prio);
+      else
+		   return EINVAL;
+   }
+   else if (policy == SCHED_OTHER)
+   {
+      if (prio == 0)
+	      ma_sched_change_prio(thread,MA_DEF_PRIO);
+	   else
+	      return EINVAL;
+   }
+   else
+   {
+      fprintf(stderr,"setprio_posix2marcel : autre policy %d\n",policy);
+   }
+   /* on est passé de prio posix a prio marcel */ 
+
+   return 0;
+}
+/*************************setschedprio************************/
+DEF_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio),(thread,prio),
+{
+   LOG_IN(); 
+
+   int policy = thread->sched.internal.entity.sched_policy;
+
+   int ret = setprio_posix2marcel(thread,prio,policy);
+   if (ret)
+	  return ret;
+ 
+   LOG_RETURN(0);
+})
+
+DEF_PTHREAD(int, setschedprio, (pthread_t thread, int prio),(thread, prio))
+DEF___PTHREAD(int, setschedprio, (pthread_t thread, int prio),(thread, prio))
+
+/*************************setschedparam****************************/
+DEF_MARCEL(int, setschedparam,(marcel_t thread, int policy, 
+                 const struct marcel_sched_param *__restrict param), (thread,policy,param),
+{
+   LOG_IN();
+
+   if (param == NULL)
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setschedparam : valeur attr ou param NULL\n");
+#endif
+      LOG_RETURN(EINVAL);
+   }
+   if ((policy != SCHED_FIFO)&&(policy != SCHED_RR)
+     &&(policy != SCHED_OTHER))
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setschedparam : valeur policy(%d) invalide\n",policy);
+#endif
+      LOG_RETURN(EINVAL);
+   }
+
+   marcel_sched_setscheduler(thread,policy,param);
+      
+   LOG_RETURN(0);
+})
+
+DEF_POSIX(int, setschedparam,(marcel_t thread, int policy, 
+                 const struct marcel_sched_param *__restrict param), (thread,policy,param),
+{
+   LOG_IN();
+
+   if (param == NULL)
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setschedparam : valeur attr ou param NULL\n");
+#endif
+      LOG_RETURN(EINVAL);
+   }
+   if ((policy != SCHED_FIFO)&&(policy != SCHED_RR)
+     &&(policy != SCHED_OTHER))
+   {
+#ifdef MA__DEBUG
+      fprintf(stderr,"(p)marcel_setschedparam : valeur policy(%d) invalide\n",policy);
+#endif
+      LOG_RETURN(EINVAL);
+   }
+
+   thread->sched.internal.sched_policy=policy;
+
+   int ret = setprio_posix2marcel(thread,param->__sched_priority,policy);
+   if (ret)
+	  return ret;
+   
    LOG_RETURN(0);
 })
 
@@ -1062,18 +1297,53 @@ DEF_PTHREAD(int, setschedparam, (pthread_t thread, int policy,
 DEF___PTHREAD(int, setschedparam, (pthread_t thread, int policy,
    __const struct sched_param *__restrict param), (thread, policy, param))
 
-DEF_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
-                                     struct marcel_sched_param *__restrict param),
-                 (thread,policy,param),
+/******************************getschedparam*************************/
+DEF_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
+                                     struct marcel_sched_param *__restrict param),(thread,policy,param),
 {
-#ifdef MA__DEBUG
-   if (param == NULL)
+   if ((param == NULL)||(policy == NULL))
    {
+#ifdef MA__DEBUG      
+      fprintf(stderr,"(p)marcel_setschedparam : valeur policy ou param NULL\n");
+#endif
       return EINVAL;
    } 
-#endif
-   *policy = SCHED_RR;
+
+   *policy = marcel_sched_getscheduler(thread);
    marcel_sched_getparam(thread,param);
+
+   return 0;
+})
+
+DEF_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
+                                     struct marcel_sched_param *__restrict param),(thread,policy,param),
+{
+   if ((param == NULL)||(policy == NULL))
+   {
+#ifdef MA__DEBUG      
+      fprintf(stderr,"(p)marcel_setschedparam : valeur policy ou param NULL\n");
+#endif
+      return EINVAL;
+   } 
+
+// a enlever
+   int mprio = thread->sched.internal.prio;
+
+   if (mprio > MA_DEF_PRIO)
+   {
+      param->__sched_priority = 0;
+      *policy = SCHED_OTHER;
+   } 
+   else if (mprio <= MA_RT_PRIO)
+   { 
+      param->__sched_priority = MA_RT_PRIO - mprio;
+      *policy = SCHED_RR;
+   }
+   else
+   {
+      fprintf(stderr,"(p)marcel_setschedparam : prio ?? ; policy %d\n",*policy);
+   }
+
    return 0;
 })
 

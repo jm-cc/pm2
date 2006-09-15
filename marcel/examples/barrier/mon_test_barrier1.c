@@ -28,12 +28,14 @@
 #define NBTHREADS 10
 pthread_t thr[NBTHREADS];
 
+int balise = 0;
 pthread_barrier_t barrier;
-#define COUNT 5
+#define COUNT 10
 
 void * dosleep(void *arg)
 {
-  fprintf(stderr,"thread %lx dans dosleep pour %d\n",pthread_self(),(int)arg);
+  balise ++;
+  fprintf(stderr,"thread %lx dans dosleep\n",pthread_self());
   sleep((int)arg);
   pthread_barrier_wait(&barrier);
   fprintf(stderr,"reveil du thread %lx\n",pthread_self());
@@ -46,18 +48,19 @@ int main(void)
   int i;
   void *retour;
   pthread_barrier_init(&barrier,NULL,COUNT);
+  balise = 1;
 
-  fprintf(stderr,"count = %d\n",COUNT);
+  fprintf(stderr,"main count = %d\n",COUNT);
 
-  for (i=1;i<=NBTHREADS;i++)
+  for (i=0;i<NBTHREADS;i++)
   {
-	 pthread_create(&thr[NBTHREADS],NULL,dosleep,(void *)i);  
+	 pthread_create(&thr[i],NULL,dosleep,(void *)i);  
   }
   
 
-  for (i=1;i<=NBTHREADS;i++)
+  for (i=0;i<NBTHREADS;i++)
   {
-    pthread_join(thr[NBTHREADS],&retour);  
+    pthread_join(thr[i],&retour);  
     fprintf(stderr,"le  thread %lx a fini\n",thr[NBTHREADS]); 
   }
 

@@ -48,7 +48,9 @@
 #define MARCEL_NBMAXVPSUP	0
 #endif
 
-#if defined(MA__IFACE_PMARCEL) || defined(MA__IFACE_LPT)
+#if defined(MA__IFACE_LPT)
+#define MA_MAX_USER_RT_PRIO	99
+#elif defined(MA__IFACE_PMARCEL)
 #define MA_MAX_USER_RT_PRIO	32
 #else
 #define MA_MAX_USER_RT_PRIO	9

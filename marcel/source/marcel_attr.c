@@ -564,7 +564,7 @@ DEF_POSIX(int,attr_getschedpolicy,(__const pmarcel_attr_t *__restrict attr, int 
    }
 
 //a enlever
-   int mprio = marcel_self()->sched.internal.prio;
+   int mprio = marcel_self()->sched.internal.entity.prio;
    
    if (mprio >= MA_DEF_PRIO)
    {

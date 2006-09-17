@@ -39,9 +39,26 @@ void marcel_postexit_internal(marcel_t cur,
  *                Initialisation des structures
  */
 static __inline__ void init_marcel_thread(marcel_t __restrict t, 
-					  __const marcel_attr_t * __restrict attr)
+					  __const marcel_attr_t * __restrict attr,
+					  int special_mode)
 {
 	PROF_THREAD_BIRTH(t);
+
+	/* we need to set the thread number early for tracing tools to early know
+	 * whether it is an interesting thread or not */
+	t->flags = attr->flags;
+
+	if (t == __main_thread) {
+		t->number = 0;
+	} else
+	if (!(special_mode==2 && MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
+		marcel_one_more_task(t);
+	} else {
+		/* TODO: per_lwp ? */
+		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
+		t->number = ma_atomic_dec_return(&norun_pid);
+	}
+	PROF_EVENT2_ALWAYS(set_thread_number,t,t->number);
 
 	/* Free within schedule_tail */
 	t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET;
@@ -51,7 +68,6 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->work = MARCEL_WORK_INIT;
 	t->softirq_pending_in_hardirq=0;
 	//t->ctx_migr
-	t->flags = attr->flags;
 	//t->child
 	//t->father
 	//t->f_to_call
@@ -137,7 +153,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 void marcel_create_init_marcel_thread(marcel_t __restrict t, 
 				      __const marcel_attr_t * __restrict attr)
 {
-	return init_marcel_thread(t, attr);
+	return init_marcel_thread(t, attr, 0);
 }
 
 /****************************************************************
@@ -239,7 +255,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		static_stack = tbx_false;
 	} /* fin (attr->stack_base) */
 
-	init_marcel_thread(new_task, attr);
+	init_marcel_thread(new_task, attr, special_mode);
 	new_task->stack_base = stack_base;
 	new_task->static_stack = static_stack;
 	
@@ -265,14 +281,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 	if(pid)
 		*pid = new_task;
 	
-	if (!(special_mode==2 && MA_TASK_NOT_COUNTED_IN_RUNNING(new_task))) {
-		marcel_one_more_task(new_task);
-	} else {
-		/* TODO: per_lwp ? */
-		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
-		new_task->number = ma_atomic_dec_return(&norun_pid);
-	}
-	PROF_EVENT2_ALWAYS(set_thread_number,new_task,new_task->number);
 	MTRACE("Creation", new_task);
 	
 	//PROF_IN_EXT(newborn_thread);

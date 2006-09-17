@@ -27,9 +27,6 @@
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
                          void * (*start_routine)(void *), void *arg)
 { 
-  int policy;
-  pmarcel_attr_getschedpolicy((pmarcel_attr_t*)attr,&policy);
-
   static int _launched=0;
   marcel_attr_t new_attr;
 
@@ -39,6 +36,9 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
 
   if (attr != NULL)
     {
+      int policy;
+      pmarcel_attr_getschedpolicy((pmarcel_attr_t*)attr,&policy);
+
    /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
      the old size and access to the new members might crash the program.
      We convert the struct now.  */

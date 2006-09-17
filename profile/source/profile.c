@@ -74,7 +74,7 @@ static struct {
   unsigned thread_id;
 } activate_params
 #ifdef PROFILE_AUTOSTART
-	= { FUT_ENABLE, ~0, 0 };
+	= { FUT_ENABLE, FUT_KEYMASKALL, 0 };
 #endif
 	;
 

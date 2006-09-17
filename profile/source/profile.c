@@ -117,6 +117,7 @@ void profile_init(void)
       fprintf(stderr,"fkt failed\n");
 #endif
 
+    atexit(profile_stop);
   }
 }
 

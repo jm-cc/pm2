@@ -149,7 +149,7 @@ unsigned marcel_nbthreads(void)
    unsigned num = 0;
    struct marcel_topo_level *vp;
    for_all_vp(vp)
-      num += ma_topo_vpdata(vp,nb_tasks)-1;
+      num += ma_topo_vpdata(vp,nb_tasks);
    return num + 1;   /* + 1 pour le main */
 }
 
@@ -159,7 +159,7 @@ int marcel_per_lwp_nbthreads()
    struct marcel_topo_level *vp;
 
    vp=GET_LWP(MARCEL_SELF)->vp_level;
-      num += ma_topo_vpdata(vp,nb_tasks)-1;
+      num += ma_topo_vpdata(vp,nb_tasks);
    return num + 1;   /* + 1 pour le main */
 }
 
@@ -171,7 +171,7 @@ unsigned long marcel_createdthreads(void)
    unsigned long num = 0;
    struct marcel_topo_level *vp;
    for_all_vp(vp)
-      num += ma_topo_vpdata(vp,task_number)-1;
+      num += ma_topo_vpdata(vp,task_number);
    return num;
 }
 
@@ -188,7 +188,7 @@ void marcel_one_more_task(marcel_t pid)
 	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
 	_ma_raw_spin_lock(&ma_topo_vpdata(vp,threadlist_lock));
 
-	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + ma_topo_vpdata(vp,task_number)++;
+	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + ++ma_topo_vpdata(vp,task_number);
 	MA_BUG_ON(ma_topo_vpdata(vp,task_number) == MAX_MAX_VP_THREADS);
 	list_add(&pid->all_threads,&ma_topo_vpdata(vp,all_threads));
 	oldnbtasks = ma_topo_vpdata(vp,nb_tasks)++;

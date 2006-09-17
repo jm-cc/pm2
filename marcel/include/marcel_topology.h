@@ -252,7 +252,7 @@ struct marcel_topo_vpdata {
 #section marcel_macros
 #define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
 	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
-	.task_number = 1, \
+	.task_number = 0, \
 	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
 	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
 	.postexit_space = MARCEL_SEM_INITIALIZER(1), \

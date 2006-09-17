@@ -190,17 +190,27 @@ DEF___LIBC(ret, name, proto, (args))
 #if MA_BITS_PER_LONG < 64
 off64_t __lseek64(int fd, off64_t offset, int whence) {
 	off64_t res;
-	int old = __pmarcel_enable_asynccancel();
-	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
-	__pmarcel_disable_asynccancel(old);
+	int ret;
+	if (tbx_unlikely(!marcel_createdthreads())) {
+		ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+	} else {
+		int old = __pmarcel_enable_asynccancel();
+		ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+		__pmarcel_disable_asynccancel(old);
+	}
 	return ret ? ret : res;
 }
 strong_alias(__lseek64, lseek64)
 loff_t __llseek(int fd, loff_t offset, int whence) {
 	loff_t res;
-	int old = __pmarcel_enable_asynccancel();
-	int ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
-	__pmarcel_disable_asynccancel(old);
+	int ret;
+	if (tbx_unlikely(!marcel_createdthreads())) {
+		ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+	} else {
+		int old = __pmarcel_enable_asynccancel();
+		ret = syscall(SYS__llseek, fd, (off_t)(offset >> 32), (off_t)(offset & 0xffffffff), &res, whence);
+		__pmarcel_disable_asynccancel(old);
+	}
 	return ret ? ret : res;
 }
 strong_alias(__llseek, llseek)

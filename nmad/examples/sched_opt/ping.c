@@ -42,6 +42,19 @@
 #define MAX     (16 * 1024)
 #define LOOPS   2000
 
+static __inline__
+uint32_t _next(uint32_t len)
+{
+  if(!len)
+    return 4;
+  else if(len < 16)
+    return len + 4;
+  else if(len < 1024)
+    return len + 16;
+  else
+    return len << 1;
+}
+
 static
 void
 usage(void) {
@@ -132,7 +145,7 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 0; len <= MAX; len = (len ? len << 1 : 4)) {
+		for(len = 0; len <= MAX; len = _next(len)) {
 		  for(k = 0; k < LOOPS; k++) {
 		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
 		    nm_so_unpack(cnx, buf, len);
@@ -156,7 +169,7 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 0; len <= MAX; len = (len ? len << 1 : 4)) {
+		for(len = 0; len <= MAX; len = _next(len)) {
 
 		  TBX_GET_TICK(t1);
 

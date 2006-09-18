@@ -64,7 +64,7 @@ void ma_allocator_exit(void)
 {
   ma_obj_allocator_fini(level_container_allocator);
   ma_obj_allocator_fini(lwp_container_allocator);
-  ma_obj_allocator_fini(ma_node_allocator);
+  //ma_obj_allocator_fini(ma_node_allocator);
   ma_node_allocator = NULL;
   lwp_container_allocator = NULL;
   level_container_allocator = NULL;

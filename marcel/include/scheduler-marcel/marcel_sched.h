@@ -191,7 +191,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			h;
 	} else {
 #ifdef MA__BUBBLES
-#ifdef MARCEL_BUBBLE_STEAL
 		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
 		if (!b->sched.init_holder) {
 			marcel_bubble_init(b);
@@ -199,11 +198,15 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			if (!h)
 				h = &ma_main_runqueue.hold;
 			b->sched.init_holder = h;
-			if (h->type != MA_RUNQUEUE_HOLDER)
-				marcel_bubble_insertbubble(ma_bubble_holder(h), b);
+			if (h->type != MA_RUNQUEUE_HOLDER) {
+				marcel_bubble_t *bb = ma_bubble_holder(h);
+#ifdef MARCEL_BUBBLE_EXPLODE
+				b->sched.sched_level = bb->sched.sched_level + 1;
+#endif
+				marcel_bubble_insertbubble(bb, b);
+			}
 		}
 		marcel_bubble_insertentity(b, &internal->entity);
-#endif
 #endif
 		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
@@ -269,6 +272,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			rq = &ma_main_runqueue;
 		}
 		internal->entity.sched_holder = &rq->hold;
+		PROF_EVENT2(bubble_sched_switchrq, t, rq);
 		MA_BUG_ON(!rq->name[0]);
 	}
 	INIT_LIST_HEAD(&internal->entity.run_list);

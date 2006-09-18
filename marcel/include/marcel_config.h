@@ -48,10 +48,8 @@
 #define MARCEL_NBMAXVPSUP	0
 #endif
 
-#ifdef MA__BUBBLES
 #define MARCEL_LEVEL_DEFAULT	0
 #define MARCEL_LEVEL_KEEPCLOSED	INT_MAX
-#endif
 
 #if defined(MA__IFACE_LPT)
 #define MA_MAX_USER_RT_PRIO	99

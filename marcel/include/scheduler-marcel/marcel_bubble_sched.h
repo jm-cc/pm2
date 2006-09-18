@@ -20,9 +20,6 @@
 
 #include <stdlib.h>
 
-#section marcel_macros
-#define MARCEL_LEVEL_DEFAULT MARCEL_LEVEL_MACHINE
-
 #section types
 typedef struct marcel_bubble marcel_bubble_t;
 

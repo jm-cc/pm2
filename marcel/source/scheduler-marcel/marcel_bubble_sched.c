@@ -90,6 +90,9 @@ int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
 
 int marcel_bubble_sleep_locked(marcel_bubble_t *bubble) {
 	VARS;
+	if ( (bubble->sched.run_holder && bubble->sched.run_holder == &bubble->hold)
+	   || (!bubble->sched.run_holder && bubble->sched.sched_holder == &bubble->hold))
+		return;
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);
@@ -115,6 +118,10 @@ int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble) {
 } while(0)
 int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
 	VARS;
+	int already_locked = 0;
+	if ( (bubble->sched.run_holder && bubble->sched.run_holder == &bubble->hold)
+	   || (!bubble->sched.run_holder && bubble->sched.sched_holder == &bubble->hold))
+		return;
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);

@@ -165,7 +165,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
-	ma_runqueue_t *rq;
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	LOG_IN();
 	internal->entity.type = MA_TASK_ENTITY;
@@ -205,10 +204,14 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			}
 		}
 		marcel_bubble_insertentity(b, &internal->entity);
+#ifdef MARCEL_BUBBLE_STEAL
 		if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 			/* keep this thread inside the bubble */
 			break;
 #endif
+#endif
+#ifndef MARCEL_BUBBLE_EXPLODE
+		ma_runqueue_t *rq;
 		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
 		else {
@@ -275,6 +278,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		internal->entity.sched_holder = &rq->hold;
 		PROF_EVENT2(bubble_sched_switchrq, t, rq);
 		MA_BUG_ON(!rq->name[0]);
+#endif
 	} while (0);
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->__schedparam.__sched_priority;

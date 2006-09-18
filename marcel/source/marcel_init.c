@@ -507,6 +507,9 @@ void marcel_init_section(int sec) {
 #endif // PROFILE
                   call_init_function(&ma_init_info_marcel_debug_init_auto);
                   call_init_function(&ma_init_info_marcel_slot_init);
+#ifdef MA__BUBBLES
+                  call_init_function(&ma_init_info_bubble_sched_init);
+#endif // MA__BUBBLES
                   call_init_function(&ma_init_info_sched_init);
                   call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
@@ -522,9 +525,6 @@ void marcel_init_section(int sec) {
 #endif // MA__TIMER
 #endif
                   call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
-#ifdef MA__BUBBLES
-                  call_init_function(&ma_init_info_bubble_sched_init);
-#endif // MA__BUBBLES
                   call_init_function(&ma_init_info_softirq_init);
                   call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
                   call_init_function(&ma_init_info_marcel_io_init);

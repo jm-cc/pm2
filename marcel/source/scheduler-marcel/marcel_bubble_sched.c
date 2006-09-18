@@ -624,8 +624,11 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_holder_rawlock(&currq->hold);
 		nextent->sched_holder = &currq->hold;
 		ma_activate_entity(nextent,&currq->hold);
-		ma_holder_unlock(&currq->hold);
-		LOG_RETURN(NULL);
+		ma_holder_rawunlock(&currq->hold);
+		if (rq != currq) {
+			ma_preempt_enable();
+			LOG_RETURN(NULL);
+		}
 	}
 #endif
 
@@ -989,21 +992,14 @@ static void __marcel_init bubble_sched_init() {
 	marcel_root_bubble.sched.sched_holder =
 		marcel_root_bubble.sched.init_holder = &ma_main_runqueue.hold;
 #ifdef MARCEL_BUBBLE_EXPLODE
-	/* fake main thread preemption */
-	ma_deactivate_running_task(MARCEL_SELF,&ma_main_runqueue.hold);
-	/* put it in root bubble */
-	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
 	/* make it explode */
 	PROF_EVENT2_ALWAYS(bubble_sched_switchrq,&marcel_root_bubble,&ma_main_runqueue);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
-	/* and fake main thread restart */
-	ma_rq_dequeue_entity(&SELF_GETMEM(sched).internal.entity, &ma_main_runqueue);
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
 	/* Having main on the main runqueue is both faster and respects priorities */
-	ma_deactivate_running_entity(&MARCEL_SELF->sched.internal.entity, &marcel_root_bubble.hold);
 	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.hold;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
 	ma_activate_running_entity(&MARCEL_SELF->sched.internal.entity, &ma_main_runqueue.hold);

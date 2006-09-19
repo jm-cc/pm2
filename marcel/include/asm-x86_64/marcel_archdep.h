@@ -98,7 +98,7 @@ typedef struct {
     if (new_task == __main_thread) \
       val = __main_thread_desc; \
     else \
-      val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~THREAD_SLOT_SIZE)) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
+      val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~(THREAD_SLOT_SIZE-1))) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
     asm volatile ("movw %w0, %%fs" : : "q" (val)); \
   } while(0)
 #else

@@ -74,6 +74,8 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 
 void marcel_bubble_join(marcel_bubble_t *bubble);
 
+int marcel_bubble_detach(marcel_bubble_t *bubble);
+
 void marcel_sched_exit(marcel_t t);
 #ifndef MA__BUBBLES
 #define marcel_sched_exit(t)

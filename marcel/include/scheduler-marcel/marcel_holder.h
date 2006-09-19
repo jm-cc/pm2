@@ -75,6 +75,12 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 	return tbx_container_of(h, marcel_bubble_t, hold);
 }
+#section marcel_functions
+static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h) {
+	return tbx_container_of(h, ma_runqueue_t, hold);
+}
 #section marcel_macros
 #ifdef MA__BUBBLES
 #define ma_holder_type(h) ((h)->type)

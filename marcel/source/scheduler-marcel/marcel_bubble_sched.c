@@ -1023,6 +1023,7 @@ static void __marcel_init bubble_sched_init() {
 void ma_bubble_sched_init2(void) {
 #ifdef MARCEL_BUBBLE_STEAL
 	/* Having main on the main runqueue is both faster and respects priorities */
+	ma_deactivate_running_entity(&MARCEL_SELF->sched.internal.entity, &marcel_root_bubble.hold);
 	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.hold;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
 	ma_activate_running_entity(&MARCEL_SELF->sched.internal.entity, &ma_main_runqueue.hold);

@@ -202,6 +202,18 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				b->sched.sched_level = bb->sched.sched_level + 1;
 				marcel_bubble_insertbubble(bb, b);
 			}
+#ifdef MARCEL_BUBBLE_STEAL
+			if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
+				ma_runqueue_t *rq;
+				marcel_bubble_detach(b);
+				rq = ma_to_rq_holder(h);
+				if (!rq)
+					rq = &ma_main_runqueue;
+				b->sched.sched_holder = &rq->hold;
+				ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_BLOCKED);
+				PROF_EVENT2(bubble_sched_switchrq, b, rq);
+			}
+#endif
 		}
 		marcel_bubble_insertentity(b, &internal->entity);
 #ifdef MARCEL_BUBBLE_STEAL

@@ -248,9 +248,9 @@ static __tbx_inline__ int want_to_see(marcel_t t, int which)
     return 0;
 
   if(MA_TASK_IS_READY(t)) {
-    if(which & NOT_SLEEPING_ONLY)
+    if(which & NOT_READY_ONLY)
       return 0;
-  } else if(which & SLEEPING_ONLY)
+  } else if(which & READY_ONLY)
     return 0;
 
   return 1;
@@ -267,7 +267,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
 		((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
 		((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
-		((which & SLEEPING_ONLY) && (which & NOT_SLEEPING_ONLY)))
+		((which & READY_ONLY) && (which & NOT_READY_ONLY)))
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
 	for_all_vp(vp) {

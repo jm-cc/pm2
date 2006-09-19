@@ -73,8 +73,8 @@ void marcel_snapshot(snapshot_func_t f);
 #define NOT_DETACHED_ONLY	 8
 #define BLOCKED_ONLY		16
 #define NOT_BLOCKED_ONLY	32
-#define SLEEPING_ONLY           64
-#define NOT_SLEEPING_ONLY      128
+#define READY_ONLY           64
+#define NOT_READY_ONLY      128
 
 #section functions
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);

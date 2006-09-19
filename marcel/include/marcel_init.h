@@ -35,6 +35,8 @@ void marcel_init_section(int section);
 
 void marcel_purge_cmdline(int *argc, char *argv[]);
 
+void marcel_finish_prepare(void);
+
 void marcel_finish(void);
 
 void marcel_strip_cmdline(int *argc, char *argv[]);

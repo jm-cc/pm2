@@ -610,6 +610,10 @@ common_exit(common_attr_t *attr)
 #endif // DSM
 #endif // PM2
 
+#ifdef MARCEL
+  marcel_finish_prepare();
+#endif // MARCEL
+
 #if defined  (MAD3) || defined (MAD4)
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);

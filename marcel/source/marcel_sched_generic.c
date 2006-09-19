@@ -68,11 +68,23 @@ DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmt
 DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
 DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
 
-DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
+DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
 #ifdef MA__ACTIVATION
 	return usleep(usec);
 #else
+	LOG_IN();
+
+	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
+
+	LOG_RETURN(0);
+
+#endif
+})
+
+DEF_POSIX(int,usleep,(unsigned long usec),(usec),
+{
 	LOG_IN();
 
    if ((usec<0)||(usec>1000000))
@@ -84,12 +96,8 @@ DEF_MARCEL_POSIX(int,usleep,(unsigned long usec),(usec),
       return -1;
    }
 
-	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
-
+	marcel_usleep(usec);
 	LOG_RETURN(0);
-
-#endif
 })
 
 DEF_C(int,usleep,(unsigned long usec),(usec));

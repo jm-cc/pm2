@@ -458,7 +458,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 			if (!MA_TASK_IS_RUNNING(t)) { /* not running somewhere */
 				bubble_sched_debugl(7,"deactivating task %s(%p) from %p\n", t->name, t, h);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
-				if (MA_TASK_IS_SLEEPING(t))
+				if (MA_TASK_IS_READY(t))
 					ma_deactivate_task(t,h);
 				bubble->nbrunning--;
 			}

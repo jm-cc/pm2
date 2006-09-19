@@ -247,7 +247,7 @@ static __tbx_inline__ int want_to_see(marcel_t t, int which)
   } else if(which & BLOCKED_ONLY)
     return 0;
 
-  if(MA_TASK_IS_SLEEPING(t)) {
+  if(MA_TASK_IS_READY(t)) {
     if(which & NOT_SLEEPING_ONLY)
       return 0;
   } else if(which & SLEEPING_ONLY)

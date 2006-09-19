@@ -172,7 +172,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define ma_task_holder_data(p)  (THREAD_GETMEM(p,sched.internal.entity.holder_data))
 
 #define MA_TASK_IS_RUNNING(tsk) (ma_task_run_holder(tsk)&&!ma_task_holder_data(tsk))
-#define MA_TASK_IS_SLEEPING(tsk) (ma_task_run_holder(tsk)&&ma_task_holder_data(tsk))
+#define MA_TASK_IS_READY(tsk) (ma_task_run_holder(tsk)&&ma_task_holder_data(tsk))
 #define MA_TASK_IS_BLOCKED(tsk) (!ma_task_run_holder(tsk))
 
 #define ma_holder_preempt_lock(h) __ma_preempt_spin_lock(&(h)->lock)

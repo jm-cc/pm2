@@ -657,7 +657,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
 	PROF_EVENT2(sched_setprio,t,prio);
 	h = ma_task_holder_lock_softirq(t);
-	if ((requeue = (MA_TASK_IS_SLEEPING(t) &&
+	if ((requeue = (MA_TASK_IS_READY(t) &&
 			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))
 		ma_dequeue_task(t,h);
 	t->sched.internal.entity.prio=prio;
@@ -766,7 +766,7 @@ static void finish_task_switch(marcel_task_t *prev)
 			PROF_EVENT2(bubble_sched_goingback,prev,bubble);
 			if (MA_TASK_IS_RUNNING(prev))
 				ma_deactivate_running_task(prev,prevh);
-			else if (MA_TASK_IS_SLEEPING(prev))
+			else if (MA_TASK_IS_READY(prev))
 				ma_deactivate_task(prev,prevh);
 		}
 #endif
@@ -1887,7 +1887,7 @@ int marcel_yield_to(marcel_t next)
 
 	nexth = ma_task_holder_lock_softirq(next);
 
-	if (!MA_TASK_IS_SLEEPING(next)) {
+	if (!MA_TASK_IS_READY(next)) {
 		busy = MA_TASK_IS_RUNNING(next);
 		ma_task_holder_unlock_softirq(nexth);
 		sched_debug("marcel_yield: %s task %p\n",

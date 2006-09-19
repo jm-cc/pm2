@@ -88,7 +88,7 @@ static void printtask(marcel_task_t *t) {
 	if (MA_TASK_IS_RUNNING(t))
 		schedstate = 'R';
 	else if (MA_TASK_IS_READY(t))
-		schedstate = 'S';
+		schedstate = 'r';
 	else if (MA_TASK_IS_BLOCKED(t))
 		schedstate = 'B';
 	else

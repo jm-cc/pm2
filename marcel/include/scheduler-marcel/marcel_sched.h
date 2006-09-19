@@ -50,7 +50,7 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 
 #section macros
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
-	.sched_policy = MARCEL_SCHED_BALANCE, \
+	.sched_policy = MARCEL_SCHED_DEFAULT, \
 	.init_holder = NULL, \
 	.inheritholder = tbx_false, \
 }

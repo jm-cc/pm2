@@ -65,6 +65,8 @@
 #define MARCEL_TASK_TIMESLICE	1
 #define MARCEL_BUBBLE_TIMESLICE	10
 
+#define MARCEL_SCHED_DEFAULT	MARCEL_SCHED_BALANCE
+
 /* ========== timer =================== */
 
 #include <signal.h>

@@ -284,6 +284,11 @@ void marcel_purge_cmdline(int *argc, char *argv[])
   marcel_strip_cmdline(argc, argv);
 }
 
+void marcel_finish_prepare(void)
+{
+  marcel_gensched_shutdown();
+}
+
 void marcel_finish(void)
 {
   marcel_gensched_shutdown();
@@ -397,6 +402,7 @@ extern const __ma_init_info_t ma_init_info_sched_init;
 extern void ma_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
+extern void ma_bubble_sched_init2(void);
 #endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;
@@ -452,6 +458,9 @@ extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
 #ifdef MA__ACTIVATION
 extern const __ma_init_info_t ma_init_info_init_upcalls;
 #endif // MA__ACTIVATION
+#ifdef MA__BUBBLES
+extern void ma_bubble_sched_start(void);
+#endif
 
 __ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS+1] = {{MA_INIT_SELF, "Init self"},
                                                         {MA_INIT_TLS,  "Init TLS"},
@@ -511,6 +520,9 @@ void marcel_init_section(int sec) {
                   call_init_function(&ma_init_info_bubble_sched_init);
 #endif // MA__BUBBLES
                   call_init_function(&ma_init_info_sched_init);
+#ifdef MA__BUBBLES
+		  ma_bubble_sched_init2();
+#endif // MA__BUBBLES
                   call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
                   call_init_function(&ma_init_info_marcel_random_lwp_call_UP_PREPARE);
@@ -564,6 +576,9 @@ void marcel_init_section(int sec) {
 #ifdef MA__ACTIVATION
                   call_init_function(&ma_init_info_init_upcalls);
 #endif //MA__ACTIVATION
+#ifdef MA__BUBBLES
+		  ma_bubble_sched_start();
+#endif //MA__BUBBLES
                 }
 
 		ma_init_done[section]=1;

@@ -92,7 +92,7 @@ int marcel_bubble_sleep_locked(marcel_bubble_t *bubble) {
 	VARS;
 	if ( (bubble->sched.run_holder && bubble->sched.run_holder == &bubble->hold)
 	   || (!bubble->sched.run_holder && bubble->sched.sched_holder == &bubble->hold))
-		return;
+		return 0;
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);
@@ -118,10 +118,9 @@ int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble) {
 } while(0)
 int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
 	VARS;
-	int already_locked = 0;
 	if ( (bubble->sched.run_holder && bubble->sched.run_holder == &bubble->hold)
 	   || (!bubble->sched.run_holder && bubble->sched.sched_holder == &bubble->hold))
-		return;
+		return 0;
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);
@@ -991,6 +990,18 @@ any_t marcel_gang_scheduler(any_t foo) {
 	return NULL;
 }
 
+void __marcel_init ma_bubble_sched_start(void) {
+#ifdef MARCEL_GANG_SCHEDULER
+  marcel_attr_t attr;
+  marcel_attr_init(&attr);
+  marcel_attr_setdetachstate(&attr, tbx_true);
+  marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+  marcel_attr_setflags(&attr, MA_SF_NORUN);
+  marcel_attr_setname(&attr, "gang scheduler");
+  marcel_create(NULL, &attr, marcel_gang_scheduler, NULL);
+#endif
+}
+
 /******************************************************************************
  * Initialisation
  */
@@ -1006,6 +1017,11 @@ static void __marcel_init bubble_sched_init() {
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
+#endif
+}
+
+void ma_bubble_sched_init2(void) {
+#ifdef MARCEL_BUBBLE_STEAL
 	/* Having main on the main runqueue is both faster and respects priorities */
 	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.hold;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);

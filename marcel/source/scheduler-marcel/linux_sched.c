@@ -3248,16 +3248,16 @@ void __marcel_init ma_sched_init0(void)
 	marcel_vpmask_empty(&ma_main_runqueue.vpset);
 	marcel_vpmask_empty(&ma_dontsched_runqueue.vpset);
 #endif
+
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_dontsched_runqueue);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
 }
 
 static void __marcel_init sched_init(void)
 {
 	LOG_IN();
 	ma_holder_t *h;
-
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_dontsched_runqueue);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
 
 #ifdef MA__SMP
 	if (marcel_topo_nblevels>1) {

@@ -71,9 +71,6 @@ static void printtask(marcel_task_t *t) {
 	char buf3[32];
 	unsigned long cpu; /* en pour mille */
 
-#define MA_TASK_IS_RUNNING(tsk) (ma_task_run_holder(tsk)&&!ma_task_holder_data(tsk))
-#define MA_TASK_IS_READY(tsk) (ma_task_run_holder(tsk)&&ma_task_holder_data(tsk))
-#define MA_TASK_IS_BLOCKED(tsk) (!ma_task_run_holder(tsk))
 	switch (t->sched.state) {
 		case MA_TASK_RUNNING: 		state = 'R'; break;
 		case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;

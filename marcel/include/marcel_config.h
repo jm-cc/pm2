@@ -69,6 +69,10 @@
 
 /* ========== timer =================== */
 
+/* Unité : microsecondes */
+#define MARCEL_MIN_TIME_SLICE		10000
+#define MARCEL_DEFAULT_TIME_SLICE	MARCEL_MIN_TIME_SLICE
+
 #include <signal.h>
 #ifdef MA__TIMER
 #if defined(MA__LWPS) && (!defined(SA_SIGINFO) || defined(OSF_SYS) || defined(AIX_SYS) || defined(DARWIN_SYS))

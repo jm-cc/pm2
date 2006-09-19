@@ -35,9 +35,7 @@
 ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
 
 /* Unité : microsecondes */
-#define MIN_TIME_SLICE		10000
-#define DEFAULT_TIME_SLICE	MIN_TIME_SLICE
-static volatile unsigned long time_slice = DEFAULT_TIME_SLICE;
+static volatile unsigned long time_slice = MARCEL_DEFAULT_TIME_SLICE;
 
 // Fréquence des messages de debug dans timer_interrupt
 #ifndef TICK_RATE
@@ -354,8 +352,8 @@ void marcel_settimeslice(unsigned long microsecs)
 {
 	LOG_IN();
 
-	if (microsecs && (microsecs < MIN_TIME_SLICE)) {
-		time_slice = MIN_TIME_SLICE;
+	if (microsecs && (microsecs < MARCEL_MIN_TIME_SLICE)) {
+		time_slice = MARCEL_MIN_TIME_SLICE;
 	} else {
 		time_slice = microsecs;
 	}

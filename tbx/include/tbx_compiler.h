@@ -89,10 +89,16 @@ void __memory_barrier(void);
 #endif
 #define TBX_FORMAT(...) __attribute__ ((__format__(__VA_ARGS__)))
 
+#if defined __OPTIMIZE__
+#define __TBX_ALWAYS_INLINE	__attribute__((always_inline))
+#else
+#define __TBX_ALWAYS_INLINE
+#endif
+
 #if __GNUC__ > 3
 #  define __TBX_FUNCTION__		__func__
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
-#  define __tbx_inline__	__inline__ __attribute__((always_inline))
+#  define __tbx_inline__	__inline__ __TBX_ALWAYS_INLINE
 #  define __tbx_setjmp_inline__	__inline__
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
@@ -108,10 +114,10 @@ void __memory_barrier(void);
 #elif __GNUC__ == 3
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  if __GNUC_MINOR__ >= 1
-#    define __tbx_inline__	__inline__ __attribute__((always_inline))
+#    define __tbx_inline__	__inline__ __TBX_ALWAYS_INLINE
 #    define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
 #    if __GNUC_MINOR < 4
-#      define __tbx_setjmp_inline__	__inline__ __attribute__((always_inline))
+#      define __tbx_setjmp_inline__	__inline__ __TBX_ALWAYS_INLINE
 #    else
 #      define __tbx_setjmp_inline__	__inline__
 #    endif

@@ -994,11 +994,11 @@ void __marcel_init ma_bubble_sched_start(void) {
 #ifdef MARCEL_GANG_SCHEDULER
   marcel_attr_t attr;
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, tbx_true);
-  marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
-  marcel_attr_setflags(&attr, MA_SF_NORUN);
   marcel_attr_setname(&attr, "gang scheduler");
-  marcel_create(NULL, &attr, marcel_gang_scheduler, NULL);
+  marcel_attr_setdetachstate(&attr, tbx_true);
+  marcel_attr_setflags(&attr, MA_SF_NORUN);
+  marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+  marcel_create_special(NULL, &attr, marcel_gang_scheduler, NULL);
 #endif
 }
 

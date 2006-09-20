@@ -291,7 +291,6 @@ void marcel_finish_prepare(void)
 
 void marcel_finish(void)
 {
-  marcel_gensched_shutdown();
   marcel_slot_exit();
   ma_topo_exit();
   marcel_exit_top();

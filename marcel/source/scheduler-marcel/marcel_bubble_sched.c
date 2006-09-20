@@ -582,7 +582,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 #ifdef MA__LWPS
 	/* sur smp, descendre l'entité si besoin est */
-	if (nextent->sched_level > rq->level) {
+	if (ma_idle_scheduler && nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une
 		 * telle priorité (ou encore plus forte) avant nous */
 		bubble_sched_debugl(7,"%p should go down\n", nextent);

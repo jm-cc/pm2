@@ -173,7 +173,9 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   /* Then clean whole iov */
   if(flags & NM_SO_IOV_ALLOC_DYNAMIC) {
     TBX_FREE(p_so_pw->pw.v);
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
     TBX_FREE(p_so_pw->pw.nm_v);
+#endif
   }
 
   /* Finally clean packet wrapper itself */

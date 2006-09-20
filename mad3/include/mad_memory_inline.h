@@ -107,28 +107,14 @@ mad_alloc_buffer_group_struct(void)
   return (p_mad_buffer_group_t)tbx_malloc(mad_buffer_group_memory);
 }
 
-static
 void
-mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group)
-{
-  tbx_free(mad_buffer_group_memory, buffer_group);
-}
+mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group);
 
-static
 void
-mad_foreach_free_buffer_group_struct(void *object)
-{
-  tbx_free(mad_buffer_group_memory, object);
-}
+mad_foreach_free_buffer_group_struct(void *object);
 
-static
 void
-mad_foreach_free_buffer(void *object)
-{
-  p_mad_buffer_t buffer = (p_mad_buffer_t)object;
-
-  mad_free_buffer(buffer);
-}
+mad_foreach_free_buffer(void *object);
 
 TBX_FMALLOC
 static

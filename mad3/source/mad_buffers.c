@@ -20,3 +20,22 @@
 
 #include "madeleine.h"
 
+void
+mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group)
+{
+  tbx_free(mad_buffer_group_memory, buffer_group);
+}
+
+void
+mad_foreach_free_buffer_group_struct(void *object)
+{
+  tbx_free(mad_buffer_group_memory, object);
+}
+
+void
+mad_foreach_free_buffer(void *object)
+{
+  p_mad_buffer_t buffer = (p_mad_buffer_t)object;
+
+  mad_free_buffer(buffer);
+}

@@ -59,16 +59,12 @@ __inline__
 p_mad_buffer_group_t
 mad_alloc_buffer_group_struct(void);
 
-static
-__inline__
 void
 mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group);
 
-static
 void
 mad_foreach_free_buffer_group_struct(void *object);
 
-static
 void
 mad_foreach_free_buffer(void *object);
 

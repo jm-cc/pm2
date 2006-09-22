@@ -47,7 +47,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #define MA_ATOMIC_INIT(i)	{ (i) }
 #define ma_atomic_init(v,i)	ma_atomic_set((v), (i))
 #else
-#depend "linux_spinlock.h[macros]"
+#depend "linux_spinlock.h[marcel_macros]"
 #define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 #define ma_atomic_init(v,i)	do { \
 					ma_atomic_t *__v = (v); \
@@ -88,7 +88,6 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 	}
 #else
 #depend "linux_spinlock.h[marcel_macros]"
-#depend "linux_spinlock.h[marcel_inline]"
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, repl; \
 	ma_spin_lock_softirq(&v->lock); \

@@ -13,7 +13,6 @@
 
 export FLAVOR_DEFAULT:=mad4
 
-PROGS :=			\
-	hello
+MOD_SRC	:= $(PM2_ROOT)/nmad/examples/sched_opt
 
 include $(PM2_ROOT)/make/apps.mak

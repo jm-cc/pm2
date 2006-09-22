@@ -79,8 +79,8 @@ registering_flavors() {
 	--mad3=tcp
 
     register_flavor mad4 \
-	--modules="mad4 marcel tbx ntbx init" $COMMON_OPTIONS \
-	--mad4=tcp --marcel=mono --marcel=marcel_main
+	--modules="mad4 tbx ntbx init" $COMMON_OPTIONS \
+	--mad4=sched_opt --mad4=strat_default
 
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \

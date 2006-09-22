@@ -1,0 +1,2 @@
+Provide: mad4_sched
+Conflict: mad4_sched

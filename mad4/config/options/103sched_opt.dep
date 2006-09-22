@@ -1,0 +1,3 @@
+Provide: mad4_sched
+Conflict: mad4_sched
+Depend: mad4_strategy

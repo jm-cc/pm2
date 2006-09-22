@@ -1031,7 +1031,7 @@ weak_alias (siglongjmp, longjmp);
 #endif
 
 /***************************signal********************************/
-DEF_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handler),
+DEF_MARCEL_POSIX(void *,signal,(int sig, void * handler),(sig,handler),
 {
    LOG_IN();
   
@@ -1063,7 +1063,7 @@ DEF_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handle
 	return oact.marcel_sa_handler;
 })
 
-sighandler_t lpt___sysv_signal(int sig, sighandler_t handler)
+void *lpt___sysv_signal(int sig, void * handler)
 {
    LOG_IN();
   
@@ -1095,11 +1095,11 @@ sighandler_t lpt___sysv_signal(int sig, sighandler_t handler)
    return oact.marcel_sa_handler;
 }
 
-DEF_C(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handler))
-DEF___C(sighandler_t,signal,(int sig, sighandler_t handler),(sig,handler))
+DEF_C(void *,signal,(int sig, void * handler),(sig,handler))
+DEF___C(void *,signal,(int sig, void * handler),(sig,handler))
 
-DEF_LIBC(sighandler_t,__sysv_signal,(int sig, sighandler_t handler),(sig,handler))
-DEF___LIBC(sighandler_t,__sysv_signal,(int sig, sighandler_t handler),(sig,handler))
+DEF_LIBC(void *,__sysv_signal,(int sig, void * handler),(sig,handler))
+DEF___LIBC(void *,__sysv_signal,(int sig, void * handler),(sig,handler))
 
 /***************************sigaction*****************************/
 DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,

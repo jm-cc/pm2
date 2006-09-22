@@ -103,8 +103,8 @@ DEC_MARCEL_POSIX(int, sigsetjmp, (sigjmp_buf env, int savemask) __THROW);
 void pmarcel_siglongjmp(sigjmp_buf env, int val);
 DEC_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val) __THROW);
 
-sighandler_t pmarcel_signal(int sig, sighandler_t handler);
-DEC_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler) __THROW);
+void *pmarcel_signal(int sig, void *handler);
+DEC_MARCEL_POSIX(void *,signal,(int sig, void *handler) __THROW);
 
 #ifdef OSF_SYS
 /* Hack around gcc's signal.h stupid #define sigaction _Esigaction */

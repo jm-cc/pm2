@@ -394,9 +394,9 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
     if(!remaining_bytes) {
       /* Headers area continues on a separate iovec entry */
       vec++;
-      ptr = (void *)nm_so_aligned((uint32_t)vec->iov_base);
+      ptr = (void *)nm_so_aligned((uint64_t)vec->iov_base);
       remaining_bytes = vec->iov_len
-	                - ((uint32_t)ptr - (uint32_t)vec->iov_base);
+	                - ((uint64_t)ptr - (uint64_t)vec->iov_base);
       to_skip = 0;
     }
 
@@ -550,10 +550,11 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
       if(proto_id != NM_SO_PROTO_DATA_UNUSED) {
 	/* Retrieve data location */
+	uint16_t skip = dh->skip;
+
 	data = ptr;
 
-	{
-	  uint16_t skip = dh->skip;
+	if(skip) {
 	  uint32_t rlen;
 	  struct iovec *v;
 

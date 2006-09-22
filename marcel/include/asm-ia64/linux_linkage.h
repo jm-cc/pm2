@@ -13,7 +13,6 @@
  * General Public License for more details.
  */
 
-#section common
 /*
  * Similar to:
  * include/asm-ia64/linkage.h
@@ -23,3 +22,5 @@
 
 #define asmlinkage CPP_ASMLINKAGE __attribute__((syscall_linkage))
 
+#section common
+#depend "asm-generic/linux_linkage.h[]"

@@ -282,7 +282,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 
     # Mad3 special case
     case " $_PM2CONFIG_MODULES " in
-    *\ mad3\ * | *\ mad4\ *)
+    *\ mad3\ *)
 	# Mad III mode
 	log "Mad III selected"
 	mad3 "${prog_args[@]}"

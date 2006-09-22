@@ -43,6 +43,7 @@ Directories pm2-libs was configured to
 Other options
   --ext         : extension used
   --protocols   : communication libraries used
+  --schedulers  : communication scheduler used
   --modules     : modules included in the flavor
   --profmods    : modules which have the 'profile' functionality enabled
   --headgenmods : modules which generate some specific header files at compile time
@@ -347,9 +348,13 @@ pm2config_set_vars()
     done
     export _PM2CONFIG_HEADGEN_MODULES
 
-    # Protocols
+    # Communication protocols
     _PM2CONFIG_PROTOCOLS="$PM2_PROTOCOLS"
     export _PM2CONFIG_PROTOCOLS
+
+    # Communication schedulers
+    _PM2CONFIG_SCHEDULERS="$PM2_NMAD_SCHED"
+    export _PM2CONFIG_SCHEDULERS
 
     # C Compiler
     _PM2CONFIG_CC=${PM2_CC:-gcc}
@@ -511,7 +516,7 @@ pm2config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
+    --ext|--protocols|--schedulers|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
     --cflags)
@@ -582,6 +587,10 @@ pm2config_parse_cmdline() # args
 		;;
 	    --protocols)
 		echo $_PM2CONFIG_PROTOCOLS
+		exit 0
+		;;
+            --schedulers)
+	        echo $_PM2CONFIG_SCHEDULERS
 		exit 0
 		;;
 	    --modules)

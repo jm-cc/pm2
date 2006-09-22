@@ -15,6 +15,7 @@
  */
 
 #section functions
+#ifdef MA__SMP
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <pthread.h>
 #   include <semaphore.h>
@@ -26,6 +27,7 @@
 #     include <unistd.h>
 #   endif
 # endif
+#endif
 
 #section marcel_types
 #ifdef MA__SMP

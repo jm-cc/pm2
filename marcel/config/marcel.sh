@@ -10,6 +10,8 @@ case "$PM2_SYS" in
 	;;
 esac
 
+[ "$PM2_SYS" = OSF_SYS ] && PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_OSF_SOURCE"
+
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;
     *) PM2_DEFAULT_LOADER=${PM2_ROOT}/marcel/bin/marcelload_conf_not_needed ;;

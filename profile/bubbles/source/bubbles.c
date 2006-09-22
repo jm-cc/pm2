@@ -1574,7 +1574,6 @@ static void usage(char *argv0) {
 int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
 	FILE *f;
-	int i;
 	char c;
 
 	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpns")) != EOF)
@@ -1739,6 +1738,10 @@ if (optind != argc) {
 	hcreate(1024);
 
 	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_64, &ev))) {
+		static int i;
+		i++;
+		if (!(i%1000))
+			fprintf(stderr,"\r%d",i);
 		if (ev.ev64.code == FUT_KEYCHANGE_CODE)
 			keymask = ev.ev64.param[0];
 		switch (ev.ev64.code) {

@@ -24,9 +24,9 @@ static unsigned int pm2_conf_size = 0;
 
 void common_attr_init(common_attr_t *attr)
 {
-#if defined (MAD3) || defined (MAD4)
+#if defined (MAD3)
   attr->madeleine = NULL;
-#endif // MAD 3 || MAD4
+#endif
 
 #ifdef MAD2
   attr->madeleine = NULL;
@@ -156,7 +156,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_memory_manager_init(*argc, argv);
 #endif /* MAD2 */
 
-#if defined (MAD3) || defined (MAD4)
+#if defined (MAD3)
   /*
    * Mad3 memory managers
    * --------------------
@@ -169,15 +169,11 @@ void common_pre_init(int *argc, char *argv[],
    */
   mad_memory_manager_init(*argc, argv);
 
-#if defined (MAD4)
-  mad_iovec_allocator_init();
-#endif /* MAD4 */
-
 #ifdef MARCEL
   mad_forward_memory_manager_init(*argc, argv);
   mad_mux_memory_manager_init(*argc, argv);
 #endif // MARCEL
-#endif /* MAD3 || MAD4 */
+#endif /* MAD3 */
 
 #ifdef MAD2
   /*
@@ -207,7 +203,7 @@ void common_pre_init(int *argc, char *argv[],
   }
 #endif /* MAD2 */
 
-#if defined (MAD3) || defined (MAD4)
+#if defined (MAD3)
   /*
    * Mad3 core initialization
    * ------------------------
@@ -260,7 +256,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_spawn_driver_init(attr->madeleine, argc, argv);
 #endif /* MAD2 && EXTERNAL_SPAWN */
 
-#if defined (MAD3) || defined (MAD4)
+#if defined (MAD3)
   /*
    * Mad3 structure initializations
    * ------------------------------
@@ -277,12 +273,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_leonie_link_init(attr->madeleine, *argc, argv);
   mad_leonie_command_init(attr->madeleine, *argc, argv);
   mad_directory_init(attr->madeleine, *argc, argv);
-#ifdef MAD3
   mad_drivers_init(attr->madeleine, argc, &argv);
-#else /* MAD4 */
-  mad_dir_driver_init(attr->madeleine, argc, &argv);
-  //mad_dir_driver_init(attr->madeleine);
-#endif /* MAD4 */
 
 #ifdef PM2
   pm2self       = attr->madeleine->session->process_rank;
@@ -292,7 +283,7 @@ void common_pre_init(int *argc, char *argv[],
 // number of processes = tbx_slist_get_length(madeleine->dir->process_slist));
 // global rank max     = tbx_darray_length(madeleine->dir->process_darray));
 #endif /* PM2 */
-#endif /* MAD3 || MAD4 */
+#endif /* MAD3 */
 
 #ifdef MAD2
   /*
@@ -414,7 +405,7 @@ void common_post_init(int *argc, char *argv[],
     mad_parse_url(attr->madeleine);
 #endif /* MAD2 && APPLICATION_SPAWN */
 
-#if defined(MAD2) || defined(MAD3) || defined(MAD4)
+#if defined(MAD2) || defined(MAD3)
   /*
    * Mad2/3 command line clean-up
    * --------------------------
@@ -482,8 +473,6 @@ void common_post_init(int *argc, char *argv[],
 
 #if defined (MAD3)
   mad_channels_init(attr->madeleine);
-#elif defined(MAD4)
-  mad_dir_channel_init(attr->madeleine);
 #endif /* MAD3 */
 
 #if defined (MAD3) && defined (MARCEL)
@@ -582,7 +571,7 @@ common_exit(common_attr_t *attr)
   // TODO : comms LWP finalization
 #endif // EV_SERV
 
-#if defined (MAD3) || defined (MAD4)
+#if defined (MAD3)
   //
   // Leonie termination synchronisation
   // ----------------------------------
@@ -598,7 +587,7 @@ common_exit(common_attr_t *attr)
 
   mad_leonie_sync(attr->madeleine);
   mad_dir_channels_exit(attr->madeleine);
-#endif // MAD3 || MAD4
+#endif // MAD3
 
 
 #ifdef PM2
@@ -614,7 +603,7 @@ common_exit(common_attr_t *attr)
   marcel_finish_prepare();
 #endif // MARCEL
 
-#if defined  (MAD3) || defined (MAD4)
+#if defined  (MAD3)
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);
   mad_leonie_link_exit(attr->madeleine);
@@ -630,10 +619,7 @@ common_exit(common_attr_t *attr)
 
   mad_memory_manager_exit();
 
-#if defined (MAD4)
-  mad_iovec_allocator_exit();
-#endif // MAD4
-#endif // MAD3 || MAD4
+#endif // MAD3
 
 #ifdef MAD2
   mad_exit(attr->madeleine);

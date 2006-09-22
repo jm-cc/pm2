@@ -22,7 +22,6 @@ struct _struct_common_attr_t;
 typedef struct _struct_common_attr_t common_attr_t;
 
 #if !defined(MARCEL_KERNEL) && \
-    !defined(MAD4_KERNEL)   && \
     !defined(MAD3_KERNEL)   && \
     !defined(MAD2_KERNEL)   && \
     !defined(PM2_KERNEL)    && \
@@ -60,7 +59,7 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #include "marcel.h"
 #endif /* MARCEL */
 
-#ifdef MAD
+#if defined(MAD)
 #include "madeleine.h"
 #endif /* MAD */
 
@@ -76,7 +75,7 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 
 struct _struct_common_attr_t {
 
-#ifdef MAD
+#if defined(MAD)
   p_mad_madeleine_t    madeleine;   // OUT
 #endif // MAD
 

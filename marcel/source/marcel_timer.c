@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 #ifdef MA__LIBPTHREAD
-#define sigaction kernel_sigaction
+#define sigaction ma_kernel_sigaction
 #define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)
 #define sigprocmask(how,set,oset) syscall(SYS_rt_sigprocmask,how,set,oset,_NSIG/8)
 #define nanosleep(t1,t2) syscall(SYS_nanosleep,t1,t2)

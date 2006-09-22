@@ -36,10 +36,11 @@ struct marcel_sigaction {
 #section marcel_macros
 #define MARCEL_NSIG 32
 
+#ifdef MA__LIBPTHREAD
 #ifdef LINUX_SYS
 /*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */
-#define kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
-struct kernel_sigaction {
+#define ma_kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
+typedef struct {
       union {
 #undef sa_handler
             __sighandler_t sa_handler;
@@ -51,12 +52,17 @@ struct kernel_sigaction {
       unsigned long sa_flags;
       void (*sa_restorer) (void);
       sigset_t sa_mask;
-};
+} ma_kernel_sigaction_t;
 #else
-#define kernel_sigaction sigaction
+#error Need to know how to send signals directly to kernel
+#endif
+#else
+typedef struct sigaction ma_kernel_sigaction_t;
+#define ma_kernel_sigaction(num, act, oact) sigaction(num, act, oact)
 #endif
 
 #section functions
+#depend "marcel_alias.h[macros]"
 #include <signal.h>
 #include <setjmp.h>
 typedef void (*sighandler_t)(int);
@@ -99,6 +105,12 @@ DEC_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val) __THROW);
 
 sighandler_t pmarcel_signal(int sig, sighandler_t handler);
 DEC_MARCEL_POSIX(sighandler_t,signal,(int sig, sighandler_t handler) __THROW);
+
+#ifdef OSF_SYS
+/* Hack around gcc's signal.h stupid #define sigaction _Esigaction */
+#undef sigaction
+#define sigaction(a,b,c) _Esigaction(a,b,c)
+#endif
 
 int pmarcel_sigaction(int sig, const struct marcel_sigaction *act,struct marcel_sigaction *oact);
 DEC_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,

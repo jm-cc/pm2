@@ -1106,7 +1106,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
      struct marcel_sigaction *oact),(sig,act,oact),
 {
    LOG_IN();
-   struct kernel_sigaction kact;
+   ma_kernel_sigaction_t kact;
    void *handler;
 
    if ((sig < 1)||(sig >= MARCEL_NSIG))
@@ -1197,7 +1197,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 #endif
                    (act->marcel_sa_flags & SA_RESTART);
 
-   if(kernel_sigaction(sig,&kact,NULL) == -1)
+   if(ma_kernel_sigaction(sig,&kact,NULL) == -1)
    {
 #ifdef MA__DEBUG
       fprintf(stderr,"!! syscall sigaction rate -> sig : %d\n",sig);

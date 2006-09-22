@@ -201,9 +201,14 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
+#ifdef CONFIG_STRAT_DEFAULT
   active_strategy = &nm_so_strat_default;
-  // active_strategy = &nm_so_strat_aggreg;
-  // active_strategy = &nm_so_strat_exhaustive;
+#elif CONFIG_STRAT_AGGREG
+  active_strategy = &nm_so_strat_aggreg;
+#else
+  /* Fall back to the default strategy */
+  active_strategy = &nm_so_strat_default;
+#endif
 
   __nm_so_pack = active_strategy->pack;
 

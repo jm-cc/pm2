@@ -396,7 +396,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
       vec++;
       ptr = (void *)nm_so_aligned((uint64_t)vec->iov_base);
       remaining_bytes = vec->iov_len
-	                - ((uint64_t)ptr - (uint64_t)vec->iov_base);
+	                - (ptr - vec->iov_base);
       to_skip = 0;
     }
 

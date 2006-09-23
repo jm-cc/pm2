@@ -25,25 +25,9 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 #include "nm_so_tracks.h"
+#include "nm_so_raw_interface.h"
 
 //#define NM_SO_OPTIMISTIC_RECV
-
-int
-__nm_so_wait_recv_range(struct nm_core *p_core,
-			struct nm_gate *p_gate,
-			uint8_t tag,
-			uint8_t seq_inf, uint8_t seq_sup)
-{
-  uint8_t seq = seq_inf;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
-  do {
-    while(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_RECV_COMPLETED))
-      nm_schedule(p_core);
-  } while(seq++ != seq_sup);
-
-  return NM_ESUCCESS;
-}
 
 int
 __nm_so_unpack(struct nm_gate *p_gate,

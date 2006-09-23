@@ -25,31 +25,6 @@
 #include "nm_so_strategies.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
-#include "nm_so_interface.h"
-
-int
-__nm_so_wait_send_range(struct nm_core *p_core,
-			struct nm_gate *p_gate,
-			uint8_t tag,
-			uint8_t seq_inf, uint8_t seq_sup)
-{
-  uint8_t seq = seq_inf;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
-  do {
-    while(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED))
-
-      if(p_so_gate->active_recv[0])
-	/* We also need to schedule in new packets (typically ACKs) */
-	nm_schedule(p_core);
-      else
-	/* We just need to schedule out data on this gate */
-	nm_sched_out_gate(p_gate);
-
-  } while(seq++ != seq_sup);
-
-  return NM_ESUCCESS;
-}
 
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,

@@ -23,7 +23,7 @@
 #include <nm_public.h>
 #include <nm_so_public.h>
 
-#include <nm_so_interface.h>
+#include <nm_so_pack_interface.h>
 
 #if defined CONFIG_MX
 #  include <nm_mx_public.h>
@@ -67,6 +67,12 @@ main(int	  argc,
                 printf("nm_core_init returned err = %d\n", err);
                 goto out;
         }
+
+	err = nm_so_pack_interface_init();
+	if(err != NM_ESUCCESS) {
+	  printf("nm_so_pack_interface_init return err = %d\n", err);
+	  goto out;
+	}
 
         argc--;
         argv++;

@@ -24,12 +24,12 @@
 
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
-#include "nm_so_interface.h"
+#include "nm_so_pack_interface.h"
 
 struct nm_so_cnx out_cnx[NM_SO_MAX_TAGS], in_cnx[NM_SO_MAX_TAGS];
 
 int
-nm_so_interface_init(void)
+nm_so_pack_interface_init(void)
 {
   return NM_ESUCCESS;
 }

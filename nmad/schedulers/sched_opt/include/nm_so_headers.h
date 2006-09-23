@@ -60,7 +60,7 @@ union nm_so_generic_ctrl_header {
 
 #define NM_SO_ALIGN_TYPE      uint32_t
 #define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)
-#define nm_so_aligned(x)      tbx_aligned(x, NM_SO_ALIGN_FRONTIER)
+#define nm_so_aligned(x)      tbx_aligned((x), NM_SO_ALIGN_FRONTIER)
 
 #define NM_SO_GLOBAL_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_global_header))

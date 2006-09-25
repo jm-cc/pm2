@@ -244,6 +244,9 @@ static void __marcel_init look_cpuinfo(void) {
 					if (MA_CPU_ISSET(cpu2,&diecpus[i]))
 						marcel_vpmask_add_vp(&die_level[j].vpset,k);
 				}
+				die_level[i].arity=0;
+				die_level[i].sons=NULL;
+				die_level[i].father=NULL;
 				mdebug("die %d has vpset %lx\n",j,die_level[j].vpset);
 				j++;
 			}
@@ -292,6 +295,9 @@ static void __marcel_init look_cpuinfo(void) {
 					if (MA_CPU_ISSET(cpu2,&corecpus[i]))
 						marcel_vpmask_add_vp(&core_level[j].vpset,k);
 				}
+				core_level[i].arity=0;
+				core_level[i].sons=NULL;
+				core_level[i].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 				ma_atomic_set(&core_level[j].nbidle, 0);
 #endif
@@ -366,6 +372,9 @@ static void __marcel_init look_libnuma(void) {
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))
 				ma_vp_node[j]=i;
+		node_level[i].arity=0;
+		node_level[i].sons=NULL;
+		node_level[i].father=NULL;
 	}
 
 	marcel_vpmask_empty(&node_level[i].vpset);
@@ -423,6 +432,9 @@ static void __marcel_init look_libnuma(void) {
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))
 				ma_vp_node[j]=radid;
+		node_level[i].arity=0;
+		node_level[i].sons=NULL;
+		node_level[i].father=NULL;
 	}
 
 	marcel_vpmask_empty(&node_level[i].vpset);
@@ -447,6 +459,9 @@ static void look_cpu(void) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
 		cpu_level[cpu].number=cpu;
 		marcel_vpmask_empty(&cpu_level[cpu].vpset);
+		cpu_level[i].arity=0;
+		cpu_level[i].sons=NULL;
+		cpu_level[i].father=NULL;
 	}
 	marcel_vpmask_empty(&cpu_level[cpu].vpset);
 

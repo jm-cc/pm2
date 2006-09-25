@@ -40,7 +40,7 @@ struct marcel_sigaction {
 #ifdef LINUX_SYS
 /*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */
 #define ma_kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
-typedef struct {
+typedef struct ma_kernel_sigaction {
       union {
 #undef sa_handler
             __sighandler_t sa_handler;

@@ -30,6 +30,13 @@
 #define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #ifdef __GNUC__
 #ifndef __INTEL_COMPILER
+#define get_sp_fresh() \
+({ \
+  register unsigned long sp; \
+  __asm__ (";; mov %0 = sp ;; \n\t": "=r"(sp)); \
+  sp; \
+})
+
 #define get_sp() \
 ({ \
   register unsigned long sp asm("sp"); \
@@ -89,6 +96,7 @@ static __tbx_inline__ unsigned long get_bsp(void)
 #define _MA_IA64_REG_SP		1036	/* R12 */
 __ma_u64 __getReg(const int whichReg);
 #define get_sp() ((unsigned long)__getReg(_MA_IA64_REG_SP))
+#define get_sp_fresh() get_sp()
 #endif /* __INTEL_COMPILER */
 #else /* neither gcc nor icc */
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"

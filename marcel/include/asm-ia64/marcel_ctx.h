@@ -59,7 +59,7 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \
   do { \
 	  /* NOTE: sur ia64 on ne sait pas précisément combien il faut de marge !! */ \
-    unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
+    unsigned long _local = ((unsigned long)(cur_top)) - get_sp_fresh(); \
     unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, new_task->stack_base); \

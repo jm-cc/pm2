@@ -230,7 +230,7 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("%d dies\n", numdies);
 
 	if (really_dies) {
-		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+1)*sizeof(*die_level))));
+		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
 
 		for (cpu=0, j=0; cpu <= processor; cpu++) {
 			i = proc_physid[cpu];
@@ -277,7 +277,7 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("%d cores\n", numcores);
 
 	if (really_cores) {
-		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+1)*sizeof(*core_level))));
+		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
 
 		for (cpu=0, j=0; cpu <= processor; cpu++) {
 			physid = proc_physid[cpu];
@@ -334,7 +334,7 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+1)*sizeof(*node_level))));
+	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
 
 	for (i=0;i<marcel_nbvps();i++)
 		ma_vp_node[i]=-1;
@@ -399,7 +399,7 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+1)*sizeof(*node_level))));
+	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
 
 	for (i=0;i<marcel_nbvps();i++)
 		ma_vp_node[i]=-1;
@@ -441,7 +441,7 @@ static void look_cpu(void) {
 	if (marcel_nbprocessors>=marcel_nbvps())
 		return;
 
-	MA_BUG_ON(!(cpu_level=TBX_MALLOC((marcel_nbprocessors+1)*sizeof(*cpu_level))));
+	MA_BUG_ON(!(cpu_level=TBX_MALLOC((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level))));
 
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
@@ -587,7 +587,7 @@ static void topo_discover(void) {
 				memmove(&marcel_topo_level_nbitems[l+2],&marcel_topo_level_nbitems[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_level_nbitems));
 				memmove(&marcel_topo_levels[l+2],&marcel_topo_levels[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_levels));
 				marcel_topo_level_nbitems[l+1] = levelsize;
-				marcel_topo_levels[l+1] = TBX_MALLOC((levelsize+1)*sizeof(**marcel_topo_levels));
+				marcel_topo_levels[l+1] = TBX_MALLOC((levelsize+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
 				for (i=0,j=0; marcel_topo_levels[l][i].vpset; i++) {
 					split(marcel_topo_levels[l][i].arity,&sublevelsize,&nbsublevels);
 					mdebug("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelsize);

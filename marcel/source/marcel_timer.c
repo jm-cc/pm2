@@ -20,10 +20,10 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 
 #ifdef MA__LIBPTHREAD
+#include <sys/syscall.h>
 #define sigaction ma_kernel_sigaction
 #define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)
 #define sigprocmask(how,set,oset) syscall(SYS_rt_sigprocmask,how,set,oset,_NSIG/8)

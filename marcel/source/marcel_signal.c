@@ -17,7 +17,10 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <signal.h>
+#ifndef AIX_SYS
 #include <sys/syscall.h>
+#define HAVE_SYSCALL
+#endif
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -1345,10 +1348,15 @@ int marcel_call_function(int sig)
    
    if (cact.marcel_sa_handler == SIG_DFL)
    {
+#ifdef HAVE_SYSCALL
       if (syscall(SYS_kill,getpid(),sig) == -1)
          return -1;
       LOG_OUT();
       return 0;
+#else
+      fprintf(stderr,"No way to send signal directly to kernel\n");
+      return -1;
+#endif
    }
    
    marcel_sigset_t oldmask;

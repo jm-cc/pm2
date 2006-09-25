@@ -41,6 +41,7 @@ typedef enum {
 	POLL_SELECT
 } poll_op_t;
 
+#undef NFDS
 #if __GNU__ < 3
 #  define MA_GCC_NAME __ma_gcc
 #  define FD MA_GCC_NAME.fd

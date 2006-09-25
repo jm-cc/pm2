@@ -11,6 +11,7 @@ case "$PM2_SYS" in
 esac
 
 [ "$PM2_SYS" = OSF_SYS ] && PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_OSF_SOURCE"
+[ "$PM2_SYS" = AIX_SYS ] && PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_ALL_SOURCE"
 
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;

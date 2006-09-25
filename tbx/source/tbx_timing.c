@@ -31,7 +31,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "tbx.h"
+#ifdef MA__LIBPTHREAD
 #include <sys/syscall.h>
+#endif
 
 static double      scale        = 0.0;
 unsigned long long tbx_residual = 0;

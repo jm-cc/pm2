@@ -63,7 +63,11 @@ extern int __zero_fd;
 #    define MAIN_STACK_BOT         0xa8000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(X86_64_ARCH)
-#    ifdef MA__PROVIDE_TLS
+#    ifdef PM2VALGRIND
+#      define ISOADDR_AREA_TOP       0x20000000
+#      define SLOT_AREA_BOTTOM       0x18000000
+#      define MAIN_STACK_BOT         0xffffffff
+#    elif defined(MA__PROVIDE_TLS)
 #      define ISOADDR_AREA_TOP       0x100000000
 #      define SLOT_AREA_BOTTOM       0x10000000
 #      define MAIN_STACK_BOT         0xffffffff

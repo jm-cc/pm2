@@ -231,7 +231,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task = ma_slot_top_task(top);
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr
 				- attr->__stacksize) {
-			fprintf(stderr,"size = %d, not big enough\n",attr->__stacksize);
+			fprintf(stderr,"size = %lu, not big enough\n",(unsigned long)attr->__stacksize);
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); /* Not big enough */
 		}
 		stack_base = attr->__stackaddr - attr->__stacksize;

@@ -394,7 +394,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
     if(!remaining_bytes) {
       /* Headers area continues on a separate iovec entry */
       vec++;
-      ptr = (void *)nm_so_aligned((uint64_t)vec->iov_base);
+      ptr = (void *)nm_so_aligned((intptr_t)vec->iov_base);
       remaining_bytes = vec->iov_len
 	                - (ptr - vec->iov_base);
       to_skip = 0;

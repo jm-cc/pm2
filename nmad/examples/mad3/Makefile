@@ -12,7 +12,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+ifeq ($(CONFIG_SCHED_OPT), y)
+# When compiled with sched opt, the mad3 emulation proto defines
+# the mad_nmad_* function set (which does not provide a permissive 
+# receive operation), therefore we do not compile standard Madeleine examples
+APP		:=
+else
 APP		:= mad_ping mad_mini mad_micro
+endif
+
 NM_PATH		:= ../..
 
 include $(NM_PATH)/Makefile

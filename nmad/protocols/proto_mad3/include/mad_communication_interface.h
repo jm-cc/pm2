@@ -26,14 +26,43 @@
  * Functions
  * ---------
  */
+#if defined CONFIG_SCHED_OPT
+p_mad_connection_t
+mad_nmad_begin_packing(p_mad_channel_t      ch,
+                       ntbx_process_lrank_t remote_rank);
 
+p_mad_connection_t
+mad_nmad_begin_unpacking_from(p_mad_channel_t      ch,
+                              ntbx_process_lrank_t remote_rank);
+
+void
+mad_nmad_end_packing(p_mad_connection_t out);
+
+void
+mad_nmad_end_unpacking(p_mad_connection_t in);
+
+void
+mad_nmad_pack(p_mad_connection_t   out,
+              void                *user_buffer,
+              size_t               user_buffer_length,
+              mad_send_mode_t      send_mode,
+              mad_receive_mode_t   receive_mode);
+
+void
+mad_nmad_unpack(p_mad_connection_t   in,
+                void                *user_buffer,
+                size_t               user_buffer_length,
+                mad_send_mode_t      send_mode,
+                mad_receive_mode_t   receive_mode);
+
+#else
 void
 mad_free_parameter_slist(p_tbx_slist_t parameter_slist);
 
-#ifdef MAD_MESSAGE_POLLING
+#  ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_message_ready(p_mad_channel_t channel);
-#endif /* MAD_MESSAGE_POLLING */
+#  endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t      channel,
@@ -81,6 +110,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
                size_t                 buffer_length,
                mad_send_mode_t        send_mode,
                mad_receive_mode_t     receive_mode);
+#endif
 
 #ifdef MARCEL
 void

@@ -15,7 +15,7 @@
 ifdef NM_PATH
         NM_MK_PREFIX	:= $(NM_PATH)/
 else
-        NM_MK_PREFIX	:= 
+        NM_MK_PREFIX	:= $(CURDIR)/
 endif
 
 include $(NM_MK_PREFIX)make.vars

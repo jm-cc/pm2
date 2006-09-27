@@ -45,6 +45,11 @@ tbx_purge_cmd_line(int   *argc,
 void
 tbx_exit(void);
 
+void
+tbx_dump(unsigned char *p,
+         size_t	n);
+
+
 /*
  * Destructors
  * -----------

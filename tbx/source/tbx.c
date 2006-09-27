@@ -30,6 +30,38 @@ static const    char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
 static volatile tbx_bool_t initialized = tbx_false;
 
 void
+tbx_dump(unsigned char *p,
+         size_t	n) {
+        int		c = 0;
+        size_t	l = 0;
+
+        while (n) {
+                if (!c) {
+                        DISP_NO_NL("%016zx ", 16*l);
+                }
+
+                DISP_NO_NL("%02x ", *p++);
+
+                c++;
+                if (c == 8) {
+                        DISP_NO_NL(" ");
+                } else if (c == 16) {
+                        l++;
+                        c = 0;
+                        DISP_NO_NL("\n");
+                        if (l >= 4) {
+                                DISP_NO_NL("...\n");
+                                break;
+                        }
+                } else if (n == 1) {
+                        DISP_NO_NL("\n");
+                }
+
+                n--;
+        }
+}
+
+void
 tbx_init(int    argc TBX_UNUSED,
 	 char **argv TBX_UNUSED)
 {

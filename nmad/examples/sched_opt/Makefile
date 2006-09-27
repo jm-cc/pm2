@@ -13,7 +13,7 @@
 # General Public License for more details.
 
 ifeq ($(CONFIG_SCHED_OPT), y)
-APP		:= dummy hello big_hello ping latency single-ping multi-ping 4-ping #basic basic_ping
+APP		:= mad_micro_sel mad_ping_sel dummy hello big_hello ping latency single-ping multi-ping 4-ping #basic basic_ping
 else
 APP		:=
 endif

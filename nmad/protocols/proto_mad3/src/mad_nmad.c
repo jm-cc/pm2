@@ -28,6 +28,8 @@
 #include <nm_public.h>
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_mini_alt_public.h>
+#elif defined CONFIG_SCHED_OPT
+#  include <nm_so_public.h>
 #else
 #  error mad_nmad.c requires the mini alt scheduler for now
 #endif
@@ -49,7 +51,12 @@
 #endif
 
 #include <nm_tcp_public.h>
-#include <nm_basic_public.h>
+#if defined CONFIG_SCHED_MINI_ALT
+#  include <nm_basic_public.h>
+#elif defined CONFIG_SCHED_OPT
+#  include <nm_so_pack_interface.h>
+#endif
+
 #include "nm_mad3_private.h"
 
 #include "madeleine.h"
@@ -78,6 +85,9 @@ typedef struct s_mad_nmad_channel_specific {
 
 typedef struct s_mad_nmad_connection_specific {
   	uint8_t			 gate_id;
+#ifdef CONFIG_SCHED_OPT
+        struct nm_so_cnx	*so_cnx;
+#endif /* CONFIG_SCHED_OPT */
 } mad_nmad_connection_specific_t, *p_mad_nmad_connection_specific_t;
 
 typedef struct s_mad_nmad_link_specific {
@@ -122,10 +132,11 @@ mad_nmad_after_open_channel(p_mad_channel_t);
 static void
 mad_nmad_disconnect(p_mad_connection_t);
 
-#ifdef MAD_MESSAGE_POLLING
+#if defined CONFIG_SCHED_MINI_ALT
+#  ifdef MAD_MESSAGE_POLLING
 static p_mad_connection_t
 mad_nmad_poll_message(p_mad_channel_t);
-#endif /* MAD_MESSAGE_POLLING */
+#  endif /* MAD_MESSAGE_POLLING */
 
 static void
 mad_nmad_new_message(p_mad_connection_t);
@@ -149,6 +160,7 @@ static void
 mad_nmad_receive_sub_buffer_group(p_mad_link_t,
                                   tbx_bool_t,
                                   p_mad_buffer_group_t);
+#endif
 
 /* static vars
  */
@@ -170,6 +182,7 @@ nm_mad3_init_core(int	 *argc,
         int err;
 
         TRACE("Initializing NMAD driver");
+#if defined CONFIG_SCHED_MINI_ALT
         err = nm_core_init(argc, argv, &p_core, nm_mini_alt_load);
         if (err != NM_ESUCCESS) {
                 DISP("nm_core_init returned err = %d\n", err);
@@ -180,6 +193,18 @@ nm_mad3_init_core(int	 *argc,
                 DISP("nm_core_proto_init returned err = %d\n", err);
                 TBX_FAILURE("nmad error");
         }
+#elif defined CONFIG_SCHED_OPT
+        err = nm_core_init(argc, argv, &p_core, nm_so_load);
+        if (err != NM_ESUCCESS) {
+                DISP("nm_core_init returned err = %d\n", err);
+                TBX_FAILURE("nmad error");
+        }
+	err = nm_so_pack_interface_init();
+	if(err != NM_ESUCCESS) {
+                DISP("nm_so_pack_interface_init return err = %d\n", err);
+                TBX_FAILURE("nmad error");
+	}
+#endif
 }
 
 /*
@@ -212,11 +237,12 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->choice                     = NULL;
         interface->get_static_buffer          = NULL;
         interface->return_static_buffer       = NULL;
+#if defined CONFIG_SCHED_MINI_ALT
         interface->new_message                = NULL;
         interface->finalize_message           = NULL;
-#ifdef MAD_MESSAGE_POLLING
+#  ifdef MAD_MESSAGE_POLLING
         interface->poll_message               = mad_nmad_poll_message;
-#endif // MAD_MESSAGE_POLLING
+#  endif // MAD_MESSAGE_POLLING
         interface->new_message                = mad_nmad_new_message;
         interface->receive_message            = mad_nmad_receive_message;
         interface->message_received           = NULL;
@@ -224,6 +250,20 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->receive_buffer             = mad_nmad_receive_buffer;
         interface->send_buffer_group          = mad_nmad_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_nmad_receive_sub_buffer_group;
+#else
+        interface->new_message                = NULL;
+        interface->finalize_message           = NULL;
+#  ifdef MAD_MESSAGE_POLLING
+        interface->poll_message               = NULL;
+#  endif // MAD_MESSAGE_POLLING
+        interface->new_message                = NULL;
+        interface->receive_message            = NULL;
+        interface->message_received           = NULL;
+        interface->send_buffer                = NULL;
+        interface->receive_buffer             = NULL;
+        interface->send_buffer_group          = NULL;
+        interface->receive_sub_buffer_group   = NULL;
+#endif
         NM_LOG_OUT();
 
         return "nmad";
@@ -417,8 +457,8 @@ mad_nmad_disconnect(p_mad_connection_t cnx) {
         /* TODO */
         NM_LOG_OUT();
 }
-
-#ifdef MAD_MESSAGE_POLLING
+#ifdef CONFIG_SCHED_MINI_ALT
+#  ifdef MAD_MESSAGE_POLLING
 static
 p_mad_connection_t
 mad_nmad_poll_message(p_mad_channel_t ch) {
@@ -437,7 +477,7 @@ mad_nmad_poll_message(p_mad_channel_t ch) {
 
         return in;
 }
-#endif // MAD_MESSAGE_POLLING
+#  endif // MAD_MESSAGE_POLLING
 
 static
 void
@@ -765,4 +805,165 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t         lnk,
         mad_nmad_receive_sub_buffer_group_1(lnk, bg);
         NM_LOG_OUT();
 }
+#elif defined(CONFIG_SCHED_OPT)
 
+/* Direct mapping of the high level interface */
+
+p_mad_connection_t
+mad_nmad_begin_packing(p_mad_channel_t      ch,
+                       ntbx_process_lrank_t remote_rank) {
+  p_mad_connection_t       out = NULL;
+  p_mad_nmad_channel_specific_t		 chs	= NULL;
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  TRACE("New emission request");
+  if (!ch->not_private)
+    return NULL;
+
+  out = tbx_darray_get(ch->out_connection_darray, remote_rank);
+
+  if (!out)
+    {
+      LOG_OUT();
+
+      return NULL;
+    }
+
+#  ifdef MARCEL
+  marcel_mutex_lock(&(out->lock_mutex));
+#  else /* MARCEL */
+  if (out->lock == tbx_true)
+    TBX_FAILURE("mad_begin_packing: connection dead lock");
+  out->lock = tbx_true;
+#  endif /* MARCEL */
+
+  chs	= ch->specific;
+  cs	= out->specific;
+
+  nm_so_begin_packing(p_core, cs->gate_id, chs->tag_id, &so_cnx);
+  cs->so_cnx     = so_cnx;
+
+
+  TRACE("Emission request initiated");
+  LOG_OUT();
+
+  return out;
+}
+
+p_mad_connection_t
+mad_nmad_begin_unpacking_from(p_mad_channel_t      ch,
+                              ntbx_process_lrank_t remote_rank) {
+  p_mad_connection_t      		 in	= NULL;
+  p_mad_nmad_channel_specific_t		 chs	= NULL;
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  TRACE("New selective reception request");
+  if (!ch->not_private)
+    return NULL;
+
+  in = tbx_darray_get(ch->in_connection_darray, remote_rank);
+
+  if (!in)
+    {
+      LOG_OUT();
+
+      return NULL;
+    }
+
+#  ifdef MARCEL
+  marcel_mutex_lock(&(in->lock_mutex));
+#  else /* MARCEL */
+  if (in->lock == tbx_true)
+    TBX_FAILURE("mad_begin_unpacking_from: connection dead lock");
+  in->lock = tbx_true;
+#  endif /* MARCEL */
+
+  chs	= ch->specific;
+  cs	= in->specific;
+
+  nm_so_begin_unpacking(p_core, cs->gate_id, chs->tag_id, &so_cnx);
+  cs->so_cnx     = so_cnx;
+
+
+  TRACE("Selective reception request initiated");
+  LOG_OUT();
+
+  return in;
+}
+
+void
+mad_nmad_end_packing(p_mad_connection_t out) {
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  cs		= out->specific;
+  so_cnx	= cs->so_cnx;
+  nm_so_end_packing(p_core, so_cnx);
+
+#ifdef MARCEL
+  marcel_mutex_unlock(&(out->lock_mutex));
+#else // MARCEL
+  out->lock = tbx_false;
+#endif // MARCEL
+  TRACE("Emission request completed");
+  LOG_OUT();
+}
+
+
+void
+mad_nmad_end_unpacking(p_mad_connection_t in) {
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  cs		= in->specific;
+  so_cnx	= cs->so_cnx;
+  nm_so_end_unpacking(p_core, so_cnx);
+
+#ifdef MARCEL
+  marcel_mutex_unlock(&(in->lock_mutex));
+#else // MARCEL
+  in->lock = tbx_false;
+#endif // MARCEL
+  TRACE("Reception request completed");
+  LOG_OUT();
+}
+
+void
+mad_nmad_pack(p_mad_connection_t   out,
+              void                *user_buffer,
+              size_t               user_buffer_length,
+              mad_send_mode_t      send_mode,
+              mad_receive_mode_t   receive_mode) {
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  cs		= out->specific;
+  so_cnx	= cs->so_cnx;
+  nm_so_pack(so_cnx, user_buffer, user_buffer_length);
+  LOG_OUT();
+}
+
+void
+mad_nmad_unpack(p_mad_connection_t   in,
+                void                *user_buffer,
+                size_t               user_buffer_length,
+                mad_send_mode_t      send_mode,
+                mad_receive_mode_t   receive_mode) {
+  p_mad_nmad_connection_specific_t	 cs	= NULL;
+  struct nm_so_cnx			*so_cnx	= NULL;
+
+  LOG_IN();
+  cs		= in->specific;
+  so_cnx	= cs->so_cnx;
+  nm_so_unpack(so_cnx, user_buffer, user_buffer_length);
+  LOG_OUT();
+}
+
+#endif

@@ -21,7 +21,9 @@ bool CONFIG_DISK	= n
 bool CONFIG_DUMMY	= n
 
 [protocols]
-bool CONFIG_PROTO_MAD3	= n
+bool CONFIG_PROTO_BASIC		= n
+bool CONFIG_PROTO_SO_BASIC	= n
+bool CONFIG_PROTO_MAD3		= n
 
 #===================================
 
@@ -52,6 +54,5 @@ string DUMMY_LIBS
 
 # -*- protos -*-
 [mad3_emulation: CONFIG_PROTO_MAD3]
-set CONFIG_SCHED_MINI_ALT	= y
 
 #

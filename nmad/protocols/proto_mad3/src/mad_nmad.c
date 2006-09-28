@@ -70,13 +70,23 @@
  * local structures
  * ----------------
  */
+#ifdef CONFIG_SCHED_OPT
+typedef struct s_mad_nmad_deferred {
+        void			*ptr;
+        size_t			 len;
+        uint8_t			 seq;
+        uint8_t			 tag_id;
+} mad_nmad_deferred_t, *p_mad_nmad_deferred_t;
+#endif /* CONFIG_SCHED_OPT */
+
 typedef struct s_mad_nmad_driver_specific {
         uint8_t			 drv_id;
         char			*l_url;
 } mad_nmad_driver_specific_t, *p_mad_nmad_driver_specific_t;
 
 typedef struct s_mad_nmad_adapter_specific {
-        int dummy;
+        int 			 master_channel_id;
+        p_tbx_darray_t		 cnx_darray;
 } mad_nmad_adapter_specific_t, *p_mad_nmad_adapter_specific_t;
 
 typedef struct s_mad_nmad_channel_specific {
@@ -84,10 +94,19 @@ typedef struct s_mad_nmad_channel_specific {
 } mad_nmad_channel_specific_t, *p_mad_nmad_channel_specific_t;
 
 typedef struct s_mad_nmad_connection_specific {
-  	uint8_t			 gate_id;
 #ifdef CONFIG_SCHED_OPT
-        struct nm_so_cnx	*so_cnx;
+        struct s_mad_nmad_connection_specific	*master_cnx;
+        struct nm_gate		*p_gate;
+        uint8_t			 in_next_seq;
+        uint8_t			 in_wait_seq;
+        uint8_t			 in_flow_ctrl;
+        p_tbx_slist_t		 in_deferred_slist;
+
+        uint8_t			 out_next_seq;
+        uint8_t			 out_wait_seq;
+        uint8_t			 out_flow_ctrl;
 #endif /* CONFIG_SCHED_OPT */
+  	uint8_t			 gate_id;
 } mad_nmad_connection_specific_t, *p_mad_nmad_connection_specific_t;
 
 typedef struct s_mad_nmad_link_specific {
@@ -167,8 +186,9 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t,
 
 /* core and proto objects */
 static struct nm_core	*p_core		= NULL;
+#if defined CONFIG_SCHED_MINI_ALT
 static struct nm_proto	*p_proto	= NULL;
-
+#endif
 
 /*
  * Driver private functions
@@ -343,6 +363,9 @@ mad_nmad_adapter_init(p_mad_adapter_t	a) {
         ds	= a->driver->specific;
 
         as	= TBX_MALLOC(sizeof(mad_nmad_adapter_specific_t));
+
+        as->master_channel_id	= -1;
+        as->cnx_darray	= tbx_darray_init();
         a->specific	= as;
         a->parameter	= tbx_strdup(ds->l_url);
         NM_LOG_OUT();
@@ -351,11 +374,16 @@ mad_nmad_adapter_init(p_mad_adapter_t	a) {
 static
 void
 mad_nmad_channel_init(p_mad_channel_t ch) {
-        p_mad_nmad_channel_specific_t chs	= NULL;
+        p_mad_nmad_adapter_specific_t	as	= NULL;
+        p_mad_nmad_channel_specific_t	chs	= NULL;
 
         NM_LOG_IN();
+        as		= ch->adapter->specific;
         chs		= TBX_MALLOC(sizeof(mad_nmad_channel_specific_t));
         chs->tag_id	= ch->dir_channel->id;
+        if (as->master_channel_id == -1) {
+                as->master_channel_id = ch->dir_channel->id;
+        }
         ch->specific	= chs;
         NM_LOG_OUT();
 }
@@ -364,16 +392,47 @@ static
 void
 mad_nmad_connection_init(p_mad_connection_t in,
                          p_mad_connection_t out) {
-        p_mad_nmad_connection_specific_t cs	= NULL;
+        p_mad_channel_t				ch	= NULL;
+        p_mad_nmad_adapter_specific_t		as	= NULL;
+        p_mad_nmad_channel_specific_t		chs	= NULL;
+        p_mad_nmad_connection_specific_t	cs	= NULL;
         int err;
 
         NM_LOG_IN();
+        ch	= in->channel;
+        as	= in->channel->adapter->specific;
+        chs	= in->channel->specific;
         cs	= TBX_MALLOC(sizeof(mad_nmad_connection_specific_t));
-        err = nm_core_gate_init(p_core, &cs->gate_id);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_init returned err = %d\n", err);
-                TBX_FAILURE("nmad error");
+
+        if (as->master_channel_id == ch->dir_channel->id) {
+                err = nm_core_gate_init(p_core, &cs->gate_id);
+                if (err != NM_ESUCCESS) {
+                        printf("nm_core_gate_init returned err = %d\n", err);
+                        TBX_FAILURE("nmad error");
+                }
+
+#ifdef CONFIG_SCHED_OPT
+                cs->p_gate	= p_core->gate_array + cs->gate_id;
+#endif /* CONFIG_SCHED_OPT */
+
+
+                tbx_darray_expand_and_set(as->cnx_darray, in->remote_rank,
+                                          cs);
+                cs->master_cnx	= cs;
+        } else {
+                cs->master_cnx	= NULL;
         }
+
+#ifdef CONFIG_SCHED_OPT
+        cs->in_next_seq		= 0;
+        cs->in_wait_seq		= 0;
+        cs->in_flow_ctrl	= 0;
+        cs->in_deferred_slist	= tbx_slist_nil();
+
+        cs->out_next_seq	= 0;
+        cs->out_wait_seq	= 0;
+        cs->out_flow_ctrl	= 0;
+#endif /* CONFIG_SCHED_OPT */
         in->specific	= out->specific	= cs;
         in->nb_link	= 1;
         out->nb_link	= 1;
@@ -401,19 +460,26 @@ void
 mad_nmad_accept(p_mad_connection_t   in,
                 p_mad_adapter_info_t ai TBX_UNUSED) {
         p_mad_nmad_driver_specific_t		ds	= NULL;
+        p_mad_nmad_adapter_specific_t		as	= NULL;
         p_mad_nmad_connection_specific_t	cs	= NULL;
         int err;
 
         NM_LOG_IN();
         cs	= in->specific;
+        as	= in->channel->adapter->specific;
         ds	= in->channel->adapter->driver->specific;
 
-        err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL, NULL);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_accept returned err = %d\n", err);
-                TBX_FAILURE("nmad error");
+        if (cs->master_cnx) {
+                err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL, NULL);
+                if (err != NM_ESUCCESS) {
+                        printf("nm_core_gate_accept returned err = %d\n", err);
+                        TBX_FAILURE("nmad error");
+                }
+
+                DISP("gate_accept: connection established");
+        } else {
+                cs->master_cnx = tbx_darray_get(as->cnx_darray, in->remote_rank);
         }
-        DISP("gate_accept: connection established");
         NM_LOG_OUT();
 
 }
@@ -423,6 +489,7 @@ void
 mad_nmad_connect(p_mad_connection_t   out,
                  p_mad_adapter_info_t ai) {
         p_mad_nmad_driver_specific_t		ds	= NULL;
+        p_mad_nmad_adapter_specific_t		as	= NULL;
         p_mad_nmad_connection_specific_t	cs	= NULL;
         p_mad_dir_node_t			r_n	= NULL;
         p_mad_dir_adapter_t			r_a	= NULL;
@@ -430,17 +497,24 @@ mad_nmad_connect(p_mad_connection_t   out,
 
         NM_LOG_IN();
         cs	= out->specific;
+        as	= out->channel->adapter->specific;
         ds	= out->channel->adapter->driver->specific;
 
         r_a	= ai->dir_adapter;
         r_n	= ai->dir_node;
-        err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id,
-                                   r_n->name, r_a->parameter);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_connect returned err = %d\n", err);
-                TBX_FAILURE("nmad error");
+
+        if (cs->master_cnx) {
+                err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id,
+                                           r_n->name, r_a->parameter);
+                if (err != NM_ESUCCESS) {
+                        printf("nm_core_gate_connect returned err = %d\n", err);
+                        TBX_FAILURE("nmad error");
+                }
+
+                DISP("gate_connect: connection established");
+        } else {
+                cs->master_cnx = tbx_darray_get(as->cnx_darray, out->remote_rank);
         }
-        DISP("gate_connect: connection established");
         NM_LOG_OUT();
 }
 
@@ -809,13 +883,24 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t         lnk,
 
 /* Direct mapping of the high level interface */
 
+static
+void
+mad_nmad_deferred_dump(p_tbx_slist_t l) {
+        while (!tbx_slist_is_nil(l)) {
+                p_mad_nmad_deferred_t	def	= NULL;
+
+                def	= tbx_slist_extract(l);
+                DISP("completed deferred unpack: seq = %d, tag_id = %d, len = %zx",
+                     def->seq, def->tag_id, def->len);
+                tbx_dump(def->ptr, def->len);
+                TBX_FREE(def);
+        }
+}
+
 p_mad_connection_t
 mad_nmad_begin_packing(p_mad_channel_t      ch,
                        ntbx_process_lrank_t remote_rank) {
-  p_mad_connection_t       out = NULL;
-  p_mad_nmad_channel_specific_t		 chs	= NULL;
-  p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_connection_t	out = NULL;
 
   LOG_IN();
   TRACE("New emission request");
@@ -839,12 +924,7 @@ mad_nmad_begin_packing(p_mad_channel_t      ch,
   out->lock = tbx_true;
 #  endif /* MARCEL */
 
-  chs	= ch->specific;
-  cs	= out->specific;
-
-  nm_so_begin_packing(p_core, cs->gate_id, chs->tag_id, &so_cnx);
-  cs->so_cnx     = so_cnx;
-
+  /* Nothing */
 
   TRACE("Emission request initiated");
   LOG_OUT();
@@ -855,10 +935,7 @@ mad_nmad_begin_packing(p_mad_channel_t      ch,
 p_mad_connection_t
 mad_nmad_begin_unpacking_from(p_mad_channel_t      ch,
                               ntbx_process_lrank_t remote_rank) {
-  p_mad_connection_t      		 in	= NULL;
-  p_mad_nmad_channel_specific_t		 chs	= NULL;
-  p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_connection_t	in	= NULL;
 
   LOG_IN();
   TRACE("New selective reception request");
@@ -882,12 +959,7 @@ mad_nmad_begin_unpacking_from(p_mad_channel_t      ch,
   in->lock = tbx_true;
 #  endif /* MARCEL */
 
-  chs	= ch->specific;
-  cs	= in->specific;
-
-  nm_so_begin_unpacking(p_core, cs->gate_id, chs->tag_id, &so_cnx);
-  cs->so_cnx     = so_cnx;
-
+  /* Nothing */
 
   TRACE("Selective reception request initiated");
   LOG_OUT();
@@ -898,12 +970,18 @@ mad_nmad_begin_unpacking_from(p_mad_channel_t      ch,
 void
 mad_nmad_end_packing(p_mad_connection_t out) {
   p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_nmad_channel_specific_t	 	 chs	= NULL;
 
   LOG_IN();
-  cs		= out->specific;
-  so_cnx	= cs->so_cnx;
-  nm_so_end_packing(p_core, so_cnx);
+  cs	= out->specific;
+  chs	= out->channel->specific;
+
+  if (cs->out_wait_seq != cs->out_next_seq) {
+          __nm_so_swait_range(p_core, cs->p_gate, chs->tag_id,
+                              cs->out_wait_seq, cs->out_next_seq-1);
+          cs->out_wait_seq	= cs->out_next_seq;
+          cs->out_flow_ctrl	= 0;
+  }
 
 #ifdef MARCEL
   marcel_mutex_unlock(&(out->lock_mutex));
@@ -918,12 +996,19 @@ mad_nmad_end_packing(p_mad_connection_t out) {
 void
 mad_nmad_end_unpacking(p_mad_connection_t in) {
   p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_nmad_channel_specific_t	 	 chs	= NULL;
 
   LOG_IN();
-  cs		= in->specific;
-  so_cnx	= cs->so_cnx;
-  nm_so_end_unpacking(p_core, so_cnx);
+  cs	= in->specific;
+  chs	= in->channel->specific;
+
+  if (cs->in_wait_seq != cs->in_next_seq) {
+          __nm_so_rwait_range(p_core, cs->p_gate, chs->tag_id,
+                              cs->in_wait_seq, cs->in_next_seq-1);
+          cs->in_wait_seq	= cs->in_next_seq;
+          cs->in_flow_ctrl	= 0;
+          mad_nmad_deferred_dump(cs->in_deferred_slist);
+  }
 
 #ifdef MARCEL
   marcel_mutex_unlock(&(in->lock_mutex));
@@ -936,33 +1021,93 @@ mad_nmad_end_unpacking(p_mad_connection_t in) {
 
 void
 mad_nmad_pack(p_mad_connection_t   out,
-              void                *user_buffer,
-              size_t               user_buffer_length,
+              void                *ptr,
+              size_t               len,
               mad_send_mode_t      send_mode,
               mad_receive_mode_t   receive_mode) {
-  p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_nmad_connection_specific_t	cs	= NULL;
+  p_mad_nmad_channel_specific_t		chs	= NULL;
 
   LOG_IN();
-  cs		= out->specific;
-  so_cnx	= cs->so_cnx;
-  nm_so_pack(so_cnx, user_buffer, user_buffer_length);
+  if (send_mode == mad_send_LATER)
+          TBX_FAILURE("mad_send_LATER unimplemented");
+
+  cs	= out->specific;
+  chs	= out->channel->specific;
+
+  DISP("pack: seq = %d, tag = %d, len = %zx",
+       cs->out_next_seq, chs->tag_id, len);
+  tbx_dump(ptr, len);
+  __nm_so_pack(cs->p_gate, chs->tag_id, cs->out_next_seq, ptr, len);
+
+  cs->out_next_seq++;
+  cs->out_flow_ctrl++;
+
+  if (cs->out_flow_ctrl == 255) {
+          __nm_so_swait_range(p_core, cs->p_gate, chs->tag_id,
+                              cs->out_wait_seq, cs->out_next_seq-1);
+          cs->out_wait_seq	= cs->out_next_seq;
+          cs->out_flow_ctrl	= 0;
+  } else if (send_mode == mad_send_SAFER) {
+          nm_so_swait(p_core, cs->p_gate, chs->tag_id, cs->out_next_seq-1);
+          if (cs->out_flow_ctrl == 1) {
+                            cs->out_wait_seq	= cs->out_next_seq;
+                            cs->out_flow_ctrl	= 0;
+          }
+  }
   LOG_OUT();
 }
 
 void
 mad_nmad_unpack(p_mad_connection_t   in,
-                void                *user_buffer,
-                size_t               user_buffer_length,
+                void                *ptr,
+                size_t               len,
                 mad_send_mode_t      send_mode,
                 mad_receive_mode_t   receive_mode) {
   p_mad_nmad_connection_specific_t	 cs	= NULL;
-  struct nm_so_cnx			*so_cnx	= NULL;
+  p_mad_nmad_channel_specific_t		 chs	= NULL;
 
   LOG_IN();
-  cs		= in->specific;
-  so_cnx	= cs->so_cnx;
-  nm_so_unpack(so_cnx, user_buffer, user_buffer_length);
+  if (send_mode == mad_send_LATER)
+          TBX_FAILURE("mad_send_LATER unimplemented");
+
+  cs	= in->specific;
+  chs	= in->channel->specific;
+
+  __nm_so_unpack(cs->p_gate, chs->tag_id, cs->in_next_seq, ptr, len);
+
+  cs->in_next_seq++;
+  cs->in_flow_ctrl++;
+
+  if (cs->in_flow_ctrl == 255) {
+          __nm_so_rwait_range(p_core, cs->p_gate, chs->tag_id,
+                              cs->in_wait_seq, cs->in_next_seq-1);
+          cs->in_wait_seq	= cs->in_next_seq;
+          cs->in_flow_ctrl	= 0;
+          mad_nmad_deferred_dump(cs->in_deferred_slist);
+          DISP("unpack: seq = %d, tag_id = %d, len = %zx",
+               cs->in_next_seq-1, chs->tag_id, len);
+          tbx_dump(ptr, len);
+  } else if (receive_mode == mad_receive_EXPRESS) {
+          nm_so_rwait(p_core, cs->p_gate, chs->tag_id, cs->in_next_seq-1);
+          if (cs->in_flow_ctrl == 1) {
+                            cs->in_wait_seq	= cs->in_next_seq;
+                            cs->in_flow_ctrl	= 0;
+          }
+          DISP("unpack: seq = %d, tag_id = %d, len = %zx",
+               cs->in_next_seq-1, chs->tag_id, len);
+          tbx_dump(ptr, len);
+  } else {
+          p_mad_nmad_deferred_t	def	= NULL;
+
+          DISP("mad_receive_CHEAPER: potentially deferred reception");
+          def	= TBX_MALLOC(sizeof(*def));
+          def->ptr	= ptr;
+          def->len	= len;
+          def->seq	= cs->in_next_seq-1;
+          def->tag_id	= chs->tag_id;
+          tbx_slist_append(cs->in_deferred_slist, def);
+  }
   LOG_OUT();
 }
 

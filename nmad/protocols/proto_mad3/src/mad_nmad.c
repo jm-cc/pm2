@@ -18,6 +18,7 @@
  * =========
  */
 
+#undef MAD_NMAD_SO_DEBUG
 
 #include <stdint.h>
 #include <sys/uio.h>
@@ -71,12 +72,14 @@
  * ----------------
  */
 #ifdef CONFIG_SCHED_OPT
+#  ifdef MAD_NMAD_SO_DEBUG
 typedef struct s_mad_nmad_deferred {
         void			*ptr;
         size_t			 len;
         uint8_t			 seq;
         uint8_t			 tag_id;
 } mad_nmad_deferred_t, *p_mad_nmad_deferred_t;
+#  endif /* MAD_NMAD_SO_DEBUG */
 #endif /* CONFIG_SCHED_OPT */
 
 typedef struct s_mad_nmad_driver_specific {
@@ -100,7 +103,9 @@ typedef struct s_mad_nmad_connection_specific {
         uint8_t			 in_next_seq;
         uint8_t			 in_wait_seq;
         uint8_t			 in_flow_ctrl;
+#  ifdef MAD_NMAD_SO_DEBUG
         p_tbx_slist_t		 in_deferred_slist;
+#  endif /* MAD_NMAD_SO_DEBUG */
 
         uint8_t			 out_next_seq;
         uint8_t			 out_wait_seq;
@@ -427,7 +432,9 @@ mad_nmad_connection_init(p_mad_connection_t in,
         cs->in_next_seq		= 0;
         cs->in_wait_seq		= 0;
         cs->in_flow_ctrl	= 0;
+#  ifdef MAD_NMAD_SO_DEBUG
         cs->in_deferred_slist	= tbx_slist_nil();
+#  endif /* MAD_NMAD_SO_DEBUG */
 
         cs->out_next_seq	= 0;
         cs->out_wait_seq	= 0;
@@ -883,6 +890,7 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t         lnk,
 
 /* Direct mapping of the high level interface */
 
+#  ifdef MAD_NMAD_SO_DEBUG
 static
 void
 mad_nmad_deferred_dump(p_tbx_slist_t l) {
@@ -896,6 +904,7 @@ mad_nmad_deferred_dump(p_tbx_slist_t l) {
                 TBX_FREE(def);
         }
 }
+#  endif /* MAD_NMAD_SO_DEBUG */
 
 p_mad_connection_t
 mad_nmad_begin_packing(p_mad_channel_t      ch,
@@ -1007,7 +1016,9 @@ mad_nmad_end_unpacking(p_mad_connection_t in) {
                               cs->in_wait_seq, cs->in_next_seq-1);
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
+#  ifdef MAD_NMAD_SO_DEBUG
           mad_nmad_deferred_dump(cs->in_deferred_slist);
+#  endif /* MAD_NMAD_SO_DEBUG */
   }
 
 #ifdef MARCEL
@@ -1035,9 +1046,11 @@ mad_nmad_pack(p_mad_connection_t   out,
   cs	= out->specific;
   chs	= out->channel->specific;
 
+#  ifdef MAD_NMAD_SO_DEBUG
   DISP("pack: seq = %d, tag = %d, len = %zx",
        cs->out_next_seq, chs->tag_id, len);
   tbx_dump(ptr, len);
+#  endif /* MAD_NMAD_SO_DEBUG */
   __nm_so_pack(cs->p_gate, chs->tag_id, cs->out_next_seq, ptr, len);
 
   cs->out_next_seq++;
@@ -1084,20 +1097,25 @@ mad_nmad_unpack(p_mad_connection_t   in,
                               cs->in_wait_seq, cs->in_next_seq-1);
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
+#  ifdef MAD_NMAD_SO_DEBUG
           mad_nmad_deferred_dump(cs->in_deferred_slist);
           DISP("unpack: seq = %d, tag_id = %d, len = %zx",
                cs->in_next_seq-1, chs->tag_id, len);
           tbx_dump(ptr, len);
+#  endif /* MAD_NMAD_SO_DEBUG */
   } else if (receive_mode == mad_receive_EXPRESS) {
           nm_so_rwait(p_core, cs->p_gate, chs->tag_id, cs->in_next_seq-1);
           if (cs->in_flow_ctrl == 1) {
                             cs->in_wait_seq	= cs->in_next_seq;
                             cs->in_flow_ctrl	= 0;
           }
+#  ifdef MAD_NMAD_SO_DEBUG
           DISP("unpack: seq = %d, tag_id = %d, len = %zx",
                cs->in_next_seq-1, chs->tag_id, len);
           tbx_dump(ptr, len);
+#  endif /* MAD_NMAD_SO_DEBUG */
   } else {
+#  ifdef MAD_NMAD_SO_DEBUG
           p_mad_nmad_deferred_t	def	= NULL;
 
           DISP("mad_receive_CHEAPER: potentially deferred reception");
@@ -1107,6 +1125,7 @@ mad_nmad_unpack(p_mad_connection_t   in,
           def->seq	= cs->in_next_seq-1;
           def->tag_id	= chs->tag_id;
           tbx_slist_append(cs->in_deferred_slist, def);
+#  endif  /* MAD_NMAD_SO_DEBUG */
   }
   LOG_OUT();
 }

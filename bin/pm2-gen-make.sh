@@ -164,6 +164,14 @@ LINK_LDFLAGS := $_PM2CONFIG_LINK_LDFLAGS
 
 EOF
 
+    if [ "$LIBRARY" = mad4 ] ; then
+	cat <<EOF
+MAD4_PROTOCOLS := $_PM2CONFIG_PROTOCOLS
+MAD4_SHEDULERS := $_PM2CONFIG_SCHEDULERS
+MAD4_PROTO     := $PM2_NMAD_PROTO
+EOF
+    fi
+
 }
 
 ## Progs ########################################

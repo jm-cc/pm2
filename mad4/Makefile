@@ -22,12 +22,6 @@ LIBNAME=mad
 MOD_SRC := $(PM2_ROOT)/nmad/core/src
 include $(PM2_ROOT)/make/libs-vars.mak
 
-# Inclusion du cache specifique a madeleine
-#---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/mad4-specific.mak
-endif
-
 # Gestion du scheduler : prise en compte de fichiers sources supplémentaires
 MOD_SRC += $(foreach SCHED, $(MAD4_SCHEDULERS), $(PM2_ROOT)/nmad/schedulers/$(SCHED)/src)
 
@@ -35,16 +29,10 @@ MOD_SRC += $(foreach SCHED, $(MAD4_SCHEDULERS), $(PM2_ROOT)/nmad/schedulers/$(SC
 #---------------------------------------------------------------------
 MOD_SRC += $(foreach PROT, $(MAD4_PROTOCOLS), $(PM2_ROOT)/nmad/drivers/$(PROT)/src)
 
+# Emulation mad3 : prise en compte des fichiers sources supplémentaires
+#---------------------------------------------------------------------
+MOD_SRC += $(foreach PROT, $(MAD4_PROTO), $(PM2_ROOT)/nmad/protocols/$(PROT)/src)
+
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
-
-# Construction du cache specifique a Madeleine IV
-#---------------------------------------------------------------------
-$(PM2_MAK_DIR)/mad4-specific.mak: $(MOD_STAMP_FLAVOR)
-	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(MODULE)`;\
-	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "MAD4_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
-	fi;
-	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --schedulers $(MODULE)`;\
-	echo "MAD4_SCHEDULERS := $$_PM2_OUTPUT" >> $@ ;

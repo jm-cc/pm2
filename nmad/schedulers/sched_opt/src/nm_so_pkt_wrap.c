@@ -204,7 +204,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
     if(p_so_pw->uncompleted_header) {
 
       struct nm_so_data_header *h = p_so_pw->uncompleted_header;
-      uint32_t gap = nm_so_aligned(h->len) - h->len;
+      unsigned long gap = nm_so_aligned(h->len) - h->len;
 
       p_so_pw->uncompleted_header = NULL;
 
@@ -367,8 +367,8 @@ int
 nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
 {
   int err = NM_ESUCCESS;
-  uint32_t remaining_bytes;
-  uint32_t to_skip;
+  unsigned long remaining_bytes;
+  unsigned long to_skip;
   void *ptr;
   struct iovec *vec;
 
@@ -520,8 +520,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 {
   struct iovec *vec;
   void *ptr;
-  uint32_t remaining_len;
-  uint8_t proto_id;
+  unsigned long remaining_len;
+  unsigned int proto_id;
   struct nm_so_data_header *dh;
   void *data = NULL;
 
@@ -550,11 +550,11 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
       if(proto_id != NM_SO_PROTO_DATA_UNUSED) {
 	/* Retrieve data location */
-	uint16_t skip = dh->skip;
+	unsigned long skip = dh->skip;
 
 	data = ptr;
 
-	if(skip) {
+	if(dh->len) {
 	  uint32_t rlen;
 	  struct iovec *v;
 
@@ -577,8 +577,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
       /* We must recall ptr if necessary */
       if(remaining_len && dh->skip == 0) {
-	uint16_t skip;
-	uint32_t rlen;
+	unsigned long skip;
+	unsigned long rlen;
 
 	skip = dh->len;
 	rlen = (vec->iov_base + vec->iov_len) - ptr;

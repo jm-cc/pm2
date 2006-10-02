@@ -50,15 +50,15 @@ nm_so_pw_init(struct nm_core *p_core)
 {
   tbx_malloc_init(&nm_so_pw_nohd_mem,
 		  sizeof(struct nm_so_pkt_wrap),
-		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
+		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/nohd");
 
   tbx_malloc_init(&nm_so_pw_send_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_PREALLOC_BUF_LEN,
-		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
+		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/send");
 
   tbx_malloc_init(&nm_so_pw_recv_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
-		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap");
+		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/recv");
 
   return NM_ESUCCESS;
 }

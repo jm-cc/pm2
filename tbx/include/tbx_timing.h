@@ -36,21 +36,12 @@
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 
+typedef unsigned long long tbx_tick_t, *p_tbx_tick_t;
+
 #define TBX_GET_TICK(t) \
-   __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
+   __asm__ volatile("rdtsc" : "=A" (t))
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-   ((t2).tick - (t1).tick)
-
-typedef union u_tbx_tick
-{
-  unsigned long long tick;
-
-  struct
-  {
-    unsigned low;
-    unsigned high;
-  } sub;
-} tbx_tick_t, *p_tbx_tick_t;
+   ((t2) - (t1))
 
 #elif defined(ALPHA_ARCH)
 

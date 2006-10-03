@@ -97,11 +97,11 @@ DEC_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__re
 int pmarcel_sigsuspend(const marcel_sigset_t *sigmask);
 DEC_MARCEL_POSIX(int,sigsuspend, (const marcel_sigset_t *sigmask) __THROW);
 
-int pmarcel_sigsetjmp(sigjmp_buf env, int savemask);
-DEC_MARCEL_POSIX(int, sigsetjmp, (sigjmp_buf env, int savemask) __THROW);
+int TBX_RETURNS_TWICE pmarcel_sigsetjmp(sigjmp_buf env, int savemask);
+DEC_MARCEL_POSIX(int TBX_RETURNS_TWICE, sigsetjmp, (sigjmp_buf env, int savemask) __THROW);
 
-void pmarcel_siglongjmp(sigjmp_buf env, int val);
-DEC_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val) __THROW);
+void TBX_NORETURN pmarcel_siglongjmp(sigjmp_buf env, int val);
+DEC_MARCEL_POSIX(void TBX_NORETURN, siglongjmp, (sigjmp_buf env, int val) __THROW);
 
 void *pmarcel_signal(int sig, void *handler);
 DEC_MARCEL_POSIX(void *,signal,(int sig, void *handler) __THROW);

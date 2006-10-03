@@ -33,9 +33,9 @@ typedef struct {
 
 void clone_init(clone_t *c, int nb_slaves);
 
-void clone_slave(clone_t *c); /* Appele par chaque "esclave" */
+void TBX_NORETURN clone_slave(clone_t *c); /* Appele par chaque "esclave" */
 
-void clone_slave_ends(clone_t *c); /* Appele par chaque "esclave" */
+void TBX_NORETURN clone_slave_ends(clone_t *c); /* Appele par chaque "esclave" */
 
 void clone_master(clone_t *c); /* Appele par le thread scalaire */
 

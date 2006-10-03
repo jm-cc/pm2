@@ -58,7 +58,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 
 typedef int ma_jmp_buf[6];
 
-extern int ma_setjmp(ma_jmp_buf buf);
+extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
 
 static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
 

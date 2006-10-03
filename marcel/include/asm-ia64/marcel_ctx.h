@@ -27,7 +27,7 @@ ucontext_t jbuf;
 
 #section macros
 #include <ucontext.h>
-int ia64_setjmp(ucontext_t *ucp);
+int TBX_RETURNS_TWICE ia64_setjmp(ucontext_t *ucp);
 int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 
 #define marcel_ctx_getcontext(ctx) \

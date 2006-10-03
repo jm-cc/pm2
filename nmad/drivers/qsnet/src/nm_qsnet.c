@@ -140,7 +140,13 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         p_tbx_string_t		 url_string	= NULL;
         int err;
 
+        NM_LOG_IN();
         err = -NM_EINVAL;
+
+        node_string = getenv("LIBELAN_ECAP0");
+        if (node_string)
+                goto capability_generated;
+
         node_string = getenv("ELAN_NODE_STRING");
         if (!node_string)
                 goto out;
@@ -148,6 +154,7 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         if (elan_generateCapability (node_string) < 0)
                 goto out;
 
+ capability_generated:
         err = -NM_ESCFAILD;
         if (!(base = elan_baseInit(0))) {
                 perror("elan_baseInit");
@@ -181,6 +188,8 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         err = NM_ESUCCESS;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 }
 
@@ -206,6 +215,7 @@ nm_qsnet_open_track	(struct nm_trk_rq	*p_trk_rq) {
         ELAN_QUEUE		*q		= NULL;
         int err;
 
+        NM_LOG_IN();
         p_trk		= p_trk_rq->p_trk;
         p_drv		= p_trk->p_drv;
         p_qsnet_drv	= p_drv->priv;
@@ -253,6 +263,8 @@ nm_qsnet_open_track	(struct nm_trk_rq	*p_trk_rq) {
         err = NM_ESUCCESS;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 }
 
@@ -284,6 +296,7 @@ nm_qsnet_connect		(struct nm_cnx_rq *p_crq) {
         char			*drv_url	= NULL;
         int err;
 
+        NM_LOG_IN();
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
@@ -354,6 +367,7 @@ nm_qsnet_connect		(struct nm_cnx_rq *p_crq) {
         NM_TRACEF("send pkt <--");
 
         err = NM_ESUCCESS;
+        NM_LOG_OUT();
 
         return err;
 }
@@ -372,6 +386,7 @@ nm_qsnet_accept		(struct nm_cnx_rq *p_crq) {
         int			 remote_proc	= 0;
         int err;
 
+        NM_LOG_IN();
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
@@ -427,6 +442,7 @@ nm_qsnet_accept		(struct nm_cnx_rq *p_crq) {
                   p_gate->id, remote_proc);
 
         err = NM_ESUCCESS;
+        NM_LOG_OUT();
 
         return err;
 }

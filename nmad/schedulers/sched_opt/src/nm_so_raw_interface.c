@@ -37,7 +37,7 @@ nm_so_stest(struct nm_core *p_core,
   if(p_so_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED)
     return NM_ESUCCESS;
 
-  if(p_so_gate->active_recv[0])
+  if(p_so_gate->active_recv[0][0] || p_so_gate->active_recv[1][0])
     /* We also need to schedule in new packets (typically ACKs) */
     nm_schedule(p_core);
   else
@@ -57,7 +57,7 @@ nm_so_swait(struct nm_core *p_core,
 
   while(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED))
 
-    if(p_so_gate->active_recv[0])
+    if(p_so_gate->active_recv[0][0] || p_so_gate->active_recv[1][0])
       /* We also need to schedule in new packets (typically ACKs) */
       nm_schedule(p_core);
     else

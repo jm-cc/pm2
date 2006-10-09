@@ -68,11 +68,11 @@ __nm_so_unpack(struct nm_gate *p_gate,
       p_so_gate->pending_unpacks++;
 
       /* Check if we should post a new recv packet */
-      if(!p_so_gate->active_recv[0])
 #ifdef NM_SO_OPTIMISTIC_RECV
+      if(!p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_SMALL])
 	nm_so_post_optimistic_recv(p_gate, tag, seq, data, len);
 #else
-        nm_so_post_regular_recv(p_gate);
+      nm_so_refill_regular_recv(p_gate);
 #endif
     }
 
@@ -84,25 +84,41 @@ __nm_so_unpack(struct nm_gate *p_gate,
     /* Check if the RdV request is already in */
     if(*status & NM_SO_STATUS_RDV_HERE) {
       /* A RdV request has already been received for this chunk */
+      int drv_id;
 
       *status &= ~NM_SO_STATUS_RDV_HERE;
 
-      /* Is the large data track available? */
-      if(!p_so_gate->active_recv[1]) {
+      /* Is there any large data track available? */
+#ifdef CONFIG_MULTI_RAIL
+      for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
+	if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
+	  goto found;
+      goto busy;
+    found:
+#else
+      drv_id = NM_SO_DEFAULT_NET;
+      if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_LARGE])
+	goto busy;
+#endif
+      {
 	/* Cool! Track 1 is available, so let's post the receive and
 	   send an ACK */
 	union nm_so_generic_ctrl_header ctrl;
 
-	nm_so_post_large_recv(p_gate, tag + 128, seq, data, len);
+	nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
 
-	nm_so_init_ack(&ctrl, tag + 128, seq, 1);
+	nm_so_init_ack(&ctrl, tag + 128, seq,
+		       drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
 
 	err = active_strategy->pack_ctrl(p_gate, &ctrl);
 
 	/* We're done! */
 	goto out;
 
-      } else {
+      }
+
+    busy:
+      {
 	/* Track 1 is not available : postpone the receive */
 	struct nm_so_pkt_wrap *p_so_pw;
 
@@ -129,8 +145,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 
       /* Check if we should post a new recv packet
          in order to receive the rdv request */
-      if(!p_so_gate->active_recv[0])
-        nm_so_post_regular_recv(p_gate);
+      nm_so_refill_regular_recv(p_gate);
 
     }
 
@@ -203,24 +218,41 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Application is already ready! */
+    int drv_id;
+
     p_so_gate->pending_unpacks--;
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
 
-    if(!p_so_gate->active_recv[1]) {
+#ifdef CONFIG_MULTI_RAIL
+    for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
+      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
+	goto found;
+    goto busy;
+  found:
+#else
+    drv_id = NM_SO_DEFAULT_NET;
+    if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_LARGE])
+      goto busy;
+#endif
+    {
       /* Track 1 is available */
 	union nm_so_generic_ctrl_header ctrl;
 
 	/* Post the data reception */
-	nm_so_post_large_recv(p_gate, tag_id, seq,
+	nm_so_post_large_recv(p_gate, drv_id, tag_id, seq,
 			      p_so_gate->recv[tag][seq].unpack_here.data,
 			      p_so_gate->recv[tag][seq].unpack_here.len);
 
-	nm_so_init_ack(&ctrl, tag_id, seq, 1);
+	nm_so_init_ack(&ctrl, tag_id, seq,
+		       drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
 
 	err = active_strategy->pack_ctrl(p_gate, &ctrl);
 
-    } else {
+	goto out;
+    }
+  busy:
+    {
       /* Argh! Track 1 is currently not available */
       struct nm_so_pkt_wrap *p_so_large_pw;
 
@@ -245,6 +277,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
   }
 
+ out:
   return NM_SO_HEADER_MARK_READ;
 }
 
@@ -268,7 +301,9 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   assert(seq == p_so_large_pw->pw.seq);
 
   /* Send the data */
-  _nm_so_post_send(p_gate, p_so_large_pw, track_id);
+  _nm_so_post_send(p_gate, p_so_large_pw,
+		   track_id % NM_SO_MAX_TRACKS,
+		   track_id / NM_SO_MAX_TRACKS);
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -287,10 +322,10 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   //printf("Packet %p received completely (on track %d)!\n",
   //	 p_so_pw, p_pw->p_trk->id);
 
-  if(p_pw->p_trk->id == 0) {
+  if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
 
-    p_so_gate->active_recv[0] = 0;
+    p_so_gate->active_recv[p_pw->p_drv->id][TRK_SMALL] = 0;
 
 #ifdef NM_SO_OPTIMISTIC_RECV
     {
@@ -322,19 +357,20 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
     if(p_so_gate->pending_unpacks)
       /* Check if we should post a new recv packet */
-      nm_so_post_regular_recv(p_so_pw->pw.p_gate);
+      nm_so_refill_regular_recv(p_gate);
 
-  } else if(p_pw->p_trk->id == 1) {
+  } else if(p_pw->p_trk->id == TRK_LARGE) {
     /* This is the completion of a large message. */
     volatile uint8_t *status =
       &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
+    int drv_id = p_pw->p_drv->id;
+
+    p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
 
     /* Free the wrapper */
     nm_so_pw_free(p_so_pw);
 
     *status |= NM_SO_STATUS_RECV_COMPLETED;
-
-    p_so_gate->active_recv[1] = 0;
 
     /* Check if some recv requests were postponed */
     if(!list_empty(&p_so_gate->pending_large_recv)) {
@@ -345,14 +381,14 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       list_del(p_so_gate->pending_large_recv.next);
 
       /* Post the data reception */
-      nm_so_direct_post_large_recv(p_gate,
+      nm_so_direct_post_large_recv(p_gate, drv_id,
                                    p_so_large_pw);
 
       /* Send an ACK */
       nm_so_init_ack(&ctrl,
 		     p_so_large_pw->pw.proto_id,
 		     p_so_large_pw->pw.seq,
-		     1);
+		     drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
 
       err = active_strategy->pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)

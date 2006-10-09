@@ -37,15 +37,13 @@ extern nm_so_strategy *active_strategy;
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)16)
 
 
-#define NM_SO_MAX_TRACKS   3
-
 struct nm_so_gate {
   /* Actually counts the number of expected small messages, including
      RdV requests for large messages */
   unsigned pending_unpacks;
 
-  unsigned active_recv[NM_SO_MAX_TRACKS];
-  unsigned active_send[NM_SO_MAX_TRACKS];
+  unsigned active_recv[NM_SO_MAX_NETS][NM_SO_MAX_TRACKS];
+  unsigned active_send[NM_SO_MAX_NETS][NM_SO_MAX_TRACKS];
 
   /* WARNING: better replace the following array by two separate
      bitmaps, to save space and avoid false sharing between send and

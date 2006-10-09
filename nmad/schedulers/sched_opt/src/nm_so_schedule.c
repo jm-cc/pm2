@@ -27,6 +27,7 @@
 
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
+#include "nm_so_strategies/nm_so_strat_balance.h"
 
 nm_so_strategy *active_strategy = NULL;
 
@@ -119,38 +120,10 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         goto out_free_2;
     }
 
-    /* Track 2 - piste pour les longs*/
-    struct nm_trk_rq trk_rq_2 = {
-        .p_trk	= NULL,
-        .cap	= {
-            .rq_type			= nm_trk_rq_rdv,
-            .iov_type			= nm_trk_iov_unspecified,
-            .max_pending_send_request	= 0,
-            .max_pending_recv_request	= 0,
-            .min_single_request_length	= 0,
-            .max_single_request_length	= 0,
-            .max_iovec_request_length	= 0,
-            .max_iovec_size		= 0
-        },
-        .flags	= 0
-    };
-
-    err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_2.p_trk);
-    if (err != NM_ESUCCESS)
-        goto out_free;
-
-    err = p_drv->ops.open_trk(&trk_rq_2);
-    if (err != NM_ESUCCESS) {
-        goto out_free_3;
-    }
-
     err	= NM_ESUCCESS;
 
  out:
     return err;
-
- out_free_3:
-    p_core->ops.trk_free(p_core, trk_rq_2.p_trk);
 
  out_free_2:
     p_core->ops.trk_free(p_core, trk_rq_1.p_trk);
@@ -201,9 +174,11 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
-#ifdef CONFIG_STRAT_DEFAULT
+#if defined(CONFIG_MULTI_RAIL)
+  active_strategy = &nm_so_strat_balance; 
+#elif defined(CONFIG_STRAT_DEFAULT)
   active_strategy = &nm_so_strat_default;
-#elif CONFIG_STRAT_AGGREG
+#elif defined(CONFIG_STRAT_AGGREG)
   active_strategy = &nm_so_strat_aggreg;
 #else
   /* Fall back to the default strategy */

@@ -25,11 +25,12 @@
 #include <nm_public.h>
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
+#include "nm_so_parameters.h"
 
 static __inline__
 void
 _nm_so_post_recv(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw,
-		 int track_id)
+		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
@@ -37,19 +38,19 @@ _nm_so_post_recv(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw,
 
   /* Packet is assigned to given track */
   p_so_pw->pw.p_drv = (p_so_pw->pw.p_gdrv =
-		       p_gate->p_gate_drv_array[0])->p_drv;
+		       p_gate->p_gate_drv_array[drv_id])->p_drv;
   p_so_pw->pw.p_trk = (p_so_pw->pw.p_gtrk
 		       = p_so_pw->pw.p_gdrv->p_gate_trk_array[track_id])->p_trk;
 
   /* append pkt to scheduler post list */
   tbx_slist_append(p_gate->p_sched->post_aux_recv_req, &p_so_pw->pw);
 
-  p_so_gate->active_recv[track_id] = 1;
+  p_so_gate->active_recv[drv_id][track_id] = 1;
 }
 
 static __inline__
 int
-nm_so_post_regular_recv(struct nm_gate *p_gate)
+nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
 {
   int err;
   struct nm_so_pkt_wrap *p_so_pw;
@@ -60,12 +61,36 @@ nm_so_post_regular_recv(struct nm_gate *p_gate)
   if(err != NM_ESUCCESS)
     goto out;
 
-  _nm_so_post_recv(p_gate, p_so_pw, 0);
+  _nm_so_post_recv(p_gate, p_so_pw, TRK_SMALL, drv_id);
 
   err = NM_ESUCCESS;
  out:
   return err;
 }
+
+static __inline__
+int
+nm_so_refill_regular_recv(struct nm_gate *p_gate)
+{
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  int err = NM_ESUCCESS;
+
+#ifdef CONFIG_MULTI_RAIL
+  {
+    int drv;
+
+    for(drv = 0; drv < NM_SO_MAX_NETS; drv++)
+      if(!p_so_gate->active_recv[drv][TRK_SMALL])
+	err = nm_so_post_regular_recv(p_gate, drv);
+  }
+#else
+  if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_SMALL] == 0)
+    err = nm_so_post_regular_recv(p_gate, NM_SO_DEFAULT_NET);
+#endif
+
+  return err;
+}
+
 
 #ifdef NM_SO_OPTIMISTIC_RECV
 static __inline__
@@ -81,7 +106,7 @@ nm_so_post_optimistic_recv(struct nm_gate *p_gate,
   if(err != NM_ESUCCESS)
     goto out;
 
-  _nm_so_post_recv(p_gate, p_so_pw, 0);
+  _nm_so_post_recv(p_gate, p_so_pw, TRK_SMALL, NM_SO_DEFAULT_NET);
 
   err = NM_ESUCCESS;
  out:
@@ -92,7 +117,7 @@ nm_so_post_optimistic_recv(struct nm_gate *p_gate,
 
 static __inline__
 int
-nm_so_post_large_recv(struct nm_gate *p_gate,
+nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
 		      uint8_t tag, uint8_t seq,
 		      void *data, uint32_t len)
 {
@@ -107,7 +132,7 @@ nm_so_post_large_recv(struct nm_gate *p_gate,
   if(err != NM_ESUCCESS)
     goto out;
 
-  _nm_so_post_recv(p_gate, p_so_pw, 1);
+  _nm_so_post_recv(p_gate, p_so_pw, TRK_LARGE, drv_id);
 
   err = NM_ESUCCESS;
  out:
@@ -117,12 +142,12 @@ nm_so_post_large_recv(struct nm_gate *p_gate,
 
 static __inline__
 int
-nm_so_direct_post_large_recv(struct nm_gate *p_gate,
+nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
                              struct nm_so_pkt_wrap *p_so_pw)
 {
   int err;
   
-  _nm_so_post_recv(p_gate, p_so_pw, 1);
+  _nm_so_post_recv(p_gate, p_so_pw, TRK_LARGE, drv_id);
 
   err = NM_ESUCCESS;
   return err;
@@ -134,7 +159,7 @@ static __inline__
 void
 _nm_so_post_send(struct nm_gate *p_gate,
 		 struct nm_so_pkt_wrap *p_so_pw,
-		 uint8_t track_id)
+		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
@@ -142,14 +167,14 @@ _nm_so_post_send(struct nm_gate *p_gate,
 
   /* Packet is assigned to given track */
   p_so_pw->pw.p_drv = (p_so_pw->pw.p_gdrv =
-		       p_gate->p_gate_drv_array[0])->p_drv;
+		       p_gate->p_gate_drv_array[drv_id])->p_drv;
   p_so_pw->pw.p_trk = (p_so_pw->pw.p_gtrk
 		       = p_so_pw->pw.p_gdrv->p_gate_trk_array[track_id])->p_trk;
 
   /* append pkt to scheduler post list */
   tbx_slist_append(p_gate->post_sched_out_list, &p_so_pw->pw);
 
-  p_so_gate->active_send[track_id]++;
+  p_so_gate->active_send[drv_id][track_id]++;
 }
 
 #endif

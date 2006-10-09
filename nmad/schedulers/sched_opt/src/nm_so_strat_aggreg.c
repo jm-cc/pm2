@@ -155,8 +155,7 @@ static int pack(struct nm_gate *p_gate,
 
     /* Check if we should post a new recv packet: we're waiting for an
        ACK! */
-    if(!p_so_gate->active_recv[0])
-      nm_so_post_regular_recv(p_gate);
+    nm_so_refill_regular_recv(p_gate);
 
   }
 
@@ -175,7 +174,7 @@ static int try_and_commit(struct nm_gate *p_gate)
     &((struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv)->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
 
-  if(p_so_gate->active_send[0] == NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
+  if(p_so_gate->active_send[NM_SO_DEFAULT_NET][TRK_SMALL] == NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
     /* We're done */
     goto out;
 
@@ -191,7 +190,7 @@ static int try_and_commit(struct nm_gate *p_gate)
   nm_so_pw_finalize(p_so_pw);
 
   /* Post packet on track 0 */
-  _nm_so_post_send(p_gate, p_so_pw, 0);
+  _nm_so_post_send(p_gate, p_so_pw, TRK_SMALL, NM_SO_DEFAULT_NET);
 
  out:
     return NM_ESUCCESS;
@@ -200,6 +199,7 @@ static int try_and_commit(struct nm_gate *p_gate)
 /* Initialization */
 static int init(void)
 {
+  printf("[loading strategy: <aggreg>]\n");
   return NM_ESUCCESS;
 }
 

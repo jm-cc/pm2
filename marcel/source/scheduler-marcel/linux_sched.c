@@ -643,6 +643,8 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic())
 		ma_schedule();
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
 	LOG_OUT();
 }
 

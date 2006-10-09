@@ -15,6 +15,8 @@
  */
 
 #define _GNU_SOURCE
+#include <stdint.h>
+#include <inttypes.h>
 
 /*******************************************************************************
  * Configuration
@@ -52,11 +54,12 @@
 static int DISPPRIO = 0;
 static int DISPNAME = 0;
 static int showSystem = 0;
+static int showEmptyBubbles = 1;
 
 static float thick = 4.;
 static float CURVE = 20.;
-static float OPTIME = 0.5; /* Operation time */
-#define DELAYTIME (OPTIME/2.) /* FXT delay between switches */
+static float OPTIME = 1; /* Operation time */
+#define DELAYTIME (OPTIME/6.) /* FXT delay between switches */
 #define BUBBLETHICK thick
 #define THREADTHICK thick
 #define RQTHICK thick
@@ -116,8 +119,6 @@ static char *fontfile = "/usr/share/libming/fonts/Timmons.fdb";
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
-#include <stdint.h>
-#include <inttypes.h>
 //#include <string.h>
 char *strdup(const char*s);
 struct fxt_code_name fut_code_table [] =
@@ -586,6 +587,8 @@ float nextX;
  * children */
 void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	entity_t *e;
+	if (!showEmptyBubbles && list_empty(&b->heldentities))
+		return;
 	SWFShape_setLine(shape,b->entity.thick,0,0,0,255);
 	SWFShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 	SWFShape_drawCircle(shape,CURVE/2);
@@ -1541,7 +1544,7 @@ void bubbleInsertThread(thread_t *bubble, thread_t *thread);
 static void error(const char *msg, ...) {
 	va_list args;
 	static int recur = 0;
-
+	
 	va_start(args, msg);
 	vfprintf(stderr,msg, args);
 	va_end(args);
@@ -1569,6 +1572,7 @@ static void usage(char *argv0) {
 	fprintf(stderr,"  -p			display priorities\n");
 	fprintf(stderr,"  -n			display thread names\n");
 	fprintf(stderr,"  -s			display system threads\n");
+	fprintf(stderr,"  -e			display empty bubbles\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -1576,7 +1580,7 @@ int main(int argc, char *argv[]) {
 	FILE *f;
 	char c;
 
-	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpns")) != EOF)
+	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpnse")) != EOF)
 		switch(c) {
 		case 'f':
 			fontfile = optarg;
@@ -1617,6 +1621,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 's':
 			showSystem = 1;
+			break;
+		case 'e':
+			showEmptyBubbles = 1;
 			break;
 		case ':':
 			fprintf(stderr,"missing parameter to switch %c\n", optopt);
@@ -1708,7 +1715,7 @@ int main(int argc, char *argv[]) {
 			200
 #endif
 #ifdef TREES
-			4*CURVE
+			2*CURVE
 #endif
 			);
 
@@ -1749,7 +1756,7 @@ if (optind != argc) {
 			case BUBBLE_SCHED_NEW: {
 				bubble_t *b = newBubblePtr(ev.ev64.param[0], norq);
 				verbprintf("new bubble %p -> %p\n", (void *)(intptr_t)ev.ev64.param[0], b);
-				showEntity(&b->entity);
+				//showEntity(&b->entity);
 				break;
 			}
 			case SCHED_SETPRIO: {
@@ -1798,6 +1805,7 @@ if (optind != argc) {
 			case BUBBLE_SCHED_SWITCHRQ: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				rq_t *rq = getRunqueue(ev.ev64.param[1]);
+				if (!e) break;
 				verbprintf("%s %p(%p) switching to %p (%p)\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
 				if (showSystem || e->type!=THREAD || thread_of_entity(e)->number >= 0)
 					switchRunqueues(rq, e);
@@ -1808,6 +1816,7 @@ if (optind != argc) {
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				verbprintf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertBubble(b,e);
+				showEntity(&b->entity);
 				break;
 			}
 			case BUBBLE_SCHED_INSERT_THREAD: {
@@ -1816,8 +1825,10 @@ if (optind != argc) {
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
 				verbprintf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
-				if (showSystem || e->number>=0)
+				if (showSystem || e->number>=0) {
 					bubbleInsertThread(b,e);
+					showEntity(&b->entity);
+				}
 				break;
 			}
 			case BUBBLE_SCHED_WAKE: {
@@ -1871,6 +1882,22 @@ if (optind != argc) {
 					newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 					verbprintf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				}
+				break;
+			}
+			case RQ_LOCK: {
+				rq_t *rq = getRunqueue(ev.ev64.param[0]);
+				verbprintf("rq %p (%lx) locked\n",rq,ev.ev64.param[0]);
+				if (!rq) break;
+				rq->entity.thick = 2*RQTHICK;
+				updateEntity(&rq->entity);
+				break;
+			}
+			case RQ_UNLOCK: {
+				rq_t *rq = getRunqueue(ev.ev64.param[0]);
+				verbprintf("rq %p (%lx) unlocked\n",rq,ev.ev64.param[0]);
+				if (!rq) break;
+				rq->entity.thick = RQTHICK;
+				updateEntity(&rq->entity);
 				break;
 			}
 			case FUT_SETUP_CODE:
@@ -2175,7 +2202,7 @@ if (optind != argc) {
 		fprintf(stderr,"b1=%p, b2=%p, b=%p\n",b1,b2,b);
 #ifdef SHOWEVOLUTION
 
-#if 1
+#if 0
 		/* �olution de vol */
 		pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
@@ -2200,8 +2227,9 @@ if (optind != argc) {
 		switchRunqueuesEnd(&rqs[1][1], &b->entity);
 		pause(1);
 
-		/* �olution d'explosion */
 #else
+#if 0
+		/* �olution d'explosion */
 		pause(1);
 		bubbleExplode(b);
 		pause(1);
@@ -2234,11 +2262,59 @@ if (optind != argc) {
 		switchRunqueuesBegin2(&rqs[2][0], &t3->entity);
 		switchRunqueuesBegin2(&rqs[2][2], &t1->entity);
 		doStepsBegin(step)
-			switchRunqueuesStep(&rqs[2][0], &t1->entity, step);
-			switchRunqueuesStep(&rqs[2][2], &t3->entity, step);
+			switchRunqueuesStep(&rqs[2][2], &t1->entity, step);
+			switchRunqueuesStep(&rqs[2][0], &t3->entity, step);
 		doStepsEnd();
 		switchRunqueuesEnd(&rqs[2][2], &t1->entity);
 		switchRunqueuesEnd(&rqs[2][0], &t3->entity);
+#else
+	/* A handful shadow runqueue */
+		rq_t *norq2, *norq3;
+		setRqs(&norq2,1,90,500,MOVIEX,4*CURVE);
+
+		/* exemples de manipulations */
+		pause(1);
+		switchRunqueues(&rqs[0][0], &b->entity);
+		pause(1);
+		switchRunqueues(&rqs[2][0], &b->entity);
+		pause(1);
+
+		rqs[2][0].entity.thick = 2*RQTHICK;
+		updateEntity(&rqs[2][0].entity);
+		pause(1);
+
+		switchRunqueues(norq2, &b->entity);
+		pause(1);
+		switchRunqueues(&rqs[2][0], &b2->entity);
+		pause(1);
+
+		rqs[2][0].entity.thick = RQTHICK;
+		updateEntity(&rqs[2][0].entity);
+
+		pause(1);
+
+		rqs[0][0].entity.thick = 2*RQTHICK;
+		updateEntity(&rqs[0][0].entity);
+		pause(1);
+
+		switchRunqueues(&rqs[0][0], &b->entity);
+		pause(1);
+		setRqs(&norq3,1,90,170,MOVIEX,4*CURVE);
+		switchRunqueues(norq3, &b1->entity);
+		pause(1);
+
+		rqs[0][0].entity.thick = RQTHICK;
+		updateEntity(&rqs[0][0].entity);
+
+		pause(1);
+
+		rqs[1][1].entity.thick = 2*RQTHICK;
+		updateEntity(&rqs[0][0].entity);
+		switchRunqueues(&rqs[1][1], &b1->entity);
+		rqs[1][1].entity.thick = RQTHICK;
+		updateEntity(&rqs[0][0].entity);
+
+#endif
 #endif
 
 #endif

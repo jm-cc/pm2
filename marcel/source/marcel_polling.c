@@ -160,6 +160,7 @@ static int compat_poll_group(marcel_ev_server_t server,
 }
 
 
+TBX_SYM_WARN(marcel_pollid_create_X, "marcel_pollid_create will be removed in favor of marcel_ev_server_init");
 marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 				       marcel_poll_func_t f,
 				       marcel_fastpoll_func_t h,
@@ -175,9 +176,6 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 
-#ifdef PM2_DEV
-#warning marcel_pollid_create will be removed in favor of marcel_ev_server_init	
-#endif
 	id = &poll_structs[index];
 
 	marcel_ev_server_init(&id->server, name);

@@ -207,6 +207,14 @@ void __memory_barrier(void);
 #define TBX_RETURNS_TWICE
 #endif
 
+#if defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH) || defined(IA64_ARCH))
+#define TBX_SYM_WARN(sym,msg) static const char __evoke_link_warning_##sym[] \
+	__tbx_attribute_used__ TBX_SECTION(".gnu.warning."#sym"\n\t#") \
+	= msg
+#else
+#define TBX_SYM_WARN(sym,msg)
+#endif
+
 /*
  * Generic compiler-dependent macros required for kernel
  * build go below this comment. Actual compiler/compiler version

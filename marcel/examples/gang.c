@@ -25,11 +25,15 @@ int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the bubble_steal
 #else
 
 #define GANGS 5
-#define THREADS 16
+#define THREADS 5
+#define DIFFERENT
+//#define BARRIER
 
 extern ma_runqueue_t ma_gang_rq;
 
+#ifdef BARRIER
 marcel_barrier_t barrier[GANGS];
+#endif
 
 any_t work(any_t arg) {
   int i;
@@ -68,18 +72,24 @@ int marcel_main(int argc, char **argv)
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, tbx_true);
 
-  marcel_attr_setprio(&attr, MA_DEF_PRIO-1);
-  marcel_attr_setname(&attr, "gang scheduler");
-  marcel_create(&gangsched,&attr,marcel_gang_scheduler,NULL);
+  //marcel_attr_setprio(&attr, MA_DEF_PRIO-1);
+  //marcel_attr_setname(&attr, "gang scheduler");
+  //marcel_create(&gangsched,&attr,marcel_gang_scheduler,NULL);
 
-  marcel_attr_setprio(&attr, MA_DEF_PRIO);
+  //marcel_attr_setprio(&attr, MA_DEF_PRIO);
 
   for (i=0; i<GANGS; i++) {
+#ifdef BARRIER
     marcel_barrier_init(&barrier[i], NULL, (i+1)%THREADS);
+#endif
     marcel_bubble_init(&gang[i]);
     marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
     marcel_attr_setinitbubble(&attr, &gang[i]);
+#ifdef DIFFERENT
     for (j=0; j<(i+1)%THREADS; j++) {
+#else
+    for (j=0; j<THREADS; j++) {
+#endif
       snprintf(name,sizeof(name),"%d-%d",i,j);
       marcel_attr_setname(&attr,name);
       marcel_create(NULL,&attr,work,(any_t)(i*100+j));
@@ -91,7 +101,7 @@ int marcel_main(int argc, char **argv)
 
   for (i=0; i<GANGS; i++)
     marcel_bubble_join(&gang[i]);
-  marcel_cancel(gangsched);
+  //marcel_cancel(gangsched);
 
   fflush(stdout);
   marcel_end();

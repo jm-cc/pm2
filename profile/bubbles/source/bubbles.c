@@ -162,10 +162,14 @@ SWFMovie movie;
 SWFAction stop;
 SWFFont font;
 
-
+SWFShape pause_shape;
+SWFDisplayItem pause_item;
 void nextFrame(SWFMovie movie) {
-	if (playing)
+	static int i = 0;
+	if (playing) {
+		SWFDisplayItem_rotateTo(pause_item, (++i)*360/RATE);
 		SWFMovie_nextFrame(movie);
+	}
 }
 
 /* pause for a few seconds, or until mouse click (when sec == 0) */
@@ -1660,6 +1664,13 @@ int main(int argc, char *argv[]) {
 	SWFMovie_setRate(movie,RATE);
 	SWFMovie_setDimension(movie,MOVIEX,MOVIEY);
 
+	pause_shape = newSWFShape();
+	SWFShape_setLine(pause_shape,thick,0,0,0,255);
+	SWFShape_movePenTo(pause_shape, -CURVE/2, 0);
+	SWFShape_drawLineTo(pause_shape, CURVE/2, 0);
+	pause_item = SWFMovie_add(movie,(SWFBlock)pause_shape);
+	SWFDisplayItem_moveTo(pause_item, CURVE/2, MOVIEY-CURVE/2);
+
 	{ /* stop / continue action */
 		SWFButton button = newSWFButton();
 		SWFDisplayItem item;
@@ -1886,7 +1897,7 @@ if (optind != argc) {
 			}
 			case RQ_LOCK: {
 				rq_t *rq = getRunqueue(ev.ev64.param[0]);
-				verbprintf("rq %p (%lx) locked\n",rq,ev.ev64.param[0]);
+				verbprintf("rq %p (%p) locked\n",rq,(void*)(intptr_t)ev.ev64.param[0]);
 				if (!rq) break;
 				rq->entity.thick = 2*RQTHICK;
 				updateEntity(&rq->entity);
@@ -1894,7 +1905,7 @@ if (optind != argc) {
 			}
 			case RQ_UNLOCK: {
 				rq_t *rq = getRunqueue(ev.ev64.param[0]);
-				verbprintf("rq %p (%lx) unlocked\n",rq,ev.ev64.param[0]);
+				verbprintf("rq %p (%p) unlocked\n",rq,(void*)(intptr_t)ev.ev64.param[0]);
 				if (!rq) break;
 				rq->entity.thick = RQTHICK;
 				updateEntity(&rq->entity);

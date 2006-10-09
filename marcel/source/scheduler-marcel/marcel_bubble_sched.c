@@ -944,7 +944,7 @@ int marcel_bubble_steal_work(void) {
 	return 0;
 }
 
-static ma_runqueue_t ma_gang_rq;
+ma_runqueue_t ma_gang_rq;
 
 any_t marcel_gang_scheduler(any_t foo) {
 	marcel_entity_t *e, *ee;
@@ -955,7 +955,9 @@ any_t marcel_gang_scheduler(any_t foo) {
 	while(1) {
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 		rq = work_rq;
+		PROF_EVENT1(rq_lock,work_rq);
 		ma_holder_lock_softirq(&rq->hold);
+		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
@@ -986,7 +988,9 @@ any_t marcel_gang_scheduler(any_t foo) {
 			ma_activate_entity(&b->sched, &work_rq->hold);
 		}
 		ma_holder_rawunlock(&rq->hold);
+		PROF_EVENT1(rq_unlock,&ma_gang_rq);
 		ma_holder_unlock_softirq(&work_rq->hold);
+		PROF_EVENT1(rq_unlock,work_rq);
 		ma_lwp_t lwp;
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
@@ -1006,8 +1010,8 @@ any_t marcel_gang_cleaner(any_t foo) {
 	ma_runqueue_t *rq, *work_rq = (void*) foo;
 	struct list_head *queue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
+	marcel_delay(1);
 	while(1) {
-		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 		rq = work_rq;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
@@ -1040,25 +1044,31 @@ any_t marcel_gang_cleaner(any_t foo) {
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
 	return NULL;
 }
 
 #ifdef MARCEL_GANG_SCHEDULER
-marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq) {
+marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int sys) {
 	marcel_attr_t attr;
 	marcel_t t;
 	marcel_attr_init(&attr);
 	marcel_attr_setname(&attr, "gang scheduler");
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setflags(&attr, MA_SF_NORUN);
+	marcel_attr_setinitrq(&attr, rq);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
-	marcel_create_special(&t, &attr, f, rq);
-	marcel_wake_up_created_thread(t);
+	if (sys) {
+		marcel_attr_setflags(&attr, MA_SF_NORUN);
+		marcel_create_special(&t, &attr, f, rq);
+		marcel_wake_up_created_thread(t);
+	} else {
+		marcel_create(&t, &attr, f, rq);
+	}
 	return t;
 }
-marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq) {
-	return __marcel_start_gang_scheduler(marcel_gang_scheduler, rq);
+marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
+	return __marcel_start_gang_scheduler(marcel_gang_scheduler, rq, sys);
 }
 #endif
 
@@ -1067,17 +1077,17 @@ void __marcel_init ma_bubble_sched_start(void) {
 	ma_idle_scheduler = 0;
 	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 #if 1
-	marcel_start_gang_scheduler(&ma_main_runqueue);
+	marcel_start_gang_scheduler(&ma_main_runqueue, 0);
 #else
-	__marcel_start_gang_scheduler(marcel_gang_cleaner, &ma_main_runqueue);
+	__marcel_start_gang_scheduler(marcel_gang_cleaner, &ma_main_runqueue, 1);
 #if 1
-	marcel_start_gang_scheduler(&marcel_topo_levels[1][0].sched);
-	marcel_start_gang_scheduler(&marcel_topo_levels[1][1].sched);
+	marcel_start_gang_scheduler(&marcel_topo_levels[1][0].sched, 0);
+	marcel_start_gang_scheduler(&marcel_topo_levels[1][1].sched, 0);
 #else
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][0].sched);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][1].sched);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][2].sched);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][3].sched);
+	marcel_start_gang_scheduler(&marcel_topo_levels[2][0].sched, 0);
+	marcel_start_gang_scheduler(&marcel_topo_levels[2][1].sched, 0);
+	marcel_start_gang_scheduler(&marcel_topo_levels[2][2].sched, 0);
+	marcel_start_gang_scheduler(&marcel_topo_levels[2][3].sched, 0);
 #endif
 #endif
 #endif

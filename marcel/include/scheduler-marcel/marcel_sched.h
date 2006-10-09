@@ -288,7 +288,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			rq = &ma_main_runqueue;
 		}
 		internal->entity.sched_holder = &rq->hold;
-		PROF_EVENT2(bubble_sched_switchrq, t, rq);
 		MA_BUG_ON(!rq->name[0]);
 #endif
 	} while (0);

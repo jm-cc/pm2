@@ -1,17 +1,34 @@
-Marcel can provide an NPTL-ABI-compatible libpthread.so.
 
-For this, just chose the "libpthread" flavor and run make. For running some
-application with Marcel's libpthread.so instead of the system's, run
+		                POSIX compatibility
 
-pm2-libpthread yourapplication
 
-(which will set LD_PRELOAD and LD_LIBRARY_PATH environment variables
-appropriately)
+Marcel interface
+================
 
-Known limitations
+The marcel_* interface is almost similar to the POSIX standard, except a few
+notable exceptions:
+
+- marcel_mutex_trylock() returns 1 on success, 0 on failure.
+- marcel_attr_setstack() takes the stack _bottom_ as argument, not the stack
+pointer.
+
+and a bunch of semantic details that we considered as too expensive for a fast
+thread library (different kinds of mutexes, ...)
+
+
+PMarcel interface
 =================
 
-- A 2.6 linux kernel is needed ;
+For a really POSIX compliant interface, please enable the "pmarcel" option in
+the Marcel module. This will provide a pmarcel_* interface that exactly follows
+the POSIX standard.
+
+For saving the user the burden to rename all pthread_* calls into pmarcel
+calls, a marcel/include/pthread/pthread.h file is provided that #defines_*
+pthread_* into pmarcel_* .
+
+Known limitations
+-----------------
 
 - some features will not be supported without quite some work:
   * process-shared mutexes and semaphores (spinlocks should work fine, however),
@@ -26,3 +43,24 @@ could relatively easily, if needed:
   * pthread_attr_setinheritsched(SCHED_INHERIT),
   * pthread_attr_setscope(SCOPE_SYSTEM),
   * pthread_rwlock_timedwrlock/pthread_mutex_timedlock
+
+PThread interface
+=================
+
+Marcel can provide an NPTL-ABI-compatible libpthread.so, hence saving the need
+to recompile the target application. This is currently supported only on Linux.
+
+For this, just chose the "libpthread" flavor and run make. For running some
+application using Marcel's libpthread.so instead of the system's, run
+
+pm2-libpthread yourapplication
+
+That will set LD_PRELOAD and LD_LIBRARY_PATH environment variables
+appropriately.
+
+Known limitations
+-----------------
+
+The same as PMarcel, plus
+
+- A 2.6 linux kernel is needed.

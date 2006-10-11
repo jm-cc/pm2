@@ -319,7 +319,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
-                mx_ret = mx_issend(p_mx_trk->ep, &sg, 1, p_mx_cnx->r_ep_addr,
+                mx_ret = mx_isend(p_mx_trk->ep, &sg, 1, p_mx_cnx->r_ep_addr,
                                    UINT64_C(0xdeadbeefdeadbeef), 0, &rq);
                 nm_mx_check_return("mx_isend", mx_ret);
                 mx_ret = mx_wait(p_mx_trk->ep, &rq, MX_INFINITE, &s, &r);

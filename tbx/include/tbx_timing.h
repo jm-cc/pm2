@@ -42,7 +42,7 @@ typedef unsigned long long tbx_tick_t, *p_tbx_tick_t;
 #define TBX_GET_TICK(t) \
    __asm__ volatile("rdtsc" : "=A" (t))
 #else
-#define TBX_GET_TICK(val) do { \
+#define TBX_GET_TICK(t) do { \
      unsigned int __a,__d; \
      asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
      (t) = ((unsigned long)__a) | (((unsigned long)__d)<<32); \

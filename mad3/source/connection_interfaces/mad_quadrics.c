@@ -1075,8 +1075,6 @@ mad_quadrics_receive_message(p_mad_channel_t ch) {
                 r = global_notify[sender*(1+FIRST_PACKET_THRESHOLD)];
                 global_notify[sender*(1+FIRST_PACKET_THRESHOLD)] = 0;
                 MEMBAR_STORESTORE();
-
-                TBX_ASSERT(r <= 1);
         }
 
 #else /* USE_PUT_NOTIFICATION */

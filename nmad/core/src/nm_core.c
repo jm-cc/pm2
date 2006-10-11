@@ -225,6 +225,7 @@ nm_core_driver_init(struct nm_core	 *p_core,
         p_tbx_string_t	 url		= NULL;
         int err;
 
+        NM_LOG_IN();
         if (p_core->nb_drivers == 255) {
                 err	= -NM_ENOMEM;
                 goto out;
@@ -297,6 +298,8 @@ nm_core_driver_init(struct nm_core	 *p_core,
         err = NM_ESUCCESS;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 }
 

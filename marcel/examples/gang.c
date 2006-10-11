@@ -19,9 +19,13 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#ifndef MARCEL_BUBBLE_STEAL
+#if !defined(MARCEL_BUBBLE_STEAL)
 #warning I need the bubble_steal option
 int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the bubble_steal option\n"); }
+
+#elif !defined(MARCEL_GANG_SCHEDULER)
+#warning I need the GANG_SCHEDULER config
+int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the GANG_SCHEDULER config\n"); }
 #else
 
 #define GANGS 5
@@ -36,9 +40,7 @@ marcel_barrier_t barrier[GANGS];
 #endif
 
 any_t work(any_t arg) {
-  int i;
   int n = (int) arg;
-  int num;
   while(1);
   marcel_printf("%d done\n",n);
   return NULL;
@@ -58,11 +60,10 @@ int marcel_main(int argc, char **argv)
   marcel_attr_t attr;
   char name[MARCEL_MAXNAMESIZE];
   struct marcel_sched_param p = { .sched_priority = MA_DEF_PRIO-1 } ;
-  marcel_t gangsched;
+  //marcel_t gangsched;
 
   marcel_init(&argc, argv);
 
-  marcel_setname(marcel_self(), "gang");
   marcel_sched_setparam(marcel_self(), &p);
 
 #ifdef PROFILE
@@ -83,6 +84,7 @@ int marcel_main(int argc, char **argv)
     marcel_barrier_init(&barrier[i], NULL, (i+1)%THREADS);
 #endif
     marcel_bubble_init(&gang[i]);
+    marcel_bubble_insertbubble(&marcel_root_bubble, &gang[i]);
     marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
     marcel_attr_setinitbubble(&attr, &gang[i]);
 #ifdef DIFFERENT

@@ -3239,7 +3239,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 }
 #endif
 
-void __marcel_init ma_sched_init0(void)
+void __marcel_init ma_linux_sched_init0(void)
 {
 	ma_init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
@@ -3256,7 +3256,7 @@ void __marcel_init ma_sched_init0(void)
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
 }
 
-static void __marcel_init sched_init(void)
+static void __marcel_init linux_sched_init(void)
 {
 	LOG_IN();
 	ma_holder_t *h;
@@ -3298,7 +3298,7 @@ static void __marcel_init sched_init(void)
 	LOG_OUT();
 }
 
-__ma_initfunc_prio(sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO, "Scheduler Linux 2.6");
+__ma_initfunc_prio(linux_sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO, "Scheduler Linux 2.6");
 
 #if 0
 #ifdef CONFIG_DEBUG_SPINLOCK_SLEEP

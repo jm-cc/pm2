@@ -123,8 +123,17 @@ define marcel-printthread
   if $arg0->sched.state == 256
     set $state='B'
   end
-  printf "0x%lx %16s %2d %c", \
-    $arg0, $arg0->name, $arg0->sched.internal.entity.prio, $state
+  if $arg0->sched.internal.entity.run_holder
+    if $arg0->sched.internal.entity.holder_data
+      set $sched_state='r'
+    else
+      set $sched_state='R'
+    end
+  else
+    set $sched_state='B'
+  end
+  printf "0x%lx %16s %2d %c%c", \
+    $arg0, $arg0->name, $arg0->sched.internal.entity.prio, $state, $sched_state
   if $arg0->sched.lwp
     printf " %2d", $arg0->sched.lwp->number
   end

@@ -48,6 +48,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #depend "marcel_sem.h[structures]"
 #depend "marcel_exception.h[structures]"
 #depend "marcel_signal.h[marcel_types]"
+#depend "marcel_stats.h[marcel_types]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
@@ -81,11 +82,14 @@ struct marcel_task {
 	/* Changements de contexte (sauvegarde état) */
 	marcel_ctx_t ctx_yield;
 	/* travaux en cours (deviate, signaux, ...) */
+	unsigned not_deviatable;
 	struct marcel_work work;
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
 	unsigned long softirq_pending_in_hardirq;
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
+	unsigned not_migratable;
+	unsigned long remaining_sleep_time;
 	/* utilisé pour marquer les task idle, upcall, idle, ... */
 	volatile unsigned long flags;
 	/* Pour la création des threads */
@@ -116,19 +120,23 @@ struct marcel_task {
 	/* Clés */
 	any_t key[MAX_KEY_SPECIFIC];
 
-
-
+	/* Pile */
 	any_t stack_base;
 	int static_stack;
-	long initial_sp, depl;
+	long initial_sp;
+
+	/* Identification du thread */
 	char name[MARCEL_MAXNAMESIZE];
 	int id;
 	int number;
-	unsigned long remaining_sleep_time;
+
+	/* itimer & co */
 	struct ma_timer_list *timer;
-	unsigned not_migratable, not_deviatable;
+
+	/* mutex & co */
 	marcel_sem_t suspend_sem;
 	
+	/* marcel-top */
 	ma_atomic_t top_utime/*, top_stime*/;
 
 #ifndef MA__PROVIDE_TLS
@@ -150,10 +158,11 @@ struct marcel_task {
 	marcel_sem_t pthread_sync;
 #endif
 
-	/*         list of all threads */
+	/* per-lwp list of all threads */
 	struct list_head all_threads;
 
 #ifdef MARCEL_DEBUG_SPINLOCK
+	/* backtrace pour débugguer la préemption */
 	void *preempt_backtrace[TBX_BACKTRACE_DEPTH];
 	size_t preempt_backtrace_size;
 	int spinlock_backtrace;
@@ -178,8 +187,12 @@ struct marcel_task {
 #endif
 
 #ifdef MA__PROVIDE_TLS
+	/* TLS Exec (non dynamique) */
       char tls[MA_TLS_AREA_SIZE];
 #endif
+	/* Statistiques */
+	ma_stats_t stats;
+
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; /*  Doit rester le _dernier_ champ */
 #endif

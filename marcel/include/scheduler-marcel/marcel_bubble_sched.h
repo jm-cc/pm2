@@ -91,6 +91,8 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
 
+void ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset);
+
 #ifdef MARCEL_BUBBLE_EXPLODE
 void marcel_close_bubble(marcel_bubble_t *bubble);
 #endif
@@ -102,6 +104,7 @@ void marcel_close_bubble(marcel_bubble_t *bubble);
 #section structures
 #depend "pm2_list.h"
 #depend "scheduler/marcel_holder.h[structures]"
+#depend "marcel_stats.h[marcel_types]"
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 typedef enum {
@@ -129,11 +132,9 @@ struct marcel_bubble {
 	struct list_head runningentities;
 	int settled;
 #endif
-	/* statistics */
-	unsigned cputime;
-	unsigned memory;
-	unsigned running;
 	marcel_barrier_t barrier;
+
+	ma_stats_t stats;
 };
 
 #section macros
@@ -161,9 +162,6 @@ struct marcel_bubble {
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
 	.join = MARCEL_SEM_INITIALIZER(1), \
 	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
-	.cputime = 0, \
-	.memory = 0, \
-	.running = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
 }
 

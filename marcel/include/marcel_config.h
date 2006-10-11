@@ -17,21 +17,29 @@
 
 /* ========== customization =========== */
 
+/* Max number of marcel_key_create() calls */
 #define MAX_KEY_SPECIFIC	20
 
+/* Max number of marcel_schedpolicy_create() calls */
 #define MARCEL_MAX_USER_SCHED	16
 
+/* Threshold for MARCEL_SCHED_AFFINITY policy */
 #define THREAD_THRESHOLD_LOW	1
 
+/* Max size for thread names */
 #define MARCEL_MAXNAMESIZE	32
 
+/* Alignment of marcel_t */
 #define MARCEL_ALIGN		64
 
+/* Room for per-something variables */
 #define MA_PER_LWP_ROOM		32768
 #define MA_PER_LEVEL_ROOM	4096
 
+/* Room for Exec TLS (not dynamic) */
 #define MA_TLS_AREA_SIZE        ((unsigned long) 4096)
 
+/* Max number of architecture elements */
 #ifdef MA__LWPS
 #define MARCEL_NBMAXCPUS	(sizeof(unsigned long)*8)
 #ifdef MA__NUMA
@@ -41,18 +49,20 @@
 #endif
 #endif
 
-#ifdef MA__LWPS
+/* Max number of marcel_add_lwp() calls */
 #define MARCEL_NBMAXVPSUP	2
-#else
-/* don't change this */
-#define MARCEL_NBMAXVPSUP	0
-#endif
 
+/* Default scheduling level */
 #define MARCEL_LEVEL_DEFAULT	0
+/* Level of bubble recursion from which they are kept closed */
 #define MARCEL_LEVEL_KEEPCLOSED	INT_MAX
 
-//#define MARCEL_GANG_SCHEDULER
+/* Room for threads/bubbles statistics */
+#define MARCEL_STATS_ROOM	64
 
+#define MARCEL_GANG_SCHEDULER
+
+/* Number of distinct real-time priorities */
 #if defined(MA__IFACE_LPT)
 #define MA_MAX_USER_RT_PRIO	99
 #elif defined(MA__IFACE_PMARCEL)
@@ -60,21 +70,27 @@
 #else
 #define MA_MAX_USER_RT_PRIO	9
 #endif
+/* Same, for PM2's own usage */
 #define MA_MAX_SYS_RT_PRIO	9
+/* Number of Nice prioritiés */
 #define MA_MAX_NICE		0
 
 /* TODO: utiliser la priorité pour le calculer */
+/* Preemption timeslice for threads in timer ticks */
 #define MARCEL_TASK_TIMESLICE	1
+/* Timeslice for bubbles in timer ticks */
 #define MARCEL_BUBBLE_TIMESLICE	10
 
+/* Default LWP choice policy */
 #define MARCEL_SCHED_DEFAULT	MARCEL_SCHED_BALANCE
 
 /* ========== timer =================== */
 
-/* Unité : microsecondes */
+/* Timer tick period, in µs */
 #define MARCEL_MIN_TIME_SLICE		10000
 #define MARCEL_DEFAULT_TIME_SLICE	MARCEL_MIN_TIME_SLICE
 
+/* Timer time and signal */
 #include <signal.h>
 #ifdef MA__TIMER
 #if defined(MA__LWPS) && (!defined(SA_SIGINFO) || defined(OSF_SYS) || defined(AIX_SYS) || defined(DARWIN_SYS))
@@ -101,3 +117,9 @@
 #endif
 #endif /* MA__TIMER */
 #define MARCEL_RESCHED_SIGNAL     SIGXFSZ
+
+/* don't change this */
+#ifndef MA__LWPS
+#undef MARCEL_NBMAXVPSUP
+#define MARCEL_NBMAXVPSUP	0
+#endif

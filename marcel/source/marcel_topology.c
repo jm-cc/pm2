@@ -459,9 +459,9 @@ static void look_cpu(void) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
 		cpu_level[cpu].number=cpu;
 		marcel_vpmask_empty(&cpu_level[cpu].vpset);
-		cpu_level[i].arity=0;
-		cpu_level[i].sons=NULL;
-		cpu_level[i].father=NULL;
+		cpu_level[cpu].arity=0;
+		cpu_level[cpu].sons=NULL;
+		cpu_level[cpu].father=NULL;
 	}
 	marcel_vpmask_empty(&cpu_level[cpu].vpset);
 

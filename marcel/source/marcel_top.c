@@ -95,8 +95,8 @@ static void printtask(marcel_task_t *t) {
 		schedstate = '?';
 	utime = ma_atomic_read(&t->top_utime);
 	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("%#*lx %*s %2d %3lu.%1lu %c%c %2d %10s %10s %10s\r\n",
-		(int) (2*sizeof(void*)), (unsigned long) t,
+	top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s\r\n",
+		(int) (2+2*sizeof(void*)), (unsigned long) t,
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
 		state, schedstate, GET_LWP_NUMBER(t),
@@ -112,16 +112,17 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 	char buf1[32];
 	char buf2[32];
 	char buf3[32];
-	top_printf("%#*lx %*s %2d            %10s %10s %10s\r\n",
-		(int) (2*sizeof(void*)), (unsigned long) b,
-        	MARCEL_MAXNAMESIZE, "bubble",
+	top_printf("%*s%-#*lx %*s(%2d) %2d             %-10s %-10s %-10s\r\n",
+		indent, "",
+		(int) (2+2*sizeof(void*)), (unsigned long) b,
+        	MARCEL_MAXNAMESIZE-4, "", *(unsigned *)ma_stats_get(b, ma_stats_nbthreads_offset),
 		b->sched.prio,
 		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
 		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_TASK_ENTITY) {
-			top_printf("%*s", indent, "");
+			top_printf("%*s", indent+1, "");
 			printtask(ma_task_entity(e));
 		} else {
 			printbubble(ma_bubble_entity(e), indent+1);
@@ -184,9 +185,10 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 	marcel_freeze_sched();
 #ifdef MA__BUBBLES
-	if (bubbles)
+	if (bubbles) {
+		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_nbthreads_offset);
 		printbubble(&marcel_root_bubble, 0);
-	else
+	} else
 #endif
 	{
 		marcel_threadslist(NBPIDS,pids,&nbpids,0);

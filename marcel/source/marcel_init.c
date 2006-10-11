@@ -397,8 +397,9 @@ extern const __ma_init_info_t ma_init_info_main_thread_init;
 // Section MA_INIT_MAIN_LWP
 extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
 extern const __ma_init_info_t ma_init_info_marcel_slot_init;
-extern const __ma_init_info_t ma_init_info_sched_init;
-extern void ma_sched_init0(void);
+extern const __ma_init_info_t ma_init_info_linux_sched_init;
+extern void ma_sched_init(void);
+extern void ma_linux_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
 extern void ma_bubble_sched_init2(void);
@@ -495,7 +496,7 @@ void marcel_init_section(int sec) {
 #ifdef PROFILE
 		profile_init();
 #endif
-		  ma_sched_init0();
+		  ma_linux_sched_init0();
 #ifdef MA__LIBPTHREAD
 		  ma_check_lpt_sizes();
 #endif
@@ -515,10 +516,11 @@ void marcel_init_section(int sec) {
 #endif // PROFILE
                   call_init_function(&ma_init_info_marcel_debug_init_auto);
                   call_init_function(&ma_init_info_marcel_slot_init);
+		  ma_sched_init();
 #ifdef MA__BUBBLES
                   call_init_function(&ma_init_info_bubble_sched_init);
 #endif // MA__BUBBLES
-                  call_init_function(&ma_init_info_sched_init);
+                  call_init_function(&ma_init_info_linux_sched_init);
 #ifdef MA__BUBBLES
 		  ma_bubble_sched_init2();
 #endif // MA__BUBBLES

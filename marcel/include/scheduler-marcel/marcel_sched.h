@@ -375,15 +375,7 @@ extern void ma_unfreeze_thread(marcel_task_t * tsk);
 extern void marcel_breakpoint();
 #endif
 
-int __marcel_tempo_give_hand(unsigned long timeout, tbx_bool_t *blocked, marcel_sem_t *s);
-
-marcel_t marcel_unchain_task_and_find_next(marcel_t t, 
-						     marcel_t find_next);
-void marcel_insert_task(marcel_t t);
-marcel_t marcel_radical_next_task(void);
 marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t *lwp);
-
-int marcel_check_sleeping(void);
 
 /**************************************************************************/
 /**************************************************************************/

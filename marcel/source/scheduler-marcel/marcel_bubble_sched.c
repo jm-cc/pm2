@@ -434,6 +434,33 @@ int marcel_bubble_barrier(marcel_bubble_t *bubble) {
 }
 
 /******************************************************************************
+ * Statistiques
+ */
+static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset) {
+	marcel_bubble_t *b;
+	marcel_entity_t *e;
+	marcel_task_t *t;
+	ma_stats_reset_func(offset)(ma_stats_get(bubble, offset));
+	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list) {
+		if (e->type == MA_BUBBLE_ENTITY) {
+			b = ma_bubble_entity(e);
+			ma_holder_rawlock(&b->hold);
+			__ma_bubble_synthesize_stats(b, offset);
+			ma_holder_rawunlock(&b->hold);
+			ma_stats_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(b, offset));
+		} else {
+			t = ma_task_entity(e);
+			ma_stats_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(t, offset));
+		}
+	}
+}
+void ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset) {
+	ma_holder_lock_softirq(&bubble->hold);
+	__ma_bubble_synthesize_stats(bubble, offset);
+	ma_holder_unlock_softirq(&bubble->hold);
+}
+
+/******************************************************************************
  * Refermeture de bulle
  */
 

@@ -103,7 +103,6 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->stack_base
 	//t->static_stack
 	//t->initial_sp
-	//t->depl
 	strncpy(t->name,attr->name,MARCEL_MAXNAMESIZE);
 	t->id = attr->id;
 	PROF_EVENT2(set_thread_id,t,t->id);
@@ -143,6 +142,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
    t->canceled = MARCEL_NOT_CANCELED;
 #endif
+
+	*(unsigned long*)ma_stats_get(t, ma_stats_nbthreads_offset) = 1;
  
 #ifdef ENABLE_STACK_JUMPING
 	*((marcel_t *)(ma_task_slot_top(t) - sizeof(void *))) = t;

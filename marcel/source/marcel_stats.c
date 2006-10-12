@@ -39,3 +39,10 @@ void ma_stats_unsigned_sum_synthesis(void * __restrict dest, const void * __rest
 	const unsigned *src_data = src;
 	*dest_data += *src_data;
 }
+TBX_FUN_ALIAS(void, ma_stats_unsigned_max_reset, ma_stats_unsigned_sum_reset, (void *dest), (dest));
+void ma_stats_unsigned_max_synthesis(void * __restrict dest, const void * __restrict src) {
+	unsigned *dest_data = dest;
+	const unsigned *src_data = src;
+	if (*src_data > *dest_data)
+		*dest_data = *src_data;
+}

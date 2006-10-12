@@ -115,7 +115,6 @@ unsigned marcel_add_lwp(void);
 #depend "scheduler/marcel_holder.h[marcel_structures]"
 typedef struct {
 	struct ma_sched_entity entity;
-	unsigned long timestamp, last_ran;
 	marcel_bubble_t bubble;
 } marcel_sched_internal_task_t;
 
@@ -294,7 +293,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
-	/* timestamp, last_ran */
 	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;

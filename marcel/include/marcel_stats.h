@@ -15,7 +15,7 @@
  */
 
 #section marcel_variables
-extern unsigned long ma_stats_nbthreads_offset;
+extern unsigned long ma_stats_nbthreads_offset, ma_stats_last_ran_offset;
 
 #section marcel_types
 typedef char ma_stats_t[MARCEL_STATS_ROOM];
@@ -38,3 +38,5 @@ unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesi
 
 ma_stats_synthesis_t ma_stats_unsigned_sum_synthesis;
 ma_stats_reset_t ma_stats_unsigned_sum_reset;
+ma_stats_synthesis_t ma_stats_unsigned_max_synthesis;
+ma_stats_reset_t ma_stats_unsigned_max_reset;

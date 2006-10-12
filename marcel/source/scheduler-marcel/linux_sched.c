@@ -586,7 +586,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	sched_debug("wake up created thread %p\n",p);
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-	p->sched.internal.timestamp = marcel_clock();
+	*(unsigned*)ma_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
 	ma_set_task_state(p, MA_TASK_RUNNING);
 
 #ifdef MA__BUBBLES
@@ -1824,7 +1824,7 @@ switch_tasks:
 //		if (!(HIGH_CREDIT(prev) || LOW_CREDIT(prev)))
 //			prev->interactive_credit--;
 //	}
-	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
+	*(unsigned*)ma_stats_get(prev, ma_stats_last_ran_offset) = now;
 
 	if (tbx_likely(didswitch = (prev != next))) {
 #ifdef MA__LWPS

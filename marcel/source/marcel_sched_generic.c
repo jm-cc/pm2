@@ -580,7 +580,7 @@ __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création
 unsigned long ma_stats_nbthreads_offset;
 void __marcel_init ma_sched_init(void)
 {
-	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_unsigned_sum_reset, ma_stats_unsigned_sum_synthesis, sizeof(unsigned));
+	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_unsigned_sum_reset, ma_stats_unsigned_sum_synthesis, ma_stats_unsigned_sum_synthesis, sizeof(unsigned));
 	*(unsigned *)ma_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
 }
 

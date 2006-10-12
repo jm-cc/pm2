@@ -450,7 +450,7 @@ static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long 
 			ma_stats_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(b, offset));
 		} else {
 			t = ma_task_entity(e);
-			ma_stats_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(t, offset));
+			ma_stats_thread_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(t, offset));
 		}
 	}
 }

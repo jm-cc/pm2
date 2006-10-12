@@ -225,10 +225,15 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
 
 #ifdef CONFIG_MULTI_RAIL
-    for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
-      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
-	goto found;
+//    for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
+//      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
+//	goto found;
+
+    drv_id = p_so_pw->pw.p_drv->id;
+    if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
+      goto found;
     goto busy;
+
   found:
 #else
     drv_id = NM_SO_DEFAULT_NET;
@@ -236,6 +241,9 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
       goto busy;
 #endif
     {
+
+      DISP_VAL("Envoi du gros sur le drv", drv_id);
+
       /* Track 1 is available */
 	union nm_so_generic_ctrl_header ctrl;
 

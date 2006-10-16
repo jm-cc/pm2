@@ -815,6 +815,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	ma_preempt_disable();
 	//if (find_interesting_bubble(rq, up_power, 0)) {
 		ma_holder_rawlock(&rq->hold);
+		/* recommencer une fois verrouillé */
 		b = find_interesting_bubble(rq, up_power);
 		if (!b) {
 			ma_holder_rawunlock(&rq->hold);
@@ -832,9 +833,9 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->name);
 			if (!rq2 ||
 					/* pas intéressant pour moi, on laisse les autres se débrouiller */
+					/* todo: le faire quand même ? */
 					!marcel_vpmask_vp_ismember(&rq2->vpset,LWP_NUMBER(LWP_SELF))) {
 				bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
-				/* todo: le faire quand même ? */
 				ma_holder_rawunlock(&rq->hold);
 			} else {
 				bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->name, b);
@@ -852,6 +853,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 							(b2->hold.nr_scheduled ||
 							 /* laisser la première bulle */
 							 first)
+							 /* ne pas toucher à ce qui tourne actuellement */
 							) || (!b2 && MA_TASK_IS_RUNNING(t))) {
 						int state;
 						if (b2) {
@@ -922,10 +924,12 @@ static int see_down(struct marcel_topo_level *level,
 		power = marcel_vpmask_weight(&rq->vpset);
 	}
 	if (me) {
+		/* si l'appelant fait partie des fils, l'éviter */
 		n--;
 		i = (me->index + 1) % level->arity;
 	}
 	while (n--) {
+		/* examiner les fils */
 		if (see(level->sons[i], power) || see_down(level->sons[i], NULL))
 			return 1;
 		i = (i+1) % level->arity;
@@ -939,8 +943,10 @@ static int see_up(struct marcel_topo_level *level) {
 	bubble_sched_debugl(7,"see_up from %d %d\n", level->type, level->number);
 	if (!father)
 		return 0;
+	/* regarder vers le haut, c'est d'abord regarder en bas */
 	if (see_down(father, level))
 		return 1;
+	/* puis chez le père */
 	if (see_up(father))
 		return 1;
 	bubble_sched_debugl(7,"up done\n");
@@ -979,13 +985,16 @@ any_t marcel_gang_scheduler(any_t foo) {
 	ma_runqueue_t *rq, *work_rq = (void*) foo;
 	struct list_head *queue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
+	/* Attendre un tout petit peu que la création de threads se fasse */
+	marcel_usleep(1);
 	while(1) {
-		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
+		/* D'abord enlever les jobs de la work_rq */
 		rq = work_rq;
 		PROF_EVENT1(rq_lock,work_rq);
 		ma_holder_lock_softirq(&rq->hold);
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
+		/* Les bulles pleines */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -995,6 +1004,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
+		/* Les bulles vides */
 		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -1004,6 +1014,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
+		/* Mettre ensuite un job sur la work_rq */
 		rq = &ma_gang_rq;
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		if (!ma_queue_empty(queue)) {
@@ -1019,6 +1030,7 @@ any_t marcel_gang_scheduler(any_t foo) {
 		ma_holder_unlock_softirq(&work_rq->hold);
 		PROF_EVENT1(rq_unlock,work_rq);
 		ma_lwp_t lwp;
+		/* Et préempter les threads de cette rq */
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
@@ -1027,21 +1039,24 @@ any_t marcel_gang_scheduler(any_t foo) {
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
 	return NULL;
 }
 
+/* Nettoyeur: enlève les jobs de la work_rq */
 any_t marcel_gang_cleaner(any_t foo) {
 	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
 	ma_runqueue_t *rq, *work_rq = (void*) foo;
 	struct list_head *queue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
-	marcel_delay(1);
+	marcel_usleep(1);
 	while(1) {
 		rq = work_rq;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
+		/* Les bulles pleines */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -1051,6 +1066,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
+		/* Les bulles vides */
 		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -1063,6 +1079,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock_softirq(&ma_gang_rq.hold);
 		ma_lwp_t lwp;
+		/* Et préempter les threads de cette rq */
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
@@ -1104,13 +1121,17 @@ void __marcel_init ma_bubble_sched_start(void) {
 	ma_idle_scheduler = 0;
 	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 #if 1
+	/* un seul gang scheduler */
 	marcel_start_gang_scheduler(&ma_main_runqueue, 0);
 #else
+	/* un nettoyeur */
 	__marcel_start_gang_scheduler(marcel_gang_cleaner, &ma_main_runqueue, 1);
 #if 1
+	/* deux gang schedulers */
 	marcel_start_gang_scheduler(&marcel_topo_levels[1][0].sched, 0);
 	marcel_start_gang_scheduler(&marcel_topo_levels[1][1].sched, 0);
 #else
+	/* quatre gang schedulers */
 	marcel_start_gang_scheduler(&marcel_topo_levels[2][0].sched, 0);
 	marcel_start_gang_scheduler(&marcel_topo_levels[2][1].sched, 0);
 	marcel_start_gang_scheduler(&marcel_topo_levels[2][2].sched, 0);

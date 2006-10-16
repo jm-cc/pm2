@@ -26,8 +26,8 @@ typedef void ma_stats_reset_t(void *dest);
 extern ma_stats_t ma_stats_funcs;
 
 #section marcel_macros
-#define __ma_stats_get(stats, offset) ((void*)&(stats)[offset])
-#define ma_stats_get(object, offset) __ma_stats_get(&(object)->stats, (offset))
+#define __ma_stats_get(stats, offset) ((void*)&((stats)[offset]))
+#define ma_stats_get(object, offset) __ma_stats_get((object)->stats, (offset))
 #define __ma_stats_func(offset) ((void**)__ma_stats_get(ma_stats_funcs, (offset)))
 #define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)(__ma_stats_func(offset)))
 #define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)(__ma_stats_func(offset) + 1))

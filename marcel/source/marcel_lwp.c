@@ -178,56 +178,58 @@ static void *lwp_kthread_start_func(void *arg)
 
 unsigned marcel_lwp_add_lwp(int num)
 {
-  marcel_lwp_t *lwp;
+	marcel_lwp_t *lwp;
 
-  LOG_IN();
+	LOG_IN();
 
-  lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node[num==-1?0:num]);
-  /* initialiser le lwp *avant* de l'enregistrer */
-  *lwp = MA_LWP_INITIALIZER(lwp);
+	lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node[num == -1 ? 0 : num]);
+	/* initialiser le lwp *avant* de l'enregistrer */
+	*lwp = MA_LWP_INITIALIZER(lwp);
 
-  INIT_LWP_NB(num, lwp);
+	INIT_LWP_NB(num, lwp);
 
-  // Initialisation de la structure marcel_lwp_t
-  ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
+	// Initialisation de la structure marcel_lwp_t
+	ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
 
-  lwp_list_lock_write();
-  {
-    // Ajout dans la liste globale des LWP
-    list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
-  }
-  lwp_list_unlock_write();
+	lwp_list_lock_write();
+	{
+		// Ajout dans la liste globale des LWP
+		list_add_tail(&lwp->lwp_list, &ma_list_lwp_head);
+	}
+	lwp_list_unlock_write();
 
 #ifdef MA__SMP
-  // Lancement du thread noyau "propulseur". Il faut désactiver les
-  // signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
-  // correct.
-  marcel_sig_disable_interrupts();
-  marcel_kthread_create(&lwp->pid, 
-			ma_per_lwp(run_task,lwp)?(void*)THREAD_GETMEM(ma_per_lwp(run_task,lwp), initial_sp):NULL,
-			ma_per_lwp(run_task,lwp)?THREAD_GETMEM(ma_per_lwp(run_task,lwp), stack_base):0,
-			lwp_kthread_start_func, (void *)lwp);
-  marcel_sig_enable_interrupts();
+	// Lancement du thread noyau "propulseur". Il faut désactiver les
+	// signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
+	// correct.
+	marcel_sig_disable_interrupts();
+	marcel_kthread_create(&lwp->pid,
+	    ma_per_lwp(run_task,
+		lwp) ? (void *) THREAD_GETMEM(ma_per_lwp(run_task, lwp),
+		initial_sp) : NULL, ma_per_lwp(run_task,
+		lwp) ? THREAD_GETMEM(ma_per_lwp(run_task, lwp), stack_base) : 0,
+	    lwp_kthread_start_func, (void *) lwp);
+	marcel_sig_enable_interrupts();
 #endif
-  return ma_per_lwp(number,lwp);
+	return ma_per_lwp(number, lwp);
 
-  LOG_OUT();
+	LOG_OUT();
 }
 
 unsigned marcel_lwp_add_vp(void)
 {
-  unsigned num;
-  static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
+	unsigned num;
+	static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
 
-  num = ma_atomic_inc_return(&nb_lwp);
+	num = ma_atomic_inc_return(&nb_lwp);
 
-  if (num >= marcel_nbvps() + MARCEL_NBMAXVPSUP)
-    MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");
+	if (num >= marcel_nbvps() + MARCEL_NBMAXVPSUP)
+		MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");
 
-  if (num >= MA_NR_LWPS)
-    MARCEL_EXCEPTION_RAISE("Too many lwp\n");
+	if (num >= MA_NR_LWPS)
+		MARCEL_EXCEPTION_RAISE("Too many lwp\n");
 
-  return marcel_lwp_add_lwp(num);
+	return marcel_lwp_add_lwp(num);
 }
 
 #endif // MA__LWPS
@@ -238,31 +240,30 @@ unsigned marcel_lwp_add_vp(void)
 
    This should be fixed! 
 */
-void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
+void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 {
-  LOG_IN();
-  mdebug("stopping LWP %p\n",lwp);
+	LOG_IN();
+	mdebug("stopping LWP %p\n", lwp);
 
-  if (IS_FIRST_LWP(lwp)) {
-	  pm2debug("Arghh, trying to kill main_lwp\n");
-	  return;
-  }
-  marcel_sem_V(&lwp->kthread_stop);
+	if (IS_FIRST_LWP(lwp)) {
+		pm2debug("Arghh, trying to kill main_lwp\n");
+		return;
+	}
+	marcel_sem_V(&lwp->kthread_stop);
 
-  mdebug("joining LWP %p\n",lwp);
-  marcel_kthread_join(&lwp->pid);
+	mdebug("joining LWP %p\n", lwp);
+	marcel_kthread_join(&lwp->pid);
 
-  {
-	  /* La structure devrait être libérée ainsi que
-	   * les piles des threads résidents... 
-	   */
-	  marcel_free_node(lwp, sizeof(marcel_lwp_t),
-			  ma_vp_node[LWP_NUMBER(lwp)]);
-  }
+	{
+		/* La structure devrait être libérée ainsi que
+		 * les piles des threads résidents... 
+		 */
+		marcel_free_node(lwp, sizeof(marcel_lwp_t),
+		    ma_vp_node[LWP_NUMBER(lwp)]);
+	}
 
-  LOG_OUT();
+	LOG_OUT();
 }
-
 /* wait for ourself to become the active LWP of a VP */
 void ma_lwp_wait_active(void) {
 	struct marcel_topo_level *level;

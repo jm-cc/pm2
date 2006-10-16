@@ -124,45 +124,41 @@ init_rtsigs (void)
 #endif
 
 /* Return number of available real-time signal with highest priority.  */
-int
-__libc_current_sigrtmin (void)
+int __libc_current_sigrtmin(void)
 {
 #ifdef __SIGRTMIN
-  if (__builtin_expect (!rtsigs_initialized, 0))
-    init_rtsigs ();
+	if (__builtin_expect(!rtsigs_initialized, 0))
+		init_rtsigs();
 #endif
-  return current_rtmin;
+	return current_rtmin;
 }
 
 /* Return number of available real-time signal with lowest priority.  */
-int
-__libc_current_sigrtmax (void)
+int __libc_current_sigrtmax(void)
 {
 #ifdef __SIGRTMIN
-  if (__builtin_expect (!rtsigs_initialized, 0))
-    init_rtsigs ();
+	if (__builtin_expect(!rtsigs_initialized, 0))
+		init_rtsigs();
 #endif
-  return current_rtmax;
+	return current_rtmax;
 }
 
 /* Allocate real-time signal with highest/lowest available
    priority.  Please note that we don't use a lock since we assume
    this function to be called at program start.  */
-int
-__libc_allocate_rtsig (int high)
+int __libc_allocate_rtsig(int high)
 {
 #ifndef __SIGRTMIN
-  return -1;
+	return -1;
 #else
-  if (__builtin_expect (!rtsigs_initialized, 0))
-    init_rtsigs ();
-  if (__builtin_expect (current_rtmin == -1, 0)
-      || __builtin_expect (current_rtmin > current_rtmax, 0))
-    /* We don't have anymore signal available.  */
-    return -1;
+	if (__builtin_expect(!rtsigs_initialized, 0))
+		init_rtsigs();
+	if (__builtin_expect(current_rtmin == -1, 0)
+	    || __builtin_expect(current_rtmin > current_rtmax, 0))
+		/* We don't have anymore signal available.  */
+		return -1;
 
-  return high ? current_rtmin++ : current_rtmax--;
+	return high ? current_rtmin++ : current_rtmax--;
 #endif
 }
-
 #endif /* MA__LIBPTHREAD */

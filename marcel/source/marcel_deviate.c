@@ -21,66 +21,66 @@
 static ma_allocator_t * deviate_records;
 static marcel_lock_t deviate_lock = MARCEL_LOCK_INIT;
 
-void __marcel_init ma_deviate_init(void) {
-  deviate_records = ma_new_obj_allocator(0,
-		      ma_obj_allocator_malloc, (void*) sizeof(ma_allocator_t),
-		      ma_obj_allocator_free, NULL,
-		      POLICY_HIERARCHICAL, 0);
+void __marcel_init ma_deviate_init(void)
+{
+	deviate_records = ma_new_obj_allocator(0,
+	    ma_obj_allocator_malloc, (void *) sizeof(ma_allocator_t),
+	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL, 0);
 }
 
 // préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 {
-  deviate_record_t *ptr = ma_obj_alloc(deviate_records);
+	deviate_record_t *ptr = ma_obj_alloc(deviate_records);
 
-  ptr->func = h;
-  ptr->arg = arg;
+	ptr->func = h;
+	ptr->arg = arg;
 
-  ptr->next = pid->work.deviate_work;
-  pid->work.deviate_work = ptr;
+	ptr->next = pid->work.deviate_work;
+	pid->work.deviate_work = ptr;
 
 #ifdef MA__WORK
-  SET_DEVIATE_WORK(pid);
+	SET_DEVIATE_WORK(pid);
 #endif
 }
 
 // préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void do_execute_deviate_work(void)
 {
-  marcel_t cur = marcel_self();
-  deviate_record_t *ptr;
+	marcel_t cur = marcel_self();
+	deviate_record_t *ptr;
 
-  while((ptr = cur->work.deviate_work) != NULL) {
-    handler_func_t h = ptr->func;
-    any_t arg = ptr->arg;
+	while ((ptr = cur->work.deviate_work) != NULL) {
+		handler_func_t h = ptr->func;
+		any_t arg = ptr->arg;
 
-    cur->work.deviate_work = ptr->next;
-    ma_obj_free(deviate_records, ptr);
+		cur->work.deviate_work = ptr->next;
+		ma_obj_free(deviate_records, ptr);
 
-    marcel_lock_release(&deviate_lock);
-    ma_preempt_enable();
+		marcel_lock_release(&deviate_lock);
+		ma_preempt_enable();
 
-    (*h)(arg);
+		(*h) (arg);
 
-    ma_preempt_disable();
-    marcel_lock_acquire(&deviate_lock);
-  }
+		ma_preempt_disable();
+		marcel_lock_acquire(&deviate_lock);
+	}
 
 #ifdef MA__WORK
-  CLR_DEVIATE_WORK(cur);
+	CLR_DEVIATE_WORK(cur);
 #endif
 }
 
 // préemption désactivée lorsque l'on exécute cette fonction
 void marcel_execute_deviate_work(void)
 {
-  if(!SELF_GETMEM(not_deviatable)) {
-    marcel_lock_acquire(&deviate_lock);
+	if (!SELF_GETMEM(not_deviatable)) {
+		marcel_lock_acquire(&deviate_lock);
 
-    do_execute_deviate_work();
+		do_execute_deviate_work();
 
-    marcel_lock_release(&deviate_lock);
-  }
+		marcel_lock_release(&deviate_lock);
+	}
 }
 
 #ifdef MA__ACTIVATION
@@ -89,140 +89,140 @@ void marcel_execute_deviate_work(void)
 #endif
 #endif
 static void insertion_relai(handler_func_t f, void *arg)
-{ 
-  marcel_ctx_t back;
-  marcel_t cur = marcel_self();
+{
+	marcel_ctx_t back;
+	marcel_t cur = marcel_self();
 
-  /* save the way back to the thread's normal path */
-  memcpy(back, cur->ctx_yield, sizeof(marcel_ctx_t));
+	/* save the way back to the thread's normal path */
+	memcpy(back, cur->ctx_yield, sizeof(marcel_ctx_t));
 
-  /* set the current path to here */
-  if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
-    /* and return at once to father */
-    marcel_ctx_set_tls_reg(cur->father);
-    marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
-  } else {
-    /* later on, actually do the work */
-    MA_THR_DESTROYJMP(cur);
-    MA_THR_RESTARTED(cur, "Deviation");
-    MA_BUG_ON(!ma_in_atomic());
-    ma_preempt_enable();
+	/* set the current path to here */
+	if (MA_THR_SETJMP(cur) == FIRST_RETURN) {
+		/* and return at once to father */
+		marcel_ctx_set_tls_reg(cur->father);
+		marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
+	} else {
+		/* later on, actually do the work */
+		MA_THR_DESTROYJMP(cur);
+		MA_THR_RESTARTED(cur, "Deviation");
+		MA_BUG_ON(!ma_in_atomic());
+		ma_preempt_enable();
 
-    (*f)(arg);
+		(*f) (arg);
 
-    ma_preempt_disable();
-    /* and return to normal path */
-    marcel_ctx_longjmp(back, NORMAL_RETURN);
-  }
+		ma_preempt_disable();
+		/* and return to normal path */
+		marcel_ctx_longjmp(back, NORMAL_RETURN);
+	}
 }
 
 /* VERY INELEGANT: to avoid inlining of insertion_relai function... */
-typedef void (*relai_func_t)(handler_func_t f, void *arg);
+typedef void (*relai_func_t) (handler_func_t f, void *arg);
 static volatile relai_func_t relai_func = insertion_relai;
 
 void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 {
-  static volatile handler_func_t f_to_call;
-  static void * volatile argument;
-  static volatile long initial_sp;
+	static volatile handler_func_t f_to_call;
+	static void *volatile argument;
+	static volatile long initial_sp;
 
-  if(marcel_ctx_setjmp(SELF_GETMEM(ctx_yield)) == FIRST_RETURN) {
-    f_to_call = h;
-    argument = arg;
+	if (marcel_ctx_setjmp(SELF_GETMEM(ctx_yield)) == FIRST_RETURN) {
+		f_to_call = h;
+		argument = arg;
 
-    pid->father = marcel_self();
+		pid->father = marcel_self();
 
-    initial_sp = MAL_BOT((unsigned long)marcel_ctx_get_sp(pid->ctx_yield)) -
-      TOP_STACK_FREE_AREA - 256;
+		initial_sp =
+		    MAL_BOT((unsigned long) marcel_ctx_get_sp(pid->ctx_yield)) -
+		    TOP_STACK_FREE_AREA - 256;
 
-    marcel_ctx_switch_stack(marcel_self(), pid, initial_sp, &arg);
+		marcel_ctx_switch_stack(marcel_self(), pid, initial_sp, &arg);
 
-    (*relai_func)(f_to_call, argument);
+		(*relai_func) (f_to_call, argument);
 
-    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR); // on ne doit jamais arriver ici !
-  }
-  marcel_ctx_destroyjmp(SELF_GETMEM(ctx_yield));
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);	// on ne doit jamais arriver ici !
+	}
+	marcel_ctx_destroyjmp(SELF_GETMEM(ctx_yield));
 }
 
 void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
-{ 
-  LOG_IN();
+{
+	LOG_IN();
 
-  ma_preempt_disable();
-  if (pid == marcel_self()) {
-    if (!ma_last_preempt() || pid->not_deviatable) {
-      marcel_lock_acquire(&deviate_lock);
-      marcel_deviate_record(pid, h, arg);
-      marcel_lock_release(&deviate_lock);
-      ma_preempt_enable();
-    } else {
-      ma_preempt_enable();
-      (*h)(arg);
-    }
-    LOG_OUT();
-    return;
-  }
-  // On prend ce verrou très tôt pour s'assurer que la tâche cible ne
-  // progresse pas au-delà d'un 'disable_deviation' pendant qu'on
-  // l'inspecte...
-  marcel_lock_acquire(&deviate_lock);
-  if (pid->not_deviatable) {
-    // Le thread n'est pas "déviable" en ce moment...
+	ma_preempt_disable();
+	if (pid == marcel_self()) {
+		if (!ma_last_preempt() || pid->not_deviatable) {
+			marcel_lock_acquire(&deviate_lock);
+			marcel_deviate_record(pid, h, arg);
+			marcel_lock_release(&deviate_lock);
+			ma_preempt_enable();
+		} else {
+			ma_preempt_enable();
+			(*h) (arg);
+		}
+		LOG_OUT();
+		return;
+	}
+	// On prend ce verrou très tôt pour s'assurer que la tâche cible ne
+	// progresse pas au-delà d'un 'disable_deviation' pendant qu'on
+	// l'inspecte...
+	marcel_lock_acquire(&deviate_lock);
+	if (pid->not_deviatable) {
+		// Le thread n'est pas "déviable" en ce moment...
 
-    marcel_deviate_record(pid, h, arg);
+		marcel_deviate_record(pid, h, arg);
 
-    marcel_lock_release(&deviate_lock);
-    ma_preempt_enable();
+		marcel_lock_release(&deviate_lock);
+		ma_preempt_enable();
 
-    LOG_OUT();
-    return;
-  }
+		LOG_OUT();
+		return;
+	}
+	// En premier lieu, il faut empêcher la tâche 'cible' de changer
+	// d'état
+	//state_lock(pid);
 
-  // En premier lieu, il faut empêcher la tâche 'cible' de changer
-  // d'état
-  //state_lock(pid);
-
-  // TODO: quand le thread n'est pas actif, utiliser marcel_do_deviate()
-  // (plus efficace)
+	// TODO: quand le thread n'est pas actif, utiliser marcel_do_deviate()
+	// (plus efficace)
 #ifdef MA__WORK
-  marcel_deviate_record(pid, h, arg);
-  
-  marcel_lock_release(&deviate_lock);
-  ma_preempt_enable();
+	marcel_deviate_record(pid, h, arg);
 
-  ma_wake_up_state(pid,MA_TASK_INTERRUPTIBLE|MA_TASK_FROZEN);
+	marcel_lock_release(&deviate_lock);
+	ma_preempt_enable();
 
-  LOG_OUT();
-  return;
+	ma_wake_up_state(pid, MA_TASK_INTERRUPTIBLE | MA_TASK_FROZEN);
+
+	LOG_OUT();
+	return;
 #else
 	// Tant pis !
-  MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
+	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif
 
-  LOG_OUT();
+	LOG_OUT();
 }
 
 void marcel_enable_deviation(void)
 {
-  marcel_t cur = marcel_self();
+	marcel_t cur = marcel_self();
 
-  ma_preempt_disable();
-  marcel_lock_acquire(&deviate_lock);
+	ma_preempt_disable();
+	marcel_lock_acquire(&deviate_lock);
 
-  if(--cur->not_deviatable == 0)
-    do_execute_deviate_work();
+	if (--cur->not_deviatable == 0)
+		do_execute_deviate_work();
 
-  marcel_lock_release(&deviate_lock);
-  ma_preempt_enable();
+	marcel_lock_release(&deviate_lock);
+	ma_preempt_enable();
 }
 
 void marcel_disable_deviation(void)
 {
-  ma_preempt_disable();
-  marcel_lock_acquire(&deviate_lock);
+	ma_preempt_disable();
+	marcel_lock_acquire(&deviate_lock);
 
-  ++SELF_GETMEM(not_deviatable);
+	++SELF_GETMEM(not_deviatable);
 
-  marcel_lock_release(&deviate_lock);
-  ma_preempt_enable();
+	marcel_lock_release(&deviate_lock);
+	ma_preempt_enable();
 }

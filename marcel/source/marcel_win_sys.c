@@ -28,48 +28,46 @@
 void *ISOADDR_AREA_TOP;
 static void *ISOADDR_AREA_BOTTOM;
 
-void* win_mmap(void* __addr, size_t __len)
+void *win_mmap(void *__addr, size_t __len)
 {
-  return __addr;
+	return __addr;
 }
 
-int win_munmap(void* __addr, size_t __len)
+int win_munmap(void *__addr, size_t __len)
 {
-  return 0;
+	return 0;
 }
 
-#endif // WIN_SYS
+#endif				// WIN_SYS
 
 void marcel_win_sys_init(int *argc, char *argv[])
 {
 #ifdef WIN_SYS
 #ifdef __CYGWIN__
-  ISOADDR_AREA_BOTTOM = mmap(NULL,
-	     ISOADDR_AREA_SIZE,
-	     PROT_READ | PROT_WRITE,
-	     MMAP_MASK,
-	     FILE_TO_MAP, 0);
+	ISOADDR_AREA_BOTTOM = mmap(NULL,
+	    ISOADDR_AREA_SIZE,
+	    PROT_READ | PROT_WRITE, MMAP_MASK, FILE_TO_MAP, 0);
 
-  if(ISOADDR_AREA_BOTTOM == MAP_FAILED) {
-    perror("mmap");
-    exit(1);
-  }
+	if (ISOADDR_AREA_BOTTOM == MAP_FAILED) {
+		perror("mmap");
+		exit(1);
+	}
 #else
-  ISOADDR_AREA_BOTTOM = HeapAlloc(GetProcessHeap(), 0, ISOADDR_AREA_SIZE);
-  if(! ISOADDR_AREA_BOTTOM) {
-    fprintf(stderr,"HeapAlloc() failed (%ld)",GetLastError());
-    exit(1);
-  }
+	ISOADDR_AREA_BOTTOM = HeapAlloc(GetProcessHeap(), 0, ISOADDR_AREA_SIZE);
+	if (!ISOADDR_AREA_BOTTOM) {
+		fprintf(stderr, "HeapAlloc() failed (%ld)", GetLastError());
+		exit(1);
+	}
 #endif
 
-  ISOADDR_AREA_TOP = ISOADDR_AREA_BOTTOM + ISOADDR_AREA_SIZE;
+	ISOADDR_AREA_TOP = ISOADDR_AREA_BOTTOM + ISOADDR_AREA_SIZE;
 
-  // Ajustements pour aligner sur une frontière de THREAD_SLOT_SIZE
-  ISOADDR_AREA_BOTTOM = (void *)(((unsigned long)ISOADDR_AREA_BOTTOM +
-                                  THREAD_SLOT_SIZE-1) & ~(THREAD_SLOT_SIZE-1));
-  ISOADDR_AREA_TOP = (void *)((unsigned long)ISOADDR_AREA_TOP & 
-                              ~(THREAD_SLOT_SIZE-1));
-  mdebug("isoaddr from %p to %p\n", ISOADDR_AREA_BOTTOM, ISOADDR_AREA_TOP);
+	// Ajustements pour aligner sur une frontière de THREAD_SLOT_SIZE
+	ISOADDR_AREA_BOTTOM = (void *) (((unsigned long) ISOADDR_AREA_BOTTOM +
+		THREAD_SLOT_SIZE - 1) & ~(THREAD_SLOT_SIZE - 1));
+	ISOADDR_AREA_TOP = (void *) ((unsigned long) ISOADDR_AREA_TOP &
+	    ~(THREAD_SLOT_SIZE - 1));
+	mdebug("isoaddr from %p to %p\n", ISOADDR_AREA_BOTTOM,
+	    ISOADDR_AREA_TOP);
 #endif
 }
-

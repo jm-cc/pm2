@@ -32,26 +32,26 @@ enum policy_t {
 };
 
 typedef struct _ma_allocator_t {
-  enum policy_t policy;
-  union {
-	  ma_container_t * obj;
-	  unsigned long offset;
-  } container;
-  void *(*create)(void *);
-  void *create_arg;
+	enum policy_t policy;
+	union {
+		ma_container_t *obj;
+		unsigned long offset;
+	} container;
+	void *(*create) (void *);
+	void *create_arg;
 
-  void (*destroy)(void *, void *);
-  void *destroy_arg;
+	void (*destroy) (void *, void *);
+	void *destroy_arg;
 
-  int conservative;
-  int max_size;
-  int init;
+	int conservative;
+	int max_size;
+	int init;
 } ma_allocator_t;
 
 typedef struct {
-  unsigned long cur;
-  ma_spinlock_t lock;
-  unsigned long max;
+	unsigned long cur;
+	ma_spinlock_t lock;
+	unsigned long max;
 } ma_per_sth_cur_t;
 
 #section marcel_macros

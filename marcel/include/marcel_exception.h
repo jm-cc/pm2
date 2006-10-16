@@ -59,8 +59,8 @@ typedef struct marcel_exception_block marcel_exception_block_t;
 #depend "asm/marcel_ctx.h[structures]"
 
 struct marcel_exception_block {
-  marcel_ctx_t ctx;
-  struct marcel_exception_block *old_blk;
+	marcel_ctx_t ctx;
+	struct marcel_exception_block *old_blk;
 };
 
 #section variables

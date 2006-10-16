@@ -16,118 +16,116 @@
 
 #include "marcel.h"
 
-void ma_container_add(ma_container_t * container, void * obj) 
+void ma_container_add(ma_container_t * container, void *obj)
 {
-  ma_node_t * new_node;
+	ma_node_t *new_node;
 
-  /* Mode conservatif */
-  if(container->conservative == 1)
-    {
-      /*On alloue un nouveau noeud separement*/
-      new_node = ma_obj_alloc(ma_node_allocator);
-    }
-  /* Mode non conservatif */
-  else
-    {
-      /*On stocke le noeud dans l'objet*/
-      new_node = ((ma_node_t *)obj);
-    }
+	/* Mode conservatif */
+	if (container->conservative == 1) {
+		/*On alloue un nouveau noeud separement */
+		new_node = ma_obj_alloc(ma_node_allocator);
+	}
+	/* Mode non conservatif */
+	else {
+		/*On stocke le noeud dans l'objet */
+		new_node = ((ma_node_t *) obj);
+	}
 
-  ma_lock_container(container);
+	ma_lock_container(container);
 
-  new_node->next_node = container->first_node;
-  new_node->obj = obj;
+	new_node->next_node = container->first_node;
+	new_node->obj = obj;
 
-  /* Ajoute le lien a la liste */
-  container->first_node = new_node;
+	/* Ajoute le lien a la liste */
+	container->first_node = new_node;
 
-  container->nb_element++;
+	container->nb_element++;
 
-  ma_unlock_container(container);
+	ma_unlock_container(container);
 }
 
-void * ma_container_get(ma_container_t * container) 
+void *ma_container_get(ma_container_t * container)
 {
-  ma_node_t * node;
-  void * obj;
+	ma_node_t *node;
+	void *obj;
 
-  if (!container->first_node)
-    return NULL;
+	if (!container->first_node)
+		return NULL;
 
-  ma_lock_container(container);
+	ma_lock_container(container);
 
-  node = container->first_node;
+	node = container->first_node;
 
-  if (!node)
-    {
-      ma_unlock_container(container);
-      return NULL;
-    }
+	if (!node) {
+		ma_unlock_container(container);
+		return NULL;
+	}
 
-  /* Si la liste n'est pas vide */
-  /* Recupere le premier noeud et le retire de la liste */
+	/* Si la liste n'est pas vide */
+	/* Recupere le premier noeud et le retire de la liste */
 
-  container->first_node = node->next_node;
-  obj = node->obj;
+	container->first_node = node->next_node;
+	obj = node->obj;
 
-  if(container->conservative == 1)
-    ma_obj_free(ma_node_allocator, node);
+	if (container->conservative == 1)
+		ma_obj_free(ma_node_allocator, node);
 
-  container->nb_element--;
+	container->nb_element--;
 
-  ma_unlock_container(container);
-  /* Retourne l'objet */
-  return obj;
+	ma_unlock_container(container);
+	/* Retourne l'objet */
+	return obj;
 }
 
-void ma_container_fini(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg )
+void ma_container_fini(ma_container_t * container, void (*destroy) (void *,
+	void *), void *destroy_arg)
 {
-  void * ptr1, * ptr2;
+	void *ptr1, *ptr2;
 
-  ma_lock_container(container);
+	ma_lock_container(container);
 
-  ptr1 = container->first_node;
-  
-  while(ptr1)
-    {
-      ptr2 = ptr1;
-      ptr1 = ((ma_node_t *)ptr1)->next_node;
-      /* Supprime l' objet */
-      if(destroy)
-	destroy(((ma_node_t *)ptr2)->obj, destroy_arg);
-      if (container->conservative == 1)
-        {
-          /* Supprime le noeud */
-          ma_obj_free(ma_node_allocator, ptr2);
-        }
-    }
+	ptr1 = container->first_node;
+
+	while (ptr1) {
+		ptr2 = ptr1;
+		ptr1 = ((ma_node_t *) ptr1)->next_node;
+		/* Supprime l' objet */
+		if (destroy)
+			destroy(((ma_node_t *) ptr2)->obj, destroy_arg);
+		if (container->conservative == 1) {
+			/* Supprime le noeud */
+			ma_obj_free(ma_node_allocator, ptr2);
+		}
+	}
 }
 
 int ma_container_nb_element(ma_container_t * container)
 {
-  return container->nb_element;
+	return container->nb_element;
 }
 
 int ma_container_plein(ma_container_t * container)
 {
-  return container->max_size && ma_container_nb_element(container) >= container->max_size; 
+	return container->max_size
+	    && ma_container_nb_element(container) >= container->max_size;
 }
 
 void ma_lock_container(ma_container_t * container)
 {
-  ma_spin_lock(&(container->lock));
+	ma_spin_lock(&(container->lock));
 }
 
 void ma_unlock_container(ma_container_t * container)
 {
-  ma_spin_unlock(&(container->lock));
+	ma_spin_unlock(&(container->lock));
 }
 
-void ma_container_init(ma_container_t * container, int conservative, int max_size)
+void ma_container_init(ma_container_t * container, int conservative,
+    int max_size)
 {
-    container->first_node = NULL;
-    container->nb_element = 0;
-    container->conservative = conservative;
-    container->max_size = max_size;
-    ma_spin_lock_init(&container->lock);
+	container->first_node = NULL;
+	container->nb_element = 0;
+	container->conservative = conservative;
+	container->max_size = max_size;
+	ma_spin_lock_init(&container->lock);
 }

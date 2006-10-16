@@ -31,16 +31,15 @@
  */
 static tbx_flag_t marcel_activity = tbx_flag_clear;
 
-int
-marcel_test_activity(void)
+int marcel_test_activity(void)
 {
-  tbx_bool_t result = tbx_false;
+	tbx_bool_t result = tbx_false;
 
-  LOG_IN();
-  result = tbx_flag_test(&marcel_activity);
-  LOG_OUT();
+	LOG_IN();
+	result = tbx_flag_test(&marcel_activity);
+	LOG_OUT();
 
-  return result;
+	return result;
 }
 
 /*
@@ -68,232 +67,238 @@ void marcel_initialize(int* argc, char**argv)
 }
 #endif
 
-static void marcel_parse_cmdline_early(int *argc, char **argv, tbx_bool_t do_not_strip)
+static void marcel_parse_cmdline_early(int *argc, char **argv,
+    tbx_bool_t do_not_strip)
 {
-  int i, j;
+	int i, j;
 #ifdef MA__LWPS
-  unsigned __nb_lwp = 0;
+	unsigned __nb_lwp = 0;
 #endif
 
-  if (!argc)
-    return;
+	if (!argc)
+		return;
 
-  i = j = 1;
+	i = j = 1;
 
-  while(i < *argc) {
-    if(!strcmp(argv[i], "--marcel-top")) {
-      argv[j++] = argv[i++];
-      argv[j++] = argv[i++];
-      continue;
-    } else
-    if(!strcmp(argv[i], "--marcel-xtop")) {
-      argv[j++] = argv[i++];
-      continue;
-    } else
+	while (i < *argc) {
+		if (!strcmp(argv[i], "--marcel-top")) {
+			argv[j++] = argv[i++];
+			argv[j++] = argv[i++];
+			continue;
+		} else if (!strcmp(argv[i], "--marcel-xtop")) {
+			argv[j++] = argv[i++];
+			continue;
+		} else
 #ifdef MA__LWPS
-    if(!strcmp(argv[i], "--marcel-nvp")) {
-      if(i == *argc-1) {
-	fprintf(stderr,
-		"Fatal error: --marcel-nvp option must be followed "
-		"by <nb_of_virtual_processors>.\n");
-	exit(1);
-      }
-      if(do_not_strip) {
-	__nb_lwp = atoi(argv[i+1]);
-	if(__nb_lwp < 1 || __nb_lwp > MA_NR_LWPS) {
-	  fprintf(stderr,
-		  "Error: nb of VP should be between 1 and %d\n",
-		  MA_NR_LWPS);
-	  exit(1);
-	}
-	argv[j++] = argv[i++];
-	argv[j++] = argv[i++];
-      } else
-	i += 2;
-      continue;
-    } else
-    if(!strcmp(argv[i], "--marcel-cpustride")) {
-      if(i == *argc-1) {
-	fprintf(stderr,
-		"Fatal error: --marcel-cpustride option must be followed "
-		"by <nb_of_processors_to_seek>.\n");
-	exit(1);
-      }
-      if(do_not_strip) {
-	marcel_cpu_stride = atoi(argv[i+1]);
-	if(marcel_cpu_stride < 0) {
-	  fprintf(stderr, "Error: CPU stride should be positive\n");
-	  exit(1);
-	}
-	argv[j++] = argv[i++];
-	argv[j++] = argv[i++];
-      } else
-	i += 2;
-      continue;
-    } else
+		if (!strcmp(argv[i], "--marcel-nvp")) {
+			if (i == *argc - 1) {
+				fprintf(stderr,
+				    "Fatal error: --marcel-nvp option must be followed "
+				    "by <nb_of_virtual_processors>.\n");
+				exit(1);
+			}
+			if (do_not_strip) {
+				__nb_lwp = atoi(argv[i + 1]);
+				if (__nb_lwp < 1 || __nb_lwp > MA_NR_LWPS) {
+					fprintf(stderr,
+					    "Error: nb of VP should be between 1 and %d\n",
+					    MA_NR_LWPS);
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
+			continue;
+		} else if (!strcmp(argv[i], "--marcel-cpustride")) {
+			if (i == *argc - 1) {
+				fprintf(stderr,
+				    "Fatal error: --marcel-cpustride option must be followed "
+				    "by <nb_of_processors_to_seek>.\n");
+				exit(1);
+			}
+			if (do_not_strip) {
+				marcel_cpu_stride = atoi(argv[i + 1]);
+				if (marcel_cpu_stride < 0) {
+					fprintf(stderr,
+					    "Error: CPU stride should be positive\n");
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
+			continue;
+		} else
 #ifdef MA__NUMA
-    if(!strcmp(argv[i], "--marcel-maxarity")) {
-      if(i == *argc-1) {
-	fprintf(stderr,
-		"Fatal error: --marcel-maxarity option must be followed "
-		"by <maximum_topology_arity>.\n");
-	exit(1);
-      }
-      if(do_not_strip) {
-	marcel_topo_max_arity = atoi(argv[i+1]);
-	if(marcel_topo_max_arity < 0) {
-	  fprintf(stderr, "Error: Maximum topology arity should be positive\n");
-	  exit(1);
-	}
-	argv[j++] = argv[i++];
-	argv[j++] = argv[i++];
-      } else
-	i += 2;
-      continue;
-    } else
+		if (!strcmp(argv[i], "--marcel-maxarity")) {
+			if (i == *argc - 1) {
+				fprintf(stderr,
+				    "Fatal error: --marcel-maxarity option must be followed "
+				    "by <maximum_topology_arity>.\n");
+				exit(1);
+			}
+			if (do_not_strip) {
+				marcel_topo_max_arity = atoi(argv[i + 1]);
+				if (marcel_topo_max_arity < 0) {
+					fprintf(stderr,
+					    "Error: Maximum topology arity should be positive\n");
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
+			continue;
+		} else
 #endif
 #endif
-    if(!strncmp(argv[i], "--marcel", 8)) {
-      fprintf(stderr,"--marcel flags are:\n"
-	  "--marcel-top file		Dump a top-like output to file\n"
-	  "--marcel-top |cmd		Same as above, but to command cmd via a pipe\n"
-	  "--marcel-xtop		Same as above, in a freshly created xterm\n"
+		if (!strncmp(argv[i], "--marcel", 8)) {
+			fprintf(stderr, "--marcel flags are:\n"
+			    "--marcel-top file		Dump a top-like output to file\n"
+			    "--marcel-top |cmd		Same as above, but to command cmd via a pipe\n"
+			    "--marcel-xtop		Same as above, in a freshly created xterm\n"
 #ifdef MA__LWPS
-	  "--marcel-nvp n		Force number of VPs to n\n"
-	  "--marcel-cpustride stride	Allocate VPs every stride cpus\n"
+			    "--marcel-nvp n		Force number of VPs to n\n"
+			    "--marcel-cpustride stride	Allocate VPs every stride cpus\n"
 #ifdef MA__NUMA
-	  "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
+			    "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
 #endif
 #endif
-      );
-      exit(1);
-    } else
-      argv[j++] = argv[i++];
-  }
-  *argc = j;
-  argv[j] = NULL;
+			    );
+			exit(1);
+		} else
+			argv[j++] = argv[i++];
+	}
+	*argc = j;
+	argv[j] = NULL;
 
-  if(do_not_strip) {
+	if (do_not_strip) {
 #ifdef MA__LWPS
-    marcel_lwp_fix_nb_vps(__nb_lwp);
-    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d>\n", __nb_lwp, marcel_cpu_stride);
+		marcel_lwp_fix_nb_vps(__nb_lwp);
+		mdebug
+		    ("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d>\n",
+		    __nb_lwp, marcel_cpu_stride);
 #endif
-  }
+	}
 }
 
-static void marcel_parse_cmdline_lastly(int *argc, char **argv, tbx_bool_t do_not_strip)
+static void marcel_parse_cmdline_lastly(int *argc, char **argv,
+    tbx_bool_t do_not_strip)
 {
-  int i, j;
+	int i, j;
 
-  if (!argc)
-    return;
+	if (!argc)
+		return;
 
-  i = j = 1;
+	i = j = 1;
 
-  while(i < *argc) {
-    if(!strcmp(argv[i], "--marcel-top")) {
-      if (i == *argc-1) {
-	fprintf(stderr,
-		"Fatal error: --marcel-top option must be followed "
-		"by <out_file>.\n");
-	exit(1);
-      }
-      if(do_not_strip) {
-	if (marcel_init_top(argv[i+1])) {
-	  fprintf(stderr,
-		  "Error: invalid top out_file %s\n",argv[i+1]);
-	  exit(1);
+	while (i < *argc) {
+		if (!strcmp(argv[i], "--marcel-top")) {
+			if (i == *argc - 1) {
+				fprintf(stderr,
+				    "Fatal error: --marcel-top option must be followed "
+				    "by <out_file>.\n");
+				exit(1);
+			}
+			if (do_not_strip) {
+				if (marcel_init_top(argv[i + 1])) {
+					fprintf(stderr,
+					    "Error: invalid top out_file %s\n",
+					    argv[i + 1]);
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
+			continue;
+		} else if (!strcmp(argv[i], "--marcel-xtop")) {
+			if (do_not_strip) {
+				if (marcel_init_top
+				    ("|xterm -S//0 -geometry 120x26")) {
+					fprintf(stderr,
+					    "Error: can't launch xterm\n");
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+			} else
+				i++;
+		} else
+			argv[j++] = argv[i++];
 	}
-	argv[j++] = argv[i++];
-	argv[j++] = argv[i++];
-      } else
-	i += 2;
-      continue;
-    } else
-    if(!strcmp(argv[i], "--marcel-xtop")) {
-      if (do_not_strip) {
-        if (marcel_init_top("|xterm -S//0 -geometry 120x26")) {
-	  fprintf(stderr, "Error: can't launch xterm\n");
-	  exit(1);
-	}
-	argv[j++] = argv[i++];
-      } else
-	i++;
-    } else
-      argv[j++] = argv[i++];
-  }
-  *argc = j;
-  argv[j] = NULL;
+	*argc = j;
+	argv[j] = NULL;
 }
 
 void marcel_strip_cmdline(int *argc, char *argv[])
 {
-  marcel_parse_cmdline_early(argc, argv, tbx_false);
+	marcel_parse_cmdline_early(argc, argv, tbx_false);
 
-  marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
+	marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
 
-  marcel_parse_cmdline_lastly(argc, argv, tbx_false);
+	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 }
 
 // Cannot start some internal threads or activations.
 // When completed, fork calls are still allowed.
 void marcel_init_data(int *argc, char *argv[])
 {
-  static volatile tbx_bool_t already_called = tbx_false;
+	static volatile tbx_bool_t already_called = tbx_false;
 
-  // Only execute this function once
-  if(already_called)
-    return;
-  already_called = tbx_true;
+	// Only execute this function once
+	if (already_called)
+		return;
+	already_called = tbx_true;
 
-  // Parse command line
-  marcel_parse_cmdline_early(argc, argv, tbx_true);
+	// Parse command line
+	marcel_parse_cmdline_early(argc, argv, tbx_true);
 
-  // Windows/Cygwin specific stuff
-  marcel_win_sys_init(argc, argv);
+	// Windows/Cygwin specific stuff
+	marcel_win_sys_init(argc, argv);
 
-  marcel_init_section(MA_INIT_SCHEDULER);
+	marcel_init_section(MA_INIT_SCHEDULER);
 
-  // Initialize debug facilities
-  marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
+	// Initialize debug facilities
+	marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
-  marcel_parse_cmdline_lastly(argc, argv, tbx_true);
+	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
 // When completed, some threads/activations may be started
 // Fork calls are now prohibited in non libpthread versions
 void marcel_start_sched(int *argc, char *argv[])
 {
-  // Start scheduler (i.e. run LWP/activations, start timer)
-  marcel_init_section(MA_INIT_START_LWPS);
-  marcel_activity = tbx_flag_set;
+	// Start scheduler (i.e. run LWP/activations, start timer)
+	marcel_init_section(MA_INIT_START_LWPS);
+	marcel_activity = tbx_flag_set;
 }
 
 void marcel_purge_cmdline(int *argc, char *argv[])
 {
-  static volatile tbx_bool_t already_called = tbx_false;
+	static volatile tbx_bool_t already_called = tbx_false;
 
-  marcel_init_section(MA_INIT_MAX_PARTS);
+	marcel_init_section(MA_INIT_MAX_PARTS);
 
-  // Only execute this function once
-  if(already_called)
-    return;
-  already_called = tbx_true;
+	// Only execute this function once
+	if (already_called)
+		return;
+	already_called = tbx_true;
 
-  // Remove marcel-specific arguments from command line
-  marcel_strip_cmdline(argc, argv);
+	// Remove marcel-specific arguments from command line
+	marcel_strip_cmdline(argc, argv);
 }
 
 void marcel_finish_prepare(void)
 {
-  marcel_gensched_shutdown();
+	marcel_gensched_shutdown();
 }
 
 void marcel_finish(void)
 {
-  marcel_slot_exit();
-  ma_topo_exit();
-  marcel_exit_top();
+	marcel_slot_exit();
+	ma_topo_exit();
+	marcel_exit_top();
 }
 
 #ifndef STANDARD_MAIN
@@ -303,11 +308,11 @@ extern int marcel_main(int argc, char *argv[]);
 #ifdef WIN_SYS
 void win_stack_allocate(unsigned n)
 {
-  int tab[n];
+	int tab[n];
 
-  tab[0] = 0;
+	tab[0] = 0;
 }
-#endif // WIN_SYS
+#endif				// WIN_SYS
 
 volatile int __marcel_main_ret;
 marcel_ctx_t __ma_initial_main_ctx;
@@ -475,7 +480,8 @@ static void call_init_function(const __ma_init_info_t *infos) {
         infos->func();
 }
 
-void marcel_init_section(int sec) {
+void marcel_init_section(int sec)
+{
 	int section;
 
 	/* Quick registration */
@@ -483,108 +489,102 @@ void marcel_init_section(int sec) {
 	//pm2debug_setup(&marcel_mdebug,PM2DEBUG_SHOW,PM2DEBUG_ON);
 
 	mdebug("Asked for level %d (%s)\n",
-	       ma_init_start[sec].prio,
-	       ma_init_start[sec].debug);
-	for (section=0; section<=sec; section++) {
+	    ma_init_start[sec].prio, ma_init_start[sec].debug);
+	for (section = 0; section <= sec; section++) {
 		if (ma_init_done[section])
 			continue;
 		mdebug("Init running level %d (%s)\n",
-		       ma_init_start[section].prio,
-		       ma_init_start[section].debug);
+		    ma_init_start[section].prio, ma_init_start[section].debug);
 
-                if (section == MA_INIT_SELF) {
+		if (section == MA_INIT_SELF) {
 #ifdef PROFILE
-		profile_init();
+			profile_init();
 #endif
-		  ma_linux_sched_init0();
+			ma_linux_sched_init0();
 #ifdef MA__LIBPTHREAD
-		  ma_check_lpt_sizes();
+			ma_check_lpt_sizes();
 #endif
-                  call_init_function(&ma_init_info_main_thread_init);
+			call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
-                  call_init_function(&ma_init_info_topo_discover);
-		  call_init_function(&ma_init_info_marcel_topology_notifier_register);
-		  call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
-#endif // MA__LWPS
-                }
-                else if (section == MA_INIT_MAIN_LWP) {
-		  ma_allocator_init();
-		  ma_deviate_init();
-		  ma_signals_init();
+			call_init_function(&ma_init_info_topo_discover);
+			call_init_function(&ma_init_info_marcel_topology_notifier_register);
+			call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
+#endif				// MA__LWPS
+		} else if (section == MA_INIT_MAIN_LWP) {
+			ma_allocator_init();
+			ma_deviate_init();
+			ma_signals_init();
 #ifdef PROFILE
-                  call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
-#endif // PROFILE
-                  call_init_function(&ma_init_info_marcel_debug_init_auto);
-                  call_init_function(&ma_init_info_marcel_slot_init);
-		  ma_sched_init();
+			call_init_function(&ma_init_info_marcel_int_catcher_call_ONLINE);
+#endif				// PROFILE
+			call_init_function(&ma_init_info_marcel_debug_init_auto);
+			call_init_function(&ma_init_info_marcel_slot_init);
+			ma_sched_init();
 #ifdef MA__BUBBLES
-                  call_init_function(&ma_init_info_bubble_sched_init);
-#endif // MA__BUBBLES
-                  call_init_function(&ma_init_info_linux_sched_init);
+			call_init_function(&ma_init_info_bubble_sched_init);
+#endif				// MA__BUBBLES
+			call_init_function(&ma_init_info_linux_sched_init);
 #ifdef MA__BUBBLES
-		  ma_bubble_sched_init2();
-#endif // MA__BUBBLES
-                  call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
+			ma_bubble_sched_init2();
+#endif				// MA__BUBBLES
+			call_init_function(&ma_init_info_marcel_lwp_call_UP_PREPARE);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
-                  call_init_function(&ma_init_info_marcel_random_lwp_call_UP_PREPARE);
-#endif // LINUX_SYS || GNU_SYS
-                  call_init_function(&ma_init_info_marcel_lwp_call_ONLINE);
-                  call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
-                  call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
-                  call_init_function(&ma_init_info_timer_start);
+			call_init_function(&ma_init_info_marcel_random_lwp_call_UP_PREPARE);
+#endif				// LINUX_SYS || GNU_SYS
+			call_init_function(&ma_init_info_marcel_lwp_call_ONLINE);
+			call_init_function(&ma_init_info_marcel_generic_sched_call_UP_PREPARE);
+			call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
+			call_init_function(&ma_init_info_timer_start);
 #ifndef __MINGW32__
 #ifdef MA__TIMER
-                  call_init_function(&ma_init_info_sig_init);
-#endif // MA__TIMER
+			call_init_function(&ma_init_info_sig_init);
+#endif				// MA__TIMER
 #endif
-                  call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
-                  call_init_function(&ma_init_info_softirq_init);
-                  call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
-                  call_init_function(&ma_init_info_marcel_io_init);
+			call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
+			call_init_function(&ma_init_info_softirq_init);
+			call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
+			call_init_function(&ma_init_info_marcel_io_init);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
-                  call_init_function(&ma_init_info_marcel_random_lwp_notifier_register);
-#endif // LINUX_SYS || GNU_SYS
-                  call_init_function(&ma_init_info_marcel_lwp_notifier_register);
-                  call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
-                  call_init_function(&ma_init_info_marcel_postexit_notifier_register);
+			call_init_function(&ma_init_info_marcel_random_lwp_notifier_register);
+#endif				// LINUX_SYS || GNU_SYS
+			call_init_function(&ma_init_info_marcel_lwp_notifier_register);
+			call_init_function(&ma_init_info_marcel_generic_sched_notifier_register);
+			call_init_function(&ma_init_info_marcel_postexit_notifier_register);
 #ifndef __MINGW32__
-                  call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
+			call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
 #ifdef MA__TIMER
-                  call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
+			call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
 #endif
 #endif
-                  call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
-                  call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);
-                  call_init_function(&ma_init_info_marcel_timers_notifier_register);
-                  call_init_function(&ma_init_info_marcel_lwp_finished);
-                }
-                else if (section == MA_INIT_SCHEDULER) {
+			call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
+			call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);
+			call_init_function(&ma_init_info_marcel_timers_notifier_register);
+			call_init_function(&ma_init_info_marcel_lwp_finished);
+		} else if (section == MA_INIT_SCHEDULER) {
 #ifdef MA__ACTIVATION
-                  call_init_function(&ma_init_info_marcel_upcall_call_UP_PREPARE)
-#endif // MA__ACTIVATION
-                    call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
-                    call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
+			call_init_function(&ma_init_info_marcel_upcall_call_UP_PREPARE);
+#endif				// MA__ACTIVATION
+			call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
+			call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
 #ifdef MA__TIMER
-                    call_init_function(&ma_init_info_marcel_sig_timer_call_ONLINE);
+			call_init_function(&ma_init_info_marcel_sig_timer_call_ONLINE);
 #endif
-                    call_init_function(&ma_init_info_marcel_ksoftirqd_call_UP_PREPARE);
-                    call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
-                }
-                else if (section == MA_INIT_START_LWPS) {
+			call_init_function(&ma_init_info_marcel_ksoftirqd_call_UP_PREPARE);
+			call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
+		} else if (section == MA_INIT_START_LWPS) {
 #ifdef MA__LWPS
-                  call_init_function(&ma_init_info_marcel_gensched_start_lwps);
-#endif // MA__LWPS
+			call_init_function(&ma_init_info_marcel_gensched_start_lwps);
+#endif				// MA__LWPS
 #ifdef MA__ACTIVATION
-                  call_init_function(&ma_init_info_init_upcalls);
-#endif //MA__ACTIVATION
+			call_init_function(&ma_init_info_init_upcalls);
+#endif				//MA__ACTIVATION
 #ifdef MA__BUBBLES
-		  ma_bubble_sched_start();
-#endif //MA__BUBBLES
-                }
+			ma_bubble_sched_start();
+#endif				//MA__BUBBLES
+		}
 
-		ma_init_done[section]=1;
+		ma_init_done[section] = 1;
 	}
 	mdebug("Init running level %d (%s) done\n",
-	       ma_init_start[sec].prio,
-	       ma_init_start[sec].debug);
+	    ma_init_start[sec].prio, ma_init_start[sec].debug);
 }

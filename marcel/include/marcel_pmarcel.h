@@ -181,8 +181,8 @@ extern int pmarcel_detach (pmarcel_t __th) __THROW;
 /* Obtain the identifier of the current thread.  */
 extern pmarcel_t pmarcel_self (void) __THROW TBX_CONST;
 
-/* Compare two thread identifiers.  */
-extern int pmarcel_equal (pmarcel_t __thread1, pmarcel_t __thread2) __THROW;
+/* Compare two thread identifiers.  macro dans marcel_threads.h*/
+//extern int pmarcel_equal (pmarcel_t __thread1, pmarcel_t __thread2) __THROW;
 
 
 /* Thread attribute handling.  */
@@ -623,6 +623,25 @@ extern int pmarcel_getcpuclockid (pmarcel_t __thread_id,
 extern int pmarcel_atfork (void (*__prepare) (void),
 			   void (*__parent) (void),
 			   void (*__child) (void)) __THROW;
+
+/***************************autres fonctions**************************/
+extern int pmarcel_mutexattr_getprioceiling(__const pmarcel_mutexattr_t *
+       __restrict attr, int *__restrict prioceiling) __THROW;
+extern int pmarcel_mutexattr_setprioceiling(pmarcel_mutexattr_t *attr,
+       int prioceiling) __THROW;
+extern int pmarcel_mutexattr_getprotocol(__const pmarcel_mutexattr_t *
+       __restrict attr, int *__restrict protocol);
+extern int pmarcel_mutexattr_setprotocol(pmarcel_mutexattr_t *attr,
+       int protocol);
+extern int pmarcel_condattr_getclock(__const pmarcel_condattr_t *__restrict attr,
+       clockid_t *__restrict clock_id);
+extern int pmarcel_condattr_setclock(pmarcel_condattr_t *attr,
+       clockid_t clock_id); 
+
+extern int pmarcel_mutex_getprioceiling(__const pmarcel_mutex_t *__restrict mutex,
+       int *__restrict prioceiling);
+extern int pmarcel_mutex_setprioceiling(pmarcel_mutex_t *__restrict mutex,
+       int prioceiling, int *__restrict old_ceiling); 
 
 __TBX_END_DECLS
 

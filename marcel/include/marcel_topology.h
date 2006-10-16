@@ -107,99 +107,101 @@ typedef unsigned marcel_vpmask_t;
 #define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
 
 #section functions
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask);
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t * mask);
 #section inline
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t * mask)
 {
-  *mask = MARCEL_VPMASK_EMPTY;
+	*mask = MARCEL_VPMASK_EMPTY;
 }
+
 #section functions
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask);
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t * mask);
 #section inline
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t * mask)
 {
-  *mask = MARCEL_VPMASK_FULL;
+	*mask = MARCEL_VPMASK_FULL;
 }
+
 #section functions
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
-					    unsigned vp);
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t * mask,
+    unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
-					    unsigned vp)
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t * mask,
+    unsigned vp)
 {
 #ifdef MA__LWPS
-  *mask |= 1U << vp;
+	*mask |= 1U << vp;
 #else
-  marcel_vpmask_fill(mask);
+	marcel_vpmask_fill(mask);
 #endif
 }
 
 #section functions
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
-					     unsigned vp);
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t * mask,
+    unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
-					     unsigned vp)
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t * mask,
+    unsigned vp)
 {
 #ifdef MA__LWPS
-  *mask = 1U << vp;
+	*mask = 1U << vp;
 #else
-  marcel_vpmask_fill(mask);
+	marcel_vpmask_fill(mask);
 #endif
 }
 
 #section functions
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
-					    unsigned vp);
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t * mask,
+    unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
-					    unsigned vp)
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t * mask,
+    unsigned vp)
 {
 #ifdef MA__LWPS
-  *mask &= ~(1U << vp);
+	*mask &= ~(1U << vp);
 #else
-  marcel_vpmask_empty(mask);
+	marcel_vpmask_empty(mask);
 #endif
 }
 
 #section functions
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
-						unsigned vp);
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
+    unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
-						unsigned vp)
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
+    unsigned vp)
 {
 #ifdef MA__LWPS
-  *mask = ~(1U << vp);
+	*mask = ~(1U << vp);
 #else
-  marcel_vpmask_empty(mask);
+	marcel_vpmask_empty(mask);
 #endif
 }
 
 #section functions
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
-						unsigned vp);
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
+    unsigned vp);
 #section inline
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
-						unsigned vp)
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
+    unsigned vp)
 {
 #ifdef MA__LWPS
-  return 1 & (*mask >> vp);
+	return 1 & (*mask >> vp);
 #else
-  return *mask;
+	return *mask;
 #endif
 }
 
 #section marcel_functions
-static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask);
+static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask);
 #section marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask)
+static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask)
 {
 #ifdef MA__LWPS
-  return ma_hweight_long(*mask);
+	return ma_hweight_long(*mask);
 #else
-  return *mask;
+	return *mask;
 #endif
 }
 
@@ -211,7 +213,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void);
 #depend "sys/marcel_lwp.h[variables]"
 static __tbx_inline__ unsigned __marcel_current_vp(void)
 {
-  return LWP_NUMBER(LWP_SELF);
+	return LWP_NUMBER(LWP_SELF);
 }
 #define marcel_current_vp __marcel_current_vp
 

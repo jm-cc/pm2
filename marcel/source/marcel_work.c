@@ -20,18 +20,12 @@
 
 void ma_do_work(marcel_t self)
 {
-  if(HAS_DEVIATE_WORK(self)) {
-    marcel_execute_deviate_work();
-    return;
-  }
+	if (HAS_DEVIATE_WORK(self)) {
+		marcel_execute_deviate_work();
+		return;
+	}
 
-  MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+	MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
 
 #endif
-
-
-
-
-
-

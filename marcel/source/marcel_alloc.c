@@ -15,17 +15,21 @@
  */
 
 #include "marcel.h"
-
+#include "errno.h"
 #include <unistd.h>
 #ifndef __MINGW32__
 #include <sys/mman.h>
 #endif
 #include <fcntl.h>
+#include <errno.h>
 
 #if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <asm/ldt.h>
+#ifdef X86_64_ARCH
+#include <asm/prctl.h>
+#endif
 #endif
 
 static void *next_slot;
@@ -48,8 +52,11 @@ extern void _dl_deallocate_tls(void *, int) libc_internal_function;
 extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp) libc_internal_function;
 extern void _rtld_global_ro;
 ma_allocator_t *marcel_tls_slot_allocator;
-#if defined(X86_ARCH) || defined(X86_64_ARCH)
+#if defined(X86_ARCH)
 unsigned short __main_thread_desc;
+#endif
+#if defined(X86_64_ARCH)
+unsigned long __main_thread_tls_base;
 #endif
 #endif
 
@@ -137,8 +144,8 @@ static void *tls_slot_alloc(void *foo) {
 	// j'aimerais bien qu'on m'explique pourquoi la glibc stocke cela ici.....
 	uintptr_t *sysinfo = &_rtld_global_ro + 
 	/* gdb /usr/lib/debug/ld-linux.so.2
-	 * > p (unsigned long) &_rtld_global_ro.sysinfo - (unsigned long) &_rtld_global_ro; */
-#ifdef X86_ARCH
+	 * > p (unsigned long) &_rtld_global_ro._dl_sysinfo - (unsigned long) &_rtld_global_ro; */
+#if defined(X86_ARCH)
 		384
 #elif defined(IA64_ARCH)
 		176
@@ -151,7 +158,7 @@ static void *tls_slot_alloc(void *foo) {
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 #ifdef X86_64_ARCH
 	/* because else we can't use ldt */
-	MA_BUG_ON((unsigned long) ptr > (1ul<<32));
+	MA_BUG_ON((unsigned long) ptr >= (1ul<<32));
 #endif
 	struct user_desc desc = {
 		.entry_number = (SLOT_AREA_TOP - (unsigned long) ptr) / THREAD_SLOT_SIZE - 1,
@@ -166,7 +173,7 @@ static void *tls_slot_alloc(void *foo) {
 	};
 	int ret = syscall(SYS_modify_ldt, 0x11, &desc, sizeof(desc));
 	if (ret != 0) {
-		fprintf(stderr,"entry #%u address %lx failed: %s", desc.entry_number, desc.base_addr, strerror(ret));
+		fprintf(stderr,"entry #%u address %lx failed: %s", desc.entry_number, desc.base_addr, strerror(errno));
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 #endif
@@ -246,7 +253,7 @@ static void __marcel_init marcel_slot_init(void)
 #ifdef X86_ARCH
 	asm volatile ("movw %%gs, %w0" : "=q" (__main_thread_desc));
 #elif defined(X86_64_ARCH)
-	asm volatile ("movw %%fs, %w0" : "=q" (__main_thread_desc));
+	arch_prctl(ARCH_GET_FS, &__main_thread_tls_base);
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,

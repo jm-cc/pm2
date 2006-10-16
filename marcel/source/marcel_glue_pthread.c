@@ -24,79 +24,116 @@
 #include <semaphore.h>
 
 
-int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
-                         void * (*start_routine)(void *), void *arg)
-{ 
-  static int _launched=0;
-  marcel_attr_t new_attr;
+int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
+    void *(*start_routine) (void *), void *arg)
+{
+	LOG_IN();
+	static int _launched = 0;
+	marcel_attr_t new_attr;
 
-  if (__builtin_expect(_launched, 1)==0) {
-    marcel_start_sched(NULL, NULL);
-  }
+	if (__builtin_expect(_launched, 1) == 0) {
+		marcel_start_sched(NULL, NULL);
+	}
 
-  if (attr != NULL)
-    {
-      int policy;
-      pmarcel_attr_getschedpolicy((pmarcel_attr_t*)attr,&policy);
+	if (attr != NULL) {
+		int policy;
+		pmarcel_attr_getschedpolicy((pmarcel_attr_t *) attr, &policy);
 
-   /* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
-     the old size and access to the new members might crash the program.
-     We convert the struct now.  */
-      new_attr = marcel_attr_default;
-      memcpy (&new_attr, attr,
-              (size_t) &(((marcel_attr_t*)NULL)->user_space));
-      // Le cast par (void*) est demandé par gcc pour respecter la norme C
-      // sinon, on a:
-      // warning: dereferencing type-punned pointer will break strict-aliasing rules
+		/* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
+		   the old size and access to the new members might crash the program.
+		   We convert the struct now.  */
+
+		new_attr = marcel_attr_default;
+
+		memcpy(&new_attr, attr,
+		    (size_t) & (((marcel_attr_t *) NULL)->user_space));
+
+		if (new_attr.__inheritsched == PTHREAD_INHERIT_SCHED) {
+			/* détermination des attributs du thread courant 
+			   (marcel priority, scope, marcel policy) */
+
+			marcel_t cthread = marcel_self();
+
+			/* marcel policy, marcel priority : qu'on stocke dans new_attr */
+			marcel_getschedparam(cthread, &new_attr.__schedpolicy,
+			    &new_attr.__schedparam);
+			/* and scope */
+			marcel_vpmask_t vpmask;
+			marcel_get_vpmask(cthread, &vpmask);
+			if (vpmask == MARCEL_VPMASK_EMPTY)
+				marcel_attr_setscope(&new_attr,
+				    PTHREAD_SCOPE_PROCESS);
+			else
+				marcel_attr_setscope(&new_attr,
+				    PTHREAD_SCOPE_SYSTEM);
+
+			/* détermination de la policy POSIX du thread courant
+			   d'après la priorité Marcel et la préemption */
+			int mprio = cthread->sched.internal.entity.prio;
+			if (mprio >= MA_DEF_PRIO)
+				policy = SCHED_OTHER;
+			else if (mprio <= MA_RT_PRIO) {
+				if (marcel_some_thread_is_preemption_disabled
+				    (cthread))
+					policy = SCHED_FIFO;
+				else
+					policy = SCHED_RR;
+			}
+			/* policy et priority POSIX déterminées */
+		}
+
+		/* on ajoute les caractéristiques du thread courant au nouvel attribut :
+		   préemption, scope (policy et priority marcel déja fait) */
 
 		/* désactivation de la préemption */
-      if (policy == SCHED_FIFO)
-	       marcel_attr_setpreemptible(&new_attr,0);
+		if (policy == SCHED_FIFO)
+			marcel_attr_setpreemptible(&new_attr, 0);
 
-      attr = (pthread_attr_t*)(void*)&new_attr;
-    }
-  return marcel_create ((marcel_t*)thread, (marcel_attr_t*)attr,
-			start_routine, arg);
+		if (new_attr.__scope == PTHREAD_SCOPE_SYSTEM) {
+			unsigned lwp = marcel_add_lwp();
+			marcel_attr_setvpmask(&new_attr,
+			    MARCEL_VPMASK_ALL_BUT_VP(lwp));
+		}
+		attr = (pthread_attr_t *) (void *) &new_attr;
+	}
+	LOG_OUT();
+	return marcel_create((marcel_t *) thread, (marcel_attr_t *) attr,
+	    start_routine, arg);
 }
 
-versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
+versioned_symbol(libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
 /*********************pthread_self***************************/
 
-DEF_POSIX(pmarcel_t, self, (void), (), 
-{
-   return (pmarcel_t)marcel_self();
-})
+DEF_POSIX(pmarcel_t, self, (void), (), {
+    LOG_IN(); LOG_OUT(); return (pmarcel_t) marcel_self();}
+
+)
 
 lpt_t lpt_self(void)
 {
-   return (lpt_t)pmarcel_self();
+	LOG_IN();
+	LOG_OUT();
+	return (lpt_t) pmarcel_self();
 }
 
 DEF_PTHREAD(pthread_t, self, (void), ())
-DEF___PTHREAD(pthread_t, self, (void), ())
-
+    DEF___PTHREAD(pthread_t, self, (void), ())
 
 
 //static void pthread_initialize() __attribute__((constructor));
-
 /* Appelé par la libc. Non utilisée par marcel */
 void __pthread_initialize_minimal(void)
 {
 	//marcel_init_section(MA_INIT_MAIN_LWP);
-#ifdef PM2DEBUG
-	printf("Initialisation mini libpthread marcel-based\n");
-#endif
+	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 
 /* Appelé par la libc. Non utilisée par marcel */
-void __pthread_initialize(int* argc, char**argv)
+void __pthread_initialize(int *argc, char **argv)
 {
 	//marcel_init_section(MA_INIT_MAIN_LWP);
-#ifdef PM2DEBUG
-	printf("__Initialisation libpthread marcel-based\n");
-#endif
-	
+	mdebug("__Initialisation libpthread marcel-based\n");
 }
 
 //strong_alias(pthread_initialize,__pthread_initialize);
@@ -111,30 +148,34 @@ static void pthread_finalize()
 
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {
-  return thread1 == thread2;
+	LOG_IN();
+	LOG_OUT();
+	return thread1 == thread2;
 }
 
 #ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire
 #endif
 #if 0
-strong_alias(_pthread_cleanup_push_defer,_pthread_cleanup_push);
-strong_alias(_pthread_cleanup_pop_restore,_pthread_cleanup_pop);
+strong_alias(_pthread_cleanup_push_defer, _pthread_cleanup_push);
+strong_alias(_pthread_cleanup_pop_restore, _pthread_cleanup_pop);
 
 #warning _pthread_cleanup_push,restore à vérifier
-void _pthread_cleanup_push(struct _pthread_cleanup_buffer * buffer,
-                           void (*routine)(void *), void * arg)
+void _pthread_cleanup_push(struct _pthread_cleanup_buffer *buffer,
+    void (*routine) (void *), void *arg)
 {
+	LOG_IN();
+	LOG_OUT();
 	return marcel_cleanup_push(routine, arg);
 }
 
-void _pthread_cleanup_pop(struct _pthread_cleanup_buffer * buffer,
-                          int execute)
+void _pthread_cleanup_pop(struct _pthread_cleanup_buffer *buffer, int execute)
 {
+	LOG_IN();
+	LOG_OUT();
 	return marcel_cleanup_pop(execute);
 }
 #endif
-
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
 	LOG_IN();
 	/* Extension Real-Time non supportée */
@@ -201,6 +242,7 @@ off64_t __lseek64(int fd, off64_t offset, int whence) {
 	return ret ? ret : res;
 }
 strong_alias(__lseek64, lseek64)
+
 loff_t __llseek(int fd, loff_t offset, int whence) {
 	loff_t res;
 	int ret;

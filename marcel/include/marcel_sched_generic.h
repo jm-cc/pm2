@@ -35,7 +35,7 @@
 
 /****************************************************************/
 #section functions
-
+int marcel_time_suspend(const struct timespec *abstime);
 /* ==== `sleep' functions ==== */
 int pmarcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp);
 DEC_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp));
@@ -85,6 +85,9 @@ DEC_MARCEL_POSIX(int,sched_get_priority_max,(int policy) __THROW);
 int pmarcel_sched_get_priority_min(int policy);
 DEC_MARCEL_POSIX(int,sched_get_priority_min,(int policy) __THROW);
 
+#section marcel_functions
+extern MARCEL_PROTECTED signed long FASTCALL(ma_schedule_timeout(signed long timeout));
+extern void ma_process_timeout(unsigned long __data);
 
 #section macros
 #define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
@@ -170,6 +173,16 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 	t->sched.lwps_allowed = ~attr->vpmask; 
 	ma_set_task_state(t, MA_TASK_BORNING);
 	marcel_sched_internal_init_marcel_thread(t, &t->sched.internal, attr);
+}
+
+#section marcel_functions
+__tbx_inline__ static void 
+marcel_get_vpmask(marcel_task_t* __restrict t, marcel_vpmask_t *mask);
+#section marcel_inline
+__tbx_inline__ static void 
+marcel_get_vpmask(marcel_task_t* __restrict t, marcel_vpmask_t *mask)
+{
+	     *mask = ~t->sched.lwps_allowed;
 }
 
 #section sched_marcel_functions

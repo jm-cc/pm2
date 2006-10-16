@@ -14,89 +14,33 @@
 
 /* The "atfork" stuff */
 
-#include "marcel.h" //VD: 
-#ifdef MA__LIBPTHREAD
+#include "marcel.h"
 #include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "pthread.h"
-//VD: #include "internals.h"
-//VD: #include <bits/libc-lock.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
-struct handler_list {
-  void (*handler)(void);
-  struct handler_list * next;
-};
+extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
 
-static pmarcel_mutex_t pmarcel_atfork_lock = PMARCEL_MUTEX_INITIALIZER;
-static struct handler_list * pmarcel_atfork_prepare = NULL;
-static struct handler_list * pmarcel_atfork_parent = NULL;
-static struct handler_list * pmarcel_atfork_child = NULL;
-
-static void pmarcel_insert_list(struct handler_list ** list,
-                                void (*handler)(void),
-                                struct handler_list * newlist,
-                                int at_end)
+DEF_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child),
 {
-  if (handler == NULL) return;
-  if (at_end) {
-    while(*list != NULL) list = &((*list)->next);
-  }
-  newlist->handler = handler;
-  newlist->next = *list;
-  *list = newlist;
-}
+        return __register_atfork(prepare, parent, child, NULL); 
+})
 
-struct handler_list_block {
-  struct handler_list prepare, parent, child;
-};
+DEF_PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child));
+DEF___PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child));
 
-int __pmarcel_atfork(void (*prepare)(void),
-		     void (*parent)(void),
-		     void (*child)(void))
-{
-  struct handler_list_block * block =
-    (struct handler_list_block *) malloc(sizeof(struct handler_list_block));
-  if (block == NULL) return ENOMEM;
-  pmarcel_mutex_lock(&pmarcel_atfork_lock);
-  /* "prepare" handlers are called in LIFO */
-  pmarcel_insert_list(&pmarcel_atfork_prepare, prepare, &block->prepare, 0);
-  /* "parent" handlers are called in FIFO */
-  pmarcel_insert_list(&pmarcel_atfork_parent, parent, &block->parent, 1);
-  /* "child" handlers are called in FIFO */
-  pmarcel_insert_list(&pmarcel_atfork_child, child, &block->child, 1);
-  pmarcel_mutex_unlock(&pmarcel_atfork_lock);
-  return 0;
-}
-strong_alias (__pmarcel_atfork, pmarcel_atfork)
-DEF_PTHREAD(int, atfork, (void (*prepare)(void),
-			void (*parent)(void),
-			void (*child)(void)),
-		(prepare, parent, child))
-DEF___PTHREAD(int, atfork, (void (*prepare)(void),
-			void (*parent)(void),
-			void (*child)(void)),
-		(prepare, parent, child))
-
-static inline void pmarcel_call_handlers(struct handler_list * list)
-{
-  for (/*nothing*/; list != NULL; list = list->next) (list->handler)();
-}
-
-extern int __libc_fork(void);
+#ifdef MA__LIBPTHREAD
+extern pid_t __libc_fork(void);
 
 pid_t __fork(void)
 {
-  return __libc_fork ();
+        return __libc_fork();
 }
 
 weak_alias (__fork, fork);
-
-pid_t __vfork(void)
-{
-  return __fork();
-}
-weak_alias (__vfork, vfork);
-
-#endif /* MA__LIBPTHREAD */
+weak_alias (__fork, vfork);
+#endif

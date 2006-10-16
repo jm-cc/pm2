@@ -25,19 +25,20 @@
 DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared),(lock,pshared),
 {
 #ifdef MA__DEBUG
-   if ((pshared != MARCEL_PROCESS_SHARED)&&(pshared != MARCEL_PROCESS_PRIVATE))
-   {
-	   fprintf(stderr,"(p)marcel_spin_init : valeur pshared(%d) invalide",pshared);
-      return EINVAL;
-   }
+	if ((pshared != MARCEL_PROCESS_SHARED)
+	    && (pshared != MARCEL_PROCESS_PRIVATE)) {
+		fprintf(stderr,
+		    "(p)marcel_spin_init : valeur pshared(%d) invalide",
+		    pshared);
+		return EINVAL;
+	}
 #endif
-   if (pshared == MARCEL_PROCESS_SHARED)
-   {
-      fprintf(stderr,"%s not yet implemented\n", __func__);
-      return ENOTSUP;
-   }
-   ma_spin_lock_init(&lock->lock);
-   return 0;
+	if (pshared == MARCEL_PROCESS_SHARED) {
+		fprintf(stderr, "%s not yet implemented\n", __func__);
+		return ENOTSUP;
+	}
+	ma_spin_lock_init(&lock->lock);
+	return 0;
 })
 
 DEF_PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshared));
@@ -49,8 +50,8 @@ DEF___PTHREAD(int, spin_init,(pthread_spinlock_t *lock, int pshared),(lock,pshar
 
 DEF_MARCEL_POSIX(int, spin_destroy,(marcel_spinlock_t *lock),(lock),
 {
-   memset(lock,0x7E,sizeof(*lock));
-   return 0;
+	memset(lock, 0x7E, sizeof(*lock));
+	return 0;
 })
 
 DEF_PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock),(lock));
@@ -59,8 +60,8 @@ DEF___PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock),(lock));
 
 DEF_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock),(lock),
 {
-   _ma_raw_spin_lock(&lock->lock);
-   return 0;
+	_ma_raw_spin_lock(&lock->lock);
+	return 0;
 })
 
 DEF_PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
@@ -69,10 +70,10 @@ DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
 
 DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
 {
-   /*TODO : posixtestsuite veut un EINVAL si lock non initialisé */
-   if(!_ma_raw_spin_trylock(&lock->lock))
-      return EBUSY;
-   return 0;
+	/*TODO : posixtestsuite veut un EINVAL si lock non initialisé */
+	if (!_ma_raw_spin_trylock(&lock->lock))
+		return EBUSY;
+	return 0;
 })
 
 DEF_PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock),(lock,pshared));
@@ -81,8 +82,8 @@ DEF___PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock),(lock,pshared));
 
 DEF_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock),(lock),
 {
-   _ma_raw_spin_unlock(&lock->lock);
-   return 0;
+	_ma_raw_spin_unlock(&lock->lock);
+	return 0;
 })
 
 DEF_PTHREAD(int, spin_unlock,(pthread_spinlock_t *lock),(lock));

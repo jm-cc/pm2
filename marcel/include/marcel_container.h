@@ -25,16 +25,16 @@
 
 #section marcel_types
 typedef struct ma_node_t {
-  struct ma_node_t * next_node;
-  void * obj;
+	struct ma_node_t *next_node;
+	void *obj;
 } ma_node_t;
 
 typedef struct ma_container_t {
-  ma_node_t * first_node;
-  int nb_element;
-  int conservative;
-  int max_size;
-  ma_spinlock_t lock;
+	ma_node_t *first_node;
+	int nb_element;
+	int conservative;
+	int max_size;
+	ma_spinlock_t lock;
 } ma_container_t;
 
 #section marcel_functions

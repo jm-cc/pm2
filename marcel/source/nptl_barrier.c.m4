@@ -28,13 +28,11 @@ dnl  ***************************/
 
 #include "marcel_fastlock.h"
 
-/****************************************************************
- * BARRIERS
- */
+/************************BARRIERS**********************/
  
-/*****************/
+/********************/
 /* barrierattr_init */
-/*****************/
+/********************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, barrierattr_init,
 	  (pthread_barrierattr_t * attr),
@@ -47,15 +45,15 @@ DEF___LIBPTHREAD(int, barrierattr_init,
 REPLICATE_CODE([[dnl
 int prefix_barrierattr_init(prefix_barrierattr_t *attr)
 {
+        LOG_IN();  
   ((struct prefix_barrierattr *)attr)->pshared = PREFIX_PROCESS_PRIVATE;
-
-  return 0; 
+        LOG_RETURN(0); 
 }
 ]])
 
-/********************/
+/***********************/
 /* barrierattr_destroy */
-/********************/
+/***********************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, barrierattr_destroy,
 	  (pthread_barrierattr_t * attr),
@@ -68,14 +66,15 @@ DEF___LIBPTHREAD(int, barrierattr_destroy,
 REPLICATE_CODE([[dnl
 int prefix_barrierattr_destroy (prefix_barrierattr_t *attr)
 {
+        LOG_IN();       
         /* Nothing to do.  */
-        return 0;
+        LOG_RETURN(0);
 }
 ]])
 
-/***********************/
+/**************************/
 /* barrierattr_getpshared */
-/***********************/
+/**************************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, barrierattr_getpshared,
 	  (pthread_barrierattr_t * __restrict attr, int* __restrict pshared),
@@ -85,15 +84,15 @@ DEF_LIBPTHREAD(int, barrierattr_getpshared,
 REPLICATE_CODE([[dnl
 int prefix_barrierattr_getpshared(__const prefix_barrierattr_t *attr, int *pshared)
 {
-  *pshared = ((__const struct prefix_barrierattr *)attr)->pshared;
-
-  return 0;
+	LOG_IN();
+	*pshared = ((__const struct prefix_barrierattr *) attr)->pshared;
+	LOG_RETURN(0);
 }
 ]])
 
-/***********************/
+/**************************/
 /* barrierattr_setpshared */
-/***********************/
+/**************************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, barrierattr_setpshared,
 	  (pthread_barrierattr_t * attr, int pshared),
@@ -103,30 +102,26 @@ DEF_LIBPTHREAD(int, barrierattr_setpshared,
 REPLICATE_CODE([[dnl
 int prefix_barrierattr_setpshared (prefix_barrierattr_t *attr, int pshared)
 {
-  struct prefix_barrierattr *iattr;
+	LOG_IN();
+	struct prefix_barrierattr *iattr;
 
-  LOG_IN();
+	if (pshared != PREFIX_PROCESS_PRIVATE
+	    && __builtin_expect(pshared != PREFIX_PROCESS_SHARED, 0)) {
+		mdebug
+		    ("prefix_barrierattr_setpshared : valeur pshared(%d)  invalide\n",
+		    pshared);
+		LOG_RETURN(EINVAL);
+	}
 
-  if (pshared != PREFIX_PROCESS_PRIVATE
-      && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0))
-  {
-#ifdef MA__DEBUG
-	  fprintf(stderr,"prefix_barrierattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
-#endif
-	  LOG_RETURN(EINVAL);
-  }
+	if (pshared == PREFIX_PROCESS_SHARED) {
+		fprintf(stderr,
+		    "prefix_barrierattr_setpshared : valeur PROCESS_SHARED non supporté\n");
+		LOG_RETURN(ENOTSUP);
+	}
+	iattr = (struct prefix_barrierattr *) attr;
+	iattr->pshared = pshared;
 
-  if (pshared == PREFIX_PROCESS_SHARED)
-  {
-	  pm2debug("prefix_barrierattr_setpshared : shared mutex requested!\n");
-	  LOG_RETURN(ENOTSUP);   
-  }
-  
-  iattr = (struct prefix_barrierattr *)attr;
-
-  iattr->pshared = pshared;
-
-  LOG_RETURN(0);
+	LOG_RETURN(0);
 }
 ]])
 
@@ -134,63 +129,55 @@ int prefix_barrierattr_setpshared (prefix_barrierattr_t *attr, int pshared)
 /* marcel_barrier_setcount */
 /***************************/
 
-int marcel_barrier_setcount(marcel_barrier_t *barrier, unsigned int count)
+int marcel_barrier_setcount(marcel_barrier_t * barrier, unsigned int count)
 {
-  struct marcel_barrier *ibarrier;
+	LOG_IN();
+	struct marcel_barrier *ibarrier;
 
-  LOG_IN();
-  
-  ibarrier = (struct marcel_barrier *)barrier;
+	ibarrier = (struct marcel_barrier *) barrier;
 
-  marcel_lock_acquire(&ibarrier->lock.__spinlock);
-  
-  ibarrier->init_count = count;
-  ibarrier->leftB = count;
-  ibarrier->leftE = 0;
+	marcel_lock_acquire(&ibarrier->lock.__spinlock);
+	ibarrier->init_count = count;
+	ibarrier->leftB = count;
+	ibarrier->leftE = 0;
+	marcel_lock_release(&ibarrier->lock.__spinlock);
 
-  marcel_lock_release(&ibarrier->lock.__spinlock);
-
-  LOG_RETURN(0);
+	LOG_RETURN(0);
 }
 
 /***************************/
 /* marcel_barrier_getcount */
 /***************************/
 
-int marcel_barrier_getcount(const marcel_barrier_t *barrier, unsigned int *count)
+int marcel_barrier_getcount(const marcel_barrier_t * barrier,
+    unsigned int *count)
 {
-  LOG_IN();
-  
-  *count = ((__const struct marcel_barrier *)barrier)->init_count;
-  
-  LOG_RETURN(0);
+	LOG_IN();
+	*count = ((__const struct marcel_barrier *) barrier)->init_count;
+	LOG_RETURN(0);
 }
 
 /***************************/
 /* marcel_barrier_addcount */
 /***************************/
 
-int marcel_barrier_addcount(marcel_barrier_t *barrier, int addcount)
+int marcel_barrier_addcount(marcel_barrier_t * barrier, int addcount)
 {
-  struct marcel_barrier *ibarrier;
+	LOG_IN();
 
-  LOG_IN();
-  
-  ibarrier = (struct marcel_barrier *)barrier;
+	struct marcel_barrier *ibarrier;
+	ibarrier = (struct marcel_barrier *) barrier;
 
-  marcel_lock_acquire(&ibarrier->lock.__spinlock);
-  
-  ibarrier->init_count += addcount;
-  ibarrier->leftB += addcount;
+	marcel_lock_acquire(&ibarrier->lock.__spinlock);
+	ibarrier->init_count += addcount;
+	ibarrier->leftB += addcount;
+	marcel_lock_release(&ibarrier->lock.__spinlock);
 
-  marcel_lock_release(&ibarrier->lock.__spinlock);
-
-  LOG_RETURN(0);
+	LOG_RETURN(0);
 }
-
-/*************/
+/****************/
 /* barrier_init */
-/*************/
+/****************/
 
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_barrier_init,
@@ -202,53 +189,51 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
                         __const prefix_barrierattr_t *attr,
                         unsigned int count)
 {
-  struct prefix_barrier *ibarrier;
+	LOG_IN();
+	struct prefix_barrier *ibarrier;
 
-  LOG_IN();
+	if (__builtin_expect(count == 0, 0)) {
+		mdebug("prefix_barrier_init : valeur count(%d) invalide\n",
+		    count);
+		LOG_RETURN(EINVAL);
+	}
 
-  if (__builtin_expect (count == 0, 0))
-  {
-#ifdef MA__DEBUG
-	  fprintf(stderr,"prefix_barrier_init : valeur count(%d)  invalide\n",count);
-#endif
-	  LOG_RETURN(EINVAL);
-  }
+	if (attr != NULL) {
+		struct prefix_barrierattr *iattr;
+		iattr = (struct prefix_barrierattr *) attr;
 
-  if (attr != NULL)
-  {
-    struct prefix_barrierattr *iattr;
+		if (iattr->pshared != PREFIX_PROCESS_PRIVATE
+		    && __builtin_expect(iattr->pshared != PREFIX_PROCESS_SHARED,
+			0)) {
+			/* Invalid attribute.  */
+			mdebug
+			    ("prefix_barrier_init : valeur attr->pshared(%d) invalide\n",
+			    iattr->pshared);
+			LOG_RETURN(EINVAL);
+		}
 
-    iattr = (struct prefix_barrierattr *) attr;
+		if (iattr->pshared == PREFIX_PROCESS_SHARED) {
+			fprintf(stderr,
+			    "prefix_barrier_init : process shared nt supported\n");
+			LOG_RETURN(ENOTSUP);
+		}
 
-    if (iattr->pshared != PREFIX_PROCESS_PRIVATE
-   	 && __builtin_expect (iattr->pshared != PREFIX_PROCESS_SHARED, 0))
-	    /* Invalid attribute.  */
-	 {
-#ifdef MA__DEBUG
-	    fprintf(stderr,"prefix_barrier_init : valeur attr->pshared(%d) invalide\n",iattr->pshared);
-#endif
-	    LOG_RETURN(EINVAL);
-    }
-  
-	 if (iattr->pshared == PREFIX_PROCESS_SHARED)
-	    LOG_RETURN(ENOTSUP);
-  }
-   
-  ibarrier = (struct prefix_barrier *) barrier;
+		ibarrier = (struct prefix_barrier *) barrier;
 
-  /* Initialize the individual fields.  */
-  ibarrier->lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
-  ibarrier->init_count = count;
-  ibarrier->leftB = count;
-  ibarrier->leftE = 0;
-
-  LOG_RETURN(0);
+		/* Initialize the individual fields.  */
+		ibarrier->lock =
+		    (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
+		ibarrier->init_count = count;
+		ibarrier->leftB = count;
+		ibarrier->leftE = 0;
+	}
+	LOG_RETURN(0);
 }
 ]])
 
-/****************/
+/*******************/
 /* barrier_destroy */
-/****************/
+/*******************/
 
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_barrier_destroy,
@@ -258,30 +243,29 @@ versioned_symbol (libpthread, lpt_barrier_destroy,
 REPLICATE_CODE([[dnl
 int prefix_barrier_destroy (prefix_barrier_t *barrier)
 {
-  struct prefix_barrier *ibarrier;
-  int result = EBUSY;
+	LOG_IN();
+	struct prefix_barrier *ibarrier;
+	int result = EBUSY;
 
-  ibarrier = (struct prefix_barrier *) barrier;
+	ibarrier = (struct prefix_barrier *) barrier;
 
-  prefix_lock_acquire(&ibarrier->lock.__spinlock);
- 
-  if (__builtin_expect (ibarrier->leftE == 0, 1))
-  {  /* The barrier is not used anymore.  */
-     ibarrier->leftB = ibarrier->init_count;
-     ibarrier->leftE = 0;
-     result = 0;
-  }
-  else
-  {  /* Still used, return with an error.  */
-    prefix_lock_release(&ibarrier->lock.__spinlock);
-  }  
-  return result;
+	prefix_lock_acquire(&ibarrier->lock.__spinlock);
+
+	if (__builtin_expect(ibarrier->leftE == 0, 1)) {
+		/* The barrier is not used anymore.  */
+		ibarrier->leftB = ibarrier->init_count;
+		ibarrier->leftE = 0;
+		result = 0;
+	} else {		/* Still used, return with an error.  */
+		prefix_lock_release(&ibarrier->lock.__spinlock);
+	}
+	LOG_RETURN(result);
 }
 ]])
 
-/*************/
+/****************/
 /* barrier_wait */
-/*************/
+/****************/
 
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_barrier_wait,
@@ -291,96 +275,93 @@ versioned_symbol (libpthread, lpt_barrier_wait,
 REPLICATE_CODE([[dnl
 int prefix_barrier_wait(prefix_barrier_t *barrier)
 {
-  int result = 0;
+	LOG_IN();
+	int result = 0;
 
-  prefix_barrier_wait_begin(barrier);
+	prefix_barrier_wait_begin(barrier);
 
-  if (!prefix_barrier_wait_end(barrier))
-     result = PREFIX_BARRIER_SERIAL_THREAD;
-  return result; 
+	if (!prefix_barrier_wait_end(barrier))
+		result = PREFIX_BARRIER_SERIAL_THREAD;
+	LOG_RETURN(result);
 }
 ]])
 
 
-/*****************/
+/**********************/
 /* barrier_wait_begin */
-/*****************/
+/**********************/
 
 REPLICATE_CODE([[dnl
 int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
 {
-  struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
+	LOG_IN();
+	struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
-  prefix_lock_acquire(&ibarrier->lock.__spinlock);
+	prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
-  /* Are these all?  */
-  while (ibarrier->leftE){    
-     blockcell c;
-     __prefix_register_spinlocked(&ibarrier->lock, marcel_self(), &c);
-     INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-       c.blocked,
-       prefix_lock_release(&ibarrier->lock.__spinlock),
-	    prefix_lock_acquire(&ibarrier->lock.__spinlock));
-	
-  }
-  
-  ibarrier->leftB --;
-  int ret = ibarrier->leftB; 
+	/* Are these all?  */
+	while (ibarrier->leftE) {
+		blockcell c;
+		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+		    &c);
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		    prefix_lock_release(&ibarrier->lock.__spinlock),
+		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	}
 
-  if (!ibarrier->leftB)
-  {   
-     /* Wake up everybody.  */
-     do 
-     {} 
-     while (__prefix_unlock_spinlocked(&ibarrier->lock));
- 
-     ibarrier->leftB = ibarrier->init_count;
-     ibarrier->leftE = ibarrier->init_count;
-     
-  }
-  
-  prefix_lock_release(&ibarrier->lock.__spinlock);
+	ibarrier->leftB--;
+	int ret = ibarrier->leftB;
 
-  return ret;
+	if (!ibarrier->leftB) {
+		/* Wake up everybody.  */
+		do {
+		}
+		while (__prefix_unlock_spinlocked(&ibarrier->lock));
+
+		ibarrier->leftB = ibarrier->init_count;
+		ibarrier->leftE = ibarrier->init_count;
+	}
+
+	prefix_lock_release(&ibarrier->lock.__spinlock);
+
+	LOG_RETURN(ret);
 }
 ]])
 
-/*****************/
+/********************/
 /* barrier_wait_end */
-/*****************/
+/********************/
 
 REPLICATE_CODE([[dnl
 int prefix_barrier_wait_end(prefix_barrier_t *barrier)
 {
-  struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
+	struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
-  /* Make sure we are alone.  */
-  prefix_lock_acquire(&ibarrier->lock.__spinlock);
+	/* Make sure we are alone.  */
+	prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
-  /* Are these all?  */
-  while (!ibarrier->leftE){    
-     blockcell c;
-     __prefix_register_spinlocked(&ibarrier->lock, marcel_self(), &c);
-     INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-       c.blocked,
-       prefix_lock_release(&ibarrier->lock.__spinlock),
-	    prefix_lock_acquire(&ibarrier->lock.__spinlock));
-	
-  }
-    
-  ibarrier->leftE --;
-  int ret = ibarrier->leftE;
+	/* Are these all?  */
+	while (!ibarrier->leftE) {
+		blockcell c;
+		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+		    &c);
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		    prefix_lock_release(&ibarrier->lock.__spinlock),
+		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	}
 
-  if (!ibarrier->leftE)
-  {   
-     /* Wake up everybody.  */
-     do 
-     {} 
-     while (__prefix_unlock_spinlocked(&ibarrier->lock));
-  }
- 
-  prefix_lock_release(&ibarrier->lock.__spinlock);
+	ibarrier->leftE--;
+	int ret = ibarrier->leftE;
 
-  return ret;
+	if (!ibarrier->leftE) {
+		/* Wake up everybody.  */
+		do {
+		}
+		while (__prefix_unlock_spinlocked(&ibarrier->lock));
+	}
+
+	prefix_lock_release(&ibarrier->lock.__spinlock);
+
+	LOG_RETURN(ret);
 }
 ]])

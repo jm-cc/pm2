@@ -953,7 +953,7 @@ asmlinkage long sys_getegid(void)
 #endif
 #endif /* 0 */
 
-static void process_timeout(unsigned long __data)
+void ma_process_timeout(unsigned long __data)
 {
 	ma_wake_up_thread((marcel_task_t *)__data);
 }
@@ -986,7 +986,6 @@ static void process_timeout(unsigned long __data)
  */
 fastcall MARCEL_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 {
-	struct ma_timer_list timer;
 	unsigned long expire;
 
 	switch (timeout)
@@ -1021,16 +1020,9 @@ fastcall MARCEL_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 
 	expire = timeout + ma_jiffies;
 
-	ma_init_timer(&timer);
-	timer.expires = expire;
-	timer.data = (unsigned long) MARCEL_SELF;
-	timer.function = process_timeout;
-
-	SELF_GETMEM(timer) = &timer;
-	ma_add_timer(&timer);
+	ma_mod_timer(&SELF_GETMEM(schedule_timeout_timer), expire);
 	ma_schedule();
-	ma_del_timer_sync(&timer);
-	SELF_GETMEM(timer) = NULL;
+	ma_del_timer_sync(&SELF_GETMEM(schedule_timeout_timer));
 
 	timeout = expire - ma_jiffies;
 

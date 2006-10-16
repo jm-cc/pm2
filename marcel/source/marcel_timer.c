@@ -28,8 +28,28 @@
 #define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)
 #define sigprocmask(how,set,oset) syscall(SYS_rt_sigprocmask,how,set,oset,_NSIG/8)
 #define nanosleep(t1,t2) syscall(SYS_nanosleep,t1,t2)
-#define signal(sig,handler) syscall(SYS_signal,sig,handler)
 #define setitimer(which,val,oval) syscall(SYS_setitimer,which,val,oval)
+#ifdef SYS_signal
+#define signal(sig,handler) syscall(SYS_signal,sig,handler)
+#else
+#define signal(sig,handler) kernel_signal(sig,handler)
+static sighandler_t TBX_UNUSED signal(int sig, sighandler_t handler)
+{
+	struct sigaction act;
+	struct sigaction oact;
+
+	act.sa_handler = handler;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, sig);
+
+	act.sa_flags = SA_RESTART;
+	if (sigaction(sig, &act, &oact) < 0)
+		return SIG_ERR;
+
+	return oact.sa_handler;
+}
+
+#endif
 #endif
 
 ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
@@ -49,7 +69,7 @@ static volatile unsigned long __milliseconds = 0;
 
 unsigned long marcel_clock(void)
 {
-   return __milliseconds;
+	return __milliseconds;
 }
 
 // Softirq appellée par le timer

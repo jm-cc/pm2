@@ -26,42 +26,34 @@
 
 DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
+        LOG_IN();
 #ifdef MA__ACTIVATION
+	     LOG_OUT();
 	return nanosleep(rqtp, rmtp);
-#else
-	LOG_IN();
+#else	     
+        unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
 
-   unsigned long long nsec;
-
-   nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
-
-   if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0))
-   {
-#ifdef MA__DEBUG
-	  fprintf(stderr,"(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
-#endif
+        if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0)) {
+                mdebug("(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
   	   errno = EINVAL;
-      return -1;
+                LOG_RETURN(-1);
    }
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
    int todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
 
-   if (rmtp)
-	{
+        if (rmtp) {
 	   nsec = todosleep*(1000*marcel_gettimeslice());
       rmtp->tv_sec = nsec/1000000000;
       rmtp->tv_nsec = nsec%1000000000;
 	}
 
-   if (todosleep)
-	{
+        if (todosleep) {
 	   errno = EINTR;
-      return -1;
+				    LOG_RETURN(-1);
 	}
    else
       LOG_RETURN(0);
-
 #endif
 })
 
@@ -70,7 +62,9 @@ DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rm
 
 DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
+	     LOG_IN();
 #ifdef MA__ACTIVATION
+        LOG_OUT():
 	return usleep(usec);
 #else
 	LOG_IN();
@@ -87,14 +81,11 @@ DEF_POSIX(int,usleep,(unsigned long usec),(usec),
 {
 	LOG_IN();
 
-   if ((usec<0)||(usec>1000000))
-   {
-#ifdef MA__DEBUG
-	   fprintf(stderr,"(p)marcel_usleep : valeur usec(%ld) invalide\n",usec);
-#endif
-      errno = EINVAL;
-      return -1;
-   }
+	if ((usec < 0) || (usec > 1000000)) {
+		mdebug("(p)marcel_usleep : valeur usec(%ld) invalide\n", usec);
+		errno = EINVAL;
+		LOG_RETURN(-1);
+	}
 
 	marcel_usleep(usec);
 	LOG_RETURN(0);
@@ -105,16 +96,14 @@ DEF___C(int,usleep,(unsigned long usec),(usec));
 
 DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
 {
-#ifdef MA__ACTIVATION
-	return sleep(sec);
-#else
 	LOG_IN();
-
+#ifdef MA__ACTIVATION
+	LOG_RETURN(sleep(sec));
+#else
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((1000000*sec)/marcel_gettimeslice());
 
 	LOG_RETURN(0);
-
 #endif
 })
 
@@ -154,21 +143,21 @@ static tbx_bool_t a_new_thread;
 
 unsigned marcel_nbthreads(void)
 {
-   unsigned num = 0;
-   struct marcel_topo_level *vp;
-   for_all_vp(vp)
-      num += ma_topo_vpdata(vp,nb_tasks);
-   return num + 1;   /* + 1 pour le main */
+	unsigned num = 0;
+	struct marcel_topo_level *vp;
+	for_all_vp(vp)
+	    num += ma_topo_vpdata(vp, nb_tasks);
+	return num + 1;		/* + 1 pour le main */
 }
 
 int marcel_per_lwp_nbthreads()
 {
-   unsigned num = 0;
-   struct marcel_topo_level *vp;
+	unsigned num = 0;
+	struct marcel_topo_level *vp;
 
-   vp=GET_LWP(MARCEL_SELF)->vp_level;
-      num += ma_topo_vpdata(vp,nb_tasks);
-   return num + 1;   /* + 1 pour le main */
+	vp = GET_LWP(MARCEL_SELF)->vp_level;
+	num += ma_topo_vpdata(vp, nb_tasks);
+	return num + 1;		/* + 1 pour le main */
 }
 
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
@@ -176,13 +165,12 @@ int marcel_per_lwp_nbthreads()
 
 unsigned long marcel_createdthreads(void)
 {
-   unsigned long num = 0;
-   struct marcel_topo_level *vp;
-   for_all_vp(vp)
-      num += ma_topo_vpdata(vp,task_number);
-   return num;
+	unsigned long num = 0;
+	struct marcel_topo_level *vp;
+	for_all_vp(vp)
+	    num += ma_topo_vpdata(vp, task_number);
+	return num;
 }
-
 // Appele a chaque fois qu'une tache est creee (y compris par le biais
 // de end_hibernation).
 void marcel_one_more_task(marcel_t pid)
@@ -229,31 +217,31 @@ void marcel_one_task_less(marcel_t pid)
 
 static __tbx_inline__ int want_to_see(marcel_t t, int which)
 {
-  if(t->detached) {
-    if(which & NOT_DETACHED_ONLY)
-      return 0;
-  } else if(which & DETACHED_ONLY)
-    return 0;
+	if (t->detached) {
+		if (which & NOT_DETACHED_ONLY)
+			return 0;
+	} else if (which & DETACHED_ONLY)
+		return 0;
 
-  if(t->not_migratable) {
-    if(which & MIGRATABLE_ONLY)
-      return 0;
-  } else if(which & NOT_MIGRATABLE_ONLY)
-      return 0;
+	if (t->not_migratable) {
+		if (which & MIGRATABLE_ONLY)
+			return 0;
+	} else if (which & NOT_MIGRATABLE_ONLY)
+		return 0;
 
-  if(MA_TASK_IS_BLOCKED(t)) {
-    if(which & NOT_BLOCKED_ONLY)
-      return 0;
-  } else if(which & BLOCKED_ONLY)
-    return 0;
+	if (MA_TASK_IS_BLOCKED(t)) {
+		if (which & NOT_BLOCKED_ONLY)
+			return 0;
+	} else if (which & BLOCKED_ONLY)
+		return 0;
 
-  if(MA_TASK_IS_READY(t)) {
-    if(which & NOT_READY_ONLY)
-      return 0;
-  } else if(which & READY_ONLY)
-    return 0;
+	if (MA_TASK_IS_READY(t)) {
+		if (which & NOT_READY_ONLY)
+			return 0;
+	} else if (which & READY_ONLY)
+		return 0;
 
-  return 1;
+	return 1;
 }
 
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
@@ -264,7 +252,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 	struct marcel_topo_level *vp;
 
 
-	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
+	     if(((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
 		((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
 		((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
 		((which & READY_ONLY) && (which & NOT_READY_ONLY)))
@@ -540,7 +528,6 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 static void marcel_sched_lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
-
 	MA_BUG_ON(!ma_in_irq());
 
 #ifdef MA__LWPS
@@ -569,7 +556,6 @@ void __marcel_init marcel_gensched_start_lwps(void)
 	LOG_IN();
 	for(i=1; i<marcel_nbvps(); i++)
 		marcel_lwp_add_vp();
-	
 	mdebug("marcel_sched_init  : %i lwps created\n", marcel_nbvps());
 	LOG_OUT();
 }
@@ -587,14 +573,15 @@ void __marcel_init ma_sched_init(void)
 
 DEF_MARCEL_POSIX(int,sched_get_priority_max,(int policy),(policy),
 {
-   if ((policy == SCHED_RR)||(policy == SCHED_FIFO))
-	   return MA_MAX_USER_RT_PRIO;
+	LOG_IN();
+	if ((policy == SCHED_RR) || (policy == SCHED_FIFO))
+		LOG_RETURN(MA_MAX_USER_RT_PRIO);
 	else if (policy == SCHED_OTHER)
-	   return 0;
+		LOG_RETURN(0);
 
-	fprintf(stderr,"sched_get_priority_max : valeur policy(%d) invalide\n",policy);
+	mdebug("sched_get_priority_max : valeur policy(%d) invalide\n", policy);
 	errno = EINVAL;
-	return -1;
+	LOG_RETURN(-1);
 })
 
 DEF_C(int,sched_get_priority_max,(int policy),(policy));
@@ -602,12 +589,30 @@ DEF___C(int,sched_get_priority_max,(int policy),(policy));
 
 DEF_MARCEL_POSIX(int,sched_get_priority_min,(int policy),(policy),
 {
-   if ((policy == SCHED_RR)||(policy == SCHED_OTHER)||(policy == SCHED_FIFO))
-	   return 0;
-	fprintf(stderr,"sched_get_priority_min : valeur policy(%d) invalide\n",policy);
-   errno = EINVAL;
-   return -1;
+	LOG_IN();
+	if ((policy == SCHED_RR) || (policy == SCHED_OTHER)
+	    || (policy == SCHED_FIFO))
+		LOG_RETURN(0);
+	mdebug("sched_get_priority_min : valeur policy(%d) invalide\n", policy);
+	errno = EINVAL;
+	LOG_RETURN(-1);
 })
 
 DEF_C(int,sched_get_priority_min,(int policy),(policy));
 DEF___C(int,sched_get_priority_min,(int policy),(policy));
+
+
+int marcel_time_suspend(const struct timespec *abstime)
+{
+        LOG_IN();
+        unsigned long long nsec = abstime->tv_nsec + 1000000000*abstime->tv_sec;
+        if ((abstime->tv_nsec<0)||(abstime->tv_nsec > 999999999)||(abstime->tv_sec < 0)) {
+                mdebug("marcel_time_suspend : valeur nsec(%ld) invalide\n",abstime->tv_nsec);
+                errno = EINVAL;
+                LOG_RETURN(-1);
+        }
+
+        ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+        LOG_OUT();
+        return ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
+}

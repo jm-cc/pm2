@@ -9,6 +9,7 @@ MARCEL {
     marcel_yield;
     marcel_*;
     pmarcel_*;
+    _pmarcel_*;
     ma_*;
     __ma_*;
     tselect;
@@ -92,12 +93,14 @@ GLIBC_2.0 {
     __errno_location; __h_errno_location;
 
     # Functions which previously have been overwritten.
-    sigwait; sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
+    sigwait;
+	 sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
     raise;
+	 sigpause; __sigpause;
 
     # défini dans libc, mais on écrase
     sigsuspend; signal; __signal; __sysv_signal; sigpending; __sigpending;
-    sigprocmask;  __sigprocmask;
+    sigprocmask;  __sigprocmask; 
     setjmp; sigsetjmp; __sigsetjmp;
     usleep; sleep; alarm; getitimer; setitimer;
     sched_get_priority_min; sched_get_priority_max;
@@ -127,11 +130,16 @@ GLIBC_2.1 {
 
     pthread_getconcurrency; pthread_setconcurrency;
 
+    sigtimedwait; sigwaitinfo;
+
     # Semaphores.
     sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
 
     __libc_current_sigrtmin; __libc_current_sigrtmax;
     __libc_allocate_rtsig;
+
+	 sighold; __sighold; sigrelse; __sigrelse ; 
+	 sigignore; __sigignore; sigset; __sigset;
 } GLIBC_2.0;
 GLIBC_2.1.1 {
   global:

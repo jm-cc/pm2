@@ -23,7 +23,8 @@
 #section types
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;
-typedef p_marcel_task_t marcel_t, pmarcel_t, lpt_t;
+typedef p_marcel_task_t marcel_t, lpt_t;
+typedef unsigned long int pmarcel_t;
 typedef struct marcel_sched_param marcel_sched_param_t;
 
 #section marcel_macros
@@ -67,9 +68,9 @@ typedef struct marcel_sched_param marcel_sched_param_t;
    allocated for them. */
 struct _marcel_rwlock_t;
 typedef struct _marcel_rwlock_info {
-  struct _marcel_rwlock_info *pr_next;
-  struct _marcel_rwlock_t *pr_lock;
-  int pr_lock_count;
+	struct _marcel_rwlock_info *pr_next;
+	struct _marcel_rwlock_t *pr_lock;
+	int pr_lock_count;
 } marcel_readlock_info;
 
 struct marcel_task {
@@ -119,11 +120,13 @@ struct marcel_task {
 	unsigned exline;
 	/* Clés */
 	any_t key[MAX_KEY_SPECIFIC];
+	/* Timer pour ma_schedule_timeout */
+	struct ma_timer_list schedule_timeout_timer;
 
 	/* Pile */
 	any_t stack_base;
 	int static_stack;
-	long initial_sp;
+	long initial_sp, depl;
 
 	/* Identification du thread */
 	char name[MARCEL_MAXNAMESIZE];
@@ -131,7 +134,6 @@ struct marcel_task {
 	int number;
 
 	/* itimer & co */
-	struct ma_timer_list *timer;
 
 	/* mutex & co */
 	marcel_sem_t suspend_sem;
@@ -169,26 +171,28 @@ struct marcel_task {
 #endif
 
 /*********signaux***********/
-      ma_spinlock_t siglock;
-      marcel_sigset_t sigpending;
-      marcel_sigset_t curmask;
-      int interrupted;
-      int delivering_sig;
-      int restart_deliver_sig;
-/********sigwait**********/
-      marcel_sigset_t waitset;
-      int *waitsig;
+	ma_spinlock_t siglock;
+	marcel_sigset_t sigpending;
+	siginfo_t siginfo[MARCEL_NSIG];      
+	marcel_sigset_t curmask;
+	int interrupted;
+	int delivering_sig;
+	int restart_deliver_sig;
+	/********sigtimedwait**********/
+	marcel_sigset_t waitset;
+	int *waitsig;
+	siginfo_t *waitinfo;
 #ifdef MA__IFACE_PMARCEL
-/*********attributs*********/
-      ma_spinlock_t cancellock;
-      int cancelstate;
-      int canceltype;
-      int canceled;
+	/*********attributs*********/
+	ma_spinlock_t cancellock;
+	int cancelstate;
+	int canceltype;
+	int canceled;
 #endif
 
 #ifdef MA__PROVIDE_TLS
 	/* TLS Exec (non dynamique) */
-      char tls[MA_TLS_AREA_SIZE];
+	char tls[MA_TLS_AREA_SIZE];
 #endif
 	/* Statistiques */
 	ma_stats_t stats;
@@ -218,26 +222,30 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
 MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 {
-  marcel_t self;
+	marcel_t self;
 #ifdef MARCEL_SELF_IN_REG
-  self = (marcel_t)get_gs();
+	self = (marcel_t) get_gs();
 #else
-  register unsigned long sp = get_sp();
+	register unsigned long sp = get_sp();
 
 #ifdef STANDARD_MAIN
-  if(IS_ON_MAIN_STACK(sp))
-    self = &__main_thread_struct;
-  else
+	if (IS_ON_MAIN_STACK(sp))
+		self = &__main_thread_struct;
+	else
 #endif
+	{
 #ifdef ENABLE_STACK_JUMPING
-    self = *((marcel_t *)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *))));
+		self = *((marcel_t *) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
+			    THREAD_SLOT_SIZE - sizeof(void *))));
 #else
-    self = (marcel_t)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE) -
-		      MAL(sizeof(marcel_task_t)));
+		self = (marcel_t) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
+			THREAD_SLOT_SIZE) - MAL(sizeof(marcel_task_t)));
 #endif
-  MA_BUG_ON(sp>=(unsigned long)self && sp<(unsigned long)(self+1));
+		MA_BUG_ON(sp >= (unsigned long) self
+		    && sp < (unsigned long) (self + 1));
+	}
 #endif
-  return self;
+	return self;
 }
 
 #section marcel_macros

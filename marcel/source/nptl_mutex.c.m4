@@ -48,11 +48,10 @@ REPLICATE_CODE([[dnl
 int prefix_mutex_init (prefix_mutex_t *mutex, 
 		       const prefix_mutexattr_t * mutexattr)
 {
-	mdebug("initializing mutex %p by %p\n", 
-	       mutex, marcel_self());
-   
+        LOG_IN();
+        mdebug("initializing mutex %p by %p\n", mutex, marcel_self());
 	__marcel_init_lock(&mutex->__data.__lock);
-	return 0;
+        LOG_RETURN(0);
 }
 ]], [[MARCEL]])
 
@@ -66,10 +65,9 @@ static const struct prefix_mutexattr prefix_default_attr =
 int prefix_mutex_init (prefix_mutex_t *mutex, 
 		       const prefix_mutexattr_t * mutexattr)
 {
+        LOG_IN();
 	const struct prefix_mutexattr *imutexattr;
-
-	mdebug("initializing mutex %p by %p\n", 
-	       mutex, marcel_self());
+        mdebug("initializing mutex %p by %p\n", mutex, marcel_self());
 
 #if MA__MODE == MA__MODE_LPT
 	MA_BUG_ON (sizeof (lpt_mutex_t) > __SIZEOF_LPT_MUTEX_T);
@@ -90,7 +88,8 @@ int prefix_mutex_init (prefix_mutex_t *mutex,
 	// mutex->__spins = 0;        already done by memset
 	
         __prefix_init_lock(&mutex->__data.__lock);
-	return 0;
+        
+        LOG_RETURN(0);
 }
 ]], [[PMARCEL LPT]])
 
@@ -105,11 +104,12 @@ DEF___LIBPTHREAD(int, mutex_destroy, (pthread_mutex_t * mutex), (mutex))
 REPLICATE_CODE([[dnl
 int prefix_mutex_destroy(prefix_mutex_t * mutex)
 {
-#if MA__MODE == MA__MODE_LPT || MA__MODE == MA__MODE_PMARCEL
-  if (mutex->__data.__nusers != 0)
-    return EBUSY;
-#endif
-  return 0;
+        LOG_IN();
+        /* #if MA__MODE == MA__MODE_LPT || MA__MODE == MA__MODE_PMARCEL */
+        /*    if (mutex->__data.__nusers != 0) */
+        /*       return EBUSY; */
+        /* #endif */
+        LOG_RETURN(0);
 }
 ]],[[MARCEL PMARCEL LPT]])
 
@@ -125,35 +125,33 @@ DEF___LIBPTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 REPLICATE_CODE([[dnl
 int prefix_mutex_lock(prefix_mutex_t * mutex)
 {
+        LOG_IN();
    struct marcel_task *id = MARCEL_SELF;
    __marcel_lock(&mutex->__data.__lock, id);
-   return 0;
+        LOG_RETURN(0);
 }
 ]], [[MARCEL]])
 
 REPLICATE_CODE([[dnl
 int prefix_mutex_lock(prefix_mutex_t * mutex)
 {
+        LOG_IN();
 	struct marcel_task *id = MARCEL_SELF;
 
 #if MA__MODE == MA__MODE_LPT
 	MA_BUG_ON (sizeof (mutex->__size) < sizeof (mutex->__data));
 #endif
-	switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP))
-	{
+        switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP)) {
 		/* Recursive mutex.  */
 	case PREFIX_MUTEX_RECURSIVE_NP:
 		/* Check whether we already hold the mutex.  */
-		if (mutex->__data.__owner == id)
-		{
+                        if (mutex->__data.__owner == id) {
 			/* Just bump the counter.  */
 			if (__builtin_expect (mutex->__data.__count + 1 == 0, 0))
 				/* Overflow of the counter.  */
-				return EAGAIN;
-			
+                                        LOG_RETURN(EAGAIN);
 			++mutex->__data.__count;
-			
-			return 0;
+                                LOG_RETURN(0);
 		}
 		
 		/* We have to get the mutex.  */
@@ -166,18 +164,15 @@ int prefix_mutex_lock(prefix_mutex_t * mutex)
 	case PREFIX_MUTEX_ERRORCHECK_NP:
 		/* Check whether we already hold the mutex.  */
 		if (mutex->__data.__owner == id)
-			return EDEADLK;
+                                LOG_RETURN(EDEADLK);
+
+                default:
 		
-		/* FALLTHROUGH */
-		
-	default:
-		/* Correct code cannot set any other type.  */
 	case PREFIX_MUTEX_TIMED_NP:
 	case PREFIX_MUTEX_ADAPTIVE_NP:
 		/* Normal mutex.  */
 		__prefix_lock(&mutex->__data.__lock, id);
-		break;
-		
+                break;		      
 	}
 	
 	/* Record the ownership.  */
@@ -185,7 +180,7 @@ int prefix_mutex_lock(prefix_mutex_t * mutex)
 	mutex->__data.__owner = id;
 	++mutex->__data.__nusers;
 	
-	return 0;
+                LOG_RETURN(0);
 }
 ]], [[PMARCEL LPT]])
 
@@ -200,6 +195,8 @@ DEF___LIBPTHREAD(int, mutex_trylock, (pthread_mutex_t * mutex), (mutex))
 REPLICATE_CODE([[dnl
 int prefix_mutex_trylock(prefix_mutex_t * mutex)
 {
+        LOG_IN();
+        LOG_OUT();
         return __marcel_trylock(&mutex->__data.__lock);
 }
 ]], [[MARCEL]])
@@ -207,27 +204,24 @@ int prefix_mutex_trylock(prefix_mutex_t * mutex)
 REPLICATE_CODE([[dnl
 int prefix_mutex_trylock(prefix_mutex_t * mutex)
 {
+        LOG_IN();
 	struct marcel_task *id;
 
-	switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP))
-	{
+        switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP)) {
 		/* Recursive mutex.  */
 	case PREFIX_MUTEX_RECURSIVE_NP:
 		id = MARCEL_SELF;
 		/* Check whether we already hold the mutex.  */
-		if (mutex->__data.__owner == id)
-		{
+                        if (mutex->__data.__owner == id) {
 			/* Just bump the counter.  */
 			if (tbx_unlikely (mutex->__data.__count + 1 == 0))
 				/* Overflow of the counter.  */
-				return EAGAIN;
-			
+                                        LOG_RETURN(EAGAIN);
 			++mutex->__data.__count;
-			return 0;
+                                LOG_RETURN(0);
 		}
 		
-		if (__prefix_trylock(&mutex->__data.__lock) != 0)
-		{
+                        if (__prefix_trylock(&mutex->__data.__lock) != 0) {
 			/* Record the ownership.  */
 			mutex->__data.__owner = id;
 			mutex->__data.__count = 1;
@@ -243,74 +237,140 @@ int prefix_mutex_trylock(prefix_mutex_t * mutex)
 	case PREFIX_MUTEX_TIMED_NP:
 	case PREFIX_MUTEX_ADAPTIVE_NP:
 		/* Normal mutex.  */
-		if (__prefix_trylock(&mutex->__data.__lock) != 0)
-		{
+                        if (__prefix_trylock(&mutex->__data.__lock) != 0) {
 			/* Record the ownership.  */
 			mutex->__data.__owner = MARCEL_SELF;
-			++mutex->__data.__nusers;
-			
-			return 0;
+                                ++mutex->__data.__nusers;	
+                                LOG_RETURN(0);
 		}
 	}
 	
-	return EBUSY;
+        LOG_RETURN(EBUSY);
 }
 ]], [[PMARCEL LPT]])
 
-#if 0
+
      /*******************/
      /* mutex_timedlock */
      /*******************/
-DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
-				 const struct timespec *abstime),
-		(mutex, abstime),
+REPLICATE_CODE([[dnl
+static int prefix_mutex_blockcell(prefix_mutex_t * mutex,const struct timespec *abstime)
 {
-  marcel_descr self;
-  int res;
+        struct timeval now, tv;
+        unsigned long int timeout;
+
+        /* il faut arrondir au supérieur */
+        tv.tv_sec = abstime->tv_sec;
+        tv.tv_usec =(abstime->tv_nsec + 999) / 1000;
+	
+        gettimeofday(&now, NULL);
+	
+        if(timercmp(&tv, &now, <=)) {
+                mdebug("prefix_mutex_blockcell : valeur temporelle invalide\n");
+                LOG_RETURN(ETIMEDOUT);
+        }
+	
+        timeout = (((tv.tv_sec*1e6 + tv.tv_usec) -
+        		  (now.tv_sec*1e6 + now.tv_usec)) + marcel_gettimeslice()-1)/marcel_gettimeslice();
+
+        prefix_lock_acquire(&mutex->__data.__lock.__spinlock); 
+
+        {
+                blockcell c;
+
+                __prefix_register_spinlocked(&mutex->__data.__lock,
+        		          marcel_self(), &c);
+
+                //tant que c'est bloqué et qu'il y a du temps...
+                while(c.blocked && timeout) {
+                        ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+                        prefix_lock_release(&mutex->__data.__lock.__spinlock);
+                        timeout = ma_schedule_timeout(timeout+1);
+                        prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
+                }
+                // si c'est encore bloqué (cad le temps est écoulé)
+                if (c.blocked) {
+                        if (__prefix_unregister_spinlocked(&mutex->__data.__lock, &c)) {
+                                pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
+                        }
+                        //on sort	
+                        prefix_lock_release(&mutex->__data.__lock.__spinlock);
+                        LOG_RETURN(ETIMEDOUT);
+                }
+                prefix_lock_release(&mutex->__data.__lock.__spinlock);
+        }
+        LOG_RETURN(0);
+}
+]], [[PMARCEL LPT]])
+
+REPLICATE_CODE([[dnl
+int prefix_mutex_timedlock(prefix_mutex_t * mutex,const struct timespec *abstime)
+{
+        LOG_IN();
+
+        marcel_t cthread = marcel_self();
+        int ret;
 
   if (__builtin_expect (abstime->tv_nsec, 0) < 0
-      || __builtin_expect (abstime->tv_nsec, 0) >= 1000000000)
-    return EINVAL;
+		  || __builtin_expect (abstime->tv_nsec, 0) >= 1000000000) {
+                mdebug("prefix_mutex_timedlock : valeur temporelle invalide\n");       
+                LOG_RETURN(EINVAL);
+        }
 
-  switch(mutex->__m_kind) {
-  case MARCEL_MUTEX_ADAPTIVE_NP:
-    __pmarcel_lock(&mutex->__m_lock, NULL);
-    return 0;
-  case MARCEL_MUTEX_RECURSIVE_NP:
-    self = __thread_self();
-    if (mutex->__m_owner == self) {
-      mutex->__m_count++;
-      return 0;
+        switch(mutex->__data.__kind) {
+  
+                case PREFIX_MUTEX_RECURSIVE_NP:
+                        cthread = cthread;
+                        if (mutex->__data.__owner == cthread) {
+                                mutex->__data.__count++;
+                                LOG_RETURN(0);
     }
-    __pmarcel_lock(&mutex->__m_lock, self);
-    mutex->__m_owner = self;
-    mutex->__m_count = 0;
-    return 0;
-  case MARCEL_MUTEX_ERRORCHECK_NP:
-    self = __thread_self();
-    if (mutex->__m_owner == self) return EDEADLK;
-    res = __pmarcel_alt_timedlock(&mutex->__m_lock, self, abstime);
-    if (res != 0)
-      {
-	mutex->__m_owner = self;
-	return 0;
+                        if (mutex->__data.__nusers == 0)
+                                mutex->__data.__count = 1;
+                        else {
+                                ret = prefix_mutex_blockcell(mutex,abstime);
+                                if (ret)
+                                        LOG_RETURN(ETIMEDOUT);
+                                else
+                                        mutex->__data.__count = 1;
       }
-    return ETIMEDOUT;
-  case MARCEL_MUTEX_TIMED_NP:
-    /* Only this type supports timed out lock. */
-    return (__pmarcel_alt_timedlock(&mutex->__m_lock, NULL, abstime)
-	    ? 0 : ETIMEDOUT);
+                break;
+
+                case PREFIX_MUTEX_ERRORCHECK_NP:
+                        cthread = cthread;
+                        if (mutex->__data.__owner == cthread) 
+                                LOG_RETURN(EDEADLK);
+                        if (mutex->__data.__nusers != 0) {
+                                ret = prefix_mutex_blockcell(mutex,abstime);
+                                if (ret)
+                                        LOG_RETURN(ETIMEDOUT);
+                        }
+                break;
+
+                case PREFIX_MUTEX_ADAPTIVE_NP:
+                case PREFIX_MUTEX_TIMED_NP:
+                        if (mutex->__data.__nusers != 0) {
+                                ret = prefix_mutex_blockcell(mutex,abstime);
+                                if (ret)
+                                        LOG_RETURN(ETIMEDOUT);
+                        }
+                break;
+  
   default:
-    return EINVAL;
+                        LOG_RETURN(EINVAL);
   }
-})
+    
+        mutex->__data.__nusers ++;
+        mutex->__data.__owner = cthread;
+        __prefix_lock(&mutex->__data.__lock, NULL);
+        LOG_RETURN(0);
+}
+]], [[PMARCEL LPT]])
 
 PRINT_PTHREAD([[dnl
 versioned_symbol(libpthread, lpt_mutex_timedlock,
 	              pthread_mutex_timedlock, GLIBC_2_2);
 ]])
-
-#endif
 
      /****************/
      /* mutex_unlock */
@@ -330,16 +390,17 @@ int prefix_mutex_unlock(prefix_mutex_t * mutex)
 REPLICATE_CODE([[dnl
 int prefix_mutex_unlock_usercnt(prefix_mutex_t * mutex, int decr)
 {
-	switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP))
-	{
+        LOG_IN();
+
+        switch (__builtin_expect (mutex->__data.__kind, PREFIX_MUTEX_TIMED_NP)) {
 	case PREFIX_MUTEX_RECURSIVE_NP:
 		/* Recursive mutex.  */
 		if (mutex->__data.__owner != MARCEL_SELF)
-			return EPERM;
+                                LOG_RETURN(EPERM);
 		
 		if (--mutex->__data.__count != 0)
 			/* We still hold the mutex.  */
-			return 0;
+                                LOG_RETURN(0);
 		break;
 		
 	case PREFIX_MUTEX_ERRORCHECK_NP:
@@ -347,7 +408,7 @@ int prefix_mutex_unlock_usercnt(prefix_mutex_t * mutex, int decr)
 		if (mutex->__data.__owner != MARCEL_SELF
 		    //|| ! lll_mutex_islocked (mutex->__data.__lock)
 			)
-			return EPERM;
+                        LOG_RETURN(EPERM);
 		break;
 		
 	default:
@@ -367,11 +428,13 @@ int prefix_mutex_unlock_usercnt(prefix_mutex_t * mutex, int decr)
 	/* Unlock.  */
 	__prefix_unlock(&mutex->__data.__lock);
 	
-	return 0;
+        LOG_RETURN(0);
 }
  
 int prefix_mutex_unlock(prefix_mutex_t * mutex)
 {
+        LOG_IN();
+        LOG_OUT();
   return prefix_mutex_unlock_usercnt (mutex, 1);
 }
 ]], [[PMARCEL LPT]])
@@ -387,13 +450,15 @@ DEF___LIBPTHREAD(int, mutexattr_init, (pthread_mutexattr_t *attr), (attr))
 REPLICATE_CODE([[dnl
 int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 {
-        return 0;
+        LOG_IN();
+        LOG_RETURN(0);
 }
 ]], [[MARCEL]])
 
 REPLICATE_CODE([[dnl
 int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 {
+        LOG_IN();
 #if MA__MODE == MA__MODE_LPT
 	if (sizeof (struct prefix_mutexattr) != sizeof (prefix_mutexattr_t))
 		memset (attr, '\0', sizeof (*attr));
@@ -404,7 +469,7 @@ int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 	   mutex is not process-shared.  */
 	((struct prefix_mutexattr *) attr)->mutexkind = PREFIX_MUTEX_NORMAL;
 	
-	return 0;
+        LOG_RETURN(0);
 }
 ]], [[PMARCEL LPT]])
 
@@ -419,7 +484,8 @@ DEF___LIBPTHREAD(int, mutexattr_destroy, (pthread_mutexattr_t *attr), (attr))
 REPLICATE_CODE([[dnl
 int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 {
-        return 0;
+        LOG_IN();
+        LOG_RETURN(0);
 }
 ]],[[MARCEL PMARCEL LPT]])
 
@@ -436,24 +502,20 @@ DEF___LIBPTHREAD(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind), 
 REPLICATE_CODE([[dnl
 int prefix_mutexattr_settype(prefix_mutexattr_t * attr, int kind)
 {
-{
+        LOG_IN();
 	struct prefix_mutexattr *iattr;
 
-	if (kind < PREFIX_MUTEX_NORMAL || kind > PREFIX_MUTEX_ADAPTIVE_NP)
-	{
-#ifdef MA__DEBUG
-		fprintf(stderr,"prefix_mutexattr_settype : valeur kind(%d)  invalide\n",kind);
-#endif
-      return EINVAL;
+        if (kind < PREFIX_MUTEX_NORMAL || kind > PREFIX_MUTEX_ADAPTIVE_NP) {
+                mdebug("prefix_mutexattr_settype : valeur kind(%d) invalide\n",kind);
+                LOG_RETURN(EINVAL);
 	}
 	iattr = (struct prefix_mutexattr *) attr;
 
 	/* We use bit 31 to signal whether the mutex is going to be
 	   process-shared or not.  */
 	iattr->mutexkind = (iattr->mutexkind & 0x80000000) | kind;
-
-	return 0;
-}}
+        LOG_RETURN(0);
+}
 ]], [[PMARCEL LPT]])
 
 
@@ -470,7 +532,7 @@ REPLICATE_CODE([[dnl
 int prefix_mutexattr_gettype(const prefix_mutexattr_t * __restrict attr,
 	int * __restrict kind)
 {
-{
+        LOG_IN();
 	const struct prefix_mutexattr *iattr;
 	iattr = (const struct prefix_mutexattr *) attr;
 
@@ -478,8 +540,8 @@ int prefix_mutexattr_gettype(const prefix_mutexattr_t * __restrict attr,
 	   process-shared or not.  */
 	*kind = iattr->mutexkind & ~0x80000000;
 
-	return 0;
-}}
+        LOG_RETURN(0);
+}
 ]], [[PMARCEL LPT]])
 
 
@@ -494,21 +556,18 @@ DEF_LIBPTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
 REPLICATE_CODE([[dnl
 int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 {
-{
+        LOG_IN();
 	struct prefix_mutexattr *iattr;
 
 	if (pshared != PREFIX_PROCESS_PRIVATE
-	    && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0))
-   {
-#ifdef MA__DEBUG
-		 fprintf(stderr,"prefix_mutexattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
-#endif
-		 return EINVAL;
+        	     && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0)) {
+                mdebug("prefix_mutexattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
+                LOG_RETURN(EINVAL);
    }
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
-		pm2debug("prefix_mutexattr_setpshared : shared mutex requested!\n");
-		return ENOTSUP;
+                fprintf(stderr,"prefix_mutexattr_setpshared : shared mutex requested!\n");
+                LOG_RETURN(ENOTSUP);
 	}
 
 	iattr = (struct prefix_mutexattr *) attr;
@@ -520,8 +579,8 @@ int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 	else
 		iattr->mutexkind |= 0x80000000;
 
-	return 0;
-}}
+        LOG_RETURN(0);
+}
 ]], [[PMARCEL LPT]])
 
      /********************/
@@ -536,7 +595,7 @@ REPLICATE_CODE([[dnl
 int prefix_mutexattr_getpshared(const prefix_mutexattr_t * __restrict attr,
 	int * __restrict pshared)
 {
-{
+        LOG_IN();
 	const struct prefix_mutexattr *iattr;
 	
 	iattr = (const struct prefix_mutexattr *) attr;
@@ -546,8 +605,8 @@ int prefix_mutexattr_getpshared(const prefix_mutexattr_t * __restrict attr,
 	*pshared = ((iattr->mutexkind & 0x80000000) != 0
 		    ? PREFIX_PROCESS_SHARED : PREFIX_PROCESS_PRIVATE);
 	
-	return 0;
-}}
+        LOG_RETURN(0);
+}
 ]], [[PMARCEL LPT]])
 
 
@@ -569,18 +628,19 @@ enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
 
 static void marcel_once_cancelhandler(void *arg)
 {
-    marcel_once_t *once_control = arg;
+	marcel_once_t *once_control = arg;
 
-    marcel_mutex_lock(&once_masterlock);
-    *once_control = NEVER;
-    marcel_mutex_unlock(&once_masterlock);
-    marcel_cond_broadcast(&once_finished);
+	marcel_mutex_lock(&once_masterlock);
+	*once_control = NEVER;
+	marcel_mutex_unlock(&once_masterlock);
+	marcel_cond_broadcast(&once_finished);
 }
 
 REPLICATE_CODE([[dnl
 int prefix_once(prefix_once_t * once_control, 
 	void (*init_routine)(void))
 {
+        LOG_IN();
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
@@ -593,7 +653,7 @@ int prefix_once(prefix_once_t * once_control,
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {
 		READ_MEMORY_BARRIER();
-		return 0;
+                LOG_RETURN(0);
 	}
 	/* Lock and test again */
 	
@@ -628,7 +688,7 @@ int prefix_once(prefix_once_t * once_control,
 	if (state_changed)
 		marcel_cond_broadcast(&once_finished);
 	
-	return 0;
+        LOG_RETURN(0);
 }
 ]],[[MARCEL PMARCEL LPT]])
 
@@ -655,22 +715,22 @@ DEF___LIBPTHREAD(int, once, (pthread_once_t *once_control,
 REPLICATE_CODE([[dnl
 void prefix_once_fork_prepare(void)
 {
-  marcel_mutex_lock(&once_masterlock);
+	marcel_mutex_lock(&once_masterlock);
 }
 
 void prefix_once_fork_parent(void)
 {
-  marcel_mutex_unlock(&once_masterlock);
+	marcel_mutex_unlock(&once_masterlock);
 }
 
 void prefix_once_fork_child(void)
 {
-  marcel_mutex_init(&once_masterlock, NULL);
-  marcel_cond_init(&once_finished, NULL);
-  if (fork_generation <= INT_MAX - 4)
-    fork_generation += 4;	/* leave least significant two bits zero */
-  else
-    fork_generation = 0;
+	marcel_mutex_init(&once_masterlock, NULL);
+	marcel_cond_init(&once_finished, NULL);
+	if (fork_generation <= INT_MAX - 4)
+		fork_generation += 4;	/* leave least significant two bits zero */
+	else
+		fork_generation = 0;
 }
 ]],[[LPT]])
 

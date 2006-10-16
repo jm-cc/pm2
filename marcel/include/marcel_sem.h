@@ -22,17 +22,17 @@
 typedef struct semcell_struct semcell;
 #section marcel_structures
 struct semcell_struct {
-  marcel_t task;
-  struct semcell_struct *next;
-  struct semcell_struct *last; /* Valide uniquement dans la cellule de tête */
-  tbx_bool_t blocked;
+	marcel_t task;
+	struct semcell_struct *next;
+	struct semcell_struct *last;	/* Valide uniquement dans la cellule de tête */
+	tbx_bool_t blocked;
 };
 
 #section structures
 struct semaphor_struct {
-  int value;
-  struct semcell_struct *first,*last;
-  ma_spinlock_t lock;  /* For preventing concurrent access from multiple LWPs */
+	int value;
+	struct semcell_struct *first, *last;
+	ma_spinlock_t lock;	/* For preventing concurrent access from multiple LWPs */
 };
 
 #section macros
@@ -66,8 +66,8 @@ static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline
 static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s)
 {
-  (void)s;
-  return 0;
+	(void) s;
+	return 0;
 }
 
 #section functions

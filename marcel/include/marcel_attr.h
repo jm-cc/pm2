@@ -25,37 +25,35 @@ typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 #depend "scheduler/marcel_sched.h[types]"
 
 /* Attributes for threads.  */
-struct __marcel_attr_s
-{
-      /* begin of pthread */
-      int __detachstate;
-      int __schedpolicy;
-      struct marcel_sched_param __schedparam;
-      int __inheritsched;
-      int __scope;
-      size_t __guardsize;
-      int __stackaddr_set;
-      void *__stackaddr;
-      size_t __stacksize;
-      /* end of pthread */
+struct __marcel_attr_s {
+	/* begin of pthread */
+	int __detachstate;
+	int __schedpolicy;
+	struct marcel_sched_param __schedparam;
+	int __inheritsched;
+	int __scope;
+	size_t __guardsize;
+	int __stackaddr_set;
+	void *__stackaddr;
+	size_t __stacksize;
+	/* end of pthread */
 
-      /* marcel attributes */
-      /* unsigned stack_size; */
-      /* char *stack_base; */
-      /*int tbx_bool_t detached; */
-      unsigned user_space;
-      /*tbx_bool_t*/int immediate_activation;
-      unsigned not_migratable;
-      unsigned not_deviatable;
-      int not_preemptible;
-      /* int sched_policy; */
-      /*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
-      marcel_vpmask_t vpmask;
-      int flags;
-      char name[MARCEL_MAXNAMESIZE];
-      int id;
-      marcel_sched_attr_t sched;
-
+	/* marcel attributes */
+	/* unsigned stack_size; */
+	/* char *stack_base; */
+	/*int tbx_bool_t detached; */
+	unsigned user_space;
+	/*tbx_bool_t */ int immediate_activation;
+	unsigned not_migratable;
+	unsigned not_deviatable;
+	int not_preemptible;
+	/* int sched_policy; */
+	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
+	marcel_vpmask_t vpmask;
+	int flags;
+	char name[MARCEL_MAXNAMESIZE];
+	int id;
+	marcel_sched_attr_t sched;
 };
 
 #section macros
@@ -126,6 +124,8 @@ struct __marcel_attr_s
 /* realtime */
 #define MARCEL_CLASS_REGULAR      tbx_false
 #define MARCEL_CLASS_REALTIME     tbx_true
+
+#define PMARCEL_STACK_MIN sizeof(marcel_task_t)
 
 #section functions
 #depend "marcel_utils.h[types]"
@@ -202,13 +202,16 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 
 DEC_MARCEL_POSIX(int, attr_setinheritsched, (marcel_attr_t * attr,int inheritsched) __THROW);
 DEC_MARCEL_POSIX(int, attr_getinheritsched, (marcel_attr_t * attr,int * inheritsched) __THROW);
-DEC_POSIX(int, attr_setscope, (pmarcel_attr_t *__restrict attr, int contentionscope) __THROW);
-DEC_POSIX(int, attr_getscope, (__const pmarcel_attr_t *__restrict attr, int *contentionscope) __THROW);
+DEC_MARCEL_POSIX(int, attr_setscope, (pmarcel_attr_t *__restrict attr, int contentionscope) __THROW);
+DEC_MARCEL_POSIX(int, attr_getscope, (__const pmarcel_attr_t *__restrict attr, int *contentionscope) __THROW);
 DEC_POSIX(int, attr_setschedpolicy, (pmarcel_attr_t *__restrict attr, int policy) __THROW);
 DEC_POSIX(int, attr_getschedpolicy, (__const pmarcel_attr_t *__restrict attr, int *policy) __THROW);
 DEC_MARCEL(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_sched_param *param) __THROW);
 DEC_MARCEL(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
 DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
+
+int marcel_getattr_np(marcel_t t,marcel_attr_t *__attr);
+
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;
 extern marcel_attr_t marcel_attr_destroyer;

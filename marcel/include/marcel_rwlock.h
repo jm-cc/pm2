@@ -78,6 +78,10 @@ DEC_MARCEL_POSIX(int, rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
 				      const struct timespec * __restrict abstime)
 		 __THROW);
 
+DEC_MARCEL_POSIX(int, rwlock_timedwrlock, (marcel_rwlock_t * __restrict rwlock,
+				      const struct timespec * __restrict abstime)
+		 __THROW);
+
 DEC_MARCEL_POSIX(int, rwlock_tryrdlock, (marcel_rwlock_t *rwlock) __THROW);
 
 DEC_MARCEL_POSIX(int, rwlock_wrlock, (marcel_rwlock_t *rwlock) __THROW);

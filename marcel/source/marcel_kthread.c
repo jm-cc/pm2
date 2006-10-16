@@ -77,52 +77,50 @@ int  clone(int (*fn) (void *arg), void *child_stack_base,
 
 // WARNING: stack is never freed. That's not a problem since kernel
 // threads only terminate at the end of the program, but...
-void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
-			   void* stack_base,
-			   marcel_kthread_func_t func, void *arg)
+void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
+    void *stack_base, marcel_kthread_func_t func, void *arg)
 {
 #ifdef IA64_ARCH
-  size_t stack_size;
+	size_t stack_size;
 #endif
 
-  LOG_IN();
-  if (!sp) {
-	  stack_base = marcel_slot_alloc();
-	  sp = stack_base + THREAD_SLOT_SIZE;
-	  mdebug("Allocating stack for kthread at %p\n", stack_base);
-  }
-  sp -= 64;
-  mdebug("Stack for kthread set at %p\n", sp);
+	LOG_IN();
+	if (!sp) {
+		stack_base = marcel_slot_alloc();
+		sp = stack_base + THREAD_SLOT_SIZE;
+		mdebug("Allocating stack for kthread at %p\n", stack_base);
+	}
+	sp -= 64;
+	mdebug("Stack for kthread set at %p\n", sp);
 
 #ifdef IA64_ARCH
-  stack_base=(void*)(((unsigned long int)stack_base+15)&(~0xF));
-  stack_size=(sp-stack_base)&(~0xF);
-  int ret = __clone2((int (*)(void *))func, 
-	       stack_base, stack_size,
-	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
-	       CLONE_THREAD,
-	       arg, pid, &dummy, pid);
-  MA_BUG_ON(ret == -1);
+	stack_base = (void *) (((unsigned long int) stack_base + 15) & (~0xF));
+	stack_size = (sp - stack_base) & (~0xF);
+	int ret = __clone2((int (*)(void *)) func,
+	    stack_base, stack_size,
+	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
+	    arg, pid, &dummy, pid);
+	MA_BUG_ON(ret == -1);
 #else
-  int ret = clone((int (*)(void *))func, 
-	       sp,
-	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
-	       CLONE_THREAD,
-	       arg, pid, &dummy, pid);
-  MA_BUG_ON(ret == -1);
+	int ret = clone((int (*)(void *)) func,
+	    sp,
+	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
+	    arg, pid, &dummy, pid);
+	MA_BUG_ON(ret == -1);
 #endif
-  LOG_OUT();
+	LOG_OUT();
 }
 
-void marcel_kthread_join(marcel_kthread_t *pid)
+void marcel_kthread_join(marcel_kthread_t * pid)
 {
 	LOG_IN();
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1 && errno == EINTR);
+		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1
+		    && errno == EINTR) ;
 	LOG_OUT();
 }
 

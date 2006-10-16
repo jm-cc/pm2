@@ -40,45 +40,49 @@
 #ifdef RS6K_ARCH
 int _jmg(int r)
 {
-  if(r!=0) 
-    ma_preempt_enable();
-  return r;
+	if (r != 0)
+		ma_preempt_enable();
+	return r;
 }
 
 #undef longjmp
 void LONGJMP(jmp_buf buf, int val)
 {
-  static jmp_buf _buf;
-  static int _val;
+	static jmp_buf _buf;
+	static int _val;
 
-  ma_preempt_disable();
-  memcpy(_buf, buf, sizeof(jmp_buf));
-  _val = val;
+	ma_preempt_disable();
+	memcpy(_buf, buf, sizeof(jmp_buf));
+	_val = val;
 #ifdef PM2_DEV
 #warning set_sp() should not be directly used
 #endif
-  set_sp(SP_FIELD(buf)-256);
-  longjmp(_buf, _val);
+	set_sp(SP_FIELD(buf) - 256);
+	longjmp(_buf, _val);
 }
+
 #define longjmp(buf, v)	LONGJMP(buf, v)
 #endif
 
 marcel_exception_t
-   MARCEL_TASKING_ERROR = "MARCEL_TASKING_ERROR: A non-handled exception occurred in a task",
-   MARCEL_DEADLOCK_ERROR = "MARCEL_DEADLOCK_ERROR: Global Blocking Situation Detected",
-   MARCEL_STORAGE_ERROR = "MARCEL_STORAGE_ERROR: No space left on the heap",
-   MARCEL_CONSTRAINT_ERROR = "MARCEL_CONSTRAINT_ERROR",
-   MARCEL_PROGRAM_ERROR = "MARCEL_PROGRAM_ERROR",
-   MARCEL_STACK_ERROR = "MARCEL_STACK_ERROR: Stack Overflow",
-   MARCEL_TIME_OUT = "TIME OUT while being blocked on a semaphor",
-   MARCEL_NOT_IMPLEMENTED = "MARCEL_NOT_IMPLEMENTED (sorry)",
-   MARCEL_USE_ERROR = "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
+    MARCEL_TASKING_ERROR =
+    "MARCEL_TASKING_ERROR: A non-handled exception occurred in a task",
+    MARCEL_DEADLOCK_ERROR =
+    "MARCEL_DEADLOCK_ERROR: Global Blocking Situation Detected",
+    MARCEL_STORAGE_ERROR =
+    "MARCEL_STORAGE_ERROR: No space left on the heap", MARCEL_CONSTRAINT_ERROR =
+    "MARCEL_CONSTRAINT_ERROR", MARCEL_PROGRAM_ERROR =
+    "MARCEL_PROGRAM_ERROR", MARCEL_STACK_ERROR =
+    "MARCEL_STACK_ERROR: Stack Overflow", MARCEL_TIME_OUT =
+    "TIME OUT while being blocked on a semaphor", MARCEL_NOT_IMPLEMENTED =
+    "MARCEL_NOT_IMPLEMENTED (sorry)", MARCEL_USE_ERROR =
+    "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
 void marcel_breakpoint()
 {
-  /* Lieu ideal ;-) pour un point d'arret */
+	/* Lieu ideal ;-) pour un point d'arret */
 }
 
 /* =========== specifs =========== */
@@ -88,30 +92,32 @@ int marcel_cancel(marcel_t pid);
    its stack pointer */
 unsigned long marcel_usablestack(void)
 {
-  return (unsigned long)get_sp() - (unsigned long)marcel_self()->stack_base;
+	return (unsigned long) get_sp() -
+	    (unsigned long) marcel_self()->stack_base;
 }
 
 /* ================== Gestion des exceptions : ================== */
 
 int _marcel_raise_exception(marcel_exception_t ex)
 {
-  marcel_t cur = marcel_self();
+	marcel_t cur = marcel_self();
 
-   if(ex == NULL)
-      ex = cur->cur_exception ;
+	if (ex == NULL)
+		ex = cur->cur_exception;
 
-   if(cur->cur_excep_blk == NULL) {
-      ma_preempt_disable();
-      fprintf(stderr, "\nUnhandled exception %s in task %d on LWP(%d)"
-	      "\nFILE : %s, LINE : %d\n",
-	      ex, cur->number, LWP_NUMBER(LWP_SELF), cur->exfile, cur->exline);
-      abort(); /* To generate a core file */
-      exit(1);
-   } else {
-      cur->cur_exception = ex ;
-      call_ST_FLUSH_WINDOWS();
-      marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
-   }
+	if (cur->cur_excep_blk == NULL) {
+		ma_preempt_disable();
+		fprintf(stderr, "\nUnhandled exception %s in task %d on LWP(%d)"
+		    "\nFILE : %s, LINE : %d\n",
+		    ex, cur->number, LWP_NUMBER(LWP_SELF), cur->exfile,
+		    cur->exline);
+		abort();	/* To generate a core file */
+		exit(1);
+	} else {
+		cur->cur_exception = ex;
+		call_ST_FLUSH_WINDOWS();
+		marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
+	}
 }
 
 #ifndef MA__LIBPTHREAD

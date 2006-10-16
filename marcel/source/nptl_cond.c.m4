@@ -47,11 +47,12 @@ DEF___LIBPTHREAD(int, condattr_init,
 REPLICATE_CODE([[dnl
 int prefix_condattr_init (prefix_condattr_t *attr)
 {
+        LOG_IN();
 	memset (attr, '\0', sizeof (*attr));
 #if MA__MODE == MA__MODE_LPT
 	MA_BUG_ON (sizeof (lpt_condattr_t) > __SIZEOF_LPT_CONDATTR_T);
 #endif
-	return 0;
+		  LOG_RETURN(0);
 }
 ]])
 
@@ -70,8 +71,9 @@ DEF___LIBPTHREAD(int, condattr_destroy,
 REPLICATE_CODE([[dnl
 int prefix_condattr_destroy (prefix_condattr_t *attr)
 {
+        LOG_IN();
         /* Nothing to be done.  */
-        return 0;
+        LOG_RETURN(0);      
 }
 ]])
 
@@ -88,10 +90,10 @@ REPLICATE_CODE([[dnl
 int prefix_condattr_getpshared (const prefix_condattr_t * __restrict attr,
 	int* __restrict pshared)
 {
-{
+        LOG_IN();
 	*pshared = ((const struct prefix_condattr *) attr)->value & 1;
-        return 0;
-}}
+        LOG_RETURN(0);
+}
 ]], [[PMARCEL LPT]])
 
 /***********************/
@@ -106,26 +108,26 @@ DEF_LIBPTHREAD(int, condattr_setpshared,
 REPLICATE_CODE([[dnl
 int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 {
-    if (pshared != PTHREAD_PROCESS_PRIVATE
-        && __builtin_expect (pshared != PTHREAD_PROCESS_SHARED, 0))
-    {
-#ifdef MA__DEBUG
-	    fprintf(stderr,"prefix_condattr_setpshared : valeur pshared(%d)  invalide\n",pshared);
-#endif
-	    LOG_RETURN(EINVAL);
-    }
+	LOG_IN();
+	if (pshared != PTHREAD_PROCESS_PRIVATE
+	    && __builtin_expect(pshared != PTHREAD_PROCESS_SHARED, 0)) {
+		mdebug
+		    ("prefix_condattr_setpshared : valeur pshared(%d)  invalide\n",
+		    pshared);
+		LOG_RETURN(EINVAL);
+	}
 
 	/* For now it is not possible to share a mutex variable.  */
 	if (pshared != MARCEL_PROCESS_PRIVATE) {
-		pm2debug("prefix_condattr_setpshared : shared condition requested!\n");
-		return ENOTSUP;
+		fprintf(stderr,
+		    "prefix_condattr_setpshared : shared condition requested!\n");
+		LOG_RETURN(ENOTSUP);
 	}
 
-        int *valuep = &((struct prefix_condattr *) attr)->value;
+	int *valuep = &((struct prefix_condattr *) attr)->value;
+	*valuep = (*valuep & ~1) | (pshared != PTHREAD_PROCESS_PRIVATE);
 
-        *valuep = (*valuep & ~1) | (pshared != PTHREAD_PROCESS_PRIVATE);
-
-        return 0;
+	LOG_RETURN(0);
 }
 ]], [[PMARCEL LPT]])
 
@@ -148,10 +150,11 @@ REPLICATE_CODE([[dnl
 int prefix_cond_init (prefix_cond_t * __restrict cond,
 	const prefix_condattr_t * __restrict attr)
 {
-  cond->__data.__lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
-  cond->__data.__waiting = NULL;
-
-  return 0;
+	LOG_IN();
+	cond->__data.__lock =
+	    (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
+	cond->__data.__waiting = NULL;
+	LOG_RETURN(0);
 }
 ]])
 
@@ -172,11 +175,10 @@ compat_symbol (libpthread, __old_pthread_cond_destroy, pthread_cond_destroy,
 REPLICATE_CODE([[dnl
 int prefix_cond_destroy (prefix_cond_t *cond)
 {
-  if (cond->__data.__waiting != NULL) {
-    /* TODO: pas très POSIX ça. Voir l'implémentation dans nptl */
-    return EBUSY;
-  }
-  return 0;
+        LOG_IN();
+        if (cond->__data.__waiting != NULL)
+                LOG_RETURN(EBUSY);
+        LOG_RETURN(0);
 }
 ]])
 
@@ -197,8 +199,9 @@ compat_symbol (libpthread, __old_pthread_cond_signal, pthread_cond_signal,
 REPLICATE_CODE([[dnl
 int prefix_cond_signal (prefix_cond_t *cond)
 {
-  __prefix_unlock(&cond->__data.__lock);
-  return 0;
+	LOG_IN();
+	__prefix_unlock(&cond->__data.__lock);
+	LOG_RETURN(0);
 }
 ]])
 
@@ -219,10 +222,11 @@ compat_symbol (libpthread, __old_pthread_cond_broadcast,
 REPLICATE_CODE([[dnl
 int prefix_cond_broadcast (prefix_cond_t *cond)
 {
-  prefix_lock_acquire(&cond->__data.__lock.__spinlock);
-  do {} while (__prefix_unlock_spinlocked(&cond->__data.__lock));
-  prefix_lock_release(&cond->__data.__lock.__spinlock);
-  return 0;
+	LOG_IN();
+	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
+	do { } while (__prefix_unlock_spinlocked(&cond->__data.__lock));
+	prefix_lock_release(&cond->__data.__lock.__spinlock);
+	LOG_RETURN(0);
 }
 ]])
 
@@ -244,32 +248,31 @@ REPLICATE_CODE([[dnl
 int prefix_cond_wait (prefix_cond_t * __restrict cond,
 	prefix_mutex_t * __restrict mutex)
 {
-  prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
-  prefix_lock_acquire(&cond->__data.__lock.__spinlock);
+	LOG_IN();
+	prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
+	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
 #if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
-  mutex->__data.__owner = 0;
+	mutex->__data.__owner = 0;
 #endif
-  __prefix_unlock_spinlocked(&mutex->__data.__lock);
-  prefix_lock_release(&mutex->__data.__lock.__spinlock);
-  {
-	  blockcell c;
-	  
-	  __prefix_register_spinlocked(&cond->__data.__lock, 
-		  marcel_self(), &c);
+	__prefix_unlock_spinlocked(&mutex->__data.__lock);
+	prefix_lock_release(&mutex->__data.__lock.__spinlock);
+	{
+		blockcell c;
 
-	  mdebug("blocking %p (cell %p) in prefix_cond_wait %p\n", 
-		  marcel_self(), &c, cond);
-	  INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-		  c.blocked, 
-		  prefix_lock_release(&cond->__data.__lock.__spinlock),
-		  prefix_lock_acquire(&cond->__data.__lock.__spinlock));
-	  prefix_lock_release(&cond->__data.__lock.__spinlock);
-	  mdebug("unblocking %p (cell %p) in prefix_cond_wait %p\n",
-		  marcel_self(), &c, cond);
-  }
+		__prefix_register_spinlocked(&cond->__data.__lock,
+		    marcel_self(), &c);
 
-  prefix_mutex_lock(mutex);
-  return 0;
+		mdebug("blocking %p (cell %p) in prefix_cond_wait %p\n",
+		    marcel_self(), &c, cond);
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		    prefix_lock_release(&cond->__data.__lock.__spinlock),
+		    prefix_lock_acquire(&cond->__data.__lock.__spinlock));
+		prefix_lock_release(&cond->__data.__lock.__spinlock);
+		mdebug("unblocking %p (cell %p) in prefix_cond_wait %p\n",
+		    marcel_self(), &c, cond);
+	}
+	prefix_mutex_lock(mutex);
+	LOG_RETURN(0);
 }
 ]])
 
@@ -298,24 +301,23 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 	prefix_mutex_t * __restrict mutex,
 	const struct timespec * __restrict abstime)
 {
+	LOG_IN();
 	struct timeval now, tv;
 	unsigned long timeout;
 	int ret = 0;
 
-	LOG_IN();
 	tv.tv_sec = abstime->tv_sec;
 	tv.tv_usec = abstime->tv_nsec / 1000;
-	
+
 	gettimeofday(&now, NULL);
-	
-	if(ma_timercmp(&tv, &now, <=)) {
-		LOG_OUT();
-		return ETIMEDOUT;
+
+	if (ma_timercmp(&tv, &now, <=)) {
+		LOG_RETURN(ETIMEDOUT);
 	}
-	
-	timeout = JIFFIES_FROM_US(((tv.tv_sec*1e6 + tv.tv_usec) -
-				   (now.tv_sec*1e6 + now.tv_usec)));
-	
+
+	timeout = JIFFIES_FROM_US(((tv.tv_sec * 1e6 + tv.tv_usec) -
+		(now.tv_sec * 1e6 + now.tv_usec)));
+
 	prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
 	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
 #if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
@@ -325,32 +327,32 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 	prefix_lock_release(&mutex->__data.__lock.__spinlock);
 	{
 		blockcell c;
-		
 		__prefix_register_spinlocked(&cond->__data.__lock,
-		                             marcel_self(), &c);
-		
+		    marcel_self(), &c);
+
 		mdebug("blocking %p (cell %p) in prefix_cond_timedwait %p\n",
-		       marcel_self(), &c, cond);
-		while(c.blocked && timeout) {
+		    marcel_self(), &c, cond);
+		while (c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			prefix_lock_release(&cond->__data.__lock.__spinlock);
-			timeout=ma_schedule_timeout(timeout);
+			timeout = ma_schedule_timeout(timeout);
 			prefix_lock_acquire(&cond->__data.__lock.__spinlock);
 		}
 		if (c.blocked) {
-			if (__prefix_unregister_spinlocked(&cond->__data.__lock, &c)) {
-				pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
+			if (__prefix_unregister_spinlocked(&cond->__data.__lock,
+				&c)) {
+				pm2debug
+				    ("Strange, we should be in the queue !!! (%s:%d)\n",
+				    __FILE__, __LINE__);
 			}
-			ret=ETIMEDOUT;
+			ret = ETIMEDOUT;
 		}
 		prefix_lock_release(&cond->__data.__lock.__spinlock);
 		mdebug("unblocking %p (cell %p) in prefix_cond_timedwait %p\n",
-		       marcel_self(), &c, cond);
+		    marcel_self(), &c, cond);
 	}
-	
+
 	prefix_mutex_lock(mutex);
-	LOG_OUT();
-	return ret;
+	LOG_RETURN(ret);
 }
 ]])
-

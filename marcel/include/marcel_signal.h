@@ -19,18 +19,19 @@ typedef struct ma_twblocked_struct ma_twblocked_t;
 
 #section marcel_structures
 struct ma_twblocked_struct {
-   marcel_t t;
-   marcel_sigset_t waitset;
-   int * waitsig;
-   struct ma_twblocked_struct *next_twblocked;
+	marcel_t t;
+	marcel_sigset_t waitset;
+	int *waitsig;
+	siginfo_t *waitinfo;
+	struct ma_twblocked_struct *next_twblocked;
 };
 
 #section structures
 struct marcel_sigaction {
-  void (*marcel_sa_handler)(int);
-  marcel_sigset_t marcel_sa_mask;
-  int marcel_sa_flags;
-  void (*marcel_sa_sigaction)(int, siginfo_t *, void *);   
+	void (*marcel_sa_handler) (int);
+	marcel_sigset_t marcel_sa_mask;
+	int marcel_sa_flags;
+	void (*marcel_sa_sigaction) (int, siginfo_t *, void *);
 };
 
 #section marcel_macros
@@ -91,8 +92,16 @@ DEC_MARCEL_POSIX(int, sigmask, (int how, __const marcel_sigset_t *set, marcel_si
 int pmarcel_sigpending(marcel_sigset_t *set);
 DEC_MARCEL_POSIX(int, sigpending, (marcel_sigset_t *set) __THROW);
 
+int pmarcel_sigtimedwait(const marcel_sigset_t *__restrict set, siginfo_t *__restrict info,const struct timespec *__restrict timeout);
+
+DEC_MARCEL_POSIX(int, sigtimedwait, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info,const struct timespec *__restrict timeout) __THROW);
+
 int pmarcel_sigwait(const marcel_sigset_t *__restrict set, int *__restrict sig);
 DEC_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__restrict sig) __THROW);
+
+int pmarcel_sigwaitinfo(const marcel_sigset_t *__restrict set, siginfo_t *__restrict info);
+
+DEC_MARCEL_POSIX(int, sigwaitinfo, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info) __THROW);
 
 int pmarcel_sigsuspend(const marcel_sigset_t *sigmask);
 DEC_MARCEL_POSIX(int,sigsuspend, (const marcel_sigset_t *sigmask) __THROW);
@@ -118,8 +127,8 @@ DEC_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 
 int marcel_deliver_sig(void);
 int marcel_call_function(int sig);
-int marcel_distribwait_sigext(int sig);
-int marcel_distribwait_thread(int sig,marcel_t thread);
+int marcel_distribwait_sigext(siginfo_t *info);
+int marcel_distribwait_thread(siginfo_t *info,marcel_t thread);
 void ma_signals_init(void);
 
 /**************************marcel_sigset_t*********************/
@@ -166,7 +175,7 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
   ({ *(dest) = ~*(set);                    \
      0; })
 
-#define marcel_sigandset(dest, left, right)\
+#define marcel_sigandset(dest, left, right)      \
   ({ *(dest) = *(left)&*(right);           \
      0; })
 
@@ -182,7 +191,7 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 #define marcel_signandset(dest, left, right)       \
   ({ marcel_sigset_t notright;                     \
      marcel_signotset(&notright,(right));          \
-     marcel_sigandset((dest), (left), &(notright));\
+           marcel_sigandset((dest), (left), &(notright)); \
      0; }) 
 
 #define marcel_signandisempty(left,right)     \
@@ -190,7 +199,7 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
      marcel_signandset(&nand,(left),(right)); \
      marcel_sigisemptyset(&nand); })
 
-#define marcel_signandismember(left,right,sig)\
+#define marcel_signandismember(left,right,sig)      \
   ({ marcel_sigset_t nand;                    \
      marcel_signandset(&nand,(left),(right)); \
      marcel_sigismember(&nand,(sig)); })
@@ -227,4 +236,19 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 #define pmarcel_signandismember marcel_signandismember
 #define pmarcel_sigequalset     marcel_sigequalset
 
-void marcel_testset(marcel_sigset_t * set,char *what);
+void marcel_testset(__const marcel_sigset_t * set,char *what);
+
+/****************autres fonctions******************/
+int pmarcel_sighold(int sig);
+DEC_MARCEL_POSIX(int,sighold,(int sig) __THROW);
+
+int pmarcel_sigrelse(int sig);
+DEC_MARCEL_POSIX(int,sigrelse,(int sig) __THROW);
+
+int pmarcel_sigignore(int sig);
+DEC_MARCEL_POSIX(int,sigignore,(int sig) __THROW);
+
+int pmarcel_sigpause(int sig);
+DEC_MARCEL_POSIX(int,sigpause,(int sig) __THROW);
+
+void (*pmarcel_sigset(int sig,void (*dispo)(int)));

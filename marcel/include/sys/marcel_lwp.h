@@ -126,7 +126,7 @@ extern unsigned  ma__nb_vp;
 
 #section marcel_variables
 
-extern marcel_lwp_t __main_lwp;
+extern TBX_EXTERN marcel_lwp_t __main_lwp;
 
 #ifdef MA__LWPS
 

@@ -1,36 +1,127 @@
-/*******************************smp******************************************/
-all ok !!!
+/*******************************pmarcel new failed**************************/
+pthread_kill/8-1: INTERRUPTED
 
-/*******************************failed***************************************/
-pthread_rwlock_rdlock/2-3:  FAILED ---> rd_thread blocked on read lock
-pthread_rwlock_unlock/3-1:  FAILED --->  writer did not get write lock, when main release the lock
+pthread_create/1-6: The thread is not using the scheduling policy that was required
+pthread_create/3-2: The new thread does not report the scheluling policy that was specified
+
+pthread_join/4-1:  ne peut annuler le thread defferé, on doit pouvoir join sur un thread cancelled
+pthread_join/6-3: detachstate mis je ne sais pas ou (faudrait faire un breakpoint sur create)
+
+pthread_detach/2-2: 0xa7f1a030 in .text.lock.marcel () at source/marcel_sched_generic.c:291    MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+
+pthread_detach/4-3: INTERRUPTED ou PASS
+
+pthread_equal/2-1: INTERRUPTED 
+
+pthread_atfork/3-3: INTERRUPTED ma_lwp_wait_active () at source/marcel_lwp.c:26
+
+pthread_cond_broadcast/4-2: INTERRUPTED ---> bloque sur un spinlock
+
+pthread_getschedparam/1-3: FAILED -> The thread's policy is not as expected
+
+sigwaitinfo/3-1: UNRESOLVED 
+
+sighold/1-1: FAILED
+sigrelse/1-1: UNRESOLVED
+
+pthread_cond_signal/4-2: INTERRUPTED  ---> bloque sur un spinlock
+pthread_cond_wait/4-1: INTERRUPTED 
+pthread_cond_wait/2-3: INTERRUPTED ---> histoire de cancel
+pthread_cond_timedwait/4-3: INTERRUPTED 
+
+sem_wait/13-1: segfault dans pmarcel_semwait
+sem_timedwait/10-1: FAILED 
+sem_post/8-1 : peut fait crasher l'ordi !!! 
+
+pthread_attr_setinheritsched/2-4: à voir
+pthread_attr_setinheritsched/2-3: à voir
+
+pthread_rwlock_unlock/3-1: regarder le thread qui a la plus grande priorité quand on unlock un rwlock
+
+
+sigaction/4-10: INTERRUPTED 
+sigaction/4-7: INTERRUPTED 
+sigaction/4-32: INTERRUPTED 
+sigaction/4-35: INTERRUPTED 
+sigaction/4-40: INTERRUPTED 
+sigaction/4-17: INTERRUPTED 
+sigaction/4-29: INTERRUPTED 
+sigaction/4-11: INTERRUPTED 
+sigaction/4-13: INTERRUPTED 
+sigaction/4-24: INTERRUPTED 
+sigaction/4-31: INTERRUPTED 
+sigaction/4-4: INTERRUPTED 
+sigaction/4-1: INTERRUPTED 
+sigaction/4-14: INTERRUPTED 
+sigaction/4-25: INTERRUPTED 
+sigaction/4-49: INTERRUPTED 
+sigaction/4-6: INTERRUPTED 
+sigaction/4-12: INTERRUPTED 
+sigaction/4-27: INTERRUPTED 
+sigaction/4-38: INTERRUPTED 
+sigaction/9-1: INTERRUPTED 
+sigaction/4-42: INTERRUPTED 
+sigaction/4-19: INTERRUPTED 
+sigaction/4-23: INTERRUPTED 
+sigaction/4-9: INTERRUPTED 
+sigaction/4-41: INTERRUPTED 
+sigaction/4-50: INTERRUPTED 
+sigaction/4-22: INTERRUPTED 
+sigaction/4-16: INTERRUPTED 
+sigaction/4-46: INTERRUPTED 
+sigaction/4-43: INTERRUPTED 
+sigaction/4-26: INTERRUPTED 
+sigaction/29-1: UNRESOLVED 
+sigaction/4-39: INTERRUPTED 
+sigaction/4-3: INTERRUPTED 
+sigaction/4-51: INTERRUPTED 
+sigaction/4-45: INTERRUPTED 
+sigaction/4-48: INTERRUPTED 
+sigaction/4-44: INTERRUPTED 
+sigaction/4-34: INTERRUPTED 
+sigaction/4-36: INTERRUPTED 
+sigaction/4-5: INTERRUPTED 
+sigaction/4-15: INTERRUPTED 
+sigaction/4-28: INTERRUPTED 
+sigaction/4-20: INTERRUPTED 
+sigaction/4-21: INTERRUPTED 
+sigaction/4-2: INTERRUPTED 
+sigaction/4-30: INTERRUPTED 
+sigaction/4-52: INTERRUPTED 
+sigaction/4-47: INTERRUPTED 
+sigaction/4-33: INTERRUPTED 
+sigaction/4-8: INTERRUPTED 
+sigaction/4-37: INTERRUPTED 
+sigaction/4-18: INTERRUPTED 
 
 /*****************************not supported**********************************/
+
 sigwait/7-1:  UNRESOLVED ---> signaux rt not supported
 sigwait/2-1:  UNRESOLVED ---> signaux rt not supported
+sigwaitinfo/7-1: FAILED ---> signaux rt not supported
+sigwaitinfo/8-1: FAILED ---> signaux rt not supported
+sigwaitinfo/2-1: UNRESOLVED ---> signaux rt not supported
 
-pthread_condattr_setpshared/1-2:  FAILED ---> PTHREAD_PROCESS_SHARED not supported
-pthread_mutexattr_getpshared/1-2:  UNRESOLVED ---> PTHREAD_PROCESS_SHARED not supported
-pthread_rwlockattr_setpshared/1-1:  FAILED ---> PROCESS_SHARED not supported
-pthread_mutex_destroy/2-2:  UNRESOLVED ---> PROCESS_SHARED not supported
-pthread_mutex_destroy/5-2:  UNRESOLVED ---> PROCESS_SHARED not supported
-pthread_cond_init/1-3:  UNRESOLVED ---> PROCESS_SHARED not supported
+sem_init/3-2: UNRESOLVED ---> PROCESS_SHARED not supported
+sem_init/3-3: UNRESOLVED ---> PROCESS_SHARED not supported
 pthread_mutex_trylock/4-3:  UNRESOLVED ---> PROCESS_SHARED not supported
 pthread_mutex_trylock/1-2:  UNRESOLVED ---> PROCESS_SHARED not supported
 pthread_mutex_trylock/4-2:  UNRESOLVED ---> PROCESS_SHARED not supported
 pthread_mutex_trylock/2-1:  UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_mutex_destroy/2-2:  UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_mutex_destroy/5-2:  UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_mutexattr_getpshared/1-2:  UNRESOLVED ---> PTHREAD_PROCESS_SHARED not supported
 pthread_mutexattr_setpshared/2-2:  FAILED ---> PROCESS_SHARED not supported
 pthread_mutexattr_setpshared/1-1:  FAILED ---> PROCESS_SHARED not supported
+pthread_cond_init/4-1: UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_cond_init/4-2: UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_cond_init/1-3:  UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_condattr_setpshared/1-2:  FAILED ---> PTHREAD_PROCESS_SHARED not supported
 pthread_condattr_getpshared/1-2:  UNRESOLVED ---> PROCESS_SHARED not supported
-
-pthread_attr_setscope/1-1:  UNRESOLVED ---> SCOPE_SYSTEM not supported
-
-pthread_attr_getinheritsched/1-1:  UNRESOLVED ---> SCHED_INHERIT not supported
-pthread_attr_setinheritsched/1-1:  UNRESOLVED ---> SCHED_INHERIT not supported
-pthread_attr_setinheritsched/2-3:  UNRESOLVED ---> SCHED_INHERIT not supported
-pthread_attr_setinheritsched/2-4:  FAILED ---> SCHED_INHERIT not supported
-pthread_attr_setinheritsched/2-1:  UNRESOLVED ---> SCHED_INHERIT not supported
-
+pthread_rwlockattr_setpshared/1-1:  FAILED ---> PROCESS_SHARED not supported
+pthread_rwlockattr_getpshared/2-1: UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_barrierattr_setpshared/1-1: UNRESOLVED ---> PROCESS_SHARED not supported
+pthread_barrierattr_getpshared/2-1: UNRESOLVED ---> PROCESS_SHARED not supported
 pthread_attr_setstack/4-1:  U ---> pile non alignée, Interrupted system call
 pthread_attr_setstack/1-1:  U ---> pile non alignée, Interrupted system call
 pthread_attr_setstack/2-1:  U ---> pile non alignée, Interrupted system call
@@ -38,49 +129,14 @@ pthread_attr_getstack/1-1:  U ---> pile non alignée, Interrupted system call
 
 pthread_key_create/speculative/5-1:  I ---> trop de keys (choix d'implementation)
 pthread_exit/6-1:  UNRESOLVED ---> fork (trop difficile)
-sem_post/8-1: INTERRUPTED ---> (fork)
+sem_post/8-1: INTERRUPTED ---> fork (trop difficile)
 sigwait/6-1:  INTERRUPTED ---> signaux avec SIG_DFL pour sa_handler enotsup pour pthread_sigmask
 pthread_attr_setstacksize/4-1:  FAILED ---> pinaillage sur PTHREAD_STACK_MIN
+pthread_spin_init/2-1: FAILED ---> utilise sem_open, sem_unlink, PROCESS_SHARED pthread_rwlock_timedwrlock/6-2:  FAILED ---> libérer les mutexes pris par un thread que l'on tue
 
 /*****************************not implemented*****************************/
-
-pthread_rwlock_timedwrlock/6-2:  UNRESOLVED ---> not yet implemented (todo)
-pthread_rwlock_timedwrlock/5-1:  UNRESOLVED ---> not yet implemented (todo)
-pthread_rwlock_timedwrlock/1-1:  UNRESOLVED ---> not yet implemented (todo)
-pthread_rwlock_timedwrlock/6-1:  FAILED ---> not yet implemented (todo)
-pthread_rwlock_timedwrlock/2-1:  UNRESOLVED ---> not yet implemented (todo)
-
-pthread_mutex_timedlock/5-1:  FAILED ---> not yet implemented (todo)
-pthread_mutex_timedlock/4-1:  FAILED ---> not yet implemented (todo)
-pthread_mutex_timedlock/5-2:  FAILED ---> not yet implemented (todo)
-pthread_mutex_timedlock/1-1:  FAILED ---> not yet implemented (todo)
-pthread_mutex_timedlock/5-3:  FAILED ---> not yet implemented (todo)
-
-pthread_atfork/2-2:  INTERRUPTED ---> not implemented (difficile)
-pthread_atfork/4-1:  INTERRUPTED ---> not implemented (difficile)
-pthread_atfork/3-2:  INTERRUPTED ---> not implemented (difficile)
-pthread_atfork/1-2:  INTERRUPTED ---> not implemented (difficile)
-
-sigaltstack/6-1:  FAILED ---> not implemented (vieux)
-sigaltstack/7-1:  FAILED ---> not implemented (vieux)
-
-sigwaitinfo/5-1:  UNRESOLVED ---> not implemented
-sigwaitinfo/1-1:  UNRESOLVED ---> not implemented
-sigwaitinfo/9-1:  UNRESOLVED ---> not implemented
-sigwaitinfo/6-1:  UNRESOLVED ---> not implemented
-sigwaitinfo/7-1:  FAILED ---> not implemented
-sigwaitinfo/8-1:  FAILED ---> not implemented
-sigwaitinfo/2-1:  UNRESOLVED ---> not implemented
-sigwaitinfo/3-1:  UNRESOLVED ---> not implemented
-
-sigpause/1-1:  FAILED ---> not implemented (vieux)
-sigpause/1-2:  FAILED ---> not implemented (vieux)
-sigpause/2-1:  UNRESOLVED ---> not implemented (vieux)
-sigpause/3-1:  INTERRUPTED ---> not implemented (vieux)
-
-sigtimedwait/4-1:  UNRESOLVED ---> not implemented
-sigtimedwait/1-1:  FAILED ---> not implemented
-sigtimedwait/6-1:  FAILED ---> not implemented
+sigaltstack/6-1:  FAILED ---> not implemented (difficile)
+sigaltstack/7-1:  FAILED ---> not implemented (difficile)
 
 sem_open/2-2:  UNRESOLVED ---> not implemented (difficile)
 sem_open/15-1:  UNRESOLVED ---> not implemented (difficile)
@@ -102,61 +158,86 @@ sem_unlink/4-2:  FAILED ---> not implemented (difficile)
 sem_unlink/2-1:  INTERRUPTED ---> not implemented (difficile)
 sem_unlink/3-1:  UNRESOLVED ---> not implemented (difficile)
 
-sighold/1-1:  FAILED ---> not implemented (vieux)
-sigset: ---> not yet implemented (vieux)
-sigrelse: ---> not yet implemented (vieux)
+pthread_mutex_getprioceiling/1-1: FAILED ---> not implemented
+pthread_mutexattr_setprioceiling/1-1: FAILED ---> not implemented
+pthread_mutexattr_setprioceiling/3-2: FAILED ---> not implemented
+pthread_mutexattr_setprioceiling/3-1: FAILED ---> not implemented
+pthread_mutexattr_getprioceiling/1-1: UNRESOLVED ---> not implemented
+pthread_mutexattr_getprioceiling/1-2: UNRESOLVED ---> not implemented
+pthread_mutexattr_getprioceiling/3-1: FAILED ---> not implemented
+pthread_mutexattr_getprotocol/1-1: FAILED ---> not implemented
+pthread_mutexattr_getprotocol/1-2: UNRESOLVED ---> not implemented
+pthread_mutexattr_setprotocol/1-1: UNRESOLVED ---> not implemented
+pthread_mutexattr_setprotocol/3-2: FAILED ---> not implemented
+pthread_mutexattr_setprotocol/3-1: FAILED ---> not implemented
+pthread_condattr_getclock/1-1: FAILED ---> not implemented
+pthread_condattr_getclock/1-2: UNRESOLVED ---> not implemented
+pthread_condattr_setclock/1-3: FAILED ---> not implemented
+pthread_condattr_setclock/1-1: FAILED ---> not implemented
+pthread_condattr_setclock/1-2: FAILED ---> not implemented
 
-/****************************sigaction***********************/
+pthread_cond_init/1-2: UNRESOLVED --> set/getclock not implemented
+pthread_cond_init/2-2: UNRESOLVED --> set/getclock not implemented
+pthread_cond_wait/2-2: UNRESOLVED --> set/getclock not implemented
+pthread_cond_broadcast/1-2: UNRESOLVED --> set/getclock not implemented
+pthread_cond_broadcast/2-3: UNRESOLVED --> set/getclock not implemented
+pthread_cond_signal/1-2: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_timedwait/2-4: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_timedwait/2-6: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_timedwait/2-5: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_timedwait/4-2: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_timedwait/2-7: UNRESOLVED ---> set/getclock not implemented
+pthread_cond_destroy/2-1: UNRESOLVED ---> set/getclock not implemented
 
+sigqueue/5-1: UNRESOLVED ---> not implemented
+sigqueue/4-1: UNRESOLVED ---> not implemented
+sigqueue/1-1: UNRESOLVED ---> not implemented
+sigqueue/6-1: UNRESOLVED ---> not implemented
+sigqueue/7-1: UNRESOLVED ---> not implemented
+sigqueue/8-1: FAILED ---> not implemented
+
+sigignore/1-1: FAILED ---> not implemented
+sigset/4-1: FAILED ---> not implemented
+sigset/1-1: UNRESOLVED ---> not implemented
+sigset/9-1: FAILED ---> not implemented
+sigset/6-1: FAILED ---> not implemented
+sigset/7-1: UNRESOLVED ---> not implemented
+sigset/2-1: UNRESOLVED ---> not implemented
+sigpause/1-1: FAILED ---> not implemented
+sigpause/1-2: FAILED ---> not implemented
+sigpause/2-1: UNRESOLVED ---> not implemented
+sigpause/3-1: INTERRUPTED ---> not implemented
+
+/*****************************wait*************************/
+
+sigaction/21-1:  FAILED ---> wait not yet implemented
 sigaction/22-11:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-10:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-2:  FAILED ---> siginfo niveau processus
-sigaction/19-6:  FAILED ---> siginfo niveau processus
-sigaction/6-11:  FAILED ---> siginfo niveau processus
 sigaction/4-7:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-23:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-24:  FAILED ---> siginfo niveau processus
 sigaction/22-2:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-9:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-2:  FAILED ---> siginfo niveau processus
 sigaction/22-3:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-22:  FAILED ---> siginfo niveau processus
-sigaction/19-19:  FAILED ---> siginfo niveau processus
-sigaction/19-1:  FAILED ---> siginfo niveau processus
-sigaction/6-17:  FAILED ---> siginfo niveau processus
-sigaction/19-16:  FAILED ---> siginfo niveau processus
 sigaction/25-19:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-17:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-15:  FAILED ---> siginfo niveau processus
 sigaction/4-17:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-10:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-22:  FAILED ---> siginfo niveau processus
-sigaction/6-8:  FAILED ---> siginfo niveau processus
 sigaction/22-7:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-11:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-6:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-13:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-24:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-3:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-12:  FAILED ---> siginfo niveau processus
 sigaction/25-16:  UNRESOLVED  ---> wait not yet implemented
-sigaction/6-13:  FAILED ---> siginfo niveau processus
 sigaction/4-4:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-11:  FAILED ---> siginfo niveau processus
 sigaction/25-8:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-17:  FAILED ---> siginfo niveau processus
 sigaction/4-1:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-20:  FAILED ---> siginfo niveau processus
 sigaction/4-14:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-23:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-9:  FAILED ---> siginfo niveau processus
 sigaction/22-1:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-18:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-7:  FAILED ---> siginfo niveau processus
 sigaction/4-25:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-4:  FAILED ---> siginfo niveau processus
 sigaction/25-21:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-14:  FAILED ---> siginfo niveau processus
 sigaction/4-6:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-20:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-15:  UNRESOLVED ---> wait not yet implemented
@@ -164,8 +245,6 @@ sigaction/25-26:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-12:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-12:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-15:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-13:  FAILED ---> siginfo niveau processus
-sigaction/19-7:  FAILED ---> siginfo niveau processus
 sigaction/25-2:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-18:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-19:  UNRESOLVED ---> wait not yet implemented
@@ -173,92 +252,63 @@ sigaction/25-4:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-25:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-23:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-9:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-19:  FAILED ---> siginfo niveau processus
 sigaction/22-13:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-10:  FAILED ---> siginfo niveau processus
 sigaction/4-22:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-26:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-9:  FAILED ---> siginfo niveau processus
 sigaction/4-16:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-26:  FAILED ---> siginfo niveau processus
 sigaction/4-26:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-26:  FAILED ---> siginfo niveau processus
 sigaction/25-24:  UNRESOLVED ---> wait not yet implemented
 sigaction/29-1:  UNRESOLVED ---> wait not yet implemented
-sigaction/11-1:  INTERRUPTED ---> siginfo niveau processus
 sigaction/22-20:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-1:  FAILED ---> siginfo niveau processus
 sigaction/4-3:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-3:  FAILED ---> siginfo niveau processus
-sigaction/10-1:  INTERRUPTED ---> siginfo niveau processus
 sigaction/22-9:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-3:  FAILED ---> siginfo niveau processus
-sigaction/6-6:  FAILED ---> siginfo niveau processus
-sigaction/19-20:  FAILED ---> siginfo niveau processus
 sigaction/22-8:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-21:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-7:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-19:  UNRESOLVED ---> wait not yet implemented
-sigaction/21-1:  FAILED ---> siginfo niveau processus
 sigaction/22-10:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-12:  FAILED ---> siginfo niveau processus
-sigaction/6-18:  FAILED ---> siginfo niveau processus
 sigaction/25-1:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-5:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-24:  FAILED ---> siginfo niveau processus
 sigaction/25-14:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-12:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-10:  FAILED ---> siginfo niveau processus
 sigaction/25-5:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-4:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-8:  FAILED ---> siginfo niveau processus
 sigaction/4-15:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-22:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-18:  FAILED ---> siginfo niveau processus
-sigaction/19-23:  FAILED ---> siginfo niveau processus
 sigaction/22-5:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-24:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-21:  FAILED ---> siginfo niveau processus
 sigaction/22-14:  UNRESOLVED ---> wait not yet implemented
 sigaction/22-22:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-20:  UNRESOLVED ---> wait not yet implemented
 sigaction/4-21:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-23:  FAILED ---> siginfo niveau processus
 sigaction/4-2:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-15:  FAILED ---> siginfo niveau processus
-sigaction/6-5:  FAILED ---> siginfo niveau processus
 sigaction/22-16:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-11:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-6:  UNRESOLVED ---> wait not yet implemented
-sigaction/6-25:  FAILED ---> siginfo niveau processus
 sigaction/4-8:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-5:  FAILED ---> siginfo niveau processus
-sigaction/19-25:  FAILED ---> siginfo niveau processus
-sigaction/6-16:  FAILED ---> siginfo niveau processus
-sigaction/19-21:  FAILED ---> siginfo niveau processus
-sigaction/6-14:  FAILED ---> siginfo niveau processus
 sigaction/4-18:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-13:  UNRESOLVED ---> wait not yet implemented
 sigaction/25-25:  UNRESOLVED ---> wait not yet implemented
-sigaction/19-4:  FAILED ---> siginfo niveau processus
 sigaction/22-17:  UNRESOLVED ---> wait not yet implemented
-
-/*****************************wait*************************/
 
 sigsuspend/4-1:  UNRESOLVED ---> wait not yet implemented
 sigsuspend/1-1:  UNRESOLVED ---> wait not yet implemented
 sigsuspend/6-1:  UNRESOLVED ---> wait not yet implemented
 sigsuspend/3-1:  UNRESOLVED ---> wait not yet implemented
+
 raise/1-2:  UNRESOLVED ---> wait not yet implemented
 
+sem_wait/7-1:  UNRESOLVED  ---> wait not yet implemented
 sem_timedwait/9-1:  UNRESOLVED ---> wait not yet implemented
 sem_timedwait/2-1:  UNRESOLVED ---> wait not yet implemented
 
 nanosleep/5-2:  UNRESOLVED ---> wait not yet implemented
 nanosleep/7-1:  UNRESOLVED ---> wait not yet implemented
 nanosleep/3-1:  UNRESOLVED ---> wait not yet implemented
-
-marcel : sem_wait/7-1: PASS mais segfault ---> wait not yet implemented
+nanosleep/1-3:  UNRESOLVED ---> wait not yet implemented
+nanosleep/3-2:  UNRESOLVED ---> wait not yet implemented
+nanosleep/1-2:  UNRESOLVED ---> wait not yet implemented
+nanosleep/7-2:  UNRESOLVED ---> wait not yet implemented
 
 /*******************************untested******************************/
 
@@ -268,16 +318,19 @@ pthread_mutex_init/speculative/5-2:  UNSUPPORTED ---> non testé (idem nptl)
 
 /*******************************douteux******************************/
 
+pthread_rwlock_trywrlock/speculative/3-1:  einval à retourner qd pas initialisé
 pthread_mutexattr_gettype/speculative/3-1:  FAILED ---> le test est faux - comportement normal
 pthread_rwlock_wrlock/3-1:  INTERRUPTED ---> le test est faux - comportement normal
 pthread_rwlock_unlock/4-1:  FAILED ---> le test est faux - comportement normal
 pthread_attr_setdetachstate/2-1:  FAILED ---> le test est faux - comportement normal
 pthread_attr_setschedpolicy/5-1:  le test est faux - comportement normal
+pthread_key_create/2-1: FAILED ---> le test est faux - comportement normal
 pthread_attr_setstacksize/2-1:  get_attr_np bizarre
+pthread_attr_destroy/1-1: cmt tester si initialisé ou pas ?
+pthread_join/speculative/6-1: join sur detached (EINVAL....)
+pthread_join/1-2: test faux, le thread est crée détaché, donc le join != 0 forcément
 
 /*******************************conclusion****************************/
 
-tests appelant fork, atfork/wait, siginfo(sigwaitinfo,...), PROCESS_SHARED, SIGRT : difficile
-SCHED_INHERIT : difficile mais faisable (todo)  
-SCOPE_SYSTEM : todo
+tests appelant fork, wait, PROCESS_SHARED, SIGRT : difficile
 

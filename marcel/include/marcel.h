@@ -170,7 +170,7 @@ unsigned long marcel_unusedstack(void);
 static __tbx_inline__ char *marcel_stackbase(marcel_t pid) TBX_UNUSED;
 static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 {
-  return (char *)pid->stack_base;
+	return (char *) pid->stack_base;
 }
 
 
@@ -183,6 +183,9 @@ void marcel_start_playing(void);
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 long marcel_random(void);
 #endif
+
+DEC_MARCEL_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)) __THROW);
+
 
 __TBX_END_DECLS
 

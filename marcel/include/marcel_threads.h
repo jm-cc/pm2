@@ -132,6 +132,9 @@ static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
   return (pid1 == pid2);
 }
 
+#section macros
+#define pmarcel_equal(t1,t2) ((t1) == (t2))
+
 #section functions
 
 /**********************set/getconcurrency**********************/
@@ -146,7 +149,7 @@ int fastcall __pmarcel_enable_asynccancel (void);
 void fastcall __pmarcel_disable_asynccancel(int old);
 #ifndef MA__IFACE_PMARCEL
 #define __pmarcel_enable_asynccancel() 0
-#define __pmarcel_disable_asynccancel(old) (void)0
+#define __pmarcel_disable_asynccancel(old) (void)(old)
 #endif
 /******************set/getschedparam/prio*****************/
 DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
@@ -287,7 +290,7 @@ int marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
    be used in matching pairs at the same nesting level of braces. */
 
 #define marcel_cleanup_push(routine,arg) \
-  { struct _marcel_cleanup_buffer _buffer;                                   \
+{       struct _marcel_cleanup_buffer _buffer; \
     _marcel_cleanup_push (&_buffer, (routine), (arg));
 
 extern void _marcel_cleanup_push (struct _marcel_cleanup_buffer *__buffer,
@@ -308,7 +311,7 @@ extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
 
 /* #ifdef __USE_GNU */
 # define marcel_cleanup_push_defer_np(routine,arg) \
-  { struct _marcel_cleanup_buffer _buffer;				      \
+{       struct _marcel_cleanup_buffer _buffer; \
     _marcel_cleanup_push_defer (&_buffer, (routine), (arg));
 
 extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,

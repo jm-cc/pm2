@@ -1,5 +1,8 @@
+#include<sys/syscall.h>
+#include<sys/types.h>
+#include<unistd.h>
 #include "errno.h"
-#include "sys/marcel_flags.h" //VD: 
+#include "sys/marcel_flags.h"
 #ifdef MA__LIBPTHREAD
 
 /* POSIX à revoir :
@@ -28,6 +31,13 @@ static int infile=0;
     return ENOSYS; \
   }
 
+#define NDP(prefix,function) \
+        ND(prefix##pthread_##function) \
+        ND(prefix##pmarcel_##function)
+
+#define NDSP(function) NDP(_,function) 
+#define NDSSP(function) NDP(__,function) 
+
 #define NDC(function) \
   int function(void) { \
     if (!infile) { \
@@ -47,22 +57,26 @@ static int infile=0;
         return 0; \
   }
 
-ND(_pthread_cleanup_pop_restore)
-ND(_pthread_cleanup_push_defer)
+NDSP(cleanup_pop_restore)
+NDSP(cleanup_push_defer)
 NDC(recvmsg)
-ND(pthread_kill_other_threads_np)
+NDP(,kill_other_threads_np)
 
-ND(pthread_mutex_timedlock)
-ND(pthread_rwlock_timedrdlock) ND(pthread_rwlock_timedwrlock)
+NDP(,mutexattr_getrobust_np) NDP(,mutexattr_setrobust_np)
+NDP(,mutex_consistent_np)
 
-ND(pthread_mutexattr_getrobust_np) ND(pthread_mutexattr_setrobust_np)
-ND(pthread_mutex_consistent_np)
+NDP(,mutexattr_getprotocol) NDP(,mutexattr_setprotocol)
+NDP(,mutexattr_getprioceiling) NDP(,mutexattr_setprioceiling)
+NDP(,mutex_getprioceiling) NDP(,mutex_setprioceiling)
 
-ND(pthread_mutexattr_getprotocol) ND(pthread_mutexattr_setprotocol)
-ND(pthread_mutexattr_getprioceiling) ND(pthread_mutexattr_setprioceiling)
-ND(pthread_mutex_getprioceiling) ND(pthread_mutex_setprioceiling)
+NDP(,condattr_setclock) NDP(,condattr_getclock)
 
-ND(__pthread_unwind)
+NDSSP(unwind)
 
-NDC(__wait) NDC(system) NDC(tcdrain) NDC(wait) NDC(msync) NDC(sendmsg) NDC(sendto)
+pid_t wait(int *status)
+{
+	return syscall(SYS_wait4,-1,status,0,NULL);
+}
+
+NDC(system) NDC(tcdrain) NDC(msync) NDC(sendmsg) NDC(sendto)
 #endif

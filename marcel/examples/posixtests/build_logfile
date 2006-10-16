@@ -1,0 +1,407 @@
+conformance/interfaces/pthread_rwlock_timedwrlock/6-2: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_timedwrlock/6-2.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_timedwrlock/6-2.c:65: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_rwlock_timedwrlock/6-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_timedwrlock/6-1.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_timedwrlock/6-1.c:63: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_create/4-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_create/4-1.o: dans la fonction « main »:
+conformance/interfaces/pthread_create/4-1.c:51: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_create/1-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_create/1-1.o: dans la fonction « main »:
+conformance/interfaces/pthread_create/1-1.c:43: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_create/1-4: link: FAILED. Linker output: 
+conformance/interfaces/pthread_create/1-4.o: dans la fonction « threaded »:
+conformance/interfaces/pthread_create/1-4.c:135: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_atfork/1-2: link: FAILED. Linker output: 
+conformance/interfaces/pthread_atfork/1-2.o: dans la fonction « threaded »:
+conformance/interfaces/pthread_atfork/1-2.c:162: référence indéfinie vers « pmarcel_equal »
+conformance/interfaces/pthread_atfork/1-2.c:167: référence indéfinie vers « pmarcel_equal »
+conformance/interfaces/pthread_atfork/1-2.c:148: référence indéfinie vers « pmarcel_equal »
+conformance/interfaces/pthread_atfork/1-2.c:153: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_join/4-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_join/4-1.c: In function ‘threaded’:
+conformance/interfaces/pthread_join/4-1.c:98: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/4-1.c:117: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/4-1.c: In function ‘joiner_func’:
+conformance/interfaces/pthread_join/4-1.c:124: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/4-1.c:129: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/6-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_join/6-3.c: In function ‘threaded’:
+conformance/interfaces/pthread_join/6-3.c:186: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/6-3.c:189: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_join/1-2.c: In function ‘threaded’:
+conformance/interfaces/pthread_join/1-2.c:96: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_join/1-2.c:111: warning: format ‘%lx’ expects type ‘long unsigned int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/mq_timedsend/5-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/5-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/5-1.c:115: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/1-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/1-1.c:58: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/9-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/9-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/9-1.c:69: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/4-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/4-3.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/4-3.c:60: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/3-2.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/3-2.c:105: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-2.c:115: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-2.c:125: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-2.c:135: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-2.c:145: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/7-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/7-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/7-1.c:76: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/8-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/8-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/8-1.c:55: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedsend/3-1.c: In function ‘main’:
+conformance/interfaces/mq_timedsend/3-1.c:98: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-1.c:108: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-1.c:118: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-1.c:128: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedsend/3-1.c:138: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/pthread_mutex_getprioceiling/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutex_getprioceiling/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutex_getprioceiling/1-1.c:43: warning: implicit declaration of function ‘pmarcel_mutex_getprioceiling’
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1: build: FAILED: Compiler output: 
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1.c:52:45: error: macro "pthread_mutexattr_setprioceiling" requires 3 arguments, but only 2 given
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1.c:52: error: ‘pthread_mutexattr_setprioceiling’ undeclared (first use in this function)
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1.c:52: error: (Each undeclared identifier is reported only once
+conformance/interfaces/pthread_mutexattr_setprioceiling/1-1.c:52: error: for each function it appears in.)
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2: build: FAILED: Compiler output: 
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c:44:59: error: macro "pthread_mutexattr_setprioceiling" requires 3 arguments, but only 2 given
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c:44: error: ‘pthread_mutexattr_setprioceiling’ undeclared (first use in this function)
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c:44: error: (Each undeclared identifier is reported only once
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c:44: error: for each function it appears in.)
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-2.c:36: warning: unused variable ‘mta’
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1: build: FAILED: Compiler output: 
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c:42:59: error: macro "pthread_mutexattr_setprioceiling" requires 3 arguments, but only 2 given
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c:42: error: ‘pthread_mutexattr_setprioceiling’ undeclared (first use in this function)
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c:42: error: (Each undeclared identifier is reported only once
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c:42: error: for each function it appears in.)
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_setprioceiling/3-1.c:36: warning: unused variable ‘mta’
+conformance/interfaces/pthread_cond_broadcast/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_broadcast/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_cond_broadcast/1-2.c:428: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_broadcast/1-2.c:431: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_broadcast/2-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_broadcast/2-3.c: In function ‘main’:
+conformance/interfaces/pthread_cond_broadcast/2-3.c:418: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_broadcast/2-3.c:421: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/sigaltstack/9-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/sigaltstack/9-1.c: In function ‘main’:
+conformance/interfaces/sigaltstack/9-1.c:63: warning: not enough variable arguments to fit a sentinel
+conformance/interfaces/pthread_cond_signal/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_signal/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_cond_signal/1-2.c:383: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_signal/1-2.c:386: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/sigwait/6-2: link: FAILED. Linker output: 
+conformance/interfaces/sigwait/6-2.o: dans la fonction « main »:
+conformance/interfaces/sigwait/6-2.c:175: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/mq_open/19-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/19-1.c: In function ‘main’:
+conformance/interfaces/mq_open/19-1.c:59: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/19-1.c:84: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/9-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/9-1.c: In function ‘main’:
+conformance/interfaces/mq_open/9-1.c:67: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/9-1.c:101: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/8-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/8-2.c: In function ‘main’:
+conformance/interfaces/mq_open/8-2.c:83: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/8-2.c:138: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/7-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/7-1.c: In function ‘main’:
+conformance/interfaces/mq_open/7-1.c:76: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/8-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/8-1.c: In function ‘main’:
+conformance/interfaces/mq_open/8-1.c:63: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/8-1.c:98: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/7-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/7-2.c: In function ‘main’:
+conformance/interfaces/mq_open/7-2.c:83: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/2-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/2-1.c: In function ‘main’:
+conformance/interfaces/mq_open/2-1.c:83: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/9-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_open/9-2.c: In function ‘main’:
+conformance/interfaces/mq_open/9-2.c:92: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_open/9-2.c:139: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_timedreceive/speculative/10-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedreceive/speculative/10-2.c: In function ‘main’:
+conformance/interfaces/mq_timedreceive/speculative/10-2.c:62: warning: pointer targets in passing argument 4 of ‘mq_timedreceive’ differ in signedness
+conformance/interfaces/mq_timedreceive/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedreceive/1-1.c: In function ‘main’:
+conformance/interfaces/mq_timedreceive/1-1.c:65: warning: pointer targets in passing argument 4 of ‘mq_timedreceive’ differ in signedness
+conformance/interfaces/mq_timedreceive/1-1.c:80: warning: pointer targets in passing argument 4 of ‘mq_timedreceive’ differ in signedness
+conformance/interfaces/mq_timedreceive/10-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedreceive/10-2.c: In function ‘main’:
+conformance/interfaces/mq_timedreceive/10-2.c:65: warning: pointer targets in passing argument 4 of ‘mq_timedreceive’ differ in signedness
+conformance/interfaces/mq_timedreceive/10-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_timedreceive/10-1.c: In function ‘main’:
+conformance/interfaces/mq_timedreceive/10-1.c:59: warning: pointer targets in passing argument 4 of ‘mq_timedreceive’ differ in signedness
+conformance/interfaces/pthread_cond_destroy/2-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_destroy/2-1.c: In function ‘main’:
+conformance/interfaces/pthread_cond_destroy/2-1.c:420: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_destroy/2-1.c:423: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_wait/2-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_wait/2-2.c: In function ‘main’:
+conformance/interfaces/pthread_cond_wait/2-2.c:380: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_wait/2-2.c:423: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_wait/2-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_wait/2-3.c: In function ‘main’:
+conformance/interfaces/pthread_cond_wait/2-3.c:287: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_self/1-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_self/1-1.o: dans la fonction « main »:
+conformance/interfaces/pthread_self/1-1.c:58: référence indéfinie vers « pmarcel_equal »
+conformance/interfaces/pthread_self/1-1.c:63: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-1.c:44: warning: implicit declaration of function ‘pmarcel_mutexattr_getprioceiling’
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2: build: FAILED: Compiler output: 
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c:53:45: error: macro "pthread_mutexattr_setprioceiling" requires 3 arguments, but only 2 given
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c:53: error: ‘pthread_mutexattr_setprioceiling’ undeclared (first use in this function)
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c:53: error: (Each undeclared identifier is reported only once
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c:53: error: for each function it appears in.)
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_getprioceiling/1-2.c:60: warning: implicit declaration of function ‘pmarcel_mutexattr_getprioceiling’
+conformance/interfaces/pthread_mutexattr_getprioceiling/3-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_getprioceiling/3-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_getprioceiling/3-1.c:36: warning: implicit declaration of function ‘pmarcel_mutexattr_getprioceiling’
+conformance/interfaces/pthread_cond_init/2-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_init/2-2.c: In function ‘do_cs_test’:
+conformance/interfaces/pthread_cond_init/2-2.c:224: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_init/4-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_init/4-1.c: In function ‘main’:
+conformance/interfaces/pthread_cond_init/4-1.c:151: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_init/4-1.c:153: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_init/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_init/1-2.c: In function ‘do_cs_test’:
+conformance/interfaces/pthread_cond_init/1-2.c:222: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_init/4-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_init/4-2.c: In function ‘threaded’:
+conformance/interfaces/pthread_cond_init/4-2.c:180: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_init/4-2.c:182: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_getclock/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_getclock/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_getclock/1-1.c:38: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_getclock/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_getclock/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_getclock/1-2.c:39: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_getclock/1-2.c:46: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_once/4-1: link: SKIP
+conformance/interfaces/sem_unlink/2-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/sem_unlink/2-2.c: In function ‘main’:
+conformance/interfaces/sem_unlink/2-2.c:205: warning: not enough variable arguments to fit a sentinel
+conformance/interfaces/sem_unlink/5-1: build: FAILED: Compiler output: 
+conformance/interfaces/sem_unlink/5-1.c: In function ‘main’:
+conformance/interfaces/sem_unlink/5-1.c:96: error: expected identifier or ‘(’ before numeric constant
+conformance/interfaces/sem_unlink/5-1.c:103: error: invalid lvalue in assignment
+conformance/interfaces/sem_unlink/5-1.c:157: error: invalid lvalue in assignment
+conformance/interfaces/pthread_rwlock_wrlock/2-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_wrlock/2-1.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_wrlock/2-1.c:48: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/mq_send/5-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/5-1.c: In function ‘main’:
+conformance/interfaces/mq_send/5-1.c:108: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/1-1.c: In function ‘main’:
+conformance/interfaces/mq_send/1-1.c:54: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/9-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/9-1.c: In function ‘main’:
+conformance/interfaces/mq_send/9-1.c:65: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/4-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/4-3.c: In function ‘main’:
+conformance/interfaces/mq_send/4-3.c:55: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/3-2.c: In function ‘main’:
+conformance/interfaces/mq_send/3-2.c:96: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-2.c:106: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-2.c:116: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-2.c:126: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-2.c:136: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/7-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/7-1.c: In function ‘main’:
+conformance/interfaces/mq_send/7-1.c:71: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/8-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/8-1.c: In function ‘main’:
+conformance/interfaces/mq_send/8-1.c:51: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_send/3-1.c: In function ‘main’:
+conformance/interfaces/mq_send/3-1.c:89: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-1.c:99: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-1.c:109: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-1.c:119: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_send/3-1.c:129: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_receive/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/mq_receive/1-1.c: In function ‘main’:
+conformance/interfaces/mq_receive/1-1.c:61: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/mq_receive/1-1.c:74: warning: pointer targets in passing argument 4 of ‘mq_receive’ differ in signedness
+conformance/interfaces/pthread_condattr_setclock/1-3: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_setclock/1-3.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_setclock/1-3.c:58: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_setclock/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_setclock/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_setclock/1-1.c:38: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_setclock/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_setclock/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_setclock/1-2.c:51: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_condattr_setclock/2-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_condattr_setclock/2-1.c: In function ‘main’:
+conformance/interfaces/pthread_condattr_setclock/2-1.c:45: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/sched_yield/1-1: build: FAILED: Compiler output: 
+conformance/interfaces/sched_yield/1-1.c:25:1: error: "_GNU_SOURCE" redefined
+<command line>:1:1: error: this is the location of the previous definition
+cc1: warnings being treated as errors
+conformance/interfaces/sched_yield/1-1.c: In function ‘set_thread_affinity’:
+conformance/interfaces/sched_yield/1-1.c:119: warning: implicit declaration of function ‘pthread_setaffinity_np’
+conformance/interfaces/sched_yield/1-1.c: In function ‘runner’:
+conformance/interfaces/sched_yield/1-1.c:136: warning: format ‘%ld’ expects type ‘long int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/sched_yield/1-1.c: In function ‘busy_thread’:
+conformance/interfaces/sched_yield/1-1.c:159: warning: format ‘%ld’ expects type ‘long int’, but argument 3 has type ‘pmarcel_t’
+conformance/interfaces/pthread_equal/1-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_equal/1-1.o: dans la fonction « main »:
+conformance/interfaces/pthread_equal/1-1.c:46: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_equal/1-2: link: FAILED. Linker output: 
+conformance/interfaces/pthread_equal/1-2.o: dans la fonction « main »:
+conformance/interfaces/pthread_equal/1-2.c:53: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_equal/2-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_equal/2-1.o: dans la fonction « test »:
+conformance/interfaces/pthread_equal/2-1.c:163: référence indéfinie vers « pmarcel_equal »
+conformance/interfaces/pthread_equal/2-1.c:166: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_mutexattr_setprotocol/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_setprotocol/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprotocol/1-1.c:44: warning: implicit declaration of function ‘pmarcel_mutexattr_setprotocol’
+conformance/interfaces/pthread_mutexattr_setprotocol/1-1.c:51: warning: implicit declaration of function ‘pmarcel_mutexattr_getprotocol’
+conformance/interfaces/pthread_mutexattr_setprotocol/3-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_setprotocol/3-2.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprotocol/3-2.c:30: warning: implicit declaration of function ‘pmarcel_mutexattr_setprotocol’
+conformance/interfaces/pthread_mutexattr_setprotocol/3-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_setprotocol/3-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_setprotocol/3-1.c:45: warning: implicit declaration of function ‘pmarcel_mutexattr_setprotocol’
+conformance/interfaces/pthread_cond_timedwait/2-4: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_timedwait/2-4.c: In function ‘main’:
+conformance/interfaces/pthread_cond_timedwait/2-4.c:395: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-4.c:438: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-6: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_timedwait/2-6.c: In function ‘main’:
+conformance/interfaces/pthread_cond_timedwait/2-6.c:294: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-6.c:309: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-5: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_timedwait/2-5.c: In function ‘main’:
+conformance/interfaces/pthread_cond_timedwait/2-5.c:271: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-5.c:291: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/4-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_timedwait/4-2.c: In function ‘main’:
+conformance/interfaces/pthread_cond_timedwait/4-2.c:347: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/4-2.c:358: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-7: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_cond_timedwait/2-7.c: In function ‘main’:
+conformance/interfaces/pthread_cond_timedwait/2-7.c:401: warning: passing argument 1 of ‘pmarcel_condattr_setclock’ from incompatible pointer type
+conformance/interfaces/pthread_cond_timedwait/2-7.c:444: warning: passing argument 1 of ‘pmarcel_condattr_getclock’ from incompatible pointer type
+conformance/interfaces/pthread_mutexattr_getprotocol/1-1: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_getprotocol/1-1.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_getprotocol/1-1.c:38: warning: implicit declaration of function ‘pmarcel_mutexattr_getprotocol’
+conformance/interfaces/pthread_mutexattr_getprotocol/1-2: build: FAILED: Compiler output: 
+cc1: warnings being treated as errors
+conformance/interfaces/pthread_mutexattr_getprotocol/1-2.c: In function ‘main’:
+conformance/interfaces/pthread_mutexattr_getprotocol/1-2.c:40: warning: implicit declaration of function ‘pmarcel_mutexattr_setprotocol’
+conformance/interfaces/pthread_mutexattr_getprotocol/1-2.c:47: warning: implicit declaration of function ‘pmarcel_mutexattr_getprotocol’
+conformance/interfaces/pthread_rwlock_timedrdlock/6-2: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_timedrdlock/6-2.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_timedrdlock/6-2.c:65: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_rwlock_timedrdlock/6-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_timedrdlock/6-1.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_timedrdlock/6-1.c:63: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status
+conformance/interfaces/pthread_rwlock_rdlock/4-1: link: FAILED. Linker output: 
+conformance/interfaces/pthread_rwlock_rdlock/4-1.o: dans la fonction « sig_handler »:
+conformance/interfaces/pthread_rwlock_rdlock/4-1.c:49: référence indéfinie vers « pmarcel_equal »
+collect2: ld returned 1 exit status

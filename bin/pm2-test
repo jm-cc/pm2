@@ -63,7 +63,7 @@ do_the_test()
 
     # Compilation
     echo "Compiling program $prog..."
-    (cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
+    #(cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
     (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor)
     [ $? -eq 0 ] || pm2test_error "Compilation failed"
 
@@ -84,8 +84,8 @@ do_the_test()
 
     # Destruction de la flavor
     #echo "Cleaning flavor & files..."
-    ${PM2_ROOT}/bin/pm2-clean $flavor
-    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
+    #${PM2_ROOT}/bin/pm2-clean $flavor
+    #${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
 
     # Destruction des fichiers residuels
     rm -rf /tmp/pm2test_${USER}_*

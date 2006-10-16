@@ -25,111 +25,112 @@ static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
 
 static __tbx_inline__ void io_lock()
 {
-  //marcel_lock_acquire(&__io_lock);
+	//marcel_lock_acquire(&__io_lock);
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
-  marcel_mutex_lock(&ma_io_lock);
+	marcel_mutex_lock(&ma_io_lock);
 #else
-  marcel_extlib_protect();
+	marcel_extlib_protect();
 #endif
 }
 
 static __tbx_inline__ void io_unlock()
 {
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
-  marcel_mutex_unlock(&ma_io_lock);
+	marcel_mutex_unlock(&ma_io_lock);
 #else
-  marcel_extlib_unprotect();
+	marcel_extlib_unprotect();
 #endif
-  //marcel_lock_release(&__io_lock);
+	//marcel_lock_release(&__io_lock);
 }
 
-int marcel_printf(const char * __restrict format, ...)
+int marcel_printf(const char *__restrict format, ...)
 {
-  va_list args;
-  int retour;
+	va_list args;
+	int retour;
 
-  io_lock();
+	io_lock();
 
-  va_start(args, format);
-  retour = vprintf(format, args);
-  va_end(args);
+	va_start(args, format);
+	retour = vprintf(format, args);
+	va_end(args);
 
-  io_unlock();
+	io_unlock();
 
-  return retour;
+	return retour;
 }
 
-int marcel_fprintf(FILE * __restrict stream, const char * __restrict format, ...)
+int marcel_fprintf(FILE * __restrict stream, const char *__restrict format, ...)
 {
-  va_list args;
-  int retour;
+	va_list args;
+	int retour;
 
-  io_lock();
+	io_lock();
 
-  va_start(args, format);
-  retour = vfprintf(stream, format, args);
-  va_end(args);
+	va_start(args, format);
+	retour = vfprintf(stream, format, args);
+	va_end(args);
 
-  io_unlock();
-  return retour;
+	io_unlock();
+	return retour;
 }
 
-int marcel_sprintf(char * __restrict string, const char * __restrict format, ...)
- {
-  va_list args;
-  int retour;
+int marcel_sprintf(char *__restrict string, const char *__restrict format, ...)
+{
+	va_list args;
+	int retour;
 
-  io_lock();
+	io_lock();
 
-  va_start(args, format);
-  retour = vsprintf(string, format, args);
-  va_end(args);
+	va_start(args, format);
+	retour = vsprintf(string, format, args);
+	va_end(args);
 
-  io_unlock();
-  return retour;
-} 
-  
-int marcel_snprintf(char * __restrict string, size_t size, const char * __restrict format, ...)
- {
-  va_list args;
-  int retour;
+	io_unlock();
+	return retour;
+}
 
-  io_lock();
+int marcel_snprintf(char *__restrict string, size_t size,
+    const char *__restrict format, ...)
+{
+	va_list args;
+	int retour;
 
-  va_start(args, format);
-  retour = vsnprintf(string, size, format, args);
-  va_end(args);
+	io_lock();
 
-  io_unlock();
-  return retour;
-} 
+	va_start(args, format);
+	retour = vsnprintf(string, size, format, args);
+	va_end(args);
 
-FILE *marcel_fopen(const char * __restrict path, const char * __restrict mode)
- {
-    FILE *file;
-    
-    io_lock();
-    file = fopen(path,mode);
-    io_unlock();
-    return file;
- } 
+	io_unlock();
+	return retour;
+}
 
-int marcel_fclose(FILE *stream)
- {
-    int retour;
-    
-    io_lock();
-    retour  = fclose(stream);
-    io_unlock();
-    return retour;
-} 
+FILE *marcel_fopen(const char *__restrict path, const char *__restrict mode)
+{
+	FILE *file;
 
-int marcel_fflush(FILE *stream)
-  {
-    int retour;
-    
-    io_lock();
-    retour  = fflush(stream);
-    io_unlock();
-    return retour;
-} 
+	io_lock();
+	file = fopen(path, mode);
+	io_unlock();
+	return file;
+}
+
+int marcel_fclose(FILE * stream)
+{
+	int retour;
+
+	io_lock();
+	retour = fclose(stream);
+	io_unlock();
+	return retour;
+}
+
+int marcel_fflush(FILE * stream)
+{
+	int retour;
+
+	io_lock();
+	retour = fflush(stream);
+	io_unlock();
+	return retour;
+}

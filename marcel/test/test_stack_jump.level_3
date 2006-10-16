@@ -14,7 +14,7 @@
 
 
 # Configuration
-flavor="test_marcel"
+flavor="test_marcel_jump"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="stack_jump"
 args=""

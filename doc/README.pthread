@@ -31,19 +31,12 @@ Known limitations
 -----------------
 
 - some features will not be supported without quite some work:
-  * process-shared mutexes and semaphores (spinlocks should work fine, however),
-  * fork-related functions,
-  * SIGINFO,
-
-- some features aren't supported because they are really not much used, but
-could relatively easily, if needed:
-  * old deprecated signal functions (sigpause, sigtimedwait, sighold, sigset,
-  sigrelse)
-  * real-time signals,
-  * pthread_attr_setinheritsched(SCHED_INHERIT),
-  * pthread_attr_setscope(SCOPE_SYSTEM),
-  * pthread_rwlock_timedwrlock/pthread_mutex_timedlock
-
+  * process-shared mutexes and semaphores (spinlocks should work fine, however)
+  * real-time signals
+  * mutex(attr)_prioceiling/protocol
+  * cond(attr)_set/getclock
+  * complete SIGINFO for user-generated signals
+ 
 PThread interface
 =================
 

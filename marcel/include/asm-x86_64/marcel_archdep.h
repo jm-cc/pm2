@@ -16,6 +16,9 @@
 
 #section marcel_macros
 
+#ifdef MA__PROVIDE_TLS
+#include <asm/prctl.h>
+#endif
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
@@ -74,10 +77,11 @@
                        : : "r" (__sp), "r" (__bp) : "memory", "rsp" ); \
   } while (0)
 
-extern unsigned short __main_thread_desc;
+extern unsigned long __main_thread_tls_base;
 
 #ifdef MA__PROVIDE_TLS
 #include <stdint.h>
+/* nptl/sysdeps/x86_64/tls.h */
 typedef struct {
   void *tcb;
   void *dtv;
@@ -95,11 +99,12 @@ typedef struct {
 #define marcel_ctx_set_tls_reg(new_task) \
   do { \
     unsigned short val; \
-    if (new_task == __main_thread) \
-      val = __main_thread_desc; \
-    else \
+    if (new_task == __main_thread) { \
+      arch_prctl(ARCH_SET_FS, __main_thread_tls_base); \
+    } else { \
       val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~(THREAD_SLOT_SIZE-1))) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
     asm volatile ("movw %w0, %%fs" : : "q" (val)); \
+    } \
   } while(0)
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0

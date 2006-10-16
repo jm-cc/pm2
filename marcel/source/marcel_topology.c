@@ -104,7 +104,7 @@ unsigned marcel_topo_max_arity = 0;
 #endif
 
 void ma_set_nbprocessors(void) {
-	// Dï¿½ermination du nombre de processeurs disponibles
+	// Détermination du nombre de processeurs disponibles
 	marcel_nbprocessors = ma_nbprocessors();
 	mdebug("%d processors available\n", marcel_nbprocessors);
 }

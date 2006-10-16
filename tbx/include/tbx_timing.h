@@ -38,16 +38,8 @@
 
 typedef unsigned long long tbx_tick_t, *p_tbx_tick_t;
 
-#ifdef X86_ARCH
 #define TBX_GET_TICK(t) \
    __asm__ volatile("rdtsc" : "=A" (t))
-#else
-#define TBX_GET_TICK(t) do { \
-     unsigned int __a,__d; \
-     asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
-     (t) = ((unsigned long)__a) | (((unsigned long)__d)<<32); \
-} while(0)
-#endif
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    ((t2) - (t1))
 

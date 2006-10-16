@@ -60,7 +60,7 @@
 /* Room for threads/bubbles statistics */
 #define MARCEL_STATS_ROOM	64
 
-#define MARCEL_GANG_SCHEDULER
+/* #define MARCEL_GANG_SCHEDULER */
 
 /* Number of distinct real-time priorities */
 #if defined(MA__IFACE_LPT)

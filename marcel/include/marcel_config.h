@@ -50,7 +50,7 @@
 #endif
 
 /* Max number of marcel_add_lwp() calls */
-#define MARCEL_NBMAXVPSUP	2
+#define MARCEL_NBMAXVPSUP	10
 
 /* Default scheduling level */
 #define MARCEL_LEVEL_DEFAULT	0

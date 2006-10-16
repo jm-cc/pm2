@@ -49,6 +49,11 @@ typedef struct xpaul_req *xpaul_req_t;
  */
 typedef struct xpaul_wait *xpaul_wait_t;
 
+#ifdef MA__LWPS
+/* LWP spécialisé dans les communications */
+typedef struct xpaul_comm_lwp *xpaul_comm_lwp_t;
+#endif /* MA__LWPS */
+
 #ifndef MARCEL
 /* Without Marcel compliance */
 #define xpaul_time_t int*
@@ -181,6 +186,20 @@ typedef struct {
 	xpaul_callback_speed_t speed;
 } xpaul_pcallback_t;
 
+
+#ifdef MA__LWPS
+/* Communications specialized LWP */
+struct xpaul_comm_lwp {
+	int vp_nb; 		/* LWP number */
+	int fds[2];		/* file descriptor used to unblock the lwp  */
+	struct list_head chain_lwp_ready;
+	struct list_head chain_lwp_working;
+	xpaul_server_t server;
+	int wait;
+	marcel_t pid;
+};
+#endif /* MA__LWPS */
+
 /* Events server structure */
 struct xpaul_server {
 #ifdef MARCEL
@@ -204,6 +223,19 @@ struct xpaul_server {
 	struct list_head list_req_success;
 	/* List of waiters */
 	struct list_head list_id_waiters;
+
+#ifdef MA__LWPS
+	/* Liste des requêtes à exporter */
+	struct list_head list_req_to_export;
+	/* Liste des requêtes exportées */
+	struct list_head list_req_exported;
+	/* List of ready LWPs */
+	struct list_head list_lwp_ready;
+	/* List of working LWPs */
+	struct list_head list_lwp_working;
+
+#endif /* MA__LWPS */
+
 #ifdef MARCEL
 	/* Spinlock used to access list_req_success */
 	ma_spinlock_t req_success_lock;
@@ -216,8 +248,11 @@ struct xpaul_server {
 
 	/* List of grouped queries for polling (or being grouped) */
 	struct list_head list_req_poll_grouped;
+	/* List of grouped queries for syscall (or being grouped) */
+	struct list_head list_req_block_grouped;
 	/* Amount of queries in list_req_poll_grouped */
 	int req_poll_grouped_nb;
+	int req_block_grouped_nb;
 
 	/* Callbacks */
 	xpaul_pcallback_t funcs[XPAUL_FUNCTYPE_SIZE];
@@ -259,10 +294,17 @@ struct xpaul_req {
 	struct list_head chain_req_registered;
 	/* List of grouped queries */
 	struct list_head chain_req_grouped;
+	/* List of grouped queries (for a blocking syscall)*/
+	struct list_head chain_req_block_grouped;
 	/* Chaine des requêtes signalées OK par un call-back */
 	struct list_head chain_req_ready;
 	/* List of completed queries */
 	struct list_head chain_req_success;
+	/* List of queries to be exported */
+	struct list_head chain_req_to_export;
+	/* List of exported queries*/
+	struct list_head chain_req_exported;
+
 	/* Query state */
 	int state;
 	/* Query's server */
@@ -379,19 +421,19 @@ static int nb_comm_threads;
   list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
 
 /****************************************************************
- * Iterator over the grouped blocking queries
+ * Iterator over the grouped polling queries
  */
 
 /* Base iterator
  *   xpaul_req_t req : iterator
  *   xpaul_server_t server : server
  */
-#define FOREACH_REQ_BLOCK_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_block, chain_req)
+#define FOREACH_REQ_BLOCKING_BASE(req, server) \
+  list_for_each_entry((req), &(server)->list_req_block_grouped,  chain_req_block_grouped)
 
 /* Idem but safe (intern use) */
-#define FOREACH_REQ_BLOCK_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_block, chain_req)
+#define FOREACH_REQ_BLOCKING_BASE_SAFE(req, tmp, server) \
+  list_for_each_entry_safe((req), (tmp), &(server)->list_req_block_grouped, chain_req_block_grouped)
 
 /* Iterates using a custom type 
  *
@@ -400,8 +442,58 @@ static int nb_comm_threads;
  *   xpaul_server_t server : server
  *   member : name of struct xpaul in the structure pointed by req
  */
-#define FOREACH_REQ_BLOCK(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_block, member.chain_req)
+#define FOREACH_REQ_BLOCKING(req, server, member) \
+  list_for_each_entry((req), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
+
+/****************************************************************
+ * Iterator over the queries to be exported
+ */
+
+/* Base iterator
+ *   xpaul_req_t req : iterator
+ *   xpaul_server_t server : server
+ */
+#define FOREACH_REQ_TO_EXPORT_BASE(req, server) \
+  list_for_each_entry((req), &(server)->list_req_to_export, chain_req_to_export)
+
+/* Idem but safe (intern use) */
+#define FOREACH_REQ_TO_EXPORT_BASE_SAFE(req, tmp, server) \
+  list_for_each_entry_safe((req), (tmp), &(server)->list_req_to_export, chain_req_to_export)
+
+/* Iterates using a custom type 
+ *
+ * [User Type] req : pointer to a structure contening a struct xpaul_req
+ *                   (iterator)
+ *   xpaul_server_t server : server
+ *   member : name of struct xpaul in the structure pointed by req
+ */
+#define FOREACH_REQ_TO_EXPORT(req, server, member) \
+  list_for_each_entry((req), &(server)->list_req_to_export, member.chain_req_to_export)
+
+/****************************************************************
+ * Iterator over the exported queries
+ */
+
+/* Base iterator
+ *   xpaul_req_t req : iterator
+ *   xpaul_server_t server : server
+ */
+#define FOREACH_REQ_EXPORTED_BASE(req, server) \
+  list_for_each_entry((req), &(server)->list_req_exported, chain_req)
+
+/* Idem but safe (intern use) */
+#define FOREACH_REQ_EXPORTED_BASE_SAFE(req, tmp, server) \
+  list_for_each_entry_safe((req), (tmp), &(server)->list_req_exported, chain_req)
+
+/* Iterates using a custom type 
+ *
+ * [User Type] req : pointer to a structure contening a struct xpaul_req
+ *                   (iterator)
+ *   xpaul_server_t server : server
+ *   member : name of struct xpaul in the structure pointed by req
+ */
+#define FOREACH_REQ_EXPORTED(req, server, member) \
+  list_for_each_entry((req), &(server)->list_req_exported, member.chain_req)
 
 
 /****************************************************************
@@ -469,6 +561,11 @@ static int nb_comm_threads;
     .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
     .registered_req_not_yet_polled=0, \
     .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+    .list_req_block_grouped=LIST_HEAD_INIT((var).list_req_block_grouped), \
+    .list_req_to_export=LIST_HEAD_INIT((var).list_req_to_export), \
+    .list_req_exported=LIST_HEAD_INIT((var).list_req_exported), \
+    .list_lwp_ready=LIST_HEAD_INIT((var).list_lwp_ready), \
+    .list_lwp_working=LIST_HEAD_INIT((var).list_lwp_working), \
     .req_poll_grouped_nb=0, \
     .poll_points=0, \
     .period=0, \
@@ -501,7 +598,7 @@ static int nb_comm_threads;
   }
 #endif				// MARCEL
 
-#define XPAUL_EXCEPTION_RAISE(e) fprintf(stderr, "%s\n", e), exit(1)
+#define XPAUL_EXCEPTION_RAISE(e) fprintf(stderr, "%s\n", e), abort();
 
 /********************************************************************
  *  INLINE FUNCTIONS
@@ -562,7 +659,9 @@ int xpaul_test_activity(void);
  * var : the constant var xpaul_server_t
  * name: for debug messages
  */
-void xpaul_server_init(xpaul_server_t server, char *name);
+void xpaul_server_init(xpaul_server_t server, char *name, int nb_lwps);
+
+void xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps);
 
 /* Polling setup */
 int xpaul_server_set_poll_settings(xpaul_server_t server,

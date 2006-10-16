@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+/* TODO: utiliser poll au lieu de select (+ voir scalabilité) */
 #define MA_FILE_DEBUG xpaul_io
 #include "xpaul.h"
 
@@ -40,8 +41,10 @@
 
 typedef struct xpaul_io_server {
 	struct xpaul_server server;
-	fd_set rfds, wfds;
-	unsigned nb;
+	fd_set polling_rfds, polling_wfds;
+	unsigned polling_nb;
+	fd_set syscall_rfds, syscall_wfds;
+	unsigned syscall_nb;
 } *xpaul_io_serverid_t;
 
 typedef enum {
@@ -80,7 +83,7 @@ typedef struct xpaul_tcp_ev {
 
 static struct xpaul_io_server xpaul_io_server = {
 	.server =
-	    XPAUL_SERVER_INIT(xpaul_io_server.server, "Unix TCP I/O"),
+	XPAUL_SERVER_INIT(xpaul_io_server.server, "Unix TCP I/O"),
 };
 
 #ifdef MA__LWPS
@@ -111,26 +114,82 @@ static int xpaul_io_group(xpaul_server_t server,
 			  xpaul_op_t _op,
 			  xpaul_req_t req, int nb_ev, int option)
 {
-	PROF_EVENT(xpaul_io_group_entry);
 	xpaul_io_serverid_t uid =
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev;
 
 	xdebug("Grouping IO poll\n");
-	uid->nb = 0;
-	FD_ZERO(&uid->rfds);
-	FD_ZERO(&uid->wfds);
+	uid->polling_nb = 0;
+	FD_ZERO(&uid->polling_rfds);
+	FD_ZERO(&uid->polling_wfds);
 
-	FOREACH_REQ_POLL(ev, server, inst) {
+	FOREACH_REQ_REGISTERED(ev, server, inst) {
+		if(ev->inst.state & XPAUL_STATE_OCCURED)
+			fprintf(stderr, "Query allready occured\n");
+		else{
+			switch (ev->op) {
+			case XPAUL_POLL_READ:{
+				FD_SET(ev->FD, &uid->polling_rfds);
+				uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
+				break;
+			}
+			case XPAUL_POLL_WRITE:{
+				FD_SET(ev->FD, &uid->polling_wfds);
+				uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
+				break;
+			}
+			case XPAUL_POLL_SELECT:{
+				unsigned i;
+				if (ev->RFDS != NULL) {
+					for (i = 0; i < ev->NFDS; i++)
+						if (FD_ISSET(i, ev->RFDS))
+							FD_SET(i,
+							       &uid->polling_rfds);
+				}
+				if (ev->WFDS != NULL) {
+					for (i = 0; i < ev->NFDS; i++)
+						if (FD_ISSET(i, ev->WFDS))
+							FD_SET(i,
+							       &uid->polling_wfds);
+				}
+				
+				uid->polling_nb = tbx_max(uid->polling_nb, ev->NFDS);
+				break;
+			}
+			default:
+				XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
+			}
+		}
+	}
+	return 0;
+}
+
+static int xpaul_io_syscall_group(xpaul_server_t server,
+			  xpaul_op_t _op,
+			  xpaul_req_t req, int nb_ev, int option)
+{
+	xpaul_io_serverid_t uid =
+	    struct_up(server, struct xpaul_io_server, server);
+	xpaul_tcp_ev_t ev;
+
+	xdebug("Grouping IO poll\n");
+	uid->syscall_nb = 0;
+	FD_ZERO(&uid->syscall_rfds);
+	FD_ZERO(&uid->syscall_wfds);
+	
+	/* vide la liste des requete groupees pour le polling */
+	uid->polling_nb=0;
+
+	FOREACH_REQ_BLOCKING(ev, server, inst) {
 		switch (ev->op) {
 		case XPAUL_POLL_READ:{
-				FD_SET(ev->FD, &uid->rfds);
-				uid->nb = tbx_max(uid->nb, ev->FD + 1);
+				FD_SET(ev->FD, &uid->syscall_rfds);
+				uid->syscall_nb = tbx_max(uid->syscall_nb, ev->FD + 1);
 				break;
 			}
 		case XPAUL_POLL_WRITE:{
-				FD_SET(ev->FD, &uid->wfds);
-				uid->nb = tbx_max(uid->nb, ev->FD + 1);
+				FD_SET(ev->FD, &uid->syscall_wfds);
+				uid->syscall_nb = tbx_max(uid->syscall_nb, ev->FD + 1);
 				break;
 			}
 		case XPAUL_POLL_SELECT:{
@@ -139,31 +198,35 @@ static int xpaul_io_group(xpaul_server_t server,
 					for (i = 0; i < ev->NFDS; i++)
 						if (FD_ISSET(i, ev->RFDS))
 							FD_SET(i,
-							       &uid->rfds);
+							       &uid->syscall_rfds);
 				}
 				if (ev->WFDS != NULL) {
 					for (i = 0; i < ev->NFDS; i++)
 						if (FD_ISSET(i, ev->WFDS))
 							FD_SET(i,
-							       &uid->wfds);
+							       &uid->syscall_wfds);
 				}
-				uid->nb = tbx_max(uid->nb, ev->NFDS);
+				uid->syscall_nb = tbx_max(uid->syscall_nb, ev->NFDS);
 				break;
 			}
 		default:
 			XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 		}
+
+		if(!(ev->inst.state & XPAUL_STATE_EXPORTED)) {
+			ev->inst.state|=XPAUL_STATE_EXPORTED;
+		}
 	}
-	PROF_EVENT(xpaul_io_group_exit);
 	return 0;
 }
 
 inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
-					 xpaul_tcp_ev_t ev,
+ 					 xpaul_tcp_ev_t ev,
 					 fd_set * __restrict rfds,
 					 fd_set * __restrict wfds)
 {
 	xdebug("Checking select for IO poll (at least one success)\n");
+
 	switch (ev->op) {
 	case XPAUL_POLL_READ:
 		if (FD_ISSET(ev->FD, rfds))
@@ -290,11 +353,91 @@ int xpaul_ask_for_select(int n, fd_set * readfds, fd_set * writefds,
 	return res;
 }
 
+/* option : fd à surveiller (passage de commandes) */
 static int xpaul_io_block(xpaul_server_t server,
 			  xpaul_op_t _op,
 			  xpaul_req_t req, int nb_ev, int option)
 {				// a preciser
-	PROF_EVENT(xpaul_io_block_entry);
+	xpaul_io_serverid_t uid =
+	    struct_up(server, struct xpaul_io_server, server);
+	xpaul_tcp_ev_t ev;
+
+	int r;
+	fd_set rfds, wfds;
+	struct timeval tv, *ptv;
+	PROF_EVENT1(xpaul_io_block_entry,ev);
+	
+#ifdef MARCEL
+	xdebugl(6, "Syscall function called on LWP %d\n",
+		marcel_current_vp());
+#endif				// MARCEL
+
+	timerclear(&tv);
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	ptv = &tv;
+
+	/* Ajoute le descripteur du tube pour pouvoir etre interrompu par une autre commande */
+	FD_SET(option, &uid->syscall_rfds);
+	if(option+1>uid->syscall_nb)
+		uid->syscall_nb=option+1;
+
+	rfds = uid->syscall_rfds;
+	wfds = uid->syscall_wfds;
+
+	do {
+		r = select(uid->syscall_nb, &rfds, &wfds, NULL, NULL);
+	}while(r==-1 && errno==EINTR);
+
+	if (tbx_unlikely(r == -1)) {
+		int found = 0;
+		if (errno != EBADF)
+			return 0;
+		/* A fd is incorrect */
+		FOREACH_REQ_BLOCKING(ev, server, inst) {
+			xdebug
+			    ("Checking select for IO syscall (with badFD)\n");
+			switch (ev->op) {
+			case XPAUL_POLL_READ:
+			case XPAUL_POLL_WRITE:
+				break;
+			case XPAUL_POLL_SELECT:{
+					ev->ret_val =
+					    select(ev->NFDS, ev->RFDS,
+						   ev->WFDS, NULL, NULL);
+					if (ev->ret_val) {
+						XPAUL_REQ_SUCCESS(&ev->
+								  inst);
+						found = 1;
+					}
+					break;
+				}
+			default:
+				XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
+			}
+			if (!found) {
+				pm2debug
+				    ("IO syscall with bad fd not detected.\n"
+				     "Please, fix marcel code\n");
+			}
+		}
+	} else if (r == 0) {
+		return 0;
+	}
+
+	FOREACH_REQ_BLOCKING(ev, server, inst) {
+		xpaul_io_check_select(uid, ev, &rfds, &wfds);
+	}
+	return 0;
+}
+
+
+/* option : fd à surveiller (passage de commandes) */
+static int xpaul_io_blockone(xpaul_server_t server,
+			  xpaul_op_t _op,
+			  xpaul_req_t req, int nb_ev, int option)
+{				// a preciser
+
 	xpaul_io_serverid_t uid =
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev = struct_up(req, struct xpaul_tcp_ev, inst);
@@ -307,6 +450,10 @@ static int xpaul_io_block(xpaul_server_t server,
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
+	if(ev->inst.state & XPAUL_STATE_OCCURED){
+		fprintf(stderr, "BLOCKONE: Req %p occured\n",req);
+		return 0;
+	}
 	switch (ev->op) {
 	case XPAUL_POLL_READ:{
 			FD_SET(ev->FD, &rfds);
@@ -330,19 +477,24 @@ static int xpaul_io_block(xpaul_server_t server,
 		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}
 
+	/* Ajoute le descripteur du tube pour pouvoir etre interrompu par une autre commande */
+	FD_SET(option, &rfds);
+	if(option + 1 > nb)
+		nb=option+1;
+
 	timerclear(&tv);
 
 	errno = 0;
-	r = xpaul_ask_for_select(nb, &rfds, &wfds, NULL, &tv);
+	do {
+		r = select(nb, &rfds, &wfds, NULL, NULL);
+	}while(r==-1 && errno==EINTR);
 
 	if (r <= 0) {
 		ev->ret_val = -errno;
-		PROF_EVENT(xpaul_io_block_exit2);
 		return 0;
 	}
 
 	xpaul_io_check_select(uid, ev, &rfds, &wfds);
-	PROF_EVENT(xpaul_io_block_exit);
 	return 0;
 }
 #endif				// MA__LWPS
@@ -351,14 +503,14 @@ static int xpaul_io_poll(xpaul_server_t server,
 			 xpaul_op_t _op,
 			 xpaul_req_t req, int nb_ev, int option)
 {
-	PROF_EVENT(xpaul_io_poll_entry);
 	xpaul_io_serverid_t uid =
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev;
 	int r;
 	fd_set rfds, wfds;
 	struct timeval tv, *ptv;
-
+	PROF_EVENT1(xpaul_io_poll_entry,ev);
+	
 #ifdef MARCEL
 	xdebugl(6, "Polling function called on LWP %d\n",
 		marcel_current_vp());
@@ -369,9 +521,9 @@ static int xpaul_io_poll(xpaul_server_t server,
 	tv.tv_usec = 0;
 	ptv = &tv;
 
-	rfds = uid->rfds;
-	wfds = uid->wfds;
-	r = select(uid->nb, &rfds, &wfds, NULL, ptv);
+	rfds = uid->polling_rfds;
+	wfds = uid->polling_wfds;
+	r = select(uid->polling_nb, &rfds, &wfds, NULL, ptv);
 
 	if (tbx_unlikely(r == -1)) {
 		int found = 0;
@@ -389,7 +541,6 @@ static int xpaul_io_poll(xpaul_server_t server,
 					ev->ret_val =
 					    select(ev->NFDS, ev->RFDS,
 						   ev->WFDS, NULL, NULL);
-					//                                                 ev->WFDS, NULL, ptv);
 					if (ev->ret_val) {
 						XPAUL_REQ_SUCCESS(&ev->
 								  inst);
@@ -436,6 +587,9 @@ static int xpaul_io_fast_poll(xpaul_server_t server,
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
+	if(ev->inst.state & XPAUL_STATE_OCCURED){
+		return 0;
+	}
 	switch (ev->op) {
 	case XPAUL_POLL_READ:{
 			FD_SET(ev->FD, &rfds);
@@ -464,7 +618,6 @@ static int xpaul_io_fast_poll(xpaul_server_t server,
 	errno = 0;
 
 	r = select(nb, &rfds, &wfds, NULL, &tv);
-
 	if (r <= 0) {
 
 		ev->ret_val = -errno;
@@ -533,6 +686,7 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 
 			LOG("IO writing fd %i", fildes);
 			n = write(fildes, buf, nbytes);
+			
 		} while (n == -1 && errno == EINTR);
 
 		LOG_RETURN(n);
@@ -714,7 +868,6 @@ any_t xpaul_receiver()
 
 
 	PROF_EVENT1(reciever_fds, fds[0]);
-	fprintf(stderr, "Lancement du receiver\n");
 	for (;;) {
 		marcel_sem_P(&req_sem);
 
@@ -814,6 +967,9 @@ any_t xpaul_receiver()
 void xpaul_io_init(void)
 {
 	LOG_IN();
+#ifdef MA__LWPS
+	xpaul_server_start_lwp(&xpaul_io_server.server, 1);
+#endif /* MA__LWPS */
 	xpaul_server_set_poll_settings(&xpaul_io_server.server,
 				       XPAUL_POLL_AT_TIMER_SIG
 				       | XPAUL_POLL_AT_IDLE, 1, -1);
@@ -823,19 +979,13 @@ void xpaul_io_init(void)
 	xpaul_server_add_callback(&xpaul_io_server.server,
 				  XPAUL_FUNCTYPE_BLOCK_WAITONE,
 				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
-				  XPAUL_CALLBACK_SLOWEST});
-
-	xpaul_server_add_callback(&xpaul_io_server.server,
-				  XPAUL_FUNCTYPE_BLOCK_WAITONE_TIMEOUT,
-				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
+				  .func = &xpaul_io_blockone,.speed =
 				  XPAUL_CALLBACK_SLOWEST});
 
 	xpaul_server_add_callback(&xpaul_io_server.server,
 				  XPAUL_FUNCTYPE_BLOCK_GROUP,
 				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
+				  .func = &xpaul_io_syscall_group,.speed =
 				  XPAUL_CALLBACK_SLOWEST});
 
 	xpaul_server_add_callback(&xpaul_io_server.server,
@@ -843,26 +993,6 @@ void xpaul_io_init(void)
 				  (xpaul_pcallback_t) {
 				  .func = &xpaul_io_block,.speed =
 				  XPAUL_CALLBACK_SLOWEST});
-
-	xpaul_server_add_callback(&xpaul_io_server.server,
-				  XPAUL_FUNCTYPE_BLOCK_WAITANY_TIMEOUT,
-				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
-				  XPAUL_CALLBACK_SLOWEST});
-
-	xpaul_server_add_callback(&xpaul_io_server.server,
-				  XPAUL_FUNCTYPE_UNBLOCK_WAITONE,
-				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
-				  XPAUL_CALLBACK_SLOWEST});
-
-	xpaul_server_add_callback(&xpaul_io_server.server,
-				  XPAUL_FUNCTYPE_UNBLOCK_WAITANY,
-				  (xpaul_pcallback_t) {
-				  .func = &xpaul_io_block,.speed =
-				  XPAUL_CALLBACK_SLOWEST});
-
-
 #endif
 
 #ifndef MARCEL_DO_NOT_GROUP_TCP
@@ -893,6 +1023,7 @@ void xpaul_io_init(void)
 /* Communication LWP creation */
 void xpaul_init_receiver(void)
 {
+	return;
 	int i;
 	vp_nb = marcel_add_lwp();
 	marcel_attr_t attr;

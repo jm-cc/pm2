@@ -155,8 +155,8 @@ int xpaul_unlock(xpaul_server_t server)
 #define xpaul_spin_unlock_softirq(lock) ma_spin_unlock_softirq(lock)
 #define xpaul_write_lock_softirq(lock) ma_write_lock_softirq(lock)
 #define xpaul_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
-#define xpaul_read_lock_softirq(lock) ma_read_lock_softirq(&xpaul_poll_lock)
-#define xpaul_read_unlock_softirq(lock) ma_read_unlock_softirq(&xpaul_poll_lock)
+#define xpaul_read_lock_softirq(lock) ma_read_lock_softirq(lock)
+#define xpaul_read_unlock_softirq(lock) ma_read_unlock_softirq(lock)
 
 #define xpaul_spin_lock(lock) ma_spin_lock(lock)
 #define xpaul_spin_unlock(lock) ma_spin_unlock(lock)
@@ -182,6 +182,40 @@ int xpaul_unlock(xpaul_server_t server)
 #define xpaul_spin_lock(lock) (void) 0
 #define xpaul_spin_unlock(lock) (void) 0
 #endif				// MARCEL
+
+/* Détermine s'il est judicieux d'exporter un syscall */
+int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req,
+			xpaul_wait_t wait, xpaul_time_t timeout)
+{
+  /*********************************************
+   *  TODO : A prendre en compte :
+   *   - la vitesse de la fonction
+   *   - l'historique des requêtes
+   *   - priorité de la requête, du thread ?
+   *   - changement de méthode
+   *********************************************/
+#ifndef MARCEL
+	return 0;
+#else
+	return 0; // en attendant que l'export d'appel bloquant fonctionne bien
+	/* requête terminée */
+	if (req->state & XPAUL_STATE_OCCURED)
+		return 0;
+	/* pas de méthode bloquante */
+	if (!server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].func)
+		return 0;
+	/* force le polling */
+	if (req->func_to_use == XPAUL_FUNC_POLLING)
+		return 0;
+
+	/* pas d'autres threads */
+	PROF_EVENT1(running_threads, marcel_per_lwp_nbthreads());
+	if (marcel_per_lwp_nbthreads() < 2)
+		return 0;
+#endif				// MARCEL
+	return 1;
+}
+
 /****************************************************************
  * Gestion des événements signalés OK par les call-backs
  *
@@ -293,6 +327,31 @@ inline static int __xpaul_poll_group(xpaul_server_t server,
 	return 0;
 }
 
+
+inline static int __xpaul_block_group(xpaul_server_t server,
+				     xpaul_req_t req)
+{
+#ifdef MA__DEBUG
+	XPAUL_BUG_ON(!server->req_block_grouped_nb);
+#endif
+	if (server->funcs[XPAUL_FUNCTYPE_BLOCK_GROUP].func &&
+	    (server->req_block_grouped_nb > 1
+	     || !server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].func)) {
+		xdebug
+		    ("Factorizing %i blocking(s) with BLOCK_GROUP for [%s]\n",
+		     server->req_block_grouped_nb, server->name);
+		(*server->funcs[XPAUL_FUNCTYPE_BLOCK_GROUP].func)
+		    (server, XPAUL_FUNCTYPE_BLOCK_WAITONE,
+		     req, server->req_block_grouped_nb, 0);
+
+//		req->state |= XPAUL_STATE_GROUPED;
+		return 1;
+	}
+	xdebug("No need to group %i polling(s) for [%s]\n",
+	       server->req_block_grouped_nb, server->name);
+	return 0;
+}
+
 // TODO: support sans Marcel
 extern unsigned long volatile ma_jiffies;
 
@@ -303,7 +362,6 @@ inline static void __xpaul_poll_start(xpaul_server_t server)
 {
 	xpaul_write_lock_softirq(&xpaul_poll_lock);
 	xdebug("Starting polling for %s\n", server->name);
-	XPAUL_BUG_ON(!list_empty(&server->chain_poll));
 	list_add(&server->chain_poll, &xpaul_list_poll);
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
 		xdebug("Starting timer polling for [%s] at period %i\n",
@@ -373,15 +431,34 @@ inline static void __xpaul_init_req(xpaul_req_t req)
 	xdebug("Clearing Grouping request %p\n", req);
 	INIT_LIST_HEAD(&req->chain_req_registered);
 	INIT_LIST_HEAD(&req->chain_req_grouped);
+	INIT_LIST_HEAD(&req->chain_req_block_grouped);
+	INIT_LIST_HEAD(&req->chain_req_to_export);
 	INIT_LIST_HEAD(&req->chain_req_ready);
 	INIT_LIST_HEAD(&req->chain_req_success);
 	req->state = 0;
 	req->server = NULL;
 	req->max_poll = 0;
 	req->nb_polled = 0;
+	if(req->func_to_use != 	XPAUL_FUNC_POLLING 
+	   && req->func_to_use != XPAUL_FUNC_SYSCALL)
+		req->func_to_use=XPAUL_FUNC_AUTO;
+	if(!req->priority)
+		req->priority=XPAUL_REQ_PRIORITY_NORMAL;
 	INIT_LIST_HEAD(&req->list_wait);
 }
 
+#ifdef MA__LWPS
+inline static void __xpaul_init_lwp(xpaul_comm_lwp_t lwp)
+{
+	xdebug("Clearing Grouping request %p\n", req);
+	INIT_LIST_HEAD(&lwp->chain_lwp_ready);
+	INIT_LIST_HEAD(&lwp->chain_lwp_working);
+	lwp->vp_nb = -1;
+	lwp->fds[0] = lwp->fds[1] = -1;
+	lwp->server = NULL;
+	lwp->pid = NULL;
+}
+#endif /* MA__LWPS */
 inline static int __xpaul_register(xpaul_server_t server, xpaul_req_t req)
 {
 
@@ -401,7 +478,6 @@ inline static int __xpaul_unregister(xpaul_server_t server,
 	LOG_IN();
 	xdebug("Unregister request %p for [%s]\n", req, server->name);
 	__xpaul_del_success_req(server, req);
-
 	list_del_init(&req->chain_req_registered);
 	req->state &= ~XPAUL_STATE_REGISTERED;
 	LOG_RETURN(0);
@@ -414,9 +490,9 @@ inline static int __xpaul_register_poll(xpaul_server_t server,
 	/* On doit ajouter la requête à celles en attente */
 	xdebug("Grouping Poll request %p for [%s]\n", req, server->name);
 	list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
+
 	server->req_poll_grouped_nb++;
 	req->state |= XPAUL_STATE_GROUPED;
-
 	__xpaul_poll_group(server, req);
 
 	if (server->req_poll_grouped_nb == 1) {
@@ -432,11 +508,40 @@ inline static int __xpaul_unregister_poll(xpaul_server_t server,
 	if (req->state & XPAUL_STATE_GROUPED) {
 		xdebug("Ungrouping Poll request %p for [%s]\n", req,
 		       server->name);
-		list_del_init(&req->chain_req_grouped);
-		server->req_poll_grouped_nb--;
+		if(req->state & XPAUL_STATE_EXPORTED){
+			list_del_init(&req->chain_req_block_grouped);
+			list_del_init(&req->chain_req_to_export);
+			server->req_block_grouped_nb--;
+		} else {
+			list_del_init(&req->chain_req_grouped);
+			server->req_poll_grouped_nb--;
+		}
 		req->state &= ~XPAUL_STATE_GROUPED;
 		LOG_RETURN(1);
 	}
+	else if(req->state & XPAUL_STATE_EXPORTED){
+		list_del_init(&req->chain_req_to_export);
+	}
+	list_del_init(&req->chain_req_registered);
+	LOG_RETURN(0);
+}
+
+static int __xpaul_register_block(xpaul_server_t server,
+					xpaul_req_t req)
+{
+	LOG_IN();
+	xdebug("Grouping Block request %p for [%s]\n", req, server->name);
+
+	__xpaul_unregister_poll(server, req);
+
+	list_add(&req->chain_req_to_export, &server->list_req_to_export);			
+	list_add(&req->chain_req_block_grouped, &server->list_req_block_grouped);			
+
+	server->req_block_grouped_nb++;	
+	req->state |= XPAUL_STATE_GROUPED;// | XPAUL_STATE_EXPORTED;
+
+	__xpaul_block_group(server, req);
+		
 	LOG_RETURN(0);
 }
 
@@ -471,8 +576,7 @@ inline static int __xpaul_manage_ready(xpaul_server_t server)
 
 		list_del_init(&req->chain_req_ready);
 		if (req->state & XPAUL_STATE_ONE_SHOT) {
-			nb_grouped_req_removed +=
-			    __xpaul_unregister_poll(server, req);
+			nb_grouped_req_removed +=__xpaul_unregister_poll(server, req);
 			__xpaul_unregister(server, req);
 		}
 		bak = req;
@@ -530,18 +634,17 @@ static void xpaul_check_polling_for(xpaul_server_t server)
 		count = 50000;
 	}
 #endif
-
 	if (!nb)
 		return;
 
 	server->registered_req_not_yet_polled = 0;
 	if (nb == 1 && server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func) {
 		(*server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
-		    (server, XPAUL_FUNCTYPE_POLL_POLLONE,
-		     list_entry(server->list_req_poll_grouped.next,
-				struct xpaul_req, chain_req_grouped),
-		     nb, XPAUL_OPT_REQ_IS_GROUPED);
-
+			(server, XPAUL_FUNCTYPE_POLL_POLLONE,
+			 list_entry(server->list_req_poll_grouped.next,
+				    struct xpaul_req, chain_req_grouped),
+			 nb, XPAUL_OPT_REQ_IS_GROUPED);
+		
 	} else if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLANY].func) {
 		(*server->funcs[XPAUL_FUNCTYPE_POLL_POLLANY].func)
 		    (server, XPAUL_FUNCTYPE_POLL_POLLANY, NULL, nb, 0);
@@ -550,16 +653,15 @@ static void xpaul_check_polling_for(xpaul_server_t server)
 		xpaul_req_t req;
 		FOREACH_REQ_POLL_BASE(req, server) {
 			(*server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
-			    (server, XPAUL_FUNCTYPE_POLL_POLLONE,
-			     req, nb,
-			     XPAUL_OPT_REQ_IS_GROUPED
-			     | XPAUL_OPT_REQ_ITER);
+				(server, XPAUL_FUNCTYPE_POLL_POLLONE,
+				 req, nb,
+				 XPAUL_OPT_REQ_IS_GROUPED
+				 | XPAUL_OPT_REQ_ITER);
 		}
 	} else {
 		/* Pas de méthode disponible ! */
 		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}
-
 	__xpaul_manage_ready(server);
 	if (nb != __xpaul_need_poll(server)) {
 		/* Le nombre de tache en cours de polling a varié */
@@ -601,20 +703,25 @@ void xpaul_poll_timer(unsigned long hid)
 void __xpaul_check_polling(unsigned polling_point)
 {
 	PROF_IN();
-	xpaul_server_t server;
+	xpaul_server_t server, bak;
 
-	//debug("Checking polling at %i\n", polling_point);
 	xpaul_read_lock_softirq(&xpaul_poll_lock);
 	list_for_each_entry(server, &xpaul_list_poll, chain_poll) {
 		if (server->poll_points & polling_point) {
+			if(bak==server){
+				break;	
+			}		
 			xdebugl(7,
 				"Scheduling polling for [%s] at point %i\n",
 				server->name, polling_point);
 #ifdef MARCEL
+			//	xpaul_check_polling_for(server);
+
 			ma_tasklet_schedule(&server->poll_tasklet);
 #else
-			//TODO: Lancement polling
+			/* TODO: Lancement polling */
 #endif				// MARCEL
+			bak=server;			
 		}
 	}
 	xpaul_read_unlock_softirq(&xpaul_poll_lock);
@@ -765,6 +872,115 @@ int xpaul_req_cancel(xpaul_req_t req, int ret_code)
 	LOG_RETURN(0);
 }
 
+#ifdef MA__LWPS
+/* Previent un LWP de comm qu'il y a des requetes à exporter */
+int xpaul_callback_will_block(xpaul_server_t server) 
+{
+	xpaul_req_t req;
+	xpaul_comm_lwp_t lwp;	
+	int foo=42;
+
+	req = list_entry(server->list_req_registered.next,
+			 struct xpaul_req, chain_req_registered);
+	__xpaul_register_block(server, req);
+
+	/* Choisit un LWP (n'importe lequel) */
+	if(!list_empty(server->list_lwp_ready.next))
+		lwp = list_entry(server->list_lwp_ready.next, struct xpaul_comm_lwp, chain_lwp_ready);
+	else // si aucun n'est pret, on interromp un lwp qui travaille (TODO : ne le faire que si on peut)
+		lwp = list_entry(server->list_lwp_working.next, struct xpaul_comm_lwp, chain_lwp_working);
+
+	/* wakeup LWP */
+	PROF_EVENT2(waikingup_lwp, lwp->vp_nb, lwp->fds[1]);
+	write(lwp->fds[1], &foo, 1);
+	lwp->wait=2;
+	sched_yield();
+	
+	PROF_EVENT2(waikingup_lwp_done, lwp->vp_nb, lwp->fds[1]);
+	return 0;
+}
+
+/* TODO : lors de la création du serveur : spécifier le nombre de LWPs a lancer */
+/* attend d'etre débloqué pour lancer un appel systeme */
+void __xpaul_syscall_loop(void * param)
+{
+	xpaul_comm_lwp_t lwp=(xpaul_comm_lwp_t) param;
+	xpaul_server_t server=lwp->server;
+	xpaul_req_t req, prev, tmp;
+	int foo=42;
+	marcel_task_t *lock;
+
+	lock = xpaul_ensure_lock_server(server);
+	do {
+		lwp->wait=0;
+		/* etat working -> ready (TODO: proteger ?)*/
+		list_del_init(&lwp->chain_lwp_working);
+		list_add(&lwp->chain_lwp_ready, &server->list_lwp_ready);
+		__xpaul_unlock_server(server);
+
+		PROF_EVENT2(syscall_waiting, lwp->vp_nb, lwp->fds[0]);
+		read(lwp->fds[0], &foo, 1); /* Lit n'importe quoi */
+		PROF_EVENT2(syscall_read_done, lwp->vp_nb, lwp->fds[0]);
+
+		lwp->wait=1;
+		if( lwp->server->state == XPAUL_SERVER_STATE_HALTED ){
+			return;
+		}
+		
+		/* etat ready->working */
+		lock = xpaul_ensure_lock_server(server);
+		list_del_init(&lwp->chain_lwp_ready);
+		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+		
+		/* recupere les requetes à poster */
+		if(server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
+		{
+			__xpaul_unlock_server(server);
+			(*server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITANY].
+			 func) (server, XPAUL_FUNCTYPE_BLOCK_WAITANY, req,
+				server->req_block_grouped_nb, lwp->fds[0]);
+				lock = xpaul_ensure_lock_server(server);
+		}
+		else{
+			if(server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].func)
+			{
+				prev=NULL;
+				FOREACH_REQ_TO_EXPORT_BASE_SAFE(req, tmp, server) {
+					if(req==prev)
+						break;
+					if(req->state &XPAUL_STATE_OCCURED)
+						fprintf(stderr, "\tReq %p occured\n",req);
+					else
+					{
+						/* Place la req dans la liste des req exportées */
+						list_del_init(&req->chain_req_to_export);
+						list_add(&req->chain_req_exported, &server->list_req_exported);
+						req->state|=XPAUL_STATE_EXPORTED;
+						
+						/* appel a fonction bloquante */
+						__xpaul_unlock_server(server);
+						(*server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].
+						 func) (server, XPAUL_FUNCTYPE_BLOCK_WAITONE, req,
+							server->req_poll_grouped_nb, lwp->fds[0]);
+						lock = xpaul_ensure_lock_server(server);
+					}
+					prev=req;
+					break;
+				}
+			}
+			else 
+				XPAUL_EXCEPTION_RAISE(XPAUL_CALLBACK_ERROR);
+
+		}
+		lock = xpaul_ensure_lock_server(server);
+		__xpaul_manage_ready(server);
+
+	} while(lwp->server->state!=XPAUL_SERVER_STATE_HALTED);
+	__xpaul_unlock_server(server);
+}
+
+#endif /* MA__LWPS */
+
 // TODO: support sans Marcel
 inline static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t req,
 				   xpaul_wait_t wait, xpaul_time_t timeout)
@@ -778,15 +994,22 @@ inline static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t req,
 #ifdef MARCEL
 	marcel_sem_init(&wait->sem, 0);
 	wait->task = MARCEL_SELF;
-#endif
+#endif /* MARCEL */
 	wait->ret = 0;
 
+#ifdef MA__LWPS
+	if (__xpaul_need_export(server, req, wait, timeout) 
+	    && !list_empty(server->list_lwp_ready.next)) {
+		xpaul_callback_will_block(server);
+	}
+#endif /* MA_LWPS */
+
 	__xpaul_unlock_server(server);
+
 #ifdef MARCEL
 	// TODO: utiliser pmarcel_sem_P qui peut renvoyer -1 avec errno EINT (support posix)
 	marcel_sem_P(&wait->sem);
 #else
-	// while (!fini) fast_poll;
 	int waken_up = 0;
 	int checked = 0;
 	do {
@@ -902,38 +1125,6 @@ int xpaul_server_wait(xpaul_server_t server, xpaul_time_t timeout)
 	LOG_RETURN(wait.ret);
 }
 
-/* Détermine s'il est judicieux d'exporter un syscall */
-int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req,
-			xpaul_wait_t wait, xpaul_time_t timeout)
-{
-  /*********************************************
-   *  TODO : A prendre en compte :
-   *   - la vitesse de la fonction
-   *   - l'historique des requêtes
-   *   - priorité de la requête, du thread ?
-   *   - changement de méthode
-   *********************************************/
-#ifndef MARCEL
-	return 0;
-#else
-	/* requête terminée */
-	if (req->state & XPAUL_STATE_OCCURED)
-		return 0;
-	/* pas de méthode bloquante */
-	if (!server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].func)
-		return 0;
-	/* force le polling */
-	if (req->func_to_use == XPAUL_FUNC_POLLING)
-		return 0;
-
-	/* pas d'autres threads */
-	PROF_EVENT1(running_threads, marcel_per_lwp_nbthreads());
-	if (marcel_per_lwp_nbthreads() < 2)
-		return 0;
-#endif				// MARCEL
-	return 1;
-}
-
 /* Enregistrement, attente et désenregistrement d'un événement */
 int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 	       xpaul_wait_t wait, xpaul_time_t timeout)
@@ -949,7 +1140,6 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 #endif				// MARCEL
 
 	xpaul_verify_server_state(server);
-
 	if (req->state & XPAUL_STATE_DONT_POLL_FIRST)
 		checked = 1;
 	__xpaul_init_req(req);
@@ -959,7 +1149,6 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 	xdebug("Marcel_poll (thread %p)...\n", marcel_self());
 #endif				// MARCEL
 	xdebug("using pollid [%s]\n", server->name);
-
 	req->state |= XPAUL_STATE_ONE_SHOT | XPAUL_STATE_NO_WAKE_SERVER;
 
 	if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
@@ -991,26 +1180,7 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 		LOG_RETURN(0);
 	}
 
-	if (__xpaul_need_export(server, req, wait, timeout)) {
-		// TODO: mettre dans la liste des appels bloqués
-		__xpaul_unregister(server, req);
-		__xpaul_unlock_server(server);
-		// TODO: gerer le regroupement de reqs
-		(*server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].
-		 func) (server, XPAUL_FUNCTYPE_POLL_POLLONE, req,
-			server->req_poll_grouped_nb, 1);
-#ifdef MARCEL
-		xpaul_lock_server_owner(server, lock);
-		__xpaul_manage_ready(server);
-		xpaul_restore_lock_server_locked(server, lock);
-#else
-		__xpaul_manage_ready(server);
-#endif				// MARCEL
-		LOG_RETURN(wait->ret);
-	}
-
 	__xpaul_register_poll(server, req);
-
 	if (!checked) {
 		xpaul_check_polling_for(server);
 	}
@@ -1025,6 +1195,7 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 #ifdef MARCEL
 	xpaul_restore_lock_server_locked(server, lock);
 #endif				// MARCEL
+	PROF_EVENT1(xpaul_wait_exit, req->nb_polled);
 	LOG_RETURN(wait->ret);
 }
 
@@ -1046,7 +1217,42 @@ xpaul_test_activity(void)
   return result;
 }
 
-void xpaul_server_init(xpaul_server_t server, char *name)
+void 
+xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps)
+{
+#ifdef MA__LWPS
+	/* Lancement des LWP de comm */
+	int i;
+	marcel_attr_t attr;
+	
+	//fprintf(stderr, "Starting %d LWPs for server %s\n",nb_lwps, server->name);
+	marcel_attr_init(&attr);
+	marcel_attr_setdetachstate(&attr, tbx_true);
+//	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp_nb));
+	marcel_attr_setname(&attr, "xpaul_receiver");
+
+	INIT_LIST_HEAD(&server->list_lwp_working);
+	INIT_LIST_HEAD(&server->list_lwp_ready);
+	for(i=0;i<nb_lwps;i++)
+	{
+		xpaul_comm_lwp_t lwp=(xpaul_comm_lwp_t) malloc(sizeof(struct xpaul_comm_lwp));
+		__xpaul_init_lwp(lwp);
+		lwp->server=server;
+		/* le LWP est considéré comme Working pendant l'initialisation */
+		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+
+		lwp->vp_nb = marcel_add_lwp();
+		if (pipe(lwp->fds) == -1) {
+			perror("pipe");
+			exit(EXIT_FAILURE);
+		}
+		marcel_create(&lwp->pid, &attr, (void*) &__xpaul_syscall_loop, lwp);
+
+	}
+#endif /* MA__LWPS */
+}
+
+void xpaul_server_init(xpaul_server_t server, char *name, int nb_lwps)
 {
 	*server = (struct xpaul_server) XPAUL_SERVER_INIT(*server, name);
 }
@@ -1083,6 +1289,7 @@ int xpaul_server_start(xpaul_server_t server)
 	}
 	xpaul_activity = tbx_flag_set;
 	server->state = XPAUL_SERVER_STATE_LAUNCHED;
+	PROF_EVENT1(xpaul_server_start, server);
 	return 0;
 }
 
@@ -1098,6 +1305,7 @@ int xpaul_server_stop(xpaul_server_t server)
 
 	xpaul_verify_server_state(server);
 	server->state = XPAUL_SERVER_STATE_HALTED;
+	/* TODO : arreter les LWPs de comm */
 
 #ifndef ECANCELED
 #define ECANCELED EIO
@@ -1115,6 +1323,7 @@ int xpaul_server_stop(xpaul_server_t server)
 	xpaul_restore_lock_server_unlocked(server, lock);
 #endif				//MARCEL
 
+	PROF_EVENT1(xpaul_server_stop, server);
 	LOG_RETURN(0);
 
 	return 0;

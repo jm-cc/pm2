@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -103,18 +103,18 @@ maindeffile=${GENDIR}/main_fut_entries.h
 fxt_file=${GENDIR}/fxt_fut_print.h
 case $TYPE in
     pm2)
-	base=$((4096 + 256)) # 0x1100
-	other=15728640 # 0xf00000
+	base=$((0x1100))
+	other=$((0xf000))
 	deffile=${GENDIR}/fut_entries.h
 	printfile=${GENDIR}/fut_print.h
 	;;
     app)
-	base=$((8192 + 256)) # 0x2100
-	other=15990784 # 0xf40000
+	base=$((0x2100))
+	other=$((0xf400))
 	;;
     pad)
-	base=$((12544 + 256)) # 0x3100
-	other=16252928 # 0xf80000
+	base=$((0x3100))
+	other=$((0xf800))
 	;;
 esac
 

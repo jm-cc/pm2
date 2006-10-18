@@ -54,9 +54,9 @@ DEC_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key));
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
 
 
-#section functions
+#section marcel_functions
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
-#section inline
+#section marcel_inline
 #depend "marcel_descr.h[types]"
 #depend "marcel_descr.h[marcel_structures]"
 #depend "marcel_descr.h[marcel_inline]"

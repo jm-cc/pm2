@@ -27,7 +27,7 @@ typedef p_marcel_task_t marcel_t, lpt_t;
 typedef unsigned long int pmarcel_t;
 typedef struct marcel_sched_param marcel_sched_param_t;
 
-#section marcel_macros
+#section macros
 
 /* à préférer lorsque l'on veut accéder à un champ d'un marcel_t */
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)

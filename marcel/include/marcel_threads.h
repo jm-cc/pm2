@@ -190,6 +190,8 @@ MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t);
 #section inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
+/* Pour les membres de marcel_t */
+#depend "marcel_descr.h[marcel_structures]"
 static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
 {
 #ifdef MA__DEBUG

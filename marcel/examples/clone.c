@@ -15,6 +15,7 @@
  */
 
 
+#define MARCEL_INTERNAL_INCLUDE
 #include "clone.h"
 
 marcel_key_t _clone_key, _slave_key;

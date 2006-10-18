@@ -1,8 +1,0 @@
-OK       U pthread_cond_broadcast
-OK       U pthread_cond_wait
-OK       U pthread_mutex_lock
-OK       U pthread_mutex_unlock
-OK       U pthread_self
-			T sigaction
-OK       U sigemptyset
-??       T signal

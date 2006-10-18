@@ -581,6 +581,7 @@ int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 void marcel_wake_up_created_thread(marcel_task_t * p)
 {
 	ma_holder_t *h;
+	ma_runqueue_t *rq;
 	LOG_IN();
 
 	sched_debug("wake up created thread %p\n",p);
@@ -641,10 +642,16 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 //	}
 	ma_holder_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic())
-		ma_schedule();
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()) {
+		rq = ma_rq_holder(h);
+		if (ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)))
+			/* XXX: on pourrait être préempté entre-temps... */
+			ma_schedule();
+		else
+			try_to_resched(p, h);
+	}
 	LOG_OUT();
 }
 
@@ -3137,7 +3144,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq = ma_lwp_rq(lwp);
 	snprintf(name,sizeof(name),"lwp%d",num);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
-	ma_init_rq(rq, name, MA_VP_RQ);
+	ma_init_rq(rq, name, MA_LWP_RQ);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
 	if (num == -1)
 		/* "extra" LWPs are apart */

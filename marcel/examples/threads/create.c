@@ -35,6 +35,10 @@ int marcel_main(int argc, char *argv[])
 		
 		while(nb--) {
 			
+#ifdef PROFILE
+			if (!nb)
+				profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
 			GET_TICK(t1);
 			marcel_create(&pid, NULL, f, NULL);
 			marcel_join(pid, NULL);

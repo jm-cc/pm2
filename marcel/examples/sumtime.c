@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 #define CPU0ONLY
-//#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
+//#define dprintf(fmt,args...) marcel_fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
 #define MAX_BUBBLE_LEVEL 8
@@ -107,9 +107,9 @@ void compute(job j) {
   marcel_sem_P(&j.sem);
 
   TBX_GET_TICK(t2);
-  printf("Sum from 1 to %d = %d\n", j.sup, j.res);
+  marcel_printf("Sum from 1 to %d = %d\n", j.sup, j.res);
   temps = TBX_TIMING_DELAY(t1, t2);
-  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 }
 
 int main(int argc, char **argv)
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
   } else {
     // Execution interactive
     MARCEL_LOOP(bcle)
-      printf("Enter a rather small integer (0 to quit) : ");
+      marcel_printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup <= 0)
 	MARCEL_EXIT_LOOP(bcle);
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     MARCEL_END_LOOP(bcle)
   }
 
-  fflush(stdout);
+  marcel_fflush(stdout);
   marcel_end();
   return 0;
 }

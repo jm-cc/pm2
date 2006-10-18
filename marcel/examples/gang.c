@@ -21,11 +21,11 @@
 
 #if !defined(MARCEL_BUBBLE_STEAL)
 #warning I need the bubble_steal option
-int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the bubble_steal option\n"); }
+int marcel_main(int argc, char **argv) { marcel_fprintf(stderr,"I need the bubble_steal option\n"); }
 
 #elif !defined(MARCEL_GANG_SCHEDULER)
 #warning I need the GANG_SCHEDULER config
-int marcel_main(int argc, char **argv) { fprintf(stderr,"I need the GANG_SCHEDULER config\n"); }
+int marcel_main(int argc, char **argv) { marcel_fprintf(stderr,"I need the GANG_SCHEDULER config\n"); }
 #else
 
 #define GANGS 5
@@ -105,10 +105,10 @@ int marcel_main(int argc, char **argv)
     marcel_bubble_join(&gang[i]);
   //marcel_cancel(gangsched);
 
-  fflush(stdout);
+  marcel_fflush(stdout);
   marcel_end();
 #else
-  fprintf(stderr,"%s needs bubbles\n",argv[0]);
+  marcel_fprintf(stderr,"%s needs bubbles\n",argv[0]);
 #endif
   return 0;
 }

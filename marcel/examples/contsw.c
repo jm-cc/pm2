@@ -31,7 +31,7 @@ any_t f(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -43,13 +43,13 @@ any_t f2(any_t arg)
   TBX_GET_TICK(t1);
   while(--n) {
     if (a) {
-	    printf("ok\n");
+	    marcel_printf("ok\n");
     }
     marcel_yield();
   }
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -63,7 +63,7 @@ any_t f3(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -77,7 +77,7 @@ any_t f4(any_t arg)
     marcel_yield_to(main_thread);
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -95,7 +95,7 @@ void bench_setjmp(unsigned nb)
   }
   TBX_GET_TICK(t2);
 
-  printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
+  marcel_printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }
@@ -114,7 +114,7 @@ void bench_longjmp(unsigned nb)
   }
   TBX_GET_TICK(t2);
 
-  printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
+  marcel_printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }
@@ -157,7 +157,7 @@ void bench_contsw2(unsigned long nb)
 
   while(--n) {
     if (a) {
-	    printf("ok\n");
+	    marcel_printf("ok\n");
     }
     marcel_yield();
   }
@@ -207,7 +207,7 @@ int marcel_main(int argc, char *argv[])
 
   main_thread = marcel_self();
   if(argc != 2) {
-    fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+    marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);
   }
 

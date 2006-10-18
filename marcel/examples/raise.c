@@ -27,7 +27,7 @@ any_t func(any_t arg)
 
 int marcel_main(int argc, char *argv[])
 {
-  fprintf(stderr,
+  marcel_fprintf(stderr,
 	  "WARNING: this program will deliberately cause a SEGFAULT in a few us...\n");
 
   marcel_init(&argc, argv);

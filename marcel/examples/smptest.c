@@ -30,7 +30,7 @@ any_t thread_func(any_t arg)
 
   marcel_sem_P(&sem[num]);
 
-  fprintf(stderr, "Hi! I'm thread %ld on VP %d\n",
+  marcel_fprintf(stderr, "Hi! I'm thread %ld on VP %d\n",
 	  num, marcel_current_vp());
 
   if(num != NB-1)

@@ -31,7 +31,7 @@ any_t thread_func(any_t arg)
 
   marcel_detach(marcel_self());
 
-  fprintf(stderr, "Hi! I'm thread %ld on VP %d\n",
+  marcel_fprintf(stderr, "Hi! I'm thread %ld on VP %d\n",
 	  num, marcel_current_vp());
 
   for(i=0; i<LOOPS; i++) {
@@ -57,7 +57,7 @@ int marcel_main(int argc, char *argv[])
   if(argc > 1)
     NB = atoi(argv[1]);
 
-  fprintf(stderr, "Using %d threads\n", NB);
+  marcel_fprintf(stderr, "Using %d threads\n", NB);
 
   marcel_attr_init(&attr);
 
@@ -76,7 +76,7 @@ int marcel_main(int argc, char *argv[])
 
   TBX_GET_TICK(t2);
   temps = TBX_TIMING_DELAY(t1, t2);
-  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
   marcel_end();
   return 0;

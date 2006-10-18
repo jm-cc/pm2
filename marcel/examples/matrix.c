@@ -67,13 +67,13 @@ void put(matrix_t m, char *s)
 {
   int i, j;
 
-  printf("matrix %s\n", s);
+  marcel_printf("matrix %s\n", s);
 
   for(i=0; i<SIZE; i++) {
     for(j=0; j<SIZE; j++) {
-      printf("%3d ", m[i][j]);
+      marcel_printf("%3d ", m[i][j]);
     }
-    printf ("\n");
+    marcel_printf ("\n");
   }
 }
  
@@ -151,7 +151,7 @@ int marcel_main(int argc, char *argv[])
   mult();
   temps = cpu_time();
 
-  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
   marcel_end();
 

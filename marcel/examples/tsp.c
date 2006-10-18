@@ -73,10 +73,10 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
     if (len < minimum)
       {
        minimum = len ;
-       printf ("worker[%d] finds path len = %3d :", num_worker, len) ;
+       marcel_printf ("worker[%d] finds path len = %3d :", num_worker, len) ;
        for (i=0; i < distance.NrTowns; i++)
-         printf ("%2d ", path[i]) ;
-       printf ("\n") ;
+         marcel_printf ("%2d ", path[i]) ;
+       marcel_printf ("\n") ;
       }
 #ifdef MT
 #ifdef MARCEL
@@ -147,10 +147,10 @@ void *worker (int num_worker)
  Job_t job ;
  int cuts = 0 ;
 
- printf ("Worker [%2d] starts \n", num_worker) ;
+ marcel_printf ("Worker [%2d] starts \n", num_worker) ;
 
 #ifdef MARCEL
- printf ("thread %p on LWP %d\n", marcel_self(), marcel_current_vp ()) ;
+ marcel_printf ("thread %p on LWP %d\n", marcel_self(), marcel_current_vp ()) ;
 #endif
 
  while (get_job (&q, &job)) 
@@ -159,7 +159,7 @@ void *worker (int num_worker)
     tsp (MAXHOPS, job.len, job.path, &cuts, num_worker) ;
    }
 
- printf ("Worker [%2d] terminates, %4d jobs done with %4d cuts.\n", num_worker, jobcount, cuts) ;
+ marcel_printf ("Worker [%2d] terminates, %4d jobs done with %4d cuts.\n", num_worker, jobcount, cuts) ;
  return (void *) 0 ;
 }
 

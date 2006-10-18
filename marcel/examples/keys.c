@@ -28,7 +28,7 @@ void imprime(void)
   char *str = (char *)marcel_getspecific(key);
 
    for(i=0;i<10;i++) {
-      printf(str);
+      marcel_printf(str);
       marcel_delay(50);
    }
 }

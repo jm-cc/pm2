@@ -16,7 +16,8 @@ TYPES_ALL=nptl linuxthread unix clone pth
 
 TYPES=nptl #linuxthread #unix #clone #pth
 
-FLAVORS=marcel-mono marcel-smp marcel-numa marcel-smpdbg
+FLAVORS=marcel-mono marcel-smp marcel-numa
+#FLAVORS=marcel-smp marcel-numa
 
 DEPENDS= thread.h utils.h
 

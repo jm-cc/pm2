@@ -24,7 +24,7 @@ any_t looper(any_t arg)
 {
   marcel_detach(marcel_self());
 
-  fprintf(stderr, "Looper lauched on LWP %d\n",
+  marcel_fprintf(stderr, "Looper lauched on LWP %d\n",
 	  marcel_current_vp());
 
   while(!finished)
@@ -36,7 +36,7 @@ any_t looper(any_t arg)
 any_t f(any_t arg)
 {
   marcel_sem_V((marcel_sem_t *)arg);
-  /* fprintf(stderr, "Hi! I'm on LWP %d\n", marcel_current_vp()); */
+  /* marcel_fprintf(stderr, "Hi! I'm on LWP %d\n", marcel_current_vp()); */
   return NULL;
 }
 
@@ -53,7 +53,7 @@ any_t main_thread(void *arg)
 
   marcel_detach(marcel_self());
 
-  //  fprintf(stderr, "Main thread launched on LWP %d\n",
+  //  marcel_fprintf(stderr, "Main thread launched on LWP %d\n",
   //  marcel_current_vp());
 
   marcel_attr_init(&attr);
@@ -88,7 +88,7 @@ any_t main_thread(void *arg)
 	profile_stop();
 #endif
 	TBX_GET_TICK(t2);
-	printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+	marcel_printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
       }
     }
   }
@@ -104,7 +104,7 @@ int marcel_main(int argc, char *argv[])
   marcel_init(&argc, argv);
 
   if(argc != 2) {
-    fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+    marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);
   }
 

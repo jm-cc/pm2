@@ -25,11 +25,11 @@ any_t thread_func(any_t arg)
 {
   marcel_detach(marcel_self());
 
-  printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
+  marcel_printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
 
   /* Allocation d'une pile annexe, *obligatoirement* de taille THREAD_SLOT_SIZE.  */
   stack = marcel_slot_alloc();
-  printf("New stack goes from %p to %p\n", stack, stack + THREAD_SLOT_SIZE - 1);
+  marcel_printf("New stack goes from %p to %p\n", stack, stack + THREAD_SLOT_SIZE - 1);
 
   /* Préparation de la nouvelle pile pour accueillir le thread */
   marcel_prepare_stack_jump(stack);
@@ -37,9 +37,9 @@ any_t thread_func(any_t arg)
   /* basculement sur la pile annexe */
   set_sp(stack + THREAD_SLOT_SIZE - 1024);
 
-  printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
+  marcel_printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
 
-  printf("Here we are!!\n");
+  marcel_printf("Here we are!!\n");
 
   /* on ne peut pas retourner avec "return", donc : */
   marcel_exit(NULL);
@@ -53,7 +53,7 @@ int marcel_main(int argc, char *argv[])
 {
 #ifndef ENABLE_STACK_JUMPING
 
-  fprintf(stderr,
+  marcel_fprintf(stderr,
 	  "Please compile this program (and the Marcel library)\n"
 	  "with the -DENABLE_STACK_JUMPING flag.\n");
   exit(1);

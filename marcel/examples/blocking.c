@@ -44,12 +44,12 @@ any_t block(any_t arg)
   while (n--) {
     marcel_fprintf(stderr,"%s sleeping (VP %d)\n", name, marcel_current_vp());
     marcel_enter_blocking_section();
-    fprintf(stderr,"%s really sleeping (VP %d)\n", name, marcel_current_vp());
+    marcel_fprintf(stderr,"%s really sleeping (VP %d)\n", name, marcel_current_vp());
     ts.tv_sec = 1;
     ts.tv_nsec = 0;
     while (nanosleep(&ts,&ts))
       ;
-    fprintf(stderr,"%s really slept (VP %d)\n", name, marcel_current_vp());
+    marcel_fprintf(stderr,"%s really slept (VP %d)\n", name, marcel_current_vp());
     marcel_leave_blocking_section();
     marcel_fprintf(stderr,"%s slept (VP %d)\n", name, marcel_current_vp());
   }

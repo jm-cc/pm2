@@ -37,7 +37,7 @@ any_t master(any_t arg)
 
     CLONE_BEGIN(&clone_var);
 
-    fprintf(stderr,
+    marcel_fprintf(stderr,
 	    "Je (%p) suis en section parallele "
 	    "(delta = %lx, &i = %p/%p, i = %d)\n", marcel_self(),
 	    clone_my_delta(),
@@ -48,7 +48,7 @@ any_t master(any_t arg)
 
     CLONE_END(&clone_var);
 
-    fprintf(stderr, "ouf, les esclaves ont termine\n");
+    marcel_fprintf(stderr, "ouf, les esclaves ont termine\n");
   }
 
   clone_terminate(&clone_var);

@@ -132,18 +132,18 @@ void PrintDistTab ()
 {
  int i, j ;
 
- printf ("distance.NrTowns = %d\n", distance.NrTowns) ;
+ marcel_printf ("distance.NrTowns = %d\n", distance.NrTowns) ;
 
  for (i=0; i<distance.NrTowns; i++)
   {
-   printf ("distance.dst [%1d]",i) ;
+   marcel_printf ("distance.dst [%1d]",i) ;
    for (j=0; j<distance.NrTowns; j++)
     {
-     printf (" [d:%2d, to:%2d] ", distance.dst[i][j].dist, distance.dst[i][j].ToCity) ;
+     marcel_printf (" [d:%2d, to:%2d] ", distance.dst[i][j].dist, distance.dst[i][j].ToCity) ;
     }
-   printf (";\n\n") ;
+   marcel_printf (";\n\n") ;
   }
- printf ("done ...\n") ;
+ marcel_printf ("done ...\n") ;
 
 }
 
@@ -170,7 +170,7 @@ int marcel_main (int argc, char **argv)
 
  if (argc != 4)
    {
-    fprintf (stderr, "Usage: %s <nb_threads > <ncities> <seed> \n",argv[0]) ;
+    marcel_fprintf (stderr, "Usage: %s <nb_threads > <ncities> <seed> \n",argv[0]) ;
     exit (1) ;
    }
 
@@ -190,7 +190,7 @@ int marcel_main (int argc, char **argv)
  minimum = INT_MAX ;
  nb_workers = atoi (argv[1]) ;
 
- printf ("nb_threads = %3d ncities = %3d\n", nb_workers, atoi(argv[2])) ;
+ marcel_printf ("nb_threads = %3d ncities = %3d\n", nb_workers, atoi(argv[2])) ;
 
  init_queue (&q) ;
  InitDistance (&distance) ;
@@ -243,7 +243,7 @@ int marcel_main (int argc, char **argv)
 #endif
  top2 () ;
  temps = cpu_time();
- printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+ marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
  marcel_end();
  return 0 ;
 }

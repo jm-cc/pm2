@@ -88,11 +88,11 @@ int send_message (tube *t, char *message, int len)
   }
 #else
 #ifdef SHOW
-  printf("Before write %p\n", marcel_self());
+  marcel_printf("Before write %p\n", marcel_self());
 #endif
   n = write (t->tub[1], message, len) ;
 #ifdef SHOW
-  printf("After write %p\n", marcel_self());
+  marcel_printf("After write %p\n", marcel_self());
 #endif
 #endif
 
@@ -115,12 +115,12 @@ int receive_message (tube *t, char *message, int len)
   }
 #else
 #ifdef SHOW
-  printf("Before read %p\n", marcel_self());
+  marcel_printf("Before read %p\n", marcel_self());
 #endif
   //marcel_yield();
   n = read (t->tub[0], message, len) ;
 #ifdef SHOW
-  printf("After read %p\n", marcel_self());
+  marcel_printf("After read %p\n", marcel_self());
 #endif
 #endif
     
@@ -160,10 +160,10 @@ void * consommateur (void * arg)
   TBX_GET_TICK(t2);
 
   temps = TBX_TIMING_DELAY(t1, t2);
-  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 #ifdef __ACT__
-  printf("nb=%i\n",nb);
-  printf("dont time idle = %ld.%03ldms\n", temps_act/1000, temps_act%1000);
+  marcel_printf("nb=%i\n",nb);
+  marcel_printf("dont time idle = %ld.%03ldms\n", temps_act/1000, temps_act%1000);
 #endif
 
   return NULL;

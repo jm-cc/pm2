@@ -40,7 +40,7 @@ void repasser_en_mode_normal()
 any_t ma_fonction(any_t arg)
 {
    while(1) {
-      printf("%s ", (char *)arg); fflush(stdout);
+      marcel_printf("%s ", (char *)arg); marcel_fflush(stdout);
       { int j = 500000; while(j--); } /* On passe son temps comme on peut... */
    }
    return NULL;
@@ -71,7 +71,7 @@ int marcel_main(int argc, char *argv[])
    /* On attend la fin du "thread" pour sortir proprement */
    marcel_join(pid, &status);
 
-   printf("\nThread %p completed.\n", pid);
+   marcel_printf("\nThread %p completed.\n", pid);
 
    /* Au revoir les threads... */
 /*   marcel_end(); */

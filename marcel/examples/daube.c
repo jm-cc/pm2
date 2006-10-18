@@ -267,9 +267,9 @@ int marcel_main(int argc, char **argv)
 
   TBX_GET_TICK(t2);
 
-  printf("Sum from 1 to %d = %d\n", j.sup, j.res);
+  marcel_printf("Sum from 1 to %d = %d\n", j.sup, j.res);
   temps = TBX_TIMING_DELAY(t1, t2);
-  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
 #ifndef NO_IO
   /* terminaison du serveur */

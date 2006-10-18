@@ -30,18 +30,18 @@ any_t blocker(any_t arg)
 {
   struct timespec t = { .tv_sec = 2, .tv_nsec = 0};
   marcel_setname(marcel_self(),"blocker");
-  printf("  sleeping %lds\n", t.tv_sec);
+  marcel_printf("  sleeping %lds\n", t.tv_sec);
   while (nanosleep(&t,&t) == -1 && errno == EINTR);
-  printf("  slept, trying taking kthread_mutex\n");
+  marcel_printf("  slept, trying taking kthread_mutex\n");
   if (marcel_kthread_mutex_trylock(&kthread_mutex)) {
-    printf("  not free, trying harder\n");
+    marcel_printf("  not free, trying harder\n");
     marcel_kthread_mutex_lock(&kthread_mutex);
   }
-  printf("  got kthread_mutex, sleeping %lds\n", t.tv_sec = 3);
+  marcel_printf("  got kthread_mutex, sleeping %lds\n", t.tv_sec = 3);
   while (nanosleep(&t,&t) == -1 && errno == EINTR);
-  printf("  releasing kthread_mutex\n");
+  marcel_printf("  releasing kthread_mutex\n");
   marcel_kthread_mutex_unlock(&kthread_mutex);
-  printf("  released kthread_mutex\n");
+  marcel_printf("  released kthread_mutex\n");
   return NULL;
 }
 #endif
@@ -85,7 +85,7 @@ int marcel_main(int argc, char **argv)
   marcel_kthread_mutex_lock(&kthread_mutex);
   marcel_printf("got kthread_mutex\n");
 
-  fflush(stdout);
+  marcel_fflush(stdout);
   marcel_end();
 #endif
   return 0;

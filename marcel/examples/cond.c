@@ -37,7 +37,7 @@ any_t f(any_t arg)
   TBX_GET_TICK(t2);
   marcel_mutex_unlock(&mutex);
 
-  printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(intptr_t)arg);
+  marcel_printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(intptr_t)arg);
   return NULL;
 }
 
@@ -82,7 +82,7 @@ int marcel_main(int argc, char *argv[])
   marcel_init(&argc, argv);
 
   if(argc != 2) {
-    fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+    marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);
   }
 

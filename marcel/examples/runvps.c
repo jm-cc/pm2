@@ -28,7 +28,7 @@ any_t worker(any_t arg) {
 
   TBX_GET_TICK(t2);
 
-  printf("worker %d time = %fus\n", n, TBX_TIMING_DELAY(t1, t2));
+  marcel_printf("worker %d time = %fus\n", n, TBX_TIMING_DELAY(t1, t2));
   return NULL;
 }
 

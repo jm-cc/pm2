@@ -19,6 +19,8 @@
 
 volatile int a=0;
 
+marcel_t main_thread;
+
 any_t f(any_t arg)
 {
   register long n = (long)arg;
@@ -72,7 +74,7 @@ any_t f4(any_t arg)
 
   TBX_GET_TICK(t1);
   while(--n)
-    marcel_yield_to(__main_thread);
+    marcel_yield_to(main_thread);
   TBX_GET_TICK(t2);
 
   printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
@@ -203,6 +205,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
+  main_thread = marcel_self();
   if(argc != 2) {
     fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);

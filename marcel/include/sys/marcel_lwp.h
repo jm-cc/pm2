@@ -180,10 +180,10 @@ static __tbx_inline__ void lwp_list_unlock_write(void)
 }
 
 #section functions
-MARCEL_INLINE unsigned marcel_nbvps(void);
+static __tbx_inline__ unsigned marcel_nbvps(void);
 #section inline
 #depend "[variables]"
-MARCEL_INLINE unsigned marcel_nbvps(void)
+static __tbx_inline__ unsigned marcel_nbvps(void)
 {
 #ifdef MA__LWPS
   return ma__nb_vp;

@@ -58,7 +58,7 @@ extern int marcel_key_present[MAX_KEY_SPECIFIC];
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
 #section marcel_inline
 #depend "marcel_descr.h[types]"
-#depend "marcel_descr.h[marcel_structures]"
+#depend "marcel_descr.h[structures]"
 #depend "marcel_descr.h[marcel_inline]"
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {

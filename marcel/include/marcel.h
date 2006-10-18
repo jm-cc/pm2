@@ -26,8 +26,13 @@
 #include "tbx_types.h"
 #include "marcel_alloc___macros.h"
 #include "sys/marcel_flags.h"
+#include "sys/isomalloc_archdep.h"
 #include "marcel_config.h"
 #include "marcel_valgrind.h"
+
+#if (defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL)) && !defined (MARCEL_INTERNAL_INCLUDE)
+#define MARCEL_INTERNAL_INCLUDE
+#endif
 
 #ifdef MARCEL_KERNEL
 #define MARCEL_PROTECTED TBX_EXTERN /* TBX_PROTECTED */
@@ -40,7 +45,11 @@
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
 #  define MARCEL_INLINE TBX_EXTERN
 #else
-#  define MARCEL_INLINE TBX_EXTERN extern inline
+#  ifdef MARCEL_INTERNAL_INCLUDE
+#    define MARCEL_INLINE TBX_EXTERN extern inline
+#  else
+#    define MARCEL_INLINE TBX_EXTERN extern
+#  endif
 #endif
 
 /* ============ constants ============= */
@@ -96,12 +105,14 @@ TBX_VISIBILITY_POP
 #include "marcel-master___inline.h"
 /*#include "scheduler/marcel-master___inline.h"*/
 
-#if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
-/* pthread.h est inclu _ici_ pour qu'il soit inclut avec une visibilitÃ© normale par dÃ©faut, car sinon notre libpthread.so aurait les symboles pthread_* en interne seulement ! */
+#ifdef MARCEL_INTERNAL_INCLUDE
+/* pthread.h est inclu _ici_ pour qu'il soit inclut avec une visibilité normale par défaut, car sinon notre libpthread.so aurait les symboles pthread_* en interne seulement ! */
 #ifdef MA__LIBPTHREAD
 #include <pthread.h>
 #endif
+#ifndef X86_64_ARCH
 TBX_VISIBILITY_PUSH_INTERNAL
+#endif
 /*#  include "asm/marcel-master___marcel_compiler.h"*/
 #  include "marcel-master___marcel_compiler.h"
 /*#  include "scheduler/marcel-master___marcel_compiler.h"*/
@@ -129,7 +140,9 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "asm/marcel-master___marcel_inline.h"
 #  include "marcel-master___marcel_inline.h"
 #  include "scheduler/marcel-master___marcel_inline.h"
+#ifndef X86_64_ARCH
 TBX_VISIBILITY_POP
+#endif
 
 /*#  include "asm/marcel-master___all.h"*/
 /*#  include "marcel-master___all.h"*/
@@ -144,7 +157,6 @@ TBX_VISIBILITY_POP
 
 #include "sys/marcel_archsetjmp.h"
 
-#include "sys/marcel_privatedefs.h"
 #include "marcel_timing.h"
 #include "marcel_stdio.h"
 
@@ -164,15 +176,6 @@ TBX_FMALLOC
 marcel_t marcel_alloc_stack (unsigned size) __tbx_deprecated__;
 
 unsigned long marcel_usablestack(void);
-
-unsigned long marcel_unusedstack(void);
-
-static __tbx_inline__ char *marcel_stackbase(marcel_t pid) TBX_UNUSED;
-static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
-{
-	return (char *) pid->stack_base;
-}
-
 
 /* ============= miscellaneous ============ */
 

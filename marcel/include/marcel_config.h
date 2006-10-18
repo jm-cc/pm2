@@ -82,7 +82,7 @@
 #define MARCEL_BUBBLE_TIMESLICE	10
 
 /* Default LWP choice policy */
-#define MARCEL_SCHED_DEFAULT	MARCEL_SCHED_BALANCE
+#define MARCEL_SCHED_DEFAULT	MARCEL_SCHED_SHARED
 
 /* ========== timer =================== */
 

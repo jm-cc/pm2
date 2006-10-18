@@ -32,6 +32,8 @@ tsp-ldflags := -lm
 
 balance-ldflags := -lm
 
+hello: CC=g++
+
 # Applications dont le nom n'a pas de .c correspondant
 #----------------------------------------------------------------------
 APPS :=

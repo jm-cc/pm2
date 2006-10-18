@@ -14,13 +14,17 @@
  * General Public License for more details.
  */
 
-#ifndef PRIVATEDEFS_EST_DEF
-#define PRIVATEDEFS_EST_DEF
-
+#section common
 #include "tbx_compiler.h"
 
-extern marcel_task_t __main_thread_struct;
+#section functions
+#ifdef ENABLE_STACK_JUMPING
+static __tbx_inline__ void marcel_prepare_stack_jump(void *stack);
+static __tbx_inline__ void marcel_set_stack_jump(marcel_t m);
+#endif
 
+#section inline
+#depend "asm/marcel_archdep.h[marcel_macros]"
 #ifdef ENABLE_STACK_JUMPING
 static __tbx_inline__ void marcel_prepare_stack_jump(void *stack)
 {
@@ -34,6 +38,4 @@ static __tbx_inline__ void marcel_set_stack_jump(marcel_t m)
 
   *(marcel_t *)((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *)) = m;
 }
-#endif
-
 #endif

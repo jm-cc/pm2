@@ -19,8 +19,4 @@ PROGS := hello
 
 include $(PM2_ROOT)/make/apps.mak
 
-# Il faudrait écrire les règles génériques pour le C++...
-CXXFLAGS:=$(CFLAGS)
-MOD_CXXFLAGS:=$(MOD_CFLAGS)
-CC:=g++
-
+CC=g++

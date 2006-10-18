@@ -113,6 +113,8 @@ unsigned marcel_add_lwp(void);
 
 #section marcel_types
 #depend "scheduler/marcel_holder.h[marcel_structures]"
+#depend "scheduler/marcel_bubble_sched.h[types]"
+#depend "scheduler/marcel_bubble_sched.h[structures]"
 typedef struct {
 	struct ma_sched_entity entity;
 	marcel_bubble_t bubble;

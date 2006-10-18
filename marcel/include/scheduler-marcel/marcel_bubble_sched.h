@@ -105,6 +105,8 @@ void marcel_close_bubble(marcel_bubble_t *bubble);
 #depend "pm2_list.h"
 #depend "scheduler/marcel_holder.h[structures]"
 #depend "marcel_stats.h[marcel_types]"
+#depend "marcel_sem.h[types]"
+#depend "marcel_sem.h[structures]"
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 typedef enum {

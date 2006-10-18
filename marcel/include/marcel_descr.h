@@ -40,7 +40,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #define MARCEL_SELF (marcel_self())
 
 
-#section marcel_structures
+#section structures
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "asm/marcel_ctx.h[structures]"
 #depend "sys/marcel_work.h[marcel_structures]"
@@ -50,6 +50,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #depend "marcel_exception.h[structures]"
 #depend "marcel_signal.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
+#depend "linux_timer.h[structures]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
@@ -203,20 +204,15 @@ struct marcel_task {
 };
 
 #section functions
-#ifndef MARCEL_INTERNAL_INCLUDE
 /* ==== get current thread or LWP id ==== */
-extern marcel_t marcel_self(void);
-#endif
+MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 
 #section marcel_macros
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
-#section marcel_functions
-MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 #section marcel_inline
 #depend "[marcel_macros]"
-#depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h[marcel_macros]"
 #depend "marcel_threads.h[marcel_macros]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
@@ -247,6 +243,16 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 #endif
 	return self;
 }
+
+
+#section functions
+static __tbx_inline__ char *marcel_stackbase(marcel_t pid);
+#section inline
+static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
+{
+	return (char *) pid->stack_base;
+}
+
 
 #section marcel_macros
 

@@ -77,6 +77,7 @@ enum ma_rq_type {
 	MA_PROC_RQ,
 #endif
 	MA_VP_RQ,
+	MA_LWP_RQ,
 #endif
 };
 

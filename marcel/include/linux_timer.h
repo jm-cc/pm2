@@ -35,7 +35,7 @@
 #section marcel_types
 typedef struct ma_tvec_t_base_s ma_tvec_base_t;
 
-#section marcel_structures
+#section structures
 struct ma_timer_list {
 	struct list_head entry;
 	unsigned long expires;
@@ -49,6 +49,7 @@ struct ma_timer_list {
 	struct ma_tvec_t_base_s *base;
 };
 
+#section marcel_structures
 typedef struct ma_tvec_s {
 	struct list_head vec[TVN_SIZE];
 } ma_tvec_t;

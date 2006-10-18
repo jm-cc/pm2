@@ -177,12 +177,12 @@ void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
 #section functions
-MARCEL_INLINE void marcel_thread_preemption_enable(void);
-MARCEL_INLINE void marcel_thread_preemption_disable(void);
-MARCEL_INLINE int marcel_thread_is_preemption_disabled(void);
-MARCEL_INLINE void marcel_some_thread_preemption_enable(marcel_t t);
-MARCEL_INLINE void marcel_some_thread_preemption_disable(marcel_t t);
-MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t);
+void marcel_thread_preemption_enable(void);
+void marcel_thread_preemption_disable(void);
+int marcel_thread_is_preemption_disabled(void);
+static __tbx_inline__ void marcel_some_thread_preemption_enable(marcel_t t);
+static __tbx_inline__ void marcel_some_thread_preemption_disable(marcel_t t);
+static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t);
 #define	marcel_thread_preemption_enable() marcel_some_thread_preemption_enable(MARCEL_SELF)
 #define	marcel_thread_preemption_disable() marcel_some_thread_preemption_disable(MARCEL_SELF)
 #define	marcel_thread_is_preemption_disabled() marcel_some_thread_is_preemption_disabled(MARCEL_SELF)
@@ -191,7 +191,7 @@ MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t);
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
 /* Pour les membres de marcel_t */
-#depend "marcel_descr.h[marcel_structures]"
+#depend "marcel_descr.h[structures]"
 static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
 {
 #ifdef MA__DEBUG
@@ -200,7 +200,7 @@ static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
         ma_barrier();
 	THREAD_GETMEM(t, not_preemptible)--;
 }
-MARCEL_INLINE void marcel_some_thread_preemption_enable(marcel_t t) {
+static __tbx_inline__ void marcel_some_thread_preemption_enable(marcel_t t) {
 	__marcel_some_thread_preemption_enable(t);
 }
 
@@ -209,7 +209,7 @@ static __tbx_inline__ void __marcel_some_thread_preemption_disable(marcel_t t) {
         ma_barrier();
 }
 
-MARCEL_INLINE void marcel_some_thread_preemption_disable(marcel_t t) {
+static __tbx_inline__ void marcel_some_thread_preemption_disable(marcel_t t) {
 	__marcel_some_thread_preemption_disable(t);
 }
 
@@ -217,7 +217,7 @@ static __tbx_inline__ int __marcel_some_thread_is_preemption_disabled(marcel_t t
 	return THREAD_GETMEM(t, not_preemptible) != 0;
 }
 
-MARCEL_INLINE int marcel_some_thread_is_preemption_disabled(marcel_t t) {
+static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t) {
 	return __marcel_some_thread_is_preemption_disabled(t);
 }
 
@@ -260,17 +260,17 @@ typedef void (*transfert_func_t)(marcel_t t, unsigned long depl, unsigned long b
 typedef void (*post_migration_func_t)(void *arg);
 
 #section functions
-static __tbx_inline__ void marcel_disablemigration(marcel_t pid);
-#section inline
-static __tbx_inline__ void marcel_disablemigration(marcel_t pid)
+MARCEL_INLINE void marcel_disablemigration(marcel_t pid);
+#section marcel_inline
+MARCEL_INLINE void marcel_disablemigration(marcel_t pid)
 {
   pid->not_migratable++;
 }
 
 #section functions
-static __tbx_inline__ void marcel_enablemigration(marcel_t pid);
-#section inline
-static __tbx_inline__ void marcel_enablemigration(marcel_t pid)
+MARCEL_INLINE void marcel_enablemigration(marcel_t pid);
+#section marcel_inline
+MARCEL_INLINE void marcel_enablemigration(marcel_t pid)
 {
   pid->not_migratable--;
 }
@@ -341,7 +341,8 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
 /* 			 void (*__init_routine) (void)) __THROW; */
 
 
-#section marcel_macros
+#section macros
+#depend "marcel_descr.h[types]"
 #ifdef STANDARD_MAIN
 extern marcel_task_t __main_thread_struct;
 #define __main_thread  (&__main_thread_struct)

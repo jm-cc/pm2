@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
 #include "marcel_alloc.h"
 

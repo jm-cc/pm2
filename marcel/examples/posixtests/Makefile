@@ -18,8 +18,8 @@
 #
 
 # Added tests timeout from Sebastien Decugis (http://nptl.bullopensource.org) 
-# Expiration delay is 120 seconds
-TIMEOUT_VAL = 120
+# Expiration delay is 240 seconds
+TIMEOUT_VAL = 240
 # The following value is the shell return value of a timedout application.
 # with the bash shell, the ret val of a killed application is 128 + signum
 # and under Linux, SIGALRM=14, so we have (Linux+bash) 142.
@@ -29,11 +29,13 @@ top_builddir = .
 
 LOGFILE = $(top_builddir)/logfile
 
-CFLAGS = -g -O2 -Wall -Werror $(shell pm2-config --cflags) -I$$PM2_ROOT/marcel/include/pthread
-LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#) $(shell pm2-config --libs)
+#CFLAGS = -g -O2 -Wall -Werror $(shell pm2-config --cflags) -I$$PM2_ROOT/marcel/include/pthread
+#LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#) $(shell pm2-config --libs)
 
-#CFLAGS = -g -O2 -Wall -Werror -D_POSIX_C_SOURCE=200112L 
-#LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#) -lpthread
+EXEC_PREFIX := pm2-libpthread
+
+CFLAGS = -g -O2 -Wall -Werror -D_POSIX_C_SOURCE=200112L
+LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#) -lpthread -lrt
 
 RUN_TESTS := $(shell $(top_builddir)/locate-test \
              --execs $(top_builddir)/$(POSIX_TARGET))
@@ -97,10 +99,10 @@ clean:
 # Rule to run an executable test
 # If it is only a build test, then the binary exist, so we don't need to run
 .PHONY: %.run-test
-%.run-test: %.test $(top_builddir)/t0
+%.run-test: %.test $(top_builddir)/t0 $(top_builddir)/t0.val
 	@COMPLOG=$(LOGFILE).$$$$; \
 	[ -f $< ] || exit 0; \
-	$(TIMEOUT) $< > $$COMPLOG 2>&1; \
+	$(TIMEOUT) $(EXEC_PREFIX) $< > $$COMPLOG 2>&1; \
 	RESULT=$$?; \
 	if [ $$RESULT -eq 1 ]; \
 	then \
@@ -140,10 +142,12 @@ clean:
 
 $(top_builddir)/t0: $(top_builddir)/t0.c
 	@echo Building timeout helper files; \
-	$(CC) -O2 -o $@ $< ; \
+	$(CC) -O2 -o $@ $<
+	
+$(top_builddir)/t0.val: $(top_builddir)/t0
 	echo `$(top_builddir)/t0 0; echo $$?` > $(top_builddir)/t0.val
 	
-%.run-test: %.sh $(top_builddir)/t0
+%.run-test: %.sh $(top_builddir)/t0 $(top_builddir)/t0.val
 	@COMPLOG=$(LOGFILE).$$$$; \
 	chmod +x $<; \
 	$(TIMEOUT) $< > $$COMPLOG 2>&1; \

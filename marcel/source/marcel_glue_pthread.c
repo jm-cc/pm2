@@ -15,7 +15,6 @@
  */
 
 #include "marcel.h"
-#ifdef MA__LIBPTHREAD
 
 #include "pm2_common.h"
 #include <errno.h>
@@ -23,6 +22,12 @@
 #include <unistd.h>
 #include <semaphore.h>
 
+DEF_POSIX(pmarcel_t, self, (void), (), {
+    LOG_IN(); LOG_OUT(); return (pmarcel_t) marcel_self();}
+
+)
+
+#ifdef MA__LIBPTHREAD
 
 int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
     void *(*start_routine) (void *), void *arg)
@@ -104,11 +109,6 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 versioned_symbol(libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
 /*********************pthread_self***************************/
-
-DEF_POSIX(pmarcel_t, self, (void), (), {
-    LOG_IN(); LOG_OUT(); return (pmarcel_t) marcel_self();}
-
-)
 
 lpt_t lpt_self(void)
 {

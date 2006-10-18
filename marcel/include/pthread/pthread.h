@@ -227,7 +227,7 @@
 #undef pthread_attr_getguardsize
 #define pthread_attr_getguardsize(attr, guardsize) pmarcel_attr_getguardsize(attr, guardsize)
 #undef pthread_getattr_np
-#define pthread_getattr_np(thread,attr) marcel_getattr_np(thread,attr)
+#define pthread_getattr_np(thread,attr) pmarcel_getattr_np(thread,attr)
 /* nptl_mutex.c */
 
 #undef pthread_mutex_init

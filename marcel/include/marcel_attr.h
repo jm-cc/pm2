@@ -210,8 +210,6 @@ DEC_MARCEL(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_
 DEC_MARCEL(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
 DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
 
-int marcel_getattr_np(marcel_t t,marcel_attr_t *__attr);
-
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;
 extern marcel_attr_t marcel_attr_destroyer;

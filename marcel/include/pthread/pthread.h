@@ -310,28 +310,46 @@
 /* marcel_signal.c */
 
 #undef pause
-#define pause pmarcel_pause
+#define pause() pmarcel_pause()
+#undef alarm
+#define alarm(sec) pmarcel_alarm(sec)
+#undef getitimer
+#define getitimer(which,value) pmarcel_getitimer(which,value)
+#undef setitimer
+#define setitimer(which,value,ovalue) pmarcel_setitimer(which,value,ovalue)
 #undef raise
-#define raise pmarcel_raise
+#define raise(sig) pmarcel_raise(sig)
 #undef pthread_kill
 #define pthread_kill(thread,sig) pmarcel_kill(thread,sig)
-#undef pthread_sigmask
-#define pthread_sigmask(how,set,oset) pmarcel_sigmask(how,set,oset)
-#undef sigprocmask
-#define sigprocmask(how,set,oset) marcel_sigmask(how,set,oset)
 #undef sigpending
 #define sigpending(set) pmarcel_sigpending(set)
+#undef sigtimedwait
+#define sigtimedwait(set,info,timeout) pmarcel_sigtimedwait(set,info,timeout)
+#undef sigwaitinfo
+#define sigwaitinfo(set,info) pmarcel_sigwaitinfo(set,info)
 #undef sigwait
 #define sigwait(set,sig) pmarcel_sigwait(set,sig)
 #undef sigsuspend
 #define sigsuspend(set) pmarcel_sigsuspend(set)
-#undef sigsetjmp
-#define sigsetjmp(env,savemask) pmarcel_sigsetjmp(env,savemask)
 #undef siglongjmp
 #define siglongjmp(env,val) pmarcel_siglongjmp(env,val)
 #undef signal
 #define signal(sig,handler) pmarcel_signal(sig,handler)
+#undef pthread_sigmask
+#define pthread_sigmask(how,set,oset) pmarcel_sigmask(how,set,oset)
+#undef sigprocmask
+#define sigprocmask(how,set,oset) marcel_sigmask(how,set,oset)
+#undef sigsetjmp
+#define sigsetjmp(env,savemask) pmarcel_sigsetjmp(env,savemask)
 /* #define sigaction(sig,act,oact) pmarcel_sigaction(sig,act,oact) déja fait pour la structure */
+#undef sighold
+#define sighold(sig) pmarcel_sighold(sig)
+#undef sigrelse
+#define sigrelse(sig) pmarcel_sigrelse(sig)
+#undef sigignore
+#define sigignore(sig) pmarcel_sigignore(sig)
+#undef sigpause
+#define sigpause(sig) pmarcel_sigpause(sig)
 
 #undef sigemptyset 
 #define sigemptyset     pmarcel_sigemptyset

@@ -77,6 +77,8 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	}
 };
 
+static marcel_vpmask_t vpmask;
+
 int ma_vp_node[MA_NR_LWPS];
 
 #undef marcel_topo_vp_level
@@ -367,7 +369,7 @@ static void __marcel_init look_libnuma(void) {
 		}
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].number=i;
-		node_level[i].vpset=vpset=buffer[0];
+		node_level[i].vpset=vpset=buffer[0]&vpmask;
 		mdebug("node %d has vpset %lx\n",i,vpset);
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))
@@ -392,7 +394,7 @@ static void __marcel_init look_libnuma(void) {
 #include <numa.h>
 static void __marcel_init look_libnuma(void) {
 	cpu_cursor_t cursor;
-	unsigned i,j;
+	unsigned i;
 	unsigned nbnodes;
 	radid_t radid;
 	cpuid_t cpuid;
@@ -426,12 +428,11 @@ static void __marcel_init look_libnuma(void) {
 		marcel_vpmask_empty(&node_level[radid].vpset);
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
-			marcel_vpmask_add_vp(&node_level[radid].vpset,cpuid);
-		vpset = node_level[radid].vpset;
-		mdebug("node %d has vpset %lx\n",i,vpset);
-		for (j=0;j<marcel_nbvps();j++)
-			if (marcel_vpmask_vp_ismember(&vpset,j))
-				ma_vp_node[j]=radid;
+			if (cpuid < marcel_nbvps()) {
+				marcel_vpmask_add_vp(&node_level[radid].vpset,cpuid);
+				ma_vp_node[cpuid]=radid;
+			}
+		mdebug("node %d has vpset %lx\n",i,node_level[radid].vpset);
 		node_level[i].arity=0;
 		node_level[i].sons=NULL;
 		node_level[i].father=NULL;
@@ -526,9 +527,10 @@ static void topo_discover(void) {
 	int dosplit;
 #endif
 #ifdef MA__NUMA
-	marcel_vpmask_empty(&marcel_machine_level[0].vpset);
+	marcel_vpmask_empty(&vpmask);
 	for (vp=0; vp < marcel_nbvps(); vp++)
-		marcel_vpmask_add_vp(&marcel_machine_level[0].vpset, vp);
+		marcel_vpmask_add_vp(&vpmask, vp);
+	memcpy(&marcel_machine_level[0].vpset, &vpmask, sizeof(vpmask));
 #ifdef LINUX_SYS
 	look_libnuma();
 	look_cpuinfo();

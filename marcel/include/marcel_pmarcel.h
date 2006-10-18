@@ -286,10 +286,10 @@ extern int pmarcel_attr_getstack (__const pmarcel_attr_t *__restrict __attr,
 extern int pmarcel_attr_setstack (pmarcel_attr_t *__attr, void *__stackaddr,
 				  size_t __stacksize) __THROW;
 
-#ifdef __USE_GNU
+//#ifdef __USE_GNU
 /* Get thread attributes corresponding to the already running thread TH.  */
 extern int pmarcel_getattr_np (pmarcel_t __th, pmarcel_attr_t *__attr) __THROW;
-#endif
+//#endif
 
 
 /* Functions for scheduling control.  */
@@ -424,12 +424,12 @@ extern int pmarcel_rwlock_rdlock (pmarcel_rwlock_t *__rwlock) __THROW;
 /* Try to acquire read lock for RWLOCK.  */
 extern int pmarcel_rwlock_tryrdlock (pmarcel_rwlock_t *__rwlock) __THROW;
 
-# ifdef __USE_XOPEN2K
+//# ifdef __USE_XOPEN2K
 /* Try to acquire read lock for RWLOCK or return after specfied time.  */
 extern int pmarcel_rwlock_timedrdlock (pmarcel_rwlock_t *__restrict __rwlock,
 				       __const struct timespec *__restrict
 				       __abstime) __THROW;
-# endif
+//# endif
 
 /* Acquire write lock for RWLOCK.  */
 extern int pmarcel_rwlock_wrlock (pmarcel_rwlock_t *__rwlock) __THROW;
@@ -437,12 +437,12 @@ extern int pmarcel_rwlock_wrlock (pmarcel_rwlock_t *__rwlock) __THROW;
 /* Try to acquire write lock for RWLOCK.  */
 extern int pmarcel_rwlock_trywrlock (pmarcel_rwlock_t *__rwlock) __THROW;
 
-# ifdef __USE_XOPEN2K
+//# ifdef __USE_XOPEN2K
 /* Try to acquire write lock for RWLOCK or return after specfied time.  */
 extern int pmarcel_rwlock_timedwrlock (pmarcel_rwlock_t *__restrict __rwlock,
 				       __const struct timespec *__restrict
 				       __abstime) __THROW;
-# endif
+//# endif
 
 /* Unlock RWLOCK.  */
 extern int pmarcel_rwlock_unlock (pmarcel_rwlock_t *__rwlock) __THROW;

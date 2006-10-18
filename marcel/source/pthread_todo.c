@@ -3,7 +3,6 @@
 #include<unistd.h>
 #include "errno.h"
 #include "sys/marcel_flags.h"
-#ifdef MA__LIBPTHREAD
 
 /* POSIX à revoir :
  *
@@ -31,13 +30,21 @@ static int infile=0;
     return ENOSYS; \
   }
 
+#ifdef MA__LIBPTHREAD
 #define NDP(prefix,function) \
         ND(prefix##pthread_##function) \
         ND(prefix##pmarcel_##function)
+#elif defined(MA__IFACE_PMARCEL)
+#define NDP(prefix,function) \
+        ND(prefix##pmarcel_##function)
+#else
+#define NDP(prefix,function)
+#endif
 
 #define NDSP(function) NDP(_,function) 
 #define NDSSP(function) NDP(__,function) 
 
+#ifdef MA__LIBPTHREAD
 #define NDC(function) \
   int function(void) { \
     if (!infile) { \
@@ -48,14 +55,9 @@ static int infile=0;
     errno = ENOSYS; \
     return -1; \
   }
-
-
-#define ND2(function)
-
-#define ND3(function) \
-  int function(void) { \
-        return 0; \
-  }
+#else
+#define NDC(function)
+#endif
 
 NDSP(cleanup_pop_restore)
 NDSP(cleanup_push_defer)
@@ -73,10 +75,11 @@ NDP(,condattr_setclock) NDP(,condattr_getclock)
 
 NDSSP(unwind)
 
+#ifdef MA__LIBPTHREAD
 pid_t wait(int *status)
 {
 	return syscall(SYS_wait4,-1,status,0,NULL);
 }
+#endif
 
 NDC(system) NDC(tcdrain) NDC(msync) NDC(sendmsg) NDC(sendto)
-#endif

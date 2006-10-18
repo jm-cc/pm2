@@ -149,6 +149,7 @@ struct marcel_task {
 #ifdef MA__LIBPTHREAD
 	/* Pour le code provenant de la libpthread */
 	struct __res_state __res_state;
+#endif
 	/*         List of readlock info structs */
 	marcel_readlock_info *p_readlock_list;
 	/*         Free list of structs */
@@ -158,7 +159,6 @@ struct marcel_task {
 	/*         Next element in the queue holding the thr */
 	marcel_t p_nextwaiting;
 	marcel_sem_t pthread_sync;
-#endif
 
 	/* per-lwp list of all threads */
 	struct list_head all_threads;

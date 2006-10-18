@@ -22,8 +22,6 @@
 #include "marcel.h" //VD:
 #include "marcel_for_pthread.h"
 
-#ifdef MA__LIBPTHREAD // ST:
-
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -700,5 +698,3 @@ DEF_MARCEL_POSIX(int,
 
 DEF_PTHREAD(int, rwlockattr_setkind_np, (pthread_rwlockattr_t *attr, int pref),
 		 (attr, pref))
-
-#endif // MA__LIBPTHREAD (ST:)

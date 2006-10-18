@@ -21,7 +21,6 @@ static inline marcel_t __thread_self() {
   return marcel_self();
 }
 
-#ifdef MA__LIBPTHREAD
 static inline void restart(marcel_descr th)
 {
   marcel_sem_V(&th->pthread_sync);
@@ -43,4 +42,3 @@ static inline int timed_suspend(marcel_descr self, unsigned long timeout)
   MARCEL_EXCEPTION_END
 }
 
-#endif

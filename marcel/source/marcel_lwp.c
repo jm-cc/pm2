@@ -211,9 +211,7 @@ unsigned marcel_lwp_add_lwp(int num)
 	    lwp_kthread_start_func, (void *) lwp);
 	marcel_sig_enable_interrupts();
 #endif
-	return ma_per_lwp(number, lwp);
-
-	LOG_OUT();
+	LOG_RETURN(ma_per_lwp(number, lwp));
 }
 
 unsigned marcel_lwp_add_vp(void)

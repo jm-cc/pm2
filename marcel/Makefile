@@ -40,7 +40,7 @@ MOD_HSPLITS_SOURCES:=$(filter-out $(M4_GEN_HEADERS_NAMES), \
 	grep -l '^\#section' *.h sys/*.h)) $(M4_GEN_HEADERS_NAMES)
 
 #MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
-MOD_HSPLITS_GENDIR = $(CURDIR)/autogen-include
+MOD_HSPLITS_GENDIR = $(PM2_ROOT)/marcel/autogen-include
 
 MOD_SRC += source/scheduler-$(SCHED_NAME)
 MOD_SRC += source/arch-$(MOD_ARCH)

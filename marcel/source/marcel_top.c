@@ -115,7 +115,7 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 	top_printf("%*s%-#*lx %*s(%2d) %2d             %-10s %-10s %-10s\r\n",
 		indent, "",
 		(int) (2+2*sizeof(void*)), (unsigned long) b,
-        	MARCEL_MAXNAMESIZE-4, "", *(unsigned *)ma_stats_get(b, ma_stats_nbthreads_offset),
+        	MARCEL_MAXNAMESIZE-4, "", *(unsigned *)ma_stats_get(&b->hold, ma_stats_nbthreads_offset),
 		b->sched.prio,
 		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),

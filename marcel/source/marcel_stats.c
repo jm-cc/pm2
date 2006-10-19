@@ -17,16 +17,16 @@
 #include "marcel.h"
 
 static ma_per_sth_cur_t stats_cur = MA_PER_STH_CUR_INITIALIZER(MARCEL_STATS_ROOM);
-ma_stats_t ma_stats_funcs;
+ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, ma_stats_synthesis_t *thread_synthesis_function, size_t size) {
 	unsigned long offset;
-	if (size < sizeof(reset_function) + sizeof(synthesis_function) + sizeof(thread_synthesis_function))
-		size = sizeof(synthesis_function) + sizeof(synthesis_function) + sizeof(thread_synthesis_function);
+	if (size < sizeof(void(*)()))
+		size = sizeof(void(*)());
 	offset = ma_per_sth_alloc(&stats_cur, size);
 	ma_stats_reset_func(offset) = reset_function;
 	ma_stats_synthesis_func(offset) = synthesis_function;
-	ma_stats_thread_synthesis_func(offset) = thread_synthesis_function;
-	reset_function(ma_stats_get(__main_thread, offset));
+	ma_stats_size(offset) = size;
+	reset_function(ma_stats_get(&__main_thread->sched.internal.entity, offset));
 	return offset;
 }
 
@@ -39,10 +39,17 @@ void ma_stats_unsigned_sum_synthesis(void * __restrict dest, const void * __rest
 	const unsigned *src_data = src;
 	*dest_data += *src_data;
 }
+
 TBX_FUN_ALIAS(void, ma_stats_unsigned_max_reset, ma_stats_unsigned_sum_reset, (void *dest), (dest));
 void ma_stats_unsigned_max_synthesis(void * __restrict dest, const void * __restrict src) {
 	unsigned *dest_data = dest;
 	const unsigned *src_data = src;
 	if (*src_data > *dest_data)
 		*dest_data = *src_data;
+}
+
+void __ma_stats_reset(ma_stats_t *stats) {
+	unsigned long offset;
+	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
+		ma_stats_reset_func(offset)(__ma_stats_get(stats,offset));
 }

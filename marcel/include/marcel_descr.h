@@ -49,7 +49,6 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #depend "marcel_sem.h[structures]"
 #depend "marcel_exception.h[structures]"
 #depend "marcel_signal.h[marcel_types]"
-#depend "marcel_stats.h[marcel_types]"
 #depend "linux_timer.h[structures]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
@@ -195,8 +194,6 @@ struct marcel_task {
 	/* TLS Exec (non dynamique) */
 	char tls[MA_TLS_AREA_SIZE];
 #endif
-	/* Statistiques */
-	ma_stats_t stats;
 
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; /*  Doit rester le _dernier_ champ */

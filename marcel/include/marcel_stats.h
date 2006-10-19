@@ -23,18 +23,19 @@ typedef void ma_stats_synthesis_t(void * __restrict dest, const void * __restric
 typedef void ma_stats_reset_t(void *dest);
 
 #section marcel_variables
-extern ma_stats_t ma_stats_funcs;
+extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 
 #section marcel_macros
 #define __ma_stats_get(stats, offset) ((void*)&((stats)[offset]))
 #define ma_stats_get(object, offset) __ma_stats_get((object)->stats, (offset))
-#define __ma_stats_func(offset) ((void**)__ma_stats_get(ma_stats_funcs, (offset)))
-#define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)(__ma_stats_func(offset)))
-#define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)(__ma_stats_func(offset) + 1))
-#define ma_stats_thread_synthesis_func(offset) (*(ma_stats_synthesis_t **)(__ma_stats_func(offset) + 2))
+#define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)__ma_stats_get(ma_stats_reset_func, (offset)))
+#define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)__ma_stats_get(ma_stats_synthesis_func, (offset)))
+#define ma_stats_size(offset) (*(size_t *)__ma_stats_get(ma_stats_size, (offset)))
+#define ma_stats_reset(object) __ma_stats_reset(&(object)->stats)
 
 #section marcel_functions
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, ma_stats_synthesis_t *thread_synthesis_function, size_t size);
+void __ma_stats_reset(ma_stats_t *stats);
 
 ma_stats_synthesis_t ma_stats_unsigned_sum_synthesis;
 ma_stats_reset_t ma_stats_unsigned_sum_reset;

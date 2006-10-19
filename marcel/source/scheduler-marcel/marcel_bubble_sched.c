@@ -31,6 +31,8 @@ marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubbl
 int marcel_bubble_init(marcel_bubble_t *bubble) {
 	PROF_EVENT1(bubble_sched_new,bubble);
 	*bubble = (marcel_bubble_t) MARCEL_BUBBLE_INITIALIZER(*bubble);
+	ma_stats_reset(&bubble->sched);
+	ma_stats_reset(&bubble->hold);
 	PROF_EVENT2(sched_setprio,bubble,bubble->sched.prio);
 	return 0;
 }
@@ -440,17 +442,18 @@ static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long 
 	marcel_bubble_t *b;
 	marcel_entity_t *e;
 	marcel_task_t *t;
-	ma_stats_reset_func(offset)(ma_stats_get(bubble, offset));
+	ma_stats_reset_func(offset)(ma_stats_get(&bubble->hold, offset));
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			b = ma_bubble_entity(e);
 			ma_holder_rawlock(&b->hold);
 			__ma_bubble_synthesize_stats(b, offset);
 			ma_holder_rawunlock(&b->hold);
-			ma_stats_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(b, offset));
+			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&b->hold, offset));
+			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&b->sched, offset));
 		} else {
 			t = ma_task_entity(e);
-			ma_stats_thread_synthesis_func(offset)(ma_stats_get(bubble, offset), ma_stats_get(t, offset));
+			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&t->sched.internal.entity, offset));
 		}
 	}
 }

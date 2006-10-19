@@ -403,7 +403,6 @@ extern const __ma_init_info_t ma_init_info_main_thread_init;
 extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
 extern const __ma_init_info_t ma_init_info_marcel_slot_init;
 extern const __ma_init_info_t ma_init_info_linux_sched_init;
-extern void ma_sched_init(void);
 extern void ma_linux_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
@@ -519,7 +518,6 @@ void marcel_init_section(int sec)
 #endif				// PROFILE
 			call_init_function(&ma_init_info_marcel_debug_init_auto);
 			call_init_function(&ma_init_info_marcel_slot_init);
-			ma_sched_init();
 #ifdef MA__BUBBLES
 			call_init_function(&ma_init_info_bubble_sched_init);
 #endif				// MA__BUBBLES

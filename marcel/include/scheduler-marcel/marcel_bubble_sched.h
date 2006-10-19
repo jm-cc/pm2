@@ -104,7 +104,6 @@ void marcel_close_bubble(marcel_bubble_t *bubble);
 #section structures
 #depend "pm2_list.h"
 #depend "scheduler/marcel_holder.h[structures]"
-#depend "marcel_stats.h[marcel_types]"
 #depend "marcel_sem.h[types]"
 #depend "marcel_sem.h[structures]"
 
@@ -135,8 +134,6 @@ struct marcel_bubble {
 	int settled;
 #endif
 	marcel_barrier_t barrier;
-
-	ma_stats_t stats;
 };
 
 #section macros
@@ -146,6 +143,7 @@ struct marcel_bubble {
 #depend "asm/linux_atomic.h"
 #depend "scheduler/marcel_holder.h[macros]"
 
+/* Attention: ne doit être utilisé que par marcel_bubble_init */
 #ifdef MARCEL_BUBBLE_EXPLODE
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 	.status = MA_BUBBLE_CLOSED, \

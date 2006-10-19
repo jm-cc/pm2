@@ -299,6 +299,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
+	ma_stats_reset(&t->sched.internal.entity);
+	*(unsigned long *) ma_stats_get(&t->sched.internal.entity, ma_stats_nbthreads_offset) = 1;
 	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else

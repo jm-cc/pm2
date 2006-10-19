@@ -33,6 +33,7 @@ enum marcel_entity {
 #depend "linux_spinlock.h[types]"
 #depend "[marcel_types]"
 #depend "marcel_barrier.h[types]"
+#depend "marcel_stats.h[marcel_types]"
 
 /* Un conteneur a un type (bulle/runqueue), et peut se verrouiller pour ajouter
  * des entités. */
@@ -45,6 +46,7 @@ struct ma_holder {
 	ma_spinlock_t lock;
 	unsigned long nr_running, nr_uninterruptible;
 	unsigned long nr_scheduled;
+	ma_stats_t stats;
 };
 
 #section types
@@ -102,6 +104,7 @@ static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h) {
 #depend "[types]"
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
+#depend "marcel_stats.h[marcel_types]"
 struct ma_sched_entity {
 	enum marcel_entity type;
 	ma_holder_t *init_holder;
@@ -118,6 +121,7 @@ struct ma_sched_entity {
 #ifdef MA__LWPS
 	int sched_level;
 #endif
+	ma_stats_t stats;
 };
 
 #section types

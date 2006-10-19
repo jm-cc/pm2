@@ -146,8 +146,6 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->canceled = MARCEL_NOT_CANCELED;
 #endif
 
-	*(unsigned long *) ma_stats_get(t, ma_stats_nbthreads_offset) = 1;
-
 #ifdef ENABLE_STACK_JUMPING
 	*((marcel_t *) (ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif

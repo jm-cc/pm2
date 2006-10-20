@@ -44,6 +44,7 @@ void marcel_slot_exit(void);
 
 #define ma_slot_task(slot) ((marcel_task_t *)((unsigned long) (slot) + THREAD_SLOT_SIZE - MAL(sizeof(marcel_task_t))))
 #define ma_slot_top_task(top) ((marcel_task_t *)((unsigned long) (top) - MAL(sizeof(marcel_task_t))))
+#define ma_slot_sp_task(sp) ma_slot_task((sp) & ~(THREAD_SLOT_SIZE-1))
 #define ma_task_slot_top(t) ((unsigned long) (t) + MAL(sizeof(marcel_task_t)))
 
 

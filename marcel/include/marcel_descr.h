@@ -231,8 +231,7 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 		self = *((marcel_t *) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
 			    THREAD_SLOT_SIZE - sizeof(void *))));
 #else
-		self = (marcel_t) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
-			THREAD_SLOT_SIZE) - MAL(sizeof(marcel_task_t)));
+		self = ma_slot_sp_task(sp);
 #endif
 		MA_BUG_ON(sp >= (unsigned long) self
 		    && sp < (unsigned long) (self + 1));

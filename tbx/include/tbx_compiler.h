@@ -216,6 +216,14 @@ void __memory_barrier(void);
 #endif
 
 /*
+ * Atomic builtins
+ */
+
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR >=1)
+#define tbx_mb __sync_synchronize()
+#endif
+
+/*
  * Generic compiler-dependent macros required for kernel
  * build go below this comment. Actual compiler/compiler version
  * specific implementations come from the above header files

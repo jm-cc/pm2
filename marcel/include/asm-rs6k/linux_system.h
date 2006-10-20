@@ -54,8 +54,9 @@
  * sequential memory pages only.
  */
 
-#error "to write !"
-#define ma_mb()
+#include "tbx_compiler.h"
+#error "to check !"
+#define ma_mb()		tbx_mb()
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	ma_mb()
 #define ma_read_barrier_depends()	do { } while(0)

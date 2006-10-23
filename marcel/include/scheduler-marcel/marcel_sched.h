@@ -300,7 +300,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
 	ma_stats_reset(&t->sched.internal.entity);
-	*(unsigned long *) ma_stats_get(&t->sched.internal.entity, ma_stats_nbthreads_offset) = 1;
+	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
 	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else
@@ -352,7 +352,11 @@ int marcel_sched_getparam(marcel_t t, struct marcel_sched_param *p);
 int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_param *p);
 int marcel_sched_getscheduler(marcel_t t);
 
+#section marcel_macros
+#define ma_task_stats_get(t,offset) ma_stats_get(&(t)->sched.internal.entity,(offset))
+
 /* ==== SMP scheduling directives ==== */
+#section functions
 
 void marcel_change_vpmask(marcel_vpmask_t *mask);
 

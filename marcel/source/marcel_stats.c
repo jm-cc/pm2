@@ -26,24 +26,24 @@ unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesi
 	ma_stats_reset_func(offset) = reset_function;
 	ma_stats_synthesis_func(offset) = synthesis_function;
 	ma_stats_size(offset) = size;
-	reset_function(ma_stats_get(&__main_thread->sched.internal.entity, offset));
+	reset_function(ma_task_stats_get(__main_thread, offset));
 	return offset;
 }
 
-void ma_stats_unsigned_sum_reset(void *dest) {
-	unsigned *data = dest;
+void ma_stats_long_sum_reset(void *dest) {
+	long *data = dest;
 	*data = 0;
 }
-void ma_stats_unsigned_sum_synthesis(void * __restrict dest, const void * __restrict src) {
-	unsigned *dest_data = dest;
-	const unsigned *src_data = src;
+void ma_stats_long_sum_synthesis(void * __restrict dest, const void * __restrict src) {
+	long *dest_data = dest;
+	const long *src_data = src;
 	*dest_data += *src_data;
 }
 
-TBX_FUN_ALIAS(void, ma_stats_unsigned_max_reset, ma_stats_unsigned_sum_reset, (void *dest), (dest));
-void ma_stats_unsigned_max_synthesis(void * __restrict dest, const void * __restrict src) {
-	unsigned *dest_data = dest;
-	const unsigned *src_data = src;
+TBX_FUN_ALIAS(void, ma_stats_long_max_reset, ma_stats_long_sum_reset, (void *dest), (dest));
+void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict src) {
+	long *dest_data = dest;
+	const long *src_data = src;
 	if (*src_data > *dest_data)
 		*dest_data = *src_data;
 }
@@ -52,4 +52,10 @@ void __ma_stats_reset(ma_stats_t *stats) {
 	unsigned long offset;
 	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
 		ma_stats_reset_func(offset)(__ma_stats_get(stats,offset));
+}
+
+long *marcel_stats_get(marcel_t t, unsigned long offset) {
+	if (!t)
+		t = MARCEL_SELF;
+	return ma_task_stats_get(t, offset);
 }

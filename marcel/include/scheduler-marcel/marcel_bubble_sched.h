@@ -93,6 +93,11 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
 void ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset);
 
+#section marcel_macros
+#define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->sched, (offset))
+#define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->hold, (offset))
+
+#section functions
 #ifdef MARCEL_BUBBLE_EXPLODE
 void marcel_close_bubble(marcel_bubble_t *bubble);
 #endif

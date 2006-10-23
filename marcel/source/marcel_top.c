@@ -70,6 +70,7 @@ static void printtask(marcel_task_t *t) {
 	char buf2[32];
 	char buf3[32];
 	unsigned long cpu; /* en pour mille */
+	long load;
 
 	switch (t->sched.state) {
 		case MA_TASK_RUNNING: 		state = 'R'; break;
@@ -95,7 +96,7 @@ static void printtask(marcel_task_t *t) {
 		schedstate = '?';
 	utime = ma_atomic_read(&t->top_utime);
 	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s\r\n",
+	top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s",
 		(int) (2+2*sizeof(void*)), (unsigned long) t,
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
@@ -103,6 +104,9 @@ static void printtask(marcel_task_t *t) {
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+	if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
+		top_printf(" %ld",load);
+	top_printf("\r\n");
 	ma_atomic_sub(utime, &t->top_utime);
 }
 
@@ -112,14 +116,18 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 	char buf1[32];
 	char buf2[32];
 	char buf3[32];
-	top_printf("%*s%-#*lx %*s(%2d) %2d             %-10s %-10s %-10s\r\n",
+	long load;
+	top_printf("%*s%-#*lx %*s(%2ld) %2d             %-10s %-10s %-10s",
 		indent, "",
 		(int) (2+2*sizeof(void*)), (unsigned long) b,
-        	MARCEL_MAXNAMESIZE-4, "", *(unsigned *)ma_stats_get(&b->hold, ma_stats_nbthreads_offset),
+        	MARCEL_MAXNAMESIZE-4, "", *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset),
 		b->sched.prio,
 		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
 		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
+	if ((load = *(long *)ma_bubble_hold_stats_get(b, marcel_stats_load_offset)))
+		top_printf(" %ld",load);
+	top_printf("\r\n");
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_TASK_ENTITY) {
 			top_printf("%*s", indent+1, "");
@@ -187,6 +195,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 #ifdef MA__BUBBLES
 	if (bubbles) {
 		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_nbthreads_offset);
+		ma_bubble_synthesize_stats(&marcel_root_bubble, marcel_stats_load_offset);
 		printbubble(&marcel_root_bubble, 0);
 	} else
 #endif

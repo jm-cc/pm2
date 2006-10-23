@@ -449,11 +449,11 @@ static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long 
 			ma_holder_rawlock(&b->hold);
 			__ma_bubble_synthesize_stats(b, offset);
 			ma_holder_rawunlock(&b->hold);
-			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&b->hold, offset));
-			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&b->sched, offset));
+			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_bubble_hold_stats_get(b, offset));
+			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_bubble_stats_get(b, offset));
 		} else {
 			t = ma_task_entity(e);
-			ma_stats_synthesis_func(offset)(ma_stats_get(&bubble->hold, offset), ma_stats_get(&t->sched.internal.entity, offset));
+			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_task_stats_get(t, offset));
 		}
 	}
 }

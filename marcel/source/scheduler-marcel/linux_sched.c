@@ -587,7 +587,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	sched_debug("wake up created thread %p\n",p);
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-	*(unsigned*)ma_stats_get(&p->sched.internal.entity, ma_stats_last_ran_offset) = marcel_clock();
+	*(long*)ma_task_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
 	ma_set_task_state(p, MA_TASK_RUNNING);
 
 #ifdef MA__BUBBLES
@@ -1831,7 +1831,7 @@ switch_tasks:
 //		if (!(HIGH_CREDIT(prev) || LOW_CREDIT(prev)))
 //			prev->interactive_credit--;
 //	}
-	*(unsigned*)ma_stats_get(&prev->sched.internal.entity, ma_stats_last_ran_offset) = now;
+	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
 
 	if (tbx_likely(didswitch = (prev != next))) {
 #ifdef MA__LWPS
@@ -3265,15 +3265,17 @@ void __marcel_init ma_linux_sched_init0(void)
 
 
 unsigned long ma_stats_nbthreads_offset, ma_stats_last_ran_offset;
+unsigned long marcel_stats_load_offset;
 
 static void __marcel_init linux_sched_init(void)
 {
 	LOG_IN();
 	ma_holder_t *h;
 
-	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_unsigned_sum_reset, ma_stats_unsigned_sum_synthesis, ma_stats_unsigned_sum_synthesis, sizeof(unsigned));
-	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_unsigned_max_reset, ma_stats_unsigned_max_synthesis, ma_stats_unsigned_max_synthesis, sizeof(unsigned));
-	*(unsigned *)ma_stats_get(&__main_thread->sched.internal.entity, ma_stats_nbthreads_offset) = 1;
+	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, ma_stats_long_max_synthesis, sizeof(long));
+	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, ma_stats_long_sum_synthesis, sizeof(long));
+	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
 
 #ifdef MA__SMP
 	if (marcel_topo_nblevels>1) {

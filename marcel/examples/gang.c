@@ -41,6 +41,7 @@ marcel_barrier_t barrier[GANGS];
 
 any_t work(any_t arg) {
   int n = (int) arg;
+  marcel_stats(load) = rand()%10;
   while(1);
   marcel_printf("%d done\n",n);
   return NULL;

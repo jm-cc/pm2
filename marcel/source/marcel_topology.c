@@ -77,7 +77,9 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	}
 };
 
+#ifdef MA__NUMA
 static marcel_vpmask_t vpmask;
+#endif
 
 int ma_vp_node[MA_NR_LWPS];
 

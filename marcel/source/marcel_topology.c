@@ -433,9 +433,9 @@ static void __marcel_init look_libnuma(void) {
 				ma_vp_node[cpuid]=radid;
 			}
 		mdebug("node %d has vpset %lx\n",i,node_level[radid].vpset);
-		node_level[i].arity=0;
-		node_level[i].sons=NULL;
-		node_level[i].father=NULL;
+		node_level[radid].arity=0;
+		node_level[radid].sons=NULL;
+		node_level[radid].father=NULL;
 	}
 
 	marcel_vpmask_empty(&node_level[i].vpset);

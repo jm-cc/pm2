@@ -3272,9 +3272,9 @@ static void __marcel_init linux_sched_init(void)
 	LOG_IN();
 	ma_holder_t *h;
 
-	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, ma_stats_long_sum_synthesis, sizeof(long));
-	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, ma_stats_long_max_synthesis, sizeof(long));
-	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
+	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
 
 #ifdef MA__SMP

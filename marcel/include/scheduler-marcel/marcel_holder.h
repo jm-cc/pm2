@@ -122,6 +122,9 @@ struct ma_sched_entity {
 	int sched_level;
 #endif
 	ma_stats_t stats;
+
+	ma_spinlock_t memory_areas_lock;
+	struct list_head memory_areas;
 };
 
 #section types
@@ -166,6 +169,8 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	.time_slice = MA_ATOMIC_INIT(0), \
 	MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) \
 	MA_SCHED_LEVEL_INIT \
+	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.memory_areas = LIST_HEAD_INIT((e).memory_areas), \
 }
 
 #section marcel_macros

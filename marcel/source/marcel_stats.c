@@ -18,7 +18,7 @@
 
 static ma_per_sth_cur_t stats_cur = MA_PER_STH_CUR_INITIALIZER(MARCEL_STATS_ROOM);
 ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
-unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, ma_stats_synthesis_t *thread_synthesis_function, size_t size) {
+unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size) {
 	unsigned long offset;
 	if (size < sizeof(void(*)()))
 		size = sizeof(void(*)());
@@ -48,7 +48,7 @@ void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict
 		*dest_data = *src_data;
 }
 
-void __ma_stats_reset(ma_stats_t *stats) {
+void __ma_stats_reset(ma_stats_t stats) {
 	unsigned long offset;
 	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
 		ma_stats_reset_func(offset)(__ma_stats_get(stats,offset));

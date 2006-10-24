@@ -14,8 +14,12 @@
  * General Public License for more details.
  */
 
+#section variables
+extern unsigned long marcel_stats_load_offset;
+
 #section marcel_variables
-extern unsigned long ma_stats_nbthreads_offset, ma_stats_last_ran_offset;
+extern unsigned long ma_stats_nbthreads_offset, ma_stats_last_ran_offset,
+		ma_stats_memory_offset;
 
 #section marcel_types
 typedef char ma_stats_t[MARCEL_STATS_ROOM];
@@ -31,19 +35,16 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 #define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)__ma_stats_get(ma_stats_reset_func, (offset)))
 #define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)__ma_stats_get(ma_stats_synthesis_func, (offset)))
 #define ma_stats_size(offset) (*(size_t *)__ma_stats_get(ma_stats_size, (offset)))
-#define ma_stats_reset(object) __ma_stats_reset(&(object)->stats)
+#define ma_stats_reset(object) __ma_stats_reset((object)->stats)
 
 #section marcel_functions
-unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, ma_stats_synthesis_t *thread_synthesis_function, size_t size);
-void __ma_stats_reset(ma_stats_t *stats);
+unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size);
+void __ma_stats_reset(ma_stats_t stats);
 
 ma_stats_synthesis_t ma_stats_long_sum_synthesis;
 ma_stats_reset_t ma_stats_long_sum_reset;
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
 ma_stats_reset_t ma_stats_long_max_reset;
-
-#section variables
-extern unsigned long marcel_stats_load_offset;
 
 #section functions
 long *marcel_stats_get(marcel_t t, unsigned long offset);

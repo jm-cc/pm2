@@ -32,6 +32,14 @@
 #endif
 #endif
 
+struct memory_area {
+	struct list_head list;
+	void *data;
+	size_t size;
+};
+ma_allocator_t *memory_area_allocator;
+unsigned long ma_stats_memory_offset;
+
 static void *next_slot;
 static ma_spinlock_t next_slot_lock = MA_SPIN_LOCK_UNLOCKED;
 
@@ -242,6 +250,11 @@ static void __marcel_init marcel_slot_init(void)
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 			mapped_slot_alloc, NULL, mapped_slot_free, NULL,
 			POLICY_HIERARCHICAL, 0);
+	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
+	    (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
+	    POLICY_HIERARCHICAL, 0);
+	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+
 #ifdef MA__PROVIDE_TLS
 	size_t static_tls_size, static_tls_align;
 	_dl_get_tls_static_info(&static_tls_size, &static_tls_align);
@@ -260,6 +273,17 @@ static void __marcel_init marcel_slot_init(void)
 			POLICY_HIERARCHICAL, 0);
 #endif
 	LOG_OUT();
+}
+
+__ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO, "Initialise memory slot system");
+
+void marcel_slot_exit(void)
+{
+#ifdef MA__PROVIDE_TLS
+	ma_obj_allocator_fini(marcel_tls_slot_allocator);
+#endif
+	ma_obj_allocator_fini(marcel_mapped_slot_allocator);
+	ma_obj_allocator_fini(marcel_unmapped_slot_allocator);
 }
 
 /* marcel_malloc, marcel_calloc, marcel_free:
@@ -320,13 +344,46 @@ void marcel_free(void *ptr, char * __restrict file, unsigned line)
         }
 }
 
-__ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO, "Initialise memory slot system");
-
-void marcel_slot_exit(void)
+void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 {
-#ifdef MA__PROVIDE_TLS
-	ma_obj_allocator_fini(marcel_tls_slot_allocator);
-#endif
-	ma_obj_allocator_fini(marcel_mapped_slot_allocator);
-	ma_obj_allocator_fini(marcel_unmapped_slot_allocator);
+	struct memory_area *area;
+	ma_holder_t *h;
+	if (!e)
+		e = &MARCEL_SELF->sched.internal.entity;
+	while (level--) {
+		h = e->init_holder;
+		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
+		e = &ma_bubble_holder(h)->sched;
+	}
+	area = ma_obj_alloc(memory_area_allocator);
+	area->size = size;
+	area->data = data;
+	ma_spin_lock(&e->memory_areas_lock);
+	list_add(&area->list, &e->memory_areas);
+	ma_spin_unlock(&e->memory_areas_lock);
+	*(long*)ma_stats_get(e, ma_stats_memory_offset) += size;
+}
+
+void ma_memory_detach(marcel_entity_t *e, void *data, int level)
+{
+	struct memory_area *area;
+	ma_holder_t *h;
+	if (!e)
+		e = &MARCEL_SELF->sched.internal.entity;
+	while (level--) {
+		h = e->init_holder;
+		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
+		e = &ma_bubble_holder(h)->sched;
+	}
+	ma_spin_lock(&e->memory_areas_lock);
+	list_for_each_entry(area, &e->memory_areas, list)
+		if (area->data == data) {
+			data = NULL;
+			list_del(&area->list);
+			break;
+		}
+	MA_BUG_ON(data);
+	ma_spin_unlock(&e->memory_areas_lock);
+	*(long*)ma_stats_get(e, ma_stats_memory_offset) -= area->size;
+	ma_obj_free(memory_area_allocator, area);
 }

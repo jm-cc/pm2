@@ -301,6 +301,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #endif
 	ma_stats_reset(&t->sched.internal.entity);
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
+	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
+	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);
 	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else

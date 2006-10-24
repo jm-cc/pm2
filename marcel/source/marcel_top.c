@@ -106,6 +106,8 @@ static void printtask(marcel_task_t *t) {
 		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 	if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
 		top_printf(" %ld",load);
+	if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
+		top_printf(" %ldMB",load>>20);
 	top_printf("\r\n");
 	ma_atomic_sub(utime, &t->top_utime);
 }
@@ -126,7 +128,11 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
 		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, marcel_stats_load_offset)))
-		top_printf(" %ld",load);
+		top_printf(" (%ld)",load);
+	if ((load = *(long *)ma_bubble_stats_get(b, ma_stats_memory_offset)))
+		top_printf(" %ldMB",load>>20);
+	if ((load = *(long *)ma_bubble_hold_stats_get(b, ma_stats_memory_offset)))
+		top_printf(" (%ldMB)",load>>20);
 	top_printf("\r\n");
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_TASK_ENTITY) {
@@ -196,6 +202,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	if (bubbles) {
 		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_nbthreads_offset);
 		ma_bubble_synthesize_stats(&marcel_root_bubble, marcel_stats_load_offset);
+		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_memory_offset);
 		printbubble(&marcel_root_bubble, 0);
 	} else
 #endif

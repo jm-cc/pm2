@@ -1,8 +1,8 @@
-#include<sys/syscall.h>
 #include<sys/types.h>
 #include<unistd.h>
 #include "errno.h"
 #include "sys/marcel_flags.h"
+#include "tbx_compiler.h"
 
 /* POSIX à revoir :
  *
@@ -18,7 +18,7 @@
 
 extern int printf (__const char *__restrict __format, ...) ;
 
-static int infile=0;
+static int TBX_UNUSED infile=0;
 
 #define ND(function) \
   int function(void) { \
@@ -76,6 +76,7 @@ NDP(,condattr_setclock) NDP(,condattr_getclock)
 NDSSP(unwind)
 
 #ifdef MA__LIBPTHREAD
+#include<sys/syscall.h>
 pid_t wait(int *status)
 {
 	return syscall(SYS_wait4,-1,status,0,NULL);

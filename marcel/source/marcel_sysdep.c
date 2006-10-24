@@ -16,6 +16,9 @@
 
 #include "marcel.h"
 #include <errno.h>
+#ifndef __MINGW32__
+#include <sys/mman.h>
+#endif
 
 /*
  * How to bind a thread on a given processor
@@ -186,6 +189,28 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	rademptyset(mattr.mattr_radset);
 	radaddset(mattr.mattr_radset,node);
 	return nmmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0, &mattr);
+}
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
+	munmap(ptr, size);
+}
+void ma_migrate_mem(void *ptr, size_t size, int node) {
+}
+#elif defined(AIX_SYS)
+#include <sys/rset.h>
+void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
+	rsethandle_t rset, rad;
+	int MCMlevel = rs_getinfo(NULL, R_MCMSDL, 0);
+	void *ret;
+	rsid_t rsid;
+
+	rset = rs_alloc(RS_PARTITION);
+	rad = rs_alloc(RS_EMPTY);
+	rs_getrad(rset, rad, MCMlevel, node, 0);
+	rsid.at_rset = rad;
+	ret = ra_mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0, R_RSET, rsid, P_DEFAULT);
+	rs_free(rset);
+	rs_free(rad);
+	return ret;
 }
 void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
 	munmap(ptr, size);

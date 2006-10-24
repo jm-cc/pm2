@@ -101,8 +101,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				__nb_lwp = atoi(argv[i + 1]);
 				if (__nb_lwp < 1 || __nb_lwp > MA_NR_LWPS) {
 					fprintf(stderr,
-					    "Error: nb of VP should be between 1 and %d\n",
-					    MA_NR_LWPS);
+					    "Error: nb of VP should be between 1 and %ld\n",
+					    (long) MA_NR_LWPS);
 					exit(1);
 				}
 				argv[j++] = argv[i++];

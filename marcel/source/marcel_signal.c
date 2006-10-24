@@ -17,10 +17,6 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <signal.h>
-#ifndef AIX_SYS
-#include <sys/syscall.h>
-#define HAVE_SYSCALL
-#endif
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -1386,14 +1382,14 @@ int marcel_call_function(int sig)
 		LOG_RETURN(0);
 
 	if (handler == SIG_DFL) {
-	#ifdef HAVE_SYSCALL
-		if (syscall(SYS_kill, getpid(), sig) == -1)
+#ifdef MA_HAVE_SYSCALL
+		if (ma_kill(getpid(), sig) == -1)
 			LOG_RETURN(-1);
 		LOG_RETURN(0);
-	#else
+#else
 		fprintf(stderr, "No way to send signal directly to kernel\n");
 		LOG_RETURN(-1);
-	#endif
+#endif
 	}
 
 	marcel_sigset_t oldmask;

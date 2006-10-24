@@ -18,7 +18,6 @@
 
 #include "pm2_common.h"
 #include <errno.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 #include <semaphore.h>
 
@@ -28,6 +27,7 @@ DEF_POSIX(pmarcel_t, self, (void), (), {
 )
 
 #ifdef MA__LIBPTHREAD
+#include <sys/syscall.h>
 
 int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
     void *(*start_routine) (void *), void *arg)

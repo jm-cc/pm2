@@ -446,6 +446,67 @@ static void __marcel_init look_libnuma(void) {
 }
 #endif
 
+#ifdef AIX_SYS
+#include <sys/rset.h>
+static void __marcel_init look_rset(void) {
+	int MCMlevel = rs_getinfo(NULL, R_MCMSDL, 0);
+	rsethandle_t rset, rad;
+	int i,nbcpus,j;
+	unsigned nbnodes;
+	struct marcel_topo_level *node_level;
+
+	rset = rs_alloc(RS_PARTITION);
+	rad = rs_alloc(RS_EMPTY);
+	nbnodes = rs_numrads(rset, MCMlevel, 0);
+	if (nbnodes == -1) {
+		perror("rs_numrads");
+		nbnodes = 0;
+		return;
+	}
+	if (nbnodes == 1) {
+		nbnodes = 0;
+		return;
+	}
+
+	MA_BUG_ON(nbnodes == 0);
+
+	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+
+	for (i = 0; i < marcel_nbvps(); i++)
+		ma_vp_node[i]=-1;
+
+	for (i = 0; i < nbnodes; i++) {
+		if (rs_getrad(rset, rad, MCMlevel, i, 0)) {
+			fprintf(stderr,"rs_getrad(%d) failed: %s\n", i, strerror(errno));
+			continue;
+		}
+
+		node_level[i].type = MARCEL_LEVEL_NODE;
+		node_level[i].number=i;
+		marcel_vpmask_empty(&node_level[i].vpset);
+		nbcpus = rs_getinfo(rad, R_NUMPROCS, 0);
+		for (j = 0; j < marcel_nbvps(); j++) {
+			if (!rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
+				continue;
+			marcel_vpmask_add_vp(&node_level[i].vpset,j);
+			ma_vp_node[j]=i;
+		}
+		mdebug("node %d has vpset %lx\n",i,node_level[i].vpset);
+		node_level[i].arity=0;
+		node_level[i].sons=NULL;
+		node_level[i].father=NULL;
+	}
+
+	marcel_vpmask_empty(&node_level[i].vpset);
+
+	marcel_topo_level_nbitems[discovering_level]=nbnodes;
+	marcel_topo_levels[discovering_level++] =
+		marcel_topo_node_level = node_level;
+	rs_free(rset);
+	rs_free(rad);
+}
+#endif
+
 
 static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
@@ -537,6 +598,9 @@ static void topo_discover(void) {
 #endif
 #ifdef OSF_SYS
 	look_libnuma();
+#endif
+#ifdef  AIX_SYS
+	look_rset();
 #endif
 	look_cpu();
 #endif

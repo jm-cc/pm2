@@ -15,7 +15,7 @@
  */
 
 /* TODO: utiliser poll au lieu de select (+ voir scalabilité) */
-#define MA_FILE_DEBUG xpaul_io
+#define XPAUL_FILE_DEBUG xpaul_io
 #include "xpaul.h"
 
 #ifdef MARCEL
@@ -229,12 +229,14 @@ inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
 
 	switch (ev->op) {
 	case XPAUL_POLL_READ:
-		if (FD_ISSET(ev->FD, rfds))
-			XPAUL_REQ_SUCCESS(&ev->inst);
+		if (FD_ISSET(ev->FD, rfds)){
+			xpaul_req_success(&ev->inst);
+		}
 		break;
 	case XPAUL_POLL_WRITE:
-		if (FD_ISSET(ev->FD, wfds))
-			XPAUL_REQ_SUCCESS(&ev->inst);
+		if (FD_ISSET(ev->FD, wfds)){
+			xpaul_req_success(&ev->inst);
+		}
 		break;
 	case XPAUL_POLL_SELECT:{
 			unsigned i;
@@ -274,7 +276,7 @@ inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
 					}
 			}
 			if (ev->ret_val) {
-				XPAUL_REQ_SUCCESS(&ev->inst);
+				xpaul_req_success(&ev->inst);
 			}
 			break;
 		}
@@ -285,73 +287,6 @@ inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
 
 #ifdef MA__LWPS
 
-/* Ask another LWP to do a select syscall to avoid blocking
- *  every threads in the current LWP */
-int xpaul_ask_for_select(int n, fd_set * readfds, fd_set * writefds,
-			 fd_set * exceptfds, struct timeval *timeout)
-{
-	PROF_IN();
-	int i;
-	int res = 0;
-
-	struct marcel_sched_param param, backup;
-	param.__sched_priority = MA_MAX_RT_PRIO;
-	marcel_sched_getparam(marcel_self(), &backup);
-	marcel_sched_setparam(marcel_self(), &param);
-
-	struct xpaul_wait wait;
-	INIT_LIST_HEAD(&wait.chain_wait);
-	marcel_sem_init(&wait.sem, 0);
-	marcel_sem_P(&req_sem);
-	for (i = 0; i < n; i++) {
-		if (readfds)
-			if (FD_ISSET(i, readfds)){
-				list_add(&wait.chain_wait, &reqs.lwait[i][0]);
-				PROF_EVENT1(ask_for_new_read,i);
-				FD_SET(i, reqs.readfds);
-			}
-		if (writefds)
-			if (FD_ISSET(i, writefds)){
-				list_add(&wait.chain_wait, &reqs.lwait[i][1]);
-				PROF_EVENT1(ask_for_new_write,i);
-				FD_SET(i, reqs.writefds);
-			}
-	}
-	reqs.n = (reqs.n > n) ? reqs.n : n;
-	marcel_sem_V(&req_sem);
-
-	/* TODO :  change to a signal (when available) */
-	PROF_EVENT1(xpaul_exporting,&wait.sem);
-	i = write(fds[1], &i, sizeof(i));	/* send anything to wake up the communication LWP */
-	PROF_EVENT(xpaul_export_done);
-	sched_yield();
-	marcel_sem_P(&wait.sem);
-	for (i = 0; i < n; i++) {
-		if (readfds){
-			if (FD_ISSET(i, res_req.readfds)) {
-				PROF_EVENT1(ask_got_read,i);
-				FD_SET(i, readfds);
-				FD_CLR(i, res_req.readfds);
-				res++;
-			}
-			list_del_init(&wait.chain_wait);
-		}
-		if (writefds){
-			if (FD_ISSET(i, res_req.writefds)) {
-				PROF_EVENT1(ask_got_write,i);
-				FD_SET(i, writefds);
-				FD_CLR(i, res_req.writefds);
-				res++;
-			}
-			list_del_init(&wait.chain_wait);
-		}
-	}
-
-	marcel_sched_setparam(marcel_self(), &backup);
-	PROF_OUT();
-
-	return res;
-}
 
 /* option : fd à surveiller (passage de commandes) */
 static int xpaul_io_block(xpaul_server_t server,
@@ -406,7 +341,7 @@ static int xpaul_io_block(xpaul_server_t server,
 					    select(ev->NFDS, ev->RFDS,
 						   ev->WFDS, NULL, NULL);
 					if (ev->ret_val) {
-						XPAUL_REQ_SUCCESS(&ev->
+						xpaul_req_success(&ev->
 								  inst);
 						found = 1;
 					}
@@ -542,8 +477,7 @@ static int xpaul_io_poll(xpaul_server_t server,
 					    select(ev->NFDS, ev->RFDS,
 						   ev->WFDS, NULL, NULL);
 					if (ev->ret_val) {
-						XPAUL_REQ_SUCCESS(&ev->
-								  inst);
+						xpaul_req_success(&ev->inst);
 						found = 1;
 					}
 					break;
@@ -686,7 +620,7 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 
 			LOG("IO writing fd %i", fildes);
 			n = write(fildes, buf, nbytes);
-			
+
 		} while (n == -1 && errno == EINTR);
 
 		LOG_RETURN(n);
@@ -975,7 +909,6 @@ void xpaul_io_init(void)
 				       | XPAUL_POLL_AT_IDLE, 1, -1);
 
 #ifdef MA__LWPS
-	// TODO: queries aggregation
 	xpaul_server_add_callback(&xpaul_io_server.server,
 				  XPAUL_FUNCTYPE_BLOCK_WAITONE,
 				  (xpaul_pcallback_t) {
@@ -1037,7 +970,6 @@ void xpaul_init_receiver(void)
 
 	marcel_sem_init(&recved_sem, 1);
 	marcel_sem_init(&req_sem, 1);
-//	marcel_sem_init(&req_send, 0);
 
 	res_req.readfds = (fd_set *) malloc(sizeof(fd_set));
 	res_req.writefds = (fd_set *) malloc(sizeof(fd_set));

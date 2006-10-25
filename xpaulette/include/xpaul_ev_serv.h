@@ -239,6 +239,7 @@ struct xpaul_server {
 #ifdef MARCEL
 	/* Spinlock used to access list_req_success */
 	ma_spinlock_t req_success_lock;
+	ma_spinlock_t req_ready_lock;
 #else
 	/* foo */
 	void *req_success_lock;
@@ -445,6 +446,9 @@ static int nb_comm_threads;
 #define FOREACH_REQ_BLOCKING(req, server, member) \
   list_for_each_entry((req), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
 
+#define FOREACH_REQ_BLOCKING_SAFE(req, tmp, server, member) \
+  list_for_each_entry_safe((req),(tmp), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
+
 /****************************************************************
  * Iterator over the queries to be exported
  */
@@ -530,11 +534,15 @@ static int nb_comm_threads;
  *
  *   xpaul_req_t req : query
 */
-#define XPAUL_REQ_SUCCESS(req) \
+void xpaul_req_success(xpaul_req_t req);
+/*
+ \
   do { \
+//	xpaul_spin_lock_softirq(req.server->req_ready_lock); \
         list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
+//	xpaul_spin_unlock_softirq(req.server->req_ready_lock); \
   } while(0)
-
+*/
 
 /* Macro used in callbacks to wake up a waiting thread, giving it the ret value
  *   xpaul_wait_t wait : waiter to wake up
@@ -550,6 +558,7 @@ static int nb_comm_threads;
   const xpaul_server_t var
 
 #ifdef MARCEL
+#ifdef MA__LWPS
 #define XPAUL_SERVER_INIT(var, sname) \
   { \
     .lock=MA_SPIN_LOCK_UNLOCKED, \
@@ -559,6 +568,7 @@ static int nb_comm_threads;
     .list_req_success=LIST_HEAD_INIT((var).list_req_success), \
     .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters), \
     .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
+    .req_ready_lock=MA_SPIN_LOCK_UNLOCKED, \
     .registered_req_not_yet_polled=0, \
     .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
     .list_req_block_grouped=LIST_HEAD_INIT((var).list_req_block_grouped), \
@@ -579,7 +589,34 @@ static int nb_comm_threads;
     .state=XPAUL_SERVER_STATE_INIT, \
     .name=sname, \
   }
-#else
+#else  /* MA__LWPS */
+#define XPAUL_SERVER_INIT(var, sname) \
+  { \
+    .lock=MA_SPIN_LOCK_UNLOCKED, \
+    .lock_owner=NULL, \
+    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered), \
+    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready), \
+    .list_req_success=LIST_HEAD_INIT((var).list_req_success), \
+    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters), \
+    .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
+    .req_ready_lock=MA_SPIN_LOCK_UNLOCKED, \
+    .registered_req_not_yet_polled=0, \
+    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+    .req_poll_grouped_nb=0, \
+    .poll_points=0, \
+    .period=0, \
+    .max_poll=-1, \
+    .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
+    .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
+                     &xpaul_poll_from_tasklet, \
+                     (unsigned long)(xpaul_server_t)&(var) ), \
+    .poll_timer= MA_TIMER_INITIALIZER(xpaul_poll_timer, 0, \
+                   (unsigned long)(xpaul_server_t)&(var)), \
+    .state=XPAUL_SERVER_STATE_INIT, \
+    .name=sname, \
+  }
+#endif /* MA__LWPS */
+#else  /* MARCEL */
 #define XPAUL_SERVER_INIT(var, sname) \
   { \
     .list_req_registered=LIST_HEAD_INIT((var).list_req_registered), \

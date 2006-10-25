@@ -450,16 +450,15 @@ static void __marcel_init look_libnuma(void) {
 
 #ifdef AIX_SYS
 #include <sys/rset.h>
-static void __marcel_init look_rset(void) {
-	int MCMlevel = rs_getinfo(NULL, R_MCMSDL, 0);
+static void __marcel_init look_rset(int sdl, enum marcel_topo_level_t level) {
 	rsethandle_t rset, rad;
-	int i,nbcpus,j;
+	int r,i,nbcpus,j;
 	unsigned nbnodes;
-	struct marcel_topo_level *node_level;
+	struct marcel_topo_level *rad_level;
 
 	rset = rs_alloc(RS_PARTITION);
 	rad = rs_alloc(RS_EMPTY);
-	nbnodes = rs_numrads(rset, MCMlevel, 0);
+	nbnodes = rs_numrads(rset, sdl, 0);
 	if (nbnodes == -1) {
 		perror("rs_numrads");
 		nbnodes = 0;
@@ -472,38 +471,42 @@ static void __marcel_init look_rset(void) {
 
 	MA_BUG_ON(nbnodes == 0);
 
-	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+	MA_BUG_ON(!(rad_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level))));
 
-	for (i = 0; i < marcel_nbvps(); i++)
-		ma_vp_node[i]=-1;
-
-	for (i = 0; i < nbnodes; i++) {
-		if (rs_getrad(rset, rad, MCMlevel, i, 0)) {
+	for (r = 0, i = 0; i < nbnodes; i++) {
+		if (rs_getrad(rset, rad, sdl, i, 0)) {
 			fprintf(stderr,"rs_getrad(%d) failed: %s\n", i, strerror(errno));
 			continue;
 		}
+		if (!rs_getinfo(rad, R_NUMPROCS, 0))
+			continue;
 
-		node_level[i].type = MARCEL_LEVEL_NODE;
-		node_level[i].number=i;
-		marcel_vpmask_empty(&node_level[i].vpset);
+		rad_level[r].type = level;
+		rad_level[r].number=r;
+		marcel_vpmask_empty(&rad_level[r].vpset);
 		nbcpus = rs_getinfo(rad, R_NUMPROCS, 0);
 		for (j = 0; j < marcel_nbvps(); j++) {
 			if (!rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
 				continue;
-			marcel_vpmask_add_vp(&node_level[i].vpset,j);
-			ma_vp_node[j]=i;
+			marcel_vpmask_add_vp(&rad_level[r].vpset,j);
+			if (level == MARCEL_LEVEL_NODE)
+				ma_vp_node[j]=r;
 		}
-		mdebug("node %d has vpset %lx\n",i,node_level[i].vpset);
-		node_level[i].arity=0;
-		node_level[i].sons=NULL;
-		node_level[i].father=NULL;
+		mdebug("node %d has vpset %lx\n",r,rad_level[r].vpset);
+		rad_level[r].arity=0;
+		rad_level[r].sons=NULL;
+		rad_level[r].father=NULL;
+		r++;
 	}
 
-	marcel_vpmask_empty(&node_level[i].vpset);
+	marcel_vpmask_empty(&rad_level[r].vpset);
 
 	marcel_topo_level_nbitems[discovering_level]=nbnodes;
-	marcel_topo_levels[discovering_level++] =
-		marcel_topo_node_level = node_level;
+	marcel_topo_levels[discovering_level++] = rad_level;
+	if (level == MARCEL_LEVEL_NODE)
+		marcel_topo_node_level = rad_level;
+	if (level == MARCEL_LEVEL_CORE)
+		marcel_topo_core_level = rad_level;
 	rs_free(rset);
 	rs_free(rad);
 }
@@ -602,7 +605,23 @@ static void topo_discover(void) {
 	look_libnuma();
 #endif
 #ifdef  AIX_SYS
-	look_rset();
+	enum marcel_topo_level_t mlevel = MARCEL_LEVEL_MACHINE;
+
+	for (i = 0; i < marcel_nbvps(); i++)
+		ma_vp_node[i]=-1;
+
+	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
+		if (i == rs_getinfo(NULL, R_MCMSDL, 0))
+			mlevel = MARCEL_LEVEL_NODE;
+		else if (i == rs_getinfo(NULL, R_L2CSDL, 0))
+			mlevel = MARCEL_LEVEL_DIE;
+		else if (i == rs_getinfo(NULL, R_PCORESDL, 0))
+			mlevel = MARCEL_LEVEL_CORE;
+		else if (i == rs_getinfo(NULL, R_MAXSDL, 0))
+			mlevel = MARCEL_LEVEL_PROC;
+		mdebug("looking AIX sdl %d\n",i);
+		look_rset(i, mlevel);
+	}
 #endif
 	look_cpu();
 #endif
@@ -651,6 +670,7 @@ static void topo_discover(void) {
 			mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
 		}
 	}
+	mdebug("arity done.\n");
 
 #ifdef MA__NUMA
 	/* Split hi-arity levels */
@@ -733,6 +753,7 @@ static void topo_discover(void) {
 			}
 		}
 	}
+	mdebug("connecting done.\n");
 	marcel_topo_vp_level = marcel_topo_levels[marcel_topo_nblevels-1];
 	for (i=marcel_nbvps(); i<marcel_nbvps() + MARCEL_NBMAXVPSUP; i++) {
 		marcel_topo_vp_level[i].type=MARCEL_LEVEL_VP;

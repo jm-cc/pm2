@@ -1895,6 +1895,7 @@ if (optind != argc) {
 				}
 				break;
 			}
+#ifdef RQ_LOCK
 			case RQ_LOCK: {
 				rq_t *rq = getRunqueue(ev.ev64.param[0]);
 				verbprintf("rq %p (%p) locked\n",rq,(void*)(intptr_t)ev.ev64.param[0]);
@@ -1903,6 +1904,8 @@ if (optind != argc) {
 				updateEntity(&rq->entity);
 				break;
 			}
+#endif
+#ifdef RQ_UNLOCK
 			case RQ_UNLOCK: {
 				rq_t *rq = getRunqueue(ev.ev64.param[0]);
 				verbprintf("rq %p (%p) unlocked\n",rq,(void*)(intptr_t)ev.ev64.param[0]);
@@ -1911,6 +1914,7 @@ if (optind != argc) {
 				updateEntity(&rq->entity);
 				break;
 			}
+#endif
 			case FUT_SETUP_CODE:
 			case FUT_RESET_CODE:
 			case FUT_CALIBRATE0_CODE:

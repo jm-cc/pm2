@@ -911,12 +911,9 @@ int xpaul_callback_will_block(xpaul_server_t server)
 		lwp = list_entry(server->list_lwp_working.next, struct xpaul_comm_lwp, chain_lwp_working);
 
 	/* wakeup LWP */
-	PROF_EVENT2(waikingup_lwp, lwp->vp_nb, lwp->fds[1]);
 	write(lwp->fds[1], &foo, 1);
 	lwp->wait=2;
-	sched_yield();
-	
-	PROF_EVENT2(waikingup_lwp_done, lwp->vp_nb, lwp->fds[1]);
+
 	return 0;
 }
 
@@ -1215,7 +1212,6 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 #ifdef MARCEL
 	xpaul_restore_lock_server_locked(server, lock);
 #endif				// MARCEL
-	PROF_EVENT1(xpaul_wait_exit, req->nb_polled);
 	LOG_RETURN(wait->ret);
 }
 
@@ -1260,6 +1256,8 @@ xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps)
 		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 		lwp->vp_nb = marcel_add_lwp();
+		marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp->vp_nb));
+
 		if (pipe(lwp->fds) == -1) {
 			perror("pipe");
 			exit(EXIT_FAILURE);

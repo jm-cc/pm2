@@ -13,4 +13,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-include $(PM2_ROOT)/make/libs.mak
+# LIBNAME -> nom de la librairie
+#---------------------------------------------------------------------
+LIBNAME=ntbx
+
+# Inclusion des makefiles generiques
+#---------------------------------------------------------------------
+include $(PM2_ROOT)/make/libs-vars.mak
+
+# Regles communes aux librairies
+#---------------------------------------------------------------------
+include $(PM2_ROOT)/make/libs-rules.mak

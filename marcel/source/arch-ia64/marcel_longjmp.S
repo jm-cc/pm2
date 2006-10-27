@@ -35,7 +35,7 @@
   switches only.  Therefore, it does not have to restore anything
   other than the PRESERVED state.  */
 
-ENTRY(ia64_longjmp)
+ENTRY(ma_ia64_longjmp)
 	//alloc r16 = ar.pfs, 1, 0, 3, 0
 	alloc r16 = ar.pfs, 2, 0, 3, 0
 
@@ -152,7 +152,7 @@ ENTRY(ia64_longjmp)
 	mov.m ar.rnat = rRNAT
 	mov.m ar.rsc = rRSC
 	ret
-END(ia64_longjmp)
+END(ma_ia64_longjmp)
 
 //weak_alias(__setcontext, setcontext)
 #endif /* IA64_ARCH */

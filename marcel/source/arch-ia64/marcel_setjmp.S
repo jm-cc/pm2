@@ -37,7 +37,7 @@
   switches only.  Therefore, it does not have to save anything
   other than the PRESERVED state.  */
 
-ENTRY(ia64_setjmp)
+ENTRY(ma_ia64_setjmp)
 	alloc r16 = ar.pfs, 1, 0, 3, 0
 
 	// sigprocmask (SIG_BLOCK, NULL, &sc->sc_mask):
@@ -153,7 +153,7 @@ ENTRY(ia64_setjmp)
 	st8 [r2] = rB4
 	st8 [r3] = rB5
 	ret
-END(ia64_setjmp)
+END(ma_ia64_setjmp)
 
 //weak_alias(__getcontext, getcontext)
 #endif /* IA64_ARCH */

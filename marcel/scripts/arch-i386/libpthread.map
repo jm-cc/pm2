@@ -230,6 +230,8 @@ GLIBC_2.3.3 {
     # affinity interfaces without size parameter
     pthread_getaffinity_np; pthread_setaffinity_np;
     pthread_attr_getaffinity_np; pthread_attr_setaffinity_np;
+
+    pthread_attr_setstacksize; pthread_attr_setstack;
 } GLIBC_2.3.2;
 GLIBC_2.3.4 {
   global:

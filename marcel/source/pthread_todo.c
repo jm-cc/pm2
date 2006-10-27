@@ -75,12 +75,4 @@ NDP(,condattr_setclock) NDP(,condattr_getclock)
 
 NDSSP(unwind)
 
-#ifdef MA__LIBPTHREAD
-#include<sys/syscall.h>
-pid_t wait(int *status)
-{
-	return syscall(SYS_wait4,-1,status,0,NULL);
-}
-#endif
-
-NDC(system) NDC(tcdrain) NDC(msync) NDC(sendmsg) NDC(sendto)
+NDC(tcdrain) NDC(msync) NDC(sendmsg) NDC(sendto)

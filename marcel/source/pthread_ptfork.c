@@ -33,6 +33,8 @@ DEF_PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)
 DEF___PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child));
 
 #ifdef MA__LIBPTHREAD
+#include <sys/syscall.h>
+
 extern pid_t __libc_fork(void);
 
 pid_t __fork(void)
@@ -42,4 +44,16 @@ pid_t __fork(void)
 
 weak_alias (__fork, fork);
 weak_alias (__fork, vfork);
+
+pid_t wait(int *status)
+{
+	return syscall(SYS_wait4,-1,status,0,NULL);
+}
+
+extern int __libc_system(const char *line);
+
+int system(const char *line)
+{
+	return __libc_system(line);
+}
 #endif

@@ -540,6 +540,7 @@ static void __marcel_init sig_init(void)
 	 * lancés par la librairie de threads n'en recoivent pas */
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
 #endif
+	marcel_kthread_atfork(NULL,NULL,marcel_sig_exit);
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
 #endif

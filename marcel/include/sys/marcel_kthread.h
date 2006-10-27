@@ -90,6 +90,7 @@ void marcel_kthread_cond_init(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex);
+void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 #endif // MA__SMP
 
 

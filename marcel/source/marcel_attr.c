@@ -70,11 +70,13 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 	return 0;
 })
 
+#ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, __pmarcel_attr_setstacksize, pthread_attr_setstacksize, GLIBC_2_3_3);
 
 #if MA_GLIBC_VERSION_MINIMUM < 20303
 strong_alias(__pmarcel_attr_setstacksize, __old_lpt_attr_setstacksize)
 compat_symbol(libpthread, __old_lpt_attr_setstacksize, pthread_attr_setstacksize, GLIBC_2_1);
+#endif
 #endif
 
 DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict attr, size_t * __restrict stack), (attr, stack),
@@ -156,11 +158,13 @@ DEF_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t sta
 	return 0;
 })
 
+#ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, __pmarcel_attr_setstack, pthread_attr_setstack, GLIBC_2_3_3);
 
 #if MA_GLIBC_VERSION_MINIMUM < 20303
 strong_alias(__pmarcel_attr_setstack, __old_lpt_attr_setstack)
 compat_symbol(libpthread, __old_lpt_attr_setstack, pthread_attr_setstack, GLIBC_2_2);
+#endif
 #endif
 
 DEF_POSIX(int, attr_getstack, (__const marcel_attr_t * __restrict attr, 

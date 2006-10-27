@@ -15,7 +15,7 @@ MARCEL {
     tselect;
     main;
 };
-GLIBC_2.2.5 {
+  GLIBC_2.2.5 {
   global:
     pthread_create; pthread_join; pthread_self; pthread_equal;
     pthread_exit; pthread_detach;
@@ -93,13 +93,12 @@ GLIBC_2.2.5 {
     __errno_location; __h_errno_location;
 
     # Functions which previously have been overwritten.
-    sigwait;
-	 sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
+    sigwait; sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
     raise;
-	 sigpause; __sigpause;
 
     # défini dans libc, mais on écrase
     sigsuspend; signal; __signal; __sysv_signal; sigpending; __sigpending;
+    sigpause; __sigpause;
     sigprocmask;  __sigprocmask; 
     setjmp; sigsetjmp; __sigsetjmp;
     usleep; sleep; alarm; getitimer; setitimer;
@@ -107,9 +106,8 @@ GLIBC_2.2.5 {
     __sched_get_priority_min; __sched_get_priority_max;
 
 
-
-
-
+# GLIBC_2.1 {
+  global:
     pthread_create;
     pthread_attr_init;
 
@@ -129,26 +127,28 @@ GLIBC_2.2.5 {
 
     pthread_getconcurrency; pthread_setconcurrency;
 
-    sigtimedwait; sigwaitinfo;
-
     # Semaphores.
     sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
 
     __libc_current_sigrtmin; __libc_current_sigrtmax;
     __libc_allocate_rtsig;
 
-    sighold; __sighold; sigrelse; __sigrelse ; 
-    sigignore; __sigignore; sigset; __sigset;
+    sigtimedwait; sigwaitinfo;
+    sighold; __sighold; sigrelse; __sigrelse; sigignore; __sigignore; sigset; __sigset;
+  # GLIBC_2.0;
 
-
+# GLIBC_2.1.1 {
+  global:
     sem_close; sem_open; sem_unlink;
+  # GLIBC_2.1;
 
-
-
+# GLIBC_2.1.2 {
+  global:
     __vfork;
+  # GLIBC_2.1.1;
 
-
-
+# GLIBC_2.2 {
+  global:
     pthread_mutexattr_getpshared; pthread_mutexattr_setpshared;
 
     pthread_condattr_getpshared; pthread_condattr_setpshared;
@@ -186,28 +186,35 @@ GLIBC_2.2.5 {
 
     __res_state;
 
-
-
+# GLIBC_2.2.3 {
+  global:
+    # Extensions.
     pthread_getattr_np;
+  # GLIBC_2.2;
 
-
-
-
+# GLIBC_2.2.5 {
+  global:
     __nanosleep;
+  # GLIBC_2.2.3;
+
   local:
     *;
-};
-GLIBC_2.2.6 {
+  };
+  GLIBC_2.2.6 {
   global:
+    # Cancellation wrapper
     __nanosleep;
-} GLIBC_2.2.5;
-GLIBC_2.3.2 {
+  } GLIBC_2.2.5;
+
+  GLIBC_2.3.2 {
   global:
+    # Changed pthread_cond_t.
     pthread_cond_init; pthread_cond_destroy;
     pthread_cond_wait; pthread_cond_timedwait;
     pthread_cond_signal; pthread_cond_broadcast;
-} GLIBC_2.2.6;
-GLIBC_2.3.3 {
+  } GLIBC_2.2.6;
+
+  GLIBC_2.3.3 {
   global:
     # 1003.1-2001 function accidentally left out in 2.2.
     pthread_barrierattr_getpshared;
@@ -229,26 +236,29 @@ GLIBC_2.3.3 {
     pthread_attr_getaffinity_np; pthread_attr_setaffinity_np;
 
     pthread_attr_setstacksize; pthread_attr_setstack;
-} GLIBC_2.3.2;
-GLIBC_2.3.4 {
+  } GLIBC_2.3.2;
+
+  GLIBC_2.3.4 {
   global:
     # New affinity interfaces.
     pthread_getaffinity_np; pthread_setaffinity_np;
     pthread_attr_getaffinity_np; pthread_attr_setaffinity_np;
 
     pthread_setschedprio;
-} GLIBC_2.3.3;
-GLIBC_2.4 {
+  } GLIBC_2.3.3;
+
+  GLIBC_2.4 {
   global:
     pthread_mutexattr_getrobust_np; pthread_mutexattr_setrobust_np;
     pthread_mutex_consistent_np;
     pthread_mutexattr_getprotocol; pthread_mutexattr_setprotocol;
     pthread_mutexattr_getprioceiling; pthread_mutexattr_setprioceiling;
     pthread_mutex_getprioceiling; pthread_mutex_setprioceiling;
-} GLIBC_2.3.4;
-GLIBC_PRIVATE {
+  } GLIBC_2.3.4;
+
+  GLIBC_PRIVATE {
   global:
     __pthread_initialize_minimal;
     __pthread_clock_gettime; __pthread_clock_settime;
     __pthread_unwind;
-} GLIBC_2.4;
+  } GLIBC_2.4;

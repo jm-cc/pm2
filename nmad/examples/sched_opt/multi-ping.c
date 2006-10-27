@@ -39,8 +39,23 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#define MAX     (8*1024)
+#define NB_PACKS 4
+#define MIN     (NB_PACKS * 4)
+#define MAX     (8 * 1024 * 1024)
 #define LOOPS   1000
+
+static __inline__
+uint32_t _next(uint32_t len)
+{
+        if(!len)
+                return 4;
+        else if(len < 32)
+                return len + 4;
+        else if(len < 1024)
+                return len + 32;
+        else
+                return len << 1;
+}
 
 static
 void
@@ -138,19 +153,19 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 8; len <= MAX; len *= 2) {
-		  for(k = 0; k < LOOPS; k++) {
+		for(len = MIN; len <= MAX; len = _next(len)) {
+		  unsigned long n, chunk = len / NB_PACKS;
 
+		  for(k = 0; k < LOOPS; k++) {
 		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
-		    nm_so_unpack(cnx, buf, len/2);
-		    nm_so_unpack(cnx, buf+len/2, len/2);
+		    for(n = 0; n < NB_PACKS; n++)
+		      nm_so_unpack(cnx, buf + n * chunk, chunk);
 		    nm_so_end_unpacking(p_core, cnx);
 
 		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
-		    nm_so_pack(cnx, buf, len/2);
-		    nm_so_pack(cnx, buf+len/2, len/2);
+		    for(n = 0; n < NB_PACKS; n++)
+		      nm_so_pack(cnx, buf + n * chunk, chunk);
 		    nm_so_end_packing(p_core, cnx);
-
 		  }
 		}
 
@@ -166,19 +181,20 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = 8; len <= MAX; len *= 2) {
+		for(len = MIN; len <= MAX; len = _next(len)) {
+		  unsigned long n, chunk = len / NB_PACKS;
 
 		  TBX_GET_TICK(t1);
 
 		  for(k = 0; k < LOOPS; k++) {
 		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
-		    nm_so_pack(cnx, buf, len/2);
-		    nm_so_pack(cnx, buf+len/2, len/2);
+		    for(n = 0; n < NB_PACKS; n++)
+		      nm_so_pack(cnx, buf + n * chunk, chunk);
 		    nm_so_end_packing(p_core, cnx);
 
 		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
-		    nm_so_unpack(cnx, buf, len/2);
-		    nm_so_unpack(cnx, buf+len/2, len/2);
+		    for(n = 0; n < NB_PACKS; n++)
+		      nm_so_unpack(cnx, buf + n * chunk, chunk);
 		    nm_so_end_unpacking(p_core, cnx);
 		  }
 

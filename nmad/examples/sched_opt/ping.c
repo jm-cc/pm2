@@ -39,20 +39,20 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#define MAX     (16 * 1024)
+#define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000
 
 static __inline__
 uint32_t _next(uint32_t len)
 {
-  if(!len)
-    return 4;
-  else if(len < 16)
-    return len + 4;
-  else if(len < 1024)
-    return len + 16;
-  else
-    return len << 1;
+        if(!len)
+                return 4;
+        else if(len < 32)
+                return len + 4;
+        else if(len < 1024)
+                return len + 32;
+        else
+                return len << 1;
 }
 
 static

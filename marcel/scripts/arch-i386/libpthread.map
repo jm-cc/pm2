@@ -138,8 +138,8 @@ GLIBC_2.1 {
     __libc_current_sigrtmin; __libc_current_sigrtmax;
     __libc_allocate_rtsig;
 
-	 sighold; __sighold; sigrelse; __sigrelse ; 
-	 sigignore; __sigignore; sigset; __sigset;
+    sighold; __sighold; sigrelse; __sigrelse ; 
+    sigignore; __sigignore; sigset; __sigset;
 } GLIBC_2.0;
 GLIBC_2.1.1 {
   global:

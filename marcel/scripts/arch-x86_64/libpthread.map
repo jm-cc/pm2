@@ -93,15 +93,14 @@ GLIBC_2.2.5 {
     __errno_location; __h_errno_location;
 
     # Functions which previously have been overwritten.
-    sigwait;  sigtimedwait; sigwaitinfo;
+    sigwait;
 	 sigaction; __sigaction; _exit; _Exit; longjmp; siglongjmp;
     raise;
+	 sigpause; __sigpause;
 
     # défini dans libc, mais on écrase
     sigsuspend; signal; __signal; __sysv_signal; sigpending; __sigpending;
     sigprocmask;  __sigprocmask; 
-	 sighold; __sighold; sigrelse; __sigrelse; sigignore; __sigignore;
-    sigpause;	__sigpause;  sigset; __sigset;
     setjmp; sigsetjmp; __sigsetjmp;
     usleep; sleep; alarm; getitimer; setitimer;
     sched_get_priority_min; sched_get_priority_max;
@@ -130,12 +129,16 @@ GLIBC_2.2.5 {
 
     pthread_getconcurrency; pthread_setconcurrency;
 
+    sigtimedwait; sigwaitinfo;
+
     # Semaphores.
     sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
 
     __libc_current_sigrtmin; __libc_current_sigrtmax;
     __libc_allocate_rtsig;
 
+    sighold; __sighold; sigrelse; __sigrelse ; 
+    sigignore; __sigignore; sigset; __sigset;
 
 
     sem_close; sem_open; sem_unlink;

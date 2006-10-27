@@ -22,14 +22,15 @@
 #include "nm_so_strategies/nm_so_strat_balance.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_tracks.h"
+#include "nm_so_parameters.h"
+
 
 struct nm_so_strat_balance_gate {
   /* list of raw outgoing packets */
   struct list_head out_list;
+  unsigned nb_paquets;
 };
 
-int out_list_len = 0;
-//int active_drv[NM_SO_MAX_NETS];
 
 /* Add a new control "header" to the flow of outgoing packets */
 static int pack_ctrl(struct nm_gate *p_gate,
@@ -39,37 +40,28 @@ static int pack_ctrl(struct nm_gate *p_gate,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_strat_balance_gate *p_so_sa_gate
     = (struct nm_so_strat_balance_gate *)p_so_gate->strat_priv;
-  int flags = 0;
   int err;
 
+  if(!list_empty(&p_so_sa_gate->out_list)) {
+    /* Inspect only the head of the list */
+    p_so_pw = nm_l2so(p_so_sa_gate->out_list.next);
 
-  // on ne s'agrège qu'à un paquet de ctrl dont la taille est < 64
-  /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
-    uint32_t used_space = p_so_pw->header_index->iov_len;
-    uint32_t ctrl_size = NM_SO_CTRL_HEADER_SIZE;
-
-    if(used_space + ctrl_size >  64)
-      /* There's not enough room to add our ctrl header
-         to this paquet */
-      goto next;
-
-    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    goto out;
-
-  next:
-    ;
+    /* If the paquet is reasonably small, we can form an aggregate */
+    if(p_so_pw->pw.length <= 32 - NM_SO_CTRL_HEADER_SIZE) {
+      err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+      goto out;
+    }
   }
 
-  /* Simply form a new packet wrapper */
+  /* Otherwise, simply form a new packet wrapper */
   err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
 					     &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
-  /* Add the control packet to the out_list */
+  /* Add the control packet to the BEGINING of out_list */
   list_add(&p_so_pw->link, &p_so_sa_gate->out_list);
-  out_list_len++;
+  p_so_sa_gate->nb_paquets++;
 
  out:
   return err;
@@ -88,36 +80,35 @@ static int pack(struct nm_gate *p_gate,
   int flags = 0;
   int err;
 
-  //DISP("-->pack");
-
   p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
-
+    
   if(len <= NM_SO_MAX_SMALL) {
     /* Small packet */
 
-    // si on a plus de 2 paquets en attente, on agrége
-    if( out_list_len > 2){
- 
+    /* We aggregate ONLY if data are very small OR if there are
+       already two ready paquets */
+    if(/*len <= 512 || */p_so_sa_gate->nb_paquets >= 2) {
+
       /* We first try to find an existing packet to form an aggregate */
       list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
-        uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-        uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+	uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 
-        if(size <= h_rlen)
-          /* We can copy data into the header zone */
-          flags = NM_SO_DATA_USE_COPY;
-        else
-          /* There's not enough room to add our data to this paquet */
+	if(size <= h_rlen)
+	  /* We can copy data into the header zone */
+	  flags = NM_SO_DATA_USE_COPY;
+	else
+	  /* There's not enough room to add our data to this paquet */
 	  goto next;
 
-        err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-        goto out;
+	err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+	goto out;
 
       next:
-        ;
+	;
       }
     }
- 
+
     flags = NM_SO_DATA_USE_COPY;
 
     /* We didn't have a chance to form an aggregate, so simply form a
@@ -130,13 +121,13 @@ static int pack(struct nm_gate *p_gate,
       goto out;
 
     list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
-    out_list_len ++;
+    p_so_sa_gate->nb_paquets++;
 
   } else {
     /* Large packets can not be sent immediately : we have to issue a
        RdV request. */
 
-    /* First allocate a packet wrapper */
+    /* First allocate a packet wrapper */ 
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                             data, len,
                                             NM_SO_DATA_DONT_USE_HEADER,
@@ -172,7 +163,6 @@ static int pack(struct nm_gate *p_gate,
   err = NM_ESUCCESS;
 
  out:
-  //DISP("<--pack");
   return err;
 }
 
@@ -180,26 +170,31 @@ static int pack(struct nm_gate *p_gate,
    return next packet to send */
 static int try_and_commit(struct nm_gate *p_gate)
 {
-
-  //DISP("-->try_and_commit");
-
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct list_head *out_list =
-    &((struct nm_so_strat_balance_gate *)p_so_gate->strat_priv)->out_list;
+  struct nm_so_strat_balance_gate *p_so_sa_gate
+    = (struct nm_so_strat_balance_gate *)p_so_gate->strat_priv;
+  struct list_head *out_list = &p_so_sa_gate->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
-  int drv_id;
+  int n, drv_id;
 
  start:
   if(list_empty(out_list))
     /* We're done */
     goto out;
 
-  for(drv_id = NM_SO_MAX_NETS -1 ; drv_id >= 0; drv_id--)
-    if (p_so_gate->active_send[drv_id ][TRK_SMALL] == 0
-        && p_so_gate->active_send[drv_id][TRK_LARGE] == 0)
-      /* We found an idle NIC */
-      goto next;
-
+#ifdef CONFIG_MULTI_RAIL
+  for(n = 0; n < NM_SO_MAX_NETS; n++) {
+    drv_id = nm_so_network_latency(n);
+    if (p_so_gate->active_send[drv_id][TRK_SMALL] +
+	p_so_gate->active_send[drv_id][TRK_LARGE] == 0)
+    /* We found an idle NIC */
+    goto next;
+  }
+#else
+  drv_id = 0;
+  if(p_so_gate->active_send[drv_id][TRK_SMALL] == 0)
+    goto next;
+#endif
 
   /* We didn't found any idle NIC, so we're done*/
   goto out;
@@ -208,7 +203,7 @@ static int try_and_commit(struct nm_gate *p_gate)
   /* Simply take the head of the list */
   p_so_pw = nm_l2so(out_list->next);
   list_del(out_list->next);
-  out_list_len --;
+  p_so_sa_gate->nb_paquets--;
 
   /* Finalize packet wrapper */
   nm_so_pw_finalize(p_so_pw);
@@ -220,8 +215,6 @@ static int try_and_commit(struct nm_gate *p_gate)
   goto start;
 
  out:
-  //DISP("<--try_and_commit");
-
     return NM_ESUCCESS;
 }
 
@@ -238,6 +231,8 @@ static int init_gate(struct nm_gate *p_gate)
     = TBX_MALLOC(sizeof(struct nm_so_strat_balance_gate));
 
   INIT_LIST_HEAD(&priv->out_list);
+
+  priv->nb_paquets = 0;
 
   ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = priv;
 

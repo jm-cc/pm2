@@ -31,7 +31,7 @@
 #define NM_SO_MAX_UNEXPECTED                (32 * 1024)
 
 /* Maximum size of a small message */
-#define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED - \
+#define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED -	\
 					     NM_SO_GLOBAL_HEADER_SIZE - \
 					     NM_SO_DATA_HEADER_SIZE)
 
@@ -68,5 +68,17 @@
 #define TRK_SMALL         NM_SO_TRK(0)
 #define TRK_LARGE         NM_SO_TRK(1)
 
+/* The following function defines the order in which the networks will
+   be considered */
+/* 
+ Currently, MAX_NETS == 2, and drv[1] is faster than drv[0], so :
+ net(0) -> 1
+ net(1) -> 0 
+*/
+#define nm_so_network_latency(n)  \
+  (1-n)
+
+#define nm_so_network_bandwidth(n)  \
+  (1-n)
 
 #endif

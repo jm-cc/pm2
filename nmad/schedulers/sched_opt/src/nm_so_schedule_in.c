@@ -84,13 +84,14 @@ __nm_so_unpack(struct nm_gate *p_gate,
     /* Check if the RdV request is already in */
     if(*status & NM_SO_STATUS_RDV_HERE) {
       /* A RdV request has already been received for this chunk */
-      int drv_id;
+      int n, drv_id;
 
       *status &= ~NM_SO_STATUS_RDV_HERE;
 
       /* Is there any large data track available? */
 #ifdef CONFIG_MULTI_RAIL
-      for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
+      for(n = 0; n < NM_SO_MAX_NETS; n++)
+	drv_id = nm_so_network_bandwidth(n);
 	if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
 	  goto found;
       goto busy;
@@ -218,22 +219,19 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Application is already ready! */
-    int drv_id;
+    int n, drv_id;
 
     p_so_gate->pending_unpacks--;
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
 
 #ifdef CONFIG_MULTI_RAIL
-//    for(drv_id = 0; drv_id < NM_SO_MAX_NETS; drv_id++)
-//      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
-//	goto found;
-
-    drv_id = p_so_pw->pw.p_drv->id;
-    if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
-      goto found;
+    for(n = 0; n < NM_SO_MAX_NETS; n++) {
+      drv_id = nm_so_network_bandwidth(n);
+      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
+	goto found;
+    }
     goto busy;
-
   found:
 #else
     drv_id = NM_SO_DEFAULT_NET;
@@ -241,9 +239,6 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
       goto busy;
 #endif
     {
-
-      DISP_VAL("Envoi du gros sur le drv", drv_id);
-
       /* Track 1 is available */
 	union nm_so_generic_ctrl_header ctrl;
 
@@ -295,25 +290,27 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
                         void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
-  struct nm_gate * p_gate = p_so_pw->pw.p_gate;
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_pkt_wrap *p_so_large_pw;
   uint8_t tag = tag_id - 128;
 
   p_so_gate->pending_unpacks--;
 
-  assert(!list_empty(&p_so_gate->pending_large_send[tag]));
+  list_for_each_entry(p_so_large_pw, &p_so_gate->pending_large_send[tag], link) {
+    if(p_so_large_pw->pw.seq == seq) {
+      list_del(&p_so_large_pw->link);
 
-  p_so_large_pw = nm_l2so(p_so_gate->pending_large_send[tag].next);
-  list_del(p_so_gate->pending_large_send[tag].next);
+      /* Send the data */
+      _nm_so_post_send(p_gate, p_so_large_pw,
+		       track_id % NM_SO_MAX_TRACKS,
+		       track_id / NM_SO_MAX_TRACKS);
 
-  assert(seq == p_so_large_pw->pw.seq);
+      return NM_SO_HEADER_MARK_READ;
+    }
+      
+  }
 
-  /* Send the data */
-  _nm_so_post_send(p_gate, p_so_large_pw,
-		   track_id % NM_SO_MAX_TRACKS,
-		   track_id / NM_SO_MAX_TRACKS);
-
-  return NM_SO_HEADER_MARK_READ;
+  TBX_FAILURE("PANIC!\n");
 }
 
 
@@ -372,6 +369,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     volatile uint8_t *status =
       &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
     int drv_id = p_pw->p_drv->id;
+
+    //    printf("Large received (%d bytes) on drv %d\n", p_pw->length, drv_id);
 
     p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
 

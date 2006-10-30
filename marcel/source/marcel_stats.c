@@ -54,6 +54,13 @@ void __ma_stats_reset(ma_stats_t stats) {
 		ma_stats_reset_func(offset)(__ma_stats_get(stats,offset));
 }
 
+void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
+	unsigned long offset;
+	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
+		ma_stats_synthesis_func(offset)(__ma_stats_get(dest,offset),
+			__ma_stats_get(src,offset));
+}
+
 long *marcel_stats_get(marcel_t t, unsigned long offset) {
 	if (!t)
 		t = MARCEL_SELF;

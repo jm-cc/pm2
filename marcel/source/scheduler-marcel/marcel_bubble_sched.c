@@ -438,28 +438,28 @@ int marcel_bubble_barrier(marcel_bubble_t *bubble) {
 /******************************************************************************
  * Statistiques
  */
-static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset) {
+static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 	marcel_bubble_t *b;
 	marcel_entity_t *e;
 	marcel_task_t *t;
-	ma_stats_reset_func(offset)(ma_stats_get(&bubble->hold, offset));
+	ma_stats_reset(&bubble->hold);
+	ma_stats_synthesize(&bubble->hold, &bubble->sched);
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			b = ma_bubble_entity(e);
 			ma_holder_rawlock(&b->hold);
-			__ma_bubble_synthesize_stats(b, offset);
+			__ma_bubble_synthesize_stats(b);
 			ma_holder_rawunlock(&b->hold);
-			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_bubble_hold_stats_get(b, offset));
-			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_bubble_stats_get(b, offset));
+			ma_stats_synthesize(&bubble->hold, &b->hold);
 		} else {
 			t = ma_task_entity(e);
-			ma_stats_synthesis_func(offset)(ma_bubble_hold_stats_get(bubble, offset), ma_task_stats_get(t, offset));
+			ma_stats_synthesize(&bubble->hold, &t->sched.internal.entity);
 		}
 	}
 }
-void ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset) {
+void ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 	ma_holder_lock_softirq(&bubble->hold);
-	__ma_bubble_synthesize_stats(bubble, offset);
+	__ma_bubble_synthesize_stats(bubble);
 	ma_holder_unlock_softirq(&bubble->hold);
 }
 

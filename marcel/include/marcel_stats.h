@@ -36,10 +36,12 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 #define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)__ma_stats_get(ma_stats_synthesis_func, (offset)))
 #define ma_stats_size(offset) (*(size_t *)__ma_stats_get(ma_stats_size, (offset)))
 #define ma_stats_reset(object) __ma_stats_reset((object)->stats)
+#define ma_stats_synthesize(dest, src) __ma_stats_synthesize((dest)->stats, (src)->stats)
 
 #section marcel_functions
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size);
 void __ma_stats_reset(ma_stats_t stats);
+void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src);
 
 ma_stats_synthesis_t ma_stats_long_sum_synthesis;
 ma_stats_reset_t ma_stats_long_sum_reset;

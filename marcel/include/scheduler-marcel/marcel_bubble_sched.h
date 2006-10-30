@@ -91,7 +91,7 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
 
-void ma_bubble_synthesize_stats(marcel_bubble_t *bubble, unsigned long offset);
+void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
 
 #section marcel_macros
 #define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->sched, (offset))

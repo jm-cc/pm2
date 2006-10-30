@@ -200,9 +200,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	marcel_freeze_sched();
 #ifdef MA__BUBBLES
 	if (bubbles) {
-		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_nbthreads_offset);
-		ma_bubble_synthesize_stats(&marcel_root_bubble, marcel_stats_load_offset);
-		ma_bubble_synthesize_stats(&marcel_root_bubble, ma_stats_memory_offset);
+		ma_bubble_synthesize_stats(&marcel_root_bubble);
 		printbubble(&marcel_root_bubble, 0);
 	} else
 #endif

@@ -227,8 +227,10 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 	(*cond)--;
 }
 
+extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
+
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
-	MA_BUG_ON(pthread_atfork(prepare,parent,child));
+	MA_BUG_ON(__register_atfork(prepare,parent,child,NULL));
 }
 #else
 

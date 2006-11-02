@@ -104,9 +104,7 @@ TBX_VISIBILITY_POP
 #ifdef MA__LIBPTHREAD
 #include <pthread.h>
 #endif
-#ifndef X86_64_ARCH
 TBX_VISIBILITY_PUSH_INTERNAL
-#endif
 /*#  include "asm/marcel-master___marcel_compiler.h"*/
 #  include "marcel-master___marcel_compiler.h"
 /*#  include "scheduler/marcel-master___marcel_compiler.h"*/
@@ -134,9 +132,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "asm/marcel-master___marcel_inline.h"
 #  include "marcel-master___marcel_inline.h"
 #  include "scheduler/marcel-master___marcel_inline.h"
-#ifndef X86_64_ARCH
 TBX_VISIBILITY_POP
-#endif
 
 /*#  include "asm/marcel-master___all.h"*/
 /*#  include "marcel-master___all.h"*/

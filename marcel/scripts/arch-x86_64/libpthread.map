@@ -107,7 +107,7 @@ MARCEL {
 
 
 # GLIBC_2.1 {
-  global:
+# global:
     pthread_create;
     pthread_attr_init;
 
@@ -138,17 +138,17 @@ MARCEL {
   # GLIBC_2.0;
 
 # GLIBC_2.1.1 {
-  global:
+# global:
     sem_close; sem_open; sem_unlink;
   # GLIBC_2.1;
 
 # GLIBC_2.1.2 {
-  global:
+# global:
     __vfork;
   # GLIBC_2.1.1;
 
 # GLIBC_2.2 {
-  global:
+# global:
     pthread_mutexattr_getpshared; pthread_mutexattr_setpshared;
 
     pthread_condattr_getpshared; pthread_condattr_setpshared;
@@ -187,13 +187,13 @@ MARCEL {
     __res_state;
 
 # GLIBC_2.2.3 {
-  global:
+# global:
     # Extensions.
     pthread_getattr_np;
   # GLIBC_2.2;
 
 # GLIBC_2.2.5 {
-  global:
+# global:
     __nanosleep;
   # GLIBC_2.2.3;
 

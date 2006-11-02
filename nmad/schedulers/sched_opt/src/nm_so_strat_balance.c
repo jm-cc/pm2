@@ -87,7 +87,7 @@ static int pack(struct nm_gate *p_gate,
 
     /* We aggregate ONLY if data are very small OR if there are
        already two ready paquets */
-    if(/*len <= 512 || */p_so_sa_gate->nb_paquets >= 2) {
+    if(len <= 512 || p_so_sa_gate->nb_paquets >= 2) {
 
       /* We first try to find an existing packet to form an aggregate */
       list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
@@ -182,7 +182,6 @@ static int try_and_commit(struct nm_gate *p_gate)
     /* We're done */
     goto out;
 
-#ifdef CONFIG_MULTI_RAIL
   for(n = 0; n < NM_SO_MAX_NETS; n++) {
     drv_id = nm_so_network_latency(n);
     if (p_so_gate->active_send[drv_id][TRK_SMALL] +
@@ -190,11 +189,6 @@ static int try_and_commit(struct nm_gate *p_gate)
     /* We found an idle NIC */
     goto next;
   }
-#else
-  drv_id = 0;
-  if(p_so_gate->active_send[drv_id][TRK_SMALL] == 0)
-    goto next;
-#endif
 
   /* We didn't found any idle NIC, so we're done*/
   goto out;
@@ -225,6 +219,58 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
+static int rdv_success(struct nm_gate *p_gate,
+		       uint8_t tag, uint8_t seq,
+		       void *data, uint32_t len)
+{
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_pkt_wrap *p_so_pw;
+  int err, n, drv_id;
+
+  /* Is there any large data track available? */
+  for(n = 0; n < NM_SO_MAX_NETS; n++) {
+    drv_id = nm_so_network_bandwidth(n);
+    if(p_so_gate->active_recv[drv_id][TRK_LARGE] == 0)
+      goto found;
+  }
+  goto busy;
+
+ found:
+  {
+    /* Cool! Track TRK_LARGE is available, so let's post the receive and
+       send an ACK */
+    union nm_so_generic_ctrl_header ctrl;
+
+    nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
+
+    nm_so_init_ack(&ctrl, tag + 128, seq,
+		   drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
+
+    err = pack_ctrl(p_gate, &ctrl);
+
+    /* We're done! */
+    goto out;
+  }
+
+ busy:
+  /* Track TRK_LARGE is not available : postpone the receive */
+
+  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+					  data, len,
+					  NM_SO_DATA_DONT_USE_HEADER,
+					  &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  list_add_tail(&p_so_pw->link, &p_so_gate->pending_large_recv);
+
+  err = NM_ESUCCESS;
+
+ out:
+  return err;
+}
+
+
 static int init_gate(struct nm_gate *p_gate)
 {
   struct nm_so_strat_balance_gate *priv
@@ -249,5 +295,6 @@ nm_so_strategy nm_so_strat_balance = {
   .commit = NULL,
   .try_and_commit = try_and_commit,
   .cancel = NULL,
+  .rdv_success = rdv_success,
   .priv = NULL,
 };

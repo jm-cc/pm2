@@ -50,6 +50,10 @@ typedef int (*nm_so_strategy_try_and_commit_func)(struct nm_gate *p_gate);
 /* Forget the pre-computed stuff */
 typedef int (*nm_so_strategy_cancel_func)(void);
 
+/* Handle a RdV success */
+typedef int (*nm_so_strategy_rdv_success_func)(struct nm_gate *p_gate,
+					       uint8_t tag, uint8_t seq,
+					       void *data, uint32_t len);
 
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
@@ -60,6 +64,7 @@ struct nm_so_strategy_struct {
   nm_so_strategy_commit_func commit;
   nm_so_strategy_try_and_commit_func try_and_commit;
   nm_so_strategy_cancel_func cancel;
+  nm_so_strategy_rdv_success_func rdv_success;
   void *priv;
 };
 

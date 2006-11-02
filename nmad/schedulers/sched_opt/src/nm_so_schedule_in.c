@@ -84,54 +84,12 @@ __nm_so_unpack(struct nm_gate *p_gate,
     /* Check if the RdV request is already in */
     if(*status & NM_SO_STATUS_RDV_HERE) {
       /* A RdV request has already been received for this chunk */
-      int n, drv_id;
 
       *status &= ~NM_SO_STATUS_RDV_HERE;
 
-      /* Is there any large data track available? */
-#ifdef CONFIG_MULTI_RAIL
-      for(n = 0; n < NM_SO_MAX_NETS; n++)
-	drv_id = nm_so_network_bandwidth(n);
-	if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
-	  goto found;
-      goto busy;
-    found:
-#else
-      drv_id = NM_SO_DEFAULT_NET;
-      if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_LARGE])
-	goto busy;
-#endif
-      {
-	/* Cool! Track 1 is available, so let's post the receive and
-	   send an ACK */
-	union nm_so_generic_ctrl_header ctrl;
+      err = active_strategy->rdv_success(p_gate, tag, seq, data, len);
 
-	nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
-
-	nm_so_init_ack(&ctrl, tag + 128, seq,
-		       drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
-
-	err = active_strategy->pack_ctrl(p_gate, &ctrl);
-
-	/* We're done! */
-	goto out;
-
-      }
-
-    busy:
-      {
-	/* Track 1 is not available : postpone the receive */
-	struct nm_so_pkt_wrap *p_so_pw;
-
-	err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-						data, len,
-						NM_SO_DATA_DONT_USE_HEADER,
-						&p_so_pw);
-	if(err != NM_ESUCCESS)
-	  goto out;
-
-	list_add_tail(&p_so_pw->link, &p_so_gate->pending_large_recv);
-      }
+      goto out;
 
     } else {
       /* No RdV request has been received */
@@ -219,68 +177,22 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Application is already ready! */
-    int n, drv_id;
 
     p_so_gate->pending_unpacks--;
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
 
-#ifdef CONFIG_MULTI_RAIL
-    for(n = 0; n < NM_SO_MAX_NETS; n++) {
-      drv_id = nm_so_network_bandwidth(n);
-      if(!p_so_gate->active_recv[drv_id][TRK_LARGE])
-	goto found;
-    }
-    goto busy;
-  found:
-#else
-    drv_id = NM_SO_DEFAULT_NET;
-    if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_LARGE])
-      goto busy;
-#endif
-    {
-      /* Track 1 is available */
-	union nm_so_generic_ctrl_header ctrl;
-
-	/* Post the data reception */
-	nm_so_post_large_recv(p_gate, drv_id, tag_id, seq,
-			      p_so_gate->recv[tag][seq].unpack_here.data,
-			      p_so_gate->recv[tag][seq].unpack_here.len);
-
-	nm_so_init_ack(&ctrl, tag_id, seq,
-		       drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
-
-	err = active_strategy->pack_ctrl(p_gate, &ctrl);
-
-	goto out;
-    }
-  busy:
-    {
-      /* Argh! Track 1 is currently not available */
-      struct nm_so_pkt_wrap *p_so_large_pw;
-
-      err = nm_so_pw_alloc_and_fill_with_data(tag_id, seq,
-                                              p_so_gate->recv[tag][seq].unpack_here.data,
-                                              p_so_gate->recv[tag][seq].unpack_here.len,
-                                              NM_SO_DATA_DONT_USE_HEADER,
-                                              &p_so_large_pw);
-
-      /* WARNING!! We should probably "panic" here! */
-      if(err != NM_ESUCCESS)
-        return err;
-
-      /* Postpone receive */
-      list_add_tail(&p_so_large_pw->link,
-                    &p_so_gate->pending_large_recv);
-
-    }
+    err = active_strategy->rdv_success(p_gate, tag, seq,
+				       p_so_gate->recv[tag][seq].unpack_here.data,
+				       p_so_gate->recv[tag][seq].unpack_here.len);
+    if(err != NM_ESUCCESS)
+      TBX_FAILURE("PANIC!\n");
 
   } else {
     /* Store rdv request */
     p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
   }
 
- out:
   return NM_SO_HEADER_MARK_READ;
 }
 
@@ -398,8 +310,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 		     drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
 
       err = active_strategy->pack_ctrl(p_gate, &ctrl);
-      if(err != NM_ESUCCESS)
-	goto out;
+      goto out;
 
     }
 

@@ -55,7 +55,7 @@ do { \
 
 #section functions
 #depend "tbx_compiler.h"
-MARCEL_PROTECTED void ma_preempt_schedule(void);
+TBX_EXTERN void ma_preempt_schedule(void);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"

@@ -61,7 +61,7 @@ extern ma_rwlock_t tasklist_lock;
 /* extern void update_process_times(int user); */
 /* extern void update_one_process(marcel_task_t *p, unsigned long user, */
 /* 			       unsigned long system, int cpu); */
-extern MARCEL_PROTECTED void ma_scheduler_tick(int user_tick, int system);
+extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 /* extern unsigned long cache_decay_ticks; */
 
 #section marcel_macros
@@ -73,7 +73,7 @@ int marcel_yield_to(marcel_t next);
 
 #section marcel_functions
 void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp);
-asmlinkage MARCEL_PROTECTED int ma_schedule(void);
+asmlinkage TBX_EXTERN int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 
 /* struct sighand_struct { */
@@ -318,7 +318,7 @@ extern void node_nr_running_init(void);
 /* extern void migrate_all_tasks(void); */
 /* extern void set_user_nice(task_t *p, long nice); */
 /* extern int marcel_task_prio(task_t *p); */
-/* extern MARCEL_PROTECTED int task_nice(task_t *p); */
+/* extern TBX_EXTERN int task_nice(task_t *p); */
 /* extern int task_curr(task_t *p); */
 /* extern int idle_cpu(int cpu); */
 
@@ -332,7 +332,7 @@ void ma_yield(void);
 
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
-extern MARCEL_PROTECTED int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
+extern TBX_EXTERN int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else
@@ -512,7 +512,7 @@ static __tbx_inline__ void ma_task_unlock(marcel_task_t *p)
 }
 #endif 
 
-extern MARCEL_PROTECTED void __ma_cond_resched(void);
+extern TBX_EXTERN void __ma_cond_resched(void);
 static __tbx_inline__ void ma_cond_resched(void)
 {
 	if (ma_need_resched())

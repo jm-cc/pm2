@@ -313,7 +313,7 @@ void ma_unfreeze_thread(marcel_task_t * p)
 	ma_try_to_wake_up(p, MA_TASK_FROZEN, 0);
 }
 
-void MARCEL_PROTECTED marcel_freeze_sched(void)
+void TBX_EXTERN marcel_freeze_sched(void)
 {
 	ma_holder_lock_softirq(&ma_main_runqueue.hold);
 	/* TODO: other levels */
@@ -327,7 +327,7 @@ void MARCEL_PROTECTED marcel_freeze_sched(void)
 	frozen_scheduler++;
 }
 
-void MARCEL_PROTECTED marcel_unfreeze_sched(void)
+void TBX_EXTERN marcel_unfreeze_sched(void)
 {
 	MA_BUG_ON(!frozen_scheduler);
 	frozen_scheduler--;

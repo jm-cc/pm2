@@ -86,7 +86,7 @@ int pmarcel_sched_get_priority_min(int policy);
 DEC_MARCEL_POSIX(int,sched_get_priority_min,(int policy) __THROW);
 
 #section marcel_functions
-extern MARCEL_PROTECTED signed long FASTCALL(ma_schedule_timeout(signed long timeout));
+extern TBX_EXTERN signed long FASTCALL(ma_schedule_timeout(signed long timeout));
 extern void ma_process_timeout(unsigned long __data);
 
 #section macros

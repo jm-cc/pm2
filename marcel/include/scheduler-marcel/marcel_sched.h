@@ -370,8 +370,8 @@ unsigned marcel_blockedthreads(void);
 unsigned marcel_frozenthreads(void);
 
 
-extern MARCEL_PROTECTED void marcel_freeze_sched(void);
-extern MARCEL_PROTECTED void marcel_unfreeze_sched(void);
+extern TBX_EXTERN void marcel_freeze_sched(void);
+extern TBX_EXTERN void marcel_unfreeze_sched(void);
 
 #section marcel_functions
 extern void ma_freeze_thread(marcel_task_t * tsk);

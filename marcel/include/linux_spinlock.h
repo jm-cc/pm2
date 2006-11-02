@@ -252,13 +252,13 @@ typedef struct {
 #section functions
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[types]"
-MARCEL_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock);
+TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 #endif
 
 #section marcel_functions
 #if defined(MA__LWPS)
 #depend "asm/linux_rwlock.h[marcel_types]"
-MARCEL_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock);
+TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock);
 #endif
 
 #section marcel_macros

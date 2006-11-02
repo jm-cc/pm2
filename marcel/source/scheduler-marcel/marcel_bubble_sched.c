@@ -170,7 +170,7 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
  */
 
 #ifdef MARCEL_BUBBLE_STEAL
-void ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
+void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	marcel_entity_t *ee;
 	marcel_bubble_t *b;
 	ma_holder_t *h;

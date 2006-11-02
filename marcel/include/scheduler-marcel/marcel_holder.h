@@ -544,7 +544,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 #define MA_ENTITY_BLOCKED 1
 #define MA_ENTITY_SLEEPING 0
 #section marcel_functions
-void ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
+void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
 static __tbx_inline__ int ma_get_entity(marcel_entity_t *e);
 #section marcel_inline
 /* prendre une entité de son conteneur (qui doit être déjà verrouillé) */

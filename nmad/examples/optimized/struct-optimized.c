@@ -13,32 +13,6 @@
  * General Public License for more details.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
-
-#include <tbx.h>
-
-#include <nm_public.h>
-#include <nm_so_public.h>
-
-#include <nm_so_pack_interface.h>
-
-#if defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
-#else
-#  include <nm_tcp_public.h>
-#endif
-
 #include "ping-optimized.h"
 #include "struct-optimized.h"
 

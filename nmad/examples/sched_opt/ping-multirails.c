@@ -31,8 +31,8 @@
 #  include <nm_mx_public.h>
 #  include <nm_qsnet_public.h>
 
-#define NB_PACKS 4
-#define MIN     (4 * NB_PACKS)
+#define NB_PACKS 2
+#define MIN     (1 * 1024 * 1024) /* (4 * NB_PACKS) */
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000
 

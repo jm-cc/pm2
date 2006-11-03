@@ -41,10 +41,7 @@
 #include "ping-optimized.h"
 #include "indexed-optimized.h"
 #include "vector-optimized.h"
-
-/*
- * END OF EMULATION OF THE MPI DATATYPE
- */
+#include "struct-optimized.h"
 
 int
 main(int	  argc,
@@ -113,7 +110,6 @@ main(int	  argc,
       printf("nm_core_gate_accept returned err = %d\n", err);
       goto out;
     }
-
   }
 
   /*
@@ -125,9 +121,10 @@ main(int	  argc,
       for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
         if (number_of_blocks > size) continue;
 
-        //pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 1);
+        pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 1);
         pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 1);
       }
+      pingpong_datatype_struct(p_core, gate_id, size, 1);
     }
   }
   else {
@@ -136,8 +133,10 @@ main(int	  argc,
       for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
         if (number_of_blocks > size) continue;
 
+        pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 0);
         pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 0);
       }
+      pingpong_datatype_struct(p_core, gate_id, size, 0);
     }
   }
  out:

@@ -18,7 +18,7 @@ MOD_SRC	:= $(PM2_ROOT)/nmad/examples/optimized
 include $(PM2_ROOT)/make/apps.mak
 
 $(MOD_GEN_BIN)/ping-optimized$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, \
-			$(if $(ping-optimized-objs), $(ping-optimized-objs), ping-optimized.o)) indexed-optimized.o vector-optimized.o
+			$(if $(ping-optimized-objs), $(ping-optimized-objs), ping-optimized.o)) indexed-optimized.o vector-optimized.o struct-optimized.o
 $(MOD_GEN_BIN)/ping-optimized$(MOD_EXT): LDFLAGS += $(ping-optimized-ldflags) -lm
 $(MOD_GEN_BIN)/ping-optimized$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
 

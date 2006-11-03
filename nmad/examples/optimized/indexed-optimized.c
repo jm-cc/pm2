@@ -13,6 +13,13 @@
  * General Public License for more details.
  */
 
+#include <stdint.h>
+#include <sys/uio.h>
+#include <assert.h>
+
+#include <pm2_common.h>
+#include "nm_private.h"
+
 #include "ping-optimized.h"
 #include "indexed-optimized.h"
 
@@ -46,7 +53,7 @@ void pingpong_datatype_indexed(struct nm_core        *p_core,
     }
     TBX_GET_TICK(t2);
 
-    printf("%d\t%d\t%d\t%lf\n", MPIR_INDEXED, number_of_elements, number_of_blocks, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
+    printf("%s\t%s\t%d\t%d\t%lf\n", "indexed", STRATEGY, number_of_elements, number_of_blocks, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
     PRINTF("Received value: ");
     for(i=0 ; i<number_of_elements ; i++) PRINTF("%3.2f ", r_buffer[i]);
     PRINTF("\n");
@@ -117,15 +124,15 @@ void pack_datatype_indexed(struct nm_core        *p_core,
   nm_so_begin_packing(p_core, gate_id, 0, &cnx);
   nm_so_pack(cnx, &numberOfBlocks, sizeof(int));
   nm_so_pack(cnx, &size, sizeof(int));
-  nm_so_end_packing(p_core, cnx);
+  //  nm_so_end_packing(p_core, cnx);
 
   /*  pack the number of elements in the blocks */
-  nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+  // nm_so_begin_packing(p_core, gate_id, 0, &cnx);
   nm_so_pack(cnx, datatype->blocklens, numberOfBlocks*sizeof(int));
-  nm_so_end_packing(p_core, cnx);
+  // nm_so_end_packing(p_core, cnx);
 
   /*  pack the elements for each block */
-  nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+  // nm_so_begin_packing(p_core, gate_id, 0, &cnx);
   for(i=0 ; i<numberOfBlocks ; i++) {
     tmp_buf = s_ptr + datatype->indices[i];
     DEBUG("Packing block %d with %d elements of size %d at address %p\n", i, datatype->blocklens[i], size, tmp_buf);
@@ -141,28 +148,32 @@ void unpack_datatype_indexed(struct nm_core  *p_core,
                              uint8_t          gate_id,
                              float           *r_ptr) {
   struct nm_so_cnx *cnx      = NULL;
+  struct nm_gate   *gate;
   float           **tmp_buf;
   int               numberOfBlocks, size, *numberOfElements, i;
 
   DEBUG("Receiving (h)indexed datatype at address %p...\n", r_ptr);
+  gate = &(p_core->gate_array[gate_id]);
 
   /*  Unpack the following information : number of blocks, size of each element */
   nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
   nm_so_unpack(cnx, &numberOfBlocks, sizeof(int));
   nm_so_unpack(cnx, &size, sizeof(int));
-  nm_so_end_unpacking(p_core, cnx);
+  nm_so_rwait(p_core, gate, 0, 1);
+  // nm_so_end_unpacking(p_core, cnx);
   DEBUG("Number of blocks %d Size %d\n", numberOfBlocks, size);
 
   /*  unpack the number of elements in the blocks */
   numberOfElements = malloc(numberOfBlocks * sizeof(int));
-  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+  //  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
   nm_so_unpack(cnx, numberOfElements, numberOfBlocks*sizeof(int));
-  nm_so_end_unpacking(p_core, cnx);
+  // nm_so_end_unpacking(p_core, cnx);
 
   /*  unpack the elements for each block */
   tmp_buf = malloc((numberOfBlocks+1) * sizeof(float *));
   tmp_buf[0] = r_ptr;
-  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+  //nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+  nm_so_rwait(p_core, gate, 0, 2);
   for(i=0 ; i<numberOfBlocks ; i++) {
     DEBUG("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
     nm_so_unpack(cnx, tmp_buf[i], numberOfElements[i]*size);

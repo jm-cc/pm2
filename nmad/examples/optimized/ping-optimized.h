@@ -20,8 +20,7 @@
 #define MAX_SIZE   1024 * 4
 #define MIN_BLOCKS 2
 #define MAX_BLOCKS 10
-#define LOOPS      1
-//2000
+#define LOOPS      2000
 
 //#define PRINTF(...) { printf(__VA_ARGS__) ; }
 #define PRINTF(...) { }

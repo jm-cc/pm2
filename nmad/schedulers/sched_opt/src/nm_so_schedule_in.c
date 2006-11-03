@@ -29,6 +29,47 @@
 
 //#define NM_SO_OPTIMISTIC_RECV
 
+static int rdv_success(struct nm_gate *p_gate,
+		       uint8_t tag, uint8_t seq,
+		       void *data, uint32_t len)
+{
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_pkt_wrap *p_so_pw;
+  int err;
+  unsigned long drv_id = NM_SO_DEFAULT_NET;
+  unsigned long trk_id = TRK_LARGE;
+
+  /* Can we find an available track to prepare the receive? */
+  err = active_strategy->rdv_accept(p_gate, &drv_id, &trk_id);
+
+  if(err == NM_ESUCCESS) {
+    /* Let's acknowledge the Rendez-Vous request! */
+    union nm_so_generic_ctrl_header ctrl;
+
+    nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
+
+    nm_so_init_ack(&ctrl, tag + 128, seq,
+		   drv_id * NM_SO_MAX_TRACKS + trk_id);
+
+    err = active_strategy->pack_ctrl(p_gate, &ctrl);
+
+  } else {
+    /* We are forced to postpone the receive */
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+					  data, len,
+					  NM_SO_DATA_DONT_USE_HEADER,
+					  &p_so_pw);
+    if(err != NM_ESUCCESS)
+      goto out;
+
+    list_add_tail(&p_so_pw->link, &p_so_gate->pending_large_recv);
+  }
+
+ out:
+  return err;
+}
+
+
 int
 __nm_so_unpack(struct nm_gate *p_gate,
 	       uint8_t tag, uint8_t seq,
@@ -87,7 +128,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 
       *status &= ~NM_SO_STATUS_RDV_HERE;
 
-      err = active_strategy->rdv_success(p_gate, tag, seq, data, len);
+      err = rdv_success(p_gate, tag, seq, data, len);
 
       goto out;
 
@@ -182,9 +223,10 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
 
-    err = active_strategy->rdv_success(p_gate, tag, seq,
-				       p_so_gate->recv[tag][seq].unpack_here.data,
-				       p_so_gate->recv[tag][seq].unpack_here.len);
+    err = rdv_success(p_gate, tag, seq,
+		      p_so_gate->recv[tag][seq].unpack_here.data,
+		      p_so_gate->recv[tag][seq].unpack_here.len);
+
     if(err != NM_ESUCCESS)
       TBX_FAILURE("PANIC!\n");
 
@@ -298,6 +340,13 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
         = nm_l2so(p_so_gate->pending_large_recv.next);
 
       list_del(p_so_gate->pending_large_recv.next);
+
+      /* Note: we could call active_strategy->rdv_accept(...) to let
+	 the current strategy choose the appropriate drv/trk
+	 combination. However, there's currently only ONE available
+	 drv/trk couple, so the alternate solution would be to
+	 postpone the receive... Such a strategy can be implemented on
+	 the sending side, right? */
 
       /* Post the data reception */
       nm_so_direct_post_large_recv(p_gate, drv_id,

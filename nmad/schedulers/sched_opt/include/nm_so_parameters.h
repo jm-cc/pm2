@@ -76,9 +76,9 @@
  net(1) -> 0 
 */
 #define nm_so_network_latency(n)  \
-  (1-n)
+  (NM_SO_MAX_NETS-n-1)
 
 #define nm_so_network_bandwidth(n)  \
-  (1-n)
+  (n)
 
 #endif

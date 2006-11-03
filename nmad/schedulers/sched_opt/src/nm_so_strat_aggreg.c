@@ -204,47 +204,20 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
-static int rdv_success(struct nm_gate *p_gate,
-		       uint8_t tag, uint8_t seq,
-		       void *data, uint32_t len)
+/* Warning: drv_id and trk_id are IN/OUT parameters. They initially
+   hold values "suggested" by the caller. */
+static int rdv_accept(struct nm_gate *p_gate,
+		      unsigned long *drv_id,
+		      unsigned long *trk_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_pkt_wrap *p_so_pw;
-  int err, drv_id;
 
-  drv_id = NM_SO_DEFAULT_NET;
-
-  /* Is there any large data track available? */
-  if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_LARGE] == 0) {
-    /* Cool! Track TRK_LARGE is available, so let's post the receive and
-       send an ACK */
-    union nm_so_generic_ctrl_header ctrl;
-
-    nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
-
-    nm_so_init_ack(&ctrl, tag + 128, seq,
-		   drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
-
-    err = pack_ctrl(p_gate, &ctrl);
-
-    /* We're done! */
-    goto out;
-  }
-
-  /* Track TRK_LARGE is not available : postpone the receive */
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					  data, len,
-					  NM_SO_DATA_DONT_USE_HEADER,
-					  &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  list_add_tail(&p_so_pw->link, &p_so_gate->pending_large_recv);
-
-  err = NM_ESUCCESS;
-
- out:
-  return err;
+  if(p_so_gate->active_recv[*drv_id][*trk_id] == 0)
+    /* Cool! The suggested track is available! */
+    return NM_ESUCCESS;
+  else
+    /* We decide to postpone the acknowledgement. */
+    return -NM_EAGAIN;
 }
 
 static int init_gate(struct nm_gate *p_gate)
@@ -269,6 +242,6 @@ nm_so_strategy nm_so_strat_aggreg = {
   .commit = NULL,
   .try_and_commit = try_and_commit,
   .cancel = NULL,
-  .rdv_success = rdv_success,
+  .rdv_accept = rdv_accept,
   .priv = NULL,
 };

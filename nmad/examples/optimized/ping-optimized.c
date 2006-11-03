@@ -90,7 +90,6 @@ main(int	  argc,
     goto out;
   }
 
-  fprintf(stderr, "argc %d\n", argc);
   if (argc == 3) {
     /* client */
     argv++;

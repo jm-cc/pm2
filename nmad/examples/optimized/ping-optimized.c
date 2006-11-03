@@ -48,6 +48,7 @@ main(int	  argc,
      char	**argv) {
   struct nm_core *p_core   = NULL;
   char		 *r_url	   = NULL;
+  char		 *datatype = NULL;
   char		 *l_url	   = NULL;
   uint8_t	  drv_id   = 0;
   uint8_t	  gate_id  = 0;
@@ -89,10 +90,13 @@ main(int	  argc,
     goto out;
   }
 
-  if (argc > 1) {
+  fprintf(stderr, "argc %d\n", argc);
+  if (argc == 3) {
     /* client */
     argv++;
     r_url = *argv;
+    argv++;
+    datatype = *argv;
     printf("running as client using remote url: %s [%s]\n", hostname, r_url);
 
     err = nm_core_gate_connect(p_core, gate_id, drv_id, hostname, r_url);
@@ -101,8 +105,10 @@ main(int	  argc,
       goto out;
     }
   }
-  else {
+  else if (argc == 2) {
     /* server */
+    argv++;
+    datatype = *argv;
     printf("running as server\n");
     printf("local url: [%s]\n", l_url);
     err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
@@ -111,32 +117,64 @@ main(int	  argc,
       goto out;
     }
   }
+  else {
+    fprintf(stderr, "usage: argv[0] [<remote url>] <datatype>\n");
+    exit(EXIT_FAILURE);
+  }
 
   /*
     Ping-pong
   */
-  if (argc > 1) {
+  if (argc == 3) {
     /* client */
-    for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
-      for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
-        if (number_of_blocks > size) continue;
-
-        pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 1);
-        pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 1);
+    if (!strcmp(datatype, "index")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
+          if (number_of_blocks > size) continue;
+          pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 1);
+        }
       }
-      pingpong_datatype_struct(p_core, gate_id, size, 1);
+    }
+
+    if (!strcmp(datatype, "vector")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
+          if (number_of_blocks > size) continue;
+          pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 1);
+        }
+      }
+    }
+
+    if (!strcmp(datatype, "struct")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        pingpong_datatype_struct(p_core, gate_id, size, 1);
+      }
     }
   }
   else {
     /* server */
-    for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
-      for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
-        if (number_of_blocks > size) continue;
-
-        pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 0);
-        pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 0);
+    if (!strcmp(datatype, "index")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
+          if (number_of_blocks > size) continue;
+          pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 0);
+        }
       }
-      pingpong_datatype_struct(p_core, gate_id, size, 0);
+    }
+
+    if (!strcmp(datatype, "vector")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
+          if (number_of_blocks > size) continue;
+          pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 0);
+        }
+      }
+    }
+
+    if (!strcmp(datatype, "struct")) {
+      for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
+        pingpong_datatype_struct(p_core, gate_id, size, 0);
+      }
     }
   }
  out:

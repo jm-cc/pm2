@@ -48,6 +48,16 @@
 #define MAX_BLOCKS 10
 #define LOOPS      2000
 
+#if defined(CONFIG_MULTI_RAIL)
+#  define STRATEGY "multi_rail"
+#elif defined(CONFIG_STRAT_DEFAULT)
+#  define STRATEGY "strat_default"
+#elif defined(CONFIG_STRAT_AGGREG)
+#  define STRATEGY "strat_aggreg"
+#else
+#  define STRATEGY "strat_default"
+#endif
+
 //#define PRINTF(...) { printf(__VA_ARGS__) ; }
 #define PRINTF(...) { }
 //#define DEBUG(...) { printf(__VA_ARGS__) ; }

@@ -18,6 +18,12 @@
 
 #include "ping-optimized.h"
 
+void pingpong_datatype_indexed(struct nm_core        *p_core,
+                               uint8_t                gate_id,
+                               int                    number_of_elements,
+                               int                    number_of_blocks,
+                               int                    client);
+
 void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
                            int                   number_of_elements,
                            int                   number_of_blocks);

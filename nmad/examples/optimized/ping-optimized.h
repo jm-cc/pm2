@@ -16,6 +16,12 @@
 #ifndef PING_OPTIMIZED_H
 #define PING_OPTIMIZED_H
 
+#define MIN_SIZE   4
+#define MAX_SIZE   1024 * 4
+#define MIN_BLOCKS 2
+#define MAX_BLOCKS 10
+#define LOOPS      2000
+
 //#define PRINTF(...) { printf(__VA_ARGS__) ; }
 #define PRINTF(...) { }
 //#define DEBUG(...) { printf(__VA_ARGS__) ; }

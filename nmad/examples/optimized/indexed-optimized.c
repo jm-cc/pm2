@@ -39,6 +39,54 @@
 #endif
 
 #include "ping-optimized.h"
+#include "indexed-optimized.h"
+
+void pingpong_datatype_indexed(struct nm_core        *p_core,
+                               uint8_t                gate_id,
+                               int                    number_of_elements,
+                               int                    number_of_blocks,
+                               int                    client) {
+  struct MPIR_DATATYPE *datatype_indexed = NULL;
+  float                *buffer = NULL;
+  float                *r_buffer = NULL;
+  int                   i, k;
+
+  /*
+    Initialise data
+  */
+  buffer = malloc(number_of_elements * 2 * sizeof(float));
+  memset(buffer, 0, number_of_elements);
+  for(i=0 ; i<number_of_elements*2 ; i++) buffer[i] = i;
+
+  datatype_indexed = malloc(sizeof(struct MPIR_DATATYPE));
+  init_datatype_indexed(datatype_indexed, number_of_elements, number_of_blocks);
+  r_buffer = malloc(number_of_elements * sizeof(float));
+
+  if (client) {
+    tbx_tick_t t1, t2;
+    TBX_GET_TICK(t1);
+    for(k = 0 ; k<LOOPS ; k++) {
+      pack_datatype_indexed(p_core, gate_id, datatype_indexed, buffer);
+      unpack_datatype_indexed(p_core, gate_id, r_buffer);
+    }
+    TBX_GET_TICK(t2);
+
+    printf("%d\t%d\t%d\t%lf\n", MPIR_INDEXED, number_of_elements, number_of_blocks, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
+    PRINTF("Received value: ");
+    for(i=0 ; i<number_of_elements ; i++) PRINTF("%3.2f ", r_buffer[i]);
+    PRINTF("\n");
+  }
+  else { /* server */
+    for(k = 0 ; k<LOOPS ; k++) {
+      unpack_datatype_indexed(p_core, gate_id, r_buffer);
+      pack_datatype_indexed(p_core, gate_id, datatype_indexed, buffer);
+    }
+  }
+
+  free(buffer);
+  free(r_buffer);
+  free(datatype_indexed);
+}
 
 void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
                            int                   number_of_elements,

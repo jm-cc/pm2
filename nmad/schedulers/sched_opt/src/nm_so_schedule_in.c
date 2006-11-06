@@ -338,10 +338,11 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       union nm_so_generic_ctrl_header ctrl;
       struct nm_so_pkt_wrap *p_so_large_pw
         = nm_l2so(p_so_gate->pending_large_recv.next);
+      struct nm_so_sched *p_so_sched = p_sched->sch_private;
 
       list_del(p_so_gate->pending_large_recv.next);
 
-      /* Note: we could call active_strategy->rdv_accept(...) to let
+      /* Note: we could call current_strategy->rdv_accept(...) to let
 	 the current strategy choose the appropriate drv/trk
 	 combination. However, there's currently only ONE available
 	 drv/trk couple, so the alternate solution would be to
@@ -358,7 +359,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 		     p_so_large_pw->pw.seq,
 		     drv_id * NM_SO_MAX_TRACKS + TRK_LARGE);
 
-      err = active_strategy->pack_ctrl(p_gate, &ctrl);
+      err = p_so_sched->current_strategy->pack_ctrl(p_gate, &ctrl);
       goto out;
 
     }

@@ -23,7 +23,6 @@
 struct nm_core;
 struct nm_gate;
 
-
 extern int
 (*__nm_so_pack)(struct nm_gate *p_gate,
 		uint8_t tag, uint8_t seq,

@@ -26,7 +26,6 @@
 extern int
 nm_sched_out_gate(struct nm_gate *);
 
-
 int
 nm_so_stest(struct nm_core *p_core,
 	    struct nm_gate *p_gate,

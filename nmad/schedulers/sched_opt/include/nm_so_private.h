@@ -37,7 +37,14 @@ extern nm_so_strategy *active_strategy;
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)16)
 
 
+struct nm_so_sched {
+  nm_so_strategy *current_strategy;
+};
+
 struct nm_so_gate {
+
+  struct nm_so_sched *p_so_sched;
+
   /* Actually counts the number of expected small messages, including
      RdV requests for large messages */
   unsigned pending_unpacks;
@@ -68,10 +75,6 @@ struct nm_so_gate {
   struct list_head pending_large_recv;
 
   void *strat_priv;
-};
-
-struct nm_so_sched {
-  int dummy;
 };
 
 

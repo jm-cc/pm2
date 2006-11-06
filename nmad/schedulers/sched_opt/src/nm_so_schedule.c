@@ -47,14 +47,25 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   /* Initialize "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_init(p_core);
 
-  /* Initialize strategy */
-  active_strategy->init();
-
   p_priv = TBX_MALLOC(sizeof(struct nm_so_sched));
   if (!p_priv) {
     err = -NM_ENOMEM;
     goto out;
   }
+
+#if defined(CONFIG_MULTI_RAIL)
+  p_priv->current_strategy = &nm_so_strat_balance; 
+#elif defined(CONFIG_STRAT_DEFAULT)
+  p_priv->current_strategy = &nm_so_strat_default;
+#elif defined(CONFIG_STRAT_AGGREG)
+  p_priv->current_strategy = &nm_so_strat_aggreg;
+#else
+  /* Fall back to the default strategy */
+  p_priv->current_strategy = &nm_so_strat_default;
+#endif
+
+  /* Initialize strategy */
+  p_priv->current_strategy->init();
 
   p_sched->sch_private	= p_priv;
 
@@ -137,6 +148,7 @@ static int
 nm_so_init_gate	(struct nm_sched	*p_sched,
                  struct nm_gate		*p_gate)
 {
+  struct nm_so_sched *p_so_sched = p_sched->sch_private;
   struct nm_so_gate *p_so_gate = NULL;
   int i;
   int err;
@@ -146,6 +158,9 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
     err = -NM_ENOMEM;
     goto out;
   }
+
+
+  p_so_gate->p_so_sched = p_so_sched;
 
   memset(p_so_gate->active_recv, 0, sizeof(p_so_gate->active_recv));
   memset(p_so_gate->active_send, 0, sizeof(p_so_gate->active_send));
@@ -163,7 +178,7 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
   INIT_LIST_HEAD(&p_so_gate->pending_large_recv);
 
-  active_strategy->init_gate(p_gate);
+  p_so_sched->current_strategy->init_gate(p_gate);
 
   err = NM_ESUCCESS;
 

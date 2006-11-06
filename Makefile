@@ -320,9 +320,7 @@ sos:
 
 .PHONY: lines
 lines: distclean
-	( for i in * ; do \
-		echo "$$(cat /dev/null $$(find $$i \( -name '*.[chC]' -o -name '*.m4' \) -type f ! -path '*SCCS/*' ! -path '*BitKeeper/*' ! -path '*.svn/*' ! -path '*linux_archive/*' ) | wc -l) $$(basename $$i)" ; \
-	done ) | xdu
+	wc -l $$(find . \( -name '*.[chC]' -o -name '*.m4' \) -type f ! -path '*SCCS/*' ! -path '*BitKeeper/*' ! -path '*.svn/*' ! -path '*linux_archive/*' ) | sed -e 's/^ *//' | head -n -1 | xdu
 
 # Fin du Makefile
 ######################################################################

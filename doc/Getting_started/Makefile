@@ -115,6 +115,8 @@ $(EMPHCFILES_PS): %-emph-ps: %
 $(EMPHCFILES_HTML): %-emph-html: %
 	@perl -w emph.pl $< $@ html
 
+distclean: clean
+
 clean: wml-clean html-clean ps-clean inria-clean labri-clean emph-clean
 	rm -rf $(BUILD)
 

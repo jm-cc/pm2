@@ -34,13 +34,15 @@ static int rdv_success(struct nm_gate *p_gate,
 		       void *data, uint32_t len)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
+  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
   struct nm_so_pkt_wrap *p_so_pw;
   int err;
   unsigned long drv_id = NM_SO_DEFAULT_NET;
   unsigned long trk_id = TRK_LARGE;
 
   /* Can we find an available track to prepare the receive? */
-  err = active_strategy->rdv_accept(p_gate, &drv_id, &trk_id);
+  err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
 
   if(err == NM_ESUCCESS) {
     /* Let's acknowledge the Rendez-Vous request! */
@@ -51,7 +53,7 @@ static int rdv_success(struct nm_gate *p_gate,
     nm_so_init_ack(&ctrl, tag + 128, seq,
 		   drv_id * NM_SO_MAX_TRACKS + trk_id);
 
-    err = active_strategy->pack_ctrl(p_gate, &ctrl);
+    err = cur_strat->pack_ctrl(p_gate, &ctrl);
 
   } else {
     /* We are forced to postpone the receive */
@@ -261,7 +263,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
 
       return NM_SO_HEADER_MARK_READ;
     }
-      
+
   }
 
   TBX_FAILURE("PANIC!\n");

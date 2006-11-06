@@ -26,9 +26,6 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"
 
-extern nm_so_strategy *active_strategy;
-
-
 /* Status flags contents */
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)

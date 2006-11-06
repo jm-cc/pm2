@@ -295,6 +295,9 @@ struct marcel_topo_level {
 	char data[MA_PER_LEVEL_ROOM];
 };
 
+#section types
+typedef struct marcel_topo_level marcel_topo_level_t;
+
 #section marcel_macros
 #define ma_topo_vpdata(vp, field) ((vp)->leveldata.vpdata.field)
 
@@ -303,6 +306,9 @@ extern TBX_EXTERN unsigned marcel_topo_nblevels;
 extern TBX_EXTERN struct marcel_topo_level marcel_machine_level[];
 extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
 extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
+
+#section functions
+marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index);
 
 #section marcel_macros
 #define for_all_vp(vp) \

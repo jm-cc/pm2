@@ -97,6 +97,12 @@ unsigned marcel_current_vp(void)
 	return __marcel_current_vp();
 }
 
+marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
+	if (index > marcel_topo_level_nbitems[level])
+		return NULL;
+	return &marcel_topo_levels[level][index];
+}
+
 #ifdef MA__LWPS
 
 static int discovering_level = 1;
@@ -346,9 +352,6 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
 
-	for (i=0;i<marcel_nbvps();i++)
-		ma_vp_node[i]=-1;
-
 	if (!(buffer=TBX_MALLOC(buffersize))) {
 		fprintf(stderr,"no room for storing cpu mask\n");
 		return;
@@ -413,9 +416,6 @@ static void __marcel_init look_libnuma(void) {
 	MA_BUG_ON(nbnodes==0);
 
 	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
-
-	for (i=0;i<marcel_nbvps();i++)
-		ma_vp_node[i]=-1;
 
 	cpusetcreate(&cpuset);
 	for (radid = 0; radid < nbnodes; radid++) {
@@ -591,8 +591,10 @@ static void topo_discover(void) {
 	unsigned sublevelsize;
 	unsigned vp;
 	int dosplit;
-#endif
-#ifdef MA__NUMA
+
+	for (i = 0; i < marcel_nbvps() + MARCEL_NBMAXVPSUP; i++)
+		ma_vp_node[i]=-1;
+
 	marcel_vpmask_empty(&vpmask);
 	for (vp=0; vp < marcel_nbvps(); vp++)
 		marcel_vpmask_add_vp(&vpmask, vp);
@@ -606,9 +608,6 @@ static void topo_discover(void) {
 #endif
 #ifdef  AIX_SYS
 	enum marcel_topo_level_t mlevel = MARCEL_LEVEL_MACHINE;
-
-	for (i = 0; i < marcel_nbvps(); i++)
-		ma_vp_node[i]=-1;
 
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0))

@@ -364,12 +364,6 @@ void marcel_change_vpmask(marcel_vpmask_t *mask);
 
 /* ==== scheduler status ==== */
 
-unsigned marcel_activethreads(void);
-unsigned marcel_sleepingthreads(void);
-unsigned marcel_blockedthreads(void);
-unsigned marcel_frozenthreads(void);
-
-
 extern TBX_EXTERN void marcel_freeze_sched(void);
 extern TBX_EXTERN void marcel_unfreeze_sched(void);
 

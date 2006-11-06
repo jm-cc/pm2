@@ -144,8 +144,8 @@ static int compat_poll_all(marcel_ev_server_t server,
 	marcel_pollid_t ps=struct_up(server, struct poll_struct, server);
 	(*ps->func)(ps,
 		    ma_nr_running(),
-		    marcel_sleepingthreads(),
-		    marcel_blockedthreads());	
+		    0,
+		    0);	
 	return 0;
 }
 

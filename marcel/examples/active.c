@@ -40,19 +40,13 @@ int marcel_main(int argc, char *argv[])
 
    marcel_init(&argc, argv);
 
-   tprintf("active threads = %d\n", marcel_activethreads());
-
    tprintf("thread creation\n");
 
    marcel_create(&pid, NULL, sample, NULL);
 
    marcel_delay(500);
 
-   tprintf("active threads = %d\n", marcel_activethreads());
-
    marcel_delay(1600);
-
-   tprintf("active threads = %d\n", marcel_activethreads());
 
    have_to_work = tbx_false;
 
@@ -61,8 +55,6 @@ int marcel_main(int argc, char *argv[])
    tprintf("thread termination catched\n");
 
    marcel_delay(10);
-
-   tprintf("active threads = %d\n", marcel_activethreads());
 
    marcel_end();
    return 0;

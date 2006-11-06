@@ -170,23 +170,15 @@ extern debug_type_t marcel_mtrace_timer;
 #  define MTRACE(msg, pid) \
     (msg[0] ? debug_printf(&marcel_mtrace, \
             "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
-            " [%06x], %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
+            " [%06x], %3d T]\n", \
             msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
             pid->preempt_count, \
-            marcel_activethreads(), \
-            marcel_sleepingthreads(), \
-            marcel_blockedthreads(), \
-            marcel_frozenthreads(), \
             marcel_nbthreads() + 1) : 0)
 #  define MTRACE_TIMER(msg, pid) \
     debug_printf(&marcel_mtrace_timer, \
             "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
-            " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
+            " %3d T]\n", \
             msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
-            marcel_activethreads(), \
-            marcel_sleepingthreads(), \
-            marcel_blockedthreads(), \
-            marcel_frozenthreads(), \
             marcel_nbthreads() + 1)
 #  define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
 #  define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)

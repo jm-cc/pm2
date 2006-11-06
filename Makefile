@@ -321,7 +321,7 @@ sos:
 .PHONY: lines
 lines: distclean
 	( for i in * ; do \
-		echo "$$(cat /dev/null $$(find $$i -name \*.[ch] -type f ! -path '*SCCS/*' ! -path '*BitKeeper/*' ) | wc -l) $$(basename $$i)" ; \
+		echo "$$(cat /dev/null $$(find $$i \( -name '*.[chC]' -o -name '*.m4' \) -type f ! -path '*SCCS/*' ! -path '*BitKeeper/*' ! -path '*.svn/*' ! -path '*linux_archive/*' ) | wc -l) $$(basename $$i)" ; \
 	done ) | xdu
 
 # Fin du Makefile

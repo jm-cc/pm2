@@ -124,10 +124,14 @@ void pack_datatype_vector(struct nm_core        *p_core,
   nm_so_pack(cnx, &datatype->count, sizeof(int));
   nm_so_pack(cnx, &size, sizeof(int));
   nm_so_pack(cnx, &datatype->blocklen, sizeof(int));
-  //  nm_so_end_packing(p_core, cnx);
+#if defined(NO_RWAIT)
+  nm_so_end_packing(p_core, cnx);
+#endif /* NO_RWAIT */
 
   /*  for each block pack the elements of this block */
-  // nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+#if defined(NO_RWAIT)
+  nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+#endif /* NO_RWAIT */
   tmp_buf = s_ptr;
   for(i=0 ; i<datatype->count ; i++) {
     DEBUG("Packing block %d at address %p\n", i, tmp_buf);
@@ -156,14 +160,19 @@ void unpack_datatype_vector(struct nm_core  *p_core,
   nm_so_unpack(cnx, &numberOfBlocks, sizeof(int));
   nm_so_unpack(cnx, &size, sizeof(int));
   nm_so_unpack(cnx, &blockLength, sizeof(int));
+#if defined(NO_RWAIT)
+  nm_so_end_unpacking(p_core, cnx);
+#else
   nm_so_rwait(p_core, gate, 0, 2);
-  //  nm_so_end_unpacking(p_core, cnx);
+#endif /* NO_RWAIT */
   DEBUG("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);
 
   /*  unpack the elements for each block */
   tmp_buf = malloc((numberOfBlocks+1) * sizeof(float *));
   tmp_buf[0] = r_ptr;
-  // nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+#if defined(NO_RWAIT)
+  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+#endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     DEBUG("Going to unpack block %d at address %p\n", i, tmp_buf[i]);
     nm_so_unpack(cnx, tmp_buf[i], blockLength*size);

@@ -48,8 +48,8 @@
 #define MAX_BLOCKS 10
 #define LOOPS      2000
 
-//#define RWAIT
-#define NO_RWAIT
+#define RWAIT
+//#define NO_RWAIT
 
 #if defined(CONFIG_MULTI_RAIL)
 #  define STRATEGY "multi_rail"

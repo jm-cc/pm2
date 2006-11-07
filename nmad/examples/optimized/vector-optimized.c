@@ -163,6 +163,8 @@ void unpack_datatype_vector(struct nm_core  *p_core,
 #if defined(NO_RWAIT)
   nm_so_end_unpacking(p_core, cnx);
 #else
+  nm_so_rwait(p_core, gate, 0, 0);
+  nm_so_rwait(p_core, gate, 0, 1);
   nm_so_rwait(p_core, gate, 0, 2);
 #endif /* NO_RWAIT */
   DEBUG("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);

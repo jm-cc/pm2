@@ -16,6 +16,8 @@
 #ifndef _NM_SO_RAW_INTERFACE_H_
 #define _NM_SO_RAW_INTERFACE_H_
 
+#include "nm_so_interfaces.h"
+
 /* WARNING!!! There's a severe limitation here: concurrent
    begin_(un)pack/end_(un)pack session are not allowed on the same
    tag_id, even if they use different gates... */
@@ -23,21 +25,24 @@
 struct nm_core;
 struct nm_gate;
 
-extern int
-(*__nm_so_pack)(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len);
+extern nm_so_interface nm_so_raw_interface;
 
+extern int
+nm_so_raw_interface_init(struct nm_core *p_core);
+
+
+extern int
+_nm_so_pack(struct nm_gate *p_gate,
+            uint8_t tag, uint8_t seq,
+            void *data, uint32_t len);
 extern int
 nm_so_stest(struct nm_core *p_core,
 	    struct nm_gate *p_gate,
 	    uint8_t tag, uint8_t seq);
-
 extern int
 nm_so_swait(struct nm_core *p_core,
 	    struct nm_gate *p_gate,
 	    uint8_t tag, uint8_t seq);
-
 static __inline__
 int
 __nm_so_swait_range(struct nm_core *p_core,
@@ -59,9 +64,9 @@ __nm_so_swait_range(struct nm_core *p_core,
 
 
 extern int
-__nm_so_unpack(struct nm_gate *p_gate,
-	       uint8_t tag, uint8_t seq,
-	       void *data, uint32_t len);
+_nm_so_unpack(struct nm_gate *p_gate,
+            uint8_t tag, uint8_t seq,
+            void *data, uint32_t len);
 
 extern int
 nm_so_rtest(struct nm_core *p_core,

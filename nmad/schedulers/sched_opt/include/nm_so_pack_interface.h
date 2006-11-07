@@ -25,13 +25,15 @@ struct nm_so_cnx {
   uint8_t seq_number;
 };
 
+extern nm_so_interface nm_so_pack_interface;
+
 extern struct nm_so_cnx out_cnx[], in_cnx[];
 
-int
-nm_so_pack_interface_init(void);
+extern int
+nm_so_pack_interface_init(struct nm_core *p_core);
 
 
-int
+extern int
 nm_so_begin_packing(struct nm_core *p_core,
 		    uint16_t gate_id, uint8_t tag,
 		    struct nm_so_cnx **cnx);
@@ -41,9 +43,9 @@ int
 nm_so_pack(struct nm_so_cnx *cnx,
 	   void *data, uint32_t len)
 {
-  return __nm_so_pack(cnx->p_gate,
-		      (cnx - out_cnx), cnx->seq_number++,
-		      data, len);
+  return _nm_so_pack(cnx->p_gate,
+                     (cnx - out_cnx), cnx->seq_number++,
+                     data, len);
 }
 
 static __inline__
@@ -66,9 +68,9 @@ int
 nm_so_unpack(struct nm_so_cnx *cnx,
 	     void *data, uint32_t len)
 {
-  return __nm_so_unpack(cnx->p_gate,
-			(cnx - in_cnx), cnx->seq_number++,
-			data, len);
+  return _nm_so_unpack(cnx->p_gate,
+                       (cnx - in_cnx), cnx->seq_number++,
+                       data, len);
 }
 
 static __inline__

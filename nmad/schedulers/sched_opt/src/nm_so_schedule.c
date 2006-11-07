@@ -178,6 +178,10 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
   p_so_sched->current_strategy->init_gate(p_gate);
 
+  if(!p_so_sched->current_interface)
+    TBX_FAILURE("Interface not defined");
+  p_so_sched->current_interface->init_gate(p_gate);
+
   err = NM_ESUCCESS;
 
  out:

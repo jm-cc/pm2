@@ -32,11 +32,12 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
 
   //  printf("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //  	 ptr, len, proto_id-128, seq);
 
-  p_so_gate->status[proto_id - 128][seq] |= NM_SO_STATUS_SEND_COMPLETED;
+  interface->pack_success(p_so_pw->pw.p_gate, proto_id - 128, seq);
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -47,7 +48,8 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
                              struct nm_pkt_wrap	*p_pw) {
   int err;
   struct nm_so_pkt_wrap *p_so_pw = nm_pw2so(p_pw);
-  struct nm_so_gate *p_so_gate = p_so_pw->pw.p_gate->sch_private;
+  struct nm_gate *p_gate = p_pw->p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
   p_so_gate->active_send[p_pw->p_drv->id][p_pw->p_trk->id]--;
 
@@ -61,9 +63,9 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 				  p_so_gate);
 
   } else if(p_pw->p_trk->id == 1) {
-
-    p_so_gate->status[p_pw->proto_id - 128][p_pw->seq] |=
-      NM_SO_STATUS_SEND_COMPLETED;
+    nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+    interface->pack_success(p_gate,
+                            p_pw->proto_id - 128, p_pw->seq);
 
     /* Free the wrapper */
     nm_so_pw_free(p_so_pw);
@@ -80,5 +82,5 @@ nm_so_out_process_failed_rq(struct nm_sched	*p_sched,
                             int		 	_err)
 {
     TBX_FAILURE("nm_so_out_process_failed_rq");
-    return nm_so_out_process_success_rq(p_sched,p_pw);
+    return nm_so_out_process_success_rq(p_sched, p_pw);
 }

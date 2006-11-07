@@ -25,17 +25,17 @@
 #include "nm_so_parameters.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"
+#include "nm_so_interfaces.h"
 
 /* Status flags contents */
-#define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
-#define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
-#define NM_SO_STATUS_PACKET_HERE     ((uint8_t)4)
-#define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)8)
-#define NM_SO_STATUS_RDV_HERE        ((uint8_t)16)
+#define NM_SO_STATUS_PACKET_HERE     ((uint8_t)1)
+#define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)2)
+#define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
 
 
 struct nm_so_sched {
   nm_so_strategy *current_strategy;
+  nm_so_interface *current_interface;
 };
 
 struct nm_so_gate {
@@ -72,6 +72,7 @@ struct nm_so_gate {
   struct list_head pending_large_recv;
 
   void *strat_priv;
+  void *interface_private;
 };
 
 

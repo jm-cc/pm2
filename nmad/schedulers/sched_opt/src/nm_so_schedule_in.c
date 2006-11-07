@@ -26,6 +26,7 @@
 #include "nm_so_headers.h"
 #include "nm_so_tracks.h"
 #include "nm_so_raw_interface.h"
+#include "nm_so_interfaces.h"
 
 //#define NM_SO_OPTIMISTIC_RECV
 
@@ -78,6 +79,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 	       void *data, uint32_t len)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
@@ -96,7 +98,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       nm_so_pw_dec_header_ref_count(p_so_gate->recv[tag][seq].pkt_here.p_so_pw);
 
       *status &= ~NM_SO_STATUS_PACKET_HERE;
-      *status |= NM_SO_STATUS_RECV_COMPLETED;
+      interface->unpack_success(p_gate, tag, seq);
 
     } else {
       /* Data not yet received */
@@ -106,7 +108,6 @@ __nm_so_unpack(struct nm_gate *p_gate,
       p_so_gate->recv[tag][seq].unpack_here.len = len;
 
       *status |= NM_SO_STATUS_UNPACK_HERE;
-      *status &= ~NM_SO_STATUS_RECV_COMPLETED;
 
       p_so_gate->pending_unpacks++;
 
@@ -121,8 +122,6 @@ __nm_so_unpack(struct nm_gate *p_gate,
 
   } else {
     /* Large packet */
-
-    *status &= ~NM_SO_STATUS_RECV_COMPLETED;
 
     /* Check if the RdV request is already in */
     if(*status & NM_SO_STATUS_RDV_HERE) {
@@ -172,6 +171,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
 
@@ -179,6 +179,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   //  	 ptr, len, tag, seq);
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
+    struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+
     /* Cool! We already have a waiting unpack for this packet */
 
     if(len)
@@ -190,7 +192,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->pending_unpacks--;
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
-    *status |= NM_SO_STATUS_RECV_COMPLETED;
+    interface->unpack_success(p_gate, tag, seq);
 
     return NM_SO_HEADER_MARK_READ;
 
@@ -285,7 +287,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
-
     p_so_gate->active_recv[p_pw->p_drv->id][TRK_SMALL] = 0;
 
 #ifdef NM_SO_OPTIMISTIC_RECV
@@ -301,9 +302,10 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 	   corresponding unpack 'completed'. */
 	volatile uint8_t *status =
 	  &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
+        nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
 
 	*status &= ~NM_SO_STATUS_UNPACK_HERE;
-	*status |= NM_SO_STATUS_RECV_COMPLETED;
+        interface->unpack_success(p_gate, tag, seq);
 
 	p_so_gate->pending_unpacks--;
       }
@@ -321,10 +323,15 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       nm_so_refill_regular_recv(p_gate);
 
   } else if(p_pw->p_trk->id == TRK_LARGE) {
-    /* This is the completion of a large message. */
-    volatile uint8_t *status =
-      &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
+
     int drv_id = p_pw->p_drv->id;
+
+    /* This is the completion of a large message. */
+    nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+
+    interface->unpack_success(p_gate,
+                              p_so_pw->pw.proto_id - 128,
+                              p_so_pw->pw.seq);
 
     //    printf("Large received (%d bytes) on drv %d\n", p_pw->length, drv_id);
 
@@ -332,8 +339,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
     /* Free the wrapper */
     nm_so_pw_free(p_so_pw);
-
-    *status |= NM_SO_STATUS_RECV_COMPLETED;
 
     /* Check if some recv requests were postponed */
     if(!list_empty(&p_so_gate->pending_large_recv)) {
@@ -367,7 +372,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     }
 
   }
-
   /* Hum... Well... We're done guys! */
 
   err = NM_ESUCCESS;

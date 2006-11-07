@@ -62,8 +62,6 @@ static int pack(struct nm_gate *p_gate,
   int flags = 0;
   int err;
 
-  p_so_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
-
   if(len <= NM_SO_MAX_SMALL) {
     /* Small packet */
 

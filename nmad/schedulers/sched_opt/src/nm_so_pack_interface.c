@@ -24,15 +24,23 @@
 
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
+#include "nm_so_interfaces.h"
 #include "nm_so_pack_interface.h"
 
 struct nm_so_cnx out_cnx[NM_SO_MAX_TAGS], in_cnx[NM_SO_MAX_TAGS];
 
+/* User Interface */
+
 int
-nm_so_pack_interface_init(void)
+nm_so_pack_interface_init(struct nm_core *p_core)
 {
-  return NM_ESUCCESS;
+  struct nm_so_sched *so_sched = p_core->p_sched->sch_private;
+
+  so_sched->current_interface = &nm_so_pack_interface;
+
+  return nm_so_raw_interface.init(p_core);
 }
+
 
 int
 nm_so_begin_packing(struct nm_core *p_core,
@@ -85,3 +93,31 @@ nm_so_begin_unpacking(struct nm_core *p_core,
  out:
   return err;
 }
+
+/* Internal interface */
+int nm_so_pi_init_gate(struct nm_gate *p_gate){
+  return nm_so_raw_interface.init_gate(p_gate);
+}
+
+
+
+int nm_so_pi_pack_success(struct nm_gate *p_gate,
+                          uint8_t tag, uint8_t seq){
+
+  return nm_so_raw_interface.pack_success(p_gate, tag, seq);
+}
+
+
+int nm_so_pi_unpack_success(struct nm_gate *p_gate,
+                            uint8_t tag, uint8_t seq){
+  return nm_so_raw_interface.unpack_success(p_gate, tag, seq);
+}
+
+nm_so_interface nm_so_pack_interface = {
+  .init = nm_so_pack_interface_init,
+  .init_gate = nm_so_pi_init_gate,
+  .pack_success = nm_so_pi_pack_success,
+  .unpack_success = nm_so_pi_unpack_success,
+
+  .priv = NULL,
+};

@@ -43,7 +43,7 @@
 #endif
 
 #define MIN_SIZE   4
-#define MAX_SIZE   1024 * 4
+#define MAX_SIZE   1024 * 1024 * 4
 #define MIN_BLOCKS 2
 #define MAX_BLOCKS 10
 #define LOOPS      2000

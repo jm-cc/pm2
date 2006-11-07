@@ -1806,10 +1806,7 @@ if (optind != argc) {
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
 				verbprintf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
-#ifndef TREES
-				/* n'a pas de sens en repr�entation arbresque */
 				bubbleInsertThread(b,e);
-#endif
 				break;
 			}
 #endif

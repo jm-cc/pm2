@@ -16,13 +16,21 @@
 
 #include "marcel.h"
 
-int ma_idle_scheduler =
-#ifdef MARCEL_GANG_SCHEDULER
-	0
-#else
-	1
-#endif
-	;
+#define switchrq(e,rq) \
+	PROF_EVENT2(bubble_sched_switchrq, \
+	e->type == MA_TASK_ENTITY? \
+	(void*)ma_task_entity(e): \
+	(void*)ma_bubble_entity(e), \
+	rq)
+
+#define switchbubble(e,b) do { \
+	if ((e)->type == MA_TASK_ENTITY) \
+		PROF_EVENT2(bubble_sched_insert_thread, (void*)ma_task_entity(e), b); \
+	else \
+		PROF_EVENT2(bubble_sched_insert_bubble, (void*)ma_bubble_entity(e), b); \
+} while(0)
+
+int ma_idle_scheduler = 0;
 ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
 
 #ifdef MA__BUBBLES
@@ -166,7 +174,9 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 }
 
 /******************************************************************************
+ *
  * Insertion dans une bulle
+ *
  */
 
 #ifdef MARCEL_BUBBLE_STEAL
@@ -175,6 +185,7 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 	marcel_bubble_t *b;
 	ma_holder_t *h;
 	bubble_sched_debugl(7,"ma_set_sched_holder %p to bubble %p\n",e,bubble);
+	h = e->sched_holder;
 	e->sched_holder = &bubble->hold;
 	if (e->type == MA_TASK_ENTITY) {
 		if ((h = e->run_holder) && h != &bubble->hold) {
@@ -197,13 +208,18 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 		}
 	} else {
 		MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
-		b = ma_bubble_entity(e);
-		ma_holder_rawlock(&b->hold);
-		list_for_each_entry(ee, &b->heldentities, bubble_entity_list) {
-			if (ee->sched_holder && ee->sched_holder->type == MA_BUBBLE_HOLDER)
-				ma_set_sched_holder(ee, bubble);
+		/* stop recursing when reaching a bubble that was on a runqueue */
+		if (h && h->type == MA_RUNQUEUE_HOLDER) {
+			e->sched_holder = h;
+		} else {
+			b = ma_bubble_entity(e);
+			ma_holder_rawlock(&b->hold);
+			list_for_each_entry(ee, &b->heldentities, bubble_entity_list) {
+				if (ee->sched_holder && ee->sched_holder->type == MA_BUBBLE_HOLDER)
+					ma_set_sched_holder(ee, bubble);
+			}
+			ma_holder_rawunlock(&b->hold);
 		}
-		ma_holder_rawunlock(&b->hold);
 	}
 }
 #endif
@@ -214,16 +230,16 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	ma_holder_t *sched_bubble;
 #endif
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
-	if (list_empty(&bubble->heldentities))
+	if (!bubble->nbentities)
 		marcel_sem_P(&bubble->join);
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
-	else {
+	else
 		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
-	}
 	list_add_tail(&entity->bubble_entity_list, &bubble->heldentities);
 	marcel_barrier_addcount(&bubble->barrier, 1);
+	bubble->nbentities++;
 	entity->init_holder = &bubble->hold;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	entity->sched_holder = entity->init_holder;
@@ -250,10 +266,8 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-#ifdef MARCEL_BUBBLE_EXPLODE
 	ma_holder_t *h = NULL;
 	ma_runqueue_t *rq;
-#endif
 	LOG_IN();
 
 	if (!list_empty(&entity->bubble_entity_list)) {
@@ -261,21 +275,16 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
 		marcel_bubble_removeentity(ma_bubble_holder(h),entity);
 	}
-#ifdef MARCEL_BUBBLE_EXPLODE
 	if (bubble->status != MA_BUBBLE_OPENED) {
 retryclosed:
-#endif
 		ma_holder_lock_softirq(&bubble->hold);
-#ifdef MARCEL_BUBBLE_EXPLODE
 		if (bubble->status == MA_BUBBLE_OPENED) {
 			ma_holder_unlock_softirq(&bubble->hold);
 			goto retryopened;
 		}
-#endif
 		bubble_sched_debugl(7,"inserting %p in closed bubble %p\n",entity,bubble);
 		__do_bubble_insertentity(bubble,entity);
 		ma_holder_unlock_softirq(&bubble->hold);
-#ifdef MARCEL_BUBBLE_EXPLODE
 	} else {
 retryopened:
 		h = ma_entity_holder_lock_softirq(&bubble->sched);
@@ -304,7 +313,6 @@ retryopened:
 		ma_holder_rawunlock(&bubble->hold);
 		ma_entity_holder_unlock_softirq(h);
 	}
-#endif
 	LOG_OUT();
 	return 0;
 }
@@ -339,7 +347,8 @@ int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entit
 	entity->run_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
-	return (list_empty(&bubble->heldentities));
+	bubble->nbentities--;
+	return (!bubble->nbentities);
 }
 
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
@@ -436,7 +445,9 @@ int marcel_bubble_barrier(marcel_bubble_t *bubble) {
 }
 
 /******************************************************************************
+ *
  * Statistiques
+ *
  */
 static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 	marcel_bubble_t *b;
@@ -554,7 +565,9 @@ void ma_bubble_tick(marcel_bubble_t *bubble) {
 }
 
 /******************************************************************************
+ *
  * Self-scheduling
+ *
  */
 
 #if 0
@@ -756,7 +769,9 @@ les #ifdef dans les arguments de macro...
 }
 
 /******************************************************************************
- * Choix de vol
+ *
+ * Vol de bulle local.
+ *
  */
 
 #ifdef MARCEL_BUBBLE_STEAL
@@ -909,6 +924,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				ma_holder_rawunlock(&b->hold);
 				/* mettre b sur rq2 */
 				ma_put_entity(&b->sched, &rq2->hold, MA_ENTITY_RUNNING);
+				PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 				b->sched.sched_level = rq2->level;
 				ma_holder_rawunlock(&rq2->hold);
 			}
@@ -979,6 +995,232 @@ int marcel_bubble_steal_work(void) {
 #endif
 	return 0;
 }
+
+/******************************************************************************
+ *
+ * Répartiteur de bulles.
+ *
+ * Suppose que la hiérarchie est rassemblée.
+ *
+ */
+
+#include <math.h>
+static inline long entity_load(marcel_entity_t *e) {
+	if (e->type == MA_BUBBLE_ENTITY)
+		return *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), marcel_stats_load_offset);
+	else
+		return *(long*)ma_task_stats_get(ma_task_entity(e), marcel_stats_load_offset);
+}
+
+static int load_compar(const void *_e1, const void *_e2) {
+	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
+	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
+	long l1 = entity_load(e1);
+	long l2 = entity_load(e2);
+	return l2 - l1; /* decreasing order */
+}
+static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl) {
+	/* TODO: give imbalance in recursion */
+	/* TODO: XXX: lock holders! */
+	int i;
+	fprintf(stderr,"spreading entit%s", ne>1?"ies":"y");
+	for (i=0; i<ne; i++)
+		fprintf(stderr," %p", e[i]);
+	fprintf(stderr," at level%s", nl>1?"s":"");
+	for (i=0; i<nl; i++)
+		fprintf(stderr," %s", l[i]->sched.name);
+	fprintf(stderr,"\n");
+
+	/* TODO: tune */
+	if (ne < nl) {
+		/* less entities than items, recurse into entities before items */
+		unsigned new_ne = 0;
+		unsigned recursed = 0;
+		int i, j;
+		fprintf(stderr,"%d < %d, recurse into entities\n", ne, nl);
+
+		/* first count */
+		for (i=0; i<ne; i++) {
+			if (e[i]->type == MA_BUBBLE_ENTITY) {
+				recursed = 1;
+				new_ne += ma_bubble_entity(e[i])->nbentities;
+			} else
+				new_ne += 1;
+		}
+		if (recursed) {
+			fprintf(stderr,"%d sub-entities\n", new_ne);
+			/* now establish the list */
+			marcel_entity_t *new_e[new_ne], *ee;
+			j = 0;
+			for (i=0; i<ne; i++) {
+				if (e[i]->type == MA_BUBBLE_ENTITY) {
+					marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+					list_for_each_entry(ee, &bb->heldentities, bubble_entity_list)
+						new_e[j++] = ee;
+				} else
+					new_e[j++] = e[i];
+			}
+			/* and recurse */
+			__marcel_bubble_spread(new_e, new_ne, l, nl);
+		} else {
+			/* Grmpf, really not enough parallelism, only
+			 * use part of the machine */
+			MA_BUG_ON(ne > nl);
+			fprintf(stderr,"Not enough parallelism, use only %d item%s\n", ne, ne>1?"s":"");
+			__marcel_bubble_spread(&e[i], ne, l, ne);
+		}
+	}
+
+	else 
+
+	{
+		/* More entities than items, distribute */
+		int i, j, n, nitems, nentities;
+		unsigned long totload = 0, partload, load;
+		float per_item_load, bonus = 0;
+
+		/* compute total load */
+		for (i=0; i<ne; i++) {
+			if (e[i]->type == MA_BUBBLE_ENTITY)
+				totload += *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e[i]), marcel_stats_load_offset);
+			else
+				totload += *(long*)ma_task_stats_get(ma_task_entity(e[i]), marcel_stats_load_offset);
+		}
+		per_item_load = (float)totload / nl;
+		fprintf(stderr,"load %lu = %d*%.2f\n", totload, nl, per_item_load);
+
+		/* Sort entities by load */
+		qsort(e, ne, sizeof(e[0]), &load_compar);
+
+		/* Start with heaviest, put on the first item */
+		i = 0;
+		n = 0;
+		while(i<ne) {
+			/* when entities' load is 0, just leave them here */
+			if (entity_load(e[i]) == 0) {
+				fprintf(stderr,"remaining entities are 0-loaded, just leave them here\n");
+				int state;
+				for (j=i; j<ne; j++) {
+					ma_runqueue_t *rq;
+					state = ma_get_entity(e[j]);
+					if (l[0]->father)
+						rq = &l[0]->father->sched;
+					else
+						rq = &marcel_machine_level[0].sched;
+					ma_put_entity(e[j], &rq->hold, state);
+					switchrq(e[j], rq);
+				}
+				break;
+			}
+
+			/* start with some bonus or malus */
+			partload = -bonus;
+			fprintf(stderr,"starting at %s with load %lu\n", l[n]->sched.name, partload);
+			for (j=i; j<ne; j++) {
+				load = entity_load(e[j]);
+				partload += load;
+				fprintf(stderr,"adding entity %p(%lu) -> %lu\n", e[j], load, partload);
+				/* accept 10% imbalance: TODO: tune */
+				if (partload > per_item_load * 9 / 10) {
+					nentities = j-i+1;
+					break;
+				}
+			}
+			if (j == ne)
+				nentities = ne-i;
+
+			nitems = (partload + per_item_load / 10) / per_item_load;
+			bonus = nitems * per_item_load - partload;
+			fprintf(stderr,"Ok, %d item%s and remaining %.2f load\n", nitems, nitems>1?"s":"", bonus);
+
+			if (nitems == 1) {
+				/* one item selected, put that there */
+				fprintf(stderr,"Ok, put %s on %s\n", nentities>1?"them":"it", l[n]->sched.name);
+				int state;
+				for (j=i; j<i+nentities; j++) {
+					state = ma_get_entity(e[j]);
+					ma_put_entity(e[j], &l[n]->sched.hold, state);
+					switchrq(e[j], &l[n]->sched);
+				}
+				if (l[n]->arity) {
+					fprintf(stderr,"and recurse\n");
+					__marcel_bubble_spread(&e[i], nentities, l[n]->sons, l[n]->arity);
+				}
+			} else {
+				/* several items, just recurse */
+				__marcel_bubble_spread(&e[i], nentities, &l[n], nitems);
+			}
+			n += nitems;
+			i += nentities;
+			/* TODO: if n>nl, put the rest ! (should only happen if floating point operations are not exact) */
+			MA_BUG_ON(n>nl);
+		}
+	}
+	fprintf(stderr,"spreading entit%s", ne>1?"ies":"y");
+	for (i=0; i<ne; i++)
+		fprintf(stderr," %p", e[i]);
+	fprintf(stderr," at level%s", nl>1?"s":"");
+	for (i=0; i<nl; i++)
+		fprintf(stderr," %s", l[i]->sched.name);
+	fprintf(stderr," done.\n");
+
+}
+
+/* Rassembleur de la hiérarchie de la bulle */
+static void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
+	marcel_entity_t *e;
+	ma_holder_rawlock(&b->hold);
+	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
+		int state;
+		ma_holder_t *h = NULL;
+
+		if (e->type == MA_BUBBLE_ENTITY)
+			__ma_bubble_gather(ma_bubble_entity(e), rootbubble);
+
+		if (e->sched_holder == &b->hold || e->sched_holder == &rootbubble->hold)
+			/* déjà rassemblé */
+			continue;
+
+		if (e->run_holder != &b->hold && e->run_holder != &rootbubble->hold)
+			/* verrouiller le conteneur actuel de e */
+			/* TODO: en principe, devrait être "plus bas" */
+			h = ma_entity_holder_rawlock(e);
+
+		state = ma_get_entity(e);
+		fprintf(stderr,"putting back %p in bubble %p(%p)\n", e, b, &b->hold);
+		ma_put_entity(e, &b->hold, state);
+		PROF_EVENT2(bubble_sched_goingback, e, b);
+
+		if (h)
+			ma_entity_holder_rawunlock(h);
+	}
+	ma_holder_rawunlock(&b->hold);
+}
+void ma_bubble_gather(marcel_bubble_t *b) {
+	ma_preempt_disable();
+	ma_local_bh_disable();
+	__ma_bubble_gather(b, b);
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+}
+void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
+	marcel_entity_t *e = &b->sched;
+	ma_bubble_synthesize_stats(b);
+	ma_preempt_disable();
+	ma_local_bh_disable();
+	__ma_bubble_gather(b, b);
+	ma_holder_rawlock(&b->hold);
+	__marcel_bubble_spread(&e, 1, &l, 1);
+	ma_holder_rawunlock(&b->hold);
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+}
+
+/******************************************************************************
+ *
+ * Bubble gang scheduler.
+ *
+ */
 
 ma_runqueue_t ma_gang_rq;
 
@@ -1122,7 +1364,6 @@ marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
 void __marcel_init ma_bubble_sched_start(void) {
 #ifdef MARCEL_GANG_SCHEDULER
 	ma_idle_scheduler = 0;
-	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 #if 1
 	/* un seul gang scheduler */
 	marcel_start_gang_scheduler(&ma_main_runqueue, 0);
@@ -1145,7 +1386,9 @@ void __marcel_init ma_bubble_sched_start(void) {
 }
 
 /******************************************************************************
+ *
  * Initialisation
+ *
  */
 
 static void __marcel_init bubble_sched_init() {
@@ -1159,6 +1402,7 @@ static void __marcel_init bubble_sched_init() {
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
+	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 #endif
 }
 

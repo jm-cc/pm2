@@ -23,9 +23,9 @@
 #warning I need the bubble_steal option
 int marcel_main(int argc, char **argv) { marcel_fprintf(stderr,"I need the bubble_steal option\n"); return 0; }
 
-#elif !defined(MARCEL_GANG_SCHEDULER)
-#warning I need the GANG_SCHEDULER config
-int marcel_main(int argc, char **argv) { marcel_fprintf(stderr,"I need the GANG_SCHEDULER config\n"); return 0; }
+//#elif !defined(MARCEL_GANG_SCHEDULER)
+//#warning I need the GANG_SCHEDULER config
+//int marcel_main(int argc, char **argv) { marcel_fprintf(stderr,"I need the GANG_SCHEDULER config\n"); return 0; }
 #else
 
 #define GANGS 5
@@ -87,7 +87,9 @@ int marcel_main(int argc, char **argv)
 #endif
     marcel_bubble_init(&gang[i]);
     marcel_bubble_insertbubble(&marcel_root_bubble, &gang[i]);
+#ifdef MARCEL_GANG_SCHEDULER
     marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
+#endif
     marcel_attr_setinitbubble(&attr, &gang[i]);
 #ifdef DIFFERENT
     for (j=0; j<(i+1)%THREADS; j++) {
@@ -98,10 +100,14 @@ int marcel_main(int argc, char **argv)
       marcel_attr_setname(&attr,name);
       marcel_create(NULL,&attr,work,(any_t)(i*100+j));
     }
+#ifdef MARCEL_GANG_SCHEDULER
     marcel_wake_up_bubble(&gang[i]);
+#endif
   }
 
+  marcel_delay(5000);
   marcel_start_playing();
+  marcel_bubble_spread(&marcel_root_bubble, marcel_topo_level(0,0));
 
   for (i=0; i<GANGS; i++)
     marcel_bubble_join(&gang[i]);

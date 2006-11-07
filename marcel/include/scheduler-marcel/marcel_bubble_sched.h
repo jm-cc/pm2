@@ -126,6 +126,7 @@ struct marcel_bubble {
 	struct ma_sched_entity sched;
 	struct ma_holder hold;
 	struct list_head heldentities;
+	unsigned nbentities;
 	marcel_sem_t join;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	ma_bubble_status status;
@@ -165,6 +166,7 @@ struct marcel_bubble {
 	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_BATCH_PRIO), \
 	.hold = MA_HOLDER_INITIALIZER(MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
+	.nbentities = 0, \
 	.join = MARCEL_SEM_INITIALIZER(1), \
 	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
@@ -187,7 +189,9 @@ void ma_bubble_tick(marcel_bubble_t *bubble);
 int marcel_bubble_steal_work(void);
 
 #section functions
+#depend "marcel_topology.h[types]"
 any_t marcel_gang_scheduler(any_t foo);
+void marcel_bubble_spread(marcel_bubble_t *b, marcel_topo_level_t *l);
 
 #section marcel_functions
 #ifdef MARCEL_BUBBLE_STEAL

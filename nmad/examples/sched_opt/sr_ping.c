@@ -25,7 +25,7 @@
 #include <nm_public.h>
 #include <nm_so_public.h>
 
-#include <nm_so_pack_interface.h>
+#include <nm_so_sendrecv_interface.h>
 
 #if defined CONFIG_MX
 #  include <nm_mx_public.h>
@@ -73,8 +73,7 @@ main(int	  argc,
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint32_t		 len;
-	struct nm_so_cnx         cnx;
-	nm_so_pack_interface     interface;
+	nm_so_sr_interface       interface;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -83,7 +82,7 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_pack_interface_init(p_core, &interface);
+	err = nm_so_sr_interface_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
 	  printf("nm_so_pack_interface_init return err = %d\n", err);
 	  goto out;
@@ -154,13 +153,13 @@ main(int	  argc,
 
 		for(len = 0; len <= MAX; len = _next(len)) {
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-		    nm_so_unpack(&cnx, buf, len);
-		    nm_so_end_unpacking(&cnx);
+		    nm_so_sr_request request;
 
-		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
-		    nm_so_pack(&cnx, buf, len);
-		    nm_so_end_packing(&cnx);
+		    nm_so_sr_irecv(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_rwait(interface, request);
+
+		    nm_so_sr_isend(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_swait(interface, request);
 		  }
 		}
 
@@ -181,13 +180,13 @@ main(int	  argc,
 		  TBX_GET_TICK(t1);
 
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
-		    nm_so_pack(&cnx, buf, len);
-		    nm_so_end_packing(&cnx);
+		    nm_so_sr_request request;
 
-		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-		    nm_so_unpack(&cnx, buf, len);
-		    nm_so_end_unpacking(&cnx);
+		    nm_so_sr_isend(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_swait(interface, request);
+
+		    nm_so_sr_irecv(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_rwait(interface, request);
 		  }
 
 		  TBX_GET_TICK(t2);

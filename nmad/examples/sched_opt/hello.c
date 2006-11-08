@@ -57,7 +57,8 @@ main(int	  argc,
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint64_t		 len;
-	struct nm_so_cnx        *cnx            = NULL;
+	struct nm_so_cnx         cnx;
+	nm_so_pack_interface     interface;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -66,7 +67,7 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_pack_interface_init();
+	err = nm_so_pack_interface_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
 	  printf("nm_so_pack_interface_init return err = %d\n", err);
 	  goto out;
@@ -138,11 +139,11 @@ main(int	  argc,
 
                 memset(buf, 0, len);
 
-		nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+		nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 
-		nm_so_unpack(cnx, buf, len);
+		nm_so_unpack(&cnx, buf, len);
 
-		nm_so_end_unpacking(p_core, cnx);
+		nm_so_end_unpacking(&cnx);
 
         } else {
                 /* client
@@ -157,11 +158,11 @@ main(int	  argc,
 		printf("Client !\n");
                 strcpy(buf, msg);
 
-		nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+		nm_so_begin_packing(interface, gate_id, 0, &cnx);
 
-		nm_so_pack(cnx, buf, len);
+		nm_so_pack(&cnx, buf, len);
 
-		nm_so_end_packing(p_core, cnx);
+		nm_so_end_packing(&cnx);
         }
 
         if (!r_url) {

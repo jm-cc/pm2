@@ -456,6 +456,8 @@ static int lwp_start(ma_lwp_t lwp)
 		ma_bind_on_processor(target);
 		mdebug("LWP %u bound to processor %lu\n",
 				LWP_NUMBER(lwp), target);
+	} else {
+		ma_unbind_from_processor();
 	}
 #endif
 	LOG_OUT();

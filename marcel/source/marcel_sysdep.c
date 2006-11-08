@@ -113,6 +113,55 @@ void ma_bind_on_processor(unsigned target) {
 #warning "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif
 }
+void ma_unbind_from_processor() {
+#if defined(SOLARIS_SYS)
+#warning TODO
+#elif defined(LINUX_SYS)
+#ifndef CPU_SET
+	/* no libc support, use direct system call */
+	unsigned long mask = ~0;
+
+	if (sched_setaffinity(0,sizeof(mask),&mask)<0) {
+		perror("sched_setaffinity");
+		exit(1);
+	}
+#else
+	cpu_set_t mask;
+	unsigned long target;
+
+	CPU_ZERO(&mask);
+	for (target = 0; target < marcel_nbprocessors; target++)
+		CPU_SET(target, &mask);
+#ifdef HAVE_OLD_SCHED_SETAFFINITY
+	if(sched_setaffinity(0,&mask)<0) {
+#else /* HAVE_OLD_SCHED_SETAFFINITY */
+	if(sched_setaffinity(0,sizeof(mask),&mask)<0) {
+#endif /* HAVE_OLD_SCHED_SETAFFINITY */
+		perror("sched_setaffinity");
+		exit(1);
+	}
+#endif
+#elif defined(WIN_SYS)
+#warning TODO
+#elif defined(OSF_SYS)
+	radset_t radset;
+	radsetcreate(&radset);
+	rademptyset(radset);
+	for (target = 0; target < marcel_nbprocessors; target++)
+		radaddset(radset, target);
+	if (pthread_rad_bind(pthread_self(), radset, RAD_INSIST)) {
+		perror("pthread_rad_attach");
+		exit(1);
+	}
+	radsetdestroy(&radset);
+#elif defined(AIX_SYS)
+#warning TODO
+#else
+	/* TODO: GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
+	/* IRIX: voir _DSM_MUSTRUN */
+#warning "don't know how to unbind from processors on this system"
+#endif
+}
 #endif
 
 /*

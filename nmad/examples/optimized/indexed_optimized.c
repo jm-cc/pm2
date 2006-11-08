@@ -20,8 +20,8 @@
 #include <pm2_common.h>
 #include "nm_private.h"
 
-#include "ping-optimized.h"
-#include "indexed-optimized.h"
+#include "ping_optimized.h"
+#include "indexed_optimized.h"
 
 void pingpong_datatype_indexed(struct nm_core        *p_core,
                                uint8_t                gate_id,

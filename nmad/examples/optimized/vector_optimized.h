@@ -16,7 +16,7 @@
 #ifndef VECTOR_OPTIMIZED_H
 #define VECTOR_OPTIMIZED_H
 
-#include "ping-optimized.h"
+#include "ping_optimized.h"
 
 void pingpong_datatype_vector(struct nm_core        *p_core,
                               uint8_t                gate_id,

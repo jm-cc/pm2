@@ -20,8 +20,8 @@
 #include <pm2_common.h>
 #include "nm_private.h"
 
-#include "ping-optimized.h"
-#include "vector-optimized.h"
+#include "ping_optimized.h"
+#include "vector_optimized.h"
 
 int get_vector_size(int size,
                   int blocks) {

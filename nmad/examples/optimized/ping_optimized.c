@@ -47,10 +47,10 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#include "ping-optimized.h"
-#include "indexed-optimized.h"
-#include "vector-optimized.h"
-#include "struct-optimized.h"
+#include "ping_optimized.h"
+#include "indexed_optimized.h"
+#include "vector_optimized.h"
+#include "struct_optimized.h"
 
 #if defined(CONFIG_MULTI_RAIL)
 #define CLIENT_ARGUMENTS 4

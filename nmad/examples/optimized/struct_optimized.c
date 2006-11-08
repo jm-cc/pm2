@@ -13,8 +13,8 @@
  * General Public License for more details.
  */
 
-#include "ping-optimized.h"
-#include "struct-optimized.h"
+#include "ping_optimized.h"
+#include "struct_optimized.h"
 
 void pingpong_datatype_struct(struct nm_core        *p_core,
                               uint8_t                gate_id,

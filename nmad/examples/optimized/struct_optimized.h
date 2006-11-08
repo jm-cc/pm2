@@ -16,7 +16,7 @@
 #ifndef STRUCT_OPTIMIZED_H
 #define STRUCT_OPTIMIZED_H
 
-#include "ping-optimized.h"
+#include "ping_optimized.h"
 
 typedef struct {
   float x, y;

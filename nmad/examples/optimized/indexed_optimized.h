@@ -16,7 +16,7 @@
 #ifndef INDEXED_OPTIMIZED_H
 #define INDEXED_OPTIMIZED_H
 
-#include "ping-optimized.h"
+#include "ping_optimized.h"
 
 void pingpong_datatype_indexed(struct nm_core        *p_core,
                                uint8_t                gate_id,

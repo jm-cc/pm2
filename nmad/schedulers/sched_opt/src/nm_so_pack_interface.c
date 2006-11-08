@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-/*
+
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -22,103 +22,98 @@
 
 #include <nm_so_private.h>
 
-#include "nm_so_pkt_wrap.h"
-#include "nm_so_headers.h"
-#include "nm_so_interfaces.h"
 #include "nm_so_pack_interface.h"
+#include "nm_so_raw_interface.h"
 
-struct nm_so_cnx {
+
+struct __nm_so_cnx {
   struct nm_so_interface *p_interface;
+  unsigned long gate_id;
+  unsigned long tag;
+  unsigned long first_seq_number;
 };
 
 
 int
-nm_so_pack_interface_init(struct nm_core *p_core
-			  nm_so_pack_api *p_interface);
+nm_so_pack_interface_init(struct nm_core *p_core,
+			  nm_so_pack_interface *p_interface)
 {
-  struct nm_so_interface *p_api;
-  int err;
-
-  err = nm_so_ri_init(p_core, &p_api);
-
-  return err;
+  return nm_so_ri_init(p_core, (struct nm_so_interface **)p_interface);
 }
 
 
 int
-nm_so_begin_packing(nm_so_pack_api interface,
+nm_so_begin_packing(nm_so_pack_interface interface,
 		    uint16_t gate_id, uint8_t tag,
-		    struct nm_so_cnx **cnx)
+		    struct nm_so_cnx *cnx)
 {
-  int err;
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  if(gate_id >= p_core->nb_gates) {
-    err	= -NM_EINVAL;
-    goto out;
-  }
+  _cnx->p_interface = (struct nm_so_interface *)interface;
+  _cnx->gate_id = gate_id;
+  _cnx->tag = tag;
+  _cnx->first_seq_number = nm_so_ri_get_current_send_seq(_cnx->p_interface,
+							 gate_id, tag);
 
-  if(tag >= NM_SO_MAX_TAGS) {
-    err = -NM_EINVAL;
-    goto out;
-  }
-
-  err = NM_ESUCCESS;
- out:
-  return err;
+  return NM_ESUCCESS;
 }
 
 int
-nm_so_begin_unpacking(nm_so_pack_api interface,
-		      uint16_t gate_id, uint8_t tag,
-		      struct nm_so_cnx **cnx)
+nm_so_pack(struct nm_so_cnx *cnx,
+	   void *data, uint32_t len)
 {
-  int err;
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  if(gate_id >= p_core->nb_gates) {
-    err	= -NM_EINVAL;
-    goto out;
-  }
+  return nm_so_ri_isend(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			data, len, NULL);
+}
 
-  if(tag >= NM_SO_MAX_TAGS) {
-    err = -NM_EINVAL;
-    goto out;
-  }
+int
+nm_so_end_packing(struct nm_so_cnx *cnx)
+{
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+  unsigned long seq = nm_so_ri_get_current_send_seq(_cnx->p_interface,
+						    _cnx->gate_id, _cnx->tag);
 
-  in_cnx[tag].p_gate = p_core->gate_array + gate_id;
-  in_cnx[tag].seq_number = 0;
-  *cnx = in_cnx + tag;
-
-  err = NM_ESUCCESS;
- out:
-  return err;
+  return nm_so_ri_swait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			      cnx->first_seq_number, seq-1);
 }
 
 
-int nm_so_pi_init_gate(struct nm_gate *p_gate){
-  return nm_so_raw_interface.init_gate(p_gate);
+int
+nm_so_begin_unpacking(nm_so_pack_interface interface,
+		      uint16_t gate_id, uint8_t tag,
+		      struct nm_so_cnx *cnx)
+{
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+
+  _cnx->p_interface = (struct nm_so_interface *)interface;
+  _cnx->gate_id = gate_id;
+  _cnx->tag = tag;
+  _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+							 gate_id, tag);
+
+  return NM_ESUCCESS;
 }
 
+int
+nm_so_unpack(struct nm_so_cnx *cnx,
+	     void *data, uint32_t len)
+{
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-
-int nm_so_pi_pack_success(struct nm_gate *p_gate,
-                          uint8_t tag, uint8_t seq){
-
-  return nm_so_raw_interface.pack_success(p_gate, tag, seq);
+  return nm_so_ri_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			data, len, NULL);
 }
 
+int
+nm_so_end_unpacking(struct nm_so_cnx *cnx)
 
-int nm_so_pi_unpack_success(struct nm_gate *p_gate,
-                            uint8_t tag, uint8_t seq){
-  return nm_so_raw_interface.unpack_success(p_gate, tag, seq);
+{
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+  unsigned long seq = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+						    _cnx->gate_id, _cnx->tag);
+
+  return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			      cnx->first_seq_number, seq-1);
 }
-
-nm_so_interface nm_so_pack_interface = {
-  .init = nm_so_pack_interface_init,
-  .init_gate = nm_so_pi_init_gate,
-  .pack_success = nm_so_pi_pack_success,
-  .unpack_success = nm_so_pi_unpack_success,
-
-  .priv = NULL,
-};
-
-*/

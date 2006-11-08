@@ -32,7 +32,7 @@ struct nm_so_ri_gate {
      recv operations. status[tag_id][seq] */
   volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
-  uint8_t seq_number[NM_SO_MAX_TAGS];
+  uint8_t send_seq_number[NM_SO_MAX_TAGS], recv_seq_number[NM_SO_MAX_TAGS];
 };
 
 static int nm_so_ri_init_gate(struct nm_gate *p_gate);
@@ -95,15 +95,18 @@ nm_so_ri_isend(struct nm_so_interface *p_so_interface,
   uint8_t seq;
   volatile uint8_t *p_req;
 
-  seq = p_ri_gate->seq_number[tag]++;
+  seq = p_ri_gate->send_seq_number[tag]++;
 
   p_req = &p_ri_gate->status[tag][seq];
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
-  *p_request = (intptr_t)p_req;
+  if(p_request)
+    *p_request = (intptr_t)p_req;
 
-  return p_so_interface->p_so_sched->current_strategy->pack(p_gate, tag, seq, data, len);
+  return p_so_interface->p_so_sched->current_strategy->pack(p_gate,
+							    tag, seq,
+							    data, len);
 }
 
 int
@@ -140,17 +143,19 @@ nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long seq_sup)
 {
-  /*
   struct nm_core *p_core = p_so_interface->p_core;
-  struct nm_gate *p_gate = p_so_interface->gate_array + gate_id;
-  uint8_t seq = seq_inf;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  uint8_t seq = seq_inf, limit = seq_sup;
 
   do {
 
-    nm_so_swait(p_core, p_gate, tag, seq);
+    nm_so_ri_swait(p_so_interface,
+		   (nm_so_request)&p_ri_gate->status[tag][seq]);
 
-  } while(seq++ != seq_sup);
-  */
+  } while(seq++ != limit);
+
   return NM_ESUCCESS;
 }
 
@@ -169,13 +174,14 @@ nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
   uint8_t seq;
   volatile uint8_t *p_req;
 
-  seq = p_ri_gate->seq_number[tag]++;
+  seq = p_ri_gate->recv_seq_number[tag]++;
 
   p_req = &p_ri_gate->status[tag][seq];
 
   *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
 
-  *p_request = (intptr_t)p_req;
+  if(p_request)
+    *p_request = (intptr_t)p_req;
 
   return __nm_so_unpack(p_gate, tag, seq, data, len);
 }
@@ -214,18 +220,45 @@ nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long seq_sup)
 {
-  /*
   struct nm_core *p_core = p_so_interface->p_core;
-  struct nm_gate *p_gate = p_so_interface->gate_array + gate_id;
-  uint8_t seq = seq_inf;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  uint8_t seq = seq_inf, limit = seq_sup;
 
   do {
 
-    nm_so_rwait(p_core, p_gate, tag, seq);
+    nm_so_ri_rwait(p_so_interface,
+		   (nm_so_request)&p_ri_gate->status[tag][seq]);
 
-  } while(seq++ != seq_sup);
-  */
+  } while(seq++ != limit);
+
   return NM_ESUCCESS;
+}
+
+
+unsigned long
+nm_so_ri_get_current_send_seq(struct nm_so_interface *p_so_interface,
+			      uint16_t gate_id, uint8_t tag)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+
+  return p_ri_gate->send_seq_number[tag];
+}
+
+unsigned long
+nm_so_ri_get_current_recv_seq(struct nm_so_interface *p_so_interface,
+			      uint16_t gate_id, uint8_t tag)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+
+  return p_ri_gate->recv_seq_number[tag];
 }
 
 
@@ -241,7 +274,8 @@ int nm_so_ri_init_gate(struct nm_gate *p_gate)
   if(p_ri_gate == NULL)
     return -NM_ENOMEM;
 
-  memset(p_ri_gate->seq_number, 0, sizeof(p_ri_gate->seq_number));
+  memset(p_ri_gate->send_seq_number, 0, sizeof(p_ri_gate->send_seq_number));
+  memset(p_ri_gate->recv_seq_number, 0, sizeof(p_ri_gate->recv_seq_number));
 
   p_so_gate->interface_private = p_ri_gate;
 

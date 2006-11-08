@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-
+/*
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -27,23 +27,26 @@
 #include "nm_so_interfaces.h"
 #include "nm_so_pack_interface.h"
 
-struct nm_so_cnx out_cnx[NM_SO_MAX_TAGS], in_cnx[NM_SO_MAX_TAGS];
+struct nm_so_cnx {
+  struct nm_so_interface *p_interface;
+};
 
-/* User Interface */
 
 int
-nm_so_pack_interface_init(struct nm_core *p_core)
+nm_so_pack_interface_init(struct nm_core *p_core
+			  nm_so_pack_api *p_interface);
 {
-  struct nm_so_sched *so_sched = p_core->p_sched->sch_private;
+  struct nm_so_interface *p_api;
+  int err;
 
-  so_sched->current_interface = &nm_so_pack_interface;
+  err = nm_so_ri_init(p_core, &p_api);
 
-  return nm_so_raw_interface.init(p_core);
+  return err;
 }
 
 
 int
-nm_so_begin_packing(struct nm_core *p_core,
+nm_so_begin_packing(nm_so_pack_api interface,
 		    uint16_t gate_id, uint8_t tag,
 		    struct nm_so_cnx **cnx)
 {
@@ -59,17 +62,13 @@ nm_so_begin_packing(struct nm_core *p_core,
     goto out;
   }
 
-  out_cnx[tag].p_gate = p_core->gate_array + gate_id;
-  out_cnx[tag].seq_number = 0;
-  *cnx = out_cnx + tag;
-
   err = NM_ESUCCESS;
  out:
   return err;
 }
 
 int
-nm_so_begin_unpacking(struct nm_core *p_core,
+nm_so_begin_unpacking(nm_so_pack_api interface,
 		      uint16_t gate_id, uint8_t tag,
 		      struct nm_so_cnx **cnx)
 {
@@ -94,7 +93,7 @@ nm_so_begin_unpacking(struct nm_core *p_core,
   return err;
 }
 
-/* Internal interface */
+
 int nm_so_pi_init_gate(struct nm_gate *p_gate){
   return nm_so_raw_interface.init_gate(p_gate);
 }
@@ -121,3 +120,5 @@ nm_so_interface nm_so_pack_interface = {
 
   .priv = NULL,
 };
+
+*/

@@ -29,11 +29,6 @@
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_balance.h"
 
-int
-(*__nm_so_pack)(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len);
-
 static int
 nm_so_schedule_init (struct nm_sched *p_sched)
 {
@@ -157,7 +152,6 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
     goto out;
   }
 
-
   p_so_gate->p_so_sched = p_so_sched;
 
   memset(p_so_gate->active_recv, 0, sizeof(p_so_gate->active_recv));
@@ -188,34 +182,25 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
   return err;
 }
 
-int nm_so_try_and_commit(struct nm_gate *p_gate){
+static int
+nm_so_out_schedule_gate(struct nm_gate *p_gate)
+{
   struct nm_so_gate *p_so_gate   = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
 
   return p_so_sched->current_strategy->try_and_commit(p_gate);
 }
 
-int nm_so_pack(struct nm_gate *p_gate,
-               uint8_t tag, uint8_t seq,
-               void *data, uint32_t len){
-  struct nm_so_gate *p_so_gate   = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-
-  return p_so_sched->current_strategy->pack(p_gate,
-                                            tag, seq, data, len);
-}
 
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
-  __nm_so_pack = nm_so_pack;
-
   p_ops->init			= nm_so_schedule_init;
 
   p_ops->init_trks		= nm_so_init_trks;
   p_ops->init_gate		= nm_so_init_gate;
 
-  p_ops->out_schedule_gate      = nm_so_try_and_commit;
+  p_ops->out_schedule_gate      = nm_so_out_schedule_gate;
   p_ops->out_process_success_rq = nm_so_out_process_success_rq;
   p_ops->out_process_failed_rq  = nm_so_out_process_failed_rq;
 

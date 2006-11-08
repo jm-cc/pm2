@@ -16,84 +16,53 @@
 #ifndef _NM_SO_RAW_INTERFACE_H_
 #define _NM_SO_RAW_INTERFACE_H_
 
-#include "nm_so_interfaces.h"
+struct nm_so_interface;
 
-/* WARNING!!! There's a severe limitation here: concurrent
-   begin_(un)pack/end_(un)pack session are not allowed on the same
-   tag_id, even if they use different gates... */
-
-struct nm_core;
-struct nm_gate;
-
-extern nm_so_interface nm_so_raw_interface;
+typedef intptr_t nm_so_request;
 
 extern int
-nm_so_raw_interface_init(struct nm_core *p_core);
+nm_so_ri_init(struct nm_core *p_core,
+	      struct nm_so_interface **p_so_interface);
 
 
 extern int
-_nm_so_pack(struct nm_gate *p_gate,
-            uint8_t tag, uint8_t seq,
-            void *data, uint32_t len);
+nm_so_ri_isend(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request);
+
 extern int
-nm_so_stest(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq);
+nm_so_ri_stest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
+
 extern int
-nm_so_swait(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq);
-static __inline__
-int
-__nm_so_swait_range(struct nm_core *p_core,
-		    struct nm_gate *p_gate,
-		    uint8_t tag,
-		    uint8_t seq_inf, uint8_t seq_sup)
-{
-  uint8_t seq = seq_inf;
+nm_so_ri_swait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
 
-  do {
-
-    nm_so_swait(p_core, p_gate, tag, seq);
-
-  } while(seq++ != seq_sup);
-
-  return NM_ESUCCESS;
-}
-
+extern int
+nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long seq_sup);
 
 
 extern int
-_nm_so_unpack(struct nm_gate *p_gate,
-            uint8_t tag, uint8_t seq,
-            void *data, uint32_t len);
+nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request);
 
 extern int
-nm_so_rtest(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq);
+nm_so_ri_rtest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
 
 extern int
-nm_so_rwait(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq);
+nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
 
-static __inline__
-int
-__nm_so_rwait_range(struct nm_core *p_core,
-		    struct nm_gate *p_gate,
-		    uint8_t tag,
-		    uint8_t seq_inf, uint8_t seq_sup)
-{
-  uint8_t seq = seq_inf;
+extern int
+nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long seq_sup);
 
-  do {
-
-    nm_so_rwait(p_core, p_gate, tag, seq);
-
-  } while(seq++ != seq_sup);
-
-  return NM_ESUCCESS;
-}
 
 #endif

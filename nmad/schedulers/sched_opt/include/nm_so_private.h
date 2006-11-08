@@ -33,9 +33,10 @@
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
 
 
+
 struct nm_so_sched {
   nm_so_strategy *current_strategy;
-  nm_so_interface *current_interface;
+  struct nm_so_interface_ops *current_interface;
 };
 
 struct nm_so_gate {
@@ -77,7 +78,9 @@ struct nm_so_gate {
 
 
 int
-nm_so_out_schedule_gate(struct nm_gate *p_gate);
+__nm_so_unpack(struct nm_gate *p_gate,
+	       uint8_t tag, uint8_t seq,
+	       void *data, uint32_t len);
 
 int
 nm_so_out_process_success_rq(struct nm_sched	*p_sched,

@@ -31,169 +31,243 @@ struct nm_so_ri_gate {
      bitmaps, to save space and avoid false sharing between send and
      recv operations. status[tag_id][seq] */
   volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+
+  uint8_t seq_number[NM_SO_MAX_TAGS];
 };
 
+static int nm_so_ri_init_gate(struct nm_gate *p_gate);
+static int nm_so_ri_pack_success(struct nm_gate *p_gate,
+				 uint8_t tag, uint8_t seq);
+static int nm_so_ri_unpack_success(struct nm_gate *p_gate,
+				   uint8_t tag, uint8_t seq);
 
+struct nm_so_interface_ops ri_ops = {
+  .init_gate = nm_so_ri_init_gate,
+  .pack_success = nm_so_ri_pack_success,
+  .unpack_success = nm_so_ri_unpack_success,
+};
+
+struct nm_so_interface {
+  struct nm_core *p_core;
+  struct nm_so_sched *p_so_sched;
+};
 
 /* User interface */
 
-int nm_so_raw_interface_init(struct nm_core *p_core){
-   struct nm_so_sched *so_sched = p_core->p_sched->sch_private;
-   so_sched->current_interface = &nm_so_raw_interface;
-
-   return NM_ESUCCESS;
-}
-
 extern int
-(*__nm_so_pack)(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len);
-
-
-int
-_nm_so_pack(struct nm_gate *p_gate,
-            uint8_t tag, uint8_t seq,
-            void *data, uint32_t len){
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
-  p_ri_gate->status[tag][seq] &= ~NM_SO_STATUS_SEND_COMPLETED;
-
-  return __nm_so_pack(p_gate, tag, seq, data, len);
-}
-
-int
-nm_so_stest(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq)
+nm_so_ri_init(struct nm_core *p_core,
+	      struct nm_so_interface **p_so_interface)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  struct nm_so_interface *p_so_int = NULL;
 
-  if(p_ri_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED)
-    return NM_ESUCCESS;
+#ifndef CONFIG_SCHED_OPT
+  return -NM_EINVAL;
+#endif
 
-  if(p_so_gate->active_recv[0][0] || p_so_gate->active_recv[1][0])
-    /* We also need to schedule in new packets (typically ACKs) */
-    nm_schedule(p_core);
-  else
-    /* We just need to schedule out data on this gate */
-    nm_sched_out_gate(p_gate);
+  p_so_int = TBX_MALLOC(sizeof(struct nm_so_interface));
+  if(p_so_interface == NULL)
+    return -NM_ENOMEM;
 
-  return (p_ri_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED) ?
-    NM_ESUCCESS : -NM_EAGAIN;
-}
+  /* Initialize shorcuts pointers */
+  p_so_int->p_core = p_core;
+  p_so_int->p_so_sched = p_core->p_sched->sch_private;
 
-int
-nm_so_swait(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq)
-{
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  /* Fill-in scheduler callbacks */
+  p_so_int->p_so_sched->current_interface = &ri_ops;
 
-  while(!(p_ri_gate->status[tag][seq] & NM_SO_STATUS_SEND_COMPLETED))
-
-    if(p_so_gate->active_recv[0][0] || p_so_gate->active_recv[1][0])
-      /* We also need to schedule in new packets (typically ACKs) */
-      nm_schedule(p_core);
-    else
-      /* We just need to schedule out data on this gate */
-      nm_sched_out_gate(p_gate);
+  *p_so_interface = p_so_int;
 
   return NM_ESUCCESS;
 }
 
-extern int
-__nm_so_unpack(struct nm_gate *p_gate,
-	       uint8_t tag, uint8_t seq,
-	       void *data, uint32_t len);
-
+/* Send operations */
 
 int
-_nm_so_unpack(struct nm_gate *p_gate,
-            uint8_t tag, uint8_t seq,
-            void *data, uint32_t len){
+nm_so_ri_isend(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
-  p_ri_gate->status[tag][seq] &= ~NM_SO_STATUS_RECV_COMPLETED;
+  uint8_t seq;
+  volatile uint8_t *p_req;
+
+  seq = p_ri_gate->seq_number[tag]++;
+
+  p_req = &p_ri_gate->status[tag][seq];
+
+  *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
+
+  *p_request = (intptr_t)p_req;
+
+  return p_so_interface->p_so_sched->current_strategy->pack(p_gate, tag, seq, data, len);
+}
+
+int
+nm_so_ri_stest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  volatile uint8_t *p_request = (uint8_t *)request;
+
+  if(*p_request & NM_SO_STATUS_SEND_COMPLETED)
+    return NM_ESUCCESS;
+
+  nm_schedule(p_core);
+
+  return (*p_request & NM_SO_STATUS_SEND_COMPLETED) ?
+    NM_ESUCCESS : -NM_EAGAIN;
+}
+
+int
+nm_so_ri_swait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  uint8_t *p_request = (uint8_t *)request;
+
+  while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
+    nm_schedule(p_core);
+
+  return NM_ESUCCESS;
+}
+
+int
+nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long seq_sup)
+{
+  /*
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_so_interface->gate_array + gate_id;
+  uint8_t seq = seq_inf;
+
+  do {
+
+    nm_so_swait(p_core, p_gate, tag, seq);
+
+  } while(seq++ != seq_sup);
+  */
+  return NM_ESUCCESS;
+}
+
+/* Receive operations */
+
+int
+nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  uint8_t seq;
+  volatile uint8_t *p_req;
+
+  seq = p_ri_gate->seq_number[tag]++;
+
+  p_req = &p_ri_gate->status[tag][seq];
+
+  *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+
+  *p_request = (intptr_t)p_req;
 
   return __nm_so_unpack(p_gate, tag, seq, data, len);
 }
 
 int
-nm_so_rtest(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq)
+nm_so_ri_rtest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  struct nm_core *p_core = p_so_interface->p_core;
+  uint8_t *p_request = (uint8_t *)request;
 
-  if(p_ri_gate->status[tag][seq] & NM_SO_STATUS_RECV_COMPLETED)
+  if(*p_request & NM_SO_STATUS_RECV_COMPLETED)
     return NM_ESUCCESS;
 
   nm_schedule(p_core);
 
-  return (p_ri_gate->status[tag][seq] & NM_SO_STATUS_RECV_COMPLETED) ?
+  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
 int
-nm_so_rwait(struct nm_core *p_core,
-	    struct nm_gate *p_gate,
-	    uint8_t tag, uint8_t seq)
+nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  struct nm_core *p_core = p_so_interface->p_core;
+  uint8_t *p_request = (uint8_t *)request;
 
-  while(!(p_ri_gate->status[tag][seq] & NM_SO_STATUS_RECV_COMPLETED))
+  while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
 
   return NM_ESUCCESS;
 }
 
+int
+nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long seq_sup)
+{
+  /*
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_so_interface->gate_array + gate_id;
+  uint8_t seq = seq_inf;
 
+  do {
 
-/* Internal interface */
+    nm_so_rwait(p_core, p_gate, tag, seq);
 
-int nm_so_ri_init(struct nm_core *p_core){
+  } while(seq++ != seq_sup);
+  */
   return NM_ESUCCESS;
 }
 
 
-int nm_so_ri_init_gate(struct nm_gate *p_gate){
+/* Callback functions */
+
+static
+int nm_so_ri_init_gate(struct nm_gate *p_gate)
+{
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = TBX_MALLOC(sizeof(struct nm_so_ri_gate));
+  struct nm_so_ri_gate *p_ri_gate;
+
+  p_ri_gate = TBX_MALLOC(sizeof(struct nm_so_ri_gate));
+  if(p_ri_gate == NULL)
+    return -NM_ENOMEM;
+
+  memset(p_ri_gate->seq_number, 0, sizeof(p_ri_gate->seq_number));
+
   p_so_gate->interface_private = p_ri_gate;
 
   return NM_ESUCCESS;
 }
 
-
-
+static
 int nm_so_ri_pack_success(struct nm_gate *p_gate,
-                          uint8_t tag, uint8_t seq){
+                          uint8_t tag, uint8_t seq)
+{
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+
   p_ri_gate->status[tag][seq] |= NM_SO_STATUS_SEND_COMPLETED;
 
   return NM_ESUCCESS;
 }
 
-
+static
 int nm_so_ri_unpack_success(struct nm_gate *p_gate,
-                            uint8_t tag, uint8_t seq){
+                            uint8_t tag, uint8_t seq)
+{
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+
   p_ri_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
 
   return NM_ESUCCESS;
 }
-
-nm_so_interface nm_so_raw_interface = {
-  .init = nm_so_ri_init,
-  .init_gate = nm_so_ri_init_gate,
-  .pack_success = nm_so_ri_pack_success,
-  .unpack_success = nm_so_ri_unpack_success,
-
-  .priv = NULL
-};

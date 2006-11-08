@@ -79,7 +79,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 	       void *data, uint32_t len)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+  struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
@@ -171,7 +171,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
-  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+  struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
 
@@ -282,8 +282,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int err;
 
-  //printf("Packet %p received completely (on track %d)!\n",
-  //	 p_so_pw, p_pw->p_trk->id);
+  //  printf("Packet %p received completely (on track %d)!\n",
+  //  	 p_so_pw, p_pw->p_trk->id);
 
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
@@ -302,7 +302,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 	   corresponding unpack 'completed'. */
 	volatile uint8_t *status =
 	  &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
-        nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+        struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
 	*status &= ~NM_SO_STATUS_UNPACK_HERE;
         interface->unpack_success(p_gate, tag, seq);
@@ -327,7 +327,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     int drv_id = p_pw->p_drv->id;
 
     /* This is the completion of a large message. */
-    nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+    struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
     interface->unpack_success(p_gate,
                               p_so_pw->pw.proto_id - 128,

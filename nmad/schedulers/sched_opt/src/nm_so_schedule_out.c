@@ -32,7 +32,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
-  nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+  struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
   //  printf("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //  	 ptr, len, proto_id-128, seq);
@@ -63,7 +63,8 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 				  p_so_gate);
 
   } else if(p_pw->p_trk->id == 1) {
-    nm_so_interface *interface = p_so_gate->p_so_sched->current_interface;
+    struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
+
     interface->pack_success(p_gate,
                             p_pw->proto_id - 128, p_pw->seq);
 

@@ -279,8 +279,11 @@ static void timer_interrupt(int sig)
 #endif
 	ma_irq_enter();
 #ifdef MA__TIMER
-	if (LWP_SELF->number !=-1 && LWP_SELF->number < marcel_nbvps()
-	    && (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)) {
+	if (
+#if MA__LWPS
+	    LWP_SELF->number !=-1 && LWP_SELF->number < marcel_nbvps() &&
+#endif
+	    (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)) {
 #ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...

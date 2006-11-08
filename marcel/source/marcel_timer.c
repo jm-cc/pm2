@@ -280,7 +280,7 @@ static void timer_interrupt(int sig)
 	ma_irq_enter();
 #ifdef MA__TIMER
 	if (
-#if MA__LWPS
+#ifdef MA__LWPS
 	    LWP_SELF->number !=-1 && LWP_SELF->number < marcel_nbvps() &&
 #endif
 	    (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)) {

@@ -1,19 +1,20 @@
 
 # NewMadeleine
 # Copyright (C) 2006 (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
 ifeq ($(CONFIG_SCHED_OPT), y)
-APP		:= mad_micro_sel mad_ping_sel dummy hello big_hello ping latency single-ping multi-ping 4-ping #basic basic_ping
+APP		:= 4-ping big_hello double_big_hello double_big_hello_multirail hello mad_micro_sel multi-ping ping-balanced ping-multirails ping single-ping sr_hello sr_ping dummy latency mad_ping_sel single-ping sr_latency
+
 else
 APP		:=
 endif

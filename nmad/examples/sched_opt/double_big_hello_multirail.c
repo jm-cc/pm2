@@ -20,8 +20,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <tbx.h>
-
 #include <nm_public.h>
 #include <nm_so_public.h>
 
@@ -32,28 +30,14 @@
 #  include <nm_mx_public.h>
 #  include <nm_qsnet_public.h>
 
-#define NB_PACKS 2
-#define MIN     (1 * 1024 * 1024) /* (4 * NB_PACKS) */
-#define MAX     (8 * 1024 * 1024)
-#define LOOPS   2000
+#define SIZE  64 //(64 * 1024)
 
-static __inline__
-uint32_t _next(uint32_t len)
-{
-        if(!len)
-                return 4;
-        else if(len < 32)
-                return len + 4;
-        else if(len < 1024)
-                return len + 32;
-        else
-                return len << 1;
-}
+const char *msg_beg	= "hello", *msg_end = "world!";
 
 static
 void
 usage(void) {
-        fprintf(stderr, "usage: hello [[-h <remote_hostname>] <remote url> <remote url2>]\n");
+        fprintf(stderr, "usage: hello [[-h <remote_hostname>] <remote url>]\n");
         exit(EXIT_FAILURE);
 }
 
@@ -70,8 +54,7 @@ main(int	  argc,
         uint8_t			 gate_id	=    0;
         char			*buf		= NULL;
         char			*hostname	= "localhost";
-        uint32_t		 len;
-	struct nm_so_cnx         cnx;
+        struct nm_so_cnx         cnx;
         nm_so_pack_interface     interface;
         int err;
 
@@ -83,8 +66,8 @@ main(int	  argc,
 
 	err = nm_so_pack_interface_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
-                printf("nm_so_pack_interface_init return err = %d\n", err);
-                goto out;
+	  printf("nm_so_pack_interface_init return err = %d\n", err);
+	  goto out;
 	}
 
         argc--;
@@ -132,11 +115,10 @@ main(int	  argc,
                 goto out;
         }
 
-        buf = malloc(MAX);
-	memset(buf, 0, MAX);
+        buf = malloc(SIZE+1);
+	memset(buf, 0, SIZE+1);
 
         if (!r_url1 && !r_url2) {
-                int k;
                 /* server
                  */
 
@@ -152,30 +134,17 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = MIN; len <= MAX; len = _next(len)) {
-		  unsigned long n, chunk = len / NB_PACKS;
 
-		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-		    for(n = 0; n < NB_PACKS; n++)
-		      nm_so_unpack(&cnx, buf + n * chunk, chunk);
-		    nm_so_end_unpacking(&cnx);
 
-		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
-		    for(n = 0; n < NB_PACKS; n++)
-		      nm_so_pack(&cnx, buf + n * chunk, chunk);
-		    nm_so_end_packing(&cnx);
-		  }
-		}
+
+		nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+
+		nm_so_unpack(&cnx, buf, SIZE/2);
+                nm_so_unpack(&cnx, buf + SIZE/2, SIZE/2);
+
+		nm_so_end_unpacking(&cnx);
 
         } else {
-                tbx_tick_t t1, t2;
-                int k;
-
-                if (!r_url1)
-                        usage();
-
-
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv1_id,
@@ -192,27 +161,35 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(len = MIN; len <= MAX; len = _next(len)) {
-		  unsigned long n, chunk = len / NB_PACKS;
 
-                        TBX_GET_TICK(t1);
+		{
+		  char *src, *dst;
 
-                        for(k = 0; k < LOOPS; k++) {
-			  nm_so_begin_packing(interface, gate_id, 0, &cnx);
-			  for(n = 0; n < NB_PACKS; n++)
-			    nm_so_pack(&cnx, buf + n * chunk, chunk);
-			  nm_so_end_packing(&cnx);
+		  memset(buf, ' ', SIZE);
+		  dst = buf;
+		  src = msg_beg;
+		  while(*src)
+		    *dst++ = *src++;
 
-			  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-			  for(n = 0; n < NB_PACKS; n++)
-			    nm_so_unpack(&cnx, buf + n * chunk, chunk);
-			  nm_so_end_unpacking(&cnx);
-                        }
+		  dst = buf + SIZE - strlen(msg_end);
+		  src = msg_end;
+		  while(*src)
+		    *dst++ = *src++;
 
-                        TBX_GET_TICK(t2);
-
-                        printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+		  //printf("Here's the message we're going to send : [%s]\n", buf);
 		}
+
+
+		nm_so_begin_packing(interface, gate_id, 0, &cnx);
+
+		nm_so_pack(&cnx, buf, SIZE/2);
+                nm_so_pack(&cnx, buf + SIZE/2, SIZE/2);
+
+		nm_so_end_packing(&cnx);
+        }
+
+        if (!r_url1 && !r_url2) {
+                printf("buffer contents: [%s]\n", buf);
         }
 
  out:

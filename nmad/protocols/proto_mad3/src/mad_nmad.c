@@ -59,7 +59,7 @@
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_basic_public.h>
 #elif defined CONFIG_SCHED_OPT
-#  include <nm_so_pack_interface.h>
+#  include <nm_so_raw_interface.h>
 #endif
 
 #include "nm_mad3_private.h"
@@ -103,7 +103,9 @@ typedef struct s_mad_nmad_channel_specific {
 typedef struct s_mad_nmad_connection_specific {
 #ifdef CONFIG_SCHED_OPT
         struct s_mad_nmad_connection_specific	*master_cnx;
-        struct nm_gate		*p_gate;
+
+        nm_so_request		 in_reqs[256];
+
         uint8_t			 in_next_seq;
         uint8_t			 in_wait_seq;
         uint8_t			 in_flow_ctrl;
@@ -111,6 +113,7 @@ typedef struct s_mad_nmad_connection_specific {
         p_tbx_slist_t		 in_deferred_slist;
 #  endif /* MAD_NMAD_SO_DEBUG */
 
+        nm_so_request		 out_reqs[256];
         uint8_t			 out_next_seq;
         uint8_t			 out_wait_seq;
         uint8_t			 out_flow_ctrl;
@@ -197,6 +200,8 @@ mad_nmad_receive_sub_buffer_group(p_mad_link_t,
 static struct nm_core	*p_core		= NULL;
 #if defined CONFIG_SCHED_MINI_ALT
 static struct nm_proto	*p_proto	= NULL;
+#elif defined CONFIG_SCHED_OPT
+static struct nm_so_interface *p_so_if	= NULL;
 #endif
 
 /*
@@ -228,9 +233,9 @@ nm_mad3_init_core(int	 *argc,
                 DISP("nm_core_init returned err = %d\n", err);
                 TBX_FAILURE("nmad error");
         }
-	err = nm_so_pack_interface_init();
+	err = nm_so_ri_init(p_core, &p_so_if);
 	if(err != NM_ESUCCESS) {
-                DISP("nm_so_pack_interface_init return err = %d\n", err);
+                DISP("nm_so_ri_init return err = %d\n", err);
                 TBX_FAILURE("nmad error");
 	}
 #endif
@@ -600,11 +605,6 @@ mad_nmad_connection_init(p_mad_connection_t in,
                         printf("nm_core_gate_init returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
                 }
-
-#ifdef CONFIG_SCHED_OPT
-                cs->p_gate	= p_core->gate_array + cs->gate_id;
-#endif /* CONFIG_SCHED_OPT */
-
 
                 tbx_darray_expand_and_set(as->cnx_darray, in->remote_rank,
                                           cs);
@@ -1171,8 +1171,13 @@ mad_nmad_end_packing(p_mad_connection_t out) {
   chs	= out->channel->specific;
 
   if (cs->out_wait_seq != cs->out_next_seq) {
-          __nm_so_swait_range(p_core, cs->p_gate, chs->tag_id,
-                              cs->out_wait_seq, cs->out_next_seq-1);
+          uint8_t i;
+          for (i = cs->out_wait_seq; i != cs->out_next_seq; i++) {
+#  ifdef MAD_NMAD_SO_DEBUG
+                  DISP("end wait send request[%d]: %d", i, cs->out_reqs[i]);
+#  endif /* MAD_NMAD_SO_DEBUG */
+                  nm_so_ri_swait(p_so_if, cs->out_reqs[i]);
+          }
           cs->out_wait_seq	= cs->out_next_seq;
           cs->out_flow_ctrl	= 0;
   }
@@ -1197,8 +1202,14 @@ mad_nmad_end_unpacking(p_mad_connection_t in) {
   chs	= in->channel->specific;
 
   if (cs->in_wait_seq != cs->in_next_seq) {
-          __nm_so_rwait_range(p_core, cs->p_gate, chs->tag_id,
-                              cs->in_wait_seq, cs->in_next_seq-1);
+          uint8_t i;
+
+          for (i = cs->in_wait_seq; i != cs->in_next_seq; i++) {
+#  ifdef MAD_NMAD_SO_DEBUG
+                  DISP("end wait recv request[%d]: %d", i, cs->in_reqs[i]);
+#  endif /* MAD_NMAD_SO_DEBUG */
+                  nm_so_ri_rwait(p_so_if, cs->in_reqs[i]);
+          }
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
 #  ifdef MAD_NMAD_SO_DEBUG
@@ -1236,18 +1247,25 @@ mad_nmad_pack(p_mad_connection_t   out,
        cs->out_next_seq, chs->tag_id, len);
   tbx_dump(ptr, len);
 #  endif /* MAD_NMAD_SO_DEBUG */
-  __nm_so_pack(cs->p_gate, chs->tag_id, cs->out_next_seq, ptr, len);
+  nm_so_ri_isend(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &cs->out_reqs[cs->out_next_seq]);
+
+#  ifdef MAD_NMAD_SO_DEBUG
+  DISP("send request[%d]: %d", cs->out_next_seq, cs->out_reqs[cs->out_next_seq]);
+#  endif /* MAD_NMAD_SO_DEBUG */
 
   cs->out_next_seq++;
   cs->out_flow_ctrl++;
 
   if (cs->out_flow_ctrl == 255) {
-          __nm_so_swait_range(p_core, cs->p_gate, chs->tag_id,
-                              cs->out_wait_seq, cs->out_next_seq-1);
+          uint8_t i;
+          for (i = cs->out_wait_seq; i != cs->out_next_seq; i++) {
+                  nm_so_ri_swait(p_so_if, cs->out_reqs[i]);
+          }
+
           cs->out_wait_seq	= cs->out_next_seq;
           cs->out_flow_ctrl	= 0;
   } else if (send_mode == mad_send_SAFER) {
-          nm_so_swait(p_core, cs->p_gate, chs->tag_id, cs->out_next_seq-1);
+          nm_so_ri_swait(p_so_if, cs->out_reqs[cs->out_next_seq-1]);
           if (cs->out_flow_ctrl == 1) {
                             cs->out_wait_seq	= cs->out_next_seq;
                             cs->out_flow_ctrl	= 0;
@@ -1272,14 +1290,23 @@ mad_nmad_unpack(p_mad_connection_t   in,
   cs	= in->specific;
   chs	= in->channel->specific;
 
-  __nm_so_unpack(cs->p_gate, chs->tag_id, cs->in_next_seq, ptr, len);
+  nm_so_ri_irecv(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &cs->in_reqs[cs->in_next_seq]);
+
+#  ifdef MAD_NMAD_SO_DEBUG
+  DISP("recv request[%d]: %d", cs->in_next_seq, cs->in_reqs[cs->in_next_seq]);
+#  endif /* MAD_NMAD_SO_DEBUG */
 
   cs->in_next_seq++;
   cs->in_flow_ctrl++;
 
   if (cs->in_flow_ctrl == 255) {
-          __nm_so_rwait_range(p_core, cs->p_gate, chs->tag_id,
-                              cs->in_wait_seq, cs->in_next_seq-1);
+           uint8_t i;
+          for (i = cs->in_wait_seq; i != cs->in_next_seq; i++) {
+#  ifdef MAD_NMAD_SO_DEBUG
+                  DISP("fc wait recv request[%d]: %d", i, cs->in_reqs[i]);
+#  endif /* MAD_NMAD_SO_DEBUG */
+                  nm_so_ri_rwait(p_so_if, cs->in_reqs[i]);
+          }
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
 #  ifdef MAD_NMAD_SO_DEBUG
@@ -1289,7 +1316,10 @@ mad_nmad_unpack(p_mad_connection_t   in,
           tbx_dump(ptr, len);
 #  endif /* MAD_NMAD_SO_DEBUG */
   } else if (receive_mode == mad_receive_EXPRESS) {
-          nm_so_rwait(p_core, cs->p_gate, chs->tag_id, cs->in_next_seq-1);
+#  ifdef MAD_NMAD_SO_DEBUG
+          DISP("express wait recv request[%d]: %d", cs->in_next_seq-1, cs->in_reqs[cs->in_next_seq-1]);
+#  endif /* MAD_NMAD_SO_DEBUG */
+          nm_so_ri_rwait(p_so_if, cs->in_reqs[cs->in_next_seq-1]);
           if (cs->in_flow_ctrl == 1) {
                             cs->in_wait_seq	= cs->in_next_seq;
                             cs->in_flow_ctrl	= 0;

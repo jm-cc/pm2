@@ -60,7 +60,8 @@ main(int	  argc,
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint32_t		 len;
-	struct nm_so_cnx        *cnx            = NULL;
+	struct nm_so_cnx         cnx;
+        nm_so_pack_interface     interface;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -69,7 +70,7 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_pack_interface_init();
+	err = nm_so_pack_interface_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
 	  printf("nm_so_pack_interface_init return err = %d\n", err);
 	  goto out;
@@ -141,19 +142,19 @@ main(int	  argc,
 		for(len = 16; len <= MAX; len *= 2) {
 		  for(k = 0; k < LOOPS; k++) {
 
-		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
-		    nm_so_unpack(cnx, buf, len/4);
-		    nm_so_unpack(cnx, buf+len/4, len/4);
-		    nm_so_unpack(cnx, buf+len/2, len/4);
-		    nm_so_unpack(cnx, buf+(len/4)*3, len/4);
-		    nm_so_end_unpacking(p_core, cnx);
+		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+		    nm_so_unpack(&cnx, buf, len/4);
+		    nm_so_unpack(&cnx, buf+len/4, len/4);
+		    nm_so_unpack(&cnx, buf+len/2, len/4);
+		    nm_so_unpack(&cnx, buf+(len/4)*3, len/4);
+		    nm_so_end_unpacking(&cnx);
 
-		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
-		    nm_so_pack(cnx, buf, len/4);
-		    nm_so_pack(cnx, buf+len/4, len/4);
-		    nm_so_pack(cnx, buf+len/2, len/4);
-		    nm_so_pack(cnx, buf+(len/4)*3, len/4);
-		    nm_so_end_packing(p_core, cnx);
+		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
+		    nm_so_pack(&cnx, buf, len/4);
+		    nm_so_pack(&cnx, buf+len/4, len/4);
+		    nm_so_pack(&cnx, buf+len/2, len/4);
+		    nm_so_pack(&cnx, buf+(len/4)*3, len/4);
+		    nm_so_end_packing(&cnx);
 
 		  }
 		}
@@ -175,19 +176,19 @@ main(int	  argc,
 		  TBX_GET_TICK(t1);
 
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
-		    nm_so_pack(cnx, buf, len/4);
-		    nm_so_pack(cnx, buf+len/4, len/4);
-		    nm_so_pack(cnx, buf+len/2, len/4);
-		    nm_so_pack(cnx, buf+(len/4)*3, len/4);
-		    nm_so_end_packing(p_core, cnx);
+		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
+		    nm_so_pack(&cnx, buf, len/4);
+		    nm_so_pack(&cnx, buf+len/4, len/4);
+		    nm_so_pack(&cnx, buf+len/2, len/4);
+		    nm_so_pack(&cnx, buf+(len/4)*3, len/4);
+		    nm_so_end_packing(&cnx);
 
-		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
-		    nm_so_unpack(cnx, buf, len/4);
-		    nm_so_unpack(cnx, buf+len/4, len/4);
-		    nm_so_unpack(cnx, buf+len/2, len/4);
-		    nm_so_unpack(cnx, buf+(len/4)*3, len/4);
-		    nm_so_end_unpacking(p_core, cnx);
+		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+		    nm_so_unpack(&cnx, buf, len/4);
+		    nm_so_unpack(&cnx, buf+len/4, len/4);
+		    nm_so_unpack(&cnx, buf+len/2, len/4);
+		    nm_so_unpack(&cnx, buf+(len/4)*3, len/4);
+		    nm_so_end_unpacking(&cnx);
 		  }
 
 		  TBX_GET_TICK(t2);

@@ -93,7 +93,7 @@
 #define ma_irq_exit()							\
 do {									\
 		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;			\
-		if (!ma_in_interrupt() && ma_softirq_pending(LWP_SELF)) \
+		if (!ma_in_interrupt() && ma_local_softirq_pending()) \
 			ma_do_softirq();					\
 		ma_preempt_enable_no_resched();				\
 } while (0)

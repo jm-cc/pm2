@@ -55,6 +55,8 @@ struct nm_so_gate {
      recv operations. status[tag_id][seq] */
   volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
+  uint8_t send_seq_number[NM_SO_MAX_TAGS], recv_seq_number[NM_SO_MAX_TAGS];
+
   union recv_info {
     struct {
       void *data;

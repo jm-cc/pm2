@@ -32,7 +32,6 @@ struct nm_so_ri_gate {
      recv operations. status[tag_id][seq] */
   volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
-  uint8_t send_seq_number[NM_SO_MAX_TAGS], recv_seq_number[NM_SO_MAX_TAGS];
 };
 
 static int nm_so_ri_init_gate(struct nm_gate *p_gate);
@@ -95,7 +94,7 @@ nm_so_ri_isend(struct nm_so_interface *p_so_interface,
   uint8_t seq;
   volatile uint8_t *p_req;
 
-  seq = p_ri_gate->send_seq_number[tag]++;
+  seq = p_so_gate->send_seq_number[tag]++;
 
   p_req = &p_ri_gate->status[tag][seq];
 
@@ -174,7 +173,7 @@ nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
   uint8_t seq;
   volatile uint8_t *p_req;
 
-  seq = p_ri_gate->recv_seq_number[tag]++;
+  seq = p_so_gate->recv_seq_number[tag]++;
 
   p_req = &p_ri_gate->status[tag][seq];
 
@@ -244,9 +243,8 @@ nm_so_ri_get_current_send_seq(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
 
-  return p_ri_gate->send_seq_number[tag];
+  return p_so_gate->send_seq_number[tag];
 }
 
 unsigned long
@@ -256,9 +254,8 @@ nm_so_ri_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
 
-  return p_ri_gate->recv_seq_number[tag];
+  return p_so_gate->recv_seq_number[tag];
 }
 
 
@@ -273,9 +270,6 @@ int nm_so_ri_init_gate(struct nm_gate *p_gate)
   p_ri_gate = TBX_MALLOC(sizeof(struct nm_so_ri_gate));
   if(p_ri_gate == NULL)
     return -NM_ENOMEM;
-
-  memset(p_ri_gate->send_seq_number, 0, sizeof(p_ri_gate->send_seq_number));
-  memset(p_ri_gate->recv_seq_number, 0, sizeof(p_ri_gate->recv_seq_number));
 
   p_so_gate->interface_private = p_ri_gate;
 

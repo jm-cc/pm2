@@ -1,0 +1,30 @@
+messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
+
+Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel enlever ces derniers
+
+pmarcel_spin_* en mono.
+
+utiliser doxygen ou autre pour générer des pages de man
+
+Une interface fortran.
+
+Attributs de threads ou de bulles: une fonction marcel_(bubble_)?attr_read(const char *filename, marcel_attr_t *attr);
+
+Batterie de benchs lancés régulièrement, tirer des graphes => trouver facilement _le_ commit qui a fait perdre 1µs :)
+
+pmarcel_create() avec PTHREAD_SCOPE_SYSTEM: les paramètres du lwp supplémentaire devraient être ceux d'attr.
+
+Réécrire la tambouille split de Vince pour générer un bête marcel.h et marcel-internal.h
+
+changement de contexte/pile: dans asm-generic, utiliser make context & co comme implémentation par défaut.
+
+Compiler avec g++ pour les cas (rares) où c'est le seul moyen de linker avec du code c++. Pb: il y a plein de casts implicites en void* partout, des opérations arithmétiques sur void*...
+
+Supporter le cpu hotplug, pour des systèmes qui nous préviendrait de la préemption, ou avec qui on pourrait négocier le nombre de LWPs.
+
+RCU lists
+
+Utiliser /dev/rtc sous linux pour avoir une fréquence de préemption plus grande que par défaut (~1KHz).
+
+Windows-smp:
+Accepter une pile fournie par l'os pour les kthread.

@@ -321,6 +321,29 @@ void marcel_sem_V(marcel_sem_t *s)
 	LOG_OUT();
 }
 
+int marcel_sem_try_V(marcel_sem_t *s)
+{
+	semcell *c;
+
+	LOG_IN();
+	LOG_PTR("semaphore", s);
+
+	ma_spin_lock_bh(&s->lock);
+
+	if (++(s->value) <= 0) {
+		c = s->first;
+		s->first = c->next;
+		ma_spin_unlock_bh(&s->lock);
+		c->blocked = 0;
+		ma_smp_wmb();
+		ma_wake_up_thread(c->task);
+	} else {
+		ma_spin_unlock_bh(&s->lock);
+	}
+
+	LOG_RETURN(1);
+}
+
 DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
 {
 	// TODO: vérifier tout overflow de value

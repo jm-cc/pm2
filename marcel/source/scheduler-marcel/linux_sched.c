@@ -227,7 +227,7 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
 
                PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
-		marcel_kthread_kill(lwp->pid, MARCEL_RESCHED_SIGNAL);
+		MA_LWP_RESCHED(lwp);
 	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, LWP_NUMBER(lwp));
 #endif
 out:
@@ -286,15 +286,13 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
  *
  * returns failure only if the task is already active.
  */
-int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
+int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_holder_t *h)
 {
 	int success = 0;
 	long old_state;
-	ma_holder_t *h;
 	ma_runqueue_t *rq;
 
-repeat_lock_task:
-	h = ma_task_holder_lock_softirq(p);
+//repeat_lock_task:
 	old_state = p->sched.state;
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
@@ -305,6 +303,10 @@ repeat_lock_task:
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
 			 */
+#ifdef PM2_DEV
+#warning TODO
+#endif
+			#if 0
 			if (tbx_unlikely(sync && /*!MA_TASK_IS_RUNNING(p) inutile &&*/
 				(ma_task_lwp(p) != LWP_SELF)
 				&& lwp_isset(LWP_NUMBER(LWP_SELF),
@@ -321,6 +323,7 @@ repeat_lock_task:
 				ma_task_holder_unlock_softirq(h);
 				goto repeat_lock_task;
 			}
+			#endif
 			if (old_state == MA_TASK_UNINTERRUPTIBLE){
 				h->nr_uninterruptible--;
 				/*
@@ -351,8 +354,16 @@ repeat_lock_task:
 			success = 1;
 		}
 	}
-	ma_task_holder_unlock_softirq(h);
 
+	return success;
+}
+
+int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
+{
+	int success;
+	ma_holder_t *h = ma_task_holder_lock_softirq(p);
+	success = __ma_try_to_wake_up(p, state, sync, h);
+	ma_task_holder_unlock_softirq(h);
 	return success;
 }
 
@@ -365,6 +376,20 @@ TBX_EXTERN int fastcall ma_wake_up_thread(marcel_task_t * p)
 int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 {
 	return ma_try_to_wake_up(p, state, 0);
+}
+
+int ma_wake_up_async(marcel_task_t * p)
+{
+	int success;
+	ma_holder_t *h = ma_entity_holder_lock_softirq_async(&p->sched.internal.entity);
+	if (!h) {
+		ma_task_holder_unlock_softirq(h);
+		return 0;
+	}
+	success = __ma_try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
+				MA_TASK_UNINTERRUPTIBLE, 1, h);
+	ma_task_holder_unlock_softirq(h);
+	return success;
 }
 
 /*

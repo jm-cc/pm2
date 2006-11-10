@@ -274,6 +274,27 @@ static inline ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e) {
 	return ma_entity_holder_lock(e);
 }
 
+static inline ma_holder_t *ma_entity_holder_lock_softirq_async(marcel_entity_t *e) {
+	ma_holder_t *h, *h2;
+	ma_local_bh_disable();
+	ma_preempt_disable();
+	h = ma_entity_some_holder(e);
+again:
+	if (!h)
+		return NULL;
+	sched_debug("ma_entity_holder_locking_async(%p)\n",h);
+	if (tbx_unlikely(!ma_holder_trylock(h)))
+		return NULL;
+	if (tbx_unlikely(h != (h2 = ma_entity_some_holder(e)))) {
+		sched_debug("ma_entity_holder_unlocking_async(%p)\n",h);
+		ma_holder_rawunlock(h);
+		h = h2;
+		goto again;
+	}
+	sched_debug("ma_entity_holder_locked_async(%p)\n",h);
+	return h;
+}
+
 #section marcel_functions
 static __tbx_inline__ ma_holder_t *ma_this_holder_lock();
 #section marcel_inline

@@ -74,3 +74,6 @@ static __tbx_inline__ unsigned int preemption_enabled(void)
 {
 	return ma_atomic_read(&__ma_preemption_disabled) == 0;
 }
+
+#section marcel_macros
+#define MA_LWP_RESCHED(lwp) marcel_kthread_kill((lwp)->pid, MARCEL_RESCHED_SIGNAL)

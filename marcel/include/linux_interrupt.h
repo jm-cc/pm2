@@ -73,6 +73,12 @@ extern TBX_EXTERN void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq(unsigned int nr));
 
+#depend "sys/marcel_lwp.h[marcel_structures]"
+#depend "marcel_topology.h[marcel_variables]"
+static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) {
+	ma_set_bit(nr, &ma_softirq_pending_vp(vp));
+}
+
 #ifndef ma_invoke_softirq
 #define ma_invoke_softirq() ma_do_softirq()
 #endif

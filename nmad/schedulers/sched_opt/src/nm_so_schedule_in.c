@@ -174,13 +174,12 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
 
   //    printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //  	 ptr, len, tag, seq);
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
-    struct nm_gate *p_gate = p_so_pw->pw.p_gate;
-
     /* Cool! We already have a waiting unpack for this packet */
 
     if(len)
@@ -204,6 +203,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
 
     *status |= NM_SO_STATUS_PACKET_HERE;
+    interface->unexpected(p_gate, tag, seq);
 
     return NM_SO_HEADER_MARK_UNREAD;
   }

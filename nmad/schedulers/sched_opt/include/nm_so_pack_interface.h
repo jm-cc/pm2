@@ -49,6 +49,12 @@ nm_so_begin_unpacking(nm_so_pack_interface interface,
 		      struct nm_so_cnx *cnx);
 
 int
+nm_so_begin_unpacking_any_src(nm_so_pack_interface interface,
+                              uint8_t tag,
+                              struct nm_so_cnx *cnx);
+
+
+int
 nm_so_unpack(struct nm_so_cnx *cnx,
 	     void *data, uint32_t len);
 

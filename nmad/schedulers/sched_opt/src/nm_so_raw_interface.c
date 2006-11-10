@@ -22,6 +22,7 @@
 #include <nm_public.h>
 #include "nm_so_private.h"
 #include "nm_so_raw_interface.h"
+#include "nm_so_raw_interface_private.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
@@ -36,24 +37,20 @@ struct nm_so_ri_gate {
 
 static int nm_so_ri_init_gate(struct nm_gate *p_gate);
 static int nm_so_ri_pack_success(struct nm_gate *p_gate,
-				 uint8_t tag, uint8_t seq);
+                                 uint8_t tag, uint8_t seq);
 static int nm_so_ri_unpack_success(struct nm_gate *p_gate,
-				   uint8_t tag, uint8_t seq);
+                                   uint8_t tag, uint8_t seq);
 
 struct nm_so_interface_ops ri_ops = {
   .init_gate = nm_so_ri_init_gate,
   .pack_success = nm_so_ri_pack_success,
   .unpack_success = nm_so_ri_unpack_success,
-};
-
-struct nm_so_interface {
-  struct nm_core *p_core;
-  struct nm_so_sched *p_so_sched;
+  .unexpected = NULL,
 };
 
 /* User interface */
 
-extern int
+int
 nm_so_ri_init(struct nm_core *p_core,
 	      struct nm_so_interface **p_so_interface)
 {
@@ -260,7 +257,6 @@ nm_so_ri_get_current_recv_seq(struct nm_so_interface *p_so_interface,
 
 
 /* Callback functions */
-
 static
 int nm_so_ri_init_gate(struct nm_gate *p_gate)
 {

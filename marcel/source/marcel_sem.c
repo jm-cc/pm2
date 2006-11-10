@@ -328,18 +328,23 @@ int marcel_sem_try_V(marcel_sem_t *s)
 	LOG_IN();
 	LOG_PTR("semaphore", s);
 
-	ma_spin_lock_bh(&s->lock);
+	if (!(ma_spin_trylock_bh(&s->lock)))
+		LOG_RETURN(0);
 
-	if (++(s->value) <= 0) {
+	if (s->value < 0) {
 		c = s->first;
-		s->first = c->next;
-		ma_spin_unlock_bh(&s->lock);
+		if (!(ma_wake_up_thread_async(c->task))) {
+			ma_spin_unlock_bh(&s->lock);
+			LOG_RETURN(0);
+		}
+		/* This is a bit late, but since we hold the lock, the woken up
+		 * thread will spin waiting for us */
 		c->blocked = 0;
-		ma_smp_wmb();
-		ma_wake_up_thread(c->task);
-	} else {
-		ma_spin_unlock_bh(&s->lock);
+		s->first = c->next;
 	}
+
+	s->value++;
+	ma_spin_unlock_bh(&s->lock);
 
 	LOG_RETURN(1);
 }

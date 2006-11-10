@@ -333,6 +333,7 @@ void ma_yield(void);
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
 extern TBX_EXTERN int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
+extern int FASTCALL(ma_wake_up_thread_async(marcel_task_t * tsk));
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else

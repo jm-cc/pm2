@@ -378,7 +378,7 @@ int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 	return ma_try_to_wake_up(p, state, 0);
 }
 
-int ma_wake_up_async(marcel_task_t * p)
+int fastcall ma_wake_up_thread_async(marcel_task_t * p)
 {
 	int success;
 	ma_holder_t *h = ma_entity_holder_lock_softirq_async(&p->sched.internal.entity);

@@ -28,10 +28,8 @@ typedef int (*nm_so_interface_pack_success)(struct nm_gate *p_gate,
 typedef int (*nm_so_interface_unpack_success)(struct nm_gate *p_gate,
 					      uint8_t tag, uint8_t seq);
 
-typedef int (*nm_so_interface_any_source)(struct nm_gate *p_gate, uint8_t tag);
-
 typedef int (*nm_so_interface_unexpected)(struct nm_gate *p_gate,
-                                           uint8_t tag, uint8_t seq);
+                                          uint8_t tag, uint8_t seq);
 
 struct nm_so_interface_ops {
   nm_so_interface_init_gate init_gate;

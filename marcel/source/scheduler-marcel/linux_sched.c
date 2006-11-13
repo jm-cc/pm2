@@ -528,8 +528,11 @@ static void finish_task_switch(marcel_task_t *prev)
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
 		}
-		if (prev->sched.state == MA_TASK_DEAD)
+		if (prev->sched.state == MA_TASK_DEAD) {
 			PROF_THREAD_DEATH(prev);
+			if (prev->detached && !prev->static_stack)
+				marcel_tls_slot_free(marcel_stackbase(prev));
+		}
 	} else {
 		MTRACE("still running",prev);
 		ma_enqueue_task(prev,prevh);

@@ -25,10 +25,6 @@
 #endif
 #include <errno.h>
 
-inline static 
-void marcel_postexit_internal(marcel_t cur,
-			      marcel_postexit_func_t func, any_t arg);
-
 /****************************************************************/
 /****************************************************************
  *                Création des threads
@@ -257,11 +253,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 	new_task->stack_base = stack_base;
 	new_task->static_stack = static_stack;
 
-	if (!attr->__stackaddr_set) {
-		marcel_postexit_internal(new_task, marcel_tls_slot_free,
-		    marcel_stackbase(new_task));
-	}
-
 	new_task->father = cur;
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
 		/* Le thread devra attendre marcel_run */
@@ -405,22 +396,17 @@ MA_LWP_NOTIFIER_CALL_ONLINE(postexit, MA_INIT_THREADS_THREAD);
 /****************************************************************
  *                Enregistrement des fonctions de terminaison
  */
-inline static 
-void marcel_postexit_internal(marcel_t __restrict cur,
-			      marcel_postexit_func_t func, any_t __restrict arg)
+void marcel_postexit(marcel_postexit_func_t func, any_t arg)
 {
+	marcel_t cur;
 	LOG_IN();
+	cur = marcel_self();
 	if (cur->postexit_func) {
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 	cur->postexit_func=func;
 	cur->postexit_arg=arg;
 	LOG_OUT();
-}
-
-void marcel_postexit(marcel_postexit_func_t func, any_t arg)
-{
-	return marcel_postexit_internal(marcel_self(), func, arg);
 }
 
 void marcel_atexit(marcel_atexit_func_t func, any_t arg)
@@ -629,10 +615,6 @@ void marcel_print_jmp_buf(char *name, jmp_buf buf)
 //PROF_NAME(newborn_thread)
 //PROF_NAME(on_security_stack)
 
-inline static 
-void marcel_postexit_internal(marcel_t __restrict cur,
-			      marcel_postexit_func_t func, any_t __restrict arg);
-
 /************************join****************************/
 static int TBX_UNUSED check_join(marcel_t tid, any_t *status)
 {
@@ -669,14 +651,13 @@ DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 	pid->detached = 1;
 
 	/* Exécution de la fonction post_mortem */
-	(*pid->postexit_func) (pid->postexit_arg);
-	/*       {  */
-	/*      DEFINE_CUR_LWP(register, =, GET_LWP(pid)); */
-	/*         marcel_sem_P(&cur_lwp->postexit_space); */
-	/*              cur_lwp->postexit_func=pid->postexit_func; */
-	/*              cur_lwp->postexit_arg=pid->postexit_arg; */
-	/*              marcel_sem_V(&cur_lwp->postexit_thread); */
-	/*       } */
+	if (*pid->postexit_func)
+		(*pid->postexit_func) (pid->postexit_arg);
+
+	/* Et libération de la pile */
+	if (!pid->static_stack)
+		marcel_tls_slot_free(marcel_stackbase(pid));
+
 	LOG_RETURN(0);
 })
 

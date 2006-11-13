@@ -217,18 +217,7 @@ void *marcel_tls_slot_alloc(void)
 	return ma_obj_alloc(marcel_tls_slot_allocator);
 }
 
-#undef marcel_tls_slot_free
-void marcel_tls_slot_free(void *addr)
-{
-	ma_obj_free(marcel_tls_slot_allocator, addr);
-}
 #endif
-
-#undef marcel_slot_free
-void marcel_slot_free(void *addr)
-{
-	ma_obj_free(marcel_mapped_slot_allocator, addr);
-}
 
 static void __marcel_init marcel_slot_init(void)
 {

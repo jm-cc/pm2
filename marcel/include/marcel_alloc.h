@@ -37,7 +37,6 @@ void marcel_slot_exit(void);
 #else
 #  define marcel_tls_slot_alloc marcel_slot_alloc
 #  define marcel_tls_slot_free marcel_slot_free
-#  define marcel_tls_slot_free marcel_slot_free
 #endif
 #define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
 #define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)

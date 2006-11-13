@@ -48,7 +48,7 @@ void pingpong_datatype_struct(nm_so_pack_interface interface,
     }
     TBX_GET_TICK(t2);
 
-    printf("%d\t%d\t%d\t%lf\n", MPIR_STRUCT, number_of_elements, 3, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
+    printf("%s\t%s\t%d\t%d\t%lf\n", "struct", STRATEGY, number_of_elements, 3, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
     PRINTF("Received values: ");
     for(i=0 ; i<number_of_elements ; i++) PRINTF("%3.2f %3.2f %3d %3.2f\n", r_buffer[i].x, r_buffer[i].y, r_buffer[i].c, r_buffer[i].z);
   }

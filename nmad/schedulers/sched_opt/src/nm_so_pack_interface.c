@@ -189,7 +189,6 @@ nm_so_unpack(struct nm_so_cnx *cnx,
 
 int
 nm_so_end_unpacking(struct nm_so_cnx *cnx)
-
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
@@ -201,3 +200,15 @@ nm_so_end_unpacking(struct nm_so_cnx *cnx)
   return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			      cnx->first_seq_number, seq-1);
 }
+
+int
+nm_so_rwait(struct nm_so_cnx *cnx)
+{
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+
+  unsigned long seq = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+						    _cnx->gate_id, _cnx->tag);
+
+  return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag, cnx->first_seq_number, seq-1);
+}
+

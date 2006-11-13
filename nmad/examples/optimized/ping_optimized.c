@@ -61,6 +61,7 @@
 int
 main(int	  argc,
      char	**argv) {
+  nm_so_pack_interface interface;
   struct nm_core *p_core   = NULL;
   char		 *r_url	   = NULL;
   char		 *l_url	   = NULL;
@@ -90,7 +91,7 @@ main(int	  argc,
     printf("nm_core_init returned err = %d\n", err);
     goto out;
   }
-  err = nm_so_pack_interface_init();
+  err = nm_so_pack_interface_init(p_core, &interface);
   if(err != NM_ESUCCESS) {
     printf("nm_so_pack_interface_init return err = %d\n", err);
     goto out;
@@ -188,7 +189,7 @@ main(int	  argc,
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
         for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
           if (number_of_blocks > size) continue;
-          pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 1);
+          pingpong_datatype_indexed(interface, gate_id, size, number_of_blocks, 1);
         }
       }
     }
@@ -197,14 +198,14 @@ main(int	  argc,
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
         for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
           if (number_of_blocks > size) continue;
-          pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 1);
+          pingpong_datatype_vector(interface, gate_id, size, number_of_blocks, 1);
         }
       }
     }
 
     if (!strcmp(datatype, "struct")) {
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
-        pingpong_datatype_struct(p_core, gate_id, size, 1);
+        pingpong_datatype_struct(interface, gate_id, size, 1);
       }
     }
   }
@@ -214,7 +215,7 @@ main(int	  argc,
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
         for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
           if (number_of_blocks > size) continue;
-          pingpong_datatype_indexed(p_core, gate_id, size, number_of_blocks, 0);
+          pingpong_datatype_indexed(interface, gate_id, size, number_of_blocks, 0);
         }
       }
     }
@@ -223,14 +224,14 @@ main(int	  argc,
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
         for(number_of_blocks = MIN_BLOCKS ; number_of_blocks <= MAX_BLOCKS ; number_of_blocks++) {
           if (number_of_blocks > size) continue;
-          pingpong_datatype_vector(p_core, gate_id, size, number_of_blocks, 0);
+          pingpong_datatype_vector(interface, gate_id, size, number_of_blocks, 0);
         }
       }
     }
 
     if (!strcmp(datatype, "struct")) {
       for(size=MIN_SIZE ; size<=MAX_SIZE ; size*=2) {
-        pingpong_datatype_struct(p_core, gate_id, size, 0);
+        pingpong_datatype_struct(interface, gate_id, size, 0);
       }
     }
   }

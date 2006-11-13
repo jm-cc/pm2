@@ -18,7 +18,6 @@
 #include <assert.h>
 
 #include <pm2_common.h>
-#include "nm_private.h"
 
 #include "ping_optimized.h"
 #include "vector_optimized.h"
@@ -37,11 +36,11 @@ float get_value(int x,
 }
 
 
-void pingpong_datatype_vector(struct nm_core        *p_core,
-                              uint8_t                gate_id,
-                              int                    number_of_elements,
-                              int                    number_of_blocks,
-                              int                    client) {
+void pingpong_datatype_vector(nm_so_pack_interface interface,
+                              uint8_t              gate_id,
+                              int                  number_of_elements,
+                              int                  number_of_blocks,
+                              int                  client) {
   struct MPIR_DATATYPE *datatype_vector = NULL;
   float                *buffer;
   float                *r_buffer = NULL;
@@ -69,8 +68,8 @@ void pingpong_datatype_vector(struct nm_core        *p_core,
     tbx_tick_t t1, t2;
     TBX_GET_TICK(t1);
     for(k = 0 ; k<LOOPS ; k++) {
-      pack_datatype_vector(p_core, gate_id, datatype_vector, buffer);
-      unpack_datatype_vector(p_core, gate_id, r_buffer);
+      pack_datatype_vector(interface, gate_id, datatype_vector, buffer);
+      unpack_datatype_vector(interface, gate_id, r_buffer);
     }
     TBX_GET_TICK(t2);
 
@@ -81,8 +80,8 @@ void pingpong_datatype_vector(struct nm_core        *p_core,
   }
   else { /* server */
     for(k = 0 ; k<LOOPS ; k++) {
-      unpack_datatype_vector(p_core, gate_id, r_buffer);
-      pack_datatype_vector(p_core, gate_id, datatype_vector, buffer);
+      unpack_datatype_vector(interface, gate_id, r_buffer);
+      pack_datatype_vector(interface, gate_id, datatype_vector, buffer);
     }
   }
 
@@ -106,13 +105,13 @@ void init_datatype_vector(struct MPIR_DATATYPE *datatype,
   datatype->size =  datatype->blocklen * datatype->count * sizeof(float);
 }
 
-void pack_datatype_vector(struct nm_core        *p_core,
-                          uint8_t                gate_id,
-                          struct MPIR_DATATYPE  *datatype,
-                          float                  *s_ptr) {
-  int size, numberOfElements, i, j;
-  float *tmp_buf;
-  struct nm_so_cnx  *cnx      = NULL;
+void pack_datatype_vector(nm_so_pack_interface  interface,
+                          uint8_t               gate_id,
+                          struct MPIR_DATATYPE *datatype,
+                          float                *s_ptr) {
+  struct nm_so_cnx cnx;
+  int              size, numberOfElements, i, j;
+  float           *tmp_buf;
 
   DEBUG("Sending (h)vector type: stride %d - blocklen %d - count %d - size %d\n", datatype->stride, datatype->blocklen,
         datatype->count, datatype->size);
@@ -120,17 +119,17 @@ void pack_datatype_vector(struct nm_core        *p_core,
   size = datatype->size / numberOfElements;
 
   /*  Pack the needed information to unpack on the other side (number of blocks, number of elements, size of each element) */
-  nm_so_begin_packing(p_core, gate_id, 0, &cnx);
-  nm_so_pack(cnx, &datatype->count, sizeof(int));
-  nm_so_pack(cnx, &size, sizeof(int));
-  nm_so_pack(cnx, &datatype->blocklen, sizeof(int));
+  nm_so_begin_packing(interface, gate_id, 0, &cnx);
+  nm_so_pack(&cnx, &datatype->count, sizeof(int));
+  nm_so_pack(&cnx, &size, sizeof(int));
+  nm_so_pack(&cnx, &datatype->blocklen, sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_packing(p_core, cnx);
+  nm_so_end_packing(&cnx);
 #endif /* NO_RWAIT */
 
   /*  for each block pack the elements of this block */
 #if defined(NO_RWAIT)
-  nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+  nm_so_begin_packing(interface, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
   tmp_buf = s_ptr;
   for(i=0 ; i<datatype->count ; i++) {
@@ -138,34 +137,30 @@ void pack_datatype_vector(struct nm_core        *p_core,
     DEBUG("Values: ");
     for(j=0 ; j<datatype->blocklen ; j++) DEBUG("%3.2f ", tmp_buf[j]);
     DEBUG("\n");
-    nm_so_pack(cnx, tmp_buf, datatype->blocklen*size);
+    nm_so_pack(&cnx, tmp_buf, datatype->blocklen*size);
     tmp_buf += datatype->stride;
   }
-  nm_so_end_packing(p_core, cnx);
+  nm_so_end_packing(&cnx);
 }
 
-void unpack_datatype_vector(struct nm_core  *p_core,
-                            uint8_t          gate_id,
-                            float           *r_ptr) {
-  struct nm_so_cnx   *cnx      = NULL;
-  struct nm_gate     *gate;
-  int                 numberOfBlocks, size, blockLength, i;
-  float             **tmp_buf;
+void unpack_datatype_vector(nm_so_pack_interface interface,
+                            uint8_t              gate_id,
+                            float               *r_ptr) {
+  struct nm_so_cnx cnx;
+  int              numberOfBlocks, size, blockLength, i;
+  float          **tmp_buf;
 
   DEBUG("Receiving (h)vector type\n");
-  gate = &(p_core->gate_array[gate_id]);
 
   /*  Unpack the following informations: numberOfBlocks, size of each element, block length */
-  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
-  nm_so_unpack(cnx, &numberOfBlocks, sizeof(int));
-  nm_so_unpack(cnx, &size, sizeof(int));
-  nm_so_unpack(cnx, &blockLength, sizeof(int));
+  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+  nm_so_unpack(&cnx, &numberOfBlocks, sizeof(int));
+  nm_so_unpack(&cnx, &size, sizeof(int));
+  nm_so_unpack(&cnx, &blockLength, sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_unpacking(p_core, cnx);
+  nm_so_end_unpacking(&cnx);
 #else
-  nm_so_rwait(p_core, gate, 0, 0);
-  nm_so_rwait(p_core, gate, 0, 1);
-  nm_so_rwait(p_core, gate, 0, 2);
+  nm_so_rwait(&cnx);
 #endif /* NO_RWAIT */
   DEBUG("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);
 
@@ -173,13 +168,13 @@ void unpack_datatype_vector(struct nm_core  *p_core,
   tmp_buf = malloc((numberOfBlocks+1) * sizeof(float *));
   tmp_buf[0] = r_ptr;
 #if defined(NO_RWAIT)
-  nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     DEBUG("Going to unpack block %d at address %p\n", i, tmp_buf[i]);
-    nm_so_unpack(cnx, tmp_buf[i], blockLength*size);
+    nm_so_unpack(&cnx, tmp_buf[i], blockLength*size);
     tmp_buf[i+1] = tmp_buf[i] + blockLength;
   }
-  nm_so_end_unpacking(p_core, cnx);
+  nm_so_end_unpacking(&cnx);
   free(tmp_buf);
 }

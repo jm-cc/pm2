@@ -24,21 +24,21 @@ typedef struct {
   float z;
 } particle_t;
 
-void pingpong_datatype_struct(struct nm_core        *p_core,
-                              uint8_t                gate_id,
-                              int                    number_of_elements,
-                              int                    client);
+void pingpong_datatype_struct(nm_so_pack_interface interface,
+                              uint8_t              gate_id,
+                              int                  number_of_elements,
+                              int                  client);
 
 void init_datatype_struct(struct MPIR_DATATYPE *datatype,
                           int                   number_of_elements);
 
-void pack_datatype_struct(struct nm_core       *p_core,
+void pack_datatype_struct(nm_so_pack_interface  interface,
                           uint8_t               gate_id,
                           struct MPIR_DATATYPE *datatype,
                           particle_t           *s_ptr);
 
-void unpack_datatype_struct(struct nm_core *p_core,
-                            uint8_t         gate_id,
-                            particle_t     *r_ptr);
+void unpack_datatype_struct(nm_so_pack_interface interface,
+                            uint8_t              gate_id,
+                            particle_t          *r_ptr);
 
 #endif /* STRUCT_OPTIMIZED_H */

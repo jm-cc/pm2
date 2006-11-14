@@ -94,11 +94,6 @@ DEF___PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *sta
 DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
 	LOG_IN();
-	if ((uintptr_t) addr % THREAD_SLOT_SIZE != 0) {
-		mdebug("marcel_attr_setstackaddr : stack addr error\n");
-		LOG_OUT();
-		return EINVAL;
-	}
 	attr->__stackaddr_set = 1;
 	/* addr est le bas de la pile */
 	attr->__stackaddr = addr + THREAD_SLOT_SIZE;
@@ -109,11 +104,6 @@ DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, add
 DEF_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
 	LOG_IN();
-	if ((uintptr_t) addr % THREAD_SLOT_SIZE != 0) {
-		mdebug("pmarcel_attr_setstackaddr : stack addr error\n");
-		LOG_OUT();
-		return EINVAL;
-	}
 	attr->__stackaddr_set = 1;
 	/* addr est le haut de la pile */
 	attr->__stackaddr = addr;

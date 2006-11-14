@@ -329,6 +329,7 @@ static int xpaul_io_block(xpaul_server_t server,
 		if (errno != EBADF)
 			return 0;
 		/* A fd is incorrect */
+		/* TODO: XXX: lock */
 		FOREACH_REQ_BLOCKING(ev, server, inst) {
 			xdebug
 			    ("Checking select for IO syscall (with badFD)\n");
@@ -360,9 +361,11 @@ static int xpaul_io_block(xpaul_server_t server,
 		return 0;
 	}
 
+	/* TODO: XXX: lock */
 	FOREACH_REQ_BLOCKING(ev, server, inst) {
 		xpaul_io_check_select(uid, ev, &rfds, &wfds);
 	}
+	PROF_EVENT(xpaul_blockany_exit);
 	return 0;
 }
 
@@ -382,6 +385,7 @@ static int xpaul_io_blockone(xpaul_server_t server,
 	struct timeval tv;
 	int r;
 
+	PROF_EVENT(xpaul_blockone_entry);
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
@@ -430,6 +434,7 @@ static int xpaul_io_blockone(xpaul_server_t server,
 	}
 
 	xpaul_io_check_select(uid, ev, &rfds, &wfds);
+	PROF_EVENT(xpaul_blockone_exit);
 	return 0;
 }
 #endif				// MA__LWPS
@@ -444,7 +449,6 @@ static int xpaul_io_poll(xpaul_server_t server,
 	int r;
 	fd_set rfds, wfds;
 	struct timeval tv, *ptv;
-	PROF_EVENT1(xpaul_io_poll_entry,ev);
 	
 #ifdef MARCEL
 	xdebugl(6, "Polling function called on LWP %d\n",
@@ -553,7 +557,6 @@ static int xpaul_io_fast_poll(xpaul_server_t server,
 
 	r = select(nb, &rfds, &wfds, NULL, &tv);
 	if (r <= 0) {
-
 		ev->ret_val = -errno;
 		return 0;
 	}
@@ -568,6 +571,8 @@ int xpaul_read(int fildes, void *buf, size_t nbytes)
 	struct xpaul_tcp_ev ev;
 	struct xpaul_wait wait;
 	LOG_IN();
+
+	PROF_EVENT(xpaul_read_entry);
 	/* Pour eviter de demander à un serveur qui n'est pas lancé */
 	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
 	{
@@ -580,7 +585,8 @@ int xpaul_read(int fildes, void *buf, size_t nbytes)
 			LOG("IO reading fd %i", fildes);
 			n = read(fildes, buf, nbytes);
 		} while (n == -1 && errno == EINTR);
-		
+
+		PROF_EVENT(xpaul_read_exit);
 		LOG_RETURN(n);
 	}else
 		LOG_RETURN(read(fildes, buf, nbytes));
@@ -608,6 +614,8 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 	struct xpaul_tcp_ev ev;
 	struct xpaul_wait wait;
 	LOG_IN();
+
+	PROF_EVENT(xpaul_write_entry);
 	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
 	{
        
@@ -623,6 +631,7 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 
 		} while (n == -1 && errno == EINTR);
 
+		PROF_EVENT(xpaul_write_exit);
 		LOG_RETURN(n);
 	} else
 		LOG_RETURN(write(fildes, buf, nbytes));
@@ -649,16 +658,17 @@ int xpaul_select(int nfds, fd_set * __restrict rfds,
 {
 	struct xpaul_tcp_ev ev;
 	struct xpaul_wait wait;
-
 	LOG_IN();
 	if(xpaul_io_server.server.state==XPAUL_SERVER_STATE_LAUNCHED)
-	{
+	{	
+		PROF_EVENT(xpaul_select_entry);
 		ev.op = XPAUL_POLL_SELECT;
 		ev.RFDS = rfds;
 		ev.WFDS = wfds;
 		ev.NFDS = nfds;
 		xdebug("Selecting within %i fds\n", nfds);
 		xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
+		PROF_EVENT(xpaul_select_exit);
 		LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
 			   (errno = -ev.ret_val, -1));
 	}

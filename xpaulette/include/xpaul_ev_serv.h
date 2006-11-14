@@ -195,7 +195,6 @@ struct xpaul_comm_lwp {
 	struct list_head chain_lwp_ready;
 	struct list_head chain_lwp_working;
 	xpaul_server_t server;
-	int wait;
 	marcel_t pid;
 };
 #endif /* MA__LWPS */
@@ -275,6 +274,8 @@ struct xpaul_server {
 	/* Tasklet and timer used for polling */
 	/* TODO : useless without marcel ?  */
 	struct ma_tasklet_struct poll_tasklet;
+//	struct ma_tasklet_struct manage_tasklet;
+	int need_manage;
 	struct ma_timer_list poll_timer;
 #endif
 	/* server state */
@@ -584,6 +585,7 @@ void xpaul_req_success(xpaul_req_t req);
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &xpaul_poll_from_tasklet, \
                      (unsigned long)(xpaul_server_t)&(var) ), \
+    .need_manage=0, \
     .poll_timer= MA_TIMER_INITIALIZER(xpaul_poll_timer, 0, \
                    (unsigned long)(xpaul_server_t)&(var)), \
     .state=XPAUL_SERVER_STATE_INIT, \
@@ -610,6 +612,7 @@ void xpaul_req_success(xpaul_req_t req);
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &xpaul_poll_from_tasklet, \
                      (unsigned long)(xpaul_server_t)&(var) ), \
+    .need_manage=0, \
     .poll_timer= MA_TIMER_INITIALIZER(xpaul_poll_timer, 0, \
                    (unsigned long)(xpaul_server_t)&(var)), \
     .state=XPAUL_SERVER_STATE_INIT, \
@@ -635,7 +638,7 @@ void xpaul_req_success(xpaul_req_t req);
   }
 #endif				// MARCEL
 
-#define XPAUL_EXCEPTION_RAISE(e) fprintf(stderr, "%s\n", e), abort();
+#define XPAUL_EXCEPTION_RAISE(e) abort();
 
 /********************************************************************
  *  INLINE FUNCTIONS
@@ -696,7 +699,7 @@ int xpaul_test_activity(void);
  * var : the constant var xpaul_server_t
  * name: for debug messages
  */
-void xpaul_server_init(xpaul_server_t server, char *name, int nb_lwps);
+void xpaul_server_init(xpaul_server_t server, char *name);
 
 void xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps);
 

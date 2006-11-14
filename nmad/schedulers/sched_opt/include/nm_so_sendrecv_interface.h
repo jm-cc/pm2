@@ -28,7 +28,7 @@ nm_so_sr_interface_init(struct nm_core *p_core,
 
 extern int
 nm_so_sr_isend(nm_so_sr_interface interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_sr_request *p_request);
 
@@ -38,7 +38,7 @@ nm_so_sr_swait(nm_so_sr_interface interface,
 
 extern int
 nm_so_sr_irecv(nm_so_sr_interface interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_sr_request *p_request);
 

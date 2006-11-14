@@ -23,20 +23,26 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_raw_interface.h"
 
+#define NM_SO_ANY_SRC -1
+
 int
 nm_so_sr_interface_init(struct nm_core *p_core,
 			nm_so_sr_interface *p_interface)
 {
+
   return nm_so_ri_init(p_core, (struct nm_so_interface **)p_interface);
 }
 
 
 extern int
 nm_so_sr_isend(nm_so_sr_interface interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_sr_request *p_request)
 {
+
+  DISP("nm_so_sr_isend");
+
   return nm_so_ri_isend((struct nm_so_interface *)interface,
 			gate_id, tag, data, len, (nm_so_request *)p_request);
 }
@@ -51,12 +57,22 @@ nm_so_sr_swait(nm_so_sr_interface interface,
 
 extern int
 nm_so_sr_irecv(nm_so_sr_interface interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_sr_request *p_request)
 {
   return nm_so_ri_irecv((struct nm_so_interface *)interface,
 			gate_id, tag, data, len, (nm_so_request *)p_request);
+}
+
+extern int
+nm_so_sr_irecv_any_src(nm_so_sr_interface interface,
+                       uint8_t tag,
+                       void *data, uint32_t len,
+                       nm_so_sr_request *p_request)
+{
+  return nm_so_ri_irecv((struct nm_so_interface *)interface,
+			NM_SO_ANY_SRC, tag, data, len, (nm_so_request *)p_request);
 }
 
 extern int

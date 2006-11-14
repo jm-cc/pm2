@@ -37,6 +37,15 @@
 struct nm_so_sched {
   nm_so_strategy *current_strategy;
   struct nm_so_interface_ops *current_interface;
+
+  /* For any source messages */
+  struct {
+    uint8_t  unpack_here;
+    void *data;
+    uint32_t len;
+  } any_src[NM_SO_MAX_TAGS];
+
+  uint8_t next_gate_id;
 };
 
 struct nm_so_gate {
@@ -84,6 +93,10 @@ __nm_so_unpack(struct nm_gate *p_gate,
 	       uint8_t tag, uint8_t seq,
 	       void *data, uint32_t len);
 
+int
+__nm_so_unpack_any_src(struct nm_core *p_core,
+                       uint8_t tag,
+                       void *data, uint32_t len);
 int
 nm_so_out_process_success_rq(struct nm_sched	*p_sched,
                              struct nm_pkt_wrap	*p_pw);

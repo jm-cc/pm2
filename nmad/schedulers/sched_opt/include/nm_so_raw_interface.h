@@ -47,7 +47,7 @@ nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
 
 extern int
 nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request);
 

@@ -72,6 +72,58 @@ static int rdv_success(struct nm_gate *p_gate,
   return err;
 }
 
+int
+__nm_so_unpack_any_src(struct nm_core *p_core,
+                       uint8_t tag, void *data, uint32_t len){
+
+  struct nm_so_sched *p_so_sched = p_core->p_sched->sch_private;
+  uint8_t next_gate_id = p_so_sched->next_gate_id;
+  uint8_t nb_gates = p_core->nb_gates;
+  struct nm_so_interface_ops *interface = p_so_sched->current_interface;
+  struct nm_gate *p_gate= NULL;
+  struct nm_so_gate *p_so_gate = NULL;
+  volatile uint8_t *status = NULL;
+  int seq;
+
+  int i, j;
+
+  for(j = 0, i = next_gate_id; j < nb_gates; j++, i = (i +1) % p_core->nb_gates){
+    p_gate = &p_core->gate_array[i];
+    p_so_gate = p_gate->sch_private;
+    seq = p_so_gate->recv_seq_number[tag];
+
+    status = &(p_so_gate->status[tag][seq]);
+
+    if(*status & NM_SO_STATUS_PACKET_HERE
+       || *status & NM_SO_STATUS_RDV_HERE){
+
+      __nm_so_unpack(p_gate,
+                     tag, seq,
+                     data, len);
+      p_so_gate->recv_seq_number[tag]++;
+
+      interface->unpack_success(p_gate, tag, seq, tbx_true);
+
+      goto out;
+    }
+  }
+
+
+  p_so_sched->any_src[tag].unpack_here |= NM_SO_STATUS_UNPACK_HERE;
+  p_so_sched->any_src[tag].data = data;
+  p_so_sched->any_src[tag].len = len;
+
+  for(i = 0; i < p_core->nb_gates; i++){
+    nm_so_refill_regular_recv(&p_core->gate_array[i]);
+  }
+
+ out:
+  return NM_ESUCCESS;
+}
+
+
+
+
 
 int
 __nm_so_unpack(struct nm_gate *p_gate,
@@ -98,7 +150,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       nm_so_pw_dec_header_ref_count(p_so_gate->recv[tag][seq].pkt_here.p_so_pw);
 
       *status &= ~NM_SO_STATUS_PACKET_HERE;
-      interface->unpack_success(p_gate, tag, seq);
+      interface->unpack_success(p_gate, tag, seq, tbx_false);
 
     } else {
       /* Data not yet received */
@@ -171,7 +223,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
-  struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
+  struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
+  struct nm_so_interface_ops *interface = p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
@@ -191,11 +244,25 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->pending_unpacks--;
 
     *status &= ~NM_SO_STATUS_UNPACK_HERE;
-    interface->unpack_success(p_gate, tag, seq);
+    interface->unpack_success(p_gate, tag, seq, tbx_false);
 
     return NM_SO_HEADER_MARK_READ;
 
+  } else if (seq == p_so_gate->recv_seq_number[tag]
+             && p_so_sched->any_src[tag].unpack_here) {
+
+    /* we look for the any source expected message */
+    memcpy(p_so_sched->any_src[tag].data,
+           ptr,
+           p_so_sched->any_src[tag].len);
+
+    p_so_gate->pending_unpacks--;
+
+    interface->unpack_success(p_gate, tag, seq, tbx_true);
+
+    return NM_SO_HEADER_MARK_READ;
   } else {
+
     /* Receiver process is not ready, so store the information in the
        recv array and keep the p_so_pw packet alive */
 
@@ -203,7 +270,6 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
 
     *status |= NM_SO_STATUS_PACKET_HERE;
-    interface->unexpected(p_gate, tag, seq);
 
     return NM_SO_HEADER_MARK_UNREAD;
   }
@@ -331,7 +397,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
     interface->unpack_success(p_gate,
                               p_so_pw->pw.proto_id - 128,
-                              p_so_pw->pw.seq);
+                              p_so_pw->pw.seq,
+                              tbx_false);
 
     //    printf("Large received (%d bytes) on drv %d\n", p_pw->length, drv_id);
 

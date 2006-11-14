@@ -35,17 +35,23 @@ struct nm_so_ri_gate {
 
 };
 
+struct{
+  uint8_t here;
+  uint8_t gate_id;
+} any_src[NM_SO_MAX_TAGS];
+
+
 static int nm_so_ri_init_gate(struct nm_gate *p_gate);
 static int nm_so_ri_pack_success(struct nm_gate *p_gate,
                                  uint8_t tag, uint8_t seq);
 static int nm_so_ri_unpack_success(struct nm_gate *p_gate,
-                                   uint8_t tag, uint8_t seq);
+                                   uint8_t tag, uint8_t seq,
+                                   tbx_bool_t any_src);
 
 struct nm_so_interface_ops ri_ops = {
   .init_gate = nm_so_ri_init_gate,
   .pack_success = nm_so_ri_pack_success,
   .unpack_success = nm_so_ri_unpack_success,
-  .unexpected = NULL,
 };
 
 /* User interface */
@@ -90,6 +96,9 @@ nm_so_ri_isend(struct nm_so_interface *p_so_interface,
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
+
+  DISP("nm_so_ri_isend");
+
 
   seq = p_so_gate->send_seq_number[tag]++;
 
@@ -159,27 +168,41 @@ nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
-	       uint16_t gate_id, uint8_t tag,
+	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  struct nm_gate *p_gate = p_core->gate_array + gate_id;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
-  uint8_t seq;
-  volatile uint8_t *p_req;
+  volatile uint8_t *p_req = NULL;
 
-  seq = p_so_gate->recv_seq_number[tag]++;
+  if(gate_id == -1){
+    any_src[tag].here &= ~NM_SO_STATUS_RECV_COMPLETED;
 
-  p_req = &p_ri_gate->status[tag][seq];
+    if(p_request){
+      p_req = &any_src[tag].here;
+      *p_request = (intptr_t)p_req;
+    }
 
-  *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+    return __nm_so_unpack_any_src(p_core, tag, data, len);
 
-  if(p_request)
-    *p_request = (intptr_t)p_req;
 
-  return __nm_so_unpack(p_gate, tag, seq, data, len);
+  } else {
+    struct nm_gate *p_gate = p_core->gate_array + gate_id;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+    struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+    uint8_t seq;
+
+    seq = p_so_gate->recv_seq_number[tag]++;
+
+    p_req = &p_ri_gate->status[tag][seq];
+
+    *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+
+    if(p_request)
+      *p_request = (intptr_t)p_req;
+
+    return __nm_so_unpack(p_gate, tag, seq, data, len);
+  }
 }
 
 int
@@ -286,12 +309,18 @@ int nm_so_ri_pack_success(struct nm_gate *p_gate,
 
 static
 int nm_so_ri_unpack_success(struct nm_gate *p_gate,
-                            uint8_t tag, uint8_t seq)
+                            uint8_t tag, uint8_t seq,
+                            tbx_bool_t is_any_src)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
+  if(!is_any_src){
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+    struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
 
-  p_ri_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
+    p_ri_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
+  } else {
+    any_src[tag].here |= NM_SO_STATUS_RECV_COMPLETED;
+    any_src[tag].gate_id = p_gate->id;
+  }
 
   return NM_ESUCCESS;
 }

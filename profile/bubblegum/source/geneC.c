@@ -93,7 +93,7 @@ int gen_fichier_C(Element * bullemere)
 	  wprintf(L"Le fichier entré en paramètre n'est pas une BULLE\n"); 
 	  return -1;
    }
-   fw = fopen("to_pm2.c","w");
+   fw = fopen(GENEC_NAME ".c","w");
    if (fw == NULL)
    {
 	  wprintf(L"Erreur lors de l'ouverture du fichier en écriture\n"); 
@@ -122,7 +122,7 @@ int gen_fichier_C(Element * bullemere)
   
    fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
   
-   fprintf(fw,"\n   marcel_printf(\"ok\\n\");");
+   fprintf(fw,"\n   marcel_printf(\"ok\n\n");");
    //   fprintf(fw,"\n   profile_stop();\n");
    fprintf(fw,"   marcel_end();\n\n");
    fprintf(fw,"   return 0;\n}\n");

@@ -1262,8 +1262,11 @@ char* ConfigGetTraceFileName(char* configfile)
    int n;
 
    f = fopen(configfile, "r");
-   if (f == NULL)
+   if (f == NULL) {
+	perror("fopen");
+   	fprintf(stderr,"can't open %s\n",configfile);
       return NULL;
+   }
    do
    {
       fgets(str, 512, f);

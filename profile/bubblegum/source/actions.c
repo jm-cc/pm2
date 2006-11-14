@@ -11,6 +11,7 @@
 #include "mainwindow.h"
 #include "actions.h"
 #include "load.h"
+#include "geneC.h"
 
 void Quitter(GtkWidget *widget, gpointer data)
 {
@@ -264,11 +265,7 @@ void Executer(GtkWidget *widget, gpointer data)
    GtkWidget *dialog;
    GtkWidget *progress_bar;
    GtkWidget *infos;
-   gdouble fraction;
 
-   if (widget == NULL)
-      return;
-   
    dialog = gtk_dialog_new_with_buttons("Exécution de l'ordonnanceur ...",
                                         GTK_WINDOW(data), GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
                                         "_Progression de 20%", GTK_RESPONSE_ACCEPT, "_Ok", GTK_RESPONSE_OK, NULL);
@@ -286,26 +283,19 @@ void Executer(GtkWidget *widget, gpointer data)
    
    gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
    
-  cestmoche:
-   switch(gtk_dialog_run(GTK_DIALOG(dialog)))
-   {
-      case GTK_RESPONSE_OK:
-         gtk_widget_destroy(dialog);
-         break;
-      case GTK_RESPONSE_ACCEPT:
-         /* Recuperation de la valeur de la barre de progression */
-         fraction = gtk_progress_bar_get_fraction(GTK_PROGRESS_BAR(progress_bar));
-         if (fraction < 1)
-         {
-            fraction += 0.2;
-            /* Modification de la valeur de la barre de progression */
-            gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), fraction);
-         }
-         goto cestmoche;
-      default:
-         gtk_widget_destroy(dialog);
-         break;
-   }
+   // XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
+   gen_fichier_C(iGaucheVars->bullePrincipale);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
+   system("make " GENEC_NAME);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
+   system("pm2load " GENEC_NAME);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.8);
+   char tracefile[1024];
+   snprintf(tracefile,sizeof(tracefile),"/tmp/prof_file_user_%s",getenv("USER"));
+   LoadScene(anim, tracefile);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
+   gtk_widget_destroy(dialog);
 }
 
 void Temp(GtkWidget *widget, gpointer data)

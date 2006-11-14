@@ -21,6 +21,8 @@
 #include "polices.h"
 #include "texture.h"
 
+extern AnimElements* anim;
+
 GtkWidget* make_right_window(GtkWidget* parent);
 void       make_right_toolbar(GtkWidget* vbox, GtkWidget* parent);
 void       make_drawable_zone(GtkWidget* vbox);

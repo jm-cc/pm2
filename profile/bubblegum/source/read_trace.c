@@ -418,7 +418,7 @@ ev_t set_etat_ev( ev_t evt, int * ad_nb_levels, fxt_blockev_t blockev_machin,
 
 /* lire trace */
 
-inf_t lire_trace(char * fichier_trace)
+inf_t lire_trace(const char * fichier_trace)
 {
    fxt_t trace;
    fxt_blockev_t blockev_trace;
@@ -459,7 +459,7 @@ inf_t lire_trace(char * fichier_trace)
 
 /* la fonction qui analyse la trace et la met dans ton tableau de structure événement*/
 
-ev_t * analyser_trace(char * fichier_trace,ev_t * tracetab,int * leveltab)
+ev_t * analyser_trace(const char * fichier_trace,ev_t * tracetab,int * leveltab)
 {
 
    fxt_t trace;
@@ -928,7 +928,7 @@ ev_t * GetEv(ev_t * tracetab,int i)
 /* allocation mémoire d'un tableau de trace */
 /* ne pas oublier le free */
  
-ev_t * malloc_tracetab(char * fichier)
+ev_t * malloc_tracetab(const char * fichier)
 {
    inf_t infos_trace;
    infos_trace = lire_trace(fichier);

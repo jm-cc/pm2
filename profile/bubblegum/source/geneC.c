@@ -122,7 +122,7 @@ int gen_fichier_C(Element * bullemere)
   
    fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
   
-   fprintf(fw,"\n   marcel_printf(\"ok\n\n");");
+   fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //   fprintf(fw,"\n   profile_stop();\n");
    fprintf(fw,"   marcel_end();\n\n");
    fprintf(fw,"   return 0;\n}\n");

@@ -7,6 +7,8 @@
 #include "rightwindow.h"
 #include "load.h"
 
+AnimElements* anim;
+
 GtkWidget* make_right_window(GtkWidget* parent)
 {
    GtkWidget* vb_right_interface = gtk_vbox_new(FALSE, 0);
@@ -49,7 +51,7 @@ void make_drawable_zone(GtkWidget* vb_right_interface)
       printf("aie : La promotion au rang de widget OpenGL a failli lamentablement.\n");
    }
 
-   AnimElements* anim = AnimationNew(drawzone);  // creation des objets necessaires pour l'animateur
+   anim = AnimationNew(drawzone);  // creation des objets necessaires pour l'animateur
 
    // on va lui donner une autre promotion au widget (waw c'est un widget colonel maintenant)
    // il peut recevoir des evennements bas niveau de mouvement de souris:
@@ -77,8 +79,6 @@ void make_drawable_zone(GtkWidget* vb_right_interface)
 // réglages des parametres opengl définitifs
 void Realize_dz(GtkWidget *widget, gpointer data)
 {
-   AnimElements* anim = (AnimElements*)data;
-   
    GdkGLContext* glcontext = gtk_widget_get_gl_context(widget);
    GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(widget);
    
@@ -137,8 +137,6 @@ void Realize_dz(GtkWidget *widget, gpointer data)
 /* callback du timer de la glib */
 gboolean Redraw_dz(gpointer anim_parm)
 {
-   AnimElements* anim = (AnimElements*)anim_parm;
-
    if (anim->pIfont)  // tant que realize n'a pas été produit, pas d'animation
       WorkOnAnimation(anim);
    
@@ -149,7 +147,6 @@ gboolean Redraw_dz(gpointer anim_parm)
 gboolean Reshape_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer anim_parm)
 {
    widget = NULL;  // inutilisé
-   AnimElements* anim = (AnimElements*)anim_parm;
 
    // lorsque la fenêtre est redimensionnée, il faut redimensionner la zone opengl et adapter la projection.
    anim->area.x = ev->width;
@@ -175,7 +172,6 @@ gboolean Reshape_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer anim_parm
 gboolean MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer anim_parm)
 {
    widget = NULL;  // inutilisé
-   AnimElements* anim = (AnimElements*)anim_parm;
 
    anim->mousePos.x = ev->x;
    anim->mousePos.y = anim->area.y - ev->y;   

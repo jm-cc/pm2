@@ -218,7 +218,7 @@ void DrawSprite(Texture* texture, int x, int y, int w, int h, long color);
 
 void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft);
 
-int LoadScene(AnimElements* anim);
+int LoadScene(AnimElements* anim, const char *tracefile);
 void DrawFixedScene(AnimElements* anim);
 
 char* GetDescription(ScnObj* obj);

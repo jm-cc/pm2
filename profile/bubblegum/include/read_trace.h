@@ -40,9 +40,9 @@ typedef struct infos_tr inf_t;
 
 ev_t set_etat_ev( ev_t evt, int * ad_nb_levels, fxt_blockev_t blockev_machin,
 							int ev_type, struct fxt_ev ev, int * leveltab, int mode);
-inf_t lire_trace(char * fichier_trace);
-ev_t * analyser_trace(char * fichier,ev_t * tracetab,int * leveltab);
-ev_t * malloc_tracetab(char * fichier);
+inf_t lire_trace(const char * fichier_trace);
+ev_t * analyser_trace(const char * fichier,ev_t * tracetab,int * leveltab);
+ev_t * malloc_tracetab(const char * fichier);
 int free_tracetab(ev_t * tracetab);
 
 void Remake_IdNom_Ev(ev_t *);

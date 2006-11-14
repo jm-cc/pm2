@@ -75,15 +75,14 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
    // création obligatoire d'une runqueue level -1
    CreateRunQueue(&newobj->runQueues, 0, -1);
 
-   LoadScene(newobj);
+   LoadScene(newobj, ConfigGetTraceFileName(CONFIG_FILE_NAME));
 
    return newobj;
 }
 
 // charger les elements graphiques de la scène avec leur propriétés
-int LoadScene(AnimElements* anim)
+int LoadScene(AnimElements* anim, const char *tracefile)
 {
-   char* tracefile = ConfigGetTraceFileName(CONFIG_FILE_NAME);
    ev_t* myEvents = malloc_tracetab(tracefile);
 
    int i = 0;
@@ -1117,7 +1116,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    
    if (firstcall)  // premier appel a la fonction
    {
-      corner = LoadTextureFromFile("imgs/corner.png");  // on tente de charger
+      corner = open_texture("imgs/corner.png");  // on tente de charger
       firstcall = false;  // ce n'est plus le premier appel
    }
    if (corner == NULL)  // si le chargement a foiré

@@ -38,6 +38,9 @@ void pingpong_datatype_indexed(nm_so_pack_interface interface,
   buffer = malloc(number_of_elements * 2 * sizeof(float));
   memset(buffer, 0, number_of_elements);
   for(i=0 ; i<number_of_elements*2 ; i++) buffer[i] = i;
+  PRINTF("Sending buffer: ");
+  for(i=0 ; i<number_of_elements*2 ; i++) PRINTF("%3.2f ", buffer[i]);
+  PRINTF("\n");
 
   datatype_indexed = malloc(sizeof(struct MPIR_DATATYPE));
   init_datatype_indexed(datatype_indexed, number_of_elements, number_of_blocks);
@@ -76,6 +79,7 @@ void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
   datatype->dte_type = MPIR_INDEXED;
   datatype->count = number_of_blocks;
   datatype->elements = number_of_elements;
+  datatype->size = datatype->elements * sizeof(float);
 
   datatype->blocklens = malloc(datatype->count * sizeof(int));
   if (datatype->elements == 0) {
@@ -87,16 +91,24 @@ void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
     for(i=0 ; i<datatype->count ; i++) {
       datatype->blocklens[i] = datatype->elements / datatype->count;
     }
-    datatype->blocklens[number_of_blocks-1] += datatype->elements % datatype->count;
+    datatype->blocklens[datatype->count-1] += datatype->elements % datatype->count;
   }
 
   datatype->indices = malloc(datatype->count * sizeof(int));
   datatype->indices[0] = 0;
   for(i=1 ; i<datatype->count ; i++) {
     datatype->indices[i] = datatype->blocklens[i-1] + datatype->indices[i-1] + 2;
+    if (datatype->indices[i] + datatype->blocklens[i] > number_of_elements*2) {
+      DEBUG_PRINTF("OVERFLOW! indice %d blocklens %d number_of_elements %d\n",
+                   datatype->indices[i], datatype->blocklens[i], number_of_elements*2);
+      datatype->indices[i] = number_of_elements*2 - datatype->blocklens[i];
+    }
   }
 
-  datatype->size = datatype->elements * sizeof(float);
+  for(i=0 ; i<datatype->count ; i++) {
+    DEBUG_PRINTF("Block %d has length %d and indice %d\n", i, datatype->blocklens[i], datatype->indices[i]);
+  }
+
 }
 
 void pack_datatype_indexed(nm_so_pack_interface  interface,
@@ -107,8 +119,8 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
   float           *tmp_buf;
   int              size, numberOfBlocks, numberOfElements, i, j;
 
-  DEBUG("Sending (h)indexed datatype, indices[0]=%d blocklen[0]=%d size=%d elements=%d\n", datatype->indices[0], datatype->blocklens[0],
-         datatype->size, datatype->elements);
+  DEBUG_PRINTF("Sending (h)indexed datatype, indices[0]=%d blocklen[0]=%d size=%d elements=%d\n", datatype->indices[0], datatype->blocklens[0],
+               datatype->size, datatype->elements);
 
   size = datatype->size / datatype->elements;
   numberOfBlocks = 1;
@@ -117,7 +129,7 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
     numberOfBlocks ++;
     numberOfElements += datatype->blocklens[numberOfBlocks-1];
   }
-  DEBUG("Number of blocks %d\n", numberOfBlocks);
+  DEBUG_PRINTF("Elements = %d -- Blocks = %d\n", numberOfElements, numberOfBlocks);
 
   /*  Pack the needed information to unpack on the other side (number of blocks, size of each element) */
   nm_so_begin_packing(interface, gate_id, 0, &cnx);
@@ -142,10 +154,10 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     tmp_buf = s_ptr + datatype->indices[i];
-    DEBUG("Packing block %d with %d elements of size %d at address %p\n", i, datatype->blocklens[i], size, tmp_buf);
-    DEBUG("Values: ");
-    for(j=0 ; j<datatype->blocklens[i] ; j++) DEBUG("%3.2f ", tmp_buf[j]);
-    DEBUG("\n");
+    DEBUG_PRINTF("Packing block %d with %d elements of size %d at address %p\n", i, datatype->blocklens[i], size, tmp_buf);
+    DEBUG_PRINTF("Values: ");
+    for(j=0 ; j<datatype->blocklens[i] ; j++) DEBUG_PRINTF("%3.2f ", tmp_buf[j]);
+    DEBUG_PRINTF("\n");
     nm_so_pack(&cnx, tmp_buf, datatype->blocklens[i]*size);
   }
   nm_so_end_packing(&cnx);
@@ -158,7 +170,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
   float          **tmp_buf;
   int              numberOfBlocks, size, *numberOfElements, i;
 
-  DEBUG("Receiving (h)indexed datatype at address %p...\n", r_ptr);
+  DEBUG_PRINTF("Receiving (h)indexed datatype at address %p...\n", r_ptr);
 
   /*  Unpack the following information : number of blocks, size of each element */
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
@@ -169,7 +181,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
 #else
   nm_so_rwait(&cnx);
 #endif /* NO_RWAIT */
-  DEBUG("Number of blocks %d Size %d\n", numberOfBlocks, size);
+  DEBUG_PRINTF("Number of blocks %d Size %d\n", numberOfBlocks, size);
 
   /*  unpack the number of elements in the blocks */
   numberOfElements = malloc(numberOfBlocks * sizeof(int));
@@ -190,7 +202,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
   nm_so_rwait(&cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
-    DEBUG("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
+    DEBUG_PRINTF("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
     nm_so_unpack(&cnx, tmp_buf[i], numberOfElements[i]*size);
     tmp_buf[i+1] = tmp_buf[i] + numberOfElements[i];
   }

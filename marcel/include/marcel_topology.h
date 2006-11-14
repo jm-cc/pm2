@@ -52,7 +52,7 @@ extern void ma_topo_exit(void);
 #endif
 
 #section types
-enum marcel_topo_level_t {
+enum marcel_topo_level_e {
 	MARCEL_LEVEL_MACHINE,
 #ifndef MA__LWPS
 #define MARCEL_LEVEL_LAST MARCEL_LEVEL_MACHINE
@@ -263,7 +263,7 @@ struct marcel_topo_vpdata {
 #section marcel_structures
 
 struct marcel_topo_level {
-	enum marcel_topo_level_t type;
+	enum marcel_topo_level_e type;
 	unsigned number; /* for whole machine */
 	unsigned index; /* in father array */
 

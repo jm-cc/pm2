@@ -450,7 +450,7 @@ static void __marcel_init look_libnuma(void) {
 
 #ifdef AIX_SYS
 #include <sys/rset.h>
-static void __marcel_init look_rset(int sdl, enum marcel_topo_level_t level) {
+static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	rsethandle_t rset, rad;
 	int r,i,nbcpus,j;
 	unsigned nbnodes;
@@ -607,7 +607,7 @@ static void topo_discover(void) {
 	look_libnuma();
 #endif
 #ifdef  AIX_SYS
-	enum marcel_topo_level_t mlevel = MARCEL_LEVEL_MACHINE;
+	enum marcel_topo_level_e mlevel = MARCEL_LEVEL_MACHINE;
 
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0))

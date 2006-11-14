@@ -63,8 +63,14 @@
 
 //#define PRINTF(...) { printf(__VA_ARGS__) ; }
 #define PRINTF(...) { }
-//#define DEBUG(...) { printf(__VA_ARGS__) ; }
-#define DEBUG(...) { }
+
+#define DEBUG
+
+#if defined(DEBUG)
+#define DEBUG_PRINTF(...) { printf(__VA_ARGS__) ; }
+#else /* ! DEBUG */
+#define DEBUG_PRINTF(...) { }
+#endif /* DEBUG */
 
 /*
  * EMULATION OF THE MPI DATATYPE

@@ -1,5 +1,9 @@
 #include <marcel.h>
 
+#ifndef MA__IFACE_PMARCEL
+#warning "This file can't be used without the pmarcel option in the flavor"
+#endif
+
 /* typage */
 
 #undef pthread_t
@@ -449,3 +453,4 @@
 #define pthread_barrierattr_setpshared(attr,pshared) pmarcel_barrierattr_setpshared(attr,pshared)
 #undef pthread_barrierattr_getpshared
 #define pthread_barrierattr_getpshared(attr,pshared) pmarcel_barrierattr_getpshared(attr,pshared)
+

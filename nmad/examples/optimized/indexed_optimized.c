@@ -22,6 +22,30 @@
 #include "ping_optimized.h"
 #include "indexed_optimized.h"
 
+void check_correctness(struct MPIR_DATATYPE *datatype,
+                       float *buffer) {
+  float value = datatype->indices[0];
+  int i, j=0;
+
+  for(i=0 ; i<datatype->elements ; i++) {
+    if (buffer[i] != value) {
+      printf("Value incorrect. buffer[%d] = %f. Expected is %f\n", i, buffer[i], value);
+      abort();
+    }
+    value += 1.0;
+    if ((i+1) % datatype->blocklens[j] == 0) {
+      j++;
+      if (j >= datatype->count) j = datatype->count-1;
+      else {
+        DEBUG_PRINTF("Jumping to next block %d\n", j);
+        value = datatype->indices[j];
+      }
+    }
+  }
+  DEBUG_PRINTF("Received buffer is correct\n");
+}
+
+
 void pingpong_datatype_indexed(nm_so_pack_interface interface,
                                uint8_t              gate_id,
                                int                  number_of_elements,
@@ -56,6 +80,9 @@ void pingpong_datatype_indexed(nm_so_pack_interface interface,
     TBX_GET_TICK(t2);
 
     printf("%s\t%s\t%d\t%d\t%lf\n", "indexed", STRATEGY, number_of_elements, number_of_blocks, TBX_TIMING_DELAY(t1, t2) / (2 * LOOPS));
+#ifdef DEBUG
+    check_correctness(datatype_indexed, r_buffer);
+#endif /* DEBUG */
     PRINTF("Received value: ");
     for(i=0 ; i<number_of_elements ; i++) PRINTF("%3.2f ", r_buffer[i]);
     PRINTF("\n");

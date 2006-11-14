@@ -65,6 +65,9 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 		return EINVAL;
 	}
 
+	if (attr->__stackaddr_set)
+		attr->__stackaddr += stack - attr->__stacksize;
+
 	attr->__stacksize = stack;
 	LOG_OUT();
 	return 0;
@@ -96,7 +99,7 @@ DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, add
 	LOG_IN();
 	attr->__stackaddr_set = 1;
 	/* addr est le bas de la pile */
-	attr->__stackaddr = addr + THREAD_SLOT_SIZE;
+	attr->__stackaddr = addr + attr->__stacksize;
 	LOG_OUT();
 	return 0;
 })

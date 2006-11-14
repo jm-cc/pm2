@@ -23,7 +23,6 @@
 #include "marcel_for_pthread.h"
 
 #include <errno.h>
-#include <pthread.h>
 #include <stdlib.h>
 //VD: #include "internals.h"
 //VD: #include "queue.h"

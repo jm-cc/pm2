@@ -19,8 +19,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "pthread.h"
-#include <unistd.h>
 
 extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
 

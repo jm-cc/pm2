@@ -29,7 +29,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 //VD:#include <shlib-compat.h>
-#include "pthread.h"
 #include "sys/marcel_flags.h"
 //VD:#include "internals.h"
 //VD:#include "spinlock.h"

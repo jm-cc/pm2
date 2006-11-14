@@ -35,11 +35,17 @@ struct nm_so_ri_gate {
 
 };
 
-struct{
-  uint8_t here;
-  uint8_t gate_id;
-} any_src[NM_SO_MAX_TAGS];
+struct any_src_status {
+  uint8_t status;
+  long gate_id;
+};
 
+#define outer_any_src_struct(p_status) \
+	((struct any_src_status *)((uint8_t *)(p_status) - \
+         (unsigned long)(&((struct any_src_status *)0)->status)))
+
+
+static struct any_src_status any_src[NM_SO_MAX_TAGS];
 
 static int nm_so_ri_init_gate(struct nm_gate *p_gate);
 static int nm_so_ri_pack_success(struct nm_gate *p_gate,
@@ -96,9 +102,6 @@ nm_so_ri_isend(struct nm_so_interface *p_so_interface,
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
-
-  DISP("nm_so_ri_isend");
-
 
   seq = p_so_gate->send_seq_number[tag]++;
 
@@ -175,16 +178,16 @@ nm_so_ri_irecv(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_req = NULL;
 
-  if(gate_id == -1){
-    any_src[tag].here &= ~NM_SO_STATUS_RECV_COMPLETED;
+  if(gate_id == -1) {
 
-    if(p_request){
-      p_req = &any_src[tag].here;
+    any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
+
+    if(p_request) {
+      p_req = &any_src[tag].status;
       *p_request = (intptr_t)p_req;
     }
 
     return __nm_so_unpack_any_src(p_core, tag, data, len);
-
 
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -230,6 +233,17 @@ nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
 
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
+
+  return NM_ESUCCESS;
+}
+
+int
+nm_so_ri_recv_source(nm_so_request request, long *gate_id)
+{
+  struct any_src_status *p_status = outer_any_src_struct(request);
+
+  if(gate_id)
+    *gate_id = p_status->gate_id;
 
   return NM_ESUCCESS;
 }
@@ -312,14 +326,17 @@ int nm_so_ri_unpack_success(struct nm_gate *p_gate,
                             uint8_t tag, uint8_t seq,
                             tbx_bool_t is_any_src)
 {
-  if(!is_any_src){
+  if(!is_any_src) {
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
     struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
 
     p_ri_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
+
   } else {
-    any_src[tag].here |= NM_SO_STATUS_RECV_COMPLETED;
+
     any_src[tag].gate_id = p_gate->id;
+    any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
+
   }
 
   return NM_ESUCCESS;

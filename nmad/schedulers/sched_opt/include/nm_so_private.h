@@ -46,6 +46,8 @@ struct nm_so_sched {
   } any_src[NM_SO_MAX_TAGS];
 
   uint8_t next_gate_id;
+
+  unsigned pending_any_src_unpacks;
 };
 
 struct nm_so_gate {
@@ -105,6 +107,9 @@ int
 nm_so_out_process_failed_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw,
                             int		         _err);
+
+int
+nm_so_out_schedule_gate(struct nm_gate *p_gate);
 
 int
 nm_so_in_schedule(struct nm_sched *p_sched);

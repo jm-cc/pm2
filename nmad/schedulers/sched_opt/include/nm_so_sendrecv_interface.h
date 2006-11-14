@@ -18,6 +18,11 @@
 
 #include <nm_public.h>
 
+#ifndef NM_SO_ANY_SRC
+#define NM_SO_ANY_SRC  ((long)-1)
+#endif
+
+
 typedef intptr_t nm_so_sr_interface;
 typedef unsigned long nm_so_sr_request;
 
@@ -45,5 +50,10 @@ nm_so_sr_irecv(nm_so_sr_interface interface,
 extern int
 nm_so_sr_rwait(nm_so_sr_interface interface,
 	       nm_so_sr_request request);
+
+extern int
+nm_so_sr_recv_source(nm_so_sr_interface interface,
+		     nm_so_sr_request request,
+		     long *gate_id);
 
 #endif

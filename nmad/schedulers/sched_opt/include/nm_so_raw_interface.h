@@ -64,6 +64,9 @@ nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long seq_sup);
 
+int
+nm_so_ri_recv_source(nm_so_request request, long *gate_id);
+
 
 extern unsigned long
 nm_so_ri_get_current_send_seq(struct nm_so_interface *p_so_interface,

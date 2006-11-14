@@ -27,7 +27,7 @@ typedef int (*nm_so_interface_pack_success)(struct nm_gate *p_gate,
 					    uint8_t tag, uint8_t seq);
 typedef int (*nm_so_interface_unpack_success)(struct nm_gate *p_gate,
 					      uint8_t tag, uint8_t seq,
-                                              tbx_bool_t any_src);
+                                              tbx_bool_t is_any_src);
 
 struct nm_so_interface_ops {
   nm_so_interface_init_gate init_gate;

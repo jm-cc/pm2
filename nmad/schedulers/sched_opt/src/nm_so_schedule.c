@@ -46,6 +46,11 @@ nm_so_schedule_init (struct nm_sched *p_sched)
     goto out;
   }
 
+  memset(p_priv->any_src, 0, sizeof(p_priv->any_src));
+  
+  p_priv->next_gate_id = 0;
+  p_priv->pending_any_src_unpacks = 0;
+
 #if defined(CONFIG_MULTI_RAIL)
   p_priv->current_strategy = &nm_so_strat_balance;
 #elif defined(CONFIG_STRAT_DEFAULT)
@@ -180,15 +185,6 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
  out:
   return err;
-}
-
-static int
-nm_so_out_schedule_gate(struct nm_gate *p_gate)
-{
-  struct nm_so_gate *p_so_gate   = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-
-  return p_so_sched->current_strategy->try_and_commit(p_gate);
 }
 
 

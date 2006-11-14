@@ -26,6 +26,16 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 
+int
+nm_so_out_schedule_gate(struct nm_gate *p_gate)
+{
+  struct nm_so_gate *p_so_gate   = p_gate->sch_private;
+  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
+
+  return p_so_sched->current_strategy->try_and_commit(p_gate);
+}
+
+
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
 				    uint8_t proto_id, uint8_t seq,

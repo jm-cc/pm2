@@ -1,3 +1,4 @@
+#include <gdk/gdkkeysyms.h>
 #include "interfaceGauche.h"
 #include "load.h"
 
@@ -308,6 +309,13 @@ void deleteRec(GtkWidget* pWidget, gpointer data)
    return;
 }
 
+
+void deleteRec2(GtkWidget* pWidget, gpointer data)
+{
+   deleteRec(NULL,(gpointer)pWidget);
+
+   return;
+}
 
 
 void AddBulle(GtkWidget* widget, DataAddBulle* data)

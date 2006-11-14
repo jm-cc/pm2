@@ -21,4 +21,6 @@ typedef struct BiWidget_tag
       GtkWidget* wg2;
 } BiWidget;
 
+extern interfaceGaucheVars* iGaucheVars;
+
 #endif

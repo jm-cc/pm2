@@ -64,6 +64,9 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
    gtk_accel_group_connect(accel_group, GDK_Left, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Basculement_droite_hotkey), pane, NULL));
 
+   gtk_accel_group_connect(accel_group, GDK_Delete, 0, 0,
+                           g_cclosure_new_swap(G_CALLBACK(deleteRec2), iGaucheVars, NULL));
+
    gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
       
 }

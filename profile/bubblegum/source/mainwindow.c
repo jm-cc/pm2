@@ -8,6 +8,8 @@
 
 #include "mainwindow.h"
 
+interfaceGaucheVars* iGaucheVars;
+
 int main(int argc, char **argv)
 {
    /* Création des Widgets */
@@ -20,7 +22,6 @@ int main(int argc, char **argv)
    GtkWidget *left_viewport;
    GtkWidget *left_frame;
    GtkWidget *right_viewport;
-   interfaceGaucheVars* iGaucheVars;
 
    /* Initialisation de gtk */ 
    gtk_init(&argc, &argv);

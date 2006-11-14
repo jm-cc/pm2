@@ -29,6 +29,7 @@ void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data);
 void addThreadAutoOff(interfaceGaucheVars* data);
 void switchModeAuto(GtkWidget* pWidget, gpointer data);
 void deleteRec(GtkWidget* pWidget, gpointer data);
+void deleteRec2(GtkWidget* pWidget, gpointer data);
 
 void OnScrollbarChange(GtkWidget *pWidget, gpointer data);
 

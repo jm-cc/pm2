@@ -139,7 +139,7 @@ main(int	  argc,
 
                 memset(buf, 0, len);
 
-		nm_so_sr_irecv(interface, gate_id, 0, buf, len, &request);
+		nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, buf, len, &request);
 		nm_so_sr_rwait(interface, request);
 
         } else {

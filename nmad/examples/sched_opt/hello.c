@@ -139,11 +139,13 @@ main(int	  argc,
 
                 memset(buf, 0, len);
 
-		nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+		nm_so_begin_unpacking(interface, NM_SO_ANY_SRC, 0, &cnx);
 
 		nm_so_unpack(&cnx, buf, len);
 
 		nm_so_end_unpacking(&cnx);
+
+                printf("buffer contents: %s\n", buf);
 
         } else {
                 /* client
@@ -163,10 +165,6 @@ main(int	  argc,
 		nm_so_pack(&cnx, buf, len);
 
 		nm_so_end_packing(&cnx);
-        }
-
-        if (!r_url) {
-                printf("buffer contents: %s\n", buf);
         }
 
  out:

@@ -29,6 +29,7 @@
 #define XPAUL_NOT_IMPLEMENTED "XPAUL_NOT_IMPLEMENTED (sorry)"
 #define XPAUL_USE_ERROR "XPAUL_USE_ERROR: XPaulette was not compiled to enable this functionality"
 #define XPAUL_CALLBACK_ERROR "XPAUL_CALLBACK_ERROR: no callback defined"
+#define XPAUL_LWP_ERROR "XPAUL_LWP_ERROR: no lwp available"
 
 /*
 #ifndef MODULE

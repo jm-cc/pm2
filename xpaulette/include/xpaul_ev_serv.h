@@ -260,7 +260,7 @@ struct xpaul_server {
 	/* Polling points and polling period */
 	unsigned poll_points;
 	unsigned period;	/* polls every 'period' timeslices */
-
+	int stopable; 	       
 	/* TODO: ? xpaul_chooser_t chooser; // a callback used to decide wether to export or not */
 	/* Amount of polling loop before exporting a syscall 
 	 * ( -1 : never export a syscall) */
@@ -580,6 +580,7 @@ void xpaul_req_success(xpaul_req_t req);
     .req_poll_grouped_nb=0, \
     .poll_points=0, \
     .period=0, \
+    .stopable=0, \
     .max_poll=-1, \
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
@@ -607,6 +608,7 @@ void xpaul_req_success(xpaul_req_t req);
     .req_poll_grouped_nb=0, \
     .poll_points=0, \
     .period=0, \
+    .stopable=0, \
     .max_poll=-1, \
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
@@ -631,6 +633,7 @@ void xpaul_req_success(xpaul_req_t req);
     .req_poll_grouped_nb=0, \
     .poll_points=0, \
     .period=0, \
+    .stopable=0, \
     .max_poll=-1, \
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .state=XPAUL_SERVER_STATE_INIT, \

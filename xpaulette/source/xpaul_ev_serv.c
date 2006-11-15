@@ -934,7 +934,10 @@ int xpaul_callback_will_block(xpaul_server_t server)
 		lwp = list_entry(server->list_lwp_ready.next, struct xpaul_comm_lwp, chain_lwp_ready);
 	else // si aucun n'est pret, on interromp un lwp qui travaille 
 		/* (TODO : ne le faire que si on peut)  */
-		lwp = list_entry(server->list_lwp_working.next, struct xpaul_comm_lwp, chain_lwp_working);
+		if( server->stopable)
+			lwp = list_entry(server->list_lwp_working.next, struct xpaul_comm_lwp, chain_lwp_working);
+		else
+			XPAUL_EXCEPTION_RAISE(XPAUL_LWP_ERROR);
 	/* else : lancer un nouveau LWP */
 	__xpaul_unlock_server(server);
 

@@ -914,6 +914,7 @@ void xpaul_io_init(void)
 #ifdef MA__LWPS
 	xpaul_server_start_lwp(&xpaul_io_server.server, 1);
 #endif /* MA__LWPS */
+	xpaul_io_server.server.stopable=1;
 	xpaul_server_set_poll_settings(&xpaul_io_server.server,
 				       XPAUL_POLL_AT_TIMER_SIG
 				       | XPAUL_POLL_AT_IDLE, 1, -1);

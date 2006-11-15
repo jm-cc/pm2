@@ -39,7 +39,27 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#define LOOPS   1
+#define LOOPS    1
+#define MAX      (64 * 1024)
+
+const char *msg_beg	= "hello...", *msg_end = "...world!";
+
+static void store_big_string(char *big_buf, unsigned max)
+{
+  const char *src;
+  char *dst;
+
+  memset(big_buf, ' ', max);
+  dst = big_buf;
+  src = msg_beg;
+  while(*src)
+    *dst++ = *src++;
+
+  dst = big_buf + max - strlen(msg_end);
+  src = msg_end;
+  while(*src)
+    *dst++ = *src++;
+}
 
 static
 void
@@ -143,8 +163,8 @@ main(int	  argc,
 		  }
 
 		{
-		  nm_so_sr_request r1, r2, r3;
-		  char buf[16];
+		  nm_so_sr_request r1, r2, r3, r4;
+		  char buf[16], *big_buf;
 		  long gate;
 
 		  nm_so_sr_irecv(interface, gate_id, 0, NULL, 0, &r1);
@@ -161,6 +181,12 @@ main(int	  argc,
 		  nm_so_sr_recv_source(interface, r3, &gate);
 
 		  printf("Got msg 3 : [%s] from gate %ld \n", buf, gate);
+
+		  big_buf = malloc(MAX);
+		  nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, big_buf, MAX, &r4);
+		  nm_so_sr_rwait(interface, r4);
+
+		  printf("Got msg 4 : [%s]\n", big_buf);
 		}
 
         } else {
@@ -185,18 +211,25 @@ main(int	  argc,
 		}
 
 		{
-		  nm_so_sr_request r1, r2, r3;
-		  char buf[16];
+		  nm_so_sr_request r1, r2, r3, r4;
+		  char buf[16], *big_buf;
 
-		  strcpy(buf, "Hello!");
 
 		  nm_so_sr_isend(interface, gate_id, 0, NULL, 0, &r1);
 		  nm_so_sr_isend(interface, gate_id, 0, NULL, 0, &r2);
+
+		  strcpy(buf, "Hello!");
 		  nm_so_sr_isend(interface, gate_id, 0, buf, 16, &r3);
+
+		  big_buf = malloc(MAX);
+		  store_big_string(big_buf, MAX);
+
+		  nm_so_sr_isend(interface, gate_id, 0, big_buf, MAX, &r4);
 
 		  nm_so_sr_swait(interface, r1);
 		  nm_so_sr_swait(interface, r2);
 		  nm_so_sr_swait(interface, r3);
+		  nm_so_sr_swait(interface, r4);
 		}
 
         }

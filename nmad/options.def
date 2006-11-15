@@ -24,6 +24,7 @@ bool CONFIG_DUMMY	= n
 bool CONFIG_PROTO_BASIC		= n
 bool CONFIG_PROTO_SO_BASIC	= n
 bool CONFIG_PROTO_MAD3		= n
+bool CONFIF_PROTO_MPI           = n
 
 #===================================
 
@@ -54,5 +55,7 @@ string DUMMY_LIBS
 
 # -*- protos -*-
 [mad3_emulation: CONFIG_PROTO_MAD3]
+
+[mpi_emulation: CONFIG_PROTO_MPI]
 
 #

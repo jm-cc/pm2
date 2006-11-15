@@ -16,13 +16,18 @@
 #ifndef _NM_SO_PACK_INTERFACE_H_
 #define _NM_SO_PACK_INTERFACE_H_
 
+#ifndef NM_SO_ANY_SRC
+#define NM_SO_ANY_SRC  ((long)-1)
+#endif
+
 typedef intptr_t nm_so_pack_interface;
 
 struct nm_so_cnx {
   intptr_t interface;
-  intptr_t gate;
-  intptr_t tag;
-  intptr_t first_seq_number;
+  long gate;
+  long tag;
+  long first_seq_number;
+  long nb_paquets;
 };
 
 extern int
@@ -45,14 +50,8 @@ nm_so_end_packing(struct nm_so_cnx *cnx);
 
 int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
-		      uint16_t gate_id, uint8_t tag,
+		      long gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx);
-
-int
-nm_so_begin_unpacking_any_src(nm_so_pack_interface interface,
-                              uint8_t tag,
-                              struct nm_so_cnx *cnx);
-
 
 int
 nm_so_unpack(struct nm_so_cnx *cnx,

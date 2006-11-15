@@ -27,13 +27,12 @@
 #include "nm_so_raw_interface_private.h"
 #include "nm_so_tracks.h"
 
-#define NM_SO_RECV_ANY_SRC  -1
-
 struct __nm_so_cnx {
   struct nm_so_interface *p_interface;
-  unsigned long gate_id;
+  long gate_id;
   unsigned long tag;
   unsigned long first_seq_number;
+  unsigned long nb_paquets;
 };
 
 
@@ -41,6 +40,8 @@ int
 nm_so_pack_interface_init(struct nm_core *p_core,
 			  nm_so_pack_interface *p_interface)
 {
+  assert(sizeof(struct nm_so_cnx) == sizeof(struct __nm_so_cnx));
+
   return nm_so_ri_init(p_core,
                        (struct nm_so_interface **)p_interface);
 }
@@ -58,6 +59,7 @@ nm_so_begin_packing(nm_so_pack_interface interface,
   _cnx->tag = tag;
   _cnx->first_seq_number = nm_so_ri_get_current_send_seq(_cnx->p_interface,
 							 gate_id, tag);
+  _cnx->nb_paquets = 0;
 
   return NM_ESUCCESS;
 }
@@ -68,6 +70,8 @@ nm_so_pack(struct nm_so_cnx *cnx,
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
+  _cnx->nb_paquets++;
+
   return nm_so_ri_isend(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			data, len, NULL);
 }
@@ -76,17 +80,15 @@ int
 nm_so_end_packing(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
-  unsigned long seq = nm_so_ri_get_current_send_seq(_cnx->p_interface,
-						    _cnx->gate_id, _cnx->tag);
 
   return nm_so_ri_swait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
-			      cnx->first_seq_number, seq-1);
+			      _cnx->first_seq_number, _cnx->nb_paquets);
 }
 
 
 int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
-		      uint16_t gate_id, uint8_t tag,
+		      long gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
@@ -94,28 +96,14 @@ nm_so_begin_unpacking(nm_so_pack_interface interface,
   _cnx->p_interface = (struct nm_so_interface *)interface;
   _cnx->gate_id = gate_id;
   _cnx->tag = tag;
-  _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
-							 gate_id, tag);
+  _cnx->nb_paquets = 0;
+
+  if(gate_id != NM_SO_ANY_SRC)
+    _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+							   gate_id, tag);
 
   return NM_ESUCCESS;
 }
-
-
-int
-nm_so_begin_unpacking_any_src(nm_so_pack_interface interface,
-                              uint8_t tag,
-                              struct nm_so_cnx *cnx){
-  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
-
-  _cnx->p_interface = (struct nm_so_interface *)interface;
-  _cnx->tag = tag;
-  _cnx->gate_id = NM_SO_RECV_ANY_SRC;
-  _cnx->first_seq_number = -1;
-
-  return NM_ESUCCESS;
-}
-
-
 
 int
 nm_so_unpack(struct nm_so_cnx *cnx,
@@ -123,8 +111,35 @@ nm_so_unpack(struct nm_so_cnx *cnx,
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  return nm_so_ri_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
-			data, len, NULL);
+  if(_cnx->gate_id == NM_SO_ANY_SRC) {
+    /* first unpack is ANY_SRC */
+    nm_so_request request;
+    int err;
+
+    err = nm_so_ri_irecv(_cnx->p_interface, NM_SO_ANY_SRC, _cnx->tag,
+			 data, len, &request);
+    if(err != NM_ESUCCESS)
+      return err;
+
+    err = nm_so_ri_rwait(_cnx->p_interface, request);
+    if(err != NM_ESUCCESS)
+      return err;
+
+    err = nm_so_ri_recv_source(request, &_cnx->gate_id);
+
+    _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+							   _cnx->gate_id,
+							   _cnx->tag);
+
+    return err;
+
+  } else {
+
+    _cnx->nb_paquets++;
+
+    return nm_so_ri_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			  data, len, NULL);
+  }
 }
 
 int
@@ -132,11 +147,8 @@ nm_so_end_unpacking(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  unsigned long seq = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
-						    _cnx->gate_id, _cnx->tag);
-
   return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
-			      cnx->first_seq_number, seq-1);
+			      _cnx->first_seq_number, _cnx->nb_paquets);
 }
 
 int
@@ -144,9 +156,6 @@ nm_so_rwait(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  unsigned long seq = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
-						    _cnx->gate_id, _cnx->tag);
-
-  return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag, cnx->first_seq_number, seq-1);
+  return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			      _cnx->first_seq_number, _cnx->nb_paquets);
 }
-

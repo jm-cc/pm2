@@ -32,7 +32,6 @@ struct nm_so_ri_gate {
      bitmaps, to save space and avoid false sharing between send and
      recv operations. status[tag_id][seq] */
   volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
-
 };
 
 struct any_src_status {
@@ -149,20 +148,21 @@ nm_so_ri_swait(struct nm_so_interface *p_so_interface,
 int
 nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
-		     unsigned long seq_inf, unsigned long seq_sup)
+		     unsigned long seq_inf, unsigned long nb)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
-  uint8_t seq = seq_inf, limit = seq_sup;
+  uint8_t seq = seq_inf;
 
-  do {
+  while(nb--) {
 
     nm_so_ri_swait(p_so_interface,
 		   (nm_so_request)&p_ri_gate->status[tag][seq]);
 
-  } while(seq++ != limit);
+    seq++;
+  }
 
   return NM_ESUCCESS;
 }
@@ -229,7 +229,7 @@ nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request;
+  volatile uint8_t *p_request = (uint8_t *)request;
 
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
@@ -251,20 +251,21 @@ nm_so_ri_recv_source(nm_so_request request, long *gate_id)
 int
 nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
-		     unsigned long seq_inf, unsigned long seq_sup)
+		     unsigned long seq_inf, unsigned long nb)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_ri_gate *p_ri_gate = p_so_gate->interface_private;
-  uint8_t seq = seq_inf, limit = seq_sup;
+  uint8_t seq = seq_inf;
 
-  do {
+  while(nb--) {
 
     nm_so_ri_rwait(p_so_interface,
 		   (nm_so_request)&p_ri_gate->status[tag][seq]);
 
-  } while(seq++ != limit);
+    seq++;
+  }
 
   return NM_ESUCCESS;
 }

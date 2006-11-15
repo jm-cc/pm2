@@ -42,7 +42,7 @@ nm_so_ri_swait(struct nm_so_interface *p_so_interface,
 extern int
 nm_so_ri_swait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
-		     unsigned long seq_inf, unsigned long seq_sup);
+		     unsigned long seq_inf, unsigned long nb);
 
 
 extern int
@@ -62,7 +62,7 @@ nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
 extern int
 nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
-		     unsigned long seq_inf, unsigned long seq_sup);
+		     unsigned long seq_inf, unsigned long nb);
 
 int
 nm_so_ri_recv_source(nm_so_request request, long *gate_id);

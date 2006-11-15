@@ -61,6 +61,9 @@ int
 nm_so_end_unpacking(struct nm_so_cnx *cnx);
 
 int
-nm_so_rwait(struct nm_so_cnx *cnx);
+nm_so_flush_packs(struct nm_so_cnx *cnx);
+
+int
+nm_so_flush_unpacks(struct nm_so_cnx *cnx);
 
 #endif

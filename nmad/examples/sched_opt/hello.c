@@ -157,7 +157,6 @@ main(int	  argc,
                         goto out;
                 }
 
-		printf("Client !\n");
                 strcpy(buf, msg);
 
 		nm_so_begin_packing(interface, gate_id, 0, &cnx);

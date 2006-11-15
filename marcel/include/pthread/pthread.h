@@ -454,3 +454,19 @@
 #undef pthread_barrierattr_getpshared
 #define pthread_barrierattr_getpshared(attr,pshared) pmarcel_barrierattr_getpshared(attr,pshared)
 
+#if defined(__cplusplus)
+#define pthread_once pmarcel_once
+#define pthread_getspecific pmarcel_getspecific
+#define pthread_setspecific pmarcel_setspecific
+#define pthread_create pmarcel_create
+#define pthread_cancel pmarcel_cancel
+#define pthread_mutex_lock pmarcel_mutex_lock
+#define pthread_mutex_trylock pmarcel_mutex_trylock
+#define pthread_mutex_unlock pmarcel_mutex_unlock
+#define pthread_mutex_init pmarcel_mutex_init
+#define pthread_key_create pmarcel_key_create
+#define pthread_key_delete pmarcel_key_delete
+#define pthread_mutexattr_init pmarcel_mutexattr_init
+#define pthread_mutexattr_settype pmarcel_mutexattr_settype
+#define pthread_mutexattr_destroy pmarcel_mutexattr_destroy
+#endif /* __cpluscplus */

@@ -27,7 +27,7 @@
 #include "mpi_types.h"
 
 int MPI_Init(int *argc,
-             char **argv);
+             char ***argv);
 
 int MPI_Finalize(void);
 

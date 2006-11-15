@@ -22,6 +22,8 @@
 
 #include <stdint.h>
 
+#include <madeleine.h>
+
 #include <nm_public.h>
 #include <nm_so_public.h>
 #include <nm_so_pack_interface.h>
@@ -38,6 +40,9 @@
 #  include <nm_tcp_public.h>
 #endif
 
+static int global_size;
+static int process_rank;
+
 int not_implemented(char *s) 
 {
   printf("%s: Not implemented yet\n", s);
@@ -45,48 +50,33 @@ int not_implemented(char *s)
 }
 
 int MPI_Init(int *argc,
-             char **argv) {
-  nm_so_pack_interface  interface;
-  struct nm_core       *p_core  = NULL;
-  uint8_t		drv_id	=    0;
-  char                 *l_url	= NULL;
-  uint8_t		gate_id	=    0;
-  int                   err;
+             char ***argv) {
+
+  p_mad_madeleine_t madeleine = NULL;
+  p_mad_session_t   session   = NULL;
 
   /*
-    Initialise NewMadeleine
-  */
-  err = nm_core_init(argc, argv, &p_core, nm_so_load);
-  if (err != NM_ESUCCESS) {
-    printf("nm_core_init returned err = %d\n", err);
-    return 0;
-  }
-  err = nm_so_pack_interface_init(p_core, &interface);
-  if(err != NM_ESUCCESS) {
-    printf("nm_so_pack_interface_init return err = %d\n", err);
-    return 0;
-  }
+   * Initialization of various libraries.
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_init(argc, *argv);
 
-#if defined CONFIG_MX
-  err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
-#elif defined CONFIG_GM
-  err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
-#elif defined CONFIG_QSNET
-  err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
-#else
-  err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
-#endif
-  if (err != NM_ESUCCESS) {
-    printf("nm_core_driver_init returned err = %d\n", err);
-    return 0;
-  }
-  printf("local url: [%s]\n", l_url);
+  /*
+   * Reference to the session information object
+   */
+  session      = madeleine->session;
 
-  err = nm_core_gate_init(p_core, &gate_id);
-  if (err != NM_ESUCCESS) {
-    printf("nm_core_gate_init returned err = %d\n", err);
-    return 0;
-  }
+  /*
+   * Globally unique process rank.
+   */
+  process_rank = session->process_rank;
+  //printf("My global rank is %d\n", process_rank);
+
+  /*
+   * How to obtain the configuration size.
+   */
+  global_size = tbx_slist_get_length(madeleine->dir->process_slist);
+  //printf("The configuration size is %d\n", global_size);
 
   return 1;
 }
@@ -97,12 +87,18 @@ int MPI_Finalize(void) {
 
 int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
-  return not_implemented("MPI_Comm_size");
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  *size = global_size;
+  return 1;
 }
 
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
-  return not_implemented("MPI_Comm_rank");
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  *rank = process_rank;
+  return 1;
 }
 
 int MPI_Send(void *buffer,

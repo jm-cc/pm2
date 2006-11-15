@@ -94,7 +94,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
     seq = p_so_gate->recv_seq_number[tag];
     status = &p_so_gate->status[tag][seq];
 
-    if(*status == NM_SO_STATUS_PACKET_HERE) {
+    if(*status & NM_SO_STATUS_PACKET_HERE) {
       /* Wow! Data already in! */
 
       *status = 0;
@@ -114,7 +114,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
       goto out;
     }
 
-    if(*status == NM_SO_STATUS_RDV_HERE) {
+    if(*status & NM_SO_STATUS_RDV_HERE) {
 
       *status = 0;
 
@@ -129,7 +129,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
 
   } while(p_so_sched->next_gate_id != first);
 
-  p_so_sched->any_src[tag].unpack_here = NM_SO_STATUS_UNPACK_HERE;
+  p_so_sched->any_src[tag].status = NM_SO_STATUS_UNPACK_HERE;
   p_so_sched->any_src[tag].data = data;
   p_so_sched->any_src[tag].len = len;
 
@@ -167,7 +167,8 @@ __nm_so_unpack(struct nm_gate *p_gate,
 	 chunks are still in use, the pw will be destroyed. */
       nm_so_pw_dec_header_ref_count(p_so_gate->recv[tag][seq].pkt_here.p_so_pw);
 
-      *status &= ~NM_SO_STATUS_PACKET_HERE;
+      *status = 0;
+
       interface->unpack_success(p_gate, tag, seq, tbx_false);
 
     } else {
@@ -177,7 +178,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       p_so_gate->recv[tag][seq].unpack_here.data = data;
       p_so_gate->recv[tag][seq].unpack_here.len = len;
 
-      *status |= NM_SO_STATUS_UNPACK_HERE;
+      *status = NM_SO_STATUS_UNPACK_HERE;
 
       p_so_gate->pending_unpacks++;
 
@@ -197,7 +198,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
     if(*status & NM_SO_STATUS_RDV_HERE) {
       /* A RdV request has already been received for this chunk */
 
-      *status &= ~NM_SO_STATUS_RDV_HERE;
+      *status = 0;
 
       err = rdv_success(p_gate, tag, seq, data, len);
 
@@ -212,7 +213,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       p_so_gate->recv[tag][seq].unpack_here.data = data;
       p_so_gate->recv[tag][seq].unpack_here.len = len;
 
-      *status |= NM_SO_STATUS_UNPACK_HERE;
+      *status = NM_SO_STATUS_UNPACK_HERE;
 
       /* Check if we should post a new recv packet
          in order to receive the rdv request */
@@ -261,14 +262,18 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     p_so_gate->pending_unpacks--;
 
-    *status &= ~NM_SO_STATUS_UNPACK_HERE;
+    *status = 0;
     interface->unpack_success(p_gate, tag, seq, tbx_false);
 
     return NM_SO_HEADER_MARK_READ;
 
-  } else if ((p_so_sched->any_src[tag].unpack_here == NM_SO_STATUS_UNPACK_HERE)
+  } else if ((p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
 	     &&
 	     (p_so_gate->recv_seq_number[tag] == seq)) {
+
+    p_so_sched->any_src[tag].status = 0;
+
+    p_so_gate->recv_seq_number[tag]++;
 
     /* Copy data to its final destination */
     memcpy(p_so_sched->any_src[tag].data,
@@ -276,8 +281,6 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
            p_so_sched->any_src[tag].len);
 
     p_so_sched->pending_any_src_unpacks--;
-
-    p_so_sched->any_src[tag].unpack_here = 0;
 
     interface->unpack_success(p_gate, tag, seq, tbx_true);
 
@@ -291,7 +294,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     p_so_gate->recv[tag][seq].pkt_here.data = ptr;
     p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
 
-    *status |= NM_SO_STATUS_PACKET_HERE;
+    *status = NM_SO_STATUS_PACKET_HERE;
 
     return NM_SO_HEADER_MARK_UNREAD;
   }
@@ -303,6 +306,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
                         void *arg)
 {
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   uint8_t tag = tag_id - 128;
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
@@ -313,7 +317,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     p_so_gate->pending_unpacks--;
 
-    *status &= ~NM_SO_STATUS_UNPACK_HERE;
+    *status = 0;
 
     err = rdv_success(p_gate, tag, seq,
 		      p_so_gate->recv[tag][seq].unpack_here.data,
@@ -322,9 +326,25 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     if(err != NM_ESUCCESS)
       TBX_FAILURE("PANIC!\n");
 
+  } else if ((p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
+	     &&
+	     (p_so_gate->recv_seq_number[tag] == seq)) {
+    /* Application is already ready! */
+
+    p_so_sched->any_src[tag].status = NM_SO_STATUS_RDV_IN_PROGRESS;
+
+    p_so_gate->recv_seq_number[tag]++;
+
+    err = rdv_success(p_gate, tag, seq,
+		      p_so_sched->any_src[tag].data,
+		      p_so_sched->any_src[tag].len);
+
+    if(err != NM_ESUCCESS)
+      TBX_FAILURE("PANIC!\n");
+
   } else {
     /* Store rdv request */
-    p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
+    p_so_gate->status[tag][seq] = NM_SO_STATUS_RDV_HERE;
   }
 
   return NM_SO_HEADER_MARK_READ;
@@ -388,12 +408,13 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       if(res == NM_SO_OPTIMISTIC_SUCCESS) {
 	/* The optimistic recv operation succeeded! We must mark the
 	   corresponding unpack 'completed'. */
+	unsigned tag = p_so_pw->pw.proto_id - 128;
 	volatile uint8_t *status =
-	  &(p_so_gate->status[p_so_pw->pw.proto_id - 128][p_so_pw->pw.seq]);
+	  &(p_so_gate->status[tag][p_so_pw->pw.seq]);
         struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-	*status &= ~NM_SO_STATUS_UNPACK_HERE;
-        interface->unpack_success(p_gate, tag, seq);
+	*status = 0;
+        interface->unpack_success(p_gate, tag, seq, tbx_false);
 
 	p_so_gate->pending_unpacks--;
       }
@@ -412,16 +433,20 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       nm_so_refill_regular_recv(p_gate);
 
   } else if(p_pw->p_trk->id == TRK_LARGE) {
-
-    int drv_id = p_pw->p_drv->id;
-
     /* This is the completion of a large message. */
+    int drv_id = p_pw->p_drv->id;
+    unsigned tag = p_so_pw->pw.proto_id - 128;
     struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-    interface->unpack_success(p_gate,
-                              p_so_pw->pw.proto_id - 128,
-                              p_so_pw->pw.seq,
-                              tbx_false);
+    if(p_so_gate->p_so_sched->any_src[tag].status & NM_SO_STATUS_RDV_IN_PROGRESS) {
+      /* Completion of an ANY_SRC unpack: the unpack_success has to
+	 carry out this information (tbx_true) */
+
+      p_so_gate->p_so_sched->any_src[tag].status = 0;
+
+      interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_true);
+    } else
+      interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
 
     //    printf("Large received (%d bytes) on drv %d\n", p_pw->length, drv_id);
 

@@ -31,7 +31,7 @@
 #define NM_SO_STATUS_PACKET_HERE     ((uint8_t)1)
 #define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)2)
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
-
+#define NM_SO_STATUS_RDV_IN_PROGRESS ((uint8_t)8)
 
 
 struct nm_so_sched {
@@ -40,8 +40,8 @@ struct nm_so_sched {
 
   /* For any source messages */
   struct {
-    uint8_t  unpack_here;
-    void *data;
+    uint8_t  status;
+    void    *data;
     uint32_t len;
   } any_src[NM_SO_MAX_TAGS];
 

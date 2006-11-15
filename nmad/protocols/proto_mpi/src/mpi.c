@@ -40,8 +40,9 @@
 #  include <nm_tcp_public.h>
 #endif
 
-static int global_size;
-static int process_rank;
+static p_mad_madeleine_t madeleine    = NULL;
+static int               global_size  = -1;
+static int               process_rank = -1;
 
 int not_implemented(char *s) 
 {
@@ -52,7 +53,6 @@ int not_implemented(char *s)
 int MPI_Init(int *argc,
              char ***argv) {
 
-  p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
 
   /*
@@ -78,11 +78,12 @@ int MPI_Init(int *argc,
   global_size = tbx_slist_get_length(madeleine->dir->process_slist);
   //printf("The configuration size is %d\n", global_size);
 
-  return 1;
+  return 0;
 }
 
 int MPI_Finalize(void) {
-  return not_implemented("MPI_Finalize");
+  mad_exit(madeleine);
+  return 0;
 }
 
 int MPI_Comm_size(MPI_Comm comm,
@@ -90,7 +91,7 @@ int MPI_Comm_size(MPI_Comm comm,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   *size = global_size;
-  return 1;
+  return 0;
 }
 
 int MPI_Comm_rank(MPI_Comm comm,
@@ -98,7 +99,7 @@ int MPI_Comm_rank(MPI_Comm comm,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   *rank = process_rank;
-  return 1;
+  return 0;
 }
 
 int MPI_Send(void *buffer,

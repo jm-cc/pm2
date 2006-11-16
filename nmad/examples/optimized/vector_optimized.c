@@ -160,7 +160,7 @@ void unpack_datatype_vector(nm_so_pack_interface interface,
 #if defined(NO_RWAIT)
   nm_so_end_unpacking(&cnx);
 #else
-  nm_so_rwait(&cnx);
+  nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   DEBUG_PRINTF("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);
 

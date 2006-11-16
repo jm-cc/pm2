@@ -205,7 +205,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
 #if defined(NO_RWAIT)
   nm_so_end_unpacking(&cnx);
 #else
-  nm_so_rwait(&cnx);
+  nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   DEBUG_PRINTF("Number of blocks %d Size %d\n", numberOfBlocks, size);
 
@@ -225,7 +225,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
 #if defined(NO_RWAIT)
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 #else
-  nm_so_rwait(&cnx);
+  nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     DEBUG_PRINTF("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);

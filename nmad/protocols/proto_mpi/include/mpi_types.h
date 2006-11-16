@@ -21,7 +21,7 @@
 #ifndef MPI_TYPES_H
 #define MPI_TYPES_H
 
-typedef struct { 
+typedef struct {
     int count;
     int MPI_SOURCE;
     int MPI_TAG;

@@ -22,12 +22,20 @@
 
 #include <stdint.h>
 #include <madeleine.h>
+#include <nm_public.h>
+#include <nm_so_public.h>
+#include <nm_so_sendrecv_interface.h>
+#include <nm_mad3_private.h>
+
 #include "mpi.h"
 
-static p_mad_madeleine_t madeleine       = NULL;
-static int               global_size     = -1;
-static int               process_rank    = -1;
-static int              *sizeof_datatype = NULL;
+#define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
+
+static p_mad_madeleine_t  madeleine       = NULL;
+static int                global_size     = -1;
+static int                process_rank    = -1;
+static int               *sizeof_datatype = NULL;
+static nm_so_sr_interface p_so_sr_if;
 
 int not_implemented(char *s)
 {
@@ -38,7 +46,9 @@ int not_implemented(char *s)
 int MPI_Init(int *argc,
              char ***argv) {
 
-  p_mad_session_t   session   = NULL;
+  p_mad_session_t   session  = NULL;
+  struct nm_core   *p_core   = NULL;
+  int err;
 
   /*
    * Initialization of various libraries.
@@ -62,6 +72,13 @@ int MPI_Init(int *argc,
    */
   global_size = tbx_slist_get_length(madeleine->dir->process_slist);
   //printf("The configuration size is %d\n", global_size);
+
+  /*
+   * Reference to the NewMadeleine core object
+   */
+  p_core = mad_nmad_get_core();
+  err = nm_so_sr_interface_init(p_core, &p_so_sr_if);
+  CHECK_RETURN_CODE(err, "nm_so_sr_interface_init");
 
   /*
    * Init the sizeof_datatype array
@@ -113,8 +130,11 @@ int MPI_Send(void *buffer,
              int dest,
              int tag,
              MPI_Comm comm) {
-  p_mad_channel_t    channel = NULL;
-  p_mad_connection_t out     = NULL;
+  p_mad_channel_t                  channel = NULL;
+  p_mad_connection_t               out     = NULL;
+  p_mad_nmad_connection_specific_t cs	   = NULL;
+  nm_so_sr_request                 request;
+  int                              err     = -1;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
@@ -127,7 +147,7 @@ int MPI_Send(void *buffer,
     return 1;
   }
 
-  out = mad_nmad_begin_packing(channel, dest);
+  out = tbx_darray_get(channel->out_connection_darray, dest);
   if (!out) {
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     return 1;
@@ -136,8 +156,12 @@ int MPI_Send(void *buffer,
   fprintf(stderr, "Connection out: %p\n", out);
 #endif /* MPI_NMAD_SO_DEBUG */
 
-  mad_nmad_pack(out, buffer, count * sizeof_datatype[datatype], mad_send_SAFER, mad_receive_EXPRESS);
-  mad_nmad_end_packing(out);
+  cs = out->specific;
+  err = nm_so_sr_isend(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], &request);
+  CHECK_RETURN_CODE(err, "nm_so_sr_isend");
+  err = nm_so_sr_swait(p_so_sr_if, request);
+  CHECK_RETURN_CODE(err, "nm_so_sr_wait");
+
   return 0;
 }
 
@@ -150,6 +174,9 @@ int MPI_Recv(void *buffer,
              MPI_Status *status) {
   p_mad_channel_t    channel = NULL;
   p_mad_connection_t in      = NULL;
+  p_mad_nmad_connection_specific_t	cs	= NULL;
+  nm_so_sr_request request;
+  int err;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
@@ -162,7 +189,7 @@ int MPI_Recv(void *buffer,
     return 1;
   }
 
-  in = mad_nmad_begin_unpacking_from(channel, source);
+  in =  tbx_darray_get(channel->in_connection_darray, source);
   if (!in) {
     fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
     return 1;
@@ -171,8 +198,11 @@ int MPI_Recv(void *buffer,
   fprintf(stderr, "Connection in: %p\n", in);
 #endif /* MPI_NMAD_SO_DEBUG */
 
-  mad_nmad_unpack(in, buffer, count * sizeof_datatype[datatype], mad_send_SAFER, mad_receive_EXPRESS);
-  mad_nmad_end_unpacking(in);
+  cs = in->specific;
+  err = nm_so_sr_irecv(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], &request);
+  CHECK_RETURN_CODE(err, "nm_so_sr_irecv");
+  err = nm_so_sr_rwait(p_so_sr_if, request);
+  CHECK_RETURN_CODE(err, "nm_so_sr_rwait");
 
   status->count = count;
   status->MPI_SOURCE = source;

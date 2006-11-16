@@ -50,13 +50,7 @@
 /*	3 external ints */
 
 /*	set to non-zero when probing is active */
-volatile unsigned int fut_active =
-#ifdef PROFILE_AUTOSTART
-	FUT_KEYMASKALL
-#else /* PROFILE_AUTOSTART */
-	0
-#endif /* PROFILE_AUTOSTART */
-	;
+volatile unsigned int fut_active = 0;
 
 /*	points to next unused byte in buffer (multiple of 4) */
 unsigned long * volatile fut_next_slot = NULL;

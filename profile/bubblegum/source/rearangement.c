@@ -1,4 +1,5 @@
 #include "rearangement.h"
+#include <limits.h>
 
 void PrintZone(zone* zonePrincipale);
 void printTab(int* tab, int taille);
@@ -8,13 +9,13 @@ void printTab(int* tab, int taille);
 /* { */
 /*    zone* zone1 = CreerZone(0,0,2,1); */
 
-/*    zone* zone2 = CreerZone(0,0,50,50); */
-/*    zone* zone3 = CreerZone(0,0,50,50); */
-/*    zone* zone4 = CreerZone(0,0,50,50); */
-/*    zone* zone5 = CreerZone(0,0,50,50); */
-/*    zone* zone6 = CreerZone(0,0,50,50); */
-/*    zone* zone7 = CreerZone(0,0,50,50); */
-/*    zone* zone8 = CreerZone(0,0,50,50); */
+/*    zone* zone2 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone3 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone4 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone5 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone6 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone7 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
+/*    zone* zone8 = CreerZone(0,0,LARGEUR_B,HAUTEUR_B); */
 
 /*    AjouterSousZones(zone1, zone2); */
 /*    AjouterSousZones(zone1, zone3); */
@@ -50,11 +51,11 @@ int Rearanger(zone * zone1)
    nElement = 1;
    zone2 = LireSousZones(zone1,1);
 
-   if (LireZoneHauteur(zone1)>50)
-      ChangerZoneHauteur(zone1, 50);
+   if (LireZoneHauteur(zone1)>HAUTEUR_B)
+      ChangerZoneHauteur(zone1, HAUTEUR_B);
 
-   if (LireZoneLargeur(zone1)>50)
-      ChangerZoneLargeur(zone1, 50);
+   if (LireZoneLargeur(zone1)>LARGEUR_B)
+      ChangerZoneLargeur(zone1, LARGEUR_B);
 
    /* la zone à réaranger n'est pas vide */
    if(zone2 != NULL)
@@ -65,13 +66,14 @@ int Rearanger(zone * zone1)
          ChangerZoneX(zone2,0);
          ChangerZoneY(zone2,0);
 
+	 /* réarranger d'abord récursivement */
          if (LireZoneLargeur(zone2) != LARGEUR_T)
             Rearanger(zone2);
 
 
          /* on détermine approximativement la surface que la zone
           * couvrira */
-         surface += (LireZoneHauteur(zone2) ) *
+         surface += (LireZoneHauteur(zone2)) *
             (LireZoneLargeur(zone2));
 
          /* on vérifie la largeur minimale que la surface aura
@@ -91,15 +93,8 @@ int Rearanger(zone * zone1)
       ChangerZoneLargeur(zone1, largeur);
 
       /* on cree un tableau de plateau */
-      tabX = malloc((1 + nElement) * sizeof(int));
-      tabY = malloc((1 + nElement) * sizeof(int));
-
-      /* qu'on initialise : */
-      for (j = 0; j < 1 + nElement; j++)
-      {
-         tabX[j] = 0;
-         tabY[j] = 0;
-      }
+      tabX = calloc(1 + nElement, sizeof(int));
+      tabY = calloc(1 + nElement, sizeof(int));
 
       /* initialement il n'y a qu'un plateau */
       nPlateau = 1;
@@ -111,8 +106,9 @@ int Rearanger(zone * zone1)
        * de plateau */
       for(j = 1; j < nElement; j++)
       {
+         zone2 = LireSousZones(zone1,j);
          /* on fixe le minimum à l'infini; */
-         minY = 2147483647;
+         minY = INT_MAX;
 
          /* nMin : numéro du plateau ou "ça passe le mieu" */
          nMin = -1;
@@ -124,9 +120,9 @@ int Rearanger(zone * zone1)
             minY2 = TesterPositionnerZone(tabX, tabY,
                                           largeur,
                                           nPlateau, k,
-                                          LireZoneLargeur(LireSousZones(zone1,j)));
+                                          LireZoneLargeur(zone2));
 
-            /* si on touve un meilleur endroit ou placer la zone,
+            /* si on trouve un meilleur endroit ou placer la zone,
              * alors on sauvegarde ses coordonnees */
             if (minY2 < minY)
             {
@@ -135,20 +131,19 @@ int Rearanger(zone * zone1)
             }
          }
 
-         Translater(LireSousZones(zone1,j),
-                    tabX[nMin] - LireZoneX(LireSousZones(zone1,j)),
-                    minY - LireZoneY(LireSousZones(zone1,j)));
+         Translater(zone2, tabX[nMin] - LireZoneX(zone2),
+                    minY - LireZoneY(zone2));
 
-         if (LireZoneX(LireSousZones(zone1,j)) +
-             LireZoneLargeur(LireSousZones(zone1,j)) >
+         if (LireZoneX(zone2) +
+             LireZoneLargeur(zone2) >
              largeurMax)
-            largeurMax = LireZoneX(LireSousZones(zone1,j)) +
-               LireZoneLargeur(LireSousZones(zone1,j));
+            largeurMax = LireZoneX(zone2) +
+               LireZoneLargeur(zone2);
 
          /* quand on a trouvé la meilleur position pour mettre la
             nouvelle zone, on met à jour le tableau de plateau */
          nPlateau = MAJTabPlateau(tabX, tabY, nPlateau, nMin,
-                                  LireSousZones(zone1, j), zone1, minY);
+                                  zone2, zone1, minY);
 
          /* debug */
 /*          printTab(tabX,nPlateau); */
@@ -203,9 +198,10 @@ int TesterPositionnerZone(int* tabX, int *tabY,
    int y = tabY[plateau];
 
    /* si la zone à insérer est trop à droite, on retourne l'infini */
-   if (largeurZoneP - MARGE < largeurSousZone + tabX[plateau])
+
+   if (tabX[plateau] + largeurSousZone + MARGE > largeurZoneP)
    {
-      return 2147483647;
+      return INT_MAX;
    }
 
    /* sinon, on test pour chacun des plateaux qui sont au niveau de la

@@ -131,14 +131,13 @@ int Rearanger(zone * zone1)
             }
          }
 
+	 if (nMin == -1 || minY == INT_MAX)
+	   abort();
          Translater(zone2, tabX[nMin] - LireZoneX(zone2),
                     minY - LireZoneY(zone2));
 
-         if (LireZoneX(zone2) +
-             LireZoneLargeur(zone2) >
-             largeurMax)
-            largeurMax = LireZoneX(zone2) +
-               LireZoneLargeur(zone2);
+         if (LireZoneX(zone2) + LireZoneLargeur(zone2) > largeurMax)
+            largeurMax = LireZoneX(zone2) + LireZoneLargeur(zone2);
 
          /* quand on a trouvé la meilleur position pour mettre la
             nouvelle zone, on met à jour le tableau de plateau */
@@ -209,8 +208,7 @@ int TesterPositionnerZone(int* tabX, int *tabY,
     * déterminer à quelle hauteur minimale peut on placer la sous
     * zone*/ 
    for(i = plateau + 1;
-       (tabX[i] < largeurSousZone + tabX[plateau]) &&
-          (i < nPlateau );
+          (i < nPlateau ) && (tabX[i] < largeurSousZone + tabX[plateau]);
        i++)
    {
       if (tabY[i] > y)
@@ -254,7 +252,7 @@ int MAJTabPlateau(int* tabX, int *tabY,
 
    /* on décale les plateaux vers la gauche dans le tableau */
    for(k = plateau + 1 + NbPlateauACreer;
-       k < nPlateau - NbPlateauACreer - NbPlateauASupr;
+       k < nPlateau - NbPlateauASupr;
        k++)
    {
       tabX[k] = tabX[k + NbPlateauASupr];
@@ -284,7 +282,7 @@ int MAJTabPlateau(int* tabX, int *tabY,
 
    tabY[plateau] = Y + LireZoneHauteur(SousZone);
 
-   return nPlateau - NbPlateauASupr + NbPlateauACreer;
+   return nPlateau + NbPlateauACreer;
 }
 
 /* fonction de trace */

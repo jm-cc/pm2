@@ -16,5 +16,25 @@
 
 #include "nm_protected.h"
 #include "madeleine.h"
+#include "nm_so_raw_interface.h"
 
-/* nothing for now */
+typedef struct s_mad_nmad_connection_specific {
+#ifdef CONFIG_SCHED_OPT
+        struct s_mad_nmad_connection_specific	*master_cnx;
+
+        nm_so_request		 in_reqs[256];
+
+        uint8_t			 in_next_seq;
+        uint8_t			 in_wait_seq;
+        uint8_t			 in_flow_ctrl;
+#  ifdef MAD_NMAD_SO_DEBUG
+        p_tbx_slist_t		 in_deferred_slist;
+#  endif /* MAD_NMAD_SO_DEBUG */
+
+        nm_so_request		 out_reqs[256];
+        uint8_t			 out_next_seq;
+        uint8_t			 out_wait_seq;
+        uint8_t			 out_flow_ctrl;
+#endif /* CONFIG_SCHED_OPT */
+  	uint8_t			 gate_id;
+} mad_nmad_connection_specific_t, *p_mad_nmad_connection_specific_t;

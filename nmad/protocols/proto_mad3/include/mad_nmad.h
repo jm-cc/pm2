@@ -33,4 +33,7 @@
 char *
 mad_nmad_register(p_mad_driver_interface_t);
 
+struct nm_core	*
+mad_nmad_get_core(void);
+
 #endif /* MAD_NMAD_H */

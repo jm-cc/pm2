@@ -56,7 +56,8 @@ main(int	  argc,
         uint8_t			 drv_id		=    0;
         uint8_t			 gate_id1	=    0;
         uint8_t			 gate_id2	=    0;
-        char			*buf		= NULL;
+        char			*s_buf		= NULL;
+        char			*r_buf		= NULL;
         char			*hostname	= "localhost";
         uint64_t		 len;
 	struct nm_so_cnx         cnx;
@@ -203,7 +204,7 @@ main(int	  argc,
         // ping sur mon 1er voisin
         nm_so_begin_packing(interface, gate_id1, 0, &cnx);
 
-        nm_so_pack(&cnx, buf, len);
+        nm_so_pack(&cnx, s_buf, len);
 
         nm_so_end_packing(&cnx);
 
@@ -211,7 +212,7 @@ main(int	  argc,
         // pong (qui devrait venir du 2)
         nm_so_begin_unpacking_any_src(interface, 0, &cnx);
 
-        nm_so_unpack(&cnx, buf, len);
+        nm_so_unpack(&cnx, r_buf, len);
 
         nm_so_end_unpacking(&cnx);
 

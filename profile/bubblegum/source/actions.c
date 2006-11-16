@@ -285,16 +285,21 @@ void Executer(GtkWidget *widget, gpointer data)
    
    // XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
+   gtk_main_iteration_do(FALSE);
    gen_fichier_C(iGaucheVars->bullePrincipale);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
+   gtk_main_iteration_do(FALSE);
    system("make " GENEC_NAME);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
+   gtk_main_iteration_do(FALSE);
    system("pm2load " GENEC_NAME);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.8);
+   gtk_main_iteration_do(FALSE);
    char tracefile[1024];
    snprintf(tracefile,sizeof(tracefile),"/tmp/prof_file_user_%s",getenv("USER"));
    LoadScene(anim, tracefile);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
+   gtk_main_iteration_do(FALSE);
    gtk_widget_destroy(dialog);
 }
 

@@ -130,11 +130,49 @@ int MPI_Send(void *buffer,
              int dest,
              int tag,
              MPI_Comm comm) {
+  MPI_Request request;
+  int         err = 0;
+
+  MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
+
+  err = nm_so_sr_swait(p_so_sr_if, request);
+
+  return err;
+}
+
+int MPI_Recv(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int source,
+             int tag,
+             MPI_Comm comm,
+             MPI_Status *status) {
+  MPI_Request request;
+  int         err = 0;
+
+  MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
+
+  err = nm_so_sr_rwait(p_so_sr_if, request);
+
+  status->count = count;
+  status->MPI_SOURCE = source;
+  status->MPI_TAG = tag;
+  status->MPI_ERROR = err;
+
+  return err;
+}
+
+int MPI_Isend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) {
   p_mad_channel_t                  channel = NULL;
   p_mad_connection_t               out     = NULL;
   p_mad_nmad_connection_specific_t cs	   = NULL;
-  nm_so_sr_request                 request;
-  int                              err     = -1;
+  int                              err     = 0;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
@@ -157,26 +195,22 @@ int MPI_Send(void *buffer,
 #endif /* MPI_NMAD_SO_DEBUG */
 
   cs = out->specific;
-  err = nm_so_sr_isend(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], &request);
-  CHECK_RETURN_CODE(err, "nm_so_sr_isend");
-  err = nm_so_sr_swait(p_so_sr_if, request);
-  CHECK_RETURN_CODE(err, "nm_so_sr_wait");
+  err = nm_so_sr_isend(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
-  return 0;
+  return err;
 }
 
-int MPI_Recv(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int source,
-             int tag,
-             MPI_Comm comm,
-             MPI_Status *status) {
-  p_mad_channel_t    channel = NULL;
-  p_mad_connection_t in      = NULL;
-  p_mad_nmad_connection_specific_t	cs	= NULL;
-  nm_so_sr_request request;
-  int err;
+int MPI_Irecv(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) {
+  p_mad_channel_t                   channel = NULL;
+  p_mad_connection_t                in      = NULL;
+  p_mad_nmad_connection_specific_t  cs      = NULL;
+  int                               err     = 0;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
@@ -199,15 +233,8 @@ int MPI_Recv(void *buffer,
 #endif /* MPI_NMAD_SO_DEBUG */
 
   cs = in->specific;
-  err = nm_so_sr_irecv(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], &request);
-  CHECK_RETURN_CODE(err, "nm_so_sr_irecv");
-  err = nm_so_sr_rwait(p_so_sr_if, request);
-  CHECK_RETURN_CODE(err, "nm_so_sr_rwait");
+  err = nm_so_sr_irecv(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
-  status->count = count;
-  status->MPI_SOURCE = source;
-  status->MPI_TAG = tag;
-  status->MPI_ERROR = 0;
-  return 0;
+  return err;
 }
 

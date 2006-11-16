@@ -28,6 +28,8 @@ typedef struct {
     int MPI_ERROR;
 } MPI_Status;
 
+typedef unsigned long MPI_Request;
+
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD 91
 #define MPI_COMM_SELF  92

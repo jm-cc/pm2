@@ -52,5 +52,21 @@ int MPI_Recv(void *buffer,
              MPI_Comm comm,
              MPI_Status *status);
 
+int MPI_Isend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request);
+
+int MPI_Irecv(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request);
+
 #endif /* MPI_H */
 

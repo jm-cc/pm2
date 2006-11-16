@@ -14,9 +14,7 @@ create_temp_file() { #prefix suffix directory
     echo $temp_file
 }
 
-get_machines() { #nb_of_processes
-    nb=$1
-
+get_machines() {
     # Which machines are available
     if [ -n "$machineFile" ] ; then
         host_list=`cat $machineFile`
@@ -31,16 +29,16 @@ get_machines() { #nb_of_processes
 
     # how many machines do you want?
     nb_machines=`echo $host_list | wc -w`
-    if [ $nb -lt $nb_machines ] ; then
-	host_list2=`echo $host_list | tr ' ' '\012' | head -$nb`
-    elif [ $nb -gt $nb_machines ] ; then
+    if [ $NP -lt $nb_machines ] ; then
+	host_list2=`echo $host_list | tr ' ' '\012' | head -$NP`
+    elif [ $NP -gt $nb_machines ] ; then
 	host_list_tmp=$host_list
 	x=$nb_machines
-	while [ $x -lt $nb ] ; do
+	while [ $x -lt $NP ] ; do
 	    x=`expr $x + $nb_machines`
 	    host_list_tmp=`echo $host_list_tmp $host_list`
 	done
-	host_list_tmp2=`echo $host_list_tmp | tr ' ' '\012' | head -$nb`
+	host_list_tmp2=`echo $host_list_tmp | tr ' ' '\012' | head -$NP`
 	host_list2=`echo $host_list_tmp2 | tr ' ' '\012' | sort`
     else
 	host_list2=$host_list
@@ -113,7 +111,7 @@ if [ ! -r "$NET_FILE" ]; then
     exit 1
 fi
 
-get_machines $NP
+get_machines
 appli_file=`create_temp_file .mad .appli .`
 trap 'rm -f "${appli_file}"' 0 INT QUIT
 touch "${appli_file}"                  
@@ -140,13 +138,13 @@ EOF
 ) > $appli_file
 
 if [ -n "$debugger" ]; then
-    $Show leonie -d -w $LEONIE_ARGS --appli="$progname" --flavor="$PM2_FLAVOR" "$appli_file" $cmdLineArgs
+    $Show leonie -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
-    $Show leonie -vg -w $LEONIE_ARGS --appli="$progname" --flavor="$PM2_FLAVOR" "$appli_file" $cmdLineArgs
+    $Show leonie -vg -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$MPI_NMAD_X" ] ; then
-    $Show leonie --appli="$progname" --flavor="$PM2_FLAVOR" $LEONIE_ARGS "$appli_file" $cmdLineArgs
+    $Show leonie $LEONIE_ARGS $appli_file $cmdLineArgs
 else
-    $Show leonie --appli="$progname" --flavor="$PM2_FLAVOR" --x --p $LEONIE_ARGS "$appli_file" $cmdLineArgs
+    $Show leonie --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
 fi
 
 exit 0

@@ -18,8 +18,6 @@
  * =====
  */
 
-#undef MPI_NMAD_SO_DEBUG
-
 #include <stdint.h>
 #include <madeleine.h>
 #include <nm_public.h>
@@ -28,8 +26,7 @@
 #include <nm_mad3_private.h>
 
 #include "mpi.h"
-
-#define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
+#include "mpi_nmad_private.h"
 
 static p_mad_madeleine_t  madeleine       = NULL;
 static int                global_size     = -1;
@@ -154,10 +151,12 @@ int MPI_Recv(void *buffer,
 
   err = nm_so_sr_rwait(p_so_sr_if, request);
 
-  status->count = count;
-  status->MPI_SOURCE = source;
-  status->MPI_TAG = tag;
-  status->MPI_ERROR = err;
+  if (status != NULL) {
+    status->count = count;
+    status->MPI_SOURCE = source;
+    status->MPI_TAG = tag;
+    status->MPI_ERROR = err;
+  }
 
   return err;
 }
@@ -190,13 +189,12 @@ int MPI_Isend(void *buffer,
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     return 1;
   }
-#if defined(MPI_NMAD_SO_DEBUG)
-  fprintf(stderr, "Connection out: %p\n", out);
-#endif /* MPI_NMAD_SO_DEBUG */
+  MPI_NMAD_TRACE("Connection out: %p\n", out);
 
   cs = out->specific;
   err = nm_so_sr_isend(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
+  inc_nb_outgoing_msg();
   return err;
 }
 
@@ -228,13 +226,33 @@ int MPI_Irecv(void* buffer,
     fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
     return 1;
   }
-#if defined(MPI_NMAD_SO_DEBUG)
-  fprintf(stderr, "Connection in: %p\n", in);
-#endif /* MPI_NMAD_SO_DEBUG */
+  MPI_NMAD_TRACE("Connection in: %p\n", in);
 
   cs = in->specific;
   err = nm_so_sr_irecv(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
+  inc_nb_incoming_msg();
   return err;
 }
+
+int MPI_Barrier(MPI_Comm comm) {
+
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  tbx_bool_t termination = test_termination(comm);
+  MPI_NMAD_TRACE("Result %d\n", termination);
+  while (termination == tbx_false) {
+    sleep(1);
+    termination = test_termination(comm);
+  }
+  return 0;
+}
+
+double MPI_Wtime(void) {
+  tbx_tick_t time;
+  TBX_GET_TICK(time);
+  double usec = tbx_tick2usec(time);
+  return usec / 1000000;
+}
+
 

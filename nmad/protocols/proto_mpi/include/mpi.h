@@ -68,5 +68,9 @@ int MPI_Irecv(void* buffer,
               MPI_Comm comm,
               MPI_Request *request);
 
+int MPI_Barrier(MPI_Comm comm);
+
+double MPI_Wtime(void);
+
 #endif /* MPI_H */
 

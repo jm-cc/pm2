@@ -33,6 +33,8 @@ static int                global_size     = -1;
 static int                process_rank    = -1;
 static int               *sizeof_datatype = NULL;
 static nm_so_sr_interface p_so_sr_if;
+static long              *out_gate_id;
+static long              *in_gate_id;
 
 int not_implemented(char *s)
 {
@@ -43,9 +45,14 @@ int not_implemented(char *s)
 int MPI_Init(int *argc,
              char ***argv) {
 
-  p_mad_session_t   session  = NULL;
-  struct nm_core   *p_core   = NULL;
-  int err;
+  p_mad_session_t                  session    = NULL;
+  struct nm_core                  *p_core     = NULL;
+  int                              err;
+  int                              dest;
+  int                              source;
+  p_mad_channel_t                  channel    = NULL;
+  p_mad_connection_t               connection = NULL;
+  p_mad_nmad_connection_specific_t cs	      = NULL;
 
   /*
    * Initialization of various libraries.
@@ -96,6 +103,51 @@ int MPI_Init(int *argc,
   sizeof_datatype[MPI_LONG_DOUBLE] = sizeof(long double);
   sizeof_datatype[MPI_LONG_LONG_INT] = sizeof(long long int);
   sizeof_datatype[MPI_LONG_LONG] = sizeof(long long);
+
+  /*
+   * Store the gate id of all the other processes
+   */
+  out_gate_id = malloc(global_size * sizeof(long));
+  in_gate_id = malloc(global_size * sizeof(long));
+
+  /* Get a reference to the channel structure */
+  channel = tbx_htable_get(madeleine->channel_htable, "channel_comm_world");
+
+  /* If that fails, it means that our process does not belong to the channel */
+  if (!channel) {
+    fprintf(stderr, "I don't belong to this channel");
+    return 1;
+  }
+
+  for(dest=0 ; dest<global_size ; dest++) {
+    out_gate_id[dest] = -1;
+    if (dest == process_rank) continue;
+
+    connection = tbx_darray_get(channel->out_connection_darray, dest);
+    if (!connection) {
+      fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
+    }
+    else {
+      MPI_NMAD_TRACE("Connection out: %p\n", out);
+      cs = connection->specific;
+      out_gate_id[dest] = cs->gate_id;
+    }
+  }
+
+  for(source=0 ; source<global_size ; source++) {
+    in_gate_id[source] = -1;
+    if (source == process_rank) continue;
+
+    connection =  tbx_darray_get(channel->in_connection_darray, source);
+    if (!connection) {
+      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+    }
+    else {
+      MPI_NMAD_TRACE("Connection in: %p\n", in);
+      cs = connection->specific;
+      in_gate_id[source] = cs->gate_id;
+    }
+  }
 
   return 0;
 }
@@ -168,31 +220,18 @@ int MPI_Isend(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  p_mad_channel_t                  channel = NULL;
-  p_mad_connection_t               out     = NULL;
-  p_mad_nmad_connection_specific_t cs	   = NULL;
-  int                              err     = 0;
+  int  err     = 0;
+  long gate_id;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
-  /* Get a reference to the channel structure */
-  channel = tbx_htable_get(madeleine->channel_htable, "channel_comm_world");
-
-  /* If that fails, it means that our process does not belong to the channel */
-  if (!channel) {
-    fprintf(stderr, "I don't belong to this channel");
-    return 1;
-  }
-
-  out = tbx_darray_get(channel->out_connection_darray, dest);
-  if (!out) {
+  if (dest >= global_size || out_gate_id[dest] == -1) {
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     return 1;
   }
-  MPI_NMAD_TRACE("Connection out: %p\n", out);
 
-  cs = out->specific;
-  err = nm_so_sr_isend(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
+  gate_id = out_gate_id[dest];
+  err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
   inc_nb_outgoing_msg();
   return err;
@@ -205,31 +244,18 @@ int MPI_Irecv(void* buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  p_mad_channel_t                   channel = NULL;
-  p_mad_connection_t                in      = NULL;
-  p_mad_nmad_connection_specific_t  cs      = NULL;
-  int                               err     = 0;
+  int err      = 0;
+  long gate_id;
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
-  /* Get a reference to the channel structure */
-  channel = tbx_htable_get(madeleine->channel_htable, "channel_comm_world");
-
-  /* If that fails, it means that our process does not belong to the channel */
-  if (!channel) {
-    fprintf(stderr, "I don't belong to this channel");
-    return 1;
-  }
-
-  in =  tbx_darray_get(channel->in_connection_darray, source);
-  if (!in) {
+  if (source >= global_size || in_gate_id[source] == -1) {
     fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
     return 1;
   }
-  MPI_NMAD_TRACE("Connection in: %p\n", in);
 
-  cs = in->specific;
-  err = nm_so_sr_irecv(p_so_sr_if, cs->gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
+  gate_id = in_gate_id[source];
+  err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
 
   inc_nb_incoming_msg();
   return err;

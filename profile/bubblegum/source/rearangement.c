@@ -33,6 +33,11 @@ void printTab(int* tab, int taille);
 /* } */
 
 
+/* Un "plateau" est un "coin gauche", où l'on peut caser une zone (si le
+ * plateau immédiatement à gauche est plus haut), ou qui la gêne (si le plateau
+ * immédiatement à gauche est moins haut) */
+/* Ils sont triés par ordre croissant des X */
+
 int Rearanger(zone * zone1)
 {
    int nElement;
@@ -101,16 +106,14 @@ int Rearanger(zone * zone1)
       tabX[0] = MARGE;
       tabY[0] = MARGE;
 
-
-      /* pour chaque élément, on essaye de l'insérer dans le tableau
-       * de plateau */
+      /* pour chaque élément, on essaye de l'insérer dans un des plateaux */
       for(j = 1; j < nElement; j++)
       {
          zone2 = LireSousZones(zone1,j);
          /* on fixe le minimum à l'infini; */
          minY = INT_MAX;
 
-         /* nMin : numéro du plateau ou "ça passe le mieu" */
+         /* nMin : numéro du plateau ou "ça passe le mieux" */
          nMin = -1;
 
          /* on teste pour chaque plateau si il "passe" à cet
@@ -144,11 +147,13 @@ int Rearanger(zone * zone1)
          nPlateau = MAJTabPlateau(tabX, tabY, nPlateau, nMin,
                                   zone2, zone1, minY);
 
+#if 0
          /* debug */
-/*          printTab(tabX,nPlateau); */
-/*          printf("_"); */
-/*          printTab(tabY,nPlateau); */
-/*          printf("\n"); */
+         printTab(tabX,nPlateau);
+         printf("_");
+         printTab(tabY,nPlateau);
+         printf("\n");
+#endif
 
          ChangerZoneLargeur(zone1, largeurMax + MARGE);
          
@@ -203,12 +208,12 @@ int TesterPositionnerZone(int* tabX, int *tabY,
       return INT_MAX;
    }
 
-   /* sinon, on test pour chacun des plateaux qui sont au niveau de la
-    * sous zone lequel gène le plus la zone (est le plus haut) pour
+   /* sinon, on test pour chacun des plateaux qui sont sur la largeur de la
+    * sous zone lequel gène leplus la zone (est le plus haut) pour
     * déterminer à quelle hauteur minimale peut on placer la sous
     * zone*/ 
    for(i = plateau + 1;
-          (i < nPlateau ) && (tabX[i] < largeurSousZone + tabX[plateau]);
+          (i < nPlateau ) && (tabX[i] < tabX[plateau] + largeurSousZone);
        i++)
    {
       if (tabY[i] > y)
@@ -232,15 +237,18 @@ int MAJTabPlateau(int* tabX, int *tabY,
    NbPlateauACreer = 1;
 
    /* on parcourt le tableau de plateau pour trouver le nombre (NbPlateauASupr) de
-    * plateau qui seront à supprimer par l'ajout du nouveau plateau */
+    * plateau qui seront à supprimer par l'ajout du nouveau plateau 
+    * (ceux qui sont dans le même intervalle de X). */
    for (i = plateau + 1; i< nPlateau; i++, NbPlateauASupr++)
    {
       /* si on tombe "pile" sur un plateau, pas besoin d'en créer un */
-      if(tabX[i] == tabX[plateau] + LireZoneLargeur(SousZone))
+      if(tabX[i] == tabX[plateau] + LireZoneLargeur(SousZone)) {
          NbPlateauACreer = 0;
+	 break; /* ne pas le supprimer, il va nous servir */
+      }
 
       /* si on passe sur des tableau à droite de la zone on s'arrète */
-      if (tabX[i] >= tabX[plateau] + LireZoneLargeur(SousZone))
+      if (tabX[i] > tabX[plateau] + LireZoneLargeur(SousZone))
          break;
    }
 
@@ -251,7 +259,7 @@ int MAJTabPlateau(int* tabX, int *tabY,
       NbPlateauACreer = 0;
 
    /* on décale les plateaux vers la gauche dans le tableau */
-   for(k = plateau + 1 + NbPlateauACreer;
+   for(k = plateau + 1;
        k < nPlateau - NbPlateauASupr;
        k++)
    {
@@ -280,6 +288,7 @@ int MAJTabPlateau(int* tabX, int *tabY,
    }
 
 
+   /* Le plateau qu'on a utilisé est de nouveau disponible plus haut. */
    tabY[plateau] = Y + LireZoneHauteur(SousZone);
 
    return nPlateau + NbPlateauACreer;

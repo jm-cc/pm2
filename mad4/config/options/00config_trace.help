@@ -1,1 +1,1 @@
-config trace flag enabled (-DCONFIG_TRACE, ...)
+config trace flag enabled (-DCONFIG_TRACE)

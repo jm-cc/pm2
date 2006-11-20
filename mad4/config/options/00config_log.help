@@ -1,1 +1,1 @@
-config log flag enabled (-DCONFIG_LOG, ...)
+config log flag enabled (-DCONFIG_LOG)

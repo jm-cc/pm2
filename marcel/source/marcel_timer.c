@@ -327,6 +327,7 @@ static void timer_interrupt(int sig)
 }
 #endif
 
+#undef marcel_sig_pause
 void marcel_sig_pause(void)
 {
 #if defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER)
@@ -401,6 +402,7 @@ unsigned long marcel_gettimeslice(void)
 
 
 #ifndef __MINGW32__
+#undef marcel_sig_enable_interrupts
 void marcel_sig_enable_interrupts(void)
 {
 #ifdef MA__SMP
@@ -410,6 +412,7 @@ void marcel_sig_enable_interrupts(void)
 #endif
 }
 
+#undef marcel_sig_disable_interrupts
 void marcel_sig_disable_interrupts(void)
 {
 #ifdef MA__SMP
@@ -474,6 +477,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 	LOG_OUT();
 }
 
+#undef marcel_sig_stop_itimer
 void marcel_sig_stop_itimer(void)
 {
 #ifdef MA__TIMER

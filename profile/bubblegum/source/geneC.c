@@ -1,9 +1,9 @@
 #include "geneC.h"
 
 FILE * fw;
-static int bid = 0;
-static int faux_bid = 0;
-static int tid = 0;
+static int bid;
+static int faux_bid;
+static int tid;
 
 /* Fonction de parcours de bulle
    si mode est placé à GENERE, écriture dans le fichier généré
@@ -93,6 +93,9 @@ int gen_fichier_C(Element * bullemere)
 	  wprintf(L"Le fichier entré en paramètre n'est pas une BULLE\n"); 
 	  return -1;
    }
+   bid = 0;
+   faux_bid = 0;
+   tid = 0;
    fw = fopen(GENEC_NAME ".c","w");
    if (fw == NULL)
    {

@@ -128,7 +128,7 @@ int MPI_Init(int *argc,
       fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     }
     else {
-      MPI_NMAD_TRACE("Connection out: %p\n", out);
+      MPI_NMAD_TRACE("Connection out: %p\n", connection);
       cs = connection->specific;
       out_gate_id[dest] = cs->gate_id;
     }
@@ -143,7 +143,7 @@ int MPI_Init(int *argc,
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
     }
     else {
-      MPI_NMAD_TRACE("Connection in: %p\n", in);
+      MPI_NMAD_TRACE("Connection in: %p\n", connection);
       cs = connection->specific;
       in_gate_id[source] = cs->gate_id;
     }

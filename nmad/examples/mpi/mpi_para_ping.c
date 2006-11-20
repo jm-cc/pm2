@@ -29,7 +29,7 @@
 // Setup
 //......................
 static const int param_warmup            = 1;
-static const int param_nb_samples        = 100;
+static const int param_nb_samples        = 1000;
 static const int param_min_size          = 4;
 static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */

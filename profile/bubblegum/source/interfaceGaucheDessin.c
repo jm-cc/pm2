@@ -65,13 +65,13 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
    EffacerParcours(p);
 
 
-   if(500 < iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale))
+   if(400 < iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale))
    {
       glScalef(0.95,0.95,0.95);
       iGaucheVars->echelle *= 0.95;
    }
 
-   if(420 > iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale))
+   if(300 > iGaucheVars->echelle * LireZoneHauteur(iGaucheVars->zonePrincipale))
    {
       glScalef(1.05,1.05,1.05);
       iGaucheVars->echelle *= 1.05;

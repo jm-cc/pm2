@@ -19,6 +19,8 @@
  */
 
 #include <stdint.h>
+#include <unistd.h>
+
 #include <madeleine.h>
 #include <nm_public.h>
 #include <nm_so_public.h>
@@ -173,6 +175,18 @@ int MPI_Comm_rank(MPI_Comm comm,
   return 0;
 }
 
+int MPI_Get_processor_name(char *name, int *resultlen) {
+  int err;
+  err = gethostname(name, MPI_MAX_PROCESSOR_NAME);
+  if (!err) {
+    *resultlen = strlen(name);
+    return 0;
+  }
+  else {
+    return errno;
+  }
+}
+
 int MPI_Send(void *buffer,
              int count,
              MPI_Datatype datatype,
@@ -278,7 +292,6 @@ int MPI_Wait(MPI_Request *request,
 }
 
 int MPI_Barrier(MPI_Comm comm) {
-
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   tbx_bool_t termination = test_termination(comm);
@@ -290,11 +303,128 @@ int MPI_Barrier(MPI_Comm comm) {
   return 0;
 }
 
+int MPI_Bcast(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int root,
+              MPI_Comm comm) {
+  int tag = 1;
+
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  if (process_rank == root) {
+    MPI_Request *requests;
+    int i, err;
+    requests = malloc(global_size * sizeof(MPI_Request));
+    for(i=0 ; i<global_size ; i++) {
+      if (i==root) continue;
+      err = MPI_Isend(buffer, count, datatype, i, tag, comm, &requests[i]);
+      if (err != 0) return err;
+    }
+    for(i=0 ; i<global_size ; i++) {
+      if (i==root) continue;
+      err = MPI_Wait(&requests[i], NULL);
+      if (err != 0) return err;
+    }
+    return 0;
+  }
+  else {
+    return MPI_Recv(buffer, count, datatype, root, tag, comm, NULL);
+  }
+}
+
+void reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
+  int i, j;
+
+  switch (op) {
+    case MPI_SUM : {
+      switch (datatype) {
+        case MPI_INT : {
+          int *in_int = (int *) sendbuf;
+          int *out_int = (int *) recvbuf;
+          for(i=0 ; i<count ; i++) {
+            out_int[i] = in_int[i];
+          }
+          in_int = (int *) remote_sendbufs[0];
+          for(j=1 ; j<size ; j++) {
+            for(i=0 ; i<count ; i++) {
+              out_int[i] += *in_int;
+              in_int ++;
+            }
+          }
+          break;
+        } /* END MPI_INT FOR MPI_SUM */
+        case MPI_DOUBLE : {
+          double *in_int = (double *) sendbuf;
+          double *out_int = (double *) recvbuf;
+          for(i=0 ; i<count ; i++) {
+            out_int[i] = in_int[i];
+          }
+          in_int = (double *) remote_sendbufs[0];
+          for(j=1 ; j<size ; j++) {
+            for(i=0 ; i<count ; i++) {
+              out_int[i] += *in_int;
+              in_int ++;
+            }
+          }
+          break;
+        } /* END MPI_DOUBLE FOR MPI_SUM */
+        default : {
+          not_implemented("Datatype not implemented");
+          break;
+        }
+      }
+      break;
+    }
+    default : {
+      not_implemented("Operation not implemented");
+      break;
+    }
+  }
+}
+
+int MPI_Reduce(void* sendbuf,
+               void* recvbuf,
+               int count,
+               MPI_Datatype datatype,
+               MPI_Op op,
+               int root,
+               MPI_Comm comm) {
+  int tag = 2;
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  if (process_rank == root) {
+    // Get the input buffers of all the processes
+    void **remote_sendbufs;
+    MPI_Request *requests;
+    int i, j=0;
+    remote_sendbufs = malloc(global_size * sizeof(void *));
+    requests = malloc(global_size * sizeof(MPI_Request));
+    for(i=0 ; i<global_size ; i++) {
+      if (i == root) continue;
+      remote_sendbufs[j] = malloc(count * sizeof_datatype[datatype]);
+      MPI_Irecv(remote_sendbufs[j], count, datatype, i, tag, comm, &requests[j]);
+      j++;
+    }
+    for(i=0 ; i<global_size-1 ; i++) {
+      MPI_Wait(&requests[i], NULL);
+    }
+
+    // Do the reduction operation
+    reduce(sendbuf, remote_sendbufs, global_size, datatype, count, op, recvbuf);
+  }
+  else {
+    MPI_Send(sendbuf, count, datatype, root, tag, comm);
+  }
+
+  // Broadcast the result to all processes
+  return MPI_Bcast(recvbuf, count, datatype, root, comm);
+}
+
 double MPI_Wtime(void) {
   tbx_tick_t time;
   TBX_GET_TICK(time);
   double usec = tbx_tick2usec(time);
   return usec / 1000000;
 }
-
 

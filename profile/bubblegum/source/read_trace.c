@@ -639,6 +639,7 @@ int GetCode_Ev(ev_t * adrev)
 /*          break; */
 /*       } */
 
+#ifdef SCHED_IDLE_START
       case SCHED_IDLE_START: {
          my_printf_2(L"SCHED_IDLE_START\n");
          my_printf_2(L"rien à faire\n");
@@ -649,6 +650,7 @@ int GetCode_Ev(ev_t * adrev)
          my_printf_2(L"rien à faire\n");
          break;
       }
+#endif
       case FUT_START_PLAYING: {
          my_printf_2(L"FUT_START_PLAYING\n");
          my_printf_2(L"rien à faire\n");
@@ -964,7 +966,7 @@ int free_tracetab(ev_t * tracetab)
 
 int my_printf(const wchar_t* format, ...)
 {
-   int ret;
+   int ret = 0;
    
    va_list ap;
    va_start(ap, format);
@@ -979,7 +981,7 @@ int my_printf(const wchar_t* format, ...)
 
 int my_printf_2(const wchar_t* format, ...)
 {
-   int ret;
+   int ret = 0;
    
    va_list ap;
    va_start(ap, format);

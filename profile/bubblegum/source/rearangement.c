@@ -319,8 +319,6 @@ void PrintZone(zone* zonePrincipale)
           LireZoneX(zonePrincipale),
           LireZoneY(zonePrincipale));
 
-   sousZone = LireSousZones(zonePrincipale, i);
-
    for(i = 1;
        (sousZone = LireSousZones(zonePrincipale, i)) != NULL;
        i++)

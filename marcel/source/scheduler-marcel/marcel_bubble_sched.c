@@ -1042,8 +1042,11 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		/* first count */
 		for (i=0; i<ne; i++) {
 			if (e[i]->type == MA_BUBBLE_ENTITY) {
-				recursed = 1;
-				new_ne += ma_bubble_entity(e[i])->nbentities;
+				unsigned nb = ma_bubble_entity(e[i])->nbentities;
+				if (nb) {
+					recursed = 1;
+					new_ne += nb;
+				}
 			} else
 				new_ne += 1;
 		}
@@ -1067,7 +1070,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			 * use part of the machine */
 			MA_BUG_ON(ne > nl);
 			fprintf(stderr,"Not enough parallelism, use only %d item%s\n", ne, ne>1?"s":"");
-			__marcel_bubble_spread(&e[i], ne, l, ne);
+			__marcel_bubble_spread(&e[0], ne, l, ne);
 		}
 	}
 
@@ -1076,8 +1079,8 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	{
 		/* More entities than items, distribute */
 		int i, j, n, nitems, nentities;
-		unsigned long totload = 0, partload, load;
-		float per_item_load, bonus = 0;
+		unsigned long totload = 0, load;
+		float per_item_load, bonus = 0, partload;
 
 		/* compute total load */
 		for (i=0; i<ne; i++) {
@@ -1115,11 +1118,11 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 			/* start with some bonus or malus */
 			partload = -bonus;
-			fprintf(stderr,"starting at %s with load %lu\n", l[n]->sched.name, partload);
+			fprintf(stderr,"starting at %s with load %.2f\n", l[n]->sched.name, partload);
 			for (j=i; j<ne; j++) {
 				load = entity_load(e[j]);
 				partload += load;
-				fprintf(stderr,"adding entity %p(%lu) -> %lu\n", e[j], load, partload);
+				fprintf(stderr,"adding entity %p(%lu) -> %.2f\n", e[j], load, partload);
 				/* accept 10% imbalance: TODO: tune */
 				if (partload > per_item_load * 9 / 10) {
 					nentities = j-i+1;
@@ -1130,6 +1133,8 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				nentities = ne-i;
 
 			nitems = (partload + per_item_load / 10) / per_item_load;
+			if (!nitems)
+				nitems = 1;
 			bonus = nitems * per_item_load - partload;
 			fprintf(stderr,"Ok, %d item%s and remaining %.2f load\n", nitems, nitems>1?"s":"", bonus);
 

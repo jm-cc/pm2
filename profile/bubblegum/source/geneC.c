@@ -42,7 +42,7 @@ int parcourir_bulle(Element* bulle, int where, int mode)
             fwprintf(fw,L"   //création de la bulle %d :\n",bid);
             fprintf(fw,"   marcel_bubble_init(&b%d);\n",bid);
             fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",where,bid);
-            fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(element_i));
+            //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",bid,GetPrioriteBulle(element_i));
          }
          if(mode == 2)
          {

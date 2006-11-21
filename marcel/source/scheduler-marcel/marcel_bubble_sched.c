@@ -95,7 +95,7 @@ int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
 	ma_local_bh_disable();
 	RAWLOCK_HOLDER();
 	SETPRIO(prio);
-	ma_entity_holder_unlock(h);
+	ma_entity_holder_unlock_softirq(h);
 	return 0;
 }
 

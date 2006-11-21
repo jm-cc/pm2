@@ -22,17 +22,24 @@
 #define MPI_TYPES_H
 
 typedef struct {
-    int count;
-    int MPI_SOURCE;
-    int MPI_TAG;
-    int MPI_ERROR;
+  int count;
+  int MPI_SOURCE;
+  int MPI_TAG;
+  int MPI_ERROR;
 } MPI_Status;
 
-typedef unsigned long MPI_Request;
+typedef int MPI_Request_type;
+#define MPI_REQUEST_SEND ((MPI_Request_type)1)
+#define MPI_REQUEST_RECV ((MPI_Request_type)2)
+
+typedef struct {
+  MPI_Request_type request_type;
+  unsigned long request_id;
+} MPI_Request;
 
 typedef int MPI_Comm;
-#define MPI_COMM_WORLD 91
-#define MPI_COMM_SELF  92
+#define MPI_COMM_WORLD ((MPI_Comm)91)
+#define MPI_COMM_SELF  ((MPI_Comm)92)
 
 /* Data types */
 typedef int MPI_Datatype;

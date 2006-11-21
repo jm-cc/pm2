@@ -184,7 +184,7 @@ int MPI_Send(void *buffer,
 
   MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
 
-  err = nm_so_sr_swait(p_so_sr_if, request);
+  err = nm_so_sr_swait(p_so_sr_if, request.request_id);
 
   return err;
 }
@@ -201,7 +201,7 @@ int MPI_Recv(void *buffer,
 
   MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
 
-  err = nm_so_sr_rwait(p_so_sr_if, request);
+  err = nm_so_sr_rwait(p_so_sr_if, request.request_id);
 
   if (status != NULL) {
     status->count = count;
@@ -231,7 +231,8 @@ int MPI_Isend(void *buffer,
   }
 
   gate_id = out_gate_id[dest];
-  err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
+  err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], &(request->request_id));
+  request->request_type = MPI_REQUEST_SEND;
 
   inc_nb_outgoing_msg();
   return err;
@@ -255,9 +256,24 @@ int MPI_Irecv(void* buffer,
   }
 
   gate_id = in_gate_id[source];
-  err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], request);
+  err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], &(request->request_id));
+  request->request_type = MPI_REQUEST_RECV;
 
   inc_nb_incoming_msg();
+  return err;
+}
+
+int MPI_Wait(MPI_Request *request,
+	     MPI_Status *status) {
+  int err;
+
+  if (request->request_type == MPI_REQUEST_RECV) {
+    err = nm_so_sr_rwait(p_so_sr_if, request->request_id);
+  }
+  else {
+    err = nm_so_sr_swait(p_so_sr_if, request->request_id);
+  }
+
   return err;
 }
 

@@ -69,7 +69,7 @@ enum
   { .__data = { .__flags = PMARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP } }
 
 /* Read-write lock types.  */
-#ifdef __USE_UNIX98
+/* #ifdef __USE_UNIX98 */
 enum
 {
   PMARCEL_RWLOCK_PREFER_READER_NP,
@@ -77,7 +77,7 @@ enum
   PMARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP,
   PMARCEL_RWLOCK_DEFAULT_NP = PMARCEL_RWLOCK_PREFER_READER_NP
 };
-#endif  /* Unix98 */
+/* #endif  Unix98 */
 
 
 /* Scheduler inheritance.  */
@@ -131,13 +131,13 @@ enum
 #define PMARCEL_ONCE_INIT 0
 
 
-#ifdef __USE_XOPEN2K
+/* #ifdef __USE_XOPEN2K */
 /* Value returned by 'pmarcel_barrier_wait' for one of the threads after
    the required number of threads have called this function.
    -1 is distinct from 0 and all errno constants */
 /*  defined in marcel/include/marcel_barrier.h */
 /* # define PMARCEL_BARRIER_SERIAL_THREAD -1 */
-#endif
+/* #endif */
 
 
 __TBX_BEGIN_DECLS
@@ -159,7 +159,7 @@ extern void pmarcel_exit (void *__retval)
    is not NULL.  */
 extern int pmarcel_join (pmarcel_t __th, void **__thread_return) __THROW;
 
-#ifdef __USE_GNU
+/* #ifdef __USE_GNU */
 /* Check whether thread TH has terminated.  If yes return the status of
    the thread in *THREAD_RETURN, if THREAD_RETURN is not NULL.  */
 extern int pmarcel_tryjoin_np (pmarcel_t __th, void **__thread_return) __THROW;
@@ -169,7 +169,7 @@ extern int pmarcel_tryjoin_np (pmarcel_t __th, void **__thread_return) __THROW;
    *THREAD_RETURN, if THREAD_RETURN is not NULL.  */
 extern int pmarcel_timedjoin_np (pmarcel_t __th, void **__thread_return,
 				 __const struct timespec *__abstime) __THROW;
-#endif
+/* #endif */
 
 /* Indicate that the thread TH is never to be joined with PMARCEL_JOIN.
    The resources of TH will therefore be freed immediately when it
@@ -319,13 +319,13 @@ extern int pmarcel_getconcurrency (void) __THROW;
 extern int pmarcel_setconcurrency (int __level) __THROW;
 /* #endif */
 
-#ifdef __USE_GNU
+/* #ifdef __USE_GNU */
 /* Yield the processor to another thread or process.
    This function is similar to the POSIX `sched_yield' function but
    might be differently implemented in the case of a m-on-n thread
    implementation.  */
 extern int pmarcel_yield (void) __THROW;
-#endif
+/* #endif */
 
 
 /* Functions for handling initialization.  */
@@ -380,7 +380,7 @@ extern void _pmarcel_cleanup_push (struct _pmarcel_cleanup_buffer *__buffer,
 extern void _pmarcel_cleanup_pop (struct _pmarcel_cleanup_buffer *__buffer,
 				  int __execute) __THROW;
 
-#ifdef __USE_GNU
+/* #ifdef __USE_GNU */
 /* Install a cleanup handler as pmarcel_cleanup_push does, but also
    saves the current cancellation type and sets it to deferred
    cancellation.  */
@@ -400,7 +400,7 @@ extern void _pmarcel_cleanup_push_defer (struct _pmarcel_cleanup_buffer *__buffe
 
 extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
-#endif
+/* #endif */
 
 /**************************************************/
 /* Les mutex sont déclarés dans marcel_mutex.h.m4 */
@@ -580,7 +580,7 @@ extern void _pmarcel_cleanup_pop (struct _pmarcel_cleanup_buffer *__buffer,
 				  int __execute) __THROW;
 
 
-#ifdef __USE_GNU
+/* #ifdef __USE_GNU */
 /* Install a cleanup handler as pmarcel_cleanup_push does, but also
    saves the current cancellation type and set it to deferred cancellation.  */
 # define pmarcel_cleanup_push_defer_np(routine,arg) \
@@ -599,14 +599,14 @@ extern void _pmarcel_cleanup_push_defer (struct _pmarcel_cleanup_buffer *__buffe
 
 extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
-#endif
+/* #endif */
 
 
-#ifdef __USE_XOPEN2K
+/* #ifdef __USE_XOPEN2K */
 /* Get ID of CPU-time clock for thread THREAD_ID.  */
 extern int pmarcel_getcpuclockid (pmarcel_t __thread_id,
 				  clockid_t *__clock_id) __THROW;
-#endif
+/* #endif */
 
 
 /* Install handlers to be called when a new process is created with FORK.

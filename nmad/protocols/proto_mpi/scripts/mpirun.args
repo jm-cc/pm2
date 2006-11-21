@@ -81,7 +81,7 @@ while [ 1 -le $# ] ; do
       	just_testing=1
 	Show=echo
 	;;
-    -dbg=* | --dbg=*)
+    -dbg | -dbg=* | --dbg=*)
         debugger="yes"
 	;;
     -valgrind)

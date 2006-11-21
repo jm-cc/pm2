@@ -189,6 +189,7 @@ unsigned ma_nbprocessors(void) {
 
 #ifdef MA__NUMA
 #ifdef LINUX_SYS
+#define HAS_NUMA
 #include <numa.h>
 int ma_numa_not_available;
 
@@ -227,6 +228,7 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 		mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask), MPOL_MF_MOVE);
 }
 #elif defined(OSF_SYS)
+#define HAS_NUMA
 #include <numa.h>
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	/* TODO: utiliser acreate/amalloc plutôt ? */
@@ -244,8 +246,10 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 }
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
-#elif defined(AIX_SYS) && defined(P_DEFAULT)
+#elif defined(AIX_SYS)
 #include <sys/rset.h>
+#ifdef P_DEFAULT
+#define HAS_NUMA
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	rsethandle_t rset, rad;
 	int MCMlevel = rs_getinfo(NULL, R_MCMSDL, 0);
@@ -266,7 +270,9 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 }
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
-#else
+#endif
+#endif
+#ifndef HAS_NUMA
 	/* TODO: SOLARIS_SYS, AIX_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 #warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {

@@ -300,6 +300,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
 	ma_stats_reset(&t->sched.internal.entity);
+	*(long *) ma_task_stats_get(t, marcel_stats_load_offset) = 1;
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
 	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);

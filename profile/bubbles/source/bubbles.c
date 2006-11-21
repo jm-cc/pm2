@@ -701,11 +701,15 @@ void delThread(thread_t *t) {
 		switchRunqueuesStep(norq, &t->entity, j);
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &t->entity);
+	pause(DELAYTIME);
 	list_del(&t->entity.rq);
 	t->entity.holder = NULL;
 	if (t->entity.bubble_holder) {
 		list_del(&t->entity.entity_list);
+		updateEntity(&t->entity.bubble_holder->entity);
 		t->entity.bubble_holder = NULL;
+	} else {
+		hideEntity(&t->entity);
 	}
 	// XXX: berk. � marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= t->entity.width+RQ_XMARGIN;
@@ -1962,10 +1966,8 @@ if (optind != argc) {
 					thread_t *t = getThread(th);
 					printfThread(th,t);
 					verbprintf(" death\n");
-					if (showSystem || t->number >= 0) {
+					if (showSystem || t->number >= 0)
 						delThread(t);
-						pause(DELAYTIME);
-					}
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
 					// penser �free(t->name) aussi

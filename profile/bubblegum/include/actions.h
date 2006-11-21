@@ -6,9 +6,11 @@
 void Quitter(GtkWidget *widget, gpointer data);
 void A_Propos(GtkWidget *widget, gpointer data);
 void Aide(GtkWidget *widget, gpointer data);
+void Nouveau(GtkWidget *widget, gpointer data);
 void Ouvrir(GtkWidget *widget, gpointer data);
 void Enregistrer(GtkWidget *widget, gpointer data);
 void Executer(GtkWidget *widget, gpointer data);
+void ExecuterFlash(GtkWidget *widget, gpointer data);
 void Basculement_gauche(GtkWidget *widget, gpointer data);
 void Centrage_interfaces(GtkWidget *widget, gpointer data);
 void Basculement_droite(GtkWidget *widget, gpointer data);

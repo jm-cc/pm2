@@ -1,6 +1,7 @@
 #include <gdk/gdkkeysyms.h>
 #include "interfaceGauche.h"
 #include "load.h"
+#include "mainwindow.h"
 
 
 interfaceGaucheVars* interfaceGauche()
@@ -199,9 +200,9 @@ void addThreadAutoOff(interfaceGaucheVars* data)
    GtkWidget *prioriteScrollbar = gtk_hscrollbar_new(GTK_ADJUSTMENT(prioriteAdjust));
 
    GtkWidget *chargeFrame = gtk_frame_new("charge");
-   GtkWidget *chargeLabel = gtk_label_new("0");
+   GtkWidget *chargeLabel = gtk_label_new(tostr(DEFLOAD));
    GtkWidget *chargeVBox = gtk_vbox_new(FALSE, 0);
-   GtkWidget *chargeAdjust = (GtkWidget*)gtk_adjustment_new(0, 0, 100, 1, 10, 1);
+   GtkWidget *chargeAdjust = (GtkWidget*)gtk_adjustment_new(DEFLOAD, 0, 100, 1, 10, 1);
    GtkWidget *chargeScrollbar = gtk_hscrollbar_new(GTK_ADJUSTMENT(chargeAdjust));
 
    GtkWidget *boutonOk = gtk_button_new_with_mnemonic("OK");
@@ -436,7 +437,7 @@ void AddThread(GtkWidget* widget, DataAddThread* data)
          val1 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->prioriteScrollbar));
          val2 = gtk_range_get_value(GTK_RANGE((DataAddThread*)data->chargeScrollbar));
 
-         nouveauThread = CreateThread(val1, val2, nom, 0);
+         nouveauThread = CreateThread(val1, 0, nom, val2);
    
          AddElement(bulleParent, nouveauThread);
 
@@ -466,7 +467,7 @@ void AddThread(GtkWidget* widget, DataAddThread* data)
 
          /* Recuperation de la valeur de la scrollbar */
 
-         nouveauThread = CreateThread(0, 0, nom, 0);
+         nouveauThread = CreateThread(0, 0, nom, DEFLOAD);
    
          AddElement(bulleParent, nouveauThread);
 

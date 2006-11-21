@@ -40,7 +40,7 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
                            g_cclosure_new_swap(G_CALLBACK(Aide), window, NULL));
    
    gtk_accel_group_connect(accel_group, GDK_n, GDK_CONTROL_MASK, 0,
-                           g_cclosure_new_swap(G_CALLBACK(Temp), window, NULL));
+                           g_cclosure_new_swap(G_CALLBACK(Nouveau), window, NULL));
    
    gtk_accel_group_connect(accel_group, GDK_o, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Ouvrir), window, NULL));
@@ -53,6 +53,9 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
    
    gtk_accel_group_connect(accel_group, GDK_e, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Executer), window, NULL));
+   
+   gtk_accel_group_connect(accel_group, GDK_f, GDK_CONTROL_MASK, 0,
+                           g_cclosure_new_swap(G_CALLBACK(ExecuterFlash), window, NULL));
 
    // pour ces fonctions la, soyons certain que ca marchera en redefinissant des closure qui vont bien:   
    gtk_accel_group_connect(accel_group, GDK_Right, GDK_CONTROL_MASK, 0,

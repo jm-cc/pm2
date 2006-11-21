@@ -15,6 +15,10 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
+#define DEFLOAD 10
+#define _tostr(s) #s
+#define tostr(s) _tostr(s)
+
 typedef struct BiWidget_tag
 {
       GtkWidget* wg1;

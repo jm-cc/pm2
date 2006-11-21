@@ -20,6 +20,7 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    GtkWidget *enregistrer = open_ico("ico/enregistrer.png");
    GtkWidget *fermer = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_LARGE_TOOLBAR);
    GtkWidget *executer = open_ico("ico/executer.png");
+   GtkWidget *executer2 = open_ico("ico/executer2.png");
    GtkWidget *basculement_gauche = open_ico("ico/basculement_gauche.png");
    GtkWidget *centrage = open_ico("ico/centrage.png");
    GtkWidget *basculement_droite = open_ico("ico/basculement_droite.png");
@@ -28,7 +29,7 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    GtkWidget *about = gtk_image_new_from_stock(GTK_STOCK_DIALOG_QUESTION, GTK_ICON_SIZE_LARGE_TOOLBAR);
      
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Nouveau projet", NULL, nouveau, G_CALLBACK(Temp), parent);
+                              NULL, NULL, "Nouveau projet", NULL, nouveau, G_CALLBACK(Nouveau), parent);
    
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                               NULL, NULL, "Ouvrir un projet", NULL, ouvrir, G_CALLBACK(Ouvrir), parent);
@@ -49,6 +50,10 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                               NULL, NULL, "Exécution de l'ordonnanceur",
                               NULL, executer, G_CALLBACK(Executer), parent);
+      
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
+                              NULL, NULL, "Exécution de l'ordonnanceur, sortie en Flash",
+                              NULL, executer2, G_CALLBACK(ExecuterFlash), parent);
       
    gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
 

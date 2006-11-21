@@ -117,6 +117,7 @@ void Aide(GtkWidget *widget, gpointer data)
                          "Ctrl + s : Sauvergarde un projet\n"
                          "Ctrl + s : Fermer un projet\n"
                          "Ctrl + e : Exécution de l'ordonnanceur\n"
+                         "Ctrl + f : Exécution de l'ordonnanceur, sortie en flash\n"
                          "Ctrl + Gauche : Bascule sur l'interface de droite\n"
                          "Ctrl + Droite : Bascule sur l'interface de gauche\n"
                          "Ctrl + Haut : Recentre les interfaces\n"
@@ -132,6 +133,14 @@ void Aide(GtkWidget *widget, gpointer data)
 
    /*La seule action possible */
    gtk_widget_destroy(dialog);
+}
+
+void Nouveau(GtkWidget *widget, gpointer data)
+{
+   /* XXX: memleak !! */
+   iGaucheVars->bullePrincipale = CreateBulle(1);
+   iGaucheVars->zonePrincipale = iGaucheVars->zoneSelectionnee = CreerZone(0,0,200,100);
+   Rearanger(iGaucheVars->zonePrincipale);
 }
 
 void Ouvrir(GtkWidget *widget, gpointer data)
@@ -292,12 +301,49 @@ void Executer(GtkWidget *widget, gpointer data)
    system("make " GENEC_NAME);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
    gtk_main_iteration_do(FALSE);
-   system("pm2load " GENEC_NAME);
+   system("pm2load " GENEC_NAME " --marcel-nvp 4 --marcel-maxarity 2");
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.8);
    gtk_main_iteration_do(FALSE);
    char tracefile[1024];
    snprintf(tracefile,sizeof(tracefile),"/tmp/prof_file_user_%s",getenv("USER"));
    LoadScene(anim, tracefile);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
+   gtk_main_iteration_do(FALSE);
+   gtk_widget_destroy(dialog);
+}
+
+void ExecuterFlash(GtkWidget *widget, gpointer data)
+{
+   GtkWidget *dialog;
+   GtkWidget *progress_bar;
+   GtkWidget *infos;
+
+   dialog = gtk_dialog_new_with_buttons("Exécution de l'ordonnanceur ...",
+                                        GTK_WINDOW(data), GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
+                                        "_Progression de 20%", GTK_RESPONSE_ACCEPT, "_Ok", GTK_RESPONSE_OK, NULL);
+                
+   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+   
+   infos = gtk_label_new("L'ordonnenceur PM2 est en train de s'éxecuter\n\nSoyez patient ...");
+
+   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), infos, TRUE, FALSE, 10);
+   
+   progress_bar = gtk_progress_bar_new();
+   gtk_progress_bar_set_orientation(GTK_PROGRESS_BAR(progress_bar), GTK_PROGRESS_LEFT_TO_RIGHT);
+   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), progress_bar, TRUE, FALSE, 10);
+   
+   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
+   
+   // XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
+   gtk_main_iteration_do(FALSE);
+   gen_fichier_C(iGaucheVars->bullePrincipale);
+   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
+   gtk_main_iteration_do(FALSE);
+   char command[1024];
+   snprintf(command,sizeof(command),"( make "GENEC_NAME" ; pm2load "GENEC_NAME" --marcel-nvp 4 --marcel-maxarity 2 ; bubbles /tmp/prof_file_user_%s ; realplay autobulles.swf ) &",getenv("USER"));
+   system(command);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
    gtk_main_iteration_do(FALSE);
    gtk_widget_destroy(dialog);

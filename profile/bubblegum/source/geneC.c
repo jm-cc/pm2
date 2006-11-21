@@ -61,7 +61,7 @@ int parcourir_bulle(Element* bulle, int where, int mode)
             fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
             fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
-            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)%d);\n",GetId(element_i),GetId(element_i));
+            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)%d);\n",GetId(element_i),GetId(element_i)*100+GetCharge(element_i));
             fprintf(fw,"   }\n\n");
          }
          if(mode == 2)
@@ -108,8 +108,13 @@ int gen_fichier_C(Element * bullemere)
    fprintf(fw,"#include \"marcel.h\"\n\n");
    fprintf(fw,"any_t f(any_t foo) {\n");
    fprintf(fw,"   int i = (int)foo;\n");
-   fprintf(fw,"   marcel_printf(\"some work in %%d\\n\",i);\n");
-   fprintf(fw,"   return NULL;\n}\n\n");
+   fprintf(fw,"   int id = i/100;\n");
+   fprintf(fw,"   int load = i%%100;\n");
+   fprintf(fw,"   int n;\n");
+   fprintf(fw,"   int sum = 0;\n");
+   fprintf(fw,"   marcel_printf(\"some work %%d in %%d\\n\",load,id);\n");
+   fprintf(fw,"   for (n=0;n<load*10000000;n++) sum+=n;\n");
+   fprintf(fw,"   return (void*)sum;\n}\n\n");
 
    parcourir_bulle(bullemere,0,2);
   
@@ -124,6 +129,7 @@ int gen_fichier_C(Element * bullemere)
    parcourir_bulle(bullemere,0,1);
   
    fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
+   fprintf(fw,"   marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //   fprintf(fw,"\n   profile_stop();\n");

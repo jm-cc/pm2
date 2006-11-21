@@ -28,7 +28,7 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
 
    menu_item = gtk_image_menu_item_new_with_mnemonic("_Nouveau");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), nouveau);
-   g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Temp), parent);
+   g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Nouveau), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
 
    menu_item = gtk_image_menu_item_new_with_mnemonic("_Ouvrir");
@@ -63,12 +63,18 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
 void Menu_actions(GtkWidget *parent, GtkWidget *menubar)
 {
    GtkWidget *executer = open_ico("ico/executer.png");
+   GtkWidget *executer2 = open_ico("ico/executer2.png");
    
    menu = gtk_menu_new();
    
    menu_item = gtk_image_menu_item_new_with_mnemonic("_Exécuter");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), executer);
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Executer), parent);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
+   
+   menu_item = gtk_image_menu_item_new_with_mnemonic("_Exécuter Flash");
+   gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), executer2);
+   g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(ExecuterFlash), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
    
    menu_item = gtk_menu_item_new_with_mnemonic("_Actions");

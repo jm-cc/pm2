@@ -1,5 +1,17 @@
 #!/bin/sh
 
+compile_leonie() {
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ -z "$LEONIE_DIR" ] ; then
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie
+        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+        if [ -z "$LEONIE_DIR" ] ; then
+            echo "Could not compile leonie. Aborting"
+            exit 1
+        fi
+    fi
+}
+
 create_temp_file() { #prefix suffix directory
     temp_file=""
     if [ -x /bin/tempfile ] ; then
@@ -142,6 +154,7 @@ application : {
 EOF
 ) > $appli_file
 
+compile_leonie
 if [ -n "$debugger" ]; then
     $Show leonie -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then

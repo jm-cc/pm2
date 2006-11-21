@@ -667,7 +667,11 @@ void doEntity(entity_t *e) {
 }
 
 void showEntity(entity_t *e) {
-	if (e->lastitem)
+	if (e->lastitem
+#ifdef TREES
+		|| e->bubble_holder
+#endif
+		)
 		/* already shown */
 		return;
 	doEntity(e);
@@ -1823,8 +1827,8 @@ if (optind != argc) {
 				bubble_t *e = getBubble(ev.ev64.param[0]);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				verbprintf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
-				bubbleInsertBubble(b,e);
 				showEntity(&b->entity);
+				bubbleInsertBubble(b,e);
 				break;
 			}
 			case BUBBLE_SCHED_INSERT_THREAD: {
@@ -1834,8 +1838,8 @@ if (optind != argc) {
 				printfThread(t,e);
 				verbprintf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
 				if (showSystem || e->number>=0) {
-					bubbleInsertThread(b,e);
 					showEntity(&b->entity);
+					bubbleInsertThread(b,e);
 				}
 				break;
 			}

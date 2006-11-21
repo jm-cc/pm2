@@ -115,7 +115,7 @@ void ma_bind_on_processor(unsigned target) {
 }
 void ma_unbind_from_processor() {
 #if defined(SOLARIS_SYS)
-#warning TODO
+#warning TODO unbind thread
 #elif defined(LINUX_SYS)
 #ifndef CPU_SET
 	/* no libc support, use direct system call */
@@ -142,7 +142,7 @@ void ma_unbind_from_processor() {
 	}
 #endif
 #elif defined(WIN_SYS)
-#warning TODO
+#warning TODO unbind thread
 #elif defined(OSF_SYS)
 	radset_t radset;
 	radsetcreate(&radset);
@@ -155,7 +155,7 @@ void ma_unbind_from_processor() {
 	}
 	radsetdestroy(&radset);
 #elif defined(AIX_SYS)
-#warning TODO
+#warning TODO unbind thread
 #else
 	/* TODO: GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 	/* IRIX: voir _DSM_MUSTRUN */
@@ -270,11 +270,13 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 }
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
+#else
+#warning "Only AIX >= 5.3 has the NUMA API"
 #endif
 #endif
 #ifndef HAS_NUMA
 	/* TODO: SOLARIS_SYS, AIX_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
-#warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"
+#warning "don't know how to allocate memory on specific nodes"
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	return marcel_malloc(size, file, line);
 }

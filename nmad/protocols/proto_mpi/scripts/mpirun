@@ -93,6 +93,11 @@ if [ -z "$progname" ] ; then
     echo "You need to specify an application to run" 1>&2
     exit 1
 fi
+pm2_appli=$(pm2which -f $PM2_FLAVOR $progname 2>/dev/null)
+if [ -z "$pm2_appli" ] ; then
+    echo "$progname not found in current directory or in PM2 directory"
+    exit 1
+fi
 
 if [ -z "$NP" ] ; then
     echo "Must specify the number of processes using the option -np"
@@ -114,8 +119,8 @@ fi
 get_machines
 appli_file=`create_temp_file .mad .appli .`
 trap 'rm -f "${appli_file}"' 0 INT QUIT
-touch "${appli_file}"                  
-                      
+touch "${appli_file}"
+
 if [ $? -ne 0 ]; then
   echo "$0: Cannot create temp $appli_file file, exiting..." 1>&2
   exit 1
@@ -123,7 +128,7 @@ fi
 
 (cat <<EOF
 application : {
-     name     : $progname;
+     name     : $pm2_appli;
      flavor   : $PM2_FLAVOR;
      networks : {
           include  : $NET_FILE;

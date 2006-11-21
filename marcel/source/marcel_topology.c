@@ -612,10 +612,14 @@ static void topo_discover(void) {
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0))
 			mlevel = MARCEL_LEVEL_NODE;
+#ifdef R_L2CSDL
 		else if (i == rs_getinfo(NULL, R_L2CSDL, 0))
 			mlevel = MARCEL_LEVEL_DIE;
+#endif
+#ifdef R_PCORESDL
 		else if (i == rs_getinfo(NULL, R_PCORESDL, 0))
 			mlevel = MARCEL_LEVEL_CORE;
+#endif
 		else if (i == rs_getinfo(NULL, R_MAXSDL, 0))
 			mlevel = MARCEL_LEVEL_PROC;
 		mdebug("looking AIX sdl %d\n",i);

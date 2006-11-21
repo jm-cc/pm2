@@ -244,7 +244,7 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 }
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
-#elif defined(AIX_SYS)
+#elif defined(AIX_SYS) && defined(P_DEFAULT)
 #include <sys/rset.h>
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	rsethandle_t rset, rad;

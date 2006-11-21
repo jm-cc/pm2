@@ -92,8 +92,8 @@ int Rearanger(zone * zone1)
 
       /* on prend comme largeur le maximum entre la largeur minimale
        * et la racine carre de la surface */
-      if (largeur < ceil(sqrt(surface)) + 2 * MARGE)
-         largeur = ceil(sqrt(surface)) + 2 * MARGE;
+      if (largeur < 1.2 * ceil(sqrt(surface)) + 2 * MARGE)
+         largeur = 1.2 * ceil(sqrt(surface)) + 2 * MARGE;
 
       ChangerZoneLargeur(zone1, largeur);
 

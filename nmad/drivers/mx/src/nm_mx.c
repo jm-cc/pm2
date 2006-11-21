@@ -59,9 +59,13 @@ struct nm_mx_cnx {
          */
         uint32_t		r_ep_id;
 
-        /* MX match info
+        /* MX match info (when sending)
          */
-        uint64_t 		match_info;
+        uint64_t 		send_match_info;
+
+        /* MX match info (when receiving)
+         */
+        uint64_t 		recv_match_info;
 };
 
 struct nm_mx_gate {
@@ -180,6 +184,7 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         /* private data							*/
 	p_mx_trk	= TBX_MALLOC(sizeof (struct nm_mx_trk));
         memset(p_mx_trk, 0, sizeof (struct nm_mx_trk));
+	p_mx_trk->next_match_info	= 1;
         p_trk->priv	= p_mx_trk;
 
         /* track capabilities encoding					*/
@@ -269,12 +274,12 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         drv_url		= p_crq->remote_drv_url;
         trk_url		= p_crq->remote_trk_url;
 
-        if (p_mx_trk->next_match_info) {
+        if (p_mx_trk->next_match_info-1) {
                 p_mx_trk->gate_map	=
                         TBX_REALLOC(p_mx_trk->gate_map,
                                     p_mx_trk->next_match_info+1);
         } else {
-                p_mx_trk->gate_map	= TBX_MALLOC(1);
+                p_mx_trk->gate_map	= TBX_MALLOC(2);
         }
 
         p_mx_trk->gate_map[p_mx_trk->next_match_info]		= p_gate->id;
@@ -285,7 +290,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         NM_TRACEF("connect - drv_url: %s", drv_url);
         NM_TRACEF("connect - trk_url: %s", trk_url);
         mx_ret	= mx_hostname_to_nic_id(drv_url, &r_nic_id);
-        nm_mx_check_return("mx_hostname_to_nic_id", mx_ret);
+        nm_mx_check_return("(connect) mx_hostname_to_nic_id", mx_ret);
 
         {
                 char *ptr = NULL;
@@ -312,10 +317,11 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
                 strcpy(pkt1.drv_url, p_drv->url);
                 strcpy(pkt1.trk_url, p_trk->url);
+		p_mx_cnx->recv_match_info	= p_mx_trk->next_match_info;
                 pkt1.match_info	= p_mx_trk->next_match_info++;
                 NM_TRACEF("connect - pkt1.drv_url: %s",	pkt1.drv_url);
                 NM_TRACEF("connect - pkt1.trk_url: %s",	pkt1.trk_url);
-                NM_TRACEF("connect - pkt1.match_info: %llu",	pkt1.match_info);
+                NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %llu",	pkt1.match_info);
 
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
@@ -345,7 +351,8 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         }
         NM_TRACEF("recv pkt2 <--");
 
-        p_mx_cnx->match_info	= pkt2.match_info;
+        p_mx_cnx->send_match_info	= pkt2.match_info;
+	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %llu",	pkt2.match_info);
 
         err = NM_ESUCCESS;
 
@@ -383,12 +390,12 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         }
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
 
-        if (p_mx_trk->next_match_info) {
+        if (p_mx_trk->next_match_info-1) {
                 p_mx_trk->gate_map	=
                         TBX_REALLOC(p_mx_trk->gate_map,
                                     p_mx_trk->next_match_info+1);
         } else {
-                p_mx_trk->gate_map	= TBX_MALLOC(1);
+                p_mx_trk->gate_map	= TBX_MALLOC(2);
         }
 
         p_mx_trk->gate_map[p_mx_trk->next_match_info]		= p_gate->id;
@@ -413,9 +420,8 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 
         NM_TRACEF("accept - pkt1.drv_url: %s",	pkt1.drv_url);
         NM_TRACEF("accept - pkt1.trk_url: %s",	pkt1.trk_url);
-        NM_TRACEF("accept - pkt1.match_info: %llu",	pkt1.match_info);
         mx_ret	= mx_hostname_to_nic_id(pkt1.drv_url, &r_nic_id);
-        nm_mx_check_return("mx_hostname_to_nic_id", mx_ret);
+        nm_mx_check_return("(accept) mx_hostname_to_nic_id", mx_ret);
 
         {
                 char *ptr = NULL;
@@ -423,7 +429,8 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 p_mx_cnx->r_ep_id = strtol(pkt1.trk_url, &ptr, 0);
         }
 
-        p_mx_cnx->match_info	= pkt1.match_info;
+        p_mx_cnx->send_match_info	= pkt1.match_info;
+	NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %llu",	pkt1.match_info);
 
         NM_TRACEF("mx_connect -->");
         mx_ret	= mx_connect(p_mx_trk->ep,
@@ -442,7 +449,9 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 mx_segment_t	sg;
                 uint32_t	r;
 
+		p_mx_cnx->recv_match_info	= p_mx_trk->next_match_info;
                 pkt2.match_info	= p_mx_trk->next_match_info++;
+		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %llu",	pkt2.match_info);
 
                 sg.segment_ptr		= &pkt2;
                 sg.segment_length	= sizeof(pkt2);
@@ -521,7 +530,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
                                    seg_list,
                                    p_pw->v_nb,
                                    p_mx_cnx->r_ep_addr,
-                                   p_mx_cnx->match_info,
+                                   p_mx_cnx->send_match_info,
                                    NULL,
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_isend", mx_ret);
@@ -561,7 +570,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_mx_gate	= p_pw->gate_priv;
                 p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
                 match_mask	= UINT64_C(0xffffffffffffffff);
-                match_info	= p_mx_cnx->match_info;
+                match_info	= p_mx_cnx->recv_match_info;
         } else {
                 match_info	= 0;
 

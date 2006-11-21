@@ -121,6 +121,9 @@ void Aide(GtkWidget *widget, gpointer data)
                          "Ctrl + Gauche : Bascule sur l'interface de droite\n"
                          "Ctrl + Droite : Bascule sur l'interface de gauche\n"
                          "Ctrl + Haut : Recentre les interfaces\n"
+			 "t : Ajouter un thread\n"
+			 "b : Ajouter une bulle\n"
+			 "Suppr : Supprimer l'élément sélectionné\n"
                          "F1 : Aide\n");
                          
    gtk_box_pack_start(GTK_BOX(hbox), infos, FALSE, FALSE, 10);

@@ -118,6 +118,7 @@ int gen_fichier_C(Element * bullemere)
    parcourir_bulle(bullemere,0,1);
   
    fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
+   fprintf(fw,"   marcel_start_playing();\n");
    fprintf(fw,"   marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");

@@ -260,10 +260,12 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	list_del(&e->run_list);
+#if 0
 	if (list_empty(&b->runningentities) && b->sched.prio != MA_NOSCHED_PRIO) {
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		marcel_bubble_sleep_locked(b);
 	}
+#endif
 #endif
 	MA_BUG_ON(!e->holder_data);
 	e->holder_data = NULL;

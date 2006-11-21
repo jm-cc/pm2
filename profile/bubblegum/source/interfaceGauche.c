@@ -71,7 +71,7 @@ interfaceGaucheVars* interfaceGauche()
 
 void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data)
 {
-   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
    DataAddBulle* dataAddBulle;
 
 
@@ -84,7 +84,7 @@ void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data)
       dataAddBulle = malloc(sizeof (DataAddBulle));
       dataAddBulle->popup = NULL;
       dataAddBulle->pScrollbar = NULL;
-      dataAddBulle->iGaucheVars = (interfaceGaucheVars*) data;
+      dataAddBulle->iGaucheVars = iGaucheVars;
       AddBulle(NULL, dataAddBulle);
    }
 
@@ -93,7 +93,7 @@ void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data)
 
 void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
 {
-   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
    DataAddThread* dataAddThread;
 
    if (iGaucheVars->mode_auto == MODE_AUTO_OFF)
@@ -106,7 +106,7 @@ void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
       dataAddThread->nomEntry = NULL;
       dataAddThread->idEntry = NULL;
       dataAddThread->popup = NULL;
-      dataAddThread->iGaucheVars = (interfaceGaucheVars*) data;
+      dataAddThread->iGaucheVars = iGaucheVars;
       AddThread(NULL, dataAddThread);
    }
 
@@ -117,6 +117,7 @@ void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
  * d'une bulle */
 void addBulleAutoOff(interfaceGaucheVars* data)
 {
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
 
    GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
    GtkWidget *pVBox = gtk_vbox_new(FALSE, 0);
@@ -132,7 +133,7 @@ void addBulleAutoOff(interfaceGaucheVars* data)
    DataAddBulle* dataAddBulle = malloc(sizeof (DataAddBulle));
    dataAddBulle->popup = popup;
    dataAddBulle->pScrollbar = pScrollbar;
-   dataAddBulle->iGaucheVars = (interfaceGaucheVars*) data;
+   dataAddBulle->iGaucheVars = iGaucheVars;
 
    Element* bulleParent;
    parcours* p;
@@ -184,6 +185,7 @@ void addBulleAutoOff(interfaceGaucheVars* data)
  * d'un thread */
 void addThreadAutoOff(interfaceGaucheVars* data)
 {
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*) data;
    GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
    GtkWidget *pVBox = gtk_vbox_new(FALSE, 0);
 
@@ -215,7 +217,7 @@ void addThreadAutoOff(interfaceGaucheVars* data)
    dataAddThread->nomEntry = nomEntry;
    dataAddThread->idEntry = idEntry;
    dataAddThread->popup = popup;
-   dataAddThread->iGaucheVars = (interfaceGaucheVars*) data;
+   dataAddThread->iGaucheVars = iGaucheVars;
 
    Element* bulleParent;
    parcours* p;
@@ -280,7 +282,7 @@ void addThreadAutoOff(interfaceGaucheVars* data)
 
 void switchModeAuto(GtkWidget* pWidget, gpointer data)
 {
-   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
 
    if(iGaucheVars->mode_auto == MODE_AUTO_OFF)
    {
@@ -294,7 +296,7 @@ void switchModeAuto(GtkWidget* pWidget, gpointer data)
 
 void deleteRec(GtkWidget* pWidget, gpointer data)
 {
-   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
+   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
  
    if(iGaucheVars->zonePrincipale != iGaucheVars->zoneSelectionnee)
    {

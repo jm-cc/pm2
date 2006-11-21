@@ -6,7 +6,6 @@
 int main(int argc, char **argv) {
   int numtasks, rank;
   int tag = 1;
-  int counter, nbpings, message;
   MPI_Status stat;
 
   // Initialise MPI

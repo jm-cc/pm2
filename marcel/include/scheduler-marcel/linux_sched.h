@@ -70,6 +70,7 @@ extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 
 #section functions
 int marcel_yield_to(marcel_t next);
+DEC_MARCEL_POSIX(int, yield, (void));
 
 #section marcel_functions
 void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp);
@@ -321,8 +322,6 @@ extern void node_nr_running_init(void);
 /* extern TBX_EXTERN int task_nice(task_t *p); */
 /* extern int task_curr(task_t *p); */
 /* extern int idle_cpu(int cpu); */
-
-void ma_yield(void);
 
 /* extern marcel_task_t *find_task_by_pid(int pid); */
 

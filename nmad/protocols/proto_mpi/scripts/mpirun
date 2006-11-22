@@ -2,10 +2,10 @@
 
 compile_leonie() {
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ -z "$LEONIE_DIR" ] ; then
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         make FLAVOR=leonie -C $PM2_ROOT/modules/leonie
         LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ -z "$LEONIE_DIR" ] ; then
+        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
             echo "Could not compile leonie. Aborting"
             exit 1
         fi

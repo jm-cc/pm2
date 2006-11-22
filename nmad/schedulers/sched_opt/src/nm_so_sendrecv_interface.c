@@ -50,6 +50,13 @@ nm_so_sr_swait(nm_so_sr_interface interface,
 }
 
 int
+nm_so_sr_stest(nm_so_sr_interface interface,
+	       nm_so_sr_request request)
+{
+  return nm_so_ri_stest((struct nm_so_interface *)interface,
+			request);
+}
+int
 nm_so_sr_irecv(nm_so_sr_interface interface,
 	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
@@ -74,6 +81,14 @@ nm_so_sr_rwait(nm_so_sr_interface interface,
 	       nm_so_sr_request request)
 {
   return nm_so_ri_rwait((struct nm_so_interface *)interface,
+			request);
+}
+
+int
+nm_so_sr_rtest(nm_so_sr_interface interface,
+	       nm_so_sr_request request)
+{
+  return nm_so_ri_rtest((struct nm_so_interface *)interface,
 			request);
 }
 

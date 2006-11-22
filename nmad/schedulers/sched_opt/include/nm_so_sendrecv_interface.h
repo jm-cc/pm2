@@ -42,6 +42,10 @@ nm_so_sr_swait(nm_so_sr_interface interface,
 	       nm_so_sr_request request);
 
 extern int
+nm_so_sr_stest(nm_so_sr_interface interface,
+	       nm_so_sr_request request);
+
+extern int
 nm_so_sr_irecv(nm_so_sr_interface interface,
 	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
@@ -49,6 +53,10 @@ nm_so_sr_irecv(nm_so_sr_interface interface,
 
 extern int
 nm_so_sr_rwait(nm_so_sr_interface interface,
+	       nm_so_sr_request request);
+
+extern int
+nm_so_sr_rtest(nm_so_sr_interface interface,
 	       nm_so_sr_request request);
 
 extern int

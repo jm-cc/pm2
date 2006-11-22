@@ -28,6 +28,19 @@
 
 #define MPI_BOTTOM      (void *)0
 
+/* Pre-defined constants */
+#define MPI_UNDEFINED      (-32766)
+#define MPI_UNDEFINED_RANK MPI_UNDEFINED
+#define MPI_KEYVAL_INVALID 0
+
+/* For supported thread levels */
+#define MPI_THREAD_SINGLE 0
+#define MPI_THREAD_FUNNELED 1
+#define MPI_THREAD_SERIALIZED 2
+#define MPI_THREAD_MULTIPLE 3
+
+typedef long MPI_Aint;
+
 typedef struct {
   int count;
   int MPI_SOURCE;
@@ -39,10 +52,14 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_SEND ((MPI_Request_type)1)
 #define MPI_REQUEST_RECV ((MPI_Request_type)2)
 
-typedef struct {
+typedef struct MPI_Request_s {
   MPI_Request_type request_type;
   unsigned long request_id;
-} MPI_Request;
+} MPI_Request_t;
+
+typedef struct MPI_Request_s *MPI_Request;
+
+#define MPI_REQUEST_NULL   ((MPI_Request)0)
 
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)91)

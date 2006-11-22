@@ -21,6 +21,13 @@
 #ifndef MPI_TYPES_H
 #define MPI_TYPES_H
 
+#define MPI_PROC_NULL   (-1)
+#define MPI_ANY_SOURCE 	(-2)
+#define MPI_ROOT        (-3)
+#define MPI_ANY_TAG     (-1)
+
+#define MPI_BOTTOM      (void *)0
+
 typedef struct {
   int count;
   int MPI_SOURCE;

@@ -37,6 +37,8 @@ static int               *sizeof_datatype = NULL;
 static nm_so_sr_interface p_so_sr_if;
 static long              *out_gate_id;
 static long              *in_gate_id;
+static int               *out_dest;
+static int               *in_dest;
 
 int not_implemented(char *s)
 {
@@ -111,6 +113,8 @@ int MPI_Init(int *argc,
    */
   out_gate_id = malloc(global_size * sizeof(long));
   in_gate_id = malloc(global_size * sizeof(long));
+  out_dest = malloc(256 * sizeof(int));
+  in_dest = malloc(256 * sizeof(int));
 
   /* Get a reference to the channel structure */
   channel = tbx_htable_get(madeleine->channel_htable, "channel_comm_world");
@@ -133,6 +137,7 @@ int MPI_Init(int *argc,
       MPI_NMAD_TRACE("Connection out: %p\n", connection);
       cs = connection->specific;
       out_gate_id[dest] = cs->gate_id;
+      out_dest[cs->gate_id] = dest;
     }
   }
 
@@ -148,6 +153,7 @@ int MPI_Init(int *argc,
       MPI_NMAD_TRACE("Connection in: %p\n", connection);
       cs = connection->specific;
       in_gate_id[source] = cs->gate_id;
+      in_dest[cs->gate_id] = source;
     }
   }
 
@@ -158,6 +164,15 @@ int MPI_Finalize(void) {
   mad_exit(madeleine);
   return 0;
 }
+
+int MPI_Abort(MPI_Comm comm,
+              int errorcode) {
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  mad_exit(madeleine);
+  return errorcode;
+}
+
 
 int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
@@ -196,6 +211,9 @@ int MPI_Send(void *buffer,
   MPI_Request request;
   int         err = 0;
 
+  if (count == 0) return not_implemented("Sending 0 element");
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
   MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
 
   err = nm_so_sr_swait(p_so_sr_if, request.request_id);
@@ -213,17 +231,27 @@ int MPI_Recv(void *buffer,
   MPI_Request request;
   int         err = 0;
 
+  if (count == 0) return not_implemented("Receiving 0 element");
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
   MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
 
   err = nm_so_sr_rwait(p_so_sr_if, request.request_id);
 
   if (status != NULL) {
     status->count = count;
-    status->MPI_SOURCE = source;
     status->MPI_TAG = tag;
     status->MPI_ERROR = err;
-  }
 
+    if (source == MPI_ANY_SOURCE) {
+      long gate_id;
+      nm_so_sr_recv_source(p_so_sr_if, request.request_id, &gate_id);
+      status->MPI_SOURCE = in_dest[gate_id];
+    }
+    else {
+      status->MPI_SOURCE = source;
+    }
+  }
   return err;
 }
 
@@ -237,6 +265,7 @@ int MPI_Isend(void *buffer,
   int  err     = 0;
   long gate_id;
 
+  if (count == 0) return not_implemented("Sending 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   if (dest >= global_size || out_gate_id[dest] == -1) {
@@ -262,14 +291,21 @@ int MPI_Irecv(void* buffer,
   int err      = 0;
   long gate_id;
 
+  if (count == 0) return not_implemented("Receiving 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
-  if (source >= global_size || in_gate_id[source] == -1) {
-    fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
-    return 1;
+  if (source == MPI_ANY_SOURCE) {
+    gate_id = NM_SO_ANY_SRC;
+  }
+  else {
+    if (source >= global_size || in_gate_id[source] == -1) {
+      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+      return 1;
+    }
+
+    gate_id = in_gate_id[source];
   }
 
-  gate_id = in_gate_id[source];
   err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], &(request->request_id));
   request->request_type = MPI_REQUEST_RECV;
 
@@ -333,10 +369,34 @@ int MPI_Bcast(void* buffer,
   }
 }
 
-void reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
+int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
   int i, j;
 
   switch (op) {
+    case MPI_MIN : {
+      switch (datatype) {
+        case MPI_INT : {
+          int *in_int = (int *) sendbuf;
+          int *out_int = (int *) recvbuf;
+          for(i=0 ; i<count ; i++) {
+            out_int[i] = in_int[i];
+          }
+          in_int = (int *) remote_sendbufs[0];
+          for(j=1 ; j<size ; j++) {
+            for(i=0 ; i<count ; i++) {
+              if (*in_int < out_int[i]) out_int[i] = *in_int;
+              in_int ++;
+            }
+          }
+          break;
+        } /* END MPI_INT FOR MPI_MIN */
+        default : {
+          return not_implemented("Reduce Datatype");
+          break;
+        }
+      }
+      break;
+    } /* END MPI_MIN */
     case MPI_SUM : {
       switch (datatype) {
         case MPI_INT : {
@@ -370,17 +430,57 @@ void reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype dataty
           break;
         } /* END MPI_DOUBLE FOR MPI_SUM */
         default : {
-          not_implemented("Datatype not implemented");
+          return not_implemented("Reduce Datatype");
+          break;
+        }
+      }
+      break;
+    }
+    case MPI_PROD : {
+      switch (datatype) {
+        case MPI_INT : {
+          int *in_int = (int *) sendbuf;
+          int *out_int = (int *) recvbuf;
+          for(i=0 ; i<count ; i++) {
+            out_int[i] = in_int[i];
+          }
+          in_int = (int *) remote_sendbufs[0];
+          for(j=1 ; j<size ; j++) {
+            for(i=0 ; i<count ; i++) {
+              out_int[i] *= *in_int;
+              in_int ++;
+            }
+          }
+          break;
+        } /* END MPI_INT FOR MPI_PROD */
+        case MPI_DOUBLE : {
+          double *in_int = (double *) sendbuf;
+          double *out_int = (double *) recvbuf;
+          for(i=0 ; i<count ; i++) {
+            out_int[i] = in_int[i];
+          }
+          in_int = (double *) remote_sendbufs[0];
+          for(j=1 ; j<size ; j++) {
+            for(i=0 ; i<count ; i++) {
+              out_int[i] *= *in_int;
+              in_int ++;
+            }
+          }
+          break;
+        } /* END MPI_DOUBLE FOR MPI_PROD */
+        default : {
+          return not_implemented("Reduce Datatype");
           break;
         }
       }
       break;
     }
     default : {
-      not_implemented("Operation not implemented");
+      return not_implemented("Reduce Operation");
       break;
     }
   }
+  return 0;
 }
 
 int MPI_Reduce(void* sendbuf,
@@ -391,6 +491,7 @@ int MPI_Reduce(void* sendbuf,
                int root,
                MPI_Comm comm) {
   int tag = 2;
+
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   if (process_rank == root) {
@@ -411,14 +512,25 @@ int MPI_Reduce(void* sendbuf,
     }
 
     // Do the reduction operation
-    reduce(sendbuf, remote_sendbufs, global_size, datatype, count, op, recvbuf);
+    return reduce(sendbuf, remote_sendbufs, global_size, datatype, count, op, recvbuf);
   }
   else {
-    MPI_Send(sendbuf, count, datatype, root, tag, comm);
+    return MPI_Send(sendbuf, count, datatype, root, tag, comm);
   }
+}
+
+int MPI_Allreduce(void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  MPI_Datatype datatype,
+                  MPI_Op op,
+                  MPI_Comm comm) {
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+
+  MPI_Reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
 
   // Broadcast the result to all processes
-  return MPI_Bcast(recvbuf, count, datatype, root, comm);
+  return MPI_Bcast(recvbuf, count, datatype, 0, comm);
 }
 
 double MPI_Wtime(void) {
@@ -428,3 +540,6 @@ double MPI_Wtime(void) {
   return usec / 1000000;
 }
 
+double MPI_Wtick(void) {
+  return 1e-7;
+}

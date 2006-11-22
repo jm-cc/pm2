@@ -31,6 +31,9 @@ int MPI_Init(int *argc,
 
 int MPI_Finalize(void);
 
+int MPI_Abort(MPI_Comm comm,
+              int errorcode);
+
 int MPI_Comm_size(MPI_Comm comm,
                   int *size);
 
@@ -89,7 +92,16 @@ int MPI_Reduce(void* sendbuf,
                int root,
                MPI_Comm comm);
 
+int MPI_Allreduce(void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  MPI_Datatype datatype,
+                  MPI_Op op,
+                  MPI_Comm comm);
+
 double MPI_Wtime(void);
+
+double MPI_Wtick(void);
 
 #endif /* MPI_H */
 

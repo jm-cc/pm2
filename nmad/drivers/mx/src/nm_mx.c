@@ -321,7 +321,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
                 pkt1.match_info	= p_mx_trk->next_match_info++;
                 NM_TRACEF("connect - pkt1.drv_url: %s",	pkt1.drv_url);
                 NM_TRACEF("connect - pkt1.trk_url: %s",	pkt1.trk_url);
-                NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %llu",	pkt1.match_info);
+                NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %lu",	pkt1.match_info);
 
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
@@ -352,7 +352,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         NM_TRACEF("recv pkt2 <--");
 
         p_mx_cnx->send_match_info	= pkt2.match_info;
-	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %llu",	pkt2.match_info);
+	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %lu",	pkt2.match_info);
 
         err = NM_ESUCCESS;
 
@@ -430,7 +430,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         }
 
         p_mx_cnx->send_match_info	= pkt1.match_info;
-	NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %llu",	pkt1.match_info);
+	NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %lu",	pkt1.match_info);
 
         NM_TRACEF("mx_connect -->");
         mx_ret	= mx_connect(p_mx_trk->ep,
@@ -451,7 +451,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 
 		p_mx_cnx->recv_match_info	= p_mx_trk->next_match_info;
                 pkt2.match_info	= p_mx_trk->next_match_info++;
-		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %llu",	pkt2.match_info);
+		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %lu",	pkt2.match_info);
 
                 sg.segment_ptr		= &pkt2;
                 sg.segment_length	= sizeof(pkt2);

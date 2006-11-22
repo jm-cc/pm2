@@ -37,13 +37,6 @@ struct marcel_sigaction {
 #section marcel_macros
 #define MARCEL_NSIG 32
 
-#ifndef AIX_SYS
-#include <sys/syscall.h>
-#define ma_kill(pid,sig) syscall(SYS_kill,(pid),(sig))
-#define MA_HAVE_SYSCALL
-#else
-#define ma_kill(pid,sig) kill((pid),(sig))
-#endif
 #ifdef MA__LIBPTHREAD
 #ifdef LINUX_SYS
 /*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */

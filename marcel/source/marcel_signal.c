@@ -1382,14 +1382,9 @@ int marcel_call_function(int sig)
 		LOG_RETURN(0);
 
 	if (handler == SIG_DFL) {
-#ifdef MA_HAVE_SYSCALL
-		if (ma_kill(getpid(), sig) == -1)
+		if (kill(getpid(), sig) == -1)
 			LOG_RETURN(-1);
 		LOG_RETURN(0);
-#else
-		fprintf(stderr, "No way to send signal directly to kernel\n");
-		LOG_RETURN(-1);
-#endif
 	}
 
 	marcel_sigset_t oldmask;

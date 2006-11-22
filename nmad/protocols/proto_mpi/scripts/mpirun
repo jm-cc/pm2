@@ -97,7 +97,9 @@ if [ -z "$PM2_ROOT" ] ; then
     exit 1
 fi
 
-PM2_FLAVOR=mad4-mpi
+if [ -z "$PM2_FLAVOR" ] ; then
+    PM2_FLAVOR=mad4-mpi
+fi
 
 . `dirname $0`/mpirun.args
 # We need at least the program name

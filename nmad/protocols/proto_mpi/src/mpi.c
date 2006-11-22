@@ -369,7 +369,7 @@ int MPI_Bcast(void* buffer,
   }
 }
 
-int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
+int reduce(void *sendbuf, void *remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
   int i, j;
 
   switch (op) {
@@ -381,7 +381,7 @@ int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatyp
           for(i=0 ; i<count ; i++) {
             out_int[i] = in_int[i];
           }
-          in_int = (int *) remote_sendbufs[0];
+          in_int = (int *) remote_sendbufs;
           for(j=1 ; j<size ; j++) {
             for(i=0 ; i<count ; i++) {
               if (*in_int < out_int[i]) out_int[i] = *in_int;
@@ -404,11 +404,13 @@ int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatyp
           int *out_int = (int *) recvbuf;
           for(i=0 ; i<count ; i++) {
             out_int[i] = in_int[i];
+	    MPI_NMAD_TRACE("Setting value %d for count %d\n", out_int[i], i);
           }
-          in_int = (int *) remote_sendbufs[0];
+          in_int = (int *) remote_sendbufs;
           for(j=1 ; j<size ; j++) {
             for(i=0 ; i<count ; i++) {
               out_int[i] += *in_int;
+	      MPI_NMAD_TRACE("Adding value %d from process %d for count %d\n", *in_int, j, i);
               in_int ++;
             }
           }
@@ -420,7 +422,7 @@ int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatyp
           for(i=0 ; i<count ; i++) {
             out_int[i] = in_int[i];
           }
-          in_int = (double *) remote_sendbufs[0];
+          in_int = (double *) remote_sendbufs;
           for(j=1 ; j<size ; j++) {
             for(i=0 ; i<count ; i++) {
               out_int[i] += *in_int;
@@ -444,7 +446,7 @@ int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatyp
           for(i=0 ; i<count ; i++) {
             out_int[i] = in_int[i];
           }
-          in_int = (int *) remote_sendbufs[0];
+          in_int = (int *) remote_sendbufs;
           for(j=1 ; j<size ; j++) {
             for(i=0 ; i<count ; i++) {
               out_int[i] *= *in_int;
@@ -459,7 +461,7 @@ int reduce(void *sendbuf, void **remote_sendbufs, int size, MPI_Datatype datatyp
           for(i=0 ; i<count ; i++) {
             out_int[i] = in_int[i];
           }
-          in_int = (double *) remote_sendbufs[0];
+          in_int = (double *) remote_sendbufs;
           for(j=1 ; j<size ; j++) {
             for(i=0 ; i<count ; i++) {
               out_int[i] *= *in_int;
@@ -496,16 +498,19 @@ int MPI_Reduce(void* sendbuf,
 
   if (process_rank == root) {
     // Get the input buffers of all the processes
-    void **remote_sendbufs;
+    void *remote_sendbufs;
+    void **ptr;
     MPI_Request *requests;
     int i, j=0;
-    remote_sendbufs = malloc(global_size * sizeof(void *));
+    remote_sendbufs = malloc(global_size * count * sizeof_datatype[datatype]);
+    ptr = malloc(global_size * sizeof(void *));
+    ptr[0] = remote_sendbufs;
     requests = malloc(global_size * sizeof(MPI_Request));
     for(i=0 ; i<global_size ; i++) {
       if (i == root) continue;
-      remote_sendbufs[j] = malloc(count * sizeof_datatype[datatype]);
-      MPI_Irecv(remote_sendbufs[j], count, datatype, i, tag, comm, &requests[j]);
+      MPI_Irecv(ptr[j], count, datatype, i, tag, comm, &requests[j]);
       j++;
+      ptr[j] = ptr[j-1] + count * sizeof_datatype[datatype];
     }
     for(i=0 ; i<global_size-1 ; i++) {
       MPI_Wait(&requests[i], NULL);

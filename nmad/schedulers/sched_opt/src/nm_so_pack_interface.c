@@ -130,7 +130,7 @@ nm_so_unpack(struct nm_so_cnx *cnx,
     if(err != NM_ESUCCESS)
       return err;
 
-    err = nm_so_ri_recv_source(request, &_cnx->gate_id);
+    err = nm_so_ri_recv_source(_cnx->p_interface, request, &_cnx->gate_id);
 
     _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
 							   _cnx->gate_id,

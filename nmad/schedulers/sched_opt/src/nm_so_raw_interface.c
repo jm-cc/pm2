@@ -238,7 +238,8 @@ nm_so_ri_rwait(struct nm_so_interface *p_so_interface,
 }
 
 int
-nm_so_ri_recv_source(nm_so_request request, long *gate_id)
+nm_so_ri_recv_source(struct nm_so_interface *p_so_interface,
+                     nm_so_request request, long *gate_id)
 {
   struct any_src_status *p_status = outer_any_src_struct(request);
 

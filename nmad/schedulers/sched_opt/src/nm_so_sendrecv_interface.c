@@ -97,5 +97,6 @@ nm_so_sr_recv_source(nm_so_sr_interface interface,
 		     nm_so_sr_request request,
 		     long *gate_id)
 {
-  return nm_so_ri_recv_source(request, gate_id);
+  return nm_so_ri_recv_source((struct nm_so_interface *)interface,
+                              request, gate_id);
 }

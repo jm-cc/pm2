@@ -65,7 +65,8 @@ nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     unsigned long seq_inf, unsigned long nb);
 
 int
-nm_so_ri_recv_source(nm_so_request request, long *gate_id);
+nm_so_ri_recv_source(struct nm_so_interface *p_so_interface,
+                     nm_so_request request, long *gate_id);
 
 extern int
 nm_so_ri_probe(struct nm_so_interface *p_so_interface,

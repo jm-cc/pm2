@@ -57,7 +57,7 @@ main(int	  argc,
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint64_t		 len;
-	nm_so_sr_interface       interface;
+	struct nm_so_interface  *interface;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -66,7 +66,7 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_sr_interface_init(p_core, &interface);
+	err = nm_so_sr_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
 	  printf("nm_so_sr_interface_init return err = %d\n", err);
 	  goto out;
@@ -126,7 +126,7 @@ main(int	  argc,
         buf = malloc((size_t)len);
 
         if (!r_url) {
-	  nm_so_sr_request request;
+	  nm_so_request request;
                 /* server
                  */
                 printf("local url: [%s]\n", l_url);
@@ -143,7 +143,7 @@ main(int	  argc,
 		nm_so_sr_rwait(interface, request);
 
         } else {
-	  nm_so_sr_request request;
+	  nm_so_request request;
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv_id,

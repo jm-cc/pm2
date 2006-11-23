@@ -77,7 +77,7 @@ main(int	  argc,
         uint8_t			 drv_id		=    0;
         uint8_t			 gate_id	=    0;
         char			*hostname	= "localhost";
-	nm_so_sr_interface       interface;  
+	struct nm_so_interface  *interface;  
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -86,9 +86,9 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_sr_interface_init(p_core, &interface);
+	err = nm_so_sr_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
-	  printf("nm_so_sr_interface_init return err = %d\n", err);
+	  printf("nm_so_sr_init return err = %d\n", err);
 	  goto out;
 	}
 
@@ -153,7 +153,7 @@ main(int	  argc,
                 }
 
 		for(k = 0; k < LOOPS; k++) {
-		  nm_so_sr_request request;
+		  nm_so_request request;
 
 		  nm_so_sr_irecv(interface, gate_id, 0, NULL, 0, &request);
 		  nm_so_sr_rwait(interface, request);
@@ -163,7 +163,7 @@ main(int	  argc,
 		  }
 
 		{
-		  nm_so_sr_request r1, r2, r3, r4;
+		  nm_so_request r1, r2, r3, r4;
 		  char buf[16], *big_buf;
 		  long gate;
 
@@ -201,7 +201,7 @@ main(int	  argc,
                 }
 
 		for(k = 0; k < LOOPS; k++) {
-		  nm_so_sr_request request;
+		  nm_so_request request;
 
 		  nm_so_sr_isend(interface, gate_id, 0, NULL, 0, &request);
 		  nm_so_sr_swait(interface, request);
@@ -211,7 +211,7 @@ main(int	  argc,
 		}
 
 		{
-		  nm_so_sr_request r1, r2, r3, r4;
+		  nm_so_request r1, r2, r3, r4;
 		  char buf[16], *big_buf;
 
 

@@ -25,6 +25,13 @@
 static int nb_incoming_msg = 0;
 static int nb_outgoing_msg = 0;
 
+int not_implemented(char *s)
+{
+  fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
+  fflush(stderr);
+  return MPI_Abort(MPI_COMM_WORLD, 1);
+}
+
 void inc_nb_incoming_msg(void) {
   nb_incoming_msg ++;
 }

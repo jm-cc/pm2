@@ -40,13 +40,6 @@ static long              *in_gate_id	= NULL;
 static int               *out_dest	= NULL;
 static int               *in_dest	= NULL;
 
-int not_implemented(char *s)
-{
-  fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
-  fflush(stderr);
-  return MPI_Abort(MPI_COMM_WORLD, 1);
-}
-
 int MPI_Init(int *argc,
              char ***argv) {
 

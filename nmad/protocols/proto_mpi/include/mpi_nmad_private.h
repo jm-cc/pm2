@@ -25,6 +25,8 @@
 
 #undef MPI_NMAD_SO_DEBUG
 
+int not_implemented(char *s);
+
 tbx_bool_t test_termination(MPI_Comm comm);
 
 void inc_nb_incoming_msg(void);

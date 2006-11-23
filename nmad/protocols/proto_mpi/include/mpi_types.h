@@ -54,7 +54,7 @@ typedef int MPI_Request_type;
 
 typedef struct MPI_Request_s {
   MPI_Request_type request_type;
-  unsigned long request_id;
+  intptr_t request_id;
 } MPI_Request_t;
 
 typedef struct MPI_Request_s *MPI_Request;

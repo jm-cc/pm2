@@ -34,7 +34,7 @@ static p_mad_madeleine_t  madeleine	= NULL;
 static int                global_size	= -1;
 static int                process_rank	= -1;
 static int               *sizeof_datatype	= NULL;
-static nm_so_sr_interface p_so_sr_if;
+static struct nm_so_interface    *p_so_sr_if;
 static long              *out_gate_id	= NULL;
 static long              *in_gate_id	= NULL;
 static int               *out_dest	= NULL;
@@ -86,7 +86,7 @@ int MPI_Init(int *argc,
    * Reference to the NewMadeleine core object
    */
   p_core = mad_nmad_get_core();
-  err = nm_so_sr_interface_init(p_core, &p_so_sr_if);
+  err = nm_so_sr_init(p_core, &p_so_sr_if);
   CHECK_RETURN_CODE(err, "nm_so_sr_interface_init");
 
   /*

@@ -16,7 +16,7 @@
 
 #include "nm_protected.h"
 #include "madeleine.h"
-#include "nm_so_raw_interface.h"
+#include "nm_so_sendrecv_interface.h"
 
 typedef struct s_mad_nmad_connection_specific {
 #ifdef CONFIG_SCHED_OPT

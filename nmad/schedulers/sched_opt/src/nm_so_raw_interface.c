@@ -249,6 +249,22 @@ nm_so_ri_recv_source(nm_so_request request, long *gate_id)
 }
 
 int
+nm_so_ri_probe(struct nm_so_interface *p_so_interface,
+               long gate_id, uint8_t tag)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+  uint8_t seq = p_so_gate->recv_seq_number[tag];
+
+  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+
+  return ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) ?
+    NM_ESUCCESS : -NM_EAGAIN;
+}
+
+int
 nm_so_ri_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb)

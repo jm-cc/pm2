@@ -14,22 +14,35 @@
  */
 
 /*
- * mpi.h
- * =====
+ * mpi_init.h
+ * ==========
  */
 
-#ifndef MPI_H
-#define MPI_H
+#ifndef MPI_INIT_H
+#define MPI_INIT_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
 
-#include "mpi_types.h"
+int MPI_Init(int *argc,
+             char ***argv);
 
-#include "mpi_config.h"
+int MPI_Init_thread(int *argc,
+                    char ***argv,
+                    int required,
+                    int *provided);
 
-#include "mpi_pt2pt.h"
+int MPI_Finalize(void);
 
-#endif /* MPI_H */
+int MPI_Abort(MPI_Comm comm,
+              int errorcode);
+
+int MPI_Comm_size(MPI_Comm comm,
+                  int *size);
+
+int MPI_Comm_rank(MPI_Comm comm,
+                  int *rank);
+
+int MPI_Get_processor_name(char *name, int *resultlen);
+
+
+#endif /* MPI_INIT_H */
 

@@ -651,7 +651,7 @@ DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 	pid->detached = 1;
 
 	/* Exécution de la fonction post_mortem */
-	if (*pid->postexit_func)
+	if (pid->postexit_func)
 		(*pid->postexit_func) (pid->postexit_arg);
 
 	/* Et libération de la pile */
@@ -670,25 +670,8 @@ DEF_POSIX(int, join, (pmarcel_t ptid, any_t *status), (ptid, status),
 	int err = check_join(tid, status);
 	if (err)
 		LOG_RETURN(err);
-	/* fin codes d'erreur */
 
-	MA_BUG_ON(tid->detached);
-
-	marcel_sem_P(&tid->client);
-	if (status)
-		*status = tid->ret_val;
-
-	tid->detached = 1;
-	/* Exécution de la fonction post_mortem */
-	(*tid->postexit_func) (tid->postexit_arg);
-	/*       {  */
-	/*              DEFINE_CUR_LWP(register, =, GET_LWP(tid)); */
-	/*              marcel_sem_P(&cur_lwp->postexit_space); */
-	/*              cur_lwp->postexit_func=tid->postexit_func; */
-	/*              cur_lwp->postexit_arg=tid->postexit_arg; */
-	/*              marcel_sem_V(&cur_lwp->postexit_thread); */
-	/*      } */
-	LOG_RETURN(0);
+	LOG_RETURN(marcel_join(tid, status));
 })
 DEF_PTHREAD(int, join, (pthread_t tid, void **status), (tid, status))
 DEF___PTHREAD(int, join, (pthread_t tid, void **status), (tid, status))

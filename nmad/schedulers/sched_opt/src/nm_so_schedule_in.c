@@ -25,7 +25,7 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 #include "nm_so_tracks.h"
-#include "nm_so_raw_interface.h"
+#include "nm_so_sendrecv_interface.h"
 #include "nm_so_interfaces.h"
 
 //#define NM_SO_OPTIMISTIC_RECV

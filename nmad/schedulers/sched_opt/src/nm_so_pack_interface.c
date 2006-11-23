@@ -23,8 +23,8 @@
 #include <nm_so_private.h>
 
 #include "nm_so_pack_interface.h"
-#include "nm_so_raw_interface.h"
-#include "nm_so_raw_interface_private.h"
+#include "nm_so_sendrecv_interface.h"
+#include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_tracks.h"
 
 struct __nm_so_cnx {
@@ -42,7 +42,7 @@ nm_so_pack_interface_init(struct nm_core *p_core,
 {
   assert(sizeof(struct nm_so_cnx) == sizeof(struct __nm_so_cnx));
 
-  return nm_so_ri_init(p_core,
+  return nm_so_sr_init(p_core,
                        (struct nm_so_interface **)p_interface);
 }
 
@@ -57,7 +57,7 @@ nm_so_begin_packing(nm_so_pack_interface interface,
   _cnx->p_interface = (struct nm_so_interface *)interface;
   _cnx->gate_id = gate_id;
   _cnx->tag = tag;
-  _cnx->first_seq_number = nm_so_ri_get_current_send_seq(_cnx->p_interface,
+  _cnx->first_seq_number = nm_so_sr_get_current_send_seq(_cnx->p_interface,
 							 gate_id, tag);
   _cnx->nb_paquets = 0;
 
@@ -72,7 +72,7 @@ nm_so_pack(struct nm_so_cnx *cnx,
 
   _cnx->nb_paquets++;
 
-  return nm_so_ri_isend(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+  return nm_so_sr_isend(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			data, len, NULL);
 }
 
@@ -96,7 +96,7 @@ nm_so_begin_unpacking(nm_so_pack_interface interface,
   _cnx->nb_paquets = 0;
 
   if(gate_id != NM_SO_ANY_SRC)
-    _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+    _cnx->first_seq_number = nm_so_sr_get_current_recv_seq(_cnx->p_interface,
 							   gate_id, tag);
 
   return NM_ESUCCESS;
@@ -111,7 +111,7 @@ nm_so_unpack(struct nm_so_cnx *cnx,
   if(_cnx->gate_id != NM_SO_ANY_SRC) {
     _cnx->nb_paquets++;
 
-    return nm_so_ri_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+    return nm_so_sr_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			  data, len, NULL);
   } else {
   /* Here, we know that 1) begin_unpacking has been called with
@@ -121,18 +121,18 @@ nm_so_unpack(struct nm_so_cnx *cnx,
     nm_so_request request;
     int err;
 
-    err = nm_so_ri_irecv(_cnx->p_interface, NM_SO_ANY_SRC, _cnx->tag,
+    err = nm_so_sr_irecv(_cnx->p_interface, NM_SO_ANY_SRC, _cnx->tag,
 			 data, len, &request);
     if(err != NM_ESUCCESS)
       return err;
 
-    err = nm_so_ri_rwait(_cnx->p_interface, request);
+    err = nm_so_sr_rwait(_cnx->p_interface, request);
     if(err != NM_ESUCCESS)
       return err;
 
-    err = nm_so_ri_recv_source(_cnx->p_interface, request, &_cnx->gate_id);
+    err = nm_so_sr_recv_source(_cnx->p_interface, request, &_cnx->gate_id);
 
-    _cnx->first_seq_number = nm_so_ri_get_current_recv_seq(_cnx->p_interface,
+    _cnx->first_seq_number = nm_so_sr_get_current_recv_seq(_cnx->p_interface,
 							   _cnx->gate_id,
 							   _cnx->tag);
 
@@ -151,7 +151,7 @@ nm_so_flush_packs(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  return nm_so_ri_swait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+  return nm_so_sr_swait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			      _cnx->first_seq_number, _cnx->nb_paquets);
 }
 
@@ -160,6 +160,6 @@ nm_so_flush_unpacks(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
 
-  return nm_so_ri_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+  return nm_so_sr_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			      _cnx->first_seq_number, _cnx->nb_paquets);
 }

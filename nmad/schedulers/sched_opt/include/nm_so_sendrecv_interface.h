@@ -16,52 +16,73 @@
 #ifndef _NM_SO_SENDRECV_INTERFACE_H_
 #define _NM_SO_SENDRECV_INTERFACE_H_
 
-#include <nm_public.h>
-
 #ifndef NM_SO_ANY_SRC
 #define NM_SO_ANY_SRC  ((long)-1)
 #endif
 
+struct nm_so_interface;
 
-typedef intptr_t nm_so_sr_interface;
-typedef unsigned long nm_so_sr_request;
-
-extern int
-nm_so_sr_interface_init(struct nm_core *p_core,
-			nm_so_sr_interface *p_interface);
-
+typedef intptr_t nm_so_request;
 
 extern int
-nm_so_sr_isend(nm_so_sr_interface interface,
+nm_so_sr_init(struct nm_core *p_core,
+	      struct nm_so_interface **p_so_interface);
+
+
+extern int
+nm_so_sr_isend(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request);
+
+extern int
+nm_so_sr_stest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
+
+extern int
+nm_so_sr_swait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
+
+extern int
+nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb);
+
+
+extern int
+nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
-	       nm_so_sr_request *p_request);
+	       nm_so_request *p_request);
 
 extern int
-nm_so_sr_swait(nm_so_sr_interface interface,
-	       nm_so_sr_request request);
+nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
 
 extern int
-nm_so_sr_stest(nm_so_sr_interface interface,
-	       nm_so_sr_request request);
+nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
+	       nm_so_request request);
 
 extern int
-nm_so_sr_irecv(nm_so_sr_interface interface,
-	       long gate_id, uint8_t tag,
-	       void *data, uint32_t len,
-	       nm_so_sr_request *p_request);
+nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb);
+
+int
+nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
+                     nm_so_request request, long *gate_id);
 
 extern int
-nm_so_sr_rwait(nm_so_sr_interface interface,
-	       nm_so_sr_request request);
+nm_so_sr_probe(struct nm_so_interface *p_so_interface,
+               long gate_id, uint8_t tag);
 
-extern int
-nm_so_sr_rtest(nm_so_sr_interface interface,
-	       nm_so_sr_request request);
+extern unsigned long
+nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
+			      uint16_t gate_id, uint8_t tag);
 
-extern int
-nm_so_sr_recv_source(nm_so_sr_interface interface,
-		     nm_so_sr_request request,
-		     long *gate_id);
+extern unsigned long
+nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
+			      uint16_t gate_id, uint8_t tag);
+
 
 #endif

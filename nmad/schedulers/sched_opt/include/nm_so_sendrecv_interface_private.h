@@ -13,8 +13,8 @@
  * General Public License for more details.
  */
 
-#ifndef _NM_SO_RAW_INTERFACE_PRIVATE_H_
-#define _NM_SO_RAW_INTERFACE_PRIVATE_H_
+#ifndef _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
+#define _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
 
 struct nm_so_interface {
   struct nm_core *p_core;

@@ -374,6 +374,58 @@ int MPI_Test(MPI_Request *request,
   return 0;
 }
 
+int MPI_Iprobe(int source,
+               int tag,
+               MPI_Comm comm,
+               int *flag,
+               MPI_Status *status) {
+  int err      = 0;
+  long gate_id;
+
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+
+  if (source == MPI_ANY_SOURCE) {
+    gate_id = NM_SO_ANY_SRC;
+  }
+  else {
+    if (source >= global_size || in_gate_id[source] == -1) {
+      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+      return 1;
+    }
+
+    gate_id = in_gate_id[source];
+  }
+
+  err = nm_so_sr_probe(p_so_sr_if, gate_id, tag);
+  if (err == NM_ESUCCESS) {
+    *flag = 1;
+#warning Fill in the status object
+  }
+  else { /* err == -NM_EAGAIN */
+    *flag = 0;
+  }
+  return 0;
+}
+
+int MPI_Probe(int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Status *status) {
+  int flag = 0;
+  int err;
+
+  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+
+  err = MPI_Iprobe(source, tag, comm, &flag, status);
+  while (flag != 1) {
+    err = MPI_Iprobe(source, tag, comm, &flag, status);
+  }
+  return err;
+}
+
+
 int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count) {

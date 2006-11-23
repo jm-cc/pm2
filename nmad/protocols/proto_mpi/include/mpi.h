@@ -86,6 +86,17 @@ int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status);
 
+int MPI_Iprobe(int source,
+               int tag,
+               MPI_Comm comm,
+               int *flag,
+               MPI_Status *status);
+
+int MPI_Probe(int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Status *status);
+
 int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count);

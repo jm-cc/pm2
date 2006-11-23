@@ -225,6 +225,7 @@ int MPI_Send(void *buffer,
 
   if (count == 0) return not_implemented("Sending 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
 
@@ -245,6 +246,7 @@ int MPI_Recv(void *buffer,
 
   if (count == 0) return not_implemented("Receiving 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
 
@@ -279,6 +281,7 @@ int MPI_Isend(void *buffer,
 
   if (count == 0) return not_implemented("Sending 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   if (dest >= global_size || out_gate_id[dest] == -1) {
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
@@ -307,6 +310,7 @@ int MPI_Irecv(void* buffer,
 
   if (count == 0) return not_implemented("Receiving 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   if (source == MPI_ANY_SOURCE) {
     gate_id = NM_SO_ANY_SRC;
@@ -341,7 +345,40 @@ int MPI_Wait(MPI_Request *request,
   free(*request);
   *request = MPI_REQUEST_NULL;
 
+#warning Fill in the status object
+
   return err;
+}
+
+int MPI_Test(MPI_Request *request,
+             int *flag,
+             MPI_Status *status) {
+  int err;
+
+  if ((*request)->request_type == MPI_REQUEST_RECV) {
+    err = nm_so_sr_rtest(p_so_sr_if, (*request)->request_id);
+  }
+  else {
+    err = nm_so_sr_stest(p_so_sr_if, (*request)->request_id);
+  }
+
+  if (err == NM_ESUCCESS) {
+    *flag = 1;
+    free(*request);
+    *request = MPI_REQUEST_NULL;
+#warning Fill in the status object
+  }
+  else { /* err == -NM_EAGAIN */
+    *flag = 0;
+  }
+  return 0;
+}
+
+int MPI_Get_count(MPI_Status *status,
+                  MPI_Datatype datatype,
+                  int *count) {
+  *count = status->count;
+  return 0;
 }
 
 int MPI_Barrier(MPI_Comm comm) {

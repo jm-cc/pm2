@@ -81,6 +81,14 @@ int MPI_Irecv(void* buffer,
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status);
 
+int MPI_Test(MPI_Request *request,
+             int *flag,
+             MPI_Status *status);
+
+int MPI_Get_count(MPI_Status *status,
+                  MPI_Datatype datatype,
+                  int *count);
+
 int MPI_Barrier(MPI_Comm comm);
 
 int MPI_Bcast(void* buffer,

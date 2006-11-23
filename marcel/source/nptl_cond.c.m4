@@ -248,7 +248,7 @@ int prefix_cond_wait (prefix_cond_t * __restrict cond,
 	LOG_IN();
 	prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
 	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
-#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
+#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_PMARCEL)
 	mutex->__data.__owner = 0;
 #endif
 	__prefix_unlock_spinlocked(&mutex->__data.__lock);
@@ -317,7 +317,7 @@ int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
 
 	prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
 	prefix_lock_acquire(&cond->__data.__lock.__spinlock);
-#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_LPT)
+#if (MA__MODE == MA__MODE_LPT) || (MA__MODE == MA__MODE_PMARCEL)
 	mutex->__data.__owner = 0;
 #endif
 	__prefix_unlock_spinlocked(&mutex->__data.__lock);

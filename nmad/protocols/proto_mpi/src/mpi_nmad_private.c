@@ -19,12 +19,6 @@
  */
 
 #include <stdint.h>
-#include <madeleine.h>
-#include <nm_public.h>
-#include <nm_so_public.h>
-#include <nm_so_sendrecv_interface.h>
-#include <nm_mad3_private.h>
-
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 
@@ -38,7 +32,6 @@ void inc_nb_incoming_msg(void) {
 void inc_nb_outgoing_msg(void) {
   nb_outgoing_msg ++;
 }
-
 
 /*
  * Using Friedmann  Mattern's Four Counter Method to detect

@@ -80,7 +80,7 @@ static void *unmapped_slot_alloc(void *foo)
 	}
 #endif
 	ptr = next_slot -= 
-#if defined(PM2VALGRIND) || defined(PM2STACKSGUARD)
+#if defined(PM2VALGRIND) || defined(PM2STACKSGUARD) || defined(PM2DEBUG)
 		2*
 #endif
 		THREAD_SLOT_SIZE;

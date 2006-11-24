@@ -47,6 +47,7 @@ void internal_init() {
   for(i=1 ; i<=MPI_LONG_LONG ; i++) {
     datatypes[i]->basic = 1;
     datatypes[i]->committed = 1;
+    datatypes[i]->is_contig = 1;
   }
   datatypes[0]->size = 0;
   datatypes[MPI_CHAR]->size = sizeof(signed char);
@@ -102,23 +103,6 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
   }
 }
 
-int mpir_type_contiguous(int count,
-                         MPI_Datatype oldtype,
-                         MPI_Datatype *newtype) {
-  *newtype = get_available_datatype();
-  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
-
-  datatypes[*newtype]->dte_type = MPIR_CONTIG;
-  datatypes[*newtype]->committed = 0;
-  datatypes[*newtype]->is_contig = 1;
-  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count;
-  datatypes[*newtype]->elements = count;
-  datatypes[*newtype]->old_type = get_datatype(oldtype);
-
-  MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
-  return 0;
-}
-
 int mpir_type_commit(MPI_Datatype *datatype) {
   if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
     ERROR("Unknown datatype %d\n", *datatype);
@@ -138,6 +122,45 @@ int mpir_type_free(MPI_Datatype *datatype) {
   ptr = malloc(sizeof(int));
   *ptr = *datatype;
   tbx_slist_enqueue(available_datatypes, ptr);
+  return 0;
+}
+
+int mpir_type_contiguous(int count,
+                         MPI_Datatype oldtype,
+                         MPI_Datatype *newtype) {
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type = MPIR_CONTIG;
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = 1;
+  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count;
+  datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
+
+  MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
+  return 0;
+}
+
+int mpir_type_vector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) {
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type = MPIR_VECTOR;
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = 0;
+  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count * blocklength;
+  datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->blocklen = blocklength;
+  datatypes[*newtype]->block_size = blocklength * sizeof_datatype(oldtype);
+  datatypes[*newtype]->stride = stride * sizeof_datatype(oldtype);
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
+
+  MPI_NMAD_TRACE("Creating new vector type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
   return 0;
 }
 

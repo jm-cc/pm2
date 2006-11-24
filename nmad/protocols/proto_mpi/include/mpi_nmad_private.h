@@ -23,7 +23,7 @@
 
 #include <tbx.h>
 
-#undef MPI_NMAD_SO_DEBUG
+#define MPI_NMAD_SO_DEBUG
 
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
@@ -53,12 +53,11 @@ typedef struct mpir_datatype_s {
   int is_contig; /* whether entirely contiguous */
   int size; /* size of type */
   int elements; /* number of basic elements */
-  int ref_count; /* nodes depending on this node */
   int align; /* alignment needed for start of datatype */
-  int count; /* replication count */
   int stride; /* stride, for VECTOR and HVECTOR types */
   int *indices; /* array of indices, for (H)INDEXED, STRUCT */
   int blocklen; /* blocklen, for VECTOR and HVECTOR types */
+  int block_size; /* blocklen, for VECTOR and HVECTOR types */
   int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
   struct mpir_datatype_s *old_type;
   int nb_elements;   /* number of elements for STRUCT */
@@ -72,13 +71,19 @@ int sizeof_datatype(MPI_Datatype datatype);
 
 mpir_datatype_t* get_datatype(MPI_Datatype datatype);
 
+int mpir_type_commit(MPI_Datatype *datatype);
+
+int mpir_type_free(MPI_Datatype *datatype);
+
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype);
 
-int mpir_type_commit(MPI_Datatype *datatype);
-
-int mpir_type_free(MPI_Datatype *datatype);
+int mpir_type_vector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype);
 
 tbx_bool_t test_termination(MPI_Comm comm);
 

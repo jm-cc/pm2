@@ -21,12 +21,18 @@
 #ifndef MPI_DATATYPE_H
 #define MPI_DATATYPE_H
 
+int MPI_Type_commit(MPI_Datatype *datatype);
+
+int MPI_Type_free(MPI_Datatype *datatype);
+
 int MPI_Type_contiguous(int count,
                         MPI_Datatype oldtype,
                         MPI_Datatype *newtype);
 
-int MPI_Type_commit(MPI_Datatype *datatype);
-
-int MPI_Type_free(MPI_Datatype *datatype);
+int MPI_Type_vector(int count,
+                    int blocklength,
+                    int stride,
+                    MPI_Datatype oldtype,
+                    MPI_Datatype *newtype);
 
 #endif /* MPI_DATATYPE_H */

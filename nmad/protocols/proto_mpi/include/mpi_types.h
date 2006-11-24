@@ -51,10 +51,13 @@ typedef struct {
 typedef int MPI_Request_type;
 #define MPI_REQUEST_SEND ((MPI_Request_type)1)
 #define MPI_REQUEST_RECV ((MPI_Request_type)2)
+#define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
+#define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 
 typedef struct MPI_Request_s {
   MPI_Request_type request_type;
   intptr_t request_id;
+  struct nm_so_cnx *request_cnx;
 } MPI_Request_t;
 
 typedef struct MPI_Request_s *MPI_Request;

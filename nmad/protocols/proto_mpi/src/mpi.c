@@ -390,8 +390,16 @@ int MPI_Wait(MPI_Request *request,
   if ((*request)->request_type == MPI_REQUEST_RECV) {
     err = nm_so_sr_rwait(p_so_sr_if, (*request)->request_id);
   }
-  else {
+  else if ((*request)->request_type == MPI_REQUEST_SEND) {
     err = nm_so_sr_swait(p_so_sr_if, (*request)->request_id);
+  }
+  else if ((*request)->request_type == MPI_REQUEST_PACK_RECV) {
+    err = nm_so_flush_unpacks(request->request_cnx);
+    free((*request)->request_cnx);
+  }
+  else /* ((*request)->request_type == MPI_REQUEST_PACK_SEND) */ {
+    err = nm_so_flush_packs(request->request_cnx);
+    free((*request)->request_cnx);
   }
   free(*request);
   *request = MPI_REQUEST_NULL;

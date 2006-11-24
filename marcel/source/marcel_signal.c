@@ -891,7 +891,7 @@ versioned_symbol(libpthread, lpt_sigtimedwait,
 #endif
 
 /************************sigwaitinfo************************/
-DEF_MARCEL_POSIX(int, sigwaitinfo, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info), (set,sig),
+DEF_MARCEL_POSIX(int, sigwaitinfo, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info), (set,info),
 {
         LOG_IN();
         LOG_OUT();

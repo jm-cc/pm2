@@ -42,10 +42,15 @@ void make_drawable_zone(GtkWidget* vb_right_interface)
       printf("info : initiliasation en simple buffer (double impossible)\n");
    }
    if (glconf == NULL)
+   { /* peut etre un probleme, alpha inacceptable sur cette config ? */
+      glconf = gdk_gl_config_new_by_mode(GDK_GL_MODE_RGBA);
+      printf("info : initiliasation sans alpha (ce sera moins joli)\n");
+   }
+   if (glconf == NULL)
    {
       wprintf(L"aie : problème de configuration opengl !\n");
-   }
-   
+      wprintf(L"Il n'y aura pas d'affichage\n");
+   } else
    if (!gtk_widget_set_gl_capability(drawzone, glconf, NULL, TRUE, GDK_GL_RGBA_TYPE))
    { /* ok, ya un truc qui n'a pas marché */
       printf("aie : La promotion au rang de widget OpenGL a failli lamentablement.\n");

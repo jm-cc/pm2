@@ -9,19 +9,11 @@ void print_buffer(int *buffer) {
   printf("Received data [%d, %d, %d, %d]\n", buffer[0], buffer[1], buffer[2], buffer[3]);
 }
 
-int main(int argc, char **argv) {
-  int numtasks, rank;
+void contig_datatype(int rank) {
   MPI_Status stat;
   MPI_Datatype mytype;
   MPI_Datatype mytype3;
   MPI_Datatype mytype2;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  printf("Rank %d Size %d\n", rank, numtasks);
 
   MPI_Type_contiguous(2, MPI_INT, &mytype);
   MPI_Type_commit(&mytype);
@@ -55,6 +47,43 @@ int main(int argc, char **argv) {
   MPI_Type_free(&mytype3);
   MPI_Type_contiguous(2, MPI_INT, &mytype);
   MPI_Type_commit(&mytype);
+}
+
+void vector_datatype(int rank) {
+  MPI_Datatype mytype;
+
+  MPI_Type_vector(10, 2, 10, MPI_INT, &mytype);
+  MPI_Type_commit(&mytype);
+
+  if (rank == 0) {
+    int i;
+    int buffer[100];
+    for(i=0 ; i<100 ; i++) buffer[i] = i;
+
+    MPI_Send(buffer, 1, mytype, 1, 10, MPI_COMM_WORLD);
+  }
+  else {
+    int i;
+    int buffer[20];
+    MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    printf("Vector: [");
+    for(i=0 ; i<20 ; i++) printf("%d ", buffer[i]);
+    printf("]\n");
+  }
+}
+
+int main(int argc, char **argv) {
+  int numtasks, rank;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  printf("Rank %d Size %d\n", rank, numtasks);
+
+  contig_datatype(rank);
+  vector_datatype(rank);
 
   MPI_Finalize();
   exit(0);

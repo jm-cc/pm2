@@ -22,15 +22,125 @@
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 
-static int nb_incoming_msg = 0;
-static int nb_outgoing_msg = 0;
+static mpir_datatype_t** datatypes = NULL;
+static p_tbx_slist_t     available_datatypes;
+static int 		 nb_incoming_msg  = 0;
+static int 		 nb_outgoing_msg  = 0;
 
-int not_implemented(char *s)
-{
+int not_implemented(char *s) {
   fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
   fflush(stderr);
   return MPI_Abort(MPI_COMM_WORLD, 1);
 }
+
+void internal_init() {
+  int i;
+
+  /*
+   * Initialise the basic datatypes
+   */
+  datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t));
+
+  for(i=0 ; i<=MPI_LONG_LONG ; i++) {
+    datatypes[i] = malloc(sizeof(mpir_datatype_t));
+  }
+  for(i=1 ; i<=MPI_LONG_LONG ; i++) {
+    datatypes[i]->basic = 1;
+    datatypes[i]->committed = 1;
+  }
+  datatypes[0]->size = 0;
+  datatypes[MPI_CHAR]->size = sizeof(signed char);
+  datatypes[MPI_UNSIGNED_CHAR]->size = sizeof(unsigned char);
+  datatypes[MPI_BYTE]->size = 1;
+  datatypes[MPI_SHORT]->size = sizeof(signed short);
+  datatypes[MPI_UNSIGNED_SHORT]->size = sizeof(unsigned short);
+  datatypes[MPI_INT]->size = sizeof(signed int);
+  datatypes[MPI_UNSIGNED]->size = sizeof(unsigned int);
+  datatypes[MPI_LONG]->size = sizeof(signed long);
+  datatypes[MPI_UNSIGNED_LONG]->size = sizeof(unsigned long);
+  datatypes[MPI_FLOAT]->size = sizeof(float);
+  datatypes[MPI_DOUBLE]->size = sizeof(double);
+  datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
+  datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
+  datatypes[MPI_LONG_LONG]->size = sizeof(long long);
+
+  available_datatypes = tbx_slist_nil();
+  for(i=MPI_LONG_LONG+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
+    int *ptr;
+    ptr = malloc(sizeof(int));
+    *ptr = i;
+    tbx_slist_push(available_datatypes, ptr);
+  }
+}
+
+int get_available_datatype() {
+  if (tbx_slist_is_nil(available_datatypes) == tbx_true) {
+    ERROR("Maximum number of datatypes created");
+    return -1;
+  }
+  else {
+    int datatype;
+    int *ptr = tbx_slist_extract(available_datatypes);
+    datatype = *ptr;
+    free(ptr);
+    return datatype;
+  }
+}
+
+int sizeof_datatype(MPI_Datatype datatype) {
+  mpir_datatype_t *mpir_datatype = get_datatype(datatype);
+  return mpir_datatype->size;
+}
+
+mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
+  if (datatype < NUMBER_OF_DATATYPES) {
+    return datatypes[datatype];
+  }
+  else {
+    ERROR("Datatype %d unknown", datatype);
+    return NULL;
+  }
+}
+
+int mpir_type_contiguous(int count,
+                         MPI_Datatype oldtype,
+                         MPI_Datatype *newtype) {
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type = MPIR_CONTIG;
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = 1;
+  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count;
+  datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
+
+  MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
+  return 0;
+}
+
+int mpir_type_commit(MPI_Datatype *datatype) {
+  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
+    ERROR("Unknown datatype %d\n", *datatype);
+    return -1;
+  }
+  datatypes[*datatype]->committed = 1;
+  return 0;
+}
+
+int mpir_type_free(MPI_Datatype *datatype) {
+  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
+    ERROR("Unknown datatype %d\n", *datatype);
+    return -1;
+  }
+  free(datatypes[*datatype]);
+  int *ptr;
+  ptr = malloc(sizeof(int));
+  *ptr = *datatype;
+  tbx_slist_enqueue(available_datatypes, ptr);
+  return 0;
+}
+
 
 void inc_nb_incoming_msg(void) {
   nb_incoming_msg ++;

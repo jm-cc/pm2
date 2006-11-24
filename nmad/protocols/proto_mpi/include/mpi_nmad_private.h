@@ -25,14 +25,6 @@
 
 #undef MPI_NMAD_SO_DEBUG
 
-int not_implemented(char *s);
-
-tbx_bool_t test_termination(MPI_Comm comm);
-
-void inc_nb_incoming_msg(void);
-
-void inc_nb_outgoing_msg(void);
-
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
 #if defined(MPI_NMAD_SO_DEBUG)
@@ -41,5 +33,57 @@ void inc_nb_outgoing_msg(void);
 #  define MPI_NMAD_TRACE(...) { }
 #endif /* MPI_NMAD_SO_DEBUG */
 
-#endif /* MPI_NMAD_PRIVATE_H */
+#define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 
+#define NUMBER_OF_DATATYPES (MPI_LONG_LONG + 20)
+
+typedef enum {
+    MPIR_INT, MPIR_FLOAT, MPIR_DOUBLE, MPIR_COMPLEX, MPIR_LONG, MPIR_SHORT,
+    MPIR_CHAR, MPIR_BYTE, MPIR_UCHAR, MPIR_USHORT, MPIR_ULONG, MPIR_UINT,
+    MPIR_CONTIG, MPIR_VECTOR, MPIR_HVECTOR,
+    MPIR_INDEXED, MPIR_HINDEXED, MPIR_STRUCT, MPIR_DOUBLE_COMPLEX, MPIR_PACKED,
+    MPIR_UB, MPIR_LB, MPIR_LONGDOUBLE, MPIR_LONGLONGINT,
+    MPIR_LOGICAL, MPIR_FORT_INT
+} mpir_nodetype_t;
+
+typedef struct mpir_datatype_s {
+  mpir_nodetype_t    dte_type; /* type of datatype element this is */
+  int basic;
+  int committed; /* whether committed or not */
+  int is_contig; /* whether entirely contiguous */
+  int size; /* size of type */
+  int elements; /* number of basic elements */
+  int ref_count; /* nodes depending on this node */
+  int align; /* alignment needed for start of datatype */
+  int count; /* replication count */
+  int stride; /* stride, for VECTOR and HVECTOR types */
+  int *indices; /* array of indices, for (H)INDEXED, STRUCT */
+  int blocklen; /* blocklen, for VECTOR and HVECTOR types */
+  int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
+  struct mpir_datatype_s *old_type;
+  int nb_elements;   /* number of elements for STRUCT */
+} mpir_datatype_t;
+
+int not_implemented(char *s);
+
+void internal_init();
+
+int sizeof_datatype(MPI_Datatype datatype);
+
+mpir_datatype_t* get_datatype(MPI_Datatype datatype);
+
+int mpir_type_contiguous(int count,
+                         MPI_Datatype oldtype,
+                         MPI_Datatype *newtype);
+
+int mpir_type_commit(MPI_Datatype *datatype);
+
+int mpir_type_free(MPI_Datatype *datatype);
+
+tbx_bool_t test_termination(MPI_Comm comm);
+
+void inc_nb_incoming_msg(void);
+
+void inc_nb_outgoing_msg(void);
+
+#endif /* MPI_NMAD_PRIVATE_H */

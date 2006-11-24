@@ -33,7 +33,6 @@
 static p_mad_madeleine_t  madeleine	= NULL;
 static int                global_size	= -1;
 static int                process_rank	= -1;
-static int               *sizeof_datatype	= NULL;
 static struct nm_so_interface    *p_so_sr_if;
 static long              *out_gate_id	= NULL;
 static long              *in_gate_id	= NULL;
@@ -83,24 +82,9 @@ int MPI_Init(int *argc,
   CHECK_RETURN_CODE(err, "nm_so_sr_interface_init");
 
   /*
-   * Init the sizeof_datatype array
+   * Internal initialisation
    */
-  sizeof_datatype = malloc((MPI_LONG_LONG + 1) * sizeof(int));
-  sizeof_datatype[0] = 0;
-  sizeof_datatype[MPI_CHAR] = sizeof(signed char);
-  sizeof_datatype[MPI_UNSIGNED_CHAR] = sizeof(unsigned char);
-  sizeof_datatype[MPI_BYTE] = 1;
-  sizeof_datatype[MPI_SHORT] = sizeof(signed short);
-  sizeof_datatype[MPI_UNSIGNED_SHORT] = sizeof(unsigned short);
-  sizeof_datatype[MPI_INT] = sizeof(signed int);
-  sizeof_datatype[MPI_UNSIGNED] = sizeof(unsigned int);
-  sizeof_datatype[MPI_LONG] = sizeof(signed long);
-  sizeof_datatype[MPI_UNSIGNED_LONG] = sizeof(unsigned long);
-  sizeof_datatype[MPI_FLOAT] = sizeof(float);
-  sizeof_datatype[MPI_DOUBLE] = sizeof(double);
-  sizeof_datatype[MPI_LONG_DOUBLE] = sizeof(long double);
-  sizeof_datatype[MPI_LONG_LONG_INT] = sizeof(long long int);
-  sizeof_datatype[MPI_LONG_LONG] = sizeof(long long);
+  internal_init();
 
   /*
    * Store the gate id of all the other processes
@@ -284,7 +268,8 @@ int MPI_Isend(void *buffer,
   gate_id = out_gate_id[dest];
 
   *request = malloc(sizeof(MPI_Request_t));
-  err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], &((*request)->request_id));
+  MPI_NMAD_TRACE("Sending data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
+  err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &((*request)->request_id));
   (*request)->request_type = MPI_REQUEST_SEND;
 
   inc_nb_outgoing_msg();
@@ -318,7 +303,7 @@ int MPI_Irecv(void* buffer,
   }
 
   *request = malloc(sizeof(MPI_Request_t));
-  err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype[datatype], &((*request)->request_id));
+  err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &((*request)->request_id));
   (*request)->request_type = MPI_REQUEST_RECV;
 
   inc_nb_incoming_msg();
@@ -601,7 +586,7 @@ int MPI_Reduce(void* sendbuf,
     void **ptr;
     MPI_Request *requests;
     int i, j=0;
-    remote_sendbufs = malloc(global_size * count * sizeof_datatype[datatype]);
+    remote_sendbufs = malloc(global_size * count * sizeof_datatype(datatype));
     ptr = malloc(global_size * sizeof(void *));
     ptr[0] = remote_sendbufs;
     requests = malloc(global_size * sizeof(MPI_Request));
@@ -609,7 +594,7 @@ int MPI_Reduce(void* sendbuf,
       if (i == root) continue;
       MPI_Irecv(ptr[j], count, datatype, i, tag, comm, &requests[j]);
       j++;
-      ptr[j] = ptr[j-1] + count * sizeof_datatype[datatype];
+      ptr[j] = ptr[j-1] + count * sizeof_datatype(datatype);
     }
     for(i=0 ; i<global_size-1 ; i++) {
       MPI_Wait(&requests[i], NULL);
@@ -647,3 +632,18 @@ double MPI_Wtime(void) {
 double MPI_Wtick(void) {
   return 1e-7;
 }
+
+int MPI_Type_contiguous(int count,
+                        MPI_Datatype oldtype,
+                        MPI_Datatype *newtype) {
+  return mpir_type_contiguous(count, oldtype, newtype);
+}
+
+int MPI_Type_commit(MPI_Datatype *datatype) {
+  return mpir_type_commit(datatype);
+}
+
+int MPI_Type_free(MPI_Datatype *datatype) {
+  return mpir_type_free(datatype);
+}
+

@@ -14,24 +14,19 @@
  */
 
 /*
- * mpi.h
- * =====
+ * mpi_datatype.h
+ * ==============
  */
 
-#ifndef MPI_H
-#define MPI_H
+#ifndef MPI_DATATYPE_H
+#define MPI_DATATYPE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+int MPI_Type_contiguous(int count,
+                        MPI_Datatype oldtype,
+                        MPI_Datatype *newtype);
 
-#include "mpi_types.h"
+int MPI_Type_commit(MPI_Datatype *datatype);
 
-#include "mpi_config.h"
+int MPI_Type_free(MPI_Datatype *datatype);
 
-#include "mpi_pt2pt.h"
-
-#include "mpi_datatype.h"
-
-#endif /* MPI_H */
-
+#endif /* MPI_DATATYPE_H */

@@ -35,4 +35,10 @@ int MPI_Type_vector(int count,
                     MPI_Datatype oldtype,
                     MPI_Datatype *newtype);
 
+int MPI_Type_hvector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype);
+
 #endif /* MPI_DATATYPE_H */

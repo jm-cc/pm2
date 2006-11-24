@@ -51,23 +51,37 @@ void contig_datatype(int rank) {
 
 void vector_datatype(int rank) {
   MPI_Datatype mytype;
+  MPI_Datatype mytype2;
 
   MPI_Type_vector(10, 2, 10, MPI_INT, &mytype);
   MPI_Type_commit(&mytype);
+  MPI_Type_hvector(8, 3, 8*sizeof(MPI_FLOAT), MPI_FLOAT, &mytype2);
+  MPI_Type_commit(&mytype2);
 
   if (rank == 0) {
     int i;
     int buffer[100];
+    float buffer2[64];
+
     for(i=0 ; i<100 ; i++) buffer[i] = i;
+    for(i=0 ; i<64 ; i++) buffer2[i] = i;
 
     MPI_Send(buffer, 1, mytype, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer2, 1, mytype2, 1, 10, MPI_COMM_WORLD);
   }
   else {
     int i;
     int buffer[20];
+    float buffer2[24];
+
     MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, NULL);
     printf("Vector: [");
     for(i=0 ; i<20 ; i++) printf("%d ", buffer[i]);
+    printf("]\n");
+
+    MPI_Recv(buffer2, 1, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
+    printf("Vector: [");
+    for(i=0 ; i<24 ; i++) printf("%3.2f ", buffer2[i]);
     printf("]\n");
   }
 }

@@ -82,6 +82,7 @@ int mpir_type_contiguous(int count,
 int mpir_type_vector(int count,
                      int blocklength,
                      int stride,
+                     mpir_nodetype_t type,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 

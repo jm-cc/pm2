@@ -292,7 +292,7 @@ int MPI_Isend(void *buffer,
     err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &((*request)->request_id));
     (*request)->request_type = MPI_REQUEST_SEND;
   }
-  else if (mpir_datatype->dte_type == MPIR_VECTOR) {
+  else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection;
     int              i, j;
     void            *ptr = buffer;
@@ -353,7 +353,7 @@ int MPI_Irecv(void* buffer,
     err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &((*request)->request_id));
     (*request)->request_type = MPI_REQUEST_RECV;
   }
-  else if (mpir_datatype->dte_type == MPIR_VECTOR) {
+  else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection;
     int              i, j, k=0;
     void            **ptr;
@@ -394,11 +394,11 @@ int MPI_Wait(MPI_Request *request,
     err = nm_so_sr_swait(p_so_sr_if, (*request)->request_id);
   }
   else if ((*request)->request_type == MPI_REQUEST_PACK_RECV) {
-    err = nm_so_flush_unpacks(request->request_cnx);
+    err = nm_so_flush_unpacks((*request)->request_cnx);
     free((*request)->request_cnx);
   }
   else /* ((*request)->request_type == MPI_REQUEST_PACK_SEND) */ {
-    err = nm_so_flush_packs(request->request_cnx);
+    err = nm_so_flush_packs((*request)->request_cnx);
     free((*request)->request_cnx);
   }
   free(*request);
@@ -733,5 +733,14 @@ int MPI_Type_vector(int count,
                     int stride,
                     MPI_Datatype oldtype,
                     MPI_Datatype *newtype) {
-  return mpir_type_vector(count, blocklength, stride, oldtype, newtype);
+  int hstride = stride * sizeof_datatype(oldtype);
+  return mpir_type_vector(count, blocklength, hstride, MPIR_VECTOR, oldtype, newtype);
+}
+
+int MPI_Type_hvector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) {
+  return mpir_type_vector(count, blocklength, stride, MPIR_HVECTOR, oldtype, newtype);
 }

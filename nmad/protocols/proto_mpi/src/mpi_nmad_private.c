@@ -145,19 +145,20 @@ int mpir_type_contiguous(int count,
 int mpir_type_vector(int count,
                      int blocklength,
                      int stride,
+                     mpir_nodetype_t type,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
   *newtype = get_available_datatype();
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
-  datatypes[*newtype]->dte_type = MPIR_VECTOR;
+  datatypes[*newtype]->dte_type = type;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->size = sizeof_datatype(oldtype) * count * blocklength;
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->blocklen = blocklength;
   datatypes[*newtype]->block_size = blocklength * sizeof_datatype(oldtype);
-  datatypes[*newtype]->stride = stride * sizeof_datatype(oldtype);
+  datatypes[*newtype]->stride = stride; // * sizeof_datatype(oldtype);
   datatypes[*newtype]->old_type = get_datatype(oldtype);
 
   MPI_NMAD_TRACE("Creating new vector type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));

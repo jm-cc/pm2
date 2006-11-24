@@ -297,13 +297,33 @@ int MPI_Isend(void *buffer,
     int              i, j;
     void            *ptr = buffer;
 
-    MPI_NMAD_TRACE("Sending vector type: stride %d - blocklen %d - count %d - size %d\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, mpir_datatype->size);
+    MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %d\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, mpir_datatype->size);
     connection = malloc(sizeof(struct nm_so_cnx));
     nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
     for(i=0 ; i<count ; i++) {
       for(j=0 ; j<mpir_datatype->elements ; j++) {
         nm_so_pack(connection, ptr, mpir_datatype->block_size);
         ptr += mpir_datatype->stride;
+      }
+    }
+    nm_so_end_packing(connection);
+    (*request)->request_type = MPI_REQUEST_PACK_SEND;
+    (*request)->request_cnx = connection;
+  }
+  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_INDEXED) {
+    struct nm_so_cnx *connection;
+    int               i, j;
+    void             *ptr = buffer;
+
+    MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %d\n", mpir_datatype->elements, mpir_datatype->size);
+    connection = malloc(sizeof(struct nm_so_cnx));
+    nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
+    for(i=0 ; i<count ; i++) {
+      ptr = buffer + i * (mpir_datatype->indices[mpir_datatype->elements-1] + mpir_datatype->blocklens[mpir_datatype->elements-1]);
+      for(j=0 ; j<mpir_datatype->elements ; j++) {
+        ptr += mpir_datatype->indices[j];
+        nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_type->size);
+        ptr -= mpir_datatype->indices[j];
       }
     }
     nm_so_end_packing(connection);
@@ -355,7 +375,7 @@ int MPI_Irecv(void* buffer,
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection;
-    int              i, j, k=0;
+    int               i, j, k=0;
     void            **ptr;
 
     MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %d\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, mpir_datatype->size);
@@ -368,6 +388,27 @@ int MPI_Irecv(void* buffer,
         nm_so_unpack(connection, ptr[k], mpir_datatype->block_size);
         k++;
         ptr[k] = ptr[k-1] + mpir_datatype->block_size;
+      }
+    }
+    nm_so_end_unpacking(connection);
+    (*request)->request_type = MPI_REQUEST_PACK_RECV;
+    (*request)->request_cnx = connection;
+  }
+  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_INDEXED) {
+    struct nm_so_cnx *connection;
+    int               i, j, k=0;
+    void            **ptr;
+
+    MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %d\n", mpir_datatype->elements, mpir_datatype->size);
+    connection = malloc(sizeof(struct nm_so_cnx));
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
+    ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+    ptr[0] = buffer;
+    for(i=0 ; i<count ; i++) {
+      for(j=0 ; j<mpir_datatype->elements ; j++) {
+        nm_so_unpack(connection, ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_type->size);
+        k++;
+        ptr[k] = ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_type->size;
       }
     }
     nm_so_end_unpacking(connection);
@@ -744,3 +785,20 @@ int MPI_Type_hvector(int count,
                      MPI_Datatype *newtype) {
   return mpir_type_vector(count, blocklength, stride, MPIR_HVECTOR, oldtype, newtype);
 }
+
+int MPI_Type_indexed(int count,
+                     int *array_of_blocklengths,
+                     int *array_of_displacements,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) {
+  return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_INDEXED, oldtype, newtype);
+}
+
+int MPI_Type_hindexed(int count,
+                      int *array_of_blocklengths,
+                      MPI_Aint *array_of_displacements,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype) {
+  return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_HINDEXED, oldtype, newtype);
+}
+

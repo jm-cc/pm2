@@ -132,11 +132,11 @@ int mpir_type_contiguous(int count,
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = MPIR_CONTIG;
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
-  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count;
+  datatypes[*newtype]->size = datatypes[*newtype]->old_type->size * count;
   datatypes[*newtype]->elements = count;
-  datatypes[*newtype]->old_type = get_datatype(oldtype);
 
   MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
   return 0;
@@ -152,19 +152,50 @@ int mpir_type_vector(int count,
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = type;
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
-  datatypes[*newtype]->size = sizeof_datatype(oldtype) * count * blocklength;
+  datatypes[*newtype]->size = datatypes[*newtype]->old_type->size * count * blocklength;
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->blocklen = blocklength;
-  datatypes[*newtype]->block_size = blocklength * sizeof_datatype(oldtype);
-  datatypes[*newtype]->stride = stride; // * sizeof_datatype(oldtype);
-  datatypes[*newtype]->old_type = get_datatype(oldtype);
+  datatypes[*newtype]->block_size = blocklength * datatypes[*newtype]->old_type->size;
+  datatypes[*newtype]->stride = stride;
 
-  MPI_NMAD_TRACE("Creating new vector type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
+  MPI_NMAD_TRACE("Creating new (h)vector type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
   return 0;
 }
 
+int mpir_type_indexed(int count,
+                      int *array_of_blocklengths,
+                      int *array_of_displacements,
+                      mpir_nodetype_t type,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype) {
+  int i;
+
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type = type;
+  datatypes[*newtype]->old_type = get_datatype(oldtype);
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = 0;
+  datatypes[*newtype]->size = datatypes[*newtype]->old_type->size * count;
+  for(i=0 ; i<count ; i++) {
+    datatypes[*newtype]->size *= array_of_blocklengths[i];
+  }
+  datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->blocklens = array_of_blocklengths;
+  datatypes[*newtype]->indices = array_of_displacements;
+  if (type == MPIR_HINDEXED) {
+    for(i=0 ; i<count ; i++) {
+      datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_type->size;
+    }
+  }
+
+  MPI_NMAD_TRACE("Creating new index type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
+  return 0;
+}
 
 void inc_nb_incoming_msg(void) {
   nb_incoming_msg ++;

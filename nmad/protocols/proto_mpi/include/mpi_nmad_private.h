@@ -86,6 +86,13 @@ int mpir_type_vector(int count,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 
+int mpir_type_indexed(int count,
+                      int *array_of_blocklengths,
+                      int *array_of_displacements,
+                      mpir_nodetype_t type,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype);
+
 tbx_bool_t test_termination(MPI_Comm comm);
 
 void inc_nb_incoming_msg(void);

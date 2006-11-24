@@ -505,8 +505,10 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	marcel_topo_levels[discovering_level++] = rad_level;
 	if (level == MARCEL_LEVEL_NODE)
 		marcel_topo_node_level = rad_level;
+#ifdef MARCEL_SMT_IDLE
 	if (level == MARCEL_LEVEL_CORE)
 		marcel_topo_core_level = rad_level;
+#endif
 	rs_free(rset);
 	rs_free(rad);
 }

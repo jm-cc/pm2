@@ -23,7 +23,7 @@
 
 #include <tbx.h>
 
-#define MPI_NMAD_SO_DEBUG
+#undef MPI_NMAD_SO_DEBUG
 
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 

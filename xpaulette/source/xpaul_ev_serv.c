@@ -509,6 +509,7 @@ inline static int __xpaul_unregister(xpaul_server_t server,
 	xdebug("Unregister request %p for [%s]\n", req, server->name);
 	__xpaul_del_success_req(server, req);
 	list_del_init(&req->chain_req_registered);
+	list_del_init(&req->chain_req_ready);
 	req->state &= ~XPAUL_STATE_REGISTERED;
 	LOG_RETURN(0);
 }
@@ -557,6 +558,12 @@ inline static int __xpaul_unregister_poll(xpaul_server_t server,
 		list_del_init(&req->chain_req_to_export);
 	}
 #endif /* MA__LWPS */
+	else {
+		list_del_init(&req->chain_req_grouped);
+		server->req_poll_grouped_nb--;
+		LOG_RETURN(1);
+	}
+
 	LOG_RETURN(0);
 }
 
@@ -772,6 +779,15 @@ void __xpaul_check_polling(unsigned polling_point)
 	}
 	xpaul_read_unlock_softirq(&xpaul_poll_lock);
 	PROF_OUT();
+}
+
+void xpaul_poll_req(xpaul_req_t req){
+	if(req->server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func) {
+		(*req->server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
+			(req->server, XPAUL_FUNCTYPE_POLL_POLLONE,
+			 req, 1, XPAUL_OPT_REQ_ITER);
+	}
+	/* else error? */
 }
 
 /* Force une scrutation sur un serveur */
@@ -1095,6 +1111,9 @@ inline static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t req,
 					__xpaul_poll_stop(server);
 				}
 			}
+			__xpaul_unregister_poll(server, req);
+			__xpaul_unregister(server, req);
+
 			/* Pas update_timer(id) car on a fait un poll_one et
 			 * pas poll_all */
 			LOG_RETURN(0);
@@ -1109,6 +1128,8 @@ inline static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t req,
 int xpaul_req_wait(xpaul_req_t req, xpaul_wait_t wait,
 		   xpaul_time_t timeout)
 {
+	if(req->state&XPAUL_STATE_OCCURED)
+		return 0;
 #ifdef MARCEL
 	marcel_task_t *lock;
 #endif				// MARCEL
@@ -1295,6 +1316,7 @@ xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps)
 		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 		lwp->vp_nb = marcel_add_lwp();
+		nb_comm_threads++;
 		marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp->vp_nb));
 
 		if (pipe(lwp->fds) == -1) {
@@ -1310,7 +1332,9 @@ xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps)
 void xpaul_server_init(xpaul_server_t server, char *name)
 {
 	*server = (struct xpaul_server) XPAUL_SERVER_INIT(*server, name);
+#ifdef MARCEL
 	ma_open_softirq(MA_XPAUL_SOFTIRQ, __xpaul_manage_ready, NULL);
+#endif /* MARCEL */
 }
 
 int xpaul_server_set_poll_settings(xpaul_server_t server,

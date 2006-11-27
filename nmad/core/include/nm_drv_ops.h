@@ -38,4 +38,6 @@ struct nm_drv_ops {
 
         int (*poll_send_iov)    (struct nm_pkt_wrap 	*p_pw);
         int (*poll_recv_iov)	(struct nm_pkt_wrap 	*p_pw);
+
+        int (*wait_iov)         (struct nm_pkt_wrap 	*p_pw);
 };

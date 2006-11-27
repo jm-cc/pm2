@@ -787,6 +787,8 @@ int xpaul_callback_has_blocked(xpaul_server_t server);
 
 /* Forced polling */
 void xpaul_poll_force(xpaul_server_t server);
+/* Poll a specified query */
+void xpaul_poll_req(xpaul_req_t req);
 /* Idem, ensures the polling is done before it returns */
 void xpaul_poll_force_sync(xpaul_server_t server);
 

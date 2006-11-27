@@ -132,7 +132,11 @@ nm_poll_recv(struct nm_sched	*p_sched,
                      p_pw->seq);
 
                 /* poll request 					*/
-                err = p_pw->p_drv->ops.poll_recv_iov(p_pw);
+#ifdef XPAULETTE
+                err = p_pw->p_drv->ops.wait_iov(p_pw);
+#else
+		err = p_pw->p_drv->ops.poll_recv_iov(p_pw);
+#endif
 
                 /* process poll command status				*/
                 if (err == -NM_EAGAIN) {

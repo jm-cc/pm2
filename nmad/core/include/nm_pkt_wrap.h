@@ -16,6 +16,10 @@
 #ifndef _NM_PKT_WRAP_H_
 #define _NM_PKT_WRAP_H_
 
+#ifdef XPAULETTE
+#include "xpaul.h"
+#endif
+
 struct nm_iovec {
     /* io vector entry meta-data	*/
 
@@ -44,6 +48,12 @@ struct nm_iovec_iter {
 };
 
 struct nm_pkt_wrap {
+
+#ifdef XPAULETTE
+	struct xpaul_req	 inst;
+	int                      err;  
+#endif /* XPAULETTE */
+
         /* internal packet wrapper	*/
 
 

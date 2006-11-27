@@ -20,6 +20,7 @@
 #include "marcel.h"
 
 
+#ifdef MARCEL_FORTRAN
 extern int  iargc_();
 extern void getarg_(int*,char*,int);
 
@@ -40,10 +41,10 @@ void marcel_init_(){
 
     argv[i] = (char *) malloc (argsize * sizeof (char));
     getarg_ (&i, argv[i], argsize);
-    argv[i][argsize] = 0;
+    argv[i][argsize-1] = 0;
 
     /* Trim trailing blanks */
-    j = argsize - 1;
+    j = argsize - 2;
     while(j!= 0 && argv[i][j] == ' '){
 
       argv[i][j] = 0;
@@ -85,3 +86,4 @@ void marcel_join_(marcel_t *pid){
 void marcel_yield_(){
   marcel_yield();
 }
+#endif

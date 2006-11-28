@@ -189,10 +189,6 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->old_type = get_datatype(oldtype);
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
-  datatypes[*newtype]->size = datatypes[*newtype]->old_type->size * count;
-  for(i=0 ; i<count ; i++) {
-    datatypes[*newtype]->size *= array_of_blocklengths[i];
-  }
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(int));

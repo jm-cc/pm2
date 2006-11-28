@@ -16,7 +16,7 @@
 
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "dsm_protocol_lib.h"
 #include "dsm_protocol_policy.h"
 #include "dsmlib_erc_sw_inv_protocol.h"

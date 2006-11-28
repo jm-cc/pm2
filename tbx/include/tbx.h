@@ -55,11 +55,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
-#ifndef DARWIN_SYS
-#include <malloc.h>
-#else
-#include <sys/malloc.h>
-#endif
+#include <stdlib.h>
 
 #include "tbx_timing.h"
 #include "tbx_macros.h"

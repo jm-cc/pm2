@@ -69,7 +69,7 @@
   #include <pthread.h>
   static pthread_sem_t mutex_send[MAX_MODULES];
 #else
-  #include <malloc.h>
+  #include <stdlib.h>
   #define lock_task()
   #define unlock_task()
   #define tmalloc malloc

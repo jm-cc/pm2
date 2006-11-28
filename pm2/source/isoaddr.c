@@ -27,11 +27,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <assert.h>
-#ifndef DARWIN_SYS
-#include <malloc.h>
-#else
-#include <sys/malloc.h>
-#endif
+#include <stdlib.h>
 #include <stdarg.h>
 
 #include "marcel.h"

@@ -8,7 +8,7 @@
 #ifndef HACHAGE_H
 #define HACHAGE_H
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <time.h>
 
 struct PairNode_tag;

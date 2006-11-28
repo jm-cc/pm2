@@ -83,6 +83,8 @@ void vector_datatype(int rank) {
     for(i=0 ; i<24 ; i++) printf("%3.2f ", buffer2[i]);
     printf("]\n");
   }
+  MPI_Type_free(&mytype);
+  MPI_Type_free(&mytype2);
 }
 
 void indexed_datatype(int rank) {
@@ -118,6 +120,8 @@ void indexed_datatype(int rank) {
     for(i=0 ; i<12 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
     printf("]\n");
   }
+  MPI_Type_free(&mytype);
+  MPI_Type_free(&mytype2);
 }
 
 void struct_datatype(int rank) {
@@ -175,6 +179,54 @@ void struct_datatype(int rank) {
   MPI_Type_free(&mytype);
 }
 
+void struct_and_indexed(int rank) {
+  MPI_Datatype struct_type;
+  struct part_s {
+    double d;
+    int b;
+  };
+  MPI_Datatype types[2] = { MPI_DOUBLE, MPI_INT };
+  int struct_blocklens[2] = { 1, 1 };
+  MPI_Aint struct_displacements[2];
+  struct part_s particle;
+
+  MPI_Datatype indexed_type;
+  int indexed_blocklens[2] = { 3, 1 };
+  int indexed_displacements[2] = { 0, 4*sizeof(struct part_s) };
+
+  MPI_Get_address(&(particle.d), &struct_displacements[0]);
+  MPI_Get_address(&(particle.b), &struct_displacements[1]);
+  struct_displacements[1] -= struct_displacements[0];
+
+  MPI_Type_struct(2, struct_blocklens, struct_displacements, types, &struct_type);
+  MPI_Type_commit(&struct_type);
+
+  MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
+  MPI_Type_commit(&indexed_type);
+
+  printf("Sizeof particle is %d\n", sizeof(struct part_s));
+  if (rank == 0) {
+    struct part_s particles[20];
+    int i;
+    for(i=0 ; i<20 ; i++) {
+      particles[i].d = (i+1)*10;
+      particles[i].b = i+1;
+      printf("Sending Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
+    }
+    MPI_Send(particles, 3, indexed_type, 1, 10, MPI_COMM_WORLD);
+  }
+  else {
+    struct part_s particles[12];
+    int i;
+    MPI_Recv(particles, 3, indexed_type, 0, 10, MPI_COMM_WORLD, NULL);
+    for(i=0 ; i<12 ; i++) {
+      printf("Receiving Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
+    }
+  }
+  MPI_Type_free(&indexed_type);
+  MPI_Type_free(&struct_type);
+}
+
 int main(int argc, char **argv) {
   int numtasks, rank;
 
@@ -185,11 +237,12 @@ int main(int argc, char **argv) {
 
   printf("Rank %d Size %d\n", rank, numtasks);
 
-//  contig_datatype(rank);
-//  vector_datatype(rank);
-//  indexed_datatype(rank);
-
+  contig_datatype(rank);
+  vector_datatype(rank);
+  indexed_datatype(rank);
   struct_datatype(rank);
+
+  struct_and_indexed(rank);
 
   MPI_Finalize();
   exit(0);

@@ -22,6 +22,7 @@
  *
  */
 
+#ifdef MA__BUBBLES
 ma_runqueue_t ma_gang_rq;
 
 any_t marcel_gang_scheduler(any_t foo) {
@@ -189,3 +190,4 @@ void __marcel_init ma_bubble_sched_start(void) {
 void ma_bubble_gang_sched_init() {
 	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
 }
+#endif

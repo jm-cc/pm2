@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MA__BUBBLES
 #define switchrq(e,rq) \
 	PROF_EVENT2(bubble_sched_switchrq, \
 	e->type == MA_TASK_ENTITY? \
@@ -248,3 +249,4 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_local_bh_enable();
 }
 
+#endif

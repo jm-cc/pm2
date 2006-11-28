@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-#section common
+#section types
 #ifdef MA__SMP
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <pthread.h>

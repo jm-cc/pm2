@@ -406,6 +406,7 @@ extern const __ma_init_info_t ma_init_info_linux_sched_init;
 extern void ma_linux_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
+extern void ma_bubble_gang_sched_init(void);
 extern void ma_bubble_sched_init2(void);
 #endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
@@ -520,6 +521,7 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_slot_init);
 #ifdef MA__BUBBLES
 			call_init_function(&ma_init_info_bubble_sched_init);
+			ma_bubble_gang_sched_init();
 #endif				// MA__BUBBLES
 			call_init_function(&ma_init_info_linux_sched_init);
 #ifdef MA__BUBBLES

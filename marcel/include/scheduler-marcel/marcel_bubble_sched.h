@@ -186,13 +186,6 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
  * bubble has expired */
 void ma_bubble_tick(marcel_bubble_t *bubble);
 
-int marcel_bubble_steal_work(void);
-
-#section functions
-#depend "marcel_topology.h[types]"
-any_t marcel_gang_scheduler(any_t foo);
-void marcel_bubble_spread(marcel_bubble_t *b, marcel_topo_level_t *l);
-
 #section marcel_functions
 #ifdef MARCEL_BUBBLE_STEAL
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);

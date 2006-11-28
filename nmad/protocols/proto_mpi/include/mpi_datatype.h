@@ -21,6 +21,8 @@
 #ifndef MPI_DATATYPE_H
 #define MPI_DATATYPE_H
 
+int MPI_Get_address(void *location, MPI_Aint *address);
+
 int MPI_Type_commit(MPI_Datatype *datatype);
 
 int MPI_Type_free(MPI_Datatype *datatype);
@@ -52,5 +54,11 @@ int MPI_Type_hindexed(int count,
                       MPI_Aint *array_of_displacements,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype);
+
+int MPI_Type_struct(int count,
+                    int *array_of_blocklengths,
+                    MPI_Aint *array_of_displacements,
+                    MPI_Datatype *array_of_types,
+                    MPI_Datatype *newtype);
 
 #endif /* MPI_DATATYPE_H */

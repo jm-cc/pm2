@@ -330,6 +330,28 @@ int MPI_Isend(void *buffer,
     (*request)->request_type = MPI_REQUEST_PACK_SEND;
     (*request)->request_cnx = connection;
   }
+  else if (mpir_datatype->dte_type == MPIR_STRUCT) {
+    struct nm_so_cnx *connection;
+    int               i, j;
+    void             *ptr = buffer;
+
+    MPI_NMAD_TRACE("Sending struct type: size %d\n", mpir_datatype->size);
+    connection = malloc(sizeof(struct nm_so_cnx));
+    nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
+    for(i=0 ; i<count ; i++) {
+      ptr = buffer + i * mpir_datatype->size;
+      MPI_NMAD_TRACE("Element %d starts at %p (%p + %d)\n", i, ptr, buffer, i*mpir_datatype->size);
+      for(j=0 ; j<mpir_datatype->elements ; j++) {
+        ptr += mpir_datatype->indices[j];
+        MPI_NMAD_TRACE("packing data at %p (+%d) with a size %d*%d\n", ptr, mpir_datatype->indices[j], mpir_datatype->blocklens[j], mpir_datatype->old_types[j]->size);
+        nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_types[j]->size);
+        ptr -= mpir_datatype->indices[j];
+      }
+    }
+    nm_so_end_packing(connection);
+    (*request)->request_type = MPI_REQUEST_PACK_SEND;
+    (*request)->request_cnx = connection;
+  }
   else {
     ERROR("Do not know how to send datatype %d\n", datatype);
     return 0;
@@ -409,6 +431,28 @@ int MPI_Irecv(void* buffer,
         nm_so_unpack(connection, ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_type->size);
         k++;
         ptr[k] = ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_type->size;
+      }
+    }
+    nm_so_end_unpacking(connection);
+    (*request)->request_type = MPI_REQUEST_PACK_RECV;
+    (*request)->request_cnx = connection;
+  }
+  else if (mpir_datatype->dte_type == MPIR_STRUCT) {
+    struct nm_so_cnx *connection;
+    int               i, j, k=0;
+    void            **ptr;
+
+    MPI_NMAD_TRACE("Receiving struct type: size %d\n", mpir_datatype->size);
+    connection = malloc(sizeof(struct nm_so_cnx));
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
+    ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+    for(i=0 ; i<count ; i++) {
+      ptr[k] = buffer + i*mpir_datatype->size;
+      for(j=0 ; j<mpir_datatype->elements ; j++) {
+        ptr[k] += mpir_datatype->indices[j];
+        nm_so_unpack(connection, ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_types[j]->size);
+        k++;
+        ptr[k] = ptr[k-1] - mpir_datatype->indices[j];
       }
     }
     nm_so_end_unpacking(connection);
@@ -755,6 +799,16 @@ double MPI_Wtick(void) {
   return 1e-7;
 }
 
+int MPI_Get_address(void *location, MPI_Aint *address) {
+  /* This is the "portable" way to generate an address.
+     The difference of two pointers is the number of elements
+     between them, so this gives the number of chars between location
+     and ptr.  As long as sizeof(char) == 1, this will be the number
+     of bytes from 0 to location */
+  *address = (MPI_Aint) ((char *)location - (char *)MPI_BOTTOM);
+  return MPI_SUCCESS;
+}
+
 int MPI_Type_commit(MPI_Datatype *datatype) {
   return mpir_type_commit(datatype);
 }
@@ -802,3 +856,10 @@ int MPI_Type_hindexed(int count,
   return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_HINDEXED, oldtype, newtype);
 }
 
+int MPI_Type_struct(int count,
+                    int *array_of_blocklengths,
+                    MPI_Aint *array_of_displacements,
+                    MPI_Datatype *array_of_types,
+                    MPI_Datatype *newtype) {
+  return mpir_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
+}

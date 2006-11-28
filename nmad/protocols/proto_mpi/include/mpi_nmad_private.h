@@ -53,14 +53,13 @@ typedef struct mpir_datatype_s {
   int is_contig; /* whether entirely contiguous */
   int size; /* size of type */
   int elements; /* number of basic elements */
-  int align; /* alignment needed for start of datatype */
   int stride; /* stride, for VECTOR and HVECTOR types */
   int *indices; /* array of indices, for (H)INDEXED, STRUCT */
   int blocklen; /* blocklen, for VECTOR and HVECTOR types */
   int block_size; /* blocklen, for VECTOR and HVECTOR types */
   int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
   struct mpir_datatype_s *old_type;
-  int nb_elements;   /* number of elements for STRUCT */
+  struct mpir_datatype_s **old_types;
 } mpir_datatype_t;
 
 int not_implemented(char *s);
@@ -92,6 +91,12 @@ int mpir_type_indexed(int count,
                       mpir_nodetype_t type,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype);
+
+int mpir_type_struct(int count,
+                     int *array_of_blocklengths,
+                     MPI_Aint *array_of_displacements,
+                     MPI_Datatype *array_of_types,
+                     MPI_Datatype *newtype);
 
 tbx_bool_t test_termination(MPI_Comm comm);
 

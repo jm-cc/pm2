@@ -117,6 +117,15 @@ int mpir_type_free(MPI_Datatype *datatype) {
     ERROR("Unknown datatype %d\n", *datatype);
     return -1;
   }
+  if (datatypes[*datatype]->dte_type == MPIR_INDEXED ||
+      datatypes[*datatype]->dte_type == MPIR_HINDEXED ||
+      datatypes[*datatype]->dte_type == MPIR_STRUCT) {
+    free(datatypes[*datatype]->blocklens);
+    free(datatypes[*datatype]->indices);
+    if (datatypes[*datatype]->dte_type == MPIR_STRUCT) {
+      free(datatypes[*datatype]->old_types);
+    }
+  }
   free(datatypes[*datatype]);
   int *ptr;
   ptr = malloc(sizeof(int));
@@ -185,8 +194,12 @@ int mpir_type_indexed(int count,
     datatypes[*newtype]->size *= array_of_blocklengths[i];
   }
   datatypes[*newtype]->elements = count;
-  datatypes[*newtype]->blocklens = array_of_blocklengths;
-  datatypes[*newtype]->indices = array_of_displacements;
+  datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
+  datatypes[*newtype]->indices = malloc(count * sizeof(int));
+  for(i=0 ; i<count ; i++) {
+    datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
+    datatypes[*newtype]->indices[i] = array_of_displacements[i];
+  }
   if (type == MPIR_HINDEXED) {
     for(i=0 ; i<count ; i++) {
       datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_type->size;
@@ -194,6 +207,35 @@ int mpir_type_indexed(int count,
   }
 
   MPI_NMAD_TRACE("Creating new index type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
+  return 0;
+}
+
+int mpir_type_struct(int count,
+                     int *array_of_blocklengths,
+                     MPI_Aint *array_of_displacements,
+                     MPI_Datatype *array_of_types,
+                     MPI_Datatype *newtype) {
+  int i;
+
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type = MPIR_STRUCT;
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = 0;
+  datatypes[*newtype]->elements = count;
+
+  datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
+  datatypes[*newtype]->indices = malloc(count * sizeof(int));
+  datatypes[*newtype]->old_types = malloc(count * sizeof(struct mpir_datatype_s *));
+  for(i=0 ; i<count ; i++) {
+    datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
+    datatypes[*newtype]->old_types[i] = get_datatype(array_of_types[i]);
+    datatypes[*newtype]->indices[i] = array_of_displacements[i];
+  }
+  datatypes[*newtype]->size = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_types[count-1]->size * datatypes[*newtype]->blocklens[count-1];
+
+  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%d\n", *newtype, datatypes[*newtype]->size);
   return 0;
 }
 

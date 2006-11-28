@@ -109,7 +109,7 @@ int mpir_type_commit(MPI_Datatype *datatype) {
     return -1;
   }
   datatypes[*datatype]->committed = 1;
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_free(MPI_Datatype *datatype) {
@@ -131,7 +131,7 @@ int mpir_type_free(MPI_Datatype *datatype) {
   ptr = malloc(sizeof(int));
   *ptr = *datatype;
   tbx_slist_enqueue(available_datatypes, ptr);
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_contiguous(int count,
@@ -148,7 +148,7 @@ int mpir_type_contiguous(int count,
   datatypes[*newtype]->elements = count;
 
   MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_vector(int count,
@@ -171,7 +171,7 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->stride = stride;
 
   MPI_NMAD_TRACE("Creating new (h)vector type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_indexed(int count,
@@ -207,7 +207,7 @@ int mpir_type_indexed(int count,
   }
 
   MPI_NMAD_TRACE("Creating new index type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_struct(int count,
@@ -236,7 +236,7 @@ int mpir_type_struct(int count,
   datatypes[*newtype]->size = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_types[count-1]->size * datatypes[*newtype]->blocklens[count-1];
 
   MPI_NMAD_TRACE("Creating new struct type (%d) with size=%d\n", *newtype, datatypes[*newtype]->size);
-  return 0;
+  return MPI_SUCCESS;
 }
 
 void inc_nb_incoming_msg(void) {

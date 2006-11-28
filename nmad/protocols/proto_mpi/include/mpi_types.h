@@ -28,6 +28,9 @@
 
 #define MPI_BOTTOM      (void *)0
 
+/* error return classes */
+#define MPI_SUCCESS          0      /* Successful return code */
+
 /* Pre-defined constants */
 #define MPI_UNDEFINED      (-32766)
 #define MPI_UNDEFINED_RANK MPI_UNDEFINED

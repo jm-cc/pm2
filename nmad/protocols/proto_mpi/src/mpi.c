@@ -139,7 +139,7 @@ int MPI_Init(int *argc,
     }
   }
 
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Init_thread(int *argc,
@@ -155,7 +155,7 @@ int MPI_Init_thread(int *argc,
 
 int MPI_Finalize(void) {
   mad_exit(madeleine);
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Abort(MPI_Comm comm,
@@ -172,7 +172,7 @@ int MPI_Comm_size(MPI_Comm comm,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   *size = global_size;
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Comm_rank(MPI_Comm comm,
@@ -180,7 +180,7 @@ int MPI_Comm_rank(MPI_Comm comm,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   *rank = process_rank;
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Get_processor_name(char *name, int *resultlen) {
@@ -188,7 +188,7 @@ int MPI_Get_processor_name(char *name, int *resultlen) {
   err = gethostname(name, MPI_MAX_PROCESSOR_NAME);
   if (!err) {
     *resultlen = strlen(name);
-    return 0;
+    return MPI_SUCCESS;
   }
   else {
     return errno;
@@ -354,7 +354,7 @@ int MPI_Isend(void *buffer,
   }
   else {
     ERROR("Do not know how to send datatype %d\n", datatype);
-    return 0;
+    return -1;
   }
 
   inc_nb_outgoing_msg();
@@ -461,7 +461,7 @@ int MPI_Irecv(void* buffer,
   }
   else {
     ERROR("Do not know how to receive datatype %d\n", datatype);
-    return 0;
+    return -1;
   }
 
   inc_nb_incoming_msg();
@@ -515,7 +515,7 @@ int MPI_Test(MPI_Request *request,
   else { /* err == -NM_EAGAIN */
     *flag = 0;
   }
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Iprobe(int source,
@@ -549,7 +549,7 @@ int MPI_Iprobe(int source,
   else { /* err == -NM_EAGAIN */
     *flag = 0;
   }
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Probe(int source,
@@ -574,7 +574,7 @@ int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count) {
   *count = status->count;
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Barrier(MPI_Comm comm) {
@@ -586,7 +586,7 @@ int MPI_Barrier(MPI_Comm comm) {
     sleep(1);
     termination = test_termination(comm);
   }
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Bcast(void* buffer,
@@ -612,7 +612,7 @@ int MPI_Bcast(void* buffer,
       err = MPI_Wait(&requests[i], NULL);
       if (err != 0) return err;
     }
-    return 0;
+    return MPI_SUCCESS;
   }
   else {
     return MPI_Recv(buffer, count, datatype, root, tag, comm, NULL);
@@ -732,7 +732,7 @@ int reduce(void *sendbuf, void *remote_sendbufs, int size, MPI_Datatype datatype
       break;
     }
   }
-  return 0;
+  return MPI_SUCCESS;
 }
 
 int MPI_Reduce(void* sendbuf,

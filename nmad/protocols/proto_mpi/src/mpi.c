@@ -519,6 +519,21 @@ int MPI_Test(MPI_Request *request,
   return MPI_SUCCESS;
 }
 
+int MPI_Testany(int count,
+                MPI_Request *array_of_requests,
+                int *index,
+                int *flag,
+                MPI_Status *status) {
+  int i, err;
+  for(i=0 ; i<count ; i++) {
+    err = MPI_Test(&array_of_requests[i], flag, status);
+    if (*flag == 1) {
+      return MPI_SUCCESS;
+    }
+  }
+  return err;
+}
+
 int MPI_Iprobe(int source,
                int tag,
                MPI_Comm comm,
@@ -620,120 +635,14 @@ int MPI_Bcast(void* buffer,
   }
 }
 
-int reduce(void *sendbuf, void *remote_sendbufs, int size, MPI_Datatype datatype, int count, MPI_Op op, void *recvbuf) {
-  int i, j;
+int MPI_Op_create(MPI_User_function *function,
+                  int commute,
+                  MPI_Op *op) {
+  return mpir_op_create(function, commute, op);
+}
 
-  switch (op) {
-    case MPI_MIN : {
-      switch (datatype) {
-        case MPI_INT : {
-          int *in_int = (int *) sendbuf;
-          int *out_int = (int *) recvbuf;
-          for(i=0 ; i<count ; i++) {
-            out_int[i] = in_int[i];
-          }
-          in_int = (int *) remote_sendbufs;
-          for(j=1 ; j<size ; j++) {
-            for(i=0 ; i<count ; i++) {
-              if (*in_int < out_int[i]) out_int[i] = *in_int;
-              in_int ++;
-            }
-          }
-          break;
-        } /* END MPI_INT FOR MPI_MIN */
-        default : {
-          return not_implemented("Reduce Datatype");
-          break;
-        }
-      }
-      break;
-    } /* END MPI_MIN */
-    case MPI_SUM : {
-      switch (datatype) {
-        case MPI_INT : {
-          int *in_int = (int *) sendbuf;
-          int *out_int = (int *) recvbuf;
-          for(i=0 ; i<count ; i++) {
-            out_int[i] = in_int[i];
-	    MPI_NMAD_TRACE("Setting value %d for count %d\n", out_int[i], i);
-          }
-          in_int = (int *) remote_sendbufs;
-          for(j=1 ; j<size ; j++) {
-            for(i=0 ; i<count ; i++) {
-              out_int[i] += *in_int;
-	      MPI_NMAD_TRACE("Adding value %d from process %d for count %d\n", *in_int, j, i);
-              in_int ++;
-            }
-          }
-          break;
-        } /* END MPI_INT FOR MPI_SUM */
-        case MPI_DOUBLE : {
-          double *in_int = (double *) sendbuf;
-          double *out_int = (double *) recvbuf;
-          for(i=0 ; i<count ; i++) {
-            out_int[i] = in_int[i];
-          }
-          in_int = (double *) remote_sendbufs;
-          for(j=1 ; j<size ; j++) {
-            for(i=0 ; i<count ; i++) {
-              out_int[i] += *in_int;
-              in_int ++;
-            }
-          }
-          break;
-        } /* END MPI_DOUBLE FOR MPI_SUM */
-        default : {
-          return not_implemented("Reduce Datatype");
-          break;
-        }
-      }
-      break;
-    }
-    case MPI_PROD : {
-      switch (datatype) {
-        case MPI_INT : {
-          int *in_int = (int *) sendbuf;
-          int *out_int = (int *) recvbuf;
-          for(i=0 ; i<count ; i++) {
-            out_int[i] = in_int[i];
-          }
-          in_int = (int *) remote_sendbufs;
-          for(j=1 ; j<size ; j++) {
-            for(i=0 ; i<count ; i++) {
-              out_int[i] *= *in_int;
-              in_int ++;
-            }
-          }
-          break;
-        } /* END MPI_INT FOR MPI_PROD */
-        case MPI_DOUBLE : {
-          double *in_int = (double *) sendbuf;
-          double *out_int = (double *) recvbuf;
-          for(i=0 ; i<count ; i++) {
-            out_int[i] = in_int[i];
-          }
-          in_int = (double *) remote_sendbufs;
-          for(j=1 ; j<size ; j++) {
-            for(i=0 ; i<count ; i++) {
-              out_int[i] *= *in_int;
-              in_int ++;
-            }
-          }
-          break;
-        } /* END MPI_DOUBLE FOR MPI_PROD */
-        default : {
-          return not_implemented("Reduce Datatype");
-          break;
-        }
-      }
-      break;
-    }
-    default : {
-      return not_implemented("Reduce Operation");
-      break;
-    }
-  }
-  return MPI_SUCCESS;
+int MPI_Op_free(MPI_Op *op) {
+  return mpir_op_free(op);
 }
 
 int MPI_Reduce(void* sendbuf,
@@ -747,28 +656,36 @@ int MPI_Reduce(void* sendbuf,
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
+  mpir_function_t *function = mpir_get_function(op);
+  if (function->function == NULL) {
+    ERROR("Operation %d not implemented\n", op);
+    return -1;
+  }
+
   if (process_rank == root) {
     // Get the input buffers of all the processes
-    void *remote_sendbufs;
-    void **ptr;
+    void **remote_sendbufs;
     MPI_Request *requests;
-    int i, j=0;
-    remote_sendbufs = malloc(global_size * count * sizeof_datatype(datatype));
-    ptr = malloc(global_size * sizeof(void *));
-    ptr[0] = remote_sendbufs;
+    int i;
+    remote_sendbufs = malloc(global_size * sizeof(void *));
     requests = malloc(global_size * sizeof(MPI_Request));
     for(i=0 ; i<global_size ; i++) {
       if (i == root) continue;
-      MPI_Irecv(ptr[j], count, datatype, i, tag, comm, &requests[j]);
-      j++;
-      ptr[j] = ptr[j-1] + count * sizeof_datatype(datatype);
+      remote_sendbufs[i] = malloc(count * sizeof_datatype(datatype));
+      MPI_Irecv(remote_sendbufs[i], count, datatype, i, tag, comm, &requests[i]);
     }
-    for(i=0 ; i<global_size-1 ; i++) {
+    for(i=0 ; i<global_size ; i++) {
+      if (i == root) continue;
       MPI_Wait(&requests[i], NULL);
     }
 
     // Do the reduction operation
-    return reduce(sendbuf, remote_sendbufs, global_size, datatype, count, op, recvbuf);
+    memcpy(recvbuf, sendbuf, count*sizeof_datatype(datatype));
+    for(i=0 ; i<global_size ; i++) {
+      if (i == root) continue;
+      function->function(remote_sendbufs[i], recvbuf, &count, &datatype);
+    }
+    return MPI_SUCCESS;
   }
   else {
     return MPI_Send(sendbuf, count, datatype, root, tag, comm);
@@ -808,6 +725,10 @@ int MPI_Get_address(void *location, MPI_Aint *address) {
      of bytes from 0 to location */
   *address = (MPI_Aint) ((char *)location - (char *)MPI_BOTTOM);
   return MPI_SUCCESS;
+}
+
+int MPI_Address(void *location, MPI_Aint *address) {
+  return MPI_Get_address(location, address);
 }
 
 int MPI_Type_commit(MPI_Datatype *datatype) {

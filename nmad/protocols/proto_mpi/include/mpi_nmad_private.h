@@ -35,6 +35,13 @@
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 
+#define NUMBER_OF_FUNCTIONS MPI_MAXLOC
+
+typedef struct mpir_function_s {
+  MPI_User_function *function;
+  int commute;
+} mpir_function_t;
+
 #define NUMBER_OF_DATATYPES (MPI_LONG_LONG + 20)
 
 typedef enum {
@@ -65,6 +72,11 @@ typedef struct mpir_datatype_s {
 int not_implemented(char *s);
 
 void internal_init();
+
+
+/*
+ * Datatype functionalities
+ */
 
 int sizeof_datatype(MPI_Datatype datatype);
 
@@ -97,6 +109,28 @@ int mpir_type_struct(int count,
                      MPI_Aint *array_of_displacements,
                      MPI_Datatype *array_of_types,
                      MPI_Datatype *newtype);
+
+
+/*
+ * Reduction operation functionalities
+ */
+
+int mpir_op_create(MPI_User_function *function,
+                   int commute,
+                   MPI_Op *op);
+
+int mpir_op_free(MPI_Op *op);
+
+mpir_function_t *mpir_get_function(MPI_Op op);
+
+void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+
+/*
+ * Termination functionalities
+ */
 
 tbx_bool_t test_termination(MPI_Comm comm);
 

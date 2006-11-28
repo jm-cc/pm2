@@ -21,6 +21,9 @@
 #ifndef MPI_COLLECTIVE_H
 #define MPI_COLLECTIVE_H
 
+/* User combination function */
+typedef void MPI_User_function(void *, void *, int *, MPI_Datatype *);
+
 int MPI_Barrier(MPI_Comm comm);
 
 int MPI_Bcast(void* buffer,
@@ -28,6 +31,12 @@ int MPI_Bcast(void* buffer,
               MPI_Datatype datatype,
               int root,
               MPI_Comm comm);
+
+int MPI_Op_create(MPI_User_function *function,
+                  int commute,
+                  MPI_Op *op);
+
+int MPI_Op_free(MPI_Op *op);
 
 int MPI_Reduce(void* sendbuf,
                void* recvbuf,

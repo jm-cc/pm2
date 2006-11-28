@@ -22,10 +22,12 @@
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 
-static mpir_datatype_t** datatypes = NULL;
-static p_tbx_slist_t     available_datatypes;
-static int 		 nb_incoming_msg  = 0;
-static int 		 nb_outgoing_msg  = 0;
+static mpir_datatype_t   **datatypes = NULL;
+static p_tbx_slist_t       available_datatypes;
+static mpir_function_t   **functions = NULL;
+static p_tbx_slist_t       available_functions;
+static int 		   nb_incoming_msg  = 0;
+static int 		   nb_outgoing_msg  = 0;
 
 int not_implemented(char *s) {
   fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
@@ -71,6 +73,24 @@ void internal_init() {
     ptr = malloc(sizeof(int));
     *ptr = i;
     tbx_slist_push(available_datatypes, ptr);
+  }
+
+  /* Initialise the collective functions */
+  functions = malloc((NUMBER_OF_FUNCTIONS+1) * sizeof(mpir_function_t));
+  for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
+    functions[i] = malloc(sizeof(mpir_function_t));
+    functions[i]->commute = 1;
+  }
+  functions[MPI_MAX]->function = &mpir_op_max;
+  functions[MPI_MIN]->function = &mpir_op_min;
+  functions[MPI_SUM]->function = &mpir_op_sum;
+  functions[MPI_PROD]->function = &mpir_op_prod;
+
+  available_functions = tbx_slist_nil();
+  for(i=1 ; i<MPI_MAX ; i++) {
+    int *ptr = malloc(sizeof(int));
+    *ptr = i;
+    tbx_slist_push(available_functions, ptr);
   }
 }
 
@@ -236,12 +256,135 @@ int mpir_type_struct(int count,
   return MPI_SUCCESS;
 }
 
-void inc_nb_incoming_msg(void) {
-  nb_incoming_msg ++;
+int mpir_op_create(MPI_User_function *function,
+                   int commute,
+                   MPI_Op *op) {
+  if (tbx_slist_is_nil(available_functions) == tbx_true) {
+    ERROR("Maximum number of operations created");
+    return -1;
+  }
+  else {
+    int *ptr = tbx_slist_extract(available_functions);
+    *op = *ptr;
+    free(ptr);
+
+    functions[*op] = malloc(sizeof(mpir_function_t));
+    functions[*op]->function = function;
+    functions[*op]->commute = commute;
+    return MPI_SUCCESS;
+  }
 }
 
-void inc_nb_outgoing_msg(void) {
-  nb_outgoing_msg ++;
+int mpir_op_free(MPI_Op *op) {
+  if (*op > NUMBER_OF_FUNCTIONS || functions[*op] == NULL) {
+    ERROR("Unknown operator %d\n", *op);
+    return -1;
+  }
+  free(functions[*op]);
+  int *ptr;
+  ptr = malloc(sizeof(int));
+  *ptr = *op;
+  tbx_slist_enqueue(available_functions, ptr);
+  return MPI_SUCCESS; 
+}
+
+mpir_function_t *mpir_get_function(MPI_Op op) {
+  if (functions[op] != NULL) {
+    return functions[op];
+  }
+  else {
+    ERROR("Operation %d unknown", op);
+    return NULL;
+  }
+}
+
+void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+  int i;
+  switch (*type) {
+    case MPI_INT : {
+      int *i_invec = (int *) invec;
+      int *i_inoutvec = (int *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INT FOR MPI_MAX */
+    default : {
+      not_implemented("Datatype for MAX Reduce operation");
+      break;
+    }
+  }
+}
+
+void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+  int i;
+  switch (*type) {
+    case MPI_INT : {
+      int *i_invec = (int *) invec;
+      int *i_inoutvec = (int *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+          if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INT FOR MPI_MIN */
+    default : {
+      not_implemented("Datatype for MIN Reduce operation");
+      break;
+    }
+  }
+}
+
+void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+  int i;
+  switch (*type) {
+    case MPI_INT : {
+      int *i_invec = (int *) invec;
+      int *i_inoutvec = (int *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        MPI_NMAD_TRACE("Summing %d and %d\n", i_inoutvec[i], i_invec[i]);
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    } /* END MPI_INT FOR MPI_SUM */
+    case MPI_DOUBLE : {
+      double *i_invec = (double *) invec;
+      double *i_inoutvec = (double *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    } /* END MPI_DOUBLE FOR MPI_SUM */
+    default : {
+      not_implemented("Datatype for SUM Reduce operation");
+      break;
+    }
+  }
+}
+
+void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+  int i;
+  switch (*type) {
+    case MPI_INT : {
+      int *i_invec = (int *) invec;
+      int *i_inoutvec = (int *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] *= i_invec[i];
+      }
+      break;
+    } /* END MPI_INT FOR MPI_PROD */
+    case MPI_DOUBLE : {
+      double *i_invec = (double *) invec;
+      double *i_inoutvec = (double *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] *= i_invec[i];
+      }
+      break;
+    } /* END MPI_DOUBLE FOR MPI_PROD */
+    default : {
+      not_implemented("Datatype for PROD Reduce operation");
+      break;
+    }
+  }
 }
 
 /*
@@ -331,3 +474,12 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     }
   }
 }
+
+void inc_nb_incoming_msg(void) {
+  nb_incoming_msg ++;
+}
+
+void inc_nb_outgoing_msg(void) {
+  nb_outgoing_msg ++;
+}
+

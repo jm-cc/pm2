@@ -118,10 +118,10 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    anim->scene.objects = malloc((bubbles_num + threads_num) * sizeof(ScnObj));
    anim->scene.num = bubbles_num + threads_num;
    // l'argument est a titre indicatif pour optimiser le rapport perte d'espace / vitesse:
-   anim->ht_threads = NewHashTable(threads_num);
-   anim->ht_bubbles = NewHashTable(bubbles_num);
-   anim->ht_rqslvl = NewHashTable(rqnum);
-   anim->ht_rqspos = NewHashTable(rqnum);
+   anim->ht_threads = NewHashTable(threads_num+1);
+   anim->ht_bubbles = NewHashTable(bubbles_num+1);
+   anim->ht_rqslvl = NewHashTable(rqnum+1);
+   anim->ht_rqspos = NewHashTable(rqnum+1);
    
    anim->animation.frames = malloc(sizeof(Frame) * frames);
    anim->animation.num = frames;

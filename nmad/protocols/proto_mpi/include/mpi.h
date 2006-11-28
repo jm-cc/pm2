@@ -31,6 +31,8 @@
 
 #include "mpi_pt2pt.h"
 
+#include "mpi_collective.h"
+
 #include "mpi_datatype.h"
 
 #endif /* MPI_H */

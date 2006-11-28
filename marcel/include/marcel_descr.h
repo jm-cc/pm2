@@ -53,9 +53,9 @@ typedef struct marcel_sched_param marcel_sched_param_t;
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
-#depend <netinet/in.h>
-#depend <arpa/nameser.h>
-#depend <resolv.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
 #undef __need_res_state
 #endif
 

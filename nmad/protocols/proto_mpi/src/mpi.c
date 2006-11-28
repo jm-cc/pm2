@@ -319,7 +319,8 @@ int MPI_Isend(void *buffer,
     connection = malloc(sizeof(struct nm_so_cnx));
     nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
     for(i=0 ; i<count ; i++) {
-      ptr = buffer + i * (mpir_datatype->indices[mpir_datatype->elements-1] + mpir_datatype->blocklens[mpir_datatype->elements-1]);
+      ptr = buffer + i * mpir_datatype->size;
+      MPI_NMAD_TRACE("Element %d starts at %p (%p + %d)\n", i, ptr, buffer, i*mpir_datatype->size);
       for(j=0 ; j<mpir_datatype->elements ; j++) {
         ptr += mpir_datatype->indices[j];
         nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_type->size);

@@ -205,6 +205,7 @@ int mpir_type_indexed(int count,
       datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_type->size;
     }
   }
+  datatypes[*newtype]->size = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_type->size * datatypes[*newtype]->blocklens[count-1];
 
   MPI_NMAD_TRACE("Creating new index type (%d) with size=%d based on type %d with a size %d\n", *newtype, datatypes[*newtype]->size, oldtype, sizeof_datatype(oldtype));
   return MPI_SUCCESS;

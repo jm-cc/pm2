@@ -571,11 +571,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
 	xpaul_req_init(&p_pw->inst);
 	p_pw->inst.state|=XPAUL_STATE_ONE_SHOT;
 	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
-	xpaul_poll_req(&p_pw->inst);
 	err=p_pw->err;
-	if(p_pw->err==NM_ESUCCESS){
-		xpaul_req_cancel(&p_pw->inst, NM_ESUCCESS);
-	}
 #else
         err = nm_mx_poll_iov(p_pw);
 #endif /* XPAULETTE */
@@ -650,17 +646,12 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
         }
-
 #ifdef XPAULETTE
 	p_pw->err=0;
 	xpaul_req_init(&p_pw->inst);
 	p_pw->inst.state|=XPAUL_STATE_ONE_SHOT;
 	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
-	xpaul_poll_req(&p_pw->inst);
 	err=p_pw->err;
-	if(p_pw->err==NM_ESUCCESS){
-		xpaul_req_cancel(&p_pw->inst, NM_ESUCCESS);
-	}
 #else
         err = nm_mx_poll_iov(p_pw);
 #endif /* XPAULETTE */
@@ -684,10 +675,8 @@ nm_mx_do_poll(xpaul_server_t	        server,
 	
 	p_ev->err=nm_mx_poll_iov(p_ev);
 
-	if(p_ev->err==NM_ESUCCESS){
+	if(p_ev->err==NM_ESUCCESS)
 		xpaul_req_success(&(p_ev->inst));
-	}
-
         LOG_OUT();
         return 0;
 }
@@ -695,7 +684,6 @@ static
 int
 nm_mx_wait_iov    	(struct nm_pkt_wrap *p_pw) {
         LOG_IN();
-	PROF_EVENT(mad_mx_do_poll);
 	struct xpaul_wait wait;
 	xpaul_req_wait(&p_pw->inst, &wait, 0);
 	return p_pw->err;
@@ -713,7 +701,6 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         mx_status_t	status;
         uint32_t	result;
         int err;
-
         p_mx_drv	= p_pw->p_drv->priv;
         p_mx_pw		= p_pw->drv_priv;
 

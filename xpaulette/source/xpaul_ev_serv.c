@@ -238,12 +238,13 @@ int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req,
 
 void xpaul_req_success(xpaul_req_t req)
 {
-	if(req->state&XPAUL_STATE_OCCURED)
-		abort();
-
+#ifdef MARCEL
 	xpaul_spin_lock_softirq(&req->server->req_ready_lock); 
+#endif
         list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); 
+#ifdef MARCEL
 	xpaul_spin_unlock_softirq(&req->server->req_ready_lock); 
+#endif
 }
 
 /****************************************************************
@@ -895,7 +896,13 @@ int xpaul_req_submit(xpaul_server_t server, xpaul_req_t req)
 #ifdef MARCEL
 	xpaul_restore_lock_server_locked(server, lock);
 #endif				//MARCEL
-
+	if(! (req->state & XPAUL_STATE_DONT_POLL_FIRST)) {
+		xpaul_poll_req(req);
+		if(req->chain_req_ready.next!= &(req->chain_req_ready) && (req->state= XPAUL_STATE_ONE_SHOT)) {
+			// ie state occured 
+			xpaul_req_cancel(req, 0);
+		}
+	}
 	LOG_RETURN(0);
 }
 

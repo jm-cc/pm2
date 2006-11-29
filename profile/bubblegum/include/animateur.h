@@ -40,8 +40,9 @@ typedef unsigned char bool;
 // lors de sauts dans la timeline.
 #define KEYFRAME_SPACING 20
 
-#define SLEEPING_COLOR ARGB(200, 0, 255, 0)
-#define WORKING_COLOR ARGB(200, 0, 0, 255)
+#define WORKING_COLOR ARGB(200, 255, 0, 0)
+#define READY_COLOR ARGB(200, 0, 255, 0)
+#define BLOCKED_COLOR ARGB(200, 0, 0, 255)
 
 #define CONFIG_FILE_NAME "animateur.conf"
 
@@ -90,7 +91,8 @@ typedef enum OBJTYPE_tag
 typedef enum STATE_tag
 {
    WORKING_STT,
-   SLEEPING_STT
+   READY_STT,
+   BLOCKED_STT
 } STATE;
 
 typedef struct Properties_tag
@@ -227,6 +229,7 @@ int GetObjUnderMouse(AnimElements* anim);
 void DrawLinks(AnimElements* anim);
 Links* DeleteLink(Links* lnk, int obj1, int obj2);
 Links* CreateLink(Links* lnk, int obj1, int obj2);
+int GetSon(Links* lnk, int obj, int i);
 
 void CreateRunQueue(RQueues* rqs, int rqpos, int level);
 void DeleteAllRQ(RQueues* rqs);

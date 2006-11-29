@@ -109,6 +109,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             break;
          case FUT_SWITCH_TO_CODE:
          case BUBBLE_SCHED_SWITCHRQ:
+	 case SCHED_THREAD_BLOCKED:
             frames++;
       }
       ++i;
@@ -196,7 +197,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].prop.id = -1;
             anim->scene.objects[ind].prop.prior = -1;
             anim->scene.objects[ind].prop.number = -1;
-            anim->scene.objects[ind].state = SLEEPING_STT;
+            anim->scene.objects[ind].state = READY_STT;
             anim->scene.objects[ind].description = NULL;
 
             // ajout immédiat du thread né en runqueue -1
@@ -313,22 +314,14 @@ int LoadScene(AnimElements* anim, const char *tracefile)
                   anim->animation.frames[frame].objChanges[1].index = ind3;
                      
                   // passage à l'état dormant
-                  anim->animation.frames[frame].objChanges[0].color = SLEEPING_COLOR;
-                  anim->animation.frames[frame].objChanges[0].stt = SLEEPING_STT;
-                  // retourne dormir
-                  anim->animation.frames[frame].objChanges[0].newRQ = 0;
-                  anim->animation.frames[frame].objChanges[0].newLvl = -1;
+                  anim->animation.frames[frame].objChanges[0].color = READY_COLOR;
+                  anim->animation.frames[frame].objChanges[0].stt = READY_STT;
+                  anim->animation.frames[frame].objChanges[0].newRQ = -1;
                   // et inversement:
                   anim->animation.frames[frame].objChanges[1].color = WORKING_COLOR;
                   anim->animation.frames[frame].objChanges[1].stt = WORKING_STT;
+                  anim->animation.frames[frame].objChanges[1].newRQ = -1;
                   // determine l'ancienne position du thread qui travaillait pour l'échanger
-                  int lv, rq, ob;
-                  GetRQCoord(&anim->runQueues, &anim->scene.objects[ind2], &lv, &rq, &ob);
-                  if (lv == -2)
-                     wprintf(L"PROBLEME: thread travaillant non trouvé, ind %d\n", ind2);
-                  // va bosser               
-                  anim->animation.frames[frame].objChanges[1].newRQ = rq;
-                  anim->animation.frames[frame].objChanges[1].newLvl = lv;
                   // applique les changements à la structure générale:
                   ReadFrame(anim, frame);
                //}
@@ -355,9 +348,34 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             lvl = GetData(anim->ht_rqslvl, adr2);
 
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind2], rpos, lvl);
+
+	    int j = 1;
+	    while ((ind3 = GetSon(anim->links, ind2, j++)) != -1)
+               AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind3], rpos, lvl);
             
             frame++;
             break;
+	 case SCHED_THREAD_BLOCKED:
+            adr = GetAdr_Thread_Ev(evt_i);
+
+            ind2 = GetData(anim->ht_bubbles, adr);
+
+            if (ind2 == -1)
+            {
+               ind2 = GetData(anim->ht_threads, adr);
+            }
+            if (ind2 == -1)
+            {
+               break;
+            }
+
+	    anim->animation.frames[frame].keyframe = NULL;
+	    anim->animation.frames[frame].objChanges[0].index = ind2; 
+	       
+	    // passage à l'état bloqué
+	    anim->animation.frames[frame].objChanges[0].color = BLOCKED_COLOR;
+	    anim->animation.frames[frame].objChanges[0].stt = BLOCKED_STT;
+	    break;
       }
    }
 
@@ -419,7 +437,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    anim->scene.objects[2].prop.name = "haricot vert";
    anim->scene.objects[2].prop.id = 3;
    anim->scene.objects[2].prop.prior = 20;
-   anim->scene.objects[2].state = SLEEPING_STT;
+   anim->scene.objects[2].state = READY_STT;
    anim->scene.objects[2].description = NULL;
 
    // le premier lien modifie le pointeur
@@ -494,7 +512,8 @@ void ReadFrame(AnimElements* anim, int frame)
       // répercution du premier objet
       pchgs = &anim->animation.frames[frame].objChanges[0];
       pobj = &anim->scene.objects[ pchgs->index ];
-      AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
+      if (pchgs->newRQ >= 0)
+         AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
 
       pobj->color = pchgs->color;
       pobj->state = pchgs->stt;
@@ -504,7 +523,8 @@ void ReadFrame(AnimElements* anim, int frame)
       if (pchgs->index != -1)
       {
          pobj = &anim->scene.objects[ pchgs->index ];
-         AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
+         if (pchgs->newRQ >= 0)
+            AddObjectToRunQueue(&anim->runQueues, pobj, pchgs->newRQ, pchgs->newLvl);
          pobj->color = pchgs->color;
          pobj->state = pchgs->stt;
       }
@@ -584,8 +604,10 @@ char* GetDescription(ScnObj* obj)
       strcat(obj->description, "\xE9tat : ");
       if (obj->state == WORKING_STT)
          strcat(obj->description, "working\n");
-      else if (obj->state == SLEEPING_STT)
-         strcat(obj->description, "sleeping\n");
+      else if (obj->state == READY_STT)
+         strcat(obj->description, "ready\n");
+      else if (obj->state == BLOCKED_STT)
+         strcat(obj->description, "blocked\n");
       // charge
       strcat(obj->description, "charge : ");
       sprintf(itoa, "%d", obj->prop.load);
@@ -622,6 +644,17 @@ Links* CreateLink(Links* lnk, int obj1, int obj2)
    lnk->pair.i2 = obj2;
 
    return first;
+}
+
+// TODO: avoir plut�t des listes de fils pour les bulles !!
+int GetSon(Links *first, int obj, int i) {
+   Links *lnk;
+
+   for (lnk = first; lnk; lnk = lnk->next)
+      if (lnk->pair.i1 == obj)
+         if (!--i)
+	    return lnk->pair.i2;
+   return -1;
 }
 
 // je sais même plus si j'ai testé cette fonction
@@ -886,11 +919,12 @@ void GetRQCoord(RQueues* rqs, ScnObj* obj, int* lv, int* rq, int* rqpos)
          }
       }
    }
+   *lv = -2;
 }
 
 void DeleteObjOfRQs(RQueues* rqs, ScnObj* obj)
 {
-   int lv = -2, rq, ob;
+   int lv, rq, ob;
    
    // recherche voir si l'objet est déjà contenu qq part
    GetRQCoord(rqs, obj, &lv, &rq, &ob);

@@ -7,6 +7,7 @@
 
 
 #include "mainwindow.h"
+#include <locale.h>
 
 interfaceGaucheVars* iGaucheVars;
 
@@ -22,6 +23,8 @@ int main(int argc, char **argv)
    GtkWidget *left_viewport;
    GtkWidget *left_frame;
    GtkWidget *right_viewport;
+
+   setlocale(LC_ALL,"");
 
    /* Initialisation de gtk */ 
    gtk_init(&argc, &argv);

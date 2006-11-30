@@ -204,7 +204,7 @@ int MPI_Send(void *buffer,
   MPI_Request request;
   int         err = 0;
 
-  if (count == 0) return not_implemented("Sending 0 element");
+  //if (count == 0) return not_implemented("Sending 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
@@ -231,7 +231,7 @@ int MPI_Recv(void *buffer,
   MPI_Request request;
   int         err = 0;
 
-  if (count == 0) return not_implemented("Receiving 0 element");
+  //  if (count == 0) return not_implemented("Receiving 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
@@ -276,7 +276,7 @@ int MPI_Isend(void *buffer,
   long gate_id;
   mpir_datatype_t *mpir_datatype = NULL;
 
-  if (count == 0) return not_implemented("Sending 0 element");
+  //  if (count == 0) return not_implemented("Sending 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
@@ -376,11 +376,12 @@ int MPI_Irecv(void* buffer,
   long gate_id;
   mpir_datatype_t *mpir_datatype = NULL;
 
-  if (count == 0) return not_implemented("Receiving 0 element");
+  //  if (count == 0) return not_implemented("Receiving 0 element");
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
+
   if (source == MPI_ANY_SOURCE) {
     gate_id = NM_SO_ANY_SRC;
   }
@@ -397,6 +398,7 @@ int MPI_Irecv(void* buffer,
 
   mpir_datatype = get_datatype(datatype);
   if (mpir_datatype->is_contig == 1) {
+    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
     err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &((*request)->request_id));
     (*request)->request_type = MPI_REQUEST_RECV;
   }

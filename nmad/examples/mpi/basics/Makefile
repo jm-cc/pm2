@@ -13,7 +13,7 @@
 
 export FLAVOR_DEFAULT:=mad4-mpi
 
-MOD_SRC	:= $(PM2_ROOT)/nmad/examples/mpi
+MOD_SRC	:= $(PM2_ROOT)/nmad/examples/mpi/basics
 
 include $(PM2_ROOT)/make/apps.mak
 

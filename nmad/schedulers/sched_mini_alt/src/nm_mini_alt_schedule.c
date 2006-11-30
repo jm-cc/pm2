@@ -92,13 +92,13 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
 
         /* Track 0
          */
-        err = nm_core_trk_alloc(p_core, p_drv, trk_rq_0);
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0);
         if (err != NM_ESUCCESS)
                 goto out;
 
         /* Track 1
          */
-        err = nm_core_trk_alloc(p_core, p_drv, trk_rq_1);
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_1);
         if (err != NM_ESUCCESS)
                 goto out_free;
 
@@ -109,7 +109,7 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
 
  out_free:
         nm_core_trk_free(p_core, trk_rq_0.p_trk);
-
+	goto out;
 }
 
 static

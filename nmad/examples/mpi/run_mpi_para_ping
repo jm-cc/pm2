@@ -1,0 +1,3 @@
+/opt/mpich-mx/bin/mpicc mpi_para_ping.c -o mpi_para_ping
+/opt/mpich-mx/bin/mpirun -np 2 -machinefile nmad-opteron.lst mpi_para_ping.sh
+

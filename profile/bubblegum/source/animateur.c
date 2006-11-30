@@ -1105,9 +1105,17 @@ void AnimationPlay(GtkWidget *widget, gpointer data)
 {
    chrono_start(anim->time);
 }
+
 void AnimationForward(GtkWidget *widget, gpointer data)
 {
    chrono_set(anim->time, anim->animation.num);
+}
+
+void AnimationSet(void *a, void*b, void*c, void*d)
+{
+   //fprintf(stderr,"%p %p %p %p\n",a,b,c,d);
+   //fprintf(stderr,"set %lf\n",value);
+   //chrono_set(anim->time, value);
 }
 
 void WorkOnAnimation(AnimElements* anim)
@@ -1338,6 +1346,7 @@ char* ConfigGetTraceFileName(char* configfile)
    if (f == NULL) {
 	perror("fopen");
    	fprintf(stderr,"can't open %s\n",configfile);
+   	fprintf(stderr,"There is a sample configuration file in pm2/marcel/examples/\n");
       return NULL;
    }
    do

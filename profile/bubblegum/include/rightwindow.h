@@ -26,7 +26,6 @@ extern AnimElements* anim;
 GtkWidget* make_right_window(GtkWidget* parent);
 void       make_right_toolbar(GtkWidget* vbox, GtkWidget* parent);
 void       make_drawable_zone(GtkWidget* vbox);
-void       OnPositionChange(GtkWidget* pWidget, gpointer data);
 gboolean   Redraw_dz(gpointer anim);
 void       Realize_dz(GtkWidget* widget, gpointer data);
 gboolean   Reshape_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer anim_parm);

@@ -221,6 +221,8 @@ void AnimationBackPlay(GtkWidget *widget, gpointer data);
 void AnimationPause(GtkWidget *widget, gpointer data);
 void AnimationPlay(GtkWidget *widget, gpointer data);
 void AnimationForward(GtkWidget *widget, gpointer data);
+//void AnimationSet(GtkRange *range, GtkScrollType *scroll, gdouble value, gpointer user_data);
+void AnimationSet(void *a, void*b, void*c, void*d);
 void WorkOnAnimation(AnimElements* anim);
 
 void DrawSprite(Texture* texture, int x, int y, int w, int h, long color);

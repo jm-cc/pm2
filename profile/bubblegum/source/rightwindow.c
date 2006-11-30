@@ -217,7 +217,7 @@ void make_right_toolbar(GtkWidget* vb_right_interface, GtkWidget* parent)
    
    right_scroll_bar = gtk_hscrollbar_new(adj);
    gtk_box_pack_end(GTK_BOX(vb_right_interface), right_scroll_bar, FALSE, FALSE, 0);
-   g_signal_connect(G_OBJECT(right_scroll_bar), "value-changed", G_CALLBACK(OnPositionChange), NULL);
+   g_signal_connect(G_OBJECT(right_scroll_bar), "value-changed", G_CALLBACK(AnimationSet), NULL);
 
   
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Convertir en Flash", NULL, flash_converter, G_CALLBACK(Temp), vb_right_interface);

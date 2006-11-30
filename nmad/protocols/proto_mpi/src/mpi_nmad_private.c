@@ -309,8 +309,16 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_MAX */
+    case MPI_DOUBLE : {
+      double *i_invec = (double *) invec;
+      double *i_inoutvec = (double *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_DOUBLE FOR MPI_MAX */
     default : {
-      not_implemented("Datatype for MAX Reduce operation");
+      ERROR("Datatype %d for MAX Reduce operation", *type);
       break;
     }
   }
@@ -328,7 +336,7 @@ void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       break;
     } /* END MPI_INT FOR MPI_MIN */
     default : {
-      not_implemented("Datatype for MIN Reduce operation");
+      ERROR("Datatype %d for MIN Reduce operation", *type);
       break;
     }
   }
@@ -355,7 +363,7 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       break;
     } /* END MPI_DOUBLE FOR MPI_SUM */
     default : {
-      not_implemented("Datatype for SUM Reduce operation");
+      ERROR("Datatype %d for SUM Reduce operation", *type);
       break;
     }
   }
@@ -381,7 +389,7 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       break;
     } /* END MPI_DOUBLE FOR MPI_PROD */
     default : {
-      not_implemented("Datatype for PROD Reduce operation");
+      ERROR("Datatype %d for PROD Reduce operation", *type);
       break;
     }
   }

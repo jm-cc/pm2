@@ -68,7 +68,6 @@ int MPI_Init(int *argc,
    * Globally unique process rank.
    */
   process_rank = session->process_rank;
-  //printf("My global rank is %d\n", process_rank);
 
   /*
    * How to obtain the configuration size.
@@ -180,6 +179,7 @@ int MPI_Comm_rank(MPI_Comm comm,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
   *rank = process_rank;
+  MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
   return MPI_SUCCESS;
 }
 
@@ -238,12 +238,15 @@ int MPI_Recv(void *buffer,
   MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
 
   if (request->request_type == MPI_REQUEST_RECV) {
+    MPI_NMAD_TRACE("Calling nm_so_sr_rwait...\n");
     err = nm_so_sr_rwait(p_so_sr_if, request->request_id);
   }
   else {
     err = nm_so_flush_unpacks(request->request_cnx);
     free(request->request_cnx);
   }
+
+  MPI_NMAD_TRACE("Wait completed\n");
 
   if (status != NULL) {
     status->count = count;
@@ -377,6 +380,7 @@ int MPI_Irecv(void* buffer,
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
+  MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
   if (source == MPI_ANY_SOURCE) {
     gate_id = NM_SO_ANY_SRC;
   }
@@ -466,6 +470,7 @@ int MPI_Irecv(void* buffer,
   }
 
   inc_nb_incoming_msg();
+  MPI_NMAD_TRACE("Irecv completed\n");
   return err;
 }
 
@@ -473,6 +478,7 @@ int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
   int err;
 
+  MPI_NMAD_TRACE("Waiting for a request\n");
   if ((*request)->request_type == MPI_REQUEST_RECV) {
     err = nm_so_sr_rwait(p_so_sr_if, (*request)->request_id);
   }
@@ -492,6 +498,7 @@ int MPI_Wait(MPI_Request *request,
 
 #warning Fill in the status object
 
+  MPI_NMAD_TRACE("Request completed\n");
   return err;
 }
 
@@ -614,6 +621,7 @@ int MPI_Bcast(void* buffer,
 
   if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
 
+  MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   if (process_rank == root) {
     MPI_Request *requests;
     int i, err;

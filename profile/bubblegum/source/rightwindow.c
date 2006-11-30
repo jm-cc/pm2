@@ -198,17 +198,17 @@ void make_right_toolbar(GtkWidget* vb_right_interface, GtkWidget* parent)
    GtkWidget* stopper = gtk_image_new_from_stock(GTK_STOCK_MEDIA_STOP, GTK_ICON_SIZE_SMALL_TOOLBAR);
    GtkWidget* flash_converter = gtk_image_new_from_stock(GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
   
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Retour", NULL, stopper, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Retour", NULL, stopper, G_CALLBACK(AnimationStop), parent);
 
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Rembobiner", NULL, rewinder, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Rembobiner", NULL, rewinder, G_CALLBACK(AnimationRewind), parent);
 
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Lecture arrière", NULL, back_player, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Lecture arrière", NULL, back_player, G_CALLBACK(AnimationBackPlay), parent);
   
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Pause", NULL, pauser, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Pause", NULL, pauser, G_CALLBACK(AnimationPause), parent);
 
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Lecture", NULL, player, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Lecture", NULL, player, G_CALLBACK(AnimationPlay), parent);
 
-   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Avance rapide", NULL, forwarder, G_CALLBACK(Temp), parent);
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Avance rapide", NULL, forwarder, G_CALLBACK(AnimationForward), parent);
   
    gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
 

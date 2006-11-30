@@ -215,6 +215,12 @@ Vecteur Interp(const Vecteur* v1, const Vecteur* v2, float time);
 
 AnimElements* AnimationNew(GtkWidget* drawzone);
 void AnimationReset(AnimElements *anim, const char *file);
+void AnimationStop(GtkWidget *widget, gpointer data);
+void AnimationRewind(GtkWidget *widget, gpointer data);
+void AnimationBackPlay(GtkWidget *widget, gpointer data);
+void AnimationPause(GtkWidget *widget, gpointer data);
+void AnimationPlay(GtkWidget *widget, gpointer data);
+void AnimationForward(GtkWidget *widget, gpointer data);
 void WorkOnAnimation(AnimElements* anim);
 
 void DrawSprite(Texture* texture, int x, int y, int w, int h, long color);

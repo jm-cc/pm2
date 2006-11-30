@@ -100,6 +100,7 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
 void AnimationReset(AnimElements *newobj, const char *file)
 {
    chrono_init(newobj->time);
+   chrono_reset(newobj->time);
    chrono_start(newobj->time);
 
    // initialisation des autres structures:
@@ -1080,6 +1081,34 @@ int GetObjUnderMouse(AnimElements* anim)
 }
 
 
+void AnimationStop(GtkWidget *widget, gpointer data)
+{
+   chrono_stop(anim->time);
+}
+
+void AnimationRewind(GtkWidget *widget, gpointer data)
+{
+   chrono_reset(anim->time);
+}
+
+void AnimationBackPlay(GtkWidget *widget, gpointer data)
+{
+   chrono_back(anim->time);
+}
+
+void AnimationPause(GtkWidget *widget, gpointer data)
+{
+   chrono_pause(anim->time);
+}
+
+void AnimationPlay(GtkWidget *widget, gpointer data)
+{
+   chrono_start(anim->time);
+}
+void AnimationForward(GtkWidget *widget, gpointer data)
+{
+   chrono_set(anim->time, anim->animation.num);
+}
 
 void WorkOnAnimation(AnimElements* anim)
 {

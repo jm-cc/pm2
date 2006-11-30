@@ -16,9 +16,6 @@
 
 struct nm_core {
 
-        /* global operations						*/
-        struct nm_core_ops	 ops;
-
         /* number of gates						*/
         uint8_t			 nb_gates;
 

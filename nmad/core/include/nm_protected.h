@@ -38,7 +38,6 @@
 #include "nm_proto_ops.h"
 #include "nm_proto.h"
 
-#include "nm_core_ops.h"
 #include "nm_core.h"
 
 #include <assert.h>

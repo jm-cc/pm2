@@ -22,6 +22,8 @@
 
 #include "nm_mini_alt_private.h"
 
+#include <nm_public.h>
+
 #define INITIAL_CTRL_NUM		16
 #define INITIAL_TOKEN_NUM		16
 
@@ -90,7 +92,7 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
 
         /* Track 0
          */
-        err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
         if (err != NM_ESUCCESS)
                 goto out;
 
@@ -101,7 +103,7 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
 
         /* Track 1
          */
-        err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_1.p_trk);
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_1.p_trk);
         if (err != NM_ESUCCESS)
                 goto out_free;
 
@@ -116,10 +118,10 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
         return err;
 
  out_free_2:
-        p_core->ops.trk_free(p_core, trk_rq_1.p_trk);
+        nm_core_trk_free(p_core, trk_rq_1.p_trk);
 
  out_free:
-        p_core->ops.trk_free(p_core, trk_rq_0.p_trk);
+        nm_core_trk_free(p_core, trk_rq_0.p_trk);
         goto out;
 }
 

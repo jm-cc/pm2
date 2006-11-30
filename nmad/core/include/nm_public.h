@@ -21,6 +21,8 @@ struct nm_pkt_wrap;
 struct nm_proto;
 struct nm_proto_ops;
 struct nm_sched_ops;
+struct nm_trk;
+struct nm_drv;
 
 int
 nm_core_init		(int			 *argc,
@@ -38,6 +40,14 @@ nm_core_driver_init	(struct nm_core		 *p_core,
                          int (*drv_load)(struct nm_drv_ops *),
                          uint8_t		 *p_id,
                          char			**p_url);
+
+int
+nm_core_trk_alloc       (struct nm_core		 * p_core,
+			 struct nm_drv		 * p_drv,
+			 struct nm_trk		**pp_trk);
+int
+nm_core_trk_free	(struct nm_core		*p_core,
+			 struct nm_trk		*p_trk);
 
 int
 nm_core_gate_init	(struct nm_core		 *p_core,

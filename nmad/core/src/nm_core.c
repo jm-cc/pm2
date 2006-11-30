@@ -41,11 +41,10 @@ p_tbx_memory_t nm_core_iov2_mem	= NULL;
  * connection is open with the corresponding driver. The track is not
  * automatically connected if some connections already are open on the driver.
  */
-static
 int
-nm_trk_alloc	(struct nm_core		 * p_core,
-             	 struct nm_drv		 * p_drv,
-                 struct nm_trk		**pp_trk) {
+nm_core_trk_alloc(struct nm_core	 * p_core,
+		  struct nm_drv		 * p_drv,
+		  struct nm_trk		**pp_trk) {
         struct nm_trk		*p_trk;
         uint8_t			 id;
         int	err;
@@ -91,11 +90,10 @@ nm_trk_alloc	(struct nm_core		 * p_core,
  *
  * not yet implemented
  */
-static
 int
-nm_trk_free	(struct nm_core		*p_core,
+nm_core_trk_free(struct nm_core		*p_core,
                  struct nm_trk		*p_trk) {
-        int	err;
+	int	err;
 
         /* TODO: implement */
 #warning TODO
@@ -611,9 +609,6 @@ nm_core_init		(int			 *argc,
         p_core->nb_gates	= 0;
         p_core->nb_drivers	= 0;
         p_core->p_sched		= NULL;
-
-        p_core->ops.trk_alloc		= nm_trk_alloc;
-        p_core->ops.trk_free		= nm_trk_free;
 
         tbx_malloc_init(&nm_core_pw_mem,   sizeof(struct nm_pkt_wrap),
                         INITIAL_PW_NUM,   "nmad/pw");

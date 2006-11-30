@@ -22,6 +22,8 @@
 
 #include "nm_null_private.h"
 
+#include <nm_public.h>
+
 /* initialize the scheduler instance and memory allocators
  */
 static
@@ -72,7 +74,7 @@ nm_null_init_trks	(struct nm_sched	*p_sched,
 
         /* Track 0
          */
-        err = p_core->ops.trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
         if (err != NM_ESUCCESS)
                 goto out;
 
@@ -85,7 +87,7 @@ nm_null_init_trks	(struct nm_sched	*p_sched,
         return err;
 
  out_free:
-        p_core->ops.trk_free(p_core, trk_rq_0.p_trk);
+        nm_core_trk_free(p_core, trk_rq_0.p_trk);
         goto out;
 }
 

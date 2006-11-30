@@ -8,6 +8,7 @@
 #include "load.h"
 
 AnimElements* anim;
+GtkWidget *right_scroll_bar;
 
 GtkWidget* make_right_window(GtkWidget* parent)
 {
@@ -214,9 +215,9 @@ void make_right_toolbar(GtkWidget* vb_right_interface, GtkWidget* parent)
    
    GtkAdjustment* adj = (GtkAdjustment*)gtk_adjustment_new(0, 0, 110, 1, 10, 10);
    
-   GtkWidget* scroll_bar = gtk_hscrollbar_new(adj);
-   gtk_box_pack_end(GTK_BOX(vb_right_interface), scroll_bar, FALSE, FALSE, 0);
-   g_signal_connect(G_OBJECT(scroll_bar), "value-changed", G_CALLBACK(OnPositionChange), NULL);
+   right_scroll_bar = gtk_hscrollbar_new(adj);
+   gtk_box_pack_end(GTK_BOX(vb_right_interface), right_scroll_bar, FALSE, FALSE, 0);
+   g_signal_connect(G_OBJECT(right_scroll_bar), "value-changed", G_CALLBACK(OnPositionChange), NULL);
 
   
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON, NULL, NULL, "Convertir en Flash", NULL, flash_converter, G_CALLBACK(Temp), vb_right_interface);

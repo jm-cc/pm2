@@ -214,6 +214,7 @@ typedef struct AnimElements_tag
 Vecteur Interp(const Vecteur* v1, const Vecteur* v2, float time);
 
 AnimElements* AnimationNew(GtkWidget* drawzone);
+void AnimationReset(AnimElements *anim, const char *file);
 void WorkOnAnimation(AnimElements* anim);
 
 void DrawSprite(Texture* texture, int x, int y, int w, int h, long color);
@@ -244,12 +245,6 @@ void* DelArrayElement(void* begin, size_t elem_szt, int size, int pos);
 void SetPositions(AnimElements* anim);
 
 void ReadFrame(AnimElements* anim, int frame);
-
-long ARGB(byte a, byte r, byte g, byte b);
-byte Alpha(long c);
-byte Red(long c);
-byte Green(long c);
-byte Blue(long c);
 
 char* ConfigGetTraceFileName(char* configfile);
 

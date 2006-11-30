@@ -309,7 +309,7 @@ void Executer(GtkWidget *widget, gpointer data)
    gtk_main_iteration_do(FALSE);
    char tracefile[1024];
    snprintf(tracefile,sizeof(tracefile),"/tmp/prof_file_user_%s",getenv("USER"));
-   LoadScene(anim, tracefile);
+   AnimationReset(anim, tracefile);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
    gtk_main_iteration_do(FALSE);
    gtk_widget_destroy(dialog);

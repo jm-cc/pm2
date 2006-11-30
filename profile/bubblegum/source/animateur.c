@@ -6,6 +6,7 @@
  *********************************************************************/
 
 #include "animateur.h"
+#include "rightwindow.h"
 
 #include <fxt/fut.h>
 #include <fxt/fxt.h>
@@ -20,6 +21,31 @@ struct fxt_code_name fut_code_table2 [] =
 #include <fut_print.h>
    {0, NULL }
 };
+
+static long ARGB(byte a, byte r, byte g, byte b)
+{
+   return a << 24 | r << 16 | g << 8 | b;
+}
+
+static byte Alpha(long c)
+{
+   return c >> 24;
+}
+
+static byte Red(long c)
+{
+   return (c >> 16) & 0x0000ff;
+}
+
+static byte Green(long c)
+{
+   return (c >> 8) & 0x0000ff;
+}
+
+static byte Blue(long c)
+{
+   return c & 0x0000ff;
+}
 
 static int dbg_printf(const char* format, ...)
 {
@@ -60,14 +86,22 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
    AnimElements* newobj = malloc(sizeof(AnimElements));
    
    Chrono* seconds = malloc(sizeof(Chrono));  // création et démarrage d'un chronometre
-   chrono_init(seconds);
-   chrono_start(seconds);
-
    newobj->time = seconds;
    newobj->drawzone = drawzone;
    // en attendant mieux à l'evennement realize (voir Realize_dz)
    // (l'initialisation des fonts doit se faire en zone de dessin opengl)
    newobj->pIfont = NULL;
+   AnimationReset(newobj, ConfigGetTraceFileName(CONFIG_FILE_NAME));
+
+   return newobj;
+}
+
+// TODO: memleak
+void AnimationReset(AnimElements *newobj, const char *file)
+{
+   chrono_init(newobj->time);
+   chrono_start(newobj->time);
+
    // initialisation des autres structures:
    newobj->links = NULL;
    newobj->runQueues.levels = NULL;
@@ -75,9 +109,7 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
    // création obligatoire d'une runqueue level -1
    CreateRunQueue(&newobj->runQueues, 0, -1);
 
-   LoadScene(newobj, ConfigGetTraceFileName(CONFIG_FILE_NAME));
-
-   return newobj;
+   LoadScene(newobj, file);
 }
 
 // charger les elements graphiques de la scène avec leur propriétés
@@ -126,6 +158,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    
    anim->animation.frames = malloc(sizeof(Frame) * frames);
    anim->animation.num = frames;
+
+   gtk_range_set_adjustment(GTK_RANGE(GTK_SCROLLBAR(right_scroll_bar)), GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, frames, 1, 10, 1)));
    
    int ind = 0, ind2;
    long adr, adr2;
@@ -350,6 +384,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind2], rpos, lvl);
 
 	    int j = 1;
+	    /* TODO: recurse */
 	    while ((ind3 = GetSon(anim->links, ind2, j++)) != -1)
                AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind3], rpos, lvl);
             
@@ -1069,6 +1104,7 @@ void WorkOnAnimation(AnimElements* anim)
    // si le curseur est sur un objet, afficher ses propriétés
 
    ReadFrame(anim, (int)time);
+   gtk_range_set_value(GTK_RANGE(right_scroll_bar), (int)time);
    DrawFixedScene(anim);
 
    // la souris est-elle au dessus d'un objet ? si oui afficher les infos
@@ -1083,7 +1119,7 @@ void WorkOnAnimation(AnimElements* anim)
    glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
    glTranslated(0, anim->area.y - 15, 0);
    glScalef(0.8, 0.8, 0);
-   Print2D(anim->pIfont, "%dx%d - fps: %.2f", anim->area.x, anim->area.y, 1 / (time - oldtime));
+   Print2D(anim->pIfont, "%.2f %dx%d - fps: %.2f", time, anim->area.x, anim->area.y, 1 / (time - oldtime));
    glLoadIdentity();
 
    /* Swap buffers. */
@@ -1261,31 +1297,6 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    free(message2);
    glPopMatrix();
    glPopAttrib();
-}
-
-long ARGB(byte a, byte r, byte g, byte b)
-{
-   return a << 24 | r << 16 | g << 8 | b;
-}
-
-byte Alpha(long c)
-{
-   return c >> 24;
-}
-
-byte Red(long c)
-{
-   return (c >> 16) & 0x0000ff;
-}
-
-byte Green(long c)
-{
-   return (c >> 8) & 0x0000ff;
-}
-
-byte Blue(long c)
-{
-   return c & 0x0000ff;
 }
 
 char* ConfigGetTraceFileName(char* configfile)

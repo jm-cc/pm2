@@ -32,4 +32,6 @@ void       Realize_dz(GtkWidget* widget, gpointer data);
 gboolean   Reshape_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer anim_parm);
 gboolean   MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer anim_parm);
 
+extern GtkWidget *right_scroll_bar;
+
 #endif

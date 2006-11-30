@@ -21,7 +21,7 @@ void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
 }
 
 int main(int argc, char **argv) {
-  int numtasks, rank;
+  int numtasks, rank, global_rank, provided;
   float buffer[2];
   int reduce[2];
   int global_sum[2];
@@ -29,11 +29,17 @@ int main(int argc, char **argv) {
   MPI_Op operator;
 
   // Initialise MPI
-  MPI_Init(&argc,&argv);
+  MPI_Init_thread(&argc,&argv, MPI_THREAD_SINGLE, &provided);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
   printf("Rank %d Size %d\n", rank, numtasks);
+
+  if (rank == 0) {
+    global_rank = 49;
+  }
+  MPI_Bcast(&global_rank, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  fprintf(stdout, "[%d] Broadcasted message [%d]\n", rank, global_rank);
 
   buffer[0] = 12.45;
   buffer[1] = 3.14;

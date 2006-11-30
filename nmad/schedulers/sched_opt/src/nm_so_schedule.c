@@ -95,14 +95,9 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         .flags	= 0
     };
 
-    err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
+    err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0);
     if (err != NM_ESUCCESS)
         goto out;
-
-    err = p_drv->ops.open_trk(&trk_rq_0);
-    if (err != NM_ESUCCESS) {
-        goto out_free;
-    }
 
     /* Track 1 - piste pour les longs*/
     struct nm_trk_rq trk_rq_1 = {
@@ -120,22 +115,14 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
         .flags	= 0
     };
 
-    err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_1.p_trk);
+    err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_1);
     if (err != NM_ESUCCESS)
         goto out_free;
-
-    err = p_drv->ops.open_trk(&trk_rq_1);
-    if (err != NM_ESUCCESS) {
-        goto out_free_2;
-    }
 
     err	= NM_ESUCCESS;
 
  out:
     return err;
-
- out_free_2:
-    nm_core_trk_free(p_core, trk_rq_1.p_trk);
 
  out_free:
     nm_core_trk_free(p_core, trk_rq_0.p_trk);

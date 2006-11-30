@@ -74,21 +74,10 @@ nm_null_init_trks	(struct nm_sched	*p_sched,
 
         /* Track 0
          */
-        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0.p_trk);
-        if (err != NM_ESUCCESS)
-                goto out;
+        err = nm_core_trk_alloc(p_core, p_drv, &trk_rq_0);
 
-        err = p_drv->ops.open_trk(&trk_rq_0);
-        if (err != NM_ESUCCESS) {
-                goto out_free;
-        }
-
- out:
         return err;
 
- out_free:
-        nm_core_trk_free(p_core, trk_rq_0.p_trk);
-        goto out;
 }
 
 /* handler called when a new gate is opened

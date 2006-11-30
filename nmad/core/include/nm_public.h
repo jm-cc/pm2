@@ -22,6 +22,7 @@ struct nm_proto;
 struct nm_proto_ops;
 struct nm_sched_ops;
 struct nm_trk;
+struct nm_trk_rq;
 struct nm_drv;
 
 int
@@ -44,7 +45,7 @@ nm_core_driver_init	(struct nm_core		 *p_core,
 int
 nm_core_trk_alloc       (struct nm_core		 * p_core,
 			 struct nm_drv		 * p_drv,
-			 struct nm_trk		**pp_trk);
+			 struct nm_trk_rq	 * p_trk_rq);
 int
 nm_core_trk_free	(struct nm_core		*p_core,
 			 struct nm_trk		*p_trk);

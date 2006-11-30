@@ -22,6 +22,8 @@
 
 #include "nm_private.h"
 
+#include <nm_public.h>
+
 /* Macros
  */
 #define INITIAL_PW_NUM		16
@@ -44,7 +46,7 @@ p_tbx_memory_t nm_core_iov2_mem	= NULL;
 int
 nm_core_trk_alloc(struct nm_core	 * p_core,
 		  struct nm_drv		 * p_drv,
-		  struct nm_trk		**pp_trk) {
+		  struct nm_trk_rq	 * p_trk_rq) {
         struct nm_trk		*p_trk;
         uint8_t			 id;
         int	err;
@@ -79,11 +81,19 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
         }
 
         p_drv->p_track_array[id]	= p_trk;
-        *pp_trk	= p_trk;
-        err = NM_ESUCCESS;
+        p_trk_rq->p_trk = p_trk;
+
+        err = p_drv->ops.open_trk(p_trk_rq);
+        if (err != NM_ESUCCESS) {
+                goto out_free;
+        }
 
  out:
         return err;
+
+ out_free:
+        nm_core_trk_free(p_core, p_trk);
+        goto out;
 }
 
 /* clean up a track.

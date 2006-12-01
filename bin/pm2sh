@@ -1,4 +1,7 @@
 #!/bin/sh
+# Nettoyer l'environnement
+export GREP_OPTIONS=
+export LC_ALL=C
 # Essayer d'exécuter un shell connu pour avoir ce dont on a besoin
 [ -x /bin/bash ] && exec /bin/bash "$@"
 [ -x /bin/ksh ] && exec /bin/ksh "$@"

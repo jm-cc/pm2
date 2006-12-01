@@ -143,7 +143,7 @@ main(int	  argc,
                 goto out;
         }
 
-
+        printf("local url: [%s]\n", l_url);
 
         if(!r_url1 && !r_url2){
           // accept sur les 2 gates
@@ -198,8 +198,6 @@ main(int	  argc,
         strcpy(s_buf, msg);
         memset(r_buf, 0, len);
 
-
-        printf("local url: [%s]\n", l_url);
 
         // ping sur mon 1er voisin
         nm_so_begin_packing(interface, gate_id1, 0, &cnx);

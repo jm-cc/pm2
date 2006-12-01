@@ -1,16 +1,20 @@
-PROGS = pingpong mpi_para_ping
+MPICC	:=	../mpicc
+#MPICC	:=	/opt/mx/bin/mpicc
+
+PROGS		:=	pingpong mpi_para_ping index
+pingpong_LIBS	:=	-lm
 
 all: $(PROGS)
 
-pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o
-	../mpicc $^ -o $@ -lm
-
-mpi_para_ping: mpi_para_ping.o
-	../mpicc $^ -o $@
+%: %.o
+	$(MPICC) $^ -o $@ ${${@}_LIBS}
 
 %.o: %.c
 	../mpicc -c $< -o $@
 
+mpi_para_ping: mpi_para_ping.o
+pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o
+index: index.o indexType.o toolbox.o
 
 clean:
 	rm -f *.o $(PROGS)

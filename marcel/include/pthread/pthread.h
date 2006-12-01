@@ -1,4 +1,8 @@
+#ifndef _MARCEL_PTHREAD_H
+#define _MARCEL_PTHREAD_H
+
 #include <marcel.h>
+
 
 #ifndef MA__IFACE_PMARCEL
 #warning "This file can't be used without the pmarcel option in the flavor"
@@ -470,3 +474,5 @@
 #define pthread_mutexattr_settype pmarcel_mutexattr_settype
 #define pthread_mutexattr_destroy pmarcel_mutexattr_destroy
 #endif /* __cpluscplus */
+
+#endif  /*_MARCEL_PTHREAD_H*/

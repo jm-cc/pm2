@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include "indexType.h"
+#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
   int numtasks, rank, ret;

@@ -1,5 +1,5 @@
 MPICC	:=	../mpicc
-#MPICC	:=	/opt/mx/bin/mpicc
+#MPICC	:=	/opt/mpich-mx/bin/mpicc
 
 PROGS		:=	pingpong mpi_para_ping index
 pingpong_LIBS	:=	-lm
@@ -10,10 +10,10 @@ all: $(PROGS)
 	$(MPICC) $^ -o $@ ${${@}_LIBS}
 
 %.o: %.c %.h
-	../mpicc -c $< -o $@
+	$(MPICC) -c $< -o $@
 
 %.o: %.c
-	../mpicc -c $< -o $@
+	$(MPICC) -c $< -o $@
 
 mpi_para_ping: mpi_para_ping.o
 pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o

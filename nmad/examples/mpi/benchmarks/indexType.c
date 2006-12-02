@@ -30,12 +30,8 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
   int          blocklengths[blocks];
   int          displacements[blocks];
   MPI_Datatype indextype;
-  MPI_Status   stat;
   int          i;
-  double t1, t2, sum;
-#ifdef ASYNC
-  MPI_Request  request;
-#endif // ASYNC
+  double       t1, t2, sum;
 
   if (rank != source && rank != dest) return;
 
@@ -92,27 +88,13 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
 
     // send the data to the processor 1
     t1 = MPI_Wtime();
-#ifdef ASYNC
-    MPI_Isend(data,
-#else  // !NOT_ASYNC
-    MPI_Send(data,
-#endif // ASYNC
-	     1, indextype, dest, TAG, MPI_COMM_WORLD
-#ifdef ASYNC
-	     ,&request
-#endif // ASYNC
-	     );
+    MPI_Send(data, 1, indextype, dest, TAG, MPI_COMM_WORLD);
 
     // erase the local data
     for(i=0 ; i<numberOfElements ; i++) data[i] = -1.0;
 
-    // check data have been sent properly
-#ifdef ASYNC
-    MPI_Wait(&request, &stat);
-#endif
-
     // receive data from processor 1
-    MPI_Recv(data, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, &stat);
+    MPI_Recv(data, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, NULL);
     checkIndexIsCorrect(data, i, numberOfElements);
 
     t2 = MPI_Wtime(); 

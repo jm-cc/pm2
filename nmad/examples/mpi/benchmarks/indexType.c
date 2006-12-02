@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BUFFER        10
+#define NB_TESTS 1000
 
 // Check the elements have been properly received
 void checkIndexIsCorrect(float *vector, int rank, int numberOfElements) {
@@ -30,7 +30,7 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
   int          blocklengths[blocks];
   int          displacements[blocks];
   MPI_Datatype indextype;
-  int          i;
+  int          i, test;
   double       t1, t2, sum;
 
   if (rank != source && rank != dest) return;
@@ -69,45 +69,49 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
 
   MPI_Type_commit(&indextype);
 
-  if (rank == source) {
-    float        data[numberOfElements];
+  sum = 0;
+  for(test=0 ; test<NB_TESTS ; test++) {
+    if (rank == source) {
+      float        data[numberOfElements];
+      float        data2[numberOfElements];
 
-    // Initialise data to send
-    if (VERBOSE) {
-      PRINT_NO_NL("data = ");
-    }
-    for(i=0 ; i<numberOfElements ; i++) {
-      data[i] = 1.0 * (i+1);
+      // Initialise data to send
       if (VERBOSE) {
-	PRINT_NO_NL("%3.1f ", data[i]);
+        PRINT_NO_NL("data = ");
       }
+      for(i=0 ; i<numberOfElements ; i++) {
+        data[i] = 1.0 * (i+1);
+        if (VERBOSE) {
+          PRINT_NO_NL("%3.1f ", data[i]);
+        }
+      }
+      if (VERBOSE) {
+        PRINT("\n");
+      }
+
+      // send the data to the processor 1
+      t1 = MPI_Wtime();
+      MPI_Send(data, 1, indextype, dest, TAG, MPI_COMM_WORLD);
+
+      // receive data from processor 1
+      //    MPI_Recv(data2, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, NULL);
+      MPI_Recv(data2, 1, indextype, dest, TAG, MPI_COMM_WORLD, NULL);
+      //checkIndexIsCorrect(data2, i, numberOfElements);
+
+      t2 = MPI_Wtime(); 
+      sum += (t2 - t1) * 1e6;
     }
-    if (VERBOSE) {
-      PRINT("\n");
+    else if (rank == dest) {
+      float b[numberOfElements];
+      //    MPI_Recv(b, numberOfElements, MPI_FLOAT, source, TAG, MPI_COMM_WORLD, NULL);
+      MPI_Recv(b, 1, indextype, source, TAG, MPI_COMM_WORLD, NULL);
+      // checkIndexIsCorrect(b, rank, numberOfElements);
+
+      MPI_Send(b, 1, indextype, source, TAG, MPI_COMM_WORLD);
     }
-
-    // send the data to the processor 1
-    t1 = MPI_Wtime();
-    MPI_Send(data, 1, indextype, dest, TAG, MPI_COMM_WORLD);
-
-    // erase the local data
-    for(i=0 ; i<numberOfElements ; i++) data[i] = -1.0;
-
-    // receive data from processor 1
-    MPI_Recv(data, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, NULL);
-    checkIndexIsCorrect(data, i, numberOfElements);
-
-    t2 = MPI_Wtime(); 
-    sum = (t2 - t1) * 1e6;
-    if (display)
-      PRINT("%d\t%d\t%f\t%d\t%d-%d", numberOfElements, MPIR_INDEXED, sum, blocks, source, dest);
   }
-  else if (rank == dest) {
-    float b[numberOfElements];
-    MPI_Recv(b, numberOfElements, MPI_FLOAT, source, TAG, MPI_COMM_WORLD, &stat);
-    checkIndexIsCorrect(b, rank, numberOfElements);
-
-    MPI_Send(b, 1, indextype, source, TAG, MPI_COMM_WORLD);
+  if (rank == source && display) {
+    PRINT("%d\t%d\t%s\t%d\t%d\t%3.2f", source, dest, "indexed_type", numberOfElements, blocks, sum/NB_TESTS);
   }
 
   MPI_Type_free(&indextype);
@@ -139,6 +143,10 @@ int sendIndexType(int argc, char *argv[], int rank, int numtasks) {
   if (ret) return ret;
 
   processAndSendIndexType(0, DEFAULT_BLOCKS, rank, numtasks, use_hindex, FALSE);
+
+  if (rank == 0) {
+    PRINT("src  | dest  | type	     | size    | blocks | time");
+  }
 
   if (size != -1) {
     if (blocks != -1) {

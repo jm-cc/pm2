@@ -1,0 +1,1 @@
+../mpirun -np 2 -machinefile ../nmad_opteron.lst index -min 100 -max 1000 -stride 100

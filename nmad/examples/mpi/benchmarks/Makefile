@@ -9,6 +9,9 @@ all: $(PROGS)
 %: %.o
 	$(MPICC) $^ -o $@ ${${@}_LIBS}
 
+%.o: %.c %.h
+	../mpicc -c $< -o $@
+
 %.o: %.c
 	../mpicc -c $< -o $@
 

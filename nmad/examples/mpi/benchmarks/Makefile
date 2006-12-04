@@ -1,7 +1,7 @@
 MPICC	:=	../mpicc
 #MPICC	:=	/opt/mpich-mx/bin/mpicc
 
-PROGS		:=	pingpong mpi_para_ping index index_hetero_size
+PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size
 pingpong_LIBS	:=	-lm
 
 all: $(PROGS)
@@ -19,7 +19,7 @@ mpi_para_ping: mpi_para_ping.o
 pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o
 index: index.o indexType.o toolbox.o
 
-index_hetero_size: index_hetero_size.o indexType_hetero_size.o toolbox.o 
+indexType_hetero_size: indexType_hetero_size.o
 
 clean:
 	rm -f *.o $(PROGS)

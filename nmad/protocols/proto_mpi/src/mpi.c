@@ -205,8 +205,8 @@ int MPI_Send(void *buffer,
   int         err = 0;
 
   //if (count == 0) return not_implemented("Sending 0 element");
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
 
@@ -232,8 +232,8 @@ int MPI_Recv(void *buffer,
   int         err = 0;
 
   //  if (count == 0) return not_implemented("Receiving 0 element");
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
 
@@ -277,10 +277,10 @@ int MPI_Isend(void *buffer,
   mpir_datatype_t *mpir_datatype = NULL;
 
   //  if (count == 0) return not_implemented("Sending 0 element");
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
-  if (dest >= global_size || out_gate_id[dest] == -1) {
+  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     return 1;
   }
@@ -313,7 +313,7 @@ int MPI_Isend(void *buffer,
     (*request)->request_type = MPI_REQUEST_PACK_SEND;
     (*request)->request_cnx = connection;
   }
-  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_INDEXED) {
+  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
     struct nm_so_cnx *connection;
     int               i, j;
     void             *ptr = buffer;
@@ -376,17 +376,17 @@ int MPI_Irecv(void* buffer,
   long gate_id;
   mpir_datatype_t *mpir_datatype = NULL;
 
-  //  if (count == 0) return not_implemented("Receiving 0 element");
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
+  //if (tbx_unlikely(count == 0)) return not_implemented("Receiving 0 element");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
 
-  if (source == MPI_ANY_SOURCE) {
+  if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
     gate_id = NM_SO_ANY_SRC;
   }
   else {
-    if (source >= global_size || in_gate_id[source] == -1) {
+    if (tbx_unlikely(source >= global_size || in_gate_id[source] == -1)){
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
       return 1;
     }
@@ -423,7 +423,7 @@ int MPI_Irecv(void* buffer,
     (*request)->request_type = MPI_REQUEST_PACK_RECV;
     (*request)->request_cnx = connection;
   }
-  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_INDEXED) {
+  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
     struct nm_so_cnx *connection;
     int               i, j, k=0;
     void            **ptr;

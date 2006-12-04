@@ -6,7 +6,7 @@
 #include "toolbox.h"
 
 #define NB_TESTS 1
-#define NB_LINES 2
+#define NB_LINES 5
 
 void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest) {
   int          blocklengths[blocks];

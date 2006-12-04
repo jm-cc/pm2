@@ -39,6 +39,8 @@ struct marcel_sigaction {
 
 #ifdef MA__LIBPTHREAD
 #ifdef LINUX_SYS
+#include <sys/syscall.h>
+#include <unistd.h>
 /*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */
 #define ma_kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
 typedef struct ma_kernel_sigaction {

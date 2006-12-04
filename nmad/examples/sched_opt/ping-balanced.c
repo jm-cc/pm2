@@ -33,7 +33,7 @@
 
 #define NOSPLIT_LIMIT (32 * 1024)
 #define NB_PACKS      2
-#define MIN           (4 * NB_PACKS)
+#define MIN           (1 * 1024 * 1024) //(4 * NB_PACKS)
 #define MAX           (8 * 1024 * 1024)
 #define LOOPS         2000
 
@@ -55,24 +55,14 @@ uint32_t _size(uint32_t len, unsigned n)
 {
   unsigned chunk = len / NB_PACKS;
 
-  if(len > 4 * 1024 * 1024) {
+  if (len >= 1 * 1024 * 1024) {
     if(n & 1) { /* pack 1 */
-      return chunk + chunk / 32;
-    } else { /* pack 0 */
-      return chunk - chunk / 32;
-    }
-  } else if (len > 2 * 1024 * 1024) {
-    if(n & 1) { /* pack 1 */
-      return chunk + chunk / 4;
-    } else { /* pack 0 */
       return chunk - chunk / 4;
-    }
-  } else { //if (len > 1024 * 1024) {
-    if(n & 1) { /* pack 1 */
-      return chunk;
     } else { /* pack 0 */
-      return chunk;
+      return chunk + chunk / 4;
     }
+  } else {
+    return chunk;
   }
 
   return chunk;
@@ -99,7 +89,8 @@ main(int	  argc,
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint32_t		 len;
-	struct nm_so_cnx        *cnx            = NULL;
+	struct nm_so_cnx         cnx;
+        nm_so_pack_interface     interface;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -108,7 +99,7 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_pack_interface_init();
+	err = nm_so_pack_interface_init(p_core, &interface);
 	if(err != NM_ESUCCESS) {
                 printf("nm_so_pack_interface_init return err = %d\n", err);
                 goto out;
@@ -186,28 +177,28 @@ main(int	  argc,
 		  for(k = 0; k < LOOPS; k++) {
 
 		    _buf = buf;
-		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 		    if(len <= NOSPLIT_LIMIT)
-		      nm_so_unpack(cnx, _buf, len);
+		      nm_so_unpack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
 			unsigned long size = _size(len, n);
-			nm_so_unpack(cnx, _buf, size);
+			nm_so_unpack(&cnx, _buf, size);
 			_buf += size;
 		      }
-		    nm_so_end_unpacking(p_core, cnx);
+		    nm_so_end_unpacking(&cnx);
 
 		    _buf = buf;
-		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
 		    if(len <= NOSPLIT_LIMIT)
-		      nm_so_pack(cnx, _buf, len);
+		      nm_so_pack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
 			unsigned long size = _size(len, n);
-			nm_so_pack(cnx, _buf, size);
+			nm_so_pack(&cnx, _buf, size);
 			_buf += size;
 		      }
-		    nm_so_end_packing(p_core, cnx);
+		    nm_so_end_packing(&cnx);
 		  }
 		}
 
@@ -244,28 +235,28 @@ main(int	  argc,
 		  for(k = 0; k < LOOPS; k++) {
 
 		    _buf = buf;
-		    nm_so_begin_packing(p_core, gate_id, 0, &cnx);
+		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
 		    if(len <= NOSPLIT_LIMIT)
-		      nm_so_pack(cnx, _buf, len);
+		      nm_so_pack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
 			unsigned long size = _size(len, n);
-			nm_so_pack(cnx, _buf, size);
+			nm_so_pack(&cnx, _buf, size);
 			_buf += size;
 		      }
-		    nm_so_end_packing(p_core, cnx);
+		    nm_so_end_packing(&cnx);
 
 		    _buf = buf;
-		    nm_so_begin_unpacking(p_core, gate_id, 0, &cnx);
+		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 		    if(len <= NOSPLIT_LIMIT)
-		      nm_so_unpack(cnx, _buf, len);
+		      nm_so_unpack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
 			unsigned long size = _size(len, n);
-			nm_so_unpack(cnx, _buf, size);
+			nm_so_unpack(&cnx, _buf, size);
 			_buf += size;
 		      }
-		    nm_so_end_unpacking(p_core, cnx);
+		    nm_so_end_unpacking(&cnx);
 
 		  }
 

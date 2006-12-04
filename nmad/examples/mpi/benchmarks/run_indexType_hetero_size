@@ -1,5 +1,7 @@
+/home/nfurmento/usr/bin/pm2_clean.pl ; ssh rantanplan /home/nfurmento/usr/bin/pm2_clean.pl
 make clean
 make indexType_hetero_size
+export MPI_NMAD_PROTOCOL=mx
 ../mpirun -np 2 -machinefile ../nmad_opteron.lst indexType_hetero_size
 
 make clean

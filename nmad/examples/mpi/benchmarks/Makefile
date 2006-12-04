@@ -1,4 +1,7 @@
+ifeq ($(MPICC),)
 MPICC	:=	../mpicc
+endif
+
 #MPICC	:=	/opt/mpich-mx/bin/mpicc
 
 PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size

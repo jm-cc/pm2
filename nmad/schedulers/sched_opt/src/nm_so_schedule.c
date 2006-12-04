@@ -151,6 +151,9 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
   memset(p_so_gate->status, 0, sizeof(p_so_gate->status));
 
+  memset(p_so_gate->send_seq_number, 0, sizeof(p_so_gate->send_seq_number));
+  memset(p_so_gate->recv_seq_number, 0, sizeof(p_so_gate->recv_seq_number));
+
   memset(p_so_gate->recv, 0, sizeof(p_so_gate->recv));
 
   p_so_gate->pending_unpacks = 0;

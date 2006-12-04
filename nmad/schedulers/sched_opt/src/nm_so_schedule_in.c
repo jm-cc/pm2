@@ -30,6 +30,10 @@
 
 //#define NM_SO_OPTIMISTIC_RECV
 
+/* rdv_success is called when a RdV request and an UNPACK operation
+   match together. Basically, we just have to check if there is a
+   track available for the large data transfer and to send an ACK if
+   so. Otherwise, we simply postpone the acknowledgement.*/
 static int rdv_success(struct nm_gate *p_gate,
 		       uint8_t tag, uint8_t seq,
 		       void *data, uint32_t len)
@@ -42,22 +46,29 @@ static int rdv_success(struct nm_gate *p_gate,
   unsigned long drv_id = NM_SO_DEFAULT_NET;
   unsigned long trk_id = TRK_LARGE;
 
-  /* Can we find an available track to prepare the receive? */
+  /* We ask the current strategy to find an available track for
+     transfering this large data chunk. */
   err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
 
   if(err == NM_ESUCCESS) {
-    /* Let's acknowledge the Rendez-Vous request! */
+    /* The strategy found an available transfer track, so let's
+       acknowledge the Rendez-Vous request! */
     union nm_so_generic_ctrl_header ctrl;
 
+    /* It is mandatory to post the recv *before* sending the
+       acknowledgement! */
     nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
 
     nm_so_init_ack(&ctrl, tag + 128, seq,
 		   drv_id * NM_SO_MAX_TRACKS + trk_id);
 
+    /* Add ACK to the list of outgoing paquets. The strategy may
+       aggregate it with another paquet... */
     err = cur_strat->pack_ctrl(p_gate, &ctrl);
 
   } else {
-    /* We are forced to postpone the receive */
+    /* The current strategy did'nt find any suitable track: we are
+       forced to postpone the acknowledgement */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
 					    data, len,
 					    NM_SO_DATA_DONT_USE_HEADER,
@@ -248,8 +259,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
 
-  //    printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
-  //  	 ptr, len, tag, seq);
+  //  printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
+  //	 ptr, len, tag, seq);
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
@@ -391,7 +402,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   int err;
 
   //  printf("Packet %p received completely (on track %d)!\n",
-  //  	 p_so_pw, p_pw->p_trk->id);
+  //	 p_so_pw, p_pw->p_trk->id);
 
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */

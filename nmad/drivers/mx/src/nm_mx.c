@@ -653,17 +653,6 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
 	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
 	err=p_pw->err;
 #else
-#ifdef XPAULETTE
-	p_pw->err=0;
-	xpaul_req_init(&p_pw->inst);
-	p_pw->inst.state|=XPAUL_STATE_ONE_SHOT;
-	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
-	xpaul_poll_req(&p_pw->inst);
-	err=p_pw->err;
-	if(p_pw->err==NM_ESUCCESS){
-		xpaul_req_cancel(&p_pw->inst, NM_ESUCCESS);
-	}
-#else
         err = nm_mx_poll_iov(p_pw);
 #endif /* XPAULETTE */
 

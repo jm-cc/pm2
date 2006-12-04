@@ -1,6 +1,9 @@
 #ifndef _MARCEL_PTHREAD_H
 #define _MARCEL_PTHREAD_H
 
+#ifdef MARCEL_EST_DEF
+#error "When this file is in the include path, marcel.h mustn't be #included directly. Always just #include <pthread.h>."
+#endif
 #include <marcel.h>
 
 

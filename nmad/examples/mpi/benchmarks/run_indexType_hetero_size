@@ -1,0 +1,7 @@
+make clean
+make indexType_hetero_size
+../mpirun -np 2 -machinefile ../nmad_opteron.lst indexType_hetero_size
+
+make clean
+make indexType_hetero_size MPICC=/opt/mpich-mx/bin/mpicc
+/opt/mpich-mx/bin/mpirun -np 2 -machinefile ../nmad_opteron.lst indexType_hetero_size

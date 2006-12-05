@@ -52,17 +52,13 @@ enum
   PREFIX_MUTEX_RECURSIVE_NP,
   PREFIX_MUTEX_ERRORCHECK_NP,
   PREFIX_MUTEX_ADAPTIVE_NP
-/* #ifdef __USE_UNIX98 */
   ,
   PREFIX_MUTEX_NORMAL = PREFIX_MUTEX_TIMED_NP,
   PREFIX_MUTEX_RECURSIVE = PREFIX_MUTEX_RECURSIVE_NP,
   PREFIX_MUTEX_ERRORCHECK = PREFIX_MUTEX_ERRORCHECK_NP,
   PREFIX_MUTEX_DEFAULT = PREFIX_MUTEX_NORMAL
-/* #endif */
-/* #ifdef __USE_GNU */
   /* For compatibility.  */
   , PREFIX_MUTEX_FAST_NP = PREFIX_MUTEX_TIMED_NP
-/* #endif */
 };
 ]], [[PMARCEL LPT]])/* pas MARCEL car il n'a pas tout ces modes */
 
@@ -86,7 +82,6 @@ REPLICATE([[dnl
 /* Mutex initializers.  */
 #define PREFIX_MUTEX_INITIALIZER \
   {.__data = {.__lock=MA_PREFIX_FASTLOCK_UNLOCKED}}
-#ifdef __USE_GNU
 # if MA_BITS_PER_LONG == 64
 #  define PREFIX_RECURSIVE_MUTEX_INITIALIZER_NP \
   { { 0, 0, 0, 0, PREFIX_MUTEX_RECURSIVE_NP, MA_PREFIX_FASTLOCK_UNLOCKED } }
@@ -102,7 +97,6 @@ REPLICATE([[dnl
 #  define PREFIX_ADAPTIVE_MUTEX_INITIALIZER_NP \
   { { 0, 0, 0, PREFIX_MUTEX_ADAPTIVE_NP, MA_PREFIX_FASTLOCK_UNLOCKED } }
 # endif
-#endif
 ]],[[PMARCEL LPT]])/* pas PTHREAD car déjà dans pthread.h, pas MARCEL car il a son propre initializer */
 
 #section structures
@@ -188,7 +182,6 @@ extern int prefix_mutexattr_getpshared (__const prefix_mutexattr_t *
 extern int prefix_mutexattr_setpshared (prefix_mutexattr_t *__attr,
                                          int __pshared) __THROW;
 
-/* #ifdef __USE_UNIX98 */
 /* Return in *KIND the mutex kind attribute in *ATTR.  */
 extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
                                       __attr, int *__restrict __kind) __THROW;
@@ -198,7 +191,6 @@ extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
    PREFIX_MUTEX_DEFAULT).  */
 extern int prefix_mutexattr_settype (prefix_mutexattr_t *__attr, int __kind)
      __THROW;
-/* #endif */
 /* Functions for handling initialization.  */
 
 /* Guarantee that the initialization function INIT_ROUTINE will be called

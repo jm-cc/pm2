@@ -112,31 +112,6 @@
   DEC_LOCAL_MARCEL(name); \
   static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
-#ifdef __USE_UNIX98
-#  define DEC_MARCEL_UNIX98(rtype, name, proto) \
-     DEC_MARCEL_POSIX(rtype, name, proto)
-#  ifdef __USE_XOPEN2K
-#    define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-       DEC_MARCEL_POSIX(rtype, name, proto)
-#  else /* __USE_XOPEN2K */
-#    define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-       DEC_MARCEL(rtype, name, proto)
-#  endif /* __USE_XOPEN2K */
-#else /* __USE_UNIX98 */
-#  define DEC_MARCEL_UNIX98(rtype, name, proto) \
-     DEC_MARCEL(rtype, name, proto)
-#  define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-     DEC_MARCEL(rtype, name, proto)
-#endif /* __USE_UNIX98 */
-
-#ifdef __USE_GNU
-#  define DEC_MARCEL_GNU(rtype, name, proto) \
-     DEC_MARCEL_POSIX(rtype, name, proto)
-#else
-#  define DEC_MARCEL_GNU(rtype, name, proto) \
-     DEC_MARCEL(rtype, name, proto)
-#endif
-
 /****************************************************************
  * Définitions
  */

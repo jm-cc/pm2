@@ -14,10 +14,10 @@
  * General Public License for more details.
  */
 
+#include "marcel.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "marcel.h"
 
 
 #ifdef MARCEL_FORTRAN

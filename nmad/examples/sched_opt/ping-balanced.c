@@ -31,9 +31,11 @@
 #  include <nm_mx_public.h>
 #  include <nm_qsnet_public.h>
 
-#define NOSPLIT_LIMIT (32 * 1024)
+//#define ISO_SPLIT
+
+#define SPLIT_THRESHOLD (64 * 1024)
 #define NB_PACKS      2
-#define MIN           (1 * 1024 * 1024) //(4 * NB_PACKS)
+#define MIN           (16 * 1024) //(4 * NB_PACKS)
 #define MAX           (8 * 1024 * 1024)
 #define LOOPS         2000
 
@@ -55,15 +57,15 @@ uint32_t _size(uint32_t len, unsigned n)
 {
   unsigned chunk = len / NB_PACKS;
 
-  if (len >= 1 * 1024 * 1024) {
+#ifndef ISO_SPLIT
+  if (len >= 256 * 1024) {
     if(n & 1) { /* pack 1 */
-      return chunk - chunk / 4;
+      return chunk - chunk / 8;
     } else { /* pack 0 */
-      return chunk + chunk / 4;
+      return chunk + chunk / 8;
     }
-  } else {
-    return chunk;
   }
+#endif
 
   return chunk;
 }
@@ -178,7 +180,7 @@ main(int	  argc,
 
 		    _buf = buf;
 		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-		    if(len <= NOSPLIT_LIMIT)
+		    if(len < SPLIT_THRESHOLD)
 		      nm_so_unpack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
@@ -190,7 +192,7 @@ main(int	  argc,
 
 		    _buf = buf;
 		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
-		    if(len <= NOSPLIT_LIMIT)
+		    if(len < SPLIT_THRESHOLD)
 		      nm_so_pack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
@@ -236,7 +238,7 @@ main(int	  argc,
 
 		    _buf = buf;
 		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
-		    if(len <= NOSPLIT_LIMIT)
+		    if(len < SPLIT_THRESHOLD)
 		      nm_so_pack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {
@@ -248,7 +250,7 @@ main(int	  argc,
 
 		    _buf = buf;
 		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-		    if(len <= NOSPLIT_LIMIT)
+		    if(len < SPLIT_THRESHOLD)
 		      nm_so_unpack(&cnx, _buf, len);
 		    else
 		      for(n = 0; n < NB_PACKS; n++) {

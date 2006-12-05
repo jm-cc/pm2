@@ -165,8 +165,8 @@
 #define DEF_MARCEL_POSIX(rtype, name, proto, args, code) \
   rtype LOCAL_MARCEL_NAME(name) proto code \
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
-  DEF_ALIAS_POSIX(rtype, name, proto, args) \
-  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args)
+  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
+  DEF_ALIAS_POSIX(rtype, name, proto, args)
 
 #define DEF_MARCEL(rtype, name, proto, args, code) \
   rtype LOCAL_MARCEL_NAME(name) proto code \
@@ -184,8 +184,8 @@
   TBX_FUN_ALIAS(rtype, MARCEL_NAME(name), \
     MARCEL_INLINE_NAME(name), proto, args); \
   DEF_ALIAS_LOCAL_MARCEL(rtype, name, proto, args) \
-  DEF_ALIAS_POSIX(rtype, name, proto, args) \
-  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args)
+  DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
+  DEF_ALIAS_POSIX(rtype, name, proto, args)
 
 #define DEFINLINE_MARCEL(rtype, name, proto, args) \
   DEF_ALIAS_LOCAL_MARCEL(rtype, name, proto, args)

@@ -129,7 +129,7 @@ extern int __zero_fd;
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | 0x1000)
 #elif defined(AIX_SYS)
 #    if defined(RS6K_ARCH) || defined(PPC_ARCH)
-#      define ISOADDR_AREA_TOP       0xcfff0000
+#      define ISOADDR_AREA_TOP       (0xd0000000 - THREAD_SLOT_SIZE)
 #    endif
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)

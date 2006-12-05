@@ -195,99 +195,20 @@ int MPI_Get_processor_name(char *name, int *resultlen) {
   }
 }
 
-int MPI_Send(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int dest,
-             int tag,
-             MPI_Comm comm) {
-  MPI_Request request;
-  int         err = 0;
-
-  //if (count == 0) return not_implemented("Sending 0 element");
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
-
-  MPI_Isend(buffer, count, datatype, dest, tag, comm, &request);
-
-  if (request->request_type == MPI_REQUEST_SEND) {
-    err = nm_so_sr_swait(p_so_sr_if, request->request_id);
-  }
-  else {
-    err = nm_so_flush_packs(request->request_cnx);
-    free(request->request_cnx);
-  }
-
-  return err;
-}
-
-int MPI_Recv(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int source,
-             int tag,
-             MPI_Comm comm,
-             MPI_Status *status) {
-  MPI_Request request;
-  int         err = 0;
-
-  //  if (count == 0) return not_implemented("Receiving 0 element");
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
-
-  MPI_Irecv(buffer, count, datatype, source, tag, comm, &request);
-
-  if (request->request_type == MPI_REQUEST_RECV) {
-    MPI_NMAD_TRACE("Calling nm_so_sr_rwait...\n");
-    err = nm_so_sr_rwait(p_so_sr_if, request->request_id);
-  }
-  else {
-    err = nm_so_flush_unpacks(request->request_cnx);
-    free(request->request_cnx);
-  }
-
-  MPI_NMAD_TRACE("Wait completed\n");
-
-  if (status != NULL) {
-    status->count = count;
-    status->MPI_TAG = tag;
-    status->MPI_ERROR = err;
-
-    if (source == MPI_ANY_SOURCE) {
-      long gate_id;
-      nm_so_sr_recv_source(p_so_sr_if, request->request_id, &gate_id);
-      status->MPI_SOURCE = in_dest[gate_id];
-    }
-    else {
-      status->MPI_SOURCE = source;
-    }
-  }
-  return err;
-}
-
-int MPI_Isend(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) {
-  int  err     = 0;
+__inline__
+int mpi_inline_isend(void *buffer,
+                     int count,
+                     MPI_Datatype datatype,
+                     int dest,
+                     int tag,
+                     MPI_Comm comm,
+                     MPI_Request *request) {
   long gate_id;
   mpir_datatype_t *mpir_datatype = NULL;
-
-  //  if (count == 0) return not_implemented("Sending 0 element");
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
-
-  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
-    fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
-    return 1;
-  }
+  int err = MPI_SUCCESS;
 
   gate_id = out_gate_id[dest];
 
-  *request = malloc(sizeof(MPI_Request_t));
 
   mpir_datatype = get_datatype(datatype);
   if (mpir_datatype->is_contig == 1) {
@@ -365,22 +286,64 @@ int MPI_Isend(void *buffer,
   return err;
 }
 
-int MPI_Irecv(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) {
-  int err      = 0;
-  long gate_id;
-  mpir_datatype_t *mpir_datatype = NULL;
+int MPI_Send(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int dest,
+             int tag,
+             MPI_Comm comm) {
+  struct MPI_Request_s request_s;
+  MPI_Request request = &request_s;
+  int         err = 0;
 
-  //if (tbx_unlikely(count == 0)) return not_implemented("Receiving 0 element");
+  //if (count == 0) return not_implemented("Sending 0 element");
   if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
-  MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
+  mpi_inline_isend(buffer, count, datatype, dest, tag, comm, &request);
+
+  if (request->request_type == MPI_REQUEST_SEND) {
+    err = nm_so_sr_swait(p_so_sr_if, request->request_id);
+  }
+  else {
+    err = nm_so_flush_packs(request->request_cnx);
+    free(request->request_cnx);
+  }
+
+  return err;
+}
+
+int MPI_Isend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) {
+  //  if (count == 0) return not_implemented("Sending 0 element");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
+
+  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
+    fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
+    return 1;
+  }
+
+  *request = malloc(sizeof(MPI_Request_t));
+  return mpi_inline_isend(buffer, count, datatype, dest, tag, comm, request);
+}
+
+__inline__
+int mpi_inline_irecv(void* buffer,
+                     int count,
+                     MPI_Datatype datatype,
+                     int source,
+                     int tag,
+                     MPI_Comm comm,
+                     MPI_Request *request) {
+  int err      = 0;
+  long gate_id;
+  mpir_datatype_t *mpir_datatype = NULL;
 
   if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
     gate_id = NM_SO_ANY_SRC;
@@ -393,8 +356,6 @@ int MPI_Irecv(void* buffer,
 
     gate_id = in_gate_id[source];
   }
-
-  *request = malloc(sizeof(MPI_Request_t));
 
   mpir_datatype = get_datatype(datatype);
   if (mpir_datatype->is_contig == 1) {
@@ -474,6 +435,67 @@ int MPI_Irecv(void* buffer,
   inc_nb_incoming_msg();
   MPI_NMAD_TRACE("Irecv completed\n");
   return err;
+}
+
+int MPI_Recv(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int source,
+             int tag,
+             MPI_Comm comm,
+             MPI_Status *status) {
+  struct MPI_Request_s request_s;
+  MPI_Request request = &request_s;
+  int         err = 0;
+
+  //  if (count == 0) return not_implemented("Receiving 0 element");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
+
+  mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
+
+  if (request->request_type == MPI_REQUEST_RECV) {
+    MPI_NMAD_TRACE("Calling nm_so_sr_rwait...\n");
+    err = nm_so_sr_rwait(p_so_sr_if, request->request_id);
+  }
+  else {
+    err = nm_so_flush_unpacks(request->request_cnx);
+    free(request->request_cnx);
+  }
+
+  MPI_NMAD_TRACE("Wait completed\n");
+
+  if (status != NULL) {
+    status->count = count;
+    status->MPI_TAG = tag;
+    status->MPI_ERROR = err;
+
+    if (source == MPI_ANY_SOURCE) {
+      long gate_id;
+      nm_so_sr_recv_source(p_so_sr_if, request->request_id, &gate_id);
+      status->MPI_SOURCE = in_dest[gate_id];
+    }
+    else {
+      status->MPI_SOURCE = source;
+    }
+  }
+  return err;
+}
+
+int MPI_Irecv(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) {
+  //if (tbx_unlikely(count == 0)) return not_implemented("Receiving 0 element");
+  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
+
+  MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
+  *request = malloc(sizeof(MPI_Request_t));
+  return mpi_inline_irecv(buffer, count, datatype, source, tag, comm, request);
 }
 
 int MPI_Wait(MPI_Request *request,

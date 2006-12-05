@@ -5,8 +5,11 @@
 #include "mpi.h"
 #include "toolbox.h"
 
-#define NB_TESTS 1
-#define NB_LINES 3
+#define NB_TESTS 100
+#define NB_LINES 10
+
+#define SMALL 64
+#define LARGE (256 * 1024) //(1 * 1024 *1024)
 
 void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest) {
   int          blocklengths[blocks];
@@ -26,8 +29,8 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
   else {
     assert(blocks % 2 == 0);
     for(i = 0; i < blocks; i+=2){
-      blocklengths[i]   = 64;
-      blocklengths[i+1] = (1 * 1024 *1024);
+      blocklengths[i]   = SMALL;
+      blocklengths[i+1] = LARGE;
     }
   }
 
@@ -107,7 +110,7 @@ void processAndSendIndexType(int size, int blocks, int rank, int numtasks) {
 
 int main(int argc, char *argv[]) {
   int numtasks, rank, ret;
-  int len = 64 + (1 * 1024 *1024);
+  int len = SMALL + LARGE;
   int i, b;
 
   // Initialise MPI
@@ -120,10 +123,10 @@ int main(int argc, char *argv[]) {
   }
 
   for(i = 1; i <= NB_LINES; i++) {
-    for(b=2 ; b<=i*2 ; b*=2) {
-      processAndSendIndexType(len * i, b, rank, numtasks);
+    //for(b=2 ; b<=i*2 ; b*=2) {
+    processAndSendIndexType(len * i, 2 *i, rank, numtasks);
       if (VERBOSE) PRINT("------------------------------------");
-    }
+      //}
   }
 
   MPI_Finalize();

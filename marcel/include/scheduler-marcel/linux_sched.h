@@ -68,10 +68,6 @@ extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 #include <limits.h>
 #define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
 
-#section functions
-int marcel_yield_to(marcel_t next);
-DEC_MARCEL_POSIX(int, yield, (void));
-
 #section marcel_functions
 void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp);
 asmlinkage TBX_EXTERN int ma_schedule(void);

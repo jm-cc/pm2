@@ -115,7 +115,8 @@ extern void ma_process_timeout(unsigned long __data);
 
 #section functions
 /* ==== explicit preemption ==== */
-DEC_MARCEL_GNU(int, yield, (void) __THROW);
+int marcel_yield_to(marcel_t next);
+DEC_MARCEL_POSIX(int, yield, (void) __THROW);
 
 /****************************************************************/
 /*               Scheduler et threads                           */

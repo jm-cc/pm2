@@ -144,8 +144,8 @@ main(int    argc,
                                                 MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
                                                 MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
                                         }
-                                        MPI_Barrier(MPI_COMM_WORLD);
                                         t2 = MPI_Wtime();
+                                        MPI_Barrier(MPI_COMM_WORLD);
 
                                         sum += t2 - t1;
                                 }

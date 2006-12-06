@@ -201,8 +201,7 @@ struct ma_alt_instr {
 		      ".previous" :: "i" (feature) : "memory")  
 #endif
 #define ma_alternative(oldinstr, newinstr, feature) 	\
-	asm volatile ("661:\n\t" oldinstr "\n662:\n" 		     \
-		      ::: "memory")  
+	asm volatile (oldinstr ::: "memory")  
 
 
 /*

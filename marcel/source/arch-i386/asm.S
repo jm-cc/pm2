@@ -19,7 +19,7 @@
 	.text
 	.align 4
 	
-#if defined(FREEBSD_SYS) || defined(WIN_SYS)
+#if defined(FREEBSD_SYS) || defined(WIN_SYS) || defined(DARWIN_SYS)
 #define ma_setjmp _ma_setjmp
 #define __sigsetjmp ___sigsetjmp
 #define ma_savesigs _ma_savesigs
@@ -37,7 +37,7 @@ ma_setjmp:
         xorl    %eax, %eax
         jmp     *%edx
 
-#ifndef WIN_SYS
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 .size ma_setjmp,.-ma_setjmp
 #endif
 
@@ -56,12 +56,12 @@ __sigsetjmp:
 		  pushl   %edx
         jmp     ma_savesigs
 
-#ifndef WIN_SYS
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 .size __sigsetjmp,.-__sigsetjmp
 #endif
 #endif
 		  
-#ifdef WIN_SYS
+#if !(defined(LINUX_SYS) || defined(GNU_SYS))
 	.globl ma_i386_spinlock_contention
 ma_i386_spinlock_contention:
 re:

@@ -121,9 +121,16 @@ extern int __zero_fd;
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #    define FILE_TO_MAP            __zero_fd
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
-#elif defined(DARWIN_SYS) && defined(PPC_ARCH)
+#elif defined(DARWIN_SYS)
+#  if defined(PPC_ARCH)
 #    define ISOADDR_AREA_TOP       0xb0000000
 #    define MAIN_STACK_BOT         0x90000000
+#  elif defined(X86_ARCH)
+#    define ISOADDR_AREA_TOP       0x80000000
+#    define MAIN_STACK_BOT         0xbf800000
+#  else
+#    error Sorry. This architecture is not yet supported.
+#  endif
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | 0x1000)

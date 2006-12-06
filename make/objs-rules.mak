@@ -208,7 +208,7 @@ $(MOD_FUT): $(MOD_GEN_CPP)/%.fut: $(MOD_GEN_CPP)/%.i
 	$(COMMON_BUILD)
 	$(COMMON_HIDE) cp /dev/null $@
 	$(COMMON_MAIN) $(CC) -c -O0 $< -o /tmp/foo-$$$$.o && \
-	nm /tmp/foo-$$$$.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@ && \
+	nm /tmp/foo-$$$$.o | grep this_is_the_ | sed -e 's/^.*this_is_the_\(.*_code\).*/\1/' >> $@ && \
 	rm -f /tmp/foo-$$$$.o
 	$(COMMON_HIDE) touch $(MOD_GEN_STAMP)/fut_stamp
 

@@ -14,10 +14,6 @@
  * General Public License for more details.
  */
 
-#if ! defined(X86_ARCH) && ! defined(IA64_ARCH) && ! defined(X86_64_ARCH)
-#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86, X86_64 AND IA64 ARCHITECTURES"
-#endif
-
 #ifdef USE_FKT
 
 #include <stdio.h>

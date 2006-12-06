@@ -237,7 +237,7 @@
 #  undef MA__HAS_SUBSECTION
 #endif
 
-#ifndef WIN_SYS
+#if defined(LINUX_SYS) || defined(GNU_SYS)
 #  define MA__HAS_SUBSECTION
 #endif
 

@@ -39,7 +39,8 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#define LOOPS   2000
+#define WARMUP  100
+#define LOOPS   5000
 
 static
 void
@@ -132,7 +133,7 @@ main(int	  argc,
                         goto out;
                 }
 
-		for(k = 0; k < LOOPS; k++) {
+		for(k = 0; k < LOOPS + WARMUP; k++) {
 		  nm_so_request request;
 
 		  nm_so_sr_irecv(interface, gate_id, 0, NULL, 0, &request);
@@ -153,6 +154,17 @@ main(int	  argc,
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         goto out;
                 }
+
+		/* Warm up */
+		for(k = 0; k < WARMUP; k++) {
+		  nm_so_request request;
+
+		  nm_so_sr_isend(interface, gate_id, 0, NULL, 0, &request);
+		  nm_so_sr_swait(interface, request);
+
+		  nm_so_sr_irecv(interface, gate_id, 0, NULL, 0, &request);
+		  nm_so_sr_rwait(interface, request);
+		}
 
 		TBX_GET_TICK(t1);
 

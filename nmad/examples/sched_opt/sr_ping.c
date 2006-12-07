@@ -40,6 +40,7 @@
 #endif
 
 #define MAX     (8 * 1024 * 1024)
+#define WARMUP   100
 #define LOOPS   2000
 
 static __inline__
@@ -152,7 +153,7 @@ main(int	  argc,
                 }
 
 		for(len = 0; len <= MAX; len = _next(len)) {
-		  for(k = 0; k < LOOPS; k++) {
+		  for(k = 0; k < LOOPS + WARMUP; k++) {
 		    nm_so_request request;
 
 		    nm_so_sr_irecv(interface, gate_id, 0, buf, len, &request);
@@ -176,6 +177,16 @@ main(int	  argc,
                 }
 
 		for(len = 0; len <= MAX; len = _next(len)) {
+
+		  for(k = 0; k < WARMUP; k++) {
+		    nm_so_request request;
+
+		    nm_so_sr_isend(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_swait(interface, request);
+
+		    nm_so_sr_irecv(interface, gate_id, 0, buf, len, &request);
+		    nm_so_sr_rwait(interface, request);
+		  }
 
 		  TBX_GET_TICK(t1);
 

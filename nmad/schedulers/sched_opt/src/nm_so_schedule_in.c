@@ -28,8 +28,6 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_interfaces.h"
 
-//#define NM_SO_OPTIMISTIC_RECV
-
 /* rdv_success is called when a RdV request and an UNPACK operation
    match together. Basically, we just have to check if there is a
    track available for the large data transfer and to send an ACK if

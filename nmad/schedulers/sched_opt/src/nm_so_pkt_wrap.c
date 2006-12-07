@@ -89,7 +89,9 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 
       p_so_pw->pw.pkt_priv_flags = NM_SO_RECV_PW;
 
+#ifdef NM_SO_OPTIMISTIC_RECV
       p_so_pw->optimistic_recv = 0;
+#endif
 
       p_so_pw->v->iov_base = p_so_pw->buf;
       p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED);
@@ -143,7 +145,11 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     p_so_pw->pw.pkt_priv_flags = 0;
 
     p_so_pw->header_index = p_so_pw->v;
+
+#ifdef NM_SO_OPTIMISTIC_RECV
     p_so_pw->uncompleted_header = NULL;
+#endif
+
     p_so_pw->pending_skips = 0;
   }
 
@@ -196,10 +202,14 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  void *data, uint32_t len, int flags)
 {
   int err;
-  register struct iovec *vec;
+  struct iovec *vec;
 
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) {
     /* Add data with header */
+
+#ifdef NM_SO_OPTIMISTIC_RECV
+    /* This code is only useful when NM_SO_DATA_FORCE_CONTIGUOUS is
+       used, that is, when NM_SO_OPTIMISTIC_RECV is defined. */
 
     if(p_so_pw->uncompleted_header) {
 
@@ -207,12 +217,6 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
       unsigned long gap = nm_so_aligned(h->len) - h->len;
 
       p_so_pw->uncompleted_header = NULL;
-
-      // TODO: realloc iov dynamically!
-      if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-	err = -NM_ENOMEM;
-	goto out;
-      }
 
       /* Use a new iovec entry for upcoming headers */
       vec = p_so_pw->header_index = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
@@ -231,17 +235,17 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	p_so_pw->pw.length += gap;
 
       } else {
-
 	vec->iov_base = (char *)h + NM_SO_DATA_HEADER_SIZE;
 	vec->iov_len = 0;
       }
 
-    } else {
+    } else
+#endif // NM_SO_OPTIMISTIC_RECV
+      {
+	vec = p_so_pw->header_index;
+      }
 
-      vec = p_so_pw->header_index;
-    }
-
-    if(!(flags & NM_SO_DATA_IS_CTRL_HEADER)) {
+    if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER))) {
 
       /* Small data case */
       struct nm_so_data_header *h;
@@ -254,7 +258,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
       vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 
-      if(flags & NM_SO_DATA_USE_COPY) {
+      if(tbx_likely(flags & NM_SO_DATA_USE_COPY)) {
 
 	/* Data immediately follows its header */
 	uint32_t size;
@@ -275,12 +279,6 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
 	struct iovec *dvec;
 
-	// TODO: realloc iov dynamically!
-	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-	  err = -NM_ENOMEM;
-	  goto out;
-	}
-
 	dvec = p_so_pw->pw.v + p_so_pw->pw.v_nb;
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 	nm_so_iov_flags(p_so_pw, p_so_pw->pw.v_nb) = NM_SO_ALLOC_STATIC;
@@ -295,6 +293,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	p_so_pw->pending_skips++;
 	h->len = len;
 
+#ifdef NM_SO_OPTIMISTIC_RECV
 	if(flags & NM_SO_DATA_FORCE_CONTIGUOUS) {
 
 	  /* Actually we know that skip == 0 at this point. But to
@@ -309,7 +308,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	  p_so_pw->uncompleted_header = h;
 
 	}
-
+#endif
 	p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + len;
 
 	p_so_pw->pw.v_nb++;
@@ -337,12 +336,6 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
   } else {
     /* Data chunk added 'as is': simply use a new iovec entry */
 
-    // TODO: realloc iov dynamically!
-    if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-      err = -NM_ENOMEM;
-      goto out;
-    }
-
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
     nm_so_iov_flags(p_so_pw, p_so_pw->pw.v_nb) = NM_SO_ALLOC_STATIC;
 #endif
@@ -359,7 +352,6 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
   err = NM_ESUCCESS;
 
- out:
   return err;
 }
 
@@ -431,6 +423,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
   return err;
 }
 
+#ifdef NM_SO_OPTIMISTIC_RECV
 int
 nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
 			  void *data, uint32_t len,
@@ -510,6 +503,8 @@ nm_so_pw_check_optimistic(struct nm_so_pkt_wrap *p_so_pw,
 
   return NM_ESUCCESS;
 }
+
+#endif // NM_SO_OPTIMISTIC_RECV
 
 int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,

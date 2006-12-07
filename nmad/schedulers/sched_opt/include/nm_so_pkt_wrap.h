@@ -42,11 +42,15 @@ struct nm_so_pkt_wrap {
   int                header_ref_count;
 
   /* Used on the sending side */
+#ifdef NM_SO_OPTIMISTIC_RECV
   struct nm_so_data_header *uncompleted_header;
+#endif
   int                pending_skips;
 
   /* Used on the receiving side */
+#ifdef NM_SO_OPTIMISTIC_RECV
   int                optimistic_recv;
+#endif
 
   struct list_head   link;
 

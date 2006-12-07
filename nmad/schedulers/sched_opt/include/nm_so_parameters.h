@@ -46,9 +46,16 @@
    header zone */
 #define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
 
+
+//#define NM_SO_OPTIMISTIC_RECV
+
+#ifdef NM_SO_OPTIMISTIC_RECV
+
 /* Threasold used on both sides to decide if an optimistic receive
    operation may be attempted */
 #define NM_SO_OPTIMISTIC_RECV_LOW_THRESHOLD 32
+
+#endif // NM_SO_OPTIMISTIC_RECV
 
 #define NM_SO_MAX_ACTIVE_SEND_PER_TRACK     1
 

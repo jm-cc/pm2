@@ -28,7 +28,7 @@
 
 // Setup
 //......................
-static const int param_warmup            = 1;
+static const int param_warmup            = 100;
 static const int param_nb_samples        = 1000;
 static const int param_min_size          = 4;
 static const int param_max_size          = 1024*1024*2;
@@ -62,7 +62,7 @@ int
 main(int    argc,
      char **argv)
 {
-        int log;
+        int log, i;
         int ping_side;
         int rank_dst;
 
@@ -108,12 +108,14 @@ main(int    argc,
 
         /* Warmup */
         MPI_Barrier(MPI_COMM_WORLD);
-        if (ping_side) {
-                MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-                MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
-        } else {
-                MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
-                MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+        for(i=0 ; i<param_warmup ; i++) {
+          if (ping_side) {
+            MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+          } else {
+            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+            MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+          }
         }
         MPI_Barrier(MPI_COMM_WORLD);
 

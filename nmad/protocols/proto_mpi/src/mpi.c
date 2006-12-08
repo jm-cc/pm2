@@ -568,7 +568,7 @@ int MPI_Testany(int count,
                 int *index,
                 int *flag,
                 MPI_Status *status) {
-  int i, err;
+  int i, err = 0;
   for(i=0 ; i<count ; i++) {
     err = MPI_Test(&array_of_requests[i], flag, status);
     if (*flag == 1) {

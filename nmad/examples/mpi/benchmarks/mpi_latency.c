@@ -78,8 +78,7 @@ main(int    argc,
   }
 
   if (comm_rank == 0 && log) {
-    fprintf(stderr, "The configuration size is %d\n", comm_size);
-    fprintf(stderr, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
+    fprintf(stderr, "src|dst|size        |latency\n");
   }
 
   if (comm_size & 1) {
@@ -91,13 +90,6 @@ main(int    argc,
 
   ping_side	= !(comm_rank & 1);
   rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
-
-  if (ping_side) {
-    fprintf(stderr, "(%d): ping with %d\n", comm_rank, rank_dst);
-  } else {
-    if (log)
-      fprintf(stderr, "(%d): pong with %d\n", comm_rank, rank_dst);
-  }
 
   /* Warmup */
   MPI_Barrier(MPI_COMM_WORLD);
@@ -142,8 +134,7 @@ main(int    argc,
       lat		= sum / param_nb_tests / param_nb_samples / 2;
 
       if (log)
-        fprintf(stderr, "%3d %3d %12.3f\n",
-                comm_rank, rank_dst, lat);
+        fprintf(stderr, "%3d %3d 0 %12.3f\n", comm_rank, rank_dst, lat);
 
     } else {
       int		nb_tests	= param_nb_tests;

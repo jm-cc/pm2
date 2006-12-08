@@ -109,9 +109,9 @@ void processAndSendIndexType(int size, int blocks, int rank, int numtasks) {
 
 
 int main(int argc, char *argv[]) {
-  int numtasks, rank, ret;
+  int numtasks, rank;
   int len = SMALL + LARGE;
-  int i, b;
+  int i;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);

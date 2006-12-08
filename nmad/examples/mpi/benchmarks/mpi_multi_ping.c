@@ -48,13 +48,6 @@ uint32_t _next(uint32_t len)
     return len << 1;
 }
 
-static
-void
-usage(void) {
-  fprintf(stderr, "usage: hello [[-h <remote_hostname>] <remote url>]\n");
-  exit(EXIT_FAILURE);
-}
-
 int
 main(int	  argc,
      char	**argv) {

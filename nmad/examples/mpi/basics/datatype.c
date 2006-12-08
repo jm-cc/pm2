@@ -142,7 +142,7 @@ void struct_datatype(int rank) {
   MPI_Get_address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
-  printf("sizeof struct %d, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+  printf("sizeof struct %lud, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
@@ -204,7 +204,7 @@ void struct_and_indexed(int rank) {
   MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
   MPI_Type_commit(&indexed_type);
 
-  printf("Sizeof particle is %d\n", sizeof(struct part_s));
+  printf("Sizeof particle is %lud\n", sizeof(struct part_s));
   if (rank == 0) {
     struct part_s particles[20];
     int i;

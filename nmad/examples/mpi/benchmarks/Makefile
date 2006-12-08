@@ -26,3 +26,9 @@ indexType_hetero_size: indexType_hetero_size.o
 
 clean:
 	rm -f *.o $(PROGS)
+
+lib:
+	make -C $(PM2_ROOT)/mad4 FLAVOR=mad4-mpi
+
+clean-lib:
+	make -C $(PM2_ROOT)/mad4 FLAVOR=mad4-mpi clean

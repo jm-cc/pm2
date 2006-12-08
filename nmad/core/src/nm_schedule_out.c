@@ -252,16 +252,6 @@ int
 nm_sched_out_gate	(struct nm_gate *p_gate) {
         int	err;
 
-        /* check pending out requests	*/
-        if (p_gate->out_req_nb) {
-                NM_TRACEF("polling outbound requests");
-                err = nm_poll_send(p_gate);
-
-                if (err < 0 && err != -NM_EAGAIN) {
-                        NM_DISPF("poll_send returned %d", err);
-                }
-        }
-
         /* schedule new requests	*/
         err	= p_gate->p_sched->ops.out_schedule_gate(p_gate);
         if (err < 0) {
@@ -276,6 +266,16 @@ nm_sched_out_gate	(struct nm_gate *p_gate) {
             if (err < 0 && err != -NM_EAGAIN) {
                 NM_DISPF("post_send returned %d", err);
             }
+        }
+
+        /* check pending out requests	*/
+        if (p_gate->out_req_nb) {
+                NM_TRACEF("polling outbound requests");
+                err = nm_poll_send(p_gate);
+
+                if (err < 0 && err != -NM_EAGAIN) {
+                        NM_DISPF("poll_send returned %d", err);
+                }
         }
 
         err = NM_ESUCCESS;

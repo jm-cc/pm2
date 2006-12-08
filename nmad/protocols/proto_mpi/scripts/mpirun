@@ -65,7 +65,7 @@ get_machines() {
     fi
 
     for net in `echo $protocols` ; do
-	network_name=`. ${PM2_ROOT}/bin/leo-network $NET_FILE $net $host_list2`
+	network_name=`${PM2_ROOT}/bin/leo_network.pl $NET_FILE $net $host_list2`
 	if [ "$network_name" != "Network not found" ] ; then
 	    break
 	fi

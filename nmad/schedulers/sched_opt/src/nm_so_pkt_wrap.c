@@ -56,9 +56,15 @@ nm_so_pw_init(struct nm_core *p_core)
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_PREALLOC_BUF_LEN,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/send");
 
+#if NM_SO_PREALLOC_BUF_LEN == NM_SO_MAX_UNEXPECTED
+  /* There's no need to use a separate allocator for send and recv ! */
+  nm_so_pw_recv_mem = nm_so_pw_send_mem;
+#else
   tbx_malloc_init(&nm_so_pw_recv_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/recv");
+#endif
+
 
   return NM_ESUCCESS;
 }

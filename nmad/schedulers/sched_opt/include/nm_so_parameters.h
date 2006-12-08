@@ -25,7 +25,9 @@
 
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion
-   of the previous ones. */
+   of the previous ones. 
+
+   WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
 #define NM_SO_PENDING_PACKS_WINDOW          256
 
 #define NM_SO_MAX_UNEXPECTED                (32 * 1024)
@@ -36,7 +38,7 @@
 					     NM_SO_DATA_HEADER_SIZE)
 
 /* Maximum size of the (preallocated) header zone within packet wrappers */
-#define NM_SO_PREALLOC_BUF_LEN              (32 * 1024)
+#define NM_SO_PREALLOC_BUF_LEN              NM_SO_MAX_UNEXPECTED
 
 /* Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 16
@@ -51,7 +53,7 @@
 
 #ifdef NM_SO_OPTIMISTIC_RECV
 
-/* Threasold used on both sides to decide if an optimistic receive
+/* Threshold used on both sides to decide if an optimistic receive
    operation may be attempted */
 #define NM_SO_OPTIMISTIC_RECV_LOW_THRESHOLD 32
 

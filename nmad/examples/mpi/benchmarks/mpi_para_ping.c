@@ -30,7 +30,7 @@
 //......................
 static const int param_warmup            = 100;
 static const int param_nb_samples        = 1000;
-static const int param_min_size          = 4;
+static const int param_min_size          = 0;
 static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
 static const int param_nb_tests          = 5;
@@ -57,6 +57,18 @@ static unsigned char *main_buffer = NULL;
 
 // Functions
 //......................
+static __inline__
+uint32_t _next(uint32_t len)
+{
+        if(!len)
+                return 4;
+        else if(len < 32)
+                return len + 4;
+        else if(len < 1024)
+                return len + 32;
+        else
+                return len << 1;
+}
 
 int
 main(int    argc,
@@ -125,7 +137,7 @@ main(int    argc,
 
                 for (size = param_min_size;
                      size <= param_max_size;
-                     size = param_step?size + param_step:size * 2) {
+                     size = param_step?size + param_step:_next(size)) {
                         if (ping_side) {
                                 int		nb_tests	= param_nb_tests;
                                 double		sum		= 0.0;

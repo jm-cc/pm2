@@ -4,7 +4,7 @@ endif
 
 #MPICC	:=	/opt/mpich-mx/bin/mpicc
 
-PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size mpi_multi_ping mpi_latency
+PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size mpi_multi_ping mpi_latency mpi_multi_ping_hetero
 pingpong_LIBS	:=	-lm
 
 all: $(PROGS)
@@ -23,10 +23,9 @@ pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o
 index: index.o indexType.o toolbox.o
 
 indexType_hetero_size: indexType_hetero_size.o
-
 mpi_multi_ping: mpi_multi_ping.o
-
 mpi_latency:mpi_latency.o
+mpi_multi_ping_hetero: mpi_multi_ping_hetero.o
 
 clean:
 	rm -f *.o $(PROGS)

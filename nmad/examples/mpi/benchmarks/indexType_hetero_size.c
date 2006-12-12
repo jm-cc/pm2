@@ -93,6 +93,7 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
   }
 
   if (rank == source) {
+    sum /= 2;
     PRINT("%d\t%d\t%s\t%d\t%d\t%3.2f", source, dest, "indexed_type", numberOfElements, blocks, sum/NB_TESTS);
   }
 

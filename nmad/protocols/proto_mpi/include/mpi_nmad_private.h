@@ -165,6 +165,12 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 int mpir_comm_free(MPI_Comm *comm);
 
+__inline__
+int mpir_is_comm_valid(MPI_Comm comm);
+
+__inline__
+int mpir_project_comm_and_tag(MPI_Comm comm, int tag);
+
 /*
  * Termination functionalities
  */

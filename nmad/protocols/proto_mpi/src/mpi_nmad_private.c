@@ -453,6 +453,27 @@ int mpir_comm_free(MPI_Comm *comm) {
   }
 }
 
+__inline__
+int mpir_is_comm_valid(MPI_Comm comm) {
+  if (comm > NUMBER_OF_COMMUNICATORS || communicators[comm-MPI_COMM_WORLD] == NULL) {
+    return 0;
+  }
+  else {
+    return (communicators[comm-MPI_COMM_WORLD]->is_global == 1);
+  }
+}
+
+__inline__
+int mpir_project_comm_and_tag(MPI_Comm comm, int tag) {
+  /*
+   * We suppose that comm and  tag are represented on 3 bits. We stick
+   * both of them into a new 6-bits representation 
+   */
+  int newtag = (comm-MPI_COMM_WORLD) << 3;
+  newtag += tag;
+  return newtag;
+}
+
 /*
  * Using Friedmann  Mattern's Four Counter Method to detect
  * termination detection.

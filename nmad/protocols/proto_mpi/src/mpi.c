@@ -158,7 +158,10 @@ int MPI_Finalize(void) {
 
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
   mad_exit(madeleine);
   return errorcode;
@@ -167,7 +170,10 @@ int MPI_Abort(MPI_Comm comm,
 
 int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
   *size = global_size;
   return MPI_SUCCESS;
@@ -175,7 +181,10 @@ int MPI_Comm_size(MPI_Comm comm,
 
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
   *rank = process_rank;
   MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
@@ -205,14 +214,17 @@ int mpi_inline_isend(void *buffer,
   long                  gate_id;
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
+  int                   nmad_tag;
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
   gate_id = out_gate_id[dest];
 
   mpir_datatype = get_datatype(datatype);
+  nmad_tag = mpir_project_comm_and_tag(comm, tag);
+  MPI_NMAD_TRACE("Sending tag is %d (%d, %d)\n", nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
-    err = nm_so_sr_isend(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+    err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
     _request->request_type = MPI_REQUEST_SEND;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -291,7 +303,10 @@ int MPI_Send(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                   err = 0;
 
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   mpi_inline_isend(buffer, count, datatype, dest, tag, comm, &request);
@@ -314,7 +329,11 @@ int MPI_Isend(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
@@ -335,6 +354,7 @@ int mpi_inline_irecv(void* buffer,
                      MPI_Request *request) {
   int                   err      = 0;
   long                  gate_id;
+  int                   nmad_tag;
   mpir_datatype_t      *mpir_datatype = NULL;
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
@@ -351,9 +371,11 @@ int mpi_inline_irecv(void* buffer,
   }
 
   mpir_datatype = get_datatype(datatype);
+  nmad_tag = mpir_project_comm_and_tag(comm, tag);
+  MPI_NMAD_TRACE("Receiving tag is %d (%d, %d)\n", nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
-    err = nm_so_sr_irecv(p_so_sr_if, gate_id, tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+    err = nm_so_sr_irecv(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
     _request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -437,7 +459,10 @@ int MPI_Recv(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                  err = 0;
 
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
@@ -477,7 +502,10 @@ int MPI_Irecv(void* buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
@@ -559,7 +587,10 @@ int MPI_Iprobe(int source,
   int err      = 0;
   long gate_id;
 
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   if (source == MPI_ANY_SOURCE) {
@@ -592,7 +623,10 @@ int MPI_Probe(int source,
   int flag = 0;
   int err;
 
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
   if (tag == MPI_ANY_TAG) return not_implemented("Using MPI_ANY_TAG");
 
   err = MPI_Iprobe(source, tag, comm, &flag, status);
@@ -611,9 +645,14 @@ int MPI_Get_count(MPI_Status *status,
 }
 
 int MPI_Barrier(MPI_Comm comm) {
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  tbx_bool_t termination;
 
-  tbx_bool_t termination = test_termination(comm);
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
+
+  termination = test_termination(comm);
   MPI_NMAD_TRACE("Result %d\n", termination);
   while (termination == tbx_false) {
     sleep(1);
@@ -629,7 +668,10 @@ int MPI_Bcast(void* buffer,
               MPI_Comm comm) {
   int tag = 1;
 
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
   MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   if (process_rank == root) {
@@ -671,10 +713,14 @@ int MPI_Reduce(void* sendbuf,
                int root,
                MPI_Comm comm) {
   int tag = 2;
+  mpir_function_t *function;
 
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
-  mpir_function_t *function = mpir_get_function(op);
+  function = mpir_get_function(op);
   if (function->function == NULL) {
     ERROR("Operation %d not implemented\n", op);
     return -1;
@@ -716,7 +762,10 @@ int MPI_Allreduce(void* sendbuf,
                   MPI_Datatype datatype,
                   MPI_Op op,
                   MPI_Comm comm) {
-  if (comm != MPI_COMM_WORLD) return not_implemented("Not using MPI_COMM_WORLD");
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    return -1;
+  }
 
   MPI_Reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
 

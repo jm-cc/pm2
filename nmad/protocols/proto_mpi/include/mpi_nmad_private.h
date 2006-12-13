@@ -21,7 +21,16 @@
 #ifndef MPI_NMAD_PRIVATE_H
 #define MPI_NMAD_PRIVATE_H
 
+#include <stdint.h>
+#include <unistd.h>
+
+#include <madeleine.h>
+#include <nm_public.h>
+#include <nm_so_public.h>
+#include <nm_so_sendrecv_interface.h>
+#include <nm_so_pack_interface.h>
 #include <tbx.h>
+#include <nm_mad3_private.h>
 
 #undef MPI_NMAD_SO_DEBUG
 
@@ -34,6 +43,19 @@
 #endif /* MPI_NMAD_SO_DEBUG */
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
+
+typedef int MPI_Request_type;
+#define MPI_REQUEST_ZERO ((MPI_Request_type)0)
+#define MPI_REQUEST_SEND ((MPI_Request_type)1)
+#define MPI_REQUEST_RECV ((MPI_Request_type)2)
+#define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
+#define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
+
+struct MPI_Request_s {
+  MPI_Request_type request_type;
+  intptr_t request_id;
+  struct nm_so_cnx request_cnx;
+};
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
 

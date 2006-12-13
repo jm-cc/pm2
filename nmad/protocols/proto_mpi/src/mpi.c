@@ -18,31 +18,8 @@
  * =====
  */
 
-#include <stdint.h>
-#include <unistd.h>
-
-#include <madeleine.h>
-#include <nm_public.h>
-#include <nm_so_public.h>
-#include <nm_so_sendrecv_interface.h>
-#include <nm_so_pack_interface.h>
-#include <nm_mad3_private.h>
-
 #include "mpi.h"
 #include "mpi_nmad_private.h"
-
-typedef int MPI_Request_type;
-#define MPI_REQUEST_ZERO ((MPI_Request_type)0)
-#define MPI_REQUEST_SEND ((MPI_Request_type)1)
-#define MPI_REQUEST_RECV ((MPI_Request_type)2)
-#define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
-#define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
-
-struct MPI_Request_s {
-  MPI_Request_type request_type;
-  intptr_t request_id;
-  struct nm_so_cnx request_cnx;
-};
 
 static p_mad_madeleine_t       madeleine	= NULL;
 static int                     global_size	= -1;

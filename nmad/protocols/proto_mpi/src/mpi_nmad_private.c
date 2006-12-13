@@ -466,10 +466,11 @@ int mpir_is_comm_valid(MPI_Comm comm) {
 __inline__
 int mpir_project_comm_and_tag(MPI_Comm comm, int tag) {
   /*
-   * We suppose that comm and  tag are represented on 3 bits. We stick
-   * both of them into a new 6-bits representation 
+   * NewMadeleine only allows us 7 bits!
+   * We suppose that comm is represented on 3 bits and tag on 4 bits.
+   * We stick both of them into a new 7-bits representation
    */
-  int newtag = (comm-MPI_COMM_WORLD) << 3;
+  int newtag = (comm-MPI_COMM_WORLD) << 4;
   newtag += tag;
   return newtag;
 }

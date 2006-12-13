@@ -14,28 +14,15 @@
  */
 
 /*
- * mpi.h
- * =====
+ * mpi_collective.h
+ * ================
  */
 
-#ifndef MPI_H
-#define MPI_H
+#ifndef MPI_COMMUNICATOR_H
+#define MPI_COMMUNICATOR_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
-#include "mpi_types.h"
+int MPI_Comm_free(MPI_Comm *comm);
 
-#include "mpi_config.h"
-
-#include "mpi_pt2pt.h"
-
-#include "mpi_collective.h"
-
-#include "mpi_datatype.h"
-
-#include "mpi_communicator.h"
-
-#endif /* MPI_H */
-
+#endif /* MPI_COMMUNICATOR_H */

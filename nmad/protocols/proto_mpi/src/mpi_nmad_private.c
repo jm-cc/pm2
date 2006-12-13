@@ -22,12 +22,14 @@
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 
-static mpir_datatype_t   **datatypes = NULL;
-static p_tbx_slist_t       available_datatypes;
-static mpir_function_t   **functions = NULL;
-static p_tbx_slist_t       available_functions;
-static int 		   nb_incoming_msg  = 0;
-static int 		   nb_outgoing_msg  = 0;
+static mpir_datatype_t     **datatypes = NULL;
+static p_tbx_slist_t         available_datatypes;
+static mpir_function_t     **functions = NULL;
+static p_tbx_slist_t         available_functions;
+static mpir_communicator_t **communicators = NULL;
+static p_tbx_slist_t         available_communicators;
+static int 		     nb_incoming_msg  = 0;
+static int 		     nb_outgoing_msg  = 0;
 
 int not_implemented(char *s) {
   fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
@@ -73,6 +75,18 @@ void internal_init() {
     ptr = malloc(sizeof(int));
     *ptr = i;
     tbx_slist_push(available_datatypes, ptr);
+  }
+
+  /* Initialise data for communicators */
+  communicators = malloc(NUMBER_OF_COMMUNICATORS * sizeof(mpir_communicator_t));
+  communicators[0] = malloc(sizeof(mpir_communicator_t));
+  communicators[0]->is_global = 1;
+  communicators[0]->communicator_id = MPI_COMM_WORLD;
+  available_communicators = tbx_slist_nil();
+  for(i=MPI_COMM_WORLD+1 ; i<=NUMBER_OF_COMMUNICATORS ; i++) {
+    int *ptr = malloc(sizeof(int));
+    *ptr = i;
+    tbx_slist_push(available_communicators, ptr);
   }
 
   /* Initialise the collective functions */
@@ -280,12 +294,14 @@ int mpir_op_free(MPI_Op *op) {
     ERROR("Unknown operator %d\n", *op);
     return -1;
   }
-  free(functions[*op]);
-  int *ptr;
-  ptr = malloc(sizeof(int));
-  *ptr = *op;
-  tbx_slist_enqueue(available_functions, ptr);
-  return MPI_SUCCESS; 
+  else {
+    int *ptr;
+    free(functions[*op]);
+    ptr = malloc(sizeof(int));
+    *ptr = *op;
+    tbx_slist_enqueue(available_functions, ptr);
+    return MPI_SUCCESS; 
+  }
 }
 
 mpir_function_t *mpir_get_function(MPI_Op op) {
@@ -392,6 +408,48 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       ERROR("Datatype %d for PROD Reduce operation", *type);
       break;
     }
+  }
+}
+
+int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
+  if (tbx_slist_is_nil(available_communicators) == tbx_true) {
+    ERROR("Maximum number of communicators created");
+    return -1;
+  }
+  else if (communicators[comm-MPI_COMM_WORLD] == NULL) {
+    ERROR("Communicator %d is not valid", comm);
+    return -1;
+  }
+  else {
+    int *ptr = tbx_slist_extract(available_communicators);
+    *newcomm = *ptr;
+    free(ptr);
+
+    communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
+    communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
+    communicators[*newcomm - MPI_COMM_WORLD]->is_global = 1;
+    
+    return MPI_SUCCESS;
+  }
+}
+
+int mpir_comm_free(MPI_Comm *comm) {
+  if (*comm == MPI_COMM_WORLD) {
+    ERROR("Cannot free communicator MPI_COMM_WORLD");
+    return -1;
+  }
+  else if (*comm > NUMBER_OF_COMMUNICATORS || communicators[*comm-MPI_COMM_WORLD] == NULL) {
+    ERROR("Unknown communicator %d\n", *comm);
+    return -1;
+  }
+  else {
+    int *ptr;
+    free(communicators[*comm-MPI_COMM_WORLD]);
+    communicators[*comm-MPI_COMM_WORLD] = NULL;
+    ptr = malloc(sizeof(int));
+    *ptr = *comm;
+    tbx_slist_enqueue(available_communicators, ptr);
+    return MPI_SUCCESS; 
   }
 }
 

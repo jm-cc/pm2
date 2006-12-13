@@ -44,6 +44,13 @@
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 
+#define NUMBER_OF_COMMUNICATORS (MPI_COMM_WORLD + 7)
+
+typedef struct mpir_communicator_s {
+  int communicator_id;
+  int is_global;
+} mpir_communicator_t;
+
 typedef int MPI_Request_type;
 #define MPI_REQUEST_ZERO ((MPI_Request_type)0)
 #define MPI_REQUEST_SEND ((MPI_Request_type)1)
@@ -149,6 +156,14 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
 void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
 void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
 void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+
+/*
+ * Communicator operations
+ */
+
+int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+
+int mpir_comm_free(MPI_Comm *comm);
 
 /*
  * Termination functionalities

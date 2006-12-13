@@ -291,7 +291,6 @@ int MPI_Send(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                   err = 0;
 
-  //if (count == 0) return not_implemented("Sending 0 element");
   if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
@@ -315,7 +314,6 @@ int MPI_Isend(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  //  if (count == 0) return not_implemented("Sending 0 element");
   if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
@@ -439,7 +437,6 @@ int MPI_Recv(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                  err = 0;
 
-  //  if (count == 0) return not_implemented("Receiving 0 element");
   if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
@@ -480,7 +477,6 @@ int MPI_Irecv(void* buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  //if (tbx_unlikely(count == 0)) return not_implemented("Receiving 0 element");
   if (tbx_unlikely(comm != MPI_COMM_WORLD)) return not_implemented("Not using MPI_COMM_WORLD");
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
@@ -806,4 +802,12 @@ int MPI_Type_struct(int count,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype) {
   return mpir_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
+}
+
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
+  return mpir_comm_dup(comm, newcomm);
+}
+
+int MPI_Comm_free(MPI_Comm *comm) {
+  return mpir_comm_free(comm);
 }

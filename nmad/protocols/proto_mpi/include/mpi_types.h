@@ -57,7 +57,6 @@ typedef char MPI_Request[56];
 
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)91)
-#define MPI_COMM_SELF  ((MPI_Comm)92)
 
 /* Data types */
 typedef int MPI_Datatype;

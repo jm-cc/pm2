@@ -268,7 +268,6 @@ int mpi_inline_isend(void *buffer,
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending struct type: size %d\n", mpir_datatype->size);
-    connection = malloc(sizeof(struct nm_so_cnx));
     nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
     for(i=0 ; i<count ; i++) {
       ptr = buffer + i * mpir_datatype->size;
@@ -316,7 +315,7 @@ int MPI_Send(void *buffer,
   }
   else {
     struct nm_so_cnx *connection = &(_request->request_cnx);
-    err = nm_so_flush_packs(connection);
+    err = nm_so_end_packing(connection);
   }
 
   return err;
@@ -422,7 +421,6 @@ int mpi_inline_irecv(void* buffer,
     void            **ptr;
 
     MPI_NMAD_TRACE("Receiving struct type: size %d\n", mpir_datatype->size);
-    connection = malloc(sizeof(struct nm_so_cnx));
     nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
     ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
     for(i=0 ; i<count ; i++) {
@@ -473,7 +471,7 @@ int MPI_Recv(void *buffer,
   }
   else {
     struct nm_so_cnx *connection = &(_request->request_cnx);
-    err = nm_so_flush_unpacks(connection);
+    err = nm_so_end_unpacking(connection);
   }
 
   MPI_NMAD_TRACE("Wait completed\n");
@@ -526,11 +524,11 @@ int MPI_Wait(MPI_Request *request,
   }
   else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
-    err = nm_so_flush_unpacks(connection);
+    err = nm_so_end_unpacking(connection);
   }
   else /* ((*request)->request_type == MPI_REQUEST_PACK_SEND) */ {
     struct nm_so_cnx *connection = &(_request->request_cnx);
-    err = nm_so_flush_packs(connection);
+    err = nm_so_end_packing(connection);
   }
   _request->request_type = MPI_REQUEST_ZERO;
 

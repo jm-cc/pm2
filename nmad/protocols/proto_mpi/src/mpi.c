@@ -50,7 +50,7 @@ int MPI_Init(int *argc,
    */
   MPI_NMAD_TRACE("sizeof(struct MPI_Request_s) = %ld\n", sizeof(struct MPI_Request_s));
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", sizeof(MPI_Request));
-  assert(sizeof(struct MPI_Request_s) == sizeof(MPI_Request));
+  assert(sizeof(struct MPI_Request_s) <= sizeof(MPI_Request));
 
   /*
    * Initialization of various libraries.

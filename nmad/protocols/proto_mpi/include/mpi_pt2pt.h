@@ -80,4 +80,6 @@ int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count);
 
+int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2);
+
 #endif /* MPI_PT2PT_H */

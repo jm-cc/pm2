@@ -163,3 +163,19 @@ nm_so_flush_unpacks(struct nm_so_cnx *cnx)
   return nm_so_sr_rwait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			      _cnx->first_seq_number, _cnx->nb_paquets);
 }
+
+int
+nm_so_test_end_packing(struct nm_so_cnx *cnx) {
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+
+  return nm_so_sr_stest_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			      _cnx->first_seq_number, _cnx->nb_paquets);
+}
+
+int
+nm_so_test_end_unpacking(struct nm_so_cnx *cnx) {
+  struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+
+  return nm_so_sr_stest_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
+			      _cnx->first_seq_number, _cnx->nb_paquets);
+}

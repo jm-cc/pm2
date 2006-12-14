@@ -132,6 +132,30 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
+extern int
+nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb) {
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  uint8_t seq = seq_inf;
+  int ret;
+
+  while(nb--) {
+
+    ret = nm_so_sr_stest(p_so_interface,
+                         (nm_so_request)&p_sr_gate->status[tag][seq]);
+    if (ret == -NM_EAGAIN) {
+      return ret;
+    }
+    seq++;
+  }
+
+  return ret;
+}
+
 int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -222,6 +246,30 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 
   return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
+}
+
+extern int
+nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb) {
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  uint8_t seq = seq_inf;
+  int ret;
+
+  while(nb--) {
+
+    ret = nm_so_sr_rtest(p_so_interface,
+                         (nm_so_request)&p_sr_gate->status[tag][seq]);
+    if (ret == -NM_EAGAIN) {
+      return ret;
+    }
+    seq++;
+  }
+
+  return ret;
 }
 
 int

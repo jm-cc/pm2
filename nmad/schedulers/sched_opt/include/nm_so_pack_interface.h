@@ -66,4 +66,10 @@ nm_so_flush_packs(struct nm_so_cnx *cnx);
 int
 nm_so_flush_unpacks(struct nm_so_cnx *cnx);
 
+int
+nm_so_test_end_packing(struct nm_so_cnx *cnx);
+
+int
+nm_so_test_end_unpacking(struct nm_so_cnx *cnx);
+
 #endif

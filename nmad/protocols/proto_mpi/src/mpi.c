@@ -544,6 +544,14 @@ int MPI_Test(MPI_Request *request,
   else if (_request->request_type == MPI_REQUEST_SEND) {
     err = nm_so_sr_stest(p_so_sr_if, _request->request_id);
   }
+  else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
+    struct nm_so_cnx *connection = &(_request->request_cnx);
+    err = nm_so_test_end_unpacking(connection);
+  }
+  else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
+    struct nm_so_cnx *connection = &(_request->request_cnx);
+    err = nm_so_test_end_packing(connection);
+  }
 
   if (err == NM_ESUCCESS) {
     *flag = 1;

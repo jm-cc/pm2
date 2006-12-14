@@ -40,6 +40,10 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 
 extern int
+nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb);
+extern int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 
@@ -58,6 +62,11 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 extern int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
+
+extern int
+nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
+		     uint16_t gate_id, uint8_t tag,
+		     unsigned long seq_inf, unsigned long nb);
 
 extern int
 nm_so_sr_rwait(struct nm_so_interface *p_so_interface,

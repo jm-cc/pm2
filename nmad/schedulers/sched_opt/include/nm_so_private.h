@@ -64,7 +64,7 @@ struct nm_so_gate {
   /* WARNING: better replace the following array by two separate
      bitmaps, to save space and avoid false sharing between send and
      recv operations. status[tag_id][seq] */
-  volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+  uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
   uint8_t send_seq_number[NM_SO_MAX_TAGS], recv_seq_number[NM_SO_MAX_TAGS];
 

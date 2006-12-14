@@ -90,7 +90,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
   struct nm_so_interface_ops *interface = p_so_sched->current_interface;
   struct nm_gate *p_gate;
   struct nm_so_gate *p_so_gate;
-  volatile uint8_t *status;
+  uint8_t *status;
   int seq, first, i, err = NM_ESUCCESS;
 
   first = p_so_sched->next_gate_id;
@@ -159,7 +159,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
-  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
   if(len <= NM_SO_MAX_SMALL) {
@@ -254,7 +254,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
   struct nm_so_interface_ops *interface = p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
-  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  uint8_t *status = &(p_so_gate->status[tag][seq]);
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
 
   //  printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
@@ -318,7 +318,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   uint8_t tag = tag_id - 128;
-  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+  uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
@@ -418,8 +418,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 	/* The optimistic recv operation succeeded! We must mark the
 	   corresponding unpack 'completed'. */
 	unsigned tag = p_so_pw->pw.proto_id - 128;
-	volatile uint8_t *status =
-	  &(p_so_gate->status[tag][p_so_pw->pw.seq]);
+	uint8_t *status = &(p_so_gate->status[tag][p_so_pw->pw.seq]);
         struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
 	*status = 0;

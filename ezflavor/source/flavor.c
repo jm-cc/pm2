@@ -408,7 +408,7 @@ static void save_and_proceed(gpointer data)
 
   strcpy(name, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
-  if((gint)data == TRUE)
+  if((glong)data == TRUE)
     if(flavor_save() != 0)
       return;
 
@@ -575,7 +575,7 @@ static void save_and_load(gpointer data)
 
   strcpy(new_fla, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
-  if((gint)data == TRUE) { // Override
+  if((glong)data == TRUE) { // Override
     if(flavor_never_saved)
       flavor_destroy_current();
 
@@ -660,7 +660,7 @@ void flavor_create(void)
 
 static void save_and_quit(gpointer data)
 {
-  if((int)data == TRUE)
+  if((glong)data == TRUE)
     if(flavor_save() != 0)
       return;
 

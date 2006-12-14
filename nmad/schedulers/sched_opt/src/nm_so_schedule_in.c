@@ -247,15 +247,14 @@ nm_so_in_schedule(struct nm_sched *p_sched)
 
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
-				    uint8_t proto_id, uint8_t seq,
-				    void *arg)
+				    uint8_t proto_id, uint8_t seq)
 {
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
   struct nm_so_interface_ops *interface = p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
-  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
 
   //  printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //	 ptr, len, tag, seq);
@@ -311,12 +310,11 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 }
 
 static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
-                        uint8_t tag_id, uint8_t seq,
-                        void *arg)
+                        uint8_t tag_id, uint8_t seq)
 {
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   uint8_t tag = tag_id - 128;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
@@ -361,11 +359,10 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
 static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
                         uint8_t tag_id, uint8_t seq,
-                        uint8_t track_id,
-                        void *arg)
+                        uint8_t track_id)
 {
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_pkt_wrap *p_so_large_pw;
   uint8_t tag = tag_id - 128;
 
@@ -432,8 +429,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
 				  rdv_callback,
-				  ack_callback,
-				  p_so_gate);
+				  ack_callback);
 
     if(p_so_gate->pending_unpacks ||
        p_so_gate->p_so_sched->pending_any_src_unpacks)

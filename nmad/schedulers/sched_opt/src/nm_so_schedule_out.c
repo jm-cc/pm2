@@ -38,16 +38,16 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate)
 
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
-				    uint8_t proto_id, uint8_t seq,
-				    void *arg)
+				    uint8_t proto_id, uint8_t seq)
 {
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)arg;
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
   //  printf("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
   //  	 ptr, len, proto_id-128, seq);
 
-  interface->pack_success(p_so_pw->pw.p_gate, proto_id - 128, seq);
+  interface->pack_success(p_gate, proto_id - 128, seq);
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -69,8 +69,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
 				  NULL,
-				  NULL,
-				  p_so_gate);
+				  NULL);
 
   } else if(p_pw->p_trk->id == 1) {
     struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;

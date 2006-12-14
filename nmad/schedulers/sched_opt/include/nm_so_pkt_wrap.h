@@ -181,21 +181,17 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);
 
 typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw, 
 				  void *ptr, uint32_t len,
-				  uint8_t proto_id, uint8_t seq,
-				  void *arg);
+				  uint8_t proto_id, uint8_t seq);
 typedef int nm_so_pw_rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
-				 uint8_t tag_id, uint8_t seq,
-				 void *arg);
+				 uint8_t tag_id, uint8_t seq);
 typedef int nm_so_pw_ack_handler(struct nm_so_pkt_wrap *p_so_pw,
-				 uint8_t tag_id, uint8_t seq, uint8_t track_id,
-				 void *arg);
+				 uint8_t tag_id, uint8_t seq, uint8_t track_id);
 
 int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler,
-			      void *arg);
+			      nm_so_pw_ack_handler ack_handler);
 
 static __inline__
 int

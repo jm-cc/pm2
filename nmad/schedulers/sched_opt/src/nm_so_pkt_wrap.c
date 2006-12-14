@@ -516,13 +516,11 @@ int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler,
-			      void *arg)
+			      nm_so_pw_ack_handler ack_handler)
 {
   struct iovec *vec;
   void *ptr;
-  unsigned long remaining_len;
-  unsigned int proto_id;
+  unsigned long remaining_len, proto_id;
   struct nm_so_data_header *dh;
   void *data = NULL;
 
@@ -598,8 +596,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
       if(proto_id != NM_SO_PROTO_DATA_UNUSED && data_handler) {
 	int r = data_handler(p_so_pw,
 			     data, dh->len,
-			     dh->proto_id, dh->seq,
-			     arg);
+			     dh->proto_id, dh->seq);
 	if(r == NM_SO_HEADER_MARK_READ)
 	  dh->proto_id = NM_SO_PROTO_DATA_UNUSED;
 	else
@@ -615,9 +612,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
 	  if(rdv_handler) {
-	    int r = rdv_handler(p_so_pw,
-				ch->r.tag_id, ch->r.seq,
-				arg);
+	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq);
 	    if(r == NM_SO_HEADER_MARK_READ)
 	      ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    else
@@ -634,8 +629,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
 	  if(ack_handler) {
 	    int r = ack_handler(p_so_pw,
-				ch->a.tag_id, ch->a.seq, ch->a.track_id,
-				arg);
+				ch->a.tag_id, ch->a.seq, ch->a.track_id);
 	    if(r == NM_SO_HEADER_MARK_READ)
 	      ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    else

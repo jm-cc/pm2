@@ -19,6 +19,10 @@
 #include <sys/uio.h>
 #include <tbx.h>
 
+#include <nm_protected.h>
+
+#include <infiniband/verbs.h>
+
 struct nm_ibverbs_drv {
         int dummy;
 };

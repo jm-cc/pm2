@@ -17,6 +17,7 @@ bool CONFIG_QSNET	= n
 bool CONFIG_MX		= n
 bool CONFIG_GM		= n
 bool CONFIG_SISCI	= n
+bool CONFIG_IBVERBS     = n
 bool CONFIG_DISK	= n
 bool CONFIG_DUMMY	= n
 
@@ -46,6 +47,9 @@ string GM_LIBS		= gm
 string SISCI_INC_PATH	= /opt/DIS/include
 string SISCI_LD_PATH	= /opt/DIS/lib
 string SISCI_LIBS	= sisci
+
+[ibverbs: CONFIG_IBVERBS]
+string IB_ROOT          = /usr
 
 [dummy: CONFIG_DUMMY]
 string DUMMY_INC_PATH

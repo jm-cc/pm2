@@ -221,7 +221,7 @@ int mpi_inline_isend(void *buffer,
 
   mpir_datatype = get_datatype(datatype);
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
-  MPI_NMAD_TRACE("Sending tag is %d (%d, %d)\n", nmad_tag, comm, tag);
+  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
     err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
@@ -233,7 +233,7 @@ int mpi_inline_isend(void *buffer,
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %d\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_packing(p_so_pack_if, gate_id, nmad_tag, connection);
     for(i=0 ; i<count ; i++) {
       for(j=0 ; j<mpir_datatype->elements ; j++) {
         nm_so_pack(connection, ptr, mpir_datatype->block_size);
@@ -248,7 +248,7 @@ int mpi_inline_isend(void *buffer,
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %d\n", mpir_datatype->elements, mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_packing(p_so_pack_if, gate_id, nmad_tag, connection);
     for(i=0 ; i<count ; i++) {
       ptr = buffer + i * mpir_datatype->size;
       MPI_NMAD_TRACE("Element %d starts at %p (%p + %d)\n", i, ptr, buffer, i*mpir_datatype->size);
@@ -266,7 +266,7 @@ int mpi_inline_isend(void *buffer,
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending struct type: size %d\n", mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_packing(p_so_pack_if, gate_id, nmad_tag, connection);
     for(i=0 ; i<count ; i++) {
       ptr = buffer + i * mpir_datatype->size;
       MPI_NMAD_TRACE("Element %d starts at %p (%p + %d)\n", i, ptr, buffer, i*mpir_datatype->size);
@@ -305,13 +305,16 @@ int MPI_Send(void *buffer,
   }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
+  _request->request_type = MPI_REQUEST_SEND;
   mpi_inline_isend(buffer, count, datatype, dest, tag, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_SEND) {
+    MPI_NMAD_TRACE("Waiting for completion swait\n");
     err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
   }
   else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
+    MPI_NMAD_TRACE("Waiting for completion end_packing\n");
     err = nm_so_end_packing(connection);
   }
 
@@ -368,7 +371,7 @@ int mpi_inline_irecv(void* buffer,
 
   mpir_datatype = get_datatype(datatype);
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
-  MPI_NMAD_TRACE("Receiving tag is %d (%d, %d)\n", nmad_tag, comm, tag);
+  MPI_NMAD_TRACE("Receiving from %d with tag %d (%d, %d)\n", source, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %d (%d*%d)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
     err = nm_so_sr_irecv(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
@@ -380,7 +383,7 @@ int mpi_inline_irecv(void* buffer,
     void            **ptr;
 
     MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %d\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, nmad_tag, connection);
     ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
     ptr[0] = buffer;
     for(i=0 ; i<count ; i++) {
@@ -398,7 +401,7 @@ int mpi_inline_irecv(void* buffer,
     void            **ptr;
 
     MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %d\n", mpir_datatype->elements, mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, nmad_tag, connection);
     ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
     ptr[0] = buffer;
     for(i=0 ; i<count ; i++) {
@@ -416,7 +419,7 @@ int mpi_inline_irecv(void* buffer,
     void            **ptr;
 
     MPI_NMAD_TRACE("Receiving struct type: size %d\n", mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, 0, connection);
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, nmad_tag, connection);
     ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
     for(i=0 ; i<count ; i++) {
       ptr[k] = buffer + i*mpir_datatype->size;
@@ -457,6 +460,7 @@ int MPI_Recv(void *buffer,
   }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
+  _request->request_type = MPI_REQUEST_RECV;
   mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_RECV) {

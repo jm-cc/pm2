@@ -577,9 +577,11 @@ int MPI_Testany(int count,
   for(i=0 ; i<count ; i++) {
     err = MPI_Test(&array_of_requests[i], flag, status);
     if (*flag == 1) {
+      *index = i;
       return MPI_SUCCESS;
     }
   }
+  *index = MPI_UNDEFINED;
   return err;
 }
 

@@ -214,16 +214,15 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
 			    "prefix_barrier_init : process shared nt supported\n");
 			LOG_RETURN(ENOTSUP);
 		}
-
-		ibarrier = (struct prefix_barrier *) barrier;
-
-		/* Initialize the individual fields.  */
-		ibarrier->lock =
-		    (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
-		ibarrier->init_count = count;
-		ibarrier->leftB = count;
-		ibarrier->leftE = 0;
 	}
+	ibarrier = (struct prefix_barrier *) barrier;
+
+	/* Initialize the individual fields.  */
+	ibarrier->lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
+	ibarrier->init_count = count;
+	ibarrier->leftB = count;
+	ibarrier->leftE = 0;
+
 	LOG_RETURN(0);
 }
 ]])

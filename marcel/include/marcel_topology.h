@@ -233,7 +233,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #depend "sys/marcel_kthread.h[marcel_types]"
 
 struct marcel_topo_vpdata {
-	/* for VPs */
+	/* for VP levels */
 	marcel_task_t *ksoftirqd;
 	unsigned long softirq_pending;
 	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
@@ -267,17 +267,17 @@ struct marcel_topo_level {
 	unsigned number; /* for whole machine */
 	unsigned index; /* in father array */
 
-	marcel_vpmask_t vpset;
+	marcel_vpmask_t vpset; /* VPs covered by this level */
 
-	unsigned arity;
-	struct marcel_topo_level **sons;
-	struct marcel_topo_level *father;
+	unsigned arity; /* Number of sons */
+	struct marcel_topo_level **sons; /* sons[0 .. arity -1] */
+	struct marcel_topo_level *father; /* NULL if machine */
 
 #ifdef MARCEL_SMT_IDLE
-	ma_atomic_t nbidle;
+	ma_atomic_t nbidle; /* For SMT Idleness */
 #endif
 
-	ma_runqueue_t sched;
+	ma_runqueue_t sched; /* data for the scheduler (runqueue for Marcel) */
 
 #ifdef MA__SMP
 	/* for LWPs/VPs management */
@@ -289,7 +289,7 @@ struct marcel_topo_level {
 #endif
 
 	union {
-		struct marcel_topo_vpdata vpdata;
+		struct marcel_topo_vpdata vpdata; /* for VP levels */
 	} leveldata;
 
 	char data[MA_PER_LEVEL_ROOM];
@@ -305,10 +305,11 @@ typedef struct marcel_topo_level marcel_topo_level_t;
 extern TBX_EXTERN unsigned marcel_topo_nblevels;
 extern TBX_EXTERN struct marcel_topo_level marcel_machine_level[];
 extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
-extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
+extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1]; /* marcel_topo_levels[l = 0 .. marcel_topo_nblevels-1][0..marcel_topo_level_nbitems[l]] */
 
 #section functions
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index);
+/* indexes into marcel_topo_levels, but available from application */
 
 #section marcel_macros
 #define for_all_vp(vp) \

@@ -43,6 +43,11 @@ int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	return 0;
 }
 
+int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level) {
+	marcel_bubble_setinitrq(bubble, &level->sched);
+	return 0;
+}
+
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level) {
 #ifdef MA__LWPS
 	if (level>marcel_topo_nblevels-1)

@@ -47,10 +47,10 @@ uint32_t _next(uint32_t len)
 {
         if(!len)
                 return 4;
-        else if(len < 32)
-                return len + 4;
-        else if(len < 1024)
-                return len + 32;
+//        else if(len < 32)
+//                return len + 4;
+//        else if(len < 1024)
+//                return len + 32;
         else
                 return len << 1;
 }
@@ -166,6 +166,7 @@ main(int	  argc,
 
         } else {
 	  tbx_tick_t t1, t2;
+          double sum, lat, bw_million_byte, bw_mbyte;
 	  int k;
                 /* client
                  */
@@ -175,6 +176,8 @@ main(int	  argc,
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         goto out;
                 }
+
+                printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
 
 		for(len = 0; len <= MAX; len = _next(len)) {
 
@@ -192,7 +195,14 @@ main(int	  argc,
 
 		  TBX_GET_TICK(t2);
 
-		  printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+                  sum = TBX_TIMING_DELAY(t1, t2);
+
+                  lat	      = sum / (2 * LOOPS);
+                  bw_million_byte = len * (LOOPS / (sum / 2));
+                  bw_mbyte        = bw_million_byte / 1.048576;
+
+		  printf("%d\t%lf\t%8.3f\t%8.3f\n",
+                         len, lat, bw_million_byte, bw_mbyte);
 		}
         }
 

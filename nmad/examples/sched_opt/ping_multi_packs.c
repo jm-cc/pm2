@@ -40,7 +40,7 @@
 #endif
 
 #define NB_PACKS 4
-#define MIN     (NB_PACKS * 4)
+#define MIN     (NB_PACKS)
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   1000
 
@@ -201,7 +201,7 @@ main(int	  argc,
 
 		  TBX_GET_TICK(t2);
 
-		  printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+		  printf("%d\t%d\t%lf\n", len, NB_PACKS, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
 		}
         }
 

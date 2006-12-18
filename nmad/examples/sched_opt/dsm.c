@@ -39,9 +39,9 @@
 #  include <nm_tcp_public.h>
 #endif
 
-#define LOOPS   2000
+#define LOOPS      2000
 #define PAGE_SIZE (65 * 1024)
-#define NB_PAGES 3
+#define NB_PAGES   3
 
 static
 void
@@ -155,7 +155,8 @@ main(int	  argc,
     memset(page, 'a', PAGE_SIZE);
 
     for(k = 0; k < LOOPS; k++){
-
+      i = 0;
+      j = 0;
 
       for(n = 0; n < NB_PAGES; n++){
 
@@ -166,16 +167,13 @@ main(int	  argc,
 
         nm_so_sr_isend(interface, gate_id, 0, &n_page, sizeof(int), &s_request[j++]);
         nm_so_sr_isend(interface, gate_id, 0, &trouve, sizeof(tbx_bool_t), &s_request[j++]);
-        nm_so_sr_isend(interface, gate_id, 0, &page, PAGE_SIZE, &s_request[j++]);
+        nm_so_sr_isend(interface, gate_id, 0, page, PAGE_SIZE, &s_request[j++]);
+
       }
 
-      for(n = 0; n < i; n++){
-        nm_so_sr_rwait(interface, r_request[n]);
-      }
+      nm_so_sr_rwait_range(interface, gate_id, 0, 0, i-1);
 
-      for(n = 0; n < j; n++){
-        nm_so_sr_swait(interface, s_request[n]);
-      }
+      nm_so_sr_swait_range(interface, gate_id, 0, 0, j-1);
     }
 
   } else {
@@ -214,6 +212,8 @@ main(int	  argc,
     TBX_GET_TICK(t1);
 
     for(k = 0; k < LOOPS; k++){
+      i = 0;
+      j = 0;
 
       for(n = 0; n < NB_PAGES; n++){
 
@@ -224,16 +224,12 @@ main(int	  argc,
 
         nm_so_sr_irecv(interface, gate_id, 0, &numero_page[n], sizeof(int), &r_request[i++]);
         nm_so_sr_irecv(interface, gate_id, 0, &trouve[n],  sizeof(tbx_bool_t), &r_request[i++]);
-        nm_so_sr_irecv(interface, gate_id, 0, &page,  sizeof(int), &r_request[i++]);
+        nm_so_sr_irecv(interface, gate_id, 0, page,  sizeof(int), &r_request[i++]);
       }
 
-      for(n = 0; n < j; n++){
-        nm_so_sr_swait(interface, s_request[n]);
-      }
+      nm_so_sr_swait_range(interface, gate_id, 0, 0, j-1);
 
-      for(n = 0; n < i; n++){
-        nm_so_sr_rwait(interface, r_request[n]);
-      }
+      nm_so_sr_rwait_range(interface, gate_id, 0, 0, i-1);
     }
 
     TBX_GET_TICK(t2);

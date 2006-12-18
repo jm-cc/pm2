@@ -178,7 +178,7 @@ main(int	  argc,
 
   } else {
     tbx_tick_t t1, t2;
-    double sum, tps_par_page;
+    double sum, tps_par_page, tps;
     int k;
     /* client
      */
@@ -208,6 +208,7 @@ main(int	  argc,
     tbx_bool_t envoi_diff = tbx_true;
     int type_acces = 1;
 
+    printf("page_size | nb pages | lat par page | lat\n");
 
     TBX_GET_TICK(t1);
 
@@ -235,10 +236,10 @@ main(int	  argc,
     TBX_GET_TICK(t2);
 
     sum = TBX_TIMING_DELAY(t1, t2);
-
+    tps = sum / LOOPS;
     tps_par_page = sum / NB_PAGES / LOOPS;
 
-    printf("%d\t%lf\n", PAGE_SIZE, tps_par_page);
+    printf("%d\t%d\t%lf\t%lf\n", PAGE_SIZE, NB_PAGES, tps_par_page, tps);
 
   }
 

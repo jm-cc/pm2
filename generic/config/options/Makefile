@@ -59,7 +59,7 @@ duplique_global:
 		fi ; \
 	    done ; \
 	} ; \
-	send "debug gdb opt noinline profile gcc_instrument" "$(LIBS) appli" ; \
-	send "debug gdb opt noinline" "$(MODULES)" ; \
+	send "debug gdb gprof opt noinline profile gcc_instrument" "$(LIBS) appli" ; \
+	send "debug gdb gprof opt noinline" "$(MODULES)" ; \
 	send "build_static build_dynamic build_both" "$(LIBS)" ; \
 	append_ligne_dep "`cat linkmode.dep | head -1`" "$(LIBS)"

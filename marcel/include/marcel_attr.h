@@ -197,8 +197,6 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 #define marcel_attr_setguardsize(attr, guardsize) (!!(guardsize))
 #define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = 0, 0)
 #endif
-#define pmarcel_attr_setguardsize(attr, guardsize) marcel_attr_setguardsize(attr, guardsize)
-#define pmarcel_attr_getguardsize(attr, guardsize) marcel_attr_getguardsize(attr, guardsize)
 
 DEC_MARCEL_POSIX(int, attr_setinheritsched, (marcel_attr_t * attr,int inheritsched) __THROW);
 DEC_MARCEL_POSIX(int, attr_getinheritsched, (marcel_attr_t * attr,int * inheritsched) __THROW);

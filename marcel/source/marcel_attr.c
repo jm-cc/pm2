@@ -233,23 +233,30 @@ DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, int *de
 DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
 DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
 
-#ifdef MA__LIBPTHREAD
  /********************attr_set/getguardsize**********************/
-int pthread_attr_setguardsize(pthread_attr_t * attr, size_t guardsize)
+DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr, size_t guardsize), (attr, guardsize), 
 {
 	LOG_IN();
-	LOG_OUT();
-	return marcel_attr_setguardsize(attr, guardsize);
-}
+	if (marcel_attr_setguardsize(attr, guardsize)) {
+		errno = EINVAL;
+		LOG_RETURN(-1);
+	}
+	LOG_RETURN(0);
+})
 
-int pthread_attr_getguardsize(__const pthread_attr_t * __restrict attr,
-    size_t * __restrict guardsize)
+DEF_PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
+DEF___PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
+
+DEF_POSIX(int, attr_getguardsize, (__const pthread_attr_t * __restrict attr,
+    size_t * __restrict guardsize), (attr, guardsize),
 {
 	LOG_IN();
 	LOG_OUT();
 	return marcel_attr_getguardsize(attr, guardsize);
-}
-#endif
+})
+
+DEF_PTHREAD(int, attr_getguardsize, (pthread_attr_t *attr, size_t *guardsize), (attr, guardsize))
+DEF___PTHREAD(int, attr_getguardsize, (pthread_attr_t *attr, size_t *guardsize), (attr, guardsize))
 
 int marcel_attr_setuserspace(marcel_attr_t * attr, unsigned space)
 {

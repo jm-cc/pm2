@@ -325,7 +325,7 @@ static void postexit_thread_atexit_func(any_t arg) {
 
 	struct marcel_topo_level *vp TBX_UNUSED = arg;
 
-	TRACE("postexit thread killed on lwp %i\n", vp->number);
+	MTRACE("postexit thread killed on lwp %i\n", vp->number);
 	MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
 

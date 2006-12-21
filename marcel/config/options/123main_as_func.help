@@ -1,1 +1,1 @@
-Rename marcel's main into go_marcel_main
+Allow the application to use a regular 'main' function in addition to the 'marcel_main' function. The application must however explicitely call Marcel's 'go_marcel_main' function, which will itself call 'marcel_main'.

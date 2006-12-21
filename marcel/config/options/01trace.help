@@ -1,1 +1,1 @@
-sets the "trace" mode on
+Enable the MTRACE debugging macro for tracing basic scheduler events (thread creation, block, ...).

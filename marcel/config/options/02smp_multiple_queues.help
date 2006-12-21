@@ -1,1 +1,0 @@
-Uses one ready-queue per LWP (SMP mode only).

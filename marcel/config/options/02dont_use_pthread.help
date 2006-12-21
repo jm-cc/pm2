@@ -1,1 +1,1 @@
-Do not use pthread to implement kernel threads (SMP mode only).
+Use the system's low-level functions for creating kernel threads instead of system's libpthread (SMP mode and Linux only).

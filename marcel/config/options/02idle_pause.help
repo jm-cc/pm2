@@ -1,1 +1,1 @@
-Call pause() when idle.
+Call pause() when idle. This may decrease I/O reactivity.

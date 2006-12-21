@@ -1,1 +1,1 @@
-No automatic preemption.
+Disable periodic preemption (timer).  This will make time-related functions hang.

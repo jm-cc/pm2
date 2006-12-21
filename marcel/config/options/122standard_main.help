@@ -1,1 +1,1 @@
-Allow the application to use a regular 'main' function instead of the 'marcel_main' function. This may add some overhead to some marcel primitives.
+Allow the application to use a regular 'main' function instead of the 'marcel_main' function. This will add a very little overhead on the marcel_self() function.

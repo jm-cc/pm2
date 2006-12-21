@@ -1,1 +1,1 @@
-Manage SMT cores' idleness to get best performances on non-idle logical processors
+Manage idleness in SMT cores to get best performances on non-idle logical processors.

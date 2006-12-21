@@ -1,1 +1,1 @@
-Bind LWPS on processors (SMP mode only);
+Bind kernel threads on processors (SMP mode only).

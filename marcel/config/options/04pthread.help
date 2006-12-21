@@ -1,5 +1,2 @@
-enable libpthread generation (EXPERIMENTAL)
-This produce a binary compatible libpthread using lpt_* versions of marcel
-functions to export pthread_* function. This also export the other symbols
-required by the standard libpthread.
-This works only on Linux (x86 and ia64 for now)
+enable libpthread generation
+This enables pthread_* functions that are binary equivalent to Linux' libpthread, permitting to run existing binary applications.

@@ -206,7 +206,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	LOG_IN();
 
-	TIMING_EVENT("marcel_create");
+	MTRACE("marcel_create", cur);
 
 #ifdef MA__LIBPTHREAD
 	__pthread_multiple_threads = 1;

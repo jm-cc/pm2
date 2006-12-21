@@ -147,7 +147,6 @@ TBX_VISIBILITY_POP
 
 #include "sys/marcel_archsetjmp.h"
 
-#include "marcel_timing.h"
 #include "marcel_stdio.h"
 
 #include "marcel_alloc___functions.h"

@@ -15,7 +15,6 @@
  */
 
 #include "marcel.h"
-#include "marcel_timing.h"
 #include "marcel_alloc.h"
 #include "sys/marcel_work.h"
 

@@ -559,12 +559,6 @@ inline static int __xpaul_unregister_poll(xpaul_server_t server,
 		list_del_init(&req->chain_req_to_export);
 	}
 #endif /* MA__LWPS */
-	else {
-		list_del_init(&req->chain_req_grouped);
-		server->req_poll_grouped_nb--;
-		LOG_RETURN(1);
-	}
-
 	LOG_RETURN(0);
 }
 
@@ -886,11 +880,7 @@ int xpaul_req_submit(xpaul_server_t server, xpaul_req_t req)
 
 /*Entre en conflit avec le test de la fonction __register*/
 //      req->server=server;
-
-	server->registered_req_not_yet_polled++;
-
 	__xpaul_register(server, req);
-	__xpaul_register_poll(server, req);
 
 	XPAUL_BUG_ON(!(req->state & XPAUL_STATE_REGISTERED));
 #ifdef MARCEL
@@ -901,7 +891,11 @@ int xpaul_req_submit(xpaul_server_t server, xpaul_req_t req)
 		if(req->chain_req_ready.next!= &(req->chain_req_ready) && (req->state= XPAUL_STATE_ONE_SHOT)) {
 			// ie state occured 
 			xpaul_req_cancel(req, 0);
-		}
+		} else 
+			__xpaul_register_poll(server, req);
+	} else {
+		server->registered_req_not_yet_polled++;
+		__xpaul_register_poll(server, req);
 	}
 	LOG_RETURN(0);
 }

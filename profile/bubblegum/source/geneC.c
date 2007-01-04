@@ -109,7 +109,9 @@ int gen_fichier_C(Element * bullemere)
   
    fprintf(fw,"\nint main(int argc, char *argv[]) {");
    fprintf(fw,"\n\n   marcel_init(&argc,argv);");
+   fprintf(fw,"\n#ifdef PROFILE");
    fprintf(fw,"\n   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);");
+   fprintf(fw,"\n#endif");
    fprintf(fw,"\n   marcel_printf(\"started\\n\");\n\n");
   
    bid = 0;

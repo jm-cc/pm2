@@ -1346,7 +1346,7 @@ char* ConfigGetTraceFileName(char* configfile)
    if (f == NULL) {
 	perror("fopen");
    	fprintf(stderr,"can't open %s\n",configfile);
-   	fprintf(stderr,"There is a sample configuration file in pm2/marcel/examples/\n");
+   	fprintf(stderr,"There is a sample configuration file in $PM2_ROOT/marcel/examples/, you probably just need to \"cd\" there\n");
       return NULL;
    }
    do

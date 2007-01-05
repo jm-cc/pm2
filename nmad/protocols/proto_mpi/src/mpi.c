@@ -304,6 +304,8 @@ int mpi_inline_isend(void *buffer,
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %d (%d*%d)\n", newbuffer, len, count, sizeof_datatype(datatype));
       err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, newbuffer, len, &(_request->request_id));
       MPI_NMAD_TRANSFER("Sent --> %d: %d bytes\n", gate_id, count * sizeof_datatype(datatype));
+      err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
+      free(newbuffer);
       if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
     }
   }
@@ -485,6 +487,7 @@ int mpi_inline_irecv(void* buffer,
           ptr -= mpir_datatype->indices[j];
         }
       }
+      free(recvbuffer);
       if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
     }
   }

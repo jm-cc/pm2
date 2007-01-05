@@ -33,6 +33,7 @@
 #include <nm_mad3_private.h>
 
 #undef MPI_NMAD_SO_DEBUG
+#undef MPI_NMAD_SO_TRACE
 
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
@@ -41,6 +42,12 @@
 #else
 #  define MPI_NMAD_TRACE(...) { }
 #endif /* MPI_NMAD_SO_DEBUG */
+
+#if defined(MPI_NMAD_SO_TRACE)
+#  define MPI_NMAD_TRANSFER(...) { fprintf(stderr, __VA_ARGS__) ; }
+#else
+#  define MPI_NMAD_TRANSFER(...) { }
+#endif /* MPI_NMAD_SO_TRACE */
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 
@@ -96,6 +103,7 @@ typedef struct mpir_datatype_s {
   int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
   struct mpir_datatype_s *old_type;
   struct mpir_datatype_s **old_types;
+  int is_optimized;
 } mpir_datatype_t;
 
 int not_implemented(char *s);

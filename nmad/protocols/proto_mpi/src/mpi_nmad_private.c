@@ -143,6 +143,7 @@ int mpir_type_commit(MPI_Datatype *datatype) {
     return -1;
   }
   datatypes[*datatype]->committed = 1;
+  datatypes[*datatype]->is_optimized = 0;
   return MPI_SUCCESS;
 }
 

@@ -69,6 +69,7 @@ struct MPI_Request_s {
   MPI_Request_type request_type;
   intptr_t request_id;
   struct nm_so_cnx request_cnx;
+  void **request_ptr;
 };
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC

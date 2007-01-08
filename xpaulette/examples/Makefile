@@ -1,4 +1,4 @@
-PROGS=multi_connect basic_ping
+PROGS=multi_connect basic_ping bench
 
 FUT=$(PROGS:=.fut)
 LDFLAGS := $(LDFLAGS) 
@@ -14,6 +14,9 @@ basic_ping-objs := basic_ping.o foo.o
 
 basic_ping.o: foo.o basic_ping.c 
 
+bench-objs := bench.o foo.o 
+
+bench.o: foo.o bench.c 
 foo.o : fut
 
 .PHONY: fut

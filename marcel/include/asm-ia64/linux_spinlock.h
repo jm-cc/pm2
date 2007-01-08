@@ -146,8 +146,8 @@ typedef struct {
 do {											\
 	ma_rwlock_t *__ma_read_lock_ptr = (rw);						\
 	while(((volatile int *)__ma_read_lock_ptr)[1] > 0);				\
-	while (tbx_unlikely(ma_ia64_fetchadd(1, (int *) __ma_read_lock_ptr, acq) < 0)) {		\
-		ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);			\
+	while (tbx_unlikely(ma_ia64_fetchadd(1, (volatile int *) __ma_read_lock_ptr, acq) < 0)) {		\
+		ma_ia64_fetchadd(-1, (volatile int *) __ma_read_lock_ptr, rel);			\
 		while (*(volatile int *)__ma_read_lock_ptr < 0)				\
 			ma_cpu_relax();							\
 	}										\
@@ -157,7 +157,7 @@ do {											\
 #define _ma_raw_read_unlock(rw)					\
 do {								\
 	ma_rwlock_t *__ma_read_lock_ptr = (rw);			\
-	ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);	\
+	ma_ia64_fetchadd(-1, (volatile int *) __ma_read_lock_ptr, rel);	\
 } while (0)
 
 #ifdef __INTEL_COMPILER
@@ -165,7 +165,7 @@ do {								\
 #define _ma_raw_write_lock(l)								\
 ({											\
 	__u64 ia64_val, ia64_set_val = ia64_dep_mi(-1, 0, 31, 1);			\
-	__u32 *ia64_write_lock_ptr = (__u32 *) (l);					\
+	volatile __u32 *ia64_write_lock_ptr = (volatile __u32 *) (l);					\
 	ma_ia64_fetchadd(1 , ia64_write_lock_ptr+1);\
 	do {										\
 		while (*ia64_write_lock_ptr)						\
@@ -179,13 +179,13 @@ do {								\
 ({									\
 	__u64 ia64_val;							\
 	__u64 ia64_set_val = ia64_dep_mi(-1, 0, 31,1);			\
-	ia64_val = ia64_cmpxchg4_acq((__u32 *)(rw), ia64_set_val, 0);	\
+	ia64_val = ia64_cmpxchg4_acq((volatile __u32 *)(rw), ia64_set_val, 0);	\
 	(ia64_val == 0);						\
 })
 #else
 #define _ma_raw_write_lock(rw)							\
 do {										\
-	ma_ia64_fetchadd(1 , ((int*)rw)+1,acq);\
+	ma_ia64_fetchadd(1 , ((volatile int*)rw)+1,acq);\
  	__asm__ __volatile__ (							\
 		"mov ar.ccv = r0\n"						\
 		"dep r29 = -1, r0, 31, 1;;\n"					\
@@ -197,7 +197,7 @@ do {										\
 		"cmp4.eq p0,p7 = r0, r2\n"					\
 		"(p7) br.cond.spnt.few 1b;;\n"					\
 		:: "r"(rw) : "ar.ccv", "p7", "r2", "r29", "memory");		\
-	 ma_ia64_fetchadd(-1 , ((int*)rw)+1,acq);\
+	 ma_ia64_fetchadd(-1 , ((volatile int*)rw)+1,acq);\
 } while(0)
 
 #define _ma_raw_write_trylock(rw)							\

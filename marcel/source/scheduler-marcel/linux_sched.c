@@ -851,7 +851,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	MA_BUG_ON(ma_preempt_count()<0);
 	if (tbx_likely(!(SELF_GETMEM(sched).state & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
-			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
+			pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
 			ma_show_preempt_backtrace();
 			MA_BUG();
 		}

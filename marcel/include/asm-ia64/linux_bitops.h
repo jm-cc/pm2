@@ -85,7 +85,7 @@ __ma_set_bit (int nr, volatile void *addr);
 static __tbx_inline__ void
 __ma_set_bit (int nr, volatile void *addr)
 {
-	*((__ma_u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
+	*((volatile __ma_u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
 }
 
 /*
@@ -135,7 +135,7 @@ ma_clear_bit (int nr, volatile void *addr)
  *static __tbx_inline__ void
  *__ma_clear_bit (int nr, volatile void *addr)
  *{
- *	volatile __ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
+ *	volatile __ma_u32 *p = (volatile __ma_u32 *) addr + (nr >> 5);
  *	__ma_u32 m = 1 << (nr & 31);
  *	*p &= ~m;
  *}
@@ -186,7 +186,7 @@ __ma_change_bit (int nr, volatile void *addr);
 static __tbx_inline__ void
 __ma_change_bit (int nr, volatile void *addr)
 {
-	*((__ma_u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
+	*((volatile __ma_u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
 }
 
 /**

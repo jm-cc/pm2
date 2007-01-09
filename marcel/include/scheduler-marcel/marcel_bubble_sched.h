@@ -122,7 +122,7 @@ int marcel_bubble_detach(marcel_bubble_t *bubble);
  */
 int ma_bubble_gather(marcel_bubble_t *bubble);
 /* Internal version (preemption and local bottom halves are already disabled) */
-int __ma_bubble_gather(marcel_bubble_t *bubble);
+void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
 
 /** \brief Executes the barrier of bubble \e bubble, which synchronizes all
  * threads of the bubble.

@@ -117,10 +117,10 @@ void marcel_bubble_join(marcel_bubble_t *bubble);
 int marcel_bubble_detach(marcel_bubble_t *bubble);
 
 /** \brief
- * Gathers bubbles contained in \e bubble back into it, i.e. get them from their
- * runqueues and put them back into \e bubble.
+ * Gathers bubbles contained in \e b back into it, i.e. get them from their
+ * runqueues and put them back into \e b.
  */
-int ma_bubble_gather(marcel_bubble_t *bubble);
+void ma_bubble_gather(marcel_bubble_t *b);
 /* Internal version (preemption and local bottom halves are already disabled) */
 void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
 

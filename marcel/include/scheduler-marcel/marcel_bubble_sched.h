@@ -120,9 +120,9 @@ int marcel_bubble_detach(marcel_bubble_t *bubble);
  * Gathers bubbles contained in \e bubble back into it, i.e. get them from their
  * runqueues and put them back into \e bubble.
  */
-int ma_bubble_detach(marcel_bubble_t *bubble);
+int ma_bubble_gather(marcel_bubble_t *bubble);
 /* Internal version (preemption and local bottom halves are already disabled) */
-int __ma_bubble_detach(marcel_bubble_t *bubble);
+int __ma_bubble_gather(marcel_bubble_t *bubble);
 
 /** \brief Executes the barrier of bubble \e bubble, which synchronizes all
  * threads of the bubble.

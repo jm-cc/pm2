@@ -29,7 +29,7 @@
 #define TOP_SEC 3
 
 static int top_pid;
-static int top_file=-1;
+static int top_file;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 #ifdef MA__BUBBLES

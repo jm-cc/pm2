@@ -145,7 +145,7 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 }
 #endif
 
-static void marcel_top_tick(unsigned long foo) {
+void marcel_show_top() {
 	marcel_lwp_t *lwp;
 	unsigned long now;
 #define NBPIDS 22
@@ -212,7 +212,10 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			printtask(pids[nbpids-1]);
 	}
 	marcel_unfreeze_sched();
+}
 
+static void marcel_top_tick(unsigned long foo) {
+	marcel_show_top();
 	timer.expires += JIFFIES_FROM_US(TOP_SEC * 1000000);
 	ma_add_timer(&timer);
 }

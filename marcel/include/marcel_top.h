@@ -17,3 +17,4 @@
 #section functions
 int marcel_init_top(char *);
 void marcel_exit_top(void);
+void marcel_show_top(void);

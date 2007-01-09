@@ -82,12 +82,9 @@ typedef struct mpir_function_s {
 #define NUMBER_OF_DATATYPES (MPI_LONG_LONG + 20)
 
 typedef enum {
-    MPIR_INT, MPIR_FLOAT, MPIR_DOUBLE, MPIR_COMPLEX, MPIR_LONG, MPIR_SHORT,
-    MPIR_CHAR, MPIR_BYTE, MPIR_UCHAR, MPIR_USHORT, MPIR_ULONG, MPIR_UINT,
+    MPIR_BASIC,
     MPIR_CONTIG, MPIR_VECTOR, MPIR_HVECTOR,
-    MPIR_INDEXED, MPIR_HINDEXED, MPIR_STRUCT, MPIR_DOUBLE_COMPLEX, MPIR_PACKED,
-    MPIR_UB, MPIR_LB, MPIR_LONGDOUBLE, MPIR_LONGLONGINT,
-    MPIR_LOGICAL, MPIR_FORT_INT
+    MPIR_INDEXED, MPIR_HINDEXED, MPIR_STRUCT
 } mpir_nodetype_t;
 
 typedef struct mpir_datatype_s {
@@ -95,15 +92,15 @@ typedef struct mpir_datatype_s {
   int basic;
   int committed; /* whether committed or not */
   int is_contig; /* whether entirely contiguous */
-  int size; /* size of type */
+  size_t size; /* size of type */
   int elements; /* number of basic elements */
   int stride; /* stride, for VECTOR and HVECTOR types */
-  int *indices; /* array of indices, for (H)INDEXED, STRUCT */
+  MPI_Aint *indices; /* array of indices, for (H)INDEXED, STRUCT */
   int blocklen; /* blocklen, for VECTOR and HVECTOR types */
   int block_size; /* blocklen, for VECTOR and HVECTOR types */
   int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
-  struct mpir_datatype_s *old_type;
-  struct mpir_datatype_s **old_types;
+  size_t old_size; /* size of old type */
+  size_t* old_sizes; /* size of old types */
   int is_optimized;
 } mpir_datatype_t;
 
@@ -111,12 +108,14 @@ int not_implemented(char *s);
 
 void internal_init();
 
+void internal_exit();
+
 
 /*
  * Datatype functionalities
  */
 
-int sizeof_datatype(MPI_Datatype datatype);
+size_t sizeof_datatype(MPI_Datatype datatype);
 
 mpir_datatype_t* get_datatype(MPI_Datatype datatype);
 
@@ -137,7 +136,7 @@ int mpir_type_vector(int count,
 
 int mpir_type_indexed(int count,
                       int *array_of_blocklengths,
-                      int *array_of_displacements,
+                      MPI_Aint *array_of_displacements,
                       mpir_nodetype_t type,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype);

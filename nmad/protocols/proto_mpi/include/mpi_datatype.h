@@ -47,7 +47,7 @@ int MPI_Type_hvector(int count,
 
 int MPI_Type_indexed(int count,
                      int *array_of_blocklengths,
-                     int *array_of_displacements,
+                     MPI_Aint *array_of_displacements,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 

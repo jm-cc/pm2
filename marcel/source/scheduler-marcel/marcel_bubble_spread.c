@@ -205,43 +205,6 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 }
 
-/* Rassembleur de la hiérarchie de la bulle */
-static void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
-	marcel_entity_t *e;
-	ma_holder_rawlock(&b->hold);
-	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
-		int state;
-		ma_holder_t *h = NULL;
-
-		if (e->type == MA_BUBBLE_ENTITY)
-			__ma_bubble_gather(ma_bubble_entity(e), rootbubble);
-
-		if (e->sched_holder == &b->hold || e->sched_holder == &rootbubble->hold)
-			/* déjà rassemblé */
-			continue;
-
-		if (e->run_holder != &b->hold && e->run_holder != &rootbubble->hold)
-			/* verrouiller le conteneur actuel de e */
-			/* TODO: en principe, devrait être "plus bas" */
-			h = ma_entity_holder_rawlock(e);
-
-		state = ma_get_entity(e);
-		debug("putting back %p in bubble %p(%p)\n", e, b, &b->hold);
-		ma_put_entity(e, &b->hold, state);
-		PROF_EVENT2(bubble_sched_goingback, e, b);
-
-		if (h)
-			ma_entity_holder_rawunlock(h);
-	}
-	ma_holder_rawunlock(&b->hold);
-}
-void ma_bubble_gather(marcel_bubble_t *b) {
-	ma_preempt_disable();
-	ma_local_bh_disable();
-	__ma_bubble_gather(b, b);
-	ma_preempt_enable_no_resched();
-	ma_local_bh_enable();
-}
 void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	marcel_entity_t *e = &b->sched;
 	ma_bubble_synthesize_stats(b);

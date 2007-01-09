@@ -1,54 +1,3 @@
-/* Object types */
-marcel_bubble_t *b;
-marcel_task_t *t;
-ma_runqueue_t *rq;
-
-/* Entities: task or bubble */
-marcel_entity_t *e;
-e->type == MA_BUBBLE_ENTITY ou MA_TASK_ENTITY
-marcel_task_t *    ma_task_entity(marcel_entity_t *e);
-marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
-&t->sched.internal.entity: marcel_entity_t *
-&b->sched: marcel_entity_t *
-
-/* Holder: runqueue or bubble */
-ma_holder_t *h;
-h->type == MA_BUBBLE_HOLDER ou MA_RUNQUEUE_HOLDER
-ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h);
-marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
-&h->hold: ma_holder_t *
-&b->hold: ma_holder_t *
-
-/* Locking holders: */
-ma_holder_lock_softirq(ma_holder_t *h);
-ma_holder_unlock_softirq(ma_holder_t *h);
-ou quand on en possède déjà un (donc préemption déjà désactivée):
-ma_holder_rawlock(ma_holder_t *h);
-ma_holder_rawunlock(ma_holder_t *h);
-
-/* Locking a thead's holder: */
-ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e);
-ma_entity_holder_unlock_softirq(ma_holder_t *h);
-
-/* Take an entity, put it elsewhere. */
-/* The holder must be locked, and in the case of a bubble, its last holder
- * (most probably a queue) must be locked too (since we might have to remove the
- bubble). */
-int ma_get_entity(marcel_entity_t *e, marcel_holder_t *h);
-ma_put_entity(marcel_entity_t *e, marcel_holder_t *h, int state);
-
-/* Iterate over runqueue priorities and entities: */
-struct list_head *queue;
-queue = ma_rq_queue(rq, MA_DEF_PRIO)
-ma_queue_for_each_entry_safe(e, ee, queue) {
-	/* manipuler e, voire l'enlever */
-}
-
-/* Iterate over bubble held entities: */
-list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
-	...
-}
-
 /* Topology management: */
 struct marcel_topo_level *l;
 l->father: struct marcel_topo_level *, NULL at top.
@@ -57,5 +6,3 @@ l->level, l->number, l->index.
 l->sched: ma_runqueue_t
 for (i=0; i<marcel_topo_nblevels; i++)
 	for (l=&marcel_topo_levels[i][0]; l->vpset; l++)
-
-Voir dans marcel/source/scheduler-marcel/marcel_sched_bubble.c les fonctions see, see_down, see_up, marcel_gang_scheduler.

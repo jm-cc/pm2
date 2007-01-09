@@ -563,7 +563,7 @@ void ma_bubble_tick(marcel_bubble_t *bubble) {
 }
 
 /* Rassembleur de la hiérarchie de la bulle */
-static void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
+void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 	marcel_entity_t *e;
 	ma_holder_rawlock(&b->hold);
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
@@ -583,7 +583,7 @@ static void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) 
 			h = ma_entity_holder_rawlock(e);
 
 		state = ma_get_entity(e);
-		debug("putting back %p in bubble %p(%p)\n", e, b, &b->hold);
+		mdebug("putting back %p in bubble %p(%p)\n", e, b, &b->hold);
 		ma_put_entity(e, &b->hold, state);
 		PROF_EVENT2(bubble_sched_goingback, e, b);
 

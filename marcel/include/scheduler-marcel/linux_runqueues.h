@@ -14,6 +14,19 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Linux runqueues
+ *
+ * \defgroup marcel_runqueues Runqueues
+ *
+ * Runqueues hold entities. Each topology level has its own runqueue, where
+ * processors of this level can take work.
+ *
+ * Each runqueue holds an active and an expire array of queues (indexed by
+ * priority).
+ *
+ * @{
+ */
 #section common
 #depend "scheduler-marcel/marcel_bubble_sched.h[types]"
 #include "tbx_compiler.h"
@@ -21,6 +34,11 @@
 /*
  * These are the runqueue data structures:
  */
+
+#section types
+/** \brief Type of runqueues */
+typedef struct ma_runqueue ma_runqueue_t;
+typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 #section macros
 /*
@@ -36,15 +54,16 @@
  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
  */
 
-#define MA_SYS_RT_PRIO		MA_MAX_SYS_RT_PRIO
-#define MA_MAX_RT_PRIO		(MA_SYS_RT_PRIO+1)
-#define MA_RT_PRIO		(MA_MAX_RT_PRIO+MA_MAX_USER_RT_PRIO)
-#define MA_DEF_PRIO		(MA_RT_PRIO+MA_MAX_NICE+1)
-#define MA_BATCH_PRIO		(MA_DEF_PRIO+1)
-#define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)
-#define MA_NOSCHED_PRIO		(MA_IDLE_PRIO+1)
+#define MA_SYS_RT_PRIO		MA_MAX_SYS_RT_PRIO	/**< \brief Marcel-internal Real-Time priority */
+#define MA_MAX_RT_PRIO		(MA_SYS_RT_PRIO+1)	/**< \brief Maximum application Real-Time priority */
+#define MA_RT_PRIO		(MA_MAX_RT_PRIO+MA_MAX_USER_RT_PRIO) /**< \brief Default application Real-Time priority */
+#define MA_DEF_PRIO		(MA_RT_PRIO+MA_MAX_NICE+1)	/**< \brief Default application priority */
+#define MA_BATCH_PRIO		(MA_DEF_PRIO+1)		/**< \brief Batch priority */
+#define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)	/**< \brief Idle priority */
+#define MA_NOSCHED_PRIO		(MA_IDLE_PRIO+1)	/**< \brief Nosched priority (never scheduled) */
 #define MA_MAX_PRIO		(MA_NOSCHED_PRIO+1)
 
+/** \brief Whether the thread has Real-Time priority */
 #define ma_rt_task(p)		((p)->sched.internal.entity.prio < MA_RT_PRIO)
 
 #section marcel_macros
@@ -65,6 +84,7 @@ struct prio_array {
 typedef struct prio_array ma_prio_array_t;
 
 #section types
+/** \brief Type of runqueue */
 enum ma_rq_type {
 	MA_DONTSCHED_RQ,
 	MA_MACHINE_RQ,
@@ -81,23 +101,30 @@ enum ma_rq_type {
 #endif
 };
 
-/*
- * This is the main, per-CPU runqueue data structure.
- *
- * Locking rule: those places that want to lock multiple runqueues
- * (such as the load balancing or the thread migration code), lock
- * acquire operations must be ordered by ascending &runqueue.
- */
 #section marcel_structures
 #depend "[types]"
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_holder.h[marcel_structures]"
+/**
+ * This is the main, per-CPU runqueue data structure.
+ *
+ * Locking rule: those places that want to lock multiple runqueues (such as the
+ * load balancing or the thread migration code), lock acquire operations must
+ * be ordered by descending level: the main runqueue first, then lower levels,
+ * and on a given level, from low indices to high indices.
+ */
 struct ma_runqueue {
+	/** \brief Holder information */
 	struct ma_holder hold;
-	unsigned long long nr_switches;
+	/* Number of switches */
+	//unsigned long long nr_switches;
+	/** \brief Name of the runqueue */
 	char name[16];
-	unsigned long expired_timestamp, timestamp_last_tick;
-	ma_prio_array_t *active, *expired, arrays[2];
+	//unsigned long expired_timestamp, timestamp_last_tick;
+	/** \brief active arrays of queues */
+	ma_prio_array_t *active;
+	/** \brief expired arrays of queues */
+	ma_prio_array_t *expired, arrays[2];
 /* 	int best_expired_prio, prev_cpu_load[NR_CPUS]; */
 /* #ifdef CONFIG_NUMA */
 /* 	atomic_t *node_nr_running; */
@@ -109,38 +136,38 @@ struct ma_runqueue {
 /* 	ma_atomic_t nr_iowait; */
 
 #ifdef MA__LWPS
+	/** \brief "Father" of the runqueue in the topology */
 	struct ma_runqueue *father;
+	/** \brief "Level" of the runqueue in the topology */
 	int level;
+	/** \brief Vpset of the runqueue */
 	marcel_vpmask_t vpset;
 #endif
+	/** \brief Type of the runqueue */
 	enum ma_rq_type type;
 };
+
 #section marcel_macros
+/** \brief Convert ma_runqueue_t *rq into ma_holder_t * */
 #define ma_holder_rq(rq) (&(rq)->hold)
-
-#section marcel_functions
-static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
-        return tbx_container_of(h, ma_runqueue_t, hold);
-}
-
-#section types
-typedef struct ma_runqueue ma_runqueue_t;
-typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
 #depend "[marcel_macros]"
 
+/** \brief The main runqueue (for the whole machine) */
 #define ma_main_runqueue (marcel_machine_level[0].sched)
 extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 #ifdef MA__LWPS
+/** \brief Runqueue of LWP \e lwp */
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
+/** \brief Runqueue of VP running on LWP \e lwp */
 #define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->sched)
+/** \brief "Don't sched" runqueue of LWP \e lwp (for idle & such) */
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
+/** \brief Whether runqueue covers VP \e vpnum */
 #define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpmask_vp_ismember(&rq->vpset, vpnum))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
@@ -148,14 +175,21 @@ extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
 #define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
 #endif
+/** \brief Current LWP */
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
+/** \brief Queue of entities with priority \e prio in array \e array */
 #define ma_array_queue(array,prio)	((array)->queue + (prio))
+/** \brief Queue of priority \e prio in runqueue \e rq */
 #define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
+/** \brief Whether queue \e queue is empty */
 #define ma_queue_empty(queue)	list_empty(queue)
+/** \brief First entity in queue \e queue */
 #define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, run_list)
 
+/** \brief Iterate through the entities held in queue \e queue */
 #define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, run_list)
-/* Safe version against current item removal: prefetches the next item in ee. */
+/** \brief Same as ma_queue_for_each_entry(), but safe version against current
+ * item removal: prefetches the next entity in \e ee. */
 #define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, run_list)
 
 /*
@@ -225,10 +259,8 @@ static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, 
 	array->nr_active += num;
 }
 
-/*
- * Switch the active and expired arrays.
- */
 #section marcel_functions
+/** \brief Switch the active and expired arrays of runqueue \e rq. */
 static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
@@ -238,13 +270,11 @@ static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 	rq->active = rq->expired;
 	rq->expired = array;
 	array = rq->active;
-	rq->expired_timestamp = 0;
+	//rq->expired_timestamp = 0;
 /* 	rq->best_expired_prio = MA_MAX_PRIO; */
 }
 
-/*
- * initialize runqueue
- */
 #section marcel_functions
 extern void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type);
 
+/* @} */

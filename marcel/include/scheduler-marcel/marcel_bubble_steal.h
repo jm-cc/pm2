@@ -14,5 +14,20 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Bubble steal scheduler functions
+ * \defgroup marcel_bubble_steal Bubble Steal scheduler
+ * @{
+ */
+
 #section marcel_functions
+/** \brief Steal work
+ *
+ * This function may typically be called when a processor becomes idle. It will
+ * look for bubbles to steal first locally (neighbour processors), then more
+ * and more globally.
+ *
+ * \return 1 if it managed to steal work, 0 else.
+ */
 int marcel_bubble_steal_work(void);
+/* @} */

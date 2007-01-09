@@ -31,7 +31,7 @@ void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 	LOG_IN();
 
 	ma_holder_init(&rq->hold, MA_RUNQUEUE_HOLDER);
-	rq->nr_switches = 0;
+//	rq->nr_switches = 0;
 	strncpy(rq->name,name,sizeof(rq->name)-1);
 	rq->name[sizeof(rq->name)-1]=0;
 	//expired_timestamp, timestamp_last_tick

@@ -25,10 +25,10 @@
 #ifdef MA__BUBBLES
 ma_runqueue_t ma_gang_rq;
 
-any_t marcel_gang_scheduler(any_t foo) {
+any_t marcel_gang_scheduler(any_t runqueue) {
 	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
-	ma_runqueue_t *rq, *work_rq = (void*) foo;
+	ma_runqueue_t *rq, *work_rq = (void*) runqueue;
 	struct list_head *queue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	/* Attendre un tout petit peu que la création de threads se fasse */

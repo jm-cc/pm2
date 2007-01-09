@@ -14,6 +14,25 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Bubble Spread scheduler functions
+ * \defgroup marcel_bubble_spread Bubble Spread scheduler
+ *
+ * This is a very basic greedy scheduler that just spreads a given bubble
+ * hierarchy over a given topology level while taking load indications into
+ * account.
+ *
+ * @{
+ */
+
 #section functions
 #depend "marcel_topology.h[types]"
+/** \brief Spread a bubble
+ *
+ * This functions spreads bubble \e b on the topology level \e l.
+ * marcel_bubble_gather() may be useful afterwards for gathering back the
+ * content of ::b.
+ */
 void marcel_bubble_spread(marcel_bubble_t *b, marcel_topo_level_t *l);
+
+/* @} */

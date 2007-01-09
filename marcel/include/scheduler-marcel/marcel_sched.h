@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Marcel scheduler
+ */
 #section default [no-include-in-main,no-include-in-master-section]
 
 #section common

@@ -14,17 +14,46 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Marcel holders
+ *
+ * \defgroup marcel_holders Marcel holders
+ *
+ * Holders (runqueues or bubbles) contain entities (threads or bubbles).
+ * They must be locked before adding/removing entities.
+ *
+ * Locking convention is top-down, i.e. holder then holdee: the runqueue, then
+ * the bubble on the runqueue, then bubbles held in the bubble (and not put on
+ * another runqueue), then lower-leveled runqueue, then bubble on it, then
+ * bubbles in the bubble, etc.
+ *
+ * If you know that bottom halves are already disabled, you can replace
+ * ma_holder_lock_softirq() by ma_holder_lock() and ma_holder_unlock_softirq()
+ * by ma_holder_unlock().
+ *
+ * If you know that you already hold a lock on a holder, you can even
+ * ma_holder_rawlock() and ma_holder_rawunlock()
+ *
+ * @{
+ */
+
 #section marcel_types
+/** \brief Holder types: runqueue or bubble */
 enum marcel_holder {
+	/** \brief holder */
 	MA_RUNQUEUE_HOLDER,
 #ifdef MA__BUBBLES
+	/** \brief bubble */
 	MA_BUBBLE_HOLDER,
 #endif
 };
 
+/** \brief Entity types: thread or bubble */
 enum marcel_entity {
+	/** \brief task */
 	MA_TASK_ENTITY,
 #ifdef MA__BUBBLES
+	/** \brief bubble */
 	MA_BUBBLE_ENTITY,
 #endif
 };
@@ -35,21 +64,24 @@ enum marcel_entity {
 #depend "marcel_barrier.h[types]"
 #depend "marcel_stats.h[marcel_types]"
 
-/* Un conteneur a un type (bulle/runqueue), et peut se verrouiller pour ajouter
- * des entités. */
-/* verrouillage: toujours dans l'ordre contenant puis contenu:
- * runqueue, puis bulle sur la runqueues, puis bulles contenues dans la
- * bulle, mais sur la même runqueue, puis sous-runqueue, puis bulles
- * contenues dans bulle, mais sur la sous-runqueue, etc... */
+/** \brief Holder information */
 struct ma_holder {
+	/** \brief Type of holder */
 	enum marcel_holder type;
+	/** \brief Lock of holder */
 	ma_spinlock_t lock;
-	unsigned long nr_running, nr_uninterruptible;
+	/** \brief Number of running held entities */
+	unsigned long nr_running;
+	/** \brief Number of interruptibly blocked held entities */
+	unsigned long nr_uninterruptible;
+	/** \brief Number of entities that are currently scheduled on processors */
 	unsigned long nr_scheduled;
+	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
 };
 
 #section types
+/** \brief Holder type */
 typedef struct ma_holder ma_holder_t;
 
 #section marcel_macros
@@ -72,19 +104,28 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 }
 
 #section marcel_functions
+/** \brief Convert ma_holder_t *h into marcel_bubble_t * (assumes that \e h is a bubble) */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
+/** \brief Convert ma_holder_t *h into ma_runqueue_t * (assumes that \e h is a runqueue) */
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
+/** \brief Convert marcel_bubble_t *b into ma_holder_t * */
+ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
+#define ma_holder_bubble(b) (&(b)->hold)
+/** \brief Convert ma_runqueue_t *b into ma_holder_t * */
+ma_holder_t *ma_holder_runqueue(ma_runqueue_t *rq);
+#define ma_holder_runqueue(rq) (&(rq)->hold)
+
 #section marcel_inline
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 	return tbx_container_of(h, marcel_bubble_t, hold);
 }
-#section marcel_functions
-static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h) {
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 	return tbx_container_of(h, ma_runqueue_t, hold);
 }
+
 #section marcel_macros
 #ifdef MA__BUBBLES
+/** \brief Return type of holder \e h */
 #define ma_holder_type(h) ((h)->type)
 #else
 #define ma_holder_type(h) MA_RUNQUEUE_HOLDER
@@ -105,36 +146,69 @@ static __tbx_inline__ ma_runqueue_t *ma_runqueue_holder(ma_holder_t *h) {
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
+/** \brief Entity information
+ *
+ * An entity is held in some initial holder (::init_holder), is put on some
+ * scheduling holder (::sched_holder) by bubble schedulers, and is actually
+ * still running in some running holder (::run_holder).
+ *
+ * ::holder_data is NULL when the entity is currently running. Else, it was
+ * preempted and put in ::run_list.
+ */
 struct ma_sched_entity {
+	/** \brief Entity type */
 	enum marcel_entity type;
+	/** \brief Initial holder */
 	ma_holder_t *init_holder;
+	/** \brief Scheduling holder */
 	ma_holder_t *sched_holder;
+	/** \brief Running holder */
 	ma_holder_t *run_holder;
+	/** \brief Data for holder */
 	void *holder_data;
+	/** \brief List link of ready entities */
 	struct list_head run_list;
+	/** \brief scheduling policy */
 	int sched_policy;
+	/** \brief priority */
 	int prio;
+	/** \brief remaining time slice */
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
+	/** \brief List link of entities held in the containing bubble */
 	struct list_head bubble_entity_list;
 #endif
+#ifdef MARCEL_BUBBLE_EXPLODE
 #ifdef MA__LWPS
+	/** \brief scheduling level for the Burst Algorithm */
 	int sched_level;
 #endif
+#endif
+	/** \brief Statistics for the entity */
 	ma_stats_t stats;
 
-	ma_spinlock_t memory_areas_lock;
+	/** \brief List of attached memory areas */
 	struct list_head memory_areas;
+	/** \brief Lock for ::memory_areas */
+	ma_spinlock_t memory_areas_lock;
 };
 
 #section types
 typedef struct ma_sched_entity marcel_entity_t;
 
 #section marcel_functions
+/** \brief Convert ma_entity_t * \e e into marcel_task_t * (assumes that \e e is a thread) */
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
 #ifdef MA__BUBBLES
+/** \brief Convert ma_entity_t * \e e into marcel_bubble_t * (assumes that \e e is a bubble) */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 #endif
+/** \brief Convert marcel_bubble_t *b into marcel_entity_t * */
+marcel_entity_t *marcel_entity_bubble(marcel_bubble_t *b);
+#define marcel_entity_bubble(b) (&(b)->sched)
+/** \brief Convert marcel_task_t *b into marcel_entity_t * */
+marcel_entity_t *marcel_entity_task(marcel_task_t *t);
+#define marcel_entity_task(t) (&(t)->sched.internal.entity)
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
 	MA_BUG_ON(e->type != MA_TASK_ENTITY);
@@ -188,9 +262,11 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define ma_holder_trylock(h) _ma_raw_spin_trylock(&(h)->lock)
 #define ma_holder_rawlock(h) _ma_raw_spin_lock(&(h)->lock)
 #define ma_holder_lock(h) ma_spin_lock(&(h)->lock)
+/** \brief Locks holder \e h */
 #define ma_holder_lock_softirq(h) ma_spin_lock_softirq(&(h)->lock)
 #define ma_holder_rawunlock(h) _ma_raw_spin_unlock(&(h)->lock)
 #define ma_holder_unlock(h) ma_spin_unlock(&(h)->lock)
+/** \brief Unlocks holder \e h */
 #define ma_holder_unlock_softirq(h) ma_spin_unlock_softirq(&(h)->lock)
 
 /* locking */
@@ -221,9 +297,11 @@ static __tbx_inline__ ma_holder_t *ma_entity_some_holder(marcel_entity_t *e)
 #section marcel_functions
 static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e);
 static inline ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e);
+/** \brief Locks the holder of entity \e e and return it */
 static inline ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e);
 ma_holder_t *ma_task_holder_rawlock(marcel_task_t *e);
 ma_holder_t *ma_task_holder_lock(marcel_task_t *e);
+/** \brief Locks the holder of task \e t and return it */
 ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
 #define ma_task_holder_rawlock(t) ma_entity_holder_rawlock(&(t)->sched.internal.entity)
 #define ma_task_holder_lock(t) ma_entity_holder_lock(&(t)->sched.internal.entity)
@@ -310,9 +388,11 @@ static __tbx_inline__ ma_holder_t *ma_this_holder_lock() {
 #section marcel_functions
 static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h);
 static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h);
+/** \brief Unlocks holder \e h */
 static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h);
 void ma_task_holder_rawunlock(ma_holder_t *h);
 void ma_task_holder_unlock(ma_holder_t *h);
+/** \brief Unlocks holder \e h */
 void ma_task_holder_unlock_softirq(ma_holder_t *h);
 #define ma_task_holder_rawunlock(h) ma_entity_holder_rawunlock(h)
 #define ma_task_holder_unlock(h) ma_entity_holder_unlock(h)
@@ -566,9 +646,9 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 #define MA_ENTITY_SLEEPING 0
 #section marcel_functions
 void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
+/** \brief Gets entity \e e out from its holder (which must be already locked), returns its state */
 static __tbx_inline__ int ma_get_entity(marcel_entity_t *e);
 #section marcel_inline
-/* prendre une entité de son conteneur (qui doit être déjà verrouillé) */
 static __tbx_inline__ int ma_get_entity(marcel_entity_t *e) {
 	int ret;
 	ma_holder_t *h;
@@ -593,9 +673,9 @@ static __tbx_inline__ int ma_get_entity(marcel_entity_t *e) {
 }
 
 #section marcel_functions
+/** \brief Put entity \e e into holder \e h (which must be already locked) in state \e state */
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
-/* mettre une entité dans un conteneur (qui doit être déjà verrouillé) */
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
 	e->sched_holder = h;
 	if (state == MA_ENTITY_SLEEPING)
@@ -611,3 +691,5 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 #endif
 
 #section marcel_structures
+
+/* @} */

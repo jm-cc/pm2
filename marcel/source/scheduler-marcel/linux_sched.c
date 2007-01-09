@@ -706,7 +706,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	MA_BUG_ON(!h);
 	rq = ma_to_rq_holder(h);
 	if (rq) {
-		rq->timestamp_last_tick = marcel_clock();
+		//rq->timestamp_last_tick = marcel_clock();
 
 #ifdef MA__LWPS
 		if (rq->type == MA_DONTSCHED_RQ)

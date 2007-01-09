@@ -178,11 +178,9 @@ struct ma_sched_entity {
 	/** \brief List link of entities held in the containing bubble */
 	struct list_head bubble_entity_list;
 #endif
-#ifdef MARCEL_BUBBLE_EXPLODE
 #ifdef MA__LWPS
-	/** \brief scheduling level for the Burst Algorithm */
+	/** \brief Nesting level */
 	int sched_level;
-#endif
 #endif
 	/** \brief Statistics for the entity */
 	ma_stats_t stats;

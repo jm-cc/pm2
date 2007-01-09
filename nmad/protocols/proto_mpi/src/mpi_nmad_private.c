@@ -116,11 +116,19 @@ void internal_exit() {
     free(datatypes[i]);
   }
   free(datatypes);
+  while (tbx_slist_is_nil(available_datatypes) == tbx_false) {
+    int *ptr = tbx_slist_extract(available_datatypes);
+    free(ptr);
+  }
   tbx_slist_clear(available_datatypes);
   tbx_slist_free(available_datatypes);
 
   free(communicators[0]);
   free(communicators);
+  while (tbx_slist_is_nil(available_communicators) == tbx_false) {
+    int *ptr = tbx_slist_extract(available_communicators);
+    free(ptr);
+  }
   tbx_slist_clear(available_communicators);
   tbx_slist_free(available_communicators);
 
@@ -128,6 +136,10 @@ void internal_exit() {
     free(functions[i]);
   }
   free(functions);
+  while (tbx_slist_is_nil(available_functions) == tbx_false) {
+    int *ptr = tbx_slist_extract(available_functions);
+    free(ptr);
+  }
   tbx_slist_clear(available_functions);
   tbx_slist_free(available_functions);
 }

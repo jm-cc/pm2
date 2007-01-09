@@ -784,6 +784,7 @@ int MPI_Bcast(void* buffer,
               int root,
               MPI_Comm comm) {
   int tag = 1;
+  int err;
 
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
@@ -806,13 +807,15 @@ int MPI_Bcast(void* buffer,
       if (err != 0) return err;
     }
     free(requests);
-    return MPI_SUCCESS;
+    err = MPI_SUCCESS;
   }
   else {
     MPI_Request request;
     MPI_Irecv(buffer, count, datatype, root, tag, comm, &request);
-    return MPI_Wait(&request, NULL);
+    err = MPI_Wait(&request, NULL);
   }
+  MPI_NMAD_TRACE("End of bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
+  return err;
 }
 
 int MPI_Op_create(MPI_User_function *function,

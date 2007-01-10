@@ -58,7 +58,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 		.index = 0,
 		.vpset = MARCEL_VPMASK_FULL,
 		.arity = 0,
-		.sons = NULL,
+		.children = NULL,
 		.father = NULL,
 #ifdef MARCEL_SMT_IDLE
 		.nbidle = MA_ATOMIC_INIT(0),
@@ -255,9 +255,9 @@ static void __marcel_init look_cpuinfo(void) {
 						marcel_vpmask_add_vp(&die_level[j].vpset,k);
 				}
 				die_level[i].arity=0;
-				die_level[i].sons=NULL;
+				die_level[i].children=NULL;
 				die_level[i].father=NULL;
-				mdebug("die %d has vpset %lx\n",j,die_level[j].vpset);
+				mdebug("die %d has vpset %"MA_PRIxVPM"\n",j,die_level[j].vpset);
 				j++;
 			}
 		}
@@ -306,12 +306,12 @@ static void __marcel_init look_cpuinfo(void) {
 						marcel_vpmask_add_vp(&core_level[j].vpset,k);
 				}
 				core_level[i].arity=0;
-				core_level[i].sons=NULL;
+				core_level[i].children=NULL;
 				core_level[i].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 				ma_atomic_set(&core_level[j].nbidle, 0);
 #endif
-				mdebug("core %d has vpset %lx\n",j,core_level[j].vpset);
+				mdebug("core %d has vpset %"MA_PRIxVPM"\n",j,core_level[j].vpset);
 				j++;
 			}
 		}
@@ -375,12 +375,12 @@ static void __marcel_init look_libnuma(void) {
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].number=i;
 		node_level[i].vpset=vpset=buffer[0]&vpmask;
-		mdebug("node %d has vpset %lx\n",i,vpset);
+		mdebug("node %d has vpset %"MA_PRIxVPM"\n",i,vpset);
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpmask_vp_ismember(&vpset,j))
 				ma_vp_node[j]=i;
 		node_level[i].arity=0;
-		node_level[i].sons=NULL;
+		node_level[i].children=NULL;
 		node_level[i].father=NULL;
 	}
 
@@ -434,9 +434,9 @@ static void __marcel_init look_libnuma(void) {
 				marcel_vpmask_add_vp(&node_level[radid].vpset,cpuid);
 				ma_vp_node[cpuid]=radid;
 			}
-		mdebug("node %d has vpset %lx\n",i,node_level[radid].vpset);
+		mdebug("node %d has vpset %"MA_PRIxVPM"\n",i,node_level[radid].vpset);
 		node_level[radid].arity=0;
-		node_level[radid].sons=NULL;
+		node_level[radid].children=NULL;
 		node_level[radid].father=NULL;
 	}
 
@@ -492,9 +492,9 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			if (level == MARCEL_LEVEL_NODE)
 				ma_vp_node[j]=r;
 		}
-		mdebug("node %d has vpset %lx\n",r,rad_level[r].vpset);
+		mdebug("node %d has vpset %"MA_PRIxVPM"\n",r,rad_level[r].vpset);
 		rad_level[r].arity=0;
-		rad_level[r].sons=NULL;
+		rad_level[r].children=NULL;
 		rad_level[r].father=NULL;
 		r++;
 	}
@@ -529,7 +529,7 @@ static void look_cpu(void) {
 		cpu_level[cpu].number=cpu;
 		marcel_vpmask_empty(&cpu_level[cpu].vpset);
 		cpu_level[cpu].arity=0;
-		cpu_level[cpu].sons=NULL;
+		cpu_level[cpu].children=NULL;
 		cpu_level[cpu].father=NULL;
 	}
 	marcel_vpmask_empty(&cpu_level[cpu].vpset);
@@ -540,7 +540,7 @@ static void look_cpu(void) {
 	}
 
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++)
-		mdebug("cpu %d has vpset %lx\n",cpu,cpu_level[cpu].vpset);
+		mdebug("cpu %d has vpset %"MA_PRIxVPM"\n",cpu,cpu_level[cpu].vpset);
 
 	marcel_topo_level_nbitems[discovering_level]=marcel_nbprocessors;
 	marcel_topo_levels[discovering_level++]=
@@ -563,7 +563,7 @@ static void look_vp(void) {
 		vp_level[i].number=i;
 		marcel_vpmask_only_vp(&vp_level[i].vpset,i);
 		vp_level[i].arity=0;
-		vp_level[i].sons=NULL;
+		vp_level[i].children=NULL;
 		vp_level[i].father=NULL;
 	}
 	marcel_vpmask_empty(&vp_level[i].vpset);
@@ -672,7 +672,7 @@ static void topo_discover(void) {
 				if (!(marcel_topo_levels[l+1][j].vpset &
 					~(marcel_topo_levels[l][i].vpset)))
 					marcel_topo_levels[l][i].arity++;
-			mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
+			mdebug("level %u,%u: vpset %"MA_PRIxVPM" arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
 		}
 	}
 	mdebug("arity done.\n");
@@ -722,10 +722,10 @@ static void topo_discover(void) {
 							if (!(marcel_topo_levels[l+2][m].vpset &
 								~(marcel_topo_levels[l+1][j+k].vpset)))
 								marcel_topo_levels[l+1][j+k].arity++;
-						mdebug("fake level %u,%u: vpset %lx arity %u\n",l+1,j+k,marcel_topo_levels[l+1][j+k].vpset,marcel_topo_levels[l+1][j+k].arity);
+						mdebug("fake level %u,%u: vpset %"MA_PRIxVPM" arity %u\n",l+1,j+k,marcel_topo_levels[l+1][j+k].vpset,marcel_topo_levels[l+1][j+k].arity);
 					}
 					marcel_topo_levels[l][i].arity = nbsublevels;
-					mdebug("now level %u,%u: vpset %lx has arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
+					mdebug("now level %u,%u: vpset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
 					MA_BUG_ON(k!=nbsublevels);
 					j += nbsublevels;
 				}
@@ -742,15 +742,15 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 			if (marcel_topo_levels[l][i].arity) {
-				mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
-				MA_BUG_ON(!(marcel_topo_levels[l][i].sons=
+				mdebug("level %u,%u: vpset %"MA_PRIxVPM" arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
+				MA_BUG_ON(!(marcel_topo_levels[l][i].children=
 					TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
 
 				m=0;
 				for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
 					if (!(marcel_topo_levels[l+1][j].vpset &
 						~(marcel_topo_levels[l][i].vpset))) {
-						marcel_topo_levels[l][i].sons[m]=
+						marcel_topo_levels[l][i].children[m]=
 							&marcel_topo_levels[l+1][j];
 						marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
 						marcel_topo_levels[l+1][j].index = m++;
@@ -765,7 +765,7 @@ static void topo_discover(void) {
 		marcel_topo_vp_level[i].number=i;
 		marcel_vpmask_only_vp(&marcel_topo_vp_level[i].vpset,i);
 		marcel_topo_vp_level[i].arity=0;
-		marcel_topo_vp_level[i].sons=NULL;
+		marcel_topo_vp_level[i].children=NULL;
 		marcel_topo_vp_level[i].father=NULL;
 	}
 	marcel_vpmask_empty(&marcel_topo_vp_level[i].vpset);
@@ -779,8 +779,8 @@ void ma_topo_exit(void) {
 	/* Last level is not freed because we need it in various places */
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
-			TBX_FREE(marcel_topo_levels[l][i].sons);
-			marcel_topo_levels[l][i].sons = NULL;
+			TBX_FREE(marcel_topo_levels[l][i].children);
+			marcel_topo_levels[l][i].children = NULL;
 		}
 		if (l) {
 			TBX_FREE(marcel_topo_levels[l]);

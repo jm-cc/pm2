@@ -197,7 +197,7 @@ static int see_down(struct marcel_topo_level *level,
 	}
 	while (n--) {
 		/* examiner les fils */
-		if (see(level->sons[i], power) || see_down(level->sons[i], NULL))
+		if (see(level->children[i], power) || see_down(level->children[i], NULL))
 			return 1;
 		i = (i+1) % level->arity;
 	}
@@ -229,7 +229,7 @@ int marcel_bubble_steal_work(void) {
 	ma_read_lock(&ma_idle_scheduler_lock);
 	if (ma_idle_scheduler) {
 		struct marcel_topo_level *me =
-			&marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
+			&marcel_topo_vp_level[marcel_current_vp()];
 		bubble_sched_debugl(7,"bubble steal on %d\n", LWP_NUMBER(LWP_SELF));
 		/* couln't find work on local runqueue, go see elsewhere */
 		ma_read_unlock(&ma_idle_scheduler_lock);

@@ -1407,20 +1407,20 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 	}
 
 	for (i=0;i<level->arity;i++) {
-		if (level->sons[i]->type == MARCEL_LEVEL_FAKE)
+		if (level->children[i]->type == MARCEL_LEVEL_FAKE)
 			snprintf(name, sizeof(name), "fake%d-%d",
-				levelnum, level->sons[i]->number);
+				levelnum, level->children[i]->number);
 		else
 			snprintf(name,sizeof(name), "%s%d",
-				base[level->sons[i]->type], level->sons[i]->number);
-		newrq = &level->sons[i]->sched;
-		ma_init_rq(newrq, name, rqtypes[level->sons[i]->type]);
+				base[level->children[i]->type], level->children[i]->number);
+		newrq = &level->children[i]->sched;
+		ma_init_rq(newrq, name, rqtypes[level->children[i]->type]);
 		newrq->level = levelnum;
 		newrq->father = rq;
-		newrq->vpset = level->sons[i]->vpset;
+		newrq->vpset = level->children[i]->vpset;
 		mdebug("runqueue %s has father %s\n", name, rq->name);
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,newrq);
-		init_subrunqueues(level->sons[i],newrq,levelnum+1);
+		init_subrunqueues(level->children[i],newrq,levelnum+1);
 	}
 }
 #endif

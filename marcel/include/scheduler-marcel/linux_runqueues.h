@@ -64,6 +64,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #define MA_MAX_PRIO		(MA_NOSCHED_PRIO+1)
 
 /** \brief Whether the thread has Real-Time priority */
+int ma_rt_task(marcel_task_t p);
 #define ma_rt_task(p)		((p)->sched.internal.entity.prio < MA_RT_PRIO)
 
 #section marcel_macros
@@ -147,27 +148,28 @@ struct ma_runqueue {
 	enum ma_rq_type type;
 };
 
-#section marcel_macros
-/** \brief Convert ma_runqueue_t *rq into ma_holder_t * */
-#define ma_holder_rq(rq) (&(rq)->hold)
-
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
 #depend "[marcel_macros]"
 
 /** \brief The main runqueue (for the whole machine) */
+ma_runqueue_t ma_main_runqueue;
 #define ma_main_runqueue (marcel_machine_level[0].sched)
 extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 #ifdef MA__LWPS
 /** \brief Runqueue of LWP \e lwp */
+ma_runqueue_t *ma_lwp_rq(ma_lwp_t lwp);
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
-/** \brief Runqueue of VP running on LWP \e lwp */
+/** \brief Runqueue of VP run by LWP \e lwp */
+ma_runqueue_t *ma_lwp_vprq(ma_lwp_t lwp);
 #define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->sched)
 /** \brief "Don't sched" runqueue of LWP \e lwp (for idle & such) */
+ma_runqueue_t *ma_dontsched_rq(ma_lwp_t lwp);
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
 /** \brief Whether runqueue covers VP \e vpnum */
+int ma_rq_covers(ma_runqueue_t *rq, int vpnum);
 #define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpmask_vp_ismember(&rq->vpset, vpnum))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
@@ -175,15 +177,21 @@ extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
 #define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
 #endif
-/** \brief Current LWP */
+/** \brief Current thread */
+marcel_task_t ma_lwp_curr(ma_lwp_t lwp);
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
+struct prio_array;
 /** \brief Queue of entities with priority \e prio in array \e array */
+struct list_head *ma_array_queue(struct prio_array *array, int prio);
 #define ma_array_queue(array,prio)	((array)->queue + (prio))
 /** \brief Queue of priority \e prio in runqueue \e rq */
+struct list_head *ma_rq_queue(ma_runqueue_t *rq, int prio);
 #define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
 /** \brief Whether queue \e queue is empty */
+int ma_queue_empty(struct list_head *queue);
 #define ma_queue_empty(queue)	list_empty(queue)
 /** \brief First entity in queue \e queue */
+marcel_entity_t *ma_queue_entry(struct list_head *queue);
 #define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, run_list)
 
 /** \brief Iterate through the entities held in queue \e queue */

@@ -183,7 +183,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				}
 				if (l[n]->arity) {
 					debug("and recurse\n");
-					__marcel_bubble_spread(&e[i], nentities, l[n]->sons, l[n]->arity);
+					__marcel_bubble_spread(&e[i], nentities, l[n]->children, l[n]->arity);
 				}
 			} else {
 				/* several items, just recurse */

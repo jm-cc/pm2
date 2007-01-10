@@ -1,8 +1,0 @@
-/* Topology management: */
-struct marcel_topo_level *l;
-l->father: struct marcel_topo_level *, NULL at top.
-l->sons: struct marcel_topo_level * [l->arity]
-l->level, l->number, l->index.
-l->sched: ma_runqueue_t
-for (i=0; i<marcel_topo_nblevels; i++)
-	for (l=&marcel_topo_levels[i][0]; l->vpset; l++)

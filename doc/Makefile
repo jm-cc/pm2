@@ -1,2 +1,2 @@
 all:
-	doxygen ../marcel/Doxyfile
+	doxygen ../modules/marcel/Doxyfile

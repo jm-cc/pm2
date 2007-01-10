@@ -395,10 +395,6 @@ static int ksoftirqd(void * __bind_cpu)
 			   If already offline, we'll be on wrong CPU:
 			   don't process */
 			ma_preempt_disable();
-#if 0
-			if (cpu_is_offline((long)__bind_cpu))
-				goto wait_to_die;
-#endif
 			ma_do_softirq();
 			ma_preempt_enable();
 			ma_cond_resched();
@@ -408,18 +404,6 @@ static int ksoftirqd(void * __bind_cpu)
 	}
 	__ma_set_current_state(MA_TASK_RUNNING);
 	return 0;
-#if 0
-wait_to_die:
-	ma_preempt_enable();
-	/* Wait for kthread_stop */
-	__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	while (!ma_kthread_should_stop()) {
-		ma_schedule();
-		__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	}
-	__ma_set_current_state(MA_TASK_RUNNING);
-	return 0;
-#endif
 }
 
 #if 0
@@ -512,15 +496,6 @@ static void ksoftirqd_init(ma_lwp_t lwp)
 
 	MA_BUG_ON(ma_topo_vpdata(ma_per_lwp(vp_level, lwp),tasklet_vec).list);
 	MA_BUG_ON(ma_topo_vpdata(ma_per_lwp(vp_level, lwp),tasklet_hi_vec).list);
-#if 0
-	p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
-	if (MA_IS_ERR(p)) {
-		pm2debug("ksoftirqd for %i failed\n", hotcpu);
-		return NOTIFY_BAD;
-	}
-	//ma_kthread_bind(p, hotcpu);
-	ma_topo_vpdata(ma_per_lwp(vp_level, hotcpu),ksoftirqd) = p;
-#endif
 }
 
 static void ksoftirqd_start(ma_lwp_t lwp)

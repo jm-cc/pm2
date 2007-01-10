@@ -153,7 +153,7 @@ struct ma_runqueue {
 #depend "[marcel_macros]"
 
 /** \brief The main runqueue (for the whole machine) */
-ma_runqueue_t ma_main_runqueue;
+extern ma_runqueue_t ma_main_runqueue;
 #define ma_main_runqueue (marcel_machine_level[0].sched)
 extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 

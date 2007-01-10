@@ -150,7 +150,7 @@ unsigned marcel_nbthreads(void)
 	return num + 1;		/* + 1 pour le main */
 }
 
-int marcel_per_lwp_nbthreads()
+unsigned marcel_per_lwp_nbthreads()
 {
 	unsigned num = 0;
 	struct marcel_topo_level *vp;

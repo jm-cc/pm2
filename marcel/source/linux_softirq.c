@@ -380,6 +380,11 @@ static int ksoftirqd(void * __bind_cpu)
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
  
 	while (!ma_kthread_should_stop()) {
+		if (tbx_unlikely(ma_in_atomic())) {
+			pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
+			ma_show_preempt_backtrace();
+			MA_BUG();
+		}
 		if (!ma_local_softirq_pending())
 			ma_schedule();
 

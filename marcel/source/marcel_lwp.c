@@ -421,7 +421,7 @@ static void lwp_init(ma_lwp_t lwp)
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
 	/* Elle doit prendre la main sur toute autre tâche de ce LWP */
-	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+	marcel_attr_setprio(&attr, 0);
 	marcel_attr_setinitrq(&attr, ma_lwp_rq(lwp));
 #ifdef PM2
 	{

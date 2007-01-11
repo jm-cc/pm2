@@ -1,8 +1,12 @@
-.PHONY: all upload wml-upload pdf-upload wml pdf clean wml-clean ps-clean
+.PHONY: all upload wml-upload pdf-upload wml pdf emph clean emph-clean wml-clean ps-clean
 
 XML2HTML		:=	./xml2html
 
 TARGET			:=	madMpiDoc
+
+CFILES			:=	$(wildcard code/*.c code/*.txt code/*.cfg)
+EMPHCFILES_PS		:=	$(CFILES:%=%-emph-ps)
+EMPHCFILES_HTML		:=	$(CFILES:%=%-emph-html)
 
 XML_FILES		:=	$(wildcard *.xml)
 DEPS			:=	$(XML_FILES)
@@ -46,7 +50,7 @@ $(WWW)/resources/$(TARGET).pdf: $(THISDIR)/$(TARGET).pdf
 
 wml: $(BUILD)/wml/$(TARGET)/index.wml
 
-$(BUILD)/wml/$(TARGET)/%.wml: $(TARGET).xml $(DEPS) $(FIGURES_HTML)
+$(BUILD)/wml/$(TARGET)/%.wml: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
 	$(XML2HTML)/bin/shell/xml2wml.sh $(TARGET).xml $(BUILD)/wml/$(TARGET) $(SECTIONS)
 
 pdf: $(THISDIR)/$(TARGET).pdf
@@ -55,21 +59,29 @@ $(THISDIR)/$(TARGET).pdf: $(BUILD)/ps/$(TARGET).ps
 	ps2pdf $< $@
 
 $(BUILD)/ps/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
-	cd $(BUILD)/ps/ && ln -sf ../../Figures
-	cd $(BUILD)/ps/ && ln -sf ../../Progs
+	cd $(BUILD)/ps/ && ln -sf ../../figures
+	cd $(BUILD)/ps/ && ln -sf ../../code
 	cd $(BUILD)/ps/ && ln -sf ../../$(XML2HTML)/data/latex/* .
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && dvips $(TARGET) -o 
 
-$(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS)
+$(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/ps
 	$(XML2HTML)/bin/shell/xml2latex.sh $(TARGET).xml $(BUILD)/ps $(SECTIONS)
 
+emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
+$(EMPHCFILES_PS): %-emph-ps: %
+	@perl -w emph.pl $< $@ ps 
+$(EMPHCFILES_HTML): %-emph-html: %
+	@perl -w emph.pl $< $@ html
+
 distclean: clean
 
-clean: wml-clean ps-clean
+clean: wml-clean ps-clean emph-clean
 	rm -rf $(BUILD)
+emph-clean:; rm -f $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 wml-clean:; rm -rf $(BUILD)/wml
 ps-clean:; rm -rf $(BUILD)/ps $(THISDIR)/$(TARGET).pdf
+

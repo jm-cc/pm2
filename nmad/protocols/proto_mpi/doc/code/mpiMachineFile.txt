@@ -1,0 +1,5 @@
+% cat mymachines
+node-16.bordeaux.grid5000.fr
+node-41.bordeaux.grid5000.fr
+node-47.bordeaux.grid5000.fr
+% mpirun -machinefile mymachines ...

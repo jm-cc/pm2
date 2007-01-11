@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE TEXT SYSTEM "file:./xml2html/data/xml/DOCUMENT.dtd">
+
+<TEXT>
+
+<SUBSECTION TITLE="Basic Use">
+
+<P>
+The directory <TT>$PM2_ROOT/nmad/examples/mpi/basics</TT> contains
+basic examples that can be used to test your Mad-MPI. We will go
+through this section by using the program <TT>cpi.c</TT>.
+</P>
+
+<UL>
+<LI>
+<P>
+On top of the environment variables defined in Section <REF
+LABEL="variables"/>, you need to define the following environment
+variable which is needed by PM2.
+</P>
+
+<CODE FILE="./code/setLeoRsh.txt"/>
+</LI>
+
+<LI>
+<P>
+Compile your application with <TT>mpicc</TT>.
+</P>
+<CODE FILE="./code/compileCpi.txt"/>
+</LI>
+
+<LI>
+<P>
+You need to make sure you can connect to the machines defined in your
+channel using the SSH protocol. Mad-MPI applications are launched
+using the PM2's mechanisms to remotely connect to the machines, this
+requires a SSH access to the machines without password or pass-phrase.
+You might need to change the definition of the environment variable
+<TT>LEO_RSH</TT> to match the configuration of your SSH connection.
+Here an example to test your configuration is working:
+</P>
+<CODE FILE="./code/checkSsh.txt"/>
+</LI>
+
+<LI>
+<P>
+We suppose for now the network configuration file
+<TT>networks.cfg</TT> is present in the directory
+<TT>${PM2_ROOT}/nmad/examples/mpi/</TT> as explained in Section <REF
+LABEL="installMadMpi"/>. Look at the contents of that file to see
+which machines you can use for your application. The machines can be
+specified by:
+</P>
+<UL>
+  <LI>
+  <P>
+  Using the parameter <TT>-machinefile</TT> to specify the file
+  containing the list of machines you wish to use.
+  </P>
+  </LI>
+
+  <LI>
+  <P>
+  Using a OAR reservation, the application will be launched on
+  the machines reserved by OAR.
+  </P>
+  </LI>
+
+  <LI>
+  <P>
+  By setting the environment variable <TT>MPI_HOST_FILE</TT>
+  to a file containing the list of the machines you wish to use.
+  </P>
+  </LI>
+</UL>
+<CODE FILE="./code/mpiMachineFile.txt"/>
+<CODE FILE="./code/mpiHostFile.txt"/>
+</LI>
+
+<LI>
+<P>
+Start your application using the command <TT>mpirun</TT> taking at
+least in parameter the number of processes to launch by using the
+standard MPI option <TT>-np</TT> and the name of the application. The
+number of processes does not have to be the number of machines in the
+machine file (as specified above). Mad-MPI will use a subset of these
+machines, or will start more than one process per machine accordingly.
+</P>
+<CODE FILE="./code/executeCpi2.txt"/>
+</LI>
+
+<LI>
+<P>
+You should obtain an output similar to:
+</P>
+<CODE FILE="./code/pi.out"/>
+</LI>
+</UL>
+
+<P>
+<B>Remark:</B> The default behavior of Mad-MPI is to launch
+processes only on the nodes specified in the channel configuration
+file. No process is spawned on the local machine (unless it is listed
+in the channel configuration file)
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Advanced Use" LABEL="advanced">
+
+<UL>
+
+<LI>
+<P>
+The default network file used for launching jobs is
+<TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>. This file has to
+be provided by the person installing
+Mad-MPI. However, users can select another network file by defining
+the environment variable <TT>MPI_NET_FILE</TT> with the location of
+the new file, e.g.: 
+</P>
+
+<CODE FILE="./code/setMpiNetFile.txt"/>
+</LI>
+
+<LI>
+<P>
+If the machines you wish to use to run your application are
+interconnected with more than 1 network, then Mad-MPI will by default
+select the first network to connect the nodes. To use another network,
+you can set the environment variable <TT>MPI_NMAD_PROTOCOL</TT> to
+the name of this network.
+</P>
+
+<CODE FILE="./code/setMpichMadProtocol.txt"/>
+</LI>
+
+<LI>
+<P>
+If you wish to start your application under the debugger, you can use
+the option <TT>-dbg</TT>. All the processes of the MPI application
+will be launched through <TT>gdb</TT>, the GNU debugger.
+</P>
+<CODE FILE="./code/executeWithGdb.txt"/>
+</LI>
+
+<LI>
+<P>
+If you wish to start your application under valgrind, you can use
+the option <TT>-valgrind</TT>.
+</P>
+<CODE FILE="./code/executeWithValgrind.txt"/>
+</LI>
+
+</UL>
+
+</SUBSECTION>
+
+</TEXT>
+

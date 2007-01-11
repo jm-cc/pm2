@@ -1,0 +1,1 @@
+% export PM2_ROOT=$HOME/soft/pm2

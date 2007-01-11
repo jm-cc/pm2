@@ -1,0 +1,2 @@
+% cd $HOME/soft
+% svn checkout svn://scm.gforge.inria.fr/svn/pm2/trunk pm2

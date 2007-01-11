@@ -1,0 +1,1 @@
+% export MPI_NET_FILE=$HOME/networks.cfg

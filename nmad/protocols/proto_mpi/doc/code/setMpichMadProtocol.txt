@@ -1,0 +1,1 @@
+% export MPI_NMAD_PROTOCOL=mx

@@ -1,0 +1,6 @@
+% echo $LEO_RSH
+ssh -n -f
+% $LEO_RSH jack uname -a
+% Linux jack 2.6.4-fkt #14 SMP Thu Sep 23 2004 i686 GNU/Linux
+
+%

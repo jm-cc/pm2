@@ -1,0 +1,2 @@
+% export MX_DIR=/softs/mx
+% export SISCI_PATH=/opt/DIS

@@ -1,0 +1,8 @@
+% cat $OAR_NODEFILE
+node-16.bordeaux.grid5000.fr
+node-41.bordeaux.grid5000.fr
+node-47.bordeaux.grid5000.fr
+% cat $MPI_HOST_FILE
+node-16.bordeaux.grid5000.fr
+node-41.bordeaux.grid5000.fr
+%

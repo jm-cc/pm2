@@ -199,6 +199,13 @@ mad_nmad_get_core(void) {
   return p_core;
 }
 
+#if defined CONFIG_SCHED_OPT
+struct nm_so_interface	*
+mad_nmad_get_sr_interface(void) {
+  return p_so_if;
+}
+#endif
+
 static
 void
 nm_mad3_init_core(int	 *argc,

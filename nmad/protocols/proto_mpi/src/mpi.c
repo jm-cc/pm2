@@ -36,7 +36,6 @@ int MPI_Init(int *argc,
 
   p_mad_session_t                  session    = NULL;
   struct nm_core                  *p_core     = NULL;
-  int                              err;
   int                              dest;
   int                              source;
   p_mad_channel_t                  channel    = NULL;
@@ -78,10 +77,8 @@ int MPI_Init(int *argc,
    * Reference to the NewMadeleine core object
    */
   p_core = mad_nmad_get_core();
-  err = nm_so_sr_init(p_core, &p_so_sr_if);
-  CHECK_RETURN_CODE(err, "nm_so_sr_interface_init");
-  err =  nm_so_pack_interface_init(p_core, &p_so_pack_if);
-  CHECK_RETURN_CODE(err, "nm_so_pack_interface_init");
+  p_so_sr_if = mad_nmad_get_sr_interface();
+  p_so_pack_if = (struct nm_so_pack_interface *)p_so_sr_if;
 
   /*
    * Internal initialisation

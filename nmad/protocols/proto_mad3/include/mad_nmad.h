@@ -36,4 +36,9 @@ mad_nmad_register(p_mad_driver_interface_t);
 struct nm_core	*
 mad_nmad_get_core(void);
 
+#if defined CONFIG_SCHED_OPT
+struct nm_so_interface	*
+mad_nmad_get_sr_interface(void);
+#endif
+
 #endif /* MAD_NMAD_H */

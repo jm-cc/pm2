@@ -64,7 +64,7 @@ enum marcel_entity {
 #depend "marcel_barrier.h[types]"
 #depend "marcel_stats.h[marcel_types]"
 
-/** \brief Holder information */
+/** Holder information */
 struct ma_holder {
 	/** \brief Type of holder */
 	enum marcel_holder type;
@@ -146,8 +146,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
-/** \brief Entity information
- *
+/**
  * An entity is held in some initial holder (::init_holder), is put on some
  * scheduling holder (::sched_holder) by bubble schedulers, and is actually
  * still running in some running holder (::run_holder).
@@ -189,6 +188,9 @@ struct ma_sched_entity {
 	struct list_head memory_areas;
 	/** \brief Lock for ::memory_areas */
 	ma_spinlock_t memory_areas_lock;
+
+	/** \brief General-purpose list link for bubble schedulers */
+	struct list_head next;
 };
 
 #section types

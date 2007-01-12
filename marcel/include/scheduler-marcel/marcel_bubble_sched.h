@@ -110,20 +110,6 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 /** \brief Joins bubble \e bubble, i.e. waits for all of its threads to terminate. */
 void marcel_bubble_join(marcel_bubble_t *bubble);
 
-/** \brief
- * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on
- * the runqueue of the holding bubble.
- */
-int marcel_bubble_detach(marcel_bubble_t *bubble);
-
-/** \brief
- * Gathers bubbles contained in \e b back into it, i.e. get them from their
- * runqueues and put them back into \e b.
- */
-void ma_bubble_gather(marcel_bubble_t *b);
-/* Internal version (preemption and local bottom halves are already disabled) */
-void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
-
 /** \brief Executes the barrier of bubble \e bubble, which synchronizes all
  * threads of the bubble.
  */
@@ -178,7 +164,7 @@ typedef enum {
 } ma_bubble_status;
 #endif
 
-/** \brief Structure of a bubble */
+/** Structure of a bubble */
 struct marcel_bubble {
 	/* garder en premier, pour que les conversions bubble / entity soient
 	 * triviales */
@@ -275,6 +261,20 @@ void ma_bubble_tick(marcel_bubble_t *bubble);
  * The synthesis of statistics can be read thanks to ma_bubble_hold_stats_get()
  */
 void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
+
+/** \brief
+ * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on
+ * the runqueue of the holding bubble.
+ */
+int marcel_bubble_detach(marcel_bubble_t *bubble);
+
+/** \brief
+ * Gathers bubbles contained in \e b back into it, i.e. get them from their
+ * runqueues and put them back into \e b.
+ */
+void ma_bubble_gather(marcel_bubble_t *b);
+/* Internal version (preemption and local bottom halves are already disabled) */
+void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
 
 /******************************************************************************
  * internal view

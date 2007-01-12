@@ -30,7 +30,7 @@
 /** \brief Spread a bubble
  *
  * This functions spreads bubble \e b on the topology level \e l.
- * marcel_bubble_gather() may be useful afterwards for gathering back the
+ * ma_bubble_gather() may be useful afterwards for gathering back the
  * content of ::b.
  */
 void marcel_bubble_spread(marcel_bubble_t *b, marcel_topo_level_t *l);

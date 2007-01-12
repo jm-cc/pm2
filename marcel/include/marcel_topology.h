@@ -21,7 +21,7 @@
  * Topology is recorded in ::marcel_topo_levels, an array of arrays of struct
  * marcel_topo_level.
  *
- * It is usually browse either as a tree, for instance:
+ * It is usually browsed either as a tree, for instance:
  *
  * \code
  * void f(struct marcel_topo_level *l, struct marcel_topo_level *son) {
@@ -359,7 +359,7 @@ struct marcel_topo_vpdata {
 
 #section marcel_structures
 
-/** \brief Structure of a topology level */
+/** Structure of a topology level */
 struct marcel_topo_level {
 	enum marcel_topo_level_e type;	/**< \brief Type of level */
 	unsigned number;		/**< \brief Horizontal index among the machine */

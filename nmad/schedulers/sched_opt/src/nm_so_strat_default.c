@@ -188,9 +188,19 @@ static int init_gate(struct nm_gate *p_gate)
   return NM_ESUCCESS;
 }
 
+static int exit_gate(struct nm_gate *p_gate)
+{
+  struct nm_so_strat_default_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;
+  TBX_FREE(priv);
+  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = NULL;
+
+  return NM_ESUCCESS;
+}
+
 nm_so_strategy nm_so_strat_default = {
   .init = init,
   .init_gate = init_gate,
+  .exit_gate = exit_gate,
   .pack = pack,
   .pack_ctrl = pack_ctrl,
   .try = NULL,

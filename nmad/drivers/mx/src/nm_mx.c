@@ -188,11 +188,19 @@ nm_mx_init		(struct nm_drv *p_drv) {
 static
 int
 nm_mx_exit		(struct nm_drv *p_drv) {
+        struct nm_mx_drv	*p_mx_drv	= NULL;
         mx_return_t	mx_ret	= MX_SUCCESS;
         int err;
 
         mx_ret	= mx_finalize();
         nm_mx_check_return("mx_finalize", mx_ret);
+
+        p_mx_drv = p_drv->priv;
+        TBX_FREE(p_mx_drv);
+        p_drv->priv = NULL;
+
+        TBX_FREE(p_drv->url);
+        p_drv->url = NULL;
 
         err = NM_ESUCCESS;
 
@@ -262,7 +270,6 @@ static
 int
 nm_mx_close_track	(struct nm_trk *p_trk) {
         mx_return_t		 mx_ret		= MX_SUCCESS;
-        int err;
         struct nm_mx_trk	*p_mx_trk	= NULL;
 
         /* mx endpoint
@@ -272,9 +279,9 @@ nm_mx_close_track	(struct nm_trk *p_trk) {
         nm_mx_check_return("mx_close_endpoint", mx_ret);
         TBX_FREE(p_trk->priv);
 
-        err = NM_ESUCCESS;
+        TBX_FREE(p_trk->url);
 
-        return err;
+        return NM_ESUCCESS;
 }
 
 static
@@ -519,16 +526,23 @@ nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_mx_gate	*p_mx_gate	= NULL;
+        struct nm_trk		*p_trk		= NULL;
+        struct nm_mx_trk	*p_mx_trk	= NULL;
         int err = NM_ESUCCESS;
 
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
+        p_trk		= p_crq->p_trk;
+
+        p_mx_trk	= p_trk->priv;
         p_mx_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
 
         if (p_mx_gate) {
           p_mx_gate->ref_cnt--;
 
           if (!p_mx_gate->ref_cnt) {
+            TBX_FREE(p_mx_trk->gate_map);
+            p_mx_trk->gate_map = NULL;
             TBX_FREE(p_mx_gate);
             p_mx_gate = NULL;
             p_gate->p_gate_drv_array[p_drv->id]->info = NULL;

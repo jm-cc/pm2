@@ -164,6 +164,8 @@ nm_so_close_gate(struct nm_sched	*p_sched,
   struct nm_so_sched *p_so_sched = p_sched->sch_private;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
+  p_so_sched->current_strategy->exit_gate(p_gate);
+
   if(!p_so_sched->current_interface)
     TBX_FAILURE("Interface not defined");
   p_so_sched->current_interface->exit_gate(p_gate);

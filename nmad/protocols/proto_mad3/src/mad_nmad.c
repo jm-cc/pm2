@@ -119,6 +119,9 @@ static void
 mad_nmad_adapter_init(p_mad_adapter_t);
 
 static void
+mad_nmad_adapter_exit(p_mad_adapter_t);
+
+static void
 mad_nmad_channel_init(p_mad_channel_t);
 
 static void
@@ -253,7 +256,7 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->link_exit                  = NULL;
         interface->connection_exit            = NULL;
         interface->channel_exit               = NULL;
-        interface->adapter_exit               = NULL;
+        interface->adapter_exit               = mad_nmad_adapter_exit;
         interface->driver_exit                = mad_nmad_driver_exit;
         interface->choice                     = NULL;
         interface->get_static_buffer          = NULL;
@@ -568,6 +571,15 @@ mad_nmad_adapter_init(p_mad_adapter_t	a) {
                 a->parameter	= tbx_strdup("-");
         }
         NM_LOG_OUT();
+}
+
+static
+void
+mad_nmad_adapter_exit(p_mad_adapter_t	a) {
+        p_mad_nmad_adapter_specific_t	as	= a->specific;
+
+        TBX_FREE(as);
+        a->specific = NULL;
 }
 
 static

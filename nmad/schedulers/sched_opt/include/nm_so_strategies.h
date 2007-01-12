@@ -25,6 +25,9 @@ typedef int (*nm_so_strategy_init_func)(void);
 
 typedef int (*nm_so_strategy_init_gate)(struct nm_gate *p_gate);
 
+/* Termination */
+typedef int (*nm_so_strategy_exit_gate)(struct nm_gate *p_gate);
+
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
 typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
@@ -60,6 +63,7 @@ typedef int (*nm_so_strategy_rdv_accept_func)(struct nm_gate *p_gate,
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
   nm_so_strategy_init_gate init_gate;
+  nm_so_strategy_exit_gate exit_gate;
   nm_so_strategy_pack_func pack;
   nm_so_strategy_pack_ctrl_func pack_ctrl;
   nm_so_strategy_try_func try;

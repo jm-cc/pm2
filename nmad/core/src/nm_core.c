@@ -98,7 +98,6 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
 
 /* clean up a track.
  *
- * not yet implemented
  */
 int
 nm_core_trk_free(struct nm_core		*p_core,
@@ -108,6 +107,9 @@ nm_core_trk_free(struct nm_core		*p_core,
 
         p_drv = p_trk->p_drv;
         err = p_drv->ops.close_trk(p_trk);
+
+        TBX_FREE(p_trk);
+        p_trk = NULL;
 
         return err;
 }
@@ -371,6 +373,11 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   for(i=0 ; i<p_core->nb_drivers ; i++) {
     p_drv = p_core->driver_array + i;
     err	= p_sched->ops.close_trks(p_sched, p_drv);
+    if (err != NM_ESUCCESS) {
+      NM_DISPF("drv.exit returned %d", err);
+      return err;
+    }
+    err = p_drv->ops.exit(p_drv);
     if (err != NM_ESUCCESS) {
       NM_DISPF("drv.exit returned %d", err);
       return err;

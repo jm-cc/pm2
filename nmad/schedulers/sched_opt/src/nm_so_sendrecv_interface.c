@@ -89,6 +89,15 @@ nm_so_sr_init(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
+int
+nm_so_sr_exit(struct nm_so_interface *p_so_interface)
+{
+  TBX_FREE(p_so_interface);
+  p_so_interface = NULL;
+  return NM_ESUCCESS;
+}
+
+
 /* Send operations */
 
 int

@@ -347,7 +347,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
 
     for(j=0 ; j<255 ; j++) {
       if (p_gate->p_gate_drv_array[j] != NULL) {
-        struct nm_drv		 *p_drv = p_gate->p_gate_drv_array[j]->p_drv;
+        p_drv = p_gate->p_gate_drv_array[j]->p_drv;
         for(k=0 ; k<p_gate->p_gate_drv_array[j]->p_drv->nb_tracks ; k++) {
           struct nm_trk *p_trk = p_drv->p_track_array[k];
           struct nm_cnx_rq	 rq	= {
@@ -360,6 +360,15 @@ nm_core_driver_exit(struct nm_core  *p_core) {
             };
           rq.p_drv->ops.disconnect(&rq);
         }
+        err	= p_sched->ops.close_trks(p_sched, p_drv);
+        if (err != NM_ESUCCESS) {
+          NM_DISPF("drv.exit returned %d", err);
+          return err;
+        }
+        TBX_FREE(p_drv->p_track_array);
+        p_drv->p_track_array = NULL;
+        TBX_FREE(p_gate->p_gate_drv_array[j]);
+        p_gate->p_gate_drv_array[j] = NULL;
       }
     }
 
@@ -372,11 +381,6 @@ nm_core_driver_exit(struct nm_core  *p_core) {
 
   for(i=0 ; i<p_core->nb_drivers ; i++) {
     p_drv = p_core->driver_array + i;
-    err	= p_sched->ops.close_trks(p_sched, p_drv);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("drv.exit returned %d", err);
-      return err;
-    }
     err = p_drv->ops.exit(p_drv);
     if (err != NM_ESUCCESS) {
       NM_DISPF("drv.exit returned %d", err);

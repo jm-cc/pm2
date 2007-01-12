@@ -28,6 +28,9 @@ extern int
 nm_so_sr_init(struct nm_core *p_core,
 	      struct nm_so_interface **p_so_interface);
 
+int
+nm_so_sr_exit(struct nm_so_interface *p_so_interface);
+
 
 extern int
 nm_so_sr_isend(struct nm_so_interface *p_so_interface,

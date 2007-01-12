@@ -296,6 +296,7 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
 static
 void
 mad_nmad_driver_exit(p_mad_driver_t	   d) {
+  p_mad_nmad_driver_specific_t	 ds		= d->specific;
   int err;
 
   err = nm_core_driver_exit(p_core);
@@ -308,6 +309,14 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     DISP("nm_core__exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
+  err = nm_so_sr_exit(p_so_if);
+  if(err != NM_ESUCCESS) {
+    DISP("nm_so_sr_exit return err = %d\n", err);
+    TBX_FAILURE("nmad error");
+  }
+
+  TBX_FREE(ds->l_url);
+  ds->l_url = NULL;
   NM_LOG_OUT();
 }
 

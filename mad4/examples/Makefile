@@ -13,6 +13,13 @@
 
 export FLAVOR_DEFAULT:=mad4
 
-MOD_SRC	:= $(PM2_ROOT)/nmad/examples/sched_opt
+NMAD_SCHED := $(shell pm2-config --schedulers)
+
+ifeq ($(NMAD_SCHED),sched_opt)
+  MOD_SRC += $(PM2_ROOT)/nmad/examples/sched_opt
+else
+  MOD_SRC += $(PM2_ROOT)/nmad/examples/basic
+  MOD_SRC += $(PM2_ROOT)/nmad/examples/mini
+endif
 
 include $(PM2_ROOT)/make/apps.mak

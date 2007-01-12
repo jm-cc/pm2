@@ -74,6 +74,16 @@ nm_so_schedule_init (struct nm_sched *p_sched)
 }
 
 static int
+nm_so_schedule_exit (struct nm_sched *p_sched)
+{
+  struct nm_so_sched *p_priv = p_sched->sch_private;
+
+  TBX_FREE(p_priv);
+  p_sched->sch_private = NULL;
+  return NM_ESUCCESS;
+}
+
+static int
 nm_so_close_trks(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
   struct nm_core *p_core = p_sched->p_core;
@@ -148,6 +158,21 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
 }
 
 static int
+nm_so_close_gate(struct nm_sched	*p_sched,
+                 struct nm_gate		*p_gate)
+{
+  struct nm_so_sched *p_so_sched = p_sched->sch_private;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+  if(!p_so_sched->current_interface)
+    TBX_FAILURE("Interface not defined");
+  p_so_sched->current_interface->exit_gate(p_gate);
+
+  TBX_FREE(p_so_gate);
+  return NM_ESUCCESS;
+}
+
+static int
 nm_so_init_gate	(struct nm_sched	*p_sched,
                  struct nm_gate		*p_gate)
 {
@@ -200,11 +225,13 @@ int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {
   p_ops->init			= nm_so_schedule_init;
+  p_ops->exit			= nm_so_schedule_exit;
 
   p_ops->init_trks		= nm_so_init_trks;
   p_ops->init_gate		= nm_so_init_gate;
 
   p_ops->close_trks             = nm_so_close_trks;
+  p_ops->close_gate             = nm_so_close_gate;
 
   p_ops->out_schedule_gate      = nm_so_out_schedule_gate;
   p_ops->out_process_success_rq = nm_so_out_process_success_rq;

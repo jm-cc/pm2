@@ -300,6 +300,11 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     DISP("nm_core_driver_exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
+  err = nm_core_exit(p_core);
+  if(err != NM_ESUCCESS) {
+    DISP("nm_core__exit return err = %d\n", err);
+    TBX_FAILURE("nmad error");
+  }
   NM_LOG_OUT();
 }
 

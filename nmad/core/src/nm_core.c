@@ -173,6 +173,24 @@ nm_core_schedule_init(struct nm_core *p_core,
         goto out;
 }
 
+/* shutdown a scheduler.
+ *
+ */
+static
+int
+nm_core_schedule_exit(struct nm_core *p_core) {
+        struct nm_sched	*p_sched	= p_core->p_sched;
+        int err;
+
+        err = p_sched->ops.exit(p_sched);
+
+        TBX_FREE(p_sched);
+        p_core->p_sched = NULL;
+
+        return err;
+}
+
+
 /* load and initialize a protocol.
  *
  * out parameters:
@@ -318,9 +336,38 @@ int
 nm_core_driver_exit(struct nm_core  *p_core) {
   struct nm_drv	  *p_drv    = NULL;
   struct nm_sched *p_sched  = NULL;
-  int i, err;
+  struct nm_gate  *p_gate   = NULL;
+  int i, j, k, err;
 
   p_sched = p_core->p_sched;
+  for(i=0 ; i<p_core->nb_gates ; i++) {
+    p_gate = p_core->gate_array + i;
+
+    for(j=0 ; j<255 ; j++) {
+      if (p_gate->p_gate_drv_array[j] != NULL) {
+        struct nm_drv		 *p_drv = p_gate->p_gate_drv_array[j]->p_drv;
+        for(k=0 ; k<p_gate->p_gate_drv_array[j]->p_drv->nb_tracks ; k++) {
+          struct nm_trk *p_trk = p_drv->p_track_array[k];
+          struct nm_cnx_rq	 rq	= {
+                .p_gate			= p_gate,
+                .p_drv			= p_drv,
+                .p_trk			= p_trk,
+                .remote_host_url	= NULL,
+                .remote_drv_url		= NULL,
+                .remote_trk_url		= NULL
+            };
+          rq.p_drv->ops.disconnect(&rq);
+        }
+      }
+    }
+
+    err = p_sched->ops.close_gate(p_sched, p_gate);
+     if (err != NM_ESUCCESS) {
+      NM_DISPF("gate.exit returned %d", err);
+      return err;
+     }
+  }
+
   for(i=0 ; i<p_core->nb_drivers ; i++) {
     p_drv = p_core->driver_array + i;
     err	= p_sched->ops.close_trks(p_sched, p_drv);
@@ -329,6 +376,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
       return err;
     }
   }
+
   return err;
 }
 
@@ -662,3 +710,13 @@ nm_core_init		(int			 *argc,
         TBX_FREE(p_core);
         goto out;
 }
+
+/* shutdown the core struct and the main scheduler
+ */
+int
+nm_core_exit           (struct nm_core		*p_core) {
+  nm_core_schedule_exit(p_core);
+  TBX_FREE(p_core);
+  return NM_ESUCCESS;
+}
+

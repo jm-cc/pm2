@@ -22,6 +22,9 @@ struct nm_gate;
 /* Initialization */
 typedef int (*nm_so_interface_init_gate)(struct nm_gate *p_gate);
 
+/* Termination */
+typedef int (*nm_so_interface_exit_gate)(struct nm_gate *p_gate);
+
 /* Handle the success of an operation. */
 typedef int (*nm_so_interface_pack_success)(struct nm_gate *p_gate,
 					    uint8_t tag, uint8_t seq);
@@ -31,6 +34,7 @@ typedef int (*nm_so_interface_unpack_success)(struct nm_gate *p_gate,
 
 struct nm_so_interface_ops {
   nm_so_interface_init_gate init_gate;
+  nm_so_interface_exit_gate exit_gate;
   nm_so_interface_pack_success pack_success;
   nm_so_interface_unpack_success unpack_success;
 };

@@ -47,6 +47,7 @@ struct any_src_status {
 static struct any_src_status any_src[NM_SO_MAX_TAGS];
 
 static int nm_so_sr_init_gate(struct nm_gate *p_gate);
+static int nm_so_sr_exit_gate(struct nm_gate *p_gate);
 static int nm_so_sr_pack_success(struct nm_gate *p_gate,
                                  uint8_t tag, uint8_t seq);
 static int nm_so_sr_unpack_success(struct nm_gate *p_gate,
@@ -55,6 +56,7 @@ static int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
 struct nm_so_interface_ops sr_ops = {
   .init_gate = nm_so_sr_init_gate,
+  .exit_gate = nm_so_sr_exit_gate,
   .pack_success = nm_so_sr_pack_success,
   .unpack_success = nm_so_sr_unpack_success,
 };
@@ -372,6 +374,17 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
 
   p_so_gate->interface_private = p_sr_gate;
 
+  return NM_ESUCCESS;
+}
+
+static
+int nm_so_sr_exit_gate(struct nm_gate *p_gate)
+{
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+
+  TBX_FREE(p_sr_gate);
+  p_so_gate->interface_private = NULL;
   return NM_ESUCCESS;
 }
 

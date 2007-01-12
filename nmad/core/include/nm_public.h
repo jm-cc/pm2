@@ -32,6 +32,9 @@ nm_core_init		(int			 *argc,
                          int (*sched_load)(struct nm_sched_ops *));
 
 int
+nm_core_exit           (struct nm_core		*p_core);
+
+int
 nm_core_proto_init	(struct nm_core		 *p_core,
                          int (*proto_load)(struct nm_proto_ops *),
                          struct nm_proto	**pp_proto);

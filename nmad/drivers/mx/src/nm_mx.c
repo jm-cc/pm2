@@ -70,6 +70,7 @@ struct nm_mx_cnx {
 
 struct nm_mx_gate {
         struct nm_mx_cnx	cnx_array[255];
+  	int			ref_cnt;
 };
 
 struct nm_mx_pkt_wrap {
@@ -306,7 +307,10 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
+        } else {
+          p_mx_gate->ref_cnt++;
         }
+
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
 
         drv_url		= p_crq->remote_drv_url;
@@ -425,7 +429,10 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
+        } else {
+          p_mx_gate->ref_cnt++;
         }
+
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
 
         if (p_mx_trk->next_match_info-1) {
@@ -509,12 +516,24 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 static
 int
 nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
-        int err;
+        struct nm_gate		*p_gate		= NULL;
+        struct nm_drv		*p_drv		= NULL;
+        struct nm_mx_gate	*p_mx_gate	= NULL;
+        int err = NM_ESUCCESS;
 
+        p_gate		= p_crq->p_gate;
+        p_drv		= p_crq->p_drv;
+        p_mx_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
 
-        /* nothing
-         */
-        err = NM_ESUCCESS;
+        if (p_mx_gate) {
+          p_mx_gate->ref_cnt--;
+
+          if (!p_mx_gate->ref_cnt) {
+            TBX_FREE(p_mx_gate);
+            p_mx_gate = NULL;
+            p_gate->p_gate_drv_array[p_drv->id]->info = NULL;
+          }
+        }
 
         return err;
 }
@@ -679,7 +698,7 @@ nm_mx_do_poll(xpaul_server_t	        server,
 
         LOG_IN();
 	p_ev = struct_up(req,  struct nm_pkt_wrap, inst);
-	
+
 	p_ev->err=nm_mx_poll_iov(p_ev);
 
 	if(p_ev->err==NM_ESUCCESS)

@@ -24,6 +24,8 @@ struct nm_sched_ops {
         /* scheduler commands */
         int (*init)			(struct nm_sched *p_sched);
 
+        int (*exit)			(struct nm_sched *p_sched);
+
 
         /* session commands */
         int (*init_trks)		(struct nm_sched	 *p_sched,
@@ -34,6 +36,9 @@ struct nm_sched_ops {
 
         int (*close_trks)		(struct nm_sched	 *p_sched,
                                          struct nm_drv		 *p_drv);
+
+        int (*close_gate)		(struct nm_sched	 *p_sched,
+                                         struct nm_gate		 *p_gate);
 
 
         /* schedule and post new outgoing buffers */

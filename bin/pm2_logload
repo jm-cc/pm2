@@ -29,6 +29,7 @@ do
 done
 
 logfile="/tmp/pm2log-${USER:-nobody}-${num}"
+echo $logfile
 
 [ -f $logfile ] && rm -f $logfile
 

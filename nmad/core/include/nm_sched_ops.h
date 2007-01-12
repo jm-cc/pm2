@@ -32,6 +32,8 @@ struct nm_sched_ops {
         int (*init_gate)		(struct nm_sched	 *p_sched,
                                          struct nm_gate		 *p_gate);
 
+        int (*close_trks)		(struct nm_sched	 *p_sched,
+                                         struct nm_drv		 *p_drv);
 
 
         /* schedule and post new outgoing buffers */

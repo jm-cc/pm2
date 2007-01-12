@@ -103,11 +103,11 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
 int
 nm_core_trk_free(struct nm_core		*p_core,
                  struct nm_trk		*p_trk) {
+        struct nm_drv		 *p_drv;
 	int	err;
 
-        /* TODO: implement */
-#warning TODO
-        err	= NM_ESUCCESS;
+        p_drv = p_trk->p_drv;
+        err = p_drv->ops.close_trk(p_trk);
 
         return err;
 }
@@ -309,6 +309,27 @@ nm_core_driver_init(struct nm_core	 *p_core,
         NM_LOG_OUT();
 
         return err;
+}
+
+/* shutdown a driver.
+ *
+ */
+int
+nm_core_driver_exit(struct nm_core  *p_core) {
+  struct nm_drv	  *p_drv    = NULL;
+  struct nm_sched *p_sched  = NULL;
+  int i, err;
+
+  p_sched = p_core->p_sched;
+  for(i=0 ; i<p_core->nb_drivers ; i++) {
+    p_drv = p_core->driver_array + i;
+    err	= p_sched->ops.close_trks(p_sched, p_drv);
+    if (err != NM_ESUCCESS) {
+      NM_DISPF("drv.exit returned %d", err);
+      return err;
+    }
+  }
+  return err;
 }
 
 /* initialize a new gate.

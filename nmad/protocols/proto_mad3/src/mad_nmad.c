@@ -113,6 +113,9 @@ static void
 mad_nmad_driver_init(p_mad_driver_t, int *, char ***);
 
 static void
+mad_nmad_driver_exit(p_mad_driver_t);
+
+static void
 mad_nmad_adapter_init(p_mad_adapter_t);
 
 static void
@@ -251,7 +254,7 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->connection_exit            = NULL;
         interface->channel_exit               = NULL;
         interface->adapter_exit               = NULL;
-        interface->driver_exit                = NULL;
+        interface->driver_exit                = mad_nmad_driver_exit;
         interface->choice                     = NULL;
         interface->get_static_buffer          = NULL;
         interface->return_static_buffer       = NULL;
@@ -287,6 +290,18 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         return "nmad";
 }
 
+static
+void
+mad_nmad_driver_exit(p_mad_driver_t	   d) {
+  int err;
+
+  err = nm_core_driver_exit(p_core);
+  if(err != NM_ESUCCESS) {
+    DISP("nm_core_driver_exit return err = %d\n", err);
+    TBX_FAILURE("nmad error");
+  }
+  NM_LOG_OUT();
+}
 
 static
 void

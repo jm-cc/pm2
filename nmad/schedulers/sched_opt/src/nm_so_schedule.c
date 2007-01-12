@@ -74,6 +74,24 @@ nm_so_schedule_init (struct nm_sched *p_sched)
 }
 
 static int
+nm_so_close_trks(struct nm_sched	*p_sched,
+                 struct nm_drv		*p_drv) {
+  struct nm_core *p_core = p_sched->p_core;
+  struct nm_trk  *p_trk;
+  int i, err;
+
+  for(i=0 ; i<p_drv->nb_tracks ; i++) {
+    p_trk = p_drv->p_track_array[i];
+    err = nm_core_trk_free(p_core, p_trk);
+    if (err != NM_ESUCCESS) {
+      NM_DISPF("nm_core_trk_free returned %d", err);
+      return err;
+    }
+  }
+  return err;
+}
+
+static int
 nm_so_init_trks	(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
     struct nm_core *p_core	= p_sched->p_core;
@@ -185,6 +203,8 @@ nm_so_load		(struct nm_sched_ops	*p_ops)
 
   p_ops->init_trks		= nm_so_init_trks;
   p_ops->init_gate		= nm_so_init_gate;
+
+  p_ops->close_trks             = nm_so_close_trks;
 
   p_ops->out_schedule_gate      = nm_so_out_schedule_gate;
   p_ops->out_process_success_rq = nm_so_out_process_success_rq;

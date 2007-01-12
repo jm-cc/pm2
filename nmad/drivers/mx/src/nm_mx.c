@@ -260,8 +260,15 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
 static
 int
 nm_mx_close_track	(struct nm_trk *p_trk) {
+        mx_return_t		 mx_ret		= MX_SUCCESS;
         int err;
+        struct nm_mx_trk	*p_mx_trk	= NULL;
 
+        /* mx endpoint
+         */
+        p_mx_trk = p_trk->priv;
+        mx_ret	= mx_close_endpoint(p_mx_trk->ep);
+        nm_mx_check_return("mx_close_endpoint", mx_ret);
         TBX_FREE(p_trk->priv);
 
         err = NM_ESUCCESS;

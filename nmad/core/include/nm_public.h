@@ -43,6 +43,9 @@ nm_core_driver_init	(struct nm_core		 *p_core,
                          char			**p_url);
 
 int
+nm_core_driver_exit	(struct nm_core		 *p_core);
+
+int
 nm_core_trk_alloc       (struct nm_core		 * p_core,
 			 struct nm_drv		 * p_drv,
 			 struct nm_trk_rq	 * p_trk_rq);

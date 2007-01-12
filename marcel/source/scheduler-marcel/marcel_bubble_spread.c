@@ -58,16 +58,16 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	debug("spreading entit%s", ne>1?"ies":"y");
 	for (i=0; i<ne; i++)
 		_debug(" %p", e[i]);
-	debug(" at level%s", nl>1?"s":"");
+	_debug(" at level%s", nl>1?"s":"");
 	for (i=0; i<nl; i++)
 		_debug(" %s", l[i]->sched.name);
-	debug("\n");
+	_debug("\n");
 
 	if (nl == 1) {
 		/* Only only level */
 		debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->sched.name);
 		if (l[0]->arity) {
-			debug("and recurse\n");
+			debug("and recurse in levels\n");
 			return __marcel_bubble_spread(e, ne, l[0]->children, l[0]->arity, recurse+1);
 		}
 		debug("No more possible level recursion, we're done\n");
@@ -83,7 +83,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			totload += *(long*)ma_task_stats_get(ma_task_entity(e[i]), marcel_stats_load_offset);
 	}
 	per_item_load = (float)totload / nl;
-	debug("load %lu = %d*%.2f\n", totload, nl, per_item_load);
+	debug("total load %lu = %d*%.2f\n", totload, nl, per_item_load);
 
 	/* Sort entities by load */
 	qsort(e, ne, sizeof(e[0]), &load_compar);
@@ -125,7 +125,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				} else
 					new_e[j++] = e[i];
 			}
-			/* and recurse */
+			debug("recurse into entities\n");
 			return __marcel_bubble_spread(new_e, new_ne, l, nl, recurse+1);
 		}
 		if (ne < nl) {
@@ -137,6 +137,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	}
 
 	/* More entities than items, greedily distribute */
+	struct marcel_topo_level *l_l[nl];
 	struct list_head l_dist[nl];
 	unsigned long l_load[nl];
 	int l_n[nl];
@@ -147,20 +148,21 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	i = 0;
 	n = 0;
 	for (i=0; i<nl; i++) {
+		l_l[i] = l[i];
 		INIT_LIST_HEAD(&l_dist[i]);
 		l_load[i] = 0;
 		l_n[i] = 0;
 	}
 	for (i=0; i<ne; i++) {
-		debug("entity load is %ld\n",entity_load(e[i]));
+		debug("entity %p(%ld)\n",e[i],entity_load(e[i]));
 		/* when entities' load is 0, just leave them here */
 		if (entity_load(e[i]) == 0) {
 			int state;
 			ma_runqueue_t *rq;
 			debug("0, leave it here\n");
 			state = ma_get_entity(e[j]);
-			if (l[0]->father)
-				rq = &l[0]->father->sched;
+			if (l_l[0]->father)
+				rq = &l_l[0]->father->sched;
 			else
 				rq = &marcel_machine_level[0].sched;
 			ma_put_entity(e[j], &rq->hold, state);
@@ -168,14 +170,14 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			continue;
 		}
 
-		debug("add to level %s(%ld)",l[0]->sched.name,l_load[0]);
+		debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
-		list_add(&e[i]->next,&l_dist[0]);
+		list_add_tail(&e[i]->next,&l_dist[0]);
 		l_load[0] += entity_load(e[i]);
 		l_n[0]++;
 		state = ma_get_entity(e[i]);
-		ma_put_entity(e[i], &l[0]->sched.hold, state);
-		switchrq(e[i], &l[0]->sched);
+		ma_put_entity(e[i], &l_l[0]->sched.hold, state);
+		switchrq(e[i], &l_l[0]->sched);
 		_debug(" -> %ld\n",l_load[0]);
 
 		/* And sort */
@@ -207,36 +209,38 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				struct marcel_topo_level *_l;
 				int _l_n;
 
-				debug("exchanging level %s(%ld) and %s(%ld)", l[0]->sched.name, l_load[0], l[m]->sched.name, l_load[m]);
+				debug("exchanging level %s(%ld) and %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[m]->sched.name, l_load[m]);
 
+				INIT_LIST_HEAD(&_l_dist);
 				_l_load = l_load[0];
-				_l_dist = l_dist[0];
+				list_splice_init(&l_dist[0],&_l_dist);
 				_l_n = l_n[0];
-				_l = l[0];
+				_l = l_l[0];
 
 				l_load[0] = l_load[m];
-				l_dist[0] = l_dist[m];
+				list_splice_init(&l_dist[m],&l_dist[0]);
 				l_n[0] = l_n[m];
-				l[0] = l[m];
+				l_l[0] = l_l[m];
 
 				l_load[m] = _l_load;
-				l_dist[m] = _l_dist;
+				list_splice(&_l_dist,&l_dist[m]);
 				l_n[m] = _l_n;
-				l[m] = _l;
+				l_l[m] = _l;
 			}
 		}
 	}
 	for (i=0; i<nl; i++) {
-		debug("recurse in %s\n",l[i]->sched.name);
+		debug("recurse in %s\n",l_l[i]->sched.name);
 		marcel_entity_t *ne[l_n[i]];
 		marcel_entity_t *e;
 		j = 0;
 		list_for_each_entry(e,&l_dist[i],next)
 			ne[j++] = e;
-		if (l[i]->arity)
-			__marcel_bubble_spread(ne, l_n[i], l[i]->children, l[i]->arity, recurse+1);
+		MA_BUG_ON(j != l_n[i]);
+		if (l_l[i]->arity)
+			__marcel_bubble_spread(ne, l_n[i], l_l[i]->children, l_l[i]->arity, recurse+1);
 		else
-			__marcel_bubble_spread(ne, l_n[i], &l[i], 1, recurse+1);
+			__marcel_bubble_spread(ne, l_n[i], &l_l[i], 1, recurse+1);
 	}
 }
 

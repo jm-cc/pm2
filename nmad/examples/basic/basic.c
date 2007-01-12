@@ -37,7 +37,9 @@
 
 /* Choose a driver
  */
-#if defined CONFIG_MX
+#if defined CONFIG_IBVERBS
+#  include <nm_ibverbs_public.h>
+#elif defined CONFIG_MX
 #  include <nm_mx_public.h>
 #elif defined CONFIG_GM
 #  include <nm_gm_public.h>
@@ -119,7 +121,9 @@ main(int	  argc,
                 goto out;
         }
 
-#if defined CONFIG_MX
+#if defined CONFIG_IBVERBS
+        err = nm_core_driver_init(p_core, nm_ibverbs_load, &drv_id, &l_url);
+#elif defined CONFIG_MX
         err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
 #elif defined CONFIG_GM
         err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);

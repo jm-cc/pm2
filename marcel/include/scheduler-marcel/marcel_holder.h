@@ -15,7 +15,7 @@
  */
 
 /** \file
- * \brief Marcel holders
+ * \brief Holders
  *
  * \defgroup marcel_holders Marcel holders
  *

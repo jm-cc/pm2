@@ -23,13 +23,14 @@
  * is to schedule together the threads of the same "gang".
  *
  * This is here realized by expressing gangs thanks to bubbles: a bubble just
- * holds the threads of a gang, and a deamon threads is spawned for actually
+ * holds the threads of a gang, and a daemon thread is spawned for actually
  * performing the scheduling.
  *
- * The daemon thread takes a bubble from the ::ma_gang_rq runqueue, puts it on a
- * scheduling runqueue, and leave it there for some time during which the basic
- * Self-Scheduler can schedule the threads of the bubble. It then puts the
- * bubble back into ::ma_gang_rq, and loops with another bubble.
+ * The daemon thread takes a bubble from the ::ma_gang_rq runqueue, puts it on
+ * a scheduling runqueue, and leave it there for some time during which the
+ * basic Self-Scheduler can schedule the threads of the bubble. The daemon
+ * thread then puts the bubble back into ::ma_gang_rq, and loops with another
+ * bubble.
  *
  * If (for instance), the gangs are not big enough for filling the whole
  * machine, it is possible to start several concurrent bubble gang schedulers

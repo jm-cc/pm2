@@ -347,6 +347,8 @@ void marcel_gensched_shutdown(void)
 
 #ifdef MA__SMP
 
+	/* Stop timer before stopping kernel threads, to avoid running
+	 * pthread_kill() in the middle of pthread_exit() */
 	marcel_sig_stop_itimer();
 
 	mdebug("blocking this LWP\n");

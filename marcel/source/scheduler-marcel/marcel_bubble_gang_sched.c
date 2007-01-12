@@ -34,13 +34,13 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 	/* Attendre un tout petit peu que la création de threads se fasse */
 	marcel_usleep(1);
 	while(1) {
-		/* D'abord enlever les jobs de la work_rq */
+		/* First clean the work_rq runqueue */
 		rq = work_rq;
 		PROF_EVENT1(rq_lock,work_rq);
 		ma_holder_lock_softirq(&rq->hold);
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
-		/* Les bulles pleines */
+		/* Non-empty bubbles */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -50,7 +50,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
-		/* Les bulles vides */
+		/* Empty bubbles */
 		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -60,7 +60,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
-		/* Mettre ensuite un job sur la work_rq */
+		/* Then put one job on work_rq */
 		rq = &ma_gang_rq;
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		if (!ma_queue_empty(queue)) {
@@ -76,7 +76,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		ma_holder_unlock_softirq(&work_rq->hold);
 		PROF_EVENT1(rq_unlock,work_rq);
 		ma_lwp_t lwp;
-		/* Et préempter les threads de cette rq */
+		/* And eventually preempt currently running thread */
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
@@ -90,7 +90,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 	return NULL;
 }
 
-/* Nettoyeur: enlève les jobs de la work_rq */
+/* Cleaner: cleans jobs from work_rq */
 any_t marcel_gang_cleaner(any_t foo) {
 	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
@@ -102,7 +102,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 		rq = work_rq;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
-		/* Les bulles pleines */
+		/* Non-empty bubbles */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -112,7 +112,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
 			}
 		}
-		/* Les bulles vides */
+		/* Empty bubbles */
 		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
@@ -125,7 +125,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock_softirq(&ma_gang_rq.hold);
 		ma_lwp_t lwp;
-		/* Et préempter les threads de cette rq */
+		/* And eventually preempt currently running thread */
 		for_each_lwp_begin(lwp)
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);

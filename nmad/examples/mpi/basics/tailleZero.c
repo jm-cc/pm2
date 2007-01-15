@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
   printf("Rank %d Size %d\n", rank, numtasks);
 
   if (rank == 0) {
+    message=-1;
     counter=1;
     MPI_Send(&counter, 0, MPI_INT, 1, tag, MPI_COMM_WORLD);
     MPI_Recv(&message, 0, MPI_INT, 1, tag, MPI_COMM_WORLD, &stat);

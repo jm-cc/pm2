@@ -46,6 +46,9 @@ int main(int argc, char **argv) {
 	fprintf(stdout, "Message from child %d [%f,%f]\n", child, r_buffer[0], r_buffer[1]);
       }
     }
+
+    free(out_requests);
+    free(in_requests);
   }
   else {
     int father = 0;

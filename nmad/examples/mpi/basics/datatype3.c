@@ -13,6 +13,7 @@ void struct_datatype(int rank) {
   int blocklens[3] = { 1, 2, 4 };
   MPI_Aint displacements[3];
   struct part_s particle;
+  int sizeof_particle;
   int i;
 
   MPI_Get_address(&(particle.class), &displacements[0]);
@@ -24,6 +25,9 @@ void struct_datatype(int rank) {
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
+  MPI_Type_size(mytype, &sizeof_particle);
+
+  printf("size of struct type : %d\n", sizeof_particle);
 
   if (rank == 0) {
     struct part_s particles[3];
@@ -42,19 +46,19 @@ void struct_datatype(int rank) {
       printf("Sending Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
              particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
     }
-
     MPI_Send(particles, 3, mytype, 1, 10, MPI_COMM_WORLD);
     MPI_Send(particles, 3, mytype, 1, 11, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[3];
-    void *buffer = malloc(3*sizeof(struct part_s));
+    void *buffer;
     int i, j;
     char *class;
     double *d;
     int *b;
 
-    MPI_Recv(buffer, 3 * sizeof(struct part_s), MPI_BYTE, 0, 11, MPI_COMM_WORLD, NULL);
+    buffer = malloc(3*sizeof_particle);
+    MPI_Recv(buffer, 3 * sizeof_particle, MPI_BYTE, 0, 11, MPI_COMM_WORLD, NULL);
     MPI_Recv(particles, 3, mytype, 0, 10, MPI_COMM_WORLD, NULL);
 
     for(i=0 ; i<3 ; i++) {

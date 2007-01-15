@@ -336,9 +336,10 @@ nm_core_driver_init(struct nm_core	 *p_core,
  */
 int
 nm_core_driver_exit(struct nm_core  *p_core) {
-  struct nm_drv	  *p_drv    = NULL;
-  struct nm_sched *p_sched  = NULL;
-  struct nm_gate  *p_gate   = NULL;
+  struct nm_drv	     *p_drv    = NULL;
+  struct nm_sched    *p_sched  = NULL;
+  struct nm_gate     *p_gate   = NULL;
+  struct nm_gate_drv *p_gdrv	= NULL;
   int i, j, k, err;
 
   p_sched = p_core->p_sched;
@@ -347,8 +348,10 @@ nm_core_driver_exit(struct nm_core  *p_core) {
 
     for(j=0 ; j<255 ; j++) {
       if (p_gate->p_gate_drv_array[j] != NULL) {
-        p_drv = p_gate->p_gate_drv_array[j]->p_drv;
-        for(k=0 ; k<p_gate->p_gate_drv_array[j]->p_drv->nb_tracks ; k++) {
+        p_gdrv = p_gate->p_gate_drv_array[j];
+        p_drv = p_gdrv->p_drv;
+        for(k=0 ; k<p_drv->nb_tracks ; k++) {
+          struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[k];
           struct nm_trk *p_trk = p_drv->p_track_array[k];
           struct nm_cnx_rq	 rq	= {
                 .p_gate			= p_gate,
@@ -359,15 +362,19 @@ nm_core_driver_exit(struct nm_core  *p_core) {
                 .remote_trk_url		= NULL
             };
           rq.p_drv->ops.disconnect(&rq);
+          TBX_FREE(p_gtrk);
+          p_gdrv->p_gate_trk_array[k] = NULL;
         }
         err	= p_sched->ops.close_trks(p_sched, p_drv);
         if (err != NM_ESUCCESS) {
           NM_DISPF("drv.exit returned %d", err);
           return err;
         }
+        TBX_FREE(p_gdrv->p_gate_trk_array);
+        p_gdrv->p_gate_trk_array = NULL;
         TBX_FREE(p_drv->p_track_array);
         p_drv->p_track_array = NULL;
-        TBX_FREE(p_gate->p_gate_drv_array[j]);
+        TBX_FREE(p_gdrv);
         p_gate->p_gate_drv_array[j] = NULL;
       }
     }

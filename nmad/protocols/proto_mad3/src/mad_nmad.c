@@ -594,6 +594,8 @@ void
 mad_nmad_adapter_exit(p_mad_adapter_t	a) {
         p_mad_nmad_adapter_specific_t	as	= a->specific;
 
+        tbx_darray_free(as->cnx_darray);
+
         TBX_FREE(as);
         a->specific = NULL;
 }

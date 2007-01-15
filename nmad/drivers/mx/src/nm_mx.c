@@ -196,6 +196,9 @@ nm_mx_exit		(struct nm_drv *p_drv) {
         nm_mx_check_return("mx_finalize", mx_ret);
 
         p_mx_drv = p_drv->priv;
+
+        tbx_malloc_clean(p_mx_drv->mx_pw_mem);
+
         TBX_FREE(p_mx_drv);
         p_drv->priv = NULL;
 
@@ -275,6 +278,8 @@ nm_mx_close_track	(struct nm_trk *p_trk) {
         /* mx endpoint
          */
         p_mx_trk = p_trk->priv;
+        TBX_FREE(p_mx_trk->gate_map);
+        p_mx_trk->gate_map = NULL;
         mx_ret	= mx_close_endpoint(p_mx_trk->ep);
         nm_mx_check_return("mx_close_endpoint", mx_ret);
         TBX_FREE(p_trk->priv);
@@ -541,8 +546,6 @@ nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
           p_mx_gate->ref_cnt--;
 
           if (!p_mx_gate->ref_cnt) {
-            TBX_FREE(p_mx_trk->gate_map);
-            p_mx_trk->gate_map = NULL;
             TBX_FREE(p_mx_gate);
             p_mx_gate = NULL;
             p_gate->p_gate_drv_array[p_drv->id]->info = NULL;

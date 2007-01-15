@@ -149,12 +149,13 @@ int MPI_Init_thread(int *argc,
 }
 
 int MPI_Finalize(void) {
-  mad_exit(madeleine);
   free(out_gate_id);
   free(in_gate_id);
   free(out_dest);
   free(in_dest);
+
   internal_exit();
+  mad_exit(madeleine);
 
   return MPI_SUCCESS;
 }

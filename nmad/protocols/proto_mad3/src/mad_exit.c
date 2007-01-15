@@ -1194,12 +1194,7 @@ mad_exit(p_mad_madeleine_t madeleine)
   madeleine = NULL;
   mad_memory_manager_exit();
 
-#if 0
-  /* TODO: enable common_exit cleanup
-   */
-#warning TODO
   common_exit(NULL);
-#endif
 }
 
 

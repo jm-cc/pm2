@@ -49,4 +49,5 @@ int xpaul_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 #endif
 
 void xpaul_io_init(void);
+void xpaul_io_stop(void);
 void xpaul_init_receiver(void);

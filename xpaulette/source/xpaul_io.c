@@ -220,7 +220,7 @@ static int xpaul_io_syscall_group(xpaul_server_t server,
 	return 0;
 }
 
-inline static void xpaul_io_check_select(xpaul_io_serverid_t uid,
+__tbx_inline__ static void xpaul_io_check_select(xpaul_io_serverid_t uid,
  					 xpaul_tcp_ev_t ev,
 					 fd_set * __restrict rfds,
 					 fd_set * __restrict wfds)
@@ -961,8 +961,13 @@ void xpaul_io_init(void)
 	LOG_OUT();
 }
 
+void xpaul_io_stop()
+{
+	xpaul_server_stop(&xpaul_io_server.server);
+}
 
 #ifdef MA__LWPS
+
 
 /* Communication LWP creation */
 void xpaul_init_receiver(void)

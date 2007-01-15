@@ -704,7 +704,7 @@ int xpaul_test_activity(void);
  */
 void xpaul_server_init(xpaul_server_t server, char *name);
 
-void xpaul_server_start_lwp(xpaul_server_t server, int nb_lwps);
+void xpaul_server_start_lwp(xpaul_server_t server, unsigned nb_lwps);
 
 /* Polling setup */
 int xpaul_server_set_poll_settings(xpaul_server_t server,

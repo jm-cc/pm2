@@ -487,7 +487,7 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
     communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
     communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
     communicators[*newcomm - MPI_COMM_WORLD]->is_global = 1;
-    
+
     return MPI_SUCCESS;
   }
 }

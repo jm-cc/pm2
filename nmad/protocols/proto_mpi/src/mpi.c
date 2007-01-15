@@ -871,8 +871,14 @@ int MPI_Reduce(void* sendbuf,
       function->function(remote_sendbufs[i], recvbuf, &count, &datatype);
     }
 
+    // Free memory
+    for(i=0 ; i<global_size ; i++) {
+      if (i == root) continue;
+      free(remote_sendbufs[i]);
+    }
     free(remote_sendbufs);
     free(requests);
+
     return MPI_SUCCESS;
   }
   else {

@@ -76,6 +76,8 @@ int main(int argc, char **argv) {
   send_with_different_tags(rank);
   send_with_different_communicators(rank, comm1);
 
+  MPI_Comm_free(&comm1);
+  MPI_Comm_free(&comm2);
   MPI_Finalize();
   exit(0);
 }

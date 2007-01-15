@@ -173,6 +173,17 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
   }
 }
 
+int mpir_type_size(MPI_Datatype datatype, int *size) {
+  if (datatype < NUMBER_OF_DATATYPES) {
+    *size = datatypes[datatype]->size;
+    return MPI_SUCCESS;
+  }
+  else {
+    ERROR("Datatype %d unknown", datatype);
+    return -1;
+  }
+}
+
 int mpir_type_commit(MPI_Datatype *datatype) {
   if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
     ERROR("Unknown datatype %d\n", *datatype);
@@ -264,7 +275,7 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
-  datatypes[*newtype]->indices = malloc(count * sizeof(int));
+  datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));
   for(i=0 ; i<count ; i++) {
     datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
@@ -308,7 +319,13 @@ int mpir_type_struct(int count,
     MPI_NMAD_TRACE("Element %d of length %d based on type with size %lu\n", i, datatypes[*newtype]->blocklens[i], datatypes[*newtype]->old_sizes[i]);
     datatypes[*newtype]->size +=  datatypes[*newtype]->blocklens[i] * datatypes[*newtype]->old_sizes[i];
   }
-  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%lu\n", *newtype, datatypes[*newtype]->size);
+  /* We suppose here that the last field of the struct does not need
+     an alignment. In case, one sends an array of struct, the 1st
+     field of the 2nd struct immediatly follows the last field of the
+     previous struct.
+  */
+  datatypes[*newtype]->extent = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->blocklens[count-1] * datatypes[*newtype]->old_sizes[count-1];
+  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%lu and extend=%lu\n", *newtype, datatypes[*newtype]->size, datatypes[*newtype]->extent);
   return MPI_SUCCESS;
 }
 

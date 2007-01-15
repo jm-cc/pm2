@@ -25,6 +25,8 @@ int MPI_Get_address(void *location, MPI_Aint *address);
 
 int MPI_Address(void *location, MPI_Aint *address);
 
+int MPI_Type_size(MPI_Datatype datatype, int *size);
+
 int MPI_Type_commit(MPI_Datatype *datatype);
 
 int MPI_Type_free(MPI_Datatype *datatype);
@@ -47,7 +49,7 @@ int MPI_Type_hvector(int count,
 
 int MPI_Type_indexed(int count,
                      int *array_of_blocklengths,
-                     MPI_Aint *array_of_displacements,
+                     int *array_of_displacements,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 

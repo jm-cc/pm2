@@ -92,6 +92,7 @@ typedef struct mpir_datatype_s {
   int basic;
   int committed; /* whether committed or not */
   int is_contig; /* whether entirely contiguous */
+  size_t extent;
   size_t size; /* size of type */
   int elements; /* number of basic elements */
   int stride; /* stride, for VECTOR and HVECTOR types */
@@ -118,6 +119,8 @@ void internal_exit();
 size_t sizeof_datatype(MPI_Datatype datatype);
 
 mpir_datatype_t* get_datatype(MPI_Datatype datatype);
+
+int mpir_type_size(MPI_Datatype datatype, int *size);
 
 int mpir_type_commit(MPI_Datatype *datatype);
 

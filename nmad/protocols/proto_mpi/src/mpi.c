@@ -281,8 +281,8 @@ int mpi_inline_isend(void *buffer,
       MPI_NMAD_TRACE("Sending struct type: size %lu\n", mpir_datatype->size);
       nm_so_begin_packing(p_so_pack_if, gate_id, nmad_tag, connection);
       for(i=0 ; i<count ; i++) {
-        ptr = buffer + i * mpir_datatype->size;
-        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->size);
+        ptr = buffer + i * mpir_datatype->extent;
+        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->extent);
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           ptr += mpir_datatype->indices[j];
           MPI_NMAD_TRACE("packing data at %p (+%lu) with a size %d*%lu\n", ptr, mpir_datatype->indices[j], mpir_datatype->blocklens[j], mpir_datatype->old_sizes[j]);
@@ -307,8 +307,8 @@ int mpi_inline_isend(void *buffer,
 
       newptr = newbuffer;
       for(i=0 ; i<count ; i++) {
-        ptr = buffer + i * mpir_datatype->size;
-        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->size);
+        ptr = buffer + i * mpir_datatype->extent;
+        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->extent);
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           ptr += mpir_datatype->indices[j];
           MPI_NMAD_TRACE("packing to %p data from %p (+%ld) with a size %d*%lu\n", newptr, ptr, mpir_datatype->indices[j], mpir_datatype->blocklens[j], mpir_datatype->old_sizes[j]);
@@ -499,8 +499,8 @@ int mpi_inline_irecv(void* buffer,
 
       recvptr = recvbuffer;
       for(i=0 ; i<count ; i++) {
-        ptr = buffer + i*mpir_datatype->size;
-        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->size);
+        ptr = buffer + i*mpir_datatype->extent;
+        MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, i*mpir_datatype->extent);
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           ptr += mpir_datatype->indices[j];
           MPI_NMAD_TRACE("Sub-element %d starts at %p (%p + %ld)\n", j, ptr, ptr-mpir_datatype->indices[j], mpir_datatype->indices[j]);
@@ -922,6 +922,11 @@ int MPI_Address(void *location, MPI_Aint *address) {
   return MPI_Get_address(location, address);
 }
 
+int MPI_Type_size(MPI_Datatype datatype, int *size) {
+  return mpir_type_size(datatype, size);
+}
+
+
 int MPI_Type_commit(MPI_Datatype *datatype) {
   return mpir_type_commit(datatype);
 }
@@ -955,10 +960,10 @@ int MPI_Type_hvector(int count,
 
 int MPI_Type_indexed(int count,
                      int *array_of_blocklengths,
-                     MPI_Aint *array_of_displacements,
+                     int *array_of_displacements,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
-  return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_INDEXED, oldtype, newtype);
+  return mpir_type_indexed(count, array_of_blocklengths, (MPI_Aint *)array_of_displacements, MPIR_INDEXED, oldtype, newtype);
 }
 
 int MPI_Type_hindexed(int count,

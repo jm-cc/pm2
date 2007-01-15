@@ -47,6 +47,7 @@
 #include "tbx.h"
 #include "ntbx.h"
 #include "tbx_debug.h"
+#include "pm2_common.h"
 
 /* Protocol registration */
 #include "mad_registration.h"

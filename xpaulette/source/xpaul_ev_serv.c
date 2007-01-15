@@ -1399,6 +1399,7 @@ int xpaul_server_stop(xpaul_server_t server)
 
 	xpaul_verify_server_state(server);
 	server->state = XPAUL_SERVER_STATE_HALTED;
+#ifdef MA__LWPS
 /* arret des LWPs de comm */
 	xpaul_comm_lwp_t lwp;
 
@@ -1413,7 +1414,7 @@ int xpaul_server_stop(xpaul_server_t server)
 		lwp = list_entry(server->list_lwp_working.next, struct xpaul_comm_lwp, chain_lwp_working);
 		write(lwp->fds[1], &foo, 1);
 	}
-
+#endif
 #ifndef ECANCELED
 #define ECANCELED EIO
 #endif

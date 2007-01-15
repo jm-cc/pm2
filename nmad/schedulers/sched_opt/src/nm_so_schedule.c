@@ -78,6 +78,9 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
 {
   struct nm_so_sched *p_priv = p_sched->sch_private;
 
+  /* Shutdown "Lightning Fast" Packet Wrappers Manager */
+  nm_so_pw_exit();
+
   TBX_FREE(p_priv);
   p_sched->sch_private = NULL;
   return NM_ESUCCESS;

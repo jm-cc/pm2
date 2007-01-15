@@ -186,6 +186,13 @@ nm_core_schedule_exit(struct nm_core *p_core) {
 
         err = p_sched->ops.exit(p_sched);
 
+        tbx_slist_free(p_sched->pending_aux_recv_req);
+        tbx_slist_free(p_sched->post_aux_recv_req);
+        tbx_slist_free(p_sched->submit_aux_recv_req);
+        tbx_slist_free(p_sched->pending_perm_recv_req);
+        tbx_slist_free(p_sched->post_perm_recv_req);
+        tbx_slist_free(p_sched->submit_perm_recv_req);
+
         TBX_FREE(p_sched);
         p_core->p_sched = NULL;
 
@@ -378,6 +385,9 @@ nm_core_driver_exit(struct nm_core  *p_core) {
         p_gate->p_gate_drv_array[j] = NULL;
       }
     }
+
+    tbx_slist_free(p_gate->pre_sched_out_list);
+    tbx_slist_free(p_gate->post_sched_out_list);
 
     err = p_sched->ops.close_gate(p_sched, p_gate);
      if (err != NM_ESUCCESS) {
@@ -735,6 +745,11 @@ int
 nm_core_exit           (struct nm_core		*p_core) {
   nm_core_schedule_exit(p_core);
   TBX_FREE(p_core);
+
+  tbx_malloc_clean(nm_core_pw_mem);
+  tbx_malloc_clean(nm_core_iov1_mem);
+  tbx_malloc_clean(nm_core_iov2_mem);
+
   return NM_ESUCCESS;
 }
 

@@ -70,6 +70,19 @@ nm_so_pw_init(struct nm_core *p_core)
 }
 
 int
+nm_so_pw_exit()
+{
+  tbx_malloc_clean(nm_so_pw_nohd_mem);
+  tbx_malloc_clean(nm_so_pw_send_mem);
+
+#if NM_SO_PREALLOC_BUF_LEN != NM_SO_MAX_UNEXPECTED
+  tbx_malloc_clean(nm_so_pw_recv_mem);
+#endif
+
+  return NM_ESUCCESS;
+}
+
+int
 nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 {
   struct nm_so_pkt_wrap *p_so_pw;

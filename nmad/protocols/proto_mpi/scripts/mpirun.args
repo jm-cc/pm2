@@ -27,6 +27,8 @@ mpirun [mpirun_options...] <progname> [options...]
     -dbg    Start processes under the gdb debugger.
     -valgrind
             Start processes under valgrind.
+    -log
+            Log output into files
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status (currently, all are one, but this 
 may change in the future).
@@ -86,6 +88,9 @@ while [ 1 -le $# ] ; do
 	;;
     -valgrind)
 	valgrind="yes"
+        ;;
+    -log)
+	log="yes"
         ;;
     -usage|--usage|-help|--help|-\?)
       	# Accept these for help until the program name is provided.

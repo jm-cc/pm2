@@ -165,11 +165,19 @@ compile_leonie
 if [ -n "$debugger" ]; then
     $Show leonie -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
-    $Show leonie -vg -w $LEONIE_ARGS $appli_file $cmdLineArgs
+    if [ -n "$log" ] ; then
+        $Show leonie -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
+    else
+        $Show leonie -vg $LEONIE_ARGS $appli_file $cmdLineArgs
+    fi
 elif [ -n "$MPI_NMAD_X" ] ; then
     $Show leonie $LEONIE_ARGS $appli_file $cmdLineArgs
 else
-    $Show leonie --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
+    if [ -n "$log" ] ; then
+        $Show leonie -l $LEONIE_ARGS $appli_file $cmdLineArgs
+    else
+        $Show leonie --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
+    fi
 fi
 
 exit 0

@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include <nm_protected.h>
 
@@ -142,7 +143,7 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	p_ibverbs_drv->lid = port_attr.lid;
 	fprintf(stderr, "Infiniband: local LID  = 0x%02X\n", p_ibverbs_drv->lid);
 
-        /* driver url encoding						*/
+	/* open chelper socket */
 	p_ibverbs_drv->server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	assert(p_ibverbs_drv->server_sock > -1);
 	struct sockaddr_in addr;
@@ -157,11 +158,21 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	}
 	rc = getsockname(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
 	listen(p_ibverbs_drv->server_sock, 255);
-	char s_port[8]; /* port is 16 bits */
-	snprintf(s_port, 8, "%d", ntohs(addr.sin_port));
+	
+        /* driver url encoding */
+	char hostname[256];
+	rc = gethostname(hostname, 256);
+	const struct hostent*he = gethostbyname(hostname);
+	if(!he) {
+		fprintf(stderr, "Infiniband: cannot get local address\n");
+		err = -NM_EUNREACH;
+		goto out;
+	}
+	char s_port[24];
+	snprintf(s_port, 24, "%s:%d", inet_ntoa(*(struct in_addr*)he->h_addr), ntohs(addr.sin_port));
         p_drv->url = tbx_strdup(s_port);
 
-        /* driver capabilities encoding					*/
+        /* driver capabilities encoding */
         p_drv->cap.has_trk_rq_dgram			= 1;
         p_drv->cap.has_selective_receive		= 1;
         p_drv->cap.has_concurrent_selective_receive	= 0;
@@ -415,22 +426,25 @@ static int nm_ibverbs_connect(struct nm_cnx_rq *p_crq)
 		int fd = socket(AF_INET, SOCK_STREAM, 0);
 		assert(fd > -1);
 		(*pp_ibverbs_gate)->sock = fd;
-		const char*peer_name = p_crq->remote_host_url;
-		const int peer_port  = atoi(p_crq->remote_drv_url);
-		const struct hostent*he = gethostbyname(peer_name);
-		if(!he) {
-			fprintf(stderr, "Infiniband: cannot find host %s\n", peer_name);
+		char*sep = strchr(p_crq->remote_drv_url, ':');
+		*sep = 0;
+		char*peer_addr = p_crq->remote_drv_url;
+		int peer_port = atoi(sep + 1);
+		struct in_addr peer_inaddr;
+		rc = inet_aton(peer_addr, &peer_inaddr);
+		if(!rc) {
+			fprintf(stderr, "Infiniband: cannot find host %s\n", peer_addr);
 			err = -NM_EUNREACH;
 			goto out;
 		}
 		struct sockaddr_in inaddr = {
 			.sin_family = AF_INET,
 			.sin_port   = htons(peer_port),
-			.sin_addr   = *(struct in_addr*)he->h_addr
+			.sin_addr   = peer_inaddr
 		};
 		rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
 		if(rc) {
-			fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", peer_name, peer_port);
+			fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", peer_addr, peer_port);
 			err = -NM_EUNREACH;
 			goto out;
 		}

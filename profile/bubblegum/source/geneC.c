@@ -61,6 +61,7 @@ int parcourir_bulle(Element* bulle, int mybid, int mode)
             fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
             fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)%d);\n",tid,GetId(element_i)*100+GetCharge(element_i));
+	    fprintf(fw,"      *marcel_stats_get(t%d, marcel_stats_load_offset) = %d;\n",tid,GetCharge(element_i));
             fprintf(fw,"   }\n\n");
          }
          if(mode == 2)
@@ -101,6 +102,7 @@ int gen_fichier_C(Element * bullemere)
    fprintf(fw,"   int n;\n");
    fprintf(fw,"   int sum = 0;\n");
    fprintf(fw,"   marcel_printf(\"some work %%d in %%d\\n\",load,id);\n");
+   fprintf(fw,"   if (!load) marcel_delay(1000);\n");
    fprintf(fw,"   for (n=0;n<load*10000000;n++) sum+=n;\n");
    fprintf(fw,"   marcel_printf(\"%%d done\\n\",id);\n");
    fprintf(fw,"   return (void*)sum;\n}\n\n");

@@ -20,6 +20,7 @@
 
 #include "mpi.h"
 #include "mpi_nmad_private.h"
+#include "nm_so_parameters.h"
 
 static p_mad_madeleine_t       madeleine	= NULL;
 static int                     global_size	= -1;
@@ -231,6 +232,12 @@ int mpi_inline_isend(void *buffer,
 
   mpir_datatype = get_datatype(datatype);
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
+
+  if (tbx_unlikely(nmad_tag > NM_SO_MAX_TAGS)) {
+    fprintf(stderr, "Invalid tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
+    return 1;
+  }
+
   _request->request_ptr = NULL;
   MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
@@ -425,6 +432,12 @@ int mpi_inline_irecv(void* buffer,
 
   mpir_datatype = get_datatype(datatype);
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
+
+  if (tbx_unlikely(nmad_tag > NM_SO_MAX_TAGS)) {
+    fprintf(stderr, "Invalid tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
+    return 1;
+  }
+
   _request->request_ptr = NULL;
 
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, nmad_tag, comm, tag);

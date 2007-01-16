@@ -21,7 +21,11 @@
 
 /* Maximum number of tags (e.g. logical channels) the application can
    use. 128 means [0..127]. A value smaller than 128 saves space! */
+#if defined(CONFIG_PROTO_MPI)
+#define NM_SO_MAX_TAGS                      128
+#else
 #define NM_SO_MAX_TAGS                      16
+#endif
 
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion

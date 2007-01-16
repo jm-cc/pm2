@@ -115,8 +115,6 @@ enum ma_rq_type {
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_holder.h[marcel_structures]"
 /**
- * This is the main, per-CPU runqueue data structure.
- *
  * Locking rule: those places that want to lock multiple runqueues (such as the
  * load balancing or the thread migration code), lock acquire operations must
  * be ordered by descending level: the main runqueue first, then lower levels,
@@ -130,9 +128,9 @@ struct ma_runqueue {
 	/** \brief Name of the runqueue */
 	char name[16];
 	//unsigned long expired_timestamp, timestamp_last_tick;
-	/** \brief active arrays of queues */
+	/* \brief active arrays of queues */
 	ma_prio_array_t *active;
-	/** \brief expired arrays of queues */
+	/* \brief expired arrays of queues */
 	ma_prio_array_t *expired, arrays[2];
 /* 	int best_expired_prio, prev_cpu_load[NR_CPUS]; */
 /* #ifdef CONFIG_NUMA */

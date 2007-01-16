@@ -31,7 +31,7 @@
  * ma_holder_lock_softirq() by ma_holder_lock() and ma_holder_unlock_softirq()
  * by ma_holder_unlock().
  *
- * If you know that you already hold a lock on a holder, you can even
+ * If you know that you already hold a lock on a holder, you can even use
  * ma_holder_rawlock() and ma_holder_rawunlock()
  *
  * @{
@@ -204,11 +204,11 @@ static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 #endif
 /** \brief Convert marcel_bubble_t *b into marcel_entity_t * */
-marcel_entity_t *marcel_entity_bubble(marcel_bubble_t *b);
-#define marcel_entity_bubble(b) (&(b)->sched)
+marcel_entity_t *ma_entity_bubble(marcel_bubble_t *b);
+#define ma_entity_bubble(b) (&(b)->sched)
 /** \brief Convert marcel_task_t *b into marcel_entity_t * */
-marcel_entity_t *marcel_entity_task(marcel_task_t *t);
-#define marcel_entity_task(t) (&(t)->sched.internal.entity)
+marcel_entity_t *ma_entity_task(marcel_task_t *t);
+#define ma_entity_task(t) (&(t)->sched.internal.entity)
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
 	MA_BUG_ON(e->type != MA_TASK_ENTITY);

@@ -28,6 +28,7 @@
  * 	...
  *	// look down first
  * 	for (int i=0; i<l->arity; i++)
+ * 		// avoid recursing into where we came from
  * 		if (l->children[i] != son)
  * 			f(l->children[i]);
  * 	...
@@ -36,7 +37,7 @@
  * 	...
  * }
  *
- * f(marcel_topo_vp_level[marcel_current_vp()], NULL);
+ * f(&marcel_topo_vp_level[marcel_current_vp()], NULL);
  * \endcode
  *
  * or as an array of arrays, for instance:
@@ -124,7 +125,7 @@ enum marcel_topo_level_e {
 	MARCEL_LEVEL_CORE,	/**< \brief Core of a chip */
 	MARCEL_LEVEL_PROC,	/**< \brief SMT Processor in a core */
 #endif
-	MARCEL_LEVEL_VP,	/**< \brief Virtual Processor (_not_ SMT) */
+	MARCEL_LEVEL_VP,	/**< \brief Virtual Processor (\b not SMT) */
 #define MARCEL_LEVEL_LAST MARCEL_LEVEL_VP
 #endif
 };
@@ -295,7 +296,8 @@ static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask)
 }
 
 #section functions
-/** \brief Get the current VP number. Note that this may change just after the function call. */
+/** \brief Get the current VP number. Note that if preemption wasn't disabled,
+ * this may change just after the function call. */
 unsigned marcel_current_vp(void);
 #section marcel_functions
 /* Internal version, for inlining */

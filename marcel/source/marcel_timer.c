@@ -312,9 +312,6 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-	/* ma_irq_exit risque de déclancher un changement de contexte,
-	 * il faut réarmer les signaux AVANT
-	 */
 	ma_irq_exit();
 #ifdef MA_TIMER_NOMASK
 	ma_preempt_check_resched(0);

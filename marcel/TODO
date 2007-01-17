@@ -1,4 +1,4 @@
-Éviter que marcel_create utilise lui-même le postexit_func juste pour libérer la pile: le faire explicitement dans marcel_join et ma_schedule_tail
+Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux....
 
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 

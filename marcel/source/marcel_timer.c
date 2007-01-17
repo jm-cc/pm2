@@ -257,6 +257,9 @@ static void timer_interrupt(int sig)
 
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
+	/* check that stack isn't overflowing */
+	MA_BUG_ON(get_sp() < (unsigned long) marcel_stackbase(MARCEL_SELF) + (THREAD_SLOT_SIZE / 0x10));
+
 #ifdef DISTRIBUTE_SIGALRM
 	if (sig == MARCEL_TIMER_SIGNAL && (!info || info->si_code > 0)) {
 		/* kernel timer signal, distribute */

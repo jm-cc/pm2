@@ -98,7 +98,7 @@
 #define MA_BOGUS_SIGINFO_CODE
 #endif
 /* Don't mask signals during timer handler (avoid two syscalls per timer preemption, but may lead to handler reentrancy) */
-/* #define MA_TIMER_NOMASK */
+#define MA_TIMER_NOMASK
 /*  Signal utilisé pour la premption automatique */
 #ifdef USE_VIRTUAL_TIMER
 #  define MARCEL_TIMER_SIGNAL       SIGVTALRM

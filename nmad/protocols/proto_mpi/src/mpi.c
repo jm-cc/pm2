@@ -234,7 +234,7 @@ int mpi_inline_isend(void *buffer,
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
 
   if (tbx_unlikely(nmad_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
+    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
     return 1;
   }
 
@@ -352,6 +352,8 @@ int MPI_Send(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                   err = 0;
 
+  MPI_NMAD_TRACE("Sending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
+
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
     return -1;
@@ -387,6 +389,8 @@ int MPI_Isend(void *buffer,
               MPI_Comm comm,
               MPI_Request *request) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+
+  MPI_NMAD_TRACE("Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
@@ -434,7 +438,7 @@ int mpi_inline_irecv(void* buffer,
   nmad_tag = mpir_project_comm_and_tag(comm, tag);
 
   if (tbx_unlikely(nmad_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
+    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
     return 1;
   }
 
@@ -549,6 +553,8 @@ int MPI_Recv(void *buffer,
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
   int                  err = 0;
 
+  MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
+
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
     return -1;
@@ -599,13 +605,14 @@ int MPI_Irecv(void* buffer,
               MPI_Request *request) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
+  MPI_NMAD_TRACE("Ireceiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
+
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
     return -1;
   }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) return not_implemented("Using MPI_ANY_TAG");
 
-  MPI_NMAD_TRACE("Receiving message from %d of datatype %d\n", source, datatype);
   _request->request_ptr = NULL;
   _request->request_type = MPI_REQUEST_RECV;
   return mpi_inline_irecv(buffer, count, datatype, source, tag, comm, request);

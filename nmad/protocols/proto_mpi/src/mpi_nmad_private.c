@@ -316,7 +316,7 @@ int mpir_type_struct(int count,
     datatypes[*newtype]->old_sizes[i] = get_datatype(array_of_types[i])->size;
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
 
-    MPI_NMAD_TRACE("Element %d of length %d based on type with size %lu\n", i, datatypes[*newtype]->blocklens[i], datatypes[*newtype]->old_sizes[i]);
+    MPI_NMAD_TRACE("Element %d: length %d, old_type size %lu, indice %lu\n", i, datatypes[*newtype]->blocklens[i], datatypes[*newtype]->old_sizes[i], datatypes[*newtype]->indices[i]);
     datatypes[*newtype]->size +=  datatypes[*newtype]->blocklens[i] * datatypes[*newtype]->old_sizes[i];
   }
   /* We suppose here that the last field of the struct does not need
@@ -325,7 +325,7 @@ int mpir_type_struct(int count,
      previous struct.
   */
   datatypes[*newtype]->extent = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->blocklens[count-1] * datatypes[*newtype]->old_sizes[count-1];
-  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%lu and extend=%lu\n", *newtype, datatypes[*newtype]->size, datatypes[*newtype]->extent);
+  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%lu and extent=%lu\n", *newtype, datatypes[*newtype]->size, datatypes[*newtype]->extent);
   return MPI_SUCCESS;
 }
 

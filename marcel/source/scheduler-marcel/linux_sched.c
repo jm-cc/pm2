@@ -1195,7 +1195,7 @@ int marcel_yield_to(marcel_t next)
 	return 0;
 }
 
-void ma_preempt_schedule(void)
+void ma_preempt_schedule(int irq)
 {
         marcel_task_t *ti = MARCEL_SELF;
 
@@ -1203,7 +1203,17 @@ void ma_preempt_schedule(void)
 
 need_resched:
         ti->preempt_count = MA_PREEMPT_ACTIVE;
+
+	if (irq)
+		/* now we recorded preemption, we can safely re-enable signals */
+		marcel_sig_disable_interrupts();
+
         ma_schedule();
+
+	if (irq)
+		/* before forgetting about preemption, re-disable signals */
+		marcel_sig_enable_interrupts();
+
         ti->preempt_count = 0;
 
         /* we could miss a preemption opportunity between schedule and now */

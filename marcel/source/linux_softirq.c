@@ -173,7 +173,7 @@ void TBX_EXTERN ma_local_bh_enable(void)
 	if (tbx_unlikely(!ma_in_interrupt() &&
 		     ma_local_softirq_pending()))
 		ma_invoke_softirq();
-	ma_preempt_check_resched();
+	ma_preempt_check_resched(0);
 }
 
 inline void __ma_raise_softirq_bhoff(unsigned int nr)

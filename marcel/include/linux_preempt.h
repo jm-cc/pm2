@@ -55,7 +55,7 @@ do { \
 
 #section functions
 #depend "tbx_compiler.h"
-TBX_EXTERN void ma_preempt_schedule(void);
+TBX_EXTERN void ma_preempt_schedule(int irq);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"
@@ -85,16 +85,16 @@ do { \
         ma_preempt_count_dec(); \
 } while (0)
 
-#define ma_preempt_check_resched() \
+#define ma_preempt_check_resched(irq) \
 do { \
         if (tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED)) && !ma_preempt_count() && ma_thread_preemptible()) \
-                ma_preempt_schedule(); \
+                ma_preempt_schedule(irq); \
 } while (0)
 
 #define ma_preempt_enable() \
 do { \
         ma_preempt_enable_no_resched(); \
-        ma_preempt_check_resched(); \
+        ma_preempt_check_resched(0); \
 } while (0)
 
 #section marcel_macros

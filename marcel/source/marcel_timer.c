@@ -312,22 +312,15 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-#ifdef MA__SMP
-	//SA_NOMASK est mis dans l'appel à sigaction
-	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#else
-#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-	sigrelse(sig);
-#else
-	//SA_NOMASK est mis dans l'appel à sigaction
-	//sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
-#endif
 	/* ma_irq_exit risque de déclancher un changement de contexte,
 	 * il faut réarmer les signaux AVANT
 	 */
 	ma_irq_exit();
-	ma_preempt_check_resched();
+#ifdef MA_TIMER_NOMASK
+	ma_preempt_check_resched(0);
+#else
+	ma_preempt_check_resched(1);
+#endif
 
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
@@ -414,7 +407,11 @@ void marcel_sig_enable_interrupts(void)
 #ifdef MA__SMP
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
+#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
+	sigrelse(sig);
+#else
 	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
+#endif
 #endif
 }
 
@@ -424,7 +421,11 @@ void marcel_sig_disable_interrupts(void)
 #ifdef MA__SMP
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #else
+#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
+	sighold(sig);
+#else
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
+#endif
 #endif
 }
 
@@ -441,15 +442,15 @@ static void sig_start_timer(ma_lwp_t lwp)
 #else
 	sa.sa_flags = 0;
 #endif
+
+#ifdef MA_TIMER_NOMASK
 #if defined(SA_NOMASK)
 	sa.sa_flags |= SA_NOMASK;
 #elif defined(SA_NODEFER)
 	sa.sa_flags |= SA_NODEFER;
 #else
-	// TODO: oui, c'est bien "allow" qu'indique NOMASK/NODEFER.
-	// Préfère-t-on dépenser deux appels systèmes par préemption que de
-	// risquer une récursion des signaux ?
 #warning no way to allow nested signals
+#endif
 #endif
 
 #ifdef SA_SIGINFO

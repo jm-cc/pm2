@@ -270,7 +270,7 @@ static void timer_interrupt(int sig)
 
 #ifdef MA__TIMER
 #ifdef MA__DEBUG
-	if (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)
+	if (sig == MARCEL_TIMER_SIGNAL)
 		if (++tick == TICK_RATE) {
 			mdebugl(7,"\t\t\t<<Sig handler>>\n");
 			tick = 0;
@@ -293,17 +293,20 @@ static void timer_interrupt(int sig)
 #ifndef MA_HAVE_COMPAREEXCHANGE
 		}
 #endif
-#if defined(MA__LWPS) && !defined(MA_BOGUS_SIGINFO_CODE)
+#if defined(MA__LWPS)
+#if !defined(MA_BOGUS_SIGINFO_CODE)
 		if (!info || info->si_code > 0)
+#elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
+		if (IS_FIRST_LWP(LWP_SELF))
+#else
+		if (sig == MARCEL_TIMER_SIGNAL)
+#endif
 #endif
 		/* kernel timer signal */
-#ifndef DISTRIBUTE_SIGALRM
-			if (IS_FIRST_LWP(LWP_SELF))
-#endif
-			{
-				ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
-				__milliseconds += time_slice/1000;
-			}
+		{
+			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
+			__milliseconds += time_slice/1000;
+		}
 	}
 #endif
 #ifdef MA__SMP

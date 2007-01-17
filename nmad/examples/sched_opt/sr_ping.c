@@ -27,16 +27,19 @@
 
 #include <nm_so_sendrecv_interface.h>
 
-#if defined CONFIG_MX
-#  include <nm_mx_public.h>
+#include <nm_drivers.h>
+
+typedef int (*nm_driver_load)(struct nm_drv_ops*);
+#if defined CONFIG_IBVERBS
+const static nm_driver_load p_driver_load = &nm_ibverbs_load;
+#elif defined CONFIG_MX
+const static nm_driver_load p_driver_load = &nm_mx_load;
 #elif defined CONFIG_GM
-#  include <nm_gm_public.h>
+const static nm_driver_load p_driver_load = &nm_gm_load;
 #elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
+const static nm_driver_load p_driver_load = &nm_qsnet_load;
 #else
-#  include <nm_tcp_public.h>
+const static nm_driver_load p_driver_load = &nm_tcp_load;
 #endif
 
 #define MAX     (8 * 1024 * 1024)
@@ -117,15 +120,7 @@ main(int	  argc,
                 printf("running as server\n");
         }
 
-#if defined CONFIG_MX
-        err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
-#elif defined CONFIG_GM
-        err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
-#elif defined CONFIG_QSNET
-        err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
-#else
-        err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
-#endif
+        err = nm_core_driver_init(p_core, p_driver_load, &drv_id, &l_url);
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_init returned err = %d\n", err);
                 goto out;

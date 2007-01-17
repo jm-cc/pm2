@@ -312,11 +312,12 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-	ma_irq_exit();
 #ifdef MA_TIMER_NOMASK
+	ma_irq_exit();
 	ma_preempt_check_resched(0);
 #else
 	ma_preempt_check_resched(1);
+	ma_irq_exit();
 #endif
 
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);

@@ -37,7 +37,7 @@
 
 #define NM_IBVERBS_PORT       1
 #define NM_IBVERBS_TX_DEPTH   2
-#define NM_IBVERBS_RX_DEPTH   2
+#define NM_IBVERBS_RX_DEPTH   1
 #define NM_IBVERBS_RDMA_DEPTH 4
 #define NM_IBVERBS_MAX_SG_SQ  2
 #define NM_IBVERBS_MAX_SG_RQ  2
@@ -45,10 +45,10 @@
 #define NM_IBVERBS_MTU        IBV_MTU_1024
 #define NM_IBVERBS_WRID_SEND  1
 
-#define NM_IBVERBS_BUF_SIZE   (2 * 4096)
-#define NM_IBVERBS_RBUF_NUM   16
+#define NM_IBVERBS_BUF_SIZE   (16 * 4096 - sizeof(struct nm_ibverbs_header))
+#define NM_IBVERBS_RBUF_NUM   8
 #define NM_IBVERBS_SBUF_NUM   2
-#define NM_IBVERBS_CREDITS_THR 10
+#define NM_IBVERBS_CREDITS_THR 6
 
 #define NM_IBVERBS_STATUS_EMPTY   0x00 /**< no message in buffer */
 #define NM_IBVERBS_STATUS_DATA    0x01 /**< data in buffer (sent by copy) */
@@ -100,15 +100,16 @@ struct nm_ibverbs_cnx {
 	struct ibv_cq*of_cq;
 	struct ibv_cq*if_cq;
 
-	uint32_t next_out;  /**< next sequence number for outgoing packet */
-	uint32_t credits;   /**< remaining credits for sending */
-	uint32_t next_in;   /**< cell number of next expected packet */
-	uint32_t to_ack;    /**< credits not acked yet by the receiver */
-
+	struct {
+		uint32_t next_out;  /**< next sequence number for outgoing packet */
+		uint32_t credits;   /**< remaining credits for sending */
+		uint32_t next_in;   /**< cell number of next expected packet */
+		uint32_t to_ack;    /**< credits not acked yet by the receiver */
+	} window;
 	struct {
 		struct nm_ibverbs_packet rbuf[NM_IBVERBS_RBUF_NUM];
 		struct nm_ibverbs_packet sbuf[NM_IBVERBS_SBUF_NUM];
-		struct nm_ibverbs_header rhdr[NM_IBVERBS_RBUF_NUM];
+		struct nm_ibverbs_header rhdr;
 		struct nm_ibverbs_header shdr;
 	} buffer;
 };
@@ -381,10 +382,10 @@ static int nm_ibverbs_cnx_create(struct nm_cnx_rq*p_crq)
 		.rkey  = p_ibverbs_cnx->mr->rkey
 	};
 	/* init state */
-	p_ibverbs_cnx->next_out = 1;
-	p_ibverbs_cnx->next_in  = 1;
-	p_ibverbs_cnx->credits  = NM_IBVERBS_RBUF_NUM;
-	p_ibverbs_cnx->to_ack   = 0;
+	p_ibverbs_cnx->window.next_out = 1;
+	p_ibverbs_cnx->window.next_in  = 1;
+	p_ibverbs_cnx->window.credits  = NM_IBVERBS_RBUF_NUM;
+	p_ibverbs_cnx->window.to_ack   = 0;
 	memset(&p_ibverbs_cnx->buffer, 0, sizeof(p_ibverbs_cnx->buffer));
  out:
 	return err;
@@ -638,35 +639,35 @@ static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*p_pw)
 			packet->header = (struct nm_ibverbs_header) {
 				.offset = offset,
 				.size   = buffers->iov_len,
-				.ack    = p_ibverbs_cnx->to_ack,
+				.ack    = p_ibverbs_cnx->window.to_ack,
 				.status = done ? NM_IBVERBS_STATUS_CONT : NM_IBVERBS_STATUS_DATA
 			};
 			done += packet_size;
-			p_ibverbs_cnx->to_ack = 0;
-			while(p_ibverbs_cnx->credits <= 1) {
+			p_ibverbs_cnx->window.to_ack = 0;
+			while(p_ibverbs_cnx->window.credits <= 1) {
 				/* recover credits */
+				if(p_ibverbs_cnx->buffer.rhdr.status) {
+					p_ibverbs_cnx->window.credits += p_ibverbs_cnx->buffer.rhdr.ack;
+					p_ibverbs_cnx->buffer.rhdr.ack = 0;
+					p_ibverbs_cnx->buffer.rhdr.status &= ~NM_IBVERBS_STATUS_CREDITS;
+				}
 				int j;
 				for(j = 0; j < NM_IBVERBS_RBUF_NUM; j++) {
-					if(p_ibverbs_cnx->buffer.rhdr[j].status) {
-						p_ibverbs_cnx->credits += p_ibverbs_cnx->buffer.rhdr[j].ack;
-						p_ibverbs_cnx->buffer.rhdr[j].ack = 0;
-						p_ibverbs_cnx->buffer.rhdr[j].status &= ~NM_IBVERBS_STATUS_CREDITS;
-					}
 					if(p_ibverbs_cnx->buffer.rbuf[j].header.status) {
-						p_ibverbs_cnx->credits += p_ibverbs_cnx->buffer.rbuf[j].header.ack;
+						p_ibverbs_cnx->window.credits += p_ibverbs_cnx->buffer.rbuf[j].header.ack;
 						p_ibverbs_cnx->buffer.rbuf[j].header.ack = 0;
 						p_ibverbs_cnx->buffer.rbuf[j].header.status &= ~NM_IBVERBS_STATUS_CREDITS;
 					}
 				}
 			}
-			assert(p_ibverbs_cnx->credits > 0);
+			assert(p_ibverbs_cnx->window.credits > 0);
 
 			nm_ibverbs_rdma_send(p_ibverbs_cnx, p_ibverbs_drv,
 					     sizeof(struct nm_ibverbs_packet) - offset,
 					     &packet->data[offset],
-					     &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->next_out].data[offset]);
-			p_ibverbs_cnx->next_out = (p_ibverbs_cnx->next_out + 1) % NM_IBVERBS_RBUF_NUM;
-			p_ibverbs_cnx->credits--;
+					     &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->window.next_out].data[offset]);
+			p_ibverbs_cnx->window.next_out = (p_ibverbs_cnx->window.next_out + 1) % NM_IBVERBS_RBUF_NUM;
+			p_ibverbs_cnx->window.credits--;
 			pending++;
 			if(pending > 1)	{
 				nm_ibverbs_rdma_wait(p_ibverbs_cnx);
@@ -694,7 +695,7 @@ static int nm_ibverbs_poll_one(struct nm_ibverbs_cnx*p_ibverbs_cnx, const struct
 			       void*data, int len)
 {
 	int err = -NM_EUNKNOWN;
-	struct nm_ibverbs_packet*packet = &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->next_in];
+	struct nm_ibverbs_packet*packet = &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->window.next_in];
 	if(packet->header.status) {
 		assert(packet->header.status & NM_IBVERBS_STATUS_DATA);
 		const int msg_size = packet->header.size;
@@ -709,26 +710,26 @@ static int nm_ibverbs_poll_one(struct nm_ibverbs_cnx*p_ibverbs_cnx, const struct
 			const int packet_size = NM_IBVERBS_BUF_SIZE - packet->header.offset;
 			memcpy(data + done, &packet->data[packet->header.offset], packet_size);
 			done += packet_size;
-			p_ibverbs_cnx->credits += packet->header.ack;
+			p_ibverbs_cnx->window.credits += packet->header.ack;
 			packet->header.ack = 0;
 			packet->header.status = 0;
-			p_ibverbs_cnx->to_ack++;
-			if(p_ibverbs_cnx->to_ack >= NM_IBVERBS_CREDITS_THR) {
+			p_ibverbs_cnx->window.to_ack++;
+			if(p_ibverbs_cnx->window.to_ack >= NM_IBVERBS_CREDITS_THR) {
 				p_ibverbs_cnx->buffer.shdr = (struct nm_ibverbs_header) {
 					.offset = 0,
 					.size   = 0,
-					.ack    = p_ibverbs_cnx->to_ack,
+					.ack    = p_ibverbs_cnx->window.to_ack,
 					.status = NM_IBVERBS_STATUS_CREDITS
 				};
 				nm_ibverbs_rdma_send(p_ibverbs_cnx, p_ibverbs_drv,
 						     sizeof(struct nm_ibverbs_header),
 						     (void*)&p_ibverbs_cnx->buffer.shdr,
-						     (void*)&p_ibverbs_cnx->buffer.rhdr[p_ibverbs_cnx->next_in]);
+						     (void*)&p_ibverbs_cnx->buffer.rhdr);
 				nm_ibverbs_rdma_wait(p_ibverbs_cnx);
-				p_ibverbs_cnx->to_ack = 0;
+				p_ibverbs_cnx->window.to_ack = 0;
 			}
-			p_ibverbs_cnx->next_in = (p_ibverbs_cnx->next_in + 1) % NM_IBVERBS_RBUF_NUM;
-			packet = &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->next_in];
+			p_ibverbs_cnx->window.next_in = (p_ibverbs_cnx->window.next_in + 1) % NM_IBVERBS_RBUF_NUM;
+			packet = &p_ibverbs_cnx->buffer.rbuf[p_ibverbs_cnx->window.next_in];
 		}
 		err = NM_ESUCCESS;
 	} else {

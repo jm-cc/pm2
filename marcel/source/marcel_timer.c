@@ -261,7 +261,14 @@ static void timer_interrupt(int sig)
 	MA_BUG_ON(get_sp() < (unsigned long) marcel_stackbase(MARCEL_SELF) + (THREAD_SLOT_SIZE / 0x10));
 
 #ifdef DISTRIBUTE_SIGALRM
-	if (sig == MARCEL_TIMER_SIGNAL && (!info || info->si_code > 0)) {
+#if !defined(MA_BOGUS_SIGINFO_CODE)
+	if (!info || info->si_code > 0))
+#elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
+#error "Can't distinguish between kernel and user signal"
+#else
+	if (sig == MARCEL_TIMER_SIGNAL)
+#endif
+	{
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)

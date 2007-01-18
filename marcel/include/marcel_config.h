@@ -87,7 +87,12 @@
 /* ========== timer =================== */
 
 /* Timer tick period, in µs */
+#ifdef AIX_SYS
+/* AIX has troubles with automatic preemption... */
+#define MARCEL_MIN_TIME_SLICE		100000
+#else
 #define MARCEL_MIN_TIME_SLICE		10000
+#endif
 #define MARCEL_DEFAULT_TIME_SLICE	MARCEL_MIN_TIME_SLICE
 
 /* Timer time and signal */

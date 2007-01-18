@@ -118,10 +118,10 @@ nm_mx_print_status(mx_status_t s) {
         DISP("mx status: %s", msg);
 }
 
-static
+static __tbx_inline__
 void
 nm_mx_check_return(char *msg, mx_return_t return_code) {
-        if (return_code != MX_SUCCESS) {
+        if (tbx_unlikely(return_code != MX_SUCCESS)) {
                 const char *msg_mx = NULL;
 
                 msg_mx = mx_strerror(return_code);
@@ -647,7 +647,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
         p_mx_drv	= p_drv->priv;
         p_mx_trk	= p_trk->priv;
 
-        if (p_pw->p_gate) {
+        if (tbx_likely(p_pw->p_gate)) {
                 struct nm_gate		*p_gate		= NULL;
                 struct nm_mx_gate	*p_mx_gate	= NULL;
                 struct nm_mx_cnx	*p_mx_cnx	= NULL;
@@ -756,12 +756,12 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         mx_ret	= mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
         nm_mx_check_return("mx_test", mx_ret);
 
-        if (!result) {
+        if (tbx_unlikely(!result)) {
                 err	= -NM_EAGAIN;
                 goto out;
         }
 
-        if (!p_pw->p_gate) {
+        if (tbx_unlikely(!p_pw->p_gate)) {
                 struct nm_mx_trk	*p_mx_trk	= NULL;
 
                 /* gate-less request */
@@ -772,7 +772,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
 
         tbx_free(p_mx_drv->mx_pw_mem, p_mx_pw);
 
-        if (status.code != MX_SUCCESS) {
+        if (tbx_unlikely(status.code != MX_SUCCESS)) {
                 switch (status.code) {
                 case MX_STATUS_PENDING:
                 case MX_STATUS_BUFFERED:

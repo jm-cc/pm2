@@ -439,25 +439,26 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		}
 
 #endif
-		marcel_sig_disable_interrupts();
-		ma_clear_thread_flag(TIF_POLLING_NRFLAG);
-		/* make sure people see that we won't poll it afterwards */
-		ma_smp_mb__after_clear_bit();
-
-		if (ma_need_resched()) {
-			marcel_sig_enable_interrupts();
-			continue;
-		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)
 			marcel_sig_nanosleep();
-		else
+		else {
+			marcel_sig_disable_interrupts();
+			ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+			/* make sure people see that we won't poll it afterwards */
+			ma_smp_mb__after_clear_bit();
+
+			if (ma_need_resched()) {
+				marcel_sig_enable_interrupts();
+				continue;
+			}
 			marcel_sig_pause();
+			/* let wakers now that we will shortly poll need_resched and
+			 * thus they don't need to send a kill */
+			ma_set_thread_flag(TIF_POLLING_NRFLAG);
+			marcel_sig_enable_interrupts();
+		}
 #endif
-		/* let wakers now that we will shortly poll need_resched and
-		 * thus they don't need to send a kill */
-		ma_set_thread_flag(TIF_POLLING_NRFLAG);
-		marcel_sig_enable_interrupts();
 	}
 }
 #ifndef MA__ACT

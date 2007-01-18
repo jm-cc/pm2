@@ -262,7 +262,7 @@ static void timer_interrupt(int sig)
 
 #ifdef DISTRIBUTE_SIGALRM
 #if !defined(MA_BOGUS_SIGINFO_CODE)
-	if (!info || info->si_code > 0))
+	if (!info || info->si_code > 0)
 #elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
 #error "Can't distinguish between kernel and user signal"
 #else

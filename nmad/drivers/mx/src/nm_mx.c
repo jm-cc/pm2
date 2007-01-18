@@ -215,9 +215,11 @@ int
 nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         struct nm_trk		*p_trk		= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
-        uint32_t                 ep_id     	= 1;
         const uint32_t		 ep_key		= 0xFFFFFFFF;
         mx_endpoint_t		 ep;
+	mx_endpoint_addr_t	 ep_addr;
+	uint32_t		 ep_id;
+	uint64_t		 nic_id;
         mx_return_t		 mx_ret		= MX_SUCCESS;
         p_tbx_string_t		 url_string	= NULL;
         int err;
@@ -246,15 +248,19 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
 
         /* mx endpoint
          */
-        do {
-                mx_ret	= mx_open_endpoint(0,
-                                           ep_id,
-                                           ep_key,
-                                           NULL,
-                                           0,
-                                           &ep);
-        } while (mx_ret == MX_BUSY && ep_id++);
+        mx_ret = mx_open_endpoint(0,
+                                  MX_ANY_ENDPOINT,
+                                  ep_key,
+                                  NULL,
+                                  0,
+                                  &ep);
         nm_mx_check_return("mx_open_endpoint", mx_ret);
+
+	mx_ret = mx_get_endpoint_addr(ep, &ep_addr);
+        nm_mx_check_return("mx_get_endpoint_addr", mx_ret);
+
+	mx_ret = mx_decompose_endpoint_addr(ep_addr, &nic_id, &ep_id);
+        nm_mx_check_return("mx_decompose_endpoint_addr", mx_ret);
 
         p_mx_trk->ep	= ep;
         p_mx_trk->ep_id	= ep_id;

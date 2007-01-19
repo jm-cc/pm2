@@ -262,10 +262,7 @@ static void compute_nb_steps(void)
     i++;
   }
 
-  if(show_all_modules)
-    parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
-  else
-    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_root());
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
 
   while((tok = parser_next_token()) != END_OF_INPUT)
     max_steps++;

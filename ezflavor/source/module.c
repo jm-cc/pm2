@@ -39,6 +39,7 @@ static GtkWidget *deselect_button;
 static GtkWidget *builddir_entry, *extension_entry;
 
 static GList *mod_names = NULL;
+static GList *visible_names = NULL;
 
 typedef struct {
   char *name;
@@ -48,7 +49,6 @@ typedef struct {
 
 static GList *the_modules = NULL;
 static GList *the_static_modules = NULL;
-
 
 char *known_static_modules[] =
 {
@@ -84,14 +84,27 @@ static void module_rescan(void)
 
   string_list_destroy(&mod_names);
 
-  if(show_all_modules)
-    parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
-  else
-    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_root());
+  /* First build the complete list of modules */
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
 
   mod_names = string_list_from_parser();
 
   parser_stop();
+
+  /* Then build the list of visible modules */
+  if(show_all_modules)
+
+    visible_names = mod_names;
+
+  else {
+
+    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_root());
+
+    visible_names = string_list_from_parser();
+
+    parser_stop();
+
+  }
 
   intro_end_step();
 }
@@ -418,10 +431,12 @@ static void add_misc_options(GtkWidget *box)
 
 static void set_page_select_state(GtkWidget *page, gint selected)
 {
+  GtkWidget *tab = gtk_notebook_get_tab_label(GTK_NOTEBOOK(notebook),
+					      page);
+
   gtk_widget_set_sensitive(page, selected);
-  gtk_widget_set_sensitive(gtk_notebook_get_tab_label(GTK_NOTEBOOK(notebook),
-						      page),
-			   selected);
+  if(tab)
+    gtk_widget_set_sensitive(tab, selected);
 }
 
 static void update_select_buttons(gint active_page)
@@ -533,7 +548,9 @@ static void module_build_notebook(GtkWidget *box)
 
     label = gtk_label_new(module);
 
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), cur_mod->page, label);
+    /* Add the page to the notebook is ONLY if module is visible! */
+    if(g_list_find_custom(visible_names, module, (GCompareFunc)strcmp))
+      gtk_notebook_append_page(GTK_NOTEBOOK(notebook), cur_mod->page, label);
 
     if(tips_enabled)
       module_set_tooltip_msg(label, module);
@@ -670,17 +687,21 @@ void module_update_with_current_flavor(void)
 
     module_t *m = (module_t *)mod->data;
 
-    if(flavor_uses_module((char *)gtk_object_get_user_data(GTK_OBJECT(m->page)))) {
+    //    if(g_list_find_custom(visible_names, m->name, (GCompareFunc)strcmp)) {
+      /* Module "m->name" is visible, so we can update he display */
 
-      set_page_select_state(m->page, TRUE);
+      if(flavor_uses_module((char *)gtk_object_get_user_data(GTK_OBJECT(m->page)))) {
 
-      module_update_module_options(m);
+	set_page_select_state(m->page, TRUE);
 
-    } else {
+	module_update_module_options(m);
 
-      set_page_select_state(m->page, FALSE);
+      } else {
 
-    }
+	set_page_select_state(m->page, FALSE);
+
+      }
+      //    }
   }
 
   update_select_buttons(gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));

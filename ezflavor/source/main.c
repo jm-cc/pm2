@@ -29,7 +29,7 @@
 gint destroy_phase = FALSE;
 
 // Customization
-gint tips_enabled = TRUE;
+gint tips_enabled = FALSE;
 gint skip_intro = FALSE;
 gint with_sound = FALSE;
 gint show_all_modules = FALSE;
@@ -70,6 +70,9 @@ static void parse_options(int *argc, char *argv[])
     if(!strcmp(argv[i], "--expert") || !strcmp(argv[i], "-e")) {
       tips_enabled = FALSE;
       i++;
+    } else if(!strcmp(argv[i], "--tips") || !strcmp(argv[i], "-t")) {
+      tips_enabled = TRUE;
+      i++;
     } else if(!strcmp(argv[i], "--skip-intro") || !strcmp(argv[i], "-ni")) {
       skip_intro = TRUE;
       i++;
@@ -93,11 +96,12 @@ static void do_show_help(char *cmd)
 {
   g_print("Usage: %s { <option> }\n", cmd);
   g_print("<option> can be:\n");
-  g_print("\t--expert | -e      : disable tips (noticeably accelerates startup!)\n");
-  g_print("\t--all-modules | -a : show all modules\n");
-  g_print("\t--skip-intro | -ni : skip introduction window\n");
-  g_print("\t--with-sound | -s  : enable sounds during intro\n");
-  g_print("\t--help | -h        : show this help screen\n");
+  g_print("\t--expert      | -e  : disable tips (noticeably accelerates startup!)\n");
+  g_print("\t--tips        | -t  : enable tips (noticeably slows down startup...)\n");
+  g_print("\t--all-modules | -a  : show all modules\n");
+  g_print("\t--skip-intro  | -ni : skip introduction window\n");
+  g_print("\t--with-sound  | -s  : enable sounds during intro\n");
+  g_print("\t--help        | -h  : show this help screen\n");
 }
 
 int main(int argc, char *argv[])

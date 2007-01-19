@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Example:
-# if defined_in -O6 PM2_MARCEL_CFLAGS ; then
+# if included_in -O6 PM2_MARCEL_CFLAGS ; then
 #    ...
 # fi
 included_in()

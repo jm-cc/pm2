@@ -153,7 +153,7 @@ main(int	  argc,
 
 		for(len = 0; len <= MAX; len = _next(len)) {
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_request request;
+		    nm_so_request_t request=(nm_so_request_t) malloc(sizeof(nm_so_request));
 
 		    nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, buf, len, &request);
 		    nm_so_sr_rwait(interface, request);
@@ -180,7 +180,7 @@ main(int	  argc,
 		  TBX_GET_TICK(t1);
 
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_request request;
+		    nm_so_request_t request=(nm_so_request_t) malloc(sizeof(nm_so_request));
 
 		    nm_so_sr_isend(interface, gate_id, 0, buf, len, &request);
 		    nm_so_sr_swait(interface, request);

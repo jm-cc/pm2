@@ -72,7 +72,6 @@ nm_process_successful_recv_rq(struct nm_sched		*p_sched,
    - requests may be successful or failed, and should be handled appropriately
     --> this function is responsible for the processing common to both cases
 */
-static
 __inline__
 int
 nm_process_complete_recv_rq(struct nm_sched	*p_sched,
@@ -132,11 +131,7 @@ nm_poll_recv(struct nm_sched	*p_sched,
                      p_pw->seq);
 
                 /* poll request 					*/
-#ifdef XPAULETTE
-                err = p_pw->p_drv->ops.wait_iov(p_pw);
-#else
 		err = p_pw->p_drv->ops.poll_recv_iov(p_pw);
-#endif
 
                 /* process poll command status				*/
                 if (err == -NM_EAGAIN) {

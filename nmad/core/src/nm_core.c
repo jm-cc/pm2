@@ -730,7 +730,9 @@ nm_core_init		(int			 *argc,
 
         *pp_core	= p_core;
         err = NM_ESUCCESS;
-
+#ifdef XPAULETTE
+	nm_xpaul_init(p_core);
+#endif 
  out:
         return err;
 

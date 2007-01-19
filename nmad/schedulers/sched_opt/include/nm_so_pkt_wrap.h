@@ -16,6 +16,7 @@
 #ifndef _NM_SO_PKT_WRAP_H_
 #define _NM_SO_PKT_WRAP_H_
 
+#include <sys/uio.h>
 #include <tbx.h>
 #include <pm2_list.h>
 

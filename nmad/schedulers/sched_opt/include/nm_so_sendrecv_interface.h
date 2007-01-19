@@ -21,8 +21,22 @@
 #endif
 
 struct nm_so_interface;
+#ifdef XPAULETTE
+#include "nm_xpaul.h"
+#endif
 
-typedef intptr_t nm_so_request;
+typedef struct {
+#ifdef XPAULETTE
+#warning XPAUL_TODO
+	struct nm_xpaul_data nm_xp_data;	
+	int err;
+	p_tbx_slist_t *list;
+	struct nm_xpaul_data *cnx; // "Master query's" xpaul_data	
+#endif
+	volatile intptr_t request;	
+} nm_so_request, *nm_so_request_t;
+
+#include "nm_so_private.h"
 
 extern int
 nm_so_sr_init(struct nm_core *p_core,
@@ -36,11 +50,11 @@ extern int
 nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 	       uint16_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
-	       nm_so_request *p_request);
+	       nm_so_request_t *p_request);
 
 extern int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
-	       nm_so_request request);
+	       nm_so_request_t request);
 
 extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
@@ -48,7 +62,7 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 		     unsigned long seq_inf, unsigned long nb);
 extern int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
-	       nm_so_request request);
+	       nm_so_request_t request);
 
 extern int
 nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
@@ -60,11 +74,11 @@ extern int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 	       long gate_id, uint8_t tag,
 	       void *data, uint32_t len,
-	       nm_so_request *p_request);
+	       nm_so_request_t *p_request);
 
 extern int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
-	       nm_so_request request);
+	       nm_so_request_t request);
 
 extern int
 nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
@@ -73,7 +87,7 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
 
 extern int
 nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
-	       nm_so_request request);
+	       nm_so_request_t request);
 
 extern int
 nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
@@ -82,7 +96,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
-                     nm_so_request request, long *gate_id);
+                     nm_so_request_t request, long *gate_id);
 
 extern int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,

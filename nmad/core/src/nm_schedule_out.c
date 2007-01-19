@@ -70,7 +70,7 @@ nm_process_successful_send_rq(struct nm_gate		*p_gate,
  * - requests may be successful or failed, and should be handled appropriately
  * --> this function is responsible for the processing common to both cases
  */
-static
+
 __inline__
 int
 nm_process_complete_send_rq(struct nm_gate	*p_gate,
@@ -121,11 +121,8 @@ nm_poll_send	(struct nm_gate *p_gate) {
         /* Fast path */
         for (i = 0; i < req_nb; i++) {
                 p_pw	= p_gate->out_req_list[i];
-#ifdef XPAULETTE
-                err	= p_pw->p_drv->ops.wait_iov(p_pw);
-#else
 		err	= p_pw->p_drv->ops.poll_send_iov(p_pw);
-#endif
+
                 if (err != -NM_EAGAIN)
                         goto update_needed;
         }
@@ -140,11 +137,7 @@ nm_poll_send	(struct nm_gate *p_gate) {
 
         for (;i < req_nb; i++) {
                 p_pw	= p_gate->out_req_list[i];
-#ifdef XPAULETTE
-                err	= p_pw->p_drv->ops.wait_iov(p_pw);
-#else
 		err	= p_pw->p_drv->ops.poll_send_iov(p_pw);
-#endif
 
                 if (err == -NM_EAGAIN) {
                         p_gate->out_req_list[j] = p_gate->out_req_list[i];
@@ -212,9 +205,6 @@ nm_post_send	(struct nm_gate *p_gate) {
                              p_pw->p_trk->id,
                              p_pw->proto_id,
                              p_pw->seq);
-#ifdef XPAULETTE
-			err = p_pw->p_gdrv->p_drv->ops.wait_iov(p_pw);
-#endif /* XPAULETTE */
  
                 } else {
                         /* Yes, request complete, process it */
@@ -261,7 +251,7 @@ nm_sched_out_gate	(struct nm_gate *p_gate) {
         /* post new requests	*/
         if (!tbx_slist_is_nil(p_gate->post_sched_out_list)) {
              NM_TRACEF("posting outbound requests");
-            err	= nm_post_send(p_gate);
+	     err	= nm_post_send(p_gate);
 
             if (err < 0 && err != -NM_EAGAIN) {
                 NM_DISPF("post_send returned %d", err);

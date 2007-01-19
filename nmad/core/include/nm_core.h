@@ -33,4 +33,7 @@ struct nm_core {
 
         /* compiled-in scheduler */
         struct nm_sched 	*p_sched;
+#ifdef XPAULETTE
+	xpaul_server_t     xpaul_server;
+#endif 
 };

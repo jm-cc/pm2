@@ -16,8 +16,11 @@
 #ifndef _NM_PKT_WRAP_H_
 #define _NM_PKT_WRAP_H_
 
+#include <sys/uio.h>
+
 #ifdef XPAULETTE
 #include "xpaul.h"
+#include "nm_xpaul.h"
 #endif
 
 struct nm_iovec {
@@ -50,9 +53,11 @@ struct nm_iovec_iter {
 struct nm_pkt_wrap {
 
 #ifdef XPAULETTE
-	struct xpaul_req	 inst;
-	int                      err;  
-#endif /* XPAULETTE */
+	struct nm_xpaul_data nm_xp_data;
+	int err;
+	p_tbx_slist_t *list;
+	struct nm_xpaul_data *cnx; // "Master query's" xpaul_data
+#endif	
 
         /* internal packet wrapper	*/
 

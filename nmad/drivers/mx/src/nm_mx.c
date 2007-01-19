@@ -88,19 +88,6 @@ struct nm_mx_adm_pkt_2 {
         uint64_t 	match_info;
 };
 
-#ifdef XPAULETTE
-
-static
-int
-nm_mx_do_poll(xpaul_server_t	        server,
-               xpaul_op_t		_op,
-               xpaul_req_t		req,
-               int			nb_ev,
-	      int			option) ;
-
-	struct xpaul_server nm_mx_ev_server = XPAUL_SERVER_INIT(nm_mx_ev_server, "NMad/MX I/O");
-	tbx_bool_t nm_mx_ev_server_started = tbx_false;
-#endif /* XPAULETTE */
 /* prototypes
  */
 static
@@ -163,25 +150,6 @@ nm_mx_init		(struct nm_drv *p_drv) {
         p_drv->cap.has_concurrent_selective_receive	= 0;
 
         err = NM_ESUCCESS;
-#ifdef XPAULETTE
-
-	nm_mx_ev_server.stopable=1;
-
-	xpaul_server_set_poll_settings(&nm_mx_ev_server,
-				       XPAUL_POLL_AT_TIMER_SIG
-				       | XPAUL_POLL_AT_IDLE | XPAUL_POLL_AT_YIELD, 1, -1);
-
-	xpaul_server_add_callback(&nm_mx_ev_server,
-				  XPAUL_FUNCTYPE_POLL_POLLONE,
-				  (xpaul_pcallback_t) {
-				  .func = &nm_mx_do_poll,.speed =
-				  XPAUL_CALLBACK_FAST});
-
-	if (!nm_mx_ev_server_started) {
-                xpaul_server_start(&nm_mx_ev_server);
-                nm_mx_ev_server_started = tbx_true;
-        }
-#endif /* XPAULETTE */
         return err;
 }
 
@@ -615,15 +583,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_isend", mx_ret);
         }
-#ifdef XPAULETTE
-	p_pw->err=0;
-	xpaul_req_init(&p_pw->inst);
-	p_pw->inst.state|=XPAUL_STATE_ONE_SHOT;
-	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
-	err=p_pw->err;
-#else
         err = nm_mx_poll_iov(p_pw);
-#endif /* XPAULETTE */
 
         return err;
 }
@@ -695,50 +655,11 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
         }
-#ifdef XPAULETTE
-	p_pw->err=0;
-	xpaul_req_init(&p_pw->inst);
-	p_pw->inst.state|=XPAUL_STATE_ONE_SHOT;
-	xpaul_req_submit(&nm_mx_ev_server, &p_pw->inst);
-	err=p_pw->err;
-#else
         err = nm_mx_poll_iov(p_pw);
-#endif /* XPAULETTE */
 
         return err;
 }
 
-#ifdef XPAULETTE
-
-static
-int
-nm_mx_do_poll(xpaul_server_t	        server,
-               xpaul_op_t		_op,
-               xpaul_req_t		req,
-               int			nb_ev,
-               int			option) {
-	struct nm_pkt_wrap      *p_ev;
-
-        LOG_IN();
-	p_ev = struct_up(req,  struct nm_pkt_wrap, inst);
-
-	p_ev->err=nm_mx_poll_iov(p_ev);
-
-	if(p_ev->err==NM_ESUCCESS)
-		xpaul_req_success(&(p_ev->inst));
-        LOG_OUT();
-        return 0;
-}
-static
-int
-nm_mx_wait_iov    	(struct nm_pkt_wrap *p_pw) {
-        LOG_IN();
-	struct xpaul_wait wait;
-	xpaul_req_wait(&p_pw->inst, &wait, 0);
-	return p_pw->err;
-}
-
-#endif /* XPAULETTE */
 
 
 static
@@ -752,6 +673,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         int err;
         p_mx_drv	= p_pw->p_drv->priv;
         p_mx_pw		= p_pw->drv_priv;
+
 
         mx_ret	= mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
         nm_mx_check_return("mx_test", mx_ret);
@@ -821,7 +743,6 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
 
                 goto out;
         }
-
         err = NM_ESUCCESS;
 
 out:
@@ -845,10 +766,6 @@ nm_mx_load(struct nm_drv_ops *p_ops) {
 
         p_ops->poll_send_iov    = nm_mx_poll_iov     ;
         p_ops->poll_recv_iov    = nm_mx_poll_iov     ;
-
-#ifdef XPAULETTE
-	p_ops->wait_iov         = nm_mx_wait_iov     ;
-#endif /* XPAULETTE */
 
         return NM_ESUCCESS;
 }

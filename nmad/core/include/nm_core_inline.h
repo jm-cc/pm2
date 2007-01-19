@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#include <sys/uio.h>
+#include "tbx.h"
 
 extern p_tbx_memory_t nm_core_pw_mem	;
 extern p_tbx_memory_t nm_core_iov1_mem	;

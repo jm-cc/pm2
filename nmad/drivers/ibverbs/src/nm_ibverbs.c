@@ -257,6 +257,8 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 		p_ibverbs_drv->ib_caps.max_mr, p_ibverbs_drv->ib_caps.max_mr_size,
 		p_ibverbs_drv->ib_caps.page_size_cap, p_ibverbs_drv->ib_caps.max_msg_size);
 
+	fprintf(stderr, "Infiniband:   active_width=%d; active_speed=%d\n",
+		(int)port_attr.active_width, (int)port_attr.active_speed);
 
         /* driver capabilities encoding */
         p_drv->cap.has_trk_rq_dgram			= 1;

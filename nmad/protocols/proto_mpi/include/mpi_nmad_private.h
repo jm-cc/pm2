@@ -33,7 +33,8 @@
 #include <nm_mad3_private.h>
 
 #undef MPI_NMAD_SO_DEBUG
-#undef MPI_NMAD_SO_TRACE
+#undef MPI_NMAD_SO_TRANSFER
+#undef MPI_NMAD_LOG
 
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
@@ -43,11 +44,19 @@
 #  define MPI_NMAD_TRACE(...) { }
 #endif /* MPI_NMAD_SO_DEBUG */
 
-#if defined(MPI_NMAD_SO_TRACE)
+#if defined(MPI_NMAD_SO_TRANSFER)
 #  define MPI_NMAD_TRANSFER(...) { fprintf(stderr, __VA_ARGS__) ; }
 #else
 #  define MPI_NMAD_TRANSFER(...) { }
-#endif /* MPI_NMAD_SO_TRACE */
+#endif /* MPI_NMAD_SO_TRANSFER */
+
+#if defined(MPI_NMAD_LOG)
+#  define MPI_NMAD_LOG_IN() { fprintf(stderr, "%s: -->\n", __TBX_FUNCTION__) ; }
+#  define MPI_NMAD_LOG_OUT() { fprintf(stderr, "%s: <--\n", __TBX_FUNCTION__) ; }
+#else
+#  define MPI_NMAD_LOG_IN() { }
+#  define MPI_NMAD_LOG_OUT() { }
+#endif /* MPI_NMAD_LOG */
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 
@@ -70,6 +79,7 @@ struct MPI_Request_s {
   intptr_t request_id;
   struct nm_so_cnx request_cnx;
   void **request_ptr;
+  void *contig_buffer;
 };
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC

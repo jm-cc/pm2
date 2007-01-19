@@ -44,6 +44,13 @@ int MPI_Isend(void *buffer,
               MPI_Comm comm,
               MPI_Request *request);
 
+int MPI_Rsend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm);
+
 int MPI_Irecv(void* buffer,
               int count,
               MPI_Datatype datatype,

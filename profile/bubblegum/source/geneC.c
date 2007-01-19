@@ -126,8 +126,8 @@ int gen_fichier_C(Element * bullemere)
    fprintf(fw,"   marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
+   fprintf(fw,"\n   marcel_end();\n");
    fprintf(fw,"\n   profile_stop();\n");
-   //fprintf(fw,"   marcel_end();\n\n");
    fprintf(fw,"   return 0;\n}\n");
 
    fclose(fw);

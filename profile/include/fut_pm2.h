@@ -102,39 +102,45 @@
 
 #else // ifndef PREPROC
 
+#if defined(DARWIN_SYS) || defined(WIN_SYS)
+#define FUT_SYM_PREFIX "_"
+#else
+#define FUT_SYM_PREFIX ""
+#endif
+
 #define __GEN_PREPROC(name,line)                          \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_PROBE0(PROFILE_KEYMASK, __code##line);            \
   } while(0)
 
 #define __GEN_PREPROC1(name,line,arg1)                    \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_PROBE1(PROFILE_KEYMASK, __code##line, arg1);      \
   } while(0)
 
 #define __GEN_PREPROC2(name,line,arg1,arg2)               \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2); \
   } while(0)
 
 #define __GEN_PREPROC_ALWAYS(name,line)                   \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_DO_PROBE0(__code##line);                          \
   } while(0)
 
 #define __GEN_PREPROC1_ALWAYS(name,line,arg1)             \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_DO_PROBE1(__code##line, arg1);                    \
   } while(0)
 
 #define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)        \
   do {                                                    \
-    extern unsigned __code##line asm("fut_" name "_code");\
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_DO_PROBE2(__code##line, arg1,arg2);               \
   } while(0)
 

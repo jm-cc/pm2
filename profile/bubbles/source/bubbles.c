@@ -172,8 +172,8 @@ void nextFrame(SWFMovie movie) {
 	}
 }
 
-/* pause for a few seconds, or until mouse click (when sec == 0) */
-void pause(float sec) {
+/* bubble_pause for a few seconds, or until mouse click (when sec == 0) */
+void bubble_pause(float sec) {
 	float i;
 	if (!sec) {
 		/* grmbl marche pas */
@@ -701,7 +701,7 @@ void delThread(thread_t *t) {
 		switchRunqueuesStep(norq, &t->entity, j);
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &t->entity);
-	pause(DELAYTIME);
+	bubble_pause(DELAYTIME);
 	list_del(&t->entity.rq);
 	t->entity.holder = NULL;
 	if (t->entity.bubble_holder) {
@@ -2018,7 +2018,7 @@ if (optind != argc) {
 					break;
 				}
 				case SCHED_TICK: {
-					pause(DELAYTIME);
+					bubble_pause(DELAYTIME);
 					break;
 				}
 				case SCHED_THREAD_BLOCKED: {
@@ -2031,7 +2031,7 @@ if (optind != argc) {
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
 					if (showSystem || t->number >= 0)
-						pause(DELAYTIME);
+						bubble_pause(DELAYTIME);
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
@@ -2048,7 +2048,7 @@ if (optind != argc) {
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
 					if (showSystem || t->number >= 0)
-						pause(DELAYTIME);
+						bubble_pause(DELAYTIME);
 					break;
 				}
 #ifdef SCHED_RESCHED_LWP
@@ -2080,7 +2080,7 @@ if (optind != argc) {
 						updateEntity(&tnext->entity);
 					}
 					if (showSystem || tprev->number>=0 || tnext->number>=0)
-						pause(DELAYTIME);
+						bubble_pause(DELAYTIME);
 #if 0
 					if (tprev->active) {
 						entityMoveDeltaBegin(&tprev->entity,0,0);
@@ -2178,7 +2178,7 @@ if (optind != argc) {
 		showEntity(&t3->entity);
 		showEntity(&t4->entity);
 		showEntity(&t5->entity);
-		pause(1);
+		bubble_pause(1);
 #endif /* SHOWBUILD */
 
 
@@ -2186,29 +2186,29 @@ if (optind != argc) {
 
 #ifdef SHOWBUILD
 		showEntity(&b1->entity);
-		pause(1);
+		bubble_pause(1);
 #endif /* SHOWBUILD */
 		b2 = newBubble(0, norq);
 #ifdef SHOWBUILD
 		showEntity(&b2->entity);
-		pause(1);
+		bubble_pause(1);
 #endif /* SHOWBUILD */
 
 		bubbleInsertThread(b1,t1);
 		bubbleInsertThread(b1,t2);
 
 #ifdef SHOWBUILD
-		pause(1);
+		bubble_pause(1);
 #endif /* SHOWBUILD */
 		bubbleInsertThread(b2,t3);
 		bubbleInsertThread(b2,t4);
 #ifdef SHOWBUILD
-		pause(1);
+		bubble_pause(1);
 #endif
 		b = newBubble(0, norq);
 #ifdef SHOWBUILD
 		showEntity(&b->entity);
-		pause(1);
+		bubble_pause(1);
 #endif
 		bubbleInsertBubble(b,b2);
 		bubbleInsertBubble(b,b1);
@@ -2222,13 +2222,13 @@ if (optind != argc) {
 
 #if 0
 		/* �olution de vol */
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[2][0], &b->entity);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[2][3], &b->entity);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueuesBegin(&rqs[2][3], &b1->entity);
 		switchRunqueuesBegin(&rqs[2][2], &b2->entity);
 		switchRunqueuesBegin(&rqs[1][1], &b->entity);
@@ -2243,17 +2243,17 @@ if (optind != argc) {
 		switchRunqueuesEnd(&rqs[2][3], &b1->entity);
 		switchRunqueuesEnd(&rqs[2][2], &b2->entity);
 		switchRunqueuesEnd(&rqs[1][1], &b->entity);
-		pause(1);
+		bubble_pause(1);
 
 #else
 #if 0
 		/* �olution d'explosion */
-		pause(1);
+		bubble_pause(1);
 		bubbleExplode(b);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[1][1], &b1->entity);
 		switchRunqueues(&rqs[1][0], &b2->entity);
-		pause(1);
+		bubble_pause(1);
 		bubbleExplodeBegin(b1);
 		bubbleExplodeBegin(b2);
 		bubbleExplodeBegin2(b1);
@@ -2264,7 +2264,7 @@ if (optind != argc) {
 		doStepsEnd();
 		bubbleExplodeEnd(b2);
 		bubbleExplodeEnd(b1);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueuesBegin(&rqs[2][1], &t4->entity);
 		switchRunqueuesBegin(&rqs[2][3], &t2->entity);
 		switchRunqueuesBegin2(&rqs[2][1], &t4->entity);
@@ -2291,40 +2291,40 @@ if (optind != argc) {
 		setRqs(&norq2,1,90,500,MOVIEX,4*CURVE);
 
 		/* exemples de manipulations */
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[2][0], &b->entity);
-		pause(1);
+		bubble_pause(1);
 
 		rqs[2][0].entity.thick = 2*RQTHICK;
 		updateEntity(&rqs[2][0].entity);
-		pause(1);
+		bubble_pause(1);
 
 		switchRunqueues(norq2, &b->entity);
-		pause(1);
+		bubble_pause(1);
 		switchRunqueues(&rqs[2][0], &b2->entity);
-		pause(1);
+		bubble_pause(1);
 
 		rqs[2][0].entity.thick = RQTHICK;
 		updateEntity(&rqs[2][0].entity);
 
-		pause(1);
+		bubble_pause(1);
 
 		rqs[0][0].entity.thick = 2*RQTHICK;
 		updateEntity(&rqs[0][0].entity);
-		pause(1);
+		bubble_pause(1);
 
 		switchRunqueues(&rqs[0][0], &b->entity);
-		pause(1);
+		bubble_pause(1);
 		setRqs(&norq3,1,90,170,MOVIEX,4*CURVE);
 		switchRunqueues(norq3, &b1->entity);
-		pause(1);
+		bubble_pause(1);
 
 		rqs[0][0].entity.thick = RQTHICK;
 		updateEntity(&rqs[0][0].entity);
 
-		pause(1);
+		bubble_pause(1);
 
 		rqs[1][1].entity.thick = 2*RQTHICK;
 		updateEntity(&rqs[0][0].entity);
@@ -2376,12 +2376,12 @@ if (optind != argc) {
 		bubbleExplode(b[0]);
 		switchRunqueues(&rqs[1][1],&t[1]->entity);
 		switchRunqueues(&rqs[1][0],&t[0]->entity);
-		pause(1);
+		bubble_pause(1);
 		b[0]->exploded = 0;
 		bubbleInsertThread(b[0],t[0]);
 		bubbleInsertThread(b[0],t[1]);
 		switchRunqueues(&rqs[0][0],&b[0]->entity);
-		pause(1);
+		bubble_pause(1);
 #endif /* SHOWPRIO */
 	}
 	SWFMovie_save(movie,"bulles.swf");

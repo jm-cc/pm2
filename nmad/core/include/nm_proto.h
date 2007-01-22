@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef NM_PROTO_H
+#define NM_PROTO_H
 
 struct nm_proto {
 
@@ -32,3 +34,5 @@ struct nm_proto {
         /* protocol capabilities */
         struct nm_proto_cap	 cap;
 };
+
+#endif /* NM_PROTO_H */

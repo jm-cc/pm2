@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef NM_CORE_H
+#define NM_CORE_H
 
 struct nm_core {
 
@@ -35,5 +37,7 @@ struct nm_core {
         struct nm_sched 	*p_sched;
 #ifdef XPAULETTE
 	xpaul_server_t     xpaul_server;
-#endif 
+#endif
 };
+
+#endif /* NM_CORE_H */

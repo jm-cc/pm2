@@ -12,6 +12,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
+
+#ifndef NM_SCHED_H
+#define NM_SCHED_H
+
 #include "tbx_pointers.h"
 
 struct nm_sched {
@@ -69,3 +73,5 @@ struct nm_sched {
 
 
 };
+
+#endif /* NM_SCHED_H */

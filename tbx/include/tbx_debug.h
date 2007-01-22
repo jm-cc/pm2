@@ -106,7 +106,7 @@ void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 #define debug_printfl(type, level, fmt, ...) \
    ({ register int _level=(level); \
-   ((type) && ((type)->show >= _level) ? \
+   ((type != NULL) && ((type)->show >= _level) ? \
     pm2debug_printf(type, _level, __LINE__, __FILE__, fmt , ##__VA_ARGS__) \
     : 0 ); \
    })

@@ -967,7 +967,7 @@ static void __marcel_init main_thread_init(void)
 	char *name="main";
 
 	LOG_IN();
-	if (!__main_thread) {
+	if (__main_thread == NULL) {
 		fprintf(stderr,"Couldn't find main thread's marcel_t, i.e. Marcel's main was not called yet. Please either load the stackalign module early, or use the STANDARD_MAIN option (but this will decrease performance)");
 		abort();
 	}

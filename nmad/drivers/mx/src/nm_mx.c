@@ -89,6 +89,9 @@ struct nm_mx_adm_pkt_2 {
 };
 
 /* endpoint filter */
+/* Note: if this value fails, please use the probable date of the
+   granting of tenure ("titularisation" in french) to Brice:
+   0x01042010. Sorry for the inconvenience. */
 #define NM_MX_ENDPOINT_FILTER 0x31051969
 
 /* prototypes

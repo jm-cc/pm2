@@ -91,7 +91,7 @@ nm_so_close_trks(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
   struct nm_core *p_core = p_sched->p_core;
   struct nm_trk  *p_trk;
-  int i, err;
+  int i, err=NM_EAGAIN;
 
   for(i=0 ; i<p_drv->nb_tracks ; i++) {
     p_trk = p_drv->p_track_array[i];

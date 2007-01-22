@@ -107,7 +107,7 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  p_req = &p_sr_gate->status[tag][seq].request;
+  p_req = (uint8_t *)&p_sr_gate->status[tag][seq].request;
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
@@ -144,7 +144,7 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret;
+  int ret=NM_EAGAIN;
 
   while(nb--) {
 
@@ -253,7 +253,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
     seq = p_so_gate->recv_seq_number[tag]++;
 
-    p_req = &p_sr_gate->status[tag][seq].request;
+    p_req = (uint8_t *)&p_sr_gate->status[tag][seq].request;
 
     *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
 
@@ -289,7 +289,7 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret;
+  int ret=NM_EAGAIN;
 
   while(nb--) {
 

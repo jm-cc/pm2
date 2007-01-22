@@ -27,7 +27,6 @@ struct nm_so_interface;
 
 typedef struct {
 #ifdef XPAULETTE
-#warning XPAUL_TODO
 	struct nm_xpaul_data nm_xp_data;	
 	int err;
 	p_tbx_slist_t *list;

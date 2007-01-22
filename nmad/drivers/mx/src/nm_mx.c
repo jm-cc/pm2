@@ -88,6 +88,9 @@ struct nm_mx_adm_pkt_2 {
         uint64_t 	match_info;
 };
 
+/* endpoint filter */
+#define NM_MX_ENDPOINT_FILTER 0x31051969
+
 /* prototypes
  */
 static
@@ -183,7 +186,6 @@ int
 nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         struct nm_trk		*p_trk		= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
-        const uint32_t		 ep_key		= 0xFFFFFFFF;
         mx_endpoint_t		 ep;
 	mx_endpoint_addr_t	 ep_addr;
 	uint32_t		 ep_id;
@@ -218,7 +220,7 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
          */
         mx_ret = mx_open_endpoint(0,
                                   MX_ANY_ENDPOINT,
-                                  ep_key,
+                                  NM_MX_ENDPOINT_FILTER,
                                   NULL,
                                   0,
                                   &ep);
@@ -277,7 +279,6 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         char			*drv_url	= NULL;
         char			*trk_url	= NULL;
         uint64_t		 r_nic_id	= 0;
-        const uint32_t		 ep_key		= 0xFFFFFFFF;
         mx_return_t	mx_ret	= MX_SUCCESS;
         int err;
 
@@ -330,7 +331,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         mx_ret	= mx_connect(p_mx_trk->ep,
                              r_nic_id,
                              p_mx_cnx->r_ep_id,
-                             ep_key,
+                             NM_MX_ENDPOINT_FILTER,
                              MX_INFINITE,
                              &p_mx_cnx->r_ep_addr);
         NM_TRACEF("mx_connect <--");
@@ -399,7 +400,6 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         struct nm_mx_trk	*p_mx_trk	= NULL;
         struct nm_mx_cnx	*p_mx_cnx	= NULL;
         uint64_t		 r_nic_id	= 0;
-        const uint32_t		 ep_key		= 0xFFFFFFFF;
         mx_return_t	mx_ret	= MX_SUCCESS;
         int err;
 
@@ -467,7 +467,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         mx_ret	= mx_connect(p_mx_trk->ep,
                              r_nic_id,
                              p_mx_cnx->r_ep_id,
-                             ep_key,
+                             NM_MX_ENDPOINT_FILTER,
                              MX_INFINITE,
                              &p_mx_cnx->r_ep_addr);
         NM_TRACEF("mx_connect <--");

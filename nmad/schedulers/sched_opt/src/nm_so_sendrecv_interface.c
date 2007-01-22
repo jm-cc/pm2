@@ -124,7 +124,7 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request_t request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)request->request;
+  volatile uint8_t *p_request = (uint8_t *)&request->request;
 
   if(*p_request & NM_SO_STATUS_SEND_COMPLETED)
     return NM_ESUCCESS;
@@ -269,7 +269,7 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request_t request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request->request;
+  volatile uint8_t *p_request = (uint8_t *)&request->request;
 
   if(*p_request & NM_SO_STATUS_RECV_COMPLETED)
     return NM_ESUCCESS;

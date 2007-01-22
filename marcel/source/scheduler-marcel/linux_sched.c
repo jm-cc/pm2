@@ -873,7 +873,7 @@ need_resched:
 		run_time = NS_MAX_SLEEP_AVG;
 		*/
 
-	prevh = ma_task_sched_holder(prev);
+	prevh = ma_task_run_holder(prev);
 	MA_BUG_ON(!prevh);
 
 	go_to_sleep = 0;

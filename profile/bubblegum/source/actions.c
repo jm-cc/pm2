@@ -352,7 +352,6 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
 	    "realplay"
 #endif
 	    " autobulles.swf ) &",getenv("USER"));
-   //   printf("%s\n", command);
    system(command);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
    gtk_main_iteration_do(FALSE);

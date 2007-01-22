@@ -14,6 +14,7 @@
 
 APP		:= basic basic_ping
 NM_PATH		:= ../..
+APP_COMMON_C	:= basic_common.c
 
 include $(NM_PATH)/Makefile
 

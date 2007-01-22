@@ -27,6 +27,9 @@
 /* Choose a scheduler
  */
 #include <nm_public.h>
+
+#include "basic_common.h"
+
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_mini_alt_public.h>
 #elif defined CONFIG_SCHED_OPT
@@ -73,7 +76,7 @@ typedef struct s_ping_result
 static const int param_control_receive   = 0;
 static const int param_warmup            = 1;
 static const int param_test_warmup       = 1;
-static const int param_nb_samples        = 1000;
+static const int param_nb_samples        = 2;
 static const int param_min_size          = 4;
 static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
@@ -94,6 +97,13 @@ static uint8_t			 gate_id	=    0;
 
 // Functions
 //......................
+
+static
+void
+usage(void) {
+        fprintf(stderr, "usage: basic_ping [[-h <remote_hostname>] <remote url>]\n");
+        exit(EXIT_FAILURE);
+}
 
 static void
 mark_buffer(int len);
@@ -389,100 +399,11 @@ pong(void) {
 }
 
 int
-session_init(int    argc,
-             char **argv) {
-        char	*r_url	= NULL;
-        char	*l_url	= NULL;
-        int err;
-
-#if defined CONFIG_SCHED_MINI_ALT
-        err = nm_core_init(&argc, argv, &p_core, nm_mini_alt_load);
-#elif defined CONFIG_SCHED_OPT
-        err = nm_core_init(&argc, argv, &p_core, nm_so_load);
-#else
-        err = nm_core_init(&argc, argv, &p_core, nm_mini_load);
-#endif
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_init returned err = %d\n", err);
-                goto out;
-        }
-
-        argc--;
-        argv++;
-
-        if (argc) {
-                r_url	= *argv;
-                printf("running as client using remote url: \"%s\"\n", r_url);
-
-                argc--;
-                argv++;
-        } else {
-                printf("running as server\n");
-        }
-
-        err = nm_core_proto_init(p_core, nm_basic_load, &p_proto);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_proto_init returned err = %d\n", err);
-                goto out;
-        }
-
-#if defined CONFIG_IBVERBS
-        err = nm_core_driver_init(p_core, nm_ibverbs_load, &drv_id, &l_url);
-#elif defined CONFIG_MX
-        err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
-#elif defined CONFIG_GM
-        err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
-#elif defined CONFIG_QSNET
-        err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
-#elif defined CONFIG_SISCI
-        err = nm_core_driver_init(p_core, nm_sisci_load, &drv_id, &l_url);
-#else
-        err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
-#endif
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
-                goto out;
-        }
-
-        err = nm_core_gate_init(p_core, &gate_id);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_init returned err = %d\n", err);
-                goto out;
-        }
-
-        if (!r_url) {
-                /* server
-                 */
-                printf("local url: \"%s\"\n", l_url);
-
-                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_accept returned err = %d\n", err);
-                        goto out;
-                }
-        } else {
-                /* client
-                 */
-                err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                           "localhost", r_url);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_connect returned err = %d\n", err);
-                        goto out;
-                }
-        }
-
-        return !!r_url;
-
- out:
-        exit(EXIT_FAILURE);
-}
-
-int
 main(int    argc,
      char **argv) {
         int is_master;
+        is_master	= !bc_core_init(&argc, argv, &p_core, &p_proto, &gate_id);
 
-        is_master	= session_init(argc, argv);
         if (!param_dynamic_allocation) {
                 main_buffer = tbx_aligned_malloc(param_max_size, 8);
         }

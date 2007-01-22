@@ -187,16 +187,18 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 	e->sched_holder = &bubble->hold;
 	if (e->type == MA_TASK_ENTITY) {
 		if ((h = e->run_holder) && h != &bubble->hold) {
-			MA_BUG_ON(ma_holder_type(h) != MA_BUBBLE_HOLDER);
 			/* already enqueued */
 			if (!(e->holder_data)) {
 				/* and already running ! */
 				ma_deactivate_running_entity(e,h);
 				ma_activate_running_entity(e,&bubble->hold);
 			} else {
-				/* Ici, on suppose que h est déjà verrouillé
-				 * ainsi que sa runqueue */
-				__ma_bubble_dequeue_entity(e,ma_bubble_holder(h));
+				if (ma_holder_type(h) == MA_BUBBLE_HOLDER)
+					/* Ici, on suppose que h est déjà verrouillé
+					 * ainsi que sa runqueue */
+					__ma_bubble_dequeue_entity(e,ma_bubble_holder(h));
+				else
+					ma_rq_dequeue_entity(e,ma_rq_holder(h));
 				ma_deactivate_running_entity(e,h);
 				ma_activate_running_entity(e,&bubble->hold);
 				/* Ici, on suppose que la runqueue de bubble
@@ -334,15 +336,12 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 }
 #endif
 
-/* l'entité doit être vraiment morte (déqueuée notament).
- * Retourne 1 si on doit libérer le sémaphore join. */
+/* Retourne 1 si on doit libérer le sémaphore join. */
 int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	MA_BUG_ON(entity->init_holder != &bubble->hold);
 	entity->init_holder = NULL;
 	/* le sched holder pourrait être autre (vol) */
 	entity->sched_holder = NULL;
-	MA_BUG_ON(entity->run_holder);
-	entity->run_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
 	bubble->nbentities--;

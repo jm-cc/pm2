@@ -96,8 +96,8 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_verb_tmpl,$(M)))
 # Note: "%:%.o" and "%:%.c" disables the corresponding implicit rules
 %:	%.c
 %:	%.o
-%:	%.o $(LIBS_DEP)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
+%:	%.o $(APP_COMMON_OBJ) $(LIBS_DEP)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(APP_COMMON_OBJ) $(LDFLAGS) $(LIBS)
 
 # compiling rule
 # ----
@@ -157,12 +157,12 @@ $(foreach M,$(EMODULES),$(if $(NM_$(M)_LIB),$(eval $(call SHLIB_tmpl,$(M)))))
 # single file application building rule
 # ----
 #
-# Note: "%:%.o" and "%:%.c" disables the corresponding implicit rules
+# Note: "%:%.o" and "%:%.c" disable the corresponding implicit rules
 %:	%.c
 %:	%.o
-%:	%.o  $(LIBS_DEP)
+%:	%.o $(APP_COMMON_OBJ) $(LIBS_DEP)
 	@echo -e "  [LINK]\t  "$@
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(APP_COMMON_OBJ) $(LDFLAGS) $(LIBS)
 
 # compiling rule
 # ----

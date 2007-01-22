@@ -188,14 +188,14 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 	if (e->type == MA_TASK_ENTITY) {
 		if ((h = e->run_holder) && h != &bubble->hold) {
 			/* already enqueued */
+			/* Ici, on suppose que h est déjà verrouillé
+			 * ainsi que sa runqueue pour une bulle */
 			if (!(e->holder_data)) {
 				/* and already running ! */
 				ma_deactivate_running_entity(e,h);
 				ma_activate_running_entity(e,&bubble->hold);
 			} else {
 				if (ma_holder_type(h) == MA_BUBBLE_HOLDER)
-					/* Ici, on suppose que h est déjà verrouillé
-					 * ainsi que sa runqueue */
 					__ma_bubble_dequeue_entity(e,ma_bubble_holder(h));
 				else
 					ma_rq_dequeue_entity(e,ma_rq_holder(h));
@@ -228,6 +228,11 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_holder_t *sched_bubble;
+	ma_holder_t *h = ma_entity_holder_lock_softirq(entity);
+
+	if (h != &bubble->hold)
+		/* XXX: c'est couillu ca */
+		ma_holder_rawlock(&bubble->hold);
 #endif
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nbentities)
@@ -254,13 +259,16 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	} else {
 		bubble_sched_debugl(7,"unlock new holder %p\n", &bubble->hold);
 		ma_holder_rawunlock(&bubble->hold);
-		ma_holder_rawlock(sched_bubble);
+		if (h != sched_bubble)
+			ma_holder_rawlock(sched_bubble);
 		bubble_sched_debugl(7,"sched holder %p locked\n", sched_bubble);
 	}
 	ma_set_sched_holder(entity, ma_bubble_holder(sched_bubble));
 	bubble_sched_debugl(7,"unlock sched holder %p\n", sched_bubble);
-	/* dans le cas STEAL, on s'occupe de déverrouiller */
-	ma_holder_unlock_softirq(sched_bubble);
+	if (h != sched_bubble)
+		ma_holder_rawunlock(sched_bubble);
+	
+	ma_entity_holder_unlock_softirq(h);
 #endif
 }
 
@@ -327,12 +335,10 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		marcel_bubble_removeentity(ma_bubble_holder(h),entity);
 	}
 
-	ma_holder_lock_softirq(&bubble->hold);
 	bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
 	__do_bubble_insertentity(bubble,entity);
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
-	LOG_OUT();
-	return 0;
+	LOG_RETURN(0);
 }
 #endif
 

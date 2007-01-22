@@ -37,10 +37,6 @@ nm_null_out_schedule_gate(struct nm_gate *p_gate) {
 
         int	 err;
 
-        /* TODO: check if track is busy
-         */
-#warning TODO
-
         pre	= p_gate->pre_sched_out_list;
         post	= p_gate->post_sched_out_list;
 
@@ -97,10 +93,6 @@ nm_null_out_process_success_rq(struct nm_sched		*p_sched,
                 NM_DISPF("proto.ops.out_success returned: %d", err);
         }
 
-        /* TODO: move iov_free and pkt_wrap_free to user/proto code
-         */
-#warning TODO
-
  discard:
         /* free iovec
          */
@@ -139,10 +131,6 @@ nm_null_out_process_failed_rq(struct nm_sched		*p_sched,
         if (err != NM_ESUCCESS) {
                 NM_DISPF("proto.ops.out_failed returned: %d", err);
         }
-
-        /* TODO: move iov_free and pkt_wrap_free to user/proto code
-         */
-#warning TODO
 
  discard:
         /* free iovec

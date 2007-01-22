@@ -92,18 +92,10 @@ static unsigned char		*main_buffer	= NULL;
 static struct nm_core		*p_core		= NULL;
 static struct nm_proto		*p_proto	= NULL;
 static struct nm_basic_rq	*p_rq		= NULL;
-static uint8_t			 drv_id		=    0;
 static uint8_t			 gate_id	=    0;
 
 // Functions
 //......................
-
-static
-void
-usage(void) {
-        fprintf(stderr, "usage: basic_ping [[-h <remote_hostname>] <remote url>]\n");
-        exit(EXIT_FAILURE);
-}
 
 static void
 mark_buffer(int len);

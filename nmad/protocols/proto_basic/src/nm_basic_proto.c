@@ -196,11 +196,6 @@ nm_basic_irecv_any(struct nm_proto	 *p_proto,
 	return err;
 }
 
-/* TODO: add a means for the application to retrieve the actual gate
-   id for completed gateless requests
- */
-#warning TODO
-
 int
 nm_basic_wait(struct nm_basic_rq	 *p_rq) {
 	int err;

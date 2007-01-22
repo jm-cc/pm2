@@ -237,10 +237,6 @@ nm_disk_disconnect		(struct nm_cnx_rq *p_crq) {
 
         SYSCALL(close(p_disk_gate->fd[p_trk->id]));
 
-        /* TODO: free disk_gate struct
-         */
-#warning TODO
-
 	err = NM_ESUCCESS;
 
 	return err;

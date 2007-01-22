@@ -22,8 +22,6 @@
 
 #include "nm_mini_private.h"
 
-/* TODO: merge with version in mini_schedule_out
- */
 static
 int
 nm_mini_make_ctrl_pkt(struct nm_sched		 *p_sched,
@@ -125,16 +123,6 @@ nm_mini_in_schedule(struct nm_sched *p_sched) {
         pre	= p_sched->submit_aux_recv_req;
         if (tbx_slist_is_nil(pre))
                 goto early_out;
-
-        /* TODO: take driver capabilities into account in deciding whether to
-           post a receive request or not
-         */
-#warning TODO
-
-        /* TODO: if driver does not support selective receives, implement a
-           RDV algorithm
-         */
-#warning TODO
 
         /* loop on the new submitted pkts
          */
@@ -333,10 +321,6 @@ nm_mini_in_process_success_rq(struct nm_sched	*p_sched,
                         NM_DISPF("proto.ops.in_success returned: %d", err);
                 }
 
-                /* TODO: move iov_free and pkt_wrap_free to user/proto code
-                 */
-#warning TODO
-
 
          discard:
                /* free iovec
@@ -398,11 +382,6 @@ nm_mini_in_process_failed_rq(struct nm_sched	*p_sched,
                 if (err != NM_ESUCCESS) {
                         NM_DISPF("proto.ops.in_failed returned: %d", err);
                 }
-
-                /* TODO: move iov_free and pkt_wrap_free to user/proto code
-                 */
-#warning TODO
-
 
          discard:
                /* free iovec

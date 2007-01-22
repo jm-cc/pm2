@@ -31,8 +31,6 @@
 #warning anticipated incoming ctrl pkt post disabled
 #endif
 
-/* TODO: merge with version in mini_alt_schedule_out
- */
 static
 __inline__
 int
@@ -144,16 +142,6 @@ nm_mini_alt_in_schedule_data_aux(struct nm_sched		*p_sched,
         if (tbx_slist_is_nil(pre))
                 goto early_out;
 
-        /* TODO: take driver capabilities into account in deciding whether to
-           post a receive request or not
-         */
-#warning TODO
-
-        /* TODO: if driver does not support selective receives, implement a
-           RDV algorithm
-         */
-#warning TODO
-
         /* loop on the new submitted pkts
          */
         do {
@@ -258,16 +246,6 @@ nm_mini_alt_in_schedule_data_perm(struct nm_sched		*p_sched,
 
         if (tbx_slist_is_nil(pre))
                 goto early_out;
-
-        /* TODO: take driver capabilities into account in deciding whether to
-           post a receive request or not
-         */
-#warning TODO
-
-        /* TODO: if driver does not support selective receives, implement a
-           RDV algorithm
-         */
-#warning TODO
 
         pkt_list	= p_mini_alt_sched->pkt_list;
 
@@ -583,11 +561,6 @@ nm_mini_alt_in_process_success_data(struct nm_sched	*p_sched,
                 NM_DISPF("proto.ops.in_success returned: %d", err);
         }
 
-        /* TODO: move iov_free and pkt_wrap_free to user/proto code
-         */
-#warning TODO
-
-
  discard:
         /* free iovec
          */
@@ -662,11 +635,6 @@ nm_mini_alt_in_process_failed_rq(struct nm_sched	*p_sched,
                 if (err != NM_ESUCCESS) {
                         NM_DISPF("proto.ops.in_failed returned: %d", err);
                 }
-
-                /* TODO: move iov_free and pkt_wrap_free to user/proto code
-                 */
-#warning TODO
-
 
          discard:
                /* free iovec

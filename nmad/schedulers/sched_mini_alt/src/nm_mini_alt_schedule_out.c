@@ -22,8 +22,6 @@
 
 #include "nm_mini_alt_private.h"
 
-/* TODO: merge with version in mini_alt_schedule_in
- */
 static
 int
 nm_mini_alt_make_ctrl_pkt(struct nm_sched		 *p_sched,
@@ -251,11 +249,6 @@ nm_mini_alt_out_process_success_rq(struct nm_sched		*p_sched,
                         NM_DISPF("proto.ops.out_success returned: %d", err);
                 }
 
-                /* TODO: move iov_free and pkt_wrap_free to user/proto code
-                 */
-#warning TODO
-
-
         discard:
                 /* free iovec
                  */
@@ -318,11 +311,6 @@ nm_mini_alt_out_process_failed_rq(struct nm_sched		*p_sched,
                 if (err != NM_ESUCCESS) {
                         NM_DISPF("proto.ops.out_failed returned: %d", err);
                 }
-
-                /* TODO: move iov_free and pkt_wrap_free to user/proto code
-                 */
-#warning TODO
-
 
         discard:
                 /* free iovec

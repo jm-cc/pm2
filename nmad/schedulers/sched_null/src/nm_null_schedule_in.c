@@ -33,10 +33,6 @@ nm_null_in_schedule(struct nm_sched *p_sched) {
 
         p_null_sched	= p_sched->sch_private;
 
-        /* TODO: add logic to avoid conflicting concurrent requests
-         */
-#warning TODO
-
         /* post permissive requests
          */
         pre	= p_sched->submit_perm_recv_req;
@@ -105,10 +101,6 @@ nm_null_in_process_success_rq(struct nm_sched	*p_sched,
                 NM_DISPF("proto.ops.in_success returned: %d", err);
         }
 
-        /* TODO: move iov_free and pkt_wrap_free to user/proto code
-         */
-#warning TODO
-
  discard:
         /* free iovec
          */
@@ -147,10 +139,6 @@ nm_null_in_process_failed_rq(struct nm_sched	*p_sched,
         if (err != NM_ESUCCESS) {
                 NM_DISPF("proto.ops.in_failed returned: %d", err);
         }
-
-        /* TODO: move iov_free and pkt_wrap_free to user/proto code
-         */
-#warning TODO
 
  discard:
         /* free iovec

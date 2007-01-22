@@ -302,9 +302,6 @@ nm_core_driver_init(struct nm_core	 *p_core,
                 goto out;
         }
 
-        /* TODO: build full URL with drv and trks URLs
-         */
-#warning TODO
         if (p_url) {
                 int i;
 
@@ -436,10 +433,6 @@ nm_core_gate_init(struct nm_core	*p_core,
         p_gate->pre_sched_out_list	= tbx_slist_nil();
         p_gate->post_sched_out_list	= tbx_slist_nil();
 
-        /* TODO: initialise gate_drv_array
-         */
-#warning TODO
-
         p_core->nb_gates++;
 
         err = p_core->p_sched->ops.init_gate(p_core->p_sched, p_gate);
@@ -510,9 +503,6 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
         memset(p_gdrv, 0, sizeof(struct nm_gate_drv));
 
         if (!p_gdrv) {
-                /* TODO: free already allocated structs
-                 */
-#warning TODO
                 err	= -NM_ENOMEM;
                 goto out;
         }
@@ -524,9 +514,6 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 TBX_MALLOC(rq.p_drv->nb_tracks * sizeof(struct nm_gate_trk	*));
 
         if (!p_gdrv->p_gate_trk_array) {
-                /* TODO: free already allocated structs
-                 */
-#warning TODO
                 err	= -NM_ENOMEM;
                 goto out;
         }
@@ -544,9 +531,6 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 memset(p_gtrk, 0, sizeof(struct nm_gate_trk));
 
                 if (!p_gtrk) {
-                        /* TODO: free already allocated structs
-                         */
-#warning TODO
                         err	= -NM_ENOMEM;
                         goto out;
                 }
@@ -650,10 +634,6 @@ nm_core_gate_connect	(struct nm_core	*p_core,
                                            host_url, drv_trk_url,
                                            !0);
 }
-
-/* TODO: symmetrical connect
- */
-#warning TODO
 
 /* public function to wrap a single buffer.
  *

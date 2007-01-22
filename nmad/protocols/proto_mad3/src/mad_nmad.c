@@ -1318,6 +1318,7 @@ mad_nmad_unpack(p_mad_connection_t   in,
                 mad_receive_mode_t   receive_mode) {
   p_mad_nmad_connection_specific_t	 cs	= NULL;
   p_mad_nmad_channel_specific_t		 chs	= NULL;
+  nm_so_request_t                        request;
 
   LOG_IN();
   if (send_mode == mad_send_LATER)
@@ -1326,7 +1327,8 @@ mad_nmad_unpack(p_mad_connection_t   in,
   cs	= in->specific;
   chs	= in->channel->specific;
 
-  nm_so_sr_irecv(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &cs->in_reqs[cs->in_next_seq]);
+  request=&cs->in_reqs[cs->in_next_seq];
+  nm_so_sr_irecv(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &request);
 
 #  ifdef MAD_NMAD_SO_DEBUG
   DISP("recv request[%d]: %d", cs->in_next_seq, cs->in_reqs[cs->in_next_seq]);

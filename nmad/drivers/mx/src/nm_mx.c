@@ -94,6 +94,10 @@ struct nm_mx_adm_pkt_2 {
    0x01042010. Sorry for the inconvenience. */
 #define NM_MX_ENDPOINT_FILTER 0x31051969
 
+/* connect/accept matching info */
+#define NM_MX_CONNECT_MATCH_INFO UINT64_C(0xdeadbeefdeadbeef)
+#define NM_MX_ACCEPT_MATCH_INFO UINT64_C(0xbeefdeadbeefdead)
+
 /* prototypes
  */
 static
@@ -358,7 +362,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
                 mx_ret = mx_isend(p_mx_trk->ep, &sg, 1, p_mx_cnx->r_ep_addr,
-                                   UINT64_C(0xdeadbeefdeadbeef), 0, &rq);
+				  NM_MX_CONNECT_MATCH_INFO, 0, &rq);
                 nm_mx_check_return("mx_isend", mx_ret);
                 mx_ret = mx_wait(p_mx_trk->ep, &rq, MX_INFINITE, &s, &r);
                 nm_mx_check_return("mx_wait", mx_ret);
@@ -375,8 +379,8 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
                 sg.segment_ptr		= &pkt2;
                 sg.segment_length	= sizeof(pkt2);
                 mx_ret = mx_irecv(p_mx_trk->ep, &sg, 1,
-                                  UINT64_C(0xbeefdeadbeefdead),
-                                  UINT64_C(0xffffffffffffffff), 0, &rq);
+                                  NM_MX_ACCEPT_MATCH_INFO,
+                                  MX_MATCH_MASK_NONE, 0, &rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
                 mx_ret = mx_wait(p_mx_trk->ep, &rq, MX_INFINITE, &s, &r);
                 nm_mx_check_return("mx_wait", mx_ret);
@@ -444,8 +448,8 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
                 mx_ret = mx_irecv(p_mx_trk->ep, &sg, 1,
-                                  UINT64_C(0xdeadbeefdeadbeef),
-                                  UINT64_C(0xffffffffffffffff), 0, &rq);
+                                  NM_MX_CONNECT_MATCH_INFO,
+                                  MX_MATCH_MASK_NONE, 0, &rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
                 mx_ret = mx_wait(p_mx_trk->ep, &rq, MX_INFINITE, &s, &r);
                 nm_mx_check_return("mx_wait", mx_ret);
@@ -490,7 +494,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 sg.segment_ptr		= &pkt2;
                 sg.segment_length	= sizeof(pkt2);
                 mx_ret = mx_issend(p_mx_trk->ep, &sg, 1, p_mx_cnx->r_ep_addr,
-                                   UINT64_C(0xbeefdeadbeefdead), 0, &rq);
+                                   NM_MX_ACCEPT_MATCH_INFO, 0, &rq);
                 nm_mx_check_return("mx_issend", mx_ret);
                 mx_ret = mx_wait(p_mx_trk->ep, &rq, MX_INFINITE, &s, &r);
                 nm_mx_check_return("mx_wait", mx_ret);
@@ -619,7 +623,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_pw->gate_priv	= p_gate->p_gate_drv_array[p_drv->id]->info;
                 p_mx_gate	= p_pw->gate_priv;
                 p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
-                match_mask	= UINT64_C(0xffffffffffffffff);
+                match_mask	= MX_MATCH_MASK_NONE;
                 match_info	= p_mx_cnx->recv_match_info;
         } else {
                 match_info	= 0;

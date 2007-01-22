@@ -15,4 +15,4 @@
 
 
 int
-nm_tcp_load(struct nm_drv_ops *p_ops);
+nm_tcpdg_load(struct nm_drv_ops *p_ops);

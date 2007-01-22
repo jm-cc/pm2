@@ -27,14 +27,14 @@
 
 #include <tbx.h>
 
-#include "nm_tcp_private.h"
+#include "nm_tcpdg_private.h"
 
-struct nm_tcp_drv {
+struct nm_tcpdg_drv {
         /* server socket	*/
         int	server_fd;
 };
 
-struct nm_tcp_trk {
+struct nm_tcpdg_trk {
 
         /* number of poll array entries to process until next poll	*/
         int nb_incoming;
@@ -49,71 +49,41 @@ struct nm_tcp_trk {
         uint8_t		*gate_map;
 };
 
-struct nm_tcp_gate {
+struct nm_tcpdg_gate {
         int	fd[255];
 };
 
-struct nm_tcp_pkt_wrap {
-        struct nm_iovec_iter vi;
+struct nm_tcpdg_pkt_wrap {
+        /* state
+           0: reading the message length
+           1: reading the message body
+         */
+        uint8_t			state;
+
+        /* buffer ptr
+           current location in sending the header
+         */
+        uint8_t			*ptr;
+
+        /* remaining length
+           current remaining length in sending either the header
+           or the body (according to the state)
+         */
+        uint64_t		 rem_length;
+
+        /* message header
+         */
+        struct {
+
+                uint64_t	length;
+        } h;
+
+        struct nm_iovec_iter	vi;
 };
-
-#define PROFILE_TCP
-
-#ifdef PROFILE_TCP
-#define NB_SAMPLES	20000
-enum profile_op {
-        po_init		= 0,
-
-        po_out_poll,
-        po_in_mpoll,
-        po_in_spoll,
-        po_send,
-        po_recv,
-        po_send_write,
-        po_recv_read,
-
-        po_out_poll_done,
-        po_in_mpoll_done,
-        po_in_spoll_done,
-        po_send_done,
-        po_recv_done,
-        po_send_write_done,
-        po_recv_read_done,
-};
-
-static char *profile_str[] = {
-        "init",
-
-        "out_poll",
-        "in_mpoll",
-        "in_spoll",
-        "send",
-        "recv",
-        "send_write",
-        "recv_read",
-
-        "out_poll_done",
-        "in_mpoll_done",
-        "in_spoll_done",
-        "send_done",
-        "recv_done",
-        "send_write_done",
-        "recv_read_done",
-};
-
-
-static tbx_tick_t	sample_array[NB_SAMPLES];
-static enum profile_op	op_array[NB_SAMPLES];
-static int		next_sample	= 0;
-
-#  define SAMPLE(op) do {if (next_sample < NB_SAMPLES){TBX_GET_TICK(sample_array[next_sample]);op_array[next_sample]=(op);next_sample++;}} while (0)
-#else /* PROFILE_TCP */
-#  define SAMPLE(op)
-#endif /* PROFILE_TCP */
 
 static
 char *
-nm_tcp_h_errno_to_str(void) {
+nm_tcpdg_h_errno_to_str(void) {
         char *msg = NULL;
 
         switch (h_errno) {
@@ -139,7 +109,7 @@ nm_tcp_h_errno_to_str(void) {
 
 static
 int
-nm_tcp_socket_create(struct sockaddr_in	*address,
+nm_tcpdg_socket_create(struct sockaddr_in	*address,
                      unsigned short 	 port) {
         socklen_t          len  = sizeof(struct sockaddr_in);
         struct sockaddr_in temp;
@@ -162,7 +132,7 @@ nm_tcp_socket_create(struct sockaddr_in	*address,
 
 static
 void
-nm_tcp_address_fill(struct sockaddr_in	*address,
+nm_tcpdg_address_fill(struct sockaddr_in	*address,
                     unsigned short	 port,
                     char                  *host_name) {
         struct hostent *host_entry;
@@ -170,7 +140,7 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
         if (!(host_entry = gethostbyname(host_name))) {
                 char *msg = NULL;
 
-                msg	= nm_tcp_h_errno_to_str();
+                msg	= nm_tcpdg_h_errno_to_str();
                 NM_DISPF("gethostbyname error: %s", msg);
         }
 
@@ -185,19 +155,19 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
 
 static
 int
-nm_tcp_init		(struct nm_drv *p_drv) {
-        struct nm_tcp_drv	*p_tcp_drv	= NULL;
+nm_tcpdg_init		(struct nm_drv *p_drv) {
+        struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         uint16_t		 port;
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
         int			 err;
 
         /* private data							*/
-	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcp_drv));
+	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcpdg_drv));
         p_drv->priv	= p_tcp_drv;
 
         /* server socket						*/
-        p_tcp_drv->server_fd	= nm_tcp_socket_create(&address, 0);
+        p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
         SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));
 
         /* driver url encoding						*/
@@ -211,8 +181,6 @@ nm_tcp_init		(struct nm_drv *p_drv) {
         p_drv->cap.has_selective_receive		= 1;
         p_drv->cap.has_concurrent_selective_receive	= 1;
 
-        SAMPLE(po_init);
-
         err = NM_ESUCCESS;
 
         return err;
@@ -220,8 +188,8 @@ nm_tcp_init		(struct nm_drv *p_drv) {
 
 static
 int
-nm_tcp_exit		(struct nm_drv *p_drv) {
-	struct nm_tcp_drv	*p_tcp_drv	= NULL;
+nm_tcpdg_exit		(struct nm_drv *p_drv) {
+	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         int			 err;
 
 	p_tcp_drv	= p_drv->priv;
@@ -236,16 +204,16 @@ nm_tcp_exit		(struct nm_drv *p_drv) {
 
 static
 int
-nm_tcp_open_trk		(struct nm_trk_rq	*p_trk_rq) {
+nm_tcpdg_open_trk		(struct nm_trk_rq	*p_trk_rq) {
         struct nm_trk		*p_trk		= NULL;
-        struct nm_tcp_trk	*p_tcp_trk	= NULL;
+        struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         int			 err;
 
         p_trk	= p_trk_rq->p_trk;
 
         /* private data							*/
-	p_tcp_trk	= TBX_MALLOC(sizeof (struct nm_tcp_trk));
-        memset(p_tcp_trk, 0, sizeof (struct nm_tcp_trk));
+	p_tcp_trk	= TBX_MALLOC(sizeof (struct nm_tcpdg_trk));
+        memset(p_tcp_trk, 0, sizeof (struct nm_tcpdg_trk));
         p_trk->priv	= p_tcp_trk;
 
         /* track capabilities encoding					*/
@@ -267,8 +235,8 @@ nm_tcp_open_trk		(struct nm_trk_rq	*p_trk_rq) {
 
 static
 int
-nm_tcp_close_trk	(struct nm_trk	*p_trk) {
-        struct nm_tcp_trk	*p_tcp_trk	= NULL;
+nm_tcpdg_close_trk	(struct nm_trk	*p_trk) {
+        struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         int			 err;
 
         p_tcp_trk	= p_trk->priv;
@@ -283,13 +251,13 @@ nm_tcp_close_trk	(struct nm_trk	*p_trk) {
 
 static
 int
-nm_tcp_connect_accept	(struct nm_cnx_rq	*p_crq,
+nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
                          int			 fd) {
-        struct nm_tcp_gate	*p_tcp_gate	= NULL;
+        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_tcp_trk	*p_tcp_trk	= NULL;
+        struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         int			 val    	=    1;
         socklen_t		 len    	= sizeof(int);
         int			 n;
@@ -308,8 +276,8 @@ nm_tcp_connect_accept	(struct nm_cnx_rq	*p_crq,
         /* private data				*/
         p_tcp_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
         if (!p_tcp_gate) {
-                p_tcp_gate	= TBX_MALLOC(sizeof (struct nm_tcp_gate));
-                memset(p_tcp_gate, 0, sizeof(struct nm_tcp_gate));
+                p_tcp_gate	= TBX_MALLOC(sizeof (struct nm_tcpdg_gate));
+                memset(p_tcp_gate, 0, sizeof(struct nm_tcpdg_gate));
 
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_tcp_gate;
@@ -344,7 +312,7 @@ nm_tcp_connect_accept	(struct nm_cnx_rq	*p_crq,
 
 static
 int
-nm_tcp_connect		(struct nm_cnx_rq *p_crq) {
+nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         uint16_t		 port;
         struct sockaddr_in	 address;
         int			 fd;
@@ -352,22 +320,22 @@ nm_tcp_connect		(struct nm_cnx_rq *p_crq) {
 
         /* TCP connect 				*/
         port	= strtol(p_crq->remote_drv_url, (char **)NULL, 10);
-        fd	= nm_tcp_socket_create(NULL, 0);
+        fd	= nm_tcpdg_socket_create(NULL, 0);
 
-        nm_tcp_address_fill(&address, port, p_crq->remote_host_url);
+        nm_tcpdg_address_fill(&address, port, p_crq->remote_host_url);
 
         SYSCALL(connect(fd, (struct sockaddr *)&address,
                         sizeof(struct sockaddr_in)));
 
-        err = nm_tcp_connect_accept(p_crq, fd);
+        err = nm_tcpdg_connect_accept(p_crq, fd);
 
         return err;
 }
 
 static
 int
-nm_tcp_accept		(struct nm_cnx_rq *p_crq) {
-        struct nm_tcp_drv	*p_tcp_drv	= NULL;
+nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
+        struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         struct nm_drv		*p_drv		= NULL;
         int			 fd;
         int			 err;
@@ -378,14 +346,14 @@ nm_tcp_accept		(struct nm_cnx_rq *p_crq) {
         /* TCP accept 				*/
         SYSCALL(fd = accept(p_tcp_drv->server_fd, NULL, NULL));
 
-        err = nm_tcp_connect_accept(p_crq, fd);
+        err = nm_tcpdg_connect_accept(p_crq, fd);
 
         return err;
 }
 
 static
 int
-nm_tcp_disconnect	(struct nm_cnx_rq *p_crq) {
+nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
         int	err;
 
         err = NM_ESUCCESS;
@@ -396,9 +364,9 @@ nm_tcp_disconnect	(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_tcp_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
+nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
 	struct pollfd		 pollfd;
-        struct nm_tcp_gate	*p_tcp_gate	= NULL;
+        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
         int			 ret;
         int			 err;
 
@@ -413,9 +381,7 @@ nm_tcp_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         pollfd.revents	= 0;
 
  poll_again:
-        SAMPLE(po_out_poll);
         ret	= poll(&pollfd, 1, 0);
-        SAMPLE(po_out_poll_done);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -456,12 +422,12 @@ nm_tcp_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
+nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 	struct pollfd		 pollfd;
         struct nm_drv		*p_drv		= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_tcp_gate	*p_tcp_gate	= NULL;
-        struct nm_tcp_trk	*p_tcp_trk	= NULL;
+        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
+        struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         struct nm_core		*p_core		= NULL;
         struct pollfd		*p_gate_pollfd	= NULL;
 
@@ -490,9 +456,7 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                         NM_TRACE_VAL("tcp incoming multi poll: gate 0 fd", p_tcp_trk->poll_array[0].fd);
 
                 multi_poll_again:
-                        SAMPLE(po_in_mpoll);
                         ret	= poll(p_tcp_trk->poll_array, p_drv->nb_gates, 0);
-                        SAMPLE(po_in_mpoll_done);
                         if (ret < 0) {
                                 if (errno == EINTR)
                                         goto multi_poll_again;
@@ -583,9 +547,7 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         NM_TRACE_VAL("tcp incoming single poll: pollfd", pollfd.fd);
 
  poll_single_again:
-        SAMPLE(po_in_spoll);
         ret	= poll(&pollfd, 1, 0);
-        SAMPLE(po_in_spoll_done);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -633,16 +595,14 @@ nm_tcp_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 /* used for post and poll */
 static
 int
-nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
-        struct nm_tcp_gate	*p_tcp_gate	= NULL;
-        struct nm_tcp_pkt_wrap	*p_tcp_pw	= NULL;
-        struct nm_iovec_iter	*p_vi		= NULL;
-        struct iovec		*p_cur		= NULL;
-        int			 ret;
-        int			 err;
+nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
+        struct nm_tcpdg_gate		*p_tcp_gate	= NULL;
+        struct nm_tcpdg_pkt_wrap	*p_tcp_pw	= NULL;
+        int				 fd		=   -1;
+        int				 ret;
+        int				 err;
 
-        SAMPLE(po_send);
-        err	= nm_tcp_outgoing_poll(p_pw);
+        err	= nm_tcpdg_outgoing_poll(p_pw);
         if (err < 0)
                 goto out_complete;
 
@@ -651,7 +611,7 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
         if (!p_tcp_pw) {
                 NM_TRACEF("setup vector iterator");
 
-                p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
+                p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcpdg_pkt_wrap));
                 p_pw->drv_priv	= p_tcp_pw;
 
                 /* current entry num is first entry num
@@ -665,68 +625,44 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
                 /* current vector size is full vector size
                  */
                 p_tcp_pw->vi.v_cur_size	= p_pw->v_nb;
-        }
 
-        /* get a pointer to the iterator
-         */
-        p_vi	= &(p_tcp_pw->vi);
-
-        /* get a pointer to the current entry
-         */
-        p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
-
-        NM_TRACE_VAL("tcp outgoing trk id", p_pw->p_trk->id);
-        NM_TRACE_VAL("tcp outgoing fd", p_tcp_gate->fd[p_pw->p_trk->id]);
-        NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
-        NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
-        NM_TRACE_VAL("tcp outgoing cur len", p_cur->iov_len);
-
-        if (!p_vi->v_cur_size) {
-                err	= NM_ESUCCESS;
-
-                goto out_complete;
-        }
-
- writev_again:
-        NM_TRACEF("tcp outgoing writev %d, %p, %u", p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
-        SAMPLE(po_send_write);
-        ret	= writev(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
-        SAMPLE(po_send_write_done);
-        NM_TRACE_VAL("tcp outgoing writev ret", ret);
-
-        if (ret < 0) {
-                if (errno == EINTR)
-                        goto writev_again;
-
-                perror("writev");
-                err = -NM_ESCFAILD;
-                goto out_complete;
-        }
-
-        if (ret	== 0) {
-                NM_TRACEF("connection closed");
-                err = -NM_ECLOSED;
-                goto out_complete;
-        }
-
-        do {
-                uint64_t len	= tbx_min(p_cur->iov_len, ret);
-                p_cur->iov_base	+= len;
-                p_cur->iov_len	-= len;
-
-                /* still something to send for this vector entry?
+                /* message header
                  */
-                if (p_cur->iov_len)
-                        break;
+                p_tcp_pw->h.length	= p_pw->length;
 
-                /* restore vector entry
+                /* initial state
                  */
-                *p_cur = p_vi->cur_copy;
+                p_tcp_pw->state		= 0;
 
-                /* increment cursors
+                /* header ptr
                  */
-                p_vi->v_cur++;
-                p_vi->v_cur_size--;
+                p_tcp_pw->ptr		= (uint8_t *)&(p_tcp_pw->h);
+
+                /* remaining length
+                 */
+                p_tcp_pw->rem_length	= sizeof(p_tcp_pw->h);
+        }
+
+        fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+
+        if (p_tcp_pw->state) {
+                struct nm_iovec_iter	*p_vi;
+                struct iovec		*p_cur;
+
+        write_body:
+                /* get a pointer to the iterator
+                 */
+                p_vi	= &(p_tcp_pw->vi);
+
+                /* get a pointer to the current entry
+                 */
+                p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
+
+                NM_TRACE_VAL("tcp outgoing trk id", p_pw->p_trk->id);
+                NM_TRACE_VAL("tcp outgoing fd", p_tcp_gate->fd[p_pw->p_trk->id]);
+                NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
+                NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
+                NM_TRACE_VAL("tcp outgoing cur len", p_cur->iov_len);
 
                 if (!p_vi->v_cur_size) {
                         err	= NM_ESUCCESS;
@@ -734,15 +670,90 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
                         goto out_complete;
                 }
 
-                p_cur++;
-                p_vi->cur_copy = *p_cur;
-                ret -= len;
-        } while (ret);
+        writev_again:
+                ret	= writev(fd, p_cur, p_vi->v_cur_size);
+
+                if (ret < 0) {
+                        if (errno == EINTR)
+                                goto writev_again;
+
+                        perror("writev");
+                        err = -NM_ESCFAILD;
+                        goto out_complete;
+                }
+
+                if (ret	== 0) {
+                        NM_TRACEF("connection closed");
+                        err = -NM_ECLOSED;
+                        goto out_complete;
+                }
+
+                do {
+                        uint64_t len	= tbx_min(p_cur->iov_len, ret);
+                        p_cur->iov_base	+= len;
+                        p_cur->iov_len	-= len;
+
+                        /* still something to send for this vector entry?
+                         */
+                        if (p_cur->iov_len)
+                                break;
+
+                        /* restore vector entry
+                         */
+                        *p_cur = p_vi->cur_copy;
+
+                        /* increment cursors
+                         */
+                        p_vi->v_cur++;
+                        p_vi->v_cur_size--;
+
+                        if (!p_vi->v_cur_size) {
+                                err	= NM_ESUCCESS;
+
+                                goto out_complete;
+                        }
+
+                        p_cur++;
+                        p_vi->cur_copy = *p_cur;
+                        ret -= len;
+                } while (ret);
+        } else {
+        write_again:
+                ret	= write(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+
+                if (ret < 0) {
+                        if (errno == EINTR)
+                                goto write_again;
+
+                        perror("write");
+                        err = -NM_ESCFAILD;
+                        goto out_complete;
+                }
+
+                if (ret	== 0) {
+                        NM_TRACEF("connection closed");
+                        err = -NM_ECLOSED;
+                        goto out_complete;
+                }
+
+                p_tcp_pw->ptr		+= ret;
+                p_tcp_pw->rem_length	-= ret;
+
+                if (!p_tcp_pw->rem_length) {
+                        p_tcp_pw->state	= 1;
+                        p_tcp_pw->rem_length	= p_tcp_pw->h.length;
+
+                        err	= nm_tcpdg_outgoing_poll(p_pw);
+                        if (err < 0)
+                                goto out_complete;
+
+                        goto write_body;
+                }
+        }
 
         err	= -NM_EAGAIN;
 
  out:
-        SAMPLE(po_send_done);
         return err;
 
  out_complete:
@@ -757,16 +768,14 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
 /* used for post and poll */
 static
 int
-nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
-        struct nm_tcp_gate	*p_tcp_gate	= NULL;
-        struct nm_tcp_pkt_wrap	*p_tcp_pw	= NULL;
-        struct nm_iovec_iter	*p_vi		= NULL;
-        struct iovec		*p_cur		= NULL;
-        int			 ret;
-        int			 err;
+nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
+        struct nm_tcpdg_gate		*p_tcp_gate	= NULL;
+        struct nm_tcpdg_pkt_wrap	*p_tcp_pw	= NULL;
+        int				 fd;
+        int			 	 ret;
+        int			 	 err;
 
-        SAMPLE(po_recv);
-        err	= nm_tcp_incoming_poll(p_pw);
+        err	= nm_tcpdg_incoming_poll(p_pw);
         if (err < 0)
                 goto out_complete;
 
@@ -775,7 +784,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
                 NM_TRACEF("setup vector iterator");
-                p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcp_pkt_wrap));
+                p_tcp_pw	= TBX_MALLOC(sizeof(struct nm_tcpdg_pkt_wrap));
                 p_pw->drv_priv	= p_tcp_pw;
 
                 /* current entry num is first entry num
@@ -789,60 +798,93 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 /* current vector size is full vector size
                  */
                 p_tcp_pw->vi.v_cur_size	= p_pw->v_nb;
+
+                /* message header
+                 */
+                p_tcp_pw->h.length	= 0;
+
+                /* initial state
+                 */
+                p_tcp_pw->state		= 0;
+
+                /* header ptr
+                 */
+                p_tcp_pw->ptr		= (uint8_t *)&(p_tcp_pw->h);
+
+                /* remaining length
+                 */
+                p_tcp_pw->rem_length	= sizeof(p_tcp_pw->h);
         }
 
-        /* get a pointer to the iterator
-         */
-        p_vi	= &(p_tcp_pw->vi);
+        fd	= p_tcp_gate->fd[p_pw->p_trk->id];
 
-        /* get a pointer to the current entry
-         */
-        p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
+        if (p_tcp_pw->state) {
+                struct nm_iovec_iter	*p_vi;
+                struct iovec		*p_cur;
 
-        NM_TRACE_VAL("tcp incoming trk id", p_pw->p_trk->id);
-        NM_TRACE_VAL("tcp incoming fd", p_tcp_gate->fd[p_pw->p_trk->id]);
-        NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
-        NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
-        NM_TRACE_VAL("tcp incoming cur len", p_cur->iov_len);
+        read_body:
 
-        if (!p_vi->v_cur_size) {
-                err	= NM_ESUCCESS;
+                /* get a pointer to the iterator
+                 */
+                p_vi	= &(p_tcp_pw->vi);
 
-                goto out_complete;
-        }
+                /* get a pointer to the current entry
+                 */
+                p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
 
- readv_again:
-        NM_TRACEF("tcp incoming readv %d, %p, %u", p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
-        SAMPLE(po_recv_read);
-        ret	= readv(p_tcp_gate->fd[p_pw->p_trk->id], p_cur, p_vi->v_cur_size);
-        SAMPLE(po_recv_read_done);
-        NM_TRACE_VAL("tcp incoming readv ret", ret);
+                NM_TRACE_VAL("tcp incoming trk id", p_pw->p_trk->id);
+                NM_TRACE_VAL("tcp incoming fd", p_tcp_gate->fd[p_pw->p_trk->id]);
+                NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
+                NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
+                NM_TRACE_VAL("tcp incoming cur len", p_cur->iov_len);
 
-        if (ret < 0) {
-                if (errno == EINTR)
-                        goto readv_again;
+                if (!p_vi->v_cur_size) {
+                        err	= NM_ESUCCESS;
 
-                perror("readv");
+                        goto out_complete;
+                }
 
-                err = -NM_ESCFAILD;
-                goto out_complete;
-        }
+        read_body_again:
+                /* We cannot use readv because if the incoming message is shorter
+                   than expected, readv could end-up reading part of the next message
+                   as well.
+                 */
 
-        if (ret	== 0) {
-                NM_TRACEF("connection closed");
-                err = -NM_ECLOSED;
-                goto out_complete;
-        }
+                ret	= read(fd, p_cur->iov_base,
+                               tbx_min(p_cur->iov_len, p_tcp_pw->rem_length));
+                if (ret < 0) {
+                        if (errno == EINTR)
+                                goto read_body_again;
 
-        do {
-                uint64_t len	= tbx_min(p_cur->iov_len, ret);
-                p_cur->iov_base	+= len;
-                p_cur->iov_len	-= len;
+                        perror("read");
+
+                        err = -NM_ESCFAILD;
+                        goto out_complete;
+                }
+
+                if (ret	== 0) {
+                        NM_TRACEF("connection closed");
+                        err = -NM_ECLOSED;
+                        goto out_complete;
+                }
+
+                p_tcp_pw->rem_length	-= ret;
+
+                if (!p_tcp_pw->rem_length) {
+                        err	= NM_ESUCCESS;
+
+                        goto out_complete;
+                }
+
+                p_cur->iov_base		+= ret;
+                p_cur->iov_len		-= ret;
 
                 /* still something to send for this vector entry?
                  */
-                if (p_cur->iov_len)
-                        break;
+                if (p_cur->iov_len) {
+                        err	= -NM_EAGAIN;
+                        goto out;
+                }
 
                 /* restore vector entry
                  */
@@ -854,20 +896,62 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_vi->v_cur_size--;
 
                 if (!p_vi->v_cur_size) {
-                        err	= NM_ESUCCESS;
+                        if (p_tcp_pw->rem_length) {
+                                /* message truncated
+                                 */
+                                err	= -NM_EINVAL;
+                        } else {
+                                err	= NM_ESUCCESS;
+                        }
 
                         goto out_complete;
                 }
 
                 p_cur++;
                 p_vi->cur_copy = *p_cur;
-                ret -= len;
-        } while (ret);
+
+                err	= nm_tcpdg_outgoing_poll(p_pw);
+                if (err < 0)
+                        goto out_complete;
+
+                goto read_body_again;
+        } else {
+        read_header_again:
+                ret	= read(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+
+                if (ret < 0) {
+                        if (errno == EINTR)
+                                goto read_header_again;
+
+                        perror("read");
+                        err = -NM_ESCFAILD;
+                        goto out_complete;
+                }
+
+                if (ret	== 0) {
+                        NM_TRACEF("connection closed");
+                        err = -NM_ECLOSED;
+                        goto out_complete;
+                }
+
+                p_tcp_pw->ptr		+= ret;
+                p_tcp_pw->rem_length	-= ret;
+
+                if (!p_tcp_pw->rem_length) {
+                        p_tcp_pw->state	= 1;
+                        p_tcp_pw->rem_length	= p_tcp_pw->h.length;
+
+                        err	= nm_tcpdg_outgoing_poll(p_pw);
+                        if (err < 0)
+                                goto out_complete;
+
+                        goto read_body;
+                }
+        }
 
         err	= -NM_EAGAIN;
 
  out:
-        SAMPLE(po_recv_done);
         return err;
 
  out_complete:
@@ -880,44 +964,18 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
 }
 
 int
-nm_tcp_load(struct nm_drv_ops *p_ops) {
-        p_ops->init		= nm_tcp_init;
-        p_ops->exit             = nm_tcp_exit;
-        p_ops->open_trk		= nm_tcp_open_trk;
-        p_ops->close_trk	= nm_tcp_close_trk;
-        p_ops->connect		= nm_tcp_connect;
-        p_ops->accept		= nm_tcp_accept;
-        p_ops->disconnect       = nm_tcp_disconnect;
-        p_ops->post_send_iov	= nm_tcp_send_iov;
-        p_ops->post_recv_iov    = nm_tcp_recv_iov;
-        p_ops->poll_send_iov	= nm_tcp_send_iov;
-        p_ops->poll_recv_iov	= nm_tcp_recv_iov;
+nm_tcpdg_load(struct nm_drv_ops *p_ops) {
+        p_ops->init		= nm_tcpdg_init;
+        p_ops->exit             = nm_tcpdg_exit;
+        p_ops->open_trk		= nm_tcpdg_open_trk;
+        p_ops->close_trk	= nm_tcpdg_close_trk;
+        p_ops->connect		= nm_tcpdg_connect;
+        p_ops->accept		= nm_tcpdg_accept;
+        p_ops->disconnect       = nm_tcpdg_disconnect;
+        p_ops->post_send_iov	= nm_tcpdg_send_iov;
+        p_ops->post_recv_iov    = nm_tcpdg_recv_iov;
+        p_ops->poll_send_iov	= nm_tcpdg_send_iov;
+        p_ops->poll_recv_iov	= nm_tcpdg_recv_iov;
 
         return NM_ESUCCESS;
 }
-
-#ifdef PROFILE_TCP
-void
-disp_stats(void) {
-        int i;
-
-        if (next_sample < 2)
-                return;
-
-        fprintf(stderr, "%06d, %03.2lf, %02d - %s\n", 0, 0.0, op_array[0], profile_str[op_array[0]]);
-
-        for (i = 1; i < next_sample; i++) {
-                tbx_tick_t      t1;
-                tbx_tick_t      t2;
-                int	op;
-                double	d;
-
-                t1	= sample_array[i-1];
-                t2	= sample_array[i];
-                op	= op_array[i];
-                d	= TBX_TIMING_DELAY(t1, t2);
-                fprintf(stderr, "%06d, %03.2lf, %02d - %s\n", i, d, op, profile_str[op]);
-        }
-}
-
-#endif /* PROFILE_TCP */

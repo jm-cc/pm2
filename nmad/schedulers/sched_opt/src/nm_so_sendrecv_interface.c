@@ -182,7 +182,6 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request_t request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)&request->request;
 #ifdef XPAULETTE
   request->nm_xp_data.complete_callback=&nm_so_cnx_completed;
   request->nm_xp_data.method=SEND;
@@ -190,10 +189,9 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
   request->nm_xp_data.p_core=p_core;
 
   nm_xpaul_wait(&request->nm_xp_data);
-  if(!(*p_request & NM_SO_STATUS_SEND_COMPLETED)) {
-	  NM_DISPF("nm_xpaul_wait exited but there's still work to do!\n");
-  }
 #else
+  uint8_t *p_request = (uint8_t *)&request->request;
+  
   while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
     nm_schedule(p_core);
 #endif
@@ -310,7 +308,6 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 	       nm_so_request_t request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)&request->request;
 #ifdef XPAULETTE
   request->nm_xp_data.complete_callback=&nm_so_cnx_completed;
   request->nm_xp_data.method=RECV;
@@ -318,11 +315,9 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
   request->nm_xp_data.p_core=p_core;
 
   nm_xpaul_wait(&request->nm_xp_data);
-  if(!(*p_request & NM_SO_STATUS_RECV_COMPLETED)) {
-	  NM_DISPF("nm_xpaul_wait exited but there's still work to do!\n");
-  }
-
 #else
+  volatile uint8_t *p_request = (uint8_t *)&request->request;
+  
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
 #endif

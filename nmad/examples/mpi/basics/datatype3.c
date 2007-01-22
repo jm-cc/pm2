@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NB_PARTICLES 30
+
 void struct_datatype(int rank) {
   struct part_s {
     char class[1];
@@ -30,10 +32,11 @@ void struct_datatype(int rank) {
   printf("size of struct type : %d\n", sizeof_particle);
 
   if (rank == 0) {
-    struct part_s particles[3];
+    struct part_s particles[NB_PARTICLES];
+    MPI_Request request1, request2;
     int i;
 
-    for(i=0 ; i<3 ; i++) {
+    for(i=0 ; i<NB_PARTICLES ; i++) {
       particles[i].class[0] = (char) i+97;
       particles[i].d[0] = (i+1)*10;
       particles[i].d[1] = (i+1)*2;
@@ -42,27 +45,29 @@ void struct_datatype(int rank) {
       particles[i].b[2] = i*3;
       particles[i].b[3] = i+5;
     }
-    for(i=0 ; i<3 ; i++) {
+    for(i=0 ; i<NB_PARTICLES ; i++) {
       printf("Sending Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
              particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
     }
-    MPI_Send(particles, 3, mytype, 1, 10, MPI_COMM_WORLD);
-    MPI_Send(particles, 3, mytype, 1, 11, MPI_COMM_WORLD);
+    MPI_Isend(particles, NB_PARTICLES, mytype, 1, 11, MPI_COMM_WORLD, &request1);
+    MPI_Isend(particles, NB_PARTICLES, mytype, 1, 10, MPI_COMM_WORLD, &request2);
+    MPI_Wait(&request1, NULL);
+    MPI_Wait(&request2, NULL);
   }
   else {
-    struct part_s particles[3];
+    struct part_s particles[NB_PARTICLES];
     void *buffer, *ptr;
     int i, j;
     char *class;
     double *d;
     int *b;
 
-    buffer = malloc(3*sizeof_particle);
-    MPI_Recv(buffer, 3 * sizeof_particle, MPI_BYTE, 0, 11, MPI_COMM_WORLD, NULL);
-    MPI_Recv(particles, 3, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    buffer = malloc(NB_PARTICLES*sizeof_particle);
+    MPI_Recv(particles, NB_PARTICLES, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer, NB_PARTICLES * sizeof_particle, MPI_BYTE, 0, 11, MPI_COMM_WORLD, NULL);
 
     ptr = buffer;
-    for(i=0 ; i<3 ; i++) {
+    for(i=0 ; i<NB_PARTICLES ; i++) {
       class = (char *) ptr;
       d = (double *) (ptr + sizeof(char));
       b = (int *) (ptr + sizeof(char) + 2*sizeof(double));

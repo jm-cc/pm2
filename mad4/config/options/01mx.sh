@@ -5,6 +5,7 @@ PM2_MAD4_CFLAGS="$PM2_MAD4_CFLAGS -I${PM2_ROOT}/nmad/drivers/mx/include -I${MX_D
 PM2_MAD4_LD_PATH="$PM2_MAD4_LD_PATH -L${MX_DIR}/lib"
 PM2_MAD4_LIBS="$PM2_MAD4_LIBS -lmyriexpress"
 
+PM2_MAD4_DYN_LIBS_DIR="${MX_DIR}/lib"
 
 # mx_open_endpoint calls pthread_create, we need to link libpthread
 # (or disable the use of pthread in MX)

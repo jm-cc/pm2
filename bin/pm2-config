@@ -435,6 +435,16 @@ pm2config_set_vars()
     export _PM2CONFIG_LD_PATH
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_LD_PATH
 
+    #EXTRA LD_LIBRARY_PATHs
+    for _lib in $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _dir=\$PM2_${_LIB}_DYN_LIBS_DIR
+	if [ -n "$_dir" ] ; then
+	_PM2CONFIG_LD_LIBRARY_PATH=${_PM2CONFIG_LD_LIBRARY_PATH:+${_PM2CONFIG_LD_LIBRARY_PATH}:}${_dir}
+	fi
+    done
+
+    #LDLIBS
     _PM2CONFIG_LD_LIBS=""
     for _lib in $_PM2CONFIG_DIRTY_ORDERED_LIBS ; do
 	case " $_requested " in
@@ -719,4 +729,3 @@ else
     pm2config_parse_cmdline ${@:+"$@"}
     exit 0
 fi
-

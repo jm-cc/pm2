@@ -430,15 +430,8 @@ inf_t lire_trace(const char * fichier_trace)
       exit(1);
    }
   
-   struct fxt_ev_native ev_native;
-   struct fxt_ev_32 ev_32;
-   struct fxt_ev_64 ev_64;
    struct fxt_ev ev;
    int ev_type = FXT_EV_TYPE_64;
-
-   ev.native = ev_native;
-   ev.ev32 = ev_32;
-   ev.ev64 = ev_64;
 
    blockev_trace = fxt_blockev_enter(trace); 
 
@@ -466,15 +459,8 @@ ev_t * analyser_trace(const char * fichier_trace,ev_t * tracetab,int * leveltab)
    fxt_blockev_t blockev_trace;
    trace = fxt_open(fichier_trace);
   
-   struct fxt_ev_native ev_native;
-   struct fxt_ev_32 ev_32;
-   struct fxt_ev_64 ev_64;
    struct fxt_ev ev;
    int ev_type = FXT_EV_TYPE_64;
-
-   ev.native = ev_native;
-   ev.ev32 = ev_32;
-   ev.ev64 = ev_64;
 
    blockev_trace = fxt_blockev_enter(trace); 
 

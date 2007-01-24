@@ -222,8 +222,8 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       *p_request = (intptr_t)p_req;
     }
 
+    NMAD_SO_TRACE("[%s] calling __nm_so_unpack_any_src request = %p\n", __TBX_FUNCTION__, *p_request);
     return __nm_so_unpack_any_src(p_core, tag, data, len);
-
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -239,6 +239,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
+    NMAD_SO_TRACE("[%s] IRECV: seq = %d, request = %p\n", __TBX_FUNCTION__, seq, p_request);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -420,10 +421,14 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
     p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
 
+    NMAD_SO_TRACE("[%s] data received for request = %p\n", __TBX_FUNCTION__, &p_sr_gate->status[tag][seq]);
+
   } else {
 
     any_src[tag].gate_id = p_gate->id;
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
+
+    NMAD_SO_TRACE("[%s] data received for ANY_SRC request = %p\n", __TBX_FUNCTION__, &any_src[tag].status);
 
   }
 

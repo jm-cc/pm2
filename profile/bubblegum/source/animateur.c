@@ -5,6 +5,9 @@
  * Date  : 21/04/2006
  *********************************************************************/
 
+//#define VERBOSE_DEBUG
+//#define DRAW_HIDDEN
+
 #include "animateur.h"
 #include "rightwindow.h"
 
@@ -47,6 +50,7 @@ static byte Blue(long c)
    return c & 0x0000ff;
 }
 
+#ifdef VERBOSE_DEBUG
 static int dbg_printf(const char* format, ...)
 {
    int ret = 0;
@@ -54,13 +58,14 @@ static int dbg_printf(const char* format, ...)
    va_list ap;
    va_start(ap, format);
    
-#ifdef VERBOSE_DEBUG
    ret = vprintf(format, ap);
-#endif
 
    va_end(ap);
    return ret;
 }
+#else
+#define dbg_printf(fmt,...)
+#endif
 
 // todo: jarter cte craderie
 static int GetNumInStr(char* str)
@@ -113,6 +118,11 @@ void AnimationReset(AnimElements *newobj, const char *file)
    LoadScene(newobj, file);
 }
 
+static void showBubble(ScnObj* objs, int ind) {
+  if (objs[ind].prop.number++ == -1 && objs[ind].prop.holder>=0)
+    showBubble(objs,objs[ind].prop.holder);
+}
+
 // charger les elements graphiques de la scène avec leur propriétés
 int LoadScene(AnimElements* anim, const char *tracefile)
 {
@@ -162,11 +172,12 @@ int LoadScene(AnimElements* anim, const char *tracefile)
 
    gtk_range_set_adjustment(GTK_RANGE(GTK_SCROLLBAR(right_scroll_bar)), GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, frames, 1, 10, 1)));
    
-   int ind = 0, ind2;
+   int ind = 0, ind2, ind3;
    long adr, adr2;
    ev_t* evt_i;
    char* thename;
    int id, rpos, lvl;
+   ScnObj* objs = anim->scene.objects;
    // boucle de création des objets
    i = 0;
    while (!GetFin_Ev(GetEv(myEvents, i)))
@@ -189,6 +200,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].type = BUBBLE_OBJ;
             anim->scene.objects[ind].prop.id = ind;
             anim->scene.objects[ind].prop.prior = -1;
+            anim->scene.objects[ind].prop.number = -1;
+            anim->scene.objects[ind].prop.holder = -1;
             anim->scene.objects[ind].description = NULL;
 
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind], 0, -1);
@@ -212,10 +225,15 @@ int LoadScene(AnimElements* anim, const char *tracefile)
 
             adr = GetAdr_Bulle_Ev(evt_i);
             adr2 = GetMere_Bulle_Ev(evt_i);
+	    ind2 = GetData(anim->ht_bubbles, adr);
+	    ind3 = GetData(anim->ht_bubbles, adr2);
 
-            dbg_printf("lier adr: %lx et %lx\n", adr, adr2);
+            dbg_printf("lier b adr: %lx(%d) et %lx(%d)\n", adr, ind2, adr2, ind3);
             
-            anim->links = CreateLink(anim->links, GetData(anim->ht_bubbles, adr2), GetData(anim->ht_bubbles, adr));            
+            anim->links = CreateLink(anim->links, ind3, ind2);
+	    objs[ind2].prop.holder = ind3;
+	    if (objs[ind2].prop.number >= 0)
+	       showBubble(objs,ind3);
             break;
          case FUT_THREAD_BIRTH_CODE:
 
@@ -232,11 +250,13 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].prop.id = -1;
             anim->scene.objects[ind].prop.prior = -1;
             anim->scene.objects[ind].prop.number = -1;
+            anim->scene.objects[ind].prop.holder = -1;
             anim->scene.objects[ind].state = READY_STT;
             anim->scene.objects[ind].description = NULL;
 
             // ajout immédiat du thread né en runqueue -1
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind], 0, -1);
+	    dbg_printf("Thread new: %lx(%d)\n", adr, ind);
 
             ind++;
             break;
@@ -244,8 +264,15 @@ int LoadScene(AnimElements* anim, const char *tracefile)
 
             adr = GetAdr_Thread_Ev(evt_i);
             adr2 = GetMere_Bulle_Ev(evt_i);
+	    ind2 = GetData(anim->ht_threads, adr);
+	    ind3 = GetData(anim->ht_bubbles, adr2);
 
-            anim->links = CreateLink(anim->links, GetData(anim->ht_bubbles, adr2), GetData(anim->ht_threads, adr));
+            dbg_printf("lier adr: %lx(%d) et %lx(%d)\n", adr, ind2, adr2, ind3);
+            
+            anim->links = CreateLink(anim->links, ind3, ind2);
+	    objs[ind2].prop.holder = ind3;
+	    if (objs[ind2].prop.number >= 0)
+	       showBubble(objs,ind3);
             break;
          case SET_THREAD_ID:   // information de l'id
 
@@ -277,7 +304,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    }
 
    int frame = 0;
-   int ind3, nb;
+   int nb;
    // boucle de chargement de l'animation
    i = 0;
    while (!GetFin_Ev(GetEv(myEvents, i)))
@@ -295,6 +322,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             if (ind2 >= 0 && ind2 < anim->scene.num)
             {
                anim->scene.objects[ind2].prop.number = nb;
+	       if (nb>=0 && anim->scene.objects[ind2].prop.holder >= 0)
+	          showBubble(anim->scene.objects,anim->scene.objects[ind2].prop.holder);
             }
                
             break;
@@ -364,6 +393,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             }
             break;
          case BUBBLE_SCHED_SWITCHRQ:   // déplacement d'un objet
+	 case BUBBLE_SCHED_WAKE:
 
             adr = GetAdr_Bulle_Ev(evt_i);
             adr2 = GetAdr_Rq_Ev(evt_i);
@@ -382,6 +412,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             rpos = GetData(anim->ht_rqspos, adr2);
             lvl = GetData(anim->ht_rqslvl, adr2);
 
+	    dbg_printf("%lx(%d) switches to %lx(%d,%d)\n",adr,ind2,adr2,rpos,lvl);
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind2], rpos, lvl);
 
 	    int j = 1;
@@ -723,7 +754,7 @@ Links* DeleteLink(Links* first, int obj1, int obj2)
 
 void DrawLinks(AnimElements* anim)
 {
-   Links* lnk = anim->links;
+   Links* lnk;
 
    Vecteur_fl norm;
    Vecteur vect, vect2;
@@ -734,10 +765,15 @@ void DrawLinks(AnimElements* anim)
 
    Vecteur center1, center2;
 
-   while (lnk != NULL)  // pour tout element de la liste
+   for (lnk = anim->links; lnk != NULL; lnk = lnk->next)
+      // pour tout element de la liste
    {
       i1 = lnk->pair.i1;
       i2 = lnk->pair.i2;
+
+      if (objs[i2].prop.number < 0)
+          // ne pas montrer les liens vers les objets cach�s
+          continue;
 
       center1.x = objs[i1].pos.x + objs[i1].size.x / 2;
       center1.y = objs[i1].pos.y + objs[i1].size.y / 2;
@@ -782,8 +818,6 @@ void DrawLinks(AnimElements* anim)
       glVertex3f(center1.x + v1dim * norm.x + vect.x, center1.y + v1dim * norm.y + vect.y, 0);
       
       glEnd();
-      
-      lnk = lnk->next;
    }
 }
 

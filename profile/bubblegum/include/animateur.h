@@ -102,6 +102,7 @@ typedef struct Properties_tag
       int prior;
       int load;
       int number;
+      int holder;
 } Properties;
 
 typedef struct ScnObj_tag  // objet de scene

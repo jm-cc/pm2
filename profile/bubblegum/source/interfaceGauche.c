@@ -122,7 +122,7 @@ void addBulleAutoOff(interfaceGaucheVars* data)
    GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
    GtkWidget *pVBox = gtk_vbox_new(FALSE, 0);
    GtkWidget *pFrame = gtk_frame_new("Priorité");
-   GtkWidget *Adjust = (GtkWidget*)gtk_adjustment_new(0, 0, 100, 1, 10, 1);
+   GtkWidget *Adjust = (GtkWidget*)gtk_adjustment_new(20, 0, 100, 1, 10, 1);
    GtkWidget *pScrollbar = gtk_hscrollbar_new(GTK_ADJUSTMENT(Adjust));
    GtkWidget *pLabel = gtk_label_new("0");
    GtkWidget *prioriteVBox = gtk_vbox_new(FALSE, 0);

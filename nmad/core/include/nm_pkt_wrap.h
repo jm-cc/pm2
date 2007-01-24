@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_PKT_WRAP_H
+#define NM_PKT_WRAP_H
+
 #ifdef XPAULETTE
 #include "xpaul.h"
 #endif
@@ -176,4 +179,6 @@ struct nm_pkt_wrap {
          */
         struct nm_iovec		*nm_v;
 };
+
+#endif /* NM_PKT_WRAP_H */
 

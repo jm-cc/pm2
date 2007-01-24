@@ -152,7 +152,7 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret;
+  int ret = NM_EAGAIN;
 
   while(nb--) {
 
@@ -167,42 +167,15 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-#ifdef XPAULETTE
-int
-nm_so_cnx_completed(struct nm_xpaul_data *xp_data) {
-	nm_so_request_t request=struct_up(xp_data, nm_so_request, nm_xp_data);
-	volatile uint8_t *p_request = (uint8_t *) &request->request;
-	if(xp_data->method==RECV){
-
-		if (*p_request & NM_SO_STATUS_RECV_COMPLETED)
-			return 1;
-	}
-	else{
-		if (*p_request & NM_SO_STATUS_SEND_COMPLETED)
-			return 1;
-	}
-	return 0;
-}
-#endif 
-
 int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
-	       nm_so_request_t request)
+	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-#ifdef XPAULETTE
-  request->nm_xp_data.complete_callback=&nm_so_cnx_completed;
-  request->nm_xp_data.method=SEND;
-  request->nm_xp_data.which=CNX;
-  request->nm_xp_data.p_core=p_core;
+  uint8_t *p_request = (uint8_t *)request;
 
-  nm_xpaul_wait(&request->nm_xp_data);
-#else
-  uint8_t *p_request = (uint8_t *)&request->request;
-  
   while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
     nm_schedule(p_core);
-#endif
 
   return NM_ESUCCESS;
 }
@@ -295,7 +268,7 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret;
+  int ret = NM_EAGAIN;
 
   while(nb--) {
 
@@ -310,34 +283,24 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-
 int
 nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
-	       nm_so_request_t request)
+	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-#ifdef XPAULETTE
-  request->nm_xp_data.complete_callback=&nm_so_cnx_completed;
-  request->nm_xp_data.method=RECV;
-  request->nm_xp_data.which=CNX;
-  request->nm_xp_data.p_core=p_core;
+  volatile uint8_t *p_request = (uint8_t *)request;
 
-  nm_xpaul_wait(&request->nm_xp_data);
-#else
-  volatile uint8_t *p_request = (uint8_t *)&request->request;
-  
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
-#endif
 
   return NM_ESUCCESS;
 }
 
 int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
-                     nm_so_request_t request, long *gate_id)
+                     nm_so_request request, long *gate_id)
 {
-  struct any_src_status *p_status = outer_any_src_struct(request->request);
+  struct any_src_status *p_status = outer_any_src_struct(request);
 
   if(gate_id)
     *gate_id = p_status->gate_id;

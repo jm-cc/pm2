@@ -255,7 +255,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 	if (!rq)
 		return;
 	for (i=0; i<marcel_nbvps()+MARCEL_NBMAXVPSUP; i++) {
-		if (GET_LWP_BY_NUM(i) && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(ma_vp_lwp[i]))) {
+		if (GET_LWP_BY_NUM(i) != NULL && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(ma_vp_lwp[i]))) {
 			lwp = GET_LWP_BY_NUM(i);
 			if (!lwp)
 				/* No luck: still no lwp or being replaced by

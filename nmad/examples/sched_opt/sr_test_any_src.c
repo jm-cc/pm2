@@ -153,7 +153,7 @@ main(int	  argc,
                 }
 
 		for(k = 0; k < LOOPS; k++) {
-		  nm_so_request_t request;
+		  nm_so_request request;
 
 		  nm_so_sr_irecv(interface, gate_id, 0, NULL, 0, &request);
 		  nm_so_sr_rwait(interface, request);
@@ -163,8 +163,7 @@ main(int	  argc,
 		  }
 
 		{
-		  nm_so_request_t r1, r2, r3, r4;
-
+		  nm_so_request r1, r2, r3, r4;
 		  char buf[16], *big_buf;
 		  long gate;
 
@@ -202,7 +201,7 @@ main(int	  argc,
                 }
 
 		for(k = 0; k < LOOPS; k++) {
-		  nm_so_request_t request;
+		  nm_so_request request;
 
 		  nm_so_sr_isend(interface, gate_id, 0, NULL, 0, &request);
 		  nm_so_sr_swait(interface, request);
@@ -212,8 +211,7 @@ main(int	  argc,
 		}
 
 		{
-		  nm_so_request_t r1, r2, r3, r4;
-
+		  nm_so_request r1, r2, r3, r4;
 		  char buf[16], *big_buf;
 
 

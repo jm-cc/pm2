@@ -139,8 +139,8 @@ main(int	  argc,
 
     int n, i = 0, j = 0;
 
-    nm_so_request_t r_request[NB_PAGES * 4];
-    nm_so_request_t s_request[NB_PAGES * 3];
+    nm_so_request r_request[NB_PAGES * 4];
+    nm_so_request s_request[NB_PAGES * 3];
 
     // reception
     int source[NB_PAGES];
@@ -192,8 +192,8 @@ main(int	  argc,
 
     int n, i = 0, j = 0;
 
-    nm_so_request_t r_request[NB_PAGES * 3];
-    nm_so_request_t s_request[NB_PAGES * 4];
+    nm_so_request r_request[NB_PAGES * 3];
+    nm_so_request s_request[NB_PAGES * 4];
 
     // reception
     int numero_page[NB_PAGES];

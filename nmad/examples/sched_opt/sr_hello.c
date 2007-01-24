@@ -126,7 +126,7 @@ main(int	  argc,
         buf = malloc((size_t)len);
 
         if (!r_url) {
-		nm_so_request_t request;
+	  nm_so_request request;
                 /* server
                  */
                 printf("local url: [%s]\n", l_url);
@@ -143,7 +143,7 @@ main(int	  argc,
 		nm_so_sr_rwait(interface, request);
 
         } else {
-		nm_so_request_t request;
+	  nm_so_request request;
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv_id,

@@ -118,7 +118,7 @@ nm_so_unpack(struct nm_so_cnx *cnx,
      ANY_SRC as the gate_id parameter and 2) this is the first
      unpack. So we have to perform a synchronous recv in order to wait
      for the real gate_id to be known before next unpacks... */
-    nm_so_request_t request;
+    nm_so_request request;
     int err;
 
     err = nm_so_sr_irecv(_cnx->p_interface, NM_SO_ANY_SRC, _cnx->tag,
@@ -150,6 +150,7 @@ int
 nm_so_flush_packs(struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
+
   return nm_so_sr_swait_range(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			      _cnx->first_seq_number, _cnx->nb_paquets);
 }

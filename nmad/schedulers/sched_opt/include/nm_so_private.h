@@ -26,7 +26,6 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"
 #include "nm_so_interfaces.h"
-#include "nm_so_sendrecv_interface.h"
 
 #undef NMAD_SO_DEBUG
 #if defined(NMAD_SO_DEBUG)
@@ -41,18 +40,6 @@
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
 #define NM_SO_STATUS_RDV_IN_PROGRESS ((uint8_t)8)
 
-
-#define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
-#define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
-
-
-struct nm_so_sr_gate {
-  /* WARNING: better replace the following array by two separate
-     bitmaps, to save space and avoid false sharing between send and
-     recv operations. status[tag_id][seq] */
-	nm_so_request status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
-//  volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
-};
 
 struct nm_so_sched {
   nm_so_strategy *current_strategy;

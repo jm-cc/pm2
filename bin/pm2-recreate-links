@@ -54,10 +54,7 @@ if [ ! -d ${PM2_ROOT}/modules ] ; then
     mkdir ${PM2_ROOT}/modules
 fi
 for module in appli common dsm ezflavor generic init leonie leoparse \
-	mad2 mad3 mad4 marcel xpaulette ntbx pm2 profile stackalign tbx \
-	sigmund/sigmundlib sigmund/sigmund sigmund/sigmundps \
-	sigmund/xsigmund sigmund/supertrace
-        #mad1 \
+	mad3 mad4 marcel xpaulette ntbx pm2 profile stackalign tbx
 	do
    make_ln ${PM2_ROOT}/modules ../$module `basename $module`
 done
@@ -72,24 +69,24 @@ make_ln ${PM2_ROOT}/mad3/examples ../../leonie/examples/networks.cfg
 # Toolbox
 
 # Mad I
-echo
-echo Madeleine I
-make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+#echo
+#echo Madeleine I
+#make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
-make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
-make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
-make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
-make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
+#make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
+#make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
+#make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
+#make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
 
 # Mad II
-echo
-echo Madeleine II
-make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+#echo
+#echo Madeleine II
+#make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # DSM
-echo
-echo DSM
-make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+#echo
+#echo DSM
+#make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 if [ "$1" != "--nooptionsets" ]; then
     # Fabrication des catégories d'options

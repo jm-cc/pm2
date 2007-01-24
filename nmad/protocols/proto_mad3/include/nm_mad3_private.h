@@ -16,12 +16,13 @@
 
 #include "nm_protected.h"
 #include "madeleine.h"
-#include "nm_so_sendrecv_interface.h"
+#ifdef CONFIG_SCHED_OPT
+#  include "nm_so_sendrecv_interface.h"
+#endif /* CONFIG_SCHED_OPT */
 
 typedef struct s_mad_nmad_connection_specific {
-#ifdef CONFIG_SCHED_OPT
         struct s_mad_nmad_connection_specific	*master_cnx;
-
+#ifdef CONFIG_SCHED_OPT
         nm_so_request		 in_reqs[256];
 
         uint8_t			 in_next_seq;

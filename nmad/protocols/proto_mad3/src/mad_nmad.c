@@ -55,7 +55,11 @@
 #  include <nm_sisci_public.h>
 #endif
 
-#include <nm_tcp_public.h>
+#if defined CONFIG_TCP
+#  include <nm_tcp_public.h>
+#else
+#  include <nm_tcpdg_public.h>
+#endif
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_basic_public.h>
 #elif defined CONFIG_SCHED_OPT
@@ -316,12 +320,13 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     DISP("nm_core__exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
+#ifdef CONFIG_SCHED_OPT
   err = nm_so_sr_exit(p_so_if);
   if(err != NM_ESUCCESS) {
     DISP("nm_so_sr_exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
-
+#endif
   TBX_FREE(ds->l_url);
   ds->l_url = NULL;
   NM_LOG_OUT();
@@ -342,10 +347,19 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
                 nm_mad3_init_core(argc, *argv);
         }
 
+#ifdef CONFIG_TCP
         if (tbx_streq(d->device_name, "tcp")) {
                 err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
                 goto found;
         }
+#else
+        /* load TCPdg by default, unless TCP(regular) is explicitely requested
+         */
+        if (tbx_streq(d->device_name, "tcp")) {
+                err = nm_core_driver_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
+                goto found;
+        }
+#endif
 
 #ifdef CONFIG_GM
         if (tbx_streq(d->device_name, "gm")) {

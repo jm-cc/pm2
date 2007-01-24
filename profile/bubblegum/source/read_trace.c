@@ -426,6 +426,7 @@ inf_t lire_trace(const char * fichier_trace)
 
    if (trace == NULL)
    {
+      perror("open");
       wprintf(L"oh oh, ouverture de trace foirée\n");
       exit(1);
    }

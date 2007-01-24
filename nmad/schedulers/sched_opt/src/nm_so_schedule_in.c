@@ -118,6 +118,8 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
 
       p_so_gate->recv_seq_number[tag]++;
 
+      NMAD_SO_TRACE("[%s] UNPACK ANYSRC (data already in): seq = %d\n", __TBX_FUNCTION__, seq);
+
       interface->unpack_success(p_gate, tag, seq, tbx_true);
 
       goto out;
@@ -128,6 +130,8 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
       *status = 0;
 
       p_so_gate->recv_seq_number[tag]++;
+
+      NMAD_SO_TRACE("[%s] UNPACK ANYSRC (rdv): seq = %d\n", __TBX_FUNCTION__, seq);
 
       err = rdv_success(p_gate, tag, seq, data, len);
 
@@ -256,6 +260,9 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t tag = proto_id - 128;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
 
+  NMAD_SO_TRACE("[%s] Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
+                __TBX_FUNCTION__, ptr, len, tag, seq);
+
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
 
@@ -316,12 +323,16 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
+  NMAD_SO_TRACE("[%s] RDV completed for tag = %d, seq = %u\n", __TBX_FUNCTION__, tag, seq);
+
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Application is already ready! */
 
     p_so_gate->pending_unpacks--;
 
     *status = 0;
+
+    NMAD_SO_TRACE("[%s] Application is ready\n", __TBX_FUNCTION__);
 
     err = rdv_success(p_gate, tag, seq,
 		      p_so_gate->recv[tag][seq].unpack_here.data,
@@ -339,6 +350,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     p_so_gate->recv_seq_number[tag]++;
 
+    NMAD_SO_TRACE("[%s] Application is ready for ANY_SRC\n", __TBX_FUNCTION__);
     err = rdv_success(p_gate, tag, seq,
 		      p_so_sched->any_src[tag].data,
 		      p_so_sched->any_src[tag].len);
@@ -347,6 +359,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
       TBX_FAILURE("PANIC!\n");
 
   } else {
+    NMAD_SO_TRACE("[%s] Application is NOT ready\n", __TBX_FUNCTION__);
     /* Store rdv request */
     p_so_gate->status[tag][seq] = NM_SO_STATUS_RDV_HERE;
   }
@@ -362,6 +375,8 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_pkt_wrap *p_so_large_pw;
   uint8_t tag = tag_id - 128;
+
+  NMAD_SO_TRACE("[%s] ACK completed for tag = %d, seq = %u\n", __TBX_FUNCTION__, tag, seq);
 
   p_so_gate->pending_unpacks--;
 
@@ -392,6 +407,9 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int err;
+
+  NMAD_SO_TRACE("[%s] Packet %p received completely (on track %d)!\n",
+                __TBX_FUNCTION__, p_so_pw, p_pw->p_trk->id);
 
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
@@ -436,6 +454,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     unsigned tag = p_so_pw->pw.proto_id - 128;
     struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
+    NMAD_SO_TRACE("[%s] Completion of a large message\n", __TBX_FUNCTION__);
+
     if(p_so_gate->p_so_sched->any_src[tag].status & NM_SO_STATUS_RDV_IN_PROGRESS) {
       /* Completion of an ANY_SRC unpack: the unpack_success has to
 	 carry out this information (tbx_true) */
@@ -445,6 +465,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_true);
     } else
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
+
+    NMAD_SO_TRACE("[%s] Large received (%d bytes) on drv %d, seq = %d\n", __TBX_FUNCTION__, p_pw->length, drv_id, p_pw->seq);
 
     p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
 

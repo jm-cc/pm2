@@ -20,27 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <tbx.h>
-
-#include <nm_public.h>
-#include <nm_so_public.h>
-
-#include <nm_so_pack_interface.h>
-
-#include <nm_drivers.h>
-
-typedef int (*nm_driver_load)(struct nm_drv_ops*);
-#if defined CONFIG_IBVERBS
-const static nm_driver_load p_driver_load = &nm_ibverbs_load;
-#elif defined CONFIG_MX
-const static nm_driver_load p_driver_load = &nm_mx_load;
-#elif defined CONFIG_GM
-const static nm_driver_load p_driver_load = &nm_gm_load;
-#elif defined CONFIG_QSNET
-const static nm_driver_load p_driver_load = &nm_qsnet_load;
-#else
-const static nm_driver_load p_driver_load = &nm_tcp_load;
-#endif
+#include "helper.h"
 
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000
@@ -58,102 +38,29 @@ uint32_t _next(uint32_t len)
                 return len << 1;
 }
 
-static
-void
-usage(void) {
-        fprintf(stderr, "usage: hello [[-h <remote_hostname>] <remote url>]\n");
-        exit(EXIT_FAILURE);
-}
-
 int
 main(int	  argc,
      char	**argv) {
-        struct nm_core		*p_core		= NULL;
-        char			*r_url		= NULL;
-        char			*l_url		= NULL;
-        uint8_t			 drv_id		=    0;
-        uint8_t			 gate_id	=    0;
-        char			*buf		= NULL;
-        char			*hostname	= "localhost";
-        uint32_t		 len;
 	struct nm_so_cnx         cnx;
-	nm_so_pack_interface     interface;
-        int err;
+        char			*buf		= NULL;
+        uint32_t		 len;
 
-        err = nm_core_init(&argc, argv, &p_core, nm_so_load);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_init returned err = %d\n", err);
-                goto out;
-        }
-
-	err = nm_so_pack_interface_init(p_core, &interface);
-	if(err != NM_ESUCCESS) {
-	  printf("nm_so_pack_interface_init return err = %d\n", err);
-	  goto out;
-	}
-
-        argc--;
-        argv++;
-
-        if (argc) {
-                /* client */
-                while (argc) {
-                        if (!strcmp(*argv, "-h")) {
-                                argc--;
-                                argv++;
-
-                                if (!argc)
-                                        usage();
-
-                                hostname = *argv;
-                        } else {
-                                r_url	= *argv;
-                        }
-
-                        argc--;
-                        argv++;
-                }
-
-                printf("running as client using remote url: %s[%s]\n", hostname, r_url);
-        } else {
-                /* no args: server */
-                printf("running as server\n");
-        }
-
-        err = nm_core_driver_init(p_core, p_driver_load, &drv_id, &l_url);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
-                goto out;
-        }
-
-        err = nm_core_gate_init(p_core, &gate_id);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_init returned err = %d\n", err);
-                goto out;
-        }
+        init(argc, argv);
 
         buf = malloc(MAX);
 	memset(buf, 0, MAX);
 
-        if (!r_url) {
+        if (is_server) {
 	  int k;
                 /* server
                  */
-                printf("local url: [%s]\n", l_url);
-
-                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_accept returned err = %d\n", err);
-                        goto out;
-                }
-
 		for(len = 0; len <= MAX; len = _next(len)) {
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+		    nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
 		    nm_so_unpack(&cnx, buf, len);
 		    nm_so_end_unpacking(&cnx);
 
-		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
+		    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
 		    nm_so_pack(&cnx, buf, len);
 		    nm_so_end_packing(&cnx);
 		  }
@@ -165,13 +72,6 @@ main(int	  argc,
 	  int k;
                 /* client
                  */
-                err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                           hostname, r_url);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_connect returned err = %d\n", err);
-                        goto out;
-                }
-
                 printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
 
 		for(len = 0; len <= MAX; len = _next(len)) {
@@ -179,11 +79,11 @@ main(int	  argc,
 		  TBX_GET_TICK(t1);
 
 		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_packing(interface, gate_id, 0, &cnx);
+		    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
 		    nm_so_pack(&cnx, buf, len);
 		    nm_so_end_packing(&cnx);
 
-		    nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+		    nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
 		    nm_so_unpack(&cnx, buf, len);
 		    nm_so_end_unpacking(&cnx);
 		  }
@@ -201,6 +101,5 @@ main(int	  argc,
 		}
         }
 
- out:
         return 0;
 }

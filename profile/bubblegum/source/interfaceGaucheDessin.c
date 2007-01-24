@@ -225,55 +225,55 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
       for(i = -M_PI/4; i < M_PI/4; i += M_PI/20)
       {
          couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 10 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 10 *sin(i));
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 10 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 10 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
          couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 12.5 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 12.5 *sin(i + M_PI/20));
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 12.5 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 12.5 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.625 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 4 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.625 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 4 *sin(i));
       }
       for(i = -M_PI/4; i < M_PI/4; i += M_PI/20)
       {
          couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 7.5 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 7.5 *sin(i));
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 7.5 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 7.5 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.375 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.375 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i + M_PI/20));
          couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 10 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 10 *sin(i + M_PI/20));
-         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * 10 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 15 + M_SQRT2 * 10 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
       }
 
       for(i = 3*M_PI/4; i < 5*M_PI/4; i += M_PI/20)
       {
          couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + 20 +M_SQRT2 * 10 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 10 *sin(i));
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 10 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 10 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T +M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
          couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 12.5 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 12.5 *sin(i + M_PI/20));
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 12.5 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 12.5 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.625 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 4 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.625 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 4 *sin(i));
       }
       for(i = 3*M_PI/4; i < 5*M_PI/4; i += M_PI/20)
       {
          couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 7.5 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 7.5 *sin(i));
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 7.5 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 7.5 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.375 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.375 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i + M_PI/20));
          couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 10 *cos(i + M_PI/20) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 10 *sin(i + M_PI/20));
-         glVertex2f(LireZoneX(zoneADessiner) + 20 + M_SQRT2 * 10 *cos(i) ,
-                    LireZoneY(zoneADessiner) + 35 + M_SQRT2 * 10 *sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
       }
       glEnd();
 
@@ -281,27 +281,27 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       glBegin(GL_POLYGON);
       couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-      glVertex2f(LireZoneX(zoneADessiner) + 10,
-                 LireZoneY(zoneADessiner) + 45);
+      glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2,
+                 LireZoneY(zoneADessiner) + HAUTEUR_T * 0.9);
 
       couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
       for(i = -M_PI/4; i <= 3*M_PI/4; i += M_PI/30)
       {
-         glVertex2f(LireZoneX(zoneADessiner) + 10 + M_SQRT2 * 2.5 * cos(i),
-                    LireZoneY(zoneADessiner) + 45 + M_SQRT2 * 2.5 * sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2 + M_SQRT2 * LARGEUR_T * 0.125 * cos(i),
+                    LireZoneY(zoneADessiner) + HAUTEUR_T * 0.9 + M_SQRT2 * HAUTEUR_T * 0.05 * sin(i));
       }
       glEnd();
 
       glBegin(GL_POLYGON);
       couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
-      glVertex2f(LireZoneX(zoneADessiner) + 10,
-                 LireZoneY(zoneADessiner) + 5);
+      glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2,
+                 LireZoneY(zoneADessiner) + HAUTEUR_T / 10);
 
       couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
       for(i = 3*M_PI/4; i <= 7*M_PI/4; i += M_PI/30)
       {
-         glVertex2f(LireZoneX(zoneADessiner) + 10 + M_SQRT2 * 2.5 * cos(i),
-                    LireZoneY(zoneADessiner) + 5 + M_SQRT2 * 2.5 * sin(i));
+         glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2 + M_SQRT2 * LARGEUR_T * 0.125 * cos(i),
+                    LireZoneY(zoneADessiner) + HAUTEUR_T / 10 + M_SQRT2 * HAUTEUR_T * 0.05 * sin(i));
       }
       glEnd();
 

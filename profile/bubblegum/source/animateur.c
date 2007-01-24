@@ -18,6 +18,16 @@
 #include "read_trace.h"
 #include "load.h"
 
+#if 1
+#define BUBBLE_RADIUS 64
+#define THREAD_HEIGHT 64
+#define THREAD_WIDTH 32
+#else
+#define BUBBLE_RADIUS 100
+#define THREAD_HEIGHT 100
+#define THREAD_WIDTH 60
+#endif
+
 // pour les constantes
 struct fxt_code_name fut_code_table2 [] =
 {
@@ -195,8 +205,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].color = ARGB(200, 200, 100, 255);
             anim->scene.objects[ind].pos.x = (ind % 5) * 100;
             anim->scene.objects[ind].pos.y = (ind / 5) * 100;
-            anim->scene.objects[ind].size.x = 64;
-            anim->scene.objects[ind].size.y = 64;
+            anim->scene.objects[ind].size.x = BUBBLE_RADIUS;
+            anim->scene.objects[ind].size.y = BUBBLE_RADIUS;
             anim->scene.objects[ind].type = BUBBLE_OBJ;
             anim->scene.objects[ind].prop.id = ind;
             anim->scene.objects[ind].prop.prior = -1;
@@ -243,8 +253,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].color = ARGB(200, 0, 255, 0);
             anim->scene.objects[ind].pos.x = (ind % 5) * 100;
             anim->scene.objects[ind].pos.y = (ind / 5) * 100;
-            anim->scene.objects[ind].size.x = 32;
-            anim->scene.objects[ind].size.y = 64;
+            anim->scene.objects[ind].size.x = THREAD_WIDTH;
+            anim->scene.objects[ind].size.y = THREAD_HEIGHT;
             anim->scene.objects[ind].type = THREAD_OBJ;
             anim->scene.objects[ind].prop.name = "haricot";
             anim->scene.objects[ind].prop.id = -1;
@@ -474,8 +484,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    anim->scene.objects[0].color = ARGB(200, 200, 100, 255);
    anim->scene.objects[0].pos.x = 120;
    anim->scene.objects[0].pos.y = 220;
-   anim->scene.objects[0].size.x = 64;
-   anim->scene.objects[0].size.y = 64;
+   anim->scene.objects[0].size.x = BUBBLE_RADIUS;
+   anim->scene.objects[0].size.y = BUBBLE_RADIUS;
    anim->scene.objects[0].type = BUBBLE_OBJ;
    anim->scene.objects[0].prop.name = "bulle de test";
    anim->scene.objects[0].prop.id = 1;
@@ -486,8 +496,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    anim->scene.objects[1].color = ARGB(240, 255, 0, 0);
    anim->scene.objects[1].pos.x = 220;
    anim->scene.objects[1].pos.y = 120;
-   anim->scene.objects[1].size.x = 32;
-   anim->scene.objects[1].size.y = 64;
+   anim->scene.objects[1].size.x = THREAD_WIDTH;
+   anim->scene.objects[1].size.y = THREAD_HEIGHT;
    anim->scene.objects[1].type = THREAD_OBJ;
    anim->scene.objects[1].prop.name = "thread de test";
    anim->scene.objects[1].prop.id = 2;
@@ -498,8 +508,8 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    anim->scene.objects[2].color = ARGB(240, 0, 255, 0);
    anim->scene.objects[2].pos.x = 420;
    anim->scene.objects[2].pos.y = 320;
-   anim->scene.objects[2].size.x = 32;
-   anim->scene.objects[2].size.y = 64;
+   anim->scene.objects[2].size.x = THREAD_WIDTH;
+   anim->scene.objects[2].size.y = THREAD_HEIGHT;
    anim->scene.objects[2].type = THREAD_OBJ;
    anim->scene.objects[2].prop.name = "haricot vert";
    anim->scene.objects[2].prop.id = 3;
@@ -825,13 +835,15 @@ void DrawLinks(AnimElements* anim)
 // appartenance aux runqueues
 void SetPositions(AnimElements* anim)
 {
-   int lv, rq, ob, offset = 0, num, sob;
+   int lv, rq, ob, offset = 0, num, sob, width;
    Queue* q;
    for (lv = 0; lv < anim->runQueues.level_num; ++lv)
    {
       for (rq = 0; rq < anim->runQueues.levels[lv].num; ++rq)
       {
          q = &anim->runQueues.levels[lv].queues[rq];  // chaque queues
+	 width = (q->rect2.x - BUBBLE_RADIUS/2) - (q->rect1.x + BUBBLE_RADIUS/2);
+	 if (width < 0) width = 0;
 #ifndef DRAW_HIDDEN
          num = 0;   // comptage du vrai nombre d'objets a afficher
          for (ob = 0; ob < q->num_obj; ++ob)
@@ -849,6 +861,10 @@ void SetPositions(AnimElements* anim)
 #endif
             switch (q->objects[ob]->type)
             {
+	       /* TODO: heu, non, ce n'est pas ainsi qu'il faut penser
+		* C'est la bulle qui est sur la runqueue, et son contenu qui
+		* est dessinée en-dessous de la bulle (et qui _donc_ se
+		* retrouve sous la runqueue) */
                case THREAD_OBJ:
                   offset = -q->objects[ob]->size.y / 2;  // les threads sont dessinÃ©s sous les runqueues
                   break;
@@ -859,7 +875,7 @@ void SetPositions(AnimElements* anim)
             if (num == 1)
                q->objects[ob]->pos.x = q->rect1.x + (q->rect2.x - q->rect1.x) / 2 - q->objects[ob]->size.x / 2;
             else
-               q->objects[ob]->pos.x = (float)sob / (num - 1) * (q->rect2.x - q->rect1.x) + q->rect1.x - q->objects[ob]->size.x / 2;
+               q->objects[ob]->pos.x = (float)sob / (num - 1) * width + q->rect1.x + BUBBLE_RADIUS/2 - q->objects[ob]->size.x / 2;
             q->objects[ob]->pos.y = (q->rect1.y + q->rect2.y) / 2 - q->objects[ob]->size.y / 2 + offset;
             sob++;
          }         

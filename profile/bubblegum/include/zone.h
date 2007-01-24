@@ -5,11 +5,19 @@
 #include "bulle.h"
 
 #define CHARGE 50
+#if 1
 #define LARGEUR_T 20
 #define HAUTEUR_T 50
 #define LARGEUR_B 50
 #define HAUTEUR_B 50
 #define MARGE 25
+#else
+#define LARGEUR_T 40
+#define HAUTEUR_T 100
+#define LARGEUR_B 100
+#define HAUTEUR_B 100
+#define MARGE 50
+#endif
 
 typedef struct _zone
 {

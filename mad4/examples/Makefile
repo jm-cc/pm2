@@ -13,7 +13,7 @@
 
 export FLAVOR_DEFAULT:=mad4
 
-NMAD_SCHED := $(shell pm2-config --schedulers)
+NMAD_SCHED := $(shell pm2-config --flavor=$(FLAVOR_DEFAULT) --schedulers)
 
 ifeq ($(NMAD_SCHED),sched_opt)
   MOD_SRC += $(PM2_ROOT)/nmad/examples/sched_opt

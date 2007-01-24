@@ -24,7 +24,7 @@ fi
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
-EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|ezflavor|sigmund|sigmundlib|sigmunddps|supertrace|xsigmund|stackalign|bubbles|bubblegum"
+EXPERT_MODULES="generic|appli|dsm|leonie|mad2|leoparse|ezflavor|stackalign|bubbles|bubblegum"
 
 # aide
 usage() # exit_code section
@@ -114,7 +114,7 @@ EOF
 Command '$2' unknown
 
 EOF
-	
+
     esac
 #    if [ $exit_code != 0 ]; then
 #	echo "error in $PROGNAME $ARGV" 1>&2

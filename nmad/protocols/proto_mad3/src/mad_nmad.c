@@ -1210,7 +1210,7 @@ mad_nmad_end_packing(p_mad_connection_t out) {
 #  ifdef MAD_NMAD_SO_DEBUG
                   DISP("end wait send request[%d]: %d", i, cs->out_reqs[i]);
 #  endif /* MAD_NMAD_SO_DEBUG */
-                  nm_so_sr_swait(p_so_if, &(cs->out_reqs[i]));
+                  nm_so_sr_swait(p_so_if, cs->out_reqs[i]);
           }
           cs->out_wait_seq	= cs->out_next_seq;
           cs->out_flow_ctrl	= 0;
@@ -1242,7 +1242,7 @@ mad_nmad_end_unpacking(p_mad_connection_t in) {
 #  ifdef MAD_NMAD_SO_DEBUG
                   DISP("end wait recv request[%d]: %d", i, cs->in_reqs[i]);
 #  endif /* MAD_NMAD_SO_DEBUG */
-                  nm_so_sr_rwait(p_so_if,& cs->in_reqs[i]);
+                  nm_so_sr_rwait(p_so_if, cs->in_reqs[i]);
           }
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
@@ -1268,7 +1268,6 @@ mad_nmad_pack(p_mad_connection_t   out,
               mad_receive_mode_t   receive_mode) {
   p_mad_nmad_connection_specific_t	cs	= NULL;
   p_mad_nmad_channel_specific_t		chs	= NULL;
-  nm_so_request_t                       request;
 
   LOG_IN();
   if (send_mode == mad_send_LATER)
@@ -1282,11 +1281,10 @@ mad_nmad_pack(p_mad_connection_t   out,
        cs->out_next_seq, chs->tag_id, len);
   tbx_dump(ptr, len);
 #  endif /* MAD_NMAD_SO_DEBUG */
-  request=&cs->out_reqs[cs->out_next_seq];
-  nm_so_sr_isend(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &request);
+  nm_so_sr_isend(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &cs->out_reqs[cs->out_next_seq]);
 
 #  ifdef MAD_NMAD_SO_DEBUG
-  DISP("send request[%d]: %d", cs->out_next_seq, &(cs->out_reqs[cs->out_next_seq]));
+  DISP("send request[%d]: %d", cs->out_next_seq, cs->out_reqs[cs->out_next_seq]);
 #  endif /* MAD_NMAD_SO_DEBUG */
 
   cs->out_next_seq++;
@@ -1295,13 +1293,13 @@ mad_nmad_pack(p_mad_connection_t   out,
   if (cs->out_flow_ctrl == 255) {
           uint8_t i;
           for (i = cs->out_wait_seq; i != cs->out_next_seq; i++) {
-            nm_so_sr_swait(p_so_if, &cs->out_reqs[i]);
+                  nm_so_sr_swait(p_so_if, cs->out_reqs[i]);
           }
 
           cs->out_wait_seq	= cs->out_next_seq;
           cs->out_flow_ctrl	= 0;
   } else if (send_mode == mad_send_SAFER) {
-          nm_so_sr_swait(p_so_if, request);
+          nm_so_sr_swait(p_so_if, cs->out_reqs[cs->out_next_seq-1]);
           if (cs->out_flow_ctrl == 1) {
                             cs->out_wait_seq	= cs->out_next_seq;
                             cs->out_flow_ctrl	= 0;
@@ -1318,7 +1316,6 @@ mad_nmad_unpack(p_mad_connection_t   in,
                 mad_receive_mode_t   receive_mode) {
   p_mad_nmad_connection_specific_t	 cs	= NULL;
   p_mad_nmad_channel_specific_t		 chs	= NULL;
-  nm_so_request_t                        request;
 
   LOG_IN();
   if (send_mode == mad_send_LATER)
@@ -1327,8 +1324,7 @@ mad_nmad_unpack(p_mad_connection_t   in,
   cs	= in->specific;
   chs	= in->channel->specific;
 
-  request=&cs->in_reqs[cs->in_next_seq];
-  nm_so_sr_irecv(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &request);
+  nm_so_sr_irecv(p_so_if, cs->gate_id, chs->tag_id, ptr, len, &cs->in_reqs[cs->in_next_seq]);
 
 #  ifdef MAD_NMAD_SO_DEBUG
   DISP("recv request[%d]: %d", cs->in_next_seq, cs->in_reqs[cs->in_next_seq]);
@@ -1343,7 +1339,7 @@ mad_nmad_unpack(p_mad_connection_t   in,
 #  ifdef MAD_NMAD_SO_DEBUG
                   DISP("fc wait recv request[%d]: %d", i, cs->in_reqs[i]);
 #  endif /* MAD_NMAD_SO_DEBUG */
-                  nm_so_sr_rwait(p_so_if, &cs->in_reqs[i]);
+                  nm_so_sr_rwait(p_so_if, cs->in_reqs[i]);
           }
           cs->in_wait_seq	= cs->in_next_seq;
           cs->in_flow_ctrl	= 0;
@@ -1357,7 +1353,7 @@ mad_nmad_unpack(p_mad_connection_t   in,
 #  ifdef MAD_NMAD_SO_DEBUG
           DISP("express wait recv request[%d]: %d", cs->in_next_seq-1, cs->in_reqs[cs->in_next_seq-1]);
 #  endif /* MAD_NMAD_SO_DEBUG */
-          nm_so_sr_rwait(p_so_if, &cs->in_reqs[cs->in_next_seq-1]);
+          nm_so_sr_rwait(p_so_if, cs->in_reqs[cs->in_next_seq-1]);
           if (cs->in_flow_ctrl == 1) {
                             cs->in_wait_seq	= cs->in_next_seq;
                             cs->in_flow_ctrl	= 0;

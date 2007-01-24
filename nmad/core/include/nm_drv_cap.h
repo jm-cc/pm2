@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_DRV_CAP_H
-#define NM_DRV_CAP_H
-
 struct nm_drv_cap {
         /* driver capabilities						*/
 
@@ -57,11 +54,8 @@ struct nm_drv_cap {
          * concurrently
          */
         uint8_t has_concurrent_selective_receive;;
-#if defined(XPAULETTE) && defined(MA__LWPS)
-	uint8_t has_syscall;
-#endif
+
+
         double *network_sampling_latency;
         int nb_sampling;
 };
-
-#endif /* NM_DRV_CAP_H */

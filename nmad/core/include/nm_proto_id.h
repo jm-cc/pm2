@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_PROTO_ID_H
-#define NM_PROTO_ID_H
-
 enum nm_proto_id {
 
         nm_pi_wildcard		=   0,	/* any protocol, cannot be used
@@ -37,4 +34,3 @@ enum nm_proto_id {
         nm_pi_user_channel	= 128,	/* first user channel		*/
 };
 
-#endif /* NM_PROTO_ID_H */

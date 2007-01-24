@@ -14,9 +14,6 @@
  */
 
 
-#ifndef NM_TRK_CAP_H
-#define NM_TRK_CAP_H
-
 enum nm_trk_request_type {
 
         /* uninitialized
@@ -96,6 +93,4 @@ struct nm_trk_cap {
         uint64_t max_iovec_request_length;
         uint16_t max_iovec_size;
 };
-
-#endif /* NM_TRK_CAP_H */
 

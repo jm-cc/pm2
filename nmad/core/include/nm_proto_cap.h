@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_PROTO_CAP_H
-#define NM_PROTO_CAP_H
-
 struct nm_proto_cap {
         /* proto capabilities						*/
 
@@ -24,5 +21,3 @@ struct nm_proto_cap {
         uint8_t	dummy;
 
 };
-
-#endif /* NM_PROTO_CAP_H */

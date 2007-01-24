@@ -13,11 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SCHED_H
-#define NM_SCHED_H
-
-#include "tbx_pointers.h"
-
 struct nm_sched {
         /* packet scheduler						*/
 
@@ -73,5 +68,3 @@ struct nm_sched {
 
 
 };
-
-#endif /* NM_SCHED_H */

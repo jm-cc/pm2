@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_GATE_H
-#define NM_GATE_H
-
 struct nm_gate_trk {
         /* per track gate related data */
 
@@ -118,5 +115,3 @@ struct nm_gate {
 
         /* nothing for now */
 };
-
-#endif /* NM_GATE_H */

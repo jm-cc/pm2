@@ -13,12 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_CORE_INLINE_H
-#define NM_CORE_INLINE_H
-
-#include <sys/uio.h>
-#include "tbx.h"
-
 extern p_tbx_memory_t nm_core_pw_mem	;
 extern p_tbx_memory_t nm_core_iov1_mem	;
 extern p_tbx_memory_t nm_core_iov2_mem	;
@@ -413,5 +407,3 @@ __nm_core_post_recv	(struct nm_core		*p_core,
 
         return err;
 }
-
-#endif /* NM_CORE_INLINE_H */

@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_PROTO_OPS_H
-#define NM_PROTO_OPS_H
-
 struct nm_proto;
 struct nm_pkt_wrap;
 struct nm_proto_ops {
@@ -52,5 +49,3 @@ struct nm_proto_ops {
                                  struct nm_pkt_wrap	*p_pw,
                                  int			_err);
 };
-
-#endif /* NM_PROTO_OPS_H */

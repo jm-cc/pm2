@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef NM_PKT_HEAD_H
-#define NM_PKT_HEAD_H
-
 struct nm_pkt_head {
 
         /* data interpreter
@@ -61,6 +58,3 @@ struct nm_pkt_head {
          */
         uint8_t iov_flags;
 };
-
-#endif /* NM_PKT_HEAD_H */
-

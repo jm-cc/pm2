@@ -34,6 +34,11 @@
  */
 #define MAX_POLL_IDS    16
 
+#ifdef MA__LWPS
+/* Amount of communication threads */
+static int nb_comm_threads;
+#endif
+
 
 // TODO : dupliquer les fonctions de lock, unlock pour support sans Marcel
 #ifdef MARCEL
@@ -471,6 +476,7 @@ __tbx_inline__ static void __xpaul_init_req(xpaul_req_t req)
 #endif /* MA__LWPS */
 	INIT_LIST_HEAD(&req->chain_req_ready);
 	INIT_LIST_HEAD(&req->chain_req_success);
+	
 	req->state = 0;
 	req->server = NULL;
 	req->max_poll = 0;
@@ -571,6 +577,7 @@ __tbx_inline__ static int __xpaul_unregister_poll(xpaul_server_t server,
 	LOG_RETURN(0);
 }
 
+#ifdef MA__LWPS
 static int __xpaul_register_block(xpaul_server_t server,
 					xpaul_req_t req)
 {
@@ -579,11 +586,9 @@ static int __xpaul_register_block(xpaul_server_t server,
 
 	__xpaul_unregister_poll(server, req);
 
-#ifdef MA__LWPS	
 	list_add(&req->chain_req_to_export, &server->list_req_to_export);			
 	list_add(&req->chain_req_block_grouped, &server->list_req_block_grouped);			
 
-#endif /* MA__LWPS */
 	server->req_block_grouped_nb++;	
 	req->state |= XPAUL_STATE_GROUPED;// | XPAUL_STATE_EXPORTED;
 
@@ -591,6 +596,7 @@ static int __xpaul_register_block(xpaul_server_t server,
 		
 	LOG_RETURN(0);
 }
+#endif 
 
 /* On gère les événements signalés OK par les call-backs
  * - retrait événtuel de la liste des ev groupés (que l'on compte)
@@ -749,9 +755,9 @@ void xpaul_manage_from_tasklet(unsigned long hid)
 /* call-back pour le timer */
 void xpaul_poll_timer(unsigned long hid)
 {
+#ifdef MARCEL
 	xpaul_server_t server = (xpaul_server_t) hid;
 	xdebugl(7, "Timer function for [%s]\n", server->name);
-#ifdef MARCEL
 	ma_tasklet_schedule(&server->poll_tasklet);
 #else
 	// TODO: lancement du polling
@@ -900,10 +906,11 @@ int xpaul_req_submit(xpaul_server_t server, xpaul_req_t req)
 #endif				//MARCEL
 	if(! (req->state & XPAUL_STATE_DONT_POLL_FIRST)) {
 		xpaul_poll_req(req);
+		req->state&= ~XPAUL_STATE_DONT_POLL_FIRST;
 		if(req->chain_req_ready.next!= &(req->chain_req_ready) && (req->state= XPAUL_STATE_ONE_SHOT)) {
 			// ie state occured 
 			xpaul_req_cancel(req, 0);
-		} else 
+		} else
 			__xpaul_register_poll(server, req);
 	} else {
 		server->registered_req_not_yet_polled++;
@@ -1099,11 +1106,12 @@ __tbx_inline__ static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t re
 	marcel_sem_P(&wait->sem);	
 #else
 	int waken_up = 0;
-	int checked = 0;
+
 	do {
 		req->state |=
 		    XPAUL_STATE_ONE_SHOT | XPAUL_STATE_NO_WAKE_SERVER;
-
+		xpaul_check_polling_for(server);
+/*
 		if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
 		    && req->func_to_use != XPAUL_FUNC_SYSCALL) {
 			xdebug("Using Immediate POLL_ONE\n");
@@ -1115,6 +1123,7 @@ __tbx_inline__ static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t re
 			waken_up -= __xpaul_need_poll(server);
 			checked = 1;
 		}
+*/
 
 		if (req->state & XPAUL_STATE_OCCURED) {
 			if (waken_up) {

@@ -164,6 +164,7 @@ static int xpaul_io_group(xpaul_server_t server,
 	return 0;
 }
 
+#ifdef MA__LWPS
 static int xpaul_io_syscall_group(xpaul_server_t server,
 			  xpaul_op_t _op,
 			  xpaul_req_t req, int nb_ev, int option)
@@ -219,6 +220,7 @@ static int xpaul_io_syscall_group(xpaul_server_t server,
 	}
 	return 0;
 }
+#endif
 
 __tbx_inline__ static void xpaul_io_check_select(xpaul_io_serverid_t uid,
  					 xpaul_tcp_ev_t ev,

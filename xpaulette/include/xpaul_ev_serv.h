@@ -308,7 +308,7 @@ struct xpaul_req {
 	struct list_head chain_req_exported;
 
 	/* Query state */
-	int state;
+	unsigned state;
 	/* Query's server */
 	xpaul_server_t server;
 	/* List of waiters for this query */
@@ -344,8 +344,6 @@ struct xpaul_wait {
  */
 extern struct list_head xpaul_list_poll;
 
-/* Amount of communication threads */
-static int nb_comm_threads;
 
 
 /********************************************************************
@@ -684,7 +682,7 @@ static __tbx_inline__ void xpaul_check_polling(unsigned polling_point)
 /********************************************************************
  * Information functions about the machine's state
  */
-
+/*
 #ifdef MARCEL
 __tbx_inline__ static int NB_RUNNING_THREADS(void)
 {
@@ -693,7 +691,7 @@ __tbx_inline__ static int NB_RUNNING_THREADS(void)
 	return res - nb_comm_threads;
 }
 #endif				// MARCEL
-
+*/
 /********************************************************************
  *  FUNCTIONS PROTOTYPES 
  */

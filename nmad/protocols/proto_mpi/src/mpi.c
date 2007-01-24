@@ -271,8 +271,9 @@ int mpi_inline_isend(void *buffer,
   MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
+    MPI_NMAD_TRANSFER("[%s] Sent (contig) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
     err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
-    MPI_NMAD_TRANSFER("Sent --> %ld: %lu bytes\n", gate_id, count * sizeof_datatype(datatype));
+    MPI_NMAD_TRANSFER("[%s] Sent finished\n", __TBX_FUNCTION__);
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -354,8 +355,9 @@ int mpi_inline_isend(void *buffer,
         }
       }
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, len, count, sizeof_datatype(datatype));
+      MPI_NMAD_TRANSFER("[%s] Sent (struct) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
       err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, _request->contig_buffer, len, &(_request->request_id));
-      MPI_NMAD_TRANSFER("Sent --> %ld: %lu bytes\n", gate_id, count * sizeof_datatype(datatype));
+      MPI_NMAD_TRANSFER("[%s] Sent (struct) finished\n", __TBX_FUNCTION__);
       if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
     }
   }
@@ -399,8 +401,9 @@ int MPI_Send(void *buffer,
 
   if (_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
+    MPI_NMAD_TRANSFER("[%s] Calling nm_so_sr_swait\n", __TBX_FUNCTION__);
     err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
+    MPI_NMAD_TRANSFER("[%s] Returning from nm_so_sr_swait\n", __TBX_FUNCTION__);
     if (_request->contig_buffer != NULL) {
       free(_request->contig_buffer);
     }
@@ -450,6 +453,7 @@ int MPI_Isend(void *buffer,
 
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
+  _request->contig_buffer = NULL;
   err = mpi_inline_isend(buffer, count, datatype, dest, tag, comm, request);
 
   MPI_NMAD_LOG_OUT();
@@ -550,8 +554,9 @@ int mpi_inline_irecv(void* buffer,
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
+    MPI_NMAD_TRANSFER("[%s] Recv (contig) --< %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
     err = nm_so_sr_irecv(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
-    MPI_NMAD_TRANSFER("Recv --< %ld: %lu bytes\n", gate_id, count * sizeof_datatype(datatype));
+    MPI_NMAD_TRANSFER("[%s] Recv (contig) finished, request = %p\n", __TBX_FUNCTION__, &(_request->request_id));
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -613,11 +618,13 @@ int mpi_inline_irecv(void* buffer,
 
       recvbuffer = malloc(count * sizeof_datatype(datatype));
       MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", datatype, recvbuffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
+      MPI_NMAD_TRANSFER("[%s] Recv (struct) --< %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
       err = nm_so_sr_irecv(p_so_sr_if, gate_id, nmad_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_id));
-      MPI_NMAD_TRANSFER("Recv --< %ld: %lu bytes\n", gate_id, count * sizeof_datatype(datatype));
+      MPI_NMAD_TRANSFER("[%s] Recv (struct) finished\n", __TBX_FUNCTION__);
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-      MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait\n");
+      MPI_NMAD_TRANSFER("[%s] Calling nm_so_sr_rwait (struct)\n", __TBX_FUNCTION__);
       err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+      MPI_NMAD_TRANSFER("[%s] Returning from nm_so_sr_rwait\n", __TBX_FUNCTION__);
 
       recvptr = recvbuffer;
       for(i=0 ; i<count ; i++) {
@@ -679,13 +686,15 @@ int MPI_Recv(void *buffer,
 
   if (_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait\n");
+    MPI_NMAD_TRANSFER("[%s] Calling nm_so_sr_rwait for request = %p\n", __TBX_FUNCTION__, &(_request->request_id));
     err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+    MPI_NMAD_TRANSFER("[%s] Returning from nm_so_sr_rwait\n", __TBX_FUNCTION__);
   }
   else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
-    MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
+    MPI_NMAD_TRANSFER("[%s] Calling nm_so_end_unpacking\n", __TBX_FUNCTION__);
     err = nm_so_end_unpacking(connection);
+    MPI_NMAD_TRANSFER("[%s] Returning from nm_so_end_unpacking\n", __TBX_FUNCTION__);
   }
   MPI_NMAD_TRACE("Wait completed\n");
 
@@ -751,13 +760,15 @@ int MPI_Wait(MPI_Request *request,
   MPI_NMAD_TRACE("Waiting for a request %d\n", _request->request_type);
   if (_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait\n");
+    MPI_NMAD_TRANSFER("[%s] Calling nm_so_sr_rwait for request=%p\n", __TBX_FUNCTION__, &(_request->request_id));
     err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+    MPI_NMAD_TRANSFER("[%s] Returning from nm_so_sr_rwait\n", __TBX_FUNCTION__);
   }
   else if (_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
+    MPI_NMAD_TRANSFER("[%s] Calling nm_so_sr_swait\n", __TBX_FUNCTION__);
     err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
+    MPI_NMAD_TRANSFER("[%s] Returning from nm_so_sr_swait\n", __TBX_FUNCTION__);
     if (_request->contig_buffer != NULL) {
       free(_request->contig_buffer);
     }

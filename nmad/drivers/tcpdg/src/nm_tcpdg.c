@@ -13,7 +13,6 @@
  * General Public License for more details.
  */
 
-#define CONFIG_TRACE y
 #include <stdint.h>
 #include <unistd.h>
 #include <limits.h>

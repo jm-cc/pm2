@@ -256,9 +256,6 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t tag = proto_id - 128;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
 
-  //  printf("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
-  //	 ptr, len, tag, seq);
-
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
 
@@ -266,7 +263,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
       /* Copy data to its final destination */
       memcpy(p_so_gate->recv[tag][seq].unpack_here.data,
 	     ptr,
-	     p_so_gate->recv[tag][seq].unpack_here.len);
+	     tbx_min(len, p_so_gate->recv[tag][seq].unpack_here.len));
 
     p_so_gate->pending_unpacks--;
 
@@ -286,7 +283,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     /* Copy data to its final destination */
     memcpy(p_so_sched->any_src[tag].data,
            ptr,
-           p_so_sched->any_src[tag].len);
+           tbx_min(len, p_so_sched->any_src[tag].len));
 
     p_so_sched->pending_any_src_unpacks--;
 
@@ -396,9 +393,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int err;
 
-  //  printf("Packet %p received completely (on track %d)!\n",
-  //	 p_so_pw, p_pw->p_trk->id);
-
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
     p_so_gate->active_recv[p_pw->p_drv->id][TRK_SMALL] = 0;
@@ -451,8 +445,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_true);
     } else
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
-
-    //    printf("Large received (%d bytes) on drv %d\n", p_pw->length, drv_id);
 
     p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
 

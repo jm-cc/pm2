@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-
+#define CONFIG_TRACE y
 #include <stdint.h>
 #include <unistd.h>
 #include <limits.h>
@@ -370,6 +370,7 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         int			 ret;
         int			 err;
 
+        NM_LOG_IN();
         if (!p_pw->gate_priv) {
                 p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
         }
@@ -417,6 +418,8 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         err	= NM_ESUCCESS;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 }
 
@@ -434,6 +437,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         int			 ret;
         int			 err;
 
+        NM_LOG_IN();
         p_tcp_trk	= p_pw->p_trk->priv;
         p_drv		= p_pw->p_drv;
         p_core		= p_drv->p_core;
@@ -589,6 +593,8 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         err	= NM_ESUCCESS;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 }
 
@@ -602,6 +608,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
         int				 ret;
         int				 err;
 
+        NM_LOG_IN();
         err	= nm_tcpdg_outgoing_poll(p_pw);
         if (err < 0)
                 goto out_complete;
@@ -650,6 +657,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 struct iovec		*p_cur;
 
         write_body:
+                NM_TRACEF("tcp outgoing: sending body");
                 /* get a pointer to the iterator
                  */
                 p_vi	= &(p_tcp_pw->vi);
@@ -672,6 +680,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         writev_again:
                 ret	= writev(fd, p_cur, p_vi->v_cur_size);
+                NM_TRACE_VAL("tcp outgoing writev status", ret);
 
                 if (ret < 0) {
                         if (errno == EINTR)
@@ -718,8 +727,10 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                         ret -= len;
                 } while (ret);
         } else {
+                NM_TRACEF("tcp outgoing: sending header");
         write_again:
                 ret	= write(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+                NM_TRACE_VAL("tcp outgoing write status", ret);
 
                 if (ret < 0) {
                         if (errno == EINTR)
@@ -754,6 +765,8 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
         err	= -NM_EAGAIN;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 
  out_complete:
@@ -775,6 +788,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         int			 	 ret;
         int			 	 err;
 
+        NM_LOG_IN();
         err	= nm_tcpdg_incoming_poll(p_pw);
         if (err < 0)
                 goto out_complete;
@@ -823,6 +837,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 struct iovec		*p_cur;
 
         read_body:
+                NM_TRACEF("tcp incoming: receiving body");
 
                 /* get a pointer to the iterator
                  */
@@ -852,6 +867,8 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
                 ret	= read(fd, p_cur->iov_base,
                                tbx_min(p_cur->iov_len, p_tcp_pw->rem_length));
+                NM_TRACE_VAL("tcp incoming read status", ret);
+
                 if (ret < 0) {
                         if (errno == EINTR)
                                 goto read_body_again;
@@ -910,14 +927,16 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_cur++;
                 p_vi->cur_copy = *p_cur;
 
-                err	= nm_tcpdg_outgoing_poll(p_pw);
+                err	= nm_tcpdg_incoming_poll(p_pw);
                 if (err < 0)
                         goto out_complete;
 
                 goto read_body_again;
         } else {
+                NM_TRACEF("tcp incoming: receiving header");
         read_header_again:
                 ret	= read(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+                NM_TRACE_VAL("tcp incoming read status", ret);
 
                 if (ret < 0) {
                         if (errno == EINTR)
@@ -941,7 +960,8 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                         p_tcp_pw->state	= 1;
                         p_tcp_pw->rem_length	= p_tcp_pw->h.length;
 
-                        err	= nm_tcpdg_outgoing_poll(p_pw);
+                        NM_TRACE_VAL("tcp incoming pkt length", p_tcp_pw->rem_length);
+                        err	= nm_tcpdg_incoming_poll(p_pw);
                         if (err < 0)
                                 goto out_complete;
 
@@ -952,6 +972,8 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         err	= -NM_EAGAIN;
 
  out:
+        NM_LOG_OUT();
+
         return err;
 
  out_complete:

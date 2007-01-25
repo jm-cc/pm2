@@ -26,9 +26,6 @@ _pm2load_error() # msg
     exit 1
 }
 
-export PM2_CMD_PREFIX
-PM2_CMD_PREFIX="pm2-pre-script.sh"
-
 #echo "[ pm2-pre-script.sh " ${@:+"$@"} " ]"
 
 debug_file=""
@@ -37,7 +34,6 @@ valgrind=""
 while [ $# -gt 0 ]; do
     case "$1" in
 	--script-debug)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    PM2_SCRIPT_DEBUG=on
 	    export PM2_SCRIPT_DEBUG
 	    log "Using script debug mode"
@@ -45,14 +41,12 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
         --use-local-flavor)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    shift
 	    PM2_USE_LOCAL_FLAVOR=on
 	    export PM2_USE_LOCAL_FLAVOR
 	    log "Using local flavor"
 	    ;;
 	--preload)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1 $2"
 	    shift
 	    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$1"
 	    export LD_PRELOAD
@@ -63,22 +57,25 @@ while [ $# -gt 0 ]; do
 	    log "Using ld preload [${LD_PRELOAD}]"
 	    ;;
 	--export)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1 $2 $3"
 	    shift
 	    var="$1"
 	    shift
-	    eval value="$1"
+	    value="$1"
 	    shift
-	    # $value contient déjà des guillemets...
-	    eval $var="$value"
+	    eval $var=\"\$value\"
 	    eval export $var
 	    if [ -n "$debug_file" ]; then
 		echo "set environment $var $value" >> $debug_file
 	    fi
 	    log "Exporting [$var] set to [$value]"
 	    ;;
+	--prescript)
+	    shift
+	    prescript="$1"
+	    shift
+	    log "Using [$prescript] as a pre-script environment"
+	    ;;
 	--debug|--valgrind)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    [ "$1" == --valgrind ] && valgrind=yes
 	    shift
 	    # tempo file
@@ -98,7 +95,6 @@ while [ $# -gt 0 ]; do
 	    log "Using debug mode"
 	    ;;
 	--strace)
-	    PM2_CMD_PREFIX="PM2_CMD_PREFIX $1"
 	    shift
 	    # tempo file
 	    num=0
@@ -110,7 +106,6 @@ while [ $# -gt 0 ]; do
 	    log "Using strace mode"
 	    ;;
 	--)
-	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    shift
 	    break
 	    ;;
@@ -120,10 +115,6 @@ while [ $# -gt 0 ]; do
 	    ;;
     esac
 done
-
-if [ "$PM2_USE_LOCAL_FLAVOR" != on ]; then
-    PM2_CMD_PREFIX="${PM2_ROOT}/bin/${PM2_CMD_PREFIX}"
-fi
 
 PM2_CMD_NAME="$1"
 export PM2_CMD_NAME
@@ -225,6 +216,11 @@ elif [ -n "$strace_file" ]; then
 
     log "Executing: exec strace -o $strace_file $prog $*"
     exec strace -f -o $strace_file $prog ${@:+"$@"}
+
+elif [ -n "$prescript" ]; then
+
+    log "Executing: exec $prescript $prog $*"
+    exec $prescript $prog ${@:+"$@"}
 
 else
 

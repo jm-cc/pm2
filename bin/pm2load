@@ -32,6 +32,7 @@ Usage: $PROGNAME { option } command
     -d      : Run command through gdb
     -vg     : Run command through valgrind
     -t      : Run command through strace
+    -p cmd  : Run pre-script command (e.g. numactl)
     -s      : Run scripts in debug mode
     -c name : Use console named "name"
     -l      : Also generate a log file on first node
@@ -173,6 +174,11 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_STRACE=on
 	    ;;
+	--prescript)
+	    shift
+	    PM2_SCRIPT="$1"
+	    shift
+	    ;;
 	-s|--debug)
 	    shift
 	    PM2_SCRIPT_DEBUG=on
@@ -250,8 +256,10 @@ done
 # Initialisation des arguments passés à pm2-pre-script.sh
 _prescript_args=""
 
+
 # Variables automatiquement exportées
 PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}PM2_LD_LIBRARY_PATH:PM2_FLAVOR
+
 if [ "$PM2_SCRIPT_DEBUG" = on ]; then
     export PM2_SCRIPT_DEBUG
     _prescript_args="$_prescript_args --script-debug"
@@ -352,6 +360,10 @@ if [ "$PM2_STRACE" = on ]; then
     _prescript_args="$_prescript_args --strace"
 fi
 
+if [ -n "$PM2_SCRIPT" ]; then
+    _prescript_args="$_prescript_args --prescript \"$PM2_SCRIPT\""
+fi
+
 _old_ifs="$IFS"
 _ifs_not_set=${IFS-yes}
 IFS=":"
@@ -381,20 +393,20 @@ fi
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
     log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
 	$PM2_CMD_NAME ${prog_args[@]}"
-    $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+    eval $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
 	$PM2_CMD_NAME "${prog_args[@]}" 2>&1 | tee /tmp/${USER}-pm2log-0
     exit 0
 elif [ "$PM2_LOGS_ON_NODE_0" = "only" ]; then
     log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
         $PM2_CMD_NAME ${prog_args[@]}"
-    $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+    eval $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
         $PM2_CMD_NAME "${prog_args[@]}" > /tmp/${USER}-pm2log-0 2>&1
     exit 0
 else
     log "Executing: set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
         $PM2_CMD_NAME ${prog_args[@]}"
     log "Executing: . $_PM2CONFIG_LOADER"
-    set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
-	$PM2_CMD_NAME "${prog_args[@]}"
+    eval set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
+	$PM2_CMD_NAME \"\${prog_args[@]}\"
     . $_PM2CONFIG_LOADER
 fi

@@ -206,6 +206,7 @@ int xpaul_unlock(xpaul_server_t server)
 #endif				// MARCEL
 
 /* Détermine s'il est judicieux d'exporter un syscall */
+__tbx_inline__ static
 int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req,
 			xpaul_wait_t wait, xpaul_time_t timeout)
 {
@@ -234,9 +235,10 @@ int __xpaul_need_export(xpaul_server_t server, xpaul_req_t req,
 
 	/* pas d'autres threads */
 	/* TODO : determiner le nombre de threads de facon plus 'propre' */
-	PROF_EVENT1(running_threads, marcel_per_lwp_nbthreads());
-	if (marcel_per_lwp_nbthreads() < marcel_nbvps() +1)
-		return 0;
+	int i;
+	for(i=0;i<marcel_nbvps();i++)
+		if(MA_VP_IS_POLLING(i))
+			return 0;
 #endif				// MARCEL
 	return 1;
 }
@@ -246,6 +248,7 @@ void xpaul_req_success(xpaul_req_t req)
 #ifdef MARCEL
 	xpaul_spin_lock_softirq(&req->server->req_ready_lock); 
 #endif
+	XPAUL_LOGF("Req %p succeded !\n",req);
         list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); 
 #ifdef MARCEL
 	xpaul_spin_unlock_softirq(&req->server->req_ready_lock); 
@@ -940,14 +943,11 @@ int xpaul_req_cancel(xpaul_req_t req, int ret_code)
 
 #ifdef MA__LWPS
 /* Previent un LWP de comm qu'il y a des requetes à exporter */
-int xpaul_callback_will_block(xpaul_server_t server) 
+int xpaul_callback_will_block(xpaul_server_t server, xpaul_req_t req) 
 {
-	xpaul_req_t req;
 	xpaul_comm_lwp_t lwp;	
 	int foo=42;
 
-	req = list_entry(server->list_req_registered.next,
-			 struct xpaul_req, chain_req_registered);
 	__xpaul_register_block(server, req);
 
 	/* Choisit un LWP (n'importe lequel) */
@@ -963,6 +963,7 @@ int xpaul_callback_will_block(xpaul_server_t server)
 	__xpaul_unlock_server(server);
 
 	/* wakeup LWP */
+	XPAUL_LOGF("Waiking up comm LWP #%d\n",lwp->vp_nb);
 	PROF_EVENT(writing_tube);
 	write(lwp->fds[1], &foo, 1);
 	PROF_EVENT(writing_tube_done);
@@ -991,6 +992,7 @@ void *__xpaul_syscall_loop(void * param)
 		PROF_EVENT2(syscall_waiting, lwp->vp_nb, lwp->fds[0]);
 		read(lwp->fds[0], &foo, 1); 
 		PROF_EVENT2(syscall_read_done, lwp->vp_nb, lwp->fds[0]);
+		XPAUL_LOGF("Comm LWP #%d is working\n",lwp->vp_nb);
 
 		if( lwp->server->state == XPAUL_SERVER_STATE_HALTED ){
 			list_del_init(&lwp->chain_lwp_ready);
@@ -1080,7 +1082,7 @@ __tbx_inline__ static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t re
 #ifdef MA__LWPS
 	if (__xpaul_need_export(server, req, wait, timeout) )
 	{
-		xpaul_callback_will_block(server);
+		xpaul_callback_will_block(server, req);
 	}
 	else
 #endif /* MA_LWPS */

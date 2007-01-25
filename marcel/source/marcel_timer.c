@@ -235,7 +235,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  */
 #ifndef __MINGW32__
 
-#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
+#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL) && !defined(DARWIN_SYS)
 #define DISTRIBUTE_SIGALRM
 #endif
 
@@ -254,8 +254,15 @@ static void timer_interrupt(int sig)
 	static unsigned long tick = 0;
 #endif
 #endif
-
+	/* Don't do anything before this */
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
+
+	/* Avoid recursing interrupts. Not completely safe, but better than nothing */
+	if (ma_in_irq()) {
+	        return;
+	}
+
+	ma_irq_enter();
 
 	/* check that stack isn't overflowing */
 #ifndef ENABLE_STACK_JUMPING
@@ -276,7 +283,7 @@ static void timer_interrupt(int sig)
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
 			if (lwp->number != -1 && lwp->number < marcel_nbvps())
-				marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+			        marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
 		for_each_lwp_from_end()
 	}
 #endif
@@ -290,7 +297,6 @@ static void timer_interrupt(int sig)
 		}
 #endif
 #endif
-	ma_irq_enter();
 #ifdef MA__TIMER
 	if (
 #ifdef MA__LWPS

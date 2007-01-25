@@ -1654,7 +1654,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT,sig);
 	f = fopen(fontfile,"r");
 	if (!f) {
-		perror("could not open font file");
+		perror("Warning: could not open font file, will not able to print thread priority");
 		fprintf(stderr,"(tried %s. Use -f option for changing this)\n",fontfile);
 	}
 

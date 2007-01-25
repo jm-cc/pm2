@@ -221,19 +221,12 @@ elif [ -n "$debug_file" ]; then
 
     rm -f $debug_file
 
-elif [ -n "$debug_file" ]; then
-
-    log "Executing: gdb -x $debug_file $prog"
-    gdb -x $debug_file $prog
-
-    rm -f $debug_file
-
 elif [ -n "$strace_file" ]; then
 
     log "Executing: exec strace -o $strace_file $prog $*"
     exec strace -f -o $strace_file $prog ${@:+"$@"}
 
-else # debug
+else
 
     log "Executing: exec $prog $*"
     exec $prog ${@:+"$@"}

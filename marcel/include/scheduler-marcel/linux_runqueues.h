@@ -239,7 +239,10 @@ static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *p, ma_prio_a
 static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
-	list_add_tail(&e->run_list, ma_array_queue(array, e->prio));
+	if (e->prio >= MA_BATCH_PRIO)
+		list_add(&e->run_list, ma_array_queue(array, e->prio));
+	else
+		list_add_tail(&e->run_list, ma_array_queue(array, e->prio));
 	__ma_set_bit(e->prio, array->bitmap);
 	if (e->prio != MA_NOSCHED_PRIO)
 		array->nr_active++;

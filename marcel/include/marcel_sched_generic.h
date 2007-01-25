@@ -281,6 +281,10 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 #define MA_TASK_REAL_TIME(task) \
    ma_test_ti_thread_flag(task, TIF_RT_THREAD)
 
+/* Is the current VP in a polling loop ? */
+#define MA_VP_IS_POLLING(vp) \
+   ma_test_tsk_thread_flag(ma_per_lwp(current_thread, GET_LWP_BY_NUM(vp)), TIF_POLLING_NRFLAG)
+
 #section types
 #section marcel_inline
 #section variables

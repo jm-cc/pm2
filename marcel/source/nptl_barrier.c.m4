@@ -253,8 +253,8 @@ int prefix_barrier_destroy (prefix_barrier_t *barrier)
 		ibarrier->leftE = 0;
 		result = 0;
 	} else {		/* Still used, return with an error.  */
-		prefix_lock_release(&ibarrier->lock.__spinlock);
 	}
+	prefix_lock_release(&ibarrier->lock.__spinlock);
 	LOG_RETURN(result);
 }
 ]])

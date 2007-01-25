@@ -114,41 +114,38 @@ static int xpaul_io_group(xpaul_server_t server,
 	FD_ZERO(&uid->polling_wfds);
 
 	FOREACH_REQ_REGISTERED(ev, server, inst) {
-		if(ev->inst.state & XPAUL_STATE_OCCURED)
-			fprintf(stderr, "Query allready occured\n");
-		else{
-			switch (ev->op) {
-			case XPAUL_POLL_READ:{
-				FD_SET(ev->FD, &uid->polling_rfds);
-				uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
-				break;
+		XPAUL_WARN_ON(ev->inst.state & XPAUL_STATE_OCCURED);
+		switch (ev->op) {
+		case XPAUL_POLL_READ:{
+			FD_SET(ev->FD, &uid->polling_rfds);
+			uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
+			break;
+		}
+		case XPAUL_POLL_WRITE:{
+			FD_SET(ev->FD, &uid->polling_wfds);
+			uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
+			break;
+		}
+		case XPAUL_POLL_SELECT:{
+			unsigned i;
+			if (ev->RFDS != NULL) {
+				for (i = 0; i < ev->NFDS; i++)
+					if (FD_ISSET(i, ev->RFDS))
+						FD_SET(i,
+						       &uid->polling_rfds);
 			}
-			case XPAUL_POLL_WRITE:{
-				FD_SET(ev->FD, &uid->polling_wfds);
-				uid->polling_nb = tbx_max(uid->polling_nb, ev->FD + 1);
-				break;
+			if (ev->WFDS != NULL) {
+				for (i = 0; i < ev->NFDS; i++)
+					if (FD_ISSET(i, ev->WFDS))
+						FD_SET(i,
+						       &uid->polling_wfds);
 			}
-			case XPAUL_POLL_SELECT:{
-				unsigned i;
-				if (ev->RFDS != NULL) {
-					for (i = 0; i < ev->NFDS; i++)
-						if (FD_ISSET(i, ev->RFDS))
-							FD_SET(i,
-							       &uid->polling_rfds);
-				}
-				if (ev->WFDS != NULL) {
-					for (i = 0; i < ev->NFDS; i++)
-						if (FD_ISSET(i, ev->WFDS))
-							FD_SET(i,
-							       &uid->polling_wfds);
-				}
 				
-				uid->polling_nb = tbx_max(uid->polling_nb, ev->NFDS);
-				break;
-			}
-			default:
-				XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
-			}
+			uid->polling_nb = tbx_max(uid->polling_nb, ev->NFDS);
+			break;
+		}
+		default:
+			XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 		}
 	}
 	return 0;
@@ -163,7 +160,7 @@ static int xpaul_io_syscall_group(xpaul_server_t server,
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev;
 
-	XPAUL_LOGF("Grouping IO poll\n");
+	XPAUL_LOGF("Grouping IO syscalls\n");
 	uid->syscall_nb = 0;
 	FD_ZERO(&uid->syscall_rfds);
 	FD_ZERO(&uid->syscall_wfds);
@@ -294,10 +291,8 @@ static int xpaul_io_block(xpaul_server_t server,
 	struct timeval tv, *ptv;
 	PROF_EVENT1(xpaul_io_block_entry,ev);
 	
-#ifdef MARCEL
 	XPAUL_LOGF("Syscall function called on LWP %d\n",
 		marcel_current_vp());
-#endif				// MARCEL
 
 	timerclear(&tv);
 	tv.tv_sec = 0;
@@ -381,10 +376,8 @@ static int xpaul_io_blockone(xpaul_server_t server,
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
-	if(ev->inst.state & XPAUL_STATE_OCCURED){
-		fprintf(stderr, "BLOCKONE: Req %p occured\n",req);
-		return 0;
-	}
+	XPAUL_BUG_ON(ev->inst.state & XPAUL_STATE_OCCURED);
+
 	switch (ev->op) {
 	case XPAUL_POLL_READ:{
 			FD_SET(ev->FD, &rfds);

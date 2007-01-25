@@ -129,6 +129,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
 
       *status = 0;
 
+      p_so_sched->any_src[tag].status = NM_SO_STATUS_RDV_IN_PROGRESS;
       p_so_gate->recv_seq_number[tag]++;
 
       NMAD_SO_TRACE("[%s] UNPACK ANYSRC (rdv): seq = %d\n", __TBX_FUNCTION__, seq);

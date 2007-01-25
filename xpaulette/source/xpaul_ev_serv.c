@@ -1070,6 +1070,7 @@ void *__xpaul_syscall_loop(void * param)
 
 	} while(lwp->server->state!=XPAUL_SERVER_STATE_HALTED);
 	__xpaul_tryunlock_server(server);
+	return NULL;
 }
 
 #endif /* MA__LWPS */

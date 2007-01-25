@@ -88,25 +88,15 @@ static struct xpaul_io_server xpaul_io_server = {
 
 #ifdef MA__LWPS
 
-#define MAX_REQS 50
+//#define MAX_REQS 50
 typedef struct {
 	int n;
 	fd_set *readfds;
 	fd_set *writefds;
 	fd_set *exceptfds;
 	struct timeval *timeout;	/* not used (TODO?) */
-	struct list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
+//	struct list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
 } requete;
-
-static int fds[2];
-static requete reqs;
-static requete res_req;
-static volatile int res;
-#ifdef MARCEL
-static marcel_sem_t recved_sem;
-static marcel_sem_t req_sem;	/* to access reqs */
-#endif				// MARCEL
-static int vp_nb;
 
 #endif
 
@@ -766,7 +756,7 @@ int xpaul_tselect(int width, fd_set * __restrict readfds,
 	return res;
 }
 
-
+#if 0
 #ifdef MA__LWPS
 
 /* Communication LWP main loop */
@@ -908,7 +898,7 @@ any_t xpaul_receiver()
 	}
 }
 #endif				// MA__LWPS
-
+#endif
 
 void xpaul_io_init(void)
 {
@@ -968,52 +958,3 @@ void xpaul_io_stop()
 	xpaul_server_stop(&xpaul_io_server.server);
 }
 
-#ifdef MA__LWPS
-
-
-/* Communication LWP creation */
-void xpaul_init_receiver(void)
-{
-	return;
-	int i;
-	vp_nb = marcel_add_lwp();
-	marcel_attr_t attr;
-
-	marcel_t recv_pid;
-
-	if (pipe(fds) == -1) {
-		perror("pipe");
-		exit(EXIT_FAILURE);
-	}
-
-	marcel_sem_init(&recved_sem, 1);
-	marcel_sem_init(&req_sem, 1);
-
-	res_req.readfds = (fd_set *) malloc(sizeof(fd_set));
-	res_req.writefds = (fd_set *) malloc(sizeof(fd_set));
-	res_req.exceptfds = (fd_set *) malloc(sizeof(fd_set));
-	FD_ZERO(res_req.readfds);
-	FD_ZERO(res_req.writefds);
-	FD_ZERO(res_req.exceptfds);
-
-	reqs.readfds = (fd_set *) malloc(sizeof(fd_set));
-	reqs.writefds = (fd_set *) malloc(sizeof(fd_set));
-	reqs.exceptfds = (fd_set *) malloc(sizeof(fd_set));
-	FD_ZERO(reqs.readfds);
-	FD_ZERO(reqs.writefds);
-	FD_ZERO(reqs.exceptfds);
-	for(i=0;i<MAX_REQS;i++) {
-		INIT_LIST_HEAD(&(reqs.lwait[i][0]));
-		INIT_LIST_HEAD(&(reqs.lwait[i][1]));
-	}
-
-	marcel_attr_init(&attr);
-	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp_nb));
-	marcel_attr_setname(&attr, "xpaul_receiver");
-
-	marcel_create(&recv_pid, &attr, xpaul_receiver, NULL);
-	nb_comm_threads = 1;
-}
-
-#endif

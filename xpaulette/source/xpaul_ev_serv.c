@@ -14,7 +14,6 @@
  * General Public License for more details.
  */
 
-#define XPAUL_FILE_DEBUG xpaul_ev_serv
 #include "xpaul.h"
 #ifdef MARCEL
 #include "marcel.h"
@@ -157,10 +156,9 @@ __tbx_inline__ static void xpaul_restore_lock_server_unlocked(xpaul_server_t
 /* Utilisé par l'application */
 int xpaul_lock(xpaul_server_t server)
 {
-#ifdef XPAUL__DEBUG
 	/* Ce lock n'est pas réentrant ! Vérifier l'appli */
 	XPAUL_BUG_ON(server->lock_owner == MARCEL_SELF);
-#endif
+
 	__xpaul_lock_server(server, MARCEL_SELF);
 	return 0;
 }
@@ -168,10 +166,9 @@ int xpaul_lock(xpaul_server_t server)
 /* Utilisé par l'application */
 int xpaul_unlock(xpaul_server_t server)
 {
-#ifdef XPAUL__DEBUG
 	/* On doit avoir le lock pour le relâcher */
 	XPAUL_BUG_ON(server->lock_owner != MARCEL_SELF);
-#endif
+
 	__xpaul_unlock_server(server);
 	return 0;
 }
@@ -270,8 +267,7 @@ xpaul_req_t xpaul_get_success(xpaul_server_t server)
 		req = list_entry(server->list_req_success.next,
 				 struct xpaul_req, chain_req_success);
 		list_del_init(&req->chain_req_success);
-		xdebug("Getting success req %p pour [%s]\n", req,
-		       server->name);
+		XPAUL_LOGF("Getting success req %p pour [%s]\n", req, server->name);
 	}
 
 	xpaul_spin_unlock_softirq(&server->req_success_lock);
@@ -288,7 +284,7 @@ __tbx_inline__ static int __xpaul_del_success_req(xpaul_server_t server,
 	}
 	xpaul_spin_lock(&server->req_success_lock);
 	list_del_init(&req->chain_req_success);
-	xdebug("Removing success ev %p pour [%s]\n", req, server->name);
+	XPAUL_LOGF("Removing success ev %p pour [%s]\n", req, server->name);
 	xpaul_spin_unlock(&server->req_success_lock);
 
 	LOG_RETURN(0);
@@ -304,7 +300,7 @@ __tbx_inline__ static int __xpaul_add_success_req(xpaul_server_t server,
 	}
 	xpaul_spin_lock(&server->req_success_lock);
 
-	xdebug("Adding success req %p pour [%s]\n", req, server->name);
+	XPAUL_LOGF("Adding success req %p pour [%s]\n", req, server->name);
 	list_add_tail(&req->chain_req_success, &server->list_req_success);
 	xpaul_spin_unlock(&server->req_success_lock);
 
@@ -321,10 +317,10 @@ __tbx_inline__ static int __xpaul_wake_req_waiters(xpaul_server_t server,
 #ifdef XPAUL__DEBUG
 		switch (code) {
 		case 0:
-			xdebug("Poll succeed with task %p\n", wait->task);
+			XPAUL_LOGF("Poll succeed with task %p\n", wait->task);
 			break;
 		default:
-			xdebug("Poll awake with task %p on code %i\n",
+			XPAUL_LOGF("Poll awake with task %p on code %i\n",
 			       wait->task, code);
 		}
 #endif
@@ -347,13 +343,12 @@ __tbx_inline__ static int __xpaul_wake_req_waiters(xpaul_server_t server,
 __tbx_inline__ static int __xpaul_poll_group(xpaul_server_t server,
 				     xpaul_req_t req)
 {
-#ifdef XPAUL__DEBUG
 	XPAUL_BUG_ON(!server->req_poll_grouped_nb);
-#endif
+
 	if (server->funcs[XPAUL_FUNCTYPE_POLL_GROUP].func &&
 	    (server->req_poll_grouped_nb > 1
 	     || !server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)) {
-		xdebug
+		XPAUL_LOGF
 		    ("Factorizing %i polling(s) with POLL_GROUP for [%s]\n",
 		     server->req_poll_grouped_nb, server->name);
 		(*server->funcs[XPAUL_FUNCTYPE_POLL_GROUP].func)
@@ -361,7 +356,7 @@ __tbx_inline__ static int __xpaul_poll_group(xpaul_server_t server,
 		     req, server->req_poll_grouped_nb, 0);
 		return 1;
 	}
-	xdebug("No need to group %i polling(s) for [%s]\n",
+	XPAUL_LOGF("No need to group %i polling(s) for [%s]\n",
 	       server->req_poll_grouped_nb, server->name);
 	return 0;
 }
@@ -370,13 +365,12 @@ __tbx_inline__ static int __xpaul_poll_group(xpaul_server_t server,
 __tbx_inline__ static int __xpaul_block_group(xpaul_server_t server,
 				     xpaul_req_t req)
 {
-#ifdef XPAUL__DEBUG
 	XPAUL_BUG_ON(!server->req_block_grouped_nb);
-#endif
+
 	if (server->funcs[XPAUL_FUNCTYPE_BLOCK_GROUP].func &&
 	    (server->req_block_grouped_nb > 1
 	     || !server->funcs[XPAUL_FUNCTYPE_BLOCK_WAITONE].func)) {
-		xdebug
+		XPAUL_LOGF
 		    ("Factorizing %i blocking(s) with BLOCK_GROUP for [%s]\n",
 		     server->req_block_grouped_nb, server->name);
 		(*server->funcs[XPAUL_FUNCTYPE_BLOCK_GROUP].func)
@@ -386,7 +380,7 @@ __tbx_inline__ static int __xpaul_block_group(xpaul_server_t server,
 //		req->state |= XPAUL_STATE_GROUPED;
 		return 1;
 	}
-	xdebug("No need to group %i polling(s) for [%s]\n",
+	XPAUL_LOGF("No need to group %i polling(s) for [%s]\n",
 	       server->req_block_grouped_nb, server->name);
 	return 0;
 }
@@ -400,10 +394,10 @@ extern unsigned long volatile ma_jiffies;
 __tbx_inline__ static void __xpaul_poll_start(xpaul_server_t server)
 {
 	xpaul_write_lock_softirq(&xpaul_poll_lock);
-	xdebug("Starting polling for %s\n", server->name);
+	XPAUL_LOGF("Starting polling for %s\n", server->name);
 	list_add(&server->chain_poll, &xpaul_list_poll);
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
-		xdebug("Starting timer polling for [%s] at period %i\n",
+		XPAUL_LOGF("Starting timer polling for [%s] at period %i\n",
 		       server->name, server->period);
 		/* ma_mod_timer des fois qu'un ancien soit toujours
 		 * pending... */
@@ -424,10 +418,10 @@ __tbx_inline__ static void __xpaul_poll_start(xpaul_server_t server)
 __tbx_inline__ static void __xpaul_poll_stop(xpaul_server_t server)
 {
 	xpaul_write_lock_softirq(&xpaul_poll_lock);
-	xdebug("Stopping polling for [%s]\n", server->name);
+	XPAUL_LOGF("Stopping polling for [%s]\n", server->name);
 	list_del_init(&server->chain_poll);
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
-		xdebug("Stopping timer polling for [%s]\n", server->name);
+		XPAUL_LOGF("Stopping timer polling for [%s]\n", server->name);
 #ifdef MARCEL
 		// TODO: support du timer sans Marcel
 		ma_del_timer(&server->poll_timer);
@@ -446,11 +440,11 @@ __tbx_inline__ static int __xpaul_wake_id_waiters(xpaul_server_t server, int cod
 #ifdef XPAUL__DEBUG
 		switch (code) {
 		case 0:
-			xdebug("Poll succeed with global task %p\n",
+			XPAUL_LOGF("Poll succeed with global task %p\n",
 			       wait->task);
 			break;
 		default:
-			xdebug
+			XPAUL_LOGF
 			    ("Poll awake with global task %p on code %i\n",
 			     wait->task, code);
 		}
@@ -467,7 +461,7 @@ __tbx_inline__ static int __xpaul_wake_id_waiters(xpaul_server_t server, int cod
 
 __tbx_inline__ static void __xpaul_init_req(xpaul_req_t req)
 {
-	xdebug("Clearing Grouping request %p\n", req);
+	XPAUL_LOGF("Clearing Grouping request %p\n", req);
 	INIT_LIST_HEAD(&req->chain_req_registered);
 	INIT_LIST_HEAD(&req->chain_req_grouped);
 #ifdef MA__LWPS
@@ -496,7 +490,6 @@ __tbx_inline__ static void __xpaul_init_req(xpaul_req_t req)
 #ifdef MA__LWPS
 __tbx_inline__ static void __xpaul_init_lwp(xpaul_comm_lwp_t lwp)
 {
-	xdebug("Clearing Grouping request %p\n", req);
 	INIT_LIST_HEAD(&lwp->chain_lwp_ready);
 	INIT_LIST_HEAD(&lwp->chain_lwp_working);
 	lwp->vp_nb = -1;
@@ -510,8 +503,9 @@ __tbx_inline__ static int __xpaul_register(xpaul_server_t server, xpaul_req_t re
 
 	LOG_IN();
 	/* On doit ajouter la requête à celles en attente */
-	xdebug("Register req %p for [%s]\n", req, server->name);
+	XPAUL_LOGF("Register req %p for [%s]\n", req, server->name);
 	XPAUL_BUG_ON(req->server);
+
 	list_add(&req->chain_req_registered, &server->list_req_registered);
 	req->state |= XPAUL_STATE_REGISTERED;
 	req->server = server;
@@ -522,7 +516,7 @@ __tbx_inline__ static int __xpaul_unregister(xpaul_server_t server,
 				     xpaul_req_t req)
 {
 	LOG_IN();
-	xdebug("Unregister request %p for [%s]\n", req, server->name);
+	XPAUL_LOGF("Unregister request %p for [%s]\n", req, server->name);
 	__xpaul_del_success_req(server, req);
 	list_del_init(&req->chain_req_registered);
 	list_del_init(&req->chain_req_ready);
@@ -535,7 +529,7 @@ __tbx_inline__ static int __xpaul_register_poll(xpaul_server_t server,
 {
 	LOG_IN();
 	/* On doit ajouter la requête à celles en attente */
-	xdebug("Grouping Poll request %p for [%s]\n", req, server->name);
+	XPAUL_LOGF("Grouping Poll request %p for [%s]\n", req, server->name);
 	list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
 
 	server->req_poll_grouped_nb++;
@@ -553,7 +547,7 @@ __tbx_inline__ static int __xpaul_unregister_poll(xpaul_server_t server,
 {
 	LOG_IN();
 	if (req->state & XPAUL_STATE_GROUPED) {
-		xdebug("Ungrouping Poll request %p for [%s]\n", req,
+		XPAUL_LOGF("Ungrouping Poll request %p for [%s]\n", req,
 		       server->name);
 #ifdef MA__LWPS
 		if(req->state & XPAUL_STATE_EXPORTED){
@@ -582,7 +576,7 @@ static int __xpaul_register_block(xpaul_server_t server,
 					xpaul_req_t req)
 {
 	LOG_IN();
-	xdebug("Grouping Block request %p for [%s]\n", req, server->name);
+	XPAUL_LOGF("Grouping Block request %p for [%s]\n", req, server->name);
 
 	__xpaul_unregister_poll(server, req);
 
@@ -618,7 +612,7 @@ __tbx_inline__ static int __xpaul_manage_ready(xpaul_server_t server)
 		if (req == bak) {
 			break;
 		}
-		xdebug("Poll succeed with req %p\n", req);
+		XPAUL_LOGF("Poll succeed with req %p\n", req);
 		req->state |= XPAUL_STATE_OCCURED;
 
 		__xpaul_wake_req_waiters(server, req, 0);
@@ -637,7 +631,7 @@ __tbx_inline__ static int __xpaul_manage_ready(xpaul_server_t server)
 
 	xpaul_spin_unlock_softirq(&server->req_ready_lock); 
 	if (nb_grouped_req_removed) {
-		xdebug("Nb grouped task set to %i\n",
+		XPAUL_LOGF("Nb grouped task set to %i\n",
 		       server->req_poll_grouped_nb);
 	}
 
@@ -645,9 +639,7 @@ __tbx_inline__ static int __xpaul_manage_ready(xpaul_server_t server)
 		__xpaul_wake_id_waiters(server, nb_req_ask_wake_server);
 	}
 	
-#ifdef XPAUL__DEBUG
 	XPAUL_BUG_ON(!list_empty(&server->list_req_ready));
-#endif
 	return 0;
 }
 
@@ -664,8 +656,7 @@ __tbx_inline__ static void __xpaul_update_timer(xpaul_server_t server)
 {
 	// TODO: Support sans Marcel
 	if (server->poll_points & XPAUL_POLL_AT_TIMER_SIG) {
-		xdebugl(7,
-			"Update timer polling for [%s] at period %i\n",
+		XPAUL_LOGF("Update timer polling for [%s] at period %i\n",
 			server->name, server->period);
 #ifdef MARCEL
 		ma_mod_timer(&server->poll_timer,
@@ -683,10 +674,10 @@ static void xpaul_check_polling_for(xpaul_server_t server)
 #ifdef XPAUL__DEBUG
 	static int count = 0;
 
-	xdebugl(7, "Check polling for [%s]\n", server->name);
+	XPAUL_LOGF("Check polling for [%s]\n", server->name);
 
 	if (!count--) {
-		xdebugl(6, "Check polling 50000 for [%s]\n", server->name);
+		XPAUL_LOGF("Check polling 50000 for [%s]\n", server->name);
 		count = 50000;
 	}
 #endif
@@ -739,7 +730,7 @@ static void xpaul_check_polling_for(xpaul_server_t server)
 void xpaul_poll_from_tasklet(unsigned long hid)
 {
 	xpaul_server_t server = (xpaul_server_t) hid;
-	xdebugl(7, "Tasklet function for [%s]\n", server->name);
+	XPAUL_LOGF("Tasklet function for [%s]\n", server->name);
 	xpaul_check_polling_for(server);
 	return;
 }
@@ -747,7 +738,7 @@ void xpaul_poll_from_tasklet(unsigned long hid)
 void xpaul_manage_from_tasklet(unsigned long hid)
 {
 	xpaul_server_t server = (xpaul_server_t) hid;
-	xdebugl(7, "Tasklet function for [%s]\n", server->name);
+	XPAUL_LOGF("Tasklet function for [%s]\n", server->name);
 	__xpaul_manage_ready(server);
 	return;
 }
@@ -757,7 +748,7 @@ void xpaul_poll_timer(unsigned long hid)
 {
 #ifdef MARCEL
 	xpaul_server_t server = (xpaul_server_t) hid;
-	xdebugl(7, "Timer function for [%s]\n", server->name);
+	XPAUL_LOGF("Timer function for [%s]\n", server->name);
 	ma_tasklet_schedule(&server->poll_tasklet);
 #else
 	// TODO: lancement du polling
@@ -777,11 +768,7 @@ void __xpaul_check_polling(unsigned polling_point)
 		if(bak==server){
 			break;	
 		}
-		if (server->poll_points & polling_point) {
-				
-			xdebugl(7,
-				"Scheduling polling for [%s] at point %i\n",
-				server->name, polling_point);
+		if (server->poll_points & polling_point) {				
 #ifdef MARCEL
 			ma_tasklet_schedule(&server->poll_tasklet);
 #else
@@ -807,7 +794,7 @@ void xpaul_poll_req(xpaul_req_t req){
 void xpaul_poll_force(xpaul_server_t server)
 {
 	LOG_IN();
-	xdebug("Poll forced for [%s]\n", server->name);
+	XPAUL_LOGF("Poll forced for [%s]\n", server->name);
 	/* Pas très important si on loupe quelque chose ici (genre
 	 * liste modifiée au même instant)
 	 */
@@ -826,7 +813,7 @@ void xpaul_poll_force_sync(xpaul_server_t server)
 {
 
 	LOG_IN();
-	xdebug("Sync poll forced for [%s]\n", server->name);
+	XPAUL_LOGF("Sync poll forced for [%s]\n", server->name);
 #ifdef MARCEL
 	marcel_task_t *lock;
 	/* On se synchronise */
@@ -850,9 +837,7 @@ void xpaul_poll_force_sync(xpaul_server_t server)
  */
 __tbx_inline__ static void xpaul_verify_server_state(xpaul_server_t server)
 {
-#ifdef XPAUL__DEBUG
 	XPAUL_BUG_ON(server->state != XPAUL_SERVER_STATE_LAUNCHED);
-#endif
 }
 
 
@@ -1115,7 +1100,7 @@ __tbx_inline__ static int __xpaul_wait_req(xpaul_server_t server, xpaul_req_t re
 /*
 		if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
 		    && req->func_to_use != XPAUL_FUNC_SYSCALL) {
-			xdebug("Using Immediate POLL_ONE\n");
+			XPAUL_LOGF("Using Immediate POLL_ONE\n");
 			(*server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
 			    (server, XPAUL_FUNCTYPE_POLL_POLLONE,
 			     req, server->req_poll_grouped_nb, 0);
@@ -1247,14 +1232,14 @@ int xpaul_wait(xpaul_server_t server, xpaul_req_t req,
 	__xpaul_init_req(req);
 	__xpaul_register(server, req);
 #ifdef MARCEL
-	xdebug("Marcel_poll (thread %p)...\n", marcel_self());
+	XPAUL_LOGF("Marcel_poll (thread %p)...\n", marcel_self());
 #endif				// MARCEL
-	xdebug("using pollid [%s]\n", server->name);
+	XPAUL_LOGF("using pollid [%s]\n", server->name);
 	req->state |= XPAUL_STATE_ONE_SHOT | XPAUL_STATE_NO_WAKE_SERVER;
 
 	if (server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
 	    && req->func_to_use != XPAUL_FUNC_SYSCALL && !checked) {
-		xdebug("Using Immediate POLL_ONE\n");
+		XPAUL_LOGF("Using Immediate POLL_ONE\n");
 		(*server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func)
 		    (server, XPAUL_FUNCTYPE_POLL_POLLONE,
 		     req, server->req_poll_grouped_nb, 0);
@@ -1365,11 +1350,10 @@ int xpaul_server_set_poll_settings(xpaul_server_t server,
 				   unsigned poll_points,
 				   unsigned period, int max_poll)
 {
-#ifdef XPAUL__DEBUG
 	/* Cette fonction doit être appelée entre l'initialisation et
 	 * le démarrage de ce serveur d'événements */
 	XPAUL_BUG_ON(server->state != XPAUL_SERVER_STATE_INIT);
-#endif
+
 	server->max_poll = max_poll;
 	server->poll_points = poll_points;
 	if (poll_points & XPAUL_POLL_AT_TIMER_SIG) {
@@ -1388,7 +1372,7 @@ int xpaul_server_start(xpaul_server_t server)
 
 	if (!server->funcs[XPAUL_FUNCTYPE_POLL_POLLONE].func
 	    && !server->funcs[XPAUL_FUNCTYPE_POLL_POLLANY].func) {
-		xdebug("One poll function needed for [%s]\n",
+		XPAUL_LOGF("One poll function needed for [%s]\n",
 		       server->name);
 		XPAUL_EXCEPTION_RAISE(XPAUL_PROGRAM_ERROR);
 	}

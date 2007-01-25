@@ -18,6 +18,7 @@
 #define XPAUL_EST_DEF
 
 #define MARCEL_INTERNAL_INCLUDE
+#include "xpaul_log.h"
 #include "xpaul_debug.h"
 #include "xpaul_io.h"
 #include "xpaul_ev_serv.h"

@@ -15,7 +15,7 @@
  */
 
 /* TODO: utiliser poll au lieu de select (+ voir scalabilité) */
-#define XPAUL_FILE_DEBUG xpaul_io
+
 #include "xpaul.h"
 
 #ifdef MARCEL
@@ -108,7 +108,7 @@ static int xpaul_io_group(xpaul_server_t server,
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev;
 
-	xdebug("Grouping IO poll\n");
+	XPAUL_LOGF("Grouping IO poll\n");
 	uid->polling_nb = 0;
 	FD_ZERO(&uid->polling_rfds);
 	FD_ZERO(&uid->polling_wfds);
@@ -163,7 +163,7 @@ static int xpaul_io_syscall_group(xpaul_server_t server,
 	    struct_up(server, struct xpaul_io_server, server);
 	xpaul_tcp_ev_t ev;
 
-	xdebug("Grouping IO poll\n");
+	XPAUL_LOGF("Grouping IO poll\n");
 	uid->syscall_nb = 0;
 	FD_ZERO(&uid->syscall_rfds);
 	FD_ZERO(&uid->syscall_wfds);
@@ -217,7 +217,7 @@ __tbx_inline__ static void xpaul_io_check_select(xpaul_io_serverid_t uid,
 					 fd_set * __restrict rfds,
 					 fd_set * __restrict wfds)
 {
-	xdebug("Checking select for IO poll (at least one success)\n");
+	XPAUL_LOGF("Checking select for IO poll (at least one success)\n");
 
 	switch (ev->op) {
 	case XPAUL_POLL_READ:
@@ -295,7 +295,7 @@ static int xpaul_io_block(xpaul_server_t server,
 	PROF_EVENT1(xpaul_io_block_entry,ev);
 	
 #ifdef MARCEL
-	xdebugl(6, "Syscall function called on LWP %d\n",
+	XPAUL_LOGF("Syscall function called on LWP %d\n",
 		marcel_current_vp());
 #endif				// MARCEL
 
@@ -323,7 +323,7 @@ static int xpaul_io_block(xpaul_server_t server,
 		/* A fd is incorrect */
 		/* TODO: XXX: lock */
 		FOREACH_REQ_BLOCKING(ev, server, inst) {
-			xdebug
+			XPAUL_LOGF
 			    ("Checking select for IO syscall (with badFD)\n");
 			switch (ev->op) {
 			case XPAUL_POLL_READ:
@@ -443,7 +443,7 @@ static int xpaul_io_poll(xpaul_server_t server,
 	struct timeval tv, *ptv;
 	
 #ifdef MARCEL
-	xdebugl(6, "Polling function called on LWP %d\n",
+	XPAUL_LOGF("Polling function called on LWP %d\n",
 		marcel_current_vp());
 #endif				// MARCEL
 
@@ -462,7 +462,7 @@ static int xpaul_io_poll(xpaul_server_t server,
 			return 0;
 		/* A fd is incorrect */
 		FOREACH_REQ_POLL(ev, server, inst) {
-			xdebug
+			XPAUL_LOGF
 			    ("Checking select for IO poll (with badFD)\n");
 			switch (ev->op) {
 			case XPAUL_POLL_READ:
@@ -510,7 +510,7 @@ static int xpaul_io_fast_poll(xpaul_server_t server,
 	struct timeval tv;
 	int r;
 #ifdef MARCEL
-	xdebugl(6, "Fast Polling function called on LWP %d\n",
+	XPAUL_LOGF("Fast Polling function called on LWP %d\n",
 		marcel_current_vp());
 #endif				// MARCEL
 
@@ -572,7 +572,7 @@ int xpaul_read(int fildes, void *buf, size_t nbytes)
 		do {
 			ev.op = XPAUL_POLL_READ;
 			ev.FD = fildes;
-			xdebug("Reading in fd %i\n", fildes);
+			XPAUL_LOGF("Reading in fd %i\n", fildes);
 			xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 			LOG("IO reading fd %i", fildes);
 			n = read(fildes, buf, nbytes);
@@ -592,7 +592,7 @@ int xpaul_readv(int fildes, const struct iovec *iov, int iovcnt)
 	LOG_IN();
 	ev.op = XPAUL_POLL_READ;
 	ev.FD = fildes;
-	xdebug("Reading in fd %i\n", fildes);
+	XPAUL_LOGF("Reading in fd %i\n", fildes);
 	xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 
 	LOG("IO readving fd %i", fildes);
@@ -615,7 +615,7 @@ int xpaul_write(int fildes, const void *buf, size_t nbytes)
 
 			ev.op = XPAUL_POLL_WRITE;
 			ev.FD = fildes;
-			xdebug("Writing in fd %i\n", fildes);
+			XPAUL_LOGF("Writing in fd %i\n", fildes);
 			xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 
 			LOG("IO writing fd %i", fildes);
@@ -638,7 +638,7 @@ int xpaul_writev(int fildes, const struct iovec *iov, int iovcnt)
 	LOG_IN();
 	ev.op = XPAUL_POLL_WRITE;
 	ev.FD = fildes;
-	xdebug("Writing in fd %i\n", fildes);
+	XPAUL_LOGF("Writing in fd %i\n", fildes);
 	xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 	LOG("IO writving fd %i", fildes);
 	LOG_RETURN(writev(fildes, iov, iovcnt));
@@ -658,7 +658,7 @@ int xpaul_select(int nfds, fd_set * __restrict rfds,
 		ev.RFDS = rfds;
 		ev.WFDS = wfds;
 		ev.NFDS = nfds;
-		xdebug("Selecting within %i fds\n", nfds);
+		XPAUL_LOGF("Selecting within %i fds\n", nfds);
 		xpaul_wait(&xpaul_io_server.server, &ev.inst, &wait, 0);
 		PROF_EVENT(xpaul_select_exit);
 		LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :

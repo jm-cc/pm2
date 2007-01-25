@@ -415,6 +415,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		/* upcall_new_task est venue ici ? */
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
+	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
 		ma_lwp_wait_active();
 		/* we are the active LWP of this VP */
@@ -464,6 +465,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 #ifndef MA__ACT
 static any_t idle_func(any_t hlwp)
 {
+	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
 		/* let wakers now that we will shortly poll need_resched and
 		 * thus they don't need to send a kill */

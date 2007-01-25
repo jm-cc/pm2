@@ -2127,6 +2127,7 @@ if (optind != argc) {
 		case FXT_EV_TYPEERROR: fprintf(stderr,"wrong trace word size\n"); break;
 	}
 	SWFMovie_save(movie,"autobulles.swf");
+	printf("saved as autobulles.swf");
 } else
 #endif /* FXT */
 {

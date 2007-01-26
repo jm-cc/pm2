@@ -349,6 +349,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     /* Application is already ready! */
 
     p_so_sched->any_src[tag].status = NM_SO_STATUS_RDV_IN_PROGRESS;
+    p_so_sched->pending_any_src_unpacks--;
 
     p_so_gate->recv_seq_number[tag]++;
 

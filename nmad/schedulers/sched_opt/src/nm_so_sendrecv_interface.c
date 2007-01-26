@@ -222,7 +222,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
   if(gate_id == -1) {
 
     while (any_src[tag].nb_requests != 0) {
-      NMAD_SO_TRACE("[%s] Irecv not completed for ANY_SRC tag=%d nb_requests=%d\n", __TBX_FUNCTION__, tag, any_src[tag].nb_requests);
+      NMAD_SO_TRACE("Irecv not completed for ANY_SRC tag=%d nb_requests=%d\n", tag, any_src[tag].nb_requests);
       nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
       any_src[tag].nb_requests --;
     }
@@ -235,7 +235,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       *p_request = (intptr_t)p_req;
     }
 
-    NMAD_SO_TRACE("[%s] calling __nm_so_unpack_any_src request = %p\n", __TBX_FUNCTION__, *p_request);
+    NMAD_SO_TRACE("calling __nm_so_unpack_any_src request = %p\n", *p_request);
     return __nm_so_unpack_any_src(p_core, tag, data, len);
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -252,7 +252,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
-    NMAD_SO_TRACE("[%s] IRECV: seq = %d, request = %p\n", __TBX_FUNCTION__, seq, p_request);
+    NMAD_SO_TRACE("IRECV: seq = %d, request = %p\n", seq, p_request);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -306,10 +306,10 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
 #ifdef NMAD_SO_DEBUG
   if (*p_request & NM_SO_STATUS_RECV_COMPLETED) {
-    NMAD_SO_TRACE("[%s] request %p completed\n", __TBX_FUNCTION__, p_request);
+    NMAD_SO_TRACE("request %p completed\n", p_request);
   }
   else {
-    NMAD_SO_TRACE("[%s] request %p not completed\n", __TBX_FUNCTION__, p_request);
+    NMAD_SO_TRACE("request %p not completed\n", p_request);
   }
 #endif
 
@@ -443,14 +443,14 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
     p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
 
-    NMAD_SO_TRACE("[%s] data received for request = %p\n", __TBX_FUNCTION__, &p_sr_gate->status[tag][seq]);
+    NMAD_SO_TRACE("data received for request = %p\n", &p_sr_gate->status[tag][seq]);
 
   } else {
 
     any_src[tag].gate_id = p_gate->id;
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
 
-    NMAD_SO_TRACE("[%s] data received for ANY_SRC request = %p\n", __TBX_FUNCTION__, &any_src[tag].status);
+    NMAD_SO_TRACE("data received for ANY_SRC request = %p\n", &any_src[tag].status);
 
   }
 

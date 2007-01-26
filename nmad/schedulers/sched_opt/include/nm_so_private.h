@@ -29,9 +29,9 @@
 
 #undef NMAD_SO_DEBUG
 #if defined(NMAD_SO_DEBUG)
-#  define NMAD_SO_TRACE(...) { fprintf(stderr, __VA_ARGS__) ; }
+#  define NMAD_SO_TRACE(str, ...) fprintf(stderr, "[%s] " str, __TBX_FUNCTION__ , ## __VA_ARGS__)
 #else
-#  define NMAD_SO_TRACE(...) { }
+#  define NMAD_SO_TRACE(str, ...) (void)(0)
 #endif /* NMAD_SO_DEBUG */
 
 /* Status flags contents */

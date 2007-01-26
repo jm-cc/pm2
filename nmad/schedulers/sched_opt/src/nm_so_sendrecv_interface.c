@@ -221,10 +221,10 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
   if(gate_id == -1) {
 
-    while (any_src[tag].nb_requests != 0) {
-      NMAD_SO_TRACE("[%s] Irecv not completed for ANY_SRC tag=%d\n", __TBX_FUNCTION__, tag);
-      nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
-    }
+//    while (any_src[tag].nb_requests != 0) {
+//      NMAD_SO_TRACE("[%s] Irecv not completed for ANY_SRC tag=%d\n", __TBX_FUNCTION__, tag);
+//      nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
+//    }
 
     any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
     any_src[tag].nb_requests ++;
@@ -309,15 +309,15 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
      is correct to call tbx_container_of when status does not belong
      to a any_src_status structure!
   */
-  struct any_src_status *p_status = tbx_container_of(request, struct any_src_status, status);
-  if (p_status->nb_requests != 0) {
-    NMAD_SO_TRACE("[%s] waiting for ANY_SRC request = %d\n", __TBX_FUNCTION__, p_status->nb_requests);
-    p_status->nb_requests --;
-    if (p_status->nb_requests != 0) {
-      NMAD_SO_TRACE("[%s] The request has already been completed\n", __TBX_FUNCTION__);
-      return NM_ESUCCESS;
-    }
-  }
+//  struct any_src_status *p_status = tbx_container_of(request, struct any_src_status, status);
+//  if (p_status->nb_requests != 0) {
+//    NMAD_SO_TRACE("[%s] waiting for ANY_SRC request = %d\n", __TBX_FUNCTION__, p_status->nb_requests);
+//    p_status->nb_requests --;
+//    if (p_status->nb_requests != 0) {
+//      NMAD_SO_TRACE("[%s] The request has already been completed\n", __TBX_FUNCTION__);
+//      return NM_ESUCCESS;
+//    }
+//  }
 
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);

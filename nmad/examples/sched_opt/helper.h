@@ -132,3 +132,28 @@ init(int	  argc,
  out_err:
         exit(EXIT_FAILURE);
 }
+
+/* clean session
+ *
+ * returns NM_ESUCCESS or EXIT_FAILURE
+ */
+int nmad_exit() {
+  int err, ret = NM_ESUCCESS;
+
+  err = nm_core_driver_exit(p_core);
+  if(err != NM_ESUCCESS) {
+    printf("nm_core_driver_exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+  err = nm_core_exit(p_core);
+  if(err != NM_ESUCCESS) {
+    printf("nm_core__exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+  err = nm_so_sr_exit(sr_if);
+  if(err != NM_ESUCCESS) {
+    printf("nm_so_sr_exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+  return ret;
+}

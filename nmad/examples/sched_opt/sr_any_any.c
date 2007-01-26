@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "helper.h"
+#include <nm_log.h>
 
 #define SIZE (8 * 1024 * 1024)
 
@@ -36,41 +37,40 @@ main(int	  argc,
         if (is_server) {
           /* server
            */
-          nm_so_request request;
-          nm_so_request request1;
-          nm_so_request request2;
-          nm_so_request request3;
+          nm_so_request request[5];
 
-          nm_so_sr_irecv(sr_if, gate_id, 0, buf, SIZE, &request);
-          nm_so_sr_rwait(sr_if, request);
+          nm_so_sr_irecv(sr_if, gate_id, 0, buf, SIZE, &request[0]);
+          nm_so_sr_rwait(sr_if, request[0]);
 
-          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request1);
-          nm_so_sr_rwait(sr_if, request1);
+          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request[1]);
+          nm_so_sr_rwait(sr_if, request[1]);
 
-          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request2);
-          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request3);
+          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request[2]);
+          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request[3]);
+          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, SIZE, &request[4]);
 
-          nm_so_sr_rwait(sr_if, request2);
-          nm_so_sr_rwait(sr_if, request3);
+          nm_so_sr_rwait(sr_if, request[3]);
+          nm_so_sr_rwait(sr_if, request[2]);
+          nm_so_sr_rwait(sr_if, request[4]);
         }
         else {
           /* client
            */
-          nm_so_request request;
-          nm_so_request request1;
-          nm_so_request request2;
-          nm_so_request request3;
+          nm_so_request request[5];
 
-          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request);
-          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request1);
-          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request2);
-          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request3);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request[0]);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request[1]);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request[2]);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request[3]);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request[4]);
 
-          nm_so_sr_swait(sr_if, request);
-          nm_so_sr_swait(sr_if, request1);
-          nm_so_sr_swait(sr_if, request3);
-          nm_so_sr_swait(sr_if, request2);
+          nm_so_sr_swait(sr_if, request[0]);
+          nm_so_sr_swait(sr_if, request[1]);
+          nm_so_sr_swait(sr_if, request[3]);
+          nm_so_sr_swait(sr_if, request[2]);
+          nm_so_sr_swait(sr_if, request[4]);
         }
 
+        nmad_exit();
         return 0;
 }

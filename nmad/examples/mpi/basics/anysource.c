@@ -33,13 +33,12 @@ int main(int argc, char **argv) {
     MPI_Wait(&request[1], NULL);
 
     MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[2]);
-    MPI_Wait(&request[2], NULL);
-
     MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[3]);
-    MPI_Wait(&request[3], NULL);
-
     MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[4]);
+
+    MPI_Wait(&request[2], NULL);
     MPI_Wait(&request[4], NULL);
+    MPI_Wait(&request[3], NULL);
   }
   else if (rank == 1) {
     MPI_Isend(buffer, SIZE, MPI_CHAR, 0, 2, MPI_COMM_WORLD, &request[0]);

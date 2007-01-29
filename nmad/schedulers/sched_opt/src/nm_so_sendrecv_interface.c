@@ -37,7 +37,7 @@ struct nm_so_sr_gate {
 struct any_src_status {
   uint8_t status;
   long gate_id;
-  int nb_requests;
+  int is_first_request;
 };
 
 #define outer_any_src_struct(p_status) \
@@ -89,7 +89,7 @@ nm_so_sr_init(struct nm_core *p_core,
   *p_so_interface = p_so_int;
 
   for(i=0 ; i<NM_SO_MAX_TAGS ; i++) {
-    any_src[i].nb_requests = 0;
+    any_src[i].is_first_request = 1;
   }
 
   return NM_ESUCCESS;
@@ -221,14 +221,13 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
   if(gate_id == -1) {
 
-    while (any_src[tag].nb_requests != 0) {
-      NMAD_SO_TRACE("Irecv not completed for ANY_SRC tag=%d nb_requests=%d\n", tag, any_src[tag].nb_requests);
+    if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
+      NMAD_SO_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
       nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
-      any_src[tag].nb_requests --;
     }
 
+    any_src[tag].is_first_request = 0;
     any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
-    any_src[tag].nb_requests ++;
 
     if(p_request) {
       p_req = &any_src[tag].status;

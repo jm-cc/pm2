@@ -754,7 +754,7 @@ int MPI_Irecv(void* buffer,
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
-  int                   err;
+  int                   err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Waiting for a request %d\n", _request->request_type);
@@ -800,7 +800,7 @@ int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
-  int                   err;
+  int                   err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
 
@@ -979,7 +979,7 @@ int MPI_Bcast(void* buffer,
               int root,
               MPI_Comm comm) {
   int tag = 1;
-  int err;
+  int err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
 

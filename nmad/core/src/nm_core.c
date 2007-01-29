@@ -37,7 +37,7 @@ p_tbx_memory_t nm_core_iov2_mem	= NULL;
 
 /* memory management part						*/
 
-/* allocate a new track.
+/** Allocate a new track.
  *
  * Tracks should be allocated at initialization time, before any
  * connection is open with the corresponding driver. The track is not
@@ -96,7 +96,7 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
         goto out;
 }
 
-/* clean up a track.
+/** Clean up a track.
  *
  */
 int
@@ -114,7 +114,7 @@ nm_core_trk_free(struct nm_core		*p_core,
         return err;
 }
 
-/* load and initialize a scheduler.
+/** Load and initialize a scheduler.
  *
  * This operation should only be performed once per session, at least for now.
  */
@@ -175,7 +175,7 @@ nm_core_schedule_init(struct nm_core *p_core,
         goto out;
 }
 
-/* shutdown a scheduler.
+/** Shutdown a scheduler.
  *
  */
 static
@@ -200,7 +200,7 @@ nm_core_schedule_exit(struct nm_core *p_core) {
 }
 
 
-/* load and initialize a protocol.
+/** Load and initialize a protocol.
  *
  * out parameters:
  * pp_proto - structure representing the protocol (allocated by nm_core)
@@ -243,7 +243,7 @@ nm_core_proto_init(struct nm_core	 *p_core,
         return err;
 }
 
-/* load and initialize a driver.
+/** Load and initialize a driver.
  *
  * Out parameters:
  * p_id  - contains the id of the new driver
@@ -335,7 +335,7 @@ nm_core_driver_init(struct nm_core	 *p_core,
         return err;
 }
 
-/* shutdown a driver.
+/** Shutdown a driver.
  *
  */
 int
@@ -405,7 +405,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   return err;
 }
 
-/* initialize a new gate.
+/** Initialize a new gate.
  *
  * out parameters:
  * p_id - id of the gate
@@ -449,7 +449,7 @@ nm_core_gate_init(struct nm_core	*p_core,
         return err;
 }
 
-/* connect the process through a gate using a specified driver
+/** Connect the process through a gate using a specified driver.
  */
 static
 int
@@ -609,7 +609,7 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
 
 }
 
-/* server side of connection establishment.
+/** Server side of connection establishment.
  */
 int
 nm_core_gate_accept	(struct nm_core	*p_core,
@@ -622,7 +622,7 @@ nm_core_gate_accept	(struct nm_core	*p_core,
                                            0);
 }
 
-/* client side of connection establishment.
+/** Client side of connection establishment.
  */
 int
 nm_core_gate_connect	(struct nm_core	*p_core,
@@ -635,7 +635,7 @@ nm_core_gate_connect	(struct nm_core	*p_core,
                                            !0);
 }
 
-/* public function to wrap a single buffer.
+/** Public function to wrap a single buffer.
  *
  * Mostly for debugging purpose. The wrapping is usually done by
  * internal code that has at least access to protected methods
@@ -651,7 +651,7 @@ nm_core_wrap_buffer	(struct nm_core		 *p_core,
         return __nm_core_wrap_buffer(p_core, gate_id, proto_id, seq, buf, len, pp_pw);
 }
 
-/* public function to post a send request.
+/** Public function to post a send request.
  *
  * Mostly for debugging purpose. The wrapping is usually done by
  * internal code that has at least access to protected methods
@@ -662,7 +662,7 @@ nm_core_post_send	(struct nm_core		*p_core,
         return __nm_core_post_send(p_core, p_pw);
 }
 
-/* public function to post a receive request.
+/** Public function to post a receive request.
  *
  * Mostly for debugging purpose. The wrapping is usually done by
  * internal code that has at least access to protected methods
@@ -673,7 +673,8 @@ nm_core_post_recv	(struct nm_core		*p_core,
         return __nm_core_post_recv(p_core, p_pw);
 }
 
-/* initialize the core struct and the main scheduler
+/** Initialize the core struct and the main scheduler.
+
    - sched_load is function that should initialize the
    sched_ops struct it receives with the implementation
    dependent scheduler methods
@@ -719,7 +720,7 @@ nm_core_init		(int			 *argc,
         goto out;
 }
 
-/* shutdown the core struct and the main scheduler
+/** Shutdown the core struct and the main scheduler.
  */
 int
 nm_core_exit           (struct nm_core		*p_core) {

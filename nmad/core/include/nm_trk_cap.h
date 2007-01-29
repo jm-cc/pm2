@@ -13,7 +13,8 @@
  * General Public License for more details.
  */
 
-
+/** Request type expected on the track.
+ */
 enum nm_trk_request_type {
 
         /** Uninitialized.

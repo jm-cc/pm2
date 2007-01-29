@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+/** Proto capabilities.
+ */
 struct nm_proto_cap {
 
         /** Contents to be defined at a later date.

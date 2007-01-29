@@ -13,7 +13,8 @@
  * General Public License for more details.
  */
 
-
+/** Core NewMadeleine structure.
+ */
 struct nm_core {
 
         /** Number of gates.

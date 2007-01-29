@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+/** Per track gate related data.
+ */
 struct nm_gate_trk {
 
         /** Track.

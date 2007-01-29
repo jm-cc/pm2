@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+/** Request for opening a new track on a driver.
+ */
 struct nm_trk_rq {
 
         /** Track (and indirectly driver).

@@ -635,7 +635,7 @@ nm_core_gate_connect	(struct nm_core	*p_core,
                                            !0);
 }
 
-/* public function to wrap a single buffer.
+/** Public function to wrap a single buffer.
  *
  * Mostly for debugging purpose. The wrapping is usually done by
  * internal code that has at least access to protected methods

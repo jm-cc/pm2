@@ -369,15 +369,18 @@ nm_core_driver_exit(struct nm_core  *p_core) {
           TBX_FREE(p_gtrk);
           p_gdrv->p_gate_trk_array[k] = NULL;
         }
-        err	= p_sched->ops.close_trks(p_sched, p_drv);
-        if (err != NM_ESUCCESS) {
-          NM_DISPF("drv.exit returned %d", err);
-          return err;
-        }
+	if (p_drv->nb_tracks != 0) {
+	  err	= p_sched->ops.close_trks(p_sched, p_drv);
+	  if (err != NM_ESUCCESS) {
+	    NM_DISPF("close.trks returned %d", err);
+	    return err;
+	  }
+	}
         TBX_FREE(p_gdrv->p_gate_trk_array);
         p_gdrv->p_gate_trk_array = NULL;
         TBX_FREE(p_drv->p_track_array);
         p_drv->p_track_array = NULL;
+	p_drv->nb_tracks = 0;
         TBX_FREE(p_gdrv);
         p_gate->p_gate_drv_array[j] = NULL;
       }

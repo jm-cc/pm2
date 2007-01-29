@@ -13,50 +13,56 @@
  * General Public License for more details.
  */
 
+/** Per track gate related data.
+ */
 struct nm_gate_trk {
-        /* per track gate related data */
 
-        /* track */
+        /** Track.
+         */
         struct nm_trk 		*p_trk;
 
-        /* related gate driver */
+        /** Related gate driver.
+         */
         struct nm_gate_drv	*p_gdrv;
 
-        /* preallocated outgoing request */
+        /** Preallocated outgoing request.
+         */
         struct nm_pkt_wrap	*p_out_rq;
 
-        /* reference to current incoming request, or NULL */
+        /** Reference to current incoming request, or NULL.
+         */
         struct nm_pkt_wrap		*p_in_rq;
 };
 
+/** Per driver gate related data. */
 struct nm_gate_drv {
-        /* per driver gate related data */
 
-        /* driver */
+        /** Driver.
+         */
         struct nm_drv		 *p_drv;
 
-        /* array of gate track struct */
+        /** Array of gate track struct.
+         */
         struct nm_gate_trk	**p_gate_trk_array;
 
         void			 *info;
 
-        /* cumulated number of pending out requests on this driver for
-           this gate
+        /** Cumulated number of pending out requests on this driver for
+           this gate.
          */
         uint16_t		   out_req_nb;
 };
 
+/** Connexion to another process.
+ */
 struct nm_gate {
 
-        /* connexion to another process
-         */
-
-        /* nm core object
+        /** NM core object.
          */
         struct nm_core		 *p_core;
 
-         /* gate id
-         */
+         /** Gate id.
+          */
         uint8_t			  id;
 
 
@@ -65,10 +71,12 @@ struct nm_gate {
          * implementation dependent fields *
          */
 
-        /* scheduler managing this gate */
+        /** Scheduler managing this gate.
+         */
         struct nm_sched *p_sched;
 
-        /* scheduler private field */
+        /** Scheduler private field.
+         */
         void *sch_private;
 
 
@@ -77,7 +85,8 @@ struct nm_gate {
          * connectivity structures *
          */
 
-        /* gate data for each driver
+        /** Gate data for each driver.
+
          */
         struct nm_gate_drv	 *p_gate_drv_array[255];
 
@@ -89,22 +98,22 @@ struct nm_gate {
          * outgoing *
          */
 
-        /* pre-scheduler outgoing packet wrap
+        /** Pre-scheduler outgoing packet wrap.
            - list filled from outside the scheduler
 	*/
         p_tbx_slist_t pre_sched_out_list;
 
-        /* post-scheduler outgoing packet wrap lists
+        /** Post-scheduler outgoing packet wrap lists.
            - list filled by the implementation-dependent scheduling code
 	*/
         p_tbx_slist_t post_sched_out_list;
 
 
-        /* outgoing active requests
+        /** Outgoing active requests.
          */
         struct nm_pkt_wrap *out_req_list[256];
 
-        /* number of outgoing active rq */
+        /** number of outgoing active rq */
         uint16_t out_req_nb;
 
 

@@ -13,32 +13,33 @@
  * General Public License for more details.
  */
 
+/** Driver capabilities.
+ */
 struct nm_drv_cap {
-        /* driver capabilities						*/
 
         /* track request types						*/
 
 
-        /* request boundaries not preserved
+        /** Request boundaries not preserved.
          */
         uint8_t has_trk_rq_stream;
 
-        /* request boundaries preserved
+        /** Request boundaries preserved.
          */
         uint8_t has_trk_rq_dgram;
 
-        /* headerless zero copy send/receive track
-         * with rendez-vous
+        /** Headerless zero copy send/receive track
+         * with rendez-vous.
          */
         uint8_t has_trk_rq_rdv;
 
-        /* headerless zero copy remote put track
-         * with rendez-vous
+        /** Headerless zero copy remote put track
+         * with rendez-vous.
          */
         uint8_t has_trk_rq_put;
 
-        /* headerless zero copy remote get track
-         * with rendez-vous
+        /** Headerless zero copy remote get track
+         * with rendez-vous.
          */
         uint8_t has_trk_rq_get;
 
@@ -46,12 +47,12 @@ struct nm_drv_cap {
 
         /* recv selection						*/
 
-        /* may receive from a specific gate
+        /** May receive from a specific gate.
          */
         uint8_t has_selective_receive;
 
-        /* multiple recv request may be active on different gates
-         * concurrently
+        /** Multiple recv request may be active on different gates
+         * concurrently.
          */
         uint8_t has_concurrent_selective_receive;;
 

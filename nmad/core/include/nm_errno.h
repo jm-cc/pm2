@@ -32,7 +32,8 @@
 #ifndef CORE_NM_ERRNO
 #define CORE_NM_ERRNO
 
-/* error codes */
+/** Error codes.
+ */
 enum nm_errno {
         NM_ESUCCESS		=  0,	/* successful operation	*/
         NM_EUNKNOWN		=  1,	/* unknown error	*/

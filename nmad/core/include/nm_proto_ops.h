@@ -15,9 +15,13 @@
 
 struct nm_proto;
 struct nm_pkt_wrap;
-struct nm_proto_ops {
-        /* protocol commands */
 
+/** Protocol commands.
+ */
+struct nm_proto_ops {
+
+        /** Initialize the protocol module.
+         */
         int (*init)		(struct nm_proto 	* const p_proto);
 
         /* handlers called when a packet is received for this protocol
@@ -27,23 +31,23 @@ struct nm_proto_ops {
            pkt_wrap structure when the handlers return, so the handlers
            must not free it */
 
-        /* successful outgoing request
+        /* Process a successful outgoing request.
          */
         int (*out_success)	(struct nm_proto 	* const p_proto,
                                  struct nm_pkt_wrap	*p_pw);
 
-        /* failed outgoing request
+        /* Process a failed outgoing request.
          */
         int (*out_failed)	(struct nm_proto 	* const p_proto,
                                  struct nm_pkt_wrap	*p_pw,
                                  int			_err);
 
-        /* successful incoming request
+        /* Process a successful incoming request.
          */
         int (*in_success)	(struct nm_proto 	* const p_proto,
                                  struct nm_pkt_wrap	*p_pw);
 
-        /* failed incoming request
+        /* Process a failed incoming request.
          */
         int (*in_failed)	(struct nm_proto 	* const p_proto,
                                  struct nm_pkt_wrap	*p_pw,

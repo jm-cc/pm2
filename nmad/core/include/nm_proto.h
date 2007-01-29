@@ -13,21 +13,23 @@
  * General Public License for more details.
  */
 
+/** Protocol.
+ */
 struct nm_proto {
 
-        /* protocol id */
+        /** Protocol id. */
         uint8_t	id;
 
-        /* nm_core object */
+        /** nm_core object. */
         struct nm_core		*p_core;
 
-        /* implementation dependent data
+        /** Implementation dependent data.
          */
         void			*priv;
 
-        /* protocol operations */
+        /** Protocol operations. */
         struct nm_proto_ops	 ops;
 
-        /* protocol capabilities */
+        /** Protocol capabilities. */
         struct nm_proto_cap	 cap;
 };

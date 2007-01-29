@@ -13,34 +13,37 @@
  * General Public License for more details.
  */
 
+/** Packet header.
+ */
 struct nm_pkt_head {
 
-        /* data interpreter
+        /** Data interpreter.
          */
         uint8_t proto_id;
 
-        /* sequence number for the given protocol id
+        /** Sequence number for the given protocol id.
          */
         uint8_t seq;
 
-        /* driver pre-assigned for transmitting data
-         * driver number in gate numbering
+        /** Driver pre-assigned for transmitting data
+         * driver number in gate numbering.
          */
         uint8_t drv_num;
 
-        /* track pre-assigned for transmitting data
-         * track number
+        /** Track pre-assigned for transmitting data
+         * track number.
          */
         uint8_t trk_num;
 
-        /* total length: low to high weight bytes
+        /** Total length: low to high weight bytes.
          */
         uint8_t length[8];
 
-        /* last vector index used */
+        /** Last vector index used.
+         */
         uint8_t last;
 
-        /* iovec headers
+        /** Iovec headers.
          * bit 0:
          * 0 - no main/iovec header
          * 1 - reference main and iovec header in iovec

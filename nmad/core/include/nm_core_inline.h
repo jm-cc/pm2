@@ -17,6 +17,8 @@ extern p_tbx_memory_t nm_core_pw_mem	;
 extern p_tbx_memory_t nm_core_iov1_mem	;
 extern p_tbx_memory_t nm_core_iov2_mem	;
 
+/** Allocate a pkt wrapper struct.
+ */
 static
 __inline__
 int
@@ -45,6 +47,8 @@ nm_pkt_wrap_alloc(struct nm_core	 *p_core,
         return err;
 }
 
+/** Free a pkt wrapper struct.
+ */
 static
 __inline__
 int
@@ -58,7 +62,7 @@ nm_pkt_wrap_free(struct nm_core		*p_core,
         return err;
 }
 
-/* Alloc a custom-sized iovec */
+/** Allocate a custom-sized iovec. */
 static
 __inline__
 int
@@ -98,6 +102,8 @@ nm_iov_alloc(struct nm_core	 	*p_core,
         return	err;
 }
 
+/** Free a custom sized iovec.
+ */
 static
 __inline__
 int
@@ -127,6 +133,8 @@ nm_iov_free(struct nm_core	*p_core,
         return	err;
 }
 
+/** Allocate iovec-corresponding entries for storing meta-data.
+ */
 static
 __inline__
 int
@@ -151,6 +159,8 @@ nm_iov_meta_alloc(struct nm_core	*p_core,
         return	err;
 }
 
+/** Free iovec meta-data.
+ */
 static
 __inline__
 int
@@ -167,6 +177,8 @@ nm_iov_meta_free(struct nm_core		*p_core,
         return	err;
 }
 
+/** Append a buffer to the iovec.
+ */
 static
 __inline__
 int
@@ -194,6 +206,8 @@ nm_iov_append_buf(struct nm_core	*p_core,
         return	err;
 }
 
+/** Prepend a buffer to the iovec.
+ */
 static
 __inline__
 int
@@ -222,6 +236,8 @@ nm_iov_prepend_buf(struct nm_core	*p_core,
         return	err;
 }
 
+/** Append an already existing iovec to another iovec.
+ */
 static
 __inline__
 int
@@ -256,6 +272,8 @@ nm_iov_append_iov(struct nm_core	*p_core,
         return	err;
 }
 
+/** Prepend an already existing iovec to another iovec.
+ */
 static
 __inline__
 int
@@ -291,7 +309,7 @@ nm_iov_prepend_iov(struct nm_core	*p_core,
         return	err;
 }
 
-/* prepare a pkt_wrap struct
+/** Prepare a pre-filled pkt_wrap struct.
    - gate_id == -1 means 'any gate'
  */
 static
@@ -371,6 +389,8 @@ __nm_core_wrap_buffer	(struct nm_core		 *p_core,
         return err;
 }
 
+/** Post a pkt wrapper to the pre-sched output list.
+ */
 static
 __inline__
 int
@@ -390,6 +410,8 @@ __nm_core_post_send	(struct nm_core		*p_core,
         return err;
 }
 
+/** Post a pkt wrapper to the pre-sched input list.
+ */
 static
 __inline__
 int

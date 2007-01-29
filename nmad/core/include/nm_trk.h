@@ -13,30 +13,31 @@
  * General Public License for more details.
  */
 
+/** Track.
+ */
 struct nm_trk {
-        /* track				*/
 
-        /* track id
+        /** Id.
          */
         uint8_t			 id;
 
-        /* driver
+        /** Driver.
          */
         struct nm_drv		*p_drv;
 
-        /* track capabilities
+        /** Capabilities.
          */
         struct nm_trk_cap	 cap;
 
-        /* url to connect to this track
+        /** URL to connect to this track.
          */
         char			*url;
 
-        /* number of pending out requests on this track
+        /** Number of pending out requests on this track.
          */
         uint16_t 		 out_req_nb;
 
-        /* private data
+        /** Private data.
          */
         void			*priv;
 };

@@ -14,50 +14,51 @@
  */
 
 
+/** Driver.
+ */
 struct nm_drv {
-        /* driver		*/
 
-        /* nm core object
+        /* NM core object.
          */
         struct nm_core		 *p_core;
 
-        /* driver id
+        /* Driver id.
          */
         uint8_t			  id;
 
-        /* driver name
+        /** Driver name.
          */
         char			 *name;
 
-        /* commands
+        /** Commands.
          */
         struct nm_drv_ops	  ops;
 
-        /* capabilities
+        /** Capabilities.
          */
         struct nm_drv_cap	  cap;
 
-        /* number of gates using this driver
+        /** Number of gates using this driver.
          */
         uint8_t			  nb_gates;
 
-        /* number of tracks opened on this driver
+        /** Number of tracks opened on this driver.
          */
         uint8_t			  nb_tracks;
 
-        /* track array
+        /** Track array.
          */
         struct nm_trk		**p_track_array;
 
-        /* url to connect to this driver
+        /** Url to connect to this driver.
          */
         char			 *url;
 
-        /* cumulated number of pending out requests on this driver
+        /** Cumulated number of pending out requests on this driver.
          */
         uint8_t			 out_req_nb;
 
-        /* private data
+        /** Private data.
          */
         void			 *priv;
 };

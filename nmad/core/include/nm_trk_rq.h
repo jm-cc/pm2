@@ -13,18 +13,19 @@
  * General Public License for more details.
  */
 
+/** Request for opening a new track on a driver.
+ */
 struct nm_trk_rq {
-        /* request for opening a track on a driver */
 
-        /* Track (and indirectly driver)
+        /** Track (and indirectly driver).
          */
         struct nm_trk		*p_trk;
 
-        /* Requested capabilities
+        /** Requested capabilities.
          */
         struct nm_trk_cap	 cap;
 
-        /* Flags
+        /** Flags.
            - unspecified for now
          */
         uint32_t		 flags;

@@ -13,24 +13,31 @@
  * General Public License for more details.
  */
 
-
+/** Core NewMadeleine structure.
+ */
 struct nm_core {
 
-        /* number of gates						*/
+        /** Number of gates.
+         */
         uint8_t			 nb_gates;
 
-        /* array of gates						*/
+        /** Array of gates.
+         */
         struct nm_gate		 gate_array[255];
 
-        /* number of drivers						*/
+        /** Number of drivers.
+         */
         uint8_t			 nb_drivers;
 
-        /* array of drivers						*/
+        /** Array of drivers.
+         */
         struct nm_drv	 	 driver_array[255];
 
-        /* array of protocols						*/
+        /** Array of protocols.
+         */
         struct nm_proto		*p_proto_array[255];
 
-        /* compiled-in scheduler */
+        /** Compiled-in scheduler.
+         */
         struct nm_sched 	*p_sched;
 };

@@ -13,57 +13,58 @@
  * General Public License for more details.
  */
 
+/** Packet scheduler.
+ */
 struct nm_sched {
-        /* packet scheduler						*/
 
-        /* nm_core object */
+        /** nm_core object. */
         struct	nm_core	*p_core;
 
-        /* implementation-dependent scheduler operations */
+        /** Implementation-dependent scheduler operations. */
         struct nm_sched_ops	ops;
 
 
 
         /*
-         * implementation dependent fields *
+         * Implementation dependent fields. *
          */
 
-        /* scheduler private field */
+        /** Scheduler private field. */
         void *sch_private;
 
 
 
         /*
-         * outgoing *
+         * Outgoing *
          */
 
         /* nothing for now... */
 
 
         /*
-         * incoming *
+         * Incoming *
          */
 
-        /* request lists						*/
+        /* Request lists						*/
 
-        /* aux requests pending */
+        /** Aux requests pending. */
         p_tbx_slist_t	 pending_aux_recv_req;
 
-        /* aux requests to post */
+        /** Aux requests to post. */
         p_tbx_slist_t	 post_aux_recv_req;
 
-        /* aux requests submitted to scheduler from external code */
+        /** Aux requests submitted to scheduler from external code. */
         p_tbx_slist_t	 submit_aux_recv_req;
 
 
-        /* pending permissive input request list
+        /** Pending permissive input request list.
          */
         p_tbx_slist_t	 pending_perm_recv_req;
 
-        /* permissive requests to post */
+        /** Permissive requests to post. */
         p_tbx_slist_t	 post_perm_recv_req;
 
-        /* permissive requests submitted to scheduler from external code */
+        /** Permissive requests submitted to scheduler from external code. */
         p_tbx_slist_t	 submit_perm_recv_req;
 
 

@@ -16,7 +16,6 @@
 
 #include "nm_protected.h"
 
-
 int
 nm_sched_out_gate	(struct nm_gate *p_gate);
 

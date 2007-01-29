@@ -19,48 +19,62 @@ struct nm_pkt_wrap;
 struct nm_sched;
 struct nm_trk;
 
+/** Scheduler commands. */
 struct nm_sched_ops {
-        /* scheduler commands */
+
+        /** Initialize the scheduler module.
+         */
         int (*init)			(struct nm_sched *p_sched);
 
+        /** Shutdown the scheduler module.
+         */
         int (*exit)			(struct nm_sched *p_sched);
 
-
-        /* session commands */
+        /** Initialize the scheduler structures for a new track.
+         */
         int (*init_trks)		(struct nm_sched	 *p_sched,
                                          struct nm_drv		 *p_drv);
 
+        /** Initialize the scheduler structures for a new gate.
+         */
         int (*init_gate)		(struct nm_sched	 *p_sched,
                                          struct nm_gate		 *p_gate);
 
+        /** Clean-up the scheduler structures for a track.
+         */
         int (*close_trks)		(struct nm_sched	 *p_sched,
                                          struct nm_drv		 *p_drv);
 
+        /** Clean-up the scheduler structures for a gate.
+         */
         int (*close_gate)		(struct nm_sched	 *p_sched,
                                          struct nm_gate		 *p_gate);
 
 
-        /* schedule and post new outgoing buffers */
+        /** Schedule and post new outgoing buffers */
         int (*out_schedule_gate)	(struct nm_gate *p_gate);
 
-        /* process complete successful outgoing request */
+        /** Process complete successful outgoing request */
         int (*out_process_success_rq)	(struct nm_sched	*p_sched,
                                          struct nm_pkt_wrap	*p_pw);
 
-        /* process complete failed outgoing request */
+        /** Process complete failed outgoing request */
         int (*out_process_failed_rq)	(struct nm_sched	*p_sched,
                                          struct nm_pkt_wrap	*p_pw,
                                          int			 _err);
 
 
-        /* schedule and post new incoming buffers */
+        /** Schedule and post new incoming buffers.
+         */
         int (*in_schedule)		(struct nm_sched *p_sched);
 
-        /* process complete successful incoming request */
+        /** Process complete successful incoming request.
+         */
         int (*in_process_success_rq)	(struct nm_sched	*p_sched,
                                          struct nm_pkt_wrap	*p_pw);
 
-        /* process complete failed incoming request */
+        /** Process complete failed incoming request.
+         */
         int (*in_process_failed_rq)	(struct nm_sched	*p_sched,
                                          struct nm_pkt_wrap	*p_pw,
                                          int			 _err);

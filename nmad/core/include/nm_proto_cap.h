@@ -13,10 +13,11 @@
  * General Public License for more details.
  */
 
+/** Proto capabilities.
+ */
 struct nm_proto_cap {
-        /* proto capabilities						*/
 
-        /* contents to be defined at a later date
+        /** Contents to be defined at a later date.
          */
         uint8_t	dummy;
 

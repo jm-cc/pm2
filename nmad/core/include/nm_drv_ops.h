@@ -19,23 +19,51 @@ struct nm_pkt_wrap;
 struct nm_trk;
 struct nm_trk_rq;
 
+/** Driver commands. */
 struct nm_drv_ops {
-        /* driver commands */
 
+        /** Initialize the driver.
+         */
         int (*init)		(struct nm_drv 		*p_drv);
+
+        /** Shutdown the driver.
+         */
         int (*exit)		(struct nm_drv 		*p_drv);
 
+        /** Open a new track.
+         */
         int (*open_trk)		(struct nm_trk_rq	*p_trk_rq);
+
+        /** Close a track.
+         */
         int (*close_trk)	(struct nm_trk 		*p_trk);
 
+        /** Connect a gate to a remote process.
+         */
         int (*connect)		(struct nm_cnx_rq 	*p_crq);
+
+        /** Accept an incoming connection from a remote process.
+         */
         int (*accept)		(struct nm_cnx_rq 	*p_crq);
+
+        /** Close a connection.
+         */
         int (*disconnect)	(struct nm_cnx_rq 	*p_crq);
 
+        /** Post a new send request.
+         */
         int (*post_send_iov)	(struct nm_pkt_wrap 	*p_pw);
+
+        /** Post a new receive request.
+         */
         int (*post_recv_iov)	(struct nm_pkt_wrap 	*p_pw);
 
+        /** Poll a active send request.
+         */
         int (*poll_send_iov)    (struct nm_pkt_wrap 	*p_pw);
+
+        /** Poll an active receive request.
+         */
         int (*poll_recv_iov)	(struct nm_pkt_wrap 	*p_pw);
 
         int (*wait_iov)         (struct nm_pkt_wrap 	*p_pw);

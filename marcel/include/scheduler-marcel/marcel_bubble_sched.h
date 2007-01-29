@@ -297,6 +297,7 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->sched,b)
 #endif
 
+#section functions
 /* Endort la bulle (qui est verrouillée) */
 int marcel_bubble_sleep_locked(marcel_bubble_t *bubble);
 /* Endort la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */

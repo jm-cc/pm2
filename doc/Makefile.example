@@ -1,0 +1,63 @@
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+## Example makefile for external projects
+
+# list of programs to build
+PROGS		 = prog1 prog2
+
+# common auxiliary .c files
+AUX		 = aux.c
+
+# PM2 flavor
+FLAVOR		 = mad3
+
+# custom compilation flags
+CFLAGS		 = -g
+
+
+### helper programs
+PM2_CONFIG	 = "pm2-config"
+
+
+### computed vars
+CFLAGS		+= $(shell $(PM2_CONFIG) --flavor=$(FLAVOR) --cflags)
+LDFLAGS		 = $(shell $(PM2_CONFIG) --flavor=$(FLAVOR) --libs)
+OBJ_AUX		 = $(subst .c,.o,$(AUX))
+
+### rules
+
+# default rule: build everything
+all: $(PROGS)
+
+# link
+% :  %.o $(OBJ_AUX)
+	$(CC) $^ $(LDFLAGS) -o $@
+
+# compilation
+%.o : %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+# cancel default compile+link implicit rule
+% : %.c
+
+# virtual rules
+.PHONY: clean all
+
+# cleanup
+clean:
+	rm -f $(subst ,.o,$(PROGS)) $(PROGS)
+
+#
+

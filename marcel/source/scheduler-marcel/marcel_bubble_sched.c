@@ -228,15 +228,21 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_holder_t *sched_bubble;
-	ma_holder_t *h = ma_entity_holder_lock_softirq(entity);
+	ma_holder_t *h;
+#endif
+
+	/* XXX: will sleep (hence abort) if the bubble was joined ! */
+	if (!bubble->nbentities)
+		marcel_sem_P(&bubble->join);
+
+#ifdef MARCEL_BUBBLE_STEAL
+	h = ma_entity_holder_lock_softirq(entity);
 
 	if (h != &bubble->hold)
 		/* XXX: c'est couillu ca */
 		ma_holder_rawlock(&bubble->hold);
 #endif
-	/* XXX: will sleep (hence abort) if the bubble was joined ! */
-	if (!bubble->nbentities)
-		marcel_sem_P(&bubble->join);
+
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);

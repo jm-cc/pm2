@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Protocol IDs definition
- */
 enum nm_proto_id {
 
         nm_pi_wildcard		=   0,	/* any protocol, cannot be used

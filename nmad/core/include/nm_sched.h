@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Packet scheduler.
- */
 struct nm_sched {
 
         /** nm_core object. */

@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Driver capabilities.
- */
 struct nm_drv_cap {
 
         /* track request types						*/

@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Protocol.
- */
 struct nm_proto {
 
         /** Protocol id. */

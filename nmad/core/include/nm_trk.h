@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Track.
- */
 struct nm_trk {
 
         /** Id.

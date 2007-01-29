@@ -228,6 +228,7 @@ SWFShape newArrow(float width, float height, int right) {
 
 void gasp() {
 	/* essaie quand m�e de sauver ce qu'on peut */
+	fprintf(stderr,"saving to rescue.swf\n");
 	SWFMovie_save(movie,"rescue.swf");
 	fprintf(stderr,"written on rescue.swf\n");
 	abort();
@@ -1561,6 +1562,7 @@ static void error(const char *msg, ...) {
 	vfprintf(stderr,msg, args);
 	va_end(args);
 	if (!recur++) {
+		fprintf(stderr,"saving to rescue.swf\n");
 		SWFMovie_save(movie,"rescue.swf");
 		fprintf(stderr,"saved to rescue.swf\n");
 	}
@@ -2126,6 +2128,7 @@ if (optind != argc) {
 		case FXT_EV_ERROR: perror("fxt_next_ev"); break;
 		case FXT_EV_TYPEERROR: fprintf(stderr,"wrong trace word size\n"); break;
 	}
+	printf("saving to autobulles.swf\n");
 	SWFMovie_save(movie,"autobulles.swf");
 	printf("saved as autobulles.swf\n");
 } else

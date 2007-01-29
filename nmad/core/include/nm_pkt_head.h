@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-/** Packet header.
- */
 struct nm_pkt_head {
 
         /** Data interpreter.

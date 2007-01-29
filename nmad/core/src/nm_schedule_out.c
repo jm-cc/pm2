@@ -22,7 +22,7 @@
 
 #include "nm_private.h"
 
-/* handle failed incoming requests
+/** Handle failed incoming requests.
  *
  * requests are handed to the implementation dependent scheduler
  */
@@ -44,7 +44,7 @@ nm_process_failed_send_rq(struct nm_gate	*p_gate,
 }
 
 
-/* handle successful incoming requests
+/** Handle successful incoming requests.
  *
  * requests are handed to the implementation dependent scheduler
  */
@@ -64,8 +64,8 @@ nm_process_successful_send_rq(struct nm_gate		*p_gate,
         return err;
 }
 
-/* handle outgoing requests that have been processed by the driver-dependent
- * code
+/** Handle outgoing requests that have been processed by the driver-dependent
+ * code.
  *
  * - requests may be successful or failed, and should be handled appropriately
  * --> this function is responsible for the processing common to both cases
@@ -106,7 +106,7 @@ nm_process_complete_send_rq(struct nm_gate	*p_gate,
         return err;
 }
 
-/* poll active outgoing requests
+/** Poll active outgoing requests.
  */
 static
 __inline__
@@ -158,7 +158,7 @@ nm_poll_send	(struct nm_gate *p_gate) {
         return err;
 }
 
-/* post new outgoing requests
+/** Post new outgoing requests.
    - ideally, this function shouldn't have to check track availability since
    it is the job of the implementation-dependent scheduling code, but one never
    knows...
@@ -245,7 +245,7 @@ nm_post_send	(struct nm_gate *p_gate) {
         return err;
 }
 
-/* main scheduler func for outgoing requests
+/** Main scheduler func for outgoing requests.
    - this function must be called once for each gate on a regular basis
  */
 int

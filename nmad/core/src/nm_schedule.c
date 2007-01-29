@@ -22,7 +22,7 @@
 
 #include "nm_private.h"
 
-/* main function of the core scheduler loop.
+/** Main function of the core scheduler loop.
  *
  * This is the heart of NewMadeleine...
  */

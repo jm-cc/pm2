@@ -22,7 +22,7 @@
 
 #include "nm_private.h"
 
-/* handle failed incoming requests
+/** Handle failed incoming requests.
  *
  * requests are handed to the implementation dependent scheduler
  */
@@ -45,7 +45,7 @@ nm_process_failed_recv_rq(struct nm_sched	*p_sched,
         return err;
 }
 
-/* handle successful incoming requests
+/** Handle successful incoming requests.
  *
  * requests are handed to the implementation dependent scheduler
  */
@@ -67,8 +67,8 @@ nm_process_successful_recv_rq(struct nm_sched		*p_sched,
         return err;
 }
 
-/* handle incoming requests that have been processed by the driver-dependent
-   code
+/** Handle incoming requests that have been processed by the driver-dependent
+   code.
    - requests may be successful or failed, and should be handled appropriately
     --> this function is responsible for the processing common to both cases
 */
@@ -109,7 +109,7 @@ nm_process_complete_recv_rq(struct nm_sched	*p_sched,
         return err;
 }
 
-/* poll active incoming requests in poll_slist
+/** Poll active incoming requests in poll_slist.
  */
 static
 __inline__
@@ -171,9 +171,9 @@ nm_poll_recv(struct nm_sched	*p_sched,
         return err;
 }
 
-/* transfer request from the post_slist to the pending_slist if the
+/** Transfer request from the post_slist to the pending_slist if the
    state of the drv/trk targeted by a request allows this request to
-   be posted
+   be posted.
  */
 static
 __inline__
@@ -255,7 +255,7 @@ nm_post_recv(struct nm_sched	*p_sched,
         return err;
 }
 
-/* main scheduler func for incoming requests
+/** Main scheduler func for incoming requests.
    - this function must be called once for each gate on a regular basis
  */
 int

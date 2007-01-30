@@ -1,4 +1,3 @@
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -15,32 +14,44 @@
 
 compile_leonie()
 {
-	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie
+        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+            echo "Could not compile leonie. Aborting"
+            exit 1
+        fi
+    fi
 }
 
 # Verification et compilation du lanceur leonie
-#leonie --help > /dev/null 2>&1 || compile_leonie
 compile_leonie
 
 # Configuration
-flavor="test_mad4"
-appdir="${PM2_ROOT}/mad4/examples"
-prog="mad_test"
+flavor="test_mad4_mpi"
+appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+prog="anysource"
 args="--x --p --l"
-hosts=${TESTCONFIG:-"localhost localhost"}
-net=${TESTNET:-tcp}
+hosts=${TESTCONFIG:-"william averell"}
+nb_hosts=$(echo $hosts | wc -w)
+nb_hosts2=$(echo $nb_hosts -1 | bc)
+net=${TESTNET:-mx}
 rm -f /tmp/pm2test_"${USER}"_expected
-for i in $hosts
-do
-  echo "success" >> /tmp/pm2test_"${USER}"_expected
+
+(
+for i in $hosts ; do
+    echo "success"
+    echo "success"
 done
+) > /tmp/pm2test_"${USER}"_expected
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
- --modules=\"init mad4 ntbx tbx\" \
+ --modules=\"mad4 tbx ntbx init\" \
  --init=\"debug gdb\" \
- --mad4=\"debug gdb ${net}\" \
+ --mad4=\"debug gdb ${net} sched_opt strat_aggreg mpi_emu mad3_emu\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
  --common=\"debug gdb\" \

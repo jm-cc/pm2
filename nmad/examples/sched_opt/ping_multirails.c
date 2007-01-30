@@ -35,7 +35,7 @@
 
 #define SPLIT_THRESHOLD (64 * 1024)
 #define NB_PACKS      2
-#define MIN           NB_PACKS
+#define MIN           (4 * NB_PACKS)
 #define MAX           (8 * 1024 * 1024)
 #define LOOPS         2000
 

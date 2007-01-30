@@ -25,7 +25,7 @@
 	(void*)ma_bubble_entity(e), \
 	rq)
 
-#if 1
+#if 0
 #define _debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #define debug(fmt, ...) fprintf(stderr, "%*s" fmt, recurse, "", ##__VA_ARGS__);
 #else
@@ -54,6 +54,13 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	int i;
 	float per_item_load;
 	unsigned long totload;
+
+	if (!ne) {
+		debug("no entity, do nothing");
+		return;
+	}
+
+	MA_BUG_ON(!nl);
 
 	debug("spreading entit%s", ne>1?"ies":"y");
 	for (i=0; i<ne; i++)

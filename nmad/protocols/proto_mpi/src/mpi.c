@@ -81,7 +81,7 @@ int MPI_Init(int *argc,
    */
   p_core = mad_nmad_get_core();
   p_so_sr_if = mad_nmad_get_sr_interface();
-  p_so_pack_if = (struct nm_so_pack_interface *)p_so_sr_if;
+  p_so_pack_if = (nm_so_pack_interface)p_so_sr_if;
 
   /*
    * Internal initialisation

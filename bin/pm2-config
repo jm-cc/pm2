@@ -44,6 +44,7 @@ Other options
   --ext         : extension used
   --protocols   : communication libraries used
   --schedulers  : communication scheduler used
+  --launcher    : launcher used
   --modules     : modules included in the flavor
   --profmods    : modules which have the 'profile' functionality enabled
   --headgenmods : modules which generate some specific header files at compile time
@@ -356,6 +357,10 @@ pm2config_set_vars()
     _PM2CONFIG_SCHEDULERS="$PM2_NMAD_SCHED"
     export _PM2CONFIG_SCHEDULERS
 
+    # Launcher
+    _PM2CONFIG_LAUNCHER="$PM2_NMAD_LAUNCHER"
+    export _PM2CONFIG_LAUNCHER
+
     # C Compiler
     _PM2CONFIG_CC=${PM2_CC:-gcc}
     export _PM2CONFIG_CC
@@ -526,7 +531,7 @@ pm2config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--schedulers|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
+    --ext|--protocols|--schedulers|--launcher|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
     --cflags)
@@ -601,6 +606,10 @@ pm2config_parse_cmdline() # args
 		;;
             --schedulers)
 	        echo $_PM2CONFIG_SCHEDULERS
+		exit 0
+		;;
+            --launcher)
+	        echo $_PM2CONFIG_LAUNCHER
 		exit 0
 		;;
 	    --modules)

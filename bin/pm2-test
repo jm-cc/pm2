@@ -70,13 +70,17 @@ do_the_test()
     # Execution
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
-    (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+    if [ -z "$net" ] ; then
+        (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+    else
+        (${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+    fi
 #    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
     [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2test_error "Execution failed"
 
     # Le moment de verite
     echo "Checking results..."
-    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl | diff -u /tmp/pm2test_${USER}_expected - ; then
+    if grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | head -$nbl | diff -u /tmp/pm2test_${USER}_expected - ; then
 	echo "Test ok!"
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"

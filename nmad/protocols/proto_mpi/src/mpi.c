@@ -97,7 +97,7 @@ int MPI_Init(int *argc,
   in_dest = malloc(256 * sizeof(int));
 
   /* Get a reference to the channel structure */
-  channel = tbx_htable_get(madeleine->channel_htable, "channel_comm_world");
+  channel = tbx_htable_get(madeleine->channel_htable, "pm2");
 
   /* If that fails, it means that our process does not belong to the channel */
   if (!channel) {

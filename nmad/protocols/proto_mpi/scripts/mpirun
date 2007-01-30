@@ -152,7 +152,7 @@ application : {
      networks : {
           include  : $NET_FILE;
           channels : ({
-               name  : channel_comm_world;
+               name  : pm2;
                net   : $network_name;
                hosts : ($machines);
           });

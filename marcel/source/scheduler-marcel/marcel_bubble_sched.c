@@ -16,13 +16,6 @@
 
 #include "marcel.h"
 
-#define switchbubble(e,b) do { \
-	if ((e)->type == MA_TASK_ENTITY) \
-		PROF_EVENT2(bubble_sched_insert_thread, (void*)ma_task_entity(e), b); \
-	else \
-		PROF_EVENT2(bubble_sched_insert_bubble, (void*)ma_bubble_entity(e), b); \
-} while(0)
-
 int ma_idle_scheduler = 0;
 ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
 
@@ -357,6 +350,11 @@ int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entit
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
 	bubble->nbentities--;
+	if ((entity)->type == MA_TASK_ENTITY)
+		PROF_EVENT2(bubble_sched_remove_thread, (void*)ma_task_entity(entity), bubble);
+	else
+		PROF_EVENT2(bubble_sched_remove_bubble, (void*)ma_bubble_entity(entity), bubble);
+
 	return (!bubble->nbentities);
 }
 

@@ -1326,6 +1326,34 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 #endif
 }
 
+void bubbleInsertBubble(bubble_t *bubble, bubble_t *little_bubble);
+#define bubbleInsertBubble(b,lb) bubbleInsertEntity(b,&lb->entity)
+void bubbleInsertThread(thread_t *bubble, thread_t *thread);
+#define bubbleInsertThread(b,t) bubbleInsertEntity(b,&t->entity)
+
+/*******************************************************************************
+ * Bubble remove
+ */
+
+void bubbleRemoveEntity(bubble_t *b, entity_t *e) {
+#ifndef TREES
+	gasp();
+#endif
+	switchRunqueues(norq,e);
+	list_del(&e->entity_list);
+	if (e->bubble_holder != b)
+		gasp();
+	e->bubble_holder = NULL;
+	updateEntity(&b->entity);
+	showEntity(e);
+	nextFrame(movie);
+}
+
+void bubbleRemoveBubble(bubble_t *bubble, bubble_t *little_bubble);
+#define bubbleRemoveBubble(b,lb) bubbleRemoveEntity(b,&lb->entity)
+void bubbleRemoveThread(thread_t *bubble, thread_t *thread);
+#define bubbleRemoveThread(b,t) bubbleRemoveEntity(b,&t->entity)
+
 /*******************************************************************************
  * Bubble explode
  */
@@ -1542,11 +1570,6 @@ void growInHolderEnd(entity_t *e) {
 	}
 }
 
-
-void bubbleInsertBubble(bubble_t *bubble, bubble_t *little_bubble);
-#define bubbleInsertBubble(b,lb) bubbleInsertEntity(b,&lb->entity)
-void bubbleInsertThread(thread_t *bubble, thread_t *thread);
-#define bubbleInsertThread(b,t) bubbleInsertEntity(b,&t->entity)
 
 /*******************************************************************************
  * Main
@@ -1846,6 +1869,26 @@ if (optind != argc) {
 				if (showSystem || e->number>=0) {
 					showEntity(&b->entity);
 					bubbleInsertThread(b,e);
+				}
+				break;
+			}
+			case BUBBLE_SCHED_REMOVE_BUBBLE: {
+				bubble_t *e = getBubble(ev.ev64.param[0]);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				verbprintf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
+				showEntity(&b->entity);
+				bubbleRemoveBubble(b,e);
+				break;
+			}
+			case BUBBLE_SCHED_REMOVE_THREAD: {
+				uint64_t t = ev.ev64.param[0];
+				thread_t *e = getThread(t);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				printfThread(t,e);
+				verbprintf(" inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
+				if (showSystem || e->number>=0) {
+					showEntity(&b->entity);
+					bubbleRemoveThread(b,e);
 				}
 				break;
 			}

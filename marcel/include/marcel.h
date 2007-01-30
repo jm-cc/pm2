@@ -101,7 +101,7 @@ TBX_VISIBILITY_POP
 
 #ifdef MARCEL_INTERNAL_INCLUDE
 /* pthread.h est inclu _ici_ pour qu'il soit inclut avec une visibilité normale par défaut, car sinon notre libpthread.so aurait les symboles pthread_* en interne seulement ! */
-#if defined(MA__LIBPTHREAD) || defined(MA__IFACE_LPT) || defined(MA__IFACE_PMARCEL)
+#if defined(MA__LIBPTHREAD) || defined(MA__IFACE_LPT)
 #include <pthread.h>
 #endif
 TBX_VISIBILITY_PUSH_INTERNAL

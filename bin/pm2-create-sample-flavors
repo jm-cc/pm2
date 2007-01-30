@@ -52,12 +52,15 @@ registering_flavors() {
     register_flavor marcel-bubbles \
 	--modules="marcel profile tbx init bubbles" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
-	--marcel=profile
+	--marcel=profile \
+	--bubbles=gdb --bubbles=noinline
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubbles bubblegum" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
-	--marcel=profile
+	--marcel=profile \
+	--bubbles=gdb --bubbles=noinline \
+	--bubblegum=gdb --bubblegum=noinline
 
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" --all=debug --all=gdb $COMMON_OPTIONS

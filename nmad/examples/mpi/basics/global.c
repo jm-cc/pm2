@@ -13,10 +13,10 @@ void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
   in = (int *) a;
   inout = (int *) b;
   for(i=0 ; i<*r ; i++) {
-    printf("Inout[%d] = %d\n", i, inout[i]);
+    //printf("Inout[%d] = %d\n", i, inout[i]);
     inout[i] += in[i];
     inout[i] *= 2;
-    printf("Inout[%d] = %d\n", i, inout[i]);
+    //printf("Inout[%d] = %d\n", i, inout[i]);
   }
 }
 
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  printf("Rank %d Size %d\n", rank, numtasks);
+  //printf("Rank %d Size %d\n", rank, numtasks);
 
   if (rank == 0) {
     global_rank = 49;

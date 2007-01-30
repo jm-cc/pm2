@@ -38,6 +38,7 @@ Usage: $PROGNAME { option } command
     -l      : Also generate a log file on first node
     -L      : As '-l' but do not display the log file
     -u      : Use local flavor (re-run pm2-config on each node)
+    --protocol name : Use protocol named "name"
     -h      : Display this help message
 EOF
     exit $1
@@ -72,7 +73,11 @@ mad3()
     protocol=$_PM2CONFIG_PROTOCOLS
     nb_protocols=$(echo $protocol | wc -w)
     if [ "$nb_protocols" != 1 ] ; then
-	_pm2load_error "Error: More than one protocol selected ($protocol )"
+        if [ -z "$PM2_PROTOCOL" ] ; then
+        	_pm2load_error "Error: More than one protocol selected ($protocol ). You might use the parameter --protocol to select one protocol"
+        else
+                protocol="$PM2_PROTOCOL"
+        fi
     fi
     log "Protocol: $protocol"
 
@@ -160,6 +165,11 @@ while [ $# -gt 0 ]; do
 	-f|--flavor)
 	    shift
 	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	--protocol)
+	    shift
+	    PM2_PROTOCOL="$1"
 	    shift
 	    ;;
 	-d|--debug)
@@ -298,7 +308,13 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	;;
     *)
 	;;
-esac
+    esac
+
+    if [ "$_PM2CONFIG_LAUNCHER" == "leonie" ] ; then
+        log "Leonie selected"
+	mad3 "${prog_args[@]}"
+	exit $?               
+    fi
 
 
     # Librairies dynamiques (LD_PRELOAD)

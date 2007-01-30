@@ -17,7 +17,6 @@
 #section types
 #ifdef MA__SMP
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
-#   include <pthread.h>
 #   include <semaphore.h>
 # else
 #   ifdef SOLARIS_SYS

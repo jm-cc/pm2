@@ -106,8 +106,8 @@ REPLICATE_CODE([[dnl
 int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 {
 	LOG_IN();
-	if (pshared != PTHREAD_PROCESS_PRIVATE
-	    && __builtin_expect(pshared != PTHREAD_PROCESS_SHARED, 0)) {
+	if (pshared != PREFIX_PROCESS_PRIVATE
+	    && __builtin_expect(pshared != PREFIX_PROCESS_SHARED, 0)) {
 		mdebug
 		    ("prefix_condattr_setpshared : valeur pshared(%d)  invalide\n",
 		    pshared);
@@ -115,14 +115,14 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 	}
 
 	/* For now it is not possible to share a mutex variable.  */
-	if (pshared != MARCEL_PROCESS_PRIVATE) {
+	if (pshared != PREFIX_PROCESS_PRIVATE) {
 		fprintf(stderr,
 		    "prefix_condattr_setpshared : shared condition requested!\n");
 		LOG_RETURN(ENOTSUP);
 	}
 
 	int *valuep = &((struct prefix_condattr *) attr)->value;
-	*valuep = (*valuep & ~1) | (pshared != PTHREAD_PROCESS_PRIVATE);
+	*valuep = (*valuep & ~1) | (pshared != PREFIX_PROCESS_PRIVATE);
 
 	LOG_RETURN(0);
 }

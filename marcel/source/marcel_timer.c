@@ -235,7 +235,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  */
 #ifndef __MINGW32__
 
-#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL) && !defined(DARWIN_SYS)
+#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL) && !defined(DARWIN_SYS) && defined(lmkjqsmdfkl)
 #define DISTRIBUTE_SIGALRM
 #endif
 

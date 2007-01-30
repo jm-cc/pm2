@@ -31,11 +31,11 @@
 #  include <nm_mx_public.h>
 #  include <nm_qsnet_public.h>
 
-#define ISO_SPLIT
+//#define ISO_SPLIT
 
 #define SPLIT_THRESHOLD (64 * 1024)
 #define NB_PACKS      2
-#define MIN           NB_PACKS//(16 * 1024) //(4 * NB_PACKS)
+#define MIN           NB_PACKS
 #define MAX           (8 * 1024 * 1024)
 #define LOOPS         2000
 
@@ -44,10 +44,10 @@ uint32_t _next(uint32_t len)
 {
         if(!len)
                 return 4;
-//        else if(len < 32)
-//                return len + 4;
-//        else if(len < 1024)
-//                  return len + 32;
+        else if(len < 32)
+                return len + 4;
+        else if(len < 1024)
+                  return len + 32;
         else
                 return len << 1;
 }

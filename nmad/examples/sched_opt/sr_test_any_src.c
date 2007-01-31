@@ -81,7 +81,7 @@ main(int	  argc,
 		  nm_so_sr_rwait(sr_if, r3);
 		  nm_so_sr_recv_source(sr_if, r3, &gate);
 
-		  printf("Got msg 3 : [%s] from gate %ld \n", buf, gate);
+		  printf("Got msg 3 : [%s] from gate %ld\n", buf, gate);
 
 		  big_buf = malloc(MAX);
 		  nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, big_buf, MAX, &r4);

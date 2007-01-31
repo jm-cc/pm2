@@ -8,6 +8,70 @@
 
 #include <nm_drivers.h>
 
+#ifdef CONFIG_PROTO_MAD3
+
+#include <madeleine.h>
+#include <nm_mad3_private.h>
+
+static p_mad_madeleine_t       madeleine	= NULL;
+static int                     is_server	= -1;
+static struct nm_so_interface *sr_if;
+static nm_so_pack_interface    pack_if;
+static uint8_t	 gate_id	=    0;
+
+/* initialize everything
+ *
+ * returns 1 if server, 0 if client
+ */
+void
+init(int	  argc,
+     char	**argv) {
+  p_mad_session_t         session    = NULL;
+  struct nm_core         *p_core     = NULL;
+
+  /*
+   * Initialization of various libraries.
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_init(&argc, argv);
+
+  /*
+   * Reference to the session information object
+   */
+  session      = madeleine->session;
+
+  /*
+   * Globally unique process rank.
+   */
+  is_server = session->process_rank;
+
+  if (!is_server) {
+    /* client needs gate_id to connect to the server */
+    p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+    p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, 1);
+    p_mad_nmad_connection_specific_t cs = connection->specific;
+    gate_id = cs->gate_id;
+  }
+
+  /*
+   * Reference to the NewMadeleine core object
+   */
+  p_core = mad_nmad_get_core();
+  sr_if = mad_nmad_get_sr_interface();
+  pack_if = (nm_so_pack_interface)sr_if;
+}
+
+/* clean session
+ *
+ * returns NM_ESUCCESS or EXIT_FAILURE
+ */
+int nmad_exit() {
+  mad_exit(madeleine);
+  return NM_ESUCCESS;
+}
+
+#else /* ! CONFIG_PROTO_MAD3 */
+
 static
 void
 usage(void) {
@@ -157,3 +221,4 @@ int nmad_exit() {
   }
   return ret;
 }
+#endif /* CONFIG_PROTO_MAD3 */

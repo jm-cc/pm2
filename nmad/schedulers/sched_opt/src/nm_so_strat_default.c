@@ -156,9 +156,7 @@ static int try_and_commit(struct nm_gate *p_gate)
 /* Initialization */
 static int init(void)
 {
-#ifndef CONFIG_PROTO_MPI
-  printf("[loading strategy: <default>]\n");
-#endif
+  NM_LOGF("[loading strategy: <default>]");
   return NM_ESUCCESS;
 }
 

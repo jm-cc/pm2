@@ -52,6 +52,8 @@ main(int	  argc,
           nm_so_sr_rwait(sr_if, request[3]);
           nm_so_sr_rwait(sr_if, request[2]);
           nm_so_sr_rwait(sr_if, request[4]);
+
+          printf("success\n");
         }
         else {
           /* client
@@ -69,6 +71,7 @@ main(int	  argc,
           nm_so_sr_swait(sr_if, request[3]);
           nm_so_sr_swait(sr_if, request[2]);
           nm_so_sr_swait(sr_if, request[4]);
+          printf("success\n");
         }
 
         nmad_exit();

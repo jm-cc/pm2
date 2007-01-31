@@ -52,7 +52,7 @@ int marcel_bubble_init(marcel_bubble_t *bubble);
  * \brief Destroys resources associated with bubble \e bubble
  */
 int marcel_bubble_destroy(marcel_bubble_t *bubble);
-#define marcel_bubble_destroy(bubble) 0
+#define marcel_bubble_destroy(bubble) ((void)0)
 
 /** \brief Inserts entity \e entity into bubble \e bubble. */
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);

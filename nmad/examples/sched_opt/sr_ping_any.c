@@ -89,5 +89,6 @@ main(int	  argc,
 		}
         }
 
-        return 0;
+        nmad_exit();
+        exit(0);
 }

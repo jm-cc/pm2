@@ -81,8 +81,8 @@ main(int	  argc,
 
 		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
 		    nm_so_sr_swait(sr_if, request);
-		    
-		    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
+
+                    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
 		    nm_so_sr_rwait(sr_if, request);
 		  }
 
@@ -111,5 +111,6 @@ main(int	  argc,
 		}
         }
 
-        return 0;
+        nmad_exit();
+        exit(0);
 }

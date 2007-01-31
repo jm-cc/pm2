@@ -32,7 +32,6 @@ main(int	  argc,
 	struct nm_so_cnx         cnx;
 
         init(argc, argv);
-
         len = 1+strlen(msg);
         buf = malloc((size_t)len);
 
@@ -61,5 +60,6 @@ main(int	  argc,
 		nm_so_end_packing(&cnx);
         }
 
-        return 0;
+        nmad_exit();
+        exit(0);
 }

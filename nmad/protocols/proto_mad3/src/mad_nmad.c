@@ -716,9 +716,7 @@ mad_nmad_accept(p_mad_connection_t   in,
                         TBX_FAILURE("nmad error");
                 }
 
-#ifndef CONFIG_PROTO_MPI
-                DISP("gate_accept: connection established");
-#endif
+                TRACE("gate_accept: connection established");
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, in->remote_rank);
         }
@@ -753,9 +751,7 @@ mad_nmad_connect(p_mad_connection_t   out,
                         TBX_FAILURE("nmad error");
                 }
 
-#ifndef CONFIG_PROTO_MPI
-                DISP("gate_connect: connection established");
-#endif
+                TRACE("gate_connect: connection established");
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, out->remote_rank);
         }

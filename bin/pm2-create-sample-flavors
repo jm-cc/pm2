@@ -62,6 +62,12 @@ registering_flavors() {
 	--bubbles=gdb --bubbles=noinline \
 	--bubblegum=gdb --bubblegum=noinline
 
+    register_flavor marcel-gomp \
+        --modules="marcel tbx init" \
+	--marcel=numa --marcel=smp_multiple_queues --marcel=smp_bind_proc \
+	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
+	--marcel=bubble_steal
+
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" --all=debug --all=gdb $COMMON_OPTIONS
 

@@ -28,13 +28,17 @@
 /** Gate storage for strat balance.
  */
 struct nm_so_strat_balance_gate {
-  /* list of raw outgoing packets */
+        /** List of raw outgoing packets. */
   struct list_head out_list;
   unsigned nb_paquets;
 };
 
 
 /** Add a new control "header" to the flow of outgoing packets.
+ *
+ *  @param p_gate a pointer to the gate object.
+ *  @param p_ctrl a pointer to the ctrl header.
+ *  @return The NM status.
  */
 static int pack_ctrl(struct nm_gate *p_gate,
 		     union nm_so_generic_ctrl_header *p_ctrl)
@@ -70,9 +74,16 @@ static int pack_ctrl(struct nm_gate *p_gate,
   return err;
 }
 
-/** Handle the arrival of a new packet. The strategy may already apply
-   some optimizations at this point.
-*/
+/** Handle a new packet submitted by the user code. 
+ *
+ *  @note The strategy may already apply some optimizations at this point.
+ *  @param p_gate a pointer to the gate object.
+ *  @param tag the message tag.
+ *  @param seq the fragment sequence number.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @return The NM status.
+ */
 static int pack(struct nm_gate *p_gate,
 		uint8_t tag, uint8_t seq,
 		void *data, uint32_t len)
@@ -178,7 +189,11 @@ static int pack(struct nm_gate *p_gate,
 }
 
 /** Compute and apply the best possible packet rearrangement, then
-   return next packet to send. */
+ *  return next packet to send.
+ *
+ *  @param p_gate a pointer to the gate object.
+ *  @return The NM status.
+ */
 static int try_and_commit(struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -223,7 +238,9 @@ static int try_and_commit(struct nm_gate *p_gate)
     return NM_ESUCCESS;
 }
 
-/** Initialization.
+/** Initialize the strategy module.
+ *
+ *  @return The NM status.
  */
 static int init(void)
 {
@@ -231,9 +248,15 @@ static int init(void)
   return NM_ESUCCESS;
 }
 
-/** Warning: drv_id and trk_id are IN/OUT parameters. They initially
-    hold values "suggested" by the caller.
-*/
+/** Accept or refuse a RDV on the suggested (driver/track/gate).
+ *
+ *  @warning @p drv_id and @p trk_id are IN/OUT parameters. They initially
+ *  hold values "suggested" by the caller.
+ *  @param p_gate a pointer to the gate object.
+ *  @param drv_id the suggested driver id.
+ *  @param trk_id the suggested track id.
+ *  @return The NM status.
+ */
 static int rdv_accept(struct nm_gate *p_gate,
 		      unsigned long *drv_id,
 		      unsigned long *trk_id)
@@ -257,7 +280,10 @@ static int rdv_accept(struct nm_gate *p_gate,
   return -NM_EAGAIN;
 }
 
-/** Initialize the gate storage for aggreg strategy.
+/** Initialize the gate storage for balance strategy.
+ *
+ *  @param p_gate a pointer to the gate object.
+ *  @return The NM status.
  */
 static int init_gate(struct nm_gate *p_gate)
 {
@@ -273,7 +299,10 @@ static int init_gate(struct nm_gate *p_gate)
   return NM_ESUCCESS;
 }
 
-/** Cleanup the gate storage for aggreg strategy.
+/** Cleanup the gate storage for balance strategy.
+ *
+ *  @param p_gate a pointer to the gate object.
+ *  @return The NM status.
  */
 static int exit_gate(struct nm_gate *p_gate)
 {

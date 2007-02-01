@@ -241,18 +241,25 @@ int prefix_barrier_destroy (prefix_barrier_t *barrier)
 {
 	LOG_IN();
 	struct prefix_barrier *ibarrier;
-	int result = EBUSY;
+	int result = 0;
 
 	ibarrier = (struct prefix_barrier *) barrier;
 
 	prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
-	if (__builtin_expect(ibarrier->leftE == 0, 1)) {
-		/* The barrier is not used anymore.  */
-		ibarrier->leftB = ibarrier->init_count;
-		ibarrier->leftE = 0;
-		result = 0;
-	} else {		/* Still used, return with an error.  */
+	/* Are these all?  */
+	while (ibarrier->leftE) {
+		blockcell c;
+		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+		    &c);
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		    prefix_lock_release(&ibarrier->lock.__spinlock),
+		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	}
+
+	if (__builtin_expect(ibarrier->leftB != ibarrier->init_count, 0)) {
+		/* Still used, return with an error.  */
+		result = EBUSY;
 	}
 	prefix_lock_release(&ibarrier->lock.__spinlock);
 	LOG_RETURN(result);

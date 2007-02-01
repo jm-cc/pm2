@@ -140,7 +140,7 @@ mad3()
     [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2load_args="${pm2load_args} -l"
     [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2load_args="${pm2load_args} --l"
 
-    ${PM2_ROOT}/bin/leonie --env="LD_LIBRARY_PATH=$PM2_LD_LIBRARY_PATH" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    ${PM2_ROOT}/bin/leonie --env="LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }

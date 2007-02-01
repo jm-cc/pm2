@@ -56,36 +56,19 @@ initialize_bench()
          --common=\"opt\" \
          --all=\"build_static\"
 
-	# Creation du fichier de configuration de Leonie
-	rm -f $leo_cfg_file
-
-	sed -e "s/HOSTS/${hosts}/" -e "s/NET/${net}/" > $leo_cfg_file <<END
-application : {
-	networks : {
-		channels : ({
-			name : channel_1;
-			net  : NET;
-			hosts : (HOSTS);
-		});
-	};
-};
-END
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}"
+        ${PM2_ROOT}/bin/pm2conf -f $flavor `echo $hosts | tr ',' ' '`
 }
 
 # args: -
 run_bench()
 {
-	_run_appli=$1
-	shift
-
-	_run_flavor=$1
-	shift
+        net=$1
 
 	# wait for NFS to propagate the new compiled program
 	sleep 10
 
-	${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
+        ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
 }
 
 # args: loop variable

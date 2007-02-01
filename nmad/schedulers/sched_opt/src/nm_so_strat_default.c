@@ -23,13 +23,16 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_tracks.h"
 
+/** Gate storage for strat default.
+ */
 struct nm_so_strat_default_gate {
-  /* list of raw outgoing packets */
+  /** List of raw outgoing packets. */
   struct list_head out_list;
 };
 
 
-/* Add a new control "header" to the flow of outgoing packets */
+/** Add a new control "header" to the flow of outgoing packets.
+ */
 static int pack_ctrl(struct nm_gate *p_gate,
 		     union nm_so_generic_ctrl_header *p_ctrl)
 {
@@ -51,8 +54,9 @@ static int pack_ctrl(struct nm_gate *p_gate,
   return err;
 }
 
-/* Handle the arrival of a new packet. The strategy may already apply
-   some optimizations at this point */
+/** Handle the arrival of a new packet. The strategy may already apply
+    some optimizations at this point.
+*/
 static int pack(struct nm_gate *p_gate,
 		uint8_t tag, uint8_t seq,
 		void *data, uint32_t len)
@@ -121,8 +125,8 @@ static int pack(struct nm_gate *p_gate,
   return err;
 }
 
-/* Compute and apply the best possible packet rearrangement, then
-   return next packet to send */
+/** Compute and apply the best possible packet rearrangement, then
+   return next packet to send. */
 static int try_and_commit(struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -153,14 +157,15 @@ static int try_and_commit(struct nm_gate *p_gate)
     return NM_ESUCCESS;
 }
 
-/* Initialization */
+/** Initialization. */
 static int init(void)
 {
   NM_LOGF("[loading strategy: <default>]");
   return NM_ESUCCESS;
 }
 
-/* Warning: drv_id and trk_id are IN/OUT parameters. They initially
+/** Accept or refuse a RDV on the suggested (driver/track/gate).
+   Warning: drv_id and trk_id are IN/OUT parameters. They initially
    hold values "suggested" by the caller. */
 static int rdv_accept(struct nm_gate *p_gate,
 		      unsigned long *drv_id,
@@ -176,6 +181,8 @@ static int rdv_accept(struct nm_gate *p_gate,
     return -NM_EAGAIN;
 }
 
+/** Initialize the gate storage for default strategy.
+ */
 static int init_gate(struct nm_gate *p_gate)
 {
   struct nm_so_strat_default_gate *priv
@@ -188,6 +195,9 @@ static int init_gate(struct nm_gate *p_gate)
   return NM_ESUCCESS;
 }
 
+
+/** Cleanup the gate storage for default strategy.
+ */
 static int exit_gate(struct nm_gate *p_gate)
 {
   struct nm_so_strat_default_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;

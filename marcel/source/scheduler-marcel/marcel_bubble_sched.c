@@ -337,6 +337,9 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
 	__do_bubble_insertentity(bubble,entity);
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
+
+	if (entity->type == MA_TASK_ENTITY)
+		marcel_bubble_insertentity(bubble,ma_entity_bubble(&ma_task_entity(entity)->sched.internal.bubble));
 	LOG_RETURN(0);
 }
 #endif

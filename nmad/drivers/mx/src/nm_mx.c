@@ -25,121 +25,136 @@
 
 #include "nm_mx_private.h"
 
+/** Initial number of packet wrappers */
 #define INITIAL_PW_NUM		16
 
+/** MX specific driver data */
 struct nm_mx_drv {
-        p_tbx_memory_t mx_pw_mem;
+	p_tbx_memory_t mx_pw_mem;
 };
 
+/** MX specific track data */
 struct nm_mx_trk {
-
-        /* MX endpoing
-         */
-        mx_endpoint_t		ep;
-
-        /* endpoint id
-         */
-        uint32_t		ep_id;
-
-        /* next value to use for match info
-         */
-        uint16_t 		next_peer_id;
-
-        /* match info to gate id reverse mapping			*/
-        uint8_t		*gate_map;
+	/** MX endpoint */
+	mx_endpoint_t ep;
+	/** Endpoint id */
+	uint32_t ep_id;
+	/** Next value to use for match info */
+	uint16_t next_peer_id;
+	/** Match info to gate id reverse mapping */
+	uint8_t *gate_map;
 };
 
+/** MX specific connection data */
 struct nm_mx_cnx {
-
-        /* remote endpoint addr
-         */
-        mx_endpoint_addr_t	r_ep_addr;
-
-        /* remote endpoint id
-         */
-        uint32_t		r_ep_id;
-
-        /* MX match info (when sending)
-         */
-        uint64_t 		send_match_info;
-
-        /* MX match info (when receiving)
-         */
-        uint64_t 		recv_match_info;
+	/** Remote endpoint addr */
+	mx_endpoint_addr_t r_ep_addr;
+	/** Remote endpoint id */
+	uint32_t r_ep_id;
+	/** MX match info (when sending) */
+	uint64_t send_match_info;
+	/** MX match info (when receiving) */
+	uint64_t recv_match_info;
 };
 
+/** MX specific gate data */
 struct nm_mx_gate {
-        struct nm_mx_cnx	cnx_array[255];
-  	int			ref_cnt;
+	struct nm_mx_cnx cnx_array[255];
+	int ref_cnt;
 };
 
+/** MX specific packet wrapper data */
 struct nm_mx_pkt_wrap {
-        mx_endpoint_t		*p_ep;
-        mx_request_t		 rq;
+	mx_endpoint_t *p_ep;
+	mx_request_t rq;
 };
 
+/** MX specific first administrative packet data */
 struct nm_mx_adm_pkt_1 {
-        uint64_t 	match_info;
-        char		drv_url[MX_MAX_HOSTNAME_LEN];
-        char		trk_url[16];
+	uint64_t match_info;
+	char drv_url[MX_MAX_HOSTNAME_LEN];
+	char trk_url[16];
 };
 
+/** MX specific second administrative packet data */
 struct nm_mx_adm_pkt_2 {
-        uint64_t 	match_info;
+	uint64_t match_info;
 };
 
-/* endpoint filter */
+/** Endpoint filter */
 /* Note: if this value fails, please use the probable date of the
    granting of tenure ("titularisation" in french) to Brice:
    0x01042010. Sorry for the inconvenience. */
 #define NM_MX_ENDPOINT_FILTER 0x31051969
 
 /*
- * how the matching is used
+ * How the matching is used
  */
-/* bit 63: administrative packet or not? */
+
+/** @name Administrative packets matching mask
+ * Bit 63: administrative packet or not?
+ */
+/*@{*/
 #define NM_MX_ADMIN_MATCHING_BITS 1
 #define NM_MX_ADMIN_MATCHING_SHIFT 63
-/* bits 47-62: peer id */
+/*@}*/
+
+/** @name Peer id matching mask
+ * Bits 47-62: peer id
+ */
+/*@{*/
 #define NM_MX_PEER_ID_MATCHING_BITS 16
 #define NM_MX_PEER_ID_MATCHING_SHIFT 47
+/*@}*/
 
-/* regular messages matching info */
+/** @name Actual matching info generation */
+/*@{*/
+/** Regular messages matching info */
 #define NM_MX_MATCH_INFO(peer) ( (((uint64_t)peer) << NM_MX_PEER_ID_MATCHING_SHIFT) )
-/* connect and accept matching info, with the adminsitrative bit */
+/** Administrative message mask */
 #define NM_MX_ADMIN_MATCH_MASK (UINT64_C(1) << NM_MX_ADMIN_MATCHING_SHIFT)
+/** Connect matching info, with the administrative bit */
 #define NM_MX_CONNECT_MATCH_INFO ( UINT64_C(0xdeadbeef) | NM_MX_ADMIN_MATCH_MASK )
+/** Accept matching info, with the administrative bit */
 #define NM_MX_ACCEPT_MATCH_INFO ( UINT64_C(0xbeefdead) | NM_MX_ADMIN_MATCH_MASK )
+/*@}*/
 
-/* prototypes
+/*
+ * Forwarded prototypes
  */
+
 static
 int
 nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw);
 
-/* functions
+/*
+ * Functions
  */
+
+/** Display the MX request status */
 static
 void
 nm_mx_print_status(mx_status_t s) {
-        const char *msg = NULL;
+	const char *msg = NULL;
 
-        msg = mx_strstatus(s.code);
-        DISP("mx status: %s", msg);
+	msg = mx_strstatus(s.code);
+	DISP("mx status: %s", msg);
 }
 
+/** Display the MX return value */
 static __tbx_inline__
 void
 nm_mx_check_return(char *msg, mx_return_t return_code) {
-        if (tbx_unlikely(return_code != MX_SUCCESS)) {
-                const char *msg_mx = NULL;
+	if (tbx_unlikely(return_code != MX_SUCCESS)) {
+		const char *msg_mx = NULL;
 
-                msg_mx = mx_strerror(return_code);
+		msg_mx = mx_strerror(return_code);
 
-                DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
+		DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
         }
 }
 
+/** Initialize the MX driver */
 static
 int
 nm_mx_init		(struct nm_drv *p_drv) {
@@ -176,6 +191,7 @@ nm_mx_init		(struct nm_drv *p_drv) {
         return err;
 }
 
+/** Finalize the MX driver */
 static
 int
 nm_mx_exit		(struct nm_drv *p_drv) {
@@ -201,6 +217,7 @@ nm_mx_exit		(struct nm_drv *p_drv) {
         return err;
 }
 
+/** Open a MX track */
 static
 int
 nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
@@ -265,6 +282,7 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         return err;
 }
 
+/** Close a MX track */
 static
 int
 nm_mx_close_track	(struct nm_trk *p_trk) {
@@ -285,6 +303,7 @@ nm_mx_close_track	(struct nm_trk *p_trk) {
         return NM_ESUCCESS;
 }
 
+/** Connect to a new MX peer */
 static
 int
 nm_mx_connect		(struct nm_cnx_rq *p_crq) {
@@ -412,6 +431,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
+/** Accept the connection request from a MX peer */
 static
 int
 nm_mx_accept		(struct nm_cnx_rq *p_crq) {
@@ -527,6 +547,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
+/** Disconnect from a new MX peer */
 static
 int
 nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
@@ -557,6 +578,7 @@ nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
+/** Post a iov send request to MX */
 static
 int
 nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
@@ -616,6 +638,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
+/** Post a iov receive request to MX */
 static
 int
 nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
@@ -687,8 +710,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
-
-
+/** Post a iov request completion in MX */
 static
 int
 nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
@@ -773,6 +795,7 @@ out:
         return err;
 }
 
+/** Load MX operations */
 int
 nm_mx_load(struct nm_drv_ops *p_ops) {
         p_ops->init		= nm_mx_init         ;

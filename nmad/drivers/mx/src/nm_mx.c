@@ -43,7 +43,7 @@ struct nm_mx_trk {
 
         /* next value to use for match info
          */
-        uint64_t 		next_match_info;
+        uint16_t 		next_peer_id;
 
         /* match info to gate id reverse mapping			*/
         uint8_t		*gate_map;
@@ -94,9 +94,22 @@ struct nm_mx_adm_pkt_2 {
    0x01042010. Sorry for the inconvenience. */
 #define NM_MX_ENDPOINT_FILTER 0x31051969
 
-/* connect/accept matching info */
-#define NM_MX_CONNECT_MATCH_INFO UINT64_C(0xdeadbeefdeadbeef)
-#define NM_MX_ACCEPT_MATCH_INFO UINT64_C(0xbeefdeadbeefdead)
+/*
+ * how the matching is used
+ */
+/* bit 63: administrative packet or not? */
+#define NM_MX_ADMIN_MATCHING_BITS 1
+#define NM_MX_ADMIN_MATCHING_SHIFT 63
+/* bits 47-62: peer id */
+#define NM_MX_PEER_ID_MATCHING_BITS 16
+#define NM_MX_PEER_ID_MATCHING_SHIFT 47
+
+/* regular messages matching info */
+#define NM_MX_MATCH_INFO(peer) ( (((uint64_t)peer) << NM_MX_PEER_ID_MATCHING_SHIFT) )
+/* connect and accept matching info, with the adminsitrative bit */
+#define NM_MX_ADMIN_MATCH_MASK (UINT64_C(1) << NM_MX_ADMIN_MATCHING_SHIFT)
+#define NM_MX_CONNECT_MATCH_INFO ( UINT64_C(0xdeadbeef) | NM_MX_ADMIN_MATCH_MASK )
+#define NM_MX_ACCEPT_MATCH_INFO ( UINT64_C(0xbeefdead) | NM_MX_ADMIN_MATCH_MASK )
 
 /* prototypes
  */
@@ -206,7 +219,7 @@ nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         /* private data							*/
 	p_mx_trk	= TBX_MALLOC(sizeof (struct nm_mx_trk));
         memset(p_mx_trk, 0, sizeof (struct nm_mx_trk));
-	p_mx_trk->next_match_info	= 1;
+	p_mx_trk->next_peer_id = 1;
         p_trk->priv	= p_mx_trk;
 
         /* track capabilities encoding					*/
@@ -302,7 +315,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
         } else {
-          p_mx_gate->ref_cnt++;
+		p_mx_gate->ref_cnt++;
         }
 
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
@@ -310,15 +323,15 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         drv_url		= p_crq->remote_drv_url;
         trk_url		= p_crq->remote_trk_url;
 
-        if (p_mx_trk->next_match_info-1) {
+	if (p_mx_trk->next_peer_id-1) {
                 p_mx_trk->gate_map	=
                         TBX_REALLOC(p_mx_trk->gate_map,
-                                    p_mx_trk->next_match_info+1);
+                                    p_mx_trk->next_peer_id+1);
         } else {
                 p_mx_trk->gate_map	= TBX_MALLOC(2);
         }
 
-        p_mx_trk->gate_map[p_mx_trk->next_match_info]		= p_gate->id;
+        p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate->id;
 
         /* we use the remote_drv_url instead of the remote_host_url
            since we want the hostname "as MX sees it"
@@ -353,8 +366,12 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
                 strcpy(pkt1.drv_url, p_drv->url);
                 strcpy(pkt1.trk_url, p_trk->url);
-		p_mx_cnx->recv_match_info	= p_mx_trk->next_match_info;
-                pkt1.match_info	= p_mx_trk->next_match_info++;
+		pkt1.match_info = NM_MX_MATCH_INFO(p_mx_trk->next_peer_id);
+		p_mx_cnx->recv_match_info = pkt1.match_info;
+		p_mx_trk->next_peer_id++;
+		if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
+			DISP("reached maximal number of peers %d", p_mx_trk->next_peer_id);
+
                 NM_TRACEF("connect - pkt1.drv_url: %s",	pkt1.drv_url);
                 NM_TRACEF("connect - pkt1.trk_url: %s",	pkt1.trk_url);
                 NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %lu",	pkt1.match_info);
@@ -423,20 +440,20 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
         } else {
-          p_mx_gate->ref_cnt++;
+		p_mx_gate->ref_cnt++;
         }
 
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
 
-        if (p_mx_trk->next_match_info-1) {
+	if (p_mx_trk->next_peer_id-1) {
                 p_mx_trk->gate_map	=
                         TBX_REALLOC(p_mx_trk->gate_map,
-                                    p_mx_trk->next_match_info+1);
+                                    p_mx_trk->next_peer_id+1);
         } else {
                 p_mx_trk->gate_map	= TBX_MALLOC(2);
         }
 
-        p_mx_trk->gate_map[p_mx_trk->next_match_info]		= p_gate->id;
+        p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate->id;
 
         NM_TRACEF("recv pkt1 -->");
         {
@@ -487,8 +504,12 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
                 mx_segment_t	sg;
                 uint32_t	r;
 
-		p_mx_cnx->recv_match_info	= p_mx_trk->next_match_info;
-                pkt2.match_info	= p_mx_trk->next_match_info++;
+		pkt2.match_info = NM_MX_MATCH_INFO(p_mx_trk->next_peer_id);
+		p_mx_cnx->recv_match_info = pkt2.match_info;
+		p_mx_trk->next_peer_id++;
+		if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
+			DISP("reached maximal number of peers %d", p_mx_trk->next_peer_id);
+
 		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %lu",	pkt2.match_info);
 
                 sg.segment_ptr		= &pkt2;
@@ -626,10 +647,9 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 match_mask	= MX_MATCH_MASK_NONE;
                 match_info	= p_mx_cnx->recv_match_info;
         } else {
+		/* filter out administrative pkts */
                 match_info	= 0;
-
-                /* the first 'f' filters out administrative pkts */
-                match_mask	= UINT64_C(0xf000000000000000);
+                match_mask	= NM_MX_ADMIN_MATCH_MASK;
         }
 
         p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);

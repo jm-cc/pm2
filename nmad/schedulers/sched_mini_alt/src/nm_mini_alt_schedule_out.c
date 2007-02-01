@@ -22,6 +22,8 @@
 
 #include "nm_mini_alt_private.h"
 
+/** Build and post a new send request of a ctrl pkt.
+ */
 static
 int
 nm_mini_alt_make_ctrl_pkt(struct nm_sched		 *p_sched,
@@ -85,7 +87,8 @@ nm_mini_alt_make_ctrl_pkt(struct nm_sched		 *p_sched,
         return err;
 }
 
-/* check if track is busy */
+/** Check if track is available.
+ */
 static
 int
 nm_check_track(struct nm_gate_drv	 *const p_gdrv,
@@ -103,7 +106,8 @@ nm_check_track(struct nm_gate_drv	 *const p_gdrv,
         return err;
 }
 
-/* schedule and post new outgoing buffers */
+/** Schedule and post new outgoing buffers.
+ */
 int
 nm_mini_alt_out_schedule_gate(struct nm_gate *p_gate) {
         p_tbx_slist_t 		 pre		= NULL;
@@ -202,7 +206,8 @@ nm_mini_alt_out_schedule_gate(struct nm_gate *p_gate) {
 }
 
 
-/* process complete successful outgoing request */
+/** Handle a complete successful outgoing request.
+ */
 int
 nm_mini_alt_out_process_success_rq(struct nm_sched		*p_sched,
                                struct nm_pkt_wrap	*p_pw) {
@@ -264,7 +269,8 @@ nm_mini_alt_out_process_success_rq(struct nm_sched		*p_sched,
         return err;
 }
 
-/* process complete failed outgoing request */
+/** Handle a failed outgoing request.
+ */
 int
 nm_mini_alt_out_process_failed_rq(struct nm_sched		*p_sched,
                               struct nm_pkt_wrap	*p_pw,

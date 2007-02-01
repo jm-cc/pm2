@@ -84,7 +84,16 @@ static int pack(struct nm_gate *p_gate,
     /* Small packet */
 
     /* We aggregate ONLY if data are very small OR if there are
-       already two ready paquets */
+       already two ready paquets
+
+       constant 512 is currently a hard-coded threshold which should
+       eventually be updated with a real network value
+
+       constant 2 is currently the hard-coded number of NICs in
+       multi-rail --> we do not try to aggregate until there is at
+       least as many available packets as the number of NICs (should
+       eventually be updated with the actual number of NICs)
+    */
     if(len <= 512 || p_so_sa_gate->nb_paquets >= 2) {
 
       /* We first try to find an existing packet to form an aggregate */

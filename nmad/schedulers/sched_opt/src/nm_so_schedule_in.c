@@ -28,7 +28,9 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_interfaces.h"
 
-/* rdv_success is called when a RdV request and an UNPACK operation
+/** Handle a matching rendez-vous.
+
+ rdv_success is called when a RdV request and an UNPACK operation
    match together. Basically, we just have to check if there is a
    track available for the large data transfer and to send an ACK if
    so. Otherwise, we simply postpone the acknowledgement.*/
@@ -81,6 +83,8 @@ static int rdv_success(struct nm_gate *p_gate,
   return err;
 }
 
+/** Handle a source-less unpack.
+ */
 int
 __nm_so_unpack_any_src(struct nm_core *p_core,
                        uint8_t tag, void *data, uint32_t len)
@@ -159,6 +163,8 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
   return err;
 }
 
+/** Handle a sourceful unpack.
+ */
 int
 __nm_so_unpack(struct nm_gate *p_gate,
 	       uint8_t tag, uint8_t seq,
@@ -245,13 +251,16 @@ __nm_so_unpack(struct nm_gate *p_gate,
   return err;
 }
 
-/* schedule and post new incoming buffers */
+/** Schedule and post new incoming buffers.
+ */
 int
 nm_so_in_schedule(struct nm_sched *p_sched)
 {
   return NM_ESUCCESS;
 }
 
+/** Process a complete data request.
+ */
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
 				    uint8_t proto_id, uint8_t seq)
@@ -315,6 +324,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 
 }
 
+/** Process a complete rendez-vous request.
+ */
 static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
                         uint8_t tag_id, uint8_t seq)
 {
@@ -370,6 +381,8 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
   return NM_SO_HEADER_MARK_READ;
 }
 
+/** Process a complete rendez-vous acknowledgement request.
+ */
 static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
                         uint8_t tag_id, uint8_t seq,
                         uint8_t track_id)
@@ -401,7 +414,8 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
 }
 
 
-/* process complete successful incoming request */
+/** Process a complete successful incoming request.
+ */
 int
 nm_so_in_process_success_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw)
@@ -519,7 +533,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 }
 
 
-/* process complete failed incoming request */
+/** Process a failed incoming request.
+ */
 int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,

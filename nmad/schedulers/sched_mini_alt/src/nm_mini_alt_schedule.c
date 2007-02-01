@@ -27,6 +27,8 @@
 #define INITIAL_CTRL_NUM		16
 #define INITIAL_TOKEN_NUM		16
 
+/** Initialize the scheduler.
+ */
 static
 int
 nm_mini_alt_schedule_init	(struct nm_sched	*p_sched) {
@@ -53,6 +55,8 @@ nm_mini_alt_schedule_init	(struct nm_sched	*p_sched) {
         return err;
 }
 
+/** Initialize the tracks.
+ */
 static
 int
 nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
@@ -112,6 +116,8 @@ nm_mini_alt_init_trks	(struct nm_sched	*p_sched,
 	goto out;
 }
 
+/** Open a new gate.
+ */
 static
 int
 nm_mini_alt_init_gate	(struct nm_sched	*p_sched,
@@ -142,6 +148,8 @@ nm_mini_alt_init_gate	(struct nm_sched	*p_sched,
         return err;
 }
 
+/** Load the scheduler.
+ */
 int
 nm_mini_alt_load		(struct nm_sched_ops	*p_ops) {
         p_ops->init			= nm_mini_alt_schedule_init;

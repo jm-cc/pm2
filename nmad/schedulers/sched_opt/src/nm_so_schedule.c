@@ -29,6 +29,8 @@
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_balance.h"
 
+/** Initialize the scheduler.
+ */
 static int
 nm_so_schedule_init (struct nm_sched *p_sched)
 {
@@ -73,6 +75,8 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   return err;
 }
 
+/** Shutdown the scheduler.
+ */
 static int
 nm_so_schedule_exit (struct nm_sched *p_sched)
 {
@@ -86,6 +90,8 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
   return NM_ESUCCESS;
 }
 
+/** Shutdown the tracks.
+ */
 static int
 nm_so_close_trks(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
@@ -104,6 +110,8 @@ nm_so_close_trks(struct nm_sched	*p_sched,
   return err;
 }
 
+/** Initialize the tracks.
+ */
 static int
 nm_so_init_trks	(struct nm_sched	*p_sched,
                  struct nm_drv		*p_drv) {
@@ -160,6 +168,8 @@ nm_so_init_trks	(struct nm_sched	*p_sched,
     goto out;
 }
 
+/** Close a gate.
+ */
 static int
 nm_so_close_gate(struct nm_sched	*p_sched,
                  struct nm_gate		*p_gate)
@@ -177,6 +187,8 @@ nm_so_close_gate(struct nm_sched	*p_sched,
   return NM_ESUCCESS;
 }
 
+/** Open a gate.
+ */
 static int
 nm_so_init_gate	(struct nm_sched	*p_sched,
                  struct nm_gate		*p_gate)
@@ -225,7 +237,8 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
   return err;
 }
 
-
+/** Load the SchedOpt optimizing scheduler.
+ */
 int
 nm_so_load		(struct nm_sched_ops	*p_ops)
 {

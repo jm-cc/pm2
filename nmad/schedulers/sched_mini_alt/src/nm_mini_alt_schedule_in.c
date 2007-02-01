@@ -31,6 +31,8 @@
 #warning anticipated incoming ctrl pkt post disabled
 #endif
 
+/** Allocate and fill a ctrl pkt.
+ */
 static
 __inline__
 int
@@ -99,6 +101,8 @@ nm_mini_alt_make_ctrl_pkt(struct nm_sched		 *p_sched,
         return err;
 }
 
+/** Schedule the reception of a new ctrl pkt on the post list.
+ */
 static
 __inline__
 int
@@ -130,6 +134,8 @@ nm_mini_alt_in_schedule_ctrl(struct nm_sched		*p_sched,
 }
 
 
+/** Schedule the selective reception of a new data pkt on the post list.
+ */
 static
 __inline__
 int
@@ -234,6 +240,8 @@ nm_mini_alt_in_schedule_data_aux(struct nm_sched		*p_sched,
         return err;
 }
 
+/** Schedule the permissive reception of a new data pkt on the post list.
+ */
 static
 __inline__
 int
@@ -349,7 +357,8 @@ nm_mini_alt_in_schedule_data_perm(struct nm_sched		*p_sched,
         return err;
 }
 
-/* schedule and post new incoming buffers */
+/** Schedule and post new incoming buffers.
+ */
 int
 nm_mini_alt_in_schedule(struct nm_sched *p_sched) {
         struct nm_mini_alt_sched	*p_mini_alt_sched	= NULL;
@@ -392,7 +401,8 @@ nm_mini_alt_in_schedule(struct nm_sched *p_sched) {
         return err;
 }
 
-
+/** Handle a successful receive request for a ctrl pkt.
+ */
 static
 __inline__
 int
@@ -533,6 +543,8 @@ nm_mini_alt_in_process_success_ctrl(struct nm_sched	*p_sched,
         return err;
 }
 
+/** Handle a successful receive request for a data pkt.
+ */
 static
 __inline__
 int
@@ -575,7 +587,8 @@ nm_mini_alt_in_process_success_data(struct nm_sched	*p_sched,
         return err;
 }
 
-/* process complete successful incoming request */
+/** Handle a successful incoming request.
+ */
 int
 nm_mini_alt_in_process_success_rq(struct nm_sched	*p_sched,
                                   struct nm_pkt_wrap	*p_pw) {
@@ -591,7 +604,8 @@ nm_mini_alt_in_process_success_rq(struct nm_sched	*p_sched,
 }
 
 
-/* process complete failed incoming request */
+/** Handle a failed incoming request.
+ */
 int
 nm_mini_alt_in_process_failed_rq(struct nm_sched	*p_sched,
                              struct nm_pkt_wrap	*p_pw,

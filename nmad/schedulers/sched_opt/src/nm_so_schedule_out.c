@@ -26,6 +26,8 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 
+/** Schedule outbound requests.
+ */
 int
 nm_so_out_schedule_gate(struct nm_gate *p_gate)
 {
@@ -35,7 +37,8 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate)
   return p_so_sched->current_strategy->try_and_commit(p_gate);
 }
 
-
+/** Process a complete data request.
+ */
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 				    void *ptr, uint32_t len,
 				    uint8_t proto_id, uint8_t seq)
@@ -52,7 +55,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   return NM_SO_HEADER_MARK_READ;
 }
 
-/* process complete successful outgoing request */
+/** Process a complete successful outgoing request.
+ */
 int
 nm_so_out_process_success_rq(struct nm_sched *p_sched,
                              struct nm_pkt_wrap	*p_pw) {
@@ -85,7 +89,8 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
   return err;
 }
 
-/* process complete failed outgoing request */
+/** Process a failed outgoing request.
+ */
 int
 nm_so_out_process_failed_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw,

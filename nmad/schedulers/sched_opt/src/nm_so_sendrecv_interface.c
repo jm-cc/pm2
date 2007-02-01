@@ -55,6 +55,8 @@ static int nm_so_sr_unpack_success(struct nm_gate *p_gate,
                                    uint8_t tag, uint8_t seq,
                                    tbx_bool_t any_src);
 
+/** Send/recv API.
+ */
 struct nm_so_interface_ops sr_ops = {
   .init_gate = nm_so_sr_init_gate,
   .exit_gate = nm_so_sr_exit_gate,
@@ -64,6 +66,8 @@ struct nm_so_interface_ops sr_ops = {
 
 /* User interface */
 
+/** Initialize the send/receive interface.
+ */
 int
 nm_so_sr_init(struct nm_core *p_core,
 	      struct nm_so_interface **p_so_interface)
@@ -95,6 +99,8 @@ nm_so_sr_init(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
+/** Shutdown the send/receive interface.
+ */
 int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 {

@@ -16,14 +16,14 @@
 
 #include "nm_protected.h"
 
-/* control pkt of mini sched
+/** Control pkt.
  */
 struct nm_mini_alt_ctrl {
         uint8_t	proto_id;
         uint8_t seq;
 };
 
-/* output structs
+/** Output state.
  */
 struct nm_mini_alt_gate {
 
@@ -39,7 +39,7 @@ struct nm_mini_alt_gate {
         struct nm_pkt_wrap	*p_next_pw;
 };
 
-/* input structs
+/** Input state.
  */
 struct nm_mini_alt_sched_gate {
 
@@ -57,6 +57,8 @@ struct nm_mini_alt_sched_gate {
         uint32_t	token_per_proto[255];
 };
 
+/** Alternate implementation of mini scheduler.
+ */
 struct nm_mini_alt_sched {
         struct nm_mini_alt_sched_gate	sched_gates[255];
 

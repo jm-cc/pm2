@@ -27,24 +27,63 @@
 
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 /* Per-'iovec entry' allocation flags (exclusive) */
+/** @name IOV entry allocation
+
+    Flag constants to indicate whether a given iovec entry has been
+    dynamically or statically allocated.
+ */
+/*@{*/
+/** Entry is has been allocated statically and should not be freed explicitely.
+ */
 #define NM_SO_ALLOC_STATIC       0
+/** Entry is has been allocated dynamically and should be freed after use.
+ */
 #define NM_SO_ALLOC_DYNAMIC      1
+/*@}*/
 #endif
 
 /* Global priv_flags */
-#define NM_SO_NO_HEADER          1
-#define NM_SO_IOV_ALLOC_DYNAMIC  2
-#define NM_SO_RECV_PW            4
+/** @name Global private flags
 
-/* fast packet allocator */
+    Flag constants for the flag field of pw.
+ */
+/*@{*/
+/** Headerless pkt, if set.
+ */
+#define NM_SO_NO_HEADER          1
+
+/** Pkt with a dynamically allocated IOV, if set.
+ */
+#define NM_SO_IOV_ALLOC_DYNAMIC  2
+
+/** Pkt has been allocated for reception, if set.
+ */
+#define NM_SO_RECV_PW            4
+/*@}*/
+
+/** Fast packet allocator constant for initial number of entries. */
 #define INITIAL_PKT_NUM  16
+
+/** Allocator struct for headerless SO pkt wrapper.
+ */
 static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
+
+/** Allocator struct for send SO pkt wrapper.
+ */
 static p_tbx_memory_t nm_so_pw_send_mem = NULL;
+
+/** Allocator struct for recv SO pkt wrapper.
+ */
 static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 
 /* Some ugly macros (for convenience only) */
 #define nm_so_iov_flags(p_so_pw, i)  ((p_so_pw)->pw.nm_v[i].priv_flags)
 
+/** Initialize the fast allocator structs for SO pkt wrapper.
+ *
+ *  @param p_core a pointer to the NM core object.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_init(struct nm_core *p_core)
 {
@@ -69,6 +108,10 @@ nm_so_pw_init(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
+/** Cleanup the fast allocator structs for SO pkt wrapper.
+ *
+ *  @return The NM status.
+ */
 int
 nm_so_pw_exit()
 {
@@ -82,6 +125,14 @@ nm_so_pw_exit()
   return NM_ESUCCESS;
 }
 
+/** Allocate a suitable pkt wrapper for various SO purposes.
+ *
+ *  @param flags the flags indicating what pkt wrapper is needed.
+ *    - @c NM_SO_DATA_DONT_USE_HEADER:  whether to prepare a global header or not.
+ *    - @c NM_SO_DATA_PREPARE_RECV:  whether to prepare a send or receive pkt wrapper.
+ *  @param pp_so_pw a pointer to the pkt wrapper pointer where to store the result.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 {
@@ -89,8 +140,10 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
   int err = NM_ESUCCESS;
 
   if(flags & NM_SO_DATA_DONT_USE_HEADER) {
+          /* dont use header */
 
     if(flags & NM_SO_DATA_PREPARE_RECV) {
+            /* receive, no header */
 
       p_so_pw = tbx_malloc(nm_so_pw_recv_mem);
       if (!p_so_pw) {
@@ -98,6 +151,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 	goto out;
       }
 
+      /* io vector */
       p_so_pw->pw.v = p_so_pw->v;
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
       p_so_pw->pw.nm_v = p_so_pw->nm_v;
@@ -106,16 +160,19 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
       p_so_pw->pw.v_nb = 1;
 
+      /* pw flags */
       p_so_pw->pw.pkt_priv_flags = NM_SO_RECV_PW;
 
 #ifdef NM_SO_OPTIMISTIC_RECV
       p_so_pw->optimistic_recv = 0;
 #endif
 
+      /* first entry: pkt header */
       p_so_pw->v->iov_base = p_so_pw->buf;
       p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED);
 
     } else {
+            /* send, no header */
 
       p_so_pw = tbx_malloc(nm_so_pw_nohd_mem);
       if (!p_so_pw) {
@@ -123,6 +180,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 	goto out;
       }
 
+      /* io vector */
       p_so_pw->pw.v = p_so_pw->v;
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
       p_so_pw->pw.nm_v = p_so_pw->nm_v;
@@ -131,19 +189,22 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
       p_so_pw->pw.v_nb = 0;
 
+      /* pw flags */
       p_so_pw->pw.pkt_priv_flags = NM_SO_NO_HEADER;
 
+      /* pkt is empty for now */
       p_so_pw->pw.length = 0;
     }
 
   } else {
-
+          /* send, with header*/
     p_so_pw = tbx_malloc(nm_so_pw_send_mem);
     if (!p_so_pw) {
       err = -NM_ENOMEM;
       goto out;
     }
 
+    /* io vector */
     p_so_pw->pw.v = p_so_pw->v;
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
     p_so_pw->pw.nm_v = p_so_pw->nm_v;
@@ -152,6 +213,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
     p_so_pw->pw.v_nb = 1;
 
+    /* first entry: global header */
     p_so_pw->v->iov_base = p_so_pw->buf;
     p_so_pw->v->iov_len = NM_SO_GLOBAL_HEADER_SIZE;
 
@@ -159,10 +221,13 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     nm_so_iov_flags(p_so_pw, 0) = NM_SO_ALLOC_STATIC;
 #endif
 
+    /* cumulated length: global header length) */
     p_so_pw->pw.length = NM_SO_GLOBAL_HEADER_SIZE;
 
+      /* pw flags */
     p_so_pw->pw.pkt_priv_flags = 0;
 
+    /* current header index */
     p_so_pw->header_index = p_so_pw->v;
 
 #ifdef NM_SO_OPTIMISTIC_RECV
@@ -178,6 +243,11 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     return err;
 }
 
+/** Free a pkt wrapper and related structs.
+ *
+ *  @param p_so_pw the pkt wrapper pointer.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
 {
@@ -215,6 +285,16 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   return err;
 }
 
+/** Append a fragment of data to the pkt wrapper being built.
+ *
+ *  @param p_so_pw the pkt wrapper pointer.
+ *  @param proto_id the protocol id which generated the fragment.
+ *  @param seq the sequence number of the fragment.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @param flags the flags controlling the way the fragment is appended.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
@@ -335,7 +415,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
       }
 
     } else {
-	
+
       /* Data actually references a ctrl header. We simply append it
 	 to the previous other headers. */
       union nm_so_generic_ctrl_header *src, *dst;
@@ -374,6 +454,11 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
   return err;
 }
 
+/** Finalize the incremental building of the packet.
+ *
+ *  @param p_so_pw the pkt wrapper pointer.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
 {
@@ -383,11 +468,15 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
   void *ptr;
   struct iovec *vec;
 
+  /* check if the packet travels headerles
+   */
   if(p_so_pw->pw.pkt_priv_flags & NM_SO_NO_HEADER)
     /* We're done */
     goto out;
 
-  ((struct nm_so_global_header *)(p_so_pw->pw.v->iov_base))->len = 
+  /* update the length field of the global header
+   */
+  ((struct nm_so_global_header *)(p_so_pw->pw.v->iov_base))->len =
     p_so_pw->pw.length;
 
   /* Fix the 'skip' fields */
@@ -525,6 +614,14 @@ nm_so_pw_check_optimistic(struct nm_so_pkt_wrap *p_so_pw,
 
 #endif // NM_SO_OPTIMISTIC_RECV
 
+/** Iterate over the fields of a freshly received ctrl pkt.
+ *
+ *  @param p_so_pw the pkt wrapper pointer.
+ *  @param data_handler the inline data callback.
+ *  @param rdv_handler the rdv request callback.
+ *  @param ack_handler the rdv ack callback.
+ *  @return The NM status.
+ */
 int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,

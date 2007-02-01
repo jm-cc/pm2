@@ -402,6 +402,8 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
 /** Retrieve the pkt source of a complete any source receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @param gate_id a pointer to where the source gate id should be put.
  *  @return The NM status.
  */
 int

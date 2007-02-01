@@ -17,7 +17,7 @@
 #
 # determine the machine type from scratch
 #
-if [ -f /bin/uname -o -f /usr/bin/uname ]; then
+if [ -z "$PM2_SYS" -a \( -f /bin/uname -o -f /usr/bin/uname \) ]; then
 	if [ -f /bin/uname ]; then
 		_os="`/bin/uname -s`"
 	else

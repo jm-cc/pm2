@@ -14,7 +14,7 @@
 # General Public License for more details.
 
 
-if [ -f /bin/uname -o -f /usr/bin/uname ]; then
+if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/uname \) ]; then
 	if [ -f /bin/uname ]; then
 		_os="`/bin/uname -s`"
 		_ht="`/bin/uname -m`"

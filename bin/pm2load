@@ -140,7 +140,7 @@ mad3()
     [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2load_args="${pm2load_args} -l"
     [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2load_args="${pm2load_args} --l"
 
-    ${PM2_ROOT}/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    ${PM2_ROOT}/bin/leonie --env="LD_LIBRARY_PATH=$PM2_LD_LIBRARY_PATH" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }
@@ -298,6 +298,14 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
     PM2_CMD_NAME="$_PM2WHICH_RESULT"
     export PM2_CMD_NAME
 
+    # Librairies dynamiques (LD_PRELOAD)
+    if [ -n "$_PM2CONFIG_PRELOAD" ]; then
+	_prescript_args="$_prescript_args --preload $_PM2CONFIG_PRELOAD"
+    fi
+
+    # LD library path
+    PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
+
     # Mad3 special case
     case " $_PM2CONFIG_MODULES " in
     *\ mad3\ *)
@@ -315,15 +323,6 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	mad3 "${prog_args[@]}"
 	exit $?               
     fi
-
-
-    # Librairies dynamiques (LD_PRELOAD)
-    if [ -n "$_PM2CONFIG_PRELOAD" ]; then
-	_prescript_args="$_prescript_args --preload $_PM2CONFIG_PRELOAD"
-    fi
-
-    # LD library path
-    PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
 
 else # USE_LOCAL_FLAVOR
 

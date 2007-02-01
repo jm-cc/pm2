@@ -216,9 +216,6 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 {
 	marcel_t self;
-#ifdef MARCEL_SELF_IN_REG
-	self = (marcel_t) get_gs();
-#else
 	register unsigned long sp = get_sp();
 
 #ifdef STANDARD_MAIN
@@ -236,7 +233,6 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 		MA_BUG_ON(sp >= (unsigned long) self
 		    && sp < (unsigned long) (self + 1));
 	}
-#endif
 	return self;
 }
 

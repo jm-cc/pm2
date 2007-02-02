@@ -54,6 +54,7 @@ typedef void (*debug_action_func_t)(debug_type_t*, debug_action_t, int);
 #define PM2DEBUG_STDLEVEL      4
 #define PM2DEBUG_PM2DEBUGLEVEL 0
 #define PM2DEBUG_DISPLEVEL     1
+#define PM2DEBUG_WARNLEVEL     1
 #define PM2DEBUG_LOGLEVEL      PM2DEBUG_STDLEVEL
 #define PM2DEBUG_TRACELEVEL    PM2DEBUG_STDLEVEL
 
@@ -154,14 +155,19 @@ int pm2debug_backtrace(void ** array, int size);
 #ifndef DEBUG_NAME_TRACE
 #define DEBUG_NAME_TRACE(DEBUG_NAME) CONCAT3(debug_, DEBUG_NAME, _trace)
 #endif
+#ifndef DEBUG_NAME_WARN
+#define DEBUG_NAME_WARN(DEBUG_NAME) CONCAT3(debug_, DEBUG_NAME, _warn)
+#endif
 
 extern debug_type_t debug_disp;
 extern debug_type_t debug_log;
 extern debug_type_t debug_trace;
+extern debug_type_t debug_warn;
 
 extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
+extern debug_type_t DEBUG_NAME_WARN(DEBUG_NAME);
 
 #if defined(PM2DEBUG) || defined(TBX_KERNEL)
 
@@ -174,7 +180,10 @@ debug_type_t DEBUG_NAME_LOG(DEBUG_NAME)= \
 		        #DEBUG_NAME "-log", &debug_log); \
 debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
   NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-trace: ", \
-		        #DEBUG_NAME "-trace", &debug_trace);
+		        #DEBUG_NAME "-trace", &debug_trace); \
+debug_type_t DEBUG_NAME_WARN(DEBUG_NAME)= \
+  NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-warn: ", \
+		        #DEBUG_NAME "-warn", &debug_warn);
 #else /* PM2DEBUG */
 
 #define DEBUG_DECLARE(DEBUG_NAME)
@@ -184,7 +193,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define DEBUG_INIT(DEBUG_NAME) \
   { pm2debug_register(&DEBUG_NAME_DISP(DEBUG_NAME)); \
     pm2debug_register(&DEBUG_NAME_LOG(DEBUG_NAME)); \
-    pm2debug_register(&DEBUG_NAME_TRACE(DEBUG_NAME)); }
+    pm2debug_register(&DEBUG_NAME_TRACE(DEBUG_NAME)); \
+    pm2debug_register(&DEBUG_NAME_WARN(DEBUG_NAME)); }
 
 /*
  * Display  macros  _________________________________________________
@@ -339,4 +349,45 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 
 #endif /* PM2DEBUG */
 
+/*
+ * Warning  macros  _________________________________________________
+ * ________________//////////////////////////////////////////////////
+ */
+#if defined(PM2DEBUG)
+#define WARN(str, ...)       debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   str "\n" , ## __VA_ARGS__)
+#define WARN_NO_NL(str, ...) debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   str , ## __VA_ARGS__)
+#define WARN_IN()            debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   __TBX_FUNCTION__": -->\n")
+#define WARN_OUT()           debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   __TBX_FUNCTION__": <--\n")
+#define WARN_VAL(str, val)   debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   str " = %d\n" , (int)(val))
+#define WARN_CHAR(val)       debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   "%c" , (char)(val))
+#define WARN_PTR(str, ptr)   debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   str " = %p\n" , (void *)(ptr))
+#define WARN_STR(str, str2)  debug_printfl(&DEBUG_NAME_WARN(DEBUG_NAME), \
+                                           PM2DEBUG_WARNLEVEL, \
+					   str ": %s\n" , (char *)(str2))
+#else /* PM2DEBUG */
+
+#define WARN(str, ...)       fprintf(stderr, str "\n" , ## __VA_ARGS__)
+#define WARN_NO_NL(str, ...) fprintf(stderr, str, ## __VA_ARGS__)
+#define WARN_IN()            fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
+#define WARN_OUT()           fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
+#define WARN_VAL(str, val)   fprintf(stderr, str " = %d\n" , (int)(val))
+#define WARN_CHAR(val)       fprintf(stderr, "%c" , (char)(val))
+#define WARN_PTR(str, ptr)   fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define WARN_STR(str, str2)  fprintf(stderr, str ": %s\n" , (char *)(str2))
+
+#endif /* PM2DEBUG */
 #endif

@@ -75,6 +75,7 @@ debug_type_t debug_default={
 debug_type_t debug_disp = NEW_DEBUG_TYPE("disp: ", "disp");
 debug_type_t debug_log = NEW_DEBUG_TYPE("log: ", "log");
 debug_type_t debug_trace = NEW_DEBUG_TYPE("trace: ", "trace");
+debug_type_t debug_warn = NEW_DEBUG_TYPE("warn: ", "warn");
 
 DEBUG_DECLARE(init)
 #ifdef MARCEL
@@ -349,6 +350,9 @@ void pm2debug_init_base()
 #endif
 #ifdef MAD3
 	DEBUG_INIT(mad3);
+#endif
+#ifdef MAD4
+	DEBUG_INIT(mad4);
 #endif
 #ifdef LEONIE
 	DEBUG_INIT(leonie);

@@ -67,41 +67,64 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 int marcel_sched_attr_init(marcel_sched_attr_t *attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0
 
+
 int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW;
+/** Sets the initial holder for created thread */
+int marcel_attr_setinitholder(marcel_attr_t *attr, ma_holder_t *h) __THROW;
+#define marcel_attr_setinitholder(attr,holder) marcel_sched_attr_setinitholder(&(attr)->sched,holder)
+
 int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW;
+/** Gets the initial holder for created thread */
+int marcel_attr_getinitholder(__const marcel_attr_t *attr, ma_holder_t **h) __THROW;
+#define marcel_attr_getinitholder(attr,holder) marcel_sched_attr_getinitholder(&(attr)->sched,holder)
+
 
 int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
 #define marcel_sched_attr_setinitrq(attr, rq) marcel_sched_attr_setinitholder(attr, &(rq)->hold)
+/** Sets the initial runqueue for created thread */
+int marcel_attr_setinitrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
+#define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
+
 int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
+/** Gets the initial runqueu for created thread */
+int marcel_attr_getinitrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
+#define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
+
 
 #ifdef MA__BUBBLES
 int marcel_sched_attr_setinitbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
 #define marcel_sched_attr_setinitbubble(attr, bubble) marcel_sched_attr_setinitholder(attr, &(bubble)->hold)
-int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
-#endif
-
-int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
-int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
-
-int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t *attr, int policy) __THROW;
-int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t * __restrict attr,
-                               int * __restrict policy) __THROW;
-
-#section macros
-#define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
-#define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
-#define marcel_attr_setinitholder(attr,holder) marcel_sched_attr_setinitholder(&(attr)->sched,holder)
-#define marcel_attr_getinitholder(attr,holder) marcel_sched_attr_getinitholder(&(attr)->sched,holder)
-#ifdef MA__BUBBLES
+/** Sets the initial bubbles for created thread */
+int marcel_attr_setinitbubble(marcel_attr_t *attr, marcel_bubble_t *bubble) __THROW;
 #define marcel_attr_setinitbubble(attr,bubble) marcel_sched_attr_setinitbubble(&(attr)->sched,bubble)
+int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+/** Gets the initial bubbles for created thread */
+int marcel_attr_getinitbubble(__const marcel_attr_t *attr, marcel_bubble_t **bubble) __THROW;
 #define marcel_attr_getinitbubble(attr,bubble) marcel_sched_attr_getinitbubble(&(attr)->sched,bubble)
 #endif
 
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
+/** Makes created thread inherits holder from its parent */
+int marcel_attr_setinheritholder(marcel_attr_t *attr, int yes) __THROW;
 #define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
+/** Whether created thread inherits holder from its parent */
+int marcel_attr_getinheritholder(__const marcel_attr_t *attr, int *yes) __THROW;
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
 
+int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t *attr, int policy) __THROW;
+/** Sets the scheduling policy */
+int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
 #define marcel_attr_setschedpolicy(attr,policy) marcel_sched_attr_setschedpolicy(&(attr)->sched,policy)
+int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t * __restrict attr,
+                               int * __restrict policy) __THROW;
+/** Gets the scheduling policy */
+int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
+                               int * __restrict policy) __THROW;
 #define marcel_attr_getschedpolicy(attr,policy) marcel_sched_attr_getschedpolicy(&(attr)->sched,policy)
+
+
+
 
 #section functions
 #ifdef MA__LWPS
@@ -328,9 +351,13 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 /* ==== SMP scheduling policies ==== */
 
 #define MARCEL_SCHED_INVALID	-1
+/** Creates the thread on the global runqueue */
 #define MARCEL_SCHED_SHARED      0
+/** Creates the thread on another LWP (the next one, usually) */
 #define MARCEL_SCHED_OTHER       1
+/** Creates the thread on a non-loaded LWP or the same LWP */
 #define MARCEL_SCHED_AFFINITY    2
+/** Creates the thread on the least loaded LWP */
 #define MARCEL_SCHED_BALANCE     3
 #define __MARCEL_SCHED_AVAILABLE 4
 

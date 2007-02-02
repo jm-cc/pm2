@@ -24,8 +24,9 @@ int main(int argc, char **argv) {
   int numtasks, rank, global_rank, provided;
   float buffer[2];
   int reduce[2];
+  long lreduce[2];
   int global_sum[2];
-  int global_product[2];
+  long global_product[2];
   MPI_Op operator;
 
   // Initialise MPI
@@ -54,10 +55,10 @@ int main(int argc, char **argv) {
     fprintf(stdout, "[%d] Global sum [%d,%d]\n", rank, global_sum[0], global_sum[1]);
   }
 
-  reduce[0] = (rank+1)*2;
-  reduce[1] = rank+1;
-  MPI_Allreduce(reduce, global_product, 2, MPI_INT, MPI_PROD, MPI_COMM_WORLD);
-  fprintf(stdout, "[%d] Global product [%d,%d]\n", rank, global_product[0], global_product[1]);
+  lreduce[0] = (rank+1)*2;
+  lreduce[1] = rank+1;
+  MPI_Allreduce(lreduce, global_product, 2, MPI_LONG, MPI_PROD, MPI_COMM_WORLD);
+  fprintf(stdout, "[%d] Global product [%li,%li]\n", rank, global_product[0], global_product[1]);
 
   {
     int reduce[3] = {rank+1, rank+2, rank+3};

@@ -463,6 +463,14 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_DOUBLE FOR MPI_PROD */
+    case MPI_LONG : {
+      long *i_invec = (long *) invec;
+      long *i_inoutvec = (long *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] *= i_invec[i];
+      }
+      break;
+    } /* END MPI_LONG FOR MPI_PROD */
     default : {
       ERROR("Datatype %d for PROD Reduce operation", *type);
       break;

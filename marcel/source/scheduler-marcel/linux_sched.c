@@ -215,7 +215,7 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	
 	if (tbx_unlikely(ma_test_tsk_thread_flag(p, TIF_NEED_RESCHED))) goto out;
 
-	ma_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
+	ma_set_tsk_need_resched(p);
 
 	if (lwp == LWP_SELF)
 		goto out;

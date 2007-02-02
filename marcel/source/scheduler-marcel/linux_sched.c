@@ -1206,13 +1206,13 @@ need_resched:
 
 	if (irq)
 		/* now we recorded preemption, we can safely re-enable signals */
-		marcel_sig_disable_interrupts();
+		marcel_sig_enable_interrupts();
 
         ma_schedule();
 
 	if (irq)
 		/* before forgetting about preemption, re-disable signals */
-		marcel_sig_enable_interrupts();
+		marcel_sig_disable_interrupts();
 
         ti->preempt_count = irq;
 

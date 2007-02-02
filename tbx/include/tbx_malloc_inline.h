@@ -254,7 +254,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
                                + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
       }
 
-    TBX_FAILUREF("attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
+    WARN("attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
   }
 
   block_mem = mem->first_mem;

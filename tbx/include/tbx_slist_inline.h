@@ -71,9 +71,9 @@ tbx_slist_free(p_tbx_slist_t slist)
 {
   LOG_IN();
   if (slist->length)
-    TBX_FAILURE("slist not empty");
+    WARN("slist not empty");
   if (slist->nref_head)
-    TBX_FAILURE("nrefs still exist");
+    WARN("nrefs still exist");
   __tbx_slist_free_struct(slist);
   LOG_OUT();
 }

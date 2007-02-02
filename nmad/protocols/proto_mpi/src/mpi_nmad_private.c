@@ -552,6 +552,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
   int process_rank, global_size;
   MPI_Comm_rank(comm, &process_rank);
   MPI_Comm_size(comm, &global_size);
+  int tag = 49;
   
   if (process_rank == 0) {
     // 1st phase
@@ -563,7 +564,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     global_nb_incoming_msg = nb_incoming_msg;
     global_nb_outgoing_msg = nb_outgoing_msg;
     for(i=1 ; i<global_size ; i++) {
-      MPI_Recv(remote_counters, 2, MPI_INT, i, 0, MPI_COMM_WORLD, NULL);
+      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, NULL);
       global_nb_incoming_msg += remote_counters[0];
       global_nb_outgoing_msg += remote_counters[1];
     }
@@ -575,7 +576,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     }
 
     for(i=1 ; i<global_size ; i++) {
-      MPI_Send(&answer, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+      MPI_Send(&answer, 1, MPI_INT, i, tag, MPI_COMM_WORLD);
     }
 
     if (answer == tbx_false) {
@@ -587,7 +588,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
       global_nb_incoming_msg = nb_incoming_msg;
       global_nb_outgoing_msg = nb_outgoing_msg;
       for(i=1 ; i<global_size ; i++) {
-        MPI_Recv(remote_counters, 2, MPI_INT, i, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, NULL);
         global_nb_incoming_msg += remote_counters[0];
         global_nb_outgoing_msg += remote_counters[1];
       }
@@ -599,7 +600,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
       }
 
       for(i=1 ; i<global_size ; i++) {
-        MPI_Send(&answer, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+        MPI_Send(&answer, 1, MPI_INT, i, tag, MPI_COMM_WORLD);
       }
 
       return answer;
@@ -611,9 +612,9 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     MPI_NMAD_TRACE("Beginning of 1st phase.\n");
     local_counters[0] = nb_incoming_msg;
     local_counters[1] = nb_outgoing_msg;
-    MPI_Send(local_counters, 2, MPI_INT, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
-    MPI_Recv(&answer, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, NULL);
     if (answer == tbx_false) {
       return tbx_false;
     }
@@ -622,9 +623,9 @@ tbx_bool_t test_termination(MPI_Comm comm) {
       MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
       local_counters[0] = nb_incoming_msg;
       local_counters[1] = nb_outgoing_msg;
-      MPI_Send(local_counters, 2, MPI_INT, 0, 0, MPI_COMM_WORLD);
+      MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
-      MPI_Recv(&answer, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, NULL);
+      MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, NULL);
       return answer;
     }
   }

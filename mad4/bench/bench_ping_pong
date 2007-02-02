@@ -17,7 +17,7 @@
 # pm2-bench settings
 flavor="bench_mad4"
 appdir="${PM2_ROOT}/mad4/examples"
-prog="mad_ping_sel"
+prog="sr_bench"
 loop="mx"
 
 # bench settings used by 'mad3_default' include

@@ -37,7 +37,13 @@ run_bench()
 # args: loop variable
 finalize_bench()
 {
-    true
+    file_result="/tmp/pm2bench_${prog}_${USER}_result"
+    if [ -d $HOME/results/marcel/raw ] ; then
+        date=`date "+%Y.%m.%d"`
+        revision=`svn info $PM2_ROOT |grep Revision:|awk '{print $2}'`
+        mkdir $HOME/results/marcel/raw/${date}_rev$revision
+        cp $file_result $HOME/results/marcel/raw/${date}_rev$revision/
+    fi
 }
 
 

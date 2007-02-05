@@ -1,0 +1,9 @@
+For cross-compiling, you need to override PM2_ARCH, PM2_ASM, PM2_CC (and even
+PM2_SYS if needed):
+
+For instance, for compiling x86_64 binaries on x86:
+
+PM2_CC=gcc -m64
+PM2_ARCH=X86_64_ARCH
+PM2_ASM=x86_64
+export PM2_CC PM2_ARCH PM2_ASM

@@ -70,13 +70,13 @@ mad3()
 {
     log "Args: ${prog_args[@]}"
 
-    protocol=$_PM2CONFIG_PROTOCOLS
-    nb_protocols=$(echo $protocol | wc -w)
-    if [ "$nb_protocols" != 1 ] ; then
-        if [ -z "$PM2_PROTOCOL" ] ; then
-        	_pm2load_error "Error: More than one protocol selected ($protocol ). You might use the parameter --protocol to select one protocol"
-        else
-                protocol="$PM2_PROTOCOL"
+    if [ -n "$PM2_PROTOCOL" ] ; then
+        protocol="$PM2_PROTOCOL"
+    else
+        protocol=$_PM2CONFIG_PROTOCOLS
+        nb_protocols=$(echo $protocol | wc -w)
+        if [ "$nb_protocols" != 1 ] ; then
+            _pm2load_error "Error: More than one protocol selected ($protocol ). You might use the parameter --protocol to select one protocol"
         fi
     fi
     log "Protocol: $protocol"
@@ -96,6 +96,10 @@ mad3()
     host_list=`cat ${PM2_CONF_FILE}`
     set ${PM2_LEONIE_NETWORK_FILE} $protocol $host_list
     network_name=`. ${PM2_ROOT}/bin/leo-network`
+
+    if [ "$network_name" == "Network not found" ] ; then
+        _pm2load_error "Error: No network found for protocol $protocol and hosts $host_list"
+    fi
 
     new_list=""
 

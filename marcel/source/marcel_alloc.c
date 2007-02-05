@@ -62,6 +62,7 @@ extern void _rtld_global_ro;
 ma_allocator_t *marcel_tls_slot_allocator;
 #if defined(X86_ARCH)
 unsigned short __main_thread_desc;
+static uintptr_t sysinfo;
 #endif
 #if defined(X86_64_ARCH)
 unsigned long __main_thread_tls_base;
@@ -147,20 +148,8 @@ static void *tls_slot_alloc(void *foo) {
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 	tcb->tcb = tcb;
 #endif
-
 #if defined(X86_ARCH)
-	// j'aimerais bien qu'on m'explique pourquoi la glibc stocke cela ici.....
-	uintptr_t *sysinfo = &_rtld_global_ro + 
-	/* gdb /usr/lib/debug/ld-linux.so.2
-	 * > p (unsigned long) &_rtld_global_ro._dl_sysinfo - (unsigned long) &_rtld_global_ro; */
-#if defined(X86_ARCH)
-		384
-#elif defined(IA64_ARCH)
-		176
-#endif
-		;
-
-	tcb->sysinfo = *sysinfo;
+	tcb->sysinfo = sysinfo;
 #endif
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
@@ -253,7 +242,8 @@ static void __marcel_init marcel_slot_init(void)
 		abort();
 	}
 #ifdef X86_ARCH
-	asm volatile ("movw %%gs, %w0" : "=q" (__main_thread_desc));
+	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
+	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 #elif defined(X86_64_ARCH)
 	arch_prctl(ARCH_GET_FS, &__main_thread_tls_base);
 #endif

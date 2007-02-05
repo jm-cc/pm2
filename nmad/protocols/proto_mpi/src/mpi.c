@@ -32,6 +32,10 @@ static long                   *in_gate_id	= NULL;
 static int                    *out_dest	 	= NULL;
 static int                    *in_dest		= NULL;
 
+/**
+ * This routine must be called before any other MPI routine. It must
+ * be called at most once; subsequent calls are erroneous.
+ */
 int MPI_Init(int *argc,
              char ***argv) {
 
@@ -142,6 +146,13 @@ int MPI_Init(int *argc,
   return MPI_SUCCESS;
 }
 
+/**
+ * The following function may be used to initialize MPI, and
+ * initialize the MPI thread environment, instead of MPI_Init.
+ *
+ * @param required level of thread support (integer)
+ * @param provided level of thread support (integer)
+ */
 int MPI_Init_thread(int *argc,
                     char ***argv,
                     int required,
@@ -157,6 +168,10 @@ int MPI_Init_thread(int *argc,
   return err;
 }
 
+/**
+ * This routine must be called by each process before it exits. The
+ * call cleans up all MPI state.
+ */
 int MPI_Finalize(void) {
   MPI_NMAD_LOG_IN();
 
@@ -172,6 +187,9 @@ int MPI_Finalize(void) {
   return MPI_SUCCESS;
 }
 
+/**
+ * This routine makes a ``best attempt'' to abort all tasks in the group of comm.
+ */
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
   MPI_NMAD_LOG_IN();
@@ -192,7 +210,10 @@ int MPI_Abort(MPI_Comm comm,
   return errorcode;
 }
 
-
+/**
+ * This function indicates the number of processes involved in a an
+ * intracommunicator.
+ */
 int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
   MPI_NMAD_LOG_IN();
@@ -208,6 +229,10 @@ int MPI_Comm_size(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
+/**
+ * This function gives the rank of the process in the particular
+ * communicator's group.
+ */
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
   MPI_NMAD_LOG_IN();
@@ -225,6 +250,10 @@ int MPI_Comm_rank(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
+/**
+ * This routine returns the name of the processor on which it was
+ * called at the moment of the call.
+ */
 int MPI_Get_processor_name(char *name, int *resultlen) {
   int err;
 
@@ -370,6 +399,9 @@ int mpi_inline_isend(void *buffer,
   return err;
 }
 
+/**
+ * Performs a standard-mode, blocking send.
+ */
 int MPI_Send(void *buffer,
              int count,
              MPI_Datatype datatype,
@@ -422,6 +454,9 @@ int MPI_Send(void *buffer,
   return err;
 }
 
+/**
+ * Posts a standard-mode, non blocking send.
+ */
 int MPI_Isend(void *buffer,
               int count,
               MPI_Datatype datatype,
@@ -460,6 +495,9 @@ int MPI_Isend(void *buffer,
   return err;
 }
 
+/**
+ * Performs a ready-mode, blocking send.
+ */
 int MPI_Rsend(void* buffer,
               int count,
               MPI_Datatype datatype,
@@ -655,6 +693,9 @@ int mpi_inline_irecv(void* buffer,
   return err;
 }
 
+/**
+ * Performs a standard-mode, blocking receive.
+ */
 int MPI_Recv(void *buffer,
              int count,
              MPI_Datatype datatype,
@@ -720,6 +761,9 @@ int MPI_Recv(void *buffer,
   return err;
 }
 
+/**
+ * Posts a nonblocking receive.
+ */
 int MPI_Irecv(void* buffer,
               int count,
               MPI_Datatype datatype,
@@ -751,6 +795,9 @@ int MPI_Irecv(void* buffer,
   return err;
 }
 
+/**
+ * Returns when the operation identified by request is complete.
+ */
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
@@ -796,6 +843,10 @@ int MPI_Wait(MPI_Request *request,
   return err;
 }
 
+/**
+ * Returns flag = true if the operation identified by request is
+ * complete.
+ */
 int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
@@ -832,6 +883,10 @@ int MPI_Test(MPI_Request *request,
   return MPI_SUCCESS;
 }
 
+/**
+ * Tests for completion of the communication operations associated
+ * with requests in the array.
+ */
 int MPI_Testany(int count,
                 MPI_Request *array_of_requests,
                 int *index,
@@ -854,6 +909,11 @@ int MPI_Testany(int count,
   return err;
 }
 
+/**
+ * Nonblocking operation that returns flag = true if there is a
+ * message that can be received and that matches the message envelope
+ * specified by source, tag and comm.
+ */
 int MPI_Iprobe(int source,
                int tag,
                MPI_Comm comm,
@@ -900,6 +960,10 @@ int MPI_Iprobe(int source,
   return MPI_SUCCESS;
 }
 
+/**
+ * Blocks and returns only after a message that matches the message
+ * envelope specified by source, tag and comm can be received.
+ */
 int MPI_Probe(int source,
               int tag,
               MPI_Comm comm,
@@ -928,6 +992,9 @@ int MPI_Probe(int source,
   return err;
 }
 
+/**
+ * Computes the number of entries received.
+ */
 int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count) {
@@ -951,6 +1018,9 @@ int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2) {
   }
 }
 
+/**
+ * Blocks the caller until all group members have called the routine.
+ */
 int MPI_Barrier(MPI_Comm comm) {
   tbx_bool_t termination;
 
@@ -973,6 +1043,10 @@ int MPI_Barrier(MPI_Comm comm) {
   return MPI_SUCCESS;
 }
 
+/**
+ * Broadcasts a message from the process with rank root to all
+ * processes of the group, itself included.
+ */
 int MPI_Bcast(void* buffer,
               int count,
               MPI_Datatype datatype,
@@ -1023,6 +1097,10 @@ int MPI_Bcast(void* buffer,
   return err;
 }
 
+/**
+ * Binds a user-defined global operation to an op handle that can
+ * subsequently used in a global reduction operation.
+ */
 int MPI_Op_create(MPI_User_function *function,
                   int commute,
                   MPI_Op *op) {
@@ -1034,6 +1112,9 @@ int MPI_Op_create(MPI_User_function *function,
   return err;
 }
 
+/**
+ * Marks a user-defined reduction operation for deallocation.
+ */
 int MPI_Op_free(MPI_Op *op) {
   int err;
 
@@ -1043,6 +1124,11 @@ int MPI_Op_free(MPI_Op *op) {
   return err;
 }
 
+/**
+ * Combines the elements provided in the input buffer of each process
+ * in the group, using the operation op, and returns the combined
+ * value in the output buffer of the process with rank root.
+ */
 int MPI_Reduce(void* sendbuf,
                void* recvbuf,
                int count,
@@ -1111,6 +1197,11 @@ int MPI_Reduce(void* sendbuf,
   }
 }
 
+/**
+ * Combines the elements provided in the input buffer of each process
+ * in the group, using the operation op, and returns the combined
+ * value in the output buffer of each process in the group.
+ */
 int MPI_Allreduce(void* sendbuf,
                   void* recvbuf,
                   int count,
@@ -1135,6 +1226,10 @@ int MPI_Allreduce(void* sendbuf,
   return err;
 }
 
+/**
+ * Returns a floating-point number of seconds, representing elapsed
+ * wall-clock time since some time in the past.
+ */
 double MPI_Wtime(void) {
   tbx_tick_t time;
 
@@ -1147,10 +1242,16 @@ double MPI_Wtime(void) {
   return usec / 1000000;
 }
 
+/**
+ * Returns the resolution of MPI_WTIME in seconds.
+ */
 double MPI_Wtick(void) {
   return 1e-7;
 }
 
+/**
+ * Returns the byte address of location.
+ */
 int MPI_Get_address(void *location, MPI_Aint *address) {
   /* This is the "portable" way to generate an address.
      The difference of two pointers is the number of elements
@@ -1163,29 +1264,50 @@ int MPI_Get_address(void *location, MPI_Aint *address) {
   return MPI_SUCCESS;
 }
 
+/**
+ * Returns the byte address of location.
+ */
 int MPI_Address(void *location, MPI_Aint *address) {
   return MPI_Get_address(location, address);
 }
 
+/**
+ * Returns the total size, in bytes, of the entries in the type
+ * signature associated with datatype.
+ */
 int MPI_Type_size(MPI_Datatype datatype, int *size) {
   return mpir_type_size(datatype, size);
 }
 
-
+/**
+ * Commits the datatype.
+ */
 int MPI_Type_commit(MPI_Datatype *datatype) {
   return mpir_type_commit(datatype);
 }
 
+/**
+ * Marks the datatype object associated with datatype for
+ * deallocation.
+ */
 int MPI_Type_free(MPI_Datatype *datatype) {
   return mpir_type_free(datatype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of a datatype
+ * into contiguous locations.
+ */
 int MPI_Type_contiguous(int count,
                         MPI_Datatype oldtype,
                         MPI_Datatype *newtype) {
   return mpir_type_contiguous(count, oldtype, newtype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of a datatype
+ * into location that consist of equally spaced blocks.
+ */
 int MPI_Type_vector(int count,
                     int blocklength,
                     int stride,
@@ -1195,6 +1317,12 @@ int MPI_Type_vector(int count,
   return mpir_type_vector(count, blocklength, hstride, MPIR_VECTOR, oldtype, newtype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of a datatype
+ * into location that consist of equally spaced blocks, assumes that
+ * the stride between successive blocks is a multiple of the oldtype
+ * extent.
+ */
 int MPI_Type_hvector(int count,
                      int blocklength,
                      int stride,
@@ -1203,6 +1331,11 @@ int MPI_Type_hvector(int count,
   return mpir_type_vector(count, blocklength, stride, MPIR_HVECTOR, oldtype, newtype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of a datatype
+ * into a sequence of blocks, each block is a concatenation of the old
+ * datatype.
+ */
 int MPI_Type_indexed(int count,
                      int *array_of_blocklengths,
                      int *array_of_displacements,
@@ -1211,6 +1344,12 @@ int MPI_Type_indexed(int count,
   return mpir_type_indexed(count, array_of_blocklengths, (MPI_Aint *)array_of_displacements, MPIR_INDEXED, oldtype, newtype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of a datatype
+ * into a sequence of blocks, each block is a concatenation of the old
+ * datatype; block displacements are specified in bytes, rather than
+ * in multiples of the old datatype extent.
+ */
 int MPI_Type_hindexed(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
@@ -1219,6 +1358,10 @@ int MPI_Type_hindexed(int count,
   return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_HINDEXED, oldtype, newtype);
 }
 
+/**
+ * Constructs a typemap consisting of the replication of different
+ * datatypes, with different block sizes.
+ */
 int MPI_Type_struct(int count,
                     int *array_of_blocklengths,
                     MPI_Aint *array_of_displacements,
@@ -1227,10 +1370,17 @@ int MPI_Type_struct(int count,
   return mpir_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
 }
 
+/**
+ * Creates a new intracommunicator with the same fixed attributes as
+ * the input intracommunicator.
+ */
 int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
   return mpir_comm_dup(comm, newcomm);
 }
 
+/**
+ * Marks the communication object for deallocation.
+ */
 int MPI_Comm_free(MPI_Comm *comm) {
   return mpir_comm_free(comm);
 }

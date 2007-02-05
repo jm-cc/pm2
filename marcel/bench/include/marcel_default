@@ -22,7 +22,7 @@ initialize_bench()
         --marcel=\"opt marcel-main $marcel\" \
         --all=\"opt build_static static\"
 
-    ${PM2_ROOT}/bin/pm2conf -f $flavor `echo $hosts | tr ',' ' '`
+    ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
 }
 
 # args: -
@@ -41,8 +41,8 @@ finalize_bench()
     if [ -d $HOME/results/marcel/raw ] ; then
         date=`date "+%Y.%m.%d"`
         revision=`svn info $PM2_ROOT |grep Revision:|awk '{print $2}'`
-        mkdir -p $HOME/results/marcel/raw/${date}_rev$revision
-        cp $file_result $HOME/results/marcel/raw/${date}_rev$revision/
+        mkdir -p $HOME/results/marcel/raw/${hosts}_${marcel}_${date}_rev$revision
+        cp $file_result $HOME/results/marcel/raw/${hosts}_${marcel}_${date}_rev$revision/
     fi
 }
 

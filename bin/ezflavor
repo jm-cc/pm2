@@ -21,6 +21,7 @@ case "$progname" in
 esac
 
 [ -z "$flavor" ] && flavor="$progname"
+export PM2_FLAVOR="$flavor"
 [ -z "$module" ] && module="$progname"
 
 args="$@"

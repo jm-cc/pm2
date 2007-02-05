@@ -74,7 +74,7 @@ void dumptime( time_t *the_time, clock_t *the_jiffies)
   if( (*the_time = time(NULL)) == -1 )
     perror("time");
 
-  if( (*the_jiffies = times(&cur_time)) < 0 )
+  if( (*the_jiffies = times(&cur_time)) == (clock_t) -1 )
     perror("times");
 }
 

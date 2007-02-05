@@ -21,6 +21,6 @@ appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 
 prog="create"
-args="1000"
+args="1000000"
 
 

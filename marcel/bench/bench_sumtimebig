@@ -20,7 +20,7 @@ flavor="bench_marcel_${marcel}"
 appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 
-prog="cond"
-args="1000000"
+prog="sumtime"
+args="10000"
 
 

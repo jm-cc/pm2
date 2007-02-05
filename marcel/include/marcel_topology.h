@@ -348,6 +348,8 @@ struct marcel_topo_vpdata {
 	any_t postexit_arg;
 	marcel_sem_t postexit_thread;
 	marcel_sem_t postexit_space;
+
+	int need_resched;
 };
 
 #section marcel_macros
@@ -476,6 +478,11 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 		ma_atomic_dec(&level->nbidle);
 }
 #endif
+
+static __tbx_inline__ int *ma_need_resched_location() {
+	return &ma_topo_vpdata(__ma_get_lwp_var(vp_level), need_resched);
+}
+#define ma_need_resched() (*(ma_need_resched_location()))
 
 #section functions
 #depend "tbx_compiler.h"

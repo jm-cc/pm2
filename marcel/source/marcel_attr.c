@@ -178,6 +178,7 @@ DEF___PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackadd
 /********************attr_set/getdetachstate**********************/
 static int TBX_UNUSED check_attr_setdetachstate(marcel_attr_t *attr, int detached)
 {
+	LOG_IN();
 	if ((detached != MARCEL_CREATE_DETACHED)
 	    && (detached != MARCEL_CREATE_JOINABLE)) {
 		mdebug

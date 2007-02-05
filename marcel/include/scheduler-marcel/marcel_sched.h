@@ -459,7 +459,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		(ma_in_atomic())
 		/* ou bien on ne veut pas  */
 		|| !ma_thread_preemptible()
-		/* On n'a pas encore de scheduler... */
 		|| dont_schedule
 #ifdef MA__LWPS
 		/* On ne peut pas placer ce thread sur le LWP courant */
@@ -467,7 +466,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* Si la politique est du type 'placer sur le LWP le moins
 		   chargé', alors on ne peut pas placer ce thread sur le LWP
 		   courant */
-		|| (new_task->sched.internal.entity.sched_policy != MARCEL_SCHED_OTHER)
+		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_OTHER)
+		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_BALANCE)
 #endif
 #ifdef MA__BUBBLES
 		/* on est placé dans une bulle (on ne sait donc pas si l'on a

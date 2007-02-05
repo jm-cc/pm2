@@ -40,8 +40,6 @@ static __tbx_inline__ void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag);
 static __tbx_inline__ int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag);
 static __tbx_inline__ int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag);
 static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t *ti, int flag);
-static __tbx_inline__ void ma_set_need_resched(void);
-static __tbx_inline__ void ma_clear_need_resched(void);
 
 #section marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
@@ -96,16 +94,6 @@ static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t *ti, int flag)
         return ma_test_bit(flag,&ti->flags);
 }
 
-static __tbx_inline__ void ma_set_need_resched(void)
-{
-        ma_set_thread_flag(TIF_NEED_RESCHED);
-}
-
-static __tbx_inline__ void ma_clear_need_resched(void)
-{
-        ma_clear_thread_flag(TIF_NEED_RESCHED);
-}
-
 /* set thread flags in other task's structures
  * - see asm/thread_info.h for TIF_xxxx flags available
  */
@@ -134,19 +122,9 @@ static __tbx_inline__ int ma_test_tsk_thread_flag(marcel_task_t *tsk, int flag)
 	return ma_test_ti_thread_flag(tsk,flag);
 }
 
-static __tbx_inline__ void ma_set_tsk_need_resched(marcel_task_t *tsk)
-{
-	ma_set_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
-}
-
 static __tbx_inline__ void ma_set_tsk_need_togo(marcel_task_t *tsk)
 {
 	ma_set_tsk_thread_flag(tsk,TIF_NEED_TOGO);
-}
-
-static __tbx_inline__ void ma_clear_tsk_need_resched(marcel_task_t *tsk)
-{
-	ma_clear_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
 }
 
 static __tbx_inline__ void ma_clear_tsk_need_togo(marcel_task_t *tsk)
@@ -159,11 +137,6 @@ static __tbx_inline__ int ma_signal_pending(marcel_task_t *p)
 	return tbx_unlikely(ma_test_tsk_thread_flag(p,TIF_WORKPENDING));
 }
   
-static __tbx_inline__ int ma_need_resched(void)
-{
-	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED));
-}
-
 static __tbx_inline__ int ma_need_togo(void)
 {
 	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_TOGO));

@@ -81,7 +81,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
-				ma_resched_task(ma_per_lwp(current_thread,lwp),lwp);
+				ma_resched_task(ma_per_lwp(current_thread,lwp),LWP_NUMBER(lwp),lwp);
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
@@ -130,7 +130,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
-				ma_resched_task(ma_per_lwp(current_thread,lwp),lwp);
+				ma_resched_task(ma_per_lwp(current_thread,lwp),LWP_NUMBER(lwp),lwp);
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();

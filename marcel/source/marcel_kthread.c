@@ -119,8 +119,10 @@ void marcel_kthread_join(marcel_kthread_t * pid)
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1)
-			MA_BUG_ON(errno != EINTR);
+		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
+			int the_errno = errno;
+			MA_BUG_ON(the_errno != EINTR && the_errno != EAGAIN);
+		}
 	LOG_OUT();
 }
 

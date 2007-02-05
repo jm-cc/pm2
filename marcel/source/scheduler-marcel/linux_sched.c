@@ -208,19 +208,24 @@ static int currently_idle;
  * might also involve a LWP killing to trigger the scheduler on
  * the target LWP.
  */
-void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
+void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 {
+	PROF_EVENT2(sched_resched_task, p, vp);
 #ifdef MA__LWPS
 	ma_preempt_disable();
 	
-	if (tbx_unlikely(ma_test_tsk_thread_flag(p, TIF_NEED_RESCHED))) goto out;
-
-	ma_set_tsk_need_resched(p);
-
-	if (lwp == LWP_SELF)
+	if (tbx_unlikely(ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched))) {
+		PROF_EVENT(sched_already_resched);
 		goto out;
+	}
 
-#ifdef MA__TIMER
+	ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched) = 1;
+
+	if (lwp == LWP_SELF) {
+		PROF_EVENT(sched_thats_us);
+		goto out;
+	}
+
 	/* NEED_RESCHED must be visible before we test POLLING_NRFLAG */
 	ma_smp_mb();
 	/* minimise the chance of sending an interrupt to poll_idle() */
@@ -229,11 +234,10 @@ void ma_resched_task(marcel_task_t *p, ma_lwp_t lwp)
                PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
 		MA_LWP_RESCHED(lwp);
 	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, LWP_NUMBER(lwp));
-#endif
 out:
 	ma_preempt_enable();
 #else
-	ma_set_tsk_need_resched(p);
+	ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched) = 1;
 #endif
 }
 
@@ -251,25 +255,24 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
 	marcel_lwp_t *lwp, *chosen = NULL;
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
-	int max_preempt = 0, preempt, i;
+	int max_preempt = 0, preempt, i, chosenvp = -1;
 	if (!rq)
 		return;
 	for (i=0; i<marcel_nbvps()+MARCEL_NBMAXVPSUP; i++) {
-		if (GET_LWP_BY_NUM(i) != NULL && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(ma_vp_lwp[i]))) {
-			lwp = GET_LWP_BY_NUM(i);
-			if (!lwp)
-				/* No luck: still no lwp or being replaced by
-				 * another one */
-				continue;
+		lwp = GET_LWP_BY_NUM(i);
+		if (lwp && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(lwp))) {
 			preempt = TASK_CURR_PREEMPT(p, lwp);
 			if (preempt > max_preempt) {
 				max_preempt = preempt;
 				chosen = lwp;
+				chosenvp = i;
 			}
 		}
 	}
 	if (chosen)
-		ma_resched_task(ma_per_lwp(current_thread, chosen), chosen);
+		ma_resched_task(ma_per_lwp(current_thread, chosen), chosenvp, chosen);
+	else
+		PROF_EVENT2(couldnt_resched_task, p, h);
 }
 
 /***
@@ -291,6 +294,7 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 	int success = 0;
 	long old_state;
 	ma_runqueue_t *rq;
+	LOG_IN();
 
 //repeat_lock_task:
 	old_state = p->sched.state;
@@ -299,6 +303,7 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 		PROF_EVENT2(sched_thread_wake, p, old_state);
 		p->sched.state = MA_TASK_RUNNING;
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
+			PROF_EVENT(sched_thread_wake_unblock);
 			/*
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
@@ -345,17 +350,19 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 			 * the waker guarantees that the freshly woken up task is going
 			 * to be considered on this CPU.)
 			 */
-			rq = ma_to_rq_holder(h);
-			if (rq && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
-				/* we can avoid remote reschedule by switching to it */
-				if (!sync) /* only if we won't for sure yield() soon */
-                                       ma_resched_task(MARCEL_SELF, LWP_SELF);
-			} else try_to_resched(p, h);
-			success = 1;
 		}
+
+		rq = ma_to_rq_holder(h);
+		if (rq && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
+			/* we can avoid remote reschedule by switching to it */
+			if (!sync) /* only if we won't for sure yield() soon */
+				ma_resched_task(MARCEL_SELF, LWP_NUMBER(LWP_SELF), LWP_SELF);
+		} else try_to_resched(p, h);
+
+		success = 1;
 	}
 
-	return success;
+	LOG_RETURN(success);
 }
 
 int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
@@ -456,13 +463,15 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()) {
-		rq = ma_rq_holder(h);
-		if (ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)))
-			/* XXX: on pourrait être préempté entre-temps... */
-			ma_schedule();
-		else
-			try_to_resched(p, h);
+	rq = ma_rq_holder(h);
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()
+	    && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF))) {
+		/* XXX: on pourrait être préempté entre-temps... */
+		PROF_EVENT(exec_woken_up_created_thread);
+		ma_schedule();
+	} else {
+		PROF_EVENT(resched_for_woken_up_created_thread);
+		try_to_resched(p, h);
 	}
 	LOG_OUT();
 }
@@ -738,14 +747,14 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
 				p->name, ma_task_run_holder(p),
 				ma_task_holder_data(p), __FILE__, __LINE__);
-		ma_set_tsk_need_resched(p);
+		ma_need_resched() = 1;
 		goto out;
 	}
 
 	if (preemption_enabled() && ma_thread_preemptible()) {
 		MA_BUG_ON(ma_atomic_read(&p->sched.internal.entity.time_slice)>MARCEL_TASK_TIMESLICE);
 		if (ma_atomic_dec_and_test(&p->sched.internal.entity.time_slice)) {
-			ma_set_tsk_need_resched(p);
+			ma_need_resched() = 1;
 			sched_debug("scheduler_tick: time slice expired\n");
 			//p->prio = effective_prio(p);
 			ma_atomic_set(&p->sched.internal.entity.time_slice,MARCEL_TASK_TIMESLICE);
@@ -798,7 +807,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			(p->array == rq->active)) {
 			if (preemption_enabled() && ma_thread_preemptible()) {
 				//ma_dequeue_task(p, &rq->hold);
-				ma_set_tsk_need_resched(p);
+				ma_need_resched() = 1;
 //				p->prio = effective_prio(p);
 				//ma_enqueue_task(p, &rq->hold);
 			}
@@ -841,6 +850,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int didpoll = 0;
 #endif
 	int hard_preempt;
+	int need_resched = ma_need_resched();
 	LOG_IN();
 
 	/*
@@ -858,6 +868,12 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	}
 
 need_resched:
+	/* Say the world we're currently rescheduling */
+	ma_need_resched() = 0;
+	ma_smp_mb__after_clear_bit();
+	/* Now that we announced we're taking a decision, we can have a look at
+	 * what is available */
+
 	/* we need to disable bottom half to avoid running ma_schedule_tick() ! */
 	ma_preempt_disable();
 	ma_local_bh_disable();
@@ -876,9 +892,10 @@ need_resched:
 	prevh = ma_task_run_holder(prev);
 	MA_BUG_ON(!prevh);
 
-	go_to_sleep = 0;
 	go_to_sleep_traced = 0;
 need_resched_atomic:
+	/* Note: maybe we got woken up in the meanwhile */
+	go_to_sleep = 0;
 	/* by default, reschedule this thread */
 	prev_as_next = prev;
 	prev_as_h = prevh;
@@ -917,6 +934,18 @@ need_resched_atomic:
 			PROF_EVENT(sched_thread_blocked);
 			go_to_sleep_traced = 1;
 		}
+		/* Let people know as soon as now that for now the next thread
+		 * will be idle, hence letting higher priority thread wake-ups
+		 * ask for reschedule.
+		 *
+		 * need_resched needs to have been set _before_ this
+		 */
+		__ma_get_lwp_var(current_thread) = __ma_get_lwp_var(idle_task);
+		ma_smp_mb();
+		/* Now we said that, check again that nobody woke us in the
+		 * meanwhile. */
+		if (!prev->sched.state)
+			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(LWP_SELF)->hold;
 		prev_as_prio = MA_IDLE_PRIO;
@@ -951,7 +980,7 @@ restart:
 			/* let polling know that this context switch is urging */
 			hard_preempt = 1;
 		}
-		if (cur && ma_need_resched() && idx == prev_as_prio && idx < MA_BATCH_PRIO) {
+		if (cur && need_resched && idx == prev_as_prio && idx < MA_BATCH_PRIO) {
 		/* still wanted to schedule prev, but it needs resched
 		 * and this is same prio
 		 */
@@ -1004,10 +1033,9 @@ restart:
 			didpoll = 1;
 		}
 		ma_check_work();
-		ma_set_need_resched();
+		need_resched = 1;
 		ma_local_bh_disable();
 		currently_idle = 0;
-		go_to_sleep = 0;
 		goto need_resched_atomic;
 #endif
 	}
@@ -1092,7 +1120,6 @@ switch_tasks:
 		MA_BUG_ON(next==prev);
 
 	tbx_prefetch(next);
-	ma_clear_tsk_need_resched(prev);
 	ma_clear_tsk_need_togo(prev);
 //Pour quand on voudra ce mécanisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
@@ -1147,8 +1174,9 @@ switch_tasks:
 
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (ma_test_thread_flag(TIF_NEED_RESCHED) && ma_thread_preemptible()) {
+	if (ma_need_resched() && ma_thread_preemptible()) {
 		sched_debug("need resched\n");
+		need_resched = 1;
 		goto need_resched;
 	}
 	sched_debug("switched\n");
@@ -1218,7 +1246,7 @@ need_resched:
 
         /* we could miss a preemption opportunity between schedule and now */
         ma_barrier();
-        if (tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED)))
+        if (ma_need_resched())
                 goto need_resched;
 }
 
@@ -1230,7 +1258,7 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
   LOG_IN();
 
   marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
-  ma_set_need_resched();
+  ma_need_resched() = 1;
   ma_schedule();
 
   LOG_OUT();

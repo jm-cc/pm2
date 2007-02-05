@@ -31,7 +31,7 @@ any_t f(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (2*(double)(long)arg));
   return NULL;
 }
 
@@ -49,7 +49,7 @@ any_t f2(any_t arg)
   }
   TBX_GET_TICK(t2);
 
-  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (2*(double)(long)arg));
   return NULL;
 }
 
@@ -63,7 +63,7 @@ any_t f3(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  marcel_printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (2*(double)(long)arg));
   return NULL;
 }
 
@@ -77,7 +77,7 @@ any_t f4(any_t arg)
     marcel_yield_to(main_thread);
   TBX_GET_TICK(t2);
 
-  marcel_printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (2*(double)(long)arg));
   return NULL;
 }
 

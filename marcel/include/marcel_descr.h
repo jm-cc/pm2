@@ -252,14 +252,12 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
  * 0x0000FF00 : marcel_sched
  * 0x00020000 : marcel_descr (debug)
  */
-#define TIF_NEED_RESCHED        0       /* rescheduling necessary */
 #define TIF_WORKPENDING         1       /* work pending */
-#define TIF_POLLING_NRFLAG      2       /* true if idle() is polling TIF_NEED_RESCHED */
+#define TIF_POLLING_NRFLAG      2       /* true if idle() is polling vpdata->need_resched */
 #define TIF_NEED_TOGO           3       /* rescheduling necessary, no affinity */
 #define TIF_DEBUG_IN_PROGRESS   16      /* true if pm2debug is in execution */
 #define TIF_BLOCK_HARDIRQ       17      /* true if softirq can be raised in hardirq */
 
-#define _TIF_NEED_RESCHED       (1<<TIF_NEED_RESCHED)
 #define _TIF_WORKPENDING        (1<<TIF_WORKPENDING)
 #define _TIF_POLLING_NRFLAG     (1<<TIF_POLLING_NRFLAG)
 #define _TIF_DEBUG_IN_PROGRESS  (1<<TIF_DEBUG_IN_PROGRESS)

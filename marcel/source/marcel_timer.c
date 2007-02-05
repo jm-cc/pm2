@@ -197,6 +197,7 @@ static void int_catcher_exit(ma_lwp_t lwp)
 static void int_catcher(int signo)
 {
 	fprintf(stderr,"SIGINT caught, saving profile\n");
+	PROF_EVENT(fut_stop);
 	profile_stop();
 	profile_exit();
 	int_catcher_exit(NULL);
@@ -263,6 +264,8 @@ static void timer_interrupt(int sig)
 	}
 
 	ma_irq_enter();
+
+	PROF_EVENT(timer_interrupt);
 
 	/* check that stack isn't overflowing */
 #ifndef ENABLE_STACK_JUMPING

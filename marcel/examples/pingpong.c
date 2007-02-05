@@ -17,7 +17,7 @@
 #include "marcel.h"
 #include <stdio.h>
 
-marcel_sem_t sem1 = MARCEL_SEM_INITIALIZER(1), sem2 = MARCEL_SEM_INITIALIZER(0);
+marcel_sem_t sem1 = MARCEL_SEM_INITIALIZER(0), sem2 = MARCEL_SEM_INITIALIZER(1);
 
 any_t f(any_t arg)
 {
@@ -31,7 +31,7 @@ any_t f(any_t arg)
   }
   TBX_GET_TICK(t2);
 
-  marcel_printf("pingpong =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
+  marcel_printf("pingpong =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (2*(double)(long)arg));
   return NULL;
 }
 

@@ -421,11 +421,13 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		/* we are the active LWP of this VP */
 
 		/* schedule threads */
+		//PROF_EVENT(idle_tests_need_resched);
 		if (ma_need_resched()) {
 			PROF_EVENT(idle_does_schedule);
 			if (ma_schedule())
 				continue;
 		}
+		//PROF_EVENT(idle_tested_need_resched);
 
 		/* no more threads, now poll */
 #ifdef XPAULETTE

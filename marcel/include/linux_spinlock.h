@@ -481,6 +481,7 @@ extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/linux_spinlock.h[marcel_inline]"
 #endif
+#depend "marcel_topology.h[marcel_inline]"
 /*
  *  bit-based spin_lock()
  *

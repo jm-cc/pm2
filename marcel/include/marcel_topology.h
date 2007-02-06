@@ -295,6 +295,13 @@ static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask)
 #endif
 }
 
+#section marcel_macros
+#define marcel_vpmask_foreach_begin(vp, mask) \
+	for (vp = 0; vp < marcel_nbvps() + MARCEL_NBMAXVPSUP; vp++) \
+		if (marcel_vpmask_vp_ismember(mask, vp)) {
+#define marcel_vpmask_foreach_end() \
+		}
+
 #section functions
 /** \brief Get the current VP number. Note that if preemption wasn't disabled,
  * this may change just after the function call. */

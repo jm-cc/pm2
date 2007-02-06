@@ -252,6 +252,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 }
 
 void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
+	unsigned vp;
 	marcel_entity_t *e = &b->sched;
 	ma_bubble_synthesize_stats(b);
 	ma_preempt_disable();
@@ -260,6 +261,13 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_holder_rawlock(&b->hold);
 	__marcel_bubble_spread(&e, 1, &l, 1, 0);
 	ma_holder_rawunlock(&b->hold);
+
+	/* resched existing threads */
+	marcel_vpmask_foreach_begin(vp,&l->vpset)
+		ma_lwp_t lwp = ma_vp_lwp[vp];
+		ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
+	marcel_vpmask_foreach_end()
+
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }

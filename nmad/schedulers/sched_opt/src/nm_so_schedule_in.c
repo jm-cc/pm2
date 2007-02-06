@@ -272,16 +272,19 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t tag = proto_id - 128;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
 
-  NMAD_SO_TRACE("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u\n", ptr, len, tag, seq);
+  NMAD_SO_TRACE("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u, status = %p\n", ptr, len, tag, seq, status);
 
   if(*status & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
 
-    if(len)
+    NMAD_SO_TRACE("We already have a waiting unpack for this packet\n");
+
+    if(len) {
       /* Copy data to its final destination */
       memcpy(p_so_gate->recv[tag][seq].unpack_here.data,
 	     ptr,
 	     tbx_min(len, p_so_gate->recv[tag][seq].unpack_here.len));
+    }
 
     p_so_gate->pending_unpacks--;
 
@@ -293,6 +296,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   } else if ((p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
 	     &&
 	     (p_so_gate->recv_seq_number[tag] == seq)) {
+
+    NMAD_SO_TRACE("We have a any_src waiting unpack for this packet\n");
 
     p_so_sched->any_src[tag].status = 0;
 
@@ -313,6 +318,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     /* Receiver process is not ready, so store the information in the
        recv array and keep the p_so_pw packet alive */
+
+    NMAD_SO_TRACE("Receiver process is not ready\n");
 
     p_so_gate->recv[tag][seq].pkt_here.data = ptr;
     p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
@@ -425,7 +432,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int err;
 
-  NMAD_SO_TRACE("Packet %p received completely (on track %d)!\n", p_so_pw, p_pw->p_trk->id);
+  NMAD_SO_TRACE("Packet %p received completely (on track %d, gate %d)!\n", p_so_pw, p_pw->p_trk->id, (int)p_gate->id);
 
   if(p_pw->p_trk->id == TRK_SMALL) {
     /* Track 0 */
@@ -485,7 +492,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     } else
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
 
-    NMAD_SO_TRACE("Large received (%d bytes) on drv %d, seq = %d\n", p_pw->length, drv_id, p_pw->seq);
+    NMAD_SO_TRACE("Large received (%lld bytes) on drv %d, seq = %d\n", p_pw->length, drv_id, p_pw->seq);
 
     p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
 

@@ -150,8 +150,11 @@ int MPI_Init(int *argc,
  * The following function may be used to initialize MPI, and
  * initialize the MPI thread environment, instead of MPI_Init.
  *
- * @param required level of thread support (integer)
- * @param provided level of thread support (integer)
+ * @param argc a pointer to the process argc.
+ * @param argv a pointer to the process argv.
+ * @param required level of thread support (integer).
+ * @param provided level of thread support (integer).
+ * @return The MPI status.
  */
 int MPI_Init_thread(int *argc,
                     char ***argv,

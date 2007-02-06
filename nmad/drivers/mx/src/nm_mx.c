@@ -108,7 +108,7 @@ struct nm_mx_adm_pkt_2 {
 /*@}*/
 
 /** @name Track id matching mask
- * Bits 39-46: track id
+ * Bits 39-46: track id (internally multiplexed in MX 1.2)
  */
 /*@{*/
 #define NM_MX_TRACK_ID_MATCHING_BITS 8
@@ -190,6 +190,21 @@ nm_mx_init		(struct nm_drv *p_drv) {
 
         mx_board_number_to_nic_id(0, &nic_id);
         mx_nic_id_to_hostname(nic_id, hostname);
+
+#if MX_API >= 0x301
+	{
+		/* Multiplex internal queues across tracks since we never match
+		 * among multiple tracks. This will reduce the length of the queues
+		 * and thus avoid long queue traversal caused by unrelated peers.
+		 */
+		mx_param_t param;
+		param.key = MX_PARAM_CONTEXT_ID;
+		param.val.context_id.bits = NM_MX_TRACK_ID_MATCHING_BITS;
+		param.val.context_id.shift = NM_MX_TRACK_ID_MATCHING_SHIFT;
+		ep_params = &param;
+		ep_params_count = 1;
+	}
+#endif
 
 	/* mx endpoint
 	 */

@@ -270,6 +270,8 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
 
         NM_TRACE_VAL("tcp connect/accept trk id", p_trk->id);
+        NM_TRACE_VAL("tcp connect/accept gate id", p_gate->id);
+        NM_TRACE_VAL("tcp connect/accept drv id", p_drv->id);
         NM_TRACE_VAL("tcp connect/accept new socket on fd", fd);
 
         /* private data				*/
@@ -280,9 +282,11 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
 
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_tcp_gate;
+                NM_TRACEF("drv_id %d, p_gate %p", p_drv->id, p_gate->p_gate_drv_array[p_drv->id]->info );
         }
 
         p_tcp_gate->fd[p_trk->id]	= fd;
+        NM_TRACE_PTR("tcp connect/accept p_tcp_gate", p_tcp_gate);
 
         /* update trk private data		*/
         n = p_drv->nb_gates;
@@ -372,6 +376,8 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         NM_LOG_IN();
         if (!p_pw->gate_priv) {
                 p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
+                NM_TRACEF("nm_tcpdg_outgoing_poll: filling gate_priv - p_pw = %p, p_gate = %p, p_gate->id = %d, gate_priv = %p",
+                          p_pw, p_pw->p_gate, p_pw->p_gate->id, p_pw->gate_priv);
         }
 
 	p_tcp_gate	= p_pw->gate_priv;
@@ -500,6 +506,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                 p_tcp_trk->next_entry	= i;
                 p_pw->p_gate		=
                         p_core->gate_array + p_tcp_trk->gate_map[i];
+                NM_TRACE_VAL("gateless request: active gate id ", p_pw->p_gate->id);
         }
 
         /* gate already selected or selective recv 		*/
@@ -609,10 +616,18 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         NM_LOG_IN();
         err	= nm_tcpdg_outgoing_poll(p_pw);
-        if (err < 0)
-                goto out_complete;
+        if (err < 0) {
+                if (err == -NM_EAGAIN) {
+                        goto out;
+                } else {
+                        goto out_complete;
+                }
+        }
 
+        NM_TRACEF("nm_tcpdg_send_iov: pw details --- gate_priv - p_pw = %p, p_gate = %p, p_gate->id = %d, gate_priv = %p",
+                  p_pw, p_pw->p_gate, p_pw->p_gate->id, p_pw->gate_priv);
 	p_tcp_gate	= p_pw->gate_priv;
+        NM_TRACE_PTR("p_tcp_gate", p_tcp_gate);
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
                 NM_TRACEF("setup vector iterator");
@@ -666,6 +681,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
 
                 NM_TRACE_VAL("tcp outgoing trk id", p_pw->p_trk->id);
+                NM_TRACE_VAL("tcp outgoing gate id", p_pw->p_gate->id);
                 NM_TRACE_VAL("tcp outgoing fd", p_tcp_gate->fd[p_pw->p_trk->id]);
                 NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
                 NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
@@ -727,6 +743,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 } while (ret);
         } else {
                 NM_TRACEF("tcp outgoing: sending header");
+                NM_TRACE_VAL("tcp header outgoing gate id", p_pw->p_gate->id);
         write_again:
                 ret	= write(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
                 NM_TRACE_VAL("tcp outgoing write status", ret);
@@ -754,8 +771,13 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                         p_tcp_pw->rem_length	= p_tcp_pw->h.length;
 
                         err	= nm_tcpdg_outgoing_poll(p_pw);
-                        if (err < 0)
-                                goto out_complete;
+                        if (err < 0) {
+                                if (err == -NM_EAGAIN) {
+                                        goto out;
+                                } else {
+                                        goto out_complete;
+                                }
+                        }
 
                         goto write_body;
                 }
@@ -774,6 +796,10 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_pw->drv_priv	= NULL;
         }
 
+        if (p_pw->gate_priv) {
+                p_pw->gate_priv = NULL;
+        }
+
         goto out;
 }
 
@@ -789,10 +815,18 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         NM_LOG_IN();
         err	= nm_tcpdg_incoming_poll(p_pw);
-        if (err < 0)
-                goto out_complete;
+        if (err < 0) {
+                if (err == -NM_EAGAIN) {
+                        goto out;
+                } else {
+                        goto out_complete;
+                }
+        }
 
         p_tcp_gate	= p_pw->gate_priv;
+        NM_TRACE_PTR("p_tcp_gate", p_tcp_gate);
+        NM_TRACE_PTR("p_gate", p_pw->p_gate);
+        NM_TRACEF("drv_id %d p_tcp_gate(2) %p", p_pw->p_drv->id, p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info);
 
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
@@ -830,6 +864,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
         fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+        NM_TRACE_VAL("tcp incoming - state value", p_tcp_pw->state);
 
         if (p_tcp_pw->state) {
                 struct nm_iovec_iter	*p_vi;
@@ -847,6 +882,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
 
                 NM_TRACE_VAL("tcp incoming trk id", p_pw->p_trk->id);
+                NM_TRACE_VAL("tcp incoming gate id", p_pw->p_gate->id);
                 NM_TRACE_VAL("tcp incoming fd", p_tcp_gate->fd[p_pw->p_trk->id]);
                 NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
                 NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
@@ -885,6 +921,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 }
 
                 p_tcp_pw->rem_length	-= ret;
+                NM_TRACE_VAL("tcp incoming rem length", p_tcp_pw->rem_length);
 
                 if (!p_tcp_pw->rem_length) {
                         err	= NM_ESUCCESS;
@@ -894,13 +931,17 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
                 p_cur->iov_base		+= ret;
                 p_cur->iov_len		-= ret;
+                NM_TRACE_VAL("tcp incoming iov_len", p_cur->iov_len);
 
-                /* still something to send for this vector entry?
+                /* still something to receive for this vector entry?
                  */
                 if (p_cur->iov_len) {
+                        NM_TRACEF("tcp incoming iov: next time...");
                         err	= -NM_EAGAIN;
                         goto out;
                 }
+
+                NM_TRACEF("tcp incoming iov: next vector entry");
 
                 /* restore vector entry
                  */
@@ -912,11 +953,15 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_vi->v_cur_size--;
 
                 if (!p_vi->v_cur_size) {
+                        NM_TRACEF("tcp incoming iov: no more vector entry");
+
                         if (p_tcp_pw->rem_length) {
+                                NM_TRACEF("tcp incoming iov: truncating message");
                                 /* message truncated
                                  */
                                 err	= -NM_EINVAL;
                         } else {
+                                NM_TRACEF("tcp incoming iov: receive complete");
                                 err	= NM_ESUCCESS;
                         }
 
@@ -926,16 +971,24 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_cur++;
                 p_vi->cur_copy = *p_cur;
 
+                NM_TRACEF("tcp incoming iov: polling for next vector entry");
                 err	= nm_tcpdg_incoming_poll(p_pw);
-                if (err < 0)
-                        goto out_complete;
+                if (err < 0) {
+                        if (err == -NM_EAGAIN) {
+                                goto out;
+                        } else {
+                                goto out_complete;
+                        }
+                }
 
+                NM_TRACEF("tcp incoming iov: looping on next vector entry");
                 goto read_body_again;
         } else {
                 NM_TRACEF("tcp incoming: receiving header");
+                NM_TRACE_VAL("tcp header incoming gate id", p_pw->p_gate->id);
         read_header_again:
                 ret	= read(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
-                NM_TRACE_VAL("tcp incoming read status", ret);
+                NM_TRACE_VAL("tcp header incoming read status", ret);
 
                 if (ret < 0) {
                         if (errno == EINTR)
@@ -954,16 +1007,24 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
                 p_tcp_pw->ptr		+= ret;
                 p_tcp_pw->rem_length	-= ret;
+                NM_TRACE_VAL("tcp header incoming - header length remaining", p_tcp_pw->rem_length);
 
                 if (!p_tcp_pw->rem_length) {
+                        NM_TRACEF("tcp header incoming - header receive complete, switching to state 1");
                         p_tcp_pw->state	= 1;
                         p_tcp_pw->rem_length	= p_tcp_pw->h.length;
 
-                        NM_TRACE_VAL("tcp incoming pkt length", p_tcp_pw->rem_length);
+                        NM_TRACE_VAL("tcp header incoming pkt length", p_tcp_pw->rem_length);
                         err	= nm_tcpdg_incoming_poll(p_pw);
-                        if (err < 0)
-                                goto out_complete;
+                        if (err < 0) {
+                                if (err == -NM_EAGAIN) {
+                                        goto out;
+                                } else {
+                                        goto out_complete;
+                                }
+                        }
 
+                        NM_TRACEF("tcp header incoming - going to read body");
                         goto read_body;
                 }
         }
@@ -979,6 +1040,10 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         if (p_pw->drv_priv) {
                 TBX_FREE(p_pw->drv_priv);
                 p_pw->drv_priv	= NULL;
+        }
+
+        if (p_pw->gate_priv) {
+                p_pw->gate_priv = NULL;
         }
 
         goto out;

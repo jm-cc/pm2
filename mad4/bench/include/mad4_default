@@ -68,6 +68,12 @@ run_bench()
 	# wait for NFS to propagate the new compiled program
 	sleep 10
 
+        if [ "$net" == "mx" ] ; then
+            export MX_RCACHE=1
+            export MX_STATS=1
+            export PM2_EXPORT=MX_RCACHE:MX_STATS
+        fi
+
         ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
 }
 

@@ -17,7 +17,39 @@ static p_mad_madeleine_t       madeleine	= NULL;
 static int                     is_server	= -1;
 static struct nm_so_interface *sr_if;
 static nm_so_pack_interface    pack_if;
-static uint8_t	 gate_id	=    0;
+static uint8_t	               gate_id    	=    0;
+static p_mad_session_t         session          = NULL;
+
+/*
+ * Returns process rank
+ */
+int get_rank() {
+  return session->process_rank;
+}
+
+/*
+ * Returns the number of nodes
+ */
+int get_size() {
+  return tbx_slist_get_length(madeleine->dir->process_slist);
+}
+
+/*
+ * Returns the gate id of the process dest
+ */
+int get_gate_out_id(int dest) {
+  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+  p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, dest);
+  p_mad_nmad_connection_specific_t cs = connection->specific;
+  return cs->gate_id;
+}
+
+int get_gate_in_id(int dest) {
+  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+  p_mad_connection_t connection = tbx_darray_get(channel->in_connection_darray, dest);
+  p_mad_nmad_connection_specific_t cs = connection->specific;
+  return cs->gate_id;
+}
 
 /* initialize everything
  *
@@ -26,7 +58,6 @@ static uint8_t	 gate_id	=    0;
 void
 init(int	  argc,
      char	**argv) {
-  p_mad_session_t         session    = NULL;
   struct nm_core         *p_core     = NULL;
 
   /*
@@ -105,6 +136,38 @@ static char	*l_url	= NULL;
 static uint8_t	 drv_id		=    0;
 static uint8_t	 gate_id	=    0;
 static int	 is_server;
+
+/*
+ * Returns process rank
+ */
+int get_rank() {
+  fprintf(stderr, "not implemented\n");
+  exit(EXIT_FAILURE);
+}
+
+/*
+ * Returns the number of nodes
+ */
+int get_size() {
+  fprintf(stderr, "not implemented\n");
+  exit(EXIT_FAILURE);
+}
+
+/*
+ * Returns the gate id of the process dest
+ */
+int get_gate_in_id(int dest) {
+  fprintf(stderr, "not implemented\n");
+  exit(EXIT_FAILURE);
+}
+
+/*
+ * Returns the gate id of the process dest
+ */
+int get_gate_out_id(int dest) {
+  fprintf(stderr, "not implemented\n");
+  exit(EXIT_FAILURE);
+}
 
 /* initialize everything
  *

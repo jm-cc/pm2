@@ -29,7 +29,7 @@
 gint destroy_phase = FALSE;
 
 // Customization
-gint tips_enabled = FALSE;
+gint tips_enabled = TRUE;
 gint skip_intro = FALSE;
 gint with_sound = FALSE;
 gint show_all_modules = FALSE;

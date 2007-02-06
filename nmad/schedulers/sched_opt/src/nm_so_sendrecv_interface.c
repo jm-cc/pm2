@@ -315,7 +315,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
-    NMAD_SO_TRACE("IRECV: seq = %d, request = %p\n", seq, p_request);
+    NMAD_SO_TRACE("IRECV: tag = %d, seq = %d, request = %p\n", tag, seq, p_req);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -397,6 +397,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
 
+  NMAD_SO_TRACE("request %p completed\n", p_request);
   return NM_ESUCCESS;
 }
 

@@ -934,6 +934,7 @@ need_resched_atomic:
 			PROF_EVENT(sched_thread_blocked);
 			go_to_sleep_traced = 1;
 		}
+#ifdef MA__LWPS
 		/* Let people know as soon as now that for now the next thread
 		 * will be idle, hence letting higher priority thread wake-ups
 		 * ask for reschedule.
@@ -942,6 +943,7 @@ need_resched_atomic:
 		 */
 		__ma_get_lwp_var(current_thread) = __ma_get_lwp_var(idle_task);
 		ma_smp_mb();
+#endif
 		/* Now we said that, check again that nobody woke us in the
 		 * meanwhile. */
 		if (!prev->sched.state)

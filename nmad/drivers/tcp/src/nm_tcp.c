@@ -643,8 +643,13 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         SAMPLE(po_send);
         err	= nm_tcp_outgoing_poll(p_pw);
-        if (err < 0)
-                goto out_complete;
+        if (err < 0) {
+                if (err == -NM_EAGAIN) {
+                        goto out;
+                } else {
+                        goto out_complete;
+                }
+        }
 
 	p_tcp_gate	= p_pw->gate_priv;
         p_tcp_pw	= p_pw->drv_priv;
@@ -751,6 +756,11 @@ nm_tcp_send_iov	(struct nm_pkt_wrap *p_pw) {
                 p_pw->drv_priv	= NULL;
         }
 
+        if (p_pw->gate_priv) {
+                p_pw->gate_priv = NULL;
+        }
+
+
         goto out;
 }
 
@@ -767,8 +777,13 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         SAMPLE(po_recv);
         err	= nm_tcp_incoming_poll(p_pw);
-        if (err < 0)
-                goto out_complete;
+        if (err < 0) {
+                if (err == -NM_EAGAIN) {
+                        goto out;
+                } else {
+                        goto out_complete;
+                }
+        }
 
         p_tcp_gate	= p_pw->gate_priv;
 
@@ -874,6 +889,10 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
         if (p_pw->drv_priv) {
                 TBX_FREE(p_pw->drv_priv);
                 p_pw->drv_priv	= NULL;
+        }
+
+        if (p_pw->gate_priv) {
+                p_pw->gate_priv = NULL;
         }
 
         goto out;

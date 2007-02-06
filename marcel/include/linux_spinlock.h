@@ -62,6 +62,8 @@ typedef struct {
 	void *bt[TBX_BACKTRACE_DEPTH];
 	size_t btsize;
 } ma_spinlock_t;
+#define MA_SPINLOCK_MAGIC  0x1D244B3C
+#define MA_SPIN_LOCK_UNLOCKED { .magic=MA_SPINLOCK_MAGIC, .lock=0, .babble=10, .module=__FILE__ , .owner=NULL , .oline=0}
 #else /* MARCEL_DEBUG_SPINLOCK */
 /*
  * gcc versions before ~2.95 have a nasty bug with empty initializers.
@@ -82,9 +84,6 @@ typedef struct {
 /* #define SPIN_ABORT() */
 #define SPIN_ABORT() MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR) 
 	
-#define MA_SPINLOCK_MAGIC  0x1D244B3C
-#define MA_SPIN_LOCK_UNLOCKED { .magic=MA_SPINLOCK_MAGIC, .lock=0, .babble=10, .module=__FILE__ , .owner=NULL , .oline=0}
-
 #define ma_spin_lock_init(x) \
         do { \
                 (x)->magic = MA_SPINLOCK_MAGIC; \

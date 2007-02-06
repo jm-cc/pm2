@@ -28,58 +28,79 @@
 
 #include "nm_tcpdg_private.h"
 
+/** TCP/datagram specific driver data.
+ */
 struct nm_tcpdg_drv {
-        /* server socket	*/
+        /** server socket	*/
         int	server_fd;
 };
 
+/** TCP/datagram specific track data.
+ */
 struct nm_tcpdg_trk {
 
-        /* number of poll array entries to process until next poll	*/
+        /** Number of pending poll array entries to process before
+            calling poll again. */
         int nb_incoming;
 
-        /* next poll array entry to process				*/
+        /** Next pending poll array entry to process.
+         */
         uint8_t next_entry;
 
-        /* array for polling multiple descriptors			*/
+        /** Array for polling multiple descriptors.
+         */
         struct pollfd	*poll_array;
 
-        /* poll array index to gate id reverse mapping			*/
+        /** Poll array index to gate id reverse mapping. Allows to
+         *  find the source of a packet when performing gateless
+         *  requests.
+         */
         uint8_t		*gate_map;
 };
 
+/** TCP/datagram specific gate data.
+ */
 struct nm_tcpdg_gate {
+        /** Array of sockets, one socket per track.
+         */
         int	fd[255];
 };
 
+/** TCP/datagram specific pkt wrapper data.
+ */
 struct nm_tcpdg_pkt_wrap {
-        /* state
+        /** Reception state-machine state.
            0: reading the message length
            1: reading the message body
          */
         uint8_t			state;
 
-        /* buffer ptr
-           current location in sending the header
+        /** Buffer ptr.
+           Current location in sending the header.
          */
         uint8_t			*ptr;
 
-        /* remaining length
-           current remaining length in sending either the header
-           or the body (according to the state)
+        /** Remaining Length.
+           Current remaining length in sending either the header
+           or the body (according to the state).
          */
         uint64_t		 rem_length;
 
-        /* message header
+        /** Message header storage.
          */
         struct {
 
                 uint64_t	length;
         } h;
 
+        /* Message body iovec iterator.
+         */
         struct nm_iovec_iter	vi;
 };
 
+/** Provide status messages for herrno errors.
+    @return Status message, or NULL if error is unknown.
+ */
 static
 char *
 nm_tcpdg_h_errno_to_str(void) {
@@ -106,6 +127,11 @@ nm_tcpdg_h_errno_to_str(void) {
         return msg;
 }
 
+/** Encapsulate the creation of bound server socket.
+ *  @param address the address to bind the socket to.
+ *  @param port the TCP port to bind the socket to.
+ *  @return The bound socket.
+ */
 static
 int
 nm_tcpdg_socket_create(struct sockaddr_in	*address,
@@ -129,6 +155,12 @@ nm_tcpdg_socket_create(struct sockaddr_in	*address,
         return desc;
 }
 
+/** Encapsulate the filling of an address struct.
+ *  @note The function uses gethostbyname for resolving the hostname.
+ *  @param address the address struct to fill.
+ *  @param port the TCP port.
+ *  @param host_name the machine hostname.
+ */
 static
 void
 nm_tcpdg_address_fill(struct sockaddr_in	*address,
@@ -152,6 +184,10 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
         memset(address->sin_zero, 0, 8);
 }
 
+/** Initialize the TCP driver with datagram emulation.
+ *  @param p_drv the driver.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_init		(struct nm_drv *p_drv) {
@@ -185,6 +221,10 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
         return err;
 }
 
+/** Cleanup the TCP driver with datagram emulation.
+ *  @param p_drv the driver.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_exit		(struct nm_drv *p_drv) {
@@ -201,6 +241,10 @@ nm_tcpdg_exit		(struct nm_drv *p_drv) {
         return err;
 }
 
+/** Open a new track.
+ *  @param p_trk_rq the request details for opening the track.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_open_trk		(struct nm_trk_rq	*p_trk_rq) {
@@ -232,6 +276,10 @@ nm_tcpdg_open_trk		(struct nm_trk_rq	*p_trk_rq) {
         return err;
 }
 
+/** Close a track.
+ *  @param p_trk the track.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_close_trk	(struct nm_trk	*p_trk) {
@@ -248,6 +296,11 @@ nm_tcpdg_close_trk	(struct nm_trk	*p_trk) {
         return err;
 }
 
+/** Implement the code common to connect and accept operations.
+ *  @param p_crq the connection request.
+ *  @param fd the socket of the connection.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
@@ -313,6 +366,10 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         return err;
 }
 
+/** Open an outgoing connection.
+ *  @param p_crq the connection request.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
@@ -335,6 +392,10 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
+/** Open an incoming connection.
+ *  @param p_crq the connection request.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
@@ -354,6 +415,11 @@ nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
+/** Closes a connection.
+ *  @warning The function does nothing for now.
+ *  @param p_crq the connection request.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
@@ -364,7 +430,10 @@ nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
         return err;
 }
 
-
+/** Check if a pkt wrapper send request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
@@ -428,6 +497,10 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
+/** Check if a pkt wrapper receive request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
 static
 int
 nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
@@ -604,7 +677,8 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
-/* used for post and poll */
+/** Post a new send request or try to make a pending request progress.
+ */
 static
 int
 nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
@@ -803,7 +877,8 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
         goto out;
 }
 
-/* used for post and poll */
+/** Post a new receive request or try to make a pending request progress.
+ */
 static
 int
 nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
@@ -1049,6 +1124,10 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         goto out;
 }
 
+/** Load the TCP driver with datagram emulation.
+ *  @param p_ops the driver operation structure to fill.
+ *  @return the NM status code.
+ */
 int
 nm_tcpdg_load(struct nm_drv_ops *p_ops) {
         p_ops->init		= nm_tcpdg_init;

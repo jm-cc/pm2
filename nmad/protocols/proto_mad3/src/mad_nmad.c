@@ -710,6 +710,10 @@ mad_nmad_accept(p_mad_connection_t   in,
         ds	= in->channel->adapter->driver->specific;
 
         if (cs->master_cnx) {
+                NM_TRACEF("accept: cnx_id = %d, remote node = %s, gate_id = %d",
+                          in->remote_rank,
+                          ai->dir_node->name,
+                          cs->gate_id);
                 err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept returned err = %d\n", err);
@@ -744,6 +748,10 @@ mad_nmad_connect(p_mad_connection_t   out,
         r_n	= ai->dir_node;
 
         if (cs->master_cnx) {
+                NM_TRACEF("connect: cnx_id = %d, remote node = %s, gate_id = %d",
+                          out->remote_rank,
+                          ai->dir_node->name,
+                          cs->gate_id);
                 err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id,
                                            r_n->name, r_a->parameter);
                 if (err != NM_ESUCCESS) {

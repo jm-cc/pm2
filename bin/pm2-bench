@@ -55,13 +55,13 @@ to_be_benched() # module
 compile()
 {
     echo "Compiling program $prog..."
-    cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor
+    #cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor
     cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor
 }
 
 clean()
 {
-    ${PM2_ROOT}/bin/pm2-clean $flavor
+    #${PM2_ROOT}/bin/pm2-clean $flavor
     ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
 }
 
@@ -86,8 +86,8 @@ do_the_bench()
     [ `cat $file_status` -eq 0 ] || pm2bench_error "Execution failed"
 
     # Nettoyage
-    (clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2bench_error "Cleaning failed"
+    #(clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    #[ `cat $file_status` -eq 0 ] || pm2bench_error "Cleaning failed"
 
     # Finalisation
     (finalize_bench $_iter) 2>&1 | sed -e 's/^/..../'

@@ -144,10 +144,12 @@ leo_help(void)
   DISP("");
   __leo_option_help("-d", "",
 		    "Open session processes in gdb           (implies  -x)");
-  __leo_option_help("-vg", "",
-		    "Open session processes in valgrind      (implies  -x)");
   __leo_option_help("[--d]", "",
 		    "Do not open session processes in gdb");
+  __leo_option_help("", "-numactl",
+		    "Open session processes with numactl");
+  __leo_option_help("", "[--numactl]",
+		    "Do not open session processes with numactl");
   __leo_option_help("-vg", "",
 		    "Open session processes in valgrind      (implies  -x and -p)");
   __leo_option_help("[--vg]", "",

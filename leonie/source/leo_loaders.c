@@ -175,7 +175,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	if (settings->numactl_mode)
 	  {
-	    tbx_arguments_append_cstring(args, "-numactl");
+	    tbx_arguments_append_cstring_ext(args, "--numactl", ' ', settings->numactl_value);
 	  }
 
 	if (settings->xterm_mode)

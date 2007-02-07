@@ -183,13 +183,10 @@ process_command_line(int    argc,
 	    {
 	      settings->valgrind_mode = tbx_false;
 	    }
-	  else if (tbx_argit_arg_equals("-numactl"))
+	  else if (tbx_argit_vopt_equals("--numactl"))
 	    {
-	      settings->numactl_mode = tbx_true;
-	    }
-	  else if (tbx_argit_arg_equals("--numactl"))
-	    {
-	      settings->numactl_mode = tbx_false;
+              settings->numactl_mode = tbx_true;
+              settings->numactl_value = tbx_argit_vopt_value_cstr();
 	    }
 	  else if (tbx_argit_arg_equals("--d"))
 	    {

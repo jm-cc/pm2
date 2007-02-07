@@ -487,7 +487,7 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #endif
 
 #section marcel_macros
-#define ma_need_resched() (ma_topo_vpdata(__ma_get_lwp_var(vp_level), need_resched))}
+#define ma_need_resched() (ma_topo_vpdata(__ma_get_lwp_var(vp_level), need_resched))
 
 #section functions
 #depend "tbx_compiler.h"

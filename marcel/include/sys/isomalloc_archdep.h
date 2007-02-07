@@ -22,14 +22,18 @@
 
 #define ISOADDR_PAGES                 (128*1024)
 /* Attention : ASM_THREAD_SLOT_SIZE redéfini pour certaines archis */
-/* il doit être une puissance de deux, et au moins deux fois plus grand que
- * PTHREAD_STACK_MIN */
+/* Warning: ASM_THREAD_SLOT_SIZE must be a power of two, and be at least twice
+ * as much as PTHREAD_STACK_MIN */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisÃ©e
    dans un source assembleur */
-#ifdef MA__LIBPTHREAD
-#define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 Mo */
+#if defined(X86_64_ARCH) || defined(IA64_ARCH) || defined(ALPHA_ARCH)
+  #define ASM_THREAD_SLOT_SIZE          (0x1000000) /* 16 MB */
 #else
-#define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
+  #ifdef MA__LIBPTHREAD
+    #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+  #else
+    #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
+  #endif
 #endif
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
 #define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
@@ -77,9 +81,6 @@ extern int __zero_fd;
 #    endif
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(IA64_ARCH)
-#    undef ASM_THREAD_SLOT_SIZE
-     /* 0x30000 nÃ©cessaire pour pthread_create */
-#    define ASM_THREAD_SLOT_SIZE   (0x80000) /* 512 Ko */
 #    define ISOADDR_AREA_TOP       0x10000000000
 #    define MAIN_STACK_BOT         0x6000000000000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)

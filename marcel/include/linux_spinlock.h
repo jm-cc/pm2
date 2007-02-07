@@ -17,6 +17,7 @@
 #section common
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
+#depend "asm/marcel_compareexchange.h[macros]"
 /*
  * similar to:
  * include/linux/spinlock.h - generic locking declarations

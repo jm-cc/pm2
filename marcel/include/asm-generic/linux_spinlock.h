@@ -16,6 +16,7 @@
 
 #section common
 #include <unistd.h>
+#depend "asm/marcel_compareexchange.h[macros]"
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #depend "asm/marcel_testandset.h[macros]"
 #ifdef MA_HAVE_TESTANDSET

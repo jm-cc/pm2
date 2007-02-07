@@ -17,5 +17,6 @@
 #section common
 #depend "asm-generic/linux_spinlock.h[]"
 #section types
+#section macros
 #section marcel_macros
 #section marcel_inline

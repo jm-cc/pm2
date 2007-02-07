@@ -33,6 +33,7 @@
 
 #section macros
 #define MA_HAVE_RWLOCK 1
+#define MA_SPIN_LOCK_UNLOCKED			{ 0 }
 
 
 #section types
@@ -44,7 +45,6 @@ typedef struct {
 
 #section marcel_macros
 
-#define MA_SPIN_LOCK_UNLOCKED			{ 0 }
 #define ma_spin_lock_init(x)			((x)->lock = 0)
 
 

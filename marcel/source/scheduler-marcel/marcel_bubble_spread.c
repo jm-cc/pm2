@@ -48,6 +48,8 @@ static int load_compar(const void *_e1, const void *_e2) {
 	long l2 = entity_load(e2);
 	return l2 - l1; /* decreasing order */
 }
+/* spread entities e on topology levels l */
+/* e has ne items, l has nl items */
 static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl, int recurse) {
 	/* TODO: give imbalance in recursion ? */
 	/* TODO: XXX: lock holders! */
@@ -162,8 +164,9 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	}
 	for (i=0; i<ne; i++) {
 		debug("entity %p(%ld)\n",e[i],entity_load(e[i]));
-		/* when entities' load is 0, just leave them here */
-		if (entity_load(e[i]) == 0) {
+		/* when entities' load is very small, just leave them here */
+		/* TODO: tune */
+		if (entity_load(e[i]) < per_item_load/30) {
 			int state;
 			ma_runqueue_t *rq;
 			debug("0, leave it here\n");

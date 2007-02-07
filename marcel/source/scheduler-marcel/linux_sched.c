@@ -299,7 +299,7 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 //repeat_lock_task:
 	old_state = p->sched.state;
 	if (old_state & state) {
-		/* on s'occupe de la réveiller */
+		/* on s'occupe de la rï¿½eiller */
 		PROF_EVENT2(sched_thread_wake, p, old_state);
 		p->sched.state = MA_TASK_RUNNING;
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
@@ -322,7 +322,7 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 				//ma_deactivate_task(p,h);
 				//ma_activate_task(p,&ma_lwp_vprq(LWP_SELF)->hold);
 
-				//réalisé par ma_schedule()
+				//rï¿½lisï¿½par ma_schedule()
 				//ma_set_task_lwp(p, LWP_SELF);
 
 				ma_task_holder_unlock_softirq(h);
@@ -338,8 +338,8 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 //				p->activated = -1;
 			}
 
-			/* Attention ici: h peut être une bulle, auquel cas
-			 * activate_task peut lâcher la bulle pour verrouiller
+			/* Attention ici: h peut ï¿½re une bulle, auquel cas
+			 * activate_task peut lï¿½her la bulle pour verrouiller
 			 * une runqueue */
 			ma_activate_task(p, h);
 			/*
@@ -443,7 +443,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 //	p->prio = effective_prio(p);
 //	ma_set_task_lwp(p, LWP_SELF);
 
-	/* il est possible de démarrer sur une autre rq que celle de SELF,
+	/* il est possible de dï¿½arrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
 //	if (tbx_unlikely(!SELF_GETMEM(sched).internal.entity.array))
 	if (MA_TASK_IS_BLOCKED(p))
@@ -460,13 +460,13 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 //		rq->hold.running++;
 //	}
 	ma_holder_unlock_softirq(h);
-	// on donne la main aussitôt, bien souvent le meilleur choix
+	// on donne la main aussitï¿½, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
 	rq = ma_rq_holder(h);
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()
 	    && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF))) {
-		/* XXX: on pourrait être préempté entre-temps... */
+		/* XXX: on pourrait ï¿½re prï¿½mptï¿½entre-temps... */
 		PROF_EVENT(exec_woken_up_created_thread);
 		ma_schedule();
 	} else {
@@ -483,7 +483,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	/* attention ici. Pour l'instant on n'a pas besoin de requeuer dans
 	 * une bulle */
 	/* quand on le voudra, il faudra faire attention que dequeue_task peut
-	 * vouloir déverouiller la bulle pour pouvoir verrouiller la runqueue */
+	 * vouloir dï¿½erouiller la bulle pour pouvoir verrouiller la runqueue */
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
 	PROF_EVENT2(sched_setprio,t,prio);
 	h = ma_task_holder_lock_softirq(t);
@@ -513,7 +513,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
  */
 static void finish_task_switch(marcel_task_t *prev)
 {
-	/* note: pas de softirq ici, on est déjà en mode interruption */
+	/* note: pas de softirq ici, on est dï¿½ï¿½en mode interruption */
 	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
 	unsigned long prev_task_flags;
 #ifdef MA__BUBBLES
@@ -700,7 +700,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	//if (rcu_pending(cpu))
 	//      rcu_check_callbacks(cpu, user_ticks);
 
-// TODO Pour l'instant, on n'a pas de notion de tick système.
+// TODO Pour l'instant, on n'a pas de notion de tick systï¿½e.
 #define sys_ticks user_ticks
 	if (ma_hardirq_count()) {
 		lwpstat->irq += sys_ticks;
@@ -768,7 +768,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	//				rq->best_expired_prio = p->static_prio;
 			//}
 		}
-		// attention: rq->lock ne doit pas être pris pour pouvoir
+		// attention: rq->lock ne doit pas ï¿½re pris pour pouvoir
 		// verrouiller la bulle.
 #ifdef MARCEL_BUBBLE_EXPLODE
 		{
@@ -911,8 +911,8 @@ need_resched_atomic:
 		prev_as_prio = prev->sched.internal.entity.prio;
 
 	if (prev->sched.state &&
-			/* garde-fou pour éviter de s'endormir
-			 * par simple préemption */
+			/* garde-fou pour ï¿½iter de s'endormir
+			 * par simple prï¿½mption */
 			((prev->sched.state == MA_TASK_DEAD) ||
 			!(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
 		//switch_count = &prev->nvcsw;
@@ -999,7 +999,7 @@ restart:
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
 #ifdef PM2_DEV
-#warning TODO: demander à l application de rebalancer
+#warning TODO: demander ï¿½l application de rebalancer
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MARCEL_BUBBLE_STEAL
@@ -1086,7 +1086,7 @@ restart:
 	
 #ifdef MA__BUBBLES
 	if (!(nextent = ma_bubble_sched(nextent, prevh, rq, &nexth, idx)))
-		/* ma_bubble_sched aura libéré prevrq */
+		/* ma_bubble_sched aura libï¿½ï¿½prevrq */
 		goto need_resched_atomic;
 #endif
 	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
@@ -1118,12 +1118,12 @@ switch_tasks:
 
 	if (go_to_sleep && ((prev->sched.state == MA_TASK_DEAD) ||
 				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
-		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
+		/* on va dormir, il _faut_ donner la main ï¿½quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
 
 	tbx_prefetch(next);
 	ma_clear_tsk_need_togo(prev);
-//Pour quand on voudra ce mécanisme...
+//Pour quand on voudra ce mï¿½anisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
 
 //	prev->sleep_avg -= run_time;
@@ -1252,7 +1252,7 @@ need_resched:
                 goto need_resched;
 }
 
-// Effectue un changement de contexte + éventuellement exécute des
+// Effectue un changement de contexte + ï¿½entuellement exï¿½ute des
 // fonctions de scrutation...
 
 DEF_MARCEL_POSIX(int, yield, (void), (),
@@ -1266,24 +1266,24 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
   LOG_OUT();
   return 0;
 })
-/* La définition n'est pas toujours dans pthread.h */
+/* La dï¿½inition n'est pas toujours dans pthread.h */
 extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(int, yield, (void), ())
 
-// Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
+// Modifie le 'vpmask' du thread courant. Le cas ï¿½hï¿½nt, il faut donc
 // retirer le thread de la file et le replacer dans la file
-// adéquate...
+// adï¿½uate...
 // IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
-// pour se déplacer sur le LWP courant (cf terminaison des threads)
+// pour se dï¿½lacer sur le LWP courant (cf terminaison des threads)
 void marcel_change_vpmask(marcel_vpmask_t *mask)
 {
 #ifdef MA__LWPS
 	ma_holder_t *old_h;
 	ma_runqueue_t *new_rq;
 	LOG_IN();
-	/* empêcher ma_schedule() */
+	/* empï¿½her ma_schedule() */
 	ma_preempt_disable();
-	/* empêcher même scheduler_tick() */
+	/* empï¿½her mï¿½e scheduler_tick() */
 	ma_local_bh_disable();
 	old_h=ma_this_holder();
 	new_rq=marcel_sched_vpmask_init_rq(mask);
@@ -1358,7 +1358,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	ma_runqueue_t *rq;
 #endif
 	LOG_IN();
-	/* en mono, rien par lwp, tout est initialisé dans sched_init */
+	/* en mono, rien par lwp, tout est initialisï¿½dans sched_init */
 #ifdef MA__LWPS
 	rq = ma_lwp_rq(lwp);
 	snprintf(name,sizeof(name),"lwp%d",num);
@@ -1405,7 +1405,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 {
 	ma_holder_t *h;
 	marcel_task_t *p = ma_per_lwp(run_task,lwp);
-	/* Cette tâche est en train d'être exécutée */
+	/* Cette tï¿½he est en train d'ï¿½re exï¿½utï¿½ */
 	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
 	ma_task_holder_unlock_softirq(h);
@@ -1413,7 +1413,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
 				  linux_sched_lwp_init, "Initialisation des runqueue",
-				  linux_sched_lwp_start, "Activation de la tâche courante");
+				  linux_sched_lwp_start, "Activation de la tï¿½he courante");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 

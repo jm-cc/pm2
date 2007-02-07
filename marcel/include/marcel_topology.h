@@ -320,7 +320,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #section marcel_structures
 
 #ifdef PM2_DEV
-/*  #warning il ne faudrait pas dépendre d un scheduler particulier */
+/*  #warning il ne faudrait pas dï¿½endre d un scheduler particulier */
 #endif
 #depend "scheduler-marcel/linux_runqueues.h[marcel_structures]"
 #depend "scheduler-marcel/linux_runqueues.h[types]"
@@ -488,6 +488,8 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 
 #section marcel_macros
 #define ma_need_resched() (ma_topo_vpdata(__ma_get_lwp_var(vp_level), need_resched))
+}
+#define ma_need_resched() (*(ma_need_resched_location()))
 
 #section functions
 #depend "tbx_compiler.h"

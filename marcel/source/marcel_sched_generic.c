@@ -107,7 +107,9 @@ DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
 #endif
 })
 
-DEF_C(int,sleep,(unsigned long sec),(sec));
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_sleep, sleep, GLIBC_2_0);
+#endif
 DEF___C(int,sleep,(unsigned long sec),(sec));
 
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)

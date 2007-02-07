@@ -115,7 +115,6 @@ int prefix_mutex_destroy(prefix_mutex_t * mutex)
      /* mutex_lock */
      /**************/
 PRINT_PTHREAD([[dnl
-DEF_LIBPTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 DEF___LIBPTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 ]])
 
@@ -180,6 +179,11 @@ int prefix_mutex_lock(prefix_mutex_t * mutex)
                 LOG_RETURN(0);
 }
 ]], [[PMARCEL LPT]])
+
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, lpt_mutex_lock,
+		pthread_mutex_lock, GLIBC_2_0);
+#endif
 
      /*****************/
      /* mutex_trylock */
@@ -373,7 +377,6 @@ versioned_symbol(libpthread, lpt_mutex_timedlock,
      /* mutex_unlock */
      /****************/
 PRINT_PTHREAD([[dnl
-DEF_LIBPTHREAD(int, mutex_unlock, (pthread_mutex_t * mutex), (mutex))
 DEF___LIBPTHREAD(int, mutex_unlock, (pthread_mutex_t * mutex), (mutex))
 ]])
 
@@ -435,6 +438,11 @@ int prefix_mutex_unlock(prefix_mutex_t * mutex)
   return prefix_mutex_unlock_usercnt (mutex, 1);
 }
 ]], [[PMARCEL LPT]])
+
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, lpt_mutex_unlock,
+		pthread_mutex_unlock, GLIBC_2_0);
+#endif
 
      /******************/
      /* mutexattr_init */

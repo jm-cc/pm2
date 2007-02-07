@@ -133,7 +133,10 @@ DEF_MARCEL_POSIX(int *, __errno_location,(void),(),
 #endif
 	return res;
 })
-DEF_C(int *, __errno_location,(void),());
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel___errno_location,
+		__errno_location, GLIBC_2_0);
+#endif
 DEF___C(int *, __errno_location,(void),());
 
 #undef h_errno

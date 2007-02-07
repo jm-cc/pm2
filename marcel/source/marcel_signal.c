@@ -89,7 +89,9 @@ DEF_MARCEL_POSIX(unsigned int, alarm, (unsigned int nb_sec), (nb_sec),
 	LOG_RETURN(ret);
 })
 
-DEF_C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_alarm, alarm, GLIBC_2_0);
+#endif
 DEF___C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
 
 
@@ -1161,7 +1163,9 @@ void *lpt___sysv_signal(int sig, void * handler)
 	return oact.marcel_sa_handler;
 }
 
-DEF_C(void *,signal,(int sig, void * handler),(sig,handler))
+#ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel_signal, signal, GLIBC_2_0);
+#endif
 DEF___C(void *,signal,(int sig, void * handler),(sig,handler))
 
 DEF_LIBC(void *,__sysv_signal,(int sig, void * handler),(sig,handler))

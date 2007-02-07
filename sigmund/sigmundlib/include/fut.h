@@ -156,17 +156,17 @@
 #define FUT_UNPAIRED_LIMIT_CODE		0xf00000	/* all unpaired codes above this limit */
 
 /*	Codes for fut use */
-#define FUT_SETUP_CODE				0xffffff
-#define FUT_KEYCHANGE_CODE			0xfffffe
-#define FUT_RESET_CODE				0xfffffd
-#define FUT_CALIBRATE0_CODE			0xfffffc
-#define FUT_CALIBRATE1_CODE			0xfffffb
-#define FUT_CALIBRATE2_CODE			0xfffffa
+#define FUT_SETUP_CODE				0xffff
+#define FUT_KEYCHANGE_CODE			0xfffe
+#define FUT_RESET_CODE				0xfffd
+#define FUT_CALIBRATE0_CODE			0xfffc
+#define FUT_CALIBRATE1_CODE			0xfffb
+#define FUT_CALIBRATE2_CODE			0xfffa
 
-#define FUT_NEW_LWP_CODE                        0xfffff9
-#define FUT_THREAD_BIRTH_CODE                   0xfffff8
-#define FUT_THREAD_DEATH_CODE                   0xfffff7
-#define FUT_SET_THREAD_NAME_CODE                0xfffff6
+#define FUT_NEW_LWP_CODE                        0xfff9
+#define FUT_THREAD_BIRTH_CODE                   0xfff8
+#define FUT_THREAD_DEATH_CODE                   0xfff7
+#define FUT_SET_THREAD_NAME_CODE                0xfff6
 
 #define FUT_SWITCH_TO_CODE			0x31a
 

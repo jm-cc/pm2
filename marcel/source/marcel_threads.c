@@ -1013,7 +1013,7 @@ static void __marcel_init main_thread_init(void)
 __ma_initfunc(main_thread_init, MA_INIT_THREADS_MAIN, "Initialise the main thread structure");
 
 #ifdef STANDARD_MAIN
-marcel_task_t __main_thread_struct;
+marcel_task_t __main_thread_struct = {.not_preemptible = 1};
 #else
 marcel_t __main_thread;
 #endif

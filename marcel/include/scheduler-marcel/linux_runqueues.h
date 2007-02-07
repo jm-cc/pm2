@@ -72,8 +72,8 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #define MA_MAX_PRIO		(MA_NOSCHED_PRIO+1)
 
 /** \brief Whether the thread has Real-Time priority */
-int ma_rt_task(marcel_task_t p);
-#define ma_rt_task(p)		((p)->sched.internal.entity.prio < MA_RT_PRIO)
+#define ma_rt_task(p)		\
+	((p)->sched.internal.entity.prio < MA_RT_PRIO)
 
 #section marcel_macros
 #depend "[macros]"

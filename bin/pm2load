@@ -28,18 +28,19 @@ _pm2load_usage() # exit_code
 Usage: $PROGNAME { option } command
 
   option:
-    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -d      : Run command through gdb
-    -vg     : Run command through valgrind
-    -t      : Run command through strace
-    -p cmd  : Run pre-script command (e.g. numactl)
-    -s      : Run scripts in debug mode
-    -c name : Use console named "name"
-    -l      : Also generate a log file on first node
-    -L      : As '-l' but do not display the log file
-    -u      : Use local flavor (re-run pm2-config on each node)
+    -f name  : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d       : Run command through gdb
+    -vg      : Run command through valgrind
+    -numactl : Run command through numactl
+    -t       : Run command through strace
+    -p cmd   : Run pre-script command (e.g. numactl)
+    -s       : Run scripts in debug mode
+    -c name  : Use console named "name"
+    -l       : Also generate a log file on first node
+    -L       : As '-l' but do not display the log file
+    -u       : Use local flavor (re-run pm2-config on each node)
     --protocol name : Use protocol named "name"
-    -h      : Display this help message
+    -h       : Display this help message
 EOF
     exit $1
 }
@@ -137,6 +138,8 @@ mad3()
     [ "$PM2_DEBUG" = "off" ]          && pm2load_args="${pm2load_args} --d"
     [ "$PM2_VALGRIND" = "on" ]        && pm2load_args="${pm2load_args} -vg"
     [ "$PM2_VALGRIND" = "off" ]       && pm2load_args="${pm2load_args} --vg"
+    [ "$PM2_NUMACTL" = "on" ]         && pm2load_args="${pm2load_args} -numactl"
+    [ "$PM2_NUMACTL" = "off" ]        && pm2load_args="${pm2load_args} --numactl"
     [ "$PM2_XMODE" = "on" ]           && pm2load_args="${pm2load_args} -x"
     [ "$PM2_XMODE" = "off" ]          && pm2load_args="${pm2load_args} --x"
     [ "$PM2_PMODE" = "on" ]           && pm2load_args="${pm2load_args} -p"
@@ -159,6 +162,7 @@ PM2_CONSOLE=""
 
 PM2_DEBUG=off
 PM2_VALGRIND=off
+PM2_NUMACTL=off
 PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
 PM2_XMODE=off
@@ -183,6 +187,11 @@ while [ $# -gt 0 ]; do
 	-vg|--valgrind)
 	    shift
 	    PM2_VALGRIND=on
+	    ;;
+	-numactl)
+	    shift
+	    PM2_NUMACTL=on
+	    PM2_SCRIPT="numactl --cpubind==0 --membind=0"
 	    ;;
 	-t|--trace)
 	    shift
@@ -222,6 +231,10 @@ while [ $# -gt 0 ]; do
 	--vg) # Valgrind off
 	    shift
 	    PM2_VALGRIND=off
+	    ;;
+	--numactl) # Numactl off
+	    shift
+	    PM2_NUMACTL=off
 	    ;;
 	--t) # Strace off
 	    shift

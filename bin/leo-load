@@ -118,9 +118,10 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_VALGRIND=on
 	    ;;
-	-numactl)
+	--numactl)
 	    shift
-	    PM2_NUMACTL=on
+	    PM2_NUMACTL=$1
+            shift
 	    ;;
 	-s)
 	    shift

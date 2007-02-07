@@ -31,7 +31,7 @@ Usage: $PROGNAME { option } command
     -f name  : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d       : Run command through gdb
     -vg      : Run command through valgrind
-    -numactl : Run command through numactl
+    --numactl [n]: Run command through numactl [default: n=0]
     -t       : Run command through strace
     -p cmd   : Run pre-script command (e.g. numactl)
     -s       : Run scripts in debug mode
@@ -138,14 +138,16 @@ mad3()
     [ "$PM2_DEBUG" = "off" ]          && pm2load_args="${pm2load_args} --d"
     [ "$PM2_VALGRIND" = "on" ]        && pm2load_args="${pm2load_args} -vg"
     [ "$PM2_VALGRIND" = "off" ]       && pm2load_args="${pm2load_args} --vg"
-    [ "$PM2_NUMACTL" = "on" ]         && pm2load_args="${pm2load_args} -numactl"
-    [ "$PM2_NUMACTL" = "off" ]        && pm2load_args="${pm2load_args} --numactl"
     [ "$PM2_XMODE" = "on" ]           && pm2load_args="${pm2load_args} -x"
     [ "$PM2_XMODE" = "off" ]          && pm2load_args="${pm2load_args} --x"
     [ "$PM2_PMODE" = "on" ]           && pm2load_args="${pm2load_args} -p"
     [ "$PM2_PMODE" = "off" ]          && pm2load_args="${pm2load_args} --p"
     [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2load_args="${pm2load_args} -l"
     [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2load_args="${pm2load_args} --l"
+
+    if [ "$PM2_NUMACTL" != "off" ] ; then
+        pm2load_args="${pm2load_args} --numactl=$PM2_NUMACTL"
+    fi
 
     ${PM2_ROOT}/bin/leonie --env="PM2_EXPORT=${PM2_EXPORT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
@@ -188,10 +190,16 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_VALGRIND=on
 	    ;;
-	-numactl)
+	--numactl)
 	    shift
-	    PM2_NUMACTL=on
-	    PM2_SCRIPT="numactl --cpubind==0 --membind=0"
+            x=$(expr $1 + 0 2>/dev/null)
+            if [ $? -ne 0 ] ; then
+                x=0
+            else
+                shift
+            fi
+	    PM2_NUMACTL=$x
+	    PM2_SCRIPT="numactl --cpubind=$x --membind=$x"
 	    ;;
 	-t|--trace)
 	    shift
@@ -231,10 +239,6 @@ while [ $# -gt 0 ]; do
 	--vg) # Valgrind off
 	    shift
 	    PM2_VALGRIND=off
-	    ;;
-	--numactl) # Numactl off
-	    shift
-	    PM2_NUMACTL=off
 	    ;;
 	--t) # Strace off
 	    shift

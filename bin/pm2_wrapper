@@ -17,10 +17,10 @@ else
     echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
     #MX_DISABLE_SELF=1 MX_DISABLE_SHMEM=1 MX_RCACHE=1 
     #MX_STATS=1 
-    if [ "$PM2_NUMACTL" == "on" ] ; then
-        numactl --cpubind=0 --membind=0 -- $prog ${@:+"$@"}
-    else
+    if [ "$PM2_NUMACTL" == "off" ] ; then
         $prog ${@:+"$@"}
+    else
+        numactl --cpubind=$PM2_NUMACTL --membind=$PM2_NUMACTL -- $prog ${@:+"$@"}
     fi
 fi
 

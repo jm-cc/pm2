@@ -407,14 +407,11 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_runqueue_t *rq;
 	ma_holder_t *h;
 	LOG_IN();
-	if (!(bubble->sched.init_holder)) {
-		rq = &ma_main_runqueue;
-		bubble->sched.sched_holder = bubble->sched.init_holder = &rq->hold;
-	} else {
-		MA_BUG_ON(ma_holder_type(h = bubble->sched.sched_holder)
-				!= MA_RUNQUEUE_HOLDER);
-		rq = ma_rq_holder(h);
+	if (!(h = (bubble->sched.sched_holder))) {
+		h = ma_task_sched_holder(MARCEL_SELF);
+		bubble->sched.init_holder = bubble->sched.sched_holder = h;
 	}
+	rq = ma_to_rq_holder(h);
 	ma_holder_lock_softirq(&rq->hold);
 	bubble_sched_debug("waking up bubble %p on rq %s\n",bubble,rq->name);
 	PROF_EVENT2(bubble_sched_wake,bubble,rq);

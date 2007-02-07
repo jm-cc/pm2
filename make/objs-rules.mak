@@ -143,7 +143,7 @@ endif
 
 # Dependances vers *.c
 #---------------------------------------------------------------------
-$(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS) -DSTATIC_BUILD
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: $(MOD_GEN_C_INC)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.c
 	$(COMMON_BUILD)
@@ -155,7 +155,7 @@ $(MOD_C_PREPROCESSED): $(MOD_GEN_OBJ)/%$(MOD_EXT).C: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CXXFLAGS) -E $< -o $@
 
-$(MOD_C_PICS): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_C_PICS): CFLAGS+=$(MOD_CFLAGS) -DDYNAMIC_BUILD
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: $(MOD_GEN_C_INC)
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.c
 	$(COMMON_BUILD)

@@ -121,11 +121,26 @@ DEF_PTHREAD(pthread_t, self, (void), ())
     DEF___PTHREAD(pthread_t, self, (void), ())
 
 
+#ifdef STATIC_BUILD
+extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
+#endif
+
 //static void pthread_initialize() __attribute__((constructor));
 /* Appelé par la libc pour initialiser de manière basique. */
 void __pthread_initialize_minimal(void)
 {
-	marcel_init_section(MA_INIT_MAIN_LWP);
+	//marcel_init_section(MA_INIT_MAIN_LWP);
+#ifdef STATIC_BUILD
+  /* Unlike in the dynamically linked case the dynamic linker has not
+     taken care of initializing the TLS data structures.  */
+  __libc_setup_tls (sizeof(lpt_tcb_t), __alignof__(lpt_tcb_t));
+
+  /* We must prevent gcc from being clever and move any of the
+     following code ahead of the __libc_setup_tls call.  This function
+     will initialize the thread register which is subsequently
+     used.  */
+  __asm __volatile ("");
+#endif
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 

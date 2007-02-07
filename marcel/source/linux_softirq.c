@@ -464,7 +464,6 @@ static void takeover_tasklets(unsigned int cpu)
 inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 {
 	marcel_attr_t attr;
-	marcel_t kthread;
 	char name[MARCEL_MAXNAMESIZE];
 
 	LOG_IN();
@@ -483,8 +482,8 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	marcel_create_special(&kthread, &attr, (void*(*)(void*))ksoftirqd, lwp);
-	LOG_RETURN(kthread);
+	marcel_create_special(&lwp->ksoftirqd_task, &attr, (void*(*)(void*))ksoftirqd, lwp);
+	LOG_RETURN(lwp->ksoftirqd_task);
 }
 
 static void ksoftirqd_init(ma_lwp_t lwp)

@@ -360,7 +360,6 @@ void marcel_threads_postexit_init(marcel_lwp_t *lwp)
 void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 {
 	marcel_attr_t attr;
-	marcel_t postexit;
 	char name[MARCEL_MAXNAMESIZE];
 
 	LOG_IN();
@@ -382,8 +381,8 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp->vp_level);
-	marcel_wake_up_created_thread(postexit);
+	marcel_create_special(&lwp->postexit_task, &attr, postexit_thread_func, lwp->vp_level);
+	marcel_wake_up_created_thread(lwp->postexit_task);
 	LOG_OUT();
 }
 

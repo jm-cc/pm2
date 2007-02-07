@@ -62,6 +62,8 @@ struct marcel_lwp {
 #ifdef MA__LWPS
 	marcel_task_t *idle_task;
 #endif
+	marcel_task_t *postexit_task;
+	marcel_task_t *ksoftirqd_task;
 
 #ifdef MA__ACTIVATION
 	marcel_task_t *upcall_new_task;

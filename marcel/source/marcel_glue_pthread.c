@@ -122,10 +122,10 @@ DEF_PTHREAD(pthread_t, self, (void), ())
 
 
 //static void pthread_initialize() __attribute__((constructor));
-/* Appelé par la libc. Non utilisée par marcel */
+/* Appelé par la libc pour initialiser de manière basique. */
 void __pthread_initialize_minimal(void)
 {
-	//marcel_init_section(MA_INIT_MAIN_LWP);
+	marcel_init_section(MA_INIT_MAIN_LWP);
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 

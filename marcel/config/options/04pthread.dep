@@ -1,3 +1,2 @@
 Depend: marcel_pmarcel
-Depend: dynamic_libs
 Provide: marcel_pthread

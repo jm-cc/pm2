@@ -86,6 +86,9 @@ export PM2_DEBUG
 PM2_VALGRIND=off
 export PM2_VALGRIND
 
+PM2_NUMACTL=off
+export PM2_NUMACTL
+
 PM2_XMODE=off
 export PM2_XMODE
 
@@ -114,6 +117,10 @@ while [ $# -gt 0 ]; do
 	-vg)
 	    shift
 	    PM2_VALGRIND=on
+	    ;;
+	-numactl)
+	    shift
+	    PM2_NUMACTL=on
 	    ;;
 	-s)
 	    shift

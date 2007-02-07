@@ -75,6 +75,10 @@ run_bench()
         fi
 
         ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $leo_appli_args
 }
 
 # args: loop variable

@@ -110,7 +110,6 @@ retry:
 	}
 	/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */
 	VALGRIND_STACK_REGISTER(ptr, ptr + THREAD_SLOT_SIZE);
-	if (!(((unsigned long)ptr)& 0xffffffff))
 	res = mmap(ptr,
 		   THREAD_SLOT_SIZE,
 		   PROT_READ | PROT_WRITE | PROT_EXEC,

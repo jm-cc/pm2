@@ -75,6 +75,7 @@ ma_allocator_t *ma_new_obj_allocator(int conservative,
 void ma_obj_allocator_init(ma_allocator_t * allocator);
 TBX_FMALLOC void *ma_obj_alloc(ma_allocator_t *allocator);
 void ma_obj_free(ma_allocator_t *allocator, void *obj);
+void ma_obj_allocator_print(ma_allocator_t * allocator);
 void ma_obj_allocator_fini(ma_allocator_t *allocator);
 void ma_allocator_init(void);
 void ma_allocator_exit(void);

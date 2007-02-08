@@ -99,6 +99,7 @@ void ma_obj_free(ma_allocator_t * allocator, void *obj)
 {
 	ma_container_t *container;
 	container = ma_get_container(allocator, FREE_METHOD);
+
 	if (container)
 		ma_container_add(container, obj);
 	else if (allocator->destroy)
@@ -285,6 +286,36 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, int mode)
 	}
 #endif
 	return NULL;
+}
+
+void ma_obj_allocator_print(ma_allocator_t * allocator) {
+	if (allocator->policy == POLICY_GLOBAL) {
+		fprintf(stderr,"global: %d elements\n",allocator->container.obj->nb_element);
+		return;
+	}
+	if (allocator->policy == POLICY_LOCAL) {
+		ma_lwp_t lwp;
+		fprintf(stderr,"local\n");
+		for_all_lwp(lwp)
+			fprintf(stderr,"%4d",LWP_NUMBER(lwp));
+		fprintf(stderr,"\n");
+		for_all_lwp(lwp)
+			fprintf(stderr,"%4d",((ma_container_t*)ma_per_lwp_self_data(allocator->container.offset))->nb_element);
+		fprintf(stderr,"\n");
+		return;
+	}
+	if (allocator->policy == POLICY_HIERARCHICAL) {
+		int i,j;
+		fprintf(stderr,"hierarchical\n");
+		for (j = 0; j < marcel_topo_nblevels; ++j) {
+			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
+				fprintf(stderr,"%4d",marcel_topo_levels[j][i].number);
+			fprintf(stderr,"\n");
+			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
+				fprintf(stderr,"%4d",((ma_container_t*)ma_per_level_data(&marcel_topo_levels[j][i],(allocator->container.offset)))->nb_element);
+			fprintf(stderr,"\n");
+		}
+	}
 }
 
 void *ma_obj_allocator_malloc(void *arg)

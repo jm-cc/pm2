@@ -409,7 +409,7 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	LOG_IN();
 	if (!(h = (bubble->sched.sched_holder))) {
 		h = ma_task_sched_holder(MARCEL_SELF);
-		bubble->sched.init_holder = bubble->sched.sched_holder = h;
+		bubble->sched.init_holder = h;
 	}
 	rq = ma_to_rq_holder(h);
 	ma_holder_lock_softirq(&rq->hold);

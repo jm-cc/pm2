@@ -108,13 +108,14 @@ retry:
 			goto retry;
 		}
 	}
+	/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */
+	VALGRIND_STACK_REGISTER(ptr, ptr + THREAD_SLOT_SIZE);
+	if (!(((unsigned long)ptr)& 0xffffffff))
 	res = mmap(ptr,
 		   THREAD_SLOT_SIZE,
 		   PROT_READ | PROT_WRITE | PROT_EXEC,
 		   MMAP_MASK,
 		   FILE_TO_MAP, 0);
-	/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */
-	VALGRIND_STACK_REGISTER(next_slot, next_slot + THREAD_SLOT_SIZE);
 
 	if(res == MAP_FAILED) {
 		if (!ma_in_atomic() && nb_try_left--) {
@@ -127,7 +128,7 @@ retry:
 		}
 		perror("mmap");
 		fprintf(stderr,"args %p, %lx, %u, %d", 
-				next_slot, THREAD_SLOT_SIZE,
+				ptr, THREAD_SLOT_SIZE,
 				MMAP_MASK, FILE_TO_MAP);
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}

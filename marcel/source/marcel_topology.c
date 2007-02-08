@@ -110,7 +110,7 @@ unsigned marcel_nbprocessors = 1;
 unsigned marcel_cpu_stride = 1;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
-unsigned marcel_topo_max_arity = 0;
+unsigned marcel_topo_max_arity = 4;
 #endif
 
 void ma_set_nbprocessors(void) {
@@ -573,24 +573,24 @@ static void look_vp(void) {
 }
 
 #ifdef MA__NUMA
-static void split(unsigned arity, unsigned * __restrict sublevelsize, unsigned * __restrict nbsublevels) {
-	*sublevelsize = sqrt(arity);
-	*nbsublevels = (arity + *sublevelsize-1) / *sublevelsize;
+/* split arity into nbsublevels of size sublevelarity */
+static void split(unsigned arity, unsigned * __restrict sublevelarity, unsigned * __restrict nbsublevels) {
+	*sublevelarity = sqrt(arity);
+	*nbsublevels = (arity + *sublevelarity-1) / *sublevelarity;
 	if (*nbsublevels > marcel_topo_max_arity) {
 		*nbsublevels = marcel_topo_max_arity;
-		*sublevelsize = (arity + *nbsublevels-1) / *nbsublevels;
+		*sublevelarity = (arity + *nbsublevels-1) / *nbsublevels;
 	}
 }
 #endif
 
 static void topo_discover(void) {
-	unsigned l,i,j,m;
+	unsigned l,i,j,m,n;
 	struct marcel_topo_level *level;
 #ifdef MA__NUMA
 	unsigned k;
-	unsigned levelsize;
 	unsigned nbsublevels;
-	unsigned sublevelsize;
+	unsigned sublevelarity;
 	unsigned vp;
 	int dosplit;
 
@@ -679,63 +679,92 @@ static void topo_discover(void) {
 
 #ifdef MA__NUMA
 	/* Split hi-arity levels */
-	if (marcel_topo_max_arity)
+	if (marcel_topo_max_arity) {
+		/* connect levels */
 		for (l=0; l<marcel_topo_nblevels-1; l++) {
-			levelsize = 0;
-			dosplit = 0;
 			for (i=0; marcel_topo_levels[l][i].vpset; i++) {
-				split(marcel_topo_levels[l][i].arity,&sublevelsize,&nbsublevels);
+				if (marcel_topo_levels[l][i].arity) {
+					mdebug("level %u,%u: vpset %"MA_PRIxVPM" arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
+					MA_BUG_ON(!(marcel_topo_levels[l][i].children=
+						TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
+
+					m=0;
+					for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
+						if (!(marcel_topo_levels[l+1][j].vpset &
+							~(marcel_topo_levels[l][i].vpset))) {
+							marcel_topo_levels[l][i].children[m]=
+								&marcel_topo_levels[l+1][j];
+							marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
+							marcel_topo_levels[l+1][j].index = m++;
+						}
+				}
+			}
+		}
+		mdebug("pre-connecting done.\n");
+
+		/* For each level */
+		for (l=0; l<marcel_topo_nblevels-1; l++) {
+			unsigned level_width = 0;
+			dosplit = 0;
+			/* Look at each item, check for max_arity */
+			for (i=0; marcel_topo_levels[l][i].vpset; i++) {
+				split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
 				if (marcel_topo_levels[l][i].arity > marcel_topo_max_arity) {
-					mdebug("splitting level %u,%u because %d > %d\n", l, i, marcel_topo_levels[l][i].arity, marcel_topo_max_arity);
+					mdebug("will split level %u,%u because %d > %d\n", l, i, marcel_topo_levels[l][i].arity, marcel_topo_max_arity);
 					dosplit=1;
 				}
-				levelsize += nbsublevels;
+				level_width += nbsublevels;
 			}
 			if (dosplit) {
+				/* split needed, shift levels */
 				memmove(&marcel_topo_level_nbitems[l+2],&marcel_topo_level_nbitems[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_level_nbitems));
 				memmove(&marcel_topo_levels[l+2],&marcel_topo_levels[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_levels));
-				marcel_topo_level_nbitems[l+1] = levelsize;
-				marcel_topo_levels[l+1] = TBX_MALLOC((levelsize+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
+				/* new fake level */
+				marcel_topo_level_nbitems[l+1] = level_width;
+				marcel_topo_levels[l+1] = TBX_MALLOC((level_width+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
+				/* fill it with split items */
 				for (i=0,j=0; marcel_topo_levels[l][i].vpset; i++) {
-					split(marcel_topo_levels[l][i].arity,&sublevelsize,&nbsublevels);
-					mdebug("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelsize);
+					/* split one item */
+					split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
+					mdebug("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelarity);
+					/* initialize subitems */
 					for (k=0; k<nbsublevels; k++) {
 						level = &marcel_topo_levels[l+1][j+k];
 						level->type = MARCEL_LEVEL_FAKE;
 						level->number = j+k;
 						marcel_vpmask_empty(&level->vpset);
-					}
-					for (vp=0,k=0,m=0; vp<marcel_nbvps(); vp++) {
-						if (marcel_vpmask_vp_ismember(&marcel_topo_levels[l][i].vpset, vp)) {
-							marcel_vpmask_add_vp(&marcel_topo_levels[l+1][j+k].vpset, vp);
-							marcel_topo_levels[l+1][j+k].arity++;
-							if (++m == sublevelsize) {
-								/* filled that sublevel, begin next one */
-								k++;
-								m = 0;
-							}
-						}
-					}
-					for (k=0; k<nbsublevels; k++) {
 						marcel_topo_levels[l+1][j+k].arity=0;
-						for (m=0; marcel_topo_levels[l+2][m].vpset; m++)
-							if (!(marcel_topo_levels[l+2][m].vpset &
-								~(marcel_topo_levels[l+1][j+k].vpset)))
-								marcel_topo_levels[l+1][j+k].arity++;
-						mdebug("fake level %u,%u: vpset %"MA_PRIxVPM" arity %u\n",l+1,j+k,marcel_topo_levels[l+1][j+k].vpset,marcel_topo_levels[l+1][j+k].arity);
+					}
+
+					/* distribute cpus to subitems */
+					/* give cpus of sublevelarity items to each fake item */
+
+					/* first fake item */
+					k = 0;
+					/* will get first item's cpus */
+					m = 0;
+					for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
+						marcel_vpmask_or(&marcel_topo_levels[l+1][j+k].vpset,
+							&marcel_topo_levels[l][i].children[n]->vpset);
+						marcel_topo_levels[l+1][j+k].arity++;
+						if (++m == sublevelarity) {
+							k++;
+							m = 0;
+						}
 					}
 					marcel_topo_levels[l][i].arity = nbsublevels;
 					mdebug("now level %u,%u: vpset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
 					MA_BUG_ON(k!=nbsublevels);
 					j += nbsublevels;
 				}
-				MA_BUG_ON(j!=levelsize);
+				MA_BUG_ON(j!=level_width);
 				marcel_vpmask_empty(&marcel_topo_levels[l+1][j].vpset);
 				if (++marcel_topo_nblevels ==
 					sizeof(marcel_topo_levels)/sizeof(*marcel_topo_levels))
 					MA_BUG();
 			}
 		}
+	}
 #endif
 
 	/* and finally connect levels */

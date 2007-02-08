@@ -281,6 +281,15 @@ static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
 #endif
 }
 
+#section functions
+/** \brief Test whether VP \e vp is part of mask \e mask */
+static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or);
+#section inline
+static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or)
+{
+	*mask |= *to_or;
+}
+
 #section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask);

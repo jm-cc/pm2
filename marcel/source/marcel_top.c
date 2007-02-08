@@ -33,7 +33,7 @@ static int top_file;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 #ifdef MA__BUBBLES
-static int bubbles;
+static int bubbles = 1;
 #endif
 
 static int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
@@ -152,6 +152,8 @@ void marcel_show_top() {
 	marcel_t pids[NBPIDS];
 	int nbpids;
 	unsigned char cmd;
+	struct ma_lwp_usage_stat total_usage;
+	unsigned long long total_total;
 
 	top_printf("\e[H\e[J");
 	while (read(top_file,&cmd,1)==1)
@@ -181,19 +183,34 @@ void marcel_show_top() {
 
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
 
+	memset(&total_usage, 0, sizeof(total_usage));
 	for_all_lwp(lwp) {
 		// cette lecture n'est pas atomique, il peut y avoir un tick
 		// entre-temps, ce n'est pas extrêmement grave...
-		struct ma_lwp_usage_stat lst = ma_per_lwp(lwp_usage,lwp);
-		unsigned long long tot = lst.user + lst.nice + lst.softirq +
-			lst.irq + lst.idle;
+		struct ma_lwp_usage_stat lst;
+		unsigned long long tot;
+		lst = ma_per_lwp(lwp_usage,lwp);
+		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
+		total_usage.user += lst.user;
+		total_usage.nice += lst.nice;
+		total_usage.softirq += lst.softirq;
+		total_usage.irq += lst.irq;
+		total_usage.idle += lst.idle;
+		tot = lst.user + lst.nice + lst.softirq + lst.irq + lst.idle;
 		if (tot)
 			top_printf("\
-lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+lwp %2u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
-		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
 	}
+	total_total = total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq + total_usage.idle;
+	top_printf("\
+Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+		total_usage.user*100/total_total,
+		total_usage.nice*100/total_total,
+		total_usage.softirq*100/total_total,
+		total_usage.irq*100/total_total,
+		total_usage.idle*100/total_total);
 	top_printf("  %*s %*s %2s %4s%% %2s %2s %10s %10s %10s\r\n",
 		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");

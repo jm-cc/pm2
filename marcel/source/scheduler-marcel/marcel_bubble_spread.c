@@ -25,7 +25,7 @@
 	(void*)ma_bubble_entity(e), \
 	rq)
 
-#if 0
+#if 1
 #define _debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #define debug(fmt, ...) fprintf(stderr, "%*s" fmt, recurse, "", ##__VA_ARGS__);
 #else
@@ -193,16 +193,21 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		/* And sort */
 		if (nl > 1 && l_load[0] > l_load[1]) {
 			/* TODO: optimize this */
-			m = j = 1;
+			j = 1;
 			k = nl - 1;
-			while(j != k) {
+			if (l_load[0] < l_load[k])
+			while(1) {
 				MA_BUG_ON(l_load[j] >= l_load[0] || l_load[0] >= l_load[k]);
 				/* rough guess by assuming linear distribution */
 				// TODO: fix it
 				//int m = j + (l_load[0] - l_load[j]) * (k - j) / (l_load[k] - l_load[j]);
+				if (j == k-1) {
+					k = j;
+					break;
+				}
 				m = (j+k)/2;
 
-				debug("trying %d between %d and %d\n", m, j, k);
+				debug("trying %d(%ld) between %d(%ld) and %d(%ld)\n", m, l_load[m], j, l_load[j], k, l_load[k]);
 
 				if (l_load[0] == l_load[m])
 					break;
@@ -213,29 +218,33 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 					j = m;
 			}
 
+			debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[k]->sched.name, l_load[k]);
 			{
 				unsigned long _l_load;
 				struct list_head _l_dist;
 				struct marcel_topo_level *_l;
 				int _l_n;
 
-				debug("exchanging level %s(%ld) and %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[m]->sched.name, l_load[m]);
-
+				/* Save level 0 */
 				INIT_LIST_HEAD(&_l_dist);
 				_l_load = l_load[0];
 				list_splice_init(&l_dist[0],&_l_dist);
 				_l_n = l_n[0];
 				_l = l_l[0];
 
-				l_load[0] = l_load[m];
-				list_splice_init(&l_dist[m],&l_dist[0]);
-				l_n[0] = l_n[m];
-				l_l[0] = l_l[m];
+				/* Shift levels */
+				for (m=0; m<k; m++) {
+					l_load[m] = l_load[m+1];
+					list_splice_init(&l_dist[m+1],&l_dist[m]);
+					l_n[m] = l_n[m+1];
+					l_l[m] = l_l[m+1];
+				}
 
-				l_load[m] = _l_load;
-				list_splice(&_l_dist,&l_dist[m]);
-				l_n[m] = _l_n;
-				l_l[m] = _l;
+				/* Restore level 0 */
+				l_load[k] = _l_load;
+				list_splice(&_l_dist,&l_dist[k]);
+				l_n[k] = _l_n;
+				l_l[k] = _l;
 			}
 		}
 	}

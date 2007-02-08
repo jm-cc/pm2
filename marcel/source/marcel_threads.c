@@ -505,13 +505,15 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 
 	// Il faut acquérir le sémaphore pour postexit avant
 	// de désactiver la préemption
-	marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
-	if (!cur->detached) {
-		ma_topo_vpdata(vp,postexit_func)=detach_func;
-		ma_topo_vpdata(vp,postexit_arg)=cur;
-	} else {
-		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
-		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+	if (!cur->detached || cur->postexit_func) {
+		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
+		if (!cur->detached) {
+			ma_topo_vpdata(vp,postexit_func)=detach_func;
+			ma_topo_vpdata(vp,postexit_arg)=cur;
+		} else {
+			ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
+			ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+		}
 	}
 
 	ma_preempt_disable();
@@ -524,7 +526,8 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	// car sinon la tâche idle risquerait d'être réveillée (par
 	// unchain_task) alors que sem_V réveillerait par ailleurs une
 	// autre tâche du programme !
-	marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread)); /* idem ci-dessus */
+	if (!cur->detached || cur->postexit_func)
+		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread)); /* idem ci-dessus */
 
 	// Même remarque que précédemment : main_thread peut être
 	// réveillé à cet endroit, donc il ne faut appeler
@@ -546,7 +549,6 @@ DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 	if (marcel_self() == __main_thread) {
 		marcel_end();
 #ifdef STANDARD_MAIN
-					 LOG_OUT();		
 		exit(0);
 #else
 		__marcel_main_ret = 0;
@@ -554,7 +556,6 @@ DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 #endif
 	} else
 		marcel_exit_internal(val, 0);
-	             LOG_OUT();
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 

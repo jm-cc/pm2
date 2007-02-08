@@ -515,11 +515,24 @@ static void finish_task_switch(marcel_task_t *prev)
 {
 	/* note: pas de softirq ici, on est d��en mode interruption */
 	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
-	unsigned long prev_task_flags;
+	unsigned long prev_task_state;
 #ifdef MA__BUBBLES
 	ma_holder_t *h;
 #endif
 	prevh->nr_scheduled--;
+
+	/*
+	 * A task struct has one reference for the use as "current".
+	 * If a task dies, then it sets TASK_ZOMBIE in tsk->state and calls
+	 * schedule one last time. The schedule call will never return,
+	 * and the scheduled task must drop that reference.
+	 * The test for TASK_ZOMBIE must occur while the runqueue locks are
+	 * still held, otherwise prev could be scheduled on another cpu, die
+	 * there before we look at prev->state, and then the reference would
+	 * be dropped twice.
+	 * 		Manfred Spraul <manfred@colorfullife.com>
+	 */
+	prev_task_state = prev->sched.state;
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
 				|| !(THREAD_GETMEM(prev,preempt_count) & MA_PREEMPT_ACTIVE))
@@ -536,11 +549,6 @@ static void finish_task_switch(marcel_task_t *prev)
 			MTRACE("going to sleep",prev);
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
-		}
-		if (prev->sched.state == MA_TASK_DEAD) {
-			PROF_THREAD_DEATH(prev);
-			if (prev->detached && !prev->static_stack)
-				marcel_tls_slot_free(marcel_stackbase(prev));
 		}
 	} else {
 		MTRACE("still running",prev);
@@ -587,25 +595,17 @@ static void finish_task_switch(marcel_task_t *prev)
 #endif
 	} else
 #endif
-	/*
-	 * A task struct has one reference for the use as "current".
-	 * If a task dies, then it sets TASK_ZOMBIE in tsk->state and calls
-	 * schedule one last time. The schedule call will never return,
-	 * and the scheduled task must drop that reference.
-	 * The test for TASK_ZOMBIE must occur while the runqueue locks are
-	 * still held, otherwise prev could be scheduled on another cpu, die
-	 * there before we look at prev->state, and then the reference would
-	 * be dropped twice.
-	 * 		Manfred Spraul <manfred@colorfullife.com>
-	 */
 	{
-		prev_task_flags = prev->flags;
-
 		/* on sort du mode interruption */
 		ma_finish_arch_switch(prevh, prev);
 
 //		if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
 //			ma_put_task_struct(prev);
+	}
+	if (prev_task_state == MA_TASK_DEAD) {
+		PROF_THREAD_DEATH(prev);
+		if (prev->detached && !prev->static_stack)
+			marcel_tls_slot_free(marcel_stackbase(prev));
 	}
 }
 

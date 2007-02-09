@@ -25,7 +25,7 @@ struct semcell_struct {
 	marcel_t task;
 	struct semcell_struct *next;
 	struct semcell_struct *last;	/* Valide uniquement dans la cellule de tête */
-	tbx_bool_t blocked;
+	volatile tbx_bool_t blocked;
 };
 
 #section structures

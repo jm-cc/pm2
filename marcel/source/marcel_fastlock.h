@@ -39,7 +39,7 @@ typedef struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
   struct blockcell_struct *last; /* Valide uniquement dans la cellule de tête */
-  tbx_bool_t blocked;
+  volatile tbx_bool_t blocked;
 } blockcell;
 
 __tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)

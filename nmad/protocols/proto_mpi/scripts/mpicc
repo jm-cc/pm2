@@ -7,7 +7,10 @@ if [ -z "$PM2_ROOT" ] ; then
     exit 1
 fi
 
-PM2_FLAVOR=mad4-mpi
+if [ "$PM2_FLAVOR" == "" ] ; then
+    echo "Error. You need to set the variable PM2_FLAVOR to specify the pm2 flavor to use"
+    exit 1
+fi
 
 DoLink=1
 DoCompile=0

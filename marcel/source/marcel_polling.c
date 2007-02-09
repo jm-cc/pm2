@@ -37,7 +37,7 @@ typedef struct marcel_per_lwp_polling_s{
 	void (*func) (void *);
 	void *arg;
 	marcel_t task;
-	tbx_bool_t blocked;
+	volatile tbx_bool_t blocked;
 	struct marcel_per_lwp_polling_s* next;
 }marcel_per_lwp_polling_t;
 

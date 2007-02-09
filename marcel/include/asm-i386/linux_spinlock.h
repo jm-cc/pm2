@@ -15,6 +15,16 @@
  */
 
 #section common
+
+#ifdef X86_64_ARCH
+#define MA_SPINB "l"
+#define MA_SPINb ""
+#define MA_SPINT int
+#else
+#define MA_SPINB "b"
+#define MA_SPINb "b"
+#define MA_SPINT char
+#endif
 /*
  * Similar to:
  * include/asm-i386/spinlock.h
@@ -45,24 +55,24 @@ typedef struct {
  * We make no fairness assumptions. They have a cost.
  */
 
-#define ma_spin_is_locked(x)	(*(volatile signed char *)(&(x)->lock) <= 0)
+#define ma_spin_is_locked(x)	(*(volatile signed MA_SPINT *)(&(x)->lock) <= 0)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
 
 #ifdef MA__HAS_SUBSECTION
 #define ma_spin_lock_string \
 	"\n1:\t" \
-	"lock ; decb %0\n\t" \
+	"lock ; dec"MA_SPINB" %0\n\t" \
 	"js 2f\n" \
 	MA_LOCK_SECTION_START("") \
 	"2:\t" \
 	"rep;nop\n\t" \
-	"cmpb $0,%0\n\t" \
+	"cmp"MA_SPINB" $0,%0\n\t" \
 	"jle 2b\n\t" \
 	"jmp 1b\n" \
 	MA_LOCK_SECTION_END
 #else
 #define ma_spin_lock_string \
-	"lock ; decb %0\n\t" \
+	"lock ; dec"MA_SPINB" %0\n\t" \
 	"jns 1f\n\t" \
 	"call ma_i386_spinlock_contention\n\t" \
 	"1:\n"
@@ -78,7 +88,7 @@ typedef struct {
 #if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
 
 #define ma_spin_unlock_string \
-	"movb $1,%0" \
+	"mov"MA_SPINB" $1,%0" \
 		:"=m" (lock->lock) : : "memory"
 
 
@@ -92,13 +102,13 @@ static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 #else
 
 #define ma_spin_unlock_string \
-	"xchgb %b0, %1" \
+	"xchg"MA_SPINB" %"MA_SPINb"0, %1" \
 		:"=q" (oldval), "=m" (lock->lock) \
 		:"0" (oldval) : "memory"
 
 static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 {
-	char oldval = 1;
+	MA_SPINT oldval = 1;
 	__asm__ __volatile__(
 		ma_spin_unlock_string
 	);
@@ -108,9 +118,9 @@ static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 
 static __tbx_inline__ int _ma_raw_spin_trylock(ma_spinlock_t *lock)
 {
-	char oldval;
+	MA_SPINT oldval;
 	__asm__ __volatile__(
-		"xchgb %b0,%1"
+		"xchg"MA_SPINB" %"MA_SPINb"0,%1"
 		:"=q" (oldval), "=m" (lock->lock)
 		:"0" (0) : "memory");
 	return oldval > 0;

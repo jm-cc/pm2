@@ -50,7 +50,7 @@ static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btsl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 
 
@@ -71,7 +71,7 @@ static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
 	__asm__(
 		"btsl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 
 #section marcel_functions
@@ -93,7 +93,7 @@ static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btrl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 
 static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
@@ -101,7 +101,7 @@ static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
 	__asm__ __volatile__(
 		"btrl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 #section marcel_macros
 #define ma_smp_mb__before_clear_bit()	ma_barrier()
@@ -124,7 +124,7 @@ static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr
 	__asm__ __volatile__(
 		"btcl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 
 #section marcel_functions
@@ -144,7 +144,7 @@ static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btcl %1,%0"
 		:"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 }
 
 #section marcel_functions
@@ -165,7 +165,7 @@ static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * a
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btsl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr) : "memory");
+		:"dIr" (nr) : "memory");
 	return oldbit;
 }
 
@@ -188,7 +188,7 @@ static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *
 	__asm__(
 		"btsl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 	return oldbit;
 }
 
@@ -210,7 +210,7 @@ static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btrl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr) : "memory");
+		:"dIr" (nr) : "memory");
 	return oldbit;
 }
 
@@ -234,7 +234,7 @@ static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long
 	__asm__(
 		"btrl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr));
+		:"dIr" (nr));
 	return oldbit;
 }
 
@@ -246,7 +246,7 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 	__asm__ __volatile__(
 		"btcl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr) : "memory");
+		:"dIr" (nr) : "memory");
 	return oldbit;
 }
 
@@ -268,7 +268,7 @@ static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long*
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btcl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit),"=m" (ADDR)
-		:"Ir" (nr) : "memory");
+		:"dIr" (nr) : "memory");
 	return oldbit;
 }
 
@@ -297,7 +297,7 @@ static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned l
 	__asm__ __volatile__(
 		"btl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit)
-		:"m" (ADDR),"Ir" (nr));
+		:"m" (ADDR),"dIr" (nr));
 	return oldbit;
 }
 
@@ -475,7 +475,11 @@ static __tbx_inline__ unsigned long ma_ffz(unsigned long word);
 #section marcel_inline
 static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
+#ifdef X86_64_ARCH
+	__asm__("bsfq %1,%0"
+#else
 	__asm__("bsfl %1,%0"
+#endif
 		:"=r" (word)
 		:"r" (~word));
 	return word;
@@ -492,7 +496,11 @@ static __tbx_inline__ unsigned long __ma_ffs(unsigned long word);
 #section marcel_inline
 static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 {
+#ifdef X86_64_ARCH
+	__asm__("bsfq %1,%0"
+#else
 	__asm__("bsfl %1,%0"
+#endif
 		:"=r" (word)
 		:"rm" (word));
 	return word;
@@ -518,6 +526,11 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {
 	if (tbx_unlikely(b[0]))
 		return __ma_ffs(b[0]);
+#ifdef X86_64_ARCH
+	if (tbx_unlikely(b[1]))
+		return __ma_ffs(b[1]) + 64;
+	return __ma_ffs(b[2]) + 128;
+#else
 	if (tbx_unlikely(b[1]))
 		return __ma_ffs(b[1]) + 32;
 	if (tbx_unlikely(b[2]))
@@ -525,6 +538,7 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 	if (b[3])
 		return __ma_ffs(b[3]) + 96;
 	return __ma_ffs(b[4]) + 128;
+#endif
 }
 
 #section marcel_functions

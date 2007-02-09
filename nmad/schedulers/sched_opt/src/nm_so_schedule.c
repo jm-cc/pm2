@@ -82,6 +82,11 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
 {
   struct nm_so_sched *p_priv = p_sched->sch_private;
 
+  /* Terminates strategy */
+  if (p_priv->current_strategy->exit != NULL) {
+    p_priv->current_strategy->exit();
+  }
+
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
 

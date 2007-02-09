@@ -236,6 +236,7 @@ static int exit_gate(struct nm_gate *p_gate)
 
 nm_so_strategy nm_so_strat_default = {
   .init = init,
+  .exit = NULL,
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,

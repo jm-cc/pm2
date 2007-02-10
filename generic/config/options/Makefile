@@ -13,9 +13,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel xpaulette mad2 mad3 tbx ntbx dsm init leoparse profile sigmundlib
+LIBS := pm2 marcel xpaulette mad3 tbx ntbx dsm init leoparse profile bubblelib
 # mad1
-MODULES := leonie stackalign sigmund sigmundps xsigmund supertrace bubbles bubblegum
+MODULES := leonie stackalign bubbles bubblegum
 
 # Directement dans les sources:
 # stackalign

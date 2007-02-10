@@ -1,8 +1,8 @@
 In order to compile bubblegum, you need the following libraries and their -dev
 or -devel part:
 
-- libnuma (for Marcel's NUMA option)
-- libming (for the "bubbles" module)
 - libgtk
 - libgtkgl
 - libfxt (available on cvs -d :pserver:anonymous@cvs.sv.gnu.org:/sources/fkt co FxT )
+
+You also need the "bubblelib" and "bubbles" modules and their dependencies.

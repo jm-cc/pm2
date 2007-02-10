@@ -447,4 +447,13 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
                 ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
              pos = n)
 
+
+/* Iterate after the "start" item only */
+#define list_for_each_entry_after(pos,head,member,start)		   \
+	for (pos = list_entry((start)->member.next, typeof(*pos), member), \
+			tbx_prefetch(pos->member.next);			   \
+		&pos->member != (head);					   \
+		pos = list_entry(pos->member.next, typeof(*pos), member),  \
+			tbx_prefetch(pos->member.next))
+
 #endif

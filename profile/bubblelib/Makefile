@@ -13,11 +13,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-FLAVOR_DEFAULT:=marcel-bubblegum
-CFLAGS += -I${MOD_GEN_INC}
+LIBNAME=bubblelib
 
-.PHONY: default
-include $(PM2_ROOT)/make/progs.mak
+FLAVOR_DEFAULT:=marcel-bubbles
+CFLAGS += -I${MOD_GEN_INC} -I/usr/local/include
+
+include $(PM2_ROOT)/make/libs.mak
 
 $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
 	$(COMMON_BUILD)

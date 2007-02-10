@@ -1,14 +1,14 @@
-In order to use the "bubbles" module, you need the following libraries and their
--dev or -devel part:
+In order to use the "bubblelib" module, you need the following libraries and
+their -dev or -devel part:
 
 - libnuma (for Marcel's NUMA option)
-- libming (for the "bubbles" module)
+- libming
 - libfxt (available on cvs -d :pserver:anonymous@cvs.sv.gnu.org:/sources/fkt co FxT )
 
 You also need to configure your flavor:
 
-- enable the bubbles module (of course)
+- enable the bubblelib module (of course)
 - enable the profile module
 - enable the NUMA and profile options in the Marcel module
 
-You may also just use the marcel-bubbles sample flavor.
+You can also just use the marcel-bubbles sample flavor.

@@ -163,7 +163,7 @@ unsigned marcel_per_lwp_nbthreads()
 }
 
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
-#define MAX_MAX_VP_THREADS 1000000
+#define MA_MAX_VP_THREADS 10000000
 
 unsigned long marcel_createdthreads(void)
 {
@@ -186,8 +186,8 @@ void marcel_one_more_task(marcel_t pid)
 	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
 	_ma_raw_spin_lock(&ma_topo_vpdata(vp,threadlist_lock));
 
-	pid->number = LWP_NUMBER(LWP_SELF) * MAX_MAX_VP_THREADS + ++ma_topo_vpdata(vp,task_number);
-	MA_BUG_ON(ma_topo_vpdata(vp,task_number) == MAX_MAX_VP_THREADS);
+	pid->number = LWP_NUMBER(LWP_SELF) * MA_MAX_VP_THREADS + ++ma_topo_vpdata(vp,task_number);
+	MA_BUG_ON(ma_topo_vpdata(vp,task_number) == MA_MAX_VP_THREADS);
 	list_add(&pid->all_threads,&ma_topo_vpdata(vp,all_threads));
 	oldnbtasks = ma_topo_vpdata(vp,nb_tasks)++;
 
@@ -202,7 +202,7 @@ void marcel_one_more_task(marcel_t pid)
 // Appele a chaque fois qu'une tache est terminee.
 void marcel_one_task_less(marcel_t pid)
 {
-	unsigned vpnum = pid->number/MAX_MAX_VP_THREADS;
+	unsigned vpnum = pid->number/MA_MAX_VP_THREADS;
 	struct marcel_topo_level *vp;
 
 	MA_BUG_ON(vpnum >= marcel_nbvps());

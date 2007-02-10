@@ -110,7 +110,7 @@ unsigned marcel_nbprocessors = 1;
 unsigned marcel_cpu_stride = 1;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
-unsigned marcel_topo_max_arity = 4;
+unsigned marcel_topo_max_arity = 0;
 #endif
 
 void ma_set_nbprocessors(void) {

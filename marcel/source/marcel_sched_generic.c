@@ -179,6 +179,7 @@ void marcel_one_more_task(marcel_t pid)
 {
 	unsigned oldnbtasks;
 	struct marcel_topo_level *vp;
+	unsigned task_number;
 
 	/* record this thread on _this_ lwp */
 	ma_local_bh_disable();
@@ -186,7 +187,9 @@ void marcel_one_more_task(marcel_t pid)
 	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
 	_ma_raw_spin_lock(&ma_topo_vpdata(vp,threadlist_lock));
 
-	pid->number = LWP_NUMBER(LWP_SELF) * MA_MAX_VP_THREADS + ++ma_topo_vpdata(vp,task_number);
+	task_number = ++ma_topo_vpdata(vp,task_number);
+	MA_BUG_ON(task_number == MA_MAX_VP_THREADS);
+	pid->number = LWP_NUMBER(LWP_SELF) * MA_MAX_VP_THREADS + task_number;
 	MA_BUG_ON(ma_topo_vpdata(vp,task_number) == MA_MAX_VP_THREADS);
 	list_add(&pid->all_threads,&ma_topo_vpdata(vp,all_threads));
 	oldnbtasks = ma_topo_vpdata(vp,nb_tasks)++;

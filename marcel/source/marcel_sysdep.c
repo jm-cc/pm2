@@ -170,7 +170,9 @@ void ma_unbind_from_processor() {
 
 #ifdef MA__LWPS
 unsigned ma_nbprocessors(void) {
-#if defined(_SC_NPROCESSORS_CONF)
+#if defined(_SC_NPROCESSORS_ONLN)
+	return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
 	return sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(_SC_NPROC_CONF) || defined(IRIX_SYS)
 	return sysconf(_SC_NPROC_CONF);

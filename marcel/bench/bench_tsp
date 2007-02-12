@@ -21,6 +21,6 @@ appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 
 prog="tsp"
-args="100 15 100"
+args="16 16 100"
 
 

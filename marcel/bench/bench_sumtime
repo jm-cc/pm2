@@ -21,4 +21,4 @@ appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 
 prog="sumtime"
-args="10000"
+args="1000"

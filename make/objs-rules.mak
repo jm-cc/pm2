@@ -144,6 +144,7 @@ endif
 # Dependances vers *.c
 #---------------------------------------------------------------------
 $(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS) -DSTATIC_BUILD
+$(MOD_C_OBJECTS): CFLAGS+=$($<-cflags)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: $(MOD_GEN_C_INC)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.c
 	$(COMMON_BUILD)

@@ -49,7 +49,13 @@ void bench_pingpong(unsigned long nb)
   n++;
 
   marcel_attr_init(&attr);
+#ifdef MA__LWPS
+  if (marcel_nbvps() < 2) {
+     marcel_printf("can't run SMP pingpong with only one VP\n");
+     return;
+  }
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
+#endif
   marcel_create(&pid, &attr, f, (any_t)n);
 
   while(--n) {

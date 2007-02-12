@@ -16,7 +16,7 @@
 marcel=${BENCHMARCEL:-"mono"}
 hosts=${BENCHHOST:-"localhost"}
 
-flavor="bench_marcel_${marcel}"
+flavor="bench_marcel_${marcel}_${hosts}"
 appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 

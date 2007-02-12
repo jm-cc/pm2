@@ -14,7 +14,7 @@
 . include/marcel_default
 
 marcel=${BENCHMARCEL:-"mono"}
-hosts=${BENCHHOST:-"sweetie"}
+hosts=${BENCHHOST:-"localhost"}
 
 flavor="bench_marcel_${marcel}"
 appdir="${PM2_ROOT}/marcel/examples"

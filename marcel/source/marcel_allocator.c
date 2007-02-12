@@ -334,6 +334,7 @@ unsigned long ma_per_sth_alloc(ma_per_sth_cur_t * cur, size_t size)
 {
 	unsigned long ret;
 	ma_spin_lock(&cur->lock);
+	size = (size + sizeof(void(*)())-1) & ~(sizeof(void(*)())-1);
 	ret = cur->cur;
 	cur->cur += size;
 	MA_BUG_ON(cur->cur > cur->max);

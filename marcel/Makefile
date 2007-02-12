@@ -177,3 +177,4 @@ $(MOD_HSPLITS_MAKEFILES): $(M4_GEN_HEADERS)
 clean_m4gen:
 	$(COMMON_CLEAN) $(RM) -r $(M4_GEN_FILES)
 
+source/marcel_init.c-cflags=-fno-omit-frame-pointer

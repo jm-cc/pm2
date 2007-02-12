@@ -23,6 +23,7 @@ APPS_EXCLUDE = $(basename $(wildcard *-posix.c))
 #----------------------------------------------------------------------
 eclone-objs := clone.o eclone.o
 eclone-cflags := -O0
+stackjump-cflags := -fno-omit-frame-pointer
 
 tsp-objs := tsp-main.o tsp-job.o tsp.o
 tsp-cflags := -DMT

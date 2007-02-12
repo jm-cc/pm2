@@ -83,7 +83,7 @@ do_the_bench()
 
     # Execution
     (run_bench $_iter; echo "$?" >$file_status) 2>&1|tee -a $file_result 
-    [ `cat $file_status` -eq 0 ] || pm2bench_error "Execution failed"
+    exec=`cat $file_status`
 
     # Nettoyage
     #(clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
@@ -91,6 +91,8 @@ do_the_bench()
 
     # Finalisation
     (finalize_bench $_iter) 2>&1 | sed -e 's/^/..../'
+
+    [ $exec -eq 0 ] || pm2bench_error "Execution failed"
 }
 
 # Programme principal

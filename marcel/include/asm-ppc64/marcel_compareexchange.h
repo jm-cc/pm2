@@ -59,9 +59,9 @@ static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, uns
 		    TBX_LOCAL_LBL(1) ":\n"
   		       "      ldarx %0,0,%2;\n"
   		       "      cmpd 0,%0,%3;\n"
-  		       "      bne- 2f;\n"
+  		       "      bne- " TBX_LOCAL_LBLF(2) ";\n"
   		       "      stdcx. %4,0,%2;\n"
-  		       "      bne- 1b;\n"
+		       "      bne- " TBX_LOCAL_LBLB(1) ";\n"
 		       MA_ISYNC_ON_SMP
 		    TBX_LOCAL_LBL(2) ":\n"
   	: "=&r"(prev), "=m" (*p)

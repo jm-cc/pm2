@@ -137,12 +137,10 @@ struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
 
 #ifdef LINUX_SYS
-#define PROCESSOR	"processor\t: "
-#define PROCESSOR2	"processor  : "
-#define PHYSID		"physical id: "
-#define COREID		"core id\t: "
-#define COREID2		"core id    : "
-//#define THREADID	"thread id  : "
+#define PROCESSOR	"processor"
+#define PHYSID		"physical id"
+#define COREID		"core id"
+//#define THREADID	"thread id"
 
 static void __marcel_init look_cpuinfo(void) {
 	FILE *fd;
@@ -154,15 +152,9 @@ static void __marcel_init look_cpuinfo(void) {
 
 	unsigned cpu, cpu2;
 
-	int dienum[maxphysid+1];
-	ma_cpu_set_t diecpus[maxphysid+1];
-	struct marcel_topo_level *die_level;
 	unsigned numdies=0;
 	int really_dies=0;
 
-	int corenum[numdies*(maxcoreid+1)];
-	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
-	struct marcel_topo_level *core_level;
 	unsigned numcores=0;
 	int really_cores=0;
 
@@ -177,8 +169,9 @@ static void __marcel_init look_cpuinfo(void) {
 	while (fgets(string,sizeof(string),fd)!=NULL) {
 #define getprocnb_begin(field, var) \
 		if ( !strncmp(field,string,strlen(field))) { \
-			var = strtol(string+strlen(field),&endptr,0); \
-			if (endptr==string+strlen(field)) { \
+			char *c = strchr(string, ':')+1; \
+			var = strtol(c,&endptr,0); \
+			if (endptr==c) { \
 				fprintf(stderr,"no number in "field" field of /proc/cpuinfo\n"); \
 				break; \
 			} else if (var==LONG_MIN) { \
@@ -193,19 +186,12 @@ static void __marcel_init look_cpuinfo(void) {
 		}
 		getprocnb_begin(PROCESSOR,processor);
 		getprocnb_end() else
-		getprocnb_begin(PROCESSOR2,processor);
-		getprocnb_end() else
 		getprocnb_begin(PHYSID,physid);
 			proc_physid[processor]=physid;
 			if (physid>maxphysid)
 				maxphysid=physid;
 		getprocnb_end() else
 		getprocnb_begin(COREID,coreid);
-			proc_coreid[processor]=coreid;
-			if (coreid>maxcoreid)
-				maxcoreid=coreid;
-		getprocnb_end() else
-		getprocnb_begin(COREID2,coreid);
 			proc_coreid[processor]=coreid;
 			if (coreid>maxcoreid)
 				maxcoreid=coreid;
@@ -218,6 +204,10 @@ static void __marcel_init look_cpuinfo(void) {
 	fclose(fd);
 
 	mdebug("%ld processors\n", processor+1);
+
+	int dienum[maxphysid+1];
+	ma_cpu_set_t diecpus[maxphysid+1];
+	struct marcel_topo_level *die_level;
 
 	memset(dienum,0,sizeof(dienum));
 	memset(diecpus,0,sizeof(diecpus));
@@ -267,6 +257,10 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_level_nbitems[discovering_level]=numdies;
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
+
+	int corenum[numdies*(maxcoreid+1)];
+	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
+	struct marcel_topo_level *core_level;
 
 	memset(corenum,0,sizeof(corenum));
 	memset(corecpus,0,sizeof(corecpus));

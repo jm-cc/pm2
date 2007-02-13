@@ -85,13 +85,13 @@ $(PUK_BUILDDIR)/config.status: $(CONFIG_FILES) $(PADICO_ROOT)/etc/padico-setup.s
 # ##
 
 build: $(PUK_BUILDDIR)/config.status
-	$(MAKE) -C $(PUK_BUILDDIR)/Puk
+	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk
 
 # ## install
 # ##
 
 $(PADICO_ROOT)/lib/libPadicoPuk.a: $(PUK_BUILDDIR)/config.status
-	$(MAKE) -C $(PUK_BUILDDIR)/Puk install
+	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk install
 
 # ## clean
 # ##

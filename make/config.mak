@@ -25,6 +25,11 @@ CC := gcc
 endif
 AS := $(CC) # needed for some gcc specific flags
 LD := $(CC) # needed for some gcc specific flags
+AR := $(PM2_AR)
+ifeq (,$(AR))
+AR := ar
+endif
+
 
 LEX  :=  flex
 YACC :=  bison -y -d --locations

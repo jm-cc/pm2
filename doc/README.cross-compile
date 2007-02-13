@@ -3,6 +3,7 @@ PM2_SYS if needed):
 
 For instance, for compiling x86_64 binaries on x86:
 
+PM2_AR=ar
 PM2_CC=gcc -m64
 PM2_ARCH=X86_64_ARCH
 PM2_ASM=x86_64

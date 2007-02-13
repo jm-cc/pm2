@@ -7,4 +7,12 @@ PM2_AR=ar
 PM2_CC=gcc -m64
 PM2_ARCH=X86_64_ARCH
 PM2_ASM=x86_64
-export PM2_CC PM2_ARCH PM2_ASM
+export PM2_CC PM2_ARCH PM2_ASM PM2_AR
+
+And for compiling PPC64 binaries on AIX:
+
+PM2_AR=ar -X64
+PM2_CC=gcc -maix64 -mcpu=powerpc64
+PM2_ARCH=PPC64_ARCH
+PM2_ASM=ppc64
+export PM2_CC PM2_ARCH PM2_ASM PM2_AR

@@ -79,7 +79,7 @@ externals/configure: externals/configure.ac externals/building-tools/*.m4
 
 $(PUK_BUILDDIR)/config.status: $(CONFIG_FILES) $(PADICO_ROOT)/etc/padico-setup.sh
 	mkdir -p $(PUK_BUILDDIR)
-	( cd $(PUK_BUILDDIR) ; $(PUK_SRCDIR)/externals/configure --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
+	( cd $(PUK_BUILDDIR) ; $(PUK_SRCDIR)/externals/configure --disable-pukabi --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
 
 # ## build
 # ##

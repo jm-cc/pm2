@@ -30,6 +30,8 @@ struct nm_so_strat_aggreg_gate {
   struct list_head out_list;
 };
 
+static int nb_data_aggregation;
+static int nb_ctrl_aggregation;
 
 /** Add a new control "header" to the flow of outgoing packets.
  *
@@ -54,6 +56,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
       goto next;
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+    //nb_ctrl_aggregation ++;
     goto out;
 
   next:
@@ -115,6 +118,7 @@ static int pack(struct nm_gate *p_gate,
 	  goto next;
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+      //nb_data_aggregation ++;
       goto out;
 
     next:
@@ -221,6 +225,15 @@ static int try_and_commit(struct nm_gate *p_gate)
 static int init(void)
 {
   NM_LOGF("[loading strategy: <aggreg>]");
+  nb_data_aggregation = 0;
+  nb_ctrl_aggregation = 0;
+  return NM_ESUCCESS;
+}
+
+static int exit_strategy(void)
+{
+  DISP_VAL("Aggregation data", nb_data_aggregation);
+  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 
@@ -280,7 +293,7 @@ static int exit_gate(struct nm_gate *p_gate)
 
 nm_so_strategy nm_so_strat_aggreg = {
   .init = init,
-  .exit = NULL,
+  .exit = exit_strategy,
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,

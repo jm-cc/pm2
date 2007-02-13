@@ -26,7 +26,7 @@
  * as much as PTHREAD_STACK_MIN */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisée
    dans un source assembleur */
-#if defined(X86_64_ARCH) || defined(IA64_ARCH) || defined(ALPHA_ARCH)
+#if defined(X86_64_ARCH) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
   #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
 #else
   #ifdef MA__LIBPTHREAD
@@ -138,6 +138,8 @@ extern int __zero_fd;
 #elif defined(AIX_SYS)
 #    if defined(RS6K_ARCH) || defined(PPC_ARCH)
 #      define ISOADDR_AREA_TOP       (0xd0000000 - THREAD_SLOT_SIZE)
+#    elif defined(PPC64_ARCH)
+#      define ISOADDR_AREA_TOP       (0x0800000000000000 - THREAD_SLOT_SIZE)
 #    endif
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)

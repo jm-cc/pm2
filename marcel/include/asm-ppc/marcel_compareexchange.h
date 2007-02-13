@@ -20,6 +20,15 @@
 #define MA_HAVE_COMPAREEXCHANGE 1
 
 #section marcel_variables
+#section marcel_macros
+#ifdef MA__LWPS
+#define MA_EIEIO_ON_SMP "eieio;\n"
+#define MA_SYNC_ON_SMP  "sync;\n"
+#else
+#define MA_EIEIO_ON_SMP
+#define MA_SYNC_ON_SMP
+#endif
+
 #section marcel_functions
 static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long repl, int size);
 #section marcel_inline
@@ -37,9 +46,7 @@ static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, uns
   		       "      bne " TBX_LOCAL_LBLF(2) ";\n"
   		       "      stwcx. %4,0,%2;\n"
 		       "      bne- " TBX_LOCAL_LBLB(1) ";\n"
-#ifdef MA__LWPS
-		       "      sync;\n"
-#endif
+		       MA_SYNC_ON_SMP
 		    TBX_LOCAL_LBL(2) ":\n"
   	: "=&r"(prev), "=m" (*p)
   	: "r"(p), "r" (old), "r"(repl), "m" (*p)

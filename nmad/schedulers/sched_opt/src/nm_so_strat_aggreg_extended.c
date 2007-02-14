@@ -186,8 +186,8 @@ static int pack(struct nm_gate *p_gate,
 int pack_extended(struct nm_gate *p_gate,
                   uint8_t tag, uint8_t seq,
                   void *data, uint32_t len,
-                  tbx_bool_t is_completed){
-
+                  tbx_bool_t is_completed)
+{
   struct nm_so_pkt_wrap *p_so_pw;
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
   struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
@@ -309,7 +309,7 @@ static int try_and_commit(struct nm_gate *p_gate)
   /* Simply take the head of the list */
   p_so_pw = nm_l2so(out_list->next);
 
-  if(p_so_pw->is_completed) {
+  if(p_so_pw->is_completed == tbx_true) {
     list_del(out_list->next);
   } else {
     goto out;
@@ -339,8 +339,8 @@ static int init(void)
 
 static int exit_strategy(void)
 {
-  DISP_VAL("Aggregation data", nb_data_aggregation);
-  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
+  DISP_VAL("Extended aggregation data", nb_data_aggregation);
+  DISP_VAL("Extended aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

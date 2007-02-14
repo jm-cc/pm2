@@ -185,9 +185,17 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
   if(p_request)
     *p_request = (intptr_t)p_req;
 
-  return p_so_interface->p_so_sched->current_strategy->pack_extended(p_gate,
-                                                                     tag, seq,
-                                                                     data, len, is_completed);
+  if (p_so_interface->p_so_sched->current_strategy->pack_extended == NULL) {
+    NM_DISPF("The current strategy does not provide a extended pack");
+    return p_so_interface->p_so_sched->current_strategy->pack(p_gate,
+                                                              tag, seq,
+                                                              data, len);
+  }
+  else {
+    return p_so_interface->p_so_sched->current_strategy->pack_extended(p_gate,
+                                                                       tag, seq,
+                                                                       data, len, is_completed);
+  }
 }
 
 

@@ -318,6 +318,7 @@ nm_so_strategy nm_so_strat_balance = {
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,
+  .pack_extended = NULL,
   .pack_ctrl = pack_ctrl,
   .try = NULL,
   .commit = NULL,

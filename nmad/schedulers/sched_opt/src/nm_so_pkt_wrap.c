@@ -191,6 +191,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->pw.v_size = NM_SO_PREALLOC_IOV_LEN;
       p_so_pw->pw.v_nb = 0;
 
+      p_so_pw->is_completed = tbx_true;
+
       /* pw flags */
       p_so_pw->pw.pkt_priv_flags = NM_SO_NO_HEADER;
 
@@ -223,10 +225,12 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     nm_so_iov_flags(p_so_pw, 0) = NM_SO_ALLOC_STATIC;
 #endif
 
+    p_so_pw->is_completed = tbx_true;
+
     /* cumulated length: global header length) */
     p_so_pw->pw.length = NM_SO_GLOBAL_HEADER_SIZE;
 
-      /* pw flags */
+    /* pw flags */
     p_so_pw->pw.pkt_priv_flags = 0;
 
     /* current header index */

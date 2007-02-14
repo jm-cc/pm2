@@ -167,6 +167,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->optimistic_recv = 0;
 #endif
 
+      p_so_pw->is_completed = tbx_true;
+
       /* first entry: pkt header */
       p_so_pw->v->iov_base = p_so_pw->buf;
       p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED);

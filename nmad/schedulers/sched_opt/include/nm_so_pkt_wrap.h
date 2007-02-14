@@ -60,6 +60,8 @@ struct nm_so_pkt_wrap {
   struct nm_iovec    nm_v[NM_SO_PREALLOC_IOV_LEN];
 #endif
 
+  tbx_bool_t is_completed;
+
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];
 };
@@ -182,7 +184,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);
 #define NM_SO_HEADER_MARK_READ   0
 #define NM_SO_HEADER_MARK_UNREAD 1
 
-typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw, 
+typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw,
 				  void *ptr, uint32_t len,
 				  uint8_t proto_id, uint8_t seq);
 typedef int nm_so_pw_rdv_handler(struct nm_so_pkt_wrap *p_so_pw,

@@ -27,6 +27,7 @@
 
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
+#include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
 #include "nm_so_strategies/nm_so_strat_balance.h"
 
 /** Initialize the scheduler.
@@ -49,7 +50,7 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   }
 
   memset(p_priv->any_src, 0, sizeof(p_priv->any_src));
-  
+
   p_priv->next_gate_id = 0;
   p_priv->pending_any_src_unpacks = 0;
 
@@ -59,6 +60,8 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
   p_priv->current_strategy = &nm_so_strat_aggreg;
+#elif defined(CONFIG_STRAT_AGGREG_EXTENDED)
+  p_priv->current_strategy = &nm_so_strat_aggreg_extended;
 #else
   /* Fall back to the default strategy */
   p_priv->current_strategy = &nm_so_strat_default;

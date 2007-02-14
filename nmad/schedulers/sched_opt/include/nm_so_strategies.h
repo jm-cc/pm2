@@ -36,6 +36,12 @@ typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
 					uint8_t tag, uint8_t seq,
 					void *data, uint32_t len);
 
+typedef int (*nm_so_strategy_pack_extended_func)(struct nm_gate *p_gate,
+                                                 uint8_t tag, uint8_t seq,
+                                                 void *data, uint32_t len,
+                                                 tbx_bool_t is_completed);
+
+
 typedef int (*nm_so_strategy_pack_ctrl_func)(struct nm_gate *gate,
 					     union nm_so_generic_ctrl_header *p_ctrl);
 
@@ -68,6 +74,7 @@ struct nm_so_strategy_struct {
   nm_so_strategy_init_gate init_gate;
   nm_so_strategy_exit_gate exit_gate;
   nm_so_strategy_pack_func pack;
+  nm_so_strategy_pack_extended_func pack_extended;
   nm_so_strategy_pack_ctrl_func pack_ctrl;
   nm_so_strategy_try_func try;
   nm_so_strategy_commit_func commit;

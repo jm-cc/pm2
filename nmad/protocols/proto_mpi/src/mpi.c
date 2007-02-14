@@ -280,6 +280,7 @@ int mpi_inline_isend(void *buffer,
                      MPI_Datatype datatype,
                      int dest,
                      int tag,
+                     MPI_Extended is_completed,
                      MPI_Comm comm,
                      MPI_Request *request) {
   long                  gate_id;
@@ -304,7 +305,12 @@ int mpi_inline_isend(void *buffer,
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
     MPI_NMAD_TRANSFER("[%s] Sent (contig) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
-    err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+    if (is_completed == MPI_DO_NOT_USE_EXTENDED) {
+      err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+    }
+    else {
+      err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), is_completed, &(_request->request_id));
+    }
     MPI_NMAD_TRANSFER("[%s] Sent finished\n", __TBX_FUNCTION__);
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
   }
@@ -388,7 +394,12 @@ int mpi_inline_isend(void *buffer,
       }
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, len, count, sizeof_datatype(datatype));
       MPI_NMAD_TRANSFER("[%s] Sent (struct) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
-      err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, _request->contig_buffer, len, &(_request->request_id));
+      if (is_completed == MPI_DO_NOT_USE_EXTENDED) {
+        err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, _request->contig_buffer, len, &(_request->request_id));
+      }
+      else {
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, nmad_tag, _request->contig_buffer, len, is_completed, &(_request->request_id));
+      }
       MPI_NMAD_TRANSFER("[%s] Sent (struct) finished\n", __TBX_FUNCTION__);
       if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
     }
@@ -401,6 +412,49 @@ int mpi_inline_isend(void *buffer,
   inc_nb_outgoing_msg();
   return err;
 }
+
+/**
+ * Performs a extended send
+ */
+int MPI_Esend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Extended is_completed,
+              MPI_Comm comm,
+              MPI_Request *request) {
+  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  int err;
+
+  MPI_NMAD_LOG_IN();
+  MPI_NMAD_TRACE("Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
+
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_LOG_OUT();
+    return -1;
+  }
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    MPI_NMAD_LOG_OUT();
+    return not_implemented("Using MPI_ANY_TAG");
+  }
+
+  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
+    fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
+    MPI_NMAD_LOG_OUT();
+    return 1;
+  }
+
+  _request->request_type = MPI_REQUEST_SEND;
+  _request->request_ptr = NULL;
+  _request->contig_buffer = NULL;
+  err = mpi_inline_isend(buffer, count, datatype, dest, tag, is_completed, comm, request);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
 
 /**
  * Performs a standard-mode, blocking send.
@@ -432,7 +486,7 @@ int MPI_Send(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  mpi_inline_isend(buffer, count, datatype, dest, tag, comm, &request);
+  mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_DO_NOT_USE_EXTENDED, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
@@ -492,7 +546,7 @@ int MPI_Isend(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  err = mpi_inline_isend(buffer, count, datatype, dest, tag, comm, request);
+  err = mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_DO_NOT_USE_EXTENDED, comm, request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -528,7 +582,7 @@ int MPI_Rsend(void* buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  mpi_inline_isend(buffer, count, datatype, dest, tag, comm, &request);
+  mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_DO_NOT_USE_EXTENDED, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");

@@ -96,4 +96,10 @@ typedef int MPI_Op;
 #define MPI_MAX_ERROR_STRING   512
 #define MPI_MAX_NAME_STRING    256
 
+/* extended modes */
+typedef int MPI_Extended;
+#define MPI_IS_NOT_COMPLETED    ((MPI_Extended)0)
+#define MPI_IS_COMPLETED        ((MPI_Extended)1)
+#define MPI_DO_NOT_USE_EXTENDED ((MPI_Extended)-1)
+
 #endif /* MPI_TYPES_H */

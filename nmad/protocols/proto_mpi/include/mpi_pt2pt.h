@@ -21,6 +21,15 @@
 #ifndef MPI_PT2PT_H
 #define MPI_PT2PT_H
 
+int MPI_Esend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Extended is_completed,
+              MPI_Comm comm,
+              MPI_Request *request);
+
 int MPI_Send(void *buffer,
              int count,
              MPI_Datatype datatype,

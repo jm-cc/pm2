@@ -479,6 +479,14 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 			mdebug("  max iteration in key destructor for thread %i\n",cur->number);
 #endif
 	}
+
+	/* Since it will die, we don't want this thread to be chosen for
+	 * delivering signals any more */
+	{
+		marcel_sigset_t set;
+		marcel_sigfillset(&set);
+		marcel_sigmask(SIG_BLOCK,&set,NULL);
+	}
 	
 	cur->ret_val = val;
 	//if(!cur->detached) {

@@ -21,6 +21,8 @@
 #ifndef MPI_TYPES_H
 #define MPI_TYPES_H
 
+#include <tbx.h>
+
 #define MPI_PROC_NULL   (-1)
 #define MPI_ANY_SOURCE 	(-2)
 #define MPI_ROOT        (-3)
@@ -98,8 +100,8 @@ typedef int MPI_Op;
 
 /* extended modes */
 typedef int MPI_Extended;
-#define MPI_IS_NOT_COMPLETED    ((MPI_Extended)0)
-#define MPI_IS_COMPLETED        ((MPI_Extended)1)
+#define MPI_IS_NOT_COMPLETED    ((MPI_Extended)tbx_false)
+#define MPI_IS_COMPLETED        ((MPI_Extended)tbx_true)
 #define MPI_DO_NOT_USE_EXTENDED ((MPI_Extended)-1)
 
 #endif /* MPI_TYPES_H */

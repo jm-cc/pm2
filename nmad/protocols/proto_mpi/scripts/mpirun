@@ -161,22 +161,25 @@ application : {
 EOF
 ) > $appli_file
 
+PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
+env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
+
 compile_leonie
 if [ -n "$debugger" ]; then
-    $Show leonie -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show leonie $env -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
     if [ -n "$log" ] ; then
-        $Show leonie -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show leonie $env -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show leonie -vg $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show leonie $env -vg $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 elif [ -n "$MPI_NMAD_X" ] ; then
-    $Show leonie $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show leonie $env $LEONIE_ARGS $appli_file $cmdLineArgs
 else
     if [ -n "$log" ] ; then
-        $Show leonie -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show leonie $env -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show leonie --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show leonie $env --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 fi
 

@@ -31,6 +31,7 @@ struct nm_so_strat_aggreg_extended_gate {
 };
 
 static int nb_data_aggregation;
+static int nb_extended_aggregation;
 static int nb_ctrl_aggregation;
 
 /** Add a new control "header" to the flow of outgoing packets.
@@ -216,7 +217,7 @@ int pack_extended(struct nm_gate *p_gate,
 	  goto next;
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      //nb_data_aggregation ++;
+      //nb_extended_aggregation ++;
 
       p_so_pw->is_completed = is_completed;
       goto out;
@@ -333,14 +334,16 @@ static int init(void)
 {
   NM_LOGF("[loading strategy: <aggreg>]");
   nb_data_aggregation = 0;
+  nb_extended_aggregation = 0;
   nb_ctrl_aggregation = 0;
   return NM_ESUCCESS;
 }
 
 static int exit_strategy(void)
 {
-  DISP_VAL("Extended aggregation data", nb_data_aggregation);
-  DISP_VAL("Extended aggregation control", nb_ctrl_aggregation);
+  DISP_VAL("Aggregation data", nb_data_aggregation);
+  DISP_VAL("Extended aggregation", nb_extended_aggregation);
+  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

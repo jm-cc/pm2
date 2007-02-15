@@ -57,7 +57,59 @@ static int pack_ctrl(struct nm_gate *p_gate,
       goto next;
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    //nb_ctrl_aggregation ++;
+    nb_ctrl_aggregation ++;
+    goto out;
+
+  next:
+    ;
+  }
+
+  /* Simply form a new packet wrapper */
+  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
+					     &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  /* Add the control packet to the out_list */
+  list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
+
+ out:
+  return err;
+}
+
+/** Add a new control "header" to the flow of outgoing packets.
+ *
+ *  @param p_gate a pointer to the gate object.
+ *  @param p_ctrl a pointer to the ctrl header.
+ *  @param is_completed indicates if the data are going to be completed or can be sent straight away.
+ *  @return The NM status.
+ */
+static int pack_ctrl_extended(struct nm_gate *p_gate,
+                              union nm_so_generic_ctrl_header *p_ctrl,
+                              tbx_bool_t is_completed)
+{
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv;
+  int err;
+
+  /* We first try to find an existing packet to form an aggregate */
+  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
+
+    if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE) {
+      /* There's not enough room to add our ctrl header to this paquet */
+      p_so_pw->is_completed = tbx_true;
+      goto next;
+    }
+
+    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+    nb_ctrl_aggregation ++;
+
+    if (p_so_pw->is_completed == tbx_false) {
+      p_so_pw->is_completed = is_completed;
+    }
+
     goto out;
 
   next:
@@ -119,7 +171,7 @@ static int pack(struct nm_gate *p_gate,
 	  goto next;
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      //nb_data_aggregation ++;
+      nb_data_aggregation ++;
       goto out;
 
     next:
@@ -183,7 +235,17 @@ static int pack(struct nm_gate *p_gate,
   return err;
 }
 
-
+/** Handle a new packet submitted by the user code.
+ *
+ *  @note The strategy may already apply some optimizations at this point.
+ *  @param p_gate a pointer to the gate object.
+ *  @param tag the message tag.
+ *  @param seq the fragment sequence number.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @param is_completed indicates if the data are going to be completed or can be sent straight away.
+ *  @return The NM status.
+ */
 int pack_extended(struct nm_gate *p_gate,
                   uint8_t tag, uint8_t seq,
                   void *data, uint32_t len,
@@ -205,21 +267,28 @@ int pack_extended(struct nm_gate *p_gate,
       uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
       uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 
-      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
-	/* There's not enough room to add our data to this paquet */
+      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen) {
+        /* There's not enough room to add our data to this paquet */
+        p_so_pw->is_completed = tbx_true;
 	goto next;
+      }
 
-      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
-	/* We can copy data into the header zone */
+      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen) {
+        /* We can copy data into the header zone */
 	flags = NM_SO_DATA_USE_COPY;
+      }
       else
-	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
+	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
+          p_so_pw->is_completed = tbx_true;
 	  goto next;
+        }
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      //nb_extended_aggregation ++;
+      nb_extended_aggregation ++;
 
-      p_so_pw->is_completed = is_completed;
+      if (p_so_pw->is_completed == tbx_false) {
+        p_so_pw->is_completed = is_completed;
+      }
       goto out;
 
     next:
@@ -235,9 +304,11 @@ int pack_extended(struct nm_gate *p_gate,
 					    data, len,
 					    flags,
 					    &p_so_pw);
+
     if(err != NM_ESUCCESS)
       goto out;
 
+    p_so_pw->is_completed = is_completed;
     list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
 
   } else {
@@ -266,7 +337,7 @@ int pack_extended(struct nm_gate *p_gate,
 
       nm_so_init_rdv(&ctrl, tag + 128, seq);
 
-      err = pack_ctrl(p_gate, &ctrl);
+      err = pack_ctrl_extended(p_gate, &ctrl, is_completed);
       if(err != NM_ESUCCESS)
 	goto out;
     }

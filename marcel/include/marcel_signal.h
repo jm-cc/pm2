@@ -148,12 +148,17 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
   ({ *(set) = 0; \
      0;})
 
+#define MARCEL_SIGSET_FULL (0xffffffffUL - ma_sigmask(SIGKILL) - ma_sigmask(SIGSTOP))
+
 #define marcel_sigfillset(set) \
-  ({ *(set) = 0xffffffffUL;    \
+  ({ *(set) = MARCEL_SIGSET_FULL;    \
      0; })
 
 #define marcel_sigisemptyset(set)          \
   ({ (*(set) == 0); })
+
+#define marcel_sigisfullset(set)           \
+  ({ (*(set) == MARCEL_SIGSET_FULL); })
 
 #define marcel_sigismember(set,sig)        \
   ({ unsigned int mask = ma_sigmask(sig);  \

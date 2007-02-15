@@ -534,6 +534,7 @@ restart:
 		LOG_RETURN(0);
 	}
 
+	if (!marcel_sigisfullset(&cset))
 	for (sig = 1; sig < MARCEL_NSIG; sig++)
 		if (marcel_sigismember(&cset, sig))
 			if (csigaction[sig].marcel_sa_handler == SIG_DFL) {

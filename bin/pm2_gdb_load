@@ -28,6 +28,7 @@ LEO_XTERM=${LEO_XTERM:-'xterm'}
 echo "set args $args" > $file
 title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
+echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $file
 
 . "$PM2_ROOT/bin/pm2_arch" --source-mode
 for i in $_PM2CONFIG_MODULES ; do

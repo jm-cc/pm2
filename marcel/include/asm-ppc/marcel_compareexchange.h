@@ -22,10 +22,8 @@
 #section marcel_variables
 #section marcel_macros
 #ifdef MA__LWPS
-#define MA_EIEIO_ON_SMP "eieio;\n"
 #define MA_SYNC_ON_SMP  "sync;\n"
 #else
-#define MA_EIEIO_ON_SMP
 #define MA_SYNC_ON_SMP
 #endif
 

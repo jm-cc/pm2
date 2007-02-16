@@ -112,8 +112,8 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
 ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 #define ma_holder_bubble(b) (&(b)->hold)
 /** \brief Convert ma_runqueue_t *b into ma_holder_t * */
-ma_holder_t *ma_holder_runqueue(ma_runqueue_t *rq);
-#define ma_holder_runqueue(rq) (&(rq)->hold)
+ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
+#define ma_holder_rq(rq) (&(rq)->hold)
 
 #section marcel_inline
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {

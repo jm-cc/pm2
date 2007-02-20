@@ -80,7 +80,20 @@ mad3()
             _pm2load_error "Error: More than one protocol selected ($protocol ). You might use the parameter --protocol to select one protocol"
         fi
     fi
+    protocol=`echo $protocol|tr -d ' '`
     log "Protocol: $protocol"
+
+    dev=$protocol
+    # dirty fix list for devices with multiple drivers
+    case $protocol in
+        tcpdg)
+            dev='tcp'
+            ;;
+        *)
+            echo 'default case'
+            ;;
+    esac
+    log "Device: $dev"
 
     # Récupération du chemin d'accès au fichier de config des machines
     set --  --source-mode
@@ -95,11 +108,11 @@ mad3()
     PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
 
     host_list=`cat ${PM2_CONF_FILE}`
-    set ${PM2_LEONIE_NETWORK_FILE} $protocol $host_list
+    set ${PM2_LEONIE_NETWORK_FILE} $dev $host_list
     network_name=`. ${PM2_ROOT}/bin/leo-network`
 
     if [ "$network_name" == "Network not found" ] ; then
-        _pm2load_error "Error: No network found for protocol $protocol and hosts $host_list"
+        _pm2load_error "Error: No network found for device $dev and hosts $host_list"
     fi
 
     new_list=""

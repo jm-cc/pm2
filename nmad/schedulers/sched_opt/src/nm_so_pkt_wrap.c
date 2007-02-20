@@ -125,6 +125,14 @@ nm_so_pw_exit()
   return NM_ESUCCESS;
 }
 
+static
+void
+nm_so_pw_reset(struct nm_so_pkt_wrap * __restrict__ p_so_pw) {
+      p_so_pw->pw.gate_priv	= NULL;
+      p_so_pw->pw.drv_priv	= NULL;
+}
+
+
 /** Allocate a suitable pkt wrapper for various SO purposes.
  *
  *  @param flags the flags indicating what pkt wrapper is needed.
@@ -150,6 +158,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 	err = -NM_ENOMEM;
 	goto out;
       }
+
+      nm_so_pw_reset(p_so_pw);
 
       /* io vector */
       p_so_pw->pw.v = p_so_pw->v;
@@ -182,6 +192,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 	goto out;
       }
 
+      nm_so_pw_reset(p_so_pw);
+
       /* io vector */
       p_so_pw->pw.v = p_so_pw->v;
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
@@ -207,6 +219,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       err = -NM_ENOMEM;
       goto out;
     }
+
+    nm_so_pw_reset(p_so_pw);
 
     /* io vector */
     p_so_pw->pw.v = p_so_pw->v;

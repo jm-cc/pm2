@@ -64,6 +64,10 @@ struct nm_tcpdg_gate {
         /** Array of sockets, one socket per track.
          */
         int	fd[255];
+
+        /** Reference counter.
+         */
+        int	ref_count;
 };
 
 /** TCP/datagram specific pkt wrapper data.
@@ -336,6 +340,9 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
                 /* update gate private data		*/
                 p_gate->p_gate_drv_array[p_drv->id]->info	= p_tcp_gate;
                 NM_TRACEF("drv_id %d, p_gate %p", p_drv->id, p_gate->p_gate_drv_array[p_drv->id]->info );
+                p_tcp_gate->ref_count	= 1;
+        } else {
+                p_tcp_gate->ref_count++;
         }
 
         p_tcp_gate->fd[p_trk->id]	= fd;
@@ -423,7 +430,19 @@ nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
 static
 int
 nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
+        struct nm_gate		*p_gate		= NULL;
+        struct nm_drv		*p_drv		= NULL;
+        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
         int	err;
+
+        p_gate		= p_crq->p_gate;
+        p_drv		= p_crq->p_drv;
+        p_tcp_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+        p_tcp_gate->ref_count--;
+        if (!p_tcp_gate->ref_count) {
+                TBX_FREE(p_tcp_gate);
+                p_gate->p_gate_drv_array[p_drv->id]->info	= 0;
+        }
 
         err = NM_ESUCCESS;
 
@@ -1001,6 +1020,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 if (!p_tcp_pw->rem_length) {
                         err	= NM_ESUCCESS;
 
+                        *p_cur = p_vi->cur_copy;
                         goto out_complete;
                 }
 

@@ -90,7 +90,7 @@ mad3()
             dev='tcp'
             ;;
         *)
-            echo 'default case'
+            log "default case"
             ;;
     esac
     log "Device: $dev"

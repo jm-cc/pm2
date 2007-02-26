@@ -69,10 +69,18 @@ get_machines() {
 	if [ "$network_name" != "Network not found" ] ; then
 	    break
 	fi
-     done
+    done
     if [ "$network_name" = "Network not found" ] ; then
 	echo "$0: Cannot find a network for hosts '$host_list3', exiting..." 1>&2
 	exit 1
+    fi
+
+    nb_protocols=$(echo $protocols | wc -w)
+    if [ "$nb_protocols" != 1 ] ; then
+        echo "Warning!!!"
+        echo "....Several available protocols: $protocols"
+        echo "....Selected protocol: $net"
+        echo "....Use the environment variable MPI_NMAD_PROTOCOL to change the selection."
     fi
 
     # construct the machine list

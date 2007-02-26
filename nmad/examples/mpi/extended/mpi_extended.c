@@ -25,7 +25,7 @@
 #define PACK_SIZE_MIN 128
 #define PACK_SIZE_MAX 1024
 #define MSG_SIZE_MIN  512
-#define MSG_SIZE_MAX  (30 * 1024)
+#define MSG_SIZE_MAX  (128 * 1024)
 
 #define WARMUP    1
 #define LOOPS     1000
@@ -88,7 +88,7 @@ int main(int argc, char	**argv) {
   }
 
   /* Multi-pack pingpong */
-  if (ping_side) {
+  if (!ping_side) {
     for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
       for(pack = PACK_SIZE_MIN ; pack <= PACK_SIZE_MAX ; pack = _next_pack_size(pack)) {
         unsigned long n, chunk = len / pack;

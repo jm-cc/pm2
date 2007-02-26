@@ -6,14 +6,17 @@ if [ "$MPI_NMAD_PROTOCOL" == "" ] ; then
 fi
 
 machines=$(pm2conf|grep -v current|awk '{print $3}'|tr '\012' '_' | sed 's/_$//')
+nb_machines=$(pm2conf|grep -v current|awk '{print $3}'|wc -l)
 protocol=$MPI_NMAD_PROTOCOL
 
-mkdir -p results/${machines}_$protocol/
+mkdir -p results/${machines}_${protocol}/
+
+echo $machines | tr '_' '\012' > results/${machines}_${protocol}/machines.lst
 
 make clean mpi_extended
-../mpirun -machinefile ../nmad_xeon.lst -np 2 mpi_extended > results/${machines}_$protocol/result_extended_${machines}_${protocol}.txt 2>&1
+../mpirun -machinefile results/${machines}_${protocol}/machines.lst -np $nb_machines mpi_extended > results/${machines}_${protocol}/result_extended_${machines}_${protocol}.txt 2>&1
 
-cd results/${machines}_$protocol/
+cd results/${machines}_${protocol}/
 
 for chunk in 128 256 512 1024 ; do
     export chunk

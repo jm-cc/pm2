@@ -159,7 +159,7 @@ nm_mx_check_return(char *msg, mx_return_t return_code) {
 		msg_mx = mx_strerror(return_code);
 
 		DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
-        }
+	}
 }
 
 /** Initialize the MX driver */

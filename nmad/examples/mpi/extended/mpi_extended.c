@@ -22,8 +22,8 @@
 
 #include "mpi.h"
 
-#define PACK_SIZE_MIN 128
-#define PACK_SIZE_MAX 1024
+#define CHUNK_SIZE_MIN 128
+#define CHUNK_SIZE_MAX 1024
 #define MSG_SIZE_MIN  512
 #define MSG_SIZE_MAX  (128 * 1024)
 
@@ -34,7 +34,7 @@ static __inline__
 uint32_t _next_msg_size(uint32_t len)
 {
   if (len < 10 * 1024) {
-    return len + PACK_SIZE_MIN;
+    return len + CHUNK_SIZE_MIN;
   }
   else {
     return len << 1;
@@ -42,7 +42,7 @@ uint32_t _next_msg_size(uint32_t len)
 }
 
 static __inline__
-uint32_t _next_pack_size(uint32_t len)
+uint32_t _next_chunk_size(uint32_t len)
 {
   return len << 1;
 }
@@ -50,7 +50,7 @@ uint32_t _next_pack_size(uint32_t len)
 int main(int argc, char	**argv) {
   char	  *buffer = NULL;
   uint32_t len;
-  uint32_t pack;
+  uint32_t chunk;
   int      comm_rank;
   int      comm_size;
   int      ping_side;
@@ -69,7 +69,7 @@ int main(int argc, char	**argv) {
 
   if (comm_rank == 0) {
     fprintf(stderr, "The configuration size is %d\n", comm_size);
-    fprintf(stderr, "src\t|dst\t|size\t|pack size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit|\n");
+    fprintf(stderr, "src\t|dst\t|size\t|chunk size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit|\n");
   }
 
   /* Warmup */
@@ -87,17 +87,17 @@ int main(int argc, char	**argv) {
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
-  /* Multi-pack pingpong */
+  /* Multi-chunk pingpong */
   if (!ping_side) {
     for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
-      for(pack = PACK_SIZE_MIN ; pack <= PACK_SIZE_MAX ; pack = _next_pack_size(pack)) {
-        unsigned long n, chunk = len / pack;
+      for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
+        unsigned long n, nb_chunks = len / chunk;
 
-        if (len < pack) continue;
+        if (len < chunk) continue;
 
         for(k=0 ; k<LOOPS ; k++) {
-          for(n = 0; n < chunk; n++) {
-            MPI_Recv(buffer + n * pack, pack, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
           }
           MPI_Send(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD);
         }
@@ -120,32 +120,32 @@ int main(int argc, char	**argv) {
     MPI_Datatype datatype;
 
     for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
-      for(pack = PACK_SIZE_MIN ; pack <= PACK_SIZE_MAX ; pack = _next_pack_size(pack)) {
-        unsigned long n, chunk = len / pack;
+      for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
+        unsigned long n, nb_chunks = len / chunk;
 
-        if (len < pack) continue;
+        if (len < chunk) continue;
 
-        requests = malloc(chunk * sizeof(MPI_Request));
-        offsets = malloc(chunk * sizeof(MPI_Aint));
-        blockcounts = malloc(chunk * sizeof(int));
-        oldtypes = malloc(chunk * sizeof(MPI_Datatype));
+        requests = malloc(nb_chunks * sizeof(MPI_Request));
+        offsets = malloc(nb_chunks * sizeof(MPI_Aint));
+        blockcounts = malloc(nb_chunks * sizeof(int));
+        oldtypes = malloc(nb_chunks * sizeof(MPI_Datatype));
 
-        for(k=0 ; k<chunk ; k++) {
+        for(k=0 ; k<nb_chunks ; k++) {
           oldtypes[k] = MPI_CHAR;
-          offsets[k] = k*pack;
+          offsets[k] = k*chunk;
           blockcounts[k] = len;
         }
-        MPI_Type_struct(chunk, blockcounts, offsets, oldtypes, &datatype);
+        MPI_Type_struct(nb_chunks, blockcounts, offsets, oldtypes, &datatype);
         MPI_Type_commit(&datatype);
 
         t1_extended = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
-          for(n = 0; n < chunk-1; n++) {
-            MPI_Esend(buffer+n*pack, pack, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
+          for(n = 0; n < nb_chunks-1; n++) {
+            MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
           }
-          MPI_Esend(buffer+(chunk-1)*pack, pack, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[chunk-1]);
+          MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
 
-          for(n = 0; n < chunk; n++) {
+          for(n = 0; n < nb_chunks; n++) {
             MPI_Wait(&requests[n], NULL);
           }
 
@@ -168,7 +168,7 @@ int main(int argc, char	**argv) {
         free(oldtypes);
 
         gain = 100 - (((t2_extended - t1_extended) / (t2_bloc - t1_bloc)) * 100);
-        fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, pack, chunk, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain);
+        fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain);
       }
     }
   }

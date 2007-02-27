@@ -18,51 +18,53 @@ make clean mpi_extended
 
 cd results/${machines}_${protocol}/
 
-for chunk in 128 256 512 1024 ; do
-    export chunk
-    awk '$4 == ENVIRON["chunk"]' result_extended_${machines}_${protocol}.txt  > result_extended_${machines}_${protocol}_chunk$chunk.txt
-done
-
 seuil=10240
 
 for chunk in 128 256 512 1024 ; do
+    export chunk
+    awk '$4 == ENVIRON["chunk"]' result_extended_${machines}_${protocol}.txt  > result_extended_${machines}_${protocol}_chunk$chunk.txt
     max_size=$(awk '{print $3}' result_extended_${machines}_${protocol}_chunk$chunk.txt |sort -nr|head -1)
+
     (cat <<EOF
-set terminal jpeg
+set terminal png size 505,378
 set title "Chunk size $chunk - Machines $machines - Protocol $protocol"
 set xlabel "Message size"
 set logscale x 2
+set xtics ("512" 512, "1K" 1024, "2K" 2048,"4K" 4096,"8K" 8192,"16K" 16384,"32K" 32768,"64K" 65536,"128K" 131072, "256K" 262144,"512K" 524288,"1M" 1048576,"2M" 2097152,"4M" 4194304, "8M" 8388608)
 
 set ylabel "Transfer time"
-set output "result_extended_${machines}_${protocol}_chunk$chunk.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "1-bloc", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
+set output "result_extended_${machines}_${protocol}_chunk$chunk.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "Struct datatype", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
 
 set ylabel "Benefit"
-set output "result_extended_${machines}_${protocol}_chunk${chunk}_benefit.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints title "Benefit"
+set output "result_extended_${machines}_${protocol}_chunk${chunk}_benefit.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints notitle
 
 set xrange [:$seuil]
 
 set ylabel "Transfer time"
-set output "result_extended_${machines}_${protocol}_chunk${chunk}_small.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "1-bloc", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
+set output "result_extended_${machines}_${protocol}_chunk${chunk}_small.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "Struct datatype", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
 
 set ylabel "Benefit"
-set output "result_extended_${machines}_${protocol}_chunk${chunk}_small_benefit.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints title "Benefit"
+set output "result_extended_${machines}_${protocol}_chunk${chunk}_small_benefit.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints notitle
 
 set xrange [$seuil:$max_size]
 
 set ylabel "Transfer time"
-set output "result_extended_${machines}_${protocol}_chunk${chunk}_large.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "1-bloc", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
+set output "result_extended_${machines}_${protocol}_chunk${chunk}_large.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:6 with linespoints title "Struct datatype", "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:7 with linespoints title "Extended"
 
 set ylabel "Benefit"
-set output "result_extended_${machines}_${protocol}_chunk${chunk}_large_benefit.jpg"
-plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints title "Benefit"
+set output "result_extended_${machines}_${protocol}_chunk${chunk}_large_benefit.png"
+plot "result_extended_${machines}_${protocol}_chunk$chunk.txt" using 3:8 with linespoints notitle
 EOF
     ) > courbe_${machines}_${protocol}_${chunk}.gnu
     gnuplot courbe_${machines}_${protocol}_$chunk.gnu
+
+    rm courbe_${machines}_${protocol}_$chunk.gnu
+    rm result_extended_${machines}_${protocol}_chunk$chunk.txt
 done
 
 cd -

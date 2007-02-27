@@ -88,55 +88,58 @@ int main(int argc, char	**argv) {
   }
 
   /* Multi-chunk pingpong */
-  if (!ping_side) {
-    for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
-      for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
-        unsigned long n, nb_chunks = len / chunk;
+  for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
+    for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
+      unsigned long n, nb_chunks = len / chunk;
+      MPI_Aint *offsets;
+      MPI_Datatype *oldtypes;
+      int *blockcounts;
+      MPI_Datatype datatype;
+      MPI_Request *requests;
 
-        if (len < chunk) continue;
+      if (len < chunk) continue;
 
+      // Create the struct derived datatype
+      offsets = malloc(nb_chunks * sizeof(MPI_Aint));
+      blockcounts = malloc(nb_chunks * sizeof(int));
+      oldtypes = malloc(nb_chunks * sizeof(MPI_Datatype));
+      for(k=0 ; k<nb_chunks ; k++) {
+        oldtypes[k] = MPI_CHAR;
+        offsets[k] = k*chunk;
+        blockcounts[k] = len;
+      }
+      MPI_Type_struct(nb_chunks, blockcounts, offsets, oldtypes, &datatype);
+      MPI_Type_commit(&datatype);
+
+      requests = malloc(nb_chunks * sizeof(MPI_Request));
+
+      // Exchange message
+      if (!ping_side) {
+        // server: receive - send
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks; n++) {
             MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
           }
-          MPI_Send(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD);
+          for(n = 0; n < nb_chunks-1; n++) {
+            MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
+          }
+          MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
+
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Wait(&requests[n], NULL);
+          }
         }
 
         for(k=0 ; k<LOOPS ; k++) {
           MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
-          MPI_Send(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD);
+          MPI_Send(buffer, 1, datatype, rank_dst, 10, MPI_COMM_WORLD);
         }
       }
-    }
-  }
-  else {
-    double t1_bloc, t2_bloc;
-    double t1_extended, t2_extended;
-    double gain;
-    MPI_Request *requests;
-    MPI_Aint *offsets;
-    MPI_Datatype *oldtypes;
-    int *blockcounts;
-    MPI_Datatype datatype;
-
-    for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
-      for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
-        unsigned long n, nb_chunks = len / chunk;
-
-        if (len < chunk) continue;
-
-        requests = malloc(nb_chunks * sizeof(MPI_Request));
-        offsets = malloc(nb_chunks * sizeof(MPI_Aint));
-        blockcounts = malloc(nb_chunks * sizeof(int));
-        oldtypes = malloc(nb_chunks * sizeof(MPI_Datatype));
-
-        for(k=0 ; k<nb_chunks ; k++) {
-          oldtypes[k] = MPI_CHAR;
-          offsets[k] = k*chunk;
-          blockcounts[k] = len;
-        }
-        MPI_Type_struct(nb_chunks, blockcounts, offsets, oldtypes, &datatype);
-        MPI_Type_commit(&datatype);
+      else {
+        // client: send - receive
+        double t1_bloc, t2_bloc;
+        double t1_extended, t2_extended;
+        double gain;
 
         t1_extended = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
@@ -149,27 +152,29 @@ int main(int argc, char	**argv) {
             MPI_Wait(&requests[n], NULL);
           }
 
-          MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          }
         }
         t2_extended = MPI_Wtime();
 
         t1_bloc = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
           MPI_Send(buffer, 1, datatype, rank_dst, 10, MPI_COMM_WORLD);
-
           MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
         }
         t2_bloc = MPI_Wtime();
 
-        MPI_Type_free(&datatype);
-        free(requests);
-        free(blockcounts);
-        free(offsets);
-        free(oldtypes);
-
         gain = 100 - (((t2_extended - t1_extended) / (t2_bloc - t1_bloc)) * 100);
         fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain);
       }
+
+      // Free memory
+      MPI_Type_free(&datatype);
+      free(requests);
+      free(blockcounts);
+      free(offsets);
+      free(oldtypes);
     }
   }
 

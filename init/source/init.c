@@ -513,22 +513,6 @@ void common_post_init(int *argc, char *argv[],
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
 
-#if defined(XPAULETTE) && defined(MA__LWPS)
-  /*
-   * TCP XPaul initialization
-   * --------------------------------
-   *
-   * Provides:
-   * - Create communications specialized LWP
-   *
-   * Requires:
-   * - Marcel's LWPs
-   * - Marcel's threads
-   * - Marcel's semaphores
-   */
-  xpaul_init_receiver();
-#endif /* XPAULETTE && MA__LWPS*/
-  
 #ifdef NTBX
   ntbx_purge_cmd_line(argc, argv);
 #endif /* NTBX */

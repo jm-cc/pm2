@@ -780,7 +780,7 @@ xpaul_req_t xpaul_get_success_req(xpaul_server_t server);
 int xpaul_lock(xpaul_server_t server);
 int xpaul_unlock(xpaul_server_t server);
 /* Used by BLOCK_ONE and BLOCK_ALL before and after the syscall */
-int xpaul_callback_will_block(xpaul_server_t server);
+int xpaul_callback_will_block(xpaul_server_t server, xpaul_req_t req);
 int xpaul_callback_has_blocked(xpaul_server_t server);
 
 /* Forced polling */

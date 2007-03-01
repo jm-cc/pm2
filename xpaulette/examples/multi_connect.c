@@ -515,7 +515,9 @@ int main(int argc, char ** argv)
 			marcel_join(pid_server[i],  NULL);
 		}
 	}
+#ifdef DO_PROFILE
 	profile_stop();
+#endif
 
 	fprintf(stderr, "\n\n\n\n######################\n");
 	fprintf(stderr, "### BENCHMARK DONE ###\n");

@@ -37,7 +37,7 @@ static int file_des;
 #else
 #define NB_BOURRIN 1
 #endif
-//#define PRINT_STATS 1
+#define PRINT_STATS 1
 
 
 void envoi(void* b, unsigned int size, int id)
@@ -481,7 +481,9 @@ int main(int argc, char ** argv)
 		serveur();
 
 	}
+#ifdef DO_PROFILE
 	profile_stop();
+#endif
 
 	fprintf(stderr, "### BENCHMARK DONE ###\n");
 	fini=1;        

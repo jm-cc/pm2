@@ -28,19 +28,23 @@ _pm2load_usage() # exit_code
 Usage: $PROGNAME { option } command
 
   option:
-    -f name  : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -d       : Run command through gdb
-    -vg      : Run command through valgrind
-    --numactl [n]: Run command through numactl [default: n=0]
-    -t       : Run command through strace
-    -p cmd   : Run pre-script command (e.g. numactl)
-    -s       : Run scripts in debug mode
-    -c name  : Use console named "name"
-    -l       : Also generate a log file on first node
-    -L       : As '-l' but do not display the log file
-    -u       : Use local flavor (re-run pm2-config on each node)
-    --protocol name : Use protocol named "name"
-    -h       : Display this help message
+    -f|--flavor name      : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d|--debug            : Run command through gdb
+    -vg|--valgrind        : Run command through valgrind
+    --numactl [n]         : Run command through numactl [default: n=0]
+    -t|--trace            : Run command through strace
+    --prescript cmd       : Run pre-script command (e.g. numactl)
+    -s                    : Run scripts in debug mode
+    -c|--console name     : Use console named "name"
+    -l|--log              : Also generate a log file on first node
+    -L                    : As '-l' but do not display the log file
+    -u|--use-local-flavor : Use local flavor (re-run pm2-config on each node)
+    --protocol name       : Use protocol named "name"
+    -h|--help             : Display this help message
+
+   Madeleine options:
+    -x                    : Run command through xterm
+    -p                    : Pause at the end of the command
 EOF
     exit $1
 }

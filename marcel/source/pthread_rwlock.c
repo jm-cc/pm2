@@ -24,6 +24,8 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
 //VD: #include "internals.h"
 //VD: #include "queue.h"
 //VD: #include "spinlock.h"

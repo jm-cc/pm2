@@ -287,6 +287,7 @@ int mpi_inline_isend(void *buffer,
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
   int                   nmad_tag;
+  int                   seq, probe;
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
   gate_id = out_gate_id[dest];
@@ -299,12 +300,19 @@ int mpi_inline_isend(void *buffer,
     return 1;
   }
 
+  seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, nmad_tag);
+  probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, nmad_tag, seq-1, 1);
+  if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
+    MPI_NMAD_TRACE("Reaching maximum sequence number. Trigger automatic flushing");
+    nm_so_sr_swait_range(p_so_sr_if, gate_id, nmad_tag, 0, seq-1);
+  }
+
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
   MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, nmad_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, count*sizeof_datatype(datatype), count, sizeof_datatype(datatype));
-    MPI_NMAD_TRANSFER("[%s] Sent (contig) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
+    MPI_NMAD_TRANSFER("[%s] Sent (contig) --> %d, %ld : %lu bytes\n", __TBX_FUNCTION__, dest, gate_id, count * sizeof_datatype(datatype));
     if (is_completed == MPI_DO_NOT_USE_EXTENDED) {
       err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
     }
@@ -393,7 +401,7 @@ int mpi_inline_isend(void *buffer,
         }
       }
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, len, count, sizeof_datatype(datatype));
-      MPI_NMAD_TRANSFER("[%s] Sent (struct) --> %ld: %lu bytes\n", __TBX_FUNCTION__, gate_id, count * sizeof_datatype(datatype));
+      MPI_NMAD_TRANSFER("[%s] Sent (struct) --> %d, %ld: %lu bytes\n", __TBX_FUNCTION__, dest, gate_id, count * sizeof_datatype(datatype));
       if (is_completed == MPI_DO_NOT_USE_EXTENDED) {
         err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, _request->contig_buffer, len, &(_request->request_id));
       }
@@ -617,6 +625,7 @@ int mpi_inline_irecv(void* buffer,
   int                   err      = 0;
   long                  gate_id;
   int                   nmad_tag;
+  int                   seq, probe;
   mpir_datatype_t      *mpir_datatype = NULL;
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
@@ -642,6 +651,13 @@ int mpi_inline_irecv(void* buffer,
     fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", nmad_tag, comm, tag, NM_SO_MAX_TAGS);
     MPI_NMAD_LOG_OUT();
     return 1;
+  }
+
+  seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, nmad_tag);
+  probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, nmad_tag, seq-1, 1);
+  if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
+    MPI_NMAD_TRACE("Reaching maximum sequence number. Trigger automatic flushing");
+    nm_so_sr_rwait_range(p_so_sr_if, gate_id, nmad_tag, 0, seq-1);
   }
 
   _request->request_ptr = NULL;

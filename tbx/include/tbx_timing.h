@@ -78,6 +78,15 @@ typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    ((t2) - (t1))
 
+#elif defined(PPC64_ARCH)
+
+typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
+#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t))
+
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   ((t2) - (t1))
+
 #else
 
 /* fall back to imprecise but portable way */

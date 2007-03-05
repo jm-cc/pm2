@@ -125,7 +125,12 @@ extern int __zero_fd;
 #elif defined(DARWIN_SYS)
 #  if defined(PPC_ARCH)
 #    define ISOADDR_AREA_TOP       0xb0000000
-#    define MAIN_STACK_BOT         0x90000000
+#    define SLOT_AREA_BOTTOM       0x90000000
+#    define MAIN_STACK_BOT         0xb0000000
+#  elif defined(PPC64_ARCH)
+#    define ISOADDR_AREA_TOP       0x7000000000000
+#    define SLOT_AREA_BOTTOM       0x90000000
+#    define MAIN_STACK_BOT         0x7000000000000
 #  elif defined(X86_ARCH)
 #    define ISOADDR_AREA_TOP       0x80000000
 #    define MAIN_STACK_BOT         0xbf800000

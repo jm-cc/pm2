@@ -15,6 +15,8 @@ echo "Cmd: $prog $@"
 if [ -x ./$prog-unix ]; then
   echo "************** Unix"
   ./$prog-unix "$@"
+fi
+if [ -x ./$prog-clone ]; then
   echo "************** Clone"
   ./$prog-clone "$@"
 fi

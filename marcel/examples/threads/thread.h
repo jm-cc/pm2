@@ -32,19 +32,31 @@
 #  define marcel_join                pthread_join
 #  define marcel_self                pthread_self
 
+#ifdef __linux__
 #  define marcel_yield               pthread_yield
+#else
+#  define marcel_yield               sched_yield
+#endif
 
 #  define marcel_main                main
 
 #  define marcel_init(a, b)
 #  define marcel_end()
 
-#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+#ifdef _SC_NPROCESSORS_ONLN
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_ONLN)
+#else
+#  define marcel_nbvps()             2
+#endif
 
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
+#ifdef __linux__
 #  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#else
+#  define marcel_change_vpmask(mask) (void)0
+#endif
 #  define marcel_vpmask_t            unsigned long
 
 #  define TRUE 1
@@ -200,12 +212,20 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 
 #  define marcel_main                main
 
-#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+#ifdef _SC_NPROCESSORS_ONLN
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_ONLN)
+#else
+#  define marcel_nbvps()             2
+#endif
 
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
+#ifdef __linux__
 #  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#else
+#  define marcel_change_vpmask(mask) (void)0
+#endif
 #  define marcel_vpmask_t            unsigned long
 
 #elif defined(REGULAR_UNIX)
@@ -252,12 +272,20 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 
 #  define marcel_main                main
 
-#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+#ifdef _SC_NPROCESSORS_ONLN
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_ONLN)
+#else
+#  define marcel_nbvps()             2
+#endif
 
 #  define marcel_printf              printf
 #  define marcel_fflush              fflush
 
+#ifdef __linux__
 #  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#else
+#  define marcel_change_vpmask(mask) (void)0
+#endif
 #  define marcel_vpmask_t            unsigned long
 
 #elif defined(MARCEL)

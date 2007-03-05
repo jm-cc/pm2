@@ -14,7 +14,7 @@ LDLIBS = -lpthread
 
 TYPES_ALL=nptl linuxthread unix clone pth
 
-TYPES=nptl #linuxthread #unix #clone #pth
+TYPES=nptl unix #linuxthread #unix #clone #pth
 
 FLAVORS=marcel-mono marcel-smp marcel-numa
 #FLAVORS=marcel-smp marcel-numa

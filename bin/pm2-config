@@ -449,6 +449,8 @@ pm2config_set_vars()
 	fi
     done
 
+    export _PM2CONFIG_LD_LIBRARY_PATH
+
     #LDLIBS
     _PM2CONFIG_LD_LIBS=""
     for _lib in $_PM2CONFIG_DIRTY_ORDERED_LIBS ; do

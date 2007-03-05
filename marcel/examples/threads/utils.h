@@ -41,6 +41,26 @@ typedef unsigned long tick_t, *p_tick_t;
    ((t2) - (t1))
 
 #else
+
+#elif defined(__ppc__)
+
+	typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
+#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t))
+
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+	   ((t2) - (t1))
+
+#elif defined(__ppc64__)
+
+	typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
+#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t))
+
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+	   ((t2) - (t1))
+
+
 #error unknown architecture
 #endif
 

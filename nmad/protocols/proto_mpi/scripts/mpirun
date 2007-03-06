@@ -158,7 +158,7 @@ fi
 
 (cat <<EOF
 application : {
-     name     : $pm2_appli;
+     name     : "$pm2_appli";
      flavor   : $PM2_FLAVOR;
      networks : {
           include  : $NET_FILE;

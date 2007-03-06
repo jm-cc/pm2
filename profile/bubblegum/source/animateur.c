@@ -1397,7 +1397,13 @@ char* ConfigGetTraceFileName(char* configfile)
 	perror("fopen");
    	fprintf(stderr,"can't open %s\n",configfile);
    	fprintf(stderr,"There is a sample configuration file in $PM2_ROOT/marcel/examples/, you probably just need to \"cd\" there\n");
-      return NULL;
+      char *root = getenv("PM2_ROOT");
+      static const char path[] = "/profile/bubblegum/source/tracefile_multi";
+      int len = strlen(root) + strlen(path);
+      char *res = malloc(len+1);
+      strncpy(res, root, strlen(root));
+      strncpy(res + strlen(root), path, strlen(path)+1);
+      return res;
    }
    do
    {

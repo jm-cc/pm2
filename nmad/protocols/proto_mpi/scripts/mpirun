@@ -61,7 +61,7 @@ get_machines() {
     if [ -n "$MPI_NMAD_PROTOCOL" ] ; then
         protocols="$MPI_NMAD_PROTOCOL"
     else
-        protocols=`${PM2_ROOT}/bin/pm2-config --protocols`
+        protocols=`${PM2_ROOT}/bin/pm2-config --flavor=$PM2_FLAVOR --protocols`
     fi
 
     # Fix: tcpdg should be tcp

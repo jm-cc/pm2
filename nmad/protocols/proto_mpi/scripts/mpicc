@@ -8,8 +8,14 @@ if [ -z "$PM2_ROOT" ] ; then
 fi
 
 if [ "$PM2_FLAVOR" == "" ] ; then
-    echo "Error. You need to set the variable PM2_FLAVOR to specify the pm2 flavor to use"
-    exit 1
+    if [ "$1" != "-flavor" ] ; then
+	echo "Error. You need to set the variable PM2_FLAVOR to specify the pm2 flavor to use"
+	exit 1
+    else
+	shift
+	PM2_FLAVOR=$1
+	shift
+    fi
 fi
 
 DoLink=1
@@ -29,8 +35,8 @@ verbose=0
 # consistently with the MPICH library chosen.  By including the library
 # and include paths here, we can use the same mpicc for a range of 
 # libraries and compilers, including ones for 32 and 64 bit systems.
-CC=$(pm2-config --cc)
-CLINKER=$(pm2-config --cc)
+CC=$(pm2-config --flavor=$PM2_FLAVOR --cc)
+CLINKER=$(pm2-config --flavor=$PM2_FLAVOR --cc)
 LDFLAGSBASE=""
 USER_CFLAGS=$(pm2-config --flavor=$PM2_FLAVOR --cflags)
 BASE_LIB_LIST=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-l)

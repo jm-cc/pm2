@@ -452,7 +452,7 @@ static int lwp_start(ma_lwp_t lwp)
 
 #if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
 	if (LWP_NUMBER(lwp)<marcel_nbvps()) {
-		unsigned long target = ma_cpu_of_vp_num(LWP_NUMBER(lwp));
+		unsigned long target = marcel_topo_vp_level[LWP_NUMBER(lwp)].os_cpu;
 		ma_bind_on_processor(target);
 		mdebug("LWP %u bound to processor %lu\n",
 				LWP_NUMBER(lwp), target);

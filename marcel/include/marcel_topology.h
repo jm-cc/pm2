@@ -92,7 +92,6 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 #ifndef MA__NUMA
 #define marcel_topo_node_level marcel_machine_level
 #endif
-#define ma_cpu_of_vp_num(num) (((num)/marcel_vps_per_cpu)*marcel_cpu_stride)
 
 #section marcel_variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
@@ -198,6 +197,15 @@ static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t * mask)
 }
 
 #section functions
+/** \brief Test whether VP mask is empty */
+static __tbx_inline__ int marcel_vpmask_is_empty(const marcel_vpmask_t * mask);
+#section inline
+static __tbx_inline__ int marcel_vpmask_is_empty(const marcel_vpmask_t * mask)
+{
+	return *mask == MARCEL_VPMASK_EMPTY;
+}
+
+#section functions
 /** \brief Fill VP mask */
 static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t * mask);
 #section inline
@@ -268,10 +276,10 @@ static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
 
 #section functions
 /** \brief Test whether VP \e vp is part of mask \e mask */
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
+static __tbx_inline__ int marcel_vpmask_vp_ismember(const marcel_vpmask_t * mask,
     unsigned vp);
 #section inline
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
+static __tbx_inline__ int marcel_vpmask_vp_ismember(const marcel_vpmask_t * mask,
     unsigned vp)
 {
 #ifdef MA__LWPS
@@ -282,7 +290,7 @@ static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t * mask,
 }
 
 #section functions
-/** \brief Test whether VP \e vp is part of mask \e mask */
+/** \brief Apply OR mask \e to_or to mask \e mask */
 static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or);
 #section inline
 static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or)
@@ -290,15 +298,38 @@ static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel
 	*mask |= *to_or;
 }
 
+#section functions
+/** \brief Apply AND mask \e to_and to mask \e mask */
+static __tbx_inline__ void marcel_vpmask_and(marcel_vpmask_t * mask, const marcel_vpmask_t *to_and);
+#section inline
+static __tbx_inline__ void marcel_vpmask_and(marcel_vpmask_t * mask, const marcel_vpmask_t *to_and)
+{
+	*mask &= *to_and;
+}
+
 #section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
-static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask);
+static __tbx_inline__ int marcel_vpmask_weight(const marcel_vpmask_t * mask);
 #section marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t * mask)
+static __tbx_inline__ int marcel_vpmask_weight(const marcel_vpmask_t * mask)
 {
 #ifdef MA__LWPS
 	return ma_hweight_long(*mask);
+#else
+	return *mask;
+#endif
+}
+
+#section marcel_functions
+/** \brief Return the first VP of VP mask + 1, 0 if none.  */
+static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask);
+#section marcel_inline
+#depend "asm/linux_bitops.h[marcel_inline]"
+static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask)
+{
+#ifdef MA__LWPS
+	return ma_ffs(*mask);
 #else
 	return *mask;
 #endif
@@ -384,8 +415,13 @@ struct marcel_topo_level {
 	enum marcel_topo_level_e type;	/**< \brief Type of level */
 	unsigned number;		/**< \brief Horizontal index among the machine */
 	unsigned index;			/**< \brief Index in fathers' children array */
+	signed os_node;			/**< \brief OS-provided node number */
+	signed os_die;			/**< \brief OS-provided die number */
+	signed os_core;			/**< \brief OS-provided core number */
+	signed os_cpu;			/**< \brief OS-provided CPU number */
 
 	marcel_vpmask_t vpset;		/**< \brief VPs covered by this level */
+	marcel_vpmask_t cpuset;		/**< \brief CPUs covered by this level */
 
 	unsigned arity;			/**< \brief Number of children */
 	struct marcel_topo_level **children;	/**< \brief Children, children[0 .. arity -1] */
@@ -413,6 +449,14 @@ struct marcel_topo_level {
 	/* allocated by ma_per_level_alloc() */
 	char data[MA_PER_LEVEL_ROOM];
 };
+
+#define ma_topo_set_os_numbers(l, node, die, core, cpu) do { \
+		struct marcel_topo_level *__l = (l); \
+		__l->os_node = node; \
+		__l->os_die  = die;  \
+		__l->os_core = core; \
+		__l->os_cpu  = cpu;  \
+	} while(0)
 
 #section types
 /** \brief Type of a topology level */

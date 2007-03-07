@@ -51,13 +51,15 @@ registering_flavors() {
 
     register_flavor marcel-bubbles \
 	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=smp_multiple_queues --marcel=marcel_main \
+	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
 	--bubbles=gdb --bubbles=noinline
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" $COMMON_OPTIONS \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=smp_multiple_queues --marcel=marcel_main \
+	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
 	--bubbles=gdb --bubbles=noinline \
 	--bubblegum=gdb --bubblegum=noinline

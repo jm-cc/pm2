@@ -8,6 +8,7 @@ PM2_MAD3_CFLAGS="$PM2_MAD3_CFLAGS -DDRV_MX=mad_MX"
 PM2_PM2_CFLAGS="$PM2_PM2_CFLAGS -DMAD3_MAD1_MAIN_PROTO=mad_MX"
 PM2_PM2_CFLAGS="$PM2_PM2_CFLAGS -DMAD3_MAD1_MAIN_PROTO_PARAM=NULL"
 
+PM2_MAD3_DYN_LIBS_DIR="${MX_DIR}/lib"
 
 ## mx_open_endpoint calls pthread_create, we need to link libpthread
 ## (or disable the use of pthread in MX)

@@ -144,9 +144,9 @@ int gen_fichier_C(Element * bullemere)
 
    wprintf(L"**** Démarrage de la génération du fichier Makefile ****\n");
 
-   fprintf(fw,"CC\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --cc)\n");
-   fprintf(fw,"CFLAGS\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --cflags)\n");
-   fprintf(fw,"LIBS\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --libs)\n\n");
+   fprintf(fw,"CC\t=\t$(shell pm2-config --cc)\n");
+   fprintf(fw,"CFLAGS\t=\t$(shell pm2-config --cflags)\n");
+   fprintf(fw,"LIBS\t=\t$(shell pm2-config --libs)\n\n");
 
    fprintf(fw,"all: %s\n", GENEC_NAME);
    fprintf(fw,"%s: %s.o\n", GENEC_NAME, GENEC_NAME);

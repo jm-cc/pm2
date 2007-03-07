@@ -5,6 +5,7 @@
 #include "bulle.h"
 
 #define GENEC_NAME "to_pm2"
+#define GENEC_MAKEFILE "Makefile_bubblegum"
 
 int parcourir_bulle(Element*, int, int);
 int gen_fichier_C(Element *);

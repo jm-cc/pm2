@@ -347,7 +347,7 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
    gtk_main_iteration_do(FALSE);
    char command[1024];
-   snprintf(command,sizeof(command),"make "GENEC_NAME" && pm2load "GENEC_NAME" --marcel-nvp 4 --marcel-maxarity 2 && bubbles -x 1024 -y 800 -d /tmp/prof_file_user_%s && "
+   snprintf(command,sizeof(command),"make -f "GENEC_MAKEFILE" "GENEC_NAME" && pm2load "GENEC_NAME" --marcel-nvp 4 --marcel-maxarity 2 && bubbles -x 1024 -y 800 -d /tmp/prof_file_user_%s && "
 #ifdef DARWIN_SYS
 	    "open"
 #else

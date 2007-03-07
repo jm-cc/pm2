@@ -134,5 +134,27 @@ int gen_fichier_C(Element * bullemere)
   
    wprintf(L"**** Fichier .C généré :) ****\n\n");
 
+
+   fw = fopen(GENEC_MAKEFILE,"w");
+   if (fw == NULL)
+   {
+	  wprintf(L"Erreur lors de l'ouverture du fichier en écriture\n"); 
+	  return -1;
+   }
+
+   wprintf(L"**** Démarrage de la génération du fichier Makefile ****\n");
+
+   fprintf(fw,"CC\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --cc)\n");
+   fprintf(fw,"CFLAGS\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --cflags)\n");
+   fprintf(fw,"LIBS\t=\t$(shell /usr/local/pm2/etc/marcel_config.sh --libs)\n\n");
+
+   fprintf(fw,"all: %s\n", GENEC_NAME);
+   fprintf(fw,"%s: %s.o\n", GENEC_NAME, GENEC_NAME);
+   fprintf(fw,"\t$(CC) $^ $(LIBS) -o $@\n");
+   fprintf(fw,"%s.o: %s.c\n", GENEC_NAME, GENEC_NAME);
+   fprintf(fw,"\t$(CC) $(CFLAGS) -c $< -o $@\n");
+
+   fclose(fw);
+
    return 0;
 }

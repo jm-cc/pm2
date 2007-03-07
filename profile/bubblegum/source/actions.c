@@ -303,7 +303,7 @@ void Executer(GtkWidget *widget, gpointer data)
    gen_fichier_C(iGaucheVars->bullePrincipale);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
    gtk_main_iteration_do(FALSE);
-   system("make " GENEC_NAME);
+   system("make -f " GENEC_MAKEFILE " " GENEC_NAME);
    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
    gtk_main_iteration_do(FALSE);
    system("pm2load " GENEC_NAME " --marcel-nvp 4 --marcel-maxarity 2");

@@ -653,11 +653,13 @@ int mpi_inline_irecv(void* buffer,
     return 1;
   }
 
-  seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, nmad_tag);
-  probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, nmad_tag, seq-1, 1);
-  if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
-    MPI_NMAD_TRACE("Reaching maximum sequence number. Trigger automatic flushing");
-    nm_so_sr_rwait_range(p_so_sr_if, gate_id, nmad_tag, 0, seq-1);
+  if (source != MPI_ANY_SOURCE) {
+    seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, nmad_tag);
+    probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, nmad_tag, seq-1, 1);
+    if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
+      MPI_NMAD_TRACE("Reaching maximum sequence number. Trigger automatic flushing");
+      nm_so_sr_rwait_range(p_so_sr_if, gate_id, nmad_tag, 0, seq-1);
+    }
   }
 
   _request->request_ptr = NULL;

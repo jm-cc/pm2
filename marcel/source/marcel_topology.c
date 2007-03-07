@@ -109,7 +109,7 @@ marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 
 static int discovering_level = 1;
 unsigned marcel_nbprocessors = 1;
-unsigned marcel_cpu_stride = 1;
+unsigned marcel_cpu_stride = 0;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
 unsigned marcel_topo_max_arity = 0;
@@ -123,9 +123,13 @@ void ma_set_nbprocessors(void) {
 
 void ma_set_processors(void) {
 	marcel_vps_per_cpu = (marcel_nbvps()+marcel_nbprocessors-1)/marcel_nbprocessors;
-	if (marcel_vps_per_cpu == 1)
-		/* no more vps than cpus, distribute them */
-		marcel_cpu_stride = marcel_nbprocessors / marcel_nbvps();
+	if (!marcel_cpu_stride) {
+		if (marcel_vps_per_cpu == 1)
+			/* no more vps than cpus, distribute them */
+			marcel_cpu_stride = marcel_nbprocessors / marcel_nbvps();
+		else
+			marcel_cpu_stride = 1;
+	}
 	mdebug("%d LWP%s per cpu, stride %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride);
 }
 
@@ -242,9 +246,9 @@ static void __marcel_init look_cpuinfo(void) {
 				ma_topo_set_os_numbers(&die_level[j], -1, i, -1, -1);
 				marcel_vpmask_empty(&die_level[j].vpset);
 				marcel_vpmask_empty(&die_level[j].cpuset);
-				for (cpu=0; cpu < processor; cpu++)
-					if (MA_CPU_ISSET(cpu,&diecpus[i]))
-						marcel_vpmask_only_vp(&die_level[j].cpuset,cpu);
+				for (k=0; k <= processor; k++)
+					if (MA_CPU_ISSET(k,&diecpus[i]))
+						marcel_vpmask_add_vp(&die_level[j].cpuset,k);
 				die_level[i].arity=0;
 				die_level[i].children=NULL;
 				die_level[i].father=NULL;
@@ -297,9 +301,9 @@ static void __marcel_init look_cpuinfo(void) {
 				ma_topo_set_os_numbers(&core_level[j], -1, -1, i, -1);
 				marcel_vpmask_empty(&core_level[j].vpset);
 				marcel_vpmask_empty(&core_level[j].cpuset);
-				for (cpu=0; cpu < processor; cpu++)
-					if (MA_CPU_ISSET(cpu,&corecpus[i]))
-						marcel_vpmask_only_vp(&core_level[j].cpuset,cpu);
+				for (k=0; k <= processor; k++)
+					if (MA_CPU_ISSET(k,&corecpus[i]))
+						marcel_vpmask_add_vp(&core_level[j].cpuset,k);
 				core_level[i].arity=0;
 				core_level[i].children=NULL;
 				core_level[i].father=NULL;

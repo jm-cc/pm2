@@ -1,0 +1,1 @@
+If your FxT is not installed to /usr or /usr/local, please define FXT_PREFIX to the place where you installed it.

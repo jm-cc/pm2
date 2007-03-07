@@ -241,7 +241,10 @@ static void __marcel_init look_cpuinfo(void) {
 				die_level[j].type = MARCEL_LEVEL_DIE;
 				ma_topo_set_os_numbers(&die_level[j], -1, i, -1, -1);
 				marcel_vpmask_empty(&die_level[j].vpset);
-				marcel_vpmask_only_vp(&die_level[j].cpuset,k);
+				marcel_vpmask_empty(&die_level[j].cpuset);
+				for (cpu=0; cpu < processor; cpu++)
+					if (MA_CPU_ISSET(cpu,&diecpus[i]))
+						marcel_vpmask_only_vp(&die_level[j].cpuset,cpu);
 				die_level[i].arity=0;
 				die_level[i].children=NULL;
 				die_level[i].father=NULL;
@@ -293,7 +296,10 @@ static void __marcel_init look_cpuinfo(void) {
 				core_level[j].type = MARCEL_LEVEL_CORE;
 				ma_topo_set_os_numbers(&core_level[j], -1, -1, i, -1);
 				marcel_vpmask_empty(&core_level[j].vpset);
-				marcel_vpmask_only_vp(&core_level[j].cpuset,k);
+				marcel_vpmask_empty(&core_level[j].cpuset);
+				for (cpu=0; cpu < processor; cpu++)
+					if (MA_CPU_ISSET(cpu,&corecpus[i]))
+						marcel_vpmask_only_vp(&core_level[j].cpuset,cpu);
 				core_level[i].arity=0;
 				core_level[i].children=NULL;
 				core_level[i].father=NULL;

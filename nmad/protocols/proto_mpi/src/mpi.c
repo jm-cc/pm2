@@ -32,6 +32,188 @@ static long                   *in_gate_id	= NULL;
 static int                    *out_dest	 	= NULL;
 static int                    *in_dest		= NULL;
 
+/* Alias Fortran
+ */
+int mpi_init_(int *argc,
+              char ***argv)		__attribute__ ((alias ("MPI_Init")));
+
+int mpi_init_thread_(int *argc,
+                    char ***argv,
+                    int required,
+                    int *provided)	__attribute__ ((alias ("MPI_Init_thread")));
+
+int mpi_finalize_(void)			__attribute__ ((alias ("MPI_Finalize")));
+
+int mpi_abort_(MPI_Comm comm,
+              int errorcode)		__attribute__ ((alias ("MPI_Abort")));
+
+int mpi_comm_size_(MPI_Comm comm,
+                  int *size)		__attribute__ ((alias ("MPI_Comm_size")));
+
+
+int mpi_comm_rank_(MPI_Comm comm,
+                  int *rank) 		__attribute__ ((alias ("MPI_Comm_rank")));
+
+int mpi_get_processor_name_(char *name, int *resultlen) __attribute__ ((alias ("MPI_Get_processor_name")));
+
+int mpi_esend_(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Extended is_completed,
+              MPI_Comm comm,
+              MPI_Request *request) __attribute__ ((alias ("MPI_Esend")));
+
+int mpi_send_(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int dest,
+             int tag,
+             MPI_Comm comm) __attribute__ ((alias ("MPI_Send")));
+
+int mpi_isend_(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) __attribute__ ((alias ("MPI_Isend")));
+
+int mpi_rsend_(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm) __attribute__ ((alias ("MPI_Rsend")));
+
+int mpi_recv_(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int source,
+             int tag,
+             MPI_Comm comm,
+             MPI_Status *status) __attribute__ ((alias ("MPI_Recv")));
+
+int mpi_irecv_(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) __attribute__ ((alias ("MPI_Irecv")));
+
+int mpi_wait_(MPI_Request *request,
+	     MPI_Status *status) __attribute__ ((alias ("MPI_Wait")));
+
+int mpi_test_(MPI_Request *request,
+             int *flag,
+             MPI_Status *status) __attribute__ ((alias ("MPI_Test")));
+
+int mpi_testany_(int count,
+                MPI_Request *array_of_requests,
+                int *index,
+                int *flag,
+                MPI_Status *status) __attribute__ ((alias ("MPI_Testany")));
+
+int mpi_iprobe_(int source,
+               int tag,
+               MPI_Comm comm,
+               int *flag,
+               MPI_Status *status) __attribute__ ((alias ("MPI_Iprobe")));
+
+int mpi_probe_(int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Status *status) __attribute__ ((alias ("MPI_Probe")));
+
+int mpi_get_count_(MPI_Status *status,
+                  MPI_Datatype datatype,
+                  int *count) __attribute__ ((alias ("MPI_Get_count")));
+
+int mpi_request_is_equal_(MPI_Request request1, MPI_Request request2) __attribute__ ((alias ("MPI_Request_is_equal")));
+
+int mpi_barrier_(MPI_Comm comm) __attribute__ ((alias ("MPI_Barrier")));
+
+int mpi_bcast_(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int root,
+              MPI_Comm comm) __attribute__ ((alias ("MPI_Bcast")));
+
+int mpi_op_create_(MPI_User_function *function,
+                  int commute,
+                  MPI_Op *op) __attribute__ ((alias ("MPI_Op_create")));
+
+int mpi_op_free_(MPI_Op *op) __attribute__ ((alias ("MPI_Op_free")));
+
+int mpi_reduce_(void* sendbuf,
+               void* recvbuf,
+               int count,
+               MPI_Datatype datatype,
+               MPI_Op op,
+               int root,
+               MPI_Comm comm) __attribute__ ((alias ("MPI_Reduce")));
+
+int mpi_allreduce_(void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  MPI_Datatype datatype,
+                  MPI_Op op,
+                  MPI_Comm comm) __attribute__ ((alias ("MPI_Allreduce")));
+
+double mpi_wtime_(void) __attribute__ ((alias ("MPI_Wtime")));
+
+double mpi_wtick_(void) __attribute__ ((alias ("MPI_Wtick")));
+
+int mpi_get_address_(void *location, MPI_Aint *address) __attribute__ ((alias ("MPI_Get_address")));
+
+int mpi_address_(void *location, MPI_Aint *address) __attribute__ ((alias ("MPI_Address")));
+
+int mpi_type_size_(MPI_Datatype datatype, int *size) __attribute__ ((alias ("MPI_Type_size")));
+
+int mpi_type_commit_(MPI_Datatype *datatype) __attribute__ ((alias ("MPI_Type_commit")));
+
+int mpi_type_free_(MPI_Datatype *datatype) __attribute__ ((alias ("MPI_Type_free")));
+
+int mpi_type_contiguous_(int count,
+                        MPI_Datatype oldtype,
+                        MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_contiguous")));
+
+int mpi_type_vector_(int count,
+                    int blocklength,
+                    int stride,
+                    MPI_Datatype oldtype,
+                    MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_vector")));
+
+int mpi_type_hvector_(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_hvector")));
+
+int mpi_type_indexed_(int count,
+                     int *array_of_blocklengths,
+                     int *array_of_displacements,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_indexed")));
+
+int mpi_type_hindexed_(int count,
+                      int *array_of_blocklengths,
+                      MPI_Aint *array_of_displacements,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_hindexed")));
+
+int mpi_type_struct_(int count,
+                    int *array_of_blocklengths,
+                    MPI_Aint *array_of_displacements,
+                    MPI_Datatype *array_of_types,
+                    MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_struct")));
+
+int mpi_comm_dup_(MPI_Comm comm, MPI_Comm *newcomm) __attribute__ ((alias ("MPI_Comm_dup")));
+
+int mpi_comm_free_(MPI_Comm *comm) __attribute__ ((alias ("MPI_Comm_free")));
+
 /**
  * This routine must be called before any other MPI routine. It must
  * be called at most once; subsequent calls are erroneous.

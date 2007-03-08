@@ -62,6 +62,12 @@ static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 #ifdef CONFIG_QSNET
   mad_nmad_register,
 #endif
+#ifdef CONFIG_SISCI
+  mad_nmad_register,
+#endif
+#ifdef CONFIG_IBVERBS
+  mad_nmad_register,
+#endif
 
   NULL
 };
@@ -80,6 +86,12 @@ static char *mad_driver_name[] =
 #endif
 #ifdef CONFIG_QSNET
   "quadrics",
+#endif
+#ifdef CONFIG_SISCI
+  "sisci",
+#endif
+#ifdef CONFIG_IBVERBS
+  "ibverbs",
 #endif
 
   NULL

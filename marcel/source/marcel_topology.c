@@ -598,10 +598,10 @@ static void topo_connect(void) {
 }
 
 static void topo_discover(void) {
-	unsigned l,i,j,m,n;
+	unsigned l,i,j;
 	struct marcel_topo_level *level;
 #ifdef MA__NUMA
-	unsigned k;
+	unsigned k,m,n;
 	unsigned nbsublevels;
 	unsigned sublevelarity;
 	int dosplit;

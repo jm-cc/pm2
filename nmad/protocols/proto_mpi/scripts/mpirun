@@ -74,7 +74,7 @@ get_machines() {
 	fi
     done
     if [ "$network_name" = "Network not found" ] ; then
-	echo "$0: Cannot find a network for hosts '$host_list3', exiting..." 1>&2
+	echo "$0: Cannot find a network for protocols '$protocols' and for hosts '$host_list3' in network configuration file '$NET_FILE', exiting..." 1>&2
 	exit 1
     fi
 

@@ -959,9 +959,14 @@ interf=dialog
 case "$1" in
     --dialog)
 	interf=dialog
-	DIALOG=dialog
-	DELTA=-1
-	dialog --version >/dev/null 2>&1
+	if [ -x /usr/bin/whiptail ]; then
+	    DIALOG=/usr/bin/whiptail
+	    DELTA=0
+	elif [ -x /usr/bin/dialog ]; then
+	    DIALOG=/usr/bin/dialog
+	    DELTA=-1
+	fi
+	$DIALOG --version >/dev/null 2>&1
 	if [ $? = 0 ]; then
 	    dialcomp="''"
 	else

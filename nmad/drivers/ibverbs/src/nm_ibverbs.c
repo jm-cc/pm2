@@ -123,7 +123,7 @@ struct nm_ibverbs_bycopy {
 		uint32_t credits;   /**< remaining credits for sending */
 		uint32_t next_in;   /**< cell number of next expected packet */
 		uint32_t to_ack;    /**< credits not acked yet by the receiver */
-		int ack_pending;
+		int ack_pending;    /**< number of ACKs sent and not completed */
 	} window;
 
 	struct {
@@ -135,13 +135,13 @@ struct nm_ibverbs_bycopy {
 
 	struct {
 		const struct iovec*v;
-		int n;                /**< size of above iovec */
-		int current_packet;   /**< current buffer for sending */
-		int pending_packet;   /**< number of pending packets (sent, not completed) */
-		int msg_size;         /**< total size of message to send */
-		int done;             /**< total amount of data sent */
-		int v_done;           /**< size fo current iovec segment already sent */
-		int v_current;        /**< current iovec segment beeing sent */
+		int n;              /**< size of above iovec */
+		int current_packet; /**< current buffer for sending */
+		int pending_packet; /**< number of pending packets (sent, not completed) */
+		int msg_size;       /**< total size of message to send */
+		int done;           /**< total amount of data sent */
+		int v_done;         /**< size of current iovec segment already sent */
+		int v_current;      /**< current iovec segment beeing sent */
 	} send;
 };
 

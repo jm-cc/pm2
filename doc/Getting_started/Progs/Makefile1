@@ -15,13 +15,9 @@ OFILES		:= $(CFILES:%.c=%.o)
 EXEFILES	:= $(CFILES:%.c=%)
 
 ifdef PM2_BUILD_DIR
-TARGET	:=	${PM2_BUILD_DIR}/${PM2_FLAVOR}/examples/bin
+TARGET	:=	${PM2_BUILD_DIR}/${PM2_ASM}/${PM2_FLAVOR}/examples/bin
 else
-ifdef PM2_HOME
-TARGET	:=	${PM2_HOME}/build/${PM2_FLAVOR}/examples/bin
-else
-TARGET	:=	${HOME}/build/${PM2_FLAVOR}/examples/bin
-endif
+TARGET	:=	${PM2_ROOT}/build/${PM2_ASM}/${PM2_FLAVOR}/examples/bin
 endif
 
 all: ${EXEFILES}

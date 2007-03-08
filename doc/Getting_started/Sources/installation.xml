@@ -213,11 +213,7 @@ in the active search path.
 <P>
 The <TT>PM2_HOME</TT> variable contains the path to the PM2
 administrative directory. The default is your home directory
-<TT>${HOME}</TT>. It will contain two sub-directories: the
-<TT>.pm2</TT> sub-directory to store various PM2 configuration files
-such as flavors, and the <TT>build</TT> sub-directory to store all the
-files generated within the compilation process such as the binary file
-<TT>ezflavor</TT>.
+<TT>${HOME}</TT>. 
 </P>
 </LI>
     
@@ -228,11 +224,14 @@ By default, configuration files are stored in the
 the <TT>PM2_CONF_DIR</TT> variable to another directory.
 </P>
 <P>
-All the files generated within the compilation process will be placed by 
-default in the <TT>${PM2_HOME}/build</TT> directory. Though this may
-be convenient in a first place, you may wish to keep these files in a
-more dedicated place. Just define the <TT>PM2_BUILD_DIR</TT> environment
-variable to the desired value.
+All the files generated within the compilation process will be placed
+by default in the <TT>${PM2_ROOT}/build</TT> directory, more precisely
+in the <TT>${PM2_ROOT}/build/${PM2_ASM}</TT>. The environment variable
+<TT>PM2_ASM</TT> describes the architecture of the machine. If you
+wish to keep the compiled files into another directory, you can set
+the <TT>PM2_BUILD_DIR</TT> environment variable to this directory. The
+files will then be kept in the <TT>${PM2_BUILD_DIR}/${PM2_ASM}</TT>
+directory.
 </P>
 <P>
 Please note that these two directories have to be reachable from any

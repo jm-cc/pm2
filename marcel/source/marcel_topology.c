@@ -685,6 +685,7 @@ static void topo_discover(void) {
 	marcel_vpmask_t cpumask = MARCEL_VPMASK_EMPTY;
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
 	for (i=0; i<marcel_nbvps(); i++) {
+		/* XXX TODO: heu, ben non justement je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
 		unsigned cpu = (i*marcel_cpu_stride)%marcel_nbprocessors;
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;
@@ -862,6 +863,8 @@ static void topo_discover(void) {
 	marcel_topo_vp_level = marcel_topo_levels[marcel_topo_nblevels-1];
 
 	/* Set VP masks */
+	/* This is the only one which isn't empty by default */
+	marcel_vpmask_empty(&marcel_machine_level[0].vpset);
 	for (i=0; i<marcel_nbvps(); i++) {
 		struct marcel_topo_level *level = &marcel_topo_vp_level[i];
 		while (level) {

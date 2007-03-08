@@ -273,11 +273,13 @@ create_flavor() {
 	echo "# Pre-configuring $mod" >> ${OUT}
 	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" ]; then
 	    cat "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" >> ${OUT}
+	    echo "" >> ${OUT}
 	fi
 
 	echo "# Configuring $mod" >> ${OUT}
 	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod.sh" ]; then
 	    cat "${PM2_ROOT}/modules/$mod/config/$mod.sh" >> ${OUT}
+	    echo "" >> ${OUT}
 	fi
 
 	if [ -z "$options" ]; then
@@ -292,6 +294,7 @@ create_flavor() {
 	echo "# Post-configuring $mod" >> ${OUT}
 	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" ]; then
 	    cat "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" >> ${OUT}
+	    echo "" >> ${OUT}
 	fi
 
     done

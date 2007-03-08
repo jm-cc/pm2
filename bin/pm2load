@@ -116,7 +116,7 @@ mad3()
     network_name=`. ${PM2_ROOT}/bin/leo-network`
 
     if [ "$network_name" == "Network not found" ] ; then
-        _pm2load_error "Error: No network found for device $dev and hosts $host_list, please check the names"
+        _pm2load_error "Error: No network found for device $dev and hosts $host_list, please check the names and the network configuration file $PM2_LEONIE_NETWORK_FILE"
     fi
 
     new_list=""

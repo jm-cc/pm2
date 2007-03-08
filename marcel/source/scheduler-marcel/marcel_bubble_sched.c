@@ -583,13 +583,13 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 		ma_holder_t *h = NULL;
 
 		if (e->type == MA_BUBBLE_ENTITY)
-			__ma_bubble_gather(ma_bubble_entity(e), rootbubble);
+			__ma_bubble_gather(ma_bubble_entity(e), b->sched.sched_holder && b->sched.sched_holder->type == MA_RUNQUEUE_HOLDER ? b : rootbubble);
 
 		if (e->sched_holder == &b->hold || e->sched_holder == &rootbubble->hold)
 			/* déjà rassemblé */
 			continue;
 
-		if (e->run_holder != &b->hold && e->run_holder != &rootbubble->hold)
+		if (e->run_holder != &rootbubble->hold)
 			/* verrouiller le conteneur actuel de e */
 			/* TODO: en principe, devrait être "plus bas" */
 			h = ma_entity_holder_rawlock(e);

@@ -682,10 +682,13 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 		return;
 
 	ma_activate_running_entity(e, h);
-	if (state == MA_ENTITY_BLOCKED &&
-		/* ne pas enqueuer une bulle dans une autre ! */
-		!(e->type == MA_BUBBLE_ENTITY && h->type == MA_BUBBLE_HOLDER))
-		ma_enqueue_entity(e, h);
+	if (state == MA_ENTITY_BLOCKED) {
+		if (h->type == MA_BUBBLE_HOLDER)
+			/* ne pas enqueuer directement dans un bulle */
+			ma_set_sched_holder(e, ma_bubble_holder(h));
+		else
+			ma_enqueue_entity(e, h);
+	}
 }
 #section common
 #endif

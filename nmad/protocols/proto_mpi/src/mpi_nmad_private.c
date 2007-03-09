@@ -416,6 +416,15 @@ void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_MIN */
+    case MPI_DOUBLE_PRECISION :
+    case MPI_DOUBLE : {
+      double *i_invec = (double *) invec;
+      double *i_inoutvec = (double *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_DOUBLE FOR MPI_MAX */
     default : {
       ERROR("Datatype %d for MIN Reduce operation", *type);
       break;

@@ -159,10 +159,13 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 			}
 			case SCHED_SETPRIO: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
-				e->prio = ev.ev64.param[1];
-				verbprintf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
-				updateEntity(e);
-				BubbleMovie_nextFrame(movie);
+				if (e) {
+					e->prio = ev.ev64.param[1];
+					verbprintf("%s %p(%p) priority set to %"PRIi64"\n", e->type==BUBBLE?"bubble":"thread",(void *)(intptr_t)ev.ev64.param[0],e,ev.ev64.param[1]);
+					updateEntity(e);
+					BubbleMovie_nextFrame(movie);
+				} else
+					verbprintf("unknown %p priority set to %"PRIi64"\n", (void *)(intptr_t)ev.ev64.param[0],ev.ev64.param[1]);
 				break;
 			}
 #ifdef BUBBLE_SCHED_EXPLODE

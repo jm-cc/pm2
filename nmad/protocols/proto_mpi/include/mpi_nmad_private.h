@@ -89,7 +89,7 @@ typedef struct mpir_function_s {
   int commute;
 } mpir_function_t;
 
-#define NUMBER_OF_DATATYPES (MPI_LONG_LONG + 20)
+#define NUMBER_OF_DATATYPES (MPI_INTEGER + 20)
 
 typedef enum {
     MPIR_BASIC,

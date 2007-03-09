@@ -91,19 +91,13 @@ void mpi_abort_(MPI_Comm comm,
 
 void mpi_comm_size_(int *comm,
                    int *size, int *ierr) {
-        fprintf(stderr, "comm = %p\n", comm);
-        fprintf(stderr, "*comm = %d\n", *comm);
         *ierr = MPI_Comm_size(*comm, size);
-        fprintf(stderr, "size = %d\n", *size);
 }
 
 
 
 void mpi_comm_rank_(int *comm, int *rank, int *ierr) {
-        fprintf(stderr, "comm = %p\n", comm);
-        fprintf(stderr, "*comm = %d\n", *comm);
         *ierr = MPI_Comm_rank(*comm, rank);
-        fprintf(stderr, "rank = %d\n", *rank);
 }
 
 
@@ -263,23 +257,27 @@ void mpi_op_free_(MPI_Op *op) {
         TBX_FAILURE("unimplemented");
 }
 
-void mpi_reduce_(void* sendbuf,
-               void* recvbuf,
-               int count,
-               MPI_Datatype datatype,
-               MPI_Op op,
-               int root,
-               MPI_Comm comm) {
-        TBX_FAILURE("unimplemented");
+void mpi_reduce_(void *sendbuf,
+                 void *recvbuf,
+                 int *count,
+                 int *datatype,
+                 int *op,
+                 int *root,
+                 int *comm,
+                 int *ierr) {
+        *ierr = MPI_Reduce(sendbuf, recvbuf, *count, *datatype, *op,
+                           *root, *comm);
 }
 
-void mpi_allreduce_(void* sendbuf,
-                  void* recvbuf,
-                  int count,
-                  MPI_Datatype datatype,
-                  MPI_Op op,
-                  MPI_Comm comm) {
-        TBX_FAILURE("unimplemented");
+void mpi_allreduce_(void *sendbuf,
+                    void *recvbuf,
+                    int *count,
+                    int *datatype,
+                    int *op,
+                    int *comm,
+                    int *ierr) {
+        *ierr = MPI_Allreduce(sendbuf, recvbuf, *count, *datatype, *op,
+                              *comm);
 }
 
 double mpi_wtime_(void) {

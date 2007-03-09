@@ -45,10 +45,10 @@ void internal_init() {
    */
   datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
 
-  for(i=0 ; i<=MPI_LONG_LONG ; i++) {
+  for(i=0 ; i<=MPI_INTEGER ; i++) {
     datatypes[i] = malloc(sizeof(mpir_datatype_t));
   }
-  for(i=0 ; i<=MPI_LONG_LONG ; i++) {
+  for(i=0 ; i<=MPI_INTEGER ; i++) {
     datatypes[i]->basic = 1;
     datatypes[i]->committed = 1;
     datatypes[i]->is_contig = 1;
@@ -69,6 +69,9 @@ void internal_init() {
   datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
   datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
   datatypes[MPI_LONG_LONG]->size = sizeof(long long);
+  datatypes[MPI_REAL]->size = sizeof(float);
+  datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
+  datatypes[MPI_INTEGER]->size = sizeof(signed int);
 
   available_datatypes = tbx_slist_nil();
   for(i=MPI_LONG_LONG+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
@@ -376,6 +379,7 @@ mpir_function_t *mpir_get_function(MPI_Op op) {
 void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
+    case MPI_INTEGER :
     case MPI_INT : {
       int *i_invec = (int *) invec;
       int *i_inoutvec = (int *) inoutvec;
@@ -384,6 +388,7 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_MAX */
+    case MPI_DOUBLE_PRECISION :
     case MPI_DOUBLE : {
       double *i_invec = (double *) invec;
       double *i_inoutvec = (double *) inoutvec;
@@ -402,6 +407,7 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
 void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
+    case MPI_INTEGER :
     case MPI_INT : {
       int *i_invec = (int *) invec;
       int *i_inoutvec = (int *) inoutvec;
@@ -420,6 +426,7 @@ void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
 void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
+    case MPI_INTEGER :
     case MPI_INT : {
       int *i_invec = (int *) invec;
       int *i_inoutvec = (int *) inoutvec;
@@ -429,6 +436,7 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_SUM */
+    case MPI_DOUBLE_PRECISION :
     case MPI_DOUBLE : {
       double *i_invec = (double *) invec;
       double *i_inoutvec = (double *) inoutvec;
@@ -447,6 +455,7 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
 void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
+    case MPI_INTEGER :
     case MPI_INT : {
       int *i_invec = (int *) invec;
       int *i_inoutvec = (int *) inoutvec;
@@ -455,6 +464,7 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_PROD */
+    case MPI_DOUBLE_PRECISION :
     case MPI_DOUBLE : {
       double *i_invec = (double *) invec;
       double *i_inoutvec = (double *) inoutvec;

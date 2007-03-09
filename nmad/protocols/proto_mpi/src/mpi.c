@@ -21,6 +21,7 @@
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
+#include <stdint.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
 static int                     global_size	= -1;
@@ -32,187 +33,336 @@ static long                   *in_gate_id	= NULL;
 static int                    *out_dest	 	= NULL;
 static int                    *in_dest		= NULL;
 
+/* GFortran iargc/getargc bindings
+ */
+void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ ((weak));
+
+void _gfortran_getarg_i8(int64_t *num, char *value, int val_len)	__attribute__ ((weak));
+
+int32_t _gfortran_iargc(void)	__attribute__ ((weak));
+
+
+#define MAX_ARG_LEN 64
+/** Initialisation by Fortran code.
+ */
+int mpi_init_() {
+        int argc;
+        int i;
+        char **argv;
+
+        argc = 1+_gfortran_iargc();
+        fprintf(stderr, "argc = %d\n", argc);
+        argv = malloc(argc * sizeof(char *));
+        for (i = 0; i < argc; i++) {
+                int j;
+
+                argv[i] = malloc(MAX_ARG_LEN+1);
+                if (sizeof(char*) == 4) {
+                        _gfortran_getarg_i4((int32_t *)&i, argv[i], MAX_ARG_LEN);
+                } else {
+                        _gfortran_getarg_i8((int64_t *)&i, argv[i], MAX_ARG_LEN);
+                }
+
+                j = MAX_ARG_LEN;
+                while (j > 1 && (argv[i])[j-1] == ' ') {
+                        j--;
+                }
+                (argv[i])[j] = '\0';
+        }
+        for (i = 0; i < argc; i++) {
+                fprintf(stderr, "argv[%d] = [%s]\n", i, argv[i]);
+        }
+        return MPI_Init(&argc, &argv);
+}
+
+
 /* Alias Fortran
  */
-int mpi_init_(int *argc,
-              char ***argv)		__attribute__ ((alias ("MPI_Init")));
 
-int mpi_init_thread_(int *argc,
+void mpi_init_thread_(int *argc,
                     char ***argv,
                     int required,
                     int *provided)	__attribute__ ((alias ("MPI_Init_thread")));
 
-int mpi_finalize_(void)			__attribute__ ((alias ("MPI_Finalize")));
+void mpi_finalize_(void)			__attribute__ ((alias ("MPI_Finalize")));
 
-int mpi_abort_(MPI_Comm comm,
+void mpi_abort_(MPI_Comm comm,
               int errorcode)		__attribute__ ((alias ("MPI_Abort")));
 
-int mpi_comm_size_(MPI_Comm comm,
-                  int *size)		__attribute__ ((alias ("MPI_Comm_size")));
+void mpi_comm_size_(int *comm,
+                   int *size, int *ierr) {
+        fprintf(stderr, "comm = %p\n", comm);
+        fprintf(stderr, "*comm = %d\n", *comm);
+        *ierr = MPI_Comm_size(*comm, size);
+        fprintf(stderr, "size = %d\n", *size);
+}
 
 
-int mpi_comm_rank_(MPI_Comm comm,
-                  int *rank) 		__attribute__ ((alias ("MPI_Comm_rank")));
 
-int mpi_get_processor_name_(char *name, int *resultlen) __attribute__ ((alias ("MPI_Get_processor_name")));
+void mpi_comm_rank_(int *comm, int *rank, int *ierr) {
+        fprintf(stderr, "comm = %p\n", comm);
+        fprintf(stderr, "*comm = %d\n", *comm);
+        *ierr = MPI_Comm_rank(*comm, rank);
+        fprintf(stderr, "rank = %d\n", *rank);
+}
 
-int mpi_esend_(void *buffer,
+
+void mpi_get_processor_name_(char *name, int *resultlen) __attribute__ ((alias ("MPI_Get_processor_name")));
+
+/*
+void mpi_esend_(void *buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
               int tag,
               MPI_Extended is_completed,
               MPI_Comm comm,
-              MPI_Request *request) __attribute__ ((alias ("MPI_Esend")));
+               MPI_Request *request) {
+}
+*/
 
-int mpi_send_(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int dest,
-             int tag,
-             MPI_Comm comm) __attribute__ ((alias ("MPI_Send")));
+void mpi_send_(void *buffer,
+              int *count,
+              int *datatype,
+              int *dest,
+              int *tag,
+              int *comm,
+              int *ierr) {
+        *ierr = MPI_Send(buffer, *count, *datatype, *dest, *tag, *comm);
+}
 
-int mpi_isend_(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) __attribute__ ((alias ("MPI_Isend")));
+void mpi_isend_(void *buffer,
+                int *count,
+                int *datatype,
+                int *dest,
+                int *tag,
+                int *comm,
+                int *request,
+                int *ierr) {
+        MPI_Request *p_request = TBX_MALLOC(sizeof(MPI_Request));
+        *ierr = MPI_Isend(buffer, *count, *datatype, *dest, *tag, *comm, p_request);
+        *request = (intptr_t)p_request;
+}
 
-int mpi_rsend_(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Comm comm) __attribute__ ((alias ("MPI_Rsend")));
+void mpi_rsend_(void *buffer,
+              int *count,
+              int *datatype,
+              int *dest,
+              int *tag,
+              int *comm,
+              int *ierr) {
+        *ierr = MPI_Rsend(buffer, *count, *datatype, *dest, *tag, *comm);
+}
 
-int mpi_recv_(void *buffer,
-             int count,
-             MPI_Datatype datatype,
-             int source,
-             int tag,
-             MPI_Comm comm,
-             MPI_Status *status) __attribute__ ((alias ("MPI_Recv")));
+void mpi_recv_(void *buffer,
+               int *count,
+               int *datatype,
+               int *source,
+               int *tag,
+               int *comm,
+               int *status,
+               int *ierr) {
+        MPI_Status _status;
+        *ierr = MPI_Recv(buffer, *count, *datatype, *source, *tag, *comm, &_status);
+        memcpy(status, &_status, sizeof(_status));
+}
 
-int mpi_irecv_(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int source,
-              int tag,
-              MPI_Comm comm,
-              MPI_Request *request) __attribute__ ((alias ("MPI_Irecv")));
+void mpi_irecv_(void *buffer,
+                int *count,
+                int *datatype,
+                int *source,
+                int *tag,
+                int *comm,
+                int *request,
+                int *ierr) {
+        MPI_Request *p_request = TBX_MALLOC(sizeof(MPI_Request));
+        *ierr = MPI_Irecv(buffer, *count, *datatype, *source, *tag, *comm, p_request);
+        *request = (intptr_t)p_request;
+}
 
-int mpi_wait_(MPI_Request *request,
-	     MPI_Status *status) __attribute__ ((alias ("MPI_Wait")));
+void mpi_wait_(int *request,
+               int *status,
+               int *ierr) {
+        MPI_Status _status;
+        MPI_Request *p_request = (void *)*request;
+        *ierr = MPI_Wait(p_request, &_status);
+        memcpy(status, &_status, sizeof(_status));
+        TBX_FREE((void *)*request);
+}
 
-int mpi_test_(MPI_Request *request,
-             int *flag,
-             MPI_Status *status) __attribute__ ((alias ("MPI_Test")));
+void mpi_test_(int *request,
+               int *flag,
+               int *status,
+               int *ierr) {
+        MPI_Status _status;
+        MPI_Request *p_request = (void *)*request;
+        *ierr = MPI_Test(p_request, flag, &_status);        
+        if (*ierr != MPI_SUCCESS)
+                return;
+        memcpy(status, &_status, sizeof(_status));
+        TBX_FREE((void *)*request);
+}
 
-int mpi_testany_(int count,
+void mpi_testany_(int count,
                 MPI_Request *array_of_requests,
                 int *index,
                 int *flag,
-                MPI_Status *status) __attribute__ ((alias ("MPI_Testany")));
+                MPI_Status *status) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_iprobe_(int source,
+void mpi_iprobe_(int source,
                int tag,
                MPI_Comm comm,
                int *flag,
-               MPI_Status *status) __attribute__ ((alias ("MPI_Iprobe")));
+               MPI_Status *status) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_probe_(int source,
+void mpi_probe_(int source,
               int tag,
               MPI_Comm comm,
-              MPI_Status *status) __attribute__ ((alias ("MPI_Probe")));
+              MPI_Status *status) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_get_count_(MPI_Status *status,
-                  MPI_Datatype datatype,
-                  int *count) __attribute__ ((alias ("MPI_Get_count")));
+void mpi_get_count_(int *status,
+                    int *datatype,
+                    int *count,
+                    int *ierr) {
+        MPI_Status _status;
+        memcpy(&_status, status, sizeof(_status));
+        *ierr = MPI_Get_count(&_status, *datatype, count);
+}
 
-int mpi_request_is_equal_(MPI_Request request1, MPI_Request request2) __attribute__ ((alias ("MPI_Request_is_equal")));
+void mpi_request_is_equal_(MPI_Request request1, MPI_Request request2) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_barrier_(MPI_Comm comm) __attribute__ ((alias ("MPI_Barrier")));
+void mpi_barrier_(int *comm,
+                  int *ierr) {
+        *ierr = MPI_Barrier(*comm);
+}
 
-int mpi_bcast_(void* buffer,
-              int count,
-              MPI_Datatype datatype,
-              int root,
-              MPI_Comm comm) __attribute__ ((alias ("MPI_Bcast")));
+void mpi_bcast_(void *buffer,
+                int *count,
+                int *datatype,
+                int *root,
+                int *comm,
+                int *ierr) {
+        *ierr = MPI_Bcast(buffer, *count, *datatype, *root, *comm);
+}
 
-int mpi_op_create_(MPI_User_function *function,
+void mpi_op_create_(MPI_User_function *function,
                   int commute,
-                  MPI_Op *op) __attribute__ ((alias ("MPI_Op_create")));
+                  MPI_Op *op) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_op_free_(MPI_Op *op) __attribute__ ((alias ("MPI_Op_free")));
+void mpi_op_free_(MPI_Op *op) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_reduce_(void* sendbuf,
+void mpi_reduce_(void* sendbuf,
                void* recvbuf,
                int count,
                MPI_Datatype datatype,
                MPI_Op op,
                int root,
-               MPI_Comm comm) __attribute__ ((alias ("MPI_Reduce")));
+               MPI_Comm comm) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_allreduce_(void* sendbuf,
+void mpi_allreduce_(void* sendbuf,
                   void* recvbuf,
                   int count,
                   MPI_Datatype datatype,
                   MPI_Op op,
-                  MPI_Comm comm) __attribute__ ((alias ("MPI_Allreduce")));
+                  MPI_Comm comm) {
+        TBX_FAILURE("unimplemented");
+}
 
-double mpi_wtime_(void) __attribute__ ((alias ("MPI_Wtime")));
+double mpi_wtime_(void) {
+        return MPI_Wtime();
+}
 
-double mpi_wtick_(void) __attribute__ ((alias ("MPI_Wtick")));
+double mpi_wtick_(void) {
+        return MPI_Wtick();
+}
 
-int mpi_get_address_(void *location, MPI_Aint *address) __attribute__ ((alias ("MPI_Get_address")));
+void mpi_get_address_(void *location, MPI_Aint *address) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_address_(void *location, MPI_Aint *address) __attribute__ ((alias ("MPI_Address")));
+void mpi_address_(void *location, MPI_Aint *address) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_size_(MPI_Datatype datatype, int *size) __attribute__ ((alias ("MPI_Type_size")));
+void mpi_type_size_(MPI_Datatype datatype, int *size) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_commit_(MPI_Datatype *datatype) __attribute__ ((alias ("MPI_Type_commit")));
+void mpi_type_commit_(MPI_Datatype *datatype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_free_(MPI_Datatype *datatype) __attribute__ ((alias ("MPI_Type_free")));
+void mpi_type_free_(MPI_Datatype *datatype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_contiguous_(int count,
+void mpi_type_contiguous_(int count,
                         MPI_Datatype oldtype,
-                        MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_contiguous")));
+                        MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_vector_(int count,
+void mpi_type_vector_(int count,
                     int blocklength,
                     int stride,
                     MPI_Datatype oldtype,
-                    MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_vector")));
+                    MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_hvector_(int count,
+void mpi_type_hvector_(int count,
                      int blocklength,
                      int stride,
                      MPI_Datatype oldtype,
-                     MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_hvector")));
+                     MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_indexed_(int count,
+void mpi_type_indexed_(int count,
                      int *array_of_blocklengths,
                      int *array_of_displacements,
                      MPI_Datatype oldtype,
-                     MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_indexed")));
+                     MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_hindexed_(int count,
+void mpi_type_hindexed_(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
                       MPI_Datatype oldtype,
-                      MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_hindexed")));
+                      MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_type_struct_(int count,
+void mpi_type_struct_(int count,
                     int *array_of_blocklengths,
                     MPI_Aint *array_of_displacements,
                     MPI_Datatype *array_of_types,
-                    MPI_Datatype *newtype) __attribute__ ((alias ("MPI_Type_struct")));
+                    MPI_Datatype *newtype) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_comm_dup_(MPI_Comm comm, MPI_Comm *newcomm) __attribute__ ((alias ("MPI_Comm_dup")));
+void mpi_comm_dup_(MPI_Comm comm, MPI_Comm *newcomm) {
+        TBX_FAILURE("unimplemented");
+}
 
-int mpi_comm_free_(MPI_Comm *comm) __attribute__ ((alias ("MPI_Comm_free")));
+void mpi_comm_free_(MPI_Comm *comm) {
+        TBX_FAILURE("unimplemented");
+}
 
 /**
  * This routine must be called before any other MPI routine. It must
@@ -377,6 +527,7 @@ int MPI_Finalize(void) {
  */
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
+        exit(1);
   MPI_NMAD_LOG_IN();
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);

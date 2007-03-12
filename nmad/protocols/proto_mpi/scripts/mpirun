@@ -3,10 +3,11 @@
 compile_leonie() {
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie
+        echo "Bootstrap layer not available. Compiling ..."
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie 1>/tmp/leonie_${USER}_$$ 2>&1
         LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
         if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
+            echo "Could not compile leonie. Aborting. See file /tmp/leonie_${USER}_$$ for details."
             exit 1
         fi
     fi

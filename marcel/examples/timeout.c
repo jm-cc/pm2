@@ -47,7 +47,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_create(&pid, NULL, f,  NULL);
 
-  marcel_delay(2100);
+  marcel_delay(2250);
   marcel_sem_V(&sem);
 
   marcel_join(pid, &status);

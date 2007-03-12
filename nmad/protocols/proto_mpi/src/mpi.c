@@ -278,6 +278,34 @@ void mpi_bcast_(void *buffer,
         *ierr = MPI_Bcast(buffer, *count, *datatype, *root, *comm);
 }
 
+void mpi_alltoall_(void *sendbuf,
+		   int *sendcount,
+		   int *sendtype,
+		   void *recvbuf,
+		   int *recvcount,
+		   int *recvtype,
+		   int *comm,
+		   int *ierr) {
+ *ierr = MPI_Alltoall(sendbuf,*sendcount,*sendtype,
+		      recvbuf,*recvcount,*recvtype,
+		      *comm);
+}
+
+void mpi_alltoallv_(void *sendbuf,
+		   int *sendcount,
+		   int *sdispls,
+		   int *sendtype,
+		   void *recvbuf,
+		   int *recvcount,
+		   int *rdispls,
+		   int *recvtype,
+		   int *comm,
+		   int *ierr) {
+  *ierr = MPI_Alltoallv(sendbuf,sendcount,sdispls,*sendtype,
+			recvbuf,recvcount,rdispls,*recvtype,
+			*comm );
+}
+
 void mpi_op_create_(MPI_User_function *function,
                   int commute,
                   MPI_Op *op) {
@@ -1562,6 +1590,109 @@ int MPI_Bcast(void* buffer,
   MPI_NMAD_LOG_OUT();
   return err;
 }
+
+/**
+ *
+ */
+int MPI_Alltoall(void* sendbuf,
+		 int sendcount,
+		 MPI_Datatype sendtype,
+		 void *recvbuf,
+		 int recvcount,
+		 MPI_Datatype recvtype,
+		 MPI_Comm comm) {
+  int tag = 3;
+  int err;
+  int i;
+  MPI_Request *requests;
+      
+  requests = malloc(global_size * sizeof(MPI_Request));
+  
+  MPI_NMAD_LOG_IN();
+  
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_LOG_OUT();
+    return -1;
+  }
+
+  for(i=0 ; i<global_size; i++) {
+    if(i == process_rank)
+      memcpy(recvbuf + (i * sizeof_datatype(recvtype)), sendbuf + (i * sizeof_datatype(sendtype)), sendcount * sizeof_datatype(sendtype));
+    else
+      {
+	MPI_Irecv(recvbuf + (i * sizeof_datatype(recvtype)), recvcount, recvtype, i, tag, comm, &requests[i]);
+	
+	err = MPI_Send(sendbuf + (i * sizeof_datatype(sendtype)), sendcount, sendtype, i, tag, comm);
+	
+	if (err != 0) {
+	  MPI_NMAD_LOG_OUT();
+	  return err;
+	}
+      }
+  }
+  
+  for(i=0 ; i<global_size ; i++) {
+    if (i == process_rank) continue;
+    MPI_Wait(&requests[i], NULL);
+  }
+  
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS; 
+}
+
+/**
+ *
+ */
+int MPI_Alltoallv(void* sendbuf,
+		  int *sendcounts,
+		  int *sdispls,
+		  MPI_Datatype sendtype,
+		  void *recvbuf,
+		  int *recvcounts,
+		  int *rdispls,
+		  MPI_Datatype recvtype,
+		  MPI_Comm comm) {
+  int tag = 4;
+  int err;
+  int i;
+  MPI_Request *requests;
+      
+  requests = malloc(global_size * sizeof(MPI_Request));
+  
+  MPI_NMAD_LOG_IN();
+
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_LOG_OUT();
+    return -1;
+  }
+
+  for(i=0 ; i<global_size; i++) {
+    if(i == process_rank)
+      memcpy(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)), sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), sendcounts[i] * sizeof_datatype(sendtype));
+    else
+      {
+	MPI_Irecv(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)), recvcounts[i], recvtype, i, tag, comm, &requests[i]);
+	
+	err = MPI_Send(sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), sendcounts[i], sendtype, i, tag, comm);
+	
+	if (err != 0) {
+	  MPI_NMAD_LOG_OUT();
+	  return err;
+	}
+      }
+  }
+  
+  for(i=0 ; i<global_size ; i++) {
+    if (i == process_rank) continue;
+    MPI_Wait(&requests[i], NULL);
+  }
+  
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS; 
+}
+
 
 /**
  * Binds a user-defined global operation to an op handle that can

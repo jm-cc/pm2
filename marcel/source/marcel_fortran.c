@@ -27,6 +27,8 @@ extern void getarg_(int*,char*,int);
 
 void marcel_init_(){
   int argc = 0;
+  char *argv[] = {NULL};
+#if 0
   int argsize = 1024;
   char **argv = NULL;
   int i = 0;
@@ -60,6 +62,7 @@ void marcel_init_(){
   }
 
   free(argv);
+#endif
 }
 
 

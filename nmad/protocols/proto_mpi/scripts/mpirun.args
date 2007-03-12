@@ -29,6 +29,8 @@ mpirun [mpirun_options...] <progname> [options...]
             Start processes under valgrind.
     -log
             Log output into files
+    -x
+            Starts each processus in a graphical console
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status (currently, all are one, but this 
 may change in the future).
@@ -88,6 +90,9 @@ while [ 1 -le $# ] ; do
 	;;
     -valgrind)
 	valgrind="yes"
+        ;;
+    -x)
+        MPI_NMAD_X="1"
         ;;
     -log)
 	log="yes"

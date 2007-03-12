@@ -707,7 +707,15 @@ int mpi_inline_isend(void *buffer,
       err = nm_so_sr_isend(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
     }
     else {
-      err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), is_completed, &(_request->request_id));
+      seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, nmad_tag);
+      probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, nmad_tag, seq-2, 1);
+      if ((seq == NM_SO_PENDING_PACKS_WINDOW-2) && (probe == -NM_EAGAIN)) {
+        MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), MPI_IS_COMPLETED, &(_request->request_id));
+      }
+      else {
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, nmad_tag, buffer, count * sizeof_datatype(datatype), is_completed, &(_request->request_id));
+      }
     }
     MPI_NMAD_TRANSFER("[%s] Sent finished\n", __TBX_FUNCTION__);
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;

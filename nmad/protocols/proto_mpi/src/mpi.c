@@ -184,6 +184,37 @@ void mpi_wait_(int *request,
         TBX_FREE((void *)*request);
 }
 
+void mpi_waitall_(int *count,
+                  int *request,
+                  int  status[][MPI_STATUS_SIZE],
+                  int *ierr) {
+  int err = NM_ESUCCESS;
+  int i;
+
+  if ((MPI_Status *)status == MPI_STATUSES_IGNORE) {
+    for (i = 0; i < *count; i++) {
+        MPI_Request *p_request = (void *)request[i];
+        err =  MPI_Wait(p_request, MPI_STATUS_IGNORE);
+        TBX_FREE(p_request);
+        if (err != NM_ESUCCESS)
+          goto out;
+    }
+  } else {
+    for (i = 0; i < *count; i++) {
+        MPI_Status _status;
+        MPI_Request *p_request = (void *)request[i];
+        err =  MPI_Wait(p_request, &_status);
+        memcpy(status[i], &_status, sizeof(_status));
+        TBX_FREE((void *)*request);
+        if (err != NM_ESUCCESS)
+          goto out;
+    }
+  }
+
+ out:
+  *ierr = err;
+}
+
 void mpi_test_(int *request,
                int *flag,
                int *status,
@@ -714,7 +745,7 @@ int mpi_inline_isend(void *buffer,
       len = count * sizeof_datatype(datatype);
       _request->contig_buffer = malloc(len);
       if (_request->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %lu to send struct datatype\n", len);
+        ERROR("Cannot allocate memory with size %lu to send struct datatype\n", (unsigned long)len);
         return  -1;
       }
 

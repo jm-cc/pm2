@@ -109,4 +109,5 @@ typedef int MPI_Extended;
 
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
+#define MPI_STATUS_SIZE		4
 #endif /* MPI_TYPES_H */

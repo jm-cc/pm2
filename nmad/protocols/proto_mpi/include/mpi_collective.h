@@ -32,6 +32,24 @@ int MPI_Bcast(void* buffer,
               int root,
               MPI_Comm comm);
 
+int MPI_Alltoall(void* sendbuf,
+		 int sendcount,
+		 MPI_Datatype sendtype,
+		 void *recvbuf,
+		 int recvcount,
+		 MPI_Datatype recvType,
+		 MPI_Comm comm);
+
+int MPI_Alltoallv(void* sendbuf,
+		  int *sendcount,
+		  int *sdispls,
+		  MPI_Datatype sendtype,
+		  void *recvbuf,
+		  int *recvcount,
+		  int *recvdispls,
+		  MPI_Datatype recvType,
+		  MPI_Comm comm);
+
 int MPI_Op_create(MPI_User_function *function,
                   int commute,
                   MPI_Op *op);

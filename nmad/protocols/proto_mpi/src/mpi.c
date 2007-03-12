@@ -525,7 +525,6 @@ int MPI_Finalize(void) {
  */
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
-        exit(1);
   MPI_NMAD_LOG_IN();
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
@@ -1246,6 +1245,34 @@ int MPI_Wait(MPI_Request *request,
 
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
+ * Returns when all the operations identified by requests are complete.
+ */
+int
+MPI_Waitall(int count,
+            MPI_Request *requests,
+            MPI_Status *statuses) {
+  int err = NM_ESUCCESS;
+  int i;
+
+  if (statuses == MPI_STATUSES_IGNORE) {
+    for (i = 0; i < count; i++) {
+      err =  MPI_Wait(&(requests[i]), MPI_STATUS_IGNORE);
+      if (err != NM_ESUCCESS)
+        goto out;
+    }
+  } else {
+    for (i = 0; i < count; i++) {
+      err =  MPI_Wait(&(requests[i]), &(statuses[i]));
+      if (err != NM_ESUCCESS)
+        goto out;
+    }
+  }
+
+ out:
   return err;
 }
 

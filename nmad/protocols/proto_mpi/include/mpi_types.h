@@ -107,4 +107,6 @@ typedef int MPI_Extended;
 #define MPI_IS_COMPLETED        ((MPI_Extended)tbx_true)
 #define MPI_DO_NOT_USE_EXTENDED ((MPI_Extended)-1)
 
+#define MPI_STATUS_IGNORE	(MPI_Status *)0
+#define MPI_STATUSES_IGNORE	(MPI_Status *)0
 #endif /* MPI_TYPES_H */

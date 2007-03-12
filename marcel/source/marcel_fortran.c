@@ -86,4 +86,14 @@ void marcel_join_(marcel_t *pid){
 void marcel_yield_(){
   marcel_yield();
 }
+
+
+void marcel_set_load_(int *load) {
+  marcel_stats_get(marcel_self(), marcel_stats_load_offset) = *load;
+}
+
+
+void marcel_spread_() {
+  marcel_bubble_spread(&marcel_root_bubble, marcel_machine_level);
+}
 #endif

@@ -78,6 +78,7 @@ typedef int MPI_Datatype;
 #define MPI_LONG_DOUBLE    ((MPI_Datatype)12)
 #define MPI_LONG_LONG_INT  ((MPI_Datatype)13)
 #define MPI_LONG_LONG      ((MPI_Datatype)13)
+#define MPI_LOGICAL             ((MPI_Datatype)25)
 #define MPI_REAL		((MPI_Datatype)26)
 #define MPI_DOUBLE_PRECISION	((MPI_Datatype)27)
 #define MPI_INTEGER		((MPI_Datatype)28)

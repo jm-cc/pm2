@@ -69,9 +69,10 @@ void internal_init() {
   datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
   datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
   datatypes[MPI_LONG_LONG]->size = sizeof(long long);
+  datatypes[MPI_LOGICAL]->size = sizeof(float);
   datatypes[MPI_REAL]->size = sizeof(float);
   datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
-  datatypes[MPI_INTEGER]->size = sizeof(signed int);
+  datatypes[MPI_INTEGER]->size = sizeof(float);
 
   available_datatypes = tbx_slist_nil();
   for(i=MPI_LONG_LONG+1 ; i<=NUMBER_OF_DATATYPES ; i++) {

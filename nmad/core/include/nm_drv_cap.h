@@ -43,7 +43,9 @@ struct nm_drv_cap {
          */
         uint8_t has_trk_rq_get;
 
-
+	/** Preferred length for switching to rendez-vous.
+	 */
+	int rdv_threshold;
 
         /* recv selection						*/
 

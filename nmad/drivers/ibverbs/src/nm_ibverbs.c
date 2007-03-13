@@ -384,8 +384,10 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 
         /* driver capabilities encoding */
         p_drv->cap.has_trk_rq_dgram			= 1;
+        p_drv->cap.has_trk_rq_rdv			= 1;
         p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
+        p_drv->cap.has_concurrent_selective_receive	= 1;
+	p_drv->cap.rdv_threshold                        = 256 * 1024;
 
 	err = NM_ESUCCESS;
 
@@ -798,6 +800,7 @@ static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx*__restrict__ p_ibverb
 	};
 	struct ibv_send_wr*bad_wr = NULL;
 	int rc = ibv_post_send(p_ibverbs_cnx->qp, &wr, &bad_wr);
+	assert(wrid < _NM_IBVERBS_WRID_MAX);
 	p_ibverbs_cnx->pending.wrids[wrid]++;
 	p_ibverbs_cnx->pending.total++;
 	if(rc) {
@@ -835,6 +838,7 @@ static int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx
 	};
 	struct ibv_send_wr*bad_wr = NULL;
 	int rc = ibv_post_send(p_ibverbs_cnx->qp, &wr, &bad_wr);
+	assert(wrid < _NM_IBVERBS_WRID_MAX);
 	p_ibverbs_cnx->pending.wrids[wrid]++;
 	p_ibverbs_cnx->pending.total++;
 	if(rc) {
@@ -855,6 +859,7 @@ static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibve
 			wc.status, nm_ibverbs_status_strings[wc.status]);
 		return -NM_EUNKNOWN;
 	}
+	assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
 	p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
 	p_ibverbs_cnx->pending.total--;
 	return NM_ESUCCESS;
@@ -877,6 +882,7 @@ static int nm_ibverbs_rdma_wait(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx
 			wc.status, nm_ibverbs_status_strings[wc.status]);
 		return -NM_EUNKNOWN;
 	}
+	assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
 	p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
 	p_ibverbs_cnx->pending.total--;
 	return NM_ESUCCESS;

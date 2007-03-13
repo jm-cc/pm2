@@ -49,6 +49,7 @@ Other options
   --profmods    : modules which have the 'profile' functionality enabled
   --headgenmods : modules which generate some specific header files at compile time
   --cc          : C compiler used
+  --fc		: Fortran compiler target
   --stampfile   : stampfile generated
   --loader      : loader used
   --preload     : dynamic libraries to be pre-loaded
@@ -365,6 +366,10 @@ pm2config_set_vars()
     _PM2CONFIG_CC=${PM2_CC:-gcc}
     export _PM2CONFIG_CC
 
+    # Fortran Compiler Target
+    _PM2CONFIG_FC=${PM2_COMMON_FORTRAN_TARGET:-gfortran}
+    export _PM2CONFIG_FC
+
     # CFLAGS
     _PM2CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS}"
     for _lib in appli common $PM2_LIBS ; do
@@ -533,7 +538,7 @@ pm2config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--schedulers|--launcher|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
+    --ext|--protocols|--schedulers|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
     --cflags)
@@ -628,6 +633,10 @@ pm2config_parse_cmdline() # args
 		;;
 	    --cc)
 		echo $_PM2CONFIG_CC
+		exit 0
+		;;
+	    --fc)
+		echo $_PM2CONFIG_FC
 		exit 0
 		;;
 	    --loader)

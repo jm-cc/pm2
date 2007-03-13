@@ -231,6 +231,7 @@ main(int	  argc,
 		for(len = MIN; len <= MAX; len = _next(len)) {
 		  unsigned long n;
 		  void *_buf;
+		  double sum, lat, bw_million_byte, bw_mbyte;
 
 		  TBX_GET_TICK(t1);
 
@@ -264,7 +265,13 @@ main(int	  argc,
 
 		  TBX_GET_TICK(t2);
 
-		  printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+		  sum = TBX_TIMING_DELAY(t1, t2);
+		  lat = sum / (2 * LOOPS);
+		  bw_million_byte = len * (LOOPS / (sum / 2));
+		  bw_mbyte = bw_million_byte / 1.048576;
+
+		  printf("%d\t%lf\t%8.3f\t%8.3f\n",
+		         len, lat, bw_million_byte, bw_mbyte);
 		}
         }
 

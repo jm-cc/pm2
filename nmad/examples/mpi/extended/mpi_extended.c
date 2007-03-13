@@ -55,7 +55,7 @@ int main(int argc, char	**argv) {
   int      comm_size;
   int      ping_side;
   int      rank_dst;
-  int      i, k;
+  int      i, k, flag;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
@@ -69,7 +69,7 @@ int main(int argc, char	**argv) {
 
   if (comm_rank == 0) {
     fprintf(stderr, "The configuration size is %d\n", comm_size);
-    fprintf(stderr, "src\t|dst\t|size\t|chunk size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit|\n");
+    fprintf(stderr, "src\t|dst\t|size\t|chunk size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit\t|isend\t\t|benefit|\n");
   }
 
   /* Warmup */
@@ -122,9 +122,23 @@ int main(int argc, char	**argv) {
           }
           for(n = 0; n < nb_chunks-1; n++) {
             MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
+            MPI_Test(&requests[n], &flag, NULL);
           }
           MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
 
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Wait(&requests[n], NULL);
+          }
+        }
+
+        for(k=0 ; k<LOOPS ; k++) {
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          }
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Isend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, &requests[n]);
+            MPI_Test(&requests[n], &flag, NULL);
+          }
           for(n = 0; n < nb_chunks; n++) {
             MPI_Wait(&requests[n], NULL);
           }
@@ -138,13 +152,16 @@ int main(int argc, char	**argv) {
       else {
         // client: send - receive
         double t1_bloc, t2_bloc;
+        double t1_isend, t2_isend;
         double t1_extended, t2_extended;
-        double gain;
+        double gain_extended_bloc;
+        double gain_isend_bloc;
 
         t1_extended = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks-1; n++) {
             MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
+            MPI_Test(&requests[n], &flag, NULL);
           }
           MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
 
@@ -158,6 +175,22 @@ int main(int argc, char	**argv) {
         }
         t2_extended = MPI_Wtime();
 
+        t1_isend = MPI_Wtime();
+        for(k=0 ; k<LOOPS ; k++) {
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Isend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, &requests[n]);
+            MPI_Test(&requests[n], &flag, NULL);
+          }
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Wait(&requests[n], NULL);
+          }
+
+          for(n = 0; n < nb_chunks; n++) {
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          }
+        }
+        t2_isend = MPI_Wtime();
+
         t1_bloc = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
           MPI_Send(buffer, 1, datatype, rank_dst, 10, MPI_COMM_WORLD);
@@ -165,8 +198,9 @@ int main(int argc, char	**argv) {
         }
         t2_bloc = MPI_Wtime();
 
-        gain = 100 - (((t2_extended - t1_extended) / (t2_bloc - t1_bloc)) * 100);
-        fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain);
+        gain_extended_bloc = 100 - (((t2_extended - t1_extended) / (t2_bloc - t1_bloc)) * 100);
+        gain_isend_bloc = 100 - (((t2_isend - t1_isend) / (t2_bloc - t1_bloc)) * 100);
+        fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\t\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain_extended_bloc, (t2_isend-t1_isend)/(2*LOOPS), gain_isend_bloc);
       }
 
       // Free memory

@@ -33,6 +33,9 @@ static long                   *in_gate_id	= NULL;
 static int                    *out_dest	 	= NULL;
 static int                    *in_dest		= NULL;
 
+#define MAX_ARG_LEN 64
+
+#if defined PM2_FORTRAN_TARGET_GFORTRAN
 /* GFortran iargc/getargc bindings
  */
 void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ ((weak));
@@ -40,9 +43,6 @@ void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ (
 void _gfortran_getarg_i8(int64_t *num, char *value, int val_len)	__attribute__ ((weak));
 
 int32_t _gfortran_iargc(void)	__attribute__ ((weak));
-
-
-#define MAX_ARG_LEN 64
 /** Initialisation by Fortran code.
  */
 int mpi_init_() {
@@ -74,8 +74,47 @@ int mpi_init_() {
         }
         return MPI_Init(&argc, &argv);
 }
+#elif defined PM2_FORTRAN_TARGET_IFORT
+/* GFortran iargc/getargc bindings
+ */
+/** Initialisation by Fortran code.
+ */
+extern int  iargc_();
+extern void getarg_(int*, char*, int);
+
+int mpi_init_() {
+        int argc;
+        int i;
+        char **argv;
+
+        argc = 1+iargc_();
+        fprintf(stderr, "argc = %d\n", argc);
+        argv = malloc(argc * sizeof(char *));
+        for (i = 0; i < argc; i++) {
+                int j;
+
+                argv[i] = malloc(MAX_ARG_LEN+1);
+                getarg_((int32_t *)&i, argv[i], MAX_ARG_LEN);
+
+                j = MAX_ARG_LEN;
+                while (j > 1 && (argv[i])[j-1] == ' ') {
+                        j--;
+                }
+                (argv[i])[j] = '\0';
+        }
+        for (i = 0; i < argc; i++) {
+                fprintf(stderr, "argv[%d] = [%s]\n", i, argv[i]);
+        }
+        return MPI_Init(&argc, &argv);
+}
+#elif defined PM2_FORTRAN_TARGET_NONE
+/* Nothing */
+#else
+#  error unknown FORTRAN TARGET for Mad MPI
+#endif
 
 
+#ifndef PM2_FORTRAN_TARGET_NONE
 /* Alias Fortran
  */
 
@@ -1988,3 +2027,4 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
 int MPI_Comm_free(MPI_Comm *comm) {
   return mpir_comm_free(comm);
 }
+#endif PM2_FORTRAN_TARGET_NONE

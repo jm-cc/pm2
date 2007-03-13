@@ -44,7 +44,7 @@
 #define NM_IBVERBS_MAX_INLINE   128
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
-#define NM_IBVERBS_BUF_SIZE     (16 * 4096 - sizeof(struct nm_ibverbs_header))
+#define NM_IBVERBS_BUF_SIZE     (2 * 4096 - sizeof(struct nm_ibverbs_header))
 #define NM_IBVERBS_RBUF_NUM     32
 #define NM_IBVERBS_SBUF_NUM     2
 #define NM_IBVERBS_CREDITS_THR  17
@@ -155,8 +155,6 @@ struct nm_ibverbs_packet {
  */
 struct nm_ibverbs_bycopy {
 
-	struct ibv_mr*mr;       /**< global MR (used for 'buffer') */
-
 	struct {
 		struct nm_ibverbs_packet sbuf[NM_IBVERBS_SBUF_NUM];
 		struct nm_ibverbs_packet rbuf[NM_IBVERBS_RBUF_NUM];
@@ -168,7 +166,6 @@ struct nm_ibverbs_bycopy {
 		uint32_t credits;   /**< remaining credits for sending */
 		uint32_t next_in;   /**< cell number of next expected packet */
 		uint32_t to_ack;    /**< credits not acked yet by the receiver */
-		int ack_pending;    /**< number of ACKs sent and not completed */
 	} window;
 
 	struct {
@@ -182,12 +179,14 @@ struct nm_ibverbs_bycopy {
 		const struct iovec*v;
 		int n;              /**< size of above iovec */
 		int current_packet; /**< current buffer for sending */
-		int pending_packet; /**< number of pending packets (sent, not completed) */
 		int msg_size;       /**< total size of message to send */
 		int done;           /**< total amount of data sent */
 		int v_done;         /**< size of current iovec segment already sent */
 		int v_current;      /**< current iovec segment beeing sent */
 	} send;
+
+	struct ibv_mr*mr;           /**< global MR (used for 'buffer') */
+
 };
 
 struct nm_ibverbs_regrdma_cell {
@@ -499,7 +498,6 @@ static int nm_ibverbs_cnx_create(struct nm_cnx_rq*p_crq)
 			p_ibverbs_cnx->bycopy.window.next_in     = 1;
 			p_ibverbs_cnx->bycopy.window.credits     = NM_IBVERBS_RBUF_NUM;
 			p_ibverbs_cnx->bycopy.window.to_ack      = 0;
-			p_ibverbs_cnx->bycopy.window.ack_pending = 0;
 			memset(&p_ibverbs_cnx->bycopy.buffer, 0, sizeof(p_ibverbs_cnx->bycopy.buffer));
 			/* register Memory Region */
 			p_ibverbs_cnx->bycopy.mr = ibv_reg_mr(p_ibverbs_drv->pd, &p_ibverbs_cnx->bycopy.buffer,
@@ -851,18 +849,26 @@ static int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx
 static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
 	struct ibv_wc wc;
-	int ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
-	if(ne == 0) {
-		return -NM_EAGAIN;
-	} else if(ne < 0 || wc.status != IBV_WC_SUCCESS) {
-		fprintf(stderr, "Infiniband: WC send failed- status=%d (%s)\n",
-			wc.status, nm_ibverbs_status_strings[wc.status]);
-		return -NM_EUNKNOWN;
-	}
-	assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
-	p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
-	p_ibverbs_cnx->pending.total--;
-	return NM_ESUCCESS;
+	int ne = 0, done = 0;
+	do {
+		ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
+		if(ne > 0 && wc.status != IBV_WC_SUCCESS) {
+			fprintf(stderr, "Infiniband: WC send failed- status=%d (%s)\n",
+				wc.status, nm_ibverbs_status_strings[wc.status]);
+			return -NM_EUNKNOWN;
+		}
+		else if(ne < 0) {
+			fprintf(stderr, "Infiniband: WC polling failed.\n");
+			return -NM_EUNKNOWN;
+		}
+		else if(ne > 0) {
+			assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
+			p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
+			p_ibverbs_cnx->pending.total--;
+			done += ne;
+		}
+	} while(ne > 0);
+	return (done > 0) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
 static int nm_ibverbs_rdma_wait(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
@@ -926,7 +932,6 @@ static inline void nm_ibverbs_bycopy_send_post(struct nm_ibverbs_cnx*__restrict_
 	p_ibverbs_cnx->bycopy.send.v              = v;
 	p_ibverbs_cnx->bycopy.send.n              = n;
 	p_ibverbs_cnx->bycopy.send.current_packet = 0;
-	p_ibverbs_cnx->bycopy.send.pending_packet = 0;
 	p_ibverbs_cnx->bycopy.send.msg_size       = 0;
 	p_ibverbs_cnx->bycopy.send.done           = 0;
 	p_ibverbs_cnx->bycopy.send.v_done         = 0;
@@ -962,25 +967,25 @@ static inline int nm_ibverbs_bycopy_send_poll(struct nm_ibverbs_cnx*__restrict__
 		}
 
 		/* 2- check window availability */
-		while((p_ibverbs_cnx->bycopy.send.pending_packet > 0) &&
-		   (nm_ibverbs_rdma_poll(p_ibverbs_cnx) == NM_ESUCCESS)) {
-			p_ibverbs_cnx->bycopy.send.pending_packet--;
-		}
-		if(p_ibverbs_cnx->bycopy.send.pending_packet >= NM_IBVERBS_SBUF_NUM) {
+		nm_ibverbs_rdma_poll(p_ibverbs_cnx);
+		if(p_ibverbs_cnx->pending.wrids[NM_IBVERBS_WRID_RDMA] >= NM_IBVERBS_SBUF_NUM) {
 			goto wouldblock;
 		}
 
 		/* 3- prepare and send packet */
 		struct nm_ibverbs_packet*__restrict__ packet = &p_ibverbs_cnx->bycopy.buffer.sbuf[p_ibverbs_cnx->bycopy.send.current_packet];
-		int packet_size = 0;
 		const int remaining = p_ibverbs_cnx->bycopy.send.msg_size - p_ibverbs_cnx->bycopy.send.done;
 		const int offset = (remaining > NM_IBVERBS_BUF_SIZE) ? 0 : (NM_IBVERBS_BUF_SIZE - remaining);
-		while(packet_size < NM_IBVERBS_BUF_SIZE && p_ibverbs_cnx->bycopy.send.v_current < p_ibverbs_cnx->bycopy.send.n) {
+		int available   = NM_IBVERBS_BUF_SIZE - offset;
+		int packet_size = 0;
+		while((packet_size < available) &&
+		      (p_ibverbs_cnx->bycopy.send.v_current < p_ibverbs_cnx->bycopy.send.n)) {
 			const int v_remaining = p_ibverbs_cnx->bycopy.send.v[p_ibverbs_cnx->bycopy.send.v_current].iov_len - p_ibverbs_cnx->bycopy.send.v_done;
-			const int fragment_size = (v_remaining > NM_IBVERBS_BUF_SIZE) ? NM_IBVERBS_BUF_SIZE : v_remaining;
+			const int fragment_size = (v_remaining > available) ? available : v_remaining;
 			memcpy(&packet->data[offset + packet_size],
 			       p_ibverbs_cnx->bycopy.send.v[p_ibverbs_cnx->bycopy.send.v_current].iov_base + p_ibverbs_cnx->bycopy.send.v_done, fragment_size);
 			packet_size += fragment_size;
+			available   -= fragment_size;
 			p_ibverbs_cnx->bycopy.send.v_done += fragment_size;
 			if(p_ibverbs_cnx->bycopy.send.v_done >= p_ibverbs_cnx->bycopy.send.v[p_ibverbs_cnx->bycopy.send.v_current].iov_len) {
 				p_ibverbs_cnx->bycopy.send.v_current++;
@@ -1006,13 +1011,9 @@ static inline int nm_ibverbs_bycopy_send_poll(struct nm_ibverbs_cnx*__restrict__
 		p_ibverbs_cnx->bycopy.send.current_packet = (p_ibverbs_cnx->bycopy.send.current_packet + 1) % NM_IBVERBS_SBUF_NUM;
 		p_ibverbs_cnx->bycopy.window.next_out     = (p_ibverbs_cnx->bycopy.window.next_out     + 1) % NM_IBVERBS_RBUF_NUM;
 		p_ibverbs_cnx->bycopy.window.credits--;
-		p_ibverbs_cnx->bycopy.send.pending_packet++;
 	}
-	while((p_ibverbs_cnx->bycopy.send.pending_packet > 0) &&
-	   (nm_ibverbs_rdma_poll(p_ibverbs_cnx) == NM_ESUCCESS)) {
-		p_ibverbs_cnx->bycopy.send.pending_packet--;
-	}
-	if(p_ibverbs_cnx->bycopy.send.pending_packet > 0) {
+	nm_ibverbs_rdma_poll(p_ibverbs_cnx);
+	if(p_ibverbs_cnx->pending.wrids[NM_IBVERBS_WRID_RDMA]) {
 		goto wouldblock;
 	}
 	return NM_ESUCCESS;
@@ -1063,22 +1064,15 @@ static inline int nm_ibverbs_bycopy_poll_one(struct nm_ibverbs_cnx*__restrict__ 
 					     p_ibverbs_cnx->bycopy.mr,
 					     NM_IBVERBS_WRID_ACK);
 			p_ibverbs_cnx->bycopy.window.to_ack = 0;
-			p_ibverbs_cnx->bycopy.window.ack_pending++;
 		}
-		while(p_ibverbs_cnx->bycopy.window.ack_pending && 
-		   (nm_ibverbs_rdma_poll(p_ibverbs_cnx) == NM_ESUCCESS)) {
-			p_ibverbs_cnx->bycopy.window.ack_pending--;
-		}
+		nm_ibverbs_rdma_poll(p_ibverbs_cnx);
 		p_ibverbs_cnx->bycopy.window.next_in = (p_ibverbs_cnx->bycopy.window.next_in + 1) % NM_IBVERBS_RBUF_NUM;
 		packet = &p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in];
 	}
-	while(p_ibverbs_cnx->bycopy.window.ack_pending && 
-	      (nm_ibverbs_rdma_poll(p_ibverbs_cnx) == NM_ESUCCESS)) {
-		p_ibverbs_cnx->bycopy.window.ack_pending--;
-	}
+	nm_ibverbs_rdma_poll(p_ibverbs_cnx);
 	if((p_ibverbs_cnx->bycopy.recv.msg_size > 0) &&
 	   (p_ibverbs_cnx->bycopy.recv.done == p_ibverbs_cnx->bycopy.recv.msg_size) &&
-	   (p_ibverbs_cnx->bycopy.window.ack_pending == 0)) {
+	   (p_ibverbs_cnx->pending.wrids[NM_IBVERBS_WRID_ACK] == 0)) {
 		err = NM_ESUCCESS;
 	} else {
 		err = -NM_EAGAIN;

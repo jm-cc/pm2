@@ -72,7 +72,7 @@ main(int	  argc,
 	  int k;
                 /* client
                  */
-                printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
+                printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
 
 		for(len = 0; len <= MAX; len = _next(len)) {
 

@@ -83,7 +83,9 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	}
 };
 
+#ifdef MA__NUMA
 int ma_vp_node[MA_NR_LWPS];
+#endif
 
 #undef marcel_topo_vp_level
 struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
@@ -601,6 +603,12 @@ static void topo_connect(void) {
 static void topo_discover(void) {
 	unsigned l,i,j;
 	struct marcel_topo_level *level;
+
+	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_LWPS) {
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_LWPS);
+		exit(1);
+	}
+
 #ifdef MA__NUMA
 	unsigned k,m,n;
 	unsigned nbsublevels;

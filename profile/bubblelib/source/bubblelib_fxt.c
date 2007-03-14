@@ -133,7 +133,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 	unsigned nrqlevels = 0, *rqnums = NULL;
 	fxt_blockev_t block;
 	unsigned keymask = 0;
-	int ret;
+	int ret, i;
 
 	if (!(fut = fxt_open(traceFile))) {
 		perror("fxt_open");
@@ -143,10 +143,18 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 	hcreate(1024);
 
 	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_64, &ev))) {
-		static int i;
-		i++;
-		if (!(i%1000))
-			fprintf(stderr,"\r%d",i);
+		{
+			static int num;
+			num++;
+			if (!(num%1000)) {
+				fprintf(stderr,"\r%d",num);
+				fflush(stdout);
+			}
+			if (num > 1<<16) {
+				fprintf(stderr,"Phew! Long trace! Stopping at %d events or else the movie will probably be boring\n", num);
+				break;
+			}
+		}
 		if (ev.ev64.code == FUT_KEYCHANGE_CODE)
 			keymask = ev.ev64.param[0];
 		switch (ev.ev64.code) {

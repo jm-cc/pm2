@@ -87,7 +87,7 @@ mad3()
     fi
     nb_protocols=$(echo $protocols | wc -w)
     if [ "$nb_protocols" != 1 ] ; then
-        _pm2load_warning "Warning: More than one protocol selected ($protocols ). You might use the parameter --protocol to select one protocol"
+        _pm2load_warning "Warning: Several available protocols ($protocols). Use the parameter --protocol to select one protocol"
     fi
     log "Protocol: $protocols"
 
@@ -116,7 +116,6 @@ mad3()
 
 	new_list="$new_list ${i}[${k}]"
     done
-
     tmp_list=`echo $new_list|tr ' ' ','`
     log "Host list: " $tmp_list
     new_list=""
@@ -210,6 +209,7 @@ PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
 PM2_XMODE=off
 PM2_PMODE=off
+PM2_PROTOCOL=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -220,7 +220,7 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--protocol)
 	    shift
-	    PM2_PROTOCOL="$1"
+	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
 	    shift
 	    ;;
 	-d|--debug)

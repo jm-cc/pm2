@@ -587,6 +587,7 @@ static void topo_connect(void) {
 				for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
 					if (!(marcel_topo_levels[l+1][j].cpuset &
 						~(marcel_topo_levels[l][i].cpuset))) {
+						MA_BUG_ON(m >= marcel_topo_levels[l][i].arity);
 						marcel_topo_levels[l][i].children[m]=
 							&marcel_topo_levels[l+1][j];
 						marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
@@ -784,12 +785,13 @@ static void topo_discover(void) {
 	}
 	mdebug("arity done.\n");
 
+	/* and finally connect levels */
+	topo_connect();
+	mdebug("connecting done.\n");
+
 #ifdef MA__NUMA
 	/* Split hi-arity levels */
 	if (marcel_topo_max_arity) {
-		topo_connect();
-		mdebug("pre-connecting done.\n");
-
 		/* For each level */
 		for (l=0; l<marcel_topo_nblevels-1; l++) {
 			unsigned level_width = 0;
@@ -822,7 +824,10 @@ static void topo_discover(void) {
 						level->number = j+k;
 						ma_topo_set_os_numbers(level, -1, -1, -1, -1);
 						marcel_vpmask_empty(&level->cpuset);
-						marcel_topo_levels[l+1][j+k].arity=0;
+						level->arity = 0;
+						level->father = &marcel_topo_levels[l][i];
+						level->index = k;
+						level->children = TBX_MALLOC(sublevelarity*sizeof(void*));
 					}
 
 					/* distribute cpus to subitems */
@@ -833,17 +838,27 @@ static void topo_discover(void) {
 					/* will get first item's cpus */
 					m = 0;
 					for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
-						marcel_vpmask_or(&marcel_topo_levels[l+1][j+k].cpuset,
+						level = &marcel_topo_levels[l+1][j+k];
+						marcel_vpmask_or(&level->cpuset,
 							&marcel_topo_levels[l][i].children[n]->cpuset);
-						marcel_topo_levels[l+1][j+k].arity++;
+						level->arity++;
+						level->children[m] = marcel_topo_levels[l][i].children[n];
+						marcel_topo_levels[l][i].index = m;
 						if (++m == sublevelarity) {
 							k++;
 							m = 0;
 						}
 					}
-					marcel_topo_levels[l][i].arity = nbsublevels;
-					mdebug("now level %u,%u: cpuset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 					MA_BUG_ON(k!=nbsublevels);
+
+					/* reconnect */
+					marcel_topo_levels[l][i].arity = nbsublevels;
+					TBX_FREE(marcel_topo_levels[l][i].children);
+					marcel_topo_levels[l][i].children = TBX_MALLOC(nbsublevels*sizeof(void*));
+					for (k=0; k<nbsublevels; k++)
+						marcel_topo_levels[l][i].children[k] = level;
+
+					mdebug("now level %u,%u: cpuset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 					j += nbsublevels;
 				}
 				MA_BUG_ON(j!=level_width);
@@ -856,9 +871,6 @@ static void topo_discover(void) {
 	}
 #endif
 
-	/* and finally connect levels */
-	topo_connect();
-	mdebug("connecting done.\n");
 	MA_BUG_ON(marcel_topo_level_nbitems[marcel_topo_nblevels-1] != marcel_nbvps());
 	marcel_topo_vp_level = marcel_topo_levels[marcel_topo_nblevels-1];
 

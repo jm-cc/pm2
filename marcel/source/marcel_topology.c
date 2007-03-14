@@ -832,12 +832,12 @@ static void topo_discover(void) {
 						level = &marcel_topo_levels[l+1][j+k];
 						level->type = MARCEL_LEVEL_FAKE;
 						level->number = j+k;
+						level->index = k;
 						ma_topo_set_os_numbers(level, -1, -1, -1, -1);
 						marcel_vpmask_empty(&level->cpuset);
 						level->arity = 0;
-						level->father = &marcel_topo_levels[l][i];
-						level->index = k;
 						level->children = TBX_MALLOC(sublevelarity*sizeof(void*));
+						level->father = &marcel_topo_levels[l][i];
 					}
 
 					/* distribute cpus to subitems */
@@ -853,7 +853,8 @@ static void topo_discover(void) {
 							&marcel_topo_levels[l][i].children[n]->cpuset);
 						level->arity++;
 						level->children[m] = marcel_topo_levels[l][i].children[n];
-						marcel_topo_levels[l][i].index = m;
+						marcel_topo_levels[l][i].children[n]->index = m;
+						marcel_topo_levels[l][i].children[n]->father = level;
 						if (++m == sublevelarity) {
 							k++;
 							m = 0;
@@ -873,6 +874,7 @@ static void topo_discover(void) {
 				}
 				MA_BUG_ON(j!=level_width);
 				marcel_vpmask_empty(&marcel_topo_levels[l+1][j].cpuset);
+				marcel_vpmask_empty(&marcel_topo_levels[l+1][j].vpset);
 				if (++marcel_topo_nblevels ==
 					sizeof(marcel_topo_levels)/sizeof(*marcel_topo_levels))
 					MA_BUG();

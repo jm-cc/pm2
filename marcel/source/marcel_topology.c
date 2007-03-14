@@ -114,7 +114,7 @@ unsigned marcel_nbprocessors = 1;
 unsigned marcel_cpu_stride = 0;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
-unsigned marcel_topo_max_arity = 0;
+unsigned marcel_topo_max_arity = 4;
 #endif
 
 void ma_set_nbprocessors(void) {
@@ -719,6 +719,7 @@ static void topo_discover(void) {
 	while (marcel_topo_nblevels-1 >= l) {
 		TBX_FREE(marcel_topo_levels[marcel_topo_nblevels-1]);
 		marcel_topo_nblevels--;
+		marcel_topo_levels[marcel_topo_nblevels] = NULL;
 	}
 
 	/* And add this one */
@@ -775,6 +776,7 @@ static void topo_discover(void) {
 			memmove(&marcel_topo_level_nbitems[l+1],&marcel_topo_level_nbitems[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_level_nbitems));
 			memmove(&marcel_topo_levels[l+1],&marcel_topo_levels[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_levels));
 			marcel_topo_nblevels--;
+			marcel_topo_levels[marcel_topo_nblevels] = NULL;
 			l--;
 		}
 	}
@@ -864,7 +866,7 @@ static void topo_discover(void) {
 					TBX_FREE(marcel_topo_levels[l][i].children);
 					marcel_topo_levels[l][i].children = TBX_MALLOC(nbsublevels*sizeof(void*));
 					for (k=0; k<nbsublevels; k++)
-						marcel_topo_levels[l][i].children[k] = level;
+						marcel_topo_levels[l][i].children[k] = &marcel_topo_levels[l+1][j+k];
 
 					mdebug("now level %u,%u: cpuset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 					j += nbsublevels;

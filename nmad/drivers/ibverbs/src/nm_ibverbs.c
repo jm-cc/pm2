@@ -65,16 +65,18 @@ enum {
 	_NM_IBVERBS_WRID_NONE = 0,
 	NM_IBVERBS_WRID_ACK,    /**< ACK for bycopy */
 	NM_IBVERBS_WRID_RDMA,   /**< data for bycopy */
-	NM_IBVERBS_WRID_RECV,
-	NM_IBVERBS_WRID_SEND,
-	NM_IBVERBS_WRID_READ,
 	NM_IBVERBS_WRID_RDV,    /**< rdv for regrdma */
 	NM_IBVERBS_WRID_DATA,   /**< data for regrdma */
 	NM_IBVERBS_WRID_HEADER, /**< headers for regrdma */
+	NM_IBVERBS_WRID_RECV,
+	NM_IBVERBS_WRID_SEND,
+	NM_IBVERBS_WRID_READ,
 	NM_IBVERBS_WRID_PACKET,
 	_NM_IBVERBS_WRID_MAX
 };
 
+/** messages for Work Completion status
+ */
 static const char*const nm_ibverbs_status_strings[] = {
 	[IBV_WC_SUCCESS]            = "success",
 	[IBV_WC_LOC_LEN_ERR]        = "local length error",
@@ -144,7 +146,7 @@ struct nm_ibverbs_header {
 	volatile uint8_t status; /**< binary mask- describes the content of the message */
 }  __attribute__((packed));
 
-/** An "on the wire" packet
+/** An "on the wire" packet for 'bycopy' method
  */
 struct nm_ibverbs_packet {
 	char data[NM_IBVERBS_BUF_SIZE];
@@ -214,7 +216,7 @@ struct nm_ibverbs_regrdma_sighdr {
  */
 struct nm_ibverbs_regrdma {
 
-	struct ibv_mr*mr;       /**< global MR (used for 'buffer' */
+	struct ibv_mr*mr;       /**< global MR (used for 'headers') */
 
 	struct {
 		char*message;
@@ -262,8 +264,8 @@ struct nm_ibverbs_cnx {
 };
 
 struct nm_ibverbs_gate {
-        int sock;    /**< connected socket for IB address exchange */
 	struct nm_ibverbs_cnx cnx_array[NM_IBVERBS_TRK_MAX];
+        int sock;    /**< connected socket for IB address exchange */
 };
 
 static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*p_pw);
@@ -355,9 +357,9 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 		err = -NM_EUNREACH;
 		goto out;
 	}
-	char s_port[24];
-	snprintf(s_port, 24, "%s:%d", inet_ntoa(*(struct in_addr*)he->h_addr), ntohs(addr.sin_port));
-        p_drv->url = tbx_strdup(s_port);
+	char s_url[16];
+	snprintf(s_url, 16, "%08x%04x", htonl(((struct in_addr*)he->h_addr)->s_addr), addr.sin_port);
+        p_drv->url = tbx_strdup(s_url);
 
 	/* IB capabilities */
 	p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
@@ -682,25 +684,18 @@ static int nm_ibverbs_connect(struct nm_cnx_rq *p_crq)
 		int fd = socket(AF_INET, SOCK_STREAM, 0);
 		assert(fd > -1);
 		p_ibverbs_gate->sock = fd;
-		char*sep = strchr(p_crq->remote_drv_url, ':');
-		*sep = 0;
-		char*peer_addr = p_crq->remote_drv_url;
-		int peer_port = atoi(sep + 1);
-		struct in_addr peer_inaddr;
-		rc = inet_aton(peer_addr, &peer_inaddr);
-		if(!rc) {
-			fprintf(stderr, "Infiniband: cannot find host %s\n", peer_addr);
-			err = -NM_EUNREACH;
-			goto out;
-		}
+		assert(strlen(p_crq->remote_drv_url) == 12);
+		in_addr_t peer_addr;
+		int peer_port;
+		sscanf(p_crq->remote_drv_url, "%08x%04x", &peer_addr, &peer_port);
 		struct sockaddr_in inaddr = {
 			.sin_family = AF_INET,
-			.sin_port   = htons(peer_port),
-			.sin_addr   = peer_inaddr
+			.sin_port   = peer_port,
+			.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
 		};
 		rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
 		if(rc) {
-			fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", peer_addr, peer_port);
+			fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
 			err = -NM_EUNREACH;
 			goto out;
 		}

@@ -35,6 +35,8 @@
 #define NM_IBVERBS_CNX_MAX    256
 #define NM_IBVERBS_TRK_MAX    256
 
+/* *** global IB parameters */
+
 #define NM_IBVERBS_PORT         1
 #define NM_IBVERBS_TX_DEPTH     4
 #define NM_IBVERBS_RX_DEPTH     2
@@ -44,20 +46,38 @@
 #define NM_IBVERBS_MAX_INLINE   128
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
-#define NM_IBVERBS_BUF_SIZE     (2 * 4096 - sizeof(struct nm_ibverbs_header))
-#define NM_IBVERBS_RBUF_NUM     32
-#define NM_IBVERBS_SBUF_NUM     2
-#define NM_IBVERBS_CREDITS_THR  17
+/* *** method: 'bycopy' */
 
-#define NM_IBVERBS_STATUS_EMPTY   0x00  /**< no message in buffer */
-#define NM_IBVERBS_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
-#define NM_IBVERBS_STATUS_CONT    0x02  /**< data (continued) */
-#define NM_IBVERBS_STATUS_CREDITS 0x04  /**< message contains credits */
+#define NM_IBVERBS_BYCOPY_BUFSIZE     (4096 - sizeof(struct nm_ibverbs_bycopy_header))
+#define NM_IBVERBS_BYCOPY_RBUF_NUM    32
+#define NM_IBVERBS_BYCOPY_SBUF_NUM    2
+#define NM_IBVERBS_BYCOPY_CREDITS_THR 17
+
+#define NM_IBVERBS_BYCOPY_STATUS_EMPTY   0x00  /**< no message in buffer */
+#define NM_IBVERBS_BYCOPY_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
+#define NM_IBVERBS_BYCOPY_STATUS_CONT    0x02  /**< data (continued) */
+#define NM_IBVERBS_BYCOPY_STATUS_CREDITS 0x04  /**< message contains credits */
+
+/* *** method: 'regrdma' */
 
 static const int nm_ibverbs_regrdma_frag_base    = 128  * 1024;
 static const int nm_ibverbs_regrdma_frag_inc     = 128  * 1024;
 static const int nm_ibverbs_regrdma_frag_overrun = 64   * 1024;
 static const int nm_ibverbs_regrdma_frag_max     = 1024 * 1024;
+
+/* *** method: 'adaptrdma' */
+
+static const int nm_ibverbs_adaptrdma_block_granularity = 1024;
+static const int nm_ibverbs_adaptrdma_step_base         = 16  * 1024;
+static const int nm_ibverbs_adaptrdma_step_overrun      = 12  * 1024;
+static const int nm_ibverbs_adaptrdma_reg_threshold     = 384 * 1024;
+static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
+
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
+#define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_BEG 0x04
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
+
 
 /** list of WRIDs used in the driver.
  */
@@ -139,7 +159,7 @@ struct nm_ibverbs_cnx_addr {
 	uint32_t rkey;
 };
 
-struct nm_ibverbs_header {
+struct nm_ibverbs_bycopy_header {
 	uint32_t offset;         /**< data offset (packet_size = BUFSIZE - offset) */
 	uint32_t size;           /**< message size */
 	uint8_t  ack;            /**< credits acknowledged */
@@ -148,9 +168,9 @@ struct nm_ibverbs_header {
 
 /** An "on the wire" packet for 'bycopy' method
  */
-struct nm_ibverbs_packet {
-	char data[NM_IBVERBS_BUF_SIZE];
-	struct nm_ibverbs_header header;
+struct nm_ibverbs_bycopy_packet {
+	char data[NM_IBVERBS_BYCOPY_BUFSIZE];
+	struct nm_ibverbs_bycopy_header header;
 } __attribute__((packed));
 
 /** Connection state for tracks sending by copy
@@ -158,8 +178,8 @@ struct nm_ibverbs_packet {
 struct nm_ibverbs_bycopy {
 
 	struct {
-		struct nm_ibverbs_packet sbuf[NM_IBVERBS_SBUF_NUM];
-		struct nm_ibverbs_packet rbuf[NM_IBVERBS_RBUF_NUM];
+		struct nm_ibverbs_bycopy_packet sbuf[NM_IBVERBS_BYCOPY_SBUF_NUM];
+		struct nm_ibverbs_bycopy_packet rbuf[NM_IBVERBS_BYCOPY_RBUF_NUM];
 		volatile uint16_t rack, sack; /**< field for credits acknowledgement */
 	} buffer;
 
@@ -286,8 +306,8 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 
 	srand48(getpid() * time(NULL));
 	/* check parameters consitency */
-	assert(sizeof(struct nm_ibverbs_packet) % 1024 == 0);
-	assert(NM_IBVERBS_CREDITS_THR > NM_IBVERBS_RBUF_NUM / 2);
+	assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
+	assert(NM_IBVERBS_BYCOPY_CREDITS_THR > NM_IBVERBS_BYCOPY_RBUF_NUM / 2);
 
 	struct nm_ibverbs_drv*p_ibverbs_drv = TBX_MALLOC(sizeof(struct nm_ibverbs_drv));
         if (!p_ibverbs_drv) {
@@ -498,7 +518,7 @@ static int nm_ibverbs_cnx_create(struct nm_cnx_rq*p_crq)
 			/* init state */
 			p_ibverbs_cnx->bycopy.window.next_out    = 1;
 			p_ibverbs_cnx->bycopy.window.next_in     = 1;
-			p_ibverbs_cnx->bycopy.window.credits     = NM_IBVERBS_RBUF_NUM;
+			p_ibverbs_cnx->bycopy.window.credits     = NM_IBVERBS_BYCOPY_RBUF_NUM;
 			p_ibverbs_cnx->bycopy.window.to_ack      = 0;
 			memset(&p_ibverbs_cnx->bycopy.buffer, 0, sizeof(p_ibverbs_cnx->bycopy.buffer));
 			/* register Memory Region */
@@ -949,11 +969,11 @@ static inline int nm_ibverbs_bycopy_send_poll(struct nm_ibverbs_cnx*__restrict__
 		}
 		if(p_ibverbs_cnx->bycopy.window.credits <= 1) {
 			int j;
-			for(j = 0; j < NM_IBVERBS_RBUF_NUM; j++) {
+			for(j = 0; j < NM_IBVERBS_BYCOPY_RBUF_NUM; j++) {
 				if(p_ibverbs_cnx->bycopy.buffer.rbuf[j].header.status) {
 					p_ibverbs_cnx->bycopy.window.credits += p_ibverbs_cnx->bycopy.buffer.rbuf[j].header.ack;
 					p_ibverbs_cnx->bycopy.buffer.rbuf[j].header.ack = 0;
-					p_ibverbs_cnx->bycopy.buffer.rbuf[j].header.status &= ~NM_IBVERBS_STATUS_CREDITS;
+					p_ibverbs_cnx->bycopy.buffer.rbuf[j].header.status &= ~NM_IBVERBS_BYCOPY_STATUS_CREDITS;
 				}
 			}
 		}
@@ -963,15 +983,15 @@ static inline int nm_ibverbs_bycopy_send_poll(struct nm_ibverbs_cnx*__restrict__
 
 		/* 2- check window availability */
 		nm_ibverbs_rdma_poll(p_ibverbs_cnx);
-		if(p_ibverbs_cnx->pending.wrids[NM_IBVERBS_WRID_RDMA] >= NM_IBVERBS_SBUF_NUM) {
+		if(p_ibverbs_cnx->pending.wrids[NM_IBVERBS_WRID_RDMA] >= NM_IBVERBS_BYCOPY_SBUF_NUM) {
 			goto wouldblock;
 		}
 
 		/* 3- prepare and send packet */
-		struct nm_ibverbs_packet*__restrict__ packet = &p_ibverbs_cnx->bycopy.buffer.sbuf[p_ibverbs_cnx->bycopy.send.current_packet];
+		struct nm_ibverbs_bycopy_packet*__restrict__ packet = &p_ibverbs_cnx->bycopy.buffer.sbuf[p_ibverbs_cnx->bycopy.send.current_packet];
 		const int remaining = p_ibverbs_cnx->bycopy.send.msg_size - p_ibverbs_cnx->bycopy.send.done;
-		const int offset = (remaining > NM_IBVERBS_BUF_SIZE) ? 0 : (NM_IBVERBS_BUF_SIZE - remaining);
-		int available   = NM_IBVERBS_BUF_SIZE - offset;
+		const int offset = (remaining > NM_IBVERBS_BYCOPY_BUFSIZE) ? 0 : (NM_IBVERBS_BYCOPY_BUFSIZE - remaining);
+		int available   = NM_IBVERBS_BYCOPY_BUFSIZE - offset;
 		int packet_size = 0;
 		while((packet_size < available) &&
 		      (p_ibverbs_cnx->bycopy.send.v_current < p_ibverbs_cnx->bycopy.send.n)) {
@@ -987,24 +1007,24 @@ static inline int nm_ibverbs_bycopy_send_poll(struct nm_ibverbs_cnx*__restrict__
 				p_ibverbs_cnx->bycopy.send.v_done = 0;
 			}
 		}
-		assert(NM_IBVERBS_BUF_SIZE - offset == packet_size);
+		assert(NM_IBVERBS_BYCOPY_BUFSIZE - offset == packet_size);
 
 		packet->header.offset = offset;
 		packet->header.size   = p_ibverbs_cnx->bycopy.send.msg_size;
 		packet->header.ack    = p_ibverbs_cnx->bycopy.window.to_ack;
-		packet->header.status = p_ibverbs_cnx->bycopy.send.done ? NM_IBVERBS_STATUS_CONT : NM_IBVERBS_STATUS_DATA;
+		packet->header.status = p_ibverbs_cnx->bycopy.send.done ? NM_IBVERBS_BYCOPY_STATUS_CONT : NM_IBVERBS_BYCOPY_STATUS_DATA;
 		p_ibverbs_cnx->bycopy.window.to_ack = 0;
 		p_ibverbs_cnx->bycopy.send.done += packet_size;
 
 		nm_ibverbs_rdma_send(p_ibverbs_cnx,
-				     sizeof(struct nm_ibverbs_packet) - offset,
+				     sizeof(struct nm_ibverbs_bycopy_packet) - offset,
 				     &packet->data[offset],
 				     &p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_out].data[offset],
 				     &p_ibverbs_cnx->bycopy.buffer,
 				     p_ibverbs_cnx->bycopy.mr,
 				     NM_IBVERBS_WRID_RDMA);
-		p_ibverbs_cnx->bycopy.send.current_packet = (p_ibverbs_cnx->bycopy.send.current_packet + 1) % NM_IBVERBS_SBUF_NUM;
-		p_ibverbs_cnx->bycopy.window.next_out     = (p_ibverbs_cnx->bycopy.window.next_out     + 1) % NM_IBVERBS_RBUF_NUM;
+		p_ibverbs_cnx->bycopy.send.current_packet = (p_ibverbs_cnx->bycopy.send.current_packet + 1) % NM_IBVERBS_BYCOPY_SBUF_NUM;
+		p_ibverbs_cnx->bycopy.window.next_out     = (p_ibverbs_cnx->bycopy.window.next_out     + 1) % NM_IBVERBS_BYCOPY_RBUF_NUM;
 		p_ibverbs_cnx->bycopy.window.credits--;
 	}
 	nm_ibverbs_rdma_poll(p_ibverbs_cnx);
@@ -1030,18 +1050,18 @@ static inline void nm_ibverbs_bycopy_recv_init(struct nm_pkt_wrap*p_pw, struct n
 static inline int nm_ibverbs_bycopy_poll_one(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
 	int err = -NM_EUNKNOWN;
-	struct nm_ibverbs_packet*__restrict__ packet = &p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in];
+	struct nm_ibverbs_bycopy_packet*__restrict__ packet = &p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in];
 	while( ( (p_ibverbs_cnx->bycopy.recv.msg_size == -1) ||
 		 (p_ibverbs_cnx->bycopy.recv.done < p_ibverbs_cnx->bycopy.recv.msg_size) ) &&
 	       (packet->header.status != 0) ) {
 		if(p_ibverbs_cnx->bycopy.recv.msg_size == -1) {
-			assert((packet->header.status & NM_IBVERBS_STATUS_DATA) != 0);
+			assert((packet->header.status & NM_IBVERBS_BYCOPY_STATUS_DATA) != 0);
 			p_ibverbs_cnx->bycopy.recv.msg_size = packet->header.size;
 			assert(p_ibverbs_cnx->bycopy.recv.msg_size <= p_ibverbs_cnx->bycopy.recv.size_posted);
 		}
-		assert((p_ibverbs_cnx->bycopy.recv.done == 0 && (packet->header.status & NM_IBVERBS_STATUS_DATA)) ||
-		       (p_ibverbs_cnx->bycopy.recv.done != 0 && (packet->header.status & NM_IBVERBS_STATUS_CONT)));
-		const int packet_size = NM_IBVERBS_BUF_SIZE - packet->header.offset;
+		assert((p_ibverbs_cnx->bycopy.recv.done == 0 && (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_DATA)) ||
+		       (p_ibverbs_cnx->bycopy.recv.done != 0 && (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_CONT)));
+		const int packet_size = NM_IBVERBS_BYCOPY_BUFSIZE - packet->header.offset;
 		memcpy(p_ibverbs_cnx->bycopy.recv.buf_posted + p_ibverbs_cnx->bycopy.recv.done,
 		       &packet->data[packet->header.offset], packet_size);
 		p_ibverbs_cnx->bycopy.recv.done += packet_size;
@@ -1049,7 +1069,7 @@ static inline int nm_ibverbs_bycopy_poll_one(struct nm_ibverbs_cnx*__restrict__ 
 		packet->header.ack = 0;
 		packet->header.status = 0;
 		p_ibverbs_cnx->bycopy.window.to_ack++;
-		if(p_ibverbs_cnx->bycopy.window.to_ack > NM_IBVERBS_CREDITS_THR) {
+		if(p_ibverbs_cnx->bycopy.window.to_ack > NM_IBVERBS_BYCOPY_CREDITS_THR) {
 			p_ibverbs_cnx->bycopy.buffer.sack = p_ibverbs_cnx->bycopy.window.to_ack;
 			nm_ibverbs_rdma_send(p_ibverbs_cnx,
 					     sizeof(uint16_t),
@@ -1061,7 +1081,7 @@ static inline int nm_ibverbs_bycopy_poll_one(struct nm_ibverbs_cnx*__restrict__ 
 			p_ibverbs_cnx->bycopy.window.to_ack = 0;
 		}
 		nm_ibverbs_rdma_poll(p_ibverbs_cnx);
-		p_ibverbs_cnx->bycopy.window.next_in = (p_ibverbs_cnx->bycopy.window.next_in + 1) % NM_IBVERBS_RBUF_NUM;
+		p_ibverbs_cnx->bycopy.window.next_in = (p_ibverbs_cnx->bycopy.window.next_in + 1) % NM_IBVERBS_BYCOPY_RBUF_NUM;
 		packet = &p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in];
 	}
 	nm_ibverbs_rdma_poll(p_ibverbs_cnx);

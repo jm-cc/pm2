@@ -52,7 +52,6 @@ static int load_compar(const void *_e1, const void *_e2) {
 /* e has ne items, l has nl items */
 static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl, int recurse) {
 	/* TODO: give imbalance in recursion ? */
-	/* TODO: XXX: lock holders! */
 	int i;
 	float per_item_load;
 	unsigned long totload;
@@ -169,14 +168,14 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		if (entity_load(e[i]) < per_item_load/30) {
 			int state;
 			ma_runqueue_t *rq;
-			debug("0, leave it here\n");
-			state = ma_get_entity(e[j]);
+			debug("small(%lx), leave it here\n", entity_load(e[i]));
+			state = ma_get_entity(e[i]);
 			if (l_l[0]->father)
 				rq = &l_l[0]->father->sched;
 			else
 				rq = &marcel_machine_level[0].sched;
-			ma_put_entity(e[j], &rq->hold, state);
-			switchrq(e[j], rq);
+			ma_put_entity(e[i], &rq->hold, state);
+			switchrq(e[i], rq);
 			continue;
 		}
 
@@ -269,10 +268,11 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_bubble_synthesize_stats(b);
 	ma_preempt_disable();
 	ma_local_bh_disable();
+	/* XXX: suppose that the bubble is not held out of topo hierarchy under
+	 * level l */
+	ma_bubble_lock_all(b, l);
 	__ma_bubble_gather(b, b);
-	ma_holder_rawlock(&b->hold);
 	__marcel_bubble_spread(&e, 1, &l, 1, 0);
-	ma_holder_rawunlock(&b->hold);
 
 	/* resched existing threads */
 	marcel_vpmask_foreach_begin(vp,&l->vpset)
@@ -280,6 +280,7 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 		ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
 	marcel_vpmask_foreach_end()
 
+	ma_bubble_unlock_all(b, l);
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }

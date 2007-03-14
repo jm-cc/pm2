@@ -273,8 +273,19 @@ int marcel_bubble_detach(marcel_bubble_t *bubble);
  * runqueues and put them back into \e b.
  */
 void ma_bubble_gather(marcel_bubble_t *b);
-/* Internal version (preemption and local bottom halves are already disabled) */
+/* Internal version (bubble hierarchy is already locked) */
 void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
+
+/** \brief Locks a whole bubble hierarchy.  Also locks the whole level hierarchy.  */
+void ma_bubble_lock_all(marcel_bubble_t *b, struct marcel_topo_level *level);
+/** \brief Unlocks a whole bubble hierarchy.  Also unlocks the whole level hierarchy. */
+void ma_bubble_unlock_all(marcel_bubble_t *b, struct marcel_topo_level *level);
+
+/** \brief Locks a bubble hierarchy.  Stops at bubbles held on other runqueues */
+void ma_bubble_lock(marcel_bubble_t *b);
+
+/** \brief Unlocks a bubble hierarchy.  Stops at bubbles held on other runqueues */
+void ma_bubble_unlock(marcel_bubble_t *b);
 
 /******************************************************************************
  * internal view

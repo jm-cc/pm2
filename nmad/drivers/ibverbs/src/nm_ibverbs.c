@@ -145,9 +145,10 @@ struct nm_ibverbs_drv {
 
 struct nm_ibverbs_trk {
 	enum {
-		NM_IBVERBS_TRK_NONE    = 0,
-		NM_IBVERBS_TRK_BYCOPY  = 1,
-		NM_IBVERBS_TRK_REGRDMA = 2
+		NM_IBVERBS_TRK_NONE = 0,
+		NM_IBVERBS_TRK_BYCOPY,
+		NM_IBVERBS_TRK_REGRDMA,
+		NM_IBVERBS_TRK_ADAPTRDMA
 	} kind;
 };
 
@@ -886,29 +887,6 @@ static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibve
 	return (done > 0) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
-static int nm_ibverbs_rdma_wait(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
-{
-	struct ibv_wc wc;
-	int ne = 0;
-	do {
-		ne = ibv_poll_cq(p_ibverbs_cnx->of_cq, 1, &wc);
-		if(ne < 0) {
-			fprintf(stderr, "Infiniband: poll out CQ failed.\n");
-			return -NM_EUNKNOWN;
-		}
-	}
-	while(ne == 0);
-	if(ne != 1 || wc.status != IBV_WC_SUCCESS) {
-		fprintf(stderr, "Infiniband: WC send failed- status=%d (%s)\n",
-			wc.status, nm_ibverbs_status_strings[wc.status]);
-		return -NM_EUNKNOWN;
-	}
-	assert(wc.wr_id < _NM_IBVERBS_WRID_MAX);
-	p_ibverbs_cnx->pending.wrids[wc.wr_id]--;
-	p_ibverbs_cnx->pending.total--;
-	return NM_ESUCCESS;
-}
-
 static inline void nm_ibverbs_spin_wait(volatile int*busy)
 {
   while(!*busy)
@@ -1191,7 +1169,6 @@ static inline void nm_ibverbs_regrdma_send_step_reg(struct nm_ibverbs_cnx*__rest
 		p_ibverbs_cnx->regrdma.send.todo -= p_ibverbs_cnx->regrdma.send.cells[next].packet_size;
 		p_ibverbs_cnx->regrdma.send.frag_size = nm_ibverbs_regrdma_step_next(p_ibverbs_cnx->regrdma.send.frag_size);
 	}
-	p_ibverbs_cnx->regrdma.send.k++;
 }
 
 static void nm_ibverbs_regrdma_send_post(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx,
@@ -1204,6 +1181,7 @@ static void nm_ibverbs_regrdma_send_post(struct nm_ibverbs_cnx*__restrict__ p_ib
 	while(!nm_ibverbs_regrdma_send_done(p_ibverbs_cnx)) {
 		nm_ibverbs_regrdma_send_step_send(p_ibverbs_cnx);
 		nm_ibverbs_regrdma_send_step_reg(p_ibverbs_cnx);
+		p_ibverbs_cnx->regrdma.send.k++;
 	}
 	nm_ibverbs_regrdma_send_finalize(p_ibverbs_cnx);
 }
@@ -1272,7 +1250,6 @@ static inline void nm_ibverbs_regrdma_recv_step_wait(struct nm_ibverbs_cnx*__res
 		p_ibverbs_cnx->regrdma.recv.pending_reg--;
 		p_ibverbs_cnx->regrdma.recv.cells[prev].mr = NULL;
 	}
-	p_ibverbs_cnx->regrdma.recv.k++;
 }
 
 static int nm_ibverbs_regrdma_poll_one(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
@@ -1280,6 +1257,7 @@ static int nm_ibverbs_regrdma_poll_one(struct nm_ibverbs_cnx*__restrict__ p_ibve
 	if(!nm_ibverbs_regrdma_recv_isdone(p_ibverbs_cnx)) {
 		nm_ibverbs_regrdma_recv_step_reg(p_ibverbs_cnx);
 		nm_ibverbs_regrdma_recv_step_wait(p_ibverbs_cnx);
+		p_ibverbs_cnx->regrdma.recv.k++;
 	}
 	if(nm_ibverbs_regrdma_recv_isdone(p_ibverbs_cnx)) {
 		TBX_FREE(p_ibverbs_cnx->regrdma.recv.cells);

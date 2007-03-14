@@ -95,7 +95,8 @@ registering_flavors() {
 
     register_flavor mad4-mpi \
 	--modules="mad4 tbx ntbx init" $COMMON_OPTIONS \
-	--mad4=sched_opt --mad4=strat_aggreg --mad4=mpi_emu --mad4=mad3_emu --mad4=mx
+	--mad4=sched_opt --mad4=strat_aggreg --mad4=mpi_emu --mad4=mad3_emu --mad4=mx \
+        --common=fortran_target_none
 
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \

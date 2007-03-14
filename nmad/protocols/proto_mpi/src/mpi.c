@@ -459,6 +459,7 @@ void mpi_comm_dup_(MPI_Comm comm, MPI_Comm *newcomm) {
 void mpi_comm_free_(MPI_Comm *comm) {
         TBX_FAILURE("unimplemented");
 }
+#endif PM2_FORTRAN_TARGET_NONE
 
 /**
  * This routine must be called before any other MPI routine. It must
@@ -2027,4 +2028,3 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
 int MPI_Comm_free(MPI_Comm *comm) {
   return mpir_comm_free(comm);
 }
-#endif PM2_FORTRAN_TARGET_NONE

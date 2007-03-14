@@ -62,6 +62,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --mad4=\"debug gdb ${net} sched_opt strat_default mpi_emu mad3_emu\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
- --common=\"debug gdb\" \
+ --common=\"debug gdb fortran_target_none\" \
  --all=\"build_static\"
 

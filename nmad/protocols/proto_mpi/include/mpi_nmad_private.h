@@ -35,6 +35,7 @@
 #undef MPI_NMAD_SO_DEBUG
 #undef MPI_NMAD_SO_TRANSFER
 #undef MPI_NMAD_LOG
+#undef MPI_TIMER
 
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
@@ -57,6 +58,14 @@
 #  define MPI_NMAD_LOG_IN() { }
 #  define MPI_NMAD_LOG_OUT() { }
 #endif /* MPI_NMAD_LOG */
+
+#if defined(MPI_TIMER)
+#  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();
+#  define MPI_NMAD_TIMER_OUT() { double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start) ; }
+#else
+#  define MPI_NMAD_TIMER_IN() { }
+#  define MPI_NMAD_TIMER_OUT() { }
+#endif /* MPI_TIMER */
 
 #define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
 

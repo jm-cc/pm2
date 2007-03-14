@@ -1223,13 +1223,16 @@ int MPI_Recv(void *buffer,
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
+  MPI_NMAD_TIMER_IN();
 
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_TIMER_OUT();
     MPI_NMAD_LOG_OUT();
     return -1;
   }
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+      MPI_NMAD_TIMER_OUT();
       MPI_NMAD_LOG_OUT();
       return not_implemented("Using MPI_ANY_TAG");
   }
@@ -1270,6 +1273,8 @@ int MPI_Recv(void *buffer,
       status->MPI_SOURCE = source;
     }
   }
+
+  MPI_NMAD_TIMER_OUT();
   MPI_NMAD_LOG_OUT();
   return err;
 }

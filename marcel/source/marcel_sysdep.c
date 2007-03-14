@@ -115,7 +115,10 @@ void ma_bind_on_processor(unsigned target) {
 }
 void ma_unbind_from_processor() {
 #if defined(SOLARIS_SYS)
-#warning TODO unbind thread
+	if(processor_bind(P_LWPID, P_MYID, PBIND_NONE, NULL) != 0) {
+		perror("processor_bind");
+		exit(1);
+	}
 #elif defined(LINUX_SYS)
 #ifndef CPU_SET
 	/* no libc support, use direct system call */

@@ -1644,7 +1644,7 @@ int MPI_Alltoall(void* sendbuf,
   int tag = 3;
   int err;
   int i;
-  MPI_Request *requests;
+  MPI_Request *send_requests, *recv_requests;
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
 
   MPI_NMAD_LOG_IN();
@@ -1655,7 +1655,8 @@ int MPI_Alltoall(void* sendbuf,
     return -1;
   }
 
-  requests = malloc(global_size * sizeof(MPI_Request));
+  send_requests = malloc(global_size * sizeof(MPI_Request));
+  recv_requests = malloc(global_size * sizeof(MPI_Request));
 
   mpir_send_datatype = get_datatype(sendtype);
   mpir_recv_datatype = get_datatype(recvtype);
@@ -1667,11 +1668,11 @@ int MPI_Alltoall(void* sendbuf,
 	     sendcount * mpir_send_datatype->extent);
     else
       {
-	MPI_Irecv(recvbuf + (i * * recvcount * mpir_recv_datatype->extent), 
-		  recvcount, recvtype, i, tag, comm, &requests[i]);
+	MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent), 
+		  recvcount, recvtype, i, tag, comm, &recv_requests[i]);
 	
-	err = MPI_Send(sendbuf + (i * sendcount * mpir_send_datatype->extent),
-		       sendcount, sendtype, i, tag, comm);
+	err = MPI_Isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
+		       sendcount, sendtype, i, tag, comm, &send_requests[i]);
 	
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();
@@ -1682,10 +1683,12 @@ int MPI_Alltoall(void* sendbuf,
   
   for(i=0 ; i<global_size ; i++) {
     if (i == process_rank) continue;
-    MPI_Wait(&requests[i], NULL);
+    MPI_Wait(&recv_requests[i], NULL);
+    MPI_Wait(&send_requests[i], NULL);
   }
   
-  free(requests);
+  free(send_requests);
+  free(recv_requests);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS; 
@@ -1706,7 +1709,7 @@ int MPI_Alltoallv(void* sendbuf,
   int tag = 4;
   int err;
   int i;
-  MPI_Request *requests;
+  MPI_Request *send_requests, *recv_requests;
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
 
   MPI_NMAD_LOG_IN();
@@ -1717,7 +1720,8 @@ int MPI_Alltoallv(void* sendbuf,
     return -1;
   }
 
-  requests = malloc(global_size * sizeof(MPI_Request));
+  send_requests = malloc(global_size * sizeof(MPI_Request));
+  recv_requests = malloc(global_size * sizeof(MPI_Request));
   
   mpir_send_datatype = get_datatype(sendtype);
   mpir_recv_datatype = get_datatype(recvtype);
@@ -1730,10 +1734,10 @@ int MPI_Alltoallv(void* sendbuf,
     else
       {
 	MPI_Irecv(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
-		  recvcounts[i], recvtype, i, tag, comm, &requests[i]);
+		  recvcounts[i], recvtype, i, tag, comm, &recv_requests[i]);
 	
-	err = MPI_Send(sendbuf + (sdispls[i] * mpir_send_datatype->extent), 
-		       sendcounts[i], sendtype, i, tag, comm);
+	err = MPI_Isend(sendbuf + (sdispls[i] * mpir_send_datatype->extent), 
+		       sendcounts[i], sendtype, i, tag, comm, &send_requests[i]);
 	
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();
@@ -1744,10 +1748,12 @@ int MPI_Alltoallv(void* sendbuf,
   
   for(i=0 ; i<global_size ; i++) {
     if (i == process_rank) continue;
-    MPI_Wait(&requests[i], NULL);
+    MPI_Wait(&recv_requests[i], NULL);
+    MPI_Wait(&send_requests[i], NULL);
   }
   
-  free(requests);
+  free(send_requests);
+  free(recv_requests);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS; 

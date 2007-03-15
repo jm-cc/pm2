@@ -74,6 +74,25 @@ void internal_init() {
   datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
   datatypes[MPI_INTEGER]->size = sizeof(float);
 
+  datatypes[0]->extent = datatypes[0]->size;
+  datatypes[MPI_CHAR]->extent =  datatypes[MPI_CHAR]->size;
+  datatypes[MPI_UNSIGNED_CHAR]->extent = datatypes[MPI_UNSIGNED_CHAR]->size;
+  datatypes[MPI_BYTE]->extent = datatypes[MPI_BYTE]->size;
+  datatypes[MPI_SHORT]->extent = datatypes[MPI_SHORT]->size;
+  datatypes[MPI_UNSIGNED_SHORT]->extent = datatypes[MPI_UNSIGNED_SHORT]->size;
+  datatypes[MPI_INT]->extent =   datatypes[MPI_INT]->size; 
+  datatypes[MPI_UNSIGNED]->extent = datatypes[MPI_UNSIGNED]->size;
+  datatypes[MPI_LONG]->extent = datatypes[MPI_LONG]->size;
+  datatypes[MPI_UNSIGNED_LONG]->extent = datatypes[MPI_UNSIGNED_LONG]->size;
+  datatypes[MPI_FLOAT]->extent = datatypes[MPI_FLOAT]->size;
+  datatypes[MPI_DOUBLE]->extent = datatypes[MPI_DOUBLE]->size;
+  datatypes[MPI_LONG_DOUBLE]->extent = datatypes[MPI_LONG_DOUBLE]->size;
+  datatypes[MPI_LONG_LONG_INT]->extent = datatypes[MPI_LONG_LONG_INT]->size;
+  datatypes[MPI_LONG_LONG]->extent = datatypes[MPI_LONG_LONG]->size;
+  datatypes[MPI_REAL]->extent = datatypes[MPI_REAL]->size;
+  datatypes[MPI_DOUBLE_PRECISION]->extent = datatypes[MPI_DOUBLE_PRECISION]->size;
+  datatypes[MPI_INTEGER]->extent = datatypes[MPI_INTEGER]->size;
+
   available_datatypes = tbx_slist_nil();
   for(i=MPI_LONG_LONG+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
     int *ptr;

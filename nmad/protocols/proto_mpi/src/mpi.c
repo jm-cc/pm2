@@ -1658,12 +1658,16 @@ int MPI_Alltoall(void* sendbuf,
 
   for(i=0 ; i<global_size; i++) {
     if(i == process_rank)
-      memcpy(recvbuf + (i * sizeof_datatype(recvtype)), sendbuf + (i * sizeof_datatype(sendtype)), sendcount * sizeof_datatype(sendtype));
+      memcpy(recvbuf + (i * sizeof_datatype(recvtype)), 
+	     sendbuf + (i * sizeof_datatype(sendtype)), 
+	     sendcount * sizeof_datatype(sendtype));
     else
       {
-	MPI_Irecv(recvbuf + (i * sizeof_datatype(recvtype)), recvcount, recvtype, i, tag, comm, &requests[i]);
+	MPI_Irecv(recvbuf + (i * sizeof_datatype(recvtype)), 
+		  recvcount, recvtype, i, tag, comm, &requests[i]);
 	
-	err = MPI_Send(sendbuf + (i * sizeof_datatype(sendtype)), sendcount, sendtype, i, tag, comm);
+	err = MPI_Send(sendbuf + (i * sizeof_datatype(sendtype)),
+		       sendcount, sendtype, i, tag, comm);
 	
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();
@@ -1710,12 +1714,16 @@ int MPI_Alltoallv(void* sendbuf,
 
   for(i=0 ; i<global_size; i++) {
     if(i == process_rank)
-      memcpy(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)), sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), sendcounts[i] * sizeof_datatype(sendtype));
+      memcpy(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)), 
+	     sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), 
+	     sendcounts[i] * sizeof_datatype(sendtype));
     else
       {
-	MPI_Irecv(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)), recvcounts[i], recvtype, i, tag, comm, &requests[i]);
+	MPI_Irecv(recvbuf + (rdispls[i] * sizeof_datatype(recvtype)),
+		  recvcounts[i], recvtype, i, tag, comm, &requests[i]);
 	
-	err = MPI_Send(sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), sendcounts[i], sendtype, i, tag, comm);
+	err = MPI_Send(sendbuf + (sdispls[i] * sizeof_datatype(sendtype)), 
+		       sendcounts[i], sendtype, i, tag, comm);
 	
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();

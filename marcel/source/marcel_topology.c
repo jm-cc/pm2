@@ -489,19 +489,21 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			continue;
 
 		rad_level[r].type = level;
-		ma_topo_set_os_numbers(&rad_level[radid], -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&rad_level[r], -1, -1, -1, -1);
 		switch(level) {
 			case MARCEL_LEVEL_NODE:
-				rad_level[radid].os_node = r;
+				rad_level[r].os_node = r;
 				break;
 			case MARCEL_LEVEL_DIE:
-				rad_level[radid].os_die = r;
+				rad_level[r].os_die = r;
 				break;
 			case MARCEL_LEVEL_CORE:
-				rad_level[radid].os_core = r;
+				rad_level[r].os_core = r;
 				break;
-			case MARCEL_LEVEL_CPU:
-				rad_level[radid].os_cpu = r;
+			case MARCEL_LEVEL_PROC:
+				rad_level[r].os_cpu = r;
+				break;
+			default:
 				break;
 		}
 		marcel_vpmask_empty(&rad_level[r].vpset);

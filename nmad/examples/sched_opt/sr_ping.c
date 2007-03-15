@@ -22,6 +22,7 @@
 
 #include "helper.h"
 
+#define MIN     0
 #define MAX     (8 * 1024 * 1024)
 #define WARMUP   100
 #define LOOPS   2000
@@ -54,7 +55,7 @@ main(int	  argc,
 	  int k;
                 /* server
                  */
-		for(len = 0; len <= MAX; len = _next(len)) {
+		for(len = MIN; len <= MAX; len = _next(len)) {
 		  for(k = 0; k < LOOPS + WARMUP; k++) {
 		    nm_so_request request;
 
@@ -74,7 +75,7 @@ main(int	  argc,
                  */
                 printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
 
-		for(len = 0; len <= MAX; len = _next(len)) {
+		for(len = MIN; len <= MAX; len = _next(len)) {
 
 		  for(k = 0; k < WARMUP; k++) {
 		    nm_so_request request;

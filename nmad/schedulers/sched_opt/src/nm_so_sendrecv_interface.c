@@ -242,9 +242,11 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   else {
     if(len > NM_SO_MAX_SMALL) {
       volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+      NMAD_SO_TRACE("Waiting for status %p\n", status);
       while(!(*status & NM_SO_STATUS_ACK_HERE)) {
         nm_schedule(p_core);
       }
+      NMAD_SO_TRACE("Waiting for status %p completed\n", status);
     }
 
     return NM_ESUCCESS;

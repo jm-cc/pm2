@@ -325,6 +325,7 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         p_tcp_trk	= p_trk->priv;
 
         SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+	SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
 
         NM_TRACE_VAL("tcp connect/accept trk id", p_trk->id);
         NM_TRACE_VAL("tcp connect/accept gate id", p_gate->id);

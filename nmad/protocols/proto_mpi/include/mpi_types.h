@@ -106,9 +106,11 @@ typedef int MPI_Op;
 typedef int MPI_Communication_Mode;
 #define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)tbx_false)
 #define MPI_IS_COMPLETED        ((MPI_Communication_Mode)tbx_true)
-#define MPI_DO_NOT_USE_EXTENDED ((MPI_Communication_Mode)-1)
+#define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
+#define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
 
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
 #define MPI_STATUS_SIZE		4
+
 #endif /* MPI_TYPES_H */

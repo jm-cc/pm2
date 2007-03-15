@@ -1426,46 +1426,46 @@ static inline void nm_ibverbs_adaptrdma_recv_init(struct nm_pkt_wrap*p_pw, struc
 
 static inline int nm_ibverbs_adaptrdma_poll_one(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
-      struct nm_ibverbs_adaptrdma_header*h = nm_ibverbs_adaptrdma_get_header(p_ibverbs_cnx->adaptrdma.recv.rbuf,
-									     p_ibverbs_cnx->adaptrdma.recv.block_size);
-      if(!h->busy)
-	      goto wouldblock;
-      const int frag_size = h->offset;
-      const int flag = h->busy;
-      memcpy(&p_ibverbs_cnx->adaptrdma.recv.message[p_ibverbs_cnx->adaptrdma.recv.done],
-	     p_ibverbs_cnx->adaptrdma.recv.rbuf, frag_size);
-      /* clear blocks */
-      void*_rbuf = p_ibverbs_cnx->adaptrdma.recv.rbuf;
-      p_ibverbs_cnx->adaptrdma.recv.done += frag_size;
-      p_ibverbs_cnx->adaptrdma.recv.rbuf += p_ibverbs_cnx->adaptrdma.recv.block_size;
-      while(_rbuf < p_ibverbs_cnx->adaptrdma.recv.rbuf)	{
-	      h = nm_ibverbs_adaptrdma_get_header(_rbuf, nm_ibverbs_adaptrdma_block_granularity);
-	      h->offset = 0;
-	      h->busy = 0;
-	      _rbuf += nm_ibverbs_adaptrdma_block_granularity;
-      }
-      switch(flag) {
-      case NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR:
-	      break;
-	      
-      case NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE:
-	      p_ibverbs_cnx->adaptrdma.recv.block_size = nm_ibverbs_adaptrdma_block_size(p_ibverbs_cnx->adaptrdma.recv.done);
-	      break;
-	      
-      default:
-	      fprintf(stderr, "Infiniband: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
-	      abort();
-	      break;
-      }
+	do {
+		struct nm_ibverbs_adaptrdma_header*h = nm_ibverbs_adaptrdma_get_header(p_ibverbs_cnx->adaptrdma.recv.rbuf,
+										       p_ibverbs_cnx->adaptrdma.recv.block_size);
+		if(!h->busy)
+			goto wouldblock;
+		const int frag_size = h->offset;
+		const int flag = h->busy;
+		memcpy(&p_ibverbs_cnx->adaptrdma.recv.message[p_ibverbs_cnx->adaptrdma.recv.done],
+		       p_ibverbs_cnx->adaptrdma.recv.rbuf, frag_size);
+		/* clear blocks */
+		void*_rbuf = p_ibverbs_cnx->adaptrdma.recv.rbuf;
+		p_ibverbs_cnx->adaptrdma.recv.done += frag_size;
+		p_ibverbs_cnx->adaptrdma.recv.rbuf += p_ibverbs_cnx->adaptrdma.recv.block_size;
+		while(_rbuf < p_ibverbs_cnx->adaptrdma.recv.rbuf)	{
+			h = nm_ibverbs_adaptrdma_get_header(_rbuf, nm_ibverbs_adaptrdma_block_granularity);
+			h->offset = 0;
+			h->busy = 0;
+			_rbuf += nm_ibverbs_adaptrdma_block_granularity;
+		}
+		switch(flag) {
+		case NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR:
+			break;
+			
+		case NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE:
+			p_ibverbs_cnx->adaptrdma.recv.block_size = nm_ibverbs_adaptrdma_block_size(p_ibverbs_cnx->adaptrdma.recv.done);
+			break;
+			
+		default:
+			fprintf(stderr, "Infiniband: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
+			abort();
+			break;
+		}
+	}
+	while(p_ibverbs_cnx->adaptrdma.recv.done < p_ibverbs_cnx->adaptrdma.recv.size);
 	
-      if(p_ibverbs_cnx->adaptrdma.recv.done < p_ibverbs_cnx->adaptrdma.recv.size)
-	      goto wouldblock;
-
-      p_ibverbs_cnx->adaptrdma.recv.message = NULL;
-      return NM_ESUCCESS;
-
+	p_ibverbs_cnx->adaptrdma.recv.message = NULL;
+	return NM_ESUCCESS;
+	
  wouldblock:
-      return -NM_EAGAIN;
+	return -NM_EAGAIN;
 }
 
 

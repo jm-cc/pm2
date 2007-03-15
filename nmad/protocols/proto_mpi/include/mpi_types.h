@@ -103,10 +103,10 @@ typedef int MPI_Op;
 #define MPI_MAX_NAME_STRING    256
 
 /* extended modes */
-typedef int MPI_Extended;
-#define MPI_IS_NOT_COMPLETED    ((MPI_Extended)tbx_false)
-#define MPI_IS_COMPLETED        ((MPI_Extended)tbx_true)
-#define MPI_DO_NOT_USE_EXTENDED ((MPI_Extended)-1)
+typedef int MPI_Communication_Mode;
+#define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)tbx_false)
+#define MPI_IS_COMPLETED        ((MPI_Communication_Mode)tbx_true)
+#define MPI_DO_NOT_USE_EXTENDED ((MPI_Communication_Mode)-1)
 
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0

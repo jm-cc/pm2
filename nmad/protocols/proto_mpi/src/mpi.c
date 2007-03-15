@@ -148,7 +148,7 @@ void mpi_esend_(void *buffer,
               MPI_Datatype datatype,
               int dest,
               int tag,
-              MPI_Extended is_completed,
+              MPI_Communication_Mode is_completed,
               MPI_Comm comm,
                MPI_Request *request) {
 }
@@ -709,7 +709,7 @@ int mpi_inline_isend(void *buffer,
                      MPI_Datatype datatype,
                      int dest,
                      int tag,
-                     MPI_Extended is_completed,
+                     MPI_Communication_Mode is_completed,
                      MPI_Comm comm,
                      MPI_Request *request) {
   long                  gate_id;
@@ -866,7 +866,7 @@ int MPI_Esend(void *buffer,
               MPI_Datatype datatype,
               int dest,
               int tag,
-              MPI_Extended is_completed,
+              MPI_Communication_Mode is_completed,
               MPI_Comm comm,
               MPI_Request *request) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;

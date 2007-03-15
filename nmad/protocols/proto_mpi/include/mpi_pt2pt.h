@@ -26,7 +26,7 @@ int MPI_Esend(void *buffer,
               MPI_Datatype datatype,
               int dest,
               int tag,
-              MPI_Extended is_completed,
+              MPI_Communication_Mode is_completed,
               MPI_Comm comm,
               MPI_Request *request);
 

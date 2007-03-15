@@ -46,6 +46,12 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
                         nm_so_request *p_request);
 
 extern int
+nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request);
+
+extern int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 

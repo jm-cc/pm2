@@ -198,6 +198,58 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
   }
 }
 
+/** Post a ready send request. When seading a large packet requiring a
+ *  RDV, waits for completion of RDV, i.e returns when the matching
+ *  receive has been posted.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param gate_id the destination gate id.
+ *  @param tag the message tag.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @param p_request a pointer to a NM/SO request to be filled.
+ *  @return The NM status.
+ */
+int
+nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
+	       uint16_t gate_id, uint8_t tag,
+	       void *data, uint32_t len,
+	       nm_so_request *p_request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  uint8_t seq;
+  volatile uint8_t *p_req;
+  int ret = NM_EAGAIN;
+
+  seq = p_so_gate->send_seq_number[tag]++;
+
+  p_req = &p_sr_gate->status[tag][seq];
+
+  *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
+
+  if(p_request)
+    *p_request = (intptr_t)p_req;
+
+  ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate,
+                                                           tag, seq,
+                                                           data, len);
+
+  if (ret != NM_ESUCCESS) {
+    return ret;
+  }
+  else {
+    if(len > NM_SO_MAX_SMALL) {
+      volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+      while(!(*status & NM_SO_STATUS_ACK_HERE)) {
+        nm_schedule(p_core);
+      }
+    }
+
+    return NM_ESUCCESS;
+  }
+}
 
 /** Test for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.

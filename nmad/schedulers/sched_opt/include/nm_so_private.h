@@ -39,6 +39,7 @@
 #define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)2)
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
 #define NM_SO_STATUS_RDV_IN_PROGRESS ((uint8_t)8)
+#define NM_SO_STATUS_ACK_HERE        ((uint8_t)16)
 
 
 struct nm_so_sched {

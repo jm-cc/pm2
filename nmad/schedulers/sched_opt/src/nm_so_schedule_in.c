@@ -402,6 +402,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   NMAD_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
   p_so_gate->pending_unpacks--;
+  p_so_gate->status[tag][seq] |= NM_SO_STATUS_ACK_HERE;
 
   list_for_each_entry(p_so_large_pw, &p_so_gate->pending_large_send[tag], link) {
     if(p_so_large_pw->pw.seq == seq) {

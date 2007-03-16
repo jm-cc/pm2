@@ -40,7 +40,6 @@ net=${TESTNET:-mx}
 rm -f /tmp/pm2test_"${USER}"_expected
 
 (cat <<EOF
-Null request
 The answer to life, the universe, and everything is 42, 42
 There are 7 Wonders of the World
 EOF

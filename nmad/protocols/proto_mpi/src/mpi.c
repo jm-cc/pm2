@@ -260,7 +260,7 @@ void mpi_test_(int *request,
                int *ierr) {
         MPI_Status _status;
         MPI_Request *p_request = (void *)*request;
-        *ierr = MPI_Test(p_request, flag, &_status);        
+        *ierr = MPI_Test(p_request, flag, &_status);
         if (*ierr != MPI_SUCCESS)
                 return;
         memcpy(status, &_status, sizeof(_status));
@@ -1646,7 +1646,7 @@ int MPI_Alltoall(void* sendbuf,
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
 
   MPI_NMAD_LOG_IN();
-  
+
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
     MPI_NMAD_LOG_OUT();
@@ -1661,35 +1661,35 @@ int MPI_Alltoall(void* sendbuf,
 
   for(i=0 ; i<global_size; i++) {
     if(i == process_rank)
-      memcpy(recvbuf + (i * mpir_recv_datatype->extent), 
-	     sendbuf + (i * mpir_send_datatype->extent), 
+      memcpy(recvbuf + (i * mpir_recv_datatype->extent),
+	     sendbuf + (i * mpir_send_datatype->extent),
 	     sendcount * mpir_send_datatype->extent);
     else
       {
-	MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent), 
+	MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
 		  recvcount, recvtype, i, tag, comm, &recv_requests[i]);
-	
+
 	err = MPI_Isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
 		       sendcount, sendtype, i, tag, comm, &send_requests[i]);
-	
+
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();
 	  return err;
 	}
       }
   }
-  
+
   for(i=0 ; i<global_size ; i++) {
     if (i == process_rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
   }
-  
+
   free(send_requests);
   free(recv_requests);
 
   MPI_NMAD_LOG_OUT();
-  return MPI_SUCCESS; 
+  return MPI_SUCCESS;
 }
 
 /**
@@ -1711,7 +1711,7 @@ int MPI_Alltoallv(void* sendbuf,
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
 
   MPI_NMAD_LOG_IN();
-  
+
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
     ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
     MPI_NMAD_LOG_OUT();
@@ -1720,41 +1720,41 @@ int MPI_Alltoallv(void* sendbuf,
 
   send_requests = malloc(global_size * sizeof(MPI_Request));
   recv_requests = malloc(global_size * sizeof(MPI_Request));
-  
+
   mpir_send_datatype = get_datatype(sendtype);
   mpir_recv_datatype = get_datatype(recvtype);
-  
+
   for(i=0 ; i<global_size; i++) {
     if(i == process_rank)
-      memcpy(recvbuf + (rdispls[i] * mpir_recv_datatype->extent), 
-	     sendbuf + (sdispls[i] * mpir_send_datatype->extent), 
+      memcpy(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
+	     sendbuf + (sdispls[i] * mpir_send_datatype->extent),
 	     sendcounts[i] * mpir_send_datatype->extent);
     else
       {
 	MPI_Irecv(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
 		  recvcounts[i], recvtype, i, tag, comm, &recv_requests[i]);
-	
-	err = MPI_Isend(sendbuf + (sdispls[i] * mpir_send_datatype->extent), 
+
+	err = MPI_Isend(sendbuf + (sdispls[i] * mpir_send_datatype->extent),
 		       sendcounts[i], sendtype, i, tag, comm, &send_requests[i]);
-	
+
 	if (err != 0) {
 	  MPI_NMAD_LOG_OUT();
 	  return err;
 	}
       }
   }
-  
+
   for(i=0 ; i<global_size ; i++) {
     if (i == process_rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
   }
-  
+
   free(send_requests);
   free(recv_requests);
 
   MPI_NMAD_LOG_OUT();
-  return MPI_SUCCESS; 
+  return MPI_SUCCESS;
 }
 
 

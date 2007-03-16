@@ -87,6 +87,7 @@ struct MPI_Request_s {
   MPI_Request_type request_type;
   intptr_t request_id;
   struct nm_so_cnx request_cnx;
+  uint8_t request_tag;
   void **request_ptr;
   void *contig_buffer;
 };

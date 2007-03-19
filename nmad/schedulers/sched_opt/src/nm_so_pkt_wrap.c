@@ -743,7 +743,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
 	  if(rdv_handler) {
-	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq);
+	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq, ch->r.len);
 	    if(r == NM_SO_HEADER_MARK_READ)
 	      ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    else

@@ -188,7 +188,7 @@ typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw,
 				  void *ptr, uint32_t len,
 				  uint8_t proto_id, uint8_t seq);
 typedef int nm_so_pw_rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
-				 uint8_t tag_id, uint8_t seq);
+				 uint8_t tag_id, uint8_t seq, uint32_t len);
 typedef int nm_so_pw_ack_handler(struct nm_so_pkt_wrap *p_so_pw,
 				 uint8_t tag_id, uint8_t seq, uint8_t track_id);
 

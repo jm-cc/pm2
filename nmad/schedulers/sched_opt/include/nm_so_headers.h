@@ -29,7 +29,7 @@ struct nm_so_global_header {
   uint32_t len;
 };
 
-// Warning : All header structs (except the global one) _MUST_ begin 
+// Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
 
 struct nm_so_data_header {
@@ -43,6 +43,7 @@ struct nm_so_ctrl_rdv_header {
   uint8_t proto_id;
   uint8_t tag_id;
   uint8_t seq;
+  uint32_t len;
 };
 
 struct nm_so_ctrl_ack_header {
@@ -71,11 +72,12 @@ union nm_so_generic_ctrl_header {
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
-#define nm_so_init_rdv(p_ctrl, _tag, _seq)	\
+#define nm_so_init_rdv(p_ctrl, _tag, _seq, _len)	\
   do { \
     (p_ctrl)->r.proto_id = NM_SO_PROTO_RDV;	\
     (p_ctrl)->r.tag_id = (_tag);		\
     (p_ctrl)->r.seq = (_seq);			\
+    (p_ctrl)->r.len = (_len);			\
   } while(0)
 
 #define nm_so_init_ack(p_ctrl, _tag, _seq, _track) \

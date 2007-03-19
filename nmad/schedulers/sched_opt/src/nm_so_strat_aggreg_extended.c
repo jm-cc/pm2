@@ -217,7 +217,7 @@ static int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
@@ -339,7 +339,7 @@ int pack_extended(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
 
       err = pack_ctrl_extended(p_gate, &ctrl, is_completed);
       if(err != NM_ESUCCESS)

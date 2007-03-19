@@ -279,12 +279,15 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     /* Cool! We already have a waiting unpack for this packet */
 
     NM_SO_TRACE("We already have a waiting unpack for this packet\n");
+    if (len < p_so_gate->recv[tag][seq].unpack_here.len) {
+      p_so_gate->recv[tag][seq].unpack_here.len = len;
+    }
 
     if(len) {
       /* Copy data to its final destination */
       memcpy(p_so_gate->recv[tag][seq].unpack_here.data,
 	     ptr,
-	     tbx_min(len, p_so_gate->recv[tag][seq].unpack_here.len));
+	     p_so_gate->recv[tag][seq].unpack_here.len);
     }
 
     p_so_gate->pending_unpacks--;
@@ -301,13 +304,16 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
     NM_SO_TRACE("We have a any_src waiting unpack for this packet\n");
 
     p_so_sched->any_src[tag].status = 0;
+    if (len < p_so_sched->any_src[tag].len) {
+      p_so_sched->any_src[tag].len = len;
+    }
 
     p_so_gate->recv_seq_number[tag]++;
 
     /* Copy data to its final destination */
     memcpy(p_so_sched->any_src[tag].data,
            ptr,
-           tbx_min(len, p_so_sched->any_src[tag].len));
+           p_so_sched->any_src[tag].len);
 
     p_so_sched->pending_any_src_unpacks--;
 
@@ -335,7 +341,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 /** Process a complete rendez-vous request.
  */
 static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
-                        uint8_t tag_id, uint8_t seq)
+                        uint8_t tag_id, uint8_t seq, uint32_t len)
 {
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -354,7 +360,9 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     *status = 0;
 
     NM_SO_TRACE("Application is ready\n");
-
+    if (len < p_so_gate->recv[tag][seq].unpack_here.len) {
+      p_so_gate->recv[tag][seq].unpack_here.len = len;
+    }
     err = rdv_success(p_gate, tag, seq,
 		      p_so_gate->recv[tag][seq].unpack_here.data,
 		      p_so_gate->recv[tag][seq].unpack_here.len);
@@ -368,8 +376,10 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     /* Application is already ready! */
 
     p_so_sched->any_src[tag].status = NM_SO_STATUS_RDV_IN_PROGRESS;
+    if (len < p_so_sched->any_src[tag].len) {
+      p_so_sched->any_src[tag].len = len;
+    }
     p_so_sched->pending_any_src_unpacks--;
-
     p_so_gate->recv_seq_number[tag]++;
 
     NM_SO_TRACE("Application is ready for ANY_SRC\n");

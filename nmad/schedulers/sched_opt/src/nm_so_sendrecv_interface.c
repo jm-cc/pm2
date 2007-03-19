@@ -23,6 +23,7 @@
 #include "nm_so_private.h"
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
+#include "nm_so_debug.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
@@ -242,11 +243,11 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   else {
     if(len > NM_SO_MAX_SMALL) {
       volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
-      NMAD_SO_TRACE("Waiting for status %p\n", status);
+      NM_SO_SR_TRACE("Waiting for status %p\n", status);
       while(!(*status & NM_SO_STATUS_ACK_HERE)) {
         nm_schedule(p_core);
       }
-      NMAD_SO_TRACE("Waiting for status %p completed\n", status);
+      NM_SO_SR_TRACE("Waiting for status %p completed\n", status);
     }
 
     return NM_ESUCCESS;
@@ -377,7 +378,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
   if(gate_id == -1) {
 
     if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
-      NMAD_SO_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
+      NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
       nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
     }
 
@@ -389,7 +390,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       *p_request = (intptr_t)p_req;
     }
 
-    NMAD_SO_TRACE("calling __nm_so_unpack_any_src request = %p\n", *p_request);
+    NM_SO_SR_TRACE("calling __nm_so_unpack_any_src request = %p\n", p_request);
     return __nm_so_unpack_any_src(p_core, tag, data, len);
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -406,7 +407,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
-    NMAD_SO_TRACE("IRECV: tag = %d, seq = %d, request = %p\n", tag, seq, p_req);
+    NM_SO_SR_TRACE("IRECV: tag = %d, seq = %d, request = %p\n", tag, seq, p_req);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -478,17 +479,17 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
 #ifdef NMAD_SO_DEBUG
   if (*p_request & NM_SO_STATUS_RECV_COMPLETED) {
-    NMAD_SO_TRACE("request %p completed\n", p_request);
+    NM_SO_SR_TRACE("request %p completed\n", p_request);
   }
   else {
-    NMAD_SO_TRACE("request %p not completed\n", p_request);
+    NM_SO_SR_TRACE("request %p not completed\n", p_request);
   }
 #endif
 
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
 
-  NMAD_SO_TRACE("request %p completed\n", p_request);
+  NM_SO_SR_TRACE("request %p completed\n", p_request);
   return NM_ESUCCESS;
 }
 
@@ -668,14 +669,14 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
     p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
 
-    NMAD_SO_TRACE("data received for request = %p\n", &p_sr_gate->status[tag][seq]);
+    NM_SO_SR_TRACE("data received for request = %p\n", &p_sr_gate->status[tag][seq]);
 
   } else {
 
     any_src[tag].gate_id = p_gate->id;
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
 
-    NMAD_SO_TRACE("data received for ANY_SRC request = %p\n", &any_src[tag].status);
+    NM_SO_SR_TRACE("data received for ANY_SRC request = %p\n", &any_src[tag].status);
 
   }
 

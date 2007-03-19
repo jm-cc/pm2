@@ -27,13 +27,6 @@
 #include "nm_so_strategies.h"
 #include "nm_so_interfaces.h"
 
-#undef NMAD_SO_DEBUG
-#if defined(NMAD_SO_DEBUG)
-#  define NMAD_SO_TRACE(str, ...) fprintf(stderr, "[%s] " str, __TBX_FUNCTION__ , ## __VA_ARGS__)
-#else
-#  define NMAD_SO_TRACE(str, ...) (void)(0)
-#endif /* NMAD_SO_DEBUG */
-
 /* Status flags contents */
 #define NM_SO_STATUS_PACKET_HERE     ((uint8_t)1)
 #define NM_SO_STATUS_UNPACK_HERE     ((uint8_t)2)

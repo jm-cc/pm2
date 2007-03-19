@@ -19,13 +19,14 @@ extern debug_type_t debug_nm_so_trace;
 extern debug_type_t debug_nm_so_sr_trace;
 
 #define NM_SO_TRACE(fmt, args...) \
-    debug_printf(&debug_nm_so_trace, fmt , ##args)
+    debug_printf(&debug_nm_so_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
 
 #define NM_SO_TRACE_LEVEL(level, fmt, args...) \
-    debug_printfl(&debug_nm_so_trace, level, fmt , ##args)
+    debug_printfl(&debug_nm_so_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
 
 #define NM_SO_SR_TRACE(fmt, args...) \
-    debug_printf(&debug_nm_so_sr_trace, fmt , ##args)
+    debug_printf(&debug_nm_so_sr_trace, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
 
 #define NM_SO_SR_TRACE_LEVEL(level, fmt, args...) \
-    debug_printfl(&debug_nm_so_sr_trace, level, fmt , ##args)
+    debug_printfl(&debug_nm_so_sr_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+

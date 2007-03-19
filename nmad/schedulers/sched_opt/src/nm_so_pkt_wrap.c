@@ -24,6 +24,7 @@
 
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
+#include "nm_so_debug.h"
 
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 /* Per-'iovec entry' allocation flags (exclusive) */
@@ -748,11 +749,9 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	    else
 	      p_so_pw->header_ref_count++;
 	  }
-#ifdef NMAD_SO_DEBUG
           else {
-            NMAD_SO_TRACE("envoi de demande de RDV tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
+            NM_SO_TRACE("envoi de demande de RDV tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
           }
-#endif /* NMAD_SO_DEBUG */
         }
 	break;
       case NM_SO_PROTO_ACK:
@@ -770,11 +769,9 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	    else
 	      p_so_pw->header_ref_count++;
 	  }
-#ifdef NMAD_SO_DEBUG
           else {
-            NMAD_SO_TRACE("envoi de demande de ACK tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
+            NM_SO_TRACE("envoi de demande de ACK tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
           }
-#endif /* NMAD_SO_DEBUG */
 	}
 	break;
       case NM_SO_PROTO_CTRL_UNUSED:

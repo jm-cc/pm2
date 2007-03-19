@@ -93,6 +93,10 @@ static void removeFromHolderBegin(entity_t *e);
 static void removeFromHolderBegin2(entity_t *e);
 static void removeFromHolderStep(entity_t *e, float step);
 static void removeFromHolderEnd(entity_t *e);
+static void addToBubbleBegin(bubble_t *b, entity_t *e);
+static void addToBubbleBegin2(bubble_t *b, entity_t *e);
+static void addToBubbleStep(bubble_t *b, entity_t *e, float step);
+static void addToBubbleEnd(bubble_t *b, entity_t *e);
 
 /*******************************************************************************
  * Runqueue
@@ -304,7 +308,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
 		setEntityRecur(shape,e);
 	}
 	if (b->insertion) {
-		/* fake thread */
+		/* fake entity */
 		BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
 		BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 		BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
@@ -743,6 +747,37 @@ void switchRunqueues(rq_t *rq2, entity_t *e) {
 	switchRunqueuesEnd(rq2,e);
 }
 
+static void switchBubbleBegin(bubble_t *b2, entity_t *e) {
+	removeFromHolderBegin(e);
+	addToBubbleBegin(b2, e);
+}
+
+static void switchBubbleBegin2(bubble_t *b2, entity_t *e) {
+	removeFromHolderBegin2(e);
+	addToBubbleBegin2(b2, e);
+}
+
+static void switchBubbleStep(bubble_t *b2, entity_t *e, float step) {
+	removeFromHolderStep(e,step);
+	addToBubbleStep(b2, e, step);
+}
+
+static void switchBubbleEnd(bubble_t *b2, entity_t *e) {
+	removeFromHolderEnd(e);
+	addToBubbleEnd(b2, e);
+	e->nospace = 0;
+}
+
+void switchBubble(bubble_t *b2, entity_t *e) {
+	switchBubbleBegin(b2,e);
+	switchBubbleBegin2(b2,e);
+	if (shown(e))
+		doStepsBegin(j)
+			switchBubbleStep(b2,e,j);
+		doStepsEnd();
+	switchBubbleEnd(b2,e);
+}
+
 static void growInRunqueueBegin(rq_t *rq, entity_t *e, float dx, float dy) {
 	entity_t *el;
 
@@ -908,6 +943,73 @@ static void removeFromBubbleEnd(bubble_t *b, entity_t *e) {
 /*******************************************************************************
  * Bubble insert
  */
+
+static void addToBubbleBegin(bubble_t *b, entity_t *e) {
+	float dx = 0;
+	float dy = 0;
+
+#ifdef BUBBLES
+#warning not implemented yet
+	gasp();
+#endif
+
+	bubbleMorphBegin(b);
+
+	b->entity.lastx = b->entity.x;
+	b->entity.lasty = b->entity.y;
+
+	entityMoveToBegin(e, b->entity.x+b->nextX, b->entity.y+
+			OVERLAP+CURVE);
+
+	b->nextX += e->width+CURVE;
+
+	b->entity.lastwidth = b->entity.width;
+	if (b->nextX-OVERLAP>b->entity.width) {
+		growInHolderBegin(&b->entity,dx=(b->nextX-OVERLAP-b->entity.width),dy);
+		b->entity.width = b->nextX-OVERLAP;
+	}
+
+#ifdef TREES
+	if (e->bubble_holder != b)
+		gasp();
+#endif
+}
+
+static void addToBubbleBegin2(bubble_t *b, entity_t *e) {
+	float dx = 0;
+	if (b->nextX-OVERLAP>b->entity.lastwidth) 
+		dx = b->nextX-OVERLAP-b->entity.lastwidth;
+	bubbleMorphBegin2(b);
+	entityMoveBegin2(e);
+	if (dx)
+		growInHolderBegin2(&b->entity);
+}
+
+static void addToBubbleStep(bubble_t *b, entity_t *e, float step) {
+	float dx = 0;
+	if (b->nextX-OVERLAP>b->entity.lastwidth) 
+		dx = b->nextX-OVERLAP-b->entity.lastwidth;
+	bubbleMorphStep(b,step);
+	entityMoveStep(e,step);
+	if (dx) growInHolderStep(&b->entity,step);
+}
+
+static void addToBubbleEnd(bubble_t *b, entity_t *e) {
+	float dx = 0;
+	if (b->nextX-OVERLAP>b->entity.lastwidth) 
+		dx = b->nextX-OVERLAP-b->entity.lastwidth;
+	entityMoveEnd(e);
+	if (dx)
+		growInHolderEnd(&b->entity);
+	bubbleMorphEnd(b);
+	e->holder = &b->entity;
+#ifdef TREES
+	if (e->lastitem) {
+		BubbleDisplayItem_remove(e->lastitem);
+		e->lastitem = NULL;
+	}
+#endif
+}
 
 void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 	float dx = 0;

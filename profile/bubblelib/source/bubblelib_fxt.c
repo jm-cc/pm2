@@ -198,16 +198,23 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 				bubbleExplode(b);
 				break;
 			}
+#endif
+			case BUBBLE_SCHED_BUBBLE_GOINGBACK: {
+				bubble_t *bb = getBubble(ev.ev64.param[0]);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				verbprintf(" bubble %p(%p) going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], bb, (void *)(intptr_t)ev.ev64.param[1], b);
+				switchBubble(b,&bb->entity);
+				break;
+			}
 			case BUBBLE_SCHED_GOINGBACK: {
 				uint64_t t = ev.ev64.param[0];
 				thread_t *e = getThread(t);
 				bubble_t *b = getBubble(ev.ev64.param[1]);
 				printfThread(t,e);
 				verbprintf(" going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[1], b);
-				bubbleInsertThread(b,e);
+				switchBubble(b,&e->entity);
 				break;
 			}
-#endif
 			case BUBBLE_SCHED_SWITCHRQ: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				rq_t *rq = getRunqueue(ev.ev64.param[1]);

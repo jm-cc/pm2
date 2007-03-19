@@ -31,6 +31,10 @@ static p_tbx_slist_t         available_communicators;
 static int 		     nb_incoming_msg  = 0;
 static int 		     nb_outgoing_msg  = 0;
 
+debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace");
+debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
+debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
+
 int not_implemented(char *s) {
   fprintf(stderr, "*************** ERROR: %s: Not implemented yet\n", s);
   fflush(stderr);

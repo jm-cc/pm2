@@ -32,32 +32,29 @@
 #include <tbx.h>
 #include <nm_mad3_private.h>
 
-#undef MPI_NMAD_SO_DEBUG
-#undef MPI_NMAD_SO_TRANSFER
-#undef MPI_NMAD_LOG
-#undef MPI_TIMER
-
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
-#if defined(MPI_NMAD_SO_DEBUG)
-#  define MPI_NMAD_TRACE(...) { fprintf(stderr, __VA_ARGS__) ; }
-#else
-#  define MPI_NMAD_TRACE(...) { }
-#endif /* MPI_NMAD_SO_DEBUG */
+#undef MPI_TIMER
 
-#if defined(MPI_NMAD_SO_TRANSFER)
-#  define MPI_NMAD_TRANSFER(...) { fprintf(stderr, __VA_ARGS__) ; }
-#else
-#  define MPI_NMAD_TRANSFER(...) { }
-#endif /* MPI_NMAD_SO_TRANSFER */
+extern debug_type_t debug_mpi_nmad_trace;
+extern debug_type_t debug_mpi_nmad_transfer;
+extern debug_type_t debug_mpi_nmad_log;
 
-#if defined(MPI_NMAD_LOG)
-#  define MPI_NMAD_LOG_IN() { fprintf(stderr, "%s: -->\n", __TBX_FUNCTION__) ; }
-#  define MPI_NMAD_LOG_OUT() { fprintf(stderr, "%s: <--\n", __TBX_FUNCTION__) ; }
+#ifdef NMAD_DEBUG
+#  define MPI_NMAD_TRACE(fmt, args...) debug_printf(&debug_mpi_nmad_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+#  define MPI_NMAD_TRANSFER(fmt, args...) debug_printf(&debug_mpi_nmad_transfer, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_transfer, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+#  define MPI_NMAD_LOG_IN()  debug_printf(&debug_mpi_nmad_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MPI_NMAD_LOG_OUT() debug_printf(&debug_mpi_nmad_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
-#  define MPI_NMAD_LOG_IN() { }
-#  define MPI_NMAD_LOG_OUT() { }
-#endif /* MPI_NMAD_LOG */
+#  define MPI_NMAD_TRACE(fmt, args...) {}
+#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) {}
+#  define MPI_NMAD_TRANSFER(fmt, args...) 
+#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)
+#  define MPI_NMAD_LOG_IN()
+#  define MPI_NMAD_LOG_OUT()
+#endif /* NMAD_DEBUG */
 
 #if defined(MPI_TIMER)
 #  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();

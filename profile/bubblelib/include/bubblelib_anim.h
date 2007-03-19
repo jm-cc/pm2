@@ -156,5 +156,6 @@ void bubbleRemoveThread(thread_t *bubble, thread_t *thread);
 void bubbleExplode(bubble_t *b);
 
 void switchRunqueues(rq_t *rq2, entity_t *e);
+void switchBubble(bubble_t *rq2, entity_t *e);
 
 #endif /* BUBBLELIB_ANIM_H */

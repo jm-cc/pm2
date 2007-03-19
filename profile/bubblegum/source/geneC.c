@@ -58,7 +58,7 @@ int parcourir_bulle(Element* bulle, int mybid, int mode)
             fprintf(fw,"      marcel_attr_init(&attr);\n");
             fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",mybid);
             fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
-            fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
+            //fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
             fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",tid,GetId(element_i)*100+GetCharge(element_i));
 	    fprintf(fw,"      *marcel_stats_get(t%d, marcel_stats_load_offset) = %d;\n",tid,GetCharge(element_i));

@@ -87,6 +87,9 @@ struct MPI_Request_s {
   uint8_t request_tag;
   void **request_ptr;
   void *contig_buffer;
+  int user_tag;
+  int request_source;
+  MPI_Datatype *request_datatype;
 };
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC

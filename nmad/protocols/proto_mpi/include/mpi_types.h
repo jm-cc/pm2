@@ -48,6 +48,7 @@ typedef intptr_t MPI_Aint;
 
 typedef struct {
   int count;
+  int size;
   int MPI_SOURCE;
   int MPI_TAG;
   int MPI_ERROR;

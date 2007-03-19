@@ -722,6 +722,7 @@ int mpi_inline_isend(void *buffer,
 
   mpir_datatype = get_datatype(datatype);
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
+  _request->user_tag = tag;
 
   if (tbx_unlikely(_request->request_tag > NM_SO_MAX_TAGS)) {
     fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", _request->request_tag, comm, tag, NM_SO_MAX_TAGS);
@@ -899,6 +900,7 @@ int MPI_Esend(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
+  _request->request_datatype = &datatype;
   err = mpi_inline_isend(buffer, count, datatype, dest, tag, is_completed, comm, request);
 
   MPI_NMAD_LOG_OUT();
@@ -936,6 +938,7 @@ int MPI_Send(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
+  _request->request_datatype = &datatype;
   mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_IMMEDIATE_MODE, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_SEND) {
@@ -996,6 +999,7 @@ int MPI_Isend(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
+  _request->request_datatype = &datatype;
   err = mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_IMMEDIATE_MODE, comm, request);
 
   MPI_NMAD_LOG_OUT();
@@ -1032,10 +1036,30 @@ int MPI_Rsend(void* buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
+  _request->request_datatype = &datatype;
   mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_READY_MODE, comm, &request);
 
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+__inline__
+void mpi_set_status(MPI_Request *request, MPI_Status*status) {
+  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+
+  status->MPI_TAG = _request->user_tag;
+  //  status->MPI_ERROR = err;
+
+  //  status->count = status->size / sizeof_datatype(*(_request->request_datatype));
+
+  if (_request->request_source == MPI_ANY_SOURCE) {
+    long gate_id;
+    nm_so_sr_recv_source(p_so_sr_if, _request->request_id, &gate_id);
+    status->MPI_SOURCE = in_dest[gate_id];
+  }
+  else {
+    status->MPI_SOURCE = _request->request_source;
+  }
 }
 
 __inline__
@@ -1069,6 +1093,8 @@ int mpi_inline_irecv(void* buffer,
 
   mpir_datatype = get_datatype(datatype);
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
+  _request->user_tag = tag;
+  _request->request_source = source;
 
   if (tbx_unlikely(_request->request_tag > NM_SO_MAX_TAGS)) {
     fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", _request->request_tag, comm, tag, NM_SO_MAX_TAGS);
@@ -1225,6 +1251,7 @@ int MPI_Recv(void *buffer,
 
   _request->request_ptr = NULL;
   _request->request_type = MPI_REQUEST_RECV;
+  _request->request_datatype = &datatype;
   mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
 
   if (_request->request_type == MPI_REQUEST_RECV) {
@@ -1246,18 +1273,7 @@ int MPI_Recv(void *buffer,
   }
 
   if (status != NULL) {
-    status->count = count;
-    status->MPI_TAG = tag;
-    status->MPI_ERROR = err;
-
-    if (source == MPI_ANY_SOURCE) {
-      long gate_id;
-      nm_so_sr_recv_source(p_so_sr_if, _request->request_id, &gate_id);
-      status->MPI_SOURCE = in_dest[gate_id];
-    }
-    else {
-      status->MPI_SOURCE = source;
-    }
+    mpi_set_status(&request, status);
   }
 
   MPI_NMAD_TIMER_OUT();
@@ -1293,6 +1309,7 @@ int MPI_Irecv(void* buffer,
 
   _request->request_ptr = NULL;
   _request->request_type = MPI_REQUEST_RECV;
+  _request->request_datatype = &datatype;
   err = mpi_inline_irecv(buffer, count, datatype, source, tag, comm, request);
 
   MPI_NMAD_LOG_OUT();
@@ -1340,7 +1357,9 @@ int MPI_Wait(MPI_Request *request,
     free(_request->request_ptr);
   }
 
-#warning Fill in the status object
+  if (status != NULL) {
+    mpi_set_status(request, status);
+  }
 
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
@@ -1405,7 +1424,10 @@ int MPI_Test(MPI_Request *request,
   if (err == NM_ESUCCESS) {
     *flag = 1;
     _request->request_type = MPI_REQUEST_ZERO;
-#warning Fill in the status object
+
+    if (status != NULL) {
+      mpi_set_status(request, status);
+    }
   }
   else { /* err == -NM_EAGAIN */
     *flag = 0;

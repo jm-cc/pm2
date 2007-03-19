@@ -44,6 +44,8 @@ DEC_MARCEL_POSIX(int,usleep,(unsigned long usec));
 int pmarcel_sleep(unsigned long sec);
 DEC_MARCEL_POSIX(int,sleep,(unsigned long sec));
 
+/** \brief Pause the calling thread for a given number of milliseconds */
+int marcel_delay(unsigned long msec);
 #define marcel_delay(millisec) marcel_usleep((millisec)*1000)
 
 /* ==== scheduler status ==== */

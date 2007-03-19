@@ -1208,7 +1208,7 @@ int MPI_Recv(void *buffer,
   int                  err = 0;
 
   MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
+  MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d, count %d\n", source, datatype, tag, count);
   MPI_NMAD_TIMER_IN();
 
   if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {

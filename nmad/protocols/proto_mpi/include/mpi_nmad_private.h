@@ -50,7 +50,7 @@ extern debug_type_t debug_mpi_nmad_log;
 #else
 #  define MPI_NMAD_TRACE(fmt, args...) {}
 #  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) {}
-#  define MPI_NMAD_TRANSFER(fmt, args...) 
+#  define MPI_NMAD_TRANSFER(fmt, args...)
 #  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)
 #  define MPI_NMAD_LOG_IN()
 #  define MPI_NMAD_LOG_OUT()

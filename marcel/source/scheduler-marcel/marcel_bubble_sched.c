@@ -61,15 +61,14 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 #define VARS \
 	int running; \
 	ma_holder_t *h
-#define CHECK_HOLDER() \
-	MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER); \
-	running = h && bubble->sched.run_holder && bubble->sched.holder_data
+#define RUNNING() \
+	h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER && bubble->sched.run_holder && bubble->sched.holder_data
 #define RAWLOCK_HOLDER() \
 	h = ma_entity_holder_rawlock(&bubble->sched); \
-	CHECK_HOLDER()
+	running = RUNNING()
 #define HOLDER() \
 	h = bubble->sched.run_holder; \
-	CHECK_HOLDER()
+	running = RUNNING()
 #define SETPRIO(_prio); \
 	if (running) \
 		ma_rq_dequeue_entity(&bubble->sched, ma_rq_holder(h)); \
@@ -87,6 +86,14 @@ int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
 	RAWLOCK_HOLDER();
 	SETPRIO(prio);
 	ma_entity_holder_unlock_softirq(h);
+	return 0;
+}
+
+int marcel_bubble_setprio_locked(marcel_bubble_t *bubble, int prio) {
+	VARS;
+	if (prio == bubble->sched.prio) return 0;
+	HOLDER();
+	SETPRIO(prio);
 	return 0;
 }
 
@@ -201,15 +208,12 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 		}
 	} else {
 		MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
-		/* stop recursing when reaching a bubble that was on a runqueue */
-		if (h && h->type == MA_RUNQUEUE_HOLDER) {
-			e->sched_holder = h;
-		} else {
-			b = ma_bubble_entity(e);
-			list_for_each_entry(ee, &b->heldentities, bubble_entity_list) {
-				if (ee->sched_holder && ee->sched_holder->type == MA_BUBBLE_HOLDER)
-					ma_set_sched_holder(ee, bubble);
-			}
+		b = ma_bubble_entity(e);
+		/* XXX erases real bubble prio */
+		marcel_bubble_setprio_locked(b, MA_BATCH_PRIO);
+		list_for_each_entry(ee, &b->heldentities, bubble_entity_list) {
+			if (ee->sched_holder && ee->sched_holder->type == MA_BUBBLE_HOLDER)
+				ma_set_sched_holder(ee, bubble);
 		}
 	}
 }
@@ -592,7 +596,11 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 		state = ma_get_entity(e);
 		mdebug("putting back %p in bubble %p(%p)\n", e, b, &b->hold);
 		ma_put_entity(e, &b->hold, state);
-		PROF_EVENT2(bubble_sched_goingback, e, b);
+
+		if (e->type == MA_BUBBLE_ENTITY)
+			PROF_EVENT2(bubble_sched_bubble_goingback, ma_bubble_entity(e), b);
+		else
+			PROF_EVENT2(bubble_sched_goingback, ma_task_entity(e), b);
 	}
 }
 

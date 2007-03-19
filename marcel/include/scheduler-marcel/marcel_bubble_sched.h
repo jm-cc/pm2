@@ -87,6 +87,8 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 /** \brief Sets the priority of bubble \e bubble to \e prio. */
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
+/** \brief Sets the priority of bubble \e bubble to \e prio, holder is already locked.  */
+int marcel_bubble_setprio_locked(marcel_bubble_t *bubble, int prio);
 /** \brief Gets the priority of bubble \e bubble, put into \e *prio. */
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 

@@ -138,7 +138,7 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);
-	if (list_empty(&bubble->runningentities)) {
+	if (!list_empty(&bubble->runningentities)) {
 		if (bubble->sched.prio == MA_NOSCHED_PRIO)
 			DOWAKE();
 	} else

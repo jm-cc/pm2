@@ -131,7 +131,7 @@ int gen_fichier_C(Element * bullemere)
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //fprintf(fw,"\n   profile_stop();\n");
-   //fprintf(fw,"\n   marcel_end();\n");
+   fprintf(fw,"\n   marcel_end();\n");
    fprintf(fw,"   return 0;\n}\n");
 
    fclose(fw);

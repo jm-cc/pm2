@@ -104,6 +104,6 @@ typedef struct {
 
 extern BubbleOps *curBubbleOps, SWFBubbleOps;
 
-extern const char *SWF_fontfile;
+extern char *SWF_fontfile;
 
 #endif /* BUBBLELIB_OUTPUT_H */

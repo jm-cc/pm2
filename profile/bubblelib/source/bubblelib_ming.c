@@ -42,7 +42,7 @@ typedef SWFBlock BubbleBlock;
 int MOVIEX = 1024;
 int MOVIEY = 768;
 
-const char *SWF_fontfile = "/usr/share/libming/fonts/Timmons.fdb";
+char *SWF_fontfile;
 SWFFont font;
 
 SWFAction stop;
@@ -92,6 +92,7 @@ static BubbleMovie mynewSWFMovie(void) {
 
 	movie->swf = newSWFMovie();
 	movie->playing = 1;
+	movie->status_item = NULL;
 
 	//SWFMovie_setBackground(movie->swf,0,0,0);
 	SWFMovie_setRate(movie->swf,RATE);
@@ -242,22 +243,37 @@ static void mySWFShape_drawSizedGlyph(BubbleShape shape, unsigned short c, int s
 
 static void init(void) {
 	FILE *f;
+	char *fontpath;
 
 	Ming_init();
 	Ming_setErrorFunction(error);
 	signal(SIGSEGV, sig);
 	signal(SIGINT, sig);
 
-	f = fopen(SWF_fontfile,"r");
+	fontpath = SWF_fontfile;
+	if (!SWF_fontfile) {
+		char *root = getenv("PM2_ROOT");
+		static const char path[] = "/profile/bubblelib/font/Sans.fdb";
+		int len = strlen(root) + strlen(path);
+		fontpath = malloc(len+1);
+		strncpy(fontpath, root, strlen(root));
+		strncpy(fontpath + strlen(root), path, strlen(path)+1);
+	}
+
+	f = fopen(fontpath,"r");
+
 	if (!f) {
 		perror("Warning: could not open font file, will not able to print thread name, priority and scheduler status");
-		fprintf(stderr,"(tried %s. Use -f option for changing this. fdb files can be generated from fft files by using makefdb, and fft files can be generated from ttf files by using ttf2fft)\n",SWF_fontfile);
+		fprintf(stderr,"(tried %s. Use -f option for changing this. fdb files can be generated from fft files by using makefdb, and fft files can be generated from ttf files by using ttftofft)\n",fontpath);
 	} else {
 	/* used font */
 		font = (SWFFont) loadSWFFontFromFile(f);
 		if (!font)
 			perror("can't load font");
 	}
+
+	if (!SWF_fontfile)
+		free(fontpath);
 
 	/* pause macro */
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");

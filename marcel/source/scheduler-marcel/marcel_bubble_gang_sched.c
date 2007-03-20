@@ -40,6 +40,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		ma_holder_lock_softirq(&rq->hold);
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
+		PROF_EVENTSTR(sched_status,"gang scheduler: cleaning gang runqueue");
 		/* Non-empty bubbles */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
@@ -61,6 +62,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 			}
 		}
 		/* Then put one job on work_rq */
+		PROF_EVENTSTR(sched_status,"gang scheduler: putting one job");
 		rq = &ma_gang_rq;
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		if (!ma_queue_empty(queue)) {
@@ -85,6 +87,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
+		PROF_EVENTSTR(sched_status,"gang scheduler: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
 	return NULL;
@@ -102,6 +105,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 		rq = work_rq;
 		ma_holder_lock_softirq(&rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
+		PROF_EVENTSTR(sched_status,"gang cleaner: cleaning gang runqueue");
 		/* Non-empty bubbles */
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		ma_queue_for_each_entry_safe(e, ee, queue) {
@@ -134,6 +138,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
 		for_each_lwp_end();
+		PROF_EVENTSTR(sched_status,"gang cleaner: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
 	return NULL;

@@ -230,26 +230,6 @@ esac
 
 	    other=$(($other + 1))
             ;;
-        *single1_code)
-	    xnum=`printf "0x%x" $other`
-	    name=`echo $e | sed -e 's/fut_\(.*\)_single1_code/\1/'`
-	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
-	    echo "#define $upname $xnum" >> $printfile
-	    echo "{ $upname, \"$name\" }," >> $printfile
-            echo "unsigned $e = $xnum ;" >> $deffile
-
-	    other=$(($other + 1))
-            ;;
-        *single2_code)
-	    xnum=`printf "0x%x" $other`
-	    name=`echo $e | sed -e 's/fut_\(.*\)_single2_code/\1/'`
-	    upname=`echo $name | tr '[a-z]' '[A-Z]'`
-	    echo "#define $upname $xnum" >> $printfile
-	    echo "{ $upname, \"$name\" }," >> $printfile
-            echo "unsigned $e = $xnum ;" >> $deffile
-
-	    other=$(($other + 1))
-            ;;
 	*)
 	    echo "unknown profile type $e";
 	    exit 1

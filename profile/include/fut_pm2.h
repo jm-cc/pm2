@@ -80,12 +80,16 @@
 #define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC1(name,line,arg1)
 #define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC2(name,__LINE__,arg1,arg2)
 #define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC2(name,line,arg1,arg2)
+#define GEN_PREPROCSTR(name,s) _GEN_PREPROCSTR(name,__LINE__,s)
+#define _GEN_PREPROCSTR(name,line,s) __GEN_PREPROCSTR(name,line,s)
 #define GEN_PREPROC_ALWAYS(name) _GEN_PREPROC_ALWAYS(name,__LINE__)
 #define _GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC_ALWAYS(name,line)
 #define GEN_PREPROC1_ALWAYS(name,arg1) _GEN_PREPROC1_ALWAYS(name,__LINE__,arg1)
 #define _GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC1_ALWAYS(name,line,arg1)
 #define GEN_PREPROC2_ALWAYS(name,arg1,arg2) _GEN_PREPROC2_ALWAYS(name,__LINE__,arg1,arg2)
 #define _GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)
+#define GEN_PREPROCSTR_ALWAYS(name,s) _GEN_PREPROCSTR_ALWAYS(name,__LINE__,s)
+#define _GEN_PREPROCSTR_ALWAYS(name,line,s) __GEN_PREPROCSTR_ALWAYS(name,line,s)
 
 #ifdef PREPROC
 
@@ -96,9 +100,11 @@
   } while(0)
 #define __GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line)
 #define __GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line)
+#define __GEN_PREPROCSTR(name,line,s) __GEN_PREPROC(name,line)
 #define __GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC(name,line)
 #define __GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC(name,line)
 #define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC(name,line)
+#define __GEN_PREPROCSTR(name,line,s) __GEN_PREPROC(name,line)
 
 #else // ifndef PREPROC
 
@@ -126,6 +132,12 @@
     FUT_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2); \
   } while(0)
 
+#define __GEN_PREPROCSTR(name,line,s)                     \
+  do {                                                    \
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
+    FUT_PROBESTR(PROFILE_KEYMASK, __code##line, s);       \
+  } while(0)
+
 #define __GEN_PREPROC_ALWAYS(name,line)                   \
   do {                                                    \
     extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
@@ -142,6 +154,12 @@
   do {                                                    \
     extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
     FUT_DO_PROBE2(__code##line, arg1,arg2);               \
+  } while(0)
+
+#define __GEN_PREPROCSTR_ALWAYS(name,line,s)              \
+  do {                                                    \
+    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
+    FUT_DO_PROBESTR(__code##line, s);                     \
   } while(0)
 
 #endif // PREPROC
@@ -166,11 +184,13 @@
 #define PROF_IN_EXT(name)             GEN_PREPROC(#name "_entry")
 #define PROF_OUT_EXT(name)            GEN_PREPROC(#name "_exit")
 #define PROF_EVENT(name)              GEN_PREPROC(#name "_single")
-#define PROF_EVENT1(name, arg1)       GEN_PREPROC1(#name "_single1", arg1)
-#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(#name "_single2", arg1, arg2)
+#define PROF_EVENT1(name, arg1)       GEN_PREPROC1(#name "_single", arg1)
+#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(#name "_single", arg1, arg2)
+#define PROF_EVENTSTR(name, s)        GEN_PREPROCSTR(#name "_single", s)
 #define PROF_EVENT_ALWAYS(name)              GEN_PREPROC_ALWAYS(#name "_single")
-#define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(#name "_single1", arg1)
-#define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(#name "_single2", arg1, arg2)
+#define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(#name "_single", arg1)
+#define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(#name "_single", arg1, arg2)
+#define PROF_EVENTSTR_ALWAYS(name, s)        GEN_PREPROCSTR_ALWAYS(#name "_single", s)
 
 #else // ifndef DO_PROFILE
 
@@ -185,9 +205,11 @@
 #define PROF_EVENT(name)                      (void)0
 #define PROF_EVENT1(name, arg1)               (void)0
 #define PROF_EVENT2(name, arg1, arg2)         (void)0
+#define PROF_EVENTSTR(name, s)                (void)0
 #define PROF_EVENT_ALWAYS(name)               (void)0
 #define PROF_EVENT1_ALWAYS(name, arg1)        (void)0
 #define PROF_EVENT2_ALWAYS(name, arg1, arg2)  (void)0
+#define PROF_EVENTSTR_ALWAYS(name, s)         (void)0
 
 #endif // DO_PROFILE
 

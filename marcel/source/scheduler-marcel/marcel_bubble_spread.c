@@ -169,6 +169,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			int state;
 			ma_runqueue_t *rq;
 			debug("small(%lx), leave it here\n", entity_load(e[i]));
+			PROF_EVENTSTR(sched_status, "spread: small, leave it here");
 			state = ma_get_entity(e[i]);
 			if (l_l[0]->father)
 				rq = &l_l[0]->father->sched;
@@ -181,6 +182,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 		debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
+		PROF_EVENTSTR(sched_status, "spread: add to level");
 		list_add_tail(&e[i]->next,&l_dist[0]);
 		l_load[0] += entity_load(e[i]);
 		l_n[0]++;
@@ -273,6 +275,7 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_bubble_lock_all(b, l);
 	__ma_bubble_gather(b, b);
 	__marcel_bubble_spread(&e, 1, &l, 1, 0);
+	PROF_EVENTSTR(sched_status, "spread: done");
 
 	/* resched existing threads */
 	marcel_vpmask_foreach_begin(vp,&l->vpset)

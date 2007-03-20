@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <search.h>
+#include <string.h>
 #include "bubblelib_anim.h"
 #include "bubblelib_output.h"
 
@@ -364,6 +365,16 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 			case FUT_START_PLAYING: {
 				BubbleMovie_startPlaying(movie, 1);
 				verbprintf("start playing\n");
+				break;
+			}
+#endif
+#ifdef SCHED_STATUS
+			case SCHED_STATUS: {
+				char str[FXT_MAX_DATA+1];
+				memcpy(&str, ev.ev64.raw, FXT_MAX_DATA);
+				str[sizeof(str)-1] = 0;
+				verbprintf("sched status %s\n",str);
+				BubbleMovie_status(movie, str);
 				break;
 			}
 #endif

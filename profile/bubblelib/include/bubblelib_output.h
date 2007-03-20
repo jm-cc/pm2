@@ -50,6 +50,8 @@ typedef struct {
 #define BubbleMovie_abort curBubbleOps->Movie_abort
 	int (*Movie_save)(BubbleMovie movie, const char *filename);
 #define BubbleMovie_save curBubbleOps->Movie_save
+	void (*Movie_status)(BubbleMovie movie, const char *str);
+#define BubbleMovie_status curBubbleOps->Movie_status
 	/* TODO: we probably need a destroyMovie method too... */
 
 	/* Shape methods */

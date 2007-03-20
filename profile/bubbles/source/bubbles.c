@@ -69,11 +69,10 @@ static void usage(char *argv0) {
 int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
 	char c;
+	int delayed = 0;
 
 	curBubbleOps = &SWFBubbleOps;
 	curBubbleOps->init();
-
-	movie = newBubbleMovie();
 
 	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpnse")) != EOF)
 		switch(c) {
@@ -81,8 +80,7 @@ int main(int argc, char *argv[]) {
 			SWF_fontfile = optarg;
 			break;
 		case 'd':
-			// delayed start
-			BubbleMovie_startPlaying(movie,0);
+			delayed = 1;
 			break;
 		case 'v':
 			FxT_verbose = 1;
@@ -129,6 +127,11 @@ int main(int argc, char *argv[]) {
 			usage(argv[0]);
 			exit(0);
 		}
+
+	movie = newBubbleMovie();
+
+	if (delayed)
+		BubbleMovie_startPlaying(movie,0);
 
 	/* The hidden "norq" runqueue */
 	setRqs(&norq,1,0,0,MOVIEX,

@@ -18,12 +18,14 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <string.h>
 #include <stdlib.h>
 
 typedef struct {
 	SWFMovie swf;
 	SWFDisplayItem pause_item;
 	int playing;
+	SWFDisplayItem status_item;
 } *BubbleMovie;
 
 typedef SWFShape BubbleShape;
@@ -183,6 +185,7 @@ void mySWFMovie_pause(BubbleMovie movie, float sec) {
 		SWFShape shape = newSWFShape();
 		SWFButton button = newSWFButton();
 
+		SWFShape_setLine(shape,4,0,0,0,255);
 		SWFShape_setRightFillStyle(shape, SWFShape_addSolidFillStyle(shape,0,0,0,255));
 		SWFShape_movePenTo(shape,0,0);
 		SWFShape_drawLineTo(shape,BSIZE/3,0);
@@ -197,6 +200,7 @@ void mySWFMovie_pause(BubbleMovie movie, float sec) {
 		SWFButton_addShape(button, (void*)shape, SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, compileSWFActionCode("stopped=1; stop();"), 0xff);
 		item = SWFMovie_add(movie->swf, (SWFBlock)button);
+		SWFDisplayItem_moveTo(item, CURVE, MOVIEY-BSIZE);
 
 		mySWFMovie_nextFrame(movie);
 		SWFDisplayItem_remove(item);
@@ -213,7 +217,26 @@ int mySWFMovie_save(BubbleMovie movie, const char *filename) {
 	return SWFMovie_save(movie->swf, filename);
 }
 
+void mySWFMovie_status(BubbleMovie movie, const char *str) {
+	SWFShape shape;
+	int i;
+	if (!font)
+		return;
+	if (movie->status_item)
+		SWFDisplayItem_remove(movie->status_item);
+	shape = newSWFShape();
+	SWFShape_setLine(shape,2,0,0,0,255);
+	for (i=0; i<strlen(str); i++) {
+		SWFShape_movePenTo(shape, i*20., 0);
+		SWFShape_drawSizedGlyph(shape, font, str[i], 20.);
+	}
+	movie->status_item = SWFMovie_add(movie->swf, (SWFBlock)shape);
+	SWFDisplayItem_moveTo(movie->status_item, CURVE+BSIZE, MOVIEY-20.);
+}
+
 static void mySWFShape_drawSizedGlyph(BubbleShape shape, unsigned short c, int size) {
+	if (!font)
+		return;
 	SWFShape_drawSizedGlyph(shape, font, c, size);
 }
 
@@ -227,8 +250,8 @@ static void init(void) {
 
 	f = fopen(SWF_fontfile,"r");
 	if (!f) {
-		perror("Warning: could not open font file, will not able to print thread priority");
-		fprintf(stderr,"(tried %s. Use -f option for changing this)\n",SWF_fontfile);
+		perror("Warning: could not open font file, will not able to print thread name, priority and scheduler status");
+		fprintf(stderr,"(tried %s. Use -f option for changing this. fdb files can be generated from fft files by using makefdb, and fft files can be generated from ttf files by using ttf2fft)\n",SWF_fontfile);
 	}
 
 	/* pause macro */
@@ -250,6 +273,7 @@ BubbleOps SWFBubbleOps = {
 	.Movie_add = mySWFMovie_add,
 	.Movie_pause = mySWFMovie_pause,
 	.Movie_save = mySWFMovie_save,
+	.Movie_status = mySWFMovie_status,
 
 	/* Shape methods */
 	.newShape = newSWFShape,

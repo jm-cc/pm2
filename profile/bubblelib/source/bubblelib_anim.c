@@ -205,6 +205,7 @@ static void setThread(BubbleShape shape, unsigned thick, float width, float heig
 	BubbleShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	BubbleShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
 	BubbleShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
+	BubbleShape_setLine(shape,2,0,0,0,255);
 	if (DISPPRIO && prio) {
 		BubbleShape_movePen(shape,xStep,CURVE);
 		BubbleShape_drawSizedGlyph(shape,'0'+prio,CURVE);

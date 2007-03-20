@@ -374,19 +374,19 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	/* open IB context */
 	p_ibverbs_drv->context = ibv_open_device(ib_dev);
 	if(p_ibverbs_drv->context == NULL) {
-		fprintf(stderr, "Infniband: cannot open IB context.\n");
+		fprintf(stderr, "Infiniband: cannot open IB context.\n");
 		abort();
 	}
 	struct ibv_device_attr device_attr;
 	rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
 	if(rc != 0) {
-		fprintf(stderr, "Infniband: cannot get device capabilities.\n");
+		fprintf(stderr, "Infiniband: cannot get device capabilities.\n");
 		abort();
 	}
 	/* allocate Protection Domain */
 	p_ibverbs_drv->pd = ibv_alloc_pd(p_ibverbs_drv->context);
 	if(p_ibverbs_drv->pd == NULL) {
-		fprintf(stderr, "Infniband: cannot allocate IB protection domain.\n");
+		fprintf(stderr, "Infiniband: cannot allocate IB protection domain.\n");
 		abort();
 	}
 	/* detect LID */

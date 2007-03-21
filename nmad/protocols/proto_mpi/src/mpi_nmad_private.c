@@ -139,7 +139,7 @@ void internal_init() {
 void internal_exit() {
   int i;
 
-  for(i=0 ; i<=MPI_LONG_LONG ; i++) {
+  for(i=0 ; i<=MPI_INTEGER ; i++) {
     free(datatypes[i]);
   }
   free(datatypes);

@@ -55,7 +55,7 @@ typedef struct {
 } MPI_Status;
 
 typedef struct {
-  char request[72];
+  char request[128];
 } MPI_Request;
 
 #define MPI_REQUEST_NULL   ((MPI_Request){'\0'})

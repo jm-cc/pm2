@@ -269,31 +269,31 @@ int pack_extended(struct nm_gate *p_gate,
       uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 
       if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen) {
-        NM_SO_SR_TRACE("There's not enough room to add our data to this paquet");
+        NM_SO_SR_TRACE("There's not enough room to add our data to this paquet\n");
         p_so_pw->is_completed = tbx_true;
 	goto next;
       }
 
       if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen) {
-        NM_SO_SR_TRACE("We can copy data into the header zone");
+        NM_SO_SR_TRACE("We can copy data into the header zone\n");
 	flags = NM_SO_DATA_USE_COPY;
       }
       else
 	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-          NM_SO_SR_TRACE("Full packet. Checking next ...");
+          NM_SO_SR_TRACE("Full packet. Checking next ...\n");
           p_so_pw->is_completed = tbx_true;
 	  goto next;
         }
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      NM_SO_SR_TRACE("Adding data");
+      NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
       nb_extended_aggregation ++;
 
       if (p_so_pw->is_completed == tbx_false) {
         p_so_pw->is_completed = is_completed;
       }
 
-      NM_SO_SR_TRACE("p_so_pw->is_completed %d", is_completed);
+      NM_SO_SR_TRACE("p_so_pw->is_completed %d\n", is_completed);
 
       goto out;
 
@@ -304,7 +304,7 @@ int pack_extended(struct nm_gate *p_gate,
     if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
       flags = NM_SO_DATA_USE_COPY;
 
-    NM_SO_SR_TRACE("We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list");
+    NM_SO_SR_TRACE_LEVEL(3, "We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
 					    data, len,
 					    flags,
@@ -317,7 +317,7 @@ int pack_extended(struct nm_gate *p_gate,
     list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
 
   } else {
-    NM_SO_SR_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.");
+    NM_SO_SR_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
 
     /* First allocate a packet wrapper */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
@@ -386,10 +386,10 @@ static int try_and_commit(struct nm_gate *p_gate)
   p_so_pw = nm_l2so(out_list->next);
 
   if(p_so_pw->is_completed == tbx_true) {
-    NM_SO_SR_TRACE("pw is completed");
+    NM_SO_SR_TRACE("pw is completed\n");
     list_del(out_list->next);
   } else {
-    NM_SO_SR_TRACE("pw is not completed");
+    NM_SO_SR_TRACE("pw is not completed\n");
     goto out;
   }
 

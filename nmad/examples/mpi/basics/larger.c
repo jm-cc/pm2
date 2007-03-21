@@ -42,13 +42,13 @@ void test_larger(int rank, int size) {
     x=malloc(size*sizeof(int));
     MPI_Recv(x, size, MPI_INT, 1, 2, MPI_COMM_WORLD, &status);
     MPI_Get_count(&status, MPI_INT, &count);
-    fprintf(stdout, "source=%d, tag=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, count);
+    fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
 
     xx=malloc(2*size*sizeof(int));
     MPI_Irecv(xx, 2*size, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &request);
     MPI_Wait(&request, &status);
     MPI_Get_count(&status, MPI_INT, &count);
-    fprintf(stdout, "source=%d, tag=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, count);
+    fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
 
     fprintf(stdout, "The answer to life, the universe, and everything is %d, %d\n", x[0], xx[0]);
     fprintf(stdout, "There is %d wonders of the world\n\n", xx[size-2]);

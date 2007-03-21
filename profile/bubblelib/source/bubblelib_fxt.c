@@ -30,8 +30,6 @@ rq_t **rqs = NULL;
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
-//#include <string.h>
-char *strdup(const char*s);
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"

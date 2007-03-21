@@ -98,7 +98,7 @@ void internal_init() {
   datatypes[MPI_INTEGER]->extent = datatypes[MPI_INTEGER]->size;
 
   available_datatypes = tbx_slist_nil();
-  for(i=MPI_LONG_LONG+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
+  for(i=MPI_INTEGER+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
     int *ptr;
     ptr = malloc(sizeof(int));
     *ptr = i;

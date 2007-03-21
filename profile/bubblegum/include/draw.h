@@ -1,3 +1,4 @@
+/* Fichier qui ne sert à rien */
 
 typedef struct _position
 {
@@ -17,7 +18,7 @@ typedef struct _arbre_pos
 {
   position * pos;
   liste_arbre_pos* fils;
-}arbre_pos;
+} arbre_pos;
 
 typedef struct _tab
 {

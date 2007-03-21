@@ -13,6 +13,8 @@
 #include "toolbars.h"
 #include "load.h"
 
+/*********************************************************************/
+
 void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
 {
    GtkWidget *nouveau = gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_LARGE_TOOLBAR);

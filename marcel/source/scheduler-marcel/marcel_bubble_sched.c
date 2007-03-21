@@ -31,6 +31,11 @@ int marcel_bubble_init(marcel_bubble_t *bubble) {
 	return 0;
 }
 
+int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
+	PROF_EVENT2(bubble_setid,bubble, id);
+	return 0;
+}
+
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	bubble->sched.init_holder = bubble->sched.sched_holder = &rq->hold;
 	return 0;

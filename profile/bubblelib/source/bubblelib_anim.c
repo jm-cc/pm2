@@ -170,6 +170,7 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->entity.bubble_holder = NULL;
 	b->entity.leaving_holder = 0;
 	b->entity.nospace = 0;
+	b->entity.id = -1;
 	INIT_LIST_HEAD(&b->heldentities);
 	b->exploded = 0;
 	b->morph = NULL;
@@ -239,9 +240,9 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.bubble_holder = NULL;
 	t->entity.leaving_holder = 0;
 	t->entity.nospace = 0;
+	t->entity.id = -1;
 	t->state = THREAD_BLOCKED;
 	t->name = NULL;
-	t->id = -1;
 	t->number = -1;
 	t->initrq = initrq;
 	return t;
@@ -275,6 +276,8 @@ static void setExplodedBubble(BubbleShape shape, unsigned thick, float width, fl
 }
 
 static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
+	if (BubbleSetBubble)
+		BubbleSetBubble(shape, b->entity.id, b->entity.x, b->entity.y, b->entity.width, b->entity.height);
 	if (b->exploded)
 		setExplodedBubble(shape,b->entity.thick,b->entity.width,b->entity.height,b->entity.prio);
 	else
@@ -282,6 +285,8 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
 	BubbleDisplayItem_moveTo(b->entity.lastitem,b->entity.x,b->entity.y);
 }
 static void setThreadRecur(BubbleShape shape, thread_t *t) {
+	if (BubbleSetThread)
+		BubbleSetThread(shape, t->entity.id, t->entity.x, t->entity.y, t->entity.width, t->entity.height);
 	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->state,t->name);
 }
 

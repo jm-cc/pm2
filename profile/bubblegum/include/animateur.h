@@ -33,7 +33,7 @@ typedef unsigned char bool;
 #include "polices.h"
 #include "hachage.h"
 
-// défini la valeur d'espacement des frames absolues
+// définit la valeur d'espacement des frames absolues
 // (stockant la totalité de la scène)
 // augmenter la valeur diminuera l'occupation mémoire
 // la diminuer augmentera la réactivité de rafraichissement
@@ -50,7 +50,7 @@ typedef unsigned char bool;
 
 //#define DRAW_HIDDEN
 
-// décomenter pour activer la sortie debug
+// décommenter pour activer la sortie debug
 //#define VERBOSE_DEBUG
 
 typedef unsigned char byte;
@@ -117,7 +117,7 @@ typedef struct ScnObj_tag  // objet de scene
       char* description;  // ne doit pas être accedé directement mais construit avec GetDescription
 } ScnObj;
 
-typedef struct Scene_tag  // contient les objets de la scene
+typedef struct Scene_tag  // contient les objets de la scène
 {
       ScnObj* objects;
       size_t num;
@@ -155,7 +155,7 @@ typedef struct ScnObjLightInfos_tag
       STATE stt;
 } ScnObjLightInfos;
 
-// frame clé restockant le total des positions de la scene
+// frame clé restockant le total des positions de la scène
 typedef struct KeyFrame_tag
 {
       ScnObjLightInfos* absoluteScene;
@@ -170,12 +170,12 @@ typedef struct Frame_tag
       KeyFrame* keyframe;
 } Frame;
 
-/* règles:
-     dans une frame si le pointeur vers keyframe
+/* règles :
+     Dans une frame si le pointeur vers keyframe
      est non nul, les deux structures objets ne veulent
      rien dire.
-     si le pointeur est nul, alors au moins le premier objet
-     est significatif. si l'indice de l'objet 2 est différent
+     Si le pointeur est nul, alors au moins le premier objet
+     est significatif. Si l'indice de l'objet 2 est différent
      de -1 alors il est significatif lui aussi.
 */
 
@@ -188,6 +188,8 @@ typedef struct FramesAr_tag
 
 typedef struct AnimElements_tag
 {
+      bool scene_loaded; /* Is an animation loaded ? */
+
       Chrono* time;
       GtkWidget* drawzone;
       GPFont* pIfont;

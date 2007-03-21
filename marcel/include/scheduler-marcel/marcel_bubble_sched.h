@@ -54,6 +54,9 @@ int marcel_bubble_init(marcel_bubble_t *bubble);
 int marcel_bubble_destroy(marcel_bubble_t *bubble);
 #define marcel_bubble_destroy(bubble) ((void)0)
 
+/** \brief Sets an id for the bubble, useful for traces. */
+int marcel_bubble_setid(marcel_bubble_t *bubble, int id);
+
 /** \brief Inserts entity \e entity into bubble \e bubble. */
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
 /** \brief Inserts bubble \e little_bubble into bubble \e bubble. */

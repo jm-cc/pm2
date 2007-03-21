@@ -164,6 +164,14 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 				//showEntity(&b->entity);
 				break;
 			}
+			case BUBBLE_SETID: {
+				uint64_t bu = ev.ev64.param[0];
+				bubble_t *b = getBubble(bu);
+				int id = ev.ev64.param[1];
+				verbprintf("bubble %p(%p) id %d\n",(void*)(intptr_t)bu,b,id);
+				b->entity.id=id;
+				break;
+			}
 			case SCHED_SETPRIO: {
 				entity_t *e = getEntity(ev.ev64.param[0]);
 				if (e) {
@@ -424,7 +432,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					int id = ev.ev64.param[1];
 					printfThread(th,t);
 					verbprintf(" id %d\n", id);
-					t->id=id;
+					t->entity.id=id;
 					break;
 				}
 				case SET_THREAD_NUMBER: {

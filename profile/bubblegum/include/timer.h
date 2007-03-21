@@ -27,10 +27,10 @@ int gettimeofday (struct timeval *tp, void *tz);
 
 typedef struct Chrono_tag
 {
-      struct timeval tv1;
-      struct timeval tv2;
-      bool started;
-      int back;
+  struct timeval tv1;
+  struct timeval tv2;
+  bool started;
+  int back;
 } Chrono;
 
 void chrono_init(Chrono* c);

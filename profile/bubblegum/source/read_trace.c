@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-struct fxt_code_name fut_code_table [] =
+static struct fxt_code_name fut_code_table [] =
 {
 #include <fut_print.h>
    {0, NULL }

@@ -19,6 +19,10 @@
 #define MARGE 50
 #endif
 
+/*!
+ *
+ *
+ */
 typedef struct _zone
 {
   int posX;
@@ -28,18 +32,30 @@ typedef struct _zone
   struct _liste_zones * sous_zones;
 } zone;
 
+/*!
+ *
+ *
+ */
 typedef struct _maillon_zone
 {
   struct _zone * tete;
   struct _maillon_zone * reste;
 } maillon_zone;
 
+/*!
+ *
+ *
+ */
 typedef struct _liste_zones
 {
   struct _maillon_zone * debut;
   struct _maillon_zone * fin;
 } liste_zones;
 
+/*!
+ *
+ *
+ */
 typedef struct _parcours
 {
   int taille;

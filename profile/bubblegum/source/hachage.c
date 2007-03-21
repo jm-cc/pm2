@@ -7,11 +7,15 @@
 
 #include "hachage.h"
 
+/*********************************************************************/
+
 long HashFunction(HashTable* ht, long key)
 {
    key = key < 0 ? -key : key;
    return (key ^ ht->xor) % ht->size;
 }
+
+/*********************************************************************/
 
 HashTable* NewHashTable(long size)
 {
@@ -25,6 +29,7 @@ HashTable* NewHashTable(long size)
    return ht;
 }
 
+/*********************************************************************/
 
 void DeleteHashTable(HashTable* ht)
 {
@@ -46,6 +51,8 @@ void DeleteHashTable(HashTable* ht)
    }
    free(ht);
 }
+
+/*********************************************************************/
 
 long GetData(HashTable* ht, long key)
 {
@@ -70,6 +77,8 @@ long GetData(HashTable* ht, long key)
    }
    return pn->data;
 }
+
+/*********************************************************************/
 
 void AddPair(HashTable* ht, long key, long data)
 {

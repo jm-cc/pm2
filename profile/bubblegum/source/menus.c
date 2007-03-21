@@ -15,7 +15,8 @@
   
 GtkWidget *menu;
 GtkWidget *menu_item;
-
+/*********************************************************************/
+/* Menu Fichier */
 void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
 {   
    GtkWidget *nouveau = gtk_image_new_from_stock (GTK_STOCK_NEW, GTK_ICON_SIZE_LARGE_TOOLBAR);
@@ -60,6 +61,8 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_item);
 }
 
+/*********************************************************************/
+/* Menu Actions */
 void Menu_actions(GtkWidget *parent, GtkWidget *menubar)
 {
    GtkWidget *executer = open_ico("ico/executer.png");
@@ -83,6 +86,8 @@ void Menu_actions(GtkWidget *parent, GtkWidget *menubar)
    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), menu_item);
 }
 
+/*********************************************************************/
+/* Menu Aide */
 void Menu_aide(GtkWidget *parent, GtkWidget *menubar)
 {
    GtkWidget *aide = gtk_image_new_from_stock (GTK_STOCK_HELP, GTK_ICON_SIZE_LARGE_TOOLBAR);

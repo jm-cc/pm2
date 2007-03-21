@@ -100,14 +100,15 @@ AnimElements* AnimationNew(GtkWidget* drawzone)
 {
    AnimElements* newobj = malloc(sizeof(AnimElements));
    
-   Chrono* seconds = malloc(sizeof(Chrono));  // création et démarrage d'un chronometre
+   Chrono* seconds = malloc(sizeof(Chrono));  // crÃ©ation et dÃ©marrage d'un chronometre
    newobj->time = seconds;
-   newobj->drawzone = drawzone;
-   // en attendant mieux à l'evennement realize (voir Realize_dz)
+   newobj->drawzone = NULL;
+   // en attendant mieux Ã  l'evennement realize (voir Realize_dz)
    // (l'initialisation des fonts doit se faire en zone de dessin opengl)
    newobj->pIfont = NULL;
-   AnimationReset(newobj, ConfigGetTraceFileName(CONFIG_FILE_NAME));
 
+/*    AnimationReset(newobj, ConfigGetTraceFileName(CONFIG_FILE_NAME)); */
+	AnimationReset(newobj, NULL);
    return newobj;
 }
 
@@ -122,10 +123,14 @@ void AnimationReset(AnimElements *newobj, const char *file)
    newobj->links = NULL;
    newobj->runQueues.levels = NULL;
    newobj->runQueues.level_num = 0;
-   // création obligatoire d'une runqueue level -1
+
+	newobj->scene_loaded = false;
+	
+   // crÃ©ation obligatoire d'une runqueue level -1
    CreateRunQueue(&newobj->runQueues, 0, -1);
 
-   LoadScene(newobj, file);
+	if (file != NULL)
+	  LoadScene(newobj, file);
 }
 
 static void showBubble(ScnObj* objs, int ind) {
@@ -133,7 +138,7 @@ static void showBubble(ScnObj* objs, int ind) {
     showBubble(objs,objs[ind].prop.holder);
 }
 
-// charger les elements graphiques de la scène avec leur propriétés
+// charger les elements graphiques de la scÃ¨ne avec leur propriÃ©tÃ©s
 int LoadScene(AnimElements* anim, const char *tracefile)
 {
    ev_t* myEvents = malloc_tracetab(tracefile);
@@ -188,7 +193,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    char* thename;
    int id, rpos, lvl;
    ScnObj* objs = anim->scene.objects;
-   // boucle de création des objets
+   // boucle de crÃ©ation des objets
    i = 0;
    while (!GetFin_Ev(GetEv(myEvents, i)))
    {
@@ -219,15 +224,15 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             ind++;
             break;
          case SCHED_SETPRIO:
-            adr = GetAdr_Bulle_Ev(evt_i);  // indifférent pour les threads ou les bulles
+            adr = GetAdr_Bulle_Ev(evt_i);  // indiffÃ©rent pour les threads ou les bulles
 
-            // déterminons si il s'agit d'un thread ou d'une bulle:
+            // dÃ©terminons si il s'agit d'un thread ou d'une bulle:
             ind2 = GetData(anim->ht_bubbles, adr);
             if (ind2 == -1)
             {  // ah ben c'etait un thread :)
                ind2 = GetData(anim->ht_threads, adr);
                if (ind2 == -1)
-                  wprintf(L"erreur : sched_setprio : objet non trouvé\n");
+                  wprintf(L"erreur : sched_setprio : objet non trouvÃ©\n");
             }
             anim->scene.objects[ind2].prop.prior = GetPrio_Ev(evt_i);
             break;
@@ -264,7 +269,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             anim->scene.objects[ind].state = READY_STT;
             anim->scene.objects[ind].description = NULL;
 
-            // ajout immédiat du thread né en runqueue -1
+            // ajout immÃ©diat du thread nÃ© en runqueue -1
             AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[ind], 0, -1);
 	    dbg_printf("Thread new: %lx(%d)\n", adr, ind);
 
@@ -303,7 +308,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
 
             dbg_printf("pos: %d level: %d\n", rpos, lvl);
 
-            if (lvl >= 0)  // la création du lvl -1 est forcée à l'initialisation de toute façon
+            if (lvl >= 0)  // la crÃ©ation du lvl -1 est forcÃ©e Ã  l'initialisation de toute faÃ§on
             {
                CreateRunQueue(&anim->runQueues, rpos, lvl);            
                AddPair(anim->ht_rqslvl, adr, lvl);
@@ -355,7 +360,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             }
             break;
 
-         case FUT_SWITCH_TO_CODE:  // changement d'activité de thread
+         case FUT_SWITCH_TO_CODE:  // changement d'activitÃ© de thread
             
             adr = GetAdr_Thread_Ev(evt_i);
             adr2 = GetNext_Thread_Ev(evt_i);
@@ -366,7 +371,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
             dbg_printf("switch adr %lx, ind1: %d, adr %lx, ind2: %d frame %d\n", adr, ind2, adr2, ind3, frame);
 
             // code final:
-            if (ind2 == -1 || ind3 == -1)  // thread jamais né
+            if (ind2 == -1 || ind3 == -1)  // thread jamais nÃ©
             {
                break;
             }
@@ -377,7 +382,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
                if (frame % KEYFRAME_SPACING == 0)  // cas initial et cas keyframe
                {
                   anim->animation.frames[frame].keyframe = malloc(sizeof(KeyFrame));
-                  // todo: retrouver l'absolue a partir des précedentes
+                  // todo: retrouver l'absolue a partir des prÃ©cedentes
                   
                }
                else  // cas normal: frame relative, frame - 1 existe
@@ -387,7 +392,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
                   anim->animation.frames[frame].objChanges[0].index = ind2; 
                   anim->animation.frames[frame].objChanges[1].index = ind3;
                      
-                  // passage à l'état dormant
+                  // passage Ã  l'Ã©tat dormant
                   anim->animation.frames[frame].objChanges[0].color = READY_COLOR;
                   anim->animation.frames[frame].objChanges[0].stt = READY_STT;
                   anim->animation.frames[frame].objChanges[0].newRQ = -1;
@@ -395,14 +400,14 @@ int LoadScene(AnimElements* anim, const char *tracefile)
                   anim->animation.frames[frame].objChanges[1].color = WORKING_COLOR;
                   anim->animation.frames[frame].objChanges[1].stt = WORKING_STT;
                   anim->animation.frames[frame].objChanges[1].newRQ = -1;
-                  // determine l'ancienne position du thread qui travaillait pour l'échanger
-                  // applique les changements à la structure générale:
+                  // determine l'ancienne position du thread qui travaillait pour l'Ã©changer
+                  // applique les changements Ã  la structure gÃ©nÃ©rale:
                   ReadFrame(anim, frame);
                //}
                frame++;
             }
             break;
-         case BUBBLE_SCHED_SWITCHRQ:   // déplacement d'un objet
+         case BUBBLE_SCHED_SWITCHRQ:   // dÃ©placement d'un objet
 	 case BUBBLE_SCHED_WAKE:
 
             adr = GetAdr_Bulle_Ev(evt_i);
@@ -449,7 +454,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
 	    anim->animation.frames[frame].keyframe = NULL;
 	    anim->animation.frames[frame].objChanges[0].index = ind2; 
 	       
-	    // passage à l'état bloqué
+	    // passage Ã  l'Ã©tat bloquÃ©
 	    anim->animation.frames[frame].objChanges[0].color = BLOCKED_COLOR;
 	    anim->animation.frames[frame].objChanges[0].stt = BLOCKED_STT;
 	    break;
@@ -477,7 +482,7 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    DeleteHashTable(ht);
    ht = NULL;
 
-   // je créer des objets a la main en attendant mieux
+   // je crÃ©er des objets a la main en attendant mieux
    anim->scene.objects = malloc(3 * sizeof(ScnObj));
    anim->scene.num = 3;
 
@@ -560,19 +565,20 @@ int LoadScene(AnimElements* anim, const char *tracefile)
    AddObjectToRunQueue(&anim->runQueues, &anim->scene.objects[9], 5, 0);
 */
 
+	anim->scene_loaded = true;
 
    return 0;
 }
 
-// permet de répercuter les changements sur certains objets répertoriés dans une frame sur la scène 'globale'
+// permet de rÃ©percuter les changements sur certains objets rÃ©pertoriÃ©s dans une frame sur la scÃ¨ne 'globale'
 void ReadFrame(AnimElements* anim, int frame)
 {
-   /* règles:
+   /* rÃ¨gles:
      dans une frame si le pointeur vers keyframe
      est non nul, les deux structures objets ne veulent
      rien dire.
      si le pointeur est nul, alors au moins le premier objet
-     est significatif. si l'indice de l'objet 2 est différent
+     est significatif. si l'indice de l'objet 2 est diffÃ©rent
      de -1 alors il est significatif lui aussi.
    */
 
@@ -586,7 +592,7 @@ void ReadFrame(AnimElements* anim, int frame)
    }
    else
    {
-      // répercution du premier objet
+      // rÃ©percution du premier objet
       pchgs = &anim->animation.frames[frame].objChanges[0];
       pobj = &anim->scene.objects[ pchgs->index ];
       if (pchgs->newRQ >= 0)
@@ -595,7 +601,7 @@ void ReadFrame(AnimElements* anim, int frame)
       pobj->color = pchgs->color;
       pobj->state = pchgs->stt;
 
-      // deuxième objet, si il y a lieu
+      // deuxiÃ¨me objet, si il y a lieu
       pchgs = &anim->animation.frames[frame].objChanges[1];
       if (pchgs->index != -1)
       {
@@ -616,7 +622,7 @@ void DrawFixedScene(AnimElements* anim)
    DrawRunQueues(anim);
    SetPositions(anim);
    
-   for (i = 0; i < anim->scene.num; ++i)  // on dessine toute la scène
+   for (i = 0; i < anim->scene.num; ++i)  // on dessine toute la scÃ¨ne
    {
 #ifndef DRAW_HIDDEN
       if (anim->scene.objects[i].prop.number < 0)  // ne dessine pas les objets internes a pm2
@@ -670,14 +676,14 @@ char* GetDescription(ScnObj* obj)
    sprintf(itoa, "%d", obj->prop.id);
    strcat(obj->description, itoa);
    strcat(obj->description, "\n");
-   // priorité
+   // prioritÃ©
    sprintf(itoa, "%d", obj->prop.prior);
-   strcat(obj->description, "priorit\xE9 : ");  // 233 = 0xE9 = 'é' en iso-8859-1
+   strcat(obj->description, "priorit\xE9 : ");  // 233 = 0xE9 = 'Ã©' en iso-8859-1
    strcat(obj->description, itoa);
    if (!objbub)
    {
       strcat(obj->description, "\n");
-      // état
+      // Ã©tat
       strcat(obj->description, "\xE9tat : ");
       if (obj->state == WORKING_STT)
          strcat(obj->description, "working\n");
@@ -695,9 +701,9 @@ char* GetDescription(ScnObj* obj)
 }
 
 
-// un link est une liaison entre deux objets pour représenter leur affiliation dans la structure arborescente.
-// ils sont dessinés comme des triangles pointant de obj1 vers obj2
-// le stockage en mémoire des paires se fait dans une liste chaînée simple.
+// un link est une liaison entre deux objets pour reprÃ©senter leur affiliation dans la structure arborescente.
+// ils sont dessinÃ©s comme des triangles pointant de obj1 vers obj2
+// le stockage en mÃ©moire des paires se fait dans une liste chaÃ®nÃ©e simple.
 Links* CreateLink(Links* lnk, int obj1, int obj2)
 {
    Links* first = lnk;
@@ -723,7 +729,7 @@ Links* CreateLink(Links* lnk, int obj1, int obj2)
    return first;
 }
 
-// TODO: avoir plut�t des listes de fils pour les bulles !!
+// TODO: avoir plutôt des listes de fils pour les bulles !!
 int GetSon(Links *first, int obj, int i) {
    Links *lnk;
 
@@ -734,7 +740,7 @@ int GetSon(Links *first, int obj, int i) {
    return -1;
 }
 
-// je sais même plus si j'ai testé cette fonction
+// je sais mÃªme plus si j'ai testÃ© cette fonction
 Links* DeleteLink(Links* first, int obj1, int obj2)
 {
    Links* prev = NULL;
@@ -743,18 +749,18 @@ Links* DeleteLink(Links* first, int obj1, int obj2)
    while (!(lnk->pair.i1 == obj1 && lnk->pair.i2 == obj2))  // recherche du couple
    {
       prev = lnk;
-      if (lnk->next == NULL)  // on a pas trouvé le couple on fait rien
+      if (lnk->next == NULL)  // on a pas trouvÃ© le couple on fait rien
          return first;
       lnk = lnk->next;
    }
-   // lnk est le maillon concerné
+   // lnk est le maillon concernÃ©
    
-   if (prev == NULL)  // cas où on devrait supprimer le premier maillon
+   if (prev == NULL)  // cas oÃ¹ on devrait supprimer le premier maillon
    {
       first = lnk->next;
       free(lnk);
    }
-   else  // cas général
+   else  // cas gÃ©nÃ©ral
    {
       prev->next = lnk->next;
       free(lnk);
@@ -782,7 +788,7 @@ void DrawLinks(AnimElements* anim)
       i2 = lnk->pair.i2;
 
       if (objs[i2].prop.number < 0)
-          // ne pas montrer les liens vers les objets cach�s
+          // ne pas montrer les liens vers les objets cachés
           continue;
 
       center1.x = objs[i1].pos.x + objs[i1].size.x / 2;
@@ -798,7 +804,7 @@ void DrawLinks(AnimElements* anim)
       // sa taille:
       dist = sqrt(vect.x * vect.x + vect.y * vect.y);
 
-      // le même normalisé
+      // le mÃªme normalisÃ©
       norm.x = vect.x / dist;
       norm.y = vect.y / dist;
 
@@ -808,7 +814,7 @@ void DrawLinks(AnimElements* anim)
       // somme des deux diminutions
       diminution = v1dim + (objs[i2].size.x + objs[i2].size.y) / 3.3f;
 
-      // recalcul du vecteur à la bonne taille diminuée
+      // recalcul du vecteur Ã  la bonne taille diminuÃ©e
       vect.x = norm.x * (dist - diminution);
       vect.y = norm.y * (dist - diminution);
 
@@ -863,10 +869,10 @@ void SetPositions(AnimElements* anim)
             {
 	       /* TODO: heu, non, ce n'est pas ainsi qu'il faut penser
 		* C'est la bulle qui est sur la runqueue, et son contenu qui
-		* est dessin�e en-dessous de la bulle (et qui _donc_ se
+		* est dessinée en-dessous de la bulle (et qui _donc_ se
 		* retrouve sous la runqueue) */
                case THREAD_OBJ:
-                  offset = -q->objects[ob]->size.y / 2;  // les threads sont dessinés sous les runqueues
+                  offset = -q->objects[ob]->size.y / 2;  // les threads sont dessinÃ©s sous les runqueues
                   break;
                case BUBBLE_OBJ:
                   offset = q->objects[ob]->size.y / 2;   // les bulles dessus
@@ -883,25 +889,24 @@ void SetPositions(AnimElements* anim)
    }
 }
 
-// créer une run queue dans un niveau a une position donnée
+// crÃ©er une run queue dans un niveau a une position donnÃ©e
 void CreateRunQueue(RQueues* rqs, int rqpos, int level)
 {
    /*
-     RQueues ->
-                niveau0 -> queue0 -> object0
-                                     object1
-                                     .
-                           queue1 -> object0
-                                     .
-                           .
-                           .
-                niveau1 -> queue0
-                           .
-                niveau2
-                .
-                .
-   */
-   // eldidou, stp ne fais pas indent-region :-s
+    * RQueues ->
+    *            niveau0 -> queue0 -> object0
+    *                                 object1
+    *                                 .
+    *                       queue1 -> object0
+    *                                 .
+    *                       .
+    *                       .
+    *            niveau1 -> queue0
+    *                       .
+    *            niveau2
+    *            .
+    *            .
+	 */
    
    int i, num;
    level++;
@@ -919,7 +924,7 @@ void CreateRunQueue(RQueues* rqs, int rqpos, int level)
       rqs->levels[level].queues = malloc(sizeof(Queue) * (rqpos + 1));
       rqs->levels[level].num = rqpos + 1;
       for (i = 0; i < rqpos + 1; ++i)
-      {  // on initialise les runqueues précédentes meme si elles n'existent pas encore
+      {  // on initialise les runqueues prÃ©cÃ©dentes meme si elles n'existent pas encore
          rqs->levels[level].queues[i].objects = NULL;
          rqs->levels[level].queues[i].num_obj = 0;
          rqs->levels[level].queues[i].exist = false;
@@ -928,7 +933,7 @@ void CreateRunQueue(RQueues* rqs, int rqpos, int level)
 
       dbg_printf("nouvelle rq %d niouw lvl %d\n", rqpos, level);  
    }
-   else if (level >= 0)  // level existe déjà
+   else if (level >= 0)  // level existe dÃ©jÃ 
    {
       if (rqpos + 1 >= rqs->levels[level].num)
       {
@@ -987,14 +992,14 @@ void* DelArrayElement(void* begin, size_t elem_szt, int size, int pos)
 void GetRQCoord(RQueues* rqs, ScnObj* obj, int* lv, int* rq, int* rqpos)
 {
    int lvi, rqi, ob;
-   // recherche voir si l'objet est déjà contenu qq part
+   // recherche voir si l'objet est dÃ©jÃ  contenu qq part
    for (lvi = 0; lvi < rqs->level_num; ++lvi)
    {
       for (rqi = 0; rqi < rqs->levels[lvi].num; ++rqi)
       {
          for (ob = 0; ob < rqs->levels[lvi].queues[rqi].num_obj; ++ob)
          {
-            if (rqs->levels[lvi].queues[rqi].objects[ob] == obj) // trouvé !!
+            if (rqs->levels[lvi].queues[rqi].objects[ob] == obj) // trouvÃ© !!
             {
                // on renseigne les champs et on quitte
                *lv = lvi - 1;
@@ -1012,10 +1017,10 @@ void DeleteObjOfRQs(RQueues* rqs, ScnObj* obj)
 {
    int lv, rq, ob;
    
-   // recherche voir si l'objet est déjà contenu qq part
+   // recherche voir si l'objet est dÃ©jÃ  contenu qq part
    GetRQCoord(rqs, obj, &lv, &rq, &ob);
    lv++;
-   if (lv >= 0)     // si trouvé, on va le jarter
+   if (lv >= 0)     // si trouvÃ©, on va le jarter
    {
       rqs->levels[lv].queues[rq].objects = DelArrayElement(rqs->levels[lv].queues[rq].objects, sizeof(ScnObj*), rqs->levels[lv].queues[rq].num_obj, ob);
       rqs->levels[lv].queues[rq].num_obj--;
@@ -1059,7 +1064,7 @@ void DrawRunQueues(AnimElements* anim)
       return;
    vspacing = anim->area.y / (levels + 1);
 
-   // dessin séparé de chaque niveau:
+   // dessin sÃ©parÃ© de chaque niveau:
    int numrq;
    int white;
    Queue* q;
@@ -1133,7 +1138,8 @@ int GetObjUnderMouse(AnimElements* anim)
 
 void AnimationStop(GtkWidget *widget, gpointer data)
 {
-   chrono_stop(anim->time);
+    
+    chrono_stop(anim->time);
 }
 
 void AnimationRewind(GtkWidget *widget, gpointer data)
@@ -1168,46 +1174,48 @@ void AnimationSet(void *a, void*b, void*c, void*d)
    //chrono_set(anim->time, value);
 }
 
-void WorkOnAnimation(AnimElements* anim)
+void WorkOnAnimation(AnimElements* p_anim)
 {
    static int frames = 0;
    static double oldtime = 0.0;
-   double time = chrono_read(anim->time);
+   double time = chrono_read(p_anim->time);
 
-   GdkGLContext* glcontext = gtk_widget_get_gl_context(anim->drawzone);
-   GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(anim->drawzone);
+   GdkGLContext* glcontext = gtk_widget_get_gl_context(p_anim->drawzone);
+   GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(p_anim->drawzone);
    
    /*** OpenGL BEGIN ***/
    if (!gdk_gl_drawable_gl_begin(gldrawable, glcontext))
    {
-      // wprintf(L"attention : problème de dessin ogl\n");    // un printf ici risque de flooder
+      // wprintf(L"attention : problÃ¨me de dessin ogl\n");    // un printf ici risque de flooder
       return;
    }
 
    // nettoyer le fond et tout redessiner:
    glClear(GL_COLOR_BUFFER_BIT);
 
-   // affichage des infobulles:
-   // si le curseur est sur un objet, afficher ses propriétés
+	if (p_anim->scene_loaded) {
 
-   ReadFrame(anim, (int)time);
-   gtk_range_set_value(GTK_RANGE(right_scroll_bar), (int)time);
-   DrawFixedScene(anim);
-
-   // la souris est-elle au dessus d'un objet ? si oui afficher les infos
-   int ind;
-   ind = GetObjUnderMouse(anim);
-   if (ind != -1)
-   {
-      DrawToolTip(anim->mousePos.x, anim->mousePos.y, anim->area, GetDescription(&anim->scene.objects[ind]), anim->pIfont);
-   }
-
-   // afficher les fps en haut:
-   glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
-   glTranslated(0, anim->area.y - 15, 0);
-   glScalef(0.8, 0.8, 0);
-   Print2D(anim->pIfont, "%.2f %dx%d - fps: %.2f", time, anim->area.x, anim->area.y, 1 / (time - oldtime));
-   glLoadIdentity();
+	  // affichage des infobulles:
+	  // si le curseur est sur un objet, afficher ses propriÃ©tÃ©s
+	  ReadFrame(p_anim, (int)time);
+	  gtk_range_set_value(GTK_RANGE(right_scroll_bar), (int)time);
+	  DrawFixedScene(p_anim);
+	  
+	  // la souris est-elle au dessus d'un objet ? si oui afficher les infos
+	  int ind;
+	  ind = GetObjUnderMouse(p_anim);
+	  if (ind != -1)
+		 {
+			DrawToolTip(p_anim->mousePos.x, p_anim->mousePos.y, p_anim->area, GetDescription(&p_anim->scene.objects[ind]), p_anim->pIfont);
+		 }
+	  
+	  // afficher les fps en haut:
+	  glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
+	  glTranslated(0, p_anim->area.y - 15, 0);
+	  glScalef(0.8, 0.8, 0);
+	  Print2D(p_anim->pIfont, "%.2f %dx%d - fps: %.2f", time, p_anim->area.x, p_anim->area.y, 1 / (time - oldtime));
+	  glLoadIdentity();
+	}
 
    /* Swap buffers. */
    if (gdk_gl_drawable_is_double_buffered(gldrawable))
@@ -1276,12 +1284,12 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
       corner = open_texture("imgs/corner.png");  // on tente de charger
       firstcall = false;  // ce n'est plus le premier appel
    }
-   if (corner == NULL)  // si le chargement a foiré
+   if (corner == NULL)  // si le chargement a foirÃ©
    {
       return;  // on sort vite (au premier appel et aux prochains)
    }
 
-   // déterminons les dimensions du rectangle englobant la chaine
+   // dÃ©terminons les dimensions du rectangle englobant la chaine
    // d'abord chercher la plus grande longueur
    int i;
    int len = strlen(message);
@@ -1310,7 +1318,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
       {
          maxpixlen = pixlen;
       }
-      oi += len + 1;  // on passe a la chaîne d'après en sautant le \0 terminal
+      oi += len + 1;  // on passe a la chaÃ®ne d'aprÃ¨s en sautant le \0 terminal
    }
    Vecteur rect;
    rect.x = maxpixlen;
@@ -1322,7 +1330,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
       y -= rect.y + 32;
       
    // commencons a dessiner
-   // d'abord préparer le terrain
+   // d'abord prÃ©parer le terrain
    glPushAttrib(GL_TEXTURE_BIT | GL_TRANSFORM_BIT);
    glMatrixMode(GL_MODELVIEW);
    glPushMatrix();
@@ -1346,7 +1354,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
    DrawSprite(corner, x + 32 + rect.x, y + 16, -16, -16, ARGB(178, 255, 255, 255));
    DrawSprite(corner, x, y + 16, 16, -16, ARGB(178, 255, 255, 255));
 
-   // faire les 4 côtés manquants:
+   // faire les 4 cÃ´tÃ©s manquants:
    glBegin(GL_QUADS);
 
    glVertex3f(x + 16, y, 0.0f);
@@ -1366,7 +1374,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
 
    glVertex3f(x + 16 + rect.x, y + 16, 0.0f);
    glVertex3f(x + 16 + rect.x, y + rect.y + 16, 0.0f);
-   glVertex3f(x + 32 + rect.x, y + rect.y + 16, 0.0f);   
+   glVertex3f(x + 32 + rect.x, y + rect.y + 16, 0.0f);
    glVertex3f(x + 32 + rect.x, y + 16, 0.0f);
 
    glEnd();
@@ -1380,7 +1388,7 @@ void DrawToolTip(int x, int y, Vecteur res, const char* message, GPFont* ft)
       Print2D(ft, message2 + str_offsets[i]);
    }
 
-   free(str_offsets);  // ces free là sont super importants
+   free(str_offsets);  // ces free lÃ  sont super importants
    free(message2);
    glPopMatrix();
    glPopAttrib();

@@ -3,7 +3,7 @@
  * Author: Lightness1024
  *         mailto:oddouv@enseirb.fr
  * Date  : 26/04/2006
-*********************************************************************/
+ *********************************************************************/
 
 #ifndef HACHAGE_H
 #define HACHAGE_H
@@ -16,16 +16,16 @@ typedef struct PairNode_tag PairNode;
 
 struct PairNode_tag
 {
-      long data;
-      long key;
-      PairNode* next;
+  long data;
+  long key;
+  PairNode* next;
 };
 
 typedef struct HashTable_tag
 {
-      long size;
-      long xor;
-      PairNode** table;
+  long size;
+  long xor;
+  PairNode** table;
 } HashTable;
 
 

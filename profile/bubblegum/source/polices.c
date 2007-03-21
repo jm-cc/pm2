@@ -167,18 +167,15 @@ static void PrintCmn(GPFont* ft, const char* fmt, va_list vl)
       {
          if (n < 0)  // glib <= 2.0
          {
-            len += 30;  // on sait pas de combien faut augmenter
-            free(ft->buf);
-            ft->buf = malloc(len);
-            ft->bfsize = len;
+            len += 30;  // on ne sait pas de combien il faut augmenter
          }
          else
          {
-            char* tmp = malloc(n + 1);   // redimensionnement pile poil
-            memcpy(tmp, ft->buf, n + 1);
-            free(ft->buf);
-            ft->buf = tmp;
+			  len = n + 1;
          }
+			free(ft->buf);
+			ft->buf = malloc(len);
+			ft->bfsize = len;
          n = -1; // pour le while
       }
       else

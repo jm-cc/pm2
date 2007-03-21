@@ -20,6 +20,7 @@ int parcourir_bulle(Element* bulle, int mybid, int mode)
       {
          fwprintf(fw,L"   //création de la bulle %d :\n",mybid);
 	 fprintf(fw,"   marcel_bubble_init(&b%d);\n",mybid);
+	 fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",mybid,GetId(bulle));
 	 //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",mybid,GetPrioriteBulle(bulle));
       }
 	  if (mode == 2)
@@ -39,6 +40,7 @@ int parcourir_bulle(Element* bulle, int mybid, int mode)
          {
             fwprintf(fw,L"   //création de la bulle %d :\n",hisbid);
             fprintf(fw,"   marcel_bubble_init(&b%d);\n",hisbid);
+	    fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",hisbid,GetId(element_i));
             fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",mybid,hisbid);
             //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",hisbid,GetPrioriteBulle(element_i));
          }
@@ -76,7 +78,7 @@ int parcourir_bulle(Element* bulle, int mybid, int mode)
 
 /* Fonction principale de génération du fichier .C */
 
-int gen_fichier_C(Element * bullemere)
+int gen_fichier_C(const char * fichier, Element * bullemere)
 {
    if (GetTypeElement(bullemere) != BULLE)
    {
@@ -85,14 +87,14 @@ int gen_fichier_C(Element * bullemere)
    }
    bid = 0;
    tid = 1;
-   fw = fopen(GENEC_NAME ".c","w");
+   fw = fopen(fichier, "w");
    if (fw == NULL)
    {
 	  wprintf(L"Erreur lors de l'ouverture du fichier en écriture\n"); 
 	  return -1;
    }
 
-   wprintf(L"**** Démarrage de la génération du fichier .C ****\n");
+   wprintf(L"**** Début de la génération du fichier '%s' ****\n", fichier);
 
    fprintf(fw,"#include \"marcel.h\"\n\n");
    fprintf(fw,"any_t f(any_t foo) {\n");
@@ -123,10 +125,10 @@ int gen_fichier_C(Element * bullemere)
   
    fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
    fprintf(fw,"   marcel_start_playing();\n");
-   fprintf(fw,"   int i = 50;\n");
+   fprintf(fw,"   int i = 5;\n");
    fprintf(fw,"   while(i--) {\n");
    fprintf(fw,"      marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
-   fprintf(fw,"      marcel_delay(100);\n");
+   fprintf(fw,"      marcel_delay(1000);\n");
    fprintf(fw,"   }\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
@@ -136,7 +138,7 @@ int gen_fichier_C(Element * bullemere)
 
    fclose(fw);
   
-   wprintf(L"**** Fichier .C généré :) ****\n\n");
+   wprintf(L"**** Fichier '%s' généré ****\n\n", fichier);
 
 
    fw = fopen(GENEC_MAKEFILE,"w");

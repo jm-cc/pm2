@@ -100,6 +100,12 @@ typedef struct {
 
 	/* misc methods */
 	void (*init)(void);
+
+	/* Thread/Bubble-specific methods */
+	void (*SetThread)(BubbleShape shape, int id, float x, float y, float width, float height);
+#define BubbleSetThread curBubbleOps->SetThread
+	void (*SetBubble)(BubbleShape shape, int id, float x, float y, float width, float height);
+#define BubbleSetBubble curBubbleOps->SetBubble
 } BubbleOps;
 
 extern BubbleOps *curBubbleOps, SWFBubbleOps;

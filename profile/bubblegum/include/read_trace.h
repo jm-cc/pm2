@@ -1,5 +1,8 @@
 /* structure d'infos concernant chaque événements */
 
+#ifndef READ_TRACE_H
+#define READ_TRACE_H
+
 #define DECOMPTE 0 //simple préparcours de la trace
 #define ANALYSE 1 //parcours avec analyse
 
@@ -72,3 +75,5 @@ long GetAdr_Rq_Ev(ev_t *);
 
 int my_printf(const wchar_t* format, ...);
 int my_printf_2(const wchar_t* format, ...);
+
+#endif /* READ_TRACE_H */

@@ -5,7 +5,7 @@ zone * CreerZone(int x, int y, int l, int h)
    zone * ptr;
    ptr = malloc(sizeof(zone));
 
-/*    printf("creerZone %p\n",ptr); */
+   printf("creerZone %p\n",ptr);
 
    ptr->posX = x;
    ptr->posY = y;
@@ -63,8 +63,8 @@ void ChangerZoneHauteur(zone * z, int h)
 
 void AjouterSousZones(zone * conteneur, zone * contenu)
 {
-/*    printf("AjouterSousZones %p %p\n", conteneur, contenu); */
-   AjouterListeZones(conteneur->sous_zones, contenu);
+  printf("AjouterSousZones %p %p\n", conteneur, contenu);
+  AjouterListeZones(conteneur->sous_zones, contenu);
 }
 
 int EstDansZone(zone * z, int x, int y)
@@ -327,6 +327,13 @@ void EffacerParcours(parcours * p)
    free(p);
 }
 
+/*! A partir d'une position d'une zone, la fonction retourne un pointeur de parcours. 
+ * \param zone *
+ * \param x
+ * \param y
+ * \return parcours *
+ *
+ */
 parcours * TrouverParcours(zone * z, int x, int y)
 {
    parcours * p;
@@ -421,29 +428,65 @@ void CreerZoneBulle(Element * bulleprinc, zone * zoneprinc, int x, int y)
    EffacerParcours(p);
 }
 
+/*! Déplace une zone de
+ *
+ *
+ *
+ */
 void Deplacer(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, int destX, int destY)
 {
    parcours * psrc, * pdest;
    zone * zsrc, * zdep, * zdest;
    Element * bsrc, * bdep, * bdest;
-
+   
    psrc = TrouverParcours(zoneprinc, srcX, srcY);
    zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
    bsrc = LireElementParcoursPartiel(bulleprinc, psrc, LireParcoursTaille(psrc) - 1);
+   printf("Trace parcours élément Parent ");
+   traceParcours(psrc);
+
+   
    zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
    bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
+/*   printf("Trace parcours élément à déplacer\n");
+  traceParcours(LirePosition(psrc, LireParcoursTaille(psrc)));
+*/
+   
    pdest = TrouverParcoursBulle(bulleprinc, zoneprinc, destX, destY);
    zdest = LireZoneParcours(zoneprinc, pdest);
    bdest = LireElementParcours(bulleprinc, pdest);
+   printf("Trace parcours élément Accueil ");
+   traceParcours(pdest);   
+
 
    EnleverSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc))); 
-   RemoveElement(bsrc, LirePosition(psrc,LireParcoursTaille(psrc)));
+   /* on doit changer ceci en un déplacement et non une suppression/création */
+   /*  RemoveElement(bsrc, LirePosition(psrc,LireParcoursTaille(psrc)));  */
+   /*  On déplace 'physiquement' l'élément vers la zone d'accueil au lieu d'ajouter en bas, mais ça plante */
+
+ 
+   /* dest : accueil / src : parent / dep : selectionnee */
+   
    TranslaterZone(zdep, destX - srcX, destY - srcY);
-   AddElement(bdest, bdep);
+
+   /* MoveElement(&bsrc->bulle, bdep, &bdest->bulle);*/
+   
+   /* Donc on ajoute l'élément courant (bdep) dans la liste de l'élément de destination (bdest) */
+   AddElement2(bdest, bdep);
+   printf("DEBUG : AddElement2 fait\n");
+   /* et on n'oublie pas de supprimer l'ancien élément contenu dans l'élément parent (bsrc) */
+   RemoveElement2(bsrc, LirePosition(psrc,LireParcoursTaille(psrc)));
+   printf("DEBUG : RemoveElement2 fait\n");
+	
+
    AjouterSousZones(zdest, zdep);
+   printf("DEBUG : AjouterSousZones fait.\n");
 
    EffacerParcours(psrc);
    EffacerParcours(pdest);
+
+   Rearanger(zoneprinc);
+   printf("DEBUG : Rearanger fait.\n\n");
 }
 
 void ReDimensionner(Element * bulleprinc, zone * zoneprinc, int x, int y, int newx, int newy)
@@ -459,12 +502,17 @@ void ReDimensionner(Element * bulleprinc, zone * zoneprinc, int x, int y, int ne
    EffacerParcours(p);
 }
 
+
+/*! Effacer
+ *
+ *
+ */
 void Effacer(Element * bulleprinc, zone * zoneprinc, int x, int y)
 {
    parcours * p;
    zone * z;
    Element * b;
-
+   printf("Effacer\n");
    p = TrouverParcours(zoneprinc, x, y);
    z = LireZoneParcoursPartiel(zoneprinc, p , LireParcoursTaille(p) - 1);
    b = LireElementParcoursPartiel(bulleprinc, p , LireParcoursTaille(p) - 1);
@@ -500,6 +548,9 @@ void traceZone(zone * zone, int level, int numero)
    return;
 }
 
+/*! Affiche la trace de la parcours
+ *
+ */
 void traceParcours(parcours *p)
 {
    int i;
@@ -512,3 +563,31 @@ void traceParcours(parcours *p)
 
    return;
 }
+
+/* Deplacer original
+ *
+void Deplacer(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, int destX, int destY)
+{
+   parcours * psrc, * pdest;
+   zone * zsrc, * zdep, * zdest;
+   Element * bsrc, * bdep, * bdest;
+
+   psrc = TrouverParcours(zoneprinc, srcX, srcY);
+   zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
+   bsrc = LireElementParcoursPartiel(bulleprinc, psrc, LireParcoursTaille(psrc) - 1);
+   zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
+   bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
+   pdest = TrouverParcoursBulle(bulleprinc, zoneprinc, destX, destY);
+   zdest = LireZoneParcours(zoneprinc, pdest);
+   bdest = LireElementParcours(bulleprinc, pdest);
+
+   EnleverSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc))); 
+   RemoveElement(bsrc, LirePosition(psrc,LireParcoursTaille(psrc)));
+   TranslaterZone(zdep, destX - srcX, destY - srcY);
+   AddElement(bdest, bdep);
+   AjouterSousZones(zdest, zdep);
+
+   EffacerParcours(psrc);
+   EffacerParcours(pdest);
+}
+*/

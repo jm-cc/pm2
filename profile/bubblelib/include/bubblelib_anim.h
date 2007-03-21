@@ -52,11 +52,19 @@ extern float OPTIME; /* Operation time */
 /*******************************************************************************
  * Entity
  */
+
+/* Hack to avoid enumerator redeclaration errors in bubblegum. */
+#ifndef BUBBLELIB_PRIV_ENTITIES_TYPE
 enum entity_type {
 	BUBBLE,
 	THREAD,
 	RUNQUEUE,
 };
+#else
+enum entity_type {
+    BUBBLELIB_ENTITIES_TYPE_UNUSED
+};
+#endif
 
 typedef struct entity_s {
 	float x, y;		/* position */
@@ -74,6 +82,7 @@ typedef struct entity_s {
 	struct bubble_s *bubble_holder;	/* holding bubble */
 	int leaving_holder;	/* are we leaving our holder (special case for animations) */
 	int nospace;		/* in the case of explosion, space used by an entity might actually be already reserved by the holding bubble */
+	int id;			/* ID of the entity */
 } entity_t;
 
 /*******************************************************************************
@@ -126,7 +135,7 @@ typedef struct {
 	entity_t entity;
 	state_t state;
 	char *name;
-	int id, number;
+	int number;
 	rq_t *initrq;
 } thread_t;
 thread_t *newThread (int prio, rq_t *initrq);

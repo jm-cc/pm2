@@ -1,10 +1,18 @@
-/**********************************************************************
- * File  : actions.c
- * Author: Dufour Florent
- *         mailto:dufour@enseirb.fr
- * Date  : 27/03/2006
- *********************************************************************/
-
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2006 Florent DUFOUR <mailto:dufour@enseirb.fr>
+ * Copyright (C) 2007 Raphaël BOIS <mailto:bois@enseirb.fr>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -14,6 +22,14 @@
 #include "actions.h"
 #include "load.h"
 #include "geneC.h"
+
+#include "bubble_gl_anim.h"
+
+/* avoid enumerator redeclaration error. */
+#define BUBBLELIB_PRIV_ENTITIES_TYPE 1
+#include "bubblelib_anim.h"
+
+/*********************************************************************/
 
 void Quitter(GtkWidget *widget, gpointer data)
 {
@@ -53,6 +69,8 @@ void Quitter(GtkWidget *widget, gpointer data)
    }
 }
 
+/*********************************************************************/
+
 void A_Propos(GtkWidget *widget, gpointer data)
 {
    GtkWidget *dialog;
@@ -63,7 +81,7 @@ void A_Propos(GtkWidget *widget, gpointer data)
    if (widget == NULL)
       return;
     
-   /* Création boîte de dialogue centrée avec boutton standard OK*/
+   /* Création boÃ®te de dialogue centrée avec boutton standard OK*/
    dialog = gtk_dialog_new_with_buttons("A Propos ...", GTK_WINDOW(data),
                                         GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
                                         "_Ok", GTK_RESPONSE_OK, NULL);
@@ -92,6 +110,8 @@ void A_Propos(GtkWidget *widget, gpointer data)
    /*La seule action possible */
    gtk_widget_destroy(dialog);
 }
+
+/*********************************************************************/
 
 void Aide(GtkWidget *widget, gpointer data)
 {
@@ -125,7 +145,7 @@ void Aide(GtkWidget *widget, gpointer data)
                          "Ctrl + Haut : Recentre les interfaces\n"
 			 "t : Ajouter un thread\n"
 			 "b : Ajouter une bulle\n"
-			 "Suppr : Supprimer l'�l�ment s�lectionn�\n"
+			 "Suppr : Supprimer l'élément sélectionné\n"
                          "F1 : Aide\n");
                          
    gtk_box_pack_start(GTK_BOX(hbox), infos, FALSE, FALSE, 10);
@@ -140,6 +160,8 @@ void Aide(GtkWidget *widget, gpointer data)
    gtk_widget_destroy(dialog);
 }
 
+/*********************************************************************/
+
 void Nouveau(GtkWidget *widget, gpointer data)
 {
    /* XXX: memleak !! */
@@ -147,6 +169,8 @@ void Nouveau(GtkWidget *widget, gpointer data)
    iGaucheVars->zonePrincipale = iGaucheVars->zoneSelectionnee = CreerZone(0,0,200,100);
    Rearanger(iGaucheVars->zonePrincipale);
 }
+
+/*********************************************************************/
 
 void Ouvrir(GtkWidget *widget, gpointer data)
 {
@@ -164,7 +188,7 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 
    gtk_window_set_position(GTK_WINDOW(FileSelection), GTK_WIN_POS_CENTER_ON_PARENT);
    
-   /* On limite les actions à cette fenêtre */
+   /* On limite les actions Ã  cette fenÃªtre */
    gtk_window_set_modal(GTK_WINDOW(FileSelection), TRUE);
     
    /* Affichage fenetre */
@@ -186,6 +210,8 @@ void Ouvrir(GtkWidget *widget, gpointer data)
          break;
    }
 }
+
+/*********************************************************************/
 
 void Enregistrer(GtkWidget *widget, gpointer data)
 {
@@ -226,6 +252,8 @@ void Enregistrer(GtkWidget *widget, gpointer data)
    }
 }
 
+/*********************************************************************/
+
 void Basculement_gauche(GtkWidget *widget, gpointer data)
 {
    /* data pointe vers une structure BiWidget    */
@@ -240,6 +268,8 @@ void Basculement_gauche(GtkWidget *widget, gpointer data)
    gtk_paned_set_position(GTK_PANED(((BiWidget*)data)->wg2), width);
 }
 
+/*********************************************************************/
+
 void Centrage_interfaces(GtkWidget *widget, gpointer data)
 {
    if (widget == NULL)
@@ -250,6 +280,8 @@ void Centrage_interfaces(GtkWidget *widget, gpointer data)
    gtk_paned_set_position(GTK_PANED((((BiWidget*)data)->wg2)), (gint)(width / 2)- 2);
 }
 
+/*********************************************************************/
+
 void Basculement_droite(GtkWidget *widget, gpointer data)
 {
    if (widget == NULL)
@@ -258,115 +290,253 @@ void Basculement_droite(GtkWidget *widget, gpointer data)
    gtk_paned_set_position(GTK_PANED(data), 0);
 }
 
+/*********************************************************************/
+
 void Basculement_gauche_hotkey(gpointer data)
 {
    /* fonction spéciale a un seul argument pour la closure des raccourcis */
    Basculement_gauche(((BiWidget*)data)->wg1, data);
 }
 
+/*********************************************************************/
+
 void Centrage_interfaces_hotkey(gpointer data)
 {
    Centrage_interfaces(((BiWidget*)data)->wg1, data);
 }
+
+/*********************************************************************/
 
 void Basculement_droite_hotkey(gpointer data)
 {
    Basculement_droite(((BiWidget*)data)->wg1, data);
 }
 
-void Executer(GtkWidget *widget, gpointer data)
-{
-   GtkWidget *dialog;
-   GtkWidget *progress_bar;
-   GtkWidget *infos;
 
-   dialog = gtk_dialog_new_with_buttons("Exécution de l'ordonnanceur ...",
-                                        GTK_WINDOW(data), GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
-                                        "_Progression de 20%", GTK_RESPONSE_ACCEPT, "_Ok", GTK_RESPONSE_OK, NULL);
+/* TODO: move in a header */
+#define STRING_BUFFER_SIZE 1024
+
+/*! Initializes the execution dialog box.
+ *
+ *  \param pdialog  a pointer of pointer to receive the dialog box.
+ *  \param pprogressBar
+ *                  a pointer of pointer to receive the progress bar.
+ *  \param pinfos   a pointer of pointer to receive the info label.
+ *  \param data     user data.
+ *
+ *  \warning The dialog box don't currently displays.
+ */
+static void
+initExecDialog (GtkWidget **pdialog, GtkWidget **pprogressBar,
+                GtkWidget **pinfos, gpointer data) {
+    GtkWidget *dialog;
+    GtkWidget *progressBar;
+    GtkWidget *infos;
+
+    dialog =
+        gtk_dialog_new_with_buttons("Exécution de l'ordonnanceur ...",
+                                    GTK_WINDOW(data),
+                                    GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
+                                    "_Progression de 20%", GTK_RESPONSE_ACCEPT,
+                                    "_Ok", GTK_RESPONSE_OK, NULL);
                 
-   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+    gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
    
-   infos = gtk_label_new("L'ordonnenceur PM2 est en train de s'éxecuter\n\nSoyez patient ...");
+    infos = gtk_label_new("L'ordonnanceur PM2 est en train de s'exécuter\n"
+                          "\n"
+                          "Soyez patient ...");
 
-   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), infos, TRUE, FALSE, 10);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), infos,
+                       TRUE, FALSE, 10);
    
-   progress_bar = gtk_progress_bar_new();
-   gtk_progress_bar_set_orientation(GTK_PROGRESS_BAR(progress_bar), GTK_PROGRESS_LEFT_TO_RIGHT);
-   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), progress_bar, TRUE, FALSE, 10);
+    progressBar = gtk_progress_bar_new();
+    gtk_progress_bar_set_orientation(GTK_PROGRESS_BAR(progressBar),
+                                     GTK_PROGRESS_LEFT_TO_RIGHT);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), progressBar,
+                       TRUE, FALSE, 10);
    
-   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
-   
-   // XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
-   gtk_main_iteration_do(FALSE);
-   gen_fichier_C(iGaucheVars->bullePrincipale);
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
-   gtk_main_iteration_do(FALSE);
-   system("make -f " GENEC_MAKEFILE " " GENEC_NAME);
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.4);
-   gtk_main_iteration_do(FALSE);
-   system("pm2load " GENEC_NAME " --marcel-nvp 4 --marcel-maxarity 2");
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.8);
-   gtk_main_iteration_do(FALSE);
-   char tracefile[1024];
-   snprintf(tracefile,sizeof(tracefile),"/tmp/prof_file_user_%s",getenv("USER"));
-   AnimationReset(anim, tracefile);
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
-   gtk_main_iteration_do(FALSE);
-   gtk_widget_destroy(dialog);
+    gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
+	
+	/* XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run */
+    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progressBar), 0);
+    gtk_main_iteration_do(FALSE);
+
+	if (pdialog)
+        *pdialog = dialog;
+	if (pprogressBar)
+        *pprogressBar = progressBar;
+	if (pinfos)
+        *pinfos = infos;
 }
 
+/*! Destroys the Dialog box. 
+ *
+ *  \param dialog   a pointer to a GtkWidget.
+ *  \param progressBar
+ *                  a pointer to a GtkProgressBar.
+ *  \param infos    a pointer to a GtkLabel.
+ */
+static void
+destroyExecDialog (GtkWidget *dialog, GtkWidget *progressBar,
+                   GtkWidget *infos) {
+    gtk_widget_destroy (dialog);
+
+    dialog      = NULL;
+    progressBar = NULL;
+    infos       = NULL;
+}
+
+/*! Runs a system command.
+ *  \param command_fmt
+ *                  a printf format string.
+ *  \param ...
+ */
+static void
+runCommand (const char *command_fmt, ...) {
+    va_list vl;
+    
+	gchar command[STRING_BUFFER_SIZE] = "";
+	int ret;
+    
+    va_start (vl, command_fmt);
+    
+	/* TODO: dynamic size ? */
+	vsnprintf (command, sizeof (command), command_fmt, vl);
+    
+    ret = system (command);
+    
+    if (!WIFEXITED (ret)) {
+        if (WIFSIGNALED (ret)) {
+            printf ("command got signal %d\n", WTERMSIG (ret));
+            
+            if (WCOREDUMP (ret))
+                printf ("core dumped\n");
+        } else
+            printf ("return status %d\n", ret);
+    }
+	
+    va_end (vl);
+}
+
+
+/*! Generates a trace.
+ *
+ *  \param progress_bar
+ *                  a pointer to a GtkProgressBar.
+ *  \param pb_start an integer representing the start value of the progress bar.
+ *  \param pb_step  an integer representing the step value for the progress bar.
+ */
+static void
+generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {  
+    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
+    gtk_main_iteration_do(FALSE);
+    pb_start += pb_step;
+  
+    gen_fichier_C (GENEC_NAME ".c", iGaucheVars->bullePrincipale);
+
+    runCommand ("make -f " GENEC_MAKEFILE " " GENEC_NAME);
+
+    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
+    gtk_main_iteration_do(FALSE);
+    pb_start += pb_step;
+
+    runCommand ("pm2load " GENEC_NAME " --marcel-nvp 4 --marcel-maxarity 2");
+  
+    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
+    gtk_main_iteration_do(FALSE);
+    pb_start += pb_step;
+
+}
+
+
+/*! Builds openGL animation and runs it.
+ *
+ */
+void Executer(GtkWidget *widget, gpointer data) {
+    GtkWidget *dialog       = NULL;
+    GtkWidget *progress_bar = NULL;
+    GtkWidget *infos        = NULL;
+    
+    gchar tracefile[STRING_BUFFER_SIZE] = "";
+
+    BubbleMovie mymovie;
+    
+    initExecDialog (&dialog, &progress_bar, &infos, data);
+    
+    generateTrace (progress_bar, 0, 0.2);
+
+    snprintf (tracefile, sizeof (tracefile),
+              "/tmp/prof_file_user_%s", getenv ("USER"));
+
+    /* Generates BGLMovie */
+    BubbleOps_setBGL();
+    mymovie = newBubbleMovieFromFxT (tracefile, NULL);
+
+    /* \todo for Debug purpose : Do not remove the movie here. */
+    destroyBGLMovie (mymovie);
+
+    AnimationReset(anim, tracefile);
+
+    destroyExecDialog (dialog, progress_bar, infos);
+}
+
+/*! Builds Flash animation and runs it.
+ *
+ */
 void ExecuterFlash(GtkWidget *widget, gpointer data)
 {
-   GtkWidget *dialog;
-   GtkWidget *progress_bar;
-   GtkWidget *infos;
+    GtkWidget *dialog       = NULL;
+    GtkWidget *progress_bar = NULL;
+    GtkWidget *infos        = NULL;
 
-   dialog = gtk_dialog_new_with_buttons("Exécution de l'ordonnanceur ...",
-                                        GTK_WINDOW(data), GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
-                                        "_Progression de 20%", GTK_RESPONSE_ACCEPT, "_Ok", GTK_RESPONSE_OK, NULL);
-                
-   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
-   
-   infos = gtk_label_new("L'ordonnenceur PM2 est en train de s'éxecuter\n\nSoyez patient ...");
+    /*! \todo use user defined output file. */
+    const char *out_file = "autobulles.swf";
+    
+    BubbleMovie mymovie;
 
-   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), infos, TRUE, FALSE, 10);
-   
-   progress_bar = gtk_progress_bar_new();
-   gtk_progress_bar_set_orientation(GTK_PROGRESS_BAR(progress_bar), GTK_PROGRESS_LEFT_TO_RIGHT);
-   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), progress_bar, TRUE, FALSE, 10);
-   
-   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
-   
-   // XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
-   gtk_main_iteration_do(FALSE);
-   gen_fichier_C(iGaucheVars->bullePrincipale);
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.2);
-   gtk_main_iteration_do(FALSE);
-   char command[1024];
-   snprintf(command,sizeof(command),"make -f "GENEC_MAKEFILE" "GENEC_NAME" && pm2load "GENEC_NAME" --marcel-nvp 4 --marcel-maxarity 2 && bubbles -x 1024 -y 800 -d /tmp/prof_file_user_%s && "
-#ifdef DARWIN_SYS
-	    "open"
-#else
-	    "realplay"
+    gchar tracefile[STRING_BUFFER_SIZE] = "";
+
+    initExecDialog (&dialog, &progress_bar, &infos, data);	
+    
+    generateTrace (progress_bar, 0, 0.2);
+
+    snprintf (tracefile, sizeof (tracefile),
+              "/tmp/prof_file_user_%s", getenv ("USER"));
+
+    /* Generates BGLMovie */
+    BubbleOps_setSWF();
+    
+    MOVIEX = 1024;  /* -x bubbles cl arg. */
+    MOVIEY = 800;   /* -y bubbles cl arg. */
+
+    mymovie = newBubbleMovieFromFxT (tracefile, out_file);
+
+#if 0 /*! \todo implements destroySWFMovie */
+    destroyBubbleMovie (mymovie);
 #endif
-	    " autobulles.swf &",getenv("USER"));
-   int ret = system(command);
-   if (!WIFEXITED(ret)) {
-   	if (WIFSIGNALED(ret)) {
-		printf("command got signal %d\n",WTERMSIG(ret));
-		if (WCOREDUMP(ret))
-			printf("core dumped\n");
-	} else
-		printf("return status %d\n", ret);
-   }
-   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 1);
-   gtk_main_iteration_do(FALSE);
-   gtk_widget_destroy(dialog);
+
+    runCommand (
+#if 0
+                "bubbles -x 1024 -y 800 -d %s && "
+#endif
+                "%s %s &",
+#if 0
+                tracefile,
+#endif
+# ifdef DARWIN_SYS
+                "open",
+# else
+                "realplay",
+# endif
+                out_file
+                );
+    
+    
+    destroyExecDialog (dialog, progress_bar, infos);
 }
+
+/*********************************************************************/
 
 void Temp(GtkWidget *widget, gpointer data)
 {
@@ -378,7 +548,7 @@ void Temp(GtkWidget *widget, gpointer data)
    if (widget == NULL)
       return;
 
-   /* Création boîte de dialogue centrée avec boutton standard OK*/
+   /* Création boÃ®te de dialogue centrée avec boutton standard OK*/
    dialog = gtk_dialog_new_with_buttons("Information", GTK_WINDOW(data),
                                         GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
                                         "_Ok", GTK_RESPONSE_OK, NULL);
@@ -406,9 +576,11 @@ void Temp(GtkWidget *widget, gpointer data)
 
 }
 
+/*********************************************************************/
+
 void gtk_main_quit2(GtkWidget* widget, gpointer data)
 {
-   widget = NULL;  // étiver le warning
+   widget = NULL;  // éviter le warning
    
    printf("fin du programme\n");
    

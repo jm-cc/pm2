@@ -14,6 +14,7 @@
 # General Public License for more details.
 
 export FLAVOR_DEFAULT:=marcel-bubblegum
+CFLAGS += -I${MOD_GEN_INC}
 
 include $(PM2_ROOT)/make/apps.mak
 

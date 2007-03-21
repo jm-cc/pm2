@@ -3,15 +3,18 @@
 
 #include "interfaceGaucheDessin.h"
 
-
+/*!
+ *
+ * \todo penser à enlever les id
+ */
 typedef struct DataAddThread_tag
 {
-      interfaceGaucheVars * iGaucheVars;
-      GtkWidget *popup;
-      GtkWidget *nomEntry;
-      GtkWidget *idEntry;
-      GtkWidget *prioriteScrollbar;
-      GtkWidget *chargeScrollbar;
+  interfaceGaucheVars * iGaucheVars;
+  GtkWidget *popup;
+  GtkWidget *nomEntry;
+  GtkWidget *idEntry; 
+  GtkWidget *prioriteScrollbar;
+  GtkWidget *chargeScrollbar;
 }DataAddThread;
 
 typedef struct DataAddBulle_tag

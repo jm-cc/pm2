@@ -8,4 +8,4 @@
 #define GENEC_MAKEFILE "Makefile_bubblegum"
 
 int parcourir_bulle(Element*, int, int);
-int gen_fichier_C(Element *);
+int gen_fichier_C(const char *file, Element *root);

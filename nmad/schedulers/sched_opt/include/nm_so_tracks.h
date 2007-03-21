@@ -26,6 +26,7 @@
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_parameters.h"
+#include "nm_so_debug.h"
 
 static __inline__
 void
@@ -164,6 +165,8 @@ _nm_so_post_send(struct nm_gate *p_gate,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
   p_so_pw->pw.p_gate = p_gate;
+
+  NM_SO_TRACE_LEVEL(3, "Packet posted on track %d\n", track_id);
 
   /* Packet is assigned to given track */
   p_so_pw->pw.p_drv = (p_so_pw->pw.p_gdrv =

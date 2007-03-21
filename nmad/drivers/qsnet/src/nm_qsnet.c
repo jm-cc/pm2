@@ -411,7 +411,7 @@ nm_qsnet_accept		(struct nm_cnx_rq *p_crq) {
         {
                 ELAN_EVENT	*ev	= NULL;
                 int tag;
-                u_int size;
+                size_t size;
 
                 ev	= elan_tportRxStart(p, 0, 0, 0, -1, 1, &pkt, sizeof(pkt));
                 elan_tportRxWait(ev, &remote_proc, &tag, &size);

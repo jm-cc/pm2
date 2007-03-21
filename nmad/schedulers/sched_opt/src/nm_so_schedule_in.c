@@ -193,6 +193,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       *status = 0;
 
       interface->unpack_success(p_gate, tag, seq, tbx_false);
+      p_so_gate->recv[tag][seq].unpack_here.len = len;
 
     } else {
       /* Data not yet received */
@@ -219,7 +220,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 
     /* Check if the RdV request is already in */
     if(*status & NM_SO_STATUS_RDV_HERE) {
-      /* A RdV request has already been received for this chunk */
+      NM_SO_TRACE("A RdV request has already been received for this chunk\n");
 
       *status = 0;
 
@@ -228,7 +229,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       goto out;
 
     } else {
-      /* No RdV request has been received */
+      NM_SO_TRACE("No RdV request has been received\n");
 
       p_so_gate->pending_unpacks++;
 
@@ -504,9 +505,10 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     } else
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
 
-    NM_SO_TRACE("Large received (%lld bytes) on drv %d, seq = %d\n", p_pw->length, drv_id, p_pw->seq);
+    NM_SO_TRACE("Large received (%lld bytes) on drv %d, seq = %d\n", (long long)p_pw->length, drv_id, p_pw->seq);
 
     p_so_gate->active_recv[drv_id][TRK_LARGE] = 0;
+    p_so_gate->recv[tag][p_so_pw->pw.seq].unpack_here.len = p_pw->length;
 
     /* Free the wrapper */
     nm_so_pw_free(p_so_pw);

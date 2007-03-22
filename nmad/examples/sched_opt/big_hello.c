@@ -53,12 +53,12 @@ main(int	  argc,
 
 		  memset(buf, ' ', SIZE);
 		  dst = buf;
-		  src = msg_beg;
+		  src = (char *)msg_beg;
 		  while(*src)
 		    *dst++ = *src++;
 
 		  dst = buf + SIZE - strlen(msg_end);
-		  src = msg_end;
+		  src = (char *)msg_end;
 		  while(*src)
 		    *dst++ = *src++;
 

@@ -46,8 +46,7 @@
 
 static int data_handler(struct nm_so_pkt_wrap *p_so_pw, 
 			void *ptr, uint32_t len,
-			uint8_t proto_id, uint8_t seq,
-			void *arg)
+			uint8_t proto_id, uint8_t seq)
 {
   printf("Data header : data = %p [%s], len = %u, tag = %d, seq = %u\n",
 	 ptr, ptr, len, proto_id, seq);
@@ -56,10 +55,9 @@ static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
 }
 
 static int rdv_handler(struct nm_so_pkt_wrap *p_so_pw, 
-		       uint8_t tag_id, uint8_t seq,
-		       void *arg)
+		       uint8_t tag_id, uint8_t seq, uint32_t len)
 {
-  printf("Rdv header : tag = %d, seq = %u\n", tag_id, seq);
+  printf("Rdv header : tag = %d, seq = %u, len = %u\n", tag_id, seq, len);
 
   return NM_SO_HEADER_MARK_UNREAD;
 }
@@ -106,7 +104,7 @@ main(int	  argc,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, TAG0, 2);
+      nm_so_init_rdv(&ctrl, TAG0, 2, 4 + 2 + 5);
 
       nm_so_pw_add_control(p_so_pw, &ctrl);
     }

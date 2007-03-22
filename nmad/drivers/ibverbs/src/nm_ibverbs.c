@@ -70,7 +70,7 @@ static const int nm_ibverbs_adaptrdma_step_overrun      = 12  * 1024;
 static const int nm_ibverbs_adaptrdma_reg_threshold     = 384 * 1024;
 static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 
-#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (256 * 1024)
+#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (512 * 1024)
 #define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header))
 
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
@@ -78,6 +78,8 @@ static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_BEG 0x04
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
 
+
+#define NM_IBVERBS_AUTO_THRESHOLD (224 * 1024)
 
 /** list of WRIDs used in the driver.
  */
@@ -355,15 +357,20 @@ static void nm_ibverbs_addr_send(const struct nm_ibverbs_cnx_addr*addr,
 				 const struct nm_ibverbs_gate*p_ibverbs_gate)
 {
 	int rc = send(p_ibverbs_gate->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
-	assert(rc == sizeof(struct nm_ibverbs_cnx_addr));
-
+	if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
+		fprintf(stderr, "Infiniband: cannot send address to peer.\n");
+		abort();
+	}
 }
 
 static void nm_ibverbs_addr_recv(struct nm_ibverbs_cnx_addr*addr,
 				 const struct nm_ibverbs_gate*p_ibverbs_gate)
 {
 	int rc = recv(p_ibverbs_gate->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
-	assert(rc == sizeof(struct nm_ibverbs_cnx_addr));
+	if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
+		fprintf(stderr, "Infiniband: cannot get address from peer.\n");
+		abort();
+	}
 }
 
 static void nm_ibverbs_addr_pack(struct nm_ibverbs_cnx*p_ibverbs_cnx,
@@ -372,19 +379,19 @@ static void nm_ibverbs_addr_pack(struct nm_ibverbs_cnx*p_ibverbs_cnx,
 	int n = 0;
 
 	if(p_ibverbs_trk->kind & NM_IBVERBS_TRK_BYCOPY) {
-		p_ibverbs_cnx->local_addr.segments[n].kind  = p_ibverbs_trk->kind;
+		p_ibverbs_cnx->local_addr.segments[n].kind  = NM_IBVERBS_TRK_BYCOPY;
 		p_ibverbs_cnx->local_addr.segments[n].raddr = (uintptr_t)&p_ibverbs_cnx->bycopy.buffer;
 		p_ibverbs_cnx->local_addr.segments[n].rkey  = p_ibverbs_cnx->bycopy.mr->rkey;
 		n++;
 	}
 	if(p_ibverbs_trk->kind & NM_IBVERBS_TRK_REGRDMA) {
-		p_ibverbs_cnx->local_addr.segments[n].kind  = p_ibverbs_trk->kind;
+		p_ibverbs_cnx->local_addr.segments[n].kind  = NM_IBVERBS_TRK_REGRDMA;
 		p_ibverbs_cnx->local_addr.segments[n].raddr = (uintptr_t)&p_ibverbs_cnx->regrdma.headers;
 		p_ibverbs_cnx->local_addr.segments[n].rkey  = p_ibverbs_cnx->regrdma.mr->rkey;
 		n++;
 	}
 	if(p_ibverbs_trk->kind & NM_IBVERBS_TRK_ADAPTRDMA) {
-		p_ibverbs_cnx->local_addr.segments[n].kind  = p_ibverbs_trk->kind;
+		p_ibverbs_cnx->local_addr.segments[n].kind  = NM_IBVERBS_TRK_ADAPTRDMA;
 		p_ibverbs_cnx->local_addr.segments[n].raddr = (uintptr_t)&p_ibverbs_cnx->adaptrdma.buffer;
 		p_ibverbs_cnx->local_addr.segments[n].rkey  = p_ibverbs_cnx->adaptrdma.mr->rkey;
 		n++;
@@ -406,6 +413,10 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 			break;
 		case NM_IBVERBS_TRK_ADAPTRDMA:
 			p_ibverbs_cnx->adaptrdma.seg = addr->segments[i];
+			break;
+		default:
+			fprintf(stderr, "Infiniband: got unknown address kind.\n");
+			abort();
 			break;
 		}
 	}
@@ -561,19 +572,12 @@ static int nm_ibverbs_open_trk(struct nm_trk_rq	*p_trk_rq)
         }
         p_trk->priv = p_ibverbs_trk;
 	if(p_trk_rq->cap.rq_type == nm_trk_rq_rdv)
-		p_ibverbs_trk->kind = NM_IBVERBS_TRK_REGRDMA; /* XXX */
+		p_ibverbs_trk->kind = NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO; /* XXX */
 	else
 		p_ibverbs_trk->kind = NM_IBVERBS_TRK_BYCOPY;
 	switch(p_ibverbs_trk->kind) {
+	case NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO:
 	case NM_IBVERBS_TRK_REGRDMA:
-		p_trk->cap.rq_type  = nm_trk_rq_rdv;
-		p_trk->cap.iov_type = nm_trk_iov_none;
-		p_trk->cap.max_pending_send_request	= 1;
-		p_trk->cap.max_pending_recv_request	= 1;
-		p_trk->cap.max_single_request_length	= SSIZE_MAX;
-		p_trk->cap.max_iovec_request_length	= 0;
-		p_trk->cap.max_iovec_size		= 1;
-		break;
 	case NM_IBVERBS_TRK_ADAPTRDMA:
 		p_trk->cap.rq_type  = nm_trk_rq_rdv;
 		p_trk->cap.iov_type = nm_trk_iov_none;
@@ -593,6 +597,8 @@ static int nm_ibverbs_open_trk(struct nm_trk_rq	*p_trk_rq)
 		p_trk->cap.max_iovec_size		= 0;
 		break;
 	default:
+		fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_trk->kind, __FUNCTION__);
+		abort();
 		break;
 	}
 	err = NM_ESUCCESS;
@@ -858,7 +864,6 @@ static int nm_ibverbs_accept(struct nm_cnx_rq *p_crq)
         struct nm_drv	     *p_drv	    = p_crq->p_drv;
 	struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
         struct nm_trk	     *p_trk	    = p_crq->p_trk;
-	int rc = -1;
 	int err = nm_ibverbs_gate_create(p_crq);
 	if(err)
 		goto out;
@@ -1533,6 +1538,14 @@ static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 	int err = NM_ESUCCESS;
 	p_pw->drv_priv = p_ibverbs_cnx;
 	switch(p_ibverbs_trk->kind) {
+	case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
+	case NM_IBVERBS_TRK_AUTO:
+		if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD) {
+			nm_ibverbs_regrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
+		} else {
+			nm_ibverbs_adaptrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
+		}
+		break;
 	case NM_IBVERBS_TRK_BYCOPY:
 		nm_ibverbs_bycopy_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
 		break;
@@ -1543,6 +1556,7 @@ static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 		nm_ibverbs_adaptrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
 		break;
 	default:
+		fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_trk->kind, __FUNCTION__);
 		abort();
 		break;
 	}
@@ -1556,6 +1570,14 @@ static int nm_ibverbs_poll_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
 	int err = -NM_EUNKNOWN;
 	switch(p_ibverbs_trk->kind) {
+	case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
+	case NM_IBVERBS_TRK_AUTO:
+		if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD) {
+			err = nm_ibverbs_regrdma_send_poll(p_ibverbs_cnx);
+		} else {
+			err = nm_ibverbs_adaptrdma_send_poll(p_ibverbs_cnx);
+		}
+		break;
 	case NM_IBVERBS_TRK_BYCOPY:
 		err = nm_ibverbs_bycopy_send_poll(p_ibverbs_cnx);
 		break;
@@ -1566,6 +1588,7 @@ static int nm_ibverbs_poll_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 		err = nm_ibverbs_adaptrdma_send_poll(p_ibverbs_cnx);
 		break;
 	default:
+		fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_trk->kind, __FUNCTION__);
 		abort();
 		break;
 	}
@@ -1577,19 +1600,25 @@ static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,
 {
 	const struct nm_ibverbs_trk*__restrict p_ibverbs_trk = p_pw->p_trk->priv;
 	switch(p_ibverbs_trk->kind) {
+	case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
+	case NM_IBVERBS_TRK_AUTO:
+		if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD) {
+			nm_ibverbs_regrdma_recv_init(p_pw, p_ibverbs_cnx);
+		} else {
+			nm_ibverbs_adaptrdma_recv_init(p_pw, p_ibverbs_cnx);
+		}
+		break;
 	case NM_IBVERBS_TRK_BYCOPY:
 		nm_ibverbs_bycopy_recv_init(p_pw, p_ibverbs_cnx);
 		break;
-
 	case NM_IBVERBS_TRK_REGRDMA:
 		nm_ibverbs_regrdma_recv_init(p_pw, p_ibverbs_cnx);
 		break;
-
 	case NM_IBVERBS_TRK_ADAPTRDMA:
 		nm_ibverbs_adaptrdma_recv_init(p_pw, p_ibverbs_cnx);
 		break;
-
 	default:
+		fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_trk->kind, __FUNCTION__);
 		abort();
 		break;
 	}
@@ -1600,6 +1629,16 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
 {
 	const struct nm_ibverbs_trk*__restrict p_ibverbs_trk = p_pw->p_trk->priv;
 	switch(p_ibverbs_trk->kind) {
+	case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
+	case NM_IBVERBS_TRK_AUTO:
+		if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD) {
+			assert(p_pw->p_gate != NULL);
+			return nm_ibverbs_regrdma_poll_one(p_ibverbs_cnx);
+		} else {
+			assert(p_pw->p_gate != NULL);
+			return nm_ibverbs_adaptrdma_poll_one(p_ibverbs_cnx);
+		}
+		break;
 	case NM_IBVERBS_TRK_BYCOPY:
 		return nm_ibverbs_bycopy_poll_one(p_ibverbs_cnx);
 		break;
@@ -1615,6 +1654,7 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
 		break;
 
 	default:
+		fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_trk->kind, __FUNCTION__);
 		abort();
 		break;
 	}

@@ -230,8 +230,10 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 #endif
 
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
-	if (!bubble->nbentities)
+	if (!bubble->nbentities) {
+		MA_BUG_ON(!list_empty(&bubble->heldentities));
 		marcel_sem_P(&bubble->join);
+	}
 
 #ifdef MARCEL_BUBBLE_STEAL
 	h = ma_entity_holder_lock_softirq(entity);
@@ -427,6 +429,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 	LOG_IN();
 	marcel_sem_P(&bubble->join);
 	h = ma_entity_holder_lock_softirq(&bubble->sched);
+	MA_BUG_ON(bubble->nbentities);
 	MA_BUG_ON(!list_empty(&bubble->heldentities));
 	if (bubble->sched.run_holder) {
 		if (bubble->sched.holder_data)

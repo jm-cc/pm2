@@ -214,21 +214,23 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	top_printf("  %*s %*s %2s %4s%% %2s %2s %10s %10s %10s\r\n",
 		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
-	marcel_freeze_sched();
 #ifdef MA__BUBBLES
 	if (bubbles) {
 		ma_bubble_synthesize_stats(&marcel_root_bubble);
+		ma_bubble_lock_all(&marcel_root_bubble,marcel_machine_level);
 		printbubble(&marcel_root_bubble, 0);
+		ma_bubble_unlock_all(&marcel_root_bubble,marcel_machine_level);
 	} else
 #endif
 	{
+		marcel_freeze_sched();
 		marcel_threadslist(NBPIDS,pids,&nbpids,0);
 		if (nbpids > NBPIDS)
 			nbpids = NBPIDS;
 		for (;nbpids;nbpids--)
 			printtask(pids[nbpids-1]);
+		marcel_unfreeze_sched();
 	}
-	marcel_unfreeze_sched();
 }
 
 static void marcel_top_tick(unsigned long foo) {

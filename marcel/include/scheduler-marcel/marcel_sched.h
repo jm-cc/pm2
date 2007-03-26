@@ -216,6 +216,11 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #endif
 			h;
 	} else do {
+#ifndef MARCEL_BUBBLE_EXPLODE
+		ma_runqueue_t *rq;
+		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
+			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
+		else {
 #ifdef MA__BUBBLES
 		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
 		if (!b->sched.init_holder) {
@@ -249,11 +254,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			break;
 #endif
 #endif
-#ifndef MARCEL_BUBBLE_EXPLODE
-		ma_runqueue_t *rq;
-		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
-			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
-		else {
 #ifdef MA__LWPS
 		rq = NULL;
 		switch (internal->entity.sched_policy) {

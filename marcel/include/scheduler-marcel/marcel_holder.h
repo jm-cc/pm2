@@ -70,11 +70,13 @@ struct ma_holder {
 	enum marcel_holder type;
 	/** \brief Lock of holder */
 	ma_spinlock_t lock;
-	/** \brief Number of running held entities */
+	/** \brief List of entities placed for schedule in this holder */
+	struct list_head sched_list;
+	/** \brief Number of entities in the list above */
 	unsigned long nr_running;
 	/** \brief Number of interruptibly blocked held entities */
 	unsigned long nr_uninterruptible;
-	/** \brief Number of entities that are currently scheduled on processors */
+	/** \brief Number of entities that are currently scheduled on processors (maybe broken) */
 	unsigned long nr_scheduled;
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
@@ -85,9 +87,10 @@ struct ma_holder {
 typedef struct ma_holder ma_holder_t;
 
 #section marcel_macros
-#define MA_HOLDER_INITIALIZER(t) { \
+#define MA_HOLDER_INITIALIZER(h, t) { \
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
+	.sched_list = LIST_HEAD_INIT((h).sched_list), \
 	.nr_running = 0, \
 	.nr_uninterruptible = 0, \
 	.nr_scheduled = 0, \
@@ -99,6 +102,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder type) {
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
+	INIT_LIST_HEAD(&h->sched_list);
 	h->nr_running = h->nr_uninterruptible = 0;
 	h->nr_scheduled = 1;
 }
@@ -177,6 +181,8 @@ struct ma_sched_entity {
 	/** \brief List link of entities held in the containing bubble */
 	struct list_head bubble_entity_list;
 #endif
+	/** \brief List of entities placed for schedule in this holder */
+	struct list_head sched_list;
 #ifdef MA__LWPS
 	/** \brief Nesting level */
 	int sched_level;
@@ -456,6 +462,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
+	list_add(&e->sched_list, &h->sched_list);
 	h->nr_running++;
 }
 
@@ -463,6 +470,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
+	MA_BUG_ON(e->run_holder != &rq->hold);
 	ma_array_enqueue_entity(e, rq->active);
 }
 
@@ -569,7 +577,8 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->holder_data);
 	h->nr_running--;
-	MA_BUG_ON(!e->run_holder);
+	list_del(&e->sched_list);
+	MA_BUG_ON(e->run_holder != h);
 	e->run_holder = NULL;
 }
 
@@ -578,6 +587,7 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_
 #section marcel_inline
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->holder_data);
+	MA_BUG_ON(e->run_holder != &rq->hold);
 }
 
 #section marcel_functions

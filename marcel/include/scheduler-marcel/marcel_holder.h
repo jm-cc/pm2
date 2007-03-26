@@ -652,9 +652,9 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 /** \brief Gets entity \e e out from its holder (which must be already locked),
  * returns its state.  If entity is a bubble, its hierarchy is supposed to be
  * already locked.  */
-static __tbx_inline__ int ma_get_entity(marcel_entity_t *e);
+static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e);
 #section marcel_inline
-static __tbx_inline__ int ma_get_entity(marcel_entity_t *e) {
+static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e) {
 	int ret;
 	ma_holder_t *h;
 

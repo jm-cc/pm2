@@ -103,6 +103,7 @@ void __memory_barrier(void);
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
+#  define __tbx_warn_unused_result__	__attribute__((warn_unused_result))
 #  if !defined(AIX_SYS) && !defined(DARWIN_SYS)
 #    define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
 #    define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
@@ -142,6 +143,7 @@ void __memory_barrier(void);
 #  endif
 
 #  define __tbx_attribute_pure__	__attribute__((__pure__))
+#  define __tbx_warn_unused_result__
 #elif __GNUC__ == 2
 #  define __TBX_FUNCTION__		__FUNCTION__
 #  if __GNUC_MINOR__ < 96
@@ -161,6 +163,7 @@ void __memory_barrier(void);
 
 #  define __restrict
 #  define tbx_prefetch(a,...)		(void)0
+#  define __tbx_warn_unused_result__
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif

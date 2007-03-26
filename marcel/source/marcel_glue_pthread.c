@@ -141,6 +141,8 @@ void __pthread_initialize_minimal(void)
      used.  */
   __asm __volatile ("");
 #endif
+
+  // TODO: call libc_pthread_init
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 

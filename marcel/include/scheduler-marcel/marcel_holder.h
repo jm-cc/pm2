@@ -693,19 +693,24 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+	if (h->type == MA_BUBBLE_HOLDER) {
+		/* Don't directly enqueue in holding bubble, but in the thread cache. */
+		marcel_bubble_t *b = ma_bubble_holder(h);
+		while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
+			h = b->sched.sched_holder;
+			b = ma_bubble_holder(h);
+		}
+	}
+
 	e->sched_holder = h;
+	ma_activate_running_entity(e, h);
+
 	if (state == MA_ENTITY_SLEEPING)
 		return;
 
-	ma_activate_running_entity(e, h);
 	if (state == MA_ENTITY_BLOCKED) {
 		if (h->type == MA_BUBBLE_HOLDER) {
-			/* Don't directly enqueue in holding bubble, but in the thread cache. */
 			marcel_bubble_t *b = ma_bubble_holder(h);
-			while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
-				h = b->sched.sched_holder;
-				b = ma_bubble_holder(h);
-			}
 			if (e->type == MA_BUBBLE_ENTITY)
 				/* Recursively set the new holder. */
 				ma_set_sched_holder(e, b);
@@ -713,7 +718,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				/* Just enqueue */
 				__ma_bubble_enqueue_entity(e, b);
 		} else
-			ma_enqueue_entity(e, h);
+			ma_rq_enqueue_entity(e, ma_rq_holder(h));
 	}
 }
 #section common

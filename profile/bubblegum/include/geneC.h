@@ -7,5 +7,5 @@
 #define GENEC_NAME "to_pm2"
 #define GENEC_MAKEFILE "Makefile_bubblegum"
 
-int parcourir_bulle(Element*, int, int);
+int parcourir_bulle(Element*, int);
 int gen_fichier_C(const char *file, Element *root);

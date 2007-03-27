@@ -3,23 +3,24 @@
 
 #include "interfaceGaucheDessin.h"
 
-/*!
- *
- * \todo penser à enlever les id
- */
+#define DEF_CHARGE 10
+#define DEF_PRIO 0
+
 typedef struct DataAddThread_tag
 {
-  interfaceGaucheVars * iGaucheVars;
-  GtkWidget *popup;
-  GtkWidget *nomEntry;
-  GtkWidget *idEntry; 
-  GtkWidget *prioriteScrollbar;
-  GtkWidget *chargeScrollbar;
+      interfaceGaucheVars * iGaucheVars;
+  int idThread;
+      GtkWidget *popup;
+      GtkWidget *nomEntry;
+      GtkWidget *idEntry;
+      GtkWidget *prioriteScrollbar;
+      GtkWidget *chargeScrollbar;
 }DataAddThread;
 
 typedef struct DataAddBulle_tag
 {
       interfaceGaucheVars * iGaucheVars;
+  int idBulle;
       GtkWidget *popup;
       GtkWidget *pScrollbar;
 }DataAddBulle;
@@ -30,7 +31,7 @@ void addBulleAutoOnOff(GtkWidget* pWidget, gpointer data);
 void addBulleAutoOff(interfaceGaucheVars* data);
 void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data);
 void addThreadAutoOff(interfaceGaucheVars* data);
-void switchModeAuto(GtkWidget* pWidget, gpointer data);
+void SaveNewData();
 void deleteRec(GtkWidget* pWidget, gpointer data);
 void deleteRec2(GtkWidget* pWidget, gpointer data);
 

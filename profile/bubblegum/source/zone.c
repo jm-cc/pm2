@@ -420,7 +420,7 @@ void CreerZoneBulle(Element * bulleprinc, zone * zoneprinc, int x, int y)
    z1 = LireZoneParcours(zoneprinc, p);
    b1 = LireElementParcours(bulleprinc, p);
 
-   b2 = CreateBulle(0);
+   b2 = CreateBulle(0, 0);
    AddElement(b1, b2);
    z2 = CreerZone(x, y, LARGEUR_B, HAUTEUR_B);
    AjouterSousZones(z1, z2);

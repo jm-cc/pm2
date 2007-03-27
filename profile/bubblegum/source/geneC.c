@@ -1,76 +1,49 @@
 #include "geneC.h"
 
 FILE * fw;
-static int bid;
-static int tid;
 
 /* Fonction de parcours de bulle
-   si mode est placé à GENERE, écriture dans le fichier généré
-   sinon VISITE our simple parcours */
+   mode DECLARE ne fait que déclarer les variables de manière globale,
+   mode GENERE produit le code */
 
-int parcourir_bulle(Element* bulle, int mybid, int mode) 
+int parcourir_bulle(Element* bulle, int mybid) 
 {
-   int i;
+   int i, id;
    Element * element_i;
    TypeElement type;
 
-   if (mybid == 0)
-   {
-	  if (mode == 1)
-      {
-         fwprintf(fw,L"   //création de la bulle %d :\n",mybid);
-	 fprintf(fw,"   marcel_bubble_init(&b%d);\n",mybid);
-	 fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",mybid,GetId(bulle));
-	 //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",mybid,GetPrioriteBulle(bulle));
-      }
-	  if (mode == 2)
-      {
-         fprintf(fw,"marcel_bubble_t b0;\n");
-      }
-   }
    int taillebulle = GetNbElement(bulle);
    for (i = 1; i <= taillebulle; i++)
    {
 	  element_i = GetElement(bulle, i);
 	  type = GetTypeElement(element_i);
+	  id = GetId(element_i);
 	  if (type == BULLE)
       {
-   	int hisbid = ++bid;
-         if(mode == 1)
-         {
-            fwprintf(fw,L"   //création de la bulle %d :\n",hisbid);
-            fprintf(fw,"   marcel_bubble_init(&b%d);\n",hisbid);
-	    fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",hisbid,GetId(element_i));
-            fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",mybid,hisbid);
-            //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",hisbid,GetPrioriteBulle(element_i));
-         }
-         if(mode == 2)
-         {
-            fprintf(fw,"marcel_bubble_t b%d;\n",hisbid);
-         }
-         parcourir_bulle(element_i,hisbid,mode);
+            fprintf(fw,"marcel_bubble_t b%d;\n",id);
+            fwprintf(fw,L"   //création de la bulle %d :\n",id);
+            fprintf(fw,"   marcel_bubble_init(&b%d);\n",id);
+	    fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",id,id);
+	    if (mybid>0)
+                fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",mybid,id);
+            //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",id,GetPrioriteBulle(element_i));
+            parcourir_bulle(element_i,id);
       }  
 	  if (type == THREAD)
       {
-         if(mode == 1)
-         {
-            fwprintf(fw,L"   //création du thread id = %d :\n",GetId(element_i));
+            fprintf(fw,"marcel_t t%d;\n",id); 
+            fwprintf(fw,L"   //création du thread id = %d :\n",id);
             fprintf(fw,"   {\n");
             fprintf(fw,"      marcel_attr_t attr;\n");
             fprintf(fw,"      marcel_attr_init(&attr);\n");
-            fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",mybid);
-            fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
+	    if (mybid)
+               fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",mybid);
+            fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",id);
             //fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
-            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",tid,GetId(element_i)*100+GetCharge(element_i));
-	    fprintf(fw,"      *marcel_stats_get(t%d, marcel_stats_load_offset) = %d;\n",tid,GetCharge(element_i));
+            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",id,id*100+GetCharge(element_i));
+	    fprintf(fw,"      *marcel_stats_get(t%d, marcel_stats_load_offset) = %d;\n",id,GetCharge(element_i));
             fprintf(fw,"   }\n\n");
-         }
-         if(mode == 2)
-         {
-            fprintf(fw,"marcel_t t%d;\n",tid); 
-         }
-         tid ++;
       }
    }
    return 0;
@@ -85,8 +58,6 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
 	  wprintf(L"Le fichier entré en paramètre n'est pas une BULLE\n"); 
 	  return -1;
    }
-   bid = 0;
-   tid = 1;
    fw = fopen(fichier, "w");
    if (fw == NULL)
    {
@@ -108,9 +79,6 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"   for (n=0;n<load*10000000;n++) sum+=n;\n");
    fprintf(fw,"   marcel_printf(\"%%d done\\n\",id);\n");
    fprintf(fw,"   return (void*)sum;\n}\n\n");
-
-   parcourir_bulle(bullemere,0,2);
-  
    fprintf(fw,"\nint main(int argc, char *argv[]) {");
    fprintf(fw,"\n\n   marcel_init(&argc,argv);");
    fprintf(fw,"\n#ifdef PROFILE");
@@ -118,16 +86,22 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"\n#endif");
    fprintf(fw,"\n   marcel_printf(\"started\\n\");\n\n");
   
-   bid = 0;
-   tid = 1;
+   parcourir_bulle(bullemere,0);
   
-   parcourir_bulle(bullemere,0,1);
-  
-   fprintf(fw,"   marcel_wake_up_bubble(&b0);\n");
    fprintf(fw,"   marcel_start_playing();\n");
    fprintf(fw,"   int i = 5;\n");
    fprintf(fw,"   while(i--) {\n");
-   fprintf(fw,"      marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
+   int taillebulle = GetNbElement(bullemere);
+   int i;
+   for (i = 1; i <= taillebulle; i++) {
+      Element *element_i = GetElement(bullemere, i);
+      TypeElement type = GetTypeElement(element_i);
+      int id = GetId(element_i);
+      if (type == BULLE) {
+         fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
+         fprintf(fw,"      marcel_bubble_spread(&b%d, marcel_topo_level(0,0));\n", id);
+      }
+   }
    fprintf(fw,"      marcel_delay(1000);\n");
    fprintf(fw,"   }\n");
   

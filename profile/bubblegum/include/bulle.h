@@ -20,6 +20,7 @@ typedef struct Bulle_tag
 {
   struct ListeElement_tag* liste;
   int taille;
+  int id;
   int priorite;
 } Bulle;
 
@@ -59,7 +60,7 @@ void RemoveElementOnCascade(Element* conteneur, int position);
 
 void PrintElement(Element* bulle, int level, int numero);
 
-Element* CreateBulle(int priorite);
+Element* CreateBulle(int priorite, int id);
 Element* CreateThread(int priorite, int id, char* nom, int charge);
 
 int GetNbElement(Element* element);
@@ -72,8 +73,13 @@ TypeElement GetTypeElement(Element* element);
 int GetCharge(Element* thread);
 int GetPrioriteThread(Element* thread);
 int GetPrioriteBulle(Element* bulle);
-int GetId(Element* bulle);
-char* GetNom(Element* bulle);
+int GetId(Element* thread);
+char* GetNom(Element* thread);
+
+void SetCharge(Element* thread, int charge);
+void SetPrioriteThread(Element* thread, int priorite);
+void SetId(Element* thread, int id);
+void SetNom(Element* thread, char* nom);
 
 int GetElementPosition (Bulle * bulleParent, Element * elementRecherche);
 ListeElement * GetListeElementPosition(Bulle * bulle, int position);
@@ -81,5 +87,6 @@ void MoveElement (Bulle * bulleParent, Element * elementADeplacer, Bulle * bulle
 
 void RemoveElement2(Element* conteneur, int position);
 void AddElement2(Element* conteneur, Element* contenu);
+int appartientElementParent(Element * parent, Element * fils);
 
 #endif

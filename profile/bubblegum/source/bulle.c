@@ -19,7 +19,7 @@ ListeElement* CreateListe(void)
 /*********************************************************************/
 /* Crée une bulle en indiquant la priorité */
 /*********************************************************************/
-Element* CreateBulle(int priorite)
+Element* CreateBulle(int priorite, int id)
 {
    Element* element;
    Bulle bulle;
@@ -30,6 +30,7 @@ Element* CreateBulle(int priorite)
    bulle.liste = NULL;
    bulle.taille = 0;
    bulle.priorite = priorite;
+   bulle.id = id;
 
    element->bulle = bulle;
 
@@ -133,7 +134,7 @@ void AddElement(Element* conteneur, Element* contenu)
       liste->element = contenu;
 
       conteneur->bulle.taille++;
-/*       printf("%d\n",conteneur->bulle.taille); */
+      /*   printf("taille du conteneur : %d\n",conteneur->bulle.taille); */
 
    }
    return;
@@ -346,6 +347,13 @@ int GetCharge(Element* thread)
 
    return -1;
 }
+void SetCharge(Element* thread, int charge)
+{
+   if (thread->type == THREAD)
+	   thread->thread.charge=charge;
+
+   return ;
+}
 
 /*********************************************************************/
 
@@ -356,6 +364,13 @@ int GetPrioriteThread(Element* thread)
 
    return -1;
 }
+void SetPrioriteThread(Element* thread, int priorite)
+{
+   if (thread->type == THREAD)
+	 thread->thread.priorite=priorite;
+
+   return ;
+}
 
 /*********************************************************************/
 
@@ -364,8 +379,15 @@ int GetId(Element* thread)
    if (thread->type == THREAD)
 	  return thread->thread.id;
 
-   /* TODO: BUBBLE */
-   return -1;
+   else
+      return thread->bulle.id;
+}
+void SetId(Element* thread, int id)
+{
+   if (thread->type == THREAD)
+	  thread->thread.id=id;;
+
+   return;
 }
 
 /*********************************************************************/
@@ -377,6 +399,13 @@ char* GetNom(Element* thread)
 
    return NULL;
 }
+void SetNom(Element* thread, char* nom)
+{
+     if (thread->type == THREAD)
+	  strcpy(thread->thread.nom,nom);
+     return;
+}
+
 
 /*********************************************************************/
 
@@ -661,4 +690,45 @@ void AddElement2(Element* conteneur, Element* contenu)
 
    }
    return;
+}
+
+/**********************************************************************************/
+/*! Vérifie si l'élément fils est un fils de l'élément parent
+ * \param parent a pour type BULLE
+ *
+ */
+int appartientElementParent(Element * parent, Element * fils)
+{
+   ListeElement* liste;
+   ListeElement* liste2=NULL;
+
+   if(parent->type == BULLE)
+     {
+       liste = parent->bulle.liste;
+     }
+   else
+     {
+       /* fils non parent de parent */
+       return 0;
+     }
+   /* parcours de toute la liste des fils de parent */
+   while(liste != NULL)
+         {
+            if(liste->element == fils)
+            {
+               /* dans le cas où fils est fils de parent */
+               return 1;
+            }
+            else
+            {
+               if(liste->element->type == BULLE)
+               {  
+                  return appartientElementParent(liste->element, fils);    
+               }
+            }
+            liste2 = liste;
+            liste = liste->suivant;
+   }
+    /* dans le cas où fils n'est pas fils de parent */
+    return 0; 
 }

@@ -27,8 +27,17 @@ typedef struct interfaceGaucheVars_tag
   int mousePosClic_left_y;
   int mousePos_left_x;
   int mousePos_left_y;
+  int idThreadMax;  // Cette valeur est incrémentée à chaque fois qu'un thread est créé
+  int idBulleMax; // Cette valeur est incrémentée à chaque fois qu'une bulle est créée
   GtkWidget *interfaceGauche;
   GtkWidget *drawzone_left;
+
+  GtkWidget *charge; // Champs correspondant a l ascenseur charge
+  GtkWidget *priorite;// Champs correspondant a l ascenseur priorite
+  GtkWidget *nom;// Champs correspondant a la zone texte nom
+
+  GtkWidget *ThreadSelect;
+
   Element *bullePrincipale;
   zone *zonePrincipale;
   zone *zoneSelectionnee;

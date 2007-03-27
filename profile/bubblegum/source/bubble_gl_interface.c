@@ -1093,6 +1093,15 @@ static void
 BGLinit () {
 }
 
+/*! Finalizes BGL module.
+ *
+ *  /todo Not yet implemented. Is there any data to be freed here ?
+ */
+
+static void
+BGLfini () {
+}
+
 /*! Maps bubbles ops to BGL interface.
  */
 void
@@ -1135,6 +1144,7 @@ BubbleOps_setBGL() {
 
         /* Misc methods */
         .init = BGLinit,
+	.fini = BGLfini,
 	 
         /* Thread/Bubble-specific methods */
         .SetThread = BGLsetThread,

@@ -12,7 +12,7 @@
 #include "interfaceGauche.h"
 
 
-#define WINDOW_WIDTH 800
+#define WINDOW_WIDTH 870
 #define WINDOW_HEIGHT 600
 
 #define DEFLOAD 10

@@ -5,7 +5,7 @@
  * Date  : 27/03/2006
  *********************************************************************/
 
-
+#include "animation.h"
 #include "mainwindow.h"
 #include <locale.h>
 
@@ -47,6 +47,9 @@ int main (int argc, char **argv) {
 
    iGaucheVars = interfaceGauche();
    iGauche = iGaucheVars->interfaceGauche;   /* gtk_window_new(GTK_WINDOW_TOPLEVEL); */
+
+   iGaucheVars->idThreadMax=0; // on initialise l'identification des threads
+   iGaucheVars->idBulleMax=0; // on initialise l'identification des bulles
    
    /* Connexion au signal destroy */
    g_signal_connect (G_OBJECT(main_window), "destroy",
@@ -101,7 +104,8 @@ int main (int argc, char **argv) {
    
    /* Récupération de la vbox de droite par la fonction right_window() */
 
-   p_anim = AnimationNew (NULL);
+   /*   p_anim = AnimationNew (NULL); */
+   p_anim = newAnimationData ();
    right_window = right_window_init (p_anim);
    if (right_window)
        gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (right_viewport),

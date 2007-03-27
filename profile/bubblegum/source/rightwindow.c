@@ -14,12 +14,18 @@
  * General Public License for more details.
  */
 
+#include "animation.h"
 #include "rightwindow.h"
 #include "load.h"
 
 /*! \todo remove global variables. */
-AnimElements* anim;
+AnimationData* anim;
 GtkWidget *right_scroll_bar;
+
+struct RedrawData {
+    GtkWidget     *drawzone;
+    AnimationData *p_anim;
+};
 
 static GtkWidget *
 init_drawable_zone(AnimationData *p_anim);
@@ -28,17 +34,19 @@ static GtkWidget *
 init_right_toolbar(AnimationData *p_anim);
 
 static gboolean
-Redraw_dz(gpointer p_data);
+Redraw_dz (gpointer p_data);
 
 static void
-Realize_dz(GtkWidget* widget, gpointer p_data);
+Realize_dz (GtkWidget* widget, gpointer p_data);
 
 static gboolean
-Reshape_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer p_data);
+Reshape_dz (GtkWidget* widget, GdkEventConfigure* ev, gpointer p_data);
 
 static gboolean
-MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer p_data);
+MouseMove_dz (GtkWidget* widget, GdkEventMotion* ev, gpointer p_data);
 
+static void
+ScrollSetPosition (int frame, void *data);
 
 /*! Builds the right part of the gui.
  *  
@@ -58,7 +66,9 @@ right_window_init (AnimationData *p_anim) {
     drawzone = init_drawable_zone (p_anim);
 
     if (drawzone) {
+#if 0
         p_anim->drawzone = drawzone;
+#endif
         /* \todo Remove global variable. */
         anim = p_anim;
         vbox_right = gtk_vbox_new (FALSE, 0);
@@ -78,9 +88,13 @@ right_window_init (AnimationData *p_anim) {
             /*! \todo Remove global variable */
             right_scroll_bar = scroll;
 
+            
+
             gtk_box_pack_end (GTK_BOX (vbox_right), scroll, FALSE, FALSE, 0);
+#if 0 /*! \todo Change callback function. */
             g_signal_connect (G_OBJECT (scroll), "value-changed",
                               G_CALLBACK (AnimationSet), p_anim);
+#endif
         } else {
             gtk_widget_destroy (drawzone);
             drawzone = NULL;
@@ -161,7 +175,7 @@ init_drawable_zone (AnimationData *p_anim) {
 static GtkWidget *
 init_right_toolbar (AnimationData *p_anim) {
     GtkWidget *toolbar = gtk_toolbar_new();
-
+#if 0 /*! \todo Change callback functions */
     GtkWidget *play    = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PLAY,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
     GtkWidget *revplay = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS,
@@ -202,7 +216,7 @@ init_right_toolbar (AnimationData *p_anim) {
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Convertir en Flash", NULL, convert,
                                 G_CALLBACK (Temp), p_anim);
-    
+#endif
     return toolbar;
 }
 
@@ -222,6 +236,8 @@ Realize_dz (GtkWidget *widget, gpointer data) {
 
     AnimationData *p_anim = (AnimationData *) data;
 
+    struct RedrawData *redraw_data = NULL;
+
     if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
         wprintf(L"Attention : opengl inactif.\n");
         return;
@@ -238,7 +254,7 @@ Realize_dz (GtkWidget *widget, gpointer data) {
     
     PushScreenCoordinateMatrix(); /* Sets pixels coordinates. */
     
-#if 1 /*! \todo remove texturing. No longer used. */
+#if 0 /*! \todo remove texturing. No longer used. */
     /* Loads textures */
     anim->bulle_tex = open_texture("imgs/bulle-translucy.png");
     anim->thread_tex = open_texture("imgs/thread.png");
@@ -261,18 +277,21 @@ Realize_dz (GtkWidget *widget, gpointer data) {
                "%s/profile/bubblegum/font/font.ttf", pm2_root());
     
     // chargement de la police et des call lists:
-    
+#if 0
     p_anim->pIfont = InitGPFont(buf, 10);
     if (p_anim->pIfont == NULL) {
         wprintf(L"le chargement de ./font/font.ttf à échoué\n");
         exit(1);
     }
-
+#endif
     /* End of configuration. */
     gdk_gl_drawable_gl_end (gldrawable);
     
+    redraw_data = (struct RedrawData *) malloc (sizeof (*redraw_data));
+    redraw_data->drawzone = widget;
+    redraw_data->p_anim   = p_anim;
     /* Sets timer to redraw animation. */
-    g_timeout_add(50, Redraw_dz, data);
+    g_timeout_add (50, Redraw_dz, redraw_data);
 }
 
 
@@ -284,7 +303,27 @@ Realize_dz (GtkWidget *widget, gpointer data) {
  */
 static gboolean
 Redraw_dz (gpointer p_data) {
-    WorkOnAnimation((AnimationData *) p_data);
+    struct RedrawData *rdata = (struct RedrawData *)p_data;
+    
+    //    WorkOnAnimation((AnimationData *) p_data);
+    GdkGLContext* glcontext = gtk_widget_get_gl_context(rdata->drawzone);
+    GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(rdata->drawzone);
+    
+    if (gdk_gl_drawable_gl_begin(gldrawable, glcontext)) {
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        /* Display Frame. */
+        AnimationData_display (rdata->p_anim);
+        
+        
+        if (gdk_gl_drawable_is_double_buffered(gldrawable))
+            gdk_gl_drawable_swap_buffers(gldrawable);
+        else
+            glFlush ();
+        
+        gdk_gl_drawable_gl_end(gldrawable);
+    }
+    
     return TRUE;
 }
 
@@ -303,11 +342,11 @@ Reshape_dz (GtkWidget* widget, GdkEventConfigure* ev, gpointer p_data) {
     GdkGLContext  *glcontext  = gtk_widget_get_gl_context (widget);
     GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
 
-    widget = NULL;  /*  */
-
+#if 0
     /* Resize drawing area coordinates. */
     p_anim->area.x = ev->width;
     p_anim->area.y = ev->height;
+#endif
 
     if (gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
         glViewport (0, 0, ev->width, ev->height);
@@ -334,12 +373,24 @@ static gboolean
 MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer p_data) {
     widget = NULL;  /* unused. */
 
+#if 0
     anim->mousePos.x = ev->x;
     anim->mousePos.y = anim->area.y - ev->y;   
+#endif
    
     return TRUE;
 }
 
+
+/*! Callback method to update animation scrollbar value.
+ *
+ *  \param frame    an integer that represents the displayed frame.
+ *  \param data     a pointer to a scrollbar widget.
+ */
+static void
+ScrollSetPosition (int frame, void *data) {
+
+}
 
 
 #if 0 /*! \todo Remove. No longer in use. */

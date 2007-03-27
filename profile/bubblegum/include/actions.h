@@ -3,6 +3,9 @@
 
 #include <gtk/gtk.h>
 
+#include <libxml/tree.h>
+#include <libxml/xpath.h>
+
 void Quitter(GtkWidget *widget, gpointer data);
 void A_Propos(GtkWidget *widget, gpointer data);
 void Aide(GtkWidget *widget, gpointer data);

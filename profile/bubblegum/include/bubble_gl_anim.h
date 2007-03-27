@@ -219,4 +219,9 @@ destroyBGLMovie (BubbleMovie movie);
 # define destroyBubbleMovie destroyBGLMovie
 #endif
 
+/*! Displays a frame of a BGLMovie. */
+void
+bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale);
+
+
 #endif /* BUBBLE_GL_ANIM_H */

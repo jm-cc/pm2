@@ -119,7 +119,7 @@ bgl_anim_do_drawglyph (bgl_action_drawglyph_t *p_action,
                        enum draw_mode mode);
 
 
-
+/* List of action's methods. */
 static do_action_fn_t actions_TABLE[BGL_ACTION_COUNT] = {
     [BGL_ACTION_MOVE_PEN]    (do_action_fn_t) bgl_anim_do_movepen,
     [BGL_ACTION_DRAW_LINE]   (do_action_fn_t) bgl_anim_do_drawline,
@@ -163,6 +163,8 @@ newBubbleMovieFromFxT (const char *trace, const char *out_file) {
     printf("BubbleMovie_save... ");
     BubbleMovie_save (movie, out_file);
     printf("OK\n");
+
+    curBubbleOps->fini();
 
     return movie;
 }
@@ -375,15 +377,15 @@ bgl_anim_do_drawglyph (bgl_action_drawglyph_t *p_action,
  *                  A valid pointer to a #DisplayItem structure.
  */
 static void
-bgl_anim_DisplayItem (BubbleDisplayItem display_item) {
+bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale) {
     BubbleShape shape = NULL;
 
     struct draw_current_data state = {
         .fill            = NULL,
         .off_x           = 0.0f,
         .off_y           = 0.0f,
-        .sx              = 1.0f,
-        .sy              = 1.0f,
+        .sx              = scale,
+        .sy              = scale,
         .cx              = 0.0f,
         .cy              = 0.0f,
     };
@@ -449,7 +451,7 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item) {
  *  \param frame    An integer that represents the frame to display.
  */
 void
-bgl_anim_DisplayFrame (BubbleMovie movie, int iframe) {
+bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale) {
     if (iframe < 0)
         iframe = 0;
     if (iframe >= movie->frames_count)
@@ -462,6 +464,6 @@ bgl_anim_DisplayFrame (BubbleMovie movie, int iframe) {
     BubbleDisplayItem display_item;
 
     list_for_each_entry (display_item, &frame->display_items, disp_list) {
-        bgl_anim_DisplayItem (display_item);
+        bgl_anim_DisplayItem (display_item, scale);
     }
 }

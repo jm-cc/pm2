@@ -32,11 +32,15 @@
 #include "texture.h"
 
 /*! \todo remove global variables and AnimElements structure. */
-extern AnimElements *anim;
+
+#ifndef ANIMATION_DATA_STRUCT
+#  define ANIMATION_DATA_STRUCT
 typedef AnimElements AnimationData;
+#endif
+
+extern AnimationData *anim;
+extern GtkWidget     *right_scroll_bar;
+
 
 GtkWidget* right_window_init(AnimationData *p_anim);
-
-extern GtkWidget *right_scroll_bar;
-
 #endif

@@ -1,9 +1,17 @@
-/**********************************************************************
- * File  : raccourcis.c
- * Author: Dufour Florent
- *         mailto:dufour@enseirb.fr
- * Date  : 07/04/2006
- *********************************************************************/
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2006 Florent DUFOUR <mailto:dufour@enseirb.fr>
+ * Copyright (C) 2007 Rigann LUN <mailto:lun@enseirb.fr>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
 
 #include <stdlib.h>
@@ -70,10 +78,10 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
    gtk_accel_group_connect(accel_group, GDK_Delete, 0, 0,
                            g_cclosure_new_swap(G_CALLBACK(deleteRec2), iGaucheVars, NULL));
 
-   gtk_accel_group_connect(accel_group, GDK_b, 0, 0,
+   gtk_accel_group_connect(accel_group, GDK_b, GDK_CONTROL_MASK , 0,
                            g_cclosure_new_swap(G_CALLBACK(addBulleAutoOnOff), iGaucheVars, NULL));
 
-   gtk_accel_group_connect(accel_group, GDK_t, 0, 0,
+   gtk_accel_group_connect(accel_group, GDK_t, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(addThreadAutoOnOff), iGaucheVars, NULL));
 
    gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);

@@ -415,6 +415,7 @@ if (optind != argc) {
 	}
 	BubbleMovie_save(movie,"bulles.swf");
 }
+	curBubbleOps->fini();
 
 	return 0;
 }

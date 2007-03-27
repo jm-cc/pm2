@@ -100,6 +100,7 @@ typedef struct {
 
 	/* misc methods */
 	void (*init)(void);
+	void (*fini)(void);
 
 	/* Thread/Bubble-specific methods */
 	void (*SetThread)(BubbleShape shape, int id, float x, float y, float width, float height);

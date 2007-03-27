@@ -1,11 +1,9 @@
 #include "interfaceGaucheDessin.h"
+#include "interfaceGauche.h"
+#include "bulle.h"
 
 
-/* Variables pour les test */
-#define TRUE 1
-#define FALSE 0
-
-#if 1
+#if 0
 int i=0;
 int j=0;
 int k=0;
@@ -354,7 +352,7 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
 
    iGaucheVars->drawzone_left = drawzone;
 
-   bullePrincipale = CreateBulle(1);
+   bullePrincipale = CreateBulle(1, 0);
 
    zonePrincipale = CreerZone(0, 0, 200,  100);
 
@@ -454,7 +452,6 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
    /***************************** G_SIGNAL_CONNECT ***************************/
    
    // quand la souris bouge sur la zone on a des trucs a regarder:
-   if (selectionON == FALSE)
      g_signal_connect(G_OBJECT(drawzone), "button_press_event", G_CALLBACK(MouseMove_left_dz), iGaucheVars);
    
 #if 0
@@ -583,8 +580,6 @@ gboolean Reshape_left_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer data
 /* callback de "button_press_event" */
 gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
-  selectionON = TRUE;
-  
   parcours *p;
   widget = NULL;  // inutilisé
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
@@ -597,21 +592,36 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
   /* Pour test */
   iGaucheVars->mousePosClic_left_x =  iGaucheVars->mousePos_left_x;
   iGaucheVars->mousePosClic_left_y =  iGaucheVars->mousePos_left_y;
-
-  
   
   p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
-  
   nouvelleZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
-  
   iGaucheVars->zoneSelectionnee = nouvelleZoneSelectionnee;
-  
   elementSelectionne = LireElementParcours(iGaucheVars->bullePrincipale, p);
-  
   EffacerParcours(p);
-  
-  k++; /* variable globale */
-  printf("Clic souris détecté %d\n",k);  
+   if (elementSelectionne->type==THREAD)
+    {
+  // On repositionne les paramétres des ascenseurs et de la zone texte correspondant au données du thread
+  gtk_range_set_value (GTK_RANGE(iGaucheVars->charge),(int)GetCharge(elementSelectionne));
+  gtk_range_set_value (GTK_RANGE(iGaucheVars->priorite),(int)GetPrioriteThread(elementSelectionne));
+  gtk_entry_set_text (GTK_ENTRY(iGaucheVars->nom),GetNom(elementSelectionne));
+  // On sauve le thread selectionné en cas de changement des ses valeurs.
+  iGaucheVars->ThreadSelect=elementSelectionne;
+    }
+  else
+    {
+      printf("deselection\n");
+       iGaucheVars->ThreadSelect=NULL; 
+       /* TODO: remettre plut�t les valeurs qu'on avait avant */
+       gtk_range_set_value (GTK_RANGE(iGaucheVars->charge),DEF_CHARGE);
+       gtk_range_set_value (GTK_RANGE(iGaucheVars->priorite),DEF_PRIO);
+  gtk_entry_set_text (GTK_ENTRY(iGaucheVars->nom),"");
+    }
+
+  /* pour test
+  k++; */
+  /* variable globale pour test */
+  /*
+  printf("Clic souris détecté %d\n",k);  */
 
   return TRUE;
 }
@@ -645,15 +655,12 @@ gboolean MouseMove_left_movebt(GtkWidget* widget, GdkEventMotion* ev, gpointer d
  */
 gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
-  /* à préciser */
-  selectionON = FALSE;
-
-  parcours *p, *pParent, *pAccueil;
+  parcours *p, *pParent, *pAccueil, *pParentAccueil;
   widget = NULL;  // inutilisé
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
-  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
-  Element* elementSelectionne, * elementParent, * elementAccueil;
-  Bulle* bulleParent, * bulleAccueil;
+  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil, *ZoneParentAccueil;
+  Element* elementSelectionne, * elementParent, * elementAccueil, *elementParentAccueil;
+  Bulle* bulleParent, * bulleAccueil, * bulleParentAccueil;
   int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
   
   /* Mise à jour de iGaucheVars pour connaître les coordonnées du relâchement du clic */
@@ -664,6 +671,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   lacheX = iGaucheVars->mousePos_left_x;
   lacheY = iGaucheVars->mousePos_left_y;
 
+  /* CALCUL DES ELEMENTS SELECTIONNES, PARENT ET ACCUEIL */
   /* Voilà l'élément sélectionné qu'on va déplacer */
   p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y);
   /* printf("Trace parcours élément à déplacer\n");
@@ -680,6 +688,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   ZoneParent = LireZoneParcours(iGaucheVars->zonePrincipale, pParent);
   elementParent = LireElementParcours(iGaucheVars->bullePrincipale, pParent);
   bulleParent = &elementParent->bulle;
+  EffacerParcours(pParent);
   
   /* Voilà l'élément d'accueil */
   pAccueil = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
@@ -689,82 +698,63 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   elementAccueil = LireElementParcours(iGaucheVars->bullePrincipale, pAccueil);
   bulleAccueil = &elementAccueil->bulle;
   EffacerParcours(pAccueil);
-    
-  printf("Elément sélectionné, parent et d'accueil calculés\n");
+#if 0
+  /* Voilà l'élément parent de l'élément d'accueil */
+  pParentAccueil = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x + 1, iGaucheVars->mousePos_left_y + 1);
+  /* printf("Trace parcours élément ParentAccueil\n");
+  traceParcours(pParentAccueil);*/
+  ZoneParentAccueil = LireZoneParcours(iGaucheVars->zonePrincipale, pParentAccueil);
+  elementParentAccueil = LireElementParcours(iGaucheVars->bullePrincipale, pParentAccueil);
+  bulleParentAccueil = &elementParentAccueil->bulle;
+  EffacerParcours(pParentAccueil);
+#endif    
+  printf("Eléments sélectionné, parent et d'accueil calculés\n");
 
 
-
+  
+  /* Ici les tests pour voir si on peut effectuer les déplacements */
   /* Pour test, on regarde si la ZoneSelectionnee est vide */
   if(ZoneSelectionnee == NULL)
+  {
     printf("Zone sélectionnée vide\n");
+    return FALSE;
+  }
+   /* après tests, il s'avère que la ZoneSelectionnee n'est jamais vide */
+  if(ZoneSelectionnee == iGaucheVars->zonePrincipale)
+  {
+    printf("Zone sélectionnée bullePrincipale\n");
+    return FALSE;
+  }
   if (ZoneAccueil == NULL)
   {
     printf("Zone d'accueil vide\n");
-    return;
+    return FALSE;
    }
-  /* après test, il s'avère que la ZoneSelectionnee n'est jamais vide */
-  /* On teste pour voir si la Zone de relâchement du clic et celle du clic initial sont identiques */
   if(elementAccueil->type == THREAD)
   {
     printf("Accueil de type thread, pas de déplacement.\n");
-    return;
+    return FALSE;
   }
+  /* On teste pour voir si la Zone de relâchement du clic et celle du clic initial sont identiques */
   if(ZoneSelectionnee == ZoneAccueil || ZoneParent == ZoneAccueil)
   {
     printf("Zone identique, pas de déplacement.\n");
-    return;
+    return FALSE;
   }
+  /* Si l'élément d'accueil est un fils de l'élément sélectionné, on ne fait rien */
+  if(appartientElementParent(elementSelectionne, elementAccueil))
+  {
+     printf("Zone d'accueil comprise dans la zone sélectionnée, pas de déplacement.\n");
+     return FALSE;
+   } 
+  /* Finalement on fait le déplacement */
 
-  if(ZoneSelectionnee != ZoneAccueil && ZoneSelectionnee != NULL)
-    {
-      printf("Zones différentes, déplacement possible.\n");
-     /* MoveElement(bulleParent, elementSelectionne, bulleAccueil);
-      printf("MoveElement fait.\n"); */
-
-
+  printf("Zones différentes, déplacement possible.\n");
+ 
   Deplacer(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale,
 		    iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y,
 		    iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
 
-/*
-      EnleverSousZones(ZoneParent, LirePosition(pParent, LireParcoursTaille(pParent)));
-      printf("EnleverSousZones fait.\n");
-     
-      TranslaterZone(ZoneSelectionnee, lacheX - clicX, lacheY - clicY);
-      printf("TranslaterSousZones fait.\n");
-      AjouterSousZones(ZoneAccueil, ZoneSelectionnee);
-      printf("AjouterSousZones fait.\n"); */
-     
-
-    }
-  EffacerParcours(pParent);
-  #if 0      
-      
-      /* teste le type d'élément sélectionné */
-     
-	  /* Déplacement de la sélection vers l'élément pointé lors du relâchement du clic */
-	  Deplacer(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale,
-		    iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y,
-		    iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
-
-	  /*
-	    bulleParent = LireElementParcours(iGaucheVars->bullePrincipale, pParent);*/
-	  AddElement(bulleParent, elmt);
-	  
-	  /*AjouterSousZones(nouvelleZoneSelectionnee, 
-	    CreerZone(0,0,LARGEUR_T, HAUTEUR_T));*/
-	  /* Réarrangement de l'affichage */
-	  Rearanger(iGaucheVars->zonePrincipale);
-	 
-/* 	  Effacer(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale, */
-/*       iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y); */
-
-	}
-      else printf("deplacement impossible\n"); //juste pour le test
-    }
-  EffacerParcours(p);
-  j++;  
-  printf("relachement souris detecté %d\n",j);
-#endif
+  
   return TRUE;
 }

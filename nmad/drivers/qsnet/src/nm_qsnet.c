@@ -133,8 +133,37 @@ nm_qsnet_poll_recv_iov    	(struct nm_pkt_wrap *p_pw);
  */
 static
 int
+nm_qsnet_query		(struct nm_drv *p_drv) {
+	struct nm_qsnet_drv	*p_qsnet_drv	= NULL;
+	int err;
+
+	/* private data                                                 */
+	p_qsnet_drv	= TBX_MALLOC(sizeof (struct nm_qsnet_drv));
+	if (!p_qsnet_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+	memset(p_qsnet_drv, 0, sizeof (struct nm_qsnet_drv));
+	p_drv->priv	= p_qsnet_drv;
+
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_dgram			= 1;
+	p_drv->cap.has_selective_receive		= 1;
+	p_drv->cap.has_concurrent_selective_receive	= 0;
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+/* functions
+ */
+static
+int
 nm_qsnet_init		(struct nm_drv *p_drv) {
-        struct nm_qsnet_drv	*p_qsnet_drv	= NULL;
+	struct nm_qsnet_drv	*p_qsnet_drv	= p_drv->priv;
         ELAN_BASE		*base		= NULL;
         char			*node_string	= NULL;
         p_tbx_string_t		 url_string	= NULL;
@@ -161,10 +190,6 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
                 goto out;
         }
 
-	p_qsnet_drv	= TBX_MALLOC(sizeof (struct nm_qsnet_drv));
-        memset(p_qsnet_drv, 0, sizeof (struct nm_qsnet_drv));
-        p_drv->priv	= p_qsnet_drv;
-
         p_qsnet_drv->base	= base;
         p_qsnet_drv->proc	= base->state->vp;
         p_qsnet_drv->nproc	= base->state->nvp;
@@ -179,11 +204,6 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         p_drv->url	= tbx_string_to_cstring(url_string);
         NM_TRACE_STR("p_drv->url", p_drv->url);
         tbx_string_free(url_string);
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
 
         err = NM_ESUCCESS;
 
@@ -646,6 +666,7 @@ out:
 
 int
 nm_qsnet_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_qsnet_query         ;
         p_ops->init		= nm_qsnet_init         ;
         p_ops->exit             = nm_qsnet_exit         ;
 

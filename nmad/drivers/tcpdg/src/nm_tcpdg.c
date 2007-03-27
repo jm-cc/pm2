@@ -189,6 +189,37 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
         memset(address->sin_zero, 0, 8);
 }
 
+/** Query the TCP driver with datagram emulation.
+ *  @param p_drv the driver.
+ *  @return The NM status code.
+ */
+static
+int
+nm_tcpdg_query		(struct nm_drv *p_drv) {
+	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
+	int			 err;
+
+	/* private data							*/
+	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcpdg_drv));
+	if (!p_tcp_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+	memset(p_tcp_drv, 0, sizeof (struct nm_tcpdg_drv));
+	p_drv->priv = p_tcp_drv;
+
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_stream			= 1;
+	p_drv->cap.has_selective_receive		= 1;
+	p_drv->cap.has_concurrent_selective_receive	= 1;
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
 /** Initialize the TCP driver with datagram emulation.
  *  @param p_drv the driver.
  *  @return The NM status code.
@@ -196,15 +227,11 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
 static
 int
 nm_tcpdg_init		(struct nm_drv *p_drv) {
-        struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
+	struct nm_tcpdg_drv	*p_tcp_drv	= p_drv->priv;
         uint16_t		 port;
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
         int			 err;
-
-        /* private data							*/
-	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcpdg_drv));
-        p_drv->priv	= p_tcp_drv;
 
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
@@ -215,11 +242,6 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
         url_string	= tbx_string_init_to_int(port);
         p_drv->url	= tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_stream			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 1;
 
         err = NM_ESUCCESS;
 
@@ -1152,6 +1174,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
  */
 int
 nm_tcpdg_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_tcpdg_query;
         p_ops->init		= nm_tcpdg_init;
         p_ops->exit             = nm_tcpdg_exit;
         p_ops->open_trk		= nm_tcpdg_open_trk;

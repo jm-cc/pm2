@@ -129,6 +129,7 @@ static const char*const nm_ibverbs_status_strings[] = {
 /** Global state of the HCA
  */
 struct nm_ibverbs_drv {
+	struct ibv_device*ib_dev;   /**< IB device */
 	struct ibv_context*context; /**< global IB context */
 	struct ibv_pd*pd;           /**< global IB protection domain */
 	uint16_t lid;               /**< local IB LID */
@@ -428,16 +429,15 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 /* ** init & connection ************************************ */
 
 
-static int nm_ibverbs_init(struct nm_drv*p_drv)
+static int nm_ibverbs_query(struct nm_drv*p_drv)
 {
 	int err;
-	int rc;
 
-	srand48(getpid() * time(NULL));
 	/* check parameters consitency */
 	assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
 	assert(NM_IBVERBS_BYCOPY_CREDITS_THR > NM_IBVERBS_BYCOPY_RBUF_NUM / 2);
 
+	/* private data */
 	struct nm_ibverbs_drv*p_ibverbs_drv = TBX_MALLOC(sizeof(struct nm_ibverbs_drv));
         if (!p_ibverbs_drv) {
                 err = -NM_ENOMEM;
@@ -449,15 +449,41 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	struct ibv_device*const*dev_list = ibv_get_device_list(NULL);
 	if(!dev_list) {
 		fprintf(stderr, "Infiniband: no device found.\n");
-		abort();
+		err = -NM_ENOTFOUND;
+		goto out;
 	}
-	struct ibv_device*ib_dev = dev_list[0];
+	p_ibverbs_drv->ib_dev = dev_list[0];
+
 	/* open IB context */
-	p_ibverbs_drv->context = ibv_open_device(ib_dev);
+	p_ibverbs_drv->context = ibv_open_device(p_ibverbs_drv->ib_dev);
 	if(p_ibverbs_drv->context == NULL) {
 		fprintf(stderr, "Infiniband: cannot open IB context.\n");
-		abort();
+		err = -NM_ESCFAILD;
+		goto out;
 	}
+
+        /* driver capabilities encoding */
+        p_drv->cap.has_trk_rq_dgram			= 1;
+        p_drv->cap.has_trk_rq_rdv			= 1;
+        p_drv->cap.has_selective_receive		= 1;
+        p_drv->cap.has_concurrent_selective_receive	= 1;
+	p_drv->cap.rdv_threshold                        = 256 * 1024;
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+static int nm_ibverbs_init(struct nm_drv*p_drv)
+{
+	struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
+	int err;
+	int rc;
+
+	srand48(getpid() * time(NULL));
+
+	/* get IB context attributes */
 	struct ibv_device_attr device_attr;
 	rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
 	if(rc != 0) {
@@ -521,7 +547,7 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	p_ibverbs_drv->ib_caps.max_msg_size  = port_attr.max_msg_sz;
 
 	fprintf(stderr, "Infiniband: capabilities for device '%s'- \n",
-		ibv_get_device_name(ib_dev));
+		ibv_get_device_name(p_ibverbs_drv->ib_dev));
 	fprintf(stderr, "Infiniband:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 		p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
 		p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
@@ -531,13 +557,6 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 
 	fprintf(stderr, "Infiniband:   active_width=%d; active_speed=%d\n",
 		(int)port_attr.active_width, (int)port_attr.active_speed);
-
-        /* driver capabilities encoding */
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_trk_rq_rdv			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 1;
-	p_drv->cap.rdv_threshold                        = 256 * 1024;
 
 	err = NM_ESUCCESS;
 
@@ -1702,6 +1721,7 @@ static int nm_ibverbs_post_recv_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 
 int nm_ibverbs_load(struct nm_drv_ops *p_ops)
 {
+        p_ops->query		= nm_ibverbs_query        ;
         p_ops->init		= nm_ibverbs_init         ;
         p_ops->exit             = nm_ibverbs_exit         ;
 

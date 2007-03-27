@@ -30,6 +30,8 @@
 
 /** MX specific driver data */
 struct nm_mx_drv {
+	/** Board number */
+	uint32_t board_number;
 	/** MX packet wrapper allocator */
 	p_tbx_memory_t mx_pw_mem;
 	/** MX endpoint */
@@ -162,11 +164,47 @@ nm_mx_check_return(char *msg, mx_return_t return_code) {
 	}
 }
 
+/** Query MX resources */
+static
+int
+nm_mx_query		(struct nm_drv *p_drv) {
+        struct nm_mx_drv	*p_mx_drv	= NULL;
+        mx_return_t	mx_ret	= MX_SUCCESS;
+	int err;
+
+	/* private data                                                 */
+	p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
+	if (!p_mx_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+        memset(p_mx_drv, 0, sizeof (struct nm_mx_drv));
+        p_drv->priv	= p_mx_drv;
+
+	/* init MX */
+        mx_set_error_handler(MX_ERRORS_RETURN);
+        mx_ret	= mx_init();
+        nm_mx_check_return("mx_init", mx_ret);
+
+	p_mx_drv->board_number = 0;
+
+        /* driver capabilities encoding					*/
+        p_drv->cap.has_trk_rq_dgram			= 1;
+        p_drv->cap.has_selective_receive		= 1;
+        p_drv->cap.has_concurrent_selective_receive	= 0;
+
+        err = NM_ESUCCESS;
+
+ out:
+        return err;
+}
+
 /** Initialize the MX driver */
 static
 int
 nm_mx_init		(struct nm_drv *p_drv) {
-        struct nm_mx_drv	*p_mx_drv	= NULL;
+	struct nm_mx_drv	*p_mx_drv	= p_drv->priv;
 	mx_endpoint_t		 ep;
 	mx_endpoint_addr_t	 ep_addr;
 	uint32_t		 ep_id;
@@ -177,18 +215,10 @@ nm_mx_init		(struct nm_drv *p_drv) {
 	uint32_t                 ep_params_count = 0;
         int err;
 
-	p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
-        memset(p_mx_drv, 0, sizeof (struct nm_mx_drv));
-        p_drv->priv	= p_mx_drv;
-
         tbx_malloc_init(&(p_mx_drv->mx_pw_mem),   sizeof(struct nm_mx_pkt_wrap),
                         INITIAL_PW_NUM,   "nmad/mx/pw");
 
-        mx_set_error_handler(MX_ERRORS_RETURN);
-        mx_ret	= mx_init();
-        nm_mx_check_return("mx_init", mx_ret);
-
-        mx_board_number_to_nic_id(0, &nic_id);
+        mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
         mx_nic_id_to_hostname(nic_id, hostname);
 
 #if MX_API >= 0x301
@@ -208,7 +238,7 @@ nm_mx_init		(struct nm_drv *p_drv) {
 
 	/* mx endpoint
 	 */
-	mx_ret = mx_open_endpoint(0,
+	mx_ret = mx_open_endpoint(p_mx_drv->board_number,
 				  MX_ANY_ENDPOINT,
 				  NM_MX_ENDPOINT_FILTER,
 				  ep_params, ep_params_count,
@@ -227,11 +257,6 @@ nm_mx_init		(struct nm_drv *p_drv) {
         hostname[MX_MAX_HOSTNAME_LEN-1] = '\0';
         p_drv->url	= tbx_strdup(hostname);
         NM_TRACE_STR("p_drv->url", p_drv->url);
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
 
         err = NM_ESUCCESS;
         return err;
@@ -824,6 +849,7 @@ out:
 /** Load MX operations */
 int
 nm_mx_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_mx_query         ;
         p_ops->init		= nm_mx_init         ;
         p_ops->exit             = nm_mx_exit         ;
 

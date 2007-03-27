@@ -99,13 +99,13 @@ main(int	  argc,
                 printf("running as server\n");
         }
 
-        err = nm_core_driver_init(p_core, nm_mx_load, &drv1_id, &l_url1);
+        err = nm_core_driver_load_init(p_core, nm_mx_load, &drv1_id, &l_url1);
         printf("local url1: [%s]\n", l_url1);
-        err = nm_core_driver_init(p_core, nm_qsnet_load, &drv2_id, &l_url2);
+        err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv2_id, &l_url2);
         printf("local url2: [%s]\n", l_url2);
 
         if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
+                printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out;
         }
 

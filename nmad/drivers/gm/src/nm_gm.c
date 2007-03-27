@@ -332,28 +332,37 @@ nm_gm_extract_info(char			 *trk_url,
 
 static
 int
-nm_gm_init			(struct nm_drv *p_drv) {
-        struct nm_gm_drv	*p_gm_drv	= NULL;
-        gm_status_t		 gms		= GM_SUCCESS;
+nm_gm_query			(struct nm_drv *p_drv) {
+	struct nm_gm_drv	*p_gm_drv	= NULL;
 	int err;
 
-        /* private data							*/
+	/* private data							*/
 	p_gm_drv	= TBX_MALLOC(sizeof (struct nm_gm_drv));
-        if (!p_gm_drv) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
+	if (!p_gm_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
 
-        memset(p_gm_drv, 0, sizeof (struct nm_gm_drv));
-        p_drv->priv	= p_gm_drv;
+	memset(p_gm_drv, 0, sizeof (struct nm_gm_drv));
+	p_drv->priv	= p_gm_drv;
 
-        /* driver url encoding						*/
-        p_drv->url	= tbx_strdup("-");
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_dgram			= 1;
+	p_drv->cap.has_selective_receive		= 0;
+	p_drv->cap.has_concurrent_selective_receive	= 0;
 
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 0;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+static
+int
+nm_gm_init			(struct nm_drv *p_drv) {
+        struct nm_gm_drv	*p_gm_drv	= p_drv->priv;
+        gm_status_t		 gms		= GM_SUCCESS;
+	int err;
 
         /* GM								*/
         gms = gm_init();
@@ -363,11 +372,12 @@ nm_gm_init			(struct nm_drv *p_drv) {
                 goto error;
         }
 
+	/* driver url encoding						*/
+        p_drv->url	= tbx_strdup("-");
+
         NM_TRACE_STR("drv_url", p_drv->url);
 
 	err = NM_ESUCCESS;
-
- out:
 	return err;
 
  error:
@@ -965,7 +975,8 @@ nm_gm_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
 
 int
 nm_gm_load(struct nm_drv_ops *p_ops) {
-        p_ops->init		= nm_gm_init         ;
+        p_ops->query		= nm_gm_query        ;
+        p_ops->init             = nm_gm_init         ;
         p_ops->exit             = nm_gm_exit         ;
 
         p_ops->open_trk		= nm_gm_open_trk     ;

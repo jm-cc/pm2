@@ -83,10 +83,9 @@ main(int	  argc,
         struct nm_core		*p_core		= NULL;
         char			*r_url1		= NULL;
         char			*r_url2		= NULL;
-        char			*l_url1		= NULL;
-        char			*l_url2		= NULL;
-        uint8_t			 drv1_id	=    0;
-        uint8_t			 drv2_id	=    0;
+        char			*l_url[2]		= {NULL, NULL};
+        uint8_t			drv_id[2]	=    {0, 0};
+	int (*drv_load[2])(struct nm_drv_ops *) = { &nm_mx_load, &nm_qsnet_load };
         uint8_t			 gate_id	=    0;
         char			*buf		= NULL;
         char			*hostname	= "localhost";
@@ -136,13 +135,13 @@ main(int	  argc,
                 printf("running as server\n");
         }
 
-        err = nm_core_driver_init(p_core, nm_mx_load, &drv1_id, &l_url1);
-        printf("local url1: [%s]\n", l_url1);
-        err = nm_core_driver_init(p_core, nm_qsnet_load, &drv2_id, &l_url2);
-        printf("local url2: [%s]\n", l_url2);
+
+        err = nm_core_driver_load_init_some(p_core, 2, drv_load, drv_id, l_url);
+        printf("local url1: [%s]\n", l_url[0]);
+        printf("local url2: [%s]\n", l_url[1]);
 
         if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
+                printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out;
         }
 
@@ -160,13 +159,13 @@ main(int	  argc,
                 /* server
                  */
 
-                err = nm_core_gate_accept(p_core, gate_id, drv1_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id[0], NULL, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
-                err = nm_core_gate_accept(p_core, gate_id, drv2_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id[1], NULL, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv2) returned err = %d\n", err);
                         goto out;
@@ -214,14 +213,14 @@ main(int	  argc,
 
                 /* client
                  */
-                err = nm_core_gate_connect(p_core, gate_id, drv1_id,
+                err = nm_core_gate_connect(p_core, gate_id, drv_id[0],
                                            hostname, r_url1);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
-                err = nm_core_gate_connect(p_core, gate_id, drv2_id,
+                err = nm_core_gate_connect(p_core, gate_id, drv_id[1],
                                            hostname, r_url2);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv2) returned err = %d\n", err);

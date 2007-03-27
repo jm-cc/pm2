@@ -353,28 +353,28 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 
 #ifdef CONFIG_TCP
         if (tbx_streq(d->device_name, "tcp")) {
-                err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
                 goto found;
         }
 #else
         /* load TCPdg by default, unless TCP(regular) is explicitely requested
          */
         if (tbx_streq(d->device_name, "tcp")) {
-                err = nm_core_driver_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
                 goto found;
         }
 #endif
 
 #ifdef CONFIG_GM
         if (tbx_streq(d->device_name, "gm")) {
-                err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
                 goto found;
         }
 #endif
 
 #ifdef CONFIG_MX
         if (tbx_streq(d->device_name, "mx")) {
-                err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
                 goto found;
         }
 #endif
@@ -534,9 +534,9 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
                 if (elan_generateCapability (capability_str) < 0)
                         TBX_ERROR("elan_generateCapability");
 
-                err = nm_core_driver_init(p_core, nm_qsnet_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
                 if (err != NM_ESUCCESS) {
-                        NM_DISPF("nm_core_driver_init(qsnet) failed with error code %d", err);
+                        NM_DISPF("nm_core_driver_load_init(qsnet) failed with error code %d", err);
                         TBX_FAILURE("driver could not be initialized");
                 }
 
@@ -565,14 +565,14 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 
 #ifdef CONFIG_SISCI
         if (tbx_streq(d->device_name, "sisci")) {
-                err = nm_core_driver_init(p_core, nm_sisci_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
                 goto found;
         }
 #endif
 
 #ifdef CONFIG_IBVERBS
         if (tbx_streq(d->device_name, "ibverbs")) {
-                err = nm_core_driver_init(p_core, nm_ibverbs_load, &drv_id, &l_url);
+                err = nm_core_driver_load_init(p_core, nm_ibverbs_load, &drv_id, &l_url);
                 goto found;
         }
 #endif

@@ -56,31 +56,41 @@ struct nm_disk_pkt_wrap {
 
 static
 int
-nm_disk_init			(struct nm_drv *p_drv) {
-        struct nm_disk_drv	*p_disk_drv	= NULL;
+nm_disk_query			(struct nm_drv *p_drv) {
+	struct nm_disk_drv	*p_disk_drv	= NULL;
 	int err;
 
-        /* private data							*/
+	/* private data							*/
 	p_disk_drv	= TBX_MALLOC(sizeof (struct nm_disk_drv));
-        if (!p_disk_drv) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
+	if (!p_disk_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
 
-        memset(p_disk_drv, 0, sizeof (struct nm_disk_drv));
-        p_drv->priv	= p_disk_drv;
+	memset(p_disk_drv, 0, sizeof (struct nm_disk_drv));
+	p_drv->priv	= p_disk_drv;
 
-        /* driver url encoding						*/
-        p_drv->url	= tbx_strdup("-");
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 0;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_dgram			= 1;
+	p_drv->cap.has_selective_receive		= 0;
+	p_drv->cap.has_concurrent_selective_receive	= 0;
 
 	err = NM_ESUCCESS;
 
  out:
+	return err;
+}
+
+static
+int
+nm_disk_init			(struct nm_drv *p_drv) {
+        struct nm_disk_drv	*p_disk_drv	= p_drv->priv;
+	int err;
+
+        /* driver url encoding						*/
+        p_drv->url	= tbx_strdup("-");
+
+	err = NM_ESUCCESS;
 	return err;
 }
 
@@ -633,6 +643,7 @@ nm_disk_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
 int
 nm_disk_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_disk_query;
         p_ops->init		= nm_disk_init;
         p_ops->exit             = nm_disk_exit;
         p_ops->open_trk		= nm_disk_open_trk;

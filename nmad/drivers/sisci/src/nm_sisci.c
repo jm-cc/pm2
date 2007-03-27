@@ -309,8 +309,35 @@ nm_sisci_display_error(sci_error_t error)
 
 static
 int
+nm_sisci_query			(struct nm_drv *p_drv) {
+	struct nm_sisci_drv	*p_sisci_drv	= NULL;
+	int err;
+
+	/* private data							*/
+	p_sisci_drv	= TBX_MALLOC(sizeof (struct nm_sisci_drv));
+	if (!p_sisci_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+	memset(p_sisci_drv, 0, sizeof (struct nm_sisci_drv));
+	p_drv->priv = p_sisci_drv;
+
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_dgram			= 1;
+	p_drv->cap.has_selective_receive		= 0;
+	p_drv->cap.has_concurrent_selective_receive	= 0;
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+static
+int
 nm_sisci_init			(struct nm_drv *p_drv) {
-        struct nm_sisci_drv	*p_sisci_drv	= NULL;
+        struct nm_sisci_drv	*p_sisci_drv	= p_drv->priv;
         p_tbx_string_t		 url_string	= NULL;
         sci_desc_t		 sci_dev;
         unsigned int		 l_node_id;
@@ -362,14 +389,6 @@ nm_sisci_init			(struct nm_drv *p_drv) {
 
 #undef _CHK_
 
-        /* private data							*/
-	p_sisci_drv	= TBX_MALLOC(sizeof (struct nm_sisci_drv));
-        if (!p_sisci_drv) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
-
-        memset(p_sisci_drv, 0, sizeof (struct nm_sisci_drv));
         p_sisci_drv->sci_dev		= sci_dev;
         p_sisci_drv->sci_l_cnx_seg	= sci_l_seg;
         p_sisci_drv->l_node_id		= l_node_id;
@@ -379,17 +398,10 @@ nm_sisci_init			(struct nm_drv *p_drv) {
                         sizeof(struct nm_sisci_pkt_wrap),
                         INITIAL_PW_NUM,   "nmad/sisci/pw");
 
-        p_drv->priv	= p_sisci_drv;
-
         /* driver url encoding						*/
         url_string	= tbx_string_init_to_int(l_node_id);
         p_drv->url	= tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 0;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
 
 	err = NM_ESUCCESS;
 
@@ -1413,6 +1425,7 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
 int
 nm_sisci_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_sisci_query         ;
         p_ops->init		= nm_sisci_init         ;
         p_ops->exit             = nm_sisci_exit         ;
 

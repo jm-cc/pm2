@@ -43,31 +43,40 @@ struct nm_dummy_pkt_wrap {
 
 static
 int
-nm_dummy_init			(struct nm_drv *p_drv) {
-        struct nm_dummy_drv	*p_dummy_drv	= NULL;
+nm_dummy_query			(struct nm_drv *p_drv) {
+	struct nm_dummy_drv	*p_dummy_drv	= NULL;
 	int err;
 
-        /* private data							*/
+	/* private data							*/
 	p_dummy_drv	= TBX_MALLOC(sizeof (struct nm_dummy_drv));
-        if (!p_dummy_drv) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
+	if (!p_dummy_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
 
-        memset(p_dummy_drv, 0, sizeof (struct nm_dummy_drv));
-        p_drv->priv	= p_dummy_drv;
+	memset(p_dummy_drv, 0, sizeof (struct nm_dummy_drv));
+	p_drv->priv	= p_dummy_drv;
 
-        /* driver url encoding						*/
-        p_drv->url	= tbx_strdup("-");
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 0;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_dgram			= 1;
+	p_drv->cap.has_selective_receive		= 0;
+	p_drv->cap.has_concurrent_selective_receive	= 0;
 
 	err = NM_ESUCCESS;
 
  out:
+	return err;
+}
+
+static
+int
+nm_dummy_init			(struct nm_drv *p_drv) {
+	struct nm_dummy_drv	*p_dummy_drv	= p_drv->priv;
+
+	/* driver url encoding						*/
+	p_drv->url	= tbx_strdup("-");
+
+	err = NM_ESUCCESS;
 	return err;
 }
 
@@ -259,6 +268,7 @@ nm_dummy_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
 
 int
 nm_dummy_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_dummy_query        ;
         p_ops->init		= nm_dummy_init         ;
         p_ops->exit             = nm_dummy_exit         ;
 

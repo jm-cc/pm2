@@ -64,10 +64,10 @@ main(int	  argc,
                 r_url	= "w#f";
         }
 
-        err = nm_core_driver_init(p_core, nm_disk_load, &drv_id, NULL);
+        err = nm_core_driver_load_init(p_core, nm_disk_load, &drv_id, NULL);
 
         if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
+                printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out;
         }
 

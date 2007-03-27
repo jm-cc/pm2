@@ -40,10 +40,27 @@ nm_core_proto_init	(struct nm_core		 *p_core,
                          struct nm_proto	**pp_proto);
 
 int
-nm_core_driver_init	(struct nm_core		 *p_core,
+nm_core_driver_load	(struct nm_core		 *p_core,
                          int (*drv_load)(struct nm_drv_ops *),
-                         uint8_t		 *p_id,
+                         uint8_t		 *p_id);
+
+int
+nm_core_driver_init	(struct nm_core		 *p_core,
+                         uint8_t		 id,
                          char			**p_url);
+
+int
+nm_core_driver_load_init(struct nm_core		 *p_core,
+			 int (*drv_load)(struct nm_drv_ops *),
+			 uint8_t		 *p_id,
+			 char			**p_url);
+
+int
+nm_core_driver_load_init_some(struct nm_core *p_core,
+			      int count,
+			      int (**drv_load)(struct nm_drv_ops *),
+			      uint8_t *p_id,
+			      char **p_url);
 
 int
 nm_core_driver_exit	(struct nm_core		 *p_core);

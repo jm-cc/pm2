@@ -22,11 +22,16 @@ struct nm_trk_rq;
 /** Driver commands. */
 struct nm_drv_ops {
 
-        /** Initialize the driver.
+        /** Query and register resources for a driver.
+         */
+        int (*query)		(struct nm_drv 		*p_drv);
+	/* TODO: add a parameter to choose which resource */
+
+        /** Initialize the driver using previously registered resources.
          */
         int (*init)		(struct nm_drv 		*p_drv);
 
-        /** Shutdown the driver.
+        /** Shutdown the driver and release resources.
          */
         int (*exit)		(struct nm_drv 		*p_drv);
 

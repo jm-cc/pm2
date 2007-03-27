@@ -243,21 +243,16 @@ nm_core_proto_init(struct nm_core	 *p_core,
         return err;
 }
 
-/** Load and initialize a driver.
+/** Load a driver.
  *
  * Out parameters:
  * p_id  - contains the id of the new driver
- * p_url - contains the URL of the driver (memory for the URL is allocated by
- * nm_core)
  */
 int
-nm_core_driver_init(struct nm_core	 *p_core,
+nm_core_driver_load(struct nm_core	 *p_core,
                     int (*drv_load)(struct nm_drv_ops *),
-                    uint8_t		 *p_id,
-                    char		**p_url) {
+                    uint8_t *p_id) {
         struct nm_drv	*p_drv		= NULL;
-        struct nm_sched	*p_sched	= NULL;
-        p_tbx_string_t	 url		= NULL;
         int err;
 
         NM_LOG_IN();
@@ -281,14 +276,76 @@ nm_core_driver_init(struct nm_core	 *p_core,
                 goto out;
         }
 
+        if (p_id) {
+                *p_id	= p_drv->id;
+        }
+
+        err = NM_ESUCCESS;
+
+ out:
+        NM_LOG_OUT();
+
+        return err;
+}
+
+/** Query resources and register them for a driver.
+ *
+ */
+int
+nm_core_driver_query(struct nm_core	 *p_core,
+		     uint8_t id) {
+        struct nm_drv	*p_drv		= NULL;
+        int err;
+
+        NM_LOG_IN();
+        p_drv	= p_core->driver_array + id;
+
+	if (!p_drv->ops.query) {
+		err = NM_EINVAL;
+                goto out;
+        }
+
+        err = p_drv->ops.query(p_drv);
+       	if (err != NM_ESUCCESS) {
+                NM_DISPF("drv.query returned %d", err);
+       	        goto out;
+        }
+
+        err = NM_ESUCCESS;
+
+ out:
+        NM_LOG_OUT();
+
+        return err;
+}
+
+/** Initialize a driver using previously registered resources.
+ *
+ * Out parameters:
+ * p_url - contains the URL of the driver (memory for the URL is allocated by
+ * nm_core)
+ */
+int
+nm_core_driver_init(struct nm_core	 *p_core,
+                    uint8_t id,
+                    char		**p_url) {
+        struct nm_drv	*p_drv		= NULL;
+        struct nm_sched	*p_sched	= NULL;
+        p_tbx_string_t	 url		= NULL;
+        int err;
+
+        NM_LOG_IN();
+        p_drv	= p_core->driver_array + id;
+
+	if (!p_drv->ops.init) {
+		err = NM_EINVAL;
+                goto out;
+        }
+
         err = p_drv->ops.init(p_drv);
         if (err != NM_ESUCCESS) {
                 NM_DISPF("drv.init returned %d", err);
                 goto out;
-        }
-
-        if (p_id) {
-                *p_id	= p_drv->id;
         }
 
         if (p_url) {
@@ -333,6 +390,81 @@ nm_core_driver_init(struct nm_core	 *p_core,
         NM_LOG_OUT();
 
         return err;
+}
+
+/** Simple helper to prevent basic applications from having to
+ * do load and init when they don't tweak anything in between.
+ */
+int
+nm_core_driver_load_init(struct nm_core *p_core,
+			 int (*drv_load)(struct nm_drv_ops *),
+			 uint8_t *p_id,
+			 char **p_url)
+{
+	uint8_t id;
+	int err;
+
+	err = nm_core_driver_load(p_core, drv_load, &id);
+	if (err != NM_ESUCCESS) {
+		NM_DISPF("nm_core_driver_load returned %d", err);
+		return err;
+	}
+
+	err = nm_core_driver_query(p_core, id);
+	if (err != NM_ESUCCESS) {
+		NM_DISPF("nm_core_driver_query returned %d", err);
+		return err;
+	}
+
+	err = nm_core_driver_init(p_core, id, p_url);
+	if (err != NM_ESUCCESS) {
+		NM_DISPF("nm_core_driver_init returned %d", err);
+		return err;
+	}
+
+	*p_id = id;
+	return NM_ESUCCESS;
+}
+
+/** Simple helper to load and init several drivers at once,
+ * applying numa binding in-between.
+ */
+int
+nm_core_driver_load_init_some(struct nm_core *p_core,
+			      int count,
+			      int (**drv_load)(struct nm_drv_ops *),
+			      uint8_t *p_id,
+			      char **p_url)
+{
+	int i;
+	uint8_t id;
+	
+	for(i=0; i<count; i++) {
+		int err;
+		err = nm_core_driver_load(p_core, drv_load[i], &id);
+		if (err != NM_ESUCCESS) {
+			NM_DISPF("nm_core_driver_load returned %d", err);
+			return err;
+		}
+		
+		p_id[i] = id;
+		
+		err = nm_core_driver_query(p_core, p_id[i]);
+		if (err != NM_ESUCCESS) {
+			NM_DISPF("nm_core_driver_query returned %d", err);
+			return err;
+		}
+		
+		err = nm_core_driver_init(p_core, p_id[i], &p_url[i]);
+		if (err != NM_ESUCCESS) {
+			NM_DISPF("nm_core_driver_init returned %d", err);
+			return err;
+		}
+
+		printf("driver #%d url: [%s]\n", i, p_url[i]);
+	}
+	
+	return NM_ESUCCESS;
 }
 
 /** Shutdown a driver.

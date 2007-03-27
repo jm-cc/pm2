@@ -224,9 +224,9 @@ init(int	  argc,
                 printf("running as server\n");
         }
 
-        err = nm_core_driver_init(p_core, p_driver_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, p_driver_load, &drv_id, &l_url);
         if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
+                printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out_err;
         }
 

@@ -185,16 +185,39 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
 
 static
 int
+nm_tcp_query		(struct nm_drv *p_drv) {
+	struct nm_tcp_drv	*p_tcp_drv	= NULL;
+	int			 err;
+
+	/* private data							*/
+	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcp_drv));
+	if (!p_tcp_drv) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+	memset(p_tcp_drv, 0, sizeof (struct nm_tcp_drv));
+	p_drv->priv = p_tcp_drv;
+
+	/* driver capabilities encoding					*/
+	p_drv->cap.has_trk_rq_stream			= 1;
+	p_drv->cap.has_selective_receive		= 1;
+	p_drv->cap.has_concurrent_selective_receive	= 1;
+
+	err = NM_ESUCCESS;
+
+ out:
+	return err;
+}
+
+static
+int
 nm_tcp_init		(struct nm_drv *p_drv) {
-        struct nm_tcp_drv	*p_tcp_drv	= NULL;
+	struct nm_tcp_drv	*p_tcp_drv	= p_drv->priv;
         uint16_t		 port;
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
         int			 err;
-
-        /* private data							*/
-	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcp_drv));
-        p_drv->priv	= p_tcp_drv;
 
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcp_socket_create(&address, 0);
@@ -205,11 +228,6 @@ nm_tcp_init		(struct nm_drv *p_drv) {
         url_string	= tbx_string_init_to_int(port);
         p_drv->url	= tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
-
-        /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_stream			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 1;
 
         SAMPLE(po_init);
 
@@ -900,6 +918,7 @@ nm_tcp_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
 int
 nm_tcp_load(struct nm_drv_ops *p_ops) {
+        p_ops->query		= nm_tcp_query;
         p_ops->init		= nm_tcp_init;
         p_ops->exit             = nm_tcp_exit;
         p_ops->open_trk		= nm_tcp_open_trk;

@@ -79,16 +79,16 @@ main(int	  argc,
 
 #if defined CONFIG_MX
         printf("MX\n");
-        err = nm_core_driver_init(p_core, nm_mx_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
 #elif defined CONFIG_GM
         printf("GM\n");
-        err = nm_core_driver_init(p_core, nm_gm_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
 #else
         printf("TCP\n");
-        err = nm_core_driver_init(p_core, nm_tcp_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_init returned err = %d\n", err);
+                printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out;
         }
 

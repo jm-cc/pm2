@@ -74,37 +74,37 @@
       FUT_DO_PROBE(code, ##__VA_ARGS__);                  \
  PROF_END
 
-#define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
-#define _GEN_PREPROC(name,line) __GEN_PREPROC(name,line)
-#define GEN_PREPROC1(name,arg1) _GEN_PREPROC1(name,__LINE__,arg1)
-#define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC1(name,line,arg1)
-#define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC2(name,__LINE__,arg1,arg2)
-#define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC2(name,line,arg1,arg2)
-#define GEN_PREPROCSTR(name,s) _GEN_PREPROCSTR(name,__LINE__,s)
-#define _GEN_PREPROCSTR(name,line,s) __GEN_PREPROCSTR(name,line,s)
-#define GEN_PREPROC_ALWAYS(name) _GEN_PREPROC_ALWAYS(name,__LINE__)
-#define _GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC_ALWAYS(name,line)
-#define GEN_PREPROC1_ALWAYS(name,arg1) _GEN_PREPROC1_ALWAYS(name,__LINE__,arg1)
-#define _GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC1_ALWAYS(name,line,arg1)
-#define GEN_PREPROC2_ALWAYS(name,arg1,arg2) _GEN_PREPROC2_ALWAYS(name,__LINE__,arg1,arg2)
-#define _GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)
-#define GEN_PREPROCSTR_ALWAYS(name,s) _GEN_PREPROCSTR_ALWAYS(name,__LINE__,s)
-#define _GEN_PREPROCSTR_ALWAYS(name,line,s) __GEN_PREPROCSTR_ALWAYS(name,line,s)
+#define GEN_PREPROC(name,str) _GEN_PREPROC(name,str,__LINE__)
+#define _GEN_PREPROC(name,str,line) __GEN_PREPROC(name,str,line)
+#define GEN_PREPROC1(name,str,arg1) _GEN_PREPROC1(name,str,__LINE__,arg1)
+#define _GEN_PREPROC1(name,str,line,arg1) __GEN_PREPROC1(name,str,line,arg1)
+#define GEN_PREPROC2(name,str,arg1,arg2) _GEN_PREPROC2(name,str,__LINE__,arg1,arg2)
+#define _GEN_PREPROC2(name,str,line,arg1,arg2) __GEN_PREPROC2(name,str,line,arg1,arg2)
+#define GEN_PREPROCSTR(name,str,s) _GEN_PREPROCSTR(name,str,__LINE__,s)
+#define _GEN_PREPROCSTR(name,str,line,s) __GEN_PREPROCSTR(name,str,line,s)
+#define GEN_PREPROC_ALWAYS(name,str) _GEN_PREPROC_ALWAYS(name,str,__LINE__)
+#define _GEN_PREPROC_ALWAYS(name,str,line) __GEN_PREPROC_ALWAYS(name,str,line)
+#define GEN_PREPROC1_ALWAYS(name,str,arg1) _GEN_PREPROC1_ALWAYS(name,str,__LINE__,arg1)
+#define _GEN_PREPROC1_ALWAYS(name,str,line,arg1) __GEN_PREPROC1_ALWAYS(name,str,line,arg1)
+#define GEN_PREPROC2_ALWAYS(name,str,arg1,arg2) _GEN_PREPROC2_ALWAYS(name,str,__LINE__,arg1,arg2)
+#define _GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2) __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2)
+#define GEN_PREPROCSTR_ALWAYS(name,str,s) _GEN_PREPROCSTR_ALWAYS(name,str,__LINE__,s)
+#define _GEN_PREPROCSTR_ALWAYS(name,str,line,s) __GEN_PREPROCSTR_ALWAYS(name,str,line,s)
 
 #ifdef PREPROC
 
-#define __GEN_PREPROC(name,line)                          \
+#define __GEN_PREPROC(name,str,line)                          \
   do {                                                    \
-    extern int foo##line asm ("this_is_the_fut_" name "_code"); \
-    foo##line = 1;                                              \
+    extern int foo##name##line asm ("this_is_the_fut_" str "_code"); \
+    foo##name##line = 1;                                              \
   } while(0)
-#define __GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line)
-#define __GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line)
-#define __GEN_PREPROCSTR(name,line,s) __GEN_PREPROC(name,line)
-#define __GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC(name,line)
-#define __GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC(name,line)
-#define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC(name,line)
-#define __GEN_PREPROCSTR(name,line,s) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC1(name,str,line,arg1) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC2(name,str,line,arg1,arg2) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROCSTR(name,str,line,s) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC_ALWAYS(name,str,line) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC1_ALWAYS(name,str,line,arg1) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROCSTR(name,str,line,s) __GEN_PREPROC(name,str,line)
 
 #else // ifndef PREPROC
 
@@ -114,52 +114,52 @@
 #define FUT_SYM_PREFIX ""
 #endif
 
-#define __GEN_PREPROC(name,line)                          \
+#define __GEN_PREPROC(name,str,line)                          \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_PROBE0(PROFILE_KEYMASK, __code##line);            \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_PROBE0(PROFILE_KEYMASK, __code_##name##_##line);            \
   } while(0)
 
-#define __GEN_PREPROC1(name,line,arg1)                    \
+#define __GEN_PREPROC1(name,str,line,arg1)                    \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_PROBE1(PROFILE_KEYMASK, __code##line, arg1);      \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_PROBE1(PROFILE_KEYMASK, __code_##name##_##line, arg1);      \
   } while(0)
 
-#define __GEN_PREPROC2(name,line,arg1,arg2)               \
+#define __GEN_PREPROC2(name,str,line,arg1,arg2)               \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2); \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_PROBE2(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2); \
   } while(0)
 
-#define __GEN_PREPROCSTR(name,line,s)                     \
+#define __GEN_PREPROCSTR(name,str,line,s)                     \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_PROBESTR(PROFILE_KEYMASK, __code##line, s);       \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_PROBESTR(PROFILE_KEYMASK, __code_##name##_##line, s);       \
   } while(0)
 
-#define __GEN_PREPROC_ALWAYS(name,line)                   \
+#define __GEN_PREPROC_ALWAYS(name,str,line)                   \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_DO_PROBE0(__code##line);                          \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_DO_PROBE0(__code_##name##_##line);                          \
   } while(0)
 
-#define __GEN_PREPROC1_ALWAYS(name,line,arg1)             \
+#define __GEN_PREPROC1_ALWAYS(name,str,line,arg1)             \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_DO_PROBE1(__code##line, arg1);                    \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_DO_PROBE1(__code_##name##_##line, arg1);                    \
   } while(0)
 
-#define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)        \
+#define __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2)        \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_DO_PROBE2(__code##line, arg1,arg2);               \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_DO_PROBE2(__code_##name##_##line, arg1,arg2);               \
   } while(0)
 
-#define __GEN_PREPROCSTR_ALWAYS(name,line,s)              \
+#define __GEN_PREPROCSTR_ALWAYS(name,str,line,s)              \
   do {                                                    \
-    extern unsigned __code##line asm(FUT_SYM_PREFIX "fut_" name "_code");\
-    FUT_DO_PROBESTR(__code##line, s);                     \
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+    FUT_DO_PROBESTR(__code_##name##_##line, s);                     \
   } while(0)
 
 #endif // PREPROC
@@ -170,8 +170,8 @@
 #    define PROF_OUT()		__builtin_profile_func_exit()
 #  elif (__GNUC__ == 3 && __GNUC_MINOR__ < 4) || (__GNUC__ <= 2)
 /* Starting from gcc 3.4, __FUNCTION__ really can't be catenated with string litterals */
-#    define PROF_IN()		GEN_PREPROC(__FUNCTION__ "_entry")
-#    define PROF_OUT()		GEN_PREPROC(__FUNCTION__ "_exit")
+#    define PROF_IN()		GEN_PREPROC(function, __FUNCTION__ "_entry")
+#    define PROF_OUT()		GEN_PREPROC(function, __FUNCTION__ "_exit")
 #  endif
 #endif
 
@@ -181,16 +181,16 @@
 #define PROF_OUT() (void) 0
 #endif
 
-#define PROF_IN_EXT(name)             GEN_PREPROC(#name "_entry")
-#define PROF_OUT_EXT(name)            GEN_PREPROC(#name "_exit")
-#define PROF_EVENT(name)              GEN_PREPROC(#name "_single")
-#define PROF_EVENT1(name, arg1)       GEN_PREPROC1(#name "_single", arg1)
-#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(#name "_single", arg1, arg2)
-#define PROF_EVENTSTR(name, s)        GEN_PREPROCSTR(#name "_single", s)
-#define PROF_EVENT_ALWAYS(name)              GEN_PREPROC_ALWAYS(#name "_single")
-#define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(#name "_single", arg1)
-#define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(#name "_single", arg1, arg2)
-#define PROF_EVENTSTR_ALWAYS(name, s)        GEN_PREPROCSTR_ALWAYS(#name "_single", s)
+#define PROF_IN_EXT(name)             GEN_PREPROC(name, #name "_entry")
+#define PROF_OUT_EXT(name)            GEN_PREPROC(name, #name "_exit")
+#define PROF_EVENT(name)              GEN_PREPROC(name, #name "_single")
+#define PROF_EVENT1(name, arg1)       GEN_PREPROC1(name, #name "_single", arg1)
+#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(name, #name "_single", arg1, arg2)
+#define PROF_EVENTSTR(name, s)        GEN_PREPROCSTR(name, #name "_single", s)
+#define PROF_EVENT_ALWAYS(name)              GEN_PREPROC_ALWAYS(name, #name "_single")
+#define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(name, #name "_single", arg1)
+#define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(name, #name "_single", arg1, arg2)
+#define PROF_EVENTSTR_ALWAYS(name, s)        GEN_PREPROCSTR_ALWAYS(name, #name "_single", s)
 
 #else // ifndef DO_PROFILE
 

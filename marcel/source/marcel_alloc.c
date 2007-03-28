@@ -74,12 +74,10 @@ static void *unmapped_slot_alloc(void *foo)
 	void *ptr;
 
 	ma_spin_lock(&next_slot_lock);
-#ifdef SLOT_AREA_BOTTOM
-	if ((unsigned long)next_slot == SLOT_AREA_BOTTOM) {
+	if ((unsigned long)next_slot <= SLOT_AREA_BOTTOM) {
 		ma_spin_unlock(&next_slot_lock);
 		return NULL;
 	}
-#endif
 	ptr = next_slot -= 
 #if defined(PM2VALGRIND) || defined(PM2STACKSGUARD) || defined(PM2DEBUG)
 		2*
@@ -102,8 +100,7 @@ retry:
 		if (!ma_in_atomic() && nb_try_left--) {
 			/* On tente de faire avancer les autres
 			 * threads */
-			mdebugl(PM2DEBUG_DISPLEVEL,
-				"Trying to wait for mmap.\n");
+			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
 			marcel_yield();
 			goto retry;
 		}
@@ -120,8 +117,7 @@ retry:
 		if (!ma_in_atomic() && nb_try_left--) {
 			/* On tente de faire avancer les autres
 			 * threads */
-			mdebugl(PM2DEBUG_DISPLEVEL,
-				"Trying to wait for mmap. Current: mmap(%p, %lx, ...)\n", next_slot, THREAD_SLOT_SIZE);
+			mdebugl(PM2DEBUG_DISPLEVEL, "mmap(%p, %lx, ...) for stack failed! Trying to wait for other threads to terminate\n", next_slot, THREAD_SLOT_SIZE);
 			marcel_yield();
 			goto retry;
 		}

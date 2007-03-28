@@ -169,16 +169,16 @@ extern void *ISOADDR_AREA_TOP;
 #  error Sorry. This system/architecture is not yet supported.
 #endif
 
+#ifndef SLOT_AREA_BOTTOM
+#define SLOT_AREA_BOTTOM 0x1000
+#endif
+
 #ifdef PM2VALGRIND
 #    ifdef ENABLE_STACK_JUMPING
 #	error "valgrind doesn't work with stack jumping enabled"
 #    endif
-#    ifdef SLOT_AREA_BOTTOM
-#       undef IS_ON_MAIN_STACK
-#	define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP || (sp) < SLOT_AREA_BOTTOM )
-#    else
-#	error "IS_ON_MAIN_STACK needs to be fixed for valgrind support on this architecture"
-#    endif
+#    undef IS_ON_MAIN_STACK
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP || (sp) < SLOT_AREA_BOTTOM )
 #endif
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)

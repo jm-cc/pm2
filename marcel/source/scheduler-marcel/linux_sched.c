@@ -946,7 +946,7 @@ need_resched_atomic:
 #endif
 		/* Now we said that, check again that nobody woke us in the
 		 * meanwhile. */
-		if (!prev->sched.state)
+		if (go_to_sleep && !prev->sched.state)
 			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(LWP_SELF)->hold;

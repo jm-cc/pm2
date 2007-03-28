@@ -88,19 +88,26 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
   
    parcourir_bulle(bullemere,0);
   
-   fprintf(fw,"   marcel_start_playing();\n");
-   fprintf(fw,"   int i = 5;\n");
-   fprintf(fw,"   while(i--) {\n");
    int taillebulle = GetNbElement(bullemere);
    int i;
    for (i = 1; i <= taillebulle; i++) {
       Element *element_i = GetElement(bullemere, i);
       TypeElement type = GetTypeElement(element_i);
       int id = GetId(element_i);
-      if (type == BULLE) {
+      if (type == BULLE)
          fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
+   }
+
+   fprintf(fw,"   marcel_start_playing();\n");
+   fprintf(fw,"   int i = 5;\n");
+   fprintf(fw,"   while(i--) {\n");
+
+   for (i = 1; i <= taillebulle; i++) {
+      Element *element_i = GetElement(bullemere, i);
+      TypeElement type = GetTypeElement(element_i);
+      int id = GetId(element_i);
+      if (type == BULLE)
          fprintf(fw,"      marcel_bubble_spread(&b%d, marcel_topo_level(0,0));\n", id);
-      }
    }
    fprintf(fw,"      marcel_delay(1000);\n");
    fprintf(fw,"   }\n");

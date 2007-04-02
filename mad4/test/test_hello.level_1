@@ -14,6 +14,10 @@
 
 compile_leonie()
 {
+    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
+    if [ "$x" == "" ] ; then
+        pm2-create-sample-flavors leonie
+    fi
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'

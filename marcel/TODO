@@ -1,3 +1,11 @@
+dans marcel.h,
+#include <stdio.h>
+#define printf marcel_printf
+#define fprintf marcel_fprintf
+#define read marcel_read
+...
+?
+
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux....

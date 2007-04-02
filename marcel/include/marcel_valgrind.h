@@ -30,8 +30,16 @@
 #define VALGRIND_STACK_DEREGISTER(id) ((void)0)
 #endif
 
-#ifndef VALGRIND_MAKE_WRITABLE
-#define VALGRIND_MAKE_WRITABLE(start, size) ((void)0)
+#ifndef VALGRIND_MAKE_MEM_NOACCESS
+#define VALGRIND_MAKE_MEM_NOACCESS(start, size) ((void)0)
+#endif
+
+#ifndef VALGRIND_MAKE_MEM_UNDEFINED
+#define VALGRIND_MAKE_MEM_UNDEFINED(start, size) ((void)0)
+#endif
+
+#ifndef VALGRIND_MAKE_MEM_DEFINED
+#define VALGRIND_MAKE_MEM_DEFINED(start, size) ((void)0)
 #endif
 
 #endif /* MARCEL_VALGRIND_EST_DEF */

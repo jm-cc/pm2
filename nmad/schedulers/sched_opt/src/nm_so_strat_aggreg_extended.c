@@ -58,7 +58,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
       goto next;
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    nb_ctrl_aggregation ++;
+    //nb_ctrl_aggregation ++;
     goto out;
 
   next:
@@ -105,7 +105,7 @@ static int pack_ctrl_extended(struct nm_gate *p_gate,
     }
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    nb_ctrl_aggregation ++;
+    //nb_ctrl_aggregation ++;
 
     if (p_so_pw->is_completed == tbx_false) {
       p_so_pw->is_completed = is_completed;
@@ -172,7 +172,7 @@ static int pack(struct nm_gate *p_gate,
 	  goto next;
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      nb_data_aggregation ++;
+      //nb_data_aggregation ++;
       goto out;
 
     next:
@@ -287,7 +287,7 @@ int pack_extended(struct nm_gate *p_gate,
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
       NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
-      nb_extended_aggregation ++;
+      //nb_extended_aggregation ++;
 
       if (p_so_pw->is_completed == tbx_false) {
         p_so_pw->is_completed = is_completed;
@@ -418,9 +418,9 @@ static int init(void)
 
 static int exit_strategy(void)
 {
-  DISP_VAL("Aggregation data", nb_data_aggregation);
-  DISP_VAL("Extended aggregation", nb_extended_aggregation);
-  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
+  //  DISP_VAL("Aggregation data", nb_data_aggregation);
+  //  DISP_VAL("Extended aggregation", nb_extended_aggregation);
+  //  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

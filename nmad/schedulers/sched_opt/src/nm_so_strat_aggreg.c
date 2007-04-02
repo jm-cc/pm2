@@ -232,8 +232,8 @@ static int init(void)
 
 static int exit_strategy(void)
 {
-  NM_LOG_VAL("Aggregation data", nb_data_aggregation);
-  NM_LOG_VAL("Aggregation control", nb_ctrl_aggregation);
+  //NM_LOG_VAL("Aggregation data", nb_data_aggregation);
+  //NM_LOG_VAL("Aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

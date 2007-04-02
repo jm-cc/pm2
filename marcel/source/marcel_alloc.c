@@ -69,6 +69,7 @@ unsigned long __main_thread_tls_base;
 #endif
 #endif
 
+/* Allocate a new slot but don't map it yet */
 static void *unmapped_slot_alloc(void *foo)
 {
 	void *ptr;
@@ -87,6 +88,7 @@ static void *unmapped_slot_alloc(void *foo)
 	return ptr;
 }
 
+/* Map a new slot */
 static void *mapped_slot_alloc(void *foo)
 {
 	void *ptr;
@@ -98,8 +100,6 @@ retry:
 	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
 	if (!ptr) {
 		if (!ma_in_atomic() && nb_try_left--) {
-			/* On tente de faire avancer les autres
-			 * threads */
 			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
 			marcel_yield();
 			goto retry;
@@ -115,8 +115,6 @@ retry:
 
 	if(res == MAP_FAILED) {
 		if (!ma_in_atomic() && nb_try_left--) {
-			/* On tente de faire avancer les autres
-			 * threads */
 			mdebugl(PM2DEBUG_DISPLEVEL, "mmap(%p, %lx, ...) for stack failed! Trying to wait for other threads to terminate\n", next_slot, THREAD_SLOT_SIZE);
 			marcel_yield();
 			goto retry;
@@ -133,6 +131,7 @@ retry:
 	return ptr;
 }
 
+/* Allocate a TLS area for the slot */
 #ifdef MA__PROVIDE_TLS
 static void *tls_slot_alloc(void *foo) {
 	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
@@ -174,6 +173,7 @@ static void *tls_slot_alloc(void *foo) {
 	return ptr;
 }
 
+/* Free TLS area of the slot */
 static void tls_slot_free(void *slot, void *foo) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
@@ -182,12 +182,15 @@ static void tls_slot_free(void *slot, void *foo) {
 }
 #endif /* MA__PROVIDE_TLS */
 
+/* Unmap the slot */
 static void mapped_slot_free(void *slot, void *foo)
 {
 	if (munmap(slot, THREAD_SLOT_SIZE) == -1)
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	ma_obj_free(marcel_unmapped_slot_allocator, slot);
 }
+
+/* No way to free mapped slots */
 
 #undef marcel_slot_alloc
 void *marcel_slot_alloc(void)
@@ -230,6 +233,7 @@ static void __marcel_init marcel_slot_init(void)
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 
 #ifdef MA__PROVIDE_TLS
+	/* Check static TLS size */
 	size_t static_tls_size, static_tls_align;
 	_dl_get_tls_static_info(&static_tls_size, &static_tls_align);
 	MA_BUG_ON(static_tls_align > MARCEL_ALIGN);
@@ -237,6 +241,7 @@ static void __marcel_init marcel_slot_init(void)
 		fprintf(stderr,"Marcel has only %lu bytes for TLS while %d are needed, please increase MA_TLS_AREA_SIZE. Aborting.\n", MA_TLS_AREA_SIZE, static_tls_size + sizeof(lpt_tcb_t));
 		abort();
 	}
+	/* Record the main thread's TLS register */
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));

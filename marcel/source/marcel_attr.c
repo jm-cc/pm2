@@ -28,12 +28,8 @@
 #endif
 #include <inttypes.h>
 
-/* Déclaré non statique car  dans marcel.c : */
 marcel_attr_t marcel_attr_default = MARCEL_ATTR_INITIALIZER;
 marcel_attr_t marcel_attr_destroyer = MARCEL_ATTR_DESTROYER;
-
-/* Déclaré dans marcel.c : */
-extern volatile unsigned default_stack;
 
 DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 {

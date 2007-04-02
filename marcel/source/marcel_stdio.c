@@ -18,14 +18,12 @@
 
 #include <stdarg.h>
 
-//static marcel_lock_t __io_lock = MARCEL_LOCK_INIT;
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
 #endif
 
 static __tbx_inline__ void io_lock()
 {
-	//marcel_lock_acquire(&__io_lock);
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 	marcel_mutex_lock(&ma_io_lock);
 #else
@@ -40,7 +38,6 @@ static __tbx_inline__ void io_unlock()
 #else
 	marcel_extlib_unprotect();
 #endif
-	//marcel_lock_release(&__io_lock);
 }
 
 int marcel_printf(const char *__restrict format, ...)

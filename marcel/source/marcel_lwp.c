@@ -136,6 +136,7 @@ static void *lwp_kthread_start_func(void *arg)
 
 	marcel_lwp_start(lwp);
 
+	/* wait for being notified to stop the kernel thread */
 	marcel_sem_P(&lwp->kthread_stop);
 
 	ma_local_bh_disable();
@@ -262,6 +263,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 
 	LOG_OUT();
 }
+
 /* wait for ourself to become the active LWP of a VP */
 void ma_lwp_wait_active(void) {
 	struct marcel_topo_level *level;

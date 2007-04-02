@@ -17,6 +17,8 @@
 #include "marcel.h"
 #include <errno.h>
 
+/* a marcel_key_t is just an index in the key[] array of marcel_task_t */
+
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
 int marcel_key_present[MAX_KEY_SPECIFIC]={0};
 static marcel_lock_t marcel_key_lock=MARCEL_LOCK_INIT;

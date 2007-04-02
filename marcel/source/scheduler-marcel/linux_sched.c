@@ -961,6 +961,7 @@ restart:
 	max_prio = prev_as_prio;
 	hard_preempt = 0;
 
+	/* Iterate over runqueues that cover this LWP */
 #ifdef MA__LWPS
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
 		sched_debug("default prio: %d, rq %s\n",max_prio,ma_rq_holder(nexth)->name);
@@ -1041,6 +1042,8 @@ restart:
 		goto need_resched_atomic;
 #endif
 	}
+
+	/* found something interesting, lock the holder */
 
 	ma_holder_lock(nexth);
 	sched_debug("locked(%p)\n",nexth);
@@ -1132,9 +1135,12 @@ switch_tasks:
 //		if (!(HIGH_CREDIT(prev) || LOW_CREDIT(prev)))
 //			prev->interactive_credit--;
 //	}
+
+	/* update statistics */
 	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
 
 	if (tbx_likely(didswitch = (prev != next))) {
+		/* really switch */
 #ifdef MA__LWPS
 		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
 			PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));

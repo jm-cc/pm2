@@ -292,6 +292,7 @@ void marcel_leave_blocking_section(void);
 #  define for_all_lwp_from_end() \
      list_for_each_entry_from_end()
 #  define lwp_isset(num, map) ma_test_bit(num, &map)
+/* Should rather be the node level where this lwp was started */
 #  define lwp_vpaffinity_level(lwp)	      (&marcel_machine_level[0])
 #else
 #  define cur_lwp                             (&__main_lwp)

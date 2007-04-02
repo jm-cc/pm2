@@ -150,6 +150,7 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #define COREID		"core id"
 //#define THREADID	"thread id"
 
+/* Look at Linux' /proc/cpuinfo */
 static void __marcel_init look_cpuinfo(void) {
 	FILE *fd;
 	char string[strlen(PHYSID)+1+9+1+1];
@@ -331,6 +332,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 #ifdef LINUX_SYS
 #include <numa.h>
+/* Ask libnuma for NUMA nodes */
 static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
 	unsigned buffersize=MARCEL_NBMAXCPUS/8;
@@ -401,6 +403,7 @@ static void __marcel_init look_libnuma(void) {
 
 #ifdef OSF_SYS
 #include <numa.h>
+/* Ask libnuma for topology */
 static void __marcel_init look_libnuma(void) {
 	cpu_cursor_t cursor;
 	unsigned i;
@@ -457,6 +460,7 @@ static void __marcel_init look_libnuma(void) {
 
 #ifdef AIX_SYS
 #include <sys/rset.h>
+/* Ask rsets for topology */
 static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	rsethandle_t rset, rad;
 	int r,i,nbcpus,j;
@@ -540,6 +544,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 #endif
 
 
+/* Use the value returned by ma_nbprocessors() */
 static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
 	unsigned cpu;
@@ -602,6 +607,7 @@ static void topo_connect(void) {
 	}
 }
 
+/* Main discovery loop */
 static void topo_discover(void) {
 	unsigned l,i,j;
 	struct marcel_topo_level *level;
@@ -611,6 +617,7 @@ static void topo_discover(void) {
 		exit(1);
 	}
 
+	/* Raw detection, from coarser levels to finer levels */
 #ifdef MA__NUMA
 	unsigned k,m,n;
 	unsigned nbsublevels;

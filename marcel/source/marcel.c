@@ -35,6 +35,7 @@
 #include <sys/mman.h>
 #endif
 
+/* Miscellaneous functions */
 
 #ifdef RS6K_ARCH
 int _jmg(int r)
@@ -83,9 +84,6 @@ void marcel_breakpoint()
 {
 	/* Lieu ideal ;-) pour un point d'arret */
 }
-
-/* =========== specifs =========== */
-int marcel_cancel(marcel_t pid);
 
 /* returns the amount of mem between the base of the current thread stack and
    its stack pointer */

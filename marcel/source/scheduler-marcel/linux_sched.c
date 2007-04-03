@@ -554,6 +554,10 @@ static void finish_task_switch(marcel_task_t *prev)
 		MTRACE("still running",prev);
 		ma_enqueue_task(prev,prevh);
 	}
+	/* shouldn't already be running since we just left it ! */
+	MA_BUG_ON(MA_TASK_IS_RUNNING(prev));
+	/* No other choice */
+	MA_BUG_ON(!(MA_TASK_IS_READY(prev) || MA_TASK_IS_BLOCKED(prev)));
 
 #ifdef MA__BUBBLES
 	if ((h = (ma_task_init_holder(prev)))

@@ -228,10 +228,11 @@ void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsi
 
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 	unsigned long mask = 1<<node;
+	uintptr_t addr = ((uintptr_t)ptr) & ~(getpagesize()-1);
 	if (node < 0 || ma_numa_not_available)
 		return;
-	if (mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
-		mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
+	if (mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+		mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
 }
 #elif defined(OSF_SYS)
 #define HAS_NUMA

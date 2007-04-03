@@ -56,7 +56,7 @@ compile()
 {
     echo "Compiling program $prog..."
     #cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor
-    cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor
+    cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor
 }
 
 clean()

@@ -64,7 +64,7 @@ do_the_test()
     # Compilation
     echo "Compiling program $prog..."
     #(cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
-    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor) | sed -e 's/^/..../'
+    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor) | sed -e 's/^/..../'
     [ $? -eq 0 ] || pm2test_error "Compilation failed"
 
     # Execution

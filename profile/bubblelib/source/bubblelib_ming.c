@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct {
 	SWFMovie swf;
@@ -58,6 +59,7 @@ static void error(const char *msg, ...) {
 	va_end(args);
 	if (!recur++) {
 		fprintf(stderr,"saving to rescue.swf\n");
+		unlink("rescue.swf");
 		SWFMovie_save(lastmovie->swf,"rescue.swf");
 		fprintf(stderr,"saved to rescue.swf\n");
 	}
@@ -215,6 +217,7 @@ void mySWFMovie_pause(BubbleMovie movie, float sec) {
 }
 
 int mySWFMovie_save(BubbleMovie movie, const char *filename) {
+	unlink(filename);
 	return SWFMovie_save(movie->swf, filename);
 }
 

@@ -54,6 +54,7 @@ Other options
   --loader      : loader used
   --preload     : dynamic libraries to be pre-loaded
   --ld-library-path : dynamic library path to be added
+  --getvar=name : print content of specified variable
 
 Known values for MODULE are:
     ${_PM2CONFIG_MODULES}
@@ -542,6 +543,10 @@ pm2config_parse_cmdline() # args
     --ext|--protocols|--schedulers|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
+     --getvar=*)
+        PM2_REQUIREDVAR=$_optarg
+        _other=$1
+        ;;
     --cflags)
        	_cflags=true
        	;;
@@ -620,6 +625,10 @@ pm2config_parse_cmdline() # args
 	        echo $_PM2CONFIG_LAUNCHER
 		exit 0
 		;;
+            --getvar=*) # print contents of required variable
+                echo ${!PM2_REQUIREDVAR}
+                exit 0
+                ;;
 	    --modules)
 		echo $_PM2CONFIG_MODULES
 		exit 0

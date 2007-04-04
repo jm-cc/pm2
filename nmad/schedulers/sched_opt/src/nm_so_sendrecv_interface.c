@@ -522,15 +522,35 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
                long gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  struct nm_gate *p_gate = p_core->gate_array + gate_id;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
-  uint8_t seq = p_so_gate->recv_seq_number[tag];
+  if (gate_id == NM_SO_ANY_SRC) {
+    int i;
+    for(i = 0; i < p_core->nb_gates; i++) {
+      struct nm_gate *p_gate = p_core->gate_array + i;
+      struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
-  volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+      uint8_t seq = p_so_gate->recv_seq_number[tag];
 
-  return ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) ?
-    NM_ESUCCESS : -NM_EAGAIN;
+      volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+
+      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
+        return NM_ESUCCESS;
+      }
+    }
+    // Nothing on none of the gates
+    return -NM_EAGAIN;
+  }
+  else {
+    struct nm_gate *p_gate = p_core->gate_array + gate_id;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+    uint8_t seq = p_so_gate->recv_seq_number[tag];
+
+    volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+
+    return ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) ?
+      NM_ESUCCESS : -NM_EAGAIN;
+  }
 }
 
 /** Wait for the completion of a continuous series of non blocking receive requests.

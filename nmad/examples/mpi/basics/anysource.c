@@ -7,7 +7,7 @@
 #define SIZE (8 * 1024 * 1024)
 
 int main(int argc, char **argv) {
-  int numtasks, rank, i, source;
+  int numtasks, rank, i, source, flag;
   char *buffer;
   MPI_Request request[5];
 
@@ -25,11 +25,13 @@ int main(int argc, char **argv) {
     for(i=1 ; i<numtasks ; i++) {
       source=i;
       MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[0]);
+      MPI_Iprobe(source, 2, MPI_COMM_WORLD, &flag, NULL);
       MPI_Wait(&request[0], NULL);
 
       source = MPI_ANY_SOURCE;
 
       MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[1]);
+      MPI_Iprobe(source, 2, MPI_COMM_WORLD, &flag, NULL);
       MPI_Wait(&request[1], NULL);
 
       MPI_Irecv(buffer, SIZE, MPI_CHAR, source, 2, MPI_COMM_WORLD, &request[2]);

@@ -434,6 +434,10 @@ void delBubble(bubble_t *b) {
 		list_del(&b->entity.entity_list);
 		b->entity.bubble_holder = NULL;
 	}
+	if (b->entity.lastitem) {
+		BubbleDisplayItem_remove(b->entity.lastitem);
+		b->entity.lastitem = NULL;
+	}
 	// XXX: berk. � marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= b->entity.width+RQ_XMARGIN;
 	// TODO: animation

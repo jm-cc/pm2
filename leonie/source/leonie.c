@@ -64,6 +64,7 @@ process_command_line(int    argc,
 		{
 		  settings->env_mode = tbx_true;
 		  settings->env = tbx_argit_vopt_value_cstr();
+                  settings->export_mode = tbx_true;
 		}
 	      else
 		leo_terminate("duplicate environment");

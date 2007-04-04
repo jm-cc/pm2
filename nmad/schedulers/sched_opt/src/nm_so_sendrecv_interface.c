@@ -24,6 +24,7 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_debug.h"
+#include "nm_so_tracks.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
@@ -522,9 +523,9 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
                long gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
+  int i;
 
   if (gate_id == NM_SO_ANY_SRC) {
-    int i;
     for(i = 0; i < p_core->nb_gates; i++) {
       struct nm_gate *p_gate = p_core->gate_array + i;
       struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -537,8 +538,6 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
         return NM_ESUCCESS;
       }
     }
-    // Nothing on none of the gates
-    return -NM_EAGAIN;
   }
   else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -548,9 +547,17 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
 
     volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
 
-    return ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) ?
-      NM_ESUCCESS : -NM_EAGAIN;
+    if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
+      return NM_ESUCCESS;
+    }
   }
+
+  // Nothing on none of the gates    
+  for(i = 0; i < p_core->nb_gates; i++) {
+    nm_so_refill_regular_recv(&p_core->gate_array[i]);
+  }
+  nm_schedule(p_core);
+  return -NM_EAGAIN;
 }
 
 /** Wait for the completion of a continuous series of non blocking receive requests.

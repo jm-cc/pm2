@@ -46,7 +46,7 @@ struct list_head {
 } while (0)
 
 #define THRASH_LIST_HEAD(ptr) do { \
-	(ptr)->next = (void*)0x123; (ptr)->prev = (void*)0x321; \
+	(ptr)->next = (struct list_head *)0x123; (ptr)->prev = (struct list_head *)0x321; \
 } while(0)
 
 /**
@@ -330,7 +330,7 @@ struct hlist_node {
 #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL) 
 #define INIT_HLIST_NODE(ptr) ((ptr)->next = NULL, (ptr)->pprev = NULL)
-#define THRASH_HLIST_NODE(ptr) ((ptr)->next = (void*)0x123, (ptr)->pprev = (void*)0x321)
+#define THRASH_HLIST_NODE(ptr) ((ptr)->next = (struct hlist_node *)0x123, (ptr)->pprev = (struct hlist_node **)0x321)
 
 static __tbx_inline__ int hlist_unhashed(struct hlist_node *h) 
 { 

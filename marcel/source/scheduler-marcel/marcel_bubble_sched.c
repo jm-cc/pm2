@@ -37,12 +37,17 @@ int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 }
 
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
-	bubble->sched.init_holder = bubble->sched.sched_holder = &rq->hold;
+	bubble->sched.sched_holder = &rq->hold;
 	return 0;
 }
 
 int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level) {
 	marcel_bubble_setinitrq(bubble, &level->sched);
+	return 0;
+}
+
+int marcel_bubble_setinithere(marcel_bubble_t *bubble) {
+	bubble->sched.sched_holder = SELF_GETMEM(sched.internal.entity.sched_holder);
 	return 0;
 }
 
@@ -224,11 +229,6 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble)
 
 /* suppose bubble verrouillée avec softirq */
 static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-#ifdef MARCEL_BUBBLE_STEAL
-	ma_holder_t *sched_bubble;
-	ma_holder_t *h;
-#endif
-
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nbentities) {
 		MA_BUG_ON(!list_empty(&bubble->heldentities));
@@ -236,11 +236,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	}
 
 #ifdef MARCEL_BUBBLE_STEAL
-	h = ma_entity_holder_lock_softirq(entity);
-
-	if (h != &bubble->hold)
-		/* XXX: c'est couillu ca */
-		ma_holder_rawlock(&bubble->hold);
+	ma_holder_lock_softirq(&bubble->hold);
 #endif
 
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
@@ -256,25 +252,17 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	entity->sched_holder = entity->init_holder;
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
-	sched_bubble = bubble->sched.sched_holder;
-	/* si la bulle conteneuse est dans une autre bulle,
-	 * on hérite de la bulle d'ordonnancement */
-	if (!sched_bubble || ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER) {
-		/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
-		sched_bubble = &bubble->hold;
-	} else {
-		bubble_sched_debugl(7,"unlock new holder %p\n", &bubble->hold);
-		ma_holder_rawunlock(&bubble->hold);
-		if (h != sched_bubble)
-			ma_holder_rawlock(sched_bubble);
-		bubble_sched_debugl(7,"sched holder %p locked\n", sched_bubble);
+	if (!entity->sched_holder) {
+		ma_holder_t *sched_bubble = bubble->sched.sched_holder;
+		/* si la bulle conteneuse est dans une autre bulle,
+		 * on hérite de la bulle d'ordonnancement */
+		if (!sched_bubble || ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER) {
+			/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
+			sched_bubble = &bubble->hold;
+		}
+		entity->sched_holder = sched_bubble;
 	}
-	ma_set_sched_holder(entity, ma_bubble_holder(sched_bubble));
-	bubble_sched_debugl(7,"unlock sched holder %p\n", sched_bubble);
-	if (h != sched_bubble)
-		ma_holder_rawunlock(sched_bubble);
-	
-	ma_entity_holder_unlock_softirq(h);
+	ma_holder_unlock_softirq(&bubble->hold);
 #endif
 }
 
@@ -408,19 +396,22 @@ int marcel_bubble_detach(marcel_bubble_t *b) {
 #endif
 
 void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
-	ma_runqueue_t *rq;
 	ma_holder_t *h;
 	LOG_IN();
 	if (!(h = (bubble->sched.sched_holder))) {
 		h = ma_task_sched_holder(MARCEL_SELF);
 		bubble->sched.sched_holder = bubble->sched.init_holder = h;
 	}
-	rq = ma_to_rq_holder(h);
-	ma_holder_lock_softirq(&rq->hold);
-	bubble_sched_debug("waking up bubble %p on rq %s\n",bubble,rq->name);
-	PROF_EVENT2(bubble_sched_wake,bubble,rq);
-	ma_activate_entity(&bubble->sched, &rq->hold);
-	ma_holder_unlock_softirq(&rq->hold);
+	ma_holder_lock_softirq(h);
+	bubble_sched_debug("waking up bubble %p in holder %p\n",bubble,h);
+	if (h->type == MA_BUBBLE_HOLDER) {
+		PROF_EVENT2(bubble_sched_bubble_goingback,bubble,ma_bubble_holder(h));
+		ma_set_sched_holder(&bubble->sched,ma_bubble_holder(h));
+	} else {
+		PROF_EVENT2(bubble_sched_wake,bubble,ma_rq_holder(h));
+		ma_activate_entity(&bubble->sched,h);
+	}
+	ma_holder_unlock_softirq(h);
 	LOG_OUT();
 }
 

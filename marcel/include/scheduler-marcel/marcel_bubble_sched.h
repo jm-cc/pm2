@@ -99,11 +99,16 @@ int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
  * marcel_wake_up_bubble), \e bubble will be put on runqueue \e rq.
  */
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
-/** \brief Sets the initial topology level of bubble \e bubble to \e level. When woken
- * up (see marcel_wake_up_bubble), \e bubble will be put on the runqueue of
- * topology level \e level.
+/** \brief Sets the initial topology level of bubble \e bubble to \e level.
+ * When woken up (see marcel_wake_up_bubble), \e bubble will be put on the
+ * runqueue of topology level \e level.
  */
 int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level);
+/** \brief Sets the initial holder of bubble \e bubble to the calling thread's
+ * current scheduling holder.
+ * When woken up (see marcel_wake_up_bubble), \e bubble will be put on the runqueue of topology level \e level.
+ */
+int marcel_bubble_setinithere(marcel_bubble_t *bubble);
 
 /** \brief
  * Wakes bubble \e bubble up, i.e. puts it on its initial runqueue, and let the

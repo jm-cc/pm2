@@ -496,8 +496,8 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			case MARCEL_LEVEL_NODE:
 				rad_level[r].os_node = r;
 				break;
-			case MARCEL_LEVEL_L3:
-				rad_level[r].os_l3 = r;
+			case MARCEL_LEVEL_L2:
+				rad_level[r].os_l2 = r;
 				break;
 			case MARCEL_LEVEL_CORE:
 				rad_level[r].os_core = r;

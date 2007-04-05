@@ -438,10 +438,7 @@ static void __marcel_init look_libnuma(void) {
 		marcel_vpmask_empty(&node_level[radid].cpuset);
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
-			if (cpuid < marcel_nbvps()) {
-				marcel_vpmask_add_vp(&node_level[radid].cpuset,cpuid);
-				ma_vp_node[cpuid]=radid;
-			}
+			marcel_vpmask_add_vp(&node_level[radid].cpuset,cpuid);
 		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[radid].cpuset);
 		node_level[radid].arity=0;
 		node_level[radid].children=NULL;
@@ -463,7 +460,7 @@ static void __marcel_init look_libnuma(void) {
 /* Ask rsets for topology */
 static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	rsethandle_t rset, rad;
-	int r,i,nbcpus,j;
+	int r,i,maxcpus,j;
 	unsigned nbnodes;
 	struct marcel_topo_level *rad_level;
 
@@ -512,13 +509,10 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		}
 		marcel_vpmask_empty(&rad_level[r].vpset);
 		marcel_vpmask_empty(&rad_level[r].cpuset);
-		nbcpus = rs_getinfo(rad, R_NUMPROCS, 0);
-		for (j = 0; j < marcel_nbvps(); j++) {
-			if (!rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
-				continue;
-			marcel_vpmask_add_vp(&rad_level[r].cpuset,j);
-			if (level == MARCEL_LEVEL_NODE)
-				ma_vp_node[j]=r;
+		maxcpus = rs_getinfo(rad, R_MAXPROCS, 0);
+		for (j = 0; j < maxcpus; j++) {
+			if (rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
+				marcel_vpmask_add_vp(&rad_level[r].cpuset,j);
 		}
 		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",r,rad_level[r].cpuset);
 		rad_level[r].arity=0;
@@ -869,6 +863,9 @@ static void topo_discover(void) {
 							m = 0;
 						}
 					}
+					if (m)
+						/* Incomplete last level */
+						k++;
 					MA_BUG_ON(k!=nbsublevels);
 
 					/* reconnect */

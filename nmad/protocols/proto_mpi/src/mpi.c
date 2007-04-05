@@ -1474,7 +1474,7 @@ int MPI_Iprobe(int source,
                int *flag,
                MPI_Status *status) {
   int err      = 0;
-  long gate_id;
+  long gate_id, out_gate_id;
 
   MPI_NMAD_LOG_IN();
 
@@ -1501,10 +1501,13 @@ int MPI_Iprobe(int source,
     gate_id = in_gate_id[source];
   }
 
-  err = nm_so_sr_probe(p_so_sr_if, gate_id, tag);
+  err = nm_so_sr_probe(p_so_sr_if, gate_id, &out_gate_id, tag);
   if (err == NM_ESUCCESS) {
     *flag = 1;
-#warning Fill in the status object
+    if (status != NULL) {
+      status->MPI_TAG = tag;
+      status->MPI_SOURCE = in_dest[out_gate_id];
+    }
   }
   else { /* err == -NM_EAGAIN */
     *flag = 0;

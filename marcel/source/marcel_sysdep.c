@@ -149,6 +149,7 @@ void ma_unbind_from_processor() {
 #elif defined(WIN_SYS)
 #warning TODO unbind thread
 #elif defined(OSF_SYS)
+	unsigned long target;
 	radset_t radset;
 	radsetcreate(&radset);
 	rademptyset(radset);

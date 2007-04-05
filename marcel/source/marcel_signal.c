@@ -1104,6 +1104,7 @@ weak_alias (siglongjmp, longjmp);
 #endif // LINUX_SYS
 #endif
 
+#ifndef OSF_SYS
 /***************************signal********************************/
 DEF_MARCEL_POSIX(void *,signal,(int sig, void * handler),(sig,handler),
 {
@@ -1134,6 +1135,7 @@ DEF_MARCEL_POSIX(void *,signal,(int sig, void * handler),(sig,handler),
 	return oact.marcel_sa_handler;
 })
 
+#ifdef MA__LIBPTHREAD
 void *lpt___sysv_signal(int sig, void * handler)
 {
 	LOG_IN();
@@ -1163,6 +1165,7 @@ void *lpt___sysv_signal(int sig, void * handler)
 	LOG_OUT();
 	return oact.marcel_sa_handler;
 }
+#endif
 
 #ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, pmarcel_signal, signal, GLIBC_2_0);
@@ -1171,12 +1174,15 @@ DEF___C(void *,signal,(int sig, void * handler),(sig,handler))
 
 DEF_LIBC(void *,__sysv_signal,(int sig, void * handler),(sig,handler))
 DEF___LIBC(void *,__sysv_signal,(int sig, void * handler),(sig,handler))
+#endif
 
+#ifndef OSF_SYS
 /***************************sigaction*****************************/
 DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
      struct marcel_sigaction *oact),(sig,act,oact),
 {
 	LOG_IN();
+	struct sigaction myaction;
 	ma_kernel_sigaction_t kact;
 	void *handler;
 
@@ -1319,6 +1325,7 @@ DEF_LIBC(int,sigaction,(int sig, const struct sigaction *act,
                      struct sigaction *oact),(sig,act,oact))
 DEF___LIBC(int,sigaction,(int sig, const struct sigaction *act,
                      struct sigaction *oact),(sig,act,oact))
+#endif
 
 /***********************marcel_deliver_sig**********************/
 int marcel_deliver_sig(void)
@@ -1473,6 +1480,7 @@ versioned_symbol(libpthread, pmarcel_sigrelse,
 	              sigrelse, GLIBC_2_1);
 #endif
 
+#ifndef OSF_SYS
 DEF_MARCEL_POSIX(int,sigignore,(int sig),(sig),
 {
         LOG_IN();
@@ -1485,6 +1493,7 @@ DEF_MARCEL_POSIX(int,sigignore,(int sig),(sig),
 #ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, pmarcel_sigignore,
 	              sigignore, GLIBC_2_1);
+#endif
 #endif
 
 DEF_MARCEL_POSIX(int,sigpause,(int sig),(sig),
@@ -1506,6 +1515,7 @@ versioned_symbol(libpthread, pmarcel_sigpause,
 	              sigpause, GLIBC_2_0);
 #endif
 
+#ifndef OSF_SYS
 void (*pmarcel_sigset(int sig,void (*dispo)(int)))
 {
         LOG_IN();
@@ -1532,4 +1542,5 @@ void (*pmarcel_sigset(int sig,void (*dispo)(int)))
 #ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, pmarcel_sigset,
 	              sigset, GLIBC_2_1);
+#endif
 #endif

@@ -408,13 +408,12 @@ static void __marcel_init look_libnuma(void) {
 /* Ask libnuma for topology */
 static void __marcel_init look_libnuma(void) {
 	cpu_cursor_t cursor;
-	unsigned i;
+	unsigned i = 0;
 	unsigned nbnodes;
 	radid_t radid;
 	cpuid_t cpuid;
 	cpuset_t cpuset;
 	struct marcel_topo_level *node_level;
-	marcel_vpmask_t cpuset;
 
 	nbnodes=rad_get_num();
 	if (nbnodes==1) {
@@ -434,17 +433,17 @@ static void __marcel_init look_libnuma(void) {
 			continue;
 		}
 		
-		node_level[radid].type = MARCEL_LEVEL_NODE;
-		ma_topo_set_os_numbers(&node_level[radid], radid, -1, -1, -1, -1, -1);
-		marcel_vpmask_empty(&node_level[radid].vpset);
-		marcel_vpmask_empty(&node_level[radid].cpuset);
+		node_level[i].type = MARCEL_LEVEL_NODE;
+		ma_topo_set_os_numbers(&node_level[i], radid, -1, -1, -1, -1, -1);
+		marcel_vpmask_empty(&node_level[i].vpset);
+		marcel_vpmask_empty(&node_level[i].cpuset);
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
-			marcel_vpmask_add_vp(&node_level[radid].cpuset,cpuid);
-		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[radid].cpuset);
-		node_level[radid].arity=0;
-		node_level[radid].children=NULL;
-		node_level[radid].father=NULL;
+			marcel_vpmask_add_vp(&node_level[i].cpuset,cpuid);
+		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[i].cpuset);
+		node_level[i].arity=0;
+		node_level[i].children=NULL;
+		node_level[i].father=NULL;
 		i++;
 	}
 

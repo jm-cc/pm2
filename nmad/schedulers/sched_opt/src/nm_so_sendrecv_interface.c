@@ -515,12 +515,13 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
 /** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param gate_id the source gate id.
+ *  @param out_gate_id a pointer to the 
  *  @param tag the message tag.
  *  @return The NM status.
  */
 int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               long gate_id, uint8_t tag)
+               long gate_id, long *out_gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   int i;
@@ -535,6 +536,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
       volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
 
       if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
+	*out_gate_id = i ;
         return NM_ESUCCESS;
       }
     }
@@ -548,6 +550,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
 
     if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
+      *out_gate_id = gate_id;
       return NM_ESUCCESS;
     }
   }
@@ -557,6 +560,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     nm_so_refill_regular_recv(&p_core->gate_array[i]);
   }
   nm_schedule(p_core);
+  *out_gate_id = -1;
   return -NM_EAGAIN;
 }
 

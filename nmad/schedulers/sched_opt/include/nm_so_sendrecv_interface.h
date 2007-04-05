@@ -99,7 +99,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
 
 extern int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               long gate_id, uint8_t tag);
+               long gate_id, long *out_gate_id, uint8_t tag);
 
 extern unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,

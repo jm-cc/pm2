@@ -30,7 +30,7 @@ void test_probe(int rank, int size) {
     MPI_Send(x, size, MPI_INT, 0, 22, MPI_COMM_WORLD);
     x[0] = 7;
     MPI_Send(x, size, MPI_INT, 0, 2, MPI_COMM_WORLD);
- }
+  }
   else if (rank == 0) {
     int *x, flag, flag1, count;
     MPI_Request request, request1;
@@ -45,25 +45,25 @@ void test_probe(int rank, int size) {
       MPI_Test(&request, &flag, &status);
     }
 
-    MPI_Iprobe(1, 22, MPI_COMM_WORLD, &flag1, &status1);
-    fprintf(stdout,"flag=%d, source=%d, flag=%d\n", flag1, status1.MPI_SOURCE, status1.MPI_TAG);
+    MPI_Iprobe(MPI_ANY_SOURCE, 22, MPI_COMM_WORLD, &flag1, &status1);
+    fprintf(stdout,"\n\nIprobe: flag=%d, source=%d, tag=%d\n", flag1, status1.MPI_SOURCE, status1.MPI_TAG);
 
     if (flag1 == 1) {
       MPI_Recv(x, size, MPI_INT, status1.MPI_SOURCE, status1.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       MPI_Get_count(&status2, MPI_INT, &count);
-      fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status2.MPI_SOURCE, status2.MPI_TAG, status2.MPI_ERROR, count);
-      fprintf(stdout, "Birth date %d\n", x[0]);
     }
     else {
-      fprintf(stdout, "Test failed\n");
+      MPI_Recv(x, size, MPI_INT, 1, 22, MPI_COMM_WORLD, &status2);
     }
+    fprintf(stdout, "Received: source=%d, tag=%d, error=%d, count=%d\n", status2.MPI_SOURCE, status2.MPI_TAG, status2.MPI_ERROR, count);
+    fprintf(stdout, "Birth date %d\n", x[0]);
 
     if (flag == 0) {
       MPI_Wait(&request, &status);
     }
     MPI_Get_count(&status, MPI_INT, &count);
-    fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
+    fprintf(stdout, "Wait: source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
     fprintf(stdout, "Birth month %d\n", x[0]);
   }
 }

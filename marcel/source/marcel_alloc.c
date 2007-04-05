@@ -223,10 +223,10 @@ static void __marcel_init marcel_slot_init(void)
 
 	marcel_unmapped_slot_allocator = ma_new_obj_allocator(1,
 			unmapped_slot_alloc, NULL, NULL, NULL,
-			POLICY_HIERARCHICAL, 100);
+			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 			mapped_slot_alloc, NULL, mapped_slot_free, NULL,
-			POLICY_HIERARCHICAL, 100);
+			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
 	    (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
 	    POLICY_HIERARCHICAL, 0);
@@ -250,7 +250,7 @@ static void __marcel_init marcel_slot_init(void)
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,
-			POLICY_HIERARCHICAL, 100);
+			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 #endif
 	LOG_OUT();
 }

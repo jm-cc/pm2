@@ -84,6 +84,9 @@
 /* Default LWP choice policy */
 #define MARCEL_SCHED_DEFAULT	MARCEL_SCHED_SHARED
 
+/* Max number of threads in cache */
+#define MARCEL_THREAD_CACHE_MAX 100
+
 /* ========== timer =================== */
 
 /* Timer tick period, in µs */

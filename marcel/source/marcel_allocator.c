@@ -22,9 +22,13 @@
 #endif
 #include <inttypes.h>
 
-#define FREE_METHOD 0
-#define ALLOC_METHOD 1
-#define COMMON_FREE_METHOD 2
+enum mode {
+	ALLOC_METHOD,
+	FREE_METHOD,
+	NO_FREE_METHOD,
+};
+
+ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode);
 
 ma_allocator_t *ma_node_allocator = NULL;
 static ma_allocator_t *lwp_container_allocator = NULL;
@@ -98,13 +102,14 @@ void *ma_obj_alloc(ma_allocator_t * allocator)
 void ma_obj_free(ma_allocator_t * allocator, void *obj)
 {
 	ma_container_t *container;
-	container = ma_get_container(allocator, FREE_METHOD);
+	container = ma_get_container(allocator, allocator->destroy?FREE_METHOD:NO_FREE_METHOD);
 
 	if (container)
 		ma_container_add(container, obj);
 	else if (allocator->destroy)
 		allocator->destroy(obj, allocator->destroy_arg);
 	else
+		/* shouldn't ever happen */
 		MA_WARN_ON(1);
 }
 
@@ -222,9 +227,9 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 	}
 }
 
-ma_container_t *ma_get_container(ma_allocator_t * allocator, int mode)
+ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 {
-	if (mode != 0 && mode != 1 && mode != 2)
+	if (mode < 0 || mode > 2)
 		printf
 		    ("Erreur : le mode n'est pas bien defini -- ma_get_container\n");
 
@@ -268,7 +273,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, int mode)
 	// si les containers sont tous 
 	// pleins on retoune quand meme le container de plus proche du processeur : donc il va deborder...
 
-	if (allocator->policy == POLICY_HIERARCHICAL && mode == FREE_METHOD) {
+	if (allocator->policy == POLICY_HIERARCHICAL && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
 		while (niveau_courant) {
@@ -281,10 +286,16 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, int mode)
 			} else
 				niveau_courant = niveau_courant->father;
 		}
-		/* trop-plein, libérer */
-		return NULL;
+		if (mode == FREE_METHOD) {
+			/* trop-plein, libérer */
+			return NULL;
+		} else {
+			return ma_per_level_data(marcel_machine_level,
+			    allocator->container.offset);
+		}
 	}
 #endif
+	MA_BUG();
 	return NULL;
 }
 

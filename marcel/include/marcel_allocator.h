@@ -79,7 +79,6 @@ void ma_obj_allocator_print(ma_allocator_t * allocator);
 void ma_obj_allocator_fini(ma_allocator_t *allocator);
 void ma_allocator_init(void);
 void ma_allocator_exit(void);
-ma_container_t * ma_get_container(ma_allocator_t * allocator, int mode);
 
 /* helpful */
 TBX_FMALLOC void * ma_obj_allocator_malloc(void * arg);

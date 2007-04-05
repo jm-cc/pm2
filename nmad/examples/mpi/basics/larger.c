@@ -9,11 +9,18 @@
 void test_larger(int rank, int size);
 
 int main(int argc, char **argv) {
-  int rank;
+  int rank, numtasks;
 
   // Initialise MPI
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
 
   test_larger(rank, SMALL_SIZE);
   test_larger(rank, LARGE_SIZE);
@@ -23,16 +30,21 @@ int main(int argc, char **argv) {
 }
 
 void test_larger(int rank, int size) {
-  if (rank == 1) {
+  int ping_side, rank_dst;
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  if (ping_side) {
     int *x;
 
     x=malloc(size*sizeof(int));
     x[0] = 42;
     x[size-2] = 7;
-    MPI_Send(x, size, MPI_INT, 0, 2, MPI_COMM_WORLD);
-    MPI_Send(x, size, MPI_INT, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
+    MPI_Send(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
   }
-  else if (rank == 0) {
+  else {
     int *x;
     int *xx;
     MPI_Status status;
@@ -40,7 +52,7 @@ void test_larger(int rank, int size) {
     int count;
 
     x=malloc(size*sizeof(int));
-    MPI_Recv(x, size, MPI_INT, 1, 2, MPI_COMM_WORLD, &status);
+    MPI_Recv(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &status);
     MPI_Get_count(&status, MPI_INT, &count);
     fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
 

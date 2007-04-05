@@ -4,22 +4,27 @@
 #include <unistd.h>
 
 void send_with_different_tags(int rank) {
-  if (rank == 0) {
+  int ping_side, rank_dst;
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  if (ping_side) {
     int x=42;
     int y=7;
     MPI_Request request1, request2;
 
-    MPI_Isend(&x, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &request1);
-    MPI_Isend(&y, 1, MPI_INT, 1, 2, MPI_COMM_WORLD, &request2);
+    MPI_Isend(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
+    MPI_Isend(&y, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request2);
     MPI_Wait(&request1, NULL);
     MPI_Wait(&request2, NULL);
   }
-  else if (rank == 1) {
+  else {
     int x, y;
     MPI_Request request1, request2;
 
-    MPI_Irecv(&y, 1, MPI_INT, 0, 2, MPI_COMM_WORLD, &request2);
-    MPI_Irecv(&x, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &request1);
+    MPI_Irecv(&y, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request2);
+    MPI_Irecv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
     MPI_Wait(&request1, NULL);
     MPI_Wait(&request2, NULL);
 
@@ -29,22 +34,27 @@ void send_with_different_tags(int rank) {
 }
 
 void send_with_different_communicators(int rank, MPI_Comm comm) {
-  if (rank == 0) {
+  int ping_side, rank_dst;
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  if (ping_side) {
     int x=42;
     int y=7;
     MPI_Request request1, request2;
 
-    MPI_Isend(&x, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &request1);
-    MPI_Isend(&y, 1, MPI_INT, 1, 1, comm, &request2);
+    MPI_Isend(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
+    MPI_Isend(&y, 1, MPI_INT, rank_dst, 1, comm, &request2);
     MPI_Wait(&request1, NULL);
     MPI_Wait(&request2, NULL);
   }
-  else if (rank == 1) {
+  else {
     int x, y;
     MPI_Request request1, request2;
 
-    MPI_Irecv(&y, 1, MPI_INT, 0, 1, comm, &request2);
-    MPI_Irecv(&x, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &request1);
+    MPI_Irecv(&y, 1, MPI_INT, rank_dst, 1, comm, &request2);
+    MPI_Irecv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
     MPI_Wait(&request1, NULL);
     MPI_Wait(&request2, NULL);
 
@@ -62,6 +72,12 @@ int main(int argc, char **argv) {
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
 
   //printf("Rank %d Size %d\n", rank, numtasks);
 

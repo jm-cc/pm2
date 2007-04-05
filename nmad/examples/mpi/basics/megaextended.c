@@ -5,6 +5,7 @@
 
 int main(int argc, char **argv) {
   int i, flag, numtasks, rank, dest;
+  int ping_side, rank_dst;
   MPI_Request requests[4*1024+1];
   int *x=malloc(1024*sizeof(int));
 
@@ -13,15 +14,22 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  if (rank == 0) {
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
 
-    dest = 1;
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  if (ping_side) {
     // ping
     for(i=0 ; i<4*1024 ; i++) {
-      MPI_Isend(x, 1024, MPI_INT, dest, 1, MPI_COMM_WORLD, &requests[i]);
+      MPI_Isend(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &requests[i]);
       MPI_Test(&requests[i], &flag, NULL);
     }
-    MPI_Isend(x, 1024, MPI_INT, dest, 1, MPI_COMM_WORLD, &requests[4*1024]);
+    MPI_Isend(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &requests[4*1024]);
 
     for(i=0 ; i<=4*1024 ; i++) {
       MPI_Wait(&requests[i], NULL);
@@ -29,22 +37,20 @@ int main(int argc, char **argv) {
 
     // pong
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Recv(x, 1024, MPI_INT, dest, 1, MPI_COMM_WORLD, NULL);
+      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
     }
   }
-  else if (rank == 1) {
-    dest=0;
-
+  else {
     // pong
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Recv(x, 1024, MPI_INT, dest, 1, MPI_COMM_WORLD, NULL);
+      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
     }
 
     // ping
     for(i=0 ; i<4*1024 ; i++) {
-      MPI_Esend(x, 1024, MPI_INT, dest, 1, 0, MPI_COMM_WORLD, &requests[i]);
+      MPI_Esend(x, 1024, MPI_INT, rank_dst, 1, 0, MPI_COMM_WORLD, &requests[i]);
     }
-    MPI_Esend(x, 1024, MPI_INT, dest, 1, 1, MPI_COMM_WORLD, &requests[4*1024]);
+    MPI_Esend(x, 1024, MPI_INT, rank_dst, 1, 1, MPI_COMM_WORLD, &requests[4*1024]);
 
     for(i=0 ; i<=4*1024 ; i++) {
       MPI_Wait(&requests[i], NULL);

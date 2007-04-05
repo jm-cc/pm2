@@ -1437,6 +1437,8 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 #ifdef MA__NUMA
 		[MARCEL_LEVEL_NODE]	= "node",
 		[MARCEL_LEVEL_DIE]	= "die",
+		[MARCEL_LEVEL_L3]	= "L3",
+		[MARCEL_LEVEL_L2]	= "L2",
 		[MARCEL_LEVEL_CORE]	= "core",
 		[MARCEL_LEVEL_PROC]	= "proc",
 #endif /* MA__NUMA */
@@ -1447,6 +1449,8 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		[MARCEL_LEVEL_FAKE]	= MA_FAKE_RQ,
 		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
 		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
+		[MARCEL_LEVEL_L3]	= MA_L3_RQ,
+		[MARCEL_LEVEL_L2]	= MA_L2_RQ,
 		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
 		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
 #endif /* MA__NUMA */

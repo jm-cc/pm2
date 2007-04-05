@@ -102,6 +102,8 @@ enum ma_rq_type {
 #ifdef MA__NUMA
 	MA_NODE_RQ,
 	MA_DIE_RQ,
+	MA_L3_RQ,
+	MA_L2_RQ,
 	MA_CORE_RQ,
 	MA_PROC_RQ,
 #endif

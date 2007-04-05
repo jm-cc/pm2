@@ -121,7 +121,9 @@ enum marcel_topo_level_e {
 #ifdef MA__NUMA
 	MARCEL_LEVEL_NODE,	/**< \brief NUMA node */
 	MARCEL_LEVEL_DIE,	/**< \brief Physical chip */
-	MARCEL_LEVEL_CORE,	/**< \brief Core of a chip */
+	MARCEL_LEVEL_L3,	/**< \brief L3 cache */
+	MARCEL_LEVEL_L2,	/**< \brief L2 cache */
+	MARCEL_LEVEL_CORE,	/**< \brief Core */
 	MARCEL_LEVEL_PROC,	/**< \brief SMT Processor in a core */
 #endif
 	MARCEL_LEVEL_VP,	/**< \brief Virtual Processor (\b not SMT) */
@@ -417,6 +419,8 @@ struct marcel_topo_level {
 	unsigned index;			/**< \brief Index in fathers' children array */
 	signed os_node;			/**< \brief OS-provided node number */
 	signed os_die;			/**< \brief OS-provided die number */
+	signed os_l3;			/**< \brief OS-provided L3 number */
+	signed os_l2;			/**< \brief OS-provided L2 number */
 	signed os_core;			/**< \brief OS-provided core number */
 	signed os_cpu;			/**< \brief OS-provided CPU number */
 
@@ -450,10 +454,12 @@ struct marcel_topo_level {
 	char data[MA_PER_LEVEL_ROOM];
 };
 
-#define ma_topo_set_os_numbers(l, node, die, core, cpu) do { \
+#define ma_topo_set_os_numbers(l, node, die, l3, l2, core, cpu) do { \
 		struct marcel_topo_level *__l = (l); \
 		__l->os_node = node; \
 		__l->os_die  = die;  \
+		__l->os_l3   = l3;  \
+		__l->os_l2   = l2;  \
 		__l->os_core = core; \
 		__l->os_cpu  = cpu;  \
 	} while(0)

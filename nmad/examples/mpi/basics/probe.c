@@ -50,12 +50,11 @@ void test_probe(int rank, int size) {
 
     if (flag1 == 1) {
       MPI_Recv(x, size, MPI_INT, status1.MPI_SOURCE, status1.MPI_TAG, MPI_COMM_WORLD, &status2);
-
-      MPI_Get_count(&status2, MPI_INT, &count);
     }
     else {
       MPI_Recv(x, size, MPI_INT, 1, 22, MPI_COMM_WORLD, &status2);
     }
+    MPI_Get_count(&status2, MPI_INT, &count);
     fprintf(stdout, "Received: source=%d, tag=%d, error=%d, count=%d\n", status2.MPI_SOURCE, status2.MPI_TAG, status2.MPI_ERROR, count);
     fprintf(stdout, "Birth date %d\n", x[0]);
 

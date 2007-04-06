@@ -313,7 +313,7 @@ static void __marcel_init look_cpuinfo(void) {
 				core_level[i].children=NULL;
 				core_level[i].father=NULL;
 #ifdef MARCEL_SMT_IDLE
-				ma_atomic_set(&core_level[j].nbidle, 0);
+				ma_atomic_set(&core_level[i].nbidle, 0);
 #endif
 				mdebug("core %d has cpuset %"MA_PRIxVPM"\n",j,core_level[j].cpuset);
 				j++;
@@ -521,7 +521,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		rad_level[r].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 		if (level == MARCEL_LEVEL_CORE)
-			ma_atomic_set(&rad_level[j].nbidle, 0);
+			ma_atomic_set(&rad_level[r].nbidle, 0);
 #endif
 		r++;
 	}

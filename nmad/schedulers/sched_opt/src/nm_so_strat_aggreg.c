@@ -118,7 +118,7 @@ static int pack(struct nm_gate *p_gate,
 	  goto next;
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      //nb_data_aggregation ++;
+      nb_data_aggregation ++;
       goto out;
 
     next:
@@ -232,8 +232,8 @@ static int init(void)
 
 static int exit_strategy(void)
 {
-  //NM_LOG_VAL("Aggregation data", nb_data_aggregation);
-  //NM_LOG_VAL("Aggregation control", nb_ctrl_aggregation);
+  NM_DISP_VAL("Aggregation data", nb_data_aggregation);
+  NM_DISP_VAL("Aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

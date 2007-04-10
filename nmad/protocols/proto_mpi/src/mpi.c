@@ -730,11 +730,13 @@ int mpi_inline_isend(void *buffer,
   }
 
   seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, _request->request_tag);
-  probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
-  if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
-    MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
-    nm_so_sr_swait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
-    MPI_NMAD_TRACE("Automatic flushing over");
+  if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
+    probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
+    if (probe == -NM_EAGAIN) {
+      MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
+      nm_so_sr_swait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
+      MPI_NMAD_TRACE("Automatic flushing over");
+    }
   }
 
   _request->request_ptr = NULL;
@@ -1104,11 +1106,13 @@ int mpi_inline_irecv(void* buffer,
 
   if (source != MPI_ANY_SOURCE) {
     seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, _request->request_tag);
-    probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
-    if ((seq == NM_SO_PENDING_PACKS_WINDOW-1) && (probe == -NM_EAGAIN)) {
-      MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
-      nm_so_sr_rwait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
-      MPI_NMAD_TRACE("Automatic flushing over");
+    if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
+      probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
+      if (probe == -NM_EAGAIN) {
+	MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
+	nm_so_sr_rwait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
+	MPI_NMAD_TRACE("Automatic flushing over");
+      }
     }
   }
 

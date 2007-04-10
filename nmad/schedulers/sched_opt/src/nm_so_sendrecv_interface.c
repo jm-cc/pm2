@@ -24,6 +24,7 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_debug.h"
+#include "nm_so_log.h"
 #include "nm_so_tracks.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
@@ -150,6 +151,8 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
   uint8_t seq;
   volatile uint8_t *p_req;
 
+  NM_SO_SR_LOG_IN();
+
   seq = p_so_gate->send_seq_number[tag]++;
 
   p_req = &p_sr_gate->status[tag][seq];
@@ -177,6 +180,8 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
+
+  NM_SO_SR_LOG_IN();
 
   seq = p_so_gate->send_seq_number[tag]++;
 
@@ -225,6 +230,8 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   volatile uint8_t *p_req;
   int ret = NM_EAGAIN;
 
+  NM_SO_SR_LOG_IN();
+
   seq = p_so_gate->send_seq_number[tag]++;
 
   p_req = &p_sr_gate->status[tag][seq];
@@ -267,6 +274,8 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_request = (uint8_t *)request;
 
+  NM_SO_SR_LOG_IN();
+
   if(*p_request & NM_SO_STATUS_SEND_COMPLETED)
     return NM_ESUCCESS;
 
@@ -295,6 +304,8 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   uint8_t seq = seq_inf;
   int ret = NM_EAGAIN;
 
+  NM_SO_SR_LOG_IN();
+
   while(nb--) {
 
     ret = nm_so_sr_stest(p_so_interface,
@@ -320,6 +331,8 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   uint8_t *p_request = (uint8_t *)request;
 
+  NM_SO_SR_LOG_IN();
+
   while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
     nm_schedule(p_core);
 
@@ -344,6 +357,8 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
+
+  NM_SO_SR_LOG_IN();
 
   while(nb--) {
 
@@ -375,6 +390,8 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 {
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_req = NULL;
+
+  NM_SO_SR_LOG_IN();
 
   if(gate_id == -1) {
 
@@ -425,6 +442,8 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   uint8_t *p_request = (uint8_t *)request;
 
+  NM_SO_SR_LOG_IN();
+
   if(*p_request & NM_SO_STATUS_RECV_COMPLETED)
     return NM_ESUCCESS;
 
@@ -453,6 +472,8 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   uint8_t seq = seq_inf;
   int ret = NM_EAGAIN;
 
+  NM_SO_SR_LOG_IN();
+
   while(nb--) {
 
     ret = nm_so_sr_rtest(p_so_interface,
@@ -477,6 +498,8 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 {
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_request = (uint8_t *)request;
+
+  NM_SO_SR_LOG_IN();
 
 #ifdef NMAD_SO_DEBUG
   if (*p_request & NM_SO_STATUS_RECV_COMPLETED) {
@@ -506,6 +529,8 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
 {
   struct any_src_status *p_status = outer_any_src_struct(request);
 
+  NM_SO_SR_LOG_IN();
+
   if(gate_id)
     *gate_id = p_status->gate_id;
 
@@ -525,6 +550,8 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
 {
   struct nm_core *p_core = p_so_interface->p_core;
   int i;
+
+  NM_SO_SR_LOG_IN();
 
   if (gate_id == NM_SO_ANY_SRC) {
     for(i = 0; i < p_core->nb_gates; i++) {
@@ -583,6 +610,8 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
 
+  NM_SO_SR_LOG_IN();
+
   while(nb--) {
 
     nm_so_sr_rwait(p_so_interface,
@@ -608,6 +637,8 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
+  NM_SO_SR_LOG_IN();
+
   return p_so_gate->send_seq_number[tag];
 }
 
@@ -625,6 +656,8 @@ nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
+  NM_SO_SR_LOG_IN();
+
   return p_so_gate->recv_seq_number[tag];
 }
 
@@ -639,6 +672,8 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate;
+
+  NM_SO_SR_LOG_IN();
 
   p_sr_gate = TBX_MALLOC(sizeof(struct nm_so_sr_gate));
   if(p_sr_gate == NULL)
@@ -659,6 +694,8 @@ int nm_so_sr_exit_gate(struct nm_gate *p_gate)
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
 
+  NM_SO_SR_LOG_IN();
+
   TBX_FREE(p_sr_gate);
   p_so_gate->interface_private = NULL;
   return NM_ESUCCESS;
@@ -677,6 +714,8 @@ int nm_so_sr_pack_success(struct nm_gate *p_gate,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
 
+  NM_SO_SR_LOG_IN();
+
   p_sr_gate->status[tag][seq] |= NM_SO_STATUS_SEND_COMPLETED;
 
   return NM_ESUCCESS;
@@ -694,6 +733,8 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
                             uint8_t tag, uint8_t seq,
                             tbx_bool_t is_any_src)
 {
+  NM_SO_SR_LOG_IN();
+
   if(!is_any_src) {
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
     struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;

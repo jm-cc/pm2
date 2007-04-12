@@ -34,7 +34,12 @@ create_temp_file() { #prefix suffix directory
 get_machines() {
     # Which machines are available
     if [ -n "$machineFile" ] ; then
-        host_list=`cat $machineFile`
+	if [ -f "$machineFile" ] ; then
+	    host_list=`cat $machineFile`
+	else
+	    echo "$0: Machine file '$machineFile' not available. Exiting..." 1>&2
+	    exit 1
+	fi
     elif [ -f "$OAR_NODEFILE" ] ; then
 	host_list=`cat $OAR_NODEFILE | sort | uniq`
     elif [ -f "$MPI_HOST_FILE" ] ; then

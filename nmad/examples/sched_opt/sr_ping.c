@@ -24,27 +24,27 @@
 
 #define MIN_DEFAULT     0
 #define MAX_DEFAULT     (8 * 1024 * 1024)
+#define MULT_DEFAULT    2
+#define INCR_DEFAULT    0
 #define WARMUPS_DEFAULT 100
 #define LOOPS_DEFAULT   2000
 
 static __inline__
-uint32_t _next(uint32_t len)
+uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
-        if(!len)
-                return 4;
-//        else if(len < 32)
-//                return len + 4;
-//        else if(len < 1024)
-//                return len + 32;
-        else
-                return len << 1;
+  if (!len)
+    return 1+increment;
+  else
+    return len*multiplier+increment;
 }
 
 void usage_ping() {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
-  //fprintf(stderr, "-I incr - increment packet length [%d]\n", 0);
-  //fprintf(stderr, "-M mult - length multiplier, overrides -I [%d]\n", 0);
+  fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
+  fprintf(stderr, "-M mult - length multiplier [%d]\n", MULT_DEFAULT);
+  fprintf(stderr, "\tNext(0)      = 1+increment\n");
+  fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
@@ -56,6 +56,8 @@ main(int	  argc,
         uint32_t	 len;
         uint32_t	 start_len      = MIN_DEFAULT;
         uint32_t	 end_len        = MAX_DEFAULT;
+        uint32_t         multiplier     = MULT_DEFAULT;
+        uint32_t         increment      = INCR_DEFAULT;
         int              iterations     = LOOPS_DEFAULT;
         int              warmups        = WARMUPS_DEFAULT;
         int              i;
@@ -74,6 +76,12 @@ main(int	  argc,
           }
           else if (!strcmp(argv[i], "-E")) {
             end_len = atoi(argv[i+1]);
+          }
+          else if (!strcmp(argv[i], "-I")) {
+            increment = atoi(argv[i+1]);
+          }
+          else if (!strcmp(argv[i], "-M")) {
+            multiplier = atoi(argv[i+1]);
           }
           else if (!strcmp(argv[i], "-N")) {
             iterations = atoi(argv[i+1]);
@@ -96,7 +104,7 @@ main(int	  argc,
 	  int k;
                 /* server
                  */
-		for(len = start_len; len <= end_len; len = _next(len)) {
+		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
 		  for(k = 0; k < iterations + warmups; k++) {
 		    nm_so_request request;
 
@@ -116,7 +124,7 @@ main(int	  argc,
                  */
                 printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
 
-		for(len = start_len; len <= end_len; len = _next(len)) {
+		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
 
 		  for(k = 0; k < warmups; k++) {
 		    nm_so_request request;

@@ -56,7 +56,7 @@ int get_gate_in_id(int dest) {
  * returns 1 if server, 0 if client
  */
 void
-init(int	  argc,
+init(int	 *argc,
      char	**argv) {
   struct nm_core         *p_core     = NULL;
 
@@ -64,7 +64,7 @@ init(int	  argc,
    * Initialization of various libraries.
    * Reference to the Madeleine object.
    */
-  madeleine    = mad_init(&argc, argv);
+  madeleine    = mad_init(argc, argv);
 
   /*
    * Reference to the session information object
@@ -174,11 +174,11 @@ int get_gate_out_id(int dest) {
  * returns 1 if server, 0 if client
  */
 void
-init(int	  argc,
+init(int	 *argc,
      char	**argv) {
-        int err;
+        int i, j, err;
 
-        err = nm_core_init(&argc, argv, &p_core, nm_so_load);
+        err = nm_core_init(argc, argv, &p_core, nm_so_load);
         if (err != NM_ESUCCESS) {
                 printf("nm_core_init returned err = %d\n", err);
                 goto out_err;
@@ -196,31 +196,33 @@ init(int	  argc,
 	  goto out_err;
 	}
 
-        argc--;
-        argv++;
-
-        if (argc) {
-                /* client */
-                while (argc) {
-                        if (!strcmp(*argv, "-h")) {
-                                argc--;
-                                argv++;
-
-                                if (!argc)
-                                        usage();
-
-                                hostname = *argv;
-                        } else {
-                                r_url	= *argv;
+        i=1;
+        while (i<*argc) {
+                if (!strcmp(argv[i], "-h")) {
+                        if (i+1 > *argc) {
+                                usage();
                         }
 
-                        argc--;
-                        argv++;
+                        hostname = argv[i+1];
+                        i+=2;
                 }
+                else if (!strncmp(argv[i], "-", 1)) {
+                        break;
+                }
+                else {
+                        r_url	= argv[i];
+                        i++;
+                }
+        }
 
+        if (r_url) {
                 printf("running as client using remote url: %s[%s]\n", hostname, r_url);
+                i--;
+                *argc -= i;
+                for(j=1 ; j<*argc ; j++) {
+                        argv[j] = argv[j+i];
+                }
         } else {
-                /* no args: server */
                 printf("running as server\n");
         }
 

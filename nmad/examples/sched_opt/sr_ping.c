@@ -22,10 +22,10 @@
 
 #include "helper.h"
 
-#define MIN     0
-#define MAX     (8 * 1024 * 1024)
-#define WARMUP   100
-#define LOOPS   2000
+#define MIN_DEFAULT     0
+#define MAX_DEFAULT     (8 * 1024 * 1024)
+#define WARMUPS_DEFAULT 100
+#define LOOPS_DEFAULT   2000
 
 static __inline__
 uint32_t _next(uint32_t len)
@@ -40,23 +40,64 @@ uint32_t _next(uint32_t len)
                 return len << 1;
 }
 
+void usage_ping() {
+  fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
+  fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
+  //fprintf(stderr, "-I incr - increment packet length [%d]\n", 0);
+  //fprintf(stderr, "-M mult - length multiplier, overrides -I [%d]\n", 0);
+  fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
+  fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
+}
+
 int
 main(int	  argc,
      char	**argv) {
         char		*buf		= NULL;
         uint32_t	 len;
+        uint32_t	 start_len      = MIN_DEFAULT;
+        uint32_t	 end_len        = MAX_DEFAULT;
+        int              iterations     = LOOPS_DEFAULT;
+        int              warmups        = WARMUPS_DEFAULT;
+        int              i;
 
-        init(argc, argv);
+        init(&argc, argv);
 
-        buf = malloc(MAX);
-	memset(buf, 0, MAX);
+        if (argc > 1 && !strcmp(argv[1], "--help")) {
+          usage_ping();
+          nmad_exit();
+          exit(0);
+        }
+
+        for(i=1 ; i<argc ; i+=2) {
+          if (!strcmp(argv[i], "-S")) {
+            start_len = atoi(argv[i+1]);
+          }
+          else if (!strcmp(argv[i], "-E")) {
+            end_len = atoi(argv[i+1]);
+          }
+          else if (!strcmp(argv[i], "-N")) {
+            iterations = atoi(argv[i+1]);
+          }
+          else if (!strcmp(argv[i], "-W")) {
+            warmups = atoi(argv[i+1]);
+          }
+          else {
+            fprintf(stderr, "Illegal argument %s\n", argv[i]);
+            usage_ping();
+            nmad_exit();
+            exit(0);
+          }
+        }
+
+        buf = malloc(end_len);
+	memset(buf, 0, end_len);
 
         if (is_server) {
 	  int k;
                 /* server
                  */
-		for(len = MIN; len <= MAX; len = _next(len)) {
-		  for(k = 0; k < LOOPS + WARMUP; k++) {
+		for(len = start_len; len <= end_len; len = _next(len)) {
+		  for(k = 0; k < iterations + warmups; k++) {
 		    nm_so_request request;
 
 		    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
@@ -75,9 +116,9 @@ main(int	  argc,
                  */
                 printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
 
-		for(len = MIN; len <= MAX; len = _next(len)) {
+		for(len = start_len; len <= end_len; len = _next(len)) {
 
-		  for(k = 0; k < WARMUP; k++) {
+		  for(k = 0; k < warmups; k++) {
 		    nm_so_request request;
 
 		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
@@ -89,7 +130,7 @@ main(int	  argc,
 
 		  TBX_GET_TICK(t1);
 
-		  for(k = 0; k < LOOPS; k++) {
+		  for(k = 0; k < iterations; k++) {
 		    nm_so_request request;
 
 		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
@@ -103,8 +144,8 @@ main(int	  argc,
 
                    sum = TBX_TIMING_DELAY(t1, t2);
 
-                  lat	      = sum / (2 * LOOPS);
-                  bw_million_byte = len * (LOOPS / (sum / 2));
+                  lat	      = sum / (2 * iterations);
+                  bw_million_byte = len * (iterations / (sum / 2));
                   bw_mbyte        = bw_million_byte / 1.048576;
 
 		  printf("%d\t%lf\t%8.3f\t%8.3f\n",

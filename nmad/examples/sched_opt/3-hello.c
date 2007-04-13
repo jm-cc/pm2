@@ -24,18 +24,7 @@
 #include <nm_so_public.h>
 
 #include <nm_so_pack_interface.h>
-
-#if defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
-#else
-#  include <nm_tcp_public.h>
-#endif
+#include <nm_drivers.h>
 
 const char *msg	= "hello, world";
 
@@ -122,7 +111,7 @@ main(int	  argc,
 #elif defined CONFIG_SISCI
 	err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
 #else
-        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);

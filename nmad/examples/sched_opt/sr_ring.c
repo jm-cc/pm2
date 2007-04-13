@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   nm_so_request out_request;
   nm_so_request in_request;
 
-  init(argc, argv);
+  init(&argc, argv);
   rank = get_rank();
   numtasks = get_size();
 

@@ -29,7 +29,7 @@ main(int	  argc,
      char	**argv) {
 	struct nm_so_cnx         cnx;
 
-        init(argc, argv);
+        init(&argc, argv);
 
         if (is_server) {
 	  int k;

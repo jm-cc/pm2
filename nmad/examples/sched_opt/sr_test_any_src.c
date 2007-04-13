@@ -47,7 +47,7 @@ static void store_big_string(char *big_buf, unsigned max)
 int
 main(int	  argc,
      char	**argv) {
-        init(argc, argv);
+        init(&argc, argv);
 
         if (is_server) {
 	  int k;

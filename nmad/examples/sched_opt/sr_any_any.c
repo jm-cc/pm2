@@ -30,7 +30,7 @@ main(int	  argc,
      char	**argv) {
         char			*buf		= NULL;
 
-        init(argc, argv);
+        init(&argc, argv);
         buf = malloc(SIZE);
 	memset(buf, 0, SIZE);
 

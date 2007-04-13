@@ -28,7 +28,7 @@ main(int	  argc,
         char			*buf		= NULL;
 	struct nm_so_cnx         cnx;
 
-        init(argc, argv);
+        init(&argc, argv);
 
         buf = malloc(1024);
 	memset(buf, 0, 1024);

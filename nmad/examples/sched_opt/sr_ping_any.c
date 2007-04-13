@@ -44,7 +44,7 @@ main(int	  argc,
         char			*buf		= NULL;
         uint32_t		 len;
 
-        init(argc, argv);
+        init(&argc, argv);
         buf = malloc(MAX);
 	memset(buf, 0, MAX);
 

@@ -32,7 +32,7 @@ main(int	  argc,
         char			*buf		= NULL;
         struct nm_so_cnx         cnx;
 
-        init(argc, argv);
+        init(&argc, argv);
         buf = malloc(SIZE+1);
 	memset(buf, 0, SIZE+1);
 

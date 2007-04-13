@@ -30,7 +30,7 @@ main(int	  argc,
         char		*buf	= NULL;
         uint64_t	 len;
 
-        init(argc, argv);
+        init(&argc, argv);
 
         len = 1+strlen(msg);
         buf = malloc((size_t)len);

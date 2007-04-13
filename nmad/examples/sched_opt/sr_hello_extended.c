@@ -31,7 +31,7 @@ main(int	  argc,
   char		*buf2	= NULL;
   uint64_t	 len;
 
-  init(argc, argv);
+  init(&argc, argv);
 
   len = 1+strlen(msg);
   buf1 = malloc((size_t)len);

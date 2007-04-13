@@ -30,7 +30,7 @@ int main(int argc, char	**argv) {
   nm_so_request request_small;
   nm_so_request request_big;
 
-  init(argc, argv);
+  init(&argc, argv);
 
   buf = malloc(BIG);
   memset(buf, 0, BIG);

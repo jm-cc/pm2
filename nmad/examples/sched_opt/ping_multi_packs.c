@@ -47,7 +47,7 @@ main(int	  argc,
         uint32_t		 len;
 	struct nm_so_cnx         cnx;
 
-        init(argc, argv);
+        init(&argc, argv);
 
         buf = malloc(MAX);
 	memset(buf, 0, MAX);

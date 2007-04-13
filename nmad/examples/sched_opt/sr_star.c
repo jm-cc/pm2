@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   int numtasks;
   int tag = 1;
 
-  init(argc, argv);
+  init(&argc, argv);
   rank = get_rank();
   numtasks = get_size();
 

@@ -53,7 +53,7 @@ main(int	  argc,
         buf2 = malloc(LARGE_SIZE);
 	memset(buf2, 0, LARGE_SIZE);
 
-        init(argc, argv);
+        init(&argc, argv);
 
         if (is_server) {
 	  int n, k;

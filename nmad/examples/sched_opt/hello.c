@@ -31,7 +31,7 @@ main(int	  argc,
         uint64_t		 len;
 	struct nm_so_cnx         cnx;
 
-        init(argc, argv);
+        init(&argc, argv);
         len = 1+strlen(msg);
         buf = malloc((size_t)len);
 

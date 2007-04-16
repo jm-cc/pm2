@@ -631,12 +631,13 @@ int MPI_Abort(MPI_Comm comm,
     return -1;
   }
 
-  mad_exit(madeleine);
   free(out_gate_id);
   free(in_gate_id);
   free(out_dest);
   free(in_dest);
+
   internal_exit();
+  mad_exit(madeleine);
 
   MPI_NMAD_LOG_OUT();
   return errorcode;
@@ -721,6 +722,7 @@ int mpi_inline_isend(void *buffer,
   gate_id = out_gate_id[dest];
 
   mpir_datatype = get_datatype(datatype);
+  mpir_datatype->active_communications ++;
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
   _request->user_tag = tag;
 
@@ -943,24 +945,7 @@ int MPI_Send(void *buffer,
   _request->request_datatype = &datatype;
   mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_IMMEDIATE_MODE, comm, &request);
 
-  if (_request->request_type == MPI_REQUEST_SEND) {
-    MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
-    err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
-    MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
-    if (_request->contig_buffer != NULL) {
-      free(_request->contig_buffer);
-    }
-  }
-  else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
-    MPI_NMAD_TRACE("Waiting for completion end_packing\n");
-    err = nm_so_end_packing(connection);
-  }
-
-  if (_request->request_ptr != NULL) {
-    free(_request->request_ptr);
-  }
+  MPI_Wait(&request, NULL);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1052,7 +1037,7 @@ void mpi_set_status(MPI_Request *request, MPI_Status*status) {
   status->MPI_TAG = _request->user_tag;
   //  status->MPI_ERROR = err;
 
-  //  status->count = status->size / sizeof_datatype(*(_request->request_datatype));
+  // status->count = status->size / sizeof_datatype(*(_request->request_datatype));
 
   if (_request->request_source == MPI_ANY_SOURCE) {
     long gate_id;
@@ -1094,6 +1079,7 @@ int mpi_inline_irecv(void* buffer,
   }
 
   mpir_datatype = get_datatype(datatype);
+  mpir_datatype->active_communications ++;
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
   _request->user_tag = tag;
   _request->request_source = source;
@@ -1258,27 +1244,7 @@ int MPI_Recv(void *buffer,
   _request->request_datatype = &datatype;
   mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
 
-  if (_request->request_type == MPI_REQUEST_RECV) {
-    MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request = %p\n", &(_request->request_id));
-    err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
-    MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
-  }
-  else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
-    MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
-    err = nm_so_end_unpacking(connection);
-    MPI_NMAD_TRANSFER("Returning from nm_so_end_unpacking\n");
-  }
-  MPI_NMAD_TRACE("Wait completed\n");
-
-  if (_request->request_ptr != NULL) {
-    free(_request->request_ptr);
-  }
-
-  if (status != NULL) {
-    mpi_set_status(&request, status);
-  }
+  MPI_Wait(&request, status);
 
   MPI_NMAD_TIMER_OUT();
   MPI_NMAD_LOG_OUT();
@@ -1347,15 +1313,20 @@ int MPI_Wait(MPI_Request *request,
   }
   else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
+    MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
     err = nm_so_end_unpacking(connection);
+    MPI_NMAD_TRANSFER("Returning from nm_so_end_unpacking\n");
   }
   else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
+    MPI_NMAD_TRACE("Waiting for completion end_packing\n");
     err = nm_so_end_packing(connection);
   }
   else {
     MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", _request->request_type);
   }
+  MPI_NMAD_TRACE("Wait completed\n");
+
   _request->request_type = MPI_REQUEST_ZERO;
   if (_request->request_ptr != NULL) {
     free(_request->request_ptr);
@@ -1364,6 +1335,9 @@ int MPI_Wait(MPI_Request *request,
   if (status != NULL) {
     mpi_set_status(request, status);
   }
+
+  // Release one active communication for that type
+  mpir_type_unlock(_request->request_datatype);
 
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();

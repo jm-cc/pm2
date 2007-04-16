@@ -65,6 +65,7 @@ typedef int MPI_Comm;
 
 /* Data types */
 typedef int MPI_Datatype;
+#define MPI_DATATYPE_NULL  ((MPI_Datatype)0)
 #define MPI_CHAR           ((MPI_Datatype)1)
 #define MPI_UNSIGNED_CHAR  ((MPI_Datatype)2)
 #define MPI_BYTE           ((MPI_Datatype)3)

@@ -57,6 +57,8 @@ void internal_init() {
     datatypes[i]->committed = 1;
     datatypes[i]->is_contig = 1;
     datatypes[i]->dte_type = MPIR_BASIC;
+    datatypes[i]->active_communications = 100;
+    datatypes[i]->free_requested = 0;
   }
   datatypes[0]->size = 0;
   datatypes[MPI_CHAR]->size = sizeof(signed char);
@@ -191,8 +193,14 @@ size_t sizeof_datatype(MPI_Datatype datatype) {
 }
 
 mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
-  if (datatype < NUMBER_OF_DATATYPES) {
-    return datatypes[datatype];
+  if (datatype > MPI_DATATYPE_NULL && datatype < NUMBER_OF_DATATYPES) {
+    if (datatypes[datatype] == NULL) {
+      ERROR("Datatype %d invalid", datatype);
+      return NULL;
+    }
+    else {
+      return datatypes[datatype];
+    }
   }
   else {
     ERROR("Datatype %d unknown", datatype);
@@ -201,7 +209,7 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
 }
 
 int mpir_type_size(MPI_Datatype datatype, int *size) {
-  if (datatype < NUMBER_OF_DATATYPES) {
+  if (datatype > MPI_DATATYPE_NULL && datatype < NUMBER_OF_DATATYPES) {
     *size = datatypes[datatype]->size;
     return MPI_SUCCESS;
   }
@@ -213,33 +221,56 @@ int mpir_type_size(MPI_Datatype datatype, int *size) {
 
 int mpir_type_commit(MPI_Datatype *datatype) {
   if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
-    ERROR("Unknown datatype %d\n", *datatype);
+    ERROR("Datatype %d unknown\n", *datatype);
     return -1;
   }
   datatypes[*datatype]->committed = 1;
   datatypes[*datatype]->is_optimized = 0;
+  datatypes[*datatype]->active_communications = 0;
+  datatypes[*datatype]->free_requested = 0;
+  return MPI_SUCCESS;
+}
+
+int mpir_type_unlock(MPI_Datatype *datatype) {
+  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
+    ERROR("Datatype %d unknown\n", *datatype);
+    return -1;
+  }
+  datatypes[*datatype]->active_communications --;
+  if (datatypes[*datatype]->active_communications == 0 && datatypes[*datatype]->free_requested == 1) {
+    mpir_type_free(datatype);
+  }
   return MPI_SUCCESS;
 }
 
 int mpir_type_free(MPI_Datatype *datatype) {
   if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
-    ERROR("Unknown datatype %d\n", *datatype);
+    ERROR("Datatype %d unknown\n", *datatype);
     return -1;
   }
-  if (datatypes[*datatype]->dte_type == MPIR_INDEXED ||
-      datatypes[*datatype]->dte_type == MPIR_HINDEXED ||
-      datatypes[*datatype]->dte_type == MPIR_STRUCT) {
-    free(datatypes[*datatype]->blocklens);
-    free(datatypes[*datatype]->indices);
-    if (datatypes[*datatype]->dte_type == MPIR_STRUCT) {
-      free(datatypes[*datatype]->old_sizes);
-    }
+
+  if (datatypes[*datatype]->active_communications != 0) {
+    datatypes[*datatype]->free_requested = 1;
+    MPI_NMAD_TRACE("Datatype %d still in use. Cannot be released", *datatype);
   }
-  free(datatypes[*datatype]);
-  int *ptr;
-  ptr = malloc(sizeof(int));
-  *ptr = *datatype;
-  tbx_slist_enqueue(available_datatypes, ptr);
+  else {
+    if (datatypes[*datatype]->dte_type == MPIR_INDEXED ||
+        datatypes[*datatype]->dte_type == MPIR_HINDEXED ||
+        datatypes[*datatype]->dte_type == MPIR_STRUCT) {
+      free(datatypes[*datatype]->blocklens);
+      free(datatypes[*datatype]->indices);
+      if (datatypes[*datatype]->dte_type == MPIR_STRUCT) {
+        free(datatypes[*datatype]->old_sizes);
+      }
+    }
+    free(datatypes[*datatype]);
+    datatypes[*datatype] = NULL;
+    *datatype = MPI_DATATYPE_NULL;
+    int *ptr;
+    ptr = malloc(sizeof(int));
+    *ptr = *datatype;
+    tbx_slist_enqueue(available_datatypes, ptr);
+  }
   return MPI_SUCCESS;
 }
 
@@ -377,7 +408,7 @@ int mpir_op_create(MPI_User_function *function,
 
 int mpir_op_free(MPI_Op *op) {
   if (*op > NUMBER_OF_FUNCTIONS || functions[*op] == NULL) {
-    ERROR("Unknown operator %d\n", *op);
+    ERROR("Operator %d unknown\n", *op);
     return -1;
   }
   else {
@@ -549,7 +580,7 @@ int mpir_comm_free(MPI_Comm *comm) {
     return -1;
   }
   else if (*comm > NUMBER_OF_COMMUNICATORS || communicators[*comm-MPI_COMM_WORLD] == NULL) {
-    ERROR("Unknown communicator %d\n", *comm);
+    ERROR("Communicator %d unknown\n", *comm);
     return -1;
   }
   else {

@@ -64,7 +64,10 @@ extern debug_type_t debug_mpi_nmad_log;
 #  define MPI_NMAD_TIMER_OUT() { }
 #endif /* MPI_TIMER */
 
-#define ERROR(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); MPI_Abort(MPI_COMM_WORLD, 1); }
+#define ERROR(...) { fprintf(stderr, "\n\n************\nERROR: %s\n\t", __TBX_FUNCTION__); fprintf(stderr, __VA_ARGS__); \
+                     fprintf(stderr, "\n************\n\n"); fflush(stderr); \
+                     MPI_Abort(MPI_COMM_WORLD, 1); \
+                   }
 
 #define NUMBER_OF_COMMUNICATORS (MPI_COMM_WORLD + 7)
 
@@ -123,6 +126,8 @@ typedef struct mpir_datatype_s {
   size_t old_size; /* size of old type */
   size_t* old_sizes; /* size of old types */
   int is_optimized;
+  int active_communications; /* number of active communications using this type */
+  int free_requested; /* a free request has been posted for this type while it was still active */
 } mpir_datatype_t;
 
 int not_implemented(char *s);
@@ -143,6 +148,8 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype);
 int mpir_type_size(MPI_Datatype datatype, int *size);
 
 int mpir_type_commit(MPI_Datatype *datatype);
+
+int mpir_type_unlock(MPI_Datatype *datatype);
 
 int mpir_type_free(MPI_Datatype *datatype);
 

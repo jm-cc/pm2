@@ -263,13 +263,14 @@ int mpir_type_free(MPI_Datatype *datatype) {
         free(datatypes[*datatype]->old_sizes);
       }
     }
-    free(datatypes[*datatype]);
-    datatypes[*datatype] = NULL;
-    *datatype = MPI_DATATYPE_NULL;
     int *ptr;
     ptr = malloc(sizeof(int));
     *ptr = *datatype;
     tbx_slist_enqueue(available_datatypes, ptr);
+
+    free(datatypes[*datatype]);
+    datatypes[*datatype] = NULL;
+    *datatype = MPI_DATATYPE_NULL;
   }
   return MPI_SUCCESS;
 }

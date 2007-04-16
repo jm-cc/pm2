@@ -219,58 +219,57 @@ int mpir_type_size(MPI_Datatype datatype, int *size) {
   }
 }
 
-int mpir_type_commit(MPI_Datatype *datatype) {
-  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
-    ERROR("Datatype %d unknown\n", *datatype);
+int mpir_type_commit(MPI_Datatype datatype) {
+  if (datatype > NUMBER_OF_DATATYPES || datatypes[datatype] == NULL) {
+    ERROR("Datatype %d unknown\n", datatype);
     return -1;
   }
-  datatypes[*datatype]->committed = 1;
-  datatypes[*datatype]->is_optimized = 0;
-  datatypes[*datatype]->active_communications = 0;
-  datatypes[*datatype]->free_requested = 0;
+  datatypes[datatype]->committed = 1;
+  datatypes[datatype]->is_optimized = 0;
+  datatypes[datatype]->active_communications = 0;
+  datatypes[datatype]->free_requested = 0;
   return MPI_SUCCESS;
 }
 
-int mpir_type_unlock(MPI_Datatype *datatype) {
-  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
-    ERROR("Datatype %d unknown\n", *datatype);
+int mpir_type_unlock(MPI_Datatype datatype) {
+  if (datatype > NUMBER_OF_DATATYPES || datatypes[datatype] == NULL) {
+    ERROR("Datatype %d unknown\n", datatype);
     return -1;
   }
-  datatypes[*datatype]->active_communications --;
-  if (datatypes[*datatype]->active_communications == 0 && datatypes[*datatype]->free_requested == 1) {
+  datatypes[datatype]->active_communications --;
+  if (datatypes[datatype]->active_communications == 0 && datatypes[datatype]->free_requested == 1) {
     mpir_type_free(datatype);
   }
   return MPI_SUCCESS;
 }
 
-int mpir_type_free(MPI_Datatype *datatype) {
-  if (*datatype > NUMBER_OF_DATATYPES || datatypes[*datatype] == NULL) {
-    ERROR("Datatype %d unknown\n", *datatype);
+int mpir_type_free(MPI_Datatype datatype) {
+  if (datatype > NUMBER_OF_DATATYPES || datatypes[datatype] == NULL) {
+    ERROR("Datatype %d unknown\n", datatype);
     return -1;
   }
 
-  if (datatypes[*datatype]->active_communications != 0) {
-    datatypes[*datatype]->free_requested = 1;
-    MPI_NMAD_TRACE("Datatype %d still in use. Cannot be released", *datatype);
+  if (datatypes[datatype]->active_communications != 0) {
+    datatypes[datatype]->free_requested = 1;
+    MPI_NMAD_TRACE("Datatype %d still in use. Cannot be released", datatype);
   }
   else {
-    if (datatypes[*datatype]->dte_type == MPIR_INDEXED ||
-        datatypes[*datatype]->dte_type == MPIR_HINDEXED ||
-        datatypes[*datatype]->dte_type == MPIR_STRUCT) {
-      free(datatypes[*datatype]->blocklens);
-      free(datatypes[*datatype]->indices);
-      if (datatypes[*datatype]->dte_type == MPIR_STRUCT) {
-        free(datatypes[*datatype]->old_sizes);
+    if (datatypes[datatype]->dte_type == MPIR_INDEXED ||
+        datatypes[datatype]->dte_type == MPIR_HINDEXED ||
+        datatypes[datatype]->dte_type == MPIR_STRUCT) {
+      free(datatypes[datatype]->blocklens);
+      free(datatypes[datatype]->indices);
+      if (datatypes[datatype]->dte_type == MPIR_STRUCT) {
+        free(datatypes[datatype]->old_sizes);
       }
     }
     int *ptr;
     ptr = malloc(sizeof(int));
-    *ptr = *datatype;
+    *ptr = datatype;
     tbx_slist_enqueue(available_datatypes, ptr);
 
-    free(datatypes[*datatype]);
-    datatypes[*datatype] = NULL;
-    *datatype = MPI_DATATYPE_NULL;
+    free(datatypes[datatype]);
+    datatypes[datatype] = NULL;
   }
   return MPI_SUCCESS;
 }

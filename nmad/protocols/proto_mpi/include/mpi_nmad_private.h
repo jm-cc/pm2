@@ -93,7 +93,7 @@ struct MPI_Request_s {
   int user_tag;
   int request_source;
   int request_error;
-  MPI_Datatype *request_datatype;
+  MPI_Datatype request_datatype;
 };
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
@@ -148,11 +148,11 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype);
 
 int mpir_type_size(MPI_Datatype datatype, int *size);
 
-int mpir_type_commit(MPI_Datatype *datatype);
+int mpir_type_commit(MPI_Datatype datatype);
 
-int mpir_type_unlock(MPI_Datatype *datatype);
+int mpir_type_unlock(MPI_Datatype datatype);
 
-int mpir_type_free(MPI_Datatype *datatype);
+int mpir_type_free(MPI_Datatype datatype);
 
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,

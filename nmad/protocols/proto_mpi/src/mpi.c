@@ -707,7 +707,6 @@ int MPI_Get_processor_name(char *name, int *resultlen) {
 __inline__
 int mpi_inline_isend(void *buffer,
                      int count,
-                     MPI_Datatype datatype,
                      int dest,
                      int tag,
                      MPI_Communication_Mode communication_mode,
@@ -721,7 +720,7 @@ int mpi_inline_isend(void *buffer,
 
   gate_id = out_gate_id[dest];
 
-  mpir_datatype = get_datatype(datatype);
+  mpir_datatype = get_datatype(_request->request_datatype);
   mpir_datatype->active_communications ++;
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
   _request->user_tag = tag;
@@ -745,22 +744,22 @@ int mpi_inline_isend(void *buffer,
   _request->contig_buffer = NULL;
   MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, _request->request_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
-    MPI_NMAD_TRANSFER("Sent (contig) --> %d, %ld : %lu bytes\n", dest, gate_id, (unsigned long)count * sizeof_datatype(datatype));
+    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", _request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+    MPI_NMAD_TRANSFER("Sent (contig) --> %d, %ld : %lu bytes\n", dest, gate_id, (unsigned long)count * mpir_datatype->size);
     if (communication_mode == MPI_IMMEDIATE_MODE) {
-      err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
+      err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
     }
     else if (communication_mode == MPI_READY_MODE) {
-      err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
+      err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
     }
     else {
       seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, _request->request_tag);
       if (seq == NM_SO_PENDING_PACKS_WINDOW-2) {
         MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), MPI_IS_COMPLETED, &(_request->request_nmad));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, MPI_IS_COMPLETED, &(_request->request_nmad));
       }
       else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), communication_mode, &(_request->request_nmad));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, communication_mode, &(_request->request_nmad));
       }
     }
     MPI_NMAD_TRANSFER("Sent finished\n");
@@ -825,7 +824,7 @@ int mpi_inline_isend(void *buffer,
       int i, j;
 
       MPI_NMAD_TRACE("Sending struct datatype in a contiguous buffer\n");
-      len = count * sizeof_datatype(datatype);
+      len = count * mpir_datatype->size;
       _request->contig_buffer = malloc(len);
       if (_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %lu to send struct datatype\n", (unsigned long)len);
@@ -844,8 +843,8 @@ int mpi_inline_isend(void *buffer,
           ptr -= mpir_datatype->indices[j];
         }
       }
-      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, (unsigned long)len, count, (unsigned long)sizeof_datatype(datatype));
-      MPI_NMAD_TRANSFER("Sent (struct) --> %d, %ld: %lu bytes\n", dest, gate_id, (unsigned long)count * sizeof_datatype(datatype));
+      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, (unsigned long)len, count, (unsigned long)mpir_datatype->size);
+      MPI_NMAD_TRANSFER("Sent (struct) --> %d, %ld: %lu bytes\n", dest, gate_id, (unsigned long)count * mpir_datatype->size);
       if (communication_mode == MPI_IMMEDIATE_MODE) {
         err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_nmad));
       }
@@ -860,7 +859,7 @@ int mpi_inline_isend(void *buffer,
     }
   }
   else {
-    ERROR("Do not know how to send datatype %d\n", datatype);
+    ERROR("Do not know how to send datatype %d\n", _request->request_datatype);
     return -1;
   }
 
@@ -904,8 +903,8 @@ int MPI_Esend(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  _request->request_datatype = &datatype;
-  err = mpi_inline_isend(buffer, count, datatype, dest, tag, is_completed, comm, request);
+  _request->request_datatype = datatype;
+  err = mpi_inline_isend(buffer, count, dest, tag, is_completed, comm, request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -942,8 +941,8 @@ int MPI_Send(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  _request->request_datatype = &datatype;
-  mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_IMMEDIATE_MODE, comm, &request);
+  _request->request_datatype = datatype;
+  mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, comm, &request);
 
   MPI_Wait(&request, NULL);
 
@@ -986,8 +985,8 @@ int MPI_Isend(void *buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  _request->request_datatype = &datatype;
-  err = mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_IMMEDIATE_MODE, comm, request);
+  _request->request_datatype = datatype;
+  err = mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, comm, request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1023,8 +1022,8 @@ int MPI_Rsend(void* buffer,
   _request->request_type = MPI_REQUEST_SEND;
   _request->request_ptr = NULL;
   _request->contig_buffer = NULL;
-  _request->request_datatype = &datatype;
-  mpi_inline_isend(buffer, count, datatype, dest, tag, MPI_READY_MODE, comm, &request);
+  _request->request_datatype = datatype;
+  mpi_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, comm, &request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1037,7 +1036,7 @@ void mpi_set_status(MPI_Request *request, MPI_Status*status) {
   status->MPI_TAG = _request->user_tag;
   status->MPI_ERROR = _request->request_error;
 
-  // status->count = status->size / sizeof_datatype(*(_request->request_datatype));
+  status->count = sizeof_datatype(_request->request_datatype);
 
   if (_request->request_source == MPI_ANY_SOURCE) {
     long gate_id;
@@ -1052,7 +1051,6 @@ void mpi_set_status(MPI_Request *request, MPI_Status*status) {
 __inline__
 int mpi_inline_irecv(void* buffer,
                      int count,
-                     MPI_Datatype datatype,
                      int source,
                      int tag,
                      MPI_Comm comm,
@@ -1077,7 +1075,7 @@ int mpi_inline_irecv(void* buffer,
     gate_id = in_gate_id[source];
   }
 
-  mpir_datatype = get_datatype(datatype);
+  mpir_datatype = get_datatype(_request->request_datatype);
   mpir_datatype->active_communications ++;
   _request->request_tag = mpir_project_comm_and_tag(comm, tag);
   _request->user_tag = tag;
@@ -1105,9 +1103,9 @@ int mpi_inline_irecv(void* buffer,
 
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, _request->request_tag, comm, tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
-    MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
+    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", _request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+    MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * mpir_datatype->size);
+    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
     MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(_request->request_nmad));
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
   }
@@ -1168,10 +1166,10 @@ int mpi_inline_irecv(void* buffer,
       void *recvbuffer = NULL, *recvptr, *ptr;
       int   i, j;
 
-      recvbuffer = malloc(count * sizeof_datatype(datatype));
-      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", datatype, recvbuffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
-      MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
+      recvbuffer = malloc(count * mpir_datatype->size);
+      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", _request->request_datatype, recvbuffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+      MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * mpir_datatype->size);
+      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * mpir_datatype->size, &(_request->request_nmad));
       MPI_NMAD_TRANSFER("Recv (struct) finished\n");
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (struct)\n");
@@ -1196,7 +1194,7 @@ int mpi_inline_irecv(void* buffer,
     }
   }
   else {
-    ERROR("Do not know how to receive datatype %d\n", datatype);
+    ERROR("Do not know how to receive datatype %d\n", _request->request_datatype);
     MPI_NMAD_LOG_OUT();
     return -1;
   }
@@ -1240,8 +1238,8 @@ int MPI_Recv(void *buffer,
 
   _request->request_ptr = NULL;
   _request->request_type = MPI_REQUEST_RECV;
-  _request->request_datatype = &datatype;
-  mpi_inline_irecv(buffer, count, datatype, source, tag, comm, &request);
+  _request->request_datatype = datatype;
+  mpi_inline_irecv(buffer, count, source, tag, comm, &request);
 
   MPI_Wait(&request, status);
 
@@ -1278,8 +1276,8 @@ int MPI_Irecv(void* buffer,
 
   _request->request_ptr = NULL;
   _request->request_type = MPI_REQUEST_RECV;
-  _request->request_datatype = &datatype;
-  err = mpi_inline_irecv(buffer, count, datatype, source, tag, comm, request);
+  _request->request_datatype = datatype;
+  err = mpi_inline_irecv(buffer, count, source, tag, comm, request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1946,7 +1944,7 @@ int MPI_Type_size(MPI_Datatype datatype, int *size) {
  * Commits the datatype.
  */
 int MPI_Type_commit(MPI_Datatype *datatype) {
-  return mpir_type_commit(datatype);
+  return mpir_type_commit(*datatype);
 }
 
 /**
@@ -1954,7 +1952,9 @@ int MPI_Type_commit(MPI_Datatype *datatype) {
  * deallocation.
  */
 int MPI_Type_free(MPI_Datatype *datatype) {
-  return mpir_type_free(datatype);
+  int err = mpir_type_free(*datatype);
+  *datatype = MPI_DATATYPE_NULL;
+  return err;
 }
 
 /**

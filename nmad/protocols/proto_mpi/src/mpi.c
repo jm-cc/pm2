@@ -480,18 +480,18 @@ int MPI_Init(int *argc,
   MPI_NMAD_LOG_IN();
 
   /*
+   * Initialization of various libraries.
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_init(argc, *argv);
+
+  /*
    * Check size of opaque type MPI_Request is the same as the size of
    * our internal request type
    */
   MPI_NMAD_TRACE("sizeof(struct MPI_Request_s) = %ld\n", (unsigned long)sizeof(struct MPI_Request_s));
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (unsigned long)sizeof(MPI_Request));
   assert(sizeof(struct MPI_Request_s) <= sizeof(MPI_Request));
-
-  /*
-   * Initialization of various libraries.
-   * Reference to the Madeleine object.
-   */
-  madeleine    = mad_init(argc, *argv);
 
   /*
    * Reference to the session information object
@@ -1035,7 +1035,7 @@ void mpi_set_status(MPI_Request *request, MPI_Status*status) {
   struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
   status->MPI_TAG = _request->user_tag;
-  //  status->MPI_ERROR = err;
+  status->MPI_ERROR = _request->request_error;
 
   // status->count = status->size / sizeof_datatype(*(_request->request_datatype));
 
@@ -1057,7 +1057,6 @@ int mpi_inline_irecv(void* buffer,
                      int tag,
                      MPI_Comm comm,
                      MPI_Request *request) {
-  int                   err      = 0;
   long                  gate_id;
   int                   seq, probe;
   mpir_datatype_t      *mpir_datatype = NULL;
@@ -1108,7 +1107,7 @@ int mpi_inline_irecv(void* buffer,
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
     MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-    err = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
     MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(_request->request_id));
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
   }
@@ -1172,11 +1171,11 @@ int mpi_inline_irecv(void* buffer,
       recvbuffer = malloc(count * sizeof_datatype(datatype));
       MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", datatype, recvbuffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
       MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-      err = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_id));
+      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_id));
       MPI_NMAD_TRANSFER("Recv (struct) finished\n");
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (struct)\n");
-      err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+      nm_so_sr_rwait(p_so_sr_if, _request->request_id);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
       recvptr = recvbuffer;
@@ -1205,7 +1204,7 @@ int mpi_inline_irecv(void* buffer,
   inc_nb_incoming_msg();
   MPI_NMAD_TRACE("Irecv completed\n");
   MPI_NMAD_LOG_OUT();
-  return err;
+  return _request->request_error;
 }
 
 /**

@@ -92,6 +92,7 @@ struct MPI_Request_s {
   void *contig_buffer;
   int user_tag;
   int request_source;
+  int request_error;
   MPI_Datatype *request_datatype;
 };
 

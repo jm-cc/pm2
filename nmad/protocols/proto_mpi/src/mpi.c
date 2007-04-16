@@ -748,19 +748,19 @@ int mpi_inline_isend(void *buffer,
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
     MPI_NMAD_TRANSFER("Sent (contig) --> %d, %ld : %lu bytes\n", dest, gate_id, (unsigned long)count * sizeof_datatype(datatype));
     if (communication_mode == MPI_IMMEDIATE_MODE) {
-      err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+      err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
     }
     else if (communication_mode == MPI_READY_MODE) {
-      err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
+      err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
     }
     else {
       seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, _request->request_tag);
       if (seq == NM_SO_PENDING_PACKS_WINDOW-2) {
         MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), MPI_IS_COMPLETED, &(_request->request_id));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), MPI_IS_COMPLETED, &(_request->request_nmad));
       }
       else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), communication_mode, &(_request->request_id));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), communication_mode, &(_request->request_nmad));
       }
     }
     MPI_NMAD_TRANSFER("Sent finished\n");
@@ -847,13 +847,13 @@ int mpi_inline_isend(void *buffer,
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, (unsigned long)len, count, (unsigned long)sizeof_datatype(datatype));
       MPI_NMAD_TRANSFER("Sent (struct) --> %d, %ld: %lu bytes\n", dest, gate_id, (unsigned long)count * sizeof_datatype(datatype));
       if (communication_mode == MPI_IMMEDIATE_MODE) {
-        err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_id));
+        err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_nmad));
       }
       else if (communication_mode == MPI_READY_MODE) {
-        err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_id));
+        err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_nmad));
       }
       else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, communication_mode, &(_request->request_id));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, communication_mode, &(_request->request_nmad));
       }
       MPI_NMAD_TRANSFER("Sent (struct) finished\n");
       if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
@@ -1041,7 +1041,7 @@ void mpi_set_status(MPI_Request *request, MPI_Status*status) {
 
   if (_request->request_source == MPI_ANY_SOURCE) {
     long gate_id;
-    nm_so_sr_recv_source(p_so_sr_if, _request->request_id, &gate_id);
+    nm_so_sr_recv_source(p_so_sr_if, _request->request_nmad, &gate_id);
     status->MPI_SOURCE = in_dest[gate_id];
   }
   else {
@@ -1107,8 +1107,8 @@ int mpi_inline_irecv(void* buffer,
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", datatype, buffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
     MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_id));
-    MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(_request->request_id));
+    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
+    MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(_request->request_nmad));
     if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -1171,11 +1171,11 @@ int mpi_inline_irecv(void* buffer,
       recvbuffer = malloc(count * sizeof_datatype(datatype));
       MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", datatype, recvbuffer, (unsigned long)count*sizeof_datatype(datatype), count, (unsigned long)sizeof_datatype(datatype));
       MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * sizeof_datatype(datatype));
-      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_id));
+      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * sizeof_datatype(datatype), &(_request->request_nmad));
       MPI_NMAD_TRANSFER("Recv (struct) finished\n");
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (struct)\n");
-      nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+      nm_so_sr_rwait(p_so_sr_if, _request->request_nmad);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
       recvptr = recvbuffer;
@@ -1297,14 +1297,14 @@ int MPI_Wait(MPI_Request *request,
   MPI_NMAD_TRACE("Waiting for a request %d\n", _request->request_type);
   if (_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(_request->request_id));
-    err = nm_so_sr_rwait(p_so_sr_if, _request->request_id);
+    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(_request->request_nmad));
+    err = nm_so_sr_rwait(p_so_sr_if, _request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
   }
   else if (_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
     MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
-    err = nm_so_sr_swait(p_so_sr_if, _request->request_id);
+    err = nm_so_sr_swait(p_so_sr_if, _request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
     if (_request->contig_buffer != NULL) {
       free(_request->contig_buffer);
@@ -1384,10 +1384,10 @@ int MPI_Test(MPI_Request *request,
   MPI_NMAD_LOG_IN();
 
   if (_request->request_type == MPI_REQUEST_RECV) {
-    err = nm_so_sr_rtest(p_so_sr_if, _request->request_id);
+    err = nm_so_sr_rtest(p_so_sr_if, _request->request_nmad);
   }
   else if (_request->request_type == MPI_REQUEST_SEND) {
-    err = nm_so_sr_stest(p_so_sr_if, _request->request_id);
+    err = nm_so_sr_stest(p_so_sr_if, _request->request_nmad);
   }
   else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
     struct nm_so_cnx *connection = &(_request->request_cnx);
@@ -1548,7 +1548,7 @@ int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2) {
     return (_request1->request_type == _request2->request_type);
   }
   else {
-    return (_request1->request_id == _request2->request_id);
+    return (_request1->request_nmad == _request2->request_nmad);
   }
 }
 

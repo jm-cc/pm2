@@ -32,6 +32,7 @@
 
 /* error return classes */
 #define MPI_SUCCESS          0      /* Successful return code */
+#define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
 
 /* Pre-defined constants */
 #define MPI_UNDEFINED      (-32766)

@@ -1334,7 +1334,9 @@ int MPI_Wait(MPI_Request *request,
   }
 
   // Release one active communication for that type
-  mpir_type_unlock(_request->request_datatype);
+  if (_request->request_datatype > MPI_INTEGER) {
+    mpir_type_unlock(_request->request_datatype);
+  }
 
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
@@ -1953,8 +1955,10 @@ int MPI_Type_commit(MPI_Datatype *datatype) {
  */
 int MPI_Type_free(MPI_Datatype *datatype) {
   int err = mpir_type_free(*datatype);
-  *datatype = MPI_DATATYPE_NULL;
-  return err;
+  if (err == MPI_SUCCESS) {
+    *datatype = MPI_DATATYPE_NULL;
+  }
+  return MPI_SUCCESS;
 }
 
 /**

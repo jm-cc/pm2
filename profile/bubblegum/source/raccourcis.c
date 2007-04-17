@@ -25,6 +25,10 @@
 #include "rightwindow.h"
 #include "interfaceGauche.h"
 
+void myfunc(){
+printf("Detected");
+}
+
 void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
 {
    GtkAccelGroup* accel_group;
@@ -56,16 +60,22 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
    gtk_accel_group_connect(accel_group, GDK_s, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Enregistrer), window, NULL));
    
-   gtk_accel_group_connect(accel_group, GDK_c, GDK_CONTROL_MASK, 0,
-                           g_cclosure_new_swap(G_CALLBACK(Temp), window, NULL));
+   gtk_accel_group_connect(accel_group, GDK_s, GDK_CONTROL_MASK | GDK_SHIFT_MASK, 0,
+                           g_cclosure_new_swap(G_CALLBACK(EnregistrerSous), window, NULL));
    
+   gtk_accel_group_connect(accel_group, GDK_z, GDK_CONTROL_MASK, 0,
+                           g_cclosure_new_swap(G_CALLBACK(Annuler), window, NULL));
+
+   gtk_accel_group_connect(accel_group, GDK_y, GDK_CONTROL_MASK, 0,
+                           g_cclosure_new_swap(G_CALLBACK(Refaire), window, NULL));
+
    gtk_accel_group_connect(accel_group, GDK_e, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Executer), window, NULL));
    
    gtk_accel_group_connect(accel_group, GDK_f, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(ExecuterFlash), window, NULL));
 
-   // pour ces fonctions la, soyons certain que ca marchera en redefinissant des closure qui vont bien:   
+   // pour ces fonctions la, soyons certains que ça marchera en redéfinissant des closure qui vont bien:   
    gtk_accel_group_connect(accel_group, GDK_Right, GDK_CONTROL_MASK, 0,
                            g_cclosure_new_swap(G_CALLBACK(Basculement_gauche_hotkey), biwg, NULL));
    
@@ -77,13 +87,23 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
 
    gtk_accel_group_connect(accel_group, GDK_Delete, 0, 0,
                            g_cclosure_new_swap(G_CALLBACK(deleteRec2), iGaucheVars, NULL));
+   
+   gtk_accel_group_connect(accel_group,GDK_w,GDK_BUTTON_PRESS_MASK | 
+			   GDK_CONTROL_MASK, 0 ,
+			   g_cclosure_new_swap(G_CALLBACK(addThreadAutoOnOff), iGaucheVars, NULL));
 
    gtk_accel_group_connect(accel_group, GDK_b, GDK_CONTROL_MASK , 0,
-                           g_cclosure_new_swap(G_CALLBACK(addBulleAutoOnOff), iGaucheVars, NULL));
+			   g_cclosure_new_swap(G_CALLBACK(addBulleAutoOnOff), iGaucheVars, NULL));
 
    gtk_accel_group_connect(accel_group, GDK_t, GDK_CONTROL_MASK, 0,
+			   g_cclosure_new_swap(G_CALLBACK(addThreadAutoOnOff), iGaucheVars, NULL));
+   
+   gtk_accel_group_connect(accel_group, GDK_F4, 0, 0,
+                           g_cclosure_new_swap(G_CALLBACK(addBulleAutoOnOff), iGaucheVars, NULL));
+   
+   gtk_accel_group_connect(accel_group, GDK_F5, 0, 0,
                            g_cclosure_new_swap(G_CALLBACK(addThreadAutoOnOff), iGaucheVars, NULL));
-
+   
    gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
-      
+   
 }

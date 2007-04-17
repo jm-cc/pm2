@@ -11,46 +11,41 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-#if 1
 #include "save.h"
 #include "bulle.h"
 #include <stdio.h>
 
-#define TAILLE_DU_BUFFER 8
+#include "interfaceGauche.h"
+
+extern interfaceGaucheVars* iGaucheVars;
 
 
 /*! Creer un noeud de type "bulle"
  *  Cette fonction récupère directement l'attribut priorité de la bulle
- *  \param Bulle * bulle
- */
+ *  \param element dans ce cas c'est une bulle.
+ *  \return le noeud créer, NULL en cas d'erreur.
+ */ 
 xmlNodePtr creerBulleXml(Element * element) {
-  //Bulle bulle = element->bulle;
   xmlNodePtr noeud_bulle;
-  //  xmlChar buffer[TAILLE_DU_BUFFER];
 
   /* récupération des attributs */
-  char priorite[16]; 
+  /* unsigned */ char priorite[4]; 
   snprintf(priorite, sizeof(priorite), "%d", GetPrioriteBulle(element));
   
-  
-  printf("DEBUG : priorite %s ->*<-\n", priorite);
-
   /* Création du noeud "bulle" */
-  noeud_bulle = xmlNewNode(NULL, "bulle");
+  noeud_bulle = xmlNewNode(NULL, (unsigned char*)"bulle");
 
   if(noeud_bulle == NULL) {
-    printf("DEBUG : erreur dans la sauvegarde lors creation n b\n");
+    printf("DEBUG : erreur dans la sauvegarde lors creation noeud bulle\n");
     return NULL;
   }
   
   /* Ajout de son attribut */
- #if 1
-  if (xmlSetProp(noeud_bulle, "priorite", &priorite) == NULL) {
+  if (xmlSetProp(noeud_bulle, (unsigned char*)"priorite", (unsigned char*)priorite) == NULL) {
     xmlFreeNode(noeud_bulle);
     printf("DEBUG : erreur dans la sauvegarde lors priorite bulle\n");
     return NULL;
   }
- #endif 
   return noeud_bulle;
 }
 
@@ -58,167 +53,223 @@ xmlNodePtr creerBulleXml(Element * element) {
 /*! Creer un noeud de type "thread"
  *  Cette fonction récupère le nom, la priorité 
  *  et la charge du thread
- *  \param Thread thread
+ *  \param  element c'est forcément du type THREAD.
+ *  \return le noeud créer, NULL en cas d'erreur.
  */
-xmlNodePtr creerThreadXml(Element * element){
-  //Thread thread = element->thread;
+xmlNodePtr creerThreadXml(Element * element) {
   xmlNodePtr noeud_thread;
 
-  char priorite[16];
-  char charge[4];
-  char nom[25]; 
+  /* unsigned */ char priorite[4];
+  /* unsigned */ char charge[4];
+  /* unsigned */ char nom[32]; 
 
   snprintf(priorite, sizeof(priorite), "%d", GetPrioriteThread(element)); 
   snprintf(charge, sizeof(charge), "%d", GetCharge(element));
+  
   strcpy(nom, GetNom(element));
-  // Création du noeud "thread"
-  if ((noeud_thread = xmlNewNode(NULL, "thread")) == NULL) {
-    printf("DEBUG : erreur dans la sauvegarde lors de n t\n");
+  /*  Création du noeud "thread" */
+  if ((noeud_thread = xmlNewNode(NULL, (unsigned char*)"thread")) == NULL) {
+    printf("DEBUG : erreur dans la sauvegarde lors de noeud thread\n");
     return NULL;
   }
-    // Ajout de son attribut "nom"
-  if (xmlSetProp(noeud_thread, "nom", nom) == NULL) {
+  /*  Ajout de son attribut "nom" */
+  if (xmlSetProp(noeud_thread, (unsigned char*)"nom", (unsigned char*)nom) == NULL) {
     xmlFreeNode(noeud_thread); 
-    printf("DEBUG : erreur dans la sauvegarde lors nom t\n");   
+    printf("DEBUG : erreur dans la sauvegarde lors nom thread\n");   
     return NULL;
   }
- // Ajout de son attribut "priorite"
-  if (xmlSetProp(noeud_thread, "priorite", priorite) == NULL) {
+  /*  Ajout de son attribut "priorite" */
+  if (xmlSetProp(noeud_thread, (unsigned char*)"priorite", (unsigned char*)priorite) == NULL) {
     xmlFreeNode(noeud_thread);
-    printf("DEBUG : erreur dans la sauvegarde lors prio t\n");
+    printf("DEBUG : erreur dans la sauvegarde lors priorite thread\n");
     return NULL;
   }
  
-  // Ajout de son attribut "charge"
-  if (xmlSetProp(noeud_thread, "charge", charge) == NULL) {
+  /*  Ajout de son attribut "charge" */
+  if (xmlSetProp(noeud_thread, (unsigned char*)"charge", (unsigned char*)charge) == NULL) {
     xmlFreeNode(noeud_thread);
-     printf("DEBUG : erreur dans la sauvegarde lors charge t\n");
- return NULL;
+    printf("DEBUG : erreur dans la sauvegarde lors charge thread\n");
+    return NULL;
   }
   return noeud_thread;
 }
+
 /************************************************************************
  * Pour la sauvegarde
  */
 
-#if 1
-/*! Fonction qui génère les balises XML associés à l'arbre parcouru 
- * \param Element * elementCourant c'est forcement de type bulle 
- * \param xmlNodePtr noeud est le noeud à partir du quel on lie ses fils
+/*! Fonction qui génère les balises XML associés à l'arbre 
+ *  de thread et de bulle parcouru dans l'interface de gauche. 
+ * \param Element * elementCourant c'est forcement de type bulle. 
+ * \param xmlNodePtr noeud est le noeud à partir du quel on lie ses fils.
  */
 void parcourirBullesXml(Element * bulle, xmlNodePtr noeud) {
-  int i;
+  int position;
   Element * elementFilsPtr;
   xmlNodePtr noeudFils;
   int taillebulle = GetNbElement(bulle);
   fprintf(stderr,"Taille de la bulle : %d\n", taillebulle);
-  for(i=1; i<= taillebulle; i++){
-    fprintf(stderr, "Traitement de l'element %d\n", i);
-    elementFilsPtr=GetElement(bulle, i);
-    if(GetTypeElement(elementFilsPtr) == BULLE){
+  
+  for(position=1; position<= taillebulle; position++) {
+    fprintf(stderr, "Traitement de l'element %d\n", position);
+    elementFilsPtr = GetElement(bulle, position);
+    
+    if(GetTypeElement(elementFilsPtr) == BULLE) {
       fprintf(stderr, "bulle en traitement\n");
       noeudFils = creerBulleXml(elementFilsPtr);
       xmlAddChild(noeud, noeudFils);
       parcourirBullesXml(elementFilsPtr, noeudFils);
     }
-    if(GetTypeElement(elementFilsPtr) == THREAD){
+    if(GetTypeElement(elementFilsPtr) == THREAD) {
       fprintf(stderr, "thread en traitement\n");
-     noeudFils = creerThreadXml(elementFilsPtr);
-     xmlAddChild(noeud, noeudFils);
+      noeudFils = creerThreadXml(elementFilsPtr);
+      xmlAddChild(noeud, noeudFils);
     }
   }
 }
-#endif
-/* test*/
 
-void parcourirDocXml(Element * elementCourant, xmlNodePtr noeud) {
-  xmlNodePtr noeudFils;
+/*! Fonction qui va faire la sauvegarde de l'arbre XML
+ *  à l'adresse indiquée.
+ * \param chemin endroit où va être sauvegarder le fichier généré.
+ * \return 0 en fonctionnement correct et -1 en cas d'erreur. 
+*/
+int enregistrerXml(const char* chemin) 
+{
+  /* initialisation de la structure */
+  xmlDocPtr xmldoc;
+  xmldoc = xmlNewDoc ((unsigned char*)"1.0");
+  xmlNodePtr root;
   
-  printf("DEBUG :debut xml\n");
-  printf("DEBUG : Type d'élément %d\n", GetTypeElement(elementCourant));
+  root = xmlNewNode(NULL, (unsigned char*)"BubbleGum");
+  xmlDocSetRootElement(xmldoc, root);
   
-  if(GetTypeElement(elementCourant) == BULLE){
-    noeudFils = creerBulleXml(elementCourant);
-    xmlAddChild(noeud, noeudFils);  
-    printf("DEBUG : creation bulle xml\n");
+  /* parcours */
+  parcourirBullesXml(iGaucheVars->bullePrincipale, root);
+  
+  /* sauvegarde de l'arbre, 1 pour l'indentation */
+  if(xmlSaveFormatFile(chemin, xmldoc, 1) == -1){
+    xmlFreeDoc(xmldoc);
+    return -1;
   }
-  if(GetTypeElement(elementCourant) == THREAD){
-    noeudFils = creerThreadXml(elementCourant);
-    xmlAddChild(noeud, noeudFils);  
-    printf("DEBUG : creation thread xml\n");
-  }
-  printf("DEBUG : fin xml\n");
+  xmlFreeDoc(xmldoc);
+  
+  return 0;
 }
+
 
 /***************************************************************************
  * Pour le chargement
  */
-void lectureNoeud (xmlNodePtr node){
-  if (node->type == XML_ELEMENT_NODE){
-    xmlNodePtr n;
-    for (n = node; n; n = n->next){
-      if (n->children){
-	lectureNoeud(n->children);
+
+
+/*! Fonction qui lance la creation des element rencontres
+ *  à partir du noeud donné en paramètre
+ *
+ */
+void parcourirArbreXml(xmlNodePtr onode, Element * bulleAccueil, zone * z_conteneur) {
+  xmlNodePtr tree, node;
+  //wprintf(L"DEBUG : Début de lecture\n");
+  
+  tree = onode->children;
+  
+  for (node = tree; node; node = node->next){
+    if ((node->type == XML_ELEMENT_NODE)){
+      /* Si l'élément est une bulle */
+      if(strcmp((char *)node->name, "bulle") == 0){
+	char * attr_priorite;
+	int attrI_priorite;
+	
+	/* On verifie son attribut */
+	attr_priorite = (char*)xmlGetProp (node, (unsigned char*)"priorite");
+	attrI_priorite = atoi(attr_priorite);
+	
+	/* On creer la bulle correspondante */
+	Element * nouvelleBulle;
+	zone * z_bulle;
+	
+	nouvelleBulle = CreateBulle(attrI_priorite, SetId(iGaucheVars));
+        /* on l'insère dans la bulle de destination */
+        AddElement(bulleAccueil, nouvelleBulle);
+        /* on crée la zone qui va contenir cette nouvelle bulle */
+        z_bulle = CreerZone(0,0,LARGEUR_B, HAUTEUR_B);
+        /* et on l'insère dans la zone conteneur */
+        AjouterSousZones(z_conteneur, z_bulle);
+        Rearanger(iGaucheVars->zonePrincipale);
+
+	/* on lance la récurrence */
+	parcourirArbreXml(node, nouvelleBulle, z_bulle);
+	
+	/* on libère */ 
+	xmlFree (attr_priorite);
+      }
+      
+      /* cas du thread */
+      if(strcmp((char *)node->name, "thread") == 0){
+	/* unsigned */ char *attr_nom;
+	/* unsigned */ char *attr_priorite;
+	/* unsigned */ char *attr_charge;
+	int attrI_priorite;
+	int attrI_charge;
+	Element * nouveauThread;
+
+	/* On verifie et on récupere ses attributs */
+	attr_nom = (char *)xmlGetProp (node, (unsigned char*)"nom");
+	attr_priorite = (char *)xmlGetProp (node, (unsigned char*)"priorite");
+	attr_charge = (char *)xmlGetProp (node, (unsigned char*)"charge");
+	
+	attrI_priorite = atoi(attr_priorite);
+	attrI_charge = atoi(attr_charge);
+
+	
+	/* On creer le thread correspondant */
+	nouveauThread = CreateThread(attrI_priorite, SetId(iGaucheVars), 
+				     attr_nom, attrI_charge);
+	AddElement(bulleAccueil, nouveauThread);
+	AjouterSousZones(z_conteneur, CreerZone(0,0,LARGEUR_T, HAUTEUR_T));
+	Rearanger(iGaucheVars->zonePrincipale);
+
+	xmlFree(attr_nom);
+	xmlFree(attr_priorite);
+	xmlFree(attr_charge);
       }
     }
   }
-  else if ((node->type == XML_CDATA_SECTION_NODE)
- 	   || (node->type == XML_TEXT_NODE)){
- 
-    xmlChar *path = xmlGetNodePath (node);
-    printf ("%s -> '%s'\n", path,
-	    node->content ? (char *) node->content : "(null)");
-    xmlFree (path);
-    return;
-  }
+  //  printf("DEBUG : Fin de lecture\n");
 }
 
-/* on utilise principalement des fonctions de dessins dans "zone" et 
- * des fonctions d'objets dans "bulle"
+/*! Charge un fichier xml dans bubblegum 
+ *  \param Chemin endroit ou s'effectue la lecture.
+ *  \return 0 en fonctionnement correct et -1 en cas d'erreur. 
  */
-
-/***************************************************************************
- * Pour les tests
- */
-#if 0
-int main(){
+int chargerXml(const char * Chemin){
   
-  xmlNodePtr root, nouv_thread, nouv_bulle;
+  xmlDocPtr xmldoc = NULL;
+  xmlNodePtr racine = NULL;
   
-  xmlDocPtr xmldoc = xmlNewDoc ("1.0"); 
-  xmlChar *str;
-  int size;
-  
-  root = xmlNewNode(NULL, "bulle");
-  xmlDocSetRootElement(xmldoc, root);
-  // Ajout d'un nouveau produit en fin/queue
-  nouv_bulle = creerBulleXml("m", "4.00");
-  nouv_thread = creerThreadXml("m", "caca", "4.00","42");
-
-  if (nouv_bulle){ 
-    xmlAddChild(root, nouv_bulle); 
-    printf("creation ok\n");
+  printf("chemin %s\n", Chemin);
+  xmldoc = xmlParseFile(Chemin);
+  if (!xmldoc){
+      fprintf (stderr, "%s:%d: Erreur d'ouverture du fichier \n", 
+	       __FILE__, __LINE__);
+      return -1;
   }
-  
-  if (nouv_thread){ 
-    xmlAddChild( nouv_bulle, nouv_thread); 
-    printf("creation ok!\n");
+  else {
+    racine = xmlDocGetRootElement(xmldoc);
+    if (racine == NULL) {
+      fprintf(stderr, "Document XML vierge\n");
+      xmlFreeDoc(xmldoc);
+      return -1;
+    }
+    
+    /* On cree les bulles et les threads selon le fichier */
+    else {  
+      parcourirArbreXml(racine, iGaucheVars->bullePrincipale, 
+			iGaucheVars->zonePrincipale);
+    }  
+    
+    /* on libere */	
+    xmlFreeDoc(xmldoc);
   }
-  
-  // Affichage de l'arbre DOM tel qu'il est en mémoire
-  xmlDocFormatDump(stdout, xmldoc, 1);
-  
-  /*   FILE * fs = fopen("toto","w"); */
-  /*   xmlDocDump(fs, xmldoc); */
-  
-  xmlSaveFile("popo", xmldoc);
-  // Libération de la mémoire
-  xmlFreeDoc(xmldoc);
-  
-  return EXIT_SUCCESS;
+  return 0;
 }
-#endif
-
-#endif
-
 

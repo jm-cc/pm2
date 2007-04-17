@@ -8,7 +8,6 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include <wchar.h>
-#include"bulle.h"
 #include <string.h>
 
 typedef enum TypeElement_tag{
@@ -73,13 +72,14 @@ TypeElement GetTypeElement(Element* element);
 int GetCharge(Element* thread);
 int GetPrioriteThread(Element* thread);
 int GetPrioriteBulle(Element* bulle);
-int GetId(Element* thread);
+int GetId(Element* element);
 char* GetNom(Element* thread);
 
 void SetCharge(Element* thread, int charge);
 void SetPrioriteThread(Element* thread, int priorite);
-void SetId(Element* thread, int id);
-void SetNom(Element* thread, char* nom);
+void SetPrioriteBulle(Element* bulle, int priorite);
+
+void SetNom(Element* thread, const char* nom);
 
 int GetElementPosition (Bulle * bulleParent, Element * elementRecherche);
 ListeElement * GetListeElementPosition(Bulle * bulle, int position);
@@ -88,5 +88,6 @@ void MoveElement (Bulle * bulleParent, Element * elementADeplacer, Bulle * bulle
 void RemoveElement2(Element* conteneur, int position);
 void AddElement2(Element* conteneur, Element* contenu);
 int appartientElementParent(Element * parent, Element * fils);
+
 
 #endif

@@ -17,6 +17,20 @@
 #define BUBBLE_GL_ANIM_H
 
 #include "pm2_list.h"
+#include <stdio.h>
+
+#ifdef BUBBLE_GL_DEBUG
+#endif
+
+#if 0
+#  define IN()  printf ("BGL:  --> %s\n", __func__)
+#  define OUT() printf ("BGL: <--  %s\n", __func__)
+#  define MYTRACE(s, ...) printf (s "\n", ##__VA_ARGS__)
+#else
+#  define IN()  (void)(0)
+#  define OUT() (void)(0)
+#  define MYTRACE(s, ...) (void)(0)
+#endif
 
 /*! Color structure. */
 struct BGLColor {
@@ -180,6 +194,9 @@ struct BGLMovie {
     bgl_frame_t **frames_array; /*! < Frames array. Used to speed up play control
                                   features. */
 
+    float height;               /*! < Boundary height. */
+    float width;                /*! < Boundary width */
+
     int playing;                /*! < Movie is playing. */
     int current_frame;          /*! < Frame beeing displayed. */
 };
@@ -221,7 +238,8 @@ destroyBGLMovie (BubbleMovie movie);
 
 /*! Displays a frame of a BGLMovie. */
 void
-bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale);
+bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale,
+                      float goff_x, float goff_y, float rev_x, float rev_y);
 
 
 #endif /* BUBBLE_GL_ANIM_H */

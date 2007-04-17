@@ -23,12 +23,13 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include "timer.h"
+/* #include "timer.h" */
 #include "polices.h"
 
 #include "load.h"
 #include "rightwindow.h"
 
+/* #define BUBBLE_GL_DEBUG */
 #include "bubble_gl_anim.h"
 #include "bubblelib_fxt.h"
 #include "bubblelib_anim.h"
@@ -50,33 +51,39 @@ enum draw_mode {
  *  functions in charge of drawing shapes.
  */
 struct draw_current_data {
-    struct BGLFillStyle *fill;     /*! < a #BGLFillStyle structure pointer. */
+    struct BGLFillStyle *fill; /*! < a #BGLFillStyle structure pointer. */
 
-    float         off_x;           /*! < abscissa offset of the cursor. */
-    float         off_y;           /*! < ordinate offset of the cursor. */
+    float         goff_x;      /*! < scale independant offset abscissa. */
+    float         goff_y;      /*! < scale independant offset ordinate. */
 
-    float         sx;              /*! < abscissa scale value. */
-    float         sy;              /*! < ordinate scale value. */
+    float         rev_x;       /*! < abscissa orientation. */
+    float         rev_y;       /*! < ordinates orientation. */
 
-    float         cx;              /*! < current output cursor abscissa. offset
-                                    * and scaling applied. */
-    float         cy;              /*! < current output cursor ordinate. offset
-                                    * and scaling applied. */
+    float         off_x;       /*! < abscissa offset of the cursor. */
+    float         off_y;       /*! < ordinate offset of the cursor. */
+
+    float         sx;          /*! < abscissa scale value. */
+    float         sy;          /*! < ordinate scale value. */
+
+    float         cx;          /*! < current output cursor abscissa. offset
+                                * and scaling applied. */
+    float         cy;          /*! < current output cursor ordinate. offset
+                                * and scaling applied. */
 };
 
 
 
 /*! Drawing action function type definition. */
 typedef void (*do_action_fn_t)(bgl_action_t *,
-                             struct draw_current_data *,
-                             enum draw_mode);
+                               struct draw_current_data *,
+                               enum draw_mode);
 
 
 
 
 #define set_scaled_position(pstate, x, y)  do { \
-        (pstate)->cx = (pstate)->sx * ((pstate)->off_x * (x)); \
-        (pstate)->cy = (pstate)->sy * ((pstate)->off_y * (y)); \
+        (pstate)->cx = (pstate)->goff_x + (pstate)->rev_x * (pstate)->sx * ((pstate)->off_x + (x)); \
+        (pstate)->cy = (pstate)->goff_y + (pstate)->rev_y * (pstate)->sy * ((pstate)->off_y + (y)); \
     } while (0);
 
 #define reset_scaled_position(pstate)   set_scaled_position ((pstate), 0, 0)
@@ -141,6 +148,13 @@ static do_action_fn_t actions_TABLE[BGL_ACTION_COUNT] = {
 BubbleMovie
 newBubbleMovieFromFxT (const char *trace, const char *out_file) {
 
+    MOVIEX = 1000;  /* -x bubbles cl arg. */
+    MOVIEY = 700;   /* -y bubbles cl arg. */
+    if (!out_file) { /* BGLMovie */
+        MOVIEX = 600;  /* -x bubbles cl arg. */
+        MOVIEY = 600;   /* -y bubbles cl arg. */
+    }
+
     /*! \todo remove global variable. */
     printf("Init... ");
     curBubbleOps->init();
@@ -190,8 +204,9 @@ bgl_set_mode_gl_params (enum draw_mode mode,
                         struct BGLFillStyle *pfill,
                         struct BGLLineStyle *pline) {
     if (mode == DRAW_MODE_LINE) {
-            set_gl_color (&pline->color);
-            glLineWidth(pline->width);
+        set_gl_color (&pline->color);
+        glLineWidth(pline->width);
+        MYTRACE ("glLineWidth()");
     }
     else {
         set_gl_color (&pfill->color);
@@ -206,6 +221,7 @@ bgl_anim_do_movepen (bgl_action_movepen_t *p_action,
                      enum draw_mode mode) {
     if (mode == DRAW_MODE_FILL && p_draw_state->fill) {
         glEnd ();
+        MYTRACE("glEnd()");
         p_draw_state->fill = NULL;
     }
 
@@ -232,13 +248,17 @@ bgl_anim_do_drawline (bgl_action_drawline_t *p_action,
 
     /* Detects begining and ending of forms. */
     if (mode == DRAW_MODE_LINE) {
-        glBegin (GL_LINE);            
+        glBegin (GL_LINE_STRIP);
+        MYTRACE ("glBegin(GL_LINE)");
 
     } else {
-        if (nfill && !fill)
+        if (nfill && !fill) {
             glBegin (GL_POLYGON);
-        else if (fill && !nfill)
+            MYTRACE ("glBegin(GL_POLYGON)");
+        } else if (fill && !nfill) {
             glEnd ();
+            MYTRACE ("glEnd()");
+        }
         
         p_draw_state->fill = nfill;
     }
@@ -246,13 +266,18 @@ bgl_anim_do_drawline (bgl_action_drawline_t *p_action,
     if (nfill || mode == DRAW_MODE_LINE) {
         bgl_set_mode_gl_params (mode, nfill, pline);
         
-        if (!fill || mode == DRAW_MODE_LINE)
+        if (!fill || mode == DRAW_MODE_LINE) {
             glVertex3f (orig_x, orig_y, 0.0f);
-        glVertex3f (nx, ny, 0.0f);        
+            MYTRACE ("glVertex3f()");
+        }
+        glVertex3f (nx, ny, 0.0f);
+        MYTRACE ("glVertex3f()");
     }
 
-    if (mode == DRAW_MODE_LINE)
+    if (mode == DRAW_MODE_LINE) {
         glEnd();
+        MYTRACE ("glEnd()");
+    }
 }
 
 /*! Draws a circle. */
@@ -272,12 +297,15 @@ bgl_anim_do_drawcircle (bgl_action_drawcircle_t *p_action,
     if (mode == DRAW_MODE_FILL) {
         if (fill) {
             glEnd();
+        MYTRACE ("glEnd()");
             p_draw_state->fill = NULL;
         }
         glBegin (GL_POLYGON);
+        MYTRACE ("glBegin(GL_POLYGON)");
 
     } else {
         glBegin (GL_LINE_LOOP);
+        MYTRACE ("glBegin(GL_LINE_LOOP)");
     }
 
     if (nfill || mode == DRAW_MODE_LINE) {
@@ -285,12 +313,17 @@ bgl_anim_do_drawcircle (bgl_action_drawcircle_t *p_action,
 
         /*! \todo Draw circle. How many steps ? */
         glVertex3f (orig_x, orig_y + radius_y, 0.0f);
+        MYTRACE ("glVertex3f()");
         glVertex3f (orig_x + radius_x, orig_y, 0.0f);
+        MYTRACE ("glVertex3f()");
         glVertex3f (orig_x, orig_y - radius_y, 0.0f);
+        MYTRACE ("glVertex3f()");
         glVertex3f (orig_x - radius_x, orig_y, 0.0f);
+        MYTRACE ("glVertex3f()");
     }
 
     glEnd();
+    MYTRACE ("glEnd()");
 }
 
 /*! Draws a curve. */
@@ -320,12 +353,16 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
     /* Detects begining and ending of forms. */
     if (mode == DRAW_MODE_LINE) {
         glBegin (GL_LINE_STRIP);
+        MYTRACE ("glBegin(GL_LINE_STRIP)");
 
     } else {
-        if (nfill && !fill)
+        if (nfill && !fill) {
             glBegin (GL_POLYGON);
-        else if (fill && !nfill)
+            MYTRACE ("glBegin(GL_POLYGON)");
+        } else if (fill && !nfill) {
             glEnd ();
+            MYTRACE ("glEnd()");
+        }
         
         p_draw_state->fill = nfill;
     }
@@ -333,16 +370,22 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
     if (nfill || mode == DRAW_MODE_LINE) {
         bgl_set_mode_gl_params (mode, nfill, pline);
         
-        if (!fill || mode == DRAW_MODE_LINE)
+        if (!fill || mode == DRAW_MODE_LINE) {
             glVertex3f (orig_x, orig_y, 0.0f);
+            MYTRACE ("glVertex3f()");
+        }
 
         /*! \todo Draw a true curve */
         glVertex3f (control_x, control_y, 0.0f);
+        MYTRACE ("glVertex3f()");
         glVertex3f (anchor_x, anchor_y, 0.0f);
+        MYTRACE ("glVertex3f()");
     }
 
-    if (mode == DRAW_MODE_LINE)
+    if (mode == DRAW_MODE_LINE) {
         glEnd();
+        MYTRACE ("glEnd()");
+    }
 }
 
 /*! Draws a glyph. */
@@ -361,6 +404,7 @@ bgl_anim_do_drawglyph (bgl_action_drawglyph_t *p_action,
 
     if (fill) {
         glEnd ();
+        MYTRACE ("glEnd()");
         p_draw_state->fill = NULL;
     }
 
@@ -377,24 +421,27 @@ bgl_anim_do_drawglyph (bgl_action_drawglyph_t *p_action,
  *                  A valid pointer to a #DisplayItem structure.
  */
 static void
-bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale) {
+bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale,
+                      float goff_x, float goff_y, float rev_x, float rev_y) {
     BubbleShape shape = NULL;
 
     struct draw_current_data state = {
-        .fill            = NULL,
-        .off_x           = 0.0f,
-        .off_y           = 0.0f,
-        .sx              = scale,
-        .sy              = scale,
-        .cx              = 0.0f,
-        .cy              = 0.0f,
+        .fill     = NULL,
+        .goff_x   = goff_x,
+        .goff_y   = goff_y,
+        .rev_x    = rev_x,
+        .rev_y    = rev_y,
+        .off_x    = 0.0f,
+        .off_y    = 0.0f,
+        .sx       = scale,
+        .sy       = scale,
+        .cx       = 0.0f,
+        .cy       = 0.0f
     };
 
     bgl_action_t *current_action = NULL;
 
-    /* Ignores blocks other than shapes. */
-    if (!display_item->disp_block ||
-        display_item->disp_block->type != BGL_BLOCK_TYPE_SHAPE)
+    if (!display_item->disp_block)
         return;
 
     shape = (BubbleShape) display_item->disp_block;
@@ -424,6 +471,7 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale) {
 
     if (state.fill) { /* Close last region if needed. */
         glEnd();
+        MYTRACE ("glEnd()");
         state.fill = NULL;
     }
 
@@ -451,7 +499,8 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale) {
  *  \param frame    An integer that represents the frame to display.
  */
 void
-bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale) {
+bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale,
+                       float goff_x, float goff_y, float rev_x, float rev_y) {
     if (iframe < 0)
         iframe = 0;
     if (iframe >= movie->frames_count)
@@ -464,6 +513,7 @@ bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale) {
     BubbleDisplayItem display_item;
 
     list_for_each_entry (display_item, &frame->display_items, disp_list) {
-        bgl_anim_DisplayItem (display_item, scale);
+        bgl_anim_DisplayItem (display_item, scale,
+                              goff_x, goff_y, rev_x, rev_y);
     }
 }

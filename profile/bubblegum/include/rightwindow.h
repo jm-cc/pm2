@@ -17,19 +17,14 @@
 #ifndef RIGHT_WINDOW_H
 #define RIGHT_WINDOW_H
 
-#include <wchar.h>
-#include <math.h>
-#include <stdlib.h>
 #include <gtk/gtk.h>
-#include <gtk/gtkgl.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
 
-#include "timer.h"
-#include "actions.h"
-#include "animateur.h"
+/* #include "timer.h" */
+/* #include "animateur.h" */
+#include "animation.h"
 #include "polices.h"
 #include "texture.h"
+#include "actions.h"
 
 /*! \todo remove global variables and AnimElements structure. */
 

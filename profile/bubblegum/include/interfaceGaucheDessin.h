@@ -27,20 +27,32 @@ typedef struct interfaceGaucheVars_tag
   int mousePosClic_left_y;
   int mousePos_left_x;
   int mousePos_left_y;
-  int idThreadMax;  // Cette valeur est incrémentée à chaque fois qu'un thread est créé
-  int idBulleMax; // Cette valeur est incrémentée à chaque fois qu'une bulle est créée
+
+  int idgeneral; // id pour les bulles et les threads, correspond à l'id maximum dans la configuration actuelle
+  
+  char chemin[128]; // chemin du fichier de sauvegarde
+  
   GtkWidget *interfaceGauche;
   GtkWidget *drawzone_left;
 
-  GtkWidget *charge; // Champs correspondant a l ascenseur charge
-  GtkWidget *priorite;// Champs correspondant a l ascenseur priorite
-  GtkWidget *nom;// Champs correspondant a la zone texte nom
+  GtkWidget *charge; // Champ correspondant à l'ascenseur charge
+  GtkWidget *priorite;// Champ correspondant à l ascenseur priorite
+  GtkWidget *nom;// Champ correspondant à la zone texte nom
+  GtkWidget *prioritebulle;// Champ correspondant à l'ascenseur priorité bulle
 
-  GtkWidget *ThreadSelect;
+  int defcharge; // Champ correspondant à la valeur de charge d'un thread par défaut
+  int defpriorite;// Champ correspondant à la valeur de priorite d'un thread par défaut
+  const char *defnom;// Champ correspondant à la zone texte nom par défaut
+  int defprioritebulle;// Champ correspondant à la priorité d'une bulle par défaut
+
+  Element *ThreadSelect; // Thread selectionné
+  Element *BulleSelect; // Bulle selectionnée
 
   Element *bullePrincipale;
   zone *zonePrincipale;
   zone *zoneSelectionnee;
+  zone * head;/* la liste des elements selectionnes*/
+  zone * last;/* le dernier element selectionne*/
   float echelle;
 } interfaceGaucheVars;
 
@@ -53,6 +65,7 @@ gboolean   Reshape_left_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer an
 gboolean   MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer anim_parm);
 gboolean   MouseMove_left_movebt(GtkWidget* widget, GdkEventMotion* ev, gpointer data);
 gboolean   MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data);
+gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars);
 
 void       couleurContour(zone* zoneADessiner, zone* zoneSelectionnee);
 void       couleurInterieur(zone* zoneADessiner, zone* zoneSelectionnee);
@@ -65,6 +78,22 @@ void       TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner);
 
 void       Clear();
 
+int SetId(gpointer data);
+/*Selection Simple */ 
+#if 0
+void Copier(interfaceGaucheVars * iGaucheVars);
+void Deplacer(interfaceGaucheVars * iGaucheVars);
+#endif
+/*Fin */
 
 
+/*Selection Multiple */
+#if 1
+void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * zdest, Element *bdest, interfaceGaucheVars * iGaucheVarsPar);
+void Deplacer(interfaceGaucheVars * iGaucheVars, int srcX, int srcY, zone * zdest, Element *bdest);
+#endif
+/*Fin*/
+zone *insertZoneSelected(zone *headZoneSelectionnee,zone *zoneSelected);
+zone* delete(zone *headZoneSelectionnee,zone *deletedZone);
+gboolean isInside(zone *headZoneSelectionnee,zone *search);
 #endif

@@ -15,6 +15,8 @@
 
 
 #include <memory.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #ifdef WIN32
 #  include <sys/timeb.h>
@@ -46,15 +48,19 @@ struct AnimationData_s {
     int            cframe;     /*! < current frame. */
     float          play_speed; /*! < playback speed (normal = 1.0) */
     AnimPlayType   play_type;  /*! < playback type. */
+    int            play_seeking; /*! < is seeking in progress or not ? */
 
     struct timeval ctime;      /*! < frame start time. */
 
+    float          width, height; /*! < Draw rea size. */
+
     float          g_scale;    /*! < Scaling value to fit in the drawing area */
+    float          goff_x, goff_y; /*! < Axis Origin */
+    float          rev_x, rev_y;    /*! < Axis orientation */
 
-    AnimData_frameChanged_cb chframe_cb; /*! < Pointer to a callback function */
-    void *                   cb_data;    /*! < User data for callback */
-
-    
+    AnimData_callback chframe_cb;  /*! < Frame change callback function */
+    AnimData_callback newmovie_cb; /*! < new movie callback function */
+    void *            cb_data;     /*! < User data for callback */
 };
 
 
@@ -67,14 +73,23 @@ AnimationData *
 newAnimationData () {
     AnimationData *anim_data = malloc (sizeof(*anim_data));
 
+    anim_data->chframe_cb = NULL;
+    anim_data->newmovie_cb= NULL;
+    anim_data->cb_data    = NULL;
+
     resetAnimationData (anim_data, NULL);
 
-    anim_data->play_speed = 1.0f;
+    anim_data->play_speed =  1.0f;
 
-    anim_data->g_scale    = 1.0f;
+    anim_data->height     =  1.0f;
+    anim_data->width      =  1.0f;
 
-    anim_data->chframe_cb = NULL;
-    anim_data->cb_data    = NULL;
+    anim_data->goff_x     =  0.0f;
+    anim_data->goff_y     =  0.0f;
+    anim_data->rev_x      =  1.0f;
+    anim_data->rev_y      = -1.0f;
+
+    anim_data->g_scale    =  1.0f;
 
     return anim_data;
 }
@@ -88,12 +103,15 @@ newAnimationData () {
  *                  function.
  */
 void
-AnimationData_setFrameChangedCallback (AnimationData *pdata,
-                                       AnimData_frameChanged_cb callback,
-                                       void *udata) {
-    pdata->chframe_cb = callback;
-    pdata->cb_data    = udata;
+AnimationData_setCallback (AnimationData *pdata,
+                           AnimData_callback frameChange,
+                           AnimData_callback newMovie,
+                           void *udata) {
+    pdata->chframe_cb  = frameChange;
+    pdata->newmovie_cb = newMovie;
+    pdata->cb_data     = udata;
 }
+
 
 
 /*! Gets the current movie of an animation.
@@ -116,10 +134,60 @@ AnimationData_getMovie (AnimationData *pdata) {
  */
 void
 resetAnimationData (AnimationData *pdata, BubbleMovie movie) {
-    pdata->movie      = movie;
-    pdata->cframe     = -1;
-    pdata->play_type  = ANIM_PLAY_NORMAL;
+    pdata->movie        = movie;
+    pdata->cframe       = -1;
+    pdata->play_type    = ANIM_PLAY_NORMAL;
+    pdata->play_seeking = 0;
     gettimeofday (&(pdata->ctime), NULL);
+
+    if (movie) {
+        if (pdata->newmovie_cb)
+            pdata->newmovie_cb (movie->frames_count, pdata->cb_data);
+        if (pdata->chframe_cb)
+            pdata->chframe_cb (0, pdata->cb_data);
+    }
+}
+
+
+#ifndef MIN
+#  define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+/*! Adjusts scale parameters.
+ *
+ *  \param pdata    a pointer to an #Animationdata structure.
+ *  \param pwidth   a float that represents the draw area width.
+ *  \param pheight  a float that represents the draw area height.
+ */
+void
+AnimationData_AdjustScale (AnimationData *pdata) {
+    float scale = 1.0f;
+    float goff_x = 0.0f, goff_y = pdata->height;
+    float rev_x = 1.0f, rev_y = -1.0f;
+    BubbleMovie movie = pdata->movie;
+
+    /* Compute animation location */
+    
+    if (movie) {
+        scale = MIN (pdata->height / movie->height, pdata->width / movie->width);
+        goff_x = (pdata->width - scale * movie->width) / 2;
+        goff_y = pdata->height - (pdata->height - scale * movie->height) / 2;
+    }
+
+    AnimationData_setGlobalScale (pdata, scale);
+    AnimationData_setPosition (pdata, goff_x, goff_y, rev_x, rev_y);
+}
+
+/*! Sets view size.
+ *
+ *  \param pdata    a pointer to an #Animationdata structure.
+ *  \param width    a float that represents view width.
+ *  \param height   a float that represents view height.
+ */
+void
+AnimationData_SetViewSize (AnimationData *pdata, float width, float height) {
+    pdata->width = width;
+    pdata->height = height;
 }
 
 
@@ -131,12 +199,13 @@ resetAnimationData (AnimationData *pdata, BubbleMovie movie) {
  *  \param speed    a float that represents the playback velocity.
  */
 void
-AnimationData_setPlayStatus (AnimationData *pdata,
-                             AnimPlayType type, float speed) {
+AnimationData_setPlayStatus (AnimationData *pdata, AnimPlayType type,
+                             float speed, int seeking) {
     if (type != ANIM_PLAY_UNCHANGED)
         pdata->play_type = type;
     if (speed >= 0)
         pdata->play_speed = speed;
+    pdata->play_seeking = seeking;
 }
 
 
@@ -148,6 +217,8 @@ AnimationData_setPlayStatus (AnimationData *pdata,
 void
 AnimationData_gotoFrame (AnimationData *pdata, int frame) {
     pdata->cframe = frame;
+    if (frame < 0 && pdata->movie)
+        pdata->cframe = pdata->movie->frames_count - 1;
     gettimeofday (&(pdata->ctime), NULL);
 }
 
@@ -163,6 +234,26 @@ AnimationData_setGlobalScale (AnimationData *pdata, float scale) {
 }
 
 
+/*! Sets global position and axis orientation.
+ *
+ *  \param pdata    a pointer to an #AnimationData structure.
+ *  \param goff_x   global abscissa origin.
+ *  \param goff_y   global ordinate origin.
+ *  \param rev_x    abscissa axis orientation.
+ *  \param rev_y    ordinate axis orientation.
+ */
+void
+AnimationData_setPosition (AnimationData *pdata,
+                           float goff_x, float goff_y,
+                           float rev_x, float rev_y) {
+    pdata->goff_x = goff_x;
+    pdata->goff_y = goff_y;
+    pdata->rev_x  = rev_x;
+    pdata->rev_y  = rev_y;
+}
+
+
+
 /*! Plays a frame of the movie. It takes care of frame timing and move to the
  *  next frame when needed. In that case, calls the callback function.
  *
@@ -174,10 +265,12 @@ AnimationData_display (AnimationData *pdata) {
     float elapsed_time;
 
     float frm_time = 0;
+    int   chframe  = 0;
     
     if (!pdata || !pdata->movie)
         return; /* Nothing to display. */
     
+    AnimationData_AdjustScale (pdata);
     gettimeofday (&tv, NULL);
     
     elapsed_time = tv.tv_sec - pdata->ctime.tv_sec
@@ -186,24 +279,34 @@ AnimationData_display (AnimationData *pdata) {
     if (pdata->cframe != -1) {
         frm_time = pdata->movie->frames_array[pdata->cframe]->duration
             / pdata->play_speed;
-    }
+    } else
+        pdata->cframe = 0;
     
     /* In any case, we move by one frame max. */
     if (frm_time < elapsed_time) {
-        if (pdata->play_type == ANIM_PLAY_NORMAL)
-            pdata->cframe++;
-        else if (pdata->play_type == ANIM_PLAY_REVERSE)
-            pdata->cframe--;
-        
-        if (pdata->chframe_cb)
-            pdata->chframe_cb (pdata->cframe, pdata->cb_data);
+        if (!pdata->play_seeking) { /* If seeking, no automatic frame change. */
+            chframe = 1;
+            if (pdata->play_type == ANIM_PLAY_NORMAL)
+                pdata->cframe++;
+            else if (pdata->play_type == ANIM_PLAY_REVERSE)
+                pdata->cframe--;
+        }
         memcpy (&(pdata->ctime), &tv, sizeof (tv));
     }
     
-    if (pdata->cframe < 0)
+    if (pdata->cframe < 0) {
         pdata->cframe = 0;
-    else if (pdata->cframe >= pdata->movie->frames_count)
+        chframe = 0;
+    }
+    else if (pdata->cframe >= pdata->movie->frames_count) {
         pdata->cframe = pdata->movie->frames_count - 1;
-    
-    bgl_anim_DisplayFrame (pdata->movie, pdata->cframe, pdata->g_scale);    
+        chframe = 0;
+    }
+
+    if (pdata->chframe_cb && chframe)
+        pdata->chframe_cb (pdata->cframe, pdata->cb_data);
+
+    bgl_anim_DisplayFrame (pdata->movie, pdata->cframe, pdata->g_scale,
+                           pdata->goff_x, pdata->goff_y,
+                           pdata->rev_x, pdata->rev_y);
 }

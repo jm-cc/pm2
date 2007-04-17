@@ -29,6 +29,7 @@ typedef struct _zone
   int posY;
   int largeur;
   int hauteur;
+  struct _zone * next;
   struct _liste_zones * sous_zones;
 } zone;
 
@@ -106,11 +107,12 @@ Element * LireElementParcours(Element * bulle, parcours * p);
 
 void CreerZoneThread(Element * bulleprinc, zone * zoneprinc, int x, int y);
 void CreerZoneBulle(Element * bulleprinc, zone * zoneprinc, int x, int y);
-void Deplacer(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, int destX, int destY);
 void ReDimensionner(Element * bulleprinc, zone * zoneprinc, int x, int y, int newx, int newy);
 void Effacer(Element * bulleprinc, zone * zoneprinc, int x, int y);
 
 void traceZone(zone * zone, int level, int numero);
 void traceParcours(parcours *p);
+
+
 
 #endif

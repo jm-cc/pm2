@@ -1,10 +1,17 @@
-/**********************************************************************
- * File  : mainwindow.c
- * Author: Dufour Florent
- *         mailto:dufour@enseirb.fr
- * Date  : 27/03/2006
- *********************************************************************/
-
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2006 Dufour Florent <mailto:dufour@enseirb.fr>
+ * Copyright (C) 2007 Rigann LUN <mailto:lun@enseirb.fr>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
 #include <stdlib.h>
 #include <gtk/gtk.h>
@@ -20,7 +27,9 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    GtkWidget *nouveau = gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_LARGE_TOOLBAR);
    GtkWidget *ouvrir = open_ico("ico/ouvrir.png");
    GtkWidget *enregistrer = open_ico("ico/enregistrer.png");
-   GtkWidget *fermer = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_LARGE_TOOLBAR);
+   GtkWidget *enregistrerSous = open_ico("ico/enregistrerSous.png");;
+   GtkWidget *annuler = open_ico("ico/annuler.png");
+   GtkWidget *refaire = open_ico("ico/refaire.png");
    GtkWidget *executer = open_ico("ico/executer.png");
    GtkWidget *executer2 = open_ico("ico/executer2.png");
    GtkWidget *basculement_gauche = open_ico("ico/basculement_gauche.png");
@@ -42,10 +51,18 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
      GINT_TO_POINTER(iContextId));*/
 
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Sauvegarde un projet", NULL, enregistrer, G_CALLBACK(Enregistrer), parent);
+                              NULL, NULL, "Sauvegarder un projet", NULL, enregistrer, G_CALLBACK(Enregistrer), parent);
    
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Fermer un projet", NULL, fermer, G_CALLBACK(Temp), parent);
+                              NULL, NULL, "Sauvegarder un projet sous", NULL, enregistrerSous, G_CALLBACK(EnregistrerSous), parent);
+   
+   gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
+   
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
+                              NULL, NULL, "Annuler une action", NULL, annuler, G_CALLBACK(Annuler), parent);
+   
+   gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
+			   NULL, NULL, "Refaire une action", NULL, refaire, G_CALLBACK(Refaire), parent);
    
    gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
      
@@ -64,15 +81,15 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    biwg->wg2 = hpane;
 
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Bascule sur l'interface de gauche (ctrl + gauche)", NULL, basculement_gauche,
+                              NULL, NULL, "Bascule sur l'interface de gauche (Ctrl+gauche)", NULL, basculement_gauche,
                               G_CALLBACK(Basculement_gauche), biwg);
    
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Recentre les interfaces (ctrl + haut)", NULL, centrage,
+                              NULL, NULL, "Recentre les interfaces (Ctrl+haut)", NULL, centrage,
                               G_CALLBACK(Centrage_interfaces), biwg);
       
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Bascule sur l'interface de droite (ctrl + droite)", NULL, basculement_droite,
+                              NULL, NULL, "Bascule sur l'interface de droite (Ctrl+droite)", NULL, basculement_droite,
                               G_CALLBACK(Basculement_droite), hpane);
       
    gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
@@ -86,7 +103,7 @@ void main_toolbar(GtkWidget *parent, GtkWidget *toolbar, GtkWidget *hpane)
    gtk_toolbar_append_space(GTK_TOOLBAR(toolbar));
      
    gtk_toolbar_append_element(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                              NULL, NULL, "Quitte le programme (ctrl + q)", NULL, quit, G_CALLBACK(Quitter), parent);
+                              NULL, NULL, "Quitte le programme (Ctrl+Q)", NULL, quit, G_CALLBACK(Quitter), parent);
 }
      
      

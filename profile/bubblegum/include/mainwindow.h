@@ -10,9 +10,10 @@
 #include "raccourcis.h"
 #include "rightwindow.h"
 #include "interfaceGauche.h"
+#include "rearangement.h"
 
 
-#define WINDOW_WIDTH 870
+#define WINDOW_WIDTH 890
 #define WINDOW_HEIGHT 600
 
 #define DEFLOAD 10

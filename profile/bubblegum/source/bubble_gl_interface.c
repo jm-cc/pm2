@@ -19,13 +19,14 @@
 #include <stdlib.h>
 #include <memory.h>
 
+/* #define BUBBLE_GL_DEBUG */
 #include "bubble_gl_anim.h"
+#include "bubblelib_anim.h"
 
 /*! Prints a message on standard error before aborting.
  *
  *  \param msg      Message format string. It follows the same syntax as the
  *                  printf format string.
- *
  *
  */
 static void
@@ -44,15 +45,21 @@ error (const char *msg, ...) {
  *
  *  \sa error()
  */
+#if 0
 static void
 sig (int sig) {
     error ("got signal %d\n", sig);
 }
+#endif
 
 
 /* *******************************************************************
  * Action functions
  */
+
+typedef bgl_action_t *(*setRatio_fn_t)(bgl_action_t *, bgl_action_t *, float);
+
+
 
 /*! Creates a new action.
  *
@@ -95,7 +102,6 @@ bgl_action_new (bgl_action_type_e_t type) {
     return new_action;
 }
 
-
 /*! Creates a copy of an action.
  *
  *  \param action   A valid pointer to an action.
@@ -110,6 +116,159 @@ bgl_action_copy (bgl_action_t *action) {
 
     return new_action;
 }
+
+
+/*! Fix the intermediate values for an action with style.
+ *
+ *  \param action    action to be fixed
+ *  \param a1        initial action
+ *  \param a2        final action
+ *  \param ratio     an integer that represent the ratio for the interpolation.
+ *
+ *  \todo Fix the fill member
+ */
+static void
+bgl_action_with_style_setRatio (bgl_action_with_style_t *action,
+		                bgl_action_with_style_t *a1,
+				bgl_action_with_style_t *a2,
+		                float ratio) {
+	if (ratio < 0.5)
+		action->fill = a1->fill;
+	else
+		action->fill = a2->fill;
+	action->line.color.r = a1->line.color.r + ratio * (a2->line.color.r - a1->line.color.r);
+	action->line.color.g = a1->line.color.g + ratio * (a2->line.color.g - a1->line.color.g);
+	action->line.color.b = a1->line.color.b + ratio * (a2->line.color.b - a1->line.color.b);
+	action->line.color.a = a1->line.color.a + ratio * (a2->line.color.a - a1->line.color.a);
+	action->line.width = a1->line.width + ratio * (a2->line.width - a1->line.width);
+}
+
+/*! Creates a new movepen action interpolation. This function chould not be
+ *  called explicitly. 
+ *
+ *  \param a1       a pointer to a move pen action.
+ *  \param a2       a pointer to a move pen action.
+ *  \param ratio    an integer that represent the ratio for the interpolation.
+ *
+ * \return A newly allocated movepen action.
+ */
+static bgl_action_t *
+bgl_action_movepen_setRatio (bgl_action_movepen_t *a1,
+                             bgl_action_movepen_t *a2,
+                             float ratio) {
+    bgl_action_movepen_t *act =
+        (bgl_action_movepen_t *) bgl_action_new (BGL_ACTION_MOVE_PEN);
+    act->position.x = a1->position.x + ratio * (a2->position.x - a1->position.x);
+    act->position.y = a1->position.y + ratio * (a2->position.y - a1->position.y);
+
+    return (bgl_action_t *) act;
+}
+
+/*! Creates a new drawline action interpolation. This function chould not be
+ *  called explicitly. 
+ *
+ *  \param a1       a pointer to a drawline action.
+ *  \param a2       a pointer to a drawline action.
+ *  \param ratio    an integer that represent the ratio for the interpolation.
+ *
+ * \return A newly allocated drawline action.
+ */
+static bgl_action_t *
+bgl_action_drawline_setRatio (bgl_action_drawline_t *a1,
+                              bgl_action_drawline_t *a2,
+                             float ratio) {
+    bgl_action_drawline_t *act =
+        (bgl_action_drawline_t *) bgl_action_new (BGL_ACTION_DRAW_LINE);
+    act->draw_to.x = a1->draw_to.x + ratio * (a2->draw_to.x - a1->draw_to.x);
+    act->draw_to.y = a1->draw_to.y + ratio * (a2->draw_to.y - a1->draw_to.y);
+    bgl_action_with_style_setRatio(&act->hdr_styles, &a1->hdr_styles, &a2->hdr_styles, ratio);
+
+    return (bgl_action_t *) act;
+}
+
+/*! Creates a new drawcircle action interpolation. This function chould not be
+ *  called explicitly. 
+ *
+ *  \param a1       a pointer to a drawcircle action.
+ *  \param a2       a pointer to a drawcircle action.
+ *  \param ratio    an integer that represent the ratio for the interpolation.
+ *
+ * \return A newly allocated drawcircle action.
+ */
+static bgl_action_t *
+bgl_action_drawcircle_setRatio (bgl_action_drawcircle_t *a1,
+                                bgl_action_drawcircle_t *a2,
+                                float ratio) {
+    bgl_action_drawcircle_t *act =
+        (bgl_action_drawcircle_t *) bgl_action_new (BGL_ACTION_DRAW_CIRCLE);
+    act->radius = a1->radius + ratio * (a2->radius - a1->radius);
+    bgl_action_with_style_setRatio(&act->hdr_styles, &a1->hdr_styles, &a2->hdr_styles, ratio);
+
+    return (bgl_action_t *) act;
+}
+
+/*! Creates a new drawcurve action interpolation. This function chould not be
+ *  called explicitly. 
+ *
+ *  \param a1       a pointer to a drawcurve action.
+ *  \param a2       a pointer to a drawcurve action.
+ *  \param ratio    an integer that represent the ratio for the interpolation.
+ *
+ * \return A newly allocated drawcurve action.
+ */
+static bgl_action_t *
+bgl_action_drawcurve_setRatio (bgl_action_drawcurve_t *a1,
+                               bgl_action_drawcurve_t *a2,
+                                float ratio) {
+    bgl_action_drawcurve_t *act =
+        (bgl_action_drawcurve_t *) bgl_action_new (BGL_ACTION_DRAW_CURVE);
+    act->control.x = a1->control.x + ratio * (a2->control.x - a1->control.x);
+    act->control.y = a1->control.y + ratio * (a2->control.y - a1->control.y);
+    act->anchor.x = a1->anchor.x + ratio * (a2->anchor.x - a1->anchor.x);
+    act->anchor.y = a1->anchor.y + ratio * (a2->anchor.y - a1->anchor.y);
+    bgl_action_with_style_setRatio(&act->hdr_styles, &a1->hdr_styles, &a2->hdr_styles, ratio);
+
+    return (bgl_action_t *) act;
+}
+
+
+
+/*! Creates a new action interpolation. both actions whould have the same type.
+ *
+ *  \param a1       a pointer to an action.
+ *  \param a2       a pointer to an action.
+ *  \param ratio    an integer that represent the ratio for the interpolation.
+ *
+ * \return A newly allocated action.
+ */
+static bgl_action_t *
+bgl_action_setRatio (bgl_action_t *a1, bgl_action_t *a2, float ratio) {
+    static setRatio_fn_t setRatio_Functions[BGL_ACTION_COUNT] = {
+        [BGL_ACTION_MOVE_PEN]    (setRatio_fn_t) bgl_action_movepen_setRatio,
+        [BGL_ACTION_DRAW_LINE]   (setRatio_fn_t) bgl_action_drawline_setRatio,
+        [BGL_ACTION_DRAW_CIRCLE] (setRatio_fn_t) bgl_action_drawcircle_setRatio,
+        [BGL_ACTION_DRAW_CURVE]  (setRatio_fn_t) bgl_action_drawcurve_setRatio,
+        [BGL_ACTION_DRAW_GLYPH]  (setRatio_fn_t) NULL
+    };
+
+    setRatio_fn_t fun;
+
+    if (a1->type == a2->type) {
+        fun = setRatio_Functions[a1->type];
+        if (fun)
+            return fun (a1, a2, ratio);
+        else if (ratio < 0.5)
+            return bgl_action_copy (a1);
+        else
+            return bgl_action_copy (a2);
+    }
+
+    /* If different types, return a copy of the first (arbitrary) */
+    /* shouldn't ever happen */
+    abort();
+    return bgl_action_copy (a1);
+}
+
 
 
 /*! Sets the style of an action.
@@ -136,11 +295,13 @@ bgl_action_set_style (bgl_action_with_style_t *action,
  *
  *  \sa bgl_action_new().
  */
+#if 0
 static void
 bgl_action_free (bgl_action_t *action) {
     if (action)
         free (action);
 }
+#endif
 
 
 
@@ -167,10 +328,14 @@ BGLBlock_init (BubbleBlock block, bgl_block_type_e_t type,
 /*! Increases the reference count of a block.
  *
  *  \param block    A valid pointer to a block structure.
+ *
+ *  \return A pointer to the block passed in argument. 
  */
-static void
+static BubbleBlock
 BGLBlock_ref (BubbleBlock block) {
-    block->ref++;
+    if (block)
+        block->ref++;
+    return block;
 }
 
 /*! Decreases the reference count of a block. When the reference count reaches
@@ -207,18 +372,23 @@ BGLBlock_unref (BubbleBlock block) {
  */
 static BubbleDisplayItem
 newBGLDisplayItem (BubbleBlock block) {
+    IN();
     BubbleDisplayItem new_item = malloc (sizeof (*new_item));
 
     INIT_LIST_HEAD (&new_item->disp_list);
 
-    new_item->block = block;
-    BGLBlock_ref (block);
+    new_item->block = BGLBlock_ref (block);
 
-    new_item->disp_block = NULL;
+    if (block->type == BGL_BLOCK_TYPE_MORPH)
+        new_item->disp_block =
+            BGLBlock_ref ((struct BGLBlock *)((struct BGLMorph *) block)->shape1);
+    else
+        new_item->disp_block = BGLBlock_ref (block);        
 
     new_item->current.x = new_item->current.y = 0;
-    new_item->scale.x = new_item->scale.y = 0;
+    new_item->scale.x = new_item->scale.y = 1.0;
 
+    OUT();
     return new_item;
 }
 
@@ -231,12 +401,17 @@ newBGLDisplayItem (BubbleBlock block) {
  */
 static BubbleDisplayItem
 BGLDisplayItem_copy (BubbleDisplayItem item) {
-    BubbleDisplayItem new_item =
-        newBGLDisplayItem (item->block);
+    IN();
+    BubbleDisplayItem new_item = newBGLDisplayItem (item->block);
     new_item->current.x = item->current.x;
     new_item->current.y = item->current.y;
     new_item->scale.x = item->scale.x;
     new_item->scale.y = item->scale.y;
+    if (new_item->disp_block)
+        BGLBlock_unref (new_item->disp_block);
+    new_item->disp_block = BGLBlock_ref(item->disp_block);
+
+    OUT();
     return new_item;
 }
 
@@ -247,10 +422,12 @@ BGLDisplayItem_copy (BubbleDisplayItem item) {
  */
 static void
 destroyBGLDisplayItem (BubbleDisplayItem item) {
+    IN();
     list_del (&item->disp_list);
-    BGLBlock_unref (item->block);
     BGLBlock_unref (item->disp_block);
+    BGLBlock_unref (item->block);
     free (item);
+    OUT();
 }
 
 
@@ -266,6 +443,8 @@ destroyBGLDisplayItem (BubbleDisplayItem item) {
  */
 static void
 BGLDisplayItem_rotateTo (BubbleDisplayItem item, float degrees) {
+    IN();
+    OUT();
 }
 
 
@@ -288,10 +467,15 @@ BGLDisplayItem_remove (BubbleDisplayItem item) {
  */
 static void
 BGLDisplayItem_moveTo (BubbleDisplayItem item, float x, float y) {
+    IN();
     item->current.x = x;
     item->current.y = y;
+    MYTRACE("x = %f -- y = %f", x, y);
+    OUT();
 }
 
+
+static BubbleShape newBGLShape ();
 
 /*! Sets the ratio of a morph to be displayed. This function has an effect only
  *  if the display item is associated to a BGLMorph structure.
@@ -304,15 +488,25 @@ BGLDisplayItem_moveTo (BubbleDisplayItem item, float x, float y) {
  */
 static void 
 BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
-    BubbleMorph morph = NULL;
+    IN();
+    BubbleMorph morph  = NULL;
     BubbleShape shape1 = NULL;
     BubbleShape shape2 = NULL;
+    BubbleShape shp    = NULL;
 
-    if (!item)
+    bgl_action_t *a1;
+    bgl_action_t *a2;
+
+    if (!item) {
+        OUT();
         return;
+    }
 
-    if (item->block->type != BGL_BLOCK_TYPE_MORPH)
+    if (item->block->type != BGL_BLOCK_TYPE_MORPH) {
+	    abort();
+        OUT();
 		return ;
+    }
 
     morph = (BubbleMorph) item->block;
     shape1 = morph->shape1;
@@ -323,21 +517,40 @@ BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
     else if (ratio > 1.0f)
         ratio = 1.0f;
 
-#if 0
-    /* Morph implementation */
-    item->disp_block = newBGLShape();
+    if (item->disp_block) {
+        BGLBlock_unref (item->disp_block);
+        item->disp_block = NULL;
+    }
 
+#if 1
+    /* Morph implementation */
+    shp = newBGLShape();
+
+    a1 = list_entry (shape1->actions.next, typeof (*a1), action_list);
+    a2 = list_entry (shape2->actions.next, typeof (*a2), action_list);
+
+    while(&(a1->action_list) != &(shape1->actions) &&
+          &(a2->action_list) != &(shape2->actions)) {
+
+        bgl_action_t *nact = bgl_action_setRatio (a1, a2, ratio);
+        
+        list_add_tail (&nact->action_list, &shp->actions);
+
+        a1 = list_entry (a1->action_list.next, typeof (*a1), action_list);
+        a2 = list_entry (a2->action_list.next, typeof (*a2), action_list);
+    }
+
+    item->disp_block = BGLBlock_ref ((BubbleBlock) shp);
 #else
     /* Simplified morph display for tests. */
     if (ratio < 0.5f) {
-        item->disp_block = (BubbleBlock) shape1;
-        BGLBlock_ref ((BubbleBlock) shape1);
+        item->disp_block = BGLBlock_ref ((BubbleBlock) shape1);
     } else {
-        item->disp_block = (BubbleBlock) shape2;
-        BGLBlock_ref ((BubbleBlock) shape2);
+        item->disp_block = BGLBlock_ref ((BubbleBlock) shape2);
     }
 #endif
 
+    OUT();
 }
 
 
@@ -377,10 +590,6 @@ bgl_frame_copy (bgl_frame_t *frame) {
 
     list_for_each_entry (citem, &frame->display_items, disp_list) {
         cpy = BGLDisplayItem_copy (citem);
-        if (citem->disp_block) {
-            cpy->disp_block = citem->disp_block;
-            BGLBlock_ref (cpy->disp_block);
-        }
         list_add_tail (&cpy->disp_list, &new_frame->display_items);
     }
 
@@ -438,6 +647,7 @@ BGLMovie_get_current_frame (BubbleMovie movie) {
  */
 static BubbleMovie
 newBGLMovie (void) {
+    IN();
     BubbleMovie movie = malloc (sizeof (*movie));
 
     INIT_LIST_HEAD (&movie->frames);
@@ -447,6 +657,11 @@ newBGLMovie (void) {
 
     movie->playing = 0;
 
+    /* arbitrary defaults. */
+    movie->height = MOVIEY;
+    movie->width  = MOVIEX;
+
+    OUT();
     return movie;
 }
 
@@ -459,7 +674,9 @@ newBGLMovie (void) {
  */
 static void
 BGLMovie_startPlaying (BubbleMovie movie, int yes) {
+    IN();
     movie->playing = yes;
+    OUT();
 }
 
 /*! Causes the movie generation to abort.
@@ -480,13 +697,13 @@ BGLMovie_abort (BubbleMovie movie) {
  */
 static void
 BGLMovie_nextFrame (BubbleMovie movie) {
+    IN();
     bgl_frame_t *cframe = NULL;
     bgl_frame_t *nframe = NULL;
 
     if (list_empty (&movie->frames)) {
         nframe = bgl_frame_new ();
-    }
-    else if (movie->playing) {
+    } else { /*if (movie->playing) {*/
         cframe = BGLMovie_get_current_frame (movie);
         nframe = bgl_frame_copy (cframe);
     }
@@ -505,6 +722,7 @@ BGLMovie_nextFrame (BubbleMovie movie) {
             cframe->duration = 0;
             list_add_tail (&cframe->frame_list, &movie->frames);
 		}
+    OUT();
 }
 
 
@@ -517,13 +735,15 @@ BGLMovie_nextFrame (BubbleMovie movie) {
  */
 BubbleDisplayItem
 BGLMovie_add (BubbleMovie movie, BubbleBlock block) {
+    IN();
     bgl_frame_t *cframe;
     BubbleDisplayItem new_item;
 
     cframe = BGLMovie_get_current_frame (movie);
     new_item = newBGLDisplayItem (block);
-    list_add (&new_item->disp_list, &cframe->display_items);
+    list_add_tail (&new_item->disp_list, &cframe->display_items);
 
+    OUT();
     return new_item;
 }
 
@@ -536,9 +756,101 @@ BGLMovie_add (BubbleMovie movie, BubbleBlock block) {
  */
 static void
 BGLMovie_pause (BubbleMovie movie, float sec) {
+    IN();
     BGLMovie_get_current_frame (movie)->duration += sec;
+    OUT();
 }
 
+
+#ifdef BUBBLE_GL_DEBUG
+static void
+bgl_print_frame_tree (bgl_frame_t *frame) {
+    printf ("    Frame duration = %f\n", frame->duration);
+    if (list_empty (&frame->display_items)) {
+        printf ("  ! Frame is Empty!\n");
+        return;
+    }
+    struct BGLDisplayItem *citem;
+    bgl_action_t         *caction;
+    list_for_each_entry (citem, &frame->display_items, disp_list) {
+        printf ("    === Item :\n");
+        if (!citem->block) {
+            printf ("     !! Goups !\n");
+            continue;
+        }
+        printf ("      - BlockType : %s\n",
+                 citem->block->type == BGL_BLOCK_TYPE_SHAPE ? "SHAPE" : "MORPH");
+        printf ("      - OffSet : x=%f, y=%f\n", citem->current.x, citem->current.y);
+        printf ("      - Actions :\n");
+        if (list_empty (&((struct BGLShape *) citem->disp_block)->actions)) {
+            printf ("        ! No Actions !\n");
+            printf ("      - ----\n");
+            fflush (stdout);
+            continue;
+        }
+        fflush (stdout);
+        list_for_each_entry (caction,
+                             &((struct BGLShape *) citem->disp_block)->actions,
+                             action_list) {
+            bgl_action_with_style_t *style;
+            switch (caction->type) {
+            case BGL_ACTION_MOVE_PEN:
+                printf ("        * Move Pen : x=%f, y=%f\n",
+                         ((bgl_action_movepen_t *)caction)->position.x,
+                         ((bgl_action_movepen_t *)caction)->position.y);
+                break;
+            case BGL_ACTION_DRAW_LINE:
+                printf ("        * Line     : to_x=%f, to_y=%f\n",
+                         ((bgl_action_drawline_t *)caction)->draw_to.x,
+                         ((bgl_action_drawline_t *)caction)->draw_to.y);
+                break;
+            case BGL_ACTION_DRAW_CIRCLE:
+                printf ("        * Circle   : radius=%f\n",
+                         ((bgl_action_drawcircle_t *)caction)->radius);
+                break;
+            case BGL_ACTION_DRAW_CURVE:
+                printf ("        * Curve    : c_x=%f, c_y=%f\n",
+                         ((bgl_action_drawcurve_t *)caction)->control.x,
+                         ((bgl_action_drawcurve_t *)caction)->control.y);
+                printf ("                     a_x=%f, a_y=%f\n",
+                         ((bgl_action_drawcurve_t *)caction)->anchor.x,
+                         ((bgl_action_drawcurve_t *)caction)->anchor.y);
+                break;
+            case BGL_ACTION_DRAW_GLYPH:
+                printf ("        * Glyph\n");
+                break;
+            default:
+                printf ("     ! Unknown action !\n");
+            }
+            switch (caction->type) {
+            case BGL_ACTION_DRAW_LINE:
+            case BGL_ACTION_DRAW_CIRCLE:
+            case BGL_ACTION_DRAW_CURVE:
+            case BGL_ACTION_DRAW_GLYPH:
+                style = (bgl_action_with_style_t *)caction;
+                printf ("          _ Fill Style : ");
+                if (!style->fill)
+                    printf ("[NULL]");
+                else {
+                    printf ("r=%d, g=%d, b=%d, a=%d",
+                             style->fill->color.r, style->fill->color.g,
+                             style->fill->color.b, style->fill->color.a);
+                }
+                printf ("\n          _ Line Style : ");
+                printf ("w=%d -- r=%d, g=%d, b=%d, a=%d\n",
+                         style->line.width,
+                         style->line.color.r, style->line.color.g,
+                         style->line.color.b, style->line.color.a);
+            default:
+                printf ("        * ****\n");
+            }
+            fflush (stdout);
+        }
+        printf ("      - ----\n");
+        fflush (stdout);
+    }
+}
+#endif
 
 /*! Saves the movie. Actually, it builds data structures that optimizes movie
  *  playing control features.
@@ -550,6 +862,7 @@ BGLMovie_pause (BubbleMovie movie, float sec) {
  */
 static int
 BGLMovie_save (BubbleMovie movie, const char *filename TBX_UNUSED) {
+    IN();
     bgl_frame_t *cframe = NULL;
     int i;
 
@@ -571,12 +884,24 @@ BGLMovie_save (BubbleMovie movie, const char *filename TBX_UNUSED) {
     list_for_each_entry (cframe, &movie->frames, frame_list) {
         movie->frames_array[i] = cframe;
         i++;
+
+        if (cframe->duration == 0)
+            cframe->duration = 1. / RATE;
+
+#ifdef BUBBLE_GL_DEBUG
+        printf ("=== Frame %d\n", i);
+        bgl_print_frame_tree(cframe);
+        printf ("  = ====\n");
+        fflush (stdout);
+#endif
     }
 
     movie->current_frame = 0;
 
+    OUT();
     return 0;
 }
+
 
 
 /*! Destroys a movie structure. It releases all memory used by movie
@@ -590,6 +915,7 @@ BGLMovie_save (BubbleMovie movie, const char *filename TBX_UNUSED) {
  */
 void
 destroyBGLMovie (BubbleMovie movie) {
+    IN();
     bgl_frame_t *frame;
 
     if (!movie)
@@ -604,6 +930,7 @@ destroyBGLMovie (BubbleMovie movie) {
     }
 
     free (movie);
+    OUT();
 }
 
 
@@ -697,13 +1024,12 @@ static BubbleFillStyle
 BGLShape_addSolidFillStyle (BubbleShape shape,
                             unsigned char r, unsigned char g, unsigned char b,
                             unsigned char a) {
-    if (!shape)
-        return NULL;
-
+    IN();
     BubbleFillStyle new_style = newBGLFillStyle (r, g, b, a);
 
     list_add (&new_style->style_list, &shape->styles);
 
+    OUT();
     return new_style;
 }
 
@@ -723,7 +1049,7 @@ BGLShape_addSolidFillStyle (BubbleShape shape,
  */
 static void
 __destroyBGLShape (BubbleShape shape) {
-    /* XXX mem leak. */
+    
 }
 
 /*! Destroys a shape. Actually, it decreases the reference counter of the
@@ -765,6 +1091,7 @@ BGLShape_addAction (BubbleShape shape, bgl_action_type_e_t action_type) {
  */
 static BubbleShape
 newBGLShape () {
+    IN();
     BubbleShape new_shape = malloc (sizeof (*new_shape));
     BGLBlock_init ((BubbleBlock) new_shape, BGL_BLOCK_TYPE_SHAPE,
                    (free_block_fn_t) __destroyBGLShape);
@@ -779,7 +1106,8 @@ newBGLShape () {
     BGLLine_init (&new_shape->line, 1, 0, 0, 0, 255);
 
     new_shape->pen.x = new_shape->pen.y = 0;
-  
+
+    OUT();
     return new_shape;
 }
 
@@ -792,7 +1120,9 @@ newBGLShape () {
  */
 static void
 BGLShape_setRightFillStyle (BubbleShape shape, BubbleFillStyle style) {
+    IN();
     shape->current_style = style;
+    OUT();
 }
 
 
@@ -806,6 +1136,7 @@ BGLShape_setRightFillStyle (BubbleShape shape, BubbleFillStyle style) {
  */
 static void
 BGLShape_movePenTo (BubbleShape shape, float x, float y) {
+    IN();
     bgl_action_movepen_t *action;
 
     if (!shape) return;
@@ -820,6 +1151,7 @@ BGLShape_movePenTo (BubbleShape shape, float x, float y) {
 
     action->position.x = x;
     action->position.y = y;
+    OUT();
 }
 
 /*! Moves the pen to a relative position from the current.
@@ -832,7 +1164,9 @@ BGLShape_movePenTo (BubbleShape shape, float x, float y) {
  */
 static void
 BGLShape_movePen (BubbleShape shape, float dx, float dy) {
+    IN();
     BGLShape_movePenTo (shape, shape->pen.x + dx, shape->pen.y + dy);
+    OUT();
 }
 
 
@@ -846,6 +1180,7 @@ BGLShape_movePen (BubbleShape shape, float dx, float dy) {
  */
 static void
 BGLShape_drawLineTo (BubbleShape shape, float x, float y) {
+    IN();
     bgl_action_drawline_t *action;
 
     if (!shape) return;
@@ -863,6 +1198,7 @@ BGLShape_drawLineTo (BubbleShape shape, float x, float y) {
 
     action->draw_to.x = x;
     action->draw_to.y = y;
+    OUT();
 }
 
 /*! Draws a line to a relative position from the current.
@@ -875,7 +1211,9 @@ BGLShape_drawLineTo (BubbleShape shape, float x, float y) {
  */
 static void
 BGLShape_drawLine (BubbleShape shape, float dx, float dy) {
+    IN();
     BGLShape_drawLineTo (shape, shape->pen.x + dx, shape->pen.y + dy);
+    OUT();
 }
 
 
@@ -886,6 +1224,7 @@ BGLShape_drawLine (BubbleShape shape, float dx, float dy) {
  */
 static void
 BGLShape_drawCircle (BubbleShape shape, float r) {
+    IN();
     bgl_action_drawcircle_t *action;
 
     if (!shape) return;
@@ -899,6 +1238,7 @@ BGLShape_drawCircle (BubbleShape shape, float r) {
                           shape->current_style, &shape->line);
 
     action->radius = r;
+    OUT();
 }
 
 
@@ -912,8 +1252,12 @@ BGLShape_drawCircle (BubbleShape shape, float r) {
  *  \param a        A byte that represents the alpha line's color component.
  */
 static void
-BGLShape_setLine (BubbleShape shape, unsigned short width, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+BGLShape_setLine (BubbleShape shape, unsigned short width,
+                  unsigned char r, unsigned char g, unsigned char b,
+                  unsigned char a) {
+    IN();
     BGLLine_init (&shape->line, width, r, g, b, a);
+    OUT();
 }
 
 
@@ -932,7 +1276,10 @@ BGLShape_setLine (BubbleShape shape, unsigned short width, unsigned char r, unsi
  *                  control point) of the anchor point.
  */
 static void
-BGLShape_drawCurve (BubbleShape shape, float controldx, float controldy, float anchordx, float anchordy) {
+BGLShape_drawCurve (BubbleShape shape,
+                    float controldx, float controldy,
+                    float anchordx, float anchordy) {
+    IN();
     bgl_action_drawcurve_t *action;
 
     if (!shape) return;
@@ -960,6 +1307,7 @@ BGLShape_drawCurve (BubbleShape shape, float controldx, float controldy, float a
 
     shape->pen.x += anchordx;
     shape->pen.y += anchordy;
+    OUT();
 }
 
 
@@ -971,6 +1319,7 @@ BGLShape_drawCurve (BubbleShape shape, float controldx, float controldy, float a
  */
 static void
 BGLShape_drawSizedGlyph (BubbleShape shape, unsigned short c, int size) {
+    IN();
     bgl_action_drawglyph_t *action;
 
     if (!shape) return;
@@ -985,6 +1334,7 @@ BGLShape_drawSizedGlyph (BubbleShape shape, unsigned short c, int size) {
 
     action->glyph = c;
     action->gsize = size;
+    OUT();
 }
 
 
@@ -1006,7 +1356,7 @@ __destroyBGLMorph (BubbleMorph morph) {
     free (morph);
 }
 
-static void
+void
 destroyBGLMorph (BubbleMorph morph) {
     /*   __destroyBGLMorph (morph); */
     BGLBlock_unref ((BubbleBlock) morph);
@@ -1022,12 +1372,14 @@ destroyBGLMorph (BubbleMorph morph) {
  */
 static BubbleMorph
 newBGLMorphShape () {
+    IN();
     BubbleMorph new_morph = malloc (sizeof (*new_morph));
     BGLBlock_init ((BubbleBlock) new_morph, BGL_BLOCK_TYPE_MORPH,
                    (free_block_fn_t) __destroyBGLMorph);
-    new_morph->shape1 = newBGLShape();
-    new_morph->shape2 = newBGLShape();
+    new_morph->shape1 = (BubbleShape) BGLBlock_ref ((BubbleBlock)newBGLShape());
+    new_morph->shape2 = (BubbleShape) BGLBlock_ref ((BubbleBlock)newBGLShape());
 
+    OUT();
     return new_morph;
 }
 
@@ -1040,6 +1392,7 @@ newBGLMorphShape () {
  */
 static BubbleShape
 BGLMorph_getShape1 (BubbleMorph morph) {
+    IN(); OUT();
     return morph->shape1;
 }
 
@@ -1051,6 +1404,7 @@ BGLMorph_getShape1 (BubbleMorph morph) {
  */
 static BubbleShape
 BGLMorph_getShape2 (BubbleMorph morph) {
+    IN(); OUT();
     return morph->shape2;
 }
 
@@ -1067,7 +1421,8 @@ BGLMorph_getShape2 (BubbleMorph morph) {
 static void
 BGLsetThread (BubbleShape shape, int id, float x, float y,
               float width, float height) {
-
+    IN();
+    OUT();
 }
 
 /*! Sets a bubble boundary box.
@@ -1077,7 +1432,8 @@ BGLsetThread (BubbleShape shape, int id, float x, float y,
 static void
 BGLsetBubble (BubbleShape shape, int id, float x, float y,
               float width, float height) {
-
+    IN();
+    OUT();
 }
 
 
@@ -1091,6 +1447,8 @@ BGLsetBubble (BubbleShape shape, int id, float x, float y,
  */
 static void
 BGLinit () {
+    IN();
+    OUT();
 }
 
 /*! Finalizes BGL module.
@@ -1106,6 +1464,7 @@ BGLfini () {
  */
 void
 BubbleOps_setBGL() {
+    IN();
     static BubbleOps BGLBubbleOps = {
         /* Movie methods */
         .newMovie = newBGLMovie,
@@ -1144,7 +1503,7 @@ BubbleOps_setBGL() {
 
         /* Misc methods */
         .init = BGLinit,
-	.fini = BGLfini,
+        .fini = BGLfini,
 	 
         /* Thread/Bubble-specific methods */
         .SetThread = BGLsetThread,
@@ -1152,4 +1511,5 @@ BubbleOps_setBGL() {
     };
 
     curBubbleOps = &BGLBubbleOps;
+    OUT();
 }

@@ -8,6 +8,7 @@
 #include "animation.h"
 #include "mainwindow.h"
 #include <locale.h>
+#include <sys/stat.h>
 
 interfaceGaucheVars* iGaucheVars;
 
@@ -48,8 +49,7 @@ int main (int argc, char **argv) {
    iGaucheVars = interfaceGauche();
    iGauche = iGaucheVars->interfaceGauche;   /* gtk_window_new(GTK_WINDOW_TOPLEVEL); */
 
-   iGaucheVars->idThreadMax=0; // on initialise l'identification des threads
-   iGaucheVars->idBulleMax=0; // on initialise l'identification des bulles
+
    
    /* Connexion au signal destroy */
    g_signal_connect (G_OBJECT(main_window), "destroy",
@@ -62,7 +62,7 @@ int main (int argc, char **argv) {
    vbox = gtk_vbox_new (FALSE, 0);
    gtk_container_add (GTK_CONTAINER (main_window), vbox);
    
-   /* Création de la bare de menus */
+   /* Création de la barre de menus */
    menubar = gtk_menu_bar_new();
    gtk_box_pack_start (GTK_BOX (vbox), menubar, FALSE, FALSE, 0);
    
@@ -104,7 +104,6 @@ int main (int argc, char **argv) {
    
    /* Récupération de la vbox de droite par la fonction right_window() */
 
-   /*   p_anim = AnimationNew (NULL); */
    p_anim = newAnimationData ();
    right_window = right_window_init (p_anim);
    if (right_window)
@@ -123,7 +122,7 @@ int main (int argc, char **argv) {
    
    /* Affiche tous les Widgets de la fenêtre principale*/
    gtk_widget_show_all(main_window);
-
+   mkdir("/tmp/bubblegum", 0775);
    /* Boucle principale */
    gtk_main();
    

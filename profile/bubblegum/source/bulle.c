@@ -1,17 +1,18 @@
 #include "bulle.h"
 
+
 /*********************************************************************/
 
 ListeElement* CreateListe(void)
 {
-   ListeElement* liste;
+  ListeElement* liste;
 
-   liste = malloc(sizeof(ListeElement));
+  liste = malloc(sizeof(ListeElement));
 
-   liste->element = NULL;
-   liste->suivant = NULL;
+  liste->element = NULL;
+  liste->suivant = NULL;
 
-   return liste;
+  return liste;
 }
 
 
@@ -21,114 +22,114 @@ ListeElement* CreateListe(void)
 /*********************************************************************/
 Element* CreateBulle(int priorite, int id)
 {
-   Element* element;
-   Bulle bulle;
-   element = malloc(sizeof(Element));
-/*    printf("create bulle : %p\n", element); */
-   element->type = BULLE;
+  Element* element;
+  Bulle bulle;
+  element = malloc(sizeof(Element));
+  /*    printf("create bulle : %p\n", element); */
+  element->type = BULLE;
 
-   bulle.liste = NULL;
-   bulle.taille = 0;
-   bulle.priorite = priorite;
-   bulle.id = id;
+  bulle.liste = NULL;
+  bulle.taille = 0;
+  bulle.priorite = priorite;
+  bulle.id = id;
 
-   element->bulle = bulle;
+  element->bulle = bulle;
 
-   return element;
+  return element;
 }
 
 /*********************************************************************/
 
 Element* CreateThread(int priorite, int id, char* nom, int charge)
 {
-   Element* element;
+  Element* element;
    
-   element = malloc(sizeof(Element));
-/*    printf("create THREAD : %p\n", element); */
+  element = malloc(sizeof(Element));
+  /*    printf("create THREAD : %p\n", element); */
 
-   element->type = THREAD;
-   element->thread.priorite = priorite;
-   element->thread.id = id;
+  element->type = THREAD;
+  element->thread.priorite = priorite;
+  element->thread.id = id;
 
-   strcpy(element->thread.nom, nom);
+  strcpy(element->thread.nom, nom);
 
-   element->thread.charge = charge;
-   return element;
+  element->thread.charge = charge;
+  return element;
 }
 
 /*********************************************************************/
 
 TypeElement GetTypeElement(Element* element)
 {
-   return element->type;
+  return element->type;
 }
 
 /*********************************************************************/
 
 int GetNbElement(Element* element)
 {
-   if (element->type == BULLE)
-      return element->bulle.taille;
-   return 0;
+  if (element->type == BULLE)
+    return element->bulle.taille;
+  return 0;
 }
 
 /*********************************************************************/
 
 Element* GetElement(Element* conteneur, int position)
 {
-   int i;
-   ListeElement* liste;
-   liste = conteneur->bulle.liste;
-/*    printf("GetElement %p %d\n", conteneur, position); */
+  int i;
+  ListeElement* liste;
+  liste = conteneur->bulle.liste;
+  /*    printf("GetElement %p %d\n", conteneur, position); */
 
-   if(position < 1 || position > conteneur->bulle.taille + 1)
-   {
-/*       printf("dans getElement %d %d\n", position, conteneur->bulle.taille); */
+  if(position < 1 || position > conteneur->bulle.taille + 1)
+    {
+      /*       printf("dans getElement %d %d\n", position, conteneur->bulle.taille); */
       return NULL;
-   }
+    }
 
-   for(i = 1; i < position; i++)
-   {
+  for(i = 1; i < position; i++)
+    {
       if (liste == NULL)
-         return NULL;
+	return NULL;
       liste = liste->suivant;
-   }
+    }
 
-   if (liste == NULL)
-      return NULL;
-   return liste->element;
+  if (liste == NULL)
+    return NULL;
+  return liste->element;
 }
 
 /*********************************************************************/
 
 void AddElement(Element* conteneur, Element* contenu)
 {
-   ListeElement* liste;
-   ListeElement* liste2=NULL;
+  ListeElement* liste;
+  ListeElement* liste2=NULL;
 
-/*    printf("addElement : %p %p\n", conteneur, contenu); */
+  /*    printf("addElement : %p %p\n", conteneur, contenu); */
 
-   if(conteneur->type == BULLE)
-   {
+  if(conteneur->type == BULLE)
+    {
       liste = conteneur->bulle.liste;
 
       if (conteneur->bulle.taille == 0)
-      {
-         liste = CreateListe();
-         conteneur->bulle.liste = liste;
-      }
+	{
+	  liste = CreateListe();
+	  conteneur->bulle.liste = liste;
+	}
       else
-      {
-         /* Ajout de contenu à la fin, pourquoi ne pas ajouter au début ? */
-         while(liste != NULL)
-         {
-            liste2 = liste;
-            liste = liste->suivant;
-         }
+	{
+	  /* Ajout de contenu à la fin, pourquoi ne pas ajouter au début ? */
+	  while(liste != NULL)
+	    {
+	      liste2 = liste;
+	      liste = liste->suivant;
+	    }
 
-         liste = CreateListe();
-		 liste2->suivant = liste;
-      }
+	  liste = CreateListe();
+	  liste2->suivant = liste;
+	}
 
 
       liste->element = contenu;
@@ -136,8 +137,8 @@ void AddElement(Element* conteneur, Element* contenu)
       conteneur->bulle.taille++;
       /*   printf("taille du conteneur : %d\n",conteneur->bulle.taille); */
 
-   }
-   return;
+    }
+  return;
 }
 
 
@@ -179,18 +180,18 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
       */
       for(i = 1; i < position; i++)
 	{
-         if (liste->suivant == NULL)
-	   {
-	     printf("erreur dans remove element");
-	     return;
-	   }
+	  if (liste->suivant == NULL)
+	    {
+	      printf("erreur dans remove element");
+	      return;
+	    }
 	 
-         liste2 = liste;
-         liste = liste->suivant;
-       }
+	  liste2 = liste;
+	  liste = liste->suivant;
+	}
      
-     if (liste->element->type == THREAD)
-       free(liste->element);
+      if (liste->element->type == THREAD)
+	free(liste->element);
       else
 	{
 	  /* faire des free sur les éléments appartenant à la bulle */
@@ -205,19 +206,19 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
 	  free(liste->element);
 	}
      
-     if (liste2 == NULL) /* impossible A CORRIGER */
-       elmtPere->bulle.liste = liste->suivant;
-     else
-       liste2->suivant = liste->suivant;
+      if (liste2 == NULL) /* impossible A CORRIGER */
+	elmtPere->bulle.liste = liste->suivant;
+      else
+	liste2->suivant = liste->suivant;
      
-     free(liste);
+      free(liste);
      
-     elmtPere->bulle.taille --;      
-   }
-   else /* conteneur->type == THREAD */
-     wprintf(L"mauvais paramêtre dans RemoveElement\n");
+      elmtPere->bulle.taille --;      
+    }
+  else /* conteneur->type == THREAD */
+    wprintf(L"mauvais paramêtre dans RemoveElement\n");
    
-   return;
+  return;
 }
 #endif 
 
@@ -227,34 +228,34 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
 void RemoveElement(Element* conteneur, int position)
 {
 
-   int i;
-   ListeElement* liste;
-   ListeElement* liste2=NULL;
+  int i;
+  ListeElement* liste;
+  ListeElement* liste2=NULL;
    
-   if (conteneur != NULL && conteneur->type == BULLE
-       && position >= 1 
-       && position <= conteneur->bulle.taille)
-   {
-     liste = conteneur->bulle.liste;
+  if (conteneur != NULL && conteneur->type == BULLE
+      && position >= 1 
+      && position <= conteneur->bulle.taille)
+    {
+      liste = conteneur->bulle.liste;
      
-     /* liste2 va pointer sur l'élément avant l'élément à supprimer
-	liste va pointer sur l'élément à supprimer
-	méthode du trainard
-     */
-     for(i = 1; i < position; i++)
-       {
-         if (liste->suivant == NULL)
-	   {
-	     printf("erreur dans remove element");
-	     return;
-	   }
+      /* liste2 va pointer sur l'élément avant l'élément à supprimer
+	 liste va pointer sur l'élément à supprimer
+	 méthode du trainard
+      */
+      for(i = 1; i < position; i++)
+	{
+	  if (liste->suivant == NULL)
+	    {
+	      printf("erreur dans remove element");
+	      return;
+	    }
 	 
-         liste2 = liste;
-         liste = liste->suivant;
-       }
+	  liste2 = liste;
+	  liste = liste->suivant;
+	}
      
-     if (liste->element->type == THREAD)
-       free(liste->element);
+      if (liste->element->type == THREAD)
+	free(liste->element);
       else
 	{
 	  /* faire des free sur les éléments appartenant à la bulle */
@@ -273,19 +274,19 @@ void RemoveElement(Element* conteneur, int position)
 	  free(liste->element);
 	}
      
-     if (liste2 == NULL) /* impossible A CORRIGER */
-       conteneur->bulle.liste = liste->suivant;
-     else
-       liste2->suivant = liste->suivant;
+      if (liste2 == NULL) /* impossible A CORRIGER */
+	conteneur->bulle.liste = liste->suivant;
+      else
+	liste2->suivant = liste->suivant;
      
-     free(liste);
+      free(liste);
      
-     conteneur->bulle.taille --;      
-   }
-   else /* conteneur->type == THREAD */
-     wprintf(L"mauvais paramêtre dans RemoveElement\n");
+      conteneur->bulle.taille --;      
+    }
+  else /* conteneur->type == THREAD */
+    wprintf(L"mauvais paramêtre dans RemoveElement\n");
    
-   return;
+  return;
 }
 
 /*********************************************************************/
@@ -342,68 +343,62 @@ void RemoveElementOnCascade(Element* conteneur, int position)
 
 int GetCharge(Element* thread)
 {
-   if (thread->type == THREAD)
-	  return thread->thread.charge;
+  if (thread->type == THREAD)
+    return thread->thread.charge;
 
-   return -1;
+  return -1;
 }
 void SetCharge(Element* thread, int charge)
 {
-   if (thread->type == THREAD)
-	   thread->thread.charge=charge;
+  if (thread->type == THREAD)
+    thread->thread.charge=charge;
 
-   return ;
+  return ;
 }
 
 /*********************************************************************/
 
 int GetPrioriteThread(Element* thread)
 {
-   if (thread->type == THREAD)
-	  return thread->thread.priorite;
+  if (thread->type == THREAD)
+    return thread->thread.priorite;
 
-   return -1;
+  return -1;
 }
 void SetPrioriteThread(Element* thread, int priorite)
 {
-   if (thread->type == THREAD)
-	 thread->thread.priorite=priorite;
+  if (thread->type == THREAD)
+    thread->thread.priorite=priorite;
 
-   return ;
+  return ;
 }
 
 /*********************************************************************/
 
-int GetId(Element* thread)
+int GetId(Element* element)
 {
-   if (thread->type == THREAD)
-	  return thread->thread.id;
+  if (element->type == THREAD)
+    return element->thread.id;
 
-   else
-      return thread->bulle.id;
+  else
+    return element->bulle.id;
 }
-void SetId(Element* thread, int id)
-{
-   if (thread->type == THREAD)
-	  thread->thread.id=id;;
 
-   return;
-}
 
 /*********************************************************************/
 
 char* GetNom(Element* thread)
 {
-   if (thread->type == THREAD)
-	  return thread->thread.nom;
+  if (thread->type == THREAD)
+    return thread->thread.nom;
 
-   return NULL;
+  return NULL;
 }
-void SetNom(Element* thread, char* nom)
+void SetNom(Element* thread, const char* nom)
 {
-     if (thread->type == THREAD)
-	  strcpy(thread->thread.nom,nom);
-     return;
+  if (thread->type == THREAD)
+    strcpy(thread->thread.nom,nom);
+  return;
 }
 
 
@@ -411,91 +406,100 @@ void SetNom(Element* thread, char* nom)
 
 int GetPrioriteBulle(Element* bulle)
 {
-   if (bulle->type == BULLE)
-	  return bulle->bulle.priorite;
+  if (bulle->type == BULLE)
+    return bulle->bulle.priorite;
 
-   return -1;
+  return -1;
+}
+void SetPrioriteBulle(Element* bulle, int priorite)
+{
+  if (bulle->type == BULLE)
+    bulle->bulle.priorite=priorite;
+
+  return ;
 }
 
 /*********************************************************************/
-/*! Donne la position d'un élément dans ListeElement
+/*! Donne la position d'un élément dans ListeElement, fonction non testée et inutilisée
  *  \param bulleParent     bulleParent est la bulle parent de l'élément 'elementRecherche'
  *  \param elementRecherche    elementRecherche est un élément (bulle ou thread)
- *
+ * 
  *  \return La fonction retourne la position de l'élément dans ListeElement.
  */
 int GetElementPosition (Bulle * bulleParent, Element * elementRecherche)
 {
-   ListeElement* liste;
-   int position = 1;
-   liste = bulleParent->liste;
-   /* parcours de la liste chainée simple à la recherche de element */
-   while(liste->element != elementRecherche){
-      position++;
-      liste=liste->suivant;
-   }
-   return position;
+  ListeElement* liste;
+  int position = 1;
+  liste = bulleParent->liste;
+  /* parcours de la liste chainée simple à la recherche de element */
+  while(liste->element != elementRecherche){
+    position++;
+    liste=liste->suivant;
+  }
+  return position;
 }
 
 /*********************************************************************/
 /*! Donne la ListeElement de 'bulle' à la position 'position'. Par exemple, on veut la ListeElement 
  * dont element pointe sur le 3ème élément de ListeElement, on exécute pour cela
  * GetListeElementPosition(bulle, 3);
+ * Fonction non testée et inutilisée.
  * \param bulle une bulle contenant des éléments
  * \param position la position à laquelle on souhaite se déplacer dans la liste
  *
-*/
+ */
 ListeElement * GetListeElementPosition(Bulle * bulle, int position)
 {
-   int taille = bulle->taille;
-   int i;
-   ListeElement * listeRetour=bulle->liste;
-   if (taille < 1)
-   {
+  int taille = bulle->taille;
+  int i;
+  ListeElement * listeRetour=bulle->liste;
+  if (taille < 1)
+    {
       printf("Erreur, taille < 1");
       return NULL;
-   }
-   if (position > taille)
-      printf("Erreur, position > taille");
-      return NULL;
-   for(i=1;i<position;i++)
-   {
+    }
+  if (position > taille)
+    printf("Erreur, position > taille");
+  return NULL;
+  for(i=1;i<position;i++)
+    {
       listeRetour=listeRetour->suivant;
-   }
-   if (listeRetour->element->type == THREAD)
-   {
-     printf("Erreur GetListeElementPosition, type attendu BULLE, reçu THREAD\n");
-     return NULL;
-   }
-   return listeRetour;
+    }
+  if (listeRetour->element->type == THREAD)
+    {
+      wprintf(L"Erreur GetListeElementPosition, type attendu BULLE, reçu THREAD\n");
+      return NULL;
+    }
+  return listeRetour;
 }
 
 /*********************************************************************/   
 /*! Effectue un déplacement d'un élément d'une liste vers une autre liste
+ * Fonction non testée et inutilisée.
  * \param bulleParent la bulle parent de elementADeplacer
  * \param elementADeplacer bulle ou thread à supprimer de la liste à laquelle elle appartient
  * \param bulleDAccueil la bulle qui va accueillir elementADeplacer
  */
 void MoveElement (Bulle * bulleParent, Element * elementADeplacer, Bulle * bulleDAccueil)
 {
-   /* La bulleParent de elementADeplacer */
-   ListeElement * liste1, * liste2;
-   liste1 = NULL;
-   liste2 = NULL;
-   int i, position;
+  /* La bulleParent de elementADeplacer */
+  ListeElement * liste1, * liste2;
+  liste1 = NULL;
+  liste2 = NULL;
+  int i, position;
   
-   liste1 = bulleParent->liste;
-   /* on obtient la position de elementADeplacer */
-   position = GetElementPosition(bulleParent, elementADeplacer);
+  liste1 = bulleParent->liste;
+  /* on obtient la position de elementADeplacer */
+  position = GetElementPosition(bulleParent, elementADeplacer);
    
-   /* méthode du trainard */   
-   for(i = 1; i < position; i++)
-     {
-	  if (liste1->suivant == NULL)
-            return;
+  /* méthode du trainard */   
+  for(i = 1; i < position; i++)
+    {
+      if (liste1->suivant == NULL)
+	return;
 	  
-	  liste2 = liste1;
-	  liste1 = liste1->suivant;
+      liste2 = liste1;
+      liste1 = liste1->suivant;
     }
    
   if (liste2 == NULL)
@@ -506,229 +510,183 @@ void MoveElement (Bulle * bulleParent, Element * elementADeplacer, Bulle * bulle
   bulleParent->taille --;
       
    
-   /* On insère elementADeplacer en tête de la ListeElement de bulleDAccueil */
-   bulleDAccueil->liste->suivant = bulleDAccueil->liste;
-   bulleDAccueil->liste->element = elementADeplacer;
-   /* ne pas oublier d'augmenter la taille de la bulle */
-   bulleDAccueil->taille ++;
+  /* On insère elementADeplacer en tête de la ListeElement de bulleDAccueil */
+  bulleDAccueil->liste->suivant = bulleDAccueil->liste;
+  bulleDAccueil->liste->element = elementADeplacer;
+  /* ne pas oublier d'augmenter la taille de la bulle */
+  bulleDAccueil->taille ++;
 }
 
 /*********************************************************************/
-
-
-
-
-/* int main(void) */
-/* { */
-
-/* // On créé des bulles */
-/*    Element* bulle1 = CreateBulle(3); */
-/*    Element* bulle2 = CreateBulle(2); */
-/*    Element* bulle3 = CreateBulle(1); */
-/*    Element* bulle4 = CreateBulle(1); */
-/*    Element* bulle5 = CreateBulle(5); */
-/*    Element* bulle6 = CreateBulle(2); */
-
-/* // on créé des threads */
-/*    Element* thread1 = CreateThread(1,1,"jacky",110); */
-/*    Element* thread2 = CreateThread(2,2,"john doe",200); */
-/*    Element* thread3 = CreateThread(1,3,"mickey",30); */
-/*    Element* thread4 = CreateThread(3,4,"obi wan",140); */
-/*    Element* thread5 = CreateThread(1,5,"gordon freeman",50); */
-
-/* /\* // on mets les threads dans les bulles *\/ */
-/*    AddElement(bulle1, thread1); */
-/*    AddElement(bulle1, thread2); */
-/*    AddElement(bulle2, thread3); */
-/*    AddElement(bulle2, thread4); */
-/*    AddElement(bulle3, thread5); */
-
-/* /\* // et les bulles dans les threads *\/ */
-/*    AddElement(bulle1, bulle2); */
-/*    AddElement(bulle2, bulle3); */
-/*    AddElement(bulle3, bulle4); */
-/*    AddElement(bulle4, bulle5); */
-/*    AddElement(bulle5, bulle6); */
-
-/* /\* // on affiche la structure *\/ */
-/*    PrintElement(bulle1, 0); */
-
-/* /\*    RemoveElement(bulle1, 2); *\/ */
-
-/* /\*    PrintElement(bulle1, 1); *\/ */
-
-/*    return EXIT_SUCCESS; */
-/* } */
-
-
-
-
-
-
-/*********************************************************************/
 /* fonction qui affiche la structure */
-
 void PrintElement(Element* element, int level, int numero)
 {
-   int i;
+  int i;
 
-   //on affiche des espaces pour l'indentation (suivant le niveau de
-   //récursion)
-   for (i = 1; i <= level; i++)
-      printf("  ");
+  //on affiche des espaces pour l'indentation (suivant le niveau de
+  //récursion)
+  for (i = 1; i <= level; i++)
+    printf("  ");
 
-   if (GetTypeElement(element) == BULLE) // si c'est une bulle
-   {
+  if (GetTypeElement(element) == BULLE) // si c'est une bulle
+    {
       // on l'affiche
       printf("- bulle %p - taille = %d  priorite = %d\n", element, GetNbElement(element), GetPrioriteBulle(element));
 
       // et on affiche récursivement tout les élément contenus dans
       // cette bulle
       for(i = 1; i <= GetNbElement(element); i++) 
-         PrintElement(GetElement(element, i), level + 1, i); 
+	PrintElement(GetElement(element, i), level + 1, i); 
 
-   }
-   else
-   {
+    }
+  else
+    {
       // et si c'est un thread on l'affiche
       printf("- thread - priorite = %d  id = %d  nom : %s  charge = %d\n",
-			 GetPrioriteThread(element),
-			 GetId(element),
-			 GetNom(element),
-			 GetCharge(element));
-   }
-   return;
+	     GetPrioriteThread(element),
+	     GetId(element),
+	     GetNom(element),
+	     GetCharge(element));
+    }
+  return;
 }
 
 
 /*********************************************************************/
 /*! Supprime l'élément à la position 'position' de l'élément 'conteneur'
  * mais ne supprime pas ses fils
+ * \param conteneur contient le fils qui va être supprimé
+ * \param position la position du fils à supprimer dans la liste de conteneur
  */
 void RemoveElement2(Element* conteneur, int position)
 {
-   int i;
-   ListeElement* liste;
-   ListeElement* liste2=NULL;
+  int i;
+  ListeElement* liste;
+  ListeElement* liste2=NULL;
    
-   if (conteneur != NULL && conteneur->type == BULLE
-       && position >= 1 
-       && position <= conteneur->bulle.taille)
-   {
-     liste = conteneur->bulle.liste;
+  if (conteneur != NULL && conteneur->type == BULLE
+      && position >= 1 
+      && position <= conteneur->bulle.taille)
+    {
+      liste = conteneur->bulle.liste;
      
-     /* liste2 va pointer sur l'élément avant l'élément à supprimer
-	liste va pointer sur l'élément à supprimer
-	méthode du trainard
-     */
-     for(i = 1; i < position; i++)
-       {
-         if (liste->suivant == NULL)
-	   {
-	     printf("erreur dans remove element");
-	     return;
-	   }
+      /* liste2 va pointer sur l'élément avant l'élément à supprimer
+	 liste va pointer sur l'élément à supprimer
+	 méthode du trainard
+      */
+      for(i = 1; i < position; i++)
+	{
+	  if (liste->suivant == NULL)
+	    {
+	      printf("erreur dans remove element");
+	      return;
+	    }
 	 
-         liste2 = liste;
-         liste = liste->suivant;
-       }
+	  liste2 = liste;
+	  liste = liste->suivant;
+	}
       
-     if (liste2 == NULL) /* impossible A CORRIGER */
-       conteneur->bulle.liste = liste->suivant;
-     else
-       liste2->suivant = liste->suivant;
+      if (liste2 == NULL) /* impossible A CORRIGER */
+	conteneur->bulle.liste = liste->suivant;
+      else
+	liste2->suivant = liste->suivant;
      
-     /* free(liste); */
+      /* free(liste); */
      
-     conteneur->bulle.taille --;
-     printf("DEBUG : RemoveElement2, conteneur->bulle.taille : %d\n",conteneur->bulle.taille);      
-   }
-   else /* conteneur->type == THREAD */
-     wprintf(L"mauvais paramètre dans RemoveElement2\n");
+      conteneur->bulle.taille --;
+      printf("DEBUG : RemoveElement2, conteneur->bulle.taille : %d\n",conteneur->bulle.taille);      
+    }
+  else /* conteneur->type == THREAD */
+    wprintf(L"mauvais paramètre dans RemoveElement2\n");
    
-   return;
+  return;
 }
 
 /*********************************************************************/
-/*! Copie le contenu dans la liste du conteneur en tenant compte
- * de ce que contient déjà le contenu
- *
+/*! Copie le 'contenu' dans la liste du 'conteneur' en tenant compte
+ * de ce que contient déjà le 'contenu' (copie le pointeur de la liste de contenu,
+ * on ne recrée pas les éléments fils de 'contenu').
+ * \param conteneur l'élément qui va recevoir les nouveaux éléments créés
+ * \param contenu l'élément qui va être copié dans conteneur, avec également ses fils
  */
 void AddElement2(Element* conteneur, Element* contenu)
 {
-   ListeElement* liste;
-   ListeElement* liste2=NULL;
+  ListeElement* liste;
+  ListeElement* liste2=NULL;
 
-/*    printf("addElement : %p %p\n", conteneur, contenu); */
+  /*    printf("addElement : %p %p\n", conteneur, contenu); */
 
-   if(conteneur->type == BULLE)
-   {
+  if(conteneur->type == BULLE)
+    {
       liste = conteneur->bulle.liste;
 
       if (conteneur->bulle.taille == 0)
-      {
-         liste = CreateListe();
-         conteneur->bulle.liste = liste;
-      }
+	{
+	  liste = CreateListe();
+	  conteneur->bulle.liste = liste;
+	}
       else
-      {
-         /* Ajout de contenu à la fin, pourquoi ne pas ajouter au début ? */
-         while(liste != NULL)
-         {
-            liste2 = liste;
-            liste = liste->suivant;
-         }
-         liste = CreateListe();
-	 liste2->suivant = liste;
-      }
-
+	{
+	  /* Ajout de contenu à la fin, pourquoi ne pas ajouter au début ? */
+	  while(liste != NULL)
+	    {
+	      liste2 = liste;
+	      liste = liste->suivant;
+	    }
+	  liste = CreateListe();
+	  liste2->suivant = liste;
+	}
+      /* là on ajoute le contenu à la fin de la liste de conteneur */
       liste->element = contenu;
       printf("DEBUG : AddElement2, contenu->bulle.taille : %d\n", contenu->bulle.taille);
-
+      /* on n'oublie pas de mettre à jour la taille de l'élément conteneur */
       conteneur->bulle.taille++;
       printf("DEBUG : AddElement2, conteneur->bulle.taille : %d\n",conteneur->bulle.taille);
 
-   }
-   return;
+    }
+  return;
 }
+
 
 /**********************************************************************************/
 /*! Vérifie si l'élément fils est un fils de l'élément parent
  * \param parent a pour type BULLE
- *
+ * \param fils est de type Element
+ * \return 0 si le fils n'est pas fils de parent, 1 dans le cas contraire
  */
 int appartientElementParent(Element * parent, Element * fils)
 {
-   ListeElement* liste;
-   ListeElement* liste2=NULL;
+  ListeElement* liste;
+  ListeElement* liste2=NULL;
 
-   if(parent->type == BULLE)
-     {
-       liste = parent->bulle.liste;
-     }
-   else
-     {
-       /* fils non parent de parent */
-       return 0;
-     }
-   /* parcours de toute la liste des fils de parent */
-   while(liste != NULL)
-         {
-            if(liste->element == fils)
-            {
-               /* dans le cas où fils est fils de parent */
-               return 1;
-            }
-            else
-            {
-               if(liste->element->type == BULLE)
-               {  
-                  return appartientElementParent(liste->element, fils);    
-               }
-            }
-            liste2 = liste;
-            liste = liste->suivant;
-   }
-    /* dans le cas où fils n'est pas fils de parent */
-    return 0; 
+  if(parent->type == BULLE)
+    {
+      liste = parent->bulle.liste;
+    }
+  else
+    {
+      /* fils non fils de parent */
+      return 0;
+    }
+  /* parcours de toute la liste des fils de parent */
+  while(liste != NULL)
+    {
+      if(liste->element == fils)
+	{
+	  /* dans le cas où fils est fils de parent */
+	  return 1;
+	}
+      else
+	{
+	  /* si on tombe sur une bulle, on parcourt ses fils */
+	  if(liste->element->type == BULLE)
+	    {  
+	      return appartientElementParent(liste->element, fils);    
+	    }
+	}
+      liste2 = liste;
+      liste = liste->suivant;
+    }
+  /* dans le cas où fils n'est pas fils de parent */
+  return 0; 
 }

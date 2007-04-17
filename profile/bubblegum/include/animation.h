@@ -22,11 +22,11 @@ typedef enum {
     ANIM_PLAY_UNCHANGED = -1,
     ANIM_PLAY_PAUSE = 0,
     ANIM_PLAY_REVERSE,
-    ANIM_PLAY_NORMAL
+    ANIM_PLAY_NORMAL,
 } AnimPlayType;
 
 
-typedef void (*AnimData_frameChanged_cb)(int, void *);
+typedef void (*AnimData_callback)(int, void *);
 
 /*! Animation Data type. Only one instance should be created. */
 #ifndef ANIMATION_DATA_STRUCT
@@ -38,9 +38,10 @@ AnimationData *
 newAnimationData ();
 
 void
-AnimationData_setFrameChangedCallback (AnimationData *pdata,
-                                       AnimData_frameChanged_cb callback,
-                                       void *udata);
+AnimationData_setCallback (AnimationData *pdata,
+                           AnimData_callback frameChange,
+                           AnimData_callback animReset,
+                           void *udata);
 
 BubbleMovie
 AnimationData_getMovie (AnimationData *pdata);
@@ -49,14 +50,25 @@ void
 resetAnimationData (AnimationData *pdata, BubbleMovie movie);
 
 void
-AnimationData_setPlayStatus (AnimationData *pdata,
-                             AnimPlayType type, float speed);
+AnimationData_setPlayStatus (AnimationData *pdata, AnimPlayType type,
+                             float speed, int seeking);
 
 void
 AnimationData_gotoFrame (AnimationData *pdata, int frame);
 
 void
 AnimationData_setGlobalScale (AnimationData *pdata, float scale);
+
+void
+AnimationData_AdjustScale (AnimationData *pdata);
+
+void
+AnimationData_SetViewSize (AnimationData *pdata, float width, float height);
+
+void
+AnimationData_setPosition (AnimationData *pdata,
+                           float goff_x, float goff_y,
+                           float rev_x, float rev_y);
 
 void
 AnimationData_display (AnimationData *pdata);

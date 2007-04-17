@@ -14,7 +14,14 @@
  * General Public License for more details.
  */
 
-#include "animation.h"
+#include <wchar.h>
+#include <math.h>
+#include <stdlib.h>
+#include <gtk/gtk.h>
+#include <gtk/gtkgl.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+
 #include "rightwindow.h"
 #include "load.h"
 
@@ -46,7 +53,17 @@ static gboolean
 MouseMove_dz (GtkWidget* widget, GdkEventMotion* ev, gpointer p_data);
 
 static void
-ScrollSetPosition (int frame, void *data);
+ScrollSetPosition (int frame, gpointer p_data);
+
+static void
+ScrollSetRange (int frames, gpointer p_data);
+
+static gboolean
+AnimationControl_seekStartEnd (GtkWidget *widget, GdkEventButton *event,
+                               gpointer p_data);
+
+static gboolean
+AnimationControl_seeking (GtkRange *range, gpointer p_data);
 
 /*! Builds the right part of the gui.
  *  
@@ -71,6 +88,7 @@ right_window_init (AnimationData *p_anim) {
 #endif
         /* \todo Remove global variable. */
         anim = p_anim;
+
         vbox_right = gtk_vbox_new (FALSE, 0);
         gtk_box_pack_start (GTK_BOX (vbox_right), drawzone, TRUE, TRUE, 0);
         gtk_drawing_area_size (GTK_DRAWING_AREA (drawzone), 100, 100);
@@ -88,12 +106,18 @@ right_window_init (AnimationData *p_anim) {
             /*! \todo Remove global variable */
             right_scroll_bar = scroll;
 
-            
-
             gtk_box_pack_end (GTK_BOX (vbox_right), scroll, FALSE, FALSE, 0);
-#if 0 /*! \todo Change callback function. */
+
+#if 1 /*! \todo Change callback function. */
+            g_signal_connect (G_OBJECT (scroll), "button-press-event",
+                              G_CALLBACK (AnimationControl_seekStartEnd), p_anim);
+            g_signal_connect (G_OBJECT (scroll), "button-release-event",
+                              G_CALLBACK (AnimationControl_seekStartEnd), p_anim);
             g_signal_connect (G_OBJECT (scroll), "value-changed",
-                              G_CALLBACK (AnimationSet), p_anim);
+                              G_CALLBACK (AnimationControl_seeking), p_anim);
+
+            AnimationData_setCallback (p_anim, ScrollSetPosition,
+                                       ScrollSetRange, scroll);
 #endif
         } else {
             gtk_widget_destroy (drawzone);
@@ -125,7 +149,7 @@ init_drawable_zone (AnimationData *p_anim) {
                                         GDK_GL_MODE_ALPHA);
     if (glconf == NULL) { /* Can't enable double buffer mode  */
         glconf = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGBA | GDK_GL_MODE_ALPHA);
-        wprintf (L"info : initiliasation en simple buffer.\n");
+        wprintf (L"info : initialisation en simple buffer.\n");
     }
     if (glconf == NULL) { /* alpha not supported ? */
         glconf = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGBA);
@@ -166,6 +190,43 @@ init_drawable_zone (AnimationData *p_anim) {
 }
 
 
+/*
+ * Tool bar Callback methods.
+ */
+
+static void
+AnimationControl_firstFrame (GtkWidget *widget, gpointer pdata) {
+    AnimationData_gotoFrame ((AnimationData *)pdata, 0);
+}
+
+static void
+AnimationControl_playReverse (GtkWidget *widget, gpointer pdata) {
+    AnimationData_setPlayStatus ((AnimationData *)pdata,
+                                 ANIM_PLAY_REVERSE, -1, 0);
+}
+
+static void
+AnimationControl_pause (GtkWidget *widget, gpointer pdata) {
+    AnimationData_setPlayStatus ((AnimationData *)pdata,
+                                 ANIM_PLAY_PAUSE, -1, 0);
+}
+
+static void
+AnimationControl_play (GtkWidget *widget, gpointer pdata) {
+    AnimationData_setPlayStatus ((AnimationData *)pdata,
+                                 ANIM_PLAY_NORMAL, -1, 0);
+}
+
+static void
+AnimationControl_lastFrame (GtkWidget *widget, gpointer pdata) {
+    AnimationData_gotoFrame ((AnimationData *)pdata, -1);
+}
+
+static void
+AnimationControl_SaveAsFlash (GtkWidget *widget, gpointer pdata) {
+    /*! \todo Not yet implemented. */
+}
+
 /*! Initializes the right toolbar.
  *
  *  \param p_anim   a pointer to an AnimationData structure.
@@ -175,47 +236,51 @@ init_drawable_zone (AnimationData *p_anim) {
 static GtkWidget *
 init_right_toolbar (AnimationData *p_anim) {
     GtkWidget *toolbar = gtk_toolbar_new();
-#if 0 /*! \todo Change callback functions */
+#if 1 /*! \todo Change callback functions */
     GtkWidget *play    = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PLAY,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
-    GtkWidget *revplay = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS,
+    GtkWidget *revplay = gtk_image_new_from_stock (GTK_STOCK_MEDIA_REWIND,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
     GtkWidget *pause   = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PAUSE,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
-    GtkWidget *forward = gtk_image_new_from_stock (GTK_STOCK_MEDIA_FORWARD,
+    GtkWidget *forward = gtk_image_new_from_stock (GTK_STOCK_MEDIA_NEXT,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
-    GtkWidget *rewind  = gtk_image_new_from_stock (GTK_STOCK_MEDIA_REWIND,
+    GtkWidget *rewind  = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
-    GtkWidget *stop    = gtk_image_new_from_stock (GTK_STOCK_MEDIA_STOP,
-                                                   GTK_ICON_SIZE_SMALL_TOOLBAR);
+/*     GtkWidget *stop    = gtk_image_new_from_stock (GTK_STOCK_MEDIA_STOP, */
+/*                                                    GTK_ICON_SIZE_SMALL_TOOLBAR); */
     GtkWidget *convert = gtk_image_new_from_stock (GTK_STOCK_REFRESH,
                                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
 
     /*! \todo Maybe replace callback methods. */
+/*     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON, */
+/*                                 NULL, NULL, "Retour", NULL, stop, */
+/*                                 G_CALLBACK(NULL), p_anim); */
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                NULL, NULL, "Retour", NULL, stop,
-                                G_CALLBACK (AnimationStop), p_anim);
-    gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                NULL, NULL, "Rembobiner", NULL, rewind,
-                                G_CALLBACK (AnimationRewind), p_anim);
+                                NULL, NULL, "Début de l'animation", NULL, rewind,
+                                G_CALLBACK (AnimationControl_firstFrame),
+                                p_anim);
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Lecture arrière", NULL, revplay,
-                                G_CALLBACK (AnimationBackPlay), p_anim);
+                                G_CALLBACK (AnimationControl_playReverse),
+                                p_anim);
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Pause", NULL, pause,
-                                G_CALLBACK (AnimationPause), p_anim);
+                                G_CALLBACK (AnimationControl_pause), p_anim);
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Lecture", NULL, play,
-                                G_CALLBACK (AnimationPlay), p_anim);
+                                G_CALLBACK (AnimationControl_play), p_anim);
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
-                                NULL, NULL, "Avance rapide", NULL, forward,
-                                G_CALLBACK (AnimationForward), p_anim);
-    
+                                NULL, NULL, "Fin de l'animation.", NULL, forward,
+                                G_CALLBACK (AnimationControl_lastFrame),
+                                p_anim);
+
     gtk_toolbar_append_space (GTK_TOOLBAR (toolbar));
     
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Convertir en Flash", NULL, convert,
-                                G_CALLBACK (Temp), p_anim);
+                                G_CALLBACK (AnimationControl_SaveAsFlash),
+                                p_anim);
 #endif
     return toolbar;
 }
@@ -244,7 +309,7 @@ Realize_dz (GtkWidget *widget, gpointer data) {
     }
 
     /* Initialize openGL default status. */
-    glClearColor(0.0, 0.0, 0.0, 1.0); /* Black background color. */
+    glClearColor(1.0, 1.0, 1.0, 1.0); /* Black background color. */
     glDisable(GL_DEPTH);              /* No zbuffer. */
     
     glLoadIdentity();
@@ -342,11 +407,7 @@ Reshape_dz (GtkWidget* widget, GdkEventConfigure* ev, gpointer p_data) {
     GdkGLContext  *glcontext  = gtk_widget_get_gl_context (widget);
     GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
 
-#if 0
-    /* Resize drawing area coordinates. */
-    p_anim->area.x = ev->width;
-    p_anim->area.y = ev->height;
-#endif
+    AnimationData_SetViewSize (p_anim, ev->width, ev->height);
 
     if (gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
         glViewport (0, 0, ev->width, ev->height);
@@ -382,15 +443,48 @@ MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer p_data) {
 }
 
 
+
 /*! Callback method to update animation scrollbar value.
  *
  *  \param frame    an integer that represents the displayed frame.
  *  \param data     a pointer to a scrollbar widget.
  */
 static void
-ScrollSetPosition (int frame, void *data) {
-
+ScrollSetPosition (int frame, gpointer udata) {
+    gtk_range_set_value (GTK_RANGE (udata), frame);
 }
+
+static void
+ScrollSetRange (int frames, gpointer udata) {
+    if (frames == 0)
+        frames++;
+    gtk_range_set_range (GTK_RANGE (udata), 0, frames - 1);
+}
+
+static gboolean
+AnimationControl_seekStartEnd (GtkWidget *widget, GdkEventButton *event,
+                               gpointer pdata) {
+    if (event->button != 1)
+        return FALSE;
+    
+    if (event->type == GDK_BUTTON_PRESS) { /* Lock animation for seeking */
+        AnimationData_setPlayStatus ((AnimationData *)pdata,
+                                     ANIM_PLAY_UNCHANGED, -1, 1);
+    }
+    if (event->type == GDK_BUTTON_RELEASE) { /* Unlock animation */
+        AnimationData_setPlayStatus ((AnimationData *)pdata,
+                                     ANIM_PLAY_UNCHANGED, -1, 0);
+    }
+    return FALSE;
+}
+
+static gboolean
+AnimationControl_seeking (GtkRange *range, gpointer p_data) {
+    gdouble value = gtk_range_get_value (range);
+    AnimationData_gotoFrame ((AnimationData *)p_data, (int) value);
+    return FALSE;
+}
+
 
 
 #if 0 /*! \todo Remove. No longer in use. */

@@ -26,6 +26,7 @@ typedef struct interfaceGaucheVars_tag
   int mousePosClic_left_x;
   int mousePosClic_left_y;
   guint mousePosClic_state;
+  int clic_handled;
   int mousePos_left_x;
   int mousePos_left_y;
 

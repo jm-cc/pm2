@@ -714,20 +714,143 @@ gboolean isInside(zone *headZoneSelectionnee,zone *search)
 
 /*********************************************/
 
+static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY) {
+  parcours *p;
+  int i = 0;
+  zone * ZoneCliquee, *tempo ;
+
+  Element* elementSelectionne;
+  char *tmp = malloc(20);
+
+  p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, clicX, clicY);
+  ZoneCliquee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
+  /* D�placement court -> s�lection */
+  if (iGaucheVarsTmp->mousePosClic_state & GDK_CONTROL_MASK )
+  {      
+  	
+        //if(iGaucheVarsTmp->last != iGaucheVarsTmp->zonePrincipale && iGaucheVarsTmp->last!= NULL )
+           //iGaucheVarsTmp->zoneSelectionnee = insertZoneSelected(iGaucheVarsTmp->zoneSelectionnee, iGaucheVarsTmp->last);
+
+	if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale ){
+            printf("DEBUG : Selection de la zone principale\n");
+	    return;
+        }
+	if(!isInside(iGaucheVarsTmp->head, ZoneCliquee)){
+	   iGaucheVarsTmp->head = insertZoneSelected(iGaucheVarsTmp->head, ZoneCliquee);
+           if(isInside(iGaucheVarsTmp->head, iGaucheVarsTmp->zonePrincipale))
+              iGaucheVarsTmp->head  = delete(iGaucheVarsTmp->head , iGaucheVarsTmp->zonePrincipale);
+        }else
+	   iGaucheVarsTmp->head  = delete(iGaucheVarsTmp->head , ZoneCliquee);
+        
+     iGaucheVarsTmp->last = ZoneCliquee;
+     iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->head; 
+    elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
+  }
+  else{
+  if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale){
+    printf("DEBUG : Selection de la zone principale\n");
+    iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->zonePrincipale;
+    iGaucheVarsTmp->zoneSelectionnee->next = NULL;
+    iGaucheVarsTmp->head = iGaucheVarsTmp->zonePrincipale;
+    iGaucheVarsTmp->head->next = NULL;  
+  } else {
+   iGaucheVarsTmp->zoneSelectionnee = ZoneCliquee;
+   iGaucheVarsTmp->zoneSelectionnee->next = NULL;
+   iGaucheVarsTmp->head = ZoneCliquee;
+   iGaucheVarsTmp->head->next = NULL;
+   iGaucheVarsTmp->last = ZoneCliquee;
+   elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
+  }
+ }//fin de else 
+
+  if (elementSelectionne->type==THREAD)
+    {
+      printf("zone thread\n");
+      printf("id du thread : %d\n", GetId(elementSelectionne));
+      iGaucheVarsTmp->BulleSelect=NULL;
+      iGaucheVarsTmp->ThreadSelect=elementSelectionne;
+      // On repositionne les paramétres des ascenseurs et de la zone texte correspondant au données du thread
+      gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->charge),GetCharge(elementSelectionne));
+      gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->priorite),GetPrioriteThread(elementSelectionne));
+      gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->prioritebulle),iGaucheVarsTmp->defprioritebulle);
+      printf("debug elementselecTHREAD 1 %s\n",iGaucheVarsTmp->defnom);
+      strcpy(tmp, iGaucheVarsTmp->defnom);
+      gtk_entry_set_text (GTK_ENTRY(iGaucheVarsTmp->nom),GetNom(elementSelectionne));
+      printf("debug elementselecTHREAD 2 %s\n",tmp);
+      iGaucheVarsTmp->defnom=tmp;
+      // On sauve le thread selectionné en cas de changement des ses valeurs.
+      // iGaucheVarsTmp->ThreadSelect=elementSelectionne;
+      printf("debug elementselecTHREAD 3 %s\n",iGaucheVarsTmp->defnom);
+    }
+
+  if(elementSelectionne==iGaucheVarsTmp->bullePrincipale){
+
+    wprintf(L"Zone principale cliquée\n");
+    iGaucheVarsTmp->ThreadSelect=NULL;
+    iGaucheVarsTmp->BulleSelect=NULL;
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->charge),iGaucheVarsTmp->defcharge);
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->priorite),iGaucheVarsTmp->defpriorite);
+    printf("Debug eleselc 1 %s\n",iGaucheVarsTmp->defnom);
+    gtk_entry_set_text (GTK_ENTRY(iGaucheVarsTmp->nom),iGaucheVarsTmp->defnom);
+    printf("Debug eleselc 2 %s\n",iGaucheVarsTmp->defnom);
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->prioritebulle),iGaucheVarsTmp->defprioritebulle);
+  }
+  
+  if(elementSelectionne!=iGaucheVarsTmp->bullePrincipale && elementSelectionne->type==BULLE){
+
+    wprintf(L"Zone bulle cliquée\n");
+    printf("id de la bulle : %d\n", GetId(elementSelectionne));
+    iGaucheVarsTmp->ThreadSelect=NULL;
+    iGaucheVarsTmp->BulleSelect=elementSelectionne;
+
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->charge),iGaucheVarsTmp->defcharge);
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->priorite),iGaucheVarsTmp->defpriorite);
+    gtk_entry_set_text (GTK_ENTRY(iGaucheVarsTmp->nom),iGaucheVarsTmp->defnom);
+
+    gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->prioritebulle),GetPrioriteBulle(elementSelectionne));
+  }
+
+
+#if 1
+tempo = iGaucheVarsTmp->head;
+while(tempo != NULL){
+ printf("%d %d \n",tempo->posX,tempo->posY);
+ tempo = tempo->next;
+ 
+ i++;
+ }
+
+ printf("%d \n",i);
+#endif
+
+  EffacerParcours(p);
+}
 
 gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
  
+  parcours *p;
+  zone * ZoneCliquee;
   interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
+  int clicX, clicY;
 
-  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
-  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_x = clicX = (ev->x) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_y = clicY = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
   
   // Pour test 
-  iGaucheVarsTmp->mousePosClic_left_x =  iGaucheVarsTmp->mousePos_left_x;
-  iGaucheVarsTmp->mousePosClic_left_y =  iGaucheVarsTmp->mousePos_left_y;
+  iGaucheVarsTmp->mousePosClic_left_x =  clicX;
+  iGaucheVarsTmp->mousePosClic_left_y =  clicY;
   iGaucheVarsTmp->mousePosClic_state = ev->state;
 
+  p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, clicX, clicY);
+  ZoneCliquee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
+  EffacerParcours(p);
+  if(!isInside(iGaucheVarsTmp->head, ZoneCliquee)) {
+     handleClic(iGaucheVarsTmp, iGaucheVarsTmp->mousePosClic_left_x, iGaucheVarsTmp->mousePosClic_left_y);
+     iGaucheVarsTmp->clic_handled = 1;
+  } else {
+     iGaucheVarsTmp->clic_handled = 0;
+  }
 
 return TRUE;
 }
@@ -760,163 +883,49 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   lacheX = iGaucheVarsTmp->mousePos_left_x;
   lacheY = iGaucheVarsTmp->mousePos_left_y;
 
-if(abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
-  int i = 0;
-  zone * tmpZoneSelectionnee,*derniereZoneSelectionnee,*tempo ;
-
-  parcours *p;
-  Element* elementSelectionne;
-  char *tmp = malloc(20);
-  /* D�placement court -> s�lection */
-  if (iGaucheVarsTmp->mousePosClic_state & GDK_CONTROL_MASK )
-  {      
-  	
-        //if(iGaucheVars->last != iGaucheVars->zonePrincipale && iGaucheVars->last!= NULL )
-           //iGaucheVars->zoneSelectionnee = insertZoneSelected(iGaucheVars->zoneSelectionnee, iGaucheVars->last);
-	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX, clicY);
-
-  	tmpZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
-        if( tmpZoneSelectionnee == iGaucheVars->zonePrincipale ){
-            printf("DEBUG : Selection de la zone principale\n");
-           return FALSE;
-        }
-        if(!isInside(iGaucheVars->head, tmpZoneSelectionnee)){
-           iGaucheVars->head = insertZoneSelected(iGaucheVars->head, tmpZoneSelectionnee);
-           if(isInside(iGaucheVars->head, iGaucheVars->zonePrincipale))
-              iGaucheVars->head  = delete(iGaucheVars->head , iGaucheVars->zonePrincipale);
-        }else
-           iGaucheVars->head  = delete(iGaucheVars->head , tmpZoneSelectionnee);
-        
-     iGaucheVars->last = tmpZoneSelectionnee;
-     iGaucheVars->zoneSelectionnee = iGaucheVars->head; 
-    elementSelectionne = LireElementParcours(iGaucheVars->bullePrincipale, p);
-    EffacerParcours(p);
-  }
-  else{
-	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX,   clicY);
- 
-  derniereZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
-   
-  if( derniereZoneSelectionnee == iGaucheVars->zonePrincipale){
-   printf("DEBUG : Selection de la zone principale\n");
-    iGaucheVars->zoneSelectionnee = iGaucheVars->zonePrincipale;
-    iGaucheVars->zoneSelectionnee->next = NULL;
-    iGaucheVars->head = iGaucheVars->zonePrincipale;
-    iGaucheVars->head->next = NULL;  
-   return TRUE;
-  }
-   iGaucheVars->zoneSelectionnee = derniereZoneSelectionnee;
-   iGaucheVars->zoneSelectionnee->next = NULL;
-   iGaucheVars->head = derniereZoneSelectionnee;
-   iGaucheVars->head->next = NULL;
-   iGaucheVars->last = derniereZoneSelectionnee;
-  elementSelectionne = LireElementParcours(iGaucheVars->bullePrincipale, p);
-  EffacerParcours(p);
-
- }//fin de else 
-
-  if (elementSelectionne->type==THREAD)
-    {
-      printf("zone thread\n");
-      printf("id du thread : %d\n", GetId(elementSelectionne));
-      iGaucheVars->BulleSelect=NULL;
-      iGaucheVars->ThreadSelect=elementSelectionne;
-      // On repositionne les paramétres des ascenseurs et de la zone texte correspondant au données du thread
-      gtk_range_set_value (GTK_RANGE(iGaucheVars->charge),GetCharge(elementSelectionne));
-      gtk_range_set_value (GTK_RANGE(iGaucheVars->priorite),GetPrioriteThread(elementSelectionne));
-      gtk_range_set_value (GTK_RANGE(iGaucheVars->prioritebulle),iGaucheVars->defprioritebulle);
-      printf("debug elementselecTHREAD 1 %s\n",iGaucheVars->defnom);
-      strcpy(tmp, iGaucheVars->defnom);
-      gtk_entry_set_text (GTK_ENTRY(iGaucheVars->nom),GetNom(elementSelectionne));
-      printf("debug elementselecTHREAD 2 %s\n",tmp);
-      iGaucheVars->defnom=tmp;
-      // On sauve le thread selectionné en cas de changement des ses valeurs.
-      // iGaucheVars->ThreadSelect=elementSelectionne;
-      printf("debug elementselecTHREAD 3 %s\n",iGaucheVars->defnom);
-    }
-
-  if(elementSelectionne==iGaucheVars->bullePrincipale){
-
-    wprintf(L"Zone principale cliquée\n");
-    iGaucheVars->ThreadSelect=NULL;
-    iGaucheVars->BulleSelect=NULL;
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->charge),iGaucheVars->defcharge);
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->priorite),iGaucheVars->defpriorite);
-    printf("Debug eleselc 1 %s\n",iGaucheVars->defnom);
-    gtk_entry_set_text (GTK_ENTRY(iGaucheVars->nom),iGaucheVars->defnom);
-    printf("Debug eleselc 2 %s\n",iGaucheVars->defnom);
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->prioritebulle),iGaucheVars->defprioritebulle);
-  }
-  
-  if(elementSelectionne!=iGaucheVars->bullePrincipale && elementSelectionne->type==BULLE){
-
-    wprintf(L"Zone bulle cliquée\n");
-    printf("id de la bulle : %d\n", GetId(elementSelectionne));
-    iGaucheVars->ThreadSelect=NULL;
-    iGaucheVars->BulleSelect=elementSelectionne;
-
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->charge),iGaucheVars->defcharge);
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->priorite),iGaucheVars->defpriorite);
-    gtk_entry_set_text (GTK_ENTRY(iGaucheVars->nom),iGaucheVars->defnom);
-
-    gtk_range_set_value (GTK_RANGE(iGaucheVars->prioritebulle),GetPrioriteBulle(elementSelectionne));
-  }
-
-
-#if 1
-tempo = iGaucheVars->head;
-while(tempo != NULL){
- printf("%d %d \n",tempo->posX,tempo->posY);
- tempo = tempo->next;
- 
- i++;
- }
-
- printf("%d \n",i);
-#endif
-
-
-  return TRUE;
-}
+  if (abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
+     if (!iGaucheVarsTmp->clic_handled)
+       handleClic(iGaucheVarsTmp, clicX, clicY);
+     return TRUE;
+   }
 
 /* D�placement long -> d�placement/copie */
-
-  if(!isInside(iGaucheVars->head, iGaucheVars->last))
-   iGaucheVars->head = insertZoneSelected(iGaucheVars->head, iGaucheVars->last);
+  if(!isInside(iGaucheVarsTmp->head, iGaucheVarsTmp->last))
+   iGaucheVarsTmp->head = insertZoneSelected(iGaucheVarsTmp->head, iGaucheVarsTmp->last);
   /* CALCUL DES ELEMENTS SELECTIONNES, PARENT ET ACCUEIL */
 
   /* Voilà l'élément d'accueil */
-  pAccueil = TrouverParcours(iGaucheVars->zonePrincipale, lacheX, lacheY);
+  pAccueil = TrouverParcours(iGaucheVarsTmp->zonePrincipale, lacheX, lacheY);
   /* wprintf(L"Trace parcours élément Accueil\n");
      traceParcours(pAccueil);*/
-  ZoneAccueil = LireZoneParcours(iGaucheVars->zonePrincipale, pAccueil);
-  elementAccueil = LireElementParcours(iGaucheVars->bullePrincipale, pAccueil);
+  ZoneAccueil = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, pAccueil);
+  elementAccueil = LireElementParcours(iGaucheVarsTmp->bullePrincipale, pAccueil);
   bulleAccueil = &elementAccueil->bulle;
   EffacerParcours(pAccueil);
 
   /* Voilà l'élément sélectionné qu'on va déplacer */
-  zone *tmp = iGaucheVars->head;
-  while(tmp != NULL && tmp != iGaucheVars->zonePrincipale){
-  p = TrouverParcours(iGaucheVars->zonePrincipale, tmp->posX + 1, tmp->posY + 1 );
+  zone *tmp = iGaucheVarsTmp->head;
+ while(tmp != NULL && tmp != iGaucheVarsTmp->zonePrincipale){
+  p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, tmp->posX + 1, tmp->posY + 1 );
    //p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, iGaucheVarsTmp->mousePosClic_left_x, iGaucheVarsTmp->mousePosClic_left_y);
   /* wprintf(L"Trace parcours élément à déplacer\n");
      traceParcours(p); */
-  ZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
+  ZoneSelectionnee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
   /* après tests, il s'avère que la ZoneSelectionnee n'est jamais vide */
-  if(ZoneSelectionnee == iGaucheVars->zonePrincipale)
+  if(ZoneSelectionnee == iGaucheVarsTmp->zonePrincipale)
     {
-      iGaucheVars->head = iGaucheVars->zonePrincipale;
+      iGaucheVarsTmp->head = iGaucheVarsTmp->zonePrincipale;
       wprintf(L"Zone sélectionnée bullePrincipale\n");
       return FALSE;
     }
-  //iGaucheVars->zoneSelectionnee =  tmp ;//tmp et ZoneSelectionnee sont les memes
-  elementSelectionne = LireElementParcours(iGaucheVars->bullePrincipale, p);
+  //iGaucheVarsTmp->zoneSelectionnee =  tmp ;//tmp et ZoneSelectionnee sont les memes
+  elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   EffacerParcours(p);
 
   /* Voilà l'élément parent de l'élément sélectionné */
-  pParent = TrouverParcours(iGaucheVars->zonePrincipale, LireZoneX(tmp) + 1, LireZoneY(tmp)+1);
-  ZoneParent = LireZoneParcours(iGaucheVars->zonePrincipale, pParent);
-  elementParent = LireElementParcours(iGaucheVars->bullePrincipale, pParent);
+  pParent = TrouverParcours(iGaucheVarsTmp->zonePrincipale, LireZoneX(tmp) + 1, LireZoneY(tmp)+1);
+  ZoneParent = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, pParent);
+  elementParent = LireElementParcours(iGaucheVarsTmp->bullePrincipale, pParent);
   bulleParent = &elementParent->bulle;
   EffacerParcours(pParent);
   
@@ -960,7 +969,7 @@ while(tempo != NULL){
     } 
   /* Finalement on fait le déplacement */
    /* On teste si le déplacement ou la copie est possible */
-  //if (TestCopieDeplacement(iGaucheVars,clicX, clicY, lacheX, lacheY) == FALSE)
+  //if (TestCopieDeplacement(iGaucheVarsTmp,clicX, clicY, lacheX, lacheY) == FALSE)
   //return FALSE;
   
   
@@ -968,7 +977,7 @@ while(tempo != NULL){
    /* SI on appuie sur Control, ça fait une copie, sinon un déplacement */
   if (ev->state & GDK_CONTROL_MASK)
     {
-      Copier(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale,
+      Copier(iGaucheVarsTmp->bullePrincipale, iGaucheVarsTmp->zonePrincipale,
 	     tmp->posX + 1, tmp->posY + 1,
 	     ZoneAccueil, elementAccueil, iGaucheVarsTmp);
       printf("DEBUG : Mouse_move_left_release_copy, Copier fait\n");
@@ -976,7 +985,7 @@ while(tempo != NULL){
     }
   else
     {
-      Deplacer(iGaucheVars,
+      Deplacer(iGaucheVarsTmp,
 	        tmp->posX + 1, tmp->posY + 1,
 	       ZoneAccueil, elementAccueil);
       //enregistrerTmp(); /* pour l'historique */
@@ -985,7 +994,7 @@ while(tempo != NULL){
    printf("Mouse X : %d   Mouse Y : %d\n",  iGaucheVarsTmp->mousePos_left_x, iGaucheVarsTmp->mousePos_left_y);
  
   tmp=tmp->next;
-}
+ }
   enregistrerTmp(); /* pour l'historique */
   return TRUE;
 }

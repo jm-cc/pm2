@@ -104,15 +104,14 @@ xmlNodePtr creerThreadXml(Element * element) {
  * \param xmlNodePtr noeud est le noeud à partir du quel on lie ses fils.
  */
 void parcourirBullesXml(Element * bulle, xmlNodePtr noeud) {
-  int position;
+  ListeElement * liste;
   Element * elementFilsPtr;
   xmlNodePtr noeudFils;
   int taillebulle = GetNbElement(bulle);
   fprintf(stderr,"Taille de la bulle : %d\n", taillebulle);
   
-  for(position=1; position<= taillebulle; position++) {
-    fprintf(stderr, "Traitement de l'element %d\n", position);
-    elementFilsPtr = GetElement(bulle, position);
+  for(liste = FirstListeElement(bulle); liste; liste = NextListeElement(liste)) {
+    elementFilsPtr = liste->element;
     
     if(GetTypeElement(elementFilsPtr) == BULLE) {
       fprintf(stderr, "bulle en traitement\n");

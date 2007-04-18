@@ -102,6 +102,20 @@ Element* GetElement(Element* conteneur, int position)
 
 /*********************************************************************/
 
+ListeElement *FirstListeElement(Element *element)
+{
+  if (element->type == BULLE)
+    return element->bulle.liste;
+  return NULL;
+}
+
+ListeElement *NextListeElement(ListeElement *element)
+{
+  return element->suivant;
+}
+
+/*********************************************************************/
+
 void AddElement(Element* conteneur, Element* contenu)
 {
   ListeElement* liste;

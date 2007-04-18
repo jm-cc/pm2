@@ -66,6 +66,9 @@ int GetNbElement(Element* element);
 
 Element* GetElement(Element* conteneur, int position);
 
+ListeElement *FirstListeElement(Element *element);
+ListeElement *NextListeElement(ListeElement *element);
+
 void AddElement(Element* conteneur, Element* contenu);
 
 TypeElement GetTypeElement(Element* element);

@@ -41,7 +41,7 @@ int not_implemented(char *s) {
   return MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
-void internal_init(int global_size) {
+void internal_init(int global_size, int process_rank) {
   int i;
 
   /*
@@ -113,6 +113,12 @@ void internal_init(int global_size) {
   communicators[0]->is_global = 1;
   communicators[0]->communicator_id = MPI_COMM_WORLD;
   communicators[0]->size = global_size;
+  communicators[0]->rank = process_rank;
+  communicators[0]->global_ranks = malloc(global_size * sizeof(int));
+  for(i=0 ; i<global_size ; i++) {
+    communicators[0]->global_ranks[i] = i;
+  }
+
   available_communicators = tbx_slist_nil();
   for(i=MPI_COMM_WORLD+1 ; i<=NUMBER_OF_COMMUNICATORS ; i++) {
     int *ptr = malloc(sizeof(int));
@@ -153,6 +159,7 @@ void internal_exit() {
   tbx_slist_clear(available_datatypes);
   tbx_slist_free(available_datatypes);
 
+  free(communicators[0]->global_ranks);
   free(communicators[0]);
   free(communicators);
   while (tbx_slist_is_nil(available_communicators) == tbx_false) {
@@ -592,6 +599,7 @@ int mpir_comm_free(MPI_Comm *comm) {
   }
   else {
     int *ptr;
+    free(communicators[*comm-MPI_COMM_WORLD]->global_ranks);
     free(communicators[*comm-MPI_COMM_WORLD]);
     communicators[*comm-MPI_COMM_WORLD] = NULL;
     ptr = malloc(sizeof(int));

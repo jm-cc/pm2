@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
-static int                     process_rank	= -1;
 static struct nm_so_interface *p_so_sr_if;
 static nm_so_pack_interface    p_so_pack_if;
 static long                   *out_gate_id	= NULL;
@@ -475,6 +474,7 @@ int MPI_Init(int *argc,
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
   int                              global_size;
+  int                              process_rank;
 
   MPI_NMAD_LOG_IN();
 
@@ -518,7 +518,7 @@ int MPI_Init(int *argc,
   /*
    * Internal initialisation
    */
-  internal_init(global_size);
+  internal_init(global_size, process_rank);
 
   /*
    * Store the gate id of all the other processes
@@ -659,7 +659,8 @@ int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
   MPI_NMAD_LOG_IN();
 
-  *rank = process_rank;
+  mpir_communicator_t *mpir_communicator = get_communicator(comm);
+  *rank = mpir_communicator->rank;
   MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
 
   MPI_NMAD_LOG_OUT();
@@ -700,7 +701,13 @@ int mpi_inline_isend(void *buffer,
   int                   err = MPI_SUCCESS;
   int                   seq, probe;
 
-  gate_id = out_gate_id[dest];
+  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
+    NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
+    MPI_NMAD_LOG_OUT();
+    return 1;
+  }
+
+  gate_id = out_gate_id[mpir_communicator->global_ranks[dest]];
 
   mpir_datatype = get_datatype(mpir_request->request_datatype);
   mpir_datatype->active_communications ++;
@@ -873,12 +880,6 @@ int MPI_Esend(void *buffer,
     return not_implemented("Using MPI_ANY_TAG");
   }
 
-  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[dest] == -1)) {
-    NM_DISPF("Cannot find a connection between %d and %d\n", process_rank, dest);
-    MPI_NMAD_LOG_OUT();
-    return 1;
-  }
-
   mpir_request->request_type = MPI_REQUEST_SEND;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
@@ -947,12 +948,6 @@ int MPI_Isend(void *buffer,
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     MPI_NMAD_LOG_OUT();
     return not_implemented("Using MPI_ANY_TAG");
-  }
-
-  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[dest] == -1)) {
-    fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
-    MPI_NMAD_LOG_OUT();
-    return 1;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1035,13 +1030,12 @@ int mpi_inline_irecv(void* buffer,
     gate_id = NM_SO_ANY_SRC;
   }
   else {
-    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[source] == -1)){
-      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == -1)){
+      NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
       MPI_NMAD_LOG_OUT();
       return 1;
     }
-
-    gate_id = in_gate_id[source];
+    gate_id = in_gate_id[mpir_communicator->global_ranks[source]];
   }
 
   mpir_datatype = get_datatype(mpir_request->request_datatype);
@@ -1429,7 +1423,7 @@ int MPI_Iprobe(int source,
   }
   else {
     if (source >= mpir_communicator->size || in_gate_id[source] == -1) {
-      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+      fprintf(stderr, "Cannot find a in connection between %d and %d\n", mpir_communicator->rank, source);
       MPI_NMAD_LOG_OUT();
       return 1;
     }
@@ -1538,7 +1532,7 @@ int MPI_Bcast(void* buffer,
   mpir_communicator = get_communicator(comm);
 
   MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
-  if (process_rank == root) {
+  if (mpir_communicator->rank == root) {
     MPI_Request *requests;
     int i, err;
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
@@ -1590,7 +1584,7 @@ int MPI_Gather(void *sendbuf,
 
   mpir_communicator = get_communicator(comm);
 
-  if (process_rank == root) {
+  if (mpir_communicator->rank == root) {
     MPI_Request *requests;
     int i, err;
     mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
@@ -1611,7 +1605,7 @@ int MPI_Gather(void *sendbuf,
     }
 
     // copy local data for itself
-    memcpy(recvbuf + (process_rank * mpir_recv_datatype->extent),
+    memcpy(recvbuf + (mpir_communicator->rank * mpir_recv_datatype->extent),
            sendbuf, sendcount * mpir_send_datatype->extent);
 
   }
@@ -1676,7 +1670,7 @@ int MPI_Alltoall(void* sendbuf,
   mpir_recv_datatype = get_datatype(recvtype);
 
   for(i=0 ; i<mpir_communicator->size; i++) {
-    if(i == process_rank)
+    if(i == mpir_communicator->rank)
       memcpy(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
 	     sendbuf + (i * sendcount * mpir_send_datatype->extent),
 	     sendcount * mpir_send_datatype->extent);
@@ -1696,7 +1690,7 @@ int MPI_Alltoall(void* sendbuf,
   }
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
-    if (i == process_rank) continue;
+    if (i == mpir_communicator->rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
   }
@@ -1737,7 +1731,7 @@ int MPI_Alltoallv(void* sendbuf,
   mpir_recv_datatype = get_datatype(recvtype);
 
   for(i=0 ; i<mpir_communicator->size; i++) {
-    if(i == process_rank)
+    if(i == mpir_communicator->rank)
       memcpy(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
 	     sendbuf + (sdispls[i] * mpir_send_datatype->extent),
 	     sendcounts[i] * mpir_send_datatype->extent);
@@ -1757,7 +1751,7 @@ int MPI_Alltoallv(void* sendbuf,
   }
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
-    if (i == process_rank) continue;
+    if (i == mpir_communicator->rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
   }
@@ -1823,7 +1817,7 @@ int MPI_Reduce(void* sendbuf,
     return -1;
   }
 
-  if (process_rank == root) {
+  if (mpir_communicator->rank == root) {
     // Get the input buffers of all the processes
     void **remote_sendbufs;
     MPI_Request *requests;

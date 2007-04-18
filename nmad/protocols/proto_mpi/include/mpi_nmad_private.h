@@ -75,6 +75,8 @@ typedef struct mpir_communicator_s {
   int communicator_id;
   int is_global;
   int size;
+  int rank;
+  int *global_ranks;
 } mpir_communicator_t;
 
 typedef int MPI_Request_type;
@@ -134,7 +136,7 @@ typedef struct mpir_datatype_s {
 
 int not_implemented(char *s);
 
-void internal_init(int global_size);
+void internal_init(int global_size, int process_rank);
 
 void internal_exit();
 

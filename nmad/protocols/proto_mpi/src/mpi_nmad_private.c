@@ -41,7 +41,7 @@ int not_implemented(char *s) {
   return MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
-void internal_init() {
+void internal_init(int global_size) {
   int i;
 
   /*
@@ -86,7 +86,7 @@ void internal_init() {
   datatypes[MPI_BYTE]->extent = datatypes[MPI_BYTE]->size;
   datatypes[MPI_SHORT]->extent = datatypes[MPI_SHORT]->size;
   datatypes[MPI_UNSIGNED_SHORT]->extent = datatypes[MPI_UNSIGNED_SHORT]->size;
-  datatypes[MPI_INT]->extent =   datatypes[MPI_INT]->size; 
+  datatypes[MPI_INT]->extent =   datatypes[MPI_INT]->size;
   datatypes[MPI_UNSIGNED]->extent = datatypes[MPI_UNSIGNED]->size;
   datatypes[MPI_LONG]->extent = datatypes[MPI_LONG]->size;
   datatypes[MPI_UNSIGNED_LONG]->extent = datatypes[MPI_UNSIGNED_LONG]->size;
@@ -112,6 +112,7 @@ void internal_init() {
   communicators[0] = malloc(sizeof(mpir_communicator_t));
   communicators[0]->is_global = 1;
   communicators[0]->communicator_id = MPI_COMM_WORLD;
+  communicators[0]->size = global_size;
   available_communicators = tbx_slist_nil();
   for(i=MPI_COMM_WORLD+1 ; i<=NUMBER_OF_COMMUNICATORS ; i++) {
     int *ptr = malloc(sizeof(int));
@@ -406,7 +407,7 @@ int mpir_op_free(MPI_Op *op) {
     ptr = malloc(sizeof(int));
     *ptr = *op;
     tbx_slist_enqueue(available_functions, ptr);
-    return MPI_SUCCESS; 
+    return MPI_SUCCESS;
   }
 }
 
@@ -541,6 +542,22 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
+mpir_communicator_t *get_communicator(MPI_Comm comm) {
+  if (comm <= NUMBER_OF_COMMUNICATORS) {
+    if (communicators[comm-MPI_COMM_WORLD] == NULL) {
+      ERROR("Communicator %d invalid", comm);
+      return NULL;
+    }
+    else {
+      return communicators[comm-MPI_COMM_WORLD];
+    }
+  }
+  else {
+    ERROR("Communicator %d unknown", comm);
+    return NULL;
+  }
+}
+
 int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
   if (tbx_slist_is_nil(available_communicators) == tbx_true) {
     ERROR("Maximum number of communicators created");
@@ -558,6 +575,7 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
     communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
     communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
     communicators[*newcomm - MPI_COMM_WORLD]->is_global = 1;
+    communicators[*newcomm - MPI_COMM_WORLD]->size = communicators[comm - MPI_COMM_WORLD]->size;
 
     return MPI_SUCCESS;
   }
@@ -579,28 +597,18 @@ int mpir_comm_free(MPI_Comm *comm) {
     ptr = malloc(sizeof(int));
     *ptr = *comm;
     tbx_slist_enqueue(available_communicators, ptr);
-    return MPI_SUCCESS; 
+    return MPI_SUCCESS;
   }
 }
 
 __inline__
-int mpir_is_comm_valid(MPI_Comm comm) {
-  if (comm > NUMBER_OF_COMMUNICATORS || communicators[comm-MPI_COMM_WORLD] == NULL) {
-    return 0;
-  }
-  else {
-    return (communicators[comm-MPI_COMM_WORLD]->is_global == 1);
-  }
-}
-
-__inline__
-int mpir_project_comm_and_tag(MPI_Comm comm, int tag) {
+int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
   /*
    * NewMadeleine only allows us 7 bits!
    * We suppose that comm is represented on 3 bits and tag on 4 bits.
    * We stick both of them into a new 7-bits representation
    */
-  int newtag = (comm-MPI_COMM_WORLD) << 4;
+  int newtag = (mpir_communicator->communicator_id-MPI_COMM_WORLD) << 4;
   newtag += tag;
   return newtag;
 }
@@ -616,7 +624,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
   MPI_Comm_rank(comm, &process_rank);
   MPI_Comm_size(comm, &global_size);
   int tag = 49;
-  
+
   if (process_rank == 0) {
     // 1st phase
     int global_nb_incoming_msg = 0;

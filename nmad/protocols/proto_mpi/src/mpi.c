@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
-static int                     global_size	= -1;
 static int                     process_rank	= -1;
 static struct nm_so_interface *p_so_sr_if;
 static nm_so_pack_interface    p_so_pack_if;
@@ -475,7 +474,7 @@ int MPI_Init(int *argc,
   p_mad_channel_t                  channel    = NULL;
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
-
+  int                              global_size;
 
   MPI_NMAD_LOG_IN();
 
@@ -489,9 +488,9 @@ int MPI_Init(int *argc,
    * Check size of opaque type MPI_Request is the same as the size of
    * our internal request type
    */
-  MPI_NMAD_TRACE("sizeof(struct MPI_Request_s) = %ld\n", (unsigned long)sizeof(struct MPI_Request_s));
+  MPI_NMAD_TRACE("sizeof(mpir_request_t) = %ld\n", (unsigned long)sizeof(mpir_request_t));
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (unsigned long)sizeof(MPI_Request));
-  assert(sizeof(struct MPI_Request_s) <= sizeof(MPI_Request));
+  assert(sizeof(mpir_request_t) <= sizeof(MPI_Request));
 
   /*
    * Reference to the session information object
@@ -519,7 +518,7 @@ int MPI_Init(int *argc,
   /*
    * Internal initialisation
    */
-  internal_init();
+  internal_init(global_size);
 
   /*
    * Store the gate id of all the other processes
@@ -545,7 +544,7 @@ int MPI_Init(int *argc,
 
     connection = tbx_darray_get(channel->out_connection_darray, dest);
     if (!connection) {
-      fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
+      NM_DISPF("Cannot find a connection between %d and %d", process_rank, dest);
     }
     else {
       MPI_NMAD_TRACE("Connection out: %p\n", connection);
@@ -561,7 +560,7 @@ int MPI_Init(int *argc,
 
     connection =  tbx_darray_get(channel->in_connection_darray, source);
     if (!connection) {
-      fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
+      NM_DISPF("Cannot find a in connection between %d and %d", process_rank, source);
     }
     else {
       MPI_NMAD_TRACE("Connection in: %p\n", connection);
@@ -625,11 +624,6 @@ int MPI_Finalize(void) {
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
   MPI_NMAD_LOG_IN();
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
 
   free(out_gate_id);
   free(in_gate_id);
@@ -651,13 +645,8 @@ int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
-
-  *size = global_size;
+  mpir_communicator_t *mpir_communicator = get_communicator(comm);
+  *size = mpir_communicator->size;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
@@ -669,12 +658,6 @@ int MPI_Comm_size(MPI_Comm comm,
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
   MPI_NMAD_LOG_IN();
-
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
 
   *rank = process_rank;
   MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
@@ -710,83 +693,82 @@ int mpi_inline_isend(void *buffer,
                      int dest,
                      int tag,
                      MPI_Communication_Mode communication_mode,
-                     MPI_Comm comm,
-                     MPI_Request *request) {
+                     mpir_communicator_t *mpir_communicator,
+                     mpir_request_t *mpir_request) {
   long                  gate_id;
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
   int                   seq, probe;
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
   gate_id = out_gate_id[dest];
 
-  mpir_datatype = get_datatype(_request->request_datatype);
+  mpir_datatype = get_datatype(mpir_request->request_datatype);
   mpir_datatype->active_communications ++;
-  _request->request_tag = mpir_project_comm_and_tag(comm, tag);
-  _request->user_tag = tag;
+  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, tag);
+  mpir_request->user_tag = tag;
 
-  if (tbx_unlikely(_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", _request->request_tag, comm, tag, NM_SO_MAX_TAGS);
+  if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
+    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, tag, NM_SO_MAX_TAGS);
     return 1;
   }
 
-  seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, _request->request_tag);
+  seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-    probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
+    probe = nm_so_sr_stest_range(p_so_sr_if, gate_id, mpir_request->request_tag, seq-1, 1);
     if (probe == -NM_EAGAIN) {
       MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
-      nm_so_sr_swait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
+      nm_so_sr_swait_range(p_so_sr_if, gate_id, mpir_request->request_tag, 0, seq-1);
       MPI_NMAD_TRACE("Automatic flushing over");
     }
   }
 
-  _request->request_ptr = NULL;
-  _request->contig_buffer = NULL;
-  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, _request->request_tag, comm, tag);
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", _request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %lu (%d*%lu)\n", mpir_request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
     MPI_NMAD_TRANSFER("Sent (contig) --> %d, %ld : %lu bytes\n", dest, gate_id, (unsigned long)count * mpir_datatype->size);
     if (communication_mode == MPI_IMMEDIATE_MODE) {
-      err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
+      err = nm_so_sr_isend(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
     }
     else if (communication_mode == MPI_READY_MODE) {
-      err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
+      err = nm_so_sr_rsend(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
     }
     else {
-      seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, _request->request_tag);
+      seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
       if (seq == NM_SO_PENDING_PACKS_WINDOW-2) {
         MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, MPI_IS_COMPLETED, &(_request->request_nmad));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, MPI_IS_COMPLETED, &(mpir_request->request_nmad));
       }
       else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, communication_mode, &(_request->request_nmad));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, communication_mode, &(mpir_request->request_nmad));
       }
     }
     MPI_NMAD_TRANSFER("Sent finished\n");
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     int               i, j;
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %lu\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (unsigned long)mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, _request->request_tag, connection);
+    nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
     for(i=0 ; i<count ; i++) {
       for(j=0 ; j<mpir_datatype->elements ; j++) {
         nm_so_pack(connection, ptr, mpir_datatype->block_size);
         ptr += mpir_datatype->stride;
       }
     }
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_SEND;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     int               i, j;
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %lu\n", mpir_datatype->elements, (unsigned long)mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, _request->request_tag, connection);
+    nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
     for(i=0 ; i<count ; i++) {
       ptr = buffer + i * mpir_datatype->size;
       MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, (unsigned long)i*mpir_datatype->size);
@@ -796,16 +778,16 @@ int mpi_inline_isend(void *buffer,
         ptr -= mpir_datatype->indices[j];
       }
     }
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_SEND;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
     if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(_request->request_cnx);
+      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
       int               i, j;
       void             *ptr = buffer;
 
       MPI_NMAD_TRACE("Sending struct type: size %lu\n", (unsigned long)mpir_datatype->size);
-      nm_so_begin_packing(p_so_pack_if, gate_id, _request->request_tag, connection);
+      nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
       for(i=0 ; i<count ; i++) {
         ptr = buffer + i * mpir_datatype->extent;
         MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, (unsigned long)i*mpir_datatype->extent);
@@ -816,7 +798,7 @@ int mpi_inline_isend(void *buffer,
           ptr -= mpir_datatype->indices[j];
         }
       }
-      if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_SEND;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
     }
     else {
       void *newptr, *ptr;
@@ -825,13 +807,13 @@ int mpi_inline_isend(void *buffer,
 
       MPI_NMAD_TRACE("Sending struct datatype in a contiguous buffer\n");
       len = count * mpir_datatype->size;
-      _request->contig_buffer = malloc(len);
-      if (_request->contig_buffer == NULL) {
+      mpir_request->contig_buffer = malloc(len);
+      if (mpir_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %lu to send struct datatype\n", (unsigned long)len);
         return  -1;
       }
 
-      newptr = _request->contig_buffer;
+      newptr = mpir_request->contig_buffer;
       for(i=0 ; i<count ; i++) {
         ptr = buffer + i * mpir_datatype->extent;
         MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, (unsigned long)i*mpir_datatype->extent);
@@ -843,23 +825,23 @@ int mpi_inline_isend(void *buffer,
           ptr -= mpir_datatype->indices[j];
         }
       }
-      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", _request->contig_buffer, (unsigned long)len, count, (unsigned long)mpir_datatype->size);
+      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %lu (%d*%lu)\n", mpir_request->contig_buffer, (unsigned long)len, count, (unsigned long)mpir_datatype->size);
       MPI_NMAD_TRANSFER("Sent (struct) --> %d, %ld: %lu bytes\n", dest, gate_id, (unsigned long)count * mpir_datatype->size);
       if (communication_mode == MPI_IMMEDIATE_MODE) {
-        err = nm_so_sr_isend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_nmad));
+        err = nm_so_sr_isend(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
       }
       else if (communication_mode == MPI_READY_MODE) {
-        err = nm_so_sr_rsend(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, &(_request->request_nmad));
+        err = nm_so_sr_rsend(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
       }
       else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, _request->request_tag, _request->contig_buffer, len, communication_mode, &(_request->request_nmad));
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, communication_mode, &(mpir_request->request_nmad));
       }
       MPI_NMAD_TRANSFER("Sent (struct) finished\n");
-      if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_SEND;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
     }
   }
   else {
-    ERROR("Do not know how to send datatype %d\n", _request->request_datatype);
+    ERROR("Do not know how to send datatype %d\n", mpir_request->request_datatype);
     return -1;
   }
 
@@ -878,33 +860,30 @@ int MPI_Esend(void *buffer,
               MPI_Communication_Mode is_completed,
               MPI_Comm comm,
               MPI_Request *request) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_communicator_t  *mpir_communicator;
   int err;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Esending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     MPI_NMAD_LOG_OUT();
     return not_implemented("Using MPI_ANY_TAG");
   }
 
-  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
-    fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
+  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[dest] == -1)) {
+    NM_DISPF("Cannot find a connection between %d and %d\n", process_rank, dest);
     MPI_NMAD_LOG_OUT();
     return 1;
   }
 
-  _request->request_type = MPI_REQUEST_SEND;
-  _request->request_ptr = NULL;
-  _request->contig_buffer = NULL;
-  _request->request_datatype = datatype;
-  err = mpi_inline_isend(buffer, count, dest, tag, is_completed, comm, request);
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  err = mpi_inline_isend(buffer, count, dest, tag, is_completed, mpir_communicator, mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -922,27 +901,24 @@ int MPI_Send(void *buffer,
              MPI_Comm comm) {
   MPI_Request           request;
   MPI_Request          *request_ptr = &request;
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
+  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_communicator_t  *mpir_communicator;
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Sending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     MPI_NMAD_LOG_OUT();
     return not_implemented("Using MPI_ANY_TAG");
   }
 
-  _request->request_type = MPI_REQUEST_SEND;
-  _request->request_ptr = NULL;
-  _request->contig_buffer = NULL;
-  _request->request_datatype = datatype;
-  mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, comm, &request);
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request);
 
   MPI_Wait(&request, NULL);
 
@@ -960,33 +936,30 @@ int MPI_Isend(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_communicator_t  *mpir_communicator;
   int err;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     MPI_NMAD_LOG_OUT();
     return not_implemented("Using MPI_ANY_TAG");
   }
 
-  if (tbx_unlikely(dest >= global_size || out_gate_id[dest] == -1)) {
+  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[dest] == -1)) {
     fprintf(stderr, "Cannot find a connection between %d and %d\n", process_rank, dest);
     MPI_NMAD_LOG_OUT();
     return 1;
   }
 
-  _request->request_type = MPI_REQUEST_SEND;
-  _request->request_ptr = NULL;
-  _request->contig_buffer = NULL;
-  _request->request_datatype = datatype;
-  err = mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, comm, request);
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  err = mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1003,27 +976,24 @@ int MPI_Rsend(void* buffer,
               MPI_Comm comm) {
   MPI_Request           request;
   MPI_Request          *request_ptr = &request;
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
+  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_communicator_t  *mpir_communicator;
   int                   err = 0;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Rsending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     MPI_NMAD_LOG_OUT();
     return not_implemented("Using MPI_ANY_TAG");
   }
 
-  _request->request_type = MPI_REQUEST_SEND;
-  _request->request_ptr = NULL;
-  _request->contig_buffer = NULL;
-  _request->request_datatype = datatype;
-  mpi_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, comm, &request);
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  mpi_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1031,20 +1001,20 @@ int MPI_Rsend(void* buffer,
 
 __inline__
 void mpi_set_status(MPI_Request *request, MPI_Status*status) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
 
-  status->MPI_TAG = _request->user_tag;
-  status->MPI_ERROR = _request->request_error;
+  status->MPI_TAG = mpir_request->user_tag;
+  status->MPI_ERROR = mpir_request->request_error;
 
-  status->count = sizeof_datatype(_request->request_datatype);
+  status->count = sizeof_datatype(mpir_request->request_datatype);
 
-  if (_request->request_source == MPI_ANY_SOURCE) {
+  if (mpir_request->request_source == MPI_ANY_SOURCE) {
     long gate_id;
-    nm_so_sr_recv_source(p_so_sr_if, _request->request_nmad, &gate_id);
+    nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
     status->MPI_SOURCE = in_dest[gate_id];
   }
   else {
-    status->MPI_SOURCE = _request->request_source;
+    status->MPI_SOURCE = mpir_request->request_source;
   }
 }
 
@@ -1053,12 +1023,11 @@ int mpi_inline_irecv(void* buffer,
                      int count,
                      int source,
                      int tag,
-                     MPI_Comm comm,
-                     MPI_Request *request) {
+                     mpir_communicator_t *mpir_communicator,
+                     mpir_request_t *mpir_request) {
   long                  gate_id;
   int                   seq, probe;
   mpir_datatype_t      *mpir_datatype = NULL;
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
 
   MPI_NMAD_LOG_IN();
 
@@ -1066,7 +1035,7 @@ int mpi_inline_irecv(void* buffer,
     gate_id = NM_SO_ANY_SRC;
   }
   else {
-    if (tbx_unlikely(source >= global_size || in_gate_id[source] == -1)){
+    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[source] == -1)){
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
       MPI_NMAD_LOG_OUT();
       return 1;
@@ -1075,105 +1044,105 @@ int mpi_inline_irecv(void* buffer,
     gate_id = in_gate_id[source];
   }
 
-  mpir_datatype = get_datatype(_request->request_datatype);
+  mpir_datatype = get_datatype(mpir_request->request_datatype);
   mpir_datatype->active_communications ++;
-  _request->request_tag = mpir_project_comm_and_tag(comm, tag);
-  _request->user_tag = tag;
-  _request->request_source = source;
+  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, tag);
+  mpir_request->user_tag = tag;
+  mpir_request->request_source = source;
 
-  if (tbx_unlikely(_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", _request->request_tag, comm, tag, NM_SO_MAX_TAGS);
+  if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
+    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, tag, NM_SO_MAX_TAGS);
     MPI_NMAD_LOG_OUT();
     return 1;
   }
 
   if (source != MPI_ANY_SOURCE) {
-    seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, _request->request_tag);
+    seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
     if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-      probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, _request->request_tag, seq-1, 1);
+      probe = nm_so_sr_rtest_range(p_so_sr_if, gate_id, mpir_request->request_tag, seq-1, 1);
       if (probe == -NM_EAGAIN) {
 	MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
-	nm_so_sr_rwait_range(p_so_sr_if, gate_id, _request->request_tag, 0, seq-1);
+	nm_so_sr_rwait_range(p_so_sr_if, gate_id, mpir_request->request_tag, 0, seq-1);
 	MPI_NMAD_TRACE("Automatic flushing over");
       }
     }
   }
 
-  _request->request_ptr = NULL;
+  mpir_request->request_ptr = NULL;
 
-  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, _request->request_tag, comm, tag);
+  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, mpir_request->request_tag, mpir_communicator->communicator_id, tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", _request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %lu (%d*%lu)\n", mpir_request->request_datatype, buffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
     MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * mpir_datatype->size);
-    _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, buffer, count * mpir_datatype->size, &(_request->request_nmad));
-    MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(_request->request_nmad));
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_RECV;
+    mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
+    MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(mpir_request->request_nmad));
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     int               i, j, k=0;
 
     MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %lu\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (unsigned long)mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, _request->request_tag, connection);
-    _request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
-    _request->request_ptr[0] = buffer;
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
+    mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+    mpir_request->request_ptr[0] = buffer;
     for(i=0 ; i<count ; i++) {
       for(j=0 ; j<mpir_datatype->elements ; j++) {
-        nm_so_unpack(connection, _request->request_ptr[k], mpir_datatype->block_size);
+        nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->block_size);
         k++;
-        _request->request_ptr[k] = _request->request_ptr[k-1] + mpir_datatype->block_size;
+        mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->block_size;
       }
     }
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_RECV;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     int               i, j, k=0;
 
     MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %lu\n", mpir_datatype->elements, (unsigned long)mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, _request->request_tag, connection);
-    _request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
-    _request->request_ptr[0] = buffer;
+    nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
+    mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+    mpir_request->request_ptr[0] = buffer;
     for(i=0 ; i<count ; i++) {
       for(j=0 ; j<mpir_datatype->elements ; j++) {
-        nm_so_unpack(connection, _request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+        nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_size);
         k++;
-        _request->request_ptr[k] = _request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_size;
+        mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_size;
       }
     }
-    if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_RECV;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
     if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(_request->request_cnx);
+      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
       int               i, j, k=0;
 
       MPI_NMAD_TRACE("Receiving struct type: size %lu\n", (unsigned long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, gate_id, _request->request_tag, connection);
-      _request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+      nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
+      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
       for(i=0 ; i<count ; i++) {
-        _request->request_ptr[k] = buffer + i*mpir_datatype->size;
+        mpir_request->request_ptr[k] = buffer + i*mpir_datatype->size;
         for(j=0 ; j<mpir_datatype->elements ; j++) {
-          _request->request_ptr[k] += mpir_datatype->indices[j];
-          nm_so_unpack(connection, _request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
+          mpir_request->request_ptr[k] += mpir_datatype->indices[j];
+          nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
           k++;
-          _request->request_ptr[k] = _request->request_ptr[k-1] - mpir_datatype->indices[j];
+          mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] - mpir_datatype->indices[j];
         }
       }
-      if (_request->request_type != MPI_REQUEST_ZERO) _request->request_type = MPI_REQUEST_PACK_RECV;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
     }
     else {
       void *recvbuffer = NULL, *recvptr, *ptr;
       int   i, j;
 
       recvbuffer = malloc(count * mpir_datatype->size);
-      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", _request->request_datatype, recvbuffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
+      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %lu (%d*%lu)\n", mpir_request->request_datatype, recvbuffer, (unsigned long)count*mpir_datatype->size, count, (unsigned long)mpir_datatype->size);
       MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %lu bytes\n", gate_id, (unsigned long)count * mpir_datatype->size);
-      _request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, _request->request_tag, recvbuffer, count * mpir_datatype->size, &(_request->request_nmad));
+      mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
       MPI_NMAD_TRANSFER("Recv (struct) finished\n");
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (struct)\n");
-      nm_so_sr_rwait(p_so_sr_if, _request->request_nmad);
+      nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
       recvptr = recvbuffer;
@@ -1190,11 +1159,11 @@ int mpi_inline_irecv(void* buffer,
         }
       }
       free(recvbuffer);
-      _request->request_type = MPI_REQUEST_ZERO;
+      mpir_request->request_type = MPI_REQUEST_ZERO;
     }
   }
   else {
-    ERROR("Do not know how to receive datatype %d\n", _request->request_datatype);
+    ERROR("Do not know how to receive datatype %d\n", mpir_request->request_datatype);
     MPI_NMAD_LOG_OUT();
     return -1;
   }
@@ -1202,7 +1171,7 @@ int mpi_inline_irecv(void* buffer,
   inc_nb_incoming_msg();
   MPI_NMAD_TRACE("Irecv completed\n");
   MPI_NMAD_LOG_OUT();
-  return _request->request_error;
+  return mpir_request->request_error;
 }
 
 /**
@@ -1217,29 +1186,25 @@ int MPI_Recv(void *buffer,
              MPI_Status *status) {
   MPI_Request           request;
   MPI_Request          *request_ptr = &request;
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request_ptr;
+  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_communicator_t  *mpir_communicator;
   int                  err = 0;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d, count %d\n", source, datatype, tag, count);
   MPI_NMAD_TIMER_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_TIMER_OUT();
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
       MPI_NMAD_TIMER_OUT();
       MPI_NMAD_LOG_OUT();
       return not_implemented("Using MPI_ANY_TAG");
   }
 
-  _request->request_ptr = NULL;
-  _request->request_type = MPI_REQUEST_RECV;
-  _request->request_datatype = datatype;
-  mpi_inline_irecv(buffer, count, source, tag, comm, &request);
+  mpir_request->request_ptr = NULL;
+  mpir_request->request_type = MPI_REQUEST_RECV;
+  mpir_request->request_datatype = datatype;
+  mpi_inline_irecv(buffer, count, source, tag, mpir_communicator, mpir_request);
 
   MPI_Wait(&request, status);
 
@@ -1258,26 +1223,23 @@ int MPI_Irecv(void* buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_communicator_t *mpir_communicator;
   int err;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Ireceiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
       MPI_NMAD_LOG_OUT();
       return not_implemented("Using MPI_ANY_TAG");
   }
 
-  _request->request_ptr = NULL;
-  _request->request_type = MPI_REQUEST_RECV;
-  _request->request_datatype = datatype;
-  err = mpi_inline_irecv(buffer, count, source, tag, comm, request);
+  mpir_request->request_ptr = NULL;
+  mpir_request->request_type = MPI_REQUEST_RECV;
+  mpir_request->request_datatype = datatype;
+  err = mpi_inline_irecv(buffer, count, source, tag, mpir_communicator, mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1288,45 +1250,45 @@ int MPI_Irecv(void* buffer,
  */
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
   int                   err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Waiting for a request %d\n", _request->request_type);
-  if (_request->request_type == MPI_REQUEST_RECV) {
+  MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
+  if (mpir_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(_request->request_nmad));
-    err = nm_so_sr_rwait(p_so_sr_if, _request->request_nmad);
+    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
+    err = nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
   }
-  else if (_request->request_type == MPI_REQUEST_SEND) {
+  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
     MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
-    err = nm_so_sr_swait(p_so_sr_if, _request->request_nmad);
+    err = nm_so_sr_swait(p_so_sr_if, mpir_request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
-    if (_request->contig_buffer != NULL) {
-      free(_request->contig_buffer);
+    if (mpir_request->contig_buffer != NULL) {
+      free(mpir_request->contig_buffer);
     }
   }
-  else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
     err = nm_so_end_unpacking(connection);
     MPI_NMAD_TRANSFER("Returning from nm_so_end_unpacking\n");
   }
-  else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     MPI_NMAD_TRACE("Waiting for completion end_packing\n");
     err = nm_so_end_packing(connection);
   }
   else {
-    MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", _request->request_type);
+    MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
   }
   MPI_NMAD_TRACE("Wait completed\n");
 
-  _request->request_type = MPI_REQUEST_ZERO;
-  if (_request->request_ptr != NULL) {
-    free(_request->request_ptr);
+  mpir_request->request_type = MPI_REQUEST_ZERO;
+  if (mpir_request->request_ptr != NULL) {
+    free(mpir_request->request_ptr);
   }
 
   if (status != NULL) {
@@ -1334,8 +1296,8 @@ int MPI_Wait(MPI_Request *request,
   }
 
   // Release one active communication for that type
-  if (_request->request_datatype > MPI_INTEGER) {
-    mpir_type_unlock(_request->request_datatype);
+  if (mpir_request->request_datatype > MPI_INTEGER) {
+    mpir_type_unlock(mpir_request->request_datatype);
   }
 
   MPI_NMAD_TRACE("Request completed\n");
@@ -1378,29 +1340,29 @@ MPI_Waitall(int count,
 int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
-  struct MPI_Request_s *_request = (struct MPI_Request_s *)request;
-  int                   err = NM_ESUCCESS;
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  int             err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
 
-  if (_request->request_type == MPI_REQUEST_RECV) {
-    err = nm_so_sr_rtest(p_so_sr_if, _request->request_nmad);
+  if (mpir_request->request_type == MPI_REQUEST_RECV) {
+    err = nm_so_sr_rtest(p_so_sr_if, mpir_request->request_nmad);
   }
-  else if (_request->request_type == MPI_REQUEST_SEND) {
-    err = nm_so_sr_stest(p_so_sr_if, _request->request_nmad);
+  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
+    err = nm_so_sr_stest(p_so_sr_if, mpir_request->request_nmad);
   }
-  else if (_request->request_type == MPI_REQUEST_PACK_RECV) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     err = nm_so_test_end_unpacking(connection);
   }
-  else if (_request->request_type == MPI_REQUEST_PACK_SEND) {
-    struct nm_so_cnx *connection = &(_request->request_cnx);
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     err = nm_so_test_end_packing(connection);
   }
 
   if (err == NM_ESUCCESS) {
     *flag = 1;
-    _request->request_type = MPI_REQUEST_ZERO;
+    mpir_request->request_type = MPI_REQUEST_ZERO;
 
     if (status != NULL) {
       mpi_set_status(request, status);
@@ -1452,14 +1414,11 @@ int MPI_Iprobe(int source,
                MPI_Status *status) {
   int err      = 0;
   long gate_id, out_gate_id;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
   if (tag == MPI_ANY_TAG) {
       MPI_NMAD_LOG_OUT();
       return not_implemented("Using MPI_ANY_TAG");
@@ -1469,7 +1428,7 @@ int MPI_Iprobe(int source,
     gate_id = NM_SO_ANY_SRC;
   }
   else {
-    if (source >= global_size || in_gate_id[source] == -1) {
+    if (source >= mpir_communicator->size || in_gate_id[source] == -1) {
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", process_rank, source);
       MPI_NMAD_LOG_OUT();
       return 1;
@@ -1507,16 +1466,6 @@ int MPI_Probe(int source,
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
-  if (tag == MPI_ANY_TAG) {
-    MPI_NMAD_LOG_OUT();
-    return not_implemented("Using MPI_ANY_TAG");
-  }
-
   err = MPI_Iprobe(source, tag, comm, &flag, status);
   while (flag != 1) {
     err = MPI_Iprobe(source, tag, comm, &flag, status);
@@ -1539,16 +1488,16 @@ int MPI_Get_count(MPI_Status *status,
 }
 
 int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2) {
-  struct MPI_Request_s *_request1 = (struct MPI_Request_s *)(&request1);
-  struct MPI_Request_s *_request2 = (struct MPI_Request_s *)(&request2);
-  if (_request1->request_type == MPI_REQUEST_ZERO) {
-    return (_request1->request_type == _request2->request_type);
+  mpir_request_t *mpir_request1 = (mpir_request_t *)(&request1);
+  mpir_request_t *mpir_request2 = (mpir_request_t *)(&request2);
+  if (mpir_request1->request_type == MPI_REQUEST_ZERO) {
+    return (mpir_request1->request_type == mpir_request2->request_type);
   }
-  else if (_request2->request_type == MPI_REQUEST_ZERO) {
-    return (_request1->request_type == _request2->request_type);
+  else if (mpir_request2->request_type == MPI_REQUEST_ZERO) {
+    return (mpir_request1->request_type == mpir_request2->request_type);
   }
   else {
-    return (_request1->request_nmad == _request2->request_nmad);
+    return (mpir_request1->request_nmad == mpir_request2->request_nmad);
   }
 }
 
@@ -1559,12 +1508,6 @@ int MPI_Barrier(MPI_Comm comm) {
   tbx_bool_t termination;
 
   MPI_NMAD_LOG_IN();
-
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
 
   termination = test_termination(comm);
   MPI_NMAD_TRACE("Result %d\n", termination);
@@ -1588,21 +1531,18 @@ int MPI_Bcast(void* buffer,
               MPI_Comm comm) {
   int tag = 1;
   int err = NM_ESUCCESS;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
 
   MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   if (process_rank == root) {
     MPI_Request *requests;
     int i, err;
-    requests = malloc(global_size * sizeof(MPI_Request));
-    for(i=0 ; i<global_size ; i++) {
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
       err = MPI_Isend(buffer, count, datatype, i, tag, comm, &requests[i]);
       if (err != 0) {
@@ -1610,7 +1550,7 @@ int MPI_Bcast(void* buffer,
         return err;
       }
     }
-    for(i=0 ; i<global_size ; i++) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
       err = MPI_Wait(&requests[i], NULL);
       if (err != 0) {
@@ -1644,31 +1584,28 @@ int MPI_Gather(void *sendbuf,
                int root,
                MPI_Comm comm) {
   int tag = 2;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
 
   if (process_rank == root) {
     MPI_Request *requests;
     int i, err;
     mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
 
-    requests = malloc(global_size * sizeof(MPI_Request));
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
     mpir_recv_datatype = get_datatype(recvtype);
     mpir_send_datatype = get_datatype(sendtype);
 
     // receive data from other processes
-    for(i=0 ; i<global_size; i++) {
+    for(i=0 ; i<mpir_communicator->size; i++) {
       if(i == root) continue;
       MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
                 recvcount, recvtype, i, tag, comm, &requests[i]);
     }
-    for(i=0 ; i<global_size ; i++) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
       err = MPI_Wait(&requests[i], NULL);
     }
@@ -1698,19 +1635,16 @@ int MPI_Allgather(void *sendbuf,
                   MPI_Datatype recvtype,
                   MPI_Comm comm) {
   int err;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
+  mpir_communicator = get_communicator(comm);
 
   MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, recvcount*global_size, recvtype, 0, comm);
+  err = MPI_Bcast(recvbuf, recvcount*mpir_communicator->size, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -1730,22 +1664,18 @@ int MPI_Alltoall(void* sendbuf,
   int i;
   MPI_Request *send_requests, *recv_requests;
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
-
-  send_requests = malloc(global_size * sizeof(MPI_Request));
-  recv_requests = malloc(global_size * sizeof(MPI_Request));
+  mpir_communicator = get_communicator(comm);
+  send_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+  recv_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
   mpir_send_datatype = get_datatype(sendtype);
   mpir_recv_datatype = get_datatype(recvtype);
 
-  for(i=0 ; i<global_size; i++) {
+  for(i=0 ; i<mpir_communicator->size; i++) {
     if(i == process_rank)
       memcpy(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
 	     sendbuf + (i * sendcount * mpir_send_datatype->extent),
@@ -1765,7 +1695,7 @@ int MPI_Alltoall(void* sendbuf,
       }
   }
 
-  for(i=0 ; i<global_size ; i++) {
+  for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == process_rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
@@ -1795,22 +1725,18 @@ int MPI_Alltoallv(void* sendbuf,
   int i;
   MPI_Request *send_requests, *recv_requests;
   mpir_datatype_t *mpir_send_datatype,*mpir_recv_datatype;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
-
-  send_requests = malloc(global_size * sizeof(MPI_Request));
-  recv_requests = malloc(global_size * sizeof(MPI_Request));
+  mpir_communicator = get_communicator(comm);
+  send_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+  recv_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
   mpir_send_datatype = get_datatype(sendtype);
   mpir_recv_datatype = get_datatype(recvtype);
 
-  for(i=0 ; i<global_size; i++) {
+  for(i=0 ; i<mpir_communicator->size; i++) {
     if(i == process_rank)
       memcpy(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
 	     sendbuf + (sdispls[i] * mpir_send_datatype->extent),
@@ -1830,7 +1756,7 @@ int MPI_Alltoallv(void* sendbuf,
       }
   }
 
-  for(i=0 ; i<global_size ; i++) {
+  for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == process_rank) continue;
     MPI_Wait(&recv_requests[i], NULL);
     MPI_Wait(&send_requests[i], NULL);
@@ -1885,15 +1811,11 @@ int MPI_Reduce(void* sendbuf,
                MPI_Comm comm) {
   int tag = 2;
   mpir_function_t *function;
+  mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
-
+  mpir_communicator = get_communicator(comm);
   function = mpir_get_function(op);
   if (function->function == NULL) {
     ERROR("Operation %d not implemented\n", op);
@@ -1906,27 +1828,27 @@ int MPI_Reduce(void* sendbuf,
     void **remote_sendbufs;
     MPI_Request *requests;
     int i;
-    remote_sendbufs = malloc(global_size * sizeof(void *));
-    requests = malloc(global_size * sizeof(MPI_Request));
-    for(i=0 ; i<global_size ; i++) {
+    remote_sendbufs = malloc(mpir_communicator->size * sizeof(void *));
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       remote_sendbufs[i] = malloc(count * sizeof_datatype(datatype));
       MPI_Irecv(remote_sendbufs[i], count, datatype, i, tag, comm, &requests[i]);
     }
-    for(i=0 ; i<global_size ; i++) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       MPI_Wait(&requests[i], NULL);
     }
 
     // Do the reduction operation
     memcpy(recvbuf, sendbuf, count*sizeof_datatype(datatype));
-    for(i=0 ; i<global_size ; i++) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       function->function(remote_sendbufs[i], recvbuf, &count, &datatype);
     }
 
     // Free memory
-    for(i=0 ; i<global_size ; i++) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       free(remote_sendbufs[i]);
     }
@@ -1958,12 +1880,6 @@ int MPI_Allreduce(void* sendbuf,
   int err;
 
   MPI_NMAD_LOG_IN();
-
-  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
-    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
-    MPI_NMAD_LOG_OUT();
-    return -1;
-  }
 
   MPI_Reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
 

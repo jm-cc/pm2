@@ -74,6 +74,7 @@ extern debug_type_t debug_mpi_nmad_log;
 typedef struct mpir_communicator_s {
   int communicator_id;
   int is_global;
+  int size;
 } mpir_communicator_t;
 
 typedef int MPI_Request_type;
@@ -83,7 +84,7 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 
-struct MPI_Request_s {
+typedef struct mpir_request_s {
   MPI_Request_type request_type;
   intptr_t request_nmad;
   struct nm_so_cnx request_cnx;
@@ -94,7 +95,7 @@ struct MPI_Request_s {
   int request_source;
   int request_error;
   MPI_Datatype request_datatype;
-};
+} mpir_request_t;
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
 
@@ -133,7 +134,7 @@ typedef struct mpir_datatype_s {
 
 int not_implemented(char *s);
 
-void internal_init();
+void internal_init(int global_size);
 
 void internal_exit();
 
@@ -200,15 +201,14 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
  * Communicator operations
  */
 
+mpir_communicator_t *get_communicator(MPI_Comm comm);
+
 int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 int mpir_comm_free(MPI_Comm *comm);
 
 __inline__
-int mpir_is_comm_valid(MPI_Comm comm);
-
-__inline__
-int mpir_project_comm_and_tag(MPI_Comm comm, int tag);
+int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag);
 
 /*
  * Termination functionalities

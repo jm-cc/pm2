@@ -718,25 +718,62 @@ gboolean isInside(zone *headZoneSelectionnee,zone *search)
 gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
  
-int i = 0;
-zone * tmpZoneSelectionnee,*derniereZoneSelectionnee,*tempo ;
+  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
+
+  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
+  
+  // Pour test 
+  iGaucheVarsTmp->mousePosClic_left_x =  iGaucheVarsTmp->mousePos_left_x;
+  iGaucheVarsTmp->mousePosClic_left_y =  iGaucheVarsTmp->mousePos_left_y;
+  iGaucheVarsTmp->mousePosClic_state = ev->state;
+
+
+return TRUE;
+}
+
+
+
+
+  
+/*!
+ *
+ * 
+ * pour cette fonction, le mieux serait de sauvegarder 
+ *  dans une structure les elements selectionnées 
+ */
+gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
+{
+  parcours *p, *pParent, *pAccueil;
+  widget = NULL;  // inutilisé
+  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
+  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
+  Element* elementSelectionne, * elementParent, * elementAccueil;
+  Bulle* bulleParent, * bulleAccueil;
+  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
+  
+  /* Mise à jour de iGaucheVarsTmp pour connaître les coordonnées du relâchement du clic */
+  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
+  clicX = iGaucheVarsTmp->mousePosClic_left_x;
+  clicY = iGaucheVarsTmp->mousePosClic_left_y;
+  lacheX = iGaucheVarsTmp->mousePos_left_x;
+  lacheY = iGaucheVarsTmp->mousePos_left_y;
+
+if(abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
+  int i = 0;
+  zone * tmpZoneSelectionnee,*derniereZoneSelectionnee,*tempo ;
 
   parcours *p;
-  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
   Element* elementSelectionne;
   char *tmp = malloc(20);
-  if (ev->state & GDK_CONTROL_MASK )
+  /* D�placement court -> s�lection */
+  if (iGaucheVarsTmp->mousePosClic_state & GDK_CONTROL_MASK )
   {      
   	
         //if(iGaucheVars->last != iGaucheVars->zonePrincipale && iGaucheVars->last!= NULL )
            //iGaucheVars->zoneSelectionnee = insertZoneSelected(iGaucheVars->zoneSelectionnee, iGaucheVars->last);
-  	iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
-  	iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
-  
-  	// Pour test 
-  	iGaucheVarsTmp->mousePosClic_left_x =  iGaucheVarsTmp->mousePos_left_x;
-  	iGaucheVarsTmp->mousePosClic_left_y =  iGaucheVarsTmp->mousePos_left_y;
-  	p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVarsTmp->mousePos_left_x, iGaucheVarsTmp->mousePos_left_y);
+	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX, clicY);
 
   	tmpZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
         if( tmpZoneSelectionnee == iGaucheVars->zonePrincipale ){
@@ -756,14 +793,7 @@ zone * tmpZoneSelectionnee,*derniereZoneSelectionnee,*tempo ;
     EffacerParcours(p);
   }
   else{
-  iGaucheVars->mousePos_left_x = (ev->x) / iGaucheVars->echelle;
-  iGaucheVars->mousePos_left_y = (iGaucheVars->area_left_y - ev->y) / iGaucheVars->echelle;
-
-  // Pour test 
-  iGaucheVars->mousePosClic_left_x =  iGaucheVars->mousePos_left_x;
-  iGaucheVars->mousePosClic_left_y =  iGaucheVars->mousePos_left_y;
-  
-  p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x,   iGaucheVars->mousePos_left_y);
+	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX,   clicY);
  
   derniereZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
    
@@ -846,38 +876,11 @@ while(tempo != NULL){
 #endif
 
 
-
-return TRUE;
+  return TRUE;
 }
 
+/* D�placement long -> d�placement/copie */
 
-
-
-  
-/*!
- *
- * 
- * pour cette fonction, le mieux serait de sauvegarder 
- *  dans une structure les elements selectionnées 
- */
-gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
-{
-  parcours *p, *pParent, *pAccueil;
-  widget = NULL;  // inutilisé
-  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
-  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
-  Element* elementSelectionne, * elementParent, * elementAccueil;
-  Bulle* bulleParent, * bulleAccueil;
-  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
-  
-  /* Mise à jour de iGaucheVarsTmp pour connaître les coordonnées du relâchement du clic */
-  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
-  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
-  clicX = iGaucheVarsTmp->mousePosClic_left_x;
-  clicY = iGaucheVarsTmp->mousePosClic_left_y;
-  lacheX = iGaucheVarsTmp->mousePos_left_x;
-  lacheY = iGaucheVarsTmp->mousePos_left_y;
-  if(clicX != lacheX && clicY != lacheY) {
   if(!isInside(iGaucheVars->head, iGaucheVars->last))
    iGaucheVars->head = insertZoneSelected(iGaucheVars->head, iGaucheVars->last);
   /* CALCUL DES ELEMENTS SELECTIONNES, PARENT ET ACCUEIL */
@@ -962,8 +965,8 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   
   
    wprintf(L"Zones différentes, déplacement possible.\n");
-  /* SI on appuie sur Shift, ça fait une copie, sinon un déplacement */
-  if (ev->state & GDK_SHIFT_MASK)
+   /* SI on appuie sur Control, ça fait une copie, sinon un déplacement */
+  if (ev->state & GDK_CONTROL_MASK)
     {
       Copier(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale,
 	     tmp->posX + 1, tmp->posY + 1,
@@ -984,7 +987,6 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   tmp=tmp->next;
 }
   enregistrerTmp(); /* pour l'historique */
-}
   return TRUE;
 }
 
@@ -1223,8 +1225,8 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   if (TestCopieDeplacement(iGaucheVars) == FALSE)
     return FALSE;
  
-  /* SI on appuie sur Shift, ça fait une copie, sinon un déplacement */
-  if (ev->state & GDK_SHIFT_MASK)
+  /* SI on appuie sur Control, ça fait une copie, sinon un déplacement */
+  if (ev->state & GDK_CONTROL_MASK)
     {
       Copier(iGaucheVars);
       /* printf("DEBUG : Mouse_move_left_release, Copier fait\n"); */

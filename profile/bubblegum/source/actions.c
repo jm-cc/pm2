@@ -140,7 +140,7 @@ void Aide(GtkWidget *widget, gpointer data)
 			"Ctrl+B | F4 : Ajouter une bulle\n"
 			"Ctrl+T | F5 : Ajouter un thread\n"
 			"Suppr : Supprimer l(es) élément(s) sélectionné(s)\n"
-			"Shift+souris : Copier l(es) élément(s) sélectionné(s)\n"
+			"Ctrl+souris : Copier l(es) élément(s) sélectionné(s)\n"
 			"Ctrl+Z : Annuler la dernière action\n"
 			"Ctrl+Y : Refaire la dernière action\n"
 			);

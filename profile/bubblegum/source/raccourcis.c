@@ -88,6 +88,9 @@ void Creer_raccourcis(GtkWidget* window, GtkWidget* pane)
    gtk_accel_group_connect(accel_group, GDK_Delete, 0, 0,
                            g_cclosure_new_swap(G_CALLBACK(deleteRec2), iGaucheVars, NULL));
    
+   gtk_accel_group_connect(accel_group, GDK_BackSpace, 0, 0,
+                           g_cclosure_new_swap(G_CALLBACK(deleteRec2), iGaucheVars, NULL));
+   
    gtk_accel_group_connect(accel_group,GDK_w,GDK_BUTTON_PRESS_MASK | 
 			   GDK_CONTROL_MASK, 0 ,
 			   g_cclosure_new_swap(G_CALLBACK(addThreadAutoOnOff), iGaucheVars, NULL));

@@ -164,17 +164,7 @@ void Aide(GtkWidget *widget, gpointer data)
  */ 
 void Nouveau(GtkWidget *widget, gpointer data)
 {
-  /* XXX: memleak !! */
-  /* utilisation de effacer ?*/
-  iGaucheVars->bullePrincipale = CreateBulle(1, 0);
-  iGaucheVars->zonePrincipale = iGaucheVars->zoneSelectionnee = CreerZone(0,0,200,100);
-  Rearanger(iGaucheVars->zonePrincipale);
-  /*Slelection Multiple*/
-  #if 1
-  iGaucheVars->head =  iGaucheVars->zonePrincipale;
-  iGaucheVars->head->next = NULL;
-  #endif
-  /*Fin*/
+  NouveauTmp(widget, data);
   /* Mise à jour valeurs pour l'historique */
   NumTmpMax = 0;
   NumTmp = 0;
@@ -202,6 +192,14 @@ void NouveauTmp(GtkWidget *widget, gpointer data)
   iGaucheVars->bullePrincipale = CreateBulle(1, 0);
   iGaucheVars->zonePrincipale = iGaucheVars->zoneSelectionnee = CreerZone(0,0,200,100);
   Rearanger(iGaucheVars->zonePrincipale);
+  /*Slelection Multiple*/
+  #if 1
+  iGaucheVars->zonePrincipale->next = NULL;
+  iGaucheVars->head =  iGaucheVars->zonePrincipale;
+  iGaucheVars->last =  iGaucheVars->zonePrincipale;
+  iGaucheVars->zoneSelectionnee =  iGaucheVars->zonePrincipale;
+  #endif
+  /*Fin*/
   
   return;
 }

@@ -422,6 +422,10 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
 
   iGaucheVars->zoneSelectionnee = zonePrincipale;
 
+  iGaucheVars->zonePrincipale->next = NULL;
+  iGaucheVars->head =  iGaucheVars->zonePrincipale;
+  iGaucheVars->last =  iGaucheVars->zonePrincipale;
+  iGaucheVars->zoneSelectionnee =  iGaucheVars->zonePrincipale;
 
   // on enfiche la drawing area dans la place qui reste dans notre partie du hpane
   gtk_box_pack_start(GTK_BOX(iGaucheVars->interfaceGauche), drawzone, TRUE, TRUE, 0);
@@ -749,15 +753,15 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
   else{
   if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale){
     printf("DEBUG : Selection de la zone principale\n");
+    iGaucheVarsTmp->zonePrincipale->next = NULL;
     iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->zonePrincipale;
-    iGaucheVarsTmp->zoneSelectionnee->next = NULL;
     iGaucheVarsTmp->head = iGaucheVarsTmp->zonePrincipale;
-    iGaucheVarsTmp->head->next = NULL;  
+    iGaucheVarsTmp->last = iGaucheVarsTmp->zonePrincipale;
+    return;
   } else {
+   ZoneCliquee->next = NULL;
    iGaucheVarsTmp->zoneSelectionnee = ZoneCliquee;
-   iGaucheVarsTmp->zoneSelectionnee->next = NULL;
    iGaucheVarsTmp->head = ZoneCliquee;
-   iGaucheVarsTmp->head->next = NULL;
    iGaucheVarsTmp->last = ZoneCliquee;
    elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }

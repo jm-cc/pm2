@@ -136,8 +136,6 @@ interfaceGaucheVars* interfaceGauche()
   iGaucheVars->idgeneral=0; // on initialise l'identification
   iGaucheVars->ThreadSelect=NULL; // aucun thread n est séléctionné au début
   iGaucheVars->BulleSelect=NULL; // aucune bulle n est séléctionnée au début
-  iGaucheVars->head=NULL; // rien n est séléctionnée au début
-  iGaucheVars->last=NULL; // rien n est séléctionnée au début
   iGaucheVars->defpriorite=1;
   iGaucheVars->defcharge=10;
   iGaucheVars->defprioritebulle=1;
@@ -366,10 +364,9 @@ void  deleteRec(GtkWidget* pWidget, gpointer data)
    Rearanger(iGaucheVars->zonePrincipale);
    zoneSeleceted = next;
  }
+  iGaucheVars->zonePrincipale->next = NULL;
   iGaucheVars->zoneSelectionnee = iGaucheVars->zonePrincipale;
-  iGaucheVars->zoneSelectionnee->next = NULL;
   iGaucheVars->head = iGaucheVars->zonePrincipale;
-  iGaucheVars->head->next = NULL;
   //enregistrerTmp();
   return;
 

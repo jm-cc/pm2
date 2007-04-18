@@ -1632,6 +1632,90 @@ int MPI_Bcast(void* buffer,
 }
 
 /**
+ * Each process sends the contents of its send buffer to the root
+ * process.
+ */
+int MPI_Gather(void *sendbuf,
+               int sendcount,
+               MPI_Datatype sendtype,
+               void *recvbuf,
+               int recvcount,
+               MPI_Datatype recvtype,
+               int root,
+               MPI_Comm comm) {
+  int tag = 2;
+
+  MPI_NMAD_LOG_IN();
+
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_LOG_OUT();
+    return -1;
+  }
+
+  if (process_rank == root) {
+    MPI_Request *requests;
+    int i, err;
+    mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
+
+    requests = malloc(global_size * sizeof(MPI_Request));
+    mpir_recv_datatype = get_datatype(recvtype);
+    mpir_send_datatype = get_datatype(sendtype);
+
+    // receive data from other processes
+    for(i=0 ; i<global_size; i++) {
+      if(i == root) continue;
+      MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
+                recvcount, recvtype, i, tag, comm, &requests[i]);
+    }
+    for(i=0 ; i<global_size ; i++) {
+      if (i==root) continue;
+      err = MPI_Wait(&requests[i], NULL);
+    }
+
+    // copy local data for itself
+    memcpy(recvbuf + (process_rank * mpir_recv_datatype->extent),
+           sendbuf, sendcount * mpir_send_datatype->extent);
+
+  }
+  else {
+    MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
+}
+
+/*
+ * MPI_ALLGATHER can be thought of as MPI_GATHER, except all processes
+ * receive the result.
+ */
+int MPI_Allgather(void *sendbuf,
+                  int sendcount,
+                  MPI_Datatype sendtype,
+                  void *recvbuf,
+                  int recvcount,
+                  MPI_Datatype recvtype,
+                  MPI_Comm comm) {
+  int err;
+
+  MPI_NMAD_LOG_IN();
+
+  if (tbx_unlikely(!(mpir_is_comm_valid(comm)))) {
+    ERROR("Communicator %d not valid (does not exist or is not global)\n", comm);
+    MPI_NMAD_LOG_OUT();
+    return -1;
+  }
+
+  MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
+
+  // Broadcast the result to all processes
+  err = MPI_Bcast(recvbuf, recvcount*global_size, recvtype, 0, comm);
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
  *
  */
 int MPI_Alltoall(void* sendbuf,
@@ -1663,8 +1747,8 @@ int MPI_Alltoall(void* sendbuf,
 
   for(i=0 ; i<global_size; i++) {
     if(i == process_rank)
-      memcpy(recvbuf + (i * mpir_recv_datatype->extent),
-	     sendbuf + (i * mpir_send_datatype->extent),
+      memcpy(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
+	     sendbuf + (i * sendcount * mpir_send_datatype->extent),
 	     sendcount * mpir_send_datatype->extent);
     else
       {

@@ -86,7 +86,8 @@ do_the_test()
     else
         sort_command="cat"
     fi
-    if grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | head -$nbl | $sort_command | diff -u /tmp/pm2test_${USER}_expected - ; then
+    grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | head -$nbl | $sort_command > /tmp/pm2test_${USER}_filtered
+    if diff -u /tmp/pm2test_${USER}_expected /tmp/pm2test_${USER}_filtered ; then
 	echo "Test ok!"
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"

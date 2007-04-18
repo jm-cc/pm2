@@ -12,7 +12,7 @@ xmlNodePtr creerThreadXml(Element * element);
 
 /* Sauvegarde */
 void parcourirBullesXml(Element * bulle, xmlNodePtr noeud);
-int enregistrerXml(const char* chemin);//, Element * racine);
+int enregistrerXml(const char* chemin, Element * racine);
 
 /* Chargement */
 void parcourirArbreXml(xmlNodePtr onode, Element * bulleAccueil, zone * z_conteneur);

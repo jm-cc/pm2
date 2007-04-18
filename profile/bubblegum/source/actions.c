@@ -319,7 +319,7 @@ void EnregistrerSous(GtkWidget *widget, gpointer data)
   if (strcmp(Chemin, "no path") == 0)
     return;
   else {
-    enregistrerXml(Chemin);
+    enregistrerXml(Chemin, iGaucheVars->bullePrincipale);
     
     /* met à jour le chemin dans iGaucheVars */
     sprintf(iGaucheVars->chemin, Chemin);
@@ -340,7 +340,7 @@ void Enregistrer(GtkWidget *widget, gpointer data)
   if (strcmp(iGaucheVars->chemin,"no path") == 0)
     EnregistrerSous(widget, data);
   else
-    enregistrerXml(iGaucheVars->chemin);
+    enregistrerXml(iGaucheVars->chemin, iGaucheVars->bullePrincipale);
   
 }
 

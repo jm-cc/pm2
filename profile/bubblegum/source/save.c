@@ -133,7 +133,7 @@ void parcourirBullesXml(Element * bulle, xmlNodePtr noeud) {
  * \param chemin endroit où va être sauvegarder le fichier généré.
  * \return 0 en fonctionnement correct et -1 en cas d'erreur. 
 */
-int enregistrerXml(const char* chemin) 
+int enregistrerXml(const char* chemin, Element *racine) 
 {
   /* initialisation de la structure */
   xmlDocPtr xmldoc;
@@ -144,7 +144,7 @@ int enregistrerXml(const char* chemin)
   xmlDocSetRootElement(xmldoc, root);
   
   /* parcours */
-  parcourirBullesXml(iGaucheVars->bullePrincipale, root);
+  parcourirBullesXml(racine, root);
   
   /* sauvegarde de l'arbre, 1 pour l'indentation */
   if(xmlSaveFormatFile(chemin, xmldoc, 1) == -1){

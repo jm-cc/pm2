@@ -102,7 +102,7 @@ void enregistrerTmp(void) {
   printf("DEBUG : Save %s\n", chemin);
   printf("DEBUG : NumTmp %d NumTmpMax %d\n", NumTmp, NumTmpMax);
 #endif
-  enregistrerXml(chemin);
+  enregistrerXml(chemin, iGaucheVars->bullePrincipale);
 }
 
 interfaceGaucheVars* interfaceGauche()

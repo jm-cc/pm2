@@ -379,18 +379,6 @@ again:
 }
 
 #section marcel_functions
-static __tbx_inline__ ma_holder_t *ma_this_holder_lock();
-#section marcel_inline
-static __tbx_inline__ ma_holder_t *ma_this_holder_lock() {
-	ma_holder_t *h;
-	ma_local_bh_disable();
-	h = ma_this_holder();
-	ma_holder_lock(h);
-
-	return h;
-}
-
-#section marcel_functions
 static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h);
 static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h);
 /** \brief Unlocks holder \e h */

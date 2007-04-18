@@ -113,6 +113,7 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	LOG_OUT();
 }
 
+/* TODO: use futex' new PRIVATE flag */
 void marcel_kthread_join(marcel_kthread_t * pid)
 {
 	LOG_IN();

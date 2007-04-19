@@ -575,6 +575,7 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
     return -1;
   }
   else {
+    int i;
     int *ptr = tbx_slist_extract(available_communicators);
     *newcomm = *ptr;
     free(ptr);
@@ -583,6 +584,10 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
     communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
     communicators[*newcomm - MPI_COMM_WORLD]->is_global = 1;
     communicators[*newcomm - MPI_COMM_WORLD]->size = communicators[comm - MPI_COMM_WORLD]->size;
+    communicators[*newcomm - MPI_COMM_WORLD]->global_ranks = malloc(communicators[*newcomm - MPI_COMM_WORLD]->size * sizeof(int));
+    for(i=0 ; i<communicators[*newcomm - MPI_COMM_WORLD]->size ; i++) {
+      communicators[*newcomm - MPI_COMM_WORLD]->global_ranks[i] = communicators[comm - MPI_COMM_WORLD]->global_ranks[i];
+    }
 
     return MPI_SUCCESS;
   }

@@ -135,10 +135,12 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"CC\t=\t$(shell pm2-config --cc)\n");
    fprintf(fw,"CFLAGS\t=\t$(shell pm2-config --cflags)\n");
    fprintf(fw,"LIBS\t=\t$(shell pm2-config --libs)\n\n");
+   fprintf(fw,"modules\t\t:=\t$(shell pm2-config --modules)\n");
+   fprintf(fw,"stamplibs\t:=\t$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)\n\n");
 
    fprintf(fw,"all: %s\n", GENEC_NAME);
-   fprintf(fw,"%s: %s.o\n", GENEC_NAME, GENEC_NAME);
-   fprintf(fw,"\t$(CC) $^ $(LIBS) -o $@\n");
+   fprintf(fw,"%s: %s.o ${stamplibs}\n", GENEC_NAME, GENEC_NAME);
+   fprintf(fw,"\t$(CC) $< $(LIBS) -o $@\n");
    fprintf(fw,"%s.o: %s.c\n", GENEC_NAME, GENEC_NAME);
    fprintf(fw,"\t$(CC) $(CFLAGS) -c $< -o $@\n");
 

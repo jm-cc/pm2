@@ -75,29 +75,16 @@ void internal_init(int global_size, int process_rank) {
   datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
   datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
   datatypes[MPI_LONG_LONG]->size = sizeof(long long);
+  datatypes[MPI_COMPLEX]->size = 2*sizeof(float);
+  datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
   datatypes[MPI_LOGICAL]->size = sizeof(float);
   datatypes[MPI_REAL]->size = sizeof(float);
   datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
   datatypes[MPI_INTEGER]->size = sizeof(float);
 
-  datatypes[MPI_DATATYPE_NULL]->extent = datatypes[MPI_DATATYPE_NULL]->size;
-  datatypes[MPI_CHAR]->extent =  datatypes[MPI_CHAR]->size;
-  datatypes[MPI_UNSIGNED_CHAR]->extent = datatypes[MPI_UNSIGNED_CHAR]->size;
-  datatypes[MPI_BYTE]->extent = datatypes[MPI_BYTE]->size;
-  datatypes[MPI_SHORT]->extent = datatypes[MPI_SHORT]->size;
-  datatypes[MPI_UNSIGNED_SHORT]->extent = datatypes[MPI_UNSIGNED_SHORT]->size;
-  datatypes[MPI_INT]->extent =   datatypes[MPI_INT]->size;
-  datatypes[MPI_UNSIGNED]->extent = datatypes[MPI_UNSIGNED]->size;
-  datatypes[MPI_LONG]->extent = datatypes[MPI_LONG]->size;
-  datatypes[MPI_UNSIGNED_LONG]->extent = datatypes[MPI_UNSIGNED_LONG]->size;
-  datatypes[MPI_FLOAT]->extent = datatypes[MPI_FLOAT]->size;
-  datatypes[MPI_DOUBLE]->extent = datatypes[MPI_DOUBLE]->size;
-  datatypes[MPI_LONG_DOUBLE]->extent = datatypes[MPI_LONG_DOUBLE]->size;
-  datatypes[MPI_LONG_LONG_INT]->extent = datatypes[MPI_LONG_LONG_INT]->size;
-  datatypes[MPI_LONG_LONG]->extent = datatypes[MPI_LONG_LONG]->size;
-  datatypes[MPI_REAL]->extent = datatypes[MPI_REAL]->size;
-  datatypes[MPI_DOUBLE_PRECISION]->extent = datatypes[MPI_DOUBLE_PRECISION]->size;
-  datatypes[MPI_INTEGER]->extent = datatypes[MPI_INTEGER]->size;
+  for(i=MPI_DATATYPE_NULL ; i<=MPI_INTEGER ; i++) {
+    datatypes[i]->extent = datatypes[i]->size;
+  }
 
   available_datatypes = tbx_slist_nil();
   for(i=MPI_INTEGER+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
@@ -506,6 +493,15 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_DOUBLE FOR MPI_SUM */
+    case MPI_DOUBLE_COMPLEX : {
+      double *i_invec = (double *) invec;
+      double *i_inoutvec = (double *) inoutvec;
+      for(i=0 ; i<*len*2 ; i++) {
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+      break;
+    }
     default : {
       ERROR("Datatype %d for SUM Reduce operation", *type);
       break;

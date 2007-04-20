@@ -32,6 +32,8 @@
 
 /* error return classes */
 #define MPI_SUCCESS          0      /* Successful return code */
+#define MPI_ERR_OTHER        2
+
 #define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
 
 /* Pre-defined constants */
@@ -66,25 +68,28 @@ typedef int MPI_Comm;
 
 /* Data types */
 typedef int MPI_Datatype;
-#define MPI_DATATYPE_NULL  ((MPI_Datatype)0)
-#define MPI_CHAR           ((MPI_Datatype)1)
-#define MPI_UNSIGNED_CHAR  ((MPI_Datatype)2)
-#define MPI_BYTE           ((MPI_Datatype)3)
-#define MPI_SHORT          ((MPI_Datatype)4)
-#define MPI_UNSIGNED_SHORT ((MPI_Datatype)5)
-#define MPI_INT            ((MPI_Datatype)6)
-#define MPI_UNSIGNED       ((MPI_Datatype)7)
-#define MPI_LONG           ((MPI_Datatype)8)
-#define MPI_UNSIGNED_LONG  ((MPI_Datatype)9)
-#define MPI_FLOAT          ((MPI_Datatype)10)
-#define MPI_DOUBLE         ((MPI_Datatype)11)
-#define MPI_LONG_DOUBLE    ((MPI_Datatype)12)
-#define MPI_LONG_LONG_INT  ((MPI_Datatype)13)
-#define MPI_LONG_LONG      ((MPI_Datatype)13)
-#define MPI_LOGICAL             ((MPI_Datatype)25)
-#define MPI_REAL		((MPI_Datatype)26)
-#define MPI_DOUBLE_PRECISION	((MPI_Datatype)27)
-#define MPI_INTEGER		((MPI_Datatype)28)
+#define MPI_DATATYPE_NULL    ((MPI_Datatype)0)
+#define MPI_CHAR             ((MPI_Datatype)1)
+#define MPI_UNSIGNED_CHAR    ((MPI_Datatype)2)
+#define MPI_BYTE             ((MPI_Datatype)3)
+#define MPI_SHORT            ((MPI_Datatype)4)
+#define MPI_UNSIGNED_SHORT   ((MPI_Datatype)5)
+#define MPI_INT              ((MPI_Datatype)6)
+#define MPI_UNSIGNED         ((MPI_Datatype)7)
+#define MPI_LONG             ((MPI_Datatype)8)
+#define MPI_UNSIGNED_LONG    ((MPI_Datatype)9)
+#define MPI_FLOAT            ((MPI_Datatype)10)
+#define MPI_DOUBLE           ((MPI_Datatype)11)
+#define MPI_LONG_DOUBLE      ((MPI_Datatype)12)
+#define MPI_LONG_LONG_INT    ((MPI_Datatype)13)
+#define MPI_LONG_LONG        ((MPI_Datatype)13)
+
+#define MPI_COMPLEX          ((MPI_Datatype)23)
+#define MPI_DOUBLE_COMPLEX   ((MPI_Datatype)24)
+#define MPI_LOGICAL          ((MPI_Datatype)25)
+#define MPI_REAL	     ((MPI_Datatype)26)
+#define MPI_DOUBLE_PRECISION ((MPI_Datatype)27)
+#define MPI_INTEGER	     ((MPI_Datatype)28)
 
 /* Collective operations */
 typedef int MPI_Op;

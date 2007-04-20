@@ -179,6 +179,7 @@ typedef struct bgl_frame_s {
     struct list_head  frame_list;    /*! < Position of the frame. */
     float             duration;      /*! < Frame duration, in seconds. */
     struct list_head  display_items; /*! < Head of display items list. */
+    const char *      status;        /*! < Status text. */
 } bgl_frame_t;
 
 

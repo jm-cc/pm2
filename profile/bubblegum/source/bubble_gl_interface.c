@@ -933,6 +933,13 @@ destroyBGLMovie (BubbleMovie movie) {
     OUT();
 }
 
+void
+BGLMovie_status (BubbleMovie movie, const char *str) {
+    IN();
+    bgl_frame_t *frame = BGLMovie_get_current_frame (movie);
+    frame->status = strdup(str);
+    OUT();
+}
 
 /* *******************************************************************
  * Style methods
@@ -1474,6 +1481,7 @@ BubbleOps_setBGL() {
         .Movie_add = BGLMovie_add,
         .Movie_pause = BGLMovie_pause,
         .Movie_save = BGLMovie_save,
+        .Movie_status = BGLMovie_status,
 	 
         /* Shape methods */
         .newShape = newBGLShape,

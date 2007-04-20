@@ -108,19 +108,16 @@ void parcourirBullesXml(Element * bulle, xmlNodePtr noeud) {
   Element * elementFilsPtr;
   xmlNodePtr noeudFils;
   int taillebulle = GetNbElement(bulle);
-  fprintf(stderr,"Taille de la bulle : %d\n", taillebulle);
   
   for(liste = FirstListeElement(bulle); liste; liste = NextListeElement(liste)) {
     elementFilsPtr = liste->element;
     
     if(GetTypeElement(elementFilsPtr) == BULLE) {
-      fprintf(stderr, "bulle en traitement\n");
       noeudFils = creerBulleXml(elementFilsPtr);
       xmlAddChild(noeud, noeudFils);
       parcourirBullesXml(elementFilsPtr, noeudFils);
     }
     if(GetTypeElement(elementFilsPtr) == THREAD) {
-      fprintf(stderr, "thread en traitement\n");
       noeudFils = creerThreadXml(elementFilsPtr);
       xmlAddChild(noeud, noeudFils);
     }
@@ -245,7 +242,6 @@ int chargerXml(const char * Chemin){
   xmlDocPtr xmldoc = NULL;
   xmlNodePtr racine = NULL;
   
-  printf("chemin %s\n", Chemin);
   xmldoc = xmlParseFile(Chemin);
   if (!xmldoc){
       fprintf (stderr, "%s:%d: Erreur d'ouverture du fichier \n", 

@@ -65,6 +65,7 @@ typedef struct {
 
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)91)
+#define MPI_COMM_NULL  ((MPI_Comm)0)
 
 /* Data types */
 typedef int MPI_Datatype;

@@ -42,14 +42,18 @@ extern debug_type_t debug_mpi_nmad_log;
 
 #ifdef NMAD_DEBUG
 #  define MPI_NMAD_TRACE(fmt, args...) debug_printf(&debug_mpi_nmad_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+#  define MPI_NMAD_TRACE_NOF(fmt, args...) debug_printf(&debug_mpi_nmad_trace, fmt, ##args)
 #  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, fmt, ##args)
 #  define MPI_NMAD_TRANSFER(fmt, args...) debug_printf(&debug_mpi_nmad_transfer, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
 #  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_transfer, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
 #  define MPI_NMAD_LOG_IN()  debug_printf(&debug_mpi_nmad_log, "%s: -->\n", __TBX_FUNCTION__)
 #  define MPI_NMAD_LOG_OUT() debug_printf(&debug_mpi_nmad_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
 #  define MPI_NMAD_TRACE(fmt, args...) {}
+#  define MPI_NMAD_TRACE_NOF(fmt, args...) {}
 #  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) {}
+#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...) {}
 #  define MPI_NMAD_TRANSFER(fmt, args...)
 #  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)
 #  define MPI_NMAD_LOG_IN()

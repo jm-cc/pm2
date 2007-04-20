@@ -49,7 +49,7 @@ int mpi_init_() {
   char **argv;
 
   argc = 1+_gfortran_iargc();
-  fprintf(stderr, "argc = %d\n", argc);
+  MPI_NMAD_TRACE("argc = %d\n", argc);
   argv = malloc(argc * sizeof(char *));
   for (i = 0; i < argc; i++) {
     int j;
@@ -61,7 +61,6 @@ int mpi_init_() {
     else {
       _gfortran_getarg_i8((int64_t *)&i, argv[i], MAX_ARG_LEN);
     }
-
     j = MAX_ARG_LEN;
     while (j > 1 && (argv[i])[j-1] == ' ') {
       j--;
@@ -69,7 +68,7 @@ int mpi_init_() {
     (argv[i])[j] = '\0';
   }
   for (i = 0; i < argc; i++) {
-    fprintf(stderr, "argv[%d] = [%s]\n", i, argv[i]);
+    MPI_NMAD_TRACE("argv[%d] = [%s]\n", i, argv[i]);
   }
   return MPI_Init(&argc, &argv);
 }
@@ -87,7 +86,7 @@ int mpi_init_() {
   char **argv;
 
   argc = 1+iargc_();
-  fprintf(stderr, "argc = %d\n", argc);
+  MPI_NMAD_TRACE("argc = %d\n", argc);
   argv = malloc(argc * sizeof(char *));
   for (i = 0; i < argc; i++) {
     int j;
@@ -102,7 +101,7 @@ int mpi_init_() {
     (argv[i])[j] = '\0';
   }
   for (i = 0; i < argc; i++) {
-    fprintf(stderr, "argv[%d] = [%s]\n", i, argv[i]);
+    MPI_NMAD_TRACE("argv[%d] = [%s]\n", i, argv[i]);
   }
   return MPI_Init(&argc, &argv);
 }
@@ -215,7 +214,7 @@ void mpi_wait_(int *request,
   MPI_Request *p_request = (void *)*request;
   *ierr = MPI_Wait(p_request, &_status);
   memcpy(status, &_status, sizeof(_status));
-  TBX_FREE((void *)*request);
+  //  TBX_FREE((void *)*request);
 }
 
 void mpi_waitall_(int *count,
@@ -240,7 +239,7 @@ void mpi_waitall_(int *count,
       MPI_Request *p_request = (void *)request[i];
       err =  MPI_Wait(p_request, &_status);
       memcpy(status[i], &_status, sizeof(_status));
-      TBX_FREE((void *)*request);
+      //TBX_FREE((void *)*request);
       if (err != NM_ESUCCESS)
         goto out;
     }
@@ -446,6 +445,12 @@ void mpi_type_struct_(int count,
                       MPI_Datatype *array_of_types,
                       MPI_Datatype *newtype) {
   TBX_FAILURE("unimplemented");
+}
+
+void mpi_comm_split_(int *comm, int *color, int *key, int *newcomm, int *ierr) {
+  MPI_Comm _newcomm;
+  *ierr = MPI_Comm_split(*comm, *color, *key, &_newcomm);
+  *newcomm = _newcomm;
 }
 
 void mpi_comm_dup_(int *comm,
@@ -2033,6 +2038,113 @@ int MPI_Type_struct(int count,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype) {
   return mpir_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
+}
+
+/**
+ * Partitions the group associated to the communicator into disjoint
+ * subgroups, one for each value of color.
+ */
+int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
+  int *sendbuf, *recvbuf;
+  int i, j, nb_conodes, **conodes;
+  mpir_communicator_t *mpir_communicator;
+  mpir_communicator_t *mpir_newcommunicator;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_communicator = get_communicator(comm);
+
+  sendbuf = malloc(3*mpir_communicator->size*sizeof(int));
+  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+    sendbuf[i] = color;
+    sendbuf[i+1] = key;
+    sendbuf[i+2] = mpir_communicator->global_ranks[mpir_communicator->rank];
+  }
+  recvbuf = malloc(3*mpir_communicator->size*sizeof(int));
+
+#ifdef NMAD_DEBUG
+  MPI_NMAD_TRACE_LEVEL(3, "[%d] Sending: ", mpir_communicator->rank);
+  for(i=0 ; i<mpir_communicator->size*3 ; i++) {
+    MPI_NMAD_TRACE_NOF_LEVEL(3, "%d ", sendbuf[i]);
+  }
+  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+#endif /* NMAD_DEBUG */
+
+  MPI_Alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
+
+#ifdef NMAD_DEBUG
+  MPI_NMAD_TRACE_LEVEL(3, "[%d] Received: ", mpir_communicator->rank);
+  for(i=0 ; i<mpir_communicator->size*3 ; i++) {
+    MPI_NMAD_TRACE_NOF_LEVEL(3, "%d ", recvbuf[i]);
+  }
+  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+#endif /* NMAD_DEBUG */
+
+  // Counting how many nodes have the same color
+  nb_conodes=0;
+  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+    if (recvbuf[i] == color) {
+      nb_conodes++;
+    }
+  }
+
+  // Accumulating the nodes with the same color into an array
+  conodes = malloc(nb_conodes*sizeof(int*));
+  j=0;
+  for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
+    if (recvbuf[i] == color) {
+      conodes[j] = &recvbuf[i];
+      j++;
+    }
+  }
+
+  // Sorting the nodes with the same color according to their key
+  {
+    int nodecmp(const void *v1, const void *v2) {
+      int **node1 = (int **)v1;
+      int **node2 = (int **)v2;
+      return ((*node1)[1] - (*node2)[1]);
+    }
+    qsort(conodes, nb_conodes, sizeof(int *), nodecmp);
+  }
+
+#ifdef NMAD_DEBUG
+  MPI_NMAD_TRACE_LEVEL(3, "[%d] Conodes: ", mpir_communicator->rank);
+  for(i=0 ; i<nb_conodes ; i++) {
+    int *ptr = conodes[i];
+    MPI_NMAD_TRACE_NOF_LEVEL(3, "[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
+  }
+  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+#endif /* NMAD_DEBUG */
+
+  // Create the new communicator
+  if (color == MPI_UNDEFINED) {
+    *newcomm = MPI_COMM_NULL;
+  }
+  else {
+    MPI_Comm_dup(comm, newcomm);
+    mpir_newcommunicator = get_communicator(*newcomm);
+    mpir_newcommunicator->size = nb_conodes;
+    free(mpir_newcommunicator->global_ranks);
+    mpir_newcommunicator->global_ranks = malloc(nb_conodes*sizeof(int));
+    for(i=0 ; i<nb_conodes ; i++) {
+      int *ptr = conodes[i];
+      if ((*(ptr+1) == key) && (*(ptr+2) == mpir_communicator->rank)) {
+        mpir_newcommunicator->rank = i;
+      }
+      if (*ptr == color) {
+        mpir_newcommunicator->global_ranks[i] = *(ptr+2);
+      }
+    }
+  }
+
+  // free the allocated area
+  free(conodes);
+  free(sendbuf);
+  free(recvbuf);
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
 }
 
 /**

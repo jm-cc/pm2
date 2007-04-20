@@ -21,6 +21,8 @@
 #ifndef MPI_COMMUNICATOR_H
 #define MPI_COMMUNICATOR_H
 
+int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
+
 int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 int MPI_Comm_free(MPI_Comm *comm);

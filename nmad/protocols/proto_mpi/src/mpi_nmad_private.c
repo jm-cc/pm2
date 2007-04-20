@@ -606,6 +606,7 @@ int mpir_comm_free(MPI_Comm *comm) {
     ptr = malloc(sizeof(int));
     *ptr = *comm;
     tbx_slist_enqueue(available_communicators, ptr);
+    *comm = MPI_COMM_NULL;
     return MPI_SUCCESS;
   }
 }

@@ -569,6 +569,7 @@ bgl_frame_new () {
     INIT_LIST_HEAD (&new_frame->frame_list);
     new_frame->duration = 0;
     INIT_LIST_HEAD (&new_frame->display_items);
+    new_frame->status = "";
 
     return new_frame;
 }
@@ -592,6 +593,7 @@ bgl_frame_copy (bgl_frame_t *frame) {
         cpy = BGLDisplayItem_copy (citem);
         list_add_tail (&cpy->disp_list, &new_frame->display_items);
     }
+    new_frame->status = frame->status;
 
     return new_frame;
 }

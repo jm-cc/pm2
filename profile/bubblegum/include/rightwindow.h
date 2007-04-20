@@ -35,6 +35,8 @@ typedef AnimElements AnimationData;
 
 extern AnimationData *anim;
 extern GtkWidget     *right_scroll_bar;
+extern GtkWidget     *right_status;
+extern guint         right_status_context_id;
 
 
 GtkWidget* right_window_init(AnimationData *p_anim);

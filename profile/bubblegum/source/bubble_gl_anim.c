@@ -512,6 +512,10 @@ bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale,
     bgl_frame_t       *frame = movie->frames_array[iframe];
     BubbleDisplayItem display_item;
 
+    if (frame->status) {
+        gtk_statusbar_pop(GTK_STATUSBAR(right_status), right_status_context_id);
+        gtk_statusbar_push(GTK_STATUSBAR(right_status), right_status_context_id, frame->status);
+    }
     list_for_each_entry (display_item, &frame->display_items, disp_list) {
         bgl_anim_DisplayItem (display_item, scale,
                               goff_x, goff_y, rev_x, rev_y);

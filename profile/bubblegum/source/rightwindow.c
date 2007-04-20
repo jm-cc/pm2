@@ -28,6 +28,8 @@
 /*! \todo remove global variables. */
 AnimationData* anim;
 GtkWidget *right_scroll_bar;
+GtkWidget *right_status;
+guint right_status_context_id;
 
 struct RedrawData {
     GtkWidget     *drawzone;
@@ -119,6 +121,13 @@ right_window_init (AnimationData *p_anim) {
             AnimationData_setCallback (p_anim, ScrollSetPosition,
                                        ScrollSetRange, scroll);
 #endif
+
+            right_status = gtk_statusbar_new ();
+            right_status_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(right_status), "Bubble scheduler status");
+            gtk_statusbar_push(GTK_STATUSBAR(right_status), right_status_context_id, "");
+            
+            gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(right_status), FALSE);
+            gtk_box_pack_end (GTK_BOX (vbox_right), right_status, FALSE, FALSE, 0);
         } else {
             gtk_widget_destroy (drawzone);
             drawzone = NULL;

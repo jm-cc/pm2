@@ -4,12 +4,15 @@ endif
 
 #MPICC	:=	/opt/mpich-mx/bin/mpicc
 
+modules 	:=	$(shell pm2-config --modules)
+libs		:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)
+
 PROGS		:=	mpi_pastix
 
 all: $(PROGS)
 
 %: %.o
-	$(MPICC) $^ -o $@ ${${@}_LIBS}
+	$(MPICC) $< -o $@ ${${@}_LIBS}
 
 %.o: %.c %.h
 	$(MPICC) -c $< -o $@
@@ -17,7 +20,7 @@ all: $(PROGS)
 %.o: %.c
 	$(MPICC) -c $< -o $@
 
-mpi_pastix: mpi_pastix.o
+mpi_pastix: mpi_pastix.o ${libs}
 
 clean:
 	rm -f *.o $(PROGS)

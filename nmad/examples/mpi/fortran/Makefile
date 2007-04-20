@@ -4,10 +4,13 @@ endif
 
 PROGS		:=	fpi
 
+modules 	:=	$(shell pm2-config --modules)
+libs		:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)
+
 all: $(PROGS)
 
 %: %.o
-	$(MPIF77) $^ -o $@ ${${@}_LIBS}
+	$(MPIF77) $< -o $@ ${${@}_LIBS}
 
 %.o: %.f %.h
 	$(MPIF77) -c $< -o $@
@@ -15,7 +18,7 @@ all: $(PROGS)
 %.o: %.f
 	$(MPIF77) -c $< -o $@
 
-fpi: fpi.o
+fpi: fpi.o ${libs}
 
 clean:
 	rm -f *.o $(PROGS)

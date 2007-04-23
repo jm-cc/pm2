@@ -40,6 +40,15 @@ int MPI_Allgather(void *sendbuf,
                   MPI_Datatype recvtype,
                   MPI_Comm comm);
 
+int MPI_Allgatherv(void *sendbuf,
+                   int sendcount,
+                   MPI_Datatype sendtype,
+                   void *recvbuf,
+                   int *recvcounts,
+                   int *displs,
+                   MPI_Datatype recvtype,
+                   MPI_Comm comm);
+
 int MPI_Gather(void *sendbuf,
                int sendcount,
                MPI_Datatype sendtype,
@@ -48,6 +57,25 @@ int MPI_Gather(void *sendbuf,
                MPI_Datatype recvtype,
                int root,
                MPI_Comm comm);
+
+int MPI_Gatherv(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int *recvcounts,
+                int *displs,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm);
+
+int MPI_Scatter(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int recvcount,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm);
 
 int MPI_Alltoall(void* sendbuf,
 		 int sendcount,
@@ -87,5 +115,12 @@ int MPI_Allreduce(void* sendbuf,
                   MPI_Datatype datatype,
                   MPI_Op op,
                   MPI_Comm comm);
+
+int MPI_Reduce_scatter(void *sendbuf,
+                       void *recvbuf,
+                       int *recvcounts,
+                       MPI_Datatype datatype,
+                       MPI_Op op,
+                       MPI_Comm comm);
 
 #endif /* MPI_COLLECTIVE_H */

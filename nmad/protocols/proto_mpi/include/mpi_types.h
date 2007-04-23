@@ -33,6 +33,7 @@
 /* error return classes */
 #define MPI_SUCCESS          0      /* Successful return code */
 #define MPI_ERR_OTHER        2
+#define MPI_ERR_INTERN       3
 
 #define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
 
@@ -65,6 +66,7 @@ typedef struct {
 
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)91)
+#define MPI_COMM_SELF  ((MPI_Comm)92)
 #define MPI_COMM_NULL  ((MPI_Comm)0)
 
 /* Data types */
@@ -94,18 +96,19 @@ typedef int MPI_Datatype;
 
 /* Collective operations */
 typedef int MPI_Op;
-#define MPI_MAX    (MPI_Op)(100)
-#define MPI_MIN    (MPI_Op)(101)
-#define MPI_SUM    (MPI_Op)(102)
-#define MPI_PROD   (MPI_Op)(103)
-#define MPI_LAND   (MPI_Op)(104)
-#define MPI_BAND   (MPI_Op)(105)
-#define MPI_LOR    (MPI_Op)(106)
-#define MPI_BOR    (MPI_Op)(107)
-#define MPI_LXOR   (MPI_Op)(108)
-#define MPI_BXOR   (MPI_Op)(109)
-#define MPI_MINLOC (MPI_Op)(110)
-#define MPI_MAXLOC (MPI_Op)(111)
+#define MPI_OP_NULL (MPI_Op)(999)
+#define MPI_MAX     (MPI_Op)(100)
+#define MPI_MIN     (MPI_Op)(101)
+#define MPI_SUM     (MPI_Op)(102)
+#define MPI_PROD    (MPI_Op)(103)
+#define MPI_LAND    (MPI_Op)(104)
+#define MPI_BAND    (MPI_Op)(105)
+#define MPI_LOR     (MPI_Op)(106)
+#define MPI_BOR     (MPI_Op)(107)
+#define MPI_LXOR    (MPI_Op)(108)
+#define MPI_BXOR    (MPI_Op)(109)
+#define MPI_MINLOC  (MPI_Op)(110)
+#define MPI_MAXLOC  (MPI_Op)(111)
 
 #define MPI_MAX_PROCESSOR_NAME 256
 #define MPI_MAX_ERROR_STRING   512
@@ -121,5 +124,9 @@ typedef int MPI_Communication_Mode;
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
 #define MPI_STATUS_SIZE		4
+
+/* Error handlers */
+typedef int MPI_Errhandler;
+#define MPI_ERRHANDLER_NULL ((MPI_Errhandler)0)
 
 #endif /* MPI_TYPES_H */

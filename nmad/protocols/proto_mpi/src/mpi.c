@@ -1249,6 +1249,33 @@ int MPI_Irecv(void* buffer,
 }
 
 /**
+ * Executes a blocking send and receive operation.
+ */
+int MPI_Sendrecv(void *sendbuf,
+                 int sendcount,
+                 MPI_Datatype sendtype,
+                 int dest,
+                 int sendtag,
+                 void *recvbuf,
+                 int recvcount,
+                 MPI_Datatype recvtype,
+                 int source,
+                 int recvtag,
+                 MPI_Comm comm,
+                 MPI_Status *status) {
+  int err;
+
+  MPI_NMAD_LOG_IN();
+
+  err = MPI_Send(sendbuf, sendcount, sendtype, dest, sendtag, comm);
+  err = MPI_Recv(recvbuf, recvcount, recvtype, source, recvtag, comm, status);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+
+/**
  * Returns when the operation identified by request is complete.
  */
 int MPI_Wait(MPI_Request *request,
@@ -1626,6 +1653,59 @@ int MPI_Gather(void *sendbuf,
   return MPI_SUCCESS;
 }
 
+/**
+ * MPI_GATHERV extends the functionality of MPI_GATHER by allowing a
+ * varying count of data.
+ */
+int MPI_Gatherv(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int *recvcounts,
+                int *displs,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm) {
+  int tag = 4;
+  mpir_communicator_t *mpir_communicator;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_communicator = get_communicator(comm);
+
+  if (mpir_communicator->rank == root) {
+    MPI_Request *requests;
+    int i, err;
+    mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
+
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+    mpir_recv_datatype = get_datatype(recvtype);
+    mpir_send_datatype = get_datatype(sendtype);
+
+    // receive data from other processes
+    for(i=0 ; i<mpir_communicator->size; i++) {
+      if(i == root) continue;
+      MPI_Irecv(recvbuf + (displs[i] * mpir_recv_datatype->extent),
+                recvcounts[i], recvtype, i, tag, comm, &requests[i]);
+    }
+    for(i=0 ; i<mpir_communicator->size ; i++) {
+      if (i==root) continue;
+      err = MPI_Wait(&requests[i], NULL);
+    }
+
+    // copy local data for itself
+    memcpy(recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
+           sendbuf, sendcount * mpir_send_datatype->extent);
+
+  }
+  else {
+    MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
+}
+
 /*
  * MPI_ALLGATHER can be thought of as MPI_GATHER, except all processes
  * receive the result.
@@ -1650,6 +1730,88 @@ int MPI_Allgather(void *sendbuf,
   err = MPI_Bcast(recvbuf, recvcount*mpir_communicator->size, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+/**
+ * MPI_ALLGATHERV can be thought of as MPI_GATHERV, except all processes
+ * receive the result.
+ */
+int MPI_Allgatherv(void *sendbuf,
+                   int sendcount,
+                   MPI_Datatype sendtype,
+                   void *recvbuf,
+                   int *recvcounts,
+                   int *displs,
+                   MPI_Datatype recvtype,
+                   MPI_Comm comm) {
+  int err, i, recvcount=0;
+  mpir_communicator_t *mpir_communicator;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_communicator = get_communicator(comm);
+
+  MPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, 0, comm);
+
+  // Broadcast the result to all processes
+  for(i=0 ; i<mpir_communicator->size ; i++) {
+    recvcount += recvcounts[i];
+  }
+  err = MPI_Bcast(recvbuf, recvcount*mpir_communicator->size, recvtype, 0, comm);
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+
+/**
+ * Inverse operation of MPI_GATHER
+ */
+int MPI_Scatter(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int recvcount,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm) {
+  int tag = 3;
+  mpir_communicator_t *mpir_communicator;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_communicator = get_communicator(comm);
+
+  if (mpir_communicator->rank == root) {
+    MPI_Request *requests;
+    int i, err;
+    mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
+
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+    mpir_recv_datatype = get_datatype(recvtype);
+    mpir_send_datatype = get_datatype(sendtype);
+
+    // send data to other processes
+    for(i=0 ; i<mpir_communicator->size; i++) {
+      if(i == root) continue;
+      MPI_Isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
+                sendcount, sendtype, i, tag, comm, &requests[i]);
+    }
+    for(i=0 ; i<mpir_communicator->size ; i++) {
+      if (i==root) continue;
+      err = MPI_Wait(&requests[i], NULL);
+    }
+
+    // copy local data for itself
+    memcpy(recvbuf + (mpir_communicator->rank * mpir_recv_datatype->extent),
+           sendbuf, sendcount * mpir_send_datatype->extent);
+
+  }
+  else {
+    MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, NULL);
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
 }
 
 /**
@@ -1893,6 +2055,61 @@ int MPI_Allreduce(void* sendbuf,
 }
 
 /**
+ *
+ */
+int MPI_Reduce_scatter(void *sendbuf,
+                       void *recvbuf,
+                       int *recvcounts,
+                       MPI_Datatype datatype,
+                       MPI_Op op,
+                       MPI_Comm comm) {
+  int err, count=0, i;
+  mpir_communicator_t *mpir_communicator;
+  mpir_datatype_t *mpir_datatype;
+  int tag = 4;
+  void *reducebuf;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_datatype = get_datatype(datatype);
+  mpir_communicator = get_communicator(comm);
+  for(i=0 ; i<mpir_communicator->size ; i++) {
+    count += recvcounts[i];
+  }
+
+  if (mpir_communicator->rank == 0) {
+    reducebuf = malloc(count * mpir_datatype->size);
+  }
+  MPI_Reduce(sendbuf, reducebuf, count, datatype, op, 0, comm);
+
+  // Scatter the result
+  if (mpir_communicator->rank == 0) {
+    MPI_Request *requests;
+    int i, err;
+
+    requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
+
+    // send data to other processes
+    for(i=1 ; i<mpir_communicator->size; i++) {
+      MPI_Isend(reducebuf + (i * recvcounts[i] * mpir_datatype->extent),
+                recvcounts[i], datatype, i, tag, comm, &requests[i]);
+    }
+    for(i=1 ; i<mpir_communicator->size ; i++) {
+      err = MPI_Wait(&requests[i], NULL);
+    }
+
+    // copy local data for itself
+    memcpy(recvbuf, reducebuf, recvcounts[0] * mpir_datatype->extent);
+  }
+  else {
+    MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, NULL);
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
  * Returns a floating-point number of seconds, representing elapsed
  * wall-clock time since some time in the past.
  */
@@ -1913,6 +2130,29 @@ double MPI_Wtime(void) {
  */
 double MPI_Wtick(void) {
   return 1e-7;
+}
+
+int MPI_Error_string(int errorcode, char *string, int *resultlen) {
+  *resultlen = 100;
+  string = malloc(*resultlen * sizeof(char));
+  switch (errorcode) {
+    case MPI_SUCCESS : {
+      snprintf(string, *resultlen, "Error MPI_SUCCESS\n");
+      break;
+    }
+    case MPI_ERR_OTHER : {
+      snprintf(string, *resultlen, "Error MPI_ERR_OTHER\n");
+      break;
+    }
+    case MPI_ERR_INTERN : {
+      snprintf(string, *resultlen, "Error MPI_ERR_INTERN\n");
+      break;
+    }
+    default : {
+      snprintf(string, *resultlen, "Error %d unknown\n", errorcode);
+    }
+  }
+  return MPI_SUCCESS;
 }
 
 /**

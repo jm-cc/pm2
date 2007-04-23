@@ -97,7 +97,6 @@ void internal_init(int global_size, int process_rank) {
   /* Initialise data for communicators */
   communicators = malloc(NUMBER_OF_COMMUNICATORS * sizeof(mpir_communicator_t));
   communicators[0] = malloc(sizeof(mpir_communicator_t));
-  communicators[0]->is_global = 1;
   communicators[0]->communicator_id = MPI_COMM_WORLD;
   communicators[0]->size = global_size;
   communicators[0]->rank = process_rank;
@@ -106,8 +105,15 @@ void internal_init(int global_size, int process_rank) {
     communicators[0]->global_ranks[i] = i;
   }
 
+  communicators[1] = malloc(sizeof(mpir_communicator_t));
+  communicators[1]->communicator_id = MPI_COMM_SELF;
+  communicators[1]->size = 1;
+  communicators[1]->rank = process_rank;
+  communicators[1]->global_ranks = malloc(1 * sizeof(int));
+  communicators[1]->global_ranks[0] = process_rank;
+
   available_communicators = tbx_slist_nil();
-  for(i=MPI_COMM_WORLD+1 ; i<=NUMBER_OF_COMMUNICATORS ; i++) {
+  for(i=MPI_COMM_SELF+1 ; i<=NUMBER_OF_COMMUNICATORS ; i++) {
     int *ptr = malloc(sizeof(int));
     *ptr = i;
     tbx_slist_push(available_communicators, ptr);
@@ -205,7 +211,8 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
 
 int mpir_type_size(MPI_Datatype datatype, int *size) {
   mpir_datatype_t *mpir_datatype = get_datatype(datatype);
-  return mpir_datatype->size;
+  *size = mpir_datatype->size;
+  return MPI_SUCCESS;
 }
 
 int mpir_type_commit(MPI_Datatype datatype) {
@@ -401,6 +408,7 @@ int mpir_op_free(MPI_Op *op) {
     ptr = malloc(sizeof(int));
     *ptr = *op;
     tbx_slist_enqueue(available_functions, ptr);
+    *op = MPI_OP_NULL;
     return MPI_SUCCESS;
   }
 }
@@ -484,6 +492,15 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       }
       break;
     } /* END MPI_INT FOR MPI_SUM */
+    case MPI_FLOAT : {
+      float *i_invec = (float *) invec;
+      float *i_inoutvec = (float *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        MPI_NMAD_TRACE("Summing %f and %f\n", i_inoutvec[i], i_invec[i]);
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    } /* END MPI_FLOAT FOR MPI_SUM */
     case MPI_DOUBLE_PRECISION :
     case MPI_DOUBLE : {
       double *i_invec = (double *) invec;
@@ -499,7 +516,6 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
       for(i=0 ; i<*len*2 ; i++) {
         i_inoutvec[i] += i_invec[i];
       }
-      break;
       break;
     }
     default : {
@@ -578,7 +594,6 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
 
     communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
     communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
-    communicators[*newcomm - MPI_COMM_WORLD]->is_global = 1;
     communicators[*newcomm - MPI_COMM_WORLD]->size = communicators[comm - MPI_COMM_WORLD]->size;
     communicators[*newcomm - MPI_COMM_WORLD]->global_ranks = malloc(communicators[*newcomm - MPI_COMM_WORLD]->size * sizeof(int));
     for(i=0 ; i<communicators[*newcomm - MPI_COMM_WORLD]->size ; i++) {
@@ -592,6 +607,10 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
 int mpir_comm_free(MPI_Comm *comm) {
   if (*comm == MPI_COMM_WORLD) {
     ERROR("Cannot free communicator MPI_COMM_WORLD");
+    return -1;
+  }
+  else if (*comm == MPI_COMM_SELF) {
+    ERROR("Cannot free communicator MPI_COMM_SELF");
     return -1;
   }
   else if (*comm > NUMBER_OF_COMMUNICATORS || communicators[*comm-MPI_COMM_WORLD] == NULL) {

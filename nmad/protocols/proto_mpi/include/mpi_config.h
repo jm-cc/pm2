@@ -46,5 +46,7 @@ double MPI_Wtime(void);
 
 double MPI_Wtick(void);
 
+int MPI_Error_string(int errorcode, char *string, int *resultlen);
+
 #endif /* MPI_CONFIG_H */
 

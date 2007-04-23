@@ -73,11 +73,10 @@ extern debug_type_t debug_mpi_nmad_log;
                      MPI_Abort(MPI_COMM_WORLD, 1); \
                    }
 
-#define NUMBER_OF_COMMUNICATORS (MPI_COMM_WORLD + 7)
+#define NUMBER_OF_COMMUNICATORS (MPI_COMM_SELF + 20)
 
 typedef struct mpir_communicator_s {
   int communicator_id;
-  int is_global;
   int size;
   int rank;
   int *global_ranks;

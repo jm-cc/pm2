@@ -1698,6 +1698,9 @@ int MPI_Gatherv(void *sendbuf,
     }
 
     // copy local data for itself
+    MPI_NMAD_TRACE("Copying local data from %p to %p with len %d\n", sendbuf,
+                   recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
+                   sendcount * mpir_send_datatype->extent);
     memcpy(recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
            sendbuf, sendcount * mpir_send_datatype->extent);
 
@@ -1731,7 +1734,7 @@ int MPI_Allgather(void *sendbuf,
   MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, recvcount*mpir_communicator->size, recvtype, 0, comm);
+  err = MPI_Bcast(recvbuf, recvcount, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -1759,9 +1762,11 @@ int MPI_Allgatherv(void *sendbuf,
 
   // Broadcast the result to all processes
   for(i=0 ; i<mpir_communicator->size ; i++) {
+    MPI_NMAD_TRACE("recvcounts[%d] = %d\n", i, recvcounts[i]);
     recvcount += recvcounts[i];
   }
-  err = MPI_Bcast(recvbuf, recvcount*mpir_communicator->size, recvtype, 0, comm);
+  MPI_NMAD_TRACE("recvcount = %d\n", recvcount);
+  err = MPI_Bcast(recvbuf, recvcount, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }

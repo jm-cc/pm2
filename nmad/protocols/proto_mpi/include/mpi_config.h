@@ -48,5 +48,7 @@ double MPI_Wtick(void);
 
 int MPI_Error_string(int errorcode, char *string, int *resultlen);
 
+int MPI_Get_version(int *version, int *subversion);
+
 #endif /* MPI_CONFIG_H */
 

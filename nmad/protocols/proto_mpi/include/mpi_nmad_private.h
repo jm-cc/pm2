@@ -32,6 +32,9 @@
 #include <tbx.h>
 #include <nm_mad3_private.h>
 
+#define MADMPI_VERSION    1
+#define MADMPI_SUBVERSION 0
+
 #define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
 
 #undef MPI_TIMER

@@ -2072,11 +2072,11 @@ int MPI_Reduce_scatter(void *sendbuf,
                        MPI_Datatype datatype,
                        MPI_Op op,
                        MPI_Comm comm) {
-  int err, count=0, i;
+  int err=MPI_SUCCESS, count=0, i;
   mpir_communicator_t *mpir_communicator;
   mpir_datatype_t *mpir_datatype;
   int tag = 4;
-  void *reducebuf;
+  void *reducebuf = NULL;
 
   MPI_NMAD_LOG_IN();
 
@@ -2094,7 +2094,7 @@ int MPI_Reduce_scatter(void *sendbuf,
   // Scatter the result
   if (mpir_communicator->rank == 0) {
     MPI_Request *requests;
-    int i, err;
+    int i;
 
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
@@ -2161,6 +2161,15 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen) {
       snprintf(string, *resultlen, "Error %d unknown\n", errorcode);
     }
   }
+  return MPI_SUCCESS;
+}
+
+/**
+ * Returns the version
+ */
+int MPI_Get_version(int *version, int *subversion) {
+  *version = MADMPI_VERSION;
+  *subversion = MADMPI_SUBVERSION;
   return MPI_SUCCESS;
 }
 

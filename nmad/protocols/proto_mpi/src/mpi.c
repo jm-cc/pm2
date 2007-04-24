@@ -1264,11 +1264,15 @@ int MPI_Sendrecv(void *sendbuf,
                  MPI_Comm comm,
                  MPI_Status *status) {
   int err;
+  MPI_Request srequest, rrequest;
 
   MPI_NMAD_LOG_IN();
 
-  err = MPI_Send(sendbuf, sendcount, sendtype, dest, sendtag, comm);
-  err = MPI_Recv(recvbuf, recvcount, recvtype, source, recvtag, comm, status);
+  err = MPI_Isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
+  err = MPI_Irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
+
+  MPI_Wait(&srequest, NULL);
+  MPI_Wait(&rrequest, status);
 
   MPI_NMAD_LOG_OUT();
   return err;

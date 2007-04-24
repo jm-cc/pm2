@@ -1,0 +1,51 @@
+#include "mpi.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char **argv) {
+  int numtasks, rank;
+  int rank_dst, ping_side;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  if (ping_side) {
+    int y, x=42;
+    float fy, fx=3.1415;
+
+    MPI_Send(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    printf("[%d] The answer to life, the universe, and everything is %d\n", rank, y);
+
+    MPI_Sendrecv(&fx, 1, MPI_FLOAT, rank_dst, 1,
+                 &fy, 1, MPI_FLOAT, rank_dst, 1,
+                 MPI_COMM_WORLD, NULL);
+    printf("[%d] The estimated value of PI is %f\n", rank, fy);
+  }
+  else {
+    int x;
+    float f;
+
+    MPI_Recv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Send(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
+
+    MPI_Recv(&f, 1, MPI_FLOAT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Send(&f, 1, MPI_FLOAT, rank_dst, 1, MPI_COMM_WORLD);
+  }
+
+  MPI_Finalize();
+  exit(0);
+}
+

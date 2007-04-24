@@ -64,6 +64,8 @@ typedef struct {
 
 #define MPI_REQUEST_NULL   ((MPI_Request){'\0'})
 
+typedef int MPI_Group;
+
 typedef int MPI_Comm;
 #define MPI_COMM_WORLD ((MPI_Comm)91)
 #define MPI_COMM_SELF  ((MPI_Comm)92)

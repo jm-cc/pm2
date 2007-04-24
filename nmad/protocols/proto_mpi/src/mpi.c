@@ -2299,6 +2299,18 @@ int MPI_Type_struct(int count,
 }
 
 /**
+ * Returns a handle to the group of the given communicator.
+ */
+int MPI_Comm_group(MPI_Comm comm, MPI_Group *group) {
+  MPI_NMAD_LOG_IN();
+
+  *group = comm;
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
+}
+
+/**
  * Partitions the group associated to the communicator into disjoint
  * subgroups, one for each value of color.
  */
@@ -2418,4 +2430,32 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
  */
 int MPI_Comm_free(MPI_Comm *comm) {
   return mpir_comm_free(comm);
+}
+
+/*
+ * Maps the rank of a set of processes in group1 to their rank in
+ * group2.
+ */
+int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2) {
+  int i, j, x;
+  mpir_communicator_t *mpir_communicator;
+  mpir_communicator_t *mpir_communicator2;
+
+  MPI_NMAD_LOG_IN();
+
+  mpir_communicator = get_communicator(group1);
+  mpir_communicator2 = get_communicator(group2);
+  for(i=0 ; i<n ; i++) {
+    ranks2[i] = MPI_UNDEFINED;
+    x = mpir_communicator->global_ranks[ranks1[i]];
+    for(j=0 ; j<mpir_communicator2->size ; j++) {
+      if (mpir_communicator2->global_ranks[j] == x) {
+        ranks2[i] = j;
+        break;
+      }
+    }
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
 }

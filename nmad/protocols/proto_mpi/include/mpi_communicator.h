@@ -21,10 +21,14 @@
 #ifndef MPI_COMMUNICATOR_H
 #define MPI_COMMUNICATOR_H
 
+int MPI_Comm_group(MPI_Comm comm, MPI_Group *group);
+
 int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
 
 int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 int MPI_Comm_free(MPI_Comm *comm);
+
+int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2);
 
 #endif /* MPI_COMMUNICATOR_H */

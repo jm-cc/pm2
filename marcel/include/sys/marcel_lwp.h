@@ -129,6 +129,7 @@ extern unsigned  ma__nb_vp;
 #section marcel_variables
 
 extern TBX_EXTERN marcel_lwp_t __main_lwp;
+extern TBX_EXTERN ma_atomic_t ma__nb_lwp;
 
 #ifdef MA__LWPS
 
@@ -189,6 +190,19 @@ static __tbx_inline__ unsigned marcel_nbvps(void)
 {
 #ifdef MA__LWPS
   return ma__nb_vp;
+#else
+  return 1;
+#endif
+}
+
+#section marcel_functions
+static __tbx_inline__ unsigned marcel_nblwps(void);
+#section marcel_inline
+#depend "[marcel_variables]"
+static __tbx_inline__ unsigned marcel_nblwps(void)
+{
+#ifdef MA__LWPS
+  return ma_atomic_read(&ma__nb_lwp);
 #else
   return 1;
 #endif

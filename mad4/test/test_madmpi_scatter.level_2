@@ -35,7 +35,7 @@ compile_leonie
 # Configuration
 flavor="test_mad4_mpi"
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
-prog="global2"
+prog="scatter"
 args="--x --p --l"
 hosts=${TESTCONFIG:-"william averell"}
 nb_hosts=$(echo $hosts | wc -w)
@@ -45,15 +45,9 @@ sort_output=1
 rm -f /tmp/pm2test_"${USER}"_expected
 
 (cat <<EOF
-Rank 0 Size 2
-Rank 1 Size 2
-Received: 0 6 1 7 
-[0] Received: 0 1 10 11 
-[0] Received: 0 1 2 2 
+[0] Received: 0 1 
 [0] Sending: 0 1 2 3 
-[1] Received: 0 1 2 2 
-[1] Received: 2 3 12 13 
-[1] Sending: 10 11 12 13 
+[1] Received: 2 3 
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 

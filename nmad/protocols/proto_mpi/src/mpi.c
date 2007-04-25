@@ -1734,7 +1734,7 @@ int MPI_Allgather(void *sendbuf,
   MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, recvcount, recvtype, 0, comm);
+  err = MPI_Bcast(recvbuf, mpir_communicator->size*recvcount, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }

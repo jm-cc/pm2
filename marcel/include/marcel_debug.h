@@ -133,7 +133,7 @@ extern debug_type_t marcel_mtrace_timer;
   do { \
 	if (cond) { \
 		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		kill(getpid(),SIGABRT); \
+		*(int*)0 = 0; \
 	} \
   } while (0)
 #define MA_WARN_ON(cond) \

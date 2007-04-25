@@ -13,13 +13,10 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
   {
+    int *rrbuf = malloc(numtasks * 2 * sizeof(int));
     int sendarray[2];
-    int *rbuf;
-    if (rank == 0) {
-      rbuf = malloc(numtasks * 2 * sizeof(int));
-    }
-    sendarray[0] = rank;
-    sendarray[1] = rank+6;
+    sendarray[0] = rank*2;
+    sendarray[1] = rank+1;
 
     fprintf(stdout, "[%d] Sending: ", rank);
     for(i=0 ; i<2 ; i++) {
@@ -27,14 +24,13 @@ int main(int argc, char **argv) {
     }
     fprintf(stdout, "\n");
 
-    MPI_Gather(sendarray, 2, MPI_INT, rbuf, 2, MPI_INT, 0, MPI_COMM_WORLD);
-    if (rank == 0) {
-      fprintf(stdout, "[%d] Received: ", rank);
-      for(i=0 ; i<numtasks*2 ; i++) {
-        fprintf(stdout, "%d ", rbuf[i]);
-      }
-      fprintf(stdout, "\n");
+    MPI_Allgather(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
+
+    fprintf(stdout, "[%d] Received: ", rank);
+    for(i=0 ; i<numtasks*2 ; i++) {
+      fprintf(stdout, "%d ", rrbuf[i]);
     }
+    fprintf(stdout, "\n");
   }
 
   fflush(stdout);

@@ -2,11 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void print_buffer(int *buffer) {
+void print_buffer(int rank, int *buffer) {
   if (buffer[0] != 1 && buffer[1] != 2 && buffer[2] != 3 && buffer[3] != 4) {
-    printf("Incorrect data\n");
+    printf("[%d] Incorrect data\n", rank);
+    printf("Received data [%d, %d, %d, %d]\n", buffer[0], buffer[1], buffer[2], buffer[3]);
   }
-  printf("Received data [%d, %d, %d, %d]\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+  else {
+    printf("[%d] Contig data successfully received\n", rank);
+  }
 }
 
 void contig_datatype(int rank) {
@@ -28,13 +31,13 @@ void contig_datatype(int rank) {
   else {
     int buffer[4], buffer2[4], buffer3[4];
     MPI_Recv(buffer, 4, MPI_INT, 0, 10, MPI_COMM_WORLD, NULL);
-    print_buffer(buffer);
+    print_buffer(rank, buffer);
 
     MPI_Recv(buffer2, 2, mytype, 0, 10, MPI_COMM_WORLD, NULL);
-    print_buffer(buffer2);
+    print_buffer(rank, buffer2);
 
     MPI_Recv(buffer3, 1, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
-    print_buffer(buffer3);
+    print_buffer(rank, buffer3);
   }
 
   MPI_Type_contiguous(2, MPI_INT, &mytype);
@@ -69,22 +72,69 @@ void vector_datatype(int rank) {
     MPI_Send(buffer2, 1, mytype2, 1, 10, MPI_COMM_WORLD);
   }
   else {
-    int i;
     int buffer[20];
     float buffer2[24];
 
     MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, NULL);
-    printf("Vector: [");
-    for(i=0 ; i<20 ; i++) printf("%d ", buffer[i]);
-    printf("]\n");
+
+    {
+      int i=0, success=1;
+      int value=0;
+      int count, blength, stride=10;
+
+      for(count=0 ; count<10 ; count++) {
+        for(blength=0 ; blength<2 ; blength++) {
+          if (buffer[i] != value) {
+            success=0;
+            break;
+          }
+          i++;
+          value++;
+        }
+        value += stride - 2;
+      }
+
+      if (success) {
+        printf("[%d] Vector successfully received\n", rank);
+      }
+      else {
+        printf("[%d] Incorrect vector: [", rank);
+        for(i=0 ; i<20 ; i++) printf("%d ", buffer[i]);
+        printf("]\n");
+      }
+    }
 
     MPI_Recv(buffer2, 1, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
-    printf("Vector: [");
-    for(i=0 ; i<24 ; i++) printf("%3.2f ", buffer2[i]);
-    printf("]\n");
+
+    {
+      int i=0, success=1;
+      float value=0;
+      int count, blength, stride=8;
+
+      for(count=0 ; count<8 ; count++) {
+        for(blength=0 ; blength<3 ; blength++) {
+          if (buffer2[i] != value) {
+            success=0;
+            break;
+          }
+          i++;
+          value++;
+        }
+        value += stride - 3;
+      }
+
+      if (success) {
+        printf("[%d] Vector successfully received\n", rank);
+      }
+      else {
+        printf("[%d] Incorrect vector: [", rank);
+        for(i=0 ; i<24 ; i++) printf("%3.2f ", buffer2[i]);
+        printf("]\n");
+      }
+    }
+    MPI_Type_free(&mytype);
+    MPI_Type_free(&mytype2);
   }
-  MPI_Type_free(&mytype);
-  MPI_Type_free(&mytype2);
 }
 
 void indexed_datatype(int rank) {
@@ -96,7 +146,7 @@ void indexed_datatype(int rank) {
 
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);
-  MPI_Type_indexed(3, blocklengths, strides2, MPI_CHAR, &mytype2);
+  MPI_Type_hindexed(3, blocklengths, strides2, MPI_CHAR, &mytype2);
   MPI_Type_commit(&mytype2);
 
   if (rank == 0) {
@@ -111,15 +161,74 @@ void indexed_datatype(int rank) {
     int i;
 
     MPI_Recv(buffer, 3, mytype, 0, 10, MPI_COMM_WORLD, NULL);
-    printf("Index: [ ");
-    for(i=0 ; i<18 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
-    printf("]\n");
+
+    {
+      int i=0, j=0, success=1;
+      char value;
+      int nb, count, blength;
+
+      for(nb=0 ; nb<3 ; nb++) {
+        j=0;
+        for(count=0 ; count<3 ; count++) {
+          value = 'a' + (nb * (strides[2] + blocklengths[2]));
+          value += strides[j];
+          for(blength=0 ; blength<blocklengths[j] ; blength++) {
+            if (buffer[i] != value) {
+              success=0;
+              break;
+            }
+            i++;
+            value++;
+          }
+          j++;
+        }
+      }
+
+      if (success) {
+        printf("[%d] Index successfully received\n", rank);
+      }
+      else {
+        printf("Incorrect index: [ ");
+        for(i=0 ; i<18 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
+        printf("]\n");
+      }
+    }
 
     MPI_Recv(buffer2, 2, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
-    printf("Index: [ ");
-    for(i=0 ; i<12 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
-    printf("]\n");
+
+    {
+      int i=0, j=0, success=1;
+      char value='a';
+      int nb, count, blength;
+
+      for(nb=0 ; nb<2 ; nb++) {
+        j=0;
+        for(count=0 ; count<3 ; count++) {
+          value = 'a' + (nb * (strides[2] + blocklengths[2]));
+          value += strides[j];
+          for(blength=0 ; blength<blocklengths[j] ; blength++) {
+            if (buffer[i] != value) {
+              success=0;
+              break;
+            }
+            i++;
+            value++;
+          }
+          j++;
+        }
+      }
+
+      if (success) {
+        printf("[%d] Index successfully received\n", rank);
+      }
+      else {
+        printf("Incorrect index: [ ");
+        for(i=0 ; i<12 ; i++) printf("%c(%d) ", buffer[i], ((int) buffer[i])-97);
+        printf("]\n");
+      }
+    }
   }
+
   MPI_Type_free(&mytype);
   MPI_Type_free(&mytype2);
 }
@@ -142,7 +251,7 @@ void struct_datatype(int rank) {
   MPI_Get_address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
-  printf("sizeof struct %lud, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+  //  printf("sizeof struct %lud, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
@@ -159,23 +268,36 @@ void struct_datatype(int rank) {
       particles[i].b[2] = i*3;
       particles[i].b[3] = i+5;
     }
-    for(i=0 ; i<10 ; i++) {
-      printf("Sending Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
-             particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
-    }
-
     MPI_Send(particles, 10, mytype, 1, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[10];
-    int i;
     MPI_Recv(particles, 10, mytype, 0, 10, MPI_COMM_WORLD, NULL);
-    for(i=0 ; i<10 ; i++) {
-      printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
-             particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
+
+    {
+      int i, success=1;
+      for(i=0 ; i<10 ; i++) {
+        if (particles[i].class[0] != (char) i+97 ||
+            particles[i].d[0] != (i+1)*10 || particles[i].d[1] != (i+1)*2 ||
+            particles[i].b[0] != i || particles[i].b[1] != i+2 ||
+            particles[i].b[2] != i*3 || particles[i].b[3] != i+5) {
+          success=0;
+          break;
+        }
+      }
+
+      if (success) {
+        printf("[%d] Struct successfully received\n", rank);
+      }
+      else {
+        for(i=0 ; i<10 ; i++) {
+          printf("Receiving incorrect particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n",
+                 i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
+                 particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
+        }
+      }
     }
   }
-
   MPI_Type_free(&mytype);
 }
 
@@ -193,6 +315,7 @@ void struct_and_indexed(int rank) {
   MPI_Datatype indexed_type;
   int indexed_blocklens[2] = { 3, 1 };
   int indexed_displacements[2] = { 0, 4*sizeof(struct part_s) };
+  int indexed_displacements_aux[2] = { 0, 4 };
 
   MPI_Get_address(&(particle.d), &struct_displacements[0]);
   MPI_Get_address(&(particle.b), &struct_displacements[1]);
@@ -204,23 +327,51 @@ void struct_and_indexed(int rank) {
   MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
   MPI_Type_commit(&indexed_type);
 
-  printf("Sizeof particle is %lud\n", sizeof(struct part_s));
+  //printf("Sizeof particle is %lud\n", sizeof(struct part_s));
   if (rank == 0) {
     struct part_s particles[20];
     int i;
     for(i=0 ; i<20 ; i++) {
       particles[i].d = (i+1)*10;
       particles[i].b = i+1;
-      printf("Sending Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
+      //printf("Sending Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
     }
     MPI_Send(particles, 3, indexed_type, 1, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[12];
-    int i;
     MPI_Recv(particles, 3, indexed_type, 0, 10, MPI_COMM_WORLD, NULL);
-    for(i=0 ; i<12 ; i++) {
-      printf("Receiving Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
+
+    {
+      int i=0, j, success=1;
+      int nb, count, blength;
+      int value;
+
+      for(nb=0 ; nb<3 ; nb++) {
+        j=0;
+        for(count=0 ; count<2 ; count++) {
+          value = nb * (indexed_displacements_aux[1] + indexed_blocklens[1]);
+          value += indexed_displacements_aux[j];
+          for(blength=0 ; blength<indexed_blocklens[j] ; blength++) {
+            if (particles[i].d != (value+1)*10 || particles[i].b != value+1) {
+              success=0;
+              break;
+            }
+            i++;
+            value++;
+          }
+          j++;
+        }
+      }
+
+      if (success) {
+        printf("[%d] Struct indexed successfully received\n", rank);
+      }
+      else {
+        for(i=0 ; i<12 ; i++) {
+          printf("Receiving incorrect particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
+        }
+      }
     }
   }
   MPI_Type_free(&indexed_type);
@@ -234,8 +385,6 @@ int main(int argc, char **argv) {
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  printf("Rank %d Size %d\n", rank, numtasks);
 
   contig_datatype(rank);
   vector_datatype(rank);

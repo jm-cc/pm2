@@ -154,6 +154,8 @@ void internal_exit() {
 
   free(communicators[0]->global_ranks);
   free(communicators[0]);
+  free(communicators[1]->global_ranks);
+  free(communicators[1]);
   free(communicators);
   while (tbx_slist_is_nil(available_communicators) == tbx_false) {
     int *ptr = tbx_slist_extract(available_communicators);

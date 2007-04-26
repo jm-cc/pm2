@@ -23,6 +23,8 @@
 #ifdef LINUX_SYS
 #include <sys/utsname.h>
 #endif
+#include <sys/resource.h>
+#include <stdlib.h>
 #include <string.h>
 
 /*
@@ -343,6 +345,7 @@ int main(int argc, char *argv[])
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
 #endif
 	if(!marcel_ctx_setjmp(__ma_initial_main_ctx)) {
+		struct rlimit rlim;
 
 		__main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
 					    ~(THREAD_SLOT_SIZE-1)) -
@@ -353,6 +356,12 @@ int main(int argc, char *argv[])
                 __ma_argc = argc; __ma_argv = argv;
 
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
+
+		getrlimit(RLIMIT_STACK, &rlim);
+		if (get_sp() - new_sp > rlim.rlim_max) {
+			fprintf(stderr,"The max stack resource limit is too small (%ld) for the chosen marcel stack size (%ld).  Please decrease THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h", (long)rlim.rlim_max, (long)THREAD_SLOT_SIZE);
+			abort();
+		}
 
 		/* On se contente de descendre la pile. Tout va bien, même sur Itanium */
 #ifdef WIN_SYS

@@ -2,7 +2,7 @@ ifeq ($(MPIF77),)
 MPIF77	:=	../mpif77
 endif
 
-PROGS		:=	fpi
+PROGS		:=	fpi basics
 
 modules 	:=	$(shell pm2-config --modules)
 libs		:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)
@@ -19,6 +19,7 @@ all: $(PROGS)
 	$(MPIF77) -c $< -o $@
 
 fpi: fpi.o ${libs}
+basics: basics.o ${libs}
 
 clean:
 	rm -f *.o $(PROGS)

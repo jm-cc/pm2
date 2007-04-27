@@ -48,12 +48,16 @@ int main(int argc, char **argv) {
         fprintf(stdout, "%d ", rbuf[i]);
       }
       fprintf(stdout, "\n");
+      free(rbuf);
+      free(recvcounts);
+      free(displs);
     }
+    free(sendarray);
   }
 
   {
     int *sendarray, sendcount;
-    int *rbuf, *recvcounts, *displs, totalcount;
+    int *rbuf, *recvcounts=NULL, *displs, totalcount;
 
     totalcount = 1 + (numtasks * (numtasks - 1) / 2);
     rbuf = malloc(totalcount * sizeof(int));
@@ -88,6 +92,13 @@ int main(int argc, char **argv) {
       fprintf(stdout, "%d ", rbuf[i]);
     }
     fprintf(stdout, "\n");
+
+    if (rank == 0) {
+      free(recvcounts);
+      free(displs);
+    }
+    free(sendarray);
+    free(rbuf);
   }
 
   fflush(stdout);

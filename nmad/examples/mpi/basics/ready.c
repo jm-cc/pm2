@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
     MPI_Rsend(x, 1024*1024, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
     MPI_Send(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
     MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+
+    free(x);
   }
   else {
     int *x, y;
@@ -44,6 +46,8 @@ int main(int argc, char **argv) {
 
     printf("The answer to life, the universe, and everything is %d, %d\n", x[0], x[1024*1024-1]);
     printf("There are %d Wonders of the World\n", y);
+
+    free(x);
   }
 
   MPI_Finalize();

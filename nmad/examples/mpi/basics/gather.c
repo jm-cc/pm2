@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "%d ", rbuf[i]);
       }
       fprintf(stdout, "\n");
+      free(rbuf);
     }
   }
 

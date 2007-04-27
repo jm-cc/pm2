@@ -39,6 +39,10 @@ int main(int argc, char **argv) {
     }
     fprintf(stdout, "\n");
     fflush(stdout);
+
+    free(rrbuf);
+    free(sendarray);
+    free(recvcounts);
   }
 
   MPI_Finalize();

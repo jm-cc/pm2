@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  free(x);
   MPI_Finalize();
   exit(0);
 }

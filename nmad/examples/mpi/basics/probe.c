@@ -42,6 +42,8 @@ void test_probe(int rank, int size) {
     MPI_Send(x, size, MPI_INT, rank_dst, 22, MPI_COMM_WORLD);
     x[0] = 7;
     MPI_Send(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
+
+    free(x);
   }
   else {
     int *x, *y;
@@ -78,5 +80,8 @@ void test_probe(int rank, int size) {
     MPI_Get_count(&status, MPI_INT, &count);
     fprintf(stdout, "Wait: source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
     fprintf(stdout, "Birth month %d\n", x[0]);
+
+    free(x);
+    free(y);
   }
 }

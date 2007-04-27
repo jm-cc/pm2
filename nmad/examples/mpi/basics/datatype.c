@@ -14,8 +14,9 @@ void print_buffer(int rank, int *buffer) {
 
 void contig_datatype(int rank) {
   MPI_Datatype mytype;
-  MPI_Datatype mytype3;
+  MPI_Datatype mytype1;
   MPI_Datatype mytype2;
+  MPI_Datatype mytype3;
 
   MPI_Type_contiguous(2, MPI_INT, &mytype);
   MPI_Type_commit(&mytype);
@@ -40,15 +41,21 @@ void contig_datatype(int rank) {
     print_buffer(rank, buffer3);
   }
 
-  MPI_Type_contiguous(2, MPI_INT, &mytype);
-  MPI_Type_commit(&mytype);
+  MPI_Type_free(&mytype);
+  MPI_Type_free(&mytype2);
+
+  MPI_Type_contiguous(2, MPI_INT, &mytype1);
+  MPI_Type_commit(&mytype1);
+  MPI_Type_contiguous(2, MPI_INT, &mytype2);
+  MPI_Type_commit(&mytype2);
   MPI_Type_contiguous(2, MPI_INT, &mytype3);
   MPI_Type_commit(&mytype3);
-  MPI_Type_contiguous(2, MPI_INT, &mytype);
-  MPI_Type_commit(&mytype);
   MPI_Type_free(&mytype3);
-  MPI_Type_contiguous(2, MPI_INT, &mytype);
-  MPI_Type_commit(&mytype);
+  MPI_Type_contiguous(2, MPI_INT, &mytype3);
+  MPI_Type_commit(&mytype3);
+  MPI_Type_free(&mytype1);
+  MPI_Type_free(&mytype2);
+  MPI_Type_free(&mytype3);
 }
 
 void vector_datatype(int rank) {
@@ -132,9 +139,9 @@ void vector_datatype(int rank) {
         printf("]\n");
       }
     }
-    MPI_Type_free(&mytype);
-    MPI_Type_free(&mytype2);
   }
+  MPI_Type_free(&mytype);
+  MPI_Type_free(&mytype2);
 }
 
 void indexed_datatype(int rank) {

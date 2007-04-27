@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
       fprintf(stdout, "%d ", rrbuf[i]);
     }
     fprintf(stdout, "\n");
+
+    free(rrbuf);
   }
 
   fflush(stdout);

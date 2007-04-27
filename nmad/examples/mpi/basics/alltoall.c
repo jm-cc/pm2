@@ -12,8 +12,6 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  printf("Rank %d Size %d\n", rank, numtasks);
-
   {
     int *rrbuf = malloc(numtasks * 2 * sizeof(int));
     int *sendarray = malloc(numtasks * 2 * sizeof(int));

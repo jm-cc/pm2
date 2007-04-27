@@ -49,8 +49,6 @@ rm -f /tmp/pm2test_"${USER}"_expected
 [0] Sending: 0 1 2 3 
 [1] Received: 2 3 12 13 
 [1] Sending: 10 11 12 13 
-Rank 0 Size 2
-Rank 1 Size 2
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 

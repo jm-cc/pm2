@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
   int i, flag, numtasks, rank, dest;
   int ping_side, rank_dst;
   MPI_Request requests[4*1024+1];
-  int *x=malloc(1024*sizeof(int));
+  int *x=calloc(1024*sizeof(int), 1);
 
   // Initialise MPI
   MPI_Init(&argc,&argv);

@@ -1650,6 +1650,8 @@ int MPI_Gather(void *sendbuf,
     memcpy(recvbuf + (mpir_communicator->rank * mpir_recv_datatype->extent),
            sendbuf, sendcount * mpir_send_datatype->extent);
 
+    // free memory
+    free(requests);
   }
   else {
     MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
@@ -1706,6 +1708,8 @@ int MPI_Gatherv(void *sendbuf,
     memcpy(recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
            sendbuf, sendcount * mpir_send_datatype->extent);
 
+    // free memory
+    free(requests);
   }
   else {
     MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
@@ -1760,15 +1764,22 @@ int MPI_Allgatherv(void *sendbuf,
 
   mpir_communicator = get_communicator(comm);
 
+  // Broadcast the total receive count to all processes
+  if (mpir_communicator->rank == 0) {
+    for(i=0 ; i<mpir_communicator->size ; i++) {
+      MPI_NMAD_TRACE("recvcounts[%d] = %d\n", i, recvcounts[i]);
+      recvcount += recvcounts[i];
+    }
+    MPI_NMAD_TRACE("recvcount = %d\n", recvcount);
+  }
+  err = MPI_Bcast(&recvcount, 1, MPI_INT, 0, comm);
+
+  // Gather on process 0
   MPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  for(i=0 ; i<mpir_communicator->size ; i++) {
-    MPI_NMAD_TRACE("recvcounts[%d] = %d\n", i, recvcounts[i]);
-    recvcount += recvcounts[i];
-  }
-  MPI_NMAD_TRACE("recvcount = %d\n", recvcount);
   err = MPI_Bcast(recvbuf, recvcount, recvtype, 0, comm);
+
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -1816,6 +1827,8 @@ int MPI_Scatter(void *sendbuf,
     memcpy(recvbuf + (mpir_communicator->rank * mpir_recv_datatype->extent),
            sendbuf, sendcount * mpir_send_datatype->extent);
 
+    // free memory
+    free(requests);
   }
   else {
     MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, NULL);
@@ -2111,9 +2124,16 @@ int MPI_Reduce_scatter(void *sendbuf,
 
     // copy local data for itself
     memcpy(recvbuf, reducebuf, recvcounts[0] * mpir_datatype->extent);
+
+    // free memory
+    free(requests);
   }
   else {
     MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, NULL);
+  }
+
+  if (mpir_communicator->rank == 0) {
+    free(reducebuf);
   }
 
   MPI_NMAD_LOG_OUT();

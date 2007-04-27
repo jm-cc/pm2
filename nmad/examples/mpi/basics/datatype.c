@@ -142,7 +142,7 @@ void indexed_datatype(int rank) {
   MPI_Datatype mytype2;
   int blocklengths[3] = {1, 3, 2};
   int strides[3] = {0, 2, 6};
-  int strides2[3] = {0*sizeof(MPI_CHAR), 2*sizeof(MPI_CHAR), 6*sizeof(MPI_CHAR)};
+  MPI_Aint strides2[3] = {0*sizeof(MPI_CHAR), 2*sizeof(MPI_CHAR), 6*sizeof(MPI_CHAR)};
 
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);
@@ -302,7 +302,7 @@ void struct_datatype(int rank) {
 }
 
 void struct_and_indexed(int rank) {
-  MPI_Datatype struct_type;
+  MPI_Datatype struct_type, struct_type_ext;
   struct part_s {
     double d;
     int b;
@@ -311,6 +311,7 @@ void struct_and_indexed(int rank) {
   int struct_blocklens[2] = { 1, 1 };
   MPI_Aint struct_displacements[2];
   struct part_s particle;
+  MPI_Aint lb, extent;
 
   MPI_Datatype indexed_type;
   int indexed_blocklens[2] = { 3, 1 };
@@ -320,11 +321,21 @@ void struct_and_indexed(int rank) {
   MPI_Get_address(&(particle.d), &struct_displacements[0]);
   MPI_Get_address(&(particle.b), &struct_displacements[1]);
   struct_displacements[1] -= struct_displacements[0];
+  struct_displacements[0] = 0;
 
   MPI_Type_struct(2, struct_blocklens, struct_displacements, types, &struct_type);
   MPI_Type_commit(&struct_type);
 
-  MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
+  MPI_Type_get_extent(struct_type, &lb, &extent);
+  if (extent != sizeof(struct part_s)) {
+    MPI_Type_create_resized(struct_type, lb, sizeof(struct part_s), &struct_type_ext);
+    MPI_Type_commit(&struct_type_ext);
+    MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type_ext, &indexed_type);
+  }
+  else {
+    MPI_Type_indexed(2, indexed_blocklens, indexed_displacements, struct_type, &indexed_type);
+  }
+
   MPI_Type_commit(&indexed_type);
 
   //printf("Sizeof particle is %lud\n", sizeof(struct part_s));
@@ -373,6 +384,9 @@ void struct_and_indexed(int rank) {
         }
       }
     }
+  }
+  if (extent != sizeof(struct part_s)) {
+    MPI_Type_free(&struct_type_ext);
   }
   MPI_Type_free(&indexed_type);
   MPI_Type_free(&struct_type);

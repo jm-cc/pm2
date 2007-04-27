@@ -217,6 +217,73 @@ int mpir_type_size(MPI_Datatype datatype, int *size) {
   return MPI_SUCCESS;
 }
 
+int mpir_type_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+  mpir_datatype_t *mpir_datatype = get_datatype(datatype);
+  *lb = 0;
+  *extent = mpir_datatype->extent;
+  return MPI_SUCCESS;
+}
+
+int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype) {
+  int i;
+  mpir_datatype_t *mpir_old_datatype = get_datatype(oldtype);
+
+  *newtype = get_available_datatype();
+  datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
+
+  datatypes[*newtype]->dte_type  = mpir_old_datatype->dte_type;
+  datatypes[*newtype]->basic     = mpir_old_datatype->basic;
+  datatypes[*newtype]->committed = 0;
+  datatypes[*newtype]->is_contig = mpir_old_datatype->is_contig;
+  datatypes[*newtype]->size      = mpir_old_datatype->size;
+  datatypes[*newtype]->extent    = extent;
+
+  if(datatypes[*newtype]->dte_type == MPIR_CONTIG) {
+    datatypes[*newtype]->old_size  = mpir_old_datatype->old_size;
+    datatypes[*newtype]->elements  = mpir_old_datatype->elements;
+  }
+  else if (datatypes[*newtype]->dte_type == MPIR_VECTOR ||
+	   datatypes[*newtype]->dte_type == MPIR_HVECTOR) {
+    datatypes[*newtype]->old_size   = mpir_old_datatype->old_size;
+    datatypes[*newtype]->old_sizes  = mpir_old_datatype->old_sizes;
+    datatypes[*newtype]->elements   = mpir_old_datatype->elements;
+    datatypes[*newtype]->blocklen   = mpir_old_datatype->blocklen;
+    datatypes[*newtype]->block_size = mpir_old_datatype->block_size;
+    datatypes[*newtype]->stride     = mpir_old_datatype->stride;
+  }
+  else if (datatypes[*newtype]->dte_type == MPIR_INDEXED ||
+	   datatypes[*newtype]->dte_type == MPIR_HINDEXED) {
+    datatypes[*newtype]->old_size  = mpir_old_datatype->old_size;
+    datatypes[*newtype]->old_sizes = mpir_old_datatype->old_sizes;
+    datatypes[*newtype]->elements  = mpir_old_datatype->elements;
+    datatypes[*newtype]->blocklens = malloc(datatypes[*newtype]->elements * sizeof(int));
+    datatypes[*newtype]->indices   = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
+    for(i=0 ; i<datatypes[*newtype]->elements ; i++) {
+      datatypes[*newtype]->blocklens[i] = mpir_old_datatype->blocklens[i];
+      datatypes[*newtype]->indices[i]   = mpir_old_datatype->indices[i];
+    }
+  }
+  else if (datatypes[*newtype]->dte_type == MPIR_STRUCT) {
+    datatypes[*newtype]->elements  = mpir_old_datatype->elements;
+    datatypes[*newtype]->blocklens = malloc(datatypes[*newtype]->elements * sizeof(int));
+    datatypes[*newtype]->indices   = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
+    datatypes[*newtype]->old_sizes = malloc(datatypes[*newtype]->elements * sizeof(size_t));
+    for(i=0 ; i<datatypes[*newtype]->elements ; i++) {
+      datatypes[*newtype]->blocklens[i] = mpir_old_datatype->blocklens[i];
+      datatypes[*newtype]->indices[i]   = mpir_old_datatype->indices[i];
+      datatypes[*newtype]->old_sizes[i] = mpir_old_datatype->old_sizes[i];
+    }
+  }
+  else if (datatypes[*newtype]->dte_type != MPIR_BASIC) {
+    ERROR("Datatype %d unknown", oldtype);
+    return MPI_ERR_OTHER;
+  }
+
+  MPI_NMAD_TRACE_LEVEL(3, "Creating resized type (%d) with extent=%lu, based on type %d with a extent %lu\n",
+		       *newtype, (unsigned long)datatypes[*newtype]->extent, oldtype, (unsigned long)mpir_old_datatype->extent);
+  return MPI_SUCCESS;
+}
+
 int mpir_type_commit(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = get_datatype(datatype);
   mpir_datatype->committed = 1;
@@ -270,17 +337,24 @@ int mpir_type_free(MPI_Datatype datatype) {
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype) {
+  mpir_datatype_t *mpir_old_datatype;
+
+  mpir_old_datatype = get_datatype(oldtype);
   *newtype = get_available_datatype();
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = MPIR_CONTIG;
-  datatypes[*newtype]->old_size = sizeof_datatype(oldtype);
+  datatypes[*newtype]->basic = 0;
+  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
   datatypes[*newtype]->size = datatypes[*newtype]->old_size * count;
   datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count;
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new contiguous type (%d) with size=%lu based on type %d with a size %lu\n", *newtype, (unsigned long)datatypes[*newtype]->size, oldtype, (unsigned long)datatypes[*newtype]->old_size);
+  MPI_NMAD_TRACE_LEVEL(3, "Creating new contiguous type (%d) with size=%lu, extent=%lu based on type %d with a extent %lu\n", *newtype,
+		       (unsigned long)datatypes[*newtype]->size, (unsigned long)datatypes[*newtype]->extent,
+		       oldtype, (unsigned long)datatypes[*newtype]->old_size);
   return MPI_SUCCESS;
 }
 
@@ -290,11 +364,15 @@ int mpir_type_vector(int count,
                      mpir_nodetype_t type,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
+  mpir_datatype_t *mpir_old_datatype;
+
+  mpir_old_datatype = get_datatype(oldtype);
   *newtype = get_available_datatype();
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = type;
-  datatypes[*newtype]->old_size = sizeof_datatype(oldtype);
+  datatypes[*newtype]->basic = 0;
+  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
   datatypes[*newtype]->old_sizes = NULL;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
@@ -303,8 +381,11 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->blocklen = blocklength;
   datatypes[*newtype]->block_size = blocklength * datatypes[*newtype]->old_size;
   datatypes[*newtype]->stride = stride;
+  datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count * blocklength;
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%lu based on type %d with a size %lu\n", *newtype, (unsigned long)datatypes[*newtype]->size, oldtype, (unsigned long)sizeof_datatype(oldtype));
+  MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%lu, extent=%lu based on type %d with a extent %lu\n", *newtype,
+		       (unsigned long)datatypes[*newtype]->size, (unsigned long)datatypes[*newtype]->extent,
+		       oldtype, datatypes[*newtype]->old_size);
   return MPI_SUCCESS;
 }
 
@@ -315,12 +396,17 @@ int mpir_type_indexed(int count,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype) {
   int i;
+  mpir_datatype_t *mpir_old_datatype;
+
+  MPI_NMAD_TRACE("Creating indexed derived datatype based on %d elements\n", count);
+  mpir_old_datatype = get_datatype(oldtype);
 
   *newtype = get_available_datatype();
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = type;
-  datatypes[*newtype]->old_size = sizeof_datatype(oldtype);
+  datatypes[*newtype]->basic = 0;
+  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
   datatypes[*newtype]->old_sizes = NULL;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
@@ -330,15 +416,20 @@ int mpir_type_indexed(int count,
   for(i=0 ; i<count ; i++) {
     datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
+    MPI_NMAD_TRACE("Element %d: length %d, indice %ld\n", i, datatypes[*newtype]->blocklens[i], datatypes[*newtype]->indices[i]);  
   }
   if (type == MPIR_HINDEXED) {
     for(i=0 ; i<count ; i++) {
       datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_size;
+      MPI_NMAD_TRACE("Element %d: indice %ld\n", i, datatypes[*newtype]->indices[i]);
     }
   }
-  datatypes[*newtype]->size = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_size * datatypes[*newtype]->blocklens[count-1];
+  datatypes[*newtype]->size = (datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_size * datatypes[*newtype]->blocklens[count-1]);
+  datatypes[*newtype]->extent = (datatypes[*newtype]->indices[count-1] + mpir_old_datatype->extent * datatypes[*newtype]->blocklens[count-1]);
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new index type (%d) with size=%lu based on type %d with a size %lu\n", *newtype, (unsigned long)datatypes[*newtype]->size, oldtype, (unsigned long)sizeof_datatype(oldtype));
+  MPI_NMAD_TRACE_LEVEL(3, "Creating new index type (%d) with size=%lu, extent=%lu based on type %d with a extent %lu\n", *newtype,
+		       (unsigned long)datatypes[*newtype]->size, (unsigned long)datatypes[*newtype]->extent,
+		       oldtype, datatypes[*newtype]->old_size);
   return MPI_SUCCESS;
 }
 
@@ -354,6 +445,7 @@ int mpir_type_struct(int count,
   datatypes[*newtype] = malloc(sizeof(mpir_datatype_t));
 
   datatypes[*newtype]->dte_type = MPIR_STRUCT;
+  datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
@@ -367,7 +459,7 @@ int mpir_type_struct(int count,
     datatypes[*newtype]->old_sizes[i] = get_datatype(array_of_types[i])->size;
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
 
-    MPI_NMAD_TRACE("Element %d: length %d, old_type size %lu, indice %lu\n", i, datatypes[*newtype]->blocklens[i], (unsigned long)datatypes[*newtype]->old_sizes[i], (unsigned long)datatypes[*newtype]->indices[i]);
+    MPI_NMAD_TRACE("Element %d: length %d, old_type size %lu, indice %ld\n", i, datatypes[*newtype]->blocklens[i], (unsigned long)datatypes[*newtype]->old_sizes[i], datatypes[*newtype]->indices[i]);
     datatypes[*newtype]->size +=  datatypes[*newtype]->blocklens[i] * datatypes[*newtype]->old_sizes[i];
   }
   /* We suppose here that the last field of the struct does not need

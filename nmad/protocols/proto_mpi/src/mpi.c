@@ -781,17 +781,19 @@ int mpi_inline_isend(void *buffer,
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     int               i, j;
-    void             *ptr = buffer;
+    void             *ptr = buffer, *subptr;
 
-    MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %lu\n", mpir_datatype->elements, (unsigned long)mpir_datatype->size);
+    MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %lu - extent %lu\n", mpir_datatype->elements,
+		   (unsigned long)mpir_datatype->size, (unsigned long)mpir_datatype->extent);
     nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
     for(i=0 ; i<count ; i++) {
-      ptr = buffer + i * mpir_datatype->size;
-      MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, (unsigned long)i*mpir_datatype->size);
+      ptr = buffer + i * mpir_datatype->extent;
+      MPI_NMAD_TRACE("Element %d starts at %p (%p + %lu)\n", i, ptr, buffer, (unsigned long)i*mpir_datatype->extent);
       for(j=0 ; j<mpir_datatype->elements ; j++) {
-        ptr += mpir_datatype->indices[j];
-        nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-        ptr -= mpir_datatype->indices[j];
+        subptr = ptr + mpir_datatype->indices[j];
+	MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %lu) with size %lu\n", i, j, subptr, ptr,
+		       mpir_datatype->indices[j], mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+        nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
       }
     }
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
@@ -1698,7 +1700,7 @@ int MPI_Gatherv(void *sendbuf,
     }
 
     // copy local data for itself
-    MPI_NMAD_TRACE("Copying local data from %p to %p with len %d\n", sendbuf,
+    MPI_NMAD_TRACE("Copying local data from %p to %p with len %ld\n", sendbuf,
                    recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
                    sendcount * mpir_send_datatype->extent);
     memcpy(recvbuf + (displs[mpir_communicator->rank] * mpir_recv_datatype->extent),
@@ -2204,6 +2206,32 @@ int MPI_Type_size(MPI_Datatype datatype, int *size) {
 }
 
 /**
+ * Returns the lower bound and the extent of datatype
+ */
+int MPI_Type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+  return mpir_type_extent(datatype, lb, extent);
+}
+
+/**
+ * Returns in newtype a new datatype that is identical to oldtype,
+ * except that the lower bound of this new datatype is set to be lb,
+ * and its upper bound is set to lb + extent.
+ */
+int MPI_Type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype) {
+  int err;
+
+  MPI_NMAD_LOG_IN();
+  if (lb != 0) {
+    MPI_NMAD_LOG_OUT();
+    return not_implemented("Using lb not equals to 0");
+  }
+  err = mpir_type_create_resized(oldtype, lb, extent, newtype);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
  * Commits the datatype.
  */
 int MPI_Type_commit(MPI_Datatype *datatype) {
@@ -2269,7 +2297,20 @@ int MPI_Type_indexed(int count,
                      int *array_of_displacements,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
-  return mpir_type_indexed(count, array_of_blocklengths, (MPI_Aint *)array_of_displacements, MPIR_INDEXED, oldtype, newtype);
+  int err, i;
+
+  MPI_NMAD_LOG_IN();
+
+  MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
+  for(i=0 ; i<count ; i++) {
+    displacements[i] = array_of_displacements[i];
+  }
+
+  err = mpir_type_indexed(count, array_of_blocklengths, displacements, MPIR_INDEXED, oldtype, newtype);
+
+  free(displacements);
+  MPI_NMAD_LOG_OUT();
+  return err;
 }
 
 /**

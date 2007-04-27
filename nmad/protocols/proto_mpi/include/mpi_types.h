@@ -48,7 +48,7 @@
 #define MPI_THREAD_SERIALIZED 2
 #define MPI_THREAD_MULTIPLE 3
 
-typedef intptr_t MPI_Aint;
+typedef size_t MPI_Aint;
 
 typedef struct {
   int count;

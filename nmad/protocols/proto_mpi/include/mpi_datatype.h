@@ -27,6 +27,10 @@ int MPI_Address(void *location, MPI_Aint *address);
 
 int MPI_Type_size(MPI_Datatype datatype, int *size);
 
+int MPI_Type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
+
+int MPI_Type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype);
+
 int MPI_Type_commit(MPI_Datatype *datatype);
 
 int MPI_Type_free(MPI_Datatype *datatype);

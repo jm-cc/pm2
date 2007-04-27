@@ -157,6 +157,10 @@ mpir_datatype_t* get_datatype(MPI_Datatype datatype);
 
 int mpir_type_size(MPI_Datatype datatype, int *size);
 
+int mpir_type_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
+
+int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype);
+
 int mpir_type_commit(MPI_Datatype datatype);
 
 int mpir_type_unlock(MPI_Datatype datatype);

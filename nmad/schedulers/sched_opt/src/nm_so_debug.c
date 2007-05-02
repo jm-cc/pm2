@@ -17,6 +17,7 @@
 
 debug_type_t debug_nm_so_trace=NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");
 debug_type_t debug_nm_so_sr_trace=NEW_DEBUG_TYPE("NM_SO_SR: ", "nm_so_sr_trace");
+debug_type_t debug_nm_so_sr_log=NEW_DEBUG_TYPE("NM_SO_SR_LOG: ", "nm_so_sr_log");
 
 void nm_so_debug_init(int* argc, char** argv, int debug_flags)
 {
@@ -27,5 +28,6 @@ void nm_so_debug_init(int* argc, char** argv, int debug_flags)
 void nm_so_sr_debug_init(int* argc, char** argv, int debug_flags)
 {
   pm2debug_register(&debug_nm_so_sr_trace);
+  pm2debug_register(&debug_nm_so_sr_log);
   pm2debug_init_ext(argc, argv, debug_flags);
 }

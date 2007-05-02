@@ -24,7 +24,6 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_debug.h"
-#include "nm_so_log.h"
 #include "nm_so_tracks.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)

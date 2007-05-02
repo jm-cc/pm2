@@ -407,7 +407,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       *p_request = (intptr_t)p_req;
     }
 
-    NM_SO_SR_TRACE("calling __nm_so_unpack_any_src request = %p\n", p_request);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
     return __nm_so_unpack_any_src(p_core, tag, data, len);
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -424,7 +424,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
-    NM_SO_SR_TRACE("IRECV: tag = %d, seq = %d, request = %p\n", tag, seq, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -500,14 +500,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_LOG_IN();
 
-#ifdef NMAD_SO_DEBUG
-  if (*p_request & NM_SO_STATUS_RECV_COMPLETED) {
-    NM_SO_SR_TRACE("request %p completed\n", p_request);
-  }
-  else {
-    NM_SO_SR_TRACE("request %p not completed\n", p_request);
-  }
-#endif
+  NM_SO_SR_TRACE("request %p completion = %d\n", p_request, *p_request & NM_SO_STATUS_RECV_COMPLETED ? 1 : 0);
 
   while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
     nm_schedule(p_core);
@@ -613,6 +606,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 
   while(nb--) {
 
+    NM_SO_SR_TRACE_LEVEL(3, "asking for request %p (tag %d seq %d gate_id %d) completion\n", &p_sr_gate->status[tag][seq], tag, seq, gate_id);
     nm_so_sr_rwait(p_so_interface,
 		   (nm_so_request)&p_sr_gate->status[tag][seq]);
 

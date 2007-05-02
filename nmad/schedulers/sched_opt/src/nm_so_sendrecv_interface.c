@@ -726,23 +726,18 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
                             uint8_t tag, uint8_t seq,
                             tbx_bool_t is_any_src)
 {
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+
   NM_SO_SR_LOG_IN();
 
-  if(!is_any_src) {
-    struct nm_so_gate *p_so_gate = p_gate->sch_private;
-    struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  NM_SO_SR_TRACE("data received for request = %p (any_src request %p)\n", &p_sr_gate->status[tag][seq], is_any_src ? &any_src[tag].status : NULL);
 
-    p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
+  p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
 
-    NM_SO_SR_TRACE("data received for request = %p\n", &p_sr_gate->status[tag][seq]);
-
-  } else {
-
+  if(is_any_src) {
     any_src[tag].gate_id = p_gate->id;
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
-
-    NM_SO_SR_TRACE("data received for ANY_SRC request = %p\n", &any_src[tag].status);
-
   }
 
   return NM_ESUCCESS;

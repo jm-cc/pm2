@@ -1013,9 +1013,6 @@ static void addToBubbleEnd(bubble_t *b, entity_t *e) {
 	if (dx)
 		growInHolderEnd(&b->entity);
 	bubbleMorphEnd(b);
-	/* Put back at end of list */
-	list_del(&e->entity_list);
-	list_add_tail(&e->entity_list,&b->heldentities);
 	e->holder = &b->entity;
 #ifdef TREES
 	if (e->lastitem) {

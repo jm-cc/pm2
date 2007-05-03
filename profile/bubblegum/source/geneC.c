@@ -88,10 +88,10 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
   
    parcourir_bulle(bullemere,0);
   
-   int taillebulle = GetNbElement(bullemere);
-   int i;
-   for (i = 1; i <= taillebulle; i++) {
-      Element *element_i = GetElement(bullemere, i);
+   ListeElement *liste;
+   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
+   {
+      Element *element_i = liste->element;
       TypeElement type = GetTypeElement(element_i);
       int id = GetId(element_i);
       if (type == BULLE)
@@ -102,8 +102,9 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"   int i = 50;\n");
    fprintf(fw,"   while(i--) {\n");
 
-   for (i = 1; i <= taillebulle; i++) {
-      Element *element_i = GetElement(bullemere, i);
+   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
+   {
+      Element *element_i = liste->element;
       TypeElement type = GetTypeElement(element_i);
       int id = GetId(element_i);
       if (type == BULLE)

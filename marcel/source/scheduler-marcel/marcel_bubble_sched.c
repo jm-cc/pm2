@@ -276,7 +276,9 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		marcel_sem_P(&bubble->join);
 	}
 
+#ifdef MARCEL_BUBBLE_STEAL
 	ma_holder_lock_softirq(&bubble->hold);
+#endif
 
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
@@ -287,6 +289,10 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nbentities++;
 	entity->init_holder = &bubble->hold;
+#ifdef MARCEL_BUBBLE_EXPLODE
+	entity->sched_holder = entity->init_holder;
+#endif
+#ifdef MARCEL_BUBBLE_STEAL
 	if (!entity->sched_holder) {
 		ma_holder_t *sched_bubble = bubble->sched.sched_holder;
 		/* si la bulle conteneuse est dans une autre bulle,
@@ -298,6 +304,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		entity->sched_holder = sched_bubble;
 	}
 	ma_holder_unlock_softirq(&bubble->hold);
+#endif
 }
 
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
@@ -390,9 +397,6 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 		ma_activate_entity(&bubble->sched,h);
 	}
 	ma_holder_unlock_softirq(h);
-	ma_top_add_bubble(bubble);
-	if (current_sched->submit)
-	  current_sched->submit(&bubble->sched);
 	LOG_OUT();
 }
 

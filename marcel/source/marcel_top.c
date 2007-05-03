@@ -251,11 +251,10 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 #ifdef MA__BUBBLES
 	if (bubbles) {
-		int i;
-		printbubble(&marcel_root_bubble);
-		for (i=0; i<NB_BUBBLES; i++)
-			if (the_bubbles[i])
-				printbubble(the_bubbles[i]);
+		ma_bubble_synthesize_stats(&marcel_root_bubble);
+		ma_bubble_lock_all(&marcel_root_bubble,marcel_machine_level);
+		printbubble(&marcel_root_bubble, 0);
+		ma_bubble_unlock_all(&marcel_root_bubble,marcel_machine_level);
 	} else
 #endif
 	{

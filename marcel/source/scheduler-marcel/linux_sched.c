@@ -1390,6 +1390,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	/* Cette t�he est en train d'�re ex�ut� */
 	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
+	h->nr_scheduled++;
 	ma_task_holder_unlock_softirq(h);
 	*(long *)ma_task_stats_get(p, ma_stats_nbrunning_offset) = 1;
 }
@@ -1510,6 +1511,7 @@ static void __marcel_init linux_sched_init(void)
 	/* since it is actually already running */
 	h = ma_task_holder_lock(MARCEL_SELF);
 	ma_dequeue_task(MARCEL_SELF, h);
+	h->nr_scheduled++;
 	ma_task_holder_unlock(h);
 
 //	init_timers();

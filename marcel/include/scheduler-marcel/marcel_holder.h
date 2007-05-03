@@ -102,8 +102,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
 	INIT_LIST_HEAD(&h->sched_list);
-	h->nr_running = h->nr_uninterruptible = 0;
-	h->nr_scheduled = 1;
+	h->nr_running = h->nr_uninterruptible = h->nr_scheduled = 0;
 }
 
 #section marcel_functions

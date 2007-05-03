@@ -103,5 +103,7 @@ void marcel_bubble_submit_() {
 /* Utile pour debug */
 void marcel_rien_() {
 
+void marcel_spread_() {
+  marcel_bubble_spread(&marcel_root_bubble, marcel_machine_level);
 }
 #endif

@@ -415,8 +415,9 @@ struct marcel_topo_vpdata {
 /** Structure of a topology level */
 struct marcel_topo_level {
 	enum marcel_topo_level_e type;	/**< \brief Type of level */
-	unsigned number;		/**< \brief Horizontal index among the machine */
-	unsigned index;			/**< \brief Index in fathers' children array */
+	unsigned level;			/**< \brief Vertical index in marcel_topo_levels */
+	unsigned number;		/**< \brief Horizontal index in marcel_topo_levels[l.level] */
+	unsigned index;			/**< \brief Index in fathers' children[] array */
 	signed os_node;			/**< \brief OS-provided node number */
 	signed os_die;			/**< \brief OS-provided die number */
 	signed os_l3;			/**< \brief OS-provided L3 number */

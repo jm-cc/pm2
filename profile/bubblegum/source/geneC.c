@@ -1,4 +1,5 @@
 #include "geneC.h"
+#include "interfaceGauche.h"
 
 FILE * fw;
 
@@ -41,7 +42,7 @@ int parcourir_bulle(Element* bulle, int mybid)
             fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",id);
             //fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
-            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",id,id*100+GetCharge(element_i));
+            fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",id,id*MAX_CHARGE+GetCharge(element_i));
 	    fprintf(fw,"      *marcel_stats_get(t%d, marcel_stats_load_offset) = %d;\n",id,GetCharge(element_i));
             fprintf(fw,"   }\n\n");
       }
@@ -70,8 +71,8 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"#include \"marcel.h\"\n\n");
    fprintf(fw,"any_t f(any_t foo) {\n");
    fprintf(fw,"   int i = (intptr_t)foo;\n");
-   fprintf(fw,"   int id = i/100;\n");
-   fprintf(fw,"   int load = i%%100;\n");
+   fprintf(fw,"   int id = i/%d;\n",MAX_CHARGE);
+   fprintf(fw,"   int load = i%%%d;\n",MAX_CHARGE);
    fprintf(fw,"   int n;\n");
    fprintf(fw,"   int sum = 0;\n");
    fprintf(fw,"   marcel_printf(\"some work %%d in %%d\\n\",load,id);\n");
@@ -88,6 +89,8 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
   
    parcourir_bulle(bullemere,0);
   
+   fprintf(fw,"   marcel_start_playing();\n");
+
    ListeElement *liste;
    for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
    {
@@ -98,7 +101,7 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
          fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
    }
 
-   fprintf(fw,"   marcel_start_playing();\n");
+   fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
    fprintf(fw,"   int i = 5;\n");
    fprintf(fw,"   while(i--) {\n");
 
@@ -112,6 +115,7 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    }
    fprintf(fw,"      marcel_delay(1000);\n");
    fprintf(fw,"   }\n");
+   fprintf(fw,"#endif\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //fprintf(fw,"\n   profile_stop();\n");

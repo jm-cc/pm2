@@ -108,12 +108,13 @@ static void printtask(marcel_task_t *t) {
 		top_printf(" %ld",load);
 	if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
 		top_printf(" %ldMB",load>>20);
+	top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
 	top_printf("\r\n");
 	ma_atomic_sub(utime, &t->top_utime);
 }
 
 #ifdef MA__BUBBLES
-static void printbubble(marcel_bubble_t *b, int indent) {
+static void __printbubble(marcel_bubble_t *b, int indent) {
 	marcel_entity_t *e;
 	char buf1[32];
 	char buf2[32];
@@ -133,15 +134,49 @@ static void printbubble(marcel_bubble_t *b, int indent) {
 		top_printf(" %ldMB",load>>20);
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, ma_stats_memory_offset)))
 		top_printf(" (%ldMB)",load>>20);
+	top_printf(" %ld", *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbrunning_offset));
 	top_printf("\r\n");
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_TASK_ENTITY) {
 			top_printf("%*s", indent+1, "");
 			printtask(ma_task_entity(e));
 		} else {
-			printbubble(ma_bubble_entity(e), indent+1);
+			__printbubble(ma_bubble_entity(e), indent+1);
 		}
 	}
+}
+
+static void printbubble(marcel_bubble_t *b) {
+	ma_bubble_synthesize_stats(b);
+	ma_bubble_lock_all(b,marcel_machine_level);
+	__printbubble(b, 0);
+	ma_bubble_unlock_all(b,marcel_machine_level);
+}
+
+#define NB_BUBBLES 16
+static marcel_bubble_t *the_bubbles[NB_BUBBLES];
+static ma_spinlock_t the_bubbles_lock = MA_SPIN_LOCK_UNLOCKED;
+void ma_top_add_bubble(marcel_bubble_t *b) {
+	int i;
+	ma_spin_lock(&the_bubbles_lock);
+	for (i=0;i<NB_BUBBLES;i++) {
+		if (!the_bubbles[i]) {
+			the_bubbles[i] = b;
+			break;
+		}
+	}
+	ma_spin_unlock(&the_bubbles_lock);
+}
+void ma_top_del_bubble(marcel_bubble_t *b) {
+	int i;
+	ma_spin_lock(&the_bubbles_lock);
+	for (i=0;i<NB_BUBBLES;i++) {
+		if (the_bubbles[i] == b) {
+			the_bubbles[i] = NULL;
+			break;
+		}
+	}
+	ma_spin_unlock(&the_bubbles_lock);
 }
 #endif
 
@@ -216,10 +251,11 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 #ifdef MA__BUBBLES
 	if (bubbles) {
-		ma_bubble_synthesize_stats(&marcel_root_bubble);
-		ma_bubble_lock_all(&marcel_root_bubble,marcel_machine_level);
-		printbubble(&marcel_root_bubble, 0);
-		ma_bubble_unlock_all(&marcel_root_bubble,marcel_machine_level);
+		int i;
+		printbubble(&marcel_root_bubble);
+		for (i=0; i<NB_BUBBLES; i++)
+			if (the_bubbles[i])
+				printbubble(the_bubbles[i]);
 	} else
 #endif
 	{

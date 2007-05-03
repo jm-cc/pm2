@@ -156,21 +156,13 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	ma_holder_lock_softirq(h); // passage en mode interruption
 	ma_set_task_lwp(new_task, LWP_SELF);
 	MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
-	*(long*)ma_task_stats_get(new_task, ma_stats_last_ran_offset) = marcel_clock();
 	ma_set_task_state(new_task, MA_TASK_RUNNING);
-#ifdef MA__BUBBLES
-#ifdef MARCEL_BUBBLE_EXPLODE
-	if (bh)
-		/* le fils est déjà activé par l'insertion de la bulle, le rendre runnable */
-		ma_dequeue_task(new_task,h);
-	else
-#endif
-#endif
-	{
-		ma_activate_running_task(new_task,h);
-		h->nr_scheduled++;
-	}
+	ma_activate_running_task(new_task,h);
 	ma_holder_rawunlock(h);
+
+	*(long*)ma_task_stats_get(MARCEL_SELF, ma_stats_last_ran_offset) = marcel_clock();
+	*(long*)ma_task_stats_get(new_task, ma_stats_nbrunning_offset) = 1;
+	*(long*)ma_task_stats_get(MARCEL_SELF, ma_stats_nbrunning_offset) = 0;
 
 	PROF_SWITCH_TO(cur->number, new_task);
 	marcel_ctx_set_new_stack(new_task,
@@ -189,7 +181,6 @@ void marcel_sched_internal_create_start_son(void) {
 	h = ma_task_sched_holder(SELF_GETMEM(father));
 	ma_holder_rawlock(h);
 	ma_enqueue_task(SELF_GETMEM(father), h);
-	h->nr_scheduled--;
 	ma_holder_unlock_softirq(h); // sortie du mode interruption
 
 	MTRACE("Early start", marcel_self());

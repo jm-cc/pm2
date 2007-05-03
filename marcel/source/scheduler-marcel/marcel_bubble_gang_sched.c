@@ -28,52 +28,35 @@ ma_runqueue_t ma_gang_rq;
 any_t marcel_gang_scheduler(any_t runqueue) {
 	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
-	ma_runqueue_t *rq, *work_rq = (void*) runqueue;
-	struct list_head *queue;
+	ma_runqueue_t *work_rq = (void*) runqueue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	/* Attendre un tout petit peu que la création de threads se fasse */
 	marcel_usleep(1);
 	while(1) {
 		/* First clean the work_rq runqueue */
-		rq = work_rq;
 		PROF_EVENT1(rq_lock,work_rq);
-		ma_holder_lock_softirq(&rq->hold);
+		ma_holder_lock_softirq(&work_rq->hold);
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
 		PROF_EVENTSTR(sched_status,"gang scheduler: cleaning gang runqueue");
-		/* Non-empty bubbles */
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
+		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
-				b = ma_bubble_entity(e);
-				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
-				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
-			}
-		}
-		/* Empty bubbles */
-		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
-			if (e->type == MA_BUBBLE_ENTITY) {
-				b = ma_bubble_entity(e);
-				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
-				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
+				int state = ma_get_entity(e);
+				ma_put_entity(e, &ma_gang_rq.hold, state);
 			}
 		}
 		/* Then put one job on work_rq */
 		PROF_EVENTSTR(sched_status,"gang scheduler: putting one job");
-		rq = &ma_gang_rq;
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		if (!ma_queue_empty(queue)) {
-			e = ma_queue_entry(queue);
+		list_for_each_entry(e, &ma_gang_rq.hold.sched_list, sched_list) {
 			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 			b = ma_bubble_entity(e);
-			ma_deactivate_entity(&b->sched, &rq->hold);
-			PROF_EVENT2(bubble_sched_switchrq, b, work_rq);
-			ma_activate_entity(&b->sched, &work_rq->hold);
+			if (b->hold.nr_ready) {
+				int state = ma_get_entity(e);
+				ma_put_entity(e, &work_rq->hold, state);
+				break;
+			}
 		}
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&ma_gang_rq.hold);
 		PROF_EVENT1(rq_unlock,&ma_gang_rq);
 		ma_holder_unlock_softirq(&work_rq->hold);
 		PROF_EVENT1(rq_unlock,work_rq);
@@ -96,37 +79,20 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 /* Cleaner: cleans jobs from work_rq */
 any_t marcel_gang_cleaner(any_t foo) {
 	marcel_entity_t *e, *ee;
-	marcel_bubble_t *b;
-	ma_runqueue_t *rq, *work_rq = (void*) foo;
-	struct list_head *queue;
+	ma_runqueue_t *work_rq = (void*) foo;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	marcel_usleep(1);
 	while(1) {
-		rq = work_rq;
-		ma_holder_lock_softirq(&rq->hold);
+		ma_holder_lock_softirq(&work_rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
 		PROF_EVENTSTR(sched_status,"gang cleaner: cleaning gang runqueue");
-		/* Non-empty bubbles */
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
+		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
-				b = ma_bubble_entity(e);
-				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
-				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
+				int state = ma_get_entity(e);
+				ma_put_entity(e, &ma_gang_rq.hold, state);
 			}
 		}
-		/* Empty bubbles */
-		queue = ma_rq_queue(rq, MA_NOSCHED_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
-			if (e->type == MA_BUBBLE_ENTITY) {
-				b = ma_bubble_entity(e);
-				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_gang_rq);
-				ma_activate_entity(&b->sched, &ma_gang_rq.hold);
-			}
-		}
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&work_rq->hold);
 		ma_holder_unlock_softirq(&ma_gang_rq.hold);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
@@ -144,7 +110,6 @@ any_t marcel_gang_cleaner(any_t foo) {
 	return NULL;
 }
 
-#ifdef MARCEL_GANG_SCHEDULER
 marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int sys) {
 	marcel_attr_t attr;
 	marcel_t t;
@@ -165,34 +130,69 @@ marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int s
 marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
 	return __marcel_start_gang_scheduler(marcel_gang_scheduler, rq, sys);
 }
-#endif
 
-void __marcel_init ma_bubble_sched_start(void) {
-#ifdef MARCEL_GANG_SCHEDULER
-	ma_idle_scheduler = 0;
+static int gang_sched_init() {
+	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
+	return 0;
+}
+
+static marcel_t gang_thread, clean_thread, gang_thread1, gang_thread2, gang_thread3, gang_thread4;
+
+static int gang_sched_start(void) {
 #if 1
 	/* un seul gang scheduler */
-	marcel_start_gang_scheduler(&ma_main_runqueue, 0);
+	gang_thread = marcel_start_gang_scheduler(&ma_main_runqueue, 1);
 #else
 	/* un nettoyeur */
-	__marcel_start_gang_scheduler(marcel_gang_cleaner, &ma_main_runqueue, 1);
+	clean_thread = __marcel_start_gang_scheduler(marcel_gang_cleaner, &ma_main_runqueue, 1);
 #if 1
 	/* deux gang schedulers */
-	marcel_start_gang_scheduler(&marcel_topo_levels[1][0].sched, 0);
-	marcel_start_gang_scheduler(&marcel_topo_levels[1][1].sched, 0);
+	gang_thread1 = marcel_start_gang_scheduler(&marcel_topo_levels[1][0].sched, 1);
+	gang_thread2 = marcel_start_gang_scheduler(&marcel_topo_levels[1][1].sched, 1);
 #else
 	/* quatre gang schedulers */
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][0].sched, 0);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][1].sched, 0);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][2].sched, 0);
-	marcel_start_gang_scheduler(&marcel_topo_levels[2][3].sched, 0);
+	gang_thread1 = marcel_start_gang_scheduler(&marcel_topo_levels[2][0].sched, 1);
+	gang_thread2 = marcel_start_gang_scheduler(&marcel_topo_levels[2][1].sched, 1);
+	gang_thread3 = marcel_start_gang_scheduler(&marcel_topo_levels[2][2].sched, 1);
+	gang_thread4 = marcel_start_gang_scheduler(&marcel_topo_levels[2][3].sched, 1);
 #endif
 #endif
-#endif
+	return 0;
 }
 
+static int gang_sched_exit(void) {
+	marcel_entity_t *e, *ee;
 
-void ma_bubble_gang_sched_init() {
-	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
+#define CANCEL(var) if (var) { marcel_cancel(var); var = NULL; }
+	CANCEL(gang_thread)
+	CANCEL(clean_thread)
+	CANCEL(gang_thread1)
+	CANCEL(gang_thread2)
+	CANCEL(gang_thread3)
+	CANCEL(gang_thread4)
+	PROF_EVENT1(rq_lock,&ma_main_runqueue);
+	ma_holder_lock_softirq(&ma_main_runqueue.hold);
+	PROF_EVENT1(rq_lock,&ma_gang_rq);
+	ma_holder_rawlock(&ma_gang_rq.hold);
+	list_for_each_entry_safe(e, ee, &ma_gang_rq.hold.sched_list, sched_list) {
+		int state = ma_get_entity(e);
+		ma_put_entity(e, &ma_main_runqueue.hold, state);
+	}
+	ma_holder_rawunlock(&ma_gang_rq.hold);
+	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+	return 0;
 }
+
+static int
+gang_vp_is_idle(unsigned vp)
+{
+	/* This lwp is idle... TODO: check other that other LWPs of the same controller are idle too, and get another gang (that gang terminated) */
+	return 0;
+}
+struct ma_bubble_sched_struct marcel_bubble_gang_sched = {
+	.init = gang_sched_init,
+	.start = gang_sched_start,
+	.exit = gang_sched_exit,
+	.vp_is_idle = gang_vp_is_idle,
+};
 #endif

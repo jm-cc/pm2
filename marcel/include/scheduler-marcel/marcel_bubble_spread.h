@@ -25,14 +25,8 @@
  * @{
  */
 
-#section functions
-#depend "marcel_topology.h[types]"
-/** \brief Spread a bubble
- *
- * This functions spreads bubble \e b on the topology level \e l.
- * ma_bubble_gather() may be useful afterwards for gathering back the
- * content of ::b.
- */
-void marcel_bubble_spread(marcel_bubble_t *b, marcel_topo_level_t *l);
+#section variables
+#depend "scheduler/marcel_bubble_sched_interface.h[types]"
+extern marcel_bubble_sched_t marcel_bubble_spread_sched;
 
 /* @} */

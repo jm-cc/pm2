@@ -33,7 +33,7 @@ extern int nr_threads;
 
 #section marcel_functions
 /* extern int ma_nr_threads(void); */
-extern unsigned long ma_nr_running(void);
+extern unsigned long ma_nr_ready(void);
 /* extern unsigned long ma_nr_uninterruptible(void); */
 /* extern unsigned long nr_iowait(void); */
 

@@ -607,13 +607,10 @@ bgl_frame_copy (bgl_frame_t *frame) {
  */
 static void
 bgl_frame_free (bgl_frame_t *frame) {
-    BubbleDisplayItem item;
+    BubbleDisplayItem item, next;
 
-    while (!list_empty (&frame->display_items)) {
-        item = list_entry (frame->display_items.next, typeof (*item), disp_list);
-        list_del (&item->disp_list);
+    list_for_each_entry_safe (item, next, &frame->display_items, disp_list)
         destroyBGLDisplayItem (item);
-    }
 
     free (frame);
 }
@@ -705,7 +702,10 @@ BGLMovie_nextFrame (BubbleMovie movie) {
 
     if (list_empty (&movie->frames)) {
         nframe = bgl_frame_new ();
-    } else { /*if (movie->playing) {*/
+    } else {
+        if (!movie->playing)
+            return;
+
         cframe = BGLMovie_get_current_frame (movie);
         nframe = bgl_frame_copy (cframe);
     }

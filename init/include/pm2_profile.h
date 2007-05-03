@@ -35,7 +35,7 @@
 #  define PROF_EVENT(name)                      (void)0
 #  define PROF_EVENT1(name, arg1)               (void)0
 #  define PROF_EVENT2(name, arg1, arg2)         (void)0
-#  define PROF_EVENTSTR(name, s)                (void)0
+#  define PROF_EVENTSTR(name, s, ...)           (void)0
 #  define PROF_EVENT_ALWAYS(name)               (void)0
 #  define PROF_EVENT1_ALWAYS(name, arg1)        (void)0
 #  define PROF_EVENT2_ALWAYS(name, arg1, arg2)  (void)0

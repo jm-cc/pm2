@@ -136,7 +136,7 @@ struct ma_runqueue {
 	ma_prio_array_t *expired, arrays[2];
 /* 	int best_expired_prio, prev_cpu_load[NR_CPUS]; */
 /* #ifdef CONFIG_NUMA */
-/* 	atomic_t *node_nr_running; */
+/* 	atomic_t *node_nr_ready; */
 /* 	int prev_node_load[MAX_NUMNODES]; */
 /* #endif */
 /* 	marcel_task_t *migration_thread; */

@@ -91,9 +91,57 @@ define ma-printrq
   printf " %s", ($arg0)->name
 end
 
+define ma_rq_holder
+  set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->hold))))
+  print *$rq
+  print $rq
+end
+
+define ma_holder_rq
+  set $h = &((ma_holder_t *)$arg0)->hold
+  print *$h
+  print $h
+end
+
+define ma_bubble_holder
+  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->hold))))
+  print *$b
+  print $b
+end
+
+define ma_holder_bubble
+  set $h = &((marcel_bubble_t *)$arg0)->hold
+  print *$h
+  print $h
+end
+
+define ma_bubble_entity
+  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->sched))))
+  print *$b
+  print $b
+end
+
+define ma_entity_bubble
+  set $e = &((marcel_bubble_t *)$arg0)->sched
+  print *$e
+  print $e
+end
+
+define ma_task_entity
+  set $t = ((marcel_task_t *)(((char*)$arg0)-(unsigned)(&(((marcel_task_t *)0)->sched.internal.entity))))
+  print *$t
+  print $t
+end
+
+define ma_entity_task
+  set $e = &((marcel_task_t *)$arg0)->sched.internal.entity
+  print *$e
+  print $e
+end
+
 define ma-printholder
   if ($arg0) && ($arg0)->type == 0
-    set $rq = ((ma_runqueue_t *)(((char*)$arg0)+(unsigned)(&(((ma_runqueue_t *)0)->hold))))
+    set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->hold))))
     ma-printrq $rq
   else
     printf " 0x%lx", $arg0

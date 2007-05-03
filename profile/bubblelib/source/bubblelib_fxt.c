@@ -30,6 +30,7 @@ rq_t **rqs = NULL;
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
+
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"
@@ -452,6 +453,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					break;
 				}
 				case SCHED_TICK: {
+					BubbleMovie_nextFrame(movie);
 					BubbleMovie_pause(movie, DELAYTIME);
 					break;
 				}
@@ -464,8 +466,10 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
-					if (FxT_showSystem || t->number >= 0)
+					if (FxT_showSystem || t->number >= 0) {
+						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
+					}
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
@@ -481,8 +485,10 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
-					if (FxT_showSystem || t->number >= 0)
+					if (FxT_showSystem || t->number >= 0) {
+						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
+					}
 					break;
 				}
 #ifdef SCHED_RESCHED_LWP
@@ -497,7 +503,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					thread_t *tprev = getThread(thprev);
 					uint64_t thnext = ev.ev64.param[0];
 					thread_t *tnext = getThread(thnext);
-					if (tprev==tnext) abort();
+					//if (tprev==tnext) abort();
 					if (tprev->entity.type!=THREAD) abort();
 					if (tnext->entity.type!=THREAD) abort();
 					verbprintf("switch from ");
@@ -513,29 +519,10 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 						tnext->state = THREAD_RUNNING;
 						updateEntity(&tnext->entity);
 					}
-					if (FxT_showSystem || tprev->number>=0 || tnext->number>=0)
+					if (FxT_showSystem || tprev->number>=0 || tnext->number>=0) {
+						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
-#if 0
-					if (tprev->active) {
-						entityMoveDeltaBegin(&tprev->entity,0,0);
-						tprev->active = 0;
-						entityMoveBegin2(&tprev->entity);
-						doStepsBegin(step)
-							entityMoveStep(&tprev->entity,step);
-						doStepsEnd();
-						entityMoveEnd(&tprev->entity);
 					}
-					if (!tnext->active) {
-
-						entityMoveDeltaBegin(&tnext->entity,0,0);
-						tnext->active = 1;
-						entityMoveBegin2(&tnext->entity);
-						doStepsBegin(step)
-							entityMoveStep(&tnext->entity,step);
-						doStepsEnd();
-						entityMoveEnd(&tnext->entity);
-					}
-#endif
 					break;
 				}
 				default:

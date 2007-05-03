@@ -424,13 +424,23 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		if (list_empty(&p->sched.internal.entity.bubble_entity_list))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
-#ifdef MARCEL_BUBBLE_EXPLODE
-		return;
-#endif
 	}
 #endif
 
 	h = ma_task_sched_holder(p);
+
+#ifdef MA__BUBBLES
+	if (h->type == MA_BUBBLE_HOLDER) {
+		/* Don't directly enqueue in holding bubble, but in the thread cache. */
+		marcel_bubble_t *b = ma_bubble_holder(h);
+		ma_holder_t *hh;
+		while ((hh = b->sched.sched_holder) && hh->type == MA_BUBBLE_HOLDER) {
+			h = hh;
+			b = ma_bubble_holder(hh);
+		}
+		ma_task_sched_holder(p) = h;
+	}
+#endif
 
 	MA_BUG_ON(!h);
 	ma_holder_lock_softirq(h);
@@ -519,7 +529,6 @@ static void finish_task_switch(marcel_task_t *prev)
 #ifdef MA__BUBBLES
 	ma_holder_t *h;
 #endif
-	prevh->nr_scheduled--;
 
 	/*
 	 * A task struct has one reference for the use as "current".
@@ -564,39 +573,12 @@ static void finish_task_switch(marcel_task_t *prev)
 		&& h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		int remove_from_bubble;
-#ifdef MARCEL_BUBBLE_EXPLODE
-		int close_bubble = 0;
-		int wake_bubble;
-#endif
 		if ((remove_from_bubble = (prev->sched.state & MA_TASK_DEAD)))
 			ma_task_sched_holder(prev) = NULL;
-#ifdef MARCEL_BUBBLE_EXPLODE
-		else if ((close_bubble = (bubble->status == MA_BUBBLE_CLOSING))) {
-			bubble_sched_debugl(7,"%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
-			PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-			if (MA_TASK_IS_RUNNING(prev))
-				ma_deactivate_running_task(prev,prevh);
-			else if (MA_TASK_IS_READY(prev))
-				ma_deactivate_task(prev,prevh);
-		}
-#endif
 		ma_finish_arch_switch(prevh, prev);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
 		if (remove_from_bubble)
 			marcel_bubble_removetask(bubble, prev);
-#ifdef MARCEL_BUBBLE_EXPLODE
-		else if (close_bubble) {
-			ma_holder_lock(&bubble->hold);
-			if ((wake_bubble = !(--bubble->nbrunning))) {
-				bubble_sched_debugl(7,"it was last, bubble %p closed\n", bubble);
-				PROF_EVENT1(bubble_sched_closed,bubble);
-				bubble->status = MA_BUBBLE_CLOSED;
-			}
-			ma_holder_unlock(&bubble->hold);
-			if (wake_bubble)
-				marcel_wake_up_bubble(bubble);
-		}
-#endif
 	} else
 #endif
 	{
@@ -637,24 +619,22 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 }
 
 /*
- * nr_running, nr_uninterruptible and nr_context_switches:
+ * nr_ready, nr_uninterruptible and nr_context_switches:
  *
  * externally visible scheduler statistics: current number of runnable
  * threads, current number of uninterruptible-sleeping threads, total
  * number of context switches performed since bootup.
  */
-unsigned long ma_nr_running(void)
+unsigned long ma_nr_ready(void)
 {
 	unsigned long i, sum = 0;
 
 #ifdef PM2_DEV
-#ifdef MARCEL_BUBBLE_STEAL
 #warning TODO: descendre dans les bulles ...
 #endif
-#endif
 	for (i = 0; i < MA_NR_LWPS; i++)
-		sum += ma_lwp_rq(GET_LWP_BY_NUM(i))->hold.nr_running;
-	sum += ma_main_runqueue.hold.nr_running;
+		sum += ma_lwp_rq(GET_LWP_BY_NUM(i))->hold.nr_ready;
+	sum += ma_main_runqueue.hold.nr_ready;
 
 	return sum;
 }
@@ -677,7 +657,7 @@ static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 #define EXPIRED_STARVING(rq) \
 	((STARVATION_LIMIT && ((rq)->expired_timestamp && \
  		(jiffies - (rq)->expired_timestamp >= \
-			STARVATION_LIMIT * ((rq)->nr_running) + 1))) /*||*/ \
+			STARVATION_LIMIT * ((rq)->nr_ready) + 1))) /*||*/ \
 			/*((rq)->curr->static_prio > (rq)->best_expired_prio)*/)
 /*
  * This function gets called by the timer code, with HZ frequency.
@@ -774,18 +754,17 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		// attention: rq->lock ne doit pas �re pris pour pouvoir
 		// verrouiller la bulle.
-#ifdef MARCEL_BUBBLE_EXPLODE
 		{
+#ifdef MA__BUBBLES
 			marcel_bubble_t *b;
 			if ((h = ma_task_init_holder(p)) && 
 					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);
-				if (b!=&marcel_root_bubble
-					&& ma_atomic_dec_and_test(&b->sched.time_slice))
-					ma_bubble_tick(b);
+				if (ma_atomic_dec_and_test(&b->sched.time_slice) && current_sched->tick)
+					current_sched->tick(b);
 			}
-		}
 #endif
+		}
 	}
 #if 0
 	else {
@@ -827,6 +806,38 @@ out:
 
 void ma_scheduling_functions_start_here(void) { }
 
+
+static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now) {
+	tbx_prefetch(next);
+
+#ifdef MA__LWPS
+	if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
+		PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
+		ma_topology_lwp_idle_end(LWP_SELF);
+	}
+#endif
+
+	/* update statistics */
+	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
+	*(long*)ma_task_stats_get(next, ma_stats_nbrunning_offset) = 1;
+	*(long*)ma_task_stats_get(prev, ma_stats_nbrunning_offset) = 0;
+
+	__ma_get_lwp_var(current_thread) = next;
+	ma_dequeue_task(next, nexth);
+
+	sched_debug("unlock(%p)\n",nexth);
+	ma_holder_rawunlock(nexth);
+	ma_set_task_lwp(next, LWP_SELF);
+
+	ma_prepare_arch_switch(nexth, next);
+	prev = marcel_switch_to(prev, next);
+	ma_barrier();
+
+	ma_schedule_tail(prev);
+
+	return prev;
+}
+
 /*
  * schedule() is the main scheduler function.
  */
@@ -835,10 +846,6 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 //	long *switch_count;
 	marcel_task_t *prev, *cur, *next, *prev_as_next;
 	marcel_entity_t *nextent;
-#ifdef MARCEL_BUBBLE_EXPLODE
-	marcel_bubble_t *bubble;
-	ma_holder_t *h;
-#endif
 	ma_runqueue_t *rq, *currq;
 	ma_holder_t *prevh, *nexth, *prev_as_h;
 	ma_prio_array_t *array;
@@ -894,7 +901,6 @@ need_resched:
 		*/
 
 	prevh = ma_task_run_holder(prev);
-	MA_BUG_ON(!prevh);
 
 	go_to_sleep_traced = 0;
 need_resched_atomic:
@@ -903,15 +909,10 @@ need_resched_atomic:
 	/* by default, reschedule this thread */
 	prev_as_next = prev;
 	prev_as_h = prevh;
-#ifdef MARCEL_BUBBLE_STEAL
-	if (prev_as_h->type != MA_RUNQUEUE_HOLDER) {
+	if (prev_as_h && prev_as_h->type != MA_RUNQUEUE_HOLDER) {
 		/* the real priority is the holding bubble's */
 		prev_as_prio = ma_bubble_holder(prev_as_h)->sched.prio;
-		if (prev_as_prio == MA_NOSCHED_PRIO)
-			/* the bubble just has no content */
-			prev_as_prio = MA_BATCH_PRIO;
 	} else
-#endif
 		prev_as_prio = prev->sched.internal.entity.prio;
 
 	if (prev->sched.state &&
@@ -926,11 +927,6 @@ need_resched_atomic:
 		else
 			go_to_sleep = 1;
 	}
-#ifdef MARCEL_BUBBLE_EXPLODE
-	if ((h = ma_task_init_holder(prev)) && h->type == MA_BUBBLE_HOLDER
-		&& (bubble = ma_bubble_holder(h))->status == MA_BUBBLE_CLOSING)
-		go_to_sleep = 1;
-#endif
 
 	if (ma_need_togo() || go_to_sleep) {
 		if (go_to_sleep && !go_to_sleep_traced) {
@@ -967,16 +963,13 @@ restart:
 
 	/* Iterate over runqueues that cover this LWP */
 #ifdef MA__LWPS
-	if (nexth->type == MA_RUNQUEUE_HOLDER)
-		sched_debug("default prio: %d, rq %s\n",max_prio,ma_rq_holder(nexth)->name);
-	else
-		sched_debug("default prio: %d, h %p\n",max_prio,nexth);
+	sched_debug("default prio: %d\n",max_prio);
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
 	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
 #endif
-		if (!currq->hold.nr_running)
+		if (!currq->hold.nr_ready)
 			sched_debug("apparently nobody in %s\n",currq->name);
 		idx = ma_sched_find_first_bit(currq->active->bitmap);
 		if (idx < max_prio) {
@@ -1003,13 +996,14 @@ restart:
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
-#ifdef PM2_DEV
-#warning TODO: demander �l application de rebalancer
-#endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
-#ifdef MARCEL_BUBBLE_STEAL
-		if (marcel_bubble_steal_work())
+#ifdef MA__BUBBLES
+		if (ma_idle_scheduler)
+		  if (current_sched->vp_is_idle)
+		    {
+		      if (current_sched->vp_is_idle(LWP_NUMBER(LWP_SELF))) 
 			goto need_resched_atomic;
+		    }
 #endif
 		cur = __ma_get_lwp_var(idle_task);
 #else
@@ -1049,6 +1043,19 @@ restart:
 
 	/* found something interesting, lock the holder */
 
+#ifdef MA__LWPS
+	if (!nexth) {
+		/* no run holder, we are probably being moved */
+		if (cur && cur == prev) {
+			/* OK, we didn't want to give hand anyway */
+			didswitch = 0;
+			ma_local_bh_enable();
+			goto out;
+		}
+		/* Loop again, until the move is complete */
+		goto restart;
+	}
+#endif
 	ma_holder_lock(nexth);
 	sched_debug("locked(%p)\n",nexth);
 
@@ -1092,7 +1099,7 @@ restart:
 	nextent = ma_queue_entry(queue);
 	
 #ifdef MA__BUBBLES
-	if (!(nextent = ma_bubble_sched(nextent, prevh, rq, &nexth, idx)))
+	if (!(nextent = ma_bubble_sched(nextent, rq, &nexth, idx)))
 		/* ma_bubble_sched aura lib��prevrq */
 		goto need_resched_atomic;
 #endif
@@ -1128,8 +1135,6 @@ switch_tasks:
 		/* on va dormir, il _faut_ donner la main �quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
 
-	tbx_prefetch(next);
-	ma_clear_tsk_need_togo(prev);
 //Pour quand on voudra ce m�anisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
 
@@ -1140,33 +1145,12 @@ switch_tasks:
 //			prev->interactive_credit--;
 //	}
 
-	/* update statistics */
-	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
-
 	if (tbx_likely(didswitch = (prev != next))) {
+		ma_clear_tsk_need_togo(prev);
+
 		/* really switch */
-#ifdef MA__LWPS
-		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
-			PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
-			ma_topology_lwp_idle_end(LWP_SELF);
-		}
-#endif
-//		next->timestamp = now;
-//		rq->nr_switches++;
-		__ma_get_lwp_var(current_thread) = next;
-//		++*switch_count;
+		prev = do_switch(prev, next, nexth, now);
 
-		ma_dequeue_task(next, nexth);
-		sched_debug("unlock(%p)\n",nexth);
-		nexth->nr_scheduled++;
-		ma_holder_rawunlock(nexth);
-		ma_set_task_lwp(next, LWP_SELF);
-
-		ma_prepare_arch_switch(nexth, next);
-		prev = marcel_switch_to(prev, next);
-		ma_barrier();
-
-		ma_schedule_tail(prev);
 		/* TODO: si !hard_preempt, appeler le polling */
 	} else {
 		sched_debug("unlock(%p)\n",nexth);
@@ -1184,6 +1168,9 @@ switch_tasks:
 		  }
 	}
 
+#ifdef MA__LWPS
+out:
+#endif
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
 	if (ma_need_resched() && ma_thread_preemptible()) {
@@ -1220,16 +1207,7 @@ int marcel_yield_to(marcel_t next)
 	// we suppose we don't want to go to sleep, and we're not yielding to a
 	// dontsched thread like idle or activations
 	
-	__ma_get_lwp_var(current_thread) = next;
-	ma_set_task_lwp(next, LWP_SELF);
-	ma_dequeue_task(next, nexth);
-	nexth->nr_scheduled++;
-	ma_holder_rawunlock(nexth);
-
-	ma_prepare_arch_switch(nexth,next);
-	prev = marcel_switch_to(prev, next);
-	ma_barrier();
-	finish_task_switch(prev);
+	prev = do_switch(prev, next, nexth, marcel_clock());
 
 	LOG_OUT();
 	return 0;
@@ -1291,19 +1269,13 @@ void marcel_change_vpmask(marcel_vpmask_t *mask)
 	ma_holder_t *old_h;
 	ma_runqueue_t *new_rq;
 	LOG_IN();
-	/* emp�her ma_schedule() */
-	ma_preempt_disable();
-	/* emp�her m�e scheduler_tick() */
-	ma_local_bh_disable();
-	old_h=ma_this_holder();
+	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
 	new_rq=marcel_sched_vpmask_init_rq(mask);
 	if (old_h == &new_rq->hold) {
-		ma_local_bh_enable();
-		ma_preempt_enable();
+		ma_task_holder_unlock_softirq(old_h);
 		LOG_OUT();
 		return;
 	}
-	ma_holder_rawlock(old_h);
 	ma_deactivate_running_task(MARCEL_SELF,old_h);
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
 	ma_holder_rawunlock(old_h);
@@ -1418,8 +1390,8 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	/* Cette t�he est en train d'�re ex�ut� */
 	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
-	h->nr_scheduled++;
 	ma_task_holder_unlock_softirq(h);
+	*(long *)ma_task_stats_get(p, ma_stats_nbrunning_offset) = 1;
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
@@ -1498,7 +1470,7 @@ void __marcel_init ma_linux_sched_init0(void)
 }
 
 
-unsigned long ma_stats_nbthreads_offset, ma_stats_last_ran_offset;
+unsigned long ma_stats_nbthreads_offset, ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
 unsigned long marcel_stats_load_offset;
 
 static void __marcel_init linux_sched_init(void)
@@ -1507,9 +1479,11 @@ static void __marcel_init linux_sched_init(void)
 	ma_holder_t *h;
 
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
+	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbrunning_offset) = 1;
 
 #ifdef MA__SMP
 	if (marcel_topo_nblevels>1) {
@@ -1536,7 +1510,6 @@ static void __marcel_init linux_sched_init(void)
 	/* since it is actually already running */
 	h = ma_task_holder_lock(MARCEL_SELF);
 	ma_dequeue_task(MARCEL_SELF, h);
-	h->nr_scheduled++;
 	ma_task_holder_unlock(h);
 
 //	init_timers();

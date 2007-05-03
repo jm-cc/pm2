@@ -216,9 +216,9 @@ interfaceGaucheVars* interfaceGauche()
 
   toolbar3 = gtk_toolbar_new();
   gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar3),GTK_ORIENTATION_VERTICAL);
-  iGaucheVars->charge=gtk_hscale_new_with_range(0,100,50);
+  iGaucheVars->charge=gtk_hscale_new_with_range(0,MAX_CHARGE,10);
   gtk_range_set_value(GTK_RANGE(iGaucheVars->charge), iGaucheVars->defcharge);
-  iGaucheVars->priorite=gtk_hscale_new_with_range(0,10,1);
+  iGaucheVars->priorite=gtk_hscale_new_with_range(0,MAX_PRIO,1);
   gtk_range_set_value(GTK_RANGE(iGaucheVars->priorite), iGaucheVars->defpriorite);
   iGaucheVars->nom=gtk_entry_new();
 
@@ -277,7 +277,7 @@ void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
   dataAddThread->chargeScrollbar = iGaucheVars->charge;
   dataAddThread->nomEntry = iGaucheVars->nom;
 
-  dataAddThread->idThread =SetId(data);
+  dataAddThread->idThread =SetId(iGaucheVars);
   dataAddThread->idEntry = NULL;
   dataAddThread->popup = NULL;
   dataAddThread->iGaucheVars = iGaucheVars;
@@ -296,7 +296,7 @@ void addBulleAutoOff(interfaceGaucheVars* data)
   GtkWidget *popup = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   GtkWidget *pVBox = gtk_vbox_new(FALSE, 0);
   GtkWidget *pFrame = gtk_frame_new("Priorité");
-  GtkWidget *Adjust = (GtkWidget*)gtk_adjustment_new(20, 0, 100, 1, 10, 1);
+  GtkWidget *Adjust = (GtkWidget*)gtk_adjustment_new(DEF_PRIO, 0, MAX_PRIO, 1, 10, 1);
   GtkWidget *pScrollbar = gtk_hscrollbar_new(GTK_ADJUSTMENT(Adjust));
   GtkWidget *pLabel = gtk_label_new("0");
   GtkWidget *prioriteVBox = gtk_vbox_new(FALSE, 0);
@@ -425,12 +425,7 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   /* Création de la bulle d'accueil avec pour paramètre la priorité par défaut d'une bulle et une nouvelle id */
   nouvelleBulle = CreateBulle(iGaucheVars->defprioritebulle, SetId(iGaucheVars));
   tmp = iGaucheVars->head;
-  while(tmp!=NULL){
-  if(tmp == iGaucheVars->zonePrincipale)
-    {
-      /* printf("DEBUG : encapsuler, zoneSelectionnee = zonePrincipale, encapsulation impossible\n"); */
-      return;
-    }
+  while(tmp!=NULL && tmp != iGaucheVars->zonePrincipale){
   
   /* Voilà l'élément sélectionné qu'on va encapsuler */
   p = TrouverParcours(iGaucheVars->zonePrincipale, tmp->posX + 1, tmp->posY + 1);

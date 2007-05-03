@@ -224,6 +224,7 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 					      "_Annuler", GTK_RESPONSE_CANCEL,
 					      "_Ouvrir", GTK_RESPONSE_OPEN, 
 					      "_Importer", GTK_RESPONSE_MERGE, NULL);
+  gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OPEN);
   gtk_window_set_position(GTK_WINDOW(FileSelection), GTK_WIN_POS_CENTER_ON_PARENT);
    
   /* On limite les actions a cette fenetre */
@@ -312,6 +313,7 @@ void EnregistrerSous(GtkWidget *widget, gpointer data)
   FileSelection = gtk_file_chooser_dialog_new("Sauvegarder un fichier", GTK_WINDOW(data), GTK_FILE_CHOOSER_ACTION_SAVE,
 					      "_Annuler", GTK_RESPONSE_CANCEL,
 					      "_Sauvegarder", GTK_RESPONSE_OK, NULL);
+  gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OK);
   strcpy(Chemin,DemanderFichier(FileSelection));
   
   if (strcmp(Chemin, "no path") == 0)

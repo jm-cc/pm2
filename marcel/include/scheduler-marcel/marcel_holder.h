@@ -73,11 +73,9 @@ struct ma_holder {
 	/** \brief List of entities placed for schedule in this holder */
 	struct list_head sched_list;
 	/** \brief Number of entities in the list above */
-	unsigned long nr_running;
-	/** \brief Number of interruptibly blocked held entities */
+	unsigned long nr_ready;
+	/** \brief Number of interruptibly blocked held entities (probably broken) */
 	unsigned long nr_uninterruptible;
-	/** \brief Number of entities that are currently scheduled on processors (maybe broken) */
-	unsigned long nr_scheduled;
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
 };
@@ -91,9 +89,8 @@ typedef struct ma_holder ma_holder_t;
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
 	.sched_list = LIST_HEAD_INIT((h).sched_list), \
-	.nr_running = 0, \
+	.nr_ready = 0, \
 	.nr_uninterruptible = 0, \
-	.nr_scheduled = 0, \
 }
 
 #section marcel_functions
@@ -103,7 +100,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
 	INIT_LIST_HEAD(&h->sched_list);
-	h->nr_running = h->nr_uninterruptible = h->nr_scheduled = 0;
+	h->nr_ready = h->nr_uninterruptible = 0;
 }
 
 #section marcel_functions
@@ -449,8 +446,11 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
-	list_add(&e->sched_list, &h->sched_list);
-	h->nr_running++;
+	if (e->prio >= MA_BATCH_PRIO)
+		list_add(&e->sched_list, &h->sched_list);
+	else
+		list_add_tail(&e->sched_list, &h->sched_list);
+	h->nr_ready++;
 }
 
 #section marcel_functions
@@ -535,7 +535,7 @@ static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head,
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
 {
-	h->nr_running += num;
+	h->nr_ready += num;
 }
 
 #section marcel_functions
@@ -563,7 +563,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->holder_data);
-	h->nr_running--;
+	h->nr_ready--;
 	list_del(&e->sched_list);
 	MA_BUG_ON(e->run_holder != h);
 	e->run_holder = NULL;
@@ -636,7 +636,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 }
 
 #section common
-#ifdef MARCEL_BUBBLE_STEAL
+#ifdef MA__BUBBLES
 #section marcel_macros
 #define MA_ENTITY_RUNNING 2
 #define MA_ENTITY_BLOCKED 1
@@ -681,6 +681,21 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+	if (h->type == MA_BUBBLE_HOLDER) {
+		MA_BUG_ON(h != e->init_holder);
+		if (e->type == MA_BUBBLE_ENTITY)
+			PROF_EVENT2(bubble_sched_bubble_goingback, ma_bubble_entity(e), ma_bubble_holder(h));
+		else
+			PROF_EVENT2(bubble_sched_goingback, ma_task_entity(e), ma_bubble_holder(h));
+	} else {
+		MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
+		PROF_EVENT2(bubble_sched_switchrq,
+			e->type == MA_TASK_ENTITY?
+				(void*) ma_task_entity(e):
+				(void*) ma_bubble_entity(e),
+				ma_rq_holder(h));
+	}
+
 	if (h->type == MA_BUBBLE_HOLDER) {
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */
 		marcel_bubble_t *b = ma_bubble_holder(h);

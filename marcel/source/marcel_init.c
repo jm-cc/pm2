@@ -415,7 +415,6 @@ extern const __ma_init_info_t ma_init_info_linux_sched_init;
 extern void ma_linux_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
-extern void ma_bubble_gang_sched_init(void);
 extern void ma_bubble_sched_init2(void);
 #endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
@@ -473,7 +472,7 @@ extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
 extern const __ma_init_info_t ma_init_info_init_upcalls;
 #endif // MA__ACTIVATION
 #ifdef MA__BUBBLES
-extern void ma_bubble_sched_start(void);
+extern void __ma_bubble_sched_start(void);
 #endif
 
 __ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS+1] = {{MA_INIT_SELF, "Init self"},
@@ -530,7 +529,6 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_slot_init);
 #ifdef MA__BUBBLES
 			call_init_function(&ma_init_info_bubble_sched_init);
-			ma_bubble_gang_sched_init();
 #endif				// MA__BUBBLES
 			call_init_function(&ma_init_info_linux_sched_init);
 #ifdef MA__BUBBLES
@@ -588,7 +586,7 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_init_upcalls);
 #endif				//MA__ACTIVATION
 #ifdef MA__BUBBLES
-			ma_bubble_sched_start();
+			__ma_bubble_sched_start();
 #endif				//MA__BUBBLES
 		}
 

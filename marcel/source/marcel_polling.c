@@ -143,7 +143,7 @@ static int compat_poll_all(marcel_ev_server_t server,
 {
 	marcel_pollid_t ps=struct_up(server, struct poll_struct, server);
 	(*ps->func)(ps,
-		    ma_nr_running(),
+		    ma_nr_ready(),
 		    0,
 		    0);	
 	return 0;

@@ -8,24 +8,26 @@ extern interfaceGaucheVars* iGaucheVars;
 #endif
 /*Fin*/
 
+#define scale(v,charge) v*(1-0.8*(charge-DEF_CHARGE)/(MAX_CHARGE-DEF_CHARGE))
+#define rgbchargeprio(r,g,b,charge,prio) scale(r,charge),scale(g,charge),scale(b,charge)
 
-void couleurContour(zone* zoneADessiner, zone* zoneSelectionnee)
+static void couleurContour(zone* zoneADessiner, zone* zoneSelectionnee, int charge, int prio)
 {
   if (zoneADessiner == zoneSelectionnee)
-    glColor3f(0.1,0.8,0.1);
+    glColor3f(rgbchargeprio(0.1,0.8,0.1,charge,prio));
   else
-    glColor3f(0.3,0.6,0.7);
+    glColor3f(rgbchargeprio(0.3,0.6,0.7,charge,prio));
 
   return;
 }
 
 
-void couleurInterieur(zone* zoneADessiner, zone* zoneSelectionnee)
+static void couleurInterieur(zone* zoneADessiner, zone* zoneSelectionnee, int charge, int prio)
 {
   if (zoneADessiner == zoneSelectionnee)
-    glColor3f(0.5,1,0.5);
+    glColor3f(rgbchargeprio(0.5,1,0.5,charge,prio));
   else
-    glColor3f(0.5,1,1);
+    glColor3f(rgbchargeprio(0.5,1,1,charge,prio));
 
   return;
 }
@@ -119,17 +121,17 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
     {
       /* gauche */
       glBegin(GL_QUADS);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner),
                  LireZoneY(zoneADessiner) + MARGE);
 
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner),
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
       glEnd();
@@ -137,11 +139,11 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* coin en bas à gauche */
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       for(i = 0; i <= M_PI/2; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + MARGE - MARGE * cos(i),
@@ -151,16 +153,16 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* bas */
       glBegin(GL_QUADS);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner));
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner));
       glEnd();
@@ -168,11 +170,11 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* coin en bas à droite */
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       for(i = 0; i <= M_PI/2; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE + MARGE * cos(i),
@@ -182,16 +184,16 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* droit */
       glBegin(GL_QUADS);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner),
                  LireZoneY(zoneADessiner) + MARGE);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner),
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
       glEnd();
@@ -199,11 +201,11 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* coin en haut à droite */
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       for(i = 0; i <= M_PI/2; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE + MARGE * cos(i),
@@ -213,27 +215,27 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       /* haut */
       glBegin(GL_QUADS);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner));
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner));
       glEnd();
 
       /* coin en haut à gauche */
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       for(i = 0; i <= M_PI/2; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + MARGE - MARGE * cos(i),
@@ -242,7 +244,7 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
       glEnd();
 
       /* interieur */
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, DEF_CHARGE, element->bulle.priorite);
       glBegin(GL_POLYGON);
       glVertex2f(LireZoneX(zoneADessiner) + MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
@@ -262,12 +264,12 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
       glBegin(GL_QUADS);
       for(i = -M_PI/4; i < M_PI/4; i += M_PI/20)
 	{
-	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
-	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.625 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 4 *sin(i + M_PI/20));
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.625 *cos(i) ,
@@ -275,12 +277,12 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 	}
       for(i = -M_PI/4; i < M_PI/4; i += M_PI/20)
 	{
-	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.375 *cos(i) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i));
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T * 0.375 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i + M_PI/20));
-	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.3 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
 	  glVertex2f(LireZoneX(zoneADessiner) + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
@@ -289,12 +291,12 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
       for(i = 3*M_PI/4; i < 5*M_PI/4; i += M_PI/20)
 	{
-	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T +M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i));
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
-	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.625 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 4 *sin(i + M_PI/20));
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.625 *cos(i) ,
@@ -302,12 +304,12 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 	}
       for(i = 3*M_PI/4; i < 5*M_PI/4; i += M_PI/20)
 	{
-	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.375 *cos(i) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i));
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T * 0.375 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T * 0.15 *sin(i + M_PI/20));
-	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+	  couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i + M_PI/20) ,
 		     LireZoneY(zoneADessiner) + HAUTEUR_T * 0.7 + M_SQRT2 * HAUTEUR_T / 5 *sin(i + M_PI/20));
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T + M_SQRT2 * LARGEUR_T / 2 *cos(i) ,
@@ -318,11 +320,11 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
 
 
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2,
                  LireZoneY(zoneADessiner) + HAUTEUR_T * 0.9);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
       for(i = -M_PI/4; i <= 3*M_PI/4; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2 + M_SQRT2 * LARGEUR_T * 0.125 * cos(i),
@@ -331,11 +333,11 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
       glEnd();
 
       glBegin(GL_POLYGON);
-      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurInterieur(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
       glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2,
                  LireZoneY(zoneADessiner) + HAUTEUR_T / 10);
 
-      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee);
+      couleurContour(zoneADessiner, iGaucheVars->zoneSelectionnee, element->thread.charge, element->thread.priorite);
       for(i = 3*M_PI/4; i <= 7*M_PI/4; i += M_PI/30)
 	{
 	  glVertex2f(LireZoneX(zoneADessiner) + LARGEUR_T / 2 + M_SQRT2 * LARGEUR_T * 0.125 * cos(i),

@@ -18,3 +18,8 @@
 int marcel_init_top(char *);
 void marcel_exit_top(void);
 void marcel_show_top(void);
+#section marcel_functions
+#ifdef MA__BUBBLES
+void ma_top_add_bubble(marcel_bubble_t *b);
+void ma_top_del_bubble(marcel_bubble_t *b);
+#endif

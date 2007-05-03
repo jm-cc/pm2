@@ -54,6 +54,7 @@ unsigned marcel_topo_nblevels=
 struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 	{
 		.type = MARCEL_LEVEL_MACHINE,
+		.level = 0,
 		.number = 0,
 		.index = 0,
 		.os_node = -1,
@@ -606,9 +607,19 @@ static void topo_connect(void) {
 	}
 }
 
+#ifdef MA__NUMA
+static int compar(const void *_l1, const void *_l2) {
+  const struct marcel_topo_level *l1 = _l1, *l2 = _l2;
+  return marcel_vpmask_ffs(&l1->cpuset) - marcel_vpmask_ffs(&l2->cpuset);
+}
+#endif
+
 /* Main discovery loop */
 static void topo_discover(void) {
 	unsigned l,i,j;
+#ifdef MA__NUMA
+	unsigned m,n;
+#endif
 	struct marcel_topo_level *level;
 
 	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_LWPS) {
@@ -618,7 +629,7 @@ static void topo_discover(void) {
 
 	/* Raw detection, from coarser levels to finer levels */
 #ifdef MA__NUMA
-	unsigned k,m,n;
+	unsigned k;
 	unsigned nbsublevels;
 	unsigned sublevelarity;
 	int dosplit;
@@ -666,10 +677,7 @@ static void topo_discover(void) {
 	mdebug("discovered %d levels\n", marcel_topo_nblevels);
 
 #ifdef MA__NUMA
-	int compar(const void *_l1, const void *_l2) {
-		const struct marcel_topo_level *l1 = _l1, *l2 = _l2;
-		return marcel_vpmask_ffs(&l1->cpuset) - marcel_vpmask_ffs(&l2->cpuset);
-	}
+
 	/* sort levels according to cpu masks */
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
 		/* first sort sublevels according to cpu masks */
@@ -928,6 +936,10 @@ static void topo_discover(void) {
 
 	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
 		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);
+
+	for (l=0; l<marcel_topo_nblevels-1; l++)
+		for (i=0; marcel_topo_levels[l][i].cpuset; i++)
+			marcel_topo_levels[l][i].level = l;
 }
 
 void ma_topo_exit(void) {

@@ -46,7 +46,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	if (t == __main_thread) {
 		t->number = 0;
-	} else if (!(special_mode == 2 && MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
+	} else if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
 		marcel_one_more_task(t);
 	} else {
 		/* TODO: per_lwp ? */
@@ -441,7 +441,7 @@ static void detach_func(any_t arg) {
 	//	marcel_sem_P(&cur->thread);
 }
 
-static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
+static void TBX_NORETURN marcel_exit_internal(any_t val)
 {
 	marcel_t cur = marcel_self();
 	struct marcel_topo_level *vp;
@@ -540,7 +540,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	// Même remarque que précédemment : main_thread peut être
 	// réveillé à cet endroit, donc il ne faut appeler
 	// unchain_task qu'après.
-	if (!(special_mode && MA_TASK_NOT_COUNTED_IN_RUNNING(cur))) {
+	if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(cur))) {
 		marcel_one_task_less(cur);
 	}
 
@@ -563,13 +563,13 @@ DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
 #endif
 	} else
-		marcel_exit_internal(val, 0);
+		marcel_exit_internal(val);
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 
 void TBX_NORETURN marcel_exit_special(any_t val)
 {
-	marcel_exit_internal(val, 1);
+	marcel_exit_internal(val);
 }
 
 /****************************************************************/

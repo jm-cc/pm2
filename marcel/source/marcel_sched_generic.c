@@ -346,9 +346,11 @@ void marcel_gensched_shutdown(void)
 
 	wait_all_tasks_end();
 
-	ma_write_lock(&ma_idle_scheduler_lock);
-	ma_idle_scheduler = 0;
-	ma_write_unlock(&ma_idle_scheduler_lock);
+#ifdef MA__BUBBLES
+	marcel_bubble_deactivate_idle_scheduler();
+	if (current_sched->exit)
+		current_sched->exit();
+#endif
 
 #ifdef MA__SMP
 

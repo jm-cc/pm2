@@ -95,8 +95,13 @@ void marcel_set_load_(int *load) {
   *marcel_stats_get(marcel_self(), marcel_stats_load_offset) = *load;
 }
 
+/* TODO: rajouter la bulle qu'on soumet en parametre */
+void marcel_bubble_submit_() {
+  current_sched->submit(&marcel_root_bubble.sched);
+}
 
-void marcel_spread_() {
-  marcel_bubble_spread(&marcel_root_bubble, marcel_machine_level);
+/* Utile pour debug */
+void marcel_rien_() {
+
 }
 #endif

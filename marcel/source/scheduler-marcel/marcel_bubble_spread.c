@@ -17,13 +17,6 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
-/* helper macro for profiling events */
-#define switchrq(e,rq) \
-	PROF_EVENT2(bubble_sched_switchrq, \
-	e->type == MA_TASK_ENTITY? \
-	(void*)ma_task_entity(e): \
-	(void*)ma_bubble_entity(e), \
-	rq)
 
 #if 1
 #define _debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
@@ -33,21 +26,6 @@
 #define debug(fmt, ...) (void)0
 #endif
 
-#include <math.h>
-static inline long entity_load(marcel_entity_t *e) {
-	if (e->type == MA_BUBBLE_ENTITY)
-		return *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), marcel_stats_load_offset);
-	else
-		return *(long*)ma_task_stats_get(ma_task_entity(e), marcel_stats_load_offset);
-}
-
-static int load_compar(const void *_e1, const void *_e2) {
-	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
-	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
-	long l1 = entity_load(e1);
-	long l2 = entity_load(e2);
-	return l2 - l1; /* decreasing order */
-}
 /* spread entities e on topology levels l */
 /* e has ne items, l has nl items */
 static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl, int recurse) {
@@ -94,10 +72,10 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	debug("total load %lu = %d*%.2f\n", totload, nl, per_item_load);
 
 	/* Sort entities by load */
-	qsort(e, ne, sizeof(e[0]), &load_compar);
+	qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
 
 	/* TODO: tune */
-	if (entity_load(e[0]) > per_item_load || ne < nl) {
+	if (ma_entity_load(e[0]) > per_item_load || ne < nl) {
 		/* too big entities, or not enough entities for level items,
 		 * recurse into entities before level items */
 
@@ -105,12 +83,12 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		unsigned new_ne = 0;
 		unsigned recursed = 0;
 		int i, j;
-		debug("e[0]=%ld > %lf=per_item_load || ne=%d < %d=nl, recurse into entities\n", entity_load(e[0]), per_item_load, ne, nl);
+		debug("e[0]=%ld > %lf=per_item_load || ne=%d < %d=nl, recurse into entities\n", ma_entity_load(e[0]), per_item_load, ne, nl);
 
 		/* first count sub-entities */
 		for (i=0; i<ne; i++) {
 			if (e[i]->type == MA_BUBBLE_ENTITY &&
-				(entity_load(e[i]) > per_item_load || ne < nl)) {
+				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
 				unsigned nb = ma_bubble_entity(e[i])->nbentities;
 				if (nb) {
 					recursed = 1;
@@ -126,7 +104,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			j = 0;
 			for (i=0; i<ne; i++) {
 				if (e[i]->type == MA_BUBBLE_ENTITY &&
-					(entity_load(e[i]) > per_item_load || ne < nl)) {
+					(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
 					marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 					list_for_each_entry(ee, &bb->heldentities, bubble_entity_list)
 						new_e[j++] = ee;
@@ -162,13 +140,13 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		l_n[i] = 0;
 	}
 	for (i=0; i<ne; i++) {
-		debug("entity %p(%ld)\n",e[i],entity_load(e[i]));
+		debug("entity %p(%ld)\n",e[i],ma_entity_load(e[i]));
 		/* when entities' load is very small, just leave them here */
 		/* TODO: tune */
-		if (entity_load(e[i]) <= per_item_load/30) {
+		if (ma_entity_load(e[i]) <= per_item_load/30) {
 			int state;
 			ma_runqueue_t *rq;
-			debug("small(%lx), leave it here\n", entity_load(e[i]));
+			debug("small(%lx), leave it here\n", ma_entity_load(e[i]));
 			PROF_EVENTSTR(sched_status, "spread: small, leave it here");
 			state = ma_get_entity(e[i]);
 			if (l_l[0]->father)
@@ -176,7 +154,6 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			else
 				rq = &marcel_machine_level[0].sched;
 			ma_put_entity(e[i], &rq->hold, state);
-			switchrq(e[i], rq);
 			continue;
 		}
 
@@ -184,11 +161,10 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		/* Add this entity (heaviest) to least loaded level item */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
 		list_add_tail(&e[i]->next,&l_dist[0]);
-		l_load[0] += entity_load(e[i]);
+		l_load[0] += ma_entity_load(e[i]);
 		l_n[0]++;
 		state = ma_get_entity(e[i]);
 		ma_put_entity(e[i], &l_l[0]->sched.hold, state);
-		switchrq(e[i], &l_l[0]->sched);
 		_debug(" -> %ld\n",l_load[0]);
 
 		/* And sort */
@@ -287,5 +263,18 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
+
+int
+spread_sched_submit(marcel_entity_t *e)
+{
+  struct marcel_topo_level *l = marcel_topo_level(0,0);
+  marcel_bubble_spread(ma_bubble_entity(e), l);
+
+  return 0;
+}
+
+struct ma_bubble_sched_struct marcel_bubble_spread_sched = {
+  .submit = spread_sched_submit,
+};
 
 #endif

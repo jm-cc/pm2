@@ -15,6 +15,7 @@
  */
 
 #define _GNU_SOURCE
+
 #include "bubblelib_output.h"
 #include "bubblelib_anim.h"
 #include "bubblelib_fxt.h"

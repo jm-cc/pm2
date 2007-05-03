@@ -224,15 +224,6 @@
 #  define MA__BUBBLES
 #endif
 
-#ifdef MA__BUBBLES
-#if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
-#  define MARCEL_BUBBLE_STEAL
-#endif
-#else
-#undef MARCEL_BUBBLE_EXPLODE
-#undef MARCEL_BUBBLE_STEAL
-#endif
-
 #ifdef MA__HAS_SUBSECTION
 #  undef MA__HAS_SUBSECTION
 #endif

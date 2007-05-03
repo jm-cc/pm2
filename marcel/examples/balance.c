@@ -232,9 +232,7 @@ int marcel_main(int argc, char *argv[]) {
 				b = &bubbles[(NWORKERS-1)*i+n+k];
 				marcel_bubble_init(b);
 				marcel_bubble_setprio(b, MA_DEF_PRIO);
-#ifdef MARCEL_BUBBLE_EXPLODE
 				marcel_bubble_setschedlevel(b, j);
-#endif
 				if (n)
 					marcel_bubble_insertbubble(&bubbles[(NWORKERS-1)*i+m+k/2], b);
 			}

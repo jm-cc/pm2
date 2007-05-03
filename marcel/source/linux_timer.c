@@ -727,7 +727,7 @@ void ma_update_process_times(int user_tick)
  */
 static unsigned long count_active_tasks(void)
 {
-	return (nr_running() + nr_uninterruptible()) * FIXED_1;
+	return (nr_ready() + nr_uninterruptible()) * FIXED_1;
 }
 
 /*

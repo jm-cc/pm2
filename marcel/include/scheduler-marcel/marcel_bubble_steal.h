@@ -29,5 +29,9 @@
  *
  * \return 1 if it managed to steal work, 0 else.
  */
-int marcel_bubble_steal_work(void);
+int marcel_bubble_steal_work(unsigned vp);
 /* @} */
+
+#section variables
+#depend "marcel_bubble_sched_interface.h[types]"
+extern marcel_bubble_sched_t marcel_bubble_steal_sched;

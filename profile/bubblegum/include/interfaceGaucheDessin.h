@@ -69,9 +69,6 @@ gboolean   MouseMove_left_movebt(GtkWidget* widget, GdkEventMotion* ev, gpointer
 gboolean   MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data);
 gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars);
 
-void       couleurContour(zone* zoneADessiner, zone* zoneSelectionnee);
-void       couleurInterieur(zone* zoneADessiner, zone* zoneSelectionnee);
-
 void       DessinerTout(interfaceGaucheVars *iGaucheVars);
 
 void       Dessiner(interfaceGaucheVars *iGaucheVars, zone * zonePrincipale);

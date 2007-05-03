@@ -3,7 +3,9 @@
 
 #include "interfaceGaucheDessin.h"
 
+#define MAX_CHARGE 100
 #define DEF_CHARGE 10
+#define MAX_PRIO 10
 #define DEF_PRIO 0
 
 /* extern unsigned int NumTmp; */

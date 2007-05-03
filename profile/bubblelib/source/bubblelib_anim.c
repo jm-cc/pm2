@@ -125,6 +125,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 		(*rqs)[i].entity.type = RUNQUEUE;
 		(*rqs)[i].entity.lastitem = NULL;
 		(*rqs)[i].entity.holder = NULL;
+		(*rqs)[i].entity.bubble_holder = NULL;
 		INIT_LIST_HEAD(&(*rqs)[i].entities);
 		(*rqs)[i].nextX = (*rqs)[i].entity.x + RQ_XMARGIN;
 	}

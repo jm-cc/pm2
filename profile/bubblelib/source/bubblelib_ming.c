@@ -268,6 +268,11 @@ static void init(void) {
 	if (!f) {
 		perror("Warning: could not open font file, will not able to print thread name, priority and scheduler status");
 		fprintf(stderr,"(tried %s. Use -f option for changing this. fdb files can be generated from fft files by using makefdb, and fft files can be generated from ttf files by using ttf2fft)\n",SWF_fontfile);
+	} else {
+	/* used font */
+		font = (SWFFont) loadSWFFontFromFile(f);
+		if (!font)
+			perror("can't load font");
 	}
 
 	if (!SWF_fontfile)
@@ -275,11 +280,6 @@ static void init(void) {
 
 	/* pause macro */
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
-}
-
-static void fini(void) {
-	signal(SIGSEGV, SIG_DFL);
-	signal(SIGINT, SIG_DFL);
 }
 
 BubbleOps SWFBubbleOps = {

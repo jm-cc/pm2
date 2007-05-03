@@ -755,15 +755,15 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
   else{
   if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale){
     printf("DEBUG : Selection de la zone principale\n");
+    iGaucheVarsTmp->zonePrincipale->next = NULL;
     iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->zonePrincipale;
-    iGaucheVarsTmp->zoneSelectionnee->next = NULL;
     iGaucheVarsTmp->head = iGaucheVarsTmp->zonePrincipale;
-    iGaucheVarsTmp->head->next = NULL;  
+    iGaucheVarsTmp->last = iGaucheVarsTmp->zonePrincipale;
+    return;
   } else {
+   ZoneCliquee->next = NULL;
    iGaucheVarsTmp->zoneSelectionnee = ZoneCliquee;
-   iGaucheVarsTmp->zoneSelectionnee->next = NULL;
    iGaucheVarsTmp->head = ZoneCliquee;
-   iGaucheVarsTmp->head->next = NULL;
    iGaucheVarsTmp->last = ZoneCliquee;
    elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }

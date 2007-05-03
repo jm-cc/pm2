@@ -121,7 +121,7 @@ unsigned marcel_topo_max_arity = 4;
 #endif
 
 void ma_set_nbprocessors(void) {
-	// Détermination du nombre de processeurs disponibles
+	// Dï¿½termination du nombre de processeurs disponibles
 	marcel_nbprocessors = ma_nbprocessors();
 	mdebug("%d processors available\n", marcel_nbprocessors);
 }
@@ -629,7 +629,7 @@ static void topo_discover(void) {
 
 	/* Raw detection, from coarser levels to finer levels */
 #ifdef MA__NUMA
-	unsigned k;
+	unsigned k,m,n;
 	unsigned nbsublevels;
 	unsigned sublevelarity;
 	int dosplit;

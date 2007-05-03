@@ -638,6 +638,7 @@ static void topo_discover(void) {
 	look_libnuma();
 #endif
 #ifdef  AIX_SYS
+	mdebug("%d\n",rs_getinfo(NULL,R_PCORESDL,0));
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0)) {
 			mdebug("looking AIX node sdl %d\n",i);
@@ -645,8 +646,8 @@ static void topo_discover(void) {
 		}
 #ifdef R_L2CSDL
 		if (i == rs_getinfo(NULL, R_L2CSDL, 0)) {
-			mdebug("looking AIX L2 sdl %d\n",i);
-			look_rset(i, MARCEL_LEVEL_L2);
+			mdebug("looking AIX die sdl %d\n",i);
+			look_rset(i, MARCEL_LEVEL_DIE); /* TODO: en fait c'est juste un cache L2 que ça exprime. */
 		}
 #endif
 #ifdef R_PCORESDL
@@ -655,10 +656,8 @@ static void topo_discover(void) {
 			look_rset(i, MARCEL_LEVEL_CORE);
 		}
 #endif
-		if (i == rs_getinfo(NULL, R_SMPSDL, 0))
-			mdebug("not looking AIX \"SMP\" sdl %d\n",i);
 		if (i == rs_getinfo(NULL, R_MAXSDL, 0)) {
-			mdebug("looking AIX max sdl %d\n",i);
+			mdebug("looking AIX proc sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_PROC);
 		}
 	}

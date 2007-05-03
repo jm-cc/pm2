@@ -440,11 +440,11 @@ static void __marcel_init look_libnuma(void) {
 		marcel_vpmask_empty(&node_level[i].cpuset);
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
-			marcel_vpmask_add_vp(&node_level[i].cpuset,cpuid);
-		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[i].cpuset);
-		node_level[i].arity=0;
-		node_level[i].children=NULL;
-		node_level[i].father=NULL;
+			marcel_vpmask_add_vp(&node_level[radid].cpuset,cpuid);
+		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[radid].cpuset);
+		node_level[radid].arity=0;
+		node_level[radid].children=NULL;
+		node_level[radid].father=NULL;
 		i++;
 	}
 

@@ -642,14 +642,13 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 #define MA_ENTITY_BLOCKED 1
 #define MA_ENTITY_SLEEPING 0
 #section marcel_functions
-/* Sets the sched holder of an entity to bubble (which is supposed to be
- * locked).  If that entity is a bubble, its hierarchy is supposed to be
- * already locked. */
+/* Sets the sched holder of an entity.  If that entity is a bubble, its
+ * hierarchy is supposed to be already locked. */
 void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
 /** \brief Gets entity \e e out from its holder (which must be already locked),
  * returns its state.  If entity is a bubble, its hierarchy is supposed to be
  * already locked.  */
-static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e);
+static __tbx_inline__ int ma_get_entity(marcel_entity_t *e);
 #section marcel_inline
 static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e) {
 	int ret;
@@ -713,16 +712,11 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_BLOCKED) {
-		if (h->type == MA_BUBBLE_HOLDER) {
-			marcel_bubble_t *b = ma_bubble_holder(h);
-			if (e->type == MA_BUBBLE_ENTITY)
-				/* Recursively set the new holder. */
-				ma_set_sched_holder(e, b);
-			else
-				/* Just enqueue */
-				__ma_bubble_enqueue_entity(e, b);
-		} else
-			ma_rq_enqueue_entity(e, ma_rq_holder(h));
+		if (h->type == MA_BUBBLE_HOLDER)
+			/* Don't directly enqueue in holding bubble, but in the thread cache. */
+			ma_set_sched_holder(e, ma_bubble_holder(h));
+		else
+			ma_enqueue_entity(e, h);
 	}
 }
 #section common

@@ -725,7 +725,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				ma_set_sched_holder(e, b);
 			else
 				/* Just enqueue */
-				ma_enqueue_entity(e, h);
+				__ma_bubble_enqueue_entity(e, b);
 		} else
 			ma_enqueue_entity(e, h);
 	}

@@ -622,7 +622,7 @@ static void topo_discover(void) {
 
 	/* Raw detection, from coarser levels to finer levels */
 #ifdef MA__NUMA
-	unsigned k,m,n;
+	unsigned k;
 	unsigned nbsublevels;
 	unsigned sublevelarity;
 	int dosplit;

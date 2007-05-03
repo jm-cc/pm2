@@ -30,6 +30,7 @@ rq_t **rqs = NULL;
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
+
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"
@@ -305,7 +306,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 			case FUT_RQS_NEWLWPRQ: {
 				unsigned rqnum = ev.ev64.param[0];
 				unsigned rqlevel = nrqlevels-1;
-				/* eux peuvent ï¿½re dans le dï¿½ordre */
+				/* eux peuvent être dans le désordre */
 				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				verbprintf("new lwp runqueue %d at %p -> %p\n",rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
@@ -404,7 +405,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 						delThread(t);
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
-					// penser ï¿½free(t->name) aussi
+					// penser à free(t->name) aussi
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE: {
@@ -536,7 +537,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 		fflush(stdout);
 #if 0
 		{ static int pair = 0;
-		// Sauvegarde rï¿½guliï¿½re, pour dï¿½tecter rapidement les problï¿½mes
+		// Sauvegarde réguliére, pour détecter rapidement les problèmes
 		SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
 		}
 #endif

@@ -362,7 +362,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #section marcel_structures
 
 #ifdef PM2_DEV
-/*  #warning il ne faudrait pas dï¿½endre d un scheduler particulier */
+/*  #warning il ne faudrait pas dépendre d un scheduler particulier */
 #endif
 #depend "scheduler-marcel/linux_runqueues.h[marcel_structures]"
 #depend "scheduler-marcel/linux_runqueues.h[types]"

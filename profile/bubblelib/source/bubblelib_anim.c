@@ -417,7 +417,7 @@ void delThread(thread_t *t) {
 	} else {
 		hideEntity(&t->entity);
 	}
-	// XXX: berk. ï¿½ marche pour l'instant car on est le dernier sur la liste
+	// XXX: berk. ça marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= t->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }
@@ -439,7 +439,7 @@ void delBubble(bubble_t *b) {
 		BubbleDisplayItem_remove(b->entity.lastitem);
 		b->entity.lastitem = NULL;
 	}
-	// XXX: berk. ï¿½ marche pour l'instant car on est le dernier sur la liste
+	// XXX: berk. ça marche pour l'instant car on est le dernier sur la liste
 	norq->nextX -= b->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }

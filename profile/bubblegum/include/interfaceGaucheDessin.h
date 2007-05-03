@@ -90,10 +90,6 @@ void Deplacer(interfaceGaucheVars * iGaucheVars);
 #if 1
 void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * zdest, Element *bdest, interfaceGaucheVars * iGaucheVarsPar);
 void Deplacer(interfaceGaucheVars * iGaucheVars, int srcX, int srcY, zone * zdest, Element *bdest);
-/*Selection Multiple */
-#if 1
-void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * zdest, Element *bdest, interfaceGaucheVars * iGaucheVarsPar);
-void Deplacer(interfaceGaucheVars * iGaucheVars, int srcX, int srcY, zone * zdest, Element *bdest);
 #endif
 /*Fin*/
 zone *insertZoneSelected(zone *headZoneSelectionnee,zone *zoneSelected);

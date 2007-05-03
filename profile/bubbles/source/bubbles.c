@@ -192,7 +192,7 @@ if (optind != argc) {
 
 	{
 #ifndef SHOWPRIO
-		/* dï¿½onstration bulles simples */
+		/* démonstration bulles simples */
 		bubble_t *b1, *b2, *b;
 		thread_t *t1, *t2, *t3, *t4, *t5;
 		t1 = newThread(0, norq);
@@ -251,7 +251,7 @@ if (optind != argc) {
 #ifdef SHOWEVOLUTION
 
 #if 0
-		/* ï¿½olution de vol */
+		/* évolution de vol */
 		bubble_pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
 		bubble_pause(1);
@@ -277,7 +277,7 @@ if (optind != argc) {
 
 #else
 #if 0
-		/* ï¿½olution d'explosion */
+		/* évolution d'explosion */
 		bubble_pause(1);
 		bubbleExplode(b);
 		bubble_pause(1);
@@ -370,7 +370,7 @@ if (optind != argc) {
 
 #else /* SHOWPRIO */
 
-		/* dï¿½onstration des prioritï¿½ */
+		/* démonstration des priorités */
 #define N 5
 		bubble_t *b[N];
 		thread_t *t[2*N], *comm;

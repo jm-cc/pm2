@@ -101,9 +101,9 @@ do { \
 
 #define MA_PREEMPT_ACTIVE  (1UL << 25)
 
-/* Protection pour la rï¿½ntrance du code de marcel avec les
- * bibliothï¿½ues extï¿½ieures (glibc par exemple)
- * Dï¿½Rï¿½Iï¿½ utilisez marcel_extlib_un?protect()
+/* Protection pour la réentrance du code de marcel avec les
+ * bibliothèques extérieures (glibc par exemple)
+ * DÉPRÉCIÉ, utilisez marcel_extlib_un?protect()
  */
 #define	ma_enter_lib() marcel_extlib_protect()
 #define	ma_exit_lib()  marcel_extlib_unprotect()

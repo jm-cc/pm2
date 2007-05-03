@@ -713,10 +713,15 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_BLOCKED) {
-		if (h->type == MA_BUBBLE_HOLDER)
+		if (h->type == MA_BUBBLE_HOLDER) {
 			/* Don't directly enqueue in holding bubble, but in the thread cache. */
-			ma_set_sched_holder(e, ma_bubble_holder(h));
-		else
+			marcel_bubble_t *b = ma_bubble_holder(h);
+			while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
+				h = b->sched.sched_holder;
+				b = ma_bubble_holder(h);
+			}
+			ma_set_sched_holder(e, b);
+		} else
 			ma_enqueue_entity(e, h);
 	}
 }

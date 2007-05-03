@@ -100,6 +100,8 @@ retry:
 	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
 	if (!ptr) {
 		if (!ma_in_atomic() && nb_try_left--) {
+			/* On tente de faire avancer les autres
+			 * threads */
 			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
 			marcel_yield();
 			goto retry;
@@ -115,6 +117,8 @@ retry:
 
 	if(res == MAP_FAILED) {
 		if (!ma_in_atomic() && nb_try_left--) {
+			/* On tente de faire avancer les autres
+			 * threads */
 			mdebugl(PM2DEBUG_DISPLEVEL, "mmap(%p, %lx, ...) for stack failed! Trying to wait for other threads to terminate\n", next_slot, THREAD_SLOT_SIZE);
 			marcel_yield();
 			goto retry;

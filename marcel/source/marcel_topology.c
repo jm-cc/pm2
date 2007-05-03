@@ -522,7 +522,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		rad_level[r].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 		if (level == MARCEL_LEVEL_CORE)
-			ma_atomic_set(&rad_level[j].nbidle, 0);
+			ma_atomic_set(&rad_level[r].nbidle, 0);
 #endif
 		r++;
 	}

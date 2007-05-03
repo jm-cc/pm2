@@ -73,9 +73,11 @@ struct ma_holder {
 	/** \brief List of entities placed for schedule in this holder */
 	struct list_head sched_list;
 	/** \brief Number of entities in the list above */
-	unsigned long nr_ready;
-	/** \brief Number of interruptibly blocked held entities (probably broken) */
+	unsigned long nr_running;
+	/** \brief Number of interruptibly blocked held entities */
 	unsigned long nr_uninterruptible;
+	/** \brief Number of entities that are currently scheduled on processors (maybe broken) */
+	unsigned long nr_scheduled;
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
 };
@@ -89,7 +91,7 @@ typedef struct ma_holder ma_holder_t;
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
 	.sched_list = LIST_HEAD_INIT((h).sched_list), \
-	.nr_ready = 0, \
+	.nr_running = 0, \
 	.nr_uninterruptible = 0, \
 }
 
@@ -100,7 +102,8 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
 	INIT_LIST_HEAD(&h->sched_list);
-	h->nr_ready = h->nr_uninterruptible = 0;
+	h->nr_running = h->nr_uninterruptible = 0;
+	h->nr_scheduled = 1;
 }
 
 #section marcel_functions
@@ -446,11 +449,8 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
-	if (e->prio >= MA_BATCH_PRIO)
-		list_add(&e->sched_list, &h->sched_list);
-	else
-		list_add_tail(&e->sched_list, &h->sched_list);
-	h->nr_ready++;
+	list_add(&e->sched_list, &h->sched_list);
+	h->nr_running++;
 }
 
 #section marcel_functions
@@ -563,7 +563,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->holder_data);
-	h->nr_ready--;
+	h->nr_running--;
 	list_del(&e->sched_list);
 	MA_BUG_ON(e->run_holder != h);
 	e->run_holder = NULL;

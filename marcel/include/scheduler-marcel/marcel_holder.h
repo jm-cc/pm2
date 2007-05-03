@@ -720,7 +720,12 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				h = b->sched.sched_holder;
 				b = ma_bubble_holder(h);
 			}
-			ma_set_sched_holder(e, b);
+			if (e->type == MA_BUBBLE_ENTITY)
+				/* Recursively set the new holder. */
+				ma_set_sched_holder(e, b);
+			else
+				/* Just enqueue */
+				ma_enqueue_entity(e, h);
 		} else
 			ma_enqueue_entity(e, h);
 	}

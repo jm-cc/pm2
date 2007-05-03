@@ -58,7 +58,7 @@ suboptionshelp:
 
 thankshelp:
 	@echo
-	@echo "Troubles ? Contact Luc.Bouge@ens-lyon.fr"
+	@echo "Troubles ? Contact pm2-dev@listes.ens-lyon.fr"
 	@echo "Have a good day with PM2"
 
 # Note: interet ?

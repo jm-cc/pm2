@@ -169,6 +169,35 @@ int marcel_bubble_sleep_locked(marcel_bubble_t *bubble) {
 	return 0;
 }
 
+#define DOWAKE() do { \
+	/* XXX erases real bubble prio */ \
+	SETPRIO(MA_BATCH_PRIO); \
+} while(0)
+int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
+	VARS;
+	if ( (bubble->sched.run_holder && bubble->sched.run_holder == &bubble->hold)
+	   || (!bubble->sched.run_holder && bubble->sched.sched_holder == &bubble->hold))
+		return 0;
+	ma_holder_rawunlock(&bubble->hold);
+	RAWLOCK_HOLDER();
+	ma_holder_rawlock(&bubble->hold);
+	if (!list_empty(&bubble->runningentities)) {
+		if (bubble->sched.prio == MA_NOSCHED_PRIO)
+			DOWAKE();
+	} else
+		bubble_sched_debugl(7,"Mmm, %p actually still sleeping\n", bubble);
+	ma_entity_holder_rawunlock(h);
+	return 0;
+}
+
+int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble) {
+	VARS;
+	HOLDER();
+	DOWAKE();
+	return 0;
+}
+#endif /* MARCEL_BUBBLE_STEAL */
+
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio) {
 	*prio = bubble->sched.prio;
 	return 0;

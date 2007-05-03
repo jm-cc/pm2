@@ -653,7 +653,7 @@ static void __ma_bubble_lock_all(marcel_bubble_t *b, marcel_bubble_t *root_bubbl
 				__ma_bubble_lock_all(ma_bubble_entity(e), root_bubble);
 		}
 	} else {
-		/* Bubble by itself on a runqueue */
+		/* Bubble by itself on a runqueue. If that's not the case, you probably forgot to call ma_put_entity at some point. */
 		MA_BUG_ON(b->sched.sched_holder->type != MA_RUNQUEUE_HOLDER);
 		if (!b->sched.holder_data) {
 			/* not queued, hence didn't get locked when running ma_topo_lock() */
@@ -680,7 +680,7 @@ static void __ma_bubble_unlock_all(marcel_bubble_t *b, marcel_bubble_t *root_bub
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_all(ma_bubble_entity(e), b); /* b is the new root bubble */
 		}
-		/* Bubble by itself on a runqueue */
+		/* Bubble by itself on a runqueue. If that's not the case, you probably forgot to call ma_put_entity at some point. */
 		MA_BUG_ON(b->sched.sched_holder->type != MA_RUNQUEUE_HOLDER);
 		if (!b->sched.holder_data) {
 			/* not queued, hence didn't get locked when running ma_topo_lock() */

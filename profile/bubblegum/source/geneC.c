@@ -37,8 +37,9 @@ int parcourir_bulle(Element* bulle, int mybid)
             fprintf(fw,"   {\n");
             fprintf(fw,"      marcel_attr_t attr;\n");
             fprintf(fw,"      marcel_attr_init(&attr);\n");
-            fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",mybid);
-            fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",GetId(element_i));
+	    if (mybid)
+               fprintf(fw,"      marcel_attr_setinitbubble(&attr, &b%d);\n",mybid);
+            fprintf(fw,"      marcel_attr_setid(&attr,%d);\n",id);
             //fprintf(fw,"      marcel_attr_setprio(&attr,%d);\n",GetPrioriteThread(element_i));		  
             fprintf(fw,"      marcel_attr_setname(&attr,\"%s\");\n",GetNom(element_i));
             fprintf(fw,"      marcel_create(&t%d, &attr, f, (any_t)(intptr_t)%d);\n",id,id*MAX_CHARGE+GetCharge(element_i));
@@ -88,6 +89,8 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
   
    parcourir_bulle(bullemere,0);
   
+   fprintf(fw,"   marcel_start_playing();\n");
+
    ListeElement *liste;
    for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
    {
@@ -98,8 +101,8 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
          fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
    }
 
-   fprintf(fw,"   marcel_start_playing();\n");
-   fprintf(fw,"   int i = 50;\n");
+   fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
+   fprintf(fw,"   int i = 5;\n");
    fprintf(fw,"   while(i--) {\n");
 
    for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
@@ -112,6 +115,7 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    }
    fprintf(fw,"      marcel_delay(1000);\n");
    fprintf(fw,"   }\n");
+   fprintf(fw,"#endif\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //fprintf(fw,"\n   profile_stop();\n");

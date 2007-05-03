@@ -607,6 +607,13 @@ static void topo_connect(void) {
 	}
 }
 
+#ifdef MA__NUMA
+static int compar(const void *_l1, const void *_l2) {
+  const struct marcel_topo_level *l1 = _l1, *l2 = _l2;
+  return marcel_vpmask_ffs(&l1->cpuset) - marcel_vpmask_ffs(&l2->cpuset);
+}
+#endif
+
 /* Main discovery loop */
 static void topo_discover(void) {
 	unsigned l,i,j;

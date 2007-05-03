@@ -167,7 +167,6 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				ma_holder_rawunlock(&b->hold);
 				/* mettre b sur rq2 */
 				ma_put_entity(&b->sched, &rq2->hold, bstate);
-				PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 				b->sched.sched_level = rq2->level;
 				ma_holder_rawunlock(&rq2->hold);
 			}

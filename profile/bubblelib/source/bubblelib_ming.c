@@ -282,6 +282,11 @@ static void init(void) {
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
 }
 
+static void fini(void) {
+	signal(SIGSEGV, SIG_DFL);
+	signal(SIGINT, SIG_DFL);
+}
+
 BubbleOps SWFBubbleOps = {
 	/* Movie methods */
 	.newMovie = mynewSWFMovie,

@@ -49,6 +49,8 @@ extern unsigned long marcel_stats_load_offset;
 #section marcel_variables
 /** \brief Offset of the "number of thread" statistics */
 extern unsigned long ma_stats_nbthreads_offset;
+/** \brief Offset of the "number of running thread" statistics */
+extern unsigned long ma_stats_nbrunning_offset;
 /** \brief Offset of the "last ran time" statistics */
 extern unsigned long ma_stats_last_ran_offset;
 /** \brief Offset of the "memory usage" statistics */

@@ -39,9 +39,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.hold);
 		PROF_EVENTSTR(sched_status,"gang scheduler: cleaning gang runqueue");
-		/* Non-empty bubbles */
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
+		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
 				ma_put_entity(e, &ma_gang_rq.hold, state);
@@ -49,10 +47,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		}
 		/* Then put one job on work_rq */
 		PROF_EVENTSTR(sched_status,"gang scheduler: putting one job");
-		rq = &ma_gang_rq;
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		if (!ma_queue_empty(queue)) {
-			e = ma_queue_entry(queue);
+		list_for_each_entry(e, &ma_gang_rq.hold.sched_list, sched_list) {
 			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 			b = ma_bubble_entity(e);
 			if (b->hold.nr_ready) {
@@ -91,9 +86,7 @@ any_t marcel_gang_cleaner(any_t foo) {
 		ma_holder_lock_softirq(&work_rq->hold);
 		ma_holder_rawlock(&ma_gang_rq.hold);
 		PROF_EVENTSTR(sched_status,"gang cleaner: cleaning gang runqueue");
-		/* Non-empty bubbles */
-		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		ma_queue_for_each_entry_safe(e, ee, queue) {
+		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
 				ma_put_entity(e, &ma_gang_rq.hold, state);

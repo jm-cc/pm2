@@ -206,7 +206,7 @@ struct marcel_bubble {
 
 /* Attention: ne doit être utilisé que par marcel_bubble_init */
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
-	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_BATCH_PRIO), \
+	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
 	.hold = MA_HOLDER_INITIALIZER((b).hold, MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
 	.nbentities = 0, \
@@ -313,8 +313,8 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	MA_BUG_ON(e->run_holder != &b->hold);
-#ifdef MARCEL_BUBBLE_STEAL
-	if (list_empty(&b->runningentities) && b->sched.prio == MA_NOSCHED_PRIO) {
+	if (list_empty(&b->queuedentities)) {
+		ma_holder_t *h = b->sched.run_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
@@ -349,9 +349,8 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	MA_BUG_ON(e->run_holder != &b->hold);
-#ifdef MARCEL_BUBBLE_STEAL
-	if (list_empty(&b->runningentities) && b->sched.prio == MA_NOSCHED_PRIO) {
+	if (list_empty(&b->queuedentities)) {
+		ma_holder_t *h = b->sched.run_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);

@@ -216,7 +216,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #endif
 			h;
 	} else do {
-#ifndef MARCEL_BUBBLE_EXPLODE
 		ma_runqueue_t *rq;
 		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
 			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
@@ -248,7 +247,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 			/* keep this thread inside the bubble */
 			break;
-#endif
 #endif
 #ifdef MA__LWPS
 		rq = NULL;

@@ -1043,19 +1043,6 @@ restart:
 
 	/* found something interesting, lock the holder */
 
-#ifdef MA__LWPS
-	if (!nexth) {
-		/* no run holder, we are probably being moved */
-		if (cur && cur == prev) {
-			/* OK, we didn't want to give hand anyway */
-			didswitch = 0;
-			ma_local_bh_enable();
-			goto out;
-		}
-		/* Loop again, until the move is complete */
-		goto restart;
-	}
-#endif
 	ma_holder_lock(nexth);
 	sched_debug("locked(%p)\n",nexth);
 
@@ -1145,8 +1132,21 @@ switch_tasks:
 //			prev->interactive_credit--;
 //	}
 
+	/* update statistics */
+	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
+
 	if (tbx_likely(didswitch = (prev != next))) {
-		ma_clear_tsk_need_togo(prev);
+		/* really switch */
+#ifdef MA__LWPS
+		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
+			PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
+			ma_topology_lwp_idle_end(LWP_SELF);
+		}
+#endif
+//		next->timestamp = now;
+//		rq->nr_switches++;
+		__ma_get_lwp_var(current_thread) = next;
+//		++*switch_count;
 
 		/* really switch */
 		prev = do_switch(prev, next, nexth, now);

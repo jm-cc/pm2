@@ -101,6 +101,9 @@ export PM2_SMPMODE
 PM2_LOGMODE=off
 export PM2_LOGMODE
 
+PM2_CD=off
+export PM2_CD
+
 ADD_WRAPPER=
 
 while [ $# -gt 0 ]; do
@@ -117,6 +120,12 @@ while [ $# -gt 0 ]; do
 	-vg)
 	    shift
 	    PM2_VALGRIND=on
+	    ;;
+	-cd)
+	    shift
+	    PM2_CD=on
+            PM2_WD="$1"
+            shift
 	    ;;
 	--numactl)
 	    shift
@@ -170,6 +179,10 @@ done
 
 prog="$1"
 shift
+
+if [ "${PM2_CD}" = on ]; then
+    cd ${PM2_WD}
+fi
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 set --  --source-mode "$prog" -- "$@"

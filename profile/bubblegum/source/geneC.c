@@ -89,13 +89,15 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    parcourir_bulle(bullemere,0);
   
    fprintf(fw,"   marcel_start_playing();\n");
-   fprintf(fw,"   while(1) {\n");
-   fprintf(fw,"   marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
-   fprintf(fw,"   marcel_delay(100); }\n");
+   fprintf(fw,"   int i = 50;\n");
+   fprintf(fw,"   while(i--) {\n");
+   fprintf(fw,"      marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
+   fprintf(fw,"      marcel_delay(100);\n");
+   fprintf(fw,"   }\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //fprintf(fw,"\n   profile_stop();\n");
-   fprintf(fw,"\n   marcel_end();\n");
+   //fprintf(fw,"\n   marcel_end();\n");
    fprintf(fw,"   return 0;\n}\n");
 
    fclose(fw);

@@ -143,7 +143,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		debug("entity %p(%ld)\n",e[i],ma_entity_load(e[i]));
 		/* when entities' load is very small, just leave them here */
 		/* TODO: tune */
-		if (ma_entity_load(e[i]) <= per_item_load/30) {
+		if (entity_load(e[i]) <= per_item_load/30) {
 			int state;
 			ma_runqueue_t *rq;
 			debug("small(%lx), leave it here\n", entity_load(e[i]));

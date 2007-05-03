@@ -690,11 +690,11 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	}
 
 	e->sched_holder = h;
-	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_SLEEPING)
 		return;
 
+	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_BLOCKED) {
 		if (h->type == MA_BUBBLE_HOLDER) {

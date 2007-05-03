@@ -434,10 +434,10 @@ static void __marcel_init look_libnuma(void) {
 			continue;
 		}
 		
-		node_level[i].type = MARCEL_LEVEL_NODE;
-		ma_topo_set_os_numbers(&node_level[i], radid, -1, -1, -1, -1, -1);
-		marcel_vpmask_empty(&node_level[i].vpset);
-		marcel_vpmask_empty(&node_level[i].cpuset);
+		node_level[radid].type = MARCEL_LEVEL_NODE;
+		ma_topo_set_os_numbers(&node_level[radid], radid, -1, -1, -1, -1, -1);
+		marcel_vpmask_empty(&node_level[radid].vpset);
+		marcel_vpmask_empty(&node_level[radid].cpuset);
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
 			marcel_vpmask_add_vp(&node_level[radid].cpuset,cpuid);
@@ -492,13 +492,13 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			continue;
 
 		rad_level[r].type = level;
-		ma_topo_set_os_numbers(&rad_level[r], -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&rad_level[r], -1, -1, -1, -1, -1, -1);
 		switch(level) {
 			case MARCEL_LEVEL_NODE:
 				rad_level[r].os_node = r;
 				break;
-			case MARCEL_LEVEL_DIE:
-				rad_level[r].os_die = r;
+			case MARCEL_LEVEL_L3:
+				rad_level[r].os_l3 = r;
 				break;
 			case MARCEL_LEVEL_CORE:
 				rad_level[r].os_core = r;
@@ -522,7 +522,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		rad_level[r].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 		if (level == MARCEL_LEVEL_CORE)
-			ma_atomic_set(&rad_level[r].nbidle, 0);
+			ma_atomic_set(&rad_level[j].nbidle, 0);
 #endif
 		r++;
 	}
@@ -638,7 +638,6 @@ static void topo_discover(void) {
 	look_libnuma();
 #endif
 #ifdef  AIX_SYS
-	mdebug("%d\n",rs_getinfo(NULL,R_PCORESDL,0));
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0)) {
 			mdebug("looking AIX node sdl %d\n",i);
@@ -646,8 +645,8 @@ static void topo_discover(void) {
 		}
 #ifdef R_L2CSDL
 		if (i == rs_getinfo(NULL, R_L2CSDL, 0)) {
-			mdebug("looking AIX die sdl %d\n",i);
-			look_rset(i, MARCEL_LEVEL_DIE); /* TODO: en fait c'est juste un cache L2 que ça exprime. */
+			mdebug("looking AIX L2 sdl %d\n",i);
+			look_rset(i, MARCEL_LEVEL_L2);
 		}
 #endif
 #ifdef R_PCORESDL
@@ -656,8 +655,10 @@ static void topo_discover(void) {
 			look_rset(i, MARCEL_LEVEL_CORE);
 		}
 #endif
+		if (i == rs_getinfo(NULL, R_SMPSDL, 0))
+			mdebug("not looking AIX \"SMP\" sdl %d\n",i);
 		if (i == rs_getinfo(NULL, R_MAXSDL, 0)) {
-			mdebug("looking AIX proc sdl %d\n",i);
+			mdebug("looking AIX max sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_PROC);
 		}
 	}

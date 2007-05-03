@@ -725,65 +725,17 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
   int i = 0;
   zone * ZoneCliquee, *tempo ;
 
-gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
-{
- 
-  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
-
-  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
-  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
-  
-  // Pour test 
-  iGaucheVarsTmp->mousePosClic_left_x =  iGaucheVarsTmp->mousePos_left_x;
-  iGaucheVarsTmp->mousePosClic_left_y =  iGaucheVarsTmp->mousePos_left_y;
-  iGaucheVarsTmp->mousePosClic_state = ev->state;
-
-
-return TRUE;
-}
-
-
-
-
-  
-/*!
- *
- * 
- * pour cette fonction, le mieux serait de sauvegarder 
- *  dans une structure les elements selectionnées 
- */
-gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
-{
-  parcours *p, *pParent, *pAccueil;
-  widget = NULL;  // inutilisé
-  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
-  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
-  Element* elementSelectionne, * elementParent, * elementAccueil;
-  Bulle* bulleParent, * bulleAccueil;
-  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
-  
-  /* Mise à jour de iGaucheVarsTmp pour connaître les coordonnées du relâchement du clic */
-  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
-  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
-  clicX = iGaucheVarsTmp->mousePosClic_left_x;
-  clicY = iGaucheVarsTmp->mousePosClic_left_y;
-  lacheX = iGaucheVarsTmp->mousePos_left_x;
-  lacheY = iGaucheVarsTmp->mousePos_left_y;
-
-if(abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
-  int i = 0;
-  zone * tmpZoneSelectionnee,*derniereZoneSelectionnee,*tempo ;
-
-  parcours *p;
   Element* elementSelectionne;
   char *tmp = malloc(20);
+
+  p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, clicX, clicY);
+  ZoneCliquee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
   /* D�placement court -> s�lection */
   if (iGaucheVarsTmp->mousePosClic_state & GDK_CONTROL_MASK )
   {      
   	
-        //if(iGaucheVars->last != iGaucheVars->zonePrincipale && iGaucheVars->last!= NULL )
-           //iGaucheVars->zoneSelectionnee = insertZoneSelected(iGaucheVars->zoneSelectionnee, iGaucheVars->last);
-	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX, clicY);
+        //if(iGaucheVarsTmp->last != iGaucheVarsTmp->zonePrincipale && iGaucheVarsTmp->last!= NULL )
+           //iGaucheVarsTmp->zoneSelectionnee = insertZoneSelected(iGaucheVarsTmp->zoneSelectionnee, iGaucheVarsTmp->last);
 
 	if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale ){
             printf("DEBUG : Selection de la zone principale\n");
@@ -801,17 +753,19 @@ if(abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
     elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }
   else{
-	  p = TrouverParcours(iGaucheVars->zonePrincipale, clicX,   clicY);
- 
-  derniereZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
-   
-  if( derniereZoneSelectionnee == iGaucheVars->zonePrincipale){
-   printf("DEBUG : Selection de la zone principale\n");
-    iGaucheVars->zoneSelectionnee = iGaucheVars->zonePrincipale;
-    iGaucheVars->zoneSelectionnee->next = NULL;
-    iGaucheVars->head = iGaucheVars->zonePrincipale;
-    iGaucheVars->head->next = NULL;  
-   return TRUE;
+  if( ZoneCliquee == iGaucheVarsTmp->zonePrincipale){
+    printf("DEBUG : Selection de la zone principale\n");
+    iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->zonePrincipale;
+    iGaucheVarsTmp->zoneSelectionnee->next = NULL;
+    iGaucheVarsTmp->head = iGaucheVarsTmp->zonePrincipale;
+    iGaucheVarsTmp->head->next = NULL;  
+  } else {
+   iGaucheVarsTmp->zoneSelectionnee = ZoneCliquee;
+   iGaucheVarsTmp->zoneSelectionnee->next = NULL;
+   iGaucheVarsTmp->head = ZoneCliquee;
+   iGaucheVarsTmp->head->next = NULL;
+   iGaucheVarsTmp->last = ZoneCliquee;
+   elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }
  }//fin de else 
 
@@ -878,13 +832,72 @@ while(tempo != NULL){
   EffacerParcours(p);
 }
 
-  return TRUE;
+gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
+{
+ 
+  parcours *p;
+  zone * ZoneCliquee;
+  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
+  int clicX, clicY;
+
+  iGaucheVarsTmp->mousePos_left_x = clicX = (ev->x) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_y = clicY = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
+  
+  // Pour test 
+  iGaucheVarsTmp->mousePosClic_left_x =  clicX;
+  iGaucheVarsTmp->mousePosClic_left_y =  clicY;
+  iGaucheVarsTmp->mousePosClic_state = ev->state;
+
+  p = TrouverParcours(iGaucheVarsTmp->zonePrincipale, clicX, clicY);
+  ZoneCliquee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
+  EffacerParcours(p);
+  if(!isInside(iGaucheVarsTmp->head, ZoneCliquee)) {
+     handleClic(iGaucheVarsTmp, iGaucheVarsTmp->mousePosClic_left_x, iGaucheVarsTmp->mousePosClic_left_y);
+     iGaucheVarsTmp->clic_handled = 1;
+  } else {
+     iGaucheVarsTmp->clic_handled = 0;
+  }
+
+return TRUE;
 }
 
-/* D�placement long -> d�placement/copie */
 
-  if(!isInside(iGaucheVars->head, iGaucheVars->last))
-   iGaucheVars->head = insertZoneSelected(iGaucheVars->head, iGaucheVars->last);
+
+
+  
+/*!
+ *
+ * 
+ * pour cette fonction, le mieux serait de sauvegarder 
+ *  dans une structure les elements selectionnées 
+ */
+gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
+{
+  parcours *p, *pParent, *pAccueil;
+  widget = NULL;  // inutilisé
+  interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
+  zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
+  Element* elementSelectionne, * elementParent, * elementAccueil;
+  Bulle* bulleParent, * bulleAccueil;
+  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
+  
+  /* Mise à jour de iGaucheVarsTmp pour connaître les coordonnées du relâchement du clic */
+  iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
+  iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
+  clicX = iGaucheVarsTmp->mousePosClic_left_x;
+  clicY = iGaucheVarsTmp->mousePosClic_left_y;
+  lacheX = iGaucheVarsTmp->mousePos_left_x;
+  lacheY = iGaucheVarsTmp->mousePos_left_y;
+
+  if (abs(clicX - lacheX) < 3 && abs(clicY - lacheY) < 3) {
+     if (!iGaucheVarsTmp->clic_handled)
+       handleClic(iGaucheVarsTmp, clicX, clicY);
+     return TRUE;
+   }
+
+/* D�placement long -> d�placement/copie */
+  if(!isInside(iGaucheVarsTmp->head, iGaucheVarsTmp->last))
+   iGaucheVarsTmp->head = insertZoneSelected(iGaucheVarsTmp->head, iGaucheVarsTmp->last);
   /* CALCUL DES ELEMENTS SELECTIONNES, PARENT ET ACCUEIL */
 
   /* Voilà l'élément d'accueil */

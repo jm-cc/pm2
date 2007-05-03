@@ -681,21 +681,6 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 #section marcel_inline
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
 	if (h->type == MA_BUBBLE_HOLDER) {
-		MA_BUG_ON(h != e->init_holder);
-		if (e->type == MA_BUBBLE_ENTITY)
-			PROF_EVENT2(bubble_sched_bubble_goingback, ma_bubble_entity(e), ma_bubble_holder(h));
-		else
-			PROF_EVENT2(bubble_sched_goingback, ma_task_entity(e), ma_bubble_holder(h));
-	} else {
-		MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
-		PROF_EVENT2(bubble_sched_switchrq,
-			e->type == MA_TASK_ENTITY?
-				(void*) ma_task_entity(e):
-				(void*) ma_bubble_entity(e),
-				ma_rq_holder(h));
-	}
-
-	if (h->type == MA_BUBBLE_HOLDER) {
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */
 		marcel_bubble_t *b = ma_bubble_holder(h);
 		while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
@@ -705,20 +690,15 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	}
 
 	e->sched_holder = h;
+	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_SLEEPING)
 		return;
 
-	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_BLOCKED) {
 		if (h->type == MA_BUBBLE_HOLDER) {
-			/* Don't directly enqueue in holding bubble, but in the thread cache. */
 			marcel_bubble_t *b = ma_bubble_holder(h);
-			while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
-				h = b->sched.sched_holder;
-				b = ma_bubble_holder(h);
-			}
 			if (e->type == MA_BUBBLE_ENTITY)
 				/* Recursively set the new holder. */
 				ma_set_sched_holder(e, b);
@@ -726,7 +706,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				/* Just enqueue */
 				__ma_bubble_enqueue_entity(e, b);
 		} else
-			ma_enqueue_entity(e, h);
+			ma_rq_enqueue_entity(e, ma_rq_holder(h));
 	}
 }
 #section common

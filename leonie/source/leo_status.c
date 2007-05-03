@@ -164,6 +164,13 @@ leo_help(void)
   __leo_option_help("", "--leonie-host=HOSTNAME",
 		    "Force HOSTNAME to be the name of the    machine which leonie is started on      (default: gethostname/gethostbyname)");
   DISP("");
+  __leo_option_help("", "--wd=WORKING_DIR",
+		    "Change working directory to WORKING     _DIR at the beginning of session");
+  __leo_option_help("-cd", "",
+		    "Change working directory at the         beginning of session");
+  __leo_option_help("[--cd]", "",
+		    "Do not change working directory at      the beginning of session");
+  DISP("");
   __leo_option_help("-l", "",
 		    "Log session processes output to files");
   __leo_option_help("[--l]", "",

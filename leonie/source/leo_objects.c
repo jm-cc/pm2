@@ -36,6 +36,7 @@ leo_settings_init(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(leo_settings_t));
 
+  object->cd_mode	= tbx_true;
   object->gdb_mode      = tbx_false;
   object->xterm_mode    = tbx_true;
   object->log_mode      = tbx_false;

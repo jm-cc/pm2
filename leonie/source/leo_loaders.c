@@ -173,6 +173,12 @@ leo_default_loader(p_leo_settings_t settings,
 	    tbx_arguments_append_cstring(args, "-vg");
 	  }
 
+	if (settings->cd_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-cd");
+	    tbx_arguments_append_cstring(args, settings->wd);
+	  }
+
 	if (settings->numactl_mode)
 	  {
 	    tbx_arguments_append_cstring_ext(args, "--numactl", ' ', settings->numactl_value);
@@ -428,6 +434,12 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	if (settings->valgrind_mode)
 	  {
 	    tbx_arguments_append_cstring(args, "-vg");
+	  }
+
+	if (settings->cd_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-cd");
+	    tbx_arguments_append_cstring(args, settings->wd);
 	  }
 
 	if (settings->xterm_mode)

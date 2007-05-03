@@ -133,6 +133,23 @@ process_command_line(int    argc,
 		TBX_FREE(network_file);
 	      }
 	    }
+	  else if (tbx_argit_vopt_equals("--wd"))
+	    {
+	      if (!settings->wd)
+		{
+		  settings->wd = tbx_argit_vopt_value_cstr();
+		}
+	      else
+		leo_terminate("duplicate working directory definition");
+	    }
+	  else if (tbx_argit_arg_equals("-cd"))
+	    {
+	      settings->cd_mode = tbx_true;
+	    }
+	  else if (tbx_argit_arg_equals("--cd"))
+	    {
+	      settings->cd_mode = tbx_false;
+	    }
 	  else if (tbx_argit_arg_equals("-x"))
 	    {
 	      settings->xterm_mode = tbx_true;
@@ -243,6 +260,24 @@ process_command_line(int    argc,
 
       settings->args = args;
     }
+
+  if (!settings->wd) {
+          size_t size = 64;
+
+          settings->wd = TBX_MALLOC(size+1);
+          while (1) {
+                  if (getcwd(settings->wd, size)) {
+                          break;
+                  }
+
+                  if (errno != ERANGE) {
+                          TBX_ERROR("getcwd");
+                  }
+
+                  size *= 2;
+                  settings->wd	= TBX_REALLOC(settings->wd, size + 1);
+          }
+  }
 
   LOG_OUT();
 

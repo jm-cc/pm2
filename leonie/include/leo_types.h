@@ -173,6 +173,8 @@ typedef struct s_leo_settings
   p_tbx_arguments_t  args;
   char              *config_file;
   char              *env; //GM 
+  char              *wd;
+  tbx_bool_t         cd_mode;
   p_tbx_slist_t      network_file_slist;
   tbx_bool_t         gdb_mode;
   tbx_bool_t         xterm_mode;

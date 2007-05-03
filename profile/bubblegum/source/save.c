@@ -107,7 +107,6 @@ void parcourirBullesXml(Element * bulle, xmlNodePtr noeud) {
   ListeElement * liste;
   Element * elementFilsPtr;
   xmlNodePtr noeudFils;
-  int taillebulle = GetNbElement(bulle);
   
   for(liste = FirstListeElement(bulle); liste; liste = NextListeElement(liste)) {
     elementFilsPtr = liste->element;

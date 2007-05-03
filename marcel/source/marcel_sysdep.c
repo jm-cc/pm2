@@ -17,7 +17,6 @@
 #include "marcel.h"
 #include <errno.h>
 #include <limits.h>
-#include <stdint.h>
 #ifndef __MINGW32__
 #include <sys/mman.h>
 #endif
@@ -228,9 +227,8 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 	size += ((uintptr_t)ptr) - addr;
 	if (node < 0 || ma_numa_not_available)
 		return;
-	if (mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
-		mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
-#endif
+	if (mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+		mbind(ptr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
 }
 #elif defined(OSF_SYS)
 #define HAS_NUMA

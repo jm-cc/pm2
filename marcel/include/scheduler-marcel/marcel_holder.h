@@ -642,8 +642,9 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 #define MA_ENTITY_BLOCKED 1
 #define MA_ENTITY_SLEEPING 0
 #section marcel_functions
-/* Sets the sched holder of an entity.  If that entity is a bubble, its
- * hierarchy is supposed to be already locked. */
+/* Sets the sched holder of an entity to bubble (which is supposed to be
+ * locked).  If that entity is a bubble, its hierarchy is supposed to be
+ * already locked. */
 void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
 /** \brief Gets entity \e e out from its holder (which must be already locked),
  * returns its state.  If entity is a bubble, its hierarchy is supposed to be

@@ -1182,6 +1182,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
      struct marcel_sigaction *oact),(sig,act,oact),
 {
 	LOG_IN();
+	struct sigaction myaction;
 	ma_kernel_sigaction_t kact;
 	void *handler;
 

@@ -860,6 +860,8 @@ static void topo_discover(void) {
 						level->arity = 0;
 						level->children = TBX_MALLOC(sublevelarity*sizeof(void*));
 						level->father = &marcel_topo_levels[l][i];
+						level->index = k;
+						level->children = TBX_MALLOC(sublevelarity*sizeof(void*));
 					}
 
 					/* distribute cpus to subitems */

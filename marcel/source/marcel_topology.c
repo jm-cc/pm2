@@ -739,6 +739,7 @@ static void topo_discover(void) {
 	l++;
 	/* Discard levels below */
 	while (marcel_topo_nblevels-1 >= l) {
+#ifdef MA__NUMA
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_cpu_level)
 			marcel_topo_cpu_level = NULL;
 #ifdef MARCEL_SMT_IDLE
@@ -747,6 +748,7 @@ static void topo_discover(void) {
 #endif
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_node_level)
 			marcel_topo_node_level = NULL;
+#endif
 		TBX_FREE(marcel_topo_levels[marcel_topo_nblevels-1]);
 		marcel_topo_nblevels--;
 		marcel_topo_levels[marcel_topo_nblevels] = NULL;

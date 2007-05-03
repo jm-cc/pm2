@@ -181,11 +181,8 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
 	ma_holder_rawunlock(&bubble->hold);
 	RAWLOCK_HOLDER();
 	ma_holder_rawlock(&bubble->hold);
-	if (!list_empty(&bubble->runningentities)) {
-		if (bubble->sched.prio == MA_NOSCHED_PRIO)
-			DOWAKE();
-	} else
-		bubble_sched_debugl(7,"Mmm, %p actually still sleeping\n", bubble);
+	if (bubble->sched.prio == MA_NOSCHED_PRIO)
+		DOWAKE();
 	ma_entity_holder_rawunlock(h);
 	return 0;
 }
@@ -193,7 +190,8 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble) {
 int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble) {
 	VARS;
 	HOLDER();
-	DOWAKE();
+	if (bubble->sched.prio == MA_NOSCHED_PRIO)
+		DOWAKE();
 	return 0;
 }
 #endif /* MARCEL_BUBBLE_STEAL */

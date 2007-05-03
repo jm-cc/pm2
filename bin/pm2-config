@@ -394,8 +394,8 @@ pm2config_set_vars()
     for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL '$'PM2_COMMON_CFLAGS_KERNEL -D${_LIB}_KERNEL -DMODULE=${_lib}\"
-	eval _PM2CONFIG_CFLAGS=\"\$_PM2CONFIG_CFLAGS -I\$_PM2CONFIG_${_lib}_INCLUDE_DIR\"
-	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+	eval _PM2CONFIG_${_lib}_CFLAGS=\"\$_PM2CONFIG_CFLAGS -I\$_PM2CONFIG_${_lib}_INCLUDE_DIR\"
+	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS _PM2CONFIG_${_lib}_CFLAGS
 	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
     done
     for _lib in appli common ; do

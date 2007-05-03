@@ -90,32 +90,9 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    parcourir_bulle(bullemere,0);
   
    fprintf(fw,"   marcel_start_playing();\n");
-
-   ListeElement *liste;
-   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
-   {
-      Element *element_i = liste->element;
-      TypeElement type = GetTypeElement(element_i);
-      int id = GetId(element_i);
-      if (type == BULLE)
-         fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
-   }
-
-   fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
-   fprintf(fw,"   int i = 5;\n");
-   fprintf(fw,"   while(i--) {\n");
-
-   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
-   {
-      Element *element_i = liste->element;
-      TypeElement type = GetTypeElement(element_i);
-      int id = GetId(element_i);
-      if (type == BULLE)
-         fprintf(fw,"      marcel_bubble_spread(&b%d, marcel_topo_level(0,0));\n", id);
-   }
-   fprintf(fw,"      marcel_delay(1000);\n");
-   fprintf(fw,"   }\n");
-   fprintf(fw,"#endif\n");
+   fprintf(fw,"   while(1) {\n");
+   fprintf(fw,"   marcel_bubble_spread(&b0, marcel_topo_level(0,0));\n");
+   fprintf(fw,"   marcel_delay(100); }\n");
   
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
    //fprintf(fw,"\n   profile_stop();\n");

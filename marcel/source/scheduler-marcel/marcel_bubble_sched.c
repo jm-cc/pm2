@@ -470,6 +470,7 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
  *
  * Refermeture de bulle
  *
+ *
  */
 
 void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
@@ -740,6 +741,41 @@ static void ma_topo_unlock(struct marcel_topo_level *level) {
 void ma_bubble_lock_all(marcel_bubble_t *b, struct marcel_topo_level *level) {
 	ma_local_bh_disable();
 	ma_preempt_disable();
+	ma_topo_lock(level);
+	__ma_bubble_lock_all(b,b);
+}
+
+void ma_bubble_unlock_all(marcel_bubble_t *b, struct marcel_topo_level *level) {
+	__ma_bubble_unlock_all(b,b);
+	ma_topo_unlock(level);
+	ma_preempt_enable();
+	ma_local_bh_enable();
+}
+
+static void __ma_bubble_lock(marcel_bubble_t *b) {
+	marcel_entity_t *e;
+	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
+		if (e->type == MA_BUBBLE_ENTITY) {
+			marcel_bubble_t *b = ma_bubble_entity(e);
+			if(b->sched.sched_holder->type != MA_RUNQUEUE_HOLDER)
+				__ma_bubble_lock(b);
+		}
+	}
+}
+
+static void __ma_bubble_unlock(marcel_bubble_t *b) {
+	marcel_entity_t *e;
+	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
+		if (e->type == MA_BUBBLE_ENTITY) {
+			marcel_bubble_t *b = ma_bubble_entity(e);
+			if(b->sched.sched_holder->type != MA_RUNQUEUE_HOLDER)
+				__ma_bubble_unlock(b);
+		}
+	}
+	ma_holder_rawlock(&b->hold);
+}
+
+void ma_bubble_lock(marcel_bubble_t *b) {
 	ma_topo_lock(level);
 	__ma_bubble_lock_all(b,b);
 }

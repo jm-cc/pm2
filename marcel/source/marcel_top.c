@@ -255,6 +255,7 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		ma_bubble_lock_all(&marcel_root_bubble,marcel_machine_level);
 		printbubble(&marcel_root_bubble, 0);
 		ma_bubble_unlock_all(&marcel_root_bubble,marcel_machine_level);
+		ma_bubble_unlock_all(&marcel_root_bubble,marcel_machine_level);
 	} else
 #endif
 	{

@@ -30,7 +30,6 @@ rq_t **rqs = NULL;
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
-
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"
@@ -537,7 +536,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 		fflush(stdout);
 #if 0
 		{ static int pair = 0;
-		// Sauvegarde régulière, pour détecter rapidement les problèmes
+		// Sauvegarde rï¿½guliï¿½re, pour dï¿½tecter rapidement les problï¿½mes
 		SWFMovie_save(movie,(pair^=1)?"autobulles.swf":"autobulles2.swf");
 		}
 #endif

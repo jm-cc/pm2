@@ -426,6 +426,11 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   nouvelleBulle = CreateBulle(iGaucheVars->defprioritebulle, SetId(iGaucheVars));
   tmp = iGaucheVars->head;
   while(tmp!=NULL && tmp != iGaucheVars->zonePrincipale){
+  if(tmp == iGaucheVars->zonePrincipale)
+    {
+      /* printf("DEBUG : encapsuler, zoneSelectionnee = zonePrincipale, encapsulation impossible\n"); */
+      return;
+    }
   
   /* Voilà l'élément sélectionné qu'on va encapsuler */
   p = TrouverParcours(iGaucheVars->zonePrincipale, tmp->posX + 1, tmp->posY + 1);

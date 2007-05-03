@@ -620,6 +620,7 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 
 		state = ma_get_entity(e);
 		mdebug("putting back %p in bubble %p(%p)\n", e, b, &b->hold);
+		PROF_EVENTSTR(sched_status,"gather: putting back entity");
 		ma_put_entity(e, &b->hold, state);
 
 		if (e->type == MA_BUBBLE_ENTITY)
@@ -632,6 +633,7 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 void ma_bubble_gather(marcel_bubble_t *b) {
 	ma_bubble_lock_all(b, marcel_machine_level);
 	__ma_bubble_gather(b, b);
+	PROF_EVENTSTR(sched_status,"gather: done");
 	ma_bubble_unlock_all(b, marcel_machine_level);
 }
 

@@ -63,6 +63,7 @@ registering_flavors() {
 	--marcel=numa --marcel=smp_multiple_queues --marcel=marcel_main \
 	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
+	--marcel=bubble_sched_spread \
 	--all=debug --all=gdb --all=noinline
 
     register_flavor marcel-gomp \

@@ -48,28 +48,7 @@ int mpi_init_() {
   int i;
   char **argv;
 
-  argc = 1+_gfortran_iargc();
-  MPI_NMAD_TRACE("argc = %d\n", argc);
-  argv = malloc(argc * sizeof(char *));
-  for (i = 0; i < argc; i++) {
-    int j;
-
-    argv[i] = malloc(MAX_ARG_LEN+1);
-    if (sizeof(char*) == 4) {
-      _gfortran_getarg_i4((int32_t *)&i, argv[i], MAX_ARG_LEN);
-    }
-    else {
-      _gfortran_getarg_i8((int64_t *)&i, argv[i], MAX_ARG_LEN);
-    }
-    j = MAX_ARG_LEN;
-    while (j > 1 && (argv[i])[j-1] == ' ') {
-      j--;
-    }
-    (argv[i])[j] = '\0';
-  }
-  for (i = 0; i < argc; i++) {
-    MPI_NMAD_TRACE("argv[%d] = [%s]\n", i, argv[i]);
-  }
+  tbx_fortran_init(&argc, &argv);
   return MPI_Init(&argc, &argv);
 }
 #elif defined PM2_FORTRAN_TARGET_IFORT
@@ -85,24 +64,25 @@ int mpi_init_() {
   int i;
   char **argv;
 
-  argc = 1+iargc_();
-  MPI_NMAD_TRACE("argc = %d\n", argc);
-  argv = malloc(argc * sizeof(char *));
-  for (i = 0; i < argc; i++) {
-    int j;
-
-    argv[i] = malloc(MAX_ARG_LEN+1);
-    getarg_((int32_t *)&i, argv[i], MAX_ARG_LEN);
-
-    j = MAX_ARG_LEN;
-    while (j > 1 && (argv[i])[j-1] == ' ') {
-      j--;
-    }
-    (argv[i])[j] = '\0';
-  }
-  for (i = 0; i < argc; i++) {
-    MPI_NMAD_TRACE("argv[%d] = [%s]\n", i, argv[i]);
-  }
+  tbx_fortran_init(&argc, &argv);
+//  argc = 1+iargc_();
+//  MPI_NMAD_TRACE("argc = %d\n", argc);
+//  argv = malloc(argc * sizeof(char *));
+//  for (i = 0; i < argc; i++) {
+//    int j;
+//
+//    argv[i] = malloc(MAX_ARG_LEN+1);
+//    getarg_((int32_t *)&i, argv[i], MAX_ARG_LEN);
+//
+//    j = MAX_ARG_LEN;
+//    while (j > 1 && (argv[i])[j-1] == ' ') {
+//      j--;
+//    }
+//    (argv[i])[j] = '\0';
+//  }
+//  for (i = 0; i < argc; i++) {
+//    MPI_NMAD_TRACE("argv[%d] = [%s]\n", i, argv[i]);
+//  }
   return MPI_Init(&argc, &argv);
 }
 #elif defined PM2_FORTRAN_TARGET_NONE

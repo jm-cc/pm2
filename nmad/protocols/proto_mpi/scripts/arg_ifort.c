@@ -26,8 +26,10 @@
  * otherwise.
  */
  
+#if defined PM2_FORTRAN_TARGET_IFORT
 int iargc_() {
   return 0;
 }
 void getarg_(int* x, char* y, int z) {
 }
+#endif /* PM2_FORTRAN_TARGET_IFORT */

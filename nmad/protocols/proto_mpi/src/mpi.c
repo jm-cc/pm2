@@ -45,7 +45,6 @@ int32_t _gfortran_iargc(void)	__attribute__ ((weak));
  */
 int mpi_init_() {
   int argc;
-  int i;
   char **argv;
 
   tbx_fortran_init(&argc, &argv);
@@ -61,7 +60,6 @@ extern void getarg_(int*, char*, int);
 
 int mpi_init_() {
   int argc;
-  int i;
   char **argv;
 
   tbx_fortran_init(&argc, &argv);

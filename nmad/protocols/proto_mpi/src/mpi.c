@@ -77,8 +77,8 @@ int mpi_init_() {
  */
 /** Initialisation by Fortran code.
  */
-int  iargc_(); __attribute__ ((weak));;
-void getarg_(int*, char*, int); __attribute__ ((weak));
+int  iargc_() __attribute__ ((weak));
+void getarg_(int*, char*, int) __attribute__ ((weak));
 
 int mpi_init_() {
   int argc;

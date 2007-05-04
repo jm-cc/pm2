@@ -73,12 +73,12 @@ int mpi_init_() {
   return MPI_Init(&argc, &argv);
 }
 #elif defined PM2_FORTRAN_TARGET_IFORT
-/* GFortran iargc/getargc bindings
+/* Ifort iargc/getargc bindings
  */
 /** Initialisation by Fortran code.
  */
-extern int  iargc_();
-extern void getarg_(int*, char*, int);
+int  iargc_(); __attribute__ ((weak));;
+void getarg_(int*, char*, int); __attribute__ ((weak));
 
 int mpi_init_() {
   int argc;

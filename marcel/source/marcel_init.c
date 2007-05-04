@@ -358,8 +358,8 @@ int main(int argc, char *argv[])
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
 		getrlimit(RLIMIT_STACK, &rlim);
-		if (get_sp() - new_sp > rlim.rlim_max) {
-			fprintf(stderr,"The max stack resource limit is too small (%ld) for the chosen marcel stack size (%ld).  Please decrease THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h", (long)rlim.rlim_max, (long)THREAD_SLOT_SIZE);
+		if (get_sp() - new_sp > rlim.rlim_cur) {
+			fprintf(stderr,"The current stack resource limit is too small (%ld) for the chosen marcel stack size (%ld).  Please increase it (ulimit -s, and maximum is %ld) or decrease THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h", (long)rlim.rlim_cur, (long)THREAD_SLOT_SIZE, (long) rlim.rlim_max);
 			abort();
 		}
 

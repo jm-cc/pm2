@@ -605,7 +605,8 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 
 #ifdef MA__LWPS
 #ifdef MARCEL_SMT_IDLE
-	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
+	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
+		&& !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		marcel_sig_disable_interrupts();
 		PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
 		if (prev != MARCEL_SELF)
@@ -1156,7 +1157,8 @@ switch_tasks:
 		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
 #ifdef MA__LWPS
-		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
+		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
+			&& !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 			marcel_sig_disable_interrupts();
 			if (!ma_topology_lwp_idle_core(LWP_SELF))
 				marcel_sig_pause();

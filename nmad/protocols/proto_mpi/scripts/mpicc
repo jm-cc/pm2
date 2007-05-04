@@ -222,7 +222,11 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ -z "$LDFLAGS" ] ; then
         LDFLAGS="$LDFLAGSBASE"
     fi
-    $Show $CLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
+    dir=$(dirname $0)
+    if [ ! -f $dir/arg_ifort.o ] ; then
+	$CC $dir/arg_ifort.c -c -o $dir/arg_ifort.o
+    fi
+    $Show $CLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/arg_ifort.o
     status=$?
 fi
 exit $status

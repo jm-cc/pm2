@@ -60,6 +60,7 @@
 #include "tbx_timing.h"
 #include "tbx_macros.h"
 #include "tbx_pointers.h"
+#include "tbx_fortran_argument.h"
 
 /* #ifdef TBX_KERNEL */
 /* Inclusion de marcel.h uniquement si on compile les sources de tbx 

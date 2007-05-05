@@ -995,6 +995,7 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 	}
 }
 
+#if 0
 #ifdef CONFIG_HOTPLUG_CPU
 static int migrate_timer_list(ma_tvec_base_t *new_base, struct list_head *head)
 {
@@ -1060,6 +1061,7 @@ unlock_again:
 	goto again;
 }
 #endif /* CONFIG_HOTPLUG_CPU */
+#endif
 
 MA_DEFINE_LWP_NOTIFIER_START(timers, "Timers Linux 2.6",
 			     init_timers_lwp, "Init timer",

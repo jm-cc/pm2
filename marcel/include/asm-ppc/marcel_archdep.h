@@ -23,6 +23,10 @@
 
 /* Linux PPC */
 #if defined(LINUX_SYS)
+#  include <setjmp.h>
+#  ifndef JB_GPR1
+#    define JB_GPR1 0
+#  endif
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_GPR1])
 #endif
 

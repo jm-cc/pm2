@@ -58,10 +58,10 @@
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
 
-#ifdef AIX_SYS
-#define MA_ASM_R
-#else
+#ifdef DARWIN_SYS
 #define MA_ASM_R "r"
+#else
+#define MA_ASM_R
 #endif
 
 #define set_sp(val) \

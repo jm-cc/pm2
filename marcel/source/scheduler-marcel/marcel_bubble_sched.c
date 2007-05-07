@@ -502,7 +502,7 @@ static void __ma_bubble_unlock_all(marcel_bubble_t *b, marcel_bubble_t *root_bub
 		/* Bubble by itself on a runqueue. If that's not the case, you probably forgot to call ma_put_entity at some point. */
 		MA_BUG_ON(b->sched.sched_holder->type != MA_RUNQUEUE_HOLDER);
 		if (!b->sched.holder_data) {
-			/* not queued, hence didn't get locked when running ma_topo_lock() */
+			/* not queued, hence won't get unlocked when running ma_topo_unlock() */
 			ma_holder_rawunlock(&b->hold);
 		}
 	}

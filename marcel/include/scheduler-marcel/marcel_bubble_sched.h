@@ -231,7 +231,6 @@ struct marcel_bubble {
  * must already be locked.
  *
  * \param nextent Entity found by the Self Scheduler.
- * \param prevh Holder of the currently running thread (will be the "previous" thread).
  * \param rq Runqueue where \e nextent was found.
  * \param nexth Holder of the next entity (filled by ma_bubble_sched()).
  * \param prio Priority of \e nextent.

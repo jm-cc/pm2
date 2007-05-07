@@ -130,10 +130,11 @@ struct ma_runqueue {
 	/** \brief Name of the runqueue */
 	char name[16];
 	//unsigned long expired_timestamp, timestamp_last_tick;
-	/* \brief active arrays of queues */
-	ma_prio_array_t *active;
+	/** \brief active arrays of queues */
+	ma_prio_array_t active[1];
+	//ma_prio_array_t *active;
 	/* \brief expired arrays of queues */
-	ma_prio_array_t *expired, arrays[2];
+	//ma_prio_array_t *expired, arrays[2];
 /* 	int best_expired_prio, prev_cpu_load[NR_CPUS]; */
 /* #ifdef CONFIG_NUMA */
 /* 	atomic_t *node_nr_ready; */
@@ -280,8 +281,9 @@ static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, 
 
 #section marcel_functions
 /* \brief Switch the active and expired arrays of runqueue \e rq. */
-static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq);
+//static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq);
 #section marcel_inline
+#if 0
 static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 {
 	ma_prio_array_t *array = rq->active;
@@ -292,6 +294,7 @@ static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 	//rq->expired_timestamp = 0;
 /* 	rq->best_expired_prio = MA_MAX_PRIO; */
 }
+#endif
 
 #section marcel_functions
 extern void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type);

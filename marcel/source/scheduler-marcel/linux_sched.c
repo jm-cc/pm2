@@ -1069,22 +1069,24 @@ restart:
 	MA_BUG_ON(nexth->type != MA_RUNQUEUE_HOLDER);
 	rq = ma_rq_holder(nexth);
 #ifdef MA__LWPS
-	if (tbx_unlikely(!(rq->active->nr_active+rq->expired->nr_active))) {
+	if (tbx_unlikely(!(rq->active->nr_active))) { //+rq->expired->nr_active))) {
 		sched_debug("someone stole the task we saw, restart\n");
 		ma_holder_unlock(&rq->hold);
 		goto restart;
 	}
 #endif
 
-	MA_BUG_ON(!(rq->active->nr_active+rq->expired->nr_active));
+	MA_BUG_ON(!(rq->active->nr_active)); //+rq->expired->nr_active));
 
 	/* now look for next *different* task */
 	array = rq->active;
+#if 0
 	if (tbx_unlikely(!array->nr_active)) {
 		sched_debug("arrays switch\n");
 		/* XXX: todo: handle all rqs... */
 		rq_arrays_switch(rq);
 	}
+#endif
 
 	idx = ma_sched_find_first_bit(array->bitmap);
 #ifdef MA__LWPS

@@ -623,7 +623,7 @@ static void topo_discover(void) {
 	struct marcel_topo_level *level;
 
 	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_LWPS) {
-		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_LWPS);
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_LWPS);
 		exit(1);
 	}
 

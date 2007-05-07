@@ -82,6 +82,7 @@ do_the_bench()
     [ `cat $file_status` -eq 0 ] || pm2bench_error "Compilation failed"
 
     # Execution
+    echo "Date: $(date)" | tee -a $file_result
     (run_bench $_iter; echo "$?" >$file_status) 2>&1|tee -a $file_result 
     exec=`cat $file_status`
 

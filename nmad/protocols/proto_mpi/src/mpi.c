@@ -965,6 +965,40 @@ int MPI_Rsend(void* buffer,
   return err;
 }
 
+/**
+ * Performs a synchronous-mode, blocking send.
+ */
+int MPI_Ssend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm) {
+  MPI_Request           request;
+  MPI_Request          *request_ptr = &request;
+  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_communicator_t  *mpir_communicator;
+  int                   err = 0;
+
+  MPI_NMAD_LOG_IN();
+  MPI_NMAD_TRACE("Ssending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
+
+  mpir_communicator = get_communicator(comm);
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    MPI_NMAD_LOG_OUT();
+    return not_implemented("Using MPI_ANY_TAG");
+  }
+
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  mpi_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
 __inline__
 void mpi_set_status(MPI_Request *request, MPI_Status*status) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;

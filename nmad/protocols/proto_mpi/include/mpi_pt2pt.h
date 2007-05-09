@@ -60,6 +60,13 @@ int MPI_Rsend(void* buffer,
               int tag,
               MPI_Comm comm);
 
+int MPI_Ssend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm);
+
 int MPI_Irecv(void* buffer,
               int count,
               MPI_Datatype datatype,

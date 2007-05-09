@@ -196,8 +196,8 @@ size_t sizeof_datatype(MPI_Datatype datatype) {
 }
 
 mpir_datatype_t* get_datatype(MPI_Datatype datatype) {
-  if (datatype <= NUMBER_OF_DATATYPES) {
-    if (datatypes[datatype] == NULL) {
+  if (tbx_unlikely(datatype <= NUMBER_OF_DATATYPES)) {
+    if (tbx_unlikely(datatypes[datatype] == NULL)) {
       ERROR("Datatype %d invalid", datatype);
       return NULL;
     }
@@ -654,7 +654,7 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
 }
 
 mpir_communicator_t *get_communicator(MPI_Comm comm) {
-  if (comm <= NUMBER_OF_COMMUNICATORS) {
+  if (tbx_unlikely(comm <= NUMBER_OF_COMMUNICATORS)) {
     if (communicators[comm-MPI_COMM_WORLD] == NULL) {
       ERROR("Communicator %d invalid", comm);
       return NULL;

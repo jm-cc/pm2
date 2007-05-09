@@ -123,9 +123,9 @@ main(int    argc,
         for(i=0 ; i<param_warmup ; i++) {
           if (ping_side) {
             MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           } else {
-            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
           }
         }
@@ -156,7 +156,7 @@ main(int    argc,
                                         t1 = MPI_Wtime();
                                         while (nb_samples--) {
                                                 MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                                         }
                                         t2 = MPI_Wtime();
                                         MPI_Barrier(MPI_COMM_WORLD);
@@ -192,7 +192,7 @@ main(int    argc,
                                         MPI_Barrier(MPI_COMM_WORLD);
                                         t1 = MPI_Wtime();
                                         while (nb_samples--) {
-                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                                                 MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
                                         }
                                         MPI_Barrier(MPI_COMM_WORLD);

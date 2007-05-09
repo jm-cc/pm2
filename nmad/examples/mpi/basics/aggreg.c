@@ -30,15 +30,15 @@ int main(int argc, char **argv) {
     MPI_Isend(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
     MPI_Isend(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request2);
 
-    MPI_Wait(&request1, NULL);
-    MPI_Wait(&request2, NULL);
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
 
   }
   else {
     int x, y;
 
-    MPI_Recv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
-    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     printf("The answer to life, the universe, and everything is %d\n", x);
     printf("There are %d Wonders of the World\n", y);

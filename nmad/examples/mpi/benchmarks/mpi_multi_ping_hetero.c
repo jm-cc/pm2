@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
                     rank_dst, 0, MPI_COMM_WORLD, &(r_request[j*2 + 1]));
         }
         for(j = 0; j < (i+1) * 2; j++){
-          MPI_Wait(&(r_request[j]), NULL);
+          MPI_Wait(&(r_request[j]), MPI_STATUS_IGNORE);
         }
         for(j = 0; j <= i; j++){
           MPI_Isend(buffer + j * (SMALL+LARGE), SMALL, MPI_CHAR,
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
                     rank_dst, 0, MPI_COMM_WORLD, &(s_request[j*2 + 1]));
         }
         for(j = 0; j < (i+1) * 2; j++){
-          MPI_Wait(&(s_request[j]), NULL);
+          MPI_Wait(&(s_request[j]), MPI_STATUS_IGNORE);
         }
       }
       else {
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
                     rank_dst, 0, MPI_COMM_WORLD, &(s_request[j*2 + 1]));
         }
         for(j = 0; j < (i+1) * 2; j++){
-          MPI_Wait(&(s_request[j]), NULL);
+          MPI_Wait(&(s_request[j]), MPI_STATUS_IGNORE);
         }
         for(j = 0; j <= i; j++){
           MPI_Irecv(data2 + j * (SMALL + LARGE),  SMALL, MPI_CHAR,
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
                     rank_dst, 0, MPI_COMM_WORLD, &(r_request[j*2 + 1]));
         }
         for(j = 0; j < (i+1) * 2; j++) {
-          MPI_Wait(&(r_request[j]), NULL);
+          MPI_Wait(&(r_request[j]), MPI_STATUS_IGNORE);
         }
         t2 = MPI_Wtime();
         sum += (t2 - t1) * 1e6;

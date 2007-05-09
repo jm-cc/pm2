@@ -37,11 +37,11 @@ int main(int argc, char **argv) {
     MPI_Request request;
 
     MPI_Irecv(&x, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request);
-    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
-    MPI_Test(&request, &flag, NULL);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Test(&request, &flag, MPI_STATUS_IGNORE);
     if (!flag) {
       printf("Waiting for the data\n");
-      MPI_Wait(&request, NULL);
+      MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
 
     printf("The answer to life, the universe, and everything is %d\n", x);

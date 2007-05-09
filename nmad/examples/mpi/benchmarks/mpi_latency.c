@@ -60,6 +60,7 @@ main(int    argc,
   int log, i;
   int ping_side;
   int rank_dst;
+  void *buffer = NULL;
 
   MPI_Init(&argc,&argv);
 
@@ -95,11 +96,11 @@ main(int    argc,
   MPI_Barrier(MPI_COMM_WORLD);
   for(i=0 ; i<param_warmup ; i++) {
     if (ping_side) {
-      MPI_Send(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-      MPI_Recv(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+      MPI_Send(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+      MPI_Recv(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } else {
-      MPI_Recv(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
-      MPI_Send(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+      MPI_Recv(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Send(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
@@ -121,8 +122,8 @@ main(int    argc,
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime();
         while (nb_samples--) {
-          MPI_Send(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-          MPI_Recv(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+          MPI_Send(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+          MPI_Recv(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
         t2 = MPI_Wtime();
         MPI_Barrier(MPI_COMM_WORLD);
@@ -151,8 +152,8 @@ main(int    argc,
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime();
         while (nb_samples--) {
-          MPI_Recv(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
-          MPI_Send(NULL, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+          MPI_Recv(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          MPI_Send(buffer, 0, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
         }
         MPI_Barrier(MPI_COMM_WORLD);
         t2 = MPI_Wtime();

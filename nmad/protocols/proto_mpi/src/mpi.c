@@ -892,7 +892,7 @@ int MPI_Send(void *buffer,
   mpir_request->request_datatype = datatype;
   mpi_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request);
 
-  MPI_Wait(&request, NULL);
+  MPI_Wait(&request, MPI_STATUS_IGNORE);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1267,7 +1267,7 @@ int MPI_Sendrecv(void *sendbuf,
   err = MPI_Isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
   err = MPI_Irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
 
-  MPI_Wait(&srequest, NULL);
+  MPI_Wait(&srequest, MPI_STATUS_IGNORE);
   MPI_Wait(&rrequest, status);
 
   MPI_NMAD_LOG_OUT();
@@ -1321,7 +1321,7 @@ int MPI_Wait(MPI_Request *request,
     free(mpir_request->request_ptr);
   }
 
-  if (status != NULL) {
+  if (status != MPI_STATUS_IGNORE) {
     mpi_set_status(request, status);
   }
 
@@ -1394,7 +1394,7 @@ int MPI_Test(MPI_Request *request,
     *flag = 1;
     mpir_request->request_type = MPI_REQUEST_ZERO;
 
-    if (status != NULL) {
+    if (status != MPI_STATUS_IGNORE) {
       mpi_set_status(request, status);
     }
   }
@@ -1582,7 +1582,7 @@ int MPI_Bcast(void* buffer,
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], NULL);
+      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
       if (err != 0) {
           MPI_NMAD_LOG_OUT();
           return err;
@@ -1594,7 +1594,7 @@ int MPI_Bcast(void* buffer,
   else {
     MPI_Request request;
     MPI_Irecv(buffer, count, datatype, root, tag, comm, &request);
-    err = MPI_Wait(&request, NULL);
+    err = MPI_Wait(&request, MPI_STATUS_IGNORE);
   }
   MPI_NMAD_TRACE("End of bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   MPI_NMAD_LOG_OUT();
@@ -1637,7 +1637,7 @@ int MPI_Gather(void *sendbuf,
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], NULL);
+      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -1692,7 +1692,7 @@ int MPI_Gatherv(void *sendbuf,
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], NULL);
+      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -1814,7 +1814,7 @@ int MPI_Scatter(void *sendbuf,
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], NULL);
+      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -1825,7 +1825,7 @@ int MPI_Scatter(void *sendbuf,
     free(requests);
   }
   else {
-    MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, NULL);
+    MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, MPI_STATUS_IGNORE);
   }
 
   MPI_NMAD_LOG_OUT();
@@ -1880,8 +1880,8 @@ int MPI_Alltoall(void* sendbuf,
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == mpir_communicator->rank) continue;
-    MPI_Wait(&recv_requests[i], NULL);
-    MPI_Wait(&send_requests[i], NULL);
+    MPI_Wait(&recv_requests[i], MPI_STATUS_IGNORE);
+    MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
   free(send_requests);
@@ -1941,8 +1941,8 @@ int MPI_Alltoallv(void* sendbuf,
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == mpir_communicator->rank) continue;
-    MPI_Wait(&recv_requests[i], NULL);
-    MPI_Wait(&send_requests[i], NULL);
+    MPI_Wait(&recv_requests[i], MPI_STATUS_IGNORE);
+    MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
   free(send_requests);
@@ -2020,7 +2020,7 @@ int MPI_Reduce(void* sendbuf,
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
-      MPI_Wait(&requests[i], NULL);
+      MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // Do the reduction operation
@@ -2113,7 +2113,7 @@ int MPI_Reduce_scatter(void *sendbuf,
                 recvcounts[i], datatype, i, tag, comm, &requests[i]);
     }
     for(i=1 ; i<mpir_communicator->size ; i++) {
-      err = MPI_Wait(&requests[i], NULL);
+      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -2123,7 +2123,7 @@ int MPI_Reduce_scatter(void *sendbuf,
     free(requests);
   }
   else {
-    MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, NULL);
+    MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
   }
 
   if (mpir_communicator->rank == 0) {

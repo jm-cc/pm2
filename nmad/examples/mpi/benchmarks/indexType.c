@@ -94,8 +94,8 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
       MPI_Send(data, 1, indextype, dest, TAG, MPI_COMM_WORLD);
 
       // receive data from processor 1
-      //    MPI_Recv(data2, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, NULL);
-      MPI_Recv(data2, 1, indextype, dest, TAG, MPI_COMM_WORLD, NULL);
+      //    MPI_Recv(data2, numberOfElements, MPI_FLOAT, dest, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(data2, 1, indextype, dest, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       //checkIndexIsCorrect(data2, i, numberOfElements);
 
       t2 = MPI_Wtime(); 
@@ -103,8 +103,8 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
     }
     else if (rank == dest) {
       float b[numberOfElements];
-      //    MPI_Recv(b, numberOfElements, MPI_FLOAT, source, TAG, MPI_COMM_WORLD, NULL);
-      MPI_Recv(b, 1, indextype, source, TAG, MPI_COMM_WORLD, NULL);
+      //    MPI_Recv(b, numberOfElements, MPI_FLOAT, source, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(b, 1, indextype, source, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // checkIndexIsCorrect(b, rank, numberOfElements);
 
       MPI_Send(b, 1, indextype, source, TAG, MPI_COMM_WORLD);

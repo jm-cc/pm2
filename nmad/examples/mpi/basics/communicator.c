@@ -16,8 +16,8 @@ void send_with_different_tags(int rank) {
 
     MPI_Isend(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
     MPI_Isend(&y, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request2);
-    MPI_Wait(&request1, NULL);
-    MPI_Wait(&request2, NULL);
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
   }
   else {
     int x, y;
@@ -25,8 +25,8 @@ void send_with_different_tags(int rank) {
 
     MPI_Irecv(&y, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request2);
     MPI_Irecv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
-    MPI_Wait(&request1, NULL);
-    MPI_Wait(&request2, NULL);
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
 
     printf("The answer to life, the universe, and everything is %d\n", x);
     printf("There are %d Wonders of the World\n", y);
@@ -46,8 +46,8 @@ void send_with_different_communicators(int rank, MPI_Comm comm) {
 
     MPI_Isend(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
     MPI_Isend(&y, 1, MPI_INT, rank_dst, 1, comm, &request2);
-    MPI_Wait(&request1, NULL);
-    MPI_Wait(&request2, NULL);
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
   }
   else {
     int x, y;
@@ -55,8 +55,8 @@ void send_with_different_communicators(int rank, MPI_Comm comm) {
 
     MPI_Irecv(&y, 1, MPI_INT, rank_dst, 1, comm, &request2);
     MPI_Irecv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &request1);
-    MPI_Wait(&request1, NULL);
-    MPI_Wait(&request2, NULL);
+    MPI_Wait(&request1, MPI_STATUS_IGNORE);
+    MPI_Wait(&request2, MPI_STATUS_IGNORE);
 
     printf("The answer to life, the universe, and everything is %d\n", x);
     printf("There are %d Wonders of the World\n", y);

@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
     for(child=1 ; child<numtasks ; child++) {
       fprintf(stderr, "Waiting for sending to child %d completed\n", child);
-      MPI_Wait(&out_requests[child-1], NULL);
+      MPI_Wait(&out_requests[child-1], MPI_STATUS_IGNORE);
     }
 
     for(child=1 ; child<numtasks ; child++) {

@@ -55,7 +55,7 @@ void struct_datatype(int rank) {
       MPI_Irecv(&(particles[i].d[0]), 2, MPI_DOUBLE, 0, 10, MPI_COMM_WORLD, &requests[i*3+1]);
       MPI_Irecv(&(particles[i].b[0]), 4, MPI_INT, 0, 10, MPI_COMM_WORLD, &requests[i*3+2]);
     }
-    MPI_Wait(&requests[29], NULL);
+    MPI_Wait(&requests[29], MPI_STATUS_IGNORE);
 
     for(i=0 ; i<10 ; i++) {
       printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],

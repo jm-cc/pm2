@@ -26,22 +26,22 @@ int main(int argc, char **argv) {
     float fy, fx=3.1415;
 
     MPI_Send(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
-    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     printf("[%d] The answer to life, the universe, and everything is %d\n", rank, y);
 
     MPI_Sendrecv(&fx, 1, MPI_FLOAT, rank_dst, 1,
                  &fy, 1, MPI_FLOAT, rank_dst, 1,
-                 MPI_COMM_WORLD, NULL);
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     printf("[%d] The estimated value of PI is %f\n", rank, fy);
   }
   else {
     int x;
     float f;
 
-    MPI_Recv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     MPI_Send(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
 
-    MPI_Recv(&f, 1, MPI_FLOAT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&f, 1, MPI_FLOAT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     MPI_Send(&f, 1, MPI_FLOAT, rank_dst, 1, MPI_COMM_WORLD);
   }
 

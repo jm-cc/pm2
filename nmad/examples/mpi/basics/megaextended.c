@@ -27,23 +27,23 @@ int main(int argc, char **argv) {
     // ping
     for(i=0 ; i<4*1024 ; i++) {
       MPI_Isend(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &requests[i]);
-      MPI_Test(&requests[i], &flag, NULL);
+      MPI_Test(&requests[i], &flag, MPI_STATUS_IGNORE);
     }
     MPI_Isend(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, &requests[4*1024]);
 
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Wait(&requests[i], NULL);
+      MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // pong
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
   }
   else {
     // pong
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+      MPI_Recv(x, 1024, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     // ping
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     MPI_Esend(x, 1024, MPI_INT, rank_dst, 1, 1, MPI_COMM_WORLD, &requests[4*1024]);
 
     for(i=0 ; i<=4*1024 ; i++) {
-      MPI_Wait(&requests[i], NULL);
+      MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
     }
   }
 

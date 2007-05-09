@@ -49,14 +49,14 @@ void send_array(int comm_rank, int *sizes) {
         MPI_Isend(buffer, sizes[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=0 ; j<nb_messages ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // pong
       for(j=0 ; j<nb_messages ; j++) {
         MPI_Irecv(buffer, sizes[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=0 ; j<nb_messages ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
     }
     stop = MPI_Wtime();
@@ -70,14 +70,14 @@ void send_array(int comm_rank, int *sizes) {
         MPI_Irecv(buffer, sizes[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=0 ; j<nb_messages ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // ping
       for(j=0 ; j<nb_messages ; j++) {
         MPI_Isend(buffer, sizes[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=0 ; j<nb_messages ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
     }
   }
@@ -227,7 +227,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
       // pong
       for(j=borne_inf ; j<borne_sup ; j++) {
         // Reception pour un message de taille sizes_nmad[j]
-        MPI_Recv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -244,7 +244,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
       // pong
       for(j=borne_inf ; j<borne_sup ; j++) {
         // Reception pour un message de taille sizes_nmad[j]
-        MPI_Recv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -273,7 +273,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Isend(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // pong
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -281,7 +281,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Irecv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -301,7 +301,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Irecv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -315,7 +315,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Isend(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
     }
   }
@@ -334,7 +334,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
       }
       MPI_Esend(buffer[borne_sup-1], sizes_nmad[borne_sup-1], MPI_CHAR, dest, 0, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[borne_sup-1]);
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // pong
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -342,7 +342,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Irecv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -362,7 +362,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Irecv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {
@@ -378,7 +378,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
       }
       MPI_Esend(buffer[borne_sup-1], sizes_nmad[borne_sup-1], MPI_CHAR, dest, 0, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[borne_sup-1]);
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], NULL);
+        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
       }
     }
   }
@@ -401,7 +401,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
           ptr += sizes_nmad[j];
         }
         MPI_Send(bigbuffer, size_pastix, MPI_CHAR, dest, 0, MPI_COMM_WORLD);
-        MPI_Recv(bigbuffer, size_pastix, MPI_CHAR, dest, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(bigbuffer, size_pastix, MPI_CHAR, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         // Process data
         for(j=borne_inf ; j<borne_sup ; j++) {
           for(k=0 ; k<sizes_nmad[j] ; k++) {
@@ -413,7 +413,7 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
     }
     else if (comm_rank == 1) {
       for(i=0 ; i<LOOPS ; i++) {
-        MPI_Recv(bigbuffer, size_pastix, MPI_CHAR, dest, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(bigbuffer, size_pastix, MPI_CHAR, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         // Process data
         for(j=borne_inf ; j<borne_sup ; j++) {
           for(k=0 ; k<sizes_nmad[j] ; k++) {

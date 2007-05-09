@@ -71,7 +71,7 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
 
       // receive data from processor 1
       if (VERBOSE) PRINT("*************MPI_RECV...");
-      MPI_Recv(data2, 1, indextype, dest, TAG, MPI_COMM_WORLD, NULL);
+      MPI_Recv(data2, 1, indextype, dest, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       if (VERBOSE) PRINT("*************... COMPLETED");
 
       t2 = MPI_Wtime();
@@ -83,7 +83,7 @@ void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int 
       if (VERBOSE) PRINT("numberOfElements = %d", numberOfElements);
 
       if (VERBOSE) PRINT("*************MPI_RECV...");
-      MPI_Recv(b, 1, indextype, source, TAG, MPI_COMM_WORLD, NULL);
+      MPI_Recv(b, 1, indextype, source, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       if (VERBOSE) PRINT("*************... COMPLETED");
 
       if (VERBOSE) PRINT("*************MPI_SEND...");

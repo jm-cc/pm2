@@ -756,7 +756,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     global_nb_incoming_msg = nb_incoming_msg;
     global_nb_outgoing_msg = nb_outgoing_msg;
     for(i=1 ; i<global_size ; i++) {
-      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, NULL);
+      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       global_nb_incoming_msg += remote_counters[0];
       global_nb_outgoing_msg += remote_counters[1];
     }
@@ -780,7 +780,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
       global_nb_incoming_msg = nb_incoming_msg;
       global_nb_outgoing_msg = nb_outgoing_msg;
       for(i=1 ; i<global_size ; i++) {
-        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, NULL);
+        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         global_nb_incoming_msg += remote_counters[0];
         global_nb_outgoing_msg += remote_counters[1];
       }
@@ -806,7 +806,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
     local_counters[1] = nb_outgoing_msg;
     MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
-    MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     if (answer == tbx_false) {
       return tbx_false;
     }
@@ -817,7 +817,7 @@ tbx_bool_t test_termination(MPI_Comm comm) {
       local_counters[1] = nb_outgoing_msg;
       MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
-      MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, NULL);
+      MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       return answer;
     }
   }

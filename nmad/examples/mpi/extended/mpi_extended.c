@@ -78,9 +78,9 @@ int main(int argc, char	**argv) {
     for(i=0 ; i<LOOPS ; i++) {
       if (ping_side) {
         MPI_Send(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-        MPI_Recv(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       } else {
-        MPI_Recv(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, NULL);
+        MPI_Recv(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Send(buffer, MSG_SIZE_MAX, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
       }
     }
@@ -118,34 +118,34 @@ int main(int argc, char	**argv) {
         // server: receive - send
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           }
           for(n = 0; n < nb_chunks-1; n++) {
             MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
-            MPI_Test(&requests[n], &flag, NULL);
+            MPI_Test(&requests[n], &flag, MPI_STATUS_IGNORE);
           }
           MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
 
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Wait(&requests[n], NULL);
+            MPI_Wait(&requests[n], MPI_STATUS_IGNORE);
           }
         }
 
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           }
           for(n = 0; n < nb_chunks; n++) {
             MPI_Isend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, &requests[n]);
-            MPI_Test(&requests[n], &flag, NULL);
+            MPI_Test(&requests[n], &flag, MPI_STATUS_IGNORE);
           }
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Wait(&requests[n], NULL);
+            MPI_Wait(&requests[n], MPI_STATUS_IGNORE);
           }
         }
 
         for(k=0 ; k<LOOPS ; k++) {
-          MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           MPI_Send(buffer, 1, datatype, rank_dst, 10, MPI_COMM_WORLD);
         }
       }
@@ -161,16 +161,16 @@ int main(int argc, char	**argv) {
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks-1; n++) {
             MPI_Esend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_NOT_COMPLETED, MPI_COMM_WORLD, &requests[n]);
-            MPI_Test(&requests[n], &flag, NULL);
+            MPI_Test(&requests[n], &flag, MPI_STATUS_IGNORE);
           }
           MPI_Esend(buffer+(nb_chunks-1)*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_IS_COMPLETED, MPI_COMM_WORLD, &requests[nb_chunks-1]);
 
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Wait(&requests[n], NULL);
+            MPI_Wait(&requests[n], MPI_STATUS_IGNORE);
           }
 
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           }
         }
         t2_extended = MPI_Wtime();
@@ -179,14 +179,14 @@ int main(int argc, char	**argv) {
         for(k=0 ; k<LOOPS ; k++) {
           for(n = 0; n < nb_chunks; n++) {
             MPI_Isend(buffer+n*chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, &requests[n]);
-            MPI_Test(&requests[n], &flag, NULL);
+            MPI_Test(&requests[n], &flag, MPI_STATUS_IGNORE);
           }
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Wait(&requests[n], NULL);
+            MPI_Wait(&requests[n], MPI_STATUS_IGNORE);
           }
 
           for(n = 0; n < nb_chunks; n++) {
-            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+            MPI_Recv(buffer + n * chunk, chunk, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           }
         }
         t2_isend = MPI_Wtime();
@@ -194,7 +194,7 @@ int main(int argc, char	**argv) {
         t1_bloc = MPI_Wtime();
         for(k=0 ; k<LOOPS ; k++) {
           MPI_Send(buffer, 1, datatype, rank_dst, 10, MPI_COMM_WORLD);
-          MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, NULL);
+          MPI_Recv(buffer, len, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
         t2_bloc = MPI_Wtime();
 

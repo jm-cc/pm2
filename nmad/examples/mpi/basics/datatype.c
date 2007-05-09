@@ -31,13 +31,13 @@ void contig_datatype(int rank) {
   }
   else {
     int buffer[4], buffer2[4], buffer3[4];
-    MPI_Recv(buffer, 4, MPI_INT, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer, 4, MPI_INT, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer);
 
-    MPI_Recv(buffer2, 2, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer2, 2, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer2);
 
-    MPI_Recv(buffer3, 1, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer3, 1, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer3);
   }
 
@@ -82,7 +82,7 @@ void vector_datatype(int rank) {
     int buffer[20];
     float buffer2[24];
 
-    MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, success=1;
@@ -111,7 +111,7 @@ void vector_datatype(int rank) {
       }
     }
 
-    MPI_Recv(buffer2, 1, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer2, 1, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, success=1;
@@ -167,7 +167,7 @@ void indexed_datatype(int rank) {
     char buffer2[12];
     int i;
 
-    MPI_Recv(buffer, 3, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer, 3, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j=0, success=1;
@@ -201,7 +201,7 @@ void indexed_datatype(int rank) {
       }
     }
 
-    MPI_Recv(buffer2, 2, mytype2, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(buffer2, 2, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j=0, success=1;
@@ -279,7 +279,7 @@ void struct_datatype(int rank) {
   }
   else {
     struct part_s particles[10];
-    MPI_Recv(particles, 10, mytype, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(particles, 10, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i, success=1;
@@ -358,7 +358,7 @@ void struct_and_indexed(int rank) {
   }
   else {
     struct part_s particles[12];
-    MPI_Recv(particles, 3, indexed_type, 0, 10, MPI_COMM_WORLD, NULL);
+    MPI_Recv(particles, 3, indexed_type, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j, success=1;

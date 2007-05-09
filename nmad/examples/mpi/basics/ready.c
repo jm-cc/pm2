@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     x[1024*1024-1] = 42;
     MPI_Rsend(x, 1024*1024, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
     MPI_Send(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
-    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     free(x);
   }
@@ -40,8 +40,8 @@ int main(int argc, char **argv) {
     int *x, y;
 
     x=malloc(1024*1024*sizeof(int));
-    MPI_Recv(x, 1024*1024, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, NULL);
-    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, NULL);
+    MPI_Recv(x, 1024*1024, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     MPI_Send(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
 
     printf("The answer to life, the universe, and everything is %d, %d\n", x[0], x[1024*1024-1]);

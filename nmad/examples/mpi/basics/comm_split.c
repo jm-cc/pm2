@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
       }
       else if (newrank == 1) {
         int message;
-        MPI_Recv(&message, 1, MPI_INT, 0, 1, comm, NULL);
+        MPI_Recv(&message, 1, MPI_INT, 0, 1, comm, MPI_STATUS_IGNORE);
         fprintf(stdout, "[%d] Received message: %d\n", rank, message);
       }
     }

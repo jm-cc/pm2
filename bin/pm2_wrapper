@@ -17,6 +17,7 @@ else
     echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
     #MX_DISABLE_SELF=1 MX_DISABLE_SHMEM=1 MX_RCACHE=1 
     #MX_STATS=1 
+    export MX_DISABLE_SELF MX_DISABLE_SHMEM MX_RCACHE MX_STATS
     if [ "$PM2_NUMACTL" == "off" ] ; then
         $prog ${@:+"$@"}
     else

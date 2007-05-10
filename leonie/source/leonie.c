@@ -141,6 +141,7 @@ process_command_line(int    argc,
 		}
 	      else
 		leo_terminate("duplicate working directory definition");
+	      settings->cd_mode = tbx_true;
 	    }
 	  else if (tbx_argit_arg_equals("-cd"))
 	    {

@@ -24,8 +24,8 @@ initialize_bench()
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
         --ext=\"\" \
         --modules=\"init marcel ntbx tbx\"\
-        --marcel=\"opt marcel-main $marcel $marcel_options\" \
-        --all=\"opt build_static static\"
+        --marcel=\"marcel-main $marcel $marcel_options\" \
+        --all=\"gdb opt build_static static\"
 
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
 }

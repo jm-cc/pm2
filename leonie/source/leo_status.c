@@ -166,9 +166,9 @@ leo_help(void)
   DISP("");
   __leo_option_help("", "--wd=WORKING_DIR",
 		    "Change working directory to WORKING     _DIR at the beginning of session");
-  __leo_option_help("-cd", "",
+  __leo_option_help("[-cd]", "",
 		    "Change working directory at the         beginning of session");
-  __leo_option_help("[--cd]", "",
+  __leo_option_help("--cd", "",
 		    "Do not change working directory at      the beginning of session");
   DISP("");
   __leo_option_help("-l", "",

@@ -35,6 +35,8 @@ Usage: $PROGNAME { option } command
   option:
     -f|--flavor name      : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d|--debug            : Run command through gdb
+    -cd                   : Change working directory at the beginning of the session (leonie)
+    --wd directory        : Set working directory to given directory at the beginning of the session (leonie)
     -vg|--valgrind        : Run command through valgrind
     --numactl [n]         : Run command through numactl [default: n=0]
     -t|--trace            : Run command through strace
@@ -189,6 +191,14 @@ mad3()
         pm2load_args="${pm2load_args} --numactl=$PM2_NUMACTL"
     fi
 
+    if [ "$PM2_CDMODE" != "off" ] ; then
+        pm2load_args="${pm2load_args} -cd"
+    fi
+
+    if [ "$PM2_WDIR" != "" ] ; then
+        pm2load_args="${pm2load_args} --wd=$PM2_WDIR"
+    fi
+
     ${PM2_ROOT}/bin/leonie --env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
@@ -209,6 +219,8 @@ PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
 PM2_XMODE=off
 PM2_PMODE=off
+PM2_CDMODE=off
+PM2_WDIR=""
 PM2_PROTOCOL=""
 
 while [ $# -gt 0 ]; do
@@ -231,6 +243,15 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_VALGRIND=on
 	    ;;
+	-cd)
+	    shift
+	    PM2_CDMODE=on
+	    ;;
+        --wd)
+            shift
+            PM2_WDIR=$1
+            shift
+            ;;
 	--numactl)
 	    shift
             x=$(expr $1 + 0 2>/dev/null)
@@ -280,6 +301,10 @@ while [ $# -gt 0 ]; do
 	--vg) # Valgrind off
 	    shift
 	    PM2_VALGRIND=off
+	    ;;
+	--cd) # Cdmode off
+	    shift
+	    PM2_CDMODE=off
 	    ;;
 	--t) # Strace off
 	    shift

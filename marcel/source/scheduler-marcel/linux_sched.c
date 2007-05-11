@@ -415,6 +415,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
 	*(long*)ma_task_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
+	PROF_EVENT2(sched_thread_wake, p, p->sched.state);
 	ma_set_task_state(p, MA_TASK_RUNNING);
 
 #ifdef MA__BUBBLES
@@ -549,6 +550,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		if (prev->sched.state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
 			MTRACE("moving",prev);
+			PROF_EVENT2(sched_thread_wake, prev, prev->sched.state);
 			ma_set_task_state(prev, MA_TASK_RUNNING);
 			/* still runnable */
 			ma_enqueue_task(prev,prevh);

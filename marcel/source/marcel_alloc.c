@@ -100,7 +100,7 @@ retry:
 	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
 	if (!ptr) {
 		if (!ma_in_atomic() && nb_try_left--) {
-			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
+			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for new stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
 			marcel_yield();
 			goto retry;
 		}

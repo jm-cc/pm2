@@ -401,7 +401,7 @@ int marcel_attr_getid(__const marcel_attr_t * __restrict attr,
 
 int marcel_attr_setpreemptible(marcel_attr_t * attr, int preemptible)
 {
-	attr->not_preemptible = preemptible ? 0 : 1;
+	attr->not_preemptible = !preemptible;
 	return 0;
 }
 

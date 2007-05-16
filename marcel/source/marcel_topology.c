@@ -716,7 +716,7 @@ static void topo_discover(void) {
 	marcel_vpmask_t cpumask = MARCEL_VPMASK_EMPTY;
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
 	for (i=0; i<marcel_nbvps(); i++) {
-		/* XXX TODO: heu, ben non justement je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
+		/* XXX TODO: dans le cas où marcel_nbvpds()>marcel_nbprocessors, je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
 		unsigned cpu = (i*marcel_cpu_stride)%marcel_nbprocessors;
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;

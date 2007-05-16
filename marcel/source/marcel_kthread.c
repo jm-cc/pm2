@@ -121,8 +121,11 @@ void marcel_kthread_join(marcel_kthread_t * pid)
 	if (the_pid)
 		/* not dead yet, wait for it */
 		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
-			int the_errno = errno;
-			MA_BUG_ON(the_errno != EINTR && the_errno != EAGAIN);
+			if (errno == EWOULDBLOCK) {
+				/* done */
+				break;
+			} else if (errno != EINTR && errno != EAGAIN)
+				MA_BUG();
 		}
 	LOG_OUT();
 }
@@ -167,12 +170,10 @@ void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 	int newval;
 	if ((newval = ma_atomic_dec_return(sem)) >= 0)
 		return;
-	while(1) {
-		if (syscall(SYS_futex, sem, FUTEX_WAIT, newval, NULL) == 0)
-			return;
+	while (syscall(SYS_futex, sem, FUTEX_WAIT, newval, NULL) == -1) {
 		if (errno == EWOULDBLOCK)
 			newval = ma_atomic_read(sem);
-		else if (errno != EINTR)
+		else if (errno != EINTR && errno != EAGAIN)
 			MA_BUG();
 	}
 }
@@ -180,8 +181,21 @@ TBX_FUN_ALIAS(void, marcel_kthread_mutex_lock, marcel_kthread_sem_wait, (marcel_
 
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
-	if (ma_atomic_inc_return(sem) <= 0) {
-		MA_BUG_ON(syscall(SYS_futex, sem, FUTEX_WAKE, 1, NULL));
+	if (ma_atomic_inc_return(sem) <= 0)
+	while (1) {
+		switch (syscall(SYS_futex, sem, FUTEX_WAKE, 1, NULL)) {
+		case 1:
+			return;
+		case -1:
+			perror("futex(WAKE) in kthread_sem_post");
+			MA_BUG();
+			break;
+		case 0:
+			continue;
+		default:
+			MA_BUG();
+			break;
+		}
 	}
 }
 TBX_FUN_ALIAS(void, marcel_kthread_mutex_unlock, marcel_kthread_sem_post, (marcel_kthread_mutex_t *lock), (lock));
@@ -205,12 +219,43 @@ void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
 
 void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
 {
-	MA_BUG_ON(syscall(SYS_futex, cond, FUTEX_WAKE, 1, NULL));
+	if (*cond)
+	while (1) {
+		switch (syscall(SYS_futex, cond, FUTEX_WAKE, 1, NULL)) {
+		case 1:
+			return;
+		case -1:
+			perror("futex(WAKE) in kthread_cond_signal");
+			MA_BUG();
+			break;
+		case 0:
+			continue;
+		default:
+			MA_BUG();
+			break;
+		}
+	}
 }
 
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 {
-	MA_BUG_ON(syscall(SYS_futex, cond, FUTEX_WAKE, *cond, NULL));
+	int nbwake = *cond;
+	while (1) {
+		int res;
+		switch ((res = syscall(SYS_futex, cond, FUTEX_WAKE, nbwake, NULL))) {
+		case -1:
+			perror("futex(WAKE) in kthread_cond_broadcast");
+			MA_BUG();
+			break;
+		case 0:
+			break;
+		default:
+			if (res > 0 && res <= nbwake)
+				nbwake -= res;
+			else
+				MA_BUG();
+		}
+	}
 }
 
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
@@ -218,12 +263,10 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 	int val;
 	val = ++(*cond);
 	marcel_kthread_mutex_unlock(mutex);
-	while(1) {
-		if (syscall(SYS_futex, cond, FUTEX_WAIT, val, NULL) == 0)
-			break;
+	while (syscall(SYS_futex, cond, FUTEX_WAIT, val, NULL) == -1) {
 		if (errno == EWOULDBLOCK)
 			val = *cond;
-		else if (errno != EINTR)
+		else if (errno != EINTR && errno != EAGAIN)
 			MA_BUG();
 	}
 	marcel_kthread_mutex_lock(mutex);

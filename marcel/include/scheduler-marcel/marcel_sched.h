@@ -240,7 +240,9 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 				if (!rq)
 					rq = &ma_main_runqueue;
 				b->sched.sched_holder = &rq->hold;
+				ma_holder_lock_softirq(&rq->hold);
 				ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_BLOCKED);
+				ma_holder_unlock_softirq(&rq->hold);
 			}
 		}
 		marcel_bubble_insertentity(b, &internal->entity);

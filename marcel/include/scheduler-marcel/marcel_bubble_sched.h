@@ -355,13 +355,13 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 			if (!b->sched.holder_data) {
 				ma_holder_rawunlock(&b->hold);
-				h = ma_entity_holder_rawlock(&b->sched);
+				h = ma_bubble_holder_rawlock(b);
 				if (h) {
 					MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 					if (!b->sched.holder_data)
 						ma_rq_enqueue_entity(&b->sched, ma_rq_holder(h));
 				}
-				ma_entity_holder_rawunlock(h);
+				ma_bubble_holder_rawunlock(h);
 				ma_holder_rawlock(&b->hold);
 			}
 		}
@@ -382,12 +382,12 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 			if (b->sched.holder_data) {
 				ma_holder_rawunlock(&b->hold);
-				h = ma_entity_holder_rawlock(&b->sched);
+				h = ma_bubble_holder_rawlock(b);
 				if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 					if (b->sched.holder_data)
 						ma_rq_dequeue_entity(&b->sched, ma_rq_holder(h));
 				}
-				ma_entity_holder_rawunlock(h);
+				ma_bubble_holder_rawunlock(h);
 				ma_holder_rawlock(&b->hold);
 			}
 		}

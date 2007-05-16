@@ -130,7 +130,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
-	ma_deactivate_entity(&bubble->sched,&rq->hold);
+	ma_dequeue_entity(&bubble->sched,&rq->hold);
 	ma_holder_rawlock(&bubble->hold);
 	/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas

@@ -305,9 +305,14 @@ ma_holder_t *ma_task_holder_rawlock(marcel_task_t *e);
 ma_holder_t *ma_task_holder_lock(marcel_task_t *e);
 /** \brief Locks the holder of task \e t and return it */
 ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
+/* TODO FIXME XXX: ma_task_holder must also lock the runqueue holding the scheduling bubble, if any */
 #define ma_task_holder_rawlock(t) ma_entity_holder_rawlock(&(t)->sched.internal.entity)
 #define ma_task_holder_lock(t) ma_entity_holder_lock(&(t)->sched.internal.entity)
 #define ma_task_holder_lock_softirq(t) ma_entity_holder_lock_softirq(&(t)->sched.internal.entity)
+#define ma_task_holder_lock_softirq_async(t) ma_entity_holder_lock_softirq_async(&(t)->sched.internal.entity)
+#define ma_bubble_holder_rawlock(b) ma_entity_holder_rawlock(&(b)->sched)
+#define ma_bubble_holder_lock(b) ma_entity_holder_lock(&(b)->sched)
+#define ma_bubble_holder_lock_softirq(b) ma_entity_holder_lock_softirq(&(b)->sched)
 #section marcel_inline
 static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
 	ma_holder_t *h, *h2;
@@ -387,6 +392,9 @@ void ma_task_holder_unlock_softirq(ma_holder_t *h);
 #define ma_task_holder_rawunlock(h) ma_entity_holder_rawunlock(h)
 #define ma_task_holder_unlock(h) ma_entity_holder_unlock(h)
 #define ma_task_holder_unlock_softirq(h) ma_entity_holder_unlock_softirq(h)
+#define ma_bubble_holder_rawunlock(h) ma_entity_holder_rawunlock(h)
+#define ma_bubble_holder_unlock(h) ma_entity_holder_unlock(h)
+#define ma_bubble_holder_unlock_softirq(h) ma_entity_holder_unlock_softirq(h)
 #section marcel_inline
 static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_rawunlock(%p)\n",h);
@@ -645,7 +653,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 /* Sets the sched holder of an entity to bubble (which is supposed to be
  * locked).  If that entity is a bubble, its hierarchy is supposed to be
  * already locked. */
-void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble);
+void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble, int do_lock);
 /** \brief Gets entity \e e out from its holder (which must be already locked),
  * returns its state.  If entity is a bubble, its hierarchy is supposed to be
  * already locked.  */
@@ -669,7 +677,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 
 	if (e->type == MA_BUBBLE_ENTITY) {
 		ret = MA_ENTITY_BLOCKED;
-		ma_set_sched_holder(e, ma_bubble_entity(e));
+		ma_set_sched_holder(e, ma_bubble_entity(e), 0);
 	}
 	return ret;
 }
@@ -717,7 +725,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 			marcel_bubble_t *b = ma_bubble_holder(h);
 			if (e->type == MA_BUBBLE_ENTITY)
 				/* Recursively set the new holder. */
-				ma_set_sched_holder(e, b);
+				ma_set_sched_holder(e, b, 0);
 			else
 				/* Just enqueue */
 				__ma_bubble_enqueue_entity(e, b);

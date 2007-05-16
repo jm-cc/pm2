@@ -197,7 +197,7 @@ static int currently_idle;
  */
 #ifndef ma_prepare_arch_switch
 # define ma_prepare_arch_switch(h, next)	do { } while(0)
-# define ma_finish_arch_switch(h, next)	ma_entity_holder_unlock_softirq(h)
+# define ma_finish_arch_switch(h, next)	ma_task_holder_unlock_softirq(h)
 # define ma_task_running(h, p)		MA_TASK_IS_RUNNING(p)
 #endif
 
@@ -388,7 +388,7 @@ int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 int fastcall ma_wake_up_thread_async(marcel_task_t * p)
 {
 	int success;
-	ma_holder_t *h = ma_entity_holder_lock_softirq_async(&p->sched.internal.entity);
+	ma_holder_t *h = ma_task_holder_lock_softirq_async(p);
 	if (!h) {
 		ma_task_holder_unlock_softirq(h);
 		return 0;

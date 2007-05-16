@@ -44,7 +44,7 @@ static int top_printf (char *fmt, ...) {
 	va_start(va,fmt);
 	n=tbx_vsnprintf(buf,sizeof(buf),fmt,va);
 	va_end(va);
-	write(top_file,buf,n+1);
+	write(top_file,buf,n);
 	return n;
 }
 

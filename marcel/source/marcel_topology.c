@@ -221,6 +221,7 @@ static void __marcel_init look_cpuinfo(void) {
 	ma_cpu_set_t diecpus[maxphysid+1];
 	struct marcel_topo_level *die_level;
 
+	/* FIXME: on itanium, physical ids are very big... */
 	memset(dienum,0,sizeof(dienum));
 	memset(diecpus,0,sizeof(diecpus));
 

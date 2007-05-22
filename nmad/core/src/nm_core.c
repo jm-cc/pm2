@@ -553,7 +553,7 @@ nm_core_gate_init(struct nm_core	*p_core,
 
         err = NM_ESUCCESS;
 
-        if (p_core->nb_gates == 255) {
+        if (p_core->nb_gates == NUMBER_OF_GATES) {
                 err	= -NM_ENOMEM;
                 goto out;
         }

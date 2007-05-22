@@ -13,6 +13,10 @@
  * General Public License for more details.
  */
 
+#define NUMBER_OF_GATES          255
+#define NUMBER_OF_DRIVERS        255
+#define NUMBER_OF_PROTOCOLS      255
+
 /** Core NewMadeleine structure.
  */
 struct nm_core {
@@ -23,7 +27,7 @@ struct nm_core {
 
         /** Array of gates.
          */
-        struct nm_gate		 gate_array[255];
+        struct nm_gate		 gate_array[NUMBER_OF_GATES];
 
         /** Number of drivers.
          */
@@ -31,11 +35,11 @@ struct nm_core {
 
         /** Array of drivers.
          */
-        struct nm_drv	 	 driver_array[255];
+        struct nm_drv	 	 driver_array[NUMBER_OF_DRIVERS];
 
         /** Array of protocols.
          */
-        struct nm_proto		*p_proto_array[255];
+        struct nm_proto		*p_proto_array[NUMBER_OF_PROTOCOLS];
 
         /** Compiled-in scheduler.
          */

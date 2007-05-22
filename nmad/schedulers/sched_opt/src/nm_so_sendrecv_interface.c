@@ -374,7 +374,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 
 /** Post a non blocking receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the source gate id or -1 for receiving from any source.
+ *  @param gate_id the source gate id or NM_SO_ANY_SRC for receiving from any source.
  *  @param tag the message tag.
  *  @param data the data fragment pointer.
  *  @param len the data fragment length.
@@ -392,7 +392,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_LOG_IN();
 
-  if(gate_id == -1) {
+  if(gate_id == NM_SO_ANY_SRC) {
 
     if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
       NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
@@ -579,7 +579,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     nm_so_refill_regular_recv(&p_core->gate_array[i]);
   }
   nm_schedule(p_core);
-  *out_gate_id = -1;
+  *out_gate_id = NM_SO_ANY_SRC;
   return -NM_EAGAIN;
 }
 

@@ -13,8 +13,6 @@
  * General Public License for more details.
  */
 
-#define NUMBER_OF_TRACKS 255
-
 /** Driver.
  */
 struct nm_drv {

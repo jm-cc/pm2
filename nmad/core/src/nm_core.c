@@ -51,7 +51,7 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
         uint8_t			 id;
         int	err;
 
-        if (p_drv->nb_tracks == 255) {
+        if (p_drv->nb_tracks == NUMBER_OF_TRACKS) {
                 err = -NM_ENOMEM;
                 goto out;
         }
@@ -256,7 +256,7 @@ nm_core_driver_load(struct nm_core	 *p_core,
         int err;
 
         NM_LOG_IN();
-        if (p_core->nb_drivers == 255) {
+        if (p_core->nb_drivers == NUMBER_OF_DRIVERS) {
                 err	= -NM_ENOMEM;
                 goto out;
         }
@@ -482,7 +482,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   for(i=0 ; i<p_core->nb_gates ; i++) {
     p_gate = p_core->gate_array + i;
 
-    for(j=0 ; j<255 ; j++) {
+    for(j=0 ; j<NUMBER_OF_DRIVERS ; j++) {
       if (p_gate->p_gate_drv_array[j] != NULL) {
         p_gdrv = p_gate->p_gate_drv_array[j];
         p_drv = p_gdrv->p_drv;

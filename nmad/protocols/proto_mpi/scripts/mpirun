@@ -122,7 +122,12 @@ if [ -z "$PM2_FLAVOR" ] ; then
     PM2_FLAVOR=mad4-mpi
 fi
 
-. `dirname $0`/mpirun.args
+dir=$(dirname $0)
+link=$(readlink $0)
+if [ "$link" != "" ] ; then
+    dir=$(echo $dir"/"$(dirname $link))
+fi
+. $dir/mpirun.args
 # We need at least the program name
 if [ -z "$progname" ] ; then
     echo "You need to specify an application to run" 1>&2

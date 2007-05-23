@@ -16,6 +16,8 @@
 #ifndef _NM_SO_SENDRECV_INTERFACE_H_
 #define _NM_SO_SENDRECV_INTERFACE_H_
 
+#include "nm_so_sendrecv_interface_private.h"
+
 #ifndef NM_SO_ANY_SRC
 #define NM_SO_ANY_SRC  ((long)-1)
 #endif

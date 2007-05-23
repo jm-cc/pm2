@@ -1,4 +1,5 @@
 #!/usr/bin/env pm2sh
+#-*-sh-*-
 ###########
 
 progname="`basename $0`"

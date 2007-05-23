@@ -1,3 +1,4 @@
+#-*-sh-*-
 usage() # exit_code
 
 # PM2: Parallel Multithreaded Machine

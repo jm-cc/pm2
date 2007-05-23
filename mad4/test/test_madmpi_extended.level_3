@@ -33,7 +33,7 @@ compile_leonie()
 compile_leonie
 
 # Configuration
-flavor="test_mad4_mpi"
+flavor="test_mad4_mpi_level3"
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="extended"
 args="--x --p --l"

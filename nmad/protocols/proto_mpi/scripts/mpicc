@@ -228,11 +228,11 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ "$link" != "" ] ; then
         dir=$(echo $dir"/"$(dirname $link))
     fi
-    if [ ! -f $dir/obj/$arch/arg_ifort.o ] ; then
-        mkdir -p $dir/obj/$arch
-	$CC $USER_CFLAGS $dir/arg_ifort.c -c -o $dir/obj/$arch/arg_ifort.o
+    if [ ! -f $dir/ext/obj/$arch/arg_ifort.o ] ; then
+        mkdir -p $dir/ext/obj/$arch
+	$CC $USER_CFLAGS $dir/ext/arg_ifort.c -c -o $dir/ext/obj/$arch/arg_ifort.o
     fi
-    $Show $CLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/obj/$arch/arg_ifort.o
+    $Show $CLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/ext/obj/$arch/arg_ifort.o
     status=$?
 fi
 exit $status

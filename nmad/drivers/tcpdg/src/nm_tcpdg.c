@@ -635,36 +635,40 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         }
 
         p_tcp_gate	= p_pw->gate_priv;
-
-        /* check former multipoll result 			*/
-        p_gate_pollfd	= p_tcp_trk->poll_array + p_gate->id;
-
-        if (p_gate_pollfd->revents) {
-                p_tcp_trk->nb_incoming--;
-
-                if (p_tcp_trk->next_entry == p_gate->id) {
-                        p_tcp_trk->next_entry++;
-                }
-
-                if (p_gate_pollfd->revents == POLLIN) {
-                        p_gate_pollfd->revents = 0;
-                        goto poll_not_needed;
-                } else {
-                        if (p_gate_pollfd->revents & POLLHUP) {
-                                NM_TRACEF("tcp incoming single poll: pollhup");
-                               err = -NM_ECLOSED;
-                        } else if (p_gate_pollfd->revents & POLLNVAL) {
-                                NM_TRACEF("tcp incoming single poll: pollnval");
-                                err = -NM_EINVAL;
-                        } else {
-                                err = -NM_EBROKEN;
-                        }
-
-                        p_gate_pollfd->revents = 0;
-                        goto out;
-                }
-        }
-
+	
+	if (p_tcp_trk->nb_incoming) {
+		/* check former multipoll result 			*/
+		p_gate_pollfd	= p_tcp_trk->poll_array + p_gate->id;
+		
+		if (p_gate_pollfd->revents) {
+			p_tcp_trk->nb_incoming--;
+			
+			if (p_tcp_trk->next_entry == p_gate->id) {
+				p_tcp_trk->next_entry++;
+			}
+			
+			if (p_gate_pollfd->revents == POLLIN) {
+				p_gate_pollfd->revents = 0;
+				goto poll_not_needed;
+			} else {
+				 NM_TRACE_VAL("tcp incoming single poll: event on fd", p_gate_pollfd->fd);
+				if (p_gate_pollfd->revents & POLLHUP) {
+					NM_TRACEF("tcp incoming single poll: pollhup");
+					err = -NM_ECLOSED;
+				} else if (p_gate_pollfd->revents & POLLNVAL) {
+					NM_TRACEF("tcp incoming single poll: pollnval");
+					err = -NM_EINVAL;
+				} else {
+					NM_TRACEF("tcp incoming single poll: connection broken");
+					err = -NM_EBROKEN;
+				}
+				
+				p_gate_pollfd->revents = 0;
+				goto out;
+			}
+		}
+	}
+	
         /* poll needed			 			*/
         pollfd.fd	= p_tcp_gate->fd[p_pw->p_trk->id];
         pollfd.events	= POLLIN;

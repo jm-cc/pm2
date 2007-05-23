@@ -5,8 +5,8 @@ XML2HTML		:=	./xml2html
 TARGET			:=	madMpiDoc
 
 CFILES			:=	$(wildcard code/*.c code/*.txt code/*.cfg)
-EMPHCFILES_PS		:=	$(CFILES:%=%-emph-ps)
-EMPHCFILES_HTML		:=	$(CFILES:%=%-emph-html)
+EMPHCFILES_PS		:=	$(CFILES:%=%_emph_ps)
+EMPHCFILES_HTML		:=	$(CFILES:%=%_emph_html)
 
 XML_FILES		:=	$(wildcard *.xml)
 DEPS			:=	$(XML_FILES)
@@ -72,9 +72,9 @@ $(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	$(XML2HTML)/bin/shell/xml2latex.sh $(TARGET).xml $(BUILD)/ps $(SECTIONS)
 
 emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
-$(EMPHCFILES_PS): %-emph-ps: %
+$(EMPHCFILES_PS): %_emph_ps: %
 	@perl -w emph.pl $< $@ ps 
-$(EMPHCFILES_HTML): %-emph-html: %
+$(EMPHCFILES_HTML): %_emph_html: %
 	@perl -w emph.pl $< $@ html
 
 distclean: clean

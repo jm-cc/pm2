@@ -25,11 +25,13 @@ IGNORE			= org.runtime.manuals.latex.EmptyElement
 CLEARPAGE		= org.runtime.manuals.latex.ClearPageElement
 
 TITLE			= org.runtime.manuals.latex.EmptyElement
+LABEL			= org.runtime.manuals.latex.EmptyElement
 TEXT			= org.runtime.manuals.latex.TextElement
 P			= org.runtime.manuals.latex.PElement
 REF			= org.runtime.manuals.latex.RefElement
 CODE			= org.runtime.manuals.latex.ProgramElement
 IMAGE			= org.runtime.manuals.latex.ImageElement
+SUBIMAGE		= org.runtime.manuals.latex.SubImageElement
 PROGRAM			= org.runtime.manuals.latex.ProgramElement
 
 WARNING			= org.runtime.manuals.latex.WarningElement
@@ -72,5 +74,9 @@ TABLE			= org.runtime.manuals.latex.TableElement
 TR			= org.runtime.manuals.latex.TrElement
 TH			= org.runtime.manuals.latex.bElement
 TD			= org.runtime.manuals.latex.LatexElement
+
+ALGORITHM		= org.runtime.manuals.latex.AlgorithmElement
+STATE			= org.runtime.manuals.latex.StateElement
+FORALL			= org.runtime.manuals.latex.ForAllElement
 
 BR			= org.runtime.manuals.latex.ReturnElement

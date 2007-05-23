@@ -21,6 +21,7 @@ APPENDIX		= org.runtime.manuals.html.AppendixElement
 IGNORE			= org.runtime.manuals.html.EmptyElement
 CLEARPAGE		= org.runtime.manuals.html.EmptyElement
 TITLE			= org.runtime.manuals.html.EmptyElement
+LABEL			= org.runtime.manuals.html.EmptyElement
 
 TEXT			= org.runtime.manuals.html.TextElement
 P			= org.runtime.manuals.html.PElement
@@ -28,6 +29,7 @@ BR			= org.runtime.manuals.html.PElement
 REF			= org.runtime.manuals.html.RefElement
 CODE			= org.runtime.manuals.html.ProgramElement
 IMAGE			= org.runtime.manuals.html.ImageElement
+SUBIMAGE		= org.runtime.manuals.html.SubImageElement
 PROGRAM			= org.runtime.manuals.html.ProgramElement
 
 NOTE			= org.runtime.manuals.html.NoteElement
@@ -64,3 +66,6 @@ EMAIL			= org.runtime.manuals.html.EmailElement
 
 TABLE			= org.runtime.manuals.html.TableElement
 
+ALGORITHM		= org.runtime.manuals.html.AlgorithmElement
+STATE			= org.runtime.manuals.html.StateElement
+FORALL			= org.runtime.manuals.html.ForAllElement

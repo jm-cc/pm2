@@ -224,6 +224,10 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     fi
     dir=$(dirname $0)
     arch=$(pm2_arch --pm2-asm)
+    link=$(readlink $0)
+    if [ "$link" != "" ] ; then
+        dir=$(echo $dir"/"$(dirname $link))
+    fi
     if [ ! -f $dir/obj/$arch/arg_ifort.o ] ; then
         mkdir -p $dir/obj/$arch
 	$CC $USER_CFLAGS $dir/arg_ifort.c -c -o $dir/obj/$arch/arg_ifort.o

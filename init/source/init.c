@@ -462,9 +462,29 @@ void common_post_init(int *argc, char *argv[],
 #if defined(PROFILE) && (defined(PM2) || defined(MAD2))
   profile_set_tracefile("/tmp/prof_file_%d", pm2self);
 #endif /* PROFILE */
-#if defined(PROFILE) && (defined(MAD3))
+#if defined(PROFILE) && defined(MAD3)
   profile_set_tracefile("/tmp/prof_file_%d",
 		  mad_get_madeleine()->session->process_rank);
+#endif /* PROFILE */
+#if defined(PROFILE) && defined(MAD4)
+#  if defined(CONFIG_PROTO_MAD3)
+  profile_set_tracefile("/tmp/prof_file_%d",
+		  mad_get_madeleine()->session->process_rank);
+#  else
+ {
+#    define PM2_INIT_MAX_HOSTNAME_LEN 17
+   char         hn[PM2_INIT_MAX_HOSTNAME_LEN];
+   unsigned int pid;
+
+   gethostname(hn, PM2_INIT_MAX_HOSTNAME_LEN);
+   hn[PM2_INIT_MAX_HOSTNAME_LEN-1] = '\0';
+
+   pid = (unsigned int) getpid();
+   profile_set_tracefile("/tmp/prof_file_%s_%u",
+                         hn, pid);
+ }
+#    undef PM2_INIT_MAX_HOSTNAME_LEN
+#  endif
 #endif /* PROFILE */
 
 #ifdef MARCEL

@@ -59,7 +59,7 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #include "marcel.h"
 #endif /* MARCEL */
 
-#if defined(MAD)
+#if defined(MAD) || (defined(MAD4) && defined(CONFIG_PROTO_MAD3))
 #include "madeleine.h"
 #endif /* MAD */
 

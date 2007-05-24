@@ -30,7 +30,7 @@ extern int
 nm_so_sr_init(struct nm_core *p_core,
 	      struct nm_so_interface **p_so_interface);
 
-int
+extern int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface);
 
 
@@ -95,7 +95,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 
-int
+extern int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
                      nm_so_request request, long *gate_id);
 

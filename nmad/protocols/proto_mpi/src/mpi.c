@@ -41,7 +41,8 @@ void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ (
 void _gfortran_getarg_i8(int64_t *num, char *value, int val_len)	__attribute__ ((weak));
 
 int32_t _gfortran_iargc(void)	__attribute__ ((weak));
-/** Initialisation by Fortran code.
+/**
+ * Fortran version for MPI_INIT
  */
 int mpi_init_() {
   int argc;
@@ -58,6 +59,9 @@ int mpi_init_() {
 extern int  iargc_();
 extern void getarg_(int*, char*, int);
 
+/**
+ * Fortran version for MPI_INIT
+ */
 int mpi_init_() {
   int argc;
   char **argv;
@@ -75,25 +79,43 @@ int mpi_init_() {
 /* Alias Fortran
  */
 
+/**
+ * Fortran version for MPI_INIT_THREAD
+ */
 void mpi_init_thread_(int *argc,
                       char ***argv,
                       int required,
                       int *provided)	__attribute__ ((alias ("MPI_Init_thread")));
 
+/**
+ * Fortran version for MPI_FINALIZE
+ */
 void mpi_finalize_(void)			__attribute__ ((alias ("MPI_Finalize")));
 
+/**
+ * Fortran version for MPI_ABORT
+ */
 void mpi_abort_(MPI_Comm comm,
                 int errorcode)		__attribute__ ((alias ("MPI_Abort")));
 
+/**
+ * Fortran version for MPI_COMM_SIZE
+ */
 void mpi_comm_size_(int *comm,
                     int *size, int *ierr) {
   *ierr = MPI_Comm_size(*comm, size);
 }
 
+/**
+ * Fortran version for MPI_COMM_RANK
+ */
 void mpi_comm_rank_(int *comm, int *rank, int *ierr) {
   *ierr = MPI_Comm_rank(*comm, rank);
 }
 
+/**
+ * Fortran version for MPI_GET_PROCESSOR_NAME
+ */
 void mpi_get_processor_name_(char *name, int *resultlen) __attribute__ ((alias ("MPI_Get_processor_name")));
 
 /*
@@ -108,6 +130,9 @@ void mpi_esend_(void *buffer,
 }
 */
 
+/**
+ * Fortran version for MPI_SEND
+ */
 void mpi_send_(void *buffer,
                int *count,
                int *datatype,
@@ -118,6 +143,9 @@ void mpi_send_(void *buffer,
   *ierr = MPI_Send(buffer, *count, *datatype, *dest, *tag, *comm);
 }
 
+/**
+ * Fortran version for MPI_ISEND
+ */
 void mpi_isend_(void *buffer,
                 int *count,
                 int *datatype,
@@ -131,6 +159,9 @@ void mpi_isend_(void *buffer,
   *request = (intptr_t)p_request;
 }
 
+/**
+ * Fortran version for MPI_RSEND
+ */
 void mpi_rsend_(void *buffer,
                 int *count,
                 int *datatype,
@@ -141,6 +172,9 @@ void mpi_rsend_(void *buffer,
   *ierr = MPI_Rsend(buffer, *count, *datatype, *dest, *tag, *comm);
 }
 
+/**
+ * Fortran version for MPI_RECV
+ */
 void mpi_recv_(void *buffer,
                int *count,
                int *datatype,
@@ -154,6 +188,9 @@ void mpi_recv_(void *buffer,
   memcpy(status, &_status, sizeof(_status));
 }
 
+/**
+ * Fortran version for MPI_IRECV
+ */
 void mpi_irecv_(void *buffer,
                 int *count,
                 int *datatype,
@@ -167,6 +204,9 @@ void mpi_irecv_(void *buffer,
   *request = (intptr_t)p_request;
 }
 
+/**
+ * Fortran version for MPI_WAIT
+ */
 void mpi_wait_(int *request,
                int *status,
                int *ierr) {
@@ -177,6 +217,9 @@ void mpi_wait_(int *request,
   //  TBX_FREE((void *)*request);
 }
 
+/**
+ * Fortran version for MPI_WAIT_ALL
+ */
 void mpi_waitall_(int *count,
                   int *request,
                   int  status[][MPI_STATUS_SIZE],
@@ -209,6 +252,9 @@ void mpi_waitall_(int *count,
   *ierr = err;
 }
 
+/**
+ * Fortran version for MPI_TEST
+ */
 void mpi_test_(int *request,
                int *flag,
                int *status,
@@ -222,6 +268,9 @@ void mpi_test_(int *request,
   TBX_FREE((void *)*request);
 }
 
+/**
+ * Fortran version for MPI_TESTANY
+ */
 void mpi_testany_(int count,
                   MPI_Request *array_of_requests,
                   int *index,
@@ -230,6 +279,9 @@ void mpi_testany_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_IPROBE
+ */
 void mpi_iprobe_(int source,
                  int tag,
                  MPI_Comm comm,
@@ -238,6 +290,9 @@ void mpi_iprobe_(int source,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_
+ */
 void mpi_probe_(int source,
                 int tag,
                 MPI_Comm comm,
@@ -245,6 +300,9 @@ void mpi_probe_(int source,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_GET_COUNT
+ */
 void mpi_get_count_(int *status,
                     int *datatype,
                     int *count,
@@ -258,11 +316,17 @@ void mpi_request_is_equal_(MPI_Request request1, MPI_Request request2) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_BARRIER
+ */
 void mpi_barrier_(int *comm,
                   int *ierr) {
   *ierr = MPI_Barrier(*comm);
 }
 
+/**
+ * Fortran version for MPI_BCAST
+ */
 void mpi_bcast_(void *buffer,
                 int *count,
                 int *datatype,
@@ -272,6 +336,9 @@ void mpi_bcast_(void *buffer,
   *ierr = MPI_Bcast(buffer, *count, *datatype, *root, *comm);
 }
 
+/**
+ * Fortran version for MPI_ALLTOALL
+ */
 void mpi_alltoall_(void *sendbuf,
 		   int *sendcount,
 		   int *sendtype,
@@ -285,6 +352,9 @@ void mpi_alltoall_(void *sendbuf,
                        *comm);
 }
 
+/**
+ * Fortran version for MPI_ALLTOALLV
+ */
 void mpi_alltoallv_(void *sendbuf,
                     int *sendcount,
                     int *sdispls,
@@ -300,16 +370,25 @@ void mpi_alltoallv_(void *sendbuf,
 			*comm);
 }
 
+/**
+ * Fortran version for MPI_OP_CREATE
+ */
 void mpi_op_create_(MPI_User_function *function,
                     int commute,
                     MPI_Op *op) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_OP_FREE
+ */
 void mpi_op_free_(MPI_Op *op) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_REDUCE
+ */
 void mpi_reduce_(void *sendbuf,
                  void *recvbuf,
                  int *count,
@@ -322,6 +401,9 @@ void mpi_reduce_(void *sendbuf,
                      *root, *comm);
 }
 
+/**
+ * Fortran version for MPI_ALLREDUCE
+ */
 void mpi_allreduce_(void *sendbuf,
                     void *recvbuf,
                     int *count,
@@ -333,40 +415,67 @@ void mpi_allreduce_(void *sendbuf,
                         *comm);
 }
 
+/**
+ * Fortran version for MPI_WTIME
+ */
 double mpi_wtime_(void) {
   return MPI_Wtime();
 }
 
+/**
+ * Fortran version for MPI_WTICK
+ */
 double mpi_wtick_(void) {
   return MPI_Wtick();
 }
 
+/**
+ * Fortran version for MPI_GET_ADDRESS
+ */
 void mpi_get_address_(void *location, MPI_Aint *address) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_ADDRESS
+ */
 void mpi_address_(void *location, MPI_Aint *address) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_SIZE
+ */
 void mpi_type_size_(MPI_Datatype datatype, int *size) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_COMMIT
+ */
 void mpi_type_commit_(MPI_Datatype *datatype) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_FREE
+ */
 void mpi_type_free_(MPI_Datatype *datatype) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_CONTIGUOUS
+ */
 void mpi_type_contiguous_(int count,
                           MPI_Datatype oldtype,
                           MPI_Datatype *newtype) {
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_VECTOR
+ */
 void mpi_type_vector_(int count,
                       int blocklength,
                       int stride,
@@ -375,6 +484,9 @@ void mpi_type_vector_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_HVECTOR
+ */
 void mpi_type_hvector_(int count,
                        int blocklength,
                        int stride,
@@ -383,6 +495,9 @@ void mpi_type_hvector_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_INDEXED
+ */
 void mpi_type_indexed_(int count,
                        int *array_of_blocklengths,
                        int *array_of_displacements,
@@ -391,6 +506,9 @@ void mpi_type_indexed_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_HINDEXED
+ */
 void mpi_type_hindexed_(int count,
                         int *array_of_blocklengths,
                         MPI_Aint *array_of_displacements,
@@ -399,6 +517,9 @@ void mpi_type_hindexed_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_TYPE_STRUCT
+ */
 void mpi_type_struct_(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
@@ -407,12 +528,18 @@ void mpi_type_struct_(int count,
   TBX_FAILURE("unimplemented");
 }
 
+/**
+ * Fortran version for MPI_COMM_SPLIT
+ */
 void mpi_comm_split_(int *comm, int *color, int *key, int *newcomm, int *ierr) {
   MPI_Comm _newcomm;
   *ierr = MPI_Comm_split(*comm, *color, *key, &_newcomm);
   *newcomm = _newcomm;
 }
 
+/**
+ * Fortran version for MPI_COMM_DUP
+ */
 void mpi_comm_dup_(int *comm,
                    int *newcomm,
                    int *ierr) {
@@ -421,6 +548,9 @@ void mpi_comm_dup_(int *comm,
   *newcomm = _newcomm;
 }
 
+/**
+ * Fortran version for MPI_COMM_FREE
+ */
 void mpi_comm_free_(int *comm, int *ierr) {
   MPI_Comm _newcomm = *comm;
   *ierr = MPI_Comm_free(&_newcomm);

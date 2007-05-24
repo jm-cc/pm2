@@ -1713,7 +1713,7 @@ int MPI_Gatherv(void *sendbuf,
   return MPI_SUCCESS;
 }
 
-/*
+/**
  * MPI_ALLGATHER can be thought of as MPI_GATHER, except all processes
  * receive the result.
  */
@@ -1833,7 +1833,10 @@ int MPI_Scatter(void *sendbuf,
 }
 
 /**
- *
+ * MPI_ALLTOALL is an extension of MPI_ALLGATHER to the case where
+ * each process sends distinct data to each of the receivers. The jth
+ * block sent from process i is received by process j and is placed in
+ * the ith block of recvbuf.
  */
 int MPI_Alltoall(void* sendbuf,
 		 int sendcount,
@@ -1892,7 +1895,10 @@ int MPI_Alltoall(void* sendbuf,
 }
 
 /**
- *
+ * MPI_ALLTOALLV adds flexibility to MPI_ALLTOALL in that the location
+ * of data for the send is specified by sdispls and the location of
+ * the placement of the data on the receive side is specified by
+ * rdispls.
  */
 int MPI_Alltoallv(void* sendbuf,
 		  int *sendcounts,
@@ -2073,7 +2079,13 @@ int MPI_Allreduce(void* sendbuf,
 }
 
 /**
- *
+ * MPI_REDUCE_SCATTER first does an element-wise reduction on vector
+ * of elements in the send buffer defined by sendbuf, count and
+ * datatype. Next, the resulting vector of results is split into n
+ * disjoint segments, where n is the number of members in the group.
+ * Segment i contains recvcounts[i] elements. The ith segment is sent
+ * to process i and stored in the receive buffer defined by recvbuf,
+ * recvcounts[i] and datatype.
  */
 int MPI_Reduce_scatter(void *sendbuf,
                        void *recvbuf,
@@ -2157,6 +2169,11 @@ double MPI_Wtick(void) {
   return 1e-7;
 }
 
+/**
+ * Returns the error string associated with an error code or class.
+ * The argument string must represent storage that is at least
+ * MPI_MAX_ERROR_STRING characters long.
+ */ 
 int MPI_Error_string(int errorcode, char *string, int *resultlen) {
   *resultlen = 100;
   string = malloc(*resultlen * sizeof(char));
@@ -2487,7 +2504,7 @@ int MPI_Comm_free(MPI_Comm *comm) {
   return mpir_comm_free(comm);
 }
 
-/*
+/**
  * Maps the rank of a set of processes in group1 to their rank in
  * group2.
  */

@@ -747,7 +747,7 @@ int MPI_Esend(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_inline_isend(buffer, count, dest, tag, is_completed, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, is_completed, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -782,7 +782,7 @@ int MPI_Send(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 
@@ -817,7 +817,7 @@ int MPI_Isend(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_inline_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -851,7 +851,7 @@ int MPI_Rsend(void* buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -885,7 +885,7 @@ int MPI_Ssend(void* buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_inline_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -921,7 +921,7 @@ int MPI_Recv(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->request_type = MPI_REQUEST_RECV;
   mpir_request->request_datatype = datatype;
-  mpir_inline_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_Wait(&request, status);
 
@@ -956,7 +956,7 @@ int MPI_Irecv(void* buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->request_type = MPI_REQUEST_RECV;
   mpir_request->request_datatype = datatype;
-  err = mpir_inline_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;

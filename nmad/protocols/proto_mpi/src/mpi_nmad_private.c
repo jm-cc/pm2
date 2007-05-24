@@ -260,16 +260,15 @@ int mpir_get_out_dest(long gate) {
   return out_dest[gate];
 }
 
-__inline__
-int mpir_inline_isend(void *buffer,
-		      int count,
-		      int dest,
-		      int tag,
-		      MPI_Communication_Mode communication_mode,
-		      mpir_communicator_t *mpir_communicator,
-		      mpir_request_t *mpir_request,
-		      struct nm_so_interface *p_so_sr_if,
-		      nm_so_pack_interface    p_so_pack_if) {
+int mpir_isend(void *buffer,
+               int count,
+               int dest,
+               int tag,
+               MPI_Communication_Mode communication_mode,
+               mpir_communicator_t *mpir_communicator,
+               mpir_request_t *mpir_request,
+               struct nm_so_interface *p_so_sr_if,
+               nm_so_pack_interface    p_so_pack_if) {
   long                  gate_id;
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
@@ -432,7 +431,6 @@ int mpir_inline_isend(void *buffer,
   return err;
 }
 
-__inline__
 void mpir_set_status(MPI_Request *request,
 		     MPI_Status *status,
 		     struct nm_so_interface *p_so_sr_if) {
@@ -453,15 +451,14 @@ void mpir_set_status(MPI_Request *request,
   }
 }
 
-__inline__
-int mpir_inline_irecv(void* buffer,
-		      int count,
-		      int source,
-		      int tag,
-		      mpir_communicator_t *mpir_communicator,
-		      mpir_request_t *mpir_request,
-		      struct nm_so_interface *p_so_sr_if,
-		      nm_so_pack_interface    p_so_pack_if) {
+int mpir_irecv(void* buffer,
+               int count,
+               int source,
+               int tag,
+               mpir_communicator_t *mpir_communicator,
+               mpir_request_t *mpir_request,
+               struct nm_so_interface *p_so_sr_if,
+               nm_so_pack_interface    p_so_pack_if) {
   long                  gate_id;
   int                   seq, probe;
   mpir_datatype_t      *mpir_datatype = NULL;
@@ -1156,7 +1153,6 @@ int mpir_comm_free(MPI_Comm *comm) {
   }
 }
 
-__inline__
 int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
   /*
    * NewMadeleine only allows us 7 bits!

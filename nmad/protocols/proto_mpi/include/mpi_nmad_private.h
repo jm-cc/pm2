@@ -163,31 +163,28 @@ int mpir_get_out_dest(long gate);
  * Send/recv/status functions
  */
 
-__inline__
-int mpir_inline_isend(void *buffer,
-		      int count,
-		      int dest,
-		      int tag,
-		      MPI_Communication_Mode communication_mode,
-		      mpir_communicator_t *mpir_communicator,
-		      mpir_request_t *mpir_request,
-		      struct nm_so_interface *p_so_sr_if,
-		      nm_so_pack_interface p_so_pack_if);
+int mpir_isend(void *buffer,
+               int count,
+               int dest,
+               int tag,
+               MPI_Communication_Mode communication_mode,
+               mpir_communicator_t *mpir_communicator,
+               mpir_request_t *mpir_request,
+               struct nm_so_interface *p_so_sr_if,
+               nm_so_pack_interface p_so_pack_if);
 
-__inline__
 void mpir_set_status(MPI_Request *request,
 		     MPI_Status *status,
 		     struct nm_so_interface *p_so_sr_if);
 
-__inline__
-int mpir_inline_irecv(void* buffer,
-		      int count,
-		      int source,
-		      int tag,
-		      mpir_communicator_t *mpir_communicator,
-		      mpir_request_t *mpir_request,
-		      struct nm_so_interface *p_so_sr_if,
-		      nm_so_pack_interface p_so_pack_if);
+int mpir_irecv(void* buffer,
+               int count,
+               int source,
+               int tag,
+               mpir_communicator_t *mpir_communicator,
+               mpir_request_t *mpir_request,
+               struct nm_so_interface *p_so_sr_if,
+               nm_so_pack_interface p_so_pack_if);
 
 
 
@@ -263,7 +260,6 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 int mpir_comm_free(MPI_Comm *comm);
 
-__inline__
 int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag);
 
 /*

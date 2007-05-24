@@ -260,7 +260,7 @@ int mpir_get_out_dest(long gate) {
   return out_dest[gate];
 }
 
-__inline__
+__tbx_inline__
 int mpir_inline_isend(void *buffer,
 		      int count,
 		      int dest,
@@ -432,7 +432,7 @@ int mpir_inline_isend(void *buffer,
   return err;
 }
 
-__inline__
+__tbx_inline__
 void mpir_set_status(MPI_Request *request,
 		     MPI_Status *status,
 		     struct nm_so_interface *p_so_sr_if) {
@@ -453,7 +453,7 @@ void mpir_set_status(MPI_Request *request,
   }
 }
 
-__inline__
+__tbx_inline__
 int mpir_inline_irecv(void* buffer,
 		      int count,
 		      int source,

@@ -102,7 +102,7 @@
 #define __GEN_PREPROC_ALWAYS(name,str,line) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC1_ALWAYS(name,str,line,arg1) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2) __GEN_PREPROC(name,str,line)
-#define __GEN_PREPROCSTR(name,str,line,s,...) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROCSTR_ALWAYS(name,str,line,s,...) __GEN_PREPROC(name,str,line)
 
 #else // ifndef PREPROC
 

@@ -140,20 +140,64 @@ typedef struct mpir_datatype_s {
   int free_requested; /* a free request has been posted for this type while it was still active */
 } mpir_datatype_t;
 
-int not_implemented(char *s);
+int mpir_not_implemented(char *s);
 
-void internal_init(int global_size, int process_rank);
+int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine);
 
-void internal_exit();
+void mpir_internal_exit();
+
+/*
+ * Accessor functions
+ */
+
+long mpir_get_in_gate_id(int node);
+
+long mpir_get_out_gate_id(int node);
+
+int mpir_get_in_dest(long gate);
+
+int mpir_get_out_dest(long gate);
+
+
+/*
+ * Send/recv/status functions
+ */
+
+__inline__
+int mpir_inline_isend(void *buffer,
+		      int count,
+		      int dest,
+		      int tag,
+		      MPI_Communication_Mode communication_mode,
+		      mpir_communicator_t *mpir_communicator,
+		      mpir_request_t *mpir_request,
+		      struct nm_so_interface *p_so_sr_if,
+		      nm_so_pack_interface p_so_pack_if);
+
+__inline__
+void mpir_set_status(MPI_Request *request,
+		     MPI_Status *status,
+		     struct nm_so_interface *p_so_sr_if);
+
+__inline__
+int mpir_inline_irecv(void* buffer,
+		      int count,
+		      int source,
+		      int tag,
+		      mpir_communicator_t *mpir_communicator,
+		      mpir_request_t *mpir_request,
+		      struct nm_so_interface *p_so_sr_if,
+		      nm_so_pack_interface p_so_pack_if);
+
 
 
 /*
  * Datatype functionalities
  */
 
-size_t sizeof_datatype(MPI_Datatype datatype);
+size_t mpir_sizeof_datatype(MPI_Datatype datatype);
 
-mpir_datatype_t* get_datatype(MPI_Datatype datatype);
+mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype);
 
 int mpir_type_size(MPI_Datatype datatype, int *size);
 
@@ -213,7 +257,7 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
  * Communicator operations
  */
 
-mpir_communicator_t *get_communicator(MPI_Comm comm);
+mpir_communicator_t *mpir_get_communicator(MPI_Comm comm);
 
 int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
@@ -226,10 +270,10 @@ int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag);
  * Termination functionalities
  */
 
-tbx_bool_t test_termination(MPI_Comm comm);
+tbx_bool_t mpir_test_termination(MPI_Comm comm);
 
-void inc_nb_incoming_msg(void);
+void mpir_inc_nb_incoming_msg(void);
 
-void inc_nb_outgoing_msg(void);
+void mpir_inc_nb_outgoing_msg(void);
 
 #endif /* MPI_NMAD_PRIVATE_H */

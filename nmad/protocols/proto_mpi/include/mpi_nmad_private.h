@@ -163,7 +163,7 @@ int mpir_get_out_dest(long gate);
  * Send/recv/status functions
  */
 
-__tbx_inline__
+__inline__
 int mpir_inline_isend(void *buffer,
 		      int count,
 		      int dest,
@@ -174,12 +174,12 @@ int mpir_inline_isend(void *buffer,
 		      struct nm_so_interface *p_so_sr_if,
 		      nm_so_pack_interface p_so_pack_if);
 
-__tbx_inline__
+__inline__
 void mpir_set_status(MPI_Request *request,
 		     MPI_Status *status,
 		     struct nm_so_interface *p_so_sr_if);
 
-__tbx_inline__
+__inline__
 int mpir_inline_irecv(void* buffer,
 		      int count,
 		      int source,

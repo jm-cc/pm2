@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -19,8 +20,8 @@ if [ $# -ne 1 ] ; then
     exit 1;
 fi
 
-PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
-PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
+PM2_SYS=`${PM2_ROOT}/bin/pm2-sys`
+PM2_ARCH=`${PM2_ROOT}/bin/pm2-arch`
 
 file=$PM2_ROOT/console/bin/`basename $PM2_SYS _SYS`/`basename $PM2_ARCH _ARCH`/$1
 shift

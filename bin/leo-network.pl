@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2perl
+#!/usr/bin/env pm2-perl
 
 my @tokens = ();
 

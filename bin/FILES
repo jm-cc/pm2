@@ -1,17 +1,17 @@
-pm2-config : script to get info about flavors
-pm2-config-flavor : script to create flavors easily for user
-pm2-flavor : script to manage flavors
-pm2-module : script to manage module
-pm2_arch   : script to get the arch of the system
+pm2-config                : script to get info about flavors
+pm2-config-flavor         : script to create flavors easily for user
+pm2-flavor                : script to manage flavors
+pm2-module                : script to manage module
+pm2-arch                  : script to get the arch of the system
 pm2-create-sample-flavors : script to create initial (sample) flavors
-pm2-recreate-links : generate the symlinks of the CVS tree
-pm2_sys : script to get the system where we run
-pm2_vars : script to set main environment variables
-pm2clean : script to clean the source tree. Try to use 'make disclean' at
-		the root instead.
-pm2conf : select the protocol(s) to use within Madeleine
-pm2custom : select the machines to use
-pm2load : launch a pm2 application
-pm2logs : see logs of a pm2 application
-pm2madselect : choose between Madeleine 1 and Madeleine 2
-pm2startcons : launch a pm2 console
+pm2-recreate-links        : generate the symlinks of the CVS tree
+pm2-sys                   : script to get the system where we run
+pm2-vars                  : script to set main environment variables
+pm2-clean                 : script to clean the source tree. Try to
+                            use 'make disclean' at the root instead.
+pm2-conf                  : select the protocol(s) to use within Madeleine
+pm2-custom                : select the machines to use
+pm2-load                  : launch a pm2 application
+pm2-logs                  : see logs of a pm2 application
+pm2-madselect             : choose between Madeleine 1 and Madeleine 2
+pm2-startcons             : launch a pm2 console

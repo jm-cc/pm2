@@ -174,7 +174,7 @@ int pm2_main(int argc, char **argv)
     if((pm2_config_size() < 3) || ((pm2_config_size() & 1) == 0)) {
       fprintf(stderr,
 	      "This program requires an odd (> 3) number of processes.\n"
-	      "Please rerun pm2conf.\n");
+	      "Please rerun pm2-conf.\n");
       exit(1);
     }
 

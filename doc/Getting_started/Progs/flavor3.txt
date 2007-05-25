@@ -1,13 +1,13 @@
 ravel% cd $PM2_ROOT/pm2/examples/simple
-ravel% setenv PM2_FLAVOR pm2-debug
+ravel% setenv PM2_FLAVOR pm2debug
 ravel% make hello
 [...]
 ravel% % ls $PM2_BUILD_DIR/$PM2_ASM/$PM2_FLAVOR/examples/simple/bin/hello
-/home/nfurmento/pm2/build/pm2-debug/i386/examples/simple/bin/hello
-ravel% pm2conf ravel ravel
+/home/nfurmento/pm2/build/pm2debug/i386/examples/simple/bin/hello
+ravel% pm2-conf ravel ravel
 The current PM2 configuration contains 2 host(s) :
 0 : ravel
 1 : ravel
-ravel% pm2load hello
+ravel% pm2-load hello
 Hello world!
 Hello world!

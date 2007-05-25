@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # Example:
 # if included_in -O6 PM2_MARCEL_CFLAGS ; then

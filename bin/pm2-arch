@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -46,7 +47,7 @@ if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/un
 	*,ppc)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
 	*,ppc64)  	   PM2_ARCH=PPC64_ARCH ; PM2_ASM=ppc64 ;;
         *,Power*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
-        *)                 echo "unknown arch $_os,$_ht, please set in bin/pm2_arch";
+        *)                 echo "unknown arch $_os,$_ht, please set in bin/pm2-arch";
 	                   M2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
 	esac
 fi

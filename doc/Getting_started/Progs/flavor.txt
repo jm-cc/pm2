@@ -1,5 +1,5 @@
-ravel% more ${PM2_HOME}/.pm2/flavors/pm2-debug
-# Flavor pm2-debug
+ravel% more ${PM2_HOME}/.pm2/flavors/pm2debug
+# Flavor pm2debug
 [...]
 ### SETTINGS: --pm2=build_static --pm2=debug --pm2=gdb --pm2=opt
 [...]

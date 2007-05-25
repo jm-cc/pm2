@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,12 +15,12 @@
 # General Public License for more details.
 
 
-_PM2CONFFILE_PROGNAME=pm2-conf-file
+_PM2_CONF_FILE_PROGNAME=pm2-conf-file
 
-pm2conffile_usage() # exit_code
+pm2_conf_file_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2CONFFILE_PROGNAME { option }
+Usage: $_PM2_CONF_FILE_PROGNAME { option }
   option:
     -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
     -h        : Display this help message
@@ -27,7 +28,7 @@ EOF
     exit $1
 }
 
-pm2conffile_parse_cmdline()
+pm2_conf_file_parse_cmdline()
 {
     while [ $# -gt 0 ]; do
 	case $1 in
@@ -35,7 +36,7 @@ pm2conffile_parse_cmdline()
 		shift; PM2_FLAVOR="$1"; shift
 		;;
 	    -h)
-		pm2conffile_usage 0
+		pm2_conf_file_usage 0
 		;;
 	    --)
 		shift; break
@@ -46,9 +47,9 @@ pm2conffile_parse_cmdline()
 	esac
     done
 
-    [ $# -eq 0 ] || pm2conffile_usage 1
+    [ $# -eq 0 ] || pm2_conf_file_usage 1
 
-    PM2_CONF_FILE=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/conf/${PM2_FLAVOR:-default}/.pm2conf
+    PM2_CONF_FILE=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/conf/${PM2_FLAVOR:-default}/.pm2_conf
     export PM2_CONF_FILE
 }
 
@@ -59,9 +60,9 @@ export PM2_FLAVOR
 
 if [ "$1" = --source-mode ]; then
     shift
-    pm2conffile_parse_cmdline $*
+    pm2_conf_file_parse_cmdline $*
 else
-    pm2conffile_parse_cmdline $*
+    pm2_conf_file_parse_cmdline $*
     echo $PM2_CONF_FILE
     exit 0
 fi

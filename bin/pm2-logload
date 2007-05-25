@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 ###########
 #
 # Xwindow mode loader
@@ -18,7 +19,7 @@ then
   PS="ps -U $USER"
 fi
 
-set `$PS | grep pm2_logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /'`
+set `$PS | grep pm2-logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /'`
 num='0'
 
 while [ $# -gt 0 ]
@@ -35,4 +36,4 @@ echo $logfile
 
 echo $title > $logfile
 
-pm2_wrapper $prog $args </dev/null >>$logfile 2>&1
+pm2-wrapper $prog $args </dev/null >>$logfile 2>&1

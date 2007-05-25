@@ -346,20 +346,20 @@ ravel% make hello
 The compiled version of our program is automatically placed into your
 private \|build/${PM2_FLAVOR}| directory, but you need not bother with
 this detail at this point: PM2 cares about it for you! Use the
-\|pm2which| command to learn where a file is physically located;
+\|pm2-which| command to learn where a file is physically located;
 \begin{shell}
-ravel% pm2which hello
+ravel% pm2-which hello
 \end{shell}
 
 \section{Specifying the configuration for execution}
 
 The final step before execution is to specify the list of host names on
 which the PM2 application is going to run. For this, use the
-\|pm2conf| command. My current machine is called \|ravel|, and the two
+\|pm2-conf| command. My current machine is called \|ravel|, and the two
 neighboring ones are called \|debussy| and \|faure| (well, this should
 actually read \emph{Faur\'e}!).
 \begin{shell}
-ravel% pm2conf ravel debussy faure
+ravel% pm2-conf ravel debussy faure
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : debussy
@@ -404,7 +404,7 @@ If this is not possible to correct such problems, then it is still
 possible to run all three PM2 \emph{virtual nodes} as three processes
 of your local machine:
 \begin{shell}
-ravel% pm2conf ravel ravel ravel
+ravel% pm2-conf ravel ravel ravel
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : ravel
@@ -415,7 +415,7 @@ The current PM2 configuration contains 3 host(s) :
 
 It remains to actually load and run the program.
 \begin{shell}
-ravel% pm2load hello
+ravel% pm2-load hello
 [Threads : 2 created, 0 imported (0 cached)]
 Hello world!
 \end{shell}

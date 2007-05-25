@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -15,8 +15,8 @@
 # General Public License for more details.
 
 
-PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
-PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
+PM2_SYS=`${PM2_ROOT}/bin/pm2-sys`
+PM2_ARCH=`${PM2_ROOT}/bin/pm2-arch`
 
 ARGV=${@:+"$@"}
 
@@ -262,7 +262,7 @@ create_flavor() {
 	    	sed -e 's, \([^ ]*\), --'$mod'=\1,g'`" >> ${OUT}
     done
     echo "# Inclusion of commodity function" >> ${OUT}
-    echo '. $PM2_ROOT/bin/pm2_config_tools.sh' >> ${OUT}
+    echo '. $PM2_ROOT/bin/pm2-config-tools.sh' >> ${OUT}
     echo "#" >> ${OUT}
     echo "PM2_BUILD='$builddir'" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}

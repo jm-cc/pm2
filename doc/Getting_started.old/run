@@ -24,8 +24,8 @@ cd Progs
 
 make $PROG
 
-run  "pm2conf $CONF"
+run  "pm2-conf $CONF"
 
-run "pm2load $PROG"
+run "pm2-load $PROG"
 
-run "pm2logs"
+run "pm2-logs"

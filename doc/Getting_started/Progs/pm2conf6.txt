@@ -1,4 +1,4 @@
-ravel% pm2conf debussy debussy debussy debussy debussy debussy
+ravel% pm2-conf debussy debussy debussy debussy debussy debussy
 The current PM2 configuration contains 6 host(s) :
 0 : debussy
 1 : debussy
@@ -7,7 +7,7 @@ The current PM2 configuration contains 6 host(s) :
 4 : debussy
 5 : debussy
 
-ravel% pm2load rpc-threads1
+ravel% pm2-load rpc-threads1
 Passing on string: Init 1
 Passing on string: Init 1 2
 Passing on string: Init 1 2 3 4 5

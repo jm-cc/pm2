@@ -16,11 +16,11 @@ this unless explicitly required.
 \section{Synopsys of PM2 scripts}
 \label{sec:scripts}
 
-\subsection{\|pm2conf|}
+\subsection{\|pm2-conf|}
 
 \begin{shell}
-ravel% pm2conf -h
-Usage: pm2conf { option } { item }
+ravel% pm2-conf -h
+Usage: pm2-conf { option } { item }
 
 option:
 -f <name>: Use flavor "name" (default=$PM2_FLAVOR or default)
@@ -37,18 +37,18 @@ item:
 
 A typical use of the extended options could thus be:
 \begin{shell}
-ravel% pm2conf -s tcp cluster0 -s tcp -e cluster 10-12
+ravel% pm2-conf -s tcp cluster0 -s tcp -e cluster 10-12
 0 : cluster0tcp
 1 : cluster10tcp
 2 : cluster11tcp
 3 : cluster12tcp
 \end{shell}
 
-\subsection{\|pm2load|}
+\subsection{\|pm2-load|}
 
 \begin{shell}
-ravel% pm2load -h
-Usage: pm2load { option } command
+ravel% pm2-load -h
+Usage: pm2-load { option } command
 
 option:
 -f name: Use flavor named "name" (default=$PM2_FLAVOR or default)
@@ -93,7 +93,7 @@ accessible by \|rsh| from the local host: update your
 
 
 \begin{quote}
-  Why do I get the message "Permission denied" when running pm2load?
+  Why do I get the message "Permission denied" when running pm2-load?
   
   Why does my program crash the entire cluster?
 \end{quote}

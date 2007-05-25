@@ -1,4 +1,4 @@
-ravel% pm2conf ravel ravel ravel ravel ravel ravel
+ravel% pm2-conf ravel ravel ravel ravel ravel ravel
 The current PM2 configuration contains 6 host(s) :
 0 : ravel
 1 : ravel
@@ -7,7 +7,7 @@ The current PM2 configuration contains 6 host(s) :
 4 : ravel
 5 : ravel
 
-ravel% pm2load rpc-threads1
+ravel% pm2-load rpc-threads1
 Passing on string: Init 1
 Passing on string: Init 1 2
 Passing on string: Init 1 2 3 4 5

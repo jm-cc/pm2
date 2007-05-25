@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -43,7 +43,7 @@ Commands:
 
 EOF
     if [ $exit_code != 0 ]; then
-	echo "error in pm2_make-flavor $ARGV" 1>&2
+	echo "error in pm2-make-flavor $ARGV" 1>&2
     fi
     exit $exit_code
 }

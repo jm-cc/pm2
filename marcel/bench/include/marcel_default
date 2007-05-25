@@ -27,7 +27,7 @@ initialize_bench()
         --marcel=\"marcel-main $marcel $marcel_options\" \
         --all=\"opt build_static static\"
 
-    ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
+    ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 }
 
 # args: -
@@ -36,13 +36,13 @@ run_bench()
     # wait for NFS to propagate the new compiled program
     sleep 10
 
-    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args
+    ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args
 }
 
 # args: loop variable
 finalize_bench()
 {
-    file_result="/tmp/pm2bench_${prog}_${USER}_result"
+    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
     if [ -d $HOME/results/marcel/raw ] ; then
         date=`date "+%Y.%m.%d"`
         revision=`svn info $PM2_ROOT |grep Revision:|awk '{print $2}'`

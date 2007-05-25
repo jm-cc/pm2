@@ -1,6 +1,6 @@
 ravel% make hello
 [...]
-ravel% pm2load hello
+ravel% pm2-load hello
 Alloc page table(3670016)
  index 0: 0    ...
 isoaddr_malloc: got 16 slots locally

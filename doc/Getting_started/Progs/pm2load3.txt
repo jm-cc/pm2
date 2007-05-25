@@ -1,2 +1,2 @@
-ravel% pm2load rpc-params
+ravel% pm2-load rpc-params
 The sentence is: A la recherche du temps perdu.

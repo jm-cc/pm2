@@ -5,8 +5,8 @@ if [ "$MPI_NMAD_PROTOCOL" == "" ] ; then
     exit
 fi
 
-machines=$(pm2conf|grep -v current|awk '{print $3}'|tr '\012' '_' | sed 's/_$//')
-nb_machines=$(pm2conf|grep -v current|awk '{print $3}'|wc -l)
+machines=$(pm2-conf|grep -v current|awk '{print $3}'|tr '\012' '_' | sed 's/_$//')
+nb_machines=$(pm2-conf|grep -v current|awk '{print $3}'|wc -l)
 protocol=$MPI_NMAD_PROTOCOL
 
 mkdir -p results/${machines}_${protocol}/

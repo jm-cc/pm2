@@ -1,4 +1,4 @@
-ravel% pm2logs
+ravel% pm2-logs
 *** Process 1 on debussy:
 [Threads : 2 created, 0 imported (0 cached)]
 Hello World!

@@ -1,4 +1,4 @@
-% pm2which mad_ping
+% pm2-which mad_ping
 /home/nfurmento/build/mad3/examples/bin/mad_ping
 % gdb /home/nfurmento/build/mad3/examples/bin/mad_ping ~/core.2994
 GNU gdb Red Hat Linux (6.3.0.0-1.84rh)

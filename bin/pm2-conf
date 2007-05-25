@@ -1,4 +1,6 @@
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
+
 usage() # exit_code
 
 # PM2: Parallel Multithreaded Machine
@@ -199,6 +201,6 @@ if [ -f ${PM2_CONF_FILE} ] ; then
 	i=`expr $i + 1`
     done
 else
-    error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf with some arguments)."
+    error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2-conf with some arguments)."
 fi
 

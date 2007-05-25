@@ -1,4 +1,4 @@
-ravel% pm2conf ravel ravel ravel
+ravel% pm2-conf ravel ravel ravel
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : ravel

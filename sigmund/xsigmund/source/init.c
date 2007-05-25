@@ -49,7 +49,7 @@ static void get_builddir(char *builddir)
     dup2(Fd[1], STDOUT_FILENO);
     strcpy(pm2_config, pm2_root());
     strcat(pm2_config, "/bin/pm2-config");
-    arg[0] = pm2_config;
+    arg[0] = pm2-config;
     arg[1] = "--builddir";
     arg[2] = NULL;
     execv(pm2_config, arg);

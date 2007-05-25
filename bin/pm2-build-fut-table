@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -87,7 +87,7 @@ echo "SearchPath : $SEARCHDIR"
 set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-config
 
-BUILDDIR=`echo $_PM2CONFIG_BUILD | sed -e 's/\/\//\//'` # pour eviter les // dans le #include
+BUILDDIR=`echo $_PM2_CONFIG_BUILD | sed -e 's/\/\//\//'` # pour eviter les // dans le #include
 
 RECORD_SIZE=1
 
@@ -158,7 +158,7 @@ case $TYPE in
 	  echo "{ $c, \"$label\" }," >> $printfile
 	done
 
-	THE_MODULES="$_PM2CONFIG_PROF_MODULES"
+	THE_MODULES="$_PM2_CONFIG_PROF_MODULES"
 	;;
 esac
 

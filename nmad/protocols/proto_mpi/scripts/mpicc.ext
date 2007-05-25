@@ -1,7 +1,7 @@
 #!/bin/sh
 
 dir=$(dirname $0)
-arch=$(pm2_arch --pm2-asm)
+arch=$(pm2-arch --pm2-asm)
 link=$(readlink $0)
 if [ "$link" != "" ] ; then
     dir=$(echo $dir"/"$(dirname $link))

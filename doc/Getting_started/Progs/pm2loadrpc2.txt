@@ -1,2 +1,2 @@
-ravel% pm2load rpc-threads
+ravel% pm2-load rpc-threads
 Hello world!

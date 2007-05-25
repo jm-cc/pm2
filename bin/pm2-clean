@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,18 +15,18 @@
 # General Public License for more details.
 
 
-_PM2CLEAN_PROGNAME=pm2-clean
+_PM2_CLEAN_PROGNAME=pm2-clean
 
-pm2clean_error() # msg
+pm2_clean_error() # msg
 {
     echo $* >&2
     exit 1
 }
 
-pm2clean_usage() # exit_code
+pm2_clean_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2CLEAN_PROGNAME { option } { flavors }
+Usage: $_PM2_CLEAN_PROGNAME { option } { flavors }
   option:
     -a,--all     : Clean all flavors
     -h,--help    : Display this help message
@@ -51,7 +52,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	-h|--help)
-	    pm2clean_usage 0
+	    pm2_clean_usage 0
 	    ;;
 	-r|--refresh)
 	    _refresh=yes
@@ -80,7 +81,7 @@ set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-flavor-file
 
 if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
-    pm2clean_error "No existing flavors yet."
+    pm2_clean_error "No existing flavors yet."
 fi
 
 all_flavors_list="`(cd $PM2_USER_FLAVOR_DIR; ls)`"

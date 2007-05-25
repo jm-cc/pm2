@@ -5,11 +5,11 @@
 <<< Generating libraries: done
     building mad_ping.o
     linking mad_ping
-% pm2conf ravel debussy
+% pm2-conf ravel debussy
 The current PM2 configuration contains 2 host(s) :
 0 : ravel
 1: debussy
-% pm2load mad_ping
+% pm2-load mad_ping
 ##### ravel
 ##### debussy
 (ravel): My global rank is 0

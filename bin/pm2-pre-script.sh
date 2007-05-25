@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -20,7 +20,7 @@ log()
     fi
 }
 
-_pm2load_error() # msg
+_pm2_load_error() # msg
 {
     echo $*
     exit 1
@@ -85,8 +85,8 @@ while [ $# -gt 0 ]; do
 	    done
 	    debug_file=/tmp/pm2debug.$num
 	    cp /dev/null $debug_file
-	    . "$PM2_ROOT/bin/pm2_arch" --source-mode
-	    for i in $_PM2CONFIG_MODULES ; do
+	    . "$PM2_ROOT/bin/pm2-arch" --source-mode
+	    for i in $_PM2_CONFIG_MODULES ; do
 	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
 	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
@@ -126,17 +126,17 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
     # Récupération de (des) chemin(s) d'accès au fichier exécutable
     set --  --source-mode $PM2_CMD_NAME
-    . ${PM2_ROOT}/bin/pm2which
+    . ${PM2_ROOT}/bin/pm2-which
 
-    if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+    if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
 	exit 1
     fi
 
-    prog="$_PM2WHICH_RESULT"
+    prog="$_PM2_WHICH_RESULT"
 
     # Librairies dynamiques (LD_PRELOAD)
-    if [ -n "$_PM2CONFIG_PRELOAD" ]; then
-	LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$_PM2CONFIG_PRELOAD"
+    if [ -n "$_PM2_CONFIG_PRELOAD" ]; then
+	LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$_PM2_CONFIG_PRELOAD"
 	export LD_PRELOAD
 	if [ -n "$debug_file" ]; then
 	    echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
@@ -145,7 +145,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     fi
 
     # LD library path
-    PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
+    PM2_LD_LIBRARY_PATH="$_PM2_CONFIG_LD_LIBRARY_PATH"
 
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
 	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
@@ -157,9 +157,9 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     fi
 
     # Chemin d'accès au chargeur
-    [ -x $_PM2CONFIG_LOADER ] || _pm2load_error "Fatal Error: \"$_PM2CONFIG_LOADER\" exec file not found!"
+    [ -x $_PM2_CONFIG_LOADER ] || _pm2_load_error "Fatal Error: \"$_PM2_CONFIG_LOADER\" exec file not found!"
 
-    case $_PM2CONFIG_LOADER in
+    case $_PM2_CONFIG_LOADER in
 	*conf_not_needed)
 	    # No need to try to access the pm2 conf file
 	    ;;
@@ -168,7 +168,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 	    set --  --source-mode
 	    . ${PM2_ROOT}/bin/pm2-conf-file
 
-	    [ -f $PM2_CONF_FILE ] || _pm2load_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+	    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured this flavor (please run pm2-conf)."
 	    ;;
     esac
 

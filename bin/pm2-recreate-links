@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -28,7 +28,7 @@ if [ "${PM2_ROOT}" = "" ]; then
     exit 1
 fi
 
-. ${PM2_ROOT}/bin/pm2_vars
+. ${PM2_ROOT}/bin/pm2-vars
 
 make_ln() # Create $3 pointing on $2 in the directory $1
 {

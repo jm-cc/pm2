@@ -1,12 +1,12 @@
-ravel% pm2-config-flavor --text remove pm2-debug
-ravel% pm2-config-flavor --text create pm2-debug pm2
-Do you want to edit the new flavor pm2-debug? [Y/n]
+ravel% pm2-config-flavor --text remove pm2debug
+ravel% pm2-config-flavor --text create pm2debug pm2
+Do you want to edit the new flavor pm2debug? [Y/n]
 n
-Creating flavor pm2-debug
-ravel% pm2-config-flavor --text see pm2-debug
+Creating flavor pm2debug
+ravel% pm2-config-flavor --text see pm2debug
 ******************************************************
 Current settings:
-flavor name: pm2-debug
+flavor name: pm2debug
 builddir   : $flavor
 extension  :
 modules    : pm2 dsm marcel mad3 tbx ntbx init appli

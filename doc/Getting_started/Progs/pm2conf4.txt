@@ -1,4 +1,4 @@
-ravel% pm2conf ravel debussy faure ravel debussy faure 
+ravel% pm2-conf ravel debussy faure ravel debussy faure 
 The current PM2 configuration contains 6 host(s) :
 0 : ravel
 1 : debussy

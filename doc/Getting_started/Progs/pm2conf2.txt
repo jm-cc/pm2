@@ -1,8 +1,8 @@
-ravel% pm2conf debussy debussy debussy
+ravel% pm2-conf debussy debussy debussy
 The current PM2 configuration contains 3 host(s) :
 0 : debussy
 1 : debussy
 2 : debussy
 
-ravel% pm2load rpc
+ravel% pm2-load rpc
 Hello, World!

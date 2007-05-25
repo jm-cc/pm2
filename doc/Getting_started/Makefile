@@ -5,8 +5,8 @@ XML2HTML		:=	../xml2html
 TARGET			:=	start
 
 CFILES			:= $(wildcard Progs/*.c Progs/*.txt Progs/*.cfg)
-EMPHCFILES_PS		:= $(CFILES:%=%-emph-ps) Progs/Makefile1-emph-ps
-EMPHCFILES_HTML		:= $(CFILES:%=%-emph-html) Progs/Makefile1-emph-html
+EMPHCFILES_PS		:= $(CFILES:%=%_emph_ps) Progs/Makefile1_emph_ps
+EMPHCFILES_HTML		:= $(CFILES:%=%_emph_html) Progs/Makefile1_emph_html
 
 XML_FILES		:=	$(wildcard ./Sources/*.xml)
 DEPS			:=	$(XML_FILES)
@@ -110,9 +110,9 @@ $(BUILD)/labri/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_P
 	$(XML2HTML)/bin/shell/xml2labriReport.sh $(TARGET).xml $(BUILD)/labri $(SECTIONS)
 
 emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
-$(EMPHCFILES_PS): %-emph-ps: %
+$(EMPHCFILES_PS): %_emph_ps: %
 	@perl -w emph.pl $< $@ ps 
-$(EMPHCFILES_HTML): %-emph-html: %
+$(EMPHCFILES_HTML): %_emph_html: %
 	@perl -w emph.pl $< $@ html
 
 distclean: clean

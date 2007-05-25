@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -15,22 +15,22 @@
 # General Public License for more details.
 
 
-_PM2TEST_PROGNAME=pm2-test
+_PM2_TEST_PROGNAME=pm2-test
 
 _ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
 
 _DIRTY_ORDERED_MODULES="tbx marcel ntbx mad2 mad3 mad4 pm2 dsm"
 
-pm2test_error() # msg
+pm2_test_error() # msg
 {
     echo $* >&2
     exit 1
 }
 
-pm2test_usage() # exit_code
+pm2_test_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2TEST_PROGNAME { option } { modules }
+Usage: $_PM2_TEST_PROGNAME { option } { modules }
   option:
     -h,--help      : show this help
     -q,--quiet     : do not be verbose
@@ -66,18 +66,18 @@ do_the_test()
     echo "Compiling program $prog..."
     #(cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
     (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor) | sed -e 's/^/..../'
-    [ $? -eq 0 ] || pm2test_error "Compilation failed"
+    [ $? -eq 0 ] || pm2_test_error "Compilation failed"
 
     # Execution
     echo "Running program $prog..."
-    ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
+    ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
     if [ -z "$net" ] ; then
-        (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
     else
-        (${PM2_ROOT}/bin/pm2load --protocol $net -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load --protocol $net -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
     fi
-#    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
-    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2test_error "Execution failed"
+#    ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
+    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2_test_error "Execution failed"
 
     # Le moment de verite
     echo "Checking results..."
@@ -91,7 +91,7 @@ do_the_test()
     if diff -u /tmp/pm2test_${USER}_expected /tmp/pm2test_${USER}_filtered ; then
 	echo "Test ok!"
     else
-	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"
+	pm2_test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"
     fi
 
     # Destruction de la flavor
@@ -113,7 +113,7 @@ jobs=""
 while [ $# -gt 0 ]; do
     case $1 in
 	-h|--help)
-	    pm2test_usage 0
+	    pm2_test_usage 0
 	    ;;
 	-q|--quiet)
 	    _output_redirect="> /dev/null 2>&1"
@@ -168,7 +168,7 @@ while [ $# -gt 0 ]; do
 	    shift; break
 	    ;;
 	-*)
-	    pm2test_error "Invalid option: $1"
+	    pm2_test_error "Invalid option: $1"
 	    ;;
 	*)
 	    break
@@ -186,7 +186,7 @@ else
 		_to_test="${_to_test:+$_to_test }$m"
 		;;
 	    *)
-		pm2test_error "\"$m\" is not a valid module name"
+		pm2_test_error "\"$m\" is not a valid module name"
 		;;
 	esac
     done

@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -15,22 +15,22 @@
 # General Public License for more details.
 
 
-_PM2BENCH_PROGNAME=pm2-bench
+_PM2_BENCH_PROGNAME=pm2-bench
 
 _ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
 
 _DIRTY_ORDERED_MODULES="tbx marcel ntbx mad2 mad3 mad4 pm2 dsm"
 
-pm2bench_error() # msg
+pm2_bench_error() # msg
 {
     echo $* >&2
     exit 1
 }
 
-pm2bench_usage() # exit_code
+pm2_bench_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2BENCH_PROGNAME { option } { modules }
+Usage: $_PM2_BENCH_PROGNAME { option } { modules }
   option:
     -h,--help      : show this help
     -q,--quiet     : do not be verbose
@@ -76,11 +76,11 @@ do_the_bench()
 
     # Initialisation du bench
     (initialize_bench $_iter; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2bench_error "Initialization failed"
+    [ `cat $file_status` -eq 0 ] || pm2_bench_error "Initialization failed"
 
     # Compilation
     (compile; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2bench_error "Compilation failed"
+    [ `cat $file_status` -eq 0 ] || pm2_bench_error "Compilation failed"
 
     # Execution
     echo "Date: $(date)" | tee -a $file_result
@@ -89,12 +89,12 @@ do_the_bench()
 
     # Nettoyage
     #(clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
-    #[ `cat $file_status` -eq 0 ] || pm2bench_error "Cleaning failed"
+    #[ `cat $file_status` -eq 0 ] || pm2_bench_error "Cleaning failed"
 
     # Finalisation
     (finalize_bench $_iter) 2>&1 | sed -e 's/^/..../'
 
-    [ $exec -eq 0 ] || pm2bench_error "Execution failed"
+    [ $exec -eq 0 ] || pm2_bench_error "Execution failed"
 }
 
 # Programme principal
@@ -105,7 +105,7 @@ jobs=""
 while [ $# -gt 0 ]; do
     case $1 in
 	-h|--help)
-	    pm2bench_usage 0
+	    pm2_bench_usage 0
 	    ;;
 	-q|--quiet)
 	    _output_redirect="> /dev/null 2>&1"
@@ -124,7 +124,7 @@ while [ $# -gt 0 ]; do
 	    shift; break
 	    ;;
 	-*)
-	    pm2bench_error "Invalid option: $1"
+	    pm2_bench_error "Invalid option: $1"
 	    ;;
 	*)
 	    break
@@ -142,7 +142,7 @@ else
 		_to_bench="${_to_bench:+$_to_bench }$m"
 		;;
 	    *)
-		pm2bench_error "\"$m\" is not a valid module name"
+		pm2_bench_error "\"$m\" is not a valid module name"
 		;;
 	esac
     done
@@ -191,13 +191,13 @@ for _m in $_to_bench ; do
     	    . ./$_f
 
 	    # Fichiers de sortie
-	    file_status="/tmp/pm2bench_${prog}_${USER}_status"
+	    file_status="/tmp/pm2_bench_${prog}_${USER}_status"
 
-	    file_result="/tmp/pm2bench_${prog}_${USER}_result"
+	    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
 	    rm -f $file_result
 	    touch $file_result
 
-	    file_log="/tmp/pm2bench_${prog}_${USER}_log"
+	    file_log="/tmp/pm2_bench_${prog}_${USER}_log"
 	    rm -f $file_log
 	    touch $file_log
 

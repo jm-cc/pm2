@@ -1,4 +1,4 @@
-ravel% pm2load hello
+ravel% pm2-load hello
 Hello world!
 Hello world!
 Hello world!

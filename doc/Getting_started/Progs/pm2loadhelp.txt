@@ -1,5 +1,5 @@
-ravel% pm2load -h
-Usage: pm2load { option } command
+ravel% pm2-load -h
+Usage: pm2-load { option } command
 
   option:
     -f name : Use flavor named "name" (default=$PM2_FLAVOR or default)

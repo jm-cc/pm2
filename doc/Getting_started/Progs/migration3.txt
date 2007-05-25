@@ -1,4 +1,4 @@
-ravel% pm2load migrate-group
+ravel% pm2-load migrate-group
 Service activated on node 1, host ravel
 Initialization completed on node 1
 Thread 2: Now on node 1, host ravel

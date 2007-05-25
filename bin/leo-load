@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 #
 #                      PM2 HIGH-PERF/ISOMALLOC
 #           High Performance Parallel Multithreaded Machine
@@ -64,7 +65,7 @@ ambiguity() # prog
     echo "Error: multiple exec files found." >&2
     echo "Please remove ambiguity by using one the following:" >&2
 
-    for p in `pm2which -p $prog` ; do
+    for p in `pm2-which -p $prog` ; do
 	echo "   $PROGNAME $p ..."
     done
 
@@ -186,9 +187,9 @@ fi
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 set --  --source-mode "$prog" -- "$@"
-. ${PM2_ROOT}/bin/pm2which
+. ${PM2_ROOT}/bin/pm2-which
 
-if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity "$prog"
 fi
 
@@ -196,21 +197,21 @@ fi
 
 # Execution
 if [ "${PM2_DEBUG}" = on ]; then
-    prefix='pm2_gdb_load'
+    prefix='pm2-gdb-load'
 elif [ "${PM2_VALGRIND}" = on ]; then
-    prefix='pm2_valgrind_load'
+    prefix='pm2-valgrind-load'
 elif [ "${PM2_XMODE}" = on ]; then
-    prefix='pm2_xload'
+    prefix='pm2-xload'
 elif [ "${PM2_LOGMODE}" = on ]; then
-    prefix='pm2_logload'
+    prefix='pm2-logload'
 else
-    prefix="pm2_wrapper"
+    prefix="pm2-wrapper"
 fi
 
 # echo "### Leonie loader ###"
-# echo exec $prefix "$_PM2WHICH_RESULT" "$@"
-if [ -z "$_PM2WHICH_RESULT" ] ; then
+# echo exec $prefix "$_PM2_WHICH_RESULT" "$@"
+if [ -z "$_PM2_WHICH_RESULT" ] ; then
     echo Executable $prog not found 
     exit 1
 fi
-exec $ADD_WRAPPER $prefix "$_PM2WHICH_RESULT" "$@"
+exec $ADD_WRAPPER $prefix "$_PM2_WHICH_RESULT" "$@"

@@ -1,5 +1,5 @@
-#!/bin/sh
-##########
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # Re-ajoute dans le CVS pour compatibilite avec Leonie/MadIII
 
@@ -30,8 +30,8 @@ title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
 echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $file
 
-. "$PM2_ROOT/bin/pm2_arch" --source-mode
-for i in $_PM2CONFIG_MODULES ; do
+. "$PM2_ROOT/bin/pm2-arch" --source-mode
+for i in $_PM2_CONFIG_MODULES ; do
     gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
     gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"

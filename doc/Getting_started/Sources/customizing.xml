@@ -230,7 +230,7 @@ Load in the current flavor <TT>pm2</TT>.
 <P>
 Assume now that the real PM2 you are striving after is a PM2 with
 fully-fledged debugging facilities. What you need is to create a new
-flavor that we will called <TT>pm2-debug</TT> based on the
+flavor that we will called <TT>pm2debug</TT> based on the
 <TT>pm2</TT> one.
 </P>
 
@@ -238,14 +238,14 @@ flavor that we will called <TT>pm2-debug</TT> based on the
 Select the <TT>debug</TT> option in the <TT>pm2</TT> module.  Do it
 also for the application, and for the <TT>mad3</TT> and <TT>dsm</TT>
 modules. Change the name of this new flavor from <TT>pm2</TT> to
-<TT>pm2-debug</TT>, and save it (see Figure <REF LABEL="fig:ezflavor-create"/>).
+<TT>pm2debug</TT>, and save it (see Figure <REF LABEL="fig:ezflavor-create"/>).
 </P>
 
 <IMAGE FILE="Figures/ezflavor-create" TITLE="Creating a new flavor with ezflavor" SCALE="0.7" LABEL="fig:ezflavor-create"/>
 
 <P>
 The new flavor is checked for consistency and saved into the file
-<TT>${PM2_HOME}/.pm2/flavors/pm2-debug</TT>. You may check that
+<TT>${PM2_HOME}/.pm2/flavors/pm2debug</TT>. You may check that
 the file actually contains the new settings:
 </P>
 
@@ -266,7 +266,7 @@ Everything should run smoothly, without any warning...
 
 <P>
 Once you are done, set the <TT>PM2_FLAVOR</TT> variable to
-<TT>pm2-debug</TT> and compile your favorite PM2 program using a
+<TT>pm2debug</TT> and compile your favorite PM2 program using a
 ``dynamic'' Makefile as the one on Program <REF
 LABEL="prog:Makefile1"/>. Ideally, you should not see any difference
 with the <TT>pm2</TT> run.
@@ -275,7 +275,7 @@ with the <TT>pm2</TT> run.
 <PROGRAM FILE="./Progs/flavor3.txt"/>
 
 <P>
-Just for fun, modify the <TT>pm2-debug</TT> flavor so as to enable the option
+Just for fun, modify the <TT>pm2debug</TT> flavor so as to enable the option
 <TT>isoaddr_trace</TT> in the <TT>pm2</TT> module. Recompile PM2
 with this modified flavor. Recompile your program, for instance the
 simplistic <TT>hello</TT> on Program <REF LABEL="prog:hello"/> and run it. You should
@@ -370,7 +370,7 @@ after setting, in the file <TT>coregrind/vg_memory.c</TT>, the
 
 <P>
 Assuming that you are using the <TT>pm2</TT> flavor, create a new
-flavor <TT>pm2-debug</TT> based on it as explained in Section <REF
+flavor <TT>pm2debug</TT> based on it as explained in Section <REF
 LABEL="sec:createFlavors"/>. Set the <TT>PM2_FLAVOR</TT> shell
 variable to this value, and recompile PM2 with the new flavor.
 </P>
@@ -396,9 +396,9 @@ use the <EM>thread-safe</EM> version of <TT>(f)printf</TT>, called <TT>t(f)print
 This will prevent multiple Marcel threads to print concurrently,
 leading to scrambled text. 
 <IGNORE>
-Use the <TT>pm2logs</TT> utility to view the
+Use the <TT>pm2-logs</TT> utility to view the
 remote logs. It may be useful to force logging also on the main
-node<SPACE/>0: use <TT>pm2load -l</TT>. Then, <TT>pm2logs</TT> will recover exactly one
+node<SPACE/>0: use <TT>pm2-load -l</TT>. Then, <TT>pm2-logs</TT> will recover exactly one
 log per (logical) node.
 </IGNORE>
 </P>
@@ -423,11 +423,11 @@ occur.
 </IGNORE>
 
 <P>
-The <TT>pm2load</TT> utility provides a number of options.  The most useful
-one in a first place is <TT>pm2load -d</TT>. It can be used with any flavor,
+The <TT>pm2-load</TT> utility provides a number of options.  The most useful
+one in a first place is <TT>pm2-load -d</TT>. It can be used with any flavor,
 but it is most rewarding when the current flavor enables the <TT>gdb</TT>
 for all the modules and for the application. If run with the <TT>-d</TT>
-option, <TT>pm2load</TT> opens a <TT>gdb</TT> session on each (logical) node
+option, <TT>pm2-load</TT> opens a <TT>gdb</TT> session on each (logical) node
 declared in the configuration, with a display on your console. Just
 typing <TT>r</TT> (for <TT>run</TT>) in the window will start the execution.
 Observe that your have to type it in <EM>each</EM> window!  Before
@@ -552,7 +552,7 @@ following table provides the some useful translations.
 <SUBSECTION TITLE="Using the debug facilities of Leonie">
 
 <P>
-The PM2 bootstrap code, <TT>leonie</TT>, is used by <TT>pm2load</TT>
+The PM2 bootstrap code, <TT>leonie</TT>, is used by <TT>pm2-load</TT>
 to launch the application on the requested nodes. <TT>leonie</TT>
 accepts different parameters for debug purpose. It is possible to
 trace or log any of the modules used by PM2. The general syntax of

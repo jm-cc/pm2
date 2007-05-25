@@ -39,9 +39,9 @@ export MAD_SERVER_HOST
 
 if test $MAD_CONSOLE = "pm2"
 then
-    xterm -title "Pm2 Console" -e ${PM2_ROOT}/bin/pm2startcons pm2 &
+    xterm -title "Pm2 Console" -e ${PM2_ROOT}/bin/pm2-startcons pm2 &
 else
-    ${PM2_ROOT}/bin/pm2startcons $MAD_CONSOLE &
+    ${PM2_ROOT}/bin/pm2-startcons $MAD_CONSOLE &
 fi
 
 

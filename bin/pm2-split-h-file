@@ -1,5 +1,4 @@
-#!/usr/bin/env pm2perl
-#-*-perl-*-
+#!/usr/bin/env pm2-perl
 ###########
 
 use strict;

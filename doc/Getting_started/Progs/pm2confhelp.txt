@@ -1,5 +1,5 @@
-ravel% pm2conf -h
-Usage: pm2conf { option } { item }
+ravel% pm2-conf -h
+Usage: pm2-conf { option } { item }
   option:
     -f <name> : Use flavor "name" (default=$PM2_FLAVOR or default)
     -p <name> : Store parameters in file "name" under the preference directory

@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 ###########
 
@@ -109,7 +109,7 @@ fi
 
 export LD_LIBRARY_PATH="`${PM2_CONFIG} --flavor=$flavor --libdir $module`${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
-if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a -n "$X" ] ; then
+if [ `${PM2_ROOT}/bin/pm2-sys` = "DARWIN_SYS" -a -n "$X" ] ; then
 
     if [ -n "$@" ] ; then
 	echo "Warning: option(s) \"$@\" ignored"

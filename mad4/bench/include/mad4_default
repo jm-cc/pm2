@@ -70,7 +70,7 @@ initialize_bench()
          --all=\"build_static\"
 
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"
-        ${PM2_ROOT}/bin/pm2conf -f $flavor `echo $hosts | tr ',' ' '`
+        ${PM2_ROOT}/bin/pm2-conf -f $flavor `echo $hosts | tr ',' ' '`
 }
 
 # args: -
@@ -100,11 +100,11 @@ run_bench()
             args="--numactl"
         fi
 
-        ${PM2_ROOT}/bin/pm2load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-        ${PM2_ROOT}/bin/pm2load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-        ${PM2_ROOT}/bin/pm2load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-        ${PM2_ROOT}/bin/pm2load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-        ${PM2_ROOT}/bin/pm2load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
 }
 
 # args: loop variable

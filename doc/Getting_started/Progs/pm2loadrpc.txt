@@ -1,2 +1,2 @@
-ravel% pm2load rpc
+ravel% pm2-load rpc
 Hello, World!

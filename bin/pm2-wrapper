@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 ###########
 #
-# Wrapper for pm2_xload
+# Wrapper for pm2-xload
 
 echo "##### `hostname`"
 prog=$1

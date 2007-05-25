@@ -52,7 +52,7 @@ int pm2_main(int argc, char **argv)
 
   if (pm2_config_size() < 2) {
       TBX_FAILURE("This program requires at least two processes.\n"
-	      "Please rerun pm2conf.\n");
+	      "Please rerun pm2-conf.\n");
   }
 
 #ifdef PROFILE

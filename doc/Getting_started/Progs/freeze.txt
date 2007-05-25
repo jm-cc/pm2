@@ -1,4 +1,4 @@
-ravel% pm2load freeze
+ravel% pm2-load freeze
 Initial value: 0
 Creating thread 0
 Creating thread 1

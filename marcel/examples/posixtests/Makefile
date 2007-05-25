@@ -143,10 +143,10 @@ clean:
 $(top_builddir)/t0: $(top_builddir)/t0.c
 	@echo Building timeout helper files; \
 	$(CC) -O2 -o $@ $<
-	
+
 $(top_builddir)/t0.val: $(top_builddir)/t0
 	echo `$(top_builddir)/t0 0; echo $$?` > $(top_builddir)/t0.val
-	
+
 %.run-test: %.sh $(top_builddir)/t0 $(top_builddir)/t0.val
 	@COMPLOG=$(LOGFILE).$$$$; \
 	chmod +x $<; \

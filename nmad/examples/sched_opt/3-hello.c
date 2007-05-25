@@ -210,7 +210,7 @@ main(int	  argc,
         return 0;
 }
 
-// sur le noeud 1 : pm2load 3-hello
-// sur le noeud 2 : pm2load 3-hello "url_1"
-// sur le neoud 3 : pm2load 3-hello "url_1" "url_2"
+// sur le noeud 1 : pm2-load 3-hello
+// sur le noeud 2 : pm2-load 3-hello "url_1"
+// sur le neoud 3 : pm2-load 3-hello "url_1" "url_2"
 

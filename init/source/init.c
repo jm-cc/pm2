@@ -371,7 +371,7 @@ void common_pre_init(int *argc, char *argv[],
       else
 	{
 	  DISP("Run slave processes this way:");
-	  DISP("   pm2load %s --mad-slave --mad-url '%s' "
+	  DISP("   pm2-load %s --mad-slave --mad-url '%s' "
 	       "--mad-rank <r> <arg0>...", getenv("PM2_PROG_NAME"),
 	       mad_generate_url(attr->madeleine));
 	}

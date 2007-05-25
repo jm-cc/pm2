@@ -25,7 +25,7 @@ this unless explicitly required.
 
 <SUBSECTION TITLE="Synopsis of PM2 scripts" LABEL="sec:scripts">
 
-<SUBSUBSECTION TITLE="pm2conf">
+<SUBSUBSECTION TITLE="pm2-conf">
 
 <PROGRAM FILE="./Progs/pm2confhelp.txt"/>
 
@@ -37,7 +37,7 @@ A typical use of the extended options could thus be:
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="pm2load">
+<SUBSUBSECTION TITLE="pm2-load">
 
 <PROGRAM FILE="./Progs/pm2loadhelp.txt"/>
 

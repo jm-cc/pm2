@@ -31,7 +31,7 @@ export MAD_CONSOLE
 
 if test $MAD_CONSOLE = "pm2"
 then
-    exec xterm -title "Pm2 Console" -e ${PM2_ROOT}/bin/pm2startcons pm2
+    exec xterm -title "Pm2 Console" -e ${PM2_ROOT}/bin/pm2-startcons pm2
 else
-    exec ${PM2_ROOT}/bin/pm2startcons $MAD_CONSOLE
+    exec ${PM2_ROOT}/bin/pm2-startcons $MAD_CONSOLE
 fi

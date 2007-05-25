@@ -1,5 +1,5 @@
 ravel% setenv PM2_FLAVOR <the flavor you are currently using>
-ravel% pm2conf ravel debussy faure
+ravel% pm2-conf ravel debussy faure
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : debussy

@@ -1,4 +1,4 @@
-ravel% pm2load freeze
+ravel% pm2-load freeze
 Initial value: 0
 [...]
 Final value: 776821

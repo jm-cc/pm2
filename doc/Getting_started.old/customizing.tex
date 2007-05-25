@@ -169,18 +169,18 @@ Load in the current flavor \|pm2|.
 
 Assume now that the real PM2 you are striving after is a PM2 with
 fully-fledged debugging facilities. That's right: what you need is a
-\|pm2-debug| flavor, man! 
+\|pm2_debug| flavor, man! 
 
 Check in the \|debug| option in the \|pm2| module.  Do
 it for the application, too, and also for the \|mad2| module and
 the \|dsm| module, too. Edit the name of the new flavor from \|pm2| to
-\|pm2-debug|, and save it. The new flavor is checked for consistency
-and saved under into the \|${PM2_HOME}/.pm2/flavors/pm2-debug|
+\|pm2_debug|, and save it. The new flavor is checked for consistency
+and saved under into the \|${PM2_HOME}/.pm2/flavors/pm2_debug|
 file. You may check that the file actually contains the modified
 flavor:
 \begin{shell}
-ravel% more ${PM2_HOME}/.pm2/flavors/pm2-debug
-# Flavor pm2-debug
+ravel% more ${PM2_HOME}/.pm2/flavors/pm2_debug
+# Flavor pm2_debug
 [...]
 ### SETTINGS: --pm2=debug --pm2=opt
 [...]
@@ -191,23 +191,23 @@ do not have to explicitly set the \|PM2_FLAVOR| shell variable to
 this new value. Just specify it in-line to the \|make| facility.
 \begin{shell}
 ravel% cd ${PM2_ROOT}
-ravel% make PM2_FLAVOR=pm2-debug
+ravel% make PM2_FLAVOR=pm2_debug
 [...]           # Well, a bunch of lines here...
 \end{shell}
 Everything should run smoothly, without any warning...
 
-Once you are done, set the \|PM2_FLAVOR| variable to \|pm2-debug| and
+Once you are done, set the \|PM2_FLAVOR| variable to \|pm2_debug| and
 compile your favorite PM2 program using a
 ``dynamic'' Makefile as the one on Figure~\ref{prog:Makefile1}. Well,
 ideally, should you not make any difference with the \|pm2| run. 
 
-Just for fun, modify the \|pm2-debug| flavor so as to enable the
+Just for fun, modify the \|pm2_debug| flavor so as to enable the
 \|isoaddr_trace| in the \|pm2| module, for instance. Recompile PM2
 with this modified flavor. Recompile your program, for instance the
 simplistic \|hello| on Figure~\ref{prog:hello} and run it. You should
 see a lot of rather cryptic debugging information:
 \begin{shell}
-ravel% pm2load hello
+ravel% pm2-load hello
 Alloc page table(6291456)
 index 0: 1
 index 1: 1
@@ -252,8 +252,8 @@ ravel% pm2-config-flavor --text
 ================= Flavors management ==================
 Existing flavors :
 default leonie leoparse mad1 mad2 
-marcel marcel-act marcel-actsmp marcel-mono marcel-smp 
-pm2 pm2-mad1 pm2-mad2 pm2-marcel
+marcel marcel_act marcel_actsmp marcel_mono marcel_smp 
+pm2 pm2_mad1 pm2_mad2 pm2_marcel
 
 ******************************************************
 You can :
@@ -309,10 +309,10 @@ after setting, in \|coregrind/vg_memory.c|, the
 (65536 by default).
 
 Assuming that you are using the \|pm2| flavor, make up a
-\|pm2-debug| one. Set your \|PM2_FLAVOR| shell variable to this value,
+\|pm2_debug| one. Set your \|PM2_FLAVOR| shell variable to this value,
 and recompile PM2 with this new flavor. 
 \begin{shell}
-ravel% setenv PM2_FLAVOR pm2-debug
+ravel% setenv PM2_FLAVOR pm2_debug
 ravel% cd ${PM2_ROOT}
 ravel% make
 \end{shell}
@@ -329,9 +329,9 @@ code. Your are strongly advised to print on the \|stderr| error
 descriptor instead of regular \|stdout| one. Also, you should always
 use the \emph{thread-safe} version of \|(f)printf|, called \|t(f)printf|.
 This will prevent multiple Marcel thread to print concurrently,
-leading to scrambled text. Use the \|pm2logs| utility to view the
+leading to scrambled text. Use the \|pm2-logs| utility to view the
 remote logs. It may be useful to force logging also on the main
-node~0: use \|pm2load -l|. Then, \|pm2logs| will recover exactly one
+node~0: use \|pm2-load -l|. Then, \|pm2-logs| will recover exactly one
 log per (logical) node.
 
 You may also require ``immediate'' output from remote node by using
@@ -349,11 +349,11 @@ is guaranteed that all communications, whatever their origin, have
 been handled by the daemon service threads. Deadlock may otherwise
 occur.
 
-The \|pm2load| utility honors a number of options.  The most useful
-one in a first place is \|pm2load -d|. It can be used with any flavor,
+The \|pm2-load| utility honors a number of options.  The most useful
+one in a first place is \|pm2-load -d|. It can be used with any flavor,
 but it is most rewarding when the current flavor enables the \|gdb|
 for all the modules and for the application. If run with the \|-d|
-option, \|pm2load| opens a \|gdb| session on each (logical) node
+option, \|pm2-load| opens a \|gdb| session on each (logical) node
 declared in the configuration, with a display on your console. Just
 typing \|r| (for \|run|) in the window will start the execution.
 Observe that your have to type it in \emph{each} window!  Before

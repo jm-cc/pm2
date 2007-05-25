@@ -11,7 +11,7 @@ sub error {
   if ($msg) {
     print $msg;
   }
-  print "Error. Syntax: pm2-indent.log.pl [-bold] <log file> [<maximum depth>]\n";
+  print "Error. Syntax: pm2-indent-log.pl [-bold] <log file> [<maximum depth>]\n";
   die;
 }
 

@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,12 +15,12 @@
 # General Public License for more details.
 
 
-_PM2FLAVORFILE_PROGNAME=pm2-flavor-file
+_PM2_FLAVOR_FILE_PROGNAME=pm2-flavor-file
 
-pm2flavorfile_usage() # exit_code
+pm2_flavor_file_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2FLAVORFILE_PROGNAME { option }
+Usage: $_PM2_FLAVOR_FILE_PROGNAME { option }
   option:
     -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
     -h        : Display this help message
@@ -27,7 +28,7 @@ EOF
     exit $1
 }
 
-pm2flavorfile_parse_cmdline()
+pm2_flavor_file_parse_cmdline()
 {
     while [ $# -gt 0 ]; do
 	case $1 in
@@ -35,7 +36,7 @@ pm2flavorfile_parse_cmdline()
 		shift; PM2_FLAVOR="$1"; shift
 		;;
 	    -h)
-		pm2flavorfile_usage 0
+		pm2_flavor_file_usage 0
 		;;
 	    --)
 		shift; break
@@ -46,7 +47,7 @@ pm2flavorfile_parse_cmdline()
 	esac
     done
 
-    [ $# -eq 0 ] || pm2flavorfile_usage 1
+    [ $# -eq 0 ] || pm2_flavor_file_usage 1
 
     PM2_USER_FLAVOR_DIR=${PM2_FLAVOR_DIR:-${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/flavors}
     export PM2_USER_FLAVOR_DIR
@@ -54,7 +55,7 @@ pm2flavorfile_parse_cmdline()
     PM2_FLAVOR_FILE=$PM2_USER_FLAVOR_DIR/$PM2_FLAVOR
     export PM2_FLAVOR_FILE
 
-    if [ "$_PM2FLAVORFILE_SOURCEMODE" != yes ]; then
+    if [ "$_PM2_FLAVOR_FILE_SOURCEMODE" != yes ]; then
 	echo $PM2_FLAVOR_FILE
     fi
 }
@@ -64,14 +65,14 @@ pm2flavorfile_parse_cmdline()
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
-export _PM2FLAVORFILE_SOURCEMODE
+export _PM2_FLAVOR_FILE_SOURCEMODE
 if [ "$1" = --source-mode ]; then
-    _PM2FLAVORFILE_SOURCEMODE=yes
+    _PM2_FLAVOR_FILE_SOURCEMODE=yes
     shift
-    pm2flavorfile_parse_cmdline $*
+    pm2_flavor_file_parse_cmdline $*
 else
-    _PM2FLAVORFILE_SOURCEMODE=no
-    pm2flavorfile_parse_cmdline $*
+    _PM2_FLAVOR_FILE_SOURCEMODE=no
+    pm2_flavor_file_parse_cmdline $*
     exit 0
 fi
 

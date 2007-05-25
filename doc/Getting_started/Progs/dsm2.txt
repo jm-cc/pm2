@@ -1,4 +1,4 @@
-ravel% pm2load dsm2
+ravel% pm2-load dsm2
 Thread 1 started on node 1
 Thread 1 from node 1 finished on node 1: from 0 to 20!
 Thread 2 started on node 2

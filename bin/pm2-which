@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2sh
+#!/usr/bin/env pm2-sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -15,18 +15,18 @@
 # General Public License for more details.
 
 
-_PM2WHICH_PROGNAME=pm2which
+_PM2_WHICH_PROGNAME=pm2-which
 
-pm2which_error() # msg
+pm2_which_error() # msg
 {
     echo $* >&2
     exit 1
 }
 
-pm2which_usage() # exit_code
+pm2_which_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2WHICH_PROGNAME [option..] command
+Usage: $_PM2_WHICH_PROGNAME [option..] command
 
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
@@ -36,11 +36,11 @@ EOF
     exit $1
 }
 
-pm2which_prettyprint() # path path...
+pm2_which_prettyprint() # path path...
 {
     for p
     do
-	if [ $_PM2WHICH_SHOW_PREFIX = yes ]; then
+	if [ $_PM2_WHICH_SHOW_PREFIX = yes ]; then
 	    case "$PM2_SYS" in
 		CYGWIN*_SYS|MINGWIN*_SYS)
 		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|' -e 's|\.exe$||g'
@@ -55,7 +55,7 @@ pm2which_prettyprint() # path path...
     done
 }
 
-pm2which_handle_colon() # dir:name
+pm2_which_handle_colon() # dir:name
 {
     _old_ifs="$IFS"
     _ifs_not_set=${IFS-yes}
@@ -70,16 +70,16 @@ pm2which_handle_colon() # dir:name
 
     _dir=$1
     _name=$2
-    [ -x ${_PM2WHICH_EXDIR}/${_dir}/bin/${_name} ] || pm2which_error "Error: \"${_PM2WHICH_EXDIR}/${_dir}/bin/${_name}\" exec file not found."
-    _PM2WHICH_RESULT="${_PM2WHICH_EXDIR}/${_dir}/bin/${_name}"
-    _PM2WHICH_NB_FOUND=1
+    [ -x ${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name} ] || pm2_which_error "Error: \"${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name}\" exec file not found."
+    _PM2_WHICH_RESULT="${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name}"
+    _PM2_WHICH_NB_FOUND=1
 }
 
-pm2which_do_search() # file
+pm2_which_do_search() # file
 {
     _file=$1
-    _fifo=$_PM2WHICH_EXDIR
-    _PM2WHICH_RESULT=""
+    _fifo=$_PM2_WHICH_EXDIR
+    _PM2_WHICH_RESULT=""
 
     while [ -n "$_fifo" ] ; do
 	set $_fifo
@@ -91,23 +91,23 @@ pm2which_do_search() # file
 	    if [ -d "$_f" ] ; then
 		_fifo="$_fifo $_f"
 	    elif [ "$_rep/$_file" = "$_f" -a -x "$_f" ] ; then
-		_PM2WHICH_RESULT="${_PM2WHICH_RESULT:+$_PM2WHICH_RESULT }$_f"
+		_PM2_WHICH_RESULT="${_PM2_WHICH_RESULT:+$_PM2_WHICH_RESULT }$_f"
 	    #else : ni un sous-répertoire, ni le fichier que l'on cherche
 	    fi
 	done
     done
 
-    if [ -n "$_PM2WHICH_RESULT" ] ; then
-	set $_PM2WHICH_RESULT
-	_PM2WHICH_NB_FOUND=$#
+    if [ -n "$_PM2_WHICH_RESULT" ] ; then
+	set $_PM2_WHICH_RESULT
+	_PM2_WHICH_NB_FOUND=$#
     else
-	_PM2WHICH_NB_FOUND=0
+	_PM2_WHICH_NB_FOUND=0
     fi
 }
 
-pm2which_calc()
+pm2_which_calc()
 {
-    _PM2WHICH_ARGS="$*"
+    _PM2_WHICH_ARGS="$*"
     # On regarde si le nom de la commande est relatif/absolu
 
     case "$PM2_SYS" in
@@ -122,7 +122,7 @@ pm2which_calc()
     _prog="$1"
 
 
-    DIRS=$_PM2CONFIG_BUILD
+    DIRS=$_PM2_CONFIG_BUILD
     if [ -n "$PATH" ]; then
         DIRS="$DIRS:$PATH"
     fi
@@ -138,45 +138,45 @@ pm2which_calc()
         IFS="$_old_ifs"
     fi
 
-    export _PM2WHICH_RESULT
-    export _PM2WHICH_NB_FOUND
-    export _PM2WHICH_EXDIR
+    export _PM2_WHICH_RESULT
+    export _PM2_WHICH_NB_FOUND
+    export _PM2_WHICH_EXDIR
 
     first=1
 
     while [ $# -gt 0  ]; do
-        _PM2WHICH_EXDIR=$1
+        _PM2_WHICH_EXDIR=$1
         shift
 
         case "$_prog" in
             /*)
                 if [ -x "$_prog" ]; then
-                    _PM2WHICH_RESULT="$_prog"
-                    _PM2WHICH_NB_FOUND=1
+                    _PM2_WHICH_RESULT="$_prog"
+                    _PM2_WHICH_NB_FOUND=1
                 fi
                 ;;
             *:*)
-                pm2which_handle_colon $_prog$_ext
+                pm2_which_handle_colon $_prog$_ext
                 ;;
             *)
                 if [ $first -eq 1 ]; then
                     if [ -f "$_prog" -a -x "$_prog" ]; then
-                        _PM2WHICH_RESULT="$PWD/$_prog"
-                        _PM2WHICH_NB_FOUND=1
+                        _PM2_WHICH_RESULT="$PWD/$_prog"
+                        _PM2_WHICH_NB_FOUND=1
                     else
-                        pm2which_do_search $_prog$_ext
+                        pm2_which_do_search $_prog$_ext
                     fi
                 else
-                    __prog="$_PM2WHICH_EXDIR/$_prog"
+                    __prog="$_PM2_WHICH_EXDIR/$_prog"
                     if [ -f "$__prog" -a -x "$__prog" ]; then
-                        _PM2WHICH_RESULT=$__prog
-                        _PM2WHICH_NB_FOUND=1
+                        _PM2_WHICH_RESULT=$__prog
+                        _PM2_WHICH_NB_FOUND=1
                     fi                    
                 fi
                 ;;
         esac
 
-        if [ -n "$_PM2WHICH_NB_FOUND" ] && [ $_PM2WHICH_NB_FOUND -gt 0 ]; then
+        if [ -n "$_PM2_WHICH_NB_FOUND" ] && [ $_PM2_WHICH_NB_FOUND -gt 0 ]; then
             break
         fi
 
@@ -189,8 +189,8 @@ pm2which_calc()
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
-_PM2WHICH_SHOW_PREFIX=no
-_PM2WHICH_SOURCE_MODE=no
+_PM2_WHICH_SHOW_PREFIX=no
+_PM2_WHICH_SOURCE_MODE=no
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -201,13 +201,13 @@ while [ $# -gt 0 ]; do
 	    ;;
 	-p)
 	    shift
-	    _PM2WHICH_SHOW_PREFIX=yes
+	    _PM2_WHICH_SHOW_PREFIX=yes
 	    ;;
 	-h)
-	    pm2which_usage 0
+	    pm2_which_usage 0
 	    ;;
 	--source-mode)
-	    _PM2WHICH_SOURCE_MODE=yes
+	    _PM2_WHICH_SOURCE_MODE=yes
 	    shift
 	    ;;
 	--)
@@ -215,40 +215,40 @@ while [ $# -gt 0 ]; do
 	    break
 	    ;;
 	*)
-	    if [ "$_PM2WHICH_PROG" ]; then
-		pm2which_usage 1
+	    if [ "$_PM2_WHICH_PROG" ]; then
+		pm2_which_usage 1
 	    fi
-	    _PM2WHICH_PROG="$1"
+	    _PM2_WHICH_PROG="$1"
 	    shift
 	    ;;
     esac
 done
 
-_PROG="$_PM2WHICH_PROG"
+_PROG="$_PM2_WHICH_PROG"
 
 #On rajoute puis on vire un --source-mode
 set -- --source-mode "$@"
 . ${PM2_ROOT}/bin/pm2-config
 shift
 
-pm2which_calc "$_PM2WHICH_PROG"
-if [ $_PM2WHICH_SOURCE_MODE = no ]; then
-    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
-        echo "pm2which: '${_PROG}' exec file not found" 1>&2
+pm2_which_calc "$_PM2_WHICH_PROG"
+if [ $_PM2_WHICH_SOURCE_MODE = no ]; then
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
+        echo "pm2_which: '${_PROG}' exec file not found" 1>&2
     else
-        pm2which_prettyprint $_PM2WHICH_RESULT
+        pm2_which_prettyprint $_PM2_WHICH_RESULT
     fi
-    if [ -n "$_PM2WHICH_NB_FOUND" ] && [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
+    if [ -n "$_PM2_WHICH_NB_FOUND" ] && [ $_PM2_WHICH_NB_FOUND -eq 1 ] ; then
 	exit 0
     else
 	exit 1
     fi
 else
-    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
-        pm2which_error "pm2which: '${_PROG}' exec file not found"
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
+        pm2_which_error "pm2_which: '${_PROG}' exec file not found"
     fi
-    if [ -z "$_PM2WHICH_NB_FOUND" ] || [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
-        pm2which_error "pm2which: multiple ${_PROG} example binaries found"
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
+        pm2_which_error "pm2_which: multiple ${_PROG} example binaries found"
     fi
 fi
 

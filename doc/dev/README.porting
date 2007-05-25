@@ -5,7 +5,7 @@
 			      | Indispensable |
 			      +---------------+
 
-  Ajouter la détection de l'architecture dans bin/pm2_arch. La convention pour
+  Ajouter la détection de l'architecture dans bin/pm2-arch. La convention pour
 PM2_ASM est d'utiliser les même noms que le noyau linux.
 
   Copier marcel/include/asm-new en marcel/include/asm-votrearchi.

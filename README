@@ -73,26 +73,26 @@ To run a PM2 application, you first have give the list of machines
 that will belong to your "configuration". For instance, if you want to
 use three machines named riri, fifi and loulou, just type:
 
-	pm2conf riri fifi loulou
+	pm2-conf riri fifi loulou
 
-Please refer to the help (pm2conf -h) for a list of possible inputs.
+Please refer to the help (pm2-conf -h) for a list of possible inputs.
 
 Note: this configuration is per-flavor. If you set PM2_FLAVOR to
-another flavor, remember to re-run pm2conf.
+another flavor, remember to re-run pm2-conf.
 
 Once your configuration is set, make sure to set PM2_RSH to your remote
 shell tool:
 
 	export PM2_RSH=ssh
 	
-Then you're able to run a PM2 application simply by invoking the pm2load
+Then you're able to run a PM2 application simply by invoking the pm2-load
 loader:
 
-	pm2load simple
+	pm2-load simple
 
 You can run all processes under the gdb debugger by simply typing:
 
-	pm2load -d simple
+	pm2-load -d simple
 
 V . Miscellaneous ++++++++++++++++++++++++++++++++++++++++++++++++++++
 

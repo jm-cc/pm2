@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 ###########
 #
-# Wrapper for pm2_valgrind_load
+# Wrapper for pm2-valgrind-load
 
 echo "##### `hostname`"
 prog=$1

@@ -22,7 +22,7 @@ extern gint flavor_modified;
 void flavor_init(GtkWidget *vbox);
 
 /* Returns the list of flavor names (GList of strings) using
-   pm2-flavor... */
+   pm2_flavor... */
 GList *flavor_list(void);
 
 void flavor_create(void);

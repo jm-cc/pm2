@@ -1,3 +1,3 @@
 ravel% cd ${PM2_ROOT}
-ravel% make PM2_FLAVOR=pm2-debug
+ravel% make PM2_FLAVOR=pm2debug
 [...]           # Well, a bunch of lines here...

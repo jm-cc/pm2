@@ -29,7 +29,7 @@ PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
 
 PM2_CONF_FILE=${PM2_CONF_DIR}/.pm2conf
 
-[ -f ${PM2_CONF_FILE} ] || error "Error: conf file not found -> use pm2conf."
+[ -f ${PM2_CONF_FILE} ] || error "Error: conf file not found -> use pm2-conf."
 
 set `cat ${PM2_CONF_FILE}`
 

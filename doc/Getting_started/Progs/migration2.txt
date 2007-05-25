@@ -1,10 +1,10 @@
-ravel% pm2conf ravel ravel ravel
+ravel% pm2-conf ravel ravel ravel
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : ravel
 2 : ravel
 
-ravel% pm2load migration
+ravel% pm2-load migration
 Hop 2: I am on node 2, host ravel...
 Hop 2: Leaving to node 0
 Hop 5: I am on node 2, host ravel...

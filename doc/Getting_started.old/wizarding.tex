@@ -44,7 +44,7 @@ operations. (Observe that variable \|tmp| has be registered as
 \|volatile| to prevent the wise compiler to optimize our
 trick!). The expected final value for \|counter| is~0.  
 \begin{shell}
-ravel% pm2load freeze
+ravel% pm2-load freeze
 Initial value: 0
 Creating thread 0
 Creating thread 1
@@ -57,7 +57,7 @@ It is interesting to run the program without the calls to
 \|pm2_freeze| and \|pm2_unfreeze| routines, and see what happens.
 At least on my current workstation, this yieds the following result:
 \begin{shell}
-ravel% pm2load freeze
+ravel% pm2-load freeze
 Initial value: 0
 [...]
 Final value: 776821

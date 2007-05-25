@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -39,7 +40,7 @@ if [ -z "$PM2_SYS" -a \( -f /bin/uname -o -f /usr/bin/uname \) ]; then
 	MINGW32_NT*)     PM2_SYS=MINGWINNT_SYS ;;
         Darwin*)         PM2_SYS=DARWIN_SYS ;;
 	GNU)             PM2_SYS=GNU_SYS ;;
-	*)               echo "Unknown system, please set in bin/pm2_sys"; exit 1;;
+	*)               echo "Unknown system, please set in bin/pm2-sys"; exit 1;;
 	esac
 fi
 

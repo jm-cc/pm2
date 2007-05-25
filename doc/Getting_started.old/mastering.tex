@@ -112,13 +112,13 @@ the incoming thread will be unpacked and restarted on the destination
 node.
 
 \begin{shell}
-ravel% pm2conf ravel debussy faure
+ravel% pm2-conf ravel debussy faure
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : debussy
 2 : faure
 
-ravel% pm2load migration
+ravel% pm2-load migration
 [Threads : 5 created, 2 imported (0 cached)]
 Hop 0: I am on node 0, host ravel...
 Hop 0: Leaving to node 1
@@ -127,7 +127,7 @@ Hop 3: Leaving to node 1
 Hop 6: I am on node 0, host ravel...
 Hop 6: Leaving to node 1
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Process 1 on debussy:
 [Threads : 5 created, 3 imported (0 cached)]
 Hop 1: I am on node 1, host debussy...
@@ -146,13 +146,13 @@ between the physical machine and the logical nodes of PM2. For
 instance, you could try to run the program on the same physical node.
 It works just as well!
 \begin{shell}
-ravel% pm2conf ravel ravel ravel
+ravel% pm2-conf ravel ravel ravel
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : ravel
 2 : ravel
 
-ravel% pm2load migration
+ravel% pm2-load migration
 [Threads : 5 created, 2 imported (0 cached)]
 Hop 0: I am on node 0, host ravel...
 Hop 0: Leaving to node 1
@@ -161,7 +161,7 @@ Hop 3: Leaving to node 1
 Hop 6: I am on node 0, host ravel...
 Hop 6: Leaving to node 1
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Process 1 on ravel:
 [Threads : 5 created, 3 imported (0 cached)]
 Hop 1: I am on node 1, host ravel...
@@ -282,7 +282,7 @@ issues a RPC to node~1 to set variable \|barrier| to 1, and does so
 for its own node. Finally, the master thread calls the \|halt| routine
 to stop all daemon service threads.
 \begin{shell}
-ravel% pm2load migrate-group
+ravel% pm2-load migrate-group
 Initialization completed on node 0
 Thread 0: Created on node 0, host ravel
 Thread 1: Created on node 0, host ravel
@@ -295,7 +295,7 @@ Thread 3: Now on node 0, host ravel
 Thread 1: Now on node 0, host ravel
 [Threads : 6 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 
 *** Host debussy, process 1:
 [Threads : 4 created, 2 imported (0 cached)]
@@ -424,7 +424,7 @@ Program~\ref{prog:iso-alloc}. Variable \|x| is allocated in the
 private stack of the thread on node~1. After migration to node~2, the value
 of \|x| \emph{and its address} are left unchanged.
 \begin{shell}
-ravel% pm2logs
+ravel% pm2-logs
 *** Process 1 on debussy:
 [Threads : 3 created, 0 imported (0 cached)]
 First, I am on node 1, host debussy... &x = affafda0, x = 1234
@@ -478,12 +478,12 @@ unpacked on the destination node, and installed at the same virtual
 address as in the origin node. This is why \|**p| returns the same
 value \emph{after} the migration, as before. 
 \begin{shell}
-ravel% pm2load isomalloc
+ravel% pm2-load isomalloc
 First, I am on node 0, host ravel...
 p = aff8f040, *p = aff8f080, **p = 1234
 [Threads : 3 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 [Threads : 3 created, 1 imported (0 cached)]
 Then, I am on node 1, host debussy...
@@ -504,12 +504,12 @@ function, after a migration is of course undefined as demonstrated by
 Program~\ref{prog:isomalloc1}: the value of \|*p| is \emph{not}
 preserved through the migration!
 \begin{shell}
-ravel% pm2load isomalloc1
+ravel% pm2-load isomalloc1
 First, I am on node 0, host ravel...
 p = 80d2500, *p = 1234
 [Threads : 3 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 [Threads : 3 created, 1 imported (0 cached)]
 Then, I am on node 1, host debussy...
@@ -542,11 +542,11 @@ prints the value of the variable.  As expected, the final value of the
 variable is exactly as it would have been with a sequence of
 increments at the master node.
 \begin{shell}
-ravel% pm2load dsm
+ravel% pm2-load dsm
 shvar=40
 [Threads : 6 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 Thread 1 from node 1 finished on node 1: from 0 to 20!
 [Threads : 8 created, 0 imported (0 cached)]
@@ -587,13 +587,13 @@ node of the variable. As you can observe, the result is the same as
 above, but all the incrementing threads end up on the home node of
 the shared variable.
 \begin{shell}
-ravel% pm2load dsm1
+ravel% pm2-load dsm1
 Thread 1 from node 1 finished on node 0: from 0 to 20!
 Thread 2 from node 2 finished on node 0: from 20 to 40!
 shvar=40
 [Threads : 4 created, 2 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 [Threads : 3 created, 0 imported (0 cached)]
 Thread 1 on node 1
@@ -627,17 +627,17 @@ mutexes, which are local to a PM2 node.
 \begin{shell}
 ravel% ./run dsm2
 Compiling dsm2.c... for flavor 'pm2'
-ravel% pm2conf ravel debussy faure
+ravel% pm2-conf ravel debussy faure
 The current PM2 configuration contains 3 host(s) :
 0 : ravel
 1 : debussy
 2 : faure
 
-ravel% pm2load dsm2
+ravel% pm2-load dsm2
 shvar=40
 [Threads : 10 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 [Threads : 8 created, 0 imported (0 cached)]
 Thread 1 started on node 1
@@ -668,11 +668,11 @@ ravel% more dsm3.c
   // dsm_mutex_unlock (&L);
 [...]
 
-ravel% pm2load dsm3
+ravel% pm2-load dsm3
 shvar=20
 [Threads : 7 created, 0 imported (0 cached)]
 
-ravel% pm2logs
+ravel% pm2-logs
 *** Host debussy, process 1:
 [Threads : 7 created, 0 imported (0 cached)]
 Thread 1 started on node 1

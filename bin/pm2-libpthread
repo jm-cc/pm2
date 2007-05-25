@@ -4,7 +4,7 @@ if [ "$1" = -d ]
 then
 	shift
 	GDB=gdb
-	. $PM2_ROOT/bin/pm2_arch --source-mode
+	. $PM2_ROOT/bin/pm2-arch --source-mode
 	for mod in $(pm2-config --modules)
 	do
 		gdbinit_arch=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH

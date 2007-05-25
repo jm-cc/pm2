@@ -1,13 +1,14 @@
 PM2_PROFILE_LIBNAME=profile
 PM2_PROFILE_GENERATE_INCLUDE=true
 
-if [ "$PM2_SYS" = DARWIN_SYS ]; then
-    PM2_PROFILE_LIBS="-lfxt"
-else
-    PM2_PROFILE_LIBS="-lfxt -lbfd"
-fi
 if [ -n "$FXT_PREFIX" ]
 then
     PM2_PROFILE_CFLAGS="$PM2_PROFILE_CFLAGS -I$FXT_PREFIX/include"
     PM2_PROFILE_LIBS="$PM2_PROFILE_LIBS -L$FXT_PREFIX/lib"
+fi
+
+if [ "$PM2_SYS" = DARWIN_SYS ]; then
+    PM2_PROFILE_LIBS="$PM2_PROFILE_LIBS -lfxt"
+else
+    PM2_PROFILE_LIBS="$PM2_PROFILE_LIBS -lfxt -lbfd -liberty"
 fi

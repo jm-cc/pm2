@@ -1,3 +1,5 @@
+
+#-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -37,10 +39,10 @@ flavor="test_mad4_mpi"
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="allgather"
 args="--x --p --l"
-hosts=${TESTCONFIG:-"william averell"}
+hosts=${TESTCONFIG:-"localhost localhost"}
 nb_hosts=$(echo $hosts | wc -w)
 nb_hosts2=$(echo $nb_hosts -1 | bc)
-net=${TESTNET:-mx}
+net=${TESTNET:-tcp}
 sort_output=1
 rm -f /tmp/pm2test_"${USER}"_expected
 

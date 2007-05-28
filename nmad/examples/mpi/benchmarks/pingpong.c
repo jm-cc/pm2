@@ -153,6 +153,10 @@ int main(int argc, char *argv[]) {
     sendData(0, 3, rank, numtasks, use_htype, "vector", pairs, FALSE);
   }
 
+  if (rank == 0) {
+    PRINT("src  | dest  | type	     | size    | blocks | time");
+  }
+
   // Process with the ping-pongs
   if (size != -1) {
     if (blocks != -1) {

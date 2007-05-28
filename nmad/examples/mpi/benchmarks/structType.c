@@ -92,7 +92,7 @@ void sendStructTypeFromSrcToDest(int numberOfElements, int rank, int source, int
     t2 = MPI_Wtime(); 
     sum = (t2 - t1) * 1e6;
     if (display)
-      PRINT("%d\t%d\t%f\t%d\t%d-%d", numberOfElements, MPIR_STRUCT, sum, 3, source, dest);
+      PRINT("%d\t%d\t%s\t%d\t%s\t%3.2f", source, dest, "struct_type", numberOfElements, "-", sum);
     free(particles);
   } // end if
   else if (rank == dest) {
@@ -133,6 +133,10 @@ int sendStructType(int argc, char *argv[], int rank, int numtasks) {
   if (ret) return ret;
 
   processAndSendStructType(0, rank, numtasks, FALSE);
+
+  if (rank == 0) {
+    PRINT("src  | dest  | type	     | size    | blocks | time");
+  }
 
   if (size != -1) {
     processAndSendStructType(size, rank, numtasks, TRUE);

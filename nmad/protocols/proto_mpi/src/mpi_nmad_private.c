@@ -337,7 +337,7 @@ int mpir_isend(void *buffer,
       nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
-          MPI_NMAD_TRACE("Element %d, %d starts at %p (+ %d)\n", i, j, ptr, ptr-buffer);
+          MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, ptr, ptr-buffer);
           nm_so_pack(connection, ptr, mpir_datatype->block_size);
           ptr += mpir_datatype->stride;
         }
@@ -360,7 +360,9 @@ int mpir_isend(void *buffer,
       ptr = buffer;
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
-          MPI_NMAD_TRACE("Pack element %d, %d starting at %p (+ %d)\n", i, j, ptr, ptr-buffer);
+          MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n",
+                         i, j, (long) mpir_datatype->block_size, ptr, ptr-buffer,
+                         newptr, newptr-mpir_request->contig_buffer);
 	  memcpy(newptr, ptr, mpir_datatype->block_size);
 	  newptr += mpir_datatype->block_size;
           ptr += mpir_datatype->stride;
@@ -551,21 +553,53 @@ int mpir_irecv(void* buffer,
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-    int               i, j, k=0;
+    if (mpir_datatype->is_optimized) {
+      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+      int               i, j, k=0;
 
-    MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
-    nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-    mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
-    mpir_request->request_ptr[0] = buffer;
-    for(i=0 ; i<count ; i++) {
-      for(j=0 ; j<mpir_datatype->elements ; j++) {
-        nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->block_size);
-        k++;
-        mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->block_size;
+      MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
+      nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
+      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+      mpir_request->request_ptr[0] = buffer;
+      for(i=0 ; i<count ; i++) {
+        for(j=0 ; j<mpir_datatype->elements ; j++) {
+          nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->block_size);
+          k++;
+          mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->block_size;
+        }
       }
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
     }
-    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
+    else {
+      void  *recvbuffer = NULL, *recvptr, *ptr;
+      int    i, j;
+      size_t len;
+
+      len = count * mpir_datatype->elements * mpir_datatype->block_size;
+      recvbuffer = malloc(len);
+      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)len, count, mpir_datatype->elements, (long)mpir_datatype->block_size);
+      MPI_NMAD_TRANSFER("Recv (vector) --< %ld: %ld bytes\n", gate_id, (long)len);
+      mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, len, &(mpir_request->request_nmad));
+      MPI_NMAD_TRANSFER("Recv (vector) finished\n");
+      MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
+      MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (vector)\n");
+      nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
+      MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
+
+      recvptr = recvbuffer;
+      ptr = buffer;
+      for(i=0 ; i<count ; i++) {
+        for(j=0 ; j<mpir_datatype->elements ; j++) {
+          MPI_NMAD_TRACE("Copy element %d, %d from %p (+ %d) to %p (+ %d)\n",
+                         i, j, recvptr, recvptr-recvbuffer, ptr, ptr-buffer);
+          memcpy(ptr, recvptr, mpir_datatype->block_size);
+          recvptr += mpir_datatype->block_size;
+          ptr += mpir_datatype->block_size;
+        }
+      }
+      free(recvbuffer);
+      mpir_request->request_type = MPI_REQUEST_ZERO;      
+    }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);

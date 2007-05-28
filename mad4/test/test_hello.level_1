@@ -1,3 +1,5 @@
+
+#-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -37,8 +39,8 @@ flavor="test_mad4"
 appdir="${PM2_ROOT}/mad4/examples"
 prog="hello"
 args="--x --p --l"
-hosts=${TESTCONFIG:-"william averell"}
-net=${TESTNET:-mx}
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
 rm -f /tmp/pm2test_"${USER}"_expected
 
 (cat <<EOF

@@ -20,6 +20,14 @@ void checkVectorIsCorrect(float *b, int rank, int count, int blocklength, int si
   int x, y, i, j;
   float initialValue;
 
+  if (VERBOSE) {
+    PRINT_NO_NL("b[] = ");
+    for(i=0 ; i<count*blocklength ; i++) {
+      PRINT_NO_NL("%3.1f ", b[i]);
+    }
+    PRINT("\n");
+  }
+
   for(i=0 ; i<count ; i++) {
     if (success == TRUE) {
       for(j=0 ; j<blocklength ; j++) {
@@ -65,6 +73,10 @@ void sendVectorTypeFromSrcToDest(int size, int blocks, int rank, int source, int
   int blocklength = realSize*realSize/blocks;
   int stride = blocklength;
 
+  if (VERBOSE) {
+    PRINT("count=%d blocklength=%d, stride=%d\n", count, blocklength, stride);
+  }
+
   if (rank != source && rank != dest) return;
 
   // Initialise data to send
@@ -100,10 +112,10 @@ void sendVectorTypeFromSrcToDest(int size, int blocks, int rank, int source, int
     checkVectorIsCorrect(b, rank, count, blocklength, size, stride);
     free(b);
 
-    t2 = MPI_Wtime(); 
+    t2 = MPI_Wtime();
     sum = (t2 - t1) * 1e6;
     if (display)
-      PRINT("%d\t%d\t%f\t%d\t%d-%d", count*blocklength, MPIR_VECTOR, sum, blocks, source, dest);
+      PRINT("%d\t%d\t%s\t%d\t%d\t%3.2f", source, dest, "vector_type", count*blocklength, blocks, sum);
   }
   else if (rank == dest) {
     // receive the data
@@ -143,7 +155,11 @@ int sendVectorType(int argc, char *argv[], int rank, int numtasks) {
   ret = checkArguments(argc, argv, 1, &use_hvector, &short_message, &minSize, &maxSize, &stride, &blocks, &size, tests);
   if (ret) return ret;
 
-  processAndsendVectorType(0, DEFAULT_BLOCKS, rank, numtasks, use_hvector, FALSE);
+  processAndsendVectorType(1, DEFAULT_BLOCKS, rank, numtasks, use_hvector, FALSE);
+
+  if (rank == 0) {
+    PRINT("src  | dest  | type	     | size    | blocks | time");
+  }
 
   if (size != -1) {
     if (blocks != -1) {

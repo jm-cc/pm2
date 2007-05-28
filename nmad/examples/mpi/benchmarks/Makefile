@@ -1,5 +1,5 @@
 ifeq ($(MPICC),)
-MPICC	:=	../mpicc
+MPICC	:=	../mpicc -g
 endif
 
 modules :=	$(shell pm2-config --modules)
@@ -7,8 +7,9 @@ libs	:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)
 
 #MPICC	:=	/opt/mpich-mx/bin/mpicc
 
-PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size mpi_multi_ping mpi_latency mpi_multi_ping_hetero
+PROGS		:=	pingpong mpi_para_ping index indexType_hetero_size mpi_multi_ping mpi_latency mpi_multi_ping_hetero vector struct
 pingpong_LIBS	:=	-lm
+vector_LIBS	:=	-lm
 
 all: $(PROGS)
 
@@ -24,6 +25,8 @@ all: $(PROGS)
 mpi_para_ping: mpi_para_ping.o
 pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o
 index: index.o indexType.o toolbox.o
+vector: vector.o vectorType.o toolbox.o
+struct: struct.o structType.o toolbox.o
 
 indexType_hetero_size: indexType_hetero_size.o
 mpi_multi_ping: mpi_multi_ping.o

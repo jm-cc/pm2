@@ -333,14 +333,53 @@ int mpir_isend(void *buffer,
     void             *ptr = buffer;
 
     MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
-    nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-    for(i=0 ; i<count ; i++) {
-      for(j=0 ; j<mpir_datatype->elements ; j++) {
-        nm_so_pack(connection, ptr, mpir_datatype->block_size);
-        ptr += mpir_datatype->stride;
+    if (mpir_datatype->is_optimized) {
+      nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
+      for(i=0 ; i<count ; i++) {
+        for(j=0 ; j<mpir_datatype->elements ; j++) {
+          MPI_NMAD_TRACE("Element %d, %d starts at %p (+ %d)\n", i, j, ptr, ptr-buffer);
+          nm_so_pack(connection, ptr, mpir_datatype->block_size);
+          ptr += mpir_datatype->stride;
+        }
       }
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
     }
-    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
+    else {
+      void *newptr, *ptr;
+      size_t len;
+
+      MPI_NMAD_TRACE("Sending vector datatype in a contiguous buffer\n");
+      len = count * mpir_datatype->elements * mpir_datatype->block_size;
+      mpir_request->contig_buffer = malloc(len);
+      if (mpir_request->contig_buffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)len);
+        return MPI_ERR_INTERN;
+      }
+
+      newptr = mpir_request->contig_buffer;
+      ptr = buffer;
+      for(i=0 ; i<count ; i++) {
+        for(j=0 ; j<mpir_datatype->elements ; j++) {
+          MPI_NMAD_TRACE("Pack element %d, %d starting at %p (+ %d)\n", i, j, ptr, ptr-buffer);
+	  memcpy(newptr, ptr, mpir_datatype->block_size);
+	  newptr += mpir_datatype->block_size;
+          ptr += mpir_datatype->stride;
+        }
+      }
+      MPI_NMAD_TRACE("Sending data of vector type at address %p with len %ld (%d*%d*%ld)\n", mpir_request->contig_buffer, (long)len, count, mpir_datatype->elements, (long)mpir_datatype->block_size);
+      MPI_NMAD_TRANSFER("Sent (vector) --> %d, %ld: %ld bytes\n", dest, gate_id, (long)len);
+      if (communication_mode == MPI_IMMEDIATE_MODE) {
+        err = nm_so_sr_isend(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
+      }
+      else if (communication_mode == MPI_READY_MODE) {
+        err = nm_so_sr_rsend(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
+      }
+      else {
+        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, communication_mode, &(mpir_request->request_nmad));
+      }
+      MPI_NMAD_TRANSFER("Sent (vector) finished\n");
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
+    }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
@@ -813,8 +852,10 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->stride = stride;
   datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count * blocklength;
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		       (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent, oldtype, (long)datatypes[*newtype]->old_size);
+  MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
+                       *newtype, (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent,
+                       datatypes[*newtype]->elements, datatypes[*newtype]->blocklen,
+                       oldtype, (long)datatypes[*newtype]->old_size);
   return MPI_SUCCESS;
 }
 

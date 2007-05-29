@@ -153,8 +153,11 @@ refreshall:
 	$(ROOT)/bin/pm2-clean --all --refresh
 
 .PHONY: clean cleanall clean-header-autogen
+
+FLAVOR_WITH_MARCEL :=	$(shell $(ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep marcel)
+
 clean-header-autogen:
-	$(MAKE) -C marcel clean_autogen clean_m4gen
+	@if [ "$(FLAVOR_WITH_MARCEL)" != "" ] ; then $(MAKE) -C marcel clean_autogen clean_m4gen ; fi
 
 clean: clean-header-autogen
 	$(COMMON_HIDE) set -e; \

@@ -138,7 +138,7 @@ if [ -z "$pm2_appli" ] ; then
     echo "$progname not found in current directory or in PM2 directory"
     exit 1
 fi
-nb_applis=$(echo "$pm2_appli" | wc -w)
+nb_applis=$(echo "$pm2_appli" | wc -w | tr -d ' ')
 if [ "$nb_applis" != 1 ] ; then
     echo "$progname found in different locations ($pm2_appli)"
     exit 1

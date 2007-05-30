@@ -349,6 +349,25 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
         NM_LOG_IN();
         if (!p_core) {
                 nm_mad3_init_core(argc, *argv);
+#ifdef PROFILE
+                DISP("mad3 emulation: profile on");
+
+#  if 0
+		/* Just to check profiling works as expected */
+                NMAD_EVENT0();
+                NMAD_EVENT1(14);
+                NMAD_EVENT2(15, 43);
+                NMAD_EVENTSTR("_texte_");
+#  endif
+
+                {
+                        p_mad_madeleine_t	madeleine	= d->madeleine;
+                        unsigned int		size		= tbx_slist_get_length(madeleine->dir->process_slist);
+                        unsigned int		rank		= (unsigned int)madeleine->session->process_rank;
+
+                        NMAD_EVENT_CONFIG(size, rank);
+                }
+#endif
         }
 
 #ifdef CONFIG_TCP
@@ -580,6 +599,8 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
         TBX_FAILURE("driver unavailable");
 
 found:
+        NMAD_EVENT_DRV_ID(drv_id);
+        NMAD_EVENT_DRV_NAME(d->device_name);
         d->connection_type	= mad_bidirectional_connection;
         d->buffer_alignment	= 32;
         ds			= TBX_MALLOC(sizeof(mad_nmad_driver_specific_t));
@@ -730,7 +751,7 @@ mad_nmad_accept(p_mad_connection_t   in,
                         printf("nm_core_gate_accept returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
                 }
-
+                NMAD_EVENT_CNX_ACCEPT(in->remote_rank, cs->gate_id, ds->drv_id);
                 TRACE("gate_accept: connection established");
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, in->remote_rank);
@@ -769,7 +790,7 @@ mad_nmad_connect(p_mad_connection_t   out,
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
                 }
-
+                NMAD_EVENT_CNX_CONNECT(out->remote_rank, cs->gate_id, ds->drv_id);
                 TRACE("gate_connect: connection established");
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, out->remote_rank);

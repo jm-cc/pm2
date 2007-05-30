@@ -85,11 +85,16 @@ struct nm_tcpdg_pkt_wrap {
          */
         uint8_t			*ptr;
 
-        /** Remaining Length.
+        /** Remaining length.
            Current remaining length in sending either the header
            or the body (according to the state).
          */
         uint64_t		 rem_length;
+
+        /** Actual packet length to receive.
+            May be different from the length that is expected.
+         */
+        uint64_t		 pkt_length;
 
         /** Message header storage.
          */
@@ -392,6 +397,7 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         p_tcp_trk->poll_array[n].revents	= 0;
         p_tcp_trk->gate_map[n]		= p_gate->id;
 
+        NMAD_EVENT_NEW_TRK(p_gate->id, p_drv->id, p_trk->id);
         err = NM_ESUCCESS;
 
         return err;
@@ -783,6 +789,8 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 /* remaining length
                  */
                 p_tcp_pw->rem_length	= sizeof(p_tcp_pw->h);
+
+                NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
         }
 
         fd	= p_tcp_gate->fd[p_pw->p_trk->id];
@@ -1046,6 +1054,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 NM_TRACE_VAL("tcp incoming rem length", p_tcp_pw->rem_length);
 
                 if (!p_tcp_pw->rem_length) {
+                        NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_tcp_pw->pkt_length);
                         err	= NM_ESUCCESS;
 
                         *p_cur = p_vi->cur_copy;
@@ -1084,6 +1093,8 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                  */
                                 err	= -NM_EINVAL;
                         } else {
+                                NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
+                                fprintf(stderr, "tcp incoming iov: receive complete\n");
                                 NM_TRACEF("tcp incoming iov: receive complete");
                                 err	= NM_ESUCCESS;
                         }
@@ -1136,6 +1147,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                         NM_TRACEF("tcp header incoming - header receive complete, switching to state 1");
                         p_tcp_pw->state	= 1;
                         p_tcp_pw->rem_length	= p_tcp_pw->h.length;
+                        p_tcp_pw->pkt_length	= p_tcp_pw->h.length;
 
                         NM_TRACE_VAL("tcp header incoming pkt length", p_tcp_pw->rem_length);
                         err	= nm_tcpdg_incoming_poll(p_pw);

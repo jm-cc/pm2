@@ -10,9 +10,10 @@ BEGIN {
     # link rate and delay values are arbitrary
     our $link_rate	= 10000;
     our $link_delay	= 0.002;
+    our $time_divisor	= Math::BigFloat->new('100000000');
 
     my %opts;
-    my $ret	= getopts('d:r:', \%opts);	# -d <DELAY> -r <RATE>
+    my $ret	= getopts('d:r:t:', \%opts);	# -d <DELAY> -r <RATE> -t <TIME_DIVISOR>
 
     if (exists $opts{'d'}) {
         $link_delay	= $opts{'d'};
@@ -20,6 +21,10 @@ BEGIN {
 
     if (exists $opts{'r'}) {
         $link_rate	= $opts{'r'};
+    }
+
+    if (exists $opts{'t'}) {
+        $time_divisor	= Math::BigFloat->new($opts{'t'});
     }
 
     our $FUT_NMAD_CODE	= 0xfe00;
@@ -67,6 +72,7 @@ BEGIN {
 
 our $link_rate;
 our $link_delay;
+our $time_divisor;
 
 our $FUT_NMAD_CODE;
 
@@ -101,7 +107,7 @@ my $ev_nb_params	= shift @params;
 next
     unless (($ev_num & 0xff00) == 0xfe00);
 
-my $time	= $ev_time->copy()->bdiv(100000000);
+my $time	= $ev_time->copy()->bdiv($time_divisor);
 
 #printf "$num: \t$host_num - [%16u] %x = %16s \t", $ev_time, $ev_num, $fut_code_mapping{$ev_num};
 

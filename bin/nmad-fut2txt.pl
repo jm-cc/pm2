@@ -3,6 +3,7 @@
 
 use warnings;
 use strict;
+use Math::BigInt;
 
 BEGIN {
 
@@ -73,7 +74,7 @@ chomp;
 my @params	= split ',';
 my $num		= shift @params;
 my $host_num	= shift @params;
-my $ev_time	= shift @params;
+my $ev_time	= Math::BigInt->new(shift @params);
 my $ev_tid	= shift @params;
 my $ev_num	= shift @params;
 my $ev_nb_params	= shift @params;
@@ -81,7 +82,7 @@ my $ev_nb_params	= shift @params;
 next
     unless (($ev_num & 0xff00) == 0xfe00);
 
-printf "$num: \t$host_num - [%16u] %x = %16s \t", $ev_time, $ev_num, $fut_code_mapping{$ev_num};
+printf "$num: \t$host_num - [%16s] %x = %16s \t", $ev_time, $ev_num, $fut_code_mapping{$ev_num};
 
 if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
     my $config_size	= shift @params;

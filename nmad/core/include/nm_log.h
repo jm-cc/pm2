@@ -57,3 +57,97 @@
 #define NM_TRACE_PTR(str, ptr)  (void)(0)
 #define NM_TRACE_STR(str, str2) (void)(0)
 #endif
+
+/* Profiling/post-portem analysis
+ */
+#ifdef PROFILE
+#  define FUT_NMAD_CODE			0xfe00
+
+#  define FUT_NMAD_EVENT0_CODE		FUT_NMAD_CODE + 0x00
+#  define FUT_NMAD_EVENT1_CODE		FUT_NMAD_CODE + 0x01
+#  define FUT_NMAD_EVENT2_CODE		FUT_NMAD_CODE + 0x02
+#  define FUT_NMAD_EVENTSTR_CODE	FUT_NMAD_CODE + 0x03
+
+#  define FUT_NMAD_EVENT_CONFIG_CODE		FUT_NMAD_CODE + 0x10
+#  define FUT_NMAD_EVENT_DRV_ID_CODE		FUT_NMAD_CODE + 0x11
+#  define FUT_NMAD_EVENT_DRV_NAME_CODE		FUT_NMAD_CODE + 0x12
+#  define FUT_NMAD_EVENT_CNX_CONNECT_CODE	FUT_NMAD_CODE + 0x13
+#  define FUT_NMAD_EVENT_CNX_ACCEPT_CODE	FUT_NMAD_CODE + 0x14
+#  define FUT_NMAD_EVENT_NEW_TRK_CODE		FUT_NMAD_CODE + 0x15
+#  define FUT_NMAD_EVENT_SND_START_CODE		FUT_NMAD_CODE + 0x16
+#  define FUT_NMAD_EVENT_RCV_END_CODE		FUT_NMAD_CODE + 0x17
+
+#  define NMAD_EVENT0()					\
+ PROF_START						\
+      FUT_DO_PROBE0(FUT_NMAD_EVENT0_CODE);		\
+ PROF_END
+
+#  define NMAD_EVENT1(a)				\
+ PROF_START						\
+      FUT_DO_PROBE1(FUT_NMAD_EVENT1_CODE, a);		\
+ PROF_END
+
+#  define NMAD_EVENT2(a, b)				\
+ PROF_START						\
+      FUT_DO_PROBE2(FUT_NMAD_EVENT2_CODE, a, b);	\
+ PROF_END
+
+#  define NMAD_EVENTSTR(s, ...)							\
+ PROF_START									\
+      FUT_DO_PROBESTR(FUT_NMAD_EVENTSTR_CODE, s , ## __VA_ARGS__);		\
+ PROF_END
+
+#  define NMAD_EVENT_CONFIG(size, rank)				\
+ PROF_START							\
+      FUT_DO_PROBE2(FUT_NMAD_EVENT_CONFIG_CODE, size, rank);	\
+ PROF_END
+
+#  define NMAD_EVENT_DRV_ID(drv_id)				\
+ PROF_START							\
+      FUT_DO_PROBE1(FUT_NMAD_EVENT_DRV_ID_CODE, drv_id);	\
+ PROF_END
+
+#  define NMAD_EVENT_DRV_NAME(drv_name)				\
+ PROF_START							\
+      FUT_DO_PROBESTR(FUT_NMAD_EVENT_DRV_NAME_CODE, drv_name);	\
+ PROF_END
+
+#  define NMAD_EVENT_CNX_CONNECT(remote_rank, gate_id, drv_id)				\
+ PROF_START										\
+      FUT_DO_PROBE3(FUT_NMAD_EVENT_CNX_CONNECT_CODE, remote_rank, gate_id, drv_id);	\
+ PROF_END
+
+#  define NMAD_EVENT_CNX_ACCEPT(remote_rank, gate_id, drv_id)				\
+ PROF_START										\
+      FUT_DO_PROBE3(FUT_NMAD_EVENT_CNX_ACCEPT_CODE, remote_rank, gate_id, drv_id);	\
+ PROF_END
+
+#  define NMAD_EVENT_NEW_TRK(gate_id, drv_id, trk_id)					\
+ PROF_START										\
+      FUT_DO_PROBE3(FUT_NMAD_EVENT_NEW_TRK_CODE, gate_id, drv_id, trk_id);		\
+ PROF_END
+
+#  define NMAD_EVENT_SND_START(gate_id, drv_id, trk_id, length)				\
+ PROF_START										\
+      FUT_DO_PROBE4(FUT_NMAD_EVENT_SND_START_CODE, gate_id, drv_id, trk_id, length);	\
+ PROF_END
+
+#  define NMAD_EVENT_RCV_END(gate_id, drv_id, trk_id, length)				\
+ PROF_START										\
+      FUT_DO_PROBE4(FUT_NMAD_EVENT_RCV_END_CODE, gate_id, drv_id, trk_id, length);	\
+ PROF_END
+
+#else
+#  define NMAD_EVENT0()				(void)0
+#  define NMAD_EVENT1(a)			(void)0
+#  define NMAD_EVENT2(a, b)			(void)0
+#  define NMAD_EVENTSTR(s, ...)			(void)0
+#  define NMAD_EVENT_CONFIG(size, rank)		(void)0
+#  define NMAD_EVENT_DRV_ID(drv_id)		(void)0
+#  define NMAD_EVENT_DRV_NAME(drv_name)		(void)0
+#  define NMAD_EVENT_CNX_CONNECT(remote_rank, gate_id, drv_id)		(void)0
+#  define NMAD_EVENT_CNX_ACCEPT(remote_rank, gate_id, drv_id)		(void)0
+#  define NMAD_EVENT_NEW_TRK(gate_id, drv_id, trk_id)			(void)0
+#  define NMAD_EVENT_SND_START(gate_id, drv_id, trk_id, length)		(void)0
+#  define NMAD_EVENT_RCV_END(gate_id, drv_id, trk_id, length)		(void)0
+#endif

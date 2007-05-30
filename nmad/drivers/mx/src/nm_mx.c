@@ -69,6 +69,7 @@ struct nm_mx_gate {
 struct nm_mx_pkt_wrap {
 	mx_endpoint_t *p_ep;
 	mx_request_t rq;
+        int send_bool;
 };
 
 /** MX specific first administrative packet data */
@@ -475,6 +476,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         p_mx_cnx->send_match_info	= pkt2.match_info;
 	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %lu",	pkt2.match_info);
 
+        NMAD_EVENT_NEW_TRK(p_gate->id, p_drv->id, p_trk->id);
         err = NM_ESUCCESS;
 
         return err;
@@ -593,6 +595,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         }
         NM_TRACEF("send pkt2 <--");
 
+        NMAD_EVENT_NEW_TRK(p_gate->id, p_drv->id, p_trk->id);
         err = NM_ESUCCESS;
 
         return err;
@@ -656,7 +659,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
-
+        p_mx_pw->send_bool = 1;
         p_mx_pw->p_ep	= &(p_mx_drv->ep);
 
         {
@@ -674,6 +677,8 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
                         p_src++;
                         p_dst++;
                 }
+
+                NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
 
                 mx_ret	= mx_isend(p_mx_drv->ep,
                                    seg_list,
@@ -728,6 +733,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
+        p_mx_pw->send_bool = 0;
 
         p_mx_pw->p_ep		= &(p_mx_drv->ep);
 
@@ -843,6 +849,10 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         err = NM_ESUCCESS;
 
 out:
+        if (err == NM_ESUCCESS && !p_mx_pw->send_bool) {
+                NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
+        }
+
         return err;
 }
 

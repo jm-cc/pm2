@@ -402,10 +402,12 @@ my @file;	# Array of file objects
               redo first_event
                   if ((${$event}{'num'} & $mask) != ($filter & $mask));
 
-              if ($base_event && (${$event}{'num'} == $base_event)) {
-                  $file_object->reset_time_offset();
-              } else {
-                  redo first_event;
+              if ($base_event > 0) {
+                  if (${$event}{'num'} == $base_event) {
+                      $file_object->reset_time_offset();
+                  } else {
+                      redo first_event;
+                  }
               }
                   
               ${$file}{'event'} = $event;

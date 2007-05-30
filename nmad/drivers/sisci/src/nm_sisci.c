@@ -309,7 +309,9 @@ nm_sisci_display_error(sci_error_t error)
 
 static
 int
-nm_sisci_query			(struct nm_drv *p_drv) {
+nm_sisci_query			(struct nm_drv *p_drv,
+				 struct nm_driver_query_param *params,
+				 int nparam) {
 	struct nm_sisci_drv	*p_sisci_drv	= NULL;
 	int err;
 

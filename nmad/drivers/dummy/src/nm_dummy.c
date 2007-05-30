@@ -43,7 +43,9 @@ struct nm_dummy_pkt_wrap {
 
 static
 int
-nm_dummy_query			(struct nm_drv *p_drv) {
+nm_dummy_query			(struct nm_drv *p_drv,
+				 struct nm_driver_query_param *params,
+				 int nparam) {
 	struct nm_dummy_drv	*p_dummy_drv	= NULL;
 	int err;
 

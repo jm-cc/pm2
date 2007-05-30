@@ -227,7 +227,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
-  int ret = NM_EAGAIN;
+  int ret = -NM_EAGAIN;
 
   NM_SO_SR_LOG_IN();
 
@@ -301,7 +301,7 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret = NM_EAGAIN;
+  int ret = -NM_EAGAIN;
 
   NM_SO_SR_LOG_IN();
 
@@ -469,7 +469,7 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
-  int ret = NM_EAGAIN;
+  int ret = -NM_EAGAIN;
 
   NM_SO_SR_LOG_IN();
 

@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef __nm_public_h__
+#define __nm_public_h__
 
 #include <nm_errno.h>
 struct nm_core;
@@ -48,6 +50,24 @@ int
 nm_core_driver_init	(struct nm_core		 *p_core,
                          uint8_t		 id,
                          char			**p_url);
+
+struct nm_driver_query_param {
+	enum {
+		NM_DRIVER_QUERY_BY_NOTHING=0,
+		NM_DRIVER_QUERY_BY_INDEX,
+		/* NM_DRIVER_QUERY_BY_NUMA_NODE, */
+		/* NM_DRIVER_QUERY_BY_SPEED, */
+	} key;
+	union {
+		uint32_t index;
+	} value;
+};
+
+int
+nm_core_driver_query(struct nm_core	*p_core,
+		     uint8_t id,
+		     struct nm_driver_query_param *params,
+		     int nparam);
 
 int
 nm_core_driver_load_init(struct nm_core		 *p_core,
@@ -114,3 +134,4 @@ nm_core_post_recv	(struct nm_core		*p_core,
 int
 nm_schedule		(struct nm_core		 *p_core);
 
+#endif /* __nm_public_h__ */

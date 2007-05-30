@@ -18,14 +18,16 @@ struct nm_drv;
 struct nm_pkt_wrap;
 struct nm_trk;
 struct nm_trk_rq;
+struct nm_driver_query_param;
 
 /** Driver commands. */
 struct nm_drv_ops {
 
         /** Query and register resources for a driver.
          */
-        int (*query)		(struct nm_drv 		*p_drv);
-	/* TODO: add a parameter to choose which resource */
+        int (*query)		(struct nm_drv 		*p_drv,
+				 struct nm_driver_query_param *params,
+				 int nparam);
 
         /** Initialize the driver using previously registered resources.
          */

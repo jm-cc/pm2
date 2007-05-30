@@ -56,7 +56,9 @@ struct nm_disk_pkt_wrap {
 
 static
 int
-nm_disk_query			(struct nm_drv *p_drv) {
+nm_disk_query			(struct nm_drv *p_drv,
+				 struct nm_driver_query_param *params,
+				 int nparam) {
 	struct nm_disk_drv	*p_disk_drv	= NULL;
 	int err;
 

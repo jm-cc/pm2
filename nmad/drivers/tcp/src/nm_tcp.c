@@ -185,7 +185,9 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
 
 static
 int
-nm_tcp_query		(struct nm_drv *p_drv) {
+nm_tcp_query		(struct nm_drv *p_drv,
+			 struct nm_driver_query_param *params,
+			 int nparam) {
 	struct nm_tcp_drv	*p_tcp_drv	= NULL;
 	int			 err;
 

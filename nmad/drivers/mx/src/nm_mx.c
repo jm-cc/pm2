@@ -24,16 +24,18 @@
 #include <tbx.h>
 
 #include "nm_mx_private.h"
+#include "nm_public.h"
 
 /** Initial number of packet wrappers */
 #define INITIAL_PW_NUM		16
+
+/** MX packet wrapper allocator */
+p_tbx_memory_t mx_pw_mem;
 
 /** MX specific driver data */
 struct nm_mx_drv {
 	/** Board number */
 	uint32_t board_number;
-	/** MX packet wrapper allocator */
-	p_tbx_memory_t mx_pw_mem;
 	/** MX endpoint */
 	mx_endpoint_t ep;
 	/** Endpoint id */
@@ -167,12 +169,44 @@ nm_mx_check_return(char *msg, mx_return_t return_code) {
 	}
 }
 
+/** Maintain a usage counter for each board to distribute the workload */
+static int *board_use_count = NULL;
+static uint32_t boards;
+
+static
+int
+nm_mx_init_boards(void)
+{
+        mx_return_t	mx_ret	= MX_SUCCESS;
+	int err;
+
+	/* find number of boards */
+	mx_ret = mx_get_info(NULL, MX_NIC_COUNT, NULL, 0, &boards, sizeof(boards));
+	nm_mx_check_return("mx_get_info", mx_ret);
+
+	/* allocate usage counters */
+	board_use_count = TBX_CALLOC(boards, sizeof(*board_use_count));
+	if (!board_use_count) {
+		err = -NM_ENOMEM;
+		goto out;
+	}
+
+        err = NM_ESUCCESS;
+
+ out:
+        return err;	
+}
+
 /** Query MX resources */
 static
 int
-nm_mx_query		(struct nm_drv *p_drv) {
+nm_mx_query		(struct nm_drv *p_drv,
+			 struct nm_driver_query_param *params,
+			 int nparam) {
         struct nm_mx_drv	*p_mx_drv	= NULL;
         mx_return_t	mx_ret	= MX_SUCCESS;
+	uint32_t board_number;
+	int i;
 	int err;
 
 	/* private data                                                 */
@@ -188,9 +222,49 @@ nm_mx_query		(struct nm_drv *p_drv) {
 	/* init MX */
         mx_set_error_handler(MX_ERRORS_RETURN);
         mx_ret	= mx_init();
-        nm_mx_check_return("mx_init", mx_ret);
+	if (mx_ret != MX_ALREADY_INITIALIZED)
+		/* special return code only used by mx_init() */
+		nm_mx_check_return("mx_init", mx_ret);
 
-	p_mx_drv->board_number = 0;
+	if (!board_use_count) {
+		err = nm_mx_init_boards();
+		if (err < 0)
+			goto out;
+	}
+
+	board_number = -1;
+	for(i=0; i<nparam; i++) {
+		switch (params[i].key) {
+		case NM_DRIVER_QUERY_BY_INDEX:
+			board_number = params[i].value.index;
+			break;
+		case NM_DRIVER_QUERY_BY_NOTHING:
+			break;
+		default:
+			err = -NM_EINVAL;
+			goto out;
+		}
+	}
+
+	if (board_number == -1) {
+		/* find the least used board */
+		int min_count = INT_MAX;
+		int min_index = -1;
+		for(i=0; i<boards; i++) {
+			if (board_use_count[i] < min_count) {
+				min_index = i;
+				min_count = board_use_count[i];
+			}
+		}
+		board_number = min_index;
+
+	} else if (board_number >= boards) {
+		/* if a was has been chosen before, check the number */
+		err = -NM_EINVAL;
+		goto out;
+	}
+
+	p_mx_drv->board_number = board_number;
 
         /* driver capabilities encoding					*/
         p_drv->cap.has_trk_rq_dgram			= 1;
@@ -218,7 +292,7 @@ nm_mx_init		(struct nm_drv *p_drv) {
 	uint32_t                 ep_params_count = 0;
         int err;
 
-        tbx_malloc_init(&(p_mx_drv->mx_pw_mem),   sizeof(struct nm_mx_pkt_wrap),
+        tbx_malloc_init(&mx_pw_mem,   sizeof(struct nm_mx_pkt_wrap),
                         INITIAL_PW_NUM,   "nmad/mx/pw");
 
         mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
@@ -247,6 +321,9 @@ nm_mx_init		(struct nm_drv *p_drv) {
 				  ep_params, ep_params_count,
 				  &ep);
 	nm_mx_check_return("mx_open_endpoint", mx_ret);
+
+	/* FIXME: not thread safe, should be incremented in query, maybe one day... */
+	board_use_count[p_mx_drv->board_number]++; 
 
 	mx_ret = mx_get_endpoint_addr(ep, &ep_addr);
 	nm_mx_check_return("mx_get_endpoint_addr", mx_ret);
@@ -277,10 +354,13 @@ nm_mx_exit		(struct nm_drv *p_drv) {
 
 	mx_ret	= mx_close_endpoint(p_mx_drv->ep);
 	nm_mx_check_return("mx_close_endpoint", mx_ret);
+
+	board_use_count[p_mx_drv->board_number]--;
+
 	mx_ret	= mx_finalize();
 	nm_mx_check_return("mx_finalize", mx_ret);
 
-        tbx_malloc_clean(p_mx_drv->mx_pw_mem);
+	tbx_malloc_clean(mx_pw_mem);
 
         TBX_FREE(p_mx_drv);
         p_drv->priv = NULL;
@@ -659,7 +739,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
         p_mx_gate	= p_pw->gate_priv;
         p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
 
-        p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
+	p_mx_pw	= tbx_malloc(mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
 #ifdef PROFILE
         p_mx_pw->send_bool = 1;
@@ -735,7 +815,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 match_mask	= NM_MX_ADMIN_MATCH_MASK;
         }
 
-        p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
+	p_mx_pw	= tbx_malloc(mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
 #ifdef PROFILE
         p_mx_pw->send_bool = 0;
@@ -804,7 +884,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
                         + p_mx_trk->gate_map[status.match_info];
         }
 
-        tbx_free(p_mx_drv->mx_pw_mem, p_mx_pw);
+	tbx_free(mx_pw_mem, p_mx_pw);
 
         if (tbx_unlikely(status.code != MX_SUCCESS)) {
                 switch (status.code) {

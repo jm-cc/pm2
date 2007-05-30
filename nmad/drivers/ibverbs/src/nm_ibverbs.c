@@ -29,6 +29,7 @@
 #include <arpa/inet.h>
 
 #include <nm_protected.h>
+#include <nm_public.h>
 
 #include <infiniband/verbs.h>
 
@@ -429,9 +430,14 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 /* ** init & connection ************************************ */
 
 
-static int nm_ibverbs_query(struct nm_drv*p_drv)
+static int nm_ibverbs_query(struct nm_drv*p_drv,
+			    struct nm_driver_query_param *params,
+			    int nparam)
 {
 	int err;
+	int dev_amount;
+	int dev_number;
+	int i;
 
 	/* check parameters consitency */
 	assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
@@ -446,13 +452,31 @@ static int nm_ibverbs_query(struct nm_drv*p_drv)
         p_drv->priv = p_ibverbs_drv;
 
 	/* find IB device */
-	struct ibv_device*const*dev_list = ibv_get_device_list(NULL);
+	struct ibv_device*const*dev_list = ibv_get_device_list(&dev_amount);
 	if(!dev_list) {
 		fprintf(stderr, "Infiniband: no device found.\n");
 		err = -NM_ENOTFOUND;
 		goto out;
 	}
-	p_ibverbs_drv->ib_dev = dev_list[0];
+
+	dev_number = 0;
+	for(i=0; i<nparam; i++) {
+		switch (params[i].key) {
+		case NM_DRIVER_QUERY_BY_INDEX:
+			dev_number = params[i].value.index;
+			break;
+		case NM_DRIVER_QUERY_BY_NOTHING:
+			break;
+		default:
+			err = -NM_EINVAL;
+			goto out;
+		}
+	}
+	if (dev_number >= dev_amount) {
+		err = -NM_EINVAL;
+		goto out;
+	}
+	p_ibverbs_drv->ib_dev = dev_list[dev_number];
 
 	/* open IB context */
 	p_ibverbs_drv->context = ibv_open_device(p_ibverbs_drv->ib_dev);

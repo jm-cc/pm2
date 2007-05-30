@@ -293,7 +293,9 @@ nm_core_driver_load(struct nm_core	 *p_core,
  */
 int
 nm_core_driver_query(struct nm_core	 *p_core,
-		     uint8_t id) {
+		     uint8_t id,
+		     struct nm_driver_query_param *params,
+		     int nparam) {
         struct nm_drv	*p_drv		= NULL;
         int err;
 
@@ -301,11 +303,11 @@ nm_core_driver_query(struct nm_core	 *p_core,
         p_drv	= p_core->driver_array + id;
 
 	if (!p_drv->ops.query) {
-		err = NM_EINVAL;
+		err = -NM_EINVAL;
                 goto out;
         }
 
-        err = p_drv->ops.query(p_drv);
+        err = p_drv->ops.query(p_drv, params, nparam);
        	if (err != NM_ESUCCESS) {
                 NM_DISPF("drv.query returned %d", err);
        	        goto out;
@@ -338,7 +340,7 @@ nm_core_driver_init(struct nm_core	 *p_core,
         p_drv	= p_core->driver_array + id;
 
 	if (!p_drv->ops.init) {
-		err = NM_EINVAL;
+		err = -NM_EINVAL;
                 goto out;
         }
 
@@ -410,7 +412,7 @@ nm_core_driver_load_init(struct nm_core *p_core,
 		return err;
 	}
 
-	err = nm_core_driver_query(p_core, id);
+	err = nm_core_driver_query(p_core, id, NULL, 0);
 	if (err != NM_ESUCCESS) {
 		NM_DISPF("nm_core_driver_query returned %d", err);
 		return err;
@@ -449,7 +451,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 		
 		p_id[i] = id;
 		
-		err = nm_core_driver_query(p_core, p_id[i]);
+		err = nm_core_driver_query(p_core, p_id[i], NULL, 0);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_query returned %d", err);
 			return err;
@@ -476,7 +478,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   struct nm_sched    *p_sched  = NULL;
   struct nm_gate     *p_gate   = NULL;
   struct nm_gate_drv *p_gdrv	= NULL;
-  int i, j, k, err;
+  int i, j, k, err = NM_ESUCCESS;
 
   p_sched = p_core->p_sched;
   for(i=0 ; i<p_core->nb_gates ; i++) {

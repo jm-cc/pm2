@@ -133,7 +133,9 @@ nm_qsnet_poll_recv_iov    	(struct nm_pkt_wrap *p_pw);
  */
 static
 int
-nm_qsnet_query		(struct nm_drv *p_drv) {
+nm_qsnet_query		(struct nm_drv *p_drv,
+			 struct nm_driver_query_param *params,
+			 int nparam) {
 	struct nm_qsnet_drv	*p_qsnet_drv	= NULL;
 	int err;
 

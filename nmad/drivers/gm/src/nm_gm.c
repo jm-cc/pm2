@@ -332,7 +332,9 @@ nm_gm_extract_info(char			 *trk_url,
 
 static
 int
-nm_gm_query			(struct nm_drv *p_drv) {
+nm_gm_query			(struct nm_drv *p_drv,
+				 struct nm_driver_query_param *params,
+				 int nparam) {
 	struct nm_gm_drv	*p_gm_drv	= NULL;
 	int err;
 

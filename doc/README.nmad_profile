@@ -38,3 +38,9 @@ http://www.isi.edu/nsnam/ns/ns-build.html)
 to change the parameters for NS/NAM. -d fixes the delay, -r the rate
 and -t can also be used to set the time divisor.
 
+% nmad-fut2nam.pl -p
+
+compresses the time to avoid long blanks in between communication steps
+
+
+

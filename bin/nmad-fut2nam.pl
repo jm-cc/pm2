@@ -3,12 +3,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,9 +27,17 @@ BEGIN {
     our $link_rate	= 10000;
     our $link_delay	= 0.002;
     our $time_divisor	= Math::BigFloat->new('100000000');
+    our $pseudo_time	= 0;
+    our $pseudo_time_counter	= 0;
 
     my %opts;
-    my $ret	= getopts('d:r:t:', \%opts);	# -d <DELAY> -r <RATE> -t <TIME_DIVISOR>
+    my $ret	= getopts('pd:r:t:', \%opts);	# -d <DELAY> -r <RATE> -t <TIME_DIVISOR>
+
+    if (exists $opts{'p'}) {
+        $pseudo_time	= $opts{'p'};
+        $link_rate	= 1000000;
+        $link_delay	= 0.002;
+    }
 
     if (exists $opts{'d'}) {
         $link_delay	= $opts{'d'};
@@ -89,6 +97,8 @@ BEGIN {
 our $link_rate;
 our $link_delay;
 our $time_divisor;
+our $pseudo_time;
+our $pseudo_time_counter;
 
 our $FUT_NMAD_CODE;
 
@@ -250,9 +260,18 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
 
     #print "$config_rank -> $remote_rank, drv id = $drv_id ($drv_name), trk id = $trk_id, length = $length";
 
-    print "+ -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
-    print "- -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
-    print "h -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
+    if ($pseudo_time) {
+        print "+ -t ${pseudo_time_counter} -e 16 -s ${config_rank} -d ${remote_rank}\n";
+        print "- -t ${pseudo_time_counter} -e 16 -s ${config_rank} -d ${remote_rank}\n";
+        print "h -t ${pseudo_time_counter} -e 16 -s ${config_rank} -d ${remote_rank}\n";
+        $pseudo_time_counter += $link_delay ;
+        print "r -t ${pseudo_time_counter} -e 16 -s ${remote_rank} -d ${config_rank}\n";
+        $pseudo_time_counter += $link_delay ;
+    } else {
+        print "+ -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
+        print "- -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
+        print "h -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";
+    }
 } elsif ($ev_num == $FUT_NMAD_EVENT_RCV_END_CODE) {
     my $host	= $hosts{$host_num};
 
@@ -271,6 +290,8 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
 
     #print "$config_rank <- $remote_rank, drv id = $drv_id ($drv_name), trk id = $trk_id, length = $length";
 
-    print "r -t ${time} -e ${length} -s ${remote_rank} -d ${config_rank}\n";
+    unless ($pseudo_time) {
+        print "r -t ${time} -e ${length} -s ${remote_rank} -d ${config_rank}\n";
+    }
 }
 #print "\n";

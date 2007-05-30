@@ -1,0 +1,470 @@
+#!/usr/bin/perl
+###############
+
+use warnings;
+use strict;
+
+# -- ---------- -- #
+package TraceFile;
+
+use Math::BigInt;
+use Fcntl 'SEEK_CUR','SEEK_SET','SEEK_END';
+my %arch_code;	# architecture code to string mapping
+my %arch_word;	# architecture code to word size mapping
+my %block_code; # block code to string mapping
+
+sub read_block_header($) {
+    my $self	= shift;
+    my $bh	= {};
+    my $buf;
+
+    my $fh	= ${$self}{'file_handle'};
+
+    ${$bh}{'start'}	= sysseek($fh, 0, SEEK_CUR)
+        or die "sysseek: $!";
+
+    sysread $fh, $buf, 16
+        or die "sysread block header: $!";
+    my @unpack_h = unpack "${$self}{'swapl'}4", $buf;
+
+    if (${$self}{'is_little_endian'}) {
+        ${$bh}{'size'} = Math::BigInt->new($unpack_h[1])->blsft(32)->badd($unpack_h[0]);
+    } else {
+        ${$bh}{'size'} = Math::BigInt->new($unpack_h[0])->blsft(32)->badd($unpack_h[1]);
+    }
+
+    ${$bh}{'type'}	= $unpack_h[2];
+    ${$bh}{'type_name'}	= $block_code{$unpack_h[2]};
+    ${$bh}{'subtype'}	= $unpack_h[3];
+
+    return $bh;
+}
+
+sub disp_block_header($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    print "\n[", ${$bh}{'type_name'},"]\n";
+    print "start:\t ", ${$bh}{'start'}, "\n";
+    print "size:\t ", ${$bh}{'size'}, "\n";
+    print "subtype: ", ${$bh}{'subtype'}, "\n";
+}
+
+sub seek_next_block($$) {
+    my $self	= shift;
+    my $bh	= shift;
+
+    my $pos;
+    my $fh	= ${$self}{'file_handle'};
+
+    if (${$bh}{'size'}) {
+        # print "seeking to ", ${$bh}{'start'}+${$bh}{'size'}, "\n";
+
+        $pos	= sysseek($fh, ${$bh}{'start'}+${$bh}{'size'}, SEEK_SET)
+            or die "sysseek: $!";
+    } else {
+        $pos	= sysseek($fh, 0, SEEK_END)
+            or die "sysseek: $!";
+    }
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+sub seek_block_header($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    my $fh	= ${$self}{'file_handle'};
+
+    # print "seeking to ${$bh}{'type_name'} header at", ${$bh}{'start'}, "\n";
+    my $pos	= sysseek($fh, ${$bh}{'start'}, SEEK_SET)
+        or die "sysseek: $!";
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+sub seek_block_data($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    my $fh	= ${$self}{'file_handle'};
+
+    # print "seeking to block ${$bh}{'type_name'} data at ", ${$bh}{'start'}+16, "\n";
+    my $pos	= sysseek($fh, ${$bh}{'start'}+16, SEEK_SET)
+        or die "sysseek: $!";
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+sub init_read_event($$$) {
+    my $self		= shift;
+    my $bh_hash		= ${$self}{'block_header_hash'};
+    my $bh;
+
+    if (${$self}{'arch_word'} == 64) {
+        $bh	= ${$bh_hash}{'user raw 64'};
+    } else {
+        $bh	= ${$bh_hash}{'user raw 32'};
+        ${$self}{'read_user_event'}	= \&read_user32_event;
+    }
+
+    ${$self}{'ev_bh'}		= $bh;
+    ${$self}{'ev_start'}	= seek_block_data($self, $bh);
+    ${$self}{'pos'}		= ${$self}{'ev_start'};
+    ${$self}{'ev_end'}		= ${$self}{'pos'} + ${$bh}{'size'} - 16;
+}
+
+sub more_events($$) {
+    my $self		= shift;
+
+    # print "${$self}{'pos'} / ${$self}{'ev_end'}\n";
+    return ${$self}{'pos'} < ${$self}{'ev_end'};
+}
+
+sub disp_event($$;$) {
+    my $self		= shift;
+    my $short_fmt	= shift;
+    my $event;
+
+    if (@_) {
+        $event	= shift;
+    } else {
+        $event	= ${$self}{'ev_event'};
+    }
+
+    my $nb_params	= ${$event}{'nb_params'};
+    my $a	= ${$event}{'param_array'};
+
+    if ($short_fmt) {
+        print "${$event}{'time'},${$event}{'tid'},${$event}{'num'},$nb_params";
+        for my $i (0..$nb_params-1) {
+            print ",${$a}[$i]";
+        }
+    } else {
+        print "time:\t\t ${$event}{'time'}\n";
+        print "thread id:\t ${$event}{'tid'}\n";
+#    printf "event code:\t %x\n", ${$event}{'code'};
+        printf "event num:\t %x\n", ${$event}{'num'};
+
+#    print "nb params:\t ${nb_params}\n";
+
+        for my $i (0..$nb_params-1) {
+            printf "param ${i}:\t %x\n", ${$a}[$i];
+        }
+    }
+}
+
+sub read_user32_event($$) {
+    my $self	= shift;
+    my $fh	= ${$self}{'file_handle'};
+    my $buf;
+
+    sysread $fh, $buf, 16
+        or die "sysread event: $!";
+    ${$self}{'pos'}	+= 16;
+    my @unpack_buf = unpack "${$self}{'swapl'}4", $buf;
+
+    my $time;
+    if (${$self}{'is_little_endian'}) {
+        $time = Math::BigInt->new($unpack_buf[1])->blsft(32)->badd($unpack_buf[0]);
+    } else {
+        $time = Math::BigInt->new($unpack_buf[0])->blsft(32)->badd($unpack_buf[1]);
+    }
+
+    my $tid	= $unpack_buf[2];
+    my $code	= $unpack_buf[3];
+    my $nb_params	= ($code & 0xff) - 1;
+    my $num	= $code >> 8;
+
+    my $a	= [];
+    my $i;
+    for $i (0..$nb_params-1) {
+        my $param;
+
+        sysread $fh, $buf, 4
+            or die "read param: $!";
+        ${$self}{'pos'}	+= 4;
+        ($param)	= unpack "${$self}{swapl}", $buf;
+        ${$a}[$i]	= $param;
+    }
+
+    my $event	= {};
+    if (exists (${$self}{'time_offset'})) {
+    } else {
+        ${$self}{'time_offset'}	= $time->copy();
+    }
+
+    ${$event}{'time_stamp'}	= $time->copy();
+    ${$event}{'time'}		= $time->bsub(${$self}{'time_offset'});
+    ${$event}{'tid'}		= $tid;
+    ${$event}{'code'}		= $code;
+    ${$event}{'num'}		= $num;
+    ${$event}{'nb_params'}	= $nb_params;
+    ${$event}{'param_array'}	= $a;
+
+    ${$self}{'ev_event'}	= $event;
+    return $event;
+}
+
+sub read_user_event($) {
+    my $self	= shift;
+    return &{${$self}{'read_user_event'}}($self);
+}
+
+sub reset_time_offset($;$) {
+    my $self		= shift;
+    my $event;
+
+    if (@_) {
+        $event	= shift;
+    } else {
+        $event	= ${$self}{'ev_event'};
+    }
+
+    ${$self}{'time_offset'}	= (${$event}{'time_stamp'})->copy();
+    ${$event}{'time'}		= (${$event}{'time_stamp'})->copy()->bsub(${$self}{'time_offset'});
+}
+
+sub init($$) {
+    my $self	= {};
+    bless $self;
+
+    my $name	= shift;
+    open my $fh, "<$name"
+        or die "open <$name: $!";
+
+    my $short_fmt	= shift;
+    my $h	= {};
+    my $bh;
+
+    ${$self}{'file_handle'}		= $fh;		# File handle
+    ${$self}{'file_name'}		= $name;    	# File name
+
+    # Compute file size
+    my $file_size	= sysseek $fh, 0, SEEK_END
+        or die "sysseek: $!";
+    sysseek $fh, 0, SEEK_SET;
+    ${$self}{'file_size'}		= $file_size;	# File size
+
+    # Read architecture code
+    my $buf;
+    sysread $fh, $buf, 4
+        or die "read arch code: $!";
+    my ($arch) = unpack "N1", $buf;
+    ${$self}{'arch_code'}	= $arch_code{${arch}};
+    ${$self}{'arch_word'}	= $arch_word{${arch}};
+
+    print "arch ${arch}: ${$self}{'arch_code'}, ${$self}{'arch_word'} bits\n"
+        unless $short_fmt;
+
+    # Endianness
+    my $is_le	= ($arch < 0x10000);
+    if ($is_le) {
+        print "little endian\n"
+            unless $short_fmt;
+        ${$self}{'swaps'}	= 'v';
+        ${$self}{'swapl'}	= 'V';
+    } else {
+        print "big endian\n"
+            unless $short_fmt;
+        ${$self}{'swaps'}	= 'n';
+        ${$self}{'swapl'}	= 'N';
+    }
+    ${$self}{'is_little_endian'}	= $is_le;	# Endianness
+
+    # Read block headers
+    my $pos	= sysseek($fh, 0, SEEK_CUR)
+        or die "sysseek: $!";
+
+    while ($pos < $file_size){
+        $bh	= $self->read_block_header();
+        $self->disp_block_header($bh)
+            unless $short_fmt;
+        ${$h}{${$bh}{'type_name'}}	= $bh;
+
+        redo
+            if ${$bh}{'type_name'} eq 'infos' ;
+
+        $pos	= $self->seek_next_block($bh);
+    }
+
+    ${$self}{'file_pos'}		= $pos;		# File position
+    ${$self}{'block_header_hash'}	= $h;		# Hash of blocks
+
+    return $self;
+}
+
+# initialization of string hashes
+
+$arch_code{0}		= 'i386';
+$arch_code{1}		= 'ia64';
+$arch_code{2}		= 'x86_64';
+
+$arch_code{0x10000}	= 'PPC';
+$arch_code{0x20000}	= 'PPC64';
+
+$arch_word{0}		= 32;
+$arch_word{1}		= 64;
+$arch_word{2}		= 64;
+
+$arch_word{0x10000}	= 32;
+$arch_word{0x20000}	= 64;
+
+$block_code{0x1}	= 'infos';
+
+$block_code{0x10}	= 'time';
+$block_code{0x11}	= 'uname';
+$block_code{0x12}	= 'irqs';
+$block_code{0x13}	= 'addrs';
+$block_code{0x14}	= 'pids';
+
+$block_code{0x100}	= 'kernel raw 32';
+$block_code{0x101}	= 'kernel raw 64';
+
+$block_code{0x200}	= 'user raw 32';
+$block_code{0x201}	= 'user raw 64';
+
+# -- ---------- -- #
+package main;
+use Getopt::Std;
+
+my $filter	= 0x0;	# event selector filter
+my $mask	= 0x0;	# event selector mask
+my $short_fmt	= 0;	# bool, short display format
+my $base_event	= 0;
+
+my %opts;
+my $ret	= getopts('b:sf:m:', \%opts);	# -s -f <FILTER> -m <MASK>
+
+if (exists $opts{'s'}) {
+    $short_fmt	= 1;
+}
+
+if (exists $opts{'f'}) {
+    $filter	= $opts{'f'};
+    $filter	= hex($filter)
+        if ($filter =~ /^0x/);
+    $filter	= oct($filter)
+        if ($filter =~ /^0/);
+}
+
+if (exists $opts{'m'}) {
+    $mask	= $opts{'m'};
+    $mask	= hex($mask)
+        if ($mask =~ /^0x/);
+    $mask	= oct($mask)
+        if ($mask =~ /^0/);
+}
+
+if (exists $opts{'b'}) {
+    $base_event	= $opts{'b'};
+    $base_event	= hex($base_event)
+        if ($base_event =~ /^0x/);
+    $base_event	= oct($base_event)
+        if ($base_event =~ /^0/);    
+}
+
+my $file_num	= 0;
+my @file;	# Array of file objects
+ file_loop:
+    while (@ARGV) {
+        my $name	= shift;
+
+        print "\n Opening file ${name}\n"
+            unless $short_fmt;
+
+        my $file	= {};
+        my $file_object	= TraceFile::init($name, $short_fmt);
+        $file_object->init_read_event();
+      first_event: {
+          if ($file_object->more_events()) {
+              my $event	= $file_object->read_user_event();
+
+              redo first_event
+                  if ((${$event}{'num'} & $mask) != ($filter & $mask));
+
+              if ($base_event && (${$event}{'num'} == $base_event)) {
+                  $file_object->reset_time_offset();
+              } else {
+                  redo first_event;
+              }
+                  
+              ${$file}{'event'} = $event;
+          } else {
+              next file_loop;
+          }
+      }
+
+        ${$file}{'num'}		= $file_num++;
+        ${$file}{'name'}	= $name;
+        ${$file}{'object'}	= $file_object;
+
+        push @file, $file;
+        print "\n"
+            unless $short_fmt;
+    }
+print "\n"
+    unless $short_fmt;
+
+#my $ev_count	 = 0;
+#foreach (@file) {
+#    while ($_->more_events()) {
+#        print "\n event ${ev_count}\n";
+#        $ev_count++;
+#        $_->read_user_event();
+#        $_->disp_event();
+#    }
+#}
+#
+#print "\n";
+
+my $ev_count	 = 0;
+while (@file) {
+    my $min		= 0;
+    my $min_time	= ${${$file[$min]}{'event'}}{'time'}->copy();
+
+    for (my $i = 1; $i <= $#file; $i++) {
+        my $event_time	= ${${$file[$i]}{'event'}}{'time'};
+        if ($event_time->bcmp($min_time) == -1) {
+            $min	= $i;
+            $min_time	= $event_time->copy();
+        }
+    }
+
+    my $min_file	= $file[$min];
+    my $min_file_object	= ${$min_file}{'object'};
+
+    if ($short_fmt) {
+        print "${ev_count},${$min_file}{'num'},";
+        $min_file_object->disp_event($short_fmt);
+        print "\n";
+    } else {
+        print "\n event ${ev_count}\n";
+        print "${$min_file}{'name'}\n";
+        $min_file_object->disp_event($short_fmt);
+    }
+
+    $ev_count++;
+
+  next_event:
+    {
+        if ($min_file_object->more_events()) {
+            my $event	= $min_file_object->read_user_event();
+
+            redo next_event
+                if ((${$event}{'num'} & $mask) != ($filter & $mask));
+
+            ${$min_file}{'event'}	= $event;
+        } else {
+            splice (@file, $min, 1);
+        }
+    }
+
+}
+
+print "\n"
+    unless $short_fmt;
+

@@ -69,7 +69,9 @@ struct nm_mx_gate {
 struct nm_mx_pkt_wrap {
 	mx_endpoint_t *p_ep;
 	mx_request_t rq;
+#ifdef PROFILE
         int send_bool;
+#endif
 };
 
 /** MX specific first administrative packet data */
@@ -659,7 +661,9 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
+#ifdef PROFILE
         p_mx_pw->send_bool = 1;
+#endif
         p_mx_pw->p_ep	= &(p_mx_drv->ep);
 
         {
@@ -733,7 +737,9 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_mx_pw	= tbx_malloc(p_mx_drv->mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
+#ifdef PROFILE
         p_mx_pw->send_bool = 0;
+#endif
 
         p_mx_pw->p_ep		= &(p_mx_drv->ep);
 
@@ -849,9 +855,11 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         err = NM_ESUCCESS;
 
 out:
+#ifdef PROFILE
         if (err == NM_ESUCCESS && !p_mx_pw->send_bool) {
                 NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
         }
+#endif
 
         return err;
 }

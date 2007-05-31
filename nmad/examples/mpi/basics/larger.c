@@ -43,6 +43,8 @@ void test_larger(int rank, int size) {
     x[size-2] = 7;
     MPI_Send(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
     MPI_Send(x, size, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);
+
+    free(x);
   }
   else {
     int *x;

@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
 
   printf("[%d] Current directory %s\n", rank, cwd);
 
+  free(cwd);
   MPI_Finalize();
   exit(0);
 }

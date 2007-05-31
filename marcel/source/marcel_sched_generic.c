@@ -407,9 +407,7 @@ void marcel_gensched_shutdown(void)
 	//__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
 #endif
 #endif
-#ifdef MA__TIMER
 	marcel_sig_exit();
-#endif
 
 	LOG_OUT();
 }

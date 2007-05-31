@@ -171,6 +171,7 @@ nm_mx_check_return(char *msg, mx_return_t return_code) {
 
 /** Maintain a usage counter for each board to distribute the workload */
 static int *board_use_count = NULL;
+static int total_use_count;
 static uint32_t boards;
 
 static
@@ -184,6 +185,9 @@ nm_mx_init_boards(void)
 	mx_ret = mx_get_info(NULL, MX_NIC_COUNT, NULL, 0, &boards, sizeof(boards));
 	nm_mx_check_return("mx_get_info", mx_ret);
 
+	/* init total usage counters */
+	total_use_count = 0;
+
 	/* allocate usage counters */
 	board_use_count = TBX_CALLOC(boards, sizeof(*board_use_count));
 	if (!board_use_count) {
@@ -194,7 +198,7 @@ nm_mx_init_boards(void)
         err = NM_ESUCCESS;
 
  out:
-        return err;	
+        return err;
 }
 
 /** Query MX resources */
@@ -324,6 +328,7 @@ nm_mx_init		(struct nm_drv *p_drv) {
 
 	/* FIXME: not thread safe, should be incremented in query, maybe one day... */
 	board_use_count[p_mx_drv->board_number]++; 
+	total_use_count++;
 
 	mx_ret = mx_get_endpoint_addr(ep, &ep_addr);
 	nm_mx_check_return("mx_get_endpoint_addr", mx_ret);
@@ -356,11 +361,14 @@ nm_mx_exit		(struct nm_drv *p_drv) {
 	nm_mx_check_return("mx_close_endpoint", mx_ret);
 
 	board_use_count[p_mx_drv->board_number]--;
+	total_use_count--;
 
-	mx_ret	= mx_finalize();
-	nm_mx_check_return("mx_finalize", mx_ret);
+	if (!total_use_count) {
+	  mx_ret	= mx_finalize();
+	  nm_mx_check_return("mx_finalize", mx_ret);
 
-	tbx_malloc_clean(mx_pw_mem);
+	  tbx_malloc_clean(mx_pw_mem);
+	}
 
         TBX_FREE(p_mx_drv);
         p_drv->priv = NULL;

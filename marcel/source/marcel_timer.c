@@ -338,7 +338,7 @@ static void timer_interrupt(int sig)
 	ma_irq_exit();
 	ma_preempt_check_resched(0);
 #else
-	ma_preempt_check_resched(1);
+	ma_preempt_check_resched(MA_HARDIRQ_OFFSET );
 	ma_irq_exit();
 #endif
 

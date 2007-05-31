@@ -1223,7 +1223,7 @@ void ma_preempt_schedule(int irq)
 {
         marcel_task_t *ti = MARCEL_SELF;
 
-	MA_BUG_ON(ti->preempt_count != irq*MA_HARDIRQ_OFFSET);
+	MA_BUG_ON(ti->preempt_count != irq);
 
 need_resched:
 
@@ -1241,7 +1241,7 @@ need_resched:
 
 	MA_BUG_ON(ti->preempt_count != MA_PREEMPT_ACTIVE);
 
-        ti->preempt_count = irq*MA_HARDIRQ_OFFSET;
+        ti->preempt_count = irq;
 
         /* we could miss a preemption opportunity between schedule and now */
         ma_barrier();

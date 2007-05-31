@@ -87,7 +87,7 @@ do { \
 
 #define ma_preempt_check_resched(irq) \
 do { \
-        if (ma_preempt_count()==irq*MA_HARDIRQ_OFFSET && ma_thread_preemptible() && tbx_unlikely(ma_need_resched())) \
+        if (ma_preempt_count()==irq && ma_thread_preemptible() && tbx_unlikely(ma_need_resched())) \
                 ma_preempt_schedule(irq); \
 } while (0)
 

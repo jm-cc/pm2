@@ -348,7 +348,7 @@ static void timer_interrupt(int sig)
 
 void marcel_sig_pause(void)
 {
-#if defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER)
+#if !defined(USE_VIRTUAL_TIMER)
 	sigsuspend(&sigeptset);
 #else
 	SCHED_YIELD();

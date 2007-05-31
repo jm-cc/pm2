@@ -334,7 +334,7 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-#ifdef MA_TIMER_NOMASK
+#ifdef MA_SIGNAL_NOMASK
 	ma_irq_exit();
 	ma_preempt_check_resched(0);
 #else
@@ -460,7 +460,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sa.sa_flags = 0;
 #endif
 
-#ifdef MA_TIMER_NOMASK
+#ifdef MA_SIGNAL_NOMASK
 #if defined(SA_NOMASK)
 	sa.sa_flags |= SA_NOMASK;
 #elif defined(SA_NODEFER)

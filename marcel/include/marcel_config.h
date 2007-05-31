@@ -98,6 +98,9 @@
 #endif
 #define MARCEL_DEFAULT_TIME_SLICE	MARCEL_MIN_TIME_SLICE
 
+/* Don't mask signals during signal handler (avoid two syscalls per timer preemption, but may lead to handler reentrancy) */
+#define MA_SIGNAL_NOMASK
+
 /* Timer time and signal */
 #include <signal.h>
 #ifdef MA__TIMER
@@ -105,8 +108,6 @@
 /* no way to distinguish between a signal from the kernel or from another LWP */
 #define MA_BOGUS_SIGINFO_CODE
 #endif
-/* Don't mask signals during timer handler (avoid two syscalls per timer preemption, but may lead to handler reentrancy) */
-#define MA_TIMER_NOMASK
 /*  Signal utilisé pour la premption automatique */
 #ifdef USE_VIRTUAL_TIMER
 #  define MARCEL_TIMER_SIGNAL       SIGVTALRM

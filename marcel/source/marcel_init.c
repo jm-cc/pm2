@@ -420,13 +420,9 @@ extern void ma_bubble_sched_init2(void);
 extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;
 #ifndef __MINGW32__
-#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_sig_init;
-#endif // MA__TIMER
 extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
-#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
-#endif
 #endif
 extern const __ma_init_info_t ma_init_info_timer_start;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
@@ -458,9 +454,7 @@ extern const __ma_init_info_t ma_init_info_marcel_upcall_call_UP_PREPARE;
 #endif // MA__ACTIVATION
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_postexit_call_ONLINE;
-#ifdef MA__TIMER
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_call_ONLINE;
-#endif
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_UP_PREPARE;
 extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 
@@ -543,9 +537,7 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_postexit_call_UP_PREPARE);
 			call_init_function(&ma_init_info_timer_start);
 #ifndef __MINGW32__
-#ifdef MA__TIMER
 			call_init_function(&ma_init_info_sig_init);
-#endif				// MA__TIMER
 #endif
 			call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
 			call_init_function(&ma_init_info_softirq_init);
@@ -559,9 +551,7 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_postexit_notifier_register);
 #ifndef __MINGW32__
 			call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
-#ifdef MA__TIMER
 			call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
-#endif
 #endif
 			call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);
 			call_init_function(&ma_init_info_marcel_ksoftirqd_notifier_register);
@@ -573,9 +563,7 @@ void marcel_init_section(int sec)
 #endif				// MA__ACTIVATION
 			call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
 			call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
-#ifdef MA__TIMER
 			call_init_function(&ma_init_info_marcel_sig_timer_call_ONLINE);
-#endif
 			call_init_function(&ma_init_info_marcel_ksoftirqd_call_UP_PREPARE);
 			call_init_function(&ma_init_info_marcel_ksoftirqd_call_ONLINE);
 		} else if (section == MA_INIT_START_LWPS) {

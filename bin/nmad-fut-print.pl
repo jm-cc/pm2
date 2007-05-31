@@ -23,12 +23,16 @@ use strict;
 # -- ---------- -- #
 package TraceFile;
 
-use Math::BigInt;
-use Fcntl 'SEEK_CUR','SEEK_SET','SEEK_END';
+## a class representing a trace file being parsed
+
+use Math::BigInt;	# 64bit time stamp processing on 32bit archs
+use Fcntl 'SEEK_CUR','SEEK_SET','SEEK_END';	# seek constants
+
 my %arch_code;	# architecture code to string mapping
 my %arch_word;	# architecture code to word size mapping
 my %block_code; # block code to string mapping
 
+# parse a block header
 sub read_block_header($) {
     my $self	= shift;
     my $bh	= {};
@@ -36,13 +40,18 @@ sub read_block_header($) {
 
     my $fh	= ${$self}{'file_handle'};
 
+    # save current pos in the file
     ${$bh}{'start'}	= sysseek($fh, 0, SEEK_CUR)
         or die "sysseek: $!";
 
+    # raw read the header
     sysread $fh, $buf, 16
         or die "sysread block header: $!";
+
+    # perform byte swapping if needed
     my @unpack_h = unpack "${$self}{'swapl'}4", $buf;
 
+    # parse header fields
     if (${$self}{'is_little_endian'}) {
         ${$bh}{'size'} = Math::BigInt->new($unpack_h[1])->blsft(32)->badd($unpack_h[0]);
     } else {
@@ -56,6 +65,7 @@ sub read_block_header($) {
     return $bh;
 }
 
+# pretty pring header fields
 sub disp_block_header($$) {
     my $self	= shift;
     my $bh	= shift;
@@ -65,6 +75,7 @@ sub disp_block_header($$) {
     print "subtype: ", ${$bh}{'subtype'}, "\n";
 }
 
+# skip to the beginning of next block
 sub seek_next_block($$) {
     my $self	= shift;
     my $bh	= shift;
@@ -87,6 +98,7 @@ sub seek_next_block($$) {
     return $pos;
 }
 
+# set file pos to the beginning of the current block header
 sub seek_block_header($$) {
     my $self	= shift;
     my $bh	= shift;
@@ -101,6 +113,7 @@ sub seek_block_header($$) {
     return $pos;
 }
 
+# set file pos to the beginning of the current block body
 sub seek_block_data($$) {
     my $self	= shift;
     my $bh	= shift;
@@ -115,6 +128,7 @@ sub seek_block_data($$) {
     return $pos;
 }
 
+# prepare to read a 'user raw' block
 sub init_read_event($$$) {
     my $self		= shift;
     my $bh_hash		= ${$self}{'block_header_hash'};
@@ -122,6 +136,7 @@ sub init_read_event($$$) {
 
     if (${$self}{'arch_word'} == 64) {
         $bh	= ${$bh_hash}{'user raw 64'};
+        die "unimplemented parsing routine for user raw 64 blocks\n";
     } else {
         $bh	= ${$bh_hash}{'user raw 32'};
         ${$self}{'read_user_event'}	= \&read_user32_event;
@@ -133,6 +148,7 @@ sub init_read_event($$$) {
     ${$self}{'ev_end'}		= ${$self}{'pos'} + ${$bh}{'size'} - 16;
 }
 
+# returns a bool indicating whether more events remain to be read or not
 sub more_events($$) {
     my $self		= shift;
 
@@ -140,6 +156,7 @@ sub more_events($$) {
     return ${$self}{'pos'} < ${$self}{'ev_end'};
 }
 
+# pretty print an event
 sub disp_event($$;$) {
     my $self		= shift;
     my $short_fmt	= shift;
@@ -173,6 +190,7 @@ sub disp_event($$;$) {
     }
 }
 
+# 32bit version of the event block parsing routine
 sub read_user32_event($$) {
     my $self	= shift;
     my $fh	= ${$self}{'file_handle'};
@@ -225,11 +243,13 @@ sub read_user32_event($$) {
     return $event;
 }
 
+# wrap calls to 32bit or 64bit event parsing routine
 sub read_user_event($) {
     my $self	= shift;
     return &{${$self}{'read_user_event'}}($self);
 }
 
+# set the time stamp offset to that of the current event (or the passed as arg)
 sub reset_time_offset($;$) {
     my $self		= shift;
     my $event;
@@ -244,6 +264,7 @@ sub reset_time_offset($;$) {
     ${$event}{'time'}		= (${$event}{'time_stamp'})->copy()->bsub(${$self}{'time_offset'});
 }
 
+# constructor of the trace file class
 sub init($$) {
     my $self	= {};
     bless $self;
@@ -350,8 +371,9 @@ use Getopt::Std;
 my $filter	= 0x0;	# event selector filter
 my $mask	= 0x0;	# event selector mask
 my $short_fmt	= 0;	# bool, short display format
-my $base_event	= 0;
+my $base_event	= 0;	# event used as the timestamp offset reference
 
+# read command line args
 my %opts;
 my $ret	= getopts('b:sf:m:', \%opts);	# -s -f <FILTER> -m <MASK>
 
@@ -383,6 +405,7 @@ if (exists $opts{'b'}) {
         if ($base_event =~ /^0/);    
 }
 
+# build the tracefile objects and prepare each object for event reading
 my $file_num	= 0;
 my @file;	# Array of file objects
  file_loop:
@@ -439,8 +462,11 @@ print "\n"
 #
 #print "\n";
 
+# read and interclass the events of each tracefile
 my $ev_count	 = 0;
 while (@file) {
+
+    # find next event in order
     my $min		= 0;
     my $min_time	= ${${$file[$min]}{'event'}}{'time'}->copy();
 
@@ -452,6 +478,7 @@ while (@file) {
         }
     }
 
+    # event found, display it
     my $min_file	= $file[$min];
     my $min_file_object	= ${$min_file}{'object'};
 
@@ -467,6 +494,7 @@ while (@file) {
 
     $ev_count++;
 
+    # make the corresponding tracefile object progress
   next_event:
     {
         if ($min_file_object->more_events()) {

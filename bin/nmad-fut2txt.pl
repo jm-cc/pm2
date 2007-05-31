@@ -17,9 +17,11 @@
 
 # parse and display a merged Nmad/FUT trace (text version)
 
+# -n perl flag adds an implicit line-by-line reading loop
+
 use warnings;
 use strict;
-use Math::BigInt;
+use Math::BigInt;	# 64bit time stamp processing on 32bit archs
 
 BEGIN {
 
@@ -85,9 +87,11 @@ our %fut_code_mapping;
 
 our %hosts;
 
-chomp;
+chomp;	# chomp the trailing '\n' from the current line
 
-my @params	= split ',';
+my @params	= split ',';	# split the line into fields
+
+# read the fields
 my $num		= shift @params;
 my $host_num	= shift @params;
 my $ev_time	= Math::BigInt->new(shift @params);
@@ -95,9 +99,11 @@ my $ev_tid	= shift @params;
 my $ev_num	= shift @params;
 my $ev_nb_params	= shift @params;
 
+# skip unwanted events
 next
     unless (($ev_num & 0xff00) == 0xfe00);
 
+# process and display events
 printf "$num: \t$host_num - [%16s] %x = %16s \t", $ev_time, $ev_num, $fut_code_mapping{$ev_num};
 
 if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
@@ -237,4 +243,5 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
 
     print "$config_rank <- $remote_rank, drv id = $drv_id ($drv_name), trk id = $trk_id, length = $length";
 }
+
 print "\n";

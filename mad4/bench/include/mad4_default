@@ -64,10 +64,10 @@ initialize_bench()
          --ext=\"\" \
          --modules=\"init mad4 ntbx tbx\" \
          --init=\"opt\" \
-         --mad4=\"opt sched_opt strat_default mad3_emu ${dev}\" \
+         --mad4=\"opt sched_opt strat_default mad3_emu mpi_emu ${dev}\" \
          --ntbx=\"opt\" \
          --tbx=\"opt\" \
-         --common=\"opt\" \
+         --common=\"opt fortran_target_none\" \
          --all=\"build_static\"
 
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"

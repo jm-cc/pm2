@@ -2237,11 +2237,13 @@ int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group gr
   mpir_communicator2 = mpir_get_communicator(group2);
   for(i=0 ; i<n ; i++) {
     ranks2[i] = MPI_UNDEFINED;
-    x = mpir_communicator->global_ranks[ranks1[i]];
-    for(j=0 ; j<mpir_communicator2->size ; j++) {
-      if (mpir_communicator2->global_ranks[j] == x) {
-        ranks2[i] = j;
-        break;
+    if (ranks1[i] < mpir_communicator->size) {
+      x = mpir_communicator->global_ranks[ranks1[i]];
+      for(j=0 ; j<mpir_communicator2->size ; j++) {
+        if (mpir_communicator2->global_ranks[j] == x) {
+          ranks2[i] = j;
+          break;
+        }
       }
     }
   }

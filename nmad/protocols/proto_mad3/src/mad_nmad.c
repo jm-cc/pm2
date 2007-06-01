@@ -59,11 +59,8 @@
 #  include <nm_ibverbs_public.h>
 #endif
 
-#if defined CONFIG_TCP
-#  include <nm_tcp_public.h>
-#else
-#  include <nm_tcpdg_public.h>
-#endif
+#include <nm_tcpdg_public.h>
+
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_basic_public.h>
 #elif defined CONFIG_SCHED_OPT
@@ -370,19 +367,12 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #endif
         }
 
-#ifdef CONFIG_TCP
-        if (tbx_streq(d->device_name, "tcp")) {
-                err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
-                goto found;
-        }
-#else
-        /* load TCPdg by default, unless TCP(regular) is explicitely requested
+        /* load TCPdg by default
          */
         if (tbx_streq(d->device_name, "tcp")) {
                 err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
                 goto found;
         }
-#endif
 
 #ifdef CONFIG_GM
         if (tbx_streq(d->device_name, "gm")) {

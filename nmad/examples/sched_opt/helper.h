@@ -120,8 +120,6 @@ const static nm_driver_load p_driver_load = &nm_mx_load;
 const static nm_driver_load p_driver_load = &nm_gm_load;
 #elif defined CONFIG_QSNET
 const static nm_driver_load p_driver_load = &nm_qsnet_load;
-#elif defined CONFIG_TCP
-const static nm_driver_load p_driver_load = &nm_tcp_load;
 #else
 const static nm_driver_load p_driver_load = &nm_tcpdg_load;
 #endif

@@ -101,14 +101,12 @@ int
 nm_core_gate_accept	(struct nm_core		 *p_core,
                          uint8_t		  gate_id,
                          uint8_t		  drv_id,
-                         char			 *host_url,
                          char			 *drv_trk_url);
 
 int
 nm_core_gate_connect	(struct nm_core		 *p_core,
                          uint8_t		  gate_id,
                          uint8_t		  drv_id,
-                         char			 *host_url,
                          char			 *drv_trk_url);
 
 int

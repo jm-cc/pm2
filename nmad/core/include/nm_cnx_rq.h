@@ -21,11 +21,6 @@ struct nm_cnx_rq {
         struct	nm_drv		*p_drv;
         struct	nm_trk		*p_trk;
 
-        /** Host info for the queried driver.
-         */
-        char			*remote_host_url;
-
-
         /** Remote driver url.
          */
         char			*remote_drv_url;

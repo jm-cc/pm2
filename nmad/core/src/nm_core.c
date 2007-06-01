@@ -495,7 +495,6 @@ nm_core_driver_exit(struct nm_core  *p_core) {
                 .p_gate			= p_gate,
                 .p_drv			= p_drv,
                 .p_trk			= p_trk,
-                .remote_host_url	= NULL,
                 .remote_drv_url		= NULL,
                 .remote_trk_url		= NULL
             };
@@ -593,14 +592,12 @@ int
 nm_core_gate_connect_accept(struct nm_core	*p_core,
                             uint8_t		 gate_id,
                             uint8_t		 drv_id,
-                            char		*host_url,
                             char		*drv_trk_url,
                             int			 connect_flag) {
         struct nm_cnx_rq	 rq	= {
                 .p_gate			= NULL,
                 .p_drv			= NULL,
                 .p_trk			= NULL,
-                .remote_host_url	= host_url,
                 .remote_drv_url		= NULL,
                 .remote_trk_url		= NULL
         };
@@ -752,11 +749,9 @@ int
 nm_core_gate_accept	(struct nm_core	*p_core,
                          uint8_t	 gate_id,
                          uint8_t	 drv_id,
-                         char		*host_url,
                          char		*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
-                                           host_url, drv_trk_url,
-                                           0);
+                                           drv_trk_url, 0);
 }
 
 /** Client side of connection establishment.
@@ -765,11 +760,9 @@ int
 nm_core_gate_connect	(struct nm_core	*p_core,
                          uint8_t	 gate_id,
                          uint8_t	 drv_id,
-                         char		*host_url,
                          char		*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
-                                           host_url, drv_trk_url,
-                                           !0);
+                                           drv_trk_url, !0);
 }
 
 /** Public function to wrap a single buffer.

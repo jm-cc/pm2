@@ -106,7 +106,7 @@ int nmad_exit() {
 static
 void
 usage(void) {
-        fprintf(stderr, "usage: <prog> [[-h <remote_hostname>] <remote url>]\n");
+        fprintf(stderr, "usage: <prog> [<remote url>]\n");
         exit(EXIT_FAILURE);
 }
 
@@ -128,7 +128,6 @@ static struct nm_core		*p_core		= NULL;
 static struct nm_so_interface	*sr_if	= NULL;
 static nm_so_pack_interface	pack_if;
 
-static char	*hostname	= "localhost";
 static char	*r_url	= NULL;
 static char	*l_url	= NULL;
 static uint8_t	 drv_id		=    0;
@@ -196,15 +195,7 @@ init(int	 *argc,
 
         i=1;
         while (i<*argc) {
-                if (!strcmp(argv[i], "-h")) {
-                        if (i+1 > *argc) {
-                                usage();
-                        }
-
-                        hostname = argv[i+1];
-                        i+=2;
-                }
-                else if (!strncmp(argv[i], "-", 1)) {
+		if (!strncmp(argv[i], "-", 1)) {
                         break;
                 }
                 else {
@@ -214,7 +205,7 @@ init(int	 *argc,
         }
 
         if (r_url) {
-                printf("running as client using remote url: %s[%s]\n", hostname, r_url);
+                printf("running as client using remote url: %s\n", r_url);
                 i--;
                 *argc -= i;
                 for(j=1 ; j<*argc ; j++) {
@@ -237,8 +228,7 @@ init(int	 *argc,
         }
 
         if (r_url) {
-                err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                           hostname, r_url);
+                err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         goto out_err;
@@ -246,7 +236,7 @@ init(int	 *argc,
         } else {
                 printf("local url: \"%s\"\n", l_url);
 
-                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept returned err = %d\n", err);
                         goto out_err;

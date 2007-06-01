@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <string.h>
 #include <errno.h>
 #include <assert.h>
 
@@ -416,18 +417,24 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         struct sockaddr_in	 address;
         int			 fd;
         int			 err;
+	char *remote_hostname, *remote_port;
+	/* save the url since strtok might change it */
+	char *remote_drv_url = tbx_strdup(p_crq->remote_drv_url);
 
         /* TCP connect 				*/
-        port	= strtol(p_crq->remote_drv_url, (char **)NULL, 10);
+	remote_hostname = strtok(remote_drv_url, ":");
+	remote_port = strtok(NULL, "#");
+        port	= strtol(remote_port, (char **)NULL, 10);
         fd	= nm_tcpdg_socket_create(NULL, 0);
 
-        nm_tcpdg_address_fill(&address, port, p_crq->remote_host_url);
+        nm_tcpdg_address_fill(&address, port, remote_hostname);
 
         SYSCALL(connect(fd, (struct sockaddr *)&address,
                         sizeof(struct sockaddr_in)));
 
         err = nm_tcpdg_connect_accept(p_crq, fd);
 
+	TBX_FREE(remote_drv_url);
         return err;
 }
 

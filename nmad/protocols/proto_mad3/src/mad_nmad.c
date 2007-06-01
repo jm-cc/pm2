@@ -736,7 +736,7 @@ mad_nmad_accept(p_mad_connection_t   in,
                           in->remote_rank,
                           ai->dir_node->name,
                           cs->gate_id);
-                err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
@@ -770,16 +770,25 @@ mad_nmad_connect(p_mad_connection_t   out,
         r_n	= ai->dir_node;
 
         if (cs->master_cnx) {
+		char * url;
+		size_t url_len;
+		
+		url_len = strlen(r_n->name) + 1 + strlen(r_a->parameter) + 1;
+		url = TBX_MALLOC(url_len);
+		sprintf(url, "%s:%s", r_n->name, r_a->parameter);
+
                 NM_TRACEF("connect: cnx_id = %d, remote node = %s, gate_id = %d",
                           out->remote_rank,
                           ai->dir_node->name,
                           cs->gate_id);
-                err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id,
-                                           r_n->name, r_a->parameter);
+
+                err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id, url);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
                 }
+		TBX_FREE(url);
+
                 NMAD_EVENT_CNX_CONNECT(out->remote_rank, cs->gate_id, ds->drv_id);
                 TRACE("gate_connect: connection established");
         } else {

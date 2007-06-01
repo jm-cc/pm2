@@ -17,7 +17,6 @@ bool CONFIG_QSNET	= n
 bool CONFIG_MX		= n
 bool CONFIG_GM		= n
 bool CONFIG_SISCI	= n
-bool CONFIG_TCP		= n
 bool CONFIG_IBVERBS     = n
 bool CONFIG_DISK	= n
 bool CONFIG_DUMMY	= n

@@ -34,9 +34,5 @@
 #  include <nm_sisci_public.h>
 #endif
 
-#if defined CONFIG_TCP
-#  include <nm_tcp_public.h>
-#endif
-
 #include <nm_tcpdg_public.h>
 

@@ -31,7 +31,7 @@ const char *msg	= "hello, world";
 static
 void
 usage(void) {
-        fprintf(stderr, "usage: hello [[-h <remote_hostname>] <remote url>]\n");
+        fprintf(stderr, "usage: hello [<remote url>]\n");
         exit(EXIT_FAILURE);
 }
 
@@ -47,7 +47,6 @@ main(int	  argc,
         uint8_t			 gate_id2	=    0;
         char			*s_buf		= NULL;
         char			*r_buf		= NULL;
-        char			*hostname	= "localhost";
         uint64_t		 len;
 	struct nm_so_cnx         cnx;
 	nm_so_pack_interface     interface;
@@ -71,17 +70,6 @@ main(int	  argc,
         if (argc) {
           /* client */
 
-          if (!strcmp(*argv, "-h")) {
-            argc--;
-            argv++;
-
-            if (!argc)
-              usage();
-
-            hostname = *argv;
-
-          } else {
-
             r_url1	= *argv;
             argc--;
             argv++;
@@ -91,11 +79,10 @@ main(int	  argc,
               r_url2	= *argv;
               argc--;
               argv++;
-              printf("running as client using remote url: %s [%s] [%s]\n", hostname, r_url1, r_url2);
+              printf("running as client using remote url: %s %s\n", r_url1, r_url2);
             } else {
-              printf("running as client using remote url: %s [%s]\n", hostname, r_url1);
+              printf("running as client using remote url: %s\n", r_url1);
             }
-          }
 
         } else {
           /* no args: server */
@@ -136,13 +123,13 @@ main(int	  argc,
 
         if(!r_url1 && !r_url2){
           // accept sur les 2 gates
-          err = nm_core_gate_accept(p_core, gate_id1, drv_id, NULL, NULL);
+          err = nm_core_gate_accept(p_core, gate_id1, drv_id, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
           }
 
-          err = nm_core_gate_accept(p_core, gate_id2, drv_id, NULL, NULL);
+          err = nm_core_gate_accept(p_core, gate_id2, drv_id, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
@@ -150,30 +137,27 @@ main(int	  argc,
 
         } else if(!r_url2){
           // je fais un connect sur r_url1 dans la gate n°1
-          err = nm_core_gate_connect(p_core, gate_id1, drv_id,
-                                     hostname, r_url1);
+          err = nm_core_gate_connect(p_core, gate_id1, drv_id, r_url1);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;
           }
 
           // je fais un accept pour r_url2 dans la gate n°2
-          err = nm_core_gate_accept(p_core, gate_id2, drv_id, NULL, NULL);
+          err = nm_core_gate_accept(p_core, gate_id2, drv_id, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
           }
         } else {
           // connect sur les 2 gates
-          err = nm_core_gate_connect(p_core, gate_id1, drv_id,
-                                     hostname, r_url1);
+          err = nm_core_gate_connect(p_core, gate_id1, drv_id, r_url1);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;
           }
 
-          err = nm_core_gate_connect(p_core, gate_id2, drv_id,
-                                     hostname, r_url2);
+          err = nm_core_gate_connect(p_core, gate_id2, drv_id, r_url2);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;

@@ -240,7 +240,7 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
         int			 err;
-
+        WARN("init");
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
         SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));
@@ -417,13 +417,14 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         struct sockaddr_in	 address;
         int			 fd;
         int			 err;
+        char 			*saveptr;
 	char *remote_hostname, *remote_port;
 	/* save the url since strtok might change it */
 	char *remote_drv_url = tbx_strdup(p_crq->remote_drv_url);
 
         /* TCP connect 				*/
-	remote_hostname = strtok(remote_drv_url, ":");
-	remote_port = strtok(NULL, "#");
+	remote_hostname = strtok_r(remote_drv_url, ":", &saveptr);
+	remote_port = strtok_r(NULL, "#", &saveptr);
         port	= strtol(remote_port, (char **)NULL, 10);
         fd	= nm_tcpdg_socket_create(NULL, 0);
 
@@ -524,6 +525,7 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
                 perror("poll");
 
                 /* poll syscall failed				*/
+                WARN("-NM_ESCFAILD");
                 err = -NM_ESCFAILD;
                 goto out;
         }
@@ -537,10 +539,13 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         /* fd ready, check condition				*/
         if (pollfd.revents != POLLOUT) {
                 if (pollfd.revents & POLLHUP) {
+                        WARN("-NM_ECLOSED");
                         err = -NM_ECLOSED;
                 } else if (pollfd.revents & POLLNVAL) {
+                        WARN("-NM_EINVAL");
                         err = -NM_EINVAL;
                 } else {
+                        WARN("-NM_EBROKEN");
                         err = -NM_EBROKEN;
                 }
 
@@ -603,6 +608,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 
                                 perror("poll");
 
+                                WARN("-NM_ESCFAILD");
                                 err = -NM_ESCFAILD;
                                 goto out;
                         }
@@ -630,6 +636,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                         i++;
                 }
 
+                WARN("-NM_EINVAL");
                 err = -NM_EINVAL;
                 goto out;
 
@@ -672,6 +679,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 					err = -NM_ECLOSED;
 				} else if (p_gate_pollfd->revents & POLLNVAL) {
 					NM_TRACEF("tcp incoming single poll: pollnval");
+                                        WARN("-NM_EINVAL");
 					err = -NM_EINVAL;
 				} else {
 					NM_TRACEF("tcp incoming single poll: connection broken");
@@ -719,11 +727,14 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         if (pollfd.revents != POLLIN) {
                 if (pollfd.revents & POLLHUP) {
                         NM_TRACEF("tcp incoming single poll: pollhup");
+                        WARN("-NM_ECLOSED");
                         err = -NM_ECLOSED;
                 } else if (pollfd.revents & POLLNVAL) {
                         NM_TRACEF("tcp incoming single poll: pollnval");
+                        WARN("-NM_EINVAL");
                         err = -NM_EINVAL;
                 } else {
+                        WARN("-NM_EBROKEN");
                         err = -NM_EBROKEN;
                 }
 
@@ -1100,6 +1111,8 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                 NM_TRACEF("tcp incoming iov: truncating message");
                                 /* message truncated
                                  */
+                                WARN_VAL("message truncated: remaining bytes", p_tcp_pw->rem_length);
+                                WARN("-NM_EINVAL");
                                 err	= -NM_EINVAL;
                         } else {
                                 NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);

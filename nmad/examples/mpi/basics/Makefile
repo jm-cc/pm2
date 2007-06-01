@@ -1,5 +1,5 @@
-# PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# NewMadeleine
+# Copyright (C) 2006 (see AUTHORS file)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

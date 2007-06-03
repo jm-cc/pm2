@@ -772,10 +772,15 @@ mad_nmad_connect(p_mad_connection_t   out,
         if (cs->master_cnx) {
 		char * url;
 		size_t url_len;
-		
-		url_len = strlen(r_n->name) + 1 + strlen(r_a->parameter) + 1;
-		url = TBX_MALLOC(url_len);
-		sprintf(url, "%s:%s", r_n->name, r_a->parameter);
+
+		/* prefix the url with the hostname for tcp only */
+		if (!strcmp(out->channel->adapter->driver->device_name, "tcp")) {
+			url_len = strlen(r_n->name) + 1 + strlen(r_a->parameter) + 1;
+			url = TBX_MALLOC(url_len);
+			sprintf(url, "%s:%s", r_n->name, r_a->parameter);
+		} else {
+			url = tbx_strdup(r_a->parameter);
+		}
 
                 NM_TRACEF("connect: cnx_id = %d, remote node = %s, gate_id = %d",
                           out->remote_rank,

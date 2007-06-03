@@ -240,7 +240,7 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
         int			 err;
-        WARN("init");
+
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
         SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));

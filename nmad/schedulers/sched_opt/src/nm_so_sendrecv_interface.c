@@ -532,7 +532,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
 /** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param gate_id the source gate id.
- *  @param out_gate_id a pointer to the 
+ *  @param out_gate_id a pointer to the
  *  @param tag the message tag.
  *  @return The NM status.
  */
@@ -574,7 +574,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     }
   }
 
-  // Nothing on none of the gates    
+  // Nothing on none of the gates
   for(i = 0; i < p_core->nb_gates; i++) {
     nm_so_refill_regular_recv(&p_core->gate_array[i]);
   }

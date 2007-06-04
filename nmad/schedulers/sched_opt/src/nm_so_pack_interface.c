@@ -163,11 +163,13 @@ nm_so_unpack(struct nm_so_cnx *cnx,
 
     return nm_so_sr_irecv(_cnx->p_interface, _cnx->gate_id, _cnx->tag,
 			  data, len, NULL);
+
   } else {
   /* Here, we know that 1) begin_unpacking has been called with
      ANY_SRC as the gate_id parameter and 2) this is the first
      unpack. So we have to perform a synchronous recv in order to wait
      for the real gate_id to be known before next unpacks... */
+
     nm_so_request request;
     int err;
 
@@ -185,7 +187,6 @@ nm_so_unpack(struct nm_so_cnx *cnx,
     _cnx->first_seq_number = nm_so_sr_get_current_recv_seq(_cnx->p_interface,
 							   _cnx->gate_id,
 							   _cnx->tag);
-
     return err;
   }
 }

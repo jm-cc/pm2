@@ -728,10 +728,11 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	int r = data_handler(p_so_pw,
 			     data, dh->len,
 			     dh->proto_id, dh->seq);
-	if(r == NM_SO_HEADER_MARK_READ)
+	if(r == NM_SO_HEADER_MARK_READ) {
 	  dh->proto_id = NM_SO_PROTO_DATA_UNUSED;
-	else
+	} else {
 	  p_so_pw->header_ref_count++;
+        }
       }
     } else
       switch(proto_id) {
@@ -744,11 +745,13 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
 	  if(rdv_handler) {
 	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq, ch->r.len);
-	    if(r == NM_SO_HEADER_MARK_READ)
+	    if(r == NM_SO_HEADER_MARK_READ) {
 	      ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-	    else
+	    } else {
 	      p_so_pw->header_ref_count++;
+	    }
 	  }
+
           else {
             NM_SO_TRACE("envoi de demande de RDV tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
           }
@@ -764,11 +767,13 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  if(ack_handler) {
 	    int r = ack_handler(p_so_pw,
 				ch->a.tag_id, ch->a.seq, ch->a.track_id);
-	    if(r == NM_SO_HEADER_MARK_READ)
+	    if(r == NM_SO_HEADER_MARK_READ) {
 	      ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-	    else
+	    } else {
 	      p_so_pw->header_ref_count++;
+	    }
 	  }
+
           else {
             NM_SO_TRACE("envoi de demande de ACK tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
           }

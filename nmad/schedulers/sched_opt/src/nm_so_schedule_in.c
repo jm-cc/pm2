@@ -131,7 +131,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
     }
 
     if(*status & NM_SO_STATUS_RDV_HERE) {
-      NM_SO_TRACE("RDV_HERE");
+      NM_SO_TRACE("RDV_HERE\n");
 
       *status = 0;
 
@@ -302,7 +302,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 	     &&
 	     (p_so_gate->recv_seq_number[tag] == seq)) {
 
-    NM_SO_TRACE("We have a any_src waiting unpack for this packet\n");
+    NM_SO_TRACE("We have an any_src waiting unpack for this packet\n");
 
     p_so_sched->any_src[tag].status = 0;
     if (len < p_so_sched->any_src[tag].len) {
@@ -364,6 +364,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     if (len < p_so_gate->recv[tag][seq].unpack_here.len) {
       p_so_gate->recv[tag][seq].unpack_here.len = len;
     }
+
     err = rdv_success(p_gate, tag, seq,
 		      p_so_gate->recv[tag][seq].unpack_here.data,
 		      p_so_gate->recv[tag][seq].unpack_here.len);
@@ -427,12 +428,9 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
 
       return NM_SO_HEADER_MARK_READ;
     }
-
   }
-
   TBX_FAILURE("PANIC!\n");
 }
-
 
 /** Process a complete successful incoming request.
  */
@@ -498,12 +496,12 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     if(p_so_gate->p_so_sched->any_src[tag].status & NM_SO_STATUS_RDV_IN_PROGRESS) {
       /* Completion of an ANY_SRC unpack: the unpack_success has to
 	 carry out this information (tbx_true) */
-
       p_so_gate->p_so_sched->any_src[tag].status = 0;
 
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_true);
-    } else
+    } else {
       interface->unpack_success(p_gate, tag, p_so_pw->pw.seq, tbx_false);
+    }
 
     NM_SO_TRACE("Large received (%lld bytes) on drv %d, seq = %d\n", (long long)p_pw->length, drv_id, p_pw->seq);
 
@@ -543,7 +541,6 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
       goto out;
 
     }
-
   }
   /* Hum... Well... We're done guys! */
 

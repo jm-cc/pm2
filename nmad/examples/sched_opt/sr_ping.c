@@ -12,8 +12,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -22,12 +20,12 @@
 
 #include "helper.h"
 
-#define MIN_DEFAULT     0
-#define MAX_DEFAULT     (8 * 1024 * 1024)
-#define MULT_DEFAULT    2
-#define INCR_DEFAULT    0
-#define WARMUPS_DEFAULT 100
-#define LOOPS_DEFAULT   2000
+#define MIN_DEFAULT	0
+#define MAX_DEFAULT	(8 * 1024 * 1024)
+#define MULT_DEFAULT	2
+#define INCR_DEFAULT	0
+#define WARMUPS_DEFAULT	100
+#define LOOPS_DEFAULT	2000
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)

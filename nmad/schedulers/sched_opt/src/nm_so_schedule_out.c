@@ -48,8 +48,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-  NM_SO_TRACE("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n",
-              ptr, len, proto_id-128, seq);
+  NM_SO_TRACE("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n", ptr, len, proto_id-128, seq);
 
   interface->pack_success(p_gate, proto_id - 128, seq);
 

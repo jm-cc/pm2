@@ -98,7 +98,7 @@ static int pack(struct nm_gate *p_gate,
     /* Large packets can not be sent immediately : we have to issue a
        RdV request. */
 
-    /* First allocate a packet wrapper */ 
+    /* First allocate a packet wrapper */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                             data, len,
                                             NM_SO_DATA_DONT_USE_HEADER,

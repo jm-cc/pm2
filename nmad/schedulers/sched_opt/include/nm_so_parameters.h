@@ -29,7 +29,7 @@
 
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion
-   of the previous ones. 
+   of the previous ones.
 
    WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
 #define NM_SO_PENDING_PACKS_WINDOW          256
@@ -67,7 +67,7 @@
 
 #define NM_SO_MAX_TRACKS   2
 
-/* Number of available networks when CONFIG_MULTI_RAIL is set */ 
+/* Number of available networks when CONFIG_MULTI_RAIL is set */
 #define NM_SO_MAX_NETS     2
 
 /* Just for clarity of code (when using constant parameters) */
@@ -83,10 +83,10 @@
 
 /* The following function defines the order in which the networks will
    be considered */
-/* 
+/*
  Currently, MAX_NETS == 2, and drv[1] is faster than drv[0], so :
  net(0) -> 1
- net(1) -> 0 
+ net(1) -> 0
 */
 #define nm_so_network_latency(n)  \
   (NM_SO_MAX_NETS-n-1)

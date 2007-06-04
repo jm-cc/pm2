@@ -147,7 +147,7 @@ nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
                              struct nm_so_pkt_wrap *p_so_pw)
 {
   int err;
-  
+
   _nm_so_post_recv(p_gate, p_so_pw, TRK_LARGE, drv_id);
 
   err = NM_ESUCCESS;

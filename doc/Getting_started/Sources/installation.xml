@@ -116,8 +116,9 @@ for <TT>expr</TT>, <TT>tr</TT>, <TT>head</TT>, <TT>cut</TT>,
 <SUBSECTION TITLE="Getting the PM2 software and help">
 
 <P>
-The PM2 archive containing all the necessary sources is available
-from the PM2 web site at: <URL>http://runtime.futurs.inria.fr/pm2/</URL>.
+PM2 files are hosted on the InriaGforge server at
+<URL>https://gforge.inria.fr/projects/pm2/</URL>, also accessible from
+the PM2 web site at <URL>http://runtime.futurs.inria.fr/pm2/</URL>.
 </P>
 
 <P>
@@ -127,16 +128,87 @@ your problem is not already listed in the <EM>Frequently Asked
   Questions</EM> Section <REF LABEL="sec:faq"/>.
 </P>
 
-</SUBSECTION>
-
-<SUBSECTION TITLE="Unpacking the PM2 distribution">
+<SUBSUBSECTION TITLE="Getting the latest release">
 
 <P>
-The PM2 archive can be extracted with one of the following commands
+The latest release for the package <TT>pm2</TT> is available from the
+main page of the project PM2 at
+<URL>https://gforge.inria.fr/projects/pm2/</URL> under the tab
+<B>Files</B>. It can be extracted with the following command 
 entered at the shell prompt:
 </P>
 
 <PROGRAM FILE="./Progs/pm2extract.txt"/>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Getting the latest version">
+
+<P>
+The source code is
+managed by a <TT>Subversion</TT> server hosted by the InriaGforge. To
+get the source code, you need:
+</P>
+
+<OL>
+<LI>
+<P>
+To install the client side of the software <TT>Subversion</TT> if it
+is not already available on your system. The software can be obtained
+from <URL>http://subversion.tigris.org/</URL>.
+</P>
+</LI>
+
+<LI>
+<P>
+To become a member of the project <TT>pm2</TT>. For this, you first
+need to get an account to the gForge server. You can then become a
+member of the project by contacting one of the project administrators.
+The list of the project administrators is available from the main
+project page. 
+</P>
+<P>
+You can also choose to check out the project's SVN repository through
+anonymous access. In that case, you do not need to become a member,
+and you will have limited access to the repository.
+</P>
+</LI>
+</OL>
+
+<P>
+More information on how to get a gForge account, to become a member of
+a project, or on any other related task can be obtained from the
+InriaGforge at <URL>https://gforge.inria.fr/</URL>. The most important
+thing is to upload your public SSH key on the gForge server (see the
+FAQ at <URL>http://siteadmin.gforge.inria.fr/FAQ.html#Q6</URL> for
+instructions).
+</P>
+
+<P>
+You can now check out the latest version from the <TT>Subversion</TT>
+server 
+</P>
+<UL>
+<LI>
+<P>
+using the anonymous access.
+</P>
+<CODE FILE="./Progs/svnPm2anon.txt"/>
+</LI>
+<LI>
+<P>
+or using your gForge account.
+</P>
+<CODE FILE="./Progs/svnPm2.txt"/>
+</LI>
+</UL>
+
+</SUBSUBSECTION>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="The PM2 distribution">
+
 
 <P>
 Once extracted, the PM2 distribution should be available under the

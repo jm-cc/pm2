@@ -50,7 +50,7 @@ void test_larger(int rank, int size) {
   ping_side = !(rank & 1);
   rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
-  if (ping_side) {
+  if (!ping_side) {
     int *x;
 
     x=malloc(size*sizeof(int));

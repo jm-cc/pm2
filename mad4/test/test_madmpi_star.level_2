@@ -13,38 +13,18 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-compile_leonie()
-{
-    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie
-    fi
-    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'
-        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
-            exit 1
-        fi
-    fi
-}
-
-# Verification et compilation du lanceur leonie
-compile_leonie
-
 # Configuration
-flavor="test_mad4_mpi"
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
+mpi="mpi_emu"
+strat="strat_default"
+flavor="test_mad4_${mpi}_${net}_${strat}"
+
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="star"
 args="--x --p --l"
-hosts=${TESTCONFIG:-"localhost localhost"}
-nb_hosts=$(echo $hosts | wc -w)
-nb_hosts2=$(echo $nb_hosts -1 | bc)
-net=${TESTNET:-tcp}
-rm -f /tmp/pm2test_"${USER}"_expected
 
+rm -f /tmp/pm2test_"${USER}"_expected
 (cat <<EOF
 ISending to child 1 completed
 Waiting for sending to child 1 completed
@@ -52,14 +32,7 @@ Message from child 1 [12.450000,3.140000]
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 
-# Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
- --ext=\"\" \
- --modules=\"mad4 tbx ntbx init\" \
- --init=\"debug gdb\" \
- --mad4=\"debug gdb ${net} sched_opt strat_default mpi_emu mad3_emu\" \
- --ntbx=\"debug gdb\" \
- --tbx=\"debug gdb\" \
- --common=\"debug gdb fortran_target_none\" \
- --all=\"build_static\"
+. ./include/mad4_default
 
+# Verification et compilation du lanceur leonie
+compile_leonie

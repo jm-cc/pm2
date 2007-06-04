@@ -13,48 +13,23 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-compile_leonie()
-{
-    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie
-    fi
-    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'
-        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
-            exit 1
-        fi
-    fi
-}
-
-# Verification et compilation du lanceur leonie
-compile_leonie
-
 # Configuration
-flavor="test_mad4"
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
+mpi=""
+strat="strat_default"
+flavor="test_mad4_${mpi}_${net}_${strat}"
+
 appdir="${PM2_ROOT}/mad4/examples"
 prog="sr_any_any"
 args="--x --p --l"
-hosts=${TESTCONFIG:-"localhost localhost"}
-net=${TESTNET:-tcp}
-rm -f /tmp/pm2test_"${USER}"_expected
 
+rm -f /tmp/pm2test_"${USER}"_expected
 for f in $hosts ; do
     echo "success" >> /tmp/pm2test_"${USER}"_expected
 done
 
-# Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
- --ext=\"\" \
- --modules=\"mad4 tbx ntbx init\" \
- --init=\"debug gdb\" \
- --mad4=\"debug gdb ${net} sched_opt strat_default mad3_emu\" \
- --ntbx=\"debug gdb\" \
- --tbx=\"debug gdb\" \
- --common=\"debug gdb\" \
- --all=\"build_static\"
+. ./include/mad4_default
 
+# Verification et compilation du lanceur leonie
+compile_leonie

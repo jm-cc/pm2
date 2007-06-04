@@ -56,9 +56,10 @@ struct nm_drv_cap {
         /** Multiple recv request may be active on different gates
          * concurrently.
          */
-        uint8_t has_concurrent_selective_receive;;
+        uint8_t has_concurrent_selective_receive;
 
-
+        /** Driver performance sampling
+         */
         double *network_sampling_latency;
         int nb_sampling;
 };

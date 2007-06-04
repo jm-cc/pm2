@@ -26,7 +26,7 @@
 /** Gate storage for strat aggreg.
  */
 struct nm_so_strat_aggreg_gate {
-        /** List of raw outgoing packets. */
+  /** List of raw outgoing packets. */
   struct list_head out_list;
 };
 

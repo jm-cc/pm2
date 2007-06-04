@@ -111,7 +111,7 @@ mad3()
     do
 	[ -z "$new_list" ] && new_list="${i}[0]" && continue
 	k='0'
-	for j in $new_list 
+	for j in $new_list
 	do
 	    [ $j != "${i}[${k}]" ] && continue
 	    k=`expr $k + 1`
@@ -409,7 +409,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
     if [ "$_PM2_CONFIG_LAUNCHER" == "leonie" ] ; then
         log "Leonie selected"
 	mad3 "${prog_args[@]}"
-	exit $?               
+	exit $?
     fi
 
 else # USE_LOCAL_FLAVOR

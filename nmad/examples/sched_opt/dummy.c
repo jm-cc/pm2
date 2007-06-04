@@ -46,7 +46,7 @@ static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
   return NM_SO_HEADER_MARK_UNREAD;
 }
 
-static int rdv_handler(struct nm_so_pkt_wrap *p_so_pw, 
+static int rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
 		       uint8_t tag_id, uint8_t seq, uint32_t len)
 {
   printf("Rdv header : tag = %d, seq = %u, len = %u\n", tag_id, seq, len);

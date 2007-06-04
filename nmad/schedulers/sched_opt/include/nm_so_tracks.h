@@ -78,9 +78,10 @@ nm_so_refill_regular_recv(struct nm_gate *p_gate)
 
 #ifdef CONFIG_MULTI_RAIL
   {
+    int nb_drivers = p_gate->p_sched->p_core->nb_drivers;
     int drv;
 
-    for(drv = 0; drv < NM_SO_MAX_NETS; drv++)
+    for(drv = 0; drv < nb_drivers; drv++)
       if(!p_so_gate->active_recv[drv][TRK_SMALL])
 	err = nm_so_post_regular_recv(p_gate, drv);
   }

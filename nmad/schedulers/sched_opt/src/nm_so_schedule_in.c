@@ -43,9 +43,9 @@ static int rdv_success(struct nm_gate *p_gate,
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   nm_so_strategy *cur_strat = p_so_sched->current_strategy;
   struct nm_so_pkt_wrap *p_so_pw;
-  int err;
   unsigned long drv_id = NM_SO_DEFAULT_NET;
   unsigned long trk_id = TRK_LARGE;
+  int err;
 
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
@@ -60,8 +60,7 @@ static int rdv_success(struct nm_gate *p_gate,
        acknowledgement! */
     nm_so_post_large_recv(p_gate, drv_id, tag + 128, seq, data, len);
 
-    nm_so_init_ack(&ctrl, tag + 128, seq,
-		   drv_id * NM_SO_MAX_TRACKS + trk_id);
+    nm_so_init_ack(&ctrl, tag + 128, seq, drv_id * NM_SO_MAX_TRACKS + trk_id);
 
     /* Add ACK to the list of outgoing paquets. The strategy may
        aggregate it with another paquet... */
@@ -242,9 +241,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
       /* Check if we should post a new recv packet
          in order to receive the rdv request */
       nm_so_refill_regular_recv(p_gate);
-
     }
-
   }
 
   err = NM_ESUCCESS;
@@ -528,8 +525,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 	 the sending side, right? */
 
       /* Post the data reception */
-      nm_so_direct_post_large_recv(p_gate, drv_id,
-                                   p_so_large_pw);
+      nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
 
       /* Send an ACK */
       nm_so_init_ack(&ctrl,

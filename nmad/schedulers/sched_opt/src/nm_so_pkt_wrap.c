@@ -105,7 +105,6 @@ nm_so_pw_init(struct nm_core *p_core)
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/recv");
 #endif
 
-
   return NM_ESUCCESS;
 }
 

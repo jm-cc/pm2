@@ -58,7 +58,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
   return err;
 }
 
-/** Handle a new packet submitted by the user code. 
+/** Handle a new packet submitted by the user code.
  *
  *  @note The strategy may already apply some optimizations at this point.
  *  @param p_gate a pointer to the gate object.

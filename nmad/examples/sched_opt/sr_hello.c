@@ -37,21 +37,21 @@ main(int	  argc,
 
         if (is_server) {
 	  nm_so_request request;
-                /* server
-                 */
-                memset(buf, 0, len);
+          /* server
+           */
+          memset(buf, 0, len);
 
-		nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, len, &request);
-		nm_so_sr_rwait(sr_if, request);
+          nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, len, &request);
+          nm_so_sr_rwait(sr_if, request);
 
         } else {
 	  nm_so_request request;
-                /* client
-                 */
-                strcpy(buf, msg);
+          /* client
+           */
+          strcpy(buf, msg);
 
-		nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
-		nm_so_sr_swait(sr_if, request);
+          nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
+          nm_so_sr_swait(sr_if, request);
         }
 
         if (is_server) {

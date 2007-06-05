@@ -28,70 +28,71 @@
 static __inline__
 uint32_t _next(uint32_t len)
 {
-        if(!len)
-                return 4;
-        else if(len < 32)
-                return len + 4;
-        else if(len < 1024)
-                return len + 32;
-        else
-                return len << 1;
+  if(!len)
+    return 4;
+  else if(len < 32)
+    return len + 4;
+  else if(len < 1024)
+    return len + 32;
+  else
+    return len << 1;
 }
 
 int
 main(int	  argc,
      char	**argv) {
-        char			*buf		= NULL;
-        uint32_t		 len;
-        struct nm_so_cnx         cnx;
-        int err;
+  char			*buf		= NULL;
+  uint32_t		 len;
+  struct nm_so_cnx         cnx;
+  int err;
 
-        init(&argc, argv);
 
-        buf = malloc(MAX);
-	memset(buf, 0, MAX);
+  init(&argc, argv);
 
-        if (is_server) {
-	  int k;
-                /* server
-                 */
-		for(len = 0; len <= MAX; len = _next(len)) {
-		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_unpacking(pack_if, NM_SO_ANY_SRC, 0, &cnx);
-		    nm_so_unpack(&cnx, buf, len);
-		    nm_so_end_unpacking(&cnx);
+  buf = malloc(MAX);
+  memset(buf, 0, MAX);
 
-		    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
-		    nm_so_pack(&cnx, buf, len);
-		    nm_so_end_packing(&cnx);
-		  }
-		}
+  if (is_server) {
+    int k;
+    /* server
+     */
+    for(len = 0; len <= MAX; len = _next(len)) {
+      for(k = 0; k < LOOPS; k++) {
+        nm_so_begin_unpacking(pack_if, NM_SO_ANY_SRC, 0, &cnx);
+        nm_so_unpack(&cnx, buf, len);
+        nm_so_end_unpacking(&cnx);
 
-        } else {
-	  tbx_tick_t t1, t2;
-	  int k;
-                /* client
-                 */
-		for(len = 0; len <= MAX; len = _next(len)) {
+        nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
+        nm_so_pack(&cnx, buf, len);
+        nm_so_end_packing(&cnx);
+      }
+    }
 
-		  TBX_GET_TICK(t1);
+  } else {
+    tbx_tick_t t1, t2;
+    int k;
+    /* client
+     */
+    for(len = 0; len <= MAX; len = _next(len)) {
 
-		  for(k = 0; k < LOOPS; k++) {
-		    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
-		    nm_so_pack(&cnx, buf, len);
-		    nm_so_end_packing(&cnx);
+      TBX_GET_TICK(t1);
 
-		    nm_so_begin_unpacking(pack_if, NM_SO_ANY_SRC, 0, &cnx);
-		    nm_so_unpack(&cnx, buf, len);
-		    nm_so_end_unpacking(&cnx);
-		  }
+      for(k = 0; k < LOOPS; k++) {
+        nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
+        nm_so_pack(&cnx, buf, len);
+        nm_so_end_packing(&cnx);
 
-		  TBX_GET_TICK(t2);
+        nm_so_begin_unpacking(pack_if, NM_SO_ANY_SRC, 0, &cnx);
+        nm_so_unpack(&cnx, buf, len);
+        nm_so_end_unpacking(&cnx);
+      }
 
-		  printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
-		}
-        }
+      TBX_GET_TICK(t2);
 
-        nmad_exit();
-        exit(0);
+      printf("%d\t%lf\n", len, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+    }
+  }
+
+  nmad_exit();
+  exit(0);
 }

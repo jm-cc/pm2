@@ -29,54 +29,60 @@ const char *msg_beg	= "hello", *msg_end = "world!";
 int
 main(int	  argc,
      char	**argv) {
-        char			*buf		= NULL;
-        struct nm_so_cnx         cnx;
+  char			*buf		= NULL;
+  struct nm_so_cnx         cnx;
 
-        init(&argc, argv);
-        buf = malloc(SIZE+1);
-	memset(buf, 0, SIZE+1);
+  init(&argc, argv);
+  buf = malloc(SIZE+1);
+  memset(buf, 0, SIZE+1);
 
-        if (is_server) {
-                /* server
-                 */
-		nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
+  if (is_server) {
+    /* server
+     */
+    memset(buf, 'z', SIZE);
+    *(buf + SIZE - 1) = '\0';
 
-		nm_so_unpack(&cnx, buf, SIZE);
+    nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
 
-		nm_so_end_unpacking(&cnx);
+    nm_so_unpack(&cnx, buf, SIZE);
 
-        } else {
-                /* client
-                 */
-		{
-		  char *src, *dst;
+    nm_so_end_unpacking(&cnx);
 
-		  memset(buf, ' ', SIZE);
-		  dst = buf;
-		  src = (char *)msg_beg;
-		  while(*src)
-		    *dst++ = *src++;
+  } else {
+    /* client
+     */
+    {
+      char *src, *dst;
 
-		  dst = buf + SIZE - strlen(msg_end);
-		  src = (char *)msg_end;
-		  while(*src)
-		    *dst++ = *src++;
+      memset(buf, ' ', SIZE);
+      dst = buf;
+      src = (char *) msg_beg;
+      while(*src)
+        *dst++ = *src++;
 
-		  printf("Here's the message we're going to send : [%s]\n", buf);
-		}
+      dst = buf + SIZE - strlen(msg_end) - 1;
+      src = (char *) msg_end;
+      while(*src)
+        *dst++ = *src++;
+
+      dst = buf + SIZE - 1;
+      *dst = '\0';
+
+      printf("Here's the message we're going to send : [%s]\n", buf);
+    }
 
 
-		nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
+    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
 
-		nm_so_pack(&cnx, buf, SIZE);
+    nm_so_pack(&cnx, buf, SIZE);
 
-		nm_so_end_packing(&cnx);
-        }
+    nm_so_end_packing(&cnx);
+  }
 
-        if (is_server) {
-                printf("buffer contents: [%s]\n", buf);
-        }
+  if (is_server) {
+    printf("buffer contents: [%s]\n", buf);
+  }
 
-        nmad_exit();
-        exit(0);
+  nmad_exit();
+  exit(0);
 }

@@ -27,6 +27,8 @@
 #define WARMUPS_DEFAULT	100
 #define LOOPS_DEFAULT	2000
 
+#define DATA_CONTROL_ACTIVATED 0
+
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
@@ -47,118 +49,170 @@ void usage_ping() {
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
+static void fill_buffer(char *buffer, int len) {
+  unsigned int i = 0;
+
+  for (i = 0; i < len; i++) {
+    buffer[i] = 'a'+(i%26);
+  }
+}
+
+static void clear_buffer(char *buffer, int len) {
+  memset(buffer, 0, len);
+}
+
+static void control_buffer(char *msg, char *buffer, int len) {
+  tbx_bool_t   ok = tbx_true;
+  unsigned char expected_char;
+  unsigned int          i  = 0;
+
+  for(i = 0; i < len; i++){
+    expected_char = 'a'+(i%26);
+
+    if(buffer[i] != expected_char){
+      printf("Bad data at byte %d: expected %c, received %c\n",
+             i, expected_char, buffer[i]);
+      ok = tbx_false;
+    }
+  }
+
+  printf("Controle de %s - ", msg);
+
+  if (!ok) {
+    printf("%d bytes reception failed\n", len);
+
+    TBX_FAILURE("data corruption");
+  } else {
+    printf("ok\n");
+  }
+}
+
 int
 main(int	  argc,
      char	**argv) {
-        char		*buf		= NULL;
-        uint32_t	 len;
-        uint32_t	 start_len      = MIN_DEFAULT;
-        uint32_t	 end_len        = MAX_DEFAULT;
-        uint32_t         multiplier     = MULT_DEFAULT;
-        uint32_t         increment      = INCR_DEFAULT;
-        int              iterations     = LOOPS_DEFAULT;
-        int              warmups        = WARMUPS_DEFAULT;
-        int              i;
+  char		*buf		= NULL;
+  uint32_t	 len;
+  uint32_t	 start_len	= MIN_DEFAULT;
+  uint32_t	 end_len	= MAX_DEFAULT;
+  uint32_t	 multiplier	= MULT_DEFAULT;
+  uint32_t	 increment	= INCR_DEFAULT;
+  int		 iterations	= LOOPS_DEFAULT;
+  int		 warmups	= WARMUPS_DEFAULT;
+  int		 i;
 
-        init(&argc, argv);
+  init(&argc, argv);
 
-        if (argc > 1 && !strcmp(argv[1], "--help")) {
-          usage_ping();
-          nmad_exit();
-          exit(0);
-        }
+  if (argc > 1 && !strcmp(argv[1], "--help")) {
+    usage_ping();
+    nmad_exit();
+    exit(0);
+  }
 
-        for(i=1 ; i<argc ; i+=2) {
-          if (!strcmp(argv[i], "-S")) {
-            start_len = atoi(argv[i+1]);
-          }
-          else if (!strcmp(argv[i], "-E")) {
-            end_len = atoi(argv[i+1]);
-          }
-          else if (!strcmp(argv[i], "-I")) {
-            increment = atoi(argv[i+1]);
-          }
-          else if (!strcmp(argv[i], "-M")) {
-            multiplier = atoi(argv[i+1]);
-          }
-          else if (!strcmp(argv[i], "-N")) {
-            iterations = atoi(argv[i+1]);
-          }
-          else if (!strcmp(argv[i], "-W")) {
-            warmups = atoi(argv[i+1]);
-          }
-          else {
-            fprintf(stderr, "Illegal argument %s\n", argv[i]);
-            usage_ping();
-            nmad_exit();
-            exit(0);
-          }
-        }
+  for(i=1 ; i<argc ; i+=2) {
+    if (!strcmp(argv[i], "-S")) {
+      start_len = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-E")) {
+      end_len = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-I")) {
+      increment = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-M")) {
+      multiplier = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-N")) {
+      iterations = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-W")) {
+      warmups = atoi(argv[i+1]);
+    }
+    else {
+      fprintf(stderr, "Illegal argument %s\n", argv[i]);
+      usage_ping();
+      nmad_exit();
+      exit(0);
+    }
+  }
 
-        buf = malloc(end_len);
-	memset(buf, 0, end_len);
+  buf = malloc(end_len);
+  clear_buffer(buf, end_len);
 
-        if (is_server) {
-	  int k;
-                /* server
-                 */
-		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
-		  for(k = 0; k < iterations + warmups; k++) {
-		    nm_so_request request;
+  if (is_server) {
+    int k;
+    /* server */
+    for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
+      for(k = 0; k < iterations + warmups; k++) {
+        nm_so_request request;
 
-		    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_rwait(sr_if, request);
+        nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_rwait(sr_if, request);
 
-		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_swait(sr_if, request);
-		  }
-		}
+#if DATA_CONTROL_ACTIVATED
+        control_buffer("réception", buf, len);
+#endif
+        nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_swait(sr_if, request);
+      }
+    }
+  } else {
+    tbx_tick_t t1, t2;
+    double sum, lat, bw_million_byte, bw_mbyte;
+    int k;
 
-        } else {
-	  tbx_tick_t t1, t2;
-          double sum, lat, bw_million_byte, bw_mbyte;
-	  int k;
-                /* client
-                 */
-                printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
+    /* client */
+    fill_buffer(buf, end_len);
 
-		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
+    printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
 
-		  for(k = 0; k < warmups; k++) {
-		    nm_so_request request;
+    for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
 
-		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_swait(sr_if, request);
+      for(k = 0; k < warmups; k++) {
+        nm_so_request request;
 
-                    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_rwait(sr_if, request);
-		  }
+#if DATA_CONTROL_ACTIVATED
+        control_buffer("envoi", buf, len);
+#endif
+        nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_swait(sr_if, request);
 
-		  TBX_GET_TICK(t1);
+        nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_rwait(sr_if, request);
+#if DATA_CONTROL_ACTIVATED
+        control_buffer("reception", buf, len);
+#endif
+      }
 
-		  for(k = 0; k < iterations; k++) {
-		    nm_so_request request;
+      TBX_GET_TICK(t1);
 
-		    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_swait(sr_if, request);
+      for(k = 0; k < iterations; k++) {
+        nm_so_request request;
 
-		    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
-		    nm_so_sr_rwait(sr_if, request);
-		  }
+#if DATA_CONTROL_ACTIVATED
+        control_buffer("envoi", buf, len);
+#endif
+        nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_swait(sr_if, request);
 
-		  TBX_GET_TICK(t2);
+        nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
+        nm_so_sr_rwait(sr_if, request);
+#if DATA_CONTROL_ACTIVATED
+        control_buffer("reception", buf, len);
+#endif
+      }
 
-                   sum = TBX_TIMING_DELAY(t1, t2);
+      TBX_GET_TICK(t2);
 
-                  lat	      = sum / (2 * iterations);
-                  bw_million_byte = len * (iterations / (sum / 2));
-                  bw_mbyte        = bw_million_byte / 1.048576;
+      sum = TBX_TIMING_DELAY(t1, t2);
 
-		  printf("%d\t%lf\t%8.3f\t%8.3f\n",
-                         len, lat, bw_million_byte, bw_mbyte);
-		}
-        }
+      lat	      = sum / (2 * iterations);
+      bw_million_byte = len * (iterations / (sum / 2));
+      bw_mbyte        = bw_million_byte / 1.048576;
 
-        nmad_exit();
-        exit(0);
+      printf("%d\t%lf\t%8.3f\t%8.3f\n", len, lat, bw_million_byte, bw_mbyte);
+    }
+  }
+
+  nmad_exit();
+  exit(0);
 }

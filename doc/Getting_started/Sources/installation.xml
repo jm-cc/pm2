@@ -299,9 +299,10 @@ the <TT>PM2_CONF_DIR</TT> variable to another directory.
 All the files generated within the compilation process will be placed
 by default in the <TT>${PM2_ROOT}/build</TT> directory, more precisely
 in the <TT>${PM2_ROOT}/build/${PM2_ASM}</TT>. The environment variable
-<TT>PM2_ASM</TT> describes the architecture of the machine. If you
-wish to keep the compiled files into another directory, you can set
-the <TT>PM2_BUILD_DIR</TT> environment variable to this directory. The
+<TT>PM2_ASM</TT> describes the architecture of the machine and is set
+to the result of the call <TT>pm2-arch --pm2-asm</TT>. If you wish to
+keep the compiled files into another directory, you can set the
+<TT>PM2_BUILD_DIR</TT> environment variable to this directory. The
 files will then be kept in the <TT>${PM2_BUILD_DIR}/${PM2_ASM}</TT>
 directory.
 </P>

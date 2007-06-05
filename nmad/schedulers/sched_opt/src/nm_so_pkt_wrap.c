@@ -727,11 +727,13 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	int r = data_handler(p_so_pw,
 			     data, dh->len,
 			     dh->proto_id, dh->seq);
-	if(r == NM_SO_HEADER_MARK_READ) {
+
+	if (r == NM_SO_HEADER_MARK_READ) {
 	  dh->proto_id = NM_SO_PROTO_DATA_UNUSED;
 	} else {
 	  p_so_pw->header_ref_count++;
-        }
+	}
+
       }
     } else
       switch(proto_id) {
@@ -742,19 +744,18 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  ptr += NM_SO_CTRL_HEADER_SIZE;
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
-	  if(rdv_handler) {
+	  if (rdv_handler) {
 	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq, ch->r.len);
-	    if(r == NM_SO_HEADER_MARK_READ) {
+	    if (r == NM_SO_HEADER_MARK_READ) {
 	      ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    } else {
 	      p_so_pw->header_ref_count++;
 	    }
-	  }
 
-          else {
-            NM_SO_TRACE("envoi de demande de RDV tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
-          }
-        }
+	  } else {
+	    NM_SO_TRACE("Sent completed of a RDV on tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
+	  }
+	}
 	break;
       case NM_SO_PROTO_ACK:
 	{
@@ -766,16 +767,16 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  if(ack_handler) {
 	    int r = ack_handler(p_so_pw,
 				ch->a.tag_id, ch->a.seq, ch->a.track_id);
-	    if(r == NM_SO_HEADER_MARK_READ) {
+
+	    if (r == NM_SO_HEADER_MARK_READ) {
 	      ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    } else {
 	      p_so_pw->header_ref_count++;
 	    }
-	  }
 
-          else {
-            NM_SO_TRACE("envoi de demande de ACK tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
-          }
+	  } else {
+	    NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
+	  }
 	}
 	break;
       case NM_SO_PROTO_CTRL_UNUSED:
@@ -791,7 +792,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
   } /* while */
 
-  if(!p_so_pw->header_ref_count)
+  if (!p_so_pw->header_ref_count)
     nm_so_pw_free(p_so_pw);
 
   return NM_ESUCCESS;

@@ -200,7 +200,12 @@ mad3()
         pm2_load_args="${pm2_load_args} --wd=$PM2_WDIR"
     fi
 
-    ${PM2_ROOT}/bin/leonie --env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    if [ "$PM2_CONF_DIR" != "" ] ; then
+        env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    fi
+
+    ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }

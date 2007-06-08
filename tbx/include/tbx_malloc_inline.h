@@ -122,6 +122,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   temp_mem->first_mem =
     TBX_MALLOC(initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len) + sizeof(void *));
   CTRL_ALLOC(temp_mem->first_mem);
+  memset(temp_mem->first_mem, 0, initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len) + sizeof(void *));
 
   if (temp_mem->first_mem == NULL)
     TBX_FAILURE("not enough memory");
@@ -161,6 +162,7 @@ tbx_malloc(p_tbx_memory_t mem)
 	{
           const size_t  mem_size = mem->mem_len * (TBX_MALLOC_DEBUG_LEN+mem->block_len);
 	  void   *new_mem        = TBX_MALLOC(mem_size + sizeof(void *));
+          memset(new_mem, 0, mem_size + sizeof(void *));
 
 	  *(void **)((char*)new_mem + mem_size) = NULL;
 	  *(void **)((char*)mem->current_mem + mem_size) = new_mem;

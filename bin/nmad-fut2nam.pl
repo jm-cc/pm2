@@ -109,7 +109,7 @@ BEGIN {
     my $i = 0;
     print "c -t * -i ${i} -n magenta1\n";		 $i++;
     print "c -t * -i ${i} -n violetred1\n";		 $i++;
-    print "c -t * -i ${i} -n red1\n";		 $i++;
+    print "c -t * -i ${i} -n red1\n";		 	$i++;
     print "c -t * -i ${i} -n chocolate1\n";		 $i++;
     print "c -t * -i ${i} -n yellow1\n";		 $i++;
     print "c -t * -i ${i} -n chartreuse1\n";		 $i++;
@@ -119,7 +119,7 @@ BEGIN {
     print "c -t * -i ${i} -n slateblue1\n";		 $i++;
     print "c -t * -i ${i} -n magenta2\n";		 $i++;
     print "c -t * -i ${i} -n violetred2\n";		 $i++;
-    print "c -t * -i ${i} -n red2\n";		 $i++;
+    print "c -t * -i ${i} -n red2\n";		 	$i++;
     print "c -t * -i ${i} -n chocolate2\n";		 $i++;
     print "c -t * -i ${i} -n yellow2\n";		 $i++;
     print "c -t * -i ${i} -n chartreuse2\n";		 $i++;
@@ -127,6 +127,16 @@ BEGIN {
     print "c -t * -i ${i} -n turquoise2\n";		 $i++;
     print "c -t * -i ${i} -n deepskyblue2\n";		 $i++;
     print "c -t * -i ${i} -n slateblue2\n";		 $i++;
+    print "c -t * -i ${i} -n magenta3\n";		 $i++;
+    print "c -t * -i ${i} -n violetred3\n";		 $i++;
+    print "c -t * -i ${i} -n red3\n";		 	$i++;
+    print "c -t * -i ${i} -n chocolate3\n";		 $i++;
+    print "c -t * -i ${i} -n yellow3\n";		 $i++;
+    print "c -t * -i ${i} -n chartreuse3\n";		 $i++;
+    print "c -t * -i ${i} -n springgreen3\n";		 $i++;
+    print "c -t * -i ${i} -n turquoise3\n";		 $i++;
+    print "c -t * -i ${i} -n deepskyblue3\n";		 $i++;
+    print "c -t * -i ${i} -n slateblue3\n";		 $i++;
 }
 
 our $link_rate;
@@ -359,10 +369,10 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
         print "+ -t ${pseudo_time_counter} -e ${pseudo_length} -a ${pseudo_length} -s ${config_rank} -d ${remote_rank}\n";
         print "- -t ${pseudo_time_counter} -e ${pseudo_length} -a ${pseudo_length} -s ${config_rank} -d ${remote_rank}\n";
         print "h -t ${pseudo_time_counter} -e ${pseudo_length} -a ${pseudo_length} -s ${config_rank} -d ${remote_rank}\n";
-        $pseudo_time_counter += $link_delay * $pseudo_length;
+        $pseudo_time_counter += $link_delay * $pseudo_length / ($link_rate * $link_delay);
         print "r -t ${pseudo_time_counter} -e ${pseudo_length} -a ${pseudo_length} -s ${remote_rank} -d ${config_rank}\n";
-        print "f -t ${pseudo_time_counter} -s ${config_rank} -a node_${config_rank} -T v -n length -o ${length} -x -v\n";
         $pseudo_time_counter += $link_delay ;
+        print "f -t ${pseudo_time_counter} -s ${config_rank} -a node_${config_rank} -T v -n length -o ${length} -x -v\n";
     } else {
         print "f -t ${time} -s ${config_rank} -a node_${config_rank} -T v -n length -v ${length} -o\n";
         print "+ -t ${time} -e ${length} -s ${config_rank} -d ${remote_rank}\n";

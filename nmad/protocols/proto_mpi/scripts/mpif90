@@ -35,8 +35,9 @@ verbose=0
 # consistently with the MPICH library chosen.  By including the library
 # and include paths here, we can use the same mpicc for a range of 
 # libraries and compilers, including ones for 32 and 64 bit systems.
-F90=${PM2_F90:-gfortran}
-F90LINKER=${PM2_F90:-gfortran}
+PM2_FORTRAN_TARGET=$(pm2-config --flavor=$PM2_FLAVOR --fc)
+F90=${PM2_F90:-${PM2_FORTRAN_TARGET:-gfortran}}
+F90LINKER=${PM2_F90:-${PM2_FORTRAN_TARGET:-gfortran}}
 LDFLAGSBASE=""
 USER_CFLAGS=$(pm2-config --flavor=$PM2_FLAVOR --cflags)
 BASE_LIB_LIST=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-l)
@@ -204,13 +205,12 @@ for arg in "$@" ; do
     esac
 done
 #
-
 status=0
 if [ $DoCompile = 1 -o $show_compile = 1 ] ; then
     if [ $HasDashC != 1 ] ; then
         compileargs="-c $compileargs"
     fi
-    $Show $F90 -Wall $USER_CFLAGS $compileargs
+    $Show $F90 $USER_CFLAGS $compileargs
     status=$?
     if [ $status != 0 ] ; then
 	exit $status
@@ -222,7 +222,7 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ -z "$LDFLAGS" ] ; then
         LDFLAGS="$LDFLAGSBASE"
     fi
-    $Show $F90LINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
+    $Show $F90LINKER $USER_CFLAGS $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
     status=$?
 fi
 exit $status

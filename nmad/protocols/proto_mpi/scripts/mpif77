@@ -35,8 +35,9 @@ verbose=0
 # consistently with the MPICH library chosen.  By including the library
 # and include paths here, we can use the same mpicc for a range of 
 # libraries and compilers, including ones for 32 and 64 bit systems.
-F77=${PM2_F77:-gfortran}
-F77LINKER=${PM2_F77:-gfortran}
+PM2_FORTRAN_TARGET=$(pm2-config --flavor=$PM2_FLAVOR --fc)
+F77=${PM2_F77:-${PM2_FORTRAN_TARGET:-gfortran}}
+F77LINKER=${PM2_F77:-${PM2_FORTRAN_TARGET:-gfortran}}
 LDFLAGSBASE=""
 USER_CFLAGS=$(pm2-config --flavor=$PM2_FLAVOR --cflags)
 BASE_LIB_LIST=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-l)

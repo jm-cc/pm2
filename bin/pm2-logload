@@ -24,7 +24,7 @@ num='0'
 
 while [ $# -gt 0 ]
 do
-    [ $$ -eq $1 ] && break
+    [ $$ == "$1" ] && break
     shift
     num=`expr $num + 1`
 done

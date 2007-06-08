@@ -208,22 +208,22 @@ do { \
 #endif /* TBX_FAILURE_CONTEXT */
 
 #define TBX_FAILURE(str) \
-     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT "%s\n", __FILE__, __LINE__, (str)), \
+     (pm2debug("TBX_FAILURE(%s:%d in %s): " TBX_FAILURE_CONTEXT "%s\n", __FILE__, __LINE__, __TBX_FUNCTION__, (str)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 #define TBX_FAILUREF(fmt, ...) \
-     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT fmt "\n" , __FILE__, __LINE__, ## __VA_ARGS__), \
+     (pm2debug("TBX_FAILURE(%s:%d in %s): " TBX_FAILURE_CONTEXT fmt "\n" , __FILE__, __LINE__, __TBX_FUNCTION__, ## __VA_ARGS__), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 #define TBX_ERROR(str) \
-     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT "%s: %s\n\n", __FILE__, __LINE__, (str), strerror(errno)), \
+     (pm2debug("TBX_FAILURE(%s:%d in %s): " TBX_FAILURE_CONTEXT "%s: %s\n\n", __FILE__, __LINE__, __TBX_FUNCTION__, (str), strerror(errno)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 #define TBX_ERRORF(fmt, ...) \
-     (pm2debug("TBX_FAILURE(%s:%d): " TBX_FAILURE_CONTEXT ": %s" fmt "\n", __FILE__, __LINE__, strerror(errno) , ## __VA_ARGS__), \
+     (pm2debug("TBX_FAILURE(%s:%d in %s): " TBX_FAILURE_CONTEXT ": %s" fmt "\n", __FILE__, __LINE__, __TBX_FUNCTION__, strerror(errno) , ## __VA_ARGS__), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 

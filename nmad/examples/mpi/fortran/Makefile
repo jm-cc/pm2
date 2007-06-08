@@ -15,24 +15,27 @@ ifeq ($(MPIF77),)
 MPIF77	:=	../mpif77
 endif
 
-PROGS		:=	fpi basics
+ifeq ($(MPIF90),)
+MPIF90	:=	../mpif90
+endif
+
+PROGS		:=	fpi basics pi3f90
 
 modules 	:=	$(shell pm2-config --modules)
 libs		:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)
 
 all: $(PROGS)
 
-%: %.o
+%: %.f
 	$(MPIF77) $< -o $@ ${${@}_LIBS}
 
-%.o: %.f %.h
-	$(MPIF77) -c $< -o $@
+fpi: fpi.f ${libs}
+basics: basics.f ${libs}
 
-%.o: %.f
-	$(MPIF77) -c $< -o $@
+%: %.f90
+	$(MPIF90) $< -o $@ ${${@}_LIBS}
 
-fpi: fpi.o ${libs}
-basics: basics.o ${libs}
+pi3f90: pi3f90.f90 ${libs}
 
 clean:
 	rm -f *.o $(PROGS)

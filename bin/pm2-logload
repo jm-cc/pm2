@@ -19,7 +19,12 @@ then
   PS="ps -U $USER"
 fi
 
-set `$PS | grep pm2-logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /'`
+procs=$($PS | grep pm2-logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /')
+if [ "$procs" != "" ] ; then
+    set $procs
+else
+    set ""
+fi
 num='0'
 
 while [ $# -gt 0 ]

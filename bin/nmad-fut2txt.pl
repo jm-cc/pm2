@@ -40,22 +40,25 @@ BEGIN {
     our $FUT_NMAD_EVENT_NEW_TRK_CODE		= $FUT_NMAD_CODE + 0x15;
     our $FUT_NMAD_EVENT_SND_START_CODE		= $FUT_NMAD_CODE + 0x16;
     our $FUT_NMAD_EVENT_RCV_END_CODE		= $FUT_NMAD_CODE + 0x17;
+    our $FUT_NMAD_EVENT_ANNOTATE_CODE		= $FUT_NMAD_CODE + 0x20;
 
     our %fut_code_mapping;
 
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x00}	= 'EVENT0';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x01}	= 'EVENT1';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x02}	= 'EVENT2';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x03}	= 'EVENTSTR';
+    $fut_code_mapping{$FUT_NMAD_EVENT0_CODE  }	= 'EVENT0';
+    $fut_code_mapping{$FUT_NMAD_EVENT1_CODE  }	= 'EVENT1';
+    $fut_code_mapping{$FUT_NMAD_EVENT2_CODE  }	= 'EVENT2';
+    $fut_code_mapping{$FUT_NMAD_EVENTSTR_CODE}	= 'EVENTSTR';
 
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x10}	= 'CONFIG';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x11}	= 'DRV_ID';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x12}	= 'DRV_NAME';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x13}	= 'CNX_CONNECT';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x14}	= 'CNX_ACCEPT';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x15}	= 'NEW_TRK';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x16}	= 'SND_START';
-    $fut_code_mapping{$FUT_NMAD_CODE + 0x17}	= 'RCV_END';
+    $fut_code_mapping{$FUT_NMAD_EVENT_CONFIG_CODE     }	= 'CONFIG';
+    $fut_code_mapping{$FUT_NMAD_EVENT_DRV_ID_CODE     }	= 'DRV_ID';
+    $fut_code_mapping{$FUT_NMAD_EVENT_DRV_NAME_CODE   }	= 'DRV_NAME';
+    $fut_code_mapping{$FUT_NMAD_EVENT_CNX_CONNECT_CODE}	= 'CNX_CONNECT';
+    $fut_code_mapping{$FUT_NMAD_EVENT_CNX_ACCEPT_CODE }	= 'CNX_ACCEPT';
+    $fut_code_mapping{$FUT_NMAD_EVENT_NEW_TRK_CODE    }	= 'NEW_TRK';
+    $fut_code_mapping{$FUT_NMAD_EVENT_SND_START_CODE  }	= 'SND_START';
+    $fut_code_mapping{$FUT_NMAD_EVENT_RCV_END_CODE    }	= 'RCV_END';
+
+    $fut_code_mapping{$FUT_NMAD_EVENT_ANNOTATE_CODE}	= 'ANNOTATE';
 
     our %hosts;
 
@@ -82,6 +85,7 @@ our $FUT_NMAD_EVENT_CNX_ACCEPT_CODE;
 our $FUT_NMAD_EVENT_NEW_TRK_CODE;
 our $FUT_NMAD_EVENT_SND_START_CODE;
 our $FUT_NMAD_EVENT_RCV_END_CODE;
+our $FUT_NMAD_EVENT_ANNOTATE_CODE;
 
 our %fut_code_mapping;
 
@@ -145,6 +149,8 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
     foreach my $param (@params) {
         $drv_name	.= pack ("V", $param);
     }
+
+    ($drv_name)	= unpack "Z*", $drv_name;
 
     ${$driver}{'name'}		= $drv_name;
     ${$driver}{'links'}		= {};
@@ -242,6 +248,18 @@ if ($ev_num == $FUT_NMAD_EVENT_CONFIG_CODE) {
     my $drv_name	= ${$driver}{'name'};
 
     print "$config_rank <- $remote_rank, drv id = $drv_id ($drv_name), trk id = $trk_id, length = $length";
+} elsif ($ev_num == $FUT_NMAD_EVENT_ANNOTATE_CODE) {
+    my $host	= $hosts{$host_num};
+    my $rank	= ${$host}{'config_rank'};
+
+    my $txt	= '';
+    foreach my $param (@params) {
+        $txt	.= pack ("V", $param);
+    }
+
+    ($txt)	= unpack "Z*", $txt;
+
+    print "-*- ${rank}: ${txt} -*-";
 }
 
 print "\n";

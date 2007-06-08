@@ -3,8 +3,12 @@
 # 
 SHELL = /bin/sh
 #
-F90 = gfortran
-F90LINKER = gfortran
+ifeq ($(PM2_F90),)
+F90	:=	gfortran
+else
+F90	:=	$(PM2_F90)
+endif
+F90LINKER = $(F90)
 F90SUFFIX = f90
 LDFLAGS = 
 FFLAGS  = 

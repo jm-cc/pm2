@@ -88,7 +88,7 @@ mad3()
     else
         protocols=$_PM2_CONFIG_PROTOCOLS
     fi
-    nb_protocols=$(echo $protocols | wc -w)
+    nb_protocols=$(echo $protocols | wc -w | tr -d ' ')
     if [ "$nb_protocols" != 1 ] ; then
         _pm2_load_warning "Warning: Several available protocols ($protocols). Use the parameter --protocol to select one protocol"
     fi

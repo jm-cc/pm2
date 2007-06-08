@@ -139,6 +139,22 @@ BEGIN {
     print "c -t * -i ${i} -n slateblue3\n";		 $i++;
 }
 
+END {
+    our $pseudo_time;
+    our $pseudo_time_counter;
+    our $time;
+
+    # Final flush
+    if ($pseudo_time) {
+        $pseudo_time_counter++;
+        print "T -t ${pseudo_time_counter}\n";
+    } else {
+        $time++;
+        print "T -t ${time}\n";
+    }
+
+}
+
 our $link_rate;
 our $link_delay;
 our $time_divisor;

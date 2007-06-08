@@ -6,6 +6,7 @@
 
 # $1... = command and arguments
 
+echo "##### `hostname`"
 prog=$1
 shift
 args=${@:+"$@"}

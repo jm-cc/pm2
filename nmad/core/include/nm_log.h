@@ -77,6 +77,8 @@
 #  define FUT_NMAD_EVENT_SND_START_CODE		FUT_NMAD_CODE + 0x16
 #  define FUT_NMAD_EVENT_RCV_END_CODE		FUT_NMAD_CODE + 0x17
 
+#  define FUT_NMAD_EVENT_ANNOTATE_CODE		FUT_NMAD_CODE + 0x20
+
 #  define NMAD_EVENT0()					\
  PROF_START						\
       FUT_DO_PROBE0(FUT_NMAD_EVENT0_CODE);		\
@@ -137,6 +139,11 @@
       FUT_DO_PROBE4(FUT_NMAD_EVENT_RCV_END_CODE, gate_id, drv_id, trk_id, length);	\
  PROF_END
 
+#  define NMAD_EVENT_ANNOTATE(str, ...)							\
+ PROF_START										\
+      FUT_DO_PROBESTR(FUT_NMAD_EVENT_ANNOTATE_CODE, str , ## __VA_ARGS__);		\
+ PROF_END
+
 #else
 #  define NMAD_EVENT0()				(void)0
 #  define NMAD_EVENT1(a)			(void)0
@@ -150,4 +157,5 @@
 #  define NMAD_EVENT_NEW_TRK(gate_id, drv_id, trk_id)			(void)0
 #  define NMAD_EVENT_SND_START(gate_id, drv_id, trk_id, length)		(void)0
 #  define NMAD_EVENT_RCV_END(gate_id, drv_id, trk_id, length)		(void)0
+#  define NMAD_EVENT_ANNOTATE(str, ...)		(void)0
 #endif

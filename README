@@ -3,9 +3,7 @@
 To be compiled, pm2 software needs:
 
 * make (GNU version >= 3.81)
-* gcc (version >= 3.2)
-    gcc-2.95 can be used, but you need to uncomment the last line in the
-    pm2/make/config file
+* gcc (version >= 3.3)
 * a shell that understand substitutions like ${var/find/replace}, for
     instance bash, zsh, ksh, ...
 * a recent version of the m4 compiler (how recent???)

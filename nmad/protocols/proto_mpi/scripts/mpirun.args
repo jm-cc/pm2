@@ -31,6 +31,8 @@ mpirun [mpirun_options...] <progname> [options...]
             Log output into files
     -x
             Starts each processus in a graphical console
+    --protocol <name>
+            Uses the specified network protocol to start the application
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status (currently, all are one, but this 
 may change in the future).
@@ -97,6 +99,10 @@ while [ 1 -le $# ] ; do
     -log)
 	log="yes"
         ;;
+    -protocol)
+	MPI_NMAD_PROTOCOL="$1"
+	shift
+	;;
     -usage|--usage|-help|--help|-\?)
       	# Accept these for help until the program name is provided.
       	if [ "$progname" = "" ] ; then

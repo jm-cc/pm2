@@ -905,6 +905,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
                         break;
 
                 case MX_STATUS_TRUNCATED:
+		        WARN("Driver MX: Message truncated");
                         err	=  NM_ESUCCESS;
                         break;
 

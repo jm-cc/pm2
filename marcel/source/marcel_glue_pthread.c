@@ -122,6 +122,7 @@ DEF_PTHREAD(pthread_t, self, (void), ())
 
 
 #ifdef STATIC_BUILD
+#pragma weak __libc_setup_tls
 extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 #endif
 
@@ -133,7 +134,8 @@ void __pthread_initialize_minimal(void)
 #ifdef STATIC_BUILD
   /* Unlike in the dynamically linked case the dynamic linker has not
      taken care of initializing the TLS data structures.  */
-  __libc_setup_tls (sizeof(lpt_tcb_t), __alignof__(lpt_tcb_t));
+  if (__libc_setup_tls)
+    __libc_setup_tls (sizeof(lpt_tcb_t), __alignof__(lpt_tcb_t));
 
   /* We must prevent gcc from being clever and move any of the
      following code ahead of the __libc_setup_tls call.  This function

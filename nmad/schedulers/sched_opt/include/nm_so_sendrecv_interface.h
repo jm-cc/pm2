@@ -58,6 +58,13 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 
 extern int
+nm_so_sr_progress(struct nm_so_interface *p_so_interface);
+
+extern int
+nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
+                  nm_so_request request);
+
+extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);

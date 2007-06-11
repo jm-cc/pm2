@@ -24,6 +24,7 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_debug.h"
+//#include "nm_so_log.h"
 #include "nm_so_tracks.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
@@ -741,4 +742,36 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
   }
 
   return NM_ESUCCESS;
+}
+
+/** Calls the scheduler
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @return The NM status.
+ */
+int
+nm_so_sr_progress(struct nm_so_interface *p_so_interface)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  NM_SO_SR_LOG_IN();
+
+  nm_schedule(p_core);
+
+  return NM_ESUCCESS;
+}
+
+/** Test for the completion of a SET of non blocking receive requests.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
+int
+nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
+                  nm_so_request request)
+{
+  uint8_t *p_request = (uint8_t *)request;
+
+  NM_SO_SR_LOG_IN();
+
+  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
+    NM_ESUCCESS : -NM_EAGAIN;
 }

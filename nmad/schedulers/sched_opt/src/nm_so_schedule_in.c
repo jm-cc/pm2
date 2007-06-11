@@ -112,9 +112,10 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
 
       *status = 0;
 
-      if(len)
+      if(len) {
 	/* Copy data to its final destination */
-	memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, len);
+	memcpy(data, p_so_gate->recv[tag][seq].pkt_here.data, tbx_min(len,p_so_gate->recv[tag][seq].pkt_here.p_so_pw->pw.length));
+      }
 
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */

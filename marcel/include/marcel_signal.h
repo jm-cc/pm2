@@ -68,7 +68,7 @@ typedef struct sigaction ma_kernel_sigaction_t;
 #depend "marcel_alias.h[macros]"
 #include <signal.h>
 #include <setjmp.h>
-typedef void (*sighandler_t)(int);
+typedef void (*ma_sighandler_t)(int);
 
 int pmarcel_pause(void);
 DEC_MARCEL_POSIX(int,pause,(void) __THROW);

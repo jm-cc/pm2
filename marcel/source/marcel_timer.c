@@ -33,7 +33,7 @@
 #define signal(sig,handler) syscall(SYS_signal,sig,handler)
 #else
 #define signal(sig,handler) kernel_signal(sig,handler)
-static sighandler_t TBX_UNUSED signal(int sig, sighandler_t handler)
+static ma_sighandler_t TBX_UNUSED signal(int sig, ma_sighandler_t handler)
 {
 	struct sigaction act;
 	struct sigaction oact;

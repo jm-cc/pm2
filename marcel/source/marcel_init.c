@@ -39,9 +39,7 @@ int marcel_test_activity(void)
 
 	LOG_IN();
 	result = tbx_flag_test(&marcel_activity);
-	LOG_OUT();
-
-	return result;
+	LOG_RETURN(result);
 }
 
 /*

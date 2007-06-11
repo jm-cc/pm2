@@ -207,9 +207,7 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 	mdebug("registering pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
 	       id, g, f, h, id->server.poll_points);
 
-	LOG_OUT();
-
-	return id;
+	LOG_RETURN(id);
 }
 
 void marcel_poll(marcel_pollid_t id, any_t arg)
@@ -229,7 +227,6 @@ void marcel_force_check_polling(marcel_pollid_t id)
 	marcel_ev_poll_force(&id->server);
 	
 	LOG_OUT();
-	return;
 }
 
 /****************************************************************

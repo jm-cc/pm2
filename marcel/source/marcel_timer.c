@@ -413,8 +413,7 @@ unsigned long marcel_gettimeslice(void)
 {
 	LOG_IN();
 
-	LOG_OUT();
-	return time_slice;
+	LOG_RETURN(time_slice);
 }
 #endif
 

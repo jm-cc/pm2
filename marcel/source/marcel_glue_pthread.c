@@ -113,8 +113,7 @@ versioned_symbol(libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 lpt_t lpt_self(void)
 {
 	LOG_IN();
-	LOG_OUT();
-	return (lpt_t) pmarcel_self();
+	LOG_RETURN((lpt_t) pmarcel_self());
 }
 
 DEF_PTHREAD(pthread_t, self, (void), ())
@@ -168,8 +167,7 @@ static void pthread_finalize()
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {
 	LOG_IN();
-	LOG_OUT();
-	return thread1 == thread2;
+	LOG_RETURN(thread1 == thread2);
 }
 
 #ifdef PM2_DEV
@@ -184,15 +182,13 @@ void _pthread_cleanup_push(struct _pthread_cleanup_buffer *buffer,
     void (*routine) (void *), void *arg)
 {
 	LOG_IN();
-	LOG_OUT();
-	return marcel_cleanup_push(routine, arg);
+	LOG_RETURN(marcel_cleanup_push(routine, arg));
 }
 
 void _pthread_cleanup_pop(struct _pthread_cleanup_buffer *buffer, int execute)
 {
 	LOG_IN();
-	LOG_OUT();
-	return marcel_cleanup_pop(execute);
+	LOG_RETURN(marcel_cleanup_pop(execute));
 }
 #endif
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {

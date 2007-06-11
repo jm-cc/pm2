@@ -42,8 +42,7 @@ DEF_MARCEL_POSIX(int,pause,(void),(),
 	marcel_sigset_t set;
 	marcel_sigemptyset(&set);
 	marcel_sigmask(SIG_BLOCK, NULL, &set);
-	LOG_OUT();
-	return marcel_sigsuspend(&set);
+	LOG_RETURN(marcel_sigsuspend(&set));
 })
 
 DEF_C(int,pause,(void),())
@@ -589,8 +588,7 @@ int pmarcel_sigmask(int how, __const marcel_sigset_t * set,
 		LOG_RETURN(ret);
 	/*error checking end */
 
-	LOG_OUT();
-	return marcel_sigmask(how, set, oset);
+	LOG_RETURN(marcel_sigmask(how, set, oset));
 }
 
 #ifdef MA__LIBPTHREAD
@@ -885,8 +883,7 @@ __const struct timespec *__restrict timeout)
 		if (sigismember(set, sig))
 			marcel_sigaddset(&marcel_set, sig);
 
-	LOG_OUT();
-	return marcel_sigtimedwait(&marcel_set, info, timeout);
+	LOG_RETURN(marcel_sigtimedwait(&marcel_set, info, timeout));
 }
 
 versioned_symbol(libpthread, lpt_sigtimedwait,
@@ -897,16 +894,14 @@ versioned_symbol(libpthread, lpt_sigtimedwait,
 DEF_MARCEL_POSIX(int, sigwaitinfo, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info), (set,info),
 {
         LOG_IN();
-        LOG_OUT();
-        return marcel_sigtimedwait(set,info,NULL);
+        LOG_RETURN(marcel_sigtimedwait(set,info,NULL));
 })
 
 #ifdef MA__LIBPTHREAD
 int lpt_sigwaitinfo(__const sigset_t *__restrict set,siginfo_t *__restrict info)
 {
         LOG_IN();
-        LOG_OUT();
-        return lpt_sigtimedwait(set,info,NULL);
+        LOG_RETURN(lpt_sigtimedwait(set,info,NULL));
 }
 
 versioned_symbol(libpthread, lpt_sigwaitinfo,
@@ -1036,8 +1031,7 @@ int lpt_sigsuspend(const sigset_t * sigmask)
 	for (signo = 1; signo < MARCEL_NSIG; signo++)
 		if (sigismember(sigmask, signo))
 			marcel_sigaddset(&marcel_set, signo);
-	LOG_OUT();
-	return marcel_sigsuspend(&marcel_set);
+	LOG_RETURN(marcel_sigsuspend(&marcel_set));
 }
 #endif
 
@@ -1131,8 +1125,7 @@ DEF_MARCEL_POSIX(void *,signal,(int sig, void * handler),(sig,handler),
 		LOG_RETURN(SIG_ERR);
 	}
 
-	LOG_OUT();
-	return oact.marcel_sa_handler;
+	LOG_RETURN(oact.marcel_sa_handler);
 })
 
 #ifdef MA__LIBPTHREAD
@@ -1162,8 +1155,7 @@ void *lpt___sysv_signal(int sig, void * handler)
 		LOG_RETURN(SIG_ERR);
 	}
 
-	LOG_OUT();
-	return oact.marcel_sa_handler;
+	LOG_RETURN(oact.marcel_sa_handler);
 }
 #endif
 
@@ -1485,8 +1477,7 @@ DEF_MARCEL_POSIX(int,sigignore,(int sig),(sig),
         LOG_IN();
         struct marcel_sigaction act;
         act.marcel_sa_handler = SIG_IGN;
-        LOG_OUT();
-        return marcel_sigaction(sig,&act,NULL);
+        LOG_RETURN(marcel_sigaction(sig,&act,NULL));
 })
 
 #ifdef MA__LIBPTHREAD
@@ -1534,8 +1525,7 @@ void (*pmarcel_sigset(int sig,void (*dispo)(int)))
         if (ret != 0) {
                 mdebug("pmarcel_sigset : sigaction ne retourne pas 0\n");
                 LOG_RETURN(SIG_ERR);         }
-        LOG_OUT();
-        return (marcel_sigismember(&oset,sig)?SIG_HOLD:oact.marcel_sa_handler);
+        LOG_RETURN((marcel_sigismember(&oset,sig)?SIG_HOLD:oact.marcel_sa_handler));
 }
 
 #ifdef MA__LIBPTHREAD

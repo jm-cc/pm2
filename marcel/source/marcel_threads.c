@@ -769,8 +769,7 @@ DEF_POSIX(int, detach, (pmarcel_t ptid), (ptid),
 	/* codes d'erreur */
 	int err = check_detach(tid);
 	if (err) {
-		LOG_OUT();
-		return err;
+		LOG_RETURN(err);
 	}
 	/* fin codes d'erreur */
 
@@ -1054,8 +1053,7 @@ DEF___PTHREAD(int,setconcurrency,(int new_level),(new_level))
 DEF_MARCEL_POSIX(int, getconcurrency,(void),(),
 {
 	LOG_IN();
-	LOG_OUT();
-	return concurrency;
+	LOG_RETURN(concurrency);
 })
 
 DEF_PTHREAD(int,getconcurrency,(void),())

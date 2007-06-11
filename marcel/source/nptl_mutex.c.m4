@@ -197,8 +197,7 @@ REPLICATE_CODE([[dnl
 int prefix_mutex_trylock(prefix_mutex_t * mutex)
 {
         LOG_IN();
-        LOG_OUT();
-        return __marcel_trylock(&mutex->__data.__lock);
+        LOG_RETURN(__marcel_trylock(&mutex->__data.__lock));
 }
 ]], [[MARCEL]])
 
@@ -434,8 +433,7 @@ int prefix_mutex_unlock_usercnt(prefix_mutex_t * mutex, int decr)
 int prefix_mutex_unlock(prefix_mutex_t * mutex)
 {
         LOG_IN();
-        LOG_OUT();
-  return prefix_mutex_unlock_usercnt (mutex, 1);
+        LOG_RETURN(prefix_mutex_unlock_usercnt (mutex, 1));
 }
 ]], [[PMARCEL LPT]])
 

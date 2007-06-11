@@ -120,17 +120,15 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
 				*prev = c.next;
 				s->value++;
 				ma_spin_unlock_bh(&s->lock);
-				LOG_OUT();
 				errno = EINTR;
-				return -1;
+				LOG_RETURN(-1);
 			}
 		}
 	}
 
 	ma_spin_unlock_bh(&s->lock);
 
-	LOG_OUT();
-	return 0;
+	LOG_RETURN(0);
 })
 DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s));
 
@@ -152,8 +150,7 @@ int marcel_sem_try_P(marcel_sem_t *s)
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_OUT();
-	return !result;
+	LOG_RETURN(!result);
 }
 
 DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
@@ -290,8 +287,7 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_OUT();
-	return 0;
+	LOG_RETURN(0);
 })
 
 DEF_C(int,sem_timedwait,(sem_t *__restrict sem, const struct timespec *__restrict abs_timeout),(sem,abs_timeout));

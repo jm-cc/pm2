@@ -168,9 +168,7 @@ static void *lwp_kthread_start_func(void *arg)
 	lwp_list_unlock_write();
 
 	marcel_kthread_exit(NULL);
-	LOG_OUT();
-
-	return NULL;
+	LOG_RETURN(NULL);
 }
 #endif /* MA__SMP */
 
@@ -246,6 +244,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 
 	if (IS_FIRST_LWP(lwp)) {
 		pm2debug("Arghh, trying to kill main_lwp\n");
+		LOG_OUT();
 		return;
 	}
 	marcel_sem_V(&lwp->kthread_stop);
@@ -462,8 +461,7 @@ static int lwp_start(ma_lwp_t lwp)
 		ma_unbind_from_processor();
 	}
 #endif
-	LOG_OUT();
-	return 0;
+	LOG_RETURN(0);
 }
 
 /* Pour prendre la main au tout début : à la déclaration aussi, on se

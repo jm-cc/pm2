@@ -337,7 +337,7 @@ int mpir_isend(void *buffer,
       nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
-          MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, ptr, ptr-buffer);
+          MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-buffer));
           nm_so_pack(connection, ptr, mpir_datatype->block_size);
           ptr += mpir_datatype->stride;
         }
@@ -361,8 +361,8 @@ int mpir_isend(void *buffer,
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n",
-                         i, j, (long) mpir_datatype->block_size, ptr, ptr-buffer,
-                         newptr, newptr-mpir_request->contig_buffer);
+                         i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-buffer),
+                         newptr, (int)(newptr-mpir_request->contig_buffer));
 	  memcpy(newptr, ptr, mpir_datatype->block_size);
 	  newptr += mpir_datatype->block_size;
           ptr += mpir_datatype->stride;
@@ -593,7 +593,7 @@ int mpir_irecv(void* buffer,
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           MPI_NMAD_TRACE("Copy element %d, %d from %p (+ %d) to %p (+ %d)\n",
-                         i, j, recvptr, recvptr-recvbuffer, ptr, ptr-buffer);
+                         i, j, recvptr, (int)(recvptr-recvbuffer), ptr, (int)(ptr-buffer));
           memcpy(ptr, recvptr, mpir_datatype->block_size);
           recvptr += mpir_datatype->block_size;
           ptr += mpir_datatype->block_size;

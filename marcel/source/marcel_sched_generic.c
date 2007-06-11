@@ -28,8 +28,7 @@ DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmt
 {
         LOG_IN();
 #ifdef MA__ACTIVATION
-	     LOG_OUT();
-	return nanosleep(rqtp, rmtp);
+	LOG_RETURN(nanosleep(rqtp, rmtp));
 #else	     
         unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
 
@@ -64,8 +63,7 @@ DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
 	     LOG_IN();
 #ifdef MA__ACTIVATION
-        LOG_OUT():
-	return usleep(usec);
+	LOG_RETURN(usleep(usec));
 #else
 	LOG_IN();
 
@@ -618,6 +616,5 @@ int marcel_time_suspend(const struct timespec *abstime)
         }
 
         ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-        LOG_OUT();
-        return ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
+        LOG_RETURN(ma_schedule_timeout(nsec/(1000*marcel_gettimeslice())));
 }

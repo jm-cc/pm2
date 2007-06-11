@@ -468,6 +468,8 @@ int mpir_isend(void *buffer,
     return MPI_ERR_INTERN;
   }
 
+  nm_so_sr_progress(p_so_sr_if);
+
   mpir_inc_nb_outgoing_msg();
   return err;
 }
@@ -673,6 +675,8 @@ int mpir_irecv(void* buffer,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
+
+  nm_so_sr_progress(p_so_sr_if);
 
   mpir_inc_nb_incoming_msg();
   MPI_NMAD_TRACE("Irecv completed\n");

@@ -782,7 +782,7 @@ int MPI_Send(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 
@@ -851,7 +851,7 @@ int MPI_Rsend(void* buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -885,7 +885,7 @@ int MPI_Ssend(void* buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -921,7 +921,7 @@ int MPI_Recv(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->request_type = MPI_REQUEST_RECV;
   mpir_request->request_datatype = datatype;
-  mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_Wait(&request, status);
 
@@ -1853,7 +1853,7 @@ int MPI_Reduce_scatter(void *sendbuf,
     free(requests);
   }
   else {
-    MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
+    err = MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
   }
 
   if (mpir_communicator->rank == 0) {

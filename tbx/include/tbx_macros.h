@@ -512,7 +512,7 @@ do { \
  * variables (the new value is directly given to other caches)
  */
 #if defined(MARCEL) && defined(X86_64_ARCH)
-#define TBX_SHARED_SET(v,n) asm("lock add %1,%0":"=m"(v):"r"(n-v))
+#define TBX_SHARED_SET(v,n) asm("lock add %1,%0":"=m"(v):"r"((unsigned long)n-(unsigned long)v))
 #else
 #define TBX_SHARED_SET(v,n) (v) = (n);
 #endif

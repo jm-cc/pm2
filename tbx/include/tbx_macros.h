@@ -506,3 +506,13 @@ do { \
 #define TBX_LOCAL_LBLF(num) TBX_LOCAL_LBL(num) "f"
 #define TBX_LOCAL_LBLB(num) TBX_LOCAL_LBL(num) "b"
 #endif
+
+/*
+ * On opteron, it's better to use the prefix lock for setting highly shared
+ * variables (the new value is directly given to other caches)
+ */
+#if defined(MARCEL) && defined(X86_64_ARCH)
+#define TBX_SHARED_SET(v,n) asm("lock add %1,%0":"=m"(v):"r"(n-v))
+#else
+#define TBX_SHARED_SET(v,n) (v) = (n);
+#endif

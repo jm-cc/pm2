@@ -87,6 +87,21 @@ static __tbx_inline__ void list_add(struct list_head *lnew, struct list_head *he
 	__list_add(lnew, head, head->next);
 }
 
+/* Try to use these instead if the list head is locklessly read by other processors */
+static __tbx_inline__ void __shared_list_add(struct list_head * lnew,
+	struct list_head * prev,
+	struct list_head * next)
+{
+	TBX_SHARED_SET(next->prev,lnew);
+	lnew->next = next;
+	lnew->prev = prev;
+	TBX_SHARED_SET(prev->next,lnew);
+}
+static __tbx_inline__ void shared_list_add(struct list_head *lnew, struct list_head *head)
+{
+	__shared_list_add(lnew, head, head->next);
+}
+
 /**
  * list_add_tail - add a new entry
  * @lnew: new entry to be added
@@ -135,6 +150,28 @@ static __tbx_inline__ void list_del(struct list_head *entry)
 static __tbx_inline__ void list_del_init(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
+	INIT_LIST_HEAD(entry); 
+}
+
+/* Try to use these instead if the list head is locklessly read by other processors */
+static __tbx_inline__ void __shared_list_del(struct list_head * prev,
+				  struct list_head * next)
+{
+	TBX_SHARED_SET(next->prev,prev);
+	TBX_SHARED_SET(prev->next,next);
+}
+
+static __tbx_inline__ void shared_list_del(struct list_head *entry)
+{
+	__shared_list_del(entry->prev, entry->next);
+#ifdef PM2DEBUG
+	THRASH_LIST_HEAD(entry);
+#endif
+}
+
+static __tbx_inline__ void shared_list_del_init(struct list_head *entry)
+{
+	__shared_list_del(entry->prev, entry->next);
 	INIT_LIST_HEAD(entry); 
 }
 

@@ -34,6 +34,10 @@
 #define MARCEL_INTERNAL_INCLUDE
 #endif
 
+#if defined(MARCEL_KERNEL) && (__GNUC__ < 3 || (__GNUC__ == 3 && __GNUC_MINOR__ < 3))
+#error Your gcc is too old for Marcel, please upgrade to at least 3.3
+#endif
+
 /* pour les fonctions que l'on veut "extern inline" pour l'application, il
  * faut aussi fournir un symbole, dans marcel_extern.o */
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS

@@ -53,10 +53,12 @@ void tbx_fortran_init(int *argc, char ***argv) {
 
     (*argv)[i] = malloc(MAX_ARG_LEN+1);
     if (sizeof(char*) == 4) {
-      _gfortran_getarg_i4((int32_t *)&i, (*argv)[i], MAX_ARG_LEN);
+      int32_t ii = i;
+      _gfortran_getarg_i4(&ii, (*argv)[i], MAX_ARG_LEN);
     }
     else {
-      _gfortran_getarg_i8((int64_t *)&i, (*argv)[i], MAX_ARG_LEN);
+      int64_t ii = i;
+      _gfortran_getarg_i8(&ii, (*argv)[i], MAX_ARG_LEN);
     }
     j = MAX_ARG_LEN;
     while (j > 1 && ((*argv)[i])[j-1] == ' ') {

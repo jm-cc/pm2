@@ -8,7 +8,7 @@ dans marcel.h,
 
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
-Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux....
+Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()
 
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 
@@ -16,13 +16,9 @@ Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions
 
 pmarcel_spin_* en mono.
 
-utiliser doxygen ou autre pour générer des pages de man
-
-Une interface fortran.
-
 Attributs de threads ou de bulles: une fonction marcel_(bubble_)?attr_read(const char *filename, marcel_attr_t *attr);
 
-Batterie de benchs lancés régulièrement, tirer des graphes => trouver facilement _le_ commit qui a fait perdre 1µs :)
+Émulation d'un graphe de tâches: des threads qu'on ne réveille pas initialement, mais qu'on met en liste d'attente sur une variable conditionnelle qui est broadcastée à la fin du précédent. Pb: une tâche qui dépend de plusieurs...
 
 pmarcel_create() avec PTHREAD_SCOPE_SYSTEM: les paramètres du lwp supplémentaire devraient être ceux d'attr.
 

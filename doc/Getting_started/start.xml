@@ -19,6 +19,12 @@ nodes. This manual presents an installer's, user's and developer's guide for
  PM2.
 </P>
 <P>
+If you have any questions concerning PM2, please, send an email to
+ <EMAIL>pm2-users@lists.gforge.inria.fr</EMAIL>. However, please first
+ make sure that your problem is not already listed in the
+ <EM>Frequently Asked   Questions</EM> Section <REF LABEL="sec:faq"/>.
+</P>
+<P>
   The latest version of this document is available from the following
   URL: <URL>http://runtime.futurs.inria.fr/pm2-doc/</URL>.
 </P>

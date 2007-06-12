@@ -645,13 +645,15 @@ int MPI_Init_thread(int *argc,
  * call cleans up all MPI state.
  */
 int MPI_Finalize(void) {
+  int err;
+
   MPI_NMAD_LOG_IN();
 
-  mpir_internal_exit();
+  err = mpir_internal_exit();
   mad_exit(madeleine);
 
   MPI_NMAD_LOG_OUT();
-  return MPI_SUCCESS;
+  return err;
 }
 
 /**
@@ -659,9 +661,10 @@ int MPI_Finalize(void) {
  */
 int MPI_Abort(MPI_Comm comm,
               int errorcode) {
+  int err;
   MPI_NMAD_LOG_IN();
 
-  mpir_internal_exit();
+  err = mpir_internal_exit();
   mad_exit(madeleine);
 
   MPI_NMAD_LOG_OUT();

@@ -29,10 +29,15 @@ THISDIR			:=	$(CURDIR)
 
 all: pdf
 
-upload: pdf-upload wml-upload
+upload: check-mount pdf-upload wml-upload
 	make -C $(WWW)/..
 
-wml-upload: $(WML_DEST) $(WML_FIGURES_DEST)
+check-mount:
+	@if [ ! -d $(WWW) ] ; then \
+		echo "The target 'upload' must be updated on a machine mounting $(WWW)" ; exit 1;\
+	fi
+
+wml-upload: check-mount $(WML_DEST) $(WML_FIGURES_DEST)
 
 $(WWW)/%.wml: $(BUILD)/wml/$(TARGET)/%.wml
 	cp $< $@
@@ -43,7 +48,7 @@ $(WWW)/Figures/%.png: ./Figures/%.png
 $(WWW)/my_macros.txt: ./my_macros.txt
 	cp $< $@
 
-pdf-upload: $(WWW)/resources/$(TARGET).pdf
+pdf-upload: check-mount $(WWW)/resources/$(TARGET).pdf
 
 $(WWW)/resources/$(TARGET).pdf: $(THISDIR)/$(TARGET).pdf
 	cp $< $@

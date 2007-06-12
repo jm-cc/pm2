@@ -144,7 +144,7 @@ int mpir_not_implemented(char *s);
 
 int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine);
 
-void mpir_internal_exit();
+int mpir_internal_exit();
 
 /*
  * Accessor functions
@@ -173,9 +173,9 @@ int mpir_isend(void *buffer,
                struct nm_so_interface *p_so_sr_if,
                nm_so_pack_interface p_so_pack_if);
 
-void mpir_set_status(MPI_Request *request,
-		     MPI_Status *status,
-		     struct nm_so_interface *p_so_sr_if);
+int mpir_set_status(MPI_Request *request,
+		    MPI_Status *status,
+		    struct nm_so_interface *p_so_sr_if);
 
 int mpir_irecv(void* buffer,
                int count,

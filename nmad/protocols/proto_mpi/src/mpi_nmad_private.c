@@ -201,7 +201,7 @@ int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t made
   return MPI_SUCCESS;
 }
 
-void mpir_internal_exit() {
+int mpir_internal_exit() {
   int i;
 
   for(i=0 ; i<=MPI_INTEGER ; i++) {
@@ -242,6 +242,8 @@ void mpir_internal_exit() {
   free(in_gate_id);
   free(out_dest);
   free(in_dest);
+
+  return MPI_SUCCESS;
 }
 
 long mpir_get_in_gate_id(int node) {
@@ -474,9 +476,9 @@ int mpir_isend(void *buffer,
   return err;
 }
 
-void mpir_set_status(MPI_Request *request,
-		     MPI_Status *status,
-		     struct nm_so_interface *p_so_sr_if) {
+int mpir_set_status(MPI_Request *request,
+		    MPI_Status *status,
+		    struct nm_so_interface *p_so_sr_if) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;
 
   status->MPI_TAG = mpir_request->user_tag;
@@ -492,6 +494,8 @@ void mpir_set_status(MPI_Request *request,
   else {
     status->MPI_SOURCE = mpir_request->request_source;
   }
+
+  return MPI_SUCCESS;
 }
 
 int mpir_irecv(void* buffer,

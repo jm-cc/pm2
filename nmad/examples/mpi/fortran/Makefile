@@ -12,11 +12,11 @@
 # General Public License for more details.
 
 ifeq ($(MPIF77),)
-MPIF77	:=	../mpif77
+MPIF77	:=	../mpif77 -Wall
 endif
 
 ifeq ($(MPIF90),)
-MPIF90	:=	../mpif90
+MPIF90	:=	../mpif90 -Wall
 endif
 
 PROGS		:=	fpi basics pi3f90

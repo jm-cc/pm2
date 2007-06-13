@@ -12,7 +12,7 @@
 # General Public License for more details.
 
 ifeq ($(MPICC),)
-MPICC	:=	../mpicc
+MPICC	:=	../mpicc -Wall
 endif
 
 #MPICC	:=	/opt/mpich-mx/bin/mpicc

@@ -12,7 +12,7 @@
 # General Public License for more details.
 
 ifeq ($(MPICC),)
-MPICC	:=	../mpicc -g
+MPICC	:=	../mpicc -g -Wall
 endif
 
 modules :=	$(shell pm2-config --modules)

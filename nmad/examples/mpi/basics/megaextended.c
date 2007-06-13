@@ -19,7 +19,7 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-  int i, flag, numtasks, rank, dest;
+  int i, flag, numtasks, rank;
   int ping_side, rank_dst;
   MPI_Request requests[4*1024+1];
   int *x=calloc(1024*sizeof(int), 1);

@@ -20,7 +20,6 @@
 
 int main(int argc, char **argv) {
   int numtasks, rank, i;
-  MPI_Comm comm;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);

@@ -180,7 +180,6 @@ void indexed_datatype(int rank) {
   else {
     char buffer[18];
     char buffer2[12];
-    int i;
 
     MPI_Recv(buffer, 3, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 

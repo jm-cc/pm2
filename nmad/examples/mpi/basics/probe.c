@@ -63,7 +63,7 @@ void test_probe(int rank, int size) {
   else {
     int *x, *y;
     int flag, flag1, count;
-    MPI_Request request, request1;
+    MPI_Request request;
     MPI_Status status, status1, status2;
 
     x = malloc(size*sizeof(int));

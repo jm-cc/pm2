@@ -38,7 +38,7 @@ void struct_datatype(int rank) {
   MPI_Get_address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
-  printf("sizeof struct %lu displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+  printf("sizeof struct %ud displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
@@ -72,7 +72,7 @@ void struct_datatype(int rank) {
   else {
     struct part_s particles[NB_PARTICLES];
     void *buffer, *ptr;
-    int i, j;
+    int i;
     char *class;
     double *d;
     int *b;

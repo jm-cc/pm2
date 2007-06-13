@@ -21,7 +21,7 @@
  * include/linux/jiffies.h
  */
 
-#section marcel_variables
+#section variables
 /*
  * The 64-bit value is not volatile - you MUST NOT read it
  * without sampling the sequence number in xtime_lock.

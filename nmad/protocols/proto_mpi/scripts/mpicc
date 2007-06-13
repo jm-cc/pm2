@@ -228,7 +228,7 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
         dir=$(echo $dir"/"$(dirname $link))
     fi
     . $dir/mpicc.ext
-    $Show $CLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/ext/obj/$arch/arg_ifort.o
+    $Show $CLINKER $USER_CFLAGS $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/ext/obj/$arch/arg_ifort.o
     status=$?
 fi
 exit $status

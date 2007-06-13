@@ -30,18 +30,6 @@
 
 #include <nm_so_pack_interface.h>
 
-#if defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
-#else
-#  include <nm_tcp_public.h>
-#endif
-
 #define MIN_SIZE   4
 #define MAX_SIZE   1024 * 1024 * 4
 #define MIN_BLOCKS 2

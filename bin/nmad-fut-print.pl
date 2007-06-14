@@ -171,23 +171,27 @@ sub disp_event($$;$) {
     my $nb_params	= ${$event}{'nb_params'};
     my $a	= ${$event}{'param_array'};
 
+    my $s	= '';
+
     if ($short_fmt) {
-        print "${$event}{'time'},${$event}{'tid'},${$event}{'num'},$nb_params";
+        $s	.= "${$event}{'time'},${$event}{'tid'},${$event}{'num'},$nb_params";
         for my $i (0..$nb_params-1) {
-            print ",${$a}[$i]";
+            $s	.= ",${$a}[$i]";
         }
     } else {
-        print "time:\t\t ${$event}{'time'}\n";
-        print "thread id:\t ${$event}{'tid'}\n";
-#    printf "event code:\t %x\n", ${$event}{'code'};
-        printf "event num:\t %x\n", ${$event}{'num'};
+        $s	.= "time:\t\t ${$event}{'time'}\n";
+        $s	.= "thread id:\t ${$event}{'tid'}\n";
+#    $s .= "event code:\t %x\n", ${$event}{'code'};
+        $s 	.= sprintf "event num:\t %x\n", ${$event}{'num'};
 
-#    print "nb params:\t ${nb_params}\n";
+#    $s .= "nb params:\t ${nb_params}\n";
 
         for my $i (0..$nb_params-1) {
-            printf "param ${i}:\t %x\n", ${$a}[$i];
+            $s	.= sprintf "param ${i}:\t %x\n", ${$a}[$i];
         }
     }
+
+    return $s;
 }
 
 # 32bit version of the event block parsing routine
@@ -371,14 +375,19 @@ use Getopt::Std;
 my $filter	= 0x0;	# event selector filter
 my $mask	= 0x0;	# event selector mask
 my $short_fmt	= 0;	# bool, short display format
+my $len_prefix	= 0;	# bool, prefix record with length for rewind
 my $base_event	= 0;	# event used as the timestamp offset reference
 
 # read command line args
 my %opts;
-my $ret	= getopts('b:sf:m:', \%opts);	# -s -f <FILTER> -m <MASK>
+my $ret	= getopts('b:slf:m:', \%opts);	# -b <BASE_EVENT> -s -l -f <FILTER> -m <MASK>
 
 if (exists $opts{'s'}) {
     $short_fmt	= 1;
+}
+
+if (exists $opts{'l'}) {
+    $len_prefix	= 1;
 }
 
 if (exists $opts{'f'}) {
@@ -465,6 +474,7 @@ print "\n"
 # read and interclass the events of each tracefile
 my $ev_count	 = 0;
 while (@file) {
+    my $string = '';
 
     # find next event in order
     my $min		= 0;
@@ -482,16 +492,27 @@ while (@file) {
     my $min_file	= $file[$min];
     my $min_file_object	= ${$min_file}{'object'};
 
+    my $s	= $min_file_object->disp_event($short_fmt);
+
     if ($short_fmt) {
-        print "${ev_count},${$min_file}{'num'},";
-        $min_file_object->disp_event($short_fmt);
-        print "\n";
+        $string .= "${ev_count},${$min_file}{'num'},";
+        $string .= $s;
+        $string .= "\n";
     } else {
-        print "\n event ${ev_count}\n";
-        print "${$min_file}{'name'}\n";
-        $min_file_object->disp_event($short_fmt);
+        $string .= "\n event ${ev_count}\n";
+        $string .= "${$min_file}{'name'}\n";
+        $string .= $s;
     }
 
+    if ($len_prefix) {
+        if ($short_fmt) {
+            $string	= sprintf "%04x,%s", length($string)+5, $string;
+        } else {
+            $string	= sprintf "%04x%s", length($string)+4, $string;
+        }
+    }
+
+    print $string;
     $ev_count++;
 
     # make the corresponding tracefile object progress
@@ -510,7 +531,3 @@ while (@file) {
     }
 
 }
-
-print "\n"
-    unless $short_fmt;
-

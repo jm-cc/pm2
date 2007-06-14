@@ -44,12 +44,35 @@ BubbleOps *curBubbleOps;
  * End of configuration
  */
 
-
-void gasp() {
-	/* essaie quand même de sauver ce qu'on peut */
-	BubbleMovie_abort(movie);
+extern void bad_type_in_gasp(void);
+#define highlight(x) { \
+	entity_t *_x = (entity_t*) (x); \
+	_x->gasp = 1; \
+	updateEntity(_x); \
 }
 
+#define gasp(msg,...) do { \
+	/* essaie quand même de sauver ce qu'on peut */ \
+	BubbleMovie_status(movie, msg); \
+	fprintf(stderr,msg "\n",##__VA_ARGS__); \
+	BubbleMovie_nextFrame(movie); \
+	BubbleMovie_abort(movie); \
+} while(0)
+
+#define gasp1(x, msg, ...) do { \
+	highlight(x); \
+	gasp(msg, ##__VA_ARGS__); \
+} while(0)
+
+#define gasp2(x, y, msg, ...) do { \
+	highlight(x); \
+	gasp1(y, msg, ##__VA_ARGS__); \
+} while(0)
+
+#define gasp3(x, y, z, msg, ...) do { \
+	highlight(x); \
+	gasp2(y, z, msg, ##__VA_ARGS__); \
+} while(0)
 
 /*******************************************************************************
  * The principle of animation is to show some entities (showEntity()), and then
@@ -126,14 +149,17 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 		(*rqs)[i].entity.lastitem = NULL;
 		(*rqs)[i].entity.holder = NULL;
 		(*rqs)[i].entity.bubble_holder = NULL;
+		(*rqs)[i].entity.gasp = 0;
 		INIT_LIST_HEAD(&(*rqs)[i].entities);
 		(*rqs)[i].nextX = (*rqs)[i].entity.x + RQ_XMARGIN;
 	}
 }
 
 /* draw a runqueue */
-static void setRunqueue(BubbleShape shape, unsigned thick, float width, float height) {
-	BubbleShape_setLine(shape,thick,0,0,255,255);
+static void setRunqueue(BubbleShape shape, rq_t *rq) {
+	float width = rq->entity.width;
+	float height = rq->entity.height;
+	BubbleShape_setLine(shape,rq->entity.thick,rq->entity.gasp?255:0,0,255,255);
 	BubbleShape_movePenTo(shape,0,height-RQ_YMARGIN);
 	BubbleShape_drawLineTo(shape,width,height-RQ_YMARGIN);
 }
@@ -172,6 +198,7 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->entity.leaving_holder = 0;
 	b->entity.nospace = 0;
 	b->entity.id = -1;
+	b->entity.gasp = 0;
 	INIT_LIST_HEAD(&b->heldentities);
 	b->exploded = 0;
 	b->morph = NULL;
@@ -186,7 +213,13 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
  * Thread
  */
 
-static void setThread(BubbleShape shape, unsigned thick, float width, float height, int prio, state_t state, char *name) {
+static void setThread(BubbleShape shape, thread_t *t) {
+	unsigned thick = t->entity.thick;
+	float width = t->entity.width;
+	float height = t->entity.height;
+	int prio = t->entity.prio;
+	state_t state = t->state;
+	char *name = t->name;
 	float xStep = width/3, yStep = height/9;
 
 	switch (state) {
@@ -203,6 +236,8 @@ static void setThread(BubbleShape shape, unsigned thick, float width, float heig
 		BubbleShape_setLine(shape,thick,200,200,200,255);
 		break;
 	}
+	if (t->entity.gasp)
+		BubbleShape_setLine(shape,thick,255,0,255,255);
 	BubbleShape_movePen(shape,    xStep,0);
 	BubbleShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	BubbleShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
@@ -242,6 +277,7 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.leaving_holder = 0;
 	t->entity.nospace = 0;
 	t->entity.id = -1;
+	t->entity.gasp = 0;
 	t->state = THREAD_BLOCKED;
 	t->name = NULL;
 	t->number = -1;
@@ -250,7 +286,12 @@ thread_t *newThread (int prio, rq_t *initrq) {
 }
 
 #ifdef BUBBLES
-static void setBubble(BubbleShape shape, float width, float height, int prio) {
+static void setBubble(BubbleShape shape, bubble_t *b) {
+	float width = b->width;
+	float height = b->height;
+	int prio = b->prio;
+	if (b->gasp)
+		BubbleShape_setLine(shape,b->thick,255,0,255,255);
 	BubbleShape_movePen(shape,CURVE,0);
 	BubbleShape_drawLine(shape,width-2*CURVE,0);
 	BubbleShape_drawCurve(shape,CURVE,0,0,CURVE);
@@ -266,29 +307,29 @@ static void setBubble(BubbleShape shape, float width, float height, int prio) {
 	}
 }
 
-static void setPlainBubble(BubbleShape shape, unsigned thick, float width, float height, int prio) {
-	BubbleShape_setLine(shape,thick,0,0,0,255);
-	setBubble(shape,width,height,prio);
+static void setPlainBubble(BubbleShape shape, bubble_t *b) {
+	BubbleShape_setLine(shape,b->thick,0,0,0,255);
+	setBubble(shape,b);
 }
 
-static void setExplodedBubble(BubbleShape shape, unsigned thick, float width, float height, int prio) {
-	BubbleShape_setLine(shape,thick,0,0,0,128);
-	setBubble(shape,width,height,prio);
+static void setExplodedBubble(BubbleShape shape, bubble_t *b) {
+	BubbleShape_setLine(shape,b->thick,0,0,0,128);
+	setBubble(shape,b);
 }
 
 static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
 	if (BubbleSetBubble)
 		BubbleSetBubble(shape, b->entity.id, b->entity.x, b->entity.y, b->entity.width, b->entity.height);
 	if (b->exploded)
-		setExplodedBubble(shape,b->entity.thick,b->entity.width,b->entity.height,b->entity.prio);
+		setExplodedBubble(shape,b);
 	else
-		setPlainBubble(shape,b->entity.thick,b->entity.width,b->entity.height,b->entity.prio);
+		setPlainBubble(shape,b);
 	BubbleDisplayItem_moveTo(b->entity.lastitem,b->entity.x,b->entity.y);
 }
 static void setThreadRecur(BubbleShape shape, thread_t *t) {
 	if (BubbleSetThread)
 		BubbleSetThread(shape, t->entity.id, t->entity.x, t->entity.y, t->entity.width, t->entity.height);
-	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->state,t->name);
+	setThread(shape,t);
 }
 
 
@@ -324,13 +365,13 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
 	}
 }
 static void setThreadRecur(BubbleShape shape, thread_t *t) {
-	setThread(shape, t->entity.thick, t->entity.width, t->entity.height, t->entity.prio, t->state, t->name);
+	setThread(shape, t);
 }
 static void setEntityRecur(BubbleShape shape, entity_t *e) {
 	switch(e->type) {
 		case THREAD: return setThreadRecur(shape,thread_of_entity(e));
 		case BUBBLE: return setBubbleRecur(shape,bubble_of_entity(e));
-		case RUNQUEUE: return setRunqueue(shape,e->thick,e->x,e->y);
+		case RUNQUEUE: return setRunqueue(shape,rq_of_entity(e));
 	}
 }
 #endif
@@ -364,7 +405,7 @@ static void doEntity(entity_t *e) {
 		break;
 		case RUNQUEUE: {
 			rq_t *rq = rq_of_entity(e);
-			setRunqueue(shape, rq->entity.thick, rq->entity.width, rq->entity.height);
+			setRunqueue(shape, rq);
 			e->lastitem = BubbleMovie_add(movie,(BubbleBlock)shape);
 			BubbleDisplayItem_moveTo(e->lastitem,e->x,e->y);
 		}
@@ -394,7 +435,7 @@ void updateEntity(entity_t *e) {
 }
 
 static void hideEntity(entity_t *e) {
-	if (!e->lastitem) gasp();
+	if (!e->lastitem) gasp1(e, "hiding already hidden entity");
 	BubbleDisplayItem_remove(e->lastitem);
 	e->lastitem = NULL;
 }
@@ -656,8 +697,7 @@ static void addToRunqueueAtBegin2(rq_t *rq, entity_t *e) {
 
 static void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 	entityMoveEnd(e);
-	if (e->holder)
-		gasp();
+	if (e->holder) gasp2(rq, e, "adding non-free entity to runqueue");
 	list_add_tail(&e->rq,&rq->entities);
 	e->holder = &rq->entity;
 }
@@ -665,8 +705,7 @@ static void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 #ifdef BUBBLES
 static void addToRunqueueAtEnd(rq_t *rq, entity_t *e, entity_t *after) {
 	entityMoveEnd(e);
-	if (e->holder)
-		gasp();
+	if (e->holder) gasp(rq, e, "adding non-free entity to runqueue");
 	list_add(&e->rq,&after->rq);
 	e->holder = &rq->entity;
 }
@@ -961,7 +1000,7 @@ static void addToBubbleBegin(bubble_t *b, entity_t *e) {
 
 #ifdef BUBBLES
 #warning not implemented yet
-	gasp();
+	gasp("not implemented yet");
 #endif
 
 	bubbleMorphBegin(b);
@@ -981,8 +1020,7 @@ static void addToBubbleBegin(bubble_t *b, entity_t *e) {
 	}
 
 #ifdef TREES
-	if (e->bubble_holder != b)
-		gasp();
+	if (e->bubble_holder != b) gasp2(b,e,"adding entity to bubble that doesn't hold it");
 #endif
 }
 
@@ -1033,8 +1071,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 
 	if (b->exploded) {
 		if (b->entity.holder->type != RUNQUEUE) {
-			fprintf(stderr,"bubble exploded on something else than runqueue\n");
-			gasp();
+			gasp2(b, e, "while inserting, bubble exploded on something else than runqueue");
 		}
 		rq = rq_of_entity(b->entity.holder);
 		if (e->holder) {
@@ -1073,8 +1110,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 		}
 
 #ifdef TREES
-		if (e->bubble_holder)
-			gasp();
+		if (e->bubble_holder) gasp3(e, e->bubble_holder, b, "inserting entity that is already inserted in a bubble");
 		list_add_tail(&e->entity_list,&b->heldentities);
 		e->bubble_holder = b;
 #endif
@@ -1125,8 +1161,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 			growInHolderEnd(&b->entity);
 		bubbleMorphEnd(b);
 #ifdef BUBBLES
-		if (e->bubble_holder)
-			gasp();
+		if (e->bubble_holder) gasp3(e, e->bubble_holder, b, "inserting entity that is already inserted in a bubble");
 		list_add_tail(&e->entity_list,&b->heldentities);
 		e->bubble_holder = b;
 #endif
@@ -1146,12 +1181,11 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 
 void bubbleRemoveEntity(bubble_t *b, entity_t *e) {
 #ifndef TREES
-	gasp();
+	gasp("not useful");
 #endif
 	switchRunqueues(norq,e);
 	list_del(&e->entity_list);
-	if (e->bubble_holder != b)
-		gasp();
+	if (e->bubble_holder != b) gasp3(e, e->bubble_holder, b, "removing entity from a bubble that isn't its holder");
 	e->bubble_holder = NULL;
 	updateEntity(&b->entity);
 	showEntity(e);
@@ -1167,10 +1201,8 @@ static void bubbleExplodeBegin(bubble_t *b) {
 	entity_t *el;
 	rq_t *rq;
 
-	if (b->entity.holder->type != RUNQUEUE) {
-		fprintf(stderr,"bubble exploding on something else than runqueue\n");
-		gasp();
-	}
+	if (b->entity.holder->type != RUNQUEUE)
+		gasp1(b, "bubble exploding on something else than runqueue");
 	rq = rq_of_entity(b->entity.holder);
 	bubbleMorphBegin(b);
 
@@ -1200,10 +1232,8 @@ static void bubbleExplodeStep(bubble_t *b, float step) {
 	entity_t *el;
 	rq_t *rq;
 
-	if (b->entity.holder->type != RUNQUEUE) {
-		fprintf(stderr,"bubble exploding on something else than runqueue\n");
-		gasp();
-	}
+	if (b->entity.holder->type != RUNQUEUE)
+		gasp1(b,"bubble exploding on something else than runqueue\n");
 
 	rq = rq_of_entity(b->entity.holder);
 	bubbleMorphStep(b,step);
@@ -1220,10 +1250,8 @@ static void bubbleExplodeEnd(bubble_t *b) {
 	entity_t *el;
 	rq_t *rq;
 
-	if (b->entity.holder->type != RUNQUEUE) {
-		fprintf(stderr,"bubble exploding on something else than runqueue\n");
-		gasp();
-	}
+	if (b->entity.holder->type != RUNQUEUE)
+		gasp1(b,"bubble exploding on something else than runqueue\n");
 
 	rq = rq_of_entity(b->entity.holder);
 
@@ -1268,8 +1296,7 @@ static void removeFromHolderBegin(entity_t *e) {
 		removeFromBubbleBegin(bubble_of_entity(e->holder),e);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1283,8 +1310,7 @@ static void removeFromHolderBegin2(entity_t *e) {
 		removeFromBubbleBegin2(bubble_of_entity(e->holder),e);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1298,8 +1324,7 @@ static void removeFromHolderStep(entity_t *e, float step) {
 		removeFromBubbleStep(bubble_of_entity(e->holder),e,step);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1313,8 +1338,7 @@ static void removeFromHolderEnd(entity_t *e) {
 		removeFromBubbleEnd(bubble_of_entity(e->holder),e);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1327,8 +1351,7 @@ static void growInHolderBegin(entity_t *e, float dx, float dy) {
 		growInBubbleBegin(bubble_of_entity(e->holder), e, dx, dy);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1341,8 +1364,7 @@ static void growInHolderBegin2(entity_t *e) {
 		growInBubbleBegin2(bubble_of_entity(e->holder), e);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1355,8 +1377,7 @@ static void growInHolderStep(entity_t *e, float step) {
 		growInBubbleStep(bubble_of_entity(e->holder), e, step);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 
@@ -1369,8 +1390,7 @@ static void growInHolderEnd(entity_t *e) {
 		growInBubbleEnd(bubble_of_entity(e->holder), e);
 		break;
 	default:
-		fprintf(stderr,"uuh, %p's holder of type %d ?!\n",e,e->holder->type);
-		gasp();
+		gasp1(e,"uuh, %p's holder of type %d ?!",e,e->holder->type);
 	}
 }
 

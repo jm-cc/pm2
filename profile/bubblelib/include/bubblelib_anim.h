@@ -83,6 +83,7 @@ typedef struct entity_s {
 	int leaving_holder;	/* are we leaving our holder (special case for animations) */
 	int nospace;		/* in the case of explosion, space used by an entity might actually be already reserved by the holding bubble */
 	int id;			/* ID of the entity */
+	int gasp;		/* there's a problem with this entity */
 } entity_t;
 
 /*******************************************************************************

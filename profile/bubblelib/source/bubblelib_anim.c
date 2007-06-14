@@ -52,10 +52,9 @@ extern void bad_type_in_gasp(void);
 }
 
 #define gasp(msg,...) do { \
-	/* essaie quand même de sauver ce qu'on peut */ \
-	BubbleMovie_status(movie, msg); \
 	fprintf(stderr,msg "\n",##__VA_ARGS__); \
 	BubbleMovie_nextFrame(movie); \
+	/* essaie quand même de sauver ce qu'on peut */ \
 	BubbleMovie_abort(movie); \
 } while(0)
 

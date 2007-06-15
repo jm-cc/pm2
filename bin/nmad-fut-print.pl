@@ -377,6 +377,7 @@ my $mask	= 0x0;	# event selector mask
 my $short_fmt	= 0;	# bool, short display format
 my $len_prefix	= 0;	# bool, prefix record with length for rewind
 my $base_event	= 0;	# event used as the timestamp offset reference
+my $old_length	= 0;	# length of the previous event in the merged trace
 
 # read command line args
 my %opts;
@@ -506,10 +507,12 @@ while (@file) {
 
     if ($len_prefix) {
         if ($short_fmt) {
-            $string	= sprintf "%04x,%s", length($string)+5, $string;
+            $string	= sprintf "%04x,%s", $old_length, $string;
         } else {
-            $string	= sprintf "%04x%s", length($string)+4, $string;
+            $string	= sprintf "%04x%s", $old_length, $string;
         }
+
+        $old_length	= length($string);
     }
 
     print $string;

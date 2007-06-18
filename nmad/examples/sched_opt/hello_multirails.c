@@ -122,13 +122,13 @@ main(int	  argc,
                 /* server
                  */
 
-                err = nm_core_gate_accept(p_core, gate_id, drv1_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv1_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
-                err = nm_core_gate_accept(p_core, gate_id, drv2_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv2_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv2) returned err = %d\n", err);
                         goto out;
@@ -148,14 +148,14 @@ main(int	  argc,
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv1_id,
-                                           hostname, r_url1);
+                                           r_url1);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
                 err = nm_core_gate_connect(p_core, gate_id, drv2_id,
-                                           hostname, r_url2);
+                                           r_url2);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv2) returned err = %d\n", err);
                         goto out;
@@ -167,12 +167,12 @@ main(int	  argc,
 
 		  memset(buf, ' ', SIZE);
 		  dst = buf;
-		  src = msg_beg;
+		  src = (char *) msg_beg;
 		  while(*src)
 		    *dst++ = *src++;
 
 		  dst = buf + SIZE - strlen(msg_end);
-		  src = msg_end;
+		  src = (char *) msg_end;
 		  while(*src)
 		    *dst++ = *src++;
 

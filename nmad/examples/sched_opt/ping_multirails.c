@@ -159,13 +159,13 @@ main(int	  argc,
                 /* server
                  */
 
-                err = nm_core_gate_accept(p_core, gate_id, drv_id[0], NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id[0], NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
-                err = nm_core_gate_accept(p_core, gate_id, drv_id[1], NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id[1], NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept(drv2) returned err = %d\n", err);
                         goto out;
@@ -214,14 +214,14 @@ main(int	  argc,
                 /* client
                  */
                 err = nm_core_gate_connect(p_core, gate_id, drv_id[0],
-                                           hostname, r_url1);
+                                           r_url1);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv1) returned err = %d\n", err);
                         goto out;
                 }
 
                 err = nm_core_gate_connect(p_core, gate_id, drv_id[1],
-                                           hostname, r_url2);
+                                           r_url2);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect(drv2) returned err = %d\n", err);
                         goto out;

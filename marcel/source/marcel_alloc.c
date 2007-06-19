@@ -247,6 +247,8 @@ static void __marcel_init marcel_slot_init(void)
 #elif defined(IA64_ARCH)
 	register unsigned long base asm("r13");
 	__main_thread_tls_base = base;
+#else
+#error TODO
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,

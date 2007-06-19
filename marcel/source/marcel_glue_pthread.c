@@ -271,8 +271,18 @@ cancellable_call(int, fsync, (int fd), (fd))
 cancellable_call(off_t, lseek, (int fd, off_t offset, int whence), fd, offset, whence)
 cancellable_call(int, open, (const char *path, int flags, mode_t mode), path, flags, mode)
 cancellable_call_ext(int, open64, SYS_open, GLIBC_2_2, (const char *path, int flags, mode_t mode), path, flags, mode)
-cancellable_call_ext(ssize_t, pread64, SYS_pwrite64, GLIBC_2_2, (int fd, void *buf, size_t count, off64_t pos), fd, buf, count, pos)
+#ifdef SYS_pread
+cancellable_call_ext(ssize_t, pread, SYS_pread, GLIBC_2_2, (int fd, void *buf, size_t count, off_t pos), fd, buf, count, pos)
+#endif
+#ifdef SYS_pread64
+cancellable_call_ext(ssize_t, pread64, SYS_pread64, GLIBC_2_2, (int fd, void *buf, size_t count, off64_t pos), fd, buf, count, pos)
+#endif
+#ifdef SYS_pwrite
+cancellable_call_ext(ssize_t, pwrite, SYS_pwrite, GLIBC_2_2, (int fd, const void *buf, size_t count, off_t pos), fd, buf, count, pos)
+#endif
+#ifdef SYS_pwrite64
 cancellable_call_ext(ssize_t, pwrite64, SYS_pwrite64, GLIBC_2_2, (int fd, const void *buf, size_t count, off64_t pos), fd, buf, count, pos)
+#endif
 cancellable_call(ssize_t, read, (int fd, void *buf, size_t count), fd, buf, count)
 #ifdef SYS_waitpid
 cancellable_call(pid_t, waitpid, (pid_t pid, int *status, int options), pid, status, options)

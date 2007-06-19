@@ -62,8 +62,7 @@ ma_allocator_t *marcel_tls_slot_allocator;
 #if defined(X86_ARCH)
 unsigned short __main_thread_desc;
 static uintptr_t sysinfo;
-#endif
-#if defined(X86_64_ARCH)
+#elif defined(X86_64_ARCH) || defined(IA64_ARCH)
 unsigned long __main_thread_tls_base;
 #endif
 #endif
@@ -245,6 +244,9 @@ static void __marcel_init marcel_slot_init(void)
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
+#elif defined(IA64_ARCH)
+	register unsigned long base asm("r13");
+	__main_thread_tls_base = base;
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,

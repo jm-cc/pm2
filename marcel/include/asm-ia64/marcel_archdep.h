@@ -109,17 +109,24 @@ typedef struct {
   char padding[128]; //pour la structure thread de nptl...
 } lpt_tcb_t;
 
-// Variante I
+extern unsigned long __main_thread_tls_base;
+
+/* Variante I */
 #define marcel_tcb(new_task) \
   ((void*)(&(new_task)->tls))
 
 #define marcel_ctx_set_tls_reg(new_task) \
   do { \
+    void *tcb; \
+    if (new_task == __main_thread) \
+      tcb = (void*) __main_thread_tls_base; \
+    else \
+      tcb = marcel_tcb(new_task); \
     __asm__ __volatile__( \
       ";; \n\t" \
       "mov r13 = %0 \n\t" \
       ";; \n\t" \
-        : : "r" (marcel_tcb(new_task)) : "r13" ); \
+        : : "r" (tcb) : "r13" ); \
   } while (0)
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0

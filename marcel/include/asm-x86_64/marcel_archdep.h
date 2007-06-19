@@ -79,8 +79,6 @@
                        : : "r" (__sp), "r" (__bp) : "memory", "rsp" ); \
   } while (0)
 
-extern unsigned long __main_thread_tls_base;
-
 #ifdef MA__PROVIDE_TLS
 #include <stdint.h>
 /* nptl/sysdeps/x86_64/tls.h */
@@ -95,7 +93,9 @@ typedef struct {
   char padding[128]; //pour la structure thread de nptl...
 } lpt_tcb_t;
 
-// Variante II
+extern unsigned long __main_thread_tls_base;
+
+/* Variante II */
 #define marcel_tcb(new_task) \
   ((void*)(&(new_task)->tls[MA_TLS_AREA_SIZE - sizeof(lpt_tcb_t)]))
 #define marcel_ctx_set_tls_reg(new_task) \

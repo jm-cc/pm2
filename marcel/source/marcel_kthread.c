@@ -98,14 +98,14 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	stack_size = (sp - stack_base) & (~0xF);
 	int ret = __clone2((int (*)(void *)) func,
 	    stack_base, stack_size,
-	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_DETACHED |
 	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
 	    arg, pid, &dummy, pid);
 	MA_BUG_ON(ret == -1);
 #else
 	int ret = clone((int (*)(void *)) func,
 	    sp,
-	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_DETACHED |
 	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
 	    arg, pid, &dummy, pid);
 	MA_BUG_ON(ret == -1);

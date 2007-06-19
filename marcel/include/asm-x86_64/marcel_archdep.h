@@ -87,6 +87,7 @@ typedef struct {
   void *dtv;
   void *self;
   int multiple_threads;
+  int gscope_flag;
   uintptr_t sysinfo;
   uintptr_t stack_guard;
   uintptr_t pointer_guard;

@@ -146,16 +146,6 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw);
  * Functions
  */
 
-/** Display the MX request status */
-static
-void
-nm_mx_print_status(mx_status_t s) {
-	const char *msg = NULL;
-
-	msg = mx_strstatus(s.code);
-	DISP("mx status: %s", msg);
-}
-
 /** Display the MX return value */
 static __tbx_inline__
 void
@@ -929,6 +919,8 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
 	tbx_free(mx_pw_mem, p_mx_pw);
 
         if (tbx_unlikely(status.code != MX_SUCCESS)) {
+		WARN("MX driver: request completed with non-successful status: %s",
+		     mx_strstatus(status.code));
                 switch (status.code) {
                 case MX_STATUS_PENDING:
                 case MX_STATUS_BUFFERED:
@@ -939,7 +931,6 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
                         break;
 
                 case MX_STATUS_TRUNCATED:
-		        WARN("Driver MX: Message truncated");
                         err	=  NM_ESUCCESS;
                         break;
 

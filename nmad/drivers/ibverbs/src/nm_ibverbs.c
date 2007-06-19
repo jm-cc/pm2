@@ -634,9 +634,11 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	fprintf(stderr, "Infiniband:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 		p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
 		p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
-	fprintf(stderr, "Infiniband:   max_mr=%d; max_mr_size=%lu; page_size_cap=%lu; max_msg_size=%lu\n",
-		p_ibverbs_drv->ib_caps.max_mr, p_ibverbs_drv->ib_caps.max_mr_size,
-		p_ibverbs_drv->ib_caps.page_size_cap, p_ibverbs_drv->ib_caps.max_msg_size);
+	fprintf(stderr, "Infiniband:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+		p_ibverbs_drv->ib_caps.max_mr,
+		(unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
+		(unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
+		(unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
 
 	fprintf(stderr, "Infiniband:   active_width=%d; active_speed=%d\n",
 		(int)port_attr.active_width, (int)port_attr.active_speed);

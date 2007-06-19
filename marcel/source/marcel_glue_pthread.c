@@ -33,11 +33,13 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
     void *(*start_routine) (void *), void *arg)
 {
 	LOG_IN();
-	static int _launched = 0;
 	marcel_attr_t new_attr;
 
-	if (__builtin_expect(_launched, 1) == 0) {
-		marcel_start_sched(NULL, NULL);
+	if (__builtin_expect(marcel_activity, tbx_true) == tbx_false) {
+		int argc = 1;
+		char *argv = NULL;
+		marcel_init(&argc, &argv);
+  		// TODO: call libc_pthread_init
 	}
 
 	if (attr != NULL) {
@@ -129,32 +131,22 @@ extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 /* Appelé par la libc pour initialiser de manière basique. */
 void __pthread_initialize_minimal(void)
 {
-	//marcel_init_section(MA_INIT_MAIN_LWP);
 #ifdef STATIC_BUILD
-  /* Unlike in the dynamically linked case the dynamic linker has not
-     taken care of initializing the TLS data structures.  */
-  if (__libc_setup_tls)
-    __libc_setup_tls (sizeof(lpt_tcb_t), __alignof__(lpt_tcb_t));
+	/* Unlike in the dynamically linked case the dynamic linker has not
+	   taken care of initializing the TLS data structures.  */
+	if (__libc_setup_tls)
+		__libc_setup_tls (sizeof(lpt_tcb_t), __alignof__(lpt_tcb_t));
 
-  /* We must prevent gcc from being clever and move any of the
-     following code ahead of the __libc_setup_tls call.  This function
-     will initialize the thread register which is subsequently
-     used.  */
-  __asm __volatile ("");
+	/* We must prevent gcc from being clever and move any of the
+	   following code ahead of the __libc_setup_tls call.	This function
+	   will initialize the thread register which is subsequently
+	   used.	*/
+	__asm __volatile ("");
 #endif
 
-  // TODO: call libc_pthread_init
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 
-/* Appelé par la libc. Non utilisée par marcel */
-void __pthread_initialize(int *argc, char **argv)
-{
-	//marcel_init_section(MA_INIT_MAIN_LWP);
-	mdebug("__Initialisation libpthread marcel-based\n");
-}
-
-//strong_alias(pthread_initialize,__pthread_initialize);
 //static void pthread_finalize() __attribute__((destructor));
 /*
 static void pthread_finalize()

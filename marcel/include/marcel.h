@@ -172,8 +172,6 @@ unsigned long marcel_usablestack(void);
 
 /* ============= miscellaneous ============ */
 
-int  marcel_test_activity(void);
-
 void marcel_start_playing(void);
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)

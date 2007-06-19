@@ -31,11 +31,11 @@
  * Begin: added by O.A.
  * --------------------
  */
-static tbx_flag_t marcel_activity = tbx_flag_clear;
+tbx_flag_t marcel_activity = tbx_flag_clear;
 
 int marcel_test_activity(void)
 {
-	tbx_bool_t result = tbx_false;
+	tbx_bool_t result;
 
 	LOG_IN();
 	result = tbx_flag_test(&marcel_activity);
@@ -48,20 +48,11 @@ int marcel_test_activity(void)
  */
 
 #ifdef STACKALIGN
-static int _initialized;
-
 void marcel_initialize(int* argc, char**argv)
 {
-	if (!_initialized) {
+	if (!marcel_test_activity()) {
 		LOG_IN();
-		marcel_init_data(argc, argv);
-		tbx_init(*argc, argv);
-		tbx_purge_cmd_line(argc, argv);
-		/* TODO: A reporter : */
-                //TODO__on_exit (pthread_onexit_process, NULL);
-		/* TODO: à la création du premier thread */
-	
-		_initialized=1;
+		marcel_init(argc,argv);
 		LOG_OUT();
 	}
 }

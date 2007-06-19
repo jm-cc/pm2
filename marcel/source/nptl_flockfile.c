@@ -27,9 +27,6 @@
 /* On doit rester en dessous de cette taille pour un lock rÃ©cursif :-((( */
 //typedef struct { int lock; int cnt; void *owner; } _lpt_IO_lock_t;
 
-#warning workaround tant que marcel ne peut pas être initialisé assez tôt...
-int marcel_a_demare=0;
-
 #include "marcel_fastlock.h"
 typedef struct {
 	union {
@@ -214,7 +211,8 @@ void
 __flockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	if (marcel_a_demare)
+#warning workaround tant que marcel ne peut pas être initialisé assez tôt...
+	if (marcel_activity)
 		_lpt_IO_lock_lock (&(*stream->_lock));
 }
 strong_alias (__flockfile, _IO_flockfile)
@@ -225,7 +223,7 @@ void
 __funlockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	if (marcel_a_demare)	
+	if (marcel_activity)	
 		_lpt_IO_lock_unlock (&(*stream->_lock));
 }
 strong_alias (__funlockfile, _IO_funlockfile)
@@ -235,7 +233,7 @@ int
 __ftrylockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	if (marcel_a_demare)
+	if (marcel_activity)
 		return _lpt_IO_lock_trylock (&(*stream->_lock));
 	return 0;
 }

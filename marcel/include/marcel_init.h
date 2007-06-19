@@ -23,6 +23,9 @@
 #define marcel_init(argc, argv) common_init(argc, argv, NULL)
 #define marcel_end() common_exit(NULL)
 
+int  marcel_test_activity(void);
+extern tbx_flag_t marcel_activity;
+
 /*  When completed, calls to marcel_self() are ok, etc. */
 /*  So do calls to the Unix Fork primitive. */
 void marcel_init_data(int *argc, char *argv[]);

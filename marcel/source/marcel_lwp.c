@@ -43,10 +43,12 @@ static int ma_call_lwp_notifier(unsigned long val, ma_lwp_t lwp)
 
 LIST_HEAD(ma_list_lwp_head);
 
+#ifdef MA__LWPS
 // Verrou protégeant la liste chaînée des LWPs
 ma_rwlock_t __ma_lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
 marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
+#endif
 
 //#endif
 

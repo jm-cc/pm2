@@ -61,9 +61,12 @@ extern void _rtld_global_ro;
 ma_allocator_t *marcel_tls_slot_allocator;
 #if defined(X86_ARCH)
 unsigned short __main_thread_desc;
-static uintptr_t sysinfo;
 #elif defined(X86_64_ARCH) || defined(IA64_ARCH)
 unsigned long __main_thread_tls_base;
+#endif
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+static uintptr_t sysinfo;
+static unsigned long stack_guard, pointer_guard;
 #endif
 #endif
 
@@ -140,9 +143,9 @@ static void *tls_slot_alloc(void *foo) {
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 	tcb->tcb = tcb;
-#endif
-#if defined(X86_ARCH)
 	tcb->sysinfo = sysinfo;
+	tcb->stack_guard = stack_guard;
+	tcb->pointer_guard = pointer_guard;
 #endif
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
@@ -242,8 +245,13 @@ static void __marcel_init marcel_slot_init(void)
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
+	asm("movl %%gs:(0x14), %0":"=r" (stack_guard));
+	asm("movl %%gs:(0x18), %0":"=r" (pointer_guard));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
+	asm("movq %%fs:(0x20), %0":"=r" (sysinfo));
+	asm("movq %%fs:(0x28), %0":"=r" (stack_guard));
+	asm("movq %%fs:(0x30), %0":"=r" (pointer_guard));
 #elif defined(IA64_ARCH)
 	register unsigned long base asm("r13");
 	__main_thread_tls_base = base;

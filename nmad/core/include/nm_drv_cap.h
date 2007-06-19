@@ -62,4 +62,10 @@ struct nm_drv_cap {
          */
         double *network_sampling_latency;
         int nb_sampling;
+
+#ifdef PM2_NUIOA
+	/** Numa node where the card is attached
+	 */
+	int numa_node;
+#endif
 };

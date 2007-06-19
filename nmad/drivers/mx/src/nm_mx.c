@@ -169,6 +169,36 @@ nm_mx_check_return(char *msg, mx_return_t return_code) {
 	}
 }
 
+#ifdef PM2_NUIOA
+/** Return the preferred NUMA node of the board */
+static
+int nm_mx_get_numa_node(uint32_t board_number)
+{
+#if MX_API >= 0x301
+	mx_return_t ret;
+	uint32_t numa_node = PM2_NUIOA_ANY_NODE;
+	uint32_t line_speed;
+
+	/* get the type of link */  
+	ret = mx_get_info(NULL, MX_LINE_SPEED, &board_number, sizeof(board_number), &line_speed, sizeof(line_speed));
+	if (ret != MX_SUCCESS)
+		return PM2_NUIOA_ANY_NODE;
+
+	/* if myrinet 2000, numa effect are negligible, do not return any numa indication */
+	if (line_speed == MX_SPEED_2G)
+		return PM2_NUIOA_ANY_NODE;
+
+	ret = mx_get_info(NULL, MX_NUMA_NODE, &board_number, sizeof(board_number), &numa_node, sizeof(numa_node));
+	if (ret != MX_SUCCESS)
+		return PM2_NUIOA_ANY_NODE;
+	else
+		return numa_node == -1 ? PM2_NUIOA_ANY_NODE : (int) numa_node;
+#else /* MX_API < 0x301 */
+	return PM2_NUIOA_ANY_NODE;
+#endif /* MX_API < 0x301 */
+}
+#endif /* PM2_NUIOA */
+
 /** Maintain a usage counter for each board to distribute the workload */
 static int *board_use_count = NULL;
 static int total_use_count;
@@ -274,6 +304,9 @@ nm_mx_query		(struct nm_drv *p_drv,
         p_drv->cap.has_trk_rq_dgram			= 1;
         p_drv->cap.has_selective_receive		= 1;
         p_drv->cap.has_concurrent_selective_receive	= 0;
+#ifdef PM2_NUIOA
+	p_drv->cap.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
+#endif
 
         err = NM_ESUCCESS;
 

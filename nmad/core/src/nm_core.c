@@ -17,6 +17,9 @@
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
+#ifdef PM2_NUIOA
+#include <numa.h>
+#endif
 
 #include <pm2_common.h>
 
@@ -265,6 +268,10 @@ nm_core_driver_load(struct nm_core	 *p_core,
 
         memset(p_drv, 0, sizeof(struct nm_drv));
 
+#ifdef PM2_NUIOA
+	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
+
         p_drv->id	= p_core->nb_drivers;
         p_drv->p_core	= p_core;
 
@@ -405,6 +412,9 @@ nm_core_driver_load_init(struct nm_core *p_core,
 {
 	uint8_t id;
 	int err;
+#ifdef PM2_NUIOA
+	int node;
+#endif /* PM2_NUIOA */
 
 	err = nm_core_driver_load(p_core, drv_load, &id);
 	if (err != NM_ESUCCESS) {
@@ -417,6 +427,19 @@ nm_core_driver_load_init(struct nm_core *p_core,
 		NM_DISPF("nm_core_driver_query returned %d", err);
 		return err;
 	}
+
+#ifdef PM2_NUIOA
+	if (numa_available() >= 0) {
+		node = (p_core->driver_array + id)->cap.numa_node;
+		if (node != PM2_NUIOA_ANY_NODE) {
+			nodemask_t mask;
+			nodemask_zero(&mask);
+			nodemask_set(&mask, node);
+			DISP("binding to nuioa node %d for driver %d", node, id);
+			numa_bind(&mask);
+		}
+	}
+#endif /* PM2_NUIOA */
 
 	err = nm_core_driver_init(p_core, id, p_url);
 	if (err != NM_ESUCCESS) {
@@ -438,11 +461,16 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 			      uint8_t *p_id,
 			      char **p_url)
 {
-	int i;
 	uint8_t id;
+	int i;
+#ifdef PM2_NUIOA
+	int node, preferred_node = PM2_NUIOA_ANY_NODE;
+	int nuioa = (numa_available() >= 0);
+#endif /* PM2_NUIOA */
 	
 	for(i=0; i<count; i++) {
 		int err;
+
 		err = nm_core_driver_load(p_core, drv_load[i], &id);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_load returned %d", err);
@@ -456,7 +484,42 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 			NM_DISPF("nm_core_driver_query returned %d", err);
 			return err;
 		}
+
+#ifdef PM2_NUIOA
+		if (nuioa) {
+			node = (p_core->driver_array + id)->cap.numa_node;
+			if (node != PM2_NUIOA_ANY_NODE) {
+				/* if this driver wants something */
+				DISP("marking nuioa node %d as preferred for driver %d", node, id);
+
+				if (preferred_node == PM2_NUIOA_ANY_NODE) {
+					/* if it's the first driver, take its preference for now */
+					preferred_node = node;
+
+				} else if (preferred_node != node) {
+					/* if the first driver wants something else, it's a conflict */
+					preferred_node = PM2_NUIOA_CONFLICTING_NODES;
+					if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
+						DISP("found conflicts between preferred nuioa nodes of drivers");
+				}
+			}
+		}
+#endif /* PM2_NUIOA */
+	}
+			
+#ifdef PM2_NUIOA
+	if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
+		nodemask_t mask;
+		nodemask_zero(&mask);
+		DISP("binding to nuioa node %d", preferred_node);
+		nodemask_set(&mask, preferred_node);
+		numa_bind(&mask);
+	}	
+#endif /* PM2_NUIOA */
 		
+	for(i=0; i<count; i++) {
+		int err;
+
 		err = nm_core_driver_init(p_core, p_id[i], &p_url[i]);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_init returned %d", err);
@@ -465,7 +528,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 
 		printf("driver #%d url: [%s]\n", i, p_url[i]);
 	}
-	
+
 	return NM_ESUCCESS;
 }
 

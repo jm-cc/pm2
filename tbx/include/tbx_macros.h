@@ -516,3 +516,8 @@ do { \
 #else
 #define TBX_SHARED_SET(v,n) (v) = (n);
 #endif
+
+#ifdef PM2_NUIOA
+#define PM2_NUIOA_ANY_NODE (-1) /* we don't like any numa node more than the others */
+#define PM2_NUIOA_CONFLICTING_NODES (-2) /* we like several different numa nodes, no solution */
+#endif

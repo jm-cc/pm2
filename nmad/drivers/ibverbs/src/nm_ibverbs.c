@@ -27,6 +27,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#ifdef PM2_NUIOA
+#include <numa.h>
+#endif
 
 #include <nm_protected.h>
 #include <nm_public.h>
@@ -427,6 +430,59 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 
 /* ********************************************************* */
 
+#ifdef PM2_NUIOA
+/* ******************** numa node ***************************** */
+
+#define NM_IBVERBS_NUIOA_SYSFILE_LENGTH 16
+
+static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
+{
+#ifdef LINUX_SYS
+	int i, nb_nodes;
+	FILE *sysfile = NULL;
+	char file[128] = "";
+	char line[NM_IBVERBS_NUIOA_SYSFILE_LENGTH]="";
+
+	/* try to read /sys/class/infiniband/%s/device/numa_node (>= 2.6.22) */
+
+	sprintf(file, "/sys/class/infiniband/%s/device/numa_node", ibv_get_device_name(ib_dev));
+	sysfile = fopen(file, "r");
+	if (sysfile) {
+		int node;
+		fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
+		fclose(sysfile);
+		node = strtoul(line, NULL, 0);
+		return node >= 0 ? node : PM2_NUIOA_ANY_NODE;
+	}
+
+	/* or revert to libnuma-parsing /sys/class/infiniband/%s/device/local_cpus */
+
+	if (numa_available() < 0) {
+		return PM2_NUIOA_ANY_NODE;
+	}
+
+	sprintf(file, "/sys/class/infiniband/%s/device/local_cpus", ibv_get_device_name(ib_dev));
+	sysfile = fopen(file, "r");
+	if (sysfile == NULL) {
+		return PM2_NUIOA_ANY_NODE;
+	}
+
+	fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
+	fclose(sysfile);
+
+	nb_nodes = numa_max_node();
+	for(i=0; i<=nb_nodes; i++) {
+		unsigned long mask;
+		numa_node_to_cpus(i, &mask, sizeof(unsigned long));
+		if (strtoul(line, NULL, 16) == mask)
+			return i;
+	}
+#endif /* LINUX_SYS */
+
+	return PM2_NUIOA_ANY_NODE;
+}
+#endif /* PM2_NUIOA */
+
 /* ** init & connection ************************************ */
 
 
@@ -492,6 +548,9 @@ static int nm_ibverbs_query(struct nm_drv*p_drv,
         p_drv->cap.has_selective_receive		= 1;
         p_drv->cap.has_concurrent_selective_receive	= 1;
 	p_drv->cap.rdv_threshold                        = 256 * 1024;
+#ifdef PM2_NUIOA
+	p_drv->cap.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
+#endif
 
 	err = NM_ESUCCESS;
 

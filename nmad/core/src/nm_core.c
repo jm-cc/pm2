@@ -412,9 +412,6 @@ nm_core_driver_load_init(struct nm_core *p_core,
 {
 	uint8_t id;
 	int err;
-#ifdef PM2_NUIOA
-	int node;
-#endif /* PM2_NUIOA */
 
 	err = nm_core_driver_load(p_core, drv_load, &id);
 	if (err != NM_ESUCCESS) {
@@ -430,7 +427,7 @@ nm_core_driver_load_init(struct nm_core *p_core,
 
 #ifdef PM2_NUIOA
 	if (numa_available() >= 0) {
-		node = (p_core->driver_array + id)->cap.numa_node;
+		int node = (p_core->driver_array + id)->cap.numa_node;
 		if (node != PM2_NUIOA_ANY_NODE) {
 			nodemask_t mask;
 			nodemask_zero(&mask);
@@ -464,7 +461,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 	uint8_t id;
 	int i;
 #ifdef PM2_NUIOA
-	int node, preferred_node = PM2_NUIOA_ANY_NODE;
+	int preferred_node = PM2_NUIOA_ANY_NODE;
 	int nuioa = (numa_available() >= 0);
 #endif /* PM2_NUIOA */
 	
@@ -487,7 +484,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 
 #ifdef PM2_NUIOA
 		if (nuioa) {
-			node = (p_core->driver_array + id)->cap.numa_node;
+			int node = (p_core->driver_array + id)->cap.numa_node;
 			if (node != PM2_NUIOA_ANY_NODE) {
 				/* if this driver wants something */
 				DISP("marking nuioa node %d as preferred for driver %d", node, id);

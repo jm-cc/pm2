@@ -25,6 +25,14 @@
 #endif
 #include <errno.h>
 
+#if defined(MA__PROVIDE_TLS)
+#if defined(X86_ARCH)
+#  define libc_internal_function __attribute__((regparm (3), stdcall))
+#else
+#  define libc_internal_function
+#endif
+extern void *_dl_allocate_tls_init(void *) libc_internal_function;
+#endif
 /****************************************************************/
 /****************************************************************
  *                Création des threads
@@ -250,6 +258,9 @@ marcel_create_internal(marcel_t * __restrict pid,
 	}			/* fin (attr->stack_base) */
 
 	init_marcel_thread(new_task, attr, special_mode);
+#if defined(MA__PROVIDE_TLS)
+	_dl_allocate_tls_init(marcel_tcb(new_task));
+#endif
 	new_task->stack_base = stack_base;
 	new_task->static_stack = static_stack;
 

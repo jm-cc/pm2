@@ -55,7 +55,6 @@ ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
 #  define libc_internal_function
 #endif
 extern void *_dl_allocate_tls(void *) libc_internal_function;
-extern void *_dl_allocate_tls_init(void *) libc_internal_function;
 extern void _dl_deallocate_tls(void *, int) libc_internal_function;
 extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp) libc_internal_function;
 extern void _rtld_global_ro;
@@ -178,7 +177,6 @@ static void tls_slot_free(void *slot, void *foo) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	_dl_deallocate_tls(tcb, 0);
-	_dl_allocate_tls_init(tcb);
 }
 #endif /* MA__PROVIDE_TLS */
 

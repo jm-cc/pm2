@@ -1,2 +1,1 @@
-Depend: marcel_smp
 Provide: marcel_dont_use_pthread

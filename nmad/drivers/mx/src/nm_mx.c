@@ -300,6 +300,11 @@ nm_mx_query		(struct nm_drv *p_drv,
 
 	p_mx_drv->board_number = board_number;
 
+	/* register the board here so that load_init_some may query multiple boards
+         * before initializing them */
+	board_use_count[p_mx_drv->board_number]++; 
+	total_use_count++;
+
         /* driver capabilities encoding					*/
         p_drv->cap.has_trk_rq_dgram			= 1;
         p_drv->cap.has_selective_receive		= 1;
@@ -358,10 +363,6 @@ nm_mx_init		(struct nm_drv *p_drv) {
 				  ep_params, ep_params_count,
 				  &ep);
 	nm_mx_check_return("mx_open_endpoint", mx_ret);
-
-	/* FIXME: not thread safe, should be incremented in query, maybe one day... */
-	board_use_count[p_mx_drv->board_number]++; 
-	total_use_count++;
 
 	mx_ret = mx_get_endpoint_addr(ep, &ep_addr);
 	nm_mx_check_return("mx_get_endpoint_addr", mx_ret);

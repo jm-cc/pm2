@@ -494,10 +494,11 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 					preferred_node = node;
 
 				} else if (preferred_node != node) {
-					/* if the first driver wants something else, it's a conflict */
-					preferred_node = PM2_NUIOA_CONFLICTING_NODES;
+					/* if the first driver wants something else, it's a conflict,
+					 * display a message once */
 					if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
 						DISP("found conflicts between preferred nuioa nodes of drivers");
+					preferred_node = PM2_NUIOA_CONFLICTING_NODES;
 				}
 			}
 		}

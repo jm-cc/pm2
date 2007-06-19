@@ -164,7 +164,7 @@ static void *tls_slot_alloc(void *foo) {
 	};
 	int ret = syscall(SYS_modify_ldt, 0x11, &desc, sizeof(desc));
 	if (ret != 0) {
-		fprintf(stderr,"entry #%u address %lx failed: %s", desc.entry_number, desc.base_addr, strerror(errno));
+		fprintf(stderr,"entry #%u address %lx failed: %s", desc.entry_number, (unsigned long) desc.base_addr, strerror(errno));
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 #endif
@@ -236,7 +236,7 @@ static void __marcel_init marcel_slot_init(void)
 	_dl_get_tls_static_info(&static_tls_size, &static_tls_align);
 	MA_BUG_ON(static_tls_align > MARCEL_ALIGN);
 	if (static_tls_size + sizeof(lpt_tcb_t) > MA_TLS_AREA_SIZE) {
-		fprintf(stderr,"Marcel has only %lu bytes for TLS while %d are needed, please increase MA_TLS_AREA_SIZE. Aborting.\n", MA_TLS_AREA_SIZE, static_tls_size + sizeof(lpt_tcb_t));
+		fprintf(stderr,"Marcel has only %lu bytes for TLS while %ld are needed, please increase MA_TLS_AREA_SIZE. Aborting.\n", MA_TLS_AREA_SIZE, (unsigned long) (static_tls_size + sizeof(lpt_tcb_t)));
 		abort();
 	}
 	/* Record the main thread's TLS register */

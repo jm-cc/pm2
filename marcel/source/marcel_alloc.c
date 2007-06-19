@@ -143,6 +143,7 @@ static void *tls_slot_alloc(void *foo) {
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 	tcb->tcb = tcb;
+	tcb->multiple_threads = 1;
 	tcb->sysinfo = sysinfo;
 	tcb->stack_guard = stack_guard;
 	tcb->pointer_guard = pointer_guard;

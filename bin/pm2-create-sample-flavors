@@ -111,7 +111,7 @@ registering_flavors() {
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
-	--marcel=numa --marcel=main_as_func \
+	--marcel=numa --marcel=main_as_func --marcel=dont_use_pthread \
 	--marcel=pmarcel --marcel=pthread --common=link_pm2_shared \
 	--marcel=bubble_sched_null
 

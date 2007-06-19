@@ -17,6 +17,8 @@
 #section marcel_macros
 
 #ifdef MA__PROVIDE_TLS
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <asm/prctl.h>
 #endif
 #include "sys/marcel_flags.h"
@@ -100,7 +102,7 @@ typedef struct {
   do { \
     unsigned short val; \
     if (new_task == __main_thread) { \
-      arch_prctl(ARCH_SET_FS, __main_thread_tls_base); \
+      syscall(SYS_arch_prctl, ARCH_SET_FS, __main_thread_tls_base); \
     } else { \
       val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~(THREAD_SLOT_SIZE-1))) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
     asm volatile ("movw %w0, %%fs" : : "q" (val)); \

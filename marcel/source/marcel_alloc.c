@@ -244,7 +244,7 @@ static void __marcel_init marcel_slot_init(void)
 	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 #elif defined(X86_64_ARCH)
-	arch_prctl(ARCH_GET_FS, &__main_thread_tls_base);
+	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,

@@ -30,9 +30,9 @@ void struct_datatype(int rank) {
   struct part_s particle;
   int i;
 
-  MPI_Get_address(&(particle.class), &displacements[0]);
-  MPI_Get_address(&(particle.d), &displacements[1]);
-  MPI_Get_address(&(particle.b), &displacements[2]);
+  MPI_Address(&(particle.class), &displacements[0]);
+  MPI_Address(&(particle.d), &displacements[1]);
+  MPI_Address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
   printf("sizeof struct %ud, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);

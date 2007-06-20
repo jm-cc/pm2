@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if !defined(MAD_MPI)
+#  define MPI_Esend(a, b, c, d, e, f, g, h) MPI_Isend(a, b, c, d, e, g, h)
+#endif
+
 int main(int argc, char **argv) {
   int i, flag, numtasks, rank;
   int ping_side, rank_dst;

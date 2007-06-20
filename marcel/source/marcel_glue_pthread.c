@@ -37,8 +37,8 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 
 	if (__builtin_expect(marcel_activity, tbx_true) == tbx_false) {
 		int argc = 1;
-		char *argv = NULL;
-		marcel_init(&argc, &argv);
+		char *argv[] = { "prog", NULL };
+		marcel_init(&argc, argv);
   		// TODO: call libc_pthread_init
 	}
 

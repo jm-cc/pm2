@@ -14,6 +14,13 @@
  */
 
 #include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#if !defined(MAD_MPI)
+#  define MPI_Esend(a, b, c, d, e, f, g, h) MPI_Isend(a, b, c, d, e, g, h)
+#endif
 
 #define LOOPS 1000
 
@@ -281,7 +288,8 @@ void process(int comm_rank, int borne_inf, int borne_sup, int size_pastix, int n
         MPI_Irecv(buffer[j], sizes_nmad[j], MPI_CHAR, dest, 0, MPI_COMM_WORLD, &requests[j]);
       }
       for(j=borne_inf ; j<borne_sup ; j++) {
-        MPI_Wait(&requests[j], MPI_STATUS_IGNORE);
+	MPI_Status status;
+        MPI_Wait(&requests[j], &status);
       }
       // Process data
       for(j=borne_inf ; j<borne_sup ; j++) {

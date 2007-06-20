@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if !defined(MAD_MPI)
+#  define MPI_Request_is_equal(r1, r2) r1 == r2
+#endif
+
 int main(int argc, char **argv) {
   int numtasks, rank;
   int rank_dst, ping_side;

@@ -35,6 +35,21 @@ static ma_twblocked_t *list_wthreads;
 
 int marcel_deliver_sig(void);
 
+/*********************__ma_restore_rt************************/
+#ifdef MA__LIBPTHREAD
+#ifdef X86_64_ARCH
+#define RESTORE(name, syscall) RESTORE2(name, syscall)
+#define RESTORE2(name, syscall) asm( \
+	".global __ma_"#name"\n" \
+	".type __ma_"#name",@function\n" \
+	"__ma_"#name":\n" \
+	"	movq $" #syscall ", %rax\n" \
+	"	syscall\n" \
+);
+
+RESTORE(restore_rt,SYS_rt_sigreturn);
+#endif
+#endif
 /*********************pause**********************************/
 DEF_MARCEL_POSIX(int,pause,(void),(),
 {

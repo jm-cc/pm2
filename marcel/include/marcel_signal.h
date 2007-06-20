@@ -42,7 +42,24 @@ struct marcel_sigaction {
 #include <sys/syscall.h>
 #include <unistd.h>
 /*  L'interface noyau de linux pour sigaction n'est _pas_ la même que cette de la glibc ! */
-#define ma_kernel_sigaction(num, act, oact) syscall(SYS_rt_sigaction, num, act, oact, _NSIG / 8)
+#ifndef SA_RESTORER
+#define SA_RESTORER 0x04000000
+#endif
+#ifdef X86_64_ARCH
+void __ma_restore_rt(void);
+#define MA_KERNEL_SIGACTION_RESTORER \
+	if (_act) { \
+		_act->sa_flags |= SA_RESTORER; \
+		_act->sa_restorer = &__ma_restore_rt; \
+	}
+#else
+#define MA_KERNEL_SIGACTION_RESTORER
+#endif
+#define ma_kernel_sigaction(num, act, oact) ({ \
+	ma_kernel_sigaction_t *_act = (act); \
+	MA_KERNEL_SIGACTION_RESTORER; \
+	syscall(SYS_rt_sigaction, num, _act, oact, _NSIG / 8); \
+})
 typedef struct ma_kernel_sigaction {
       union {
 #undef sa_handler

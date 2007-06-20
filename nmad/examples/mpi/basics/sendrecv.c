@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
   if (ping_side) {
     int y, x=42;
     float fy, fx=3.1415;
+    MPI_Status status;
 
     MPI_Send(&x, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
     MPI_Recv(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
 
     MPI_Sendrecv(&fx, 1, MPI_FLOAT, rank_dst, 1,
                  &fy, 1, MPI_FLOAT, rank_dst, 1,
-                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                 MPI_COMM_WORLD, &status);
     printf("[%d] The estimated value of PI is %f\n", rank, fy);
   }
   else {

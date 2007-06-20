@@ -76,15 +76,16 @@ int main(int argc, char **argv) {
     totalcount = 1 + (numtasks * (numtasks - 1) / 2);
     rbuf = malloc(totalcount * sizeof(int));
 
+    recvcounts = malloc((numtasks+1) * sizeof(int));
+    displs = malloc((numtasks+1) * sizeof(int));
+    recvcounts[0] = 1;
+    displs[0] = 0;
+    for(i=1 ; i<=numtasks ; i++) {
+      recvcounts[i] = i;
+      displs[i] = displs[i-1] + recvcounts[i-1];
+    }
+
     if (rank == 0) {
-      recvcounts = malloc((numtasks+1) * sizeof(int));
-      displs = malloc((numtasks+1) * sizeof(int));
-      recvcounts[0] = 1;
-      displs[0] = 0;
-      for(i=1 ; i<=numtasks ; i++) {
-        recvcounts[i] = i;
-        displs[i] = displs[i-1] + recvcounts[i-1];
-      }
       sendarray = malloc(sizeof(int));
       sendarray[0] = rank;
       sendcount = 1;
@@ -107,10 +108,8 @@ int main(int argc, char **argv) {
     }
     fprintf(stdout, "\n");
 
-    if (rank == 0) {
-      free(recvcounts);
-      free(displs);
-    }
+    free(recvcounts);
+    free(displs);
     free(sendarray);
     free(rbuf);
   }

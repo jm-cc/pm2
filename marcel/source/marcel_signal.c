@@ -40,6 +40,8 @@ int marcel_deliver_sig(void);
 #ifdef X86_64_ARCH
 #define RESTORE(name, syscall) RESTORE2(name, syscall)
 #define RESTORE2(name, syscall) asm( \
+	".text\n" \
+	".align 16\n" \
 	".global __ma_"#name"\n" \
 	".type __ma_"#name",@function\n" \
 	"__ma_"#name":\n" \

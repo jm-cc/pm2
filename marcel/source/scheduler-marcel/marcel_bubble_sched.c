@@ -695,7 +695,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		LOG_RETURN(NULL);
 	}
 
-	if (bubble->num_schedules == bubble->hold.nr_ready) {
+	if (bubble->num_schedules >= bubble->hold.nr_ready) {
 		/* we expired our threads, let others execute */
 		bubble->num_schedules = 0;
 		if (bubble->sched.holder_data) {

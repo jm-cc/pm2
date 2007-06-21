@@ -785,7 +785,7 @@ int MPI_Send(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 
@@ -820,7 +820,7 @@ int MPI_Isend(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1389,7 +1389,7 @@ int MPI_Gatherv(void *sendbuf,
                 MPI_Datatype recvtype,
                 int root,
                 MPI_Comm comm) {
-  int tag = 4;
+  int tag = 3;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -1511,7 +1511,7 @@ int MPI_Scatter(void *sendbuf,
                 MPI_Datatype recvtype,
                 int root,
                 MPI_Comm comm) {
-  int tag = 3;
+  int tag = 4;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -1566,7 +1566,7 @@ int MPI_Alltoall(void* sendbuf,
 		 int recvcount,
 		 MPI_Datatype recvtype,
 		 MPI_Comm comm) {
-  int tag = 3;
+  int tag = 5;
   int err;
   int i;
   MPI_Request *send_requests, *recv_requests;
@@ -1630,7 +1630,7 @@ int MPI_Alltoallv(void* sendbuf,
 		  int *rdispls,
 		  MPI_Datatype recvtype,
 		  MPI_Comm comm) {
-  int tag = 4;
+  int tag = 6;
   int err;
   int i;
   MPI_Request *send_requests, *recv_requests;
@@ -1719,7 +1719,7 @@ int MPI_Reduce(void* sendbuf,
                MPI_Op op,
                int root,
                MPI_Comm comm) {
-  int tag = 2;
+  int tag = 7;
   mpir_function_t *function;
   mpir_communicator_t *mpir_communicator;
 
@@ -1817,7 +1817,7 @@ int MPI_Reduce_scatter(void *sendbuf,
   int err=MPI_SUCCESS, count=0, i;
   mpir_communicator_t *mpir_communicator;
   mpir_datatype_t *mpir_datatype;
-  int tag = 4;
+  int tag = 8;
   void *reducebuf = NULL;
 
   MPI_NMAD_LOG_IN();

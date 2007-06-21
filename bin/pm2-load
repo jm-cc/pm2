@@ -211,40 +211,6 @@ mad3()
 }
 
 
-### Sampling configuration ###
-
-#Check if the network samplings have been done
-pm2-config --cflags > flags_file
-
-grep -q "DENABLE_SAMPLING" flags_file
-if [ $? -eq 0 ] ; then
-    #echo  "Pattern ENABLE_SAMPLING found"
-
-    pm2-conf > machine_file
-
-    machine1=$(cat machine_file | head -n 2 | sed -e '1d' -e 's/0 : //g')
-    #echo "machine1=$machine1"
-
-    machine2=$(cat machine_file | head -n 3 | sed -e '1,2d' -e 's/1 : //g')
-    #echo "machine2=$machine2"
-
-
-    ssh $machine1 arch > architecture
-    arch=`cat architecture`
-    #echo "Arch = $arch"
-
-    rm -f architecture
-    rm -f machine_file
-
-    sampling_activated=1
-else
-    #echo "Pattern ENABLE_SAMPLING not found"
-    sampling_activated=0
-fi
-
-rm -f flags_file
-### --- ###
-
 # Programme principal
 log "Running $*"
 
@@ -264,8 +230,6 @@ PM2_CDMODE=off
 PM2_WDIR=""
 PM2_PROTOCOL=""
 
-protocol_done=0
-
 while [ $# -gt 0 ]; do
     case $1 in
 	-f|--flavor)
@@ -276,21 +240,6 @@ while [ $# -gt 0 ]; do
 	--protocol)
 	    shift
 	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
-
-            protocol_done=1
-            ### Launch the driver sampling if required ###
-            if [ $sampling_activated -eq 1 ] ; then
-                sampling_file="${PM2_ROOT}/mad4/sampling/${PM2_PROTOCOL}_${arch}_samplings.nm_ns"
-
-                if [ ! -f $sampling_file ] ; then
-                    #echo "Launching of sampling.sh"
-                    (cd ${PM2_ROOT}/mad4/sampling/; ./sampling.sh $machine1 $machine2 ${PM2_PROTOCOL})
-                #else
-                #    echo "${PM2_PROTOCOL}_${arch}_samplings.nm_ns already exists"
-                fi
-            fi
-            ### --- ###
-
 	    shift
 	    ;;
 	-d|--debug)
@@ -405,53 +354,64 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+### Sampling configuration ###
+
+#Check if the network samplings have been done
+pm2-config --cflags > flags_file
+
+grep -q "DENABLE_SAMPLING" flags_file
+if [ $? -eq 0 ] ; then
+    #echo  "Pattern ENABLE_SAMPLING found"
+
+    pm2-conf > machine_file
+
+    machine1=$(cat machine_file | head -n 2 | sed -e '1d' -e 's/0 : //g')
+    #echo "machine1=$machine1"
+
+    machine2=$(cat machine_file | head -n 3 | sed -e '1,2d' -e 's/1 : //g')
+    #echo "machine2=$machine2"
+
+
+    ssh $machine1 arch > architecture
+    arch=`cat architecture`
+    #echo "Arch = $arch"
+
+    rm -f architecture
+    rm -f machine_file
+
+    sampling_activated=1
+else
+    #echo "Pattern ENABLE_SAMPLING not found"
+    sampling_activated=0
+fi
+
+rm -f flags_file
+### --- ###
+
 ### Launch the driver sampling if required ###
-prog_args=$*
-
-if [ $protocol_done -eq 0 ] ; then
-    if [ $sampling_activated -eq 1 ] ; then
-        #echo "******************************L'option --protocol non activée"
-
-        set -- --source-mode
-        . ${PM2_ROOT}/bin/pm2-config
-
-        # there is only one protocol
-        if [ -n "$PM2_PROTOCOL" ] ; then
-            protocol="$PM2_PROTOCOL"
-            sampling_file="${PM2_ROOT}/mad4/sampling/${protocol}_${arch}_samplings.nm_ns"
-            if [ ! -f $sampling_file ] ; then
-            #echo "Launching of sampling.sh"
-                (cd ${PM2_ROOT}/mad4/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
-        #else
-        #    echo "${protocol}_${arch}_samplings.nm_ns already exists"
-            fi
-        #echo "******************************Sampling finished"
-
-        else
-            # there is several protocol
-            protocols=$_PM2_CONFIG_PROTOCOLS  #echo "PROTOCOL=$protocols"
-
-            for protocol in $protocols
-              do
-
-              if [ $protocol = "tcpdg" ]; then
-                  echo "tcpdg ignoré"
-              else
-                  sampling_file="${PM2_ROOT}/mad4/sampling/${protocol}_${arch}_samplings.nm_ns"
-                  if [ ! -f $sampling_file ] ; then
-                  #echo "Launching of sampling.sh"
-                      (cd ${PM2_ROOT}/mad4/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
-                  #else
-                  #   echo "${protocol}_${arch}_samplings.nm_ns already exists"
-                  fi
-              fi
-
-            done
-
-        fi
-
-        set -- $prog_args
+if [ $sampling_activated -eq 1 ] ; then
+    #echo "******************************L'option --protocol non activée"
+    if [ -n "$PM2_PROTOCOL" ] ; then
+        protocols="$PM2_PROTOCOL"
+    else
+        protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
     fi
+
+    for protocol in $protocols
+      do
+
+      if [ $protocol = "tcpdg" ]; then
+          echo "tcpdg ignoré"
+      else
+          sampling_file="${PM2_ROOT}/mad4/sampling/${protocol}_${arch}_samplings.nm_ns"
+          if [ ! -f $sampling_file ] ; then
+              #echo "Launching of sampling.sh"
+              (cd ${PM2_ROOT}/mad4/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
+          #else
+              #   echo "${protocol}_${arch}_samplings.nm_ns already exists"
+          fi
+      fi
+    done
 fi
 ### --- ###
 

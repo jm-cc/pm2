@@ -93,7 +93,7 @@
  net(1) -> 0
 */
 #define nm_so_network_latency(n)  \
-  (NM_SO_MAX_NETS-n-1)
+  (NM_SO_MAX_NETS-n-1) //(NM_SO_MAX_NETS-n-1) -> Q et (n) pour MX
 
 #define nm_so_network_bandwidth(n)  \
   (n)

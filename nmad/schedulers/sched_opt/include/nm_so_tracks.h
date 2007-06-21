@@ -128,9 +128,9 @@ nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
 
   err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
                                           data, len,
+                                          0,
                                           NM_SO_DATA_DONT_USE_HEADER,
                                           &p_so_pw);
-
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -140,7 +140,6 @@ nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
  out:
   return err;
 }
-
 
 static __inline__
 int
@@ -176,6 +175,8 @@ _nm_so_post_send(struct nm_gate *p_gate,
 		       = p_so_pw->pw.p_gdrv->p_gate_trk_array[track_id])->p_trk;
 
   /* append pkt to scheduler post list */
+  //#warning vérifier le nb max de requetes concurrentes autorisées!!!!(dans nm_trk_cap.h -> max_pending_send_request)
+
   tbx_slist_append(p_gate->post_sched_out_list, &p_so_pw->pw);
 
   p_so_gate->active_send[drv_id][track_id]++;

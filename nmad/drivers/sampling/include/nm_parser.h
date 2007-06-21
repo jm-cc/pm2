@@ -13,16 +13,13 @@
  * General Public License for more details.
  */
 
-#ifndef NM_NETWORK_SAMPLING_H
-#define NM_NETWORK_SAMPLING_H
+#ifndef NM_PARSER_H
+#define NM_PARSER_H
 
-int
-nm_ns_network_sampling(struct nm_drv *driver,
-                       uint8_t gate_id,
-                       int connect_flag);
+struct nm_drv;
 
-double
-nm_ns_evaluate(struct nm_drv *driver,
-               int length);
+// dans driver_init
+extern int nm_parse_sampling(struct nm_drv *drv, char *drv_name);
 
 #endif
+

@@ -787,13 +787,6 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
         goto out_free;
 
  out:
-#ifdef CONFIG_NET_SAMPLING
-        err = nm_ns_network_sampling(rq.p_drv, gate_id, connect_flag);
-        if (err != NM_ESUCCESS) {
-                NM_DISPF("ns_network_sampling returned %d", err);
-        }
-#endif /* CONFIG_NET_SAMPLING */
-
         return err;
 
  out_free:

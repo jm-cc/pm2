@@ -183,6 +183,8 @@ struct nm_pkt_wrap {
         /** IO vector per-entry meta-data, if needed, or NULL.
          */
         struct nm_iovec		*nm_v;
+
+        tbx_tick_t start_transfer_time;
 };
 
 #endif /* NM_PKT_WRAP_H */

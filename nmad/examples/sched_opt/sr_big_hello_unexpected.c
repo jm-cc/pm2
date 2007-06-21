@@ -34,27 +34,38 @@ int
 main(int	  argc,
      char	**argv) {
   char			*buf		= NULL;
-  struct nm_so_cnx         cnx;
+  struct nm_so_cnx       cnx;
 
   init(&argc, argv);
   buf = malloc(SIZE+1);
   memset(buf, 0, SIZE+1);
 
+
+
   if (is_server) {
-    /* server
-     */
+    nm_so_request request;
+    nm_so_request request0;
+
+    /* server */
     memset(buf, 'z', SIZE);
     *(buf + SIZE - 1) = '\0';
 
-    nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
+    nm_so_sr_irecv(sr_if, gate_id, 1, buf, SIZE, &request0);
 
-    nm_so_unpack(&cnx, buf, SIZE);
+    int i = 0;
+    while(i++ < 10000)
+      nm_so_sr_stest(sr_if, request0);
 
-    nm_so_end_unpacking(&cnx);
+    //nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, buf, len, &request);
+    nm_so_sr_irecv(sr_if, gate_id, 0, buf, SIZE, &request);
+    nm_so_sr_rwait(sr_if, request);
+
+    nm_so_sr_rwait(sr_if, request0);
 
   } else {
-    /* client
-     */
+    nm_so_request request;
+
+    /* client */
     {
       char *src, *dst;
 
@@ -72,21 +83,21 @@ main(int	  argc,
       dst = buf + SIZE - 1;
       *dst = '\0';
 
-      printf("Here's the message we're going to send : [%s]\n", buf);
+      //printf("Here's the message we're going to send : [%s]\n", buf);
     }
 
+    nm_so_sr_isend(sr_if, gate_id, 0, buf, SIZE, &request);
+    nm_so_sr_swait(sr_if, request);
 
-    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
 
-    nm_so_pack(&cnx, buf, SIZE);
-
-    nm_so_end_packing(&cnx);
+    sleep(10);
+    nm_so_sr_isend(sr_if, gate_id, 1, buf, SIZE, &request);
+    nm_so_sr_swait(sr_if, request);
   }
 
   if (is_server) {
-    printf("buffer contents: [%s]\n", buf);
+    printf("buffer contents: %s\n", buf);
   }
 
-  nmad_exit();
-  exit(0);
+  return 0;
 }

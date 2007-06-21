@@ -33,6 +33,10 @@ MOD_SRC += $(foreach PROT, $(MAD4_PROTOCOLS), $(PM2_ROOT)/nmad/drivers/$(PROT)/s
 #---------------------------------------------------------------------
 MOD_SRC += $(foreach PROT, $(MAD4_PROTO), $(PM2_ROOT)/nmad/protocols/$(PROT)/src)
 
+# Sampling
+#---------------------------------------------------------------------
+MOD_SRC += $(PM2_ROOT)/nmad/drivers/sampling/src
+
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak

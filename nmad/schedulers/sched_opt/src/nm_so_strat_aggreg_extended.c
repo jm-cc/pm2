@@ -171,7 +171,7 @@ static int pack(struct nm_gate *p_gate,
 	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
 	  goto next;
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, flags);
       //nb_data_aggregation ++;
       goto out;
 
@@ -184,10 +184,8 @@ static int pack(struct nm_gate *p_gate,
 
     /* We didn't have a chance to form an aggregate, so simply form a
        new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+					    0, flags, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -198,10 +196,8 @@ static int pack(struct nm_gate *p_gate,
        RdV request. */
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                            0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -217,7 +213,7 @@ static int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
@@ -285,7 +281,7 @@ int pack_extended(struct nm_gate *p_gate,
 	  goto next;
         }
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, flags);
       NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
       //nb_extended_aggregation ++;
 
@@ -305,10 +301,8 @@ int pack_extended(struct nm_gate *p_gate,
       flags = NM_SO_DATA_USE_COPY;
 
     NM_SO_SR_TRACE_LEVEL(3, "We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+					    0, flags, &p_so_pw);
 
     if(err != NM_ESUCCESS)
       goto out;
@@ -320,10 +314,8 @@ int pack_extended(struct nm_gate *p_gate,
     NM_SO_SR_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                            0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -339,7 +331,11 @@ int pack_extended(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
+#if 1
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0);
+#else
       nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+#endif
 
       err = pack_ctrl_extended(p_gate, &ctrl, is_completed);
       if(err != NM_ESUCCESS)
@@ -491,5 +487,9 @@ nm_so_strategy nm_so_strat_aggreg_extended = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+  .pack_extended_ctrl = NULL,
+  .pack_ctrl_chunk = NULL,
+  .pack_extended_ctrl_end = NULL,
+  .extended_rdv_accept = NULL,
   .priv = NULL,
 };

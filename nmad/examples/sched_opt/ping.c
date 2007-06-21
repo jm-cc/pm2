@@ -20,7 +20,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef CONFIG_MULTI_RAIL
+#include "helper_multirails.h"
+#else
 #include "helper.h"
+#endif
 
 #define MAX     (8 * 1024 * 1024)
 #define LOOPS   2000

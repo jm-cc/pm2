@@ -68,6 +68,23 @@ typedef int (*nm_so_strategy_rdv_accept_func)(struct nm_gate *p_gate,
 					      unsigned long *drv_id,
 					      unsigned long *trk_id);
 
+typedef int (*nm_so_strategy_pack_extended_ctrl_func)(struct nm_gate *p_gate,
+                                                      uint32_t cumulated_header_len,
+                                                      union nm_so_generic_ctrl_header *p_ctrl,
+                                                      struct nm_so_pkt_wrap **pp_so_pw);
+
+
+typedef int (*nm_so_strategy_pack_ctrl_chunk_func)(struct nm_so_pkt_wrap *p_so_pw,
+                                                   union nm_so_generic_ctrl_header *p_ctrl);
+
+typedef int (*nm_so_strategy_pack_extended_ctrl_end_func)(struct nm_gate *p_gate,
+                                                          struct nm_so_pkt_wrap *p_so_pw);
+
+typedef int (*nm_so_strategy_extended_rdv_accept_func)(struct nm_gate *p_gate,
+                                                       uint32_t len_to_send,
+                                                       int * nb_drv,
+                                                       uint8_t *drv_ids,
+                                                       uint32_t *chunk_lens);
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
   nm_so_strategy_exit_func exit;
@@ -81,6 +98,10 @@ struct nm_so_strategy_struct {
   nm_so_strategy_try_and_commit_func try_and_commit;
   nm_so_strategy_cancel_func cancel;
   nm_so_strategy_rdv_accept_func rdv_accept;
+  nm_so_strategy_pack_extended_ctrl_func pack_extended_ctrl;
+  nm_so_strategy_pack_ctrl_chunk_func pack_ctrl_chunk;
+  nm_so_strategy_pack_extended_ctrl_end_func pack_extended_ctrl_end;
+  nm_so_strategy_extended_rdv_accept_func extended_rdv_accept;
   void *priv;
 };
 

@@ -28,7 +28,12 @@
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
-#include "nm_so_strategies/nm_so_strat_balance.h"
+#include "nm_so_strategies/nm_so_strat_split_balance.h"
+
+#include <nm_predictions.h>
+
+
+p_tbx_memory_t nm_so_chunk_mem = NULL;
 
 /** Initialize the scheduler.
  */
@@ -55,7 +60,7 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->pending_any_src_unpacks = 0;
 
 #if defined(CONFIG_MULTI_RAIL)
-  p_priv->current_strategy = &nm_so_strat_balance;
+  p_priv->current_strategy = &nm_so_strat_split_balance;
 #elif defined(CONFIG_STRAT_DEFAULT)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
@@ -71,6 +76,10 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy->init();
 
   p_sched->sch_private	= p_priv;
+
+  tbx_malloc_init(&nm_so_chunk_mem,
+		  sizeof(struct nm_so_chunk),
+		  INITIAL_CHUNK_NUM, "nmad/.../sched_opt/nm_so_chunk");
 
   err = NM_ESUCCESS;
 
@@ -191,6 +200,37 @@ nm_so_close_gate(struct nm_sched	*p_sched,
     TBX_FAILURE("Interface not defined");
   p_so_sched->current_interface->exit_gate(p_gate);
 
+  /* Release the last pw always in use */
+  {
+    p_tbx_slist_t pending_aux_slist, pending_perm_slist;
+    pending_aux_slist = p_sched->pending_aux_recv_req;
+    pending_perm_slist = p_sched->pending_perm_recv_req;
+
+    while (!tbx_slist_is_nil(pending_aux_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_aux_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      if(p_pw->p_drv->ops.release_req){
+        p_pw->p_drv->ops.release_req(p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
+
+    while (!tbx_slist_is_nil(pending_perm_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_perm_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      if(p_pw->p_drv->ops.release_req){
+        p_pw->p_drv->ops.release_req(p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
+  }
+
   TBX_FREE(p_so_gate);
   return NM_ESUCCESS;
 }
@@ -238,6 +278,11 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
   if(!p_so_sched->current_interface)
     TBX_FAILURE("Interface not defined");
   p_so_sched->current_interface->init_gate(p_gate);
+
+  NM_SO_TRACE("Initialisation du malloc pour chunk\n");
+  tbx_malloc_init(&nm_so_chunk_mem,
+		  sizeof(struct nm_so_chunk),
+		  INITIAL_CHUNK_NUM, "nmad/.../sched_opt/nm_so_chunk");
 
   err = NM_ESUCCESS;
 

@@ -84,10 +84,8 @@ static int pack(struct nm_gate *p_gate,
       flags = NM_SO_DATA_USE_COPY;
 
     /* Simply form a new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+					    0, flags, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -99,10 +97,8 @@ static int pack(struct nm_gate *p_gate,
        RdV request. */
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                            0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -118,7 +114,7 @@ static int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
@@ -194,6 +190,8 @@ static int rdv_accept(struct nm_gate *p_gate,
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
+  *drv_id = 0;
+
   if(p_so_gate->active_recv[*drv_id][*trk_id] == 0)
     /* Cool! The suggested track is available! */
     return NM_ESUCCESS;
@@ -247,5 +245,10 @@ nm_so_strategy nm_so_strat_default = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+  .pack_extended_ctrl = NULL,
+  .pack_ctrl_chunk = NULL,
+  .pack_extended_ctrl_end = NULL,
+  .extended_rdv_accept = NULL,
   .priv = NULL,
 };
+

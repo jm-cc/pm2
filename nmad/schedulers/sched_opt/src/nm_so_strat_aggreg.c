@@ -56,7 +56,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
       goto next;
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    //nb_ctrl_aggregation ++;
+
     goto out;
 
   next:
@@ -117,7 +117,7 @@ static int pack(struct nm_gate *p_gate,
 	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
 	  goto next;
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, flags);
       nb_data_aggregation ++;
       goto out;
 
@@ -130,10 +130,8 @@ static int pack(struct nm_gate *p_gate,
 
     /* We didn't have a chance to form an aggregate, so simply form a
        new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+					    0, flags, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -144,10 +142,8 @@ static int pack(struct nm_gate *p_gate,
        RdV request. */
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                            0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -163,7 +159,7 @@ static int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
@@ -304,5 +300,9 @@ nm_so_strategy nm_so_strat_aggreg = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+  .pack_extended_ctrl = NULL,
+  .pack_ctrl_chunk = NULL,
+  .pack_extended_ctrl_end = NULL,
+  .extended_rdv_accept = NULL,
   .priv = NULL,
 };

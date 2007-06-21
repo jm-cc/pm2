@@ -234,6 +234,8 @@ _mn_so_treat_chunk(uint32_t total_len,
 
     NM_SO_TRACE("RDV recovered chunk : tag = %u, seq = %u, len = %u, chunk_offset = %u\n", tag, seq, len, chunk_offset);
 
+    p_so_gate->p_so_sched->any_src[tag-128].status |= NM_SO_STATUS_RDV_IN_PROGRESS;
+
     err = rdv_success(p_gate, tag - 128, seq, dest_buffer + chunk_offset,
                       len, chunk_offset);
 
@@ -358,6 +360,8 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
       p_so_gate->recv[tag][seq].pkt_here.p_so_pw = NULL;
 
       len -= cumulated_len;
+
+
       if(len == 0){
         NM_SO_TRACE("Wow! All data chunks were already in!\n");
 
@@ -372,7 +376,7 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
         goto out;
       }
 
-      p_so_sched->any_src[tag].status = NM_SO_STATUS_UNPACK_HERE;
+      p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
       p_so_sched->any_src[tag].data = data;
       p_so_sched->any_src[tag].len  = len;
       p_so_sched->any_src[tag].gate_id = p_gate->id;
@@ -723,6 +727,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   p_so_gate->pending_unpacks--;
+  p_so_gate->status[tag][seq] |= NM_SO_STATUS_ACK_HERE;
 
   list_for_each_entry(p_so_large_pw, &p_so_gate->pending_large_send[tag], link) {
 
@@ -812,6 +817,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
       NM_LOG_VAL("pending_unpacks", p_so_gate->pending_unpacks);
       NM_LOG_VAL("pending_any_src_unpacks", p_so_gate->p_so_sched->pending_any_src_unpacks);
+
       /* Check if we should post a new recv packet */
       nm_so_refill_regular_recv(p_gate);
     }

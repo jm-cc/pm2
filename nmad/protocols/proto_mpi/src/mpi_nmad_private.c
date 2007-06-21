@@ -1242,7 +1242,7 @@ int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
    * We suppose that comm is represented on 3 bits and tag on 4 bits.
    * We stick both of them into a new 7-bits representation
    */
-  tag += MPI_INTERNAL_TAG;
+  tag += MAX_INTERNAL_TAG;
   int newtag = (mpir_communicator->communicator_id-MPI_COMM_WORLD) << 4;
   newtag += tag;
   return newtag;

@@ -337,6 +337,7 @@ void marcel_free(void *ptr, char * __restrict file, unsigned line)
 
 void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 {
+#ifdef MA__NUMA
 	struct memory_area *area;
 	ma_holder_t *h;
 	if (!e)
@@ -353,10 +354,12 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 	list_add(&area->list, &e->memory_areas);
 	ma_spin_unlock(&e->memory_areas_lock);
 	*(long*)ma_stats_get(e, ma_stats_memory_offset) += size;
+#endif
 }
 
 void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 {
+#ifdef MA__NUMA
 	struct memory_area *area;
 	ma_holder_t *h;
 	if (!e)
@@ -377,4 +380,5 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 	ma_spin_unlock(&e->memory_areas_lock);
 	*(long*)ma_stats_get(e, ma_stats_memory_offset) -= area->size;
 	ma_obj_free(memory_area_allocator, area);
+#endif
 }

@@ -87,10 +87,13 @@ struct marcel_task {
 	struct marcel_work work;
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
 	unsigned long softirq_pending_in_hardirq;
+
+	/* TODO: option de flavor "migration" */
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
 	unsigned not_migratable;
 	unsigned long remaining_sleep_time;
+
 	/* utilisé pour marquer les task idle, upcall, idle, ... */
 	volatile unsigned long flags;
 	/* Pour la création des threads */
@@ -113,11 +116,14 @@ struct marcel_task {
 	unsigned next_atexit_func;
 	/*         cleanup */
 	struct _marcel_cleanup_buffer *last_cleanup;
+
+	/* TODO: option de flavor "exceptions" */
 	/* Gestion des exceptions */
 	marcel_exception_t cur_exception;
 	struct marcel_exception_block *cur_excep_blk;
 	char *exfile;
 	unsigned exline;
+
 	/* Clés */
 	any_t key[MAX_KEY_SPECIFIC];
 	/* Timer pour ma_schedule_timeout */
@@ -126,7 +132,7 @@ struct marcel_task {
 	/* Pile */
 	any_t stack_base;
 	int static_stack;
-	long initial_sp, depl;
+	long initial_sp;
 
 	/* Identification du thread */
 	char name[MARCEL_MAXNAMESIZE];
@@ -170,6 +176,7 @@ struct marcel_task {
 	int spinlock_backtrace;
 #endif
 
+	/* TODO: option de flavor */
 /*********signaux***********/
 	ma_spinlock_t siglock;
 	marcel_sigset_t sigpending;
@@ -182,6 +189,7 @@ struct marcel_task {
 	marcel_sigset_t waitset;
 	int *waitsig;
 	siginfo_t *waitinfo;
+
 #ifdef MA__IFACE_PMARCEL
 	/*********attributs*********/
 	ma_spinlock_t cancellock;

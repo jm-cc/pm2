@@ -173,6 +173,7 @@ extern ma_rwlock_t ma_idle_scheduler_lock;
 
 /** Structure of a bubble */
 struct marcel_bubble {
+#ifdef MA__BUBBLES
 	/* garder en premier, pour que les conversions bubble / entity soient
 	 * triviales */
 	/** \brief Entity information */
@@ -195,6 +196,7 @@ struct marcel_bubble {
 	int settled;
 	/** \brief Barrier for the barrier operation */
 	marcel_barrier_t barrier;
+#endif
 };
 
 #section macros

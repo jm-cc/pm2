@@ -104,8 +104,12 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 }
 
 #section marcel_functions
+#ifdef MA__BUBBLES
 /** \brief Convert ma_holder_t *h into marcel_bubble_t * (assumes that \e h is a bubble) */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
+#else
+#define ma_bubble_holder(h) NULL
+#endif
 /** \brief Convert ma_holder_t *h into ma_runqueue_t * (assumes that \e h is a runqueue) */
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
 /** \brief Convert marcel_bubble_t *b into ma_holder_t * */
@@ -116,9 +120,11 @@ ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->hold)
 
 #section marcel_inline
+#ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 	return tbx_container_of(h, marcel_bubble_t, hold);
 }
+#endif
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 	return tbx_container_of(h, ma_runqueue_t, hold);
 }
@@ -186,13 +192,17 @@ struct ma_sched_entity {
 	/** \brief Statistics for the entity */
 	ma_stats_t stats;
 
+#ifdef MA__NUMA
 	/** \brief List of attached memory areas */
 	struct list_head memory_areas;
 	/** \brief Lock for ::memory_areas */
 	ma_spinlock_t memory_areas_lock;
+#endif
 
+#ifdef MA__BUBBLES
 	/** \brief General-purpose list link for bubble schedulers */
 	struct list_head next;
+#endif
 };
 
 #section types
@@ -234,6 +244,13 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #else
 #define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif
+#ifdef MA__NUMA
+#define MA_SCHED_MEMORY_AREA_INIT(e) \
+	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.memory_areas = LIST_HEAD_INIT((e).memory_areas),
+#else
+#define MA_SCHED_MEMORY_AREA_INIT(e)
+#endif
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
@@ -245,8 +262,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	.time_slice = MA_ATOMIC_INIT(0), \
 	MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) \
 	MA_SCHED_LEVEL_INIT \
-	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
-	.memory_areas = LIST_HEAD_INIT((e).memory_areas), \
+	MA_SCHED_MEMORY_AREA_INIT(e) \
 }
 
 #section marcel_macros

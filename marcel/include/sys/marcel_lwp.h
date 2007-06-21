@@ -70,7 +70,7 @@ struct marcel_lwp {
 #endif
 
 #ifdef MA__LWPS
-#ifdef IA64_ARCH
+#if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
 	unsigned long ma_ia64_tp;
 #endif
 #endif

@@ -143,7 +143,9 @@ unsigned marcel_add_lwp(void);
 #depend "scheduler/marcel_bubble_sched.h[structures]"
 typedef struct {
 	struct ma_sched_entity entity;
+#ifdef MA__BUBBLES
 	marcel_bubble_t bubble;
+#endif
 } marcel_sched_internal_task_t;
 
 #section marcel_functions
@@ -324,8 +326,10 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	*(long *) ma_task_stats_get(t, marcel_stats_load_offset) = 1;
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
 	*(long *) ma_task_stats_get(t, ma_stats_nbrunning_offset) = 0;
+#ifdef MA__NUMA
 	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);
+#endif
 	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else

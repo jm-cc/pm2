@@ -21,6 +21,7 @@
 
 #section marcel_macros
 #ifdef MA__INTERRUPT_FIX_LWP
+/* TODO: ne pas le faire lorsqu'on fournit la TLS */
 
 #define MA_ARCH_SWITCHTO_LWP_FIX(current) \
   do { \

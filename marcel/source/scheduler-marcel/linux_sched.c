@@ -912,10 +912,12 @@ need_resched_atomic:
 	/* by default, reschedule this thread */
 	prev_as_next = prev;
 	prev_as_h = prevh;
+#ifdef MA__BUBBLES
 	if (prev_as_h && prev_as_h->type != MA_RUNQUEUE_HOLDER) {
 		/* the real priority is the holding bubble's */
 		prev_as_prio = ma_bubble_holder(prev_as_h)->sched.prio;
 	} else
+#endif
 		prev_as_prio = prev->sched.internal.entity.prio;
 
 	if (prev->sched.state &&

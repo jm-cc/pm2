@@ -79,7 +79,7 @@ void vector_datatype(int rank) {
 
   MPI_Type_vector(10, 2, 10, MPI_INT, &mytype);
   MPI_Type_commit(&mytype);
-  MPI_Type_hvector(8, 3, 8*sizeof(MPI_FLOAT), MPI_FLOAT, &mytype2);
+  MPI_Type_hvector(8, 3, 8*sizeof(float), MPI_FLOAT, &mytype2);
   MPI_Type_commit(&mytype2);
 
   if (rank == 0) {
@@ -164,7 +164,7 @@ void indexed_datatype(int rank) {
   MPI_Datatype mytype2;
   int blocklengths[3] = {1, 3, 2};
   int strides[3] = {0, 2, 6};
-  MPI_Aint strides2[3] = {0*sizeof(MPI_CHAR), 2*sizeof(MPI_CHAR), 6*sizeof(MPI_CHAR)};
+  MPI_Aint strides2[3] = {0*sizeof(char), 2*sizeof(char), 6*sizeof(char)};
 
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);

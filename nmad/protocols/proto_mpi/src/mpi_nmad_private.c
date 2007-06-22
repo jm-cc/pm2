@@ -610,7 +610,7 @@ int mpir_irecv(void* buffer,
 
       MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
       nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
       mpir_request->request_ptr[0] = buffer;
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
@@ -659,7 +659,7 @@ int mpir_irecv(void* buffer,
 
       MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %ld\n", mpir_datatype->elements, (long)mpir_datatype->size);
       nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
       mpir_request->request_ptr[0] = buffer;
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
@@ -722,7 +722,7 @@ int mpir_irecv(void* buffer,
 
       MPI_NMAD_TRACE("Receiving struct type: size %ld\n", (long)mpir_datatype->size);
       nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(float *));
+      mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
       for(i=0 ; i<count ; i++) {
         mpir_request->request_ptr[k] = buffer + i*mpir_datatype->size;
         for(j=0 ; j<mpir_datatype->elements ; j++) {

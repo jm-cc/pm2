@@ -26,8 +26,8 @@ args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
 (cat <<EOF
-Message received successfully
-Message received successfully
+Messages successfully received
+Messages successfully received
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 

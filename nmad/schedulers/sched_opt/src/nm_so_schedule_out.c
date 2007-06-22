@@ -38,29 +38,19 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate)
   return p_so_sched->current_strategy->try_and_commit(p_gate);
 }
 
+/** Process a complete data request.
+ */
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
-                                    void *ptr,
-                                    void *header, uint32_t len,
-                                    uint8_t proto_id, uint8_t seq,
-                                    uint32_t chunk_offset)
+				    void *ptr, uint32_t len,
+				    uint8_t proto_id, uint8_t seq)
 {
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-/** Process a complete data request.
- */
-  NM_SO_TRACE("Send completed for chunk : %p, len = %u, tag = %d, seq = %u, offset = %u\n", ptr, len, proto_id-128, seq, chunk_offset);
+  NM_SO_TRACE("Send completed for chunk : %p, len = %u, tag = %d, seq = %u\n", ptr, len, proto_id-128, seq);
 
-  p_so_gate->send[proto_id-128][seq] -= len;
-
-  if(p_so_gate->send[proto_id-128][seq] <= 0){
-    NM_SO_TRACE("All chunks are sent for the message with tag %u, seq %u and len %u!\n", proto_id -128, seq, len);
-    interface->pack_success(p_gate, proto_id - 128, seq);
-
-  } else {
-    NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_gate->send[proto_id-128][seq], proto_id - 128, seq);
-  }
+  interface->pack_success(p_gate, proto_id - 128, seq);
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -78,33 +68,18 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
   p_so_gate->active_send[p_pw->p_drv->id][p_pw->p_trk->id]--;
 
   if(p_pw->p_trk->id == 0) {
-    NM_SO_TRACE("********** sent of a short one on drv %d and trk %d***********\n", p_pw->p_drv->id, p_pw->p_trk->id);
-
     /* Track 0 */
+
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_completion_callback,
 				  NULL,
-				  NULL,
-                                  NULL);
+				  NULL);
 
   } else if(p_pw->p_trk->id == 1) {
+    struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-    NM_SO_TRACE("********** sent of a large one on drv %d and trk %d***********\n", p_pw->p_drv->id, p_pw->p_trk->id);
-
-    struct nm_so_interface_ops *interface=p_so_gate->p_so_sched->current_interface;
-    uint8_t  proto_id = p_pw->proto_id - 128;
-    uint8_t  seq = p_pw->seq;
-
-    NM_SO_TRACE("out_process_success - it is missing %d bytes to complete sending\n", p_so_gate->send[proto_id][seq]);
-
-    p_so_gate->send[proto_id][seq] -= p_pw->length;
-
-    if(p_so_gate->send[proto_id][seq] <= 0){
-      NM_SO_TRACE("---> All chunks are sended!\n");
-      interface->pack_success(p_gate, proto_id, seq);
-    } else {
-      NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_gate->send[proto_id][seq], proto_id - 128, seq);
-    }
+    interface->pack_success(p_gate,
+                            p_pw->proto_id - 128, p_pw->seq);
 
     /* Free the wrapper */
     nm_so_pw_free(p_so_pw);

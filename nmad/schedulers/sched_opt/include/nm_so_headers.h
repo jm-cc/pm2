@@ -21,8 +21,6 @@
 #define NM_SO_PROTO_DATA_FIRST   128
 #define NM_SO_PROTO_RDV          11
 #define NM_SO_PROTO_ACK          12
-#define NM_SO_PROTO_MULTI_ACK    13
-#define NM_SO_PROTO_ACK_CHUNK    14
 
 #define NM_SO_PROTO_DATA_UNUSED 0
 #define NM_SO_PROTO_CTRL_UNUSED 1
@@ -39,7 +37,6 @@ struct nm_so_data_header {
   uint8_t  seq;
   uint16_t skip;
   uint32_t len;
-  uint32_t chunk_offset;
 };
 
 struct nm_so_ctrl_rdv_header {
@@ -47,7 +44,6 @@ struct nm_so_ctrl_rdv_header {
   uint8_t tag_id;
   uint8_t seq;
   uint32_t len;
-  uint32_t chunk_offset;
 };
 
 struct nm_so_ctrl_ack_header {
@@ -55,29 +51,12 @@ struct nm_so_ctrl_ack_header {
   uint8_t tag_id;
   uint8_t seq;
   uint8_t track_id;
-  uint32_t chunk_offset;
-};
-
-struct nm_so_ctrl_multi_ack_header {
-  uint8_t proto_id;
-  uint8_t nb_chunks;
-  uint8_t tag_id;
-  uint8_t seq;
-  uint32_t chunk_offset;
-};
-
-struct nm_so_ctrl_ack_chunk_header {
-  uint8_t proto_id;
-  uint8_t trk_id;
-  uint32_t chunk_len;
 };
 
 // The following definition is useful for handling a uniform ctrl header size
 union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header r;
   struct nm_so_ctrl_ack_header a;
-  struct nm_so_ctrl_multi_ack_header ma;
-  struct nm_so_ctrl_ack_chunk_header ac;
 };
 
 #define NM_SO_ALIGN_TYPE      uint32_t
@@ -93,38 +72,20 @@ union nm_so_generic_ctrl_header {
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
-#define nm_so_init_rdv(p_ctrl, _tag, _seq, _len, _chunk_offset)	\
+#define nm_so_init_rdv(p_ctrl, _tag, _seq, _len)	\
   do { \
     (p_ctrl)->r.proto_id = NM_SO_PROTO_RDV;	\
     (p_ctrl)->r.tag_id = (_tag);		\
     (p_ctrl)->r.seq = (_seq);			\
     (p_ctrl)->r.len = (_len);			\
-    (p_ctrl)->r.chunk_offset = (_chunk_offset);	\
   } while(0)
 
-#define nm_so_init_ack(p_ctrl, _tag, _seq, _track, _chunk_offset) \
+#define nm_so_init_ack(p_ctrl, _tag, _seq, _track) \
   do { \
     (p_ctrl)->a.proto_id = NM_SO_PROTO_ACK;	\
     (p_ctrl)->a.tag_id = (_tag);		\
     (p_ctrl)->a.seq = (_seq);			\
     (p_ctrl)->a.track_id = (_track);		\
-    (p_ctrl)->a.chunk_offset = (_chunk_offset);	\
-  } while(0)
-
-#define nm_so_init_multi_ack(p_ctrl, _nb_chunks, _tag, _seq, _chunk_offset) \
-  do { \
-    (p_ctrl)->ma.proto_id = NM_SO_PROTO_MULTI_ACK;	\
-    (p_ctrl)->ma.nb_chunks = (_nb_chunks);		\
-    (p_ctrl)->ma.tag_id = (_tag);		\
-    (p_ctrl)->ma.seq = (_seq);			\
-    (p_ctrl)->ma.chunk_offset = (_chunk_offset);			\
-  } while(0)
-
-#define nm_so_add_ack_chunk(p_ctrl, _track, _chunk_len) \
-  do { \
-    (p_ctrl)->ac.proto_id = NM_SO_PROTO_ACK_CHUNK;	\
-    (p_ctrl)->ac.trk_id = (_track);		\
-    (p_ctrl)->ac.chunk_len = (_chunk_len);	\
   } while(0)
 
 #endif

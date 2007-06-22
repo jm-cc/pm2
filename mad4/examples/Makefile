@@ -29,7 +29,6 @@ endif # FLAVOR
 NMAD_SCHED := $(shell pm2-config --flavor=$(FLAVOR) --schedulers)
 
 ifeq ($(NMAD_SCHED),sched_opt)
-  MOD_SRC += $(PM2_ROOT)/mad4/sampling
   MOD_SRC += $(PM2_ROOT)/nmad/examples/sched_opt
 else
   MOD_SRC += $(PM2_ROOT)/nmad/examples/basic

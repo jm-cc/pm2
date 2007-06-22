@@ -18,11 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef CONFIG_MULTI_RAIL
-#include "helper_multirails.h"
-#else
 #include "helper.h"
-#endif
 
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(8 * 1024 * 1024)

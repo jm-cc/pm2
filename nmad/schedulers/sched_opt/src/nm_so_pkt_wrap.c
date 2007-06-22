@@ -30,9 +30,9 @@
 /* Per-'iovec entry' allocation flags (exclusive) */
 /** @name IOV entry allocation
 
-Flag constants to indicate whether a given iovec entry has been
-dynamically or statically allocated.
-*/
+    Flag constants to indicate whether a given iovec entry has been
+    dynamically or statically allocated.
+ */
 /*@{*/
 /** Entry is has been allocated statically and should not be freed explicitely.
  */
@@ -46,8 +46,8 @@ dynamically or statically allocated.
 /* Global priv_flags */
 /** @name Global private flags
 
-Flag constants for the flag field of pw.
-*/
+    Flag constants for the flag field of pw.
+ */
 /*@{*/
 /** Headerless pkt, if set.
  */
@@ -96,14 +96,14 @@ nm_so_pw_init(struct nm_core *p_core)
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_PREALLOC_BUF_LEN,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/send");
 
-  //#if NM_SO_PREALLOC_BUF_LEN == NM_SO_MAX_UNEXPECTED
-  //  /* There's no need to use a separate allocator for send and recv ! */
-  //  nm_so_pw_recv_mem = nm_so_pw_send_mem;
-  //#else
+#if NM_SO_PREALLOC_BUF_LEN == NM_SO_MAX_UNEXPECTED
+  /* There's no need to use a separate allocator for send and recv ! */
+  nm_so_pw_recv_mem = nm_so_pw_send_mem;
+#else
   tbx_malloc_init(&nm_so_pw_recv_mem,
 		  sizeof(struct nm_so_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
 		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_so_pkt_wrap/recv");
-  //#endif
+#endif
 
   return NM_ESUCCESS;
 }
@@ -118,9 +118,9 @@ nm_so_pw_exit()
   tbx_malloc_clean(nm_so_pw_nohd_mem);
   tbx_malloc_clean(nm_so_pw_send_mem);
 
-  //#if NM_SO_PREALLOC_BUF_LEN != NM_SO_MAX_UNEXPECTED
+#if NM_SO_PREALLOC_BUF_LEN != NM_SO_MAX_UNEXPECTED
   tbx_malloc_clean(nm_so_pw_recv_mem);
-  //#endif
+#endif
 
   return NM_ESUCCESS;
 }
@@ -128,8 +128,8 @@ nm_so_pw_exit()
 static
 void
 nm_so_pw_reset(struct nm_so_pkt_wrap * __restrict__ p_so_pw) {
-  p_so_pw->pw.gate_priv	= NULL;
-  p_so_pw->pw.drv_priv	= NULL;
+      p_so_pw->pw.gate_priv	= NULL;
+      p_so_pw->pw.drv_priv	= NULL;
 }
 
 
@@ -148,10 +148,10 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
   int err = NM_ESUCCESS;
 
   if(flags & NM_SO_DATA_DONT_USE_HEADER) {
-    /* dont use header */
+          /* dont use header */
 
     if(flags & NM_SO_DATA_PREPARE_RECV) {
-      /* receive, no header */
+            /* receive, no header */
 
       p_so_pw = tbx_malloc(nm_so_pw_recv_mem);
       if (!p_so_pw) {
@@ -184,7 +184,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
       p_so_pw->v->iov_len = (p_so_pw->pw.length = NM_SO_MAX_UNEXPECTED);
 
     } else {
-      /* send, no header */
+            /* send, no header */
 
       p_so_pw = tbx_malloc(nm_so_pw_nohd_mem);
       if (!p_so_pw) {
@@ -213,7 +213,7 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     }
 
   } else {
-    /* send, with header*/
+          /* send, with header*/
     p_so_pw = tbx_malloc(nm_so_pw_send_mem);
     if (!p_so_pw) {
       err = -NM_ENOMEM;
@@ -257,12 +257,10 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
     p_so_pw->pending_skips = 0;
   }
 
-  INIT_LIST_HEAD(&p_so_pw->link);
-
   *pp_so_pw = p_so_pw;
 
  out:
-  return err;
+    return err;
 }
 
 /** Free a pkt wrapper and related structs.
@@ -307,63 +305,6 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   return err;
 }
 
-// Attention!! split only enable when the p_so_pw is finished
-int nm_so_pw_split(struct nm_so_pkt_wrap *p_so_pw,
-                   struct nm_so_pkt_wrap **pp_so_pw2,
-                   uint32_t offset){
-
-  struct nm_so_pkt_wrap *p_so_pw2;
-  int idx, len, iov_offset;
-  int err;
-
-  nm_so_pw_finalize(p_so_pw);
-
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw2);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  /* Copy the pw part */
-  p_so_pw2->pw.p_drv = p_so_pw->pw.p_drv;
-  p_so_pw2->pw.p_trk = p_so_pw->pw.p_trk;
-  p_so_pw2->pw.p_gate = p_so_pw->pw.p_gate;
-  p_so_pw2->pw.p_gdrv = p_so_pw->pw.p_gdrv;
-  p_so_pw2->pw.p_gtrk = p_so_pw->pw.p_gtrk;
-  p_so_pw2->pw.p_proto = p_so_pw->pw.p_proto;
-  p_so_pw2->pw.proto_id = p_so_pw->pw.proto_id;
-  p_so_pw2->pw.seq = p_so_pw->pw.seq;
-  p_so_pw2->pw.length = p_so_pw->pw.length - offset;
-  p_so_pw->pw.length = offset;
-
-  for(idx = 0, len = 0;
-      idx < p_so_pw->pw.v_nb;
-      idx++, len += p_so_pw->pw.v[idx++].iov_len){
-
-    if(len + p_so_pw->pw.v[idx].iov_len > offset){
-      iov_offset = offset - len;
-
-      p_so_pw2->pw.v_first = idx;
-      p_so_pw2->pw.v[idx].iov_len  = p_so_pw->pw.v[idx].iov_len  - offset;
-      p_so_pw2->pw.v[idx].iov_base = p_so_pw->pw.v[idx].iov_base + offset;
-      p_so_pw2->pw.v_nb = p_so_pw->pw.v_nb - idx;
-
-      p_so_pw->pw.v[idx].iov_len = offset;
-      p_so_pw->pw.v_nb = idx + 1;
-
-      break;
-    }
-    len += p_so_pw->pw.v[idx++].iov_len;
-  }
-
-  // shortcut on the first iov entry
-  p_so_pw2->pw.data   = p_so_pw2->pw.v[p_so_pw2->pw.v_first].iov_base;
-  p_so_pw2->pw.v_size = p_so_pw2->pw.v[p_so_pw2->pw.v_first].iov_len;
-
-  *pp_so_pw2 = p_so_pw2;
-
- out:
-  return err;
-}
-
 /** Append a fragment of data to the pkt wrapper being built.
  *
  *  @param p_so_pw the pkt wrapper pointer.
@@ -377,8 +318,7 @@ int nm_so_pw_split(struct nm_so_pkt_wrap *p_so_pw,
 int
 nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
-		  void *data, uint32_t len,
-                  uint32_t offset, int flags)
+		  void *data, uint32_t len, int flags)
 {
   int err;
   struct iovec *vec;
@@ -386,8 +326,43 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) {
     /* Add data with header */
 
-    vec = p_so_pw->header_index;
+#ifdef NM_SO_OPTIMISTIC_RECV
+    /* This code is only useful when NM_SO_DATA_FORCE_CONTIGUOUS is
+       used, that is, when NM_SO_OPTIMISTIC_RECV is defined. */
 
+    if(p_so_pw->uncompleted_header) {
+
+      struct nm_so_data_header *h = p_so_pw->uncompleted_header;
+      unsigned long gap = nm_so_aligned(h->len) - h->len;
+
+      p_so_pw->uncompleted_header = NULL;
+
+      /* Use a new iovec entry for upcoming headers */
+      vec = p_so_pw->header_index = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
+
+      if(gap) {
+
+	/* Add a small gap to correct alignment on the receiving side */
+	vec->iov_base = (char *)h + NM_SO_DATA_HEADER_SIZE +
+	                NM_SO_ALIGN_FRONTIER - gap;
+	vec->iov_len = gap;
+
+	/* Important: Correct the size reserved for the previous data
+	   chunk! */
+	h->len = nm_so_aligned(h->len);
+
+	p_so_pw->pw.length += gap;
+
+      } else {
+	vec->iov_base = (char *)h + NM_SO_DATA_HEADER_SIZE;
+	vec->iov_len = 0;
+      }
+
+    } else
+#endif // NM_SO_OPTIMISTIC_RECV
+      {
+	vec = p_so_pw->header_index;
+      }
 
     if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER))) {
 
@@ -399,7 +374,6 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
       h->proto_id = proto_id;
       h->seq = seq;
-      h->chunk_offset = offset;
 
       vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 
@@ -407,11 +381,10 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
 	/* Data immediately follows its header */
 	uint32_t size;
-        size = nm_so_aligned(len);
 
 	h->skip = 0;
-        h->len = size;
-        h->chunk_offset = offset;
+	size = nm_so_aligned(len);
+	h->len = size;
 
 	if(len) {
 	  memcpy(vec->iov_base + vec->iov_len, data, len);
@@ -438,9 +411,24 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 	h->skip = p_so_pw->pw.v_nb;
 	p_so_pw->pending_skips++;
 	h->len = len;
-        h->chunk_offset = offset;
 
-        p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + len;
+#ifdef NM_SO_OPTIMISTIC_RECV
+	if(flags & NM_SO_DATA_FORCE_CONTIGUOUS) {
+
+	  /* Actually we know that skip == 0 at this point. But to
+	     simplify the nm_so_finalize routine, we store the iovec
+	     index, as in the general case. Also note that the len is
+	     _temporary_ set to 'len' and may be changed later to
+	     aligned(len) if another header is added.*/
+
+	  /* We must continue the header area on a new iovec entry if
+	     needed, and add a small gap to correct alignment. We
+	     postpone the processing to the next add_data operation. */
+	  p_so_pw->uncompleted_header = h;
+
+	}
+#endif
+	p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + len;
 
 	p_so_pw->pw.v_nb++;
 
@@ -528,7 +516,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
       vec++;
       ptr = (void *)nm_so_aligned((intptr_t)vec->iov_base);
       remaining_bytes = vec->iov_len
-        - (ptr - vec->iov_base);
+	                - (ptr - vec->iov_base);
       to_skip = 0;
     }
 
@@ -592,9 +580,9 @@ nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
   vec[1].iov_len = len;
   /* Third entry will contain additionnal data if any */
   vec[2].iov_base = (void *)p_so_pw->buf +
-    NM_SO_GLOBAL_HEADER_SIZE +
-    NM_SO_DATA_HEADER_SIZE +
-    len;
+                      NM_SO_GLOBAL_HEADER_SIZE +
+                      NM_SO_DATA_HEADER_SIZE +
+                      len;
   vec[2].iov_len = NM_SO_MAX_UNEXPECTED - len -
     NM_SO_GLOBAL_HEADER_SIZE - NM_SO_DATA_HEADER_SIZE;
 
@@ -603,7 +591,7 @@ nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
   *pp_so_pw = p_so_pw;
 
  out:
-  return err;
+    return err;
 }
 
 int
@@ -658,8 +646,7 @@ int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler,
-                              nm_so_pw_ack_chunk_handler ack_chunk_handler)
+			      nm_so_pw_ack_handler ack_handler)
 {
   struct iovec *vec;
   void *ptr;
@@ -706,7 +693,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	    data += skip;
 	  else {
 	    do {
-              skip -= rlen;
+	      skip -= rlen;
 	      v++;
 	      rlen = v->iov_len;
 	    } while (skip >= rlen);
@@ -738,8 +725,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
       if(proto_id != NM_SO_PROTO_DATA_UNUSED && data_handler) {
 	int r = data_handler(p_so_pw,
-			     data,
-			     dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset);
+			     data, dh->len,
+			     dh->proto_id, dh->seq);
 
 	if (r == NM_SO_HEADER_MARK_READ) {
 	  dh->proto_id = NM_SO_PROTO_DATA_UNUSED;
@@ -758,10 +745,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
 	  if (rdv_handler) {
-	    int r = rdv_handler(p_so_pw,
-                                ch,
-                                ch->r.tag_id, ch->r.seq,
-                                ch->r.len, ch->r.chunk_offset);
+	    int r = rdv_handler(p_so_pw, ch->r.tag_id, ch->r.seq, ch->r.len);
 	    if (r == NM_SO_HEADER_MARK_READ) {
 	      ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	    } else {
@@ -770,7 +754,6 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
 	  } else {
 	    NM_SO_TRACE("Sent completed of a RDV on tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
-            //printf("RDV envoyé on tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
 	  }
 	}
 	break;
@@ -782,9 +765,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
 	  if(ack_handler) {
-            int r = ack_handler(p_so_pw,
-				ch->a.tag_id, ch->a.seq, ch->a.track_id,
-                                ch->a.chunk_offset);
+	    int r = ack_handler(p_so_pw,
+				ch->a.tag_id, ch->a.seq, ch->a.track_id);
 
 	    if (r == NM_SO_HEADER_MARK_READ) {
 	      ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
@@ -793,76 +775,10 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	    }
 
 	  } else {
-            NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
-            //fprintf(stdout, "ACK envoyé on tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
+	    NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d\n", ch->a.tag_id, ch->a.seq);
 	  }
 	}
 	break;
-
-      case NM_SO_PROTO_MULTI_ACK:
-        {
-          union nm_so_generic_ctrl_header *ch = ptr;
-
-
-          uint8_t *proto_id  = &ch->ma.proto_id;
-          uint8_t nb_chunks = ch->ma.nb_chunks;
-          uint8_t tag_id = ch->ma.tag_id;
-          uint8_t seq = ch->ma.seq;
-          uint32_t chunk_offset = ch->ma.chunk_offset;
-          tbx_bool_t header_ref_count_incremented = tbx_false;
-          int i;
-
-          ptr += NM_SO_CTRL_HEADER_SIZE;
-          remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-          ch = ptr;
-
-          if (!ack_chunk_handler) {
-            NM_SO_TRACE("Sent completed of a multi-ack\n");
-
-            for(i = 0; i < nb_chunks; i++) {
-              ptr += NM_SO_CTRL_HEADER_SIZE;
-              remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-            }
-
-          } else {
-            NM_SO_TRACE("NM_SO_PROTO_MULTI_ACK received - nb_acks = %u, tag_id = %u, seq = %u\n", nb_chunks, tag_id, seq);
-
-            for(i = 0; i < nb_chunks; i++) {
-
-              if (ch->ac.proto_id == NM_SO_PROTO_CTRL_UNUSED)
-                goto next;
-
-              if (ch->ac.proto_id != NM_SO_PROTO_ACK_CHUNK) {
-                TBX_FAILURE("Invalid header - ACK_CHUNK expected");
-              }
-
-              NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK received - tag_id = %u, seq = %u - trk_id = %u, chunk_len =%u\n", tag_id, seq, ch->ac.trk_id, ch->ac.chunk_len);
-
-              int r = ack_chunk_handler(p_so_pw, tag_id, seq, chunk_offset,
-                                        ch->ac.trk_id, ch->ac.chunk_len);
-
-              if (r == NM_SO_HEADER_MARK_READ) {
-                ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-              } else {
-                header_ref_count_incremented = tbx_true;
-                p_so_pw->header_ref_count++;
-              }
-
-            next:
-              ptr += NM_SO_CTRL_HEADER_SIZE;
-              ch = ptr;
-              remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-            }
-
-            if(header_ref_count_incremented == tbx_false){
-              *proto_id = NM_SO_PROTO_CTRL_UNUSED;
-            } else {
-              NM_SO_TRACE("Multi-ack not completu treated\n");
-            }
-          }
-        }
-        break;
-
       case NM_SO_PROTO_CTRL_UNUSED:
 
 	ptr += NM_SO_CTRL_HEADER_SIZE;
@@ -876,9 +792,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
   } /* while */
 
-  if (!p_so_pw->header_ref_count) {
+  if (!p_so_pw->header_ref_count)
     nm_so_pw_free(p_so_pw);
-  }
 
   return NM_ESUCCESS;
 }

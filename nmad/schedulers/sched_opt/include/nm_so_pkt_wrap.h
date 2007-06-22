@@ -60,8 +60,6 @@ struct nm_so_pkt_wrap {
   struct nm_iovec    nm_v[NM_SO_PREALLOC_IOV_LEN];
 #endif
 
-  uint32_t chunk_offset;
-
   tbx_bool_t is_completed;
 
   /* The following field MUST be the LAST within the structure */
@@ -103,30 +101,21 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw);
 int
 nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw);
 
-int nm_so_pw_split(struct nm_so_pkt_wrap *p_so_pw,
-                   struct nm_so_pkt_wrap **pp_so_pw2,
-                   uint32_t offset);
-
 int
 nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
-		  void *data, uint32_t len,
-                  uint32_t offset, int flags);
+		  void *data, uint32_t len, int flags);
 
 #define nm_so_pw_add_control(p_so_pw, p_ctrl) \
   nm_so_pw_add_data((p_so_pw), \
 		    0, 0, \
 		    (p_ctrl), sizeof(*(p_ctrl)), \
-		    0, \
-                    NM_SO_DATA_IS_CTRL_HEADER)
-
+		    NM_SO_DATA_IS_CTRL_HEADER)
 
 static __inline__
 int
 nm_so_pw_alloc_and_fill_with_data(uint8_t proto_id, uint8_t seq,
-				  void *data, uint32_t len,
-                                  uint32_t chunk_offset,
-                                  int flags,
+				  void *data, uint32_t len, int flags,
 				  struct nm_so_pkt_wrap **pp_so_pw)
 {
   int err;
@@ -136,11 +125,9 @@ nm_so_pw_alloc_and_fill_with_data(uint8_t proto_id, uint8_t seq,
   if(err != NM_ESUCCESS)
     goto out;
 
-  err = nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, chunk_offset, flags);
+  err = nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, flags);
   if(err != NM_ESUCCESS)
     goto free;
-
-  p_so_pw->chunk_offset = chunk_offset;
 
   *pp_so_pw = p_so_pw;
 
@@ -176,7 +163,6 @@ nm_so_pw_alloc_and_fill_with_control(union nm_so_generic_ctrl_header *ctrl,
     goto out;
 }
 
-
 int
 nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
 			  void *data, uint32_t len,
@@ -199,34 +185,26 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);
 #define NM_SO_HEADER_MARK_UNREAD 1
 
 typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw,
-				  void *ptr,
-                                  void *header, uint32_t len,
-				  uint8_t proto_id, uint8_t seq,
-                                  uint32_t chunk_offset);
+				  void *ptr, uint32_t len,
+				  uint8_t proto_id, uint8_t seq);
 typedef int nm_so_pw_rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
-                                 void *rdv,
-				 uint8_t tag_id, uint8_t seq,
-                                 uint32_t len, uint32_t chunk_offset);
+				 uint8_t tag_id, uint8_t seq, uint32_t len);
 typedef int nm_so_pw_ack_handler(struct nm_so_pkt_wrap *p_so_pw,
-                                 uint8_t tag_id, uint8_t seq,
-                                 uint8_t track_id, uint32_t chunk_offset);
-typedef int nm_so_pw_ack_chunk_handler(struct nm_so_pkt_wrap *p_so_pw,
-                                       uint8_t tag_id, uint8_t seq, uint32_t chunk_offset,
-                                       uint8_t track_id, uint32_t chunk_len);
+				 uint8_t tag_id, uint8_t seq, uint8_t track_id);
+
 int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler,
-                              nm_so_pw_ack_chunk_handler);
+			      nm_so_pw_ack_handler ack_handler);
 
 static __inline__
 int
 nm_so_pw_dec_header_ref_count(struct nm_so_pkt_wrap *p_so_pw)
 {
-  if(!(--p_so_pw->header_ref_count)){
+  if(!(--p_so_pw->header_ref_count))
     nm_so_pw_free(p_so_pw);
-  }
+
   return NM_ESUCCESS;
 }
 

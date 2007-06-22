@@ -74,6 +74,4 @@ struct nm_drv_ops {
         int (*poll_recv_iov)	(struct nm_pkt_wrap 	*p_pw);
 
         int (*wait_iov)         (struct nm_pkt_wrap 	*p_pw);
-
-        int (*release_req)      (struct nm_pkt_wrap 	*p_pw);
 };

@@ -26,7 +26,6 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"
 #include "nm_so_interfaces.h"
-#include "nm_so_debug.h"
 
 /* Status flags contents */
 #define NM_SO_STATUS_PACKET_HERE     ((uint8_t)1)
@@ -44,29 +43,13 @@ struct nm_so_sched {
   struct {
     uint8_t  status;
     void    *data;
-    int32_t len;
-    int8_t  gate_id;
-    uint8_t seq;
+    uint32_t len;
   } any_src[NM_SO_MAX_TAGS];
 
   uint8_t next_gate_id;
 
   unsigned pending_any_src_unpacks;
 };
-
-#define INITIAL_CHUNK_NUM (NM_SO_MAX_TAGS * NM_SO_PENDING_PACKS_WINDOW)
-extern p_tbx_memory_t nm_so_chunk_mem;
-
-struct nm_so_chunk {
-  void *header;
-  struct nm_so_pkt_wrap *p_so_pw;
-  struct list_head link;
-};
-
-#define nm_l2chunk(l) \
-        ((struct nm_so_chunk *)((char *)(l) -\
-         (unsigned long)(&((struct nm_so_chunk *)0)->link)))
-
 
 struct nm_so_gate {
 
@@ -88,19 +71,14 @@ struct nm_so_gate {
 
   union recv_info {
     struct {
-      void *header;
+      void *data;
       struct nm_so_pkt_wrap *p_so_pw;
-      struct list_head chunks;
     } pkt_here;
-
     struct {
       void *data;
-      int32_t len;
+      uint32_t len;
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
-
-  /* pending len to send */
-  int32_t send[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
   /* For large messages waiting for ACKs */
   struct list_head pending_large_send[NM_SO_MAX_TAGS];

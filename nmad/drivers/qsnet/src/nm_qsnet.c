@@ -28,10 +28,6 @@
 
 #include "nm_qsnet_private.h"
 
-#ifdef ENABLE_SAMPLING
-#include "nm_parser.h"
-#endif
-
 #define INITIAL_PW_NUM		16
 #define NM_QSNET_USE_ELAN_DONE
 
@@ -210,10 +206,6 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         p_drv->url	= tbx_string_to_cstring(url_string);
         NM_TRACE_STR("p_drv->url", p_drv->url);
         tbx_string_free(url_string);
-
-#ifdef ENABLE_SAMPLING
-        nm_parse_sampling(p_drv, "qsnet");
-#endif
 
         err = NM_ESUCCESS;
 

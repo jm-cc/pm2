@@ -35,6 +35,9 @@ int MPI_Type_commit(MPI_Datatype *datatype);
 
 int MPI_Type_free(MPI_Datatype *datatype);
 
+int MPI_Type_optimized(MPI_Datatype *datatype,
+                       int optimized);
+
 int MPI_Type_contiguous(int count,
                         MPI_Datatype oldtype,
                         MPI_Datatype *newtype);

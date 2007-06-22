@@ -213,6 +213,8 @@ int mpir_type_unlock(MPI_Datatype datatype);
 
 int mpir_type_free(MPI_Datatype datatype);
 
+int mpir_type_optimized(MPI_Datatype datatype, int optimized);
+
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype);

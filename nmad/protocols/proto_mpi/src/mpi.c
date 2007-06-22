@@ -2003,6 +2003,18 @@ int MPI_Type_free(MPI_Datatype *datatype) {
 }
 
 /**
+ * This function does not belong to the MPI standard.
+ * Marks the datatype object associated with datatype as being
+ * optimized, i.e the pack interface can be used for communications
+ * requests using that type, instead of copying the data into a
+ * contiguous buffer.
+ */
+int MPI_Type_optimized(MPI_Datatype *datatype,
+                       int optimized) {
+  return mpir_type_optimized(*datatype, optimized);
+}
+
+/**
  * Constructs a typemap consisting of the replication of a datatype
  * into contiguous locations.
  */

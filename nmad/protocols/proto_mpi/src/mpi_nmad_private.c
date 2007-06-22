@@ -937,6 +937,12 @@ int mpir_type_free(MPI_Datatype datatype) {
   }
 }
 
+int mpir_type_optimized(MPI_Datatype datatype, int optimized) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
+  mpir_datatype->is_optimized = optimized;
+  return MPI_SUCCESS;
+}
+
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype) {

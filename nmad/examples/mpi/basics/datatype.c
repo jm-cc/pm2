@@ -27,7 +27,7 @@ void print_buffer(int rank, int *buffer) {
   }
 }
 
-void contig_datatype(int rank) {
+void contig_datatype(int rank, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype1;
   MPI_Datatype mytype2;
@@ -37,6 +37,11 @@ void contig_datatype(int rank) {
   MPI_Type_commit(&mytype);
   MPI_Type_contiguous(2, mytype, &mytype2);
   MPI_Type_commit(&mytype2);
+
+  if (optimized) {
+    MPI_Type_optimized(&mytype, 1);
+    MPI_Type_optimized(&mytype2, 1);
+  }
 
   if (rank == 0) {
     int buffer[4] = {1, 2, 3, 4};
@@ -73,7 +78,7 @@ void contig_datatype(int rank) {
   MPI_Type_free(&mytype3);
 }
 
-void vector_datatype(int rank) {
+void vector_datatype(int rank, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype2;
 
@@ -81,6 +86,11 @@ void vector_datatype(int rank) {
   MPI_Type_commit(&mytype);
   MPI_Type_hvector(8, 3, 8*sizeof(float), MPI_FLOAT, &mytype2);
   MPI_Type_commit(&mytype2);
+
+  if (optimized) {
+    MPI_Type_optimized(&mytype, 1);
+    MPI_Type_optimized(&mytype2, 1);
+  }
 
   if (rank == 0) {
     int i;
@@ -159,7 +169,7 @@ void vector_datatype(int rank) {
   MPI_Type_free(&mytype2);
 }
 
-void indexed_datatype(int rank) {
+void indexed_datatype(int rank, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype2;
   int blocklengths[3] = {1, 3, 2};
@@ -170,6 +180,11 @@ void indexed_datatype(int rank) {
   MPI_Type_commit(&mytype);
   MPI_Type_hindexed(3, blocklengths, strides2, MPI_CHAR, &mytype2);
   MPI_Type_commit(&mytype2);
+
+  if (optimized) {
+    MPI_Type_optimized(&mytype, 1);
+    MPI_Type_optimized(&mytype2, 1);
+  }
 
   if (rank == 0) {
     char buffer[26] = {'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 'i' ,'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
@@ -254,7 +269,7 @@ void indexed_datatype(int rank) {
   MPI_Type_free(&mytype2);
 }
 
-void struct_datatype(int rank) {
+void struct_datatype(int rank, int optimized) {
   struct part_s {
     char class[1];
     double d[2];
@@ -276,6 +291,10 @@ void struct_datatype(int rank) {
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
+
+  if (optimized) {
+    MPI_Type_optimized(&mytype, 1);
+  }
 
   if (rank == 0) {
     struct part_s particles[10];
@@ -322,7 +341,7 @@ void struct_datatype(int rank) {
   MPI_Type_free(&mytype);
 }
 
-void struct_and_indexed(int rank) {
+void struct_and_indexed(int rank, int optimized) {
   MPI_Datatype struct_type, struct_type_ext;
   struct part_s {
     double d;
@@ -347,6 +366,10 @@ void struct_and_indexed(int rank) {
   MPI_Type_struct(2, struct_blocklens, struct_displacements, types, &struct_type);
   MPI_Type_commit(&struct_type);
 
+  if (optimized) {
+    MPI_Type_optimized(&struct_type, 1);
+  }
+
   MPI_Type_get_extent(struct_type, &lb, &extent);
   if (extent != sizeof(struct part_s)) {
     MPI_Type_create_resized(struct_type, lb, sizeof(struct part_s), &struct_type_ext);
@@ -358,6 +381,9 @@ void struct_and_indexed(int rank) {
   }
 
   MPI_Type_commit(&indexed_type);
+  if (optimized) {
+    MPI_Type_optimized(&indexed_type, 1);
+  }
 
   //printf("Sizeof particle is %lud\n", sizeof(struct part_s));
   if (rank == 0) {
@@ -421,12 +447,19 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  contig_datatype(rank);
-  vector_datatype(rank);
-  indexed_datatype(rank);
-  struct_datatype(rank);
+  contig_datatype(rank, 0);
+  vector_datatype(rank, 0);
+  indexed_datatype(rank, 0);
+  struct_datatype(rank, 0);
 
-  struct_and_indexed(rank);
+  struct_and_indexed(rank, 0);
+
+  contig_datatype(rank, 1);
+  vector_datatype(rank, 1);
+  indexed_datatype(rank, 1);
+  struct_datatype(rank, 1);
+
+  struct_and_indexed(rank, 1);
 
   MPI_Finalize();
   exit(0);

@@ -37,6 +37,18 @@ rm -f /tmp/pm2test_"${USER}"_expected
 [1] Struct indexed successfully received
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
+(cat <<EOF
+[1] Contig data successfully received
+[1] Contig data successfully received
+[1] Contig data successfully received
+[1] Vector successfully received
+[1] Vector successfully received
+[1] Index successfully received
+[1] Index successfully received
+[1] Struct successfully received
+[1] Struct indexed successfully received
+EOF
+) >> /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default
 

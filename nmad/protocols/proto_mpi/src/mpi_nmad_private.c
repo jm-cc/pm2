@@ -656,7 +656,6 @@ int mpir_irecv(void* buffer,
     if (mpir_datatype->is_optimized) {
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
       int               i, j, k=0;
-      void *ptr;
 
       MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %ld\n", mpir_datatype->elements, (long)mpir_datatype->size);
       nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
@@ -675,7 +674,7 @@ int mpir_irecv(void* buffer,
       if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
     }
     else {
-      void *recvbuffer, *recvptr, *ptr, *subptr;
+      void *recvbuffer, *recvptr, *ptr;
       size_t len;
       int i, j;
 
@@ -705,6 +704,7 @@ int mpir_irecv(void* buffer,
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
+                         (long int)mpir_datatype->blocklens[j] * mpir_datatype->old_size,
                          recvptr, (int)(recvptr-recvbuffer), ptr, (int)(ptr-buffer));
 	  memcpy(ptr, recvptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
 	  recvptr += mpir_datatype->blocklens[j] * mpir_datatype->old_size;

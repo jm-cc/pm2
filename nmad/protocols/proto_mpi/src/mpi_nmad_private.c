@@ -489,7 +489,7 @@ int mpir_isend(void *buffer,
         MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           ptr += mpir_datatype->indices[j];
-          MPI_NMAD_TRACE("packing to %p data from %p (+%ld) with a size %d*%ld\n", newptr, ptr, (long)mpir_datatype->indices[j], mpir_datatype->blocklens[j], (long)mpir_datatype->old_sizes[j]);
+          MPI_NMAD_TRACE("copying to %p data from %p (+%ld) with a size %d*%ld\n", newptr, ptr, (long)mpir_datatype->indices[j], mpir_datatype->blocklens[j], (long)mpir_datatype->old_sizes[j]);
           memcpy(newptr, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
           newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j];
           ptr -= mpir_datatype->indices[j];
@@ -724,7 +724,7 @@ int mpir_irecv(void* buffer,
       nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
       mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
       for(i=0 ; i<count ; i++) {
-        mpir_request->request_ptr[k] = buffer + i*mpir_datatype->size;
+        mpir_request->request_ptr[k] = buffer + i*mpir_datatype->extent;
         for(j=0 ; j<mpir_datatype->elements ; j++) {
           mpir_request->request_ptr[k] += mpir_datatype->indices[j];
           nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);

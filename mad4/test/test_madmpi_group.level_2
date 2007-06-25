@@ -29,20 +29,20 @@ rm -f /tmp/pm2test_"${USER}"_expected
 (cat <<EOF
 [0] Communicator 91 with 4 nodes, local rank 0
 [0] Communicator 93 with 2 nodes, local rank 0, color 0
-[3] Communicator 91 with 4 nodes, local rank 3
-[3] Communicator 93 with 2 nodes, local rank 1, color 1
+[0] New ranks[0, -32766, 0, 1]
+[0] Old ranks[0, 3, 0, 2]
 [1] Communicator 91 with 4 nodes, local rank 1
 [1] Communicator 93 with 2 nodes, local rank 0, color 1
+[1] New ranks[-32766, 1, -32766, -32766]
+[1] Old ranks[0, 3, 0, 2]
 [2] Communicator 91 with 4 nodes, local rank 2
 [2] Communicator 93 with 2 nodes, local rank 1, color 0
-[2] Old ranks[0, 3, 0, 2]
 [2] New ranks[0, -32766, 0, 1]
-[3] Old ranks[0, 3, 0, 2]
+[2] Old ranks[0, 3, 0, 2]
+[3] Communicator 91 with 4 nodes, local rank 3
+[3] Communicator 93 with 2 nodes, local rank 1, color 1
 [3] New ranks[-32766, 1, -32766, -32766]
-[1] Old ranks[0, 3, 0, 2]
-[1] New ranks[-32766, 1, -32766, -32766]
-[0] Old ranks[0, 3, 0, 2]
-[0] New ranks[0, -32766, 0, 1]
+[3] Old ranks[0, 3, 0, 2]
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 

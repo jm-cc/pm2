@@ -32,8 +32,26 @@
 
 /* error return classes */
 #define MPI_SUCCESS          0      /* Successful return code */
-#define MPI_ERR_OTHER        2
-#define MPI_ERR_INTERN       3
+#define MPI_ERR_BUFFER       1
+#define MPI_ERR_COUNT        2
+#define MPI_ERR_TYPE         3
+#define MPI_ERR_TAG          4
+#define MPI_ERR_COMM         5
+#define MPI_ERR_RANK         6
+#define MPI_ERR_ROOT         7
+#define MPI_ERR_GROUP        8
+#define MPI_ERR_OP           9
+#define MPI_ERR_TOPOLOGY     10
+#define MPI_ERR_DIMS         11
+#define MPI_ERR_ARG          12
+#define MPI_ERR_UNKNOWN      13
+#define MPI_ERR_TRUNCATE     14
+#define MPI_ERR_OTHER        15
+#define MPI_ERR_INTERN       16
+#define MPI_ERR_IN_STATUS    17
+#define MPI_ERR_PENDING      18
+#define MPI_ERR_REQUEST      19
+#define MPI_ERR_LASTCODE     1073741823
 
 #define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
 

@@ -27,7 +27,7 @@
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisée
    dans un source assembleur */
 #if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS)) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
-  #define ASM_THREAD_SLOT_SIZE          (0x2000000) /* 32 MB */
+  #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
 #else
   #ifdef MA__LIBPTHREAD
     #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */

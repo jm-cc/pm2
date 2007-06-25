@@ -27,7 +27,7 @@ void print_buffer(int rank, int *buffer) {
   }
 }
 
-void contig_datatype(int rank, int optimized) {
+void contig_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype1;
   MPI_Datatype mytype2;
@@ -45,21 +45,21 @@ void contig_datatype(int rank, int optimized) {
   }
 #endif /* MAD_MPI */
 
-  if (rank == 0) {
+  if (ping_side) {
     int buffer[4] = {1, 2, 3, 4};
-    MPI_Send(buffer, 4, MPI_INT, 1, 10, MPI_COMM_WORLD);
-    MPI_Send(buffer, 2, mytype, 1, 10, MPI_COMM_WORLD);
-    MPI_Send(buffer, 1, mytype2, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 4, MPI_INT, rank_dst, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 2, mytype, rank_dst, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     int buffer[4], buffer2[4], buffer3[4];
-    MPI_Recv(buffer, 4, MPI_INT, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer, 4, MPI_INT, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer);
 
-    MPI_Recv(buffer2, 2, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer2, 2, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer2);
 
-    MPI_Recv(buffer3, 1, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer3, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     print_buffer(rank, buffer3);
   }
 
@@ -80,7 +80,7 @@ void contig_datatype(int rank, int optimized) {
   MPI_Type_free(&mytype3);
 }
 
-void vector_datatype(int rank, int optimized) {
+void vector_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype2;
 
@@ -96,7 +96,7 @@ void vector_datatype(int rank, int optimized) {
   }
 #endif /* MAD_MPI */
 
-  if (rank == 0) {
+  if (ping_side) {
     int i;
     int buffer[100];
     float buffer2[64];
@@ -104,14 +104,14 @@ void vector_datatype(int rank, int optimized) {
     for(i=0 ; i<100 ; i++) buffer[i] = i;
     for(i=0 ; i<64 ; i++) buffer2[i] = i;
 
-    MPI_Send(buffer, 1, mytype, 1, 10, MPI_COMM_WORLD);
-    MPI_Send(buffer2, 1, mytype2, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 1, mytype, rank_dst, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer2, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     int buffer[20];
     float buffer2[24];
 
-    MPI_Recv(buffer, 1, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer, 1, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, success=1;
@@ -140,7 +140,7 @@ void vector_datatype(int rank, int optimized) {
       }
     }
 
-    MPI_Recv(buffer2, 1, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer2, 1, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, success=1;
@@ -173,7 +173,7 @@ void vector_datatype(int rank, int optimized) {
   MPI_Type_free(&mytype2);
 }
 
-void indexed_datatype(int rank, int optimized) {
+void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Datatype mytype;
   MPI_Datatype mytype2;
   int blocklengths[3] = {1, 3, 2};
@@ -192,17 +192,17 @@ void indexed_datatype(int rank, int optimized) {
   }
 #endif /* MAD_MPI */
 
-  if (rank == 0) {
+  if (ping_side) {
     char buffer[26] = {'a', 'b', 'c', 'd', 'e', 'f', 'g','h', 'i' ,'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
-    MPI_Send(buffer, 3, mytype, 1, 10, MPI_COMM_WORLD);
-    MPI_Send(buffer, 2, mytype2, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD);
+    MPI_Send(buffer, 2, mytype2, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     char buffer[18];
     char buffer2[12];
 
-    MPI_Recv(buffer, 3, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer, 3, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j=0, success=1;
@@ -236,7 +236,7 @@ void indexed_datatype(int rank, int optimized) {
       }
     }
 
-    MPI_Recv(buffer2, 2, mytype2, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer2, 2, mytype2, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j=0, success=1;
@@ -275,7 +275,7 @@ void indexed_datatype(int rank, int optimized) {
   MPI_Type_free(&mytype2);
 }
 
-void struct_datatype(int rank, int optimized) {
+void struct_datatype(int rank, int ping_side, int rank_dst, int optimized) {
   struct part_s {
     char class[1];
     double d[2];
@@ -304,7 +304,7 @@ void struct_datatype(int rank, int optimized) {
   }
 #endif /* MAD_MPI */
 
-  if (rank == 0) {
+  if (ping_side) {
     struct part_s particles[10];
     int i;
     for(i=0 ; i<10 ; i++) {
@@ -316,11 +316,11 @@ void struct_datatype(int rank, int optimized) {
       particles[i].b[2] = i*3;
       particles[i].b[3] = i+5;
     }
-    MPI_Send(particles, 10, mytype, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(particles, 10, mytype, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[10];
-    MPI_Recv(particles, 10, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(particles, 10, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i, success=1;
@@ -349,7 +349,7 @@ void struct_datatype(int rank, int optimized) {
   MPI_Type_free(&mytype);
 }
 
-void struct_and_indexed(int rank, int optimized) {
+void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Datatype struct_type, struct_type_ext;
   struct part_s {
     double d;
@@ -399,7 +399,7 @@ void struct_and_indexed(int rank, int optimized) {
 #endif /* MAD_MPI */
 
   //printf("Sizeof particle is %lud\n", sizeof(struct part_s));
-  if (rank == 0) {
+  if (ping_side) {
     struct part_s particles[20];
     int i;
     for(i=0 ; i<20 ; i++) {
@@ -407,11 +407,11 @@ void struct_and_indexed(int rank, int optimized) {
       particles[i].b = i+1;
       //printf("Sending Particle[%d] = {%3.2f, %d}\n", i, particles[i].d, particles[i].b);
     }
-    MPI_Send(particles, 3, indexed_type, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(particles, 3, indexed_type, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[12];
-    MPI_Recv(particles, 3, indexed_type, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(particles, 3, indexed_type, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
       int i=0, j, success=1;
@@ -454,25 +454,29 @@ void struct_and_indexed(int rank, int optimized) {
 
 int main(int argc, char **argv) {
   int numtasks, rank;
+  int ping_side, rank_dst;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-  contig_datatype(rank, 0);
-  vector_datatype(rank, 0);
-  indexed_datatype(rank, 0);
-  struct_datatype(rank, 0);
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
-  struct_and_indexed(rank, 0);
+  contig_datatype(rank, ping_side, rank_dst, 0);
+  vector_datatype(rank, ping_side, rank_dst, 0);
+  indexed_datatype(rank, ping_side, rank_dst, 0);
+  struct_datatype(rank, ping_side, rank_dst, 0);
 
-  contig_datatype(rank, 1);
-  vector_datatype(rank, 1);
-  indexed_datatype(rank, 1);
-  struct_datatype(rank, 1);
+  struct_and_indexed(rank, ping_side, rank_dst, 0);
 
-  struct_and_indexed(rank, 1);
+  contig_datatype(rank, ping_side, rank_dst, 1);
+  vector_datatype(rank, ping_side, rank_dst, 1);
+  indexed_datatype(rank, ping_side, rank_dst, 1);
+  struct_datatype(rank, ping_side, rank_dst, 1);
+
+  struct_and_indexed(rank, ping_side, rank_dst, 1);
 
   MPI_Finalize();
   exit(0);

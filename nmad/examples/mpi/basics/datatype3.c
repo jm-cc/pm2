@@ -32,7 +32,10 @@ void struct_datatype(int rank) {
   MPI_Aint displacements[3];
   struct part_s particle;
   int sizeof_particle;
-  int i;
+  int i, ping_side, rank_dst;
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
   MPI_Address(&(particle.class), &displacements[0]);
   MPI_Address(&(particle.d), &displacements[1]);
@@ -51,7 +54,7 @@ void struct_datatype(int rank) {
   printf("size of struct type : %d\n", sizeof_particle);
 #endif
 
-  if (rank == 0) {
+  if (ping_side) {
     struct part_s particles[NB_PARTICLES];
     MPI_Request request1, request2;
     int i;
@@ -71,8 +74,8 @@ void struct_datatype(int rank) {
              particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
     }
 #endif
-    MPI_Isend(particles, NB_PARTICLES, mytype, 1, 11, MPI_COMM_WORLD, &request1);
-    MPI_Isend(particles, NB_PARTICLES, mytype, 1, 10, MPI_COMM_WORLD, &request2);
+    MPI_Isend(particles, NB_PARTICLES, mytype, rank_dst, 11, MPI_COMM_WORLD, &request1);
+    MPI_Isend(particles, NB_PARTICLES, mytype, rank_dst, 10, MPI_COMM_WORLD, &request2);
     MPI_Wait(&request1, MPI_STATUS_IGNORE);
     MPI_Wait(&request2, MPI_STATUS_IGNORE);
   }
@@ -85,8 +88,8 @@ void struct_datatype(int rank) {
     int *b;
 
     buffer = malloc(NB_PARTICLES*sizeof_particle);
-    MPI_Recv(particles, NB_PARTICLES, mytype, 0, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    MPI_Recv(buffer, NB_PARTICLES * sizeof_particle, MPI_BYTE, 0, 11, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(particles, NB_PARTICLES, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(buffer, NB_PARTICLES * sizeof_particle, MPI_BYTE, rank_dst, 11, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     ptr = buffer;
     for(i=0 ; i<NB_PARTICLES ; i++) {

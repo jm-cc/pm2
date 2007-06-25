@@ -31,6 +31,10 @@ void struct_datatype(int rank) {
   MPI_Aint displacements[3];
   struct part_s particle;
   int i;
+  int ping_side, rank_dst;
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
   MPI_Address(&(particle.class), &displacements[0]);
   MPI_Address(&(particle.d), &displacements[1]);
@@ -45,7 +49,7 @@ void struct_datatype(int rank) {
   MPI_Type_commit(&mytype);
   MPI_Type_optimized(&mytype, 1);
 
-  if (rank == 0) {
+  if (ping_side) {
     struct part_s particles[10];
     int i;
 
@@ -66,7 +70,7 @@ void struct_datatype(int rank) {
     }
 #endif
 
-    MPI_Send(particles, 10, mytype, 1, 10, MPI_COMM_WORLD);
+    MPI_Send(particles, 10, mytype, rank_dst, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[10];
@@ -74,9 +78,9 @@ void struct_datatype(int rank) {
     MPI_Request requests[30];
 
     for(i=0 ; i<10 ; i++) {
-      MPI_Irecv(&(particles[i].class), 1, MPI_CHAR, 0, 10, MPI_COMM_WORLD, &requests[i*3]);
-      MPI_Irecv(&(particles[i].d[0]), 2, MPI_DOUBLE, 0, 10, MPI_COMM_WORLD, &requests[i*3+1]);
-      MPI_Irecv(&(particles[i].b[0]), 4, MPI_INT, 0, 10, MPI_COMM_WORLD, &requests[i*3+2]);
+      MPI_Irecv(&(particles[i].class), 1, MPI_CHAR, rank_dst, 10, MPI_COMM_WORLD, &requests[i*3]);
+      MPI_Irecv(&(particles[i].d[0]), 2, MPI_DOUBLE, rank_dst, 10, MPI_COMM_WORLD, &requests[i*3+1]);
+      MPI_Irecv(&(particles[i].b[0]), 4, MPI_INT, rank_dst, 10, MPI_COMM_WORLD, &requests[i*3+2]);
     }
     MPI_Wait(&requests[29], MPI_STATUS_IGNORE);
 

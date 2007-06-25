@@ -70,6 +70,7 @@ int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t made
     datatypes[i]->dte_type = MPIR_BASIC;
     datatypes[i]->active_communications = 100;
     datatypes[i]->free_requested = 0;
+    datatypes[i]->lb = 0;
   }
   datatypes[MPI_DATATYPE_NULL]->size = 0;
   datatypes[MPI_CHAR]->size = sizeof(signed char);
@@ -820,10 +821,22 @@ int mpir_type_size(MPI_Datatype datatype, int *size) {
   return MPI_SUCCESS;
 }
 
-int mpir_type_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+int mpir_type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
-  *lb = 0;
+  *lb = mpir_datatype->lb;
   *extent = mpir_datatype->extent;
+  return MPI_SUCCESS;
+}
+
+int mpir_type_extent(MPI_Datatype datatype, MPI_Aint *extent) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
+  *extent = mpir_datatype->extent;
+  return MPI_SUCCESS;
+}
+
+int mpir_type_lb(MPI_Datatype datatype, MPI_Aint *lb) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
+  *lb = mpir_datatype->lb;
   return MPI_SUCCESS;
 }
 
@@ -840,6 +853,7 @@ int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent,
   datatypes[*newtype]->is_contig = mpir_old_datatype->is_contig;
   datatypes[*newtype]->size      = mpir_old_datatype->size;
   datatypes[*newtype]->extent    = extent;
+  datatypes[*newtype]->lb        = lb;
 
   if(datatypes[*newtype]->dte_type == MPIR_CONTIG) {
     datatypes[*newtype]->old_size  = mpir_old_datatype->old_size;
@@ -958,7 +972,8 @@ int mpir_type_contiguous(int count,
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
   datatypes[*newtype]->size = datatypes[*newtype]->old_size * count;
-  datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->elements = count; 
+  datatypes[*newtype]->lb = 0;
   datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count;
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new contiguous type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
@@ -989,6 +1004,7 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->blocklen = blocklength;
   datatypes[*newtype]->block_size = blocklength * datatypes[*newtype]->old_size;
   datatypes[*newtype]->stride = stride;
+  datatypes[*newtype]->lb = 0;
   datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count * blocklength;
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
@@ -1020,6 +1036,7 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
+  datatypes[*newtype]->lb = 0;
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));
   for(i=0 ; i<count ; i++) {
@@ -1058,6 +1075,7 @@ int mpir_type_struct(int count,
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->size = 0;
+  datatypes[*newtype]->lb = 0;
 
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));

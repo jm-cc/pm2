@@ -1961,7 +1961,21 @@ int MPI_Type_size(MPI_Datatype datatype, int *size) {
  * Returns the lower bound and the extent of datatype
  */
 int MPI_Type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
-  return mpir_type_extent(datatype, lb, extent);
+  return mpir_type_get_extent(datatype, lb, extent);
+}
+
+/**
+ * Returns the extent of the datatype
+ */
+int MPI_Type_extent(MPI_Datatype datatype, MPI_Aint *extent) {
+  return mpir_type_extent(datatype, extent);
+}
+
+/**
+ * Returns the lower bound of the datatype
+ */
+int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *lb) {
+  return mpir_type_lb(datatype, lb);
 }
 
 /**

@@ -156,5 +156,27 @@ the option <TT>-valgrind</TT>.
 
 </SUBSECTION>
 
+<SUBSECTION TITLE="MPI Compilers">
+
+<P>
+Mad-MPI provides by default a C and C++ compiler. The C compiler is
+invoked by calling <TT>mpicc</TT> and the C++ compiler by calling
+<TT>mpicxx</TT>. That name was chosen instead of <TT>mpiCC</TT> to
+avoid problems with operating systems not being case-sensitive.
+</P>
+
+<P>
+Fortran compilers are also available by setting the PM2 flavor
+accordingly. One can use the tools <TT>ezflavor</TT> or
+<TT>pm2-menu-config</TT> to modify the flavor <TT>mad4-mpi</TT> (see
+Section <REF LABEL="installMadMpi"/>). Setting the option
+<TT>fortran_target_gfortran</TT> or <TT>fortran_target_ifort</TT> of
+the module <TT>common</TT> will compile the Fortran support within
+Mad-MPI. Fortran compilers can then be invoked by calling
+<TT>mpif77</TT> or <TT>mpif90</TT>.
+</P>
+
+</SUBSECTION>
+
 </TEXT>
 

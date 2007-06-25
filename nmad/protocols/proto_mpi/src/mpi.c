@@ -1903,12 +1903,84 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen) {
       snprintf(string, *resultlen, "Error MPI_SUCCESS\n");
       break;
     }
+    case MPI_ERR_BUFFER : {
+      snprintf(string, *resultlen, "Error MPI_ERR_BUFFER\n");
+      break;
+    }
+    case MPI_ERR_COUNT : {
+      snprintf(string, *resultlen, "Error MPI_ERR_COUNT\n");
+      break;
+    }
+    case MPI_ERR_TYPE : {
+      snprintf(string, *resultlen, "Error MPI_ERR_TYPE\n");
+      break;
+    }
+    case MPI_ERR_TAG : {
+      snprintf(string, *resultlen, "Error MPI_ERR_TAG\n");
+      break;
+    }
+    case MPI_ERR_COMM : {
+      snprintf(string, *resultlen, "Error MPI_ERR_COMM\n");
+      break;
+    }
+    case MPI_ERR_RANK : {
+      snprintf(string, *resultlen, "Error MPI_ERR_RANK\n");
+      break;
+    }
+    case MPI_ERR_ROOT : {
+      snprintf(string, *resultlen, "Error MPI_ERR_ROOT\n");
+      break;
+    }
+    case MPI_ERR_GROUP : {
+      snprintf(string, *resultlen, "Error MPI_ERR_GROUP\n");
+      break;
+    }
+    case MPI_ERR_OP : {
+      snprintf(string, *resultlen, "Error MPI_ERR_OP\n");
+      break;
+    }
+    case MPI_ERR_TOPOLOGY : {
+      snprintf(string, *resultlen, "Error MPI_ERR_TOPOLOGY\n");
+      break;
+    }
+    case MPI_ERR_DIMS : {
+      snprintf(string, *resultlen, "Error MPI_ERR_DIMS\n");
+      break;
+    }
+    case MPI_ERR_ARG : {
+      snprintf(string, *resultlen, "Error MPI_ERR_ARG\n");
+      break;
+    }
+    case MPI_ERR_UNKNOWN : {
+      snprintf(string, *resultlen, "Error MPI_ERR_UNKNOWN\n");
+      break;
+    }
+    case MPI_ERR_TRUNCATE : {
+      snprintf(string, *resultlen, "Error MPI_ERR_TRUNCATE\n");
+      break;
+    }
     case MPI_ERR_OTHER : {
       snprintf(string, *resultlen, "Error MPI_ERR_OTHER\n");
       break;
     }
     case MPI_ERR_INTERN : {
       snprintf(string, *resultlen, "Error MPI_ERR_INTERN\n");
+      break;
+    }
+    case MPI_ERR_IN_STATUS : {
+      snprintf(string, *resultlen, "Error MPI_ERR_IN_STATUS\n");
+      break;
+    }
+    case MPI_ERR_PENDING : {
+      snprintf(string, *resultlen, "Error MPI_ERR_PENDING\n");
+      break;
+    }
+    case MPI_ERR_REQUEST : {
+      snprintf(string, *resultlen, "Error MPI_ERR_REQUEST\n");
+      break;
+    }
+    case MPI_ERR_LASTCODE : {
+      snprintf(string, *resultlen, "Error MPI_ERR_LASTCODE\n");
       break;
     }
     default : {

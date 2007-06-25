@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//#define DATATYPE_DEBUG
+
 void struct_datatype(int rank) {
   struct part_s {
     char class[1];
@@ -35,10 +37,13 @@ void struct_datatype(int rank) {
   MPI_Address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
-  printf("sizeof struct %ud, displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+#ifdef DATATYPE_DEBUG
+  printf("sizeof struct %ld, displacements[%ld,%ld,%ld]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+#endif
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
+  MPI_Type_optimized(&mytype, 1);
 
   if (rank == 0) {
     struct part_s particles[10];
@@ -53,16 +58,19 @@ void struct_datatype(int rank) {
       particles[i].b[2] = i*3;
       particles[i].b[3] = i+5;
     }
+
+#ifdef DATATYPE_DEBUG
     for(i=0 ; i<10 ; i++) {
       printf("Sending Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
              particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
     }
+#endif
 
     MPI_Send(particles, 10, mytype, 1, 10, MPI_COMM_WORLD);
   }
   else {
     struct part_s particles[10];
-    int i;
+    int i, success=1;
     MPI_Request requests[30];
 
     for(i=0 ; i<10 ; i++) {
@@ -73,8 +81,24 @@ void struct_datatype(int rank) {
     MPI_Wait(&requests[29], MPI_STATUS_IGNORE);
 
     for(i=0 ; i<10 ; i++) {
-      printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
-             particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
+      if ((particles[i].class[0] != (char) i+97) ||
+	  (particles[i].d[0] != (i+1)*10) ||
+	  (particles[i].d[1] != (i+1)*2) ||
+	  (particles[i].b[0] != i) ||
+	  (particles[i].b[1] != i+2) ||
+	  (particles[i].b[2] != i*3) ||
+	  (particles[i].b[3] != i+5))
+	success=0;
+    }
+
+    if (success) {
+      printf("Success\n");
+    }
+    else {
+      for(i=0 ; i<10 ; i++) {
+	printf("Error receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
+	       particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
+      }
     }
   }
 
@@ -82,14 +106,11 @@ void struct_datatype(int rank) {
 }
 
 int main(int argc, char **argv) {
-  int numtasks, rank;
+  int rank;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  printf("Rank %d Size %d\n", rank, numtasks);
 
   struct_datatype(rank);
 

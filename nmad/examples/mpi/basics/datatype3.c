@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #define NB_PARTICLES 30
+//#define DATATYPE_DEBUG
 
 void struct_datatype(int rank) {
   struct part_s {
@@ -38,13 +39,17 @@ void struct_datatype(int rank) {
   MPI_Address(&(particle.b), &displacements[2]);
   for(i=2 ; i>=0 ; i--) displacements[i] -= displacements[0];
 
-  printf("sizeof struct %ud displacements[%d,%d,%d]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+#ifdef DATATYPE_DEBUG
+  printf("sizeof struct %ld displacements[%ld,%ld,%ld]\n", sizeof(struct part_s), displacements[0], displacements[1], displacements[2]);
+#endif
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
   MPI_Type_size(mytype, &sizeof_particle);
 
+#ifdef DATATYPE_DEBUG
   printf("size of struct type : %d\n", sizeof_particle);
+#endif
 
   if (rank == 0) {
     struct part_s particles[NB_PARTICLES];
@@ -60,10 +65,12 @@ void struct_datatype(int rank) {
       particles[i].b[2] = i*3;
       particles[i].b[3] = i+5;
     }
+#ifdef DATATYPE_DEBUG
     for(i=0 ; i<NB_PARTICLES ; i++) {
       printf("Sending Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
              particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
     }
+#endif
     MPI_Isend(particles, NB_PARTICLES, mytype, 1, 11, MPI_COMM_WORLD, &request1);
     MPI_Isend(particles, NB_PARTICLES, mytype, 1, 10, MPI_COMM_WORLD, &request2);
     MPI_Wait(&request1, MPI_STATUS_IGNORE);
@@ -72,7 +79,7 @@ void struct_datatype(int rank) {
   else {
     struct part_s particles[NB_PARTICLES];
     void *buffer, *ptr;
-    int i;
+    int i, success=1;
     char *class;
     double *d;
     int *b;
@@ -86,26 +93,38 @@ void struct_datatype(int rank) {
       class = (char *) ptr;
       d = (double *) (ptr + sizeof(char));
       b = (int *) (ptr + sizeof(char) + 2*sizeof(double));
-      printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
-             particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
-      printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, class[0], d[0], d[1], b[0], b[1], b[2], b[3]);
+
+      if ((particles[i].class[0] != (char) i+97) ||
+	  (particles[i].d[0] != (i+1)*10) ||
+	  (particles[i].d[1] != (i+1)*2) ||
+	  (particles[i].b[0] != i) ||
+	  (particles[i].b[1] != i+2) ||
+	  (particles[i].b[2] != i*3) ||
+	  (particles[i].b[3] != i+5)) {
+	success=0;
+
+	printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, particles[i].class[0], particles[i].d[0], particles[i].d[1],
+	       particles[i].b[0], particles[i].b[1], particles[i].b[2], particles[i].b[3]);
+	printf("Receiving Particle[%d] = {%c, {%3.2f, %3.2f} {%d, %d, %d, %d}\n", i, class[0], d[0], d[1], b[0], b[1], b[2], b[3]);
+      }
       ptr += sizeof(char) + 2*sizeof(double) + 4*sizeof(int);
     }
     free(buffer);
+
+    if (success) {
+      printf("Success\n");
+    }
   }
 
   MPI_Type_free(&mytype);
 }
 
 int main(int argc, char **argv) {
-  int numtasks, rank;
+  int rank;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  printf("Rank %d Size %d\n", rank, numtasks);
 
   struct_datatype(rank);
 

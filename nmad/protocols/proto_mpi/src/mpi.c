@@ -2275,6 +2275,9 @@ int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group gr
         }
       }
     }
+    else {
+      return MPI_ERR_RANK;
+    }
   }
 
   MPI_NMAD_LOG_OUT();

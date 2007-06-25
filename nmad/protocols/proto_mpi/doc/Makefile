@@ -4,7 +4,7 @@ XML2HTML		:=	./xml2html
 
 TARGET			:=	madMpiDoc
 
-CFILES			:=	$(wildcard code/*.c code/*.txt code/*.cfg)
+CFILES			:=	$(wildcard code/*.c code/*.txt code/*.cfg code/*.out)
 EMPHCFILES_PS		:=	$(CFILES:%=%_emph_ps)
 EMPHCFILES_HTML		:=	$(CFILES:%=%_emph_html)
 

@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   int size, rank;
   int newsize, newrank;
   int color;
-  int ranks1[] = {0,5,0,2};
+  int ranks1[] = {0,3,0,2};
   int ranks2[4];
 
   MPI_Comm comm;
@@ -32,6 +32,12 @@ int main(int argc, char **argv) {
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  if (size != 4) {
+    fprintf(stdout, "Need 4 processes (%d)\n", size);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
 
   fprintf(stdout, "[%d] Communicator %d with %d nodes, local rank %d\n", rank, MPI_COMM_WORLD, size, rank);
 

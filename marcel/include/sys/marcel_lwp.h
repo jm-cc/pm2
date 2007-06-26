@@ -114,7 +114,7 @@ struct marcel_lwp {
 #    undef MAX_LWP
 #    define MAX_LWP ACT_NB_MAX_CPU
 #  else
-#    define MA_NR_LWPS MARCEL_NBMAXCPUS
+#    define MA_NR_LWPS (MARCEL_NBMAXCPUS+MARCEL_NBMAXVPSUP)
 #  endif
 #else
 #  define MA_NR_LWPS 1

@@ -277,6 +277,11 @@ static void marcel_top_tick(unsigned long foo) {
 
 int marcel_init_top(char *outfile) {
 	int fl;
+
+#ifndef MA__TIMER
+	fprintf(stderr,"Timer is disabled in the flavor, hence marcel_top can't work\n");
+	return 0;
+#endif
 	mdebug("marcel_init_top(%s)\n",outfile);
 #ifndef WIN_SYS
 	if (*outfile=='|') {

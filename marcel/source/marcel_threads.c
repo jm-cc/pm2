@@ -65,34 +65,54 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	/* Free within schedule_tail */
 	t->preempt_count = MA_PREEMPT_OFFSET | MA_SOFTIRQ_OFFSET;
-	marcel_sched_init_marcel_thread(t, attr);
 	t->not_preemptible = attr->not_preemptible;
+	marcel_sched_init_marcel_thread(t, attr);
 	//t->ctx_yield
-	t->work = MARCEL_WORK_INIT;
-	//t->softirq_pending_in_hardirq = 0;
-	//t->ctx_migr
+
+	//t->flags above
 	//t->child
 	//t->father
 	//t->f_to_call
-	//t->real_f_to_call
 	//t->arg
+
+	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
+	if (!attr->__detachstate)
+		marcel_sem_init(&t->client, 0);
+	//t->ret_val
+
+	ma_init_timer(&t->schedule_timeout_timer);
+	t->schedule_timeout_timer.data = (unsigned long) t;
+	t->schedule_timeout_timer.function = ma_process_timeout;
+
+	//t->stack_base
+	//t->static_stack
+	//t->initial_sp
+
+	strncpy(t->name, attr->name, MARCEL_MAXNAMESIZE);
+	t->id = attr->id;
+	PROF_EVENT2(set_thread_id, t, t->id);
+	//t->number above
+
+	//t->softirq_pending_in_hardirq = 0;
+
+	//t->ctx_migr
+	t->not_migratable = attr->not_migratable;
+	//t->remaining_sleep_time
+
+	//t->real_f_to_call
 	//t->sem_marcel_run
 	if (attr->user_space)
 		t->user_space_ptr = (char *) t - MAL(attr->user_space);
 	else
 		t->user_space_ptr = NULL;
 
-	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
-
-	if (!attr->__detachstate)
-		marcel_sem_init(&t->client, 0);
-	//t->ret_val
-
 	t->postexit_func = NULL;
 	//t->postexit_arg
+
 	//t->atexit_funcs
 	//t->atexit_args
 	t->next_atexit_func = 0;
+
 	t->last_cleanup = NULL;
 
 	//t->cur_exception
@@ -101,20 +121,9 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->exline
 
 	//t->key
-	ma_init_timer(&t->schedule_timeout_timer);
-	t->schedule_timeout_timer.data = (unsigned long) t;
-	t->schedule_timeout_timer.function = ma_process_timeout;
 
-	//t->stack_base
-	//t->static_stack
-	//t->initial_sp
-	strncpy(t->name, attr->name, MARCEL_MAXNAMESIZE);
-	t->id = attr->id;
-	PROF_EVENT2(set_thread_id, t, t->id);
-	//t->number
-	t->not_migratable = attr->not_migratable;
-	t->not_deviatable = attr->not_deviatable;
 	marcel_sem_init(&t->suspend_sem, 0);
+
 	ma_atomic_init(&t->top_utime, 0);
 
 	//t->__errno=0;
@@ -128,25 +137,35 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->p_nextwaiting = NULL;
 	marcel_sem_init(&t->pthread_sync, 0);
 
+	//t->all_threads
+
 #ifdef MARCEL_DEBUG_SPINLOCK
 	t->preempt_backtrace_size = 0;
 	t->spinlock_backtrace = 0;
 #endif
 
+	t->not_deviatable = attr->not_deviatable;
+	t->work = MARCEL_WORK_INIT;
+
 	ma_spin_lock_init(&t->siglock);
 	marcel_sigemptyset(&t->sigpending);
+	//t->siginfo
+	t->curmask = MARCEL_SELF->curmask;
+	//t->interrupted
 	t->delivering_sig = 0;
 	t->restart_deliver_sig = 0;
 	marcel_sigemptyset(&t->waitset);
 	t->waitsig = NULL;
 	t->waitinfo = NULL;
-	t->curmask = MARCEL_SELF->curmask;
+
 #ifdef MA__LIBPTHREAD
 	ma_spin_lock_init(&t->cancellock);
 	t->cancelstate = MARCEL_CANCEL_ENABLE;
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
 	t->canceled = MARCEL_NOT_CANCELED;
 #endif
+
+	//t->tls
 
 #ifdef ENABLE_STACK_JUMPING
 	*((marcel_t *) (ma_task_slot_top(t) - sizeof(void *))) = t;

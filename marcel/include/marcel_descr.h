@@ -29,7 +29,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 
 #section macros
 
-/* à préférer lorsque l'on veut accéder à un champ d'un marcel_t */
+/* à préférer lorsque l'on veut accéder à un champ d'un marcel_t, pour utiliser la TLS à la place un jour */
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
 #define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
 

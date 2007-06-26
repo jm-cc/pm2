@@ -664,9 +664,9 @@ int mpir_irecv(void* buffer,
       mpir_request->request_ptr[0] = buffer;
       for(i=0 ; i<count ; i++) {
         for(j=0 ; j<mpir_datatype->elements ; j++) {
-          MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %ld) with size %ld\n", i, j,
-                         mpir_request->request_ptr[k], buffer, mpir_request->request_ptr[k]-buffer,
-                         mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+          MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %d) with size %ld\n", i, j,
+                         mpir_request->request_ptr[k], buffer, (int)(mpir_request->request_ptr[k]-buffer),
+                         (long)mpir_datatype->blocklens[j] * mpir_datatype->old_size);
           nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_size);
           k++;
           mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_size;

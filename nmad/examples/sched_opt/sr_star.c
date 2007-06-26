@@ -27,7 +27,6 @@ int rank;
 
 int main(int argc, char **argv) {
   int numtasks;
-  int tag = 1;
 
   init(&argc, argv);
   rank = get_rank();
@@ -74,7 +73,6 @@ int main(int argc, char **argv) {
     free(in_requests);
   }
   else {
-    int father = 0;
     float r_buffer[2];
     int gate;
     nm_so_request out_request;

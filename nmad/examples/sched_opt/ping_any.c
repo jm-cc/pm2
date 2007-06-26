@@ -44,8 +44,6 @@ main(int	  argc,
   char			*buf		= NULL;
   uint32_t		 len;
   struct nm_so_cnx         cnx;
-  int err;
-
 
   init(&argc, argv);
 

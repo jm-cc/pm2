@@ -61,6 +61,7 @@ static void clear_buffer(char *buffer, int len) {
   memset(buffer, 0, len);
 }
 
+#if DATA_CONTROL_ACTIVATED
 static void control_buffer(char *msg, char *buffer, int len) {
   tbx_bool_t   ok = tbx_true;
   unsigned char expected_char;
@@ -86,6 +87,7 @@ static void control_buffer(char *msg, char *buffer, int len) {
     printf("ok\n");
   }
 }
+#endif
 
 int
 main(int	  argc,

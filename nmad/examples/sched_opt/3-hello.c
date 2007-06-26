@@ -28,13 +28,6 @@
 
 const char *msg	= "hello, world";
 
-static
-void
-usage(void) {
-        fprintf(stderr, "usage: hello [<remote url>]\n");
-        exit(EXIT_FAILURE);
-}
-
 int
 main(int	  argc,
      char	**argv) {

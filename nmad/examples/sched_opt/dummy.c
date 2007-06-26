@@ -41,7 +41,7 @@ static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
 			uint8_t proto_id, uint8_t seq)
 {
   printf("Data header : data = %p [%s], len = %u, tag = %d, seq = %u\n",
-	 ptr, ptr, len, proto_id, seq);
+	 ptr, (char *)ptr, len, proto_id, seq);
 
   return NM_SO_HEADER_MARK_UNREAD;
 }

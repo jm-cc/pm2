@@ -22,11 +22,12 @@
 
 #include "helper.h"
 
-int rank;
+//#define STAR_DEBUG
 #define PRINT(str, ...)		fprintf(stderr, "[%d] " str "\n", rank, ## __VA_ARGS__)
 
 int main(int argc, char **argv) {
   int numtasks;
+  int rank;
 
   init(&argc, argv);
   rank = get_rank();
@@ -47,17 +48,23 @@ int main(int argc, char **argv) {
     for(child=1 ; child<numtasks ; child++) {
       gate = get_gate_out_id(child);
       nm_so_sr_isend(sr_if, gate, child, buffer, 2*sizeof(float), &out_requests[child-1]);
+#ifdef STAR_DEBUG
       PRINT("Isending to child %d completed", child);
+#endif
     }
 
     for(child=1 ; child<numtasks ; child++) {
       nm_so_sr_swait(sr_if, out_requests[child-1]);
+#ifdef STAR_DEBUG
       PRINT("Waiting to child %d completed", child);
+#endif
     }
 
     for(child=1 ; child<numtasks ; child++) {
       gate = get_gate_in_id(child);
+#ifdef STAR_DEBUG
       PRINT("Waiting from child %d", child);
+#endif
       nm_so_sr_irecv(sr_if, gate, child, r_buffer, 2*sizeof(float), &in_requests[child-1]);
       nm_so_sr_rwait(sr_if, in_requests[child-1]);
 
@@ -82,12 +89,16 @@ int main(int argc, char **argv) {
     nm_so_sr_irecv(sr_if, gate, rank, r_buffer, 2*sizeof(float), &in_request);
     nm_so_sr_rwait(sr_if, in_request);
 
+#ifdef STAR_DEBUG
     PRINT("Received from father and sending back");
+#endif
 
     gate = get_gate_out_id(0);
     nm_so_sr_isend(sr_if, gate, rank, r_buffer, 2*sizeof(float), &out_request);
     nm_so_sr_swait(sr_if, out_request);
+#ifdef STAR_DEBUG
     PRINT("Waiting completed");
+#endif
   }
 
   nmad_exit();

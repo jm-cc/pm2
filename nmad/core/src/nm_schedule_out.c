@@ -173,15 +173,18 @@ nm_post_send	(struct nm_gate *p_gate) {
 
         tbx_slist_ref_to_head(post_slist);
         do {
-                struct nm_pkt_wrap	*p_pw	= tbx_slist_ref_get(post_slist);
+                struct nm_pkt_wrap	*p_pw	= NULL;
+
+        again:
+                p_pw	= tbx_slist_ref_get(post_slist);
 
                 /* check track availability				*/
                 /* TODO */
                 if (0/* track always available for now */)
-                        goto next;
+                        continue;
 
                 if (p_gate->out_req_nb == 256)
-                        goto next;
+                        continue;
 
                 p_gate->out_req_nb++;
                 p_pw->p_gdrv->out_req_nb++;
@@ -232,12 +235,9 @@ nm_post_send	(struct nm_gate *p_gate) {
 
                 /* remove request from post list */
                 if (tbx_slist_ref_extract_and_forward(post_slist, NULL))
-                        continue;
+                        goto again;
                 else
                         break;
-
-                next:
-                        ;
         } while (tbx_slist_ref_forward(post_slist));
 
         err = NM_ESUCCESS;

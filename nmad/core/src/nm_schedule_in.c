@@ -185,13 +185,15 @@ nm_post_recv(struct nm_sched	*p_sched,
 
         tbx_slist_ref_to_head(post_slist);
         do {
-                struct nm_pkt_wrap	*p_pw = tbx_slist_ref_get(post_slist);
+                struct nm_pkt_wrap	*p_pw = NULL;
 
+        again:
+                p_pw = tbx_slist_ref_get(post_slist);
 
                 /* check track availability				*/
                 /* a recv is already pending on this gate/track */
                 if (p_pw->p_gate && p_pw->p_gtrk->p_in_rq)
-                        goto next;
+                        continue;
 
 
                 /* ready to post request				*/
@@ -242,12 +244,9 @@ nm_post_recv(struct nm_sched	*p_sched,
 
                 /* remove request from post list */
                 if (tbx_slist_ref_extract_and_forward(post_slist, NULL))
-                        continue;
+                        goto again;
                 else
                         break;
-
-                next:
-                        ;
         } while (tbx_slist_ref_forward(post_slist));
 
         err = NM_ESUCCESS;

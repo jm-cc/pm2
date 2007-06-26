@@ -79,7 +79,7 @@ inline static unsigned long local_softirq_pending_hardirq(void)
 	unsigned long pending;
 	
 #if 0
-	THREAD_SETMEM(MARCEL_SELF, softirq_pending_in_hardirq, 0);
+	SELF_SETMEM(softirq_pending_in_hardirq, 0);
 	ma_set_thread_flag(TIF_BLOCK_HARDIRQ);
 	ma_smp_mb__after_clear_bit();
 #endif
@@ -94,7 +94,7 @@ inline static unsigned long local_softirq_pending_hardirq(void)
 	
 	ma_clear_thread_flag(TIF_BLOCK_HARDIRQ);
 	ma_smp_mb__after_clear_bit();
-	pending|= THREAD_GETMEM(MARCEL_SELF, softirq_pending_in_hardirq);
+	pending|= SELF_GETMEM(softirq_pending_in_hardirq);
 #endif
 	return pending;
 }
@@ -224,7 +224,7 @@ fastcall TBX_EXTERN void ma_raise_softirq_from_hardirq(unsigned int nr)
 	__ma_raise_softirq_bhoff(nr);
 #if 0
 	if (tbx_unlikely(ma_test_thread_flag(TIF_BLOCK_HARDIRQ))) {
-		ma_set_bit(nr, &THREAD_GETMEM(MARCEL_SELF, softirq_pending_in_hardirq));
+		ma_set_bit(nr, &SELF_GETMEM(softirq_pending_in_hardirq));
 	} else {
 		ma_raise_softirq_bhoff(nr);
 	}

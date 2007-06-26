@@ -69,7 +69,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->not_preemptible = attr->not_preemptible;
 	//t->ctx_yield
 	t->work = MARCEL_WORK_INIT;
-	t->softirq_pending_in_hardirq = 0;
+	//t->softirq_pending_in_hardirq = 0;
 	//t->ctx_migr
 	//t->child
 	//t->father
@@ -84,10 +84,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
 
-	if (!attr->__detachstate) {
+	if (!attr->__detachstate)
 		marcel_sem_init(&t->client, 0);
-		marcel_sem_init(&t->thread, 0);
-	}
 	//t->ret_val
 
 	t->postexit_func = NULL;
@@ -449,7 +447,6 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
 static void detach_func(any_t arg) {
 	marcel_t t=(marcel_t) arg;
 	marcel_sem_V(&t->client);
-	//	marcel_sem_P(&cur->thread);
 }
 
 static void TBX_NORETURN marcel_exit_internal(any_t val)
@@ -500,10 +497,6 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	}
 	
 	cur->ret_val = val;
-	//if(!cur->detached) {
-	     //marcel_sem_V(&cur->client);
-	     //marcel_sem_P(&cur->thread);
-	//}
 
 	ma_preempt_disable();
 	vp = GET_LWP(cur)->vp_level;

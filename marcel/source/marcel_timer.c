@@ -132,7 +132,7 @@ static void TBX_NORETURN fault_catcher(int sig)
 	pm2debug("OOPS!!! Signal %d catched on thread %p (%d)\n"
 			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n"
 			,
-		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number),
+		sig, MARCEL_SELF, SELF_GETMEM(number),
 		act->si_code, act->si_signo, act->si_addr, data);
 #endif
 	if(LWP_SELF != NULL)

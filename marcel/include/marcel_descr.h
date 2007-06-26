@@ -82,50 +82,19 @@ struct marcel_task {
 	struct marcel_sched_task sched;
 	/* Changements de contexte (sauvegarde état) */
 	marcel_ctx_t ctx_yield;
-	/* travaux en cours (deviate, signaux, ...) */
-	unsigned not_deviatable;
-	struct marcel_work work;
-	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
-	unsigned long softirq_pending_in_hardirq;
-
-	/* TODO: option de flavor "migration" */
-       /* Contexte de migration */
-	marcel_ctx_t ctx_migr;
-	unsigned not_migratable;
-	unsigned long remaining_sleep_time;
 
 	/* utilisé pour marquer les task idle, upcall, idle, ... */
 	volatile unsigned long flags;
 	/* Pour la création des threads */
 	marcel_t child, father;
 	marcel_func_t f_to_call;
-	marcel_func_t real_f_to_call;
 	any_t arg;
-	marcel_sem_t sem_marcel_run;
-	char *user_space_ptr;
+
 	/* Gestion de la terminaison */
 	tbx_bool_t detached;
-	marcel_sem_t client, thread;
+	marcel_sem_t client;
 	any_t ret_val; /* exit/join/cancel */
-	/*         postexit stuff */
-	marcel_postexit_func_t postexit_func;
-	any_t postexit_arg;
-	/*         atexit stuff */
-	marcel_atexit_func_t atexit_funcs[MAX_ATEXIT_FUNCS];
-	any_t atexit_args[MAX_ATEXIT_FUNCS];
-	unsigned next_atexit_func;
-	/*         cleanup */
-	struct _marcel_cleanup_buffer *last_cleanup;
 
-	/* TODO: option de flavor "exceptions" */
-	/* Gestion des exceptions */
-	marcel_exception_t cur_exception;
-	struct marcel_exception_block *cur_excep_blk;
-	char *exfile;
-	unsigned exline;
-
-	/* Clés */
-	any_t key[MAX_KEY_SPECIFIC];
 	/* Timer pour ma_schedule_timeout */
 	struct ma_timer_list schedule_timeout_timer;
 
@@ -139,11 +108,51 @@ struct marcel_task {
 	int id;
 	int number;
 
-	/* itimer & co */
+	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
+	//unsigned long softirq_pending_in_hardirq;
 
-	/* mutex & co */
+	/* TODO: option de flavor "migration" */
+       /* Contexte de migration */
+	marcel_ctx_t ctx_migr;
+	unsigned not_migratable;
+	unsigned long remaining_sleep_time;
+
+	/* TODO: option de flavor */
+	/* démarrage retardé */
+	marcel_func_t real_f_to_call;
+	marcel_sem_t sem_marcel_run;
+	char *user_space_ptr;
+
+	/* TODO: option de flavor */
+	/*         postexit stuff */
+	marcel_postexit_func_t postexit_func;
+	any_t postexit_arg;
+
+	/* TODO: option de flavor */
+	/*         atexit stuff */
+	marcel_atexit_func_t atexit_funcs[MAX_ATEXIT_FUNCS];
+	any_t atexit_args[MAX_ATEXIT_FUNCS];
+	unsigned next_atexit_func;
+
+	/* TODO: option de flavor */
+	/*         cleanup */
+	struct _marcel_cleanup_buffer *last_cleanup;
+
+	/* TODO: option de flavor "exceptions" */
+	/* Gestion des exceptions */
+	marcel_exception_t cur_exception;
+	struct marcel_exception_block *cur_excep_blk;
+	char *exfile;
+	unsigned exline;
+
+	/* TODO: option de flavor */
+	/* Clés */
+	any_t key[MAX_KEY_SPECIFIC];
+
+	/* TODO: option de flavor */
+	/* suspend */
 	marcel_sem_t suspend_sem;
-	
+
 	/* marcel-top */
 	ma_atomic_t top_utime/*, top_stime*/;
 
@@ -156,6 +165,8 @@ struct marcel_task {
 	/* Pour le code provenant de la libpthread */
 	struct __res_state __res_state;
 #endif
+
+	/* TODO: option rwlock */
 	/*         List of readlock info structs */
 	marcel_readlock_info *p_readlock_list;
 	/*         Free list of structs */
@@ -176,7 +187,12 @@ struct marcel_task {
 	int spinlock_backtrace;
 #endif
 
-	/* TODO: option de flavor */
+	/* TODO: option */
+	/* travaux en cours (deviate, signaux, ...) */
+	unsigned not_deviatable;
+	struct marcel_work work;
+
+	/* TODO: option de flavor, dépend de deviate */
 /*********signaux***********/
 	ma_spinlock_t siglock;
 	marcel_sigset_t sigpending;

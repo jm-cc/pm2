@@ -62,7 +62,10 @@ struct marcel_lwp {
 #ifdef MA__LWPS
 	marcel_task_t *idle_task;
 #endif
+
+	/* TODO: option */
 	marcel_task_t *postexit_task;
+
 	marcel_task_t *ksoftirqd_task;
 
 #ifdef MA__ACTIVATION
@@ -82,8 +85,6 @@ struct marcel_lwp {
 	unsigned online;
 	marcel_task_t *run_task;
 
-	//unsigned long process_counts;
-	
 	struct marcel_topo_level
 #ifdef MA__NUMA
 		*node_level,

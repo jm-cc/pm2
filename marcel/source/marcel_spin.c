@@ -33,10 +33,6 @@ DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared),(lock,psh
 		return EINVAL;
 	}
 #endif
-	if (pshared == MARCEL_PROCESS_SHARED) {
-		fprintf(stderr, "%s not yet implemented\n", __func__);
-		return ENOTSUP;
-	}
 	ma_spin_lock_init(&lock->lock);
 	return 0;
 })
@@ -60,6 +56,7 @@ DEF___PTHREAD(int, spin_destroy,(pthread_spinlock_t *lock),(lock));
 
 DEF_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock),(lock),
 {
+	marcel_thread_preemption_disable();
 	_ma_raw_spin_lock(&lock->lock);
 	return 0;
 })
@@ -70,9 +67,11 @@ DEF___PTHREAD(int, spin_lock,(pthread_spinlock_t *lock),(lock,pshared));
 
 DEF_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock),(lock),
 {
-	/*TODO : posixtestsuite veut un EINVAL si lock non initialisé */
-	if (!_ma_raw_spin_trylock(&lock->lock))
+	marcel_thread_preemption_disable();
+	if (!_ma_raw_spin_trylock(&lock->lock)) {
+		marcel_thread_preemption_enable();
 		return EBUSY;
+	}
 	return 0;
 })
 
@@ -83,6 +82,7 @@ DEF___PTHREAD(int, spin_trylock,(pthread_spinlock_t *lock),(lock,pshared));
 DEF_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock),(lock),
 {
 	_ma_raw_spin_unlock(&lock->lock);
+	marcel_thread_preemption_enable();
 	return 0;
 })
 

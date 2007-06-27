@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 #endif
       for(i=0 ; i<numtasks*2 ; i+=2) {
         if (rbuf[i] != i/2 || rbuf[i+1] != i/2+6) {
-          fprintf(stdout, "[%d] Error. rbuf[%d] != %d -- rbuf[%d] != %d\n", i, i/2, i+1, i/2+6);
+          fprintf(stdout, "[%d] Error. rbuf[%d] != %d -- rbuf[%d] != %d\n", rank, i, i/2, i+1, i/2+6);
           success=0;
         }
       }

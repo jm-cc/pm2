@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  fprintf(stdout, "[%d] Communicator %d with %d nodes\n", rank, MPI_COMM_WORLD, size);
+  fprintf(stdout, "a. [%d] Communicator %d with %d nodes\n", rank, MPI_COMM_WORLD, size);
 
   color = (rank % 2);
 
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(comm, &newsize);
     MPI_Comm_rank(comm, &newrank);
 
-    fprintf(stdout, "[%d] Communicator %d with %d nodes, local rank %d\n", rank, comm, newsize, newrank);
+    fprintf(stdout, "b. [%d] Communicator %d with %d nodes, local rank %d\n", rank, comm, newsize, newrank);
 
     if (newsize >= 2) {
       if (newrank == 0) {
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
       else if (newrank == 1) {
         int message;
         MPI_Recv(&message, 1, MPI_INT, 0, 1, comm, MPI_STATUS_IGNORE);
-        fprintf(stdout, "[%d] Received message: %d\n", rank, message);
+        fprintf(stdout, "c. [%d] Received message: %d\n", rank, message);
       }
     }
   }
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(comm2, &newsize);
     MPI_Comm_rank(comm2, &newrank);
 
-    fprintf(stdout, "[%d] Communicator %d with %d nodes, local rank %d\n", rank, comm2, newsize, newrank);
+    fprintf(stdout, "d. [%d] Communicator %d with %d nodes, local rank %d\n", rank, comm2, newsize, newrank);
   }
 
   fflush(stdout);

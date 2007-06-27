@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     for(i=0 ; i<numtasks ; i+=2) {
       if (rrbuf[i] != (rank*2)+(i/2)*10  || rrbuf[i+1] != (rank*2+1)+(i/2)*10) {
         fprintf(stdout, "[%d] Error. rrbuf[%d] != %d --- rrbuf[%d] != %d\n",
-                rank, i, (rank*2)+(i/2)*10, (rank*2+1)+(i/2)*10);
+                rank, i, (rank*2)+(i/2)*10, i+1, (rank*2+1)+(i/2)*10);
         success=0;
       }
     }

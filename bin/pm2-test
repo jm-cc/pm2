@@ -3,12 +3,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -232,22 +232,34 @@ while [ $_l -le $_level ]; do
 
 		for _f in $_tests ; do
 
-		    # Affichage
-		    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
-		    echo "Level [$_l], module [$_m], Test [$_tst_name]"
+                    # Affichage
+                    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
 
-                    # by default, do not sort the output
-                    sort_output=0
+                    is_test_selected=1
+                    if [ -n "$PM2_TESTS" ] ; then
+                        echo $PM2_TESTS |tr ' ' '\012' | grep $_tst_name
+                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep $_tst_name)" == "" ] ; then
+                            is_test_selected=0
+                        fi
+                    fi
 
-		    # Source
-		    . ./$_f
+                    if [ $is_test_selected == 1 ] ; then
+                        echo "Level [$_l], module [$_m], Test [$_tst_name]"
 
-		    # Compilation, execution et verification des resultats
-		    eval do_the_test $_output_redirect
+                        # by default, do not sort the output
+                        sort_output=0
 
-		    echo "   [$_tst_name] did succeed."
+		        # Source
+                        . ./$_f
 
-		done
+		        # Compilation, execution et verification des resultats
+                        eval do_the_test $_output_redirect
+
+                        echo "   [$_tst_name] did succeed."
+
+                    fi
+
+                done
 
 		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
 	    fi

@@ -193,3 +193,55 @@ void marcel_sched_internal_create_start_son(void) {
 	LOG_OUT();
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
+
+void *marcel_sched_ghost_thread(void *arg) {
+	ma_holder_t *h;
+	marcel_t next;
+
+	/* first ghost thread */
+	SELF_GETMEM(cur_ghost_thread) = arg;
+	ma_sched_change_prio(MARCEL_SELF, MA_BATCH_PRIO);
+
+	ma_preempt_disable();
+	ma_local_bh_disable();
+
+	marcel_ctx_setjmp(SELF_GETMEM(ctx_restart));
+	/* restart a new ghost thread */
+
+	next = SELF_GETMEM(cur_ghost_thread);
+
+	/* mimic his scheduling situation */
+#ifdef MA__BUBBLES
+	h = ma_task_init_holder(next);
+	if (h && h->type == MA_BUBBLE_HOLDER) {
+		marcel_bubble_t *bubble = ma_bubble_holder(h);
+		/* this order prevents inserttask from sleeping */
+		marcel_bubble_inserttask(bubble, MARCEL_SELF);
+		marcel_bubble_removetask(bubble, next);
+	}
+#endif
+
+	/* get out of here */
+	h = ma_task_run_holder(MARCEL_SELF);
+	ma_holder_rawlock(h);
+	ma_deactivate_running_entity(ma_entity_task(MARCEL_SELF), h);
+	ma_holder_rawunlock(h);
+
+	/* and go there */
+	ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
+	h = ma_task_run_holder(next);
+	ma_holder_rawlock(h);
+	ma_deactivate_running_entity(ma_entity_task(next), h);
+	ma_activate_running_entity(ma_entity_task(MARCEL_SELF), h);
+	ma_holder_rawunlock(h);
+
+	/* now we're ready */
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+
+	/* TODO: transférer les stats aussi? */
+
+	SELF_GETMEM(cur_ghost_thread)->f_to_call(SELF_GETMEM(cur_ghost_thread)->arg);
+	ma_obj_free(marcel_ghost_thread_allocator, SELF_GETMEM(cur_ghost_thread));
+	marcel_exit(NULL);
+}

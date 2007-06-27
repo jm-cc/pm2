@@ -46,10 +46,15 @@ __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struc
 	{
 	  debug("bulle, ");
 	}
-      else if (e[k]->type == MA_TASK_ENTITY)
+      else if (e[k]->type == MA_THREAD_ENTITY)
 	{
 	  marcel_task_t *t = ma_task_entity(e[k]);
 	  debug("%s, ", t->name);
+	}
+      else if (e[k]->type == MA_GHOST_THREAD_ENTITY)
+	{
+	  marcel_task_t *t = ma_task_entity(e[k]);
+	  debug("ghost, ");
 	}
       else 
 	debug("ovni!, ");
@@ -84,7 +89,7 @@ __sched_submit_to_upper_level(marcel_entity_t *e[], int ne, struct marcel_topo_l
   if (ne == 1)
     {
       if ((e[0]->type == MA_BUBBLE_ENTITY && (((ma_bubble_entity(e[0]))->hold.nr_ready) < l[0]->arity))
-	  || (e[0]->type == MA_TASK_ENTITY))
+	  || (e[0]->type != MA_BUBBLE_ENTITY))
 	return;
     }
 

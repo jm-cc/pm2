@@ -81,7 +81,7 @@ struct marcel_task {
 	/* Données relatives au scheduler */
 	struct marcel_sched_task sched;
 	/* Changements de contexte (sauvegarde état) */
-	marcel_ctx_t ctx_yield;
+	marcel_ctx_t ctx_yield, ctx_restart;
 
 	/* utilisé pour marquer les task idle, upcall, idle, ... */
 	volatile unsigned long flags;
@@ -89,6 +89,9 @@ struct marcel_task {
 	marcel_t child, father;
 	marcel_func_t f_to_call;
 	any_t arg;
+
+	//marcel_attr_t *shared_attr;
+	marcel_t cur_ghost_thread;
 
 	/* Gestion de la terminaison */
 	tbx_bool_t detached;

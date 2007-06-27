@@ -52,7 +52,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 			else if (!list_empty(ma_array_queue(rq->expired, i)))
 				e = list_entry(ma_array_queue(rq->expired,i)->prev, marcel_entity_t, run_list);
 	#endif
-			if (e->type == MA_TASK_ENTITY)
+			if (e->type != MA_BUBBLE_ENTITY)
 				continue;
 			b = ma_bubble_entity(e);
 			if ((nbrun = total_nr_ready(b)) >= up_power) {
@@ -235,7 +235,7 @@ int marcel_bubble_steal_work(unsigned vp) {
 
 static marcel_entity_t *
 steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx) {
-	if (nextent->type == MA_TASK_ENTITY)
+	if (nextent->type != MA_BUBBLE_ENTITY)
 		/* Don't touch tasks */
 		return nextent;
 

@@ -404,6 +404,19 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 	*flags = attr->flags;
 	return 0;
 }
+
+int marcel_attr_setghost(marcel_attr_t *attr, int ghost)
+{
+	attr->ghost = ghost;
+	return 0;
+}
+
+int marcel_attr_getghost(__const marcel_attr_t * __restrict attr,
+    int * __restrict ghost)
+{
+	*ghost = attr->ghost;
+	return 0;
+}
 /****************************destroy******************************/
 #undef marcel_attr_destroy
 DEF_MARCEL_POSIX(int,attr_destroy,(marcel_attr_t * attr),(attr),

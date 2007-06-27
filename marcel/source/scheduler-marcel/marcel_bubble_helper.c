@@ -84,7 +84,7 @@ int ma_count_entities_on_rq(ma_runqueue_t *rq)
 	{
 	  /* Crade, juste pour tester */
 #if 1 /* On prend ou non le thread main quand on ordonnance */
-	  if (ee->type == MA_TASK_ENTITY)
+	  if (ee->type == MA_THREAD_ENTITY)
 	    if ((ma_task_entity(ee)) != __main_thread)
 	      ne++;
 #else
@@ -114,7 +114,7 @@ int ma_count_all_entities_on_rq(ma_runqueue_t *rq)
 	{
 	  /* Crade, juste pour tester */
 #if 1 /* On prend ou non le thread main quand on ordonnance */
-	  if (ee->type == MA_TASK_ENTITY)
+	  if (ee->type == MA_THREAD_ENTITY)
 	    if ((ma_task_entity(ee)) != __main_thread)
 	      ne++;
 #else
@@ -144,7 +144,7 @@ void ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[])
 	{
 	  /* Crade, juste pour tester */
 #if 1 /* On prend ou non le thread main quand on ordonnance */
-	  if (ee->type == MA_TASK_ENTITY)
+	  if (ee->type == MA_THREAD_ENTITY)
 	    if ((ma_task_entity(ee)) != __main_thread)
 	      e[i++] = ee;
 #else

@@ -54,6 +54,7 @@ struct __marcel_attr_s {
 	char name[MARCEL_MAXNAMESIZE];
 	int id;
 	marcel_sched_attr_t sched;
+	int ghost;
 };
 
 #section macros
@@ -92,6 +93,7 @@ struct __marcel_attr_s {
   .name= "user_task", \
   .id = -1, \
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
+  .ghost = 0, \
 }
 
 /* #define MARCEL_SCHED_ATTR_DESTROYER { \ */
@@ -119,6 +121,7 @@ struct __marcel_attr_s {
   .flags= -1, \
   .name= "invalid", \
   .id = -2, \
+  .ghost = -1, \
 }
 
 /* realtime */
@@ -190,6 +193,10 @@ int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
                          int * __restrict flags);
+
+int marcel_attr_setghost(marcel_attr_t *attr, int ghost);
+int marcel_attr_getghost(__const marcel_attr_t * __restrict attr,
+			 int * __restrict ghost);
 #ifdef PM2STACKSGUARD
 #define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)
 #define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = THREAD_SLOT_SIZE, 0)

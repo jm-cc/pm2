@@ -75,6 +75,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->f_to_call
 	//t->arg
 
+	t->cur_ghost_thread = NULL;
+
 	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
 	if (!attr->__detachstate)
 		marcel_sem_init(&t->client, 0);
@@ -244,6 +246,18 @@ marcel_create_internal(marcel_t * __restrict pid,
 #else
 		attr = &marcel_attr_default;
 #endif
+	}
+
+	if (attr->ghost) {
+		MA_BUG_ON(attr->__detachstate != MARCEL_CREATE_DETACHED);
+		MA_BUG_ON(pid);
+		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);
+		//new_task->shared_attr = attr;
+		new_task->f_to_call = func;
+		new_task->arg = arg;
+		marcel_sched_init_ghost_thread(new_task, &new_task->sched.internal, attr);
+		marcel_wake_up_created_thread(new_task);
+		LOG_RETURN(0);
 	}
 
 	if (attr->__stackaddr_set) {
@@ -477,6 +491,14 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 #endif
 	
 	LOG_IN();
+
+	if (cur->cur_ghost_thread) {
+		/* try to die */
+		ma_set_current_state(MA_TASK_DEAD);
+		ma_schedule();
+
+		abort(); // For security
+	}
 
 	// On appelle marcel_atexit et marcel_cleanup sur la pile
 	// courante. Les fonctions atexit ne doivent pas détruire la

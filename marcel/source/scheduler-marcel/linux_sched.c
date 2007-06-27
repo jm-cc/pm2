@@ -412,11 +412,13 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	LOG_IN();
 
 	sched_debug("wake up created thread %p\n",p);
-	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
+	if (ma_entity_task(p)->type == MA_THREAD_ENTITY) {
+		MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-	*(long*)ma_task_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
-	PROF_EVENT2(sched_thread_wake, p, p->sched.state);
-	ma_set_task_state(p, MA_TASK_RUNNING);
+		*(long*)ma_task_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
+		PROF_EVENT2(sched_thread_wake, p, p->sched.state);
+		ma_set_task_state(p, MA_TASK_RUNNING);
+	}
 
 #ifdef MA__BUBBLES
 	h = ma_task_init_holder(p);
@@ -475,7 +477,8 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
 	rq = ma_rq_holder(h);
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()
+	if (ma_entity_task(p)->type == MA_THREAD_ENTITY
+	    && ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()
 	    && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF))) {
 		/* XXX: on pourrait être préempté entre-temps... */
 		PROF_EVENT(exec_woken_up_created_thread);
@@ -592,6 +595,12 @@ static void finish_task_switch(marcel_task_t *prev)
 	}
 	if (prev_task_state == MA_TASK_DEAD) {
 		PROF_THREAD_DEATH(prev);
+		if (prev->cur_ghost_thread) {
+			/* TODO: factorize with marcel_sched_generic.c */
+			if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(prev))) {
+				marcel_one_task_less(prev);
+			}
+		}
 		if (prev->detached && !prev->static_stack)
 			marcel_tls_slot_free(marcel_stackbase(prev));
 	}
@@ -1110,21 +1119,38 @@ restart:
 		/* ma_bubble_sched aura libéré prevrq */
 		goto need_resched_atomic;
 #endif
-	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
 	next = ma_task_entity(nextent);
 
-//	if (next->activated > 0) {
-//		unsigned long long delta = now - next->timestamp;
+	if (ma_entity_task(next)->type == MA_GHOST_THREAD_ENTITY) {
+		/* A ghost thread, take it */
+		ma_dequeue_task(next, nexth);
+		ma_holder_unlock(nexth);
 
-//		if (next->activated == 1)
-//			delta = delta * (ON_RUNQUEUE_WEIGHT * 128 / 100) / 128;
+		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_ghost_thread) { // && prev->shared_attr == next->shared_attr) {
+			/* yeepee, exec it */
+#ifdef MA__BUBBLES
+			ma_holder_t *h = ma_task_init_holder(prev);
+			if (h && h->type == MA_BUBBLE_HOLDER) {
+				marcel_bubble_t *bubble = ma_bubble_holder(h);
+				marcel_bubble_removetask(bubble, prev);
+			}
+#endif
 
-//		array = next->array;
-//		dequeue_task(next, array);
-//		recalc_task_prio(next, next->timestamp + delta);
-//		enqueue_task(next, array);
-//	}
-//	next->activated = 0;
+			prev->cur_ghost_thread = next;
+			marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
+		} else {
+			/* gasp, create a launcher thread */
+			marcel_attr_t attr; // = *next->shared_attr;
+			marcel_attr_init(&attr);
+			marcel_attr_setdetachstate(&attr, tbx_true);
+			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
+			marcel_create(NULL, &attr, marcel_sched_ghost_thread, next);
+			goto need_resched_atomic;
+		}
+	}
+
+	MA_BUG_ON(nextent->type != MA_THREAD_ENTITY);
 
 switch_tasks:
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
@@ -1196,6 +1222,7 @@ int marcel_yield_to(marcel_t next)
 	ma_holder_t *nexth;
 	int busy;
 
+	MA_BUG_ON(ma_entity_task(next)->type == MA_GHOST_THREAD_ENTITY);
 	if (next==prev)
 		return 0;
 

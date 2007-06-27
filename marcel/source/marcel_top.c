@@ -72,20 +72,6 @@ static void printtask(marcel_task_t *t) {
 	unsigned long cpu; /* en pour mille */
 	long load;
 
-	switch (t->sched.state) {
-		case MA_TASK_RUNNING: 		state = 'R'; break;
-		case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;
-		case MA_TASK_UNINTERRUPTIBLE:	state = 'U'; break;
-		//case MA_TASK_STOPPED:		state = 'S'; break;
-		//case MA_TASK_TRACED:		state = 'T'; break;
-		//case MA_TASK_ZOMBIE:		state = 'Z'; break;
-		case MA_TASK_DEAD:		state = 'D'; break;
-		//case MA_TASK_GHOST:		state = 'G'; break;
-		case MA_TASK_MOVING:		state = 'M'; break;
-		case MA_TASK_FROZEN:		state = 'F'; break;
-		case MA_TASK_BORNING:		state = 'B'; break;
-		default:			state = '?'; break;
-	}
 	if (MA_TASK_IS_RUNNING(t))
 		schedstate = 'R';
 	else if (MA_TASK_IS_READY(t))
@@ -94,23 +80,55 @@ static void printtask(marcel_task_t *t) {
 		schedstate = 'B';
 	else
 		schedstate = '?';
-	utime = ma_atomic_read(&t->top_utime);
-	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s",
-		(int) (2+2*sizeof(void*)), (unsigned long) t,
-        	MARCEL_MAXNAMESIZE, t->name,
-		t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
-		state, schedstate, GET_LWP_NUMBER(t),
-		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
-		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
-		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
-	if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
-		top_printf(" %ld",load);
-	if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
-		top_printf(" %ldMB",load>>20);
-	top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
-	top_printf("\r\n");
-	ma_atomic_sub(utime, &t->top_utime);
+
+	if (ma_entity_task(t)->type == MA_THREAD_ENTITY) {
+		switch (t->sched.state) {
+			case MA_TASK_RUNNING: 		state = 'R'; break;
+			case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;
+			case MA_TASK_UNINTERRUPTIBLE:	state = 'U'; break;
+			//case MA_TASK_STOPPED:		state = 'S'; break;
+			//case MA_TASK_TRACED:		state = 'T'; break;
+			//case MA_TASK_ZOMBIE:		state = 'Z'; break;
+			case MA_TASK_DEAD:		state = 'D'; break;
+			//case MA_TASK_GHOST:		state = 'G'; break;
+			case MA_TASK_MOVING:		state = 'M'; break;
+			case MA_TASK_FROZEN:		state = 'F'; break;
+			case MA_TASK_BORNING:		state = 'B'; break;
+			default:			state = '?'; break;
+		}
+		utime = ma_atomic_read(&t->top_utime);
+		cpu = djiffies?(utime*1000UL)/djiffies:0;
+		top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s",
+			(int) (2+2*sizeof(void*)), (unsigned long) t,
+			MARCEL_MAXNAMESIZE, t->name,
+			t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
+			state, schedstate, GET_LWP_NUMBER(t),
+			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
+			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
+			top_printf(" %ld",load);
+		if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
+			top_printf(" %ldMB",load>>20);
+		top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
+		top_printf("\r\n");
+		ma_atomic_sub(utime, &t->top_utime);
+	} else {
+		top_printf("%-#*lx %*s %2d        %c    %-10s %-10s %-10s",
+			(int) (2+2*sizeof(void*)), (unsigned long) t,
+			MARCEL_MAXNAMESIZE, "",
+			t->sched.internal.entity.prio,
+			schedstate,
+			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
+			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
+			top_printf(" %ld",load);
+		if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
+			top_printf(" %ldMB",load>>20);
+		top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
+		top_printf("\r\n");
+	}
 }
 
 #ifdef MA__BUBBLES
@@ -137,7 +155,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 	top_printf(" %ld", *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbrunning_offset));
 	top_printf("\r\n");
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
-		if (e->type == MA_TASK_ENTITY) {
+		if (e->type != MA_BUBBLE_ENTITY) {
 			top_printf("%*s", indent+1, "");
 			printtask(ma_task_entity(e));
 		} else {

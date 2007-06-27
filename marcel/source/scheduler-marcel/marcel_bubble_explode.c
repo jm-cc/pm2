@@ -106,9 +106,9 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 
 		MA_BUG_ON(!currq);
 		PROF_EVENT2(bubble_sched_switchrq,
-			nextent->type == MA_TASK_ENTITY?
-			(void*)ma_task_entity(nextent):
-			(void*)ma_bubble_entity(nextent),
+			nextent->type == MA_BUBBLE_ENTITY?
+			(void*)ma_bubble_entity(nextent):
+			(void*)ma_task_entity(nextent),
 			currq);
 		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
 
@@ -123,7 +123,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 		}
 	}
 
-	if (nextent->type == MA_TASK_ENTITY)
+	if (nextent->type != MA_BUBBLE_ENTITY)
 		LOG_RETURN(nextent);
 
 	marcel_bubble_t *bubble = ma_bubble_entity(nextent);

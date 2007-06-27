@@ -178,7 +178,7 @@ marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask)
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
-marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
+marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
@@ -189,14 +189,13 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #depend "scheduler/marcel_bubble_sched.h[types]"
 #depend "[marcel_variables]"
 __tbx_inline__ static void 
-marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
+marcel_sched_internal_init_marcel_task(marcel_task_t* t, 
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	LOG_IN();
-	internal->entity.type = MA_TASK_ENTITY;
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
 #ifdef MA__BUBBLES
@@ -318,7 +317,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
-	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
@@ -334,17 +332,47 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else
 		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
+
+}
+#section sched_marcel_functions
+__tbx_inline__ static void 
+marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr);
+#section sched_marcel_inline
+__tbx_inline__ static void 
+marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr)
+{
+	internal->entity.type = MA_THREAD_ENTITY;
+	marcel_sched_internal_init_marcel_task(t, internal, attr);
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
 	internal->bubble.sched.init_holder = NULL;
 #endif
+	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 	LOG_OUT();
 }
 
-
+#section sched_marcel_functions
+__tbx_inline__ static void 
+marcel_sched_init_ghost_thread(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr);
+#section sched_marcel_inline
+__tbx_inline__ static void 
+marcel_sched_init_ghost_thread(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr)
+{
+	internal->entity.type = MA_GHOST_THREAD_ENTITY;
+	marcel_sched_internal_init_marcel_task(t, internal, attr);
+}
 
 #section marcel_functions
 /* unsigned marcel_sched_add_vp(void); */
+void *marcel_sched_ghost_thread(void *arg);
 
 #section marcel_macros
 #section macros

@@ -50,12 +50,14 @@ enum marcel_holder {
 
 /** \brief Entity types: thread or bubble */
 enum marcel_entity {
-	/** \brief task */
-	MA_TASK_ENTITY,
 #ifdef MA__BUBBLES
 	/** \brief bubble */
 	MA_BUBBLE_ENTITY,
 #endif
+	/** \brief thread */
+	MA_THREAD_ENTITY,
+	/** \brief "ghost" thread */
+	MA_GHOST_THREAD_ENTITY,
 };
 
 #section structures
@@ -223,7 +225,7 @@ marcel_entity_t *ma_entity_task(marcel_task_t *t);
 #define ma_entity_task(t) (&(t)->sched.internal.entity)
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
-	MA_BUG_ON(e->type != MA_TASK_ENTITY);
+	MA_BUG_ON(e->type != MA_THREAD_ENTITY && e->type != MA_GHOST_THREAD_ENTITY);
 	return tbx_container_of(e, marcel_task_t, sched.internal.entity);
 }
 #ifdef MA__BUBBLES
@@ -714,9 +716,9 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	} else {
 		MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
 		PROF_EVENT2(bubble_sched_switchrq,
-			e->type == MA_TASK_ENTITY?
-				(void*) ma_task_entity(e):
-				(void*) ma_bubble_entity(e),
+			e->type == MA_BUBBLE_ENTITY?
+				(void*) ma_bubble_entity(e):
+				(void*) ma_task_entity(e),
 				ma_rq_holder(h));
 	}
 

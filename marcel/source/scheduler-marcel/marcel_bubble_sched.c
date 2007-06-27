@@ -195,7 +195,7 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	bubble_sched_debugl(7,"ma_set_sched_holder %p to bubble %p\n",e,bubble);
 	h = e->sched_holder;
 	e->sched_holder = &bubble->hold;
-	if (e->type == MA_TASK_ENTITY) {
+	if (e->type != MA_BUBBLE_ENTITY) {
 		if ((h = e->run_holder) && h != &bubble->hold) {
 			/* already enqueued */
 			/* Ici, on suppose que h est déjà verrouillé
@@ -217,7 +217,6 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 			}
 		}
 	} else {
-		MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 		b = ma_bubble_entity(e);
 		if (do_lock)
 			ma_holder_rawlock(&b->hold);
@@ -275,7 +274,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	__do_bubble_insertentity(bubble,entity);
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 
-	if (entity->type == MA_TASK_ENTITY) {
+	if (entity->type == MA_THREAD_ENTITY) {
 		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->sched.internal.bubble;
 		if (thread_bubble->sched.init_holder)
 			marcel_bubble_insertentity(bubble,ma_entity_bubble(thread_bubble));
@@ -292,7 +291,7 @@ int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entit
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
 	bubble->nbentities--;
-	if ((entity)->type == MA_TASK_ENTITY)
+	if ((entity)->type != MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_thread, (void*)ma_task_entity(entity), bubble);
 	else
 		PROF_EVENT2(bubble_sched_remove_bubble, (void*)ma_bubble_entity(entity), bubble);
@@ -643,7 +642,7 @@ static marcel_entity_t *ma_next_running_in_bubble(
 	next = list_entry(nexthead, marcel_entity_t, run_list);
 	bubble_sched_debugl(7,"next %p\n",next);
 
-	if (tbx_likely(next->type == MA_TASK_ENTITY))
+	if (tbx_likely(next->type != MA_BUBBLE_ENTITY))
 		return next;
 
 	/* bubble, go down */
@@ -672,7 +671,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 			LOG_RETURN(NULL);
 	}
 
-	if (nextent->type == MA_TASK_ENTITY)
+	if (nextent->type != MA_BUBBLE_ENTITY)
 		LOG_RETURN(nextent);
 
 /*
@@ -712,7 +711,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 	nextent = list_entry(bubble->queuedentities.next, marcel_entity_t, run_list);
 	bubble_sched_debugl(7,"next entity to run %p\n",nextent);
-	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
+	MA_BUG_ON(nextent->type == MA_BUBBLE_ENTITY);
 
 	sched_debug("unlock(%p)\n", rq);
 	ma_holder_rawunlock(&rq->hold);

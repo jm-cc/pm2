@@ -26,17 +26,19 @@ args="--x --p --l"
 sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[0] Broadcasted message [12.450000,3.140000]
-[0] Broadcasted message [49]
-[0] Global product [8,2]
-[0] Global reduction [6,10,14]
-[0] Global sum [10,31]
-[1] Broadcasted message [12.450000,3.140000]
-[1] Broadcasted message [49]
-[1] Global product [8,2]
-[1] Global reduction [6,10,14]
-EOF
+ranks=$(expr $(echo $hosts | wc -w) - 1)
+(
+echo "[0] Success for broadcasted message"
+echo "[0] Success for broadcasted message"
+echo "[0] Success for global product"
+echo "[0] Success for global reduction"
+echo "[0] Success for global sum"
+for f in $(seq 1 $ranks) ; do
+    echo "[$f] Success for broadcasted message"
+    echo "[$f] Success for broadcasted message"
+    echo "[$f] Success for global product"
+    echo "[$f] Success for global reduction"
+done
 ) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default

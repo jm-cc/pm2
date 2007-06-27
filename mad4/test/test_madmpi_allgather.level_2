@@ -26,13 +26,9 @@ args="--x --p --l"
 sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[0] Received: 0 1 2 2 
-[0] Sending: 0 1 
-[1] Received: 0 1 2 2 
-[1] Sending: 2 2 
-EOF
-) > /tmp/pm2test_"${USER}"_expected
+for f in $hosts ; do
+    echo "Success" >> /tmp/pm2test_"${USER}"_expected
+done
 
 . ./include/mad4_default
 

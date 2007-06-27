@@ -26,18 +26,25 @@ args="--x --p --l"
 sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-Communicator 1 is 93
-Communicator 1 is 93
-Communicator 2 is 94
-Communicator 2 is 94
-Communicator 3 is 93
-Communicator 3 is 93
-The answer to life, the universe, and everything is 42
-The answer to life, the universe, and everything is 42
-There are 7 Wonders of the World
-There are 7 Wonders of the World
-EOF
+nb=$(expr $(echo $hosts | wc -w) / 2)
+(
+for f in $hosts ; do
+    echo "Communicator 1 is 93"
+done
+for f in $hosts ; do
+    echo "Communicator 2 is 94"
+done
+for f in $hosts ; do
+    echo "Communicator 3 is 93"
+done
+for f in $(seq 1 $nb) ; do
+    echo "The answer to life, the universe, and everything is 42"
+    echo "The answer to life, the universe, and everything is 42"
+done
+for f in $(seq 1 $nb) ; do
+     echo "There are 7 Wonders of the World"
+     echo "There are 7 Wonders of the World"
+done
 ) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default

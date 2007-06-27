@@ -23,32 +23,36 @@ flavor="test_mad4_${mpi}_${net}_${strat}"
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="datatype"
 args="--x --p --l"
+sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[1] Contig data successfully received
-[1] Contig data successfully received
-[1] Contig data successfully received
-[1] Vector successfully received
-[1] Vector successfully received
-[1] Index successfully received
-[1] Index successfully received
-[1] Struct successfully received
-[1] Struct indexed successfully received
+nb=$(echo $hosts | wc -w)
+for f in $(seq 1 2 $nb) ; do
+    (cat <<EOF
+[$f] Contig data successfully received
+[$f] Contig data successfully received
+[$f] Contig data successfully received
+[$f] Contig data successfully received
+[$f] Contig data successfully received
+[$f] Contig data successfully received
+[$f] Index successfully received
+[$f] Index successfully received
+[$f] Index successfully received
+[$f] Index successfully received
+[$f] Struct indexed successfully received
+[$f] Struct indexed successfully received
+[$f] Struct successfully received
+[$f] Struct successfully received
+[$f] Vector successfully received
+[$f] Vector successfully received
+[$f] Vector successfully received
+[$f] Vector successfully received
 EOF
-) > /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[1] Contig data successfully received
-[1] Contig data successfully received
-[1] Contig data successfully received
-[1] Vector successfully received
-[1] Vector successfully received
-[1] Index successfully received
-[1] Index successfully received
-[1] Struct successfully received
-[1] Struct indexed successfully received
+    ) >> /tmp/pm2test_"${USER}"_expected
+    (cat <<EOF
 EOF
-) >> /tmp/pm2test_"${USER}"_expected
+    ) >> /tmp/pm2test_"${USER}"_expected
+done
 
 . ./include/mad4_default
 

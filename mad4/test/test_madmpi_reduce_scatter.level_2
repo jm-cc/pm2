@@ -23,16 +23,11 @@ flavor="test_mad4_${mpi}_${net}_${strat}"
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="reduce_scatter"
 args="--x --p --l"
-sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[0] Received:   0   2 
-[0] Sending:    0   1   2   3 
-[1] Received:   4   6 
-[1] Sending:    0   1   2   3 
-EOF
-) > /tmp/pm2test_"${USER}"_expected
+for f in $hosts ; do
+    echo "Success" >> /tmp/pm2test_"${USER}"_expected
+done
 
 . ./include/mad4_default
 

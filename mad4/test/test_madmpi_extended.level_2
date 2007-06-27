@@ -25,13 +25,17 @@ prog="extended"
 args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
+nb=$(expr $(echo $hosts | wc -w) / 2)
+(for f in $(seq 1 $nb) ; do
+    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
+    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
+done
+) > /tmp/pm2test_"${USER}"_expected
 (cat <<EOF
-nm_so_sr_isend_extended, The current strategy does not provide a extended pack
-nm_so_sr_isend_extended, The current strategy does not provide a extended pack
 The answer to life, the universe, and everything is 42
 There are 7 Wonders of the World
 EOF
-) > /tmp/pm2test_"${USER}"_expected
+) >> /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default
 

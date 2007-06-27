@@ -24,11 +24,11 @@ appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="datatype3"
 args="--x --p --l"
 
-rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-Success
-EOF
-) > /tmp/pm2test_"${USER}"_expected
+nb_hosts=$(echo $hosts | wc -w)
+moitie=$(expr $nb_hosts / 2)
+(for f in $(seq 1 $moitie) ; do
+    echo "Success"
+done) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default
 

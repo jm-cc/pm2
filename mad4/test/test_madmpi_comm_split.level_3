@@ -26,15 +26,33 @@ args="--x --p --l"
 sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-[0] Communicator 91 with 2 nodes
-[0] Communicator 93 with 1 nodes, local rank 0
-[0] Communicator 94 with 1 nodes, local rank 0
-[1] Communicator 91 with 2 nodes
-[1] Communicator 93 with 1 nodes, local rank 0
-[1] Communicator 94 with 1 nodes, local rank 0
-EOF
-) > /tmp/pm2test_"${USER}"_expected
+nb_hosts=$(echo $hosts | wc -w)
+ranks=$(expr $nb_hosts - 1)
+(for n in $(seq 0 $ranks) ; do
+    echo "a. [$n] Communicator 91 with $nb_hosts nodes"
+done
+
+moitie=$(expr $nb_hosts / 2)
+for n in $(seq 0 $ranks) ; do
+    local=$(expr \( $ranks - $n \) / 2)
+    echo "b. [$n] Communicator 93 with $moitie nodes, local rank $local"
+done
+
+if [ $nb_hosts -gt 2 ] ; then
+    for n in $(seq 0 $ranks) ; do
+        local=$(expr \( $ranks - $n \) / 2)
+        if [ $local == 1 ] ; then
+            echo "c. [$n] Received message: 42"
+        fi
+    done
+fi
+
+for n in $(seq 0 $ranks) ; do
+    local=$(expr $n / 2)
+    echo "d. [$n] Communicator 94 with $moitie nodes, local rank $local"
+done
+
+) >> /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default
 

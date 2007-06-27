@@ -25,10 +25,11 @@ prog="tailleZero"
 args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-Received -1
-EOF
-) > /tmp/pm2test_"${USER}"_expected
+nb_hosts=$(echo $hosts | wc -w)
+moitie=$(expr $nb_hosts / 2)
+(for f in $(seq 1 $moitie) ; do
+    echo "Received -1"
+done) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default
 

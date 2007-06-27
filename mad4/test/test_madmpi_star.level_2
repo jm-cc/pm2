@@ -19,17 +19,25 @@ net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_default"
 flavor="test_mad4_${mpi}_${net}_${strat}"
+sort_output=1
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="star"
 args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-ISending to child 1 completed
-Waiting for sending to child 1 completed
-Message from child 1 [12.450000,3.140000]
-EOF
+nb_hosts=$(echo $hosts | wc -w)
+ranks=$(expr $nb_hosts - 1)
+(
+for n in $(seq 1 $ranks) ; do
+    echo "ISending to child $n completed"
+done
+for n in $(seq 1 $ranks) ; do
+    echo "Message from child $n [12.450000,3.140000]"
+done
+for n in $(seq 1 $ranks) ; do
+    echo "Waiting for sending to child $n completed"
+done
 ) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default

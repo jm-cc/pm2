@@ -25,10 +25,12 @@ prog="ready"
 args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
-(cat <<EOF
-The answer to life, the universe, and everything is 42, 42
-There are 7 Wonders of the World
-EOF
+ranks=$(echo $hosts | wc -w)
+local=$(expr $ranks / 2)
+(for f in $(seq 1 local) ; do
+    echo "The answer to life, the universe, and everything is 42, 42"
+    echo "There are 7 Wonders of the World"
+done
 ) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/mad4_default

@@ -35,10 +35,11 @@ Usage: $_PM2_TEST_PROGNAME { option } { modules }
     -h,--help      : show this help
     -q,--quiet     : do not be verbose
     -l1,--basic    : run a basic number of tests
-    -l2,--normal    : run a reasonable number of tests for each PM2 module (default)
+    -l2,--normal   : run a reasonable number of tests for each PM2 module (default)
     -l3,--advanced : run a lot of tests to check more advanced features
     -l4,--torture  : check each line of C code to search for hidden bugs ;-)))
     -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
+    --tests XXX    : specify the tests to be run (by default all the tests of the specified level)
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -164,6 +165,11 @@ while [ $# -gt 0 ]; do
 	    jobs=$1
 	    shift
 	    ;;
+        --tests)
+            shift
+            PM2_TESTS=$1
+            shift
+            ;;
 	--)
 	    shift; break
 	    ;;

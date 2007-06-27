@@ -2290,7 +2290,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
     mpir_newcommunicator->global_ranks = malloc(nb_conodes*sizeof(int));
     for(i=0 ; i<nb_conodes ; i++) {
       int *ptr = conodes[i];
-      if ((*(ptr+1) == key) && (*(ptr+2) == mpir_communicator->rank)) {
+      if ((*(ptr+1) == key) && (*(ptr+2) == mpir_communicator->global_ranks[mpir_communicator->rank])) {
         mpir_newcommunicator->rank = i;
       }
       if (*ptr == color) {

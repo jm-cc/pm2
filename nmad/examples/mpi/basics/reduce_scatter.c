@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+//#define REDUCE_SCATTER_DEBUG
+
 int main(int argc, char **argv) {
   int numtasks, rank, i;
 
@@ -40,20 +42,31 @@ int main(int argc, char **argv) {
       sendarray[i+1] = i+1;
     }
 
+#ifdef REDUCE_SCATTER_DEBUG
     fprintf(stdout, "[%d] Sending:  ", rank);
     for(i=0 ; i<numtasks*2 ; i++) {
       fprintf(stdout, "%3d ", sendarray[i]);
     }
     fprintf(stdout, "\n");
+#endif
 
     MPI_Reduce_scatter(sendarray, rrbuf, recvcounts, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#ifdef REDUCE_SCATTER_DEBUG
     fprintf(stdout, "[%d] Received: ", rank);
     for(i=0 ; i<2 ; i++) {
       fprintf(stdout, "%3d ", rrbuf[i]);
     }
     fprintf(stdout, "\n");
     fflush(stdout);
+#endif
 
+    if (rrbuf[0] == (rank*2) * numtasks && rrbuf[1] == ((rank*2)+1) * numtasks) {
+      fprintf(stdout, "Success\n");
+    }
+    else {
+      fprintf(stdout, "[%d] Error. rrbuf[0] == %d (!= %d) --- rrbuf[1] == %d (!= %d)\n", rank, rrbuf[0], (rank*2)*numtasks,
+              rrbuf[1], ((rank*2)+1)*numtasks);
+    }
     free(rrbuf);
     free(sendarray);
     free(recvcounts);

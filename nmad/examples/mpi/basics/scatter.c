@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+//#define SCATTER_DEBUG
+
 int main(int argc, char **argv) {
   int numtasks, rank, i;
 
@@ -35,6 +37,7 @@ int main(int argc, char **argv) {
       sendarray[i+1] = i+1;
     }
 
+#ifdef SCATTER_DEBUG
     if (rank == 0) {
       fprintf(stdout, "[%d] Sending: ", rank);
       for(i=0 ; i<numtasks*2 ; i++) {
@@ -42,14 +45,25 @@ int main(int argc, char **argv) {
       }
       fprintf(stdout, "\n");
     }
+#endif
 
     MPI_Scatter(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, 0, MPI_COMM_WORLD);
+#ifdef SCATTER_DEBUG
     fprintf(stdout, "[%d] Received: ", rank);
     for(i=0 ; i<2 ; i++) {
       fprintf(stdout, "%d ", rrbuf[i]);
     }
     fprintf(stdout, "\n");
     fflush(stdout);
+#endif
+
+    if (rrbuf[0] == (rank*2) && rrbuf[1] == (rank*2) + 1) {
+      fprintf(stdout, "Success\n");
+    }
+    else {
+      fprintf(stdout, "[%d] Error. rrbuf[0] == %d (!= %d) --- rrbuf[1] == %d (!= %d)\n", rank, rrbuf[0], rank*2,
+              rrbuf[1], (rank*2)+1);
+    }
 
     free(rrbuf);
     free(sendarray);

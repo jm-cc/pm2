@@ -27,24 +27,30 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
   {
+    int success=1;
     int *rrbuf = malloc(numtasks * 2 * sizeof(int));
     int sendarray[2];
     sendarray[0] = rank*2;
     sendarray[1] = rank+1;
 
-    fprintf(stdout, "[%d] Sending: ", rank);
-    for(i=0 ; i<2 ; i++) {
-      fprintf(stdout, "%d ", sendarray[i]);
-    }
-    fprintf(stdout, "\n");
-
     MPI_Allgather(sendarray, 2, MPI_INT, rrbuf, 2, MPI_INT, MPI_COMM_WORLD);
 
-    fprintf(stdout, "[%d] Received: ", rank);
-    for(i=0 ; i<numtasks*2 ; i++) {
-      fprintf(stdout, "%d ", rrbuf[i]);
+    for(i=0 ; i<numtasks ; i+=2) {
+      if (rrbuf[i] != (i/2)*2  || rrbuf[i+1] != (i/2)+1) {
+        success=0;
+      }
     }
-    fprintf(stdout, "\n");
+
+    if (success) {
+      fprintf(stdout, "Success\n");
+    }
+    else {
+      fprintf(stdout, "[%d] Error!!! Received: ", rank);
+      for(i=0 ; i<numtasks*2 ; i++) {
+        fprintf(stdout, "%d ", rrbuf[i]);
+      }
+      fprintf(stdout, "\n");
+    }
 
     free(rrbuf);
   }

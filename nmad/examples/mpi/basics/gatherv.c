@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+//#define GATHERV_DEBUG
+
 int main(int argc, char **argv) {
   int numtasks, rank, i;
 
@@ -49,19 +51,44 @@ int main(int argc, char **argv) {
       sendarray = malloc(rank * sizeof(int));
       for(i=0 ; i<rank ; i++) sendarray[i] = rank;
     }
+#ifdef GATHERV_DEBUG
     fprintf(stdout, "[%d] Sending: ", rank);
     for(i=0 ; i<sendcount ; i++) {
       fprintf(stdout, "%d ", sendarray[i]);
     }
     fprintf(stdout, "\n");
+#endif
 
     MPI_Gatherv(sendarray, sendcount, MPI_INT, rbuf, recvcounts, displs, MPI_INT, 0, MPI_COMM_WORLD);
     if (rank == 0) {
+      int k, j, success=1;
+#ifdef GATHERV_DEBUG
       fprintf(stdout, "[%d] Received: ", rank);
       for(i=0 ; i<totalcount; i++) {
         fprintf(stdout, "%d ", rbuf[i]);
       }
       fprintf(stdout, "\n");
+#endif
+      if (rbuf[0] != 0) {
+        fprintf(stdout, "Error. rbuf[%d] != %d\n", 0, 0);
+        success=0;
+      }
+      else {
+        k=0;
+        j=1;
+        for(i=1 ; i<numtasks; i++) {
+          for(k=1 ; k<=i ; k++) {
+            if (rbuf[j] != i) {
+              fprintf(stdout, "Error. rbuf[%d] != %d\n", j, i);
+              success=0;
+            }
+            j++;
+          }
+        }
+      }
+      if (success) {
+        fprintf(stdout, "Success\n");
+      }
       free(rbuf);
       free(recvcounts);
       free(displs);
@@ -70,6 +97,7 @@ int main(int argc, char **argv) {
   }
 
   {
+    int k, j, success=1;
     int *sendarray, sendcount;
     int *rbuf, *recvcounts=NULL, *displs, totalcount;
 
@@ -95,18 +123,42 @@ int main(int argc, char **argv) {
       sendarray = malloc(rank * sizeof(int));
       for(i=0 ; i<rank ; i++) sendarray[i] = rank*10;
     }
+#ifdef GATHERV_DEBUG
     fprintf(stdout, "[%d] Sending: ", rank);
     for(i=0 ; i<sendcount ; i++) {
       fprintf(stdout, "%d ", sendarray[i]);
     }
     fprintf(stdout, "\n");
+#endif
 
     MPI_Allgatherv(sendarray, sendcount, MPI_INT, rbuf, recvcounts, displs, MPI_INT, MPI_COMM_WORLD);
+#ifdef GATHERV_DEBUG
     fprintf(stdout, "[%d] Received: ", rank);
     for(i=0 ; i<totalcount; i++) {
       fprintf(stdout, "%d ", rbuf[i]);
     }
     fprintf(stdout, "\n");
+#endif
+    if (rbuf[0] != 0) {
+      fprintf(stdout, "Error. rbuf[%d] != %d\n", 0, 0);
+      success=0;
+    }
+    else {
+      k=0;
+      j=1;
+      for(i=1 ; i<numtasks; i++) {
+        for(k=1 ; k<=i ; k++) {
+          if (rbuf[j] != i*10) {
+            fprintf(stdout, "Error. rbuf[%d] != %d\n", j, i*10);
+            success=0;
+          }
+          j++;
+        }
+      }
+    }
+    if (success) {
+      fprintf(stdout, "Success\n");
+    }
 
     free(recvcounts);
     free(displs);

@@ -47,7 +47,6 @@ int main(int argc, char **argv) {
     int y=7;
     MPI_Request request = MPI_REQUEST_NULL;
 
-    if (MPI_Request_is_equal(request, MPI_REQUEST_NULL)) printf("Null request\n");
     MPI_Isend(&x, 1, MPI_INT, rank_dst, 2, MPI_COMM_WORLD, &request);
     MPI_Send(&y, 1, MPI_INT, rank_dst, 1, MPI_COMM_WORLD);
   }

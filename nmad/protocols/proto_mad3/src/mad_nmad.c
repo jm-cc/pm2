@@ -311,6 +311,13 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
   p_mad_nmad_driver_specific_t	 ds		= d->specific;
   int err;
 
+#ifdef CONFIG_SCHED_OPT
+  err = nm_so_sr_exit(p_so_if);
+  if(err != NM_ESUCCESS) {
+    DISP("nm_so_sr_exit return err = %d\n", err);
+    TBX_FAILURE("nmad error");
+  }
+#endif
   err = nm_core_driver_exit(p_core);
   if(err != NM_ESUCCESS) {
     DISP("nm_core_driver_exit return err = %d\n", err);
@@ -321,13 +328,6 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     DISP("nm_core__exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
-#ifdef CONFIG_SCHED_OPT
-  err = nm_so_sr_exit(p_so_if);
-  if(err != NM_ESUCCESS) {
-    DISP("nm_so_sr_exit return err = %d\n", err);
-    TBX_FAILURE("nmad error");
-  }
-#endif
   TBX_FREE(ds->l_url);
   ds->l_url = NULL;
   NM_LOG_OUT();

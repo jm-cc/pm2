@@ -80,7 +80,7 @@ void test_larger(int rank, int size) {
     fprintf(stdout, "source=%d, tag=%d, error=%d, count=%d\n", status.MPI_SOURCE, status.MPI_TAG, status.MPI_ERROR, count);
 
     fprintf(stdout, "The answer to life, the universe, and everything is %d, %d\n", x[0], xx[0]);
-    fprintf(stdout, "There is %d wonders of the world\n\n", xx[size-2]);
+    fprintf(stdout, "There are %d wonders of the world\n\n", xx[size-2]);
 
     free(x);
     free(xx);

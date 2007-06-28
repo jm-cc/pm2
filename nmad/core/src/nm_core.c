@@ -189,6 +189,13 @@ nm_core_schedule_exit(struct nm_core *p_core) {
 
         err = p_sched->ops.exit(p_sched);
 
+        tbx_slist_clear(p_sched->pending_aux_recv_req);
+        tbx_slist_clear(p_sched->post_aux_recv_req);
+        tbx_slist_clear(p_sched->submit_aux_recv_req);
+        tbx_slist_clear(p_sched->pending_perm_recv_req);
+        tbx_slist_clear(p_sched->post_perm_recv_req);
+        tbx_slist_clear(p_sched->submit_perm_recv_req);
+
         tbx_slist_free(p_sched->pending_aux_recv_req);
         tbx_slist_free(p_sched->post_aux_recv_req);
         tbx_slist_free(p_sched->submit_aux_recv_req);

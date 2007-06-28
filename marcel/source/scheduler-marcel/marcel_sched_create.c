@@ -215,7 +215,7 @@ void *marcel_sched_ghost_thread(void *arg) {
 	h = ma_task_init_holder(next);
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
-		/* this order prevents inserttask from sleeping */
+		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
 		marcel_bubble_removetask(bubble, next);
 	}

@@ -1508,7 +1508,8 @@ void __marcel_init ma_linux_sched_init0(void)
 }
 
 
-unsigned long ma_stats_nbthreads_offset, ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
+unsigned long ma_stats_nbthreads_offset, ma_stats_nbgostthreads_offset;
+		ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
 unsigned long marcel_stats_load_offset;
 
 static void __marcel_init linux_sched_init(void)
@@ -1517,10 +1518,12 @@ static void __marcel_init linux_sched_init(void)
 	ma_holder_t *h;
 
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_nbghostthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
+	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbghostthreads_offset) = 0;
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbrunning_offset) = 1;
 
 #ifdef MA__SMP

@@ -90,6 +90,26 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
     p_priv->current_strategy->exit();
   }
 
+  while (!tbx_slist_is_nil(p_sched->post_aux_recv_req)) {
+    void *pw = tbx_slist_extract(p_sched->post_aux_recv_req);
+    nm_so_pw_free(pw);
+  }
+
+  while (!tbx_slist_is_nil(p_sched->post_perm_recv_req)) {
+    void *pw = tbx_slist_extract(p_sched->post_perm_recv_req);
+    nm_so_pw_free(pw);
+  }
+
+  while (!tbx_slist_is_nil(p_sched->pending_aux_recv_req)) {
+    void *pw = tbx_slist_extract(p_sched->pending_aux_recv_req);
+    nm_so_pw_free(pw);
+  }
+
+  while (!tbx_slist_is_nil(p_sched->pending_perm_recv_req)) {
+    void *pw = tbx_slist_extract(p_sched->pending_perm_recv_req);
+    nm_so_pw_free(pw);
+  }
+
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
 

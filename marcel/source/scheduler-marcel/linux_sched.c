@@ -1508,7 +1508,7 @@ void __marcel_init ma_linux_sched_init0(void)
 }
 
 
-unsigned long ma_stats_nbthreads_offset, ma_stats_nbgostthreads_offset;
+unsigned long ma_stats_nbthreads_offset, ma_stats_nbgostthreads_offset,
 		ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
 unsigned long marcel_stats_load_offset;
 

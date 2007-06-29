@@ -482,6 +482,13 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
     (*((marcel_t)t)->atexit_funcs[i])(((marcel_t)t)->atexit_args[i]);
 }
 
+/* called by postexit for making sure the thread is really terminated when
+ * marcel_join() returns */
+static void detach_func(any_t arg) {
+	marcel_t t=(marcel_t) arg;
+	marcel_sem_V(&t->client);
+}
+
 /* This is cleanup common to threads and ghost threads */
 static void common_cleanup(marcel_t t)
 {
@@ -506,6 +513,8 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 		ma_preempt_disable();
 
 		marcel_funerals(cur->cur_ghost_thread);
+		if (!cur->cur_ghost_thread->detached)
+			marcel_sem_V(&cur->cur_ghost_thread->client);
 
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);
@@ -556,12 +565,12 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	/* wait for scheduler stuff */
 	marcel_sched_exit(MARCEL_SELF);
 
-	if (cur->detached && cur->postexit_func) {
+	if (!cur->detached || cur->postexit_func) {
 		ma_preempt_disable();
 		vp = GET_LWP(cur)->vp_level;
 
 #ifdef MA__LWPS
-		/* For efficiency reasons, this thread shouldn't be moved any more */
+		/* This thread mustn't be moved any more */
 		mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
 		marcel_change_vpmask(&mask);
 #endif
@@ -569,16 +578,23 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	}
 
 	/* we need to acquire postexit semaphore before disabling preemption */
-	if (cur->detached && cur->postexit_func) {
+	if (!cur->detached || cur->postexit_func) {
 		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
-		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
-		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+		if (!cur->detached) {
+			ma_topo_vpdata(vp,postexit_func)=detach_func;
+			ma_topo_vpdata(vp,postexit_arg)=cur;
+		} else {
+			ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
+			ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+		}
 	}
 
 	/* make sure postexit or main doesn't start before we're off. */
 	ma_preempt_disable();
 
-	if (cur->detached && cur->postexit_func)
+	if (!cur->detached || cur->postexit_func)
+		/* we can't wake joiner ourself, since it may get scheduled
+		 * somewhere else on the machine */
 		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread));
 
 	common_cleanup(cur);

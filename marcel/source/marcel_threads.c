@@ -250,7 +250,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	if (attr->ghost) {
 		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
-		attr->__schedparam.__sched_priority = MA_BATCH_PRIO;
 		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);
 		//new_task->shared_attr = attr;
 		new_task->f_to_call = func;

@@ -375,7 +375,7 @@ marcel_sched_init_ghost_thread(marcel_task_t* t,
 
 #section marcel_functions
 /* unsigned marcel_sched_add_vp(void); */
-void *marcel_sched_ghost_thread(void *arg);
+void *marcel_sched_ghost_runner(void *arg);
 
 #section marcel_macros
 #section macros

@@ -658,7 +658,7 @@ int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)
         marcel_t t = (marcel_t) __t;
         marcel_attr_init(__attr);
         attr->__detachstate = t->detached;     
-        attr->__stackaddr_set = t->static_stack;
+        attr->__stackaddr_set = t->stack_kind == MA_STATIC_STACK;
         attr->__stackaddr = t;
         attr->__stacksize = THREAD_SLOT_SIZE - MAL(sizeof(*t));
         LOG_RETURN(0);
@@ -671,7 +671,7 @@ int lpt_getattr_np(lpt_t t,lpt_attr_t *__attr)
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
 	lpt_attr_init(__attr);
 	attr->__detachstate = t->detached;
-	attr->__stackaddr_set = t->static_stack;
+	attr->__stackaddr_set = t->stack_kind == MA_STATIC_STACK;
 	attr->__stackaddr = t;
 	attr->__stacksize = THREAD_SLOT_SIZE - MAL(sizeof(*t));
 	LOG_RETURN(0);

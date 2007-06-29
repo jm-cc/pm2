@@ -47,6 +47,21 @@ void marcel_slot_exit(void);
 #define ma_slot_sp_task(sp) ma_slot_task((sp) & ~(THREAD_SLOT_SIZE-1))
 #define ma_task_slot_top(t) ((unsigned long) (t) + MAL(sizeof(marcel_task_t)))
 
+#section marcel_functions
+static __tbx_inline__ void ma_free_task_stack(marcel_t task);
+#section marcel_inline
+static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
+	switch (task->stack_kind) {
+	case MA_DYNAMIC_STACK:
+		marcel_tls_slot_free(marcel_stackbase(task));
+		break;
+	case MA_STATIC_STACK:
+		break;
+	case MA_NO_STACK:
+		ma_obj_free(marcel_ghost_thread_allocator, task);
+		break;
+	}
+}
 
 /* ======= MT-Safe functions from standard library ======= */
 

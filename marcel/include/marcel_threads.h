@@ -118,6 +118,8 @@ DEC_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val) __THROW);
 #section marcel_functions
 void marcel_exit_special(any_t val) __THROW TBX_NORETURN;
 
+void marcel_funerals(marcel_t t);
+
 #section functions
 
 DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);

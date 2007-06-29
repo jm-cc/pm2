@@ -590,19 +590,11 @@ static void finish_task_switch(marcel_task_t *prev)
 		/* on sort du mode interruption */
 		ma_finish_arch_switch(prevh, prev);
 
-//		if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
-//			ma_put_task_struct(prev);
 	}
-	if (prev_task_state == MA_TASK_DEAD) {
+	if (tbx_unlikely(prev_task_state == MA_TASK_DEAD)) {
 		PROF_THREAD_DEATH(prev);
-		if (prev->cur_ghost_thread) {
-			/* TODO: factorize with marcel_sched_generic.c */
-			if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(prev))) {
-				marcel_one_task_less(prev);
-			}
-		}
-		if (prev->detached && !prev->static_stack)
-			marcel_tls_slot_free(marcel_stackbase(prev));
+		/* mourn it */
+		marcel_funerals(prev);
 	}
 }
 
@@ -1145,7 +1137,7 @@ restart:
 			marcel_attr_setdetachstate(&attr, tbx_true);
 			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
-			marcel_create(NULL, &attr, marcel_sched_ghost_thread, next);
+			marcel_create(NULL, &attr, marcel_sched_ghost_runner, next);
 			goto need_resched_atomic;
 		}
 	}

@@ -87,7 +87,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->schedule_timeout_timer.function = ma_process_timeout;
 
 	//t->stack_base
-	//t->static_stack
+	//t->stack_kind
 	//t->initial_sp
 
 	strncpy(t->name, attr->name, MARCEL_MAXNAMESIZE);
@@ -229,7 +229,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	marcel_attr_t myattr;
 #endif
 	void *stack_base;
-	int static_stack;
+	int stack_kind;
 
 	LOG_IN();
 
@@ -249,15 +249,20 @@ marcel_create_internal(marcel_t * __restrict pid,
 	}
 
 	if (attr->ghost) {
-		MA_BUG_ON(attr->__detachstate != MARCEL_CREATE_DETACHED);
-		MA_BUG_ON(pid);
 		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
+		attr->__schedparam.__sched_priority = MA_BATCH_PRIO;
 		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);
 		//new_task->shared_attr = attr;
 		new_task->f_to_call = func;
 		new_task->arg = arg;
+		new_task->stack_kind = MA_NO_STACK;
+		new_task->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
+		if (!attr->__detachstate)
+			marcel_sem_init(&new_task->client, 0);
 		marcel_sched_init_ghost_thread(new_task, &new_task->sched.internal, attr);
 		marcel_wake_up_created_thread(new_task);
+		if (pid)
+			*pid = new_task;
 		LOG_RETURN(0);
 	}
 
@@ -273,7 +278,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);	/* Not big enough */
 		}
 		stack_base = attr->__stackaddr - attr->__stacksize;
-		static_stack = tbx_true;
+		stack_kind = MA_STATIC_STACK;
 		/* TODO: Initialize TLS */
 	} else {		/* (!attr->stack_base) */
 		char *bottom;
@@ -286,7 +291,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		PROF_EVENT(thread_stack_allocated);
 		new_task = ma_slot_task(bottom);
 		stack_base = bottom;
-		static_stack = tbx_false;
+		stack_kind = MA_DYNAMIC_STACK;
 	}			/* fin (attr->stack_base) */
 
 	init_marcel_thread(new_task, attr, special_mode);
@@ -294,7 +299,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	_dl_allocate_tls_init(marcel_tcb(new_task));
 #endif
 	new_task->stack_base = stack_base;
-	new_task->static_stack = static_stack;
+	new_task->stack_kind = stack_kind;
 
 	new_task->father = cur;
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
@@ -478,15 +483,17 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
     (*((marcel_t)t)->atexit_funcs[i])(((marcel_t)t)->atexit_args[i]);
 }
 
-static void detach_func(any_t arg) {
-	marcel_t t=(marcel_t) arg;
-	marcel_sem_V(&t->client);
+/* This is cleanup common to threads and ghost threads */
+static void common_cleanup(marcel_t t)
+{
+	if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t)))
+		marcel_one_task_less(t);
 }
 
 static void TBX_NORETURN marcel_exit_internal(any_t val)
 {
 	marcel_t cur = marcel_self();
-	struct marcel_topo_level *vp;
+	struct marcel_topo_level *vp = NULL;
 #ifdef MA__LWPS
 	marcel_vpmask_t mask;
 #endif
@@ -494,6 +501,13 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	LOG_IN();
 
 	if (cur->cur_ghost_thread) {
+		cur->cur_ghost_thread->ret_val = val;
+
+		/* make sure waiter doesn't start before we're off. */
+		ma_preempt_disable();
+
+		marcel_funerals(cur->cur_ghost_thread);
+
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);
 		ma_schedule();
@@ -501,15 +515,15 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 		abort(); // For security
 	}
 
-	// On appelle marcel_atexit et marcel_cleanup sur la pile
-	// courante. Les fonctions atexit ne doivent pas détruire la
-	// pile. Les fonctions postexit peuvent le faire.
+	/* atexit and cleanup functions are called on the thread's stack.
+	 * postexit functions are called outside the thread (either postexit or
+	 * joiner), without stack when it is dynamic */
 	while (cur->last_cleanup) {
 		_marcel_cleanup_pop(cur->last_cleanup, 1);
 	}
 	marcel_atexit_exec(cur);
 
-	// gestion des thread_keys
+	/* key handling */
 	{
 		int nb_keys=marcel_nb_keys;
 		int key;
@@ -540,57 +554,37 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	
 	cur->ret_val = val;
 
-	ma_preempt_disable();
-	vp = GET_LWP(cur)->vp_level;
-
-#ifdef MA__LWPS
-	/* Durant cette fonction, il ne faut pas que le thread soit
-	   "déplacé" intempestivement (e.g. après avoir acquis
-	   stack_mutex) sur un autre LWP. */
-	mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
-	marcel_change_vpmask(&mask);
-#endif
-	ma_preempt_enable();
-
-	// attendre que l'ordonnanceur soit prêt
+	/* wait for scheduler stuff */
 	marcel_sched_exit(MARCEL_SELF);
 
-	// Ici, la pile a été allouée par le noyau Marcel
+	if (cur->detached && cur->postexit_func) {
+		ma_preempt_disable();
+		vp = GET_LWP(cur)->vp_level;
 
-	// Il faut acquérir le sémaphore pour postexit avant
-	// de désactiver la préemption
-	if (!cur->detached || cur->postexit_func) {
-		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
-		if (!cur->detached) {
-			ma_topo_vpdata(vp,postexit_func)=detach_func;
-			ma_topo_vpdata(vp,postexit_arg)=cur;
-		} else {
-			ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
-			ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
-		}
+#ifdef MA__LWPS
+		/* For efficiency reasons, this thread shouldn't be moved any more */
+		mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
+		marcel_change_vpmask(&mask);
+#endif
+		ma_preempt_enable();
 	}
 
+	/* we need to acquire postexit semaphore before disabling preemption */
+	if (cur->detached && cur->postexit_func) {
+		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
+		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
+		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+	}
+
+	/* make sure postexit or main doesn't start before we're off. */
 	ma_preempt_disable();
 
-	// Il peut paraître stupide de démarrer le thread exécutant la
-	// fonction postexit si tôt. Premièrement, ce n'est pas grave
-	// car désactiver la préemption garantit qu'aucun autre thread
-	// (sur le LWP) ne sera ordonnancé. Deuxièmement, il _faut_
-	// relâcher ce verrou très tôt (avant d'exécuter unchain_task)
-	// car sinon la tâche idle risquerait d'être réveillée (par
-	// unchain_task) alors que sem_V réveillerait par ailleurs une
-	// autre tâche du programme !
-	if (!cur->detached || cur->postexit_func)
-		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread)); /* idem ci-dessus */
+	if (cur->detached && cur->postexit_func)
+		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread));
 
-	// Même remarque que précédemment : main_thread peut être
-	// réveillé à cet endroit, donc il ne faut appeler
-	// unchain_task qu'après.
-	if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(cur))) {
-		marcel_one_task_less(cur);
-	}
+	common_cleanup(cur);
 
-	/* Changement d'état et appel au scheduler (d'où on ne revient pas) */
+	/* go off */
 	ma_set_current_state(MA_TASK_DEAD);
 	ma_schedule();
 
@@ -616,6 +610,18 @@ DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 void TBX_NORETURN marcel_exit_special(any_t val)
 {
 	marcel_exit_internal(val);
+}
+
+/* Called by scheduler after thread switch */
+void marcel_funerals(marcel_t t) {
+	if (ma_entity_task(t)->type == MA_THREAD_ENTITY
+		&& t->cur_ghost_thread)
+		common_cleanup(t);
+
+	if (t->detached)
+		ma_free_task_stack(t);
+	else
+		marcel_sem_V(&t->client);
 }
 
 /****************************************************************/
@@ -704,13 +710,10 @@ DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 
 	pid->detached = 1;
 
-	/* Exécution de la fonction post_mortem */
 	if (pid->postexit_func)
 		(*pid->postexit_func) (pid->postexit_arg);
 
-	/* Et libération de la pile */
-	if (!pid->static_stack)
-		marcel_tls_slot_free(marcel_stackbase(pid));
+	ma_free_task_stack(pid);
 
 	LOG_RETURN(0);
 })

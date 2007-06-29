@@ -103,7 +103,11 @@ struct marcel_task {
 
 	/* Pile */
 	any_t stack_base;
-	int static_stack;
+	enum {
+		MA_DYNAMIC_STACK,
+		MA_STATIC_STACK,
+		MA_NO_STACK,
+	} stack_kind;
 	long initial_sp;
 
 	/* Identification du thread */

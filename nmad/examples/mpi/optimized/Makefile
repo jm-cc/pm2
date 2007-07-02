@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=mad4
+export FLAVOR_DEFAULT:=nmad
 
 MOD_SRC	:= $(PM2_ROOT)/nmad/examples/mpi/optimized
 

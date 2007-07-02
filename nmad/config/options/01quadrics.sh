@@ -1,0 +1,8 @@
+PM2_PROTOCOLS="$PM2_PROTOCOLS qsnet"
+
+PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -DCONFIG_QSNET -I/opt/qsnet/include"
+
+PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/drivers/qsnet/include"
+
+PM2_NMAD_LIBS="$PM2_NMAD_LIBS -lelan"
+

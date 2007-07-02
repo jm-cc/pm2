@@ -168,7 +168,7 @@ avoid problems with operating systems not being case-sensitive.
 <P>
 Fortran compilers are also available by setting the PM2 flavor
 accordingly. One can use the tools <TT>ezflavor</TT> or
-<TT>pm2-menu-config</TT> to modify the flavor <TT>mad4-mpi</TT> (see
+<TT>pm2-menu-config</TT> to modify the flavor <TT>nmad-mpi</TT> (see
 Section <REF LABEL="installMadMpi"/>). Setting the option
 <TT>fortran_target_gfortran</TT> or <TT>fortran_target_ifort</TT> of
 the module <TT>common</TT> will compile the Fortran support within

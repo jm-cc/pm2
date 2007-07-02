@@ -1,4 +1,0 @@
-PM2_MAD4_CFLAGS="$PM2_MAD4_CFLAGS -DCONFIG_SCHED_MINI_ALT"
-PM2_MAD4_CFLAGS="$PM2_MAD4_CFLAGS -I${PM2_ROOT}/nmad/schedulers/sched_mini_alt/include"
-
-PM2_NMAD_SCHED="sched_mini_alt"

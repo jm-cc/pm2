@@ -1,0 +1,52 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+hosts="localhost localhost localhost localhost"
+net="tcp"
+mpi="mpi_emu"
+strat="strat_default"
+flavor="test_nmad_${mpi}_${net}_${strat}"
+
+appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+prog="group"
+args="--x --p --l"
+sort_output=1
+
+rm -f /tmp/pm2test_"${USER}"_expected
+(cat <<EOF
+[0] Communicator 91 with 4 nodes, local rank 0
+[0] Communicator 93 with 2 nodes, local rank 0, color 0
+[0] New ranks[0, -32766, 0, 1]
+[0] Old ranks[0, 3, 0, 2]
+[1] Communicator 91 with 4 nodes, local rank 1
+[1] Communicator 93 with 2 nodes, local rank 0, color 1
+[1] New ranks[-32766, 1, -32766, -32766]
+[1] Old ranks[0, 3, 0, 2]
+[2] Communicator 91 with 4 nodes, local rank 2
+[2] Communicator 93 with 2 nodes, local rank 1, color 0
+[2] New ranks[0, -32766, 0, 1]
+[2] Old ranks[0, 3, 0, 2]
+[3] Communicator 91 with 4 nodes, local rank 3
+[3] Communicator 93 with 2 nodes, local rank 1, color 1
+[3] New ranks[-32766, 1, -32766, -32766]
+[3] Old ranks[0, 3, 0, 2]
+EOF
+) > /tmp/pm2test_"${USER}"_expected
+
+. ./include/nmad_default
+
+# Verification et compilation du lanceur leonie
+compile_leonie

@@ -1,4 +1,0 @@
-PM2_MAD4_CFLAGS="$PM2_MAD4_CFLAGS -DCONFIG_SCHED_OPT"
-PM2_MAD4_CFLAGS="$PM2_MAD4_CFLAGS -I${PM2_ROOT}/nmad/schedulers/sched_opt/include"
-
-PM2_NMAD_SCHED="sched_opt"

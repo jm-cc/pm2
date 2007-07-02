@@ -2,8 +2,8 @@ How to produce trace files for NewMadeleine
 -------------------------------------------
 
 - Add the module profile in your flavor
-- Add the option profile for the module mad4
-- The option mad3_emu of mad4 must be enabled
+- Add the option profile for the module nmad
+- The option mad3_emu of nmad must be enabled
 
 - Start your application, it will create a file
   /tmp/prof_file_<node>_user_$USER on each of the nodes. 

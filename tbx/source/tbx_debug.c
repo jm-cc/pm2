@@ -93,8 +93,8 @@ DEBUG_DECLARE(mad2)
 #ifdef MAD3
 DEBUG_DECLARE(mad3)
 #endif
-#ifdef MAD4
-DEBUG_DECLARE(mad4)
+#ifdef NMAD
+DEBUG_DECLARE(nmad)
 #endif
 #ifdef LEONIE
 DEBUG_DECLARE(leonie)
@@ -351,8 +351,8 @@ void pm2debug_init_base()
 #ifdef MAD3
 	DEBUG_INIT(mad3);
 #endif
-#ifdef MAD4
-	DEBUG_INIT(mad4);
+#ifdef NMAD
+	DEBUG_INIT(nmad);
 #endif
 #ifdef LEONIE
 	DEBUG_INIT(leonie);

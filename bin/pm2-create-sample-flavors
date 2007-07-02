@@ -92,13 +92,13 @@ registering_flavors() {
 	--marcel=mono --marcel=marcel_main \
 	--mad3=tcp
 
-    register_flavor mad4 \
-	--modules="mad4 tbx ntbx init" $COMMON_OPTIONS \
-	--mad4=sched_opt --mad4=strat_default
+    register_flavor nmad \
+	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
+	--nmad=sched_opt --nmad=strat_default
 
-    register_flavor mad4-mpi \
-	--modules="mad4 tbx ntbx init" $COMMON_OPTIONS \
-	--mad4=sched_opt --mad4=strat_aggreg --mad4=mpi_emu --mad4=mad3_emu --mad4=mx \
+    register_flavor nmad-mpi \
+	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
+	--nmad=sched_opt --nmad=strat_aggreg --nmad=mpi_emu --nmad=mad3_emu --nmad=mx \
         --common=fortran_target_none
 
     register_flavor ezflavor \

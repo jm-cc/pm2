@@ -1,6 +1,5 @@
-
-# NewMadeleine
-# Copyright (C) 2006 (see AUTHORS file)
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,15 +11,23 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-ifeq ($(CONFIG_SCHED_OPT), y)
-APP		:= 4-ping big_hello hello mad_micro_sel ping_multirails ping ping_single sr_hello sr_ping sr_ping_any sr_test_any_src dummy latency mad_ping_sel  sr_latency large_small_large_small dsm sr_bench sr_hello_extended
+export FLAVOR_DEFAULT:=nmad
 
-else
-APP		:=
-endif
+# copied from common-vars because we need FLAVOR early for computing NMAD_SCHED
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    ifdef FLAVOR_DEFAULT
+      export FLAVOR:=$(FLAVOR_DEFAULT)
+    else # FLAVOR_DEFAULT
+      export FLAVOR:=default
+    endif # FLAVOR_DEFAULT
+  endif # PM2_FLAVOR
+endif # FLAVOR
 
-NM_PATH		:= ../..
+NMAD_SCHED := $(shell pm2-config --flavor=$(FLAVOR) --schedulers)
 
-include $(NM_PATH)/Makefile
+MOD_SRC += $(PM2_ROOT)/nmad/examples/sched_opt
 
-#
+include $(PM2_ROOT)/make/apps.mak

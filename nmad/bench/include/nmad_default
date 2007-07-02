@@ -1,0 +1,123 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+compile_leonie()
+{
+    echo "Compiling Leonie"
+    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
+    if [ "$x" == "" ] ; then
+        pm2-create-sample-flavors leonie
+    fi
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'
+        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+            echo "Could not compile leonie. Aborting"
+            exit 1
+        fi
+    fi
+}
+
+# args: loop variable
+initialize_bench()
+{
+	dev=$1
+	shift
+	
+	if [ ! -f ${bench_setting_file} ]; then
+		echo "bench setting file \"${bench_setting_file}\" not found"
+		return 1
+	fi
+
+        # Configuration
+	line=`grep \\^${dev} ${bench_setting_file}`
+
+	if [ "_${line}" == "_" ]; then
+		echo "device ${dev} not found in setting file"
+		return 1
+	fi
+
+	OLD_IFS=$IFS
+	IFS=":"
+	set $line
+        net="$2"
+        hosts="$3"
+        numactl="$4"
+	IFS=$OLD_IFS
+
+        # Creation de la flavor
+        eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+         --ext=\"\" \
+         --modules=\"init nmad ntbx tbx\" \
+         --init=\"opt\" \
+         --nmad=\"opt sched_opt strat_default mad3_emu mpi_emu ${dev}\" \
+         --ntbx=\"opt\" \
+         --tbx=\"opt\" \
+         --common=\"opt fortran_target_none\" \
+         --all=\"build_static\"
+
+	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"
+        ${PM2_ROOT}/bin/pm2-conf -f $flavor `echo $hosts | tr ',' ' '`
+}
+
+# args: -
+run_bench()
+{
+        net=$1
+
+        # Configuration
+	line=`grep \\^${net} ${bench_setting_file}`
+	OLD_IFS=$IFS
+	IFS=":"
+	set $line
+        numactl="$4"
+	IFS=$OLD_IFS
+
+	# wait for NFS to propagate the new compiled program
+	sleep 10
+
+        if [ "$net" == "mx" ] ; then
+            export MX_RCACHE=1
+            export MX_STATS=1
+            export PM2_EXPORT=MX_RCACHE:MX_STATS
+        fi
+
+        args=""
+        if [ "$numactl" == "numactl" ] ; then
+            args="--numactl"
+        fi
+
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+}
+
+# args: loop variable
+finalize_bench()
+{
+	true
+}
+
+####################
+
+# Compilation du lanceur leonie
+compile_leonie 2>&1 | sed -e 's/^/..../'
+
+#
+

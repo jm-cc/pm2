@@ -119,7 +119,7 @@ if [ -z "$PM2_ROOT" ] ; then
 fi
 
 if [ -z "$PM2_FLAVOR" ] ; then
-    PM2_FLAVOR=mad4-mpi
+    PM2_FLAVOR=nmad-mpi
 fi
 
 dir=$(dirname $0)

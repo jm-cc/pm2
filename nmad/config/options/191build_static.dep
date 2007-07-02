@@ -1,0 +1,3 @@
+Provide: nmad_linkmode
+Provide: static_libs
+Conflict: nmad_linkmode

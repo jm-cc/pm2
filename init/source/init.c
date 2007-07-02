@@ -466,7 +466,7 @@ void common_post_init(int *argc, char *argv[],
   profile_set_tracefile("/tmp/prof_file_%d",
 		  mad_get_madeleine()->session->process_rank);
 #endif /* PROFILE */
-#if defined(PROFILE) && defined(MAD4)
+#if defined(PROFILE) && defined(NMAD)
 #  if defined(CONFIG_PROTO_MAD3)
   profile_set_tracefile("/tmp/prof_file_%d",
 		  mad_get_madeleine()->session->process_rank);

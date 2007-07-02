@@ -41,7 +41,7 @@ clean:
 	rm -f *.o $(PROGS)
 
 lib:
-	make -C $(PM2_ROOT)/mad4 FLAVOR=mad4-mpi
+	make -C $(PM2_ROOT)/nmad FLAVOR=nmad-mpi
 
 clean-lib:
-	make -C $(PM2_ROOT)/mad4 FLAVOR=mad4-mpi clean
+	make -C $(PM2_ROOT)/nmad FLAVOR=nmad-mpi clean

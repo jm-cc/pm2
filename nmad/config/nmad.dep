@@ -1,0 +1,5 @@
+Provide: madeleine
+Depend: nmad_proto tbx ntbx init
+Provide: module nmad_proto
+Conflict: madeleine
+Depend: nmad_linkmode

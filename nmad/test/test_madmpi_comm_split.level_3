@@ -1,0 +1,60 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
+mpi="mpi_emu"
+strat="strat_default"
+flavor="test_nmad_${mpi}_${net}_${strat}"
+
+appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+prog="comm_split"
+args="--x --p --l"
+sort_output=1
+
+rm -f /tmp/pm2test_"${USER}"_expected
+nb_hosts=$(echo $hosts | wc -w)
+ranks=$(expr $nb_hosts - 1)
+(for n in $(seq 0 $ranks) ; do
+    echo "a. [$n] Communicator 91 with $nb_hosts nodes"
+done
+
+moitie=$(expr $nb_hosts / 2)
+for n in $(seq 0 $ranks) ; do
+    local=$(expr \( $ranks - $n \) / 2)
+    echo "b. [$n] Communicator 93 with $moitie nodes, local rank $local"
+done
+
+if [ $nb_hosts -gt 2 ] ; then
+    for n in $(seq 0 $ranks) ; do
+        local=$(expr \( $ranks - $n \) / 2)
+        if [ $local == 1 ] ; then
+            echo "c. [$n] Received message: 42"
+        fi
+    done
+fi
+
+for n in $(seq 0 $ranks) ; do
+    local=$(expr $n / 2)
+    echo "d. [$n] Communicator 94 with $moitie nodes, local rank $local"
+done
+
+) >> /tmp/pm2test_"${USER}"_expected
+
+. ./include/nmad_default
+
+# Verification et compilation du lanceur leonie
+compile_leonie

@@ -230,8 +230,8 @@ Once extracted, the PM2 distribution should be available under the
 <DT><TT>lib</TT> </DT>         <DD>External libraries used by PM2</DD>
 <DT><TT>mad1</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
 <DT><TT>mad2</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
-<DT><TT>mad3</TT> </DT>        <DD>Communication subsystem (current version)</DD>
-<DT><TT>mad4</TT> </DT>        <DD>Communication subsystem (prototype version)</DD>
+<DT><TT>mad3</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
+<DT><TT>nmad</TT> </DT>        <DD>Communication subsystem (current version)</DD>
 <DT><TT>make</TT> </DT>        <DD>PM2 makefile system</DD>
 <DT><TT>marcel</TT> </DT>      <DD>Multithreading subsystem</DD>
 <DT><TT>modules</TT> </DT>     <DD>Link to all the PM2 modules</DD>

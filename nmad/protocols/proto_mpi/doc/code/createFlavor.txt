@@ -1,1 +1,1 @@
-% pm2-create-sample-flavors mad4-mpi
+% pm2-create-sample-flavors nmad-mpi

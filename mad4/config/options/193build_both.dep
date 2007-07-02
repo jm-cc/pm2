@@ -1,4 +1,0 @@
-Provide: mad4_linkmode
-Provide: static_libs
-Provide: dynamic_libs
-Conflict: mad4_linkmode

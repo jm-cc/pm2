@@ -15,7 +15,7 @@ leonie        : ??? module
 mad1          : Madeleine 1 module (communication library)
 mad2          : Madeleine 2 module (communication library)
 mad3          : Madeleine 3 module (communication library)
-mad4          : Madeleine 4 module (communication library)
+nmad          : NewMadeleine module (communication library)
 madeleine     : symlink to one of the previous (see bin/pm2-madselect)
 make          : shared makefiles
 marcel        : Marcel module (threads library)

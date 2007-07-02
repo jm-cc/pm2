@@ -424,6 +424,14 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
 
         /* TCP connect 				*/
 	remote_hostname = strtok_r(remote_drv_url, ":", &saveptr);
+	if (!*saveptr) {
+		/* reached the end of the string => was no ':' */
+		WARN("Missing colon in url \"%s\", prefix \"<hostname>:\" required",
+		     remote_drv_url);
+		err = -NM_EINVAL;
+		goto out;
+	}
+
 	remote_port = strtok_r(NULL, "#", &saveptr);
         port	= strtol(remote_port, (char **)NULL, 10);
         fd	= nm_tcpdg_socket_create(NULL, 0);
@@ -435,6 +443,7 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
 
         err = nm_tcpdg_connect_accept(p_crq, fd);
 
+ out:
 	TBX_FREE(remote_drv_url);
         return err;
 }

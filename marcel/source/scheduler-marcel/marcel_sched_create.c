@@ -195,7 +195,7 @@ void marcel_sched_internal_create_start_son(void) {
 }
 
 void *marcel_sched_ghost_runner(void *arg) {
-	ma_holder_t *h;
+	ma_holder_t *h, *h2;
 	marcel_t next;
 
 	marcel_setname(MARCEL_SELF, "ghost runner");
@@ -219,23 +219,29 @@ void *marcel_sched_ghost_runner(void *arg) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
+#endif
+		PROF_EVENT1(ghost_thread_run, MA_PROFILE_TID(next));
+#ifdef MA__BUBBLES
 		marcel_bubble_removetask(bubble, next);
 	}
 #endif
 
 	/* get out of here */
 	h = ma_task_run_holder(MARCEL_SELF);
-	ma_holder_rawlock(h);
-	ma_deactivate_running_entity(ma_entity_task(MARCEL_SELF), h);
-	ma_holder_rawunlock(h);
+	h2 = ma_task_run_holder(next);
+	if (h2 != h) {
+		ma_holder_rawlock(h);
+		ma_deactivate_running_entity(ma_entity_task(MARCEL_SELF), h);
+		ma_holder_rawunlock(h);
+	}
 
 	/* and go there */
 	ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
-	h = ma_task_run_holder(next);
-	ma_holder_rawlock(h);
-	ma_deactivate_running_entity(ma_entity_task(next), h);
-	ma_activate_running_entity(ma_entity_task(MARCEL_SELF), h);
-	ma_holder_rawunlock(h);
+	ma_holder_rawlock(h2);
+	ma_deactivate_running_entity(ma_entity_task(next), h2);
+	if (h2 != h)
+		ma_activate_running_entity(ma_entity_task(MARCEL_SELF), h2);
+	ma_holder_rawunlock(h2);
 
 	/* now we're ready */
 	ma_preempt_enable_no_resched();

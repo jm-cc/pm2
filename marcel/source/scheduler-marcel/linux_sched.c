@@ -1120,14 +1120,6 @@ restart:
 
 		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_ghost_thread) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
-#ifdef MA__BUBBLES
-			ma_holder_t *h = ma_task_init_holder(prev);
-			if (h && h->type == MA_BUBBLE_HOLDER) {
-				marcel_bubble_t *bubble = ma_bubble_holder(h);
-				marcel_bubble_removetask(bubble, prev);
-			}
-#endif
-
 			prev->cur_ghost_thread = next;
 			marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
 		} else {
@@ -1138,6 +1130,7 @@ restart:
 			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
 			marcel_attr_setflags(&attr, MA_SF_NORUN);
+			marcel_attr_setpreemptible(&attr, tbx_false);
 			marcel_create(NULL, &attr, marcel_sched_ghost_runner, next);
 			goto need_resched_atomic;
 		}

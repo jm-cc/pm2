@@ -266,6 +266,8 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 
 	if (!list_empty(&entity->bubble_entity_list)) {
 		ma_holder_t *h = entity->init_holder;
+		if (ma_bubble_holder(h) == bubble)
+			LOG_RETURN(0);
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
 		marcel_bubble_removeentity(ma_bubble_holder(h),entity);
 	}
@@ -694,7 +696,8 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		LOG_RETURN(NULL);
 	}
 
-	if (bubble->num_schedules >= bubble->hold.nr_ready) {
+	/* TODO: comment choisir de l'activer ou non ? */
+	if (0 && bubble->num_schedules >= bubble->hold.nr_ready) {
 		/* we expired our threads, let others execute */
 		bubble->num_schedules = 0;
 		if (bubble->sched.holder_data) {

@@ -52,7 +52,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	 * whether it is an interesting thread or not */
 	t->flags = attr->flags;
 
-	if (t == __main_thread) {
+	if (t == __main_thread || t->f_to_call == marcel_sched_ghost_runner) {
 		t->number = 0;
 	} else if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
 		marcel_one_more_task(t);
@@ -251,6 +251,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	if (attr->ghost) {
 		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
 		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);
+		PROF_EVENT1(ghost_thread_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 		new_task->f_to_call = func;
 		new_task->arg = arg;
@@ -293,6 +294,14 @@ marcel_create_internal(marcel_t * __restrict pid,
 		stack_kind = MA_DYNAMIC_STACK;
 	}			/* fin (attr->stack_base) */
 
+	if (new_task->user_space_ptr && !attr->immediate_activation) {
+		/* Le thread devra attendre marcel_run */
+		new_task->f_to_call = &wait_marcel_run;
+		new_task->real_f_to_call = func;
+		marcel_sem_init(&new_task->sem_marcel_run, 0);
+	} else
+		new_task->f_to_call = func;
+
 	init_marcel_thread(new_task, attr, special_mode);
 #if defined(MA__PROVIDE_TLS)
 	_dl_allocate_tls_init(marcel_tcb(new_task));
@@ -301,13 +310,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 	new_task->stack_kind = stack_kind;
 
 	new_task->father = cur;
-	if (new_task->user_space_ptr && !attr->immediate_activation) {
-		/* Le thread devra attendre marcel_run */
-		new_task->f_to_call = &wait_marcel_run;
-		new_task->real_f_to_call = func;
-		marcel_sem_init(&new_task->sem_marcel_run, 0);
-	} else
-		new_task->f_to_call = func;
 
 	new_task->arg = arg;
 

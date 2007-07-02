@@ -396,6 +396,19 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					//showEntity(&t->entity);
 					break;
 				}
+				case GHOST_THREAD_BIRTH: {
+					uint64_t th = ev.ev64.param[0];
+					thread_t *t = newThreadPtr(th, norq);
+					t->entity.thick = (THREADTHICK*2)/3;
+					t->number = 0;
+					verbprintf("new ghost ");
+					printfThread(th,t);
+					verbprintf("\n");
+					addToRunqueue(norq, &t->entity);
+					showEntity(&t->entity);
+					BubbleMovie_nextFrame(movie);
+					break;
+				}
 				case FUT_THREAD_DEATH_CODE: {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = getThread(th);
@@ -406,6 +419,32 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					delPtr(ev.ev64.param[0]);
 					// on peut en avoir encore besoin... free(t);
 					// penser à free(t->name) aussi
+					break;
+				}
+				case GHOST_THREAD_RUN: {
+					uint64_t th = ev.ev64.user.tid;
+					thread_t *t = getThread(th);
+					uint64_t thnext = ev.ev64.param[0];
+					thread_t *tnext = getThread(thnext);
+					if (t->entity.type!=THREAD) abort();
+					if (tnext->entity.type!=THREAD) abort();
+					printfThread(th,t);
+					verbprintf("running ");
+					printfThread(thnext,tnext);
+					verbprintf("\n");
+					if (t->state != THREAD_RUNNING) {
+						t->state = THREAD_RUNNING;
+						updateEntity(&t->entity);
+					}
+					if (tnext->state != THREAD_RUNNING) {
+						tnext->state = THREAD_RUNNING;
+						updateEntity(&tnext->entity);
+					}
+					if (FxT_showSystem || tnext->number>=0 || tnext->number>=0) {
+						BubbleMovie_nextFrame(movie);
+						delThread(tnext);
+					}
+					delPtr(ev.ev64.param[0]);
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE: {

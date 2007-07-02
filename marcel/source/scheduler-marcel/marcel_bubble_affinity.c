@@ -531,6 +531,7 @@ static int
 __ma_local_steal_entities(struct marcel_topo_level *empty_level)
 {
   struct marcel_topo_level *father = empty_level->father;
+  if (!father) return 0;
   int arity = father->arity;
   int i, k;
 

@@ -498,7 +498,7 @@ static void common_cleanup(marcel_t t)
 		marcel_one_task_less(t);
 }
 
-static void TBX_NORETURN marcel_exit_internal(any_t val)
+static void marcel_exit_internal(any_t val)
 {
 	marcel_t cur = marcel_self();
 	struct marcel_topo_level *vp = NULL;
@@ -522,7 +522,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 		ma_set_current_state(MA_TASK_DEAD);
 		ma_schedule();
 
-		abort(); // For security
+		return;
 	}
 
 	/* atexit and cleanup functions are called on the thread's stack.
@@ -604,8 +604,6 @@ static void TBX_NORETURN marcel_exit_internal(any_t val)
 	/* go off */
 	ma_set_current_state(MA_TASK_DEAD);
 	ma_schedule();
-
-	abort(); // For security
 }
 	
 DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
@@ -621,10 +619,17 @@ DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 #endif
 	} else
 		marcel_exit_internal(val);
+	abort(); // For security
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 
 void TBX_NORETURN marcel_exit_special(any_t val)
+{
+	marcel_exit_internal(val);
+	abort(); // For security
+}
+
+void marcel_exit_canreturn(any_t val)
 {
 	marcel_exit_internal(val);
 }

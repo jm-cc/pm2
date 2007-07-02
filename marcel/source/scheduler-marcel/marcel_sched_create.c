@@ -197,6 +197,7 @@ void marcel_sched_internal_create_start_son(void) {
 void *marcel_sched_ghost_runner(void *arg) {
 	ma_holder_t *h, *h2;
 	marcel_t next;
+	void *ret;
 
 	marcel_setname(MARCEL_SELF, "ghost runner");
 
@@ -209,6 +210,8 @@ void *marcel_sched_ghost_runner(void *arg) {
 
 	marcel_ctx_setjmp(SELF_GETMEM(ctx_restart));
 	/* restart a new ghost thread */
+restart:
+	SELF_SETMEM(f_to_call, marcel_sched_ghost_runner);
 
 	next = SELF_GETMEM(cur_ghost_thread);
 
@@ -249,5 +252,12 @@ void *marcel_sched_ghost_runner(void *arg) {
 
 	/* TODO: transférer les stats aussi? */
 
-	marcel_exit(next->f_to_call(next->arg));
+	ret = next->f_to_call(next->arg);
+
+	/* we returned from the caller function, we can avoid longjumping */
+	SELF_SETMEM(f_to_call, NULL);
+
+	marcel_exit_canreturn(ret);
+
+	goto restart;
 }

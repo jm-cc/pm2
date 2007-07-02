@@ -1121,7 +1121,12 @@ restart:
 		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_ghost_thread) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
 			prev->cur_ghost_thread = next;
-			marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
+			if (!prev->f_to_call)
+				/* marcel_exit was called directly from the
+				 * runner loop, just return (faster) */
+				return 0;
+			else
+				marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
 		} else {
 			/* gasp, create a launcher thread */
 			marcel_attr_t attr; // = *next->shared_attr;

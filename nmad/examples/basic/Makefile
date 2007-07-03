@@ -24,11 +24,15 @@ endif
 
 include $(PM2_ROOT)/make/apps.mak
 
-$(MOD_GEN_BIN)/basic$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, \
-			$(if $(basic-objs), $(basic-objs), basic.o)) basic_common.o
+$(MOD_GEN_BIN)/basic$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, $(if $(basic-objs), $(basic-objs), basic.o)) basic_common.o
 $(MOD_GEN_BIN)/basic$(MOD_EXT): LDFLAGS += $(basic-ldflags) -lm
 $(MOD_GEN_BIN)/basic$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
-
 $(MOD_GEN_OBJ)/basic$(MOD_EXT).o: CFLAGS += $(basic-cflags)
 $(MOD_GEN_OBJ)/basic$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
+
+$(MOD_GEN_BIN)/basic_ping$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, $(if $(basic-ping-objs), $(basic-ping-objs), basic_ping.o)) basic_common.o
+$(MOD_GEN_BIN)/basic_ping$(MOD_EXT): LDFLAGS += $(basic-ping-ldflags) -lm
+$(MOD_GEN_BIN)/basic_ping$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
+$(MOD_GEN_OBJ)/basic_ping$(MOD_EXT).o: CFLAGS += $(basic-ping-cflags)
+$(MOD_GEN_OBJ)/basic_ping$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
 

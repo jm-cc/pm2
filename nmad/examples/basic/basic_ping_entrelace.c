@@ -786,7 +786,7 @@ session_init(int    argc,
          */
         printf("local url: [%s]\n", l_url);
 
-        err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
+        err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
         if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
@@ -794,8 +794,7 @@ session_init(int    argc,
     } else {
         /* client
          */
-        err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                   "localhost", r_url);
+        err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
         if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;

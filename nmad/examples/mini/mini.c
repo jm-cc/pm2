@@ -29,13 +29,7 @@
 #  include <nm_mini_public.h>
 #endif
 
-#if defined CONFIG_MX
-#include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#include <nm_gm_public.h>
-#else
-#include <nm_tcp_public.h>
-#endif
+#include <nm_drivers.h>
 
 const char *msg	= "hello, world";
 
@@ -85,7 +79,7 @@ main(int	  argc,
         err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
 #else
         printf("TCP\n");
-        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);
@@ -106,7 +100,7 @@ main(int	  argc,
              */
                 printf("local url: [%s]\n", l_url);
 
-                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept returned err = %d\n", err);
                         goto out;
@@ -134,8 +128,7 @@ main(int	  argc,
         } else {
                 /* client
                  */
-                err = nm_core_gate_connect(p_core, gate_id, drv_id,
-                                           "localhost", r_url);
+                err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         goto out;

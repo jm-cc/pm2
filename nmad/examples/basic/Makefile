@@ -13,6 +13,22 @@
 
 export FLAVOR_DEFAULT:=nmad
 
-MOD_SRC += $(PM2_ROOT)/nmad/examples/basic
+PROTOCOLS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --getvar=PM2_NMAD_PROTO)
+BASIC		:=	$(findstring proto_basic,$(PROTOCOLS))
+
+ifeq ($(BASIC),proto_basic)
+  MOD_SRC += $(PM2_ROOT)/nmad/examples/basic
+else
+  $(error "Protocol proto_basic is not present in $(PROTOCOLS)")
+endif
 
 include $(PM2_ROOT)/make/apps.mak
+
+$(MOD_GEN_BIN)/basic$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, \
+			$(if $(basic-objs), $(basic-objs), basic.o)) basic_common.o
+$(MOD_GEN_BIN)/basic$(MOD_EXT): LDFLAGS += $(basic-ldflags) -lm
+$(MOD_GEN_BIN)/basic$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
+
+$(MOD_GEN_OBJ)/basic$(MOD_EXT).o: CFLAGS += $(basic-cflags)
+$(MOD_GEN_OBJ)/basic$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
+

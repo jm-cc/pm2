@@ -11,8 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=nmad
-
 PROTOCOLS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --getvar=PM2_NMAD_PROTO)
 BASIC		:=	$(findstring proto_basic,$(PROTOCOLS))
 
@@ -20,6 +18,15 @@ ifeq ($(BASIC),proto_basic)
   MOD_SRC += $(PM2_ROOT)/nmad/examples/basic
 else
   $(error "Protocol proto_basic is not present in $(PROTOCOLS)")
+endif
+
+SCHEDULERS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --schedulers)
+MINI_ALT	:=	$(findstring sched_mini_alt,$(SCHEDULERS))
+
+ifeq ($(MINI_ALT),sched_mini_alt)
+  PROGS		:=	basic_ping_any
+else
+  PROGS		:=	basic basic_ping basic_ping_entrelace basic_multithreaded_ping
 endif
 
 include $(PM2_ROOT)/make/apps.mak

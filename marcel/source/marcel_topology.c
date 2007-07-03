@@ -544,6 +544,10 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 }
 #endif
 
+#ifdef WIN_SYS
+#warning TODO: use GetLogicalProcessorInformation, GetNumaHighestNodeNumber, and GetNumaNodeProcessorMask
+#endif
+
 
 /* Use the value returned by ma_nbprocessors() */
 static void look_cpu(void) {

@@ -14,6 +14,7 @@
 export FLAVOR_DEFAULT:=nmad
 
 MOD_SRC	:= $(PM2_ROOT)/nmad/examples/mpi/optimized
+PROGS 	:= ping_optimized
 
 include $(PM2_ROOT)/make/apps.mak
 

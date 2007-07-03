@@ -161,7 +161,7 @@ bc_core_init(int	  	 *p_argc,
                  */
                 printf("local url: \"%s\"\n", l_url);
 
-                err = nm_core_gate_accept(p_core, *p_gate_id, drv_id, NULL, NULL);
+                err = nm_core_gate_accept(p_core, *p_gate_id, drv_id, NULL);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_accept returned err = %d\n", err);
                         exit(EXIT_FAILURE);
@@ -170,8 +170,7 @@ bc_core_init(int	  	 *p_argc,
         } else {
                 /* client
                  */
-                err = nm_core_gate_connect(p_core, *p_gate_id, drv_id,
-                                           hostname, r_url);
+                err = nm_core_gate_connect(p_core, *p_gate_id, drv_id, r_url);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_connect returned err = %d\n", err);
                         exit(EXIT_FAILURE);

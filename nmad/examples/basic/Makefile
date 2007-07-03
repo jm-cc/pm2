@@ -11,7 +11,23 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PROTOCOLS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --getvar=PM2_NMAD_PROTO)
+export FLAVOR_DEFAULT:=nmad
+
+# FLAVOR -> flavor utilisee pour la compilation
+#---------------------------------------------------------------------
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    ifdef FLAVOR_DEFAULT
+      export FLAVOR:=$(FLAVOR_DEFAULT)
+    else # FLAVOR_DEFAULT
+      export FLAVOR:=default
+    endif # FLAVOR_DEFAULT
+  endif # PM2_FLAVOR
+endif # FLAVOR
+
+PROTOCOLS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_NMAD_PROTO)
 BASIC		:=	$(findstring proto_basic,$(PROTOCOLS))
 
 ifeq ($(BASIC),proto_basic)
@@ -20,7 +36,7 @@ else
   $(error "Protocol proto_basic is not present in $(PROTOCOLS)")
 endif
 
-SCHEDULERS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --schedulers)
+SCHEDULERS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --schedulers)
 MINI_ALT	:=	$(findstring sched_mini_alt,$(SCHEDULERS))
 
 ifeq ($(MINI_ALT),sched_mini_alt)

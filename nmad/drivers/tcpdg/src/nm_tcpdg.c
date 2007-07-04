@@ -417,7 +417,7 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         struct sockaddr_in	 address;
         int			 fd;
         int			 err;
-        char 			*saveptr;
+        char 			*saveptr = NULL;
 	char *remote_hostname, *remote_port;
 	/* save the url since strtok might change it */
 	char *remote_drv_url = tbx_strdup(p_crq->remote_drv_url);

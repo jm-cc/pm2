@@ -6,7 +6,7 @@
 <SUBSECTION TITLE="Getting Access to the Source Code">
 
 <P>
-Mad-MPI files are hosted by the project PM2 on the
+<MACRO NAME="madmpi"/> files are hosted by the project PM2 on the
 InriaGforge at <URL>https://gforge.inria.fr/projects/pm2/</URL>.
 
 The source code is managed by a <TT>Subversion</TT> server hosted by
@@ -53,7 +53,8 @@ instructions).
 <SUBSECTION TITLE="Required Development Tools" LABEL="sec:tools">
 
 <P>
-The following development tools are required to compile Mad-MPI:
+The following development tools are required to compile <MACRO
+NAME="madmpi"/>:
 </P>
 
 <UL>
@@ -82,8 +83,8 @@ GNU Bison (<URL>http://www.gnu.org/software/bison/</URL>) and Flex (<URL>http://
 
 <P>
 To use Myrinet and Quadrics, you must get the appropriate drivers.
-Mad-MPI supports Myrinet networks through the MX driver and Quadrics
-networks through the ELAN driver. 
+<MACRO NAME="madmpi"/> supports Myrinet networks through the MX driver
+and Quadrics networks through the ELAN driver.
 </P>
 
 <IGNORE>
@@ -167,20 +168,20 @@ PM2 is installed.
 <SUBSECTION TITLE="Installing Mad-MPI" LABEL="installMadMpi">
 
 <P>
-Here are the required steps to install Mad-MPI.
+Here are the required steps to install <MACRO NAME="madmpi"/>.
 </P>
 
 <OL>
 <LI>
 <P>
-Create the PM2 flavor tuned for Mad-MPI.
+Create the PM2 flavor tuned for <MACRO NAME="madmpi"/>.
 </P>
 <CODE FILE="./code/createFlavor.txt"/>
 </LI>
 
 <LI>
 <P>
-Compile Mad-MPI.
+Compile <MACRO NAME="madmpi"/>.
 </P>
 <CODE FILE="./code/compileMadMpi.txt"/>
 </LI>
@@ -191,7 +192,7 @@ You need to provide a network configuration file, located in
 <TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>. This file is
 mandatory but users can select another location by defining the
 appropriate environment variable (see Section <REF
-LABEL="advanced"/>).  When loading a Mad-MPI program, the network
+LABEL="advanced"/>).  When loading a <MACRO NAME="madmpi"/>, the network
 configuration file is read to determine which network links to use
 between the different machines involved in the execution. The sample
 file <TT>$PM2_ROOT/leonie/examples/networks.cfg</TT> can be used as a
@@ -216,7 +217,7 @@ commands <TT>mpicc</TT> and <TT>mpirun</TT>.
 <P>
 Here the list of environment variables you need to set (preferably in
 your login files such as <TT>$HOME/.bashrc</TT>) before being able to
-compile and execute Mad-MPI applications.
+compile and execute <MACRO NAME="madmpi"/> applications.
 </P>
 
 <CODE FILE="./code/variables.txt"/>

@@ -7,8 +7,9 @@
 
 <P>
 The directory <TT>$PM2_ROOT/nmad/examples/mpi/basics</TT> contains
-basic examples that can be used to test your Mad-MPI. We will go
-through this section by using the program <TT>cpi.c</TT>.
+basic examples that can be used to test your installation of <MACRO
+NAME="madmpi"/>. We will go through this section by using the program
+<TT>cpi.c</TT>.
 </P>
 
 <UL>
@@ -32,12 +33,13 @@ Compile your application with <TT>mpicc</TT>.
 <LI>
 <P>
 You need to make sure you can connect to the machines defined in your
-channel using the SSH protocol. Mad-MPI applications are launched
-using the PM2's mechanisms to remotely connect to the machines, this
-requires a SSH access to the machines without password or pass-phrase.
-You might need to change the definition of the environment variable
-<TT>LEO_RSH</TT> to match the configuration of your SSH connection.
-Here an example to test your configuration is working:
+channel using the SSH protocol. <MACRO NAME="madmpi"/> applications
+are launched using the PM2's mechanisms to remotely connect to the
+machines, this requires a SSH access to the machines without password
+or pass-phrase. You might need to change the definition of the
+environment variable <TT>LEO_RSH</TT> to match the configuration of
+your SSH connection. Here an example to test your configuration is
+working:
 </P>
 <CODE FILE="./code/checkSsh.txt"/>
 </LI>
@@ -83,8 +85,9 @@ Start your application using the command <TT>mpirun</TT> taking at
 least in parameter the number of processes to launch by using the
 standard MPI option <TT>-np</TT> and the name of the application. The
 number of processes does not have to be the number of machines in the
-machine file (as specified above). Mad-MPI will use a subset of these
-machines, or will start more than one process per machine accordingly.
+machine file (as specified above). <MACRO NAME="madmpi"/> will use a
+subset of these machines, or will start more than one process per
+machine accordingly.
 </P>
 <CODE FILE="./code/executeCpi2.txt"/>
 </LI>
@@ -98,10 +101,10 @@ You should obtain an output similar to:
 </UL>
 
 <P>
-<B>Remark:</B> The default behavior of Mad-MPI is to launch
-processes only on the nodes specified in the channel configuration
-file. No process is spawned on the local machine (unless it is listed
-in the channel configuration file)
+<B>Remark:</B> The default behavior of <MACRO NAME="madmpi"/> is to
+launch processes only on the nodes specified in the channel
+configuration file. No process is spawned on the local machine (unless
+it is listed in the channel configuration file)
 </P>
 
 </SUBSECTION>
@@ -114,10 +117,10 @@ in the channel configuration file)
 <P>
 The default network file used for launching jobs is
 <TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>. This file has to
-be provided by the person installing
-Mad-MPI. However, users can select another network file by defining
-the environment variable <TT>MPI_NET_FILE</TT> with the location of
-the new file, e.g.: 
+be provided by the person installing <MACRO NAME="madmpi"/>. However,
+users can select another network file by defining the environment
+variable <TT>MPI_NET_FILE</TT> with the location of the new file,
+e.g.:
 </P>
 
 <CODE FILE="./code/setMpiNetFile.txt"/>
@@ -126,10 +129,10 @@ the new file, e.g.:
 <LI>
 <P>
 If the machines you wish to use to run your application are
-interconnected with more than 1 network, then Mad-MPI will by default
-select the first network to connect the nodes. To use another network,
-you can set the environment variable <TT>MPI_NMAD_PROTOCOL</TT> to
-the name of this network.
+interconnected with more than 1 network, then <MACRO NAME="madmpi"/>
+will by default select the first network to connect the nodes. To use
+another network, you can set the environment variable
+<TT>MPI_NMAD_PROTOCOL</TT> to the name of this network.
 </P>
 
 <CODE FILE="./code/setMpichMadProtocol.txt"/>
@@ -159,10 +162,11 @@ the option <TT>-valgrind</TT>.
 <SUBSECTION TITLE="MPI Compilers">
 
 <P>
-Mad-MPI provides by default a C and C++ compiler. The C compiler is
-invoked by calling <TT>mpicc</TT> and the C++ compiler by calling
-<TT>mpicxx</TT>. That name was chosen instead of <TT>mpiCC</TT> to
-avoid problems with operating systems not being case-sensitive.
+<MACRO NAME="madmpi"/> provides by default a C and C++ compiler. The C
+compiler is invoked by calling <TT>mpicc</TT> and the C++ compiler by
+calling <TT>mpicxx</TT>. That name was chosen instead of
+<TT>mpiCC</TT> to avoid problems with operating systems not being
+case-sensitive.
 </P>
 
 <P>
@@ -172,8 +176,8 @@ accordingly. One can use the tools <TT>ezflavor</TT> or
 Section <REF LABEL="installMadMpi"/>). Setting the option
 <TT>fortran_target_gfortran</TT> or <TT>fortran_target_ifort</TT> of
 the module <TT>common</TT> will compile the Fortran support within
-Mad-MPI. Fortran compilers can then be invoked by calling
-<TT>mpif77</TT> or <TT>mpif90</TT>.
+<MACRO NAME="madmpi"/>. Fortran compilers can then be invoked by
+calling <TT>mpif77</TT> or <TT>mpif90</TT>.
 </P>
 
 </SUBSECTION>

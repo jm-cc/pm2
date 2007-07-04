@@ -166,7 +166,7 @@ nm_ns_free(struct nm_core *p_core, struct nm_pkt_wrap *p_pw){
     nm_pkt_wrap_free(p_core, p_pw);
 }
 
-
+#if 0
 static void
 control_buffer(struct nm_pkt_wrap *p_pw, int len) {
     unsigned char *main_buffer = p_pw->v[0].iov_base;
@@ -197,6 +197,7 @@ control_buffer(struct nm_pkt_wrap *p_pw, int len) {
         printf("ok");
     }
 }
+#endif
 
 static int
 nm_ns_ping(struct nm_drv *driver, uint8_t gate_id){

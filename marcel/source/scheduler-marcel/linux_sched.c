@@ -1121,6 +1121,8 @@ restart:
 		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_ghost_thread) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
 			prev->cur_ghost_thread = next;
+			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
+			ma_preempt_enable();
 			if (!prev->f_to_call)
 				/* marcel_exit was called directly from the
 				 * runner loop, just return (faster) */
@@ -1136,6 +1138,7 @@ restart:
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
 			marcel_attr_setflags(&attr, MA_SF_NORUN);
 			marcel_attr_setpreemptible(&attr, tbx_false);
+			/* TODO: on devrait être capable de brancher directement dessus */
 			marcel_create(NULL, &attr, marcel_sched_ghost_runner, next);
 			goto need_resched_atomic;
 		}

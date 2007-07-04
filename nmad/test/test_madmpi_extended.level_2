@@ -29,14 +29,14 @@ rm -f /tmp/pm2test_"${USER}"_expected
 nb=$(expr $(echo $hosts | wc -w) / 2)
 (
 for f in $(seq 1 $nb) ; do
+    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
+    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
+done
+for f in $(seq 1 $nb) ; do
     echo "The answer to life, the universe, and everything is 42"
 done
 for f in $(seq 1 $nb) ; do
     echo "There are 7 Wonders of the World"
-done
-for f in $(seq 1 $nb) ; do
-    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
-    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
 done
 ) > /tmp/pm2test_"${USER}"_expected
 

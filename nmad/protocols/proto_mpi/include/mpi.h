@@ -21,10 +21,6 @@
 #ifndef MPI_H
 #define MPI_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-
 #include "mpi_types.h"
 
 #include "mpi_config.h"

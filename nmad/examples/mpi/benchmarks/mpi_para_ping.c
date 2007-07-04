@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <execinfo.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "mpi.h"

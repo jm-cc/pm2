@@ -34,6 +34,7 @@ PROGRAM			= org.runtime.manuals.latex.ProgramElement
 
 WARNING			= org.runtime.manuals.latex.WarningElement
 NOTE			= org.runtime.manuals.latex.NoteElement
+MACRO			= org.runtime.manuals.latex.MacroElement
 
 HYPHEN			= org.runtime.manuals.latex.HyphenElement
 EM			= org.runtime.manuals.latex.emElement

@@ -34,6 +34,7 @@ PROGRAM			= org.runtime.manuals.html.ProgramElement
 
 WARNING			= org.runtime.manuals.html.WarningElement
 NOTE			= org.runtime.manuals.html.NoteElement
+MACRO			= org.runtime.manuals.html.MacroElement
 
 HYPHEN			= org.runtime.manuals.html.HyphenElement
 #EM			= org.runtime.manuals.html.emElement

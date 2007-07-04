@@ -84,7 +84,7 @@ do_the_test()
     echo "Checking results..."
     if [ "$sort_output" == "1" ] ; then
         echo "Sorting output"
-        sort_command="sort"
+        sort_command="sort --ignore-case"
     else
         sort_command="cat"
     fi

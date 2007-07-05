@@ -779,9 +779,14 @@ int mpir_irecv(void* buffer,
       void  *recvbuffer = NULL;
       size_t len;
 
-      len = count * mpir_datatype->elements * mpir_datatype->block_size;
+      len = count * mpir_datatype->size;
       recvbuffer = malloc(len);
-      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)len, count, mpir_datatype->elements, (long)mpir_datatype->block_size);
+      if (recvbuffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)len);
+        return MPI_ERR_INTERN;
+      }
+
+      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)len, count, (long)mpir_datatype->size);
       MPI_NMAD_TRANSFER("Recv (vector) --< %ld: %ld bytes\n", gate_id, (long)len);
       mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, len, &(mpir_request->request_nmad));
       MPI_NMAD_TRANSFER("Recv (vector) finished\n");
@@ -806,14 +811,9 @@ int mpir_irecv(void* buffer,
     else {
       void *recvbuffer;
       size_t len;
-      int j;
 
       MPI_NMAD_TRACE("Receiving (h)indexed datatype in a contiguous buffer\n");
-      len = 0;
-      for(j=0 ; j<mpir_datatype->elements ; j++) {
-        len += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
-      }
-      len *= count;
+      len = count * mpir_datatype->size;
       recvbuffer = malloc(len);
       if (recvbuffer == NULL) {
         ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)len);
@@ -846,7 +846,13 @@ int mpir_irecv(void* buffer,
       void *recvbuffer = NULL, *recvptr, *ptr;
       int   i, j;
 
-      recvbuffer = malloc(count * mpir_datatype->size);
+      len = count * mpir_datatype->size;
+      recvbuffer = malloc(len);
+      if (recvbuffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)len);
+        return MPI_ERR_INTERN;
+      }
+
       MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)count*mpir_datatype->size, count, (long)mpir_datatype->size);
       MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %ld bytes\n", gate_id, (long)count * mpir_datatype->size);
       mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, count * mpir_datatype->size, &(mpir_request->request_nmad));

@@ -260,4 +260,5 @@ restart:
 	marcel_exit_canreturn(ret);
 
 	goto restart;
+	return NULL;
 }

@@ -264,36 +264,35 @@ int mpir_get_out_dest(long gate) {
 }
 
 static inline void mpir_datatype_vector_aggregate(void *newptr,
-                                                  void *ptr,
+                                                  void *buffer,
                                                   mpir_datatype_t *mpir_datatype,
                                                   int count) {
-  void * const orig = ptr;
+  void * const orig = buffer;
   void * const dest = newptr;
-  int i;
+  int i, j;
   for(i=0 ; i<count ; i++) {
-    int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n",
-                     i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-orig),
+                     i, j, (long) mpir_datatype->block_size, buffer, (int)(buffer-orig),
                      newptr, (int)(newptr-dest));
-      memcpy(newptr, ptr, mpir_datatype->block_size);
+      memcpy(newptr, buffer, mpir_datatype->block_size);
       newptr += mpir_datatype->block_size;
-      ptr += mpir_datatype->stride;
+      buffer += mpir_datatype->stride;
     }
   }
 }
 
 static inline void mpir_datatype_vector_pack(struct nm_so_cnx *connection,
-                                             void *ptr,
+                                             void *buffer,
                                              mpir_datatype_t *mpir_datatype,
                                              int count) {
-  void *const orig = ptr;
+  void *const orig = buffer;
   int               i, j;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
-      MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-orig));
-      nm_so_pack(connection, ptr, mpir_datatype->block_size);
-      ptr += mpir_datatype->stride;
+      MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, buffer, (int)(buffer-orig));
+      nm_so_pack(connection, buffer, mpir_datatype->block_size);
+      buffer += mpir_datatype->stride;
     }
   }
 }
@@ -303,10 +302,9 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
                                                    mpir_datatype_t *mpir_datatype,
                                                    int count) {
   void *const dest = newptr;
-  int i;
+  int i, j;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
-    int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       void *subptr = ptr + mpir_datatype->indices[j];
       MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
@@ -319,31 +317,29 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
 }
 
 static inline void mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
-                                             void *buffer,
-                                             mpir_datatype_t *mpir_datatype,
-                                             int count) {
-      int i;
-      for(i=0 ; i<count ; i++) {
-        void *ptr = buffer + i * mpir_datatype->extent;
-        int j;
-        MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
-        for(j=0 ; j<mpir_datatype->elements ; j++) {
-          void *subptr = ptr + mpir_datatype->indices[j];
-          MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
-                         (long) mpir_datatype->indices[j], (long) mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-          nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-        }
-      }
+                                              void *buffer,
+                                              mpir_datatype_t *mpir_datatype,
+                                              int count) {
+  int i, j;
+  for(i=0 ; i<count ; i++) {
+    void *ptr = buffer + i * mpir_datatype->extent;
+    MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
+    for(j=0 ; j<mpir_datatype->elements ; j++) {
+      void *subptr = ptr + mpir_datatype->indices[j];
+      MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
+                     (long) mpir_datatype->indices[j], (long) mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+      nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+    }
+  }
 }
 
 static inline void mpir_datatype_struct_aggregate(void *newptr,
                                                   void *buffer,
                                                   mpir_datatype_t *mpir_datatype,
                                                   int count) {
-  int i;
+  int i, j;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
-    int j;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       ptr += mpir_datatype->indices[j];
@@ -359,10 +355,9 @@ static inline void mpir_datatype_struct_pack(struct nm_so_cnx *connection,
                                              void *buffer,
                                              mpir_datatype_t *mpir_datatype,
                                              int count) {
-  int i;
+  int i, j;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
-    int j;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       ptr += mpir_datatype->indices[j];
@@ -374,8 +369,8 @@ static inline void mpir_datatype_struct_pack(struct nm_so_cnx *connection,
 }
 
 static inline int mpir_check_send_seq(struct nm_so_interface *sr_if,
-                    long gate_id,
-                    uint8_t tag) {
+                                      long gate_id,
+                                      uint8_t tag) {
   int seq = nm_so_sr_get_current_send_seq(sr_if, gate_id, tag);
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
     int err = nm_so_sr_stest_range(sr_if, gate_id, tag, seq-1, 1);
@@ -405,7 +400,6 @@ static inline int mpir_isend_wrapper(MPI_Communication_Mode m,
   }
   return err;
 }
-
 
 int mpir_isend(void *buffer,
                int count,

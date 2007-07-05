@@ -263,19 +263,19 @@ int mpir_get_out_dest(long gate) {
   return out_dest[gate];
 }
 
-static inline size_t mpir_datatype_vector_len(mpir_datatype_t *mpir_datatype,
-                                              int count) {
-  return count * mpir_datatype->elements * mpir_datatype->block_size;
-}
-
 static inline void mpir_datatype_vector_aggregate(void *newptr,
                                                   void *ptr,
                                                   mpir_datatype_t *mpir_datatype,
                                                   int count) {
+  void * const orig = ptr;
+  void * const dest = newptr;
   int i;
   for(i=0 ; i<count ; i++) {
     int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
+      MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n",
+                     i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-orig),
+                     newptr, (int)(newptr-dest));
       memcpy(newptr, ptr, mpir_datatype->block_size);
       newptr += mpir_datatype->block_size;
       ptr += mpir_datatype->stride;
@@ -287,37 +287,31 @@ static inline void mpir_datatype_vector_pack(struct nm_so_cnx *connection,
                                              void *ptr,
                                              mpir_datatype_t *mpir_datatype,
                                              int count) {
+  void *const orig = ptr;
   int               i, j;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
+      MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, ptr, (int)(ptr-orig));
       nm_so_pack(connection, ptr, mpir_datatype->block_size);
       ptr += mpir_datatype->stride;
     }
   }
 }
 
-static inline size_t mpir_datatype_indexed_len(mpir_datatype_t *mpir_datatype,
-                                                int count) {
-  size_t len = 0;
-  int j;
-
-  for(j=0 ; j<mpir_datatype->elements ; j++) {
-    len += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
-  }
-  len *= count;
-  return len;
-}
-
 static inline void mpir_datatype_indexed_aggregate(void *newptr,
-                                                    void *buffer,
-                                                    mpir_datatype_t *mpir_datatype,
-                                                    int count) {
+                                                   void *buffer,
+                                                   mpir_datatype_t *mpir_datatype,
+                                                   int count) {
+  void *const dest = newptr;
   int i;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       void *subptr = ptr + mpir_datatype->indices[j];
+      MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
+                     (long) mpir_datatype->blocklens[j] * mpir_datatype->old_size, subptr, (int)(subptr-buffer),
+                     newptr, (int)(newptr-dest));
       memcpy(newptr, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
       newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
     }
@@ -350,8 +344,10 @@ static inline void mpir_datatype_struct_aggregate(void *newptr,
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     int j;
+    MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       ptr += mpir_datatype->indices[j];
+      MPI_NMAD_TRACE("copying to %p data from %p (+%ld) with a size %d*%ld\n", newptr, ptr, (long)mpir_datatype->indices[j], mpir_datatype->blocklens[j], (long)mpir_datatype->old_sizes[j]);
       memcpy(newptr, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
       newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j];
       ptr -= mpir_datatype->indices[j];
@@ -459,7 +455,6 @@ int mpir_isend(void *buffer,
       err = nm_so_sr_rsend(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
     }
     else {
-      seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
       if (seq == NM_SO_PENDING_PACKS_WINDOW-2) {
         MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
         err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, MPI_IS_COMPLETED, &(mpir_request->request_nmad));
@@ -483,7 +478,7 @@ int mpir_isend(void *buffer,
       size_t len;
 
       MPI_NMAD_TRACE("Sending vector datatype in a contiguous buffer\n");
-      len = mpir_datatype_vector_len(mpir_datatype, count);
+      len = count * mpir_datatype->size;
       mpir_request->contig_buffer = malloc(len);
       if (mpir_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)len);
@@ -512,7 +507,7 @@ int mpir_isend(void *buffer,
 
       MPI_NMAD_TRACE("Sending (h)indexed datatype in a contiguous buffer\n");
 
-      len = mpir_datatype_indexed_len(mpir_datatype, count);
+      len = count * mpir_datatype->size;
       mpir_request->contig_buffer = malloc(len);
       if (mpir_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)len);

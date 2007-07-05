@@ -820,7 +820,7 @@ int MPI_Isend(void *buffer,
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_isend(buffer, count, dest, tag, MPI_READY_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
+  err = mpir_isend(buffer, count, dest, tag, MPI_IMMEDIATE_MODE, mpir_communicator, mpir_request, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return err;

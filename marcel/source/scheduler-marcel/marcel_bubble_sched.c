@@ -230,7 +230,8 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 }
 
 /* suppose bubble verrouillée avec softirq */
-static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+	int ret = 1;
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nbentities) {
 		MA_BUG_ON(!list_empty(&bubble->heldentities));
@@ -248,7 +249,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nbentities++;
 	entity->init_holder = &bubble->hold;
-	if (!entity->sched_holder) {
+	if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_ENTITY) {
 		ma_holder_t *sched_bubble = bubble->sched.sched_holder;
 		/* si la bulle conteneuse est dans une autre bulle,
 		 * on hérite de la bulle d'ordonnancement */
@@ -257,8 +258,10 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 			sched_bubble = &bubble->hold;
 		}
 		entity->sched_holder = sched_bubble;
+		ret = 0;
 	}
 	ma_holder_unlock_softirq(&bubble->hold);
+	return ret;
 }
 
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
@@ -273,7 +276,12 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	}
 
 	bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
-	__do_bubble_insertentity(bubble,entity);
+	if (__do_bubble_insertentity(bubble,entity) && entity->type == MA_BUBBLE_ENTITY && entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+		/* sched holder was already set to something else, wake the bubble there */
+		ma_holder_lock_softirq(entity->sched_holder);
+		ma_activate_entity(entity, entity->sched_holder);
+		ma_holder_unlock_softirq(entity->sched_holder);
+	}
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 
 	if (entity->type == MA_THREAD_ENTITY) {

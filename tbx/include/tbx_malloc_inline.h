@@ -236,10 +236,10 @@ tbx_malloc_clean(p_tbx_memory_t mem)
 
         for (i = 0; i < mem->mem_len; i++) {
           char ** str_array;
-          void *ptr = (char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN);
+          void **ptr = (void **)((char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN));
           int j = 0;
 
-          if (!*(void **)ptr)
+          if (!*ptr)
             continue;
 
           pm2debug("tbx_malloc_clean: %s - memory block 0x%p still in use\n", mem->name, ptr);

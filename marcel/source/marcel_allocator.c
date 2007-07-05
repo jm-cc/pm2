@@ -64,7 +64,7 @@ void ma_allocator_exit(void)
 ma_allocator_t *ma_new_obj_allocator(int conservative,
     void *(*create) (void *), void *create_arg,
     void (*destroy) (void *, void *),
-    void *destroy_arg, enum policy_t policy, int max_size)
+    void *destroy_arg, enum ma_policy_t policy, int max_size)
 {
 	/* Initialisation de la structure de l'allocateur selon les parametres */
 	ma_allocator_t *allocator = TBX_MALLOC(sizeof(ma_allocator_t));

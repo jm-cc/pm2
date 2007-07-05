@@ -15,7 +15,6 @@
  */
 
 #section marcel_variables
-#depend "marcel_allocator.h[marcel_types]"
 extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
 #ifdef MA__PROVIDE_TLS
 extern ma_allocator_t *marcel_tls_slot_allocator;

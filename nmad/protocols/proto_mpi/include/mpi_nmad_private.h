@@ -99,7 +99,7 @@ typedef int MPI_Request_type;
 
 typedef struct mpir_request_s {
   MPI_Request_type request_type;
-  intptr_t request_nmad;
+  nm_so_request request_nmad;
   struct nm_so_cnx request_cnx;
   uint8_t request_tag;
   void **request_ptr;

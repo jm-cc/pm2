@@ -389,7 +389,7 @@ static inline int mpir_isend_wrapper(MPI_Communication_Mode m,
                                      uint8_t tag,
                                      void *buf,
                                      size_t len,
-                                     intptr_t *nm_rq) {
+                                     nm_so_request *nm_rq) {
   int err;
   if (m == MPI_IMMEDIATE_MODE) {
     err = nm_so_sr_isend(sr_if, gate_id, tag, buf, len, nm_rq);

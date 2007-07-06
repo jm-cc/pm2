@@ -24,8 +24,6 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
-
 #include <nm_public.h>
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_mini_alt_public.h>
@@ -61,6 +59,8 @@
 
 #include <nm_tcpdg_public.h>
 
+#include "madeleine.h"
+
 #if defined CONFIG_SCHED_MINI_ALT
 #  include <nm_basic_public.h>
 #elif defined CONFIG_SCHED_OPT
@@ -69,7 +69,6 @@
 
 #include "nm_mad3_private.h"
 
-#include "madeleine.h"
 
 #include <errno.h>
 

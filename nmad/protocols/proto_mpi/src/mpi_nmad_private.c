@@ -267,8 +267,10 @@ static inline void mpir_datatype_vector_aggregate(void *newptr,
                                                   void *buffer,
                                                   mpir_datatype_t *mpir_datatype,
                                                   int count) {
+#ifdef NMAD_DEBUG
   void * const orig = buffer;
   void * const dest = newptr;
+#endif
   int i, j;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
@@ -286,7 +288,9 @@ static inline void mpir_datatype_vector_pack(struct nm_so_cnx *connection,
                                              void *buffer,
                                              mpir_datatype_t *mpir_datatype,
                                              int count) {
+#ifdef NMAD_DEBUG
   void *const orig = buffer;
+#endif
   int               i, j;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
@@ -339,7 +343,9 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
                                                    void *buffer,
                                                    mpir_datatype_t *mpir_datatype,
                                                    int count) {
+#ifdef NMAD_DEBUG
   void *const dest = newptr;
+#endif
   int i, j;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;

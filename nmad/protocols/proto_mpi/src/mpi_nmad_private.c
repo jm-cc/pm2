@@ -843,8 +843,8 @@ int mpir_irecv(void* buffer,
       mpir_datatype_struct_unpack(connection, mpir_request, buffer, mpir_datatype, count);
     }
     else {
-      void *recvbuffer = NULL, *recvptr, *ptr;
-      int   i, j;
+      void *recvbuffer = NULL;
+      size_t len;
 
       len = count * mpir_datatype->size;
       recvbuffer = malloc(len);

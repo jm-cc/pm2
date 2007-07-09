@@ -937,6 +937,7 @@ static void topo_discover(void) {
 		}
 	}
 
+#warning "BUG ici: le dernier niveau n'a pas forcément la place pour les VPs supplémentaires"
 	/* Now add supplementary VPs on the last level. */
 	for (i=marcel_nbvps(); i<marcel_nbvps() + MARCEL_NBMAXVPSUP; i++) {
 		marcel_topo_vp_level[i].type=MARCEL_LEVEL_VP;

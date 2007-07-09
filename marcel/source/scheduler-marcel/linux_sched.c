@@ -676,7 +676,6 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
-	//ma_holder_t *h;
 	//ma_runqueue_t *rq;
 	marcel_task_t *p = MARCEL_SELF;
 
@@ -754,6 +753,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		{
 #ifdef MA__BUBBLES
 			marcel_bubble_t *b;
+			ma_holder_t *h;
 			if ((h = ma_task_init_holder(p)) && 
 					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);

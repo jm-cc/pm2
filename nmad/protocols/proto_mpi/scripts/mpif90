@@ -3,11 +3,11 @@
 # Main program
 
 if [ -z "$PM2_ROOT" ] ; then
-    "You need to set the environment variable $PM2_ROOT"
+    echo "You need to set the environment variable PM2_ROOT"
     exit 1
 fi
 
-if [ "$PM2_FLAVOR" == "" ] ; then
+if [ "$PM2_FLAVOR" = "" ] ; then
     if [ "$1" != "-flavor" ] ; then
 	echo "Error. You need to set the variable PM2_FLAVOR to specify the pm2 flavor to use"
 	exit 1

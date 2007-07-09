@@ -2,7 +2,7 @@
 
 compile_leonie() {
     LEONIE_FLAVOR=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$LEONIE_FLAVOR" == "" ] ; then
+    if [ "$LEONIE_FLAVOR" = "" ] ; then
         pm2-create-sample-flavors leonie
     fi
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
@@ -114,7 +114,7 @@ get_machines() {
 # Main program
 
 if [ -z "$PM2_ROOT" ] ; then
-    "You need to set the environment variable $PM2_ROOT"
+    echo "You need to set the environment variable PM2_ROOT"
     exit 1
 fi
 

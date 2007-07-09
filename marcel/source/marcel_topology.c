@@ -872,6 +872,7 @@ static void topo_discover(void) {
 						level->index = k;
 						ma_topo_set_os_numbers(level, -1, -1, -1, -1, -1, -1);
 						marcel_vpmask_empty(&level->cpuset);
+						marcel_vpmask_empty(&level->vpset);
 						level->arity = 0;
 						level->children = TBX_MALLOC(sublevelarity*sizeof(void*));
 						level->father = &marcel_topo_levels[l][i];
@@ -937,18 +938,19 @@ static void topo_discover(void) {
 		}
 	}
 
-#warning "BUG ici: le dernier niveau n'a pas forcément la place pour les VPs supplémentaires"
 	/* Now add supplementary VPs on the last level. */
 	for (i=marcel_nbvps(); i<marcel_nbvps() + MARCEL_NBMAXVPSUP; i++) {
 		marcel_topo_vp_level[i].type=MARCEL_LEVEL_VP;
 		marcel_topo_vp_level[i].number=i;
 		ma_topo_set_os_numbers(&marcel_topo_vp_level[i], -1, -1, -1, -1, -1, -1);
-		marcel_vpmask_only_vp(&marcel_topo_vp_level[i].cpuset,i);
+		marcel_vpmask_only_vp(&marcel_topo_vp_level[i].vpset,i);
+		marcel_vpmask_empty(&marcel_topo_vp_level[i].cpuset);
 		marcel_topo_vp_level[i].arity=0;
 		marcel_topo_vp_level[i].children=NULL;
 		marcel_topo_vp_level[i].father=NULL;
 	}
 	marcel_vpmask_empty(&marcel_topo_vp_level[i].cpuset);
+	marcel_vpmask_empty(&marcel_topo_vp_level[i].vpset);
 
 	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
 		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);

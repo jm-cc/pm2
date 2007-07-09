@@ -548,6 +548,7 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
     buffer =  mpir_request->contig_buffer;
   }
 
+  MPI_NMAD_TRACE("Sending data\n");
   MPI_NMAD_TRANSFER("Sent --> gate %ld : %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
 
   if (mpir_request->communication_mode == MPI_IMMEDIATE_MODE) {
@@ -568,11 +569,11 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
   return err;
 }
 
-int mpir_isend(mpir_request_t *mpir_request,
-               int dest,
-               mpir_communicator_t *mpir_communicator) {
+int mpir_isend_init(mpir_request_t *mpir_request,
+                    int dest,
+                    mpir_communicator_t *mpir_communicator) {
   mpir_datatype_t      *mpir_datatype = NULL;
-  MPI_Request_type	rq_type	= MPI_REQUEST_SEND;
+  MPI_Request_type	rq_type	= MPI_REQUEST_SEND_INIT;
   int                   err = MPI_SUCCESS;
 
   if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
@@ -602,7 +603,6 @@ int mpir_isend(mpir_request_t *mpir_request,
   MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
-    mpir_isend_wrapper(mpir_request);
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
@@ -624,7 +624,6 @@ int mpir_isend(mpir_request_t *mpir_request,
 
       mpir_datatype_vector_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
       MPI_NMAD_TRACE("Sending data of vector type at address %p with len %ld (%d*%d*%ld)\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, mpir_datatype->elements, (long)mpir_datatype->block_size);
-      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
@@ -648,7 +647,6 @@ int mpir_isend(mpir_request_t *mpir_request,
 
       mpir_datatype_indexed_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
       MPI_NMAD_TRACE("Sending data of (h)indexed type at address %p with len %ld\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size));
-      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
@@ -671,7 +669,6 @@ int mpir_isend(mpir_request_t *mpir_request,
 
       mpir_datatype_struct_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
       MPI_NMAD_TRACE("Sending data of struct type at address %p with len %ld (%d*%ld)\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, (long)mpir_datatype->size);
-      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else {
@@ -681,9 +678,34 @@ int mpir_isend(mpir_request_t *mpir_request,
 
   if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = rq_type;
 
-  nm_so_sr_progress(p_so_sr_if);
+  return err;
+}
 
+int mpir_isend_start(mpir_request_t *mpir_request) {
+  int err = MPI_SUCCESS;
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+
+  if (mpir_datatype->is_contig || !(mpir_datatype->is_optimized)) {
+    err = mpir_isend_wrapper(mpir_request);
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
+  }
+  // else the data have already been sent through the pack interface
+
+  nm_so_sr_progress(p_so_sr_if);
   mpir_inc_nb_outgoing_msg();
+
+  return err;
+}
+
+int mpir_isend(mpir_request_t *mpir_request,
+               int dest,
+               mpir_communicator_t *mpir_communicator) {
+  int err;
+
+  err = mpir_isend_init(mpir_request, dest, mpir_communicator);
+  if (err == MPI_SUCCESS) {
+    err = mpir_isend_start(mpir_request);
+  }
   return err;
 }
 

@@ -108,6 +108,10 @@ typedef struct mpir_request_s {
   int request_source;
   int request_error;
   MPI_Datatype request_datatype;
+  MPI_Communication_Mode communication_mode;
+  long gate_id;
+  int count;
+  void *buffer;
 } mpir_request_t;
 
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
@@ -148,7 +152,8 @@ typedef struct mpir_datatype_s {
 
 int mpir_not_implemented(char *s);
 
-int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine);
+int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
+                       struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if);
 
 int mpir_internal_exit();
 
@@ -169,28 +174,19 @@ int mpir_get_out_dest(long gate);
  * Send/recv/status functions
  */
 
-int mpir_isend(void *buffer,
-               int count,
+int mpir_isend(mpir_request_t *mpir_request,
                int dest,
-               int tag,
-               MPI_Communication_Mode communication_mode,
-               mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request,
-               struct nm_so_interface *p_so_sr_if,
-               nm_so_pack_interface p_so_pack_if);
+               mpir_communicator_t *mpir_communicator);
 
 int mpir_set_status(MPI_Request *request,
-		    MPI_Status *status,
-		    struct nm_so_interface *p_so_sr_if);
+		    MPI_Status *status);
 
 int mpir_irecv(void* buffer,
                int count,
                int source,
                int tag,
                mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request,
-               struct nm_so_interface *p_so_sr_if,
-               nm_so_pack_interface p_so_pack_if);
+               mpir_request_t *mpir_request);
 
 
 

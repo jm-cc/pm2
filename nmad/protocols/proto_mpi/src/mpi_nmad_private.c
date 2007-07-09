@@ -38,6 +38,9 @@ static long                 *in_gate_id	        = NULL;
 static int                  *out_dest	 	= NULL;
 static int                  *in_dest		= NULL;
 
+static struct nm_so_interface *p_so_sr_if;
+static nm_so_pack_interface    p_so_pack_if;
+
 debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace");
 debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
 debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
@@ -48,13 +51,20 @@ int mpir_not_implemented(char *s) {
   return MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
-int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine) {
+int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
+                       struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if) {
   int i;
   int                              dest;
   int                              source;
   p_mad_channel_t                  channel    = NULL;
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
+
+  /*
+    Set the NewMadeleine interfaces
+  */
+  p_so_sr_if = _p_so_sr_if;
+  p_so_pack_if = _p_so_pack_if;
 
   /*
    * Initialise the basic datatypes
@@ -496,70 +506,74 @@ static inline void mpir_datatype_struct_split(void *recvbuffer,
   }
 }
 
-static inline int mpir_check_send_seq(struct nm_so_interface *sr_if,
-                                      long gate_id,
+static inline int mpir_check_send_seq(long gate_id,
                                       uint8_t tag) {
-  int seq = nm_so_sr_get_current_send_seq(sr_if, gate_id, tag);
+  int seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, tag);
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-    int err = nm_so_sr_stest_range(sr_if, gate_id, tag, seq-1, 1);
+    int err = nm_so_sr_stest_range(p_so_sr_if, gate_id, tag, seq-1, 1);
     if (err == -NM_EAGAIN) {
       MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
-      nm_so_sr_swait_range(sr_if, gate_id, tag, 0, seq-1);
+      nm_so_sr_swait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
       MPI_NMAD_TRACE("Automatic flushing over");
     }
   }
   return seq;
 }
 
-static inline int mpir_check_recv_seq(struct nm_so_interface *sr_if,
-                                      long gate_id,
+static inline int mpir_check_recv_seq(long gate_id,
                                       uint8_t tag) {
-  int seq = nm_so_sr_get_current_recv_seq(sr_if, gate_id, tag);
+  int seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, tag);
   int err;
 
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-    err = nm_so_sr_rtest_range(sr_if, gate_id, tag, seq-1, 1);
+    err = nm_so_sr_rtest_range(p_so_sr_if, gate_id, tag, seq-1, 1);
     if (err == -NM_EAGAIN) {
       MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
-      nm_so_sr_rwait_range(sr_if, gate_id, tag, 0, seq-1);
+      nm_so_sr_rwait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
       MPI_NMAD_TRACE("Automatic flushing over");
     }
   }
   return seq;
 }
 
-static inline int mpir_isend_wrapper(MPI_Communication_Mode m,
-                                     struct nm_so_interface *sr_if,
-                                     long gate_id,
-                                     uint8_t tag,
-                                     void *buf,
-                                     size_t len,
-                                     nm_so_request *nm_rq) {
+static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  void *buffer;
   int err;
-  if (m == MPI_IMMEDIATE_MODE) {
-    err = nm_so_sr_isend(sr_if, gate_id, tag, buf, len, nm_rq);
-  } else if (m == MPI_READY_MODE) {
-    err = nm_so_sr_rsend(sr_if, gate_id, tag, buf, len, nm_rq);
-  } else {
-    err = nm_so_sr_isend_extended(sr_if, gate_id, tag, buf, len, m, nm_rq);
+
+  if (mpir_datatype->is_contig == 1) {
+    buffer = mpir_request->buffer;
   }
+  else {
+    buffer =  mpir_request->contig_buffer;
+  }
+
+  MPI_NMAD_TRANSFER("Sent --> gate %ld : %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
+
+  if (mpir_request->communication_mode == MPI_IMMEDIATE_MODE) {
+    err = nm_so_sr_isend(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer,
+                         mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+  }
+  else if (mpir_request->communication_mode == MPI_READY_MODE) {
+    err = nm_so_sr_rsend(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer,
+                         mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+  }
+  else {
+    err = nm_so_sr_isend_extended(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer,
+                                  mpir_request->count * mpir_datatype->size, mpir_request->communication_mode,
+                                  &(mpir_request->request_nmad));
+  }
+
+  MPI_NMAD_TRANSFER("Sent finished\n");
   return err;
 }
 
-int mpir_isend(void *buffer,
-               int count,
+int mpir_isend(mpir_request_t *mpir_request,
                int dest,
-               int tag,
-               MPI_Communication_Mode communication_mode,
-               mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request,
-               struct nm_so_interface *p_so_sr_if,
-               nm_so_pack_interface    p_so_pack_if) {
-  long                  gate_id;
+               mpir_communicator_t *mpir_communicator) {
   mpir_datatype_t      *mpir_datatype = NULL;
   MPI_Request_type	rq_type	= MPI_REQUEST_SEND;
   int                   err = MPI_SUCCESS;
-  int                   seq;
 
   if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
     NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
@@ -567,68 +581,50 @@ int mpir_isend(void *buffer,
     return MPI_ERR_INTERN;
   }
 
-  gate_id = out_gate_id[mpir_communicator->global_ranks[dest]];
-
+  mpir_request->gate_id = out_gate_id[mpir_communicator->global_ranks[dest]];
   mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
   mpir_datatype->active_communications ++;
-  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, tag);
-  mpir_request->user_tag = tag;
+  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, mpir_request->user_tag);
 
   if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, tag, NM_SO_MAX_TAGS);
+    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, NM_SO_MAX_TAGS);
     return MPI_ERR_INTERN;
   }
 
-  seq = mpir_check_send_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
+  {
+    int seq = mpir_check_send_seq(mpir_request->gate_id, mpir_request->request_tag);
+    if (tbx_unlikely((mpir_request->communication_mode == MPI_IS_NOT_COMPLETED) && (seq == NM_SO_PENDING_PACKS_WINDOW-2))) {
+      MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
+      mpir_request->communication_mode = MPI_IS_COMPLETED;
+    }
+  }
 
-  mpir_request->request_ptr = NULL;
-  mpir_request->contig_buffer = NULL;
-  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, tag);
+  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, buffer, (long)count*mpir_datatype->size, count, (long)mpir_datatype->size);
-    MPI_NMAD_TRANSFER("Sent (contig) --> %d, %ld : %ld bytes\n", dest, gate_id, (long)count * mpir_datatype->size);
-    if (communication_mode == MPI_IMMEDIATE_MODE) {
-      err = nm_so_sr_isend(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
-    }
-    else if (communication_mode == MPI_READY_MODE) {
-      err = nm_so_sr_rsend(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
-    }
-    else {
-      if (seq == NM_SO_PENDING_PACKS_WINDOW-2) {
-        MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, MPI_IS_COMPLETED, &(mpir_request->request_nmad));
-      }
-      else {
-        err = nm_so_sr_isend_extended(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, communication_mode, &(mpir_request->request_nmad));
-      }
-    }
-    MPI_NMAD_TRANSFER("Sent finished\n");
+    MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
+    mpir_isend_wrapper(mpir_request);
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
     MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
     if (mpir_datatype->is_optimized) {
-      nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_vector_pack(connection, buffer, mpir_datatype, count);
+      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_vector_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
       rq_type	= MPI_REQUEST_PACK_SEND;
     }
     else {
-      size_t len;
-
       MPI_NMAD_TRACE("Sending vector datatype in a contiguous buffer\n");
-      len = count * mpir_datatype->size;
-      mpir_request->contig_buffer = malloc(len);
+
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)len);
+        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      mpir_datatype_vector_aggregate(mpir_request->contig_buffer, buffer, mpir_datatype, count);
-      MPI_NMAD_TRACE("Sending data of vector type at address %p with len %ld (%d*%d*%ld)\n", mpir_request->contig_buffer, (long)len, count, mpir_datatype->elements, (long)mpir_datatype->block_size);
-      MPI_NMAD_TRANSFER("Sent (vector) --> %d, %ld: %ld bytes\n", dest, gate_id, (long)len);
-      err = mpir_isend_wrapper(communication_mode, p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Sent (vector) finished\n");
+      mpir_datatype_vector_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      MPI_NMAD_TRACE("Sending data of vector type at address %p with len %ld (%d*%d*%ld)\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, mpir_datatype->elements, (long)mpir_datatype->block_size);
+      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
@@ -637,27 +633,22 @@ int mpir_isend(void *buffer,
 
       MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %ld - extent %ld\n", mpir_datatype->elements,
                      (long)mpir_datatype->size, (long)mpir_datatype->extent);
-      nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_indexed_pack(connection, buffer, mpir_datatype, count);
+      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_indexed_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
       rq_type	= MPI_REQUEST_PACK_SEND;
     }
     else {
-      size_t len;
-
       MPI_NMAD_TRACE("Sending (h)indexed datatype in a contiguous buffer\n");
 
-      len = count * mpir_datatype->size;
-      mpir_request->contig_buffer = malloc(len);
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)len);
+        ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      mpir_datatype_indexed_aggregate(mpir_request->contig_buffer, buffer, mpir_datatype, count);
-      MPI_NMAD_TRACE("Sending data of (h)indexed type at address %p with len %ld\n", mpir_request->contig_buffer, (long)len);
-      MPI_NMAD_TRANSFER("Sent (indexed) --> %d, %ld: %ld bytes\n", dest, gate_id, (long)len);
-      err = mpir_isend_wrapper(communication_mode, p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Sent (indexed) finished\n");
+      mpir_datatype_indexed_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      MPI_NMAD_TRACE("Sending data of (h)indexed type at address %p with len %ld\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size));
+      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
@@ -665,26 +656,22 @@ int mpir_isend(void *buffer,
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
       MPI_NMAD_TRACE("Sending struct type: size %ld\n", (long)mpir_datatype->size);
-      nm_so_begin_packing(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_struct_pack(connection, buffer, mpir_datatype, count);
+      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_struct_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
       rq_type	= MPI_REQUEST_PACK_SEND;
     }
     else {
-      size_t len;
-
       MPI_NMAD_TRACE("Sending struct datatype in a contiguous buffer\n");
-      len = count * mpir_datatype->size;
-      mpir_request->contig_buffer = malloc(len);
+
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)len);
+        ERROR("Cannot allocate memory with size %ld to send struct datatype\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      mpir_datatype_struct_aggregate(mpir_request->contig_buffer, buffer, mpir_datatype, count);
-      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %ld (%d*%ld)\n", mpir_request->contig_buffer, (long)len, count, (long)mpir_datatype->size);
-      MPI_NMAD_TRANSFER("Sent (struct) --> %d, %ld: %ld bytes\n", dest, gate_id, (long)count * mpir_datatype->size);
-      err = mpir_isend_wrapper(communication_mode, p_so_sr_if, gate_id, mpir_request->request_tag, mpir_request->contig_buffer, len, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Sent (struct) finished\n");
+      mpir_datatype_struct_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      MPI_NMAD_TRACE("Sending data of struct type at address %p with len %ld (%d*%ld)\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, (long)mpir_datatype->size);
+      err = mpir_isend_wrapper(mpir_request);
     }
   }
   else {
@@ -701,8 +688,7 @@ int mpir_isend(void *buffer,
 }
 
 int mpir_set_status(MPI_Request *request,
-		    MPI_Status *status,
-		    struct nm_so_interface *p_so_sr_if) {
+		    MPI_Status *status) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;
 
   status->MPI_TAG = mpir_request->user_tag;
@@ -727,9 +713,7 @@ int mpir_irecv(void* buffer,
                int source,
                int tag,
                mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request,
-               struct nm_so_interface *p_so_sr_if,
-               nm_so_pack_interface    p_so_pack_if) {
+               mpir_request_t *mpir_request) {
   long                  gate_id;
   int                   seq;
   mpir_datatype_t      *mpir_datatype = NULL;
@@ -761,7 +745,7 @@ int mpir_irecv(void* buffer,
   }
 
   if (source != MPI_ANY_SOURCE) {
-    seq = mpir_check_recv_seq(p_so_sr_if, gate_id, mpir_request->request_tag);
+    seq = mpir_check_recv_seq(gate_id, mpir_request->request_tag);
   }
 
   mpir_request->request_ptr = NULL;

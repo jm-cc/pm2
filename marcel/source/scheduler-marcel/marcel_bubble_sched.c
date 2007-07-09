@@ -280,6 +280,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		/* sched holder was already set to something else, wake the bubble there */
 		ma_holder_lock_softirq(entity->sched_holder);
 		ma_activate_entity(entity, entity->sched_holder);
+		PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->sched_holder));
 		ma_holder_unlock_softirq(entity->sched_holder);
 	}
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);

@@ -97,6 +97,7 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_SEND_INIT ((MPI_Request_type)5)
+#define MPI_REQUEST_RECV_INIT ((MPI_Request_type)6)
 
 typedef struct mpir_request_s {
   MPI_Request_type request_type;
@@ -187,6 +188,12 @@ int mpir_isend(mpir_request_t *mpir_request,
 
 int mpir_set_status(MPI_Request *request,
 		    MPI_Status *status);
+
+int mpir_irecv_init(mpir_request_t *mpir_request,
+                    int source,
+                    mpir_communicator_t *mpir_communicator);
+
+int mpir_irecv_start(mpir_request_t *mpir_request);
 
 int mpir_irecv(mpir_request_t *mpir_request,
                int source,

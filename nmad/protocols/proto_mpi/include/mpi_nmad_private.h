@@ -181,12 +181,9 @@ int mpir_isend(mpir_request_t *mpir_request,
 int mpir_set_status(MPI_Request *request,
 		    MPI_Status *status);
 
-int mpir_irecv(void* buffer,
-               int count,
+int mpir_irecv(mpir_request_t *mpir_request,
                int source,
-               int tag,
-               mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request);
+               mpir_communicator_t *mpir_communicator);
 
 
 

@@ -949,8 +949,13 @@ int MPI_Recv(void *buffer,
 
   mpir_request->request_ptr = NULL;
   mpir_request->request_type = MPI_REQUEST_RECV;
+  mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request);
+  mpir_request->buffer = buffer;
+  mpir_request->count = count;
+  mpir_request->user_tag = tag;
+
+  err = mpir_irecv(mpir_request, source, mpir_communicator);
 
   MPI_Wait(&request, status);
 
@@ -962,7 +967,7 @@ int MPI_Recv(void *buffer,
 /**
  * Posts a nonblocking receive.
  */
-int MPI_Irecv(void* buffer,
+int MPI_Irecv(void *buffer,
               int count,
               MPI_Datatype datatype,
               int source,
@@ -984,8 +989,13 @@ int MPI_Irecv(void* buffer,
 
   mpir_request->request_ptr = NULL;
   mpir_request->request_type = MPI_REQUEST_RECV;
+  mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
-  err = mpir_irecv(buffer, count, source, tag, mpir_communicator, mpir_request);
+  mpir_request->buffer = buffer;
+  mpir_request->count = count;
+  mpir_request->user_tag = tag;
+
+  err = mpir_irecv(mpir_request, source, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;

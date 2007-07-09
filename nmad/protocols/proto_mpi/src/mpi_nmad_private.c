@@ -708,20 +708,34 @@ int mpir_set_status(MPI_Request *request,
   return MPI_SUCCESS;
 }
 
-int mpir_irecv(void* buffer,
-               int count,
+static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  void *buffer;
+  int err;
+
+  if (mpir_datatype->is_contig == 1) {
+    buffer = mpir_request->buffer;
+  }
+  else {
+    buffer =  mpir_request->contig_buffer;
+  }
+
+  MPI_NMAD_TRANSFER("Recv --< gate %ld: %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
+  err = nm_so_sr_irecv(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+  MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
+
+  return err;
+}
+
+int mpir_irecv(mpir_request_t *mpir_request,
                int source,
-               int tag,
-               mpir_communicator_t *mpir_communicator,
-               mpir_request_t *mpir_request) {
-  long                  gate_id;
-  int                   seq;
+               mpir_communicator_t *mpir_communicator) {
   mpir_datatype_t      *mpir_datatype = NULL;
 
   MPI_NMAD_LOG_IN();
 
   if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
-    gate_id = NM_SO_ANY_SRC;
+    mpir_request->gate_id = NM_SO_ANY_SRC;
   }
   else {
     if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == -1)){
@@ -729,33 +743,31 @@ int mpir_irecv(void* buffer,
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
-    gate_id = in_gate_id[mpir_communicator->global_ranks[source]];
+    mpir_request->gate_id = in_gate_id[mpir_communicator->global_ranks[source]];
   }
 
   mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
   mpir_datatype->active_communications ++;
-  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, tag);
-  mpir_request->user_tag = tag;
+  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, mpir_request->user_tag);
   mpir_request->request_source = source;
 
   if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, tag, NM_SO_MAX_TAGS);
+    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, NM_SO_MAX_TAGS);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
 
-  if (source != MPI_ANY_SOURCE) {
-    seq = mpir_check_recv_seq(gate_id, mpir_request->request_tag);
+  {
+    int seq;
+    if (source != MPI_ANY_SOURCE) {
+      seq = mpir_check_recv_seq(mpir_request->gate_id, mpir_request->request_tag);
+    }
   }
 
-  mpir_request->request_ptr = NULL;
-
-  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, buffer, mpir_request->request_tag, mpir_communicator->communicator_id, tag);
+  MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, mpir_request->buffer, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
-    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, buffer, (long)count*mpir_datatype->size, count, (long)mpir_datatype->size);
-    MPI_NMAD_TRANSFER("Recv (contig) --< %ld: %ld bytes\n", gate_id, (long)count * mpir_datatype->size);
-    mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, buffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
-    MPI_NMAD_TRANSFER("Recv (contig) finished, request = %p\n", &(mpir_request->request_nmad));
+    MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
+    mpir_request->request_error = mpir_irecv_wrapper(mpir_request);
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
@@ -763,31 +775,25 @@ int mpir_irecv(void* buffer,
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
       MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_vector_unpack(connection, mpir_request, buffer, mpir_datatype, count);
+      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_vector_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
     }
     else {
-      void  *recvbuffer = NULL;
-      size_t len;
-
-      len = count * mpir_datatype->size;
-      recvbuffer = malloc(len);
-      if (recvbuffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)len);
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
+      if (mpir_request->contig_buffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)len, count, (long)mpir_datatype->size);
-      MPI_NMAD_TRANSFER("Recv (vector) --< %ld: %ld bytes\n", gate_id, (long)len);
-      mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, len, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Recv (vector) finished\n");
+      MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, (long)mpir_datatype->size);
+      mpir_request->request_error = mpir_irecv_wrapper(mpir_request);
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (vector)\n");
       nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
-      mpir_datatype_vector_split(recvbuffer, buffer, mpir_datatype, count);
-      free(recvbuffer);
+      mpir_datatype_vector_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      free(mpir_request->contig_buffer);
       mpir_request->request_type = MPI_REQUEST_ZERO;
     }
   }
@@ -796,32 +802,26 @@ int mpir_irecv(void* buffer,
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
       MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %ld\n", mpir_datatype->elements, (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_indexed_unpack(connection, mpir_request, buffer, mpir_datatype, count);
+      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_indexed_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
     }
     else {
-      void *recvbuffer;
-      size_t len;
-
       MPI_NMAD_TRACE("Receiving (h)indexed datatype in a contiguous buffer\n");
-      len = count * mpir_datatype->size;
-      recvbuffer = malloc(len);
-      if (recvbuffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)len);
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
+      if (mpir_request->contig_buffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to receive (h)indexed type\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      MPI_NMAD_TRACE("Receiving (h)indexed type %d in a contiguous way at address %p with len %ld\n", mpir_request->request_datatype, recvbuffer, (long)len);
-      MPI_NMAD_TRANSFER("Recv (indexed) --< %ld: %ld bytes\n", gate_id, (long)len);
-      mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, len, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Recv (indexed) finished\n");
+      MPI_NMAD_TRACE("Receiving (h)indexed type %d in a contiguous way at address %p with len %ld\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size));
+      mpir_request->request_error = mpir_irecv_wrapper(mpir_request);
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (indexed)\n");
       nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
-      mpir_datatype_indexed_split(recvbuffer, buffer, mpir_datatype, count);
-      free(recvbuffer);
+      mpir_datatype_indexed_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      free(mpir_request->contig_buffer);
       mpir_request->request_type = MPI_REQUEST_ZERO;
     }
   }
@@ -830,31 +830,25 @@ int mpir_irecv(void* buffer,
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
       MPI_NMAD_TRACE("Receiving struct type: size %ld\n", (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_struct_unpack(connection, mpir_request, buffer, mpir_datatype, count);
+      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+      mpir_datatype_struct_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
     }
     else {
-      void *recvbuffer = NULL;
-      size_t len;
-
-      len = count * mpir_datatype->size;
-      recvbuffer = malloc(len);
-      if (recvbuffer == NULL) {
-        ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)len);
+      mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
+      if (mpir_request->contig_buffer == NULL) {
+        ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
 
-      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, recvbuffer, (long)count*mpir_datatype->size, count, (long)mpir_datatype->size);
-      MPI_NMAD_TRANSFER("Recv (struct) --< %ld: %ld bytes\n", gate_id, (long)count * mpir_datatype->size);
-      mpir_request->request_error = nm_so_sr_irecv(p_so_sr_if, gate_id, mpir_request->request_tag, recvbuffer, count * mpir_datatype->size, &(mpir_request->request_nmad));
-      MPI_NMAD_TRANSFER("Recv (struct) finished\n");
+      MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
+      mpir_request->request_error = mpir_irecv_wrapper(mpir_request);
       MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
       MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait (struct)\n");
       nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
       MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
 
-      mpir_datatype_struct_split(recvbuffer, buffer, mpir_datatype, count);
-      free(recvbuffer);
+      mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+      free(mpir_request->contig_buffer);
       mpir_request->request_type = MPI_REQUEST_ZERO;
     }
   }

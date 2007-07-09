@@ -3,7 +3,7 @@
 dir=$(dirname $0)
 arch=$(pm2-arch --pm2-asm)
 link=$(readlink $0)
-if [ "$link" != "" ] ; then
+if [ -n "$link" ] ; then
     dir=$(echo $dir"/"$(dirname $link))
 fi
 if [ ! -f $dir/ext/obj/$arch/arg_ifort.o ] ; then

@@ -7,7 +7,7 @@ if [ -z "$PM2_ROOT" ] ; then
     exit 1
 fi
 
-if [ "$PM2_FLAVOR" = "" ] ; then
+if [ -z "$PM2_FLAVOR" ] ; then
     if [ "$1" != "-flavor" ] ; then
 	echo "Error. You need to set the variable PM2_FLAVOR to specify the pm2 flavor to use"
 	exit 1
@@ -224,7 +224,7 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     fi
     dir=$(dirname $0)
     link=$(readlink $0)
-    if [ "$link" != "" ] ; then
+    if [ -n "$link" ] ; then
         dir=$(echo $dir"/"$(dirname $link))
     fi
     . $dir/mpicc.ext

@@ -643,10 +643,12 @@ unsigned long ma_nr_ready(void)
 	return sum;
 }
 
+#if 0
 /* a priori, c'est l'application qui rebalance les choses */
 static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 {
 }
+#endif
 
 /*
  * We place interactive tasks back into the active array, if possible.
@@ -674,8 +676,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
-	ma_holder_t *h;
-	ma_runqueue_t *rq;
+	//ma_holder_t *h;
+	//ma_runqueue_t *rq;
 	marcel_task_t *p = MARCEL_SELF;
 
 	//LOG_IN();
@@ -699,30 +701,21 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		sys_ticks = 0;
 	}
 
-	h = ma_this_holder();
-	MA_BUG_ON(!h);
-	rq = ma_to_rq_holder(h);
-	if (rq) {
-		//rq->timestamp_last_tick = marcel_clock();
-
 #ifdef MA__LWPS
-		if (rq->type == MA_DONTSCHED_RQ)
+	if (p->sched.internal.entity.prio == MA_IDLE_PRIO)
 #else
-		if (currently_idle)
+	if (currently_idle)
 #endif
-		{
-			// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
-			/*if (atomic_read(&rq->nr_iowait) > 0)
-				lwpstat->iowait += sys_ticks;
-			else*/
-				lwpstat->idle += sys_ticks;
-			//rebalance_tick(rq, 1);
-			//return;
-			sys_ticks = 0;
-		}
-	}
-	//if (TASK_NICE(p) > 0)
-	if (p->sched.internal.entity.prio >= MA_BATCH_PRIO)
+	{
+		// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
+		/*if (atomic_read(&rq->nr_iowait) > 0)
+			lwpstat->iowait += sys_ticks;
+		else*/
+			lwpstat->idle += sys_ticks;
+		//rebalance_tick(rq, 1);
+		//return;
+		sys_ticks = 0;
+	} else if (p->sched.internal.entity.prio >= MA_BATCH_PRIO)
 		lwpstat->nice += user_ticks;
 	else
 		lwpstat->user += user_ticks;
@@ -804,7 +797,8 @@ out_unlock:
 	ma_spin_unlock(&rq->lock);
 #endif
 out:
-	rebalance_tick(rq, 0);
+	(void)0;
+	//rebalance_tick(rq, 0);
 	//LOG_OUT();
 }
 

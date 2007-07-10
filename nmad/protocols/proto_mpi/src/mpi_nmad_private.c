@@ -573,7 +573,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
                     int dest,
                     mpir_communicator_t *mpir_communicator) {
   mpir_datatype_t      *mpir_datatype = NULL;
-  MPI_Request_type	rq_type	= MPI_REQUEST_SEND_INIT;
+  MPI_Request_type	rq_type	= MPI_REQUEST_SEND;
   int                   err = MPI_SUCCESS;
 
   if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
@@ -584,7 +584,6 @@ int mpir_isend_init(mpir_request_t *mpir_request,
 
   mpir_request->gate_id = out_gate_id[mpir_communicator->global_ranks[dest]];
   mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
-  mpir_datatype->active_communications ++;
   mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, mpir_request->user_tag);
 
   if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
@@ -672,7 +671,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
     }
   }
   else {
-    ERROR("Do not know how to send datatype %d\n", mpir_request->request_datatype);
+    ERROR("Do not know how to send datatype %d %d\n", mpir_request->request_datatype, mpir_datatype->dte_type);
     return MPI_ERR_INTERN;
   }
 
@@ -685,6 +684,7 @@ int mpir_isend_start(mpir_request_t *mpir_request) {
   int err = MPI_SUCCESS;
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
 
+  mpir_datatype->active_communications ++;
   if (mpir_datatype->is_contig || !(mpir_datatype->is_optimized)) {
     err = mpir_isend_wrapper(mpir_request);
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
@@ -769,7 +769,6 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
   }
 
   mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
-  mpir_datatype->active_communications ++;
   mpir_request->request_tag = mpir_project_comm_and_tag(mpir_communicator, mpir_request->user_tag);
   mpir_request->request_source = source;
 
@@ -789,7 +788,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, mpir_request->buffer, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Receiving data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
-    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV_INIT;
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     if (mpir_datatype->is_optimized) {
@@ -807,7 +806,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
       }
 
       MPI_NMAD_TRACE("Receiving vector type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, (long)mpir_datatype->size);
-      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV_INIT;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
     }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
@@ -827,7 +826,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
       }
 
       MPI_NMAD_TRACE("Receiving (h)indexed type %d in a contiguous way at address %p with len %ld\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size));
-      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV_INIT;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
     }
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
@@ -846,7 +845,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
       }
 
       MPI_NMAD_TRACE("Receiving struct type %d in a contiguous way at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->contig_buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
-      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV_INIT;
+      if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
     }
   }
   else {
@@ -862,10 +861,13 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
 int mpir_irecv_start(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
 
+  mpir_datatype->active_communications ++;
+
   if (mpir_datatype->is_contig || !(mpir_datatype->is_optimized)) {
     mpir_request->request_error = mpir_irecv_wrapper(mpir_request);
 
     if (mpir_datatype->is_contig) {
+      MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");
       if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
     }
     else {
@@ -885,8 +887,10 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
         mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
       }
 
-      free(mpir_request->contig_buffer);
-      mpir_request->request_type = MPI_REQUEST_ZERO;
+      if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+        free(mpir_request->contig_buffer);
+        mpir_request->request_type = MPI_REQUEST_ZERO;
+      }
     }
   }
   // else the data have already been received through the pack interface
@@ -894,7 +898,7 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
   nm_so_sr_progress(p_so_sr_if);
 
   mpir_inc_nb_incoming_msg();
-  MPI_NMAD_TRACE("Irecv completed\n");
+  MPI_NMAD_TRACE("Irecv_start completed\n");
   MPI_NMAD_LOG_OUT();
   return mpir_request->request_error;
 }
@@ -911,6 +915,18 @@ int mpir_irecv(mpir_request_t *mpir_request,
   return err;
 }
 
+int mpir_start(mpir_request_t *mpir_request) {
+  if (mpir_request->request_persistent_type == MPI_REQUEST_SEND) {
+    return mpir_isend_start(mpir_request);
+  }
+  else if (mpir_request->request_persistent_type == MPI_REQUEST_RECV) {
+    return mpir_irecv_start(mpir_request);
+  }
+  else {
+    ERROR("Unknown persistent request type: %d\n", mpir_request->request_persistent_type);
+    return MPI_ERR_INTERN;
+  }
+}
 
 int get_available_datatype() {
   if (tbx_slist_is_nil(available_datatypes) == tbx_true) {
@@ -1045,9 +1061,10 @@ int mpir_type_commit(MPI_Datatype datatype) {
 int mpir_type_unlock(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
 
-  MPI_NMAD_TRACE_LEVEL(3, "Unlocking datatype %d\n", datatype);
+  MPI_NMAD_TRACE_LEVEL(3, "Unlocking datatype %d (%d)\n", datatype, mpir_datatype->active_communications);
   mpir_datatype->active_communications --;
   if (mpir_datatype->active_communications == 0 && mpir_datatype->free_requested == 1) {
+    MPI_NMAD_TRACE("Freeing datatype %d\n", datatype);
     mpir_type_free(datatype);
   }
   return MPI_SUCCESS;
@@ -1058,7 +1075,7 @@ int mpir_type_free(MPI_Datatype datatype) {
 
   if (mpir_datatype->active_communications != 0) {
     mpir_datatype->free_requested = 1;
-    MPI_NMAD_TRACE_LEVEL(3, "Datatype %d still in use. Cannot be released\n", datatype);
+    MPI_NMAD_TRACE_LEVEL(3, "Datatype %d still in use (%d). Cannot be released\n", datatype, mpir_datatype->active_communications);
     return MPI_DATATYPE_ACTIVE;
   }
   else {

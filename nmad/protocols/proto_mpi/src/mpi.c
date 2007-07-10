@@ -748,6 +748,7 @@ int MPI_Esend(void *buffer,
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -788,6 +789,7 @@ int MPI_Send(void *buffer,
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -828,6 +830,7 @@ int MPI_Isend(void *buffer,
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -867,6 +870,7 @@ int MPI_Rsend(void* buffer,
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -906,6 +910,7 @@ int MPI_Ssend(void* buffer,
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_ptr = NULL;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -948,6 +953,7 @@ int MPI_Recv(void *buffer,
   }
 
   mpir_request->request_ptr = NULL;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_type = MPI_REQUEST_RECV;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -988,6 +994,7 @@ int MPI_Irecv(void *buffer,
   }
 
   mpir_request->request_ptr = NULL;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
   mpir_request->request_type = MPI_REQUEST_RECV;
   mpir_request->contig_buffer = NULL;
   mpir_request->request_datatype = datatype;
@@ -1052,8 +1059,10 @@ int MPI_Wait(MPI_Request *request,
     MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
     err = nm_so_sr_swait(p_so_sr_if, mpir_request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
-    if (mpir_request->contig_buffer != NULL) {
-      free(mpir_request->contig_buffer);
+    if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+      if (mpir_request->contig_buffer != NULL) {
+        free(mpir_request->contig_buffer);
+      }
     }
   }
   else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
@@ -1072,9 +1081,11 @@ int MPI_Wait(MPI_Request *request,
   }
   MPI_NMAD_TRACE("Wait completed\n");
 
-  mpir_request->request_type = MPI_REQUEST_ZERO;
-  if (mpir_request->request_ptr != NULL) {
-    free(mpir_request->request_ptr);
+  if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+    mpir_request->request_type = MPI_REQUEST_ZERO;
+    if (mpir_request->request_ptr != NULL) {
+      free(mpir_request->request_ptr);
+    }
   }
 
   if (status != MPI_STATUS_IGNORE) {
@@ -1107,7 +1118,8 @@ MPI_Waitall(int count,
       if (err != NM_ESUCCESS)
         goto out;
     }
-  } else {
+  }
+  else {
     for (i = 0; i < count; i++) {
       err =  MPI_Wait(&(requests[i]), &(statuses[i]));
       if (err != NM_ESUCCESS)
@@ -1261,6 +1273,26 @@ int MPI_Probe(int source,
   return err;
 }
 
+/*
+ * Marks for cancellation a pending, nonblocking communication
+ * operation (send or receive).
+ */
+int MPI_Cancel(MPI_Request *request) {
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  int             err = NM_ESUCCESS;
+
+  MPI_NMAD_LOG_IN();
+
+  if (mpir_request->request_persistent_type != MPI_REQUEST_ZERO) {
+    if (mpir_request->contig_buffer != NULL) {
+      free(mpir_request->contig_buffer);
+    }
+  }
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
 /**
  * Computes the number of entries received.
  */
@@ -1285,6 +1317,130 @@ int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2) {
   else {
     return (mpir_request1->request_nmad == mpir_request2->request_nmad);
   }
+}
+
+/**
+ * Creates a persistent communication request for a standard mode send
+ * operation, and binds to it all the arguments of a send operation.
+ */
+int MPI_Send_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int dest,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request) {
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_communicator_t  *mpir_communicator;
+  int err;
+
+  MPI_NMAD_LOG_IN();
+  MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
+
+  mpir_communicator = mpir_get_communicator(comm);
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    MPI_NMAD_LOG_OUT();
+    return mpir_not_implemented("Using MPI_ANY_TAG");
+  }
+
+  mpir_request->request_type = MPI_REQUEST_SEND;
+  mpir_request->request_persistent_type = MPI_REQUEST_SEND;
+  mpir_request->request_ptr = NULL;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  mpir_request->buffer = buf;
+  mpir_request->count = count;
+  mpir_request->user_tag = tag;
+  mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
+
+  // We force the datatype not to be optimized, otherwise data are sent by mpir_send_init
+  MPI_Type_optimized(&datatype, 0);
+
+  err = mpir_isend_init(mpir_request, dest, mpir_communicator);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
+ * Creates a persistent communication request for a receive operation.
+ */
+int MPI_Recv_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int source,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request) {
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_communicator_t  *mpir_communicator;
+  int err;
+
+  MPI_NMAD_LOG_IN();
+  MPI_NMAD_TRACE("Init Irecv message from %d of datatype %d with tag %d\n", source, datatype, tag);
+
+  mpir_communicator = mpir_get_communicator(comm);
+  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    MPI_NMAD_LOG_OUT();
+    return mpir_not_implemented("Using MPI_ANY_TAG");
+  }
+
+  mpir_request->request_ptr = NULL;
+  mpir_request->request_type = MPI_REQUEST_RECV;
+  mpir_request->request_persistent_type = MPI_REQUEST_RECV;
+  mpir_request->contig_buffer = NULL;
+  mpir_request->request_datatype = datatype;
+  mpir_request->buffer = buf;
+  mpir_request->count = count;
+  mpir_request->user_tag = tag;
+
+  // We force the datatype not to be optimized, otherwise data are received by mpir_irecv_init
+  MPI_Type_optimized(&datatype, 0);
+
+  err = mpir_irecv_init(mpir_request, source, mpir_communicator);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
+ * Initiates a persistent request. The associated request should be
+ * inactive. The request becomes active once the call is made. If the
+ * request is for a send with ready mode, then a matching receive
+ * should be posted before the call is made. The communication buffer
+ * should not be accessed after the call, and until the operation
+ * completes.
+ */
+int MPI_Start(MPI_Request *request) {
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  int err;
+
+  MPI_NMAD_LOG_IN();
+  MPI_NMAD_TRACE("Start request\n");
+
+  err =  mpir_start(mpir_request);
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
+/**
+ * Start all communications associated with requests in
+ * array_of_requests.
+ */
+int MPI_Startall(int count,
+                 MPI_Request *array_of_requests) {
+  int i;
+  int err = MPI_SUCCESS;
+
+  for(i=0 ; i<count ; i++) {
+    MPI_Request request = array_of_requests[i];
+    err = MPI_Start(&request);
+    if (err != MPI_SUCCESS) {
+      return err;
+    }
+  }
+  return err;
 }
 
 /**
@@ -1929,7 +2085,7 @@ double MPI_Wtick(void) {
  * Returns the error string associated with an error code or class.
  * The argument string must represent storage that is at least
  * MPI_MAX_ERROR_STRING characters long.
- */ 
+ */
 int MPI_Error_string(int errorcode, char *string, int *resultlen) {
   *resultlen = 100;
   string = malloc(*resultlen * sizeof(char));

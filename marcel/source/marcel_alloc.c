@@ -106,6 +106,10 @@ retry:
 			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for new stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
 			marcel_yield();
 			goto retry;
+		} else {
+			/* Erf. We are in atomic section or tried too long. */
+			fprintf(stderr, "Not enough room for new stack (stack size is %lx, stack allocation area is %lx-%lx).\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
+			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 		}
 	}
 	/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */

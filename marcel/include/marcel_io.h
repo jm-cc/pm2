@@ -26,6 +26,7 @@
 #include <sys/select.h>
 #include "tbx_compiler.h"
 
+/* TODO: utiliser piom_read quand il sera mergé. */
 int marcel_read(int fildes, void *buf, size_t nbytes);
 
 int marcel_write(int fildes, const void *buf, size_t nbytes);

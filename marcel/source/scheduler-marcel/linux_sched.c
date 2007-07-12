@@ -607,18 +607,8 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 	finish_task_switch(prev);
 
 #ifdef MA__LWPS
-#ifdef MARCEL_SMT_IDLE
-	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
-		&& !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		marcel_sig_disable_interrupts();
-		PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
-		if (prev != MARCEL_SELF)
-			ma_topology_lwp_idle_start(LWP_SELF);
-		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
-			marcel_sig_pause();
-		marcel_sig_enable_interrupts();
-	}
-#endif
+	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task)))
+		ma_entering_idle();
 #endif
 }
 
@@ -808,13 +798,6 @@ void ma_scheduling_functions_start_here(void) { }
 static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now) {
 	tbx_prefetch(next);
 
-#ifdef MA__LWPS
-	if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
-		PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
-		ma_topology_lwp_idle_end(LWP_SELF);
-	}
-#endif
-
 	/* update statistics */
 	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
 	*(long*)ma_task_stats_get(next, ma_stats_nbrunning_offset) = 1;
@@ -826,6 +809,11 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 	sched_debug("unlock(%p)\n",nexth);
 	ma_holder_rawunlock(nexth);
 	ma_set_task_lwp(next, LWP_SELF);
+
+#ifdef MA__LWPS
+	if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task)))
+		ma_leaving_idle();
+#endif
 
 	ma_prepare_arch_switch(nexth, next);
 	prev = marcel_switch_to(prev, next);
@@ -856,7 +844,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int didswitch;
 	int go_to_sleep_traced;
 #ifndef MA__LWPS
-	int didpoll = 0;
+	int didpoll = 0, idle = 0;
 #endif
 	int hard_preempt;
 	int need_resched = ma_need_resched();
@@ -1006,38 +994,26 @@ restart:
 		    }
 #endif
 		cur = __ma_get_lwp_var(idle_task);
-#else
+#else /* MONO */
+		if (!idle) {
+			ma_entering_idle();
+			idle = 1;
+		}
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
 		currently_idle = 1;
 		ma_local_bh_enable();
-#ifdef XPAULETTE
-		if (!xpaul_polling_is_required(XPAUL_POLL_AT_IDLE)) {	
-#else
-		  if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
-#endif /* XPAULETTE */
-			marcel_sig_disable_interrupts();
-			marcel_sig_pause();
-			marcel_sig_enable_interrupts();
-		} else {
-#ifdef MARCEL_IDLE_PAUSE
-			if (didpoll)
-				/* already polled a bit, sleep a bit before
-				 * polling again */
-				marcel_sig_nanosleep();
-#endif
-#ifdef XPAULETTE
-			__xpaul_check_polling(XPAUL_POLL_AT_IDLE);
-#else
-			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-#endif /* XPAULETTE */
-			didpoll = 1;
-		}
+		didpoll = ma_do_idle(didpoll);
 		ma_check_work();
 		need_resched = 1;
 		ma_local_bh_disable();
 		currently_idle = 0;
 		goto need_resched_atomic;
+#endif /* MONO */
+	} else {
+#ifndef MA__LWPS
+		if (idle)
+			ma_leaving_idle();
 #endif
 	}
 
@@ -1177,16 +1153,14 @@ switch_tasks:
 		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
 #ifdef MA__LWPS
-		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
-			&& !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-			marcel_sig_disable_interrupts();
-			if (!ma_topology_lwp_idle_core(LWP_SELF))
-				marcel_sig_pause();
-			marcel_sig_enable_interrupts();
-		} else
+		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task)))
+			ma_still_idle();
+		else
 #endif
 		  {
+#ifdef PIOMAN
 		    /* TODO: appeler le polling pour lui faire faire un peu de poll */
+#endif
 		  }
 	}
 

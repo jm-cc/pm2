@@ -187,18 +187,9 @@
 //}
 
 #ifndef MA__LWPS
-/* mono: pas de thread idle, mais on a besoin d'une variable pour savoir si on
- * est dans la boucle idle */
+/* mono: no idle thread, but on interrupts we need to when whether we're
+ * idling. */
 static int currently_idle;
-#endif
-
-/*
- * Default context-switch locking:
- */
-#ifndef ma_prepare_arch_switch
-# define ma_prepare_arch_switch(h, next)	do { } while(0)
-# define ma_finish_arch_switch(h, next)	ma_task_holder_unlock_softirq(h)
-# define ma_task_running(h, p)		MA_TASK_IS_RUNNING(p)
 #endif
 
 /*
@@ -580,7 +571,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		int remove_from_bubble;
 		if ((remove_from_bubble = (prev->sched.state & MA_TASK_DEAD)))
 			ma_task_sched_holder(prev) = NULL;
-		ma_finish_arch_switch(prevh, prev);
+		ma_task_holder_unlock_softirq(prevh);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
 		if (remove_from_bubble)
 			marcel_bubble_removetask(bubble, prev);
@@ -588,7 +579,7 @@ static void finish_task_switch(marcel_task_t *prev)
 #endif
 	{
 		/* on sort du mode interruption */
-		ma_finish_arch_switch(prevh, prev);
+		ma_task_holder_unlock_softirq(prevh);
 
 	}
 	if (tbx_unlikely(prev_task_state == MA_TASK_DEAD)) {
@@ -815,7 +806,6 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 		ma_leaving_idle();
 #endif
 
-	ma_prepare_arch_switch(nexth, next);
 	prev = marcel_switch_to(prev, next);
 	ma_barrier();
 
@@ -844,7 +834,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int didswitch;
 	int go_to_sleep_traced;
 #ifndef MA__LWPS
-	int didpoll = 0, idle = 0;
+	int didpoll = 0;
 #endif
 	int hard_preempt;
 	int need_resched = ma_need_resched();
@@ -995,32 +985,32 @@ restart:
 #endif
 		cur = __ma_get_lwp_var(idle_task);
 #else /* MONO */
-		if (!idle) {
-			ma_entering_idle();
-			idle = 1;
-		}
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
-		currently_idle = 1;
+		if (!currently_idle) {
+			ma_entering_idle();
+			currently_idle = 1;
+		}
 		ma_local_bh_enable();
 		didpoll = ma_do_idle(didpoll);
 		ma_check_work();
 		need_resched = 1;
 		ma_local_bh_disable();
-		currently_idle = 0;
 		goto need_resched_atomic;
 #endif /* MONO */
 	} else {
 #ifndef MA__LWPS
-		if (idle)
+		if (currently_idle) {
 			ma_leaving_idle();
+			currently_idle = 0;
+		}
 #endif
 	}
 
 	/* found something interesting, lock the holder */
 
 #ifdef MA__LWPS
-	if (!nexth) {
+	if (tbx_unlikely(!nexth)) {
 		/* no run holder, we are probably being moved */
 		if (cur && cur == prev) {
 			/* OK, we didn't want to give hand anyway */
@@ -1065,7 +1055,7 @@ restart:
 
 	idx = ma_sched_find_first_bit(array->bitmap);
 #ifdef MA__LWPS
-	if (idx > max_prio) {
+	if (tbx_unlikely(idx > max_prio)) {
 	        /* We had seen a high-priority task, but it's not there any more */
 		sched_debug("someone stole the high-priority task we saw, restart\n");
 		ma_holder_unlock(&rq->hold);
@@ -1169,7 +1159,7 @@ out:
 #endif
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (ma_need_resched() && ma_thread_preemptible()) {
+	if (tbx_unlikely(ma_need_resched() && ma_thread_preemptible())) {
 		sched_debug("need resched\n");
 		need_resched = 1;
 		goto need_resched;

@@ -357,6 +357,7 @@ void marcel_sig_pause(void)
 
 void marcel_sig_nanosleep(void)
 {
+	/* TODO: si possible, utiliser plutôt un marcel_kthread_machin temporisé, pour éviter la mécanique de signal pour se faire interrompre */
 #if !defined(USE_VIRTUAL_TIMER)
 	struct timespec time = { .tv_sec = 0, .tv_nsec = 1 };
 #ifdef OSF_SYS

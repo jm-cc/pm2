@@ -95,6 +95,11 @@ int MPI_Waitall(int count,
                 MPI_Request *request,
                 MPI_Status *status);
 
+int MPI_Waitany(int count,
+                MPI_Request *array_of_requests,
+                int *index,
+                MPI_Status *status);
+
 int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status);

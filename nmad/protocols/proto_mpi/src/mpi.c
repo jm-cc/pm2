@@ -1131,6 +1131,33 @@ MPI_Waitall(int count,
   return err;
 }
 
+/*
+ * Blocks until one of the operations associated with the active
+ * requests in the array has completed. If more then one operation is
+ * enabled and can terminate, one is arbitrarily chosen. Returns in
+ * index the index of that request in the array and returns in status
+ * the status of the completing communication. If the request was
+ * allocated by a nonblocking communication operation, then it is
+ * deallocated and the request handle is set to MPI_REQUEST_NULL.
+ */
+int MPI_Waitany(int count,
+                MPI_Request *array_of_requests,
+                int *index,
+                MPI_Status *status) {
+  int flag, i;
+
+  while (1) {
+    for(i=0 ; i<count ; i++) {
+      MPI_Request request = array_of_requests[i];
+      MPI_Test(&request, &flag, status);
+      if (flag) {
+        *index = i;
+        return MPI_SUCCESS;
+      }
+    }
+  }
+}
+
 /**
  * Returns flag = true if the operation identified by request is
  * complete.

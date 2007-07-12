@@ -718,13 +718,16 @@ int mpir_set_status(MPI_Request *request,
 
   status->count = mpir_sizeof_datatype(mpir_request->request_datatype);
 
-  if (mpir_request->request_source == MPI_ANY_SOURCE) {
-    long gate_id;
-    nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
-    status->MPI_SOURCE = in_dest[gate_id];
-  }
-  else {
-    status->MPI_SOURCE = mpir_request->request_source;
+  if (mpir_request->request_type == MPI_REQUEST_RECV ||
+      mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
+    if (mpir_request->request_source == MPI_ANY_SOURCE) {
+      long gate_id;
+      nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
+      status->MPI_SOURCE = in_dest[gate_id];
+    }
+    else {
+      status->MPI_SOURCE = mpir_request->request_source;
+    }
   }
 
   return MPI_SUCCESS;

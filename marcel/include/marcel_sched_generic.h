@@ -55,6 +55,9 @@ unsigned long marcel_createdthreads(void);
 
 #section marcel_functions
 void marcel_gensched_shutdown(void);
+#ifdef MA__LWPS
+void ma_about_to_idle(void);
+#endif
 void ma_entering_idle(void);
 void ma_still_idle(void);
 #ifndef MA__LWPS

@@ -973,6 +973,22 @@ restart:
 	if (tbx_unlikely(nexth == &ma_dontsched_rq(LWP_SELF)->hold)) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
+		if (prev->sched.state == MA_TASK_INTERRUPTIBLE || prev->sched.state == MA_TASK_UNINTERRUPTIBLE) {
+			ma_about_to_idle();
+			if (!prev->sched.state) {
+				/* We got woken up. */
+				if (ma_need_resched()) {
+					/* But we need to resched.  Restart in
+					 * case that's for somebody else */
+					goto need_resched_atomic;
+				} else {
+					/* we are ready, just return */
+					didswitch = 0;
+					ma_local_bh_enable();
+					goto out;
+				}
+			}
+		}
 		sched_debug("rebalance\n");
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES

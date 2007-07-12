@@ -520,6 +520,15 @@ int ma_do_idle(int didpoll) {
 }
 #endif /* MONO */
 
+#ifdef MA__LWPS
+/* Called by schedule before switching to idle thread. Preemption and bottom halves are disabled. */
+void ma_about_to_idle(void) {
+#ifdef PIOMAN
+	/* TODO: appeler PIOMan */
+#endif
+}
+#endif
+
 /* Called by scheduler when having switched to idle thread.  Preemption is
  * disabled. */
 void ma_entering_idle(void) {

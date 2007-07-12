@@ -123,6 +123,8 @@ int MPI_Probe(int source,
 
 int MPI_Cancel(MPI_Request *request);
 
+int MPI_Request_free(MPI_Request *request);
+
 int MPI_Get_count(MPI_Status *status,
                   MPI_Datatype datatype,
                   int *count);

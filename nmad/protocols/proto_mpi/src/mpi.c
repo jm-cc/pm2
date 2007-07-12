@@ -1151,7 +1151,11 @@ int MPI_Waitany(int count,
       MPI_Request request = array_of_requests[i];
       MPI_Test(&request, &flag, status);
       if (flag) {
+        mpir_request_t *mpir_request = (mpir_request_t *)(&request);
+
+        mpir_request->request_type = MPI_REQUEST_ZERO;
         *index = i;
+
         return MPI_SUCCESS;
       }
     }
@@ -1318,6 +1322,21 @@ int MPI_Cancel(MPI_Request *request) {
 
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+/*
+ * Mark the request object for deallocation and set request to
+ * MPI_REQUEST_NULL. An ongoing communication that is associated with
+ * the request will be allowed to complete. The request will be
+ * deallocated only after its completion.
+ */
+int MPI_Request_free(MPI_Request *request) {
+  mpir_request_t *mpir_request = (mpir_request_t *)request;
+
+  mpir_request->request_type = MPI_REQUEST_ZERO;
+  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
+
+  return MPI_SUCCESS;
 }
 
 /**

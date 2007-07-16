@@ -1066,7 +1066,7 @@ int MPI_Wait(MPI_Request *request,
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
     if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
       if (mpir_request->contig_buffer != NULL) {
-        free(mpir_request->contig_buffer);
+        FREE_AND_SET_NULL(mpir_request->contig_buffer);
       }
     }
   }
@@ -1089,7 +1089,7 @@ int MPI_Wait(MPI_Request *request,
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
     mpir_request->request_type = MPI_REQUEST_ZERO;
     if (mpir_request->request_ptr != NULL) {
-      free(mpir_request->request_ptr);
+      FREE_AND_SET_NULL(mpir_request->request_ptr);
     }
   }
 
@@ -1321,8 +1321,7 @@ int MPI_Cancel(MPI_Request *request) {
 
   if (mpir_request->request_persistent_type != MPI_REQUEST_ZERO) {
     if (mpir_request->contig_buffer != NULL) {
-      free(mpir_request->contig_buffer);
-      mpir_request->contig_buffer = NULL;
+      FREE_AND_SET_NULL(mpir_request->contig_buffer);
     }
   }
 
@@ -1552,7 +1551,7 @@ int MPI_Bcast(void* buffer,
           return err;
       }
     }
-    free(requests);
+    FREE_AND_SET_NULL(requests);
     err = MPI_SUCCESS;
   }
   else {
@@ -1609,7 +1608,7 @@ int MPI_Gather(void *sendbuf,
            sendbuf, sendcount * mpir_send_datatype->extent);
 
     // free memory
-    free(requests);
+    FREE_AND_SET_NULL(requests);
   }
   else {
     MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
@@ -1667,7 +1666,7 @@ int MPI_Gatherv(void *sendbuf,
            sendbuf, sendcount * mpir_send_datatype->extent);
 
     // free memory
-    free(requests);
+    FREE_AND_SET_NULL(requests);
   }
   else {
     MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
@@ -1786,7 +1785,7 @@ int MPI_Scatter(void *sendbuf,
            sendbuf, sendcount * mpir_send_datatype->extent);
 
     // free memory
-    free(requests);
+    FREE_AND_SET_NULL(requests);
   }
   else {
     MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, MPI_STATUS_IGNORE);
@@ -1851,8 +1850,8 @@ int MPI_Alltoall(void* sendbuf,
     MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
-  free(send_requests);
-  free(recv_requests);
+  FREE_AND_SET_NULL(send_requests);
+  FREE_AND_SET_NULL(recv_requests);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
@@ -1915,8 +1914,8 @@ int MPI_Alltoallv(void* sendbuf,
     MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
-  free(send_requests);
-  free(recv_requests);
+  FREE_AND_SET_NULL(send_requests);
+  FREE_AND_SET_NULL(recv_requests);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
@@ -2003,10 +2002,10 @@ int MPI_Reduce(void* sendbuf,
     // Free memory
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
-      free(remote_sendbufs[i]);
+      FREE_AND_SET_NULL(remote_sendbufs[i]);
     }
-    free(remote_sendbufs);
-    free(requests);
+    FREE_AND_SET_NULL(remote_sendbufs);
+    FREE_AND_SET_NULL(requests);
 
     MPI_NMAD_LOG_OUT();
     return MPI_SUCCESS;
@@ -2096,14 +2095,14 @@ int MPI_Reduce_scatter(void *sendbuf,
     memcpy(recvbuf, reducebuf, recvcounts[0] * mpir_datatype->extent);
 
     // free memory
-    free(requests);
+    FREE_AND_SET_NULL(requests);
   }
   else {
     err = MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
   }
 
   if (mpir_communicator->rank == 0) {
-    free(reducebuf);
+    FREE_AND_SET_NULL(reducebuf);
   }
 
   MPI_NMAD_LOG_OUT();
@@ -2401,7 +2400,7 @@ int MPI_Type_indexed(int count,
 
   err = mpir_type_indexed(count, array_of_blocklengths, displacements, MPIR_INDEXED, oldtype, newtype);
 
-  free(displacements);
+  FREE_AND_SET_NULL(displacements);
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -2529,7 +2528,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
     MPI_Comm_dup(comm, newcomm);
     mpir_newcommunicator = mpir_get_communicator(*newcomm);
     mpir_newcommunicator->size = nb_conodes;
-    free(mpir_newcommunicator->global_ranks);
+    FREE_AND_SET_NULL(mpir_newcommunicator->global_ranks);
     mpir_newcommunicator->global_ranks = malloc(nb_conodes*sizeof(int));
     for(i=0 ; i<nb_conodes ; i++) {
       int *ptr = conodes[i];
@@ -2543,9 +2542,9 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
   }
 
   // free the allocated area
-  free(conodes);
-  free(sendbuf);
-  free(recvbuf);
+  FREE_AND_SET_NULL(conodes);
+  FREE_AND_SET_NULL(sendbuf);
+  FREE_AND_SET_NULL(recvbuf);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;

@@ -76,6 +76,8 @@ extern debug_type_t debug_mpi_nmad_log;
                      MPI_Abort(MPI_COMM_WORLD, 1); \
                    }
 
+#define FREE_AND_SET_NULL(p) free(p); p = NULL;
+
 /*
  * Maximum value of the tag used internally in MAD-MPI
  */

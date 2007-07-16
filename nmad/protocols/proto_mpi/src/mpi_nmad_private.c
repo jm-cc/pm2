@@ -217,43 +217,43 @@ int mpir_internal_exit() {
   int i;
 
   for(i=0 ; i<=MPI_INTEGER ; i++) {
-    free(datatypes[i]);
+    FREE_AND_SET_NULL(datatypes[i]);
   }
-  free(datatypes);
+  FREE_AND_SET_NULL(datatypes);
   while (tbx_slist_is_nil(available_datatypes) == tbx_false) {
     int *ptr = tbx_slist_extract(available_datatypes);
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
   }
   tbx_slist_clear(available_datatypes);
   tbx_slist_free(available_datatypes);
 
-  free(communicators[0]->global_ranks);
-  free(communicators[0]);
-  free(communicators[1]->global_ranks);
-  free(communicators[1]);
-  free(communicators);
+  FREE_AND_SET_NULL(communicators[0]->global_ranks);
+  FREE_AND_SET_NULL(communicators[0]);
+  FREE_AND_SET_NULL(communicators[1]->global_ranks);
+  FREE_AND_SET_NULL(communicators[1]);
+  FREE_AND_SET_NULL(communicators);
   while (tbx_slist_is_nil(available_communicators) == tbx_false) {
     int *ptr = tbx_slist_extract(available_communicators);
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
   }
   tbx_slist_clear(available_communicators);
   tbx_slist_free(available_communicators);
 
   for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
-    free(functions[i]);
+    FREE_AND_SET_NULL(functions[i]);
   }
-  free(functions);
+  FREE_AND_SET_NULL(functions);
   while (tbx_slist_is_nil(available_functions) == tbx_false) {
     int *ptr = tbx_slist_extract(available_functions);
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
   }
   tbx_slist_clear(available_functions);
   tbx_slist_free(available_functions);
 
-  free(out_gate_id);
-  free(in_gate_id);
-  free(out_dest);
-  free(in_dest);
+  FREE_AND_SET_NULL(out_gate_id);
+  FREE_AND_SET_NULL(in_gate_id);
+  FREE_AND_SET_NULL(out_dest);
+  FREE_AND_SET_NULL(in_dest);
 
   return MPI_SUCCESS;
 }
@@ -911,7 +911,7 @@ int mpir_datatype_split(mpir_request_t *mpir_request) {
   }
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
-    free(mpir_request->contig_buffer);
+    FREE_AND_SET_NULL(mpir_request->contig_buffer);
     mpir_request->request_type = MPI_REQUEST_ZERO;
   }
   return MPI_SUCCESS;
@@ -939,7 +939,7 @@ int get_available_datatype() {
     int datatype;
     int *ptr = tbx_slist_extract(available_datatypes);
     datatype = *ptr;
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
     return datatype;
   }
 }
@@ -1085,10 +1085,10 @@ int mpir_type_free(MPI_Datatype datatype) {
     if (datatypes[datatype]->dte_type == MPIR_INDEXED ||
         datatypes[datatype]->dte_type == MPIR_HINDEXED ||
         datatypes[datatype]->dte_type == MPIR_STRUCT) {
-      free(datatypes[datatype]->blocklens);
-      free(datatypes[datatype]->indices);
+      FREE_AND_SET_NULL(datatypes[datatype]->blocklens);
+      FREE_AND_SET_NULL(datatypes[datatype]->indices);
       if (datatypes[datatype]->dte_type == MPIR_STRUCT) {
-        free(datatypes[datatype]->old_sizes);
+        FREE_AND_SET_NULL(datatypes[datatype]->old_sizes);
       }
     }
     int *ptr;
@@ -1096,8 +1096,7 @@ int mpir_type_free(MPI_Datatype datatype) {
     *ptr = datatype;
     tbx_slist_enqueue(available_datatypes, ptr);
 
-    free(datatypes[datatype]);
-    datatypes[datatype] = NULL;
+    FREE_AND_SET_NULL(datatypes[datatype]);
     return MPI_SUCCESS;
   }
 }
@@ -1260,7 +1259,7 @@ int mpir_op_create(MPI_User_function *function,
   else {
     int *ptr = tbx_slist_extract(available_functions);
     *op = *ptr;
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
 
     functions[*op] = malloc(sizeof(mpir_function_t));
     functions[*op]->function = function;
@@ -1276,7 +1275,7 @@ int mpir_op_free(MPI_Op *op) {
   }
   else {
     int *ptr;
-    free(functions[*op]);
+    FREE_AND_SET_NULL(functions[*op]);
     ptr = malloc(sizeof(int));
     *ptr = *op;
     tbx_slist_enqueue(available_functions, ptr);
@@ -1462,7 +1461,7 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
     int i;
     int *ptr = tbx_slist_extract(available_communicators);
     *newcomm = *ptr;
-    free(ptr);
+    FREE_AND_SET_NULL(ptr);
 
     communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
     communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;

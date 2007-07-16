@@ -98,6 +98,7 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_RECV ((MPI_Request_type)2)
 #define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
+#define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
 typedef struct mpir_request_s {
   MPI_Request_type request_type;

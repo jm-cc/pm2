@@ -1080,11 +1080,11 @@ int MPI_Wait(MPI_Request *request,
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     MPI_NMAD_TRACE("Waiting for completion end_packing\n");
     err = nm_so_end_packing(connection);
+    MPI_NMAD_TRANSFER("Returning from nm_so_end_packing\n");
   }
   else {
     MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
   }
-  MPI_NMAD_TRACE("Wait completed\n");
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
     mpir_request->request_type = MPI_REQUEST_ZERO;
@@ -1321,6 +1321,7 @@ int MPI_Cancel(MPI_Request *request) {
 
   MPI_NMAD_TRACE("Request is cancelled\n");
 
+  mpir_request->request_type = MPI_REQUEST_CANCELLED;
   if (mpir_request->contig_buffer != NULL) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);
   }

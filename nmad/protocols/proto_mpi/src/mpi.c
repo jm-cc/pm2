@@ -1043,8 +1043,9 @@ int MPI_Sendrecv(void *sendbuf,
  */
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
-  int                   err = NM_ESUCCESS;
+  mpir_request_t  *mpir_request = (mpir_request_t *)request;
+  mpir_datatype_t *mpir_datatype;
+  int                       err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
@@ -1052,6 +1053,10 @@ int MPI_Wait(MPI_Request *request,
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
     MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
     err = nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
+    mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+    if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
+      mpir_datatype_split(mpir_request);
+    }
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
   }
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
@@ -1317,6 +1322,7 @@ int MPI_Cancel(MPI_Request *request) {
   if (mpir_request->request_persistent_type != MPI_REQUEST_ZERO) {
     if (mpir_request->contig_buffer != NULL) {
       free(mpir_request->contig_buffer);
+      mpir_request->contig_buffer = NULL;
     }
   }
 

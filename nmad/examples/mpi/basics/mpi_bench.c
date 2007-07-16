@@ -28,14 +28,14 @@
 #include "mpi.h"
 
 // Setup
-//......................
-static const int param_warmup            = 100;
-static const int param_nb_samples        = 1000;
-static const int param_min_size          = 0;
-static const int param_max_size          = 1024*1024*2;
-static const int param_step              = 0; /* 0 = progression log. */
-static const int param_nb_tests          = 5;
-static const int param_log_only_master   = 0;
+
+#define MIN_DEFAULT      0
+#define MAX_DEFAULT      (8 * 1024 * 1024)
+#define MULT_DEFAULT     2
+#define INCR_DEFAULT     0
+#define WARMUPS_DEFAULT  100
+#define LOOPS_DEFAULT    2000
+#define NB_TESTS_DEFAULT 5
 
 // Types
 //......................
@@ -59,16 +59,23 @@ static unsigned char *main_buffer = NULL;
 // Functions
 //......................
 static __inline__
-uint32_t _next(uint32_t len)
+uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
-        if(!len)
-                return 4;
-        else if(len < 32)
-                return len + 4;
-        else if(len < 1024)
-                return len + 32;
-        else
-                return len << 1;
+  if (!len)
+    return 1+increment;
+  else
+    return len*multiplier+increment;
+}
+
+void usage_bench() {
+  fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
+  fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
+  fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
+  fprintf(stderr, "-M mult - length multiplier [%d]\n", MULT_DEFAULT);
+  fprintf(stderr, "\tNext(0)      = 1+increment\n");
+  fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
+  fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
+  fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
 int
@@ -78,8 +85,19 @@ main(int    argc,
         int log, i;
         int ping_side;
         int rank_dst;
+        uint32_t	 start_len      = MIN_DEFAULT;
+        uint32_t	 end_len        = MAX_DEFAULT;
+        uint32_t         multiplier     = MULT_DEFAULT;
+        uint32_t         increment      = INCR_DEFAULT;
+        int              iterations     = LOOPS_DEFAULT;
+        int              warmups        = WARMUPS_DEFAULT;
 
         MPI_Init(&argc,&argv);
+
+        if (argc > 1 && !strcmp(argv[1], "--help")) {
+          usage_bench();
+          goto out;
+        }
 
         if (gethostname(host_name, 1023) < 0) {
                 perror("gethostname");
@@ -89,45 +107,66 @@ main(int    argc,
         MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
         MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
 
-        log = (!comm_rank || !param_log_only_master);
-
-        if (!param_log_only_master) {
-                fprintf(stderr, "(%s): My rank is %d\n", host_name, comm_rank);
-        }
-
-	if (comm_rank == 0 && log) {
-                fprintf(stderr, "The configuration size is %d\n", comm_size);
-		fprintf(stderr, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
-	}
-
         if (comm_size & 1) {
-                if (log)
-                        fprintf(stderr, "This program requires an even configuration size, aborting...\n");
-
+                fprintf(stderr, "This program requires an even configuration size, aborting...\n");
                 goto out;
         }
+
+        for(i=1 ; i<argc ; i+=2) {
+                if (!strcmp(argv[i], "-S")) {
+                        start_len = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-E")) {
+                        end_len = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-I")) {
+                        increment = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-M")) {
+                        multiplier = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-N")) {
+                        iterations = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-W")) {
+                        warmups = atoi(argv[i+1]);
+                }
+                else {
+                        fprintf(stderr, "Illegal argument %s\n", argv[i]);
+                        usage_bench();
+                        goto out;
+                }
+        }
+
+        fprintf(stderr, "(%s): My rank is %d\n", host_name, comm_rank);
 
         ping_side	= !(comm_rank & 1);
         rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
         if (ping_side) {
                 fprintf(stderr, "(%d): ping with %d\n", comm_rank, rank_dst);
+                log = 1;
         } else {
-                if (log)
-                        fprintf(stderr, "(%d): pong with %d\n", comm_rank, rank_dst);
+                fprintf(stderr, "(%d): pong with %d\n", comm_rank, rank_dst);
+                log = 0;
         }
 
-        main_buffer = malloc(param_max_size);
+        if (comm_rank == 0) {
+                fprintf(stderr, "The configuration size is %d\n", comm_size);
+		fprintf(stderr, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
+	}
+
+        main_buffer = malloc(end_len);
 
         /* Warmup */
         MPI_Barrier(MPI_COMM_WORLD);
-        for(i=0 ; i<param_warmup ; i++) {
+        for(i=0 ; i<warmups ; i++) {
           if (ping_side) {
-            MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(main_buffer, end_len, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+            MPI_Recv(main_buffer, end_len, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           } else {
-            MPI_Recv(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Send(main_buffer, param_max_size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+            MPI_Recv(main_buffer, end_len, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(main_buffer, end_len, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
           }
         }
         MPI_Barrier(MPI_COMM_WORLD);
@@ -136,11 +175,11 @@ main(int    argc,
         {
                 int size = 0;
 
-                for (size = param_min_size;
-                     size <= param_max_size;
-                     size = param_step?size + param_step:_next(size)) {
+                for (size = start_len;
+                     size <= end_len;
+                     size = _next(size, multiplier, increment)) {
                         if (ping_side) {
-                                int		nb_tests	= param_nb_tests;
+                                int		nb_tests	= NB_TESTS_DEFAULT;
                                 double		sum		= 0.0;
                                 double		t1;
                                 double		t2;
@@ -151,7 +190,7 @@ main(int    argc,
                                 sum = 0;
 
                                 while (nb_tests--) {
-                                        int nb_samples = param_nb_samples;
+                                        int nb_samples = iterations;
 
                                         MPI_Barrier(MPI_COMM_WORLD);
                                         t1 = MPI_Wtime();
@@ -167,9 +206,9 @@ main(int    argc,
 
                                 sum *= 1e6;
 
-                                bw_million_byte	= (size * (double)param_nb_tests * (double)param_nb_samples)
+                                bw_million_byte	= (size * (double)NB_TESTS_DEFAULT * (double)iterations)
                                         / (sum / 2);
-                                lat		= sum / param_nb_tests / param_nb_samples / 2;
+                                lat		= sum / NB_TESTS_DEFAULT / iterations / 2;
 				bw_mbyte = bw_million_byte / 1.048576;
 
 
@@ -177,7 +216,7 @@ main(int    argc,
                                         fprintf(stderr, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
 						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
                         } else {
-                                int		nb_tests	= param_nb_tests;
+                                int		nb_tests	= NB_TESTS_DEFAULT;
                                 double		sum		= 0.0;
                                 double		t1;
                                 double		t2;
@@ -188,7 +227,7 @@ main(int    argc,
                                 sum = 0;
 
                                 while (nb_tests--) {
-                                        int nb_samples = param_nb_samples;
+                                        int nb_samples = iterations;
 
                                         MPI_Barrier(MPI_COMM_WORLD);
                                         t1 = MPI_Wtime();
@@ -204,9 +243,9 @@ main(int    argc,
 
                                 sum *= 1e6;
 
-                                bw_million_byte	= (size * (double)param_nb_tests * (double)param_nb_samples)
+                                bw_million_byte	= (size * (double)NB_TESTS_DEFAULT * (double)iterations)
                                         / (sum / 2);
-                                lat		= sum / param_nb_tests / param_nb_samples / 2;
+                                lat		= sum / NB_TESTS_DEFAULT / iterations / 2;
 				bw_mbyte = bw_million_byte / 1.048576;
 
                                 if (log && ping_side)

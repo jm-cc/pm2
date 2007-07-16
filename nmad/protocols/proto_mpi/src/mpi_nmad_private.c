@@ -411,9 +411,9 @@ static inline void mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
 }
 
 static inline void mpir_datatype_indexed_split(void *recvbuffer,
-                                              void *buffer,
-                                              mpir_datatype_t *mpir_datatype,
-                                              int count) {
+                                               void *buffer,
+                                               mpir_datatype_t *mpir_datatype,
+                                               int count) {
   void *recvptr = recvbuffer;
   void *ptr = buffer;
   int	i;
@@ -733,25 +733,6 @@ int mpir_set_status(MPI_Request *request,
   return MPI_SUCCESS;
 }
 
-static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
-  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
-  void *buffer;
-  int err;
-
-  if (mpir_datatype->is_contig == 1) {
-    buffer = mpir_request->buffer;
-  }
-  else {
-    buffer =  mpir_request->contig_buffer;
-  }
-
-  MPI_NMAD_TRANSFER("Recv --< gate %ld: %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
-  err = nm_so_sr_irecv(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
-  MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
-
-  return err;
-}
-
 int mpir_irecv_init(mpir_request_t *mpir_request,
                     int source,
                     mpir_communicator_t *mpir_communicator) {
@@ -861,6 +842,26 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
   return MPI_SUCCESS;
 }
 
+static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  void *buffer;
+  int err;
+
+  if (mpir_datatype->is_contig == 1) {
+    buffer = mpir_request->buffer;
+  }
+  else {
+    buffer =  mpir_request->contig_buffer;
+  }
+
+  MPI_NMAD_TRACE("Posting recv request\n");
+  MPI_NMAD_TRANSFER("Recv --< gate %ld: %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
+  err = nm_so_sr_irecv(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+  MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
+
+  return err;
+}
+
 int mpir_irecv_start(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
 
@@ -872,28 +873,6 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
     if (mpir_datatype->is_contig) {
       MPI_NMAD_TRACE("Calling irecv_start for contiguous data\n");
       if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
-    }
-    else {
-      // We need to wait for the data and to split them in the destination buffer
-      MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-      MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait\n");
-      nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
-      MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
-
-      if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
-        mpir_datatype_vector_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      }
-      else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
-        mpir_datatype_indexed_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      }
-      else if (mpir_datatype->dte_type == MPIR_STRUCT) {
-        mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      }
-
-      if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
-        free(mpir_request->contig_buffer);
-        mpir_request->request_type = MPI_REQUEST_ZERO;
-      }
     }
   }
   // else the data have already been received through the pack interface
@@ -916,6 +895,26 @@ int mpir_irecv(mpir_request_t *mpir_request,
     err = mpir_irecv_start(mpir_request);
   }
   return err;
+}
+
+int mpir_datatype_split(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+
+  if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
+    mpir_datatype_vector_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_INDEXED || mpir_datatype->dte_type == MPIR_HINDEXED) {
+    mpir_datatype_indexed_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_STRUCT) {
+    mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+
+  if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+    free(mpir_request->contig_buffer);
+    mpir_request->request_type = MPI_REQUEST_ZERO;
+  }
+  return MPI_SUCCESS;
 }
 
 int mpir_start(mpir_request_t *mpir_request) {

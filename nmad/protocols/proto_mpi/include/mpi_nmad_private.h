@@ -198,6 +198,8 @@ int mpir_irecv(mpir_request_t *mpir_request,
                int source,
                mpir_communicator_t *mpir_communicator);
 
+int mpir_datatype_split(mpir_request_t *mpir_request);
+
 int mpir_start(mpir_request_t *mpir_request);
 
 /*

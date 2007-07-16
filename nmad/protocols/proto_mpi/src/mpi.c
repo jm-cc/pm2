@@ -1319,10 +1319,10 @@ int MPI_Cancel(MPI_Request *request) {
 
   MPI_NMAD_LOG_IN();
 
-  if (mpir_request->request_persistent_type != MPI_REQUEST_ZERO) {
-    if (mpir_request->contig_buffer != NULL) {
-      FREE_AND_SET_NULL(mpir_request->contig_buffer);
-    }
+  MPI_NMAD_TRACE("Request is cancelled\n");
+
+  if (mpir_request->contig_buffer != NULL) {
+    FREE_AND_SET_NULL(mpir_request->contig_buffer);
   }
 
   MPI_NMAD_LOG_OUT();

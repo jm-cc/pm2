@@ -294,15 +294,16 @@ marcel_create_internal(marcel_t * __restrict pid,
 		stack_kind = MA_DYNAMIC_STACK;
 	}			/* fin (attr->stack_base) */
 
+	new_task->f_to_call = func;
+
+	init_marcel_thread(new_task, attr, special_mode);
+
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
 		/* Le thread devra attendre marcel_run */
 		new_task->f_to_call = &wait_marcel_run;
 		new_task->real_f_to_call = func;
 		marcel_sem_init(&new_task->sem_marcel_run, 0);
 	} else
-		new_task->f_to_call = func;
-
-	init_marcel_thread(new_task, attr, special_mode);
 
 #if defined(MA__PROVIDE_TLS)
 	_dl_allocate_tls_init(marcel_tcb(new_task));

@@ -283,6 +283,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->sched_holder));
 		ma_holder_unlock_softirq(entity->sched_holder);
 	}
+	/* TODO: dans le cas d'un thread, il faudrait aussi le déplacer dans son nouveau sched_holder s'il n'en avait pas déjà un, non ? */
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 
 	if (entity->type == MA_THREAD_ENTITY) {
@@ -311,21 +312,22 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		PROF_EVENT2(bubble_sched_remove_bubble, (void*)ma_bubble_entity(entity), bubble);
 	ma_holder_rawunlock(&bubble->hold);
 
-	ma_holder_t *h, *new_holder;
+	ma_holder_t *h;
 	/* Before announcing it, remove it scheduling-wise too */
-	new_holder = bubble->sched.sched_holder;
-	if (new_holder == &bubble->hold)
-		/* TODO: que faire d'autre ? (cas d'une bulle et ses entités
-		 * non schedulées sur une runqueue...) */
-		new_holder = &ma_lwp_vprq(LWP_SELF)->hold;
 	h = ma_entity_holder_rawlock(entity);
 	if (h == &bubble->hold) {
 		/* we need to get this entity out of this bubble */
 		int state = ma_get_entity(entity);
+		ma_runqueue_t *new_holder;
 		ma_holder_rawunlock(h);
-		ma_holder_rawlock(new_holder);
-		ma_put_entity(entity, new_holder, state);
-		ma_holder_unlock_softirq(new_holder);
+		new_holder = ma_to_rq_holder(bubble->sched.sched_holder);
+		if (!new_holder)
+			/* TODO: que faire d'autre ? (cas d'une bulle et ses
+			 * entités non schedulées sur une runqueue...) */
+			new_holder = ma_lwp_vprq(LWP_SELF);
+		ma_holder_rawlock(&new_holder->hold);
+		ma_put_entity(entity, &new_holder->hold, state);
+		ma_holder_unlock_softirq(&new_holder->hold);
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);

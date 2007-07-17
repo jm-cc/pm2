@@ -303,7 +303,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task->f_to_call = &wait_marcel_run;
 		new_task->real_f_to_call = func;
 		marcel_sem_init(&new_task->sem_marcel_run, 0);
-	} else
+	}
 
 #if defined(MA__PROVIDE_TLS)
 	_dl_allocate_tls_init(marcel_tcb(new_task));

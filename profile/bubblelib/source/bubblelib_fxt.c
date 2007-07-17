@@ -120,7 +120,7 @@ void printfThread(uint64_t ptr, thread_t *t) {
 	verbprintf("thread ");
 	if (t->name)
 		verbprintf("%s ",t->name);
-	verbprintf("(%"PRIx64":%p)",ptr,t);
+	verbprintf("(%"PRIx64":%p:%d)",ptr,t,t->number);
 }
 
 

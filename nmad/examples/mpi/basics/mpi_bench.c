@@ -68,14 +68,14 @@ uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 }
 
 void usage_bench() {
-  fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
-  fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
-  fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
-  fprintf(stderr, "-M mult - length multiplier [%d]\n", MULT_DEFAULT);
-  fprintf(stderr, "\tNext(0)      = 1+increment\n");
-  fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
+  fprintf(stderr, "-S start_len  - starting length [%d]\n", MIN_DEFAULT);
+  fprintf(stderr, "-E end_len    - ending length [%d]\n", MAX_DEFAULT);
+  fprintf(stderr, "-I incr       - length increment [%d]\n", INCR_DEFAULT);
+  fprintf(stderr, "-M mult       - length multiplier [%d]\n", MULT_DEFAULT);
+  fprintf(stderr, "    Next(0)      = 1+increment\n");
+  fprintf(stderr, "    Next(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
-  fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
+  fprintf(stderr, "-W warmup     - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
 int
@@ -94,8 +94,13 @@ main(int    argc,
 
         MPI_Init(&argc,&argv);
 
+        MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+        MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+
         if (argc > 1 && !strcmp(argv[1], "--help")) {
-          usage_bench();
+          if (!comm_rank) {
+            usage_bench();
+          }
           goto out;
         }
 
@@ -104,8 +109,6 @@ main(int    argc,
                 exit(1);
         }
 
-        MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-        MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
 
         if (comm_size & 1) {
                 fprintf(stderr, "This program requires an even configuration size, aborting...\n");

@@ -293,29 +293,42 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_RETURN(0);
 }
 
-/* Retourne 1 si on doit libérer le sémaphore join. */
-int __marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+	int res;
+	LOG_IN();
+
+	/* Remove entity from bubble */
+	ma_holder_lock_softirq(&bubble->hold);
 	MA_BUG_ON(entity->init_holder != &bubble->hold);
 	entity->init_holder = NULL;
-	/* le sched holder pourrait être autre (vol) */
 	entity->sched_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
-	bubble->nbentities--;
+	res = (!--bubble->nbentities);
 	if ((entity)->type != MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_thread, (void*)ma_task_entity(entity), bubble);
 	else
 		PROF_EVENT2(bubble_sched_remove_bubble, (void*)ma_bubble_entity(entity), bubble);
+	ma_holder_rawunlock(&bubble->hold);
 
-	return (!bubble->nbentities);
-}
-
-int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-	int res;
-	LOG_IN();
-	ma_holder_lock_softirq(&bubble->hold);
-	res = __marcel_bubble_removeentity(bubble,entity);
-	ma_holder_unlock_softirq(&bubble->hold);
+	ma_holder_t *h, *new_holder;
+	/* Before announcing it, remove it scheduling-wise too */
+	new_holder = bubble->sched.sched_holder;
+	if (new_holder == &bubble->hold)
+		/* TODO: que faire d'autre ? (cas d'une bulle et ses entités
+		 * non schedulées sur une runqueue...) */
+		new_holder = &ma_lwp_vprq(LWP_SELF)->hold;
+	h = ma_entity_holder_rawlock(entity);
+	if (h == &bubble->hold) {
+		/* we need to get this entity out of this bubble */
+		int state = ma_get_entity(entity);
+		ma_holder_rawunlock(h);
+		ma_holder_rawlock(new_holder);
+		ma_put_entity(entity, new_holder, state);
+		ma_holder_unlock_softirq(new_holder);
+	} else
+		/* already out from the bubble, that's ok.  */
+		ma_entity_holder_unlock_softirq(h);
 	if (res)
 		marcel_sem_V(&bubble->join);
 	LOG_OUT();

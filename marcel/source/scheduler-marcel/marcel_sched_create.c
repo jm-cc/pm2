@@ -215,6 +215,8 @@ restart:
 
 	next = SELF_GETMEM(cur_ghost_thread);
 
+	PROF_EVENT1(ghost_thread_run, MA_PROFILE_TID(next));
+
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES
 	h = ma_task_init_holder(next);
@@ -222,9 +224,6 @@ restart:
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
-#endif
-		PROF_EVENT1(ghost_thread_run, MA_PROFILE_TID(next));
-#ifdef MA__BUBBLES
 		marcel_bubble_removetask(bubble, next);
 	}
 #endif

@@ -56,14 +56,104 @@ unsigned long marcel_createdthreads(void);
 #section marcel_functions
 void marcel_gensched_shutdown(void);
 #ifdef MA__LWPS
-void ma_about_to_idle(void);
+static __tbx_inline__ void ma_about_to_idle(void);
 #endif
-void ma_entering_idle(void);
-void ma_still_idle(void);
+static __tbx_inline__ void ma_entering_idle(void);
+static __tbx_inline__ void ma_still_idle(void);
 #ifndef MA__LWPS
-int ma_do_idle(int);
+static __tbx_inline__ int ma_do_idle(int);
 #endif
-void ma_leaving_idle(void);
+static __tbx_inline__ void ma_leaving_idle(void);
+
+#section marcel_inline
+#ifndef MA__LWPS
+/* Repeatedly called by schedule on idleness. Gets 0 on first call, else the
+ * value returned by previous call. */
+static __tbx_inline__ int ma_do_idle(int didpoll) {
+#ifdef XPAULETTE
+	if (!xpaul_polling_is_required(XPAUL_POLL_AT_IDLE)) {	
+#else
+	  if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
+#endif /* XPAULETTE */
+		marcel_sig_disable_interrupts();
+		marcel_sig_pause();
+		marcel_sig_enable_interrupts();
+	} else {
+#ifdef MARCEL_IDLE_PAUSE
+		if (didpoll)
+			/* already polled a bit, sleep a bit before
+			 * polling again */
+			marcel_sig_nanosleep();
+#endif
+#ifdef XPAULETTE
+		__xpaul_check_polling(XPAUL_POLL_AT_IDLE);
+#else
+		__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+#endif /* XPAULETTE */
+		didpoll = 1;
+	}
+	return didpoll;
+}
+#endif
+
+#ifdef MA__LWPS
+/* Called by schedule before switching to idle thread. Preemption and bottom halves are disabled. */
+static __tbx_inline__ void ma_about_to_idle(void) {
+#ifdef PIOMAN
+	/* TODO: appeler PIOMan */
+#endif
+}
+#endif
+
+/* Called by scheduler when having switched to idle thread.  Preemption is
+ * disabled. */
+static __tbx_inline__ void ma_entering_idle(void) {
+#ifdef MA__LWPS
+	PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
+#ifdef MARCEL_SMT_IDLE
+	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+		marcel_sig_disable_interrupts();
+		ma_topology_lwp_idle_start(LWP_SELF);
+		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
+			marcel_sig_pause();
+		marcel_sig_enable_interrupts();
+	}
+#endif
+#endif
+#ifdef PIOMAN
+	/* TODO: appeler PIOMan */
+#endif
+}
+
+/* Called by scheduler when idle calls schedule().  Preemption is disabled. */
+static __tbx_inline__ void ma_still_idle(void) {
+#ifdef MA__LWPS
+#ifdef MARCEL_SMT_IDLE
+	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+		marcel_sig_disable_interrupts();
+		if (!ma_topology_lwp_idle_core(LWP_SELF))
+			marcel_sig_pause();
+		marcel_sig_enable_interrupts();
+	}
+#endif
+#endif
+}
+
+/* Called by scheduler just before switching from idle thread.  Preemption is
+ * disabled. */
+static __tbx_inline__ void ma_leaving_idle(void) {
+#ifdef MA__LWPS
+	PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
+#ifdef MARCEL_SMT_IDLE
+	ma_topology_lwp_idle_end(LWP_SELF);
+#endif
+#endif
+#ifdef PIOMAN
+	/* TODO: appeler PIOMan */
+#endif
+}
+
+#section marcel_functions
 
 void marcel_one_task_less(marcel_t pid);
 void marcel_one_more_task(marcel_t pid);

@@ -39,6 +39,7 @@ struct fxt_code_name fut_code_table [] =
 
 int FxT_showSystem = 0;
 int FxT_verbose = 0;
+int FxT_showPauses = 0;
 #define verbprintf(fmt,...) do { if (FxT_verbose) printf(fmt, ## __VA_ARGS__); } while(0);
 
 /*******************************************************************************
@@ -492,8 +493,10 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					break;
 				}
 				case SCHED_TICK: {
-					BubbleMovie_nextFrame(movie);
-					BubbleMovie_pause(movie, DELAYTIME);
+					if (FxT_showPauses) {
+						BubbleMovie_nextFrame(movie);
+						BubbleMovie_pause(movie, DELAYTIME);
+					}
 					break;
 				}
 				case SCHED_THREAD_BLOCKED: {
@@ -505,7 +508,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
-					if (FxT_showSystem || t->number >= 0) {
+					if (FxT_showPauses && (FxT_showSystem || t->number >= 0)) {
 						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
 					}
@@ -524,7 +527,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
-					if (FxT_showSystem || t->number >= 0) {
+					if (FxT_showPauses && (FxT_showSystem || t->number >= 0)) {
 						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
 					}
@@ -558,7 +561,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 						tnext->state = THREAD_RUNNING;
 						updateEntity(&tnext->entity);
 					}
-					if (FxT_showSystem || tprev->number>=0 || tnext->number>=0) {
+					if (FxT_showPauses && (FxT_showSystem || tprev->number>=0 || tnext->number>=0)) {
 						BubbleMovie_nextFrame(movie);
 						BubbleMovie_pause(movie, DELAYTIME);
 					}

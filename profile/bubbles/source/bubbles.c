@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 	curBubbleOps = &SWFBubbleOps;
 	curBubbleOps->init();
 
-	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpnse")) != EOF)
+	while((c=getopt(argc,argv,":fdvx:y:t:c:o:hpnsPe")) != EOF)
 		switch(c) {
 		case 'f':
 			SWF_fontfile = optarg;
@@ -115,6 +115,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 's':
 			FxT_showSystem = 1;
+			break;
+		case 'P':
+			FxT_showPauses = 1;
 			break;
 		case 'e':
 			showEmptyBubbles = 1;

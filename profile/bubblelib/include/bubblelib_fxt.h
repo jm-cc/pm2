@@ -19,5 +19,6 @@
 #include "bubblelib_output.h"
 extern int FxT_showSystem;
 extern int FxT_verbose;
+extern int FxT_showPauses;
 void BubbleFromFxT(BubbleMovie movie, const char *traceFile);
 #endif /* BUBBLELIB_FXT_H */

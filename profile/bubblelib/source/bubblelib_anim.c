@@ -430,6 +430,7 @@ void updateEntity(entity_t *e) {
 		return;
 	}
 	BubbleDisplayItem_remove(e->lastitem);
+	e->lastitem = NULL;
 	doEntity(e);
 }
 

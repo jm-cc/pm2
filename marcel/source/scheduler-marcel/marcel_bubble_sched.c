@@ -322,8 +322,6 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		ma_holder_rawunlock(h);
 		new_holder = ma_to_rq_holder(bubble->sched.sched_holder);
 		if (!new_holder)
-			/* TODO: que faire d'autre ? (cas d'une bulle et ses
-			 * entités non schedulées sur une runqueue...) */
 			new_holder = ma_lwp_vprq(LWP_SELF);
 		ma_holder_rawlock(&new_holder->hold);
 		ma_put_entity(entity, &new_holder->hold, state);

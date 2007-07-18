@@ -290,7 +290,7 @@ void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*c
 
 #ifdef PTHREAD_STACK_MIN
 #if ((((ASM_THREAD_SLOT_SIZE)-1)/2) < (PTHREAD_STACK_MIN))
-#error please increase THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h for this system, see ia64 for an example
+#error "THREAD_SLOT_SIZE is too small for this system's PTHREAD_STACK_MIN, please increase THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h"
 #endif
 #endif
 

@@ -50,6 +50,10 @@ int marcel_gettid(void) {
 // XXX: for getting rid of u32/__user of debian sarge's futex.h
 #define sys_futex(...) sys_futex()
 #include <linux/futex.h>
+#ifndef FUTEX_WAIT_PRIVATE
+#define FUTEX_WAIT_PRIVATE FUTEX_WAIT
+#define FUTEX_WAKE_PRIVATE FUTEX_WAKE
+#endif
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -113,14 +117,13 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	LOG_OUT();
 }
 
-/* TODO: use futex' new PRIVATE flag */
 void marcel_kthread_join(marcel_kthread_t * pid)
 {
 	LOG_IN();
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
+		while (syscall(SYS_futex, pid, FUTEX_WAIT_PRIVATE, the_pid, NULL) == -1) {
 			if (errno == EWOULDBLOCK) {
 				/* done */
 				break;
@@ -170,7 +173,7 @@ void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 	int newval;
 	if ((newval = ma_atomic_dec_return(sem)) >= 0)
 		return;
-	while (syscall(SYS_futex, sem, FUTEX_WAIT, newval, NULL) == -1) {
+	while (syscall(SYS_futex, sem, FUTEX_WAIT_PRIVATE, newval, NULL) == -1) {
 		if (errno == EWOULDBLOCK)
 			newval = ma_atomic_read(sem);
 		else if (errno != EINTR && errno != EAGAIN)
@@ -183,7 +186,7 @@ void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
 	if (ma_atomic_inc_return(sem) <= 0)
 	while (1) {
-		switch (syscall(SYS_futex, sem, FUTEX_WAKE, 1, NULL)) {
+		switch (syscall(SYS_futex, sem, FUTEX_WAKE_PRIVATE, 1, NULL)) {
 		case 1:
 			return;
 		case -1:
@@ -221,7 +224,7 @@ void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
 {
 	if (*cond)
 	while (1) {
-		switch (syscall(SYS_futex, cond, FUTEX_WAKE, 1, NULL)) {
+		switch (syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, 1, NULL)) {
 		case 1:
 			return;
 		case -1:
@@ -242,7 +245,7 @@ void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 	int nbwake = *cond;
 	while (1) {
 		int res;
-		switch ((res = syscall(SYS_futex, cond, FUTEX_WAKE, nbwake, NULL))) {
+		switch ((res = syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, nbwake, NULL))) {
 		case -1:
 			perror("futex(WAKE) in kthread_cond_broadcast");
 			MA_BUG();
@@ -263,7 +266,7 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 	int val;
 	val = ++(*cond);
 	marcel_kthread_mutex_unlock(mutex);
-	while (syscall(SYS_futex, cond, FUTEX_WAIT, val, NULL) == -1) {
+	while (syscall(SYS_futex, cond, FUTEX_WAIT_PRIVATE, val, NULL) == -1) {
 		if (errno == EWOULDBLOCK)
 			val = *cond;
 		else if (errno != EINTR && errno != EAGAIN)

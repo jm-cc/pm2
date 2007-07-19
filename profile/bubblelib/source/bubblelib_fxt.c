@@ -391,6 +391,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 				case FUT_THREAD_BIRTH_CODE: {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = newThreadPtr(th, norq);
+					t->state = THREAD_SLEEPING;
 					verbprintf("new ");
 					printfThread(th,t);
 					verbprintf("\n");
@@ -402,6 +403,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					thread_t *t = newThreadPtr(th, norq);
 					t->entity.thick = (THREADTHICK*2)/3;
 					t->number = 0;
+					t->state = THREAD_SLEEPING;
 					verbprintf("new ghost ");
 					printfThread(th,t);
 					verbprintf("\n");

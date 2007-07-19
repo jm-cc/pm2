@@ -706,7 +706,8 @@ int MPI_Comm_rank(MPI_Comm comm,
  * This routine returns the name of the processor on which it was
  * called at the moment of the call.
  */
-int MPI_Get_processor_name(char *name, int *resultlen) {
+int MPI_Get_processor_name(char *name,
+			   int *resultlen) {
   int err;
 
   MPI_NMAD_LOG_IN();
@@ -1357,7 +1358,8 @@ int MPI_Get_count(MPI_Status *status,
   return MPI_SUCCESS;
 }
 
-int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2) {
+int MPI_Request_is_equal(MPI_Request request1,
+			 MPI_Request request2) {
   mpir_request_t *mpir_request1 = (mpir_request_t *)(&request1);
   mpir_request_t *mpir_request2 = (mpir_request_t *)(&request2);
   if (mpir_request1->request_type == MPI_REQUEST_ZERO) {
@@ -2138,7 +2140,9 @@ double MPI_Wtick(void) {
  * The argument string must represent storage that is at least
  * MPI_MAX_ERROR_STRING characters long.
  */
-int MPI_Error_string(int errorcode, char *string, int *resultlen) {
+int MPI_Error_string(int errorcode,
+		     char *string,
+		     int *resultlen) {
   *resultlen = 100;
   string = malloc(*resultlen * sizeof(char));
   switch (errorcode) {
@@ -2236,7 +2240,8 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen) {
 /**
  * Returns the version
  */
-int MPI_Get_version(int *version, int *subversion) {
+int MPI_Get_version(int *version,
+		    int *subversion) {
   *version = MADMPI_VERSION;
   *subversion = MADMPI_SUBVERSION;
   return MPI_SUCCESS;
@@ -2245,7 +2250,8 @@ int MPI_Get_version(int *version, int *subversion) {
 /**
  * Returns the byte address of location.
  */
-int MPI_Get_address(void *location, MPI_Aint *address) {
+int MPI_Get_address(void *location,
+		    MPI_Aint *address) {
   /* This is the "portable" way to generate an address.
      The difference of two pointers is the number of elements
      between them, so this gives the number of chars between location
@@ -2260,7 +2266,8 @@ int MPI_Get_address(void *location, MPI_Aint *address) {
 /**
  * Returns the byte address of location.
  */
-int MPI_Address(void *location, MPI_Aint *address) {
+int MPI_Address(void *location,
+		MPI_Aint *address) {
   return MPI_Get_address(location, address);
 }
 
@@ -2268,28 +2275,33 @@ int MPI_Address(void *location, MPI_Aint *address) {
  * Returns the total size, in bytes, of the entries in the type
  * signature associated with datatype.
  */
-int MPI_Type_size(MPI_Datatype datatype, int *size) {
+int MPI_Type_size(MPI_Datatype datatype,
+		  int *size) {
   return mpir_type_size(datatype, size);
 }
 
 /**
  * Returns the lower bound and the extent of datatype
  */
-int MPI_Type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+int MPI_Type_get_extent(MPI_Datatype datatype,
+			MPI_Aint *lb,
+			MPI_Aint *extent) {
   return mpir_type_get_extent(datatype, lb, extent);
 }
 
 /**
  * Returns the extent of the datatype
  */
-int MPI_Type_extent(MPI_Datatype datatype, MPI_Aint *extent) {
+int MPI_Type_extent(MPI_Datatype datatype,
+		    MPI_Aint *extent) {
   return mpir_type_extent(datatype, extent);
 }
 
 /**
  * Returns the lower bound of the datatype
  */
-int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *lb) {
+int MPI_Type_lb(MPI_Datatype datatype,
+		MPI_Aint *lb) {
   return mpir_type_lb(datatype, lb);
 }
 
@@ -2298,7 +2310,10 @@ int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *lb) {
  * except that the lower bound of this new datatype is set to be lb,
  * and its upper bound is set to lb + extent.
  */
-int MPI_Type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype) {
+int MPI_Type_create_resized(MPI_Datatype oldtype,
+			    MPI_Aint lb,
+			    MPI_Aint extent,
+			    MPI_Datatype *newtype) {
   int err;
 
   MPI_NMAD_LOG_IN();
@@ -2435,7 +2450,8 @@ int MPI_Type_struct(int count,
 /**
  * Returns a handle to the group of the given communicator.
  */
-int MPI_Comm_group(MPI_Comm comm, MPI_Group *group) {
+int MPI_Comm_group(MPI_Comm comm,
+		   MPI_Group *group) {
   MPI_NMAD_LOG_IN();
 
   *group = comm;
@@ -2448,7 +2464,10 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group) {
  * Partitions the group associated to the communicator into disjoint
  * subgroups, one for each value of color.
  */
-int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
+int MPI_Comm_split(MPI_Comm comm,
+		   int color,
+		   int key,
+		   MPI_Comm *newcomm) {
   int *sendbuf, *recvbuf;
   int i, j, nb_conodes, **conodes;
   mpir_communicator_t *mpir_communicator;
@@ -2555,7 +2574,8 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm) {
  * Creates a new intracommunicator with the same fixed attributes as
  * the input intracommunicator.
  */
-int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
+int MPI_Comm_dup(MPI_Comm comm,
+		 MPI_Comm *newcomm) {
   return mpir_comm_dup(comm, newcomm);
 }
 
@@ -2570,7 +2590,11 @@ int MPI_Comm_free(MPI_Comm *comm) {
  * Maps the rank of a set of processes in group1 to their rank in
  * group2.
  */
-int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2) {
+int MPI_Group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2) {
   int i, j, x;
   mpir_communicator_t *mpir_communicator;
   mpir_communicator_t *mpir_communicator2;

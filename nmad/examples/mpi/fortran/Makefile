@@ -19,7 +19,7 @@ ifeq ($(MPIF90),)
 MPIF90	:=	../mpif90 -Wall
 endif
 
-PROGS		:=	fpi basics pi3f90
+PROGS		:=	fpi basics datatype pi3f90
 
 modules 	:=	$(shell pm2-config --modules)
 libs		:=	$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)

@@ -52,7 +52,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	 * whether it is an interesting thread or not */
 	t->flags = attr->flags;
 
-	if (t == __main_thread || t->f_to_call == marcel_sched_ghost_runner) {
+	if (t == __main_thread) {
 		t->number = 0;
 	} else if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
 		marcel_one_more_task(t);

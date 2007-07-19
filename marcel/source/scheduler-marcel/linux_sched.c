@@ -1112,7 +1112,6 @@ restart:
 			marcel_attr_setdetachstate(&attr, tbx_true);
 			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
-			marcel_attr_setflags(&attr, MA_SF_NORUN);
 			marcel_attr_setpreemptible(&attr, tbx_false);
 			/* TODO: on devrait être capable de brancher directement dessus */
 			marcel_create(NULL, &attr, marcel_sched_ghost_runner, next);

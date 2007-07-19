@@ -484,7 +484,6 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 int ma_sched_change_prio(marcel_t t, int prio) {
 	ma_holder_t *h;
 	int requeue;
-	LOG_IN();
 	/* attention ici. Pour l'instant on n'a pas besoin de requeuer dans
 	 * une bulle */
 	/* quand on le voudra, il faudra faire attention que dequeue_task peut
@@ -499,7 +498,6 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	if (requeue)
 		ma_enqueue_task(t,h);
 	ma_task_holder_unlock_softirq(h);
-	LOG_OUT();
 	return 0;
 }
 

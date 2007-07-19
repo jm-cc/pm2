@@ -347,7 +347,27 @@ void mpi_testany_(int *count,
                   int *flag,
                   int *status,
 		  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  int err = NM_ESUCCESS;
+  int i, _flag;
+  MPI_Status _status;
+
+  for (i = 0; i < *count; i++) {
+    MPI_Request *p_request = (void *)array_of_requests[i];
+    err = MPI_Test(p_request, &_flag, &_status);
+    if (_flag) {
+      *index = i;
+      *flag = _flag;
+      *ierr = MPI_SUCCESS;
+
+      if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+	memcpy(status, &_status, sizeof(_status));
+      }
+
+      return;
+    }
+  }
+  *index = MPI_UNDEFINED;
+  *ierr = err;
 }
 
 /**
@@ -359,7 +379,12 @@ void mpi_iprobe_(int *source,
                  int *flag,
                  int *status,
 		 int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Status _status;
+  *ierr = MPI_Iprobe(*source, *tag, *comm, flag, &_status);
+
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
 }
 
 /**
@@ -370,7 +395,12 @@ void mpi_probe_(int *source,
                 int *comm,
                 int *status,
 		int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Status _status;
+  *ierr = MPI_Probe(*source, *tag, *comm, &_status);
+
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
 }
 
 /**
@@ -378,7 +408,8 @@ void mpi_probe_(int *source,
  */
 void mpi_cancel_(int *request,
 		 int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Request *p_request = (void *)request[0];
+  *ierr = MPI_Cancel(p_request);
 }
 
 /**
@@ -386,7 +417,8 @@ void mpi_cancel_(int *request,
  */
 void mpi_request_free_(int *request,
 		       int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Request *p_request = (void *)*request;
+  *ierr = MPI_Request_free(p_request);
 }
 
 /**
@@ -412,7 +444,9 @@ void mpi_send_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Request *p_request = TBX_MALLOC(sizeof(MPI_Request));
+  *ierr = MPI_Send_init(buf, *count, *datatype, *dest, *tag, *comm, p_request);
+  *request = (intptr_t)p_request;
 }
 
 /**
@@ -426,7 +460,9 @@ void mpi_recv_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Request *p_request = TBX_MALLOC(sizeof(MPI_Request));
+  *ierr = MPI_Recv_init(buf, *count, *datatype, *source, *tag, *comm, p_request);
+  *request = (intptr_t)p_request;
 }
 
 /**
@@ -434,16 +470,24 @@ void mpi_recv_init_(void* buf,
  */
 void mpi_start_(int *request,
 		int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Request *p_request = (void *)*request;
+  *ierr = MPI_Start(p_request);
 }
 
 /**
  * Fortran version for MPI_START_ALL
  */
 void mpi_startall_(int *count,
-		   int  request[][MPI_REQUEST_SIZE],
+		   int  array_of_requests[][MPI_REQUEST_SIZE],
 		   int *ierr) {
-  TBX_FAILURE("unimplemented");
+  int i;
+  for (i = 0; i < *count; i++) {
+    MPI_Request *p_request = (void *)array_of_requests[i];
+    *ierr = MPI_Start(p_request);
+    if (*ierr != MPI_SUCCESS) {
+      return;
+    }
+  }
 }
 
 /**
@@ -478,7 +522,8 @@ void mpi_gather_(void *sendbuf,
 		 int *root,
 		 int *comm,
 		 int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Gather(sendbuf, *sendcount, *sendtype, recvbuf, *recvcount,
+		     *recvtype, *root, *comm);
 }
 
 /**
@@ -494,7 +539,8 @@ void mpi_gatherv_(void *sendbuf,
 		  int *root,
 		  int *comm,
 		  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Gatherv(sendbuf, *sendcount, *sendtype, recvbuf, recvcounts,
+		      displs, *recvtype, *root, *comm);
 }
 
 /**
@@ -508,7 +554,8 @@ void mpi_allgather_(void *sendbuf,
 		    int *recvtype,
 		    int *comm,
 		    int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Allgather(sendbuf, *sendcount, *sendtype, recvbuf, *recvcount,
+			*recvtype, *comm);
 }
 
 /**
@@ -523,7 +570,8 @@ void mpi_allgatherv_(void *sendbuf,
 		     int *recvtype,
 		     int *comm,
 		     int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Allgatherv(sendbuf, *sendcount, *sendtype, recvbuf, recvcounts,
+			 displs, *recvtype, *comm);
 }
 
 /*
@@ -538,7 +586,8 @@ void mpi_scatter_(void *sendbuf,
 		  int *root,
 		  int *comm,
 		  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Scatter(sendbuf, *sendcount, *sendtype, recvbuf, *recvcount,
+		      *recvtype, *root, *comm);
 }
 
 /**
@@ -552,9 +601,8 @@ void mpi_alltoall_(void *sendbuf,
 		   int *recvtype,
 		   int *comm,
 		   int *ierr) {
-  *ierr = MPI_Alltoall(sendbuf,*sendcount,*sendtype,
-                       recvbuf,*recvcount,*recvtype,
-                       *comm);
+  *ierr = MPI_Alltoall(sendbuf, *sendcount, *sendtype, recvbuf, *recvcount,
+		       *recvtype, *comm);
 }
 
 /**
@@ -570,9 +618,8 @@ void mpi_alltoallv_(void *sendbuf,
                     int *recvtype,
                     int *comm,
                     int *ierr) {
-  *ierr = MPI_Alltoallv(sendbuf,sendcount,sdispls,*sendtype,
-			recvbuf,recvcount,rdispls,*recvtype,
-			*comm);
+  *ierr = MPI_Alltoallv(sendbuf, sendcount, sdispls, *sendtype, recvbuf,
+			recvcount, rdispls, *recvtype, *comm);
 }
 
 /**
@@ -616,8 +663,7 @@ void mpi_allreduce_(void *sendbuf,
                     int *op,
                     int *comm,
                     int *ierr) {
-  *ierr = MPI_Allreduce(sendbuf, recvbuf, *count, *datatype, *op,
-                        *comm);
+  *ierr = MPI_Allreduce(sendbuf, recvbuf, *count, *datatype, *op, *comm);
 }
 
 /**
@@ -630,7 +676,8 @@ void mpi_reduce_scatter_(void *sendbuf,
 			 int *op,
 			 int *comm,
 			 int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, *datatype,
+			     *op, *comm);
 }
 
 /**
@@ -654,7 +701,7 @@ void mpi_error_string_(int *errorcode,
 		       char *string,
 		       int *resultlen,
 		       int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Error_string(*errorcode, string, resultlen);
 }
 
 /**
@@ -663,7 +710,7 @@ void mpi_error_string_(int *errorcode,
 void mpi_get_version_(int *version,
 		      int *subversion,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Get_version(version, subversion);
 }
 
 /**
@@ -690,14 +737,15 @@ void mpi_address_(void *location,
 void mpi_type_size_(int *datatype,
 		    int *size,
 		    int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Type_size(*datatype, size);
 }
 
 /**
  * Fortran version for MPI_TYPE_GET_EXTENT
  */
 void mpi_type_get_extent_(int *datatype,
-			  int *size,
+			  int *lb,
+			  int *extent,
 			  int *ierr) {
   TBX_FAILURE("unimplemented");
 }
@@ -706,7 +754,7 @@ void mpi_type_get_extent_(int *datatype,
  * Fortran version for MPI_TYPE_EXTENT
  */
 void mpi_type_extent_(int *datatype,
-		      int *size,
+		      int *extent,
 		      int *ierr) {
   TBX_FAILURE("unimplemented");
 }
@@ -823,7 +871,9 @@ void mpi_type_struct_(int *count,
 void mpi_comm_group_(int *comm,
 		     int *group,
 		     int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Group _group;
+  *ierr = MPI_Comm_group(*comm, &_group);
+  *group = _group;
 }
 
 /**
@@ -869,7 +919,8 @@ void mpi_group_translate_ranks_(int *group1,
 				int *group2,
 				int *ranks2,
 				int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Group_translate_ranks(*group1, *n, ranks1, *group2,
+				    ranks2);
 }
 
 #endif /* PM2_FORTRAN_TARGET_NONE */

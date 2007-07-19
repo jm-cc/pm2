@@ -323,7 +323,10 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 				ma_rq_enqueue_entity(&b->sched, ma_rq_holder(h));
 		}
 	}
-	list_add_tail(&e->run_list, &b->queuedentities);
+	if (e->prio >= MA_BATCH_PRIO)
+		list_add(&e->run_list, &b->queuedentities);
+	else
+		list_add_tail(&e->run_list, &b->queuedentities);
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 #endif
@@ -368,7 +371,10 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 			}
 		}
 	}
-	list_add_tail(&e->run_list, &b->queuedentities);
+	if (e->prio >= MA_BATCH_PRIO)
+		list_add(&e->run_list, &b->queuedentities);
+	else
+		list_add_tail(&e->run_list, &b->queuedentities);
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 #endif

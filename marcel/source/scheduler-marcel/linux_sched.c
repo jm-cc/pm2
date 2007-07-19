@@ -1097,6 +1097,7 @@ restart:
 			prev->cur_ghost_thread = next;
 			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
 			ma_preempt_enable();
+			LOG_OUT();
 			if (!prev->f_to_call)
 				/* marcel_exit was called directly from the
 				 * runner loop, just return (faster) */

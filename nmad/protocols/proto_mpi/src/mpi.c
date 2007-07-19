@@ -719,7 +719,9 @@ void mpi_get_version_(int *version,
 void mpi_get_address_(void *location,
 		      int *address,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Aint _address;
+  *ierr = MPI_Get_address(location, &_address);
+  *address = _address;
 }
 
 /**
@@ -728,7 +730,9 @@ void mpi_get_address_(void *location,
 void mpi_address_(void *location,
 		  int *address,
 		  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Aint _address;
+  *ierr = MPI_Address(location, &_address);
+  *address = _address;
 }
 
 /**
@@ -747,7 +751,10 @@ void mpi_type_get_extent_(int *datatype,
 			  int *lb,
 			  int *extent,
 			  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Aint _lb, _extent;
+  *ierr = MPI_Type_get_extent(*datatype, &_lb, &_extent);
+  *lb = _lb;
+  *extent = _extent;
 }
 
 /**
@@ -756,7 +763,9 @@ void mpi_type_get_extent_(int *datatype,
 void mpi_type_extent_(int *datatype,
 		      int *extent,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Aint _extent;
+  *ierr = MPI_Type_extent(*datatype, &_extent);
+  *extent = _extent;
 }
 
 /**
@@ -765,7 +774,9 @@ void mpi_type_extent_(int *datatype,
 void mpi_type_lb_(int *datatype,
 		  int *lb,
 		  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Aint _lb;
+  *ierr = MPI_Type_lb(*datatype, &_lb);
+  *lb = _lb;
 }
 
 /**
@@ -776,7 +787,9 @@ void mpi_type_create_resized_(int *oldtype,
 			      int *extent,
 			      int *newtype,
 			      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_create_resized(*oldtype, *lb, *extent, &_newtype);
+  *newtype = _newtype;
 }
 
 /**
@@ -784,7 +797,7 @@ void mpi_type_create_resized_(int *oldtype,
  */
 void mpi_type_commit_(int *datatype,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Type_commit(datatype);
 }
 
 /**
@@ -792,7 +805,7 @@ void mpi_type_commit_(int *datatype,
  */
 void mpi_type_free_(int *datatype,
 		    int *ierr) {
-  TBX_FAILURE("unimplemented");
+  *ierr = MPI_Type_free(datatype);
 }
 
 /**
@@ -802,7 +815,9 @@ void mpi_type_contiguous_(int *count,
                           int *oldtype,
                           int *newtype,
 			  int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_contiguous(*count, *oldtype, &_newtype);
+  *newtype = _newtype;
 }
 
 /**
@@ -814,7 +829,9 @@ void mpi_type_vector_(int *count,
                       int *oldtype,
                       int *newtype,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_vector(*count, *blocklength, *stride, *oldtype, &_newtype);
+  *newtype = _newtype;
 }
 
 /**
@@ -826,7 +843,9 @@ void mpi_type_hvector_(int *count,
                        int *oldtype,
                        int *newtype,
 		       int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_hvector(*count, *blocklength, *stride, *oldtype, &_newtype);
+  *newtype = _newtype;
 }
 
 /**
@@ -838,7 +857,10 @@ void mpi_type_indexed_(int *count,
                        int *oldtype,
                        int *newtype,
 		       int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  *ierr = MPI_Type_indexed(*count, array_of_blocklengths, array_of_displacements,
+			   *oldtype, &_newtype);
+  *newtype = _newtype;
 }
 
 /**
@@ -850,7 +872,17 @@ void mpi_type_hindexed_(int *count,
                         int *oldtype,
                         int *newtype,
 			int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  MPI_Aint *_array_of_displacements = malloc(*count * sizeof(MPI_Aint));
+  int i;
+
+  for(i=0 ; i<*count ; i++) {
+    _array_of_displacements[i] = array_of_displacements[i];
+  }
+  *ierr = MPI_Type_hindexed(*count, array_of_blocklengths, _array_of_displacements,
+			    *oldtype, &_newtype);
+  *newtype = _newtype;
+  free(_array_of_displacements);
 }
 
 /**
@@ -862,7 +894,17 @@ void mpi_type_struct_(int *count,
                       int *array_of_types,
                       int *newtype,
 		      int *ierr) {
-  TBX_FAILURE("unimplemented");
+  MPI_Datatype _newtype;
+  MPI_Aint *_array_of_displacements = malloc(*count * sizeof(MPI_Aint));
+  int i;
+
+  for(i=0 ; i<*count ; i++) {
+    _array_of_displacements[i] = array_of_displacements[i];
+  }
+  *ierr = MPI_Type_struct(*count, array_of_blocklengths, _array_of_displacements,
+			  array_of_types, &_newtype);
+  *newtype = _newtype;
+  free(_array_of_displacements);
 }
 
 /**

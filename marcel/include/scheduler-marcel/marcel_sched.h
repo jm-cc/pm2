@@ -195,7 +195,6 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 {
 	ma_holder_t *h = NULL;
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
-	LOG_IN();
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
 #ifdef MA__BUBBLES
@@ -344,6 +343,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
+	LOG_IN();
 	internal->entity.type = MA_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
@@ -367,10 +367,12 @@ marcel_sched_init_ghost_thread(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
+	LOG_IN();
 	internal->entity.type = MA_GHOST_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 0;
 	*(long *) ma_task_stats_get(t, ma_stats_nbghostthreads_offset) = 1;
+	LOG_OUT();
 }
 
 #section marcel_functions

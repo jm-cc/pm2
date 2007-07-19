@@ -145,6 +145,8 @@ typedef int MPI_Communication_Mode;
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
 #define MPI_STATUS_SIZE		4
 
+#define MPI_REQUEST_SIZE        4
+
 /* Error handlers */
 typedef int MPI_Errhandler;
 #define MPI_ERRHANDLER_NULL ((MPI_Errhandler)0)

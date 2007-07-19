@@ -340,6 +340,8 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
 {
 	struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
+	LOG_IN();
+
 	/* Make sure we are alone.  */
 	prefix_lock_acquire(&ibarrier->lock.__spinlock);
 

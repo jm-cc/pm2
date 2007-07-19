@@ -1430,10 +1430,9 @@ int MPI_Wait(MPI_Request *request,
 /**
  * Returns when all the operations identified by requests are complete.
  */
-int
-MPI_Waitall(int count,
-            MPI_Request *requests,
-            MPI_Status *statuses) {
+int MPI_Waitall(int count,
+		MPI_Request *requests,
+		MPI_Status *statuses) {
   int err = NM_ESUCCESS;
   int i;
 

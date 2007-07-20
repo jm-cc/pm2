@@ -38,9 +38,81 @@ void common_attr_init(common_attr_t *attr)
 #endif // MAD2
 }
 
-void common_pre_init(int *argc, char *argv[],
+#define parse(doquote, doblank, doword) \
+  separated = 1; \
+  for (c=pm2_args; *c; c++) { \
+    if (quoted) { \
+      if (*c == quoted) { \
+        quoted = '\0'; \
+	doquote; \
+      } else \
+        if (separated) { \
+	  doword; \
+          separated = 0; \
+	} \
+    } else if (*c == '"' || *c == '\'') { \
+      quoted = *c; \
+      doquote; \
+    } else if (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r') { \
+      separated = 1; \
+      doblank; \
+    } else { \
+      if (separated) { \
+        doword; \
+	separated = 0; \
+      } \
+    } \
+  } \
+
+
+#define get_args() \
+  int new_argc, *argc = &new_argc; \
+  char **argv; \
+  char *pm2_args, *c; \
+  int pm2_argc = 0; \
+  char quoted = '\0'; \
+  int separated; \
+  static int null_argc; \
+  static char *null_argv[] = { "prog", NULL }; \
+  if (!_argc) { \
+    _argc = &null_argc; \
+    _argv = null_argv; \
+  } \
+  pm2_args = getenv("PM2_ARGS"); \
+  if (pm2_args) { \
+    pm2_args = strdup(pm2_args); \
+    parse(,,pm2_argc++); \
+  } \
+  if (quoted) \
+    fprintf(stderr,"Warning: unterminated quotation mark in PM2_ARGS: %c\n",quoted); \
+  quoted = '\0'; \
+  argv = alloca((*_argc + pm2_argc + 1) * sizeof(char*)); \
+  memcpy(argv, _argv, *_argc * sizeof(char*)); \
+  new_argc = *_argc; \
+  if (pm2_args) { \
+    char *d; \
+    d = pm2_args; \
+    parse(strcpy(c, c+1), *c = '\0', argv[new_argc++] = c) \
+  }
+
+#define purge_args() \
+  { \
+    int last, cur; \
+    for (last=0, cur=0; cur<*_argc; cur++) \
+      if (argv[last] == _argv[cur]) \
+	/* keep it */ \
+	last++; \
+    memcpy(_argv, argv, last * sizeof(char*)); \
+    _argv[last] = NULL; \
+    *_argc = last; \
+  } \
+  free(pm2_args);
+
+void common_pre_init(int *_argc, char *_argv[],
 		     common_attr_t *attr)
 {
+  get_args();
+
   if (!attr) {
     common_attr_init(&default_static_attr);
     attr = &default_static_attr;
@@ -391,11 +463,14 @@ void common_pre_init(int *argc, char *argv[],
    */
   xpaul_io_init();
 #endif // XPAULETTE
+
+  purge_args();
 }
 
-void common_post_init(int *argc, char *argv[],
+void common_post_init(int *_argc, char *_argv[],
 		      common_attr_t *attr)
 {
+  get_args();
 
   if (!attr)
     attr = &default_static_attr;
@@ -555,6 +630,8 @@ void common_post_init(int *argc, char *argv[],
    */
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 #endif /* PM2DEBUG */
+
+  purge_args ();
 }
 
 void

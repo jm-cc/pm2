@@ -21,26 +21,30 @@
 
       double precision  pi
       integer myid, numprocs, rc
+      integer status(MPI_STATUS_SIZE)
 
       call MPI_INIT( ierr )
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
       print *, "Process ", myid, " of ", numprocs, " is alive"
 
-      if (myid .eq. 0) then
-         call MPI_SEND(PI25DT,1,MPI_DOUBLE_PRECISION,1,10,
+      if (myid .eq. 1) then
+         call MPI_SEND(PI25DT,1,MPI_DOUBLE_PRECISION,0,10,
      $        MPI_COMM_WORLD,ierr)
       else
-         call MPI_RECV(pi,1,MPI_DOUBLE_PRECISION,0,10,
-     $        MPI_COMM_WORLD,NULL,ierr)
+         call MPI_RECV(pi,1,MPI_DOUBLE_PRECISION,1,10,
+     $        MPI_COMM_WORLD,status,ierr)
          if (pi .eq. PI25DT) then
             write(6, 97) pi
- 97         format('  received value: ', E30.20)
-            write(6, 98) PI25DT
- 98         format('   correct value: ', E30.20)
+ 97         format('  received correct value: ', E30.20)
          else
-            write(6,97) "error"
+            write(6,99) pi
+ 99         format('  received incorrect value: ', E30.20)
          endif
+         write(6, 98) PI25DT
+ 98      format('   correct value: ', E30.20)
+         write(*,*) "status source=", status(MPI_SOURCE), ", tag=", 
+     $        status(MPI_TAG), ", error=", status(MPI_ERROR)
       endif
 
       call MPI_FINALIZE(rc)

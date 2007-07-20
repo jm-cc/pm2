@@ -199,7 +199,9 @@ void mpi_recv_(void *buffer,
                int *ierr) {
   MPI_Status _status;
   *ierr = MPI_Recv(buffer, *count, *datatype, *source, *tag, *comm, &_status);
-  memcpy(status, &_status, sizeof(_status));
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
 }
 
 /**
@@ -238,7 +240,9 @@ void mpi_sendrecv_(void *sendbuf,
   *ierr = MPI_Sendrecv(sendbuf, *sendcount, *sendtype, *dest, *sendtag,
 		       recvbuf, *recvcount, *recvtype, *source, *recvtag, *comm,
 		       &_status);
-  memcpy(status, &_status, sizeof(_status));
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
 }
 
 /**
@@ -250,7 +254,9 @@ void mpi_wait_(int *request,
   MPI_Status _status;
   MPI_Request *p_request = (void *)*request;
   *ierr = MPI_Wait(p_request, &_status);
-  memcpy(status, &_status, sizeof(_status));
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
   //  TBX_FREE((void *)*request);
 }
 
@@ -278,7 +284,9 @@ void mpi_waitall_(int *count,
       MPI_Status _status;
       MPI_Request *p_request = (void *)request[i];
       err =  MPI_Wait(p_request, &_status);
-      memcpy(status[i], &_status, sizeof(_status));
+      if ((MPI_Status *)status[i] != MPI_STATUSES_IGNORE) {
+	memcpy(status[i], &_status, sizeof(_status));
+      }
       //TBX_FREE((void *)*request);
       if (err != NM_ESUCCESS)
         goto out;
@@ -334,7 +342,9 @@ void mpi_test_(int *request,
   *ierr = MPI_Test(p_request, flag, &_status);
   if (*ierr != MPI_SUCCESS)
     return;
-  memcpy(status, &_status, sizeof(_status));
+  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
+    memcpy(status, &_status, sizeof(_status));
+  }
   TBX_FREE((void *)*request);
 }
 

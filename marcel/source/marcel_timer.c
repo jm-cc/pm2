@@ -196,6 +196,12 @@ static void int_catcher_exit(ma_lwp_t lwp)
 }
 static void int_catcher(int signo)
 {
+	static int got;
+	if (got) {
+		fprintf(stderr,"SIGINT caught a second time, exitting\n");
+		exit(EXIT_FAILURE);
+	}
+	got = 1;
 	fprintf(stderr,"SIGINT caught, saving profile\n");
 	PROF_EVENT(fut_stop);
 	profile_stop();

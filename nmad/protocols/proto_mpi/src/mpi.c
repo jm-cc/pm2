@@ -199,8 +199,10 @@ void mpi_recv_(void *buffer,
                int *ierr) {
   MPI_Status _status;
   *ierr = MPI_Recv(buffer, *count, *datatype, *source, *tag, *comm, &_status);
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
 }
 
@@ -240,8 +242,10 @@ void mpi_sendrecv_(void *sendbuf,
   *ierr = MPI_Sendrecv(sendbuf, *sendcount, *sendtype, *dest, *sendtag,
 		       recvbuf, *recvcount, *recvtype, *source, *recvtag, *comm,
 		       &_status);
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
 }
 
@@ -254,10 +258,11 @@ void mpi_wait_(int *request,
   MPI_Status _status;
   MPI_Request *p_request = (void *)*request;
   *ierr = MPI_Wait(p_request, &_status);
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
-  //  TBX_FREE((void *)*request);
 }
 
 /**
@@ -284,10 +289,11 @@ void mpi_waitall_(int *count,
       MPI_Status _status;
       MPI_Request *p_request = (void *)request[i];
       err =  MPI_Wait(p_request, &_status);
-      if ((MPI_Status *)status[i] != MPI_STATUSES_IGNORE) {
-	memcpy(status[i], &_status, sizeof(_status));
+      if (*(status[i])) {
+	status[i][0] = _status.MPI_SOURCE;
+	status[i][1] = _status.MPI_TAG;
+	status[i][2] = _status.MPI_ERROR;
       }
-      //TBX_FREE((void *)*request);
       if (err != NM_ESUCCESS)
         goto out;
     }
@@ -319,8 +325,10 @@ void mpi_waitany_(int *count,
 	mpir_request->request_type = MPI_REQUEST_ZERO;
 	*index = i;
 
-	if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-	  memcpy(status, &_status, sizeof(_status));
+	if (*status) {
+	  status[0] = _status.MPI_SOURCE;
+	  status[1] = _status.MPI_TAG;
+	  status[2] = _status.MPI_ERROR;
 	}
 
 	*ierr = err;
@@ -342,8 +350,10 @@ void mpi_test_(int *request,
   *ierr = MPI_Test(p_request, flag, &_status);
   if (*ierr != MPI_SUCCESS)
     return;
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
   TBX_FREE((void *)*request);
 }
@@ -369,8 +379,10 @@ void mpi_testany_(int *count,
       *flag = _flag;
       *ierr = MPI_SUCCESS;
 
-      if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-	memcpy(status, &_status, sizeof(_status));
+      if (*status) {
+	status[0] = _status.MPI_SOURCE;
+	status[1] = _status.MPI_TAG;
+	status[2] = _status.MPI_ERROR;
       }
 
       return;
@@ -392,8 +404,10 @@ void mpi_iprobe_(int *source,
   MPI_Status _status;
   *ierr = MPI_Iprobe(*source, *tag, *comm, flag, &_status);
 
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
 }
 
@@ -408,8 +422,10 @@ void mpi_probe_(int *source,
   MPI_Status _status;
   *ierr = MPI_Probe(*source, *tag, *comm, &_status);
 
-  if ((MPI_Status *)status != MPI_STATUSES_IGNORE) {
-    memcpy(status, &_status, sizeof(_status));
+  if (*status) {
+    status[0] = _status.MPI_SOURCE;
+    status[1] = _status.MPI_TAG;
+    status[2] = _status.MPI_ERROR;
   }
 }
 
@@ -439,7 +455,9 @@ void mpi_get_count_(int *status,
                     int *count,
                     int *ierr) {
   MPI_Status _status;
-  memcpy(&_status, status, sizeof(_status));
+  _status.MPI_SOURCE = status[0];
+  _status.MPI_TAG = status[1];
+  _status.MPI_ERROR = status[2];
   *ierr = MPI_Get_count(&_status, *datatype, count);
 }
 
@@ -1509,15 +1527,15 @@ int MPI_Wait(MPI_Request *request,
     MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
   }
 
+  if (status != MPI_STATUS_IGNORE) {
+      mpir_set_status(request, status);
+  }
+
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
     mpir_request->request_type = MPI_REQUEST_ZERO;
     if (mpir_request->request_ptr != NULL) {
       FREE_AND_SET_NULL(mpir_request->request_ptr);
     }
-  }
-
-  if (status != MPI_STATUS_IGNORE) {
-      mpir_set_status(request, status);
   }
 
   // Release one active communication for that type
@@ -1618,11 +1636,12 @@ int MPI_Test(MPI_Request *request,
 
   if (err == NM_ESUCCESS) {
     *flag = 1;
-    mpir_request->request_type = MPI_REQUEST_ZERO;
 
     if (status != MPI_STATUS_IGNORE) {
       mpir_set_status(request, status);
     }
+
+    mpir_request->request_type = MPI_REQUEST_ZERO;
   }
   else { /* err == -NM_EAGAIN */
     *flag = 0;

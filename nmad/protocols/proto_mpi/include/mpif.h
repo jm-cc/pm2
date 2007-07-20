@@ -37,6 +37,16 @@
       PARAMETER (MPI_INTEGER=28)
 
 !
+! Request accessors
+      INTEGER MPI_SOURCE
+      INTEGER MPI_TAG
+      INTEGER MPI_ERROR
+
+      PARAMETER (MPI_SOURCE=1)
+      PARAMETER (MPI_TAG=2)
+      PARAMETER (MPI_ERROR=3)
+
+!
 ! Abstract types
       INTEGER MPI_STATUS_SIZE
 

@@ -16,7 +16,7 @@
 /*! \mainpage The NewMadeleine API Documentation
  *
  * \section intro_sec Introduction
- *
+ * <div class="sec">
  *  NewMadeleine is a complete redesign and rewrite of the
  *  communication library Madeleine. The new architecture aims at
  *  enabling the use of a much wider range of communication flow
@@ -33,16 +33,18 @@
  *  the optimization goal is) expressed in terms of tactics (how to
  *  optimize to reach the optimization goal). Tactics themselves are
  *  made of basic communication flows operations such as packet
- *  merging or reordering. More information on NewMadeleine can be
+ *  merging or reordering.
+ *  More information on NewMadeleine can be
  *  found at http://runtime.futurs.inria.fr/newmadeleine/.
- *
+ * </div>
  *
  * \section user_apis User APIs
- *
+ * <div class="sec">
  * Several APIs are provided to NewMadeleine users:
  * - The pack interface: nm_so_pack_interface.c
  * - The send/receive interface: nm_so_sendrecv_interface.c
  * - The MPI interface: mpi.c
+ * </div>
  *  
  */
 

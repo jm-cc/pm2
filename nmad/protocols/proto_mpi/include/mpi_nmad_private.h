@@ -154,8 +154,6 @@ typedef struct mpir_datatype_s {
   int free_requested; /* a free request has been posted for this type while it was still active */
 } mpir_datatype_t;
 
-int mpir_not_implemented(char *s);
-
 int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
                        struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if);
 

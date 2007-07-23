@@ -1576,7 +1576,7 @@ int MPI_Waitall(int count,
   return err;
 }
 
-/*
+/**
  * Blocks until one of the operations associated with the active
  * requests in the array has completed. If more then one operation is
  * enabled and can terminate, one is arbitrarily chosen. Returns in
@@ -1750,7 +1750,7 @@ int MPI_Probe(int source,
   return err;
 }
 
-/*
+/**
  * Marks for cancellation a pending, nonblocking communication
  * operation (send or receive).
  */
@@ -1771,8 +1771,8 @@ int MPI_Cancel(MPI_Request *request) {
   return err;
 }
 
-/*
- * Mark the request object for deallocation and set request to
+/**
+ * Marks the request object for deallocation and set request to
  * MPI_REQUEST_NULL. An ongoing communication that is associated with
  * the request will be allowed to complete. The request will be
  * deallocated only after its completion.

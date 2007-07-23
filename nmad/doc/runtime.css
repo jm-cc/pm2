@@ -19,6 +19,15 @@ div.main {
 	text-align: left;
 	background: #fff;
 }
+
+div.sec {
+	margin-left: 48px;
+	margin-right: 48px;
+	padding: 8px;
+        background: #eef;
+
+}
+
 div.header {
         margin: 0px;
         border-color: #009;

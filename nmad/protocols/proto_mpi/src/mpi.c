@@ -1798,6 +1798,10 @@ int MPI_Get_count(MPI_Status *status,
   return MPI_SUCCESS;
 }
 
+/**
+ * This function does not belong to the MPI standard: compares two
+ * request handles
+ */
 int MPI_Request_is_equal(MPI_Request request1,
 			 MPI_Request request2) {
   mpir_request_t *mpir_request1 = (mpir_request_t *)(&request1);
@@ -2787,7 +2791,7 @@ int MPI_Type_free(MPI_Datatype *datatype) {
 }
 
 /**
- * This function does not belong to the MPI standard.
+ * This function does not belong to the MPI standard:
  * Marks the datatype object associated with datatype as being
  * optimized, i.e the pack interface can be used for communications
  * requests using that type, instead of copying the data into a

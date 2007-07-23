@@ -1184,8 +1184,9 @@ int MPI_Esend(void *buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1225,8 +1226,9 @@ int MPI_Send(void *buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1266,8 +1268,9 @@ int MPI_Isend(void *buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1306,8 +1309,9 @@ int MPI_Rsend(void* buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1346,8 +1350,9 @@ int MPI_Ssend(void* buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1388,9 +1393,9 @@ int MPI_Recv(void *buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
-      MPI_NMAD_TIMER_OUT();
-      MPI_NMAD_LOG_OUT();
-      return mpir_not_implemented("Using MPI_ANY_TAG");
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+    MPI_NMAD_LOG_OUT();
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_ptr = NULL;
@@ -1430,8 +1435,9 @@ int MPI_Irecv(void *buffer,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
-      MPI_NMAD_LOG_OUT();
-      return mpir_not_implemented("Using MPI_ANY_TAG");
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+    MPI_NMAD_LOG_OUT();
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_ptr = NULL;
@@ -1695,8 +1701,9 @@ int MPI_Iprobe(int source,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tag == MPI_ANY_TAG) {
-      MPI_NMAD_LOG_OUT();
-      return mpir_not_implemented("Using MPI_ANY_TAG");
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
+    MPI_NMAD_LOG_OUT();
+    return MPI_ERR_INTERN;
   }
 
   if (source == MPI_ANY_SOURCE) {
@@ -1837,8 +1844,9 @@ int MPI_Send_init(void* buf,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_type = MPI_REQUEST_SEND;
@@ -1879,8 +1887,9 @@ int MPI_Recv_init(void* buf,
 
   mpir_communicator = mpir_get_communicator(comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
+    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using MPI_ANY_TAG");
+    return MPI_ERR_INTERN;
   }
 
   mpir_request->request_ptr = NULL;
@@ -2762,8 +2771,9 @@ int MPI_Type_create_resized(MPI_Datatype oldtype,
 
   MPI_NMAD_LOG_IN();
   if (lb != 0) {
+    ERROR("<Using lb not equals to 0> not implemented yet!");
     MPI_NMAD_LOG_OUT();
-    return mpir_not_implemented("Using lb not equals to 0");
+    return MPI_ERR_INTERN;
   }
   err = mpir_type_create_resized(oldtype, lb, extent, newtype);
 

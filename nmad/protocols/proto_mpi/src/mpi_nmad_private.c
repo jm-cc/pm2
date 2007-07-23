@@ -1081,28 +1081,14 @@ int mpir_type_size(MPI_Datatype datatype, int *size) {
 /**
  * Gets the extent and lower bound of the given datatype.
  */
-int mpir_type_get_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
-  *lb = mpir_datatype->lb;
-  *extent = mpir_datatype->extent;
-  return MPI_SUCCESS;
-}
-
-/**
- * Gets the extent of the given datatype.
- */
-int mpir_type_extent(MPI_Datatype datatype, MPI_Aint *extent) {
-  mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
-  *extent = mpir_datatype->extent;
-  return MPI_SUCCESS;
-}
-
-/**
- * Gets the lower bound of the given datatype.
- */
-int mpir_type_lb(MPI_Datatype datatype, MPI_Aint *lb) {
-  mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
-  *lb = mpir_datatype->lb;
+  if (lb) {
+    *lb = mpir_datatype->lb;
+  }
+  if (extent) {
+    *extent = mpir_datatype->extent;
+  }
   return MPI_SUCCESS;
 }
 

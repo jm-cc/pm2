@@ -49,7 +49,10 @@ DIV.tabs LI, DIV.tabs FORM
 DIV.tabs FORM
 {
    float            : right;
+   padding-top      : 4px;
+   padding-right    : 20px;
 }
+ 
 
 DIV.tabs A
 {
@@ -62,7 +65,7 @@ DIV.tabs A
 
 DIV.tabs A:hover
 {
-        text-decoration: underline;
+        text-decoration: none;
         color: #08f;
 
 }
@@ -107,12 +110,7 @@ DIV.tabs A:hover SPAN
 
 DIV.tabs LI.current A
 {
-   border-width     : 0px;
-}
-
-DIV.tabs LI.current SPAN
-{
-   padding-bottom   : 0px;
+   color: #117;
 }
 
 DIV.nav

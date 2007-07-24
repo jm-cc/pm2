@@ -167,13 +167,11 @@ A.qindex:hover {
 A.qindexHL {
 	text-decoration: none;
 	font-weight: bold;
-/*	background-color: #6666cc; */
 	color: #ffffff;
 	border: 1px double #9295C2;
 }
 A.qindexHL:hover {
 	text-decoration: none;
-/*	background-color: #6666cc; */
 	color: #ffffff;
 }
 A.qindexHL:visited { text-decoration: none; background-color: #6666cc; color: #ffffff }
@@ -183,7 +181,7 @@ A.code:link { text-decoration: none; font-weight: normal; color: #0000FF}
 A.code:visited { text-decoration: none; font-weight: normal; color: #0000FF}
 A.codeRef:link { font-weight: normal; color: #0000FF}
 A.codeRef:visited { font-weight: normal; color: #0000FF}
-A:hover { text-decoration: none; background-color: #f2f2ff }
+A:hover { text-decoration: none; background-color: #fd0 }
 DL.el { margin-left: -1cm }
 .fragment {
        font-family: monospace, fixed;
@@ -202,13 +200,35 @@ PRE.fragment {
 
 DIV.main > CODE {
        font-family: monospace, fixed;
-        background: #F0F2F4;
-        margin: 8px;
+        /*background: #F0F2F4;*/
+        background: #eef;
+        margin: 0px;
+        margin-left: 48px;
         border: 0px;
+        border-left: 1px;
         border-color: #55F;
         border-style: solid;
-        padding: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        padding-left: 8px;
+        padding-right: 48px;
         color: #118;
+        line-height: 150%;
+}
+
+DIV.main > TABLE {
+         margin-left: 48px;
+         margin-right: 48px;
+}
+
+DIV.main > P {
+         margin-left: 48px;
+         margin-right: 48px;
+}
+
+DIV.main > DIV.memitem {
+         margin-left: 48px;
+         margin-right: 48px;
 }
 
 DIV.ah { background-color: black; font-weight: bold; color: #ffffff; margin-bottom: 3px; margin-top: 3px }

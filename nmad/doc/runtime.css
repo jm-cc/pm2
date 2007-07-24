@@ -198,6 +198,19 @@ PRE.fragment {
         padding: 8px;
         color: #118;
 }
+
+
+DIV.main > CODE {
+       font-family: monospace, fixed;
+        background: #F0F2F4;
+        margin: 8px;
+        border: 0px;
+        border-color: #55F;
+        border-style: solid;
+        padding: 8px;
+        color: #118;
+}
+
 DIV.ah { background-color: black; font-weight: bold; color: #ffffff; margin-bottom: 3px; margin-top: 3px }
 
 DIV.groupHeader {
@@ -258,22 +271,22 @@ SPAN.charliteral   { color: #008080 }
        padding: 0px 8px 4px 8px;
 	font-size: 80%;
 	font-style: italic;
-	background-color: #FAFAFA;
-	border-top: 1px none #E0E0E0;
-	border-right: 1px none #E0E0E0;
-	border-bottom: 1px none #E0E0E0;
-	border-left: 1px none #E0E0E0;
+	background-color: #fafaff;
+	border-top: 1px none #ccf;
+	border-right: 1px none #ccf;
+	border-bottom: 1px none #ccf;
+	border-left: 1px none #ccf;
 	margin: 0px;
 }
 .mdescRight {
        padding: 0px 8px 4px 8px;
 	font-size: 80%;
 	font-style: italic;
-	background-color: #FAFAFA;
-	border-top: 1px none #E0E0E0;
-	border-right: 1px none #E0E0E0;
-	border-bottom: 1px none #E0E0E0;
-	border-left: 1px none #E0E0E0;
+	background-color: #fafaff;
+	border-top: 1px none #ccf;
+	border-right: 1px none #ccf;
+	border-bottom: 1px none #ccf;
+	border-left: 1px none #ccf;
 	margin: 0px;
 }
 .memItemLeft {
@@ -283,15 +296,15 @@ SPAN.charliteral   { color: #008080 }
 	border-right-width: 1px;
 	border-bottom-width: 1px;
 	border-left-width: 1px;
-	border-top-color: #E0E0E0;
-	border-right-color: #E0E0E0;
-	border-bottom-color: #E0E0E0;
-	border-left-color: #E0E0E0;
+	border-top-color: #ccf;
+	border-right-color: #ccf;
+	border-bottom-color: #ccf;
+	border-left-color: #ccf;
 	border-top-style: solid;
 	border-right-style: none;
 	border-bottom-style: none;
 	border-left-style: none;
-	background-color: #FAFAFA;
+	background-color: #f8f8ff;
 	font-size: 80%;
 }
 .memItemRight {
@@ -301,15 +314,15 @@ SPAN.charliteral   { color: #008080 }
 	border-right-width: 1px;
 	border-bottom-width: 1px;
 	border-left-width: 1px;
-	border-top-color: #E0E0E0;
-	border-right-color: #E0E0E0;
-	border-bottom-color: #E0E0E0;
-	border-left-color: #E0E0E0;
+	border-top-color: #ccf;
+	border-right-color: #ccf;
+	border-bottom-color: #ccf;
+	border-left-color: #ccf;
 	border-top-style: solid;
 	border-right-style: none;
 	border-bottom-style: none;
 	border-left-style: none;
-	background-color: #FAFAFA;
+	background-color: #f8f8ff;
 	font-size: 80%;
 }
 .memTemplItemLeft {
@@ -415,7 +428,8 @@ HR { height: 1px;
 }
 .memitem {
   padding: 4px;
-  background-color: #eef3f5;
+/*  background-color: #F0F2F4;*/
+  background-color: #eef;  
   border-width: 1px;
   border-style: solid;
   border-color: #dedeee;
@@ -429,11 +443,11 @@ HR { height: 1px;
   padding-left: 10px;
 }
 .memproto {
-  background-color: #d5e1e8;
+  background-color: #ddf;
   width: 100%;
   border-width: 1px;
   border-style: solid;
-  border-color: #84b0c7;
+  border-color: #aac;
   font-weight: bold;
   -moz-border-radius: 8px 8px 8px 8px;
 }

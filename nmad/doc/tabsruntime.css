@@ -4,6 +4,7 @@ DIV.tabs
 {
    float            : left;
    width            : 100%;
+        font: 1em sans-serif;
         background-color: #fe0;
         border-color: #fd0;
         border-style: solid;
@@ -11,13 +12,28 @@ DIV.tabs
         border-top-width: 0px;
         border-bottom-width: 6px;
         border-collapse: collapse;
-        padding: 2px;
+        padding: 0px;
+        padding-left: 2px;
+        padding-right: 2px;
         text-align: center;
+}
+
+DIV.tabs + DIV.tabs
+{
+        margin-top: -4px;
+        background-color: #fffa00;
+}
+
+DIV.tabs + H1
+{
+        clear: both;
+        padding-top: 32px;
 }
 
 DIV.tabs UL
 {
    margin           : 0px;
+   padding: 0px;
    padding-left     : 10px;
    list-style       : none;
         text-align: center;
@@ -37,6 +53,7 @@ DIV.tabs FORM
 
 DIV.tabs A
 {
+   padding: 0px;
    float            : left;
    font-weight      : bold;
    text-decoration  : none;

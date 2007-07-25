@@ -54,7 +54,7 @@
 
 /** @name Error return classes
  */
-//@{
+/* @{ */
 #define MPI_SUCCESS          0      /* Successful return code */
 #define MPI_ERR_BUFFER       1
 #define MPI_ERR_COUNT        2
@@ -78,22 +78,22 @@
 #define MPI_ERR_LASTCODE     1073741823
 
 #define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
-//@}
+/* @} */
 
 /** @name Pre-defined constants
  */
-//@{
+/* @{ */
 #define MPI_UNDEFINED      (-32766)
 #define MPI_UNDEFINED_RANK MPI_UNDEFINED
 #define MPI_KEYVAL_INVALID 0
-//@}
+/* @} */
 
 /** @name For supported thread levels */
 #define MPI_THREAD_SINGLE 0
 #define MPI_THREAD_FUNNELED 1
 #define MPI_THREAD_SERIALIZED 2
 #define MPI_THREAD_MULTIPLE 3
-//@}
+/* @} */
 
 typedef size_t MPI_Aint;
 
@@ -107,11 +107,11 @@ typedef struct {
 } MPI_Status;
 
 /** @name Status of receive operation */
-//@{
+/* @{ */
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
 #define MPI_STATUS_SIZE		4
-//@}
+/* @} */
 
 /** Request handle */
 typedef struct {
@@ -119,14 +119,14 @@ typedef struct {
 } MPI_Request;
 
 /** @name Communication request for a non blocking communication. */
-//@{
+/* @{ */
 /** The special value MPI_REQUEST_NULL is used to indicate an invalid
  *  request handle.
  */
 #define MPI_REQUEST_NULL   ((MPI_Request){'\0'})
 
 #define MPI_REQUEST_SIZE        4
-//@}
+/* @} */
 
 /** Group handle */
 typedef int MPI_Group;
@@ -140,10 +140,10 @@ typedef int MPI_Comm;
 #define MPI_COMM_SELF  ((MPI_Comm)92)
 /** Invalide request handle */
 #define MPI_COMM_NULL  ((MPI_Comm)0)
-//@}
+/* @} */
 
 /** @name Basic datatypes */
-//@{
+/* @{ */
 /** Datatype handle */
 typedef int MPI_Datatype;
 #define MPI_DATATYPE_NULL    ((MPI_Datatype)0)
@@ -168,10 +168,10 @@ typedef int MPI_Datatype;
 #define MPI_REAL	     ((MPI_Datatype)26)
 #define MPI_DOUBLE_PRECISION ((MPI_Datatype)27)
 #define MPI_INTEGER	     ((MPI_Datatype)28)
-//@}
+/* @} */
 
 /** @name Collective operations */
-//@{
+/* @{ */
 /** Operator handle */
 typedef int MPI_Op;
 #define MPI_OP_NULL (MPI_Op)(999)
@@ -187,26 +187,26 @@ typedef int MPI_Op;
 #define MPI_BXOR    (MPI_Op)(109)
 #define MPI_MINLOC  (MPI_Op)(110)
 #define MPI_MAXLOC  (MPI_Op)(111)
-//@}
+/* @} */
 
 #define MPI_MAX_PROCESSOR_NAME 256
 #define MPI_MAX_ERROR_STRING   512
 #define MPI_MAX_NAME_STRING    256
 
 /** @name Extended modes */
-//@{
+/* @{ */
 typedef int MPI_Communication_Mode;
 #define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)tbx_false)
 #define MPI_IS_COMPLETED        ((MPI_Communication_Mode)tbx_true)
 #define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
 #define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
-//@}
+/* @} */
 
 /** @name Error handlers */
-//@{
+/* @{ */
 typedef int MPI_Errhandler;
 #define MPI_ERRHANDLER_NULL ((MPI_Errhandler)0)
-//@}
+/* @} */
 
 /* @}*/
 

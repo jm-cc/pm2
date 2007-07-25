@@ -33,9 +33,7 @@
  */
 #define MPI_PROC_NULL   (-1)
 
-/**
- * Wilcard value for source.
- */
+/** Wilcard value for source. */
 #define MPI_ANY_SOURCE 	(-2)
 
 /**
@@ -90,8 +88,7 @@
 #define MPI_KEYVAL_INVALID 0
 //@}
 
-/** @name For supported thread levels
- */
+/** @name For supported thread levels */
 #define MPI_THREAD_SINGLE 0
 #define MPI_THREAD_FUNNELED 1
 #define MPI_THREAD_SERIALIZED 2
@@ -100,9 +97,7 @@
 
 typedef size_t MPI_Aint;
 
-/**
- * Status of receive operation
- */
+/** Status of receive operation */
 typedef struct {
   int count;
   int size;
@@ -111,25 +106,45 @@ typedef struct {
   int MPI_ERROR;
 } MPI_Status;
 
-/**
- * Communication request for a non blocking communication
- */ 
+/** @name Status of receive operation */
+//@{
+#define MPI_STATUS_IGNORE	(MPI_Status *)0
+#define MPI_STATUSES_IGNORE	(MPI_Status *)0
+#define MPI_STATUS_SIZE		4
+//@}
+
+/** Request handle */
 typedef struct {
   char request[128];
 } MPI_Request;
 
+/** @name Communication request for a non blocking communication. */
+//@{
+/** The special value MPI_REQUEST_NULL is used to indicate an invalid
+ *  request handle.
+ */
 #define MPI_REQUEST_NULL   ((MPI_Request){'\0'})
 
+#define MPI_REQUEST_SIZE        4
+//@}
+
+/** Group handle */
 typedef int MPI_Group;
 
+/** @name Communicators */
+/** Communicator handle */
 typedef int MPI_Comm;
+/** Default communicator that includes all processes. */
 #define MPI_COMM_WORLD ((MPI_Comm)91)
+/** Communicator that includes only the process itself. */
 #define MPI_COMM_SELF  ((MPI_Comm)92)
+/** Invalide request handle */
 #define MPI_COMM_NULL  ((MPI_Comm)0)
+//@}
 
-/** @name Basic datatypes
- */
+/** @name Basic datatypes */
 //@{
+/** Datatype handle */
 typedef int MPI_Datatype;
 #define MPI_DATATYPE_NULL    ((MPI_Datatype)0)
 #define MPI_CHAR             ((MPI_Datatype)1)
@@ -157,6 +172,7 @@ typedef int MPI_Datatype;
 
 /** @name Collective operations */
 //@{
+/** Operator handle */
 typedef int MPI_Op;
 #define MPI_OP_NULL (MPI_Op)(999)
 #define MPI_MAX     (MPI_Op)(100)
@@ -185,12 +201,6 @@ typedef int MPI_Communication_Mode;
 #define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
 #define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
 //@}
-
-#define MPI_STATUS_IGNORE	(MPI_Status *)0
-#define MPI_STATUSES_IGNORE	(MPI_Status *)0
-#define MPI_STATUS_SIZE		4
-
-#define MPI_REQUEST_SIZE        4
 
 /** @name Error handlers */
 //@{

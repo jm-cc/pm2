@@ -14,6 +14,27 @@
  * General Public License for more details.
  */
 
+/*! \mainpage The Marcel API Documentation
+ *
+ * \section intro_sec Introduction
+ * <div class="sec">
+ * Marcel is a thread library that was originaly developped to meet
+ * the needs of the PM2 multithreaded environment. Marcel provides a
+ * POSIX-compliant interface and a set of original extensions. It can
+ * also be compiled to provide ABI-compabiblity with NTPL threads
+ * under Linux, so that multithreaded applications can use Marcel
+ * without being recompiled.
+ * <P>Marcel features a two-level thread scheduler (also called N:M
+ * scheduler) that achieves the performance of a user-level thread
+ * package while being able to exploit multiprocessor machines. The
+ * architecture of Marcel was carefully designed to support a high
+ * number of threads and to efficiently exploit hierarchical
+ * architectures (e.g. multi-core chips, NUMA machines).</P>
+ * <P>More information about Marcel can be found at
+ *  found at http://runtime.futurs.inria.fr/marcel/.</P>
+ * </div>
+ */
+
 /** \file
  * \brief Marcel scheduler
  */

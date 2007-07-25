@@ -154,81 +154,154 @@ typedef struct mpir_datatype_s {
   int free_requested; /* a free request has been posted for this type while it was still active */
 } mpir_datatype_t;
 
+/**
+ * Initialises internal data
+ */
 int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
                        struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if);
 
+/**
+ * Internal shutdown of the application. 
+ */
 int mpir_internal_exit();
 
-/*
- * Accessor functions
- */
+/* Accessor functions */
 
+/**
+ * Gets the incoming gate id for the given node
+ */
 long mpir_get_in_gate_id(int node);
 
+/**
+ * Gets the outgoing gate id for the given node
+ */
 long mpir_get_out_gate_id(int node);
 
+/**
+ * Gets the node associated to the given incoming gate id
+ */
 int mpir_get_in_dest(long gate);
 
+/**
+ * Gets the node associated to the given outgoing gate id
+ */
 int mpir_get_out_dest(long gate);
 
+/* Send/recv/status functions */
 
-/*
- * Send/recv/status functions
+/**
+ * Initialises a sending request.
  */
-
 int mpir_isend_init(mpir_request_t *mpir_request,
                     int dest,
                     mpir_communicator_t *mpir_communicator);
 
+/**
+ * Starts a sending request.
+ */
 int mpir_isend_start(mpir_request_t *mpir_request);
 
+/**
+ * Sends data.
+ */
 int mpir_isend(mpir_request_t *mpir_request,
                int dest,
                mpir_communicator_t *mpir_communicator);
 
+/**
+ * Sets the status based on a given request.
+ */
 int mpir_set_status(MPI_Request *request,
 		    MPI_Status *status);
 
+/**
+ * Initialises a receiving request.
+ */
 int mpir_irecv_init(mpir_request_t *mpir_request,
                     int source,
                     mpir_communicator_t *mpir_communicator);
 
+/**
+ * Initialises a receiving request.
+ */
 int mpir_irecv_start(mpir_request_t *mpir_request);
 
+/**
+ * Receives data.
+ */
 int mpir_irecv(mpir_request_t *mpir_request,
                int source,
                mpir_communicator_t *mpir_communicator);
 
+/**
+ * Calls the appropriate splitting function based on the given request.
+ */
 int mpir_datatype_split(mpir_request_t *mpir_request);
 
+/**
+ * Starts a sending or receiving request.
+ */
 int mpir_start(mpir_request_t *mpir_request);
 
-/*
- * Datatype functionalities
- */
+/* Datatype functionalities */
 
+/**
+ * Gets the size of the given datatype.
+ */
 size_t mpir_sizeof_datatype(MPI_Datatype datatype);
 
+/**
+ * Gets the internal representation of the given datatype.
+ */
 mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype);
 
+/**
+ * Gets the size of the given datatype.
+ */
 int mpir_type_size(MPI_Datatype datatype, int *size);
 
+/**
+ * Gets the extent and lower bound of the given datatype.
+ */
 int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
 
+/**
+ * Creates a new datatype based on the given datatype and the new
+ * lower bound and extent.
+ */
 int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype);
 
+/**
+ * Commits the given datatype.
+ */
 int mpir_type_commit(MPI_Datatype datatype);
 
+/**
+ * Unlocks the given datatype, when the datatype is fully unlocked,
+ * and a freeing request was posted, it will be released.
+ */
 int mpir_type_unlock(MPI_Datatype datatype);
 
+/**
+ * Releases the given datatype.
+ */
 int mpir_type_free(MPI_Datatype datatype);
 
+/**
+ * Sets the optimised functionality for the given datatype.
+ */
 int mpir_type_optimized(MPI_Datatype datatype, int optimized);
 
+/**
+ * Creates a contiguous datatype.
+ */
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype);
 
+/**
+ * Creates a new vector datatype.
+ */
 int mpir_type_vector(int count,
                      int blocklength,
                      int stride,
@@ -236,6 +309,9 @@ int mpir_type_vector(int count,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 
+/**
+ * Creates an indexed datatype.
+ */
 int mpir_type_indexed(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
@@ -243,6 +319,9 @@ int mpir_type_indexed(int count,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype);
 
+/**
+ * Creates a struct datatype.
+ */
 int mpir_type_struct(int count,
                      int *array_of_blocklengths,
                      MPI_Aint *array_of_displacements,
@@ -250,43 +329,87 @@ int mpir_type_struct(int count,
                      MPI_Datatype *newtype);
 
 
-/*
- * Reduction operation functionalities
- */
+/* Reduction operation functionalities */
 
+/**
+ * Commits a new operator for reduction operations.
+ */
 int mpir_op_create(MPI_User_function *function,
                    int commute,
                    MPI_Op *op);
 
+/**
+ * Releases the given operator for reduction operations.
+ */
 int mpir_op_free(MPI_Op *op);
 
+/**
+ * Gets the function associated to the given operator.
+ */
 mpir_function_t *mpir_get_function(MPI_Op op);
 
+/**
+ * Defines the MAX function for reduction operations.
+ */
 void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+
+/**
+ * Defines the MIN function for reduction operations.
+ */
 void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+
+/**
+ * Defines the SUM function for reduction operations.
+ */
 void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+
+/**
+ * Defines the PROD function for reduction operations.
+ */
 void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
 
-/*
- * Communicator operations
- */
+/* Communicator operations */
 
+/**
+ * Gets the internal representation of the given communicator.
+ */
 mpir_communicator_t *mpir_get_communicator(MPI_Comm comm);
 
+/**
+ * Duplicates the given communicator.
+ */
 int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
+/**
+ * Releases the given communicator.
+ */
 int mpir_comm_free(MPI_Comm *comm);
 
+/**
+ * Gets the NM tag for the given user tag and communicator.
+ */
 int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag);
 
-/*
- * Termination functionalities
- */
+/* Termination functionalities */
 
+/**
+ * Using Friedmann  Mattern's Four Counter Method to detect
+ * termination detection.
+ * "Algorithms for Distributed Termination Detection." Distributed
+ * Computing, vol 2, pp 161-175, 1987.
+ */
 tbx_bool_t mpir_test_termination(MPI_Comm comm);
 
+/**
+ * Increases by one the counter of incoming messages. The counter is
+ * used for termination detection.
+ */
 void mpir_inc_nb_incoming_msg(void);
 
+/**
+ * Increases by one the counter of outgoing messages. The counter is
+ * used for termination detection.
+ */
 void mpir_inc_nb_outgoing_msg(void);
 
 #endif /* MPI_NMAD_PRIVATE_H */

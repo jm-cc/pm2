@@ -45,9 +45,6 @@ debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace")
 debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
 debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
 
-/**
- * Initialises internal data
- */
 int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
                        struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if) {
   int i;
@@ -210,9 +207,6 @@ int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t made
   return MPI_SUCCESS;
 }
 
-/**
- * Internal shutdown of the application. 
- */
 int mpir_internal_exit() {
   int i;
 
@@ -258,30 +252,18 @@ int mpir_internal_exit() {
   return MPI_SUCCESS;
 }
 
-/**
- * Gets the incoming gate id for the given node
- */
 long mpir_get_in_gate_id(int node) {
   return in_gate_id[node];
 }
 
-/**
- * Gets the outgoing gate id for the given node
- */
 long mpir_get_out_gate_id(int node) {
   return out_gate_id[node];
 }
 
-/**
- * Gets the node associated to the given incoming gate id
- */
 int mpir_get_in_dest(long gate) {
   return in_dest[gate];
 }
 
-/**
- * Gets the node associated to the given outgoing gate id
- */
 int mpir_get_out_dest(long gate) {
   return out_dest[gate];
 }
@@ -634,9 +616,6 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
   return err;
 }
 
-/**
- * Initialises a sending request.
- */
 int mpir_isend_init(mpir_request_t *mpir_request,
                     int dest,
                     mpir_communicator_t *mpir_communicator) {
@@ -748,9 +727,6 @@ int mpir_isend_init(mpir_request_t *mpir_request,
   return err;
 }
 
-/**
- * Starts a sending request.
- */
 int mpir_isend_start(mpir_request_t *mpir_request) {
   int err = MPI_SUCCESS;
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
@@ -768,9 +744,6 @@ int mpir_isend_start(mpir_request_t *mpir_request) {
   return err;
 }
 
-/**
- * Sends data.
- */
 int mpir_isend(mpir_request_t *mpir_request,
                int dest,
                mpir_communicator_t *mpir_communicator) {
@@ -783,9 +756,6 @@ int mpir_isend(mpir_request_t *mpir_request,
   return err;
 }
 
-/**
- * Sets the status based on a given request.
- */
 int mpir_set_status(MPI_Request *request,
 		    MPI_Status *status) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;
@@ -810,9 +780,6 @@ int mpir_set_status(MPI_Request *request,
   return MPI_SUCCESS;
 }
 
-/**
- * Initialises a receiving request.
- */
 int mpir_irecv_init(mpir_request_t *mpir_request,
                     int source,
                     mpir_communicator_t *mpir_communicator) {
@@ -945,9 +912,6 @@ static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
   return err;
 }
 
-/**
- * Initialises a receiving request.
- */
 int mpir_irecv_start(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
 
@@ -971,9 +935,6 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
   return mpir_request->request_error;
 }
 
-/**
- * Receives data.
- */
 int mpir_irecv(mpir_request_t *mpir_request,
                int dest,
                mpir_communicator_t *mpir_communicator) {
@@ -986,9 +947,6 @@ int mpir_irecv(mpir_request_t *mpir_request,
   return err;
 }
 
-/**
- * Calls the appropriate splitting function based on the given request.
- */
 int mpir_datatype_split(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
 
@@ -1009,9 +967,6 @@ int mpir_datatype_split(mpir_request_t *mpir_request) {
   return MPI_SUCCESS;
 }
 
-/**
- * Starts a sending or receiving request.
- */
 int mpir_start(mpir_request_t *mpir_request) {
   if (mpir_request->request_persistent_type == MPI_REQUEST_SEND) {
     return mpir_isend_start(mpir_request);
@@ -1028,7 +983,7 @@ int mpir_start(mpir_request_t *mpir_request) {
 /**
  * Gets the id of the next available datatype.
  */
-int get_available_datatype() {
+static int get_available_datatype() {
   if (tbx_slist_is_nil(available_datatypes) == tbx_true) {
     ERROR("Maximum number of datatypes created");
     return MPI_ERR_INTERN;
@@ -1042,17 +997,11 @@ int get_available_datatype() {
   }
 }
 
-/**
- * Gets the size of the given datatype.
- */
 size_t mpir_sizeof_datatype(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   return mpir_datatype->size;
 }
 
-/**
- * Gets the internal representation of the given datatype.
- */
 mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype) {
   if (tbx_unlikely(datatype <= NUMBER_OF_DATATYPES)) {
     if (tbx_unlikely(datatypes[datatype] == NULL)) {
@@ -1069,18 +1018,12 @@ mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype) {
   }
 }
 
-/**
- * Gets the size of the given datatype.
- */
 int mpir_type_size(MPI_Datatype datatype, int *size) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   *size = mpir_datatype->size;
   return MPI_SUCCESS;
 }
 
-/**
- * Gets the extent and lower bound of the given datatype.
- */
 int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   if (lb) {
@@ -1092,10 +1035,6 @@ int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *e
   return MPI_SUCCESS;
 }
 
-/**
- * Creates a new datatype based on the given datatype and the new
- * lower bound and extent.
- */
 int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype) {
   int i;
   mpir_datatype_t *mpir_old_datatype = mpir_get_datatype(oldtype);
@@ -1157,9 +1096,6 @@ int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent,
   return MPI_SUCCESS;
 }
 
-/**
- * Commits the given datatype.
- */
 int mpir_type_commit(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   mpir_datatype->committed = 1;
@@ -1169,10 +1105,6 @@ int mpir_type_commit(MPI_Datatype datatype) {
   return MPI_SUCCESS;
 }
 
-/**
- * Unlocks the given datatype, when the datatype is fully unlocked,
- * and a freeing request was posted, it will be released.
- */
 int mpir_type_unlock(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
 
@@ -1185,9 +1117,6 @@ int mpir_type_unlock(MPI_Datatype datatype) {
   return MPI_SUCCESS;
 }
 
-/**
- * Releases the given datatype.
- */
 int mpir_type_free(MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
 
@@ -1217,18 +1146,12 @@ int mpir_type_free(MPI_Datatype datatype) {
   }
 }
 
-/**
- * Sets the optimised functionality for the given datatype.
- */
 int mpir_type_optimized(MPI_Datatype datatype, int optimized) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   mpir_datatype->is_optimized = optimized;
   return MPI_SUCCESS;
 }
 
-/**
- * Creates a contiguous datatype.
- */
 int mpir_type_contiguous(int count,
                          MPI_Datatype oldtype,
                          MPI_Datatype *newtype) {
@@ -1253,9 +1176,6 @@ int mpir_type_contiguous(int count,
   return MPI_SUCCESS;
 }
 
-/**
- * Creates a new vector datatype.
- */
 int mpir_type_vector(int count,
                      int blocklength,
                      int stride,
@@ -1289,9 +1209,6 @@ int mpir_type_vector(int count,
   return MPI_SUCCESS;
 }
 
-/**
- * Creates an indexed datatype.
- */
 int mpir_type_indexed(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
@@ -1336,9 +1253,6 @@ int mpir_type_indexed(int count,
   return MPI_SUCCESS;
 }
 
-/**
- * Creates a struct datatype.
- */
 int mpir_type_struct(int count,
                      int *array_of_blocklengths,
                      MPI_Aint *array_of_displacements,
@@ -1380,9 +1294,6 @@ int mpir_type_struct(int count,
   return MPI_SUCCESS;
 }
 
-/**
- * Commits a new operator for reduction operations.
- */
 int mpir_op_create(MPI_User_function *function,
                    int commute,
                    MPI_Op *op) {
@@ -1402,9 +1313,6 @@ int mpir_op_create(MPI_User_function *function,
   }
 }
 
-/**
- * Releases the given operator for reduction operations.
- */
 int mpir_op_free(MPI_Op *op) {
   if (*op > NUMBER_OF_FUNCTIONS || functions[*op] == NULL) {
     ERROR("Operator %d unknown\n", *op);
@@ -1421,9 +1329,6 @@ int mpir_op_free(MPI_Op *op) {
   }
 }
 
-/**
- * Gets the function associated to the given operator.
- */
 mpir_function_t *mpir_get_function(MPI_Op op) {
   if (functions[op] != NULL) {
     return functions[op];
@@ -1434,9 +1339,6 @@ mpir_function_t *mpir_get_function(MPI_Op op) {
   }
 }
 
-/**
- * Defines the MAX function for reduction operations.
- */
 void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
@@ -1465,9 +1367,6 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-/**
- * Defines the MIN function for reduction operations.
- */
 void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
@@ -1496,9 +1395,6 @@ void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-/**
- * Defines the SUM function for reduction operations.
- */
 void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
@@ -1545,9 +1441,6 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-/**
- * Defines the PROD function for reduction operations.
- */
 void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   int i;
   switch (*type) {
@@ -1584,9 +1477,6 @@ void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-/**
- * Gets the internal representation of the given communicator.
- */
 mpir_communicator_t *mpir_get_communicator(MPI_Comm comm) {
   if (tbx_unlikely(comm <= NUMBER_OF_COMMUNICATORS)) {
     if (communicators[comm-MPI_COMM_WORLD] == NULL) {
@@ -1603,9 +1493,6 @@ mpir_communicator_t *mpir_get_communicator(MPI_Comm comm) {
   }
 }
 
-/**
- * Duplicates the given communicator.
- */
 int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
   if (tbx_slist_is_nil(available_communicators) == tbx_true) {
     ERROR("Maximum number of communicators created");
@@ -1633,9 +1520,6 @@ int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
   }
 }
 
-/**
- * Releases the given communicator.
- */
 int mpir_comm_free(MPI_Comm *comm) {
   if (*comm == MPI_COMM_WORLD) {
     ERROR("Cannot free communicator MPI_COMM_WORLD");
@@ -1662,9 +1546,6 @@ int mpir_comm_free(MPI_Comm *comm) {
   }
 }
 
-/**
- * Gets the NM tag for the given user tag and communicator.
- */
 int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
   /*
    * NewMadeleine only allows us 7 bits!
@@ -1677,12 +1558,6 @@ int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
   return newtag;
 }
 
-/**
- * Using Friedmann  Mattern's Four Counter Method to detect
- * termination detection.
- * "Algorithms for Distributed Termination Detection." Distributed
- * Computing, vol 2, pp 161-175, 1987.
- */
 tbx_bool_t mpir_test_termination(MPI_Comm comm) {
   int process_rank, global_size;
   MPI_Comm_rank(comm, &process_rank);
@@ -1766,18 +1641,10 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm) {
   }
 }
 
-/**
- * Increases by one the counter of incoming messages. The counter is
- * used for termination detection.
- */
 void mpir_inc_nb_incoming_msg(void) {
   nb_incoming_msg ++;
 }
 
-/**
- * Increases by one the counter of outgoing messages. The counter is
- * used for termination detection.
- */
 void mpir_inc_nb_outgoing_msg(void) {
   nb_outgoing_msg ++;
 }

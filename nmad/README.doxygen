@@ -6,6 +6,8 @@ $ doxygen
 To upload it on the gforge site:
 
 $ scp -pr doc/html gforge:/var/lib/gforge/chroot/home/users/nfurmento/pm2/htdocs/newmadeleine
+$ scp doc/* gforge:/var/lib/gforge/chroot/home/users/nfurmento/pm2/htdocs/newmadeleine/
+
 
 
 

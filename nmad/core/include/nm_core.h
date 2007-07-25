@@ -42,7 +42,7 @@
  * <div class="sec">
  * Several APIs are provided to NewMadeleine users:
  * - The pack interface: nm_so_pack_interface.c
- * - The send/receive interface: nm_so_sendrecv_interface.c
+ * - The \ref sr_interface
  * - The \ref mpi_interface
  * </div>
  *  

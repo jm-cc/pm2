@@ -16,6 +16,13 @@
 #ifndef _NM_SO_SENDRECV_INTERFACE_H_
 #define _NM_SO_SENDRECV_INTERFACE_H_
 
+/** \defgroup sr_interface SendRecv interface
+ *
+ * This is the NM SendRecv interface
+ *
+ * @{
+ */
+
 #include "tbx.h"
 #include "nm_so_sendrecv_interface_private.h"
 
@@ -243,5 +250,6 @@ extern unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
 			      uint16_t gate_id, uint8_t tag);
 
+/* @} */
 
 #endif

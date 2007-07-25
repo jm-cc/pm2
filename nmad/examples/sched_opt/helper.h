@@ -138,7 +138,7 @@ static int	 is_server;
  * Returns process rank
  */
 int get_rank() {
-  fprintf(stderr, "not implemented\n");
+  fprintf(stderr, "get_rank not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
@@ -146,7 +146,7 @@ int get_rank() {
  * Returns the number of nodes
  */
 int get_size() {
-  fprintf(stderr, "not implemented\n");
+  fprintf(stderr, "get_size not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
@@ -154,7 +154,7 @@ int get_size() {
  * Returns the gate id of the process dest
  */
 int get_gate_in_id(int dest) {
-  fprintf(stderr, "not implemented\n");
+  fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
@@ -162,7 +162,7 @@ int get_gate_in_id(int dest) {
  * Returns the gate id of the process dest
  */
 int get_gate_out_id(int dest) {
-  fprintf(stderr, "not implemented\n");
+  fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 

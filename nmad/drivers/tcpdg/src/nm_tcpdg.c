@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/utsname.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
@@ -239,15 +240,27 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
         uint16_t		 port;
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
+	struct utsname utsname;
         int			 err;
 
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
         SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));
 
+	/* retrieve the system hostname and use it as a default hostname,
+	 * leonie or the user will replace it if needed
+	 */
+	uname(&utsname);
+#ifndef CONFIG_PROTO_MAD3
+	WARN("Using system uts nodename \"%s\" for local url, might need to be superseded by a network-valid name",
+	     utsname.nodename);
+#endif
+
         /* driver url encoding						*/
         port		= ntohs(address.sin_port);
-        url_string	= tbx_string_init_to_int(port);
+	url_string	= tbx_string_init_to_cstring(utsname.nodename);
+	tbx_string_append_char(url_string, ':');
+	tbx_string_append_uint(url_string, port);
         p_drv->url	= tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
 

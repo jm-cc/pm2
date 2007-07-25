@@ -772,11 +772,17 @@ mad_nmad_connect(p_mad_connection_t   out,
 		char * url;
 		size_t url_len;
 
-		/* prefix the url with the hostname for tcp only */
 		if (!strcmp(out->channel->adapter->driver->device_name, "tcp")) {
-			url_len = strlen(r_n->name) + 1 + strlen(r_a->parameter) + 1;
+			/* remove the default hostname possibly provided by the tcp driver and add the correct one */
+			char *port_str = strchr(r_a->parameter, ':');
+			if (port_str) {
+				port_str++;
+			} else {
+				port_str = r_a->parameter;
+			}
+			url_len = strlen(r_n->name) + 1 + strlen(port_str) + 1;
 			url = TBX_MALLOC(url_len);
-			sprintf(url, "%s:%s", r_n->name, r_a->parameter);
+			sprintf(url, "%s:%s", r_n->name, port_str);
 		} else {
 			url = tbx_strdup(r_a->parameter);
 		}

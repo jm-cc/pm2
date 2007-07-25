@@ -77,12 +77,6 @@ struct nm_so_interface_ops sr_ops = {
 
 /* User interface */
 
-/** Initialize the send/receive interface.
- *
- *  @param p_core a pointer to the NM core object.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface to be filled by the function.
- *  @return The NM status.
- */
 int
 nm_so_sr_init(struct nm_core *p_core,
 	      struct nm_so_interface **p_so_interface)
@@ -114,10 +108,6 @@ nm_so_sr_init(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
-/** Shutdown the send/receive interface.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @return The NM status.
- */
 int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 {
@@ -129,15 +119,6 @@ nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 
 /* Send operations */
 
-/** Post a non blocking send request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @param p_request a pointer to a NM/SO request to be filled.
- *  @return The NM status.
- */
 int
 nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 	       uint16_t gate_id, uint8_t tag,
@@ -205,17 +186,6 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
   }
 }
 
-/** Post a ready send request. When seading a large packet requiring a
- *  RDV, waits for completion of RDV, i.e returns when the matching
- *  receive has been posted.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @param p_request a pointer to a NM/SO request to be filled.
- *  @return The NM status.
- */
 int
 nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 	       uint16_t gate_id, uint8_t tag,
@@ -262,11 +232,6 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   }
 }
 
-/** Test for the completion of a non blocking send request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -285,14 +250,6 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
-/** Test for the completion of a continuous series of non blocking send requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @param seq_inf the sequence number of the first request to check
- *  @param nb the number of requests to check.
- *  @return The NM status.
- */
 extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
@@ -319,11 +276,6 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-/** Wait for the completion of a non blocking send request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -339,14 +291,6 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
   return NM_ESUCCESS;
 }
 
-/** Wait for the completion of a continuous series of non blocking send requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @param seq_inf the sequence number of the first request to check
- *  @param nb the number of requests to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
@@ -373,15 +317,6 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 
 /* Receive operations */
 
-/** Post a non blocking receive request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the source gate id or NM_SO_ANY_SRC for receiving from any source.
- *  @param tag the message tag.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @param p_request a pointer to a NM/SO request to be filled.
- *  @return The NM status.
- */
 int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 	       long gate_id, uint8_t tag,
@@ -430,11 +365,6 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
   }
 }
 
-/** Test for the completion of a non blocking receive request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -453,14 +383,6 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
-/** Test for the completion of a continuous series of non blocking receive requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @param seq_inf the sequence number of the first request to check
- *  @param nb the number of requests to check.
- *  @return The NM status.
- */
 extern int
 nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
@@ -487,11 +409,6 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-/** Wait for the completion of a non blocking receive request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -510,12 +427,6 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
   return NM_ESUCCESS;
 }
 
-/** Retrieve the pkt source of a complete any source receive request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @param gate_id a pointer to where the source gate id should be put.
- *  @return The NM status.
- */
 int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
                      nm_so_request request, long *gate_id)
@@ -530,13 +441,6 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
   return NM_ESUCCESS;
 }
 
-/** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the source gate id.
- *  @param out_gate_id a pointer to the
- *  @param tag the message tag.
- *  @return The NM status.
- */
 int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
                long gate_id, long *out_gate_id, uint8_t tag)
@@ -584,14 +488,6 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
   return -NM_EAGAIN;
 }
 
-/** Wait for the completion of a continuous series of non blocking receive requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the source gate id.
- *  @param tag the message tag.
- *  @param seq_inf the sequence number of the first request to check
- *  @param nb the number of requests to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 		     uint16_t gate_id, uint8_t tag,
@@ -617,12 +513,6 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
   return NM_ESUCCESS;
 }
 
-/** Get the current send sequence number for the (gate,tag).
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @return The send sequence number.
- */
 unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
 			      uint16_t gate_id, uint8_t tag)
@@ -636,12 +526,6 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
   return p_so_gate->send_seq_number[tag];
 }
 
-/** Get the current receive sequence number for the (gate,tag).
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the source gate id.
- *  @param tag the message tag.
- *  @return The receive sequence number.
- */
 unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
 			      uint16_t gate_id, uint8_t tag)
@@ -744,10 +628,6 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
   return NM_ESUCCESS;
 }
 
-/** Calls the scheduler
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @return The NM status.
- */
 int
 nm_so_sr_progress(struct nm_so_interface *p_so_interface)
 {
@@ -759,11 +639,6 @@ nm_so_sr_progress(struct nm_so_interface *p_so_interface)
   return NM_ESUCCESS;
 }
 
-/** Test for the completion of a SET of non blocking receive requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
                   nm_so_request request)

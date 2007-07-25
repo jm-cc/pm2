@@ -21,6 +21,9 @@
 #ifndef MPI_COLLECTIVE_H
 #define MPI_COLLECTIVE_H
 
+/** \addtogroup mpi_interface */
+/* @{ */
+
 /**
  * User combination function.
  */
@@ -188,5 +191,6 @@ int MPI_Reduce_scatter(void *sendbuf,
                        MPI_Datatype datatype,
                        MPI_Op op,
                        MPI_Comm comm);
+/* @}*/
 
 #endif /* MPI_COLLECTIVE_H */

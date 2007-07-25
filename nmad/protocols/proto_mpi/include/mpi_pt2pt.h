@@ -21,6 +21,9 @@
 #ifndef MPI_PT2PT_H
 #define MPI_PT2PT_H
 
+/** \addtogroup mpi_interface */
+/* @{ */
+
 /**
  * Performs a extended send
  */
@@ -203,5 +206,7 @@ int MPI_Get_count(MPI_Status *status,
  * request handles
  */
 int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2);
+
+/* @}*/
 
 #endif /* MPI_PT2PT_H */

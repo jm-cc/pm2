@@ -21,6 +21,13 @@
 #ifndef MPI_COMMUNICATOR_H
 #define MPI_COMMUNICATOR_H
 
+/** \addtogroup mpi_interface */
+/* @{ */
+
+/** \file
+ * \brief MPI Communicator interface
+ */
+
 /**
  * Returns a handle to the group of the given communicator.
  */
@@ -57,5 +64,7 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 			      int *ranks1,
 			      MPI_Group group2,
 			      int *ranks2);
+
+/* @}*/
 
 #endif /* MPI_COMMUNICATOR_H */

@@ -21,6 +21,9 @@
 #ifndef MPI_DATATYPE_H
 #define MPI_DATATYPE_H
 
+/** \addtogroup mpi_interface */
+/* @{ */
+
 /**
  * Returns the byte address of location.
  */
@@ -152,5 +155,7 @@ int MPI_Type_struct(int count,
                     MPI_Aint *array_of_displacements,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype);
+
+/* @}*/
 
 #endif /* MPI_DATATYPE_H */

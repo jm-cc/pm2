@@ -21,6 +21,13 @@
 #ifndef MPI_H
 #define MPI_H
 
+/** \defgroup mpi_interface MPI Interface
+ *
+ * This is the MPI interface
+ *
+ * @{
+ */
+
 #include "mpi_types.h"
 
 #include "mpi_config.h"
@@ -34,6 +41,8 @@
 #include "mpi_datatype.h"
 
 #include "mpi_communicator.h"
+
+/* @} */
 
 #endif /* MPI_H */
 

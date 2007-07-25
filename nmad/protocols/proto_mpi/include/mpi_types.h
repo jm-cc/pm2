@@ -23,11 +23,32 @@
 
 #include <tbx.h>
 
+/**
+ * Specify a "dummy" source or destination for communication. Can be
+ * used instead of a rank wherever a source or a destination argument
+ * is required in a communication function.
+ */
 #define MPI_PROC_NULL   (-1)
+
+/**
+ * Wilcard value for source.
+ */
 #define MPI_ANY_SOURCE 	(-2)
+
+/**
+ * Specifies the root node for an intercommunicator collective
+ * communication.
+ */
 #define MPI_ROOT        (-3)
+
+/**
+ * Wilcard value for tag.
+ */
 #define MPI_ANY_TAG     (-1)
 
+/*
+ * Indicates address zero for the buffer argument.
+ */
 #define MPI_BOTTOM      (void *)0
 
 /* error return classes */
@@ -68,6 +89,9 @@
 
 typedef size_t MPI_Aint;
 
+/**
+ * Status of receive operation
+ */
 typedef struct {
   int count;
   int size;
@@ -76,6 +100,9 @@ typedef struct {
   int MPI_ERROR;
 } MPI_Status;
 
+/**
+ * Communication request for a non blocking communication
+ */ 
 typedef struct {
   char request[128];
 } MPI_Request;

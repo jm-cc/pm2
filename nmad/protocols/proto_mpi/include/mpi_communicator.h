@@ -24,10 +24,6 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
-/** \file
- * \brief MPI Communicator interface
- */
-
 /**
  * Returns a handle to the group of the given communicator.
  */

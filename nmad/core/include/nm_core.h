@@ -13,6 +13,41 @@
  * General Public License for more details.
  */
 
+/*! \mainpage The NewMadeleine API Documentation
+ *
+ * \section intro_sec Introduction
+ * <div class="sec">
+ *  NewMadeleine is a complete redesign and rewrite of the
+ *  communication library Madeleine. The new architecture aims at
+ *  enabling the use of a much wider range of communication flow
+ *  optimization technics. It is entirely modular: The request
+ *  scheduler itself is interchangeable, allowing experimentations
+ *  with multiple approaches or on multiple issues with regard to
+ *  processing communication flows. We have implemented an
+ *  optimizing scheduler called SchedOpt. SchedOpt targets
+ *  applications with irregular, multi-flow communication schemes such
+ *  as found in the increasingly common application conglomerates made
+ *  of multiple programming environments and coupled pieces of code,
+ *  for instance. SchedOpt itself is easily extensible through the
+ *  concepts of optimization strategies  (what to optimize for, what
+ *  the optimization goal is) expressed in terms of tactics (how to
+ *  optimize to reach the optimization goal). Tactics themselves are
+ *  made of basic communication flows operations such as packet
+ *  merging or reordering.
+ *  More information on NewMadeleine can be
+ *  found at http://runtime.futurs.inria.fr/newmadeleine/.
+ * </div>
+ *
+ * \section user_apis User APIs
+ * <div class="sec">
+ * Several APIs are provided to NewMadeleine users:
+ * - The pack interface: nm_so_pack_interface.c
+ * - The send/receive interface: nm_so_sendrecv_interface.c
+ * - The \ref mpi_interface
+ * </div>
+ *  
+ */
+
 /** Core NewMadeleine structure.
  */
 struct nm_core {

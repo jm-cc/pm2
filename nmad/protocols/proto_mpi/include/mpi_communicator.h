@@ -21,14 +21,41 @@
 #ifndef MPI_COMMUNICATOR_H
 #define MPI_COMMUNICATOR_H
 
-int MPI_Comm_group(MPI_Comm comm, MPI_Group *group);
+/**
+ * Returns a handle to the group of the given communicator.
+ */
+int MPI_Comm_group(MPI_Comm comm,
+		   MPI_Group *group);
 
-int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
+/**
+ * Partitions the group associated to the communicator into disjoint
+ * subgroups, one for each value of color.
+ */
+int MPI_Comm_split(MPI_Comm comm,
+		   int color,
+		   int key,
+		   MPI_Comm *newcomm);
 
-int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+/**
+ * Creates a new intracommunicator with the same fixed attributes as
+ * the input intracommunicator.
+ */
+int MPI_Comm_dup(MPI_Comm comm,
+		 MPI_Comm *newcomm);
 
+/**
+ * Marks the communication object for deallocation.
+ */
 int MPI_Comm_free(MPI_Comm *comm);
 
-int MPI_Group_translate_ranks(MPI_Group group1, int n, int *ranks1, MPI_Group group2, int *ranks2);
+/**
+ * Maps the rank of a set of processes in group1 to their rank in
+ * group2.
+ */
+int MPI_Group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2);
 
 #endif /* MPI_COMMUNICATOR_H */

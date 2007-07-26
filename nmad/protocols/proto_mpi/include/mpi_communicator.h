@@ -26,6 +26,9 @@
 
 /**
  * Returns a handle to the group of the given communicator.
+ * @param comm communicator
+ * @param group group corresponding to comm
+ * @return MPI status
  */
 int MPI_Comm_group(MPI_Comm comm,
 		   MPI_Group *group);
@@ -33,6 +36,11 @@ int MPI_Comm_group(MPI_Comm comm,
 /**
  * Partitions the group associated to the communicator into disjoint
  * subgroups, one for each value of color.
+ * @param comm communicator
+ * @param color control of subset assignment
+ * @param key control of rank assigment
+ * @param newcomm new communicator
+ * @return MPI status
  */
 int MPI_Comm_split(MPI_Comm comm,
 		   int color,
@@ -42,18 +50,29 @@ int MPI_Comm_split(MPI_Comm comm,
 /**
  * Creates a new intracommunicator with the same fixed attributes as
  * the input intracommunicator.
+ * @param comm communicator
+ * @param newcomm copy of comm
+ * @return MPI status
  */
 int MPI_Comm_dup(MPI_Comm comm,
 		 MPI_Comm *newcomm);
 
 /**
  * Marks the communication object for deallocation.
+ * @param comm communicator to be destroyed
+ * @return MPI status
  */
 int MPI_Comm_free(MPI_Comm *comm);
 
 /**
  * Maps the rank of a set of processes in group1 to their rank in
  * group2.
+ * @param group1 group
+ * @param n number of ranks in ranks1 and ranks2 arrays
+ * @param ranks1 array of zero or more valid ranks in group1
+ * @param group2 group
+ * @param ranks2 array of corresponding ranks in group2
+ * @return MPI status
  */
 int MPI_Group_translate_ranks(MPI_Group group1,
 			      int n,

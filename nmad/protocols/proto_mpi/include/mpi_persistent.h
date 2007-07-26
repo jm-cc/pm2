@@ -27,6 +27,14 @@
 /**
  * Creates a persistent communication request for a standard mode send
  * operation, and binds to it all the arguments of a send operation.
+ * @param buf initial address of send buffer
+ * @param count number of elements sent
+ * @param datatype type of each element
+ * @param dest rank of destination
+ * @param tag message tag
+ * @param comm communicator
+ * @param request communication request handle
+ * @return MPI status
  */
 int MPI_Send_init(void* buf,
                   int count,
@@ -38,6 +46,14 @@ int MPI_Send_init(void* buf,
 
 /**
  * Creates a persistent communication request for a receive operation.
+ * @param buf initial address of receive buffer
+ * @param count number of elements received
+ * @param datatype type of each element
+ * @param source rank of source or MPI_ANY_SOURCE
+ * @param tag message tag or MPI_ANY_TAG
+ * @param comm communicator
+ * @param request communication request handle
+ * @return MPI status
  */
 int MPI_Recv_init(void* buf,
                   int count,
@@ -54,12 +70,17 @@ int MPI_Recv_init(void* buf,
  * should be posted before the call is made. The communication buffer
  * should not be accessed after the call, and until the operation
  * completes.
+ * @param request communication request handle
+ * @return MPI status
  */
 int MPI_Start(MPI_Request *request);
 
 /**
  * Start all communications associated with requests in
  * array_of_requests.
+ * @param count list length
+ * @param array_of_requests array of requests
+ * @return MPI status
  */
 int MPI_Startall(int count,
                  MPI_Request *array_of_requests);

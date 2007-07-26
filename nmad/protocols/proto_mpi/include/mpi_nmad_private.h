@@ -157,8 +157,11 @@ typedef struct mpir_datatype_s {
 /**
  * Initialises internal data
  */
-int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
-                       struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if);
+int mpir_internal_init(int global_size,
+		       int process_rank,
+		       p_mad_madeleine_t madeleine,
+                       struct nm_so_interface *_p_so_sr_if,
+		       nm_so_pack_interface _p_so_pack_if);
 
 /**
  * Internal shutdown of the application. 
@@ -258,18 +261,24 @@ mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype);
 /**
  * Gets the size of the given datatype.
  */
-int mpir_type_size(MPI_Datatype datatype, int *size);
+int mpir_type_size(MPI_Datatype datatype,
+		   int *size);
 
 /**
  * Gets the extent and lower bound of the given datatype.
  */
-int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
+int mpir_type_get_lb_and_extent(MPI_Datatype datatype,
+				MPI_Aint *lb,
+				MPI_Aint *extent);
 
 /**
  * Creates a new datatype based on the given datatype and the new
  * lower bound and extent.
  */
-int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype);
+int mpir_type_create_resized(MPI_Datatype oldtype,
+			     MPI_Aint lb,
+			     MPI_Aint extent,
+			     MPI_Datatype *newtype);
 
 /**
  * Commits the given datatype.
@@ -290,7 +299,8 @@ int mpir_type_free(MPI_Datatype datatype);
 /**
  * Sets the optimised functionality for the given datatype.
  */
-int mpir_type_optimized(MPI_Datatype datatype, int optimized);
+int mpir_type_optimized(MPI_Datatype datatype,
+			int optimized);
 
 /**
  * Creates a contiguous datatype.
@@ -351,22 +361,34 @@ mpir_function_t *mpir_get_function(MPI_Op op);
 /**
  * Defines the MAX function for reduction operations.
  */
-void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_max(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type);
 
 /**
  * Defines the MIN function for reduction operations.
  */
-void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_min(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type);
 
 /**
  * Defines the SUM function for reduction operations.
  */
-void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_sum(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type);
 
 /**
  * Defines the PROD function for reduction operations.
  */
-void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type);
+void mpir_op_prod(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type);
 
 /* Communicator operations */
 
@@ -378,7 +400,8 @@ mpir_communicator_t *mpir_get_communicator(MPI_Comm comm);
 /**
  * Duplicates the given communicator.
  */
-int mpir_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+int mpir_comm_dup(MPI_Comm comm,
+		  MPI_Comm *newcomm);
 
 /**
  * Releases the given communicator.
@@ -388,7 +411,8 @@ int mpir_comm_free(MPI_Comm *comm);
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag);
+int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator,
+			      int tag);
 
 /* Termination functionalities */
 

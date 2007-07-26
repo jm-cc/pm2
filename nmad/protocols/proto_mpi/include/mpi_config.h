@@ -76,7 +76,8 @@ int MPI_Comm_rank(MPI_Comm comm,
  * This routine returns the name of the processor on which it was
  * called at the moment of the call.
  */
-int MPI_Get_processor_name(char *name, int *resultlen);
+int MPI_Get_processor_name(char *name,
+			   int *resultlen);
 
 /**
  * Returns a floating-point number of seconds, representing elapsed
@@ -94,12 +95,15 @@ double MPI_Wtick(void);
  * The argument string must represent storage that is at least
  * MPI_MAX_ERROR_STRING characters long.
  */
-int MPI_Error_string(int errorcode, char *string, int *resultlen);
+int MPI_Error_string(int errorcode,
+		     char *string,
+		     int *resultlen);
 
 /**
  * Returns the version
  */
-int MPI_Get_version(int *version, int *subversion);
+int MPI_Get_version(int *version,
+		    int *subversion);
 
 /* @}*/
 

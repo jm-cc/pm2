@@ -45,8 +45,11 @@ debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace")
 debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
 debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
 
-int mpir_internal_init(int global_size, int process_rank, p_mad_madeleine_t madeleine,
-                       struct nm_so_interface *_p_so_sr_if, nm_so_pack_interface _p_so_pack_if) {
+int mpir_internal_init(int global_size,
+		       int process_rank,
+		       p_mad_madeleine_t madeleine,
+                       struct nm_so_interface *_p_so_sr_if,
+		       nm_so_pack_interface _p_so_pack_if) {
   int i;
   int                              dest;
   int                              source;
@@ -1018,13 +1021,16 @@ mpir_datatype_t* mpir_get_datatype(MPI_Datatype datatype) {
   }
 }
 
-int mpir_type_size(MPI_Datatype datatype, int *size) {
+int mpir_type_size(MPI_Datatype datatype,
+		   int *size) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   *size = mpir_datatype->size;
   return MPI_SUCCESS;
 }
 
-int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent) {
+int mpir_type_get_lb_and_extent(MPI_Datatype datatype,
+				MPI_Aint *lb,
+				MPI_Aint *extent) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   if (lb) {
     *lb = mpir_datatype->lb;
@@ -1035,7 +1041,10 @@ int mpir_type_get_lb_and_extent(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *e
   return MPI_SUCCESS;
 }
 
-int mpir_type_create_resized(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent, MPI_Datatype *newtype) {
+int mpir_type_create_resized(MPI_Datatype oldtype,
+			     MPI_Aint lb,
+			     MPI_Aint extent,
+			     MPI_Datatype *newtype) {
   int i;
   mpir_datatype_t *mpir_old_datatype = mpir_get_datatype(oldtype);
 
@@ -1146,7 +1155,8 @@ int mpir_type_free(MPI_Datatype datatype) {
   }
 }
 
-int mpir_type_optimized(MPI_Datatype datatype, int optimized) {
+int mpir_type_optimized(MPI_Datatype datatype,
+			int optimized) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(datatype);
   mpir_datatype->is_optimized = optimized;
   return MPI_SUCCESS;
@@ -1339,7 +1349,10 @@ mpir_function_t *mpir_get_function(MPI_Op op) {
   }
 }
 
-void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+void mpir_op_max(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type) {
   int i;
   switch (*type) {
     case MPI_INTEGER :
@@ -1367,7 +1380,10 @@ void mpir_op_max(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+void mpir_op_min(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type) {
   int i;
   switch (*type) {
     case MPI_INTEGER :
@@ -1395,7 +1411,10 @@ void mpir_op_min(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+void mpir_op_sum(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type) {
   int i;
   switch (*type) {
     case MPI_INTEGER :
@@ -1441,7 +1460,10 @@ void mpir_op_sum(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
   }
 }
 
-void mpir_op_prod(void *invec, void *inoutvec, int *len, MPI_Datatype *type) {
+void mpir_op_prod(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type) {
   int i;
   switch (*type) {
     case MPI_INTEGER :
@@ -1546,7 +1568,8 @@ int mpir_comm_free(MPI_Comm *comm) {
   }
 }
 
-int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator, int tag) {
+int mpir_project_comm_and_tag(mpir_communicator_t *mpir_communicator,
+			      int tag) {
   /*
    * NewMadeleine only allows us 7 bits!
    * We suppose that comm is represented on 3 bits and tag on 4 bits.

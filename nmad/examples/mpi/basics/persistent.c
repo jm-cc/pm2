@@ -88,7 +88,7 @@ void check_buffer(char *buffer, int *strides, int *blocklengths) {
   }
 }
 
-void persistent_index(int ping_side, int rank_dst) {
+void persistent_index(int ping_side, int rank_dst, int optimized) {
   MPI_Datatype mytype;
   int blocklengths[3] = {1, 2, 3};
   int strides[3] = {0, 2, 3};
@@ -97,6 +97,12 @@ void persistent_index(int ping_side, int rank_dst) {
 
   MPI_Type_indexed(3, blocklengths, strides, MPI_CHAR, &mytype);
   MPI_Type_commit(&mytype);
+
+#if defined(MAD_MPI)
+  if (optimized) {
+    MPI_Type_optimized(&mytype, 1);
+  }
+#endif /* MAD_MPI */
 
   if (ping_side) {
     MPI_Request send_request;
@@ -158,7 +164,8 @@ int main(int argc, char **argv) {
   rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
   persistent_int(ping_side, rank_dst);
-  persistent_index(ping_side, rank_dst);
+  persistent_index(ping_side, rank_dst, 0);
+  persistent_index(ping_side, rank_dst, 1);
 
   MPI_Finalize();
   exit(0);

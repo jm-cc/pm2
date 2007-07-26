@@ -31,6 +31,8 @@ rm -f /tmp/pm2test_"${USER}"_expected
 for f in $hosts ; do
     echo "Index successfully received"
     echo "Index successfully received"
+    echo "Index successfully received"
+    echo "Index successfully received"
 done
 for f in $hosts ; do
     echo "success"

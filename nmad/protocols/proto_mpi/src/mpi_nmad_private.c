@@ -299,43 +299,45 @@ static inline void mpir_datatype_vector_aggregate(void *newptr,
 /**
  * Packs into a NM connection data represented by a vector datatype.
  */
-static inline void mpir_datatype_vector_pack(struct nm_so_cnx *connection,
-                                             void *buffer,
-                                             mpir_datatype_t *mpir_datatype,
-                                             int count) {
+static inline int mpir_datatype_vector_pack(struct nm_so_cnx *connection,
+					    void *buffer,
+					    mpir_datatype_t *mpir_datatype,
+					    int count) {
 #ifdef NMAD_DEBUG
   void *const orig = buffer;
 #endif
-  int               i, j;
+  int               i, j, err;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, buffer, (int)(buffer-orig));
-      nm_so_pack(connection, buffer, mpir_datatype->block_size);
+      err = nm_so_pack(connection, buffer, mpir_datatype->block_size);
       buffer += mpir_datatype->stride;
     }
   }
+  return err;
 }
 
 /**
  * Unpacks from a NM connection data represented by a vector datatype.
  */
-static inline void mpir_datatype_vector_unpack(struct nm_so_cnx *connection,
-                                               mpir_request_t *mpir_request,
-                                               void *buffer,
-                                               mpir_datatype_t *mpir_datatype,
-                                               int count) {
-  int i, k=0;
+static inline int mpir_datatype_vector_unpack(struct nm_so_cnx *connection,
+					      mpir_request_t *mpir_request,
+					      void *buffer,
+					      mpir_datatype_t *mpir_datatype,
+					      int count) {
+  int i, k=0, err;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   mpir_request->request_ptr[0] = buffer;
   for(i=0 ; i<count ; i++) {
     int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
-      nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->block_size);
+      err = nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->block_size);
       k++;
       mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->block_size;
     }
   }
   if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
+  return err;
 }
 
 /**
@@ -389,11 +391,11 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
 /**
  * Packs into a NM connection data represented by a indexed datatype.
  */
-static inline void mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
-                                              void *buffer,
-                                              mpir_datatype_t *mpir_datatype,
-                                              int count) {
-  int i, j;
+static inline int mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
+					     void *buffer,
+					     mpir_datatype_t *mpir_datatype,
+					     int count) {
+  int i, j, err;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
@@ -401,20 +403,21 @@ static inline void mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
       void *subptr = ptr + mpir_datatype->indices[j];
       MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
                      (long) mpir_datatype->indices[j], (long) mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
-      nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      err = nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
     }
   }
+  return err;
 }
 
 /**
  * Unpacks from a NM connection data represented by a indexed datatype.
  */
-static inline void mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
-                                                mpir_request_t *mpir_request,
-                                                void *buffer,
-                                                mpir_datatype_t *mpir_datatype,
-                                                int count) {
-  int i, k=0;
+static inline int mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
+					       mpir_request_t *mpir_request,
+					       void *buffer,
+					       mpir_datatype_t *mpir_datatype,
+					       int count) {
+  int i, k=0, err;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   mpir_request->request_ptr[0] = buffer;
   for(i=0 ; i<count ; i++) {
@@ -423,12 +426,13 @@ static inline void mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
       MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %d) with size %ld\n", i, j,
                      mpir_request->request_ptr[k], buffer, (int)(mpir_request->request_ptr[k]-buffer),
                      (long)mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
-      nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      err = nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
       k++;
       mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
   if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
+  return err;
 }
 
 /**
@@ -480,44 +484,46 @@ static inline void mpir_datatype_struct_aggregate(void *newptr,
 /**
  * Packs into a NM connection data represented by a struct datatype.
  */
-static inline void mpir_datatype_struct_pack(struct nm_so_cnx *connection,
-                                             void *buffer,
-                                             mpir_datatype_t *mpir_datatype,
-                                             int count) {
-  int i, j;
+static inline int mpir_datatype_struct_pack(struct nm_so_cnx *connection,
+					    void *buffer,
+					    mpir_datatype_t *mpir_datatype,
+					    int count) {
+  int i, j, err;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       ptr += mpir_datatype->indices[j];
       MPI_NMAD_TRACE("packing data at %p (+%ld) with a size %d*%ld\n", ptr, (long)mpir_datatype->indices[j], mpir_datatype->blocklens[j], (long)mpir_datatype->old_sizes[j]);
-      nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
+      err = nm_so_pack(connection, ptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
       ptr -= mpir_datatype->indices[j];
     }
   }
+  return err;
 }
 
 /**
  * Unpacks from a NM connection data represented by a struct datatype.
  */
-static inline void mpir_datatype_struct_unpack(struct nm_so_cnx *connection,
-                                                mpir_request_t *mpir_request,
-                                                void *buffer,
-                                                mpir_datatype_t *mpir_datatype,
-                                                int count) {
-  int i, k=0;
+static inline int mpir_datatype_struct_unpack(struct nm_so_cnx *connection,
+					      mpir_request_t *mpir_request,
+					      void *buffer,
+					      mpir_datatype_t *mpir_datatype,
+					      int count) {
+  int i, k=0, err;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   for(i=0 ; i<count ; i++) {
     int j;
     mpir_request->request_ptr[k] = buffer + i*mpir_datatype->extent;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       mpir_request->request_ptr[k] += mpir_datatype->indices[j];
-      nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
+      err = nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[j]);
       k++;
       mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] - mpir_datatype->indices[j];
     }
   }
   if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
+  return err;
 }
 
 /**
@@ -619,11 +625,36 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
   return err;
 }
 
+/**
+ * Calls the appropriate pack function based on the given request.
+ */
+static inline int mpir_pack_wrapper(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+  int err;
+
+  MPI_NMAD_TRACE("Packing data\n");
+  nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+
+  if (mpir_datatype->dte_type == MPIR_VECTOR) {
+    err = mpir_datatype_vector_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_INDEXED) {
+    MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %ld - extent %ld\n", mpir_datatype->elements,
+		   (long)mpir_datatype->size, (long)mpir_datatype->extent);
+    err = mpir_datatype_indexed_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_STRUCT) {
+    MPI_NMAD_TRACE("Sending struct type: size %ld\n", (long)mpir_datatype->size);
+    err = mpir_datatype_struct_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  return err;
+}
+
 int mpir_isend_init(mpir_request_t *mpir_request,
                     int dest,
                     mpir_communicator_t *mpir_communicator) {
   mpir_datatype_t      *mpir_datatype = NULL;
-  MPI_Request_type	rq_type	= MPI_REQUEST_SEND;
   int                   err = MPI_SUCCESS;
 
   if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
@@ -654,15 +685,8 @@ int mpir_isend_init(mpir_request_t *mpir_request,
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
     MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
-    if (mpir_datatype->is_optimized) {
-      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_vector_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      rq_type	= MPI_REQUEST_PACK_SEND;
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       MPI_NMAD_TRACE("Sending vector datatype in a contiguous buffer\n");
 
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
@@ -676,16 +700,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
     }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED) {
-    if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
-      MPI_NMAD_TRACE("Sending (h)indexed type: count %d - size %ld - extent %ld\n", mpir_datatype->elements,
-                     (long)mpir_datatype->size, (long)mpir_datatype->extent);
-      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_indexed_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      rq_type	= MPI_REQUEST_PACK_SEND;
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       MPI_NMAD_TRACE("Sending (h)indexed datatype in a contiguous buffer\n");
 
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
@@ -699,15 +714,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
     }
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
-    if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
-      MPI_NMAD_TRACE("Sending struct type: size %ld\n", (long)mpir_datatype->size);
-      nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_struct_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
-      rq_type	= MPI_REQUEST_PACK_SEND;
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       MPI_NMAD_TRACE("Sending struct datatype in a contiguous buffer\n");
 
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
@@ -725,8 +732,6 @@ int mpir_isend_init(mpir_request_t *mpir_request,
     return MPI_ERR_INTERN;
   }
 
-  if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = rq_type;
-
   return err;
 }
 
@@ -739,7 +744,10 @@ int mpir_isend_start(mpir_request_t *mpir_request) {
     err = mpir_isend_wrapper(mpir_request);
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_SEND;
   }
-  // else the data have already been sent through the pack interface
+  else {
+    err = mpir_pack_wrapper(mpir_request);
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
+  }
 
   nm_so_sr_progress(p_so_sr_if);
   mpir_inc_nb_outgoing_msg();
@@ -825,14 +833,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
   }
   else if (mpir_datatype->dte_type == MPIR_VECTOR) {
-    if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
-      MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_vector_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %ld to receive vector type\n", (long)(mpir_request->count * mpir_datatype->size));
@@ -844,14 +845,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
     }
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED) {
-    if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
-      MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %ld\n", mpir_datatype->elements, (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_indexed_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       MPI_NMAD_TRACE("Receiving (h)indexed datatype in a contiguous buffer\n");
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
@@ -864,14 +858,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
     }
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
-    if (mpir_datatype->is_optimized) {
-      struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-
-      MPI_NMAD_TRACE("Receiving struct type: size %ld\n", (long)mpir_datatype->size);
-      nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
-      mpir_datatype_struct_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
-    }
-    else {
+    if (!mpir_datatype->is_optimized) {
       mpir_request->contig_buffer = malloc(mpir_request->count * mpir_datatype->size);
       if (mpir_request->contig_buffer == NULL) {
         ERROR("Cannot allocate memory with size %ld to receive struct type\n", (long)(mpir_request->count * mpir_datatype->size));
@@ -915,8 +902,35 @@ static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
   return err;
 }
 
+/**
+ * Calls the appropriate unpack functions based on the given request.
+ */
+static inline int mpir_unpack_wrapper(mpir_request_t *mpir_request) {
+  mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+  int err;
+
+  MPI_NMAD_TRACE("Unpacking data\n");
+  nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
+
+  if (mpir_datatype->dte_type == MPIR_VECTOR) {
+    MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
+    err = mpir_datatype_vector_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_INDEXED) {
+    MPI_NMAD_TRACE("Receiving (h)indexed type: count %d - size %ld\n", mpir_datatype->elements, (long)mpir_datatype->size);
+    err = mpir_datatype_indexed_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  else if (mpir_datatype->dte_type == MPIR_STRUCT) {
+    MPI_NMAD_TRACE("Receiving struct type: size %ld\n", (long)mpir_datatype->size);
+    err = mpir_datatype_struct_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
+  }
+  return err;
+}
+
 int mpir_irecv_start(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  int err;
 
   mpir_datatype->active_communications ++;
 
@@ -928,7 +942,10 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
       if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_RECV;
     }
   }
-  // else the data have already been received through the pack interface
+  else {
+    err = mpir_unpack_wrapper(mpir_request);
+    if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
+  }
 
   nm_so_sr_progress(p_so_sr_if);
 

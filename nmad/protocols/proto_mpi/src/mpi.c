@@ -2604,7 +2604,7 @@ int MPI_Type_indexed(int count,
     displacements[i] = array_of_displacements[i];
   }
 
-  err = mpir_type_indexed(count, array_of_blocklengths, displacements, MPIR_INDEXED, oldtype, newtype);
+  err = mpir_type_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
 
   FREE_AND_SET_NULL(displacements);
   MPI_NMAD_LOG_OUT();
@@ -2616,7 +2616,22 @@ int MPI_Type_hindexed(int count,
                       MPI_Aint *array_of_displacements,
                       MPI_Datatype oldtype,
                       MPI_Datatype *newtype) {
-  return mpir_type_indexed(count, array_of_blocklengths, array_of_displacements, MPIR_HINDEXED, oldtype, newtype);
+  int err, i;
+  size_t old_size;
+
+  MPI_NMAD_LOG_IN();
+
+  MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
+  old_size = mpir_sizeof_datatype(oldtype);
+  for(i=0 ; i<count ; i++) {
+    displacements[i] = array_of_displacements[i] * old_size;
+  }
+
+  err = mpir_type_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
+
+  FREE_AND_SET_NULL(displacements);
+  MPI_NMAD_LOG_OUT();
+  return err;
 }
 
 int MPI_Type_struct(int count,

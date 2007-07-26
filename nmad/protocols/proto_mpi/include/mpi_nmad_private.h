@@ -21,6 +21,13 @@
 #ifndef MPI_NMAD_PRIVATE_H
 #define MPI_NMAD_PRIVATE_H
 
+/** \defgroup mpi_private_interface Mad-MPI Private Interface
+ *
+ * This is the Mad-MPI private interface
+ *
+ * @{
+ */
+
 #include <stdint.h>
 #include <unistd.h>
 
@@ -35,7 +42,7 @@
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
 
-#undef MPI_TIMER
+#undef MADMPI_TIMER
 
 extern debug_type_t debug_mpi_nmad_trace;
 extern debug_type_t debug_mpi_nmad_transfer;
@@ -61,7 +68,7 @@ extern debug_type_t debug_mpi_nmad_log;
 #  define MPI_NMAD_LOG_OUT()
 #endif /* NMAD_DEBUG */
 
-#if defined(MPI_TIMER)
+#if defined(MADMPI_TIMER)
 #  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();
 #  define MPI_NMAD_TIMER_OUT() { double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start) ; }
 #else
@@ -76,13 +83,13 @@ extern debug_type_t debug_mpi_nmad_log;
 
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
 
-/*
- * Maximum value of the tag used internally in MAD-MPI
- */
+/** Maximum value of the tag used internally in MAD-MPI */
 #define MAX_INTERNAL_TAG 10
 
+/** Maximum number of communicators */
 #define NUMBER_OF_COMMUNICATORS (MPI_COMM_SELF + 20)
 
+/** Internal communicator */
 typedef struct mpir_communicator_s {
   int communicator_id;
   int size;
@@ -90,6 +97,7 @@ typedef struct mpir_communicator_s {
   int *global_ranks;
 } mpir_communicator_t;
 
+/** Type of a communication request */
 typedef int MPI_Request_type;
 #define MPI_REQUEST_ZERO ((MPI_Request_type)0)
 #define MPI_REQUEST_SEND ((MPI_Request_type)1)
@@ -98,6 +106,7 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
+/** Internal communication request */
 typedef struct mpir_request_s {
   MPI_Request_type request_type;
   MPI_Request_type request_persistent_type;
@@ -116,40 +125,64 @@ typedef struct mpir_request_s {
   void *buffer;
 } mpir_request_t;
 
+/** Maximum number of reduction operators */
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
 
+/** Internal reduction operators */
 typedef struct mpir_function_s {
   MPI_User_function *function;
   int commute;
 } mpir_function_t;
 
+/** Maximum number of datatypes */
 #define NUMBER_OF_DATATYPES (MPI_INTEGER + 2020)
 
+/** Types of datatypes */
 typedef enum {
     MPIR_BASIC,
     MPIR_CONTIG, MPIR_VECTOR, MPIR_HVECTOR,
     MPIR_INDEXED, MPIR_HINDEXED, MPIR_STRUCT
 } mpir_nodetype_t;
 
+/** Internal datatype */
 typedef struct mpir_datatype_s {
-  mpir_nodetype_t    dte_type; /* type of datatype element this is */
+  /** type of datatype element this is */
+  mpir_nodetype_t dte_type;
+  /** whether basic or user-defined */
   int basic;
-  int committed; /* whether committed or not */
-  int is_contig; /* whether entirely contiguous */
-  size_t extent;
-  MPI_Aint lb; /* lower bound of type */
-  size_t size; /* size of type */
-  int elements; /* number of basic elements */
-  int stride; /* stride, for VECTOR and HVECTOR types */
-  MPI_Aint *indices; /* array of indices, for (H)INDEXED, STRUCT */
-  int blocklen; /* blocklen, for VECTOR and HVECTOR types */
-  int block_size; /* blocklen, for VECTOR and HVECTOR types */
-  int *blocklens; /* array of blocklens for (H)INDEXED, STRUCT */
-  size_t old_size; /* size of old type */
-  size_t* old_sizes; /* size of old types */
+  /** whether committed or not */
+  int committed; 
+  /** whether entirely contiguous */
+  int is_contig;
+  /** whether optimized or not */
   int is_optimized;
-  int active_communications; /* number of active communications using this type */
-  int free_requested; /* a free request has been posted for this type while it was still active */
+  /** extent */
+  size_t extent;
+  /** lower bound of type */
+  MPI_Aint lb;
+  /** size of type */
+  size_t size;
+  /** number of active communications using this type */
+  int active_communications;
+  /** a free request has been posted for this type while it was still active */
+  int free_requested;
+
+  /** number of basic elements */
+  int elements;
+  /** stride, for VECTOR and HVECTOR types */
+  int stride;
+  /** array of indices, for (H)INDEXED, STRUCT */
+  MPI_Aint *indices;
+  /** blocklen, for VECTOR and HVECTOR types */
+  int blocklen;
+  /* block_size, for VECTOR and HVECTOR types */
+  int block_size;
+  /* array of blocklens for (H)INDEXED, STRUCT */
+  int *blocklens;
+  /* size of old type */
+  size_t old_size;
+  /* size of old types */
+  size_t* old_sizes;
 } mpir_datatype_t;
 
 /**
@@ -433,5 +466,7 @@ void mpir_inc_nb_incoming_msg(void);
  * used for termination detection.
  */
 void mpir_inc_nb_outgoing_msg(void);
+
+/* @} */
 
 #endif /* MPI_NMAD_PRIVATE_H */

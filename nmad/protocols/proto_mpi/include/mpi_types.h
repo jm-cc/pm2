@@ -97,35 +97,44 @@
 
 typedef size_t MPI_Aint;
 
-/** Status of receive operation */
-typedef struct {
+/** @name Status of receive operation */
+/* @{ */
+/** Size of a status handle for the Fortran interface */
+#define MPI_STATUS_SIZE		4
+
+/** Status handle */
+struct MPI_Status_s {
   int count;
   int size;
   int MPI_SOURCE;
   int MPI_TAG;
   int MPI_ERROR;
-} MPI_Status;
+};
 
-/** @name Status of receive operation */
-/* @{ */
+/** Status handle */
+typedef struct MPI_Status_s MPI_Status;
+
 #define MPI_STATUS_IGNORE	(MPI_Status *)0
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
-#define MPI_STATUS_SIZE		4
 /* @} */
-
-/** Request handle */
-typedef struct {
-  char request[128];
-} MPI_Request;
 
 /** @name Communication request for a non blocking communication. */
 /* @{ */
+/** Size of a request handle for the Fortran interface */
+#define MPI_REQUEST_SIZE        4
+
+/** Request handle */
+struct MPI_Request_s{
+  char request[128];
+};
+
+/** Request handle */
+typedef struct MPI_Request_s MPI_Request;
+
 /** The special value MPI_REQUEST_NULL is used to indicate an invalid
  *  request handle.
  */
 #define MPI_REQUEST_NULL   ((MPI_Request){'\0'})
-
-#define MPI_REQUEST_SIZE        4
 /* @} */
 
 /** Group handle */

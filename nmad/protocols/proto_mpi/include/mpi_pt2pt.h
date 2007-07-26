@@ -205,7 +205,8 @@ int MPI_Get_count(MPI_Status *status,
  * This function does not belong to the MPI standard: compares two
  * request handles
  */
-int MPI_Request_is_equal(MPI_Request request1, MPI_Request request2);
+int MPI_Request_is_equal(MPI_Request request1,
+			 MPI_Request request2);
 
 /* @}*/
 

@@ -269,15 +269,15 @@ void mpi_wait_(int *request,
  * Fortran version for MPI_WAIT_ALL
  */
 void mpi_waitall_(int *count,
-                  int *request,
-                  int  status[][MPI_STATUS_SIZE],
+                  int *array_of_requests,
+                  int  array_of_statuses[][MPI_STATUS_SIZE],
                   int *ierr) {
   int err = NM_ESUCCESS;
   int i;
 
-  if ((MPI_Status *)status == MPI_STATUSES_IGNORE) {
+  if ((MPI_Status *)array_of_statuses == MPI_STATUSES_IGNORE) {
     for (i = 0; i < *count; i++) {
-      MPI_Request *p_request = (void *)request[i];
+      MPI_Request *p_request = (void *)array_of_requests[i];
         err =  MPI_Wait(p_request, MPI_STATUS_IGNORE);
         TBX_FREE(p_request);
         if (err != NM_ESUCCESS)
@@ -287,12 +287,12 @@ void mpi_waitall_(int *count,
   else {
     for (i = 0; i < *count; i++) {
       MPI_Status _status;
-      MPI_Request *p_request = (void *)request[i];
+      MPI_Request *p_request = (void *)array_of_requests[i];
       err =  MPI_Wait(p_request, &_status);
       if (*(status[i])) {
-	status[i][0] = _status.MPI_SOURCE;
-	status[i][1] = _status.MPI_TAG;
-	status[i][2] = _status.MPI_ERROR;
+	array_of_statuses[i][0] = _status.MPI_SOURCE;
+	array_of_statuses[i][1] = _status.MPI_TAG;
+	array_of_statuses[i][2] = _status.MPI_ERROR;
       }
       if (err != NM_ESUCCESS)
         goto out;
@@ -1614,21 +1614,21 @@ int MPI_Wait(MPI_Request *request,
 }
 
 int MPI_Waitall(int count,
-		MPI_Request *requests,
-		MPI_Status *statuses) {
+		MPI_Request *array_of_requests,
+		MPI_Status *array_of_statuses) {
   int err = NM_ESUCCESS;
   int i;
 
-  if (statuses == MPI_STATUSES_IGNORE) {
+  if (array_of_statuses == MPI_STATUSES_IGNORE) {
     for (i = 0; i < count; i++) {
-      err =  MPI_Wait(&(requests[i]), MPI_STATUS_IGNORE);
+      err =  MPI_Wait(&(array_of_requests[i]), MPI_STATUS_IGNORE);
       if (err != NM_ESUCCESS)
         goto out;
     }
   }
   else {
     for (i = 0; i < count; i++) {
-      err =  MPI_Wait(&(requests[i]), &(statuses[i]));
+      err =  MPI_Wait(&(array_of_requests[i]), &(array_of_statuses[i]));
       if (err != NM_ESUCCESS)
         goto out;
     }

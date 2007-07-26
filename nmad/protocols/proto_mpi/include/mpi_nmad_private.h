@@ -156,7 +156,7 @@ typedef struct mpir_datatype_s {
   int is_contig;
   /** whether optimized or not */
   int is_optimized;
-  /** extent */
+  /** extent of type */
   size_t extent;
   /** lower bound of type */
   MPI_Aint lb;
@@ -173,14 +173,10 @@ typedef struct mpir_datatype_s {
   int stride;
   /** array of indices, for (H)INDEXED, STRUCT */
   MPI_Aint *indices;
-  /** blocklen, for VECTOR and HVECTOR types */
-  int blocklen;
   /* block_size, for VECTOR and HVECTOR types */
   int block_size;
-  /* array of blocklens for (H)INDEXED, STRUCT */
+  /* array of blocklenghts */
   int *blocklens;
-  /* size of old type */
-  size_t old_size;
   /* size of old types */
   size_t* old_sizes;
 } mpir_datatype_t;

@@ -378,10 +378,10 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       void *subptr = ptr + mpir_datatype->indices[j];
       MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
-                     (long) mpir_datatype->blocklens[j] * mpir_datatype->old_size, subptr, (int)(subptr-buffer),
+                     (long) mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0], subptr, (int)(subptr-buffer),
                      newptr, (int)(newptr-dest));
-      memcpy(newptr, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-      newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
+      memcpy(newptr, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
 }
@@ -400,8 +400,8 @@ static inline void mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       void *subptr = ptr + mpir_datatype->indices[j];
       MPI_NMAD_TRACE("Sub-element %d,%d starts at %p (%p + %ld) with size %ld\n", i, j, subptr, ptr,
-                     (long) mpir_datatype->indices[j], (long) mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-      nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+                     (long) mpir_datatype->indices[j], (long) mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      nm_so_pack(connection, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
     }
   }
 }
@@ -422,10 +422,10 @@ static inline void mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       MPI_NMAD_TRACE("Sub-element %d,%d unpacked at %p (%p + %d) with size %ld\n", i, j,
                      mpir_request->request_ptr[k], buffer, (int)(mpir_request->request_ptr[k]-buffer),
-                     (long)mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-      nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_size);
+                     (long)mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      nm_so_unpack(connection, mpir_request->request_ptr[k], mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
       k++;
-      mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_size;
+      mpir_request->request_ptr[k] = mpir_request->request_ptr[k-1] + mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
   if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
@@ -446,11 +446,11 @@ static inline void mpir_datatype_indexed_split(void *recvbuffer,
     int j;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
-                     (long int)mpir_datatype->blocklens[j] * mpir_datatype->old_size,
+                     (long int)mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0],
                      recvptr, (int)(recvptr-recvbuffer), ptr, (int)(ptr-buffer));
-      memcpy(ptr, recvptr, mpir_datatype->blocklens[j] * mpir_datatype->old_size);
-      recvptr += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
-      ptr += mpir_datatype->blocklens[j] * mpir_datatype->old_size;
+      memcpy(ptr, recvptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
+      recvptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
+      ptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
 }
@@ -656,7 +656,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
   else if (mpir_datatype->dte_type == MPIR_VECTOR || mpir_datatype->dte_type == MPIR_HVECTOR) {
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
-    MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
+    MPI_NMAD_TRACE("Sending (h)vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
     if (mpir_datatype->is_optimized) {
       nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
       mpir_datatype_vector_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
@@ -828,7 +828,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
     if (mpir_datatype->is_optimized) {
       struct nm_so_cnx *connection = &(mpir_request->request_cnx);
 
-      MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklen, mpir_datatype->elements, (long)mpir_datatype->size);
+      MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
       nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
       mpir_datatype_vector_unpack(connection, mpir_request, mpir_request->buffer, mpir_datatype, mpir_request->count);
     }
@@ -1060,25 +1060,27 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
   datatypes[*newtype]->lb        = lb;
 
   if(datatypes[*newtype]->dte_type == MPIR_CONTIG) {
-    datatypes[*newtype]->old_size  = mpir_old_datatype->old_size;
-    datatypes[*newtype]->elements  = mpir_old_datatype->elements;
+    datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
+    datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->elements     = mpir_old_datatype->elements;
   }
   else if (datatypes[*newtype]->dte_type == MPIR_VECTOR ||
 	   datatypes[*newtype]->dte_type == MPIR_HVECTOR) {
-    datatypes[*newtype]->old_size   = mpir_old_datatype->old_size;
-    datatypes[*newtype]->old_sizes  = mpir_old_datatype->old_sizes;
-    datatypes[*newtype]->elements   = mpir_old_datatype->elements;
-    datatypes[*newtype]->blocklen   = mpir_old_datatype->blocklen;
-    datatypes[*newtype]->block_size = mpir_old_datatype->block_size;
-    datatypes[*newtype]->stride     = mpir_old_datatype->stride;
+    datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
+    datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->elements     = mpir_old_datatype->elements;
+    datatypes[*newtype]->blocklens    = malloc(1 * sizeof(int));
+    datatypes[*newtype]->blocklens[0] = mpir_old_datatype->blocklens[0];
+    datatypes[*newtype]->block_size   = mpir_old_datatype->block_size;
+    datatypes[*newtype]->stride       = mpir_old_datatype->stride;
   }
   else if (datatypes[*newtype]->dte_type == MPIR_INDEXED ||
 	   datatypes[*newtype]->dte_type == MPIR_HINDEXED) {
-    datatypes[*newtype]->old_size  = mpir_old_datatype->old_size;
-    datatypes[*newtype]->old_sizes = mpir_old_datatype->old_sizes;
-    datatypes[*newtype]->elements  = mpir_old_datatype->elements;
-    datatypes[*newtype]->blocklens = malloc(datatypes[*newtype]->elements * sizeof(int));
-    datatypes[*newtype]->indices   = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
+    datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
+    datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->elements     = mpir_old_datatype->elements;
+    datatypes[*newtype]->blocklens    = malloc(datatypes[*newtype]->elements * sizeof(int));
+    datatypes[*newtype]->indices      = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
     for(i=0 ; i<datatypes[*newtype]->elements ; i++) {
       datatypes[*newtype]->blocklens[i] = mpir_old_datatype->blocklens[i];
       datatypes[*newtype]->indices[i]   = mpir_old_datatype->indices[i];
@@ -1136,14 +1138,16 @@ int mpir_type_free(MPI_Datatype datatype) {
   }
   else {
     MPI_NMAD_TRACE_LEVEL(3, "Releasing datatype %d\n", datatype);
+    FREE_AND_SET_NULL(datatypes[datatype]->old_sizes);
     if (datatypes[datatype]->dte_type == MPIR_INDEXED ||
         datatypes[datatype]->dte_type == MPIR_HINDEXED ||
         datatypes[datatype]->dte_type == MPIR_STRUCT) {
       FREE_AND_SET_NULL(datatypes[datatype]->blocklens);
       FREE_AND_SET_NULL(datatypes[datatype]->indices);
-      if (datatypes[datatype]->dte_type == MPIR_STRUCT) {
-        FREE_AND_SET_NULL(datatypes[datatype]->old_sizes);
-      }
+    }
+    if (datatypes[datatype]->dte_type == MPIR_VECTOR ||
+	datatypes[datatype]->dte_type == MPIR_HVECTOR) {
+      FREE_AND_SET_NULL(datatypes[datatype]->blocklens);
     }
     int *ptr;
     ptr = malloc(sizeof(int));
@@ -1173,16 +1177,17 @@ int mpir_type_contiguous(int count,
 
   datatypes[*newtype]->dte_type = MPIR_CONTIG;
   datatypes[*newtype]->basic = 0;
-  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
+  datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
+  datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
-  datatypes[*newtype]->size = datatypes[*newtype]->old_size * count;
+  datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count;
   datatypes[*newtype]->elements = count;
   datatypes[*newtype]->lb = 0;
-  datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count;
+  datatypes[*newtype]->extent = datatypes[*newtype]->old_sizes[0] * count;
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new contiguous type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		       (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent, oldtype, (long)datatypes[*newtype]->old_size);
+		       (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent, oldtype, (long)datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -1200,22 +1205,23 @@ int mpir_type_vector(int count,
 
   datatypes[*newtype]->dte_type = type;
   datatypes[*newtype]->basic = 0;
-  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
-  datatypes[*newtype]->old_sizes = NULL;
+  datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
+  datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
-  datatypes[*newtype]->size = datatypes[*newtype]->old_size * count * blocklength;
+  datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count * blocklength;
   datatypes[*newtype]->elements = count;
-  datatypes[*newtype]->blocklen = blocklength;
-  datatypes[*newtype]->block_size = blocklength * datatypes[*newtype]->old_size;
+  datatypes[*newtype]->blocklens = malloc(1 * sizeof(int));
+  datatypes[*newtype]->blocklens[0] = blocklength;
+  datatypes[*newtype]->block_size = blocklength * datatypes[*newtype]->old_sizes[0];
   datatypes[*newtype]->stride = stride;
   datatypes[*newtype]->lb = 0;
-  datatypes[*newtype]->extent = datatypes[*newtype]->old_size * count * blocklength;
+  datatypes[*newtype]->extent = datatypes[*newtype]->old_sizes[0] * count * blocklength;
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
                        *newtype, (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent,
-                       datatypes[*newtype]->elements, datatypes[*newtype]->blocklen,
-                       oldtype, (long)datatypes[*newtype]->old_size);
+                       datatypes[*newtype]->elements, datatypes[*newtype]->blocklens[0],
+                       oldtype, (long)datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -1236,8 +1242,8 @@ int mpir_type_indexed(int count,
 
   datatypes[*newtype]->dte_type = type;
   datatypes[*newtype]->basic = 0;
-  datatypes[*newtype]->old_size = mpir_old_datatype->extent;
-  datatypes[*newtype]->old_sizes = NULL;
+  datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
+  datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
@@ -1251,15 +1257,15 @@ int mpir_type_indexed(int count,
   }
   if (type == MPIR_HINDEXED) {
     for(i=0 ; i<count ; i++) {
-      datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_size;
+      datatypes[*newtype]->indices[i] *= datatypes[*newtype]->old_sizes[0];
       MPI_NMAD_TRACE("Element %d: indice %ld\n", i, (long)datatypes[*newtype]->indices[i]);
     }
   }
-  datatypes[*newtype]->size = (datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_size * datatypes[*newtype]->blocklens[count-1]);
+  datatypes[*newtype]->size = (datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_sizes[0] * datatypes[*newtype]->blocklens[count-1]);
   datatypes[*newtype]->extent = (datatypes[*newtype]->indices[count-1] + mpir_old_datatype->extent * datatypes[*newtype]->blocklens[count-1]);
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new index type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		       (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent, oldtype, (long)datatypes[*newtype]->old_size);
+		       (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent, oldtype, (long)datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 

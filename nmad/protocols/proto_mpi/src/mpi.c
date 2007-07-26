@@ -1868,9 +1868,6 @@ int MPI_Send_init(void* buf,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
 
-  // We force the datatype not to be optimized, otherwise data are sent by mpir_send_init
-  MPI_Type_optimized(&datatype, 0);
-
   err = mpir_isend_init(mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
@@ -1906,9 +1903,6 @@ int MPI_Recv_init(void* buf,
   mpir_request->buffer = buf;
   mpir_request->count = count;
   mpir_request->user_tag = tag;
-
-  // We force the datatype not to be optimized, otherwise data are received by mpir_irecv_init
-  MPI_Type_optimized(&datatype, 0);
 
   err = mpir_irecv_init(mpir_request, source, mpir_communicator);
 

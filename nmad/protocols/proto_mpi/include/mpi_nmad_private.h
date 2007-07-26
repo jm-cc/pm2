@@ -140,7 +140,7 @@ typedef struct mpir_function_s {
 /** Types of datatypes */
 typedef enum {
     MPIR_BASIC,
-    MPIR_CONTIG, MPIR_VECTOR, MPIR_HVECTOR,
+    MPIR_CONTIG, MPIR_VECTOR,
     MPIR_INDEXED, MPIR_HINDEXED, MPIR_STRUCT
 } mpir_nodetype_t;
 
@@ -169,11 +169,11 @@ typedef struct mpir_datatype_s {
 
   /** number of basic elements */
   int elements;
-  /** stride, for VECTOR and HVECTOR types */
+  /** stride, for VECTOR type */
   int stride;
   /** array of indices, for (H)INDEXED, STRUCT */
   MPI_Aint *indices;
-  /* block_size, for VECTOR and HVECTOR types */
+  /* block_size, for VECTOR type */
   int block_size;
   /* array of blocklenghts */
   int *blocklens;
@@ -342,7 +342,6 @@ int mpir_type_contiguous(int count,
 int mpir_type_vector(int count,
                      int blocklength,
                      int stride,
-                     mpir_nodetype_t type,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype);
 

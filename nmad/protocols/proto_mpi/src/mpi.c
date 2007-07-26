@@ -2579,7 +2579,7 @@ int MPI_Type_vector(int count,
                     MPI_Datatype oldtype,
                     MPI_Datatype *newtype) {
   int hstride = stride * mpir_sizeof_datatype(oldtype);
-  return mpir_type_vector(count, blocklength, hstride, MPIR_VECTOR, oldtype, newtype);
+  return mpir_type_vector(count, blocklength, hstride, oldtype, newtype);
 }
 
 int MPI_Type_hvector(int count,
@@ -2587,7 +2587,7 @@ int MPI_Type_hvector(int count,
                      int stride,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
-  return mpir_type_vector(count, blocklength, stride, MPIR_HVECTOR, oldtype, newtype);
+  return mpir_type_vector(count, blocklength, stride, oldtype, newtype);
 }
 
 int MPI_Type_indexed(int count,

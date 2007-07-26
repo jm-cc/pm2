@@ -289,7 +289,7 @@ void mpi_waitall_(int *count,
       MPI_Status _status;
       MPI_Request *p_request = (void *)array_of_requests[i];
       err =  MPI_Wait(p_request, &_status);
-      if (*(status[i])) {
+      if (*(array_of_statuses[i])) {
 	array_of_statuses[i][0] = _status.MPI_SOURCE;
 	array_of_statuses[i][1] = _status.MPI_TAG;
 	array_of_statuses[i][2] = _status.MPI_ERROR;

@@ -35,8 +35,6 @@
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
 
-#define CHECK_RETURN_CODE(err, message) { if (err != NM_ESUCCESS) { printf("%s return err = %d\n", message, err); return 1; }}
-
 #undef MPI_TIMER
 
 extern debug_type_t debug_mpi_nmad_trace;

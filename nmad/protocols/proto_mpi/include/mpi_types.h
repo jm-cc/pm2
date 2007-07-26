@@ -80,8 +80,7 @@
 #define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
 /* @} */
 
-/** @name Pre-defined constants
- */
+/** @name Pre-defined constants */
 /* @{ */
 #define MPI_UNDEFINED      (-32766)
 #define MPI_UNDEFINED_RANK MPI_UNDEFINED

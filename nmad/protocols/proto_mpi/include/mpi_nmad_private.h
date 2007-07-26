@@ -42,8 +42,21 @@
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
 
+/** @name Timer */
+/* @{ */
 #undef MADMPI_TIMER
 
+#if defined(MADMPI_TIMER)
+#  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();
+#  define MPI_NMAD_TIMER_OUT() { double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start) ; }
+#else
+#  define MPI_NMAD_TIMER_IN() { }
+#  define MPI_NMAD_TIMER_OUT() { }
+#endif /* MADMPI_TIMER */
+/* @} */
+
+/** @name Debugging facilities */
+/* @{ */
 extern debug_type_t debug_mpi_nmad_trace;
 extern debug_type_t debug_mpi_nmad_transfer;
 extern debug_type_t debug_mpi_nmad_log;
@@ -67,14 +80,7 @@ extern debug_type_t debug_mpi_nmad_log;
 #  define MPI_NMAD_LOG_IN()
 #  define MPI_NMAD_LOG_OUT()
 #endif /* NMAD_DEBUG */
-
-#if defined(MADMPI_TIMER)
-#  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();
-#  define MPI_NMAD_TIMER_OUT() { double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start) ; }
-#else
-#  define MPI_NMAD_TIMER_IN() { }
-#  define MPI_NMAD_TIMER_OUT() { }
-#endif /* MPI_TIMER */
+/* @} */
 
 #define ERROR(...) { fprintf(stderr, "\n\n************\nERROR: %s\n\t", __TBX_FUNCTION__); fprintf(stderr, __VA_ARGS__); \
                      fprintf(stderr, "\n************\n\n"); fflush(stderr); \
@@ -86,6 +92,9 @@ extern debug_type_t debug_mpi_nmad_log;
 /** Maximum value of the tag used internally in MAD-MPI */
 #define MAX_INTERNAL_TAG 10
 
+/** @name Communicators */
+/* @{ */
+
 /** Maximum number of communicators */
 #define NUMBER_OF_COMMUNICATORS (MPI_COMM_SELF + 20)
 
@@ -96,7 +105,10 @@ typedef struct mpir_communicator_s {
   int rank;
   int *global_ranks;
 } mpir_communicator_t;
+/* @} */
 
+/** @name Requests */
+/* @{ */
 /** Type of a communication request */
 typedef int MPI_Request_type;
 #define MPI_REQUEST_ZERO ((MPI_Request_type)0)
@@ -124,7 +136,10 @@ typedef struct mpir_request_s {
   int count;
   void *buffer;
 } mpir_request_t;
+/* @} */
 
+/** @name Reduction operators */
+/* @{ */
 /** Maximum number of reduction operators */
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
 
@@ -133,7 +148,10 @@ typedef struct mpir_function_s {
   MPI_User_function *function;
   int commute;
 } mpir_function_t;
+/* @} */
 
+/** @name Datatypes */
+/* @{ */
 /** Maximum number of datatypes */
 #define NUMBER_OF_DATATYPES (MPI_INTEGER + 2020)
 
@@ -179,6 +197,7 @@ typedef struct mpir_datatype_s {
   /* size of old types */
   size_t* old_sizes;
 } mpir_datatype_t;
+/* @} */
 
 /**
  * Initialises internal data

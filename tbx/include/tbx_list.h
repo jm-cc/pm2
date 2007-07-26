@@ -30,6 +30,13 @@
 #ifndef TBX_LIST_H
 #define TBX_LIST_H
 
+/** \defgroup list_interface single-linked list interface
+ *
+ * This is the single-linked list interface
+ *
+ * @{
+ */
+
 typedef void (*p_tbx_list_foreach_func_t)(void * ptr);
 
 typedef struct s_tbx_list_element
@@ -62,5 +69,7 @@ typedef struct s_tbx_list_reference
   p_tbx_list_element_t   reference;
   tbx_bool_t             after_end;
 } tbx_list_reference_t;
+
+/* @} */
 
 #endif /* TBX_LIST_H */

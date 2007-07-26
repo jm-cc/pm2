@@ -23,6 +23,13 @@
 
 #ifndef PM2DEBUG_EST_DEF
 #define PM2DEBUG_EST_DEF
+/** \defgroup debug_interface debug logs interface
+ *
+ * This is the debug logs interface
+ *
+ * @{
+ */
+
 #ifndef PM2DEBUG
 /* for fprintf & stderr */
 #include <stdio.h>
@@ -250,7 +257,7 @@ debug_type_t DEBUG_NAME_WARN(DEBUG_NAME)= \
                                            PM2DEBUG_LOGLEVEL, \
                                            str "\n" , ## __VA_ARGS__)
 
-#ifdef __PROF_APP__
+#if defined(__PROF_APP__) || defined(NO_IMPLICIT_PROFILE)
 #define LOG_IN()              do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__); \
@@ -293,7 +300,7 @@ debug_type_t DEBUG_NAME_WARN(DEBUG_NAME)= \
 
 #else // else if not PM2DEBUG
 #define LOG(str, ...)      
-#ifdef __PROF_APP__
+#if defined (__PROF_APP__) || defined(NO_IMPLICIT_PROFILE)
 #define LOG_IN()           (void)(0)
 #define LOG_OUT()          (void)(0)
 #define LOG_RETURN(val)    return (val)
@@ -390,4 +397,6 @@ debug_type_t DEBUG_NAME_WARN(DEBUG_NAME)= \
 #define WARN_STR(str, str2)  fprintf(stderr, str ": %s\n" , (char *)(str2))
 
 #endif /* PM2DEBUG */
+
+/* @} */
 #endif

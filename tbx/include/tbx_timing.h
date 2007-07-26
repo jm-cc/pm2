@@ -32,6 +32,13 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+/** \defgroup timing_interface timing interface
+ *
+ * This is the timing interface
+ *
+ * @{
+ */
+
 /* Hum hum... Here we suppose that X86ARCH => Pentium! */
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
@@ -110,5 +117,7 @@ extern tbx_tick_t         tbx_new_event;
 extern tbx_tick_t         tbx_last_event;
 
 char *tbx_tick2str(long long t);
+
+/* @} */
 
 #endif /* TBX_TIMING_H */

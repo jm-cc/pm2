@@ -18,6 +18,10 @@
  * -------------------
  */
 
+/** \addtogroup malloc_interface
+ *
+ * @{
+ */
 #define DEFAULT_BLOCK_NUMBER 1024
 
 #include "tbx_compiler.h"
@@ -275,3 +279,4 @@ tbx_malloc_clean(p_tbx_memory_t mem)
   TBX_FREE(mem);
 }
 
+/* @} */

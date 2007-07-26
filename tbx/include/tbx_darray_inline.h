@@ -17,6 +17,11 @@
  * tbx_darray_inline.h
  * :::::::::::::::::::::::////////////////////////////////////////////////////
  */
+/** \addtogroup darray_interface
+ *
+ * @{
+ */
+
 
 
 /*
@@ -305,3 +310,5 @@ tbx_darray_next_idx(p_tbx_darray_t       darray,
 
   return result;
 }
+
+/* @} */

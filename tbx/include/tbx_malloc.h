@@ -31,6 +31,13 @@
 #ifndef TBX_MALLOC_H
 #define TBX_MALLOC_H
 
+/** \defgroup malloc_interface memory allocation interface
+ *
+ * This is the memory allocation interface
+ *
+ * @{
+ */
+
 /*
  * tbx_safe_malloc
  * ---------------
@@ -58,5 +65,7 @@ typedef struct s_tbx_memory
   long     nb_allocated;
   const char *name;
 } tbx_memory_t;
+
+/* @} */
 
 #endif /* TBX_MALLOC_H */

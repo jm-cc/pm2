@@ -28,6 +28,13 @@
 #ifndef TBX_HTABLE_H
 #define TBX_HTABLE_H
 
+/** \defgroup htable_interface hash-table interface
+ *
+ * This is the hash-table interface
+ *
+ * @{
+ */
+
 /*
  * Data types
  * ----------
@@ -57,5 +64,7 @@ typedef struct s_tbx_htable
   p_tbx_htable_element_t     *bucket_array;
   tbx_htable_element_count_t  nb_element;
 } tbx_htable_t;
+
+/* @} */
 
 #endif /* TBX_HTABLE_H */

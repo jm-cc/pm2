@@ -29,6 +29,13 @@
 #ifndef TBX_PARAMETER_H
 #define TBX_PARAMETER_H
 
+/** \defgroup param_interface command line args parsing interface
+ *
+ * This is the command line args parsing interface
+ *
+ * @{
+ */
+
 /*
  * Data structures 
  * ---------------
@@ -212,4 +219,6 @@ __TBX_ARGIT_VALUE_CSTR(ARGC, ARGV, USAGE)      \
 __TBX_ARGIT_INVALID_ARG(ARGC, ARGV, USAGE)     \
 __TBX_ARGIT_INIT(ARGC, ARGV)
  
+/* @} */
+
 #endif /* TBX_PARAMETER_H */

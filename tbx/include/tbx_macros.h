@@ -29,6 +29,13 @@
 
 #include "tbx_debug.h"
 
+/** \defgroup macros general purpose macros
+ *
+ * These are the general purpose macrocommands
+ *
+ * @{
+ */
+
 /* DEBUG: main debug flag */
 /* #define DEBUG */
 
@@ -484,8 +491,13 @@ do { \
       } \
   }
 
+/* @} */
 #endif /* TBX_MACROS_H */
 
+/** \addtogroup macros
+ *
+ * @{
+ */
 /*
  * Stringification  _________________________________________________
  * ________________//////////////////////////////////////////////////
@@ -521,3 +533,4 @@ do { \
 #define PM2_NUIOA_ANY_NODE (-1) /* we don't like any numa node more than the others */
 #define PM2_NUIOA_CONFLICTING_NODES (-2) /* we like several different numa nodes, no solution */
 #endif
+/* @} */

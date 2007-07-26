@@ -29,6 +29,15 @@
 #ifndef TBX_FORTRAN_ARGUMENT_H
 #define TBX_FORTRAN_ARGUMENT_H
 
+/** \defgroup fortran_interface compiler dependent Fortran interface
+ *
+ * This is the compiler dependent Fortran interface
+ *
+ * @{
+ */
+
 void tbx_fortran_init(int *argc, char ***argv);
+
+/* @} */
 
 #endif /* TBX_FORTRAN_ARGUMENT_H */

@@ -57,6 +57,9 @@ tbx_dump(unsigned char *p,
 void
 tbx_default_specific_dest(void *specific);
 
+/** \addtogroup timing_interface
+ *  @{
+ */
 /*
  * Timing
  * ------
@@ -70,6 +73,11 @@ tbx_timing_exit(void);
 double
 tbx_tick2usec(long long t);
 
+/* @} */
+
+/** \addtogroup malloc_interface
+ *  @{
+ */
 /*
  * Aligned malloc
  * --------------
@@ -161,7 +169,12 @@ void
 tbx_malloc_clean(p_tbx_memory_t memory);
 
 
+/* @} */
 
+
+/** \addtogroup list_interface
+ *  @{
+ */
 /*
  * List management
  * ---------------
@@ -248,6 +261,11 @@ __inline__
 tbx_bool_t
 tbx_reference_after_end_of_list(const p_tbx_list_reference_t ref);
 
+/* @} */
+
+/** \addtogroup slist_interface
+ *  @{
+ */
 /*
  * Search list management
  * ----------------------
@@ -625,6 +643,11 @@ __inline__
 void *
 tbx_slist_nref_get(p_tbx_slist_nref_t nref);
 
+/* @} */
+
+/** \addtogroup htable_interface
+ *  @{
+ */
 /*
  * Hash table management
  * ---------------------
@@ -683,6 +706,12 @@ tbx_htable_dump_keys_strvals(p_tbx_htable_t htable);
 
 void
 tbx_htable_dump_keys_ptrvals(p_tbx_htable_t htable);
+
+/* @} */
+
+/** \addtogroup string_interface
+ *  @{
+ */
 
 /*
  * String management
@@ -830,6 +859,11 @@ tbx_cstr_to_long(const char *s);
 unsigned long
 tbx_cstr_to_unsigned_long(const char *s);
 
+/* @} */
+
+/** \addtogroup darray_interface
+ *  @{
+ */
 /*
  * Dynamic arrays management
  * ------------------------
@@ -904,6 +938,11 @@ void *
 tbx_darray_next_idx(p_tbx_darray_t       darray,
 		    p_tbx_darray_index_t idx);
 
+/* @} */
+
+/** \addtogroup param_interface
+ *  @{
+ */
 /*
  * Parameter management
  * --------------------
@@ -1059,5 +1098,7 @@ tbx_command_to_string(const p_tbx_command_t command);
 
 p_tbx_argument_set_t
 tbx_command_to_argument_set(const p_tbx_command_t command);
+
+/* @} */
 
 #endif /* __TBX_INTERFACE_H */

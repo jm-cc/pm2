@@ -17,6 +17,11 @@
  * tbx_slist_inline.h
  * -----------------
  */
+/** \addtogroup slist_interface
+ *
+ * @{
+ */
+
 /*
  * data structures
  * ___________________________________________________________________________
@@ -1868,3 +1873,4 @@ tbx_slist_nref_get(p_tbx_slist_nref_t nref)
     TBX_FAILURE("uninitialized reference");
 }
 
+/* @} */

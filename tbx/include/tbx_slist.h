@@ -29,6 +29,13 @@
 #ifndef TBX_SLIST_H
 #define TBX_SLIST_H
 
+/** \defgroup slist_interface doubly linked lists interface
+ *
+ * This is the doubly linked lists interface
+ *
+ * @{
+ */
+
 /*
  * Data structures
  * ---------------
@@ -57,5 +64,7 @@ typedef struct s_tbx_slist
   p_tbx_slist_element_t  ref;
   p_tbx_slist_nref_t     nref_head;
 } tbx_slist_t;
+
+/* @} */
 
 #endif /* TBX_SLIST_H */

@@ -21,6 +21,12 @@
 #ifndef TBX_COMPILER_H_EST_DEF
 #define TBX_COMPILER_H_EST_DEF
 
+/** \defgroup compiler_interface compiler dependent feature interface
+ *
+ * This is the compiler dependent feature interface
+ *
+ * @{
+ */
 #define _TBX_STRING(x) #x
 #define TBX_STRING(x) _TBX_STRING(x)
 
@@ -312,5 +318,7 @@ void __memory_barrier(void);
 # define __TBX_BEGIN_DECLS
 # define __TBX_END_DECLS
 #endif
+
+/* @} */
 
 #endif /* TBX_COMPILER_H_EST_DEF */

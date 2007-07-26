@@ -28,6 +28,13 @@
 #ifndef TBX_DARRAY_H
 #define TBX_DARRAY_H
 
+/** \defgroup darray_interface dynamic array interface
+ *
+ * This is the dynamic array interface
+ *
+ * @{
+ */
+
 /*
  * Data structures 
  * ---------------
@@ -39,5 +46,7 @@ typedef struct s_tbx_darray
   tbx_darray_index_t   allocated_length;
   void               **data;
 } tbx_darray_t;
+
+/* @} */
 
 #endif /* TBX_DARRAY_H */

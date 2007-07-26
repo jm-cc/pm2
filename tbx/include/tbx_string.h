@@ -28,6 +28,13 @@
 #ifndef TBX_STRING_H
 #define TBX_STRING_H
 
+/** \defgroup string_interface string list interface
+ *
+ * This is the string list interface
+ *
+ * @{
+ */
+
 /*
  * Data structures
  * ---------------
@@ -38,5 +45,7 @@ typedef struct s_tbx_string
   size_t  allocated_length;
   char   *data;
 } tbx_string_t;
+
+/* @} */
 
 #endif /* TBX_STRING_H */

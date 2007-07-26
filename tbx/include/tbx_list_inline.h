@@ -17,6 +17,12 @@
  * tbx_list_inline.h
  * -----------------
  */
+
+/** \addtogroup list_interface
+ *
+ * @{
+ */
+
 extern p_tbx_memory_t tbx_list_manager_memory;
 
 static
@@ -393,3 +399,5 @@ tbx_reference_after_end_of_list(p_tbx_list_reference_t ref)
       return tbx_true;
     }
 }
+
+/* @} */

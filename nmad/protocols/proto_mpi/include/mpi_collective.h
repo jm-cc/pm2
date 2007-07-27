@@ -75,15 +75,20 @@ int MPI_Gather(void *sendbuf,
                MPI_Comm comm);
 
 /**
- * MPI_GATHERV extends the functionality of MPI_GATHER by allowing a
- * varying count of data.
+ * Extends the functionality of MPI_Gather() by allowing a varying
+ * count of data.
  * @param sendbuf starting address of send buffer
  * @param sendcount number of elements in send buffer
  * @param sendtype data type of send buffer elements
  * @param recvbuf address of receive buffer (significant only at root)
- * @param recvcounts integer array of length group size containing the number of elements that are received from each process (significant only at root)
- * @param displs integer array of length group size. Entry i specifies the displacement relative to recvbuf at which to place the incoming data from process i (significant only at root)
- * @param recvtype data type of recv buffer elements (significant only at root)
+ * @param recvcounts integer array of length group size containing the
+ * number of elements that are received from each process (significant
+ * only at root)
+ * @param displs integer array of length group size. Entry i specifies
+ * the displacement relative to recvbuf at which to place the incoming
+ * data from process i (significant only at root)
+ * @param recvtype data type of recv buffer elements (significant only
+ * at root)
  * @param root rank of receiving process
  * @param comm communicator
  * @return MPI status
@@ -99,7 +104,7 @@ int MPI_Gatherv(void *sendbuf,
                 MPI_Comm comm);
 
 /**
- * MPI_ALLGATHER can be thought of as MPI_GATHER, except all processes
+ * Extends the functionality of MPI_Gather(), except all processes
  * receive the result.
  * @param sendbuf starting address of send buffer
  * @param sendcount number of elements in send buffer
@@ -119,7 +124,7 @@ int MPI_Allgather(void *sendbuf,
                   MPI_Comm comm);
 
 /**
- * MPI_ALLGATHERV can be thought of as MPI_GATHERV, except all processes
+ * Extends the functionality of MPI_Gatherv(), except all processes
  * receive the result.
  * @param sendbuf starting address of send buffer
  * @param sendcount number of elements in send buffer
@@ -141,7 +146,7 @@ int MPI_Allgatherv(void *sendbuf,
                    MPI_Comm comm);
 
 /**
- * Inverse operation of MPI_GATHER
+ * Inverse operation of MPI_Gather()
  * @param sendbuf address of send buffer
  * @param sendcount number of elements sent to each process
  * @param sendtype data type of send buffer elements
@@ -162,10 +167,10 @@ int MPI_Scatter(void *sendbuf,
                 MPI_Comm comm);
 
 /**
- * MPI_ALLTOALL is an extension of MPI_ALLGATHER to the case where
- * each process sends distinct data to each of the receivers. The jth
- * block sent from process i is received by process j and is placed in
- * the ith block of recvbuf.
+ * Extension of MPI_Allgather() to the case where each process sends
+ * distinct data to each of the receivers. The jth block sent from
+ * process i is received by process j and is placed in the ith block
+ * of recvbuf.
  * @param sendbuf starting address of send buffer
  * @param sendcount number of elements sent to each process
  * @param sendtype data type of send buffer elements
@@ -184,16 +189,20 @@ int MPI_Alltoall(void* sendbuf,
 		 MPI_Comm comm);
 
 /**
- * MPI_ALLTOALLV adds flexibility to MPI_ALLTOALL in that the location
+ * Adds flexibility to MPI_Alltoall() in that the location
  * of data for the send is specified by sdispls and the location of
  * the placement of the data on the receive side is specified by
  * rdispls.
  * @param sendbuf starting address of send buffer
- * @param sendcount integer array equal to the group size specifying the number of elements to send to each processor
- * @param sdispls integer array of length group size. Entry j specifies the displacement relative to sendbuf from which to take the outgoing data destined for process j
+ * @param sendcount integer array equal to the group size specifying
+ * the number of elements to send to each processor
+ * @param sdispls integer array of length group size. Entry j
+ * specifies the displacement relative to sendbuf from which to take
+ * the outgoing data destined for process j
  * @param sendtype data type of send buffer elements
  * @param recvbuf address of receive buffer
- * @param recvcount integer array equal to the group size specifying the number of elements that can be received from each processor
+ * @param recvcount integer array equal to the group size specifying
+ * the number of elements that can be received from each processor
  * @param recvdispls integer array
  * @param recvType data type of receive buffer elements
  * @param comm communicator
@@ -269,7 +278,7 @@ int MPI_Allreduce(void* sendbuf,
                   MPI_Comm comm);
 
 /**
- * MPI_REDUCE_SCATTER first does an element-wise reduction on vector
+ * First does an element-wise reduction on vector
  * of elements in the send buffer defined by sendbuf, count and
  * datatype. Next, the resulting vector of results is split into n
  * disjoint segments, where n is the number of members in the group.
@@ -278,7 +287,9 @@ int MPI_Allreduce(void* sendbuf,
  * recvcounts[i] and datatype.
  * @param sendbuf starting address of send buffer
  * @param recvbuf starting address of receive buffer
- * @param recvcounts integer array specifying the number of elements in result distributed to each process. Array must be identical on all calling processes
+ * @param recvcounts integer array specifying the number of elements
+ * in result distributed to each process. Array must be identical on
+ * all calling processes
  * @param datatype data type of elements of input buffer
  * @param op operation
  * @param comm communicator

@@ -36,7 +36,7 @@ int MPI_Init(int *argc,
 
 /**
  * The following function may be used to initialize MPI, and
- * initialize the MPI thread environment, instead of MPI_Init.
+ * initialize the MPI thread environment, instead of MPI_Init().
  *
  * @param argc a pointer to the process argc.
  * @param argv a pointer to the process argv.
@@ -103,8 +103,8 @@ int MPI_Get_processor_name(char *name,
 double MPI_Wtime(void);
 
 /**
- * Returns the resolution of MPI_WTIME in seconds.
- * @return resolution of MPI_WTIME in seconds
+ * Returns the resolution of MPI_Wtime() in seconds.
+ * @return resolution of MPI_Wtime() in seconds
  */
 double MPI_Wtick(void);
 

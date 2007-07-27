@@ -51,7 +51,7 @@ void test_probe(int rank, int size) {
   rank_dst = ping_side?(rank | 1) : (rank & ~1);
 
   if (ping_side) {
-    int *x = malloc(size*sizeof(int));
+    int *x = calloc(size, sizeof(int));
 
     x[0] = 29;
     MPI_Send(x, size, MPI_INT, rank_dst, 22, MPI_COMM_WORLD);
@@ -77,7 +77,7 @@ void test_probe(int rank, int size) {
     }
 
     MPI_Iprobe(MPI_ANY_SOURCE, 22, MPI_COMM_WORLD, &flag1, &status1);
-    fprintf(stdout,"\n\nIprobe: flag=%d, source=%d, tag=%d\n", flag1, status1.MPI_SOURCE, status1.MPI_TAG);
+    //    fprintf(stdout,"\n\nIprobe: flag=%d, source=%d, tag=%d\n", flag1, status1.MPI_SOURCE, status1.MPI_TAG);
 
     if (flag1 == 1) {
       MPI_Recv(y, size, MPI_INT, status1.MPI_SOURCE, status1.MPI_TAG, MPI_COMM_WORLD, &status2);

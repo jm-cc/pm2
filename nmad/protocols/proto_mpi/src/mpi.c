@@ -1598,9 +1598,9 @@ int MPI_Wait(MPI_Request *request,
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
     mpir_request->request_type = MPI_REQUEST_ZERO;
-    if (mpir_request->request_ptr != NULL) {
-      FREE_AND_SET_NULL(mpir_request->request_ptr);
-    }
+  }
+  if (mpir_request->request_ptr != NULL) {
+    FREE_AND_SET_NULL(mpir_request->request_ptr);
   }
 
   // Release one active communication for that type

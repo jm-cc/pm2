@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   //  printf("Rank %d Size %d\n", rank, numtasks);
 
   requests = malloc(5 * sizeof(MPI_Request));
-  buffer = calloc(SIZE * sizeof(char), 1);
+  buffer = calloc(SIZE, sizeof(char));
 
   if (rank == 0) {
     for(i=1 ; i<numtasks ; i++) {

@@ -129,4 +129,16 @@ $(STAMP_LINK_LIB): $(foreach name,$(MOD_PM2_SHLIBS), \
 	$(COMMON_HIDE)touch $(STAMP_LINK_LIB)
 
 
+# Generation de la doc et copie sur le serveur web
+#-------------------------------------------------
+ifeq (,$(LIBDOC))
+LIBDOC := $(LIBNAME)
+endif
+
+docs:
+	doxygen
+
+docs-upload:
+	rsync -acvrlt --exclude .svn --delete doc/ gforge:/home/groups/pm2/htdocs/$(LIBDOC)
+
 ######################################################################

@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     int y=7;
 
     x=malloc(1024*1024*sizeof(int));
+    memset(x, 0, 1024*1024*sizeof(int));
     x[0] = 42;
     x[1024*1024-1] = 42;
     MPI_Rsend(x, 1024*1024, MPI_INT, rank_dst, 2, MPI_COMM_WORLD);

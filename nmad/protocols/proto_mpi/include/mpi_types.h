@@ -55,7 +55,8 @@
 /** @name Error return classes
  */
 /* @{ */
-#define MPI_SUCCESS          0      /* Successful return code */
+/** Successful return code */
+#define MPI_SUCCESS          0
 #define MPI_ERR_BUFFER       1
 #define MPI_ERR_COUNT        2
 #define MPI_ERR_TYPE         3
@@ -77,7 +78,8 @@
 #define MPI_ERR_REQUEST      19
 #define MPI_ERR_LASTCODE     1073741823
 
-#define MPI_DATATYPE_ACTIVE  1      /* Datatype still in use */
+/** Datatype still in use */
+#define MPI_DATATYPE_ACTIVE  1
 /* @} */
 
 /** @name Pre-defined constants */

@@ -218,7 +218,7 @@ typedef struct mpir_datatype_s {
   int *blocklens;
   /** old types */
   MPI_Datatype *old_types;
-  /* size of old types */
+  /** size of old types */
   size_t* old_sizes;
 } mpir_datatype_t;
 /* @} */

@@ -149,6 +149,14 @@ int mpir_internal_init(int global_size,
   functions[MPI_MIN]->function = &mpir_op_min;
   functions[MPI_SUM]->function = &mpir_op_sum;
   functions[MPI_PROD]->function = &mpir_op_prod;
+  functions[MPI_LAND]->function = &mpir_op_land;
+  functions[MPI_BAND]->function = &mpir_op_band;
+  functions[MPI_LOR]->function = &mpir_op_lor;
+  functions[MPI_BOR]->function = &mpir_op_bor;
+  functions[MPI_LXOR]->function = &mpir_op_lxor;
+  functions[MPI_BXOR]->function = &mpir_op_bxor;
+  functions[MPI_MINLOC]->function = &mpir_op_minloc;
+  functions[MPI_MAXLOC]->function = &mpir_op_maxloc;
 
   available_functions = tbx_slist_nil();
   for(i=1 ; i<MPI_MAX ; i++) {
@@ -1079,11 +1087,15 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
   if(datatypes[*newtype]->dte_type == MPIR_CONTIG) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
+    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
   }
   else if (datatypes[*newtype]->dte_type == MPIR_VECTOR) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
+    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
     datatypes[*newtype]->blocklens    = malloc(1 * sizeof(int));
     datatypes[*newtype]->blocklens[0] = mpir_old_datatype->blocklens[0];
@@ -1093,6 +1105,8 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
   else if (datatypes[*newtype]->dte_type == MPIR_INDEXED) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
+    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
     datatypes[*newtype]->blocklens    = malloc(datatypes[*newtype]->elements * sizeof(int));
     datatypes[*newtype]->indices      = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
@@ -1106,10 +1120,12 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
     datatypes[*newtype]->blocklens = malloc(datatypes[*newtype]->elements * sizeof(int));
     datatypes[*newtype]->indices   = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
     datatypes[*newtype]->old_sizes = malloc(datatypes[*newtype]->elements * sizeof(size_t));
+    datatypes[*newtype]->old_types = malloc(datatypes[*newtype]->elements * sizeof(size_t));
     for(i=0 ; i<datatypes[*newtype]->elements ; i++) {
       datatypes[*newtype]->blocklens[i] = mpir_old_datatype->blocklens[i];
       datatypes[*newtype]->indices[i]   = mpir_old_datatype->indices[i];
       datatypes[*newtype]->old_sizes[i] = mpir_old_datatype->old_sizes[i];
+      datatypes[*newtype]->old_types[i] = mpir_old_datatype->old_types[i];
     }
   }
   else if (datatypes[*newtype]->dte_type != MPIR_BASIC) {
@@ -1154,6 +1170,7 @@ int mpir_type_free(MPI_Datatype datatype) {
   else {
     MPI_NMAD_TRACE_LEVEL(3, "Releasing datatype %d\n", datatype);
     FREE_AND_SET_NULL(datatypes[datatype]->old_sizes);
+    FREE_AND_SET_NULL(datatypes[datatype]->old_types);
     if (datatypes[datatype]->dte_type == MPIR_INDEXED || datatypes[datatype]->dte_type == MPIR_STRUCT) {
       FREE_AND_SET_NULL(datatypes[datatype]->blocklens);
       FREE_AND_SET_NULL(datatypes[datatype]->indices);
@@ -1191,6 +1208,8 @@ int mpir_type_contiguous(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
+  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
   datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count;
@@ -1218,6 +1237,8 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
+  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count * blocklength;
@@ -1254,6 +1275,8 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
+  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
@@ -1295,9 +1318,11 @@ int mpir_type_struct(int count,
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));
   datatypes[*newtype]->old_sizes = malloc(count * sizeof(size_t));
+  datatypes[*newtype]->old_types = malloc(count * sizeof(mpir_datatype_t *));
   for(i=0 ; i<count ; i++) {
     datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
     datatypes[*newtype]->old_sizes[i] = mpir_get_datatype(array_of_types[i])->size;
+    datatypes[*newtype]->old_types[i] = mpir_get_datatype(array_of_types[i]);
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
 
     MPI_NMAD_TRACE("Element %d: length %d, old_type size %ld, indice %ld\n", i, datatypes[*newtype]->blocklens[i], (long)datatypes[*newtype]->old_sizes[i],
@@ -1356,156 +1381,6 @@ mpir_function_t *mpir_get_function(MPI_Op op) {
   else {
     ERROR("Operation %d unknown", op);
     return NULL;
-  }
-}
-
-void mpir_op_max(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
-  int i;
-  switch (*type) {
-    case MPI_INTEGER :
-    case MPI_INT : {
-      int *i_invec = (int *) invec;
-      int *i_inoutvec = (int *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
-      }
-      break;
-    } /* END MPI_INT FOR MPI_MAX */
-    case MPI_DOUBLE_PRECISION :
-    case MPI_DOUBLE : {
-      double *i_invec = (double *) invec;
-      double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
-      }
-      break;
-    } /* END MPI_DOUBLE FOR MPI_MAX */
-    default : {
-      ERROR("Datatype %d for MAX Reduce operation", *type);
-      break;
-    }
-  }
-}
-
-void mpir_op_min(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
-  int i;
-  switch (*type) {
-    case MPI_INTEGER :
-    case MPI_INT : {
-      int *i_invec = (int *) invec;
-      int *i_inoutvec = (int *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-          if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
-      }
-      break;
-    } /* END MPI_INT FOR MPI_MIN */
-    case MPI_DOUBLE_PRECISION :
-    case MPI_DOUBLE : {
-      double *i_invec = (double *) invec;
-      double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
-      }
-      break;
-    } /* END MPI_DOUBLE FOR MPI_MAX */
-    default : {
-      ERROR("Datatype %d for MIN Reduce operation", *type);
-      break;
-    }
-  }
-}
-
-void mpir_op_sum(void *invec,
-		 void *inoutvec,
-		 int *len,
-		 MPI_Datatype *type) {
-  int i;
-  switch (*type) {
-    case MPI_INTEGER :
-    case MPI_INT : {
-      int *i_invec = (int *) invec;
-      int *i_inoutvec = (int *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        MPI_NMAD_TRACE("Summing %d and %d\n", i_inoutvec[i], i_invec[i]);
-        i_inoutvec[i] += i_invec[i];
-      }
-      break;
-    } /* END MPI_INT FOR MPI_SUM */
-    case MPI_FLOAT : {
-      float *i_invec = (float *) invec;
-      float *i_inoutvec = (float *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        MPI_NMAD_TRACE("Summing %f and %f\n", i_inoutvec[i], i_invec[i]);
-        i_inoutvec[i] += i_invec[i];
-      }
-      break;
-    } /* END MPI_FLOAT FOR MPI_SUM */
-    case MPI_DOUBLE_PRECISION :
-    case MPI_DOUBLE : {
-      double *i_invec = (double *) invec;
-      double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        i_inoutvec[i] += i_invec[i];
-      }
-      break;
-    } /* END MPI_DOUBLE FOR MPI_SUM */
-    case MPI_DOUBLE_COMPLEX : {
-      double *i_invec = (double *) invec;
-      double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len*2 ; i++) {
-        i_inoutvec[i] += i_invec[i];
-      }
-      break;
-    }
-    default : {
-      ERROR("Datatype %d for SUM Reduce operation", *type);
-      break;
-    }
-  }
-}
-
-void mpir_op_prod(void *invec,
-		  void *inoutvec,
-		  int *len,
-		  MPI_Datatype *type) {
-  int i;
-  switch (*type) {
-    case MPI_INTEGER :
-    case MPI_INT : {
-      int *i_invec = (int *) invec;
-      int *i_inoutvec = (int *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        i_inoutvec[i] *= i_invec[i];
-      }
-      break;
-    } /* END MPI_INT FOR MPI_PROD */
-    case MPI_DOUBLE_PRECISION :
-    case MPI_DOUBLE : {
-      double *i_invec = (double *) invec;
-      double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        i_inoutvec[i] *= i_invec[i];
-      }
-      break;
-    } /* END MPI_DOUBLE FOR MPI_PROD */
-    case MPI_LONG : {
-      long *i_invec = (long *) invec;
-      long *i_inoutvec = (long *) inoutvec;
-      for(i=0 ; i<*len ; i++) {
-        i_inoutvec[i] *= i_invec[i];
-      }
-      break;
-    } /* END MPI_LONG FOR MPI_PROD */
-    default : {
-      ERROR("Datatype %d for PROD Reduce operation", *type);
-      break;
-    }
   }
 }
 

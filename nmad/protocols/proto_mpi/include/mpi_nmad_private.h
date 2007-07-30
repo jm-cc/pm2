@@ -160,12 +160,12 @@ typedef struct mpir_request_s {
 } mpir_request_t;
 /* @} */
 
-/** @name Reduction operators */
+/** @name Reduce operators */
 /* @{ */
-/** Maximum number of reduction operators */
+/** Maximum number of reduce operators */
 #define NUMBER_OF_FUNCTIONS MPI_MAXLOC
 
-/** Internal reduction operators */
+/** Internal reduce operators */
 typedef struct mpir_function_s {
   MPI_User_function *function;
   int commute;
@@ -212,10 +212,12 @@ typedef struct mpir_datatype_s {
   int stride;
   /** array of indices, for INDEXED, STRUCT */
   MPI_Aint *indices;
-  /* block_size, for VECTOR type */
+  /** block_size, for VECTOR type */
   int block_size;
-  /* array of blocklenghts */
+  /** array of blocklenghts */
   int *blocklens;
+  /** old types */
+  struct mpir_datatype_s **old_types;
   /* size of old types */
   size_t* old_sizes;
 } mpir_datatype_t;
@@ -404,17 +406,17 @@ int mpir_type_struct(int count,
                      MPI_Datatype *newtype);
 
 
-/* Reduction operation functionalities */
+/* Reduce operation functionalities */
 
 /**
- * Commits a new operator for reduction operations.
+ * Commits a new operator for reduce operations.
  */
 int mpir_op_create(MPI_User_function *function,
                    int commute,
                    MPI_Op *op);
 
 /**
- * Releases the given operator for reduction operations.
+ * Releases the given operator for reduce operations.
  */
 int mpir_op_free(MPI_Op *op);
 
@@ -424,7 +426,7 @@ int mpir_op_free(MPI_Op *op);
 mpir_function_t *mpir_get_function(MPI_Op op);
 
 /**
- * Defines the MAX function for reduction operations.
+ * Defines the MAX function for reduce operations.
  */
 void mpir_op_max(void *invec,
 		 void *inoutvec,
@@ -432,7 +434,7 @@ void mpir_op_max(void *invec,
 		 MPI_Datatype *type);
 
 /**
- * Defines the MIN function for reduction operations.
+ * Defines the MIN function for reduce operations.
  */
 void mpir_op_min(void *invec,
 		 void *inoutvec,
@@ -440,7 +442,7 @@ void mpir_op_min(void *invec,
 		 MPI_Datatype *type);
 
 /**
- * Defines the SUM function for reduction operations.
+ * Defines the SUM function for reduce operations.
  */
 void mpir_op_sum(void *invec,
 		 void *inoutvec,
@@ -448,12 +450,76 @@ void mpir_op_sum(void *invec,
 		 MPI_Datatype *type);
 
 /**
- * Defines the PROD function for reduction operations.
+ * Defines the PROD function for reduce operations.
  */
 void mpir_op_prod(void *invec,
 		  void *inoutvec,
 		  int *len,
 		  MPI_Datatype *type);
+
+/**
+ * Defines the LAND function for reduce operations.
+ */
+void mpir_op_land(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type);
+
+/**
+ * Defines the BAND function for reduce operations.
+ */
+void mpir_op_band(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type);
+
+/**
+ * Defines the LOR function for reduce operations.
+ */
+void mpir_op_lor(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type);
+
+/**
+ * Defines the BOR function for reduce operations.
+ */
+void mpir_op_bor(void *invec,
+		 void *inoutvec,
+		 int *len,
+		 MPI_Datatype *type);
+
+/**
+ * Defines the LXOR function for reduce operations.
+ */
+void mpir_op_lxor(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type);
+
+/**
+ * Defines the BXOR function for reduce operations.
+ */
+void mpir_op_bxor(void *invec,
+		  void *inoutvec,
+		  int *len,
+		  MPI_Datatype *type);
+
+/**
+ * Defines the MINLOC function for reduce operations.
+ */
+void mpir_op_minloc(void *invec,
+		    void *inoutvec,
+		    int *len,
+		    MPI_Datatype *type);
+
+/**
+ * Defines the MAXLOC function for reduce operations.
+ */
+void mpir_op_maxloc(void *invec,
+		    void *inoutvec,
+		    int *len,
+		    MPI_Datatype *type);
 
 /* Communicator operations */
 

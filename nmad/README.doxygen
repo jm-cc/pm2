@@ -1,11 +1,11 @@
 To generate the documentation:
 -----------------------------
 
-$ doxygen
+$ make docs
 
 To upload it on the gforge site:
+-------------------------------
 
-$ rsync -acvrlt --exclude .svn --delete doc/ gforge:/home/groups/pm2/htdocs/newmadeleine
-
+$ make docs-upload
 
 The code for the index page is available in the file core/include/nm_core.h

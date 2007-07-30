@@ -403,10 +403,10 @@ void mpir_op_maxloc(void *invec,
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {    
     MPI_Datatype oldtype = (dtype)->old_types[0];
 
-    /* Set the actual length */
+    /** Set the actual length */
     _len = *len * (dtype)->elements;
 
-    /* Perform the operation */
+    /** Perform the operation */
     switch (oldtype) {
     case MPI_INT: {
       int *a = (int *)inoutvec; int *b = (int *)invec;
@@ -500,10 +500,10 @@ void mpir_op_minloc(void *invec,
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {
     MPI_Datatype oldtype = (dtype)->old_types[0];
 
-    /* Set the actual length */
+    /** Set the actual length */
     _len = *len * (dtype)->elements;
 
-    /* Perform the operation */
+    /** Perform the operation */
     switch (oldtype) {
     case MPI_INT: {
       int *a = (int *)inoutvec; int *b = (int *)invec;

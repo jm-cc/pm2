@@ -24,21 +24,38 @@
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
 
+/** all the defined datatypes */
 static mpir_datatype_t     **datatypes          = NULL;
+/** ids of datatypes that can be created by end-users */
 static p_tbx_slist_t         available_datatypes;
+
+/** all the defined reduce operations */
 static mpir_function_t     **functions          = NULL;
+/** ids of reduce operations that can be created by end-users */
 static p_tbx_slist_t         available_functions;
+
+/** all the defined communicators */
 static mpir_communicator_t **communicators      = NULL;
+/** ids of communicators that can be created by end-users */
 static p_tbx_slist_t         available_communicators;
+
+/** total number of incoming messages */
 static int 		     nb_incoming_msg    = 0;
+/** total number of outgoing messages */
 static int 		     nb_outgoing_msg    = 0;
 
+/** gives the outgoing gate attached to a node */
 static long                 *out_gate_id	= NULL;
+/** gives the incoming gate attached to a node */
 static long                 *in_gate_id	        = NULL;
+/** gives the node attached to an outgoing gate */
 static int                  *out_dest	 	= NULL;
+/** gives the node attached to an incoming gate */
 static int                  *in_dest		= NULL;
 
+/** NM send/recv interface */
 static struct nm_so_interface *p_so_sr_if;
+/** NM pack/unpack interface */
 static nm_so_pack_interface    p_so_pack_if;
 
 debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace");
@@ -114,7 +131,7 @@ int mpir_internal_init(int global_size,
     tbx_slist_push(available_datatypes, ptr);
   }
 
-  /* Initialise data for communicators */
+  /** Initialise data for communicators */
   communicators = malloc(NUMBER_OF_COMMUNICATORS * sizeof(mpir_communicator_t));
   communicators[0] = malloc(sizeof(mpir_communicator_t));
   communicators[0]->communicator_id = MPI_COMM_WORLD;
@@ -139,7 +156,7 @@ int mpir_internal_init(int global_size,
     tbx_slist_push(available_communicators, ptr);
   }
 
-  /* Initialise the collective functions */
+  /** Initialise the collective functions */
   functions = malloc((NUMBER_OF_FUNCTIONS+1) * sizeof(mpir_function_t));
   for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
     functions[i] = malloc(sizeof(mpir_function_t));
@@ -173,10 +190,10 @@ int mpir_internal_init(int global_size,
   out_dest = malloc(256 * sizeof(int));
   in_dest = malloc(256 * sizeof(int));
 
-  /* Get a reference to the channel structure */
+  /** Get a reference to the channel structure */
   channel = tbx_htable_get(madeleine->channel_htable, "pm2");
 
-  /* If that fails, it means that our process does not belong to the channel */
+  /** If that fails, it means that our process does not belong to the channel */
   if (!channel) {
     fprintf(stderr, "I don't belong to this channel");
     MPI_NMAD_LOG_OUT();
@@ -1336,11 +1353,11 @@ int mpir_type_struct(int count,
                    (long)datatypes[*newtype]->indices[i]);
     datatypes[*newtype]->size +=  datatypes[*newtype]->blocklens[i] * datatypes[*newtype]->old_sizes[i];
   }
-  /* We suppose here that the last field of the struct does not need
-     an alignment. In case, one sends an array of struct, the 1st
-     field of the 2nd struct immediatly follows the last field of the
-     previous struct.
-  */
+  /** We suppose here that the last field of the struct does not need
+   * an alignment. In case, one sends an array of struct, the 1st
+   * field of the 2nd struct immediatly follows the last field of the
+   * previous struct.
+   */
   datatypes[*newtype]->extent = datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->blocklens[count-1] * datatypes[*newtype]->old_sizes[count-1];
   MPI_NMAD_TRACE_LEVEL(3, "Creating new struct type (%d) with size=%ld and extent=%ld\n", *newtype, (long)datatypes[*newtype]->size, (long)datatypes[*newtype]->extent);
   return MPI_SUCCESS;

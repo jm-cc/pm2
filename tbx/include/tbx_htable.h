@@ -1,4 +1,4 @@
-/*! \file tbx_htable_management.c
+/*! \file tbx_htable.h
  *  \brief TBX hash-table management routines
  *
  *  This file implements hash-table TBX associative arrays.

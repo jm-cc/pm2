@@ -1,5 +1,4 @@
 
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
@@ -15,7 +14,7 @@
 
 # LIBNAME -> nom de la librairie
 #---------------------------------------------------------------------
-LIBNAME=mad
+LIBNAME=nmad
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
@@ -23,6 +22,7 @@ MOD_SRC := $(PM2_ROOT)/nmad/core/src
 include $(PM2_ROOT)/make/libs-vars.mak
 
 # Gestion du scheduler : prise en compte de fichiers sources supplémentaires
+#---------------------------------------------------------------------
 MOD_SRC += $(foreach SCHED, $(NMAD_SCHEDULERS), $(PM2_ROOT)/nmad/schedulers/$(SCHED)/src)
 
 # Gestion des drivers : prise en compte des fichiers sources supplémentaires

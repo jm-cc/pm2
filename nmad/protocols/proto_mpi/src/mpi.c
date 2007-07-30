@@ -1034,7 +1034,6 @@ int MPI_Init(int *argc,
    * How to obtain the configuration size.
    */
   global_size = tbx_slist_get_length(madeleine->dir->process_slist);
-  //printf("The configuration size is %d\n", global_size);
 
   /*
    * Reference to the NewMadeleine core object
@@ -1477,7 +1476,7 @@ int MPI_Recv(void *buffer,
 
   err = mpir_irecv(mpir_request, source, mpir_communicator);
 
-  MPI_Wait(&request, status);
+  err = MPI_Wait(&request, status);
 
   MPI_NMAD_TIMER_OUT();
   MPI_NMAD_LOG_OUT();
@@ -1540,8 +1539,8 @@ int MPI_Sendrecv(void *sendbuf,
   err = MPI_Isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
   err = MPI_Irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
 
-  MPI_Wait(&srequest, MPI_STATUS_IGNORE);
-  MPI_Wait(&rrequest, status);
+  err = MPI_Wait(&srequest, MPI_STATUS_IGNORE);
+  err = MPI_Wait(&rrequest, status);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1593,7 +1592,7 @@ int MPI_Wait(MPI_Request *request,
   }
 
   if (status != MPI_STATUS_IGNORE) {
-      mpir_set_status(request, status);
+      err = mpir_set_status(request, status);
   }
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
@@ -1605,7 +1604,7 @@ int MPI_Wait(MPI_Request *request,
 
   // Release one active communication for that type
   if (mpir_request->request_datatype > MPI_INTEGER) {
-    mpir_type_unlock(mpir_request->request_datatype);
+    err = mpir_type_unlock(mpir_request->request_datatype);
   }
 
   MPI_NMAD_TRACE("Request completed\n");
@@ -1642,19 +1641,19 @@ int MPI_Waitany(int count,
                 MPI_Request *array_of_requests,
                 int *index,
                 MPI_Status *status) {
-  int flag, i;
+  int flag, i, err;
 
   while (1) {
     for(i=0 ; i<count ; i++) {
       MPI_Request request = array_of_requests[i];
-      MPI_Test(&request, &flag, status);
+      err = MPI_Test(&request, &flag, status);
       if (flag) {
         mpir_request_t *mpir_request = (mpir_request_t *)(&request);
 
         mpir_request->request_type = MPI_REQUEST_ZERO;
         *index = i;
 
-        return MPI_SUCCESS;
+        return err;
       }
     }
   }
@@ -1687,7 +1686,7 @@ int MPI_Test(MPI_Request *request,
     *flag = 1;
 
     if (status != MPI_STATUS_IGNORE) {
-      mpir_set_status(request, status);
+      err = mpir_set_status(request, status);
     }
 
     mpir_request->request_type = MPI_REQUEST_ZERO;
@@ -1697,7 +1696,7 @@ int MPI_Test(MPI_Request *request,
   }
 
   MPI_NMAD_LOG_OUT();
-  return MPI_SUCCESS;
+  return err;
 }
 
 int MPI_Testany(int count,
@@ -1713,7 +1712,7 @@ int MPI_Testany(int count,
     err = MPI_Test(&array_of_requests[i], flag, status);
     if (*flag == 1) {
       *index = i;
-      return MPI_SUCCESS;
+      return err;
     }
   }
   *index = MPI_UNDEFINED;
@@ -1766,7 +1765,7 @@ int MPI_Iprobe(int source,
   }
 
   MPI_NMAD_LOG_OUT();
-  return MPI_SUCCESS;
+  return err;
 }
 
 int MPI_Probe(int source,
@@ -2553,7 +2552,7 @@ int MPI_Type_free(MPI_Datatype *datatype) {
   if (err == MPI_SUCCESS) {
     *datatype = MPI_DATATYPE_NULL;
   }
-  return MPI_SUCCESS;
+  return err;
 }
 
 int MPI_Type_optimized(MPI_Datatype *datatype,

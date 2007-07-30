@@ -283,10 +283,10 @@ int mpir_get_out_dest(long gate) {
  * Aggregates data represented by a vector datatype in a contiguous
  * buffer.
  */
-static inline void mpir_datatype_vector_aggregate(void *newptr,
-                                                  void *buffer,
-                                                  mpir_datatype_t *mpir_datatype,
-                                                  int count) {
+static inline int mpir_datatype_vector_aggregate(void *newptr,
+						 void *buffer,
+						 mpir_datatype_t *mpir_datatype,
+						 int count) {
 #ifdef NMAD_DEBUG
   void * const orig = buffer;
   void * const dest = newptr;
@@ -302,6 +302,7 @@ static inline void mpir_datatype_vector_aggregate(void *newptr,
       buffer += mpir_datatype->stride;
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
@@ -352,10 +353,10 @@ static inline int mpir_datatype_vector_unpack(struct nm_so_cnx *connection,
  * Splits data from a contiguous buffer into data represented by a
  * vector datatype
  */
-static inline void mpir_datatype_vector_split(void *recvbuffer,
-                                              void *buffer,
-                                              mpir_datatype_t *mpir_datatype,
-                                              int count) {
+static inline int mpir_datatype_vector_split(void *recvbuffer,
+					     void *buffer,
+					     mpir_datatype_t *mpir_datatype,
+					     int count) {
   void *recvptr = recvbuffer;
   void *ptr = buffer;
   int i;
@@ -369,16 +370,17 @@ static inline void mpir_datatype_vector_split(void *recvbuffer,
       ptr += mpir_datatype->block_size;
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
  * Aggregates data represented by a indexed datatype in a contiguous
  * buffer.
  */
-static inline void mpir_datatype_indexed_aggregate(void *newptr,
-                                                   void *buffer,
-                                                   mpir_datatype_t *mpir_datatype,
-                                                   int count) {
+static inline int mpir_datatype_indexed_aggregate(void *newptr,
+						  void *buffer,
+						  mpir_datatype_t *mpir_datatype,
+						  int count) {
 #ifdef NMAD_DEBUG
   void *const dest = newptr;
 #endif
@@ -394,6 +396,7 @@ static inline void mpir_datatype_indexed_aggregate(void *newptr,
       newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
@@ -447,10 +450,10 @@ static inline int mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
  * Splits data from a contiguous buffer into data represented by a indexed
  * datatype
  */
-static inline void mpir_datatype_indexed_split(void *recvbuffer,
-                                               void *buffer,
-                                               mpir_datatype_t *mpir_datatype,
-                                               int count) {
+static inline int mpir_datatype_indexed_split(void *recvbuffer,
+					      void *buffer,
+					      mpir_datatype_t *mpir_datatype,
+					      int count) {
   void *recvptr = recvbuffer;
   void *ptr = buffer;
   int	i;
@@ -465,16 +468,17 @@ static inline void mpir_datatype_indexed_split(void *recvbuffer,
       ptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
  * Aggregates data represented by a struct datatype in a contiguous
  * buffer.
  */
-static inline void mpir_datatype_struct_aggregate(void *newptr,
-                                                  void *buffer,
-                                                  mpir_datatype_t *mpir_datatype,
-                                                  int count) {
+static inline int mpir_datatype_struct_aggregate(void *newptr,
+						 void *buffer,
+						 mpir_datatype_t *mpir_datatype,
+						 int count) {
   int i, j;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
@@ -487,6 +491,7 @@ static inline void mpir_datatype_struct_aggregate(void *newptr,
       ptr -= mpir_datatype->indices[j];
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
@@ -538,10 +543,10 @@ static inline int mpir_datatype_struct_unpack(struct nm_so_cnx *connection,
  * Splits data from a contiguous buffer into data represented by a
  * struct datatype.
  */
-static inline void mpir_datatype_struct_split(void *recvbuffer,
-                                              void *buffer,
-                                              mpir_datatype_t *mpir_datatype,
-                                              int count) {
+static inline int mpir_datatype_struct_split(void *recvbuffer,
+					     void *buffer,
+					     mpir_datatype_t *mpir_datatype,
+					     int count) {
   void *recvptr = recvbuffer;
   int i;
   for(i=0 ; i<count ; i++) {
@@ -557,6 +562,7 @@ static inline void mpir_datatype_struct_split(void *recvbuffer,
       ptr -= mpir_datatype->indices[j];
     }
   }
+  return MPI_SUCCESS;
 }
 
 /**
@@ -757,7 +763,7 @@ int mpir_isend_start(mpir_request_t *mpir_request) {
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
   }
 
-  nm_so_sr_progress(p_so_sr_if);
+  err = nm_so_sr_progress(p_so_sr_if);
   mpir_inc_nb_outgoing_msg();
 
   return err;
@@ -778,6 +784,7 @@ int mpir_isend(mpir_request_t *mpir_request,
 int mpir_set_status(MPI_Request *request,
 		    MPI_Status *status) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;
+  int err = MPI_SUCCESS;
 
   status->MPI_TAG = mpir_request->user_tag;
   status->MPI_ERROR = mpir_request->request_error;
@@ -788,7 +795,7 @@ int mpir_set_status(MPI_Request *request,
       mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     if (mpir_request->request_source == MPI_ANY_SOURCE) {
       long gate_id;
-      nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
+      err = nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
       status->MPI_SOURCE = in_dest[gate_id];
     }
     else {
@@ -796,7 +803,7 @@ int mpir_set_status(MPI_Request *request,
     }
   }
 
-  return MPI_SUCCESS;
+  return err;
 }
 
 int mpir_irecv_init(mpir_request_t *mpir_request,
@@ -938,7 +945,6 @@ static inline int mpir_unpack_wrapper(mpir_request_t *mpir_request) {
 
 int mpir_irecv_start(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
-  int err;
 
   mpir_datatype->active_communications ++;
 
@@ -951,7 +957,7 @@ int mpir_irecv_start(mpir_request_t *mpir_request) {
     }
   }
   else {
-    err = mpir_unpack_wrapper(mpir_request);
+    mpir_request->request_error = mpir_unpack_wrapper(mpir_request);
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
   }
 
@@ -977,22 +983,23 @@ int mpir_irecv(mpir_request_t *mpir_request,
 
 int mpir_datatype_split(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+  int err = MPI_SUCCESS;
 
   if (mpir_datatype->dte_type == MPIR_VECTOR) {
-    mpir_datatype_vector_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+    err = mpir_datatype_vector_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
   }
   else if (mpir_datatype->dte_type == MPIR_INDEXED) {
-    mpir_datatype_indexed_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+    err = mpir_datatype_indexed_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
   }
   else if (mpir_datatype->dte_type == MPIR_STRUCT) {
-    mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
+    err = mpir_datatype_struct_split(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
   }
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);
     mpir_request->request_type = MPI_REQUEST_ZERO;
   }
-  return MPI_SUCCESS;
+  return err;
 }
 
 int mpir_start(mpir_request_t *mpir_request) {

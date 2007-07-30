@@ -66,6 +66,7 @@ main(int	  argc,
 		printf("<%s>\n", buf);
         }
 
+	free(buf);
         nmad_exit();
         exit(0);
 }

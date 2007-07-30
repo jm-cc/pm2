@@ -161,6 +161,7 @@ main(int	  argc,
 		}
         }
 
+	free(buf);
         nmad_exit();
         exit(0);
 }

@@ -55,7 +55,7 @@ int main(int	  argc,
 
   if (is_server) {
     char *buf	= NULL;
-    buf = malloc(SIZE+1);
+    buf = calloc(1, SIZE+1);
 
     nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
 
@@ -70,6 +70,7 @@ int main(int	  argc,
     else {
       printf("Error. Message received: [%s]\n", buf);
     }
+    free(buf);
   }
   else {
     /* client
@@ -85,6 +86,7 @@ int main(int	  argc,
     nm_so_end_packing(&cnx);
   }
 
+  free(message);
   nmad_exit();
   exit(0);
 }

@@ -55,6 +55,8 @@ void process(int is_server, char *msg) {
     else {
       printf("Error. Buffer contents: <%s> <%s>\n", buf, buf2);
     }
+    free(buf);
+    free(buf2);
   }
   else {
     nm_so_request request, request2;
@@ -96,6 +98,7 @@ int main(int argc, char	**argv) {
     while(*src) *dst++ = *src++;
 
     process(is_server, long_msg);
+    free(long_msg);
   }
 
   nmad_exit();

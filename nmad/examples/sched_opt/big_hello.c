@@ -69,6 +69,7 @@ main(int	  argc,
     else {
       printf("Error. Message received: [%s]\n", buf);
     }
+    free(buf);
   }
   else {
     /* client
@@ -82,6 +83,7 @@ main(int	  argc,
     nm_so_end_packing(&cnx);
   }
 
+  free(message);
   nmad_exit();
   exit(0);
 }

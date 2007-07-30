@@ -88,6 +88,7 @@ main(int	  argc,
 		  nm_so_sr_rwait(sr_if, r4);
 
 		  printf("Got msg 4 : [%s]\n", big_buf);
+		  free(big_buf);
 		}
 
         } else {
@@ -124,6 +125,8 @@ main(int	  argc,
 		  nm_so_sr_swait(sr_if, r2);
 		  nm_so_sr_swait(sr_if, r3);
 		  nm_so_sr_swait(sr_if, r4);
+
+		  free(big_buf);
 		}
 
         }

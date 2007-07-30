@@ -74,6 +74,7 @@ main(int	  argc,
           printf("success\n");
         }
 
+	free(buf);
         nmad_exit();
         return 0;
 }

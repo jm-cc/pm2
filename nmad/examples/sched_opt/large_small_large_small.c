@@ -105,6 +105,8 @@ main(int	  argc,
 
         }
 
+	free(buf1);
+	free(buf2);
         nmad_exit();
         exit(0);
 }

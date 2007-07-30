@@ -67,6 +67,8 @@ main(int	  argc,
     printf("buffer contents: %s\n", buf2);
   }
 
+  free(buf1);
+  free(buf2);
   nmad_exit();
   exit(0);
 }

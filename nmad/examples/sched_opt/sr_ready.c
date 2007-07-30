@@ -52,6 +52,7 @@ int main(int argc, char	**argv) {
     printf("success\n");
   }
 
+  free(buf);
   nmad_exit();
   exit(0);
 }

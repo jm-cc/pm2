@@ -60,6 +60,7 @@ main(int	  argc,
 		nm_so_end_packing(&cnx);
         }
 
+	free(buf);
         nmad_exit();
         exit(0);
 }

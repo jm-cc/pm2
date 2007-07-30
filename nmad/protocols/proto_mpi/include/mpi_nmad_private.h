@@ -163,13 +163,13 @@ typedef struct mpir_request_s {
 /** @name Reduce operators */
 /* @{ */
 /** Maximum number of reduce operators */
-#define NUMBER_OF_FUNCTIONS MPI_MAXLOC
+#define NUMBER_OF_OPERATORS MPI_MAXLOC
 
 /** Internal reduce operators */
-typedef struct mpir_function_s {
+typedef struct mpir_operator_s {
   MPI_User_function *function;
   int commute;
-} mpir_function_t;
+} mpir_operator_t;
 /* @} */
 
 /** @name Datatypes */
@@ -423,7 +423,7 @@ int mpir_op_free(MPI_Op *op);
 /**
  * Gets the function associated to the given operator.
  */
-mpir_function_t *mpir_get_function(MPI_Op op);
+mpir_operator_t *mpir_get_operator(MPI_Op op);
 
 /**
  * Defines the MAX function for reduce operations.

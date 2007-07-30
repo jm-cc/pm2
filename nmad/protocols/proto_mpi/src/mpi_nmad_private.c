@@ -30,9 +30,9 @@ static mpir_datatype_t     **datatypes          = NULL;
 static p_tbx_slist_t         available_datatypes;
 
 /** all the defined reduce operations */
-static mpir_function_t     **functions          = NULL;
+static mpir_operator_t     **operators          = NULL;
 /** ids of reduce operations that can be created by end-users */
-static p_tbx_slist_t         available_functions;
+static p_tbx_slist_t         available_operators;
 
 /** all the defined communicators */
 static mpir_communicator_t **communicators      = NULL;
@@ -156,30 +156,30 @@ int mpir_internal_init(int global_size,
     tbx_slist_push(available_communicators, ptr);
   }
 
-  /** Initialise the collective functions */
-  functions = malloc((NUMBER_OF_FUNCTIONS+1) * sizeof(mpir_function_t));
+  /** Initialise the collective operators */
+  operators = malloc((NUMBER_OF_OPERATORS+1) * sizeof(mpir_operator_t));
   for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
-    functions[i] = malloc(sizeof(mpir_function_t));
-    functions[i]->commute = 1;
+    operators[i] = malloc(sizeof(mpir_operator_t));
+    operators[i]->commute = 1;
   }
-  functions[MPI_MAX]->function = &mpir_op_max;
-  functions[MPI_MIN]->function = &mpir_op_min;
-  functions[MPI_SUM]->function = &mpir_op_sum;
-  functions[MPI_PROD]->function = &mpir_op_prod;
-  functions[MPI_LAND]->function = &mpir_op_land;
-  functions[MPI_BAND]->function = &mpir_op_band;
-  functions[MPI_LOR]->function = &mpir_op_lor;
-  functions[MPI_BOR]->function = &mpir_op_bor;
-  functions[MPI_LXOR]->function = &mpir_op_lxor;
-  functions[MPI_BXOR]->function = &mpir_op_bxor;
-  functions[MPI_MINLOC]->function = &mpir_op_minloc;
-  functions[MPI_MAXLOC]->function = &mpir_op_maxloc;
+  operators[MPI_MAX]->function = &mpir_op_max;
+  operators[MPI_MIN]->function = &mpir_op_min;
+  operators[MPI_SUM]->function = &mpir_op_sum;
+  operators[MPI_PROD]->function = &mpir_op_prod;
+  operators[MPI_LAND]->function = &mpir_op_land;
+  operators[MPI_BAND]->function = &mpir_op_band;
+  operators[MPI_LOR]->function = &mpir_op_lor;
+  operators[MPI_BOR]->function = &mpir_op_bor;
+  operators[MPI_LXOR]->function = &mpir_op_lxor;
+  operators[MPI_BXOR]->function = &mpir_op_bxor;
+  operators[MPI_MINLOC]->function = &mpir_op_minloc;
+  operators[MPI_MAXLOC]->function = &mpir_op_maxloc;
 
-  available_functions = tbx_slist_nil();
+  available_operators = tbx_slist_nil();
   for(i=1 ; i<MPI_MAX ; i++) {
     int *ptr = malloc(sizeof(int));
     *ptr = i;
-    tbx_slist_push(available_functions, ptr);
+    tbx_slist_push(available_operators, ptr);
   }
 
   /*
@@ -262,15 +262,15 @@ int mpir_internal_exit() {
   tbx_slist_free(available_communicators);
 
   for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
-    FREE_AND_SET_NULL(functions[i]);
+    FREE_AND_SET_NULL(operators[i]);
   }
-  FREE_AND_SET_NULL(functions);
-  while (tbx_slist_is_nil(available_functions) == tbx_false) {
-    int *ptr = tbx_slist_extract(available_functions);
+  FREE_AND_SET_NULL(operators);
+  while (tbx_slist_is_nil(available_operators) == tbx_false) {
+    int *ptr = tbx_slist_extract(available_operators);
     FREE_AND_SET_NULL(ptr);
   }
-  tbx_slist_clear(available_functions);
-  tbx_slist_free(available_functions);
+  tbx_slist_clear(available_operators);
+  tbx_slist_free(available_operators);
 
   FREE_AND_SET_NULL(out_gate_id);
   FREE_AND_SET_NULL(in_gate_id);
@@ -1366,41 +1366,41 @@ int mpir_type_struct(int count,
 int mpir_op_create(MPI_User_function *function,
                    int commute,
                    MPI_Op *op) {
-  if (tbx_slist_is_nil(available_functions) == tbx_true) {
+  if (tbx_slist_is_nil(available_operators) == tbx_true) {
     ERROR("Maximum number of operations created");
     return MPI_ERR_INTERN;
   }
   else {
-    int *ptr = tbx_slist_extract(available_functions);
+    int *ptr = tbx_slist_extract(available_operators);
     *op = *ptr;
     FREE_AND_SET_NULL(ptr);
 
-    functions[*op] = malloc(sizeof(mpir_function_t));
-    functions[*op]->function = function;
-    functions[*op]->commute = commute;
+    operators[*op] = malloc(sizeof(mpir_operator_t));
+    operators[*op]->function = function;
+    operators[*op]->commute = commute;
     return MPI_SUCCESS;
   }
 }
 
 int mpir_op_free(MPI_Op *op) {
-  if (*op > NUMBER_OF_FUNCTIONS || functions[*op] == NULL) {
+  if (*op > NUMBER_OF_OPERATORS || operators[*op] == NULL) {
     ERROR("Operator %d unknown\n", *op);
     return MPI_ERR_OTHER;
   }
   else {
     int *ptr;
-    FREE_AND_SET_NULL(functions[*op]);
+    FREE_AND_SET_NULL(operators[*op]);
     ptr = malloc(sizeof(int));
     *ptr = *op;
-    tbx_slist_enqueue(available_functions, ptr);
+    tbx_slist_enqueue(available_operators, ptr);
     *op = MPI_OP_NULL;
     return MPI_SUCCESS;
   }
 }
 
-mpir_function_t *mpir_get_function(MPI_Op op) {
-  if (functions[op] != NULL) {
-    return functions[op];
+mpir_operator_t *mpir_get_operator(MPI_Op op) {
+  if (operators[op] != NULL) {
+    return operators[op];
   }
   else {
     ERROR("Operation %d unknown", op);

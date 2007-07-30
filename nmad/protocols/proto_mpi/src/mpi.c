@@ -2353,14 +2353,14 @@ int MPI_Reduce(void* sendbuf,
                int root,
                MPI_Comm comm) {
   int tag = 7;
-  mpir_function_t *function;
+  mpir_operator_t *operator;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
 
   mpir_communicator = mpir_get_communicator(comm);
-  function = mpir_get_function(op);
-  if (function->function == NULL) {
+  operator = mpir_get_operator(op);
+  if (operator->function == NULL) {
     ERROR("Operation %d not implemented\n", op);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
@@ -2387,7 +2387,7 @@ int MPI_Reduce(void* sendbuf,
     memcpy(recvbuf, sendbuf, count*mpir_sizeof_datatype(datatype));
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
-      function->function(remote_sendbufs[i], recvbuf, &count, &datatype);
+      operator->function(remote_sendbufs[i], recvbuf, &count, &datatype);
     }
 
     // Free memory

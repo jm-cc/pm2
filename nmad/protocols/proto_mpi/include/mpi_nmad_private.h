@@ -100,9 +100,13 @@ extern debug_type_t debug_mpi_nmad_log;
 
 /** Internal communicator */
 typedef struct mpir_communicator_s {
+  /** id of the communicator */
   int communicator_id;
+  /** number of nodes in the communicator */
   int size;
+  /** local rank of the node itself */
   int rank;
+  /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
   int *global_ranks;
 } mpir_communicator_t;
 /* @} */
@@ -120,20 +124,38 @@ typedef int MPI_Request_type;
 
 /** Internal communication request */
 typedef struct mpir_request_s {
+  /** type of the request */
   MPI_Request_type request_type;
+  /** persistent type of the request */
   MPI_Request_type request_persistent_type;
+
+  /** handle to the NM request when data are exchanged with the \ref sr_interface */
   nm_so_request request_nmad;
+  /** handle to the NM connexion when data are exchanged with the \ref pack_interface */
   struct nm_so_cnx request_cnx;
-  uint8_t request_tag;
-  void **request_ptr;
+
+  /** buffer used when non-contiguous data are exchanged with the \ref sr_interface */
   void *contig_buffer;
+  /** array of pointers used when non-contiguous data are exchanged with the \ref pack_interface */
+  void **request_ptr;
+
+  /** tag given by the user*/
   int user_tag;
+  /** tag used by NM, its value is based on user_tag and the request communicator id */
+  uint8_t request_tag;
+  /** rank of the source node (used for incoming request) */
   int request_source;
+  /** error status of the request */
   int request_error;
+  /** type of the exchanged data */
   MPI_Datatype request_datatype;
+  /** communication mode to be used when exchanging data */
   MPI_Communication_Mode communication_mode;
+  /** gate of the destination or the source node */
   long gate_id;
+  /** number of elements to be exchanged */
   int count;
+  /** pointer to the data to be exchanged */
   void *buffer;
 } mpir_request_t;
 /* @} */

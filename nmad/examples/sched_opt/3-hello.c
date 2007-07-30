@@ -28,6 +28,12 @@
 
 const char *msg	= "hello, world";
 
+#ifdef CONFIG_PROTO_MAD3
+int main() {
+        printf("This program does not work with the protocol mad3\n");
+	exit(0);
+}
+#else
 int
 main(int	  argc,
      char	**argv) {
@@ -190,4 +196,6 @@ main(int	  argc,
 // sur le noeud 1 : pm2-load 3-hello
 // sur le noeud 2 : pm2-load 3-hello "url_1"
 // sur le neoud 3 : pm2-load 3-hello "url_1" "url_2"
+
+#endif
 

@@ -393,32 +393,6 @@ void mpir_op_bxor(void *invec,
   }
 }
 
-/* MINLOC and MAXLOC structures */
-typedef struct {
-  int  value;
-  int  loc;
-} MPIR_2int_loctype;
-
-typedef struct {
-  float  value;
-  int    loc;
-} MPIR_floatint_loctype;
-
-typedef struct {
-  long  value;
-  int    loc;
-} MPIR_longint_loctype;
-
-typedef struct {
-  short  value;
-  int    loc;
-} MPIR_shortint_loctype;
-
-typedef struct {
-  double  value;
-  int     loc;
-} MPIR_doubleint_loctype;
-
 void mpir_op_maxloc(void *invec,
 		    void *inoutvec,
 		    int *len,
@@ -427,13 +401,13 @@ void mpir_op_maxloc(void *invec,
   mpir_datatype_t *dtype = mpir_get_datatype(*type);
 
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {    
-    mpir_datatype_t *oldtype = (dtype)->old_types[0];
+    MPI_Datatype oldtype = (dtype)->old_types[0];
 
     /* Set the actual length */
     _len = *len * (dtype)->elements;
 
     /* Perform the operation */
-    switch (oldtype->dte_type) {
+    switch (oldtype) {
     case MPI_INT: {
       int *a = (int *)inoutvec; int *b = (int *)invec;
       for ( i=0; i<_len; i+=2 ) {
@@ -507,12 +481,12 @@ void mpir_op_maxloc(void *invec,
       break;
     }
     default: 
-      ERROR("Datatype %d for MINLOC Reduce operation", *type);
+      ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
       break;
     }
   }
   else {
-    ERROR("Datatype %d for MINLOC Reduce operation", *type);
+    ERROR("Datatype %d for MAXLOC Reduce operation", *type);
   }
 }
 
@@ -524,22 +498,22 @@ void mpir_op_minloc(void *invec,
   mpir_datatype_t *dtype = mpir_get_datatype(*type);
 
   if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {
-    mpir_datatype_t *oldtype = (dtype)->old_types[0];
+    MPI_Datatype oldtype = (dtype)->old_types[0];
 
     /* Set the actual length */
     _len = *len * (dtype)->elements;
 
     /* Perform the operation */
-    switch (oldtype->dte_type) {
+    switch (oldtype) {
     case MPI_INT: {
       int *a = (int *)inoutvec; int *b = (int *)invec;
       for ( i=0; i<_len; i+=2 ) {
-        if (a[i] == b[i])
-          a[i+1] = tbx_min(a[i+1],b[i+1]);
-        else if (a[i] > b[i]) {
-          a[i]   = b[i];
-          a[i+1] = b[i+1];
-        }
+	if (a[i] == b[i])
+	  a[i+1] = tbx_min(a[i+1],b[i+1]);
+	else if (a[i] > b[i]) {
+	  a[i]   = b[i];
+	  a[i+1] = b[i+1];
+	}
       }
       break;
     }
@@ -604,7 +578,7 @@ void mpir_op_minloc(void *invec,
       break;
     }
     default: 
-      ERROR("Datatype %d for MINLOC Reduce operation", *type);
+      ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
       break;
     }
   }

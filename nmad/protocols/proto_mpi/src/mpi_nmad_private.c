@@ -1087,15 +1087,15 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
   if(datatypes[*newtype]->dte_type == MPIR_CONTIG) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
-    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
-    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(MPI_Datatype));
+    datatypes[*newtype]->old_types[0] = oldtype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
   }
   else if (datatypes[*newtype]->dte_type == MPIR_VECTOR) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
-    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
-    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(MPI_Datatype));
+    datatypes[*newtype]->old_types[0] = oldtype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
     datatypes[*newtype]->blocklens    = malloc(1 * sizeof(int));
     datatypes[*newtype]->blocklens[0] = mpir_old_datatype->blocklens[0];
@@ -1105,8 +1105,8 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
   else if (datatypes[*newtype]->dte_type == MPIR_INDEXED) {
     datatypes[*newtype]->old_sizes    = malloc(1 * sizeof(int));
     datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->old_sizes[0];
-    datatypes[*newtype]->old_types    = malloc(1 * sizeof(mpir_datatype_t *));
-    datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+    datatypes[*newtype]->old_types    = malloc(1 * sizeof(MPI_Datatype));
+    datatypes[*newtype]->old_types[0] = oldtype;
     datatypes[*newtype]->elements     = mpir_old_datatype->elements;
     datatypes[*newtype]->blocklens    = malloc(datatypes[*newtype]->elements * sizeof(int));
     datatypes[*newtype]->indices      = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
@@ -1120,7 +1120,7 @@ int mpir_type_create_resized(MPI_Datatype oldtype,
     datatypes[*newtype]->blocklens = malloc(datatypes[*newtype]->elements * sizeof(int));
     datatypes[*newtype]->indices   = malloc(datatypes[*newtype]->elements * sizeof(MPI_Aint));
     datatypes[*newtype]->old_sizes = malloc(datatypes[*newtype]->elements * sizeof(size_t));
-    datatypes[*newtype]->old_types = malloc(datatypes[*newtype]->elements * sizeof(size_t));
+    datatypes[*newtype]->old_types = malloc(datatypes[*newtype]->elements * sizeof(MPI_Datatype));
     for(i=0 ; i<datatypes[*newtype]->elements ; i++) {
       datatypes[*newtype]->blocklens[i] = mpir_old_datatype->blocklens[i];
       datatypes[*newtype]->indices[i]   = mpir_old_datatype->indices[i];
@@ -1208,8 +1208,8 @@ int mpir_type_contiguous(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
-  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
-  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(MPI_Datatype));
+  datatypes[*newtype]->old_types[0] = oldtype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 1;
   datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count;
@@ -1237,8 +1237,8 @@ int mpir_type_vector(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
-  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
-  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(MPI_Datatype));
+  datatypes[*newtype]->old_types[0] = oldtype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->size = datatypes[*newtype]->old_sizes[0] * count * blocklength;
@@ -1275,8 +1275,8 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->basic = 0;
   datatypes[*newtype]->old_sizes = malloc(1 * sizeof(int));
   datatypes[*newtype]->old_sizes[0] = mpir_old_datatype->extent;
-  datatypes[*newtype]->old_types = malloc(1 * sizeof(mpir_datatype_t *));
-  datatypes[*newtype]->old_types[0] = mpir_old_datatype;
+  datatypes[*newtype]->old_types = malloc(1 * sizeof(MPI_Datatype));
+  datatypes[*newtype]->old_types[0] = oldtype;
   datatypes[*newtype]->committed = 0;
   datatypes[*newtype]->is_contig = 0;
   datatypes[*newtype]->elements = count;
@@ -1318,11 +1318,11 @@ int mpir_type_struct(int count,
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));
   datatypes[*newtype]->old_sizes = malloc(count * sizeof(size_t));
-  datatypes[*newtype]->old_types = malloc(count * sizeof(mpir_datatype_t *));
+  datatypes[*newtype]->old_types = malloc(count * sizeof(MPI_Datatype));
   for(i=0 ; i<count ; i++) {
     datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
     datatypes[*newtype]->old_sizes[i] = mpir_get_datatype(array_of_types[i])->size;
-    datatypes[*newtype]->old_types[i] = mpir_get_datatype(array_of_types[i]);
+    datatypes[*newtype]->old_types[i] = array_of_types[i];
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
 
     MPI_NMAD_TRACE("Element %d: length %d, old_type size %ld, indice %ld\n", i, datatypes[*newtype]->blocklens[i], (long)datatypes[*newtype]->old_sizes[i],

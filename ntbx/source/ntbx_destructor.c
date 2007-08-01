@@ -228,7 +228,7 @@ ntbx_topology_element_dest(p_ntbx_topology_element_t  object,
 
 void
 ntbx_topology_table_dest(p_ntbx_topology_table_t    object,
-			 p_tbx_specific_dest_func_t dest_func)
+			 p_tbx_specific_dest_func_t dest_func TBX_UNUSED)
 {
   LOG_IN();
   if (object->table)

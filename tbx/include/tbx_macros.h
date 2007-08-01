@@ -180,14 +180,14 @@
 #  define __TBX_RECORD_SOME_TRACE(array, size) pm2debug_backtrace(array, size);
 #  define __TBX_PRINT_SOME_TRACE(array, size) \
 do { \
-       int      i;\
+       int      trace_i;\
        char   **strings;\
        strings = backtrace_symbols (array, size);\
 \
        pm2debug("Obtained %d stack frames.\n", size);\
 \
-       for (i = 0; i < size; i++)\
-          pm2debug ("%s\n", strings[i]);\
+       for (trace_i = 0; trace_i < size; trace_i++)\
+          pm2debug ("%s\n", strings[trace_i]);\
 \
        free (strings);\
 } while(0)
@@ -204,10 +204,10 @@ do { \
 #  define __TBX_PRINT_TRACE()\
      ({\
        void    *array[TBX_BACKTRACE_DEPTH];\
-       int      size;\
+       int      trace_size;\
 \
-       size    = __TBX_RECORD_SOME_TRACE (array, TBX_BACKTRACE_DEPTH);\
-       __TBX_PRINT_SOME_TRACE (array, size); \
+       trace_size    = __TBX_RECORD_SOME_TRACE (array, TBX_BACKTRACE_DEPTH);\
+       __TBX_PRINT_SOME_TRACE (array, trace_size); \
      })
 
 #ifndef TBX_FAILURE_CONTEXT

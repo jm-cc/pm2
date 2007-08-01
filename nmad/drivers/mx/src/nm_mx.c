@@ -24,6 +24,7 @@
 #include <tbx.h>
 
 #include "nm_mx_private.h"
+#include "nm_mx_public.h"
 #include "nm_public.h"
 
 /** Initial number of packet wrappers */

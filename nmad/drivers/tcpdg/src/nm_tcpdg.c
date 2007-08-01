@@ -30,6 +30,7 @@
 #include <tbx.h>
 
 #include "nm_tcpdg_private.h"
+#include "nm_tcpdg_public.h"
 
 /** TCP/datagram specific driver data.
  */
@@ -203,8 +204,8 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
 static
 int
 nm_tcpdg_query		(struct nm_drv *p_drv,
-			 struct nm_driver_query_param *params,
-			 int nparam) {
+			 struct nm_driver_query_param *params TBX_UNUSED,
+			 int nparam TBX_UNUSED) {
 	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
 	int			 err;
 

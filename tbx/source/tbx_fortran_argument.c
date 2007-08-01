@@ -102,7 +102,7 @@ void tbx_fortran_init(int *argc, char ***argv) {
 //#elif defined PM2_FORTRAN_TARGET_NONE
 ///* Nothing */
 #else
-void tbx_fortran_init(int *argc, char ***argv) {
+void tbx_fortran_init(int *argc TBX_UNUSED, char ***argv TBX_UNUSED) {
 }
 //#  error unknown FORTRAN TARGET
 #endif

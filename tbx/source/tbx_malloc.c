@@ -222,7 +222,7 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 }
 
 void
-tbx_safe_free(void *ptr, const char *file, const unsigned  line)
+tbx_safe_free(void *ptr, const char *file TBX_UNUSED, const unsigned  line TBX_UNUSED)
 {
   p_tbx_safe_malloc_header_t  p    =
     ptr - TBX_SAFE_MALLOC_HEADER_SIZE;

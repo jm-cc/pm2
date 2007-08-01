@@ -152,7 +152,7 @@ typedef struct mpir_request_s {
   /** communication mode to be used when exchanging data */
   MPI_Communication_Mode communication_mode;
   /** gate of the destination or the source node */
-  uint8_t gate_id;
+  gate_id_t gate_id;
   /** number of elements to be exchanged */
   int count;
   /** pointer to the data to be exchanged */
@@ -190,7 +190,7 @@ typedef struct mpir_datatype_s {
   /** whether basic or user-defined */
   int basic;
   /** whether committed or not */
-  int committed; 
+  int committed;
   /** whether entirely contiguous */
   int is_contig;
   /** whether optimized or not */
@@ -233,7 +233,7 @@ int mpir_internal_init(int global_size,
 		       nm_so_pack_interface _p_so_pack_if);
 
 /**
- * Internal shutdown of the application. 
+ * Internal shutdown of the application.
  */
 int mpir_internal_exit(void);
 
@@ -242,22 +242,22 @@ int mpir_internal_exit(void);
 /**
  * Gets the incoming gate id for the given node
  */
-uint8_t mpir_get_in_gate_id(int node);
+gate_id_t mpir_get_in_gate_id(int node);
 
 /**
  * Gets the outgoing gate id for the given node
  */
-uint8_t mpir_get_out_gate_id(int node);
+gate_id_t mpir_get_out_gate_id(int node);
 
 /**
  * Gets the node associated to the given incoming gate id
  */
-int mpir_get_in_dest(uint8_t gate);
+int mpir_get_in_dest(gate_id_t gate);
 
 /**
  * Gets the node associated to the given outgoing gate id
  */
-int mpir_get_out_dest(uint8_t gate);
+int mpir_get_out_dest(gate_id_t gate);
 
 /* Send/recv/status functions */
 

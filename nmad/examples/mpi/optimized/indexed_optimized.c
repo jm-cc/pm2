@@ -46,7 +46,7 @@ void check_correctness_datatype_indexed(struct MPIR_DATATYPE *datatype,
 }
 
 void pingpong_datatype_indexed(nm_so_pack_interface interface,
-                               uint8_t              gate_id,
+                               gate_id_t            gate_id,
                                int                  number_of_elements,
                                int                  number_of_blocks,
                                int                  client) {
@@ -138,7 +138,7 @@ void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
 }
 
 void pack_datatype_indexed(nm_so_pack_interface  interface,
-                           uint8_t               gate_id,
+                           gate_id_t             gate_id,
                            struct MPIR_DATATYPE *datatype,
                            float                *s_ptr) {
   struct nm_so_cnx cnx;
@@ -190,7 +190,7 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
 }
 
 void unpack_datatype_indexed(nm_so_pack_interface interface,
-                             uint8_t              gate_id,
+                             gate_id_t            gate_id,
                              float               *r_ptr) {
   struct nm_so_cnx cnx;
   float          **tmp_buf;

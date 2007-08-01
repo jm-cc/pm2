@@ -51,7 +51,7 @@ main(int	  argc,
         char			*l_url2		= NULL;
         uint8_t			 drv1_id	=    0;
         uint8_t			 drv2_id	=    0;
-        uint8_t			 gate_id	=    0;
+        gate_id_t		 gate_id	=    0;
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         struct nm_so_cnx         cnx;

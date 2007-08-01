@@ -266,7 +266,7 @@ nm_mini_alt_in_schedule_data_perm(struct nm_sched		*p_sched,
                 p_tbx_slist_t			 ctrl_list	= NULL;
                 uint8_t				 proto_id;
                 uint8_t				 seq;
-                uint8_t				 gate_id;
+                gate_id_t			 gate_id;
 
                 /* fetch a pkt
                  */

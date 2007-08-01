@@ -45,8 +45,10 @@
  * - The \ref sr_interface
  * - The \ref mpi_interface
  * </div>
- *  
+ *
  */
+
+#include "nm_public.h"
 
 /** Core NewMadeleine structure.
  */
@@ -54,7 +56,7 @@ struct nm_core {
 
         /** Number of gates.
          */
-        uint8_t			 nb_gates;
+        gate_id_t                nb_gates;
 
         /** Array of gates.
          */

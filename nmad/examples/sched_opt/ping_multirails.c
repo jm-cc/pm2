@@ -86,7 +86,7 @@ main(int	  argc,
         char			*l_url[2]		= {NULL, NULL};
         uint8_t			drv_id[2]	=    {0, 0};
 	int (*drv_load[2])(struct nm_drv_ops *) = { &nm_mx_load, &nm_qsnet_load };
-        uint8_t			 gate_id	=    0;
+        gate_id_t		 gate_id	=    0;
         char			*buf		= NULL;
         char			*hostname	= "localhost";
         uint32_t		 len;

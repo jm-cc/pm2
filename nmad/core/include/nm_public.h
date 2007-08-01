@@ -27,6 +27,10 @@ struct nm_trk;
 struct nm_trk_rq;
 struct nm_drv;
 
+typedef int16_t gate_id_t;                 /* needs to support -1 */
+
+#define NM_ANY_GATE ((gate_id_t)-1)
+
 int
 nm_core_init		(int			 *argc,
                          char			 *argv[],
@@ -95,23 +99,23 @@ nm_core_trk_free	(struct nm_core		*p_core,
 
 int
 nm_core_gate_init	(struct nm_core		 *p_core,
-                         uint8_t		 *p_gate_id);
+                         gate_id_t		 *p_gate_id);
 
 int
 nm_core_gate_accept	(struct nm_core		 *p_core,
-                         uint8_t		  gate_id,
+                         gate_id_t		  gate_id,
                          uint8_t		  drv_id,
                          char			 *drv_trk_url);
 
 int
 nm_core_gate_connect	(struct nm_core		 *p_core,
-                         uint8_t		  gate_id,
+                         gate_id_t		  gate_id,
                          uint8_t		  drv_id,
                          char			 *drv_trk_url);
 
 int
 nm_core_wrap_buffer	(struct nm_core		 *p_core,
-                         int16_t		  gate_id,
+                         gate_id_t		  gate_id,
                          uint8_t		  proto_id,
                          uint8_t		  seq,
                          void			 *buf,

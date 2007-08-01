@@ -17,7 +17,7 @@
 #include "struct_optimized.h"
 
 void pingpong_datatype_struct(nm_so_pack_interface interface,
-                              uint8_t              gate_id,
+                              gate_id_t            gate_id,
                               int                  number_of_elements,
                               int                  client) {
   struct MPIR_DATATYPE *datatype_struct = NULL;
@@ -89,7 +89,7 @@ void init_datatype_struct(struct MPIR_DATATYPE *datatype,
 }
 
 void pack_datatype_struct(nm_so_pack_interface  interface,
-                          uint8_t               gate_id,
+                          gate_id_t             gate_id,
                           struct MPIR_DATATYPE *datatype,
                           particle_t           *s_ptr) {
   struct nm_so_cnx cnx;
@@ -152,7 +152,7 @@ void pack_datatype_struct(nm_so_pack_interface  interface,
 }
 
 void unpack_datatype_struct(nm_so_pack_interface interface,
-                            uint8_t              gate_id,
+                            gate_id_t            gate_id,
                             particle_t          *r_ptr) {
   struct nm_so_cnx cnx;
   int             *block_size, *block_elements, *block_offset, numberOfBlocks, count;

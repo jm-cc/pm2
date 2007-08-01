@@ -37,7 +37,7 @@ float get_value(int x,
 
 
 void pingpong_datatype_vector(nm_so_pack_interface interface,
-                              uint8_t              gate_id,
+                              gate_id_t            gate_id,
                               int                  number_of_elements,
                               int                  number_of_blocks,
                               int                  client) {
@@ -106,7 +106,7 @@ void init_datatype_vector(struct MPIR_DATATYPE *datatype,
 }
 
 void pack_datatype_vector(nm_so_pack_interface  interface,
-                          uint8_t               gate_id,
+                          gate_id_t             gate_id,
                           struct MPIR_DATATYPE *datatype,
                           float                *s_ptr) {
   struct nm_so_cnx cnx;
@@ -144,7 +144,7 @@ void pack_datatype_vector(nm_so_pack_interface  interface,
 }
 
 void unpack_datatype_vector(nm_so_pack_interface interface,
-                            uint8_t              gate_id,
+                            gate_id_t            gate_id,
                             float               *r_ptr) {
   struct nm_so_cnx cnx;
   int              numberOfBlocks, size, blockLength, i;

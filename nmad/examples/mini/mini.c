@@ -41,7 +41,7 @@ main(int	  argc,
         char			*r_url		= NULL;
         char			*l_url		= NULL;
         uint8_t			 drv_id		=    0;
-        uint8_t			 gate_id	=    0;
+        gate_id_t                gate_id	=    0;
         char			*buf		= NULL;
         uint64_t		 len;
         int err;

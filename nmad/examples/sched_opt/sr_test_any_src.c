@@ -66,7 +66,7 @@ main(int	  argc,
 		{
 		  nm_so_request r1, r2, r3, r4;
 		  char buf[16], *big_buf;
-		  uint8_t gate;
+		  gate_id_t gate;
 
 		  nm_so_sr_irecv(sr_if, gate_id, 0, NULL, 0, &r1);
 		  nm_so_sr_irecv(sr_if, gate_id, 0, NULL, 0, &r2);

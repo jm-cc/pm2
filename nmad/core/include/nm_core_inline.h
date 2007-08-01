@@ -316,7 +316,7 @@ static
 __inline__
 int
 __nm_core_wrap_buffer	(struct nm_core		 *p_core,
-                         int16_t		  gate_id,
+                         gate_id_t  		  gate_id,
                          uint8_t		  proto_id,
                          uint8_t		  seq,
                          void			 *buf,
@@ -329,7 +329,7 @@ __nm_core_wrap_buffer	(struct nm_core		 *p_core,
         /* check gate_id range
            -1 is for 'any gate'
          */
-        if (gate_id < -1 || gate_id >= p_core->nb_gates) {
+        if (gate_id < NM_ANY_GATE || gate_id >= p_core->nb_gates) {
                 err	= -NM_EINVAL;
                 goto out;
         }

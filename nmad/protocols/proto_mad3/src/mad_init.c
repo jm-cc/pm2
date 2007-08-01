@@ -479,7 +479,7 @@ links_init(p_mad_driver_interface_t interface,
   LOG_OUT();
 }
 
-//static
+static
 void
 regular_connection_init(p_mad_driver_interface_t  interface,
                                 p_mad_channel_t           channel,
@@ -1066,8 +1066,8 @@ fchannel_open(p_mad_madeleine_t  madeleine,
 
 static
 tbx_bool_t
-vchannel_open(p_mad_madeleine_t  madeleine,
-              p_mad_channel_id_t p_channel_id)
+vchannel_open(p_mad_madeleine_t  madeleine TBX_UNUSED,
+              p_mad_channel_id_t p_channel_id TBX_UNUSED)
 {
   char  *vchannel_name = NULL;
 
@@ -1088,8 +1088,8 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 
 static
 tbx_bool_t
-xchannel_open(p_mad_madeleine_t  madeleine,
-              p_mad_channel_id_t p_channel_id)
+xchannel_open(p_mad_madeleine_t  madeleine TBX_UNUSED,
+              p_mad_channel_id_t p_channel_id TBX_UNUSED)
 {
   char                                 *xchannel_name = NULL;
 

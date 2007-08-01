@@ -58,7 +58,7 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 /** Process a complete successful outgoing request.
  */
 int
-nm_so_out_process_success_rq(struct nm_sched *p_sched,
+nm_so_out_process_success_rq(struct nm_sched *p_sched TBX_UNUSED,
                              struct nm_pkt_wrap	*p_pw) {
   int err;
   struct nm_so_pkt_wrap *p_so_pw = nm_pw2so(p_pw);
@@ -94,7 +94,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched,
 int
 nm_so_out_process_failed_rq(struct nm_sched	*p_sched,
                             struct nm_pkt_wrap	*p_pw,
-                            int		 	_err)
+                            int		 	_err TBX_UNUSED)
 {
     TBX_FAILURE("nm_so_out_process_failed_rq");
     return nm_so_out_process_success_rq(p_sched, p_pw);

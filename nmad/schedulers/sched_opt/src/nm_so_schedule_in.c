@@ -254,7 +254,7 @@ __nm_so_unpack(struct nm_gate *p_gate,
 /** Schedule and post new incoming buffers.
  */
 int
-nm_so_in_schedule(struct nm_sched *p_sched)
+nm_so_in_schedule(struct nm_sched *p_sched TBX_UNUSED)
 {
   return NM_ESUCCESS;
 }

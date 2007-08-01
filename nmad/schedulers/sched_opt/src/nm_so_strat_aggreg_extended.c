@@ -247,10 +247,10 @@ static int pack(struct nm_gate *p_gate,
  *  @param is_completed indicates if the data are going to be completed or can be sent straight away.
  *  @return The NM status.
  */
-int pack_extended(struct nm_gate *p_gate,
-                  uint8_t tag, uint8_t seq,
-                  void *data, uint32_t len,
-                  tbx_bool_t is_completed)
+static int pack_extended(struct nm_gate *p_gate,
+                         uint8_t tag, uint8_t seq,
+                         void *data, uint32_t len,
+                         tbx_bool_t is_completed)
 {
   struct nm_so_pkt_wrap *p_so_pw;
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;

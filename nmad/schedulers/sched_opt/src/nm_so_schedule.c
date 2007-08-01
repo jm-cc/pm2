@@ -23,6 +23,7 @@
 #include <nm_public.h>
 
 #include "nm_so_private.h"
+#include "nm_so_public.h"
 #include "nm_so_pkt_wrap.h"
 
 #include "nm_so_strategies/nm_so_strat_default.h"

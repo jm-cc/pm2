@@ -167,6 +167,17 @@ mad_ntbx_send_string(p_ntbx_client_t  client,
 TBX_INTERNAL char *
 mad_ntbx_receive_string(p_ntbx_client_t client);
 
+TBX_INTERNAL void
+mad_leonie_send_int_nolock(const int data);
+
+TBX_INTERNAL int
+mad_leonie_receive_int_nolock(void);
+
+TBX_INTERNAL void
+mad_leonie_send_unsigned_int_nolock(const unsigned int data);
+
+TBX_INTERNAL unsigned int
+mad_leonie_receive_unsigned_int_nolock(void);
 
 TBX_INTERNAL void
 mad_leonie_send_int(const int data);

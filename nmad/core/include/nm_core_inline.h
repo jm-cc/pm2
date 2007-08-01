@@ -22,7 +22,7 @@ extern p_tbx_memory_t nm_core_iov2_mem	;
 static
 __inline__
 int
-nm_pkt_wrap_alloc(struct nm_core	 *p_core,
+nm_pkt_wrap_alloc(struct nm_core	 *p_core TBX_UNUSED,
                   struct nm_pkt_wrap	**pp_pkt_wrap,
                   uint8_t		  proto_id,
                   uint8_t		  seq) {
@@ -52,7 +52,7 @@ nm_pkt_wrap_alloc(struct nm_core	 *p_core,
 static
 __inline__
 int
-nm_pkt_wrap_free(struct nm_core		*p_core,
+nm_pkt_wrap_free(struct nm_core		*p_core TBX_UNUSED,
                  struct nm_pkt_wrap	*p_pw) {
         int	err;
 
@@ -66,7 +66,7 @@ nm_pkt_wrap_free(struct nm_core		*p_core,
 static
 __inline__
 int
-nm_iov_alloc(struct nm_core	 	*p_core,
+nm_iov_alloc(struct nm_core	 	*p_core TBX_UNUSED,
                struct nm_pkt_wrap	*p_pw,
                uint32_t			 v_size) {
         int	err;
@@ -107,7 +107,7 @@ nm_iov_alloc(struct nm_core	 	*p_core,
 static
 __inline__
 int
-nm_iov_free(struct nm_core	*p_core,
+nm_iov_free(struct nm_core	*p_core TBX_UNUSED,
             struct nm_pkt_wrap	*p_pw) {
         int	err;
 
@@ -138,7 +138,7 @@ nm_iov_free(struct nm_core	*p_core,
 static
 __inline__
 int
-nm_iov_meta_alloc(struct nm_core	*p_core,
+nm_iov_meta_alloc(struct nm_core	*p_core TBX_UNUSED,
                   struct nm_pkt_wrap	*p_pw) {
         int	err;
 
@@ -164,7 +164,7 @@ nm_iov_meta_alloc(struct nm_core	*p_core,
 static
 __inline__
 int
-nm_iov_meta_free(struct nm_core		*p_core,
+nm_iov_meta_free(struct nm_core		*p_core TBX_UNUSED,
                  struct nm_pkt_wrap	*p_pw) {
         int	err;
 
@@ -182,7 +182,7 @@ nm_iov_meta_free(struct nm_core		*p_core,
 static
 __inline__
 int
-nm_iov_append_buf(struct nm_core	*p_core,
+nm_iov_append_buf(struct nm_core	*p_core TBX_UNUSED,
                   struct nm_pkt_wrap	*p_pw,
                   void			*ptr,
                   uint64_t		 len) {
@@ -211,7 +211,7 @@ nm_iov_append_buf(struct nm_core	*p_core,
 static
 __inline__
 int
-nm_iov_prepend_buf(struct nm_core	*p_core,
+nm_iov_prepend_buf(struct nm_core	*p_core TBX_UNUSED,
                   struct nm_pkt_wrap	*p_pw,
                   void			*ptr,
                   uint64_t		 len) {
@@ -241,7 +241,7 @@ nm_iov_prepend_buf(struct nm_core	*p_core,
 static
 __inline__
 int
-nm_iov_append_iov(struct nm_core	*p_core,
+nm_iov_append_iov(struct nm_core	*p_core TBX_UNUSED,
                   struct nm_pkt_wrap	*p_pw,
                   struct iovec		*iov,
                   struct nm_iovec	*nm_iov,
@@ -277,7 +277,7 @@ nm_iov_append_iov(struct nm_core	*p_core,
 static
 __inline__
 int
-nm_iov_prepend_iov(struct nm_core	*p_core,
+nm_iov_prepend_iov(struct nm_core	*p_core TBX_UNUSED,
                   struct nm_pkt_wrap	*p_pw,
                   void			*iov,
                   struct nm_iovec	*nm_iov,
@@ -394,7 +394,7 @@ __nm_core_wrap_buffer	(struct nm_core		 *p_core,
 static
 __inline__
 int
-__nm_core_post_send	(struct nm_core		*p_core,
+__nm_core_post_send	(struct nm_core		*p_core TBX_UNUSED,
                          struct nm_pkt_wrap	*p_pw) {
         int err;
 

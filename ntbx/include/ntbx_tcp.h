@@ -71,4 +71,7 @@ typedef struct s_ntbx_tcp_retry
   int timeout_count;
 } ntbx_tcp_retry_t, *p_ntbx_tcp_retry_t;
 
+char *
+ntbx_tcp_h_errno_to_str(void);
+
 #endif /* NTBX_TCP_H */

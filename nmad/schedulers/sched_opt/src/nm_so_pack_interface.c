@@ -37,7 +37,7 @@ struct __nm_so_cnx {
 
         /** Source or destination gate id.
          */
-  long gate_id;
+  uint16_t gate_id;
 
         /** Message tag.
          */
@@ -99,7 +99,7 @@ nm_so_end_packing(struct nm_so_cnx *cnx)
 
 int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
-		      long gate_id, uint8_t tag,
+		      uint16_t gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;

@@ -27,7 +27,7 @@
 #include "nm_so_sendrecv_interface_private.h"
 
 #ifndef NM_SO_ANY_SRC
-#define NM_SO_ANY_SRC  ((long)-1)
+#define NM_SO_ANY_SRC  ((uint16_t)-1)
 #endif
 
 struct nm_so_interface;
@@ -161,7 +161,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
-	       long gate_id, uint8_t tag,
+	       uint16_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request);
 
@@ -217,7 +217,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
-                     nm_so_request request, long *gate_id);
+                     nm_so_request request, uint16_t *gate_id);
 
 /** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -228,7 +228,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               long gate_id, long *out_gate_id, uint8_t tag);
+               uint16_t gate_id, uint16_t *out_gate_id, uint8_t tag);
 
 /** Get the current send sequence number for the (gate,tag).
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.

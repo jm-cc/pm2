@@ -43,7 +43,7 @@ struct nm_so_sr_gate {
  */
 struct any_src_status {
   uint8_t status;
-  long gate_id;
+  uint16_t gate_id;
   int is_first_request;
 };
 
@@ -319,7 +319,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
-	       long gate_id, uint8_t tag,
+	       uint16_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request)
 {
@@ -360,7 +360,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     if(p_request)
       *p_request = (intptr_t)p_req;
 
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
     return __nm_so_unpack(p_gate, tag, seq, data, len);
   }
 }
@@ -429,7 +429,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
-                     nm_so_request request, long *gate_id)
+                     nm_so_request request, uint16_t *gate_id)
 {
   struct any_src_status *p_status = outer_any_src_struct(request);
 
@@ -443,7 +443,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
 
 int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               long gate_id, long *out_gate_id, uint8_t tag)
+               uint16_t gate_id, uint16_t *out_gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   int i;

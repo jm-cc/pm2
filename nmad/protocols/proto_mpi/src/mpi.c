@@ -1728,7 +1728,7 @@ int MPI_Iprobe(int source,
                int *flag,
                MPI_Status *status) {
   int err      = 0;
-  long gate_id, out_gate_id;
+  uint16_t gate_id, out_gate_id;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -1746,7 +1746,7 @@ int MPI_Iprobe(int source,
   else {
     gate_id = mpir_get_in_gate_id(source);
 
-    if (source >= mpir_communicator->size || gate_id == -1) {
+    if (source >= mpir_communicator->size || gate_id == NM_SO_ANY_SRC) {
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", mpir_communicator->rank, source);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;

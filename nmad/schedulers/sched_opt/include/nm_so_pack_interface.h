@@ -24,14 +24,14 @@
  */
 
 #ifndef NM_SO_ANY_SRC
-#define NM_SO_ANY_SRC  ((long)-1)
+#define NM_SO_ANY_SRC  ((uint16_t)-1)
 #endif
 
 typedef intptr_t nm_so_pack_interface;
 
 struct nm_so_cnx {
   intptr_t interface;
-  long gate;
+  uint16_t gate;
   long tag;
   long first_seq_number;
   long nb_paquets;
@@ -86,7 +86,7 @@ nm_so_end_packing(struct nm_so_cnx *cnx);
  */
 int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
-		      long gate_id, uint8_t tag,
+		      uint16_t gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx);
 
 /** Extract a data fragment from the current message.

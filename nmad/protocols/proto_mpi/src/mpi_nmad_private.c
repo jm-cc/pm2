@@ -45,9 +45,9 @@ static int 		     nb_incoming_msg    = 0;
 static int 		     nb_outgoing_msg    = 0;
 
 /** gives the outgoing gate attached to a node */
-static long                 *out_gate_id	= NULL;
+static uint16_t             *out_gate_id	= NULL;
 /** gives the incoming gate attached to a node */
-static long                 *in_gate_id	        = NULL;
+static uint16_t             *in_gate_id	        = NULL;
 /** gives the node attached to an outgoing gate */
 static int                  *out_dest	 	= NULL;
 /** gives the node attached to an incoming gate */
@@ -280,19 +280,19 @@ int mpir_internal_exit(void) {
   return MPI_SUCCESS;
 }
 
-long mpir_get_in_gate_id(int node) {
+uint16_t mpir_get_in_gate_id(int node) {
   return in_gate_id[node];
 }
 
-long mpir_get_out_gate_id(int node) {
+uint16_t mpir_get_out_gate_id(int node) {
   return out_gate_id[node];
 }
 
-int mpir_get_in_dest(long gate) {
+int mpir_get_in_dest(uint16_t gate) {
   return in_dest[gate];
 }
 
-int mpir_get_out_dest(long gate) {
+int mpir_get_out_dest(uint16_t gate) {
   return out_dest[gate];
 }
 
@@ -586,7 +586,7 @@ static inline int mpir_datatype_struct_split(void *recvbuffer,
  * Checks the current sending NM sequence and triggers flushing of
  * previous outgoing requests when needed.
  */
-static inline int mpir_check_send_seq(long gate_id,
+static inline int mpir_check_send_seq(uint16_t gate_id,
                                       uint8_t tag) {
   int seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, tag);
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
@@ -604,7 +604,7 @@ static inline int mpir_check_send_seq(long gate_id,
  * Checks the current receiving NM sequence and triggers flushing of
  * previous incoming requests when needed.
  */
-static inline int mpir_check_recv_seq(long gate_id,
+static inline int mpir_check_recv_seq(uint16_t gate_id,
                                       uint8_t tag) {
   int seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, tag);
   int err;
@@ -636,7 +636,7 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
   }
 
   MPI_NMAD_TRACE("Sending data\n");
-  MPI_NMAD_TRANSFER("Sent --> gate %ld : %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
+  MPI_NMAD_TRANSFER("Sent --> gate %d : %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
 
   if (mpir_request->communication_mode == MPI_IMMEDIATE_MODE) {
     err = nm_so_sr_isend(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer,
@@ -688,7 +688,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
 
-  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == -1)) {
+  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == NM_SO_ANY_SRC)) {
     NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
@@ -811,7 +811,7 @@ int mpir_set_status(MPI_Request *request,
   if (mpir_request->request_type == MPI_REQUEST_RECV ||
       mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     if (mpir_request->request_source == MPI_ANY_SOURCE) {
-      long gate_id;
+      uint16_t gate_id;
       err = nm_so_sr_recv_source(p_so_sr_if, mpir_request->request_nmad, &gate_id);
       status->MPI_SOURCE = in_dest[gate_id];
     }
@@ -834,7 +834,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
     mpir_request->gate_id = NM_SO_ANY_SRC;
   }
   else {
-    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == -1)){
+    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == NM_SO_ANY_SRC)){
       NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
@@ -927,7 +927,7 @@ static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
   }
 
   MPI_NMAD_TRACE("Posting recv request\n");
-  MPI_NMAD_TRANSFER("Recv --< gate %ld: %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
+  MPI_NMAD_TRANSFER("Recv --< gate %d: %ld bytes\n", mpir_request->gate_id, (long)mpir_request->count * mpir_datatype->size);
   err = nm_so_sr_irecv(p_so_sr_if, mpir_request->gate_id, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
   MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
 

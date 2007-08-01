@@ -168,7 +168,8 @@ mad_object_init(int    argc TBX_UNUSED,
   return madeleine;
 }
 
-void 
+#ifdef READ_CONFIG_FILES
+static void 
 mad_cmd_line_init_from_file(p_mad_settings_t settings,
 			    tbx_flag_t       *host_ok,
 			    tbx_flag_t       *port_ok,
@@ -228,6 +229,7 @@ mad_cmd_line_init_from_file(p_mad_settings_t settings,
     }
   }
 }
+#endif /* READ_CONFIG_FILES */
 
 void
 mad_cmd_line_init(p_mad_madeleine_t   madeleine,

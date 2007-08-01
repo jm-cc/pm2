@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 
+#if !defined CONFIG_SCHED_OPT
 void
 mad_free_parameter_slist(p_tbx_slist_t parameter_slist)
 {
@@ -1741,3 +1742,4 @@ mad_unpack(p_mad_connection_t  connection,
   mad_free_parameter_slist(parameter_slist);
 }
 
+#endif /* CONFIG_SCHED_OPT */

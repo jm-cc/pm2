@@ -21,6 +21,7 @@
 #include <tbx.h>
 
 #include "nm_private.h"
+#include "nm_public.h"
 
 /** Main function of the core scheduler loop.
  *

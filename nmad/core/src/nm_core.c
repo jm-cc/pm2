@@ -102,7 +102,7 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
  *
  */
 int
-nm_core_trk_free(struct nm_core		*p_core,
+nm_core_trk_free(struct nm_core		*p_core TBX_UNUSED,
                  struct nm_trk		*p_trk) {
         struct nm_drv		 *p_drv;
 	int	err;
@@ -470,7 +470,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 	int preferred_node = PM2_NUIOA_ANY_NODE;
 	int nuioa = (numa_available() >= 0);
 #endif /* PM2_NUIOA */
-	
+
 	for(i=0; i<count; i++) {
 		int err;
 
@@ -479,10 +479,10 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 			NM_DISPF("nm_core_driver_load returned %d", err);
 			return err;
 		}
-		
+
 		p_id[i] = id;
-		
-		err = nm_core_driver_query(p_core, p_id[i], NULL, 0);
+
+		err = nm_core_driver_query(p_core, p_id[i], (struct nm_driver_query_param *)NULL, 0);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_query returned %d", err);
 			return err;
@@ -510,7 +510,7 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 		}
 #endif /* PM2_NUIOA */
 	}
-			
+
 #ifdef PM2_NUIOA
 	if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
 		nodemask_t mask;
@@ -518,9 +518,9 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 		DISP("binding to nuioa node %d", preferred_node);
 		nodemask_set(&mask, preferred_node);
 		numa_bind(&mask);
-	}	
+	}
 #endif /* PM2_NUIOA */
-		
+
 	for(i=0; i<count; i++) {
 		int err;
 

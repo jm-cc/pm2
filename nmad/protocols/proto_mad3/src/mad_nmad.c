@@ -712,7 +712,7 @@ mad_nmad_link_init(p_mad_link_t lnk) {
 
 static
 void
-mad_nmad_before_open_channel(p_mad_channel_t ch) {
+mad_nmad_before_open_channel(p_mad_channel_t ch TBX_UNUSED) {
         /* nothing */
 }
 
@@ -809,12 +809,12 @@ mad_nmad_connect(p_mad_connection_t   out,
 
 static
 void
-mad_nmad_after_open_channel(p_mad_channel_t channel) {
+mad_nmad_after_open_channel(p_mad_channel_t channel TBX_UNUSED) {
         /* nothing */
 }
 
 void
-mad_nmad_disconnect(p_mad_connection_t cnx) {
+mad_nmad_disconnect(p_mad_connection_t cnx TBX_UNUSED) {
 
         NM_LOG_IN();
         /* TODO */
@@ -1328,7 +1328,7 @@ mad_nmad_pack(p_mad_connection_t   out,
               void                *ptr,
               size_t               len,
               mad_send_mode_t      send_mode,
-              mad_receive_mode_t   receive_mode) {
+              mad_receive_mode_t   receive_mode TBX_UNUSED) {
   p_mad_nmad_connection_specific_t	cs	= NULL;
   p_mad_nmad_channel_specific_t		chs	= NULL;
 

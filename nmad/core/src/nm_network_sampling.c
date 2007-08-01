@@ -10,7 +10,7 @@ static const int param_min_size          = 2;
 static const int param_max_size          = 1024*1024*1;
 
 static void
-nm_ns_print_errno(char *msg,
+nm_ns_print_errno(const char *msg,
                   int err){
     err = (err > 0 ? err : -err);
 

@@ -150,7 +150,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw);
 /** Display the MX return value */
 static __tbx_inline__
 void
-nm_mx_check_return(char *msg, mx_return_t return_code) {
+nm_mx_check_return(const char *msg, mx_return_t return_code) {
 	if (tbx_unlikely(return_code != MX_SUCCESS)) {
 		const char *msg_mx = NULL;
 

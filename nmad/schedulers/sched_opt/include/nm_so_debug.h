@@ -37,3 +37,5 @@ extern debug_type_t debug_nm_so_sr_log;
 #define NM_SO_SR_LOG_OUT() \
     debug_printf(&debug_nm_so_sr_log, "%s, : <--\n", __TBX_FUNCTION__)
 
+void nm_so_debug_init(int* argc, char** argv, int debug_flags);
+void nm_so_sr_debug_init(int* argc, char** argv, int debug_flags);

@@ -93,7 +93,7 @@ int
 nm_so_pw_init(struct nm_core *p_core);
 
 int
-nm_so_pw_exit();
+nm_so_pw_exit(void);
 
 int
 nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw);

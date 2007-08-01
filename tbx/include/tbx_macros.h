@@ -180,11 +180,11 @@
 #  define __TBX_RECORD_SOME_TRACE(array, size) pm2debug_backtrace(array, size);
 #  define __TBX_PRINT_SOME_TRACE(array, size) \
 do { \
-       size_t   i;\
+       int      i;\
        char   **strings;\
        strings = backtrace_symbols (array, size);\
 \
-       pm2debug("Obtained %zu stack frames.\n", size);\
+       pm2debug("Obtained %d stack frames.\n", size);\
 \
        for (i = 0; i < size; i++)\
           pm2debug ("%s\n", strings[i]);\

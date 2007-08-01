@@ -86,7 +86,7 @@ static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
  *  @return The NM status.
  */
 int
-nm_so_pw_init(struct nm_core *p_core)
+nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
   tbx_malloc_init(&nm_so_pw_nohd_mem,
 		  sizeof(struct nm_so_pkt_wrap),

@@ -553,7 +553,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
-                           int		_err) {
+                           int		_err TBX_UNUSED) {
   TBX_FAILURE("nm_so_in_process_failed_rq");
   return nm_so_in_process_success_rq(p_sched, p_pw);
 }

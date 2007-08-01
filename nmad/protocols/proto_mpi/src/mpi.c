@@ -2650,7 +2650,7 @@ int MPI_Comm_split(MPI_Comm comm,
 		   int key,
 		   MPI_Comm *newcomm) {
   int *sendbuf, *recvbuf;
-  unsigned int i, j, nb_conodes;
+  int i, j, nb_conodes;
   int **conodes;
   mpir_communicator_t *mpir_communicator;
   mpir_communicator_t *mpir_newcommunicator;

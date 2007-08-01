@@ -400,7 +400,7 @@ void mpir_op_maxloc(void *invec,
   int i, _len = *len;
   mpir_datatype_t *dtype = mpir_get_datatype(*type);
 
-  if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {    
+  if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {
     MPI_Datatype oldtype = (dtype)->old_types[0];
 
     /** Set the actual length */
@@ -480,7 +480,7 @@ void mpir_op_maxloc(void *invec,
       }
       break;
     }
-    default: 
+    default:
       ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
       break;
     }
@@ -577,7 +577,7 @@ void mpir_op_minloc(void *invec,
       }
       break;
     }
-    default: 
+    default:
       ERROR("Datatype Contiguous(%d) for MINLOC Reduce operation", *type);
       break;
     }

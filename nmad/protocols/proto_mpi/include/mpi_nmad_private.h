@@ -103,7 +103,7 @@ typedef struct mpir_communicator_s {
   /** id of the communicator */
   unsigned int communicator_id;
   /** number of nodes in the communicator */
-  unsigned int size;
+  int size;
   /** local rank of the node itself */
   int rank;
   /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */

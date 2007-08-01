@@ -1728,7 +1728,7 @@ int MPI_Iprobe(int source,
                int *flag,
                MPI_Status *status) {
   int err      = 0;
-  uint16_t gate_id, out_gate_id;
+  uint8_t gate_id, out_gate_id;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();

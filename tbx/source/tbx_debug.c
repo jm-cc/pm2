@@ -141,7 +141,7 @@ inline static int get_action_value(debug_type_t* type, debug_action_t action)
 	return local;
 }
 
-inline static void update_show()
+inline static void update_show(void)
 {
 	int type_ind;
 
@@ -184,7 +184,7 @@ static void print_register(debug_type_t* type)
 	}
 }
 
-inline static void print_all_registered()
+inline static void print_all_registered(void)
 {
 	int type_ind;
 
@@ -194,7 +194,7 @@ inline static void print_all_registered()
 	}
 }
 
-inline static void show_registered()
+inline static void show_registered(void)
 {
 	static int shown=0;
 
@@ -328,7 +328,8 @@ static void pm2debug_register_real(debug_type_t *type, int option)
 	print_register(type);
 }
 
-void pm2debug_init_base()
+static
+void pm2debug_init_base(void)
 {
 	static int called=0;
 

@@ -204,7 +204,7 @@ do { \
 #  define __TBX_PRINT_TRACE()\
      ({\
        void    *array[TBX_BACKTRACE_DEPTH];\
-       size_t   size;\
+       int      size;\
 \
        size    = __TBX_RECORD_SOME_TRACE (array, TBX_BACKTRACE_DEPTH);\
        __TBX_PRINT_SOME_TRACE (array, size); \

@@ -41,7 +41,7 @@ int32_t _gfortran_iargc(void)	__attribute__ ((weak));
 /**
  * Fortran version for MPI_INIT
  */
-int mpi_init_() {
+int mpi_init_(void) {
   int argc;
   char **argv;
 
@@ -308,7 +308,7 @@ void mpi_waitall_(int *count,
  */
 void mpi_waitany_(int *count,
 		  int *request,
-		  int *index,
+		  int *rqindex,
 		  int *status,
 		  int *ierr) {
   int err = NM_ESUCCESS;
@@ -323,7 +323,7 @@ void mpi_waitany_(int *count,
 	mpir_request_t *mpir_request = (mpir_request_t *)(&request);
 
 	mpir_request->request_type = MPI_REQUEST_ZERO;
-	*index = i;
+	*rqindex = i;
 
 	if (*status) {
 	  status[0] = _status.MPI_SOURCE;
@@ -363,7 +363,7 @@ void mpi_test_(int *request,
  */
 void mpi_testany_(int *count,
                   int  array_of_requests[][MPI_REQUEST_SIZE],
-                  int *index,
+                  int *rqindex,
                   int *flag,
                   int *status,
 		  int *ierr) {
@@ -375,7 +375,7 @@ void mpi_testany_(int *count,
     MPI_Request *p_request = (void *)array_of_requests[i];
     err = MPI_Test(p_request, &_flag, &_status);
     if (_flag) {
-      *index = i;
+      *rqindex = i;
       *flag = _flag;
       *ierr = MPI_SUCCESS;
 
@@ -388,7 +388,7 @@ void mpi_testany_(int *count,
       return;
     }
   }
-  *index = MPI_UNDEFINED;
+  *rqindex = MPI_UNDEFINED;
   *ierr = err;
 }
 
@@ -653,9 +653,9 @@ void mpi_alltoallv_(void *sendbuf,
 /**
  * Fortran version for MPI_OP_CREATE
  */
-void mpi_op_create_(MPI_User_function *function,
-                    int commute,
-                    MPI_Op *op) {
+void mpi_op_create_(MPI_User_function *function TBX_UNUSED,
+                    int commute TBX_UNUSED,
+                    MPI_Op *op TBX_UNUSED) {
   TBX_FAILURE("unimplemented");
 }
 
@@ -1053,7 +1053,7 @@ int MPI_Init(int *argc,
 
 int MPI_Init_thread(int *argc,
                     char ***argv,
-                    int required,
+                    int required TBX_UNUSED,
                     int *provided) {
   int err;
 
@@ -1078,7 +1078,7 @@ int MPI_Finalize(void) {
   return err;
 }
 
-int MPI_Abort(MPI_Comm comm,
+int MPI_Abort(MPI_Comm comm TBX_UNUSED,
               int errorcode) {
   int err;
   MPI_NMAD_LOG_IN();
@@ -1639,7 +1639,7 @@ int MPI_Waitall(int count,
 
 int MPI_Waitany(int count,
                 MPI_Request *array_of_requests,
-                int *index,
+                int *rqindex,
                 MPI_Status *status) {
   int flag, i, err;
 
@@ -1651,7 +1651,7 @@ int MPI_Waitany(int count,
         mpir_request_t *mpir_request = (mpir_request_t *)(&request);
 
         mpir_request->request_type = MPI_REQUEST_ZERO;
-        *index = i;
+        *rqindex = i;
 
         return err;
       }
@@ -1701,7 +1701,7 @@ int MPI_Test(MPI_Request *request,
 
 int MPI_Testany(int count,
                 MPI_Request *array_of_requests,
-                int *index,
+                int *rqindex,
                 int *flag,
                 MPI_Status *status) {
   int i, err = 0;
@@ -1711,11 +1711,12 @@ int MPI_Testany(int count,
   for(i=0 ; i<count ; i++) {
     err = MPI_Test(&array_of_requests[i], flag, status);
     if (*flag == 1) {
-      *index = i;
+      *rqindex = i;
+      MPI_NMAD_LOG_OUT();
       return err;
     }
   }
-  *index = MPI_UNDEFINED;
+  *rqindex = MPI_UNDEFINED;
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1813,7 +1814,7 @@ int MPI_Request_free(MPI_Request *request) {
 }
 
 int MPI_Get_count(MPI_Status *status,
-                  MPI_Datatype datatype,
+                  MPI_Datatype datatype TBX_UNUSED,
                   int *count) {
   MPI_NMAD_LOG_IN();
   *count = status->count;
@@ -1969,7 +1970,7 @@ int MPI_Bcast(void* buffer,
   MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   if (mpir_communicator->rank == root) {
     MPI_Request *requests;
-    int i, err;
+    int i;
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
@@ -2455,7 +2456,6 @@ int MPI_Reduce_scatter(void *sendbuf,
   // Scatter the result
   if (mpir_communicator->rank == 0) {
     MPI_Request *requests;
-    int i;
 
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
@@ -2650,7 +2650,8 @@ int MPI_Comm_split(MPI_Comm comm,
 		   int key,
 		   MPI_Comm *newcomm) {
   int *sendbuf, *recvbuf;
-  int i, j, nb_conodes, **conodes;
+  unsigned int i, j, nb_conodes;
+  int **conodes;
   mpir_communicator_t *mpir_communicator;
   mpir_communicator_t *mpir_newcommunicator;
 

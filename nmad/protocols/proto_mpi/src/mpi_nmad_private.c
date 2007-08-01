@@ -235,7 +235,7 @@ int mpir_internal_init(int global_size,
   return MPI_SUCCESS;
 }
 
-int mpir_internal_exit() {
+int mpir_internal_exit(void) {
   int i;
 
   for(i=0 ; i<=MPI_INTEGER ; i++) {
@@ -332,7 +332,7 @@ static inline int mpir_datatype_vector_pack(struct nm_so_cnx *connection,
 #ifdef NMAD_DEBUG
   void *const orig = buffer;
 #endif
-  int               i, j, err;
+  int               i, j, err = MPI_SUCCESS;
   for(i=0 ; i<count ; i++) {
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       MPI_NMAD_TRACE("Element %d, %d with size %ld starts at %p (+ %d)\n", i, j, (long) mpir_datatype->block_size, buffer, (int)(buffer-orig));
@@ -351,7 +351,7 @@ static inline int mpir_datatype_vector_unpack(struct nm_so_cnx *connection,
 					      void *buffer,
 					      mpir_datatype_t *mpir_datatype,
 					      int count) {
-  int i, k=0, err;
+  int i, k=0, err = MPI_SUCCESS;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   mpir_request->request_ptr[0] = buffer;
   for(i=0 ; i<count ; i++) {
@@ -423,7 +423,7 @@ static inline int mpir_datatype_indexed_pack(struct nm_so_cnx *connection,
 					     void *buffer,
 					     mpir_datatype_t *mpir_datatype,
 					     int count) {
-  int i, j, err;
+  int i, j, err = MPI_SUCCESS;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
@@ -445,7 +445,7 @@ static inline int mpir_datatype_indexed_unpack(struct nm_so_cnx *connection,
 					       void *buffer,
 					       mpir_datatype_t *mpir_datatype,
 					       int count) {
-  int i, k=0, err;
+  int i, k=0, err = MPI_SUCCESS;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   mpir_request->request_ptr[0] = buffer;
   for(i=0 ; i<count ; i++) {
@@ -518,7 +518,7 @@ static inline int mpir_datatype_struct_pack(struct nm_so_cnx *connection,
 					    void *buffer,
 					    mpir_datatype_t *mpir_datatype,
 					    int count) {
-  int i, j, err;
+  int i, j, err = MPI_SUCCESS;
   for(i=0 ; i<count ; i++) {
     void *ptr = buffer + i * mpir_datatype->extent;
     MPI_NMAD_TRACE("Element %d starts at %p (%p + %ld)\n", i, ptr, buffer, (long)i*mpir_datatype->extent);
@@ -540,7 +540,7 @@ static inline int mpir_datatype_struct_unpack(struct nm_so_cnx *connection,
 					      void *buffer,
 					      mpir_datatype_t *mpir_datatype,
 					      int count) {
-  int i, k=0, err;
+  int i, k=0, err = MPI_SUCCESS;
   mpir_request->request_ptr = malloc((count*mpir_datatype->elements+1) * sizeof(void *));
   for(i=0 ; i<count ; i++) {
     int j;
@@ -662,7 +662,7 @@ static inline int mpir_isend_wrapper(mpir_request_t *mpir_request) {
 static inline int mpir_pack_wrapper(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
   struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-  int err;
+  int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Packing data\n");
   nm_so_begin_packing(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
@@ -940,7 +940,7 @@ static inline int mpir_irecv_wrapper(mpir_request_t *mpir_request) {
 static inline int mpir_unpack_wrapper(mpir_request_t *mpir_request) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
   struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-  int err;
+  int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Unpacking data\n");
   nm_so_begin_unpacking(p_so_pack_if, mpir_request->gate_id, mpir_request->request_tag, connection);
@@ -1035,7 +1035,7 @@ int mpir_start(mpir_request_t *mpir_request) {
 /**
  * Gets the id of the next available datatype.
  */
-static int get_available_datatype() {
+static int get_available_datatype(void) {
   if (tbx_slist_is_nil(available_datatypes) == tbx_true) {
     ERROR("Maximum number of datatypes created");
     return MPI_ERR_INTERN;
@@ -1536,7 +1536,7 @@ tbx_bool_t mpir_test_termination(MPI_Comm comm) {
       }
 
       MPI_NMAD_TRACE("Counter [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
-      tbx_bool_t answer = tbx_true;
+      answer = tbx_true;
       if (global_nb_incoming_msg != global_nb_outgoing_msg) {
         answer = tbx_false;
       }

@@ -101,9 +101,9 @@ extern debug_type_t debug_mpi_nmad_log;
 /** Internal communicator */
 typedef struct mpir_communicator_s {
   /** id of the communicator */
-  int communicator_id;
+  unsigned int communicator_id;
   /** number of nodes in the communicator */
-  int size;
+  unsigned int size;
   /** local rank of the node itself */
   int rank;
   /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
@@ -213,7 +213,7 @@ typedef struct mpir_datatype_s {
   /** array of indices, for INDEXED, STRUCT */
   MPI_Aint *indices;
   /** block_size, for VECTOR type */
-  int block_size;
+  size_t block_size;
   /** array of blocklenghts */
   int *blocklens;
   /** old types */
@@ -235,7 +235,7 @@ int mpir_internal_init(int global_size,
 /**
  * Internal shutdown of the application. 
  */
-int mpir_internal_exit();
+int mpir_internal_exit(void);
 
 /* Accessor functions */
 

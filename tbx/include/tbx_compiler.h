@@ -228,8 +228,13 @@ void __memory_barrier(void);
  * Atomic builtins
  */
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR >=1)
+#if (__GNUC__ > 4)
 #define tbx_mb __sync_synchronize()
+#endif
+#if defined(__GNUC_MINOR)
+#  if (__GNUC__ == 4 && __GNUC_MINOR >=1)
+#    define tbx_mb __sync_synchronize()
+#  endif
 #endif
 
 /*

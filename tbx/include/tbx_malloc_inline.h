@@ -239,9 +239,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
         long i = 0;
 
         for (i = 0; i < mem->mem_len; i++) {
-          char ** str_array;
           void **ptr = (void **)((char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN));
-          int j = 0;
 
           if (!*ptr)
             continue;
@@ -249,9 +247,13 @@ tbx_malloc_clean(p_tbx_memory_t mem)
           pm2debug("tbx_malloc_clean: %s - memory block 0x%p still in use\n", mem->name, ptr);
 
 #if TBX_MALLOC_BTRACE_DEPTH
-          str_array = backtrace_symbols(ptr,  TBX_MALLOC_BTRACE_DEPTH);
-          for (j = 0; j < TBX_MALLOC_BTRACE_DEPTH; j++) {
-            pm2debug("  f[%d]: %s\n", j, str_array[j]);
+          {
+            int j = 0;
+            char ** str_array;
+            str_array = backtrace_symbols(ptr,  TBX_MALLOC_BTRACE_DEPTH);
+            for (j = 0; j < TBX_MALLOC_BTRACE_DEPTH; j++) {
+              pm2debug("  f[%d]: %s\n", j, str_array[j]);
+            }
           }
 #endif /* TBX_MALLOC_BTRACE_DEPTH */
 

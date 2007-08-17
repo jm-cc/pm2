@@ -37,4 +37,6 @@ int marcel_snprintf(char * __restrict string, size_t size, const char * __restri
 FILE *marcel_fopen(const char * __restrict path, const char * __restrict mode);
 int marcel_fclose(FILE *stream);
 int marcel_fflush(FILE *stream);
+int marcel_scanf(const char *__restrict format, ...);
+int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...);
 #endif

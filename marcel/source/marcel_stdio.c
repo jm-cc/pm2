@@ -131,3 +131,31 @@ int marcel_fflush(FILE * stream)
 	io_unlock();
 	return retour;
 }
+
+int marcel_scanf(const char *__restrict format, ...) {
+	va_list args;
+	int retour;
+
+	io_lock();
+
+	va_start(args, format);
+	retour = vscanf(format, args);
+	va_end(args);
+
+	io_unlock();
+	return retour;
+}
+
+int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...) {
+	va_list args;
+	int retour;
+
+	io_lock();
+
+	va_start(args, format);
+	retour = vfscanf(stream, format, args);
+	va_end(args);
+
+	io_unlock();
+	return retour;
+}

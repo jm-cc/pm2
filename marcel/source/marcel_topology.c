@@ -956,7 +956,7 @@ static void topo_discover(void) {
 		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);
 
 	for (l=0; l<marcel_topo_nblevels-1; l++)
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++)
+		for (i=0; marcel_topo_levels[l][i].vpset; i++)
 			marcel_topo_levels[l][i].level = l;
 }
 

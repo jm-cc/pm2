@@ -764,7 +764,7 @@ static void topo_discover(void) {
 	marcel_topo_levels[marcel_topo_nblevels++] = vp_level;
 
 	/* Now filter out CPUs from levels. */
-	for (l=0; l<marcel_topo_nblevels-1; l++) {
+	for (l=0; l<marcel_topo_nblevels; l++) {
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
 			marcel_vpmask_and(&marcel_topo_levels[l][i].cpuset, &cpumask);
 			if (marcel_vpmask_is_empty(&marcel_topo_levels[l][i].cpuset)) {
@@ -781,7 +781,7 @@ static void topo_discover(void) {
 
 #ifdef MA__NUMA
 	/* merge identical levels */
-	for (l=0; l<marcel_topo_nblevels-1; l++) {
+	for (l=0; l+1<marcel_topo_nblevels; l++) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++);
 		for (j=0; j<i && marcel_topo_levels[l+1][j].cpuset; j++)
 			if (marcel_topo_levels[l+1][j].cpuset != marcel_topo_levels[l][j].cpuset)
@@ -820,7 +820,7 @@ static void topo_discover(void) {
 #endif
 
 	/* Compute arity */
-	for (l=0; l<marcel_topo_nblevels-1; l++) {
+	for (l=0; l+1<marcel_topo_nblevels; l++) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
 			marcel_topo_levels[l][i].arity=0;
 			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
@@ -840,7 +840,7 @@ static void topo_discover(void) {
 	/* Split hi-arity levels */
 	if (marcel_topo_max_arity) {
 		/* For each level */
-		for (l=0; l<marcel_topo_nblevels-1; l++) {
+		for (l=0; l+1<marcel_topo_nblevels; l++) {
 			unsigned level_width = 0;
 			dosplit = 0;
 			/* Look at each item, check for max_arity */
@@ -955,7 +955,7 @@ static void topo_discover(void) {
 	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
 		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);
 
-	for (l=0; l<marcel_topo_nblevels-1; l++)
+	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; marcel_topo_levels[l][i].vpset; i++)
 			marcel_topo_levels[l][i].level = l;
 }

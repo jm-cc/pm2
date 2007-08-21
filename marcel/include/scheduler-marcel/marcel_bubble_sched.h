@@ -252,7 +252,7 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
  * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on
  * the runqueue of the holding bubble.
  */
-int marcel_bubble_detach(marcel_bubble_t *bubble);
+int ma_bubble_detach(marcel_bubble_t *bubble);
 
 /** \brief
  * Gathers bubbles contained in \e b back into it, i.e. get them from their

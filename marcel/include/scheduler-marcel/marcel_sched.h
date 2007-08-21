@@ -256,7 +256,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			}
 			if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
 				ma_runqueue_t *rq;
-				marcel_bubble_detach(b);
+				ma_bubble_detach(b);
 				rq = ma_to_rq_holder(h);
 				if (!rq)
 					rq = &ma_main_runqueue;

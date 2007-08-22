@@ -101,23 +101,23 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 /** \brief Sets the priority of bubble \e bubble to \e prio. */
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
-/** \brief Sets the priority of bubble \e bubble to \e prio, holder is already locked.  */
+/* \brief Sets the priority of bubble \e bubble to \e prio, holder is already locked.  */
 int marcel_bubble_setprio_locked(marcel_bubble_t *bubble, int prio);
 /** \brief Gets the priority of bubble \e bubble, put into \e *prio. */
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
 /** \brief Sets the initial runqueue of bubble \e bubble to \e rq. When woken up (see
- * marcel_wake_up_bubble), \e bubble will be put on runqueue \e rq.
+ * marcel_wake_up_bubble()), \e bubble will be put on runqueue \e rq.
  */
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
 /** \brief Sets the initial topology level of bubble \e bubble to \e level.
- * When woken up (see marcel_wake_up_bubble), \e bubble will be put on the
+ * When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the
  * runqueue of topology level \e level.
  */
 int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level);
 /** \brief Sets the initial holder of bubble \e bubble to the calling thread's
  * current scheduling holder.
- * When woken up (see marcel_wake_up_bubble), \e bubble will be put on the runqueue of topology level \e level.
+ * When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the corresponding runqueue.
  */
 int marcel_bubble_setinithere(marcel_bubble_t *bubble);
 
@@ -128,7 +128,7 @@ int marcel_bubble_setinithere(marcel_bubble_t *bubble);
  */
 void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 
-/** \brief Joins bubble \e bubble, i.e. waits for all of its threads to terminate. */
+/** \brief Joins bubble \e bubble, i.e. waits for all of its sub-bubbles and threads to terminate. */
 void marcel_bubble_join(marcel_bubble_t *bubble);
 
 /** \brief Executes the barrier of bubble \e bubble, which synchronizes all

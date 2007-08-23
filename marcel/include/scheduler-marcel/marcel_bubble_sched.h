@@ -54,10 +54,6 @@ extern marcel_bubble_t marcel_root_bubble;
  */
 int marcel_bubble_init(marcel_bubble_t *bubble);
 /**
- * \brief change the current bubble scheduler, return the old one.
- */
-marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
-/**
  * \brief Destroys resources associated with bubble \e bubble
  */
 int marcel_bubble_destroy(marcel_bubble_t *bubble);
@@ -147,6 +143,11 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
 
+/**
+ * \brief Changes the current bubble scheduler, returns the old one.
+ */
+marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
+
 /* @} */
 
 /**
@@ -160,9 +161,9 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
  */
 
 #section marcel_variables
-/** \brief Whether an idle scheduler is running */
+/* \brief Whether an idle scheduler is running */
 extern int ma_idle_scheduler;
-/** \brief Central lock for the idle scheduler */
+/* \brief Central lock for the idle scheduler */
 extern ma_rwlock_t ma_idle_scheduler_lock;
 
 #section structures
@@ -229,8 +230,8 @@ struct marcel_bubble {
 
 #section marcel_functions
 /**
- * called from the Marcel Self Scheduler to achieve bubble scheduling. \e prevrq and \e rq
- * must already be locked.
+ * called from the Marcel Self Scheduler to achieve bubble scheduling. \e
+ * prevrq and \e rq are already be locked.
  *
  * \param nextent Entity found by the Self Scheduler.
  * \param rq Runqueue where \e nextent was found.
@@ -250,13 +251,13 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
 
 /** \brief
  * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on
- * the runqueue of the holding bubble.
+ * the first runqueue encountering when following holding bubbles.
  */
 int ma_bubble_detach(marcel_bubble_t *bubble);
 
 /** \brief
- * Gathers bubbles contained in \e b back into it, i.e. get them from their
- * runqueues and put them back into \e b.
+ * Recursively gathers bubbles contained in \e b back into it, i.e. get them
+ * from their holding runqueues and put them back into their holders.
  */
 void ma_bubble_gather(marcel_bubble_t *b);
 /* Internal version (bubble hierarchy is already locked) */

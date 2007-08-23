@@ -184,7 +184,7 @@ do { \
        char   **strings;\
        strings = backtrace_symbols (array, size);\
 \
-       pm2debug("Obtained %d stack frames.\n", size);\
+       pm2debug("Obtained %d stack frames.\n", (int) size);\
 \
        for (trace_i = 0; trace_i < size; trace_i++)\
           pm2debug ("%s\n", strings[trace_i]);\

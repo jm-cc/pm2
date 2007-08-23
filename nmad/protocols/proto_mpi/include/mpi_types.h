@@ -90,10 +90,10 @@
 /* @} */
 
 /** @name For supported thread levels */
-#define MPI_THREAD_SINGLE 0
-#define MPI_THREAD_FUNNELED 1
-#define MPI_THREAD_SERIALIZED 2
-#define MPI_THREAD_MULTIPLE 3
+#define MPI_THREAD_SINGLE	0
+#define MPI_THREAD_FUNNELED	1
+#define MPI_THREAD_SERIALIZED	2
+#define MPI_THREAD_MULTIPLE	3
 /* @} */
 
 typedef size_t MPI_Aint;

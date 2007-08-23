@@ -47,11 +47,11 @@
 #undef MADMPI_TIMER
 
 #if defined(MADMPI_TIMER)
-#  define MPI_NMAD_TIMER_IN() double timer_start=MPI_Wtime();
-#  define MPI_NMAD_TIMER_OUT() { double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start) ; }
+#  define MPI_NMAD_TIMER_IN()  double timer_start=MPI_Wtime();
+#  define MPI_NMAD_TIMER_OUT() double timer_stop=MPI_Wtime(); fprintf(stderr, "TIMER %s: %f\n", __TBX_FUNCTION__, timer_stop-timer_start);
 #else
-#  define MPI_NMAD_TIMER_IN() { }
-#  define MPI_NMAD_TIMER_OUT() { }
+#  define MPI_NMAD_TIMER_IN()
+#  define MPI_NMAD_TIMER_OUT()
 #endif /* MADMPI_TIMER */
 /* @} */
 
@@ -61,20 +61,20 @@ extern debug_type_t debug_mpi_nmad_trace;
 extern debug_type_t debug_mpi_nmad_transfer;
 extern debug_type_t debug_mpi_nmad_log;
 
-#ifdef NMAD_DEBUG
-#  define MPI_NMAD_TRACE(fmt, args...) debug_printf(&debug_mpi_nmad_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
-#  define MPI_NMAD_TRACE_NOF(fmt, args...) debug_printf(&debug_mpi_nmad_trace, fmt, ##args)
-#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+#if defined(NMAD_DEBUG)
+#  define MPI_NMAD_TRACE(fmt, args...)                  debug_printf(&debug_mpi_nmad_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+#  define MPI_NMAD_TRACE_NOF(fmt, args...)              debug_printf(&debug_mpi_nmad_trace, fmt, ##args)
+#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...)     debug_printfl(&debug_mpi_nmad_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
 #  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, fmt, ##args)
-#  define MPI_NMAD_TRANSFER(fmt, args...) debug_printf(&debug_mpi_nmad_transfer, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
-#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_transfer, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
-#  define MPI_NMAD_LOG_IN()  debug_printf(&debug_mpi_nmad_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MPI_NMAD_LOG_OUT() debug_printf(&debug_mpi_nmad_log, "%s: <--\n", __TBX_FUNCTION__)
+#  define MPI_NMAD_TRANSFER(fmt, args...)               debug_printf(&debug_mpi_nmad_transfer, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)  debug_printfl(&debug_mpi_nmad_transfer, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+#  define MPI_NMAD_LOG_IN()                             debug_printf(&debug_mpi_nmad_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MPI_NMAD_LOG_OUT()                            debug_printf(&debug_mpi_nmad_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
-#  define MPI_NMAD_TRACE(fmt, args...) {}
-#  define MPI_NMAD_TRACE_NOF(fmt, args...) {}
-#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...) {}
-#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...) {}
+#  define MPI_NMAD_TRACE(fmt, args...)
+#  define MPI_NMAD_TRACE_NOF(fmt, args...)
+#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...)
+#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...)
 #  define MPI_NMAD_TRANSFER(fmt, args...)
 #  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)
 #  define MPI_NMAD_LOG_IN()
@@ -115,9 +115,9 @@ typedef struct mpir_communicator_s {
 /* @{ */
 /** Type of a communication request */
 typedef int MPI_Request_type;
-#define MPI_REQUEST_ZERO ((MPI_Request_type)0)
-#define MPI_REQUEST_SEND ((MPI_Request_type)1)
-#define MPI_REQUEST_RECV ((MPI_Request_type)2)
+#define MPI_REQUEST_ZERO      ((MPI_Request_type)0)
+#define MPI_REQUEST_SEND      ((MPI_Request_type)1)
+#define MPI_REQUEST_RECV      ((MPI_Request_type)2)
 #define MPI_REQUEST_PACK_SEND ((MPI_Request_type)3)
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)

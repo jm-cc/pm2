@@ -20,7 +20,7 @@
  *  NewMadeleine is a complete redesign and rewrite of the
  *  communication library Madeleine. The new architecture aims at
  *  enabling the use of a much wider range of communication flow
- *  optimization technics. It is entirely modular: The request
+ *  optimization techniques. It is entirely modular: The request
  *  scheduler itself is interchangeable, allowing experimentations
  *  with multiple approaches or on multiple issues with regard to
  *  processing communication flows. We have implemented an

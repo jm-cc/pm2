@@ -257,9 +257,9 @@ static void __marcel_init look_cpuinfo(void) {
 				for (k=0; k <= processor; k++)
 					if (MA_CPU_ISSET(k,&diecpus[i]))
 						marcel_vpmask_add_vp(&die_level[j].cpuset,k);
-				die_level[i].arity=0;
-				die_level[i].children=NULL;
-				die_level[i].father=NULL;
+				die_level[j].arity=0;
+				die_level[j].children=NULL;
+				die_level[j].father=NULL;
 				mdebug("die %d has cpuset %"MA_PRIxVPM"\n",j,die_level[j].cpuset);
 				j++;
 			}
@@ -312,9 +312,9 @@ static void __marcel_init look_cpuinfo(void) {
 				for (k=0; k <= processor; k++)
 					if (MA_CPU_ISSET(k,&corecpus[i]))
 						marcel_vpmask_add_vp(&core_level[j].cpuset,k);
-				core_level[i].arity=0;
-				core_level[i].children=NULL;
-				core_level[i].father=NULL;
+				core_level[j].arity=0;
+				core_level[j].children=NULL;
+				core_level[j].father=NULL;
 #ifdef MARCEL_SMT_IDLE
 				ma_atomic_set(&core_level[i].nbidle, 0);
 #endif

@@ -222,6 +222,7 @@ static void __marcel_init look_cpuinfo(void) {
 	struct marcel_topo_level *die_level;
 
 	/* FIXME: on itanium, physical ids are very big... */
+	/* FIXME: on Hagrid, physical ids start from 8... */
 	memset(dienum,0,sizeof(dienum));
 	memset(diecpus,0,sizeof(diecpus));
 

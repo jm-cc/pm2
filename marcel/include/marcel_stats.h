@@ -105,12 +105,11 @@ ma_stats_reset_t ma_stats_long_max_reset;
 #section functions
 #depend "marcel_sched_generic.h[types]"
 
-long *ma_stats_get(marcel_t t, unsigned long offset);
+long *marcel_task_stats_get(marcel_t t, unsigned long offset);
 /** \brief Application-level function for accessing statistics of a given thread (or the current one if \e t is NULL) */
-#define marcel_stats_get(t,kind) (t, marcel_stats_##kind##_offset);
+#define marcel_stats_get(t,kind) marcel_task_stats_get(t, marcel_stats_##kind##_offset)
 
-long *ma_bubble_stats_get(marcel_bubble_t *b, unsigned long offset);
 /** \brief Application-level function for accessing statistics of a given bubble. */
-#define marcel_bubble_stats_get(b,kind) (b, marcel_stats_##kind##_offset);
+#define marcel_bubble_stats_get(b,kind) ma_bubble_stats_get(b, marcel_stats_##kind##_offset)
 
 /* @} */

@@ -60,12 +60,8 @@ void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
 			__ma_stats_get(src,offset));
 }
 
-long *ma_stats_get(marcel_t t, unsigned long offset) {
+long *marcel_task_stats_get(marcel_t t, unsigned long offset) {
 	if (!t)
 		t = MARCEL_SELF;
 	return ma_task_stats_get(t, offset);
-}
-
-long *ma_bubble_stats_get(marcel_bubble_t *b, unsigned long offset) {
-	return ma_bubble_stats_get(b, offset);
 }

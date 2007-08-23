@@ -470,6 +470,7 @@ INPUT                  = ../marcel/include/scheduler-marcel/linux_runqueues.h \
                          ../marcel/include/scheduler-marcel/marcel_bubble_steal.h \
                          ../marcel/include/scheduler-marcel/marcel_holder.h \
                          ../marcel/include/scheduler-marcel/marcel_sched.h \
+                         ../marcel/include/marcel_stats.h \
                          ../marcel/include/marcel_topology.h
 
 # This tag can be used to specify the character encoding of the source files that 

@@ -62,7 +62,7 @@ void marcel_yield_(){
 
 
 void marcel_set_load_(int *load) {
-  *marcel_stats_get(marcel_self(), marcel_stats_load_offset) = *load;
+  *marcel_stats_get(marcel_self(), load) = *load;
 }
 
 /* Utile pour debug */

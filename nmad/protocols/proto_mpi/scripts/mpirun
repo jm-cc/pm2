@@ -166,7 +166,7 @@ appli_file=`create_temp_file .mad .appli .`
 trap 'rm -f "${appli_file}"' 0 INT QUIT
 touch "${appli_file}"
 
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ] ; then
   echo "$0: Cannot create temp $appli_file file, exiting..." 1>&2
   exit 1
 fi
@@ -191,7 +191,7 @@ PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
 env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
 
 compile_leonie
-if [ -n "$debugger" ]; then
+if [ -n "$debugger" ] ; then
     $Show leonie --wd=$PWD $env -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
     if [ -n "$log" ] ; then

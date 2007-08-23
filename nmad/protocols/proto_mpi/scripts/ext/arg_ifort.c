@@ -25,7 +25,7 @@
  * compiler, when compiling with mpicc, they must be defined
  * otherwise.
  */
- 
+
 #if defined PM2_FORTRAN_TARGET_IFORT
 int iargc_() {
   return 0;

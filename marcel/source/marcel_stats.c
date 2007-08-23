@@ -65,3 +65,7 @@ long *marcel_stats_get(marcel_t t, unsigned long offset) {
 		t = MARCEL_SELF;
 	return ma_task_stats_get(t, offset);
 }
+
+long *marcel_bubble_stats_get(marcel_bubble_t *b, unsigned long offset) {
+	return ma_bubble_stats_get(b, offset);
+}

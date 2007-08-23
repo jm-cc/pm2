@@ -103,8 +103,13 @@ ma_stats_synthesis_t ma_stats_long_max_synthesis;
 ma_stats_reset_t ma_stats_long_max_reset;
 
 #section functions
-/** \brief Application-level function for accessing statistics */
+#depend "marcel_sched_generic.h[types]"
+
+/** \brief Application-level function for accessing statistics of a given thread (or the current one if \e t is NULL) */
 long *marcel_stats_get(marcel_t t, unsigned long offset);
+
+/** \brief Application-level function for accessing statistics of a given bubble. */
+long *marcel_bubble_stats_get(marcel_bubble_t *b, unsigned long offset);
 
 #section macros
 /** \brief Application-level helper for accessing current thread's statistics */

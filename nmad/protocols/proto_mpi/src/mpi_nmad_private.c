@@ -74,15 +74,11 @@ int mpir_internal_init(int global_size,
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
 
-  /*
-    Set the NewMadeleine interfaces
-  */
+  /** Set the NewMadeleine interfaces */
   p_so_sr_if = _p_so_sr_if;
   p_so_pack_if = _p_so_pack_if;
 
-  /*
-   * Initialise the basic datatypes
-   */
+  /** Initialise the basic datatypes */
   datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
 
   for(i=MPI_DATATYPE_NULL ; i<=MPI_INTEGER ; i++) {
@@ -182,9 +178,7 @@ int mpir_internal_init(int global_size,
     tbx_slist_push(available_operators, ptr);
   }
 
-  /*
-   * Store the gate id of all the other processes
-   */
+  /** Store the gate id of all the other processes */
   out_gate_id = malloc(global_size * sizeof(gate_id_t));
   in_gate_id = malloc(global_size * sizeof(gate_id_t));
   out_dest = malloc(256 * sizeof(int));

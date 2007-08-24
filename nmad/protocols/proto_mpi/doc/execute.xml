@@ -116,7 +116,10 @@ it is listed in the channel configuration file)
 <LI>
 <P>
 The default network file used for launching jobs is
-<TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>. This file has to
+<LATEX>\begin{quote}</LATEX>
+<TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>
+<LATEX>\end{quote}</LATEX>
+This file has to
 be provided by the person installing <MACRO NAME="madmpi"/>. However,
 users can select another network file by defining the environment
 variable <TT>MPI_NET_FILE</TT> with the location of the new file,

@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 
   {
     int *sendarray, sendcount;
-    int *rbuf, *recvcounts, *displs, totalcount;
+    int *rbuf = NULL, *recvcounts = NULL, *displs = NULL, totalcount;
     if (rank == 0) {
       totalcount = 1 + (numtasks * (numtasks - 1) / 2);
       rbuf = malloc(totalcount * sizeof(int));

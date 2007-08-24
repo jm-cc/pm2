@@ -18,6 +18,42 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+void send_with_different_tags(int rank);
+void send_with_different_communicators(int rank, MPI_Comm comm);
+
+int main(int argc, char **argv) {
+  int numtasks, rank;
+  int comm1;
+  int comm2;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
+
+  MPI_Comm_dup(MPI_COMM_WORLD, &comm1);
+  printf("Communicator 1 is %d\n", comm1);
+  MPI_Comm_dup(MPI_COMM_WORLD, &comm2);
+  printf("Communicator 2 is %d\n", comm2);
+  MPI_Comm_free(&comm1);
+  MPI_Comm_dup(comm2, &comm1);
+  printf("Communicator 3 is %d\n", comm1);
+
+  send_with_different_tags(rank);
+  send_with_different_communicators(rank, comm1);
+
+  MPI_Comm_free(&comm1);
+  MPI_Comm_free(&comm2);
+  MPI_Finalize();
+  exit(0);
+}
+
 void send_with_different_tags(int rank) {
   int ping_side, rank_dst;
 
@@ -77,39 +113,3 @@ void send_with_different_communicators(int rank, MPI_Comm comm) {
     printf("There are %d Wonders of the World\n", y);
   }
 }
-
-int main(int argc, char **argv) {
-  int numtasks, rank;
-  int comm1;
-  int comm2;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  if (numtasks % 2 != 0) {
-    printf("Need odd size of processes (%d)\n", numtasks);
-    MPI_Abort(MPI_COMM_WORLD, 1);
-    exit(1);
-  }
-
-  //printf("Rank %d Size %d\n", rank, numtasks);
-
-  MPI_Comm_dup(MPI_COMM_WORLD, &comm1);
-  printf("Communicator 1 is %d\n", comm1);
-  MPI_Comm_dup(MPI_COMM_WORLD, &comm2);
-  printf("Communicator 2 is %d\n", comm2);
-  MPI_Comm_free(&comm1);
-  MPI_Comm_dup(comm2, &comm1);
-  printf("Communicator 3 is %d\n", comm1);
-
-  send_with_different_tags(rank);
-  send_with_different_communicators(rank, comm1);
-
-  MPI_Comm_free(&comm1);
-  MPI_Comm_free(&comm2);
-  MPI_Finalize();
-  exit(0);
-}
-

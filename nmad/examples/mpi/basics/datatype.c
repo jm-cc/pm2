@@ -17,6 +17,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void print_buffer(int rank, int *buffer);
+void contig_datatype(int rank, int ping_side, int rank_dst, int optimized);
+void vector_datatype(int rank, int ping_side, int rank_dst, int optimized);
+void indexed_datatype(int rank, int ping_side, int rank_dst, int optimized);
+void struct_datatype(int rank, int ping_side, int rank_dst, int optimized);
+void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized);
+
+int main(int argc, char **argv) {
+  int numtasks, rank;
+  int ping_side, rank_dst;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  contig_datatype(rank, ping_side, rank_dst, 0);
+  vector_datatype(rank, ping_side, rank_dst, 0);
+  indexed_datatype(rank, ping_side, rank_dst, 0);
+  struct_datatype(rank, ping_side, rank_dst, 0);
+
+  struct_and_indexed(rank, ping_side, rank_dst, 0);
+
+  contig_datatype(rank, ping_side, rank_dst, 1);
+  vector_datatype(rank, ping_side, rank_dst, 1);
+  indexed_datatype(rank, ping_side, rank_dst, 1);
+  struct_datatype(rank, ping_side, rank_dst, 1);
+
+  struct_and_indexed(rank, ping_side, rank_dst, 1);
+
+  MPI_Finalize();
+  exit(0);
+}
+
 void print_buffer(int rank, int *buffer) {
   if (buffer[0] != 1 && buffer[1] != 2 && buffer[2] != 3 && buffer[3] != 4) {
     printf("[%d] Incorrect data\n", rank);
@@ -306,7 +343,6 @@ void struct_datatype(int rank, int ping_side, int rank_dst, int optimized) {
 
   if (ping_side) {
     struct part_s particles[10];
-    int i;
     for(i=0 ; i<10 ; i++) {
       particles[i].class[0] = (char) i+97;
       particles[i].d[0] = (i+1)*10;
@@ -323,7 +359,7 @@ void struct_datatype(int rank, int ping_side, int rank_dst, int optimized) {
     MPI_Recv(particles, 10, mytype, rank_dst, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     {
-      int i, success=1;
+      int success=1;
       for(i=0 ; i<10 ; i++) {
         if (particles[i].class[0] != (char) i+97 ||
             particles[i].d[0] != (i+1)*10 || particles[i].d[1] != (i+1)*2 ||
@@ -452,32 +488,3 @@ void struct_and_indexed(int rank, int ping_side, int rank_dst, int optimized) {
   MPI_Type_free(&struct_type);
 }
 
-int main(int argc, char **argv) {
-  int numtasks, rank;
-  int ping_side, rank_dst;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  ping_side = !(rank & 1);
-  rank_dst = ping_side?(rank | 1) : (rank & ~1);
-
-  contig_datatype(rank, ping_side, rank_dst, 0);
-  vector_datatype(rank, ping_side, rank_dst, 0);
-  indexed_datatype(rank, ping_side, rank_dst, 0);
-  struct_datatype(rank, ping_side, rank_dst, 0);
-
-  struct_and_indexed(rank, ping_side, rank_dst, 0);
-
-  contig_datatype(rank, ping_side, rank_dst, 1);
-  vector_datatype(rank, ping_side, rank_dst, 1);
-  indexed_datatype(rank, ping_side, rank_dst, 1);
-  struct_datatype(rank, ping_side, rank_dst, 1);
-
-  struct_and_indexed(rank, ping_side, rank_dst, 1);
-
-  MPI_Finalize();
-  exit(0);
-}

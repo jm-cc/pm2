@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   {
     int success=1;
     int sendarray[2];
-    int *rbuf;
+    int *rbuf = NULL;
     if (rank == 0) {
       rbuf = malloc(numtasks * 2 * sizeof(int));
     }

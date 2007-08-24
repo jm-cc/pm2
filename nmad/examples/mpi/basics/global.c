@@ -18,22 +18,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
-  int *in, *inout, i;
-
-  if (*type != MPI_INT) {
-    fprintf(stderr, "Erreur. Argument type not recognized\n");
-    exit(-1);
-  }
-  in = (int *) a;
-  inout = (int *) b;
-  for(i=0 ; i<*r ; i++) {
-    //printf("Inout[%d] = %d\n", i, inout[i]);
-    inout[i] += in[i];
-    inout[i] *= 2;
-    //printf("Inout[%d] = %d\n", i, inout[i]);
-  }
-}
+void my_operation(void *a, void *b, int *r, MPI_Datatype *type);
 
 int main(int argc, char **argv) {
   int numtasks, rank, provided;
@@ -143,3 +128,19 @@ int main(int argc, char **argv) {
   exit(0);
 }
 
+void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
+  int *in, *inout, i;
+
+  if (*type != MPI_INT) {
+    fprintf(stderr, "Erreur. Argument type not recognized\n");
+    exit(-1);
+  }
+  in = (int *) a;
+  inout = (int *) b;
+  for(i=0 ; i<*r ; i++) {
+    //printf("Inout[%d] = %d\n", i, inout[i]);
+    inout[i] += in[i];
+    inout[i] *= 2;
+    //printf("Inout[%d] = %d\n", i, inout[i]);
+  }
+}

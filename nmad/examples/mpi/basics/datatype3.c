@@ -20,6 +20,21 @@
 #define NB_PARTICLES 30
 //#define DATATYPE_DEBUG
 
+void struct_datatype(int rank);
+
+int main(int argc, char **argv) {
+  int rank;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  struct_datatype(rank);
+
+  MPI_Finalize();
+  exit(0);
+}
+
 void struct_datatype(int rank) {
   struct part_s {
     char class[1];
@@ -57,7 +72,6 @@ void struct_datatype(int rank) {
   if (ping_side) {
     struct part_s particles[NB_PARTICLES];
     MPI_Request request1, request2;
-    int i;
 
     for(i=0 ; i<NB_PARTICLES ; i++) {
       particles[i].class[0] = (char) i+97;
@@ -82,7 +96,7 @@ void struct_datatype(int rank) {
   else {
     struct part_s particles[NB_PARTICLES];
     void *buffer, *ptr;
-    int i, success=1;
+    int success=1;
     char *class;
     double *d;
     int *b;
@@ -120,17 +134,4 @@ void struct_datatype(int rank) {
   }
 
   MPI_Type_free(&mytype);
-}
-
-int main(int argc, char **argv) {
-  int rank;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  struct_datatype(rank);
-
-  MPI_Finalize();
-  exit(0);
 }

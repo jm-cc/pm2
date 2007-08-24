@@ -22,6 +22,33 @@
 #  define MPI_Request_is_equal(r1, r2) r1 == r2
 #endif
 
+void check_buffer(char *buffer, int *strides, int *blocklengths);
+void persistent_index(int ping_side, int rank_dst);
+
+int main(int argc, char **argv) {
+  int numtasks, rank;
+  int rank_dst, ping_side;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (numtasks % 2 != 0) {
+    printf("Need odd size of processes (%d)\n", numtasks);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
+  }
+
+  ping_side = !(rank & 1);
+  rank_dst = ping_side?(rank | 1) : (rank & ~1);
+
+  persistent_index(ping_side, rank_dst);
+
+  MPI_Finalize();
+  exit(0);
+}
+
 void check_buffer(char *buffer, int *strides, int *blocklengths) {
   int i=0, j=0, success=1;
   char value;
@@ -90,29 +117,5 @@ void persistent_index(int ping_side, int rank_dst) {
   }
 
   MPI_Type_free(&mytype);
-}
-
-int main(int argc, char **argv) {
-  int numtasks, rank;
-  int rank_dst, ping_side;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  if (numtasks % 2 != 0) {
-    printf("Need odd size of processes (%d)\n", numtasks);
-    MPI_Abort(MPI_COMM_WORLD, 1);
-    exit(1);
-  }
-
-  ping_side = !(rank & 1);
-  rank_dst = ping_side?(rank | 1) : (rank & ~1);
-
-  persistent_index(ping_side, rank_dst);
-
-  MPI_Finalize();
-  exit(0);
 }
 

@@ -110,15 +110,15 @@ static void usage(void) {
 typedef int (*nm_driver_load)(struct nm_drv_ops*);
 
 #if defined CONFIG_IBVERBS
-const static nm_driver_load p_driver_load = &nm_ibverbs_load;
+static const nm_driver_load p_driver_load = &nm_ibverbs_load;
 #elif defined CONFIG_MX
-const static nm_driver_load p_driver_load = &nm_mx_load;
+static const nm_driver_load p_driver_load = &nm_mx_load;
 #elif defined CONFIG_GM
-const static nm_driver_load p_driver_load = &nm_gm_load;
+static const nm_driver_load p_driver_load = &nm_gm_load;
 #elif defined CONFIG_QSNET
-const static nm_driver_load p_driver_load = &nm_qsnet_load;
+static const nm_driver_load p_driver_load = &nm_qsnet_load;
 #else
-const static nm_driver_load p_driver_load = &nm_tcpdg_load;
+static const nm_driver_load p_driver_load = &nm_tcpdg_load;
 #endif
 
 static struct nm_core		*p_core		= NULL;
@@ -141,12 +141,12 @@ int get_size(void) {
   exit(EXIT_FAILURE);
 }
 
-int get_gate_in_id(int dest) {
+gate_id_t get_gate_in_id(int dest) {
   fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-int get_gate_out_id(int dest) {
+gate_id_t get_gate_out_id(int dest) {
   fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }

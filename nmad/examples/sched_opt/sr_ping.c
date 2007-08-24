@@ -38,7 +38,7 @@ uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
     return len*multiplier+increment;
 }
 
-void usage_ping() {
+static void usage_ping(void) {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
   fprintf(stderr, "-I incr - length increment [%d]\n", INCR_DEFAULT);
@@ -50,7 +50,7 @@ void usage_ping() {
 }
 
 static void fill_buffer(char *buffer, int len) {
-  unsigned int i = 0;
+  int i = 0;
 
   for (i = 0; i < len; i++) {
     buffer[i] = 'a'+(i%26);

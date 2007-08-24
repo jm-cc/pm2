@@ -279,7 +279,7 @@ main(int	  argc,
 }
 
 #else
-int main() {
+int main(int argc, char **argv) {
         printf("This program requires Myrinet/MX and Quadrics networks subsystems\n");
 
         return 0;

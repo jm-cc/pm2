@@ -26,7 +26,7 @@
 #include "helper.h"
 #endif
 
-void process(int is_server, char *msg) {
+static void process(char *msg) {
   uint64_t len;
 
   if (is_server) {
@@ -80,7 +80,7 @@ int main(int argc, char	**argv) {
 
   init(&argc, argv);
 
-  process(is_server, (char *)short_msg);
+  process((char *)short_msg);
 
   {
     /* Build the message to be sent */
@@ -97,7 +97,7 @@ int main(int argc, char	**argv) {
     src = (char *) msg_end;
     while(*src) *dst++ = *src++;
 
-    process(is_server, long_msg);
+    process(long_msg);
     free(long_msg);
   }
 

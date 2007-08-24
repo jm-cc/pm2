@@ -257,7 +257,7 @@ nm_mx_query		(struct nm_drv *p_drv,
 			goto out;
 	}
 
-	board_number = -1;
+	board_number = 0xFFFFFFFF;
 	for(i=0; i<nparam; i++) {
 		switch (params[i].key) {
 		case NM_DRIVER_QUERY_BY_INDEX:
@@ -271,14 +271,15 @@ nm_mx_query		(struct nm_drv *p_drv,
 		}
 	}
 
-	if (board_number == -1) {
+	if (board_number == 0xFFFFFFFF) {
 		/* find the least used board */
 		int min_count = INT_MAX;
 		int min_index = -1;
-		for(i=0; i<boards; i++) {
-			if (board_use_count[i] < min_count) {
-				min_index = i;
-				min_count = board_use_count[i];
+                uint32_t j;
+		for(j=0; j<boards; j++) {
+			if (board_use_count[j] < min_count) {
+				min_index = j;
+				min_count = board_use_count[j];
 			}
 		}
 		board_number = min_index;

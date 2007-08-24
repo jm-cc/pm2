@@ -8,6 +8,24 @@
 
 #include <nm_drivers.h>
 
+/** Returns process rank */
+int get_rank(void);
+
+/** Returns the number of nodes */
+int get_size(void);
+
+/** Returns the out gate id of the process dest */
+gate_id_t get_gate_out_id(int dest);
+
+/** Returns the in gate id of the process dest */
+gate_id_t get_gate_in_id(int dest);
+
+/** Initializes everything. Returns 1 if server, 0 if client. */
+void init(int *argc, char **argv);
+
+/** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
+int nmad_exit(void);
+
 #ifdef CONFIG_PROTO_MAD3
 
 #include <madeleine.h>
@@ -20,23 +38,14 @@ static nm_so_pack_interface    pack_if;
 static gate_id_t	       gate_id    	=    0;
 static p_mad_session_t         session          = NULL;
 
-/*
- * Returns process rank
- */
-int get_rank() {
+int get_rank(void) {
   return session->process_rank;
 }
 
-/*
- * Returns the number of nodes
- */
-int get_size() {
+int get_size(void) {
   return tbx_slist_get_length(madeleine->dir->process_slist);
 }
 
-/*
- * Returns the gate id of the process dest
- */
 gate_id_t get_gate_out_id(int dest) {
   p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
   p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, dest);
@@ -51,13 +60,7 @@ gate_id_t get_gate_in_id(int dest) {
   return cs->gate_id;
 }
 
-/* initialize everything
- *
- * returns 1 if server, 0 if client
- */
-void
-init(int	 *argc,
-     char	**argv) {
+void init(int *argc, char **argv) {
   struct nm_core         *p_core     = NULL;
 
   /*
@@ -92,22 +95,16 @@ init(int	 *argc,
   pack_if = (nm_so_pack_interface)sr_if;
 }
 
-/* clean session
- *
- * returns NM_ESUCCESS or EXIT_FAILURE
- */
-int nmad_exit() {
+int nmad_exit(void) {
   mad_exit(madeleine);
   return NM_ESUCCESS;
 }
 
 #else /* ! CONFIG_PROTO_MAD3 */
 
-static
-void
-usage(void) {
-        fprintf(stderr, "usage: <prog> [<remote url>]\n");
-        exit(EXIT_FAILURE);
+static void usage(void) {
+  fprintf(stderr, "usage: <prog> [<remote url>]\n");
+  exit(EXIT_FAILURE);
 }
 
 typedef int (*nm_driver_load)(struct nm_drv_ops*);
@@ -134,42 +131,26 @@ static uint8_t	 drv_id		=    0;
 static gate_id_t gate_id	=    0;
 static int	 is_server;
 
-/*
- * Returns process rank
- */
-int get_rank() {
+int get_rank(void) {
   fprintf(stderr, "get_rank not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-/*
- * Returns the number of nodes
- */
-int get_size() {
+int get_size(void) {
   fprintf(stderr, "get_size not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-/*
- * Returns the gate id of the process dest
- */
 int get_gate_in_id(int dest) {
   fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-/*
- * Returns the gate id of the process dest
- */
 int get_gate_out_id(int dest) {
   fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-/* initialize everything
- *
- * returns 1 if server, 0 if client
- */
 void
 init(int	 *argc,
      char	**argv) {
@@ -250,11 +231,7 @@ init(int	 *argc,
         exit(EXIT_FAILURE);
 }
 
-/* clean session
- *
- * returns NM_ESUCCESS or EXIT_FAILURE
- */
-int nmad_exit() {
+int nmad_exit(void) {
   int err, ret = NM_ESUCCESS;
 
   err = nm_core_driver_exit(p_core);

@@ -41,7 +41,7 @@ nm_so_out_schedule_gate(struct nm_gate *p_gate)
 /** Process a complete data request.
  */
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
-				    void *ptr, uint32_t len,
+				    void *ptr TBX_UNUSED, uint32_t len TBX_UNUSED,
 				    uint8_t proto_id, uint8_t seq)
 {
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;

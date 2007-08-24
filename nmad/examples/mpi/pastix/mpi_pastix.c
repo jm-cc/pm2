@@ -24,6 +24,7 @@
 
 #define LOOPS 1000
 
+static
 void send_array(int comm_rank, int *sizes) {
   char *buffer = NULL;
   int   total_size = 0;
@@ -135,7 +136,8 @@ int nb_messages[] = {0,      0,      0,     0,      0,      0,      -1};
 int bornes_inf[]  = {0,      0,      0,     0,      0,      0,      -1};
 int bornes_sup[]  = {0,      0,      0,     0,      0,      0,      -1};
 
-int set_bornes_pastix() {
+static
+int set_bornes_pastix(void) {
   int *nmad = sizes_nmad;
   int total = 0;
   int *pastix = sizes_pastix;

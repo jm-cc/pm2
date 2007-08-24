@@ -22,6 +22,7 @@ IGNORE			= org.runtime.manuals.html.EmptyElement
 CLEARPAGE		= org.runtime.manuals.html.EmptyElement
 TITLE			= org.runtime.manuals.html.EmptyElement
 LABEL			= org.runtime.manuals.html.EmptyElement
+LATEX			= org.runtime.manuals.html.EmptyElement
 
 TEXT			= org.runtime.manuals.html.TextElement
 P			= org.runtime.manuals.html.PElement

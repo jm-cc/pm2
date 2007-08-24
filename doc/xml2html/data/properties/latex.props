@@ -21,6 +21,7 @@ APPENDIX		= org.runtime.manuals.latex.AppendixElement
 
 IGNORE			= org.runtime.manuals.latex.EmptyElement
 CLEARPAGE		= org.runtime.manuals.latex.ClearPageElement
+LATEX			= org.runtime.manuals.latex.LatexCodeElement
 
 TITLE			= org.runtime.manuals.latex.EmptyElement
 LABEL			= org.runtime.manuals.latex.EmptyElement

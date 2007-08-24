@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE DOCUMENT SYSTEM "file:./xml2html/data/xml/DOCUMENT.dtd">
-<DOCUMENT TITLE="Mad-MPI: Installation and User's Guide" AUTHOR="Nathalie Furmento" EMAIL="runtime@labri.fr">
+<DOCUMENT TITLE="Mad-MPI: Installation and User's Guide" AUTHOR="The PM2 Team" EMAIL="runtime@labri.fr">
 
 <WML INCLUDE="my_macros.txt"/>
 

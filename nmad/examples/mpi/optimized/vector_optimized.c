@@ -22,6 +22,7 @@
 #include "ping_optimized.h"
 #include "vector_optimized.h"
 
+static
 int get_vector_size(int size,
                   int blocks) {
   int vector_size = size;
@@ -29,6 +30,7 @@ int get_vector_size(int size,
   return vector_size;
 }
 
+static
 float get_value(int x,
                 int y,
                 int size) {

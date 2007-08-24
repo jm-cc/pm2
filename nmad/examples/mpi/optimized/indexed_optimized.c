@@ -22,6 +22,7 @@
 #include "ping_optimized.h"
 #include "indexed_optimized.h"
 
+static
 void check_correctness_datatype_indexed(struct MPIR_DATATYPE *datatype,
                                         float *buffer) {
   float value = datatype->indices[0];

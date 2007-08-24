@@ -167,7 +167,10 @@ operating system you are running, you first have to compile it:
 
 <P>
 The binary will be created in the directory
-<TT>${PM2_BUILD_DIR}/${PM2_ASM}/ezflavor/ezflavor/bin/</TT>. The root script to
+<LATEX>\begin{quote}</LATEX>
+<TT>${PM2_BUILD_DIR}/${PM2_ASM}/ezflavor/ezflavor/bin/</TT>
+<LATEX>\end{quote}</LATEX>
+The root script to
 invoke <TT>ezflavor</TT> is available from your <TT>PATH</TT> in
 <TT>${PM2_ROOT}/bin/ezflavor</TT>, using your PM2 configuration, it
 will automatically redirect your call to the binary file.
@@ -245,7 +248,10 @@ modules. Change the name of this new flavor from <TT>pm2</TT> to
 
 <P>
 The new flavor is checked for consistency and saved into the file
-<TT>${PM2_HOME}/.pm2/flavors/pm2debug</TT>. You may check that
+<LATEX>\begin{quote}</LATEX>
+<TT>${PM2_HOME}/.pm2/flavors/pm2debug</TT>
+<LATEX>\end{quote}</LATEX>
+You may check that
 the file actually contains the new settings:
 </P>
 

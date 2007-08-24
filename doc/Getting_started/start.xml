@@ -26,7 +26,10 @@ If you have any questions concerning PM2, please, send an email to
 </P>
 <P>
   The latest version of this document is available from the following
-  URL: <URL>http://runtime.futurs.inria.fr/pm2-doc/</URL>.
+  URL:
+  <LATEX>\begin{quote}</LATEX>
+  <URL>http://runtime.futurs.inria.fr/pm2-doc/</URL>
+  <LATEX>\end{quote}</LATEX>
 </P>
 <KEYWORD>RPC, Communication, Thread, Distributed Programming.</KEYWORD>
 </ABSTRACT>

@@ -28,10 +28,10 @@ all: $(PROGS)
 	$(MPICC) $< -o $@ ${${@}_LIBS}
 
 %.o: %.c %.h
-	$(MPICC) -c $< -o $@
+	$(MPICC) $(CFLAGS) -c $< -o $@
 
 %.o: %.c
-	$(MPICC) -c $< -o $@
+	$(MPICC) $(CFLAGS) -c $< -o $@
 
 mpi_extended: mpi_extended.o ${libs}
 

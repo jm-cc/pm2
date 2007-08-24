@@ -90,7 +90,7 @@ int main(int argc, char	**argv) {
   /* Multi-chunk pingpong */
   for(len = MSG_SIZE_MIN; len <= MSG_SIZE_MAX; len = _next_msg_size(len)) {
     for(chunk = CHUNK_SIZE_MIN ; chunk <= CHUNK_SIZE_MAX ; chunk = _next_chunk_size(chunk)) {
-      unsigned long n, nb_chunks = len / chunk;
+      long n, nb_chunks = len / chunk;
       MPI_Aint *offsets;
       MPI_Datatype *oldtypes;
       int *blockcounts;

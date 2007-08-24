@@ -885,7 +885,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 }
 
                 do {
-                        uint64_t len	= tbx_min(p_cur->iov_len, ret);
+                        uint64_t len	= tbx_min(p_cur->iov_len, (uint64_t)ret);
                         p_cur->iov_base	+= len;
                         p_cur->iov_len	-= len;
 

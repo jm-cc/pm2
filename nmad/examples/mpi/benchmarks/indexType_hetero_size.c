@@ -26,6 +26,34 @@
 #define SMALL 64
 #define LARGE (256 * 1024) //(1 * 1024 *1024)
 
+void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest);
+void processAndSendIndexType(int size, int blocks, int rank, int numtasks);
+
+int main(int argc, char *argv[]) {
+  int numtasks, rank;
+  int len = SMALL + LARGE;
+  int i;
+
+  // Initialise MPI
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+
+  if (rank == 0) {
+    PRINT("src  | dest  | type	     | size    | blocks | time");
+  }
+
+  for(i = 1; i <= NB_LINES; i++) {
+    //for(b=2 ; b<=i*2 ; b*=2) {
+    processAndSendIndexType(len * i, 2 *i, rank, numtasks);
+      if (VERBOSE) PRINT("------------------------------------");
+      //}
+  }
+
+  MPI_Finalize();
+  exit(0);
+}
+
 void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest) {
   int          blocklengths[blocks];
   int          displacements[blocks];
@@ -122,29 +150,3 @@ void processAndSendIndexType(int size, int blocks, int rank, int numtasks) {
       sendIndexTypeFromSrcToDest(size, blocks, rank, source, source+1);
   }
 } // end processAndSendIndexType
-
-
-int main(int argc, char *argv[]) {
-  int numtasks, rank;
-  int len = SMALL + LARGE;
-  int i;
-
-  // Initialise MPI
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-
-  if (rank == 0) {
-    PRINT("src  | dest  | type	     | size    | blocks | time");
-  }
-
-  for(i = 1; i <= NB_LINES; i++) {
-    //for(b=2 ; b<=i*2 ; b*=2) {
-    processAndSendIndexType(len * i, 2 *i, rank, numtasks);
-      if (VERBOSE) PRINT("------------------------------------");
-      //}
-  }
-
-  MPI_Finalize();
-  exit(0);
-}

@@ -15,12 +15,7 @@
 
 #include "mpi.h"
 #include "toolbox.h"
-
-typedef struct {
-  float x, y;
-  int c;
-  float z;
-} Particle;
+#include "structType.h"
 
 void checkStructIsCorrect(Particle *subparticle, int size, int rank) {
   int i, error=-1;
@@ -57,7 +52,7 @@ void checkStructIsCorrect(Particle *subparticle, int size, int rank) {
 }
 
 void sendStructTypeFromSrcToDest(int numberOfElements, int rank, int source, int dest,
-				 int numtasks, int display) {
+				 int display) {
   MPI_Datatype particletype;
   MPI_Aint offsets[3];
   MPI_Datatype oldtypes[3];
@@ -127,7 +122,7 @@ void processAndSendStructType(int size, int rank, int numtasks, int display) {
   int source=0;
   for(source = 0 ; source < numtasks ; source += 2) {
     if (source + 1 != numtasks)
-      sendStructTypeFromSrcToDest(size, rank, source, source+1, numtasks, display);
+      sendStructTypeFromSrcToDest(size, rank, source, source+1, display);
   }
 } // end processAndSendStructType
 

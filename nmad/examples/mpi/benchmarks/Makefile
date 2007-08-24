@@ -30,10 +30,10 @@ all: $(PROGS)
 	$(MPICC) $^ -o $@ ${${@}_LIBS}
 
 %.o: %.c %.h
-	$(MPICC) -c $< -o $@
+	$(MPICC) $(CFLAGS) -c $< -o $@
 
 %.o: %.c
-	$(MPICC) -c $< -o $@
+	$(MPICC) $(CFLAGS) -c $< -o $@
 
 mpi_para_ping: mpi_para_ping.o
 pingpong: pingpong.o structType.o vectorType.o indexType.o toolbox.o

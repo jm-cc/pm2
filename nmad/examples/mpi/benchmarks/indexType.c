@@ -15,12 +15,12 @@
 
 #include "mpi.h"
 #include "toolbox.h"
+#include "indexType.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 #define NB_TESTS 1000
 
-// Check the elements have been properly received
 void checkIndexIsCorrect(float *vector, int rank, int numberOfElements) {
   int i, success=TRUE;
 
@@ -41,7 +41,7 @@ void checkIndexIsCorrect(float *vector, int rank, int numberOfElements) {
 }
 
 void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source,
-				int dest, int numtasks, int use_hindex, int display) {
+				int dest, int use_hindex, int display) {
   int          blocklengths[blocks];
   int          displacements[blocks];
   MPI_Datatype indextype;
@@ -136,7 +136,7 @@ void processAndSendIndexType(int size, int blocks, int rank, int numtasks, int u
   int source=0;
   for(source = 0 ; source < numtasks ; source += 2) {
     if (source + 1 != numtasks)
-      sendIndexTypeFromSrcToDest(size, blocks, rank, source, source+1, numtasks, use_hindex, display);
+      sendIndexTypeFromSrcToDest(size, blocks, rank, source, source+1, use_hindex, display);
   }
 } // end processAndSendIndexType
 

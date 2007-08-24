@@ -21,6 +21,16 @@
  */
 int sendStructType(int argc, char *argv[], int rank, int numtasks);
 
-void sendStructTypeFromSrcToDest(int numberOfElements, int rank, int source, int dest, int numtasks, int display);
+void sendStructTypeFromSrcToDest(int numberOfElements, int rank, int source, int dest, int display);
+
+typedef struct {
+  float x, y;
+  int c;
+  float z;
+} Particle;
+
+void checkStructIsCorrect(Particle *subparticle, int size, int rank);
+
+void processAndSendStructType(int size, int rank, int numtasks, int display);
 
 #endif // STRUCT_TYPE_H

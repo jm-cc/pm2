@@ -21,8 +21,17 @@
  */
 int sendVectorType(int argc, char *argv[], int rank, int numtasks);
 
-//void processAndsendVectorType(int size, int blocks, int rank, int numtasks, int use_hvector);
+void processAndsendVectorType(int size, int blocks, int rank, int numtasks, int use_hvector, int display);
 
-void sendVectorTypeFromSrcToDest(int size, int blocks, int rank, int source, int dest, int numtasks, int use_hvector, int display);
+void sendVectorTypeFromSrcToDest(int size, int blocks, int rank, int source, int dest, int use_hvector, int display);
+
+float getValue(int x, int y, int size);
+
+void getIndices(int displacement, int size, int initialValue, int *x, int *y);
+
+/** check the data is correct */
+void checkVectorIsCorrect(float *b, int rank, int count, int blocklength, int size, int stride);
+
+int getRealSize(int size, int blocks);
 
 #endif // VECTOR_TYPE_H

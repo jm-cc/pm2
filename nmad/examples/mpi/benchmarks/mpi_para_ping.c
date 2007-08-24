@@ -59,7 +59,7 @@ static unsigned char *main_buffer = NULL;
 // Functions
 //......................
 static __inline__
-uint32_t _next(uint32_t len)
+int _next(int len)
 {
         if(!len)
                 return 4;

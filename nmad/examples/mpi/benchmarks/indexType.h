@@ -21,6 +21,11 @@
  */
 int sendIndexType(int argc, char *argv[], int rank, int numtasks);
 
-void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest, int numtasks, int use_hindex, int display);
+void sendIndexTypeFromSrcToDest(int numberOfElements, int blocks, int rank, int source, int dest, int use_hindex, int display);
+
+void processAndSendIndexType(int size, int blocks, int rank, int numtasks, int use_hindex, int display);
+
+/** Check the elements have been properly received */
+void checkIndexIsCorrect(float *vector, int rank, int numberOfElements);
 
 #endif // INDEX_TYPE_H

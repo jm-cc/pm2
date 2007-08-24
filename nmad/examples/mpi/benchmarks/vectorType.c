@@ -15,6 +15,7 @@
 
 #include "mpi.h"
 #include "toolbox.h"
+#include "vectorType.h"
 #include <math.h>
 
 float getValue(int x, int y, int size) {
@@ -27,7 +28,6 @@ void getIndices(int displacement, int size, int initialValue, int *x, int *y) {
   *y = displacement - (size * *x);
 }
 
-// check the data is correct
 void checkVectorIsCorrect(float *b, int rank, int count, int blocklength, int size, int stride) {
   int originalDisplacement = 1;
   int currentPosition = 0;
@@ -75,7 +75,7 @@ int getRealSize(int size, int blocks) {
 }
 
 void sendVectorTypeFromSrcToDest(int size, int blocks, int rank, int source, int dest,
-				 int numtasks, int use_hvector, int display) {
+				 int use_hvector, int display) {
   int realSize = getRealSize(sqrt(size), blocks);
   float a[realSize][realSize];
   MPI_Datatype columntype;
@@ -150,7 +150,7 @@ void processAndsendVectorType(int size, int blocks, int rank, int numtasks, int 
   int source=0;
   for(source = 0 ; source < numtasks ; source += 2) {
     if (source + 1 != numtasks)
-      sendVectorTypeFromSrcToDest(size, blocks, rank, source, source+1, numtasks, use_hvector, display);
+      sendVectorTypeFromSrcToDest(size, blocks, rank, source, source+1, use_hvector, display);
   }
 } // end processAndsendVectorType
 

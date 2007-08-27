@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: Collective communications */
+/* @{ */
+
 /**
  * User combination function.
  */
@@ -301,6 +304,7 @@ int MPI_Reduce_scatter(void *sendbuf,
                        MPI_Datatype datatype,
                        MPI_Op op,
                        MPI_Comm comm);
+/* @}*/
 /* @}*/
 
 #endif /* MPI_COLLECTIVE_H */

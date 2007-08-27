@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: Persistent communications */
+/* @{ */
+
 /**
  * Creates a persistent communication request for a standard mode send
  * operation, and binds to it all the arguments of a send operation.
@@ -85,6 +88,7 @@ int MPI_Start(MPI_Request *request);
 int MPI_Startall(int count,
                  MPI_Request *array_of_requests);
 
+/* @}*/
 /* @}*/
 
 #endif /* MPI_PERSISTENT_H */

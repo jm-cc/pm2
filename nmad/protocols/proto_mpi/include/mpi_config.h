@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: Environmental management */
+/* @{ */
+
 /**
  * This routine must be called before any other MPI routine. It must
  * be called at most once; subsequent calls are erroneous. 
@@ -130,6 +133,7 @@ int MPI_Error_string(int errorcode,
 int MPI_Get_version(int *version,
 		    int *subversion);
 
+/* @} */
 /* @}*/
 
 #endif /* MPI_CONFIG_H */

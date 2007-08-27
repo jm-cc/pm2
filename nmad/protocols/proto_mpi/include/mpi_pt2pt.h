@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: Point-to-point communications */
+/* @{ */
+
 /**
  * Performs a standard-mode, blocking send.
  * @param buffer initial address of send buffer
@@ -95,7 +98,8 @@ int MPI_Ssend(void* buffer,
               MPI_Comm comm);
 
 /**
- * Performs a extended send
+ * This function does not belong to the MPI standard: Performs a
+ * extended send.
  * @param buffer initial address of send buffer
  * @param count number of elements in send buffer
  * @param datatype datatype of each send buffer element
@@ -319,6 +323,7 @@ int MPI_Get_count(MPI_Status *status,
 int MPI_Request_is_equal(MPI_Request request1,
 			 MPI_Request request2);
 
+/* @}*/
 /* @}*/
 
 #endif /* MPI_PT2PT_H */

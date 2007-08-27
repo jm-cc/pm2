@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: Communicators */
+/* @{ */
+
 /**
  * Returns a handle to the group of the given communicator.
  * @param comm communicator
@@ -80,6 +83,7 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 			      MPI_Group group2,
 			      int *ranks2);
 
+/* @}*/
 /* @}*/
 
 #endif /* MPI_COMMUNICATOR_H */

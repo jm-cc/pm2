@@ -24,6 +24,9 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+/** @name Functions: User-defined datatypes and packing */
+/* @{ */
+
 /**
  * Returns the byte address of location.
  * @param location location in caller memory
@@ -221,6 +224,7 @@ int MPI_Type_struct(int count,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype);
 
+/* @}*/
 /* @}*/
 
 #endif /* MPI_DATATYPE_H */

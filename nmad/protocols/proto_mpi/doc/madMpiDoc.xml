@@ -38,5 +38,7 @@
 
 <SECTION TITLE="Running MPI Applications" FILE="./execute.xml" LABEL="execute" NEWPAGE="true"/>
 
+<SECTION TITLE="Developping MPI Applications" FILE="./developpement.xml" LABEL="developpement" NEWPAGE="true"/>
+
 </DOCUMENT>
 

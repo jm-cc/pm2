@@ -3,7 +3,7 @@
 
 <TEXT>
 
-<SUBSECTION TITLE="Basic Use">
+<SUBSECTION TITLE="Basic Use" LABEL="basicUse">
 
 <P>
 The directory <TT>$PM2_ROOT/nmad/examples/mpi/basics</TT> contains

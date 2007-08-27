@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE TEXT SYSTEM "file:./xml2html/data/xml/DOCUMENT.dtd">
+
+<TEXT>
+
+<SUBSECTION TITLE="The API">
+
+<P>
+Mad-MPI implements almost all of the functionalities of the MPI
+standard. Some additional functionalities have been added to provide
+users with the facilities of the underlying NewMadeleine communication
+engine. The complete API is available at the following URL:
+  <LATEX>\begin{quote}</LATEX>
+  <URL>http://pm2.gforge.inria.fr/newmadeleine/html/group__mpi__interface.html</URL>
+  <LATEX>\end{quote}</LATEX>
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Debugging Mad-MPI applications">
+
+<P>
+The implementation of Mad-MPI and NewMadeleine are made up of modules.
+Each of these modules can be traced or logged. The PM2 flavor for
+Mad-MPI first needs to be tuned to enable the tracing and debugging
+facilities. That can be done easily by starting the tool <TT>ezflavor</TT>.
+</P>
+
+<CODE FILE="./code/ezflavor.txt"/>
+
+<P>
+Once the graphical interface <TT>ezflavor</TT> is started, click on
+drop-down menu in the <TT>Flavors</TT> panel, select the flavor
+<TT>nmad-mpi</TT> and click on the <TT>Load</TT> button in the same
+panel.
+</P>
+
+<P>
+The flavor is now loaded and can be modified. You can see in the
+right-hand side panel <TT>Modules</TT> all the modules involved in
+the implementation of Mad-MPI as well as all the options selected for
+these modules.
+</P>
+
+<P>
+In the toolbar menu,
+select <TT>View</TT>, <TT>Common Options</TT>, <TT>Display Panel</TT>.
+In the new panel <TT>Common options</TT>, tick the option <TT>Set</TT>
+in the <TT>debug</TT> panel, and the option <TT>Unset</TT> in the
+<TT>opt</TT> panel. By clicking on the <TT>Apply to all</TT> button,
+the selection of these two options will be modified for all the
+modules at once.
+</P>
+
+<P>
+Click on the <TT>Save</TT> button in the <TT>Flavors</TT> panel to
+record your modifications. You can now quit <TT>ezflavor</TT> by
+pressing <TT>Ctrl-Q</TT>, or by selecting in the toolbar menu,
+<TT>Flavor</TT>, and <TT>Quit</TT>.
+</P>
+
+<P>
+You can now recompile Mad-MPI.
+</P>
+
+<CODE FILE="./code/compileMadMpi2.txt"/>
+
+<P>
+And recompile your application as explained in Section <REF
+LABEL="basicUse"/>.
+</P>
+
+<CODE FILE="./code/compileCpi.txt"/>
+
+<P>
+Debug parameters allow to trace specific modules. The general format
+of a debug parameter is
+<TT>--debug:&lt;MODULE_NAME&gt;-&lt;TRACE_LEVEL&gt;</TT>. For example,
+the debug parameter <TT>--debug:nmad-trace</TT> will display all the
+trace messages within the module <TT>nmad</TT>. <B>Note that the
+module must have been compiled with the option <TT>debug</TT></B>.
+More debug parameters are available, you can print the list as
+follows:
+</P>
+
+<CODE FILE="./code/debugregister.txt"/>
+
+<P>
+For example, if you want to trace all the calls to communications
+routines made by Mad-MPI, you can speci fy the debug parameter
+<TT>mpi_nmad_transfer</TT>.
+</P>
+
+<CODE FILE="./code/debugtransfer.txt"/>
+
+
+</SUBSECTION>
+
+</TEXT>
+

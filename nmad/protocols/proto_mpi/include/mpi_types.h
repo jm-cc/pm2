@@ -42,18 +42,13 @@
  */
 #define MPI_ROOT        (-3)
 
-/**
- * Wilcard value for tag.
- */
+/** Wilcard value for tag. */
 #define MPI_ANY_TAG     (-1)
 
-/*
- * Indicates address zero for the buffer argument.
- */
+/** Indicates address zero for the buffer argument. */
 #define MPI_BOTTOM      (void *)0
 
-/** @name Error return classes
- */
+/** @name Error return classes */
 /* @{ */
 /** Successful return code */
 #define MPI_SUCCESS          0

@@ -7,7 +7,7 @@
 
 <P>
 The directory <TT>$PM2_ROOT/nmad/examples/mpi/basics</TT> contains
-basic examples that can be used to test your installation of <MACRO
+basic examples which can be used to test your installation of <MACRO
 NAME="madmpi"/>. We will go through this section by using the program
 <TT>cpi.c</TT>.
 </P>
@@ -49,7 +49,7 @@ working:
 We suppose for now the network configuration file
 <TT>networks.cfg</TT> is present in the directory
 <TT>${PM2_ROOT}/nmad/examples/mpi/</TT> as explained in Section <REF
-LABEL="installMadMpi"/>. Look at the contents of that file to see
+LABEL="installMadMpi"/>. Look at the contents of the file to see
 which machines you can use for your application. The machines can be
 specified by:
 </P>
@@ -167,7 +167,7 @@ the option <TT>-valgrind</TT>.
 <P>
 <MACRO NAME="madmpi"/> provides by default a C and C++ compiler. The C
 compiler is invoked by calling <TT>mpicc</TT> and the C++ compiler by
-calling <TT>mpicxx</TT>. That name was chosen instead of
+calling <TT>mpicxx</TT>. This name was chosen instead of
 <TT>mpiCC</TT> to avoid problems with operating systems not being
 case-sensitive.
 </P>

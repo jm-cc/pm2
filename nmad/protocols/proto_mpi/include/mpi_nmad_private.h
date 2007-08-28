@@ -294,7 +294,7 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
                     mpir_communicator_t *mpir_communicator);
 
 /**
- * Initialises a receiving request.
+ * Starts a receiving request.
  */
 int mpir_irecv_start(mpir_request_t *mpir_request);
 

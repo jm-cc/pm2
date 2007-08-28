@@ -21,7 +21,7 @@ create_temp_file() { #prefix suffix directory
     temp_file=""
     if [ -x /bin/tempfile ] ; then
 	temp_file="$(/bin/tempfile -p $1 -s $2 -d $3)" 
-    elif [ -x /bin/mktemp ]; then                  
+    elif [ -x /bin/mktemp ] ; then                  
 	temp_file="$(/bin/mktemp ${1}${2}.XXXXXX)" 
     elif [ -d /tmp ] ; then
 	temp_file="/tmp/${1}${2}.$$"
@@ -42,6 +42,10 @@ get_machines() {
 	fi
     elif [ -f "$OAR_NODEFILE" ] ; then
 	host_list=`cat $OAR_NODEFILE | sort | uniq`
+	oarsh=`which oarsh 2>/dev/null`
+	if [ -n "$oarsh" ] ; then
+	    LEONIE_ENV="LEO_RSH=$oarsh"
+	fi
     elif [ -f "$MPI_HOST_FILE" ] ; then
 	host_list=`cat $MPI_HOST_FILE`
     else
@@ -149,18 +153,19 @@ if [ -z "$NP" ] ; then
     exit 1
 fi
 
-if [ -n "$MPI_NET_FILE" ]; then
+if [ -n "$MPI_NET_FILE" ] ; then
     NET_FILE="$MPI_NET_FILE"
 else
     NET_FILE="${PM2_ROOT}/nmad/examples/mpi/networks.cfg"
 fi
 
-if [ ! -r "$NET_FILE" ]; then
+if [ ! -r "$NET_FILE" ] ; then
     echo "Unable to load Network Description File '$NET_FILE'" 1>&2
     echo "Please, set MPI_NET_FILE" 1>&2
     exit 1
 fi
 
+LEONIE_ENV=""
 get_machines
 appli_file=`create_temp_file .mad .appli .`
 trap 'rm -f "${appli_file}"' 0 INT QUIT
@@ -191,21 +196,23 @@ PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
 env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
 
 compile_leonie
+leonie="$LEONIE_ENV leonie"
+
 if [ -n "$debugger" ] ; then
-    $Show leonie --wd=$PWD $env -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show $leonie --wd=$PWD $env -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
     if [ -n "$log" ] ; then
-        $Show leonie --wd=$PWD $env -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD $env -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show leonie --wd=$PWD $env -vg $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD $env -vg $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 elif [ -n "$MPI_NMAD_X" ] ; then
-    $Show leonie --wd=$PWD $env $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show $leonie --wd=$PWD $env $LEONIE_ARGS $appli_file $cmdLineArgs
 else
     if [ -n "$log" ] ; then
-        $Show leonie --wd=$PWD $env -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD $env -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show leonie --wd=$PWD $env --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD $env --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 fi
 

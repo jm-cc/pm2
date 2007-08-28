@@ -164,12 +164,9 @@ fi
 # Detect which version of OAR is used
 LEONIE_ENV=""
 if [ -f "$OAR_NODEFILE" ] ; then
-    oar_version=`oarsub -V`
-    if [ $? == 0 ] ; then
-        is_oar_version_2=`echo $oar_version | grep " 2\."`
-        if [ -n "$is_oar_version_2" ] ; then
-            LEONIE_ENV="LEO_RSH=oarsh"
-        fi
+    oarsh=`which oarsh`
+    if [ -n "$oarsh" ] ; then
+        LEONIE_ENV="LEO_RSH=oarsh"
     fi
 fi
 

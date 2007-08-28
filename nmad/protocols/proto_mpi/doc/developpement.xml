@@ -23,7 +23,7 @@ engine. The complete API is available at the following URL:
 The implementation of Mad-MPI and NewMadeleine are made up of modules.
 Each of these modules can be traced or logged. The PM2 flavor for
 Mad-MPI first needs to be tuned to enable the tracing and debugging
-facilities. That can be done easily by starting the tool <TT>ezflavor</TT>.
+facilities. This can be done easily by starting the tool <TT>ezflavor</TT>.
 </P>
 
 <CODE FILE="./code/ezflavor.txt"/>

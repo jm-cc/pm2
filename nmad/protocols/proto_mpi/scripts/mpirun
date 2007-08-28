@@ -42,10 +42,6 @@ get_machines() {
 	fi
     elif [ -f "$OAR_NODEFILE" ] ; then
 	host_list=`cat $OAR_NODEFILE | sort | uniq`
-	oarsh=`which oarsh 2>/dev/null`
-	if [ -n "$oarsh" ] ; then
-	    LEONIE_ENV="LEO_RSH=$oarsh"
-	fi
     elif [ -f "$MPI_HOST_FILE" ] ; then
 	host_list=`cat $MPI_HOST_FILE`
     else
@@ -166,6 +162,11 @@ if [ ! -r "$NET_FILE" ] ; then
 fi
 
 LEONIE_ENV=""
+oarsh=`which oarsh 2>/dev/null`
+if [ -n "$oarsh" ] ; then
+    LEONIE_ENV="LEO_RSH=$oarsh"
+fi
+
 get_machines
 appli_file=`create_temp_file .mad .appli .`
 trap 'rm -f "${appli_file}"' 0 INT QUIT

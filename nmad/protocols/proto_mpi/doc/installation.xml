@@ -177,6 +177,10 @@ Here are the required steps to install <MACRO NAME="madmpi"/>.
 Create the PM2 flavor tuned for <MACRO NAME="madmpi"/>.
 </P>
 <CODE FILE="./code/createFlavor.txt"/>
+<P>
+By default, the only network protocol selected is TCP. To enable more
+protocols, see Section <REF LABEL="networkProtocols"/>.
+</P>
 </LI>
 
 <LI>
@@ -216,6 +220,55 @@ commands <TT>mpicc</TT> and <TT>mpirun</TT>.
 <CODE FILE="./code/setPath2.txt"/>
 </LI>
 </OL>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Network Protocols" LABEL="networkProtocols">
+
+<P>
+<B>
+This section can be ignored if you plan to use the TCP protocol
+only.
+</B>
+</P>
+
+<P>
+By default, the flavor for Mad-MPI only enables the TCP network
+protocol. To enable more protocols such as MX or Quadrics, you need
+to modify the flavor. This can be done easily by starting the tool
+<TT>ezflavor</TT>. 
+</P>
+
+<CODE FILE="./code/ezflavor.txt"/>
+
+<P>
+Once the graphical interface <TT>ezflavor</TT> is started, click on
+drop-down menu in the <TT>Flavors</TT> panel, select the flavor
+<TT>nmad-mpi</TT> and click on the <TT>Load</TT> button in the same
+panel.
+</P>
+
+<P>
+The flavor is now loaded and can be modified. You can see in the
+right-hand side panel <TT>Modules</TT> all the modules involved in
+the implementation of Mad-MPI as well as all the options selected for
+these modules.
+</P>
+
+<P>
+In the <TT>Modules</TT> panel, select the <TT>nmad</TT> tab, the
+options for this module will show up in the underneath panel. By using
+the scrollbar on the right-hand side of this panel, you can scroll
+down to the section showing the network protocols. Select the ones
+which are available to you.
+</P>
+
+<P>
+Click on the <TT>Save</TT> button in the <TT>Flavors</TT> panel to
+record your modifications. You can now quit <TT>ezflavor</TT> by
+pressing <TT>Ctrl-Q</TT>, or by selecting in the toolbar menu,
+<TT>Flavor</TT>, and <TT>Quit</TT>.
+</P>
 
 </SUBSECTION>
 

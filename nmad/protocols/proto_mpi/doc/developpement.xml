@@ -18,6 +18,28 @@ engine. The complete API is available at the following URL:
 </SUBSECTION>
 
 <SUBSECTION TITLE="Debugging Mad-MPI applications">
+<UL>
+<LI>
+<P>
+If you wish to start your application under the debugger, you can use
+the option <TT>-dbg</TT>. All the processes of the MPI application
+will be launched through <TT>gdb</TT>, the GNU debugger.
+</P>
+<CODE FILE="./code/executeWithGdb.txt"/>
+</LI>
+
+<LI>
+<P>
+If you wish to start your application under valgrind, you can use
+the option <TT>-valgrind</TT>.
+</P>
+<CODE FILE="./code/executeWithValgrind.txt"/>
+</LI>
+</UL>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Debugging Mad-MPI">
 
 <P>
 The implementation of Mad-MPI and NewMadeleine are made up of modules.

@@ -141,23 +141,6 @@ another network, you can set the environment variable
 <CODE FILE="./code/setMpichMadProtocol.txt"/>
 </LI>
 
-<LI>
-<P>
-If you wish to start your application under the debugger, you can use
-the option <TT>-dbg</TT>. All the processes of the MPI application
-will be launched through <TT>gdb</TT>, the GNU debugger.
-</P>
-<CODE FILE="./code/executeWithGdb.txt"/>
-</LI>
-
-<LI>
-<P>
-If you wish to start your application under valgrind, you can use
-the option <TT>-valgrind</TT>.
-</P>
-<CODE FILE="./code/executeWithValgrind.txt"/>
-</LI>
-
 </UL>
 
 </SUBSECTION>

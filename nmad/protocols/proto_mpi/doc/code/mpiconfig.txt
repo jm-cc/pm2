@@ -1,0 +1,13 @@
+% oarsub -l nodes=2 -I
+Host:Port = frontale.sophia.grid5000.fr:56926
+ IdJob = 257224
+Interactive mode : waiting
+% mpiconfig
+Generation of networksMadMpi.cfg and machineMadMpi.cfg done
+    - nodes:       node-69.sophia.grid5000.fr,node-70.sophia.grid5000.fr
+    - net:         tcp
+You can now start your MPI application:
+   mpirun -config networksMadMpi.cfg -machinefile machineMadMpi.cfg -np ...
+% mpirun -config networksMadMpi.cfg -machinefile machineMadMpi.cfg -np 4 cpi
+...
+%

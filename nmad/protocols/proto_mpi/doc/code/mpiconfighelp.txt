@@ -1,0 +1,5 @@
+% mpiconfig -h
+Syntax: .../mpiconfig [-f <machine file>] [-net <communication network>]
+    Default machine file: OAR node file
+    Default communication network: tcp
+%

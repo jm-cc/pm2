@@ -141,6 +141,24 @@ another network, you can set the environment variable
 <CODE FILE="./code/setMpichMadProtocol.txt"/>
 </LI>
 
+<LI>
+<P>
+You can create your own network configuration file by calling the
+script <TT>mpiconfig</TT>.
+</P>
+
+<CODE FILE="./code/mpiconfighelp.txt"/>
+
+<P>
+When started within an OAR reservation, the script will automatically
+use the reserved machines for the configuration. You can then start
+your application with the newly created files.
+</P>
+
+<CODE FILE="./code/mpiconfig.txt"/>
+
+</LI>
+
 </UL>
 
 </SUBSECTION>

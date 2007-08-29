@@ -41,6 +41,16 @@ if [ ! -f "$FILE" ] ; then
     exit
 fi
 
+# Check the chosen network protocol is enabled
+IS_ENABLED=$(pm2-config --protocols | tr ' ' '\012' | grep ^$NET$ 2>/dev/null)
+if [ -z "$IS_ENABLED"] ; then
+    echo ""
+    echo "*******"
+    echo "Warning. The chosen protocol $NET is not enabled in your PM2 flavor"
+    echo "*******"
+    echo ""
+fi
+
 NODES=`(cat $FILE | sort | uniq | tr '\012' ',' | tr ' ' ',' ) | sed 's/,$//'`
 
 (

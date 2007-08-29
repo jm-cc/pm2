@@ -40,7 +40,7 @@ if [ -z "$FILE" ] ; then
     echo "No OAR reservation and no machine file specified"
     exit
 elif [ ! -f "$FILE" ] ; then
-    echo "Machine file $2 not found"
+    echo "Machine file <$FILE> not found"
     exit
 fi
 

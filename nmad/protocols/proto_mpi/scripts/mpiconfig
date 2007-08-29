@@ -1,0 +1,61 @@
+#!/bin/sh
+
+NETWORKS_FILE=networksMadMpi.cfg
+MACHINE_FILE=machineMadMpi.cfg
+
+syntax() {
+    echo "Syntax: $0 [-f <machine file>] [-net <communication network>]"
+    echo "    Default machine file: OAR node file"
+    echo "    Default communication network: tcp"
+    exit 1
+}
+
+NET="tcp"
+FILE="$OAR_NODEFILE"
+
+while [ "$1" ] ; do
+    if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+	syntax
+    elif [ "$1" = "-f" ] ; then
+	if [ -z "$2" ] ; then
+	    syntax
+	    exit 1
+	else
+	    FILE=$2
+	    shift; shift
+	fi
+    elif [ "$1" == "-net" ] ; then
+	if [ -z "$2" ] ; then
+	    syntax
+	else
+	    NET=$2
+	    shift; shift
+	fi
+    else
+	syntax
+    fi
+done
+
+if [ ! -f "$FILE" ] ; then
+    echo "Machine file $2 not found"
+    exit
+fi
+
+NODES=`(cat $FILE | sort | uniq | tr '\012' ',' | tr ' ' ',' ) | sed 's/,$//'`
+
+(
+echo "networks : ({"
+echo "    name  : grid5000;"
+echo "    hosts : ($NODES);"
+echo "    dev   : $NET;"
+echo "});"
+) > $NETWORKS_FILE
+
+cat $FILE | sort | uniq > $MACHINE_FILE
+
+echo "Generation of $NETWORKS_FILE and $MACHINE_FILE done"
+echo "    - nodes:       $NODES"
+echo "    - net:         $NET"
+echo "You can now start your MPI application:"
+echo "   mpirun -config $NETWORKS_FILE -machinefile $MACHINE_FILE -np ..."
+

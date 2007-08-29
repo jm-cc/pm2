@@ -164,7 +164,7 @@ fi
 # Detect which version of OAR is used
 LEONIE_ENV=""
 if [ -f "$OAR_NODEFILE" ] ; then
-    oarsh=`which oarsh`
+    oarsh=`which oarsh 2>/dev/null`
     if [ -n "$oarsh" ] ; then
         LEONIE_ENV="LEO_RSH=oarsh"
     fi

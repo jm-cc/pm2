@@ -26,7 +26,7 @@ loop=${BENCHNET:-tcp}
 bench_setting_file="${PM2_HOME:-${HOME}}/.pm2/bench/nmad"
 leo_cfg_file="/tmp/bench_nmad_${prog}_${USER}.cfg"
 leo_args="--x --p --l"
-leo_appli_args=""
+leo_appli_args="-E 2097152"
 
 #
 

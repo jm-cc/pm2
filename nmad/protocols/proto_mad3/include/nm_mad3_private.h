@@ -37,5 +37,5 @@ typedef struct s_mad_nmad_connection_specific {
         uint8_t			 out_wait_seq;
         uint8_t			 out_flow_ctrl;
 #endif /* CONFIG_SCHED_OPT */
-  	gate_id_t		 gate_id;
+  	nm_gate_id_t		 gate_id;
 } mad_nmad_connection_specific_t, *p_mad_nmad_connection_specific_t;

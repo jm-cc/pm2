@@ -105,7 +105,7 @@ static struct nm_proto		*p_proto	= NULL;
 static struct nm_basic_rq	*p_rq0		= NULL;
 static struct nm_basic_rq	*p_rq1		= NULL;
 static uint8_t			 drv_id		=    0;
-static gate_id_t                 gate_id	=    0;
+static nm_gate_id_t              gate_id	=    0;
 
 // Functions
 //......................

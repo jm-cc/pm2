@@ -92,7 +92,7 @@ nm_ns_print_errno(const char *msg,
 static int
 nm_ns_initialize_pw(struct nm_core *p_core,
                     struct nm_drv  *p_drv,
-                    gate_id_t gate_id,
+                    nm_gate_id_t gate_id,
                     unsigned char *ptr,
                     struct nm_pkt_wrap **pp_pw){
     struct nm_pkt_wrap *p_pw = NULL;
@@ -200,7 +200,7 @@ control_buffer(struct nm_pkt_wrap *p_pw, int len) {
 #endif
 
 static int
-nm_ns_ping(struct nm_drv *driver, gate_id_t gate_id){
+nm_ns_ping(struct nm_drv *driver, nm_gate_id_t gate_id){
     struct nm_drv_ops drv_ops = driver->ops;
     struct nm_pkt_wrap * sending_pw = NULL;
     struct nm_pkt_wrap * receiving_pw = NULL;
@@ -306,7 +306,7 @@ nm_ns_ping(struct nm_drv *driver, gate_id_t gate_id){
 }
 
 static int
-nm_ns_pong(struct nm_drv *driver, gate_id_t gate_id){
+nm_ns_pong(struct nm_drv *driver, nm_gate_id_t gate_id){
     struct nm_drv_ops drv_ops = driver->ops;
     struct nm_pkt_wrap * sending_pw = NULL;
     struct nm_pkt_wrap * receiving_pw = NULL;
@@ -444,7 +444,7 @@ nm_ns_pong(struct nm_drv *driver, gate_id_t gate_id){
 
 int
 nm_ns_network_sampling(struct nm_drv *driver,
-                       gate_id_t gate_id,
+                       nm_gate_id_t gate_id,
                        int connect_flag){
     int err;
     unsigned int n = 1;

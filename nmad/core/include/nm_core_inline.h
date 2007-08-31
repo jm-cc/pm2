@@ -316,7 +316,7 @@ static
 __inline__
 int
 __nm_core_wrap_buffer	(struct nm_core		 *p_core,
-                         gate_id_t  		  gate_id,
+                         nm_gate_id_t  		  gate_id,
                          uint8_t		  proto_id,
                          uint8_t		  seq,
                          void			 *buf,

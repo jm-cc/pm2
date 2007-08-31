@@ -615,7 +615,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
  */
 int
 nm_core_gate_init(struct nm_core	*p_core,
-                  gate_id_t		*p_id) {
+                  nm_gate_id_t		*p_id) {
         struct nm_gate	*p_gate		= NULL;
         int err;
 
@@ -657,7 +657,7 @@ nm_core_gate_init(struct nm_core	*p_core,
 static
 int
 nm_core_gate_connect_accept(struct nm_core	*p_core,
-                            gate_id_t		 gate_id,
+                            nm_gate_id_t	 gate_id,
                             uint8_t		 drv_id,
                             char		*drv_trk_url,
                             int			 connect_flag) {
@@ -814,7 +814,7 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
  */
 int
 nm_core_gate_accept	(struct nm_core	*p_core,
-                         gate_id_t	 gate_id,
+                         nm_gate_id_t	 gate_id,
                          uint8_t	 drv_id,
                          char		*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
@@ -825,7 +825,7 @@ nm_core_gate_accept	(struct nm_core	*p_core,
  */
 int
 nm_core_gate_connect	(struct nm_core	*p_core,
-                         gate_id_t	 gate_id,
+                         nm_gate_id_t	 gate_id,
                          uint8_t	 drv_id,
                          char		*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
@@ -839,7 +839,7 @@ nm_core_gate_connect	(struct nm_core	*p_core,
  */
 int
 nm_core_wrap_buffer	(struct nm_core		 *p_core,
-                         gate_id_t		  gate_id,
+                         nm_gate_id_t		  gate_id,
                          uint8_t		  proto_id,
                          uint8_t		  seq,
                          void			 *buf,

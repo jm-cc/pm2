@@ -37,7 +37,7 @@ struct __nm_so_cnx {
 
         /** Source or destination gate id.
          */
-  gate_id_t gate_id;
+  nm_gate_id_t gate_id;
 
         /** Message tag.
          */
@@ -64,7 +64,7 @@ nm_so_pack_interface_init(struct nm_core *p_core,
 
 int
 nm_so_begin_packing(nm_so_pack_interface interface,
-		    gate_id_t gate_id, uint8_t tag,
+		    nm_gate_id_t gate_id, uint8_t tag,
 		    struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;
@@ -99,7 +99,7 @@ nm_so_end_packing(struct nm_so_cnx *cnx)
 
 int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
-		      gate_id_t gate_id, uint8_t tag,
+		      nm_gate_id_t gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx)
 {
   struct __nm_so_cnx *_cnx = (struct __nm_so_cnx *)cnx;

@@ -35,7 +35,7 @@ main(int	  argc,
      char	**argv) {
         struct nm_core		*p_core		= NULL;
         struct nm_proto		*p_proto	= NULL;
-        gate_id_t                gate_id	=    0;
+        nm_gate_id_t             gate_id	=    0;
         struct nm_basic_rq	*p_rq		= NULL;
         char			*buf		= NULL;
         uint64_t		 len;

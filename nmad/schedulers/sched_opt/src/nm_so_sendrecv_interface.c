@@ -43,7 +43,7 @@ struct nm_so_sr_gate {
  */
 struct any_src_status {
   uint8_t status;
-  gate_id_t gate_id;
+  nm_gate_id_t gate_id;
   int is_first_request;
 };
 
@@ -121,7 +121,7 @@ nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 
 int
 nm_so_sr_isend(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request)
 {
@@ -150,7 +150,7 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
-                        gate_id_t gate_id, uint8_t tag,
+                        nm_gate_id_t gate_id, uint8_t tag,
                         void *data, uint32_t len,
                         tbx_bool_t is_completed,
                         nm_so_request *p_request)
@@ -188,7 +188,7 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request)
 {
@@ -252,7 +252,7 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 
 extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb) {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -293,7 +293,7 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb)
 {
   struct nm_core *p_core = p_so_interface->p_core;
@@ -319,7 +319,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request)
 {
@@ -385,7 +385,7 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 
 extern int
 nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb) {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -429,7 +429,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
-                     nm_so_request request, gate_id_t *gate_id)
+                     nm_so_request request, nm_gate_id_t *gate_id)
 {
   struct any_src_status *p_status = outer_any_src_struct(request);
 
@@ -443,7 +443,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
 
 int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               gate_id_t gate_id, gate_id_t *out_gate_id, uint8_t tag)
+               nm_gate_id_t gate_id, nm_gate_id_t *out_gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   int i;
@@ -490,7 +490,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
 
 int
 nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb)
 {
   struct nm_core *p_core = p_so_interface->p_core;
@@ -515,7 +515,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 
 unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
-			      gate_id_t gate_id, uint8_t tag)
+			      nm_gate_id_t gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
@@ -528,7 +528,7 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
 
 unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
-			      gate_id_t gate_id, uint8_t tag)
+			      nm_gate_id_t gate_id, uint8_t tag)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;

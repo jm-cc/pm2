@@ -15,10 +15,10 @@ int get_rank(void);
 int get_size(void);
 
 /** Returns the out gate id of the process dest */
-gate_id_t get_gate_out_id(int dest);
+nm_gate_id_t get_gate_out_id(int dest);
 
 /** Returns the in gate id of the process dest */
-gate_id_t get_gate_in_id(int dest);
+nm_gate_id_t get_gate_in_id(int dest);
 
 /** Initializes everything. Returns 1 if server, 0 if client. */
 void init(int *argc, char **argv);
@@ -35,7 +35,7 @@ static p_mad_madeleine_t       madeleine	= NULL;
 static int                     is_server	= -1;
 static struct nm_so_interface *sr_if;
 static nm_so_pack_interface    pack_if;
-static gate_id_t	       gate_id    	=    0;
+static nm_gate_id_t	       gate_id    	=    0;
 static p_mad_session_t         session          = NULL;
 
 int get_rank(void) {
@@ -46,14 +46,14 @@ int get_size(void) {
   return tbx_slist_get_length(madeleine->dir->process_slist);
 }
 
-gate_id_t get_gate_out_id(int dest) {
+nm_gate_id_t get_gate_out_id(int dest) {
   p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
   p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, dest);
   p_mad_nmad_connection_specific_t cs = connection->specific;
   return cs->gate_id;
 }
 
-gate_id_t get_gate_in_id(int dest) {
+nm_gate_id_t get_gate_in_id(int dest) {
   p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
   p_mad_connection_t connection = tbx_darray_get(channel->in_connection_darray, dest);
   p_mad_nmad_connection_specific_t cs = connection->specific;
@@ -128,7 +128,7 @@ static nm_so_pack_interface	pack_if;
 static char	*r_url	= NULL;
 static char	*l_url	= NULL;
 static uint8_t	 drv_id		=    0;
-static gate_id_t gate_id	=    0;
+static nm_gate_id_t gate_id	=    0;
 static int	 is_server;
 
 int get_rank(void) {
@@ -141,12 +141,12 @@ int get_size(void) {
   exit(EXIT_FAILURE);
 }
 
-gate_id_t get_gate_in_id(int dest) {
+nm_gate_id_t get_gate_in_id(int dest) {
   fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }
 
-gate_id_t get_gate_out_id(int dest) {
+nm_gate_id_t get_gate_out_id(int dest) {
   fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
   exit(EXIT_FAILURE);
 }

@@ -32,7 +32,7 @@ static p_tbx_memory_t nm_basic_rq_mem	= NULL;
 
 int
 nm_basic_isend(struct nm_proto		 *p_proto,
-               gate_id_t                  gate_id,
+               nm_gate_id_t               gate_id,
                uint8_t			  tag_id,
                void			 *ptr,
                uint64_t			  len,
@@ -88,7 +88,7 @@ nm_basic_isend(struct nm_proto		 *p_proto,
 
 int
 nm_basic_irecv(struct nm_proto		 *p_proto,
-               gate_id_t		  gate_id,
+               nm_gate_id_t		  gate_id,
                uint8_t			  tag_id,
                void			 *ptr,
                uint64_t			  len,

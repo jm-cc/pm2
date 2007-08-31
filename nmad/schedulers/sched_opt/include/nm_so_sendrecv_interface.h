@@ -27,7 +27,7 @@
 #include "nm_so_sendrecv_interface_private.h"
 
 #ifndef NM_SO_ANY_SRC
-#define NM_SO_ANY_SRC  ((gate_id_t)-1)
+#define NM_SO_ANY_SRC  ((nm_gate_id_t)-1)
 #endif
 
 struct nm_so_interface;
@@ -62,13 +62,13 @@ nm_so_sr_exit(struct nm_so_interface *p_so_interface);
  */
 extern int
 nm_so_sr_isend(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request);
 
 extern int
 nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
-                        gate_id_t gate_id, uint8_t tag,
+                        nm_gate_id_t gate_id, uint8_t tag,
                         void *data, uint32_t len,
                         tbx_bool_t is_completed,
                         nm_so_request *p_request);
@@ -86,7 +86,7 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request);
 
@@ -125,7 +125,7 @@ nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 /** Wait for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -146,7 +146,7 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 
 
@@ -161,7 +161,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
-	       gate_id_t gate_id, uint8_t tag,
+	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request);
 
@@ -184,7 +184,7 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 
 /** Wait for the completion of a non blocking receive request.
@@ -206,7 +206,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
-		     gate_id_t gate_id, uint8_t tag,
+		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 
 /** Retrieve the pkt source of a complete any source receive request.
@@ -217,7 +217,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
-                     nm_so_request request, gate_id_t *gate_id);
+                     nm_so_request request, nm_gate_id_t *gate_id);
 
 /** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -228,7 +228,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
  */
 extern int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
-               gate_id_t gate_id, gate_id_t *out_gate_id, uint8_t tag);
+               nm_gate_id_t gate_id, nm_gate_id_t *out_gate_id, uint8_t tag);
 
 /** Get the current send sequence number for the (gate,tag).
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -238,7 +238,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
  */
 extern unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
-			      gate_id_t gate_id, uint8_t tag);
+			      nm_gate_id_t gate_id, uint8_t tag);
 
 /** Get the current receive sequence number for the (gate,tag).
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -248,7 +248,7 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
  */
 extern unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
-			      gate_id_t gate_id, uint8_t tag);
+			      nm_gate_id_t gate_id, uint8_t tag);
 
 /* @} */
 

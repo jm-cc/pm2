@@ -56,7 +56,7 @@ struct nm_core {
 
         /** Number of gates.
          */
-        gate_id_t                nb_gates;
+        nm_gate_id_t             nb_gates;
 
         /** Array of gates.
          */

@@ -42,8 +42,8 @@ main(int	  argc,
         char			*r_url2		= NULL;
         char			*l_url		= NULL;
         uint8_t			 drv_id		=    0;
-        gate_id_t		 gate_id1	=    0;
-        gate_id_t		 gate_id2	=    0;
+        nm_gate_id_t		 gate_id1	=    0;
+        nm_gate_id_t		 gate_id2	=    0;
         char			*s_buf		= NULL;
         char			*r_buf		= NULL;
         uint64_t		 len;

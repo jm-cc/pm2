@@ -195,7 +195,7 @@ int mpir_internal_init(int global_size,
   }
 
   for(dest=0 ; dest<global_size ; dest++) {
-    out_gate_id[dest] = -1;
+    out_gate_id[dest] = NM_ANY_GATE;
     if (dest == process_rank) continue;
 
     connection = tbx_darray_get(channel->out_connection_darray, dest);
@@ -211,7 +211,7 @@ int mpir_internal_init(int global_size,
   }
 
   for(source=0 ; source<global_size ; source++) {
-    in_gate_id[source] = -1;
+    in_gate_id[source] = NM_ANY_GATE;
     if (source == process_rank) continue;
 
     connection =  tbx_darray_get(channel->in_connection_darray, source);
@@ -682,7 +682,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
 
-  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == NM_SO_ANY_SRC)) {
+  if (tbx_unlikely(dest >= mpir_communicator->size || out_gate_id[mpir_communicator->global_ranks[dest]] == NM_ANY_GATE)) {
     NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
@@ -825,10 +825,10 @@ int mpir_irecv_init(mpir_request_t *mpir_request,
   MPI_NMAD_LOG_IN();
 
   if (tbx_unlikely(source == MPI_ANY_SOURCE)) {
-    mpir_request->gate_id = NM_SO_ANY_SRC;
+    mpir_request->gate_id = NM_ANY_GATE;
   }
   else {
-    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == NM_SO_ANY_SRC)){
+    if (tbx_unlikely(source >= mpir_communicator->size || in_gate_id[mpir_communicator->global_ranks[source]] == NM_ANY_GATE)){
       NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;

@@ -181,8 +181,8 @@ int mpir_internal_init(int global_size,
   /** Store the gate id of all the other processes */
   out_gate_id = malloc(global_size * sizeof(gate_id_t));
   in_gate_id = malloc(global_size * sizeof(gate_id_t));
-  out_dest = malloc(256 * sizeof(int));
-  in_dest = malloc(256 * sizeof(int));
+  out_dest = malloc(NUMBER_OF_GATES * sizeof(int));
+  in_dest = malloc(NUMBER_OF_GATES * sizeof(int));
 
   /** Get a reference to the channel structure */
   channel = tbx_htable_get(madeleine->channel_htable, "pm2");

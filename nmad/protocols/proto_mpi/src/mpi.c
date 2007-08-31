@@ -1318,7 +1318,7 @@ int MPI_Send(void *buffer,
   mpir_request->buffer = buffer;
   mpir_request->count = count;
   mpir_request->user_tag = tag;
-  mpir_request->communication_mode = MPI_READY_MODE;
+  mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
 
   err = mpir_isend(mpir_request, dest, mpir_communicator);
 

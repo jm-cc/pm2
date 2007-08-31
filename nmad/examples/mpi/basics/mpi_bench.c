@@ -35,7 +35,7 @@
 #define INCR_DEFAULT     0
 #define WARMUPS_DEFAULT  100
 #define LOOPS_DEFAULT    2000
-#define NB_TESTS_DEFAULT 5
+#define NB_TESTS_DEFAULT 1
 
 // Types
 //......................
@@ -75,6 +75,7 @@ static void usage_bench(void) {
   fprintf(stderr, "    Next(0)      = 1+increment\n");
   fprintf(stderr, "    Next(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
+  fprintf(stderr, "-T tests      - number of tests [%d]\n", NB_TESTS_DEFAULT);
   fprintf(stderr, "-W warmup     - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
@@ -91,6 +92,7 @@ main(int    argc,
         uint32_t         increment      = INCR_DEFAULT;
         int              iterations     = LOOPS_DEFAULT;
         int              warmups        = WARMUPS_DEFAULT;
+        int              tests          = NB_TESTS_DEFAULT;
 
         MPI_Init(&argc,&argv);
 
@@ -130,6 +132,9 @@ main(int    argc,
                 }
                 else if (!strcmp(argv[i], "-N")) {
                         iterations = atoi(argv[i+1]);
+                }
+                else if (!strcmp(argv[i], "-T")) {
+                        tests = atoi(argv[i+1]);
                 }
                 else if (!strcmp(argv[i], "-W")) {
                         warmups = atoi(argv[i+1]);
@@ -182,7 +187,7 @@ main(int    argc,
                      size <= end_len;
                      size = _next(size, multiplier, increment)) {
                         if (ping_side) {
-                                int		nb_tests	= NB_TESTS_DEFAULT;
+                                int		nb_tests	= tests;
                                 double		sum		= 0.0;
                                 double		t1;
                                 double		t2;
@@ -209,9 +214,9 @@ main(int    argc,
 
                                 sum *= 1e6;
 
-                                bw_million_byte	= (size * (double)NB_TESTS_DEFAULT * (double)iterations)
+                                bw_million_byte	= (size * (double)tests * (double)iterations)
                                         / (sum / 2);
-                                lat		= sum / NB_TESTS_DEFAULT / iterations / 2;
+                                lat		= sum / tests / iterations / 2;
 				bw_mbyte = bw_million_byte / 1.048576;
 
 
@@ -219,7 +224,7 @@ main(int    argc,
                                         fprintf(stderr, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
 						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
                         } else {
-                                int		nb_tests	= NB_TESTS_DEFAULT;
+                                int		nb_tests	= tests;
                                 double		sum		= 0.0;
                                 double		t1;
                                 double		t2;
@@ -246,9 +251,9 @@ main(int    argc,
 
                                 sum *= 1e6;
 
-                                bw_million_byte	= (size * (double)NB_TESTS_DEFAULT * (double)iterations)
+                                bw_million_byte	= (size * (double)tests * (double)iterations)
                                         / (sum / 2);
-                                lat		= sum / NB_TESTS_DEFAULT / iterations / 2;
+                                lat		= sum / tests / iterations / 2;
 				bw_mbyte = bw_million_byte / 1.048576;
 
                                 if (log && ping_side)

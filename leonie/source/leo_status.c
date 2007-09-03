@@ -200,31 +200,36 @@ leo_help(void)
 }
 
 void
-leonie_failure_cleanup(void)
+leonie_failure_cleanup(p_leo_settings_t settings)
 {
   pid_t pid = 0;
 
   LOG_IN();
-  DISP("A failure has been detected, hit return to close the session");
-  getchar();
+  if (settings && settings->pause_mode) {
+    DISP("A failure has been detected, hit return to close the session");
+    getchar();
+  }
+  else {
+    DISP("A failure has been detected, killing process ...");
+  }
   pid = getpid();
   kill(-pid, SIGTERM);
   LOG_OUT();
 }
 
 void
-leo_terminate(const char *msg)
+leo_terminate(const char *msg, p_leo_settings_t settings)
 {
   DISP("error: %s", msg);
-  leonie_failure_cleanup();
+  leonie_failure_cleanup(settings);
   exit(EXIT_FAILURE);
 }
 
 void
-leo_error(const char *command)
+leo_error(const char *command, p_leo_settings_t settings)
 {
   perror(command);
-  leonie_failure_cleanup();
+  leonie_failure_cleanup(settings);
   exit(EXIT_FAILURE);
 }
 

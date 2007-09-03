@@ -319,7 +319,7 @@ set_channel_process_info(p_leo_dir_channel_t  dir_channel,
   if (ntbx_pc_get_global(dir_channel->pc, process->global_rank))
     {
       LOG_OUT();
-      leo_terminate("duplicate process in channel process list");
+      leo_terminate("duplicate process in channel process list", NULL);
     }
   cnx = leo_dir_connection_init();
   cnx->adapter_name = strdup(adapter_name);
@@ -812,7 +812,7 @@ process_vchannel(p_leonie_t     leonie,
 
   if (tbx_slist_is_nil(vchannel_channel_slist))
     {
-      leo_terminate("vchannel has empty real channel list");
+      leo_terminate("vchannel has empty real channel list", leonie->settings);
     }
 
   TRACE("====== Process list construction");
@@ -1094,7 +1094,7 @@ process_vchannel(p_leonie_t     leonie,
 	if (!process_is_converging)
 	  {
 	    leo_terminate("routing table generation process "
-			  "is not converging");
+			  "is not converging", leonie->settings);
 	  }
 
 	{
@@ -1225,7 +1225,7 @@ process_xchannel(p_leonie_t     leonie,
 
   if (tbx_slist_is_nil(xchannel_channel_slist))
     {
-      leo_terminate("xchannel has empty real channel list");
+      leo_terminate("xchannel has empty real channel list", leonie->settings);
     }
 
   if (xchannel_sub_slist)
@@ -1514,7 +1514,7 @@ process_xchannel(p_leonie_t     leonie,
 	if (!process_is_converging)
 	  {
 	    leo_terminate("routing table generation process "
-			  "is not converging");
+			  "is not converging", leonie->settings);
 	  }
 
 	{
@@ -1656,7 +1656,7 @@ process_application(p_leonie_t leonie)
 
   if (!include_slist || tbx_slist_is_nil(include_slist))
     {
-      leo_terminate("parse error : no network include list");
+      leo_terminate("parse error : no network include list", settings);
     }
 
   TRACE("==== Including Network configuration files");
@@ -1676,14 +1676,14 @@ process_application(p_leonie_t leonie)
 
   if ((!channel_slist || tbx_slist_is_nil(channel_slist)) && (!dummy_host_slist || tbx_slist_is_nil(dummy_host_slist)))
     {
-      leo_terminate("parse error : no channel list, and no dummy channel list");
+      leo_terminate("parse error : no channel list, and no dummy channel list", settings);
     }
 
   if (channel_slist)
     {
       if (tbx_slist_is_nil(channel_slist))
 	{
-	  leo_terminate("parse error : empty channel list");
+	  leo_terminate("parse error : empty channel list", settings);
 	}
 
       tbx_slist_ref_to_head(channel_slist);
@@ -1708,7 +1708,7 @@ process_application(p_leonie_t leonie)
     {
       if (tbx_slist_is_nil(vchannel_slist))
 	{
-	  leo_terminate("parse error : empty virtual channel list");
+	  leo_terminate("parse error : empty virtual channel list", settings);
 	}
 
       tbx_slist_ref_to_head(vchannel_slist);
@@ -1737,7 +1737,7 @@ process_application(p_leonie_t leonie)
     {
       if (tbx_slist_is_nil(xchannel_slist))
 	{
-	  leo_terminate("parse error : empty multiplexing channel list");
+	  leo_terminate("parse error : empty multiplexing channel list", settings);
 	}
 
       tbx_slist_ref_to_head(xchannel_slist);

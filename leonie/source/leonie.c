@@ -67,7 +67,7 @@ process_command_line(int    argc,
                   settings->export_mode = tbx_true;
 		}
 	      else
-		leo_terminate("duplicate environment");
+		leo_terminate("duplicate environment", settings);
 	    }
 	   else if (tbx_argit_vopt_equals("--appli"))
 	    {
@@ -76,7 +76,7 @@ process_command_line(int    argc,
 		  settings->name = tbx_argit_vopt_value_cstr();
 		}
 	      else
-		leo_terminate("duplicate application name definition");
+		leo_terminate("duplicate application name definition", settings);
 
 	    }
 	  else if (tbx_argit_vopt_equals("--flavor"))
@@ -86,7 +86,7 @@ process_command_line(int    argc,
 		  settings->flavor = tbx_argit_vopt_value_cstr();
 		}
 	      else
-		leo_terminate("duplicate application name definition");
+		leo_terminate("duplicate application name definition", settings);
 	    }
 	  else if (tbx_argit_vopt_equals("--leonie-host"))
 	    {
@@ -95,7 +95,7 @@ process_command_line(int    argc,
 		  settings->leonie_host = tbx_argit_vopt_value_cstr();
 		}
 	      else
-		leo_terminate("duplicate application name definition");
+		leo_terminate("duplicate application name definition", settings);
 	    }
 	  else if (tbx_argit_vopt_equals("--net"))
 	    {
@@ -140,7 +140,7 @@ process_command_line(int    argc,
 		  settings->wd = tbx_argit_vopt_value_cstr();
 		}
 	      else
-		leo_terminate("duplicate working directory definition");
+		leo_terminate("duplicate working directory definition", settings);
 	      settings->cd_mode = tbx_true;
 	    }
 	  else if (tbx_argit_arg_equals("-cd"))

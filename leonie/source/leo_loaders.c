@@ -257,7 +257,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	if (pid == -1)
 	  {
-	    leo_error("fork");
+	    leo_error("fork", settings);
 	  }
 
 	if (!pid)
@@ -274,7 +274,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
-	    leo_error("execvp");
+	    leo_error("execvp", settings);
 	  }
 
         if (settings->wait_mode)
@@ -517,7 +517,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 
 	if (pid == -1)
 	  {
-	    leo_error("fork");
+	    leo_error("fork", settings);
 	  }
 
 	if (!pid)
@@ -534,7 +534,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 
 	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
-	    leo_error("execvp");
+	    leo_error("execvp", settings);
 	  }
 
         if (settings->wait_mode)
@@ -698,7 +698,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 
       if (pid == -1)
 	{
-	  leo_error("fork");
+	  leo_error("fork", settings);
 	}
 
       if (!pid)
@@ -713,7 +713,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 	      }
 	  }
 	  execvp(arg_set->argv[0], arg_set->argv);
-	  leo_error("execvp");
+	  leo_error("execvp", settings);
 	}
       else
 	{
@@ -724,7 +724,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 
 	  if (result == -1)
 	    {
-	      leo_error("waitpid");
+	      leo_error("waitpid", settings);
 	    }
 
 	  if (WIFEXITED(status))
@@ -734,7 +734,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 	      code = WEXITSTATUS(status);
 	      if (code)
 		{
-		  leo_terminate("bipconf failed");
+		  leo_terminate("bipconf failed", settings);
 		}
 	    }
 	  else
@@ -910,7 +910,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 
       if (pid == -1)
 	{
-	  leo_error("fork");
+	  leo_error("fork", settings);
 	}
 
       if (!pid)
@@ -926,7 +926,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 	  }
 
 	  execvp(arg_set->argv[0], arg_set->argv);
-	  leo_error("execvp");
+	  leo_error("execvp", settings);
 	}
 
       tbx_slist_ref_to_head(process_slist);

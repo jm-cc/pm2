@@ -29,10 +29,7 @@
 #error The GNU C Compiler is required to build this tool
 #endif // __GNUC__
 
-void
-leonie_failure_cleanup(void);
-
-#define TBX_FAILURE_CLEANUP() leonie_failure_cleanup()
+//#define TBX_FAILURE_CLEANUP() leonie_failure_cleanup()
 
 #include "tbx.h"
 #include "ntbx.h"
@@ -45,5 +42,8 @@ leonie_failure_cleanup(void);
 
 /* Leonie: internal interface */
 #include "leo_interface.h"
+
+void
+leonie_failure_cleanup(p_leo_settings_t settings);
 
 #endif /* LEONIE_H */

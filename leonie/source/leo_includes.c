@@ -43,7 +43,7 @@ merge_network_entries(p_tbx_htable_t dst,
   src_dev = leoparse_read_id(src, "dev");
 
   if (!tbx_streq(src_dev, dst_dev))
-    leo_terminate("duplicate network definition");
+    leo_terminate("duplicate network definition", NULL);
 
   leoparse_convert_to_slist(dst, "hosts");
   dst_slist = leoparse_read_as_slist(dst, "hosts");

@@ -176,10 +176,10 @@ void
 leo_help(void) TBX_NORETURN;
 
 void
-leo_terminate(const char *msg) TBX_NORETURN;
+leo_terminate(const char *msg, p_leo_settings_t settings) TBX_NORETURN;
 
 void
-leo_error(const char *command) TBX_NORETURN;
+leo_error(const char *command, p_leo_settings_t settings) TBX_NORETURN;
 
 void
 leonie_processes_cleanup(void);

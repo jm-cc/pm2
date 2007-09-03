@@ -84,13 +84,17 @@ nm_so_sr_init(struct nm_core *p_core,
   struct nm_so_interface *p_so_int = NULL;
   int i;
 
+  NM_SO_SR_LOG_IN();
 #ifndef CONFIG_SCHED_OPT
+  NM_SO_SR_LOG_OUT();
   return -NM_EINVAL;
 #endif
 
   p_so_int = TBX_MALLOC(sizeof(struct nm_so_interface));
-  if(p_so_interface == NULL)
+  if(p_so_interface == NULL) {
+    NM_SO_SR_LOG_OUT();
     return -NM_ENOMEM;
+  }
 
   /* Initialize shorcuts pointers */
   p_so_int->p_core = p_core;
@@ -105,14 +109,19 @@ nm_so_sr_init(struct nm_core *p_core,
     any_src[i].is_first_request = 1;
   }
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
 int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 {
+  NM_SO_SR_LOG_IN();
+
   TBX_FREE(p_so_interface);
   p_so_interface = NULL;
+
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -131,6 +140,7 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
+  int ret;
 
   NM_SO_SR_LOG_IN();
 
@@ -143,9 +153,11 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
   if(p_request)
     *p_request = (intptr_t)p_req;
 
-  return p_so_interface->p_so_sched->current_strategy->pack(p_gate,
-							    tag, seq,
-							    data, len);
+  ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate,
+                                                           tag, seq,
+                                                           data, len);
+  NM_SO_SR_LOG_OUT();
+  return ret;
 }
 
 int
@@ -161,6 +173,7 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq;
   volatile uint8_t *p_req;
+  int ret;
 
   NM_SO_SR_LOG_IN();
 
@@ -175,15 +188,17 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
 
   if (p_so_interface->p_so_sched->current_strategy->pack_extended == NULL) {
     NM_DISPF("The current strategy does not provide a extended pack");
-    return p_so_interface->p_so_sched->current_strategy->pack(p_gate,
-                                                              tag, seq,
-                                                              data, len);
+    ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate,
+                                                             tag, seq,
+                                                             data, len);
   }
   else {
-    return p_so_interface->p_so_sched->current_strategy->pack_extended(p_gate,
-                                                                       tag, seq,
-                                                                       data, len, is_completed);
+    ret = p_so_interface->p_so_sched->current_strategy->pack_extended(p_gate,
+                                                                      tag, seq,
+                                                                      data, len, is_completed);
   }
+  NM_SO_SR_LOG_OUT();
+  return ret;
 }
 
 int
@@ -216,6 +231,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
                                                            data, len);
 
   if (ret != NM_ESUCCESS) {
+    NM_SO_SR_LOG_OUT();
     return ret;
   }
   else {
@@ -228,6 +244,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
       NM_SO_SR_TRACE("Waiting for status %p completed\n", status);
     }
 
+    NM_SO_SR_LOG_OUT();
     return NM_ESUCCESS;
   }
 }
@@ -241,11 +258,14 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_LOG_IN();
 
-  if(*p_request & NM_SO_STATUS_SEND_COMPLETED)
+  if(*p_request & NM_SO_STATUS_SEND_COMPLETED) {
+    NM_SO_SR_LOG_OUT();
     return NM_ESUCCESS;
+  }
 
   nm_schedule(p_core);
 
+  NM_SO_SR_LOG_OUT();
   return (*p_request & NM_SO_STATUS_SEND_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
 }
@@ -268,11 +288,13 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
     ret = nm_so_sr_stest(p_so_interface,
                          (nm_so_request)&p_sr_gate->status[tag][seq]);
     if (ret == -NM_EAGAIN) {
+      NM_SO_SR_LOG_OUT();
       return ret;
     }
     seq++;
   }
 
+  NM_SO_SR_LOG_OUT();
   return ret;
 }
 
@@ -288,6 +310,7 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
   while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
     nm_schedule(p_core);
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -312,6 +335,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
     seq++;
   }
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -325,6 +349,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 {
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_req = NULL;
+  int ret;
 
   NM_SO_SR_LOG_IN();
 
@@ -344,7 +369,9 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     }
 
     NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
-    return __nm_so_unpack_any_src(p_core, tag, data, len);
+    ret = __nm_so_unpack_any_src(p_core, tag, data, len);
+    NM_SO_SR_LOG_OUT();
+    return ret;
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -361,7 +388,9 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       *p_request = (intptr_t)p_req;
 
     NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
-    return __nm_so_unpack(p_gate, tag, seq, data, len);
+    ret = __nm_so_unpack(p_gate, tag, seq, data, len);
+    NM_SO_SR_LOG_OUT();
+    return ret;
   }
 }
 
@@ -374,11 +403,14 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_LOG_IN();
 
-  if(*p_request & NM_SO_STATUS_RECV_COMPLETED)
+  if(*p_request & NM_SO_STATUS_RECV_COMPLETED) {
+    NM_SO_SR_LOG_OUT();
     return NM_ESUCCESS;
+  }
 
   nm_schedule(p_core);
 
+  NM_SO_SR_LOG_OUT();
   return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
 }
@@ -401,11 +433,13 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
     ret = nm_so_sr_rtest(p_so_interface,
                          (nm_so_request)&p_sr_gate->status[tag][seq]);
     if (ret == -NM_EAGAIN) {
+      NM_SO_SR_LOG_OUT();
       return ret;
     }
     seq++;
   }
 
+  NM_SO_SR_LOG_OUT();
   return ret;
 }
 
@@ -424,6 +458,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
     nm_schedule(p_core);
 
   NM_SO_SR_TRACE("request %p completed\n", p_request);
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -438,6 +473,7 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
   if(gate_id)
     *gate_id = p_status->gate_id;
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -461,6 +497,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
 
       if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
 	*out_gate_id = i ;
+        NM_SO_SR_LOG_OUT();
         return NM_ESUCCESS;
       }
     }
@@ -475,6 +512,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
 
     if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
       *out_gate_id = gate_id;
+      NM_SO_SR_LOG_OUT();
       return NM_ESUCCESS;
     }
   }
@@ -485,6 +523,7 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
   }
   nm_schedule(p_core);
   *out_gate_id = NM_SO_ANY_SRC;
+  NM_SO_SR_LOG_OUT();
   return -NM_EAGAIN;
 }
 
@@ -510,6 +549,7 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
     seq++;
   }
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -520,10 +560,13 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  unsigned long ret;
 
   NM_SO_SR_LOG_IN();
 
-  return p_so_gate->send_seq_number[tag];
+  ret = p_so_gate->send_seq_number[tag];
+  NM_SO_SR_LOG_OUT();
+  return ret;
 }
 
 unsigned long
@@ -533,10 +576,13 @@ nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  unsigned long ret;
 
   NM_SO_SR_LOG_IN();
 
-  return p_so_gate->recv_seq_number[tag];
+  ret = p_so_gate->recv_seq_number[tag];
+  NM_SO_SR_LOG_OUT();
+  return ret;
 }
 
 
@@ -554,11 +600,14 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
   NM_SO_SR_LOG_IN();
 
   p_sr_gate = TBX_MALLOC(sizeof(struct nm_so_sr_gate));
-  if(p_sr_gate == NULL)
+  if(p_sr_gate == NULL) {
+    NM_SO_SR_LOG_OUT();
     return -NM_ENOMEM;
+  }
 
   p_so_gate->interface_private = p_sr_gate;
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -576,6 +625,7 @@ int nm_so_sr_exit_gate(struct nm_gate *p_gate)
 
   TBX_FREE(p_sr_gate);
   p_so_gate->interface_private = NULL;
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -596,6 +646,7 @@ int nm_so_sr_pack_success(struct nm_gate *p_gate,
 
   p_sr_gate->status[tag][seq] |= NM_SO_STATUS_SEND_COMPLETED;
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -625,6 +676,7 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
   }
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -636,6 +688,7 @@ nm_so_sr_progress(struct nm_so_interface *p_so_interface)
 
   nm_schedule(p_core);
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -647,6 +700,7 @@ nm_so_sr_req_test(struct nm_so_interface *p_so_interface TBX_UNUSED,
 
   NM_SO_SR_LOG_IN();
 
+  NM_SO_SR_LOG_OUT();
   return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
 }

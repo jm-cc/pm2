@@ -1007,18 +1007,18 @@ int MPI_Init(int *argc,
   MPI_NMAD_LOG_IN();
 
   /*
-   * Initialization of various libraries.
-   * Reference to the Madeleine object.
-   */
-  madeleine    = mad_init(argc, *argv);
-
-  /*
    * Check size of opaque type MPI_Request is the same as the size of
    * our internal request type
    */
   MPI_NMAD_TRACE("sizeof(mpir_request_t) = %ld\n", (long)sizeof(mpir_request_t));
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (long)sizeof(MPI_Request));
   assert(sizeof(mpir_request_t) <= sizeof(MPI_Request));
+
+  /*
+   * Initialization of various libraries.
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_init(argc, *argv);
 
   /*
    * Reference to the session information object

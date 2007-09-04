@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  MPI_Type_free(&newtype);
   MPI_Finalize();
   exit(0);
 }

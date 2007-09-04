@@ -51,11 +51,11 @@ int main(int argc, char **argv) {
         fprintf(stdout, "c. [%d] Received message: %d\n", rank, message);
       }
     }
+    color = (newrank % 2);
   }
 
   {
     int newsize, newrank;
-    color = (newrank % 2);
     MPI_Comm_split(comm, color, rank*10, &comm2);
     MPI_Comm_size(comm2, &newsize);
     MPI_Comm_rank(comm2, &newrank);

@@ -158,7 +158,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 static void setRunqueue(BubbleShape shape, rq_t *rq) {
 	float width = rq->entity.width;
 	float height = rq->entity.height;
-	BubbleShape_setLine(shape,rq->entity.thick,rq->entity.gasp?255:0,0,255,255);
+	BubbleShape_setLine(shape,rq->entity.thick,rq->entity.gasp?200:0,0,200,255);
 	BubbleShape_movePenTo(shape,0,height-RQ_YMARGIN);
 	BubbleShape_drawLineTo(shape,width,height-RQ_YMARGIN);
 }
@@ -226,17 +226,17 @@ static void setThread(BubbleShape shape, thread_t *t) {
 		BubbleShape_setLine(shape,thick,0,0,0,255);
 		break;
 	case THREAD_SLEEPING:
-		BubbleShape_setLine(shape,thick,0,255,0,255);
+		BubbleShape_setLine(shape,thick,0,200,0,255);
 		break;
 	case THREAD_RUNNING:
-		BubbleShape_setLine(shape,thick,255,0,0,255);
+		BubbleShape_setLine(shape,thick,200,0,0,255);
 		break;
 	case THREAD_DEAD:
 		BubbleShape_setLine(shape,thick,200,200,200,255);
 		break;
 	}
 	if (t->entity.gasp)
-		BubbleShape_setLine(shape,thick,255,0,255,255);
+		BubbleShape_setLine(shape,thick,200,0,200,255);
 	BubbleShape_movePen(shape,    xStep,0);
 	BubbleShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	BubbleShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);

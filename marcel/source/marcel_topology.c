@@ -713,7 +713,7 @@ static void topo_discover(void) {
 			mdebug("level %u,%u: cpuset %"MA_PRIxVPM"\n",l,i,marcel_topo_levels[l][i].cpuset);
 		}
 
-	/* TODO: Brice will probably want the OS->number function */
+	/* TODO: Brice will probably want the OS->VP function */
 
 	/* create the VP level: now we decide which CPUs we will really use according to nvp and stride */
 	struct marcel_topo_level *vp_level = TBX_MALLOC((marcel_nbvps()+MARCEL_NBMAXVPSUP+1)*sizeof(*vp_level));
@@ -722,7 +722,7 @@ static void topo_discover(void) {
 	marcel_vpmask_t cpumask = MARCEL_VPMASK_EMPTY;
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
 	for (i=0; i<marcel_nbvps(); i++) {
-		/* XXX TODO: dans le cas où marcel_nbvpds()>marcel_nbprocessors, je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
+		/* XXX TODO: dans le cas où marcel_nbvpds()>marcel_nbprocessors, ou même sur aragog & co où la numérotation est "retournée", je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
 		unsigned cpu = (i*marcel_cpu_stride)%marcel_nbprocessors;
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;

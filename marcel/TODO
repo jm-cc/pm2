@@ -1,3 +1,7 @@
+Pouvoir choisir l'ordonnanceur à bulle par une option --marcel-.
+
+topologie: pouvoir demander à utiliser seulement un processeur logique par core à l'aide d'une option --marcel-.
+
 dans marcel.h,
 #include <stdio.h>
 #define printf marcel_printf
@@ -12,13 +16,13 @@ Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread
 
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 
-Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel enlever ces derniers
+Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel enlever ces derniers.
+
+Déplacer dans tbx les trucs qui n'ont rien à faire dans marcel (atomic, bitops, testandset, compareexchange, spinlock de base).
 
 pmarcel_spin_* en mono.
 
-Attributs de threads ou de bulles: une fonction marcel_(bubble_)?attr_read(const char *filename, marcel_attr_t *attr);
-
-Émulation d'un graphe de tâches: des threads qu'on ne réveille pas initialement, mais qu'on met en liste d'attente sur une variable conditionnelle qui est broadcastée à la fin du précédent. Pb: une tâche qui dépend de plusieurs...
+Attributs de threads ou de bulles: une fonction marcel_(bubble_)?attr_read(const char *filename, marcel_attr_t *attr); qui lit dans un fichier les attributs à donner.
 
 pmarcel_create() avec PTHREAD_SCOPE_SYSTEM: les paramètres du lwp supplémentaire devraient être ceux d'attr.
 
@@ -26,13 +30,15 @@ Réécrire la tambouille split de Vince pour générer un bête marcel.h et marcel-in
 
 changement de contexte/pile: dans asm-generic, utiliser make context & co comme implémentation par défaut.
 
-Compiler avec g++ pour les cas (rares) où c'est le seul moyen de linker avec du code c++. Pb: il y a plein de casts implicites en void* partout, des opérations arithmétiques sur void*...
+Compiler avec g++ pour les cas (rares) où c'est le seul moyen de linker avec du code c++. Pb: il y a plein de casts implicites en void* partout, des opérations arithmétiques sur void*... Demander à Marc sur quels systèmes c'est nécessaire.
+
+Émulation d'un graphe de tâches: des threads qu'on ne réveille pas initialement, mais qu'on met en liste d'attente sur une variable conditionnelle qui est broadcastée à la fin du précédent. Pb: une tâche qui dépend de plusieurs...
 
 Supporter le cpu hotplug, pour des systèmes qui nous préviendrait de la préemption, ou avec qui on pourrait négocier le nombre de LWPs.
 
 RCU lists
 
-Utiliser /dev/rtc sous linux pour avoir une fréquence de préemption plus grande que par défaut (~1KHz).
+Utiliser /dev/rtc sous linux pour avoir une fréquence de préemption plus grande que par défaut (100-1000Hz).
 
 Windows-smp:
 Accepter une pile fournie par l'os pour les kthread.

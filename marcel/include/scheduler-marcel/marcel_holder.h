@@ -48,7 +48,7 @@ enum marcel_holder {
 #endif
 };
 
-/** \brief Entity types: thread or bubble */
+/** \brief Entity types: bubble or thread */
 enum marcel_entity {
 #ifdef MA__BUBBLES
 	/** \brief bubble */
@@ -83,8 +83,17 @@ struct ma_holder {
 };
 
 #section types
-/** \brief Holder type */
+/* \brief Holder type */
 typedef struct ma_holder ma_holder_t;
+
+#section marcel_macros
+#ifdef MA__BUBBLES
+/** \brief Return type of holder \e h */
+enum marcel_holder ma_holder_type(ma_holder_t *h);
+#define ma_holder_type(h) ((h)->type)
+#else
+#define ma_holder_type(h) MA_RUNQUEUE_HOLDER
+#endif
 
 #section marcel_macros
 #define MA_HOLDER_INITIALIZER(h, t) { \
@@ -130,14 +139,6 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 	return tbx_container_of(h, ma_runqueue_t, hold);
 }
-
-#section marcel_macros
-#ifdef MA__BUBBLES
-/** \brief Return type of holder \e h */
-#define ma_holder_type(h) ((h)->type)
-#else
-#define ma_holder_type(h) MA_RUNQUEUE_HOLDER
-#endif
 
 #section structures
 /* Une entité a un type (bulle/thread), a un conteneur initial (bulle ou
@@ -209,6 +210,11 @@ struct ma_sched_entity {
 
 #section types
 typedef struct ma_sched_entity marcel_entity_t;
+
+#section marcel_macros
+/** \brief Return type of entity \e e */
+enum marcel_holder ma_entity_type(marcel_entity_t *e);
+#define ma_entity_type(e) ((e)->type)
 
 #section marcel_functions
 /** \brief Convert ma_entity_t * \e e into marcel_task_t * (assumes that \e e is a thread) */
@@ -283,10 +289,12 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define ma_holder_rawlock(h) _ma_raw_spin_lock(&(h)->lock)
 #define ma_holder_lock(h) ma_spin_lock(&(h)->lock)
 /** \brief Locks holder \e h */
+void ma_holder_lock_softirq(ma_holder_t *h);
 #define ma_holder_lock_softirq(h) ma_spin_lock_softirq(&(h)->lock)
 #define ma_holder_rawunlock(h) _ma_raw_spin_unlock(&(h)->lock)
 #define ma_holder_unlock(h) ma_spin_unlock(&(h)->lock)
 /** \brief Unlocks holder \e h */
+void ma_holder_unlock_softirq(ma_holder_t *h);
 #define ma_holder_unlock_softirq(h) ma_spin_unlock_softirq(&(h)->lock)
 
 /* locking */
@@ -753,6 +761,18 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 }
 #section common
 #endif
+
+#section marcel_functions
+/** \brief Moves entity \e e out from its holder (which must be already locked)
+ * into holder \e h (which must be also already locked). If entity is a bubble,
+ * its hierarchy is supposed to be already locked.  */
+static __tbx_inline__ void ma_move_entity(marcel_entity_t *e, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_move_entity(marcel_entity_t *e, ma_holder_t *h) {
+	/* TODO: optimiser ! */
+	int state = ma_get_entity(e);
+	ma_put_entity(e, h, state);
+}
 
 #section marcel_structures
 

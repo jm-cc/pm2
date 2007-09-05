@@ -40,3 +40,7 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --tbx=\"debug gdb\" \
  --common=\"debug gdb fortran_target_none\" \
  --all=\"build_static\"
+
+# should compare all the lines of the output and not only the number
+# of lines present in the expected output file
+check_all_lines=1

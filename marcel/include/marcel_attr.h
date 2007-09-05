@@ -49,6 +49,7 @@ struct __marcel_attr_s {
 	int not_preemptible;
 	/* int sched_policy; */
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
+	/* TODO: option de flavor */
 	marcel_vpmask_t vpmask;
 	int flags;
 	char name[MARCEL_MAXNAMESIZE];
@@ -172,6 +173,7 @@ int marcel_attr_setrealtime(marcel_attr_t *attr, tbx_bool_t realtime);
 int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
                             tbx_bool_t * __restrict realtime);
 
+/* TODO: pouvoir directement donner un niveau de topologie */
 int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
 int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
                           marcel_vpmask_t * __restrict mask);

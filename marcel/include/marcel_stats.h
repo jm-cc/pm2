@@ -76,11 +76,8 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 /** \brief Get the statistical value at the given offset in the \e stats member
  * of the given object */
 #define ma_stats_get(object, offset) __ma_stats_get((object)->stats, (offset))
-/** \brief Return the reset function for the statistics at the given offset */
 #define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)__ma_stats_get(ma_stats_reset_func, (offset)))
-/** \brief Return the synthesis function for the statistics at the given offset */
 #define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)__ma_stats_get(ma_stats_synthesis_func, (offset)))
-/** \brief Return the size of the statistics at the given offset */
 #define ma_stats_size(offset) (*(size_t *)__ma_stats_get(ma_stats_size, (offset)))
 /** \brief Reset all statistics for the given object */
 #define ma_stats_reset(object) __ma_stats_reset((object)->stats)
@@ -93,14 +90,23 @@ unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesi
 void __ma_stats_reset(ma_stats_t stats);
 void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src);
 
-/** "Sum" synthesis function for longs */
+/** \brief "Sum" synthesis function for longs */
 ma_stats_synthesis_t ma_stats_long_sum_synthesis;
-/** "Sum" reset function for longs (set to 0) */
+/** \brief "Sum" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_sum_reset;
-/** "Max" synthesis function for longs */
+/** \brief "Max" synthesis function for longs */
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
-/** "Max" reset function for longs (set to 0) */
+/** \brief "Max" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_max_reset;
+
+#ifdef DOXYGEN
+/** \brief Return the reset function for the statistics at the given offset */
+ma_stats_reset_t *ma_stats_reset_func(unsigned long offset);
+/** \brief Return the synthesis function for the statistics at the given offset */
+ma_stats_synthesis_t *ma_stats_synthesis_func(unsigned long offset);
+/** \brief Return the size of the statistics at the given offset */
+size_t *ma_stats_size(unsigned long offset);
+#endif
 
 #section functions
 #depend "marcel_sched_generic.h[types]"

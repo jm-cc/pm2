@@ -50,7 +50,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	_debug("\n");
 
 	if (nl == 1) {
-		/* Only only level */
+		/* Only one level */
 		debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->sched.name);
 		if (l[0]->arity) {
 			debug("and recurse in levels\n");

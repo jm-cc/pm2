@@ -118,13 +118,13 @@ struct marcel_task {
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
 	//unsigned long softirq_pending_in_hardirq;
 
-	/* TODO: option de flavor "migration" */
+	/* TODO: option de flavor "migration" + attr->not_migratable */
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
 	unsigned not_migratable;
 	unsigned long remaining_sleep_time;
 
-	/* TODO: option de flavor */
+	/* TODO: option de flavor + attr->user_space / attr->immediate_activation */
 	/* démarrage retardé */
 	marcel_func_t real_f_to_call;
 	marcel_sem_t sem_marcel_run;
@@ -194,7 +194,7 @@ struct marcel_task {
 	int spinlock_backtrace;
 #endif
 
-	/* TODO: option */
+	/* TODO: option + attr->not_deviatable */
 	/* travaux en cours (deviate, signaux, ...) */
 	unsigned not_deviatable;
 	struct marcel_work work;

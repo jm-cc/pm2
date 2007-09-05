@@ -33,7 +33,7 @@
  * 			f(l->children[i]);
  * 	...
  *	// then look up
- * 	f(father, l);
+ * 	f(l->father, l);
  * 	...
  * }
  *

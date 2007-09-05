@@ -569,31 +569,48 @@ nm_core_driver_exit(struct nm_core  *p_core) {
           TBX_FREE(p_gtrk);
           p_gdrv->p_gate_trk_array[k] = NULL;
         }
-	if (p_drv->nb_tracks != 0) {
-	  err	= p_sched->ops.close_trks(p_sched, p_drv);
-	  if (err != NM_ESUCCESS) {
-	    NM_DISPF("close.trks returned %d", err);
-	    return err;
-	  }
-	}
         TBX_FREE(p_gdrv->p_gate_trk_array);
         p_gdrv->p_gate_trk_array = NULL;
+      }
+    }
+  }
+
+  for(i=0 ; i<p_core->nb_gates ; i++) {
+    p_gate = p_core->gate_array + i;
+
+    for(j=0 ; j<NUMBER_OF_DRIVERS ; j++) {
+      if (p_gate->p_gate_drv_array[j] != NULL) {
+        p_gdrv = p_gate->p_gate_drv_array[j];
+        p_drv = p_gdrv->p_drv;
+
+        if (p_drv->nb_tracks != 0) {
+          err	= p_sched->ops.close_trks(p_sched, p_drv);
+          if (err != NM_ESUCCESS) {
+            NM_DISPF("close.trks returned %d", err);
+            return err;
+          }
+        }
+
         TBX_FREE(p_drv->p_track_array);
         p_drv->p_track_array = NULL;
-	p_drv->nb_tracks = 0;
+        p_drv->nb_tracks = 0;
         TBX_FREE(p_gdrv);
         p_gate->p_gate_drv_array[j] = NULL;
       }
     }
+  }
+
+  for(i=0 ; i<p_core->nb_gates ; i++) {
+    p_gate = p_core->gate_array + i;
+
+    err = p_sched->ops.close_gate(p_sched, p_gate);
+    if (err != NM_ESUCCESS) {
+      NM_DISPF("gate.exit returned %d", err);
+      return err;
+    }
 
     tbx_slist_free(p_gate->pre_sched_out_list);
     tbx_slist_free(p_gate->post_sched_out_list);
-
-    err = p_sched->ops.close_gate(p_sched, p_gate);
-     if (err != NM_ESUCCESS) {
-      NM_DISPF("gate.exit returned %d", err);
-      return err;
-     }
   }
 
   for(i=0 ; i<p_core->nb_drivers ; i++) {

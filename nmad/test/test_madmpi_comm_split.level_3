@@ -47,9 +47,15 @@ if [ $nb_hosts -gt 2 ] ; then
     done
 fi
 
+if [ $nb_hosts -gt 2 ] ; then
+    diviseur=4
+else
+    diviseur=2
+fi
+quart=$(expr $nb_hosts / $diviseur)
 for n in $(seq 0 $ranks) ; do
-    local=$(expr $n / 2)
-    echo "d. [$n] Communicator 94 with $moitie nodes, local rank $local"
+    local=$(expr $n / $diviseur)
+    echo "d. [$n] Communicator 94 with $quart nodes, local rank $local"
 done
 
 ) >> /tmp/pm2test_"${USER}"_expected

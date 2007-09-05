@@ -88,7 +88,16 @@ do_the_test()
     else
         sort_command="cat"
     fi
-    grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | head -$nbl | $sort_command > /tmp/pm2test_${USER}_filtered
+    if [ "$check_all_lines" == "1" ] ; then
+        # will compare all the lines of the output and not only the number
+        # of lines present in the expected output file
+        head_command="cat"
+    else
+        # will only compare the number of lines present in the
+        # expected output file
+        head_command="head -$nbl"
+    fi
+    grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > /tmp/pm2test_${USER}_filtered
     if diff -u /tmp/pm2test_${USER}_expected /tmp/pm2test_${USER}_filtered ; then
 	echo "Test ok!"
     else

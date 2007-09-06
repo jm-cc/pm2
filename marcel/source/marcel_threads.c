@@ -184,12 +184,6 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 }
 
-void marcel_create_init_marcel_thread(marcel_t __restrict t, 
-				      __const marcel_attr_t * __restrict attr)
-{
-	return init_marcel_thread(t, attr, 0);
-}
-
 /****************************************************************
  *                Démarrage retardé
  */
@@ -1079,7 +1073,7 @@ static void __marcel_init main_thread_init(void)
 #endif
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);
-	marcel_create_init_marcel_thread(__main_thread, &attr);
+	init_marcel_thread(__main_thread, &attr, 0);
 	__main_thread->initial_sp = get_sp();
 #if defined(STANDARD_MAIN)
 	/* the stack is not in a slot */

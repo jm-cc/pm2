@@ -105,14 +105,23 @@ enum
 #section types
 #depend "marcel_utils.h[types]"
 #depend "tbx_compiler.h"
+
+/** Thread handler generic type.
+ */
 typedef any_t (*marcel_func_t)(any_t);
+
+/** Clean-up handler type.
+ */
 typedef void (*cleanup_func_t)(any_t);
+
+/** At-exit clean-up handler.
+ */
 typedef void (*marcel_atexit_func_t)(any_t);
+
+/** Post exit clean-up handler.
+ */
 typedef void (*marcel_postexit_func_t)(any_t);
 
-#section marcel_functions
-void marcel_create_init_marcel_thread(marcel_t __restrict t, 
-				      __const marcel_attr_t * __restrict attr);
 #section functions
 
 DEC_MARCEL_POSIX(int,create,(marcel_t * __restrict pid,

@@ -52,8 +52,7 @@ extern void *_dl_allocate_tls_init(void *) libc_internal_function;
  *                Initialisation des structures
  */
 static __inline__ void init_marcel_thread(marcel_t __restrict t, 
-					  __const marcel_attr_t * __restrict attr,
-					  int special_mode)
+					  __const marcel_attr_t * __restrict attr)
 {
 	PROF_THREAD_BIRTH(t);
 
@@ -299,7 +298,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	new_task->f_to_call = func;
 
-	init_marcel_thread(new_task, attr, special_mode);
+	init_marcel_thread(new_task, attr);
 
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
 		/* Le thread devra attendre marcel_run */
@@ -1073,7 +1072,7 @@ static void __marcel_init main_thread_init(void)
 #endif
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);
-	init_marcel_thread(__main_thread, &attr, 0);
+	init_marcel_thread(__main_thread, &attr);
 	__main_thread->initial_sp = get_sp();
 #if defined(STANDARD_MAIN)
 	/* the stack is not in a slot */

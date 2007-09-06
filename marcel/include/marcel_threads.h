@@ -395,9 +395,15 @@ DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 #define NAME_PREFIX
 
 /** Temporarily suspend execution of the given thread.
-    - WHY keep this feature that is used only in a single example and uses a
+    - why keep this feature that is used only in a single example and uses a
     GETMEM entry?
-    - Ask Ray.
+
+    - Hum... It have to admit it was only implemented for test
+      purposes (to check if the implementation of semaphores is
+      compliant with the behavior of 'marcel_deviate'). These
+      functions, along with the corresponding GETMEM entries, can
+      definitely be deleted.
+
     Note: suspending a thread only suspends the current execution of the
     thread. A signal can still be handled by the thread for instance.
  */

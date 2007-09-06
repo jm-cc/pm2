@@ -223,6 +223,8 @@ DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
     - WHY the fastcall convention?
     - WHY the "__" prefix? Are those function for internal use only?
     - WHY not __ma_ instead of __pmarcel_ prefix?
+
+    - BECAUSE it's stolen from the libpthread source.
  */
 int fastcall __pmarcel_enable_asynccancel (void);
 void fastcall __pmarcel_disable_asynccancel(int old);
@@ -238,18 +240,23 @@ DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
 
 /** Posix-only setschedprio.
     Notes:
-    - WHY is there this an additional prototype here?
+    Some systems may not have the definition.
  */
 int pthread_setschedprio(pthread_t thread, int prio) __THROW;
 
 /** Set the scheduling params of the specified thread.
+    Note:
     - WHY not DEC_MARCEL_POSIX instead?
+    - BECAUSE of the sched_param structure. Ideally we should have a
+      pmarcel_sched_param structure typedefed to marcel_sched_param, and a
+      #define sched_param pmarcel_sched_param in include/pthread/sched.h, but
+      it's tricky because we then have to define all sched.h functions, etc.
  */
 DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
 
 /** Get the scheduling params of the specified thread.
-    - WHY not DEC_MARCEL_POSIX instead?
+    Same note as above.
  */
 DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
@@ -262,7 +269,7 @@ DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
  */
 void marcel_freeze(marcel_t *pids, int nb);
 
-/** Un-prepare a set of threads after a migration.
+/** Resume a set of threads after a migration.
  */
 void marcel_unfreeze(marcel_t *pids, int nb);
 
@@ -279,19 +286,20 @@ void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 /* ========== callbacks ============ */
 
 /** Setup a post-exit clean-up handler
-
-    - WHY two kinds of exit handlers?
-    - WHAT is the semantical difference between a post-exit and at exit handlers?
+ * Called after complete termination of the thread and the stack got freed.
  */
 void marcel_postexit(marcel_postexit_func_t, any_t);
 
 /** Setup a at-exit clean-up handler
+ * Called in the context of the thread just before its complete termination.
  */
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
 /*
   - WHY a regular prototype + a macro for the marcel_thread_preemption_enable series of functions?
+  - BECAUSE that provides a nice prototype for the doxygen documentation.
   - WHY both "__marcel_some" prefix and "marcel_some" prefix where the "marcel_some" prefix does not seem to add anything?
+  - probably BECAUSE of historical reasons that no longer apply.
  */
 
 /** Enable automatic preemption of threads.
@@ -389,8 +397,9 @@ DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 /** Temporarily suspend execution of the given thread.
     - WHY keep this feature that is used only in a single example and uses a
     GETMEM entry?
-    - WHAT are the exact semantical differences between marcel_suspend and marcel_freeze
-    as a user might confuse one for the other?
+    - Ask Ray.
+    Note: suspending a thread only suspends the current execution of the
+    thread. A signal can still be handled by the thread for instance.
  */
 void marcel_suspend(marcel_t pid);
 

@@ -25,9 +25,9 @@ prog="ready"
 args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
-ranks=$(echo $hosts | wc -w)
-local=$(expr $ranks / 2)
-(for f in $(seq 1 $local) ; do
+nb_hosts=$(echo $hosts | wc -w)
+(
+for f in $(seq 1 2 $nb_hosts) ; do
     echo "The answer to life, the universe, and everything is 42, 42"
     echo "There are 7 Wonders of the World"
 done

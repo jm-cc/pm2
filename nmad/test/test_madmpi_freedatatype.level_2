@@ -27,15 +27,14 @@ sort_output=1
 
 rm -f /tmp/pm2test_"${USER}"_expected
 nb_hosts=$(echo $hosts | wc -w)
-moitie=$(expr $nb_hosts / 2)
 (
-for f in $(seq 1 $moitie) ; do
+for f in $(seq 1 2 $nb_hosts) ; do
     echo "Received data [1, 2, 3, 4]"
 done
-for f in $(seq 1 $moitie) ; do
+for f in $(seq 1 2 $nb_hosts) ; do
     echo "receiving data"
 done
-for f in $(seq 1 $moitie) ; do
+for f in $(seq 1 2 $nb_hosts) ; do
     echo "sending data"
 done
 ) > /tmp/pm2test_"${USER}"_expected

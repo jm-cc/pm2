@@ -26,10 +26,11 @@ args="--x --p --l"
 
 rm -f /tmp/pm2test_"${USER}"_expected
 nb_hosts=$(echo $hosts | wc -w)
-moitie=$(expr $nb_hosts / 2)
-(for f in $(seq 1 $moitie) ; do
+(
+for f in $(seq 1 2 $nb_hosts) ; do
     echo "Received -1"
-done) > /tmp/pm2test_"${USER}"_expected
+done
+) > /tmp/pm2test_"${USER}"_expected
 
 . ./include/nmad_default
 

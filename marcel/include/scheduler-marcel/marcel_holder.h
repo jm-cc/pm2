@@ -759,9 +759,6 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 			ma_rq_enqueue_entity(e, ma_rq_holder(h));
 	}
 }
-#section common
-#endif
-
 #section marcel_functions
 /** \brief Moves entity \e e out from its holder (which must be already locked)
  * into holder \e h (which must be also already locked). If entity is a bubble,
@@ -773,6 +770,9 @@ static __tbx_inline__ void ma_move_entity(marcel_entity_t *e, ma_holder_t *h) {
 	int state = ma_get_entity(e);
 	ma_put_entity(e, h, state);
 }
+
+#section common
+#endif
 
 #section marcel_structures
 

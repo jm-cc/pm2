@@ -10,6 +10,12 @@ dans marcel.h,
 ...
 ?
 
+ajouter des options pour alléger la structure marcel_descr & marcel_attr: migration, delayed_activation, postexit, atexit, cleanup, exceptions, keys, suspend, rwlock, deviatable, signals (dépend de deviatable), vpmask.
+
+Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des changements de libc/gcc, parfois changement de stratégie d'ordonnancement par défaut.
+
+Benchs OpenMP EPCC.
+
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()

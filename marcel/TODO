@@ -16,6 +16,8 @@ Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des 
 
 Benchs OpenMP EPCC.
 
+topology: level->type devrait plutôt être un | des différents types d'objets matériels (un n½ud NUMA peut très bien correspondre à une puce et à un cache L3 partagé, cf Barcelona). Corriger en même temps le code qui l'utilise (== TRUC) en &TRUC)!=0
+
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()

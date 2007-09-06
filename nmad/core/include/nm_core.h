@@ -48,6 +48,9 @@
  *
  */
 
+#ifndef NM_CORE_H
+#define NM_CORE_H
+
 #include "nm_public.h"
 
 /** Core NewMadeleine structure.
@@ -78,3 +81,5 @@ struct nm_core {
          */
         struct nm_sched 	*p_sched;
 };
+
+#endif /* NM_CORE_H */

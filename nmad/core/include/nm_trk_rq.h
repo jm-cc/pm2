@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_TRK_RQ_H
+#define NM_TRK_RQ_H
+
 /** Request for opening a new track on a driver.
  */
 struct nm_trk_rq {
@@ -30,3 +33,5 @@ struct nm_trk_rq {
          */
         uint32_t		 flags;
 };
+
+#endif /* NM_TRK_RQ_H */

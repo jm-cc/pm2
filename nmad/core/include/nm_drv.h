@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_DRV_H
+#define NM_DRV_H
+
 /** Driver.
  */
 struct nm_drv {
@@ -61,3 +64,5 @@ struct nm_drv {
          */
         void			 *priv;
 };
+
+#endif /* NM_DRV_H */

@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_SCHED_H
+#define NM_SCHED_H
+
 /** Packet scheduler.
  */
 struct nm_sched {
@@ -69,3 +72,5 @@ struct nm_sched {
 
 
 };
+
+#endif /* NM_SCHED_H */

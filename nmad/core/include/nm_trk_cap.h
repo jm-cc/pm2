@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_TRK_CAP_H
+#define NM_TRK_CAP_H
+
 /** Request type expected on the track.
  */
 enum nm_trk_request_type {
@@ -114,3 +117,4 @@ struct nm_trk_cap {
         uint16_t max_iovec_size;
 };
 
+#endif /* NM_TRK_CAP_H */

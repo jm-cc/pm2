@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_DRV_CAP_H
+#define NM_DRV_CAP_H
+
 /** Driver capabilities.
  */
 struct nm_drv_cap {
@@ -69,3 +72,5 @@ struct nm_drv_cap {
 	int numa_node;
 #endif
 };
+
+#endif /* NM_DRV_CAP_H */

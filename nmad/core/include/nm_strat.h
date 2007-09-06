@@ -14,6 +14,11 @@
  */
 
 
+#ifndef NM_STRAT_H
+#define NM_STRAT_H
+
 struct nm_strat {
         uint8_t id;
 };
+
+#endif /* NM_STRAT_H */

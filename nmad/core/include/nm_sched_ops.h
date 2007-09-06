@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_SCHED_OPS_H
+#define NM_SCHED_OPS_H
+
 struct nm_drv;
 struct nm_gate;
 struct nm_pkt_wrap;
@@ -81,3 +84,4 @@ struct nm_sched_ops {
 
 };
 
+#endif /* NM_SCHED_OPS_H */

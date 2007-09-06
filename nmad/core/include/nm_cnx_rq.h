@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef NM_CNX_REQ_H
+#define NM_CNX_REQ_H
 
 /** Request for connecting/disconnecting a gate with a driver. */
 struct nm_cnx_rq {
@@ -29,3 +31,5 @@ struct nm_cnx_rq {
          */
         char			*remote_trk_url;
 };
+
+#endif /* NM_CNX_REQ_H */

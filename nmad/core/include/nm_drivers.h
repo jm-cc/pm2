@@ -14,6 +14,9 @@
  */
 
 
+#ifndef NM_DRIVERS_H
+#define NM_DRIVERS_H
+
 #if defined CONFIG_IBVERBS
 #  include <nm_ibverbs_public.h>
 #endif
@@ -36,3 +39,4 @@
 
 #include <nm_tcpdg_public.h>
 
+#endif /* NM_DRIVERS_H */

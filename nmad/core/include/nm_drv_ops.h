@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_DRV_OPS_H
+#define NM_DRV_OPS_H
+
 struct nm_cnx_rq;
 struct nm_drv;
 struct nm_pkt_wrap;
@@ -75,3 +78,5 @@ struct nm_drv_ops {
 
         int (*wait_iov)         (struct nm_pkt_wrap 	*p_pw);
 };
+
+#endif /* NM_DRV_OPS_H */

@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_PROTECTED_H
+#define NM_PROTECTED_H
+
 #define NUMBER_OF_GATES          255
 #define NUMBER_OF_DRIVERS        255
 #define NUMBER_OF_PROTOCOLS      255
@@ -50,3 +53,5 @@
 #include "nm_core_inline.h"
 
 #include "nm_network_sampling.h"
+
+#endif /* NM_PROTECTED_H */

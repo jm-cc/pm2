@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+#ifndef NM_TRK_H
+#define NM_TRK_H
+
 /** Track.
  */
 struct nm_trk {
@@ -41,3 +44,5 @@ struct nm_trk {
          */
         void			*priv;
 };
+
+#endif /* NM_TRK_H */

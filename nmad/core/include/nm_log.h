@@ -14,6 +14,9 @@
  */
 
 
+#ifndef NM_LOG_H
+#define NM_LOG_H
+
 #define NM_DISPF(str, ...)		fprintf(stderr, "%s, " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
 #define NM_DISP_IN()			fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
 #define NM_DISP_OUT()			fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
@@ -159,3 +162,5 @@
 #  define NMAD_EVENT_RCV_END(gate_id, drv_id, trk_id, length)		(void)0
 #  define NMAD_EVENT_ANNOTATE(str, ...)		(void)0
 #endif
+
+#endif /* NM_LOG_H */

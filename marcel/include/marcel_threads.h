@@ -25,6 +25,13 @@
 #define MARCEL_ONCE_INIT 0
 
 #section types
+
+/* Thread creation attribute constants.
+
+   Note: #defines of the same name than enum entries are there for
+   consistency with /usr/include/pthread.h and to enable the use of
+   #ifdef on them
+ */
 enum
 {
   MARCEL_CREATE_JOINABLE,

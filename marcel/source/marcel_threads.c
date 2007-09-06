@@ -33,6 +33,15 @@
 #endif
 extern void *_dl_allocate_tls_init(void *) libc_internal_function;
 #endif
+
+/** Canceled state value of internal marcel_t->canceled field.
+ */
+#define MARCEL_IS_CANCELED 1
+
+/** Alive state value of internal marcel_t->canceled field.
+ */
+#define MARCEL_NOT_CANCELED 0
+
 /****************************************************************/
 /****************************************************************
  *                Création des threads

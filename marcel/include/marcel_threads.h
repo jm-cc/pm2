@@ -32,6 +32,9 @@
    consistency with /usr/include/pthread.h and to enable the use of
    #ifdef on them
  */
+
+/** Relationship with parent thread.
+ */
 enum
 {
   MARCEL_CREATE_JOINABLE,
@@ -42,6 +45,8 @@ enum
 
 #define MARCEL_CREATE_DETACHSTATE_INVALID -1
 
+/** Scheduling policy and parameters inheritance.
+ */
 enum
 {
   MARCEL_INHERIT_SCHED,
@@ -52,6 +57,8 @@ enum
 
 #define MARCEL_INHERITSCHED_INVALID -1
 
+/** Scheduling contention scope.
+ */
 enum
 {
   MARCEL_SCOPE_SYSTEM,
@@ -62,8 +69,8 @@ enum
 
 #define MARCEL_SCOPE_INVALID -1
 
-/* Cancellation */
-
+/** Cancellation capability.
+ */
 enum
 {
   MARCEL_CANCEL_ENABLE,
@@ -71,6 +78,9 @@ enum
   MARCEL_CANCEL_DISABLE
 #define MARCEL_CANCEL_DISABLE	MARCEL_CANCEL_DISABLE
 };
+
+/** Cancellation mode.
+ */
 enum
 {
   MARCEL_CANCEL_DEFERRED,
@@ -78,10 +88,10 @@ enum
   MARCEL_CANCEL_ASYNCHRONOUS
 #define MARCEL_CANCEL_ASYNCHRONOUS	MARCEL_CANCEL_ASYNCHRONOUS
 };
-#define MARCEL_CANCELED ((void *) -1)
 
-#define MARCEL_IS_CANCELED 1
-#define MARCEL_NOT_CANCELED 0
+/** Return value of canceled threads.
+ */
+#define MARCEL_CANCELED ((void *) -1)
 
 #section macros
 #define MAX_ATEXIT_FUNCS	5

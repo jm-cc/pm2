@@ -400,9 +400,10 @@ static inline int mpir_datatype_indexed_aggregate(void *newptr,
     void *ptr = buffer + i * mpir_datatype->extent;
     for(j=0 ; j<mpir_datatype->elements ; j++) {
       void *subptr = ptr + mpir_datatype->indices[j];
-      MPI_NMAD_TRACE("Copy element %d, %d (size %ld) from %p (+%d) to %p (+%d)\n", i, j,
-                     (long) mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0], subptr, (int)(subptr-buffer),
-                     newptr, (int)(newptr-dest));
+      MPI_NMAD_TRACE("Copy element %d, %d (size %ld = %d * %ld) from %p (+%d) to %p (+%d)\n", i, j,
+                     (long) mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0],
+                     mpir_datatype->blocklens[j], (long) mpir_datatype->old_sizes[0],
+                     subptr, (int)(subptr-buffer), newptr, (int)(newptr-dest));
       memcpy(newptr, subptr, mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0]);
       newptr += mpir_datatype->blocklens[j] * mpir_datatype->old_sizes[0];
     }
@@ -733,6 +734,7 @@ int mpir_isend_init(mpir_request_t *mpir_request,
         ERROR("Cannot allocate memory with size %ld to send (h)indexed type\n", (long)(mpir_request->count * mpir_datatype->size));
         return MPI_ERR_INTERN;
       }
+      MPI_NMAD_TRACE("Allocating a buffer of size %ld (%d * %ld) for sending an indexed datatype\n", (long)(mpir_request->count * mpir_datatype->size), mpir_request->count, (long)mpir_datatype->size);
 
       mpir_datatype_indexed_aggregate(mpir_request->contig_buffer, mpir_request->buffer, mpir_datatype, mpir_request->count);
       MPI_NMAD_TRACE("Sending data of (h)indexed type at address %p with len %ld\n", mpir_request->contig_buffer, (long)(mpir_request->count * mpir_datatype->size));
@@ -1301,12 +1303,14 @@ int mpir_type_indexed(int count,
   datatypes[*newtype]->lb = 0;
   datatypes[*newtype]->blocklens = malloc(count * sizeof(int));
   datatypes[*newtype]->indices = malloc(count * sizeof(MPI_Aint));
+  datatypes[*newtype]->size = 0;
+
   for(i=0 ; i<count ; i++) {
     datatypes[*newtype]->blocklens[i] = array_of_blocklengths[i];
     datatypes[*newtype]->indices[i] = array_of_displacements[i];
-    MPI_NMAD_TRACE("Element %d: length %d, indice %ld\n", i, datatypes[*newtype]->blocklens[i], (long)datatypes[*newtype]->indices[i]);
+    datatypes[*newtype]->size += datatypes[*newtype]->old_sizes[0] * datatypes[*newtype]->blocklens[i];
+    MPI_NMAD_TRACE("Element %d: length %d, indice %ld, new size %ld\n", i, datatypes[*newtype]->blocklens[i], (long)datatypes[*newtype]->indices[i], (long) datatypes[*newtype]->size);
   }
-  datatypes[*newtype]->size = (datatypes[*newtype]->indices[count-1] + datatypes[*newtype]->old_sizes[0] * datatypes[*newtype]->blocklens[count-1]);
   datatypes[*newtype]->extent = (datatypes[*newtype]->indices[count-1] + mpir_old_datatype->extent * datatypes[*newtype]->blocklens[count-1]);
 
   MPI_NMAD_TRACE_LEVEL(3, "Creating new index type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,

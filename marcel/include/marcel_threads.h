@@ -219,10 +219,10 @@ DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
 /** pmarcel specific asynchronous cancel enable/disable.
 
     Notes:
-    - WHY two specific functions for the pmarcel case?
-    - WHY the fastcall convention?
-    - WHY the "__" prefix? Are those function for internal use only?
-    - WHY not __ma_ instead of __pmarcel_ prefix?
+    - why two specific functions for the pmarcel case?
+    - why the fastcall convention?
+    - why the "__" prefix? Are those function for internal use only?
+    - why not __ma_ instead of __pmarcel_ prefix?
 
     - BECAUSE it's stolen from the libpthread source.
  */
@@ -246,7 +246,7 @@ int pthread_setschedprio(pthread_t thread, int prio) __THROW;
 
 /** Set the scheduling params of the specified thread.
     Note:
-    - WHY not DEC_MARCEL_POSIX instead?
+    - why not DEC_MARCEL_POSIX instead?
     - BECAUSE of the sched_param structure. Ideally we should have a
       pmarcel_sched_param structure typedefed to marcel_sched_param, and a
       #define sched_param pmarcel_sched_param in include/pthread/sched.h, but
@@ -296,9 +296,9 @@ void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
 /*
-  - WHY a regular prototype + a macro for the marcel_thread_preemption_enable series of functions?
+  - why a regular prototype + a macro for the marcel_thread_preemption_enable series of functions?
   - BECAUSE that provides a nice prototype for the doxygen documentation.
-  - WHY both "__marcel_some" prefix and "marcel_some" prefix where the "marcel_some" prefix does not seem to add anything?
+  - why both "__marcel_some" prefix and "marcel_some" prefix where the "marcel_some" prefix does not seem to add anything?
   - probably BECAUSE of historical reasons that no longer apply.
  */
 

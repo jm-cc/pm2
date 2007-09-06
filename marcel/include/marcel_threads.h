@@ -124,94 +124,193 @@ typedef void (*marcel_postexit_func_t)(any_t);
 
 #section functions
 
+/** Create a thread.
+ */
 DEC_MARCEL_POSIX(int,create,(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr, 
 		  marcel_func_t func, any_t __restrict arg) __THROW);
 
+/** Create a thread but dont schedule it.
+ */
 int marcel_create_dontsched(marcel_t * __restrict pid,
 		  __const marcel_attr_t * __restrict attr, 
 		  marcel_func_t func, any_t __restrict arg) __THROW;
 
 #section marcel_functions
+/** Create a special thread such as internal threads or idle threads.
+    Note: the actual code does not seem to make any difference with marcel_create_dontsched
+ */
 int marcel_create_special(marcel_t * __restrict pid,
 			  __const marcel_attr_t * __restrict attr, 
 			  marcel_func_t func, any_t __restrict arg) __THROW;
 #section functions
 
+/** Posix join.
+ */
 DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status) __THROW);
 
+/** Posix exit.
+ */
 DEC_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val) __THROW);
 #section marcel_functions
+
+/** Exit function that should never return.
+ */
 void marcel_exit_special(any_t val) __THROW TBX_NORETURN;
+
+/** Exit function that may return.
+ */
 void marcel_exit_canreturn(any_t val) __THROW;
 
+/** Clean-up a terminated thread.
+ */
 void marcel_funerals(marcel_t t);
 
 #section functions
 
+/** Posix detach.
+ */
 DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);
 
+/** Posix cancel.
+ */
 DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
 
 #section functions
 static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2);
 #section inline
+/** Compare two marcel thread ids.
+ */
 static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
   return (pid1 == pid2);
 }
 
 #section macros
+/** pmarcel version of thread id comparison (as a macro).
+ */
 #define pmarcel_equal(t1,t2) ((t1) == (t2))
 
 #section functions
 
-/**********************set/getconcurrency**********************/
+/** Posix setconcurrency.
+ */
 DEC_MARCEL_POSIX(int, setconcurrency, (int newlevel) __THROW);
+
+/** Posix getconcurrency.
+ */
 DEC_MARCEL_POSIX(int, getconcurrency, (void) __THROW);
-/******************set/testcancelstate/type/  *****************/
+
+/** Posix setcancelstate.
+ */
 DEC_MARCEL_POSIX(int, setcancelstate,(int state, int *oldstate) __THROW);
+
+/** Posix setcanceltype.
+ */
 DEC_MARCEL_POSIX(int, setcanceltype,(int type, int *oldtype) __THROW);
+
+/** Posix testcancel.
+ */
 DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
+
+
 #depend "asm/linux_linkage.h[marcel_macros]"
+
+/** pmarcel specific asynchronous cancel enable/disable.
+
+    Notes:
+    - WHY two specific functions for the pmarcel case?
+    - WHY the fastcall convention?
+    - WHY the "__" prefix? Are those function for internal use only?
+    - WHY not __ma_ instead of __pmarcel_ prefix?
+ */
 int fastcall __pmarcel_enable_asynccancel (void);
 void fastcall __pmarcel_disable_asynccancel(int old);
+
 #ifndef MA__IFACE_PMARCEL
-#define __pmarcel_enable_asynccancel() 0
-#define __pmarcel_disable_asynccancel(old) (void)(old)
+#  define __pmarcel_enable_asynccancel() 0
+#  define __pmarcel_disable_asynccancel(old) (void)(old)
 #endif
-/******************set/getschedparam/prio*****************/
+
+/** Posix setschedprio.
+ */
 DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
+
+/** Posix-only setschedprio.
+    Notes:
+    - WHY is there this an additional prototype here?
+ */
 int pthread_setschedprio(pthread_t thread, int prio) __THROW;
+
+/** Set the scheduling params of the specified thread.
+    - WHY not DEC_MARCEL_POSIX instead?
+ */
 DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
+
+/** Get the scheduling params of the specified thread.
+    - WHY not DEC_MARCEL_POSIX instead?
+ */
 DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
-/******************getcpuclockid*******************************/
+
+/** Posix getcpuclockid.
+ */
 DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
 
+/** Prepare a set of threads for a subsequent migration.
+ */
 void marcel_freeze(marcel_t *pids, int nb);
+
+/** Un-prepare a set of threads after a migration.
+ */
 void marcel_unfreeze(marcel_t *pids, int nb);
 
-/* === stack user space === */
-
+/** Get the ptr to the user space area reserved for the thread.
+ */
 void marcel_getuserspace(marcel_t __restrict pid,
 		void * __restrict * __restrict user_space);
 
+/** Unlock a thread created with some user space area reserved and
+    waiting for this area to be filled.
+ */
 void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 
 /* ========== callbacks ============ */
 
+/** Setup a post-exit clean-up handler
+
+    - WHY two kinds of exit handlers?
+    - WHAT is the semantical difference between a post-exit and at exit handlers?
+ */
 void marcel_postexit(marcel_postexit_func_t, any_t);
+
+/** Setup a at-exit clean-up handler
+ */
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
-#section functions
+/*
+  - WHY a regular prototype + a macro for the marcel_thread_preemption_enable series of functions?
+  - WHY both "__marcel_some" prefix and "marcel_some" prefix where the "marcel_some" prefix does not seem to add anything?
+ */
+
+/** Enable automatic preemption of threads.
+ */
 void marcel_thread_preemption_enable(void);
+
+/** Disable automatic preemption of threads.
+ */
 void marcel_thread_preemption_disable(void);
+
+/** Return whether automatic preemption of threads is currently
+    disabled (1) or enabled (0).
+ */
 int marcel_thread_is_preemption_disabled(void);
+
 static __tbx_inline__ void marcel_some_thread_preemption_enable(marcel_t t);
 static __tbx_inline__ void marcel_some_thread_preemption_disable(marcel_t t);
 static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t);
+
 #define	marcel_thread_preemption_enable() marcel_some_thread_preemption_enable(MARCEL_SELF)
 #define	marcel_thread_preemption_disable() marcel_some_thread_preemption_disable(MARCEL_SELF)
 #define	marcel_thread_is_preemption_disabled() marcel_some_thread_is_preemption_disabled(MARCEL_SELF)
@@ -252,10 +351,16 @@ static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t) 
 
 
 #section marcel_macros
+
+/** Return whether the current thread is preemptible (1) or not (0).
+ */
 #define ma_thread_preemptible() (!SELF_GETMEM(not_preemptible))
 
+
 #section structures
-/* Cleanup buffers */
+
+/** Linked list of buffers for thread clean-up handlers.
+ */
 struct _marcel_cleanup_buffer
 {
   void (*__routine) (void *);		  /* Function to call.  */
@@ -263,32 +368,51 @@ struct _marcel_cleanup_buffer
   int __canceltype;			  /* Saved cancellation type. */
   struct _marcel_cleanup_buffer *__prev; /* Chaining of cleanup functions.  */
 };
+
+
 #section functions
 
 #undef NAME_PREFIX
 #define NAME_PREFIX _
+
+/** Posix cleanup_push.
+ */
 DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
 				     cleanup_func_t func, any_t __restrict arg) __THROW);
+/** Posix cleanup_pop.
+ */
 DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 				    tbx_bool_t execute) __THROW);
 #undef NAME_PREFIX
 #define NAME_PREFIX
 
-
-/* ===== suspending & resuming ===== */
-
+/** Temporarily suspend execution of the given thread.
+    - WHY keep this feature that is used only in a single example and uses a
+    GETMEM entry?
+    - WHAT are the exact semantical differences between marcel_suspend and marcel_freeze
+    as a user might confuse one for the other?
+ */
 void marcel_suspend(marcel_t pid);
+
+/** Resume a formerly suspended thread.
+ */
 void marcel_resume(marcel_t pid);
 
 #section types
 /* =========== migration =========== */
 #depend "marcel_descr.h[]"
 
+/** Sending-side migration handler.
+ */
 typedef void (*transfert_func_t)(marcel_t t, unsigned long depl, unsigned long blksize, void *arg);
 
+/** Receiving-side migration handler.
+ */
 typedef void (*post_migration_func_t)(void *arg);
 
 #section functions
+/** Disable preemptive migration for the given thread.
+ */
 MARCEL_INLINE void marcel_disablemigration(marcel_t pid);
 #section marcel_inline
 MARCEL_INLINE void marcel_disablemigration(marcel_t pid)
@@ -297,6 +421,8 @@ MARCEL_INLINE void marcel_disablemigration(marcel_t pid)
 }
 
 #section functions
+/** Enable preemptive migration for the given thread.
+ */
 MARCEL_INLINE void marcel_enablemigration(marcel_t pid);
 #section marcel_inline
 MARCEL_INLINE void marcel_enablemigration(marcel_t pid)
@@ -305,59 +431,78 @@ MARCEL_INLINE void marcel_enablemigration(marcel_t pid)
 }
 
 #section functions
+/** Set sending-side migration handler and settings.
+ */
 void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, void * __restrict arg, tbx_bool_t fork);
 
+/** Set receive-side migration handler and settings.
+ */
 void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg);
 
 #section functions
+/** Give a name to the thread, for debugging purpose.
+ */
 int marcel_setname(marcel_t __restrict pid, const char * __restrict name);
+
+/** Give the name of the thread.
+ */
 int marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
 
-/* Install a cleanup handler: ROUTINE will be called with arguments ARG
-   when the thread is cancelled or calls marcel_exit.  ROUTINE will also
-   be called with arguments ARG when the matching marcel_cleanup_pop
-   is executed with non-zero EXECUTE argument.
-   marcel_cleanup_push and marcel_cleanup_pop are macros and must always
-   be used in matching pairs at the same nesting level of braces. */
-
-#define marcel_cleanup_push(routine,arg) \
-{       struct _marcel_cleanup_buffer _buffer; \
-    _marcel_cleanup_push (&_buffer, (routine), (arg));
-
+/** Install a cleanup handler. ROUTINE will be called with arguments ARG
+    when the thread is cancelled or calls marcel_exit.  ROUTINE will also
+    be called with arguments ARG when the matching marcel_cleanup_pop
+    is executed with non-zero EXECUTE argument.
+*/
 extern void _marcel_cleanup_push (struct _marcel_cleanup_buffer *__buffer,
 				   void (*__routine) (void *),
 				   void *__arg) __THROW;
 
-/* Remove a cleanup handler installed by the matching marcel_cleanup_push.
-   If EXECUTE is non-zero, the handler function is called. */
+/** Remove a cleanup handler installed by the matching _marcel_cleanup_push.
+    If EXECUTE is non-zero, the handler function is called.
+*/
+extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
+                                 tbx_bool_t __execute) __THROW;
 
+
+/** Install a clean-up handler with a private clean-up buffer.
+    Note: marcel_cleanup_push and marcel_cleanup_pop are macros and must always
+    be used in matching pairs at the same nesting level of braces.
+*/
+#define marcel_cleanup_push(routine,arg) \
+{       struct _marcel_cleanup_buffer _buffer; \
+    _marcel_cleanup_push (&_buffer, (routine), (arg));
+
+/** Remove a clean-up handler installed by the matching marcel_cleanup_push.
+ */
 #define marcel_cleanup_pop(execute) \
     _marcel_cleanup_pop (&_buffer, (execute)); }
 
-extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
-		tbx_bool_t __execute) __THROW;
-
-/* Install a cleanup handler as marcel_cleanup_push does, but also
-   saves the current cancellation type and set it to deferred cancellation.  */
-
-# define marcel_cleanup_push_defer_np(routine,arg) \
-{       struct _marcel_cleanup_buffer _buffer; \
-    _marcel_cleanup_push_defer (&_buffer, (routine), (arg));
-
+/** Install a cleanup handler as marcel_cleanup_push does, but also
+    saves the current cancellation type and set it to deferred cancellation.
+*/
 extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,
 					 void (*__routine) (void *),
 					 void *__arg) __THROW;
 
-/* Remove a cleanup handler as marcel_cleanup_pop does, but also
-   restores the cancellation type that was in effect when the matching
-   marcel_cleanup_push_defer was called.  */
-
-# define marcel_cleanup_pop_restore_np(execute) \
-  _marcel_cleanup_pop_restore (&_buffer, (execute)); }
-
+/** Remove a cleanup handler as marcel_cleanup_pop does, but also
+    restores the cancellation type that was in effect when the matching
+    _marcel_cleanup_push_defer was called.
+*/
 extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
 
+/** Install a clean-up handler and save the current cancellation type
+    with a private clean-up buffer.
+ */
+# define marcel_cleanup_push_defer_np(routine,arg) \
+{       struct _marcel_cleanup_buffer _buffer; \
+    _marcel_cleanup_push_defer (&_buffer, (routine), (arg));
+
+/** Remove a clean-up handler and restore the cancellation type that was in effect when the matching
+    marcel_cleanup_push_defer_np was called.
+ */
+# define marcel_cleanup_pop_restore_np(execute) \
+  _marcel_cleanup_pop_restore (&_buffer, (execute)); }
 
 
 /* Guarantee that the initialization function INIT_ROUTINE will be called
@@ -371,9 +516,13 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
 #section macros
 #depend "marcel_descr.h[types]"
 #ifdef STANDARD_MAIN
+/** Structure of main thread when STANDARD_MAIN is defined.
+ */
 extern marcel_task_t __main_thread_struct;
-#define __main_thread  (&__main_thread_struct)
+#  define __main_thread  (&__main_thread_struct)
 #else
+/** Structure of main thread.
+ */
 extern marcel_task_t *__main_thread;
 #endif
 #section marcel_structures

@@ -286,7 +286,7 @@ void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 /* ========== callbacks ============ */
 
 /** Setup a post-exit clean-up handler
- * Called after complete termination of the thread and the stack got freed.
+ * Called after complete termination of the thread, i.e. the stack is not used any more.
  */
 void marcel_postexit(marcel_postexit_func_t, any_t);
 

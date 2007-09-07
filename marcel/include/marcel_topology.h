@@ -84,13 +84,13 @@ extern struct marcel_topo_level *marcel_topo_node_level;
 /** \brief Direct access to VP levels */
 extern struct marcel_topo_level *marcel_topo_vp_level;
 #ifndef MA__LWPS
-#define marcel_nbprocessors 1
-#define marcel_cpu_stride 1
-#define marcel_vps_per_cpu 1
-#define marcel_topo_vp_level marcel_machine_level
+#  define marcel_nbprocessors 1
+#  define marcel_cpu_stride 1
+#  define marcel_vps_per_cpu 1
+#  define marcel_topo_vp_level marcel_machine_level
 #endif
 #ifndef MA__NUMA
-#define marcel_topo_node_level marcel_machine_level
+#  define marcel_topo_node_level marcel_machine_level
 #endif
 
 #section marcel_variables
@@ -99,13 +99,18 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 extern int ma_vp_node[MA_NR_LWPS];
 
 #section functions
+/** \brief Fill ::marcel_nbprocessors with the number of available
+ *  processors */
 extern void ma_set_nbprocessors(void);
+/** \brief Compute ::marcel_vps_per_cpu, and ::marcel_cpu_stride if not
+ *  already set */
 extern void ma_set_processors(void);
+/** \brief Free all topology levels but the last one */
 extern void ma_topo_exit(void);
 #ifndef MA__LWPS
-#define ma_set_nbprocessors() (void)0
-#define ma_set_processors() (void)0
-#define ma_topo_exit() (void)0
+#  define ma_set_nbprocessors() (void)0
+#  define ma_set_processors() (void)0
+#  define ma_topo_exit() (void)0
 #endif
 
 #section types
@@ -113,21 +118,21 @@ extern void ma_topo_exit(void);
 enum marcel_topo_level_e {
 	MARCEL_LEVEL_MACHINE,	/**< \brief Whole machine */
 #ifndef MA__LWPS
-#define MARCEL_LEVEL_LAST MARCEL_LEVEL_MACHINE
-#define MARCEL_LEVEL_VP MARCEL_LEVEL_MACHINE
-#define MARCEL_LEVEL_NODE MARCEL_LEVEL_MACHINE
+#  define MARCEL_LEVEL_LAST MARCEL_LEVEL_MACHINE
+#  define MARCEL_LEVEL_VP MARCEL_LEVEL_MACHINE
+#  define MARCEL_LEVEL_NODE MARCEL_LEVEL_MACHINE
 #else
 	MARCEL_LEVEL_FAKE,	/**< \brief Fake level for meeting the marcel_topo_max_arity constraint */
-#ifdef MA__NUMA
+#  ifdef MA__NUMA
 	MARCEL_LEVEL_NODE,	/**< \brief NUMA node */
 	MARCEL_LEVEL_DIE,	/**< \brief Physical chip */
 	MARCEL_LEVEL_L3,	/**< \brief L3 cache */
 	MARCEL_LEVEL_L2,	/**< \brief L2 cache */
 	MARCEL_LEVEL_CORE,	/**< \brief Core */
 	MARCEL_LEVEL_PROC,	/**< \brief SMT Processor in a core */
-#endif
+#  endif
 	MARCEL_LEVEL_VP,	/**< \brief Virtual Processor (\b not SMT) */
-#define MARCEL_LEVEL_LAST MARCEL_LEVEL_VP
+#  define MARCEL_LEVEL_LAST MARCEL_LEVEL_VP
 #endif
 };
 
@@ -138,54 +143,59 @@ enum marcel_topo_level_e {
 #section types
 #include <limits.h>
 #ifdef MA__LWPS
-#if (1<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
-/** \brief VP mask: useful for selecting the set of "forbiden" LWP for a given thread */
+#  if (1<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
+/** \brief VP mask: useful for selecting the set of "forbidden" LWP for a given thread */
 typedef unsigned marcel_vpmask_t;
 /** \brief Empty VP mask */
-#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
+#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
 /** \brief Fill VP mask */
-#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
+#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
+/** \brief Mask of VP 0 with suitable type */
+#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1U)
 /** \brief Only set VP \e vp in VP mask */
-#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
+#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
 /** \brief Set all VPs but VP \e vp in VP mask */
-#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
-#define MA_PRIxVPM "x"
-#elif (1<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
+#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
+/** \brief Format string snippet suitable for the vpmask datatype */
+#    define MA_PRIxVPM "x"
+#  elif (1<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
 typedef unsigned long marcel_vpmask_t;
-#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0UL)
-#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0UL)
-#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1UL << (vp)))
-#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1UL << (vp))))
-#define MA_PRIxVPM "lx"
-#elif (1<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
+#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0UL)
+#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0UL)
+#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1UL)
+#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1UL << (vp)))
+#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1UL << (vp))))
+#    define MA_PRIxVPM "lx"
+#  elif (1<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
 typedef unsigned long long marcel_vpmask_t;
-#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0ULL)
-#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0ULL)
-#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1ULL << (vp)))
-#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1ULL << (vp))))
-#define MA_PRIxVPM "llx"
-#else
-#error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
-#endif
+#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0ULL)
+#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0ULL)
+#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1ULL)
+#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1ULL << (vp)))
+#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1ULL << (vp))))
+#    define MA_PRIxVPM "llx"
+#  else
+#    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
+#  endif
 #else
 typedef unsigned marcel_vpmask_t;
-#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
-#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
-#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
-#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
-#define MA_PRIxVPM "x"
+#  define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
+#  define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
+#  define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1U)
+#  define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
+#  define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
+#  define MA_PRIxVPM "x"
 #endif
 
 #section functions
 
-/*  Primitives & macros de construction de "masques" de processeurs */
-/*  virtuels.  */
+/*  Primitives & macros for building "masks" of virtual processors. */
 
-/*  ATTENTION : le placement d un thread est autorise sur un 'vp' si le */
-/*  bit correspondant est a _ZERO_ dans le masque (similitude avec */
-/*  sigset_t pour la gestion des masques de signaux). */
+/*  WARNING: a thread may run on a given "vp" iff the corresponding bit
+ *  is _cleared_ (_ZERO_) in the mask (following the model of sigset_t
+ *  for signal mask management) */
 
-/** \brief Initialize Mask */
+/** \brief Initialize VP mask */
 void marcel_vpmask_init(marcel_vpmask_t * mask);
 #define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
 
@@ -225,7 +235,7 @@ static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t * mask,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask |= 1U << vp;
+	*mask |= MARCEL_VPMASK_VP0 << vp;
 #else
 	marcel_vpmask_fill(mask);
 #endif
@@ -240,7 +250,7 @@ static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t * mask,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask = 1U << vp;
+	*mask = MARCEL_VPMASK_VP0 << vp;
 #else
 	marcel_vpmask_fill(mask);
 #endif
@@ -255,7 +265,7 @@ static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t * mask,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask &= ~(1U << vp);
+	*mask &= ~(MARCEL_VPMASK_VP0 << vp);
 #else
 	marcel_vpmask_empty(mask);
 #endif
@@ -270,7 +280,7 @@ static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask = ~(1U << vp);
+	*mask = ~(MARCEL_VPMASK_VP0 << vp);
 #else
 	marcel_vpmask_empty(mask);
 #endif
@@ -338,6 +348,9 @@ static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask)
 }
 
 #section marcel_macros
+/** \brief Loop macro iterating on a vpmask and yielding on each vp that
+ *  is member of the mask.
+ *  Uses variables \e mask (the vp mask) and \e vp (the loop variable) */
 #define marcel_vpmask_foreach_begin(vp, mask) \
 	for (vp = 0; vp < marcel_nbvps() + MARCEL_NBMAXVPSUP; vp++) \
 		if (marcel_vpmask_vp_ismember(mask, vp)) {
@@ -345,8 +358,8 @@ static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask)
 		}
 
 #section functions
-/** \brief Get the current VP number. Note that if preemption wasn't disabled,
- * this may change just after the function call. */
+/** \brief Get the current VP number. Note that if preemption is enabled,
+ *  this may change just after the function call. */
 unsigned marcel_current_vp(void);
 #section marcel_functions
 /* Internal version, for inlining */
@@ -362,7 +375,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #section marcel_structures
 
 #ifdef PM2_DEV
-/*  #warning il ne faudrait pas dépendre d un scheduler particulier */
+/*  #warning should not rely on a specific scheduler */
 #endif
 #depend "scheduler-marcel/linux_runqueues.h[marcel_structures]"
 #depend "scheduler-marcel/linux_runqueues.h[types]"

@@ -121,7 +121,6 @@ unsigned marcel_topo_max_arity = 4;
 #endif
 
 void ma_set_nbprocessors(void) {
-	// D�termination du nombre de processeurs disponibles
 	marcel_nbprocessors = ma_nbprocessors();
 	mdebug("%d processors available\n", marcel_nbprocessors);
 }

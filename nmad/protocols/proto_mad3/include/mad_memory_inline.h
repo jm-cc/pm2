@@ -18,6 +18,9 @@
  * -----------------------
  */
 
+#ifndef MAD_MEMORY_INLINE_H
+#define MAD_MEMORY_INLINE_H
+
 #include "tbx_compiler.h"
 
 extern p_tbx_memory_t mad_buffer_memory;
@@ -186,3 +189,4 @@ mad_free_slice_parameter(p_mad_buffer_slice_parameter_t slice_parameter)
   tbx_free(mad_buffer_slice_parameter_memory, slice_parameter);
 }
 
+#endif /* MAD_MEMORY_INLINE_H */

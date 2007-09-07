@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifndef NM_MAD3_PRIVATE_H
+#define NM_MAD3_PRIVATE_H
 
 #include "nm_protected.h"
 #include "madeleine.h"
@@ -39,3 +41,5 @@ typedef struct s_mad_nmad_connection_specific {
 #endif /* CONFIG_SCHED_OPT */
   	nm_gate_id_t		 gate_id;
 } mad_nmad_connection_specific_t, *p_mad_nmad_connection_specific_t;
+
+#endif /* NM_MAD3_PRIVATE_H */

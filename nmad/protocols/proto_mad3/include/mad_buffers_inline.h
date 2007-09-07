@@ -18,6 +18,9 @@
  * ====================
  */
 
+#ifndef MAD_BUFFERS_INLINE_H
+#define MAD_BUFFERS_INLINE_H
+
 #include "tbx_compiler.h"
 
 TBX_FMALLOC
@@ -339,4 +342,6 @@ mad_append_buffer_to_list(p_tbx_list_t   list,
       return position + buffer->length;
     }
 }
+
+#endif /* MAD_BUFFERS_INLINE_H */
 

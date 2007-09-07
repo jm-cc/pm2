@@ -85,11 +85,9 @@ unsigned long marcel_createdthreads(void);
 void marcel_gensched_shutdown(void);
 
 #ifdef MA__LWPS
-/** \brief Called by schedule before switching to idle thread. Preemption
- * and bottom halves are disabled
- *
- * WHY is the #ifdef MA__LWPS limited to this function only? The others functions
- * of this set are empty when MA_LWPS is undefined.
+/** \brief Called by schedule before switching to idle thread. Last chance for
+ * PIOMan to avoid switching to the idle Thread. Preemption and bottom halves
+ * are disabled. Useless in mono since there's no actual switch to mono.
  */
 static __tbx_inline__ void ma_about_to_idle(void);
 #endif

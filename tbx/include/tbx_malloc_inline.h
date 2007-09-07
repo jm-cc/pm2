@@ -255,7 +255,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
             char ** str_array;
             str_array = backtrace_symbols(ptr,  TBX_MALLOC_BTRACE_DEPTH);
             for (j = 0; j < TBX_MALLOC_BTRACE_DEPTH; j++) {
-              pm2debug("  f[%d]: %s\n", j, str_array[j]);
+              pm2debug(" tbx_malloc_clean: f[%d]: %s\n", j, str_array[j]);
             }
           }
 #endif /* TBX_MALLOC_BTRACE_DEPTH */
@@ -267,7 +267,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
                                + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
       }
 
-    WARN("attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
+    WARN("tbx_malloc_clean: attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
   }
 
   block_mem = mem->first_mem;

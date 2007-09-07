@@ -132,7 +132,7 @@ void my_operation(void *a, void *b, int *r, MPI_Datatype *type) {
   int *in, *inout, i;
 
   if (*type != MPI_INT) {
-    fprintf(stderr, "Erreur. Argument type not recognized\n");
+    fprintf(stdout, "Erreur. Argument type not recognized\n");
     exit(-1);
   }
   in = (int *) a;

@@ -68,8 +68,8 @@ int main(int argc, char	**argv) {
   rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
   if (comm_rank == 0) {
-    fprintf(stderr, "The configuration size is %d\n", comm_size);
-    fprintf(stderr, "src\t|dst\t|size\t|chunk size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit\t|isend\t\t|benefit|\n");
+    fprintf(stdout, "The configuration size is %d\n", comm_size);
+    fprintf(stdout, "src\t|dst\t|size\t|chunk size\t|nb chunks\t|1-bloc\t\t|extended\t|benefit\t|isend\t\t|benefit|\n");
   }
 
   /* Warmup */
@@ -200,7 +200,7 @@ int main(int argc, char	**argv) {
 
         gain_extended_bloc = 100 - (((t2_extended - t1_extended) / (t2_bloc - t1_bloc)) * 100);
         gain_isend_bloc = 100 - (((t2_isend - t1_isend) / (t2_bloc - t1_bloc)) * 100);
-        fprintf(stderr, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\t\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain_extended_bloc, (t2_isend-t1_isend)/(2*LOOPS), gain_isend_bloc);
+        fprintf(stdout, "%d\t%d\t%d\t%d\t\t%ld\t\t%lf\t%lf\t%3.2f%%\t\t%lf\t%3.2f%%\n", comm_rank, rank_dst, len, chunk, nb_chunks, (t2_bloc-t1_bloc)/(2*LOOPS), (t2_extended-t1_extended)/(2*LOOPS), gain_extended_bloc, (t2_isend-t1_isend)/(2*LOOPS), gain_isend_bloc);
       }
 
       // Free memory

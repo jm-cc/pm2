@@ -44,18 +44,18 @@ int main(int argc, char **argv) {
 
     for(child=1 ; child<numtasks ; child++) {
       MPI_Isend(buffer, 2, MPI_FLOAT, child, tag, MPI_COMM_WORLD, &out_requests[child-1]);
-      fprintf(stderr, "ISending to child %d completed\n", child);
+      fprintf(stdout, "ISending to child %d completed\n", child);
     }
 
     for(child=1 ; child<numtasks ; child++) {
-      fprintf(stderr, "Waiting for sending to child %d completed\n", child);
+      fprintf(stdout, "Waiting for sending to child %d completed\n", child);
       MPI_Wait(&out_requests[child-1], MPI_STATUS_IGNORE);
     }
 
     for(child=1 ; child<numtasks ; child++) {
       MPI_Recv(r_buffer, 2, MPI_FLOAT, child, tag, MPI_COMM_WORLD, &stat);
       if (r_buffer[0] != buffer[0] && r_buffer[1] != buffer[1]) {
-	fprintf(stderr, "Expected [%f,%f] - Received [%f,%f]\n", buffer[0], buffer[1], r_buffer[0], r_buffer[1]);
+	fprintf(stdout, "Expected [%f,%f] - Received [%f,%f]\n", buffer[0], buffer[1], r_buffer[0], r_buffer[1]);
       }
       else {
 	fprintf(stdout, "Message from child %d [%f,%f]\n", child, r_buffer[0], r_buffer[1]);

@@ -146,22 +146,22 @@ main(int    argc,
                 }
         }
 
-        fprintf(stderr, "(%s): My rank is %d\n", host_name, comm_rank);
+        fprintf(stdout, "(%s): My rank is %d\n", host_name, comm_rank);
 
         ping_side	= !(comm_rank & 1);
         rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
         if (ping_side) {
-                fprintf(stderr, "(%d): ping with %d\n", comm_rank, rank_dst);
+                fprintf(stdout, "(%d): ping with %d\n", comm_rank, rank_dst);
                 log = 1;
         } else {
-                fprintf(stderr, "(%d): pong with %d\n", comm_rank, rank_dst);
+                fprintf(stdout, "(%d): pong with %d\n", comm_rank, rank_dst);
                 log = 0;
         }
 
         if (comm_rank == 0) {
-                fprintf(stderr, "The configuration size is %d\n", comm_size);
-		fprintf(stderr, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
+                fprintf(stdout, "The configuration size is %d\n", comm_size);
+		fprintf(stdout, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
 	}
 
         main_buffer = malloc(end_len);
@@ -221,7 +221,7 @@ main(int    argc,
 
 
                                 if (log)
-                                        fprintf(stderr, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
+                                        fprintf(stdout, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
 						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
                         } else {
                                 int		nb_tests	= tests;
@@ -257,7 +257,7 @@ main(int    argc,
 				bw_mbyte = bw_million_byte / 1.048576;
 
                                 if (log && ping_side)
-                                        fprintf(stderr, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
+                                        fprintf(stdout, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
 						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
                         }
 
@@ -267,7 +267,7 @@ main(int    argc,
         free(main_buffer);
 
         if (log)
-                fprintf(stderr, "Exiting\n");
+                fprintf(stdout, "Exiting\n");
 
  out:
         MPI_Finalize();

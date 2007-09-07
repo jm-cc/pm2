@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   if (size != 8) {
-    fprintf(stderr, "This application needs 8 nodes\n");
+    fprintf(stdout, "This application needs 8 nodes\n");
     MPI_Finalize();
     exit(1);
   }

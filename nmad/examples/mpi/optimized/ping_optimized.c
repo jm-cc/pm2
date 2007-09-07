@@ -38,7 +38,7 @@ main(int	  argc,
   init(&argc, argv);
 
   if (argc == 1) {
-    fprintf(stderr, "usage: argv[0] <datatype>\n");
+    fprintf(stdout, "usage: argv[0] <datatype>\n");
     exit(EXIT_FAILURE);
   }
   datatype = argv[1];

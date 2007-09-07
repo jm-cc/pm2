@@ -59,17 +59,17 @@ int main(int argc, char **argv) {
   log = (!comm_rank || !param_log_only_master);
 
   if (!param_log_only_master) {
-    fprintf(stderr, "(%s): My rank is %d\n", host_name, comm_rank);
+    fprintf(stdout, "(%s): My rank is %d\n", host_name, comm_rank);
   }
 
   if (comm_rank == 0 && log) {
-    fprintf(stderr, "The configuration size is %d\n", comm_size);
-    fprintf(stderr, "src  | dest  | type	     | size    | blocks | time");
+    fprintf(stdout, "The configuration size is %d\n", comm_size);
+    fprintf(stdout, "src  | dest  | type	     | size    | blocks | time");
   }
 
   if (comm_size & 1) {
     if (log)
-      fprintf(stderr, "This program requires an even configuration size, aborting...\n");
+      fprintf(stdout, "This program requires an even configuration size, aborting...\n");
     MPI_Finalize();
     exit(0);
   }

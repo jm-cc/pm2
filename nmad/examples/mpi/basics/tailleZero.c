@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     counter=1;
     MPI_Send(&counter, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD);
     MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);
-    fprintf(stderr, "Received %d\n", message);
+    fprintf(stdout, "Received %d\n", message);
   }
   else {
     MPI_Recv(&message, 0, MPI_INT, rank_dst, tag, MPI_COMM_WORLD, &stat);

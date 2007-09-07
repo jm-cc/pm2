@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
         MPI_Recv(&recv, 1, MPI_INT, child, tag, MPI_COMM_WORLD, NULL);
         if (recv != child) {
           success = 0;
-          fprintf(stderr, "Expected [%d] - Received [%d]\n", child, recv);
+          fprintf(stdout, "Expected [%d] - Received [%d]\n", child, recv);
         }
       }
 
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
       free(in_requests);
     }
     if (success) {
-      fprintf(stderr, "Success\n");
+      fprintf(stdout, "Success\n");
     }
   }
   else {
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
       MPI_Recv(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD, NULL);
       MPI_Send(&r_buffer, 1, MPI_INT, father, tag, MPI_COMM_WORLD);
     }
-    fprintf(stderr, "Success\n");
+    fprintf(stdout, "Success\n");
   }
   MPI_Finalize();
   exit(0);

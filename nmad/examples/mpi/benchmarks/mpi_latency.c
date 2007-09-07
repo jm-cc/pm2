@@ -75,16 +75,16 @@ main(int    argc,
   log = (!comm_rank || !param_log_only_master);
 
   if (!param_log_only_master) {
-    fprintf(stderr, "(%s): My rank is %d\n", host_name, comm_rank);
+    fprintf(stdout, "(%s): My rank is %d\n", host_name, comm_rank);
   }
 
   if (comm_rank == 0 && log) {
-    fprintf(stderr, "src|dst|size        |latency\n");
+    fprintf(stdout, "src|dst|size        |latency\n");
   }
 
   if (comm_size & 1) {
     if (log)
-      fprintf(stderr, "This program requires an even configuration size, aborting...\n");
+      fprintf(stdout, "This program requires an even configuration size, aborting...\n");
 
     goto out;
   }
@@ -135,7 +135,7 @@ main(int    argc,
       lat		= sum / param_nb_tests / param_nb_samples / 2;
 
       if (log)
-        fprintf(stderr, "%3d %3d 0 %12.3f\n", comm_rank, rank_dst, lat);
+        fprintf(stdout, "%3d %3d 0 %12.3f\n", comm_rank, rank_dst, lat);
 
     } else {
       int		nb_tests	= param_nb_tests;
@@ -163,14 +163,14 @@ main(int    argc,
       sum *= 1e6;
       lat		= sum / param_nb_tests / param_nb_samples / 2;
       if (log && ping_side)
-        fprintf(stderr, "%3d %3d %12.3f\n",
+        fprintf(stdout, "%3d %3d %12.3f\n",
                 comm_rank, rank_dst, lat);
 
     }
   }
 
   if (log)
-    fprintf(stderr, "Exiting\n");
+    fprintf(stdout, "Exiting\n");
 
  out:
   MPI_Finalize();

@@ -41,8 +41,10 @@
  *
  * - WHY is there a need for this function (which does not seem to be
  *   used) besides the sleep functions?
- * - WHAT is the semantical difference between this function and the
- *   sleep functions?
+ * - probably BECAUSE of historical reasons. Should probably be deprecated.
+ *
+ * Note: there is no behavior difference with posix functions except the
+ * function interface.
  */
 int marcel_time_suspend(const struct timespec *abstime);
 

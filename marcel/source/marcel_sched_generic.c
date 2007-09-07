@@ -177,8 +177,7 @@ unsigned long marcel_createdthreads(void)
 	    num += ma_topo_vpdata(vp, task_number);
 	return num;
 }
-// Appele a chaque fois qu'une tache est creee (y compris par le biais
-// de end_hibernation).
+
 void marcel_one_more_task(marcel_t pid)
 {
 	unsigned oldnbtasks;
@@ -206,7 +205,6 @@ void marcel_one_more_task(marcel_t pid)
 	ma_local_bh_enable();
 }
 
-// Appele a chaque fois qu'une tache est terminee.
 void marcel_one_task_less(marcel_t pid)
 {
 	unsigned vpnum = pid->number/MA_MAX_VP_THREADS;

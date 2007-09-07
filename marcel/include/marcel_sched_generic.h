@@ -17,7 +17,7 @@
 #section common
 #include "tbx_compiler.h"
 /****************************************************************/
-/* Liste des sections
+/* List of sections
  */
 #section sched_marcel_functions [no-include-in-main,no-include-in-master-section]
 
@@ -28,20 +28,38 @@
 /* Include
  */
 #section common
-/* inclusion du fichier scheduler particulier */
+/* include the specific scheduler file */
 #define MARCEL_SCHED_INTERNAL_INCLUDE
 #depend "scheduler/marcel_sched.h[]"
 #undef MARCEL_SCHED_INTERNAL_INCLUDE
 
 /****************************************************************/
 #section functions
+/** \brief Suspend the scheduling of the calling thread for at least the
+ * specified time, unless a signal is delivered to the thread (i.e.
+ * thread state is set to TASK_INTERRUPTIBLE)
+ *
+ * - WHY is there a need for this function (which does not seem to be
+ *   used) besides the sleep functions?
+ * - WHAT is the semantical difference between this function and the
+ *   sleep functions?
+ */
 int marcel_time_suspend(const struct timespec *abstime);
+
 /* ==== `sleep' functions ==== */
 int pmarcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp);
+/** \fn int marcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp)
+ */
 DEC_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp));
+
 int pmarcel_usleep(unsigned long usec);
+/** \fn int marcel_usleep(unsigned long usec)
+ */
 DEC_MARCEL_POSIX(int,usleep,(unsigned long usec));
+
 int pmarcel_sleep(unsigned long sec);
+/** \fn int marcel_sleep(unsigned long sec)
+ */
 DEC_MARCEL_POSIX(int,sleep,(unsigned long sec));
 
 /** \brief Pause the calling thread for a given number of milliseconds */

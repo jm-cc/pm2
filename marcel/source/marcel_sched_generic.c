@@ -24,6 +24,8 @@
 #include <errno.h>
 #include <sched.h>
 
+/* marcel_nanosleep
+ */
 DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
         LOG_IN();
@@ -59,6 +61,8 @@ DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmt
 DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
 DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
 
+/* marcel_usleep
+ */
 DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
 	     LOG_IN();
@@ -92,6 +96,8 @@ DEF_POSIX(int,usleep,(unsigned long usec),(usec),
 DEF_C(int,usleep,(unsigned long usec),(usec));
 DEF___C(int,usleep,(unsigned long usec),(usec));
 
+/* marcel_sleep
+ */
 DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
 {
 	LOG_IN();

@@ -396,11 +396,14 @@ struct marcel_topo_vpdata {
 	/* For one_more_task, wait_all_tasks, etc. */
 	/* marcel_end() was called */
 	tbx_bool_t main_is_waiting;
-	/* Number of tasks created on this VP */
+	/* Number of tasks currently assigned to this VP */
 	unsigned nb_tasks;
 	/* List of all threads created on this VP */
 	struct list_head all_threads;
-	/* Number of last thread created on this VP */
+	/* Sequence number of the last thread created on this VP, which also
+	 * corresponds to the total number of threads created on this VP. 
+	 * Note: \e task_number is a cumulated value while nb_tasks is
+	 * an instantaneous value */
 	int task_number;
 	/* Lock for all_threads */
 	ma_spinlock_t threadlist_lock;

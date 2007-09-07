@@ -69,7 +69,7 @@
 #section variables
 /** \brief Total number of physical processors */
 extern unsigned marcel_nbprocessors;
-/** \brief Processors "stride", i.e. the number of phyical processors skipped
+/** \brief Processors "stride", i.e. the number of physical processors skipped
  * for each VP, stride = 2 can be a good idea for 2-SMT processors for instance
  */
 extern unsigned marcel_cpu_stride;

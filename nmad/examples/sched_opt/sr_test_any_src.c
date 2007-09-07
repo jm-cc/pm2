@@ -65,7 +65,7 @@ main(int	  argc,
 
 		{
 		  nm_so_request r1, r2, r3, r4;
-		  char buf[16], *big_buf;
+		  char buf[16], *big_buf, *sbig_buf;
 		  nm_gate_id_t gate;
 
 		  nm_so_sr_irecv(sr_if, gate_id, 0, NULL, 0, &r1);
@@ -80,15 +80,28 @@ main(int	  argc,
 
 		  nm_so_sr_rwait(sr_if, r3);
 		  nm_so_sr_recv_source(sr_if, r3, &gate);
-
-		  printf("Got msg 3 : [%s] from gate %ld\n", buf, gate);
+                  if (!strcmp(buf, "Hello!")) {
+                    printf("Got correct msg 3 from gate %d\n", gate);
+                  }
+                  else {
+                    printf("Got incorrect msg 3 : [%s] from gate %d\n", buf, gate);
+                  }
 
 		  big_buf = malloc(MAX);
 		  nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, big_buf, MAX, &r4);
 		  nm_so_sr_rwait(sr_if, r4);
 
-		  printf("Got msg 4 : [%s]\n", big_buf);
+		  sbig_buf = malloc(MAX);
+		  store_big_string(sbig_buf, MAX);
+
+                  if (!strcmp(big_buf, sbig_buf)) {
+                    printf("Got correct msg 4\n");
+                  }
+                  else {
+                    printf("Got incorrect msg 4 : [%s]\n", big_buf);
+                  }
 		  free(big_buf);
+		  free(sbig_buf);
 		}
 
         } else {

@@ -18,6 +18,9 @@
  * -------------------
  */
 
+#ifndef TBX_MALLOC_INLINE_H
+#define TBX_MALLOC_INLINE_H
+
 /** \addtogroup malloc_interface
  *
  * @{
@@ -284,3 +287,6 @@ tbx_malloc_clean(p_tbx_memory_t mem)
 }
 
 /* @} */
+
+#endif /* TBX_MALLOC_INLINE_H */
+

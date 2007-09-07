@@ -17,6 +17,10 @@
  * tbx_slist_inline.h
  * -----------------
  */
+
+#ifndef TBX_SLIST_INLINE_H
+#define TBX_SLIST_INLINE_H
+
 /** \addtogroup slist_interface
  *
  * @{
@@ -1874,3 +1878,5 @@ tbx_slist_nref_get(p_tbx_slist_nref_t nref)
 }
 
 /* @} */
+
+#endif /* TBX_SLIST_INLINE_H */

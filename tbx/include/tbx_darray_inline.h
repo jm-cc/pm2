@@ -17,6 +17,10 @@
  * tbx_darray_inline.h
  * :::::::::::::::::::::::////////////////////////////////////////////////////
  */
+
+#ifndef TBX_DARRAY_INLINE_H
+#define TBX_DARRAY_INLINE_H
+
 /** \addtogroup darray_interface
  *
  * @{
@@ -312,3 +316,5 @@ tbx_darray_next_idx(p_tbx_darray_t       darray,
 }
 
 /* @} */
+
+#endif /* TBX_DARRAY_INLINE_H */

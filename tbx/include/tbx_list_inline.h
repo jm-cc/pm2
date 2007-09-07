@@ -18,6 +18,9 @@
  * -----------------
  */
 
+#ifndef TBX_LIST_INLINE_H
+#define TBX_LIST_INLINE_H
+
 /** \addtogroup list_interface
  *
  * @{
@@ -401,3 +404,5 @@ tbx_reference_after_end_of_list(p_tbx_list_reference_t ref)
 }
 
 /* @} */
+
+#endif /* TBX_LIST_INLINE_H */

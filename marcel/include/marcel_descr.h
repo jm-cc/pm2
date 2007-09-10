@@ -29,14 +29,15 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 
 #section macros
 
-/* à préférer lorsque l'on veut accéder à un champ d'un marcel_t, pour utiliser la TLS à la place un jour */
+/* To be preferred when accessing a field of a marcel_t (inherited from glibc) */
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
 #define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
 
-/* à préférer lorsque l'on veut accéder à un champ du thread courant (tls un jour... */
+/* To be preferred when accessing a field of the current thread (TODO: optimize into TLS when it is available */
 #define SELF_GETMEM(field)	THREAD_GETMEM(MARCEL_SELF, field)
 #define SELF_SETMEM(field, value) THREAD_SETMEM(MARCEL_SELF, field, value)
 
+/* To be preferred for accessing the current thread's structure */
 #define MARCEL_SELF (marcel_self())
 
 
@@ -233,6 +234,7 @@ struct marcel_task {
 
 #section functions
 /* ==== get current thread or LWP id ==== */
+/* To be preferred for accessing the current thread's identifier */
 MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 
 #section marcel_macros

@@ -39,9 +39,7 @@ int main (int argc, char **argv) {
    
    /* Parametrage de la fenetre main_window */ 
    main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-   gtk_window_set_title (GTK_WINDOW (main_window),
-                         "Système de gestion des Bulles et des Threads "
-                         "- PM2 front-end");
+   gtk_window_set_title (GTK_WINDOW (main_window), "BubbleGum");
    gtk_window_set_default_size (GTK_WINDOW (main_window),
                                 WINDOW_WIDTH, WINDOW_HEIGHT);
    gtk_window_set_position (GTK_WINDOW (main_window), GTK_WIN_POS_CENTER);

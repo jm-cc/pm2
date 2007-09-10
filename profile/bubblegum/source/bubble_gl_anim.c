@@ -309,17 +309,11 @@ bgl_anim_do_drawcircle (bgl_action_drawcircle_t *p_action,
     }
 
     if (nfill || mode == DRAW_MODE_LINE) {
+	float theta;
         bgl_set_mode_gl_params (mode, nfill, pline);
 
-        /*! \todo Draw circle. How many steps ? */
-        glVertex3f (orig_x, orig_y + radius_y, 0.0f);
-        MYTRACE ("glVertex3f()");
-        glVertex3f (orig_x + radius_x, orig_y, 0.0f);
-        MYTRACE ("glVertex3f()");
-        glVertex3f (orig_x, orig_y - radius_y, 0.0f);
-        MYTRACE ("glVertex3f()");
-        glVertex3f (orig_x - radius_x, orig_y, 0.0f);
-        MYTRACE ("glVertex3f()");
+	for (theta = 0; theta < 2*M_PI; theta += M_PI/4)
+            glVertex3f (orig_x + radius_x * cos(theta), orig_y + radius_y * sin(theta), 0.0f);
     }
 
     glEnd();
@@ -350,7 +344,32 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
     float anchor_x = p_draw_state->cx;
     float anchor_y = p_draw_state->cy;
 
+#if 0
+    float knots [] = {0,1,2,3,4,5,6,7};
+    float controls [3][3] = { { orig_x, orig_y, 0 }, { control_x, control_y, 0 }, { anchor_x, anchor_y, 0 } };
+
+    GLUnurbs *nurbs;
+
+    nurbs = gluNewNurbsRenderer ();
+
+    if (nfill || mode == DRAW_MODE_LINE) {
+	p_draw_state->fill = nfill;
+	bgl_set_mode_gl_params (mode, nfill, pline);
+	
+	glEnable(GL_MAP1_VERTEX_3);
+	gluBeginCurve(nurbs);
+	gluNurbsCurve(nurbs,
+	    	    2+3-1,
+	    	    knots,
+	    	    2,
+	    	    &controls[0][0],
+	    	    3,
+	    	    GL_MAP1_VERTEX_3);
+	gluEndCurve(nurbs);
+	gluDeleteNurbsRenderer(nurbs);
+    }
     /* Detects begining and ending of forms. */
+#else
     if (mode == DRAW_MODE_LINE) {
         glBegin (GL_LINE_STRIP);
         MYTRACE ("glBegin(GL_LINE_STRIP)");
@@ -368,7 +387,7 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
     }
     
     if (nfill || mode == DRAW_MODE_LINE) {
-        bgl_set_mode_gl_params (mode, nfill, pline);
+	bgl_set_mode_gl_params (mode, nfill, pline);
         
         if (!fill || mode == DRAW_MODE_LINE) {
             glVertex3f (orig_x, orig_y, 0.0f);
@@ -386,6 +405,7 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
         glEnd();
         MYTRACE ("glEnd()");
     }
+#endif
 }
 
 /*! Draws a glyph. */
@@ -516,6 +536,14 @@ bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale,
         gtk_statusbar_pop(GTK_STATUSBAR(right_status), right_status_context_id);
         gtk_statusbar_push(GTK_STATUSBAR(right_status), right_status_context_id, frame->status);
     }
+    /* Hack: glLineWidth & co must be called before glBegin
+     * TODO: Fix that in functions */
+    glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glHint (GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+    glShadeModel (GL_SMOOTH);
+    glEnable (GL_LINE_SMOOTH);
+    glEnable (GL_POLYGON_SMOOTH);
+    glLineWidth(4);
     list_for_each_entry (display_item, &frame->display_items, disp_list) {
         bgl_anim_DisplayItem (display_item, scale,
                               goff_x, goff_y, rev_x, rev_y);

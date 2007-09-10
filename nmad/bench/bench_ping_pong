@@ -17,12 +17,12 @@
 
 # pm2-bench settings
 flavor="bench_nmad"
+flavor_options=""
 appdir="${PM2_ROOT}/nmad/examples/sched_opt"
 prog="sr_bench"
-#loop="mx"
 loop=${BENCHNET:-tcp}
 
-# bench settings used by 'mad3_default' include
+# bench settings used by 'nmad_default' include
 bench_setting_file="${PM2_HOME:-${HOME}}/.pm2/bench/nmad"
 leo_cfg_file="/tmp/bench_nmad_${prog}_${USER}.cfg"
 leo_args="--x --p --l"

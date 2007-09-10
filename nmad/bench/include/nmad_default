@@ -68,7 +68,7 @@ initialize_bench()
          --ntbx=\"opt\" \
          --tbx=\"opt\" \
          --common=\"opt fortran_target_none\" \
-         --all=\"build_static\"
+         --all=\"build_static\" $flavor_options
 
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"
         ${PM2_ROOT}/bin/pm2-conf -f $flavor `echo $hosts | tr ',' ' '`

@@ -45,11 +45,11 @@ run_bench()
 finalize_bench()
 {
     file_result="/tmp/pm2_bench_${prog}_${USER}_result"
-    if [ -d $HOME/results/marcel/raw ] ; then
+    if [ "$BENCHDIR" != "" ] && [ -d $BENCHDIR ] ; then
         date=`date "+%Y.%m.%d"`
         revision=`svn info $PM2_ROOT |grep Revision:|awk '{print $2}'`
-        mkdir -p $HOME/results/marcel/raw/${hosts}/${hosts}_${date}_rev${revision}_${marcel}/
-        cp $file_result $HOME/results/marcel/raw/${hosts}/${hosts}_${date}_rev${revision}_${marcel}/
+        mkdir -p $BENCHDIR/raw/${hosts}/${hosts}_${date}_rev${revision}_${marcel}/
+        cp $file_result $BENCHDIR/raw/${hosts}/${hosts}_${date}_rev${revision}_${marcel}/
     fi
 }
 

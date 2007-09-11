@@ -205,7 +205,15 @@ mad3()
         env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     fi
 
-    ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    LEONIE_ENV=""
+    if [ -f "$OAR_NODEFILE" ] ; then
+	oarsh=`which oarsh 2>/dev/null`
+	if [ -n "$oarsh" ] ; then
+	    LEONIE_ENV="LEO_RSH=oarsh"
+	fi
+    fi
+
+    export $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }

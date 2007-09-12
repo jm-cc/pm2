@@ -50,9 +50,6 @@ unsigned long cpu_time(void) /* retourne des microsecondes */
 }
 
 
-int    Argc ;
-char   **Argv ;
-
 int    InitSeed = 20 ;
 
 int    minimum ;
@@ -85,7 +82,6 @@ coortab_t towns ;
 int i, j, k, x =0 ;
 int dx, dy, tmp ;
 
- srand (atoi(Argv[3])) ;
 
  for (i=0; i<n; i++)
   {
@@ -120,14 +116,6 @@ int dx, dy, tmp ;
   }
 }
  
-
-void InitDistance (DistTab_t *distance)
-{
- distance->NrTowns = atoi (Argv[2]) ;
- genmap (distance->NrTowns, distance->dst) ; 
-
-}
-
 void PrintDistTab ()
 {
  int i, j ;
@@ -168,6 +156,7 @@ int marcel_main (int argc, char **argv)
  marcel_init (&argc, argv) ;
 #endif
 
+ srand (atoi(argv[3])) ;
  if (argc != 4)
    {
     marcel_fprintf (stderr, "Usage: %s <nb_threads > <ncities> <seed> \n",argv[0]) ;
@@ -175,9 +164,6 @@ int marcel_main (int argc, char **argv)
    }
 
  init_cpu_time();
-
- Argc = argc ;
- Argv = argv ;
 
 #ifdef MT
 #ifdef MARCEL
@@ -193,7 +179,8 @@ int marcel_main (int argc, char **argv)
  marcel_printf ("nb_threads = %3d ncities = %3d\n", nb_workers, atoi(argv[2])) ;
 
  init_queue (&q) ;
- InitDistance (&distance) ;
+ distance.NrTowns = atoi (argv[2]) ;
+ genmap (distance.NrTowns, distance.dst) ; 
 
  GenerateJobs () ;
 
@@ -201,7 +188,7 @@ int marcel_main (int argc, char **argv)
 
 #ifdef MT
 
-#ifdef MARCEL
+#  ifdef MARCEL
 
  marcel_attr_init (&att) ;
 
@@ -219,7 +206,7 @@ int marcel_main (int argc, char **argv)
    marcel_join (tids[i], &status) ;
   }
 
-#else
+#  else
  pthread_attr_init (&att) ;
  /* pthread_attr_setstacksize (&att, 20000) ; */
  pthread_attr_setscope (&att, PTHREAD_SCOPE_SYSTEM) ;
@@ -235,7 +222,7 @@ int marcel_main (int argc, char **argv)
   {
    pthread_join (tids[i], &status) ;
   }
-#endif
+#  endif
 #else
 
     worker ((void *)1) ;

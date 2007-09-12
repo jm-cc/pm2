@@ -1,4 +1,4 @@
-#define MAXE	30
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define MAXE	30
 
 #ifdef	MARCEL
 # ifdef	MT
@@ -23,11 +24,11 @@
 #endif	/* MARCEL */
 
 #ifdef MT
-#ifdef MARCEL
-#include "marcel.h"
-#else
-#include <pthread.h>
-#endif
+#  ifdef MARCEL
+#    include "marcel.h"
+#  else
+#    include <pthread.h>
+#  endif
 #endif
 
 typedef struct {
@@ -67,11 +68,11 @@ typedef struct {
 		Maillon *last ;
 		int end;
 #ifdef MT
-#ifdef MARCEL
+#  ifdef MARCEL
                 marcel_mutex_t mutex ;
-#else
+#  else
 		pthread_mutex_t mutex ;
-#endif
+#  endif
 #endif
                } TSPqueue ;
 		

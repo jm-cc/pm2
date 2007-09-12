@@ -29,14 +29,14 @@ extern TSPqueue     q ;
 extern DistTab_t    distance ;
  
 #ifdef MT
-#ifdef MARCEL
+#  ifdef MARCEL
 
-#include "marcel.h"
+#    include "marcel.h"
 
 extern marcel_mutex_t mutex ;
-#else
+#  else
 extern pthread_mutex_t mutex ;
-#endif
+#  endif
 #endif
 
 #define MAXHOPS		3

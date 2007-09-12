@@ -250,6 +250,9 @@ marcel_create_internal(marcel_t * __restrict pid,
 #endif
 	}
 
+	/* TODO: we could even go further by having the programmer promise that
+	 * the thread won't block, in which case we don't even need to use a
+	 * stack, idle can run it! */
 	if (attr->ghost) {
 		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
 		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);

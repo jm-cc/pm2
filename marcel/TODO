@@ -1,3 +1,5 @@
+TODOs dans le code :)
+
 Pouvoir choisir l'ordonnanceur à bulle par une option --marcel-.
 
 topologie: pouvoir demander à utiliser seulement un processeur logique par core à l'aide d'une option --marcel-.

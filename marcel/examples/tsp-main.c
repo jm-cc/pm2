@@ -30,26 +30,6 @@
 # define MT
 #endif	/* MARCEL */
 
-static struct timeval _t1, _t2;
-static unsigned long _temps_residuel = 0;
-
-#define top1() gettimeofday(&_t1, NULL)
-#define top2() gettimeofday(&_t2, NULL)
-
-void init_cpu_time(void)
-{
-   top1(); top2();
-   _temps_residuel = 1000000L * _t2.tv_sec + _t2.tv_usec - 
-                     (1000000L * _t1.tv_sec + _t1.tv_usec );
-}
-
-unsigned long cpu_time(void) /* retourne des microsecondes */
-{
-   return 1000000L * _t2.tv_sec + _t2.tv_usec - 
-           (1000000L * _t1.tv_sec + _t1.tv_usec ) - _temps_residuel;
-}
-
-
 int    InitSeed = 20 ;
 
 int    minimum ;
@@ -69,16 +49,11 @@ DistTab_t    distance ;
 
 void genmap (int n, DTab_t pairs) 
 {
-#define MAXX	100
-#define MAXY	100
-typedef struct
-		{
-		 int x, y ;
-		} coor_t ;
-
-typedef coor_t coortab_t [MAXE] ;
 int tempdist [MAXE] ;
-coortab_t towns ;
+struct {
+	int x;
+	int y;
+} towns[MAXE];
 int i, j, k, x =0 ;
 int dx, dy, tmp ;
 
@@ -138,6 +113,7 @@ void PrintDistTab ()
 
 int marcel_main (int argc, char **argv)
 {
+  tbx_tick_t t1, t2;
 #ifdef MT
   long i ;
   void *status ;
@@ -156,14 +132,13 @@ int marcel_main (int argc, char **argv)
  marcel_init (&argc, argv) ;
 #endif
 
- srand (atoi(argv[3])) ;
  if (argc != 4)
    {
     marcel_fprintf (stderr, "Usage: %s <nb_threads > <ncities> <seed> \n",argv[0]) ;
     exit (1) ;
    }
 
- init_cpu_time();
+ srand (atoi(argv[3])) ;
 
 #ifdef MT
 #ifdef MARCEL
@@ -184,8 +159,7 @@ int marcel_main (int argc, char **argv)
 
  GenerateJobs () ;
 
- top1 () ;
-
+ TBX_GET_TICK(t1);
 #ifdef MT
 
 #  ifdef MARCEL
@@ -228,8 +202,8 @@ int marcel_main (int argc, char **argv)
     worker ((void *)1) ;
 
 #endif
- top2 () ;
- temps = cpu_time();
+ TBX_GET_TICK(t2);
+ temps = TBX_TIMING_DELAY(t1, t2);
  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
  marcel_end();
  return 0 ;

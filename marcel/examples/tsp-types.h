@@ -15,6 +15,8 @@
  */
 
 #define MAXE	30
+#define MAXX	100
+#define MAXY	100
 
 #ifdef	MARCEL
 # ifdef	MT

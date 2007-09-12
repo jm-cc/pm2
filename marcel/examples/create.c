@@ -22,8 +22,6 @@ static tbx_bool_t finished = tbx_false;
 
 any_t looper(any_t arg)
 {
-  marcel_detach(marcel_self());
-
   marcel_fprintf(stderr, "Looper lauched on LWP %d\n",
 	  marcel_current_vp());
 

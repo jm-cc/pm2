@@ -21,18 +21,7 @@
 void init_queue (struct s_tsp_queue *q) {
   q->first = 0;
   q->last = 0;
-  q->end = 0;
   MUTEX_INIT(&q->mutex, NULL);
-}
-
-int empty_queue (struct s_tsp_queue q) {
-  int b;
-
-  MUTEX_LOCK(&q.mutex);
-  b = ((q.first == 0) && (q.end == 1));
-  MUTEX_UNLOCK(&q.mutex);
-
-  return b;
 }
 
 void add_job (struct s_tsp_queue *q, struct s_job j) {
@@ -79,10 +68,4 @@ int get_job (struct s_tsp_queue *q, struct s_job *j) {
   free (ptr);
   return 1;
 
-}
-
-void no_more_jobs (struct s_tsp_queue *q) {
-  MUTEX_LOCK(&q->mutex);
-  q->end = 1;
-  MUTEX_UNLOCK(&q->mutex);
 }

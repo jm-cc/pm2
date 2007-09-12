@@ -76,8 +76,6 @@ struct s_maillon {
 struct s_tsp_queue {
 	struct s_maillon *first;
 	struct s_maillon *last;
-	int end;
-	
 	MUTEX_T(mutex);
 };
 		

@@ -116,7 +116,6 @@ void GenerateJobs ()
 
  path [0] = 0 ;
  distributor (1, 0, path, &q) ; 
- no_more_jobs (&q) ;
 }
 
 void *worker (int num_worker)

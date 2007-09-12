@@ -14,6 +14,36 @@
  * General Public License for more details.
  */
 
+#ifdef MARCEL
+#  ifdef MT
+#    undef MT
+#  endif /* MT */
+#  define MT
+#endif /* MARCEL */
+
+#ifdef MT
+#  ifdef MARCEL
+#    include "marcel.h"
+#  endif
+#endif
+
+
+#ifdef MT
+#  ifdef MARCEL
+#    define MUTEX_INIT(m, a) marcel_mutex_init((m), (a))
+#    define MUTEX_LOCK(m)    marcel_mutex_lock((m))
+#    define MUTEX_UNLOCK(m)  marcel_mutex_unlock((m))
+#  else
+#    define MUTEX_INIT(m, a) pthread_mutex_init((m), (a))
+#    define MUTEX_LOCK(m)    pthread_mutex_lock((m))
+#    define MUTEX_UNLOCK(m)  pthread_mutex_unlock((m))
+#  endif
+#else
+#  define MUTEX_INIT(m, a) 
+#  define MUTEX_LOCK(m)
+#  define MUTEX_UNLOCK(m)
+#endif
+
 extern void init_queue (TSPqueue *q) ;
 
 extern int empty_queue (TSPqueue q) ;

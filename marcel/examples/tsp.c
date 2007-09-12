@@ -26,18 +26,8 @@
 
 extern int          minimum ;
 extern TSPqueue     q ;
-extern DistTab_t    distance ;
- 
-#ifdef MT
-#  ifdef MARCEL
-
-#    include "marcel.h"
-
-extern marcel_mutex_t mutex ;
-#  else
-extern pthread_mutex_t mutex ;
-#  endif
-#endif
+extern struct s_distance_table distance;
+extern MUTEX_T(mutex);
 
 #define MAXHOPS		3
 
@@ -63,13 +53,7 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
 
  if (hops == distance.NrTowns)
   {
-#ifdef MT
-#ifdef MARCEL
-   marcel_mutex_lock (&mutex) ;
-#else
-   pthread_mutex_lock (&mutex) ;
-#endif
-#endif
+    MUTEX_LOCK(&mutex);
     if (len < minimum)
       {
        minimum = len ;
@@ -78,13 +62,7 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
          marcel_printf ("%2d ", path[i]) ;
        marcel_printf ("\n") ;
       }
-#ifdef MT
-#ifdef MARCEL
-   marcel_mutex_unlock (&mutex) ;
-#else
-   pthread_mutex_unlock (&mutex) ;
-#endif
-#endif
+    MUTEX_UNLOCK(&mutex);
   }
  else
   {

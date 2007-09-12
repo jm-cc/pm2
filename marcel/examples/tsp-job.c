@@ -1,4 +1,4 @@
-#include "tsp-types.h"
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,33 +14,16 @@
  * General Public License for more details.
  */
 
+#include "tsp-types.h"
+#include "tsp-job.h"
 #include <stdlib.h>
-
-#ifdef	MARCEL
-# ifdef	MT
-#  undef MT
-# endif	/* MT */
-# define MT
-#endif	/* MARCEL */
-
-#ifdef MT
-#ifdef MARCEL
-#include "marcel.h"
-#endif
-#endif
 
 void init_queue (TSPqueue *q)
 {
  q->first = 0 ;
  q->last = 0 ;
  q->end = 0 ;
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_init (&q->mutex, NULL) ;
-#else
- pthread_mutex_init (&q->mutex, NULL) ;
-#endif
-#endif
+ MUTEX_INIT(&q->mutex, NULL);
 }
 
 
@@ -48,25 +31,11 @@ int empty_queue (TSPqueue q)
 {
  int b  ;
 
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_lock (&q.mutex) ;
-#else
- pthread_mutex_lock (&q.mutex) ;
-#endif
-#endif
-
+ MUTEX_LOCK(&q.mutex);
    b = ((q.first == 0) && (q.end == 1)) ;
+ MUTEX_UNLOCK(&q.mutex);
 
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_unlock (&q.mutex) ;
-#else
- pthread_mutex_unlock (&q.mutex) ;
-#endif
-#endif
  return b ;
-
 }
 
 
@@ -81,14 +50,7 @@ void add_job (TSPqueue *q, Job_t j)
  for (i=0;i<MAXE;i++)
    ptr->tsp_job.path [i] = j.path [i] ;
 
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_lock (&q->mutex) ;
-#else
- pthread_mutex_lock (&q->mutex) ;
-#endif
-#endif
-
+ MUTEX_LOCK(&q->mutex);
    if (q->first   == 0)
       q->first = q->last = ptr ;
     else
@@ -96,14 +58,7 @@ void add_job (TSPqueue *q, Job_t j)
        q->last->next = ptr ;
        q->last = ptr ;
       }
-
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_unlock (&q->mutex) ;
-#else
- pthread_mutex_unlock (&q->mutex) ;
-#endif
-#endif
+ MUTEX_UNLOCK(&q->mutex);
 }
 
 
@@ -112,23 +67,10 @@ int get_job (TSPqueue *q, Job_t *j)
  Maillon *ptr ;
  unsigned int i ;
 
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_lock (&q->mutex) ;
-#else
- pthread_mutex_lock (&q->mutex) ;
-#endif
-#endif
-
+ MUTEX_LOCK(&q->mutex);
      if (q->first == 0)
        {
-#ifdef MT
-#ifdef MARCEL
-        marcel_mutex_unlock (&q->mutex) ;
-#else
-        pthread_mutex_unlock (&q->mutex) ;
-#endif
-#endif
+ MUTEX_UNLOCK(&q->mutex);
         return 0 ;
        }
 
@@ -137,14 +79,7 @@ int get_job (TSPqueue *q, Job_t *j)
      q->first = ptr->next ;
      if (q->first == 0)
      q->last = 0 ;
-
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_unlock (&q->mutex) ;
-#else
- pthread_mutex_unlock (&q->mutex) ;
-#endif
-#endif
+ MUTEX_UNLOCK(&q->mutex);
 
  j->len = ptr->tsp_job.len ;
  for (i=0;i<MAXE;i++)
@@ -158,22 +93,7 @@ int get_job (TSPqueue *q, Job_t *j)
 
 void no_more_jobs (TSPqueue *q)
 {
-
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_lock (&q->mutex) ;
-#else
- pthread_mutex_lock (&q->mutex) ;
-#endif
-#endif
-
+ MUTEX_LOCK(&q->mutex);
     q->end = 1 ;
-
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_unlock (&q->mutex) ;
-#else
- pthread_mutex_unlock (&q->mutex) ;
-#endif
-#endif
+ MUTEX_UNLOCK(&q->mutex);
 }

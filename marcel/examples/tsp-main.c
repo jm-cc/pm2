@@ -35,20 +35,21 @@ int    InitSeed = 20 ;
 int    minimum ;
 
 #ifdef MT
-#ifdef MARCEL
+#  ifdef MARCEL
 marcel_mutex_t mutex ;
-#else
+#  else
 pthread_mutex_t mutex ;
-#endif
+#  endif
 #endif
 
 int          nb_workers ;
 TSPqueue     q ;
-DistTab_t    distance ;
+struct s_distance_table distance;
 
 
-void genmap (int n, DTab_t pairs) 
+void genmap (struct s_distance_table *map)
 {
+const int n = map->NrTowns;
 int tempdist [MAXE] ;
 struct {
 	int x;
@@ -85,8 +86,8 @@ int dx, dy, tmp ;
          }
       }
      tempdist [x] = INT_MAX ;
-     pairs [i][j].ToCity = x ;
-     pairs [i][j].dist = tmp ;
+     map->dst[i][j].ToCity = x ;
+     map->dst[i][j].dist = tmp ;
     }
   }
 }
@@ -155,7 +156,7 @@ int marcel_main (int argc, char **argv)
 
  init_queue (&q) ;
  distance.NrTowns = atoi (argv[2]) ;
- genmap (distance.NrTowns, distance.dst) ; 
+ genmap (&distance) ; 
 
  GenerateJobs () ;
 

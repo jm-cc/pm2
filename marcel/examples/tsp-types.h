@@ -33,20 +33,23 @@
 #  endif
 #endif
 
-typedef struct {
-		int ToCity ;
-		int dist ;
-	       } pair_t ;
+#ifdef MT
+#  ifdef MARCEL
+#    define MUTEX_T(m) marcel_mutex_t (m)
+#  else
+#    define MUTEX_T(m) pthread_mutex_t (m)
+#  endif
+#else
+#  define MUTEX_T(m)
+#endif
 
-typedef pair_t DistArray_t [MAXE] ;
-
-typedef DistArray_t DTab_t [MAXE] ;
-
-
-typedef struct {
-		int NrTowns ;
-		DTab_t dst ;
-	      } DistTab_t ;
+struct s_distance_table {
+	int NrTowns;
+	struct {
+		int ToCity;
+		int dist;
+	} dst[MAXE][MAXE];
+};
 
 /* Job types */
 
@@ -69,13 +72,8 @@ typedef struct {
                 Maillon *first ;
 		Maillon *last ;
 		int end;
-#ifdef MT
-#  ifdef MARCEL
-                marcel_mutex_t mutex ;
-#  else
-		pthread_mutex_t mutex ;
-#  endif
-#endif
+
+		MUTEX_T(mutex);
                } TSPqueue ;
 		
 

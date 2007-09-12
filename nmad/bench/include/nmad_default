@@ -63,12 +63,9 @@ initialize_bench()
         eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
          --ext=\"\" \
          --modules=\"init nmad ntbx tbx\" \
-         --init=\"opt\" \
-         --nmad=\"opt sched_opt strat_default mad3_emu mpi_emu ${dev}\" \
-         --ntbx=\"opt\" \
-         --tbx=\"opt\" \
-         --common=\"opt fortran_target_none\" \
-         --all=\"build_static\" $flavor_options
+         --nmad=\"sched_opt strat_default mad3_emu mpi_emu ${dev}\" \
+         --common=\"fortran_target_none\" \
+         --all=\"build_static opt\" $flavor_options
 
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"
         ${PM2_ROOT}/bin/pm2-conf -f $flavor `echo $hosts | tr ',' ' '`

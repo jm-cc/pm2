@@ -98,10 +98,8 @@ any_t sum(any_t arg)
 tbx_tick_t t1, t2;
 
 void compute(job j) {
-  int nbvps;
   unsigned long temps;
 
-  nbvps = marcel_nbvps();
   TBX_GET_TICK(t1);
   marcel_create(NULL, &attr, sum, (any_t)&j);
   marcel_sem_P(&j.sem);
@@ -151,13 +149,13 @@ int main(int argc, char **argv)
 #endif
   } else {
     // Execution interactive
-    MARCEL_LOOP(bcle)
+    for (;;) {	  
       marcel_printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup <= 0)
-	MARCEL_EXIT_LOOP(bcle);
+	break;
       compute(j);
-    MARCEL_END_LOOP(bcle)
+    }
   }
 
   marcel_fflush(stdout);

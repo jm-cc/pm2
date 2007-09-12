@@ -44,12 +44,12 @@
 #  define MUTEX_UNLOCK(m)
 #endif
 
-extern void init_queue (TSPqueue *q) ;
+extern void init_queue (struct s_tsp_queue *q);
 
-extern int empty_queue (TSPqueue q) ;
+extern int empty_queue (struct s_tsp_queue q);
 
-extern void add_job (TSPqueue *q, Job_t j)  ;
+extern void add_job (struct s_tsp_queue *q, struct s_job j);
 
-extern int get_job (TSPqueue *q, Job_t *j) ;
+extern int get_job (struct s_tsp_queue *q, struct s_job *j);
 
-extern void no_more_jobs (TSPqueue *q) ;
+extern void no_more_jobs (struct s_tsp_queue *q);

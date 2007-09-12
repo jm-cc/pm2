@@ -16,9 +16,8 @@
 
 extern int tsp (int hops, int len, Path_t path, int *cuts, int num_worker) ;
 
-extern void distributor (int hops, int len, Path_t path, TSPqueue *q) ;
+extern void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q) ;
 
 extern void GenerateJobs () ;
-
 
 extern void *worker (void *) ;

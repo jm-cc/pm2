@@ -18,14 +18,14 @@
 #include "tsp-job.h"
 #include <stdlib.h>
 
-void init_queue (TSPqueue *q) {
+void init_queue (struct s_tsp_queue *q) {
   q->first = 0;
   q->last = 0;
   q->end = 0;
   MUTEX_INIT(&q->mutex, NULL);
 }
 
-int empty_queue (TSPqueue q) {
+int empty_queue (struct s_tsp_queue q) {
   int b;
 
   MUTEX_LOCK(&q.mutex);
@@ -35,11 +35,11 @@ int empty_queue (TSPqueue q) {
   return b;
 }
 
-void add_job (TSPqueue *q, Job_t j) {
-  Maillon *ptr;
+void add_job (struct s_tsp_queue *q, struct s_job j) {
+  struct s_maillon *ptr;
   unsigned int i;
 
-  ptr = (Maillon *) malloc (sizeof (Maillon));
+  ptr = malloc (sizeof (struct s_maillon));
   ptr->next = 0;
   ptr->tsp_job.len=j.len;
   for (i=0; i<MAXE; i++)
@@ -55,8 +55,8 @@ void add_job (TSPqueue *q, Job_t j) {
   MUTEX_UNLOCK(&q->mutex);
 }
 
-int get_job (TSPqueue *q, Job_t *j) {
-  Maillon *ptr;
+int get_job (struct s_tsp_queue *q, struct s_job *j) {
+  struct s_maillon *ptr;
   unsigned int i;
 
   MUTEX_LOCK(&q->mutex);
@@ -81,7 +81,7 @@ int get_job (TSPqueue *q, Job_t *j) {
 
 }
 
-void no_more_jobs (TSPqueue *q) {
+void no_more_jobs (struct s_tsp_queue *q) {
   MUTEX_LOCK(&q->mutex);
   q->end = 1;
   MUTEX_UNLOCK(&q->mutex);

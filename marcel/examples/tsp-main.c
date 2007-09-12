@@ -43,13 +43,13 @@ pthread_mutex_t mutex ;
 #endif
 
 int          nb_workers ;
-TSPqueue     q ;
+struct s_tsp_queue     q ;
 struct s_distance_table distance;
 
 
 void genmap (struct s_distance_table *map)
 {
-const int n = map->NrTowns;
+const int n = map->n;
 int tempdist [MAXE] ;
 struct {
 	int x;
@@ -86,8 +86,8 @@ int dx, dy, tmp ;
          }
       }
      tempdist [x] = INT_MAX ;
-     map->dst[i][j].ToCity = x ;
-     map->dst[i][j].dist = tmp ;
+     map->t[i][j].to = x ;
+     map->t[i][j].dist = tmp ;
     }
   }
 }
@@ -96,14 +96,14 @@ void PrintDistTab ()
 {
  int i, j ;
 
- marcel_printf ("distance.NrTowns = %d\n", distance.NrTowns) ;
+ marcel_printf ("distance.n = %d\n", distance.n) ;
 
- for (i=0; i<distance.NrTowns; i++)
+ for (i=0; i<distance.n; i++)
   {
-   marcel_printf ("distance.dst [%1d]",i) ;
-   for (j=0; j<distance.NrTowns; j++)
+   marcel_printf ("distance.t [%1d]",i) ;
+   for (j=0; j<distance.n; j++)
     {
-     marcel_printf (" [d:%2d, to:%2d] ", distance.dst[i][j].dist, distance.dst[i][j].ToCity) ;
+     marcel_printf (" [d:%2d, to:%2d] ", distance.t[i][j].dist, distance.t[i][j].to) ;
     }
    marcel_printf (";\n\n") ;
   }
@@ -155,7 +155,7 @@ int marcel_main (int argc, char **argv)
  marcel_printf ("nb_threads = %3d ncities = %3d\n", nb_workers, atoi(argv[2])) ;
 
  init_queue (&q) ;
- distance.NrTowns = atoi (argv[2]) ;
+ distance.n = atoi (argv[2]) ;
  genmap (&distance) ; 
 
  GenerateJobs () ;

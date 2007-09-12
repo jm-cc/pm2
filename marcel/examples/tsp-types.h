@@ -43,38 +43,43 @@
 #  define MUTEX_T(m)
 #endif
 
+/** \brief Table of distances
+ */
 struct s_distance_table {
-	int NrTowns;
+	int n;			/**< \brief Number of towns			*/
 	struct {
-		int ToCity;
-		int dist;
-	} dst[MAXE][MAXE];
+		int to;		/**< \brief Destination city			*/
+		int dist;	/**< \brief Distance to destination city	*/
+	} t[MAXE][MAXE];
 };
 
-/* Job types */
-
+/** \brief One path
+ */
 typedef int Path_t [MAXE] ;
 
-typedef struct {
-		int len ;
-		Path_t path ;
-	       } Job_t ;
+/** \brief One job
+ */
+struct s_job {
+	int len;
+	Path_t path;
+};
 
-/* TSQ Queue */
+/** \brief Item of the job queue
+ */
+struct s_maillon {
+	struct s_job tsp_job;
+	struct s_maillon *next;
+};
 
-typedef struct Maillon 
-             {
-	      Job_t tsp_job ;
-              struct Maillon *next ;
-	     } Maillon ;
-
-typedef struct {
-                Maillon *first ;
-		Maillon *last ;
-		int end;
-
-		MUTEX_T(mutex);
-               } TSPqueue ;
+/** \brief Queue of jobs
+ */ 
+struct s_tsp_queue {
+	struct s_maillon *first;
+	struct s_maillon *last;
+	int end;
+	
+	MUTEX_T(mutex);
+};
 		
 
 

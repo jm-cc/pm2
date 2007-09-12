@@ -25,7 +25,7 @@
 #endif	/* MARCEL */
 
 extern int          minimum ;
-extern TSPqueue     q ;
+extern struct s_tsp_queue     q ;
 extern struct s_distance_table distance;
 extern MUTEX_T(mutex);
 
@@ -51,14 +51,14 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
    return;
   }
 
- if (hops == distance.NrTowns)
+ if (hops == distance.n)
   {
     MUTEX_LOCK(&mutex);
     if (len < minimum)
       {
        minimum = len ;
        marcel_printf ("worker[%d] finds path len = %3d :", num_worker, len) ;
-       for (i=0; i < distance.NrTowns; i++)
+       for (i=0; i < distance.n; i++)
          marcel_printf ("%2d ", path[i]) ;
        marcel_printf ("\n") ;
       }
@@ -68,22 +68,22 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
   {
    me = path [hops-1] ;
 
-   for (i=0; i < distance.NrTowns; i++)
+   for (i=0; i < distance.n; i++)
     {
-     city = distance.dst [me][i].ToCity ;
+     city = distance.t [me][i].to ;
      if (!present (city, hops, path))
       {
        path [hops] = city ;
-       dist = distance.dst[me][i].dist ;
+       dist = distance.t[me][i].dist ;
        tsp (hops+1, len+dist, path, cuts, num_worker) ;
       }
     }
   }
 }
 
-void distributor (int hops, int len, Path_t path, TSPqueue *q)
+void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q)
 {
- Job_t j ;
+ struct s_job j ;
  int i ;
  int me, city, dist ;
 
@@ -97,13 +97,13 @@ void distributor (int hops, int len, Path_t path, TSPqueue *q)
  else
   {
    me = path [hops-1] ;
-   for (i=0;i<distance.NrTowns;i++)
+   for (i=0;i<distance.n;i++)
     {
-     city = distance.dst[me][i].ToCity ;
+     city = distance.t[me][i].to ;
      if (!present(city,hops, path))
       {
        path [hops] = city ;
-       dist = distance.dst[me][i].dist ;
+       dist = distance.t[me][i].dist ;
        distributor (hops+1, len+dist, path, q) ;       
       }
     }
@@ -122,7 +122,7 @@ void GenerateJobs ()
 void *worker (int num_worker)
 {
  int jobcount = 0 ;
- Job_t job ;
+ struct s_job job ;
  int cuts = 0 ;
 
  marcel_printf ("Worker [%2d] starts \n", num_worker) ;

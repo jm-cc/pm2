@@ -55,20 +55,22 @@
 #  define MARCEL_EXCEPTION_RRAISE    MARCEL_EXCEPTION_RAISE(NULL)
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#section types
+#section common
 #ifdef MARCEL_EXCEPTIONS_ENABLED
+
+#section types
 typedef char *marcel_exception_t;
 typedef struct marcel_exception_block marcel_exception_block_t;
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 #section structures
 #depend "asm/marcel_ctx.h[structures]"
 
-#ifdef MARCEL_EXCEPTIONS_ENABLED
 struct marcel_exception_block {
 	marcel_ctx_t ctx;
 	struct marcel_exception_block *old_blk;
 };
+
+#section common
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 #section variables

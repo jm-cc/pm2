@@ -27,54 +27,42 @@
 #depend "[marcel_variables]"
 #section marcel_variables [no-depend-previous]
 
+#section common
+#ifdef MARCEL_KEYS_ENABLED
+
 #section types
 /* Keys for thread-specific data */
-#ifdef MARCEL_KEYS_ENABLED
 typedef unsigned int marcel_key_t,  pmarcel_key_t;
 typedef void (*marcel_key_destructor_t)(any_t);
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section marcel_variables
-#ifdef MARCEL_KEYS_ENABLED
 extern unsigned marcel_nb_keys;
 extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section functions
-#ifdef MARCEL_KEYS_ENABLED
 DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
 				   marcel_key_destructor_t any_t) __THROW);
 DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key) __THROW);
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section marcel_variables
-#ifdef MARCEL_KEYS_ENABLED
 extern volatile unsigned _nb_keys;
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section functions
-#ifdef MARCEL_KEYS_ENABLED
 DEC_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 				    __const void* value));
 DEC_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key));
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section marcel_variables
-#ifdef MARCEL_KEYS_ENABLED
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section marcel_functions
-#ifdef MARCEL_KEYS_ENABLED
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
-#endif /* MARCEL_KEYS_ENABLED */
 
 #section marcel_inline
 #depend "marcel_descr.h[types]"
 #depend "marcel_descr.h[structures]"
 #depend "marcel_descr.h[marcel_inline]"
-#ifdef MARCEL_KEYS_ENABLED
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
 	if ((key < 0) || (key >= MAX_KEY_SPECIFIC)
@@ -82,6 +70,8 @@ static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_ke
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	return &pid->key[key];
 }
+
+#section common
 #endif /* MARCEL_KEYS_ENABLED */
 
 #section functions

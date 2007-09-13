@@ -413,6 +413,9 @@ void marcel_suspend(marcel_t pid);
  */
 void marcel_resume(marcel_t pid);
 
+#section common
+#ifdef MARCEL_MIGRATION_ENABLED
+
 #section types
 /* =========== migration =========== */
 #depend "marcel_descr.h[]"
@@ -453,6 +456,9 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, vo
 /** Set receive-side migration handler and settings.
  */
 void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg);
+
+#section common
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 #section functions
 /** Give a name to the thread, for debugging purpose.

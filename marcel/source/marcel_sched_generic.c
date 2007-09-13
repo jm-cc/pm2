@@ -230,11 +230,13 @@ static __tbx_inline__ int want_to_see(marcel_t t, int which)
 	} else if (which & DETACHED_ONLY)
 		return 0;
 
+#ifdef MARCEL_MIGRATION_ENABLED
 	if (t->not_migratable) {
 		if (which & MIGRATABLE_ONLY)
 			return 0;
 	} else if (which & NOT_MIGRATABLE_ONLY)
 		return 0;
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 	if (MA_TASK_IS_BLOCKED(t)) {
 		if (which & NOT_BLOCKED_ONLY)

@@ -105,9 +105,11 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	//t->softirq_pending_in_hardirq = 0;
 
+#ifdef MARCEL_MIGRATION_ENABLED
 	//t->ctx_migr
 	t->not_migratable = attr->not_migratable;
 	//t->remaining_sleep_time
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 	//t->real_f_to_call
 	//t->sem_marcel_run
@@ -927,6 +929,7 @@ DEF_PTHREAD(void, cleanup_pop,(struct _pthread_cleanup_buffer *__buffer,
 #undef NAME_PREFIX
 #define NAME_PREFIX
 
+#ifdef MARCEL_MIGRATION_ENABLED
 void marcel_freeze(marcel_t * pids, int nb)
 {
 	int i;
@@ -1054,6 +1057,8 @@ void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f,
 
 	ma_preempt_enable();
 }
+#endif /* MARCEL_MIGRATION_ENABLED */
+
 static void __marcel_init main_thread_init(void)
 {
 	marcel_attr_t attr;

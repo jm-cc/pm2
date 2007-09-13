@@ -120,10 +120,12 @@ struct marcel_task {
 	//unsigned long softirq_pending_in_hardirq;
 
 	/* TODO: option de flavor "migration" + attr->not_migratable */
+#ifdef MARCEL_MIGRATION_ENABLED
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
 	unsigned not_migratable;
 	unsigned long remaining_sleep_time;
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 	/* TODO: option de flavor + attr->user_space / attr->immediate_activation */
 	/* démarrage retardé */

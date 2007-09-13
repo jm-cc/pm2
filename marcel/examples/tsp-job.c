@@ -14,9 +14,8 @@
  * General Public License for more details.
  */
 
-#include "tsp-types.h"
-#include "tsp-job.h"
 #include <stdlib.h>
+#include "tsp.h"
 
 void init_queue (struct s_tsp_queue *q) {
   q->first = 0;

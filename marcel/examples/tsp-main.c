@@ -1,4 +1,4 @@
-#include <stdio.h>
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -15,39 +15,21 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <limits.h>
 #include <sys/time.h>
 
-#include "tsp-types.h"
 #include "tsp.h"
-#include "tsp-job.h"
 
-#ifdef	MARCEL
-# ifdef	MT
-#  undef MT
-# endif	/* MT */
-# define MT
-#endif	/* MARCEL */
-
-int    InitSeed = 20 ;
+MUTEX_T(mutex);
 
 int    minimum ;
-
-#ifdef MT
-#  ifdef MARCEL
-marcel_mutex_t mutex ;
-#  else
-pthread_mutex_t mutex ;
-#  endif
-#endif
-
-int          nb_workers ;
-struct s_tsp_queue     q ;
+int          nb_workers;
+struct s_tsp_queue     q;
 struct s_distance_table distance;
 
-
-void genmap (struct s_distance_table *map)
+void generate_map(struct s_distance_table *map)
 {
 const int n = map->n;
 int tempdist [MAXE] ;
@@ -141,13 +123,7 @@ int marcel_main (int argc, char **argv)
 
  srand (atoi(argv[3])) ;
 
-#ifdef MT
-#ifdef MARCEL
- marcel_mutex_init (&mutex, NULL) ; 
-#else
- pthread_mutex_init (&mutex, NULL) ; 
-#endif
-#endif
+ MUTEX_INIT(&mutex, NULL);
 
  minimum = INT_MAX ;
  nb_workers = atoi (argv[1]) ;
@@ -156,9 +132,9 @@ int marcel_main (int argc, char **argv)
 
  init_queue (&q) ;
  distance.n = atoi (argv[2]) ;
- genmap (&distance) ; 
+ generate_map(&distance); 
 
- GenerateJobs () ;
+ generate_jobs();
 
  TBX_GET_TICK(t1);
 #ifdef MT

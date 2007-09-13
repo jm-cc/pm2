@@ -14,20 +14,6 @@
  * General Public License for more details.
  */
 
-#ifdef MARCEL
-#  ifdef MT
-#    undef MT
-#  endif /* MT */
-#  define MT
-#endif /* MARCEL */
-
-#ifdef MT
-#  ifdef MARCEL
-#    include "marcel.h"
-#  endif
-#endif
-
-
 #ifdef MT
 #  ifdef MARCEL
 #    define MUTEX_INIT(m, a) marcel_mutex_init((m), (a))

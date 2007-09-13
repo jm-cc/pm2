@@ -1,4 +1,3 @@
-#include <stdio.h>
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,15 +13,8 @@
  * General Public License for more details.
  */
 
-#include "tsp-types.h"
-#include "tsp-job.h"
-
-#ifdef	MARCEL
-# ifdef	MT
-#  undef MT
-# endif	/* MT */
-# define MT
-#endif	/* MARCEL */
+#include <stdio.h>
+#include "tsp.h"
 
 extern int          minimum ;
 extern struct s_tsp_queue     q ;
@@ -31,7 +23,7 @@ extern MUTEX_T(mutex);
 
 #define MAXHOPS		3
 
-int present (int city, int hops, Path_t path)
+int already (int city, int hops, Path_t path)
 {
  unsigned int i ;
 
@@ -71,7 +63,7 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
    for (i=0; i < distance.n; i++)
     {
      city = distance.t [me][i].to ;
-     if (!present (city, hops, path))
+     if (!already (city, hops, path))
       {
        path [hops] = city ;
        dist = distance.t[me][i].dist ;
@@ -100,7 +92,7 @@ void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q)
    for (i=0;i<distance.n;i++)
     {
      city = distance.t[me][i].to ;
-     if (!present(city,hops, path))
+     if (!already(city,hops, path))
       {
        path [hops] = city ;
        dist = distance.t[me][i].dist ;
@@ -110,7 +102,7 @@ void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q)
   } 
 }
 
-void GenerateJobs () 
+void generate_jobs (void) 
 {
  Path_t path ;
 
@@ -118,8 +110,9 @@ void GenerateJobs ()
  distributor (1, 0, path, &q) ; 
 }
 
-void *worker (int num_worker)
+void *worker (void *arg)
 {
+ int num_worker = (int)arg;
  int jobcount = 0 ;
  struct s_job job ;
  int cuts = 0 ;

@@ -18,21 +18,6 @@
 #define MAXX	100
 #define MAXY	100
 
-#ifdef	MARCEL
-# ifdef	MT
-#  undef MT
-# endif	/* MT */
-# define MT
-#endif	/* MARCEL */
-
-#ifdef MT
-#  ifdef MARCEL
-#    include "marcel.h"
-#  else
-#    include <pthread.h>
-#  endif
-#endif
-
 #ifdef MT
 #  ifdef MARCEL
 #    define MUTEX_T(m) marcel_mutex_t (m)

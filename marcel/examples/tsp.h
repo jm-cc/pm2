@@ -14,10 +14,28 @@
  * General Public License for more details.
  */
 
-extern int tsp (int hops, int len, Path_t path, int *cuts, int num_worker) ;
+#ifdef MARCEL
+#  ifdef MT
+#    undef MT
+#  endif /* MT */
+#  define MT
+#endif /* MARCEL */
 
-extern void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q) ;
+#ifdef MT
+#  ifdef MARCEL
+#    include "marcel.h"
+#  else
+#    include <pthread.h>
+#  endif
+#endif
 
-extern void GenerateJobs () ;
+#include "tsp-types.h"
+#include "tsp-job.h"
 
-extern void *worker (void *) ;
+extern void tsp(int hops, int len, Path_t path, int *cuts, int num_worker);
+
+extern void distributor(int hops, int len, Path_t path, struct s_tsp_queue *q);
+
+extern void generate_jobs(void);
+
+extern void *worker(void *);

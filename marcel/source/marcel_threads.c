@@ -542,6 +542,7 @@ static void marcel_exit_internal(any_t val)
 	}
 	marcel_atexit_exec(cur);
 
+#ifdef MARCEL_KEYS_ENABLED
 	/* key handling */
 	{
 		int nb_keys=marcel_nb_keys;
@@ -562,6 +563,7 @@ static void marcel_exit_internal(any_t val)
 			mdebug("  max iteration in key destructor for thread %i\n",cur->number);
 #endif
 	}
+#endif /* MARCEL_KEYS_ENABLED */
 
 	/* Since it will die, we don't want this thread to be chosen for
 	 * delivering signals any more */

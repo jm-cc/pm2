@@ -17,6 +17,7 @@
 #include "marcel.h"
 #include <errno.h>
 
+#ifdef MARCEL_KEYS_ENABLED
 /* a marcel_key_t is just an index in the key[] array of marcel_task_t */
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
@@ -114,6 +115,7 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 })
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 //DEF___PTHREAD(int, key_delete, (pthread_key_t key), (key))
+#endif /* MARCEL_KEYS_ENABLED */
 
 #undef errno
 #pragma weak errno

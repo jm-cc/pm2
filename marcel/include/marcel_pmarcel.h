@@ -537,6 +537,7 @@ extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
 
 /* Functions for handling thread-specific data.  */
 
+#ifdef MARCEL_KEYS_ENABLED
 /* Create a key value identifying a location in the thread-specific
    data area.  Each thread maintains a distinct thread-specific data
    area.  DESTR_FUNCTION, if non-NULL, is called with the value
@@ -556,6 +557,7 @@ extern void *pmarcel_getspecific (pmarcel_key_t __key) __THROW;
 extern int pmarcel_setspecific (pmarcel_key_t __key,
 				__const void *__pointer) __THROW;
 
+#endif /* MARCEL_KEYS_ENABLED */
 
 /* Install a cleanup handler: ROUTINE will be called with arguments ARG
    when the thread is cancelled or calls pmarcel_exit.  ROUTINE will also

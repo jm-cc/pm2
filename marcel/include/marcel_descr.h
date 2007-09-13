@@ -154,7 +154,6 @@ struct marcel_task {
 	unsigned exline;
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-	/* TODO: option de flavor */
 #ifdef MARCEL_KEYS_ENABLED
 	/* Clés */
 	any_t key[MAX_KEY_SPECIFIC];

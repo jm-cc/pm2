@@ -15,12 +15,13 @@
  */
 
 
-#include "clone.h"
+#ifdef MARCEL_KEYS_ENABLED
+#  include "clone.h"
 
 static clone_t clone_var;
 
-#define N       3
-#define BOUCLES 2
+#  define N       3
+#  define BOUCLES 2
 
 any_t master(any_t arg)
 {
@@ -71,16 +72,27 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
-#ifndef IA64_ARCH
+#  ifndef IA64_ARCH
   clone_init(&clone_var, N);
 
   marcel_create(NULL, NULL, master, NULL);
 
   for(i=0; i<N; i++)
     marcel_create(NULL, NULL, slave, NULL);
-#endif
+#  endif
 
   marcel_end();
 
   return 0;
 }
+#else /* MARCEL_KEYS_ENABLED */
+#  include "marcel.h"
+#  warning Marcel keys must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel keys' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_KEYS_ENABLED */

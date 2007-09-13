@@ -15,8 +15,9 @@
  */
 
 
-#define MARCEL_INTERNAL_INCLUDE
-#include "clone.h"
+#ifdef MARCEL_KEYS_ENABLED
+#  define MARCEL_INTERNAL_INCLUDE
+#  include "clone.h"
 
 marcel_key_t _clone_key, _slave_key;
 
@@ -57,12 +58,12 @@ void clone_slave(clone_t *c)
   memcpy(&buf, &c->master_jb, sizeof(marcel_ctx_t));
 
   marcel_ctx_get_sp(buf) = marcel_ctx_get_sp(buf) + clone_my_delta();
-#ifdef marcel_ctx_get_fp
+#  ifdef marcel_ctx_get_fp
   marcel_ctx_get_fp(buf) = marcel_ctx_get_fp(buf) + clone_my_delta();
-#endif
-#ifdef marcel_ctx_get_bsp
+#  endif
+#  ifdef marcel_ctx_get_bsp
   marcel_ctx_get_bsp(buf) = marcel_ctx_get_bsp(buf) + clone_my_delta();
-#endif
+#  endif
 
   marcel_mutex_unlock(&c->mutex);
 
@@ -116,3 +117,6 @@ void clone_terminate(clone_t *c)
 
   marcel_mutex_unlock(&c->mutex);
 }
+#else /* MARCEL_KEYS_ENABLED */
+#  warning Marcel keys must be enabled for this program
+#endif /* MARCEL_KEYS_ENABLED */

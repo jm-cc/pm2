@@ -62,9 +62,10 @@ int marcel_main(int argc, char *argv[])
   return 0;
 }
 #else
+#  warning Marcel suspend must be enabled for this program
 int marcel_main(int argc, char *argv[])
 {
-  fprintf(stderr, "'suspend' feature disabled in the flavor\n");
+  fprintf(stderr, "'marcel suspend' feature disabled in the flavor\n");
   return 0;
 }
 #endif

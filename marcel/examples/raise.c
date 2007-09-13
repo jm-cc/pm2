@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 marcel_exception_t USER_ERROR = "USER_ERROR";
 
 any_t func(any_t arg)
@@ -40,4 +41,13 @@ int marcel_main(int argc, char *argv[])
 
   return 0;
 }
+#else /* MARCEL_EXCEPTIONS_ENABLED */
+#  warning Marcel exceptions must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel exceptions' feature disabled in the flavor\n");
 
+  return 0;
+}
+#endif /* MARCEL_EXCEPTIONS_ENABLED */

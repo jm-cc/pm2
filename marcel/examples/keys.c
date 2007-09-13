@@ -18,6 +18,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_KEYS_ENABLED
 #define STACK_SIZE	10000
 
 marcel_key_t key;
@@ -77,3 +78,13 @@ int marcel_main(int argc, char *argv[])
 
    return 0;
 }
+#else /* MARCEL_KEYS_ENABLED */
+#  warning Marcel keys must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel keys' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_KEYS_ENABLED */

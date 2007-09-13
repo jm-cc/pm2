@@ -117,57 +117,6 @@ DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 //DEF___PTHREAD(int, key_delete, (pthread_key_t key), (key))
 #endif /* MARCEL_KEYS_ENABLED */
 
-#undef errno
-#pragma weak errno
-DEF_MARCEL_POSIX(int *, __errno_location,(void),(),
-{
-	int * res;
-
-#ifdef MA__PROVIDE_TLS
-	extern __thread int errno;
-	res=&errno;
-#else
-	static int _first_errno;
-
-	if (ma_init_done[MA_INIT_TLS]) {
-		res=&SELF_GETMEM(__errno);
-	} else {
-		res=&_first_errno;
-	}
-#endif
-	return res;
-})
-#ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel___errno_location,
-		__errno_location, GLIBC_2_0);
-#endif
-DEF___C(int *, __errno_location,(void),());
-
-#undef h_errno
-#pragma weak h_errno
-DEF_MARCEL_POSIX(int *, __h_errno_location,(void),(),
-{
-        LOG_IN();
-	int * res;
-
-#ifdef MA__PROVIDE_TLS
-	extern __thread int h_errno;
-	res=&h_errno;
-#else
-	static int _first_h_errno;
-
-	if (ma_init_done[MA_INIT_TLS]) {
-		res=&SELF_GETMEM(__h_errno);
-	} else {
-		res=&_first_h_errno;
-	}
-#endif
-        LOG_RETURN(res);
-})
-extern int *__h_errno_location(void);
-DEF_C(int *, __h_errno_location,(void),());
-DEF___C(int *, __h_errno_location,(void),());
-
 #ifdef MA__LIBPTHREAD
 /* Return thread specific resolver state.  */
 struct __res_state *lpt___res_state(void)

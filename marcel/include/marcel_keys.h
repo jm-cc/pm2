@@ -73,15 +73,3 @@ static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_ke
 
 #section common
 #endif /* MARCEL_KEYS_ENABLED */
-
-#section functions
-int *pmarcel___errno_location(void);
-int *pmarcel___h_errno_location(void);
-DEC_MARCEL_POSIX(int *, __errno_location, (void));
-DEC_MARCEL_POSIX(int *, __h_errno_location, (void));
-
-#section macros
-#define marcel_errno (*marcel___errno_location())
-#define pmarcel_errno (*pmarcel___errno_location())
-#define marcel_h_errno (*marcel___h_errno_location())
-#define pmarcel_h_errno (*pmarcel___h_errno_location())

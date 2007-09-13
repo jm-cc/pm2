@@ -29,5 +29,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"marcel_main\" \
 	--marcel=\"bubble_sched_null\" \
+	--marcel=\"enable_suspend\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

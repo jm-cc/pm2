@@ -159,9 +159,10 @@ struct marcel_task {
 	any_t key[MAX_KEY_SPECIFIC];
 #endif /* MARCEL_KEYS_ENABLED */
 
-	/* TODO: option de flavor */
+#ifdef MARCEL_SUSPEND_ENABLED
 	/* suspend */
 	marcel_sem_t suspend_sem;
+#endif /* MARCEL_SUSPEND_ENABLED */
 
 	/* marcel-top */
 	ma_atomic_t top_utime/*, top_stime*/;

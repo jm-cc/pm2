@@ -17,6 +17,7 @@
 #include "marcel.h"
 #include "marcel_sem.h"
 
+#ifdef MARCEL_SUSPEND_ENABLED
 any_t func(any_t arg)
 {
   int i;
@@ -60,3 +61,10 @@ int marcel_main(int argc, char *argv[])
 
   return 0;
 }
+#else
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr, "'suspend' feature disabled in the flavor\n");
+  return 0;
+}
+#endif

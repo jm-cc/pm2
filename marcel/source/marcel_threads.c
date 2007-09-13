@@ -134,7 +134,9 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	//t->key
 
+#ifdef MARCEL_SUSPEND_ENABLED
 	marcel_sem_init(&t->suspend_sem, 0);
+#endif /* MARCEL_SUSPEND_ENABLED */
 
 	ma_atomic_init(&t->top_utime, 0);
 
@@ -861,6 +863,7 @@ DEF_POSIX(int, detach, (pmarcel_t ptid), (ptid),
 
 DEF_PTHREAD(int, detach, (pthread_t pid), (pid))
 
+#ifdef MARCEL_SUSPEND_ENABLED
 static void suspend_handler(any_t arg)
 {
 	if ((unsigned long) arg) {
@@ -881,6 +884,7 @@ void marcel_resume(marcel_t pid)
 {
 	marcel_deviate(pid, suspend_handler, (any_t) 0);
 }
+#endif /* MARCEL_SUSPEND_ENABLED */
 
 #define __NO_WEAK_PTHREAD_ALIASES
 #ifdef MA__LIBPTHREAD

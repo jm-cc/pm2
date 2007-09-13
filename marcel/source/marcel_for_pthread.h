@@ -15,6 +15,7 @@
  */
 
 #include <errno.h>
+
 typedef marcel_task_t *marcel_descr;
 
 static inline marcel_t __thread_self() {
@@ -33,12 +34,10 @@ static inline void suspend(marcel_descr self)
 
 static inline int timed_suspend(marcel_descr self, unsigned long timeout)
 {
-  MARCEL_EXCEPTION_BEGIN
-    marcel_sem_timed_P(&self->pthread_sync, timeout);  
+  if (marcel_sem_timed_P(&self->pthread_sync, timeout)) { 
     return 0;
-  MARCEL_EXCEPTION
-    MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)
-      return ETIMEDOUT;
-  MARCEL_EXCEPTION_END
+  } else {
+    return ETIMEDOUT;
+  }
 }
 

@@ -20,38 +20,35 @@
 
 marcel_sem_t sem;
 
-any_t f(any_t arg)
-{
-  MARCEL_LOOP(b)
-    MARCEL_EXCEPTION_BEGIN
-      marcel_sem_timed_P(&sem, 500);
-      MARCEL_EXIT_LOOP(b);
-    MARCEL_EXCEPTION
-      MARCEL_EXCEPTION_WHEN(MARCEL_TIME_OUT)
-        tprintf("What a boring job, isn't it ?\n");
-    MARCEL_EXCEPTION_END
-  MARCEL_END_LOOP(b)
-  tprintf("What a relief !\n");
+void *
+f(void *arg) {
+	for (;;) {
+		if (marcel_sem_timed_P(&sem, 500))
+			break;
 
-  return 0;
+        	marcel_printf("What a boring job, isn't it ?\n");
+	}
+	marcel_printf("What a relief !\n");
+
+	return 0;
 }
 
-int marcel_main(int argc, char *argv[])
-{
-  any_t status;
-  marcel_t pid;
+int
+marcel_main(int argc, char *argv[]) {
+	void *status;
+	marcel_t pid;
 
-  marcel_init(&argc, argv);
+	marcel_init(&argc, argv);
 
-  marcel_sem_init(&sem, 0);
+	marcel_sem_init(&sem, 0);
 
-  marcel_create(&pid, NULL, f,  NULL);
+	marcel_create(&pid, NULL, f,  NULL);
 
-  marcel_delay(2250);
-  marcel_sem_V(&sem);
+	marcel_delay(2250);
+	marcel_sem_V(&sem);
 
-  marcel_join(pid, &status);
+	marcel_join(pid, &status);
 
-  marcel_end();
-  return 0;
+	marcel_end();
+	return 0;
 }

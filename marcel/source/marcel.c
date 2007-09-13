@@ -64,6 +64,7 @@ void LONGJMP(jmp_buf buf, int val)
 #define longjmp(buf, v)	LONGJMP(buf, v)
 #endif
 
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 marcel_exception_t
     MARCEL_TASKING_ERROR =
     "MARCEL_TASKING_ERROR: A non-handled exception occurred in a task",
@@ -77,6 +78,7 @@ marcel_exception_t
     "TIME OUT while being blocked on a semaphor", MARCEL_NOT_IMPLEMENTED =
     "MARCEL_NOT_IMPLEMENTED (sorry)", MARCEL_USE_ERROR =
     "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
+#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
@@ -95,6 +97,7 @@ unsigned long marcel_usablestack(void)
 
 /* ================== Gestion des exceptions : ================== */
 
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 int _marcel_raise_exception(marcel_exception_t ex)
 {
 	marcel_t cur = marcel_self();
@@ -116,6 +119,7 @@ int _marcel_raise_exception(marcel_exception_t ex)
 		marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
 	}
 }
+#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 #ifndef MA__LIBPTHREAD
 /* if MA__LIBPTHREAD is defined, marcel_extlib_protect/unprotect are

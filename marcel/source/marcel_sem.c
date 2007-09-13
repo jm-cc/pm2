@@ -163,7 +163,12 @@ DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
 })
 DEF_C(int, sem_trywait, (pmarcel_sem_t *s), (s));
 
-void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
+/** \brief Attempt to do a timeout bounded P operation on the semaphore
+ *
+ *  \return 1 if the P operation succeeded before the timeout, 0
+ *  otherwise
+ */
+int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
 	unsigned long jiffies_timeout = timeout ?
 	    (timeout * 1000 + marcel_gettimeslice() -
@@ -181,7 +186,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 			s->value++;
 			ma_spin_unlock_bh(&s->lock);
 			LOG_OUT();
-			MARCEL_EXCEPTION_RAISE(MARCEL_TIME_OUT);
+			return 0;
 		}
 		c.next = NULL;
 		c.blocked = tbx_true;
@@ -204,7 +209,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 				s->value++;
 				ma_spin_unlock_bh(&s->lock);
 				LOG_OUT();
-				MARCEL_EXCEPTION_RAISE(MARCEL_TIME_OUT);
+				return 0;
 			}
 		} while (c.blocked);
 	} else {
@@ -212,6 +217,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 	}
 
 	LOG_OUT();
+	return 1;
 }
 
 /*******************sem_timedwait**********************/

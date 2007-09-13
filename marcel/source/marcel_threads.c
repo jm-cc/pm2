@@ -125,10 +125,12 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	t->last_cleanup = NULL;
 
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 	//t->cur_exception
 	t->cur_excep_blk = NULL;
 	//t->exfile
 	//t->exline
+#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 	//t->key
 

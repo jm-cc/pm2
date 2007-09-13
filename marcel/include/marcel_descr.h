@@ -147,11 +147,13 @@ struct marcel_task {
 	struct _marcel_cleanup_buffer *last_cleanup;
 
 	/* TODO: option de flavor "exceptions" */
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 	/* Gestion des exceptions */
 	marcel_exception_t cur_exception;
 	struct marcel_exception_block *cur_excep_blk;
 	char *exfile;
 	unsigned exline;
+#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 	/* TODO: option de flavor */
 	/* Clés */

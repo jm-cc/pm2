@@ -52,7 +52,7 @@ void marcel_sem_P(marcel_sem_t *s);
 int marcel_sem_try_P(marcel_sem_t *s);
 void marcel_sem_V(marcel_sem_t *s);
 int marcel_sem_try_V(marcel_sem_t *s);
-void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
+int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
 
 int pmarcel_sem_init(pmarcel_sem_t *s, int pshared, unsigned int initial) __THROW;
 int pmarcel_sem_destroy(pmarcel_sem_t *s) __THROW;

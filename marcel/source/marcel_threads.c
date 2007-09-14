@@ -623,6 +623,10 @@ static void marcel_exit_internal(any_t val)
 	 * blocked on the corresponding join, as marcel_funerals is
 	 * called _after_ the thread switch which will never happen
 	 * since the only other thread is blocked on the sem_P.
+	 *
+	 * Fortunately, in mono it is safe to release the semaphore here, since
+	 * preemption is already disabled, hence the joiner thread will have to
+	 * wait for us to really die.
 	 */
 	if (!cur->detached)
 		marcel_sem_V(&cur->client);

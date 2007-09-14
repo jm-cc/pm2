@@ -158,14 +158,23 @@ static void __marcel_init look_cpuinfo(void) {
 	FILE *fd;
 	char string[strlen(PHYSID)+1+9+1+1];
 	char *endptr;
-	long processor=-1, physid, maxphysid=-1, coreid, maxcoreid=-1;
+	long processor=-1;
+#ifndef IA64_ARCH
+	unsigned proc_physid[MARCEL_NBMAXCPUS];
+	long physid, maxphysid=-1;
+#endif
+	unsigned proc_coreid[MARCEL_NBMAXCPUS];
+	long coreid, maxcoreid=-1;
 	int i,j,k;
-	unsigned proc_physid[MARCEL_NBMAXCPUS],proc_coreid[MARCEL_NBMAXCPUS];
 
 	unsigned cpu;
 
+#ifdef IA64_ARCH
+	const unsigned numdies=1;
+#else
 	unsigned numdies=0;
 	int really_dies=0;
+#endif
 
 	unsigned numcores=0;
 	int really_cores=0;
@@ -175,7 +184,9 @@ static void __marcel_init look_cpuinfo(void) {
 		return;
 	}
 
+#ifndef IA64_ARCH
 	memset(proc_physid,0,sizeof(proc_physid));
+#endif
 	memset(proc_coreid,0,sizeof(proc_coreid));
 
 	while (fgets(string,sizeof(string),fd)!=NULL) {
@@ -198,11 +209,13 @@ static void __marcel_init look_cpuinfo(void) {
 		}
 		getprocnb_begin(PROCESSOR,processor);
 		getprocnb_end() else
+#ifndef IA64_ARCH
 		getprocnb_begin(PHYSID,physid);
 			proc_physid[processor]=physid;
 			if (physid>maxphysid)
 				maxphysid=physid;
 		getprocnb_end() else
+#endif
 		getprocnb_begin(COREID,coreid);
 			proc_coreid[processor]=coreid;
 			if (coreid>maxcoreid)
@@ -217,6 +230,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 	mdebug("%ld processors\n", processor+1);
 
+#ifndef IA64_ARCH
 	int dienum[maxphysid+1];
 	ma_cpu_set_t diecpus[maxphysid+1];
 	struct marcel_topo_level *die_level;
@@ -271,6 +285,7 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_level_nbitems[discovering_level]=numdies;
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
+#endif
 
 	int corenum[numdies*(maxcoreid+1)];
 	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
@@ -285,8 +300,14 @@ static void __marcel_init look_cpuinfo(void) {
 	} else
 	/* normalize core numbers */
 	for (cpu=0; cpu <= processor; cpu++) {
+#ifndef IA64_ARCH
 		physid = proc_physid[cpu];
-		i = dienum[physid]+proc_coreid[cpu]*numdies;
+#endif
+		i = 
+#ifndef IA64_ARCH
+			dienum[physid]+
+#endif
+			proc_coreid[cpu]*numdies;
 		if (!corenum[i])
 			corenum[i] = -(++numcores);
 		else
@@ -301,8 +322,14 @@ static void __marcel_init look_cpuinfo(void) {
 		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
 
 		for (cpu=0, j=0; cpu <= processor; cpu++) {
+#ifndef IA64_ARCH
 			physid = proc_physid[cpu];
-			i = dienum[physid]+proc_coreid[cpu]*numdies;
+#endif
+			i = 
+#ifndef IA64_ARCH
+				dienum[physid]+
+#endif
+				proc_coreid[cpu]*numdies;
 			if (corenum[i] < 0) {
 				corenum[i] = -corenum[i]-1;
 				core_level[j].type = MARCEL_LEVEL_CORE;

@@ -73,6 +73,8 @@ extern unsigned marcel_nbprocessors;
  * for each VP, stride = 2 can be a good idea for 2-SMT processors for instance
  */
 extern unsigned marcel_cpu_stride;
+/** \brief Number of the first processor used by Marcel. */
+extern unsigned marcel_first_cpu;
 /** \brief Number of VPs per physical processor */
 extern unsigned marcel_vps_per_cpu;
 #ifdef MA__NUMA
@@ -86,6 +88,7 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 #ifndef MA__LWPS
 #  define marcel_nbprocessors 1
 #  define marcel_cpu_stride 1
+#define marcel_first_cpu 0
 #  define marcel_vps_per_cpu 1
 #  define marcel_topo_vp_level marcel_machine_level
 #endif

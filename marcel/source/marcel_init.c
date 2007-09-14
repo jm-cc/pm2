@@ -120,6 +120,25 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			} else
 				i += 2;
 			continue;
+		} else if (!strcmp(argv[i], "--marcel-firstcpu")) {
+			if (i == *argc - 1) {
+				fprintf(stderr,
+				    "Fatal error: --marcel-firstcpu option must be followed "
+				    "by <num_of_first_processor>.\n");
+				exit(1);
+			}
+			if (do_not_strip) {
+				marcel_first_cpu = atoi(argv[i + 1]);
+				if (marcel_first_cpu < 0) {
+					fprintf(stderr,
+					    "Error: CPU number should be positive\n");
+					exit(1);
+				}
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
+			continue;
 		} else
 #ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-maxarity")) {
@@ -168,8 +187,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #ifdef MA__LWPS
 		marcel_lwp_fix_nb_vps(__nb_lwp);
 		mdebug
-		    ("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d>\n",
-		    __nb_lwp, marcel_cpu_stride);
+		    ("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d, first %d>\n",
+		     __nb_lwp, marcel_cpu_stride, marcel_first_cpu);
 #endif
 	}
 }

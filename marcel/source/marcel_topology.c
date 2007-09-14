@@ -115,6 +115,7 @@ marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 static int discovering_level = 1;
 unsigned marcel_nbprocessors = 1;
 unsigned marcel_cpu_stride = 0;
+unsigned marcel_first_cpu = 0;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
 unsigned marcel_topo_max_arity = 4;
@@ -134,7 +135,7 @@ void ma_set_processors(void) {
 		else
 			marcel_cpu_stride = 1;
 	}
-	mdebug("%d LWP%s per cpu, stride %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride);
+	mdebug("%d LWP%s per cpu, stride %d, from %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride, marcel_first_cpu);
 }
 
 #ifdef MA__NUMA
@@ -722,7 +723,7 @@ static void topo_discover(void) {
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
 	for (i=0; i<marcel_nbvps(); i++) {
 		/* XXX TODO: dans le cas où marcel_nbvpds()>marcel_nbprocessors, ou même sur aragog & co où la numérotation est "retournée", je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
-		unsigned cpu = (i*marcel_cpu_stride)%marcel_nbprocessors;
+		unsigned cpu = (marcel_first_cpu+i*marcel_cpu_stride)%marcel_nbprocessors;
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;
 		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, cpu);

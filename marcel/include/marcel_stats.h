@@ -59,8 +59,9 @@ extern unsigned long ma_stats_last_ran_offset;
 extern unsigned long ma_stats_memory_offset;
 
 #section marcel_types
+#include "tbx_compiler.h"
 /** \brief type of a statistics buffer */
-typedef char ma_stats_t[MARCEL_STATS_ROOM];
+typedef char ma_stats_t[MARCEL_STATS_ROOM] TBX_ALIGNED;
 /** \brief type of a synthesizing function. */
 typedef void ma_stats_synthesis_t(void * __restrict dest, const void * __restrict src);
 /** \brief type of a reset function. */

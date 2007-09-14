@@ -120,6 +120,7 @@ struct marcel_task {
 	//unsigned long softirq_pending_in_hardirq;
 
 #ifdef MARCEL_MIGRATION_ENABLED
+#ifdef MARCEL_MIGRATION_ENABLED
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;
 	unsigned not_migratable;

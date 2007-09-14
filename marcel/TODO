@@ -26,9 +26,11 @@ Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujou
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()
 
+marcel dont_use_pthread: ajouter les hooks pour prévenir gdb quand on appelle clone().
+
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 
-Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel enlever ces derniers.
+Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel cas enlever ces derniers.
 
 Déplacer dans tbx les trucs qui n'ont rien à faire dans marcel (atomic, bitops, testandset, compareexchange, spinlock de base).
 

@@ -411,22 +411,32 @@ struct marcel_topo_vpdata {
 	ma_spinlock_t threadlist_lock;
 
 	/* Postexit call */
+#ifdef MARCEL_POSTEXIT_ENABLED
 	marcel_postexit_func_t postexit_func;
 	any_t postexit_arg;
 	marcel_sem_t postexit_thread;
 	marcel_sem_t postexit_space;
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	int need_resched;
 };
 
 #section marcel_macros
-#define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
+#ifdef MARCEL_POSTEXIT_ENABLED
+#  define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
 	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.task_number = 0, \
 	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
 	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
 	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
 }
+#else
+#  define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
+	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.task_number = 0, \
+	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
+}
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 #section marcel_structures
 

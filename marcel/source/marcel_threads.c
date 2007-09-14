@@ -118,8 +118,10 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	else
 		t->user_space_ptr = NULL;
 
+#ifdef MARCEL_POSTEXIT_ENABLED
 	t->postexit_func = NULL;
 	//t->postexit_arg
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	//t->atexit_funcs
 	//t->atexit_args
@@ -383,6 +385,7 @@ int marcel_create_special(marcel_t * __restrict pid,
  *                Thread helper
  */
 
+#ifdef MARCEL_POSTEXIT_ENABLED
 static void postexit_thread_atexit_func(any_t arg) {
 
 	struct marcel_topo_level *vp TBX_UNUSED = arg;
@@ -453,10 +456,12 @@ MA_DEFINE_LWP_NOTIFIER_START(postexit, "Postexit thread",
 			     marcel_threads_postexit_start, "Create and launch 'postexit' thread");
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(postexit, MA_INIT_THREADS_DATA);
 MA_LWP_NOTIFIER_CALL_ONLINE(postexit, MA_INIT_THREADS_THREAD);
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 /****************************************************************
  *                Enregistrement des fonctions de terminaison
  */
+#ifdef MARCEL_POSTEXIT_ENABLED
 void marcel_postexit(marcel_postexit_func_t func, any_t arg)
 {
 	marcel_t cur;
@@ -469,6 +474,7 @@ void marcel_postexit(marcel_postexit_func_t func, any_t arg)
 	cur->postexit_arg=arg;
 	LOG_OUT();
 }
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 {
@@ -497,13 +503,6 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
     (*((marcel_t)t)->atexit_funcs[i])(((marcel_t)t)->atexit_args[i]);
 }
 
-/* called by postexit for making sure the thread is really terminated when
- * marcel_join() returns */
-static void detach_func(any_t arg) {
-	marcel_t t=(marcel_t) arg;
-	marcel_sem_V(&t->client);
-}
-
 /* This is cleanup common to threads and ghost threads */
 static void common_cleanup(marcel_t t)
 {
@@ -514,10 +513,12 @@ static void common_cleanup(marcel_t t)
 static void marcel_exit_internal(any_t val)
 {
 	marcel_t cur = marcel_self();
+#ifdef MARCEL_POSTEXIT_ENABLED
 	struct marcel_topo_level *vp = NULL;
-#ifdef MA__LWPS
+#  ifdef MA__LWPS
 	marcel_vpmask_t mask;
-#endif
+#  endif
+#endif /* MARCEL_POSTEXIT_ENABLED */
 	
 	LOG_IN();
 
@@ -582,42 +583,50 @@ static void marcel_exit_internal(any_t val)
 	/* wait for scheduler stuff */
 	marcel_sched_exit(MARCEL_SELF);
 
-	if (!cur->detached || cur->postexit_func) {
+#ifdef MARCEL_POSTEXIT_ENABLED
+	if (cur->postexit_func) {
 		ma_preempt_disable();
 		vp = GET_LWP(cur)->vp_level;
 
-#ifdef MA__LWPS
+#  ifdef MA__LWPS
 		/* This thread mustn't be moved any more */
 		mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
 		marcel_change_vpmask(&mask);
-#endif
+#  endif
 		ma_preempt_enable();
-	}
 
 	/* we need to acquire postexit semaphore before disabling preemption */
-	if (!cur->detached || cur->postexit_func) {
 		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
-		if (!cur->detached) {
-			ma_topo_vpdata(vp,postexit_func)=detach_func;
-			ma_topo_vpdata(vp,postexit_arg)=cur;
-		} else {
-			ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
-			ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
-		}
+		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
+		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
 	}
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	/* make sure postexit or main doesn't start before we're off. */
 	ma_preempt_disable();
 
-	if (!cur->detached || cur->postexit_func)
+#ifdef MARCEL_POSTEXIT_ENABLED
+	if (cur->postexit_func)
 		/* we can't wake joiner ourself, since it may get scheduled
 		 * somewhere else on the machine */
 		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread));
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	common_cleanup(cur);
 
 	/* go off */
 	ma_set_current_state(MA_TASK_DEAD);
+
+#ifndef MA__LWPS
+	/* See marcel_funerals for the sem_V in the smp case.
+	 * In mono, deadlock could occur if the only remaining thread is
+	 * blocked on the corresponding join, as marcel_funerals is
+	 * called _after_ the thread switch which will never happen
+	 * since the only other thread is blocked on the sem_P.
+	 */
+	if (!cur->detached)
+		marcel_sem_V(&cur->client);
+#endif
 	ma_schedule();
 }
 	
@@ -657,8 +666,11 @@ void marcel_funerals(marcel_t t) {
 
 	if (t->detached)
 		ma_free_task_stack(t);
+#ifdef MA__LWPS
+	/* see marcel_exit_internal for the mono case */
 	else
 		marcel_sem_V(&t->client);
+#endif
 }
 
 /****************************************************************/
@@ -747,8 +759,10 @@ DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 
 	pid->detached = 1;
 
+#ifdef MARCEL_POSTEXIT_ENABLED
 	if (pid->postexit_func)
 		(*pid->postexit_func) (pid->postexit_arg);
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	ma_free_task_stack(pid);
 

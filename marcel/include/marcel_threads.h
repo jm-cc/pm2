@@ -118,9 +118,11 @@ typedef void (*cleanup_func_t)(any_t);
  */
 typedef void (*marcel_atexit_func_t)(any_t);
 
+#ifdef MARCEL_POSTEXIT_ENABLED
 /** Post exit clean-up handler.
  */
 typedef void (*marcel_postexit_func_t)(any_t);
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 #section functions
 
@@ -285,10 +287,12 @@ void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 
 /* ========== callbacks ============ */
 
+#ifdef MARCEL_POSTEXIT_ENABLED
 /** Setup a post-exit clean-up handler
  * Called after complete termination of the thread, i.e. the stack is not used any more.
  */
 void marcel_postexit(marcel_postexit_func_t, any_t);
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 /** Setup a at-exit clean-up handler
  * Called in the context of the thread just before its complete termination.

@@ -133,10 +133,11 @@ struct marcel_task {
 	marcel_sem_t sem_marcel_run;
 	char *user_space_ptr;
 
-	/* TODO: option de flavor */
+#ifdef MARCEL_POSTEXIT_ENABLED
 	/*         postexit stuff */
 	marcel_postexit_func_t postexit_func;
 	any_t postexit_arg;
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	/* TODO: option de flavor */
 	/*         atexit stuff */

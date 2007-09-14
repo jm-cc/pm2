@@ -119,7 +119,6 @@ struct marcel_task {
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
 	//unsigned long softirq_pending_in_hardirq;
 
-	/* TODO: option de flavor "migration" + attr->not_migratable */
 #ifdef MARCEL_MIGRATION_ENABLED
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;

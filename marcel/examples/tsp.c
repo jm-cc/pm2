@@ -112,7 +112,7 @@ void generate_jobs (void)
 
 void *worker (void *arg)
 {
- int num_worker = (int)arg;
+ int num_worker = (int)(intptr_t)arg;
  int jobcount = 0 ;
  struct s_job job ;
  int cuts = 0 ;

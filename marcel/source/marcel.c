@@ -111,7 +111,8 @@ int _marcel_raise_exception(marcel_exception_t ex)
 		    "\nFILE : %s, LINE : %d\n",
 		    ex, cur->number, LWP_NUMBER(LWP_SELF), cur->exfile,
 		    cur->exline);
-		abort();	/* To generate a core file */
+		*(int*)0 = -1;	/* To generate a core file */
+		exit(1);
 	} else {
 		cur->cur_exception = ex;
 		call_ST_FLUSH_WINDOWS();

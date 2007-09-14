@@ -398,13 +398,13 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					//showEntity(&t->entity);
 					break;
 				}
-				case GHOST_THREAD_BIRTH: {
+				case THREAD_SEED_BIRTH: {
 					uint64_t th = ev.ev64.param[0];
 					thread_t *t = newThreadPtr(th, norq);
 					t->entity.thick = (THREADTHICK*2)/3;
 					t->number = 0;
 					t->state = THREAD_SLEEPING;
-					verbprintf("new ghost ");
+					verbprintf("new seed");
 					printfThread(th,t);
 					verbprintf("\n");
 					addToRunqueue(norq, &t->entity);
@@ -424,7 +424,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 					// penser à free(t->name) aussi
 					break;
 				}
-				case GHOST_THREAD_RUN: {
+				case THREAD_SEED_RUN: {
 					uint64_t th = ev.ev64.user.tid;
 					thread_t *t = getThread(th);
 					uint64_t thnext = ev.ev64.param[0];

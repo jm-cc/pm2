@@ -56,8 +56,8 @@ enum marcel_entity {
 #endif
 	/** \brief thread */
 	MA_THREAD_ENTITY,
-	/** \brief "ghost" thread */
-	MA_GHOST_THREAD_ENTITY,
+	/** \brief thread seed */
+	MA_THREAD_SEED_ENTITY,
 };
 
 #section structures
@@ -231,7 +231,7 @@ marcel_entity_t *ma_entity_task(marcel_task_t *t);
 #define ma_entity_task(t) (&(t)->sched.internal.entity)
 #section marcel_inline
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
-	MA_BUG_ON(e->type != MA_THREAD_ENTITY && e->type != MA_GHOST_THREAD_ENTITY);
+	MA_BUG_ON(e->type != MA_THREAD_ENTITY && e->type != MA_THREAD_SEED_ENTITY);
 	return tbx_container_of(e, marcel_task_t, sched.internal.entity);
 }
 #ifdef MA__BUBBLES

@@ -405,16 +405,16 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 	return 0;
 }
 
-int marcel_attr_setghost(marcel_attr_t *attr, int ghost)
+int marcel_attr_setseed(marcel_attr_t *attr, int seed)
 {
-	attr->ghost = ghost;
+	attr->seed = seed;
 	return 0;
 }
 
-int marcel_attr_getghost(__const marcel_attr_t * __restrict attr,
-    int * __restrict ghost)
+int marcel_attr_getseed(__const marcel_attr_t * __restrict attr,
+    int * __restrict seed)
 {
-	*ghost = attr->ghost;
+	*seed = attr->seed;
 	return 0;
 }
 /****************************destroy******************************/

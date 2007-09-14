@@ -368,7 +368,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->entity.type = MA_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
-	*(long *) ma_task_stats_get(t, ma_stats_nbghostthreads_offset) = 0;
+	*(long *) ma_task_stats_get(t, ma_stats_nbthreadseeds_offset) = 0;
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
 	internal->bubble.sched.init_holder = NULL;
@@ -379,26 +379,26 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
-marcel_sched_init_ghost_thread(marcel_task_t* t,
+marcel_sched_init_thread_seed(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 __tbx_inline__ static void 
-marcel_sched_init_ghost_thread(marcel_task_t* t,
+marcel_sched_init_thread_seed(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	LOG_IN();
-	internal->entity.type = MA_GHOST_THREAD_ENTITY;
+	internal->entity.type = MA_THREAD_SEED_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
 	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 0;
-	*(long *) ma_task_stats_get(t, ma_stats_nbghostthreads_offset) = 1;
+	*(long *) ma_task_stats_get(t, ma_stats_nbthreadseeds_offset) = 1;
 	LOG_OUT();
 }
 
 #section marcel_functions
 /* unsigned marcel_sched_add_vp(void); */
-void *marcel_sched_ghost_runner(void *arg);
+void *marcel_sched_seed_runner(void *arg);
 
 #section marcel_macros
 #section macros

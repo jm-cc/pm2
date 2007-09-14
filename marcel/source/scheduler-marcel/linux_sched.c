@@ -1087,14 +1087,14 @@ restart:
 #endif
 	next = ma_task_entity(nextent);
 
-	if (ma_entity_task(next)->type == MA_GHOST_THREAD_ENTITY) {
-		/* A ghost thread, take it */
+	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
+		/* A thread seed, take it */
 		ma_dequeue_task(next, nexth);
 		ma_holder_unlock(nexth);
 
-		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_ghost_thread) { // && prev->shared_attr == next->shared_attr) {
+		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
-			prev->cur_ghost_thread = next;
+			prev->cur_thread_seed = next;
 			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
 			ma_preempt_enable();
 			LOG_OUT();
@@ -1113,7 +1113,7 @@ restart:
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
 			marcel_attr_setpreemptible(&attr, tbx_false);
 			/* TODO: on devrait être capable de brancher directement dessus */
-			marcel_create(NULL, &attr, marcel_sched_ghost_runner, next);
+			marcel_create(NULL, &attr, marcel_sched_seed_runner, next);
 			goto need_resched_atomic;
 		}
 	}
@@ -1188,7 +1188,7 @@ int marcel_yield_to(marcel_t next)
 	ma_holder_t *nexth;
 	int busy;
 
-	MA_BUG_ON(ma_entity_task(next)->type == MA_GHOST_THREAD_ENTITY);
+	MA_BUG_ON(ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY);
 	if (next==prev)
 		return 0;
 
@@ -1474,7 +1474,7 @@ void __marcel_init ma_linux_sched_init0(void)
 }
 
 
-unsigned long ma_stats_nbthreads_offset, ma_stats_nbghostthreads_offset,
+unsigned long ma_stats_nbthreads_offset, ma_stats_nbthreadseeds_offset,
 		ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
 unsigned long marcel_stats_load_offset;
 
@@ -1484,12 +1484,12 @@ static void __marcel_init linux_sched_init(void)
 	ma_holder_t *h;
 
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
-	ma_stats_nbghostthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_nbthreadseeds_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
-	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbghostthreads_offset) = 0;
+	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreadseeds_offset) = 0;
 	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbrunning_offset) = 1;
 
 #ifdef MA__SMP

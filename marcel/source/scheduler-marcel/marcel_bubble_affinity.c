@@ -51,10 +51,10 @@ __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struc
 	  marcel_task_t *t = ma_task_entity(e[k]);
 	  debug("%s, ", t->name);
 	}
-      else if (e[k]->type == MA_GHOST_THREAD_ENTITY)
+      else if (e[k]->type == MA_THREAD_SEED_ENTITY)
 	{
 	  marcel_task_t *t = ma_task_entity(e[k]);
-	  debug("ghost, ");
+	  debug("seed, ");
 	}
       else 
 	debug("ovni!, ");

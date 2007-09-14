@@ -143,7 +143,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 		(int) (2+2*sizeof(void*)), (unsigned long) b,
         	MARCEL_MAXNAMESIZE-7, "",
 		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset),
-		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbghostthreads_offset),
+		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreadseeds_offset),
 		b->sched.prio,
 		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),

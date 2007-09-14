@@ -92,7 +92,7 @@ struct marcel_task {
 	any_t arg;
 
 	//marcel_attr_t *shared_attr;
-	marcel_t cur_ghost_thread;
+	marcel_t cur_thread_seed;
 
 	/* Gestion de la terminaison */
 	tbx_bool_t detached;
@@ -119,7 +119,6 @@ struct marcel_task {
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */
 	//unsigned long softirq_pending_in_hardirq;
 
-#ifdef MARCEL_MIGRATION_ENABLED
 #ifdef MARCEL_MIGRATION_ENABLED
        /* Contexte de migration */
 	marcel_ctx_t ctx_migr;

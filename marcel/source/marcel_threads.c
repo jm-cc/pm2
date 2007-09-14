@@ -83,7 +83,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->f_to_call
 	//t->arg
 
-	t->cur_ghost_thread = NULL;
+	t->cur_thread_seed = NULL;
 
 	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
 	if (!attr->__detachstate)
@@ -261,10 +261,10 @@ marcel_create_internal(marcel_t * __restrict pid,
 	/* TODO: we could even go further by having the programmer promise that
 	 * the thread won't block, in which case we don't even need to use a
 	 * stack, idle can run it! */
-	if (attr->ghost) {
+	if (attr->seed) {
 		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
-		new_task = ma_obj_alloc(marcel_ghost_thread_allocator);
-		PROF_EVENT1(ghost_thread_birth, MA_PROFILE_TID(new_task));
+		new_task = ma_obj_alloc(marcel_thread_seed_allocator);
+		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 		new_task->f_to_call = func;
 		new_task->arg = arg;
@@ -272,7 +272,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
 		if (!attr->__detachstate)
 			marcel_sem_init(&new_task->client, 0);
-		marcel_sched_init_ghost_thread(new_task, &new_task->sched.internal, attr);
+		marcel_sched_init_thread_seed(new_task, &new_task->sched.internal, attr);
 		marcel_wake_up_created_thread(new_task);
 		if (pid)
 			*pid = new_task;
@@ -503,7 +503,7 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
     (*((marcel_t)t)->atexit_funcs[i])(((marcel_t)t)->atexit_args[i]);
 }
 
-/* This is cleanup common to threads and ghost threads */
+/* This is cleanup common to threads and thread seeds */
 static void common_cleanup(marcel_t t)
 {
 	if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t)))
@@ -522,15 +522,15 @@ static void marcel_exit_internal(any_t val)
 	
 	LOG_IN();
 
-	if (cur->cur_ghost_thread) {
-		cur->cur_ghost_thread->ret_val = val;
+	if (cur->cur_thread_seed) {
+		cur->cur_thread_seed->ret_val = val;
 
 		/* make sure waiter doesn't start before we're off. */
 		ma_preempt_disable();
 
-		marcel_funerals(cur->cur_ghost_thread);
-		if (!cur->cur_ghost_thread->detached)
-			marcel_sem_V(&cur->cur_ghost_thread->client);
+		marcel_funerals(cur->cur_thread_seed);
+		if (!cur->cur_thread_seed->detached)
+			marcel_sem_V(&cur->cur_thread_seed->client);
 
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);
@@ -665,7 +665,7 @@ void marcel_exit_canreturn(any_t val)
 /* Called by scheduler after thread switch */
 void marcel_funerals(marcel_t t) {
 	if (ma_entity_task(t)->type == MA_THREAD_ENTITY
-		&& t->cur_ghost_thread)
+		&& t->cur_thread_seed)
 		common_cleanup(t);
 
 	if (t->detached)

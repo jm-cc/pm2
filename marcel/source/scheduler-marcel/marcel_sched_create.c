@@ -194,28 +194,28 @@ void marcel_sched_internal_create_start_son(void) {
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
 
-void *marcel_sched_ghost_runner(void *arg) {
+void *marcel_sched_seed_runner(void *arg) {
 	ma_holder_t *h, *h2;
 	marcel_t next;
 	void *ret;
 
-	marcel_setname(MARCEL_SELF, "ghost runner");
+	marcel_setname(MARCEL_SELF, "seed runner");
 
-	/* first ghost thread */
-	SELF_GETMEM(cur_ghost_thread) = arg;
+	/* first thread seed */
+	SELF_GETMEM(cur_thread_seed) = arg;
 	ma_sched_change_prio(MARCEL_SELF, MA_BATCH_PRIO);
 
 	ma_preempt_disable();
 	ma_local_bh_disable();
 
 	marcel_ctx_setjmp(SELF_GETMEM(ctx_restart));
-	/* restart a new ghost thread */
+	/* restart a new thread seed */
 restart:
-	SELF_SETMEM(f_to_call, marcel_sched_ghost_runner);
+	SELF_SETMEM(f_to_call, marcel_sched_seed_runner);
 
-	next = SELF_GETMEM(cur_ghost_thread);
+	next = SELF_GETMEM(cur_thread_seed);
 
-	PROF_EVENT1(ghost_thread_run, MA_PROFILE_TID(next));
+	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(next));
 
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES

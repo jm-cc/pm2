@@ -135,6 +135,10 @@ void ma_set_processors(void) {
 		else
 			marcel_cpu_stride = 1;
 	}
+	if (marcel_cpu_stride > 1 && marcel_vps_per_cpu > 1) {
+		fprintf(stderr,"More VPs that CPUs doesn't make sense with a stride\n");
+		exit(1);
+	}
 	mdebug("%d LWP%s per cpu, stride %d, from %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride, marcel_first_cpu);
 }
 
@@ -748,18 +752,33 @@ static void topo_discover(void) {
 
 	marcel_vpmask_t cpumask = MARCEL_VPMASK_EMPTY;
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
+	unsigned cpu = marcel_first_cpu;
+	unsigned vps = 0;
 	for (i=0; i<marcel_nbvps(); i++) {
-		/* XXX TODO: dans le cas où marcel_nbvpds()>marcel_nbprocessors, ou même sur aragog & co où la numérotation est "retournée", je voudrais suivre la machine au mieux pour que for_all_vp soit dans un ordre bien... */
-		unsigned cpu = (marcel_first_cpu+i*marcel_cpu_stride)%marcel_nbprocessors;
+		MA_BUG_ON(cpu>=marcel_nbprocessors);
+		marcel_vpmask_t oscpumask = marcel_topo_levels[marcel_topo_nblevels-1][cpu].cpuset;
+		MA_BUG_ON(marcel_vpmask_weight(&oscpumask) != 1);
+		unsigned oscpu = marcel_vpmask_ffs(&oscpumask)-1;
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;
-		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, cpu);
-		marcel_vpmask_only_vp(&vp_level[i].cpuset, cpu);
-		marcel_vpmask_add_vp(&cpumask, cpu);
+		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, oscpu);
+		marcel_vpmask_only_vp(&vp_level[i].cpuset, oscpu);
+		marcel_vpmask_add_vp(&cpumask, oscpu);
 		vp_level[i].arity=0;
 		vp_level[i].children=NULL;
 		vp_level[i].father=NULL;
-		mdebug("VP %d has cpuset %"MA_PRIxVPM"\n",i,vp_level[i].cpuset);
+		mdebug("VP %d on %dth proc with cpuset %"MA_PRIxVPM"\n",i,cpu,vp_level[i].cpuset);
+
+		/* Follow the machine as nicely as possible, for instance, with two bicore chips and 6 vps:
+		 * chips: [     ] [     ] *
+		 * cpus:  [ ] [ ] [ ] [ ] *
+		 * VPs:    0   2   4   5  *
+		 *         1   3          */
+		int stopfill = i >= (((marcel_nbvps()-1)%marcel_nbprocessors+1) * marcel_vps_per_cpu);
+		if (++vps == marcel_vps_per_cpu - stopfill) {
+			cpu += marcel_cpu_stride;
+			vps = 0;
+		}
 	}
 	marcel_vpmask_empty(&vp_level[i].cpuset);
 

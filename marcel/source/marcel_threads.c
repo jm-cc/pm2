@@ -528,8 +528,9 @@ static void marcel_exit_internal(any_t val)
 		/* make sure waiter doesn't start before we're off. */
 		ma_preempt_disable();
 
+		int detached = cur->cur_thread_seed->detached;
 		marcel_funerals(cur->cur_thread_seed);
-		if (!cur->cur_thread_seed->detached)
+		if (!detached)
 			marcel_sem_V(&cur->cur_thread_seed->client);
 
 		/* try to die */

@@ -35,7 +35,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 
 #ifdef MA__DEBUG
 #define marcel_ctx_destroycontext(ctx) \
-  memset(&ctx[0].jbuf, 0, sizeof(ctx[0].jbuf))
+  memset(&ctx[0].jbuf, 0xa5, sizeof(ctx[0].jbuf))
 #else
 #define marcel_ctx_destroycontext(ctx)
 #endif

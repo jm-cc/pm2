@@ -423,20 +423,19 @@ struct marcel_topo_vpdata {
 
 #section marcel_macros
 #ifdef MARCEL_POSTEXIT_ENABLED
-#  define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
-	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
-	.task_number = 0, \
-	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
+#  define MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER \
 	.postexit_thread = MARCEL_SEM_INITIALIZER(0), \
-	.postexit_space = MARCEL_SEM_INITIALIZER(1), \
-}
-#else
-#  define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
+	.postexit_space = MARCEL_SEM_INITIALIZER(1), 
+#else /* MARCEL_POSTEXIT_ENABLED */
+#  define MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER
+#endif /* MARCEL_POSTEXIT_ENABLED */
+
+#define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
 	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.task_number = 0, \
 	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
+	MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER \
 }
-#endif /* MARCEL_POSTEXIT_ENABLED */
 
 #section marcel_structures
 

@@ -19,9 +19,10 @@
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
+#depend "sys/marcel_archsetjmp.h"
 
 #define TOP_STACK_FREE_AREA     64
-#if 1
+#ifdef MA_JMPBUF
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
 #define FP_FIELD(buf)           ((buf)[MARCEL_JB_BP])
 #define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])

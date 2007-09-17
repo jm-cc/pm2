@@ -48,6 +48,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 #endif
 
 #if defined(X86_ARCH) && 1
+#define MA_JMPBUF
 
 #define MARCEL_JB_BX   0
 #define MARCEL_JB_SI   1
@@ -56,7 +57,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 #define MARCEL_JB_SP   4
 #define MARCEL_JB_PC   5
 
-typedef int ma_jmp_buf[6];
+typedef intptr_t ma_jmp_buf[6];
 
 extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
 
@@ -76,7 +77,43 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
   // to make gcc believe us that the above statement doesn't return
   for(;;);
 }
+#elif defined(X86_64_ARCH) && 1
+#define MA_JMPBUF
 
+#define MARCEL_JB_RBX   0
+#define MARCEL_JB_RBP   1
+#define MARCEL_JB_R12   2
+#define MARCEL_JB_R13   3
+#define MARCEL_JB_R14   4
+#define MARCEL_JB_R15   5
+#define MARCEL_JB_RSP   6
+#define MARCEL_JB_PC    7
+
+typedef intptr_t ma_jmp_buf[8];
+
+extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
+
+static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
+
+static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
+{
+  __asm__ __volatile__ (
+		       "movq 0(%0), %%rbx\n\t"
+		       "movq 8(%0), %%rbp\n\t"
+		       "movq 16(%0), %%r12\n\t"
+		       "movq 24(%0), %%r13\n\t"
+		       "movq 32(%0), %%r14\n\t"
+		       "movq 40(%0), %%r15\n\t"
+		       "movq 48(%0), %%rsp\n\t"
+		       "movq 56(%0), %0\n\t"
+		       "jmp *%0"
+		       : : "D" (buf), "a,a" (val));
+  // to make gcc believe us that the above statement doesn't return
+  for(;;);
+}
+#endif
+
+#ifdef MA_JMPBUF
 #define jmp_buf ma_jmp_buf
 #undef setjmp
 #define setjmp ma_setjmp

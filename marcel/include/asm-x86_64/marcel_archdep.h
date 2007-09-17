@@ -24,8 +24,14 @@
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
+#depend "sys/marcel_archsetjmp.h"
 
 #define TOP_STACK_FREE_AREA     128
+#ifdef MA_JMPBUF
+#define SP_FIELD(buf)           ((buf)[MARCEL_JB_RSP])
+#define FP_FIELD(buf)           ((buf)[MARCEL_JB_RBP])
+#define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])
+#else
 #include <setjmp.h>
 #ifdef LINUX_SYS
 /* Some distributions don't provide these numbers... */
@@ -42,6 +48,7 @@
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_RSP])
 #define FP_FIELD(buf)           ((buf)->__jmpbuf[JB_RBP])
 #define PC_FIELD(buf)           ((buf)->__jmpbuf[JB_PC])
+#endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 #define SET_MARCEL_SELF_FROM_SP(sp) ((void)0)

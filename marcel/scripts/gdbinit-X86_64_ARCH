@@ -5,17 +5,9 @@ define __save-ctx
 end
 
 define __set-ctx
-  set $the_rbp=((marcel_t)$arg0)->ctx_yield[0].jbuf[0].__jmpbuf[1]
-  set $the_rsp=((marcel_t)$arg0)->ctx_yield[0].jbuf[0].__jmpbuf[6]
-  set $the_rip=((marcel_t)$arg0)->ctx_yield[0].jbuf[0].__jmpbuf[7]
-  if ($the_rbp & 0xff00000000000000)
-    set $the_rbp=$the_rbp^__pointer_chk_guard_local
-    set $the_rsp=$the_rsp^__pointer_chk_guard_local
-    set $the_rip=$the_rip^__pointer_chk_guard_local
-  end
-  set $rbp=$the_rbp
-  set $rsp=$the_rsp
-  set $rip=$the_rip
+  set $rbp=((marcel_t)$arg0)->ctx_yield[0].jbuf[1]
+  set $rsp=((marcel_t)$arg0)->ctx_yield[0].jbuf[6]
+  set $rip=((marcel_t)$arg0)->ctx_yield[0].jbuf[7]
 end
 
 define __rest-ctx

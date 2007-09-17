@@ -33,7 +33,7 @@ static int top_file;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 #ifdef MA__BUBBLES
-static int bubbles = 1;
+static int bubbles = 0;
 #endif
 
 static int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
@@ -259,6 +259,7 @@ lwp %2u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 	}
 	total_total = total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq + total_usage.idle;
+	if (total_total)
 	top_printf("\
 Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		total_usage.user*100/total_total,

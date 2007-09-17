@@ -337,6 +337,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
+	/* TODO: only for the spread scheduler */
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif

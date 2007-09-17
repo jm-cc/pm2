@@ -524,8 +524,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_OTHER)
 		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_BALANCE)
 		/* If the new task is less prioritized than us, don't schedule it yet */
-		|| (new_task->sched.internal.entity.prio > SELF_GETMEM(sched.internal.entity.prio))
 #endif
+		|| (new_task->sched.internal.entity.prio > SELF_GETMEM(sched.internal.entity.prio))
 #ifdef MA__BUBBLES
 		/* on est placé dans une bulle (on ne sait donc pas si l'on a
 		   le droit d'être ordonnancé tout de suite)

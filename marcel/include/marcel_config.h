@@ -60,8 +60,6 @@
 /* Room for threads/bubbles statistics */
 #define MARCEL_STATS_ROOM	64
 
-/* #define MARCEL_GANG_SCHEDULER */
-
 /* Number of distinct real-time priorities */
 #if defined(MA__IFACE_LPT)
 #define MA_MAX_USER_RT_PRIO	99

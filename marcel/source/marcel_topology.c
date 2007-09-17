@@ -755,10 +755,14 @@ static void topo_discover(void) {
 	unsigned cpu = marcel_first_cpu;
 	unsigned vps = 0;
 	for (i=0; i<marcel_nbvps(); i++) {
+#ifdef MA__NUMA
 		MA_BUG_ON(cpu>=marcel_nbprocessors);
 		marcel_vpmask_t oscpumask = marcel_topo_levels[marcel_topo_nblevels-1][cpu].cpuset;
 		MA_BUG_ON(marcel_vpmask_weight(&oscpumask) != 1);
 		unsigned oscpu = marcel_vpmask_ffs(&oscpumask)-1;
+#else
+		unsigned oscpu = cpu;
+#endif
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].number=i;
 		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, oscpu);

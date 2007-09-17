@@ -66,6 +66,14 @@ static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, in
 static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
+#ifdef MA__DEBUG
+		       "movl 12(%0), %%ebx\n\t"
+		       "movl 0(%%ebx), %%ebx\n\t"
+		       "movl 16(%0), %%ebx\n\t"
+		       "movl 0(%%ebx), %%ebx\n\t"
+		       "movl 20(%0), %%ebx\n\t"
+		       "movl 0(%%ebx), %%ebx\n\t"
+#endif
 		       "movl 0(%0), %%ebx\n\t"
 		       "movl 4(%0), %%esi\n\t"
 		       "movl 8(%0), %%edi\n\t"
@@ -98,6 +106,14 @@ static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, in
 static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
+#ifdef MA__DEBUG
+		       "movq 8(%0), %%rbx\n\t"
+		       "movq 0(%%rbx), %%rbx\n\t"
+		       "movq 48(%0), %%rbx\n\t"
+		       "movq 0(%%rbx), %%rbx\n\t"
+		       "movq 56(%0), %%rbx\n\t"
+		       "movq 0(%%rbx), %%rbx\n\t"
+#endif
 		       "movq 0(%0), %%rbx\n\t"
 		       "movq 8(%0), %%rbp\n\t"
 		       "movq 16(%0), %%r12\n\t"

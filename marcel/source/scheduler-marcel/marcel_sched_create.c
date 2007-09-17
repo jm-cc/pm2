@@ -133,6 +133,8 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	// Note : si le thread est un 'real-time thread', cela
 	// ne change rien ici...
 
+	ma_local_bh_disable();
+	ma_preempt_disable();
 	if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
 		MA_THR_DESTROYJMP(cur);
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
@@ -153,7 +155,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	
 	/* activer le fils */
 	h = ma_task_sched_holder(new_task);
-	ma_holder_lock_softirq(h); // passage en mode interruption
+	ma_holder_rawlock(h); // passage en mode interruption
 	ma_set_task_lwp(new_task, LWP_SELF);
 	MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
 	ma_set_task_state(new_task, MA_TASK_RUNNING);
@@ -178,13 +180,13 @@ void marcel_sched_internal_create_start_son(void) {
 	MA_ACT_SET_THREAD(MARCEL_SELF);
 
 	/* ré-enqueuer le père */
-	h = ma_task_sched_holder(SELF_GETMEM(father));
-	ma_holder_rawlock(h);
+	h = ma_task_holder_rawlock(SELF_GETMEM(father));
 	ma_enqueue_task(SELF_GETMEM(father), h);
 	ma_holder_unlock_softirq(h); // sortie du mode interruption
 
 	MTRACE("Early start", marcel_self());
 	
+	MA_THR_DESTROYJMP(MARCEL_SELF);
 	//PROF_OUT_EXT(newborn_thread);
 	PROF_SET_THREAD_NAME(MARCEL_SELF);
 

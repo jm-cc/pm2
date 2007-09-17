@@ -58,8 +58,8 @@ any_t main_thread(void *arg)
     TBX_GET_TICK(t2);
 
     marcel_sleep(1);
-    marcel_printf("timecreate =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (long)arg);
-    marcel_printf("timeexec   =  %fus\n", TBX_TIMING_DELAY(t2, t3) / (long)arg);
+    marcel_printf("create =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (long)arg);
+    marcel_printf("exec   =  %fus\n", TBX_TIMING_DELAY(t2, t3) / (long)arg);
   }
 
   return NULL;

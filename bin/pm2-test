@@ -27,6 +27,14 @@ pm2_test_error() # msg
     exit 1
 }
 
+pm2_test_error_file() # msg file
+{
+    echo "----------------------------------------" >&2
+    cat $2
+    echo "----------------------------------------" >&2
+    pm2_test_error $1
+}
+
 pm2_test_usage() # exit_code
 {
     cat <<EOF
@@ -77,8 +85,7 @@ do_the_test()
     else
         (${PM2_ROOT}/bin/pm2-load --protocol $net -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
     fi
-#    ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
-    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2_test_error "Execution failed"
+    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2_test_error_file "Execution failed" /tmp/pm2test_${USER}_result
 
     # Le moment de verite
     echo "Checking results..."
@@ -101,7 +108,7 @@ do_the_test()
     if diff -u /tmp/pm2test_${USER}_expected /tmp/pm2test_${USER}_filtered ; then
 	echo "Test ok!"
     else
-	pm2_test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"
+	pm2_test_error_file "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)" /tmp/pm2test_${USER}_filtered
     fi
 
     # Destruction de la flavor

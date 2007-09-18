@@ -133,7 +133,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	// Note : si le thread est un 'real-time thread', cela
 	// ne change rien ici...
 
-	ma_local_bh_disable();
+	ma_local_bh_disable(); // entering interrupt mode
 	ma_preempt_disable();
 	if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
 		MA_THR_DESTROYJMP(cur);
@@ -155,7 +155,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	
 	/* activer le fils */
 	h = ma_task_sched_holder(new_task);
-	ma_holder_rawlock(h); // passage en mode interruption
+	ma_holder_rawlock(h);
 	ma_set_task_lwp(new_task, LWP_SELF);
 	MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
 	ma_set_task_state(new_task, MA_TASK_RUNNING);

@@ -48,6 +48,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 #endif
 
 #if defined(X86_ARCH) && 1
+#include <stdint.h>
 #define MA_JMPBUF
 
 #define MARCEL_JB_BX   0
@@ -86,6 +87,7 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
   for(;;);
 }
 #elif defined(X86_64_ARCH) && 1
+#include <stdint.h>
 #define MA_JMPBUF
 
 #define MARCEL_JB_RBX   0

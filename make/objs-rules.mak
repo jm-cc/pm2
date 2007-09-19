@@ -42,7 +42,7 @@ fut: $(MOD_FUT)
 
 # Regles de génération des .h
 #---------------------------------------------------------------------
-.PHONY: dot_h dot_h_all
+.PHONY: dot_h dot_h_all flavormaks
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -81,6 +81,9 @@ include $(wildcard $(MOD_DEPENDS))
 endif # MOD_DEPENDS
 endif # $(MAKECMDGOALS)
 
+# Dummy target to update generated makefiles early enough
+#--------------------------------------------------------------------- 
+flavormaks:
 
 # Dependances globales *.d
 #---------------------------------------------------------------------

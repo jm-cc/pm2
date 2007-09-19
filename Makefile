@@ -111,12 +111,12 @@ $(eval $(call RECURSIVE_LIBS_template, link, libs, \
 # examples: descente recursive dans chaque module pour construction
 #           des exemples 
 #---------------------------------------------------------------------
-$(eval $(call RECURSIVE_LIBS_template, examples, flavors, \
+$(eval $(call RECURSIVE_LIBS_template, examples, flavormaks, \
 	">>> Building examples"))
 
 # preproc: descente recursive dans chaque module pour preprocessing
 #---------------------------------------------------------------------
-$(eval $(call RECURSIVE_LIBS_template, preproc, flavors, \
+$(eval $(call RECURSIVE_LIBS_template, preproc, flavormaks, \
 	">>> Creating preproc files"))
 
 # fut: descente recursive dans chaque module pour action `fut'
@@ -132,13 +132,18 @@ fut-app: dot_h fut-print
 
 # dot_h: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------
-$(eval $(call RECURSIVE_template, dot_h, $(DOT_H_GEN_LIBS), flavors, \
+$(eval $(call RECURSIVE_template, dot_h, $(DOT_H_GEN_LIBS), flavormaks, \
 	">>> Generating specific header files"))
 
 # dot_h_all: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------
-$(eval $(call RECURSIVE_template, dot_h_all, $(DOT_H_GEN_LIBS), flavors, \
+$(eval $(call RECURSIVE_template, dot_h_all, $(DOT_H_GEN_LIBS), flavormaks, \
 	">>> Generating all header files"))
+
+# flavormaks
+#---------------------------------------------------------------------
+$(eval $(call RECURSIVE_LIBS_template, flavormaks, flavors, \
+	">>> Generating/updating config makefiles"))
 
 # Nettoyage
 #---------------------------------------------------------------------

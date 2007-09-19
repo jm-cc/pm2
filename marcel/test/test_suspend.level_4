@@ -15,7 +15,7 @@
 
 
 # Configuration
-flavor="test_marcel_numa"
+flavor="test_marcel_numa_suspend"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="suspend"
 args=""

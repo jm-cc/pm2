@@ -18,13 +18,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+//#define DEBUG_REDUCE_MAXMINLOC
+
 int main(int argc, char **argv) {
   int numtasks, rank, i;
   MPI_Datatype newtype;
+  int success=1;
 
-  struct { 
+  struct {
     int val;
-    int rank; 
+    int rank;
   } in[10], min_out[10], max_out[10];
 
   // Initialise MPI
@@ -43,21 +46,42 @@ int main(int argc, char **argv) {
       in[i].val = i*10+rank;
     }
     in[i].rank = rank;
-  } 
+  }
 
+#ifdef DEBUG_REDUCE_MAXMINLOC
   printf("[%d] ", rank);
   for(i=0 ; i<10 ; i++) printf("%d ", in[i].val);
   printf("\n");
+#endif
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Reduce(in, max_out, 10, newtype, MPI_MAXLOC, 0, MPI_COMM_WORLD);
   MPI_Reduce(in, min_out, 10, newtype, MPI_MINLOC, 0, MPI_COMM_WORLD);
 
+
   if (rank == 0) {
     for(i=0 ; i<10 ; i++) {
-      printf("min out[%d] = %d, %d\n", i, min_out[i].val, min_out[i].rank);
-      printf("max out[%d] = %d, %d\n", i, max_out[i].val, max_out[i].rank);
+      if (i%2) {
+        if (!(min_out[i].rank == numtasks-1 && min_out[i].val == i*10-(numtasks-1) &&
+              max_out[i].rank == 0          && max_out[i].val == i*10)) {
+          success=0;
+          printf("min out[%d] = %d, %d != %d, %d\t\t", i, min_out[i].val, min_out[i].rank, i*10-(numtasks-1), numtasks-1);
+          printf("max out[%d] = %d, %d != %d, %d\n", i,   max_out[i].val, max_out[i].rank, i*10, 0);
+        }
+      }
+      else {
+        if (!(min_out[i].rank == 0          && min_out[i].val == i*10 &&
+              max_out[i].rank == numtasks-1 && max_out[i].val == i*10+(numtasks-1))) {
+          success=0;
+          printf("min out[%d] = %d, %d != %d, %d\t\t", i, min_out[i].val, min_out[i].rank, i*10, 0);
+          printf("max out[%d] = %d, %d != %d, %d\n", i,   max_out[i].val, max_out[i].rank, i*10+(numtasks-1), numtasks-1);
+        }
+      }
     }
+  }
+
+  if (success && rank == 0) {
+    printf("Success\n");
   }
 
   MPI_Type_free(&newtype);

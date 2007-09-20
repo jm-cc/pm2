@@ -235,6 +235,7 @@ DEF_POSIX(int, attr_getguardsize, (__const pthread_attr_t * __restrict attr,
 DEF_PTHREAD(int, attr_getguardsize, (pthread_attr_t *attr, size_t *guardsize), (attr, guardsize))
 DEF___PTHREAD(int, attr_getguardsize, (pthread_attr_t *attr, size_t *guardsize), (attr, guardsize))
 
+#ifdef MARCEL_USERSPACE_ENABLED
 int marcel_attr_setuserspace(marcel_attr_t * attr, unsigned space)
 {
 	attr->user_space = space;
@@ -260,6 +261,7 @@ int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
 	*immediate = attr->immediate_activation;
 	return 0;
 }
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 int marcel_attr_setmigrationstate(marcel_attr_t * attr, tbx_bool_t migratable)
 {

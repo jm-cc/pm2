@@ -42,8 +42,10 @@ struct __marcel_attr_s {
 	/* unsigned stack_size; */
 	/* char *stack_base; */
 	/*int tbx_bool_t detached; */
+#ifdef MARCEL_USERSPACE_ENABLED
 	unsigned user_space;
 	/*tbx_bool_t */ int immediate_activation;
+#endif /* MARCEL_USERSPACE_ENABLED */
 	unsigned not_migratable;
 	unsigned not_deviatable;
 	int not_preemptible;
@@ -74,6 +76,15 @@ struct __marcel_attr_s {
 #else
 #define MARCEL_STACKSGUARD 0
 #endif
+
+#ifdef MARCEL_USERSPACE_ENABLED
+#  define MARCEL_ATTR_USERSPACE_INITIALIZER \
+	.user_space= 0, \
+        .immediate_activation= tbx_false,
+#else /* MARCEL_USERSPACE_ENABLED */
+#  define MARCEL_ATTR_USERSPACE_INITIALIZER
+#endif /* MARCEL_USERSPACE_ENABLED */
+
 #define MARCEL_ATTR_INITIALIZER { \
   .__detachstate= MARCEL_CREATE_JOINABLE, \
   .__schedpolicy= SCHED_OTHER, \
@@ -84,8 +95,7 @@ struct __marcel_attr_s {
   .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
   .__stacksize= THREAD_SLOT_SIZE, \
-  .user_space= 0, \
-  .immediate_activation= tbx_false, \
+  MARCEL_ATTR_USERSPACE_INITIALIZER \
   .not_migratable= 1, \
   .not_deviatable= 0, \
   .not_preemptible= 0, \
@@ -103,6 +113,14 @@ struct __marcel_attr_s {
 /* 	.inheritholder = tbx_false, \ /\* à voir *\/ */
 /* } */
 
+#ifdef MARCEL_USERSPACE_ENABLED
+#  define MARCEL_ATTR_USERSPACE_DESTROYER \
+	.user_space= -1, \
+        .immediate_activation= tbx_false,
+#else /* MARCEL_USERSPACE_ENABLED */
+#  define MARCEL_ATTR_USERSPACE_DESTROYER
+#endif /* MARCEL_USERSPACE_ENABLED */
+
 #define MARCEL_ATTR_DESTROYER { \
   .__detachstate= -1, \
   .__schedpolicy= MARCEL_SCHED_INVALID, \
@@ -113,8 +131,7 @@ struct __marcel_attr_s {
   .__stackaddr_set= -1, \
   .__stackaddr= NULL, \
   .__stacksize= -1, \
-  .user_space= -1, \
-  .immediate_activation= tbx_false, \
+  MARCEL_ATTR_USERSPACE_DESTROYER \
   .not_migratable= -1, \
   .not_deviatable= -1, \
   .not_preemptible= -1, \
@@ -149,6 +166,7 @@ DEC_MARCEL_POSIX(int, attr_getstack, (__const marcel_attr_t * __restrict attr,
 DEC_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached) __THROW);
 DEC_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, int *detached) __THROW);
 
+#ifdef MARCEL_USERSPACE_ENABLED
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space);
 int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
                              unsigned * __restrict space);
@@ -156,6 +174,7 @@ int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setactivation(marcel_attr_t *attr, tbx_bool_t immediate);
 int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
                               tbx_bool_t * __restrict immediate);
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 int marcel_attr_setmigrationstate(marcel_attr_t *attr, tbx_bool_t migratable);
 int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,

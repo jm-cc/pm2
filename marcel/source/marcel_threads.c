@@ -334,9 +334,14 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	new_task->arg = arg;
 
+#ifdef MARCEL_USERSPACE_ENABLED
 	new_task->initial_sp =
 	    (unsigned long) new_task - MAL(attr->user_space) -
 	    TOP_STACK_FREE_AREA;
+#else /* MARCEL_USERSPACE_ENABLED */
+	new_task->initial_sp =
+	    (unsigned long) new_task - TOP_STACK_FREE_AREA;
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 	if (pid)
 		*pid = new_task;

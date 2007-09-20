@@ -46,7 +46,9 @@ struct __marcel_attr_s {
 	unsigned user_space;
 	/*tbx_bool_t */ int immediate_activation;
 #endif /* MARCEL_USERSPACE_ENABLED */
+#ifdef MARCEL_MIGRATION_ENABLED
 	unsigned not_migratable;
+#endif /* MARCEL_MIGRATION_ENABLED */
 	unsigned not_deviatable;
 	int not_preemptible;
 	/* int sched_policy; */
@@ -85,6 +87,13 @@ struct __marcel_attr_s {
 #  define MARCEL_ATTR_USERSPACE_INITIALIZER
 #endif /* MARCEL_USERSPACE_ENABLED */
 
+#ifdef MARCEL_MIGRATION_ENABLED
+#  define MARCEL_ATTR_MIGRATION_INITIALIZER \
+        .not_migratable= 1,
+#else /* MARCEL_MIGRATION_ENABLED */
+#  define MARCEL_ATTR_MIGRATION_INITIALIZER
+#endif /* MARCEL_MIGRATION_ENABLED */
+
 #define MARCEL_ATTR_INITIALIZER { \
   .__detachstate= MARCEL_CREATE_JOINABLE, \
   .__schedpolicy= SCHED_OTHER, \
@@ -96,7 +105,7 @@ struct __marcel_attr_s {
   .__stackaddr= NULL, \
   .__stacksize= THREAD_SLOT_SIZE, \
   MARCEL_ATTR_USERSPACE_INITIALIZER \
-  .not_migratable= 1, \
+  MARCEL_ATTR_MIGRATION_INITIALIZER \
   .not_deviatable= 0, \
   .not_preemptible= 0, \
   .vpmask= MARCEL_VPMASK_EMPTY, \
@@ -121,6 +130,13 @@ struct __marcel_attr_s {
 #  define MARCEL_ATTR_USERSPACE_DESTROYER
 #endif /* MARCEL_USERSPACE_ENABLED */
 
+#ifdef MARCEL_MIGRATION_ENABLED
+#  define MARCEL_ATTR_MIGRATION_DESTROYER \
+        .not_migratable= -1,
+#else /* MARCEL_MIGRATION_ENABLED */
+#  define MARCEL_ATTR_MIGRATION_DESTROYER
+#endif /* MARCEL_MIGRATION_ENABLED */
+
 #define MARCEL_ATTR_DESTROYER { \
   .__detachstate= -1, \
   .__schedpolicy= MARCEL_SCHED_INVALID, \
@@ -132,7 +148,7 @@ struct __marcel_attr_s {
   .__stackaddr= NULL, \
   .__stacksize= -1, \
   MARCEL_ATTR_USERSPACE_DESTROYER \
-  .not_migratable= -1, \
+  MARCEL_ATTR_MIGRATION_DESTROYER \
   .not_deviatable= -1, \
   .not_preemptible= -1, \
   .vpmask= -1, \
@@ -176,9 +192,11 @@ int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
                               tbx_bool_t * __restrict immediate);
 #endif /* MARCEL_USERSPACE_ENABLED */
 
+#ifdef MARCEL_MIGRATION_ENABLED
 int marcel_attr_setmigrationstate(marcel_attr_t *attr, tbx_bool_t migratable);
 int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
                                   tbx_bool_t * __restrict migratable);
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 int marcel_attr_setdeviationstate(marcel_attr_t *attr, tbx_bool_t deviatable);
 int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,

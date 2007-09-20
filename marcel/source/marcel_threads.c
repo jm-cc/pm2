@@ -1108,7 +1108,9 @@ static void __marcel_init main_thread_init(void)
 	marcel_attr_init(&attr);
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
+#ifdef MARCEL_MIGRATION_ENABLED
 	marcel_attr_setmigrationstate(&attr, tbx_false);
+#endif /* MARCEL_MIGRATION_ENABLED */
 	marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
 #ifdef MA__BUBBLES
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);

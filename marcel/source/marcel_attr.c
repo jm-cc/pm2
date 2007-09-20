@@ -263,6 +263,7 @@ int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
 }
 #endif /* MARCEL_USERSPACE_ENABLED */
 
+#ifdef MARCEL_MIGRATION_ENABLED
 int marcel_attr_setmigrationstate(marcel_attr_t * attr, tbx_bool_t migratable)
 {
 	attr->not_migratable = (migratable ? 0 : 1);
@@ -275,6 +276,7 @@ int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
 	*migratable = (attr->not_migratable ? tbx_false : tbx_true);
 	return 0;
 }
+#endif /* MARCEL_MIGRATION_ENABLED */
 
 int marcel_attr_setdeviationstate(marcel_attr_t * attr, tbx_bool_t deviatable)
 {

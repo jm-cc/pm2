@@ -27,9 +27,11 @@ CONFIG_FILES   := externals/configure.ac externals/configure externals/Puk/padic
 # ## front-end rules
 # ##
 
-libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
+libs:
+	$(MAKE) $(PUK_BUILDDIR)/config.status
+	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk
 
-link:
+link: install
 
 init-packaging: $(PADICO_ROOT)/etc/padico-setup.sh
 
@@ -40,6 +42,8 @@ configure: $(PUK_BUILDDIR)/config.status
 install: $(PADICO_ROOT)/lib/libPadicoPuk.a
 
 clean: clean-config clean-build
+
+flavormaks:
 
 # ## packaging tools
 # ##

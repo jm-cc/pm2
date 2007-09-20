@@ -275,6 +275,7 @@ void marcel_freeze(marcel_t *pids, int nb);
  */
 void marcel_unfreeze(marcel_t *pids, int nb);
 
+#ifdef MARCEL_USERSPACE_ENABLED
 /** Get the ptr to the user space area reserved for the thread.
  */
 void marcel_getuserspace(marcel_t __restrict pid,
@@ -284,6 +285,7 @@ void marcel_getuserspace(marcel_t __restrict pid,
     waiting for this area to be filled.
  */
 void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 /* ========== callbacks ============ */
 

@@ -18,6 +18,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_USERSPACE_ENABLED
 #define STACK_SIZE	10000
 
 #define MESSAGE		"Hi boys !"
@@ -63,3 +64,11 @@ int marcel_main(int argc, char *argv[])
    marcel_end();
    return 0;
 }
+#else
+#  warning Marcel userspace must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr, "'marcel userspace' feature disabled in the flavor\n");
+  return 0;
+}
+#endif /* MARCEL_USERSPACE_ENABLED */

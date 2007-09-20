@@ -111,12 +111,14 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->remaining_sleep_time
 #endif /* MARCEL_MIGRATION_ENABLED */
 
+#ifdef MARCEL_USERSPACE_ENABLED
 	//t->real_f_to_call
 	//t->sem_marcel_run
 	if (attr->user_space)
 		t->user_space_ptr = (char *) t - MAL(attr->user_space);
 	else
 		t->user_space_ptr = NULL;
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 #ifdef MARCEL_POSTEXIT_ENABLED
 	t->postexit_func = NULL;
@@ -194,6 +196,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 /****************************************************************
  *                Démarrage retardé
  */
+#ifdef MARCEL_USERSPACE_ENABLED
 void marcel_getuserspace(marcel_t __restrict pid,
 		void * __restrict * __restrict user_space)
 {
@@ -212,6 +215,7 @@ static void* wait_marcel_run(void* arg)
 	marcel_sem_P(&cur->sem_marcel_run);
 	return ((cur->real_f_to_call)(cur->arg));
 }
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 /****************************************************************
  *                Création d'un thread
@@ -311,12 +315,14 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	init_marcel_thread(new_task, attr);
 
+#ifdef MARCEL_USERSPACE_ENABLED
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
 		/* Le thread devra attendre marcel_run */
 		new_task->f_to_call = &wait_marcel_run;
 		new_task->real_f_to_call = func;
 		marcel_sem_init(&new_task->sem_marcel_run, 0);
 	}
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 #if defined(MA__PROVIDE_TLS)
 	_dl_allocate_tls_init(marcel_tcb(new_task));

@@ -127,10 +127,12 @@ struct marcel_task {
 #endif /* MARCEL_MIGRATION_ENABLED */
 
 	/* TODO: option de flavor + attr->user_space / attr->immediate_activation */
+#ifdef MARCEL_USERSPACE_ENABLED
 	/* démarrage retardé */
 	marcel_func_t real_f_to_call;
 	marcel_sem_t sem_marcel_run;
 	char *user_space_ptr;
+#endif /* MARCEL_USERSPACE_ENABLED */
 
 #ifdef MARCEL_POSTEXIT_ENABLED
 	/*         postexit stuff */

@@ -126,7 +126,6 @@ struct marcel_task {
 	unsigned long remaining_sleep_time;
 #endif /* MARCEL_MIGRATION_ENABLED */
 
-	/* TODO: option de flavor + attr->user_space / attr->immediate_activation */
 #ifdef MARCEL_USERSPACE_ENABLED
 	/* démarrage retardé */
 	marcel_func_t real_f_to_call;

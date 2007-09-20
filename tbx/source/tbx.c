@@ -74,10 +74,12 @@ tbx_init(int    argc TBX_UNUSED,
 
       while (argc)
 	{
+#ifdef TBX_SAFE_MALLOC
 	  if (!strcmp(*argv, tbx_no_safe_malloc_stats))
 	    {
 	      tbx_set_print_stats_mode(tbx_false); // tbx_true by default
 	    }
+#endif /* TBX_SAFE_MALLOC */
 
 	  argc--; argv++;
 	}
@@ -153,16 +155,15 @@ tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
 
   while (argc)
     {
+#ifdef TBX_SAFE_MALLOC
       if (!strcmp(*_argv, tbx_no_safe_malloc_stats))
 	{
-	  _argv++; (*_argc)--;
+	  _argv++; (*_argc)--; argc--;
+	  continue;
 	}
-      else
-	{
-	  *argv++ = *_argv++;
-	}
+#endif /* TBX_SAFE_MALLOC */
 
-      argc--;
+      *argv++ = *_argv++; argc--;
     }
 
   LOG_OUT();

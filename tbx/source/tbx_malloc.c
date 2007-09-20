@@ -35,7 +35,7 @@
  * Safe malloc
  * -----------
  */
-
+#ifdef TBX_SAFE_MALLOC
 static char tbx_safe_malloc_magic[] =
 "MarcelMadeleine MarcelMadeleine MarcelMadeleine MarcelMadeleine "
 "MarcelMadeleine MarcelMadeleine MarcelMadeleine MarcelMadeleine "
@@ -304,5 +304,5 @@ tbx_safe_realloc(void     *ptr,
 
   return new_ptr;
 }
-
+#endif /* TBX_SAFE_MALLOC */
 

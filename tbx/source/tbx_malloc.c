@@ -76,6 +76,10 @@ static ma_spinlock_t	mutex = MA_SPIN_LOCK_UNLOCKED;
 
 static tbx_bool_t tbx_print_stats = tbx_true;
 
+static
+void
+__tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode);
+
 void
 tbx_set_print_stats_mode(tbx_bool_t b) {
   tbx_print_stats = b;
@@ -90,7 +94,6 @@ static
 void
 tbx_safe_malloc_mem_check(void)
 {
-  lock();
   if(allocated && tbx_print_stats) { // i.e. if Safe_Malloc was really used
 
     fprintf(stderr, "#### SafeMalloc Stats ***\n");
@@ -102,13 +105,10 @@ tbx_safe_malloc_mem_check(void)
     if (list) {
       fprintf(stderr,
 	      "#### SafeMalloc: Warning! All allocated memory has not been restitued :\n");
-      unlock();
-      tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
-      return;
+      __tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
     }
 
   }
-  unlock();
 }
 
 void
@@ -259,12 +259,12 @@ tbx_safe_free(void *ptr, const char *file TBX_UNUSED, const unsigned  line TBX_U
   free(p);
 }
 
+static
 void
-tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
+__tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 {
   p_tbx_safe_malloc_header_t p;
 
-  lock();
   for(p = list; p; p = p->next)
     {
       void *ptr  = p;
@@ -278,6 +278,13 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 		"#### [addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
 		ptrh, (unsigned long)p->size, ptrf, p->line);
     }
+}
+
+void
+tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
+{
+  lock();
+  __tbx_safe_malloc_check(mode);
   unlock();
 }
 

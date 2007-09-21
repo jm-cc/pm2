@@ -139,11 +139,12 @@ struct marcel_task {
 	any_t postexit_arg;
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
-	/* TODO: option de flavor */
+#ifdef MARCEL_ATEXIT_ENABLED
 	/*         atexit stuff */
 	marcel_atexit_func_t atexit_funcs[MAX_ATEXIT_FUNCS];
 	any_t atexit_args[MAX_ATEXIT_FUNCS];
 	unsigned next_atexit_func;
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 	/* TODO: option de flavor */
 	/*         cleanup */

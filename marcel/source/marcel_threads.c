@@ -125,9 +125,11 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->postexit_arg
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
+#ifdef MARCEL_ATEXIT_ENABLED
 	//t->atexit_funcs
 	//t->atexit_args
 	t->next_atexit_func = 0;
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 	t->last_cleanup = NULL;
 
@@ -487,6 +489,7 @@ void marcel_postexit(marcel_postexit_func_t func, any_t arg)
 }
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
+#ifdef MARCEL_ATEXIT_ENABLED
 void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 {
 	marcel_t cur = marcel_self();
@@ -501,10 +504,12 @@ void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 
 	LOG_OUT();
 }
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 /****************************************************************
  *                Terminaison
  */
+#ifdef MARCEL_ATEXIT_ENABLED
 /* Les fonctions de fin */
 static __inline__ void marcel_atexit_exec(marcel_t t)
 {
@@ -513,6 +518,7 @@ static __inline__ void marcel_atexit_exec(marcel_t t)
   for(i=((marcel_t)t)->next_atexit_func-1; i>=0; i--)
     (*((marcel_t)t)->atexit_funcs[i])(((marcel_t)t)->atexit_args[i]);
 }
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 /* This is cleanup common to threads and thread seeds */
 static void common_cleanup(marcel_t t)
@@ -557,7 +563,10 @@ static void marcel_exit_internal(any_t val)
 	while (cur->last_cleanup) {
 		_marcel_cleanup_pop(cur->last_cleanup, 1);
 	}
+
+#ifdef MARCEL_ATEXIT_ENABLED
 	marcel_atexit_exec(cur);
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 #ifdef MARCEL_KEYS_ENABLED
 	/* key handling */

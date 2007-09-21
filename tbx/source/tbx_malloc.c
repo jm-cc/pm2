@@ -101,7 +101,7 @@ tbx_safe_malloc_mem_check(void)
 
     if (list) {
       fprintf(stderr,
-	      "SafeMalloc: Warning! All allocated memory has not been restitued :\n");
+	      "#### SafeMalloc: Warning! All allocated memory has not been restitued :\n");
       unlock();
       tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
       return;
@@ -114,11 +114,7 @@ tbx_safe_malloc_mem_check(void)
 void
 tbx_safe_malloc_init(void)
 {
-#ifdef MARCEL
-  marcel_atexit((marcel_atexit_func_t) tbx_safe_malloc_mem_check, NULL);
-#else
   atexit(tbx_safe_malloc_mem_check);
-#endif
 }
 
 void
@@ -279,7 +275,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 
       if(mode == tbx_safe_malloc_VERBOSE)
 	fprintf(stderr,
-		"\t[addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
+		"#### [addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
 		ptrh, (unsigned long)p->size, ptrf, p->line);
     }
   unlock();

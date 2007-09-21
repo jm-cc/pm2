@@ -113,7 +113,7 @@ registering_flavors() {
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=main_as_func --marcel=dont_use_pthread \
 	--marcel=smp_bind_proc --marcel=pmarcel --marcel=pthread \
-	--marcel=enable_keys \
+	--marcel=enable_keys --marcel=enable_atexit \
 	--common=link_pm2_shared \
 	--marcel=bubble_sched_null
 

@@ -84,6 +84,8 @@ void ma_obj_allocator_fini(ma_allocator_t *allocator);
 /* helpful */
 TBX_FMALLOC void * ma_obj_allocator_malloc(void * arg);
 void ma_obj_allocator_free(void * obj, void * foo);
+TBX_FMALLOC void * __ma_obj_allocator_malloc(void * arg);
+void __ma_obj_allocator_free(void * obj, void * foo);
 
 #section marcel_functions
 void ma_allocator_init(void);

@@ -347,6 +347,64 @@ void marcel_free(void *ptr, char * __restrict file, unsigned line)
         }
 }
 
+/* __marcel_malloc, __marcel_calloc, __marcel_free:
+   internal use versions that ignore the TBX safe-malloc setting */
+void *__marcel_malloc(unsigned size)
+{
+        void *p;
+
+        if (size) {
+		marcel_extlib_protect();
+                p = malloc(size);
+		marcel_extlib_unprotect();
+                if(p == NULL)
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
+}
+
+void *__marcel_realloc(void *ptr, unsigned size)
+{
+        void *p;
+
+	marcel_extlib_protect();
+        p = realloc(ptr, size);
+	marcel_extlib_unprotect();
+        if(p == NULL)
+                MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+
+        return p;
+}
+
+void *__marcel_calloc(unsigned nelem, unsigned elsize)
+{
+        void *p;
+
+        if (nelem && elsize) {
+		marcel_extlib_protect();
+                p = calloc(nelem, elsize);
+		marcel_extlib_unprotect();
+                if(p == NULL)
+                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
+}
+
+void __marcel_free(void *ptr)
+{
+        if(ptr) {
+		marcel_extlib_protect();
+                free((char *)ptr);
+		marcel_extlib_unprotect();
+        }
+}
+
 void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 {
 #ifdef MA__NUMA

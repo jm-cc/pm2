@@ -76,6 +76,11 @@ TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char * __restrict fil
 TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
 void marcel_free(void *ptr, char * __restrict file, unsigned line);
 
+TBX_FMALLOC void *__marcel_malloc(unsigned size);
+TBX_FMALLOC void *__marcel_realloc(void *ptr, unsigned size);
+TBX_FMALLOC void *__marcel_calloc(unsigned nelem, unsigned elsize);
+void __marcel_free(void *ptr);
+
 void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level);
 void ma_memory_detach(marcel_entity_t *e, void *data, int level);
 #define marcel_task_memory_attach(t,d,s,l) ma_memory_attach(t?&((marcel_t)t)->sched.internal.entity:NULL, (d), (s), (l))

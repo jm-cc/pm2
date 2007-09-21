@@ -45,10 +45,13 @@ void __marcel_init ma_allocator_init(void)
 	level_container_allocator =
 	    ma_new_obj_allocator(1, (void *(*)(void *)) ma_per_level_alloc,
 	    (void *) sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
+
+	/* We bypass potential safe_malloc checks for the node allocator
+	   as the node allocator is not freed for now */
 	ma_node_allocator =
-	    ma_new_obj_allocator(0, ma_obj_allocator_malloc,
+	    ma_new_obj_allocator(0, __ma_obj_allocator_malloc,
 	    (void *) sizeof(ma_node_t),
-	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL, 0);
+	    __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL, 0);
 }
 
 void ma_allocator_exit(void)
@@ -67,7 +70,7 @@ ma_allocator_t *ma_new_obj_allocator(int conservative,
     void *destroy_arg, enum ma_policy_t policy, int max_size)
 {
 	/* Initialisation de la structure de l'allocateur selon les parametres */
-	ma_allocator_t *allocator = TBX_MALLOC(sizeof(ma_allocator_t));
+	ma_allocator_t *allocator = __marcel_malloc(sizeof(ma_allocator_t));
 	allocator->create = create;
 	allocator->create_arg = create_arg;
 	allocator->policy = policy;
@@ -125,7 +128,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 			ma_container_fini(ma_get_container
 			    (allocator, ALLOC_METHOD),
 			    allocator->destroy, allocator->destroy_arg);
-			TBX_FREE(allocator->container.obj);
+			__marcel_free(allocator->container.obj);
 		}
 		break;
 
@@ -176,7 +179,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 		switch (allocator->policy) {
 		case POLICY_GLOBAL:
 			allocator->container.obj =
-			    TBX_MALLOC(sizeof(ma_container_t));
+			    __marcel_malloc(sizeof(ma_container_t));
 			ma_container_init(allocator->container.obj,
 			    allocator->conservative, allocator->max_size);
 			break;
@@ -339,6 +342,20 @@ void *ma_obj_allocator_malloc(void *arg)
 void ma_obj_allocator_free(void *obj, void *foo)
 {
 	TBX_FREE(obj);
+}
+
+/* safe_malloc bypass version
+ */
+void *__ma_obj_allocator_malloc(void *arg)
+{
+	void *res;
+	res = __marcel_malloc((size_t) (intptr_t) arg);
+	return res;
+}
+
+void __ma_obj_allocator_free(void *obj, void *foo)
+{
+	__marcel_free(obj);
 }
 
 unsigned long ma_per_sth_alloc(ma_per_sth_cur_t * cur, size_t size)

@@ -91,7 +91,7 @@ mad3()
     fi
     nb_protocols=$(echo $protocols | wc -w | tr -d ' ')
     if [ "$nb_protocols" != 1 ] ; then
-        _pm2_load_warning "Warning: Several available protocols ($protocols). Use the parameter --protocol to select one protocol"
+        _pm2_load_error "Error: Several available protocols ($protocols). Use the parameter --protocol to select one protocol"
     fi
     log "Protocol: $protocols"
 
@@ -451,7 +451,7 @@ case $_PM2_CONFIG_LOADER in
 	set --  --source-mode
 	. ${PM2_ROOT}/bin/pm2-conf-file
 
-	[ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured this flavor (please run pm2-conf)."
+	[ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for this flavor (please run pm2-conf)."
 	;;
 esac
 

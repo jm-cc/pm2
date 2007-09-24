@@ -543,9 +543,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 struct ma_lwp_usage_stat {
 	unsigned long long user;
 	unsigned long long nice;
-	unsigned long long system;
+	//unsigned long long system;
 	unsigned long long softirq;
 	unsigned long long irq;
 	unsigned long long idle;
-	unsigned long long iowait;
+	//unsigned long long iowait;
 };

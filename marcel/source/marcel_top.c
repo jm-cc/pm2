@@ -29,9 +29,10 @@
 #define TOP_SEC 3
 
 static int top_pid;
-static int top_file;
+static int top_file = -1;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
+static struct ma_lwp_usage_stat totlst;
 #ifdef MA__BUBBLES
 static int bubbles = 0;
 #endif
@@ -246,6 +247,11 @@ void marcel_show_top() {
 		unsigned long long tot;
 		lst = ma_per_lwp(lwp_usage,lwp);
 		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
+		totlst.user += lst.user;
+		totlst.nice += lst.nice;
+		totlst.softirq += lst.softirq;
+		totlst.irq += lst.irq;
+		totlst.idle += lst.idle;
 		total_usage.user += lst.user;
 		total_usage.nice += lst.nice;
 		total_usage.softirq += lst.softirq;
@@ -345,6 +351,39 @@ int marcel_init_top(char *outfile) {
 }
 
 void marcel_exit_top(void) {
+	unsigned long long tot;
+	marcel_lwp_t *lwp;
+	if (top_file >= 0)
+		ma_del_timer_sync(&timer);
+#if 1
+	for_all_lwp(lwp) {
+		struct ma_lwp_usage_stat lst;
+		lst = ma_per_lwp(lwp_usage,lwp);
+		totlst.user += lst.user;
+		totlst.nice += lst.nice;
+		totlst.softirq += lst.softirq;
+		totlst.irq += lst.irq;
+		totlst.idle += lst.idle;
+	}
+	tot = totlst.user + totlst.nice + totlst.softirq + totlst.irq + totlst.idle;
+	if (tot) {
+		if (top_file >= 0) {
+			top_printf("\
+%3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+			totlst.user*100/tot, totlst.nice*100/tot,
+			totlst.softirq*100/tot, totlst.irq*100/tot, totlst.idle*100/tot);
+		}
+#if 0
+		/* TODO: add a --marcel-time option ? */
+		else {
+			marcel_fprintf(stderr,"\
+%3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+			totlst.user*100/tot, totlst.nice*100/tot,
+			totlst.softirq*100/tot, totlst.irq*100/tot, totlst.idle*100/tot);
+		}
+#endif
+	}
+#endif
 #ifndef WIN_SYS
 	if (top_pid) {
 		mdebug("killing top program %d\n", top_pid);

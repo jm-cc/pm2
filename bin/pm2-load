@@ -36,8 +36,6 @@ Usage: $PROGNAME { option } command
   option:
     -f|--flavor name      : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d|--debug            : Run command through gdb
-    -cd                   : Change working directory at the beginning of the session (leonie)
-    --wd directory        : Set working directory to given directory at the beginning of the session (leonie)
     -vg|--valgrind        : Run command through valgrind
     --numactl [n]         : Run command through numactl [default: n=0]
     -t|--trace            : Run command through strace
@@ -50,9 +48,11 @@ Usage: $PROGNAME { option } command
     --protocol name       : Use protocol named "name"
     -h|--help             : Display this help message
 
-   Madeleine options:
+   Madeleine/Leonie options:
     -x                    : Run command through xterm
     -p                    : Pause at the end of the command
+    -cd                   : Change working directory at the beginning of the session
+    --wd directory        : Set working directory to given directory at the beginning of the session
 EOF
     exit $1
 }

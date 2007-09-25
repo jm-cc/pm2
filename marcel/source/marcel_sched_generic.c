@@ -350,6 +350,8 @@ void marcel_gensched_shutdown(void)
 
 	wait_all_tasks_end();
 
+	marcel_exit_top();
+
 #ifdef MA__BUBBLES
 	marcel_bubble_deactivate_idle_scheduler();
 	if (current_sched->exit)

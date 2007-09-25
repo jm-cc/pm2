@@ -308,7 +308,6 @@ void marcel_finish(void)
 {
 	marcel_slot_exit();
 	ma_topo_exit();
-	marcel_exit_top();
 }
 
 #ifndef STANDARD_MAIN

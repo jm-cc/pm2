@@ -409,14 +409,16 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 {
 #ifdef MA__NUMA
 	struct memory_area *area;
-	ma_holder_t *h;
 	if (!e)
 		e = &MARCEL_SELF->sched.internal.entity;
+#ifdef MA__BUBBLES
 	while (level--) {
+		ma_holder_t *h;
 		h = e->init_holder;
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
 		e = &ma_bubble_holder(h)->sched;
 	}
+#endif
 	area = ma_obj_alloc(memory_area_allocator);
 	area->size = size;
 	area->data = data;
@@ -431,14 +433,16 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 {
 #ifdef MA__NUMA
 	struct memory_area *area;
-	ma_holder_t *h;
 	if (!e)
 		e = &MARCEL_SELF->sched.internal.entity;
+#ifdef MA__BUBBLES
 	while (level--) {
+		ma_holder_t *h;
 		h = e->init_holder;
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
 		e = &ma_bubble_holder(h)->sched;
 	}
+#endif
 	ma_spin_lock(&e->memory_areas_lock);
 	list_for_each_entry(area, &e->memory_areas, list)
 		if (area->data == data) {

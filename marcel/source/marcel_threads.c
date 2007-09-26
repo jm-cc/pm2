@@ -720,12 +720,18 @@ void marcel_print_thread(marcel_t pid)
 	mdebug("thread %p :\n"
 	    "\tlower bound : %p\n"
 	    "\tupper bound : %lx\n"
+#ifdef MARCEL_USERSPACE_ENABLED
 	    "\tuser space : %p\n"
+#endif
 	    "\tinitial sp : %lx\n"
 	    "\tcurrent sp : %lx\n",
 	    pid,
 	    pid->stack_base,
-	    ma_task_slot_top(pid), pid->user_space_ptr, pid->initial_sp, sp);
+	    ma_task_slot_top(pid),
+#ifdef MARCEL_USERSPACE_ENABLED
+	    pid->user_space_ptr,
+#endif
+	    pid->initial_sp, sp);
 }
 
 void marcel_print_jmp_buf(char *name, jmp_buf buf)

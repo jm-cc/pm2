@@ -5,6 +5,7 @@
 
 #  include <pthread.h>
 #  include <semaphore.h>
+#  include <unistd.h>
 
 #  define marcel_mutex_t             pthread_mutex_t
 #  define marcel_mutex_init          pthread_mutex_init
@@ -160,6 +161,7 @@ typedef   void*any_t;
 
 #elif defined(LINUX_CLONE)
 
+#  include <unistd.h>
 #  include <stdio.h>
 #  include <stdlib.h>
 #  include <sched.h>

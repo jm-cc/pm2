@@ -702,7 +702,9 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	/* Task might have expired already, but not scheduled off yet */
 	//if (p->sched.internal.entity.array != rq->active) {
-	if (!MA_TASK_IS_RUNNING(p)) {
+	
+	// C'est normal quand le thread est en cours de migration par exemple. Il faudrait prendre le verrou pour faire cette vérification
+	if (0 && !MA_TASK_IS_RUNNING(p)) {
 		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
 				p->name, ma_task_run_holder(p),
 				ma_task_holder_data(p), __FILE__, __LINE__);

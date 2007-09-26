@@ -124,6 +124,14 @@ void bench_contsw(unsigned long nb)
   marcel_t pid;
   any_t status;
   register long n;
+  marcel_attr_t attr;
+  marcel_attr_init(&attr);
+#ifdef MA_BUBBLES
+  marcel_bubble_t b;
+  marcel_bubble_init(&b);
+  marcel_attr_setinitbubble(&attr, &b);
+  marcel_wake_up_bubble(&b);
+#endif
 
   if(!nb)
     return;
@@ -131,7 +139,7 @@ void bench_contsw(unsigned long nb)
   n = nb >> 1;
   n++;
 
-  marcel_create(&pid, NULL, f, (any_t)n);
+  marcel_create(&pid, &attr, f, (any_t)n);
   marcel_yield();
 
   while(--n)
@@ -170,11 +178,19 @@ void bench_contsw3(unsigned long nb)
   marcel_t pid;
   any_t status;
   register long n = nb;
+  marcel_attr_t attr;
+  marcel_attr_init(&attr);
+#ifdef MA_BUBBLES
+  marcel_bubble_t b;
+  marcel_bubble_init(&b);
+  marcel_attr_setinitbubble(&attr, &b);
+  marcel_wake_up_bubble(&b);
+#endif
 
   if(!nb)
     return;
 
-  marcel_create(&pid, NULL, f3, (any_t)n);
+  marcel_create(&pid, &attr, f3, (any_t)n);
   marcel_join(pid, &status);
 }
 
@@ -183,6 +199,14 @@ void bench_contsw4(unsigned long nb)
   marcel_t pid;
   any_t status;
   register long n;
+  marcel_attr_t attr;
+  marcel_attr_init(&attr);
+#ifdef MA_BUBBLES
+  marcel_bubble_t b;
+  marcel_bubble_init(&b);
+  marcel_attr_setinitbubble(&attr, &b);
+  marcel_wake_up_bubble(&b);
+#endif
 
   if(!nb)
     return;
@@ -190,7 +214,7 @@ void bench_contsw4(unsigned long nb)
   n = nb >> 1;
   n++;
 
-  marcel_create(&pid, NULL, f4, (any_t)n);
+  marcel_create(&pid, &attr, f4, (any_t)n);
   marcel_yield_to(pid);
 
   while(--n)

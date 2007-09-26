@@ -53,7 +53,7 @@
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#  define marcel_change_vpmask(mask) do { *mask = ~*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #else
 #  define marcel_change_vpmask(mask) (void)0
 #endif
@@ -222,7 +222,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#  define marcel_change_vpmask(mask) do { *mask = ~*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #else
 #  define marcel_change_vpmask(mask) (void)0
 #endif
@@ -282,7 +282,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_change_vpmask(mask) do { *mask = !*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
+#  define marcel_change_vpmask(mask) do { *mask = ~*mask; sched_setaffinity(0, sizeof(*mask), mask); } while(0)
 #else
 #  define marcel_change_vpmask(mask) (void)0
 #endif

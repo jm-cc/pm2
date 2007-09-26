@@ -14,11 +14,13 @@
  * General Public License for more details.
  */
 
+#define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
 #include <stdio.h>
 #include <sys/time.h>
 
 //#define DEBUG
+//#undef MA__BUBBLES
 
 tbx_tick_t t1, t2, t3;
 
@@ -38,12 +40,23 @@ any_t main_thread(void *arg)
   marcel_attr_t attr;
   long nb;
   int essais = 5;
+#ifdef MA__BUBBLES
+  marcel_bubble_t b;
+  marcel_bubble_init(&b);
+  marcel_bubble_setinitrq(&b,&marcel_topo_vp_level[0].sched);
+  marcel_wake_up_bubble(&b);
+  marcel_bubble_inserttask(&b, marcel_self());
+#endif
 
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, tbx_true);
   marcel_attr_setseed(&attr, seed);
   marcel_attr_setprio(&attr, MA_BATCH_PRIO);
+#ifdef MA__BUBBLES
+  marcel_attr_setinitbubble(&attr, &b);
+#else
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
+#endif
 
   while(essais--) {
     nb = (long)arg;
@@ -61,6 +74,10 @@ any_t main_thread(void *arg)
     marcel_printf("create =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (long)arg);
     marcel_printf("exec   =  %fus\n", TBX_TIMING_DELAY(t2, t3) / (long)arg);
   }
+#ifdef MA__BUBBLES
+  marcel_bubble_removetask(&b, marcel_self());
+  marcel_bubble_join(&b);
+#endif
 
   return NULL;
 }

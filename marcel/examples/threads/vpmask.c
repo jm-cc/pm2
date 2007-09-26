@@ -18,6 +18,31 @@
 #include "utils.h"
 #include <stdio.h>
 
+#ifdef PTHREAD
+volatile int started;
+volatile int finished;
+
+any_t f_busy(any_t arg)
+{
+  marcel_printf("I'm alive\n");
+  started = 1;
+  while (!finished);
+  marcel_printf("I'm dead\n");
+
+  return NULL;
+}
+
+any_t f_idle(any_t arg)
+{
+  marcel_printf("I'm idle (2)\n");
+  started = 1;
+  while (!finished) sleep(1);
+  marcel_printf("I'm dead (2)\n");
+
+  return NULL;
+}
+#endif
+
 void bench_change_vpmask(unsigned nb)
 {
   tick_t t1, t2;
@@ -37,6 +62,39 @@ void bench_change_vpmask(unsigned nb)
  
 }
 
+#ifdef PTHREAD
+void bench_migrate(unsigned long nb, int active)
+{
+  tick_t t1, t2;
+  marcel_t pid;
+  any_t status;
+  register long n = nb;
+
+  int i = 2;
+
+  if(!nb)
+    return;
+
+  finished = 0;
+  started = 0;
+  marcel_create(&pid, NULL, active ? f_busy : f_idle, (any_t)n);
+  while (!started);
+
+  GET_TICK(t1);
+  while(--n) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(i, &cpuset);
+    pthread_setaffinity_np(pid, sizeof(cpuset), &cpuset);
+    i = 5-i;
+  }
+  GET_TICK(t2);
+  printf("migration time =  %fus\n", TIMING_DELAY(t1, t2) / (double)nb);
+  finished = 1;
+  marcel_join(pid, &status);
+}
+#endif
+
 int marcel_main(int argc, char *argv[])
 { 
   int essais = 3;
@@ -50,8 +108,17 @@ int marcel_main(int argc, char *argv[])
     exit(1);
   }
 
+  if (marcel_nbvps() < 4) {
+    fprintf(stderr, "I need at least 4 processors to run\n");
+    exit(1);
+  }
+
   while(essais--) {
     bench_change_vpmask(atol(argv[1]));
+#ifdef PTHREAD
+    bench_migrate(atol(argv[1]), 1);
+    bench_migrate(atol(argv[1]), 0);
+#endif
   }
 
   marcel_end();

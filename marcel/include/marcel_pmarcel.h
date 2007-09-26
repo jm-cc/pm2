@@ -330,12 +330,14 @@ extern int pmarcel_yield (void) __THROW;
 
 /* Functions for handling initialization.  */
 
+#ifdef MARCEL_ONCE_ENABLED
 /* Guarantee that the initialization function INIT_ROUTINE will be called
    only once, even if pmarcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to PMARCEL_ONCE_INIT.  */
 extern int pmarcel_once (pmarcel_once_t *__once_control,
 			 void (*__init_routine) (void)) __THROW;
+#endif
 
 
 /* Functions for handling cancellation.  */

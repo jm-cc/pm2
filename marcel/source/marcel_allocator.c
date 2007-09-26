@@ -51,7 +51,7 @@ void __marcel_init ma_allocator_init(void)
 	ma_node_allocator =
 	    ma_new_obj_allocator(0, __ma_obj_allocator_malloc,
 	    (void *) sizeof(ma_node_t),
-	    __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL, 0);
+	    __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
 }
 
 void ma_allocator_exit(void)
@@ -146,6 +146,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 		}
 
 	case POLICY_HIERARCHICAL:
+	case POLICY_HIERARCHICAL_MEMORY:
 		for (j = 0; j < marcel_topo_nblevels; ++j) {
 			for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
 				ma_container_fini(ma_per_level_data
@@ -154,6 +155,10 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 					    offset)),
 				    allocator->destroy, allocator->destroy_arg);
 			}
+			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+				/* Last memory level, stop here */
+				break;
 		}
 		ma_obj_free(level_container_allocator,
 		    (void *) allocator->container.offset);
@@ -201,6 +206,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 			}
 
 		case POLICY_HIERARCHICAL:
+		case POLICY_HIERARCHICAL_MEMORY:
 
 			allocator->container.offset = (unsigned long)
 			    ma_obj_alloc(level_container_allocator);
@@ -214,6 +220,10 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 					    allocator->
 					    conservative, allocator->max_size);
 				}
+				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+						marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+					/* Last memory level, stop here */
+					break;
 			}
 
 			break;
@@ -253,7 +263,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	// Si on ne trouve pas de container plein sur toute la topologie, on 
 	// retourne le container de niveau le plus bas (= le plus proche du processeur). 
 
-	if (allocator->policy == POLICY_HIERARCHICAL && mode == ALLOC_METHOD) {
+	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && mode == ALLOC_METHOD) {
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
 		while (niveau_courant) {
@@ -263,8 +273,11 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			    allocator->container.offset);
 			if (ma_container_nb_element(container_courant) > 0)
 				return container_courant;
-			else
-				niveau_courant = niveau_courant->father;
+			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+					niveau_courant->type == MARCEL_LEVEL_NODE)
+				/* Last memory level, stop here */
+				break;
+			niveau_courant = niveau_courant->father;
 		}
 		return NULL;
 	}
@@ -276,7 +289,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	// si les containers sont tous 
 	// pleins on retoune quand meme le container de plus proche du processeur : donc il va deborder...
 
-	if (allocator->policy == POLICY_HIERARCHICAL && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
+	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
 		while (niveau_courant) {
@@ -284,10 +297,13 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			container_courant =
 			    ma_per_level_data(niveau_courant,
 			    allocator->container.offset);
-			if (!ma_container_plein(container_courant)) {
+			if (!ma_container_plein(container_courant))
 				return container_courant;
-			} else
-				niveau_courant = niveau_courant->father;
+			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+					niveau_courant->type == MARCEL_LEVEL_NODE)
+				/* Last memory level, stop here */
+				break;
+			niveau_courant = niveau_courant->father;
 		}
 		if (mode == FREE_METHOD) {
 			/* trop-plein, libérer */
@@ -318,7 +334,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 		fprintf(stderr,"\n");
 		return;
 	}
-	if (allocator->policy == POLICY_HIERARCHICAL) {
+	if (allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
 		int i,j;
 		fprintf(stderr,"hierarchical\n");
 		for (j = 0; j < marcel_topo_nblevels; ++j) {
@@ -328,6 +344,10 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
 				fprintf(stderr,"%4d",((ma_container_t*)ma_per_level_data(&marcel_topo_levels[j][i],(allocator->container.offset)))->nb_element);
 			fprintf(stderr,"\n");
+			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+				/* Last memory level, stop here */
+				break;
 		}
 	}
 }

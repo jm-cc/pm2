@@ -233,10 +233,10 @@ static void __marcel_init marcel_slot_init(void)
 			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 			mapped_slot_alloc, NULL, mapped_slot_free, NULL,
-			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
 	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
 	    (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
-	    POLICY_HIERARCHICAL, 0);
+	    POLICY_HIERARCHICAL_MEMORY, 0);
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 
 #ifdef MA__PROVIDE_TLS
@@ -267,13 +267,13 @@ static void __marcel_init marcel_slot_init(void)
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,
-			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
 #endif
 	/* TODO: on pourrait réduire la taille */
 	marcel_thread_seed_allocator = ma_new_obj_allocator(0,
 			ma_obj_allocator_malloc, (void *) sizeof(marcel_task_t),
 			ma_obj_allocator_free, NULL,
-			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
 
 	LOG_OUT();
 }

@@ -25,7 +25,7 @@ void __marcel_init ma_deviate_init(void)
 {
 	deviate_records = ma_new_obj_allocator(0,
 	    ma_obj_allocator_malloc, (void *) sizeof(ma_allocator_t),
-	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL, 0);
+	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
 }
 
 // préemption désactivée et marcel_lock_locked(deviate_lock) == 1

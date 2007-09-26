@@ -146,9 +146,11 @@ struct marcel_task {
 	unsigned next_atexit_func;
 #endif /* MARCEL_ATEXIT_ENABLED */
 
+#ifdef MARCEL_CLEANUP_ENABLED
 	/* TODO: option de flavor */
 	/*         cleanup */
 	struct _marcel_cleanup_buffer *last_cleanup;
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 	/* Gestion des exceptions */

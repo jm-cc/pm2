@@ -18,6 +18,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_CLEANUP_ENABLED
 #define STACK_SIZE	10000
 
 char *mess[2] = { "boys", "girls" };
@@ -60,3 +61,13 @@ int marcel_main(int argc, char *argv[])
    marcel_end();
    return 0;
 }
+#else /* MARCEL_CLEANUP_ENABLED */
+#  warning Marcel cleanup must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel cleanup' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_CLEANUP_ENABLED */

@@ -131,7 +131,9 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->next_atexit_func = 0;
 #endif /* MARCEL_ATEXIT_ENABLED */
 
+#ifdef MARCEL_CLEANUP_ENABLED
 	t->last_cleanup = NULL;
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 	//t->cur_exception
@@ -560,9 +562,11 @@ static void marcel_exit_internal(any_t val)
 	/* atexit and cleanup functions are called on the thread's stack.
 	 * postexit functions are called outside the thread (either postexit or
 	 * joiner), without stack when it is dynamic */
+#ifdef MARCEL_CLEANUP_ENABLED
 	while (cur->last_cleanup) {
 		_marcel_cleanup_pop(cur->last_cleanup, 1);
 	}
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 #ifdef MARCEL_ATEXIT_ENABLED
 	marcel_atexit_exec(cur);
@@ -933,6 +937,7 @@ void marcel_resume(marcel_t pid)
 }
 #endif /* MARCEL_SUSPEND_ENABLED */
 
+#ifdef MARCEL_CLEANUP_ENABLED
 #define __NO_WEAK_PTHREAD_ALIASES
 #ifdef MA__LIBPTHREAD
 #include <bits/libc-lock.h>
@@ -973,6 +978,7 @@ DEF_PTHREAD(void, cleanup_pop,(struct _pthread_cleanup_buffer *__buffer,
 				     int __execute), (__buffer, __execute))
 #undef NAME_PREFIX
 #define NAME_PREFIX
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 #ifdef MARCEL_MIGRATION_ENABLED
 void marcel_freeze(marcel_t * pids, int nb)

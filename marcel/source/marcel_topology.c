@@ -262,7 +262,7 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("%d dies\n", numdies);
 
 	if (really_dies) {
-		MA_BUG_ON(!(die_level=TBX_MALLOC((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
+		MA_BUG_ON(!(die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
 
 		for (cpu=0, j=0; cpu <= processor; cpu++) {
 			i = proc_physid[cpu];
@@ -323,7 +323,7 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("%d cores\n", numcores);
 
 	if (really_cores) {
-		MA_BUG_ON(!(core_level=TBX_MALLOC((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
+		MA_BUG_ON(!(core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
 
 		for (cpu=0, j=0; cpu <= processor; cpu++) {
 #ifndef IA64_ARCH
@@ -390,7 +390,7 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+	MA_BUG_ON(!(node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
 
 	if (!(buffer=TBX_MALLOC(buffersize))) {
 		fprintf(stderr,"no room for storing cpu mask\n");
@@ -457,7 +457,7 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+	MA_BUG_ON(!(node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
 
 	cpusetcreate(&cpuset);
 	for (radid = 0; radid < nbnodes; radid++) {
@@ -514,7 +514,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 
 	MA_BUG_ON(nbnodes == 0);
 
-	MA_BUG_ON(!(rad_level=TBX_MALLOC((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level))));
+	MA_BUG_ON(!(rad_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level))));
 
 	for (r = 0, i = 0; i < nbnodes; i++) {
 		if (rs_getrad(rset, rad, sdl, i, 0)) {
@@ -586,7 +586,7 @@ static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
 	unsigned cpu;
 
-	MA_BUG_ON(!(cpu_level=TBX_MALLOC((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level))));
+	MA_BUG_ON(!(cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level))));
 
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
@@ -747,7 +747,7 @@ static void topo_discover(void) {
 	/* TODO: Brice will probably want the OS->VP function */
 
 	/* create the VP level: now we decide which CPUs we will really use according to nvp and stride */
-	struct marcel_topo_level *vp_level = TBX_MALLOC((marcel_nbvps()+MARCEL_NBMAXVPSUP+1)*sizeof(*vp_level));
+	struct marcel_topo_level *vp_level = __marcel_malloc((marcel_nbvps()+MARCEL_NBMAXVPSUP+1)*sizeof(*vp_level));
 	MA_BUG_ON(!vp_level);
 
 	marcel_vpmask_t cpumask = MARCEL_VPMASK_EMPTY;
@@ -805,7 +805,7 @@ static void topo_discover(void) {
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_node_level)
 			marcel_topo_node_level = NULL;
 #endif
-		TBX_FREE(marcel_topo_levels[marcel_topo_nblevels-1]);
+		__marcel_free(marcel_topo_levels[marcel_topo_nblevels-1]);
 		marcel_topo_nblevels--;
 		marcel_topo_levels[marcel_topo_nblevels] = NULL;
 	}
@@ -860,7 +860,7 @@ static void topo_discover(void) {
 				merge_os_components(core);
 				merge_os_components(cpu);
 			}
-			TBX_FREE(marcel_topo_levels[l+1]);
+			__marcel_free(marcel_topo_levels[l+1]);
 			memmove(&marcel_topo_level_nbitems[l+1],&marcel_topo_level_nbitems[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_level_nbitems));
 			memmove(&marcel_topo_levels[l+1],&marcel_topo_levels[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_levels));
 			marcel_topo_nblevels--;
@@ -909,7 +909,7 @@ static void topo_discover(void) {
 				memmove(&marcel_topo_levels[l+2],&marcel_topo_levels[l+1],(marcel_topo_nblevels-(l+1))*sizeof(*marcel_topo_levels));
 				/* new fake level */
 				marcel_topo_level_nbitems[l+1] = level_width;
-				marcel_topo_levels[l+1] = TBX_MALLOC((level_width+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
+				marcel_topo_levels[l+1] = __marcel_malloc((level_width+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
 				/* fill it with split items */
 				for (i=0,j=0; marcel_topo_levels[l][i].cpuset; i++) {
 					/* split one item */
@@ -1020,7 +1020,7 @@ void ma_topo_exit(void) {
 			marcel_topo_levels[l][i].children = NULL;
 		}
 		if (l) {
-			TBX_FREE(marcel_topo_levels[l]);
+			__marcel_free(marcel_topo_levels[l]);
 			marcel_topo_levels[l] = NULL;
 		}
 	}

@@ -31,7 +31,7 @@ marcel_barrier_t barrier[GANGS];
 #endif
 
 any_t work(any_t arg) {
-  int n = (int) arg;
+  int n = (int)(intptr_t) arg;
   *marcel_stats_get(marcel_self(), load) = rand()%10;
   marcel_task_memory_attach(NULL,NULL,(rand()%10)<<20,rand()%2);
   while(1);

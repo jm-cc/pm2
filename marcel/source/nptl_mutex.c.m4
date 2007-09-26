@@ -617,6 +617,7 @@ int prefix_mutexattr_getpshared(const prefix_mutexattr_t * __restrict attr,
       * ONCE-ONLY EXECUTION
       */
 #include <limits.h>
+#ifdef MARCEL_ONCE_ENABLED
 
 // XXX Vince, à corriger. On n'a pas lpt_mutex sur toutes les archis pour l'instant, donc j'ai mis un pmarcel_mutex pour que ça marchouille.
 static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
@@ -746,3 +747,4 @@ DEF___LIBPTHREAD(void, once_fork_parent, (void), ())
 DEF___LIBPTHREAD(void, once_fork_child, (void), ())
 ]])
 //#endif
+#endif /* MARCEL_ONCE_ENABLED */

@@ -21,7 +21,7 @@
 #include <errno.h>
 
 #ifndef MA__LWPS
-#warning add needs SMP or NUMA option
+#  warning blocking.c needs SMP or NUMA option
 #else
 
 any_t loop(any_t arg)

@@ -1,7 +1,7 @@
 #include "marcel.h"
-
+#ifdef MA__BUBBLES
 any_t f(any_t foo) {
-   int i = (int)foo;
+   int i = (int)(intptr_t)foo;
    int id = i/100;
    int load = i%100;
    int n;
@@ -10,7 +10,7 @@ any_t f(any_t foo) {
    if (!load) marcel_delay(1000);
    for (n=0;n<load*10000000;n++) sum+=n;
    marcel_printf("%d done\n",id);
-   return (void*)sum;
+   return (void*)(intptr_t)sum;
 }
 
 marcel_bubble_t b0;
@@ -232,3 +232,9 @@ int main(int argc, char *argv[]) {
    profile_stop();
    return 0;
 }
+#else /* MA__BUBBLES */
+int main(int argc, char *argv[]) {
+   fprintf(stderr,"%s needs bubbles\n",argv[0]);
+   return 0;
+}
+#endif /* MA__BUBBLES */

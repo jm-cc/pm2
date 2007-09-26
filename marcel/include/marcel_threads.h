@@ -110,13 +110,17 @@ enum
  */
 typedef any_t (*marcel_func_t)(any_t);
 
+#ifdef MARCEL_CLEANUP_ENABLED
 /** Clean-up handler type.
  */
 typedef void (*cleanup_func_t)(any_t);
+#endif /* MARCEL_CLEANUP_ENABLED */
 
+#ifdef MARCEL_ATEXIT_ENABLED
 /** At-exit clean-up handler.
  */
 typedef void (*marcel_atexit_func_t)(any_t);
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 #ifdef MARCEL_POSTEXIT_ENABLED
 /** Post exit clean-up handler.
@@ -296,10 +300,12 @@ void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
+#ifdef MARCEL_ATEXIT_ENABLED
 /** Setup a at-exit clean-up handler
  * Called in the context of the thread just before its complete termination.
  */
 void marcel_atexit(marcel_atexit_func_t, any_t);
+#endif /* MARCEL_ATEXIT_ENABLED */
 
 /*
   - why a regular prototype + a macro for the marcel_thread_preemption_enable series of functions?
@@ -373,6 +379,7 @@ static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t) 
 
 #section structures
 
+#ifdef MARCEL_CLEANUP_ENABLED
 /** Linked list of buffers for thread clean-up handlers.
  */
 struct _marcel_cleanup_buffer
@@ -382,10 +389,12 @@ struct _marcel_cleanup_buffer
   int __canceltype;			  /* Saved cancellation type. */
   struct _marcel_cleanup_buffer *__prev; /* Chaining of cleanup functions.  */
 };
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 
 #section functions
 
+#ifdef MARCEL_CLEANUP_ENABLED
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 
@@ -399,7 +408,9 @@ DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 				    tbx_bool_t execute) __THROW);
 #undef NAME_PREFIX
 #define NAME_PREFIX
+#endif /* MARCEL_CLEANUP_ENABLED */
 
+#ifdef MARCEL_SUSPEND_ENABLED
 /** Temporarily suspend execution of the given thread.
     - why keep this feature that is used only in a single example and uses a
     GETMEM entry?
@@ -418,6 +429,7 @@ void marcel_suspend(marcel_t pid);
 /** Resume a formerly suspended thread.
  */
 void marcel_resume(marcel_t pid);
+#endif /* MARCEL_SUSPEND_ENABLED */
 
 #section common
 #ifdef MARCEL_MIGRATION_ENABLED
@@ -475,6 +487,7 @@ int marcel_setname(marcel_t __restrict pid, const char * __restrict name);
  */
 int marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
 
+#ifdef MARCEL_CLEANUP_ENABLED
 /** Install a cleanup handler. ROUTINE will be called with arguments ARG
     when the thread is cancelled or calls marcel_exit.  ROUTINE will also
     be called with arguments ARG when the matching marcel_cleanup_pop
@@ -489,7 +502,6 @@ extern void _marcel_cleanup_push (struct _marcel_cleanup_buffer *__buffer,
 */
 extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
                                  tbx_bool_t __execute) __THROW;
-
 
 /** Install a clean-up handler with a private clean-up buffer.
     Note: marcel_cleanup_push and marcel_cleanup_pop are macros and must always
@@ -531,14 +543,16 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
 # define marcel_cleanup_pop_restore_np(execute) \
   _marcel_cleanup_pop_restore (&_buffer, (execute)); }
 
+#endif /* MARCEL_CLEANUP_ENABLED */
 
+#ifdef MARCEL_ONCE_ENABLED
 /* Guarantee that the initialization function INIT_ROUTINE will be called
    only once, even if marcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to MARCEL_ONCE_INIT.  */
 /* extern int marcel_once (marcel_once_t *__once_control, */
 /* 			 void (*__init_routine) (void)) __THROW; */
-
+#endif /* MARCEL_ONCE_ENABLED */
 
 #section macros
 #depend "marcel_descr.h[types]"

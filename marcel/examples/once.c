@@ -18,6 +18,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_ONCE_ENABLED
 void f(void)
 {
    tprintf("Salut les gars !\n");
@@ -37,3 +38,13 @@ int marcel_main(int argc, char *argv[])
   marcel_end();
   return 0;
 }
+#else /* MARCEL_ONCE_ENABLED */
+#  warning Marcel once must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel once' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_ONCE_ENABLED */

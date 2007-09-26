@@ -78,7 +78,7 @@ static volatile float data[NWORKS][128];
 #endif
 
 any_t work(any_t arg) {
-	int i = (int) arg;
+	int i = (int)(intptr_t) arg;
 	int group = i/NWORKERS;
 	int me = i%NWORKERS;
 	unsigned long start;
@@ -270,7 +270,7 @@ int marcel_main(int argc, char *argv[]) {
 						j<NWORKERS-1?piper:consumer
 						: producer,
 #endif
-					(any_t) (i*NWORKERS+j));
+					(any_t)(intptr_t)(i*NWORKERS+j));
 		}
 #ifdef MA__BUBBLES
 		marcel_wake_up_bubble(&bubbles[

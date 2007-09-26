@@ -38,11 +38,13 @@ REPLICATE([[dnl
 ]])
 
 #section types
+#ifdef MARCEL_ONCE_ENABLED
 REPLICATE([[dnl
 /* Once-only execution */
 typedef int prefix_once_t;
-]], [[MARCEL PMARCEL]])/* pas LPT car dépendant de l'archi */
-
+]], [[MARCEL PMARCEL]]
+)/* pas LPT car dépendant de l'archi */
+#endif /* MARCEL_ONCE_ENABLED */
 
 REPLICATE([[dnl
 /* Mutex types.  */
@@ -78,6 +80,7 @@ enum
 ]], [[MARCEL PMARCEL LPT]])
 
 #include <asm/linux_types.h>
+
 REPLICATE([[dnl
 /* Mutex initializers.  */
 #define PREFIX_MUTEX_INITIALIZER \
@@ -140,6 +143,7 @@ typedef union
 
 #section functions
 #include <sys/time.h>
+
 REPLICATE([[dnl
 /* Initialize a mutex.  */
 extern int prefix_mutex_init (prefix_mutex_t * __restrict __mutex,
@@ -191,6 +195,10 @@ extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
    PREFIX_MUTEX_DEFAULT).  */
 extern int prefix_mutexattr_settype (prefix_mutexattr_t *__attr, int __kind)
      __THROW;
+]],[[MARCEL PMARCEL LPT]])dnl END_REPLICATE
+
+#ifdef MARCEL_ONCE_ENABLED
+REPLICATE([[dnl
 /* Functions for handling initialization.  */
 
 /* Guarantee that the initialization function INIT_ROUTINE will be called
@@ -201,8 +209,6 @@ extern int prefix_once (prefix_once_t *__once_control,
                          void (*__init_routine) (void)) __THROW;
 ]],[[MARCEL PMARCEL LPT]])dnl END_REPLICATE
 
-
-
 REPLICATE([[dnl
 extern void __prefix_once_fork_prepare (void);
 extern void __prefix_once_fork_parent (void);
@@ -211,3 +217,4 @@ extern void __pmarcel_once_fork_prepare (void);
 extern void __pmarcel_once_fork_parent (void);
 extern void __pmarcel_once_fork_child (void);
 ]],[[PTHREAD]])
+#endif /* MARCEL_ONCE_ENABLED */

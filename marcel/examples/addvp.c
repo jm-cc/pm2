@@ -22,7 +22,7 @@
 #include <errno.h>
 
 #ifndef MA__LWPS
-#warning add needs SMP or NUMA option
+#warning addvp needs SMP or NUMA option
 #else
 static marcel_kthread_mutex_t kthread_mutex = MARCEL_KTHREAD_MUTEX_INITIALIZER;
 

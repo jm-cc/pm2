@@ -669,8 +669,6 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 	ma_deactivate_running_task(p,h);
 }
 
-#section common
-#ifdef MA__BUBBLES
 #section marcel_macros
 #define MA_ENTITY_RUNNING 2
 #define MA_ENTITY_BLOCKED 1
@@ -701,10 +699,12 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 		ma_deactivate_running_entity(e, h);
 	}
 
+#ifdef MA__BUBBLES
 	if (e->type == MA_BUBBLE_ENTITY) {
 		ret = MA_ENTITY_BLOCKED;
 		ma_set_sched_holder(e, ma_bubble_entity(e), 0);
 	}
+#endif
 	return ret;
 }
 
@@ -715,21 +715,27 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+#ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
 		MA_BUG_ON(h != e->init_holder);
 		if (e->type == MA_BUBBLE_ENTITY)
 			PROF_EVENT2(bubble_sched_bubble_goingback, ma_bubble_entity(e), ma_bubble_holder(h));
 		else
 			PROF_EVENT2(bubble_sched_goingback, ma_task_entity(e), ma_bubble_holder(h));
-	} else {
+	} else
+#endif
+	{
 		MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
 		PROF_EVENT2(bubble_sched_switchrq,
+#ifdef MA__BUBBLES
 			e->type == MA_BUBBLE_ENTITY?
 				(void*) ma_bubble_entity(e):
+#endif
 				(void*) ma_task_entity(e),
 				ma_rq_holder(h));
 	}
 
+#ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */
 		marcel_bubble_t *b = ma_bubble_holder(h);
@@ -738,6 +744,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 			b = ma_bubble_holder(h);
 		}
 	}
+#endif
 
 	e->sched_holder = h;
 
@@ -747,6 +754,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_BLOCKED) {
+#ifdef MA__BUBBLES
 		if (h->type == MA_BUBBLE_HOLDER) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
 			if (e->type == MA_BUBBLE_ENTITY)
@@ -756,6 +764,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				/* Just enqueue */
 				__ma_bubble_enqueue_entity(e, b);
 		} else
+#endif
 			ma_rq_enqueue_entity(e, ma_rq_holder(h));
 	}
 }
@@ -770,9 +779,6 @@ static __tbx_inline__ void ma_move_entity(marcel_entity_t *e, ma_holder_t *h) {
 	int state = ma_get_entity(e);
 	ma_put_entity(e, h, state);
 }
-
-#section common
-#endif
 
 #section marcel_structures
 

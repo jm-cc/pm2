@@ -42,8 +42,7 @@ REPLICATE([[dnl
 REPLICATE([[dnl
 /* Once-only execution */
 typedef int prefix_once_t;
-]], [[MARCEL PMARCEL]]
-)/* pas LPT car dépendant de l'archi */
+]], [[MARCEL PMARCEL]])/* pas LPT car dépendant de l'archi */
 #endif /* MARCEL_ONCE_ENABLED */
 
 REPLICATE([[dnl

@@ -31,7 +31,7 @@ typedef struct {
   int level;
 } job;
 
-marcel_attr_t attr,commattr;
+marcel_attr_t attr;
 
 static __inline__ void job_init(job *j, int inf, int sup, int level)
 {
@@ -64,20 +64,26 @@ any_t sum(any_t arg)
 
 #ifdef MA__BUBBLES
   if (j->level<MAX_BUBBLE_LEVEL) {
-    marcel_t p1,p2;
     marcel_bubble_t b1,b2;
+    marcel_attr_t commattr;
+
+    marcel_attr_init(&commattr);
+    marcel_attr_setdetachstate(&commattr, tbx_true);
+    marcel_attr_setschedpolicy(&commattr, MARCEL_SCHED_AFFINITY);
+#ifdef CPU0ONLY
+    marcel_attr_setvpmask(&commattr, MARCEL_VPMASK_ALL_BUT_VP(0));
+#endif
+
     marcel_bubble_init(&b1);
     marcel_bubble_init(&b2);
     marcel_bubble_setschedlevel(&b1,j->level);
     marcel_bubble_setschedlevel(&b2,j->level);
-    marcel_create_dontsched(&p1, &commattr, sum, (any_t)&j1);
-    marcel_create_dontsched(&p2, &commattr, sum, (any_t)&j2);
-    marcel_bubble_inserttask(&b1, p1);
-    marcel_bubble_inserttask(&b2, p2);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b1);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b2);
-    marcel_wake_up_created_thread(p1);
-    marcel_wake_up_created_thread(p2);
+    marcel_attr_setinitbubble(&commattr, &b1);
+    marcel_create(NULL, &commattr, sum, (any_t)&j1);
+    marcel_attr_setinitbubble(&commattr, &b2);
+    marcel_create(NULL, &commattr, sum, (any_t)&j2);
     marcel_bubble_join(&b1);
     marcel_bubble_join(&b2);
   } else
@@ -125,13 +131,6 @@ int main(int argc, char **argv)
   marcel_attr_setinheritholder(&attr, tbx_true);
 #ifdef CPU0ONLY
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
-#endif
-
-  marcel_attr_init(&commattr);
-  marcel_attr_setdetachstate(&commattr, tbx_true);
-  marcel_attr_setschedpolicy(&commattr, MARCEL_SCHED_AFFINITY);
-#ifdef CPU0ONLY
-  marcel_attr_setvpmask(&commattr, MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif
 
   marcel_sem_init(&j.sem, 0);

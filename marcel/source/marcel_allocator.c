@@ -155,10 +155,12 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 					    offset)),
 				    allocator->destroy, allocator->destroy_arg);
 			}
+#ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
 					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
 				/* Last memory level, stop here */
 				break;
+#endif
 		}
 		ma_obj_free(level_container_allocator,
 		    (void *) allocator->container.offset);
@@ -220,10 +222,12 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 					    allocator->
 					    conservative, allocator->max_size);
 				}
+#ifdef MA__NUMA
 				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
 						marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
 					/* Last memory level, stop here */
 					break;
+#endif
 			}
 
 			break;
@@ -273,10 +277,12 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			    allocator->container.offset);
 			if (ma_container_nb_element(container_courant) > 0)
 				return container_courant;
+#ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
 					niveau_courant->type == MARCEL_LEVEL_NODE)
 				/* Last memory level, stop here */
 				break;
+#endif
 			niveau_courant = niveau_courant->father;
 		}
 		return NULL;
@@ -299,10 +305,12 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			    allocator->container.offset);
 			if (!ma_container_plein(container_courant))
 				return container_courant;
+#ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
 					niveau_courant->type == MARCEL_LEVEL_NODE)
 				/* Last memory level, stop here */
 				break;
+#endif
 			niveau_courant = niveau_courant->father;
 		}
 		if (mode == FREE_METHOD) {
@@ -344,10 +352,12 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
 				fprintf(stderr,"%4d",((ma_container_t*)ma_per_level_data(&marcel_topo_levels[j][i],(allocator->container.offset)))->nb_element);
 			fprintf(stderr,"\n");
+#ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
 					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
 				/* Last memory level, stop here */
 				break;
+#endif
 		}
 	}
 }

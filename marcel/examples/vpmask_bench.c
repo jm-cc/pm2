@@ -118,6 +118,36 @@ void bench_migrate(unsigned long nb, int active)
 #endif
 }
 
+void bench_resched(unsigned long nb)
+{
+  tbx_tick_t t1, t2;
+  marcel_t pid;
+  any_t status;
+  register long n = nb;
+  marcel_attr_t attr;
+
+  marcel_attr_init(&attr);
+  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(2));
+
+  finished = 0;
+  started = 0;
+  ma_wmb();
+  marcel_create(&pid, &attr, f_busy, (any_t)n);
+  ma_rmb();
+  while (!started);
+
+  TBX_GET_TICK(t1);
+  while(--n) {
+	  ma_set_tsk_need_togo(pid);
+	  ma_resched_task(pid, 2, GET_LWP_BY_NUM(2));
+	  ma_topo_vpdata(&marcel_topo_vp_level[2], need_resched) = 0;
+  }
+  TBX_GET_TICK(t2);
+  marcel_printf("resched time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
+  finished = 1;
+  marcel_join(pid, &status);
+}
+
 int marcel_main(int argc, char *argv[])
 { 
   int essais = 3;
@@ -138,6 +168,7 @@ int marcel_main(int argc, char *argv[])
     bench_change_vpmask(atol(argv[1]));
     bench_migrate(atol(argv[1])*100, 1);
     bench_migrate(atol(argv[1])*100, 0);
+    bench_resched(atol(argv[1])*10);
   }
 
   marcel_end();

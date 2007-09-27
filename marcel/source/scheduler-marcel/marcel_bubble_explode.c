@@ -17,8 +17,6 @@
 
 #ifdef MA__BUBBLES
 
-#warning broken
-
 static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l)
 {
   int i;
@@ -67,8 +65,9 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 {
 	int max_prio;
 	ma_runqueue_t *currq;
+	marcel_entity_t *e;
 	/* sur smp, descendre l'entité si besoin est */
-	if (ma_idle_scheduler && nextent->sched_level > rq->level) {
+	if (/*ma_idle_scheduler &&*/ nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une
 		 * telle priorité (ou encore plus forte) avant nous */
 		bubble_sched_debugl(7,"%p should go down\n", nextent);
@@ -146,6 +145,8 @@ les #ifdef dans les arguments de macro...
 	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
 	//__do_bubble_explode(bubble,rq);
 	//ma_atomic_set(&bubble->sched.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
+	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list)
+		ma_move_entity(e, &rq->hold);
 
 	ma_holder_rawunlock(&bubble->hold);
 	sched_debug("unlock(%p)\n", rq);

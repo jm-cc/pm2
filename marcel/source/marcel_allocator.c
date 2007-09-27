@@ -147,7 +147,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 
 	case POLICY_HIERARCHICAL:
 	case POLICY_HIERARCHICAL_MEMORY:
-		for (j = marcel_topo_nblevels-1; j > 0; ++j) {
+		for (j = marcel_topo_nblevels-1; j >= 0; --j) {
 			for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
 				ma_container_fini(ma_per_level_data
 				    (&marcel_topo_levels[j][i],
@@ -212,7 +212,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
 			allocator->container.offset = (unsigned long)
 			    ma_obj_alloc(level_container_allocator);
-			for (j = marcel_topo_nblevels-1; j > 0; ++j) {
+			for (j = marcel_topo_nblevels-1; j >= 0; --j) {
 				for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
 					ma_container_init(ma_per_level_data
 					    (&marcel_topo_levels
@@ -345,7 +345,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 	if (allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
 		int i,j;
 		fprintf(stderr,"hierarchical\n");
-		for (j = marcel_topo_nblevels-1; j > 0; ++j) {
+		for (j = marcel_topo_nblevels-1; j >= 0; --j) {
 			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
 				fprintf(stderr,"%4d",marcel_topo_levels[j][i].number);
 			fprintf(stderr,"\n");

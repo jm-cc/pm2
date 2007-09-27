@@ -69,7 +69,6 @@ any_t sum(any_t arg)
 
     marcel_attr_init(&commattr);
     marcel_attr_setdetachstate(&commattr, tbx_true);
-    marcel_attr_setschedpolicy(&commattr, MARCEL_SCHED_AFFINITY);
 #ifdef CPU0ONLY
     marcel_attr_setvpmask(&commattr, MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif

@@ -281,6 +281,10 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			case MARCEL_SCHED_OTHER: {
 				struct marcel_topo_level *vp;
 				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					if (!lwp)
+						continue;
+					if (!ma_per_lwp(online, lwp))
+						continue;
 					rq = &vp->sched;
 					break;
 				}
@@ -295,6 +299,11 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
 				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					marcel_lwp_t *lwp = GET_LWP_BY_NUM(vp->number);
+					if (!lwp)
+						continue;
+					if (!ma_per_lwp(online, lwp))
+						continue;
 					rq2 = &vp->sched;
 					if (rq2->hold.nr_ready < THREAD_THRESHOLD_LOW) {
 						rq = rq2;
@@ -313,6 +322,10 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 				ma_runqueue_t *rq2;
 				rq = ma_lwp_vprq(cur_lwp);
 				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
+					if (!lwp)
+						continue;
+					if (!ma_per_lwp(online, lwp))
+						continue;
 					rq2 = &vp->sched;
 					if (rq2->hold.nr_ready < best) {
 						rq = rq2;

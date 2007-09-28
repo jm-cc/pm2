@@ -58,6 +58,16 @@ struct any_src_status {
  */
 static struct any_src_status any_src[NM_SO_MAX_TAGS];
 
+#ifdef NMAD_QOS
+/** Array of priority value for each tag
+ */
+static uint8_t priorities[NM_SO_MAX_TAGS];
+
+/** Array of policy linked with corresponding tag
+ */
+static uint8_t policies[NM_SO_MAX_TAGS];
+#endif /* NMAD_QOS */
+
 static int nm_so_sr_init_gate(struct nm_gate *p_gate);
 static int nm_so_sr_exit_gate(struct nm_gate *p_gate);
 static int nm_so_sr_pack_success(struct nm_gate *p_gate,
@@ -107,7 +117,19 @@ nm_so_sr_init(struct nm_core *p_core,
 
   for(i=0 ; i<NM_SO_MAX_TAGS ; i++) {
     any_src[i].is_first_request = 1;
+#ifdef NMAD_QOS
+    priorities[i] = NM_SO_NB_PRIORITIES - 1;
+    policies[i] = NM_SO_POLICY_PRIORITY;
+#endif /* NMAD_QOS */
   }
+
+#ifdef NMAD_QOS
+  priorities[0] = 0;
+  priorities[1] = 0;
+  priorities[2] = 0;
+  priorities[3] = 0;
+  priorities[4] = 0;
+#endif /* NMAD_QOS */
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -679,6 +701,42 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
+
+#ifdef NMAD_QOS
+void
+nm_so_set_priority(uint8_t tag, uint8_t priority)
+{
+  if(tag < NM_SO_MAX_TAGS && priority < NM_SO_NB_PRIORITIES)
+    priorities[tag] = priority;
+}
+
+uint8_t
+nm_so_get_priority(uint8_t tag)
+{
+  if (tag < NM_SO_MAX_TAGS)
+    return priorities[tag];
+
+  /* Undefined priority */
+  return NM_SO_NB_PRIORITIES - 1;
+}
+
+void
+nm_so_set_policy(uint8_t tag, uint8_t policy)
+{
+  if(tag < NM_SO_MAX_TAGS && policy < NM_SO_NB_POLICIES)
+    policies[tag] = policy;
+}
+
+uint8_t
+nm_so_get_policy(uint8_t tag)
+{
+  if (tag < NM_SO_MAX_TAGS)
+    return policies[tag];
+
+  /* Undefined policy */
+  return NM_SO_POLICY_FIFO;
+}
+#endif /* NMAD_QOS */
 
 int
 nm_so_sr_progress(struct nm_so_interface *p_so_interface)

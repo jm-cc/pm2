@@ -30,6 +30,9 @@
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
 #include "nm_so_strategies/nm_so_strat_balance.h"
+#ifdef NMAD_QOS
+#include "nm_so_strategies/nm_so_strat_qos.h"
+#endif /* NMAD_QOS */
 
 /** Initialize the scheduler.
  */
@@ -61,6 +64,10 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
   p_priv->current_strategy = &nm_so_strat_aggreg;
+#ifdef NMAD_QOS
+#elif defined(CONFIG_STRAT_QOS)
+  p_priv->current_strategy = &nm_so_strat_qos;
+#endif /* NMAD_QOS */
 #elif defined(CONFIG_STRAT_AGGREG_EXTENDED)
   p_priv->current_strategy = &nm_so_strat_aggreg_extended;
 #else

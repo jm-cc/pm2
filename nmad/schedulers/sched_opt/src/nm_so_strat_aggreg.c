@@ -304,5 +304,8 @@ nm_so_strategy nm_so_strat_aggreg = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+#ifdef NMAD_QOS
+  .ack_callback = NULL,
+#endif /* NMAD_QOS */
   .priv = NULL,
 };

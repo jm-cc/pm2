@@ -25,6 +25,10 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 #include "nm_so_debug.h"
+#ifdef NMAD_QOS
+#include "nm_so_strategies.h"
+#include "nm_so_private.h"
+#endif /* NMAD_QOS */
 
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 /* Per-'iovec entry' allocation flags (exclusive) */
@@ -654,6 +658,11 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_data_header *dh;
   void *data = NULL;
 
+#ifdef NMAD_QOS
+  nm_so_strategy *strategy = ((struct nm_so_gate *)p_so_pw->pw.p_gate->sch_private)->p_so_sched->current_strategy;
+  unsigned ack_received = 0;
+#endif /* NMAD_QOS */
+
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
      safely destroyed */
@@ -765,8 +774,23 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	  remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
 	  if(ack_handler) {
-	    int r = ack_handler(p_so_pw,
-				ch->a.tag_id, ch->a.seq, ch->a.track_id);
+	    int r;
+
+#ifdef NMAD_QOS
+	    if(strategy->ack_callback != NULL)
+	      {
+		ack_received = 1;
+		r = strategy->ack_callback(p_so_pw,
+					   ch->a.tag_id,
+					   ch->a.seq,
+					   ch->a.track_id,
+					   0);
+	      }
+	    else
+#endif /* NMAD_QOS */
+	      r = ack_handler(p_so_pw,
+			      ch->a.tag_id, ch->a.seq, ch->a.track_id);
+
 
 	    if (r == NM_SO_HEADER_MARK_READ) {
 	      ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
@@ -791,6 +815,15 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
       } /* switch */
 
   } /* while */
+
+#ifdef NMAD_QOS
+  if(ack_received)
+    strategy->ack_callback(p_so_pw,
+			   0,
+			   0,
+			   128,
+			   1);
+#endif /* NMAD_QOS */
 
   if (!p_so_pw->header_ref_count)
     nm_so_pw_free(p_so_pw);

@@ -30,6 +30,22 @@
 #define NM_SO_ANY_SRC  ((nm_gate_id_t)-1)
 #endif
 
+#ifdef NMAD_QOS
+/* Parameters for the QoS strategy 
+ */
+#define NM_SO_NB_POLICIES 6
+
+#define NM_SO_POLICY_UNDEFINED NM_SO_NB_POLICIES
+#define NM_SO_POLICY_FIFO 0
+#define NM_SO_POLICY_LATENCY 1
+#define NM_SO_POLICY_RATE 2
+#define NM_SO_POLICY_PRIORITY 3
+#define NM_SO_POLICY_PRIORITY_LATENCY 4
+#define NM_SO_POLICY_PRIORITY_RATE 5
+
+#define NM_SO_NB_PRIORITIES 3
+#endif /* NMAD_QOS */
+
 struct nm_so_interface;
 
 typedef intptr_t nm_so_request;
@@ -249,6 +265,39 @@ nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
 extern unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
 			      nm_gate_id_t gate_id, uint8_t tag);
+
+
+#ifdef NMAD_QOS
+
+/** Set the specified priority value to the specified tag
+ *  @param tag the tag of a flow
+ *  @param priority the priority value to map to the tag
+ */
+extern void
+nm_so_set_priority(uint8_t tag, uint8_t priority);
+
+/** Get the priority value for the specified tag
+ *  @param tag the tag of a flow
+ *  @return The priority value mapped to the tag
+ */
+extern uint8_t
+nm_so_get_priority(uint8_t tag);
+
+/** Set the specified policy to the specified tag
+ *  @param tag the tag of a flow
+ *  @param policy the policy value to map to the tag
+ */
+extern void
+nm_so_set_policy(uint8_t tag, uint8_t policy);
+
+/** Get the policy for the specified tag
+ *  @param tag the tag of a flow
+ *  @return The policy mapped to the tag
+ */
+extern uint8_t
+nm_so_get_policy(uint8_t tag);
+
+#endif /* NMAD_QOS */
 
 /* @} */
 

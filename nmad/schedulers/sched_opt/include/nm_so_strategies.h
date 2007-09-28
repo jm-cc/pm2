@@ -68,6 +68,12 @@ typedef int (*nm_so_strategy_rdv_accept_func)(struct nm_gate *p_gate,
 					      unsigned long *drv_id,
 					      unsigned long *trk_id);
 
+#ifdef NMAD_QOS
+typedef int (*nm_so_strategy_ack_callback_func)(struct nm_so_pkt_wrap *p_so_pw,
+						uint8_t tag_id, uint8_t seq,
+						uint8_t track_id, uint8_t finished);
+#endif /* NMAD_QOS */
+
 struct nm_so_strategy_struct {
   nm_so_strategy_init_func init;
   nm_so_strategy_exit_func exit;
@@ -81,6 +87,9 @@ struct nm_so_strategy_struct {
   nm_so_strategy_try_and_commit_func try_and_commit;
   nm_so_strategy_cancel_func cancel;
   nm_so_strategy_rdv_accept_func rdv_accept;
+#ifdef NMAD_QOS
+  nm_so_strategy_ack_callback_func ack_callback;
+#endif /* NMAD_QOS */
   void *priv;
 };
 

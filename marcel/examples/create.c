@@ -56,10 +56,10 @@ any_t main_thread(void *arg)
 
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, tbx_true);
-#ifdef SMP
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
+#ifdef MA__LWPS
+  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
 
-  marcel_create(NULL, &attr, looper, NULL);
+  //marcel_create(NULL, &attr, looper, NULL);
 #endif
 
   marcel_sem_init(&sem, 0);

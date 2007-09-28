@@ -18,11 +18,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CPU0ONLY
+//#define CPU0ONLY
 //#define dprintf(fmt,args...) marcel_fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
+//#undef MA__BUBBLES
 
-#define MAX_BUBBLE_LEVEL 8
+#define MAX_BUBBLE_LEVEL 100
 //#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
@@ -50,7 +51,7 @@ any_t sum(any_t arg)
   snprintf(name,sizeof(name),"%d-%d",j->inf,j->sup);
   marcel_setname(marcel_self(),name);
 
-  dprintf("sum(%s,%p,%p,%p) started\n",name,j,&j1,&j2);
+  dprintf("sum(%s,%p,%p,%p) started on %d\n",name,j,&j1,&j2, marcel_current_vp());
 
   if(j->inf == j->sup) {
     j->res = j->inf;
@@ -79,6 +80,7 @@ any_t sum(any_t arg)
     marcel_bubble_setschedlevel(&b2,j->level);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b1);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b2);
+    marcel_attr_setprio(&commattr, MA_BATCH_PRIO);
     marcel_attr_setinitbubble(&commattr, &b1);
     marcel_create(NULL, &commattr, sum, (any_t)&j1);
     marcel_attr_setinitbubble(&commattr, &b2);
@@ -127,7 +129,9 @@ int main(int argc, char **argv)
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, tbx_true);
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
+  //marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
   marcel_attr_setinheritholder(&attr, tbx_true);
+  marcel_attr_setprio(&attr, MA_BATCH_PRIO);
 #ifdef CPU0ONLY
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif

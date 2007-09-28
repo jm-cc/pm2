@@ -2,6 +2,8 @@ TODOs dans le code :)
 
 Pouvoir choisir l'ordonnanceur à bulle par une option --marcel-.
 
+examples/create: mesurer séparément création sur le même processeur et sur un autre processeur
+
 topologie: pouvoir demander à utiliser seulement un processeur logique par core à l'aide d'une option --marcel-.
 
 dans marcel.h,

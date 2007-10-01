@@ -42,6 +42,9 @@
  * @{
  */
 
+#section common
+#ifdef MARCEL_STATS_ENABLED
+
 #section variables
 /** \brief Offset of the "load" statistics (arbitrary user-provided) */
 extern unsigned long marcel_stats_load_offset;
@@ -85,6 +88,23 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 /** \brief Synthesize all statistics for the given objects */
 #define ma_stats_synthesize(dest, src) __ma_stats_synthesize((dest)->stats, (src)->stats)
 
+#section common
+#endif /* MARCEL_STATS_ENABLED */
+
+#section marcel_macros
+#ifdef MARCEL_STATS_ENABLED
+#define ma_stats_set(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))=(val)
+#define ma_stats_add(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))+=(val)
+#define ma_stats_sub(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))-=(val)
+#else /* MARCEL_STATS_ENABLED */
+#define ma_stats_set(cast,stats,offset,val)
+#define ma_stats_add(cast,stats,offset,val)
+#define ma_stats_sub(cast,stats,offset,val)
+#endif /* MARCEL_STATS_ENABLED */
+
+#section common
+#ifdef MARCEL_STATS_ENABLED
+
 #section marcel_functions
 /** \brief Declare a new statistics */
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size);
@@ -118,5 +138,8 @@ long *marcel_task_stats_get(marcel_t t, unsigned long offset);
 
 /** \brief Application-level function for accessing statistics of a given bubble. */
 #define marcel_bubble_stats_get(b,kind) ma_bubble_stats_get(b, marcel_stats_##kind##_offset)
+
+#section common
+#endif /* MARCEL_STATS_ENABLED */
 
 /* @} */

@@ -406,7 +406,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	if (ma_entity_task(p)->type == MA_THREAD_ENTITY) {
 		MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-		*(long*)ma_task_stats_get(p, ma_stats_last_ran_offset) = marcel_clock();
+		ma_task_stats_set(long, p, ma_stats_last_ran_offset, marcel_clock());
 		PROF_EVENT2(sched_thread_wake, p, p->sched.state);
 		ma_set_task_state(p, MA_TASK_RUNNING);
 	}
@@ -790,9 +790,9 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 	tbx_prefetch(next);
 
 	/* update statistics */
-	*(long*)ma_task_stats_get(prev, ma_stats_last_ran_offset) = now;
-	*(long*)ma_task_stats_get(next, ma_stats_nbrunning_offset) = 1;
-	*(long*)ma_task_stats_get(prev, ma_stats_nbrunning_offset) = 0;
+	ma_task_stats_set(long, prev, ma_stats_last_ran_offset, now);
+	ma_task_stats_set(long, next, ma_stats_nbrunning_offset, 1);
+	ma_task_stats_set(long, prev, ma_stats_nbrunning_offset, 0);
 
 	__ma_get_lwp_var(current_thread) = next;
 	ma_dequeue_task(next, nexth);
@@ -1397,7 +1397,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
 	ma_task_holder_unlock_softirq(h);
-	*(long *)ma_task_stats_get(p, ma_stats_nbrunning_offset) = 1;
+	ma_task_stats_set(long, p, ma_stats_nbrunning_offset, 1);
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
@@ -1485,14 +1485,16 @@ static void __marcel_init linux_sched_init(void)
 	LOG_IN();
 	ma_holder_t *h;
 
+#ifdef MARCEL_STATS_ENABLED
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbthreadseeds_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
-	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreads_offset) = 1;
-	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbthreadseeds_offset) = 0;
-	*(long *)ma_task_stats_get(__main_thread, ma_stats_nbrunning_offset) = 1;
+	ma_task_stats_set(long, __main_thread, ma_stats_nbthreads_offset, 1);
+	ma_task_stats_set(long, __main_thread, ma_stats_nbthreadseeds_offset, 0);
+	ma_task_stats_set(long, __main_thread, ma_stats_nbrunning_offset, 1);
+#endif /* MARCEL_STATS_ENABLED */
 
 #ifdef MA__SMP
 	if (marcel_topo_nblevels>1) {

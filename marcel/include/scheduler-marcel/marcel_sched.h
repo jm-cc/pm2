@@ -356,9 +356,13 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #ifdef MA__LWPS
 	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
+
+#ifdef MARCEL_STATS_ENABLED
 	ma_stats_reset(&t->sched.internal.entity);
-	*(long *) ma_task_stats_get(t, marcel_stats_load_offset) = 1;
-	*(long *) ma_task_stats_get(t, ma_stats_nbrunning_offset) = 0;
+#endif /* MARCEL_STATS_ENABLED */
+
+	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
+	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 #ifdef MA__NUMA
 	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);
@@ -383,8 +387,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	internal->entity.type = MA_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
-	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 1;
-	*(long *) ma_task_stats_get(t, ma_stats_nbthreadseeds_offset) = 0;
+	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 1);
+	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
 	internal->bubble.sched.init_holder = NULL;
@@ -407,8 +411,8 @@ marcel_sched_init_thread_seed(marcel_task_t* t,
 	LOG_IN();
 	internal->entity.type = MA_THREAD_SEED_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, internal, attr);
-	*(long *) ma_task_stats_get(t, ma_stats_nbthreads_offset) = 0;
-	*(long *) ma_task_stats_get(t, ma_stats_nbthreadseeds_offset) = 1;
+	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 0);
+	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 1);
 	LOG_OUT();
 }
 
@@ -456,7 +460,12 @@ int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_
 int marcel_sched_getscheduler(marcel_t t);
 
 #section marcel_macros
+#ifdef MARCEL_STATS_ENABLED
 #define ma_task_stats_get(t,offset) ma_stats_get(&(t)->sched.internal.entity,(offset))
+#define ma_task_stats_set(cast,t,offset,val) ma_stats_set(cast, &(t)->sched.internal.entity,(offset),val)
+#else /* MARCEL_STATS_ENABLED */
+#define ma_task_stats_set(cast,t,offset,val)
+#endif /* MARCEL_STATS_ENABLED */
 
 /* ==== SMP scheduling directives ==== */
 #section functions

@@ -3,3 +3,4 @@ Provide: marcel_smp
 Conflict: marcel_proctype
 Depend: marcel_bubble_sched_type
 Depend: marcel_bind
+Depend: marcel_stats

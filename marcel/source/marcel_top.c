@@ -71,7 +71,9 @@ static void printtask(marcel_task_t *t) {
 	char buf2[32];
 	char buf3[32];
 	unsigned long cpu; /* en pour mille */
+#ifdef MARCEL_STATS_ENABLED
 	long load;
+#endif /* MARCEL_STATS_ENABLED */
 
 	if (MA_TASK_IS_RUNNING(t))
 		schedstate = 'R';
@@ -107,11 +109,14 @@ static void printtask(marcel_task_t *t) {
 			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+
+#ifdef MARCEL_STATS_ENABLED
 		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
 			top_printf(" %ld",load);
 		if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
 			top_printf(" %ldMB",load>>20);
 		top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
+#endif /* MARCEL_STATS_ENABLED */
 		top_printf("\r\n");
 		ma_atomic_sub(utime, &t->top_utime);
 	} else {
@@ -123,11 +128,14 @@ static void printtask(marcel_task_t *t) {
 			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+
+#ifdef MARCEL_STATS_ENABLED
 		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
 			top_printf(" %ld",load);
 		if ((load = *(long *)ma_task_stats_get(t, ma_stats_memory_offset)))
 			top_printf(" %ldMB",load>>20);
 		top_printf(" %ld",*(long *)ma_task_stats_get(t, ma_stats_nbrunning_offset));
+#endif /* MARCEL_STATS_ENABLED */
 		top_printf("\r\n");
 	}
 }
@@ -138,17 +146,29 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 	char buf1[32];
 	char buf2[32];
 	char buf3[32];
+	char buf4[32];
+#ifdef MARCEL_STATS_ENABLED
 	long load;
-	top_printf("%*s%-#*lx %*s(%2ld/%2ld) %2d             %-10s %-10s %-10s",
+#endif /* MARCEL_STATS_ENABLED */
+
+#ifdef MARCEL_STATS_ENABLED
+	snprintf(buf4, 32, "(%2ld/%2ld)", 
+		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset),
+		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreadseeds_offset));
+#else /* MARCEL_STATS_ENABLED */
+	buf4[0] = '\0';
+#endif /* MARCEL_STATS_ENABLED */
+
+	top_printf("%*s%-#*lx %*s%s %2d             %-10s %-10s %-10s",
 		indent, "",
 		(int) (2+2*sizeof(void*)), (unsigned long) b,
         	MARCEL_MAXNAMESIZE-7, "",
-		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset),
-		*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreadseeds_offset),
+		buf4,
 		b->sched.prio,
 		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
 		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
+#ifdef MARCEL_STATS_ENABLED
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, marcel_stats_load_offset)))
 		top_printf(" (%ld)",load);
 	if ((load = *(long *)ma_bubble_stats_get(b, ma_stats_memory_offset)))
@@ -156,6 +176,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, ma_stats_memory_offset)))
 		top_printf(" (%ldMB)",load>>20);
 	top_printf(" %ld", *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbrunning_offset));
+#endif /* MARCEL_STATS_ENABLED */
 	top_printf("\r\n");
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type != MA_BUBBLE_ENTITY) {

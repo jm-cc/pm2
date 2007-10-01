@@ -337,7 +337,7 @@ extern int pmarcel_yield (void) __THROW;
    extern variable initialized to PMARCEL_ONCE_INIT.  */
 extern int pmarcel_once (pmarcel_once_t *__once_control,
 			 void (*__init_routine) (void)) __THROW;
-#endif
+#endif /* MARCEL_ONCE_ENABLED */
 
 
 /* Functions for handling cancellation.  */
@@ -359,6 +359,7 @@ extern int pmarcel_cancel (pmarcel_t __th) __THROW;
 extern void pmarcel_testcancel (void) __THROW;
 
 
+#ifdef MARCEL_CLEANUP_ENABLED
 /* Install a cleanup handler: ROUTINE will be called with arguments ARG
    when the thread is cancelled or calls pmarcel_exit.  ROUTINE will also
    be called with arguments ARG when the matching pmarcel_cleanup_pop
@@ -403,6 +404,7 @@ extern void _pmarcel_cleanup_push_defer (struct _pmarcel_cleanup_buffer *__buffe
 extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buffer,
 					  int __execute) __THROW;
 /* #endif */
+#endif /* MARCEL_CLEANUP_ENABLED */
 
 /**************************************************/
 /* Les mutex sont déclarés dans marcel_mutex.h.m4 */

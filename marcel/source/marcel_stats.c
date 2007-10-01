@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#ifdef MARCEL_STATS_ENABLED
 #include "marcel.h"
 
 static ma_per_sth_cur_t stats_cur = MA_PER_STH_CUR_INITIALIZER(MARCEL_STATS_ROOM);
@@ -65,3 +66,4 @@ long *marcel_task_stats_get(marcel_t t, unsigned long offset) {
 		t = MARCEL_SELF;
 	return ma_task_stats_get(t, offset);
 }
+#endif /* MARCEL_STATS_ENABLED */

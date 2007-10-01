@@ -15,7 +15,7 @@
 
 
 # Configuration
-flavor="test_marcel_numa"
+flavor="test_marcel_numa_stats"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="tsp"
 args="32 16 123"
@@ -29,6 +29,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"marcel_main\" \
-	--marcel=\"bubble_sched_null\" \
+	--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

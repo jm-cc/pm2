@@ -237,7 +237,10 @@ static void __marcel_init marcel_slot_init(void)
 	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
 	    (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
 	    POLICY_HIERARCHICAL_MEMORY, 0);
+
+#ifdef MARCEL_STATS_ENABLED
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+#endif /* MARCEL_STATS_ENABLED */
 
 #ifdef MA__PROVIDE_TLS
 	/* Check static TLS size */
@@ -425,7 +428,7 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 	ma_spin_lock(&e->memory_areas_lock);
 	list_add(&area->list, &e->memory_areas);
 	ma_spin_unlock(&e->memory_areas_lock);
-	*(long*)ma_stats_get(e, ma_stats_memory_offset) += size;
+	ma_stats_add(long, e, ma_stats_memory_offset, size);
 #endif
 }
 
@@ -452,7 +455,7 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 		}
 	MA_BUG_ON(data);
 	ma_spin_unlock(&e->memory_areas_lock);
-	*(long*)ma_stats_get(e, ma_stats_memory_offset) -= area->size;
+	ma_stats_sub(long, e, ma_stats_memory_offset, area->size);
 	ma_obj_free(memory_area_allocator, area);
 #endif
 }

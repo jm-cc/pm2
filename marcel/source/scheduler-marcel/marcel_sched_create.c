@@ -162,9 +162,9 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	ma_activate_running_task(new_task,h);
 	ma_holder_rawunlock(h);
 
-	*(long*)ma_task_stats_get(MARCEL_SELF, ma_stats_last_ran_offset) = marcel_clock();
-	*(long*)ma_task_stats_get(new_task, ma_stats_nbrunning_offset) = 1;
-	*(long*)ma_task_stats_get(MARCEL_SELF, ma_stats_nbrunning_offset) = 0;
+	ma_task_stats_set(long, MARCEL_SELF, ma_stats_last_ran_offset, marcel_clock());
+	ma_task_stats_set(long, new_task, ma_stats_nbrunning_offset, 1);
+	ma_task_stats_set(long, MARCEL_SELF, ma_stats_nbrunning_offset, 0);
 
 	PROF_SWITCH_TO(cur->number, new_task);
 	marcel_ctx_set_new_stack(new_task,

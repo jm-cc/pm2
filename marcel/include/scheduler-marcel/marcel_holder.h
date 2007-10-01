@@ -78,8 +78,11 @@ struct ma_holder {
 	unsigned long nr_ready;
 	/** \brief Number of interruptibly blocked held entities (probably broken) */
 	unsigned long nr_uninterruptible;
+
+#ifdef MARCEL_STATS_ENABLED
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
+#endif /* MARCEL_STATS_ENABLED */
 };
 
 #section types
@@ -192,8 +195,11 @@ struct ma_sched_entity {
 	/** \brief Nesting level */
 	int sched_level;
 #endif
+
+#ifdef MARCEL_STATS_ENABLED
 	/** \brief Statistics for the entity */
 	ma_stats_t stats;
+#endif /* MARCEL_STATS_ENABLED */
 
 #ifdef MA__NUMA
 	/** \brief List of attached memory areas */

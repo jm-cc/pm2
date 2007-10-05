@@ -20,7 +20,7 @@
 #include <sys/time.h>
 
 //#define DEBUG
-//#undef MA__BUBBLES
+#undef MA__BUBBLES
 
 tbx_tick_t t1, t2, t3;
 

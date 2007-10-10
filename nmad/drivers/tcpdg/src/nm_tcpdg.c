@@ -223,6 +223,9 @@ nm_tcpdg_query		(struct nm_drv *p_drv,
 	p_drv->cap.has_trk_rq_stream			= 1;
 	p_drv->cap.has_selective_receive		= 1;
 	p_drv->cap.has_concurrent_selective_receive	= 1;
+#ifdef PM2_NUIOA
+	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
 
 	err = NM_ESUCCESS;
 

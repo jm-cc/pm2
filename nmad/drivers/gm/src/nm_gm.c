@@ -352,6 +352,9 @@ nm_gm_query			(struct nm_drv *p_drv,
 	p_drv->cap.has_trk_rq_dgram			= 1;
 	p_drv->cap.has_selective_receive		= 0;
 	p_drv->cap.has_concurrent_selective_receive	= 0;
+#ifdef PM2_NUIOA
+	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
 
 	err = NM_ESUCCESS;
 

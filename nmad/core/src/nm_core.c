@@ -274,10 +274,6 @@ nm_core_driver_load(struct nm_core	 *p_core,
 
         memset(p_drv, 0, sizeof(struct nm_drv));
 
-#ifdef PM2_NUIOA
-	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
-
         p_drv->id	= p_core->nb_drivers;
         p_drv->p_core	= p_core;
 

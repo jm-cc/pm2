@@ -35,14 +35,14 @@ registering_flavors() {
     for i in smp actsmp; do
 	register_flavor marcel-$i \
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=smp_multiple_queues --marcel=marcel_main \
+	    --marcel=$i --marcel=marcel_main \
 	    --marcel=smp_bind_proc --marcel=smp_smt_idle
     done
 
     for i in numa actnuma; do
 	register_flavor marcel-$i \
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=smp_multiple_queues --marcel=marcel_main \
+	    --marcel=$i --marcel=marcel_main \
 	    --marcel=smp_bind_proc --marcel=smp_smt_idle \
 	    --marcel=bubble_sched_null
     done
@@ -53,7 +53,7 @@ registering_flavors() {
 
     register_flavor marcel-bubbles \
 	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS \
-	--marcel=numa --marcel=smp_multiple_queues --marcel=marcel_main \
+	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=bubble_sched_spread \
@@ -61,7 +61,7 @@ registering_flavors() {
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" --all=build_static --common=static \
-	--marcel=numa --marcel=smp_multiple_queues --marcel=marcel_main \
+	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=bubble_sched_spread \
@@ -69,7 +69,7 @@ registering_flavors() {
 
     register_flavor marcel-gomp \
         --modules="marcel tbx init" $COMMON_OPTIONS \
-	--marcel=numa --marcel=smp_multiple_queues --marcel=smp_bind_proc \
+	--marcel=numa --marcel=smp_bind_proc \
 	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
 	--marcel=bubble_sched_spread
 

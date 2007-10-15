@@ -91,7 +91,7 @@ typedef struct ma_holder ma_holder_t;
 
 #section marcel_macros
 #ifdef MA__BUBBLES
-/** \brief Return type of holder \e h */
+/** \brief Returns type of holder \e h */
 enum marcel_holder ma_holder_type(ma_holder_t *h);
 #define ma_holder_type(h) ((h)->type)
 #else
@@ -119,17 +119,17 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 
 #section marcel_functions
 #ifdef MA__BUBBLES
-/** \brief Convert ma_holder_t *h into marcel_bubble_t * (assumes that \e h is a bubble) */
+/** \brief Converts ma_holder_t *h into marcel_bubble_t * (assumes that \e h is a bubble) */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 #else
 #define ma_bubble_holder(h) NULL
 #endif
-/** \brief Convert ma_holder_t *h into ma_runqueue_t * (assumes that \e h is a runqueue) */
+/** \brief Converts ma_holder_t *h into ma_runqueue_t * (assumes that \e h is a runqueue) */
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
-/** \brief Convert marcel_bubble_t *b into ma_holder_t * */
+/** \brief Converts marcel_bubble_t *b into ma_holder_t * */
 ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 #define ma_holder_bubble(b) (&(b)->hold)
-/** \brief Convert ma_runqueue_t *b into ma_holder_t * */
+/** \brief Converts ma_runqueue_t *b into ma_holder_t * */
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->hold)
 
@@ -218,23 +218,22 @@ struct ma_sched_entity {
 typedef struct ma_sched_entity marcel_entity_t;
 
 #section marcel_macros
-#ifdef DOXYGEN
-/** \brief Return type of entity \e e */
+/** \brief Returns type of entity \e e */
 enum marcel_holder ma_entity_type(marcel_entity_t *e);
 #endif
 #define ma_entity_type(e) ((e)->type)
 
 #section marcel_functions
-/** \brief Convert ma_entity_t * \e e into marcel_task_t * (assumes that \e e is a thread) */
+/** \brief Converts ma_entity_t * \e e into marcel_task_t * (assumes that \e e is a thread) */
 static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
 #ifdef MA__BUBBLES
-/** \brief Convert ma_entity_t * \e e into marcel_bubble_t * (assumes that \e e is a bubble) */
+/** \brief Converts ma_entity_t * \e e into marcel_bubble_t * (assumes that \e e is a bubble) */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 #endif
-/** \brief Convert marcel_bubble_t *b into marcel_entity_t * */
+/** \brief Converts marcel_bubble_t *b into marcel_entity_t * */
 marcel_entity_t *ma_entity_bubble(marcel_bubble_t *b);
 #define ma_entity_bubble(b) (&(b)->sched)
-/** \brief Convert marcel_task_t *b into marcel_entity_t * */
+/** \brief Converts marcel_task_t *b into marcel_entity_t * */
 marcel_entity_t *ma_entity_task(marcel_task_t *t);
 #define ma_entity_task(t) (&(t)->sched.internal.entity)
 #section marcel_inline
@@ -717,7 +716,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 }
 
 #section marcel_functions
-/** \brief Put entity \e e into holder \e h (which must be already locked) in
+/** \brief Puts entity \e e into holder \e h (which must be already locked) in
  * state \e state.   If entity is a bubble, its hierarchy is supposed to be
  * already locked*/
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);

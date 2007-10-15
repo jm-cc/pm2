@@ -222,9 +222,9 @@ struct marcel_bubble {
 
 
 #section marcel_macros
-/** \brief Get a statistic value of a bubble */
+/** \brief Gets a statistic value of a bubble */
 #define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->sched, (offset))
-/** \brief Get a synthesis of a statistic value of the content of a bubble, as
+/** \brief Gets a synthesis of a statistic value of the content of a bubble, as
  * collected during the last call to ma_bubble_synthesize_stats() */
 #define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->hold, (offset))
 
@@ -244,7 +244,7 @@ struct marcel_bubble {
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *rq, ma_holder_t **nexth, int prio);
 
-/** \brief Synthesize statistics of the entities contained in bubble \e bubble.
+/** \brief Synthesizes statistics of the entities contained in bubble \e bubble.
  * The synthesis of statistics can be read thanks to ma_bubble_hold_stats_get()
  */
 void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);

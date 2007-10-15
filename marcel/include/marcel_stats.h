@@ -63,11 +63,11 @@ extern unsigned long ma_stats_memory_offset;
 
 #section marcel_types
 #include "tbx_compiler.h"
-/** \brief type of a statistics buffer */
+/** \brief Type of a statistics buffer */
 typedef char ma_stats_t[MARCEL_STATS_ROOM] TBX_ALIGNED;
-/** \brief type of a synthesizing function. */
+/** \brief Type of a synthesizing function. */
 typedef void ma_stats_synthesis_t(void * __restrict dest, const void * __restrict src);
-/** \brief type of a reset function. */
+/** \brief Type of a reset function. */
 typedef void ma_stats_reset_t(void *dest);
 
 #section marcel_variables
@@ -77,15 +77,15 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 
 #section marcel_macros
 #define __ma_stats_get(stats, offset) ((void*)&((stats)[offset]))
-/** \brief Get the statistical value at the given offset in the \e stats member
+/** \brief Gets the statistical value at the given offset in the \e stats member
  * of the given object */
 #define ma_stats_get(object, offset) __ma_stats_get((object)->stats, (offset))
 #define ma_stats_reset_func(offset) (*(ma_stats_reset_t **)__ma_stats_get(ma_stats_reset_func, (offset)))
 #define ma_stats_synthesis_func(offset) (*(ma_stats_synthesis_t **)__ma_stats_get(ma_stats_synthesis_func, (offset)))
 #define ma_stats_size(offset) (*(size_t *)__ma_stats_get(ma_stats_size, (offset)))
-/** \brief Reset all statistics for the given object */
+/** \brief Resets all statistics for the given object */
 #define ma_stats_reset(object) __ma_stats_reset((object)->stats)
-/** \brief Synthesize all statistics for the given objects */
+/** \brief Synthesizes all statistics for the given objects */
 #define ma_stats_synthesize(dest, src) __ma_stats_synthesize((dest)->stats, (src)->stats)
 
 #section common
@@ -106,7 +106,7 @@ extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 #ifdef MARCEL_STATS_ENABLED
 
 #section marcel_functions
-/** \brief Declare a new statistics */
+/** \brief Declares a new statistics */
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size);
 void __ma_stats_reset(ma_stats_t stats);
 void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src);
@@ -121,11 +121,11 @@ ma_stats_synthesis_t ma_stats_long_max_synthesis;
 ma_stats_reset_t ma_stats_long_max_reset;
 
 #ifdef DOXYGEN
-/** \brief Return the reset function for the statistics at the given offset */
+/** \brief Returns the reset function for the statistics at the given offset */
 ma_stats_reset_t *ma_stats_reset_func(unsigned long offset);
-/** \brief Return the synthesis function for the statistics at the given offset */
+/** \brief Returns the synthesis function for the statistics at the given offset */
 ma_stats_synthesis_t *ma_stats_synthesis_func(unsigned long offset);
-/** \brief Return the size of the statistics at the given offset */
+/** \brief Returns the size of the statistics at the given offset */
 size_t *ma_stats_size(unsigned long offset);
 #endif
 

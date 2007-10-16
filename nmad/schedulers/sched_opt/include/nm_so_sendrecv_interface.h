@@ -143,6 +143,7 @@ extern int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
+
 /** Wait for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param request the request to check.

@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#ifdef MA__BUBBLES
+
 #define GANGS 5
 #define THREADS 5
 #define DIFFERENT
@@ -111,3 +113,10 @@ int marcel_main(int argc, char **argv)
 #endif
   return 0;
 }
+
+#else /* MA__BUBBLES */
+int main(int argc, char *argv[]) {
+   fprintf(stderr,"%s needs bubbles\n",argv[0]);
+   return 0;
+}
+#endif /* MA__BUBBLES */

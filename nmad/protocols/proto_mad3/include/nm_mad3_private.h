@@ -20,6 +20,7 @@
 #include "madeleine.h"
 #ifdef CONFIG_SCHED_OPT
 #  include "nm_so_sendrecv_interface.h"
+#  include "nm_so_sendrecv_interface_private.h"
 #endif /* CONFIG_SCHED_OPT */
 
 typedef struct s_mad_nmad_connection_specific {

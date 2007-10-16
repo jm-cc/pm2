@@ -48,7 +48,8 @@
 
 struct nm_so_interface;
 
-typedef intptr_t nm_so_request;
+struct nm_so_request_s;
+typedef struct nm_so_request_s nm_so_request;
 
 /** Initialize the send/receive interface.
  *
@@ -267,6 +268,18 @@ extern unsigned long
 nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
 			      nm_gate_id_t gate_id, uint8_t tag);
 
+/** Returns the received size of the message with the specified
+ *  request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @param tag the tag to check
+ *  @param size returns the size of the message
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_get_size(struct nm_so_interface *p_so_interface,
+                  nm_so_request *request, uint8_t tag,
+                  int *size);
 
 #ifdef NMAD_QOS
 

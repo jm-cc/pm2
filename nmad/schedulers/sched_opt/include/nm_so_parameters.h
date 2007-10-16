@@ -34,7 +34,11 @@
    WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
 #define NM_SO_PENDING_PACKS_WINDOW          256
 
-#define NM_SO_MAX_UNEXPECTED                (32 * 1024)
+#if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
+#  define NM_SO_MAX_UNEXPECTED                (1024 * 1024)
+#else
+#  define NM_SO_MAX_UNEXPECTED                (32 * 1024)
+#endif
 
 /* Maximum size of a small message */
 #define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED -	\
@@ -50,7 +54,11 @@
 /* Threshold used on the sending side to decide if data should be
    copied (when smaller than the threshold) within the packet wrapper
    header zone */
-#define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
+#if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
+#  define NM_SO_COPY_ON_SEND_THRESHOLD        (1024 * 1024)
+#else
+#  define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
+#endif
 
 
 //#define NM_SO_OPTIMISTIC_RECV

@@ -329,4 +329,5 @@ nm_so_strategy nm_so_strat_balance = {
   .ack_callback = NULL,
 #endif /* NMAD_QOS */
   .priv = NULL,
+  .flush = NULL,
 };

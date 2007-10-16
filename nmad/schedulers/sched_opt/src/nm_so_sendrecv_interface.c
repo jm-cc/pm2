@@ -172,8 +172,11 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
-  if(p_request)
-    *p_request = (intptr_t)p_req;
+  if(p_request) {
+    p_request->status = (intptr_t)p_req;
+    p_request->seq = seq;
+    p_request->gate_id = gate_id;
+  }
 
   ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate,
                                                            tag, seq,
@@ -205,8 +208,11 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
-  if(p_request)
-    *p_request = (intptr_t)p_req;
+  if(p_request) {
+    p_request->status = (intptr_t)p_req;
+    p_request->seq = seq;
+    p_request->gate_id = gate_id;
+  }
 
   if (p_so_interface->p_so_sched->current_strategy->pack_extended == NULL) {
     NM_DISPF("The current strategy does not provide a extended pack");
@@ -245,8 +251,11 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
-  if(p_request)
-    *p_request = (intptr_t)p_req;
+  if(p_request) {
+    p_request->status = (intptr_t)p_req;
+    p_request->seq = seq;
+    p_request->gate_id = gate_id;
+  }
 
   ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate,
                                                            tag, seq,
@@ -276,7 +285,7 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)request;
+  volatile uint8_t *p_request = (uint8_t *)request.status;
 
   NM_SO_SR_LOG_IN();
 
@@ -302,13 +311,14 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
   int ret = -NM_EAGAIN;
+  nm_so_request request;
 
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-
-    ret = nm_so_sr_stest(p_so_interface,
-                         (nm_so_request)&p_sr_gate->status[tag][seq]);
+    request.status = (intptr_t)&p_sr_gate->status[tag][seq];
+    request.seq = seq;
+    ret = nm_so_sr_stest(p_so_interface, request);
     if (ret == -NM_EAGAIN) {
       NM_SO_SR_LOG_OUT();
       return ret;
@@ -320,14 +330,33 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
+int nm_so_sr_flush(struct nm_so_interface *p_so_interface) {
+  struct nm_core *p_core = p_so_interface->p_core;
+  int ret = NM_EAGAIN;
+
+  if (p_so_interface->p_so_sched->current_strategy->flush != NULL) {
+    int i;
+    for(i=0 ; i<p_core->nb_gates ; i++) {
+      struct nm_gate *p_gate = p_core->gate_array + i;
+      NM_SO_SR_TRACE("Flushing gate %d\n", i);
+      ret = p_so_interface->p_so_sched->current_strategy->flush(p_gate);
+    }
+  }
+  return ret;
+}
+
 int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request;
+  uint8_t *p_request = (uint8_t *)request.status;
 
   NM_SO_SR_LOG_IN();
+
+  if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+    nm_so_sr_flush(p_so_interface);
+  }
 
   while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
     nm_schedule(p_core);
@@ -346,13 +375,15 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
+  nm_so_request request;
 
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-
-    nm_so_sr_swait(p_so_interface,
-		   (nm_so_request)&p_sr_gate->status[tag][seq]);
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.seq = seq;
+    request.gate_id = gate_id;
+    nm_so_sr_swait(p_so_interface, request);
 
     seq++;
   }
@@ -378,8 +409,11 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
   if(gate_id == NM_SO_ANY_SRC) {
 
     if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
+      nm_so_request request;
       NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
-      nm_so_sr_rwait(p_so_interface, (intptr_t) &any_src[tag].status);
+      request.status = (intptr_t) &any_src[tag].status;
+      request.gate_id = -1;
+      nm_so_sr_rwait(p_so_interface, request);
     }
 
     any_src[tag].is_first_request = 0;
@@ -387,7 +421,8 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
     if(p_request) {
       p_req = &any_src[tag].status;
-      *p_request = (intptr_t)p_req;
+      p_request->status = (intptr_t)p_req;
+      p_request->gate_id = -1;
     }
 
     NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
@@ -400,14 +435,21 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
     uint8_t seq;
 
+    if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+      nm_so_sr_flush(p_so_interface);
+    }
+
     seq = p_so_gate->recv_seq_number[tag]++;
 
     p_req = &p_sr_gate->status[tag][seq];
 
     *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
 
-    if(p_request)
-      *p_request = (intptr_t)p_req;
+    if(p_request) {
+      p_request->status = (intptr_t)p_req;
+      p_request->seq = seq;
+      p_request->gate_id = gate_id;
+    }
 
     NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
     ret = __nm_so_unpack(p_gate, tag, seq, data, len);
@@ -421,7 +463,7 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request;
+  uint8_t *p_request = (uint8_t *)request.status;
 
   NM_SO_SR_LOG_IN();
 
@@ -447,13 +489,14 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
   int ret = -NM_EAGAIN;
+  nm_so_request request;
 
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-
-    ret = nm_so_sr_rtest(p_so_interface,
-                         (nm_so_request)&p_sr_gate->status[tag][seq]);
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.seq = seq;
+    ret = nm_so_sr_rtest(p_so_interface, request);
     if (ret == -NM_EAGAIN) {
       NM_SO_SR_LOG_OUT();
       return ret;
@@ -470,9 +513,13 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
   struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)request;
+  volatile uint8_t *p_request = (uint8_t *)request.status;
 
   NM_SO_SR_LOG_IN();
+
+  if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+    nm_so_sr_flush(p_so_interface);
+  }
 
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request, *p_request & NM_SO_STATUS_RECV_COMPLETED ? 1 : 0);
 
@@ -485,10 +532,41 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 }
 
 int
+nm_so_sr_get_size(struct nm_so_interface *p_so_interface,
+                  nm_so_request *request, uint8_t tag,
+                  int *size) {
+  struct nm_core *p_core = p_so_interface->p_core;;
+  struct nm_gate *p_gate = NULL;
+  struct nm_so_gate *p_so_gate = NULL;
+  struct nm_so_sched *p_so_sched =  NULL;
+  int is_any_source = 0;
+
+  if (request->gate_id == -1) {
+    struct any_src_status *p_status = outer_any_src_struct(request->status);
+    request->gate_id = p_status->gate_id;
+    is_any_source = 1;
+  }
+
+  p_gate = p_core->gate_array + request->gate_id;
+  p_so_gate = p_gate->sch_private;
+  p_so_sched =  p_so_gate->p_so_sched;
+
+  NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %ld\n", tag, request->seq, request->gate_id);
+
+  if (is_any_source) {
+    *size = p_so_sched->any_src[tag].len;
+  }
+  else {
+    *size = p_so_gate->recv[tag][request->seq].unpack_here.len;
+  }
+  return NM_ESUCCESS;
+}
+
+int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
                      nm_so_request request, nm_gate_id_t *gate_id)
 {
-  struct any_src_status *p_status = outer_any_src_struct(request);
+  struct any_src_status *p_status = outer_any_src_struct(request.status);
 
   NM_SO_SR_LOG_IN();
 
@@ -559,14 +637,17 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq = seq_inf;
+  nm_so_request request;
 
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.seq = seq;
+    request.gate_id = gate_id;
 
     NM_SO_SR_TRACE_LEVEL(3, "asking for request %p (tag %d seq %d gate_id %d) completion\n", &p_sr_gate->status[tag][seq], tag, seq, gate_id);
-    nm_so_sr_rwait(p_so_interface,
-		   (nm_so_request)&p_sr_gate->status[tag][seq]);
+    nm_so_sr_rwait(p_so_interface, request);
 
     seq++;
   }
@@ -754,7 +835,7 @@ int
 nm_so_sr_req_test(struct nm_so_interface *p_so_interface TBX_UNUSED,
                   nm_so_request request)
 {
-  uint8_t *p_request = (uint8_t *)request;
+  uint8_t *p_request = (uint8_t *)request.status;
 
   NM_SO_SR_LOG_IN();
 

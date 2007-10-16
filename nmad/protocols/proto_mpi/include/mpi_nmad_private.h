@@ -35,6 +35,7 @@
 #include <nm_public.h>
 #include <nm_so_public.h>
 #include <nm_so_sendrecv_interface.h>
+#include <nm_so_sendrecv_interface_private.h>
 #include <nm_so_pack_interface.h>
 #include <tbx.h>
 #include <nm_mad3_private.h>

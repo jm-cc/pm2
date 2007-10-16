@@ -29,6 +29,7 @@
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
+#include "nm_so_strategies/nm_so_strat_aggreg_autoextended.h"
 #include "nm_so_strategies/nm_so_strat_balance.h"
 #ifdef NMAD_QOS
 #include "nm_so_strategies/nm_so_strat_qos.h"
@@ -70,6 +71,8 @@ nm_so_schedule_init (struct nm_sched *p_sched)
 #endif /* NMAD_QOS */
 #elif defined(CONFIG_STRAT_AGGREG_EXTENDED)
   p_priv->current_strategy = &nm_so_strat_aggreg_extended;
+#elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
+  p_priv->current_strategy = &nm_so_strat_aggreg_autoextended;
 #else
   /* Fall back to the default strategy */
   p_priv->current_strategy = &nm_so_strat_default;

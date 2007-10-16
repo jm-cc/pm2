@@ -67,7 +67,11 @@
 /*@}*/
 
 /** Fast packet allocator constant for initial number of entries. */
-#define INITIAL_PKT_NUM  16
+#if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
+#  define INITIAL_PKT_NUM  4
+#else
+#  define INITIAL_PKT_NUM  16
+#endif
 
 /** Allocator struct for headerless SO pkt wrapper.
  */

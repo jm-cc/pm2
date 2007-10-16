@@ -585,12 +585,9 @@ static inline int mpir_check_send_seq(nm_gate_id_t gate_id,
                                       uint8_t tag) {
   int seq = nm_so_sr_get_current_send_seq(p_so_sr_if, gate_id, tag);
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-    int err = nm_so_sr_stest_range(p_so_sr_if, gate_id, tag, seq-1, 1);
-    if (err == -NM_EAGAIN) {
-      MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
-      nm_so_sr_swait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
-      MPI_NMAD_TRACE("Automatic flushing over");
-    }
+    MPI_NMAD_TRACE("Reaching maximum sequence number in emission. Trigger automatic flushing");
+    nm_so_sr_swait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
+    MPI_NMAD_TRACE("Automatic flushing over");
   }
   return seq;
 }
@@ -602,15 +599,11 @@ static inline int mpir_check_send_seq(nm_gate_id_t gate_id,
 static inline int mpir_check_recv_seq(nm_gate_id_t gate_id,
                                       uint8_t tag) {
   int seq = nm_so_sr_get_current_recv_seq(p_so_sr_if, gate_id, tag);
-  int err;
 
   if (seq == NM_SO_PENDING_PACKS_WINDOW-1) {
-    err = nm_so_sr_rtest_range(p_so_sr_if, gate_id, tag, seq-1, 1);
-    if (err == -NM_EAGAIN) {
-      MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
-      nm_so_sr_rwait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
-      MPI_NMAD_TRACE("Automatic flushing over");
-    }
+    MPI_NMAD_TRACE("Reaching maximum sequence number in reception. Trigger automatic flushing");
+    nm_so_sr_rwait_range(p_so_sr_if, gate_id, tag, 0, seq-1);
+    MPI_NMAD_TRACE("Automatic flushing over");
   }
   return seq;
 }
@@ -802,8 +795,6 @@ int mpir_set_status(MPI_Request *request,
   status->MPI_TAG = mpir_request->user_tag;
   status->MPI_ERROR = mpir_request->request_error;
 
-  status->count = mpir_sizeof_datatype(mpir_request->request_datatype);
-
   if (mpir_request->request_type == MPI_REQUEST_RECV ||
       mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     if (mpir_request->request_source == MPI_ANY_SOURCE) {
@@ -814,6 +805,15 @@ int mpir_set_status(MPI_Request *request,
     else {
       status->MPI_SOURCE = mpir_request->request_source;
     }
+  }
+
+  nm_so_sr_get_size(p_so_sr_if, &(mpir_request->request_nmad), mpir_request->request_tag, &(status->size));
+  MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)mpir_sizeof_datatype(mpir_request->request_datatype));
+  if (mpir_sizeof_datatype(mpir_request->request_datatype) != 0) {
+    status->count = status->size / mpir_sizeof_datatype(mpir_request->request_datatype);
+  }
+  else {
+    status->count = -1;
   }
 
   return err;

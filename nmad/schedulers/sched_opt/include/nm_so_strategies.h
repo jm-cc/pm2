@@ -58,6 +58,8 @@ typedef int (*nm_so_strategy_commit_func)(void);
    return next packet to send */
 typedef int (*nm_so_strategy_try_and_commit_func)(struct nm_gate *p_gate);
 
+typedef int (*nm_so_strategy_flush_func)(struct nm_gate *p_gate);
+
 /* Forget the pre-computed stuff */
 typedef int (*nm_so_strategy_cancel_func)(void);
 
@@ -85,6 +87,7 @@ struct nm_so_strategy_struct {
   nm_so_strategy_try_func try;
   nm_so_strategy_commit_func commit;
   nm_so_strategy_try_and_commit_func try_and_commit;
+  nm_so_strategy_flush_func flush;
   nm_so_strategy_cancel_func cancel;
   nm_so_strategy_rdv_accept_func rdv_accept;
 #ifdef NMAD_QOS

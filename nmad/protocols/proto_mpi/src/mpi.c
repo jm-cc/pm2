@@ -1833,7 +1833,7 @@ int MPI_Request_is_equal(MPI_Request request1,
     return (mpir_request1->request_type == mpir_request2->request_type);
   }
   else {
-    return (mpir_request1->request_nmad == mpir_request2->request_nmad);
+    return (mpir_request1->request_nmad.status == mpir_request2->request_nmad.status);
   }
 }
 

@@ -19,64 +19,20 @@
 #include <assert.h>
 
 #include "nm_so_private.h"
-#include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
+#include "nm_so_strategies/nm_so_strat_aggreg_autoextended.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_tracks.h"
 #include "nm_so_debug.h"
 
 /** Gate storage for strat aggreg.
  */
-struct nm_so_strat_aggreg_extended_gate {
+struct nm_so_strat_aggreg_autoextended_gate {
         /** List of raw outgoing packets. */
   struct list_head out_list;
 };
 
 static int nb_data_aggregation;
-static int nb_extended_aggregation;
 static int nb_ctrl_aggregation;
-
-/** Add a new control "header" to the flow of outgoing packets.
- *
- *  @param p_gate a pointer to the gate object.
- *  @param p_ctrl a pointer to the ctrl header.
- *  @return The NM status.
- */
-static int pack_ctrl(struct nm_gate *p_gate,
-		     union nm_so_generic_ctrl_header *p_ctrl)
-{
-  struct nm_so_pkt_wrap *p_so_pw = NULL;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
-    = (struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv;
-  int err;
-
-  /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
-
-    if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE)
-      /* There's not enough room to add our ctrl header to this paquet */
-      goto next;
-
-    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    //nb_ctrl_aggregation ++;
-    goto out;
-
-  next:
-    ;
-  }
-
-  /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
-					     &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  /* Add the control packet to the out_list */
-  list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
-
- out:
-  return err;
-}
 
 /** Add a new control "header" to the flow of outgoing packets.
  *
@@ -85,14 +41,13 @@ static int pack_ctrl(struct nm_gate *p_gate,
  *  @param is_completed indicates if the data are going to be completed or can be sent straight away.
  *  @return The NM status.
  */
-static int pack_ctrl_extended(struct nm_gate *p_gate,
-                              union nm_so_generic_ctrl_header *p_ctrl,
-                              tbx_bool_t is_completed)
+static int pack_ctrl(struct nm_gate *p_gate,
+                     union nm_so_generic_ctrl_header *p_ctrl)
 {
   struct nm_so_pkt_wrap *p_so_pw = NULL;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
-    = (struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv;
+  struct nm_so_strat_aggreg_autoextended_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_autoextended_gate *)p_so_gate->strat_priv;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
@@ -105,11 +60,7 @@ static int pack_ctrl_extended(struct nm_gate *p_gate,
     }
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    //nb_ctrl_aggregation ++;
-
-    if (p_so_pw->is_completed == tbx_false) {
-      p_so_pw->is_completed = is_completed;
-    }
+    nb_ctrl_aggregation ++;
 
     goto out;
 
@@ -130,6 +81,20 @@ static int pack_ctrl_extended(struct nm_gate *p_gate,
   return err;
 }
 
+static int flush(struct nm_gate *p_gate)
+{
+  struct nm_so_pkt_wrap *p_so_pw;
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_strat_aggreg_autoextended_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_autoextended_gate *)p_so_gate->strat_priv;
+
+  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
+    p_so_pw->is_completed = tbx_true;
+  }
+
+  return NM_ESUCCESS;
+}
+
 /** Handle a new packet submitted by the user code.
  *
  *  @note The strategy may already apply some optimizations at this point.
@@ -140,14 +105,14 @@ static int pack_ctrl_extended(struct nm_gate *p_gate,
  *  @param len the data fragment length.
  *  @return The NM status.
  */
-static int pack(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len)
+int pack(struct nm_gate *p_gate,
+         uint8_t tag, uint8_t seq,
+         void *data, uint32_t len)
 {
-  struct nm_so_pkt_wrap *p_so_pw;
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
-  struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
-    = (struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv;
+  struct nm_so_strat_aggreg_autoextended_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_autoextended_gate *)p_so_gate->strat_priv;
   int flags = 0;
   int err;
 
@@ -160,19 +125,27 @@ static int pack(struct nm_gate *p_gate,
       uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
       uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 
-      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
-	/* There's not enough room to add our data to this paquet */
+      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen) {
+        NM_SO_SR_TRACE("There's not enough room to add our data to this paquet\n");
+        p_so_pw->is_completed = tbx_true;
 	goto next;
+      }
 
-      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
-	/* We can copy data into the header zone */
+      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen) {
+        NM_SO_SR_TRACE("We can copy data into the header zone\n");
 	flags = NM_SO_DATA_USE_COPY;
+      }
       else
-	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
+	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
+          NM_SO_SR_TRACE("Full packet. Checking next ...\n");
+          p_so_pw->is_completed = tbx_true;
 	  goto next;
+        }
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      //nb_data_aggregation ++;
+      NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
+      nb_data_aggregation ++;
+
       goto out;
 
     next:
@@ -182,26 +155,28 @@ static int pack(struct nm_gate *p_gate,
     if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
       flags = NM_SO_DATA_USE_COPY;
 
-    /* We didn't have a chance to form an aggregate, so simply form a
-       new packet wrapper and add it to the out_list */
+    NM_SO_SR_TRACE_LEVEL(3, "We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
 					    data, len,
 					    flags,
 					    &p_so_pw);
+    p_so_pw->is_completed = tbx_false;
+
     if(err != NM_ESUCCESS)
       goto out;
 
     list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
 
   } else {
-    /* Large packets can not be sent immediately : we have to issue a
-       RdV request. */
+    NM_SO_SR_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
 
     /* First allocate a packet wrapper */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                             data, len,
                                             NM_SO_DATA_DONT_USE_HEADER,
                                             &p_so_pw);
+    p_so_pw->is_completed = tbx_true;
+
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -236,128 +211,6 @@ static int pack(struct nm_gate *p_gate,
   return err;
 }
 
-/** Handle a new packet submitted by the user code.
- *
- *  @note The strategy may already apply some optimizations at this point.
- *  @param p_gate a pointer to the gate object.
- *  @param tag the message tag.
- *  @param seq the fragment sequence number.
- *  @param data the data fragment pointer.
- *  @param len the data fragment length.
- *  @param is_completed indicates if the data are going to be completed or can be sent straight away.
- *  @return The NM status.
- */
-static int pack_extended(struct nm_gate *p_gate,
-                         uint8_t tag, uint8_t seq,
-                         void *data, uint32_t len,
-                         tbx_bool_t is_completed)
-{
-  struct nm_so_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
-  struct nm_so_strat_aggreg_extended_gate *p_so_sa_gate
-    = (struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv;
-  int flags = 0;
-  int err;
-
-  if(len <= NM_SO_MAX_SMALL) {
-    /* Small packet */
-
-    /* We first try to find an existing packet to form an aggregate */
-    list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
-      uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-      uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
-      uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
-      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen) {
-        NM_SO_SR_TRACE("There's not enough room to add our data to this paquet\n");
-        p_so_pw->is_completed = tbx_true;
-	goto next;
-      }
-
-      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen) {
-        NM_SO_SR_TRACE("We can copy data into the header zone\n");
-	flags = NM_SO_DATA_USE_COPY;
-      }
-      else
-	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN) {
-          NM_SO_SR_TRACE("Full packet. Checking next ...\n");
-          p_so_pw->is_completed = tbx_true;
-	  goto next;
-        }
-
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
-      //nb_extended_aggregation ++;
-
-      if (p_so_pw->is_completed == tbx_false) {
-        p_so_pw->is_completed = is_completed;
-      }
-
-      NM_SO_SR_TRACE("p_so_pw->is_completed %d\n", is_completed);
-
-      goto out;
-
-    next:
-      ;
-    }
-
-    if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
-      flags = NM_SO_DATA_USE_COPY;
-
-    NM_SO_SR_TRACE_LEVEL(3, "We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
-
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    p_so_pw->is_completed = is_completed;
-    list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
-
-  } else {
-    NM_SO_SR_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
-
-    /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    /* Then place it into the appropriate list of large pending
-       "sends". */
-    list_add_tail(&p_so_pw->link,
-                  &(p_so_gate->pending_large_send[tag]));
-
-    /* Signal we're waiting for an ACK */
-    p_so_gate->pending_unpacks++;
-
-    /* Finally, generate a RdV request */
-    {
-      union nm_so_generic_ctrl_header ctrl;
-
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
-
-      err = pack_ctrl_extended(p_gate, &ctrl, is_completed);
-      if(err != NM_ESUCCESS)
-	goto out;
-    }
-
-    /* Check if we should post a new recv packet: we're waiting for an
-       ACK! */
-    nm_so_refill_regular_recv(p_gate);
-
-  }
-
-  err = NM_ESUCCESS;
-
- out:
-  return err;
-}
-
 
 
 /** Compute and apply the best possible packet rearrangement, then
@@ -370,7 +223,7 @@ static int try_and_commit(struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct list_head *out_list =
-    &((struct nm_so_strat_aggreg_extended_gate *)p_so_gate->strat_priv)->out_list;
+    &((struct nm_so_strat_aggreg_autoextended_gate *)p_so_gate->strat_priv)->out_list;
   struct nm_so_pkt_wrap *p_so_pw;
 
   if(p_so_gate->active_send[NM_SO_DEFAULT_NET][TRK_SMALL] ==
@@ -411,16 +264,14 @@ static int init(void)
 {
   NM_LOGF("[loading strategy: <aggreg>]");
   nb_data_aggregation = 0;
-  nb_extended_aggregation = 0;
   nb_ctrl_aggregation = 0;
   return NM_ESUCCESS;
 }
 
 static int exit_strategy(void)
 {
-  //  DISP_VAL("Aggregation data", nb_data_aggregation);
-  //  DISP_VAL("Extended aggregation", nb_extended_aggregation);
-  //  DISP_VAL("Aggregation control", nb_ctrl_aggregation);
+  DISP_VAL("Autoextended aggregation data", nb_data_aggregation);
+  DISP_VAL("Autoextended aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 
@@ -455,8 +306,8 @@ static int rdv_accept(struct nm_gate *p_gate,
  */
 static int init_gate(struct nm_gate *p_gate)
 {
-  struct nm_so_strat_aggreg_extended_gate *priv
-    = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_extended_gate));
+  struct nm_so_strat_aggreg_autoextended_gate *priv
+    = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_autoextended_gate));
 
   INIT_LIST_HEAD(&priv->out_list);
 
@@ -472,19 +323,19 @@ static int init_gate(struct nm_gate *p_gate)
  */
 static int exit_gate(struct nm_gate *p_gate)
 {
-  struct nm_so_strat_aggreg_extended_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;
+  struct nm_so_strat_aggreg_autoextended_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;
   TBX_FREE(priv);
   ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = NULL;
   return NM_ESUCCESS;
 }
 
-nm_so_strategy nm_so_strat_aggreg_extended = {
+nm_so_strategy nm_so_strat_aggreg_autoextended = {
   .init = init,
   .exit = exit_strategy,
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,
-  .pack_extended = pack_extended,
+  .pack_extended = NULL,
   .pack_ctrl = pack_ctrl,
   .try = NULL,
   .commit = NULL,
@@ -492,5 +343,5 @@ nm_so_strategy nm_so_strat_aggreg_extended = {
   .cancel = NULL,
   .rdv_accept = rdv_accept,
   .priv = NULL,
-  .flush = NULL,
+  .flush = flush
 };

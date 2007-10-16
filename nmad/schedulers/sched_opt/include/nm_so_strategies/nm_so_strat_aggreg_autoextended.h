@@ -13,18 +13,11 @@
  * General Public License for more details.
  */
 
-#ifndef _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
-#define _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
+#ifndef NM_SO_STRAT_AGGREG_AUTOEXTENDED_H
+#define NM_SO_STRAT_AGGREG_AUTOEXTENDED_H
 
-struct nm_so_interface {
-  struct nm_core *p_core;
-  struct nm_so_sched *p_so_sched;
-};
+#include "nm_so_strategies.h"
 
-struct nm_so_request_s {
-  intptr_t status;
-  uint8_t seq;
-  long gate_id;
-};
+extern nm_so_strategy nm_so_strat_aggreg_autoextended;
 
 #endif

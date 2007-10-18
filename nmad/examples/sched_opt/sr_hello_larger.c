@@ -41,12 +41,14 @@ static void process(char *msg) {
 
     len *= 2;
 
-    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request1);
+    //nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request1);
+    nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, len, &request1);
     nm_so_sr_rwait(sr_if, request1);
 
     sleep(2);
 
-    nm_so_sr_irecv(sr_if, gate_id, 0, buf2, len, &request2);
+    //nm_so_sr_irecv(sr_if, gate_id, 0, buf2, len, &request2);
+    nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf2, len, &request2);
     nm_so_sr_rwait(sr_if, request2);
 
     if (!strcmp(buf, msg) && !strcmp(buf2, msg)) {

@@ -45,8 +45,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
   int err;
 
   /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
-					     &p_so_pw);
+  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -56,6 +55,47 @@ static int pack_ctrl(struct nm_gate *p_gate,
 
  out:
   return err;
+}
+
+static int
+pack_extended_ctrl(struct nm_gate *p_gate,
+                   uint32_t cumulated_header_len,
+                   union nm_so_generic_ctrl_header *p_ctrl,
+                   struct nm_so_pkt_wrap **pp_so_pw){
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  int err;
+
+  /* Simply form a new packet wrapper */
+  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
+
+  *pp_so_pw = p_so_pw;
+
+  return err;
+}
+
+static int
+pack_ctrl_chunk(struct nm_so_pkt_wrap *p_so_pw,
+                union nm_so_generic_ctrl_header *p_ctrl){
+
+  int err;
+
+  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+
+  return err;
+}
+
+static int
+pack_extended_ctrl_end(struct nm_gate *p_gate,
+                       struct nm_so_pkt_wrap *p_so_pw){
+
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_default_gate *p_so_sd_gate
+    = (struct nm_so_strat_default_gate *)p_so_gate->strat_priv;
+
+  /* Add the control packet to the BEGINING of out_list */
+  list_add(&p_so_pw->link, &p_so_sd_gate->out_list);
+
+  return NM_ESUCCESS;
 }
 
 /** Handle a new packet submitted by the user code.
@@ -77,6 +117,8 @@ static int pack(struct nm_gate *p_gate,
   int flags = 0;
   int err;
 
+  p_so_gate->send[tag][seq] = len;
+
   if(len <= NM_SO_MAX_SMALL) {
     /* Small packet */
 
@@ -84,10 +126,8 @@ static int pack(struct nm_gate *p_gate,
       flags = NM_SO_DATA_USE_COPY;
 
     /* Simply form a new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+					    0, 1, flags, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -99,10 +139,8 @@ static int pack(struct nm_gate *p_gate,
        RdV request. */
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
+    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                            0, 0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
 
@@ -118,7 +156,7 @@ static int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)
@@ -130,6 +168,79 @@ static int pack(struct nm_gate *p_gate,
     nm_so_refill_regular_recv(p_gate);
 
   }
+
+  err = NM_ESUCCESS;
+ out:
+  return err;
+}
+
+static int
+packv(struct nm_gate *p_gate,
+      uint8_t tag, uint8_t seq,
+      struct iovec *iov, int nb_entries){
+  struct nm_so_pkt_wrap *p_so_pw;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  uint32_t offset = 0;
+  uint8_t is_last_chunk = 0;
+  int flags = 0;
+  int i, err;
+
+  for(i = 0; i < nb_entries; i++){
+    if(i == (nb_entries - 1)){
+      is_last_chunk = 1;
+    }
+
+    if(iov[i].iov_len <= NM_SO_MAX_SMALL) {
+      /* Small packet */
+
+      if(iov[i].iov_len <= NM_SO_COPY_ON_SEND_THRESHOLD)
+        flags = NM_SO_DATA_USE_COPY;
+
+      /* Simply form a new packet wrapper and add it to the out_list */
+      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, iov[i].iov_base, iov[i].iov_len,
+                                              offset, is_last_chunk, flags, &p_so_pw);
+      if(err != NM_ESUCCESS)
+        goto out;
+
+      list_add_tail(&p_so_pw->link,
+                    &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list);
+
+    } else {
+      /* Large packets can not be sent immediately : we have to issue a
+         RdV request. */
+
+      /* First allocate a packet wrapper */
+      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, iov[i].iov_base, iov[i].iov_len,
+                                              offset, is_last_chunk,
+                                              NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+      if(err != NM_ESUCCESS)
+        goto out;
+
+      /* Then place it into the appropriate list of large pending "sends". */
+      list_add_tail(&p_so_pw->link, &(p_so_gate->pending_large_send[tag]));
+
+      /* Signal we're waiting for an ACK */
+      p_so_gate->pending_unpacks++;
+
+      /* Finally, generate a RdV request */
+      {
+        union nm_so_generic_ctrl_header ctrl;
+
+        nm_so_init_rdv(&ctrl, tag + 128, seq, iov[i].iov_len, offset, is_last_chunk);
+
+        err = pack_ctrl(p_gate, &ctrl);
+        if(err != NM_ESUCCESS)
+          goto out;
+      }
+
+      /* Check if we should post a new recv packet: we're waiting for an
+         ACK! */
+      nm_so_refill_regular_recv(p_gate);
+    }
+
+    offset += iov[i].iov_len;
+  }
+  p_so_gate->send[tag][seq] = offset;
 
   err = NM_ESUCCESS;
  out:
@@ -194,6 +305,8 @@ static int rdv_accept(struct nm_gate *p_gate,
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
+  *drv_id = 0;
+
   if(p_so_gate->active_recv[*drv_id][*trk_id] == 0)
     /* Cool! The suggested track is available! */
     return NM_ESUCCESS;
@@ -240,6 +353,7 @@ nm_so_strategy nm_so_strat_default = {
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,
+  .packv = packv,
   .pack_extended = NULL,
   .pack_ctrl = pack_ctrl,
   .try = NULL,
@@ -247,9 +361,14 @@ nm_so_strategy nm_so_strat_default = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+  .pack_extended_ctrl = pack_extended_ctrl,
+  .pack_ctrl_chunk = pack_ctrl_chunk,
+  .pack_extended_ctrl_end = pack_extended_ctrl_end,
+  .extended_rdv_accept = NULL,
 #ifdef NMAD_QOS
   .ack_callback = NULL,
 #endif /* NMAD_QOS */
   .priv = NULL,
   .flush = NULL,
 };
+

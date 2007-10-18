@@ -47,6 +47,7 @@
 #endif /* NMAD_QOS */
 
 struct nm_so_interface;
+struct iovec;
 
 struct nm_so_request_s;
 typedef struct nm_so_request_s nm_so_request;
@@ -112,6 +113,12 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
  *  @param request the request to check.
  *  @return The NM status.
  */
+extern int
+nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
+                   nm_gate_id_t gate_id, uint8_t tag,
+                   struct iovec *iov, int nb_entries,
+                   nm_so_request *p_request);
+
 extern int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
@@ -197,6 +204,25 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
  *  @return The NM status.
  */
 extern int
+nm_so_sr_irecv_with_ref(struct nm_so_interface *p_so_interface,
+                        nm_gate_id_t gate_id, uint8_t tag,
+                        void *data, uint32_t len,
+                        nm_so_request *p_request,
+                        void *ref);
+
+extern int
+nm_so_sr_irecv_iov(struct nm_so_interface *p_so_interface,
+                   nm_gate_id_t gate_id, uint8_t tag,
+                   struct iovec *iov, int nb_entries,
+                   nm_so_request *p_request);
+
+extern int
+nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
+                            nm_gate_id_t gate_id, uint8_t tag,
+                            struct iovec *iov, int nb_entries,
+                            nm_so_request *p_request, void *ref);
+
+extern int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 
@@ -264,6 +290,9 @@ nm_so_sr_recv_source(struct nm_so_interface *p_so_interface,
 extern int
 nm_so_sr_probe(struct nm_so_interface *p_so_interface,
                nm_gate_id_t gate_id, nm_gate_id_t *out_gate_id, uint8_t tag);
+
+extern int
+nm_so_sr_recv_success(struct nm_so_interface *p_so_interface, void **ref);
 
 /** Get the current send sequence number for the (gate,tag).
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.

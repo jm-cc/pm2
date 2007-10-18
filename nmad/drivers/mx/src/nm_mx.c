@@ -27,6 +27,10 @@
 #include "nm_mx_public.h"
 #include "nm_public.h"
 
+#ifdef ENABLE_SAMPLING
+#include "nm_parser.h"
+#endif
+
 /** Initial number of packet wrappers */
 #define INITIAL_PW_NUM		16
 
@@ -368,6 +372,10 @@ nm_mx_init		(struct nm_drv *p_drv) {
         hostname[MX_MAX_HOSTNAME_LEN-1] = '\0';
         p_drv->url	= tbx_strdup(hostname);
         NM_TRACE_STR("p_drv->url", p_drv->url);
+
+#ifdef ENABLE_SAMPLING
+        nm_parse_sampling(p_drv, "mx");
+#endif
 
         err = NM_ESUCCESS;
         return err;
@@ -980,6 +988,18 @@ out:
         return err;
 }
 
+static int nm_mx_release_req(struct nm_pkt_wrap *p_pw){
+  struct nm_mx_drv	*p_mx_drv	= NULL;
+  struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
+
+  p_mx_drv = p_pw->p_drv->priv;
+  p_mx_pw  = p_pw->drv_priv;
+
+  tbx_free(mx_pw_mem, p_mx_pw);
+
+  return NM_ESUCCESS;
+}
+
 /** Load MX operations */
 int
 nm_mx_load(struct nm_drv_ops *p_ops) {
@@ -999,6 +1019,8 @@ nm_mx_load(struct nm_drv_ops *p_ops) {
 
         p_ops->poll_send_iov    = nm_mx_poll_iov     ;
         p_ops->poll_recv_iov    = nm_mx_poll_iov     ;
+
+        p_ops->release_req      = nm_mx_release_req;
 
         return NM_ESUCCESS;
 }

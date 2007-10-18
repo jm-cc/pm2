@@ -56,7 +56,7 @@ static int pack_ctrl(struct nm_gate *p_gate,
       goto next;
 
     err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    //nb_ctrl_aggregation ++;
+
     goto out;
 
   next:
@@ -76,6 +76,162 @@ static int pack_ctrl(struct nm_gate *p_gate,
   return err;
 }
 
+static int
+pack_extended_ctrl(struct nm_gate *p_gate,
+                   uint32_t cumulated_header_len,
+                   union nm_so_generic_ctrl_header *p_ctrl,
+                   struct nm_so_pkt_wrap **pp_so_pw){
+
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_aggreg_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
+  uint32_t h_rlen;
+  int err;
+
+  if(!list_empty(&p_so_sa_gate->out_list)) {
+    /* Inspect only the head of the list */
+    p_so_pw = nm_l2so(p_so_sa_gate->out_list.next);
+
+    h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+
+    /* If the paquet is reasonably small, we can form an aggregate */
+    if(cumulated_header_len <= h_rlen) {
+      err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+      goto out;
+    }
+  }
+
+  /* Otherwise, simply form a new packet wrapper */
+  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+ out:
+  *pp_so_pw = p_so_pw;
+
+  return err;
+}
+
+static int
+pack_ctrl_chunk(struct nm_so_pkt_wrap *p_so_pw,
+                union nm_so_generic_ctrl_header *p_ctrl){
+
+  int err;
+
+  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+
+  return err;
+}
+
+static int
+pack_extended_ctrl_end(struct nm_gate *p_gate,
+                       struct nm_so_pkt_wrap *p_so_pw){
+
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_aggreg_gate *p_so_sa_gate
+    = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
+
+  /* Add the control packet to the BEGINING of out_list */
+  list_add(&p_so_pw->link, &p_so_sa_gate->out_list);
+
+  return NM_ESUCCESS;
+}
+
+static int
+try_to_agregate_small(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
+                      void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
+  struct nm_so_pkt_wrap *p_so_pw;
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_strat_aggreg_gate *p_so_sa_gate = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
+  int flags = 0;
+  int err;
+
+  /* We first try to find an existing packet to form an aggregate */
+  list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
+    uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+    uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
+    uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+
+      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
+	/* There's not enough room to add our data to this paquet */
+	goto next;
+
+      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
+	/* We can copy data into the header zone */
+	flags = NM_SO_DATA_USE_COPY;
+      else
+	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
+	  goto next;
+
+      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
+
+      nb_data_aggregation ++;
+      goto out;
+
+  next:
+      ;
+  }
+
+  if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
+    flags = NM_SO_DATA_USE_COPY;
+
+  /* We didn't have a chance to form an aggregate, so simply form a
+     new packet wrapper and add it to the out_list */
+  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                          chunk_offset, is_last_chunk, flags, &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
+ out:
+  return err;
+}
+
+static int
+launch_large_chunk(struct nm_gate *p_gate,
+                   uint8_t tag, uint8_t seq,
+                   void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  int err;
+
+  /* Large packets can not be sent immediately : we have to issue a RdV request. */
+
+  /* First allocate a packet wrapper */
+  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+                                          chunk_offset, is_last_chunk,
+                                          NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  /* Then place it into the appropriate list of large pending "sends". */
+  list_add_tail(&p_so_pw->link, &(p_so_gate->pending_large_send[tag]));
+
+  /* Signal we're waiting for an ACK */
+  p_so_gate->pending_unpacks++;
+
+  /* Finally, generate a RdV request */
+  {
+    union nm_so_generic_ctrl_header ctrl;
+
+    nm_so_init_rdv(&ctrl, tag + 128, seq, len, chunk_offset, is_last_chunk);
+
+    err = pack_ctrl(p_gate, &ctrl);
+    if(err != NM_ESUCCESS)
+      goto out;
+  }
+
+  /* Check if we should post a new recv packet: we're waiting for an
+     ACK! */
+  nm_so_refill_regular_recv(p_gate);
+
+  err = NM_ESUCCESS;
+
+ out:
+  return err;
+}
+
 /** Handle a new packet submitted by the user code.
  *
  *  @note The strategy may already apply some optimizations at this point.
@@ -90,96 +246,57 @@ static int pack(struct nm_gate *p_gate,
 		uint8_t tag, uint8_t seq,
 		void *data, uint32_t len)
 {
-  struct nm_so_pkt_wrap *p_so_pw;
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
-  struct nm_so_strat_aggreg_gate *p_so_sa_gate
-    = (struct nm_so_strat_aggreg_gate *)p_so_gate->strat_priv;
-  int flags = 0;
   int err;
+
+  p_so_gate->send[tag][seq] = len;
 
   if(len <= NM_SO_MAX_SMALL) {
     /* Small packet */
-
-    /* We first try to find an existing packet to form an aggregate */
-    list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
-      uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-      uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
-      uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
-      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
-	/* There's not enough room to add our data to this paquet */
-	goto next;
-
-      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
-	/* We can copy data into the header zone */
-	flags = NM_SO_DATA_USE_COPY;
-      else
-	if(p_so_pw->pw.v_nb == NM_SO_PREALLOC_IOV_LEN)
-	  goto next;
-
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
-      nb_data_aggregation ++;
-      goto out;
-
-    next:
-      ;
-    }
-
-    if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
-      flags = NM_SO_DATA_USE_COPY;
-
-    /* We didn't have a chance to form an aggregate, so simply form a
-       new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
-					    flags,
-					    &p_so_pw);
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
+    err = try_to_agregate_small(p_gate, tag, seq, data, len, 0, 1);
 
   } else {
-    /* Large packets can not be sent immediately : we have to issue a
-       RdV request. */
-
-    /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
-                                            NM_SO_DATA_DONT_USE_HEADER,
-                                            &p_so_pw);
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    /* Then place it into the appropriate list of large pending
-       "sends". */
-    list_add_tail(&p_so_pw->link,
-                  &(p_so_gate->pending_large_send[tag]));
-
-    /* Signal we're waiting for an ACK */
-    p_so_gate->pending_unpacks++;
-
-    /* Finally, generate a RdV request */
-    {
-      union nm_so_generic_ctrl_header ctrl;
-
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
-
-      err = pack_ctrl(p_gate, &ctrl);
-      if(err != NM_ESUCCESS)
-	goto out;
-    }
-
-    /* Check if we should post a new recv packet: we're waiting for an
-       ACK! */
-    nm_so_refill_regular_recv(p_gate);
-
+    /* Large packet */
+    err = launch_large_chunk(p_gate, tag, seq, data, len, 0, 1);
   }
 
-  err = NM_ESUCCESS;
-
- out:
   return err;
+}
+
+static int
+packv(struct nm_gate *p_gate,
+      uint8_t tag, uint8_t seq,
+      struct iovec *iov, int nb_entries){
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+
+  uint32_t offset = 0;
+  uint8_t last_chunk = 0;
+  int i;
+
+  p_so_gate->send[tag][seq] = 0;
+
+  for(i = 0; i < nb_entries; i++){
+    if(i == (nb_entries - 1)){
+      last_chunk = 1;
+    }
+
+    if(iov[i].iov_len <= NM_SO_MAX_SMALL) {
+      NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, iov[i].iov_len, offset, last_chunk);
+
+      /* Small packet */
+      try_to_agregate_small(p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
+
+    } else {
+      NM_SO_TRACE("PACK of a large one - tag = %u, seq = %u, nb_entries = %u\n", tag, seq, nb_entries);
+
+      /* Large packets are splited in 2 chunks. */
+      launch_large_chunk(p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
+    }
+    offset += iov[i].iov_len;
+  }
+  p_so_gate->send[tag][seq] = offset;
+
+  return NM_ESUCCESS;
 }
 
 /** Compute and apply the best possible packet rearrangement, then
@@ -297,6 +414,7 @@ nm_so_strategy nm_so_strat_aggreg = {
   .init_gate = init_gate,
   .exit_gate = exit_gate,
   .pack = pack,
+  .packv = packv,
   .pack_extended = NULL,
   .pack_ctrl = pack_ctrl,
   .try = NULL,
@@ -304,6 +422,10 @@ nm_so_strategy nm_so_strat_aggreg = {
   .try_and_commit = try_and_commit,
   .cancel = NULL,
   .rdv_accept = rdv_accept,
+  .pack_extended_ctrl = pack_extended_ctrl,
+  .pack_ctrl_chunk = pack_ctrl_chunk,
+  .pack_extended_ctrl_end = pack_extended_ctrl_end,
+  .extended_rdv_accept = NULL,
 #ifdef NMAD_QOS
   .ack_callback = NULL,
 #endif /* NMAD_QOS */

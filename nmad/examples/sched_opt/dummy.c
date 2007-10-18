@@ -36,20 +36,24 @@
 #define TAG0 128
 #define TAG1 129
 
-static int data_handler(struct nm_so_pkt_wrap *p_so_pw, 
-			void *ptr, uint32_t len,
-			uint8_t proto_id, uint8_t seq)
+static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
+                        void *ptr,
+                        void *header, uint32_t len,
+                        uint8_t proto_id, uint8_t seq,
+                        uint32_t chunk_offset, uint8_t is_last_chunk)
 {
-  printf("Data header : data = %p [%s], len = %u, tag = %d, seq = %u\n",
-	 ptr, (char *)ptr, len, proto_id, seq);
+  printf("Data header : data = %p [%s], len = %u, tag = %d, seq = %u, chunk_offset = %u, is_last_chunk = %u\n", ptr, (char *)ptr, len, proto_id, seq, chunk_offset, is_last_chunk);
 
   return NM_SO_HEADER_MARK_UNREAD;
 }
 
 static int rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
-		       uint8_t tag_id, uint8_t seq, uint32_t len)
+                       void *rdv,
+                       uint8_t tag_id, uint8_t seq,
+                       uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
-  printf("Rdv header : tag = %d, seq = %u, len = %u\n", tag_id, seq, len);
+  printf("Rdv header : tag = %d, seq = %u, len = %u, chunk_offset = %u, is_last_chunk = %u\n",
+         tag_id, seq, len, chunk_offset, is_last_chunk);
 
   return NM_SO_HEADER_MARK_UNREAD;
 }
@@ -82,21 +86,23 @@ main(int	  argc,
 
     err = nm_so_pw_alloc_and_fill_with_data(TAG0, 0,
 					    "abc", 4,
+                                            0, 1,
 					    NM_SO_DATA_USE_COPY,
 					    &p_so_pw);
+
     if(err != NM_ESUCCESS) {
       printf("nm_so_pw_alloc failed: err = %d\n", err);
       goto out;
     }
 
-    nm_so_pw_add_data(p_so_pw, TAG1, 0, "d", 2, NM_SO_DATA_FORCE_CONTIGUOUS);
+    nm_so_pw_add_data(p_so_pw, TAG1, 0, "d", 2, 0, 1, 0);
 
-    nm_so_pw_add_data(p_so_pw, TAG0, 1, "efgh", 5, 0);
+    nm_so_pw_add_data(p_so_pw, TAG0, 1, "efgh", 5, 0, 1, 0);
 
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, TAG0, 2, 4 + 2 + 5);
+      nm_so_init_rdv(&ctrl, TAG0, 2, 4 + 2 + 5, 0, 1);
 
       nm_so_pw_add_control(p_so_pw, &ctrl);
     }
@@ -105,16 +111,16 @@ main(int	  argc,
 
     TBX_GET_TICK(t2);
 
-    printf("Total length = %lld\n", p_so_pw->pw.length);
+    printf("Total length = %d\n", p_so_pw->pw.length);
     for(i=0; i<p_so_pw->pw.v_nb; i++)
-      printf("iovec[%d] contains %u bytes (@ = %p)\n",
+      printf("iovec[%d] contains %d bytes (@ = %p)\n",
 	     i, p_so_pw->pw.v[i].iov_len, p_so_pw->pw.v[i].iov_base);
 
     printf("Iteration sur le wrapper d'emission :\n");
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
-				  NULL);
+				  NULL, NULL);
 
 
     vec = p_so_pw->pw.v;
@@ -133,7 +139,9 @@ main(int	  argc,
 
     err = nm_so_pw_alloc_and_fill_with_data(0, 0,
                                             buf, NM_SO_PREALLOC_BUF_LEN,
-			                    NM_SO_DATA_DONT_USE_HEADER,
+			                    0,
+                                            1,
+                                            NM_SO_DATA_DONT_USE_HEADER,
                                             &p_so_pw);
     if(err != NM_ESUCCESS) {
       printf("nm_so_pw_alloc failed: err = %d\n", err);
@@ -144,7 +152,7 @@ main(int	  argc,
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
-				  NULL);
+				  NULL, NULL);
 
     nm_so_pw_free(p_so_pw);
 

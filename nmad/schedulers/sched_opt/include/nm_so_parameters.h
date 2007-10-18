@@ -21,11 +21,7 @@
 
 /* Maximum number of tags (e.g. logical channels) the application can
    use. 128 means [0..127]. A value smaller than 128 saves space! */
-#if defined(CONFIG_PROTO_MPI)
 #define NM_SO_MAX_TAGS                      128
-#else
-#define NM_SO_MAX_TAGS                      16
-#endif
 
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion
@@ -60,17 +56,6 @@
 #  define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
 #endif
 
-
-//#define NM_SO_OPTIMISTIC_RECV
-
-#ifdef NM_SO_OPTIMISTIC_RECV
-
-/* Threshold used on both sides to decide if an optimistic receive
-   operation may be attempted */
-#define NM_SO_OPTIMISTIC_RECV_LOW_THRESHOLD 32
-
-#endif // NM_SO_OPTIMISTIC_RECV
-
 #if defined(NM_SO_MULTI_ACTIVE_SEND_PER_TRACK)
 #define NM_SO_MAX_ACTIVE_SEND_PER_TRACK     16
 #else
@@ -101,7 +86,7 @@
  net(1) -> 0
 */
 #define nm_so_network_latency(n)  \
-  (NM_SO_MAX_NETS-n-1)
+  (NM_SO_MAX_NETS-n-1) //(NM_SO_MAX_NETS-n-1) -> Q et (n) pour MX
 
 #define nm_so_network_bandwidth(n)  \
   (n)

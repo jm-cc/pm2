@@ -29,11 +29,18 @@
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
+#include "nm_so_strategies/nm_so_strat_split_balance.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_autoextended.h"
-#include "nm_so_strategies/nm_so_strat_balance.h"
 #ifdef NMAD_QOS
 #include "nm_so_strategies/nm_so_strat_qos.h"
 #endif /* NMAD_QOS */
+
+#include <nm_predictions.h>
+
+
+#define INITIAL_CHUNK_NUM (NM_SO_MAX_TAGS * NM_SO_PENDING_PACKS_WINDOW)
+
+p_tbx_memory_t nm_so_chunk_mem = NULL;
 
 /** Initialize the scheduler.
  */
@@ -60,7 +67,7 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->pending_any_src_unpacks = 0;
 
 #if defined(CONFIG_MULTI_RAIL)
-  p_priv->current_strategy = &nm_so_strat_balance;
+  p_priv->current_strategy = &nm_so_strat_split_balance;
 #elif defined(CONFIG_STRAT_DEFAULT)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
@@ -82,6 +89,10 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy->init();
 
   p_sched->sch_private	= p_priv;
+
+  tbx_malloc_init(&nm_so_chunk_mem,
+                  sizeof(struct nm_so_chunk),
+                  INITIAL_CHUNK_NUM, "nmad/.../sched_opt/nm_so_chunk");
 
   err = NM_ESUCCESS;
 
@@ -123,6 +134,8 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
 
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
+
+  tbx_malloc_clean(nm_so_chunk_mem);
 
   TBX_FREE(p_priv);
   p_sched->sch_private = NULL;
@@ -222,6 +235,37 @@ nm_so_close_gate(struct nm_sched	*p_sched,
     TBX_FAILURE("Interface not defined");
   p_so_sched->current_interface->exit_gate(p_gate);
 
+  /* Release the last pw always in use */
+  {
+    p_tbx_slist_t pending_aux_slist, pending_perm_slist;
+    pending_aux_slist = p_sched->pending_aux_recv_req;
+    pending_perm_slist = p_sched->pending_perm_recv_req;
+
+    while (!tbx_slist_is_nil(pending_aux_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_aux_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      if(p_pw->p_drv->ops.release_req){
+        p_pw->p_drv->ops.release_req(p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
+
+    while (!tbx_slist_is_nil(pending_perm_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_perm_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      if(p_pw->p_drv->ops.release_req){
+        p_pw->p_drv->ops.release_req(p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
+  }
+
   TBX_FREE(p_so_gate);
   return NM_ESUCCESS;
 }
@@ -257,12 +301,12 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
   p_so_gate->pending_unpacks = 0;
 
-  p_gate->sch_private = p_so_gate;
-
   for(i = 0; i < NM_SO_MAX_TAGS; i++)
     INIT_LIST_HEAD(&p_so_gate->pending_large_send[i]);
 
   INIT_LIST_HEAD(&p_so_gate->pending_large_recv);
+
+  p_gate->sch_private = p_so_gate;
 
   p_so_sched->current_strategy->init_gate(p_gate);
 

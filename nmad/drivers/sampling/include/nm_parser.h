@@ -13,11 +13,13 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SO_STRAT_BALANCE_H
-#define NM_SO_STRAT_BALANCE_H
+#ifndef NM_PARSER_H
+#define NM_PARSER_H
 
-#include "nm_so_strategies.h"
+struct nm_drv;
 
-extern nm_so_strategy nm_so_strat_balance;
+// dans driver_init
+extern int nm_parse_sampling(struct nm_drv *drv, char *drv_name);
 
 #endif
+

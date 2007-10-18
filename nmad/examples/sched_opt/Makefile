@@ -14,5 +14,6 @@
 export FLAVOR_DEFAULT:=nmad
 
 MOD_SRC += $(PM2_ROOT)/nmad/examples/sched_opt
+MOD_SRC += $(PM2_ROOT)/nmad/sampling
 
 include $(PM2_ROOT)/make/apps.mak

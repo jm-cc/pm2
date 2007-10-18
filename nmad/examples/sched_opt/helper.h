@@ -154,81 +154,81 @@ nm_gate_id_t get_gate_out_id(int dest) {
 void
 init(int	 *argc,
      char	**argv) {
-        int i, j, err;
+  int i, j, err;
 
-        err = nm_core_init(argc, argv, &p_core, nm_so_load);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_init returned err = %d\n", err);
-                goto out_err;
-        }
+  err = nm_core_init(argc, argv, &p_core, nm_so_load);
+  if (err != NM_ESUCCESS) {
+    printf("nm_core_init returned err = %d\n", err);
+    goto out_err;
+  }
 
-	err = nm_so_sr_init(p_core, &sr_if);
-	if(err != NM_ESUCCESS) {
-	  printf("nm_so_sr_init return err = %d\n", err);
-	  goto out_err;
-	}
+  err = nm_so_sr_init(p_core, &sr_if);
+  if(err != NM_ESUCCESS) {
+    printf("nm_so_sr_init return err = %d\n", err);
+    goto out_err;
+  }
 
-	err = nm_so_pack_interface_init(p_core, &pack_if);
-	if(err != NM_ESUCCESS) {
-	  printf("nm_so_pack_interface_init return err = %d\n", err);
-	  goto out_err;
-	}
+  err = nm_so_pack_interface_init(p_core, &pack_if);
+  if(err != NM_ESUCCESS) {
+    printf("nm_so_pack_interface_init return err = %d\n", err);
+    goto out_err;
+  }
 
-        i=1;
-        while (i<*argc) {
-		if (!strncmp(argv[i], "-", 1)) {
-                        break;
-                }
-                else {
-                        r_url	= argv[i];
-                        i++;
-                }
-        }
+  i=1;
+  while (i<*argc) {
+    if (!strncmp(argv[i], "-", 1)) {
+      break;
+    }
+    else {
+      r_url	= argv[i];
+      i++;
+    }
+  }
 
-        if (r_url) {
-                printf("running as client using remote url: %s\n", r_url);
-                i--;
-                *argc -= i;
-                for(j=1 ; j<*argc ; j++) {
-                        argv[j] = argv[j+i];
-                }
-        } else {
-                printf("running as server\n");
-        }
+  if (r_url) {
+    printf("running as client using remote url: %s\n", r_url);
+    i--;
+    *argc -= i;
+    for(j=1 ; j<*argc ; j++) {
+      argv[j] = argv[j+i];
+    }
+  } else {
+    printf("running as server\n");
+  }
 
-        err = nm_core_driver_load_init(p_core, p_driver_load, &drv_id, &l_url);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_driver_load_init returned err = %d\n", err);
-                goto out_err;
-        }
+  err = nm_core_driver_load_init(p_core, p_driver_load, &drv_id, &l_url);
+  if (err != NM_ESUCCESS) {
+    printf("nm_core_driver_load_init returned err = %d\n", err);
+    goto out_err;
+  }
 
-        err = nm_core_gate_init(p_core, &gate_id);
-        if (err != NM_ESUCCESS) {
-                printf("nm_core_gate_init returned err = %d\n", err);
-                goto out_err;
-        }
+  err = nm_core_gate_init(p_core, &gate_id);
+  if (err != NM_ESUCCESS) {
+    printf("nm_core_gate_init returned err = %d\n", err);
+    goto out_err;
+  }
 
-        if (r_url) {
-                err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_connect returned err = %d\n", err);
-                        goto out_err;
-                }
-        } else {
-                printf("local url: \"%s\"\n", l_url);
+  if (r_url) {
+    err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
+    if (err != NM_ESUCCESS) {
+      printf("nm_core_gate_connect returned err = %d\n", err);
+      goto out_err;
+    }
+  } else {
+    printf("local url: \"%s\"\n", l_url);
 
-                err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_accept returned err = %d\n", err);
-                        goto out_err;
-                }
-        }
+    err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
+    if (err != NM_ESUCCESS) {
+      printf("nm_core_gate_accept returned err = %d\n", err);
+      goto out_err;
+    }
+  }
 
-        is_server	= !r_url;
-        return;
+  is_server	= !r_url;
+  return;
 
  out_err:
-        exit(EXIT_FAILURE);
+  exit(EXIT_FAILURE);
 }
 
 int nmad_exit(void) {

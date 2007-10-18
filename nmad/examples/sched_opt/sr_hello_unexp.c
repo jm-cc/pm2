@@ -20,7 +20,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef CONFIG_MULTI_RAIL
+#include "helper_multirails.h"
+#else
 #include "helper.h"
+#endif
 
 const char *msg	= "hello, world";
 
@@ -47,7 +51,7 @@ main(int	  argc,
 
           int i = 0;
           while(i++ < 10000)
-            nm_so_sr_stest(sr_if, request0);
+            nm_so_sr_rtest(sr_if, request0);
 
           nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &request);
           nm_so_sr_rwait(sr_if, request);

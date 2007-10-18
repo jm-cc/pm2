@@ -39,4 +39,6 @@
 
 #include <nm_tcpdg_public.h>
 
+#include <nm_predictions.h>
+
 #endif /* NM_DRIVERS_H */

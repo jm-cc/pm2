@@ -23,7 +23,8 @@
 #include <nm_public.h>
 #include <nm_so_public.h>
 
-#include <nm_so_pack_interface.h>
+#include <nm_so_sendrecv_interface.h>
+
 #include <nm_drivers.h>
 
 const char *msg	= "hello, world";
@@ -47,8 +48,7 @@ main(int	  argc,
         char			*s_buf		= NULL;
         char			*r_buf		= NULL;
         uint64_t		 len;
-	struct nm_so_cnx         cnx;
-	nm_so_pack_interface     interface;
+        struct nm_so_interface *interface = NULL;
         int err;
 
         err = nm_core_init(&argc, argv, &p_core, nm_so_load);
@@ -57,11 +57,11 @@ main(int	  argc,
                 goto out;
         }
 
-	err = nm_so_pack_interface_init(p_core, &interface);
-	if(err != NM_ESUCCESS) {
-	  printf("nm_so_pack_interface_init return err = %d\n", err);
-	  goto out;
-	}
+        err = nm_so_sr_init(p_core, &interface);
+        if(err != NM_ESUCCESS) {
+          printf("nm_so_sr_init return err = %d\n", err);
+          goto out;
+        }
 
         argc--;
         argv++;
@@ -170,22 +170,35 @@ main(int	  argc,
         strcpy(s_buf, msg);
         memset(r_buf, 0, len);
 
+        if(!r_url1 && !r_url2){
+          nm_so_request request;
 
-        // ping sur mon 1er voisin
-        nm_so_begin_packing(interface, gate_id1, 0, &cnx);
+          // ping vers 1
+          nm_so_sr_isend(interface, gate_id1, 0, s_buf, len, &request);
+          nm_so_sr_swait(interface, request);
 
-        nm_so_pack(&cnx, s_buf, len);
+          // pong de 2
+          nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, r_buf, len, &request);
+          nm_so_sr_rwait(interface, request);
 
-        nm_so_end_packing(&cnx);
+        } else {
+          nm_so_request request;
+          long gate_id = -1;
 
+          //pong de 0
+          nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, r_buf, len, &request);
+          nm_so_sr_rwait(interface, request);
 
-        // pong (qui devrait venir du 2)
-        nm_so_begin_unpacking(interface, -1, 0, &cnx);
+          nm_so_sr_recv_source(interface, request, &gate_id);
 
-        nm_so_unpack(&cnx, r_buf, len);
-
-        nm_so_end_unpacking(&cnx);
-
+          if(gate_id == gate_id1){
+             nm_so_sr_isend(interface, gate_id2, 0, s_buf, len, &request);
+             nm_so_sr_swait(interface, request);
+          } else {
+            nm_so_sr_isend(interface, gate_id1, 0, s_buf, len, &request);
+            nm_so_sr_swait(interface, request);
+          }
+        }
 
         printf("buffer contents: %s\n", r_buf);
 

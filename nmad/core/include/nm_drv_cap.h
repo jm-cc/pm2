@@ -63,8 +63,8 @@ struct nm_drv_cap {
 
         /** Driver performance sampling
          */
-        double *network_sampling_latency;
-        int nb_sampling;
+        double *network_sampling_bandwidth;
+        int nb_samplings;
 
 #ifdef PM2_NUIOA
 	/** Numa node where the card is attached

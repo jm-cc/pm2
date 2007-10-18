@@ -142,7 +142,7 @@ int pack(struct nm_gate *p_gate,
 	  goto next;
         }
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, 1, flags);
       NM_SO_SR_TRACE_LEVEL(3, "Adding data\n");
       nb_data_aggregation ++;
 
@@ -157,7 +157,7 @@ int pack(struct nm_gate *p_gate,
 
     NM_SO_SR_TRACE_LEVEL(3, "We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-					    data, len,
+					    data, len, 0, 1,
 					    flags,
 					    &p_so_pw);
     p_so_pw->is_completed = tbx_false;
@@ -172,7 +172,7 @@ int pack(struct nm_gate *p_gate,
 
     /* First allocate a packet wrapper */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
-                                            data, len,
+                                            data, len, 0, 1,
                                             NM_SO_DATA_DONT_USE_HEADER,
                                             &p_so_pw);
     p_so_pw->is_completed = tbx_true;
@@ -192,7 +192,7 @@ int pack(struct nm_gate *p_gate,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len);
+      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
 
       err = pack_ctrl(p_gate, &ctrl);
       if(err != NM_ESUCCESS)

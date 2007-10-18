@@ -13,16 +13,17 @@
  * General Public License for more details.
  */
 
-#ifndef NM_NETWORK_SAMPLING_H
-#define NM_NETWORK_SAMPLING_H
+#ifndef NM_PREDICTIONS_H
+#define NM_PREDICTIONS_H
 
-int
-nm_ns_network_sampling(struct nm_drv *driver,
-                       nm_gate_id_t gate_id,
-                       int connect_flag);
+struct nm_core;
 
-double
-nm_ns_evaluate(struct nm_drv *driver,
-               int length);
+extern int nm_ns_init(struct nm_core *p_core);
+
+extern int nm_ns_dec_bws(struct nm_core *p_core, uint8_t **drv_ids);
+extern int nm_ns_inc_lats(struct nm_core *p_core, uint8_t **drv_ids);
+
+extern int nm_ns_split_ratio(uint32_t len_to_send, struct nm_core *p_core, int drv1_id, int drv2_id, uint32_t *offset);
+extern int nm_ns_multiple_split_ratio(uint32_t len_to_send, struct nm_core *p_core, int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens, int *final_nb_drv);
 
 #endif

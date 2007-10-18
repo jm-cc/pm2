@@ -26,6 +26,7 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"
 #include "nm_so_interfaces.h"
+#include "nm_so_debug.h"
 
 /* Status flags contents */
 #define NM_SO_STATUS_PACKET_HERE     ((uint8_t)1)
@@ -33,6 +34,7 @@
 #define NM_SO_STATUS_RDV_HERE        ((uint8_t)4)
 #define NM_SO_STATUS_RDV_IN_PROGRESS ((uint8_t)8)
 #define NM_SO_STATUS_ACK_HERE        ((uint8_t)16)
+#define NM_SO_STATUS_UNPACK_IOV      ((uint8_t)32)
 
 
 struct nm_so_sched {
@@ -43,13 +45,31 @@ struct nm_so_sched {
   struct {
     uint8_t  status;
     void    *data;
-    uint32_t len;
+    int32_t cumulated_len;
+    int32_t expected_len;
+    int8_t  gate_id;
+    uint8_t seq;
   } any_src[NM_SO_MAX_TAGS];
 
   uint8_t next_gate_id;
 
   unsigned pending_any_src_unpacks;
 };
+
+/* chunk of message to be stored while the unpack is not posted */
+extern p_tbx_memory_t nm_so_chunk_mem;
+
+
+struct nm_so_chunk {
+  void *header;
+  struct nm_so_pkt_wrap *p_so_pw;
+  struct list_head link;
+};
+
+#define nm_l2chunk(l) \
+        ((struct nm_so_chunk *)((char *)(l) -\
+         (unsigned long)(&((struct nm_so_chunk *)0)->link)))
+
 
 struct nm_so_gate {
 
@@ -71,14 +91,21 @@ struct nm_so_gate {
 
   union recv_info {
     struct {
-      void *data;
+      void *header;
       struct nm_so_pkt_wrap *p_so_pw;
+      struct list_head chunks;
     } pkt_here;
+
     struct {
       void *data;
-      uint32_t len;
+
+      int32_t cumulated_len;
+      int32_t expected_len;
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+
+  /* pending len to send */
+  int32_t send[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
   /* For large messages waiting for ACKs */
   struct list_head pending_large_send[NM_SO_MAX_TAGS];
@@ -97,9 +124,19 @@ __nm_so_unpack(struct nm_gate *p_gate,
 	       void *data, uint32_t len);
 
 int
+__nm_so_unpackv(struct nm_gate *p_gate,
+                uint8_t tag, uint8_t seq,
+                struct iovec *iov, int nb_entries);
+
+int
 __nm_so_unpack_any_src(struct nm_core *p_core,
                        uint8_t tag,
                        void *data, uint32_t len);
+
+int
+__nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag,
+                        struct iovec *iov, int nb_entries);
+
 int
 nm_so_out_process_success_rq(struct nm_sched	*p_sched,
                              struct nm_pkt_wrap	*p_pw);

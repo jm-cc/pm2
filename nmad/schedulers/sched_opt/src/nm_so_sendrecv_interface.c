@@ -24,19 +24,16 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_sendrecv_interface_private.h"
 #include "nm_so_debug.h"
-//#include "nm_so_log.h"
 #include "nm_so_tracks.h"
 
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 
-/** Gate storage of the SR interface.
+/** Status for basic receive requests.
  */
-struct nm_so_sr_gate {
-  /* WARNING: better replace the following array by two separate
-     bitmaps, to save space and avoid false sharing between send and
-     recv operations. status[tag_id][seq] */
-  volatile uint8_t status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+struct status {
+  volatile uint8_t status;
+  void *ref;
 };
 
 /** Status for any source receive requests.
@@ -45,7 +42,32 @@ struct any_src_status {
   uint8_t status;
   nm_gate_id_t gate_id;
   int is_first_request;
+  void *ref;
 };
+
+/** Gate storage of the SR interface.
+ */
+struct nm_so_sr_gate {
+  /* WARNING: better replace the following array by two separate
+     bitmaps, to save space and avoid false sharing between send and
+     recv operations. status[tag_id][seq] */
+  struct status status[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
+};
+
+/** Structure to keep a reference on a user object.
+ */
+struct ref_link{
+  void *ref;
+  struct list_head link;
+};
+static p_tbx_memory_t nm_sr_ref_mem;
+static struct list_head completed_rreq;
+
+
+
+#define nm_l2ref(l) \
+        ((struct ref_link *)((char *)(l) -\
+         (unsigned long)(&((struct ref_link *)0)->link)))
 
 /** Obscure macro for obtaining a pointer to the whole any_src_status
     structure from a pointer to its status field.
@@ -53,6 +75,7 @@ struct any_src_status {
 #define outer_any_src_struct(p_status) \
 	((struct any_src_status *)((uint8_t *)(p_status) - \
          (unsigned long)(&((struct any_src_status *)0)->status)))
+
 
 /** Array of any_src_status structs. One entry per tag.
  */
@@ -115,6 +138,9 @@ nm_so_sr_init(struct nm_core *p_core,
 
   *p_so_interface = p_so_int;
 
+  tbx_malloc_init(&nm_sr_ref_mem, sizeof(struct ref_link), NM_SO_PENDING_PACKS_WINDOW,
+                  "nmad/.../sched_opt/src/nm_so_send_recv_interface.c");
+
   for(i=0 ; i<NM_SO_MAX_TAGS ; i++) {
     any_src[i].is_first_request = 1;
 #ifdef NMAD_QOS
@@ -139,6 +165,8 @@ int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 {
   NM_SO_SR_LOG_IN();
+
+  tbx_malloc_clean(nm_sr_ref_mem);
 
   TBX_FREE(p_so_interface);
   p_so_interface = NULL;
@@ -168,7 +196,7 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  p_req = &p_sr_gate->status[tag][seq];
+  p_req = &p_sr_gate->status[tag][seq].status;
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
@@ -204,7 +232,7 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  p_req = &p_sr_gate->status[tag][seq];
+  p_req = &p_sr_gate->status[tag][seq].status;
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
@@ -247,7 +275,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  p_req = &p_sr_gate->status[tag][seq];
+  p_req = &p_sr_gate->status[tag][seq].status;
 
   *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
 
@@ -281,6 +309,44 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 }
 
 int
+nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
+                   nm_gate_id_t gate_id, uint8_t tag,
+                   struct iovec *iov, int nb_entries,
+                   nm_so_request *p_request)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  uint8_t seq;
+  volatile uint8_t *p_req;
+
+  NM_SO_SR_LOG_IN();
+
+  assert(nb_entries < NM_SO_PREALLOC_IOV_LEN);
+
+  seq = p_so_gate->send_seq_number[tag]++;
+
+  p_req = &p_sr_gate->status[tag][seq].status;
+
+  *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
+
+  if(p_request) {
+    p_request->status = (intptr_t)p_req;
+    p_request->seq = seq;
+    p_request->gate_id = gate_id;
+  }
+
+  return p_so_interface->p_so_sched->current_strategy->packv(p_gate, tag, seq, iov, nb_entries);
+}
+
+
+/** Test for the completion of a non blocking send request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
+int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
@@ -301,7 +367,7 @@ nm_so_sr_stest(struct nm_so_interface *p_so_interface,
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
-extern int
+int
 nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb) {
@@ -316,9 +382,10 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t)&p_sr_gate->status[tag][seq];
+    request.status = (intptr_t)&p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     ret = nm_so_sr_stest(p_so_interface, request);
+
     if (ret == -NM_EAGAIN) {
       NM_SO_SR_LOG_OUT();
       return ret;
@@ -380,7 +447,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     request.gate_id = gate_id;
     nm_so_sr_swait(p_so_interface, request);
@@ -402,10 +469,11 @@ nm_so_sr_scancel(struct nm_so_interface *p_so_interface,
 /* Receive operations */
 
 int
-nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
-	       nm_gate_id_t gate_id, uint8_t tag,
-	       void *data, uint32_t len,
-	       nm_so_request *p_request)
+nm_so_sr_irecv_with_ref(struct nm_so_interface *p_so_interface,
+                        nm_gate_id_t gate_id, uint8_t tag,
+                        void *data, uint32_t len,
+                        nm_so_request *p_request,
+                        void *ref)
 {
   struct nm_core *p_core = p_so_interface->p_core;
   volatile uint8_t *p_req = NULL;
@@ -425,6 +493,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
     any_src[tag].is_first_request = 0;
     any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
+    any_src[tag].ref = ref;
 
     if(p_request) {
       p_req = &any_src[tag].status;
@@ -436,6 +505,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
     ret = __nm_so_unpack_any_src(p_core, tag, data, len);
     NM_SO_SR_LOG_OUT();
     return ret;
+
   } else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
@@ -448,7 +518,78 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
     seq = p_so_gate->recv_seq_number[tag]++;
 
-    p_req = &p_sr_gate->status[tag][seq];
+    p_req = &(p_sr_gate->status[tag][seq].status);
+    *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+    if(p_request) {
+      p_request->status = (intptr_t)p_req;
+      p_request->seq = seq;
+      p_request->gate_id = gate_id;
+    }
+
+    p_sr_gate->status[tag][seq].ref = ref;
+
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
+
+    ret = __nm_so_unpack(p_gate, tag, seq, data, len);
+    NM_SO_SR_LOG_OUT();
+    return ret;
+  }
+}
+
+int
+nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
+               nm_gate_id_t gate_id, uint8_t tag,
+               void *data, uint32_t len,
+               nm_so_request *p_request)
+{
+  return nm_so_sr_irecv_with_ref(p_so_interface, gate_id, tag, data, len, p_request, NULL);
+}
+
+
+int nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
+                                nm_gate_id_t gate_id, uint8_t tag,
+                                struct iovec *iov, int nb_entries,
+                                nm_so_request *p_request, void *ref)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  volatile uint8_t *p_req = NULL;
+
+  NM_SO_SR_LOG_IN();
+
+  assert(nb_entries < NM_SO_PREALLOC_IOV_LEN);
+
+  if(gate_id == NM_SO_ANY_SRC) {
+
+    if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
+      nm_so_request request;
+      NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
+      request.status = (intptr_t) &any_src[tag].status;
+      request.gate_id = -1;
+      nm_so_sr_rwait(p_so_interface, request);
+    }
+
+    any_src[tag].is_first_request = 0;
+    any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
+    any_src[tag].ref = ref;
+
+    if(p_request) {
+      p_req = &any_src[tag].status;
+      p_request->status = (intptr_t)p_req;
+      p_request->gate_id = -1;
+    }
+
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
+    return __nm_so_unpackv_any_src(p_core, tag, iov, nb_entries);
+
+  } else {
+    struct nm_gate *p_gate = p_core->gate_array + gate_id;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+    struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+    uint8_t seq;
+
+    seq = p_so_gate->recv_seq_number[tag]++;
+
+    p_req = &p_sr_gate->status[tag][seq].status;
 
     *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
 
@@ -458,13 +599,31 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
       p_request->gate_id = gate_id;
     }
 
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
-    ret = __nm_so_unpack(p_gate, tag, seq, data, len);
-    NM_SO_SR_LOG_OUT();
-    return ret;
+    p_sr_gate->status[tag][seq].ref = ref;
+
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
+
+    return __nm_so_unpackv(p_gate, tag, seq, iov, nb_entries);
   }
+  return NM_ESUCCESS;
 }
 
+
+int nm_so_sr_irecv_iov(struct nm_so_interface *p_so_interface,
+                       nm_gate_id_t gate_id, uint8_t tag,
+                       struct iovec *iov, int nb_entries,
+                       nm_so_request *p_request){
+
+  return nm_so_sr_irecv_iov_with_ref(p_so_interface, gate_id, tag, iov, nb_entries, p_request, NULL);
+}
+
+
+
+/** Test for the completion of a non blocking receive request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
 int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -486,7 +645,7 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
     NM_ESUCCESS : -NM_EAGAIN;
 }
 
-extern int
+int
 nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
 		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb) {
@@ -501,9 +660,10 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     ret = nm_so_sr_rtest(p_so_interface, request);
+
     if (ret == -NM_EAGAIN) {
       NM_SO_SR_LOG_OUT();
       return ret;
@@ -561,10 +721,10 @@ nm_so_sr_get_size(struct nm_so_interface *p_so_interface,
   NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %ld\n", tag, request->seq, request->gate_id);
 
   if (is_any_source) {
-    *size = p_so_sched->any_src[tag].len;
+    *size = p_so_sched->any_src[tag].expected_len;
   }
   else {
-    *size = p_so_gate->recv[tag][request->seq].unpack_here.len;
+    *size = p_so_gate->recv[tag][request->seq].unpack_here.expected_len;
   }
   return NM_ESUCCESS;
 }
@@ -649,11 +809,12 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq];
+    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     request.gate_id = gate_id;
 
-    NM_SO_SR_TRACE_LEVEL(3, "asking for request %p (tag %d seq %d gate_id %d) completion\n", &p_sr_gate->status[tag][seq], tag, seq, gate_id);
+    NM_SO_SR_TRACE_LEVEL(3, "asking for request %p (tag %d seq %d gate_id %d) completion\n", &p_sr_gate->status[tag][seq].status, tag, seq, gate_id);
+
     nm_so_sr_rwait(p_so_interface, request);
 
     seq++;
@@ -664,12 +825,39 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 }
 
 int
+nm_so_sr_recv_success(struct nm_so_interface *p_so_interface, void **ref){
+  struct nm_core *p_core = p_so_interface->p_core;
+
+  nm_schedule(p_core);
+
+  if(!list_empty(&completed_rreq)){
+    struct ref_link *ref_link= nm_l2ref(completed_rreq.next);
+    list_del(completed_rreq.next);
+
+    *ref = ref_link->ref;
+
+    tbx_free(nm_sr_ref_mem, ref_link);
+
+  } else {
+    *ref = NULL;
+  }
+
+  return NM_ESUCCESS;
+}
+
+int
 nm_so_sr_rcancel(struct nm_so_interface *p_so_interface,
                  nm_so_request request)
 {
   return NM_ENOTIMPL;
 }
 
+/** Get the current send sequence number for the (gate,tag).
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param gate_id the destination gate id.
+ *  @param tag the message tag.
+ *  @return The send sequence number.
+ */
 unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
 			      nm_gate_id_t gate_id, uint8_t tag)
@@ -702,6 +890,47 @@ nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
+/** Calls the scheduler
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @return The NM status.
+ */
+int
+nm_so_sr_progress(struct nm_so_interface *p_so_interface)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  NM_SO_SR_LOG_IN();
+
+  nm_schedule(p_core);
+
+  return NM_ESUCCESS;
+}
+
+/** Test for the completion of a SET of non blocking receive requests.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
+int
+nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
+                  nm_so_request request)
+{
+  uint8_t *p_request = (uint8_t *)request.status;
+
+  NM_SO_SR_LOG_IN();
+
+  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
+    NM_ESUCCESS : -NM_EAGAIN;
+}
+
+
+
+
+
+
+
+
+
+
 
 /* Callback functions */
 /** Initialize the gate storage for the SR interface.
@@ -721,6 +950,8 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
     NM_SO_SR_LOG_OUT();
     return -NM_ENOMEM;
   }
+
+  INIT_LIST_HEAD(&completed_rreq);
 
   p_so_gate->interface_private = p_sr_gate;
 
@@ -760,8 +991,9 @@ int nm_so_sr_pack_success(struct nm_gate *p_gate,
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
 
   NM_SO_SR_LOG_IN();
+  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", &p_sr_gate->status[tag][seq].status, tag, seq);
 
-  p_sr_gate->status[tag][seq] |= NM_SO_STATUS_SEND_COMPLETED;
+  p_sr_gate->status[tag][seq].status |= NM_SO_STATUS_SEND_COMPLETED;
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -781,21 +1013,34 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  void *ref = NULL;
 
   NM_SO_SR_LOG_IN();
 
-  NM_SO_SR_TRACE("data received for request = %p (any_src request %p)\n", &p_sr_gate->status[tag][seq], is_any_src ? &any_src[tag].status : NULL);
+  NM_SO_SR_TRACE("data received for request = %p (any_src request %p) - tag %d, seq %d\n", &p_sr_gate->status[tag][seq].status, is_any_src ? &any_src[tag].status : NULL, tag, seq);
 
-  p_sr_gate->status[tag][seq] |= NM_SO_STATUS_RECV_COMPLETED;
+  p_sr_gate->status[tag][seq].status |= NM_SO_STATUS_RECV_COMPLETED;
 
   if(is_any_src) {
     any_src[tag].gate_id = p_gate->id;
     any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
+    ref = any_src[tag].ref;
+  } else {
+    ref = p_sr_gate->status[tag][seq].ref;
   }
 
-  NM_SO_SR_LOG_OUT();
+  if(ref){
+    struct ref_link *ref_link = tbx_malloc(nm_sr_ref_mem);
+
+    ref_link->ref = ref;
+
+    list_add_tail(&ref_link->link, &completed_rreq);
+  }
+
   return NM_ESUCCESS;
 }
+
+
 
 #ifdef NMAD_QOS
 void
@@ -833,27 +1078,3 @@ nm_so_get_policy(uint8_t tag)
 }
 #endif /* NMAD_QOS */
 
-int
-nm_so_sr_progress(struct nm_so_interface *p_so_interface)
-{
-  struct nm_core *p_core = p_so_interface->p_core;
-  NM_SO_SR_LOG_IN();
-
-  nm_schedule(p_core);
-
-  NM_SO_SR_LOG_OUT();
-  return NM_ESUCCESS;
-}
-
-int
-nm_so_sr_req_test(struct nm_so_interface *p_so_interface TBX_UNUSED,
-                  nm_so_request request)
-{
-  uint8_t *p_request = (uint8_t *)request.status;
-
-  NM_SO_SR_LOG_IN();
-
-  NM_SO_SR_LOG_OUT();
-  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
-    NM_ESUCCESS : -NM_EAGAIN;
-}

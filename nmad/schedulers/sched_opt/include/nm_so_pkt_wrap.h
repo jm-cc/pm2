@@ -26,32 +26,21 @@
 //#define _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 
 /* Data flags */
-#define NM_SO_DATA_FORCE_CONTIGUOUS    1
-#define NM_SO_DATA_USE_COPY            2
-#define NM_SO_DATA_IS_CTRL_HEADER      4
-#define NM_SO_DATA_DONT_USE_HEADER     8
-#define NM_SO_DATA_PREPARE_RECV       16
-#define NM_SO_DATA_OPTIMISTIC_RECV    32
+#define NM_SO_DATA_USE_COPY            1
+#define NM_SO_DATA_IS_CTRL_HEADER      2
+#define NM_SO_DATA_DONT_USE_HEADER     4
+#define NM_SO_DATA_PREPARE_RECV        8
 
 struct nm_so_pkt_wrap {
 
   struct nm_pkt_wrap pw;
 
-  struct iovec      *header_index;
-
   int                header_ref_count;
 
   /* Used on the sending side */
-#ifdef NM_SO_OPTIMISTIC_RECV
-  struct nm_so_data_header *uncompleted_header;
-#endif
   int                pending_skips;
 
   /* Used on the receiving side */
-#ifdef NM_SO_OPTIMISTIC_RECV
-  int                optimistic_recv;
-#endif
-
   struct list_head   link;
 
   struct iovec       v[NM_SO_PREALLOC_IOV_LEN];
@@ -59,6 +48,8 @@ struct nm_so_pkt_wrap {
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
   struct nm_iovec    nm_v[NM_SO_PREALLOC_IOV_LEN];
 #endif
+
+  uint32_t chunk_offset;
 
   tbx_bool_t is_completed;
 
@@ -77,7 +68,8 @@ struct nm_so_pkt_wrap {
 static __inline__
 uint32_t nm_so_pw_remaining_header_area(struct nm_so_pkt_wrap *p_so_pw)
 {
-  register struct iovec *vec = p_so_pw->header_index;
+  //**register struct iovec *vec = p_so_pw->header_index;
+  register struct iovec *vec = p_so_pw->v;
 
   return NM_SO_PREALLOC_BUF_LEN -
            ((vec->iov_base + vec->iov_len) - (void *)p_so_pw->buf);
@@ -101,21 +93,32 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw);
 int
 nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw);
 
+int nm_so_pw_split(struct nm_so_pkt_wrap *p_so_pw,
+                   struct nm_so_pkt_wrap **pp_so_pw2,
+                   uint32_t offset);
+
 int
 nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
-		  void *data, uint32_t len, int flags);
+		  void *data, uint32_t len,
+                  uint32_t offset, uint8_t is_last_chunk, int flags);
 
 #define nm_so_pw_add_control(p_so_pw, p_ctrl) \
   nm_so_pw_add_data((p_so_pw), \
 		    0, 0, \
 		    (p_ctrl), sizeof(*(p_ctrl)), \
-		    NM_SO_DATA_IS_CTRL_HEADER)
+		    0, \
+                    0, \
+                    NM_SO_DATA_IS_CTRL_HEADER)
+
 
 static __inline__
 int
 nm_so_pw_alloc_and_fill_with_data(uint8_t proto_id, uint8_t seq,
-				  void *data, uint32_t len, int flags,
+				  void *data, uint32_t len,
+                                  uint32_t chunk_offset,
+                                  uint8_t is_last_chunk,
+                                  int flags,
 				  struct nm_so_pkt_wrap **pp_so_pw)
 {
   int err;
@@ -125,9 +128,11 @@ nm_so_pw_alloc_and_fill_with_data(uint8_t proto_id, uint8_t seq,
   if(err != NM_ESUCCESS)
     goto out;
 
-  err = nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, flags);
+  err = nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
   if(err != NM_ESUCCESS)
     goto free;
+
+  p_so_pw->chunk_offset = chunk_offset;
 
   *pp_so_pw = p_so_pw;
 
@@ -164,18 +169,6 @@ nm_so_pw_alloc_and_fill_with_control(union nm_so_generic_ctrl_header *ctrl,
 }
 
 int
-nm_so_pw_alloc_optimistic(uint8_t tag, uint8_t seq,
-			  void *data, uint32_t len,
-			  struct nm_so_pkt_wrap **pp_so_pw);
-
-#define NM_SO_OPTIMISTIC_FAILED  0
-#define NM_SO_OPTIMISTIC_SUCCESS 1
-
-int
-nm_so_pw_check_optimistic(struct nm_so_pkt_wrap *p_so_pw,
-			  int *status);
-
-int
 nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);
 
 
@@ -185,26 +178,34 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);
 #define NM_SO_HEADER_MARK_UNREAD 1
 
 typedef int nm_so_pw_data_handler(struct nm_so_pkt_wrap *p_so_pw,
-				  void *ptr, uint32_t len,
-				  uint8_t proto_id, uint8_t seq);
+				  void *ptr,
+                                  void *header, uint32_t len,
+				  uint8_t proto_id, uint8_t seq,
+                                  uint32_t chunk_offset, uint8_t is_last_chunk);
 typedef int nm_so_pw_rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
-				 uint8_t tag_id, uint8_t seq, uint32_t len);
+                                 void *rdv,
+				 uint8_t tag_id, uint8_t seq,
+                                 uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 typedef int nm_so_pw_ack_handler(struct nm_so_pkt_wrap *p_so_pw,
-				 uint8_t tag_id, uint8_t seq, uint8_t track_id);
-
+                                 uint8_t tag_id, uint8_t seq,
+                                 uint8_t track_id, uint32_t chunk_offset);
+typedef int nm_so_pw_ack_chunk_handler(struct nm_so_pkt_wrap *p_so_pw,
+                                       uint8_t tag_id, uint8_t seq, uint32_t chunk_offset,
+                                       uint8_t track_id, uint32_t chunk_len);
 int
 nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler);
+			      nm_so_pw_ack_handler ack_handler,
+                              nm_so_pw_ack_chunk_handler);
 
 static __inline__
 int
 nm_so_pw_dec_header_ref_count(struct nm_so_pkt_wrap *p_so_pw)
 {
-  if(!(--p_so_pw->header_ref_count))
+  if(!(--p_so_pw->header_ref_count)){
     nm_so_pw_free(p_so_pw);
-
+  }
   return NM_ESUCCESS;
 }
 

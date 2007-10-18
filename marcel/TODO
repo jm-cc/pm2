@@ -24,6 +24,8 @@ topology: level->type devrait plutôt être un | des différents types d'objets mat
 
 topology: on devrait pouvoir spécifier manuellement la topologie de la machine.
 
+topology: implémenter un tri topologique pour qu'on n'ait pas à donner les niveaux dans l'ordre. Aller lire /sys/devices/system/cpu/cpu*/cache/index*/shared_cpu_map pour le partage de cache. Aller lire /sys/Devices/system/cpu/cpu*/topology/* plutôt que parser /proc/cpuinfo qui n'est pas portable.
+
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()

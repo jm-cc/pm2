@@ -119,6 +119,11 @@ nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
                    struct iovec *iov, int nb_entries,
                    nm_so_request *p_request);
 
+/** Test for the completion of a non blocking send request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
 extern int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
@@ -222,6 +227,11 @@ nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
                             struct iovec *iov, int nb_entries,
                             nm_so_request *p_request, void *ref);
 
+/** Test for the completion of a non blocking receive request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
 extern int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);

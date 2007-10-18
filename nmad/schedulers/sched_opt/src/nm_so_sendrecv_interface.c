@@ -63,8 +63,6 @@ struct ref_link{
 static p_tbx_memory_t nm_sr_ref_mem;
 static struct list_head completed_rreq;
 
-
-
 #define nm_l2ref(l) \
         ((struct ref_link *)((char *)(l) -\
          (unsigned long)(&((struct ref_link *)0)->link)))
@@ -340,12 +338,6 @@ nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
   return p_so_interface->p_so_sched->current_strategy->packv(p_gate, tag, seq, iov, nb_entries);
 }
 
-
-/** Test for the completion of a non blocking send request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -401,6 +393,7 @@ int nm_so_sr_flush(struct nm_so_interface *p_so_interface) {
   struct nm_core *p_core = p_so_interface->p_core;
   int ret = NM_EAGAIN;
 
+  NM_SO_SR_LOG_IN();
   if (p_so_interface->p_so_sched->current_strategy->flush != NULL) {
     int i;
     for(i=0 ; i<p_core->nb_gates ; i++) {
@@ -409,6 +402,7 @@ int nm_so_sr_flush(struct nm_so_interface *p_so_interface) {
       ret = p_so_interface->p_so_sched->current_strategy->flush(p_gate);
     }
   }
+  NM_SO_SR_LOG_OUT();
   return ret;
 }
 
@@ -617,13 +611,6 @@ int nm_so_sr_irecv_iov(struct nm_so_interface *p_so_interface,
   return nm_so_sr_irecv_iov_with_ref(p_so_interface, gate_id, tag, iov, nb_entries, p_request, NULL);
 }
 
-
-
-/** Test for the completion of a non blocking receive request.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
@@ -852,12 +839,6 @@ nm_so_sr_rcancel(struct nm_so_interface *p_so_interface,
   return NM_ENOTIMPL;
 }
 
-/** Get the current send sequence number for the (gate,tag).
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param gate_id the destination gate id.
- *  @param tag the message tag.
- *  @return The send sequence number.
- */
 unsigned long
 nm_so_sr_get_current_send_seq(struct nm_so_interface *p_so_interface,
 			      nm_gate_id_t gate_id, uint8_t tag)
@@ -890,10 +871,6 @@ nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-/** Calls the scheduler
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @return The NM status.
- */
 int
 nm_so_sr_progress(struct nm_so_interface *p_so_interface)
 {
@@ -905,11 +882,6 @@ nm_so_sr_progress(struct nm_so_interface *p_so_interface)
   return NM_ESUCCESS;
 }
 
-/** Test for the completion of a SET of non blocking receive requests.
- *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
- *  @return The NM status.
- */
 int
 nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
                   nm_so_request request)
@@ -921,16 +893,6 @@ nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
   return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
     NM_ESUCCESS : -NM_EAGAIN;
 }
-
-
-
-
-
-
-
-
-
-
 
 /* Callback functions */
 /** Initialize the gate storage for the SR interface.
@@ -1039,8 +1001,6 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
   return NM_ESUCCESS;
 }
-
-
 
 #ifdef NMAD_QOS
 void

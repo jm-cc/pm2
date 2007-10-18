@@ -98,6 +98,12 @@ nm_so_end_packing(struct nm_so_cnx *cnx)
 }
 
 int
+nm_so_cancel_packing(struct nm_so_cnx *cnx)
+{
+  return NM_ENOTIMPL;
+}
+
+int
 nm_so_begin_unpacking(nm_so_pack_interface interface,
 		      nm_gate_id_t gate_id, uint8_t tag,
 		      struct nm_so_cnx *cnx)
@@ -159,6 +165,12 @@ int
 nm_so_end_unpacking(struct nm_so_cnx *cnx)
 {
   return nm_so_flush_unpacks(cnx);
+}
+
+int
+nm_so_cancel_unpacking(struct nm_so_cnx *cnx)
+{
+  return NM_ENOTIMPL;
 }
 
 int

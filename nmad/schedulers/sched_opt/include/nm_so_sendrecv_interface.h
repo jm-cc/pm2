@@ -167,6 +167,14 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
 		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
 
+/** Cancel a emission request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to cancel.
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_scancel(struct nm_so_interface *p_so_interface,
+                 nm_so_request request);
 
 /** Post a non blocking receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
@@ -226,6 +234,15 @@ extern int
 nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 		     nm_gate_id_t gate_id, uint8_t tag,
 		     unsigned long seq_inf, unsigned long nb);
+
+/** Cancel a reception request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to cancel.
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_rcancel(struct nm_so_interface *p_so_interface,
+                 nm_so_request request);
 
 /** Retrieve the pkt source of a complete any source receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.

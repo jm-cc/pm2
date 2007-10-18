@@ -77,6 +77,13 @@ nm_so_pack(struct nm_so_cnx *cnx,
 extern int
 nm_so_end_packing(struct nm_so_cnx *cnx);
 
+/** Cancel the current message.
+ *  @param cnx a NM/SO connection pointer.
+ *  @return The NM status.
+ */
+extern int
+nm_so_cancel_packing(struct nm_so_cnx *cnx);
+
 /** Start receiving and extracting a new message.
  *  @param interface a pack interface object.
  *  @param gate_id the gate id of the source or -1 for receiving from any source.
@@ -105,6 +112,13 @@ nm_so_unpack(struct nm_so_cnx *cnx,
  */
 int
 nm_so_end_unpacking(struct nm_so_cnx *cnx);
+
+/** Cancel the current message.
+ *  @param cnx a NM/SO connection pointer.
+ *  @return The NM status.
+ */
+extern int
+nm_so_cancel_unpacking(struct nm_so_cnx *cnx);
 
 /** Wait for ongoing send requests to complete.
  *  @param cnx a NM/SO connection pointer.

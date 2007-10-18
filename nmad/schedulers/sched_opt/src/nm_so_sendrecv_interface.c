@@ -392,6 +392,13 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
   return NM_ESUCCESS;
 }
 
+int
+nm_so_sr_scancel(struct nm_so_interface *p_so_interface,
+                 nm_so_request request)
+{
+  return NM_ENOTIMPL;
+}
+
 /* Receive operations */
 
 int
@@ -654,6 +661,13 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
+}
+
+int
+nm_so_sr_rcancel(struct nm_so_interface *p_so_interface,
+                 nm_so_request request)
+{
+  return NM_ENOTIMPL;
 }
 
 unsigned long

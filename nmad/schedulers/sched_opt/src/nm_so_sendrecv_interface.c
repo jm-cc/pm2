@@ -522,7 +522,7 @@ nm_so_sr_irecv_with_ref(struct nm_so_interface *p_so_interface,
 
     p_sr_gate->status[tag][seq].ref = ref;
 
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
 
     ret = __nm_so_unpack(p_gate, tag, seq, data, len);
     NM_SO_SR_LOG_OUT();
@@ -595,7 +595,7 @@ int nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
 
     p_sr_gate->status[tag][seq].ref = ref;
 
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %ld, request = %p\n", tag, seq, gate_id, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
 
     return __nm_so_unpackv(p_gate, tag, seq, iov, nb_entries);
   }

@@ -69,10 +69,8 @@ int
 main(int	  argc,
      char	**argv) {
   char			*buf		= NULL;
-  char			*hostname	= "localhost";
   uint32_t		 len;
   struct nm_so_cnx         cnx;
-  int err;
 
   init(&argc, argv);
 
@@ -168,7 +166,6 @@ main(int	  argc,
     }
   }
 
- out:
   return 0;
 }
 

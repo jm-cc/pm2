@@ -111,7 +111,7 @@ main(int	  argc,
 
     TBX_GET_TICK(t2);
 
-    printf("Total length = %d\n", p_so_pw->pw.length);
+    printf("Total length = %llu\n", p_so_pw->pw.length);
     for(i=0; i<p_so_pw->pw.v_nb; i++)
       printf("iovec[%d] contains %d bytes (@ = %p)\n",
 	     i, p_so_pw->pw.v[i].iov_len, p_so_pw->pw.v[i].iov_base);

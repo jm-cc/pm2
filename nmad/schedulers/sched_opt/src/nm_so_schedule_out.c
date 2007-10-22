@@ -88,7 +88,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched TBX_UNUSED,
                                   NULL);
 
   } else if(p_pw->p_trk->id == 1) {
-    NM_SO_TRACE("********** sent of a large one on drv %d and trk %d of %d octets ***********\n", p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
+    NM_SO_TRACE("********** sent of a large one on drv %d and trk %d of %llu octets ***********\n", p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
 
     struct nm_so_interface_ops *interface=p_so_gate->p_so_sched->current_interface;
     uint8_t  proto_id = p_pw->proto_id - 128;

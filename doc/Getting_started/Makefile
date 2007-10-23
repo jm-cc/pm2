@@ -114,9 +114,9 @@ $(BUILD)/labri/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_P
 
 emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 $(EMPHCFILES_PS): %_emph_ps: %
-	@perl -w emph.pl $< $@ ps 
+	@perl -w Progs/emph.pl $< $@ ps 
 $(EMPHCFILES_HTML): %_emph_html: %
-	@perl -w emph.pl $< $@ html
+	@perl -w Progs/emph.pl $< $@ html
 
 distclean: clean
 

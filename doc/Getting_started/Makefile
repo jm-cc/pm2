@@ -33,7 +33,10 @@ WML_FIGURES_DEST	:=	$(patsubst ./Figures/%.png,$(WWW)/Figures/%.png,$(FIGURES_HT
 
 THISDIR			:=	$(CURDIR)
 
-all: ps
+all: $(THISDIR)/$(TARGET).pdf
+
+$(THISDIR)/$(TARGET).pdf: $(BUILD)/ps/$(TARGET).ps
+	ps2pdf $< $@
 
 upload: pdf-upload wml-upload
 	make -C $(WWW)
@@ -51,7 +54,7 @@ $(WWW)/my_macros.txt: ./Sources/wml/my_macros.txt
 
 pdf-upload: $(WWW)/resources/$(TARGET).pdf
 
-$(WWW)/resources/$(TARGET).pdf: $(THISDIR)/$(TARGET).ps
+$(WWW)/resources/$(TARGET).pdf: $(BUILD)/ps/$(TARGET).ps
 	ps2pdf $< $@
 
 wml: $(BUILD)/wml/$(TARGET)/index.wml
@@ -61,14 +64,14 @@ $(BUILD)/wml/$(TARGET)/%.wml: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES
 
 ps: $(THISDIR)/$(TARGET).ps
 
-$(THISDIR)/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
+$(BUILD)/ps/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
 	cd $(BUILD)/ps/ && ln -sf ../../Figures
 	cd $(BUILD)/ps/ && ln -sf ../../Progs
 	cd $(BUILD)/ps/ && ln -sf ../../$(XML2HTML)/data/latex/* .
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
-	cd $(BUILD)/ps/ && dvips $(TARGET) -o $@
+	cd $(BUILD)/ps/ && dvips $(TARGET) -o
 
 $(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/ps

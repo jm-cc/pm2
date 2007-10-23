@@ -733,7 +733,7 @@ printing the string on the standard output.
 Which string? Well, the original motivation of PM2 was to provide a
 runtime environment for high-performance distributed programs with a
 highly irregular behavior: branch-and-bound search, computation on
-sparse matrices, etc. In one word: In Search of Lost Time, <EM>À
+sparse matrices, etc. In one word: In Search of Lost Time, <EM>Ã€
   la recherche du temps perdu!</EM> You may remember that a
 <EM>Madeleine</EM>, a typically French (delicious) cookie, played a
 central role in the life of <EM>Marcel</EM> Proust...

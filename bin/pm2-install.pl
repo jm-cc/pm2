@@ -48,11 +48,11 @@ print "install directory: \t${install_dir}\n";
 
 # clean-up PM2 tree
 print "initializing PM2 tree\n";
-# system 'make init';
+system 'make init';
 
 # build flavor
 print "building PM2 tree\n";
-# system "make FLAVOR=${flavor}";
+system "make FLAVOR=${flavor}";
 
 # make install directory
 print "making install directory: ${install_dir}\n";

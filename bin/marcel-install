@@ -2,7 +2,10 @@
 #########
 
 echo "Installing Marcel in directory '$1'"
-bin/pm2-install.pl -f marcel-distrib -d $1
+./bin/pm2-install.pl -f marcel-distrib -d $1
+if [ $? != 0 ] ; then
+    exit
+fi
 
 mkdir -v "$1/examples"
 cp -v marcel/examples/sample.c "$1/examples"

@@ -2,7 +2,10 @@
 #########
 
 echo "Installing NewMadeleine in directory '$1'"
-bin/pm2-install.pl -f nmad-distrib -d $1
+./bin/pm2-install.pl -f nmad-distrib -d $1
+if [ $? != 0 ] ; then
+    exit
+fi
 
 mkdir -v "$1/examples"
 for f in examples/sched_opt/helper.h examples/sched_opt/sr_star.c examples/mpi/basics/star.c ; do

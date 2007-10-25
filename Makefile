@@ -192,6 +192,7 @@ distcleandoc:
 .PHONY: init initnoflavor checkmake bkco optionsinit bkinit \
 	cvsinit linksinit flavorinit bkclean
 init: checkmake linksinit optionsinit flavorinit
+initupdateflavor: checkmake linksinit optionsinit flavorupdate
 initnoflavor: checkmake linksinit optionsinit
 
 checkmake:
@@ -222,6 +223,9 @@ cvsinit: linksinit optionsinit
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors
+
+flavorupdate: ARCHITECTURES # remove _flavors_ before :
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors -f -v
 
 flavors:
 

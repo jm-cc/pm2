@@ -58,7 +58,7 @@ system "make FLAVOR=${flavor}";
 print "making install directory: ${install_dir}\n";
 mkdir $install_dir	or die "mkdir ${install_dir}: $!\n";
 
-foreach my $i ( 'include', 'lib', 'mak' ) {
+foreach my $i ( 'include', 'lib', 'mak', 'bin' ) {
 	print "making install directory: ${install_dir}/${i}\n";
 	mkdir "${install_dir}/${i}" or die "mkdir ${install_dir}/${i}: $!\n";
 }
@@ -183,5 +183,35 @@ my $mak_p	= "${install_dir}/mak/pm2.mak";
 open my $mak_fd, "> ${mak_p}" or die "open ${mak_p}: $!\n";
 print $mak_fd $mak;
 close $mak_fd;
+
+# Script snippet (.sh)
+my $sh	= <<END_SH;
+PM2_CFLAGS='$install_cflags'
+export PM2_CFLAGS
+PM2_LDFLAGS='$install_ldflags'
+export PM2_LDFLAGS
+PM2_LDLIBS='$install_ldlibs'
+export PM2_LDLIBS
+END_SH
+
+print $sh;
+my $sh_p	= "${install_dir}/bin/pm2.sh";
+open my $sh_fd, "> ${sh_p}" or die "open ${sh_p}: $!\n";
+print $sh_fd $sh;
+close $sh_fd;
+
+# Script snippet (.csh)
+my $csh	= <<END_CSH;
+setenv PM2_CFLAGS '$install_cflags'
+setenv PM2_LDFLAGS '$install_ldflags'
+setenv PM2_LDLIBS '$install_ldlibs'
+END_CSH
+
+print $csh;
+my $csh_p	= "${install_dir}/bin/pm2.csh";
+open my $csh_fd, "> ${csh_p}" or die "open ${csh_p}: $!\n";
+print $csh_fd $csh;
+close $csh_fd;
+
 #
 

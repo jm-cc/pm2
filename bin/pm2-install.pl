@@ -59,8 +59,9 @@ print "making install directory: ${install_dir}\n";
 mkdir $install_dir	or die "mkdir ${install_dir}: $!\n";
 
 foreach my $i ( 'include', 'lib', 'mak', 'bin' ) {
-	print "making install directory: ${install_dir}/${i}\n";
-	mkdir "${install_dir}/${i}" or die "mkdir ${install_dir}/${i}: $!\n";
+	my $d	= "${install_dir}/${i}";
+	print "making install directory: ${d}\n";
+	mkdir ${d} or die "mkdir ${d}: $!\n";
 }
 
 # get pm2 settings
@@ -184,8 +185,9 @@ open my $mak_fd, "> ${mak_p}" or die "open ${mak_p}: $!\n";
 print $mak_fd $mak;
 close $mak_fd;
 
-# Script snippet (.sh)
+# Script snippets (.sh)
 my $sh	= <<END_SH;
+#! /bin/sh
 PM2_CFLAGS='$install_cflags'
 export PM2_CFLAGS
 PM2_LDFLAGS='$install_ldflags'
@@ -200,8 +202,28 @@ open my $sh_fd, "> ${sh_p}" or die "open ${sh_p}: $!\n";
 print $sh_fd $sh;
 close $sh_fd;
 
-# Script snippet (.csh)
+chmod 0755, $sh_p or die "chmod 0755, ${sh_p}: $!\n";
+
+my $cfg_sh	= <<END_CFG_SH;
+#! /bin/sh
+case \$1 in 
+  --cflags) echo '$install_cflags' ;;
+  --ldflags) echo '$install_ldflags' ;;
+  --ldlibs) echo '$install_ldlibs' ;;
+esac
+END_CFG_SH
+
+print $cfg_sh;
+my $cfg_sh_p	= "${install_dir}/bin/pm2-config.sh";
+open my $cfg_sh_fd, "> ${cfg_sh_p}" or die "open ${cfg_sh_p}: $!\n";
+print $cfg_sh_fd $cfg_sh;
+close $cfg_sh_fd;
+
+chmod 0755, $cfg_sh_p or die "chmod 0755, ${cfg_sh_p}: $!\n";
+
+# Script snippets (.csh)
 my $csh	= <<END_CSH;
+#! /bin/csh -f
 setenv PM2_CFLAGS '$install_cflags'
 setenv PM2_LDFLAGS '$install_ldflags'
 setenv PM2_LDLIBS '$install_ldlibs'
@@ -212,6 +234,31 @@ my $csh_p	= "${install_dir}/bin/pm2.csh";
 open my $csh_fd, "> ${csh_p}" or die "open ${csh_p}: $!\n";
 print $csh_fd $csh;
 close $csh_fd;
+
+chmod 0755, $csh_p or die "chmod 0755, ${csh_p}: $!\n";
+
+my $cfg_csh	= <<END_CFG_CSH;
+#! /bin/csh -f
+switch ( \$1 ) 
+  case --cflags:
+    echo '$install_cflags'
+  breaksw
+  case --ldflags:
+    echo '$install_ldflags'
+  breaksw
+  case --ldlibs:
+    echo '$install_ldlibs'
+  breaksw
+endsw
+END_CFG_CSH
+
+print $cfg_csh;
+my $cfg_csh_p	= "${install_dir}/bin/pm2-config.csh";
+open my $cfg_csh_fd, "> ${cfg_csh_p}" or die "open ${cfg_csh_p}: $!\n";
+print $cfg_csh_fd $cfg_csh;
+close $cfg_csh_fd;
+
+chmod 0755, $cfg_csh_p or die "chmod 0755, ${cfg_csh_p}: $!\n";
 
 #
 

@@ -1,0 +1,39 @@
+#!/bin/sh
+#########
+
+echo "Installing NewMadeleine in directory '$1'"
+bin/pm2-install.pl -f nmad-distrib -d $1
+
+mkdir -v "$1/examples"
+for f in examples/sched_opt/helper.h examples/sched_opt/sr_star.c examples/mpi/basics/star.c ; do
+    cp -v nmad/$f "$1/examples"
+done
+
+echo "generating $1/examples/Makefile"
+echo "include $1/mak/pm2.mak" > "$1/examples/Makefile"
+cat >> "$1/examples/Makefile" <<END_MAK 
+
+CFLAGS  += \$(PM2_CFLAGS)
+LDFLAGS += \$(PM2_LDFLAGS)
+LDLIBS  += \$(PM2_LDLIBS)
+
+.PHONY: all clean
+
+all:    sr_star star
+
+clean:
+	rm -f sr_star star
+END_MAK
+
+echo "generating $1/examples/load"
+echo "#!/bin/sh
+
+if [ \""'$1'"\" == \"\" ] ; then
+  echo \"Error. load <program>\"
+else
+  pm2-conf -f nmad-distrib localhost localhost
+  pm2-load -f nmad-distrib "'$1'"
+fi
+" > $1/examples/load
+
+chmod +x $1/examples/load

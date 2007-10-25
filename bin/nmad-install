@@ -26,6 +26,15 @@ if [ $? != 0 ] ; then
     exit
 fi
 
+echo "compiling Leonie (bootstrap code)"
+rm -rf /tmp/leonie && ./bin/pm2-install.pl -f leonie -d /tmp/leonie > /tmp/leonie.out 2>&1
+if [ ! -f $(pm2-config --flavor=leonie --builddir)/leonie/bin/leonie ] ; then
+    echo "Compilation of leonie failed. Check /tmp/leonie.out"
+    exit
+fi
+cp -v $(pm2-config --flavor=leonie --builddir)/leonie/bin/leonie $1/bin
+cp -v ./bin/nmad-install-aux/nmad-load $1/bin
+
 mkdir -v "$1/examples"
 for f in examples/sched_opt/helper.h examples/sched_opt/sr_star.c examples/mpi/basics/star.c ; do
     cp -v nmad/$f "$1/examples"
@@ -54,8 +63,7 @@ if [ \""'$1'"\" == \"\" ] ; then
   echo \"Error. load <program> [<network protocol>]\"
 else
   protocol="'${2:-tcp}'"
-  pm2-conf -f nmad-distrib localhost localhost
-  pm2-load -f nmad-distrib --protocol "'$protocol'" "'$1'"
+  $1/bin/nmad-load -f nmad-distrib --hosts localhost:localhost --protocol "'$protocol'" \$PWD/"'$1'"
 fi
 " > $1/examples/load
 

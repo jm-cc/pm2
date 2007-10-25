@@ -1,0 +1,177 @@
+#!/bin/sh
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+PM2_DEBUG=off
+PM2_VALGRIND=off
+PM2_XMODE=off
+PM2_PMODE=off
+PM2_PROTOCOL=tcp
+PM2_HOSTS=localhost:localhost
+
+_usage() # exit_code
+{
+    cat <<EOF
+Usage: $0 { option } command
+
+  option:
+    -d|--debug            : Run command through gdb (default: $PM2_DEBUG)
+    -vg|--valgrind        : Run command through valgrind (default: $PM2_VALGRIND)
+    --protocol name       : Use protocol named "name" (default: $PM2_PROTOCOL)
+    --hosts names         : Use hosts named "names" (default: $PM2_HOSTS)
+    -h|--help             : Display this help message
+
+    -x                    : Run command through xterm  (default: $PM2_XMODE)
+    -p                    : Pause at the end of the command  (default: $PM2_PMODE)
+EOF
+    exit $1
+}
+
+log()
+{
+#    if [ -n "$PM2_SCRIPT_DEBUG" ]; then
+	echo "$*" 1>&2
+#    fi
+}
+
+leonie()
+{
+    log "Program: $PM2_PROG_NAME"
+    log "Args: ${prog_args[@]}"
+    log "Protocol: $PM2_PROTOCOL"
+    log "Hosts: $PM2_HOSTS"
+
+    host_list=`echo $PM2_HOSTS | tr ':' ' '`
+    for i in $host_list
+    do
+	[ -z "$new_list" ] && new_list="${i}[0]" && continue
+	k='0'
+	for j in $new_list
+	do
+	    [ $j != "${i}[${k}]" ] && continue
+	    k=`expr $k + 1`
+	done
+
+	new_list="$new_list ${i}[${k}]"
+    done
+    tmp_list=`echo $new_list|tr ' ' ','`
+    log "Host list: " $tmp_list
+    new_list=""
+
+    PM2_LEONIE_FILE=$PWD/leonie.$$.cfg
+    PM2_NETWORK_FILE=$PWD/network.$$.cfg
+
+    [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
+    echo "application: {"                      >  $PM2_LEONIE_FILE
+    echo "    networks: {"                     >> $PM2_LEONIE_FILE
+    echo "        channels: ("                 >> $PM2_LEONIE_FILE
+    echo "                    {"                          >> $PM2_LEONIE_FILE
+    echo "                      name : pm2;"              >> $PM2_LEONIE_FILE
+    echo "                      net  : ${PM2_PROTOCOL};"  >> $PM2_LEONIE_FILE
+    echo "                      hosts: (${tmp_list});"    >> $PM2_LEONIE_FILE
+    echo "                    }"                          >> $PM2_LEONIE_FILE
+    echo "                  );"                >> $PM2_LEONIE_FILE
+    echo "    };"                              >> $PM2_LEONIE_FILE
+    echo "};"                                  >> $PM2_LEONIE_FILE
+
+    host_list=$(echo $PM2_HOSTS | tr ':' '\012' | sort | uniq | tr '\012' ',' | sed 's/,$//')
+
+    echo "networks : ({"                       > $PM2_NETWORK_FILE
+    echo "    name  : $PM2_PROTOCOL;"          >> $PM2_NETWORK_FILE
+    echo "    hosts : ($host_list);"           >> $PM2_NETWORK_FILE
+    echo "    dev   : $PM2_PROTOCOL;"          >> $PM2_NETWORK_FILE
+    echo "});"                                 >> $PM2_NETWORK_FILE
+
+    [ "$PM2_DEBUG" = "on" ] && PM2_XMODE="on"
+    [ "$PM2_XMODE" = "on" ] && PM2_PMODE="on"
+
+    pm2_load_args=""
+    [ "$PM2_DEBUG" = "on" ]           && pm2_load_args="${pm2_load_args} -d"
+    [ "$PM2_DEBUG" = "off" ]          && pm2_load_args="${pm2_load_args} --d"
+    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} -vg"
+    [ "$PM2_VALGRIND" = "off" ]       && pm2_load_args="${pm2_load_args} --vg"
+    [ "$PM2_XMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -x"
+    [ "$PM2_XMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --x"
+    [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -p"
+    [ "$PM2_PMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --p"
+
+    $HOME/nmad/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=$PM2_FLAVOR" "--net=${PM2_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+
+    exit $?
+}
+
+# Programme principal
+PM2_FLAVOR="nmad-distrib"
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -f|--flavor)
+            shift
+            PM2_FLAVOR=$1
+            shift
+            ;;
+	--protocol)
+	    shift
+	    PM2_PROTOCOL="$1"
+	    shift
+	    ;;
+	-d|--debug)
+	    shift
+	    PM2_DEBUG=on
+	    ;;
+	-vg|--valgrind)
+	    shift
+	    PM2_VALGRIND=on
+	    ;;
+	-x) # XTerm mode on
+	    shift
+	    PM2_XMODE=on
+	    ;;
+	-p) # Pause mode on
+	    shift
+	    PM2_PMODE=on
+	    ;;
+        --hosts)
+            shift
+            PM2_HOSTS="$1"
+            shift
+            ;;
+	-h|--help)
+	    _usage 0
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	-*)
+	    _usage 1
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+[ -n "$*" ] || _usage 1
+
+# Sauvegarde de la commande et des arguments
+PM2_PROG_NAME=$1
+export PM2_PROG_NAME
+shift
+
+prog_args=(${@:+"$@"})
+
+leonie "${prog_args[@]}"

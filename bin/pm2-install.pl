@@ -25,7 +25,7 @@ print "using PM2_ROOT: \t${pm2_root}\n";
 
 # read command line args
 my %opts;
-my $ret		= getopts('f:d:', \%opts);	# -f flavor
+my $ret		= getopts('f:d:n:', \%opts);	# -f flavor
 
 if (exists $opts{'f'}) {
 	$flavor	= $opts{'f'};
@@ -49,7 +49,16 @@ print "install directory: \t${install_dir}\n";
 # clean-up PM2 tree
 print "initializing PM2 tree\n";
 system 'make initnoflavor';
-system "pm2-create-sample-flavors ${flavor}";
+system "pm2-create-sample-flavors -f ${flavor}";
+
+if ( "$flavor" eq "nmad-distrib" ) {
+    if (exists $opts{'n'} and $opts{'n'}) {
+        my @networks = split ':', $opts{'n'};
+        foreach my $network (@networks) {
+            system "pm2-flavor set `pm2-flavor get --flavor=${flavor}` --'nmad'=$network";
+        }
+    }
+}
 
 # build flavor
 print "building PM2 tree\n";

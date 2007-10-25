@@ -2,7 +2,26 @@
 #########
 
 echo "Installing NewMadeleine in directory '$1'"
-./bin/pm2-install.pl -f nmad-distrib -d $1
+
+# Detect networks
+MX_DIR=${MX_DIR:-/opt/mx}
+QSNET_DIR="/opt/qsnet"
+networks="mx:$MX_DIR quadrics:$QSNET_DIR"
+enabled_networks=""
+for network in  $networks ; do
+    network_name=$(echo $network | awk -F':' '{print $1}')
+    network_dir=$(echo $network | awk -F':' '{print $2}')
+    if [ -d $network_dir ] ; then
+        echo -n "Do you wish to enable $network_name [Y/n]? "
+        read answer
+
+        if [ "$answer" == "Y" ] || [ "$answer" == "y" ] || [ "$answer" == "" ] ; then
+            enabled_networks=$(echo "$enabled_networks:$network_name")
+        fi
+    fi
+done
+
+./bin/pm2-install.pl -f nmad-distrib -d "$1" -n $enabled_networks
 if [ $? != 0 ] ; then
     exit
 fi
@@ -32,10 +51,11 @@ echo "generating $1/examples/load"
 echo "#!/bin/sh
 
 if [ \""'$1'"\" == \"\" ] ; then
-  echo \"Error. load <program>\"
+  echo \"Error. load <program> [<network protocol>]\"
 else
+  protocol="'${2:-tcp}'"
   pm2-conf -f nmad-distrib localhost localhost
-  pm2-load -f nmad-distrib "'$1'"
+  pm2-load -f nmad-distrib --protocol "'$protocol'" "'$1'"
 fi
 " > $1/examples/load
 

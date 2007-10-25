@@ -48,7 +48,8 @@ print "install directory: \t${install_dir}\n";
 
 # clean-up PM2 tree
 print "initializing PM2 tree\n";
-system 'make initupdateflavor';
+system 'make initnoflavor';
+system "pm2-create-sample-flavors ${flavor}";
 
 # build flavor
 print "building PM2 tree\n";
@@ -118,6 +119,20 @@ foreach my $m ( @modules ) {
 			print ".. installing ${p}\n";
 			system "cp -r ${p}/. ${install_dir}/include";
 		}
+	}
+
+	if ($m eq 'nmad') {
+	    my @flags	= split ' ', $cflags;
+	    foreach my $flag (@flags) {
+		if ($flag =~ /^-I/ && $flag =~ /nmad/) {
+		    $flag =~ s/^-I//;
+
+		    if ( -d "$flag" ) {
+			print ".. installing ${flag}\n";
+			system "cp -r ${flag}/. ${install_dir}/include";
+		    }
+		}
+	    }
 	}
 
 	if ($m eq 'marcel') {

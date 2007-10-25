@@ -1,27 +1,27 @@
   Lorsque ssh forwarde X11, il utilise le programme xauth pour
-enregistrer le nouveau DISPLAY à utiliser.
-  Lors de multiples connexions simultanées par ssh avec forwarding de
-X11 sur des machines avec le même compte $HOME (partagé par NFS par
-exemple), les "xauth" sont fait en parallèles et essaye d'accéder tous
-en même temps au fichier $HOME/.Xauthority.
+enregistrer le nouveau DISPLAY Ã  utiliser.
+  Lors de multiples connexions simultanÃ©es par ssh avec forwarding de
+X11 sur des machines avec le mÃªme compte $HOME (partagÃ© par NFS par
+exemple), les "xauth" sont fait en parallÃ¨les et essaye d'accÃ©der tous
+en mÃªme temps au fichier $HOME/.Xauthority.
 
-  Pour résoudre ce problème, en attendant que xauth soit corrigé, il
+  Pour rÃ©soudre ce problÃ¨me, en attendant que xauth soit corrigÃ©, il
 existe deux solutions :
 
--1- sérialiser les appels à ssh
+-1- sÃ©rialiser les appels Ã  ssh
 
--2- utiliser un fichier Xauthority différent pour chaque connection
-ssh, ce qui évite les problèmes d'accès concurrent.
+-2- utiliser un fichier Xauthority diffÃ©rent pour chaque connection
+ssh, ce qui Ã©vite les problÃ¨mes d'accÃ¨s concurrent.
 
 
 
 Solution 1 (Alexandre DENIS)
 ----------
 
--- positionner LEO_RSH à "ssh -f" ('-f' demande à ssh de forker dès
-que la connexion est établie)
--- lancer l'application avec "leonie -w" ('-w' demande à leonie
-d'attendre que le lanceur forke quand il est prêt).
+-- positionner LEO_RSH Ã  "ssh -f" ('-f' demande Ã  ssh de forker dÃ¨s
+que la connexion est Ã©tablie)
+-- lancer l'application avec "leonie -w" ('-w' demande Ã  leonie
+d'attendre que le lanceur forke quand il est prÃªt).
 
 L'impact sur la vitesse de lancement n'est pas flagrant.
 
@@ -62,7 +62,7 @@ fi
 
 Si vous utilisez [t]csh:
 ****************************
-Rajoutez dans ${HOME}/.cshrc (ou ${HOME}/.tcshrc si nécessaire)
+Rajoutez dans ${HOME}/.cshrc (ou ${HOME}/.tcshrc si nÃ©cessaire)
 ----------------------------------------------------
 if ( $?DISPLAY ) then
 	suf="`echo $DISPLAY | cut -c11-`"

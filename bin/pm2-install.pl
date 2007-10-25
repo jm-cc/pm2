@@ -100,6 +100,7 @@ foreach my $m ( @modules ) {
 	if ($m eq 'marcel') {
 		# marcel.lds special case
 		my $f	= "${pm2_root}/marcel/scripts/marcel.lds";
+
 		if ( -r $f ) {
 			system "cp -v ${f} ${install_dir}/lib"
 		}
@@ -111,17 +112,20 @@ print "installing headers\n";
 foreach my $m ( @modules ) {
 	foreach my $d ( 'include', 'autogen-include' ) {
 		my $p	= "${m}/${d}";
+
 		if ( -d "$p" ) {
 			print ".. installing ${p}\n";
 			system "cp -r ${p}/. ${install_dir}/include";
 		}
 	}
 
-
 	if ($m eq 'marcel') {
+		# marcel 'asm' & 'scheduler' symlinks
 		my $inc_dir	= `pm2-config --flavor=${flavor} --includedir marcel`;
 		chomp $inc_dir;
+
 		print "marcel include dir: \t${inc_dir}\n";
+
 		my @inc_files	= glob("${inc_dir}/*");
 		foreach my $f (@inc_files) {
 			if ( -l $f ) {
@@ -134,7 +138,7 @@ foreach my $m ( @modules ) {
 				my $nl	= $l;
 				$nl	=~ s,.*autogen-include/,${install_dir}/include/,;
 
-				print "** $nf ==> $nl\n";
+				print "  ** $nf ==> $nl\n";
 				symlink $nl, $nf or die "symlink $nl, $nf: $!\n";
 			}
 		}
@@ -154,9 +158,9 @@ print "install_cflags: \t${install_cflags}\n";
 my $install_ldflags	= $ldflags;
 $install_ldflags	=~ s/-L\S+//g;
 $install_ldflags	.= " -L${install_dir}/lib";
-$install_ldflags		=~ s/^\s+//g;
-$install_ldflags		=~ s/\s+$//g;
-$install_ldflags		=~ s/\s\s+/ /g;
+$install_ldflags	=~ s/^\s+//g;
+$install_ldflags	=~ s/\s+$//g;
+$install_ldflags	=~ s/\s\s+/ /g;
 print "install_ldflags: \t${install_ldflags}\n";
 
 # tweak ldlibs

@@ -14,7 +14,7 @@
 
 # LIBNAME -> nom de la librairie
 #---------------------------------------------------------------------
-LIBNAME=mad
+LIBNAME=nmad
 LIBDOC=newmadeleine
 
 # Inclusion des makefiles generiques

@@ -163,7 +163,8 @@ foreach my $m ( @modules ) {
 
 # tweak cflags
 my $install_cflags	= $cflags;
-$install_cflags		=~ s/-I\S+//g;
+$install_cflags		=~ s/-I${build_dir}\S+//g;
+$install_cflags		=~ s/-I${pm2_root}\S+//g;
 $install_cflags		.= " -I${install_dir}/include";
 $install_cflags		=~ s/^\s+//g;
 $install_cflags		=~ s/\s+$//g;
@@ -172,7 +173,7 @@ print "install_cflags: \t${install_cflags}\n";
 
 # tweak ldflags
 my $install_ldflags	= $ldflags;
-$install_ldflags	=~ s/-L\S+//g;
+$install_ldflags	=~ s/-L${build_dir}\S+//g;
 $install_ldflags	.= " -L${install_dir}/lib";
 $install_ldflags	=~ s/^\s+//g;
 $install_ldflags	=~ s/\s+$//g;

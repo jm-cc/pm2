@@ -1,2 +1,26 @@
+#!/bin/sh
+#########
+
 echo "Installing Marcel in directory '$1'"
 bin/pm2-install.pl -f marcel-distrib -d $1
+
+mkdir -v "$1/examples"
+cp -v marcel/examples/sample.c "$1/examples"
+cp -v marcel/examples/sumtime.c "$1/examples"
+
+echo "generating $1/examples/Makefile"
+echo "include $1/mak/pm2.mak" > "$1/examples/Makefile"
+cat >> "$1/examples/Makefile" <<END_MAK 
+
+CFLAGS  += \$(PM2_CFLAGS)
+LDFLAGS += \$(PM2_LDFLAGS)
+LDLIBS  += \$(PM2_LDLIBS)
+
+.PHONY: all clean
+
+all:    sample sumtime
+
+clean:
+	rm -f sample sumtime
+END_MAK
+

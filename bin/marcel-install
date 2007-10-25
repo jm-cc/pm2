@@ -1,1 +1,2 @@
+echo "Installing Marcel in directory '$1'"
 bin/pm2-install.pl -f marcel-distrib -d $1

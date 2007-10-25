@@ -34,7 +34,7 @@ if (exists $opts{'f'}) {
 print "flavor: \t${flavor}\n";
 
 # make sure the install directory is dedicated, for safety
-if (exists $opts{'d'}) {
+if (exists $opts{'d'} and $opts{'d'}) {
 	$install_dir	= $opts{'d'};
 
 	if ( -d $install_dir ) {
@@ -48,7 +48,7 @@ print "install directory: \t${install_dir}\n";
 
 # clean-up PM2 tree
 print "initializing PM2 tree\n";
-system 'make init';
+system 'make initupdateflavor';
 
 # build flavor
 print "building PM2 tree\n";

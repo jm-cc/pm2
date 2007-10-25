@@ -108,13 +108,19 @@ leonie()
     [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -p"
     [ "$PM2_PMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --p"
 
-    $HOME/nmad/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=$PM2_FLAVOR" "--net=${PM2_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    $dir/leonie "--appli=${PM2_PROG_NAME}" "--flavor=$PM2_FLAVOR" "--net=${PM2_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }
 
 # Programme principal
 PM2_FLAVOR="nmad-distrib"
+
+dir=$(dirname $0)
+link=$(readlink $0)
+if [ -n "$link" ] ; then
+    dir=$(echo $dir"/"$(dirname $link))
+fi
 
 while [ $# -gt 0 ]; do
     case $1 in

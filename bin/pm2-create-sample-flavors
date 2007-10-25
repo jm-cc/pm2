@@ -63,7 +63,7 @@ registering_flavors() {
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_bind_proc --marcel=smp_smt_idle \
-	--marcel=enable_stats --marcel=bubble_sched_spread
+	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" --all=build_static --common=static \

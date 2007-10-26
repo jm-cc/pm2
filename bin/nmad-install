@@ -34,6 +34,8 @@ if [ ! -f $(pm2-config --flavor=leonie --builddir)/leonie/bin/leonie ] ; then
 fi
 cp -v $(pm2-config --flavor=leonie --builddir)/leonie/bin/leonie $1/bin
 cp -v ./bin/nmad-install-aux/nmad-load $1/bin
+cp -v ./bin/nmad-install-aux/leo-load $1/bin
+cp -v ./bin/nmad-install-aux/pm2-wrapper $1/bin
 
 mkdir -v "$1/examples"
 for f in examples/sched_opt/helper.h examples/sched_opt/sr_star.c examples/mpi/basics/star.c ; do
@@ -63,6 +65,7 @@ if [ \""'$1'"\" == \"\" ] ; then
   echo \"Error. load <program> [<network protocol>]\"
 else
   protocol="'${2:-tcp}'"
+  export PATH=$1/bin:$PATH
   $1/bin/nmad-load -f nmad-distrib --hosts localhost:localhost --protocol "'$protocol'" \$PWD/"'$1'"
 fi
 " > $1/examples/load

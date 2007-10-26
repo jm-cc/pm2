@@ -1,0 +1,223 @@
+#!/bin/sh
+#-*-sh-*-
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+PROGNAME=leo-load
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+usage() # exit_code
+{
+    cat <<EOF
+Usage: $PROGNAME { option } command
+
+  option:
+    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d      : Run command in debug mode (not supported by all implementations)
+    -c name : Use console named "name"
+    -h : Display this help message
+EOF
+    exit $1
+}
+
+ambiguity() # prog
+{
+    prog=$1
+    shift
+
+    echo "Error: multiple exec files found." >&2
+    echo "Please remove ambiguity by using one the following:" >&2
+
+    for p in `pm2-which -p $prog` ; do
+	echo "   $PROGNAME $p ..."
+    done
+
+    exit 1
+}
+
+
+# Programme principal
+
+PM2_FLAVOR=${PM2_FLAVOR:-default}
+export PM2_FLAVOR
+
+PM2_CONSOLE=""
+export PM2_CONSOLE
+
+PM2_DEBUG=off
+export PM2_DEBUG
+
+PM2_VALGRIND=off
+export PM2_VALGRIND
+
+PM2_NUMACTL=off
+export PM2_NUMACTL
+
+PM2_XMODE=off
+export PM2_XMODE
+
+PM2_PMODE=off
+export PM2_PMODE
+
+PM2_SMPMODE=off
+export PM2_SMPMODE
+
+PM2_LOGMODE=off
+export PM2_LOGMODE
+
+PM2_CD=off
+export PM2_CD
+
+ADD_WRAPPER=
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-d)
+	    shift
+	    PM2_DEBUG=on
+	    ;;
+	-vg)
+	    shift
+	    PM2_VALGRIND=on
+	    ;;
+	-cd)
+	    shift
+	    PM2_CD=on
+            PM2_WD="$1"
+            shift
+	    ;;
+	--numactl)
+	    shift
+	    PM2_NUMACTL=$1
+            shift
+	    ;;
+	-s)
+	    shift
+	    PM2_SMPMODE=on
+	    ;;
+	-x)
+	    shift
+	    PM2_XMODE=on
+	    ;;
+	-l)
+	    shift
+	    PM2_LOGMODE=on
+	    ;;
+	-p)
+	    shift
+	    PM2_PMODE=on
+	    ;;
+	-c)
+	    shift
+	    PM2_CONSOLE="$1"
+	    shift
+	    ;;
+	-w)
+	    shift
+            if [ -z "${ADD_WRAPPER}" ]; then
+                ADD_WRAPPER="$1"
+            else
+                ADD_WRAPPER="${ADD_WRAPPER} $1"
+            fi
+	    shift
+	    ;;
+	-h)
+	    usage 0
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+[ -n "$*" ] || usage 1
+
+prog="$1"
+shift
+
+if [ "${PM2_CD}" = on ]; then
+    cd ${PM2_WD}
+fi
+
+# Récupération de (des) chemin(s) d'accès au fichier exécutable
+#set --  --source-mode "$prog" -- "$@"
+#. ${PM2_ROOT}/bin/pm2-which
+
+#if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
+#    ambiguity "$prog"
+#fi
+
+[ "${PM2_SMPMODE}" = on ] && export LEO_LD_PRELOAD=`${PM2_ROOT}/bin/pm2-config --flavor=${PM2_FLAVOR:-default} --preload`
+
+dir=$(dirname $0)
+link=$(readlink $0)
+if [ -n "$link" ] ; then
+    dir=$(echo $dir"/"$(dirname $link))
+fi
+
+# Execution
+if [ "${PM2_DEBUG}" = on ]; then
+    prefix='$dir/pm2-gdb-load'
+elif [ "${PM2_VALGRIND}" = on ]; then
+    prefix='$dir/pm2-valgrind-load'
+elif [ "${PM2_XMODE}" = on ]; then
+    prefix='$dir/pm2-xload'
+elif [ "${PM2_LOGMODE}" = on ]; then
+    prefix='$dir/pm2-logload'
+else
+    prefix="$dir/pm2-wrapper"
+fi
+
+# echo "### Leonie loader ###"
+# echo exec $prefix "$_PM2_WHICH_RESULT" "$@"
+#if [ -z "$_PM2_WHICH_RESULT" ] ; then
+#    echo Executable $prog not found 
+#    exit 1
+#fi
+exec $ADD_WRAPPER $prefix "$prog" "$@"

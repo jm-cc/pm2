@@ -1,0 +1,39 @@
+#!/bin/sh
+#-*-sh-*-
+###########
+#
+# Wrapper for pm2-xload
+
+echo "##### `hostname`"
+prog=$1
+shift
+
+if [ -n "${LEO_LD_PRELOAD}" ]; then
+    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog ${@:+"$@"}
+else
+    if [ -n "${LEO_ALLOW_CORE}" ] ; then
+	ulimit -c unlimited
+    fi
+#    echo $prog ${@:+"$@"}
+    echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
+    #MX_DISABLE_SELF=1 MX_DISABLE_SHMEM=1 MX_RCACHE=1 
+    #MX_STATS=1 
+    export MX_DISABLE_SELF MX_DISABLE_SHMEM MX_RCACHE MX_STATS
+    if [ "$PM2_NUMACTL" == "off" ] ; then
+        $prog ${@:+"$@"}
+    else
+        numactl --cpubind=$PM2_NUMACTL --membind=$PM2_NUMACTL -- $prog ${@:+"$@"}
+    fi
+fi
+
+code=$?
+
+if [ "${PM2_PMODE}" = on ]
+then
+    echo "process terminated with code ${code}"
+    sleep 2
+    read dummy
+else
+    [ $code -gt 0 ] && echo "process terminated with code ${code}"
+
+fi

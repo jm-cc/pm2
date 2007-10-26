@@ -108,7 +108,7 @@ leonie()
     [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -p"
     [ "$PM2_PMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --p"
 
-    $dir/leonie "--appli=${PM2_PROG_NAME}" "--flavor=$PM2_FLAVOR" "--net=${PM2_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    $dir/leonie "--env=PATH=$dir:$PATH" "--appli=${PM2_PROG_NAME}" "--flavor=$PM2_FLAVOR" "--net=${PM2_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }

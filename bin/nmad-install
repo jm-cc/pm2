@@ -65,7 +65,7 @@ if [ \""'$1'"\" == \"\" ] ; then
   echo \"Error. load <program> [<network protocol>]\"
 else
   protocol="'${2:-tcp}'"
-  export PATH=$1/bin:$PATH
+  export PATH=$1/bin:\$PATH
   $1/bin/nmad-load -f nmad-distrib --hosts localhost:localhost --protocol "'$protocol'" \$PWD/"'$1'"
 fi
 " > $1/examples/load

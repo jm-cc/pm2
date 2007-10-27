@@ -50,8 +50,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 
 		new_attr = marcel_attr_default;
 
-		memcpy(&new_attr, attr,
-		    (size_t) & (((marcel_attr_t *) NULL)->user_space));
+		memcpy(&new_attr, attr, tbx_offset_of(marcel_attr_t, __stacksize) + sizeof(new_attr.__stacksize));
 
 		if (new_attr.__inheritsched == PTHREAD_INHERIT_SCHED) {
 			/* détermination des attributs du thread courant 

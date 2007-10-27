@@ -26,7 +26,7 @@ typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
 /* Attributes for threads.  */
 struct __marcel_attr_s {
-	/* begin of pthread */
+	/* begin of pthread, don't modify */
 	int __detachstate;
 	int __schedpolicy;
 	struct marcel_sched_param __schedparam;

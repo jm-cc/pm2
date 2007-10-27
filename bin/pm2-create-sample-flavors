@@ -44,7 +44,7 @@ registering_flavors() {
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
 	    --marcel=$i --marcel=marcel_main \
 	    --marcel=smp_bind_proc --marcel=smp_smt_idle \
-	    --marcel=bubble_sched_null
+	    --marcel=enable_stats --marcel=bubble_sched_null
     done
 
     register_flavor marcel \
@@ -70,14 +70,14 @@ registering_flavors() {
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_bind_proc --marcel=smp_smt_idle \
 	--marcel=profile \
-	--marcel=bubble_sched_spread \
+	--marcel=enable_stats --marcel=bubble_sched_spread \
 	--all=debug --all=gdb --all=noinline
 
     register_flavor marcel-gomp \
         --modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=smp_bind_proc \
 	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
-	--marcel=bubble_sched_spread \
+	--marcel=enable_stats --marcel=bubble_sched_spread \
 	--all=debug --all=gdb --all=noinline
 
     register_flavor leonie \
@@ -134,7 +134,7 @@ registering_flavors() {
 	--marcel=smp_bind_proc --marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--common=link_pm2_shared \
-	--marcel=bubble_sched_null
+	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor sigmund \
 	--modules="sigmundlib sigmund sigmundps xsigmund supertrace" \

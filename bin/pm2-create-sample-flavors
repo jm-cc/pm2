@@ -96,6 +96,7 @@ registering_flavors() {
     register_flavor pm2 \
 	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main \
+	--marcel=enable_keys --marcel=enable_migration \
 	--mad3=tcp
 
     register_flavor nmad \

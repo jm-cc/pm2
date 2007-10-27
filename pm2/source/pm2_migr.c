@@ -114,10 +114,7 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
   tbx_bool_t me_too = tbx_false;
 
   if(module == __pm2_self) {
-    for(i=0; i<nb; i++) {
-      pids[i]->depl = 0;
-      marcel_unfreeze(pids, nb);
-    }
+    marcel_unfreeze(pids, nb);
     pm2_unfreeze();
   } else {
 

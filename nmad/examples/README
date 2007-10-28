@@ -1,0 +1,4 @@
+Examples for the default nmad flavor are located in the directory sched_opt.
+
+Examples on top of the MPI interface i.e. using the flavor nmad-mpi are
+located in the directory mpi/.

@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=nmad
+export FLAVOR_DEFAULT:=nmad-basic
 
 # FLAVOR -> flavor utilisee pour la compilation
 #---------------------------------------------------------------------
@@ -33,7 +33,7 @@ BASIC		:=	$(findstring proto_basic,$(PROTOCOLS))
 ifeq ($(BASIC),proto_basic)
   MOD_SRC += $(PM2_ROOT)/nmad/examples/basic
 else
-  $(error "Protocol proto_basic is not present in $(PROTOCOLS)")
+  $(error "Protocol proto_basic is not enabled in the flavor '$(FLAVOR)'")
 endif
 
 SCHEDULERS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --schedulers)

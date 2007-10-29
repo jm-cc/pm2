@@ -39,11 +39,7 @@ endif
 SCHEDULERS	:=	$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --schedulers)
 MINI_ALT	:=	$(findstring sched_mini_alt,$(SCHEDULERS))
 
-ifeq ($(MINI_ALT),sched_mini_alt)
-  PROGS		:=	basic_ping_any
-else
-  PROGS		:=	basic basic_ping basic_ping_entrelace basic_multithreaded_ping
-endif
+PROGS		:=	basic basic_ping basic_ping_entrelace basic_ping_any basic_multithreaded_ping
 
 include $(PM2_ROOT)/make/apps.mak
 

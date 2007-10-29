@@ -51,7 +51,7 @@
 #elif defined CONFIG_SISCI
 #  include <nm_sisci_public.h>
 #else
-#  include <nm_tcp_public.h>
+#  include <nm_tcpdg_public.h>
 #endif
 
 #include <tbx.h>
@@ -71,7 +71,7 @@ bc_core_init(int	  	 *p_argc,
              char		**argv,
              struct nm_core	**pp_core,
              struct nm_proto	**pp_proto,
-             uint8_t		 *p_gate_id) {
+             nm_gate_id_t	 *p_gate_id) {
         struct nm_core		*p_core		= NULL;
         char			*r_url		= NULL;
         char			*l_url		= NULL;
@@ -142,7 +142,7 @@ bc_core_init(int	  	 *p_argc,
 #elif defined CONFIG_SISCI
         err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
 #else
-        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
 
         if (err != NM_ESUCCESS) {

@@ -55,7 +55,7 @@
 #elif defined CONFIG_SISCI
 #  include <nm_sisci_public.h>
 #else
-#  include <nm_tcp_public.h>
+#  include <nm_tcpdg_public.h>
 #endif
 
 #include <tbx.h>

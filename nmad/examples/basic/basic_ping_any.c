@@ -62,7 +62,7 @@
 #elif defined CONFIG_GM
 #  include <nm_gm_public.h>
 #else
-#  include <nm_tcp_public.h>
+#  include <nm_tcpdg_public.h>
 #endif
 
 #include <tbx.h>
@@ -423,7 +423,7 @@ session_init(int    argc,
 #elif defined CONFIG_GM
         err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
 #else
-        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);

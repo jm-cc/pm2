@@ -64,7 +64,7 @@
 #elif defined CONFIG_GM
 #  include <nm_gm_public.h>
 #else
-#  include <nm_tcp_public.h>
+#  include <nm_tcpdg_public.h>
 #endif
 
 #include <tbx.h>
@@ -282,7 +282,7 @@ ping(void) {
          size <= param_max_size;
          size = param_step?size + param_step:size * 2) {
         const int       _size   = (!size && param_no_zero)?1:size;
-        ping_result_t	results = { 0, 0.0, 0.0, 0.0 };
+        //ping_result_t	results = { 0, 0.0, 0.0, 0.0 };
         double          sum     = 0.0;
         tbx_tick_t      t1;
         tbx_tick_t      t2;
@@ -573,7 +573,7 @@ session_init(int    argc,
 #elif defined CONFIG_GM
     err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
 #else
-    err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
+    err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
     if (err != NM_ESUCCESS) {
         printf("nm_core_driver_load_init returned err = %d\n", err);

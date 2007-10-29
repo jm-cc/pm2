@@ -19,4 +19,4 @@ bc_core_init(int	  	 *p_argc,
              char		**argv,
              struct nm_core	**pp_core,
              struct nm_proto	**pp_proto,
-             uint8_t		 *p_gate_id);
+             nm_gate_id_t	 *p_gate_id);

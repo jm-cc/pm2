@@ -26,14 +26,15 @@
 #include "nm_so_public.h"
 #include "nm_so_pkt_wrap.h"
 
-#include "nm_so_strategies/nm_so_strat_default.h"
-#include "nm_so_strategies/nm_so_strat_aggreg.h"
-#include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
-#include "nm_so_strategies/nm_so_strat_split_balance.h"
 #include "nm_so_strategies/nm_so_strat_aggreg_autoextended.h"
+#include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
+#include "nm_so_strategies/nm_so_strat_aggreg.h"
+#include "nm_so_strategies/nm_so_strat_default.h"
+#include "nm_so_strategies/nm_so_strat_exhaustive.h"
 #ifdef NMAD_QOS
 #include "nm_so_strategies/nm_so_strat_qos.h"
 #endif /* NMAD_QOS */
+#include "nm_so_strategies/nm_so_strat_split_balance.h"
 
 #include <nm_predictions.h>
 
@@ -72,6 +73,8 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
   p_priv->current_strategy = &nm_so_strat_aggreg;
+#elif defined(CONFIG_STRAT_EXHAUSTIVE)
+  p_priv->current_strategy = &nm_so_strat_exhaustive;
 #ifdef NMAD_QOS
 #elif defined(CONFIG_STRAT_QOS)
   p_priv->current_strategy = &nm_so_strat_qos;

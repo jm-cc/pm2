@@ -30,7 +30,6 @@
 #include "nm_so_strategies/nm_so_strat_aggreg_extended.h"
 #include "nm_so_strategies/nm_so_strat_aggreg.h"
 #include "nm_so_strategies/nm_so_strat_default.h"
-#include "nm_so_strategies/nm_so_strat_exhaustive.h"
 #ifdef NMAD_QOS
 #include "nm_so_strategies/nm_so_strat_qos.h"
 #endif /* NMAD_QOS */

@@ -72,8 +72,6 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->current_strategy = &nm_so_strat_default;
 #elif defined(CONFIG_STRAT_AGGREG)
   p_priv->current_strategy = &nm_so_strat_aggreg;
-#elif defined(CONFIG_STRAT_EXHAUSTIVE)
-  p_priv->current_strategy = &nm_so_strat_exhaustive;
 #ifdef NMAD_QOS
 #elif defined(CONFIG_STRAT_QOS)
   p_priv->current_strategy = &nm_so_strat_qos;

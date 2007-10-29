@@ -105,6 +105,11 @@ registering_flavors() {
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
 	--nmad=sched_opt --nmad=strat_default
 
+    register_flavor nmad-basic \
+	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
+	--nmad=sched_opt --nmad=strat_default --nmad=proto_basic \
+        --common=fortran_target_none
+
     register_flavor nmad-mpi \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
 	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu \

@@ -95,8 +95,14 @@ get_railstring_driver_loads(nm_driver_load *loads,
     } else
 #endif
 #if defined CONFIG_IBVERBS
-    if (!strcmp("ibverbs", token)) {
-      printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
+    if (!strncmp("ibverbs", token, 7)) {
+      if (token[7] == ':') {
+	params[cur_nr_drivers].key = NM_DRIVER_QUERY_BY_INDEX;
+	params[cur_nr_drivers].value.index = atoi(token+8);
+	printf("Using IBVerbs board #%d for rail #%d\n", params[cur_nr_drivers].value.index, cur_nr_drivers);
+      } else {
+	printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
+      }
       loads[cur_nr_drivers++] = &nm_ibverbs_load;
     } else
 #endif

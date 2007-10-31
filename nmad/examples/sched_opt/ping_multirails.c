@@ -26,7 +26,17 @@
 #include "helper.h"
 #endif
 
-//#define ISO_SPLIT
+<<<<<<< .mine
+#include <nm_public.h>
+#include <nm_so_public.h>
+
+#include <nm_so_pack_interface.h>
+
+#  include <nm_ibverbs_public.h>
+
+=======
+>>>>>>> .r17778
+#define ISO_SPLIT
 
 #define SPLIT_THRESHOLD (64 * 1024)
 #define NB_PACKS      2
@@ -68,9 +78,25 @@ uint32_t _size(uint32_t len, unsigned n)
 int
 main(int	  argc,
      char	**argv) {
+<<<<<<< .mine
+        struct nm_core		*p_core		= NULL;
+        char			*r_url1		= NULL;
+        char			*r_url2		= NULL;
+        char			*l_url[2]		= {NULL, NULL};
+        uint8_t			drv_id[2]	=    {0, 0};
+	int (*drv_load[2])(struct nm_drv_ops *) = { &nm_ibverbs_load, &nm_ibverbs_load };
+        uint8_t			 gate_id	=    0;
+        char			*buf		= NULL;
+        char			*hostname	= "localhost";
+        uint32_t		 len;
+	struct nm_so_cnx         cnx;
+        nm_so_pack_interface     interface;
+        int err;
+=======
   char			*buf		= NULL;
   uint32_t		 len;
   struct nm_so_cnx         cnx;
+>>>>>>> .r17778
 
   init(&argc, argv);
 
@@ -168,4 +194,7 @@ main(int	  argc,
 
   return 0;
 }
+<<<<<<< .mine
+=======
 
+>>>>>>> .r17778

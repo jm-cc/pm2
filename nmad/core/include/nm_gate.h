@@ -16,6 +16,8 @@
 #ifndef NM_GATE_H
 #define NM_GATE_H
 
+#include "nm_public.h"
+
 /** Per track gate related data.
  */
 struct nm_gate_trk {

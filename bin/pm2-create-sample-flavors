@@ -122,7 +122,7 @@ registering_flavors() {
 
     register_flavor nmad-mpi-qos \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=sched_opt --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu \
         --nmad=quality_of_service \
         --common=fortran_target_none
 

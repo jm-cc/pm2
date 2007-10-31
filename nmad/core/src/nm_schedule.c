@@ -22,6 +22,9 @@
 
 #include "nm_private.h"
 #include "nm_public.h"
+#include "nm_core.h"
+#include "nm_log.h"
+#include "nm_errno.h"
 
 /** Main function of the core scheduler loop.
  *

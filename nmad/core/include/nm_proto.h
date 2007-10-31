@@ -16,6 +16,11 @@
 #ifndef NM_PROTO_H
 #define NM_PROTO_H
 
+#include "nm_proto_ops.h"
+#include "nm_proto_cap.h"
+
+struct nm_core;
+
 /** Protocol.
  */
 struct nm_proto {

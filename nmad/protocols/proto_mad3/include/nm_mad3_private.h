@@ -16,12 +16,12 @@
 #ifndef NM_MAD3_PRIVATE_H
 #define NM_MAD3_PRIVATE_H
 
-#include "nm_protected.h"
 #include "madeleine.h"
 #ifdef CONFIG_SCHED_OPT
 #  include "nm_so_sendrecv_interface.h"
 #  include "nm_so_sendrecv_interface_private.h"
 #endif /* CONFIG_SCHED_OPT */
+#include "nm_log.h"
 
 typedef struct s_mad_nmad_connection_specific {
         struct s_mad_nmad_connection_specific	*master_cnx;

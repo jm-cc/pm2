@@ -23,6 +23,8 @@
 #include <tbx.h>
 
 #include <nm_public.h>
+#include "nm_gate.h"
+#include "nm_sched.h"
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_parameters.h"

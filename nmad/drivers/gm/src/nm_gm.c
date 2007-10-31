@@ -21,9 +21,18 @@
 
 #include <tbx.h>
 
-#include <gm.h>
+#include "nm_public.h"
+#include "nm_pkt_wrap.h"
+#include "nm_drv.h"
+#include "nm_trk.h"
+#include "nm_gate.h"
+#include "nm_core.h"
+#include "nm_trk_rq.h"
+#include "nm_cnx_rq.h"
+#include "nm_errno.h"
+#include "nm_log.h"
 
-#include "nm_gm_private.h"
+#include <gm.h>
 
 #if 1
 #  define __error__(s, ...) fprintf(stderr, "%s:%d: *error* "s"\n", __FUNCTION__, __LINE__ , ## __VA_ARGS__)

@@ -13,6 +13,7 @@
  * General Public License for more details.
  */
 
+struct nm_drv_ops;
 
 int
 nm_tcpdg_load(struct nm_drv_ops *p_ops);

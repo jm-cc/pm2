@@ -19,6 +19,7 @@
 #include <tbx.h>
 #include <pm2_list.h>
 
+#include "nm_core.h"
 #include "nm_so_parameters.h"
 #include "nm_pkt_wrap.h"
 #include "nm_so_headers.h"

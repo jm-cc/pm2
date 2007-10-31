@@ -18,11 +18,21 @@
 #include <limits.h>
 #include <sys/uio.h>
 #include <unistd.h>
+
 #include <tbx.h>
 
-#include <sisci_api.h>
+#include "nm_public.h"
+#include "nm_pkt_wrap.h"
+#include "nm_drv.h"
+#include "nm_trk.h"
+#include "nm_gate.h"
+#include "nm_core.h"
+#include "nm_trk_rq.h"
+#include "nm_cnx_rq.h"
+#include "nm_errno.h"
+#include "nm_log.h"
 
-#include "nm_sisci_private.h"
+#include <sisci_api.h>
 
 #define NO_FLAGS	0
 #define NO_CALLBACK	0

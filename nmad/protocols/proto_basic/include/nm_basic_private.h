@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-
-#include "nm_protected.h"
-
 struct nm_basic_rq {
         struct nm_pkt_wrap	*p_pw;
         volatile int		 lock;

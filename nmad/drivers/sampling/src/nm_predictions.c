@@ -20,9 +20,11 @@
 #include <math.h>
 
 #include <tbx.h>
-#include <nm_protected.h>
 
+#include "nm_core.h"
+#include "nm_pkt_wrap.h"
 #include "nm_predictions.h"
+#include "nm_errno.h"
 
 #define LAT_IDX 2
 

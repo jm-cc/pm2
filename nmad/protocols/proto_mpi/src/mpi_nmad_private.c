@@ -23,6 +23,7 @@
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
+#include "nm_log.h"
 
 /** all the defined datatypes */
 static mpir_datatype_t     **datatypes          = NULL;

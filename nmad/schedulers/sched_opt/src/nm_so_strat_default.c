@@ -22,6 +22,7 @@
 #include "nm_so_strategies/nm_so_strat_default.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_tracks.h"
+#include "nm_log.h"
 
 /** Gate storage for strat default.
  */

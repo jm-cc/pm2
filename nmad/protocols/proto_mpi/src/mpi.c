@@ -23,6 +23,7 @@
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
 #include <stdint.h>
+#include <assert.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
 static struct nm_so_interface *p_so_sr_if;

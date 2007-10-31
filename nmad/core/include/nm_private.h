@@ -17,7 +17,8 @@
 #ifndef NM_PRIVATE_H
 #define NM_PRIVATE_H
 
-#include "nm_protected.h"
+struct nm_gate;
+struct nm_core;
 
 int
 nm_sched_out_gate	(struct nm_gate *p_gate);

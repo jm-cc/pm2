@@ -31,6 +31,7 @@
 #include "nm_so_strategies/nm_so_strat_qos/nm_so_policy_priority.h"
 #include "nm_so_strategies/nm_so_strat_qos/nm_so_policy_priority_latency.h"
 #include "nm_so_strategies/nm_so_strat_qos/nm_so_policy_priority_rate.h"
+#include "nm_log.h"
 
 struct nm_so_strat_qos_gate {
   /* list of raw outgoing packets */

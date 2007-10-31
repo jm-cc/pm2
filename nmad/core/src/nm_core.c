@@ -23,8 +23,16 @@
 #include <pm2_common.h>
 
 #include "nm_private.h"
-
+#include "nm_core.h"
+#include "nm_core_inline.h"
+#include "nm_drv.h"
+#include "nm_trk.h"
+#include "nm_trk_rq.h"
+#include "nm_sched.h"
+#include "nm_proto.h"
+#include "nm_cnx_rq.h"
 #include <nm_public.h>
+#include "nm_log.h"
 
 /* Macros
  */

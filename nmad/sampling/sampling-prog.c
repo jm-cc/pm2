@@ -19,13 +19,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/uio.h>
+#include <assert.h>
 
 #include <tbx.h>
 
 #include <nm_public.h>
-#include "nm_protected.h"
 #include <nm_so_public.h>
 #include "nm_so_pkt_wrap.h"
+#include "nm_core_inline.h"
 
 #ifdef CONFIG_PROTO_MAD3
 #include <madeleine.h>

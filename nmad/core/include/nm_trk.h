@@ -16,6 +16,8 @@
 #ifndef NM_TRK_H
 #define NM_TRK_H
 
+#include "nm_trk_cap.h"
+
 /** Track.
  */
 struct nm_trk {

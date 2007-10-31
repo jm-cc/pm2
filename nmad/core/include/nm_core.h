@@ -52,6 +52,11 @@
 #define NM_CORE_H
 
 #include "nm_public.h"
+#include "nm_gate.h"
+#include "nm_drv.h"
+
+struct nm_proto;
+struct nm_sched;
 
 /** Core NewMadeleine structure.
  */

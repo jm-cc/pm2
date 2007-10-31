@@ -25,6 +25,7 @@
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_tracks.h"
 #include "nm_so_parameters.h"
+#include "nm_log.h"
 
 struct nm_so_strat_split_balance_gate {
   /* list of raw outgoing packets */

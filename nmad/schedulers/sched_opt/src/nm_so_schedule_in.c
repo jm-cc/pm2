@@ -21,6 +21,8 @@
 #include <tbx.h>
 
 #include <nm_public.h>
+#include "nm_pkt_wrap.h"
+#include "nm_trk.h"
 #include "nm_so_private.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
@@ -28,6 +30,7 @@
 #include "nm_so_sendrecv_interface.h"
 #include "nm_so_interfaces.h"
 #include "nm_so_debug.h"
+#include "nm_log.h"
 
 #define RAIL_MAX 8
 

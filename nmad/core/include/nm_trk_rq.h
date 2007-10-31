@@ -16,6 +16,10 @@
 #ifndef NM_TRK_RQ_H
 #define NM_TRK_RQ_H
 
+#include "nm_trk_cap.h"
+
+struct nm_trk;
+
 /** Request for opening a new track on a driver.
  */
 struct nm_trk_rq {

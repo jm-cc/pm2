@@ -23,9 +23,16 @@
 
 #include <tbx.h>
 
-#include "nm_mx_private.h"
-#include "nm_mx_public.h"
 #include "nm_public.h"
+#include "nm_pkt_wrap.h"
+#include "nm_drv.h"
+#include "nm_trk.h"
+#include "nm_gate.h"
+#include "nm_core.h"
+#include "nm_trk_rq.h"
+#include "nm_cnx_rq.h"
+#include "nm_errno.h"
+#include "nm_log.h"
 
 #ifdef ENABLE_SAMPLING
 #include "nm_parser.h"

@@ -16,6 +16,9 @@
 #ifndef NM_DRV_H
 #define NM_DRV_H
 
+#include "nm_drv_ops.h"
+#include "nm_drv_cap.h"
+
 /** Driver.
  */
 struct nm_drv {

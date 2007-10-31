@@ -22,6 +22,9 @@
 
 #include <nm_public.h>
 #include "nm_basic_private.h"
+#include "nm_core_inline.h"
+#include "nm_proto.h"
+#include "nm_log.h"
 
 /* Macros
  */

@@ -16,6 +16,11 @@
 #ifndef NM_CORE_INLINE_H
 #define NM_CORE_INLINE_H
 
+#include "nm_pkt_wrap.h"
+#include "nm_core.h"
+#include "nm_sched.h"
+#include "nm_log.h"
+
 extern p_tbx_memory_t nm_core_pw_mem	;
 extern p_tbx_memory_t nm_core_iov1_mem	;
 extern p_tbx_memory_t nm_core_iov2_mem	;

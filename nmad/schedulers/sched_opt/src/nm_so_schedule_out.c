@@ -21,11 +21,14 @@
 #include <tbx.h>
 
 #include <nm_public.h>
+#include "nm_pkt_wrap.h"
+#include "nm_trk.h"
 #include "nm_so_private.h"
 #include "nm_so_strategies.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_headers.h"
 #include "nm_so_debug.h"
+#include "nm_log.h"
 
 /** Schedule outbound requests.
  */

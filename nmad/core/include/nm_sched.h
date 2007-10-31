@@ -16,6 +16,8 @@
 #ifndef NM_SCHED_H
 #define NM_SCHED_H
 
+#include "nm_sched_ops.h"
+
 /** Packet scheduler.
  */
 struct nm_sched {

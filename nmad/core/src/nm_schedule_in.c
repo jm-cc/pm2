@@ -21,6 +21,13 @@
 #include <tbx.h>
 
 #include "nm_private.h"
+#include "nm_pkt_wrap.h"
+#include "nm_sched.h"
+#include "nm_gate.h"
+#include "nm_drv.h"
+#include "nm_core.h"
+#include "nm_errno.h"
+#include "nm_log.h"
 
 /** Handle failed incoming requests.
  *

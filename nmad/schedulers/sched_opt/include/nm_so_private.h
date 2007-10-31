@@ -21,7 +21,6 @@
 
 #include <pm2_list.h>
 
-#include <nm_protected.h>
 #include "nm_so_parameters.h"
 #include "nm_so_pkt_wrap.h"
 #include "nm_so_strategies.h"

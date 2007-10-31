@@ -31,7 +31,8 @@ static int                       is_server = -1;
 /* get default drivers if no rails were given on the command line
  */
 static int
-get_default_driver_loads(nm_driver_load *loads)
+get_default_driver_loads(nm_driver_load *loads,
+			 struct nm_driver_query_param *params)
 {
   int cur_nr_drivers = 0;
 
@@ -66,7 +67,9 @@ get_default_driver_loads(nm_driver_load *loads)
 /* get drivers from the railstring from the command line
  */
 static int
-get_railstring_driver_loads(nm_driver_load *loads, char * railstring)
+get_railstring_driver_loads(nm_driver_load *loads,
+			    struct nm_driver_query_param *params,
+			    char * railstring)
 {
   int cur_nr_drivers = 0;
   char * token;
@@ -74,8 +77,14 @@ get_railstring_driver_loads(nm_driver_load *loads, char * railstring)
   token = strtok(railstring, "+");
   while (token) {
 #if defined CONFIG_MX
-    if (!strcmp("mx", token)) {
-      printf("Using MX for rail #%d\n", cur_nr_drivers);
+    if (!strncmp("mx", token, 2)) {
+      if (token[2] == ':') {
+	params[cur_nr_drivers].key = NM_DRIVER_QUERY_BY_INDEX;
+	params[cur_nr_drivers].value.index = atoi(token+3);
+	printf("Using MX board #%d for rail #%d\n", params[cur_nr_drivers].value.index, cur_nr_drivers);
+      } else {
+	printf("Using MX for rail #%d\n", cur_nr_drivers);
+      }
       loads[cur_nr_drivers++] = &nm_mx_load;
     } else
 #endif
@@ -126,9 +135,18 @@ init(int	 *argc,
   int nr_r_urls = 0;
   /* per rail arrays */
   nm_driver_load driver_loads[RAIL_MAX];
+  struct nm_driver_query_param params[RAIL_MAX];
+  struct nm_driver_query_param *params_array[RAIL_MAX];
+  int nparam_array[RAIL_MAX];
   char *r_url[RAIL_MAX];
   char *l_url[RAIL_MAX];
   uint8_t drv_id[RAIL_MAX];
+
+  for(i=0; i<RAIL_MAX; i++) {
+    params[i].key = NM_DRIVER_QUERY_BY_NOTHING;
+    params_array[i] = &params[i];
+    nparam_array[i] = 1;
+  }
 
   nm_so_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
   nm_so_sr_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
@@ -183,10 +201,10 @@ init(int	 *argc,
 
   if (railstring) {
     /* parse railstring to get drivers */
-    nr_rails = get_railstring_driver_loads(driver_loads, railstring);
+    nr_rails = get_railstring_driver_loads(driver_loads, params, railstring);
   } else {
     /* use default drivers */
-    nr_rails = get_default_driver_loads(driver_loads);
+    nr_rails = get_default_driver_loads(driver_loads, params);
   }
 
   if (nr_rails < 2) { /* FIXME: won't be necessary once the strategy handles this */
@@ -211,7 +229,7 @@ init(int	 *argc,
     printf("\n");
   }
 
-  err = nm_core_driver_load_init_some(p_core, nr_rails, driver_loads, drv_id, l_url);
+  err = nm_core_driver_load_init_some_with_params(p_core, nr_rails, driver_loads, params_array, nparam_array, drv_id, l_url);
   if (err != NM_ESUCCESS) {
     printf("nm_core_driver_load_init_some returned err = %d\n", err);
     goto out_err;

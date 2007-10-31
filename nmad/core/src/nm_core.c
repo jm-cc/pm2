@@ -403,62 +403,18 @@ nm_core_driver_init(struct nm_core	 *p_core,
         return err;
 }
 
-/** Simple helper to prevent basic applications from having to
- * do load and init when they don't tweak anything in between.
+/** Helper to load and init several drivers at once,
+ * with an array of parameters for each driver,
+ * and applying numa binding in-between.
  */
 int
-nm_core_driver_load_init(struct nm_core *p_core,
-			 int (*drv_load)(struct nm_drv_ops *),
-			 uint8_t *p_id,
-			 char **p_url)
-{
-	uint8_t id;
-	int err;
-
-	err = nm_core_driver_load(p_core, drv_load, &id);
-	if (err != NM_ESUCCESS) {
-		NM_DISPF("nm_core_driver_load returned %d", err);
-		return err;
-	}
-
-	err = nm_core_driver_query(p_core, id, NULL, 0);
-	if (err != NM_ESUCCESS) {
-		NM_DISPF("nm_core_driver_query returned %d", err);
-		return err;
-	}
-
-#ifdef PM2_NUIOA
-	if (numa_available() >= 0) {
-		int node = (p_core->driver_array + id)->cap.numa_node;
-		if (node != PM2_NUIOA_ANY_NODE) {
-			nodemask_t mask;
-			nodemask_zero(&mask);
-			nodemask_set(&mask, node);
-			DISP("binding to nuioa node %d for driver %d", node, id);
-			numa_bind(&mask);
-		}
-	}
-#endif /* PM2_NUIOA */
-
-	err = nm_core_driver_init(p_core, id, p_url);
-	if (err != NM_ESUCCESS) {
-		NM_DISPF("nm_core_driver_init returned %d", err);
-		return err;
-	}
-
-	*p_id = id;
-	return NM_ESUCCESS;
-}
-
-/** Simple helper to load and init several drivers at once,
- * applying numa binding in-between.
- */
-int
-nm_core_driver_load_init_some(struct nm_core *p_core,
-			      int count,
-			      int (**drv_load)(struct nm_drv_ops *),
-			      uint8_t *p_id,
-			      char **p_url)
+nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
+					  int count,
+					  int (**drv_load_array)(struct nm_drv_ops *),
+					  struct nm_driver_query_param **params_array,
+					  int *nparam_array,
+					  uint8_t *p_id_array,
+					  char **p_url_array)
 {
 	uint8_t id;
 	int i;
@@ -470,15 +426,15 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 	for(i=0; i<count; i++) {
 		int err;
 
-		err = nm_core_driver_load(p_core, drv_load[i], &id);
+		err = nm_core_driver_load(p_core, drv_load_array[i], &id);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_load returned %d", err);
 			return err;
 		}
 
-		p_id[i] = id;
+		p_id_array[i] = id;
 
-		err = nm_core_driver_query(p_core, p_id[i], (struct nm_driver_query_param *)NULL, 0);
+		err = nm_core_driver_query(p_core, id, params_array[i], nparam_array[i]);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_query returned %d", err);
 			return err;
@@ -520,13 +476,13 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 	for(i=0; i<count; i++) {
 		int err;
 
-		err = nm_core_driver_init(p_core, p_id[i], &p_url[i]);
+		err = nm_core_driver_init(p_core, p_id_array[i], &p_url_array[i]);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_init returned %d", err);
 			return err;
 		}
 
-		printf("driver #%d url: [%s]\n", i, p_url[i]);
+		printf("driver #%d url: [%s]\n", i, p_url_array[i]);
 	}
 
 	return NM_ESUCCESS;

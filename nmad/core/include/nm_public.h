@@ -79,17 +79,40 @@ nm_core_driver_query(struct nm_core	*p_core,
 		     int nparam);
 
 int
+nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
+					  int count,
+					  int (**drv_load_array)(struct nm_drv_ops *),
+					  struct nm_driver_query_param **params_array,
+					  int *nparam_array,
+					  uint8_t *p_id_array,
+					  char **p_url_array);
+
+/** Simple helpers to prevent basic applications from having to
+ * do load and init when they don't tweak anything in between.
+ */
+static inline int
+nm_core_driver_load_init_some(struct nm_core *p_core,
+			      int count,
+			      int (**drv_load_array)(struct nm_drv_ops *),
+			      uint8_t *p_id_array,
+			      char **p_url_array)
+{
+  struct nm_driver_query_param * params_array[NUMBER_OF_DRIVERS] = { NULL };
+  int nparam_array[NUMBER_OF_DRIVERS] = { 0 };
+  return nm_core_driver_load_init_some_with_params(p_core, count, drv_load_array,
+						   params_array, nparam_array,
+						   p_id_array, p_url_array);
+}
+
+static inline int
 nm_core_driver_load_init(struct nm_core		 *p_core,
 			 int (*drv_load)(struct nm_drv_ops *),
 			 uint8_t		 *p_id,
-			 char			**p_url);
-
-int
-nm_core_driver_load_init_some(struct nm_core *p_core,
-			      int count,
-			      int (**drv_load)(struct nm_drv_ops *),
-			      uint8_t *p_id,
-			      char **p_url);
+			 char			**p_url)
+{
+  int (*drv_load_array[NUMBER_OF_DRIVERS])(struct nm_drv_ops *) = { drv_load };
+  return nm_core_driver_load_init_some(p_core, 1, drv_load_array, p_id, p_url);
+}
 
 int
 nm_core_driver_exit	(struct nm_core		 *p_core);

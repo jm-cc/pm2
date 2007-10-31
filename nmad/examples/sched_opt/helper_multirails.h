@@ -16,7 +16,16 @@
 static
 void
 usage(void) {
-  fprintf(stderr, "usage: <prog> [-R <rail1:rail2...>] [<remote url> ...]\n");
+  fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
+  fprintf(stderr, "  There must be at least 2 rails, and as many rails then URLs on the sender's side\n");
+  fprintf(stderr, "  Rails may be:\n");
+  fprintf(stderr, "    mx   to use any MX board\n");
+  fprintf(stderr, "    mx:N        the Nth MX board\n");
+  fprintf(stderr, "    qsnet       the QsNet board\n");
+  fprintf(stderr, "    ibverbs     any InfiniBand board\n");
+  fprintf(stderr, "    ibverbs:N   the Nth board\n");
+  fprintf(stderr, "    gm          any GM board\n");
+  fprintf(stderr, "    tcpdg       any TCP connection\n");
   exit(EXIT_FAILURE);
 }
 

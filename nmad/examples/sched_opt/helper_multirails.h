@@ -22,10 +22,10 @@ usage(void) {
   fprintf(stderr, "    mx   to use any MX board\n");
   fprintf(stderr, "    mx:N        the Nth MX board\n");
   fprintf(stderr, "    qsnet       the QsNet board\n");
-  fprintf(stderr, "    ibverbs     any InfiniBand board\n");
-  fprintf(stderr, "    ibverbs:N   the Nth board\n");
+  fprintf(stderr, "    ib          any InfiniBand device\n");
+  fprintf(stderr, "    ib:N        the Nth InfiniBand device\n");
   fprintf(stderr, "    gm          any GM board\n");
-  fprintf(stderr, "    tcpdg       any TCP connection\n");
+  fprintf(stderr, "    tcp         any TCP connection\n");
   exit(EXIT_FAILURE);
 }
 
@@ -73,6 +73,28 @@ get_default_driver_loads(nm_driver_load *loads,
   return RAIL_NR_DEFAULT;
 }
 
+/* look for a driver string in a rail and check whether the board id is forced
+ */
+static int
+lookup_rail_driver_and_board_id(const char *rail, const char *driver,
+				struct nm_driver_query_param *param)
+{
+  int len = strlen(driver);
+
+  if (!strcmp(rail, driver))
+    return 1;
+
+  /* look for driver:N */
+  if (strncmp(rail, driver, len))
+    return 0;
+  if (rail[len] != ':')
+    return 0;
+
+  param->key = NM_DRIVER_QUERY_BY_INDEX;
+  param->value.index = atoi(rail+len+1);
+  return 1;
+}
+
 /* get drivers from the railstring from the command line
  */
 static int
@@ -81,19 +103,19 @@ get_railstring_driver_loads(nm_driver_load *loads,
 			    char * railstring)
 {
   int cur_nr_drivers = 0;
+  int board_id;
   char * token;
 
   token = strtok(railstring, "+");
   while (token) {
 #if defined CONFIG_MX
-    if (!strncmp("mx", token, 2)) {
-      if (token[2] == ':') {
-	params[cur_nr_drivers].key = NM_DRIVER_QUERY_BY_INDEX;
-	params[cur_nr_drivers].value.index = atoi(token+3);
-	printf("Using MX board #%d for rail #%d\n", params[cur_nr_drivers].value.index, cur_nr_drivers);
-      } else {
-	printf("Using MX for rail #%d\n", cur_nr_drivers);
-      }
+    if (lookup_rail_driver_and_board_id(token, "mx", &params[cur_nr_drivers])) {
+      if (params[cur_nr_drivers].key == NM_DRIVER_QUERY_BY_INDEX)
+	printf("Using MX board #%d for rail #%d\n",
+	       params[cur_nr_drivers].value.index, cur_nr_drivers);
+      else
+	printf("Using any MX board for rail #%d\n",
+	       cur_nr_drivers);
       loads[cur_nr_drivers++] = &nm_mx_load;
     } else
 #endif
@@ -104,14 +126,15 @@ get_railstring_driver_loads(nm_driver_load *loads,
     } else
 #endif
 #if defined CONFIG_IBVERBS
-    if (!strncmp("ibverbs", token, 7)) {
-      if (token[7] == ':') {
-	params[cur_nr_drivers].key = NM_DRIVER_QUERY_BY_INDEX;
-	params[cur_nr_drivers].value.index = atoi(token+8);
-	printf("Using IBVerbs board #%d for rail #%d\n", params[cur_nr_drivers].value.index, cur_nr_drivers);
-      } else {
-	printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
-      }
+      if (lookup_rail_driver_and_board_id(token, "ib", &params[cur_nr_drivers])
+	  || lookup_rail_driver_and_board_id(token, "ibv", &params[cur_nr_drivers])
+	  || lookup_rail_driver_and_board_id(token, "ibverbs", &params[cur_nr_drivers])) {
+      if (params[cur_nr_drivers].key == NM_DRIVER_QUERY_BY_INDEX)
+	printf("Using IB device #%d for rail #%d\n",
+	       params[cur_nr_drivers].value.index, cur_nr_drivers);
+      else
+	printf("Using any IB device for rail #%d\n",
+	       cur_nr_drivers);
       loads[cur_nr_drivers++] = &nm_ibverbs_load;
     } else
 #endif
@@ -121,7 +144,7 @@ get_railstring_driver_loads(nm_driver_load *loads,
       loads[cur_nr_drivers++] = &nm_gm_load;
     } else
 #endif
-    if (!strcmp("tcpdg", token)) {
+    if (!strcmp("tcp", token) || !strcmp("tcpdg", token)) {
       printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
       loads[cur_nr_drivers++] = &nm_tcpdg_load;
     } else {

@@ -19,12 +19,20 @@ usage(void) {
   fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
   fprintf(stderr, "  There must be at least 2 rails, and as many rails then URLs on the sender's side\n");
   fprintf(stderr, "  Rails may be:\n");
+#if defined CONFIG_MX
   fprintf(stderr, "    mx   to use any MX board\n");
   fprintf(stderr, "    mx:N        the Nth MX board\n");
+#endif
+#if defined CONFIG_QSNET
   fprintf(stderr, "    qsnet       the QsNet board\n");
+#endif
+#if defined CONFIG_IBVERBS
   fprintf(stderr, "    ib          any InfiniBand device\n");
   fprintf(stderr, "    ib:N        the Nth InfiniBand device\n");
+#endif
+#if defined CONFIG_GM
   fprintf(stderr, "    gm          any GM board\n");
+#endif
   fprintf(stderr, "    tcp         any TCP connection\n");
   exit(EXIT_FAILURE);
 }

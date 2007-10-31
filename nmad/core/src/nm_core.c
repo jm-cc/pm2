@@ -490,7 +490,9 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 			return err;
 		}
 
+#ifndef CONFIG_PROTO_MAD3
 		printf("driver #%d url: [%s]\n", i, p_url_array[i]);
+#endif
 	}
 
 	return NM_ESUCCESS;

@@ -17,6 +17,8 @@
 #define __nm_public_h__
 
 #include <nm_errno.h>
+#include <stdlib.h>
+
 struct nm_core;
 struct nm_drv_ops;
 struct nm_pkt_wrap;

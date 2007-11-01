@@ -22,6 +22,15 @@
 
 #include "nm_null_private.h"
 
+#include "nm_gate.h"
+#include "nm_sched.h"
+#include "nm_pkt_wrap.h"
+#include "nm_core.h"
+#include "nm_core_inline.h"
+#include "nm_proto.h"
+#include "nm_errno.h"
+#include "nm_log.h"
+
 /* schedule and post new outgoing buffers */
 int
 nm_null_out_schedule_gate(struct nm_gate *p_gate) {

@@ -14,7 +14,9 @@
  */
 
 
-#include "nm_protected.h"
+struct nm_pkt_wrap;
+struct nm_gate;
+struct nm_sched;
 
 /** Control pkt.
  */

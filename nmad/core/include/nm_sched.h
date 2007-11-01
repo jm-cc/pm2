@@ -18,6 +18,8 @@
 
 #include "nm_sched_ops.h"
 
+struct nm_core;
+
 /** Packet scheduler.
  */
 struct nm_sched {

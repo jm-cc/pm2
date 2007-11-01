@@ -13,10 +13,11 @@
  * General Public License for more details.
  */
 
-
-#include "nm_protected.h"
-
 #include "nm_mini_ctrl.h"
+
+struct nm_pkt_wrap;
+struct nm_sched;
+struct nm_gate;
 
 /* Note: the token structure is obviously not strictly needed for sched_mini
    since the control packet struct is identical and we could directly use it

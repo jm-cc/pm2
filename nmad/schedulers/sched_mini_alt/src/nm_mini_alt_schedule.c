@@ -22,7 +22,10 @@
 
 #include "nm_mini_alt_private.h"
 
-#include <nm_public.h>
+#include "nm_public.h"
+#include "nm_sched.h"
+#include "nm_trk_rq.h"
+#include "nm_gate.h"
 
 #define INITIAL_CTRL_NUM		16
 #define INITIAL_TOKEN_NUM		16

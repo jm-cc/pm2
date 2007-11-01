@@ -20,6 +20,12 @@
 #include "xpaul.h"
 #endif
 
+struct nm_drv;
+struct nm_trk;
+struct nm_gate;
+struct nm_proto;
+struct nm_pkt_head;
+
 /** IO vector entry meta-data.
  */
 struct nm_iovec {

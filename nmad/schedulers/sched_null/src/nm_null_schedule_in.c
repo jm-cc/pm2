@@ -22,6 +22,16 @@
 
 #include "nm_null_private.h"
 
+#include "nm_public.h"
+#include "nm_gate.h"
+#include "nm_sched.h"
+#include "nm_pkt_wrap.h"
+#include "nm_trk_rq.h"
+#include "nm_proto.h"
+#include "nm_core.h"
+#include "nm_core_inline.h"
+#include "nm_log.h"
+
 /* schedule and post new incoming buffers */
 int
 nm_null_in_schedule(struct nm_sched *p_sched) {

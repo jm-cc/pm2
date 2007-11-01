@@ -18,6 +18,8 @@
 
 #include "nm_trk_cap.h"
 
+struct nm_drv;
+
 /** Track.
  */
 struct nm_trk {

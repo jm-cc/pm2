@@ -22,6 +22,14 @@
 
 #include "nm_mini_alt_private.h"
 
+#include "nm_core_inline.h"
+#include "nm_sched.h"
+#include "nm_proto_id.h"
+#include "nm_proto.h"
+#include "nm_gate.h"
+#include "nm_trk.h"
+#include "nm_errno.h"
+
 /** Build and post a new send request of a ctrl pkt.
  */
 static

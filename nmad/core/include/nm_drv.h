@@ -19,6 +19,9 @@
 #include "nm_drv_ops.h"
 #include "nm_drv_cap.h"
 
+struct nm_core;
+struct nm_trk;
+
 /** Driver.
  */
 struct nm_drv {

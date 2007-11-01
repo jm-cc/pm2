@@ -13,8 +13,9 @@
  * General Public License for more details.
  */
 
-
-#include "nm_protected.h"
+struct nm_gate;
+struct nm_sched;
+struct nm_pkt_wrap;
 
 /* output structs
  */

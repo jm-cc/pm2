@@ -18,6 +18,14 @@
 
 #include "nm_public.h"
 
+struct nm_drv;
+struct nm_trk;
+struct nm_core;
+struct nm_sched;
+struct nm_gate_drv;
+struct nm_pkt_wrap;
+struct nm_gate_trk;
+
 /** Per track gate related data.
  */
 struct nm_gate_trk {

@@ -16,6 +16,10 @@
 #ifndef NM_CNX_REQ_H
 #define NM_CNX_REQ_H
 
+struct nm_gate;
+struct nm_drv;
+struct nm_trk;
+
 /** Request for connecting/disconnecting a gate with a driver. */
 struct nm_cnx_rq {
 

@@ -13,8 +13,7 @@
  * General Public License for more details.
  */
 
-
-#include "nm_protected.h"
+struct nm_so_pkt_wrap;
 
 struct nm_so_basic_rq {
     struct nm_so_pkt_wrap	*p_so_pw;

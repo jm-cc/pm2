@@ -48,8 +48,7 @@ static int                       is_server = -1;
 /* get default drivers if no rails were given on the command line
  */
 static int
-get_default_driver_loads(nm_driver_load *loads,
-			 struct nm_driver_query_param *params)
+get_default_driver_loads(nm_driver_load *loads)
 {
   int cur_nr_drivers = 0;
 
@@ -219,6 +218,8 @@ init(int	 *argc,
   while (i<*argc) {
     /* handle -R for rails */
     if (!strcmp(argv[i], "-R")) {
+      if (*argc <= i+1)
+	usage();
       railstring = argv[i+1];
       i += 2;
       continue;
@@ -250,7 +251,7 @@ init(int	 *argc,
     nr_rails = get_railstring_driver_loads(driver_loads, params, railstring);
   } else {
     /* use default drivers */
-    nr_rails = get_default_driver_loads(driver_loads, params);
+    nr_rails = get_default_driver_loads(driver_loads);
   }
 
   if (nr_rails < 2) { /* FIXME: won't be necessary once the strategy handles this */

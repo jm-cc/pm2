@@ -277,7 +277,7 @@ init(int	 *argc,
   nm_driver_load driver_load = NULL;
   struct nm_driver_query_param params[1];
 
-  params[1].key = NM_DRIVER_QUERY_BY_NOTHING;
+  params[0].key = NM_DRIVER_QUERY_BY_NOTHING;
 
   err = nm_core_init(argc, argv, &p_core, nm_so_load);
   if (err != NM_ESUCCESS) {

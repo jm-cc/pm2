@@ -321,15 +321,10 @@ init(int	 *argc,
   }
 
   /* update command line before returning to the program */
-  if (r_url) {
-    printf("running as client using remote url: %s\n", r_url);
-    i--;
-    *argc -= i;
-    for(j=1 ; j<*argc ; j++) {
-      argv[j] = argv[j+i];
-    }
-  } else {
-    printf("running as server\n");
+  i--;
+  *argc -= i;
+  for(j=1; j<*argc; j++) {
+    argv[j] = argv[j+i];
   }
 
   if (railstring) {
@@ -338,6 +333,12 @@ init(int	 *argc,
   } else {
     /* use default drivers */
     get_default_driver_load(&driver_load);
+  }
+
+  if (r_url) {
+    printf("running as client using remote url: %s\n", r_url);
+  } else {
+    printf("running as server\n");
   }
 
   err = nm_core_driver_load_init_with_params(p_core, driver_load, params, 1, &drv_id, &l_url);

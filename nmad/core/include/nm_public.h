@@ -107,13 +107,28 @@ nm_core_driver_load_init_some(struct nm_core *p_core,
 }
 
 static inline int
+nm_core_driver_load_init_with_params(struct nm_core *p_core,
+				     int (*drv_load)(struct nm_drv_ops *),
+				     struct nm_driver_query_param *params,
+				     int nparam,
+				     uint8_t *p_id,
+				     char **p_url)
+{
+  int (*drv_load_array[1])(struct nm_drv_ops *) = { drv_load };
+  struct nm_driver_query_param * params_array[1] = { params };
+  int nparam_array[1] = { nparam };
+  return nm_core_driver_load_init_some_with_params(p_core, 1, drv_load_array,
+						   params_array, nparam_array,
+						   p_id, p_url);
+}
+
+static inline int
 nm_core_driver_load_init(struct nm_core		 *p_core,
 			 int (*drv_load)(struct nm_drv_ops *),
 			 uint8_t		 *p_id,
 			 char			**p_url)
 {
-  int (*drv_load_array[NUMBER_OF_DRIVERS])(struct nm_drv_ops *) = { drv_load };
-  return nm_core_driver_load_init_some(p_core, 1, drv_load_array, p_id, p_url);
+  return nm_core_driver_load_init_with_params(p_core, drv_load, NULL, 0, p_id, p_url);
 }
 
 int

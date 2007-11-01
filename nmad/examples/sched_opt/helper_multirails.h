@@ -4,7 +4,7 @@
 
 #include <nm_public.h>
 #include <nm_so_public.h>
-
+#include "nm_so_debug.h"
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
 
@@ -109,8 +109,6 @@ handle_one_rail(char *token, int index,
 		nm_driver_load *load,
 		struct nm_driver_query_param *param)
 {
-  int board_id;
-
 #if defined CONFIG_MX
   if (lookup_rail_driver_and_board_id(token, "mx", param)) {
     if (param->key == NM_DRIVER_QUERY_BY_INDEX)

@@ -37,7 +37,7 @@ static
 void
 usage(void) {
   fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
-  fprintf(stderr, "  There must be at least 2 rails, and as many rails then URLs on the sender's side\n");
+  fprintf(stderr, "  There must be at least 2 rails, and as many rails followed by the server's URLs on the sender's side\n");
   fprintf(stderr, "  Rails may be:\n");
 #if defined CONFIG_MX
   fprintf(stderr, "    mx   to use any MX board\n");
@@ -87,7 +87,7 @@ get_default_driver_loads(nm_driver_load *loads)
 
   /* FIXME: be sure we don't add more than RAIL_MAX if we add more drivers one day */
   if (cur_nr_drivers < RAIL_NR_DEFAULT) {
-    fprintf(stderr, "Found %d drivers, need at least %d by default\n", cur_nr_drivers, RAIL_NR_DEFAULT);
+    fprintf(stderr, "Found %d rail(s), need at least %d by default\n", cur_nr_drivers, RAIL_NR_DEFAULT);
     exit(EXIT_FAILURE);
   }
 

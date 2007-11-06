@@ -219,7 +219,10 @@ typedef struct ma_sched_entity marcel_entity_t;
 
 #section marcel_macros
 /** \brief Returns type of entity \e e */
+
+#ifdef DOXYGEN
 enum marcel_holder ma_entity_type(marcel_entity_t *e);
+#endif
 #define ma_entity_type(e) ((e)->type)
 
 #section marcel_functions

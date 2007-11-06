@@ -271,8 +271,8 @@ static int init(void)
 
 static int exit_strategy(void)
 {
-  DISP_VAL("Autoextended aggregation data", nb_data_aggregation);
-  DISP_VAL("Autoextended aggregation control", nb_ctrl_aggregation);
+  //DISP_VAL("Autoextended aggregation data", nb_data_aggregation);
+  //DISP_VAL("Autoextended aggregation control", nb_ctrl_aggregation);
   return NM_ESUCCESS;
 }
 

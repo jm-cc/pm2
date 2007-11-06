@@ -1,43 +1,126 @@
 #include <string.h>
 
 #include <tbx.h>
-
 #include <nm_public.h>
 #include <nm_so_public.h>
-#include "nm_so_debug.h"
+#include <nm_so_debug.h>
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
-
 #include <nm_drivers.h>
 
+#ifdef CONFIG_MULTI_RAIL
 #define RAIL_MAX 8
 #define RAIL_NR_DEFAULT 2
+#else
+#define RAIL_MAX 1
+#define RAIL_NR_DEFAULT 1
+#endif
 
-static int                       is_server = -1;
-static struct nm_core		*p_core	= NULL;
-static struct nm_so_interface	*sr_if = NULL;
-static nm_so_pack_interface	pack_if;
-static nm_gate_id_t	        gate_id	=    0;
+static int                     is_server        = -1;
+static struct nm_so_interface *sr_if            = NULL;
+static nm_so_pack_interface    pack_if;
+static nm_gate_id_t	       gate_id	        = 0;
+
+/** Returns process rank */
+int get_rank(void);
+
+/** Returns the number of nodes */
+int get_size(void);
+
+/** Returns the out gate id of the process dest */
+nm_gate_id_t get_gate_out_id(int dest);
+
+/** Returns the in gate id of the process dest */
+nm_gate_id_t get_gate_in_id(int dest);
+
+/** Initializes everything. Returns 1 if server, 0 if client. */
+void init(int *argc, char **argv);
+
+/** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
+int nmad_exit(void);
 
 #ifdef CONFIG_PROTO_MAD3
+
+#include <madeleine.h>
+#include <nm_mad3_private.h>
+
+static p_mad_madeleine_t       madeleine	= NULL;
+static p_mad_session_t         session          = NULL;
+
+int get_rank(void) {
+  return session->process_rank;
+}
+
+int get_size(void) {
+  return tbx_slist_get_length(madeleine->dir->process_slist);
+}
+
+nm_gate_id_t get_gate_out_id(int dest) {
+  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+  p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, dest);
+  p_mad_nmad_connection_specific_t cs = connection->specific;
+  return cs->gate_id;
+}
+
+nm_gate_id_t get_gate_in_id(int dest) {
+  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+  p_mad_connection_t connection = tbx_darray_get(channel->in_connection_darray, dest);
+  p_mad_nmad_connection_specific_t cs = connection->specific;
+  return cs->gate_id;
+}
 
 void
 init(int	 *argc,
      char	**argv) {
+#ifdef CONFIG_MULTI_RAIL
   fprintf(stderr, "Multi-rail is not compatible with the protocol mad3\n");
-}
-
-int nmad_exit() {
-  exit(1);
-}
-
 #else
+  struct nm_core         *p_core     = NULL;
 
-static
-void
+  /*
+   * Initialization of various libraries.
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_init(argc, argv);
+
+  /*
+   * Reference to the session information object
+   */
+  session      = madeleine->session;
+
+  /*
+   * Globally unique process rank.
+   */
+  is_server = session->process_rank;
+
+  if (!is_server) {
+    /* client needs gate_id to connect to the server */
+    p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
+    p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, 1);
+    p_mad_nmad_connection_specific_t cs = connection->specific;
+    gate_id = cs->gate_id;
+  }
+
+  /*
+   * Reference to the NewMadeleine core object
+   */
+  p_core = mad_nmad_get_core();
+  sr_if = mad_nmad_get_sr_interface();
+  pack_if = (nm_so_pack_interface)sr_if;
+#endif /* CONFIG_MULTI_RAIL */
+}
+
+int nmad_exit(void) {
+  mad_exit(madeleine);
+  return NM_ESUCCESS;
+}
+
+#else /* ! CONFIG_PROTO_MAD3 */
+
+static void
 usage(void) {
   fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
-  fprintf(stderr, "  There must be at least 2 rails, and as many rails followed by the server's URLs on the sender's side\n");
+  fprintf(stderr, "  The number of rails must be >=%d and <=%d, and there must be as many rails followed by the server's URLs on the sender's side\n", RAIL_NR_DEFAULT, RAIL_MAX);
   fprintf(stderr, "  Rails may be:\n");
 #if defined CONFIG_MX
   fprintf(stderr, "    mx   to use any MX board\n");
@@ -59,8 +142,29 @@ usage(void) {
 
 typedef int (*nm_driver_load)(struct nm_drv_ops*);
 
-/* get default drivers if no rails were given on the command line
- */
+static struct nm_core		*p_core	        = NULL;
+
+int get_rank(void) {
+  fprintf(stderr, "get_rank not implemented. Try using the mad3 protocol.\n");
+  exit(EXIT_FAILURE);
+}
+
+int get_size(void) {
+  fprintf(stderr, "get_size not implemented. Try using the mad3 protocol.\n");
+  exit(EXIT_FAILURE);
+}
+
+nm_gate_id_t get_gate_in_id(int dest) {
+  fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
+  exit(EXIT_FAILURE);
+}
+
+nm_gate_id_t get_gate_out_id(int dest) {
+  fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
+  exit(EXIT_FAILURE);
+}
+
+/** get default drivers if no rails were given on the command line */
 static int
 get_default_driver_loads(nm_driver_load *loads)
 {
@@ -94,8 +198,7 @@ get_default_driver_loads(nm_driver_load *loads)
   return RAIL_NR_DEFAULT;
 }
 
-/* look for a driver string in a rail and check whether the board id is forced
- */
+/** look for a driver string in a rail and check whether the board id is forced  */
 static int
 lookup_rail_driver_and_board_id(const char *rail, const char *driver,
 				struct nm_driver_query_param *param)
@@ -116,8 +219,7 @@ lookup_rail_driver_and_board_id(const char *rail, const char *driver,
   return 1;
 }
 
-/* handle one rail from the railstring
- */
+/** handle one rail from the railstring */
 static int
 handle_one_rail(char *token, int index,
 		nm_driver_load *load,
@@ -170,8 +272,7 @@ handle_one_rail(char *token, int index,
   return 0;
 }
 
-/* get drivers from the railstring from the command line
- */
+/** get drivers from the railstring from the command line */
 static int
 get_railstring_driver_loads(nm_driver_load *loads,
 			    struct nm_driver_query_param *params,
@@ -189,21 +290,23 @@ get_railstring_driver_loads(nm_driver_load *loads,
     if (err < 0)
       usage();
     cur_nr_drivers++;
+
+    if (cur_nr_drivers > RAIL_MAX) {
+	fprintf(stderr, "Found too many drivers, only %d are supported\n", RAIL_MAX);
+	usage();
+    }
+
     token = strtok(NULL, "+");
   }
 
   return cur_nr_drivers;
 }
 
-/* initialize everything
- *
- * returns 1 if server, 0 if client
- */
 void
 init(int	 *argc,
      char	**argv)
 {
-  static int i,j, err;
+  int i,j, err;
   /* rails */
   char *railstring = NULL;
   int nr_rails = 0;
@@ -284,8 +387,8 @@ init(int	 *argc,
     nr_rails = get_default_driver_loads(driver_loads);
   }
 
-  if (nr_rails < 2) { /* FIXME: won't be necessary once the strategy handles this */
-    fprintf(stderr, "Need at least 2 rails\n");
+  if (nr_rails < RAIL_NR_DEFAULT) { /* FIXME: won't be necessary once the strategy handles this */
+    fprintf(stderr, "Need at least %d rails\n", RAIL_NR_DEFAULT);
     usage();
   }
 
@@ -332,7 +435,6 @@ init(int	 *argc,
 	goto out_err;
       }
     }
-
   } else {
     /* client */
     for(j=0; j<nr_rails; j++) {
@@ -351,11 +453,7 @@ init(int	 *argc,
   exit(EXIT_FAILURE);
 }
 
-/* clean session
- *
- * returns NM_ESUCCESS or EXIT_FAILURE
- */
-int nmad_exit() {
+int nmad_exit(void) {
   int err, ret = NM_ESUCCESS;
 
   err = nm_core_driver_exit(p_core);

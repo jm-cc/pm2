@@ -13,6 +13,26 @@
 #define RAIL_MAX 8
 #define RAIL_NR_DEFAULT 2
 
+static int                       is_server = -1;
+static struct nm_core		*p_core	= NULL;
+static struct nm_so_interface	*sr_if = NULL;
+static nm_so_pack_interface	pack_if;
+static nm_gate_id_t	        gate_id	=    0;
+
+#ifdef CONFIG_PROTO_MAD3
+
+void
+init(int	 *argc,
+     char	**argv) {
+  fprintf(stderr, "Multi-rail is not compatible with the protocol mad3\n");
+}
+
+int nmad_exit() {
+  exit(1);
+}
+
+#else
+
 static
 void
 usage(void) {
@@ -38,12 +58,6 @@ usage(void) {
 }
 
 typedef int (*nm_driver_load)(struct nm_drv_ops*);
-
-static struct nm_core		*p_core	= NULL;
-static struct nm_so_interface	*sr_if = NULL;
-static nm_so_pack_interface	pack_if;
-static nm_gate_id_t	        gate_id	=    0;
-static int                       is_server = -1;
 
 /* get default drivers if no rails were given on the command line
  */
@@ -361,3 +375,6 @@ int nmad_exit() {
   }
   return ret;
 }
+
+#endif /* CONFIG_PROTO_MAD3 */
+

@@ -20,11 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef CONFIG_MULTI_RAIL
-#include "helper_multirails.h"
-#else
 #include "helper.h"
-#endif
 
 //#define ISO_SPLIT
 

@@ -1,12 +1,25 @@
-#include <tbx.h>
+#include <string.h>
 
+#include <tbx.h>
 #include <nm_public.h>
 #include <nm_so_public.h>
-
+#include <nm_so_debug.h>
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
-
 #include <nm_drivers.h>
+
+#ifdef CONFIG_MULTI_RAIL
+#define RAIL_MAX 8
+#define RAIL_NR_DEFAULT 2
+#else
+#define RAIL_MAX 1
+#define RAIL_NR_DEFAULT 1
+#endif
+
+static int                     is_server        = -1;
+static struct nm_so_interface *sr_if            = NULL;
+static nm_so_pack_interface    pack_if;
+static nm_gate_id_t	       gate_id	        = 0;
 
 /** Returns process rank */
 int get_rank(void);
@@ -32,10 +45,6 @@ int nmad_exit(void);
 #include <nm_mad3_private.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
-static int                     is_server	= -1;
-static struct nm_so_interface *sr_if;
-static nm_so_pack_interface    pack_if;
-static nm_gate_id_t	       gate_id    	=    0;
 static p_mad_session_t         session          = NULL;
 
 int get_rank(void) {
@@ -60,7 +69,12 @@ nm_gate_id_t get_gate_in_id(int dest) {
   return cs->gate_id;
 }
 
-void init(int *argc, char **argv) {
+void
+init(int	 *argc,
+     char	**argv) {
+#ifdef CONFIG_MULTI_RAIL
+  fprintf(stderr, "Multi-rail is not compatible with the protocol mad3\n");
+#else
   struct nm_core         *p_core     = NULL;
 
   /*
@@ -93,6 +107,7 @@ void init(int *argc, char **argv) {
   p_core = mad_nmad_get_core();
   sr_if = mad_nmad_get_sr_interface();
   pack_if = (nm_so_pack_interface)sr_if;
+#endif /* CONFIG_MULTI_RAIL */
 }
 
 int nmad_exit(void) {
@@ -102,9 +117,11 @@ int nmad_exit(void) {
 
 #else /* ! CONFIG_PROTO_MAD3 */
 
-static void usage(void) {
-  fprintf(stderr, "usage: <prog> [-R <rail>] [<remote url>]\n");
-  fprintf(stderr, "  The rail may be:\n");
+static void
+usage(void) {
+  fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
+  fprintf(stderr, "  The number of rails must be >=%d and <=%d, and there must be as many rails followed by the server's URLs on the sender's side\n", RAIL_NR_DEFAULT, RAIL_MAX);
+  fprintf(stderr, "  Rails may be:\n");
 #if defined CONFIG_MX
   fprintf(stderr, "    mx   to use any MX board\n");
   fprintf(stderr, "    mx:N        the Nth MX board\n");
@@ -125,15 +142,7 @@ static void usage(void) {
 
 typedef int (*nm_driver_load)(struct nm_drv_ops*);
 
-static struct nm_core		*p_core		= NULL;
-static struct nm_so_interface	*sr_if	= NULL;
-static nm_so_pack_interface	pack_if;
-
-static char	*r_url	= NULL;
-static char	*l_url	= NULL;
-static uint8_t	 drv_id		=    0;
-static nm_gate_id_t gate_id	=    0;
-static int	 is_server;
+static struct nm_core		*p_core	        = NULL;
 
 int get_rank(void) {
   fprintf(stderr, "get_rank not implemented. Try using the mad3 protocol.\n");
@@ -155,31 +164,42 @@ nm_gate_id_t get_gate_out_id(int dest) {
   exit(EXIT_FAILURE);
 }
 
-/* get default drivers if no rails were given on the command line
- */
-static void
-get_default_driver_load(nm_driver_load *load)
+/** get default drivers if no rails were given on the command line */
+static int
+get_default_driver_loads(nm_driver_load *loads)
 {
+  int cur_nr_drivers = 0;
+
 #if defined CONFIG_MX
-  printf("Using MX\n");
-  *load = &nm_mx_load;
-#elif defined CONFIG_QSNET
-  printf("Using QsNet\n");
-  *load = &nm_qsnet_load;
-#elif defined CONFIG_IBVERBS
-  printf("Using IBVerbs\n");
-  *load = &nm_ibverbs_load;
-#elif defined CONFIG_GM
-  printf("Using GM\n");
-  *load = &nm_gm_load;
-#else
-  printf("Using TCPDG\n");
-  *load = &nm_tcpdg_load;
+  printf("Using MX for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_mx_load;
 #endif
+#ifdef CONFIG_QSNET
+  printf("Using QsNet for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_qsnet_load;
+#endif
+#if defined CONFIG_IBVERBS
+  printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_ibverbs_load;
+#endif
+#if defined CONFIG_GM
+  printf("Using GM for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_gm_load;
+#endif
+  printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_tcpdg_load;
+
+  /* FIXME: be sure we don't add more than RAIL_MAX if we add more drivers one day */
+  if (cur_nr_drivers < RAIL_NR_DEFAULT) {
+    fprintf(stderr, "Found %d rail(s), need at least %d by default\n", cur_nr_drivers, RAIL_NR_DEFAULT);
+    exit(EXIT_FAILURE);
+  }
+
+  return RAIL_NR_DEFAULT;
 }
 
-/* look for a driver string in a rail and check whether the board id is forced
- */
+#if defined(CONFIG_MX) || defined(CONFIG_IBVERBS)
+/** look for a driver string in a rail and check whether the board id is forced  */
 static int
 lookup_rail_driver_and_board_id(const char *rail, const char *driver,
 				struct nm_driver_query_param *param)
@@ -199,9 +219,9 @@ lookup_rail_driver_and_board_id(const char *rail, const char *driver,
   param->value.index = atoi(rail+len+1);
   return 1;
 }
+#endif
 
-/* handle one rail from the railstring
- */
+/** handle one rail from the railstring */
 static int
 handle_one_rail(char *token, int index,
 		nm_driver_load *load,
@@ -254,30 +274,62 @@ handle_one_rail(char *token, int index,
   return 0;
 }
 
-/* get drivers from the railstring from the command line
- */
-static void
-get_railstring_driver_load(nm_driver_load *load,
-			   struct nm_driver_query_param *param,
-			   char * railstring)
+/** get drivers from the railstring from the command line */
+static int
+get_railstring_driver_loads(nm_driver_load *loads,
+			    struct nm_driver_query_param *params,
+			    char * railstring)
 {
+  int cur_nr_drivers = 0;
+  char * token;
   int err;
 
-  err = handle_one_rail(railstring, 0,
-			load, param);
-  if (err < 0)
-    usage();
+  token = strtok(railstring, "+");
+  while (token) {
+    err = handle_one_rail(token, cur_nr_drivers,
+			  &loads[cur_nr_drivers],
+			  &params[cur_nr_drivers]);
+    if (err < 0)
+      usage();
+    cur_nr_drivers++;
+
+    if (cur_nr_drivers > RAIL_MAX) {
+	fprintf(stderr, "Found too many drivers, only %d are supported\n", RAIL_MAX);
+	usage();
+    }
+
+    token = strtok(NULL, "+");
+  }
+
+  return cur_nr_drivers;
 }
 
 void
 init(int	 *argc,
-     char	**argv) {
-  int i, j, err;
+     char	**argv)
+{
+  int i,j, err;
+  /* rails */
   char *railstring = NULL;
-  nm_driver_load driver_load = NULL;
-  struct nm_driver_query_param params[1];
+  int nr_rails = 0;
+  int nr_r_urls = 0;
+  /* per rail arrays */
+  nm_driver_load driver_loads[RAIL_MAX];
+  struct nm_driver_query_param params[RAIL_MAX];
+  struct nm_driver_query_param *params_array[RAIL_MAX];
+  int nparam_array[RAIL_MAX];
+  char *r_url[RAIL_MAX];
+  char *l_url[RAIL_MAX];
+  uint8_t drv_id[RAIL_MAX];
 
-  params[0].key = NM_DRIVER_QUERY_BY_NOTHING;
+  for(i=0; i<RAIL_MAX; i++) {
+    params[i].key = NM_DRIVER_QUERY_BY_NOTHING;
+    params_array[i] = &params[i];
+    nparam_array[i] = 1;
+  }
+
+  nm_so_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
+  nm_so_sr_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
 
   err = nm_core_init(argc, argv, &p_core, nm_so_load);
   if (err != NM_ESUCCESS) {
@@ -308,12 +360,16 @@ init(int	 *argc,
       continue;
     }
     /* other options have to be passed after rails and url */
-    if (!strncmp(argv[i], "-", 1)) {
+    else if (!strncmp(argv[i], "-", 1)) {
       break;
     }
     /* handle urls */
     else {
-      r_url	= argv[i];
+      if (nr_r_urls == RAIL_MAX) {
+	fprintf(stderr, "Found too many url, only %d are supported\n", RAIL_MAX);
+	usage();
+      }
+      r_url[nr_r_urls++] = argv[i];
       i++;
     }
   }
@@ -327,23 +383,44 @@ init(int	 *argc,
 
   if (railstring) {
     /* parse railstring to get drivers */
-    get_railstring_driver_load(&driver_load, params, railstring);
+    nr_rails = get_railstring_driver_loads(driver_loads, params, railstring);
   } else {
     /* use default drivers */
-    get_default_driver_load(&driver_load);
+    nr_rails = get_default_driver_loads(driver_loads);
   }
 
-  if (r_url) {
-    printf("running as client using remote url: %s\n", r_url);
-  } else {
+  if (nr_rails < RAIL_NR_DEFAULT) { /* FIXME: won't be necessary once the strategy handles this */
+    fprintf(stderr, "Need at least %d rails\n", RAIL_NR_DEFAULT);
+    usage();
+  }
+
+  is_server = (!nr_r_urls);
+
+  /* if client, we need as many url as drivers */
+  if (!is_server && nr_r_urls < nr_rails) {
+    fprintf(stderr, "Need %d url for these %d rails\n", nr_r_urls, nr_rails);
+    usage();
+  }
+
+  if (is_server) {
     printf("running as server\n");
+  } else {
+    printf("running as client using remote url:");
+    for(j=0; j<nr_rails; j++)
+      printf(" %s", r_url[j]);
+    printf("\n");
   }
 
-  err = nm_core_driver_load_init_with_params(p_core, driver_load, params, 1, &drv_id, &l_url);
+  err = nm_core_driver_load_init_some_with_params(p_core, nr_rails, driver_loads, params_array, nparam_array, drv_id, l_url);
   if (err != NM_ESUCCESS) {
-    printf("nm_core_driver_load_init returned err = %d\n", err);
+    printf("nm_core_driver_load_init_some returned err = %d\n", err);
     goto out_err;
   }
+  for(j=0; j<nr_rails; j++) {
+    printf("local url[%d]: [%s]\n", j, l_url[j]);
+  }
+
+  nm_ns_init(p_core);
 
   err = nm_core_gate_init(p_core, &gate_id);
   if (err != NM_ESUCCESS) {
@@ -351,23 +428,27 @@ init(int	 *argc,
     goto out_err;
   }
 
-  if (r_url) {
-    err = nm_core_gate_connect(p_core, gate_id, drv_id, r_url);
-    if (err != NM_ESUCCESS) {
-      printf("nm_core_gate_connect returned err = %d\n", err);
-      goto out_err;
+  if (is_server) {
+    /* server  */
+    for(j=0; j<nr_rails; j++) {
+      err = nm_core_gate_accept(p_core, gate_id, drv_id[j], NULL);
+      if (err != NM_ESUCCESS) {
+	printf("nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
+	goto out_err;
+      }
     }
   } else {
-    printf("local url: \"%s\"\n", l_url);
-
-    err = nm_core_gate_accept(p_core, gate_id, drv_id, NULL);
-    if (err != NM_ESUCCESS) {
-      printf("nm_core_gate_accept returned err = %d\n", err);
-      goto out_err;
+    /* client */
+    for(j=0; j<nr_rails; j++) {
+      err = nm_core_gate_connect(p_core, gate_id, drv_id[j], r_url[j]);
+      if (err != NM_ESUCCESS) {
+	printf("nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
+	goto out_err;
+      }
     }
+
   }
 
-  is_server	= !r_url;
   return;
 
  out_err:
@@ -394,4 +475,6 @@ int nmad_exit(void) {
   }
   return ret;
 }
+
 #endif /* CONFIG_PROTO_MAD3 */
+

@@ -183,7 +183,7 @@ main(int	  argc,
 
         } else {
           nm_so_request request;
-          long gate_id = -1;
+          nm_gate_id_t gate_id = -1;
 
           //pong de 0
           nm_so_sr_irecv(interface, NM_SO_ANY_SRC, 0, r_buf, len, &request);

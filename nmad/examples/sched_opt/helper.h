@@ -385,11 +385,6 @@ init(int	 *argc,
     nr_rails = get_default_driver_loads(driver_loads);
   }
 
-  if (nr_rails < RAIL_NR_DEFAULT) { /* FIXME: won't be necessary once the strategy handles this */
-    fprintf(stderr, "Need at least %d rails\n", RAIL_NR_DEFAULT);
-    usage();
-  }
-
   is_server = (!nr_r_urls);
 
   /* if client, we need as many url as drivers */

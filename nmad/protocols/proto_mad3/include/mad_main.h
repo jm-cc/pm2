@@ -79,6 +79,10 @@ typedef struct s_mad_madeleine
   p_tbx_htable_t      network_htable;
   p_tbx_htable_t      channel_htable;
   p_tbx_slist_t       public_channel_slist;
+#ifdef CONFIG_MULTI_RAIL
+  p_tbx_darray_t      cnx_darray;
+  int                 master_channel_id;
+#endif
 #ifdef MAD3_PMI
   p_mad_pmi_t         pmi;
 #endif /* MAD3_PMI */

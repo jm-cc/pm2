@@ -310,6 +310,8 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
   p_mad_nmad_driver_specific_t	 ds		= d->specific;
   int err;
 
+  if (p_core == NULL) return;
+
 #ifdef CONFIG_SCHED_OPT
   err = nm_so_sr_exit(p_so_if);
   if(err != NM_ESUCCESS) {
@@ -327,6 +329,7 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     DISP("nm_core__exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
+  p_core = NULL;
   TBX_FREE(ds->l_url);
   ds->l_url = NULL;
   NM_LOG_OUT();
@@ -370,6 +373,7 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
          */
         if (tbx_streq(d->device_name, "tcp")) {
                 err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
+                DISP("loading tcp %d", drv_id);
                 goto found;
         }
 
@@ -383,6 +387,7 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #ifdef CONFIG_MX
         if (tbx_streq(d->device_name, "mx")) {
                 err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
+                DISP("loading mx %d", drv_id);
                 goto found;
         }
 #endif
@@ -645,9 +650,15 @@ mad_nmad_channel_init(p_mad_channel_t ch) {
         as		= ch->adapter->specific;
         chs		= TBX_MALLOC(sizeof(mad_nmad_channel_specific_t));
         chs->tag_id	= ch->dir_channel->id;
+#ifdef CONFIG_MULTI_RAIL
+        if (ch->adapter->driver->madeleine->master_channel_id == -1) {
+                ch->adapter->driver->madeleine->master_channel_id = ch->dir_channel->id;
+        }
+#else
         if (as->master_channel_id == -1) {
                 as->master_channel_id = ch->dir_channel->id;
         }
+#endif
         ch->specific	= chs;
         NM_LOG_OUT();
 }
@@ -661,6 +672,8 @@ mad_nmad_connection_init(p_mad_connection_t in,
         p_mad_nmad_channel_specific_t		chs	= NULL;
         p_mad_nmad_connection_specific_t	cs	= NULL;
         int err;
+        p_tbx_darray_t                          cnx_darray;
+        int                                     master_channel_id;
 
         NM_LOG_IN();
         ch	= in->channel;
@@ -668,14 +681,23 @@ mad_nmad_connection_init(p_mad_connection_t in,
         chs	= in->channel->specific;
         cs	= TBX_MALLOC(sizeof(mad_nmad_connection_specific_t));
 
-        if (as->master_channel_id == ch->dir_channel->id) {
+#ifdef CONFIG_MULTI_RAIL
+        p_mad_madeleine_t madeleine = ch->adapter->driver->madeleine;
+        master_channel_id = madeleine->master_channel_id;
+        cnx_darray = madeleine->cnx_darray;
+#else
+        master_channel_id = as->master_channel_id;
+        cnx_darray = as->cnx_darray;
+#endif
+
+        if (master_channel_id == ch->dir_channel->id) {
                 err = nm_core_gate_init(p_core, &cs->gate_id);
                 if (err != NM_ESUCCESS) {
                         printf("nm_core_gate_init returned err = %d\n", err);
                         TBX_FAILURE("nmad error");
                 }
 
-                tbx_darray_expand_and_set(as->cnx_darray, in->remote_rank,
+                tbx_darray_expand_and_set(cnx_darray, in->remote_rank,
                                           cs);
                 cs->master_cnx	= cs;
         } else {
@@ -730,6 +752,21 @@ mad_nmad_accept(p_mad_connection_t   in,
         as	= in->channel->adapter->specific;
         ds	= in->channel->adapter->driver->specific;
 
+#ifdef CONFIG_MULTI_RAIL
+        p_mad_madeleine_t madeleine = in->channel->adapter->driver->madeleine;
+        cs->master_cnx = tbx_darray_get(madeleine->cnx_darray, in->remote_rank);
+        NM_TRACEF("accept: cnx_id = %d, remote node = %s, gate_id = %d",
+                  in->remote_rank,
+                  ai->dir_node->name,
+                  cs->gate_id);
+        err = nm_core_gate_accept(p_core, cs->gate_id, ds->drv_id, NULL);
+        if (err != NM_ESUCCESS) {
+          printf("nm_core_gate_accept returned err = %d\n", err);
+          TBX_FAILURE("nmad error");
+        }
+        NMAD_EVENT_CNX_ACCEPT(in->remote_rank, cs->gate_id, ds->drv_id);
+        TRACE("gate_accept: connection established");
+#else
         if (cs->master_cnx) {
                 NM_TRACEF("accept: cnx_id = %d, remote node = %s, gate_id = %d",
                           in->remote_rank,
@@ -745,6 +782,7 @@ mad_nmad_accept(p_mad_connection_t   in,
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, in->remote_rank);
         }
+#endif
         NM_LOG_OUT();
 
 }
@@ -768,6 +806,43 @@ mad_nmad_connect(p_mad_connection_t   out,
         r_a	= ai->dir_adapter;
         r_n	= ai->dir_node;
 
+#ifdef CONFIG_MULTI_RAIL
+        p_mad_madeleine_t madeleine = out->channel->adapter->driver->madeleine;
+
+        char * url;
+        size_t url_len;
+
+        cs->master_cnx = tbx_darray_get(madeleine->cnx_darray, out->remote_rank);
+        if (!strcmp(out->channel->adapter->driver->device_name, "tcp")) {
+          /* remove the default hostname possibly provided by the tcp driver and add the correct one */
+          char *port_str = strchr(r_a->parameter, ':');
+          if (port_str) {
+            port_str++;
+          } else {
+            port_str = r_a->parameter;
+          }
+          url_len = strlen(r_n->name) + 1 + strlen(port_str) + 1;
+          url = TBX_MALLOC(url_len);
+          sprintf(url, "%s:%s", r_n->name, port_str);
+        } else {
+          url = tbx_strdup(r_a->parameter);
+        }
+
+        NM_TRACEF("connect: cnx_id = %d, remote node = %s, gate_id = %d",
+                  out->remote_rank,
+                  ai->dir_node->name,
+                  cs->gate_id);
+
+        err = nm_core_gate_connect(p_core, cs->gate_id, ds->drv_id, url);
+        if (err != NM_ESUCCESS) {
+          printf("nm_core_gate_connect returned err = %d\n", err);
+          TBX_FAILURE("nmad error");
+        }
+        TBX_FREE(url);
+
+        NMAD_EVENT_CNX_CONNECT(out->remote_rank, cs->gate_id, ds->drv_id);
+        TRACE("gate_connect: connection established");
+#else
         if (cs->master_cnx) {
 		char * url;
 		size_t url_len;
@@ -804,6 +879,7 @@ mad_nmad_connect(p_mad_connection_t   out,
         } else {
                 cs->master_cnx = tbx_darray_get(as->cnx_darray, out->remote_rank);
         }
+#endif
         NM_LOG_OUT();
 }
 

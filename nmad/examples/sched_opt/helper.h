@@ -72,9 +72,6 @@ nm_gate_id_t get_gate_in_id(int dest) {
 void
 init(int	 *argc,
      char	**argv) {
-#ifdef CONFIG_MULTI_RAIL
-  fprintf(stderr, "Multi-rail is not compatible with the protocol mad3\n");
-#else
   struct nm_core         *p_core     = NULL;
 
   /*
@@ -105,12 +102,14 @@ init(int	 *argc,
    * Reference to the NewMadeleine core object
    */
   p_core = mad_nmad_get_core();
+  nm_ns_init(p_core);
   sr_if = mad_nmad_get_sr_interface();
   pack_if = (nm_so_pack_interface)sr_if;
-#endif /* CONFIG_MULTI_RAIL */
 }
 
 int nmad_exit(void) {
+  struct nm_core *p_core = mad_nmad_get_core();
+  nm_ns_exit(p_core);
   mad_exit(madeleine);
   return NM_ESUCCESS;
 }

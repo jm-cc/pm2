@@ -68,7 +68,7 @@
 #endif
 
 #include "nm_mad3_private.h"
-
+#include "nm_predictions.h"
 
 #include <errno.h>
 

@@ -458,6 +458,11 @@ init(int	 *argc,
 int nmad_exit(void) {
   int err, ret = NM_ESUCCESS;
 
+  err = nm_ns_exit(p_core);
+  if(err != NM_ESUCCESS) {
+    printf("nm_ns_exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
   err = nm_core_driver_exit(p_core);
   if(err != NM_ESUCCESS) {
     printf("nm_core_driver_exit return err = %d\n", err);

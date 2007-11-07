@@ -102,14 +102,11 @@ init(int	 *argc,
    * Reference to the NewMadeleine core object
    */
   p_core = mad_nmad_get_core();
-  nm_ns_init(p_core);
   sr_if = mad_nmad_get_sr_interface();
   pack_if = (nm_so_pack_interface)sr_if;
 }
 
 int nmad_exit(void) {
-  struct nm_core *p_core = mad_nmad_get_core();
-  nm_ns_exit(p_core);
   mad_exit(madeleine);
   return NM_ESUCCESS;
 }

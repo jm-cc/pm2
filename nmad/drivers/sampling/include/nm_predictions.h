@@ -19,6 +19,7 @@
 struct nm_core;
 
 extern int nm_ns_init(struct nm_core *p_core);
+extern int nm_ns_exit(struct nm_core *p_core);
 
 extern int nm_ns_dec_bws(struct nm_core *p_core, uint8_t **drv_ids);
 extern int nm_ns_inc_lats(struct nm_core *p_core, uint8_t **drv_ids);

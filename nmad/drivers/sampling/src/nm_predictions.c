@@ -157,6 +157,13 @@ nm_ns_init(struct nm_core *p_core){
   return NM_ESUCCESS;
 }
 
+int nm_ns_exit(struct nm_core *p_core) {
+  TBX_FREE(ordered_drv_id_by_bw);
+  TBX_FREE(ordered_drv_id_by_lat);
+
+  return NM_ESUCCESS;
+}
+
 double
 nm_ns_evaluate_bw(struct nm_drv *driver, int length){
 

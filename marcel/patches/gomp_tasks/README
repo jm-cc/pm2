@@ -1,0 +1,35 @@
+* GCC target version *
+
+  The omp task patch currently applies against gcc 4.2.2.
+
+
+* Install steps *
+
+- download and untar gcc-core-4.2.2.tar.bz2
+
+- apply patch:
+$ (cd gcc-4.2.2 && patch -p1 < ../tasks.patch)
+
+- make build and install directories:
+$ ./make_dirs
+
+- autoreconf libgomp and configure gcc:
+$ cd build
+$ ../configure
+
+- build and install gcc:
+$ make && make install
+
+- build examples:
+$ cd ../examples
+$ make && make vars
+
+- source vars to get the right LD_LIBRARY_PATH
+$ . vars
+
+- run examples:
+$ ./task
+$ ./taskwait
+
+=======================================================================
+

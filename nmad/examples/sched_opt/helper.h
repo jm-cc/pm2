@@ -377,6 +377,13 @@ init(int	 *argc,
     nr_rails = get_default_driver_loads(driver_loads);
   }
 
+#ifndef CONFIG_MULTI_RAIL
+  // Check the number of protocols against the strategy
+  if (nr_rails > 1) {
+    TBX_FAILURE("Only 1 driver is supported with the current strategy");
+  }
+#endif
+
   is_server = (!nr_r_urls);
 
   /* if client, we need as many url as drivers */

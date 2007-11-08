@@ -69,7 +69,7 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->next_gate_id = 0;
   p_priv->pending_any_src_unpacks = 0;
 
-#if defined(CONFIG_MULTI_RAIL)
+#if defined(CONFIG_STRAT_SPLIT_BALANCE)
   p_priv->current_strategy = &nm_so_strat_split_balance;
 #elif defined(CONFIG_STRAT_DEFAULT)
   p_priv->current_strategy = &nm_so_strat_default;

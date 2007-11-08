@@ -10,10 +10,8 @@
 
 #ifdef CONFIG_MULTI_RAIL
 #define RAIL_MAX 8
-#define RAIL_NR_DEFAULT 2
 #else
 #define RAIL_MAX 1
-#define RAIL_NR_DEFAULT 1
 #endif
 
 static int                     is_server        = -1;
@@ -116,23 +114,23 @@ int nmad_exit(void) {
 static void
 usage(void) {
   fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
-  fprintf(stderr, "  The number of rails must be >=%d and <=%d, and there must be as many rails followed by the server's URLs on the sender's side\n", RAIL_NR_DEFAULT, RAIL_MAX);
-  fprintf(stderr, "  Rails may be:\n");
+  fprintf(stderr, "  The number of rails must be less than or equal to %d, and there must be as many rails followed by the server's URLs on the sender's side\n", RAIL_MAX);
+  fprintf(stderr, "  Available rails are:\n");
 #if defined CONFIG_MX
-  fprintf(stderr, "    mx   to use any MX board\n");
-  fprintf(stderr, "    mx:N        the Nth MX board\n");
+  fprintf(stderr, "    mx    to use      any MX board\n");
+  fprintf(stderr, "    mx:N  to use      the Nth MX board\n");
 #endif
 #if defined CONFIG_QSNET
-  fprintf(stderr, "    qsnet       the QsNet board\n");
+  fprintf(stderr, "    qsnet to use      the QsNet board\n");
 #endif
 #if defined CONFIG_IBVERBS
-  fprintf(stderr, "    ib          any InfiniBand device\n");
-  fprintf(stderr, "    ib:N        the Nth InfiniBand device\n");
+  fprintf(stderr, "    ib    to use      any InfiniBand device\n");
+  fprintf(stderr, "    ib:N  to use      the Nth InfiniBand device\n");
 #endif
 #if defined CONFIG_GM
-  fprintf(stderr, "    gm          any GM board\n");
+  fprintf(stderr, "    gm    to use      any GM board\n");
 #endif
-  fprintf(stderr, "    tcp         any TCP connection\n");
+  fprintf(stderr, "    tcp   to use      any TCP connection\n");
   exit(EXIT_FAILURE);
 }
 
@@ -185,13 +183,7 @@ get_default_driver_loads(nm_driver_load *loads)
   printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_tcpdg_load;
 
-  /* FIXME: be sure we don't add more than RAIL_MAX if we add more drivers one day */
-  if (cur_nr_drivers < RAIL_NR_DEFAULT) {
-    fprintf(stderr, "Found %d rail(s), need at least %d by default\n", cur_nr_drivers, RAIL_NR_DEFAULT);
-    exit(EXIT_FAILURE);
-  }
-
-  return RAIL_NR_DEFAULT;
+  return cur_nr_drivers;
 }
 
 #if defined(CONFIG_MX) || defined(CONFIG_IBVERBS)

@@ -384,7 +384,6 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
          */
         if (tbx_streq(d->device_name, "tcp")) {
                 err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
-                DISP("loading tcp %d", drv_id);
                 goto found;
         }
 
@@ -398,7 +397,6 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #ifdef CONFIG_MX
         if (tbx_streq(d->device_name, "mx")) {
                 err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
-                DISP("loading mx %d", drv_id);
                 goto found;
         }
 #endif

@@ -1,3 +1,4 @@
 Provide: nmad_strategy
 Conflict: nmad_strategy
 Depend: quality_of_service
+Conflict: multi_rail

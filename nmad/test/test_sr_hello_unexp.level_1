@@ -18,7 +18,8 @@ hosts=${TESTCONFIG:-"localhost localhost"}
 net=${TESTNET:-tcp}
 mpi=""
 strat="strat_default"
-flavor="test_nmad_${mpi}_${net}_${strat}"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}_${strat}"
 
 appdir="${PM2_ROOT}/nmad/examples/sched_opt"
 prog="sr_hello_unexp"

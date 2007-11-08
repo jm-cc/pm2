@@ -18,7 +18,8 @@ hosts="localhost localhost localhost localhost"
 net="tcp"
 mpi="mpi_emu"
 strat="strat_default"
-flavor="test_nmad_${mpi}_${net}_${strat}"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}_${strat}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="group"

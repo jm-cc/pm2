@@ -18,7 +18,8 @@ hosts=${TESTCONFIG:-"localhost localhost"}
 net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_aggreg_autoextended"
-flavor="test_nmad_${mpi}_${net}_${strat}"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}_${strat}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="aggreg"

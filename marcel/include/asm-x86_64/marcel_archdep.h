@@ -26,6 +26,7 @@
 #include "tbx_compiler.h"
 #depend "sys/marcel_archsetjmp.h"
 
+/* x86_64 has a 128 byte red zone */
 #define TOP_STACK_FREE_AREA     128
 #ifdef MA_JMPBUF
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_RSP])

@@ -44,6 +44,30 @@
 
 #include <infiniband/verbs.h>
 
+/* *********************************************************
+ * Rationale of the newmad/ibverbs driver
+ *
+ * This is a multi-method driver. Three methods are available:
+ *   -- bycopy: data is copied in a pre-allocated, pre-registered
+ *      memory region, then sent through RDMA into a pre-registered
+ *      memory region of the peer node.
+ *   -- regrdma: memory is registered on the fly on both sides, the
+ *      receiver sends an ACK with RDMA info (raddr, rkey), then 
+ *      zero-copy RDMA is performed.
+ *   -- adaptrdma: same as regrdma except that memory registration
+ *      is done in an adaptive super-pipeline. Memory blocks are 
+ *      registered as long as the previous RDMA send doesn't complete.
+ *      A guard check ensures that block size progression is at least
+ *      2-base exponential to prevent artifacts to kill performance.
+ *
+ * Method is chosen as follows:
+ *   -- tracks for small messages use always 'bycopy'
+ *   -- tracks with rendez-vous use 'regrdma' for smaller messages 
+ *      and 'adaptrdma' for larger messages. Usually, the threshold 
+ *      is 224kB (from empirical results about registration/send overlap)
+ */
+
+
 /* *** global IB parameters */
 
 #define NM_IBVERBS_PORT         1

@@ -92,12 +92,6 @@ mad3()
     nb_protocols=$(echo $protocols | wc -w | tr -d ' ')
     log "Protocol: $protocols"
 
-    # Check the number of protocols and the strategy
-    STRAT=$(pm2-config --getvar=PM2_NMAD_STRAT)
-    if [ "$STRAT" != "split_balance" ] && [ "$nb_protocols" != 1 ] ; then
-        _pm2_load_error "Several protocols are not allowed with the strategy '$STRAT'. Use the parameter --protocol to select one amongst '$protocols'."
-    fi
-
     # Récupération du chemin d'accès au fichier de config des machines
     set --  --source-mode
     . ${PM2_ROOT}/bin/pm2-conf-file

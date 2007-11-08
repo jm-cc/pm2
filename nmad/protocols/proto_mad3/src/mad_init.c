@@ -242,6 +242,13 @@ mad_dir_driver_init(p_mad_madeleine_t    madeleine,
   mad_network_htable = madeleine->network_htable;
   dir_driver_htable  = madeleine->dir->driver_htable;
 
+#ifndef CONFIG_MULTI_RAIL
+  // Check the number of protocols against the strategy
+  if (dir_driver_htable->nb_element > 1) {
+    TBX_FAILURE("Only 1 driver is supported with the current strategy");
+  }
+#endif
+
   TRACE("Driver initialization: first pass");
   while (driver_init_1(madeleine,
                        mad_device_htable, mad_network_htable, dir_driver_htable,

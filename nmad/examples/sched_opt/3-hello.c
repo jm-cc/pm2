@@ -96,7 +96,7 @@ main(int	  argc,
         err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
 #elif defined CONFIG_SISCI
 	err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
-#else
+#elif defined CONFIG_TCP
         err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {

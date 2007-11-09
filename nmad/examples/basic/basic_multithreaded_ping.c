@@ -59,13 +59,7 @@
 
 /* Choose a driver
  */
-#if defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#else
-#  include <nm_tcpdg_public.h>
-#endif
+#include <nm_drivers.h>
 
 #include <tbx.h>
 
@@ -572,7 +566,7 @@ session_init(int    argc,
     err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
 #elif defined CONFIG_GM
     err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
-#else
+#elif defined CONFIG_TCP
     err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
     if (err != NM_ESUCCESS) {

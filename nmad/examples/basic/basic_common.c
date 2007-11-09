@@ -40,19 +40,7 @@
 
 /* Choose a driver
  */
-#if defined CONFIG_IBVERBS
-#  include <nm_ibverbs_public.h>
-#elif defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
-#else
-#  include <nm_tcpdg_public.h>
-#endif
+#include <nm_drivers.h>
 
 #include <tbx.h>
 
@@ -141,7 +129,7 @@ bc_core_init(int	  	 *p_argc,
         err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
 #elif defined CONFIG_SISCI
         err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
-#else
+#elif defined CONFIG_TCP
         err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
 #endif
 

@@ -57,7 +57,9 @@
 #  include <nm_ibverbs_public.h>
 #endif
 
-#include <nm_tcpdg_public.h>
+#if defined CONFIG_TCP
+#  include <nm_tcpdg_public.h>
+#endif
 
 #include "madeleine.h"
 
@@ -380,12 +382,12 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #endif
         }
 
-        /* load TCPdg by default
-         */
+#ifdef CONFIG_TCP
         if (tbx_streq(d->device_name, "tcp")) {
                 err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
                 goto found;
         }
+#endif
 
 #ifdef CONFIG_GM
         if (tbx_streq(d->device_name, "gm")) {

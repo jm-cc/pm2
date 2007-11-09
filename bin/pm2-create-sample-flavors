@@ -103,26 +103,26 @@ registering_flavors() {
 
     register_flavor nmad \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_default
+	--nmad=sched_opt --nmad=strat_default --nmad=tcp
 
     register_flavor nmad-basic \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_default --nmad=proto_basic \
+	--nmad=sched_opt --nmad=strat_default --nmad=proto_basic --nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-distrib \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-qos \
 	--modules="nmad tbx ntbx init" $COMMON_OPTIONS \
-	--nmad=sched_opt --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=sched_opt --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --nmad=quality_of_service \
         --common=fortran_target_none
 

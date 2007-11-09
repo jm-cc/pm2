@@ -49,7 +49,9 @@
  */
 static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 {
+#ifdef CONFIG_TCP
   mad_nmad_register,
+#endif
 #ifdef CONFIG_SCTP
   mad_nmad_register,
 #endif
@@ -74,7 +76,9 @@ static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 
 static char *mad_driver_name[] =
 {
+#ifdef CONFIG_TCP
   "tcp",
+#endif
 #ifdef CONFIG_SCTP
   "sctp",
 #endif

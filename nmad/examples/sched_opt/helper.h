@@ -130,7 +130,9 @@ usage(void) {
 #if defined CONFIG_GM
   fprintf(stderr, "    gm    to use      any GM board\n");
 #endif
+#if defined CONFIG_TCP
   fprintf(stderr, "    tcp   to use      any TCP connection\n");
+#endif
   exit(EXIT_FAILURE);
 }
 
@@ -183,8 +185,10 @@ get_default_driver_loads(nm_driver_load *loads)
   printf("Using GM for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_gm_load;
 #endif
+#if defined CONFIG_TCP
   printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_tcpdg_load;
+#endif
 
 #else /* !CONFIG_MULTI_RAIL */
   /* load one rail with the first driver only */
@@ -201,7 +205,7 @@ get_default_driver_loads(nm_driver_load *loads)
 #elif defined CONFIG_GM
   printf("Using GM for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_gm_load;
-#else
+#elif defined CONFIG_TCP
   printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_tcpdg_load;
 #endif
@@ -276,13 +280,16 @@ handle_one_rail(char *token, int index,
     *load = &nm_gm_load;
   } else
 #endif
+#if defined CONFIG_TCP
   if (!strcmp("tcp", token) || !strcmp("tcpdg", token)) {
     printf("Using TCPDG for rail #%d\n", index);
     *load = &nm_tcpdg_load;
-  } else {
-    fprintf(stderr, "Unrecognized rail \"%s\"\n", token);
-    return -1;
-  }
+  } else 
+#endif
+    {
+      fprintf(stderr, "Unrecognized rail \"%s\"\n", token);
+      return -1;
+    }
 
   return 0;
 }

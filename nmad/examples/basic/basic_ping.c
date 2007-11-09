@@ -44,19 +44,7 @@
 
 /* Choose a driver
  */
-#if defined CONFIG_IBVERBS
-#  include <nm_ibverbs_public.h>
-#elif defined CONFIG_MX
-#  include <nm_mx_public.h>
-#elif defined CONFIG_GM
-#  include <nm_gm_public.h>
-#elif defined CONFIG_QSNET
-#  include <nm_qsnet_public.h>
-#elif defined CONFIG_SISCI
-#  include <nm_sisci_public.h>
-#else
-#  include <nm_tcpdg_public.h>
-#endif
+#include <nm_drivers.h>
 
 #include <tbx.h>
 

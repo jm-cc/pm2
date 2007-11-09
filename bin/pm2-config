@@ -754,7 +754,7 @@ pm2_config_parse_cmdline() # args
 
 _PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 nmad puk marcel xpaulette tbx ntbx init stackalign leonie ezflavor sigmundlib sigmund sigmundps xsigmund supertrace bubblelib bubbles bubblegum"
 
-_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm nmad marcel xpaulette pthread tbx ntbx profile pm2debug stackalign sigmundlib bubblelib"
+_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad3 nmad marcel xpaulette pthread tbx ntbx profile pm2debug stackalign sigmundlib bubblelib"
 
 if [ "$1" = --source-mode ] ; then
     pm2_config_set_vars "DUMMY ARGS"

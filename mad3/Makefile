@@ -15,7 +15,7 @@
 
 # LIBNAME -> nom de la librairie
 #---------------------------------------------------------------------
-LIBNAME=mad
+LIBNAME=mad3
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------

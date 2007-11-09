@@ -164,6 +164,9 @@ get_default_driver_loads(nm_driver_load *loads)
 {
   int cur_nr_drivers = 0;
 
+#ifdef CONFIG_MULTI_RAIL
+  /* load one rail for each driver */
+
 #if defined CONFIG_MX
   printf("Using MX for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_mx_load;
@@ -182,6 +185,28 @@ get_default_driver_loads(nm_driver_load *loads)
 #endif
   printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_tcpdg_load;
+
+#else /* !CONFIG_MULTI_RAIL */
+  /* load one rail with the first driver only */
+
+#if defined CONFIG_MX
+  printf("Using MX for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_mx_load;
+#elif defined CONFIG_QSNET
+  printf("Using QsNet for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_qsnet_load;
+#elif defined CONFIG_IBVERBS
+  printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_ibverbs_load;
+#elif defined CONFIG_GM
+  printf("Using GM for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_gm_load;
+#else
+  printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
+  loads[cur_nr_drivers++] = &nm_tcpdg_load;
+#endif
+
+#endif /* !CONFIG_MULTI_RAIL */
 
   return cur_nr_drivers;
 }

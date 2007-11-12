@@ -987,6 +987,1197 @@ diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/gcc/t
      case OMP_SECTIONS:
      case OMP_FOR:
      case OMP_SINGLE:
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/bar.c gcc-4.2.2/libgomp/config/marcel/bar.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/bar.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/bar.c	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1 @@
++/* Everything is in the header.  */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/bar.h gcc-4.2.2/libgomp/config/marcel/bar.h
+--- gcc-4.2.2.orig/libgomp/config/marcel/bar.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/bar.h	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,76 @@
++/* Copyright (C) 2005 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License 
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This is the default implementation of a barrier synchronization mechanism
++   for libgomp.  This type is private to the library.  Note that we rely on
++   being able to adjust the barrier count while threads are blocked, so the
++   POSIX pthread_barrier_t won't work.  */
++
++#ifndef GOMP_BARRIER_H
++#define GOMP_BARRIER_H 1
++
++#include "marcel.h"
++
++typedef marcel_barrier_t gomp_barrier_t;
++
++static inline void
++gomp_barrier_init (marcel_barrier_t * bar, unsigned count)
++{
++  marcel_barrier_init (bar, NULL, count);
++}
++
++static inline void
++gomp_barrier_reinit (marcel_barrier_t * bar, unsigned count)
++{
++  marcel_barrier_setcount (bar, count);
++}
++
++static inline void
++gomp_barrier_destroy (marcel_barrier_t * bar)
++{
++  marcel_barrier_destroy (bar);
++}
++
++static inline void
++gomp_barrier_wait (marcel_barrier_t * bar)
++{
++  marcel_barrier_wait (bar);
++}
++
++static inline bool
++gomp_barrier_wait_start (marcel_barrier_t * bar)
++{
++  return marcel_barrier_wait_begin (bar) == 0;
++}
++
++static inline void
++gomp_barrier_wait_end (marcel_barrier_t * bar, bool last)
++{
++  marcel_barrier_wait_end (bar);
++}
++
++#endif /* GOMP_BARRIER_H */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/lock.c gcc-4.2.2/libgomp/config/marcel/lock.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/lock.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/lock.c	2007-11-12 09:05:07.000000000 +0100
+@@ -0,0 +1,113 @@
++/* Copyright (C) 2005 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License 
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This is the default PTHREADS implementation of the public OpenMP
++   locking primitives.
++
++   Because OpenMP uses different entry points for normal and recursive
++   locks, and pthreads uses only one entry point, a system may be able
++   to do better and streamline the locking as well as reduce the size
++   of the types exported.  */
++
++#include "libgomp.h"
++
++
++void
++omp_init_lock (omp_lock_t *lock)
++{
++  marcel_mutex_init (lock, NULL);
++}
++
++void
++omp_destroy_lock (omp_lock_t *lock)
++{
++  marcel_mutex_destroy (lock);
++}
++
++void
++omp_set_lock (omp_lock_t *lock)
++{
++  marcel_mutex_lock (lock);
++}
++
++void
++omp_unset_lock (omp_lock_t *lock)
++{
++  marcel_mutex_unlock (lock);
++}
++
++int
++omp_test_lock (omp_lock_t *lock)
++{
++  return marcel_mutex_trylock (lock) == 0;
++}
++
++void
++omp_init_nest_lock (omp_nest_lock_t *lock)
++{
++  pmarcel_mutexattr_t attr;
++
++  pmarcel_mutexattr_init (&attr);
++  pmarcel_mutexattr_settype (&attr, PMARCEL_MUTEX_RECURSIVE);
++  pmarcel_mutex_init (lock, &attr);
++  pmarcel_mutexattr_destroy (&attr);
++}
++
++void
++omp_destroy_nest_lock (omp_nest_lock_t *lock)
++{
++  pmarcel_mutex_destroy (lock);
++}
++
++void
++omp_set_nest_lock (omp_nest_lock_t *lock)
++{
++  pmarcel_mutex_lock (lock);
++}
++
++void
++omp_unset_nest_lock (omp_nest_lock_t *lock)
++{
++  pmarcel_mutex_unlock (lock);
++}
++
++int
++omp_test_nest_lock (omp_nest_lock_t *lock)
++{
++  return pmarcel_mutex_trylock (lock);
++}
++
++ialias (omp_init_lock)
++ialias (omp_init_nest_lock)
++ialias (omp_destroy_lock)
++ialias (omp_destroy_nest_lock)
++ialias (omp_set_lock)
++ialias (omp_set_nest_lock)
++ialias (omp_unset_lock)
++ialias (omp_unset_nest_lock)
++ialias (omp_test_lock)
++ialias (omp_test_nest_lock)
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/mutex.c gcc-4.2.2/libgomp/config/marcel/mutex.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/mutex.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/mutex.c	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1 @@
++/* Everything is in the header.  */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/mutex.h gcc-4.2.2/libgomp/config/marcel/mutex.h
+--- gcc-4.2.2.orig/libgomp/config/marcel/mutex.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/mutex.h	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,60 @@
++/* Copyright (C) 2005 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License 
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This is the default PTHREADS implementation of a mutex synchronization
++   mechanism for libgomp.  This type is private to the library.  */
++
++#ifndef GOMP_MUTEX_H
++#define GOMP_MUTEX_H 1
++
++#include "marcel.h"
++
++typedef marcel_mutex_t gomp_mutex_t;
++
++#define GOMP_MUTEX_INIT_0 0
++
++static inline void gomp_mutex_init (gomp_mutex_t *mutex)
++{
++  marcel_mutex_init (mutex, NULL);
++}
++
++static inline void gomp_mutex_lock (gomp_mutex_t *mutex)
++{
++  marcel_mutex_lock (mutex);
++}
++
++static inline void gomp_mutex_unlock (gomp_mutex_t *mutex)
++{
++  marcel_mutex_unlock (mutex);
++}
++
++static inline void gomp_mutex_destroy (gomp_mutex_t *mutex)
++{
++  marcel_mutex_destroy (mutex);
++}
++
++#endif /* GOMP_MUTEX_H */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/omp-lock.h gcc-4.2.2/libgomp/config/marcel/omp-lock.h
+--- gcc-4.2.2.orig/libgomp/config/marcel/omp-lock.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/omp-lock.h	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,11 @@
++/* This header is used during the build process to find the size and 
++   alignment of the public OpenMP locks, so that we can export data
++   structures without polluting the namespace.
++
++   In this default POSIX implementation, we map the two locks to the
++   same PTHREADS primitive.  */
++
++#include "marcel.h"
++
++typedef marcel_mutex_t omp_lock_t;
++typedef pmarcel_mutex_t omp_nest_lock_t;
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/proc.c gcc-4.2.2/libgomp/config/marcel/proc.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/proc.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/proc.c	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,103 @@
++/* Copyright (C) 2005, 2006 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License 
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This file contains system specific routines related to counting
++   online processors and dynamic load balancing.  It is expected that
++   a system may well want to write special versions of each of these.
++
++   The following implementation uses a mix of POSIX and BSD routines.  */
++
++#include "libgomp.h"
++#include <unistd.h>
++#include <stdlib.h>
++#ifdef HAVE_GETLOADAVG
++# ifdef HAVE_SYS_LOADAVG_H
++#  include <sys/loadavg.h>
++# endif
++#endif
++
++
++/* At startup, determine the default number of threads.  It would seem
++   this should be related to the number of cpus online.  */
++
++void
++gomp_init_num_threads (void)
++{
++#ifdef _SC_NPROCESSORS_ONLN
++  gomp_nthreads_var = sysconf (_SC_NPROCESSORS_ONLN);
++#endif
++}
++
++/* When OMP_DYNAMIC is set, at thread launch determine the number of
++   threads we should spawn for this team.  */
++/* ??? I have no idea what best practice for this is.  Surely some
++   function of the number of processors that are *still* online and
++   the load average.  Here I use the number of processors online
++   minus the 15 minute load average.  */
++
++unsigned
++gomp_dynamic_max_threads (void)
++{
++  unsigned n_onln, loadavg;
++
++#ifdef _SC_NPROCESSORS_ONLN
++  n_onln = sysconf (_SC_NPROCESSORS_ONLN);
++  if (n_onln > gomp_nthreads_var)
++    n_onln = gomp_nthreads_var;
++#else
++  n_onln = gomp_nthreads_var;
++#endif
++
++  loadavg = 0;
++#ifdef HAVE_GETLOADAVG
++  {
++    double dloadavg[3];
++    if (getloadavg (dloadavg, 3) == 3)
++      {
++	/* Add 0.1 to get a kind of biased rounding.  */
++	loadavg = dloadavg[2] + 0.1;
++      }
++  }
++#endif
++
++  if (loadavg >= n_onln)
++    return 1;
++  else
++    return n_onln - loadavg;
++}
++
++int
++omp_get_num_procs (void)
++{
++#ifdef _SC_NPROCESSORS_ONLN
++  return sysconf (_SC_NPROCESSORS_ONLN);
++#else
++  return gomp_nthreads_var;
++#endif
++}
++
++ialias (omp_get_num_procs)
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/sem.c gcc-4.2.2/libgomp/config/marcel/sem.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/sem.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/sem.c	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1 @@
++/* Everything is in the header.  */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/sem.h gcc-4.2.2/libgomp/config/marcel/sem.h
+--- gcc-4.2.2.orig/libgomp/config/marcel/sem.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/sem.h	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,77 @@
++/* Copyright (C) 2005, 2006 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This is the default POSIX 1003.1b implementation of a semaphore
++   synchronization mechanism for libgomp.  This type is private to
++   the library.
++
++   This is a bit heavy weight for what we need, in that we're not
++   interested in sem_wait as a cancelation point, but it's not too
++   bad for a default.  */
++
++#ifndef GOMP_SEM_H
++#define GOMP_SEM_H 1
++
++#ifdef HAVE_ATTRIBUTE_VISIBILITY
++# pragma GCC visibility push(default)
++#endif
++
++#include <semaphore.h>
++
++#ifdef HAVE_ATTRIBUTE_VISIBILITY
++# pragma GCC visibility pop
++#endif
++
++#include "marcel.h"
++
++typedef marcel_sem_t gomp_sem_t;
++
++static inline void
++gomp_sem_init (marcel_sem_t *sem, int value)
++{
++  marcel_sem_init (sem, value);  
++}
++
++static inline void
++gomp_sem_wait (marcel_sem_t *sem)
++{
++  marcel_sem_P (sem);
++}
++
++static inline void
++gomp_sem_post (marcel_sem_t *sem)
++{
++  marcel_sem_V (sem);
++}
++
++static inline void
++gomp_sem_destroy (marcel_sem_t *sem)
++{
++  marcel_sem_destroy (sem);  
++}
++
++#endif /* GOMP_SEM_H  */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config/marcel/time.c gcc-4.2.2/libgomp/config/marcel/time.c
+--- gcc-4.2.2.orig/libgomp/config/marcel/time.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config/marcel/time.c	2007-11-09 16:21:18.000000000 +0100
+@@ -0,0 +1,81 @@
++/* Copyright (C) 2005 Free Software Foundation, Inc.
++   Contributed by Richard Henderson <rth@redhat.com>.
++
++   This file is part of the GNU OpenMP Library (libgomp).
++
++   Libgomp is free software; you can redistribute it and/or modify it
++   under the terms of the GNU Lesser General Public License as published by
++   the Free Software Foundation; either version 2.1 of the License, or
++   (at your option) any later version.
++
++   Libgomp is distributed in the hope that it will be useful, but WITHOUT ANY
++   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
++   more details.
++
++   You should have received a copy of the GNU Lesser General Public License 
++   along with libgomp; see the file COPYING.LIB.  If not, write to the
++   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++   MA 02110-1301, USA.  */
++
++/* As a special exception, if you link this library with other files, some
++   of which are compiled with GCC, to produce an executable, this library
++   does not by itself cause the resulting executable to be covered by the
++   GNU General Public License.  This exception does not however invalidate
++   any other reasons why the executable file might be covered by the GNU
++   General Public License.  */
++
++/* This file contains system specific timer routines.  It is expected that
++   a system may well want to write special versions of each of these.
++
++   The following implementation uses the most simple POSIX routines.
++   If present, POSIX 4 clocks should be used instead.  */
++
++#include "libgomp.h"
++#include <unistd.h>
++#if TIME_WITH_SYS_TIME
++# include <sys/time.h>
++# include <time.h>
++#else
++# if HAVE_SYS_TIME_H
++#  include <sys/time.h>
++# else
++#  include <time.h>
++# endif
++#endif
++
++
++double
++omp_get_wtime (void)
++{
++#ifdef HAVE_CLOCK_GETTIME
++  struct timespec ts;
++# ifdef CLOCK_MONOTONIC
++  if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0)
++# endif
++    clock_gettime (CLOCK_REALTIME, &ts);
++  return ts.tv_sec + ts.tv_nsec / 1e9;
++#else
++  struct timeval tv;
++  gettimeofday (&tv, NULL);
++  return tv.tv_sec + tv.tv_usec / 1e6;
++#endif
++}
++
++double
++omp_get_wtick (void)
++{
++#ifdef HAVE_CLOCK_GETTIME
++  struct timespec ts;
++# ifdef CLOCK_MONOTONIC
++  if (clock_getres (CLOCK_MONOTONIC, &ts) < 0)
++# endif
++    clock_getres (CLOCK_REALTIME, &ts);
++  return ts.tv_sec + ts.tv_nsec / 1e9;
++#else
++  return 1.0 / sysconf(_SC_CLK_TCK);
++#endif
++}
++
++ialias (omp_get_wtime)
++ialias (omp_get_wtick)
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/config.h.in.orig gcc-4.2.2/libgomp/config.h.in.orig
+--- gcc-4.2.2.orig/libgomp/config.h.in.orig	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/config.h.in.orig	2007-10-31 17:30:57.000000000 +0100
+@@ -0,0 +1,103 @@
++/* config.h.in.  Generated from configure.ac by autoheader.  */
++
++/* Define to 1 if the target supports __attribute__((alias(...))). */
++#undef HAVE_ATTRIBUTE_ALIAS
++
++/* Define to 1 if the target supports __attribute__((dllexport)). */
++#undef HAVE_ATTRIBUTE_DLLEXPORT
++
++/* Define to 1 if the target supports __attribute__((visibility(...))). */
++#undef HAVE_ATTRIBUTE_VISIBILITY
++
++/* Define if the POSIX Semaphores do not work on your system. */
++#undef HAVE_BROKEN_POSIX_SEMAPHORES
++
++/* Define to 1 if you have the `clock_gettime' function. */
++#undef HAVE_CLOCK_GETTIME
++
++/* Define to 1 if you have the `getloadavg' function. */
++#undef HAVE_GETLOADAVG
++
++/* Define to 1 if you have the <inttypes.h> header file. */
++#undef HAVE_INTTYPES_H
++
++/* Define to 1 if you have the <memory.h> header file. */
++#undef HAVE_MEMORY_H
++
++/* Define to 1 if you have the <semaphore.h> header file. */
++#undef HAVE_SEMAPHORE_H
++
++/* Define to 1 if you have the <stdint.h> header file. */
++#undef HAVE_STDINT_H
++
++/* Define to 1 if you have the <stdlib.h> header file. */
++#undef HAVE_STDLIB_H
++
++/* Define to 1 if you have the <strings.h> header file. */
++#undef HAVE_STRINGS_H
++
++/* Define to 1 if you have the <string.h> header file. */
++#undef HAVE_STRING_H
++
++/* Define to 1 if the target supports __sync_*_compare_and_swap */
++#undef HAVE_SYNC_BUILTINS
++
++/* Define to 1 if you have the <sys/loadavg.h> header file. */
++#undef HAVE_SYS_LOADAVG_H
++
++/* Define to 1 if you have the <sys/stat.h> header file. */
++#undef HAVE_SYS_STAT_H
++
++/* Define to 1 if you have the <sys/time.h> header file. */
++#undef HAVE_SYS_TIME_H
++
++/* Define to 1 if you have the <sys/types.h> header file. */
++#undef HAVE_SYS_TYPES_H
++
++/* Define to 1 if the target supports thread-local storage. */
++#undef HAVE_TLS
++
++/* Define to 1 if you have the <unistd.h> header file. */
++#undef HAVE_UNISTD_H
++
++/* Name of package */
++#undef PACKAGE
++
++/* Define to the address where bug reports for this package should be sent. */
++#undef PACKAGE_BUGREPORT
++
++/* Define to the full name of this package. */
++#undef PACKAGE_NAME
++
++/* Define to the full name and version of this package. */
++#undef PACKAGE_STRING
++
++/* Define to the one symbol short name of this package. */
++#undef PACKAGE_TARNAME
++
++/* Define to the version of this package. */
++#undef PACKAGE_VERSION
++
++/* The size of `char', as computed by sizeof. */
++#undef SIZEOF_CHAR
++
++/* The size of `int', as computed by sizeof. */
++#undef SIZEOF_INT
++
++/* The size of `long', as computed by sizeof. */
++#undef SIZEOF_LONG
++
++/* The size of `short', as computed by sizeof. */
++#undef SIZEOF_SHORT
++
++/* The size of `void *', as computed by sizeof. */
++#undef SIZEOF_VOID_P
++
++/* Define to 1 if you have the ANSI C header files. */
++#undef STDC_HEADERS
++
++/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
++#undef TIME_WITH_SYS_TIME
++
++/* Version number of package */
++#undef VERSION
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/configure.ac gcc-4.2.2/libgomp/configure.ac
+--- gcc-4.2.2.orig/libgomp/configure.ac	2007-02-06 19:49:55.000000000 +0100
++++ gcc-4.2.2/libgomp/configure.ac	2007-11-09 16:27:08.000000000 +0100
+@@ -164,9 +164,114 @@ AC_CHECK_HEADERS(unistd.h semaphore.h sy
+ 
+ GCC_HEADER_STDINT(gstdint.h)
+ 
++# check whether we use marcel or pthread
++AC_MSG_CHECKING(whether we use marcel threads)
++AC_ARG_ENABLE(marcel, [  --enable-marcel     use marcel threads],
++	      enable_marcel=$enableval, enable_marcel=yes)
++if test "$enable_marcel" = yes; then
++  AC_DEFINE_UNQUOTED(LIBGOMP_USE_MARCEL, 1, [Define to 1 to use Marcel threads instead of Posix])
++fi
++AC_MSG_RESULT($enable_marcel)
++
++if test "$enable_marcel" = yes ; then
++  AC_MSG_CHECKING(whether we place marcel threads in bubbles)
++  AC_ARG_ENABLE(marcel-bubbles, [  --disable-marcel-bubbles     use marcel threads without bubbles],
++		enable_marcel_bubbles=$enableval, enable_marcel_bubbles=yes)
++  if test "$enable_marcel" = yes -a "$enable_marcel_bubbles" = yes; then
++    AC_DEFINE_UNQUOTED(LIBGOMP_USE_MARCEL_BUBBLES, 1, [Define to 1 to use Marcel threads with Bubbles instead of Posix])
++  fi
++  AC_MSG_RESULT($enable_marcel_bubbles)
++fi
++
++if test "$enable_marcel" = yes ; then
++  AC_MSG_CHECKING(whether pm2 is available)
++  if test -z $(which pm2-config) ; then
++    AC_MSG_ERROR(pm2-config not found)
++    exit -1
++  fi
++  AC_MSG_RESULT(yes)
++
++  MARCEL_CPPFLAGS="$(pm2-config --cflags) -I$PM2_ROOT/marcel/include/pthread/"
++
++  save_CPPFLAGS="$CPPFLAGS"
++  CPPFLAGS="$MARCEL_CPPFLAGS"
++
++  AC_MSG_CHECKING(whether marcel is available)
++  AC_PREPROC_IFELSE([
++#include "marcel.h"
++], marcel=yes, marcel=no)
++  if test $marcel = no ; then
++    AC_MSG_ERROR(marcel.h not found)
++    exit -1
++  fi
++  AC_MSG_RESULT(yes)
++
++  AC_MSG_CHECKING(whether pmarcel is enabled)
++  AC_COMPILE_IFELSE([
++#include "marcel.h"
++#ifndef MARCEL_POSIX
++#error "marcel posix disabled"
++#endif
++], pmarcel=yes, pmarcel=no)
++  if test $pmarcel = no ; then
++    AC_MSG_ERROR(MARCEL_POSIX not defined)
++    exit -1
++  fi
++  AC_MSG_RESULT(yes)
++
++  AC_MSG_CHECKING(whether marcel keys are enabled)
++  AC_COMPILE_IFELSE([
++#include "marcel.h"
++#ifndef MARCEL_KEYS_ENABLED
++#error "marcel keys disabled"
++#endif
++], marcel_keys=yes, marcel_keys=no)
++  if test $marcel_keys = no ; then
++    AC_MSG_ERROR(MARCEL_KEYS_ENABLED not defined)
++    exit -1
++  fi
++  AC_MSG_RESULT(yes)
++
++  AC_MSG_CHECKING(whether marcel standard_main is enabled)
++  AC_COMPILE_IFELSE([
++#include "marcel.h"
++#ifndef STANDARD_MAIN
++#error "marcel standard_main disabled"
++#endif
++], marcel_standard_main=yes, marcel_standard_main=no)
++  if test $marcel_standard_main = no ; then
++    AC_MSG_ERROR(marcel STANDARD_MAIN not defined)
++    exit -1
++  fi
++  AC_MSG_RESULT(yes)
++
++  if test "$enable_marcel_bubbles" = yes ; then
++    AC_MSG_CHECKING(whether marcel bubbles are enabled)
++    AC_COMPILE_IFELSE([
++#include "marcel.h"
++#ifndef MARCEL_NUMA
++#error "marcel numa disabled"
++#endif
++], pmarcel=yes, pmarcel=no)
++    if test $pmarcel = no ; then
++      AC_MSG_ERROR(MARCEL_NUMA not defined)
++      exit -1
++    fi
++    AC_MSG_RESULT(yes)
++  fi
++
++  CPPFLAGS="$save_CPPFLAGS"
++fi
++
+ # Check to see if -pthread or -lpthread is needed.  Prefer the former.
+ # In case the pthread.h system header is not found, this test will fail.
+ XPCFLAGS=""
++if test $enable_marcel = yes ; then
++
++  XPCFLAGS=" $MARCEL_CPPFLAGS"
++
++else
++
+ CFLAGS="$CFLAGS -pthread"
+ AC_LINK_IFELSE(
+  [AC_LANG_PROGRAM(
+@@ -183,6 +288,8 @@ AC_LINK_IFELSE(
+    [],
+    [AC_MSG_ERROR([Pthreads are required to build libgomp])])])
+ 
++fi
++
+ # Check for functions needed.
+ AC_CHECK_FUNCS(getloadavg clock_gettime)
+ 
+@@ -304,6 +411,10 @@ for i in $config_path; do
+   fi
+ done
+ 
++if test "$enable_marcel" = yes ; then
++  CFLAGS="$CFLAGS $MARCEL_CPPFLAGS"
++fi
++
+ _AC_COMPUTE_INT([sizeof (omp_lock_t)], [OMP_LOCK_SIZE],,
+   [AC_MSG_ERROR([unsupported system, cannot find sizeof (omp_lock_t)])])
+ _AC_COMPUTE_INT([__alignof (omp_lock_t)], [OMP_LOCK_ALIGN])
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/configure.ac.orig gcc-4.2.2/libgomp/configure.ac.orig
+--- gcc-4.2.2.orig/libgomp/configure.ac.orig	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.2.2/libgomp/configure.ac.orig	2007-02-06 19:49:55.000000000 +0100
+@@ -0,0 +1,337 @@
++# Process this file with autoconf to produce a configure script, like so:
++# aclocal -I ../config && autoconf && autoheader && automake
++
++AC_PREREQ(2.59)
++AC_INIT([GNU OpenMP Runtime Library], 1.0,,[libgomp])
++AC_CONFIG_HEADER(config.h)
++
++# -------
++# Options
++# -------
++
++AC_MSG_CHECKING([for --enable-version-specific-runtime-libs])
++LIBGOMP_ENABLE(version-specific-runtime-libs, no, ,
++   [Specify that runtime libraries should be installed in a compiler-specific directory],
++   permit yes|no)
++AC_MSG_RESULT($enable_version_specific_runtime_libs)
++
++AC_MSG_CHECKING([for --enable-linux-futex])
++LIBGOMP_ENABLE(linux-futex, default, ,
++  [Use the Linux futex system call],
++  permit yes|no|default)
++AC_MSG_RESULT($enable_linux_futex)
++
++# We would like our source tree to be readonly. However when releases or
++# pre-releases are generated, the flex/bison generated files as well as the
++# various formats of manuals need to be included along with the rest of the
++# sources.  Therefore we have --enable-generated-files-in-srcdir to do 
++# just that.
++AC_MSG_CHECKING([for --enable-generated-files-in-srcdir])
++LIBGOMP_ENABLE(generated-files-in-srcdir, no, ,
++   [put copies of generated files in source dir intended for creating source 
++    tarballs for users without texinfo bison or flex.],
++   permit yes|no)
++AC_MSG_RESULT($enable_generated_files_in_srcdir)
++AM_CONDITIONAL(GENINSRC, test "$enable_generated_files_in_srcdir" = yes)
++
++
++# -------
++# -------
++
++# Gets build, host, target, *_vendor, *_cpu, *_os, etc.
++#
++# You will slowly go insane if you do not grok the following fact:  when
++# building this library, the top-level /target/ becomes the library's /host/.
++#
++# configure then causes --target to default to --host, exactly like any
++# other package using autoconf.  Therefore, 'target' and 'host' will
++# always be the same.  This makes sense both for native and cross compilers
++# just think about it for a little while.  :-)
++#
++# Also, if this library is being configured as part of a cross compiler, the
++# top-level configure script will pass the "real" host as $with_cross_host.
++#
++# Do not delete or change the following two lines.  For why, see
++# http://gcc.gnu.org/ml/libstdc++/2003-07/msg00451.html
++AC_CANONICAL_SYSTEM
++target_alias=${target_alias-$host_alias}
++
++# Sets up automake.  Must come after AC_CANONICAL_SYSTEM.  Each of the
++# following is magically included in AUTOMAKE_OPTIONS in each Makefile.am.
++#  1.9.0:  minimum required version
++#  no-define:  PACKAGE and VERSION will not be #define'd in config.h (a bunch
++#              of other PACKAGE_* variables will, however, and there's nothing
++#              we can do about that; they come from AC_INIT).
++#  foreign:  we don't follow the normal rules for GNU packages (no COPYING
++#            file in the top srcdir, etc, etc), so stop complaining.
++#  no-dependencies:  turns off auto dependency generation (just for now)
++#  -Wall:  turns on all automake warnings...
++#  -Wno-portability:  ...except this one, since GNU make is required.
++#  -Wno-override: ... and this one, since we do want this in testsuite.
++AM_INIT_AUTOMAKE([1.9.0 foreign -Wall -Wno-portability -Wno-override])
++AM_ENABLE_MULTILIB(, ..)
++
++# Calculate toolexeclibdir
++# Also toolexecdir, though it's only used in toolexeclibdir
++case ${enable_version_specific_runtime_libs} in
++  yes)
++    # Need the gcc compiler version to know where to install libraries
++    # and header files if --enable-version-specific-runtime-libs option
++    # is selected.
++    toolexecdir='$(libdir)/gcc/$(target_alias)'
++    toolexeclibdir='$(toolexecdir)/$(gcc_version)$(MULTISUBDIR)'
++    ;;
++  no)
++    if test -n "$with_cross_host" &&
++       test x"$with_cross_host" != x"no"; then
++      # Install a library built with a cross compiler in tooldir, not libdir.
++      toolexecdir='$(exec_prefix)/$(target_alias)'
++      toolexeclibdir='$(toolexecdir)/lib'
++    else
++      toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
++      toolexeclibdir='$(libdir)'
++    fi
++    multi_os_directory=`$CC -print-multi-os-directory`
++    case $multi_os_directory in
++      .) ;; # Avoid trailing /.
++      *) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
++    esac
++    ;;
++esac
++AC_SUBST(toolexecdir)
++AC_SUBST(toolexeclibdir)
++
++# Check the compiler.
++# The same as in boehm-gc and libstdc++. Have to borrow it from there.
++# We must force CC to /not/ be precious variables; otherwise
++# the wrong, non-multilib-adjusted value will be used in multilibs.
++# As a side effect, we have to subst CFLAGS ourselves.
++
++m4_rename([_AC_ARG_VAR_PRECIOUS],[real_PRECIOUS])
++m4_define([_AC_ARG_VAR_PRECIOUS],[])
++AC_PROG_CC
++m4_rename([real_PRECIOUS],[_AC_ARG_VAR_PRECIOUS])
++
++AC_SUBST(CFLAGS)
++
++# In order to override CFLAGS_FOR_TARGET, all of our special flags go
++# in XCFLAGS.  But we need them in CFLAGS during configury.  So put them
++# in both places for now and restore CFLAGS at the end of config.
++save_CFLAGS="$CFLAGS"
++
++# Add -Wall -Werror if we are using GCC.
++if test "x$GCC" = "xyes"; then
++  XCFLAGS="$XCFLAGS -Wall -Werror"
++fi
++
++# Find other programs we need.
++AC_CHECK_TOOL(AR, ar)
++AC_CHECK_TOOL(RANLIB, ranlib, ranlib-not-found-in-path-error)
++AC_PATH_PROG(PERL, perl, perl-not-found-in-path-error)
++AC_PROG_MAKE_SET
++AC_PROG_INSTALL
++
++# See if makeinfo has been installed and is modern enough
++# that we can use it.
++ACX_CHECK_PROG_VER([MAKEINFO], [makeinfo], [--version],
++                   [GNU texinfo.* \([0-9][0-9.]*\)],
++                   [4.[4-9]*])
++AM_CONDITIONAL(BUILD_INFO, test $gcc_cv_prog_makeinfo_modern = "yes")
++
++
++# Configure libtool
++AM_PROG_LIBTOOL
++AC_SUBST(enable_shared)
++AC_SUBST(enable_static)
++
++AM_MAINTAINER_MODE
++
++# We need gfortran to compile parts of the library
++# We can't use AC_PROG_FC because it expects a fully working gfortran.
++#AC_PROG_FC(gfortran)
++FC="$GFORTRAN"
++AC_PROG_FC(gfortran)
++FCFLAGS="$FCFLAGS -Wall"
++
++# For libtool versioning info, format is CURRENT:REVISION:AGE
++libtool_VERSION=1:0:0
++AC_SUBST(libtool_VERSION)
++
++# Check header files.
++AC_STDC_HEADERS
++AC_HEADER_TIME
++AC_CHECK_HEADERS(unistd.h semaphore.h sys/loadavg.h sys/time.h)
++
++GCC_HEADER_STDINT(gstdint.h)
++
++# Check to see if -pthread or -lpthread is needed.  Prefer the former.
++# In case the pthread.h system header is not found, this test will fail.
++XPCFLAGS=""
++CFLAGS="$CFLAGS -pthread"
++AC_LINK_IFELSE(
++ [AC_LANG_PROGRAM(
++  [#include <pthread.h>
++   void *g(void *d) { return NULL; }],
++  [pthread_t t; pthread_create(&t,NULL,g,NULL);])],
++ [XPCFLAGS=" -Wc,-pthread"],
++ [CFLAGS="$save_CFLAGS" LIBS="-lpthread $LIBS"
++  AC_LINK_IFELSE(
++   [AC_LANG_PROGRAM(
++    [#include <pthread.h>
++     void *g(void *d) { return NULL; }],
++    [pthread_t t; pthread_create(&t,NULL,g,NULL);])],
++   [],
++   [AC_MSG_ERROR([Pthreads are required to build libgomp])])])
++
++# Check for functions needed.
++AC_CHECK_FUNCS(getloadavg clock_gettime)
++
++# Check for broken semaphore implementation on darwin.
++# sem_init returns: sem_init error: Function not implemented.
++case "$host" in
++  *-darwin*)
++    AC_DEFINE(HAVE_BROKEN_POSIX_SEMAPHORES, 1,
++	Define if the POSIX Semaphores do not work on your system.)
++    ;;
++  *-linux*)
++    case "$enable_linux_futex" in
++      default)
++	# If headers don't have gettid/futex syscalls definition, then
++	# default to no, otherwise there will be compile time failures.
++	# Otherwise, default to yes.  If we don't detect we are
++	# compiled/linked against NPTL and not cross-compiling, check
++	# if programs are run by default against NPTL and if not, issue
++	# a warning.
++	enable_linux_futex=no
++	AC_LINK_IFELSE(
++	 [AC_LANG_PROGRAM(
++	  [#include <sys/syscall.h>
++	   int lk;],
++	  [syscall (SYS_gettid); syscall (SYS_futex, &lk, 0, 0, 0);])],
++	  [AC_LINK_IFELSE(
++	   [AC_LANG_PROGRAM(
++	    [#ifndef _GNU_SOURCE
++	     #define _GNU_SOURCE 1
++	     #endif
++	     #include <pthread.h>
++	     pthread_t th; void *status;],
++	    [pthread_tryjoin_np (th, &status);])],[enable_linux_futex=yes],
++	    [if test x$cross_compiling = xno; then
++	       if getconf GNU_LIBPTHREAD_VERSION 2>/dev/null \
++		  | LC_ALL=C grep -i NPTL > /dev/null 2>/dev/null; then
++		 AC_MSG_WARN([The kernel might not support futex or gettid syscalls.
++If so, please configure with --disable-linux-futex])
++	       fi
++	     fi
++	     enable_linux_futex=yes])])
++	;;
++      yes)
++	AC_LINK_IFELSE(
++	 [AC_LANG_PROGRAM(
++	  [#include <sys/syscall.h>
++	   int lk;],
++	  [syscall (SYS_gettid); syscall (SYS_futex, &lk, 0, 0, 0);])],[],
++	  [AC_MSG_ERROR([SYS_gettid and SYS_futex required for --enable-linux-futex])])
++	;;
++    esac
++    ;;
++esac
++
++# At least for glibc, clock_gettime is in librt.  But don't pull that
++# in if it still doesn't give us the function we want.
++if test $ac_cv_func_clock_gettime = no; then
++  AC_CHECK_LIB(rt, clock_gettime,
++    [LIBS="-lrt $LIBS"
++     AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
++	       [Define to 1 if you have the `clock_gettime' function.])])
++fi
++
++# See if we support thread-local storage.
++GCC_CHECK_TLS
++
++# See what sort of export controls are availible.
++LIBGOMP_CHECK_ATTRIBUTE_VISIBILITY
++LIBGOMP_CHECK_ATTRIBUTE_DLLEXPORT
++LIBGOMP_CHECK_ATTRIBUTE_ALIAS
++LIBGOMP_ENABLE_SYMVERS
++
++# Get target configury.
++. ${srcdir}/configure.tgt
++CFLAGS="$save_CFLAGS $XCFLAGS"
++
++# Check for __sync_val_compare_and_swap, but only after the target has
++# had a chance to set XCFLAGS.
++LIBGOMP_CHECK_SYNC_BUILTINS
++
++XCFLAGS="$XCFLAGS$XPCFLAGS"
++
++AC_SUBST(config_path)
++AC_SUBST(XCFLAGS)
++AC_SUBST(XLDFLAGS)
++
++# Cleanup and exit.
++CFLAGS="$save_CFLAGS"
++AC_CACHE_SAVE
++
++if test ${multilib} = yes; then
++  multilib_arg="--enable-multilib"
++else
++  multilib_arg=
++fi
++
++# Set up the set of libraries that we need to link against for libgomp.
++# Note that the GOMP_SELF_SPEC in gcc.c will force -pthread for -fopenmp,
++# which will force linkage against -lpthread (or equivalent for the system).
++# That's not 100% ideal, but about the best we can do easily.
++if test $enable_shared = yes; then
++  link_gomp="-lgomp %{static: $LIBS}"
++else
++  link_gomp="-lgomp $LIBS"
++fi
++AC_SUBST(link_gomp)
++
++AM_CONDITIONAL([USE_FORTRAN], [test "$ac_cv_fc_compiler_gnu" = yes])
++
++# ??? 2006-01-24: Paulo committed to asking autoconf folk to document
++# and export AC_COMPUTE_INT.  If that happens, then we'll need to remove
++# the underscore here and update the PREREQ.  If it doesn't, then we'll
++# need to copy this macro to our acinclude.m4.
++save_CFLAGS="$CFLAGS"
++for i in $config_path; do
++  if test -f $srcdir/config/$i/omp-lock.h; then
++    CFLAGS="$CFLAGS -include $srcdir/config/$i/omp-lock.h"
++    break
++  fi
++done
++
++_AC_COMPUTE_INT([sizeof (omp_lock_t)], [OMP_LOCK_SIZE],,
++  [AC_MSG_ERROR([unsupported system, cannot find sizeof (omp_lock_t)])])
++_AC_COMPUTE_INT([__alignof (omp_lock_t)], [OMP_LOCK_ALIGN])
++_AC_COMPUTE_INT([sizeof (omp_nest_lock_t)], [OMP_NEST_LOCK_SIZE])
++_AC_COMPUTE_INT([__alignof (omp_nest_lock_t)], [OMP_NEST_LOCK_ALIGN])
++
++# If the lock fits in an integer, then arrange for Fortran to use that
++# integer.  If it doesn't, then arrange for Fortran to use a pointer.
++# Except that we don't have a way at present to multi-lib the installed
++# Fortran modules, so we assume 8 bytes for pointers, regardless of the
++# actual target.
++OMP_LOCK_KIND=$OMP_LOCK_SIZE
++OMP_NEST_LOCK_KIND=$OMP_NEST_LOCK_SIZE
++if test $OMP_LOCK_SIZE -gt 8 || test $OMP_LOCK_ALIGN -gt $OMP_LOCK_SIZE; then
++  OMP_LOCK_KIND=8
++fi
++if test $OMP_NEST_LOCK_SIZE -gt 8 || test $OMP_NEST_LOCK_ALIGN -gt $OMP_NEST_LOCK_SIZE; then
++  OMP_NEST_LOCK_KIND=8
++fi
++
++AC_SUBST(OMP_LOCK_SIZE)
++AC_SUBST(OMP_LOCK_ALIGN)
++AC_SUBST(OMP_NEST_LOCK_SIZE)
++AC_SUBST(OMP_NEST_LOCK_ALIGN)
++AC_SUBST(OMP_LOCK_KIND)
++AC_SUBST(OMP_NEST_LOCK_KIND)
++CFLAGS="$save_CFLAGS"
++
++AC_CONFIG_FILES(omp.h omp_lib.h omp_lib.f90 libgomp_f.h)
++AC_CONFIG_FILES(Makefile testsuite/Makefile libgomp.spec)
++AC_OUTPUT
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/configure.tgt gcc-4.2.2/libgomp/configure.tgt
+--- gcc-4.2.2.orig/libgomp/configure.tgt	2006-12-02 21:02:00.000000000 +0100
++++ gcc-4.2.2/libgomp/configure.tgt	2007-11-09 16:21:18.000000000 +0100
+@@ -23,6 +23,12 @@ if test $have_tls = yes ; then
+   esac
+ fi
+ 
++
++if [ "$enable_marcel" = yes ] ; then
++	config_path=marcel
++
++else
++
+ # Since we require POSIX threads, assume a POSIX system by default.
+ config_path="posix"
+ 
+@@ -109,3 +115,5 @@ case "${target}" in
+ 	;;
+ 
+ esac
++
++fi
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/critical.c gcc-4.2.2/libgomp/critical.c
+--- gcc-4.2.2.orig/libgomp/critical.c	2006-06-21 10:59:44.000000000 +0200
++++ gcc-4.2.2/libgomp/critical.c	2007-11-09 16:21:18.000000000 +0100
+@@ -30,6 +30,15 @@
+ #include "libgomp.h"
+ #include <stdlib.h>
+ 
++#ifdef LIBGOMP_USES_MARCEL
++#if 1
++#define gomp_mutex_t marcel_spinlock_t
++#define gomp_mutex_init(lock) marcel_spin_init(lock,MARCEL_PROCESS_PRIVATE)
++#define gomp_mutex_lock(lock) marcel_spin_lock(lock);
++#define gomp_mutex_unlock(lock) marcel_spin_unlock(lock);
++#define gomp_mutex_destroy(lock) marcel_spin_destroy(lock)
++#endif
++#endif
+ 
+ static gomp_mutex_t default_lock;
+ 
 diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/libgomp_g.h gcc-4.2.2/libgomp/libgomp_g.h
 --- gcc-4.2.2.orig/libgomp/libgomp_g.h	2006-01-18 20:21:25.000000000 +0100
 +++ gcc-4.2.2/libgomp/libgomp_g.h	2007-11-07 15:29:52.000000000 +0100
@@ -1001,6 +2192,88 @@ diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgo
 +extern void GOMP_taskwait (void);
 +
  #endif /* LIBGOMP_G_H */
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/libgomp.h gcc-4.2.2/libgomp/libgomp.h
+--- gcc-4.2.2.orig/libgomp/libgomp.h	2006-06-10 00:08:55.000000000 +0200
++++ gcc-4.2.2/libgomp/libgomp.h	2007-11-09 16:21:18.000000000 +0100
+@@ -40,8 +40,17 @@
+ #include "config.h"
+ #include "gstdint.h"
+ 
+-#include <pthread.h>
++/* error.c */
++
++extern void gomp_error (const char *, ...)
++	__attribute__((format (printf, 1, 2)));
++extern void gomp_fatal (const char *, ...)
++	__attribute__((noreturn, format (printf, 1, 2)));
++
++
++
+ #include <stdbool.h>
++#include <pthread.h>
+ 
+ #ifdef HAVE_ATTRIBUTE_VISIBILITY
+ # pragma GCC visibility push(hidden)
+@@ -189,13 +198,20 @@ struct gomp_team
+   struct gomp_team_state prev_ts;
+ 
+   /* This barrier is used for most synchronization of the team.  */
+-  gomp_barrier_t barrier;
++  gomp_barrier_t barrier, /*barrier_start,*/ barrier_stop;
+ 
+   /* This semaphore should be used by the master thread instead of its
+      "native" semaphore in the thread structure.  Required for nested
+      parallels, as the master is a member of two teams.  */
+   gomp_sem_t master_release;
+ 
++#ifdef LIBGOMP_USE_MARCEL_BUBBLES
++  /* The bubble that contains the threads of this team. */
++  marcel_bubble_t bubble;
++#endif
++
++  struct gomp_thread_start_data *start_data;
++
+   /* This array contains pointers to the release semaphore of the threads
+      in the team.  */
+   gomp_sem_t *ordered_release[];
+@@ -216,11 +232,22 @@ struct gomp_thread
+ 
+   /* This semaphore is used for ordered loops.  */
+   gomp_sem_t release;
++
++#ifdef LIBGOMP_USE_MARCEL
++  /* usefull to insert the thread in a bubble */
++  marcel_t tid;
++#endif
+ };
+ 
+ /* ... and here is that TLS data.  */
+ 
+-#ifdef HAVE_TLS
++#ifdef LIBGOMP_USE_MARCEL
++extern marcel_key_t gomp_tls_key;
++static inline struct gomp_thread *gomp_thread (void)
++{
++  return marcel_getspecific (gomp_tls_key);
++}
++#elif defined HAVE_TLS
+ extern __thread struct gomp_thread gomp_tls_data;
+ static inline struct gomp_thread *gomp_thread (void)
+ {
+@@ -258,13 +285,6 @@ extern void *gomp_realloc (void *, size_
+    GCC's builtin alloca().  */
+ #define gomp_alloca(x)  __builtin_alloca(x)
+ 
+-/* error.c */
+-
+-extern void gomp_error (const char *, ...)
+-	__attribute__((format (printf, 1, 2)));
+-extern void gomp_fatal (const char *, ...)
+-	__attribute__((noreturn, format (printf, 1, 2)));
+-
+ /* iter.c */
+ 
+ extern int gomp_iter_static_next (long *, long *);
 diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/libgomp.map gcc-4.2.2/libgomp/libgomp.map
 --- gcc-4.2.2.orig/libgomp/libgomp.map	2006-01-18 20:21:25.000000000 +0100
 +++ gcc-4.2.2/libgomp/libgomp.map	2007-11-08 08:27:49.000000000 +0100
@@ -1121,3 +2394,221 @@ diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgo
 +  */
 +  fprintf(stderr, "GOMP_taskwait\n");
 +}
+diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgomp/team.c gcc-4.2.2/libgomp/team.c
+--- gcc-4.2.2.orig/libgomp/team.c	2006-06-10 00:08:55.000000000 +0200
++++ gcc-4.2.2/libgomp/team.c	2007-11-09 16:21:18.000000000 +0100
+@@ -45,7 +45,9 @@ pthread_attr_t gomp_thread_attr;
+ static gomp_barrier_t gomp_threads_dock;
+ 
+ /* This is the libgomp per-thread data structure.  */
+-#ifdef HAVE_TLS
++#ifdef LIBGOMP_USE_MARCEL
++marcel_key_t gomp_tls_key;
++#elif defined HAVE_TLS
+ __thread struct gomp_thread gomp_tls_data;
+ #else
+ pthread_key_t gomp_tls_key;
+@@ -74,7 +76,7 @@ gomp_thread_start (void *xdata)
+   void (*local_fn) (void *);
+   void *local_data;
+ 
+-#ifdef HAVE_TLS
++#if HAVE_TLS && !defined LIBGOMP_USE_MARCEL
+   thr = &gomp_tls_data;
+ #else
+   struct gomp_thread local_thr;
+@@ -90,11 +92,15 @@ gomp_thread_start (void *xdata)
+ 
+   thr->ts.team->ordered_release[thr->ts.team_id] = &thr->release;
+ 
++#ifdef LIBGOMP_USE_MARCEL
++  thr->tid = marcel_self ();
++#endif
++
+   if (data->nested)
+     {
+-      gomp_barrier_wait (&thr->ts.team->barrier);
++      //gomp_barrier_wait_start (&thr->ts.team->barrier_start);
+       local_fn (local_data);
+-      gomp_barrier_wait (&thr->ts.team->barrier);
++      gomp_barrier_wait_start (&thr->ts.team->barrier_stop);
+     }
+   else
+     {
+@@ -118,7 +124,7 @@ gomp_thread_start (void *xdata)
+ 	  thr->ts.work_share_generation = 0;
+ 	  thr->ts.static_trip = 0;
+ 
+-	  gomp_barrier_wait (&team->barrier);
++	  gomp_barrier_wait_start (&team->barrier_stop);
+ 	  gomp_barrier_wait (&gomp_threads_dock);
+ 
+ 	  local_fn = thr->fn;
+@@ -148,9 +154,12 @@ new_team (unsigned nthreads, struct gomp
+   team->oldest_live_gen = work_share == NULL;
+   team->num_live_gen = work_share != NULL;
+   team->work_shares[0] = work_share;
++  team->start_data = NULL;
+ 
+   team->nthreads = nthreads;
+   gomp_barrier_init (&team->barrier, nthreads);
++  //gomp_barrier_init (&team->barrier_start, nthreads);
++  gomp_barrier_init (&team->barrier_stop, nthreads);
+ 
+   gomp_sem_init (&team->master_release, 0);
+   team->ordered_release[0] = &team->master_release;
+@@ -167,6 +176,8 @@ free_team (struct gomp_team *team)
+   free (team->work_shares);
+   gomp_mutex_destroy (&team->work_share_lock);
+   gomp_barrier_destroy (&team->barrier);
++  //gomp_barrier_destroy (&team->barrier_start);
++  //gomp_barrier_destroy (&team->barrier_stop);
+   gomp_sem_destroy (&team->master_release);
+   free (team);
+ }
+@@ -189,6 +200,32 @@ gomp_team_start (void (*fn) (void *), vo
+ 
+   team = new_team (nthreads, work_share);
+ 
++#ifdef LIBGOMP_USE_MARCEL
++  marcel_attr_t gomp_thread_attr;
++
++  marcel_attr_init(&gomp_thread_attr);
++  marcel_attr_setdetachstate(&gomp_thread_attr, tbx_true);      
++  marcel_attr_setseed(&gomp_thread_attr, tbx_true);
++  marcel_attr_setprio(&gomp_thread_attr, MA_BATCH_PRIO);
++
++#ifdef LIBGOMP_USE_MARCEL_BUBBLES
++  if (nthreads > 1 && nested)
++    {
++      marcel_bubble_init (&team->bubble);
++      marcel_bubble_setinithere (&team->bubble);
++      marcel_bubble_setprio (&team->bubble, MA_BATCH_PRIO);
++      marcel_bubble_insertbubble (marcel_bubble_holding_task (thr->tid), &team->bubble);
++      //marcel_wake_up_bubble(&team->bubble);
++      marcel_bubble_inserttask (&team->bubble, thr->tid);
++      marcel_attr_setinitbubble(&gomp_thread_attr, &team->bubble);
++    }
++  else
++    marcel_attr_setinitbubble(&gomp_thread_attr, &marcel_root_bubble);
++#endif
++#endif
++
++
++
+   /* Always save the previous state, even if this isn't a nested team.
+      In particular, we should save any work share state from an outer
+      orphaned work share construct.  */
+@@ -265,11 +302,11 @@ gomp_team_start (void (*fn) (void *), vo
+ 	}
+     }
+ 
+-  start_data = gomp_alloca (sizeof (struct gomp_thread_start_data)
++  team->start_data = gomp_malloc (sizeof (struct gomp_thread_start_data)
+ 			    * (nthreads-i));
+ 
+   /* Launch new threads.  */
+-  for (; i < nthreads; ++i, ++start_data)
++  for (start_data = team->start_data; i < nthreads; ++i, ++start_data)
+     {
+       pthread_t pt;
+       int err;
+@@ -290,14 +327,17 @@ gomp_team_start (void (*fn) (void *), vo
+     }
+ 
+  do_release:
+-  gomp_barrier_wait (nested ? &team->barrier : &gomp_threads_dock);
++  if (!nested) {
++    gomp_barrier_wait (&gomp_threads_dock);
+ 
+   /* Decrease the barrier threshold to match the number of threads
+      that should arrive back at the end of this team.  The extra
+      threads should be exiting.  Note that we arrange for this test
+      to never be true for nested teams.  */
+-  if (nthreads < old_threads_used)
+-    gomp_barrier_reinit (&gomp_threads_dock, nthreads);
++    if (nthreads < old_threads_used)
++      gomp_barrier_reinit (&gomp_threads_dock, nthreads);
++  } //else
++    //gomp_barrier_wait (&team->barrier_start);
+ }
+ 
+ 
+@@ -310,32 +350,74 @@ gomp_team_end (void)
+   struct gomp_thread *thr = gomp_thread ();
+   struct gomp_team *team = thr->ts.team;
+ 
+-  gomp_barrier_wait (&team->barrier);
++  gomp_barrier_wait (&team->barrier_stop);
++
++
++#ifdef LIBGOMP_USE_MARCEL_BUBBLES
++    if (team->nthreads > 1 &&  team->prev_ts.team != NULL)
++    {
++      marcel_bubble_t *holding_bubble = marcel_bubble_holding_bubble (&team->bubble);
++      marcel_bubble_inserttask (holding_bubble, thr->tid);
++      marcel_bubble_join (&team->bubble);
++      marcel_bubble_destroy (&team->bubble);            
++    }  
++#endif
+ 
+   thr->ts = team->prev_ts;
+ 
++  free(team->start_data);
+   free_team (team);
+ }
+ 
+ 
+ /* Constructors for this file.  */
+ 
++#define MAGOMP_DEBUG_LENGTH_MAX 1024
++#define MAGOMP_DEBUG_PREFIX "--debug:"
++#define MAGOMP_DEBUG_PREFIX_LENGTH strlen(MAGOMP_DEBUG_PREFIX)
++
+ static void __attribute__((constructor))
+ initialize_team (void)
+ {
+   struct gomp_thread *thr;
+ 
+-#ifndef HAVE_TLS
++#ifdef LIBGOMP_USE_MARCEL
++  {
++    struct marcel_sched_param param = {.sched_priority = MA_BATCH_PRIO};
++    marcel_init (NULL, NULL);
++    marcel_sched_setparam (marcel_self (), &param);
++    marcel_thread_preemption_disable ();
++  }
++#endif
++
++#if !defined HAVE_TLS || defined LIBGOMP_USE_MARCEL
+   static struct gomp_thread initial_thread_tls_data;
+ 
+   pthread_key_create (&gomp_tls_key, NULL);
+   pthread_setspecific (gomp_tls_key, &initial_thread_tls_data);
+ #endif
+ 
+-#ifdef HAVE_TLS
++#if defined HAVE_TLS && !defined LIBGOMP_USE_MARCEL
+   thr = &gomp_tls_data;
+ #else
+   thr = &initial_thread_tls_data;
++#ifdef LIBGOMP_USE_MARCEL
++  thr->tid = marcel_self ();
++#endif
+ #endif
+   gomp_sem_init (&thr->release, 0);
++  gomp_barrier_init (&gomp_threads_dock, 1);
++}
++
++#ifdef LIBGOMP_USE_MARCEL
++void __attribute__((destructor))
++finalize_team() 
++{
++  if (gomp_threads_used) {
++    gomp_barrier_wait (&gomp_threads_dock);
++    gomp_barrier_destroy (&gomp_threads_dock);    
++  }
++  marcel_end();
+ }
++#endif
++

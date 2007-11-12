@@ -193,6 +193,14 @@ get_default_driver_loads(nm_driver_load *loads)
 #else /* !CONFIG_MULTI_RAIL */
   /* load one rail with the first driver only */
 
+  if (NR_ENABLED_DRIVERS > 1) {
+    fprintf(stderr, "Too many drivers enabled (%d), please specify a single one with -R\n", NR_ENABLED_DRIVERS);
+    return -1;
+  } else if (!NR_ENABLED_DRIVERS) {
+    fprintf(stderr, "No drivers are enabled\n");
+    return -1;
+  }
+
 #if defined CONFIG_MX
   printf("Using MX for rail #%d\n", cur_nr_drivers);
   loads[cur_nr_drivers++] = &nm_mx_load;
@@ -407,6 +415,10 @@ init(int	 *argc,
   } else {
     /* use default drivers */
     nr_rails = get_default_driver_loads(driver_loads);
+    if (nr_rails < 0) {
+      fprintf(stderr, "Failed to select default drivers automatically\n");
+      usage();
+    }
   }
 
 #ifndef CONFIG_MULTI_RAIL

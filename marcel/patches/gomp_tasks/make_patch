@@ -14,7 +14,7 @@ if [ -z "${GCC_ORIG_DIR}" ]; then
 	GCC_ORIG_DIR="${GCC_DIR}.orig"
 fi
 
-diff -uprN -x '*~' -x 'configure' -x 'autom4te.cache' -x '*.in' ${GCC_ORIG_DIR} ${GCC_DIR} > tasks.patch
+diff -uprN -x '*~' -x 'configure' -x 'autom4te.cache' -x '*.in' ${GCC_ORIG_DIR} ${GCC_DIR} > forrestgomp.patch
 
 #
 

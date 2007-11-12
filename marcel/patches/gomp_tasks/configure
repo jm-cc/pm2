@@ -1,3 +1,3 @@
 GCC_DIR="${1:-../gcc-4.2.2}"
 (cd ${GCC_DIR}/libgomp && autoreconf)
-${GCC_DIR}/configure --disable-bootstrap --prefix=../install
+${GCC_DIR}/configure --disable-bootstrap --enable-marcel --prefix=`pwd`/../install

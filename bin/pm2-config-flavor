@@ -208,8 +208,8 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
     text_opt=
     nb_opt=0
     for opt in $listopt; do
-	text_opt="$text_opt '$opt' '"`"$PM2_MODULE" $helpcmd1$opt \
-	    $helpcmd2 --quickhelp`"'"
+	text_opt="$text_opt '$opt' \"`"$PM2_MODULE" $helpcmd1$opt \
+	    $helpcmd2 --quickhelp`\""
 	case " $curopts " in
 	*\ $opt\ *)
 	    text_opt="$text_opt on"

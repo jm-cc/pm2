@@ -41,6 +41,11 @@
  * @{
  */
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "mpi_types.h"
 
 #include "mpi_config.h"
@@ -54,6 +59,10 @@
 #include "mpi_datatype.h"
 
 #include "mpi_communicator.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 /* @} */
 

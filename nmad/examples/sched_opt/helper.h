@@ -371,11 +371,12 @@ init(int	 *argc,
     goto out_err;
   }
 
-  err = nm_so_pack_interface_init(p_core, &pack_if);
-  if(err != NM_ESUCCESS) {
-    printf("nm_so_pack_interface_init return err = %d\n", err);
-    goto out_err;
-  }
+//  err = nm_so_pack_interface_init(p_core, &pack_if);
+//  if(err != NM_ESUCCESS) {
+//    printf("nm_so_pack_interface_init return err = %d\n", err);
+//    goto out_err;
+//  }
+  pack_if = (nm_so_pack_interface)sr_if;
 
   i=1;
   while (i<*argc) {

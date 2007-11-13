@@ -63,7 +63,7 @@ EOF
 
     (cat <<EOF
 application : {
-     name     : sampling;
+     name     : sampling-prog;
      flavor   : $flavor;
      networks : {
           include  : $network_file;
@@ -81,11 +81,8 @@ EOF
 
     # lancement de l'échantillonnage
     sampling_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}_samplings.nm_ns"
-
-    pm2-conf -f $flavor $machine1 $machine2 > /tmp/pm2conf  2>&1
-    rm -f /tmp/pm2conf
     echo "***Launching of the sampling of ${network}"
-    pm2-load -f $flavor --protocol $network sampling-prog 2>&1 | tee $sampling_file
+    leonie --x --p $config_file  2>&1 | tee $sampling_file
 
     #cat $sampling_file
     echo "***Sampling Finished"

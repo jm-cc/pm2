@@ -377,6 +377,9 @@ if [ "$SAMPLING_ENABLED" == "1" ] ; then
     machine2=$(cat machine_file | head -n 3 | sed -e '1,2d' -e 's/1 : //g')
     #echo "machine2=$machine2"
 
+    if [ -z "$machine1" ] ; then
+        _pm2_load_error "Error. You should first call pm2-conf."
+    fi
 
     ssh $machine1 arch > architecture
     arch=`cat architecture`
@@ -406,7 +409,7 @@ if [ $sampling_activated -eq 1 ] ; then
       do
 
       if [ $protocol = "tcpdg" ]; then
-          echo "tcpdg ignoré"
+          echo "tcpdg ignored"
       else
           sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}_samplings.nm_ns"
           if [ ! -f $sampling_file ] ; then

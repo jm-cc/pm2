@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 #include <nm_public.h>
 #include <nm_so_public.h>
 #include <nm_so_debug.h>
@@ -518,6 +518,9 @@ int nmad_exit(void) {
     printf("nm_so_sr_exit return err = %d\n", err);
     ret = EXIT_FAILURE;
   }
+
+  common_exit(NULL);
+
   return ret;
 }
 

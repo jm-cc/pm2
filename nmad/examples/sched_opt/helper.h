@@ -332,6 +332,9 @@ get_railstring_driver_loads(nm_driver_load *loads,
   return cur_nr_drivers;
 }
 
+static char *l_url[RAIL_MAX];
+static int nr_rails = 0;
+
 void
 init(int	 *argc,
      char	**argv)
@@ -339,7 +342,6 @@ init(int	 *argc,
   int i,j, err;
   /* rails */
   char *railstring = NULL;
-  int nr_rails = 0;
   int nr_r_urls = 0;
   /* per rail arrays */
   nm_driver_load driver_loads[RAIL_MAX];
@@ -347,7 +349,6 @@ init(int	 *argc,
   struct nm_driver_query_param *params_array[RAIL_MAX];
   int nparam_array[RAIL_MAX];
   char *r_url[RAIL_MAX];
-  char *l_url[RAIL_MAX];
   uint8_t drv_id[RAIL_MAX];
 
   for(i=0; i<RAIL_MAX; i++) {
@@ -491,7 +492,11 @@ init(int	 *argc,
 }
 
 int nmad_exit(void) {
-  int err, ret = NM_ESUCCESS;
+  int j, err, ret = NM_ESUCCESS;
+
+  for(j=0; j<nr_rails; j++) {
+    free(l_url[j]);
+  }
 
   err = nm_ns_exit(p_core);
   if(err != NM_ESUCCESS) {

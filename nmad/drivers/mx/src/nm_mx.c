@@ -409,6 +409,7 @@ nm_mx_exit		(struct nm_drv *p_drv) {
 	  nm_mx_check_return("mx_finalize", mx_ret);
 
 	  tbx_malloc_clean(mx_pw_mem);
+          TBX_FREE(board_use_count);
 	}
 
         TBX_FREE(p_mx_drv);

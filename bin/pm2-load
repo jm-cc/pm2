@@ -363,11 +363,10 @@ done
 
 ### Sampling configuration ###
 
-#Check if the network samplings have been done
-pm2-config --cflags > flags_file
+#Check if the network samplings have to be done
+SAMPLING_ENABLED=$(pm2-config --getvar=NMAD_SAMPLING_ENABLED)
 
-grep -q "DENABLE_SAMPLING" flags_file
-if [ $? -eq 0 ] ; then
+if [ "$SAMPLING_ENABLED" == "1" ] ; then
     #echo  "Pattern ENABLE_SAMPLING found"
 
     pm2-conf > machine_file
@@ -392,7 +391,6 @@ else
     sampling_activated=0
 fi
 
-rm -f flags_file
 ### --- ###
 
 ### Launch the driver sampling if required ###

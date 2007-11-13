@@ -318,6 +318,9 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
   p_mad_nmad_driver_specific_t	 ds		= d->specific;
   int err;
 
+  TBX_FREE(ds->l_url);
+  ds->l_url = NULL;
+
   if (p_core == NULL) return;
 
 #ifdef CONFIG_SCHED_OPT
@@ -343,8 +346,6 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
     TBX_FAILURE("nmad error");
   }
   p_core = NULL;
-  TBX_FREE(ds->l_url);
-  ds->l_url = NULL;
   NM_LOG_OUT();
 }
 

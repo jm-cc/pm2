@@ -16,12 +16,17 @@ for network in $*; do
 
     flavor="nmad-sampling-"$network #echo "flavor = $flavor"
 
+    # flavor creation
+    pm2-flavor set --flavor=$flavor --modules="init nmad tbx ntbx" \
+        --common="fortran_target_none" --all="opt build_static" \
+        --nmad="$network sched_opt strat_default mad3_emu"
+
     #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
     ssh $machine1 arch > architecture
     arch=`cat architecture` #echo "Arch = $arch"
     rm -f architecture
 
-#compilation du test d'échantillonage avec une flavor prédéfinie
+    #compilation du test d'échantillonage avec une flavor prédéfinie
     if [ ! -f $PM2_BUILD_DIR/${arch}/$flavor/examples/bin/sampling-prog ] ; then
         echo "***Compilation of the sampling program"
 
@@ -37,17 +42,9 @@ for network in $*; do
         rm -f /tmp/compil
     fi
 
-#construction des fichiers de config
-#*** network.cfg
+    #construction des fichiers de config
+    #*** network.cfg
     network_file="${PM2_ROOT}/nmad/sampling/networks.cfg"
-
-    if [ ! -f $network_file ] ; then
-        #echo "Le fichier network.cfg n'existe pas"
-        echo "***Creation  of the network file $network_file"
-        touch $network_file
-    #else
-    #    echo "Le fichier network.cfg existe"
-    fi
 
     (cat <<EOF
 networks : ({
@@ -61,16 +58,8 @@ EOF
     #cat $network_file
 
 
-#*** $network_$arch.cfg
+    #*** $network_$arch.cfg
     config_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}.cfg"
-
-    if [ ! -f $config_file ] ; then
-        #echo "Le fichier ${network}_${arch}.cfg n'existe pas"
-        echo "***Creation  of the configuration file $config_file"
-        touch $config_file
-    #else
-    #    echo "Le fichier ${network}_${arch}.cfg existe"
-    fi
 
     (cat <<EOF
 application : {
@@ -90,15 +79,8 @@ EOF
 
     #cat $config_file
 
-# lancement de l'échantillonnage
+    # lancement de l'échantillonnage
     sampling_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}_samplings.nm_ns"
-    if [ ! -f $sampling_file ] ; then
-        #echo "Le fichier ${network}_${arch}_samplings.nm_ns n'existe pas"
-        #echo "Création  de $sampling_file"
-        touch $sampling_file
-    #else
-    #    echo "Le fichier ${network}_${arch}_samplings.nm_ns existe"
-    fi
 
     pm2-conf -f $flavor $machine1 $machine2 > /tmp/pm2conf  2>&1
     rm -f /tmp/pm2conf

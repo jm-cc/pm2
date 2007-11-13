@@ -85,7 +85,7 @@ nm_parse_sampling(struct nm_drv *drv, char *drv_name){
 
   sampling_file = fopen(sampling_file_path, "r");
   if(!sampling_file){
-    TBX_FAILURE("Sampling file <%s> does not exist. Check if the sampling has been done.", sampling_file_path);
+    TBX_FAILUREF("Sampling file <%s> does not exist. Check if the sampling has been done.", sampling_file_path);
   }
 
   /* count sampling entries */

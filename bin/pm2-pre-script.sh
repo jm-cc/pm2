@@ -201,7 +201,7 @@ fi
 if [ -n "$valgrind" ]; then
 
     log "Executing: valgrind -v --leak-check=yes --db-attach=yes --db-command=\"gdb -x $debug_file -nw %f %p\" $prog $*"
-    valgrind -v --leak-check=yes --db-attach=yes --db-command="gdb -x $debug_file -nw %f %p" $prog $*
+    valgrind -v --show-reachable=yes --leak-check=yes --db-attach=yes --db-command="gdb -x $debug_file -nw %f %p" $prog $*
 
     rm -f $debug_file
 

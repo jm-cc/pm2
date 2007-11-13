@@ -27,7 +27,8 @@ for network in $*; do
     rm -f architecture
 
     #compilation du test d'échantillonage avec une flavor prédéfinie
-    if [ ! -f $PM2_BUILD_DIR/${arch}/$flavor/examples/bin/sampling-prog ] ; then
+    prog=$(pm2-which -f $flavor sampling-prog 2>/dev/null)
+    if [ -z $prog ] ; then
         echo "***Compilation of the sampling program"
 
         echo "ssh $machine1 make FLAVOR=$flavor -C $PM2_ROOT/nmad/sampling sampling-prog 2>&1 | tee /tmp/compil"
@@ -36,7 +37,8 @@ for network in $*; do
         rm -f /tmp/compil
     fi
 
-    if [ ! -f $PM2_BUILD_DIR/${arch}/leonie/leonie/bin/leonie ] ; then
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         echo "***Compilation of leonie"
         make FLAVOR=leonie -C $PM2_ROOT/leonie 2>&1 | tee /tmp/compil
         rm -f /tmp/compil

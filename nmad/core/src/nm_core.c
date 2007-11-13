@@ -896,6 +896,8 @@ nm_core_exit           (struct nm_core		*p_core) {
   tbx_malloc_clean(nm_core_iov1_mem);
   tbx_malloc_clean(nm_core_iov2_mem);
 
+  common_exit(NULL);
+
   return NM_ESUCCESS;
 }
 

@@ -45,7 +45,6 @@ Usage: $PROGNAME { option } command
     -l|--log              : Also generate a log file on first node
     -L                    : As '-l' but do not display the log file
     -u|--use-local-flavor : Use local flavor (re-run pm2-config on each node)
-    --protocol name       : Use protocol named "name"
     -h|--help             : Display this help message
 
    Madeleine/Leonie options:
@@ -53,6 +52,8 @@ Usage: $PROGNAME { option } command
     -p                    : Pause at the end of the command
     -cd                   : Change working directory at the beginning of the session
     --wd directory        : Set working directory to given directory at the beginning of the session
+    --protocol name       : Use protocol named "name"
+    --network file        : Specify the network configuration file
 EOF
     exit $1
 }
@@ -102,7 +103,11 @@ mad3()
     PM2_LEONIE_FILE="${PM2_CONF_FILE}.cfg"
     log "Leonie config file: ${PM2_LEONIE_FILE}"
 
-    PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
+    if [ -n "$PM2_NETWORK_FILE" ] ; then
+	PM2_LEONIE_NETWORK_FILE=$PM2_NETWORK_FILE
+    else
+	PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
+    fi
 
     host_list=`cat ${PM2_CONF_FILE}`
     for i in $host_list
@@ -236,6 +241,7 @@ PM2_PMODE=off
 PM2_CDMODE=off
 PM2_WDIR=""
 PM2_PROTOCOL=""
+PM2_NETWORK_FILE=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -247,6 +253,11 @@ while [ $# -gt 0 ]; do
 	--protocol)
 	    shift
 	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
+	    shift
+	    ;;
+	--network)
+	    shift
+	    PM2_NETWORK_FILE="$1"
 	    shift
 	    ;;
 	-d|--debug)

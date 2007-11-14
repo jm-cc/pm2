@@ -382,6 +382,9 @@ if [ "$SAMPLING_ENABLED" == "1" ] ; then
     fi
 
     ssh $machine1 arch > architecture
+    if [ ! -f architecture ] ; then
+	ssh $machine1 uname -m > architecture
+    fi
     arch=`cat architecture`
     #echo "Arch = $arch"
 

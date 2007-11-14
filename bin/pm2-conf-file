@@ -22,8 +22,8 @@ pm2_conf_file_usage() # exit_code
     cat <<EOF
 Usage: $_PM2_CONF_FILE_PROGNAME { option }
   option:
-    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
-    -h        : Display this help message
+    -f|--flavor <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -h                 : Display this help message
 EOF
     exit $1
 }
@@ -32,7 +32,7 @@ pm2_conf_file_parse_cmdline()
 {
     while [ $# -gt 0 ]; do
 	case $1 in
-	    -f)
+	    -f|--flavor)
 		shift; PM2_FLAVOR="$1"; shift
 		;;
 	    -h)

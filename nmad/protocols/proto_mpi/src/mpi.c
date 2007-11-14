@@ -28,6 +28,7 @@
 static p_mad_madeleine_t       madeleine	= NULL;
 static struct nm_so_interface *p_so_sr_if;
 static nm_so_pack_interface    p_so_pack_if;
+static mpir_internal_data_t    mpir_internal_data;
 
 #define MAX_ARG_LEN 64
 
@@ -996,6 +997,10 @@ void mpi_group_translate_ranks_(int *group1,
 
 #endif /* PM2_FORTRAN_TARGET_NONE */
 
+mpir_internal_data_t *get_mpir_internal_data() {
+  return &mpir_internal_data;
+}
+
 int MPI_Init(int *argc,
              char ***argv) {
 
@@ -1046,7 +1051,7 @@ int MPI_Init(int *argc,
   /*
    * Internal initialisation
    */
-  ret = mpir_internal_init(global_size, process_rank, madeleine, p_so_sr_if, p_so_pack_if);
+  ret = mpir_internal_init(&mpir_internal_data, global_size, process_rank, madeleine, p_so_sr_if, p_so_pack_if);
 
   MPI_NMAD_LOG_OUT();
   return ret;
@@ -1072,7 +1077,7 @@ int MPI_Finalize(void) {
 
   MPI_NMAD_LOG_IN();
 
-  err = mpir_internal_exit();
+  err = mpir_internal_exit(&mpir_internal_data);
   mad_exit(madeleine);
 
   MPI_NMAD_LOG_OUT();
@@ -1084,7 +1089,7 @@ int MPI_Abort(MPI_Comm comm TBX_UNUSED,
   int err;
   MPI_NMAD_LOG_IN();
 
-  err = mpir_internal_exit();
+  err = mpir_internal_exit(&mpir_internal_data);
   mad_exit(madeleine);
 
   MPI_NMAD_LOG_OUT();
@@ -1095,7 +1100,7 @@ int MPI_Comm_size(MPI_Comm comm,
                   int *size) {
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator_t *mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator_t *mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   *size = mpir_communicator->size;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
@@ -1105,7 +1110,7 @@ int MPI_Comm_rank(MPI_Comm comm,
                   int *rank) {
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator_t *mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator_t *mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   *rank = mpir_communicator->rank;
   MPI_NMAD_TRACE("My comm rank is %d\n", *rank);
 
@@ -1266,7 +1271,7 @@ int MPI_Esend(void *buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Esending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1283,7 +1288,7 @@ int MPI_Esend(void *buffer,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = is_completed;
 
-  err = mpir_isend(mpir_request, dest, mpir_communicator);
+  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1304,7 +1309,7 @@ int MPI_Send(void *buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Sending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1321,7 +1326,7 @@ int MPI_Send(void *buffer,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
 
-  err = mpir_isend(mpir_request, dest, mpir_communicator);
+  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_Wait(&request, MPI_STATUS_IGNORE);
 
@@ -1343,7 +1348,7 @@ int MPI_Isend(void *buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1360,7 +1365,7 @@ int MPI_Isend(void *buffer,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
 
-  err = mpir_isend(mpir_request, dest, mpir_communicator);
+  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1381,7 +1386,7 @@ int MPI_Rsend(void* buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Rsending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1398,7 +1403,7 @@ int MPI_Rsend(void* buffer,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_READY_MODE;
 
-  err = mpir_isend(mpir_request, dest, mpir_communicator);
+  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1419,7 +1424,7 @@ int MPI_Ssend(void* buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Ssending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1436,7 +1441,7 @@ int MPI_Ssend(void* buffer,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_READY_MODE;
 
-  err = mpir_isend(mpir_request, dest, mpir_communicator);
+  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1459,7 +1464,7 @@ int MPI_Recv(void *buffer,
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d, count %d\n", source, datatype, tag, count);
   MPI_NMAD_TIMER_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1475,7 +1480,7 @@ int MPI_Recv(void *buffer,
   mpir_request->count = count;
   mpir_request->user_tag = tag;
 
-  err = mpir_irecv(mpir_request, source, mpir_communicator);
+  err = mpir_irecv(&mpir_internal_data, mpir_request, source, mpir_communicator);
 
   err = MPI_Wait(&request, status);
 
@@ -1498,7 +1503,7 @@ int MPI_Irecv(void *buffer,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Ireceiving message from %d of datatype %d with tag %d\n", source, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1514,7 +1519,7 @@ int MPI_Irecv(void *buffer,
   mpir_request->count = count;
   mpir_request->user_tag = tag;
 
-  err = mpir_irecv(mpir_request, source, mpir_communicator);
+  err = mpir_irecv(&mpir_internal_data, mpir_request, source, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1559,9 +1564,9 @@ int MPI_Wait(MPI_Request *request,
     MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
     MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
     err = nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
-    mpir_datatype = mpir_get_datatype(mpir_request->request_datatype);
+    mpir_datatype = mpir_get_datatype(&mpir_internal_data, mpir_request->request_datatype);
     if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
-      mpir_datatype_split(mpir_request);
+      mpir_datatype_split(&mpir_internal_data, mpir_request);
     }
     MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
   }
@@ -1593,7 +1598,7 @@ int MPI_Wait(MPI_Request *request,
   }
 
   if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(request, status);
+      err = mpir_set_status(&mpir_internal_data, request, status);
   }
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
@@ -1605,7 +1610,7 @@ int MPI_Wait(MPI_Request *request,
 
   // Release one active communication for that type
   if (mpir_request->request_datatype > MPI_INTEGER) {
-    err = mpir_type_unlock(mpir_request->request_datatype);
+    err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
   }
 
   MPI_NMAD_TRACE("Request completed\n");
@@ -1687,7 +1692,7 @@ int MPI_Test(MPI_Request *request,
     *flag = 1;
 
     if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(request, status);
+      err = mpir_set_status(&mpir_internal_data, request, status);
     }
 
     mpir_request->request_type = MPI_REQUEST_ZERO;
@@ -1734,7 +1739,7 @@ int MPI_Iprobe(int source,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tag == MPI_ANY_TAG) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1745,7 +1750,7 @@ int MPI_Iprobe(int source,
     gate_id = NM_SO_ANY_SRC;
   }
   else {
-    gate_id = mpir_get_in_gate_id(source);
+    gate_id = mpir_get_in_gate_id(&mpir_internal_data, source);
 
     if (source >= mpir_communicator->size || gate_id == NM_SO_ANY_SRC) {
       fprintf(stderr, "Cannot find a in connection between %d and %d\n", mpir_communicator->rank, source);
@@ -1759,7 +1764,7 @@ int MPI_Iprobe(int source,
     *flag = 1;
     if (status != NULL) {
       status->MPI_TAG = tag;
-      status->MPI_SOURCE = mpir_get_in_dest(out_gate_id);
+      status->MPI_SOURCE = mpir_get_in_dest(&mpir_internal_data, out_gate_id);
     }
   }
   else { /* err == -NM_EAGAIN */
@@ -1852,7 +1857,7 @@ int MPI_Send_init(void* buf,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Isending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1869,7 +1874,7 @@ int MPI_Send_init(void* buf,
   mpir_request->user_tag = tag;
   mpir_request->communication_mode = MPI_IMMEDIATE_MODE;
 
-  err = mpir_isend_init(mpir_request, dest, mpir_communicator);
+  err = mpir_isend_init(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1889,7 +1894,7 @@ int MPI_Recv_init(void* buf,
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Init Irecv message from %d of datatype %d with tag %d\n", source, datatype, tag);
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   if (tbx_unlikely(tag == MPI_ANY_TAG)) {
     ERROR("<Using MPI_ANY_TAG> not implemented yet!");
     MPI_NMAD_LOG_OUT();
@@ -1905,7 +1910,7 @@ int MPI_Recv_init(void* buf,
   mpir_request->count = count;
   mpir_request->user_tag = tag;
 
-  err = mpir_irecv_init(mpir_request, source, mpir_communicator);
+  err = mpir_irecv_init(&mpir_internal_data, mpir_request, source, mpir_communicator);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1918,7 +1923,7 @@ int MPI_Start(MPI_Request *request) {
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Start request\n");
 
-  err =  mpir_start(mpir_request);
+  err =  mpir_start(&mpir_internal_data, mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1944,11 +1949,11 @@ int MPI_Barrier(MPI_Comm comm) {
 
   MPI_NMAD_LOG_IN();
 
-  termination = mpir_test_termination(comm);
+  termination = mpir_test_termination(&mpir_internal_data, comm);
   MPI_NMAD_TRACE("Result %d\n", termination);
   while (termination == tbx_false) {
     sleep(1);
-    termination = mpir_test_termination(comm);
+    termination = mpir_test_termination(&mpir_internal_data, comm);
   }
 
   MPI_NMAD_LOG_OUT();
@@ -1966,7 +1971,7 @@ int MPI_Bcast(void* buffer,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   MPI_NMAD_TRACE("Entering a bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
   if (mpir_communicator->rank == root) {
@@ -2015,7 +2020,7 @@ int MPI_Gather(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   if (mpir_communicator->rank == root) {
     MPI_Request *requests;
@@ -2023,8 +2028,8 @@ int MPI_Gather(void *sendbuf,
     mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
 
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
-    mpir_recv_datatype = mpir_get_datatype(recvtype);
-    mpir_send_datatype = mpir_get_datatype(sendtype);
+    mpir_recv_datatype = mpir_get_datatype(&mpir_internal_data, recvtype);
+    mpir_send_datatype = mpir_get_datatype(&mpir_internal_data, sendtype);
 
     // receive data from other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
@@ -2066,7 +2071,7 @@ int MPI_Gatherv(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   if (mpir_communicator->rank == root) {
     MPI_Request *requests;
@@ -2074,8 +2079,8 @@ int MPI_Gatherv(void *sendbuf,
     mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
 
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
-    mpir_recv_datatype = mpir_get_datatype(recvtype);
-    mpir_send_datatype = mpir_get_datatype(sendtype);
+    mpir_recv_datatype = mpir_get_datatype(&mpir_internal_data, recvtype);
+    mpir_send_datatype = mpir_get_datatype(&mpir_internal_data, sendtype);
 
     // receive data from other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
@@ -2118,7 +2123,7 @@ int MPI_Allgather(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
 
@@ -2141,7 +2146,7 @@ int MPI_Allgatherv(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   // Broadcast the total receive count to all processes
   if (mpir_communicator->rank == 0) {
@@ -2176,7 +2181,7 @@ int MPI_Scatter(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   if (mpir_communicator->rank == root) {
     MPI_Request *requests;
@@ -2184,8 +2189,8 @@ int MPI_Scatter(void *sendbuf,
     mpir_datatype_t *mpir_recv_datatype, *mpir_send_datatype;
 
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
-    mpir_recv_datatype = mpir_get_datatype(recvtype);
-    mpir_send_datatype = mpir_get_datatype(sendtype);
+    mpir_recv_datatype = mpir_get_datatype(&mpir_internal_data, recvtype);
+    mpir_send_datatype = mpir_get_datatype(&mpir_internal_data, sendtype);
 
     // send data to other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
@@ -2229,12 +2234,12 @@ int MPI_Alltoall(void* sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   send_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
   recv_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
-  mpir_send_datatype = mpir_get_datatype(sendtype);
-  mpir_recv_datatype = mpir_get_datatype(recvtype);
+  mpir_send_datatype = mpir_get_datatype(&mpir_internal_data, sendtype);
+  mpir_recv_datatype = mpir_get_datatype(&mpir_internal_data, recvtype);
 
   for(i=0 ; i<mpir_communicator->size; i++) {
     if(i == mpir_communicator->rank)
@@ -2287,12 +2292,12 @@ int MPI_Alltoallv(void* sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   send_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
   recv_requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
 
-  mpir_send_datatype = mpir_get_datatype(sendtype);
-  mpir_recv_datatype = mpir_get_datatype(recvtype);
+  mpir_send_datatype = mpir_get_datatype(&mpir_internal_data, sendtype);
+  mpir_recv_datatype = mpir_get_datatype(&mpir_internal_data, recvtype);
 
   for(i=0 ; i<mpir_communicator->size; i++) {
     if(i == mpir_communicator->rank)
@@ -2333,7 +2338,7 @@ int MPI_Op_create(MPI_User_function *function,
   int err;
 
   MPI_NMAD_LOG_IN();
-  err = mpir_op_create(function, commute, op);
+  err = mpir_op_create(&mpir_internal_data, function, commute, op);
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -2342,7 +2347,7 @@ int MPI_Op_free(MPI_Op *op) {
   int err;
 
   MPI_NMAD_LOG_IN();
-  err = mpir_op_free(op);
+  err = mpir_op_free(&mpir_internal_data, op);
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -2360,8 +2365,8 @@ int MPI_Reduce(void* sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
-  operator = mpir_get_operator(op);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
+  operator = mpir_get_operator(&mpir_internal_data, op);
   if (operator->function == NULL) {
     ERROR("Operation %d not implemented\n", op);
     MPI_NMAD_LOG_OUT();
@@ -2377,7 +2382,7 @@ int MPI_Reduce(void* sendbuf,
     requests = malloc(mpir_communicator->size * sizeof(MPI_Request));
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
-      remote_sendbufs[i] = malloc(count * mpir_sizeof_datatype(datatype));
+      remote_sendbufs[i] = malloc(count * mpir_sizeof_datatype(&mpir_internal_data, datatype));
       MPI_Irecv(remote_sendbufs[i], count, datatype, i, tag, comm, &requests[i]);
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
@@ -2386,7 +2391,7 @@ int MPI_Reduce(void* sendbuf,
     }
 
     // Do the reduction operation
-    memcpy(recvbuf, sendbuf, count*mpir_sizeof_datatype(datatype));
+    memcpy(recvbuf, sendbuf, count*mpir_sizeof_datatype(&mpir_internal_data, datatype));
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       operator->function(remote_sendbufs[i], recvbuf, &count, &datatype);
@@ -2443,8 +2448,8 @@ int MPI_Reduce_scatter(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_datatype = mpir_get_datatype(datatype);
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_datatype = mpir_get_datatype(&mpir_internal_data, datatype);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
   for(i=0 ; i<mpir_communicator->size ; i++) {
     count += recvcounts[i];
   }
@@ -2507,23 +2512,23 @@ int MPI_Address(void *location,
 
 int MPI_Type_size(MPI_Datatype datatype,
 		  int *size) {
-  return mpir_type_size(datatype, size);
+  return mpir_type_size(&mpir_internal_data, datatype, size);
 }
 
 int MPI_Type_get_extent(MPI_Datatype datatype,
 			MPI_Aint *lb,
 			MPI_Aint *extent) {
-  return mpir_type_get_lb_and_extent(datatype, lb, extent);
+  return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, lb, extent);
 }
 
 int MPI_Type_extent(MPI_Datatype datatype,
 		    MPI_Aint *extent) {
-  return mpir_type_get_lb_and_extent(datatype, NULL, extent);
+  return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, NULL, extent);
 }
 
 int MPI_Type_lb(MPI_Datatype datatype,
 		MPI_Aint *lb) {
-  return mpir_type_get_lb_and_extent(datatype, lb, NULL);
+  return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, lb, NULL);
 }
 
 int MPI_Type_create_resized(MPI_Datatype oldtype,
@@ -2538,18 +2543,18 @@ int MPI_Type_create_resized(MPI_Datatype oldtype,
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
-  err = mpir_type_create_resized(oldtype, lb, extent, newtype);
+  err = mpir_type_create_resized(&mpir_internal_data, oldtype, lb, extent, newtype);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
 int MPI_Type_commit(MPI_Datatype *datatype) {
-  return mpir_type_commit(*datatype);
+  return mpir_type_commit(&mpir_internal_data, *datatype);
 }
 
 int MPI_Type_free(MPI_Datatype *datatype) {
-  int err = mpir_type_free(*datatype);
+  int err = mpir_type_free(&mpir_internal_data, *datatype);
   if (err == MPI_SUCCESS) {
     *datatype = MPI_DATATYPE_NULL;
   }
@@ -2558,13 +2563,13 @@ int MPI_Type_free(MPI_Datatype *datatype) {
 
 int MPI_Type_optimized(MPI_Datatype *datatype,
                        int optimized) {
-  return mpir_type_optimized(*datatype, optimized);
+  return mpir_type_optimized(&mpir_internal_data, *datatype, optimized);
 }
 
 int MPI_Type_contiguous(int count,
                         MPI_Datatype oldtype,
                         MPI_Datatype *newtype) {
-  return mpir_type_contiguous(count, oldtype, newtype);
+  return mpir_type_contiguous(&mpir_internal_data, count, oldtype, newtype);
 }
 
 int MPI_Type_vector(int count,
@@ -2572,8 +2577,8 @@ int MPI_Type_vector(int count,
                     int stride,
                     MPI_Datatype oldtype,
                     MPI_Datatype *newtype) {
-  int hstride = stride * mpir_sizeof_datatype(oldtype);
-  return mpir_type_vector(count, blocklength, hstride, oldtype, newtype);
+  int hstride = stride * mpir_sizeof_datatype(&mpir_internal_data, oldtype);
+  return mpir_type_vector(&mpir_internal_data, count, blocklength, hstride, oldtype, newtype);
 }
 
 int MPI_Type_hvector(int count,
@@ -2581,7 +2586,7 @@ int MPI_Type_hvector(int count,
                      int stride,
                      MPI_Datatype oldtype,
                      MPI_Datatype *newtype) {
-  return mpir_type_vector(count, blocklength, stride, oldtype, newtype);
+  return mpir_type_vector(&mpir_internal_data, count, blocklength, stride, oldtype, newtype);
 }
 
 int MPI_Type_indexed(int count,
@@ -2598,7 +2603,7 @@ int MPI_Type_indexed(int count,
     displacements[i] = array_of_displacements[i];
   }
 
-  err = mpir_type_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
+  err = mpir_type_indexed(&mpir_internal_data, count, array_of_blocklengths, displacements, oldtype, newtype);
 
   FREE_AND_SET_NULL(displacements);
   MPI_NMAD_LOG_OUT();
@@ -2616,12 +2621,12 @@ int MPI_Type_hindexed(int count,
   MPI_NMAD_LOG_IN();
 
   MPI_Aint *displacements = malloc(count * sizeof(MPI_Aint));
-  old_size = mpir_sizeof_datatype(oldtype);
+  old_size = mpir_sizeof_datatype(&mpir_internal_data, oldtype);
   for(i=0 ; i<count ; i++) {
     displacements[i] = array_of_displacements[i] * old_size;
   }
 
-  err = mpir_type_indexed(count, array_of_blocklengths, displacements, oldtype, newtype);
+  err = mpir_type_indexed(&mpir_internal_data, count, array_of_blocklengths, displacements, oldtype, newtype);
 
   FREE_AND_SET_NULL(displacements);
   MPI_NMAD_LOG_OUT();
@@ -2633,7 +2638,7 @@ int MPI_Type_struct(int count,
                     MPI_Aint *array_of_displacements,
                     MPI_Datatype *array_of_types,
                     MPI_Datatype *newtype) {
-  return mpir_type_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
+  return mpir_type_struct(&mpir_internal_data, count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
 }
 
 int MPI_Comm_group(MPI_Comm comm,
@@ -2658,7 +2663,7 @@ int MPI_Comm_split(MPI_Comm comm,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(comm);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
   sendbuf = malloc(3*mpir_communicator->size*sizeof(int));
   for(i=0 ; i<mpir_communicator->size*3 ; i+=3) {
@@ -2729,7 +2734,7 @@ int MPI_Comm_split(MPI_Comm comm,
   }
   else {
     MPI_Comm_dup(comm, newcomm);
-    mpir_newcommunicator = mpir_get_communicator(*newcomm);
+    mpir_newcommunicator = mpir_get_communicator(&mpir_internal_data, *newcomm);
     mpir_newcommunicator->size = nb_conodes;
     FREE_AND_SET_NULL(mpir_newcommunicator->global_ranks);
     mpir_newcommunicator->global_ranks = malloc(nb_conodes*sizeof(int));
@@ -2755,11 +2760,11 @@ int MPI_Comm_split(MPI_Comm comm,
 
 int MPI_Comm_dup(MPI_Comm comm,
 		 MPI_Comm *newcomm) {
-  return mpir_comm_dup(comm, newcomm);
+  return mpir_comm_dup(&mpir_internal_data, comm, newcomm);
 }
 
 int MPI_Comm_free(MPI_Comm *comm) {
-  return mpir_comm_free(comm);
+  return mpir_comm_free(&mpir_internal_data, comm);
 }
 
 int MPI_Group_translate_ranks(MPI_Group group1,
@@ -2773,8 +2778,8 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 
   MPI_NMAD_LOG_IN();
 
-  mpir_communicator = mpir_get_communicator(group1);
-  mpir_communicator2 = mpir_get_communicator(group2);
+  mpir_communicator = mpir_get_communicator(&mpir_internal_data, group1);
+  mpir_communicator2 = mpir_get_communicator(&mpir_internal_data, group2);
   for(i=0 ; i<n ; i++) {
     ranks2[i] = MPI_UNDEFINED;
     if (ranks1[i] < mpir_communicator->size) {

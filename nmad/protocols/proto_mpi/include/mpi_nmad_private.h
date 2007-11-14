@@ -370,6 +370,26 @@ int mpir_datatype_split(mpir_internal_data_t *mpir_internal_data,
 int mpir_start(mpir_internal_data_t *mpir_internal_data,
 	       mpir_request_t *mpir_request);
 
+/**
+ * Waits for a request.
+ */
+int mpir_wait(mpir_internal_data_t *mpir_internal_data,
+	      mpir_request_t *mpir_request);
+
+/**
+ * Tests the completion of a request.
+ */
+int mpir_test(mpir_internal_data_t *mpir_internal_data,
+	      mpir_request_t *mpir_request);
+
+/**
+ * Probes a request.
+ */
+int mpir_probe(mpir_internal_data_t *mpir_internal_data,
+	       nm_gate_id_t gate_id,
+	       nm_gate_id_t *out_gate_id,
+	       int tag);
+
 /* Datatype functionalities */
 
 /**

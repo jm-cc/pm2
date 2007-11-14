@@ -26,8 +26,6 @@
 #include <assert.h>
 
 static p_mad_madeleine_t       madeleine	= NULL;
-static struct nm_so_interface *p_so_sr_if;
-static nm_so_pack_interface    p_so_pack_if;
 static mpir_internal_data_t    mpir_internal_data;
 
 #define MAX_ARG_LEN 64
@@ -1009,6 +1007,8 @@ int MPI_Init(int *argc,
   int                              global_size;
   int                              process_rank;
   int                              ret;
+  struct nm_so_interface          *p_so_sr_if;
+  nm_so_pack_interface             p_so_pack_if;
 
   MPI_NMAD_LOG_IN();
 
@@ -1555,48 +1555,12 @@ int MPI_Sendrecv(void *sendbuf,
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
   mpir_request_t  *mpir_request = (mpir_request_t *)request;
-  mpir_datatype_t *mpir_datatype;
   int                       err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
-  if (mpir_request->request_type == MPI_REQUEST_RECV) {
-    MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
-    err = nm_so_sr_rwait(p_so_sr_if, mpir_request->request_nmad);
-    mpir_datatype = mpir_get_datatype(&mpir_internal_data, mpir_request->request_datatype);
-    if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
-      mpir_datatype_split(&mpir_internal_data, mpir_request);
-    }
-    MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
-    MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
-    MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
-    err = nm_so_sr_swait(p_so_sr_if, mpir_request->request_nmad);
-    MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
-    if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
-      if (mpir_request->contig_buffer != NULL) {
-        FREE_AND_SET_NULL(mpir_request->contig_buffer);
-      }
-    }
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-    MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
-    err = nm_so_end_unpacking(connection);
-    MPI_NMAD_TRANSFER("Returning from nm_so_end_unpacking\n");
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-    MPI_NMAD_TRACE("Waiting for completion end_packing\n");
-    err = nm_so_end_packing(connection);
-    MPI_NMAD_TRANSFER("Returning from nm_so_end_packing\n");
-  }
-  else {
-    MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
-  }
 
+  err = mpir_wait(&mpir_internal_data, mpir_request);
+  
   if (status != MPI_STATUS_IGNORE) {
       err = mpir_set_status(&mpir_internal_data, request, status);
   }
@@ -1673,21 +1637,8 @@ int MPI_Test(MPI_Request *request,
 
   MPI_NMAD_LOG_IN();
 
-  if (mpir_request->request_type == MPI_REQUEST_RECV) {
-    err = nm_so_sr_rtest(p_so_sr_if, mpir_request->request_nmad);
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
-    err = nm_so_sr_stest(p_so_sr_if, mpir_request->request_nmad);
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-    err = nm_so_test_end_unpacking(connection);
-  }
-  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
-    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
-    err = nm_so_test_end_packing(connection);
-  }
-
+  err = mpir_test(&mpir_internal_data, mpir_request);
+  
   if (err == NM_ESUCCESS) {
     *flag = 1;
 
@@ -1759,7 +1710,8 @@ int MPI_Iprobe(int source,
     }
   }
 
-  err = nm_so_sr_probe(p_so_sr_if, gate_id, &out_gate_id, tag);
+  err = mpir_probe(&mpir_internal_data, gate_id, &out_gate_id, tag);
+
   if (err == NM_ESUCCESS) {
     *flag = 1;
     if (status != NULL) {

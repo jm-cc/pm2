@@ -1018,6 +1018,79 @@ int mpir_start(mpir_internal_data_t *mpir_internal_data,
   }
 }
 
+int mpir_wait(mpir_internal_data_t *mpir_internal_data,
+	      mpir_request_t *mpir_request) {
+  int err;
+  mpir_datatype_t *mpir_datatype;
+
+  MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
+  if (mpir_request->request_type == MPI_REQUEST_RECV) {
+    MPI_NMAD_TRACE("Calling nm_so_sr_rwait\n");
+    MPI_NMAD_TRANSFER("Calling nm_so_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
+    err = nm_so_sr_rwait(mpir_internal_data->p_so_sr_if, mpir_request->request_nmad);
+    mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
+    if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
+      mpir_datatype_split(mpir_internal_data, mpir_request);
+    }
+    MPI_NMAD_TRANSFER("Returning from nm_so_sr_rwait\n");
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
+    MPI_NMAD_TRACE("Calling nm_so_sr_swait\n");
+    MPI_NMAD_TRANSFER("Calling nm_so_sr_swait\n");
+    err = nm_so_sr_swait(mpir_internal_data->p_so_sr_if, mpir_request->request_nmad);
+    MPI_NMAD_TRANSFER("Returning from nm_so_sr_swait\n");
+    if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+      if (mpir_request->contig_buffer != NULL) {
+        FREE_AND_SET_NULL(mpir_request->contig_buffer);
+      }
+    }
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+    MPI_NMAD_TRANSFER("Calling nm_so_end_unpacking\n");
+    err = nm_so_end_unpacking(connection);
+    MPI_NMAD_TRANSFER("Returning from nm_so_end_unpacking\n");
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+    MPI_NMAD_TRACE("Waiting for completion end_packing\n");
+    err = nm_so_end_packing(connection);
+    MPI_NMAD_TRANSFER("Returning from nm_so_end_packing\n");
+  }
+  else {
+    MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
+  }
+
+  return err;
+}
+
+int mpir_test(mpir_internal_data_t *mpir_internal_data,
+	      mpir_request_t *mpir_request) {
+  int err;
+  if (mpir_request->request_type == MPI_REQUEST_RECV) {
+    err = nm_so_sr_rtest(mpir_internal_data->p_so_sr_if, mpir_request->request_nmad);
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
+    err = nm_so_sr_stest(mpir_internal_data->p_so_sr_if, mpir_request->request_nmad);
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+    err = nm_so_test_end_unpacking(connection);
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
+    struct nm_so_cnx *connection = &(mpir_request->request_cnx);
+    err = nm_so_test_end_packing(connection);
+  }
+  return err;
+}
+
+int mpir_probe(mpir_internal_data_t *mpir_internal_data,
+	       nm_gate_id_t gate_id,
+	       nm_gate_id_t *out_gate_id,
+	       int tag) {
+  return nm_so_sr_probe(mpir_internal_data->p_so_sr_if, gate_id, out_gate_id, tag);
+}
+
 /**
  * Gets the id of the next available datatype.
  */

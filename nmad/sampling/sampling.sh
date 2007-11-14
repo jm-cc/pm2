@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# ./sampling.sh <machine1> <machine2> <reseau1> <...>
+if [ -z "$3" ] ; then
+    echo "Error. Syntax: $0 <machine1> <machine2> <network1> ... <networkn>"
+    exit
+fi
 
-#Directory /home/ebrunet/build/build-i686//leonie/leonie/bin not found
-
-prog=$0
 machine1=$1 #echo "machine1 = $machine1"
 machine2=$2 #echo "machine2 = $machine2"
 
@@ -23,6 +23,9 @@ for network in $*; do
 
     #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
     ssh $machine1 arch > architecture
+    if [ ! -s architecture ] ; then
+	ssh $machine1 uname -m > architecture
+    fi
     arch=`cat architecture` #echo "Arch = $arch"
     rm -f architecture
 
@@ -36,7 +39,11 @@ for network in $*; do
         ssh $machine1 make FLAVOR=$flavor -C $PM2_ROOT/nmad/sampling sampling-prog 2>&1 | tee /tmp/compil
         rm -f /tmp/compil
     fi
-
+ 
+    LEONIE_FLAVOR=$(pm2-flavor get --flavor=leonie 2>/dev/null)
+    if [ -z "$LEONIE_FLAVOR" ] ; then
+        pm2-create-sample-flavors leonie
+    fi
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         echo "***Compilation of leonie"
@@ -57,34 +64,10 @@ networks : ({
 EOF
     ) > $network_file
 
-    #cat $network_file
-
-
-    #*** $network_$arch.cfg
-    config_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}.cfg"
-
-    (cat <<EOF
-application : {
-     name     : sampling-prog;
-     flavor   : $flavor;
-     networks : {
-          include  : $network_file;
-          channels : ({
-               name  : channel;
-               net   : $network-net;
-               hosts : ($machine1, $machine2);
-          });
-     };
-};
-EOF
-    ) > $config_file
-
-    #cat $config_file
-
     # lancement de l'échantillonnage
     sampling_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}_samplings.nm_ns"
     echo "***Launching of the sampling of ${network}"
-    leonie --x --p $config_file  2>&1 | tee $sampling_file
+    pm2-load --network $network_file --flavor $flavor sampling-prog  2>&1 | tee $sampling_file
 
     #cat $sampling_file
     echo "***Sampling Finished"

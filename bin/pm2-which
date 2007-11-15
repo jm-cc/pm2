@@ -29,9 +29,9 @@ pm2_which_usage() # exit_code
 Usage: $_PM2_WHICH_PROGNAME [option..] command
 
   option:
-    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -p      : Print possible prefixed notations (used to remove ambiguity)
-    -h      : Display this help message
+    -f|--flavor name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -p               : Print possible prefixed notations (used to remove ambiguity)
+    -h               : Display this help message
 EOF
     exit $1
 }
@@ -194,7 +194,7 @@ _PM2_WHICH_SOURCE_MODE=no
 
 while [ $# -gt 0 ]; do
     case $1 in
-	-f)
+	-f|--flavor)
 	    shift
 	    PM2_FLAVOR="$1"
 	    shift

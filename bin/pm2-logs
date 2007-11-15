@@ -20,7 +20,7 @@ export PM2_FLAVOR
 
 usage()
 {
-    echo "Usage : `basename $0` [-u] [-f flavor] [node [node...]]"
+    echo "Usage : `basename $0` [-u] [-f|--flavor flavor] [node [node...]]"
     echo "  -u      : Use local flavor (re-run pm2-config on each node)"
 }
 
@@ -35,7 +35,7 @@ error() # msg
 PM2_LOGS=""
 while [ $# -gt 0 ]; do
     case $1 in
-	-f)
+	-f|--flavor)
 	    PM2_FLAVOR="$2"; shift
 	    ;;
 	-u)

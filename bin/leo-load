@@ -49,10 +49,10 @@ usage() # exit_code
 Usage: $PROGNAME { option } command
 
   option:
-    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
-    -d      : Run command in debug mode (not supported by all implementations)
-    -c name : Use console named "name"
-    -h : Display this help message
+    -f|--flavor name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d               : Run command in debug mode (not supported by all implementations)
+    -c name          : Use console named "name"
+    -h               : Display this help message
 EOF
     exit $1
 }
@@ -109,7 +109,7 @@ ADD_WRAPPER=
 
 while [ $# -gt 0 ]; do
     case $1 in
-	-f)
+	-f|--flavor)
 	    shift
 	    PM2_FLAVOR="$1"
 	    shift

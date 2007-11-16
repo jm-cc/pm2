@@ -267,7 +267,7 @@ nm_ns_multiple_split_ratio(uint32_t len_to_send,
     int cur_nb_drv = 0;
     int chunk_len = tbx_aligned(len_to_send / nb_drv, sizeof(uint32_t));
 
-    while(cur_nb_drv < nb_drv && assigned_len + chunk_len < len_to_send){
+    while(cur_nb_drv < nb_drv-1 && assigned_len + chunk_len < len_to_send){
       chunk_lens[cur_nb_drv] = chunk_len;
       cur_nb_drv ++;
       assigned_len+=chunk_len;

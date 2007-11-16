@@ -1,39 +1,34 @@
-  Lorsque ssh forwarde X11, il utilise le programme xauth pour
-enregistrer le nouveau DISPLAY à utiliser.
-  Lors de multiples connexions simultanées par ssh avec forwarding de
-X11 sur des machines avec le même compte $HOME (partagé par NFS par
-exemple), les "xauth" sont fait en parallèles et essaye d'accéder tous
-en même temps au fichier $HOME/.Xauthority.
+When SSH forwards X11, it uses xauth to set the new DISPLAY to be
+used. When starting multiple connections on machines sharing a $HOME
+directory, the different xauth being started in parallel, will all try
+to access at the same time to the file $HOME/.Xauthority.
 
-  Pour résoudre ce problème, en attendant que xauth soit corrigé, il
-existe deux solutions :
+Two solutions are available to solve this problem:
 
--1- sérialiser les appels à ssh
+-1- serialise the calls to ssh.
 
--2- utiliser un fichier Xauthority différent pour chaque connection
-ssh, ce qui évite les problèmes d'accès concurrent.
+-2- use a different Xauthority file for each connection.
 
 
 
 Solution 1 (Alexandre DENIS)
 ----------
 
--- positionner LEO_RSH à "ssh -f" ('-f' demande à ssh de forker dès
-que la connexion est établie)
--- lancer l'application avec "leonie -w" ('-w' demande à leonie
-d'attendre que le lanceur forke quand il est prêt).
+-- Set LEO_RSH to "ssh -f" ('-f' requests ssh to fork as soon as the
+   connection is established).
+-- Start the application using "leonie -w" ('-w' requests leonie to
+   wait for the loader to fork).
 
-L'impact sur la vitesse de lancement n'est pas flagrant.
-
-
+This solution does not have any noticeable effect on the speed of the
+loading process.
 
 
 Solution 2 (Vincent DANJEAN)
 ----------
 
-  Pour cela :
-rajouter le script ${HOME}/.ssh/rc contenant :
-----------------------------------------------------
+-- Create the script ${HOME}/.ssh/rc :
+
+----xx--CUT HERE--xx-------------------------------------------
 #!/bin/sh
 
 suf=`echo $DISPLAY | cut -c11-`
@@ -46,29 +41,26 @@ if read proto cookie && [ -n "$DISPLAY" ]; then
 		echo add $DISPLAY $proto $cookie
 	fi | xauth -f "/tmp/.${USER}_xa$suf" -q -
 fi
-----------------------------------------------------
+----xx--CUT HERE--xx-------------------------------------------
 
-Puis, si vous utilisez bash:
-****************************
-Rajoutez dans ${HOME}/.bashrc (et ${HOME}/.bash_profile s'il n'inclut pas
-${HOME}/.bashrc) :
-----------------------------------------------------
+-- For bash's users
+  -- Add the following lines in ${HOME}/.bashrc (and in
+     ${HOME}/.bash_profile unless it includes ${HOME}/.bashrc)
+
+----xx--CUT HERE--xx-------------------------------------------
 if [ -n "$DISPLAY" ];
 then
 	suf=`echo $DISPLAY | cut -c11-`
 	export XAUTHORITY="/tmp/.${USER}_xa$suf"
 fi
-----------------------------------------------------
+----xx--CUT HERE--xx-------------------------------------------
 
-Si vous utilisez [t]csh:
-****************************
-Rajoutez dans ${HOME}/.cshrc (ou ${HOME}/.tcshrc si nécessaire)
-----------------------------------------------------
+-- For [t]csh's users:
+  -- Add the following lines in ${HOME}/.cshrc (or ${HOME}/.tcshrc)
+
+----xx--CUT HERE--xx-------------------------------------------
 if ( $?DISPLAY ) then
 	suf="`echo $DISPLAY | cut -c11-`"
 	setenv XAUTHORITY "/tmp/.${USER}_xa$suf"
 endif
-
-
-
-
+----xx--CUT HERE--xx-------------------------------------------

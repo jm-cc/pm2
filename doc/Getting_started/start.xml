@@ -2,7 +2,7 @@
 <!DOCTYPE DOCUMENT SYSTEM "file:../xml2html/data/xml/DOCUMENT.dtd">
 <DOCUMENT TITLE="Getting started with PM2"
           AUTHOR="The PM2 Team" EMAIL="runtime@labri.fr">
-<!-- AUTHOR="Olivier Aumage and Gabriel Antoniu and Luc BougÃ© and Vincent Danjean and Raymond Namyst" EMAIL="runtime@labri.fr" -->
+<!-- AUTHOR="Olivier Aumage and Gabriel Antoniu and Luc Bougé and Vincent Danjean and Raymond Namyst" EMAIL="runtime@labri.fr" -->
 
 <!-- DATE="December 2005" -->
 
@@ -34,7 +34,7 @@ If you have any questions concerning PM2, please, send an email to
 <KEYWORD>RPC, Communication, Thread, Distributed Programming.</KEYWORD>
 </ABSTRACT>
 
-<INRIA TYPE="RT" TITRE="DÃ©marrer avec PM2">
+<INRIA TYPE="RT" TITRE="Démarrer avec PM2">
 <RESUME>
 <MOTCLE></MOTCLE>
 </RESUME>

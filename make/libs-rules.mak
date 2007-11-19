@@ -139,6 +139,6 @@ docs:
 	doxygen
 
 docs-upload:
-	rsync -acvrlt --exclude .svn --delete doc/ gforge:/home/groups/pm2/htdocs/$(LIBDOC)
+	rsync -acvrlt --exclude .svn --delete doc gforge:/home/groups/pm2/htdocs/$(LIBDOC)
 
 ######################################################################

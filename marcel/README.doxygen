@@ -5,6 +5,6 @@ $ doxygen
 
 To upload it on the gforge site:
 
-$ rsync -acvrlt --exclude .svn --exclude latex --exclude man --delete doc/ gforge:/home/groups/pm2/htdocs/marcel
+$ rsync -acvrlt --exclude .svn --exclude latex --exclude man --delete doc gforge:/home/groups/pm2/htdocs/marcel
 
 The code for the index page is available in the file include/scheduler-marcel/marcel_sched.h

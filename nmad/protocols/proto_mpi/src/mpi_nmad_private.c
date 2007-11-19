@@ -25,9 +25,11 @@
 #include "nm_so_parameters.h"
 #include "nm_log.h"
 
+#if defined(NMAD_DEBUG)
 debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace");
 debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
 debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
+#endif /* NMAD_DEBUG */
 
 int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
 		       int global_size,

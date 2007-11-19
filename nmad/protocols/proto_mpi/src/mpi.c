@@ -1588,6 +1588,8 @@ int MPI_Waitall(int count,
   int err = NM_ESUCCESS;
   int i;
 
+  MPI_NMAD_LOG_IN();
+
   if (array_of_statuses == MPI_STATUSES_IGNORE) {
     for (i = 0; i < count; i++) {
       err =  MPI_Wait(&(array_of_requests[i]), MPI_STATUS_IGNORE);
@@ -1603,7 +1605,8 @@ int MPI_Waitall(int count,
     }
   }
 
- out:
+ out: 
+  MPI_NMAD_LOG_OUT();
   return err;
 }
 
@@ -1612,6 +1615,8 @@ int MPI_Waitany(int count,
                 int *rqindex,
                 MPI_Status *status) {
   int flag, i, err;
+
+  MPI_NMAD_LOG_IN();
 
   while (1) {
     for(i=0 ; i<count ; i++) {
@@ -1623,6 +1628,7 @@ int MPI_Waitany(int count,
         mpir_request->request_type = MPI_REQUEST_ZERO;
         *rqindex = i;
 
+	MPI_NMAD_LOG_OUT();
         return err;
       }
     }
@@ -1765,9 +1771,11 @@ int MPI_Cancel(MPI_Request *request) {
 int MPI_Request_free(MPI_Request *request) {
   mpir_request_t *mpir_request = (mpir_request_t *)request;
 
+  MPI_NMAD_LOG_IN();
   mpir_request->request_type = MPI_REQUEST_ZERO;
   mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
 
+  MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
@@ -1886,13 +1894,16 @@ int MPI_Startall(int count,
   int i;
   int err = MPI_SUCCESS;
 
+  MPI_NMAD_LOG_IN();
   for(i=0 ; i<count ; i++) {
     MPI_Request request = array_of_requests[i];
     err = MPI_Start(&request);
     if (err != MPI_SUCCESS) {
+      MPI_NMAD_LOG_OUT();
       return err;
     }
   }
+  MPI_NMAD_LOG_OUT();
   return err;
 }
 

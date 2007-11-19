@@ -110,7 +110,11 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 
 /** Test for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
+ *  @param gate_id the destination gate id.
+ *  @param tag the message tag.
+ *  @param iov
+ *  @param nb_entries
+ *  @param p_request a pointer to a NM/SO request to be filled.
  *  @return The NM status.
  */
 extern int
@@ -205,7 +209,12 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
 
 /** Test for the completion of a non blocking receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
+ *  @param gate_id the source gate id or NM_SO_ANY_SRC for receiving from any source.
+ *  @param tag the message tag.
+ *  @param data the data fragment pointer.
+ *  @param len the data fragment length.
+ *  @param p_request a pointer to a NM/SO request to be filled.
+ *  @param ref
  *  @return The NM status.
  */
 extern int

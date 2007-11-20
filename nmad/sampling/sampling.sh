@@ -67,6 +67,7 @@ EOF
     # lancement de l'échantillonnage
     sampling_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}_samplings.nm_ns"
     echo "***Launching of the sampling of ${network}"
+    pm2-conf --flavor $flavor $machine1 $machine2
     pm2-load --network $network_file --flavor $flavor sampling-prog  2>&1 | tee $sampling_file
 
     #cat $sampling_file

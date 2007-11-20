@@ -74,6 +74,11 @@ gcc/omp-builtins.def
 
 gcc/omp-low.c
   * main Gomp code generation routines
+  * 2 phases (see comments at the beginning og omp-low) 
+    --> also see func execute_lower_omp
+    - phase 1 scan    (entry point is func scan_omp)
+    - phase 2 expand  (entry point is func lower_omp)
+
   - func is_task_ctx
     > minor boolean function assertion checking
 

@@ -22,7 +22,7 @@ pm2_config_usage()
 
     cat <<EOF
 Usage: $_PM2_CONFIG_PROGNAME [--flavor=name] [OPTION]... [MODULE]...
-  If '--flavor' is not specified, then it uses fisrt \$PM2_FLAVOR, or,
+  If '--flavor' is not specified, then it uses first \$PM2_FLAVOR, or,
   if not set, 'default'.
 
 Generic options

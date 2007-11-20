@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
+
 GDB=""
 if [ "$1" = -d ]
 then

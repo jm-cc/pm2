@@ -250,16 +250,6 @@ while [ $# -gt 0 ]; do
 	    PM2_FLAVOR="$1"
 	    shift
 	    ;;
-	--protocol)
-	    shift
-	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
-	    shift
-	    ;;
-	--network)
-	    shift
-	    PM2_NETWORK_FILE="$1"
-	    shift
-	    ;;
 	-d|--debug)
 	    shift
 	    PM2_DEBUG=on
@@ -268,15 +258,6 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_VALGRIND=on
 	    ;;
-	-cd)
-	    shift
-	    PM2_CDMODE=on
-	    ;;
-        --wd)
-            shift
-            PM2_WDIR=$1
-            shift
-            ;;
 	--numactl)
 	    shift
             x=$(expr $1 + 0 2>/dev/null)
@@ -314,7 +295,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_LOGS_ON_NODE_0=only
 	    ;;
-# begin MadIII only
+# begin Madeleine only
 	--l) # Logs off
 	    shift
 	    PM2_LOGS_ON_NODE_0=off
@@ -326,6 +307,10 @@ while [ $# -gt 0 ]; do
 	--vg) # Valgrind off
 	    shift
 	    PM2_VALGRIND=off
+	    ;;
+	-cd) # Cd mode on
+	    shift
+	    PM2_CDMODE=on
 	    ;;
 	--cd) # Cdmode off
 	    shift
@@ -351,7 +336,22 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_PMODE=off
 	    ;;
-# end MadIII only
+	--protocol)
+	    shift
+	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
+	    shift
+	    ;;
+	--network)
+	    shift
+	    PM2_NETWORK_FILE="$1"
+	    shift
+	    ;;
+        --wd)
+            shift
+            PM2_WDIR=$1
+            shift
+            ;;
+# end Madeleine only
 	-u|--use-local-flavor)
 	    shift
 	    PM2_USE_LOCAL_FLAVOR=on

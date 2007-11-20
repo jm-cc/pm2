@@ -389,7 +389,7 @@ if [ "$SAMPLING_ENABLED" == "1" ] ; then
     #echo "machine2=$machine2"
 
     if [ -z "$machine1" ] ; then
-        _pm2_load_error "Error. You should first call pm2-conf."
+        _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
     fi
 
     ssh $machine1 arch > architecture

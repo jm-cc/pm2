@@ -147,9 +147,9 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, 
  */
 
 #define ma_mb()		__asm__ __volatile__("mfence":::"memory")
-#define ma_rmb()	__asm__ __volatile__("lfence":::"memory")
+#define ma_rmb()	__asm__ __volatile__("":::"memory")
 //#ifdef CONFIG_UNORDERED_IO
-#define ma_wmb()	__asm__ __volatile__("sfence":::"memory")
+#define ma_wmb()	__asm__ __volatile__("":::"memory")
 //#else
 //#define ma_wmb()	__asm__ __volatile__("" ::: "memory")
 #define ma_read_barrier_depends()	do { } while(0)

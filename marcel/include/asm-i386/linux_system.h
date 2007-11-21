@@ -247,14 +247,6 @@ struct ma_alt_instr {
  */
  
 
-/* 
- * Actually only lfence would be needed for mb() because all stores done 
- * by the kernel should be already ordered. But keep a full barrier for now. 
- */
-
-#define ma_mb() ma_alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
-#define ma_rmb() ma_alternative("lock; addl $0,0(%%esp)", "lfence", X86_FEATURE_XMM2)
-
 /**
  * read_barrier_depends - Flush all pending reads that subsequents reads
  * depend on.
@@ -309,13 +301,10 @@ struct ma_alt_instr {
 
 #define ma_read_barrier_depends()	do { } while(0)
 
-#ifdef CONFIG_X86_OOSTORE
-/* Actually there are no OOO store capable CPUs for now that do SSE, 
-   but make it already an possibility. */
-#define ma_wmb() ma_alternative("lock; addl $0,0(%%esp)", "sfence", X86_FEATURE_XMM)
-#else
+#define ma_mb() ma_alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
 #define ma_wmb()	__asm__ __volatile__ ("": : :"memory")
-#endif
+#define ma_rmb()	__asm__ __volatile__ ("": : :"memory")
+
 
 #ifdef MA__LWPS
 #define ma_smp_mb()	ma_mb()

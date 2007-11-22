@@ -69,6 +69,13 @@ nm_so_sr_init(struct nm_core *p_core,
 extern int
 nm_so_sr_exit(struct nm_so_interface *p_so_interface);
 
+/** Initialises a request object.
+ *  @param p_request a pointer to a NM/SO request to be filled.
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_request_init(nm_so_request *p_request);
+
 /** Post a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param gate_id the destination gate id.

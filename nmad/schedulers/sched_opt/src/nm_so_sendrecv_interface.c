@@ -174,6 +174,15 @@ nm_so_sr_exit(struct nm_so_interface *p_so_interface)
   return NM_ESUCCESS;
 }
 
+int
+nm_so_sr_request_init(nm_so_request *p_request) {
+  if(p_request) {
+    p_request->status = -1;
+    p_request->seq = -1;
+    p_request->gate_id = -1;
+  }
+  return NM_ESUCCESS;
+}
 
 /* Send operations */
 

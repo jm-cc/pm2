@@ -80,37 +80,37 @@
  * Timing macros  __________________________________________________
  * ______________///////////////////////////////////////////////////
  */
-#ifdef TIMING
+#ifdef TBX_TIMING
 #  define _TBXT_PRE  TBX_GET_TICK(tbx_new_event)
 #  define _TBXT_DIFF tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event)
 #  define _TBXT_POST TBX_GET_TICK(tbx_last_event)
 
-#  define TIME_INIT() _TBXT_POST
-#  define TIME(str)
+#  define TBX_TIME_INIT() _TBXT_POST
+#  define TBX_TIME(str)
     _TBXT_PRE; pm2debug("%s [%4f usecs]\n", str, _TBXT_DIFF); _TBXT_POST
-#  define TIME_IN()  TIME_INIT()
-#  define TIME_OUT() TIME(__TBX_FUNCTION__)
-#  define TIME_VAL(str, val) \
+#  define TBX_TIME_IN()  TIME_INIT()
+#  define TBX_TIME_OUT() TIME(__TBX_FUNCTION__)
+#  define TBX_TIME_VAL(str, val) \
     _TBXT_PRE; \
     pm2debug(str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
     _TBXT_POST
-#  define TIME_PTR(str, ptr) \
+#  define TBX_TIME_PTR(str, ptr) \
     _TBXT_PRE; \
     pm2debug(str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
     _TBXT_POST
-#  define TIME_STR(str, str2) \
+#  define TBX_TIME_STR(str, str2) \
     _TBXT_PRE; \
     pm2debug(str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
     _TBXT_POST
-#else /* TIMING */
-#  define TIME_INIT()          (void)(0)
-#  define TIME(str)            (void)(0)
-#  define TIME_IN()            (void)(0)
-#  define TIME_OUT()           (void)(0)
-#  define TIME_VAL(str, val)   (void)(0)
-#  define TIME_PTR(str, ptr)   (void)(0)
-#  define TIME_STR(str, str2)  (void)(0)
-#endif /* TIMING */
+#else /* TBX_TIMING */
+#  define TBX_TIME_INIT()          (void)(0)
+#  define TBX_TIME(str)            (void)(0)
+#  define TBX_TIME_IN()            (void)(0)
+#  define TBX_TIME_OUT()           (void)(0)
+#  define TBX_TIME_VAL(str, val)   (void)(0)
+#  define TBX_TIME_PTR(str, ptr)   (void)(0)
+#  define TBX_TIME_STR(str, str2)  (void)(0)
+#endif /* TBX_TIMING */
 
 /*
  * Control macros  __________________________________________________

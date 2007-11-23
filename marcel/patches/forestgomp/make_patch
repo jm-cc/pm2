@@ -14,7 +14,8 @@ if [ -z "${GCC_ORIG_DIR}" ]; then
 	GCC_ORIG_DIR="${GCC_DIR}.orig"
 fi
 
-diff -uprN -x '*~' -x 'configure' -x 'autom4te.cache' -x '*.in' ${GCC_ORIG_DIR} ${GCC_DIR} > forrestgomp.patch
+diff -uprN -X diff_exclude -x libgomp ${GCC_ORIG_DIR} ${GCC_DIR} > forestgomp_gcc.patch
+diff -uprN -X diff_exclude  ${GCC_ORIG_DIR}/libgomp ${GCC_DIR}/libgomp > forestgomp_libgomp.patch
 
 #
 

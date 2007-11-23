@@ -176,10 +176,10 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
       NM_DISPF("Cannot find a connection between %d and %d", process_rank, dest);
     }
     else {
-      MPI_NMAD_TRACE("Connection out: %p\n", connection);
       cs = connection->specific;
       mpir_internal_data->out_gate_id[dest] = cs->gate_id;
       mpir_internal_data->out_dest[cs->gate_id] = dest;
+      MPI_NMAD_TRACE("Connection out (%p) with dest %d is %d\n", connection, dest, cs->gate_id);
     }
   }
 
@@ -658,8 +658,14 @@ int mpir_isend_init(mpir_internal_data_t *mpir_internal_data,
   mpir_datatype_t      *mpir_datatype = NULL;
   int                   err = MPI_SUCCESS;
 
-  if (tbx_unlikely(dest >= mpir_communicator->size || mpir_internal_data->out_gate_id[mpir_communicator->global_ranks[dest]] == NM_ANY_GATE)) {
-    NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
+  if (tbx_unlikely(dest >= mpir_communicator->size)) {
+    TBX_FAILUREF("Dest %d does not belong to communicator %d\n", dest, mpir_communicator->communicator_id);
+    MPI_NMAD_LOG_OUT();
+    return MPI_ERR_INTERN;
+  }
+
+  if (tbx_unlikely(mpir_internal_data->out_gate_id[mpir_communicator->global_ranks[dest]] == NM_ANY_GATE)) {
+    TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, dest, mpir_communicator->global_ranks[dest]);
     MPI_NMAD_LOG_OUT();
     return MPI_ERR_INTERN;
   }
@@ -816,8 +822,13 @@ int mpir_irecv_init(mpir_internal_data_t *mpir_internal_data,
     mpir_request->gate_id = NM_ANY_GATE;
   }
   else {
-    if (tbx_unlikely(source >= mpir_communicator->size || mpir_internal_data->in_gate_id[mpir_communicator->global_ranks[source]] == NM_ANY_GATE)){
-      NM_DISPF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
+    if (tbx_unlikely(source >= mpir_communicator->size)) {
+      TBX_FAILUREF("Source %d does not belong to the communicator %d\n", source, mpir_communicator->communicator_id);
+      MPI_NMAD_LOG_OUT();
+      return MPI_ERR_INTERN;
+    }
+    if (tbx_unlikely(mpir_internal_data->in_gate_id[mpir_communicator->global_ranks[source]] == NM_ANY_GATE)) {
+      TBX_FAILUREF("Cannot find a connection between %d and %d, %d\n", mpir_communicator->rank, source, mpir_communicator->global_ranks[source]);
       MPI_NMAD_LOG_OUT();
       return MPI_ERR_INTERN;
     }
@@ -1527,6 +1538,7 @@ int mpir_comm_dup(mpir_internal_data_t *mpir_internal_data,
     mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
     mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
     mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->size;
+    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->rank = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->rank;
     mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->global_ranks = malloc(mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size * sizeof(int));
     for(i=0 ; i<mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size ; i++) {
       mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->global_ranks[i] = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->global_ranks[i];
@@ -1594,7 +1606,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     global_nb_incoming_msg = mpir_internal_data->nb_incoming_msg;
     global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
     for(i=1 ; i<global_size ; i++) {
-      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
       global_nb_incoming_msg += remote_counters[0];
       global_nb_outgoing_msg += remote_counters[1];
     }
@@ -1606,7 +1618,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     }
 
     for(i=1 ; i<global_size ; i++) {
-      MPI_Send(&answer, 1, MPI_INT, i, tag, MPI_COMM_WORLD);
+      MPI_Send(&answer, 1, MPI_INT, i, tag, comm);
     }
 
     if (answer == tbx_false) {
@@ -1618,7 +1630,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       global_nb_incoming_msg = mpir_internal_data->nb_incoming_msg;
       global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
       for(i=1 ; i<global_size ; i++) {
-        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
         global_nb_incoming_msg += remote_counters[0];
         global_nb_outgoing_msg += remote_counters[1];
       }
@@ -1630,7 +1642,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       }
 
       for(i=1 ; i<global_size ; i++) {
-        MPI_Send(&answer, 1, MPI_INT, i, tag, MPI_COMM_WORLD);
+        MPI_Send(&answer, 1, MPI_INT, i, tag, comm);
       }
 
       return answer;
@@ -1642,9 +1654,9 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     MPI_NMAD_TRACE("Beginning of 1st phase.\n");
     local_counters[0] = mpir_internal_data->nb_incoming_msg;
     local_counters[1] = mpir_internal_data->nb_outgoing_msg;
-    MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
+    MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
 
-    MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
     if (answer == tbx_false) {
       return tbx_false;
     }
@@ -1653,9 +1665,9 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
       local_counters[0] = mpir_internal_data->nb_incoming_msg;
       local_counters[1] = mpir_internal_data->nb_outgoing_msg;
-      MPI_Send(local_counters, 2, MPI_INT, 0, tag, MPI_COMM_WORLD);
+      MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
 
-      MPI_Recv(&answer, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
       return answer;
     }
   }

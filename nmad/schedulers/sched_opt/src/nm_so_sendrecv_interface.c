@@ -429,8 +429,10 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
     nm_so_sr_flush(p_so_interface);
   }
 
-  while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
-    nm_schedule(p_core);
+  if (request.status != NULL) {
+    while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
+      nm_schedule(p_core);
+  }
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -687,8 +689,10 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request, *p_request & NM_SO_STATUS_RECV_COMPLETED ? 1 : 0);
 
-  while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
-    nm_schedule(p_core);
+  if (request.status != NULL) {
+    while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
+      nm_schedule(p_core);
+  }
 
   NM_SO_SR_TRACE("request %p completed\n", p_request);
   NM_SO_SR_LOG_OUT();

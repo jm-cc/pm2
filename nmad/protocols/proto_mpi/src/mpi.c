@@ -1560,7 +1560,7 @@ int MPI_Wait(MPI_Request *request,
   MPI_NMAD_LOG_IN();
 
   err = mpir_wait(&mpir_internal_data, mpir_request);
-  
+
   if (status != MPI_STATUS_IGNORE) {
       err = mpir_set_status(&mpir_internal_data, request, status);
   }
@@ -1605,7 +1605,7 @@ int MPI_Waitall(int count,
     }
   }
 
- out: 
+ out:
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -1644,7 +1644,7 @@ int MPI_Test(MPI_Request *request,
   MPI_NMAD_LOG_IN();
 
   err = mpir_test(&mpir_internal_data, mpir_request);
-  
+
   if (err == NM_ESUCCESS) {
     *flag = 1;
 

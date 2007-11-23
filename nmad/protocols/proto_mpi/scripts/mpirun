@@ -210,7 +210,11 @@ EOF
 ) > $appli_file
 
 PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
-env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
+if [ "$OMP_NUM_THREADS" == "" ] ; then
+    env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
+else
+    env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} OMP_NUM_THREADS=$OMP_NUM_THREADS\""
+fi
 
 compile_leonie
 leonie="$LEONIE_ENV leonie"

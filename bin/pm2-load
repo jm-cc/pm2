@@ -209,6 +209,10 @@ mad3()
         env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     fi
 
+    if [ "$OMP_NUM_THREADS" != "" ] ; then
+        env="$env OMP_NUM_THREADS=$OMP_NUM_THREADS"
+    fi
+
     LEONIE_ENV=""
     if [ -f "$OAR_NODEFILE" ] ; then
 	oarsh=`which oarsh 2>/dev/null`

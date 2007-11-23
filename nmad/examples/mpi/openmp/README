@@ -1,0 +1,14 @@
+To compile MPI+OpenMP applications, one needs to use gcc-4.2. To do
+so, set the variable PM2_CC before compiling your application:
+
+% export PM2_CC=gcc-4.2
+% make
+
+The application can then be executed by either calling mpirun or
+pm2-load:
+
+% ../mpirun -machinefile ../nmad_localhost.lst -np 2 mixhello
+% OMP_NUM_THREADS=3 ../mpirun -machinefile ../nmad_localhost.lst -np 2 mixhello
+% pm2-conf localhost localhost
+% OMP_NUM_THREADS=4 pm2-load mixhello
+

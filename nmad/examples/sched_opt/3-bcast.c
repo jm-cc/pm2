@@ -82,17 +82,17 @@ main(int	  argc,
           printf("running as server\n");
         }
 
-//#if defined CONFIG_MX
-//        err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
-//#elif defined CONFIG_GM
-//        err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
-//#elif defined CONFIG_QSNET
-//        err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
-//#elif defined CONFIG_SISCI
-//	err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
-//#else
+#if defined CONFIG_MX
+        err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
+#elif defined CONFIG_GM
+        err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
+#elif defined CONFIG_QSNET
+        err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
+#elif defined CONFIG_SISCI
+	err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
+#else
         err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
-//#endif
+#endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);
                 goto out;

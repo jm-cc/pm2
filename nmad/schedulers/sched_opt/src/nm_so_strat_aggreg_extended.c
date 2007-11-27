@@ -427,8 +427,8 @@ static int exit_strategy(void)
  *  @return The NM status.
  */
 static int rdv_accept(struct nm_gate *p_gate,
-		      unsigned long *drv_id,
-		      unsigned long *trk_id)
+		      uint8_t *drv_id,
+		      uint8_t *trk_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 

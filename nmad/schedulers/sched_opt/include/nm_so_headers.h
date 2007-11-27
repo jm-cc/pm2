@@ -37,9 +37,7 @@ struct nm_so_global_header {
 struct nm_so_data_header {
   uint8_t  proto_id;
   uint8_t  seq;
-  /**/
   uint8_t is_last_chunk;
-  /**/
   uint16_t skip;
   uint32_t len;
   uint32_t chunk_offset;
@@ -49,9 +47,7 @@ struct nm_so_ctrl_rdv_header {
   uint8_t proto_id;
   uint8_t tag_id;
   uint8_t seq;
-  /**/
   uint8_t is_last_chunk;
-  /**/
   uint32_t len;
   uint32_t chunk_offset;
 };
@@ -95,6 +91,9 @@ union nm_so_generic_ctrl_header {
 
 #define NM_SO_DATA_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_data_header))
+
+#define NM_SO_DATATYPE_HEADER_SIZE \
+  nm_so_aligned(sizeof(struct nm_so_datatype_header))
 
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))

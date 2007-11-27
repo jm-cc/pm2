@@ -349,6 +349,38 @@ nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
 }
 
 int
+nm_so_sr_isend_datatype(struct nm_so_interface *p_so_interface,
+                        nm_gate_id_t gate_id, uint8_t tag,
+                        struct DLOOP_Segment *segp,
+                        nm_so_request *p_request){
+  struct nm_core *p_core = p_so_interface->p_core;
+  struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+  uint8_t seq;
+  volatile uint8_t *p_req;
+
+  seq = p_so_gate->send_seq_number[tag]++;
+
+  p_req = &p_sr_gate->status[tag][seq].status;
+
+  *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
+
+  if(p_request){
+    p_request->status = (intptr_t)p_req;
+    p_request->seq = seq;
+    p_request->gate_id = gate_id;
+  }
+
+  return p_so_interface->p_so_sched->current_strategy->pack_datatype(p_gate, tag, seq, segp);
+}
+
+/** Test for the completion of a non blocking send request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
+int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
@@ -508,6 +540,7 @@ nm_so_sr_irecv_with_ref(struct nm_so_interface *p_so_interface,
     }
 
     NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
+
     ret = __nm_so_unpack_any_src(p_core, tag, data, len);
     NM_SO_SR_LOG_OUT();
     return ret;
@@ -623,6 +656,72 @@ int nm_so_sr_irecv_iov(struct nm_so_interface *p_so_interface,
   return nm_so_sr_irecv_iov_with_ref(p_so_interface, gate_id, tag, iov, nb_entries, p_request, NULL);
 }
 
+int
+nm_so_sr_irecv_datatype_with_ref(struct nm_so_interface *p_so_interface,
+                                 nm_gate_id_t gate_id, uint8_t tag,
+                                 struct DLOOP_Segment *segp,
+                                 nm_so_request *p_request,
+                                 void *ref)
+{
+  struct nm_core *p_core = p_so_interface->p_core;
+  volatile uint8_t *p_req = NULL;
+
+  if(gate_id == NM_SO_ANY_SRC) {
+    if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
+      nm_so_request request;
+      NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
+      request.status = (intptr_t) &any_src[tag].status;
+      request.gate_id = -1;
+      nm_so_sr_rwait(p_so_interface, request);
+    }
+
+    any_src[tag].is_first_request = 0;
+    any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
+    any_src[tag].ref = ref;
+
+    if(p_request) {
+      p_req = &any_src[tag].status;
+      p_request->status = (intptr_t)p_req;
+      p_request->gate_id = -1;
+    }
+
+    return __nm_so_unpack_datatype_any_src(p_core, tag, segp);
+
+  } else {
+    struct nm_gate *p_gate = p_core->gate_array + gate_id;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+    struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+    uint8_t seq;
+
+    seq = p_so_gate->recv_seq_number[tag]++;
+
+    p_req = &(p_sr_gate->status[tag][seq].status);
+    *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+    if(p_request){
+      p_request->status = (intptr_t)p_req;
+      p_request->seq = seq;
+      p_request->gate_id = gate_id;
+    }
+
+    p_sr_gate->status[tag][seq].ref = ref;
+
+    return __nm_so_unpack_datatype(p_gate, tag, seq, segp);
+  }
+}
+
+int nm_so_sr_irecv_datatype(struct nm_so_interface *p_so_interface,
+                            nm_gate_id_t gate_id, uint8_t tag,
+                            struct DLOOP_Segment *segp,
+                            nm_so_request *p_request){
+
+  return nm_so_sr_irecv_datatype_with_ref(p_so_interface, gate_id, tag, segp, p_request, NULL);
+}
+
+/** Test for the completion of a non blocking receive request.
+ *  @param p_so_interface a pointer to the NM/SchedOpt interface.
+ *  @param request the request to check.
+ *  @return The NM status.
+ */
 int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)

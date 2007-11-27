@@ -181,7 +181,7 @@ int nm_mx_get_numa_node(uint32_t board_number)
 	uint32_t numa_node = PM2_NUIOA_ANY_NODE;
 	uint32_t line_speed;
 
-	/* get the type of link */  
+	/* get the type of link */
 	ret = mx_get_info(NULL, MX_LINE_SPEED, &board_number, sizeof(board_number), &line_speed, sizeof(line_speed));
 	if (ret != MX_SUCCESS)
 		return PM2_NUIOA_ANY_NODE;
@@ -305,7 +305,7 @@ nm_mx_query		(struct nm_drv *p_drv,
 
 	/* register the board here so that load_init_some may query multiple boards
          * before initializing them */
-	board_use_count[p_mx_drv->board_number]++; 
+	board_use_count[p_mx_drv->board_number]++;
 	total_use_count++;
 
         /* driver capabilities encoding					*/
@@ -823,6 +823,7 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_isend", mx_ret);
         }
+
         err = nm_mx_poll_iov(p_pw);
 
         return err;
@@ -898,6 +899,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
         }
+
         err = nm_mx_poll_iov(p_pw);
 
         return err;
@@ -986,7 +988,7 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         }
         err = NM_ESUCCESS;
 
-out:
+ out:
 #ifdef PROFILE
         if (err == NM_ESUCCESS && !p_mx_pw->send_bool) {
                 NMAD_EVENT_RCV_END(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);

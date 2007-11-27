@@ -34,6 +34,8 @@
 #define NM_SO_STATUS_RDV_IN_PROGRESS ((uint8_t)8)
 #define NM_SO_STATUS_ACK_HERE        ((uint8_t)16)
 #define NM_SO_STATUS_UNPACK_IOV      ((uint8_t)32)
+#define NM_SO_STATUS_IS_DATATYPE ((uint8_t)64)
+#define NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE ((uint8_t)128)
 
 
 struct nm_so_sched {
@@ -92,7 +94,7 @@ struct nm_so_gate {
     struct {
       void *header;
       struct nm_so_pkt_wrap *p_so_pw;
-      struct list_head chunks;
+      struct list_head *chunks;
     } pkt_here;
 
     struct {
@@ -100,6 +102,9 @@ struct nm_so_gate {
 
       int32_t cumulated_len;
       int32_t expected_len;
+
+      struct DLOOP_Segment *segp;
+
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 
@@ -116,6 +121,7 @@ struct nm_so_gate {
   void *interface_private;
 };
 
+int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, void *data, uint32_t len);
 
 int
 __nm_so_unpack(struct nm_gate *p_gate,
@@ -128,6 +134,11 @@ __nm_so_unpackv(struct nm_gate *p_gate,
                 struct iovec *iov, int nb_entries);
 
 int
+__nm_so_unpack_datatype(struct nm_gate *p_gate,
+                        uint8_t tag, uint8_t seq,
+                        struct DLOOP_Segment *segp);
+
+int
 __nm_so_unpack_any_src(struct nm_core *p_core,
                        uint8_t tag,
                        void *data, uint32_t len);
@@ -135,6 +146,10 @@ __nm_so_unpack_any_src(struct nm_core *p_core,
 int
 __nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag,
                         struct iovec *iov, int nb_entries);
+
+int
+__nm_so_unpack_datatype_any_src(struct nm_core *p_core, uint8_t tag,
+                                struct DLOOP_Segment *segp);
 
 int
 nm_so_out_process_success_rq(struct nm_sched	*p_sched,
@@ -159,6 +174,5 @@ int
 nm_so_in_process_failed_rq(struct nm_sched	*p_sched,
                            struct nm_pkt_wrap	*p_pw,
                            int		         _err);
-
 
 #endif

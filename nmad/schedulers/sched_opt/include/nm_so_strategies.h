@@ -40,6 +40,10 @@ typedef int (*nm_so_strategy_packv_func)(struct nm_gate *p_gate,
                                          uint8_t tag, uint8_t seq,
                                          struct iovec *iov, int nb_entries);
 
+typedef int (*nm_so_strategy_pack_datatype_func)(struct nm_gate *p_gate,
+                                                 uint8_t tag, uint8_t seq,
+                                                 struct DLOOP_Segment *segp);
+
 typedef int (*nm_so_strategy_pack_extended_func)(struct nm_gate *p_gate,
                                                  uint8_t tag, uint8_t seq,
                                                  void *data, uint32_t len,
@@ -70,8 +74,8 @@ typedef int (*nm_so_strategy_cancel_func)(void);
    WARNING: drv_id and trk_id are IN/OUT parameters. They initially
    hold values "suggested" by the caller. */
 typedef int (*nm_so_strategy_rdv_accept_func)(struct nm_gate *p_gate,
-					      unsigned long *drv_id,
-					      unsigned long *trk_id);
+					      uint8_t *drv_id,
+					      uint8_t *trk_id);
 
 typedef int (*nm_so_strategy_pack_extended_ctrl_func)(struct nm_gate *p_gate,
                                                       uint32_t cumulated_header_len,
@@ -103,6 +107,7 @@ struct nm_so_strategy_struct {
   nm_so_strategy_exit_gate exit_gate;
   nm_so_strategy_pack_func pack;
   nm_so_strategy_packv_func packv;
+  nm_so_strategy_pack_datatype_func pack_datatype;
   nm_so_strategy_pack_extended_func pack_extended;
   nm_so_strategy_pack_ctrl_func pack_ctrl;
   nm_so_strategy_try_func try;

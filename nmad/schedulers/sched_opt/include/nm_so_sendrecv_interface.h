@@ -26,6 +26,8 @@
 #include "tbx.h"
 #include "nm_so_sendrecv_interface_private.h"
 
+#include <ccs_public.h>
+
 #ifndef NM_SO_ANY_SRC
 #define NM_SO_ANY_SRC  ((nm_gate_id_t)-1)
 #endif
@@ -136,6 +138,12 @@ nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
  *  @return The NM status.
  */
 extern int
+nm_so_sr_isend_datatype(struct nm_so_interface *p_so_interface,
+                        nm_gate_id_t gate_id, uint8_t tag,
+                        struct DLOOP_Segment *segp,
+                        nm_so_request *p_request);
+
+extern int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request);
 
@@ -242,6 +250,12 @@ nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
                             nm_gate_id_t gate_id, uint8_t tag,
                             struct iovec *iov, int nb_entries,
                             nm_so_request *p_request, void *ref);
+
+extern
+int nm_so_sr_irecv_datatype(struct nm_so_interface *p_so_interface,
+                            nm_gate_id_t gate_id, uint8_t tag,
+                            struct DLOOP_Segment *segp,
+                            nm_so_request *p_request);
 
 /** Test for the completion of a non blocking receive request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.

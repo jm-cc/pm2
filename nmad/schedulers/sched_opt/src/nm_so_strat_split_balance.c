@@ -27,6 +27,8 @@
 #include "nm_so_parameters.h"
 #include "nm_log.h"
 
+#define DATATYPE_DENSITY 2*1024
+
 struct nm_so_strat_split_balance_gate {
   /* list of raw outgoing packets */
   struct list_head out_list;
@@ -270,20 +272,147 @@ packv(struct nm_gate *p_gate,
     }
 
     if(iov[i].iov_len <= NM_SO_MAX_SMALL) {
-      NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, iov[i].iov_len, offset, last_chunk);
-
+      NM_SO_TRACE("PACK of a small iov entry - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, iov[i].iov_len, offset, last_chunk);
       /* Small packet */
       try_to_agregate_small(p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
 
     } else {
-      NM_SO_TRACE("PACK of a large one - tag = %u, seq = %u, nb_entries = %u\n", tag, seq, nb_entries);
-
+      NM_SO_TRACE("PACK of a large iov entry - tag = %u, seq = %u, nb_entries = %u\n", tag, seq, nb_entries);
       /* Large packets are splited in 2 chunks. */
       launch_large_chunk(p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
     }
     offset += iov[i].iov_len;
   }
   p_so_gate->send[tag][seq] = offset;
+
+  return NM_ESUCCESS;
+}
+
+static int
+agregate_datatype(struct nm_gate *p_gate,
+                  uint8_t tag, uint8_t seq,
+                  uint32_t len, struct DLOOP_Segment *segp){
+
+  struct nm_so_pkt_wrap *p_so_pw;
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_strat_split_balance_gate *p_so_sa_gate
+    = (struct nm_so_strat_split_balance_gate *)p_so_gate->strat_priv;
+  int err;
+
+  // Look for a wrapper to fullfill
+  if(len <= 512 || p_so_sa_gate->nb_packets >= 2) {
+
+    /* We first try to find an existing packet to form an aggregate */
+    list_for_each_entry(p_so_pw, &p_so_sa_gate->out_list, link) {
+      uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+      uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+
+      if(size > h_rlen)
+        /* There's not enough room to add our data to this paquet */
+        goto next;
+
+      // add the datatype. Actually, we add the header and copy the data just after
+      err = nm_so_pw_add_datatype(p_so_pw, tag + 128, seq, len, segp);
+
+      goto out;
+
+    next:
+      ;
+    }
+  }
+  // We don't find any free wrapper so we build a new one
+  int flags = NM_SO_DATA_USE_COPY;
+
+  err = nm_so_pw_alloc(flags, &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  err = nm_so_pw_add_datatype(p_so_pw, tag + 128, seq, len, segp);
+
+  list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
+  p_so_sa_gate->nb_packets++;
+
+  err = NM_ESUCCESS;
+ out:
+  return err;
+}
+
+static int
+launch_large_datatype(struct nm_gate *p_gate,
+                      uint8_t tag, uint8_t seq,
+                      uint32_t len, struct DLOOP_Segment *segp){
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  int err;
+
+  /* First allocate a packet wrapper */
+  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  nm_so_pw_store_datatype(p_so_pw, tag + 128, seq, len, segp);
+
+  p_so_gate->status[tag][seq] |= NM_SO_STATUS_IS_DATATYPE;
+
+  /* Then place it into the appropriate list of large pending "sends". */
+  list_add_tail(&p_so_pw->link, &(p_so_gate->pending_large_send[tag]));
+
+  /* Signal we're waiting for an ACK */
+  p_so_gate->pending_unpacks++;
+
+  /* Finally, generate a RdV request */
+  {
+    union nm_so_generic_ctrl_header ctrl;
+
+    nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
+
+    NM_SO_TRACE("RDV pack_ctrl\n");
+    err = pack_ctrl(p_gate, &ctrl);
+    if(err != NM_ESUCCESS)
+      goto out;
+  }
+
+  /* Check if we should post a new recv packet: we're waiting for an ACK! */
+  nm_so_refill_regular_recv(p_gate);
+
+  err = NM_ESUCCESS;
+ out:
+  return err;
+}
+
+
+
+// Si c'est un petit, on copie systématiquement (pour le moment)
+// Si c'est un long, on passe par un iov qu'on va recharger au nieavu du driver
+// s'il n'y a pas assez d'entrées. Les données sont (pour l'instant) systématiquement reçus en contigu
+static int
+pack_datatype(struct nm_gate *p_gate,
+              uint8_t tag, uint8_t seq,
+              struct DLOOP_Segment *segp){
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
+
+  DLOOP_Handle handle;
+  int data_sz;
+
+  handle = segp->handle;
+  CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
+#warning a revoir dans ccs
+  //data_sz *= segp->handle.ref_count;
+
+  p_so_gate->send[tag][seq] = data_sz;
+
+  NM_SO_TRACE("Send a datatype on gate %d and tag %d with length %d\n", p_gate->id, tag, data_sz);
+
+  if(data_sz <= NM_SO_MAX_SMALL) {
+    NM_SO_TRACE("Short datatype : try to aggregate it\n");
+    agregate_datatype(p_gate, tag, seq, data_sz, segp);
+
+  } else {
+    NM_SO_TRACE("Large datatype : send a rdv\n");
+    launch_large_datatype(p_gate, tag, seq, data_sz, segp);
+  }
+
+  p_so_gate->status[tag][seq] = NM_SO_STATUS_IS_DATATYPE;
 
   return NM_ESUCCESS;
 }
@@ -362,8 +491,8 @@ init(void){
    hold values "suggested" by the caller. */
 static int
 rdv_accept(struct nm_gate *p_gate,
-           unsigned long *drv_id,
-           unsigned long *trk_id){
+           uint8_t *drv_id,
+           uint8_t *trk_id){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   int nb_drivers = p_gate->p_sched->p_core->nb_drivers;
   int n;
@@ -396,7 +525,7 @@ extended_rdv_accept(struct nm_gate *p_gate,
   int nb_drivers = p_gate->p_core->nb_drivers;
   uint8_t *ordered_drv_id_by_bw = NULL;
   int cur_drv_idx = 0;
-  unsigned long trk_id = TRK_LARGE;
+  uint8_t trk_id = TRK_LARGE;
   int err;
   int i;
 
@@ -462,6 +591,7 @@ nm_so_strategy nm_so_strat_split_balance = {
   .exit_gate = exit_gate,
   .pack = pack,
   .packv = packv,
+  .pack_datatype = pack_datatype,
   .pack_extended = NULL,
   .pack_ctrl = pack_ctrl,
   .try = NULL,

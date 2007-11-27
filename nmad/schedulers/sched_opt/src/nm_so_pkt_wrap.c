@@ -176,15 +176,15 @@ nm_so_pw_raz(struct nm_so_pkt_wrap *p_so_pw){
 
   p_so_pw->header_ref_count = 0;
   p_so_pw->pending_skips = 0;
-
+  
   for(i = 0; i < NM_SO_PREALLOC_IOV_LEN; i++){
     p_so_pw->v[i].iov_len  = 0;
     p_so_pw->v[i].iov_base = NULL;
   }
 
   p_so_pw->chunk_offset = 0;
-
   p_so_pw->is_completed = tbx_false;
+  p_so_pw->datatype_copied_buf = tbx_false;
 }
 
 
@@ -561,6 +561,7 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
     nm_so_iov_flags(p_so_pw, p_so_pw->pw.v_nb) = NM_SO_ALLOC_STATIC;
 #endif
+
     vec = p_so_pw->pw.v + p_so_pw->pw.v_nb++;
     vec->iov_base = data;
     vec->iov_len = len;
@@ -574,6 +575,92 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 
   err = NM_ESUCCESS;
 
+  return err;
+}
+
+int
+nm_so_pw_store_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                        uint8_t proto_id, uint8_t seq,
+                        uint32_t len, struct DLOOP_Segment *segp){
+  p_so_pw->pw.proto_id = proto_id;
+  p_so_pw->pw.seq = seq;
+
+  p_so_pw->pw.length += len;
+
+  p_so_pw->pw.segp = segp;
+  p_so_pw->pw.datatype_offset = 0;
+
+  return NM_ESUCCESS;
+}
+
+// function dedicated to the datatypes which do not require a rendezvous
+int
+nm_so_pw_add_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                      uint8_t proto_id, uint8_t seq,
+                      uint32_t len, struct DLOOP_Segment *segp){
+
+  //union nm_so_generic_ctrl_header ctrl;
+  uint32_t size = 0;
+
+  if(len) {
+    size = nm_so_aligned(len);
+
+    DLOOP_Offset first = 0;
+    DLOOP_Offset last  = len;
+
+    {
+      struct nm_so_data_header *h;
+      struct iovec *vec =  p_so_pw->v;
+      /* Add header */
+      h = vec->iov_base + vec->iov_len;
+
+      h->proto_id = proto_id;
+      h->seq = seq;
+      h->is_last_chunk = 1; //is_last_chunk;
+      h->len = len;
+      h->skip = 0;
+      h->chunk_offset = 0; //offset;
+
+      vec->iov_len += NM_SO_DATA_HEADER_SIZE;
+      p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE;
+    }
+
+    // on deplie le datatype pour copier les données en contigu
+    CCSI_Segment_pack(segp, first, &last, p_so_pw->pw.v[0].iov_base + p_so_pw->pw.v[0].iov_len);
+
+    p_so_pw->pw.v[0].iov_len  += size;
+    p_so_pw->pw.length += size;
+  }
+
+  return NM_ESUCCESS;
+}
+
+int
+nm_so_pw_copy_contiguously_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                                    uint8_t proto_id, uint8_t seq,
+                                    uint32_t len, struct DLOOP_Segment *segp){
+  void *buf = NULL;
+  DLOOP_Offset first = 0;
+  DLOOP_Offset last  = len;
+  struct iovec *vec = NULL;
+  int err;
+
+  buf = TBX_MALLOC(len);
+
+  err = nm_so_pw_add_data(p_so_pw,
+                          proto_id, seq,
+                          buf, len,
+                          0, 1,
+                          NM_SO_DATA_DONT_USE_HEADER);
+
+  vec = p_so_pw->pw.v;
+
+  // on deplie le datatype pour copier les données en contigu
+  CCSI_Segment_pack(segp, first, &last, vec->iov_base);
+
+  vec->iov_len = len;
+
+  err = NM_ESUCCESS;
   return err;
 }
 
@@ -609,6 +696,7 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
     goto out;
 
   vec = p_so_pw->pw.v;
+
   ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
   remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
   to_skip = 0;
@@ -639,12 +727,66 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
 
     } else {
       /* Ctrl header */
-
       ptr += NM_SO_CTRL_HEADER_SIZE;
       remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
     }
 
   } while (p_so_pw->pending_skips);
+
+
+
+
+
+  // A virer très certainement
+//  if(!p_so_pw->nb_seg)
+//    goto out;
+//
+//
+//  vec = p_so_pw->pw.v;
+//  remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
+//  ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
+//
+//  int cur_seg = 0;
+//  struct nm_so_datatype_header *dt = NULL;
+//
+//
+//  // On a introduit des segments dans le wrapper
+//  // il faut mettre à jour le champ skip des headers correspondants
+//  do{
+//    if (*(uint8_t *)ptr == NM_SO_PROTO_DATATYPE) {
+//
+//      struct nm_so_datatype_header *dt = p_so_pw->segment[cur_seg].header;
+//      seg_len = dt->len;
+//
+//      remaining_bytes -= NM_SO_DATATYPE_HEADER_SIZE;
+//      h->skip = remaining_bytes + to_skip;
+//
+//      to_skip += seg_len;
+//      cur_seg++;
+//
+//      ptr += NM_SO_DATATYPE_HEADER_SIZE;
+//
+//    } else {
+//      if (*(uint8_t *)ptr >= NM_SO_PROTO_DATA_FIRST) {
+//        struct nm_so_data_header *h = ptr;
+//
+//        if(h->skip == 0){
+//          remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+//          ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+//
+//        } else {
+//          remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
+//          ptr += NM_SO_DATA_HEADER_SIZE;
+//        }
+//
+//      } else {
+//         /* Ctrl header */
+//        ptr += NM_SO_CTRL_HEADER_SIZE;
+//        remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+//      }
+//    }
+//
+//  } while(cur_seg != p_so_pw->nb_seg);
 
  out:
   return err;
@@ -678,7 +820,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
-     safely destroyed */
+     safey destroyed */
   p_so_pw->header_ref_count = 0;
 
   vec = p_so_pw->pw.v;
@@ -688,7 +830,6 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
   ptr += NM_SO_GLOBAL_HEADER_SIZE;
 
   while(remaining_len) {
-
     /* Decode header */
     proto_id = *(uint8_t *)ptr;
 
@@ -726,7 +867,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
       }
 
       remaining_len -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(dh->len);
-
+          
       /* We must recall ptr if necessary */
       if(dh->skip == 0){ // data are just after the header
         ptr += nm_so_aligned(dh->len);
@@ -867,18 +1008,20 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
             if(header_ref_count_incremented == tbx_false){
               *proto_id = NM_SO_PROTO_CTRL_UNUSED;
             } else {
-              NM_SO_TRACE("Multi-ack not completu treated\n");
+              NM_SO_TRACE("Multi-ack not completly treated\n");
             }
           }
         }
         break;
 
       case NM_SO_PROTO_CTRL_UNUSED:
+        {
+          ptr += NM_SO_CTRL_HEADER_SIZE;
+          remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 
-	ptr += NM_SO_CTRL_HEADER_SIZE;
-	remaining_len -= NM_SO_CTRL_HEADER_SIZE;
+          break;
+        }
 
-	break;
       default:
 	return -NM_EINVAL;
 

@@ -91,4 +91,8 @@
 #define nm_so_network_bandwidth(n)  \
   (n)
 
+
+#define DATATYPE_DENSITY 2*1024
+#define RAIL_MAX 8
+
 #endif

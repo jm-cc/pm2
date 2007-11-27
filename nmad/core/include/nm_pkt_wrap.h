@@ -20,6 +20,8 @@
 #include "xpaul.h"
 #endif
 
+#include <ccs_public.h>
+
 struct nm_drv;
 struct nm_trk;
 struct nm_gate;
@@ -132,7 +134,7 @@ struct nm_pkt_wrap {
         /** Cumulated amount of data (everything included) referenced
             by this wrap.
         */
-        uint64_t		 length;
+        uint32_t		 length;
 
 
         /** Io vector setting.
@@ -191,6 +193,10 @@ struct nm_pkt_wrap {
         struct nm_iovec		*nm_v;
 
         tbx_tick_t start_transfer_time;
+
+        struct DLOOP_Segment *segp;
+        DLOOP_Offset datatype_offset; // Current position in the datatype
+
 };
 
 #endif /* NM_PKT_WRAP_H */

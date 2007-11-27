@@ -1,4 +1,3 @@
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
@@ -33,6 +32,10 @@ MOD_SRC += $(foreach PROT, $(NMAD_PROTOCOLS), $(PM2_ROOT)/nmad/drivers/$(PROT)/s
 # Emulation mad3 : prise en compte des fichiers sources supplémentaires
 #---------------------------------------------------------------------
 MOD_SRC += $(foreach PROT, $(NMAD_PROTO), $(PM2_ROOT)/nmad/protocols/$(PROT)/src)
+
+# Datatype de MPICH
+#---------------------------------------------------------------------
+MOD_SRC += $(PM2_ROOT)/nmad/ccs
 
 # Sampling
 #---------------------------------------------------------------------

@@ -51,8 +51,8 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
 
-/** Process a complete data request.
- */
+  /** Process a complete data request.
+   */
   NM_SO_TRACE("Send completed for chunk : %p, len = %u, tag = %d, seq = %u, offset = %u\n", ptr, len, proto_id-128, seq, chunk_offset);
 
   p_so_gate->send[proto_id-128][seq] -= len;
@@ -84,11 +84,7 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched TBX_UNUSED,
     NM_SO_TRACE("********** sent of a short one on drv %d and trk %d***********\n", p_pw->p_drv->id, p_pw->p_trk->id);
 
     /* Track 0 */
-    nm_so_pw_iterate_over_headers(p_so_pw,
-				  data_completion_callback,
-				  NULL,
-				  NULL,
-                                  NULL);
+    nm_so_pw_iterate_over_headers(p_so_pw, data_completion_callback, NULL, NULL, NULL);
 
   } else if(p_pw->p_trk->id == 1) {
     NM_SO_TRACE("********** sent of a large one on drv %d and trk %d of %llu octets ***********\n", p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
@@ -97,16 +93,19 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched TBX_UNUSED,
     uint8_t  proto_id = p_pw->proto_id - 128;
     uint8_t  seq = p_pw->seq;
 
-    NM_SO_TRACE("out_process_success - it is missing %d bytes to complete sending\n", p_so_gate->send[proto_id][seq]);
-
     p_so_gate->send[proto_id][seq] -= p_pw->length;
+
+    if(p_so_pw->datatype_copied_buf){
+      //liberation du tampon ou l'on a copie en contigu les donnees parce qu'on avait pas assez d'entrees dans l'iovec
+      TBX_FREE(p_so_pw->pw.v[0].iov_base);
+    }
 
     if(p_so_gate->send[proto_id][seq] <= 0){
       NM_SO_TRACE("---> All chunks are sended!\n");
       interface->pack_success(p_gate, proto_id, seq);
 
     } else {
-      NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_gate->send[proto_id][seq], proto_id - 128, seq);
+      NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_gate->send[proto_id][seq], proto_id, seq);
     }
 
     /* Free the wrapper */

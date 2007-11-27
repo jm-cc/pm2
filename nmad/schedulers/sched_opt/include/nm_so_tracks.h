@@ -30,12 +30,19 @@
 #include "nm_so_parameters.h"
 #include "nm_so_debug.h"
 
+
+/************************************/
+/*** Primitives de réception ********/
+/************************************/
+
 static __inline__
 void
 _nm_so_post_recv(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw,
 		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+  //p_so_pw->pw.sending = tbx_false;
 
   p_so_pw->pw.p_gate = p_gate;
 
@@ -121,6 +128,42 @@ nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
 
 static __inline__
 int
+nm_so_post_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src, struct nm_gate *p_gate, int drv_id,
+                                         uint8_t tag, uint8_t seq,
+                                         uint32_t len, struct DLOOP_Segment *segp)
+{
+  int err;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_pkt_wrap *p_so_pw = NULL;
+  void *data = NULL;
+
+  data = TBX_MALLOC(len);
+
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
+                                          data, len,
+                                          0, 0, NM_SO_DATA_DONT_USE_HEADER,
+                                          &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  p_so_pw->pw.segp = segp;
+
+  _nm_so_post_recv(p_gate, p_so_pw, TRK_LARGE, drv_id);
+
+  if(is_any_src){
+    p_so_gate->p_so_sched->any_src[tag-128].status |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+
+  } else {
+    p_so_gate->status[tag - 128][seq] |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+  }
+
+  err = NM_ESUCCESS;
+ out:
+  return err;
+}
+
+static __inline__
+int
 nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
                              struct nm_so_pkt_wrap *p_so_pw)
 {
@@ -133,6 +176,44 @@ nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
 }
 
 
+static __inline__
+int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
+                                  uint8_t tag, uint8_t seq, void *data,
+                                  int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
+  uint32_t offset = 0;
+  int i;
+
+  for(i = 0; i < nb_drv; i++){
+    nm_so_post_large_recv(p_gate, drv_ids[i], tag, seq, data + offset, chunk_lens[i]);
+    offset += chunk_lens[i];
+  }
+  return NM_ESUCCESS;
+}
+
+static __inline__
+int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
+                                struct nm_so_pkt_wrap *p_so_pw,
+                                int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
+  struct nm_so_pkt_wrap *p_so_pw2 = NULL;
+  int i;
+
+  for(i = 0; i < nb_drv; i++){
+    nm_so_pw_split(p_so_pw, &p_so_pw2, chunk_lens[i]);
+
+    nm_so_direct_post_large_recv(p_gate, drv_ids[i], p_so_pw);
+
+    p_so_pw = p_so_pw2;
+  }
+  return NM_ESUCCESS;
+
+}
+
+
+
+
+/************************************/
+/*** Primitives d'envoi *************/
+/************************************/
 
 static __inline__
 void
@@ -141,6 +222,8 @@ _nm_so_post_send(struct nm_gate *p_gate,
 		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+  //p_so_pw->pw.sending = tbx_true;
 
   p_so_pw->pw.p_gate = p_gate;
 

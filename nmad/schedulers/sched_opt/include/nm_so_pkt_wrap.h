@@ -24,6 +24,8 @@
 #include "nm_pkt_wrap.h"
 #include "nm_so_headers.h"
 
+#include <ccs_public.h>
+
 //#define _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
 
 /* Data flags */
@@ -51,9 +53,11 @@ struct nm_so_pkt_wrap {
 #endif
 
   uint32_t chunk_offset;
-
   tbx_bool_t is_completed;
+  struct DLOOP_Segment *segp;
 
+  tbx_bool_t datatype_copied_buf;
+  
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];
 };
@@ -103,6 +107,27 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
 		  uint8_t proto_id, uint8_t seq,
 		  void *data, uint32_t len,
                   uint32_t offset, uint8_t is_last_chunk, int flags);
+
+int
+nm_so_pw_add_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                      uint8_t proto_id, uint8_t seq,
+                      uint32_t len, struct DLOOP_Segment *segp);
+
+
+int
+nm_so_pw_store_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                        uint8_t proto_id, uint8_t seq,
+                        uint32_t len, struct DLOOP_Segment *segp);
+
+int
+nm_so_pw_add_large_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                            uint8_t proto_id, uint8_t seq,
+                            uint32_t len, struct DLOOP_Segment *segp);
+
+int
+nm_so_pw_copy_contiguously_datatype(struct nm_so_pkt_wrap *p_so_pw,
+                                    uint8_t proto_id, uint8_t seq,
+                                    uint32_t len, struct DLOOP_Segment *segp);
 
 #define nm_so_pw_add_control(p_so_pw, p_ctrl) \
   nm_so_pw_add_data((p_so_pw), \
@@ -198,7 +223,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,
 			      nm_so_pw_rdv_handler rdv_handler,
 			      nm_so_pw_ack_handler ack_handler,
-                              nm_so_pw_ack_chunk_handler);
+                              nm_so_pw_ack_chunk_handler ack_chunk_handler);
 
 static __inline__
 int

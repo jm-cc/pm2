@@ -82,6 +82,33 @@
 
 #  define FUT_NMAD_EVENT_ANNOTATE_CODE		FUT_NMAD_CODE + 0x20
 
+#  define FUT_NMAD_INIT_NIC			FUT_NMAD_CODE + 0x40
+#  define FUT_NMAD_INIT_GATE			FUT_NMAD_CODE + 0x41
+#  define FUT_NMAD_INIT_CORE			FUT_NMAD_CODE + 0x42
+#  define FUT_NMAD_INIT_SCHED			FUT_NMAD_CODE + 0x43
+
+#  define FUT_NMAD_GATE_NEW_INPUT_LIST		FUT_NMAD_CODE + 0x44
+#  define FUT_NMAD_GATE_NEW_OUTPUT_LIST		FUT_NMAD_CODE + 0x45
+
+
+#  define FUT_NMAD_NIC_NEW_INPUT_LIST		FUT_NMAD_CODE + 0x46
+#  define FUT_NMAD_NIC_NEW_OUTPUT_LIST		FUT_NMAD_CODE + 0x47
+
+#  define FUT_NMAD_GATE_OPS_CREATE_PACKET	FUT_NMAD_CODE + 0x48
+#  define FUT_NMAD_GATE_OPS_INSERT_PACKET	FUT_NMAD_CODE + 0x49
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT		FUT_NMAD_CODE + 0x4a
+#  define FUT_NMAD_GATE_OPS_OUT_TO_TRACK	FUT_NMAD_CODE + 0x4b
+
+#  define FUT_NMAD_NIC_OPS_GATE_TO_TRACK	FUT_NMAD_CODE + 0x4c
+#  define FUT_NMAD_NIC_OPS_SEND_PACKET		FUT_NMAD_CODE + 0x4d
+
+#  define FUT_NMAD_NIC_RECV_ACK_RNDV		FUT_NMAD_CODE + 0x4e
+
+#  define FUT_NMAD_GATE_OPS_CREATE_CTRL_PACKET	FUT_NMAD_CODE + 0x4f
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG	FUT_NMAD_CODE + 0x50
+#  define FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER	FUT_NMAD_CODE + 0x51
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT	FUT_NMAD_CODE + 0x52
+
 #  define NMAD_EVENT0()					\
  PROF_START						\
       FUT_DO_PROBE0(FUT_NMAD_EVENT0_CODE);		\
@@ -161,6 +188,12 @@
 #  define NMAD_EVENT_SND_START(gate_id, drv_id, trk_id, length)		(void)0
 #  define NMAD_EVENT_RCV_END(gate_id, drv_id, trk_id, length)		(void)0
 #  define NMAD_EVENT_ANNOTATE(str, ...)		(void)0
+#  define FUT_DO_PROBE0(a)			(void)0
+#  define FUT_DO_PROBE1(a, b)			(void)0
+#  define FUT_DO_PROBE2(a, b, c)		(void)0
+#  define FUT_DO_PROBE3(a, b, c, d)		(void)0
+#  define FUT_DO_PROBE4(a, b, c, d, e)		(void)0
+#  define FUT_DO_PROBE5(a, b, c, d, e, f)	(void)0
 #endif
 
 #endif /* NM_LOG_H */

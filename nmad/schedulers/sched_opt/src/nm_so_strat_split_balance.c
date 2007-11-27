@@ -114,6 +114,12 @@ pack_ctrl(struct nm_gate *p_gate,
 
     /* If the paquet is reasonably small, we can form an aggregate */
     if(NM_SO_CTRL_HEADER_SIZE <= nm_so_pw_remaining_header_area(p_so_pw)){
+
+      struct nm_so_pkt_wrap TBX_UNUSED dummy_p_so_pw;
+      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_CTRL_PACKET, &dummy_p_so_pw, 0, 0, 0);
+      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
+      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
+
       err = nm_so_pw_add_control(p_so_pw, p_ctrl);
       goto out;
     }
@@ -123,6 +129,11 @@ pack_ctrl(struct nm_gate *p_gate,
   err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
+
+  /* TODO tag should be filled correctly */
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_CTRL_PACKET, p_so_pw, 0, 0, p_so_pw->pw.length);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 0, p_so_pw);
 
   /* Add the control packet to the BEGINING of out_list */
   list_add(&p_so_pw->link, &p_so_sa_gate->out_list);
@@ -148,6 +159,11 @@ launch_large_chunk(struct nm_gate *p_gate,
                                           &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
+
+
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 1, p_so_pw);
 
   /* Then place it into the appropriate list of large pending "sends". */
   list_add_tail(&p_so_pw->link, &(p_so_gate->pending_large_send[tag]));
@@ -201,6 +217,11 @@ try_to_agregate_small(struct nm_gate *p_gate,
       else
         /* There's not enough room to add our data to this paquet */
         goto next;
+      
+      struct nm_so_pkt_wrap TBX_UNUSED dummy_p_so_pw;
+      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_so_pw, tag, seq, len);
+      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
+      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
 
       err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
       goto out;
@@ -218,6 +239,11 @@ try_to_agregate_small(struct nm_gate *p_gate,
                                           chunk_offset, is_last_chunk, flags, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
+
+
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 0, p_so_pw);
 
   list_add_tail(&p_so_pw->link, &p_so_sa_gate->out_list);
   p_so_sa_gate->nb_packets++;
@@ -567,7 +593,12 @@ init_gate(struct nm_gate *p_gate){
   struct nm_so_strat_split_balance_gate *priv
     = TBX_MALLOC(sizeof(struct nm_so_strat_split_balance_gate));
 
+  /* we will fake some input list ... */
+  FUT_DO_PROBE2(FUT_NMAD_GATE_NEW_INPUT_LIST, 0 /* index */, p_gate->id);
+
   INIT_LIST_HEAD(&priv->out_list);
+  FUT_DO_PROBE2(FUT_NMAD_GATE_NEW_OUTPUT_LIST, 0 /* index */, p_gate->id);
+  FUT_DO_PROBE2(FUT_NMAD_GATE_NEW_OUTPUT_LIST, 1 /* index */, p_gate->id);
 
   priv->nb_packets = 0;
 

@@ -93,6 +93,9 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
         p_drv->p_track_array[id]	= p_trk;
         p_trk_rq->p_trk = p_trk;
 
+	FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_INPUT_LIST, p_drv->id, p_trk->id, p_drv->nb_tracks);
+	FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv->id, p_trk->id, p_drv->nb_tracks);
+
         err = p_drv->ops.open_trk(p_trk_rq);
         if (err != NM_ESUCCESS) {
                 goto out_free;
@@ -296,6 +299,9 @@ nm_core_driver_load(struct nm_core	 *p_core,
         if (p_id) {
                 *p_id	= p_drv->id;
         }
+
+	/*TODO : add url */
+	FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
 
         err = NM_ESUCCESS;
 
@@ -613,6 +619,8 @@ nm_core_gate_init(struct nm_core	*p_core,
 
         p_core->nb_gates++;
 
+	FUT_DO_PROBE1(FUT_NMAD_INIT_GATE, p_gate->id);
+
         err = p_core->p_sched->ops.init_gate(p_core->p_sched, p_gate);
         if (err != NM_ESUCCESS) {
                 NM_DISPF("sched.init_gate returned %d", err);
@@ -856,6 +864,8 @@ nm_core_init		(int			 *argc,
 
         common_pre_init(argc, argv, NULL);
         common_post_init(argc, argv, NULL);
+
+	FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 
         p_core	= TBX_MALLOC(sizeof(struct nm_core));
 

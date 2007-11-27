@@ -733,6 +733,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
     NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n", p_so_large_pw->pw.seq, p_so_large_pw->chunk_offset);
 
     if(p_so_large_pw->pw.seq == seq && p_so_large_pw->chunk_offset == chunk_offset) {
+      FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_so_large_pw, p_gate->id, 1/* large output list*/);
       list_del(&p_so_large_pw->link);
 
       if(p_so_gate->status[tag][seq] & NM_SO_STATUS_IS_DATATYPE
@@ -851,7 +852,11 @@ static int ack_chunk_callback(struct nm_so_pkt_wrap *p_so_pw,
       // Les données sont envoyées depuis un buffer contigu ou un iov
       } else {
         if(chunk_len < p_so_large_pw->pw.length){
+	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_so_large_pw,
+	  		p_gate->id, 1/* large output list*/);
           nm_so_pw_split(p_so_large_pw, &p_so_large_pw2, chunk_len);
+	  FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT, p_so_large_pw,
+	  		p_so_large_pw2, chunk_len, p_gate->id, 1/* outlist*/);
           list_add(&p_so_large_pw2->link, &p_so_gate->pending_large_send[tag]);
         } else {
           p_so_gate->pending_unpacks--;

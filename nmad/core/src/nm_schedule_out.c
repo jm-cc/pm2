@@ -98,6 +98,7 @@ nm_process_complete_send_rq(struct nm_gate	*p_gate,
         p_gate->out_req_nb--;
 
         if (_err == NM_ESUCCESS) {
+		FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->p_trk->id);
                 err = nm_process_successful_send_rq(p_gate, p_pw);
                 if (err < 0) {
                         NM_DISPF("process_successful_send_rq returned %d", err);
@@ -199,6 +200,7 @@ nm_post_send	(struct nm_gate *p_gate) {
                 p_pw->p_trk->out_req_nb++;
 
                 /* ready to send					*/
+		FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->p_trk->id);
                 NM_TRACEF("posting new send request: gate %d, drv %d, trk %d, proto %d, seq %d",
                      p_pw->p_gate->id,
                      p_pw->p_drv->id,

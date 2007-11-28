@@ -202,7 +202,7 @@ __nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, 
       NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
 
       *status = 0;
-      
+
       p_so_gate->recv_seq_number[tag]++;
 
       p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_IOV;
@@ -342,44 +342,9 @@ __nm_so_unpack(struct nm_gate *p_gate,
     NM_SO_TRACE("At least one data chunk already in!\n");
 
     if(len){
-      if(len <= NM_SO_MAX_SMALL){
-        struct nm_so_data_header *dh = p_so_gate->recv[tag][seq].pkt_here.header;
-        struct nm_so_pkt_wrap *p_so_pw = p_so_gate->recv[tag][seq].pkt_here.p_so_pw;
-        void *src = NULL;
-
-        /* This is the only one chunk of this message
-           -> not necessary to check if it is the last chunk*/
-        p_so_gate->recv[tag][seq].unpack_here.expected_len = dh->chunk_offset + dh->len;
-        p_so_gate->recv[tag][seq].unpack_here.cumulated_len = dh->len;
-
-        /* Retrieve data location */
-        src =  (void *)dh;
-        src += NM_SO_DATA_HEADER_SIZE + dh->skip;
-
-        // As short data are not split, there up to 1 pending data block
-        memcpy(data, src, dh->len);
-
-        /* Decrement the packet wrapper reference counter. If no other
-           chunks are still in use, the pw will be destroyed. */
-        nm_so_pw_dec_header_ref_count(p_so_pw);
-
-        /* Verify if the communication is done */
-        if(p_so_gate->recv[tag][seq].unpack_here.cumulated_len == p_so_gate->recv[tag][seq].unpack_here.expected_len){
-          struct nm_so_interface_ops *interface = p_so_gate->p_so_sched->current_interface;
-          NM_SO_TRACE("Wow! All data chunks were already in!\n");
-
-          *status = 0;
-          interface->unpack_success(p_gate, tag, seq, tbx_false);
-
+      if(treat_unexpected(tbx_false, p_gate, tag, seq, len, data) == NM_ESUCCESS){
           err = NM_ESUCCESS;
           goto out;
-        }
-
-      } else {
-        if(treat_unexpected(tbx_false, p_gate, tag, seq, len, data) == NM_ESUCCESS){
-          err = NM_ESUCCESS;
-          goto out;
-        }
       }
     }
 
@@ -501,6 +466,139 @@ nm_so_in_schedule(struct nm_sched *p_sched TBX_UNUSED)
   return NM_ESUCCESS;
 }
 
+static int process_small_data(tbx_bool_t is_any_src,
+                              struct nm_so_pkt_wrap *p_so_pw,
+                              void *ptr,
+                              uint32_t len, uint8_t tag, uint8_t seq,
+                              uint32_t chunk_offset, uint8_t is_last_chunk){
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
+  struct nm_so_interface_ops *interface = p_so_sched->current_interface;
+  uint8_t *status = NULL;
+  int32_t *p_cumulated_len;
+  int32_t *p_expected_len;
+
+  if(is_any_src){
+    status = &(p_so_sched->any_src[tag].status);
+    p_cumulated_len = &(p_so_sched->any_src[tag].cumulated_len);
+    p_expected_len  = &(p_so_sched->any_src[tag].expected_len);
+
+  } else {
+    status = &(p_so_gate->status[tag][seq]);
+    p_cumulated_len = &(p_so_gate->recv[tag][seq].unpack_here.cumulated_len);
+    p_expected_len  = &(p_so_gate->recv[tag][seq].unpack_here.expected_len);
+  }
+
+  /* Save the real length to receive */
+  if(is_last_chunk){
+    *p_expected_len = chunk_offset + len;
+  }
+
+  if(is_any_src && p_so_sched->any_src[tag].gate_id == -1){
+    p_so_gate->recv_seq_number[tag]++;
+    p_so_sched->any_src[tag].gate_id = p_gate->id;
+    p_so_sched->any_src[tag].seq = seq;
+  }
+
+  if(len){
+    /* Copy data to its final destination */
+    if(*status & NM_SO_STATUS_UNPACK_IOV){
+      struct iovec *iov = NULL;
+      if(is_any_src){
+        iov = p_so_sched->any_src[tag].data;
+      } else {
+        iov = p_so_gate->recv[tag][seq].unpack_here.data;
+      }
+
+      /* Destination is organized in several non contiguous buffers */
+      _nm_so_copy_data_in_iov(iov, chunk_offset, ptr, len);
+
+    }else if (*status & NM_SO_STATUS_IS_DATATYPE) {
+      DLOOP_Offset last = chunk_offset + len;
+      struct DLOOP_Segment *segp = NULL;
+
+      if(is_any_src){
+        segp = (struct DLOOP_Segment *)p_so_sched->any_src[tag].data;
+      } else {
+        segp = p_so_gate->recv[tag][seq].unpack_here.segp;
+      }
+
+      /* Data are described by a datatype */
+      CCSI_Segment_unpack(segp, chunk_offset, &last, ptr);
+
+    } else {
+      void *data = NULL;
+      if(is_any_src){
+        data = p_so_sched->any_src[tag].data + chunk_offset;
+      } else {
+        data = p_so_gate->recv[tag][seq].unpack_here.data + chunk_offset;
+      }
+
+      /* Data are contiguous */
+      memcpy(data, ptr, len);
+    }
+  }
+
+  *p_cumulated_len += len;
+
+  /* Verify if the communication is done */
+  if(*p_cumulated_len >= *p_expected_len){
+    NM_SO_TRACE("Wow! All data chunks were already in!\n");
+
+    *status = 0;
+
+    if(is_any_src){
+      p_so_sched->pending_any_src_unpacks--;
+      p_so_sched->any_src[tag].gate_id = -1;
+
+    } else {
+      p_so_gate->pending_unpacks--;
+
+      p_so_gate->recv[tag][seq].pkt_here.header = NULL;
+    }
+
+    interface->unpack_success(p_gate, tag, seq, is_any_src);
+  }
+  return NM_SO_HEADER_MARK_READ;
+}
+
+static int store_data_or_rdv(tbx_bool_t rdv,
+                             void *header, uint8_t tag, uint8_t seq,
+                             struct nm_so_pkt_wrap *p_so_pw){
+  struct nm_gate *p_gate = p_so_pw->pw.p_gate;
+  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+
+  if(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_PACKET_HERE)){
+    p_so_gate->recv[tag][seq].pkt_here.header = header;
+    p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
+
+  } else {
+    if(p_so_gate->recv[tag][seq].pkt_here.chunks == NULL){
+      p_so_gate->recv[tag][seq].pkt_here.chunks = TBX_MALLOC(sizeof(struct list_head));
+      INIT_LIST_HEAD(p_so_gate->recv[tag][seq].pkt_here.chunks);
+    }
+
+    struct nm_so_chunk *chunk = tbx_malloc(nm_so_chunk_mem);
+    if (!chunk) {
+      TBX_FAILURE("chunk allocation - err = -NM_ENOMEM");
+    }
+
+    chunk->header = header;
+    chunk->p_so_pw = p_so_pw;
+
+    list_add_tail(&chunk->link, p_so_gate->recv[tag][seq].pkt_here.chunks);
+  }
+
+  p_so_gate->status[tag][seq]|= NM_SO_STATUS_PACKET_HERE;
+  if(rdv){
+    p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
+  }
+
+  return NM_SO_HEADER_MARK_UNREAD;
+}
+
+
 /** Process a complete data request.
  */
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
@@ -513,52 +611,14 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
-  struct nm_so_interface_ops *interface = p_so_sched->current_interface;
   uint8_t tag = proto_id - 128;
-  uint8_t *status = &(p_so_gate->status[tag][seq]);
 
   NM_SO_TRACE("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u, offset = %u, is_last_chunk = %u\n", ptr, len, tag, seq, chunk_offset, is_last_chunk);
 
-  if(*status & NM_SO_STATUS_UNPACK_HERE) {
+  if(p_so_gate->status[tag][seq] & NM_SO_STATUS_UNPACK_HERE) {
     /* Cool! We already have a waiting unpack for this packet */
-
-    /* Save the real length to receive */
-    if(is_last_chunk){
-      p_so_gate->recv[tag][seq].unpack_here.expected_len = chunk_offset + len;
-    }
-
-    if(len){
-      /* Copy data to its final destination */
-
-      if(p_so_gate->status[tag][seq] & NM_SO_STATUS_UNPACK_IOV){
-        /* Destination is organized in several non contiguous buffers */
-        _nm_so_copy_data_in_iov(p_so_gate->recv[tag][seq].unpack_here.data, chunk_offset, ptr, len);
-
-      }else if (p_so_gate->status[tag][seq] & NM_SO_STATUS_IS_DATATYPE) {
-        DLOOP_Offset last = chunk_offset + len;
-        CCSI_Segment_unpack(p_so_gate->recv[tag][seq].unpack_here.segp, chunk_offset, &last, ptr);
-
-      } else {
-        /* Data are contiguous */
-        memcpy(p_so_gate->recv[tag][seq].unpack_here.data + chunk_offset, ptr, len);
-      }
-    }
-
-    p_so_gate->recv[tag][seq].unpack_here.cumulated_len += len;
-
-    /* Verify if the communication is done */
-    if(p_so_gate->recv[tag][seq].unpack_here.cumulated_len >= p_so_gate->recv[tag][seq].unpack_here.expected_len){
-      NM_SO_TRACE("Wow! All data chunks were already in!\n");
-      p_so_gate->pending_unpacks--;
-
-      /* Reset the status matrix*/
-      p_so_gate->recv[tag][seq].pkt_here.header = NULL;
-
-      *status = 0;
-      interface->unpack_success(p_gate, tag, seq, tbx_false);
-
-    }
-    return NM_SO_HEADER_MARK_READ;
+    return process_small_data(tbx_false, p_so_pw, ptr,
+                              len, tag, seq, chunk_offset, is_last_chunk);
 
   } else if ((p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
              &&
@@ -566,81 +626,15 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
               || (p_so_sched->any_src[tag].gate_id == p_gate->id && p_so_sched->any_src[tag].seq == seq))) {
 
     NM_SO_TRACE("Pending any_src reception\n");
-
-    if(is_last_chunk){
-      p_so_sched->any_src[tag].expected_len = chunk_offset + len;
-    }
-
-    if(p_so_sched->any_src[tag].gate_id == -1){
-      p_so_gate->recv_seq_number[tag]++;
-      p_so_sched->any_src[tag].gate_id = p_gate->id;
-      p_so_sched->any_src[tag].seq = seq;
-    }
-
-    /* Copy data to its final destination */
-    if(p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_IOV){
-      /* Destination is organized in several non contiguous buffers */
-      _nm_so_copy_data_in_iov(p_so_sched->any_src[tag].data, chunk_offset, ptr, len);
-
-    } else if(p_so_sched->any_src[tag].status & NM_SO_STATUS_IS_DATATYPE){
-      DLOOP_Offset last = chunk_offset + len;
-      CCSI_Segment_unpack(p_so_sched->any_src[tag].data, chunk_offset, &last, ptr);
-
-    } else {
-      /* Data are contiguous */
-      memcpy(p_so_sched->any_src[tag].data + chunk_offset, ptr, len);
-    }
-
-    p_so_sched->any_src[tag].cumulated_len += len;
-
-    /* Verify if the communication is done */
-    if(p_so_sched->any_src[tag].cumulated_len >= p_so_sched->any_src[tag].expected_len){
-      NM_SO_TRACE("Wow! All data chunks in!\n");
-
-      p_so_sched->any_src[tag].status = 0;
-      p_so_sched->any_src[tag].gate_id = -1;
-
-      p_so_sched->pending_any_src_unpacks--;
-
-      interface->unpack_success(p_gate, tag, seq, tbx_true);
-    }
-    return NM_SO_HEADER_MARK_READ;
+    return process_small_data(tbx_true, p_so_pw, ptr,
+                              len, tag, seq, chunk_offset, is_last_chunk);
 
   } else {
-
     /* Receiver process is not ready, so store the information in the
        recv array and keep the p_so_pw packet alive */
     NM_SO_TRACE("Store the data chunk with tag = %u, seq = %u\n", tag, seq);
 
-    if(!(*status & NM_SO_STATUS_PACKET_HERE)){
-
-      p_so_gate->recv[tag][seq].pkt_here.header = header;
-      p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
-
-      //INIT_LIST_HEAD(&p_so_gate->recv[tag][seq].pkt_here.chunks);
-
-      *status |= NM_SO_STATUS_PACKET_HERE;
-
-    } else {
-
-      if(p_so_gate->recv[tag][seq].pkt_here.chunks == NULL){
-        p_so_gate->recv[tag][seq].pkt_here.chunks = TBX_MALLOC(sizeof(struct list_head));//tbx_malloc(nm_so_chunk_mem);
-        INIT_LIST_HEAD(p_so_gate->recv[tag][seq].pkt_here.chunks);
-      }
-
-      struct nm_so_chunk *chunk = tbx_malloc(nm_so_chunk_mem);
-      if (!chunk) {
-	TBX_FAILURE("chunk allocation - err = -NM_ENOMEM");
-      }
-
-      chunk->header = header;
-      chunk->p_so_pw = p_so_pw;
-
-      //list_add_tail(&chunk->link, &p_so_gate->recv[tag][seq].pkt_here.chunks);
-      list_add_tail(&chunk->link, p_so_gate->recv[tag][seq].pkt_here.chunks);
-    }
-
-    return NM_SO_HEADER_MARK_UNREAD;
+    return store_data_or_rdv(tbx_false, header, tag, seq, p_so_pw);
   }
 }
 
@@ -681,32 +675,7 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
     /* Store rdv request */
     NM_SO_TRACE("Store the RDV for tag = %d, seq = %u len = %u, offset = %u\n", tag, seq, len, chunk_offset);
 
-    if(! p_so_gate->status[tag][seq] & NM_SO_STATUS_PACKET_HERE){
-      p_so_gate->recv[tag][seq].pkt_here.header = rdv;
-      p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
-
-    } else {
-      if(p_so_gate->recv[tag][seq].pkt_here.chunks == NULL){
-        p_so_gate->recv[tag][seq].pkt_here.chunks = TBX_MALLOC(sizeof(struct list_head));
-        INIT_LIST_HEAD(p_so_gate->recv[tag][seq].pkt_here.chunks);
-      }
-
-      struct nm_so_chunk *chunk = tbx_malloc(nm_so_chunk_mem);
-      if (!chunk) {
-        TBX_FAILURE("chunk allocation - err = -NM_ENOMEM");
-      }
-
-      chunk->header = rdv;
-      chunk->p_so_pw = p_so_pw;
-
-      //list_add_tail(&chunk->link, &p_so_gate->recv[tag][seq].pkt_here.chunks);
-      list_add_tail(&chunk->link, p_so_gate->recv[tag][seq].pkt_here.chunks);
-    }
-
-    p_so_gate->status[tag][seq] |= NM_SO_STATUS_RDV_HERE;
-    p_so_gate->status[tag][seq] |= NM_SO_STATUS_PACKET_HERE;
-
-    return NM_SO_HEADER_MARK_UNREAD;
+    return store_data_or_rdv(tbx_true, rdv, tag, seq, p_so_pw);
   }
 
   return NM_SO_HEADER_MARK_READ;
@@ -725,7 +694,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t tag = tag_id - 128;
 
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
-
+  
   p_so_gate->pending_unpacks--;
   p_so_gate->status[tag][seq] |= NM_SO_STATUS_ACK_HERE;
 

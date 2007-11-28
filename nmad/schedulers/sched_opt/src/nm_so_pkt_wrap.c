@@ -176,7 +176,7 @@ nm_so_pw_raz(struct nm_so_pkt_wrap *p_so_pw){
 
   p_so_pw->header_ref_count = 0;
   p_so_pw->pending_skips = 0;
-  
+
   for(i = 0; i < NM_SO_PREALLOC_IOV_LEN; i++){
     p_so_pw->v[i].iov_len  = 0;
     p_so_pw->v[i].iov_base = NULL;
@@ -867,7 +867,7 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
       }
 
       remaining_len -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(dh->len);
-          
+
       /* We must recall ptr if necessary */
       if(dh->skip == 0){ // data are just after the header
         ptr += nm_so_aligned(dh->len);
@@ -1037,8 +1037,9 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 			   1);
 #endif /* NMAD_QOS */
 
-  if (!p_so_pw->header_ref_count)
+  if (!p_so_pw->header_ref_count){
     nm_so_pw_free(p_so_pw);
+  }
 
   return NM_ESUCCESS;
 }

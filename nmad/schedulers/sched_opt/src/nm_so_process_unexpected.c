@@ -123,6 +123,10 @@ _nm_so_treat_chunk(tbx_bool_t is_any_src,
      chunks are still in use, the pw will be destroyed. */
   nm_so_pw_dec_header_ref_count(p_so_pw);
 
+  if (!p_so_pw->header_ref_count){
+    nm_so_pw_free(p_so_pw);
+  }
+
   return NM_ESUCCESS;
 }
 
@@ -146,6 +150,8 @@ int treat_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
     p_so_gate->recv[tag][seq].unpack_here.cumulated_len = 0;
   }
 
+  p_so_gate->recv[tag][seq].unpack_here.data = data;
+
   _nm_so_treat_chunk(is_any_src, data, first_header, first_p_so_pw);
 
   /* copy of all the received chunks */
@@ -168,6 +174,14 @@ int treat_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
   } else {
     expected_len  = p_so_gate->recv[tag][seq].unpack_here.expected_len;
     cumulated_len = p_so_gate->recv[tag][seq].unpack_here.cumulated_len;
+  }
+
+  if(expected_len == 0){
+    if(is_any_src){
+      p_so_sched->any_src[tag].expected_len  = len;
+    } else {
+      p_so_gate->recv[tag][seq].unpack_here.expected_len  = len;
+    }
   }
 
   NM_SO_TRACE("After retrieving data - expected_len = %d, cumulated_len = %d\n", expected_len, cumulated_len);

@@ -126,6 +126,8 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
   // 3) The final destination of the data is a contiguous buffer
   } else {
     void *data = NULL;
+    NM_SO_TRACE("RDV_sucess - contiguous data with tag %d , seq %d, chunk_offset %d, any_src %d\n",
+                tag, seq, chunk_offset, is_any_src);
 
     if(is_any_src){
       data = p_so_sched->any_src[tag].data + chunk_offset;
@@ -511,6 +513,8 @@ static int single_rdv(struct nm_gate *p_gate,
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
   int err;
+
+  NM_SO_TRACE("-->single_rdv with tag %d, seq %d, len %d, chunk_offset %d\n", tag, seq, len, chunk_offset);
 
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */

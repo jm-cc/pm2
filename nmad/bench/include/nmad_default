@@ -98,16 +98,11 @@ run_bench()
             args="--numactl"
         fi
 
-	date
-        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-	date
-        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-	date
-        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-	date
-        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
-	date
-        ${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+	nb_runs=5
+	for i in $(seq 1 $nb_runs) ; do
+		date
+        	${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+	done
 	date
 }
 

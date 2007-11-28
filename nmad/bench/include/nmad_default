@@ -81,6 +81,7 @@ run_bench()
 	OLD_IFS=$IFS
 	IFS=":"
 	set $line
+        hosts="$3"
         numactl="$4"
 	IFS=$OLD_IFS
 
@@ -98,10 +99,22 @@ run_bench()
             args="--numactl"
         fi
 
+	# create a network configuration file
+	networks_file=$(echo $(dirname $(${PM2_ROOT}/bin/pm2-conf-file -f $flavor))"/.pm2_network.cfg")
+	(cat<<EOF
+networks : ({
+	name  : $net;
+ 	hosts : ($hosts);
+	dev   : $net;
+            });
+EOF
+	    ) > $networks_file
+
+
 	nb_runs=5
 	for i in $(seq 1 $nb_runs) ; do
 		date
-        	${PM2_ROOT}/bin/pm2-load $args --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        	${PM2_ROOT}/bin/pm2-load $args --network $networks_file --protocol $net -f $flavor $leo_args $prog $leo_appli_args
 	done
 	date
 }

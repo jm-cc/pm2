@@ -144,7 +144,7 @@ mad3()
         networks_name=`echo $networks_name $network_name`
 
         if [ "$network_name" == "Network not found" ] ; then
-            _pm2_load_error "Error: No network found for device $dev and hosts $host_list, please check the names and the network configuration file $PM2_LEONIE_NETWORK_FILE"
+            _pm2_load_error "$PROGNAME Error: No network found for device $dev and hosts $host_list, please check the names and the network configuration file $PM2_LEONIE_NETWORK_FILE"
         fi
     done
     log "Networks: $networks_name"
@@ -393,7 +393,7 @@ if [ "$SAMPLING_ENABLED" == "1" ] ; then
     log "machine2=$machine2"
 
     if [ -z "$machine1" ] ; then
-        _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
+        _pm2_load_error "$PROGNAME Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
     fi
 
     ssh $machine1 arch > architecture
@@ -518,7 +518,7 @@ else # USE_LOCAL_FLAVOR
 fi
 
 # Chemin d'accès au chargeur
-[ -x $_PM2_CONFIG_LOADER ] || _pm2_load_error "Fatal Error: \"$_PM2_CONFIG_LOADER\" exec file not found!"
+[ -x $_PM2_CONFIG_LOADER ] || _pm2_load_error "$PROGNAME Fatal Error: \"$_PM2_CONFIG_LOADER\" exec file not found!"
 
 case $_PM2_CONFIG_LOADER in
     *conf_not_needed)
@@ -529,7 +529,7 @@ case $_PM2_CONFIG_LOADER in
 	set --  --source-mode
 	. ${PM2_ROOT}/bin/pm2-conf-file
 
-	[ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for this flavor (please run pm2-conf)."
+	[ -f $PM2_CONF_FILE ] || _pm2_load_error "$PROGNAME Error: PM2 is not yet configured for this flavor (please run pm2-conf)."
 	;;
 esac
 

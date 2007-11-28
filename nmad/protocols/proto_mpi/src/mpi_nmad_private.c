@@ -1033,7 +1033,7 @@ int mpir_start(mpir_internal_data_t *mpir_internal_data,
 
 int mpir_wait(mpir_internal_data_t *mpir_internal_data,
 	      mpir_request_t *mpir_request) {
-  int err;
+  int err = MPI_SUCCESS;
   mpir_datatype_t *mpir_datatype;
 
   MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
@@ -1079,7 +1079,7 @@ int mpir_wait(mpir_internal_data_t *mpir_internal_data,
 
 int mpir_test(mpir_internal_data_t *mpir_internal_data,
 	      mpir_request_t *mpir_request) {
-  int err;
+  int err = MPI_SUCCESS;
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
     err = nm_so_sr_rtest(mpir_internal_data->p_so_sr_if, mpir_request->request_nmad);
   }

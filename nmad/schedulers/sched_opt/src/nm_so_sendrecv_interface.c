@@ -461,7 +461,7 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
     nm_so_sr_flush(p_so_interface);
   }
 
-  if (request.status != NULL) {
+  if (p_request != NULL) {
     while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
       nm_schedule(p_core);
   }
@@ -788,7 +788,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request, *p_request & NM_SO_STATUS_RECV_COMPLETED ? 1 : 0);
 
-  if (request.status != NULL) {
+  if (p_request != NULL) {
     while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
       nm_schedule(p_core);
   }

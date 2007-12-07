@@ -196,6 +196,7 @@
 #  define FUT_DO_PROBE3(a, b, c, d)		(void)0
 #  define FUT_DO_PROBE4(a, b, c, d, e)		(void)0
 #  define FUT_DO_PROBE5(a, b, c, d, e, f)	(void)0
+#  define FUT_DO_PROBESTR(a, str)		(void)0
 #endif
 
 #endif /* NM_LOG_H */

@@ -123,10 +123,6 @@ _nm_so_treat_chunk(tbx_bool_t is_any_src,
      chunks are still in use, the pw will be destroyed. */
   nm_so_pw_dec_header_ref_count(p_so_pw);
 
-  if (!p_so_pw->header_ref_count){
-    nm_so_pw_free(p_so_pw);
-  }
-
   return NM_ESUCCESS;
 }
 

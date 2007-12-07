@@ -1,3 +1,7 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
 #ifndef CCSI_DEV_H
 #define CCSI_DEV_H
 

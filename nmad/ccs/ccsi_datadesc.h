@@ -1,3 +1,8 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
+
 #ifndef CCSI_DATADESC_H
 #define CCSI_DATADESC_H
 #include "ccs_dataloop.h"

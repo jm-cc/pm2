@@ -1,3 +1,7 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
 #ifndef CCS_PUBLIC_H
 #define CCS_PUBLIC_H
 

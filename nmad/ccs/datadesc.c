@@ -1,4 +1,7 @@
-
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
 #include <ccs.h>
 #include <ccsi.h>
 #include <ccs_dataloop.h>

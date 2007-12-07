@@ -1,3 +1,7 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
 #ifndef CCSI_H
 #define CCSI_H
 #include <stdlib.h>

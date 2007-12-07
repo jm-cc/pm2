@@ -1,10 +1,7 @@
-/* -*- Mode: C; c-basic-offset:4 ; -*- */
-
 /*
- *  (C) 2001 by Argonne National Laboratory.
- *      See COPYRIGHT in top-level directory.
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
  */
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +33,7 @@
  *
  * OPTIMIZATIONS:
  *
- * There are spots in the code with OPT tags that indicate where we could 
+ * There are spots in the code with OPT tags that indicate where we could
  * optimize particular calculations or avoid certain checks.
  *
  * NOTES:
@@ -151,9 +148,9 @@ void PREPEND_PREFIX(Dataloop_update)(struct DLOOP_Dataloop *dataloop,
 	     *
 	     * However, some compilers spit out warnings about casting on the
 	     * LHS, so we get this much nastier form instead (using common
-	     * struct for contig and vector): 
+	     * struct for contig and vector):
 	     */
-	    dataloop->loop_params.cm_t.dataloop = (struct DLOOP_Dataloop *) 
+	    dataloop->loop_params.cm_t.dataloop = (struct DLOOP_Dataloop *)
 		((char *) dataloop->loop_params.cm_t.dataloop + ptrdiff);
 
 	    if (!(dataloop->kind & DLOOP_FINAL_MASK))
@@ -553,7 +550,7 @@ void PREPEND_PREFIX(Dataloop_dup)(DLOOP_Dataloop *old_loop,
 
     DLOOP_Assert(old_loop != NULL);
     DLOOP_Assert(old_loop_sz > 0);
-    
+
     new_loop = (DLOOP_Dataloop *) DLOOP_Malloc(old_loop_sz);
     if (new_loop == NULL) {
 	*new_loop_p = NULL;
@@ -671,16 +668,16 @@ void PREPEND_PREFIX(Dataloop_print)(struct DLOOP_Dataloop *dataloop,
 		     (int) dataloop, (int) depth, (int) dataloop->kind, (int) dataloop->el_extent);
     switch(dataloop->kind & DLOOP_KIND_MASK) {
 	case DLOOP_KIND_CONTIG:
-	    DLOOP_dbg_printf("\tcount=%d, datatype=%x\n", 
-			     (int) dataloop->loop_params.c_t.count, 
+	    DLOOP_dbg_printf("\tcount=%d, datatype=%x\n",
+			     (int) dataloop->loop_params.c_t.count,
 			     (int) dataloop->loop_params.c_t.dataloop);
 	    if (!(dataloop->kind | DLOOP_FINAL_MASK))
 		PREPEND_PREFIX(Dataloop_print)(dataloop->loop_params.c_t.dataloop, depth+1);
 	    break;
 	case DLOOP_KIND_VECTOR:
 	    DLOOP_dbg_printf("\tcount=%d, blksz=%d, stride=%d, datatype=%x\n",
-			     (int) dataloop->loop_params.v_t.count, 
-			     (int) dataloop->loop_params.v_t.blocksize, 
+			     (int) dataloop->loop_params.v_t.count,
+			     (int) dataloop->loop_params.v_t.blocksize,
 			     (int) dataloop->loop_params.v_t.stride,
 			     (unsigned int) dataloop->loop_params.v_t.dataloop);
 	    if (!(dataloop->kind | DLOOP_FINAL_MASK))
@@ -688,8 +685,8 @@ void PREPEND_PREFIX(Dataloop_print)(struct DLOOP_Dataloop *dataloop,
 	    break;
 	case DLOOP_KIND_BLOCKINDEXED:
 	    DLOOP_dbg_printf("\tcount=%d, blksz=%d, datatype=%x\n",
-			     (int) dataloop->loop_params.bi_t.count, 
-			     (int) dataloop->loop_params.bi_t.blocksize, 
+			     (int) dataloop->loop_params.bi_t.count,
+			     (int) dataloop->loop_params.bi_t.blocksize,
 			     (unsigned int) dataloop->loop_params.bi_t.dataloop);
 	    /* print out offsets later */
 	    if (!(dataloop->kind | DLOOP_FINAL_MASK))

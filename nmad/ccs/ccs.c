@@ -1,3 +1,8 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */ 
+
 #include <ccsi.h>
 #include <ccsi_dev.h>
 #include <stdarg.h>

@@ -1,10 +1,7 @@
-/* -*- Mode: C; c-basic-offset:4 ; -*- */
-
 /*
- *  (C) 2001 by Argonne National Laboratory.
- *      See COPYRIGHT in top-level directory.
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 

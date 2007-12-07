@@ -1,3 +1,7 @@
+/*
+ *  (C) 2006 by Argonne National Laboratory.
+ *   Contact:  Darius Buntinas
+ */
 #ifndef HANDLER_MACROS_H
 #define HANDLER_MACROS_H
 

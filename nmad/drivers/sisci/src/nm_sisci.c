@@ -417,6 +417,7 @@ nm_sisci_init			(struct nm_drv *p_drv) {
         url_string	= tbx_string_init_to_int(l_node_id);
         p_drv->url	= tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
+	p_drv->name = tbx_strdup("sci");
 
 	err = NM_ESUCCESS;
 

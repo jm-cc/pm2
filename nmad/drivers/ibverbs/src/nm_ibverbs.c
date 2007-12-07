@@ -650,6 +650,7 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 	char s_url[16];
 	snprintf(s_url, 16, "%08x%04x", htonl(((struct in_addr*)he->h_addr)->s_addr), addr.sin_port);
         p_drv->url = tbx_strdup(s_url);
+        p_drv->name = tbx_strdup("ib");
 
 	/* IB capabilities */
 	p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;

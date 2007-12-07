@@ -300,9 +300,6 @@ nm_core_driver_load(struct nm_core	 *p_core,
                 *p_id	= p_drv->id;
         }
 
-	/*TODO : add url */
-	FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
-
         err = NM_ESUCCESS;
 
  out:
@@ -408,6 +405,14 @@ nm_core_driver_init(struct nm_core	 *p_core,
                 *p_url = tbx_string_to_cstring(url);
                 tbx_string_free(url);
         }
+
+	FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
+	if (p_drv->name) {
+		FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->name);
+	}
+	else {
+		FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, "");
+	}
 
         err = NM_ESUCCESS;
 

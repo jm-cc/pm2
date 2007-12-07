@@ -222,6 +222,7 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         p_drv->url	= tbx_string_to_cstring(url_string);
         NM_TRACE_STR("p_drv->url", p_drv->url);
         tbx_string_free(url_string);
+	p_drv->name = tbx_strdup("qsnet");
 
 #ifdef ENABLE_SAMPLING
         nm_parse_sampling(p_drv, "qsnet");

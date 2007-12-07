@@ -380,6 +380,10 @@ launch_large_datatype(struct nm_gate *p_gate,
 
   p_so_gate->status[tag][seq] |= NM_SO_STATUS_IS_DATATYPE;
 
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 1, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 1, 1, p_so_pw);
+
   /* Then place it into the appropriate list of large pending "sends". */
   list_add_tail(&p_so_pw->link, &(p_so_gate->pending_large_send[tag]));
 

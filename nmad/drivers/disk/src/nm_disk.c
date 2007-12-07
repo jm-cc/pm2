@@ -104,6 +104,7 @@ nm_disk_init			(struct nm_drv *p_drv) {
 
         /* driver url encoding						*/
         p_drv->url	= tbx_strdup("-");
+	p_drv->name	= tbx_strdup("disk");
 
 	err = NM_ESUCCESS;
 	return err;

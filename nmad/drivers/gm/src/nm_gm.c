@@ -388,6 +388,7 @@ nm_gm_init			(struct nm_drv *p_drv) {
 
 	/* driver url encoding						*/
         p_drv->url	= tbx_strdup("-");
+	p_drv->name 	= tbx_strdup("gm");
 
         NM_TRACE_STR("drv_url", p_drv->url);
 

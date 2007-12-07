@@ -90,6 +90,7 @@ nm_dummy_init			(struct nm_drv *p_drv) {
 
 	/* driver url encoding						*/
 	p_drv->url	= tbx_strdup("-");
+	p_drv->name	= tbx_strdup("dummy");
 
 	err = NM_ESUCCESS;
 	return err;

@@ -379,6 +379,7 @@ nm_mx_init		(struct nm_drv *p_drv) {
         hostname[MX_MAX_HOSTNAME_LEN-1] = '\0';
         p_drv->url	= tbx_strdup(hostname);
         NM_TRACE_STR("p_drv->url", p_drv->url);
+	p_drv->name = tbx_strdup("mx");
 
 #ifdef ENABLE_SAMPLING
         nm_parse_sampling(p_drv, "mx");

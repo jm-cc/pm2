@@ -46,7 +46,7 @@ int nm_so_build_multi_ack(struct nm_gate *p_gate,
   err = cur_strat->pack_extended_ctrl(p_gate, NM_SO_CTRL_HEADER_SIZE * (nb_drv+1), &ctrl, &p_so_acks_pw);
 
   for(i = 0; i < nb_drv; i++){
-    NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK - drv_id = %d, trk_id = %ld, chunk_len =%u\n", drv_ids[i], trk_id, chunk_lens[i]);
+    NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK - drv_id = %d, trk_id = %d, chunk_len =%u\n", drv_ids[i], trk_id, chunk_lens[i]);
     nm_so_add_ack_chunk(&ctrl, drv_ids[i] * NM_SO_MAX_TRACKS + trk_id, chunk_lens[i]);
     err = cur_strat->pack_ctrl_chunk(p_so_acks_pw, &ctrl);
   }

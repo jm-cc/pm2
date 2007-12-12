@@ -617,7 +617,7 @@ static void __ma_bubble_unlock(marcel_bubble_t *b) {
 				__ma_bubble_unlock(b);
 		}
 	}
-	ma_holder_rawlock(&b->hold);
+	ma_holder_rawunlock(&b->hold);
 }
 
 void ma_bubble_lock(marcel_bubble_t *b) {

@@ -53,7 +53,6 @@ __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struc
 	}
       else if (e[k]->type == MA_THREAD_SEED_ENTITY)
 	{
-	  marcel_task_t *t = ma_task_entity(e[k]);
 	  debug("seed, ");
 	}
       else 
@@ -82,9 +81,6 @@ static void
 __sched_submit_to_upper_level(marcel_entity_t *e[], int ne, struct marcel_topo_level **l)
 {
   int i;
-  int nb_running = 0;
-  int running = 0;
-  marcel_entity_t *ee;
 
   if (ne == 1)
     {
@@ -276,7 +272,6 @@ __marcel_bubble_affinity(struct marcel_topo_level **l)
 	  unsigned new_ne = 0;
 	  int i, j;
 	  int bubble_has_exploded = 0;
-	  int nb = 0;
 	  for (i = 0; i < ne; i++) 
 	    {
 	      /* TODO: C'est ici qu'il faudra choisir la bulle a exploser, en fonction de son épaisseur ou autre */
@@ -414,7 +409,6 @@ see(struct marcel_topo_level *level, int up_power, struct marcel_topo_level *reg
 {
   ma_runqueue_t *rq = &level->sched;
   struct marcel_topo_level *father = level->father;
-  struct marcel_topo_level *top = marcel_topo_level(0,0);
 
   int allthreads, nvp;
   int ents = ma_count_all_entities_on_rq(rq);
@@ -556,8 +550,6 @@ __ma_local_steal_entities(struct marcel_topo_level *empty_level)
 	      if (e[k]->type == MA_BUBBLE_ENTITY)
 		{
 		  marcel_bubble_t *b = ma_bubble_entity(e[k]);
-		  marcel_entity_t *ee;
-		  int running = 0;
 		  
 		  if (!ma_bubble_hold_stats_get(b, ma_stats_nbrunning_offset))
 		    {

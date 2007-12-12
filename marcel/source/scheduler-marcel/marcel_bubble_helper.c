@@ -99,7 +99,7 @@ int ma_count_entities_on_rq(ma_runqueue_t *rq)
 /* Suppose que rq est verrouillée + on a appelé synthesize au préalable */ 
 int ma_count_all_entities_on_rq(ma_runqueue_t *rq)
 {
-  marcel_entity_t *e, *ee;
+  marcel_entity_t *ee;
   int ne = 0;
 
   list_for_each_entry(ee, &rq->hold.sched_list, sched_list)

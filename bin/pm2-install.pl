@@ -29,12 +29,17 @@ if (exists $ENV{'PM2_ROOT'}) {
 	chdir $pm2_root	or die "chdir ${pm2_root}: $!\n";
 } elsif ( -x 'bin/pm2-install.pl' ) {
 	$pm2_root	= `pwd`;
+	chomp $pm2_root;
 	$ENV{'PM2_ROOT'}	= $pm2_root;
 } else {
 	die "pm2-install.pl must be run from PM2 extraction directory\n";
 }
 
+my $path	= "${pm2_root}/bin:" . $ENV{'PATH'};
+$ENV{'PATH'}	= $path;
+
 print "using PM2_ROOT: \t${pm2_root}\n";
+print "using PATH: \t${path}\n";
 
 # read command line args
 my %opts;

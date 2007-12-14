@@ -18,6 +18,8 @@ ajouter des options pour alléger la structure marcel_descr & marcel_attr: migrat
 
 Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des changements de libc/gcc, parfois changement de stratégie d'ordonnancement par défaut.
 
+Mettre en place un cron qui lance posixtestsuite et trace un courbe
+
 Benchs OpenMP EPCC.
 
 topology: level->type devrait plutôt être un | des différents types d'objets matériels (un n½ud NUMA peut très bien correspondre à une puce et à un cache L3 partagé, cf Barcelona). Corriger en même temps le code qui l'utilise (== TRUC) en &TRUC)!=0

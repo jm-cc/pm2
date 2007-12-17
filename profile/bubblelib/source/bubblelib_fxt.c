@@ -152,7 +152,7 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 				fflush(stdout);
 			}
 			if (num > 1<<16) {
-				fprintf(stderr,"Phew! Long trace! Stopping at %d events or else the movie will probably be boring\n", num);
+				fprintf(stderr,"Phew! Long trace! Stopping at %d events or else the movie will probably be boring (you can change this at %s:%d)\n", num, __FILE__, __LINE__);
 				break;
 			}
 		}

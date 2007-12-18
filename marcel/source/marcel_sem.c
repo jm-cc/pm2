@@ -26,7 +26,9 @@
 
 void marcel_sem_init(marcel_sem_t * s, int initial)
 {
-	//fprintf(stderr,"* sem_init(%p,%d)\n",s,initial);
+	/* The code assume that 'initial' is positive.
+	 */
+	MA_BUG_ON(initial < 0);
 
 	s->value = initial;
 	s->first = NULL;

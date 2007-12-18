@@ -39,8 +39,7 @@ any_t f(any_t arg)
                 }
         else
                 {
-                        ma_atomic_inc(&max_threads);
-                        if(max_threads.counter >= nb_feuilles)
+                        if(ma_atomic_inc_return(&max_threads) >= nb_feuilles)
                                 marcel_sem_V(&sem);
                 }
         

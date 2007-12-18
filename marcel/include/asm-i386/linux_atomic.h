@@ -230,6 +230,7 @@ static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 	return c;
 }
 
+/* Same as atomic_add, but return the resulting value after addition */
 #section marcel_functions
 static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
 #section marcel_inline
@@ -246,6 +247,7 @@ static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 
 }
 
+/* Same as atomic_add, but return the resulting value after substraction */
 #section marcel_functions
 static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t *v);
 #section marcel_inline

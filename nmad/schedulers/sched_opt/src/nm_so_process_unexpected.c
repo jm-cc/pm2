@@ -98,13 +98,13 @@ _nm_so_treat_chunk(tbx_bool_t is_any_src,
       p_so_gate->recv[tag][seq].unpack_here.cumulated_len += len;
     }
 
-    if((is_any_src && p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_IOV)
-       || (!(is_any_src && p_so_gate->status[tag][seq] & NM_SO_STATUS_UNPACK_IOV))){
+    if((is_any_src && (p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_IOV))
+       || (!is_any_src && (p_so_gate->status[tag][seq] & NM_SO_STATUS_UNPACK_IOV))){
 
       _nm_so_copy_data_in_iov(dest_buffer, chunk_offset, ptr, len);
 
-    } else if((!(is_any_src && p_so_gate->status[tag][seq] & NM_SO_STATUS_IS_DATATYPE))
-              || (is_any_src && p_so_sched->any_src[tag].status & NM_SO_STATUS_IS_DATATYPE)){
+    } else if((!is_any_src && (p_so_gate->status[tag][seq] & NM_SO_STATUS_IS_DATATYPE))
+              || (is_any_src && (p_so_sched->any_src[tag].status & NM_SO_STATUS_IS_DATATYPE))){
       DLOOP_Offset last = chunk_offset + len;
 
       if(is_any_src){

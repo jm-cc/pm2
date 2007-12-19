@@ -24,4 +24,4 @@ appdir="${PM2_ROOT}/marcel/examples"
 loop="marcel"
 
 prog="createtime_rec"
-args= "10"
+args="10"

@@ -103,8 +103,6 @@ struct nm_so_gate {
       int32_t cumulated_len;
       int32_t expected_len;
 
-      struct DLOOP_Segment *segp;
-
     } unpack_here;
   } recv[NM_SO_MAX_TAGS][NM_SO_PENDING_PACKS_WINDOW];
 

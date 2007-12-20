@@ -37,7 +37,8 @@
 #include <ccs_public.h>
 #include <segment.h>
 
-int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, void *data, uint32_t len){
+int
+_nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, void *data, uint32_t len){
   uint32_t chunk_len, pending_len = len;
   int offset = 0;
   int i = 0;
@@ -101,89 +102,30 @@ iov_len(struct iovec *iov, int nb_entries){
   return len;
 }
 
-/** Handle a source-less unpack.
- */
-int
-__nm_so_unpack_any_src(struct nm_core *p_core,
-                       uint8_t tag, void *data, uint32_t len)
-{
+static int
+datatype_size(struct DLOOP_Segment *segp){
+  DLOOP_Handle handle;
+  int data_sz;
 
-  struct nm_so_sched *p_so_sched = p_core->p_sched->sch_private;
-  struct nm_gate *p_gate;
-  struct nm_so_gate *p_so_gate;
-  uint8_t *status;
-  int seq, first, i, err = NM_ESUCCESS;
+  handle = segp->handle;
+  CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
 
-  NM_SO_TRACE("Unpack_ANY_src - tag = %u, len = %u\n", tag, len);
-
-  if(p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
-    TBX_FAILURE("Simultaneous any_src reception on the same tag");
-
-  p_so_sched->any_src[tag].expected_len  = len;
-  p_so_sched->any_src[tag].cumulated_len = 0;
-
-  first = p_so_sched->next_gate_id;
-  do {
-
-    p_gate = p_core->gate_array + p_so_sched->next_gate_id;
-    p_so_gate = p_gate->sch_private;
-
-    seq = p_so_gate->recv_seq_number[tag];
-    status = &p_so_gate->status[tag][seq];
-
-    if(*status & NM_SO_STATUS_PACKET_HERE) {
-      /* Wow! At least one data chunk already in! */
-      NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
-
-      *status = 0;
-      p_so_gate->recv_seq_number[tag]++;
-
-      p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-      p_so_sched->any_src[tag].data = data;
-      p_so_sched->any_src[tag].gate_id = p_gate->id;
-      p_so_sched->any_src[tag].seq = seq;
-
-      p_so_sched->pending_any_src_unpacks++;
-
-      if(treat_unexpected(tbx_true, p_gate, tag, seq, len, data) == NM_ESUCCESS){
-        goto out;
-      }
-
-      goto out;
-    }
-
-    p_so_sched->next_gate_id = (p_so_sched->next_gate_id + 1) % p_core->nb_gates;
-
-  } while(p_so_sched->next_gate_id != first);
-
-  NM_SO_TRACE("No data chunk already in - gate_id initialized at -1\n");
-  p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-  p_so_sched->any_src[tag].data = data;
-  p_so_sched->any_src[tag].gate_id = -1;
-
-  p_so_sched->pending_any_src_unpacks++;
-
-  /* Make sure that each gate has a posted receive */
-  for(i = 0; i < p_core->nb_gates; i++)
-    nm_so_refill_regular_recv(&p_core->gate_array[i]);
-
- out:
-  return err;
+  return data_sz;
 }
 
 /** Handle a source-less unpack.
  */
-int
-__nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, int nb_entries)
-{
-
+static int
+____nm_so_unpack_any_src(struct nm_core *p_core,
+                         uint8_t tag, uint8_t flag,
+                         void *data_description, uint32_t len){
   struct nm_so_sched *p_so_sched = p_core->p_sched->sch_private;
-  struct nm_gate *p_gate;
-  struct nm_so_gate *p_so_gate;
-  uint8_t *status;
+  struct nm_gate *p_gate = NULL;
+  struct nm_so_gate *p_so_gate = NULL;
+  uint8_t *status = NULL;
   int seq, first, i, err = NM_ESUCCESS;
 
-  NM_SO_TRACE("Unpackv_ANY_src - tag = %u, nb_entries = %u\n", tag, nb_entries);
+  NM_SO_TRACE("Unpack_ANY_src - tag = %u\n", tag);
 
   if(p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
     TBX_FAILURE("Simultaneous any_src reception on the same tag");
@@ -202,19 +144,18 @@ __nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, 
       NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
 
       *status = 0;
-
       p_so_gate->recv_seq_number[tag]++;
 
-      p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_IOV;
-
       p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-      p_so_sched->any_src[tag].data = iov;
+      p_so_sched->any_src[tag].status |= flag;
+
+      p_so_sched->any_src[tag].data = data_description;
       p_so_sched->any_src[tag].gate_id = p_gate->id;
       p_so_sched->any_src[tag].seq = seq;
 
       p_so_sched->pending_any_src_unpacks++;
 
-      if(treat_unexpected(tbx_true, p_gate, tag, seq, iov_len(iov, nb_entries), iov) == NM_ESUCCESS){
+      if(treat_unexpected(tbx_true, p_gate, tag, seq, len, data_description) == NM_ESUCCESS){
         goto out;
       }
 
@@ -228,12 +169,12 @@ __nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, 
   NM_SO_TRACE("No data chunk already in - gate_id initialized at -1\n");
   p_so_sched->any_src[tag].status = 0;
   p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-  p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_IOV;
+  p_so_sched->any_src[tag].status |= flag;
 
-  p_so_sched->any_src[tag].data = iov;
+  p_so_sched->any_src[tag].data = data_description;
   p_so_sched->any_src[tag].gate_id = -1;
 
-  p_so_sched->any_src[tag].expected_len  = iov_len(iov, nb_entries);
+  p_so_sched->any_src[tag].expected_len  = len;
   p_so_sched->any_src[tag].cumulated_len = 0;
 
   p_so_sched->pending_any_src_unpacks++;
@@ -246,106 +187,58 @@ __nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, 
   return err;
 }
 
-static int datatype_size(struct DLOOP_Segment *segp){
-  DLOOP_Handle handle;
-  int data_sz;
+int
+__nm_so_unpack_any_src(struct nm_core *p_core, uint8_t tag, void *data, uint32_t len)
+{
+    /* Nothing special to flag for the contiguous reception */
+  uint8_t flag = 0;
 
-  handle = segp->handle;
-  CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
+  return ____nm_so_unpack_any_src(p_core, tag, flag, data, len);
+}
 
-  return data_sz;
+
+int
+__nm_so_unpackv_any_src(struct nm_core *p_core, uint8_t tag, struct iovec *iov, int nb_entries)
+{
+  /* Data will be receive in an iovec tab */
+  uint8_t flag = 0;
+  flag |= NM_SO_STATUS_UNPACK_IOV;
+
+  return ____nm_so_unpack_any_src(p_core, tag, flag, iov, iov_len(iov, nb_entries));
 }
 
 int
 __nm_so_unpack_datatype_any_src(struct nm_core *p_core, uint8_t tag, struct DLOOP_Segment *segp){
-  struct nm_so_sched *p_so_sched = p_core->p_sched->sch_private;
-  struct nm_gate *p_gate;
-  struct nm_so_gate *p_so_gate;
-  uint8_t *status;
-  int seq, first, i, err = NM_ESUCCESS;
 
-  NM_SO_TRACE("Unpack_datatype_any_src - tag = %u\n", tag);
+  /* Data will be receive through a datatype */
+  uint8_t flag = 0;
+  flag |= NM_SO_STATUS_IS_DATATYPE;
 
-  if(p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_HERE)
-    TBX_FAILURE("Simultaneous any_src reception on the same tag");
-
-  first = p_so_sched->next_gate_id;
-  do {
-
-    p_gate = p_core->gate_array + p_so_sched->next_gate_id;
-    p_so_gate = p_gate->sch_private;
-
-    seq = p_so_gate->recv_seq_number[tag];
-    status = &p_so_gate->status[tag][seq];
-
-    if(*status & NM_SO_STATUS_PACKET_HERE) {
-      /* Wow! At least one data chunk already in! */
-      NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
-
-      *status = 0;
-      p_so_gate->recv_seq_number[tag]++;
-
-      p_so_sched->any_src[tag].status |= NM_SO_STATUS_IS_DATATYPE;
-      p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-      p_so_sched->any_src[tag].data = segp;
-      p_so_sched->any_src[tag].gate_id = p_gate->id;
-      p_so_sched->any_src[tag].seq = seq;
-
-      p_so_sched->pending_any_src_unpacks++;
-
-      if(treat_unexpected(tbx_true, p_gate, tag, seq, 0, NULL) == NM_ESUCCESS){
-        goto out;
-      }
-
-      goto out;
-    }
-
-    p_so_sched->next_gate_id = (p_so_sched->next_gate_id + 1) % p_core->nb_gates;
-
-  } while(p_so_sched->next_gate_id != first);
-
-  NM_SO_TRACE("No data chunk already in - gate_id initialized at -1\n");
-  p_so_sched->any_src[tag].expected_len  = datatype_size(segp);
-  p_so_sched->any_src[tag].cumulated_len = 0;
-
-  p_so_sched->any_src[tag].status |= NM_SO_STATUS_UNPACK_HERE;
-  p_so_sched->any_src[tag].status |= NM_SO_STATUS_IS_DATATYPE;
-
-  p_so_sched->any_src[tag].data = segp;
-  p_so_sched->any_src[tag].gate_id = -1;
-
-  p_so_sched->pending_any_src_unpacks++;
-
-  /* Make sure that each gate has a posted receive */
-  for(i = 0; i < p_core->nb_gates; i++)
-    nm_so_refill_regular_recv(&p_core->gate_array[i]);
-
- out:
-  return err;
+  return ____nm_so_unpack_any_src(p_core, tag, flag, segp, datatype_size(segp));
 }
+
 
 /** Handle a sourceful unpack.
  */
-int
-__nm_so_unpack(struct nm_gate *p_gate,
-	       uint8_t tag, uint8_t seq,
-	       void *data, uint32_t len)
-{
+static int
+____nm_so_unpack(struct nm_gate *p_gate,
+                 uint8_t tag, uint8_t seq,
+                 uint8_t flag,
+                 void *data_description, uint32_t len){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   uint8_t *status = &(p_so_gate->status[tag][seq]);
   int err;
 
-  NM_SO_TRACE("Unpack - gate_id = %u, tag = %u, seq = %u, len = %u\n", p_gate->id, tag, seq, len);
+  NM_SO_TRACE("Intern Unpack - gate_id = %u, tag = %u, seq = %u\n", p_gate->id, tag, seq);
 
   if(*status & NM_SO_STATUS_PACKET_HERE) {
     /* Wow! At least one chunk already in! */
     NM_SO_TRACE("At least one data chunk already in!\n");
 
-    if(len){
-      if(treat_unexpected(tbx_false, p_gate, tag, seq, len, data) == NM_ESUCCESS){
-          err = NM_ESUCCESS;
-          goto out;
-      }
+    *status |= flag;
+
+    if(treat_unexpected(tbx_false, p_gate, tag, seq, len, data_description) == NM_ESUCCESS){
+      goto out;
     }
 
   } else {
@@ -354,9 +247,10 @@ __nm_so_unpack(struct nm_gate *p_gate,
   }
 
   *status = 0;
-  *status = NM_SO_STATUS_UNPACK_HERE;
+  *status |= NM_SO_STATUS_UNPACK_HERE;
+  *status |= flag;
 
-  p_so_gate->recv[tag][seq].unpack_here.data = data;
+  p_so_gate->recv[tag][seq].unpack_here.data = data_description;
 
   p_so_gate->pending_unpacks++;
 
@@ -367,6 +261,17 @@ __nm_so_unpack(struct nm_gate *p_gate,
 
  out:
   return err;
+}
+
+int
+__nm_so_unpack(struct nm_gate *p_gate,
+	       uint8_t tag, uint8_t seq,
+	       void *data, uint32_t len)
+{
+  /* Nothing special to flag for the contiguous reception */
+  uint8_t flag = 0;
+
+  return ____nm_so_unpack(p_gate, tag, seq, flag, data, len);
 }
 
 int
@@ -374,43 +279,11 @@ __nm_so_unpackv(struct nm_gate *p_gate,
                 uint8_t tag, uint8_t seq,
                 struct iovec *iov, int nb_entries)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  uint8_t *status = &(p_so_gate->status[tag][seq]);
-  int err;
+  /* Data will be receive in an iovec tab */
+  uint8_t flag = 0;
+  flag |= NM_SO_STATUS_UNPACK_IOV;
 
-  NM_SO_TRACE("Unpackv - gate_id = %u, tag = %u, seq = %u, nb_entries = %u\n", p_gate->id, tag, seq, nb_entries);
-
-  if(*status & NM_SO_STATUS_PACKET_HERE) {
-    /* Wow! At least one chunk already in! */
-    NM_SO_TRACE("At least one data chunk already in!\n");
-
-    *status |= NM_SO_STATUS_UNPACK_IOV;
-
-    if(treat_unexpected(tbx_false, p_gate, tag, seq, iov_len(iov, nb_entries), iov) == NM_ESUCCESS){
-      err = NM_ESUCCESS;
-      goto out;
-    }
-
-  } else {
-    p_so_gate->recv[tag][seq].unpack_here.expected_len = iov_len(iov, nb_entries);
-    p_so_gate->recv[tag][seq].unpack_here.cumulated_len = 0;
-  }
-
-  *status = 0;
-  *status |= NM_SO_STATUS_UNPACK_HERE;
-  *status |= NM_SO_STATUS_UNPACK_IOV;
-
-  p_so_gate->recv[tag][seq].unpack_here.data = iov;
-
-  p_so_gate->pending_unpacks++;
-
-  /* Check if we should post a new recv packet */
-  nm_so_refill_regular_recv(p_gate);
-
-  err = NM_ESUCCESS;
-
- out:
-  return err;
+  return ____nm_so_unpack(p_gate, tag, seq, flag, iov, iov_len(iov, nb_entries));
 }
 
 int
@@ -418,44 +291,11 @@ __nm_so_unpack_datatype(struct nm_gate *p_gate,
                         uint8_t tag, uint8_t seq,
                         struct DLOOP_Segment *segp)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  uint8_t *status = &(p_so_gate->status[tag][seq]);
-  int err;
+  /* Data will be receive through a datatype */
+  uint8_t flag = 0;
+  flag |= NM_SO_STATUS_IS_DATATYPE;
 
-  NM_SO_TRACE("Unpack_datatype - gate_id = %u, tag = %u, seq = %u\n", p_gate->id, tag, seq);
-
-  if(*status & NM_SO_STATUS_PACKET_HERE) {
-    /* Wow! At least one chunk already in! */
-    NM_SO_TRACE("At least one data chunk already in!\n");
-
-    *status |= NM_SO_STATUS_IS_DATATYPE;
-    p_so_gate->recv[tag][seq].unpack_here.segp = segp;
-
-    if(treat_unexpected(tbx_false, p_gate, tag, seq, 0, NULL) == NM_ESUCCESS){
-      err = NM_ESUCCESS;
-      goto out;
-    }
-
-  } else {
-    p_so_gate->recv[tag][seq].unpack_here.expected_len = datatype_size(segp);
-    p_so_gate->recv[tag][seq].unpack_here.cumulated_len = 0;
-  }
-
-  *status = 0;
-  *status |= NM_SO_STATUS_UNPACK_HERE;
-  *status |= NM_SO_STATUS_IS_DATATYPE;
-
-  p_so_gate->recv[tag][seq].unpack_here.segp = segp;
-
-  p_so_gate->pending_unpacks++;
-
-  /* Check if we should post a new recv packet */
-  nm_so_refill_regular_recv(p_gate);
-
-  err = NM_ESUCCESS;
-
- out:
-  return err;
+  return ____nm_so_unpack(p_gate, tag, seq, flag, segp, datatype_size(segp));
 }
 
 /** Schedule and post new incoming buffers.
@@ -466,11 +306,12 @@ nm_so_in_schedule(struct nm_sched *p_sched TBX_UNUSED)
   return NM_ESUCCESS;
 }
 
-static int process_small_data(tbx_bool_t is_any_src,
-                              struct nm_so_pkt_wrap *p_so_pw,
-                              void *ptr,
-                              uint32_t len, uint8_t tag, uint8_t seq,
-                              uint32_t chunk_offset, uint8_t is_last_chunk){
+static int
+process_small_data(tbx_bool_t is_any_src,
+                   struct nm_so_pkt_wrap *p_so_pw,
+                   void *ptr,
+                   uint32_t len, uint8_t tag, uint8_t seq,
+                   uint32_t chunk_offset, uint8_t is_last_chunk){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
@@ -519,9 +360,9 @@ static int process_small_data(tbx_bool_t is_any_src,
       struct DLOOP_Segment *segp = NULL;
 
       if(is_any_src){
-        segp = (struct DLOOP_Segment *)p_so_sched->any_src[tag].data;
+        segp = p_so_sched->any_src[tag].data;
       } else {
-        segp = p_so_gate->recv[tag][seq].unpack_here.segp;
+        segp = p_so_gate->recv[tag][seq].unpack_here.data;
       }
 
       /* Data are described by a datatype */
@@ -563,13 +404,15 @@ static int process_small_data(tbx_bool_t is_any_src,
   return NM_SO_HEADER_MARK_READ;
 }
 
-static int store_data_or_rdv(tbx_bool_t rdv,
-                             void *header, uint8_t tag, uint8_t seq,
-                             struct nm_so_pkt_wrap *p_so_pw){
+static int
+store_data_or_rdv(tbx_bool_t rdv,
+                  void *header, uint8_t tag, uint8_t seq,
+                  struct nm_so_pkt_wrap *p_so_pw){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
   if(!(p_so_gate->status[tag][seq] & NM_SO_STATUS_PACKET_HERE)){
+
     p_so_gate->recv[tag][seq].pkt_here.header = header;
     p_so_gate->recv[tag][seq].pkt_here.p_so_pw = p_so_pw;
 
@@ -601,13 +444,13 @@ static int store_data_or_rdv(tbx_bool_t rdv,
 
 /** Process a complete data request.
  */
-static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
-				    void *ptr,
-                                    void *header, uint32_t len,
-				    uint8_t proto_id, uint8_t seq,
-                                    uint32_t chunk_offset,
-                                    uint8_t is_last_chunk)
-{
+static int
+data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
+                         void *ptr,
+                         void *header, uint32_t len,
+                         uint8_t proto_id, uint8_t seq,
+                         uint32_t chunk_offset,
+                         uint8_t is_last_chunk){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
@@ -640,11 +483,11 @@ static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,
 
 /** Process a complete rendez-vous request.
  */
-static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
-                        void *rdv,
-                        uint8_t tag_id, uint8_t seq,
-                        uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
-{
+static int
+rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
+             void *rdv,
+             uint8_t tag_id, uint8_t seq,
+             uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
@@ -683,10 +526,10 @@ static int rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
 /** Process a complete rendez-vous acknowledgement request.
  */
-static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
-                        uint8_t tag_id, uint8_t seq,
-                        uint8_t track_id, uint32_t chunk_offset)
-{
+static int
+ack_callback(struct nm_so_pkt_wrap *p_so_pw,
+             uint8_t tag_id, uint8_t seq,
+             uint8_t track_id, uint32_t chunk_offset){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
@@ -694,7 +537,7 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   uint8_t tag = tag_id - 128;
 
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
-  
+
   p_so_gate->pending_unpacks--;
   p_so_gate->status[tag][seq] |= NM_SO_STATUS_ACK_HERE;
 
@@ -750,10 +593,10 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
   TBX_FAILURE("PANIC!\n");
 }
 
-static int ack_chunk_callback(struct nm_so_pkt_wrap *p_so_pw,
-                              uint8_t tag_id, uint8_t seq, uint32_t chunk_offset,
-                              uint8_t track_id, uint32_t chunk_len){
-
+static int
+ack_chunk_callback(struct nm_so_pkt_wrap *p_so_pw,
+                   uint8_t tag_id, uint8_t seq, uint32_t chunk_offset,
+                   uint8_t track_id, uint32_t chunk_len){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;

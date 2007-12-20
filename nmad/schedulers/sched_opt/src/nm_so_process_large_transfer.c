@@ -318,10 +318,10 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 
   if(is_any_src){
     struct nm_so_sched *p_so_sched = p_gate->p_sched->sch_private;
-
     segp = p_so_sched->any_src[tag].data;
+
   } else {
-    segp = p_so_gate->recv[tag][seq].unpack_here.segp;
+    segp = p_so_gate->recv[tag][seq].unpack_here.data;
   }
 
   CCSI_Segment_count_contig_blocks(segp, 0, &last, &nb_blocks);

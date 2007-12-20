@@ -485,14 +485,14 @@ void ma_bubble_gather(marcel_bubble_t *b) {
 
 /******************************************************************************
  *
- * Verrouilleur d'une hiérarchie de la bulle
+ * Locking a hierarchy of bubbles. We need to lock runqueues with immediately held bubbles first, and then the sub-bubbles.
  *
  */
 
 static void __ma_bubble_lock_all(marcel_bubble_t *b, marcel_bubble_t *root_bubble) {
 	marcel_entity_t *e;
 	if (b->sched.sched_holder == &root_bubble->hold) {
-		/* Bubble held in root bubble, just need to lock it and its content */
+		/* Bubble held in the root bubble of this part of the hierarchy, just need to lock it and its content */
 		ma_holder_rawlock(&b->hold);
 		list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 			if (e->type == MA_BUBBLE_ENTITY)

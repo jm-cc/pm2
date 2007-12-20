@@ -165,6 +165,7 @@ unsigned marcel_add_lwp(void);
 typedef struct {
 	struct ma_sched_entity entity;
 #ifdef MA__BUBBLES
+	/* bubble where we automatically put the children of this task */
 	marcel_bubble_t bubble;
 #endif
 } marcel_sched_internal_task_t;

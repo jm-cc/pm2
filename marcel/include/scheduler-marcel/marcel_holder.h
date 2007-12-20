@@ -169,7 +169,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 struct ma_sched_entity {
 	/** \brief Entity type */
 	enum marcel_entity type;
-	/** \brief Initial holder */
+	/** \brief Initial holder, i.e. the one that the programmer provides (the holding bubble, typically). */
 	ma_holder_t *init_holder;
 	/** \brief Scheduling holder */
 	ma_holder_t *sched_holder;

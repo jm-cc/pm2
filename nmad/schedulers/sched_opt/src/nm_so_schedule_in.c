@@ -237,6 +237,11 @@ ____nm_so_unpack(struct nm_gate *p_gate,
 
     *status |= flag;
 
+    /**********************************************************************************/
+    /* Never access to the data stored in the 'unpack_here' side of the status matrix */
+    /* It is required to retrieve the data stored in  the 'pkt_here' side before!     */
+    /**********************************************************************************/
+
     if(treat_unexpected(tbx_false, p_gate, tag, seq, len, data_description) == NM_ESUCCESS){
       goto out;
     }

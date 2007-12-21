@@ -26,7 +26,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-
+#include <sys/socket.h>
 #include <tbx.h>
 
 #include "nm_public.h"
@@ -68,6 +68,9 @@ struct nm_tcpdg_trk {
          *  requests.
          */
         uint8_t		*gate_map;
+
+        /** Need this flag to correctly do the disconnection */
+        tbx_bool_t accept;
 };
 
 /** TCP/datagram specific gate data.
@@ -81,6 +84,7 @@ struct nm_tcpdg_gate {
          */
         int	ref_count;
 };
+
 
 /** TCP/datagram specific pkt wrapper data.
  */
@@ -292,7 +296,7 @@ nm_tcpdg_exit		(struct nm_drv *p_drv) {
 	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         int			 err;
 
-	p_tcp_drv	= p_drv->priv;
+        p_tcp_drv	= p_drv->priv;
         TBX_FREE(p_drv->url);
         SYSCALL(close(p_tcp_drv->server_fd));
         TBX_FREE(p_tcp_drv);
@@ -372,6 +376,7 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         struct nm_trk		*p_trk		= NULL;
         struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         int			 val    	=    1;
+        struct linger            ling         = {1, 10};
         socklen_t		 len    	= sizeof(int);
         int			 n;
         int			 err;
@@ -383,6 +388,7 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
 
         SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
 	SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
+        SYSCALL(setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(struct linger)));
 
         NM_TRACE_VAL("tcp connect/accept trk id", p_trk->id);
         NM_TRACE_VAL("tcp connect/accept gate id", p_gate->id);
@@ -447,6 +453,11 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
 	char *remote_hostname, *remote_port;
 	/* save the url since strtok might change it */
 	char *remote_drv_url = tbx_strdup(p_crq->remote_drv_url);
+        struct nm_trk		*p_trk	= NULL;
+        struct nm_tcpdg_trk	*p_tcp_trk = NULL;
+
+        p_trk		= p_crq->p_trk;
+        p_tcp_trk	= p_trk->priv;
 
         /* TCP connect 				*/
 	remote_hostname = strtok_r(remote_drv_url, ":", &saveptr);
@@ -469,6 +480,9 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
 
         err = nm_tcpdg_connect_accept(p_crq, fd);
 
+        // Flag for the disconnection
+        p_tcp_trk->accept = tbx_false;
+
  out:
 	TBX_FREE(remote_drv_url);
         return err;
@@ -484,15 +498,22 @@ nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
         struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         struct nm_drv		*p_drv		= NULL;
         int			 fd;
+        struct nm_trk		*p_trk		= NULL;
+        struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         int			 err;
 
         p_drv		= p_crq->p_drv;
         p_tcp_drv	= p_drv->priv;
+        p_trk		= p_crq->p_trk;
+        p_tcp_trk	= p_trk->priv;
 
         /* TCP accept 				*/
         SYSCALL(fd = accept(p_tcp_drv->server_fd, NULL, NULL));
 
         err = nm_tcpdg_connect_accept(p_crq, fd);
+
+        // Flag for the disconnection
+        p_tcp_trk->accept = tbx_true;
 
         return err;
 }
@@ -513,6 +534,47 @@ nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_tcp_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+
+        {
+          // Synchronization of the remote node for the disconnection
+          // in order to avoid the connexion ending before that data are not totally received
+
+          char *msg = "closed";
+          int len = strlen(msg)+1;
+          int fd;
+          int ret = 0;
+          struct nm_trk		*p_trk		= p_crq->p_trk;
+          struct nm_tcpdg_trk	*p_tcp_trk	= p_trk->priv;
+
+          fd = p_tcp_gate->fd[p_crq->p_trk->id];
+
+
+          if(p_tcp_trk->accept){
+            while(ret != len){
+              ret += write(fd, msg+ret, len);
+            }
+            assert(ret == len);
+
+          } else {
+            char *buf = TBX_MALLOC(len);
+            int ret2 = 0;
+
+            while(ret != len){
+              ret2 = read(fd, buf+ret, len);
+
+              if(ret2 == -1) {
+                if(errno != EAGAIN)
+                  TBX_FAILURE("blurp");
+              } else {
+                ret += ret2;
+              }
+            }
+            assert(ret == len);
+            assert(strcmp(msg, buf) == 0);
+          }
+          close(fd);
+        }
+
         p_tcp_gate->ref_count--;
         if (!p_tcp_gate->ref_count) {
                 TBX_FREE(p_tcp_gate);
@@ -692,18 +754,18 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         }
 
         p_tcp_gate	= p_pw->gate_priv;
-	
+
 	if (p_tcp_trk->nb_incoming) {
 		/* check former multipoll result 			*/
 		p_gate_pollfd	= p_tcp_trk->poll_array + p_gate->id;
-		
+
 		if (p_gate_pollfd->revents) {
 			p_tcp_trk->nb_incoming--;
-			
+
 			if (p_tcp_trk->next_entry == p_gate->id) {
 				p_tcp_trk->next_entry++;
 			}
-			
+
 			if (p_gate_pollfd->revents == POLLIN) {
 				p_gate_pollfd->revents = 0;
 				goto poll_not_needed;
@@ -720,13 +782,13 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 					NM_TRACEF("tcp incoming single poll: connection broken");
 					err = -NM_EBROKEN;
 				}
-				
+
 				p_gate_pollfd->revents = 0;
 				goto out;
 			}
 		}
 	}
-	
+
         /* poll needed			 			*/
         pollfd.fd	= p_tcp_gate->fd[p_pw->p_trk->id];
         pollfd.events	= POLLIN;

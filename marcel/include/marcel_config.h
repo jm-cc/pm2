@@ -18,7 +18,11 @@
 /* ========== customization =========== */
 
 /* Max number of marcel_key_create() calls */
+#ifdef MA__IFACE_PMARCEL
+#define MAX_KEY_SPECIFIC	128
+#else
 #define MAX_KEY_SPECIFIC	20
+#endif
 
 /* Max number of marcel_schedpolicy_create() calls */
 #define MARCEL_MAX_USER_SCHED	16

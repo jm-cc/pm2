@@ -163,35 +163,32 @@ static void __marcel_init look_cpuinfo(void) {
 	char string[strlen(PHYSID)+1+9+1+1];
 	char *endptr;
 	long processor=-1;
-#ifndef IA64_ARCH
+	unsigned proc_osphysid[MARCEL_NBMAXCPUS];
 	unsigned proc_physid[MARCEL_NBMAXCPUS];
-	long physid, maxphysid=-1;
-#endif
+	unsigned osphysids[MARCEL_NBMAXCPUS];
+	long physid;
+	unsigned proc_oscoreid[MARCEL_NBMAXCPUS];
 	unsigned proc_coreid[MARCEL_NBMAXCPUS];
-	long coreid, maxcoreid=-1;
+	unsigned oscoreids[MARCEL_NBMAXCPUS];
+	/* Core numbers are not unique, we have to combine them with physical IDs */
+	unsigned core_osphysids[MARCEL_NBMAXCPUS];
+	long coreid;
 	int i,j,k;
 
-	unsigned cpu;
-
-#ifdef IA64_ARCH
-	const unsigned numdies=1;
-#else
 	unsigned numdies=0;
-	int really_dies=0;
-#endif
-
 	unsigned numcores=0;
-	int really_cores=0;
 
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
 		fprintf(stderr,"could not open /proc/cpuinfo\n");
 		return;
 	}
 
-#ifndef IA64_ARCH
+	memset(proc_osphysid,0,sizeof(proc_osphysid));
 	memset(proc_physid,0,sizeof(proc_physid));
-#endif
+	memset(proc_oscoreid,0,sizeof(proc_oscoreid));
 	memset(proc_coreid,0,sizeof(proc_coreid));
+
+	/* Just record information and count number of dies and cores */
 
 	while (fgets(string,sizeof(string),fd)!=NULL) {
 #define getprocnb_begin(field, var) \
@@ -213,17 +210,28 @@ static void __marcel_init look_cpuinfo(void) {
 		}
 		getprocnb_begin(PROCESSOR,processor);
 		getprocnb_end() else
-#ifndef IA64_ARCH
 		getprocnb_begin(PHYSID,physid);
-			proc_physid[processor]=physid;
-			if (physid>maxphysid)
-				maxphysid=physid;
+			proc_osphysid[processor]=physid;
+			for (i=0; i<numdies; i++)
+				if (physid == osphysids[i])
+					break;
+			proc_physid[processor]=i;
+			mdebug("%ld on die %d (%lx)\n", processor, i, physid);
+			if (i==numdies)
+				osphysids[numdies++] = physid;
 		getprocnb_end() else
-#endif
 		getprocnb_begin(COREID,coreid);
-			proc_coreid[processor]=coreid;
-			if (coreid>maxcoreid)
-				maxcoreid=coreid;
+			proc_oscoreid[processor]=coreid;
+			for (i=0; i<numcores; i++)
+				if (coreid == oscoreids[i] && proc_osphysid[processor] == core_osphysids[i])
+					break;
+			proc_coreid[processor]=i;
+			mdebug("%ld on core %d (%lx:%x)\n", processor, i, coreid, proc_osphysid[processor]);
+			if (i==numcores) {
+				core_osphysids[numcores] = proc_osphysid[processor];
+				oscoreids[numcores] = coreid;
+				numcores++;
+			}
 		getprocnb_end()
 		if (string[strlen(string)-1]!='\n') {
 			fscanf(fd,"%*[^\n]");
@@ -234,53 +242,24 @@ static void __marcel_init look_cpuinfo(void) {
 
 	mdebug("%ld processors\n", processor+1);
 
-#ifndef IA64_ARCH
-	int dienum[maxphysid+1];
-	ma_cpu_set_t diecpus[maxphysid+1];
 	struct marcel_topo_level *die_level;
 
-	/* FIXME: on itanium, physical ids are very big... */
-	/* FIXME: on Hagrid, physical ids start from 8... */
-	memset(dienum,0,sizeof(dienum));
-	memset(diecpus,0,sizeof(diecpus));
-
-	if (maxphysid == -1) {
-		numdies = 1;
-		proc_physid[0] = maxphysid = 0;
-	} else
-	/* normalize die numbers */
-	for (cpu=0; cpu <= processor; cpu++) {
-		if (!dienum[proc_physid[cpu]]) {
-			dienum[proc_physid[cpu]] = -(++numdies);
-		} else
-			really_dies=1;
-		MA_CPU_SET(cpu,&diecpus[proc_physid[cpu]]);
-		mdebug("%d on die %d\n", cpu, -dienum[proc_physid[cpu]]-1);
-	}
-
-	if (numdies>1)
+	if (numdies>1) {
 		mdebug("%d dies\n", numdies);
-
-	if (really_dies) {
 		MA_BUG_ON(!(die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
 
-		for (cpu=0, j=0; cpu <= processor; cpu++) {
-			i = proc_physid[cpu];
-			if (dienum[i] < 0) {
-				dienum[i] = -dienum[i]-1;
-				die_level[j].type = MARCEL_LEVEL_DIE;
-				ma_topo_set_os_numbers(&die_level[j], -1, i, -1, -1, -1, -1);
-				marcel_vpmask_empty(&die_level[j].vpset);
-				marcel_vpmask_empty(&die_level[j].cpuset);
-				for (k=0; k <= processor; k++)
-					if (MA_CPU_ISSET(k,&diecpus[i]))
-						marcel_vpmask_add_vp(&die_level[j].cpuset,k);
-				die_level[j].arity=0;
-				die_level[j].children=NULL;
-				die_level[j].father=NULL;
-				mdebug("die %d has cpuset %"MA_PRIxVPM"\n",j,die_level[j].cpuset);
-				j++;
-			}
+		for (j = 0; j < numdies; j++) {
+			die_level[j].type = MARCEL_LEVEL_DIE;
+			ma_topo_set_os_numbers(&die_level[j], -1, osphysids[j], -1, -1, -1, -1);
+			marcel_vpmask_empty(&die_level[j].vpset);
+			marcel_vpmask_empty(&die_level[j].cpuset);
+			for (k=0; k <= processor; k++)
+				if (proc_osphysid[k] == osphysids[j])
+					marcel_vpmask_add_vp(&die_level[j].cpuset,k);
+			die_level[j].arity=0;
+			die_level[j].children=NULL;
+			die_level[j].father=NULL;
+			mdebug("die %d has cpuset %"MA_PRIxVPM"\n",j,die_level[j].cpuset);
 		}
 
 		marcel_vpmask_empty(&die_level[j].vpset);
@@ -289,69 +268,28 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_level_nbitems[discovering_level]=numdies;
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
-#endif
 
-	int corenum[numdies*(maxcoreid+1)];
-	ma_cpu_set_t corecpus[numdies*(maxcoreid+1)];
 	struct marcel_topo_level *core_level;
 
-	memset(corenum,0,sizeof(corenum));
-	memset(corecpus,0,sizeof(corecpus));
-
-	if (maxcoreid == -1) {
-		numcores = 1;
-		proc_coreid[0] = maxcoreid = 0;
-	} else
-	/* normalize core numbers */
-	for (cpu=0; cpu <= processor; cpu++) {
-#ifndef IA64_ARCH
-		physid = proc_physid[cpu];
-#endif
-		i = 
-#ifndef IA64_ARCH
-			dienum[physid]+
-#endif
-			proc_coreid[cpu]*numdies;
-		if (!corenum[i])
-			corenum[i] = -(++numcores);
-		else
-			really_cores=1;
-		MA_CPU_SET(cpu,&corecpus[i]);
-	}
-
-	if (numcores>1)
+	if (numcores>1) {
 		mdebug("%d cores\n", numcores);
-
-	if (really_cores) {
 		MA_BUG_ON(!(core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
 
-		for (cpu=0, j=0; cpu <= processor; cpu++) {
-#ifndef IA64_ARCH
-			physid = proc_physid[cpu];
-#endif
-			i = 
-#ifndef IA64_ARCH
-				dienum[physid]+
-#endif
-				proc_coreid[cpu]*numdies;
-			if (corenum[i] < 0) {
-				corenum[i] = -corenum[i]-1;
-				core_level[j].type = MARCEL_LEVEL_CORE;
-				ma_topo_set_os_numbers(&core_level[j], -1, -1, -1, -1, i, -1);
-				marcel_vpmask_empty(&core_level[j].vpset);
-				marcel_vpmask_empty(&core_level[j].cpuset);
-				for (k=0; k <= processor; k++)
-					if (MA_CPU_ISSET(k,&corecpus[i]))
-						marcel_vpmask_add_vp(&core_level[j].cpuset,k);
-				core_level[j].arity=0;
-				core_level[j].children=NULL;
-				core_level[j].father=NULL;
+		for (j = 0; j < numcores; j++) {
+			core_level[j].type = MARCEL_LEVEL_CORE;
+			ma_topo_set_os_numbers(&core_level[j], -1, -1, core_osphysids[j], -1, oscoreids[j], -1);
+			marcel_vpmask_empty(&core_level[j].vpset);
+			marcel_vpmask_empty(&core_level[j].cpuset);
+			for (k=0; k <= processor; k++)
+				if (proc_oscoreid[k] == oscoreids[j] && proc_osphysid[k] == core_osphysids[j])
+					marcel_vpmask_add_vp(&core_level[j].cpuset,k);
+			core_level[j].arity=0;
+			core_level[j].children=NULL;
+			core_level[j].father=NULL;
 #ifdef MARCEL_SMT_IDLE
-				ma_atomic_set(&core_level[i].nbidle, 0);
+			ma_atomic_set(&core_level[i].nbidle, 0);
 #endif
-				mdebug("core %d has cpuset %"MA_PRIxVPM"\n",j,core_level[j].cpuset);
-				j++;
-			}
+			mdebug("core %d has cpuset %"MA_PRIxVPM"\n",j,core_level[j].cpuset);
 		}
 
 		marcel_vpmask_empty(&core_level[j].vpset);

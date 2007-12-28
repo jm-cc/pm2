@@ -54,7 +54,12 @@ __sigsetjmp:
 	movq	(%rsp), %rdx
         movq    %rsp, 48(%rdi)
         movq    %rdx, 56(%rdi)
+
+#ifdef __PIC__
+        jmp     ma_savesigs@PLT
+#else
         jmp     ma_savesigs
+#endif
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 .size __sigsetjmp,.-__sigsetjmp

@@ -15,19 +15,20 @@
 # General Public License for more details.
 
 
-echo "Installing Marcel in directory '$1'"
-./bin/pm2-install.pl -f marcel-distrib -d $1
+dir=$(readlink -f $1)
+echo "Installing Marcel in directory '${dir}'"
+./bin/pm2-install.pl -f marcel-distrib -d $dir
 if [ $? != 0 ] ; then
     exit
 fi
 
-mkdir -v "$1/examples"
-cp -v marcel/examples/sample.c "$1/examples"
-cp -v marcel/examples/sumtime.c "$1/examples"
+mkdir -v "${dir}/examples"
+cp -v marcel/examples/sample.c "${dir}/examples"
+cp -v marcel/examples/sumtime.c "${dir}/examples"
 
-echo "generating $1/examples/Makefile"
-echo "include $1/mak/pm2.mak" > "$1/examples/Makefile"
-cat >> "$1/examples/Makefile" <<END_MAK 
+echo "generating ${dir}/examples/Makefile"
+echo "include ${dir}/mak/pm2.mak" > "${dir}/examples/Makefile"
+cat >> "${dir}/examples/Makefile" <<END_MAK 
 
 CFLAGS  += \$(PM2_CFLAGS)
 LDFLAGS += \$(PM2_LDFLAGS)

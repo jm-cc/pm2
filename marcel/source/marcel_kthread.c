@@ -123,7 +123,7 @@ void marcel_kthread_join(marcel_kthread_t * pid)
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		while (syscall(SYS_futex, pid, FUTEX_WAIT_PRIVATE, the_pid, NULL) == -1) {
+		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
 			if (errno == EWOULDBLOCK) {
 				/* done */
 				break;

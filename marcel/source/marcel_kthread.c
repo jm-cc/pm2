@@ -122,7 +122,7 @@ void marcel_kthread_join(marcel_kthread_t * pid)
 	LOG_IN();
 	pid_t the_pid = *pid;
 	if (the_pid)
-		/* not dead yet, wait for it */
+		/* not dead yet, wait for it (Linux wakes that futex because of the CLONE_CHILD_CLEARTID flag) */
 		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
 			if (errno == EWOULDBLOCK) {
 				/* done */

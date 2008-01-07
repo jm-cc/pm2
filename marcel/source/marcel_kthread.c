@@ -355,8 +355,8 @@ void marcel_kthread_join(marcel_kthread_t *pid)
 
 	do {
 		cc = pthread_join(*pid, NULL);
-	} while(cc == -1 && errno == EINTR);
-	MA_BUG_ON(cc==-1);
+	} while(cc == EINTR);
+	MA_BUG_ON(cc);
 	LOG_OUT();
 
 }
@@ -365,7 +365,7 @@ void marcel_kthread_exit(void *retval)
 {
 	LOG_IN();
 	pthread_exit(retval);
-	LOG_OUT();
+	MA_BUG();
 }
 
 marcel_kthread_t marcel_kthread_self(void)
@@ -375,7 +375,7 @@ marcel_kthread_t marcel_kthread_self(void)
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
-	pthread_sigmask(how, newmask, oldmask);
+	MA_BUG_ON(pthread_sigmask(how, newmask, oldmask));
 }
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
@@ -385,17 +385,17 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 
 void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
 {
-	pthread_mutex_init(lock,NULL);
+	MA_BUG_ON(pthread_mutex_init(lock,NULL));
 }
 
 void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock)
 {
-	pthread_mutex_lock(lock);
+	MA_BUG_ON(pthread_mutex_lock(lock));
 }
 
 void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
 {
-	pthread_mutex_unlock(lock);
+	MA_BUG_ON(pthread_mutex_unlock(lock));
 }
 
 int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
@@ -405,7 +405,7 @@ int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
 
 void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
 {
-	sem_init(sem,pshared,value);
+	MA_BUG_ON(sem_init(sem,pshared,value));
 }
 
 void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
@@ -415,7 +415,7 @@ void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
-	sem_post(sem);
+	MA_BUG_ON(sem_post(sem));
 }
 
 int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
@@ -425,22 +425,24 @@ int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 
 void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
 {
-	pthread_cond_init(cond, NULL);
+	MA_BUG_ON(pthread_cond_init(cond, NULL));
 }
 
 void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
 {
-	pthread_cond_signal(cond);
+	MA_BUG_ON(pthread_cond_signal(cond));
 }
 
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 {
-	pthread_cond_broadcast(cond);
+	MA_BUG_ON(pthread_cond_broadcast(cond));
 }
 
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
 {
-	while (pthread_cond_wait(cond, mutex) == EINTR);
+	int ret;
+	while ((ret = pthread_cond_wait(cond, mutex)) == EINTR);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {

@@ -15,6 +15,8 @@
  */
 
 #section common
+#define MA__INTERRUPT_FIX_LWP
+
 #ifndef MA__INTERRUPT_FIX_LWP
 #depend "asm-generic/marcel_arch_switchto.h[]"
 #endif

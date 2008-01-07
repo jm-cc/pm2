@@ -368,17 +368,25 @@ void marcel_gensched_shutdown(void)
 	ma_lwp_block();
 
 	mdebug("stopping LWPs from %p\n", LWP_SELF);
-	while ((lwp = ma_lwp_wait_vp_active())) {
-		if (lwp == &__main_lwp) {
-			mdebug("main LWP is active, jumping to it\n");
-			mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(&__main_lwp));
-			marcel_change_vpmask(&mask);
-			lwp = LWP_SELF;
-			marcel_leave_blocking_section();
-			MA_BUG_ON(LWP_SELF != &__main_lwp);
-			mdebug("block it too\n");
-			ma_lwp_block();
-		} else marcel_lwp_stop_lwp(lwp);
+	if (LWP_SELF != &__main_lwp) {
+		/* We must switch to the main kernel thread for proper
+		 * termination. However, it may be currently a spare LWP, so we
+		 * have to wait for it to become active. */
+		while ((lwp = ma_lwp_wait_vp_active())) {
+			if (lwp == &__main_lwp) {
+				mdebug("main LWP is active, jumping to it at vp %d\n", LWP_NUMBER(lwp));
+				mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp));
+				marcel_change_vpmask(&mask);
+				/* To match ma_lwp_block() above */
+				marcel_leave_blocking_section();
+				MA_BUG_ON(LWP_SELF != &__main_lwp);
+				/* Ok, we're in the main kernel thread now */
+				mdebug("block it too\n");
+				ma_lwp_block();
+				/* Now we can simply terminate other LWPs */
+				break;
+			} else marcel_lwp_stop_lwp(lwp);
+		}
 	}
 
 	MA_BUG_ON(LWP_SELF != &__main_lwp);

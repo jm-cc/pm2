@@ -1295,7 +1295,7 @@ void marcel_change_vpmask(marcel_vpmask_t *mask)
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);
 	/* On teste si le LWP courant est interdit ou pas */
-	if (LWP_NUMBER(LWP_SELF) != -1 && marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
+	if (LWP_NUMBER(LWP_SELF) == -1 || marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();

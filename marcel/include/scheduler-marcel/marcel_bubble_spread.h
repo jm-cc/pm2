@@ -27,6 +27,6 @@
 
 #section variables
 #depend "scheduler/marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_spread_sched;
+extern marcel_bubble_sched_t marcel_bubble_mspread_sched;
 
 /* @} */

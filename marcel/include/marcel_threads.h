@@ -269,7 +269,9 @@ DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
 
 /** Posix getcpuclockid.
  */
+#ifdef __USE_XOPEN2K
 DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
+#endif /* __USE_XOPEN2K */
 
 /** Prepare a set of threads for a subsequent migration.
  */

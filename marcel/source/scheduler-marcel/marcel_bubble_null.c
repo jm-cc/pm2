@@ -17,26 +17,6 @@
 
 #ifdef MA__BUBBLES
 
-static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l)
-{
-  int i;
-
-  for (i = 0; i < ne; i++) 
-    {	      
-      int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->sched.hold, state);
-    }
-}
-
-int
-null_sched_submit(marcel_entity_t *e)
-{
-  struct marcel_topo_level *l = marcel_topo_level(0,0);
-  __sched_submit(&e, 1, &l);
-
-  return 0;
-}
-
 int
 null_sched_vp_is_idle(unsigned vp)
 {
@@ -49,7 +29,7 @@ null_sched_vp_is_idle(unsigned vp)
 }
 
 struct ma_bubble_sched_struct marcel_bubble_null_sched = {
-  .submit = null_sched_submit,
+	.vp_is_idle = null_sched_vp_is_idle,
 };
 
 #endif /* MA__BUBBLES */

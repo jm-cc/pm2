@@ -198,7 +198,7 @@ define marcel-threads
   set $num=0
   while $num<ma__nb_vp
     set $vp=&marcel_topo_vp_level[$num]
-    set $all_threads=&$vp->leveldata.vpdata.all_threads
+    set $all_threads=&$vp->vpdata.all_threads
     set $threade=$all_threads->next
     while $threade!=$all_threads
       set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))

@@ -48,8 +48,7 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 	// file pour l'instant.
 
 	//PROF_IN_EXT(newborn_thread);
-
-
+	
 	/* on ne doit pas démarrer nous-même les processus spéciaux */
 	new_task->father->child = (dont_schedule?
 				   NULL: /* On ne fait rien */
@@ -165,6 +164,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	ma_task_stats_set(long, MARCEL_SELF, ma_stats_last_ran_offset, marcel_clock());
 	ma_task_stats_set(long, new_task, ma_stats_nbrunning_offset, 1);
 	ma_task_stats_set(long, MARCEL_SELF, ma_stats_nbrunning_offset, 0);
+	ma_task_stats_set(long, new_task, ma_stats_nbready_offset, 1);
 
 	PROF_SWITCH_TO(cur->number, new_task);
 	marcel_ctx_set_new_stack(new_task,
@@ -195,9 +195,8 @@ void marcel_sched_internal_create_start_son(void) {
 	LOG_OUT();
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
-
 void *marcel_sched_seed_runner(void *arg) {
-	ma_holder_t *h, *h2;
+	ma_holder_t *h, *h2, *h3;
 	marcel_t next;
 	void *ret;
 
@@ -219,6 +218,10 @@ restart:
 
 	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(next));
 
+	h2 = ma_entity_holder_rawlock(ma_entity_task(next));
+	ma_deactivate_running_task(next, h2);
+	ma_entity_holder_rawunlock(h2);
+
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES
 	h = ma_task_init_holder(next);
@@ -226,26 +229,21 @@ restart:
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
+		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
 		marcel_bubble_removetask(bubble, next);
-	}
+	} else
 #endif
+		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
 
 	/* get out of here */
-	h = ma_task_run_holder(MARCEL_SELF);
-	h2 = ma_task_run_holder(next);
-	if (h2 != h) {
-		ma_holder_rawlock(h);
-		ma_deactivate_running_entity(ma_entity_task(MARCEL_SELF), h);
-		ma_holder_rawunlock(h);
-	}
+	h2 = ma_entity_holder_rawlock(ma_entity_task(MARCEL_SELF));
+	ma_deactivate_running_task(MARCEL_SELF, h2);
+	ma_entity_holder_rawunlock(h2);
 
 	/* and go there */
-	ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
-	ma_holder_rawlock(h2);
-	ma_deactivate_running_entity(ma_entity_task(next), h2);
-	if (h2 != h)
-		ma_activate_running_entity(ma_entity_task(MARCEL_SELF), h2);
-	ma_holder_rawunlock(h2);
+	h3 = ma_entity_holder_rawlock(ma_entity_task(MARCEL_SELF));
+	ma_activate_running_task(MARCEL_SELF, h3);
+	ma_entity_holder_rawunlock(h3);
 
 	/* now we're ready */
 	ma_preempt_enable_no_resched();
@@ -263,3 +261,4 @@ restart:
 	goto restart;
 	return NULL;
 }
+

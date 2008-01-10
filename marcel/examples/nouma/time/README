@@ -1,0 +1,12 @@
+test :
+4 threads - time_01
+8 threads - time_02
+16 threads - time_03
+2 bulles avec 2 threads - time_04
+2 bulles avec 4 threads - time_05
+2 bulles avec 8 threads - time_06
+4 bulles avec 2 threads - time_07
+4 bulles avec 4 threads - time_08
+2 bulles avec 2 bulles avec 2 threads - time_09
+2 bulles avec 2 bulles avec 4 threads - time_10
+8 bulles avec 2 threads - time_11

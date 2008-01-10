@@ -27,8 +27,8 @@ typedef int (*ma_bubble_sched_exit)(void);
 /* Submission of a set of entities to be scheduled */
 typedef int (*ma_bubble_sched_submit)(marcel_entity_t *);
 
-/* Called when a vp is idle */
-typedef int (*ma_bubble_sched_vp_is_idle)(marcel_vpmask_t);
+/* Called when a vp is idle.  Preemption and bottom halves are already disabled.  */
+typedef int (*ma_bubble_sched_vp_is_idle)(unsigned);
 
 /* Called on bubble tick */
 typedef int (*ma_bubble_sched_tick)(marcel_bubble_t *);
@@ -56,4 +56,3 @@ typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 #section marcel_types
 #depend "[marcel_structures]"
 typedef struct ma_bubble_sched_struct *ma_bubble_sched_t;
-

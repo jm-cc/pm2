@@ -1,0 +1,20 @@
+#!/bin/bash
+###########
+
+if [ $# -eq 0 ]; then
+	GCC_DIR="gcc-4.2.2"
+elif [ $# -eq 1 ]; then
+	GCC_DIR="$1"
+else
+	GCC_ORIG_DIR="$1"
+	GCC_DIR="$2"
+fi
+
+if [ -z "${GCC_ORIG_DIR}" ]; then
+	GCC_ORIG_DIR="${GCC_DIR}.orig"
+fi
+
+diff -uprN -x '*~' -x 'configure' -x 'autom4te.cache' -x '*.in' ${GCC_ORIG_DIR} ${GCC_DIR} > forrestgomp.patch
+
+#
+

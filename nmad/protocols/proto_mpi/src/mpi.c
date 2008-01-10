@@ -18,14 +18,15 @@
  * =====
  */
 
-#include "madeleine.h"
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
 #include <stdint.h>
 #include <assert.h>
 
+#ifndef CONFIG_PADICO
 static p_mad_madeleine_t       madeleine	= NULL;
+#endif
 static mpir_internal_data_t    mpir_internal_data;
 
 #define MAX_ARG_LEN 64
@@ -1001,9 +1002,10 @@ mpir_internal_data_t *get_mpir_internal_data() {
 
 int MPI_Init(int *argc,
              char ***argv) {
-
+#ifndef CONFIG_PADICO
   p_mad_session_t                  session    = NULL;
   struct nm_core                  *p_core     = NULL;
+#endif
   int                              global_size;
   int                              process_rank;
   int                              ret;
@@ -1019,6 +1021,22 @@ int MPI_Init(int *argc,
   MPI_NMAD_TRACE("sizeof(mpir_request_t) = %ld\n", (long)sizeof(mpir_request_t));
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (long)sizeof(MPI_Request));
   assert(sizeof(mpir_request_t) <= sizeof(MPI_Request));
+
+#ifdef CONFIG_PADICO
+
+  puk_adapter_t launcher = puk_adapter_resolve("NewMad_Launcher");
+  puk_instance_t instance = puk_adapter_instanciate(launcher);
+  struct puk_receptacle_NewMad_Launcher_s r;
+  puk_instance_indirect_NewMad_Launcher(instance, NULL, &r);
+  (*r.driver->init)(r._status, argc, *argv, "Mad-MPI", &nm_so_load);
+  process_rank = (*r.driver->get_rank)(r._status);
+  global_size  = (*r.driver->get_size)(r._status);
+  p_so_sr_if   = (*r.driver->get_so_sr_if)(r._status);
+  p_so_pack_if = (*r.driver->get_so_pack_if)(r._status);
+
+  ret = mpir_internal_init(&mpir_internal_data, &r);
+
+#else /* CONFIG_PADICO */
 
   /*
    * Initialization of various libraries.
@@ -1053,6 +1071,8 @@ int MPI_Init(int *argc,
    */
   ret = mpir_internal_init(&mpir_internal_data, global_size, process_rank, madeleine, p_so_sr_if, p_so_pack_if);
 
+#endif /* CONFIG_PADICO*/
+
   MPI_NMAD_LOG_OUT();
   return ret;
 }
@@ -1078,7 +1098,9 @@ int MPI_Finalize(void) {
   MPI_NMAD_LOG_IN();
 
   err = mpir_internal_exit(&mpir_internal_data);
+#ifndef CONFIG_PADICO
   mad_exit(madeleine);
+#endif
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1090,8 +1112,9 @@ int MPI_Abort(MPI_Comm comm TBX_UNUSED,
   MPI_NMAD_LOG_IN();
 
   err = mpir_internal_exit(&mpir_internal_data);
+#ifndef CONFIG_PADICO
   mad_exit(madeleine);
-
+#endif
   MPI_NMAD_LOG_OUT();
   return errorcode;
 }

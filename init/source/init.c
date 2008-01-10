@@ -450,19 +450,19 @@ void common_pre_init(int *_argc, char *_argv[],
     }
 #endif /* MAD2 && APPLICATION_SPAWN */
  
-#ifdef XPAULETTE
+#ifdef PIOMAN
   /*
-   * XPaulette IO initialization
+   * PIOMan IO initialization
    * -----------------------------------------
    *
    * Provides:
-   * - TCP xpaul_server creation and initialization
+   * - TCP piom_server creation and initialization
    *
    * Requires:
    * - nothing ? (to be tested)
    */
-  xpaul_io_init();
-#endif // XPAULETTE
+  piom_io_init();
+#endif /* PIOMAN */
 
   purge_args();
 }
@@ -607,7 +607,6 @@ void common_post_init(int *_argc, char *_argv[],
 #ifdef MARCEL
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
-
 #ifdef NTBX
   ntbx_purge_cmd_line(argc, argv);
 #endif /* NTBX */

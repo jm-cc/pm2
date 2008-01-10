@@ -66,6 +66,10 @@ struct nm_drv_cap {
         double *network_sampling_bandwidth;
         int nb_samplings;
 
+#ifdef PIOM_BLOCKING_CALLS
+	uint8_t is_exportable;
+#endif
+
 #ifdef PM2_NUIOA
 	/** Numa node where the card is attached
 	 */

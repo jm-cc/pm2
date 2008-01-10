@@ -1,4 +1,4 @@
-PM2_PROTOCOLS="$PM2_PROTOCOLS vrp"
+PM2_PROTOCOLS="$PM2_PROTOCOLS mad-vrp"
 if [ "${PM2_SYS}" = SOLARIS_SYS ]; then
     PM2_MAD3_LIBS="$PM2_MAD3_LIBS -lnsl -lsocket"
 fi

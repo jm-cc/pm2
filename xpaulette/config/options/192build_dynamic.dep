@@ -1,3 +1,0 @@
-Provide: xpaulette_linkmode
-Provide: dynamic_libs
-Conflict: xpaulette_linkmode

@@ -13,11 +13,4 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SO_STRAT_AGGREG_EXTENDED_H
-#define NM_SO_STRAT_AGGREG_EXTENDED_H
-
-#include "nm_so_strategies.h"
-
-extern nm_so_strategy nm_so_strat_aggreg_extended;
-
-#endif
+extern int nm_so_strat_aggreg_extended_init(void);

@@ -451,6 +451,7 @@ pm2_config_set_vars()
     pm2_config_remove_dupplicates_keep_first _PM2_CONFIG_LD_PATH
 
     #EXTRA LD_LIBRARY_PATHs
+    _PM2_CONFIG_LD_LIBRARY_PATH=$_PM2_CONFIG_BUILD/lib
     for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _dir=\$PM2_${_LIB}_DYN_LIBS_DIR
@@ -617,7 +618,8 @@ pm2_config_parse_cmdline() # args
 		exit 0
 		;;
 	    --protocols)
-		echo $_PM2_CONFIG_PROTOCOLS
+                # TODO : trouver une façon plus joli de faire la meme chose...
+		echo $_PM2_CONFIG_PROTOCOLS |sed 's/ /\n/g' |gawk -F mad- '{print $2}' |tr '\012' ' '; echo
 		exit 0
 		;;
             --schedulers)
@@ -752,9 +754,9 @@ pm2_config_parse_cmdline() # args
 # Programme principal
 ######################
 
-_PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 nmad puk marcel xpaulette tbx ntbx init stackalign leonie ezflavor sigmundlib sigmund sigmundps xsigmund supertrace bubblelib bubbles bubblegum"
+_PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse puk pm2 dsm mad1 mad2 mad3 nmad marcel pioman tbx ntbx init stackalign leonie ezflavor sigmundlib sigmund sigmundps xsigmund supertrace bubblelib bubbles bubblegum"
 
-_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad3 nmad marcel xpaulette pthread tbx ntbx profile pm2debug stackalign sigmundlib bubblelib"
+_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad3 nmad marcel pioman xpaulette pthread tbx ntbx profile pm2debug stackalign sigmundlib bubblelib"
 
 if [ "$1" = --source-mode ] ; then
     pm2_config_set_vars "DUMMY ARGS"

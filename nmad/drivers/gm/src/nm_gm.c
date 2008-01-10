@@ -19,11 +19,12 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -44,6 +45,10 @@
 
 struct nm_gm_drv {
         int gm;
+        char*url;
+        /** capabilities */
+        struct nm_drv_cap caps;
+        int nb_gates;
 };
 
 /* TODO: setup full gate id reverse mapping struct
@@ -75,7 +80,7 @@ struct nm_gm_cnx {
         unsigned char		 unique_node_id[6];
 };
 
-struct nm_gm_gate {
+struct nm_gm {
         struct nm_gm_cnx	 cnx_array[255];
 };
 
@@ -97,6 +102,77 @@ const int nm_gm_pub_port_array[] = {
 
 static
 const int nm_gm_nb_ports = 5;
+/* ********************************** */
+
+static int nm_gm_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_gm_init(struct nm_drv *p_drv);
+static int nm_gm_open_track(struct nm_trk_rq*p_trk_rq);
+static int nm_gm_close_track(struct nm_trk*p_trk);
+static int nm_gm_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_gm_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_gm_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_gm_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_gm_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_gm_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_gm_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static struct nm_drv_cap*nm_gm_get_capabilities(struct nm_drv *p_drv);
+static const char*nm_gm_get_driver_url(struct nm_drv *p_drv);
+
+static const struct nm_drv_iface_s nm_gm_driver =
+  {
+    .query              = &nm_gm_query,
+    .init               = &nm_gm_init,
+
+    .open_trk		= &nm_gm_open_track,
+    .close_trk	        = &nm_gm_close_track,
+    
+    .connect		= &nm_gm_connect,
+    .accept		= &nm_gm_accept,
+    .disconnect         = &nm_gm_disconnect,
+    
+    .post_send_iov	= &nm_gm_post_send_iov,
+    .post_recv_iov      = &nm_gm_post_recv_iov,
+    
+    .poll_send_iov      = &nm_gm_poll_send_iov,
+    .poll_recv_iov      = &nm_gm_poll_recv_iov,
+
+    .get_driver_url     = &nm_gm_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_gm_get_capabilities
+
+  };
+
+static void*nm_gm_instanciate(puk_instance_t, puk_context_t);
+static void nm_gm_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_gm_adapter_driver =
+  {
+    .instanciate = &nm_gm_instanciate,
+    .destroy     = &nm_gm_destroy
+  };
+
+static struct nm_drv_cap*nm_gm_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_gm_drv *p_gm_drv = p_drv->priv;
+  return &p_gm_drv->caps;
+}
+
+static void*nm_gm_instanciate(puk_instance_t instance, puk_context_t context){
+  struct nm_gm*status = TBX_MALLOC(sizeof (struct nm_gm));
+  memset(status, 0, sizeof(struct nm_gm));
+  return status;
+}
+
+static void nm_gm_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
+const static char*nm_gm_get_driver_url(struct nm_drv *p_drv){
+  struct nm_gm_drv *p_gm_drv = p_drv->priv;
+  return p_gm_drv->url;
+}
+
+/* ********************************** */
 
 /* GM error message display fonction. */
 static
@@ -339,6 +415,13 @@ nm_gm_extract_info(char			 *trk_url,
         TBX_FAILURE("mad_gm_extract_info failed");
 }
 
+extern int nm_gm_load(){
+  puk_adapter_declare("NewMad_Driver_gm",
+		      puk_adapter_provides("PadicoAdapter", &nm_gm_adapter_driver),
+		      puk_adapter_provides("NewMad_Driver", &nm_gm_driver));
+  return 0;
+}
+
 static
 int
 nm_gm_query			(struct nm_drv *p_drv,
@@ -358,11 +441,11 @@ nm_gm_query			(struct nm_drv *p_drv,
 	p_drv->priv	= p_gm_drv;
 
 	/* driver capabilities encoding					*/
-	p_drv->cap.has_trk_rq_dgram			= 1;
-	p_drv->cap.has_selective_receive		= 0;
-	p_drv->cap.has_concurrent_selective_receive	= 0;
+	p_gm_drv->caps.has_trk_rq_dgram			= 1;
+	p_gm_drv->caps.has_selective_receive		= 0;
+	p_gm_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+	p_gm_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
 
 	err = NM_ESUCCESS;
@@ -374,8 +457,8 @@ nm_gm_query			(struct nm_drv *p_drv,
 static
 int
 nm_gm_init			(struct nm_drv *p_drv) {
-        struct nm_gm_drv	*p_gm_drv	= p_drv->priv;
         gm_status_t		 gms		= GM_SUCCESS;
+	struct nm_gm_drv *p_gm_drv = p_drv->priv;
 	int err;
 
         /* GM								*/
@@ -386,9 +469,9 @@ nm_gm_init			(struct nm_drv *p_drv) {
                 goto error;
         }
 
+	p_gm_drv->nb_gates++;
 	/* driver url encoding						*/
-        p_drv->url	= tbx_strdup("-");
-	p_drv->name 	= tbx_strdup("gm");
+        p_gm_drv->url	= tbx_strdup("-");
 
         NM_TRACE_STR("drv_url", p_drv->url);
 
@@ -402,12 +485,11 @@ nm_gm_init			(struct nm_drv *p_drv) {
 static
 int
 nm_gm_exit			(struct nm_drv *p_drv) {
-        struct nm_gm_drv	*p_gm_drv	= NULL;
 	int err;
+	struct nm_gm_drv *p_gm_drv = p_drv->priv;
 
-        p_gm_drv	= p_drv->priv;
-
-        TBX_FREE(p_drv->url);
+	p_gm_drv->nb_gates--;
+        TBX_FREE(p_gm_drv->url);
         TBX_FREE(p_gm_drv);
 
 	err = NM_ESUCCESS;
@@ -417,7 +499,7 @@ nm_gm_exit			(struct nm_drv *p_drv) {
 
 static
 int
-nm_gm_open_trk		(struct nm_trk_rq	*p_trk_rq) {
+nm_gm_open_track		(struct nm_trk_rq	*p_trk_rq) {
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
 	struct gm_port		*p_gm_port	= NULL;
@@ -525,7 +607,7 @@ nm_gm_open_trk		(struct nm_trk_rq	*p_trk_rq) {
 
 static
 int
-nm_gm_close_trk		(struct nm_trk *p_trk) {
+nm_gm_close_track		(struct nm_trk *p_trk) {
         struct nm_gm_trk	*p_gm_trk	= NULL;
 	int err;
 
@@ -540,8 +622,9 @@ nm_gm_close_trk		(struct nm_trk *p_trk) {
 
 static
 int
-nm_gm_connect		(struct nm_cnx_rq *p_crq) {
-        struct nm_gm_gate	*p_gm_gate	= NULL;
+nm_gm_connect		(void*_status,
+			 struct nm_cnx_rq *p_crq) {
+        struct nm_gm	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -558,21 +641,9 @@ nm_gm_connect		(struct nm_cnx_rq *p_crq) {
         p_gm_trk	= p_trk->priv;
 
         /* private data				*/
-        p_gm_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_gm_gate) {
-                p_gm_gate	= TBX_MALLOC(sizeof (struct nm_gm_gate));
-                if (!p_gm_gate) {
-                        err = -NM_ENOMEM;
-                        goto out;
-                }
+        status	= _status;
 
-                memset(p_gm_gate, 0, sizeof(struct nm_gm_gate));
-
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_gm_gate;
-        }
-
-        p_gm_cnx	= p_gm_gate->cnx_array + p_trk->id;
+        p_gm_cnx	= status->cnx_array + p_trk->id;
         nm_gm_extract_info(p_crq->remote_trk_url, p_gm_trk, p_gm_cnx);
 
         if (p_gm_trk->max_node_id) {
@@ -623,7 +694,6 @@ nm_gm_connect		(struct nm_cnx_rq *p_crq) {
 
 	err = NM_ESUCCESS;
 
- out:
 	return err;
 
  error:
@@ -632,8 +702,9 @@ nm_gm_connect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_gm_accept			(struct nm_cnx_rq *p_crq) {
-        struct nm_gm_gate	*p_gm_gate	= NULL;
+nm_gm_accept			(void*_status,
+				 struct nm_cnx_rq *p_crq) {
+        struct nm_gm	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -650,20 +721,8 @@ nm_gm_accept			(struct nm_cnx_rq *p_crq) {
         p_gm_trk	= p_trk->priv;
 
         /* private data				*/
-        p_gm_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_gm_gate) {
-                p_gm_gate	= TBX_MALLOC(sizeof (struct nm_gm_gate));
-                if (!p_gm_gate) {
-                        err = -NM_ENOMEM;
-                        goto out;
-                }
-
-                memset(p_gm_gate, 0, sizeof(struct nm_gm_gate));
-
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_gm_gate;
-        }
-        p_gm_cnx	= p_gm_gate->cnx_array + p_trk->id;
+        status	= _status;
+        p_gm_cnx	= status->cnx_array + p_trk->id;
 
         p_gm_port	= p_gm_trk->p_gm_port;
 
@@ -732,7 +791,6 @@ nm_gm_accept			(struct nm_cnx_rq *p_crq) {
 
 	err = NM_ESUCCESS;
 
- out:
 	return err;
 
  error:
@@ -741,8 +799,8 @@ nm_gm_accept			(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_gm_disconnect		(struct nm_cnx_rq *p_crq) {
-        gm_status_t		 gms		= GM_SUCCESS;
+nm_gm_disconnect		(void*_status,
+				 struct nm_cnx_rq *p_crq) {
 	int err;
 
 	err = NM_ESUCCESS;
@@ -752,11 +810,12 @@ nm_gm_disconnect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_gm_post_send_iov		(struct nm_pkt_wrap *p_pw) {
+nm_gm_post_send_iov		(void*_status,
+				 struct nm_pkt_wrap *p_pw) {
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_gm_gate	*p_gm_gate	= NULL;
+        struct nm_gm	*status	= NULL;
         struct nm_gm_trk	*p_gm_trk	= NULL;
         struct nm_gm_cnx	*p_gm_cnx	= NULL;
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
@@ -770,9 +829,9 @@ nm_gm_post_send_iov		(struct nm_pkt_wrap *p_pw) {
         p_trk		= p_pw->p_trk;
 
         p_gm_trk	= p_trk->priv;
-        p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
-        p_gm_gate	= p_pw->gate_priv;
-        p_gm_cnx	= p_gm_gate->cnx_array + p_trk->id;
+        p_pw->gate_priv	= _status;
+        status	= p_pw->gate_priv;
+        p_gm_cnx	= status->cnx_array + p_trk->id;
 
         p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
         p_pw->drv_priv	= p_gm_pw;
@@ -815,7 +874,8 @@ nm_gm_post_send_iov		(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_gm_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
+nm_gm_post_recv_iov		(void*_status,
+				 struct nm_pkt_wrap *p_pw) {
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -833,7 +893,7 @@ nm_gm_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
         p_gm_trk	= p_trk->priv;
 
         if (p_gate) {
-                p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
+	  p_pw->gate_priv	= p_drv->priv;
         }
 
         p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
@@ -869,7 +929,8 @@ nm_gm_post_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_gm_poll_send_iov    	(struct nm_pkt_wrap *p_pw) {
+nm_gm_poll_send_iov    	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
         struct gm_port		*p_gm_port	= NULL;
         gm_status_t		 gms		= GM_SUCCESS;
@@ -910,7 +971,8 @@ nm_gm_poll_send_iov    	(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_gm_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
+nm_gm_poll_recv_iov    	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
         struct nm_gm_pkt_wrap	*p_gm_pw	= NULL;
@@ -962,12 +1024,12 @@ nm_gm_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
 
         if (p_pw->p_gate) {
                 struct nm_gate		*p_gate		= NULL;
-                struct nm_gm_gate	*p_gm_gate	= NULL;
+                struct nm_gm	*status	= NULL;
 
                 p_gate		= p_pw->p_gate;
-                p_gm_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+                status	= _status;
                 assert(remote_node_id
-                       == p_gm_gate->cnx_array[p_trk->id].node_id);
+                       == status->cnx_array[p_trk->id].node_id);
         } else {
                 struct nm_gm_trk	*p_gm_trk	= NULL;
 
@@ -986,27 +1048,3 @@ nm_gm_poll_recv_iov    	(struct nm_pkt_wrap *p_pw) {
  error:
         TBX_FAILURE("nm_gm_poll_recv_iov");
 }
-
-
-int
-nm_gm_load(struct nm_drv_ops *p_ops) {
-        p_ops->query		= nm_gm_query        ;
-        p_ops->init             = nm_gm_init         ;
-        p_ops->exit             = nm_gm_exit         ;
-
-        p_ops->open_trk		= nm_gm_open_trk     ;
-        p_ops->close_trk	= nm_gm_close_trk    ;
-
-        p_ops->connect		= nm_gm_connect      ;
-        p_ops->accept		= nm_gm_accept       ;
-        p_ops->disconnect       = nm_gm_disconnect   ;
-
-        p_ops->post_send_iov	= nm_gm_post_send_iov;
-        p_ops->post_recv_iov    = nm_gm_post_recv_iov;
-
-        p_ops->poll_send_iov    = nm_gm_poll_send_iov;
-        p_ops->poll_recv_iov    = nm_gm_poll_recv_iov;
-
-        return NM_ESUCCESS;
-}
-

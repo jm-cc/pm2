@@ -36,7 +36,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <errno.h>
-
+#ifdef PIOMAN
+#include "pioman.h"
+#endif
 /*
  * Macro and constant definition
  * ========================================================================
@@ -108,13 +110,14 @@ ntbx_tcp_read_call(int		 s,
                    size_t	 l) {
       ssize_t result = 0;
 
-#ifdef XPAULETTE
-      result = xpaul_read(s, p, l);
+#ifdef PIOMAN
+//      result = piom_read(s, p, l);
+      result = read(s, p, l);
 #elif defined(MARCEL)
       result = marcel_read(s, p, l);
 #else 
       result = read(s, p, l);
-#endif /* XPAULETTE */
+#endif /* PIOMAN */
 
       return result;
 }
@@ -125,13 +128,14 @@ ntbx_tcp_write_call(int		 	 s,
                     const size_t	 l) {
       ssize_t result = 0;
 
-#ifdef XPAULETTE
-      result = xpaul_write(s, p, l);
+#ifdef PIOMAN
+      result = write(s, p, l);
+//      result = piom_write(s, p, l);
 #elif defined(MARCEL)
       result = marcel_write(s, p, l);
 #else 
       result = write(s, p, l);
-#endif /* XPAULETTE */
+#endif /* PIOMAN */
 
       return result;
 }
@@ -761,12 +765,14 @@ ntbx_tcp_read_poll(int              nb_clients,
                 fd_set local_read_fds = read_fds;
                 int    status         = 0;
 
-#ifdef XPAULETTE
-		if(xpaul_test_activity())
+#ifdef PIOMAN
+/*
+		if(piom_test_activity())
 		{
-			status=xpaul_select(max_fds + 1, &local_read_fds, NULL);
+			status=piom_select(max_fds + 1, &local_read_fds, NULL);
 		}
 		else
+*/
 #elif defined(MARCEL)
                 if (marcel_test_activity())
                   {
@@ -828,19 +834,20 @@ ntbx_tcp_write_poll(int              nb_clients,
                 fd_set local_write_fds = write_fds;
                 int    status          = 0;
 
-#ifdef XPAULETTE
-		if (xpaul_test_activity())
+#ifdef PIOMAN
+/*		if (piom_test_activity())
                   {
-                    status = xpaul_select(max_fds + 1, NULL, &local_write_fds);
+                    status = piom_select(max_fds + 1, NULL, &local_write_fds);
                   }
                 else
+*/
 #elif defined(MARCEL)
                 if (marcel_test_activity())
                   {
                     status = marcel_select(max_fds + 1, NULL, &local_write_fds);
                   }
                 else
-#endif /* XPAULETTE */
+#endif /* PIOMAN */
 		{
 			status = select(max_fds + 1, NULL, &local_write_fds, NULL, NULL);
 		}
@@ -889,14 +896,15 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         while (bytes_read < length) {
                 int status;
 
-#ifdef XPAULETTE
-		if (xpaul_test_activity())
+#ifdef PIOMAN
+/*		if (piom_test_activity())
                   {
-                    status = xpaul_read(client_specific->descriptor,
+                    status = piom_read(client_specific->descriptor,
                                          ptr + bytes_read,
                                          length - bytes_read);
                   }
                 else
+*/
 #elif defined(MARCEL)
                 if (marcel_test_activity())
                   {
@@ -905,7 +913,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
                                          length - bytes_read);
                   }
                 else
-#endif /* XPAULETTE */
+#endif /* PIOMAN */
                   {
                     status = read(client_specific->descriptor,
                                   ptr + bytes_read,
@@ -949,14 +957,16 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
         while (bytes_written < length) {
                 int status;
 
-#ifdef XPAULETTE
-                if (xpaul_test_activity())
+#ifdef PIOMAN
+/*
+                if (piom_test_activity())
                   {
-                    status = xpaul_write(client_specific->descriptor,
+                    status = piom_write(client_specific->descriptor,
                                           ptr + bytes_written,
                                           length - bytes_written);
                   }
                 else
+*/
 #elif defined(MARCEL)
                 if (marcel_test_activity())
                   {
@@ -965,7 +975,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
                                           length - bytes_written);
                   }
                 else
-#endif /* XPAULETTE */
+#endif /* PIOMAN */
                   {
                     status = write(client_specific->descriptor,
                                    ptr + bytes_written,

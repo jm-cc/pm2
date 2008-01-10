@@ -95,9 +95,6 @@ typedef union CCSI_pkt
 }
 CCSI_pkt_t;
 
-int CCSI_dev_init ();
-int CCSI_dev_finalize ();
-
 typedef struct CCS_context
 {
     CCS_amhandler_t handler[CCS_MAX_HANDLERS];

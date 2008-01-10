@@ -13,11 +13,5 @@
  * General Public License for more details.
  */
 
-#ifndef NM_SO_STRAT_SPLIT_BALANCE_H
-#define NM_SO_STRAT_SPLIT_BALANCE_H
+extern int nm_so_strat_split_balance_init(void);
 
-#include "nm_so_strategies.h"
-
-extern nm_so_strategy nm_so_strat_split_balance;
-
-#endif

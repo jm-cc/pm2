@@ -85,6 +85,11 @@ struct nm_core {
         /** Compiled-in scheduler.
          */
         struct nm_sched 	*p_sched;
+#ifdef PIOMAN
+	struct piom_server       server;
+	struct piom_req          req;
+#endif
+
 };
 
 #endif /* NM_CORE_H */

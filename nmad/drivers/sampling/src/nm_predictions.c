@@ -19,8 +19,9 @@
 #include <sys/uio.h>
 #include <math.h>
 
-#include <tbx.h>
-
+#include "pm2_common.h"
+#include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_core.h"
 #include "nm_pkt_wrap.h"
 #include "nm_predictions.h"
@@ -167,7 +168,8 @@ int nm_ns_exit(struct nm_core *p_core) {
 double
 nm_ns_evaluate_bw(struct nm_drv *driver, int length){
 
-    double * samplings = driver->cap.network_sampling_bandwidth;
+    struct nm_drv_cap* caps = driver->driver->get_capabilities(driver);
+    double * samplings = caps->network_sampling_bandwidth;
     int sampling_id = 0;
     double coef = 0;
     int sampling_start_id = 0;

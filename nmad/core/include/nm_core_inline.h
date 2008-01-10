@@ -25,6 +25,7 @@ extern p_tbx_memory_t nm_core_pw_mem	;
 extern p_tbx_memory_t nm_core_iov1_mem	;
 extern p_tbx_memory_t nm_core_iov2_mem	;
 
+
 /** Allocate a pkt wrapper struct.
  */
 static

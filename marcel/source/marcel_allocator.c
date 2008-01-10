@@ -260,6 +260,10 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	}
 #ifdef MA__LWPS
 	if (allocator->policy == POLICY_LOCAL) {
+		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
+			return ma_per_lwp_data(GET_LWP_BY_NUM(0), allocator->container.offset);
+
 		return ma_per_lwp_self_data(allocator->container.offset);
 	}
 	// On fait une boucle while qui remonte le niveau hierarchique 
@@ -270,6 +274,11 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && mode == ALLOC_METHOD) {
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
+
+		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
+			return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+
 		while (niveau_courant) {
 			ma_container_t *container_courant;
 			container_courant =
@@ -298,6 +307,11 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
+
+		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
+			return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+
 		while (niveau_courant) {
 			ma_container_t *container_courant;
 			container_courant =

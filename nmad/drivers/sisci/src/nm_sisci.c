@@ -15,15 +15,16 @@
 
 
 #include <stdint.h>
+#include <unistd.h>
 #include <limits.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include <tbx.h>
-
+#include "pm2_common.h"
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -96,6 +97,9 @@ struct nm_sisci_drv {
         unsigned int		l_node_id;
         int			next_seg_id;
         p_tbx_memory_t 		sci_pw_mem;
+        char                   *url;
+        struct nm_drv_cap       caps;
+        int nb_gates;
 };
 
 struct nm_sisci_trk {
@@ -125,7 +129,7 @@ struct nm_sisci_cnx {
         struct nm_sisci_segment	seg_array[2];
 };
 
-struct nm_sisci_gate {
+struct nm_sisci {
         struct nm_sisci_cnx	cnx_array[255];
 };
 
@@ -134,6 +138,76 @@ struct nm_sisci_pkt_wrap {
         int			 next_seg;
         struct nm_sisci_cnx	*p_sisci_cnx;
 };
+
+/* Components ***************************** */
+
+/* Drivers */
+static int nm_sisci_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_sisci_init(struct nm_drv *p_drv);
+static int nm_sisci_open_trk(struct nm_trk_rq*p_trk_rq);
+static int nm_sisci_close_trk(struct nm_trk*p_trk);
+static int nm_sisci_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_sisci_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_sisci_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_sisci_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_sisci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static const char*nm_sisci_get_driver_url(struct nm_drv *p_drv);
+static struct nm_drv_cap*nm_sisci_get_capabilities(struct nm_drv *p_drv);
+
+static const struct nm_drv_iface_s nm_sisci_driver =
+  {
+    .query              = &nm_sisci_query,
+    .init		= &nm_sisci_init,
+    
+    .open_trk		= &nm_sisci_open_trk,
+    .close_trk	        = &nm_sisci_close_trk,
+    
+    .connect		= &nm_sisci_connect,
+    .accept		= &nm_sisci_accept,
+    .disconnect         = &nm_sisci_disconnect,
+    
+    .post_send_iov	= &nm_sisci_send_iov,
+    .post_recv_iov      = &nm_sisci_recv_iov,
+    
+    .poll_send_iov      = &nm_sisci_send_iov,
+    .poll_recv_iov      = &nm_sisci_recv_iov,
+
+    .get_driver_url     = &nm_sisci_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_sisci_get_capabilities
+  };
+
+static void*nm_sisci_instanciate(puk_instance_t, puk_context_t);
+static void nm_sisci_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_sisci_adapter_driver =
+  {
+    .instanciate = &nm_sisci_instanciate,
+    .destroy     = &nm_sisci_destroy
+  };
+
+static void*nm_sisci_instanciate(puk_instance_t instance, puk_context_t context){
+  struct nm_sisci*status = TBX_MALLOC(sizeof (struct nm_sisci));
+  memset(status, 0, sizeof(struct nm_sisci));
+  return status;
+}
+
+static void nm_sisci_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
+const static char*nm_sisci_get_driver_url(struct nm_drv *p_drv){
+  struct nm_sisci_drv*p_sisci_drv = p_drv->priv;
+  return p_sisci_drv->url;
+}
+
+static struct nm_drv_cap*nm_sisci_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_sisci_drv*p_sisci_drv = p_drv->priv;
+  return &p_sisci_drv->caps;
+}
+
+/* **************************************** */
 
 static
 void
@@ -316,14 +390,22 @@ nm_sisci_display_error(sci_error_t error)
 
 #undef _SCI_ERR
 }
+extern int nm_sisci_load(void) {
+  puk_adapter_declare("NewMad_Driver_sisci",
+		      puk_adapter_provides("PadicoAdapter", &nm_sisci_adapter_driver),
+		      puk_adapter_provides("NewMad_Driver", &nm_sisci_driver));
+
+  return 0;
+}
 
 static
 int
+
 nm_sisci_query			(struct nm_drv *p_drv,
-				 struct nm_driver_query_param *params,
+                                 struct nm_driver_query_param *params,
 				 int nparam) {
-	struct nm_sisci_drv	*p_sisci_drv	= NULL;
 	int err;
+        struct nm_sisci_drv*p_sisci_drv = NULL;
 
 	/* private data							*/
 	p_sisci_drv	= TBX_MALLOC(sizeof (struct nm_sisci_drv));
@@ -335,14 +417,15 @@ nm_sisci_query			(struct nm_drv *p_drv,
 	memset(p_sisci_drv, 0, sizeof (struct nm_sisci_drv));
 	p_drv->priv = p_sisci_drv;
 
-	/* driver capabilities encoding					*/
-	p_drv->cap.has_trk_rq_dgram			= 1;
-	p_drv->cap.has_selective_receive		= 0;
-	p_drv->cap.has_concurrent_selective_receive	= 0;
+        /* driver capabilities encoding					*/
+        p_sisci_drv->caps.has_trk_rq_dgram			= 1;
+        p_sisci_drv->caps.has_selective_receive 		= 0;
+        p_sisci_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+	p_sisci_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
 
+        p_drv->priv = p_sisci_drv;
 	err = NM_ESUCCESS;
 
  out:
@@ -352,7 +435,6 @@ nm_sisci_query			(struct nm_drv *p_drv,
 static
 int
 nm_sisci_init			(struct nm_drv *p_drv) {
-        struct nm_sisci_drv	*p_sisci_drv	= p_drv->priv;
         p_tbx_string_t		 url_string	= NULL;
         sci_desc_t		 sci_dev;
         unsigned int		 l_node_id;
@@ -360,6 +442,7 @@ nm_sisci_init			(struct nm_drv *p_drv) {
         sci_local_segment_t	 sci_l_seg;
         sci_error_t		 sci_err;
 	int err;
+        struct nm_sisci_drv*p_sisci_drv = p_drv->priv;
 
 #define _CHK_ \
 	do {						\
@@ -404,6 +487,7 @@ nm_sisci_init			(struct nm_drv *p_drv) {
 
 #undef _CHK_
 
+        p_sisci_drv->nb_gates++;
         p_sisci_drv->sci_dev		= sci_dev;
         p_sisci_drv->sci_l_cnx_seg	= sci_l_seg;
         p_sisci_drv->l_node_id		= l_node_id;
@@ -415,9 +499,8 @@ nm_sisci_init			(struct nm_drv *p_drv) {
 
         /* driver url encoding						*/
         url_string	= tbx_string_init_to_int(l_node_id);
-        p_drv->url	= tbx_string_to_cstring(url_string);
+        p_sisci_drv->url = tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
-	p_drv->name = tbx_strdup("sci");
 
 	err = NM_ESUCCESS;
 
@@ -428,11 +511,9 @@ nm_sisci_init			(struct nm_drv *p_drv) {
 static
 int
 nm_sisci_exit			(struct nm_drv *p_drv) {
-        struct nm_sisci_drv	*p_sisci_drv	= NULL;
         sci_error_t		 sci_err;
 	int err;
-
-        p_sisci_drv	= p_drv->priv;
+        struct nm_sisci_drv*p_sisci_drv = p_drv->priv;
 
 #define _CHK_ \
 	do {						\
@@ -450,7 +531,8 @@ nm_sisci_exit			(struct nm_drv *p_drv) {
 
 #undef _CHK_
 
-        TBX_FREE(p_drv->url);
+        p_sisci_drv->nb_gates --;
+        TBX_FREE(p_sisci_drv->url);
         TBX_FREE(p_sisci_drv);
         SCITerminate();
 
@@ -637,14 +719,15 @@ nm_sisci_cnx_setup		(struct nm_sisci_cnx	*p_sisci_cnx,
 
 static
 int
-nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
-        struct nm_sisci_gate	*p_sisci_gate	= NULL;
+nm_sisci_connect		(void*_status,
+				 struct nm_cnx_rq *p_crq) {
+        struct nm_sisci	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_sisci_drv	*p_sisci_drv	= NULL;
         struct nm_sisci_trk	*p_sisci_trk	= NULL;
         struct nm_sisci_cnx	*p_sisci_cnx	= NULL;
+        struct nm_sisci_drv     *p_sisci_drv    = NULL;
 
         sci_desc_t		 sci_dev;
 
@@ -666,8 +749,8 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
-        p_sisci_drv	= p_drv->priv;
         p_sisci_trk	= p_trk->priv;
+        p_sisci_drv     = p_drv->priv;
 
         sci_dev		= p_sisci_drv->sci_dev;
         sci_l_cnx_seg	= p_sisci_drv->sci_l_cnx_seg;
@@ -678,20 +761,7 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
 
         /* private data
          */
-        p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_sisci_gate) {
-                p_sisci_gate	= TBX_MALLOC(sizeof (struct nm_sisci_gate));
-                if (!p_sisci_gate) {
-                        err = -NM_ENOMEM;
-                        goto out;
-                }
-
-                memset(p_sisci_gate, 0, sizeof(struct nm_sisci_gate));
-
-                /* update gate private data
-                 */
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_sisci_gate;
-        }
+        status	= _status;
 
         if (p_sisci_trk->next_cnx_id) {
                 p_sisci_trk->gate_map	=
@@ -710,7 +780,7 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
 
         p_sisci_trk->gate_map[p_sisci_trk->next_cnx_id]	= p_gate;
         p_sisci_trk->cnx_map[p_sisci_trk->next_cnx_id]	=
-                p_sisci_gate->cnx_array + p_trk->id;
+                status->cnx_array + p_trk->id;
         p_sisci_trk->next_cnx_id++;
 
 #define _CHK_ \
@@ -782,7 +852,7 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
         /* --- end of exchange --- */
 
 
-        p_sisci_cnx	= p_sisci_gate->cnx_array + p_trk->id;
+        p_sisci_cnx	= status->cnx_array + p_trk->id;
         err = nm_sisci_cnx_setup(p_sisci_cnx, p_sisci_drv->next_seg_id, r_node_id, r_seg_id);
         if (err != NM_ESUCCESS)
                 goto out;
@@ -819,14 +889,15 @@ nm_sisci_connect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
-        struct nm_sisci_gate	*p_sisci_gate	= NULL;
+nm_sisci_accept			(void*_status,
+				 struct nm_cnx_rq *p_crq) {
+        struct nm_sisci	*status	= NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_sisci_drv	*p_sisci_drv	= NULL;
         struct nm_sisci_trk	*p_sisci_trk	= NULL;
         struct nm_sisci_cnx	*p_sisci_cnx	= NULL;
+        struct nm_sisci_drv     *p_sisci_drv    = NULL;
 
         sci_desc_t		 sci_dev;
 
@@ -849,26 +920,14 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
         p_sisci_trk	= p_trk->priv;
-        p_sisci_drv	= p_drv->priv;
+        p_sisci_drv     = p_drv->priv;
 
         sci_dev		= p_sisci_drv->sci_dev;
         sci_l_cnx_seg	= p_sisci_drv->sci_l_cnx_seg;
         l_node_id	= p_sisci_drv->l_node_id;
 
         /* private data				*/
-        p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_sisci_gate) {
-                p_sisci_gate	= TBX_MALLOC(sizeof (struct nm_sisci_gate));
-                if (!p_sisci_gate) {
-                        err = -NM_ENOMEM;
-                        goto out;
-                }
-
-                memset(p_sisci_gate, 0, sizeof(struct nm_sisci_gate));
-
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_sisci_gate;
-        }
+        status	= _status;
 
         if (p_sisci_trk->next_cnx_id) {
                 p_sisci_trk->gate_map	=
@@ -887,7 +946,7 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
 
         p_sisci_trk->gate_map[p_sisci_trk->next_cnx_id]	= p_gate;
         p_sisci_trk->cnx_map[p_sisci_trk->next_cnx_id]	=
-                p_sisci_gate->cnx_array + p_trk->id;
+                status->cnx_array + p_trk->id;
         p_sisci_trk->next_cnx_id++;
 
 #define _CHK_ \
@@ -962,7 +1021,7 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
         /* --- end of exchange --- */
 
 
-        p_sisci_cnx	= p_sisci_gate->cnx_array + p_trk->id;
+        p_sisci_cnx	= status->cnx_array + p_trk->id;
         err = nm_sisci_cnx_setup(p_sisci_cnx, p_sisci_drv->next_seg_id, r_node_id, r_seg_id);
         if (err != NM_ESUCCESS)
                 goto out;
@@ -1000,7 +1059,8 @@ nm_sisci_accept			(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_sisci_disconnect		(struct nm_cnx_rq *p_crq) {
+nm_sisci_disconnect		(void*_status,
+				 struct nm_cnx_rq *p_crq) {
 	int err;
 
         /* TODO: add disconnect code
@@ -1013,13 +1073,14 @@ nm_sisci_disconnect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
+nm_sisci_send_iov	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
         struct nm_gate			*p_gate		= NULL;
         struct nm_drv			*p_drv		= NULL;
         struct nm_trk			*p_trk		= NULL;
+        struct nm_sisci_drv             *p_sisci_drv    = NULL;
 
-        struct nm_sisci_gate		*p_sisci_gate	= NULL;
-        struct nm_sisci_drv		*p_sisci_drv	= NULL;
+        struct nm_sisci		*status	= NULL;
         struct nm_sisci_trk		*p_sisci_trk	= NULL;
 
         struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
@@ -1038,16 +1099,16 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
         p_gate		= p_pw->p_gate;
         p_drv		= p_pw->p_drv;
         p_trk		= p_pw->p_trk;
+        p_sisci_drv     = p_drv->priv;
 
-        p_sisci_drv	= p_drv->priv;
         p_sisci_trk	= p_trk->priv;
 
 
         if (!p_pw->gate_priv) {
                 /* first call */
 
-                p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-                p_pw->gate_priv	= p_sisci_gate;
+                status	= _status;
+                p_pw->gate_priv	= status;
 
                 p_sisci_pw	= tbx_malloc(p_sisci_drv->sci_pw_mem);
 
@@ -1069,10 +1130,10 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
                 p_pw->drv_priv	= p_sisci_pw;
 
-                p_sisci_cnx		= p_sisci_gate->cnx_array + p_trk->id;
+                p_sisci_cnx		= status->cnx_array + p_trk->id;
                 p_sisci_pw->p_sisci_cnx	= p_sisci_cnx;
         } else {
-                p_sisci_gate	= p_pw->gate_priv;
+                status	= p_pw->gate_priv;
                 p_sisci_pw	= p_pw->drv_priv;
                 p_sisci_cnx	= p_sisci_pw->p_sisci_cnx;
         }
@@ -1202,14 +1263,15 @@ nm_sisci_send_iov	(struct nm_pkt_wrap *p_pw) {
 
 static
 int
-nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
+nm_sisci_recv_iov		(void*_status,
+				 struct nm_pkt_wrap *p_pw) {
         struct nm_gate			*p_gate		= NULL;
         struct nm_drv			*p_drv		= NULL;
         struct nm_trk			*p_trk		= NULL;
 
-        struct nm_sisci_gate		*p_sisci_gate	= NULL;
-        struct nm_sisci_drv		*p_sisci_drv	= NULL;
+        struct nm_sisci		*status	= NULL;
         struct nm_sisci_trk		*p_sisci_trk	= NULL;
+        struct nm_sisci_drv             *p_sisci_drv    = NULL;
 
         struct nm_sisci_cnx		*p_sisci_cnx	= NULL;
         struct nm_sisci_pkt_wrap	*p_sisci_pw	= NULL;
@@ -1226,8 +1288,8 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
         p_drv		= p_pw->p_drv;
         p_trk		= p_pw->p_trk;
+        p_sisci_drv     = p_drv->priv;
 
-        p_sisci_drv	= p_drv->priv;
         p_sisci_trk	= p_trk->priv;
 
         if (!p_pw->p_gate) {
@@ -1285,8 +1347,8 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
                 /* first call */
 
                 p_gate		= p_pw->p_gate;
-                p_sisci_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-                p_pw->gate_priv	= p_sisci_gate;
+                status	= _status;
+                p_pw->gate_priv	= status;
 
                 p_sisci_pw	= tbx_malloc(p_sisci_drv->sci_pw_mem);
 
@@ -1308,11 +1370,11 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
 
                 p_pw->drv_priv	= p_sisci_pw;
 
-                p_sisci_cnx		= p_sisci_gate->cnx_array + p_trk->id;
+                p_sisci_cnx		= status->cnx_array + p_trk->id;
                 p_sisci_pw->p_sisci_cnx	= p_sisci_cnx;
         } else {
                 p_gate		= p_pw->p_gate;
-                p_sisci_gate	= p_pw->gate_priv;
+                status	= p_pw->gate_priv;
                 p_sisci_pw	= p_pw->drv_priv;
                 p_sisci_cnx	= p_sisci_pw->p_sisci_cnx;
         }
@@ -1438,26 +1500,3 @@ nm_sisci_recv_iov		(struct nm_pkt_wrap *p_pw) {
  out:
 	return err;
 }
-
-int
-nm_sisci_load(struct nm_drv_ops *p_ops) {
-        p_ops->query		= nm_sisci_query         ;
-        p_ops->init		= nm_sisci_init         ;
-        p_ops->exit             = nm_sisci_exit         ;
-
-        p_ops->open_trk		= nm_sisci_open_trk     ;
-        p_ops->close_trk	= nm_sisci_close_trk    ;
-
-        p_ops->connect		= nm_sisci_connect      ;
-        p_ops->accept		= nm_sisci_accept       ;
-        p_ops->disconnect       = nm_sisci_disconnect   ;
-
-        p_ops->post_send_iov	= nm_sisci_send_iov     ;
-        p_ops->post_recv_iov    = nm_sisci_recv_iov	;
-
-        p_ops->poll_send_iov    = nm_sisci_send_iov     ;
-        p_ops->poll_recv_iov    = nm_sisci_recv_iov	;
-
-        return NM_ESUCCESS;
-}
-

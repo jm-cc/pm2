@@ -258,8 +258,8 @@ mad_dir_driver_init(p_mad_madeleine_t    madeleine,
   TRACE("Driver initialization: second pass");
   while (driver_init_2(dir_driver_htable))
     ;
-
-#ifdef MARCEL
+#if 0
+//#ifdef MARCEL
   {
     p_mad_driver_t            mad_driver   = NULL;
     p_mad_driver_interface_t  interface    = NULL;

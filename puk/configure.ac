@@ -34,6 +34,7 @@ AC_PADICO_DEP
 AC_PADICO_LINKER
 AC_PADICO_DYNLD
 AC_PADICO_DSO
+AC_PADICO_EXPAT
 
 dnl --- ABI black magic
 dnl --------------------------------------------------------
@@ -62,6 +63,7 @@ AC_PADICO_INFINIBAND
 AC_PADICO_OPTIMIZE
 AC_PADICO_DEBUG
 AC_PADICO_TRACE
+AC_PADICO_DISABLE_OUTPUT
 AC_PADICO_PM2
 
 dnl --- output

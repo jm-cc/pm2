@@ -13,6 +13,5 @@
  * General Public License for more details.
  */
 
+extern int nm_ibverbs_load(void);
 
-int
-nm_ibverbs_load(struct nm_drv_ops *p_ops);

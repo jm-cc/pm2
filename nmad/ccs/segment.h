@@ -48,7 +48,6 @@ struct CCSI_Segment_piece_params {
 	    unsigned rank;
 	    unsigned node_id;
 	    unsigned port_id;
-	    struct CCSI_dev_callback_rec *callback_rec;
 	} putget;
     } u;
 };

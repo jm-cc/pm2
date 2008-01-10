@@ -38,9 +38,9 @@
 
 #include "marcel.h"
 
-#ifdef XPAULETTE
-#include "xpaul.h"
-#endif /* XPAULETTE */
+#ifdef PIOMAN
+#include "pioman.h"
+#endif /* PIOMAN */
 #ifdef CONFIG_NUMA
 #define cpu_to_node_mask(cpu) node_to_cpumask(cpu_to_node(cpu))
 #else
@@ -1008,7 +1008,29 @@ restart:
 			currently_idle = 1;
 		}
 		ma_local_bh_enable();
-		didpoll = ma_do_idle(didpoll);
+#ifdef PIOMAN
+		if (!piom_polling_is_required(PIOM_POLL_AT_IDLE))
+#else
+		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE))
+#endif /* PIOMAN */
+		{
+		        marcel_sig_disable_interrupts();
+			marcel_sig_pause();
+			marcel_sig_enable_interrupts();
+		} else {
+#ifdef MARCEL_IDLE_PAUSE
+		        if (didpoll)
+			        /* already polled a bit, sleep a bit before
+				 * polling again */
+ 			        marcel_sig_nanosleep();
+#endif
+#ifdef PIOMAN
+			__piom_check_polling(PIOM_POLL_AT_IDLE);
+#else
+			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+#endif /* PIOMAN */
+			didpoll = 1;
+		}
 		ma_check_work();
 		need_resched = 1;
 		ma_local_bh_disable();
@@ -1386,6 +1408,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
 	}
 #endif
+	ma_spin_lock_init(&lwp->tasklet_lock);
 	LOG_OUT();
 }
 

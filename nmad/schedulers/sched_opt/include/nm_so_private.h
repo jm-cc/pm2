@@ -37,10 +37,11 @@
 #define NM_SO_STATUS_IS_DATATYPE ((uint8_t)64)
 #define NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE ((uint8_t)128)
 
-
 struct nm_so_sched {
-  nm_so_strategy *current_strategy;
   struct nm_so_interface_ops *current_interface;
+
+  puk_adapter_t strategy_adapter;
+  const struct nm_so_strategy_driver *strategy_driver;
 
   /* For any source messages */
   struct {
@@ -73,7 +74,6 @@ struct nm_so_chunk {
 
 
 struct nm_so_gate {
-
   struct nm_so_sched *p_so_sched;
 
   /* Actually counts the number of expected small messages, including
@@ -115,8 +115,11 @@ struct nm_so_gate {
   /* For large messages waiting for Track 1 (or 2) to be free */
   struct list_head pending_large_recv;
 
-  void *strat_priv;
   void *interface_private;
+
+  /* Strategy components elements */
+  struct puk_receptacle_NmStrategy_s strategy_receptacle;
+  puk_instance_t strategy_instance;
 };
 
 int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, void *data, uint32_t len);

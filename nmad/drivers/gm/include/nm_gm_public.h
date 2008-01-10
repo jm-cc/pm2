@@ -13,6 +13,5 @@
  * General Public License for more details.
  */
 
+extern int nm_gm_load(void);
 
-int
-nm_gm_load(struct nm_drv_ops *p_ops);

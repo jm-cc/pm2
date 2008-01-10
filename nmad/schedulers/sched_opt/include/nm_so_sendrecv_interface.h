@@ -23,7 +23,8 @@
  * @{
  */
 
-#include "tbx.h"
+#include "pm2_common.h"
+#include "nm_public.h"
 #include "nm_so_sendrecv_interface_private.h"
 
 #include <ccs_public.h>

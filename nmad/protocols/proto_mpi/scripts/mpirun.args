@@ -57,6 +57,9 @@ Environment variables:
    - MPI_NMAD_PROTOCOL specifies the network protocol to use. By
      default, the first network protocol available for the machines is
      selected.
+   - MPI_NMAD_STRATEGY specifies the scheduler strategy to be used. By
+     default, use the default strategy. Other strategies are :
+              aggreg aggreg-ext balance
    - MPI_HOST_FILE specifies a file containing a list of possible
      machines to run on.
    - MPI_NET_FILE specifies a configuration network file. By default,

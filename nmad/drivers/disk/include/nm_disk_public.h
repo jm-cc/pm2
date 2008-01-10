@@ -14,5 +14,5 @@
  */
 
 
-int
-nm_disk_load(struct nm_drv_ops *p_ops);
+extern int nm_disk_load(void);
+

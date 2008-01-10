@@ -27,11 +27,12 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/socket.h>
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -45,6 +46,11 @@
 struct nm_tcpdg_drv {
         /** server socket	*/
         int	server_fd;
+        /** url */
+        char*url;
+        /** capabilities */
+        struct nm_drv_cap caps;
+        int nb_gates;
 };
 
 /** TCP/datagram specific track data.
@@ -75,7 +81,7 @@ struct nm_tcpdg_trk {
 
 /** TCP/datagram specific gate data.
  */
-struct nm_tcpdg_gate {
+struct nm_tcpdg {
         /** Array of sockets, one socket per track.
          */
         int	fd[255];
@@ -122,6 +128,102 @@ struct nm_tcpdg_pkt_wrap {
          */
         struct nm_iovec_iter	vi;
 };
+
+/** Tcpdg NewMad Driver */
+static int nm_tcpdg_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_tcpdg_init(struct nm_drv* p_drv);
+static int nm_tcpdg_open_trk(struct nm_trk_rq*p_trk_rq);
+static int nm_tcpdg_close_trk(struct nm_trk*p_trk);
+static int nm_tcpdg_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_tcpdg_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_tcpdg_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_tcpdg_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_tcpdg_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static struct nm_drv_cap*nm_tcpdg_get_capabilities(struct nm_drv *p_drv);
+static int nm_tcpdg_set_capabilities(struct nm_drv *p_drv, struct nm_drv_cap*);
+static const char*nm_tcpdg_get_driver_url(struct nm_drv *p_drv);
+#ifdef PIOM_BLOCKING_CALLS
+static int nm_tcpdg_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_tcpdg_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+#endif
+
+static const struct nm_drv_iface_s nm_tcpdg_driver =
+  {
+    .query              = &nm_tcpdg_query,
+    .init               = &nm_tcpdg_init,
+
+    .open_trk		= &nm_tcpdg_open_trk,
+    .close_trk	        = &nm_tcpdg_close_trk,
+
+    .connect		= &nm_tcpdg_connect,
+    .accept		= &nm_tcpdg_accept,
+    .disconnect         = &nm_tcpdg_disconnect,
+
+    .post_send_iov	= &nm_tcpdg_send_iov,
+    .post_recv_iov      = &nm_tcpdg_recv_iov,
+
+    .poll_send_iov	= &nm_tcpdg_send_iov,
+    .poll_recv_iov	= &nm_tcpdg_recv_iov,
+    /* TODO: add poll_any callbacks  */
+    .poll_send_any_iov  = NULL,
+    .poll_recv_any_iov  = NULL,
+
+    .get_driver_url     = &nm_tcpdg_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_tcpdg_get_capabilities,
+    .set_capabilities   = &nm_tcpdg_set_capabilities,
+
+#ifdef PIOM_BLOCKING_CALLS
+    .wait_send_iov	= &nm_tcpdg_wait_send_iov,
+    .wait_recv_iov	= &nm_tcpdg_wait_recv_iov,
+
+    .wait_recv_any_iov  = NULL,
+    .wait_send_any_iov  = NULL
+#endif
+  };
+
+/** 'PadicoAdapter' facet for Tcpdg driver */
+static void*nm_tcpdg_instanciate(puk_instance_t, puk_context_t);
+static void nm_tcpdg_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_tcpdg_adapter_driver =
+  {
+    .instanciate = &nm_tcpdg_instanciate,
+    .destroy     = &nm_tcpdg_destroy
+  };
+
+/** Instanciate functions */
+static void*nm_tcpdg_instanciate(puk_instance_t instance, puk_context_t context){
+  struct nm_tcpdg*status = TBX_MALLOC(sizeof (struct nm_tcpdg));
+  memset(status, 0, sizeof(struct nm_tcpdg));
+
+  return status;
+}
+
+static void nm_tcpdg_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
+/** Return capabilities */
+static struct nm_drv_cap*nm_tcpdg_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_tcpdg_drv *p_tcp_drv = p_drv->priv;
+  return &p_tcp_drv->caps;
+}
+
+static int nm_tcpdg_set_capabilities(struct nm_drv *p_drv, struct nm_drv_cap* caps)
+{
+  struct nm_tcpdg_drv *p_tcp_drv = p_drv->priv;
+  p_tcp_drv->caps = *caps;
+  return 0;
+}
+
+/** Url function */
+static const char*nm_tcpdg_get_driver_url(struct nm_drv *p_drv)
+{
+  struct nm_tcpdg_drv *p_tcp_drv = p_drv->priv;
+  return p_tcp_drv->url;
+}
 
 /** Provide status messages for herrno errors.
     @return Status message, or NULL if error is unknown.
@@ -209,6 +311,17 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
         memset(address->sin_zero, 0, 8);
 }
 
+/** Initialize the TCP driver with datagram emulation.
+ *  @param p_drv the driver.
+ *  @return The NM status code.
+ */
+extern int nm_tcpdg_load(){
+  puk_adapter_declare("NewMad_Driver_tcpdg",
+		      puk_adapter_provides("PadicoAdapter", &nm_tcpdg_adapter_driver),
+		      puk_adapter_provides("NewMad_Driver", &nm_tcpdg_driver));
+  return 0;
+}
+
 /** Query the TCP driver with datagram emulation.
  *  @param p_drv the driver.
  *  @return The NM status code.
@@ -216,48 +329,50 @@ nm_tcpdg_address_fill(struct sockaddr_in	*address,
 static
 int
 nm_tcpdg_query		(struct nm_drv *p_drv,
-			 struct nm_driver_query_param *params TBX_UNUSED,
+                         struct nm_driver_query_param *params TBX_UNUSED,
 			 int nparam TBX_UNUSED) {
-	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
-	int			 err;
+        int			 err;
 
 	/* private data							*/
-	p_tcp_drv	= TBX_MALLOC(sizeof (struct nm_tcpdg_drv));
+	struct nm_tcpdg_drv* p_tcp_drv = TBX_MALLOC(sizeof (struct nm_tcpdg_drv));
 	if (!p_tcp_drv) {
 		err = -NM_ENOMEM;
 		goto out;
 	}
 
 	memset(p_tcp_drv, 0, sizeof (struct nm_tcpdg_drv));
-	p_drv->priv = p_tcp_drv;
+	p_tcp_drv->nb_gates = 0;
 
-	/* driver capabilities encoding					*/
-	p_drv->cap.has_trk_rq_stream			= 1;
-	p_drv->cap.has_selective_receive		= 1;
-	p_drv->cap.has_concurrent_selective_receive	= 1;
+        /* driver capabilities encoding					*/
+        p_tcp_drv->caps.has_trk_rq_stream			= 1;
+        p_tcp_drv->caps.has_selective_receive		= 1;
+        p_tcp_drv->caps.has_concurrent_selective_receive	= 1;
+#ifdef PIOM_BLOCKING_CALLS
+        p_tcp_drv->caps.is_exportable	= 1;
+#endif
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+	p_tcp_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
 
+        p_drv->priv = p_tcp_drv;
 	err = NM_ESUCCESS;
 
  out:
 	return err;
 }
 
-/** Initialize the TCP driver with datagram emulation.
- *  @param p_drv the driver.
- *  @return The NM status code.
- */
 static
 int
-nm_tcpdg_init		(struct nm_drv *p_drv) {
-	struct nm_tcpdg_drv	*p_tcp_drv	= p_drv->priv;
+nm_tcpdg_init		(struct nm_drv* p_drv) {
         uint16_t		 port;
         struct sockaddr_in       address;
         p_tbx_string_t		 url_string	= NULL;
 	struct utsname utsname;
         int			 err;
+        struct nm_tcpdg_drv *p_tcp_drv = p_drv->priv;
+
+        /* Increment the numer of gates */
+        p_tcp_drv->nb_gates++;
 
         /* server socket						*/
         p_tcp_drv->server_fd	= nm_tcpdg_socket_create(&address, 0);
@@ -277,9 +392,8 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
 	url_string	= tbx_string_init_to_cstring(utsname.nodename);
 	tbx_string_append_char(url_string, ':');
 	tbx_string_append_uint(url_string, port);
-        p_drv->url	= tbx_string_to_cstring(url_string);
+        p_tcp_drv->url  = tbx_string_to_cstring(url_string);
         tbx_string_free(url_string);
-	p_drv->name = tbx_strdup("tcp");
 
         err = NM_ESUCCESS;
 
@@ -290,14 +404,14 @@ nm_tcpdg_init		(struct nm_drv *p_drv) {
  *  @param p_drv the driver.
  *  @return The NM status code.
  */
-static
+extern
 int
 nm_tcpdg_exit		(struct nm_drv *p_drv) {
-	struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
         int			 err;
+        struct nm_tcpdg_drv *p_tcp_drv = p_drv->priv;
 
-        p_tcp_drv	= p_drv->priv;
-        TBX_FREE(p_drv->url);
+        p_tcp_drv->nb_gates--;
+        TBX_FREE(p_tcp_drv->url);
         SYSCALL(close(p_tcp_drv->server_fd));
         TBX_FREE(p_tcp_drv);
 
@@ -368,9 +482,11 @@ nm_tcpdg_close_trk	(struct nm_trk	*p_trk) {
  */
 static
 int
-nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
+nm_tcpdg_connect_accept	(void*_status,
+			 struct nm_cnx_rq	*p_crq,
                          int			 fd) {
-        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
+        struct nm_tcpdg	*status	= NULL;
+        struct nm_tcpdg_drv     *p_tcp_drv      = NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -385,6 +501,8 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
         p_tcp_trk	= p_trk->priv;
+        p_tcp_drv       = p_drv->priv;
+	status      = _status;
 
         SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
 	SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
@@ -396,41 +514,30 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
         NM_TRACE_VAL("tcp connect/accept new socket on fd", fd);
 
         /* private data				*/
-        p_tcp_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_tcp_gate) {
-                p_tcp_gate	= TBX_MALLOC(sizeof (struct nm_tcpdg_gate));
-                memset(p_tcp_gate, 0, sizeof(struct nm_tcpdg_gate));
+	//NM_TRACEF("drv_id %d, p_gate %p", _status );
 
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_tcp_gate;
-                NM_TRACEF("drv_id %d, p_gate %p", p_drv->id, p_gate->p_gate_drv_array[p_drv->id]->info );
-                p_tcp_gate->ref_count	= 1;
-        } else {
-                p_tcp_gate->ref_count++;
-        }
-
-        p_tcp_gate->fd[p_trk->id]	= fd;
-        NM_TRACE_PTR("tcp connect/accept p_tcp_gate", p_tcp_gate);
+        status->fd[p_trk->id]	= fd;
+        NM_TRACE_PTR("tcp connect/accept status", status);
 
         /* update trk private data		*/
-        n = p_drv->nb_gates;
+        n = p_tcp_drv->nb_gates;
 
-        if (n) {
+        if (n>1) {
                 p_tcp_trk->poll_array	=
                         TBX_REALLOC(p_tcp_trk->poll_array,
-                                    (n+1) * sizeof (struct pollfd));
+                                    n * sizeof (struct pollfd));
 
                 p_tcp_trk->gate_map	=
-                        TBX_REALLOC(p_tcp_trk->gate_map, n+1);
+                        TBX_REALLOC(p_tcp_trk->gate_map, n);
         } else {
-                p_tcp_trk->poll_array	= TBX_MALLOC(sizeof (struct pollfd));
-                p_tcp_trk->gate_map	= TBX_MALLOC(1);
+                p_tcp_trk->poll_array	= TBX_MALLOC(n * sizeof (struct pollfd));
+                p_tcp_trk->gate_map	= TBX_MALLOC(n);
         }
 
-        p_tcp_trk->poll_array[n].fd		= p_tcp_gate->fd[p_trk->id];
-        p_tcp_trk->poll_array[n].events	= POLLIN;
-        p_tcp_trk->poll_array[n].revents	= 0;
-        p_tcp_trk->gate_map[n]		= p_gate->id;
+        p_tcp_trk->poll_array[n-1].fd		= status->fd[p_trk->id];
+        p_tcp_trk->poll_array[n-1].events	= POLLIN;
+        p_tcp_trk->poll_array[n-1].revents	= 0;
+        p_tcp_trk->gate_map[n-1]		= p_gate->id;
 
         NMAD_EVENT_NEW_TRK(p_gate->id, p_drv->id, p_trk->id);
         err = NM_ESUCCESS;
@@ -444,7 +551,8 @@ nm_tcpdg_connect_accept	(struct nm_cnx_rq	*p_crq,
  */
 static
 int
-nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
+nm_tcpdg_connect		(void*_status,
+				 struct nm_cnx_rq *p_crq) {
         uint16_t		 port;
         struct sockaddr_in	 address;
         int			 fd;
@@ -478,7 +586,7 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
         SYSCALL(connect(fd, (struct sockaddr *)&address,
                         sizeof(struct sockaddr_in)));
 
-        err = nm_tcpdg_connect_accept(p_crq, fd);
+        err = nm_tcpdg_connect_accept(_status, p_crq, fd);
 
         // Flag for the disconnection
         p_tcp_trk->accept = tbx_false;
@@ -494,8 +602,9 @@ nm_tcpdg_connect		(struct nm_cnx_rq *p_crq) {
  */
 static
 int
-nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
-        struct nm_tcpdg_drv	*p_tcp_drv	= NULL;
+nm_tcpdg_accept		(void*_status,
+			 struct nm_cnx_rq *p_crq) {
+        struct nm_tcpdg_drv     *p_tcp_drv      = NULL;
         struct nm_drv		*p_drv		= NULL;
         int			 fd;
         struct nm_trk		*p_trk		= NULL;
@@ -503,14 +612,14 @@ nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
         int			 err;
 
         p_drv		= p_crq->p_drv;
-        p_tcp_drv	= p_drv->priv;
+        p_tcp_drv       = p_drv->priv;
         p_trk		= p_crq->p_trk;
         p_tcp_trk	= p_trk->priv;
 
         /* TCP accept 				*/
         SYSCALL(fd = accept(p_tcp_drv->server_fd, NULL, NULL));
 
-        err = nm_tcpdg_connect_accept(p_crq, fd);
+        err = nm_tcpdg_connect_accept(_status, p_crq, fd);
 
         // Flag for the disconnection
         p_tcp_trk->accept = tbx_true;
@@ -525,94 +634,83 @@ nm_tcpdg_accept		(struct nm_cnx_rq *p_crq) {
  */
 static
 int
-nm_tcpdg_disconnect	(struct nm_cnx_rq *p_crq) {
-        struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
-        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
+nm_tcpdg_disconnect	(void*_status,
+			 struct nm_cnx_rq *p_crq) {
         int	err;
+        struct nm_tcpdg	*status	= _status;
 
-        p_gate		= p_crq->p_gate;
-        p_drv		= p_crq->p_drv;
-        p_tcp_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
+	// Synchronization of the remote node for the disconnection
+	// in order to avoid the connexion ending before that data are not totally received
 
-        {
-          // Synchronization of the remote node for the disconnection
-          // in order to avoid the connexion ending before that data are not totally received
+	char *msg = "closed";
+	int len = strlen(msg)+1;
+	int fd;
+	int ret = 0;
+	struct nm_trk		*p_trk		= p_crq->p_trk;
+	struct nm_tcpdg_trk	*p_tcp_trk	= p_trk->priv;
 
-          char *msg = "closed";
-          int len = strlen(msg)+1;
-          int fd;
-          int ret = 0;
-          struct nm_trk		*p_trk		= p_crq->p_trk;
-          struct nm_tcpdg_trk	*p_tcp_trk	= p_trk->priv;
-
-          fd = p_tcp_gate->fd[p_crq->p_trk->id];
-
-
-          if(p_tcp_trk->accept){
-            while(ret != len){
-              ret += write(fd, msg+ret, len);
-            }
-            assert(ret == len);
-
-          } else {
-            char *buf = TBX_MALLOC(len);
-            int ret2 = 0;
-
-            while(ret != len){
-              ret2 = read(fd, buf+ret, len);
-
-              if(ret2 == -1) {
-                if(errno != EAGAIN)
-                  TBX_FAILURE("blurp");
-              } else {
-                ret += ret2;
-              }
-            }
-            assert(ret == len);
-            assert(strcmp(msg, buf) == 0);
-          }
-          close(fd);
-        }
-
-        p_tcp_gate->ref_count--;
-        if (!p_tcp_gate->ref_count) {
-                TBX_FREE(p_tcp_gate);
-                p_gate->p_gate_drv_array[p_drv->id]->info	= 0;
-        }
-
+	fd = status->fd[p_crq->p_trk->id];
+	
+	
+	if(p_tcp_trk->accept){
+	  while(ret != len){
+	    ret += write(fd, msg+ret, len);
+	  }
+	  assert(ret == len);
+	  
+	} else {
+	  char *buf = TBX_MALLOC(len);
+	  int ret2 = 0;
+	  
+	  while(ret != len){
+	    ret2 = read(fd, buf+ret, len);
+	    
+	    if(ret2 == -1) {
+	      if(errno != EAGAIN)
+		TBX_FAILURE("blurp");
+	    } else {
+	      ret += ret2;
+	    }
+	  }
+	  assert(ret == len);
+	  assert(strcmp(msg, buf) == 0);
+	}
+	close(fd);
+        
+	
+        status->ref_count--;
+	
         err = NM_ESUCCESS;
-
+	
         return err;
 }
 
-/** Check if a pkt wrapper send request may progress.
- *  @param p_pw the pkt wrapper.
- *  @return The NM status code.
- */
+
 static
 int
-nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
-	struct pollfd		 pollfd;
-        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
+nm_tcpdg_poll_out	(void*_status,
+			 struct nm_pkt_wrap *p_pw,
+			 int timeout) {
+        struct pollfd		 pollfd;
+        struct nm_tcpdg	*status	= NULL;
         int			 ret;
         int			 err;
 
         NM_LOG_IN();
         if (!p_pw->gate_priv) {
-                p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
+	        p_pw->gate_priv	= _status;
                 NM_TRACEF("nm_tcpdg_outgoing_poll: filling gate_priv - p_pw = %p, p_gate = %p, p_gate->id = %d, gate_priv = %p",
                           p_pw, p_pw->p_gate, p_pw->p_gate->id, p_pw->gate_priv);
         }
 
-	p_tcp_gate	= p_pw->gate_priv;
+	status	= p_pw->gate_priv;
 
-        pollfd.fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+        pollfd.fd	= status->fd[p_pw->p_trk->id];
         pollfd.events	= POLLOUT;
         pollfd.revents	= 0;
 
  poll_again:
-        ret	= poll(&pollfd, 1, 0);
+        ret	= poll(&pollfd, 1, timeout);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -657,17 +755,45 @@ nm_tcpdg_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
+#ifdef PIOM_BLOCKING_CALLS
+/** Check if a pkt wrapper send request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
+__tbx_inline__
+static
+int
+nm_tcpdg_outgoing_block	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_poll_out(_status, p_pw, -1);
+}
+#endif
+
+/** Check if a pkt wrapper send request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
+__tbx_inline__
+static
+int
+nm_tcpdg_outgoing_poll	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_poll_out(_status, p_pw, 0);
+}
+
 /** Check if a pkt wrapper receive request may progress.
  *  @param p_pw the pkt wrapper.
  *  @return The NM status code.
  */
 static
 int
-nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
+nm_tcpdg_poll_in	(struct nm_pkt_wrap *p_pw,
+			 int timeout) {
+        struct nm_tcpdg_drv     *p_tcp_drv      = NULL;
 	struct pollfd		 pollfd;
         struct nm_drv		*p_drv		= NULL;
         struct nm_gate		*p_gate		= NULL;
-        struct nm_tcpdg_gate	*p_tcp_gate	= NULL;
+        struct nm_tcpdg	*status	= NULL;
         struct nm_tcpdg_trk	*p_tcp_trk	= NULL;
         struct nm_core		*p_core		= NULL;
         struct pollfd		*p_gate_pollfd	= NULL;
@@ -679,6 +805,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         p_tcp_trk	= p_pw->p_trk->priv;
         p_drv		= p_pw->p_drv;
         p_core		= p_drv->p_core;
+        p_tcp_drv       = p_drv->priv;
 
         if (!p_pw->p_gate) {
                 int i;
@@ -690,15 +817,17 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                    - no pending multi-poll
                 */
 
+		NM_TRACE_VAL("tcp incoming multi poll: previous nb incoming", p_tcp_trk->nb_incoming);
                 if (!p_tcp_trk->nb_incoming) {
                         /* no pending multipoll				*/
                         p_tcp_trk->next_entry	= 0;
 
-                        NM_TRACE_VAL("tcp incoming multi poll: nb gates", p_drv->nb_gates);
+                        NM_TRACE_VAL("tcp incoming multi poll: nb gates", p_tcp_drv->nb_gates);
                         NM_TRACE_VAL("tcp incoming multi poll: gate 0 fd", p_tcp_trk->poll_array[0].fd);
 
                 multi_poll_again:
-                        ret	= poll(p_tcp_trk->poll_array, p_drv->nb_gates, 0);
+                        ret	= poll(p_tcp_trk->poll_array, p_tcp_drv->nb_gates, timeout);
+                        NM_TRACE_VAL("tcp incoming multi poll: poll ret", ret);
                         if (ret < 0) {
                                 if (errno == EINTR)
                                         goto multi_poll_again;
@@ -725,8 +854,9 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
                 /* pending multipoll				*/
 
                 i = p_tcp_trk->next_entry;
-                while (i < p_drv->nb_gates) {
+                while (i < p_tcp_drv->nb_gates) {
                         if (p_tcp_trk->poll_array[i].revents) {
+			  NM_TRACE_VAL("tcp incoming multi poll: active gate", i);
                                 goto active_gate_found;
                         }
 
@@ -749,14 +879,15 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         p_gate		= p_pw->p_gate;
 
         if (!p_pw->gate_priv) {
-                p_pw->gate_priv		=
-                        p_pw->p_gate->p_gate_drv_array[p_drv->id]->info;
+	        struct nm_gate_drv*p_gdrv = p_gate->p_gate_drv_array[p_drv->id];
+                p_pw->gate_priv	= p_gdrv->receptacle._status;
         }
 
-        p_tcp_gate	= p_pw->gate_priv;
+        status	= p_pw->gate_priv;
 
 	if (p_tcp_trk->nb_incoming) {
 		/* check former multipoll result 			*/
+		NM_TRACE_VAL("tcp incoming single poll: checking gate id", p_gate->id);
 		p_gate_pollfd	= p_tcp_trk->poll_array + p_gate->id;
 
 		if (p_gate_pollfd->revents) {
@@ -770,7 +901,7 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 				p_gate_pollfd->revents = 0;
 				goto poll_not_needed;
 			} else {
-				 NM_TRACE_VAL("tcp incoming single poll: event on fd", p_gate_pollfd->fd);
+				NM_TRACE_VAL("tcp incoming single poll: event on fd", p_gate_pollfd->fd);
 				if (p_gate_pollfd->revents & POLLHUP) {
 					NM_TRACEF("tcp incoming single poll: pollhup");
 					err = -NM_ECLOSED;
@@ -790,14 +921,14 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 	}
 
         /* poll needed			 			*/
-        pollfd.fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+        pollfd.fd	= status->fd[p_pw->p_trk->id];
         pollfd.events	= POLLIN;
         pollfd.revents	= 0;
 
         NM_TRACE_VAL("tcp incoming single poll: pollfd", pollfd.fd);
 
  poll_single_again:
-        ret	= poll(&pollfd, 1, 0);
+        ret	= poll(&pollfd, 1, timeout);
         if (ret < 0) {
 
                 /* redo interrupted poll			*/
@@ -847,19 +978,48 @@ nm_tcpdg_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
+#ifdef PIOM_BLOCKING_CALLS
+/** Check if a pkt wrapper receive request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
+__tbx_inline__
+static
+int
+nm_tcpdg_incoming_block(void*_status,
+                        struct nm_drv *p_drv,
+			struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_poll_in(p_pw, -1);
+}
+#endif
+
+/** Check if a pkt wrapper receive request may progress.
+ *  @param p_pw the pkt wrapper.
+ *  @return The NM status code.
+ */
+__tbx_inline__
+static
+int
+nm_tcpdg_incoming_poll	(struct nm_drv *p_drv,
+                         struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_poll_in(p_pw, 0);
+}
+
 /** Post a new send request or try to make a pending request progress.
  */
 static
 int
-nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
-        struct nm_tcpdg_gate		*p_tcp_gate	= NULL;
+nm_tcpdg_send 	(void*_status,
+		 struct nm_pkt_wrap *p_pw,
+		 int timeout) {
+        struct nm_tcpdg		*status	= NULL;
         struct nm_tcpdg_pkt_wrap	*p_tcp_pw	= NULL;
         int				 fd		=   -1;
         int				 ret;
         int				 err;
 
         NM_LOG_IN();
-        err	= nm_tcpdg_outgoing_poll(p_pw);
+        err	= nm_tcpdg_poll_out(_status, p_pw, timeout);
         if (err < 0) {
                 if (err == -NM_EAGAIN) {
                         goto out;
@@ -870,8 +1030,8 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
 
         NM_TRACEF("nm_tcpdg_send_iov: pw details --- gate_priv - p_pw = %p, p_gate = %p, p_gate->id = %d, gate_priv = %p",
                   p_pw, p_pw->p_gate, p_pw->p_gate->id, p_pw->gate_priv);
-	p_tcp_gate	= p_pw->gate_priv;
-        NM_TRACE_PTR("p_tcp_gate", p_tcp_gate);
+	status	= _status;
+        NM_TRACE_PTR("status", status);
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
                 NM_TRACEF("setup vector iterator");
@@ -910,7 +1070,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                 NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
         }
 
-        fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+        fd	= status->fd[p_pw->p_trk->id];
 
         if (p_tcp_pw->state) {
                 struct nm_iovec_iter	*p_vi;
@@ -928,7 +1088,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
 
                 NM_TRACE_VAL("tcp outgoing trk id", p_pw->p_trk->id);
                 NM_TRACE_VAL("tcp outgoing gate id", p_pw->p_gate->id);
-                NM_TRACE_VAL("tcp outgoing fd", p_tcp_gate->fd[p_pw->p_trk->id]);
+                NM_TRACE_VAL("tcp outgoing fd", status->fd[p_pw->p_trk->id]);
                 NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
                 NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
                 NM_TRACE_VAL("tcp outgoing cur len", p_cur->iov_len);
@@ -1016,7 +1176,7 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
                         p_tcp_pw->state	= 1;
                         p_tcp_pw->rem_length	= p_tcp_pw->h.length;
 
-                        err	= nm_tcpdg_outgoing_poll(p_pw);
+                        err	= nm_tcpdg_poll_out(_status, p_pw, timeout);
                         if (err < 0) {
                                 if (err == -NM_EAGAIN) {
                                         goto out;
@@ -1049,19 +1209,35 @@ nm_tcpdg_send_iov	(struct nm_pkt_wrap *p_pw) {
         goto out;
 }
 
+static
+int
+nm_tcpdg_send_iov	(void*_status, struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_send(_status, p_pw, 0);
+}
+
+#ifdef PIOM_BLOCKING_CALLS
+static
+int
+nm_tcpdg_wait_send_iov	(void*_status, struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_send(_status, p_pw, -1);
+}
+#endif
+
 /** Post a new receive request or try to make a pending request progress.
  */
 static
 int
-nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
-        struct nm_tcpdg_gate		*p_tcp_gate	= NULL;
+nm_tcpdg_recv	(void*_status,
+		 struct nm_pkt_wrap *p_pw,
+		 int timeout) {
+        struct nm_tcpdg		*status	= NULL;
         struct nm_tcpdg_pkt_wrap	*p_tcp_pw	= NULL;
         int				 fd;
         int			 	 ret;
         int			 	 err;
 
         NM_LOG_IN();
-        err	= nm_tcpdg_incoming_poll(p_pw);
+        err	= nm_tcpdg_poll_in(p_pw, timeout);
         if (err < 0) {
                 if (err == -NM_EAGAIN) {
                         goto out;
@@ -1070,10 +1246,10 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 }
         }
 
-        p_tcp_gate	= p_pw->gate_priv;
-        NM_TRACE_PTR("p_tcp_gate", p_tcp_gate);
+        status	= _status;
+        NM_TRACE_PTR("status", status);
         NM_TRACE_PTR("p_gate", p_pw->p_gate);
-        NM_TRACEF("drv_id %d p_tcp_gate(2) %p", p_pw->p_drv->id, p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info);
+        NM_TRACEF("drv_id %d status(2) %p", p_pw->p_drv->id, _status);
 
         p_tcp_pw	= p_pw->drv_priv;
         if (!p_tcp_pw) {
@@ -1110,7 +1286,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_tcp_pw->rem_length	= sizeof(p_tcp_pw->h);
         }
 
-        fd	= p_tcp_gate->fd[p_pw->p_trk->id];
+        fd	= status->fd[p_pw->p_trk->id];
         NM_TRACE_VAL("tcp incoming - state value", p_tcp_pw->state);
 
         if (p_tcp_pw->state) {
@@ -1130,7 +1306,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
                 NM_TRACE_VAL("tcp incoming trk id", p_pw->p_trk->id);
                 NM_TRACE_VAL("tcp incoming gate id", p_pw->p_gate->id);
-                NM_TRACE_VAL("tcp incoming fd", p_tcp_gate->fd[p_pw->p_trk->id]);
+                NM_TRACE_VAL("tcp incoming fd", status->fd[p_pw->p_trk->id]);
                 NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
                 NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
                 NM_TRACE_VAL("tcp incoming cur len", p_cur->iov_len);
@@ -1225,7 +1401,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_vi->cur_copy = *p_cur;
 
                 NM_TRACEF("tcp incoming iov: polling for next vector entry");
-                err	= nm_tcpdg_incoming_poll(p_pw);
+                err	= nm_tcpdg_poll_in(p_pw, timeout);
                 if (err < 0) {
                         if (err == -NM_EAGAIN) {
                                 goto out;
@@ -1269,7 +1445,7 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
                         p_tcp_pw->pkt_length	= p_tcp_pw->h.length;
 
                         NM_TRACE_VAL("tcp header incoming pkt length", p_tcp_pw->rem_length);
-                        err	= nm_tcpdg_incoming_poll(p_pw);
+                        err	= nm_tcpdg_poll_in(p_pw, timeout);
                         if (err < 0) {
                                 if (err == -NM_EAGAIN) {
                                         goto out;
@@ -1303,24 +1479,18 @@ nm_tcpdg_recv_iov	(struct nm_pkt_wrap *p_pw) {
         goto out;
 }
 
-/** Load the TCP driver with datagram emulation.
- *  @param p_ops the driver operation structure to fill.
- *  @return the NM status code.
- */
+static
 int
-nm_tcpdg_load(struct nm_drv_ops *p_ops) {
-        p_ops->query		= nm_tcpdg_query;
-        p_ops->init		= nm_tcpdg_init;
-        p_ops->exit             = nm_tcpdg_exit;
-        p_ops->open_trk		= nm_tcpdg_open_trk;
-        p_ops->close_trk	= nm_tcpdg_close_trk;
-        p_ops->connect		= nm_tcpdg_connect;
-        p_ops->accept		= nm_tcpdg_accept;
-        p_ops->disconnect       = nm_tcpdg_disconnect;
-        p_ops->post_send_iov	= nm_tcpdg_send_iov;
-        p_ops->post_recv_iov    = nm_tcpdg_recv_iov;
-        p_ops->poll_send_iov	= nm_tcpdg_send_iov;
-        p_ops->poll_recv_iov	= nm_tcpdg_recv_iov;
-
-        return NM_ESUCCESS;
+nm_tcpdg_recv_iov	(void*_status,
+                         struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_recv(_status, p_pw, 0);
 }
+
+#ifdef PIOM_BLOCKING_CALLS
+static
+int
+nm_tcpdg_wait_recv_iov	(void*_status,
+                         struct nm_pkt_wrap *p_pw) {
+	return nm_tcpdg_recv(_status, p_pw, -1);
+}
+#endif

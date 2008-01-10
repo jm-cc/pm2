@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_so_private.h>
 

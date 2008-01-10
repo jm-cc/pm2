@@ -19,7 +19,6 @@
  */
 
 #include <stdint.h>
-#include "madeleine.h"
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"

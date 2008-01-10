@@ -45,6 +45,7 @@ Usage: $PROGNAME { option } command
     -l|--log              : Also generate a log file on first node
     -L                    : As '-l' but do not display the log file
     -u|--use-local-flavor : Use local flavor (re-run pm2-config on each node)
+    --strategy name       : Use strategy named "name"
     -h|--help             : Display this help message
 
    Madeleine/Leonie options:
@@ -128,9 +129,9 @@ mad3()
 
     networks_name=""
     for p in $protocols ; do
-        dev=$p
+        dev=`echo $p | sed 's/nmad-//'`
         # dirty fix list for devices with multiple drivers
-        case $p in
+        case $dev in
             tcpdg)
                 dev='tcp'
                 ;;
@@ -148,6 +149,9 @@ mad3()
         fi
     done
     log "Networks: $networks_name"
+
+    log "Create driver configuration file"
+    $PM2_ROOT/bin/nmad-driver-conf --$dev
 
     [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
     echo "application: {"                      >  $PM2_LEONIE_FILE
@@ -345,6 +349,11 @@ while [ $# -gt 0 ]; do
 	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
 	    shift
 	    ;;
+	--strategy)
+	    shift
+	    PM2_STRATEGY="$1"
+	    shift
+	    ;;
 	--network)
 	    shift
 	    PM2_NETWORK_FILE="$1"
@@ -461,6 +470,16 @@ export PM2_PROG_NAME
 shift
 
 prog_args=(${@:+"$@"})
+
+# set the strategy
+if [ "$PM2_STRATEGY" == "" ] ; then
+    STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
+    if [ ! -f $STRAT_DIR/default_strategy.xml ] && [ ! -f $STRAT_DIR/custom_strategy.xml ] ; then
+        $PM2_ROOT/bin/nmad-strategy-conf -d
+    fi
+else
+    $PM2_ROOT/bin/nmad-strategy-conf --$PM2_STRATEGY
+fi
 
 if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 
@@ -584,6 +603,16 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 else
     PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
 fi
+
+# create driver configuration file
+if [ -n "$PM2_PROTOCOL" ] ; then
+    protocols="$PM2_PROTOCOL"
+else
+    protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
+fi
+for p in $protocols ; do
+    $PM2_ROOT/bin/nmad-driver-conf --$p
+done
 
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
     log "Executing: $_PM2_CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \

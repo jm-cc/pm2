@@ -467,6 +467,7 @@ do { \
 	ma_local_bh_enable(); \
 } while (0)
 
+#define ma_spin_trylock_softirq(lock) ma_spin_trylock_bh(lock)
 #define ma_spin_trylock_bh(lock) \
 	({ ma_local_bh_disable(); ma_preempt_disable(); \
 	_ma_raw_spin_trylock(lock) ? 1 : \

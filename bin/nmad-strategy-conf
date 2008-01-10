@@ -1,0 +1,132 @@
+#! /bin/bash
+###########
+
+# Get some variables
+STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
+NM_SO_MAX_SMALL="32726"
+NM_SO_COPY_ON_SEND_THRESHOLD="32726"
+FORCE_WRITE="false"
+CHOSEN_STRATEGY=""
+
+# Help functions
+usage() {
+    echo "USAGE:"
+    echo " --default-strategy, --default, -d: Choose strategy 'default'"
+    echo " --aggreg-strategy, --aggreg, -a: Choose strategy 'aggreg'"
+    echo " --aggreg-extended-strategy, --aggreg-ext, -e: Choose strategy 'aggreg_extended'"
+    echo " --aggreg-autoextended-strategy, --aggreg-autoext, -ae: Choose strategy 'aggreg_autoextended'"
+    echo " --split-balance-strategy, --split-balance, -b: Choose strategy 'split_balance'"
+    echo " --qos-strategy, --qos, -q: Choose strategy 'qos'"
+    echo ""
+    echo " --copy-on-send-threshold=<value>, -c=<value>:"
+    echo "             Change NM_SO_COPY_ON_SEND_THREASHOLD value."
+    echo " --max-small=<value>, -m=<value>:"
+    echo "             Change NM_SO_MAX_SMALL value."
+    echo ""
+    echo " --help, -h: Display this help"
+    echo " --overwrite-files, -f: Forces overwriting strategy files"
+    echo ""
+    echo " By default: * The strategy is default strategy."
+    echo "             * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD"
+    echo "             * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL"
+}
+
+if [ $# = 0 ]; then
+    usage
+    exit 1
+fi
+
+# Manage args
+while test $# -gt 0; do
+    CMD="$1"
+    case "$CMD" in
+	--overwrite-files|-f)
+	    FORCE_WRITE="true"
+	    ;;
+	--default-strategy|--default|-d)
+	    CHOSEN_STRATEGY=default
+	    ;;
+	--aggreg-strategy|--aggreg|-a)
+	    CHOSEN_STRATEGY=aggreg
+	    ;;
+	--aggreg-extended-strategy|--aggreg-ext|-e)
+	    CHOSEN_STRATEGY=aggreg_extended
+	    ;;
+        --aggreg-autoextended-strategy|--aggreg-autoext |-ae)
+	    CHOSEN_STRATEGY=aggreg_autoextended
+            ;;
+	--split-balance-strategy|--split-balance|-b)
+	    CHOSEN_STRATEGY=balance
+	    ;;
+        --qos-strategy|--qos|-q)
+            CHOSEN_STRATEGY=qos
+            ;;
+	--strat=strat_*|--strategy=strat_*)
+	    CHOSEN_STRATEGY=$( echo "$CMD" | sed -e 's,.*=strat_,,g' )
+	    ;;
+	--copy-on-send-threshold=*|-c=*)
+	    VALUE="${1#*=}"
+	    NM_SO_COPY_ON_SEND_THRESHOLD=$VALUE
+	    ;;
+	--max-small=*|-m=*)
+	    VALUE="${1#*=}"
+	    NM_SO_MAX_SMALL=$VALUE
+	    ;;
+	-h|-help|--help)
+	    usage
+	    exit 0
+	    ;;
+	*)
+	    echo "Unknown argument: $CMD"
+	    usage
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+if [ -z "$CHOSEN_STRATEGY" ] ; then
+    usage
+    exit 1
+fi
+
+# Create .pm2/strategy directory if it doesn't exist
+if [ ! -e $STRAT_DIR ] ; then
+    mkdir -p ${STRAT_DIR}
+fi
+
+nmad_strat_write() {
+    strat=$1
+    strat_file=${STRAT_DIR}/strategy_${strat}.xml
+# Write XML strat files if they don't exist
+if [ ! -e  ${strat_file} ] || [ ${FORCE_WRITE} = "true" ] ; then
+cat > ${strat_file} <<EOF
+<?xml version="1.0"?>
+<!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
+<puk:composite id="strategy-${strat}">
+  <puk:component id="0" name="Nm_strategy_${strat}">
+    <puk:attr label="nm_so_max_small">${NM_SO_MAX_SMALL}</puk:attr>
+    <puk:attr label="nm_so_copy_on_send_threshold">${NM_SO_COPY_ON_SEND_THRESHOLD}</puk:attr>
+  </puk:component>
+  <puk:entry-point iface="NmStrategy" provider-id="0"/>
+</puk:composite>
+EOF
+fi
+}
+
+nmad_strat_write default
+nmad_strat_write split_balance
+nmad_strat_write aggreg
+nmad_strat_write aggreg_extended
+nmad_strat_write aggreg_autoextended
+nmad_strat_write qos
+
+# Link the chosen strategy
+if [ ! -r ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ]; then
+    echo "$0: strategy \"${CHOSEN_STRATEGY}\" does not exist."
+    echo
+    usage
+    exit 1
+fi
+ln -sf ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ${STRAT_DIR}/strategy_custom.xml
+

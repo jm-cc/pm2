@@ -1,0 +1,14 @@
+# Une (brève) documentation pour savoir comment ajouter un module sans y passer 2 heures.
+
+Pour ajouter un nouveau module, il faut :
+
+- créer un répertoire à la racine de pm2 (par exemple 'plop')
+- ajouter un répertoire ${PM2_ROOT}/plop/config
+- Ajouter le nom du module dans les fichiers suivants : 
+	${PM2_ROOT}/generic/config/options/Makefile
+	${PM2_ROOT}/bin/pm2-config 
+	${PM2_ROOT}/bin/pm2-recreate-links
+- puis, on génère les fichiers d'options du module :
+	cd ${PM2_ROOT}/generic/config/options/ ; make duplique_global
+- Finalement, on crée les liens dans le répertoire ${PM2_ROOT}/modules et on génère d'autres fichiers dont a besoin pm2.
+	cd ${PM2_ROOT} ; make init

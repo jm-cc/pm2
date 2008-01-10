@@ -55,7 +55,7 @@ if [ ! -d ${PM2_ROOT}/modules ] ; then
     mkdir ${PM2_ROOT}/modules
 fi
 for module in appli common dsm ezflavor generic init leonie leoparse \
-	mad3 nmad marcel xpaulette ntbx pm2 profile stackalign tbx puk
+	mad3 nmad marcel pioman ntbx pm2 profile stackalign tbx puk
 	do
    make_ln ${PM2_ROOT}/modules ../$module `basename $module`
 done

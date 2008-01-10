@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include "nm_pkt_wrap.h"
@@ -184,6 +184,10 @@ ____nm_so_unpack_any_src(struct nm_core *p_core,
     nm_so_refill_regular_recv(&p_core->gate_array[i]);
 
  out:
+#if (defined(PIOMAN) && ! defined(PIO_OFFLOAD))
+  nm_piom_post_all(p_gate->p_core);
+#endif
+
   return err;
 }
 
@@ -525,6 +529,9 @@ rdv_callback(struct nm_so_pkt_wrap *p_so_pw,
 
     return store_data_or_rdv(tbx_true, rdv, tag, seq, p_so_pw);
   }
+#if (defined(PIOMAN) && ! defined(PIO_OFFLOAD))
+  nm_piom_post_all(p_gate->p_core);
+#endif
 
   return NM_SO_HEADER_MARK_READ;
 }
@@ -591,6 +598,10 @@ ack_callback(struct nm_so_pkt_wrap *p_so_pw,
       _nm_so_post_send(p_gate, p_so_large_pw,
 		       track_id % NM_SO_MAX_TRACKS,
 		       track_id / NM_SO_MAX_TRACKS);
+
+#if (defined(PIOMAN) && ! defined(PIO_OFFLOAD))
+      nm_piom_post_all(p_gate->p_core);
+#endif
 
       return NM_SO_HEADER_MARK_READ;
     }
@@ -734,7 +745,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
     uint8_t seq = p_so_pw->pw.seq;
     uint32_t len = p_pw->length;
     struct nm_so_interface_ops *interface= p_so_sched->current_interface;
-    nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+    const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
     int nb_drivers = p_gate->p_sched->p_core->nb_drivers;
 
     NM_SO_TRACE("********Reception of a large packet\n");
@@ -909,7 +920,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
           nm_so_init_ack(&ctrl, p_so_large_pw->pw.proto_id, p_so_large_pw->pw.seq,
                          drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
-          err = cur_strat->pack_ctrl(p_gate, &ctrl);
+          err = strategy->pack_ctrl(p_so_gate->strategy_receptacle._status, p_gate, &ctrl);
 
         } else {
           int nb_drv;
@@ -918,8 +929,9 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
           /* We ask the current strategy to find other available tracks for
              transfering this large data chunk. */
-          err = cur_strat->extended_rdv_accept(p_gate, p_so_large_pw->pw.length,
-                                               &nb_drv, drv_ids, chunk_lens);
+          err = strategy->extended_rdv_accept(p_so_gate->strategy_receptacle._status,
+					      p_gate, p_so_large_pw->pw.length,
+					      &nb_drv, drv_ids, chunk_lens);
 
           if(err == NM_ESUCCESS){
             if(nb_drv == 1){ // le réseau qui vient de se libérer est le seul disponible
@@ -927,7 +939,7 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
               nm_so_init_ack(&ctrl, p_so_large_pw->pw.proto_id, p_so_large_pw->pw.seq,
                              drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
-              err = cur_strat->pack_ctrl(p_gate, &ctrl);
+              err = strategy->pack_ctrl(p_so_gate->strategy_receptacle._status, p_gate, &ctrl);
 
             } else {
               err = nm_so_post_multiple_pw_recv(p_gate, p_so_large_pw, nb_drv, drv_ids, chunk_lens);

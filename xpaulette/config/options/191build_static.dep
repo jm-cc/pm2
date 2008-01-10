@@ -1,3 +1,0 @@
-Provide: xpaulette_linkmode
-Provide: static_libs
-Conflict: xpaulette_linkmode

@@ -58,9 +58,45 @@
 #else
 #  define CONFIG_TCP_ENABLED 0
 #endif
-
 #define NR_ENABLED_DRIVERS (CONFIG_IBVERBS_ENABLED+CONFIG_MX_ENABLED+CONFIG_GM_ENABLED+CONFIG_QSNET_ENABLED+CONFIG_SISCI_ENABLED+CONFIG_TCP_ENABLED)
 
 #include <nm_predictions.h>
+
+/** Load all built-in drivers
+ */
+static inline void nm_core_drivers_load(void)
+{
+
+	/* Exemple of load call and default adapter definition for driver Dummy
+	   #ifdef CONFIG_DUMMY
+	   nm_dummy_load();
+	   #endif
+	*/
+
+#ifdef CONFIG_GM
+	nm_gm_load();
+#endif
+
+#ifdef CONFIG_SISCI
+	nm_sisci_load();
+#endif
+
+#ifdef CONFIG_QSNET
+	nm_qsnet_load();
+#endif
+
+#ifdef CONFIG_MX
+	nm_mx_load();
+#endif
+
+#ifdef CONFIG_IBVERBS
+	nm_ibverbs_load();
+#endif
+
+#ifdef CONFIG_TCP
+	nm_tcpdg_load();
+#endif
+
+}
 
 #endif /* NM_DRIVERS_H */

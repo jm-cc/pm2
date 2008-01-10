@@ -18,6 +18,7 @@
 
 #include <nm_errno.h>
 #include <stdlib.h>
+#include <Padico/Puk.h>
 
 struct nm_core;
 struct nm_drv_ops;
@@ -38,6 +39,10 @@ typedef int16_t nm_gate_id_t;                 /* needs to support -1 */
 
 #define NM_ANY_GATE ((nm_gate_id_t)-1)
 
+puk_component_t
+nm_core_component_load  (const char*entity, 
+			 const char*name);
+
 int
 nm_core_init		(int			 *argc,
                          char			 *argv[],
@@ -54,13 +59,13 @@ nm_core_proto_init	(struct nm_core		 *p_core,
 
 int
 nm_core_driver_load	(struct nm_core		 *p_core,
-                         int (*drv_load)(struct nm_drv_ops *),
+                         puk_component_t         driver,
                          uint8_t		 *p_id);
 
 int
 nm_core_driver_init	(struct nm_core		 *p_core,
                          uint8_t		 id,
-                         char			**p_url);
+			 char			**p_url);
 
 struct nm_driver_query_param {
 	enum {
@@ -83,7 +88,7 @@ nm_core_driver_query(struct nm_core	*p_core,
 int
 nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 					  int count,
-					  int (**drv_load_array)(struct nm_drv_ops *),
+					  puk_component_t*driver_array,
 					  struct nm_driver_query_param **params_array,
 					  int *nparam_array,
 					  uint8_t *p_id_array,
@@ -95,40 +100,39 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 static inline int
 nm_core_driver_load_init_some(struct nm_core *p_core,
 			      int count,
-			      int (**drv_load_array)(struct nm_drv_ops *),
+			      puk_component_t*driver_array,
 			      uint8_t *p_id_array,
 			      char **p_url_array)
 {
   struct nm_driver_query_param * params_array[NUMBER_OF_DRIVERS] = { NULL };
   int nparam_array[NUMBER_OF_DRIVERS] = { 0 };
-  return nm_core_driver_load_init_some_with_params(p_core, count, drv_load_array,
+  return nm_core_driver_load_init_some_with_params(p_core, count, driver_array,
 						   params_array, nparam_array,
 						   p_id_array, p_url_array);
 }
 
 static inline int
 nm_core_driver_load_init_with_params(struct nm_core *p_core,
-				     int (*drv_load)(struct nm_drv_ops *),
+				     puk_component_t driver,
 				     struct nm_driver_query_param *params,
 				     int nparam,
 				     uint8_t *p_id,
 				     char **p_url)
 {
-  int (*drv_load_array[1])(struct nm_drv_ops *) = { drv_load };
   struct nm_driver_query_param * params_array[1] = { params };
   int nparam_array[1] = { nparam };
-  return nm_core_driver_load_init_some_with_params(p_core, 1, drv_load_array,
+  return nm_core_driver_load_init_some_with_params(p_core, 1, &driver,
 						   params_array, nparam_array,
 						   p_id, p_url);
 }
 
 static inline int
 nm_core_driver_load_init(struct nm_core		 *p_core,
-			 int (*drv_load)(struct nm_drv_ops *),
+			 puk_component_t          driver,
 			 uint8_t		 *p_id,
 			 char			**p_url)
 {
-  return nm_core_driver_load_init_with_params(p_core, drv_load, NULL, 0, p_id, p_url);
+  return nm_core_driver_load_init_with_params(p_core, driver, NULL, 0, p_id, p_url);
 }
 
 int
@@ -150,13 +154,13 @@ int
 nm_core_gate_accept	(struct nm_core		 *p_core,
                          nm_gate_id_t		  gate_id,
                          uint8_t		  drv_id,
-                         char			 *drv_trk_url);
+                         const char		 *drv_trk_url);
 
 int
 nm_core_gate_connect	(struct nm_core		 *p_core,
                          nm_gate_id_t		  gate_id,
                          uint8_t		  drv_id,
-                         char			 *drv_trk_url);
+                         const char		 *drv_trk_url);
 
 int
 nm_core_wrap_buffer	(struct nm_core		 *p_core,
@@ -181,4 +185,26 @@ nm_core_post_recv	(struct nm_core		*p_core,
 int
 nm_schedule		(struct nm_core		 *p_core);
 
-#endif /* __nm_public_h__ */
+#ifdef PIOMAN
+void 
+nmad_lock(void);
+
+void 
+nmad_unlock(void);
+
+int
+nm_piom_post_all        (struct nm_core	         *p_core);
+
+#else /* PIOMAN */
+
+static inline void 
+nmad_lock(void)
+{ }
+
+static inline void 
+nmad_unlock(void)
+{ }
+
+#endif /* PIOMAN */
+
+#endif

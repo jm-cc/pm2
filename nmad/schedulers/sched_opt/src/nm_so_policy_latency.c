@@ -15,11 +15,11 @@
 
 #ifdef NMAD_QOS
 
-#include <tbx.h>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
 
+#include "pm2_common.h"
 #include "nm_so_private.h"
 #include "nm_so_strategies/nm_so_strat_qos/nm_so_policy_latency.h"
 #include "nm_so_pkt_wrap.h"

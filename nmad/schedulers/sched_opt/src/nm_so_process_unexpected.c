@@ -17,7 +17,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include "nm_gate.h"
@@ -102,7 +102,7 @@ _nm_so_treat_chunk(tbx_bool_t is_any_src,
        || (is_any_src && (p_so_sched->any_src[tag].status & NM_SO_STATUS_UNPACK_IOV))){
 
       _nm_so_copy_data_in_iov(dest_buffer, chunk_offset, ptr, len);
-
+      
     } else if((!is_any_src && (p_so_gate->status[tag][seq] & NM_SO_STATUS_IS_DATATYPE))
               || (is_any_src && (p_so_sched->any_src[tag].status & NM_SO_STATUS_IS_DATATYPE))){
       struct DLOOP_Segment *segp = dest_buffer;

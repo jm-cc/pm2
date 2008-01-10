@@ -16,114 +16,97 @@
 #ifndef NM_SO_STRATEGIES_H
 #define NM_SO_STRATEGIES_H
 
+#include <Padico/Puk.h>
 #include "nm_so_headers.h"
 
-typedef struct nm_so_strategy_struct nm_so_strategy;
+/* Driver for 'NmStrategy' component interface
+ */
+struct nm_so_strategy_driver
+{
+  /** Handle the arrival of a new packet. The strategy may already apply
+      some optimizations at this point */
+  int (*pack)(void*_status,
+	      struct nm_gate *p_gate,
+	      uint8_t tag, uint8_t seq,
+	      void *data, uint32_t len);
 
-/* Initialization */
-typedef int (*nm_so_strategy_init_func)(void);
+  int (*packv)(void*_status,
+               struct nm_gate *p_gate,
+               uint8_t tag, uint8_t seq,
+               struct iovec *iov, int nb_entries);
 
-typedef int (*nm_so_strategy_init_gate)(struct nm_gate *p_gate);
+  int (*pack_datatype)(void*_status, struct nm_gate *p_gate,
+		       uint8_t tag, uint8_t seq,
+		       struct DLOOP_Segment *segp);
 
-/* Termination */
-typedef int (*nm_so_strategy_exit_func)(void);
+  int (*pack_extended)(void*_status,
+		       struct nm_gate *p_gate,
+		       uint8_t tag, uint8_t seq,
+		       void *data, uint32_t len,
+		       tbx_bool_t is_completed);
 
-typedef int (*nm_so_strategy_exit_gate)(struct nm_gate *p_gate);
+  int (*pack_ctrl)(void*_status,
+                   struct nm_gate *p_gate,
+		   union nm_so_generic_ctrl_header *p_ctrl);
 
-/* Handle the arrival of a new packet. The strategy may already apply
-   some optimizations at this point */
-typedef int (*nm_so_strategy_pack_func)(struct nm_gate *p_gate,
-					uint8_t tag, uint8_t seq,
-					void *data, uint32_t len);
+  int (*pack_ctrl_chunk)(void*_status,
+                         struct nm_so_pkt_wrap *p_so_pw,
+                         union nm_so_generic_ctrl_header *p_ctrl);
 
-typedef int (*nm_so_strategy_packv_func)(struct nm_gate *p_gate,
-                                         uint8_t tag, uint8_t seq,
-                                         struct iovec *iov, int nb_entries);
+  int (*pack_extended_ctrl)(void*_status,
+                            struct nm_gate *p_gate,
+                            uint32_t cumulated_header_len,
+                            union nm_so_generic_ctrl_header *p_ctrl,
+                            struct nm_so_pkt_wrap **pp_so_pw);
 
-typedef int (*nm_so_strategy_pack_datatype_func)(struct nm_gate *p_gate,
-                                                 uint8_t tag, uint8_t seq,
-                                                 struct DLOOP_Segment *segp);
+  int (*pack_extended_ctrl_end)(void*_status,
+                                struct nm_gate *p_gate,
+                                struct nm_so_pkt_wrap *p_so_pw);
 
-typedef int (*nm_so_strategy_pack_extended_func)(struct nm_gate *p_gate,
-                                                 uint8_t tag, uint8_t seq,
-                                                 void *data, uint32_t len,
-                                                 tbx_bool_t is_completed);
+  /** Compute the best possible packet rearrangement with no side-effect
+      on pre_list */
+  int (*try)(void*_status,
+	     struct nm_gate *p_gate,
+	     unsigned *score);
 
-typedef int (*nm_so_strategy_pack_ctrl_func)(struct nm_gate *gate,
-					     union nm_so_generic_ctrl_header *p_ctrl);
+  /** Apply the "already computed" strategy on pre_list and return next
+      packet to send */
+  int (*commit)(void*_status);
 
-/* Compute the best possible packet rearrangement with no side-effect
-   on pre_list */
-typedef int (*nm_so_strategy_try_func)(struct nm_gate *p_gate,
-				       unsigned *score);
+  /** Compute and apply the best possible packet rearrangement, then
+      return next packet to send */
+  int (*try_and_commit)(void*_status,
+			struct nm_gate *p_gate);
 
-/* Apply the "already computed" strategy on pre_list and return next
-   packet to send */
-typedef int (*nm_so_strategy_commit_func)(void);
+  /** Forget the pre-computed stuff */
+  int (*cancel)(void*_status);
 
-/* Compute and apply the best possible packet rearrangement, then
-   return next packet to send */
-typedef int (*nm_so_strategy_try_and_commit_func)(struct nm_gate *p_gate);
+  /** Allow (or not) the acknowledgement of a Rendez-Vous request.
+      @warning drv_id and trk_id are IN/OUT parameters. They initially
+      hold values "suggested" by the caller. */
+  int (*rdv_accept)(void*_status,
+		    struct nm_gate *p_gate,
+		    uint8_t *drv_id,
+		    uint8_t *trk_id);
 
-typedef int (*nm_so_strategy_flush_func)(struct nm_gate *p_gate);
+  int (*extended_rdv_accept)(void*_status,
+                             struct nm_gate *p_gate,
+                             uint32_t len_to_send,
+                             int * nb_drv,
+                             uint8_t *drv_ids,
+                             uint32_t *chunk_lens);
 
-/* Forget the pre-computed stuff */
-typedef int (*nm_so_strategy_cancel_func)(void);
+  int (*flush)(void*_status,
+               struct nm_gate *p_gate);
 
-/* Allow (or not) the acknowledgement of a Rendez-Vous request.
-   WARNING: drv_id and trk_id are IN/OUT parameters. They initially
-   hold values "suggested" by the caller. */
-typedef int (*nm_so_strategy_rdv_accept_func)(struct nm_gate *p_gate,
-					      uint8_t *drv_id,
-					      uint8_t *trk_id);
-
-typedef int (*nm_so_strategy_pack_extended_ctrl_func)(struct nm_gate *p_gate,
-                                                      uint32_t cumulated_header_len,
-                                                      union nm_so_generic_ctrl_header *p_ctrl,
-                                                      struct nm_so_pkt_wrap **pp_so_pw);
-
-
-typedef int (*nm_so_strategy_pack_ctrl_chunk_func)(struct nm_so_pkt_wrap *p_so_pw,
-                                                   union nm_so_generic_ctrl_header *p_ctrl);
-
-typedef int (*nm_so_strategy_pack_extended_ctrl_end_func)(struct nm_gate *p_gate,
-                                                          struct nm_so_pkt_wrap *p_so_pw);
-
-typedef int (*nm_so_strategy_extended_rdv_accept_func)(struct nm_gate *p_gate,
-                                                       uint32_t len_to_send,
-                                                       int * nb_drv,
-                                                       uint8_t *drv_ids,
-                                                       uint32_t *chunk_lens);
 #ifdef NMAD_QOS
-typedef int (*nm_so_strategy_ack_callback_func)(struct nm_so_pkt_wrap *p_so_pw,
-						uint8_t tag_id, uint8_t seq,
-						uint8_t track_id, uint8_t finished);
+  int (*ack_callback)(void *_status,
+                      struct nm_so_pkt_wrap *p_so_pw,
+                      uint8_t tag_id, uint8_t seq,
+                      uint8_t track_id, uint8_t finished);
 #endif /* NMAD_QOS */
-
-struct nm_so_strategy_struct {
-  nm_so_strategy_init_func init;
-  nm_so_strategy_exit_func exit;
-  nm_so_strategy_init_gate init_gate;
-  nm_so_strategy_exit_gate exit_gate;
-  nm_so_strategy_pack_func pack;
-  nm_so_strategy_packv_func packv;
-  nm_so_strategy_pack_datatype_func pack_datatype;
-  nm_so_strategy_pack_extended_func pack_extended;
-  nm_so_strategy_pack_ctrl_func pack_ctrl;
-  nm_so_strategy_try_func try;
-  nm_so_strategy_commit_func commit;
-  nm_so_strategy_try_and_commit_func try_and_commit;
-  nm_so_strategy_flush_func flush;
-  nm_so_strategy_cancel_func cancel;
-  nm_so_strategy_rdv_accept_func rdv_accept;
-  nm_so_strategy_pack_extended_ctrl_func pack_extended_ctrl;
-  nm_so_strategy_pack_ctrl_chunk_func pack_ctrl_chunk;
-  nm_so_strategy_pack_extended_ctrl_end_func pack_extended_ctrl_end;
-  nm_so_strategy_extended_rdv_accept_func extended_rdv_accept;
-#ifdef NMAD_QOS
-  nm_so_strategy_ack_callback_func ack_callback;
-#endif /* NMAD_QOS */
-  void *priv;
 };
+
+PUK_IFACE_TYPE(NmStrategy, struct nm_so_strategy_driver);
 
 #endif

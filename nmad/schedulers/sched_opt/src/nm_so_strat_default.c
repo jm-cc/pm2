@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include <tbx.h>
+#include <pm2_common.h>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -24,25 +24,113 @@
 #include "nm_so_tracks.h"
 #include "nm_log.h"
 
-/** Gate storage for strat default.
+/* Components structures:
  */
-struct nm_so_strat_default_gate {
+
+static int strat_default_pack(void*, struct nm_gate*, uint8_t, uint8_t, void*, uint32_t);
+static int strat_default_packv(void*, struct nm_gate*, uint8_t, uint8_t, struct iovec *, int);
+static int strat_default_pack_ctrl(void*, struct nm_gate *, union nm_so_generic_ctrl_header*);
+static int strat_default_pack_ctrl_chunk(void*, struct nm_so_pkt_wrap *, union nm_so_generic_ctrl_header *);
+static int strat_default_pack_extended_ctrl(void*, struct nm_gate *, uint32_t, union nm_so_generic_ctrl_header *, struct nm_so_pkt_wrap **);
+static int strat_default_pack_extended_ctrl_end(void*,
+                                                struct nm_gate *p_gate,
+                                                struct nm_so_pkt_wrap *p_so_pw);
+static int strat_default_try_and_commit(void*, struct nm_gate*);
+static int strat_default_rdv_accept(void*, struct nm_gate*, uint8_t*, uint8_t*);
+
+static const struct nm_so_strategy_driver nm_so_strat_default_driver =
+  {
+    .pack               = &strat_default_pack,
+    .packv              = &strat_default_packv,
+    .pack_extended      = NULL,
+    .pack_ctrl          = &strat_default_pack_ctrl,
+    .pack_ctrl_chunk    = &strat_default_pack_ctrl_chunk,
+    .pack_extended_ctrl = &strat_default_pack_extended_ctrl,
+    .pack_extended_ctrl_end = &strat_default_pack_extended_ctrl_end,
+    .try                = NULL,
+    .commit             = NULL,
+    .try_and_commit     = &strat_default_try_and_commit,
+    .cancel             = NULL,
+#ifdef NMAD_QOS
+    .ack_callback    = NULL,
+#endif /* NMAD_QOS */
+    .rdv_accept          = &strat_default_rdv_accept,
+    .extended_rdv_accept = NULL,
+    .flush               = NULL
+};
+
+static void*strat_default_instanciate(puk_instance_t, puk_context_t);
+static void strat_default_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_so_strat_default_adapter_driver =
+  {
+    .instanciate = &strat_default_instanciate,
+    .destroy     = &strat_default_destroy
+  };
+
+/** Per-gate status for strat default instances
+ */
+struct nm_so_strat_default {
   /** List of raw outgoing packets. */
   struct list_head out_list;
+  int nm_so_max_small;
+  int nm_so_copy_on_send_threshold;
 };
+
+/* Initialization */
+extern int nm_so_strat_default_init(void)
+{
+  puk_adapter_declare("Nm_strategy_default",
+		      puk_adapter_provides("PadicoAdapter", &nm_so_strat_default_adapter_driver),
+		      puk_adapter_provides("NmStrategy", &nm_so_strat_default_driver),
+		      puk_adapter_attr("nm_so_max_small", NULL),
+		      puk_adapter_attr("nm_so_copy_on_send_threshold", NULL));
+
+  return NM_ESUCCESS;
+}
+
+
+/** Initialize the gate storage for default strategy.
+ */
+static void*strat_default_instanciate(puk_instance_t ai, puk_context_t context)
+{
+  struct nm_so_strat_default *status = TBX_MALLOC(sizeof(struct nm_so_strat_default));
+
+  INIT_LIST_HEAD(&status->out_list);
+
+  NM_LOGF("[loading strategy: <default>]");
+
+  const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
+  status->nm_so_max_small = atoi(nm_so_max_small);
+  NM_LOGF("[NM_SO_MAX_SMALL=%i]", status->nm_so_max_small);
+
+  const char*nm_so_copy_on_send_threshold = puk_context_getattr(context, "nm_so_copy_on_send_threshold");
+  status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
+  NM_LOGF("[NM_SO_COPY_ON_SEND_THRESHOLD=%i]", status->nm_so_copy_on_send_threshold);
+
+  return (void*)status;
+}
+
+/** Cleanup the gate storage for default strategy.
+ */
+static void strat_default_destroy(void*status)
+{
+  TBX_FREE(status);
+}
 
 
 /** Add a new control "header" to the flow of outgoing packets.
  *
- *  @param p_gate a pointer to the gate object.
+ *  @param _status the strat_default instance status.
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int pack_ctrl(struct nm_gate *p_gate,
-		     union nm_so_generic_ctrl_header *p_ctrl)
+static int strat_default_pack_ctrl(void*_status,
+                                   struct nm_gate *p_gate,
+				   union nm_so_generic_ctrl_header *p_ctrl)
 {
   struct nm_so_pkt_wrap *p_so_pw = NULL;
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_default*status = _status;
   int err;
 
   /* Simply form a new packet wrapper */
@@ -50,19 +138,24 @@ static int pack_ctrl(struct nm_gate *p_gate,
   if(err != NM_ESUCCESS)
     goto out;
 
+#ifdef PIO_OFFLOAD
+  p_so_pw->pw.offload_data = NULL;
+#endif
+
   /* Add the control packet to the out_list */
   list_add_tail(&p_so_pw->link,
-                &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list);
+                &status->out_list);
 
  out:
   return err;
 }
 
 static int
-pack_extended_ctrl(struct nm_gate *p_gate,
-                   uint32_t cumulated_header_len,
-                   union nm_so_generic_ctrl_header *p_ctrl,
-                   struct nm_so_pkt_wrap **pp_so_pw){
+strat_default_pack_extended_ctrl(void*_status,
+                                 struct nm_gate *p_gate,
+                                 uint32_t cumulated_header_len,
+                                 union nm_so_generic_ctrl_header *p_ctrl,
+                                 struct nm_so_pkt_wrap **pp_so_pw){
   struct nm_so_pkt_wrap *p_so_pw = NULL;
   int err;
 
@@ -75,8 +168,9 @@ pack_extended_ctrl(struct nm_gate *p_gate,
 }
 
 static int
-pack_ctrl_chunk(struct nm_so_pkt_wrap *p_so_pw,
-                union nm_so_generic_ctrl_header *p_ctrl){
+strat_default_pack_ctrl_chunk(void*_status,
+                              struct nm_so_pkt_wrap *p_so_pw,
+                              union nm_so_generic_ctrl_header *p_ctrl){
 
   int err;
 
@@ -86,15 +180,14 @@ pack_ctrl_chunk(struct nm_so_pkt_wrap *p_so_pw,
 }
 
 static int
-pack_extended_ctrl_end(struct nm_gate *p_gate,
-                       struct nm_so_pkt_wrap *p_so_pw){
+strat_default_pack_extended_ctrl_end(void*_status,
+                                     struct nm_gate *p_gate,
+                                     struct nm_so_pkt_wrap *p_so_pw){
 
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_default_gate *p_so_sd_gate
-    = (struct nm_so_strat_default_gate *)p_so_gate->strat_priv;
+  struct nm_so_strat_default*status = _status;
 
   /* Add the control packet to the BEGINING of out_list */
-  list_add(&p_so_pw->link, &p_so_sd_gate->out_list);
+  list_add(&p_so_pw->link, &status->out_list);
 
   return NM_ESUCCESS;
 }
@@ -109,31 +202,44 @@ pack_extended_ctrl_end(struct nm_gate *p_gate,
  *  @param len the data fragment length.
  *  @return The NM status.
  */
-static int pack(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len)
+static int strat_default_pack(void*_status,
+			      struct nm_gate *p_gate,
+			      uint8_t tag, uint8_t seq,
+			      void *data, uint32_t len)
 {
   struct nm_so_pkt_wrap *p_so_pw;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_strat_default*status = _status;
   int flags = 0;
   int err;
 
   p_so_gate->send[tag][seq] = len;
 
-  if(len <= NM_SO_MAX_SMALL) {
+  if(len <= status->nm_so_max_small) {
     /* Small packet */
 
-    if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
+    if(len <= status->nm_so_copy_on_send_threshold)
       flags = NM_SO_DATA_USE_COPY;
 
+#ifdef PIO_OFFLOAD
+    err = nm_so_pw_alloc(flags, &p_so_pw);
+    p_so_pw->pw.offload_data=data;
+    p_so_pw->pw.offload_len=len;
+    p_so_pw->pw.offload_tags=tag+128;
+    p_so_pw->pw.offload_seq=seq;
+    p_so_pw->pw.offload_iov_chunk_offset=0;
+    p_so_pw->pw.offload_is_last_chunk=1;
+    p_so_pw->pw.offload_flags=flags;
+#else
     /* Simply form a new packet wrapper and add it to the out_list */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
 					    0, 1, flags, &p_so_pw);
+#endif
     if(err != NM_ESUCCESS)
       goto out;
 
     list_add_tail(&p_so_pw->link,
-		  &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list);
+		  &status->out_list);
 
   } else {
     /* Large packets can not be sent immediately : we have to issue a
@@ -144,6 +250,10 @@ static int pack(struct nm_gate *p_gate,
                                             0, 0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
+
+#ifdef PIO_OFFLOAD
+    p_so_pw->pw.offload_len=len;
+#endif
 
     /* Then place it into the appropriate list of large pending
        "sends". */
@@ -159,7 +269,7 @@ static int pack(struct nm_gate *p_gate,
 
       nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
 
-      err = pack_ctrl(p_gate, &ctrl);
+      err = strat_default_pack_ctrl(status, p_gate, &ctrl);
       if(err != NM_ESUCCESS)
 	goto out;
     }
@@ -176,9 +286,11 @@ static int pack(struct nm_gate *p_gate,
 }
 
 static int
-packv(struct nm_gate *p_gate,
-      uint8_t tag, uint8_t seq,
-      struct iovec *iov, int nb_entries){
+strat_default_packv(void*_status,
+                    struct nm_gate *p_gate,
+                    uint8_t tag, uint8_t seq,
+                    struct iovec *iov, int nb_entries){
+  struct nm_so_strat_default*status = _status;
   struct nm_so_pkt_wrap *p_so_pw;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   uint32_t offset = 0;
@@ -204,7 +316,7 @@ packv(struct nm_gate *p_gate,
         goto out;
 
       list_add_tail(&p_so_pw->link,
-                    &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list);
+                    &status->out_list);
 
     } else {
       /* Large packets can not be sent immediately : we have to issue a
@@ -229,7 +341,7 @@ packv(struct nm_gate *p_gate,
 
         nm_so_init_rdv(&ctrl, tag + 128, seq, iov[i].iov_len, offset, is_last_chunk);
 
-        err = pack_ctrl(p_gate, &ctrl);
+        err = strat_default_pack_ctrl(_status, p_gate, &ctrl);
         if(err != NM_ESUCCESS)
           goto out;
       }
@@ -254,11 +366,12 @@ packv(struct nm_gate *p_gate,
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int try_and_commit(struct nm_gate *p_gate)
+static int strat_default_try_and_commit(void*_status,
+					struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct list_head *out_list =
-    &((struct nm_so_strat_default_gate *)p_so_gate->strat_priv)->out_list;
+  struct nm_so_strat_default*status = _status;
+  struct list_head *out_list = &(status->out_list);
   struct nm_so_pkt_wrap *p_so_pw;
 
   if(p_so_gate->active_send[NM_SO_DEFAULT_NET][TRK_SMALL] ==
@@ -284,13 +397,6 @@ static int try_and_commit(struct nm_gate *p_gate)
     return NM_ESUCCESS;
 }
 
-/** Initialization. */
-static int init(void)
-{
-  NM_LOGF("[loading strategy: <default>]");
-  return NM_ESUCCESS;
-}
-
 /** Accept or refuse a RDV on the suggested (driver/track/gate).
  *
  *  @warning @p drv_id and @p trk_id are IN/OUT parameters. They initially
@@ -300,9 +406,10 @@ static int init(void)
  *  @param trk_id the suggested track id.
  *  @return The NM status.
  */
-static int rdv_accept(struct nm_gate *p_gate,
-		      uint8_t *drv_id,
-		      uint8_t *trk_id)
+static int strat_default_rdv_accept(void*_status,
+				    struct nm_gate *p_gate,
+				    uint8_t *drv_id,
+				    uint8_t *trk_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
@@ -315,61 +422,3 @@ static int rdv_accept(struct nm_gate *p_gate,
     /* We decide to postpone the acknowledgement. */
     return -NM_EAGAIN;
 }
-
-/** Initialize the gate storage for default strategy.
- *
- *  @param p_gate a pointer to the gate object.
- *  @return The NM status.
- */
-static int init_gate(struct nm_gate *p_gate)
-{
-  struct nm_so_strat_default_gate *priv
-    = TBX_MALLOC(sizeof(struct nm_so_strat_default_gate));
-
-  INIT_LIST_HEAD(&priv->out_list);
-
-  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = priv;
-
-  return NM_ESUCCESS;
-}
-
-
-/** Cleanup the gate storage for default strategy.
- *
- *  @param p_gate a pointer to the gate object.
- *  @return The NM status.
- */
-static int exit_gate(struct nm_gate *p_gate)
-{
-  struct nm_so_strat_default_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;
-  TBX_FREE(priv);
-  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = NULL;
-
-  return NM_ESUCCESS;
-}
-
-nm_so_strategy nm_so_strat_default = {
-  .init = init,
-  .exit = NULL,
-  .init_gate = init_gate,
-  .exit_gate = exit_gate,
-  .pack = pack,
-  .packv = packv,
-  .pack_extended = NULL,
-  .pack_ctrl = pack_ctrl,
-  .try = NULL,
-  .commit = NULL,
-  .try_and_commit = try_and_commit,
-  .cancel = NULL,
-  .rdv_accept = rdv_accept,
-  .pack_extended_ctrl = pack_extended_ctrl,
-  .pack_ctrl_chunk = pack_ctrl_chunk,
-  .pack_extended_ctrl_end = pack_extended_ctrl_end,
-  .extended_rdv_accept = NULL,
-#ifdef NMAD_QOS
-  .ack_callback = NULL,
-#endif /* NMAD_QOS */
-  .priv = NULL,
-  .flush = NULL,
-};
-

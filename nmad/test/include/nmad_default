@@ -33,13 +33,18 @@ compile_leonie()
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
- --modules=\"nmad tbx ntbx init\" \
+ --modules=\"puk nmad tbx ntbx init pioman marcel\" \
  --init=\"debug gdb\" \
  --nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu nuioa\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
+ --puk=\"disable_output\" \
+ --marcel=\"debug mono marcel_main\" \
  --common=\"debug gdb fortran_target_none\" \
  --all=\"build_static\"
+
+nmad-driver-conf -f --${net}
+nmad-strategy-conf -f --strategy=${strat}
 
 # should compare all the lines of the output and not only the number
 # of lines present in the expected output file

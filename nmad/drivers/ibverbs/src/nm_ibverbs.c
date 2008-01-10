@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/uio.h>
-#include <tbx.h>
+#include <pm2_common.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -34,6 +34,7 @@
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -180,6 +181,9 @@ struct nm_ibverbs_drv {
 		uint64_t page_size_cap; /**< maximum page size for device */
 		uint64_t max_msg_size;  /**< maximum message size */
 	} ib_caps;
+        char*url;               /**< url */
+        struct nm_drv_cap caps; /**< capabilities */
+        int nb_gates;
 };
 
 enum nm_ibverbs_trk_kind {
@@ -366,44 +370,117 @@ struct nm_ibverbs_cnx {
 	};
 };
 
-struct nm_ibverbs_gate {
+struct nm_ibverbs {
 	struct nm_ibverbs_cnx*cnx_array;
 	int nb_cnx;
         int sock;    /**< connected socket for IB address exchange */
 };
 
-static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*p_pw);
-static int nm_ibverbs_poll_send_iov(struct nm_pkt_wrap*p_pw);
-static int nm_ibverbs_post_recv_iov(struct nm_pkt_wrap*p_pw);
-static int nm_ibverbs_poll_recv_iov(struct nm_pkt_wrap*p_pw);
-
 /* ********************************************************* */
+
+static int nm_ibverbs_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_ibverbs_init(struct nm_drv *p_drv);
+static int nm_ibverbs_open_trk(struct nm_trk_rq	*p_trk_rq);
+static int nm_ibverbs_close_trk(struct nm_trk *p_trk);
+static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_ibverbs_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
+static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
+static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
+static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
+static const char* nm_ibverbs_get_driver_url(struct nm_drv *p_drv);
+static struct nm_drv_cap*nm_ibverbs_get_capabilities(struct nm_drv *p_drv);
+
+static const struct nm_drv_iface_s nm_ibverbs_driver =
+  {
+    .query              = &nm_ibverbs_query,
+    .init               = &nm_ibverbs_init,
+
+    .open_trk		= &nm_ibverbs_open_trk,
+    .close_trk	        = &nm_ibverbs_close_trk,
+    
+    .connect		= &nm_ibverbs_connect,
+    .accept		= &nm_ibverbs_accept,
+    .disconnect         = &nm_ibverbs_disconnect,
+    
+    .post_send_iov	= &nm_ibverbs_post_send_iov,
+    .post_recv_iov      = &nm_ibverbs_post_recv_iov,
+    
+    .poll_send_iov      = &nm_ibverbs_poll_send_iov,
+    .poll_recv_iov      = &nm_ibverbs_poll_recv_iov,
+    /* TODO: add poll_any callbacks  */
+    .poll_send_any_iov  = NULL,
+    .poll_recv_any_iov  = NULL,
+
+    .get_driver_url     = &nm_ibverbs_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_ibverbs_get_capabilities
+  };
+
+/** 'PadicoAdapter' facet for Ibverbs driver */
+static void*nm_ibverbs_instanciate(puk_instance_t, puk_context_t);
+static void nm_ibverbs_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_ibverbs_adapter_driver =
+  {
+    .instanciate = &nm_ibverbs_instanciate,
+    .destroy     = &nm_ibverbs_destroy
+  };
+
+/** Instanciate functions */
+static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t context)
+{
+  struct nm_ibverbs*status = TBX_MALLOC(sizeof (struct nm_ibverbs));
+
+  status->sock = -1;
+  status->cnx_array = NULL;
+
+  return status;
+}
+
+static void nm_ibverbs_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
+const static char*nm_ibverbs_get_driver_url(struct nm_drv *p_drv) {
+  struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
+  return p_ibverbs_drv->url;
+}
+
+/** Return capabilities */
+static struct nm_drv_cap*nm_ibverbs_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
+  return &p_ibverbs_drv->caps;
+}
 
 /* ** helpers ********************************************** */
 
-static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(const struct nm_gate*__restrict__ p_gate,
-						       const struct nm_drv* __restrict__ p_drv,
+static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status,
 						       const struct nm_trk* __restrict__ p_trk)
 {
-	struct nm_ibverbs_gate*p_ibverbs_gate = p_gate->p_gate_drv_array[p_drv->id]->info;
-	struct nm_ibverbs_cnx*p_ibverbs_cnx = &p_ibverbs_gate->cnx_array[p_trk->id];
+	struct nm_ibverbs*status = _status;
+	struct nm_ibverbs_cnx*p_ibverbs_cnx = &status->cnx_array[p_trk->id];
 	return p_ibverbs_cnx;
 }
 
-static void nm_ibverbs_addr_send(const struct nm_ibverbs_cnx_addr*addr,
-				 const struct nm_ibverbs_gate*p_ibverbs_gate)
+static void nm_ibverbs_addr_send(const void*_status,
+				 const struct nm_ibverbs_cnx_addr*addr)
 {
-	int rc = send(p_ibverbs_gate->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
+        const struct nm_ibverbs*status = _status;
+	int rc = send(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
 	if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
 		fprintf(stderr, "Infiniband: cannot send address to peer.\n");
 		abort();
 	}
 }
 
-static void nm_ibverbs_addr_recv(struct nm_ibverbs_cnx_addr*addr,
-				 const struct nm_ibverbs_gate*p_ibverbs_gate)
+static void nm_ibverbs_addr_recv(void*_status,
+				 struct nm_ibverbs_cnx_addr*addr)
 {
-	int rc = recv(p_ibverbs_gate->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
+        const struct nm_ibverbs*status = _status;
+	int rc = recv(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
 	if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
 		fprintf(stderr, "Infiniband: cannot get address from peer.\n");
 		abort();
@@ -460,8 +537,6 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 }
 
 
-/* ********************************************************* */
-
 #ifdef PM2_NUIOA
 /* ******************** numa node ***************************** */
 
@@ -516,28 +591,33 @@ static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
 #endif /* PM2_NUIOA */
 
 /* ** init & connection ************************************ */
+extern int nm_ibverbs_load(){
+  puk_adapter_declare("NewMad_Driver_ibverbs",
+		      puk_adapter_provides("PadicoAdapter", &nm_ibverbs_adapter_driver),
+		      puk_adapter_provides("NewMad_Driver", &nm_ibverbs_driver));
+  return 0;
+}
 
-
-static int nm_ibverbs_query(struct nm_drv*p_drv,
-			    struct nm_driver_query_param *params,
+static int nm_ibverbs_query(struct nm_drv *p_drv,
+                            struct nm_driver_query_param *params,
 			    int nparam)
 {
 	int err;
 	int dev_amount;
 	int dev_number;
 	int i;
+        struct nm_ibverbs_drv*p_ibverbs_drv = NULL;
 
 	/* check parameters consitency */
 	assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
 	assert(NM_IBVERBS_BYCOPY_CREDITS_THR > NM_IBVERBS_BYCOPY_RBUF_NUM / 2);
 
-	/* private data */
-	struct nm_ibverbs_drv*p_ibverbs_drv = TBX_MALLOC(sizeof(struct nm_ibverbs_drv));
+	p_ibverbs_drv = TBX_MALLOC(sizeof(struct nm_ibverbs_drv));
+
         if (!p_ibverbs_drv) {
                 err = -NM_ENOMEM;
                 goto out;
         }
-        p_drv->priv = p_ibverbs_drv;
 
 	/* find IB device */
 	struct ibv_device*const*dev_list = ibv_get_device_list(&dev_amount);
@@ -575,27 +655,29 @@ static int nm_ibverbs_query(struct nm_drv*p_drv,
 	}
 
         /* driver capabilities encoding */
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_trk_rq_rdv			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 1;
-	p_drv->cap.rdv_threshold                        = 256 * 1024;
+        p_ibverbs_drv->caps.has_trk_rq_dgram			= 1;
+        p_ibverbs_drv->caps.has_trk_rq_rdv		        = 1;
+        p_ibverbs_drv->caps.has_selective_receive		= 1;
+        p_ibverbs_drv->caps.has_concurrent_selective_receive	= 0;
+	p_ibverbs_drv->caps.rdv_threshold                       = 256 * 1024;
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
+	p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
 #endif
 
+        p_drv->priv = p_ibverbs_drv;
 	err = NM_ESUCCESS;
 
  out:
 	return err;
 }
 
-static int nm_ibverbs_init(struct nm_drv*p_drv)
+static int nm_ibverbs_init(struct nm_drv *p_drv)
 {
-	struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
 	int err;
 	int rc;
+        struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
 
+        p_ibverbs_drv->nb_gates++;
 	srand48(getpid() * time(NULL));
 
 	/* get IB context attributes */
@@ -647,10 +729,10 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 		err = -NM_EUNREACH;
 		goto out;
 	}
+
 	char s_url[16];
 	snprintf(s_url, 16, "%08x%04x", htonl(((struct in_addr*)he->h_addr)->s_addr), addr.sin_port);
-        p_drv->url = tbx_strdup(s_url);
-        p_drv->name = tbx_strdup("ib");
+        p_ibverbs_drv->url = tbx_strdup(s_url);
 
 	/* IB capabilities */
 	p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
@@ -684,12 +766,13 @@ static int nm_ibverbs_init(struct nm_drv*p_drv)
 
 static int nm_ibverbs_exit(struct nm_drv *p_drv)
 {
-        struct nm_ibverbs_drv	*p_ibverbs_drv	= p_drv->priv;
 	int err;
+        struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
 
+        p_ibverbs_drv->nb_gates--;
 	close(p_ibverbs_drv->server_sock);
 
-        TBX_FREE(p_drv->url);
+        TBX_FREE(p_ibverbs_drv->url);
         TBX_FREE(p_ibverbs_drv);
 
 	err = NM_ESUCCESS;
@@ -756,36 +839,35 @@ static int nm_ibverbs_close_trk(struct nm_trk *p_trk)
 	return err;
 }
 
-static int nm_ibverbs_gate_create(struct nm_cnx_rq*p_crq)
+static int nm_ibverbs_gate_create(void*_status,
+				  struct nm_cnx_rq*p_crq)
 {
 	int err = NM_ESUCCESS;
-        struct nm_ibverbs_gate*p_ibverbs_gate = p_crq->p_gate->p_gate_drv_array[p_crq->p_drv->id]->info;
-	if (!p_ibverbs_gate) {
-                p_ibverbs_gate = TBX_MALLOC(sizeof (struct nm_ibverbs_gate));
-                if (!p_ibverbs_gate) {
-                        err = -NM_ENOMEM;
-                        goto out;
-                }
-		p_ibverbs_gate->sock      = -1;
-		p_ibverbs_gate->nb_cnx    = p_crq->p_drv->nb_tracks;
-		p_ibverbs_gate->cnx_array = TBX_MALLOC(sizeof(struct nm_ibverbs_cnx) * p_ibverbs_gate->nb_cnx);
-		memset(p_ibverbs_gate->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * p_ibverbs_gate->nb_cnx);
-		p_crq->p_gate->p_gate_drv_array[p_crq->p_drv->id]->info = p_ibverbs_gate;
-        }
+        struct nm_ibverbs*status = _status;
+	if(!status->cnx_array)
+	  {
+	    status->nb_cnx    = p_crq->p_drv->nb_tracks;
+	    status->cnx_array = TBX_MALLOC(sizeof(struct nm_ibverbs_cnx) * status->nb_cnx);
+	    if(!status->cnx_array){
+	      err = -NM_ENOMEM;
+	      goto out;
+	    }
+	    memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * status->nb_cnx);
+	  }
 	
  out:
 	return err;
 }
 
-static int nm_ibverbs_cnx_create(struct nm_cnx_rq*p_crq)
+static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
 {
-	const struct nm_drv*p_drv   = p_crq->p_drv;
-	const struct nm_gate*p_gate = p_crq->p_gate;
+        struct nm_drv *p_drv = p_crq->p_drv;
 	const struct nm_trk*p_trk   = p_crq->p_trk;
-	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(p_gate, p_drv, p_trk);
-	const struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
+	int err = nm_ibverbs_gate_create(_status, p_crq);	
+	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_trk);
 	const struct nm_ibverbs_trk*p_ibverbs_trk = p_trk->priv;
-	int err = NM_ESUCCESS;
+        struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
+
 	if(p_ibverbs_trk->kind & NM_IBVERBS_TRK_BYCOPY)	{
 		/* init state */
 		p_ibverbs_cnx->bycopy.window.next_out    = 1;
@@ -891,9 +973,9 @@ static int nm_ibverbs_cnx_create(struct nm_cnx_rq*p_crq)
 	return err;
 }
 
-static int nm_ibverbs_cnx_connect(struct nm_cnx_rq*p_crq)
+static int nm_ibverbs_cnx_connect(void*_status, struct nm_cnx_rq*p_crq)
 {
-	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(p_crq->p_gate, p_crq->p_drv, p_crq->p_trk);
+	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_crq->p_trk);
   
 	int err = NM_ESUCCESS;
 
@@ -950,87 +1032,90 @@ static int nm_ibverbs_cnx_connect(struct nm_cnx_rq*p_crq)
   return err;
 }
 
-static int nm_ibverbs_connect(struct nm_cnx_rq *p_crq)
+static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
-        struct nm_gate*p_gate = p_crq->p_gate; 
-        struct nm_drv *p_drv  = p_crq->p_drv;
         struct nm_trk *p_trk  = p_crq->p_trk;
-	int err = nm_ibverbs_gate_create(p_crq);
+        struct nm_ibverbs*status = _status;
+
+	int err = nm_ibverbs_gate_create(_status, p_crq);
 	if(err)
-		goto out;
-        struct nm_ibverbs_gate*p_ibverbs_gate = p_gate->p_gate_drv_array[p_drv->id]->info;
-	if(p_ibverbs_gate->sock == -1) {
-		int fd = socket(AF_INET, SOCK_STREAM, 0);
-		assert(fd > -1);
-		p_ibverbs_gate->sock = fd;
-		assert(strlen(p_crq->remote_drv_url) == 12);
-		in_addr_t peer_addr;
-		int peer_port;
-		sscanf(p_crq->remote_drv_url, "%08x%04x", &peer_addr, &peer_port);
-		struct sockaddr_in inaddr = {
-			.sin_family = AF_INET,
-			.sin_port   = peer_port,
-			.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
-		};
-		int rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
-		if(rc) {
-			fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
-			err = -NM_EUNREACH;
-			goto out;
-		}
+	  {
+	    err = -NM_ENOMEM;
+	    goto out;
+	  }
+	if(status->sock == -1) {
+	  int fd = socket(AF_INET, SOCK_STREAM, 0);
+	  assert(fd > -1);
+	  status->sock = fd;
+	  assert(strlen(p_crq->remote_drv_url) == 12);
+	  in_addr_t peer_addr;
+	  int peer_port;
+	  sscanf(p_crq->remote_drv_url, "%08x%04x", &peer_addr, &peer_port);
+	  struct sockaddr_in inaddr = {
+	    .sin_family = AF_INET,
+	    .sin_port   = peer_port,
+	    .sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
+	  };
+	  int rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+	  if(rc) {
+	    fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
+	    err = -NM_EUNREACH;
+	    goto out;
+	  }
 	}
 	
-	err = nm_ibverbs_cnx_create(p_crq);
+	err = nm_ibverbs_cnx_create(_status, p_crq);
 	if(err)
 		goto out;
 
-	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(p_gate, p_drv, p_trk);
-	nm_ibverbs_addr_recv(&p_ibverbs_cnx->remote_addr, p_ibverbs_gate);
-	nm_ibverbs_addr_send(&p_ibverbs_cnx->local_addr,  p_ibverbs_gate);
+	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_trk);
+	nm_ibverbs_addr_recv(_status, &p_ibverbs_cnx->remote_addr);
+	nm_ibverbs_addr_send(_status, &p_ibverbs_cnx->local_addr);
 	nm_ibverbs_addr_unpack(&p_ibverbs_cnx->remote_addr, p_ibverbs_cnx);
-	err = nm_ibverbs_cnx_connect(p_crq);
+	err = nm_ibverbs_cnx_connect(_status, p_crq);
 
 
  out:
 	return err;
 }
 
-static int nm_ibverbs_accept(struct nm_cnx_rq *p_crq)
+static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
-        struct nm_gate	     *p_gate	    = p_crq->p_gate;
-        struct nm_drv	     *p_drv	    = p_crq->p_drv;
-	struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
         struct nm_trk	     *p_trk	    = p_crq->p_trk;
-	int err = nm_ibverbs_gate_create(p_crq);
-	if(err)
-		goto out;
+        struct nm_ibverbs*status = _status;
+        struct nm_ibverbs_drv*p_ibverbs_drv = p_crq->p_drv->priv;
 
-        struct nm_ibverbs_gate*p_ibverbs_gate = p_gate->p_gate_drv_array[p_drv->id]->info;
-	if(p_ibverbs_gate->sock == -1) {
+	int err =  nm_ibverbs_gate_create(_status, p_crq);
+	if(err)
+	  {
+	    err = -NM_ENOMEM;
+	    goto out;
+	  }
+	if(status->sock == -1) {
 		struct sockaddr_in addr;
 		unsigned addr_len = sizeof addr;
 		int fd = accept(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
 		assert(fd > -1);
-		p_ibverbs_gate->sock = fd;
+		status->sock = fd;
 	}
 
-	err = nm_ibverbs_cnx_create(p_crq);
+	err = nm_ibverbs_cnx_create(_status, p_crq);
 	if(err)
 		goto out;
 	
-	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(p_gate, p_drv, p_trk);
-	nm_ibverbs_addr_send(&p_ibverbs_cnx->local_addr,  p_ibverbs_gate);
-	nm_ibverbs_addr_recv(&p_ibverbs_cnx->remote_addr, p_ibverbs_gate);
+	struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_trk);
+	nm_ibverbs_addr_send(_status, &p_ibverbs_cnx->local_addr);
+	nm_ibverbs_addr_recv(_status, &p_ibverbs_cnx->remote_addr);
 	nm_ibverbs_addr_unpack(&p_ibverbs_cnx->remote_addr, p_ibverbs_cnx);
-	err = nm_ibverbs_cnx_connect(p_crq);
+	err = nm_ibverbs_cnx_connect(_status, p_crq);
 
  out:
 	return err;
 }
 
-static int nm_ibverbs_disconnect(struct nm_cnx_rq *p_crq)
+static int nm_ibverbs_disconnect(void*_status, struct nm_cnx_rq *p_crq)
 {
-	int err;
+        int err;
 
 	/* TODO */
 
@@ -1151,9 +1236,9 @@ static inline void nm_ibverbs_spin_wait(volatile int*busy)
 
 static inline void nm_ibverbs_send_flush(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, uint64_t wrid)
 {
-	while(p_ibverbs_cnx->pending.wrids[wrid]) {
-		nm_ibverbs_rdma_poll(p_ibverbs_cnx);
-	}
+  while(p_ibverbs_cnx->pending.wrids[wrid]) {
+    nm_ibverbs_rdma_poll(p_ibverbs_cnx);
+  }
 }
 
 static inline void nm_ibverbs_send_flushn_total(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, int n)
@@ -1363,7 +1448,7 @@ static inline int nm_ibverbs_regrdma_send_done(struct nm_ibverbs_cnx*__restrict_
 
 static inline void nm_ibverbs_regrdma_send_finalize(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
-	nm_ibverbs_send_flush(p_ibverbs_cnx, NM_IBVERBS_WRID_HEADER);
+        nm_ibverbs_send_flush(p_ibverbs_cnx, NM_IBVERBS_WRID_HEADER);
 	TBX_FREE(p_ibverbs_cnx->regrdma.send.cells);
 	p_ibverbs_cnx->regrdma.send.cells = NULL;
 }
@@ -1668,9 +1753,9 @@ static inline int nm_ibverbs_adaptrdma_poll_one(struct nm_ibverbs_cnx*__restrict
 
 /* ** driver I/O functions ********************************* */
 
-static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
-	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(p_pw->p_gate, p_pw->p_drv, p_pw->p_trk);
+	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->p_trk);
 	const struct nm_ibverbs_trk*__restrict p_ibverbs_trk = p_pw->p_trk->priv;
 	int err = NM_ESUCCESS;
 	p_pw->drv_priv = p_ibverbs_cnx;
@@ -1697,11 +1782,11 @@ static int nm_ibverbs_post_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
 		abort();
 		break;
 	}
-	err = nm_ibverbs_poll_send_iov(p_pw);
+	err = nm_ibverbs_poll_send_iov(_status, p_pw);
 	return err;
 }
 
-static int nm_ibverbs_poll_send_iov(struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
 	const struct nm_ibverbs_trk*__restrict p_ibverbs_trk = p_pw->p_trk->priv;
 	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
@@ -1798,64 +1883,38 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
 	return -NM_EUNKNOWN;
 }
 
-static int nm_ibverbs_poll_recv_iov(struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
 	int err = -NM_EAGAIN;
 	if(p_pw->drv_priv) {
-		err = nm_ibverbs_poll_one(p_pw, p_pw->drv_priv);
+	  err = nm_ibverbs_poll_one(p_pw, p_pw->drv_priv);
 	} else {
-		const struct nm_core*p_core = p_pw->p_drv->p_core;
-		int i;
-		for(i = 0; i < p_core->nb_gates; i++) {
-			const struct nm_gate*__restrict__ p_gate = &p_core->gate_array[i];
-			if(p_gate) {
-				struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(p_gate, p_pw->p_drv, p_pw->p_trk);
-				if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status) {
-					p_pw->p_gate = (struct nm_gate*)p_gate;
-					nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
-					err = nm_ibverbs_poll_one(p_pw, p_ibverbs_cnx);
-					goto out;
-				}
-			}
-		}
+	  const struct nm_core*p_core = p_pw->p_drv->p_core;
+	  int i;
+	  for(i = 0; i < p_core->nb_gates; i++) {
+	    const struct nm_gate*__restrict__ p_gate = &p_core->gate_array[i];
+	    if(p_gate) {
+	      struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->p_trk);
+	      if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status) {
+		p_pw->p_gate = (struct nm_gate*)p_gate;
+		nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
+		err = nm_ibverbs_poll_one(p_pw, p_ibverbs_cnx);
+		goto out;
+	      }
+	    }
+	  }
 	}
  out:
 	return err;
 }
 
-static int nm_ibverbs_post_recv_iov(struct nm_pkt_wrap*__restrict__ p_pw)
+static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
 	int err = NM_ESUCCESS;
-	struct nm_ibverbs_gate*__restrict__ p_ibverbs_gate = p_pw->p_gdrv->info;
-	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = &p_ibverbs_gate->cnx_array[p_pw->p_trk->id];
+	struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->p_trk);
 	if(p_pw->p_gate) {
-		nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
+	  nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
 	}
-	err = nm_ibverbs_poll_recv_iov(p_pw);
+	err = nm_ibverbs_poll_recv_iov(_status, p_pw);
 	return err;
 }
-
-/* ********************************************************* */
-
-int nm_ibverbs_load(struct nm_drv_ops *p_ops)
-{
-        p_ops->query		= nm_ibverbs_query        ;
-        p_ops->init		= nm_ibverbs_init         ;
-        p_ops->exit             = nm_ibverbs_exit         ;
-
-        p_ops->open_trk		= nm_ibverbs_open_trk     ;
-        p_ops->close_trk	= nm_ibverbs_close_trk    ;
-
-        p_ops->connect		= nm_ibverbs_connect      ;
-        p_ops->accept		= nm_ibverbs_accept       ;
-        p_ops->disconnect       = nm_ibverbs_disconnect   ;
-
-        p_ops->post_send_iov	= nm_ibverbs_post_send_iov;
-        p_ops->post_recv_iov    = nm_ibverbs_post_recv_iov;
-
-        p_ops->poll_send_iov    = nm_ibverbs_poll_send_iov;
-        p_ops->poll_recv_iov    = nm_ibverbs_poll_recv_iov;
-
-        return NM_ESUCCESS;
-}
-

@@ -16,13 +16,20 @@
 #ifndef _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
 #define _NM_SO_SENDRECV_INTERFACE_PRIVATE_H_
 
+#ifdef PIOMAN
+#include <pioman.h>
+#endif
 struct nm_so_interface {
   struct nm_core *p_core;
   struct nm_so_sched *p_so_sched;
 };
 
 struct nm_so_request_s {
-  intptr_t status;
+#ifdef PIOMAN
+  piom_cond_t *status;
+#else
+  volatile uint8_t *status;
+#endif /* PIOMAN */
   uint8_t seq;
   long gate_id;
 };

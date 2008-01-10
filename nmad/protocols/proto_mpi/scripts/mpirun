@@ -109,6 +109,9 @@ get_machines() {
         echo "....Use the environment variable MPI_NMAD_PROTOCOL to change the selection."
     fi
 
+    # Create driver configuration file
+    $PM2_ROOT/bin/nmad-driver-conf -f --$net
+
     # construct the machine list
     new_list=""
     for i in $host_list2 ; do
@@ -172,6 +175,15 @@ if [ ! -r "$NET_FILE" ] ; then
     echo "Unable to load Network Description File '$NET_FILE'" 1>&2
     echo "Please, set MPI_NET_FILE" 1>&2
     exit 1
+fi
+
+if [ "$MPI_NMAD_STRATEGY" = "" ] ; then
+    STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
+    if [ ! -f $STRAT_DIR/default_strategy.xml ] && [ ! -f $STRAT_DIR/custom_strategy.xml ] ; then
+        $PM2_ROOT/bin/nmad-strategy-conf --default
+    fi
+else
+    $PM2_ROOT/bin/nmad-strategy-conf --$MPI_NMAD_STRATEGY
 fi
 
 # Detect which version of OAR is used

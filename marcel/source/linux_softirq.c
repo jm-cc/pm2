@@ -243,9 +243,11 @@ fastcall TBX_EXTERN void __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 
 	//local_irq_save(flags);
 	ma_local_bh_disable();
+	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
 	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
+	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	//local_irq_restore(flags);
 	ma_local_bh_enable();
 }
@@ -269,8 +271,10 @@ static void tasklet_action(struct ma_softirq_action *a)
 
 	//local_irq_disable();
 	ma_local_bh_disable();
+	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	list = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = NULL;
+	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	//local_irq_enable();
 	ma_local_bh_enable();
 
@@ -278,22 +282,26 @@ static void tasklet_action(struct ma_softirq_action *a)
 		struct ma_tasklet_struct *t = list;
 
 		list = list->next;
-
 		if (ma_tasklet_trylock(t)) {
 			if (!ma_atomic_read(&t->count)) {
 				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED, &t->state))
 					MA_BUG();
 				t->func(t->data);
-				ma_tasklet_unlock(t);
-				continue;
+				if (ma_tasklet_unlock(t))
+					/* Somebody tried to schedule it, try to reschedule it here */
+					ma_tasklet_schedule(t);
+				continue;				
 			}
+			/* here, SCHED is always set so we already know it would return 1 */
 			ma_tasklet_unlock(t);
 		}
 
 		//local_irq_disable();
 		ma_local_bh_disable();
+		ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 		t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 		ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
+		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 		//local_irq_enable();
 		ma_local_bh_enable();
@@ -321,9 +329,12 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED, &t->state))
 					MA_BUG();
 				t->func(t->data);
-				ma_tasklet_unlock(t);
+				if (ma_tasklet_unlock(t))
+					/* Somebody tried to schedule it, try to reschedule it here */
+					ma_tasklet_hi_schedule(t);
 				continue;
 			}
+			/* here, SCHED is always set so we already know it would return 1 */
 			ma_tasklet_unlock(t);
 		}
 

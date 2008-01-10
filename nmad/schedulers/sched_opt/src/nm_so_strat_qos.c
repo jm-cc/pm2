@@ -15,11 +15,11 @@
 
 #ifdef NMAD_QOS
 
-#include <tbx.h>
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
 
+#include "pm2_common.h"
 #include "nm_so_private.h"
 #include "nm_so_strategies/nm_so_strat_qos.h"
 #include "nm_so_pkt_wrap.h"
@@ -33,52 +33,149 @@
 #include "nm_so_strategies/nm_so_strat_qos/nm_so_policy_priority_rate.h"
 #include "nm_log.h"
 
-struct nm_so_strat_qos_gate {
-  /* list of raw outgoing packets */
-  void *policy_priv[NM_SO_NB_POLICIES];
-  uint8_t current_policy;
-  uint8_t round;
-  struct list_head pending_acks[NM_SO_NB_PRIORITIES];
-  p_tbx_memory_t nm_so_ack_mem;
-};
+/* Components structures:
+*/
 
-struct nm_so_strat_qos_ack{
+static int strat_qos_pack(void*, struct nm_gate*, uint8_t, uint8_t, void*, uint32_t);
+static int strat_qos_pack_ctrl(void*, struct nm_gate *, union nm_so_generic_ctrl_header*);
+static int strat_qos_try_and_commit(void*, struct nm_gate*);
+static int strat_qos_rdv_accept(void*, struct nm_gate*, uint8_t*, uint8_t*);
+static int strat_qos_ack_callback(void *, struct nm_so_pkt_wrap *, uint8_t, uint8_t, uint8_t, uint8_t);
+
+static const struct nm_so_strategy_driver nm_so_strat_qos_driver =
+  {
+    .pack           = &strat_qos_pack,
+    .pack_ctrl      = &strat_qos_pack_ctrl,
+    .try            = NULL,
+    .commit         = NULL,
+    .try_and_commit = &strat_qos_try_and_commit,
+    .cancel         = NULL,
+    .ack_callback   = &strat_qos_ack_callback,
+    .rdv_accept     = &strat_qos_rdv_accept
+  };
+
+static void*strat_qos_instanciate(puk_instance_t, puk_context_t);
+static void strat_qos_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_so_strat_qos_adapter_driver =
+  {
+    .instanciate = &strat_qos_instanciate,
+    .destroy     = &strat_qos_destroy
+  };
+
+struct nm_so_strat_qos_ack {
   uint8_t tag;
   struct list_head link;
   uint8_t seq;
   uint8_t track_id;
 };
 
+/** Per-gate status for strat qos instances
+ */
+struct nm_so_strat_qos {
+  /** List of raw outgoing packets. */
+  struct list_head out_list;
+  nm_so_policy* policies[NM_SO_NB_POLICIES];
+  uint8_t policies_weights[NM_SO_NB_POLICIES];
 
-static nm_so_policy* policies[NM_SO_NB_POLICIES];
-static uint8_t policies_weights[NM_SO_NB_POLICIES];
+  void *policy_priv[NM_SO_NB_POLICIES];
+  uint8_t current_policy;
+  uint8_t round;
+  struct list_head pending_acks[NM_SO_NB_PRIORITIES];
+  p_tbx_memory_t nm_so_ack_mem;
+
+  struct nm_so_strat_qos_ack *p_ack;
+};
+
+/** Strategy initialization */
+extern int nm_so_strat_qos_init(void)
+{
+  puk_adapter_declare("Nm_strategy_qos",
+		      puk_adapter_provides("PadicoAdapter", &nm_so_strat_qos_adapter_driver),
+		      puk_adapter_provides("NmStrategy", &nm_so_strat_qos_driver));
+
+  return NM_ESUCCESS;
+}
+
+/** Initialize the gate storage for qos strategy.
+ */
+static void*strat_qos_instanciate(puk_instance_t ai, puk_context_t context)
+{
+  struct nm_so_strat_qos*status = TBX_MALLOC(sizeof(struct nm_so_strat_qos));
+  int i;
+
+  INIT_LIST_HEAD(&status->out_list);
+
+  NM_LOGF("[loading strategy: <qos>]");
+
+  status->policies[NM_SO_POLICY_FIFO] = &nm_so_policy_fifo;
+  status->policies_weights[NM_SO_POLICY_FIFO] = 1;
+  status->policies[NM_SO_POLICY_LATENCY] = &nm_so_policy_latency;
+  status->policies_weights[NM_SO_POLICY_LATENCY] = 1;
+  status->policies[NM_SO_POLICY_RATE] = &nm_so_policy_rate;
+  status->policies_weights[NM_SO_POLICY_RATE] = 1;
+  status->policies[NM_SO_POLICY_PRIORITY] = &nm_so_policy_priority;
+  status->policies_weights[NM_SO_POLICY_PRIORITY] = 1;
+  status->policies[NM_SO_POLICY_PRIORITY_LATENCY] = &nm_so_policy_priority_latency;
+  status->policies_weights[NM_SO_POLICY_PRIORITY_LATENCY] = 1;
+  status->policies[NM_SO_POLICY_PRIORITY_RATE] = &nm_so_policy_priority_rate;
+  status->policies_weights[NM_SO_POLICY_PRIORITY_RATE] = 1;
+
+  for(i = 0; i < NM_SO_NB_POLICIES; i++)
+    status->policies[i]->init_gate(&status->policy_priv[i]);
+
+  status->current_policy = 0;
+  status->round = status->policies_weights[0];
+
+  for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
+    INIT_LIST_HEAD(&status->pending_acks[i]);
+
+  tbx_malloc_init(&status->nm_so_ack_mem,
+		  sizeof(struct nm_so_strat_qos_ack),
+		  16, "nmad/.../sched_opt/nm_so_strat_qos/ack");
+
+  return (void*)status;
+}
+
+/** Cleanup the gate storage for aggreg strategy.
+ */
+static void strat_qos_destroy(void *_status)
+{
+  struct nm_so_strat_qos *status = _status;
+  uint8_t i;
+
+  for(i = 0; i < NM_SO_NB_POLICIES; i++)
+    status->policies[i]->exit_gate(&status->policy_priv[i]);
+
+  tbx_malloc_clean(status->nm_so_ack_mem);
+
+  TBX_FREE(status);
+}
 
 /* Add a new control "header" to the flow of outgoing packets */
-static int pack_ctrl(struct nm_gate *p_gate,
-		     union nm_so_generic_ctrl_header *p_ctrl)
+static int strat_qos_pack_ctrl(void*_status,
+                               struct nm_gate *p_gate,
+                               union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_qos_gate *p_so_sq_gate
-    = (struct nm_so_strat_qos_gate *)p_so_gate->strat_priv;
-  int err;
+  struct nm_so_strat_qos *status = _status;
   uint8_t tag = p_ctrl->r.tag_id - 128;
   int policy = nm_so_get_policy(tag);
+  int err;
 
-  err = policies[policy]->pack_ctrl(p_so_sq_gate->policy_priv[policy],
-				    p_ctrl);
+  err = status->policies[policy]->pack_ctrl(status->policy_priv[policy],
+                                            p_ctrl);
 
   return err;
 }
 
 /* Handle the arrival of a new packet. The strategy may already apply
    some optimizations at this point */
-static int pack(struct nm_gate *p_gate,
-		uint8_t tag, uint8_t seq,
-		void *data, uint32_t len)
+static int strat_qos_pack(void*_status,
+                          struct nm_gate *p_gate,
+                          uint8_t tag, uint8_t seq,
+                          void *data, uint32_t len)
 {
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
-  struct nm_so_strat_qos_gate *p_so_sq_gate
-    = (struct nm_so_strat_qos_gate *)p_so_gate->strat_priv;
+  struct nm_so_strat_qos *status = _status;
   int err;
   int policy;
   static int i = 0;
@@ -86,37 +183,37 @@ static int pack(struct nm_gate *p_gate,
 
   policy = nm_so_get_policy(tag);
 
-  err = policies[policy]->pack(p_gate, p_so_sq_gate->policy_priv[policy],
-			       tag, seq, data, len);
+  err = status->policies[policy]->pack(p_gate, status->policy_priv[policy],
+                                       tag, seq, data, len);
 
   return err;
 }
 
-static int get_next_busy_policy(struct nm_so_strat_qos_gate *p_so_sq_gate)
+static int get_next_busy_policy(struct nm_so_strat_qos *status)
 {
   uint8_t policy, round, i;
 
-  policy = p_so_sq_gate->current_policy;
-  round = p_so_sq_gate->round;
+  policy = status->current_policy;
+  round = status->round;
 
   if(round == 0)
     {
       policy = (policy + 1) % NM_SO_NB_POLICIES;
-      round = policies_weights[policy];
+      round = status->policies_weights[policy];
     }
 
   for(i = 0; i < NM_SO_NB_POLICIES; i++)
     {
       round--;
-      if(policies[policy]->busy(p_so_sq_gate->policy_priv[policy]) > 0)
+      if(status->policies[policy]->busy(status->policy_priv[policy]) > 0)
 	{
-	  p_so_sq_gate->round = round;
-	  p_so_sq_gate->current_policy = policy;
+	  status->round = round;
+	  status->current_policy = policy;
 	  return policy;
 	}
 
       policy = (policy + 1) % NM_SO_NB_POLICIES;
-      round = policies_weights[policy];
+      round = status->policies_weights[policy];
 
     }
 
@@ -126,11 +223,11 @@ static int get_next_busy_policy(struct nm_so_strat_qos_gate *p_so_sq_gate)
 
 /* Compute and apply the best possible packet rearrangement, then
    return next packet to send */
-static int try_and_commit(struct nm_gate *p_gate)
+static int strat_qos_try_and_commit(void*_status,
+                                    struct nm_gate *p_gate)
 {
+  struct nm_so_strat_qos *status = _status;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_qos_gate *p_so_sq_gate
-    = (struct nm_so_strat_qos_gate *)p_so_gate->strat_priv;
   int err = NM_ESUCCESS;
   uint8_t policy;
 
@@ -139,42 +236,22 @@ static int try_and_commit(struct nm_gate *p_gate)
     /* We're done */
     goto out;
 
-  if((policy = get_next_busy_policy(p_so_sq_gate)) == NM_SO_POLICY_UNDEFINED)
+  if((policy = get_next_busy_policy(status)) == NM_SO_POLICY_UNDEFINED)
     /* No data available */
     goto out;
 
-  err =
-    policies[policy]->try_and_commit(p_gate,
-				     p_so_sq_gate->policy_priv[policy]);
+  err = status->policies[policy]->try_and_commit(p_gate,
+                                                 status->policy_priv[policy]);
  out:
   return err;
 }
 
-/* Initialization */
-static int init(void)
-{
-  printf("[loading strategy: <QoS>]\n");
-  policies[NM_SO_POLICY_FIFO] = &nm_so_policy_fifo;
-  policies_weights[NM_SO_POLICY_FIFO] = 1;
-  policies[NM_SO_POLICY_LATENCY] = &nm_so_policy_latency;
-  policies_weights[NM_SO_POLICY_LATENCY] = 1;
-  policies[NM_SO_POLICY_RATE] = &nm_so_policy_rate;
-  policies_weights[NM_SO_POLICY_RATE] = 1;
-  policies[NM_SO_POLICY_PRIORITY] = &nm_so_policy_priority;
-  policies_weights[NM_SO_POLICY_PRIORITY] = 1;
-  policies[NM_SO_POLICY_PRIORITY_LATENCY] = &nm_so_policy_priority_latency;
-  policies_weights[NM_SO_POLICY_PRIORITY_LATENCY] = 1;
-  policies[NM_SO_POLICY_PRIORITY_RATE] = &nm_so_policy_priority_rate;
-  policies_weights[NM_SO_POLICY_PRIORITY_RATE] = 1;
-
-  return NM_ESUCCESS;
-}
-
 /* Warning: drv_id and trk_id are IN/OUT parameters. They initially
    hold values "suggested" by the caller. */
-static int rdv_accept(struct nm_gate *p_gate,
-		      uint8_t *drv_id,
-		      uint8_t *trk_id)
+static int strat_qos_rdv_accept(void *_status,
+                                struct nm_gate *p_gate,
+				uint8_t *drv_id,
+				uint8_t *trk_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
@@ -186,16 +263,15 @@ static int rdv_accept(struct nm_gate *p_gate,
     return -NM_EAGAIN;
 }
 
-static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
-			uint8_t tag_id, uint8_t seq,
-			uint8_t track_id, uint8_t finished)
+static int strat_qos_ack_callback(void *_status,
+                                  struct nm_so_pkt_wrap *p_so_pw,
+                                  uint8_t tag_id, uint8_t seq,
+                                  uint8_t track_id, uint8_t finished)
 {
+  struct nm_so_strat_qos *status = _status;
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_strat_qos_gate *p_so_sq_gate
-    = (struct nm_so_strat_qos_gate *)p_so_gate->strat_priv;
   struct nm_so_pkt_wrap *p_so_large_pw;
-  struct nm_so_strat_qos_ack *p_so_ack;
   uint8_t tag = tag_id - 128;
   uint8_t i;
 
@@ -203,23 +279,23 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
     {
       uint8_t priority = nm_so_get_priority(tag);
 
-      p_so_ack = tbx_malloc(p_so_sq_gate->nm_so_ack_mem);
+      status->p_ack = tbx_malloc(status->nm_so_ack_mem);
 
-      p_so_ack->tag = tag;
-      p_so_ack->seq = seq;
-      p_so_ack->track_id = track_id;
+      status->p_ack->tag = tag;
+      status->p_ack->seq = seq;
+      status->p_ack->track_id = track_id;
 
-      list_add_tail(&p_so_ack->link, &p_so_sq_gate->pending_acks[priority]);
+      list_add_tail(&status->p_ack->link, &status->pending_acks[priority]);
     }
   else
     {
       for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
 	{
-	  list_for_each_entry(p_so_ack, &p_so_sq_gate->pending_acks[i], link)
+	  list_for_each_entry(status->p_ack, &status->pending_acks[i], link)
 	    {
-	      tag = p_so_ack->tag;
-	      seq = p_so_ack->seq;
-	      track_id = p_so_ack->track_id;
+	      tag = status->p_ack->tag;
+	      seq = status->p_ack->seq;
+	      track_id = status->p_ack->track_id;
 
 	      NM_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
@@ -242,68 +318,12 @@ static int ack_callback(struct nm_so_pkt_wrap *p_so_pw,
 	      TBX_FAILURE("PANIC!\n");
 
 	    next:
-	      list_del(&p_so_ack->link);
-	      tbx_free(p_so_sq_gate->nm_so_ack_mem, p_so_ack);
+	      list_del(&status->p_ack->link);
+	      tbx_free(status->nm_so_ack_mem, status->p_ack);
 	    }
 	}
     }
   return NM_SO_HEADER_MARK_READ;
 }
-
-static int init_gate(struct nm_gate *p_gate)
-{
-  uint8_t i;
-  struct nm_so_strat_qos_gate *priv
-    = TBX_MALLOC(sizeof(struct nm_so_strat_qos_gate));
-
-  for(i = 0; i < NM_SO_NB_POLICIES; i++)
-    policies[i]->init_gate(&priv->policy_priv[i]);
-
-  priv->current_policy = 0;
-  priv->round = policies_weights[0];
-
-  for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
-    INIT_LIST_HEAD(&priv->pending_acks[i]);
-
-  tbx_malloc_init(&priv->nm_so_ack_mem,
-		  sizeof(struct nm_so_strat_qos_ack),
-		  16, "nmad/.../sched_opt/nm_so_strat_qos/ack");
-
-  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = priv;
-
-  return NM_ESUCCESS;
-}
-
-static int exit_gate(struct nm_gate *p_gate)
-{
-  uint8_t i;
-  //  char host_name[30];
-  struct nm_so_strat_qos_gate *priv = ((struct nm_so_gate *)p_gate->sch_private)->strat_priv;
-
-  for(i = 0; i < NM_SO_NB_POLICIES; i++)
-    policies[i]->exit_gate(&priv->policy_priv[i]);
-
-  tbx_malloc_clean(priv->nm_so_ack_mem);
-
-  TBX_FREE(priv);
-
-  ((struct nm_so_gate *)p_gate->sch_private)->strat_priv = NULL;
-  return NM_ESUCCESS;
-}
-
-nm_so_strategy nm_so_strat_qos = {
-  .init = init,
-  .init_gate = init_gate,
-  .exit_gate = exit_gate,
-  .pack = pack,
-  .pack_ctrl = pack_ctrl,
-  .try = NULL,
-  .commit = NULL,
-  .try_and_commit = try_and_commit,
-  .cancel = NULL,
-  .rdv_accept = rdv_accept,
-  .ack_callback = ack_callback,
-  .priv = NULL,
-};
 
 #endif /* NMAD_QOS */

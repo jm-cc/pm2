@@ -156,8 +156,13 @@ main(int	  argc,
                   bw_million_byte = len * (iterations / (sum / 2));
                   bw_mbyte        = bw_million_byte / 1.048576;
 
+#ifdef MARCEL
+		  printf("%d\t%lf\t%8.3f\t%8.3f\tmarcel\n",
+                         len, lat, bw_million_byte, bw_mbyte);
+#else
 		  printf("%d\t%lf\t%8.3f\t%8.3f\n",
                          len, lat, bw_million_byte, bw_mbyte);
+#endif
 		}
         }
 

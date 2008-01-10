@@ -16,39 +16,36 @@
 #ifndef NM_DRV_H
 #define NM_DRV_H
 
-#include "nm_drv_ops.h"
-#include "nm_drv_cap.h"
+#include <Padico/Puk.h>
+#include "nm_public.h"
 
-struct nm_core;
+#ifdef PIOMAN
+#include "pioman.h"
+#endif
+struct nm_cnx_rq;
+struct nm_drv;
+struct nm_pkt_wrap;
 struct nm_trk;
+struct nm_trk_rq;
+struct nm_core;
 
 /** Driver.
  */
 struct nm_drv {
 
+        /* Assembly associated to the driver
+	 */
+        puk_adapter_t           assembly;
+
+        const struct nm_drv_iface_s*driver;   //Warning, use only if you really don't need instance
+
         /* NM core object.
          */
-        struct nm_core		 *p_core;
+        struct nm_core          *p_core;
 
         /* Driver id.
          */
         uint8_t			  id;
-
-        /** Driver name.
-         */
-        char			 *name;
-
-        /** Commands.
-         */
-        struct nm_drv_ops	  ops;
-
-        /** Capabilities.
-         */
-        struct nm_drv_cap	  cap;
-
-        /** Number of gates using this driver.
-         */
-        uint8_t			  nb_gates;
 
         /** Number of tracks opened on this driver.
          */
@@ -58,17 +55,61 @@ struct nm_drv {
          */
         struct nm_trk		**p_track_array;
 
-        /** Url to connect to this driver.
-         */
-        char			 *url;
-
         /** Cumulated number of pending out requests on this driver.
          */
         uint8_t			 out_req_nb;
 
-        /** Private data.
+        /** Private structure of the driver.
          */
-        void			 *priv;
+        void *priv;
+
+#ifdef PIOMAN
+	struct piom_server            server;
+#endif
 };
+
+/* Driver for 'NewMad_Driver' component interface
+ */
+struct nm_drv_iface_s
+{
+  int (*query)     (struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+  int (*init)      (struct nm_drv *p_drv);
+
+  int (*open_trk)  (struct nm_trk_rq*p_trk_rq);
+  int (*close_trk) (struct nm_trk *p_trk);
+
+  int (*connect)   (void*_status, struct nm_cnx_rq *p_crq);
+  int (*accept)    (void*_status, struct nm_cnx_rq *p_crq);
+  int (*disconnect)(void*_status, struct nm_cnx_rq *p_crq);
+
+  int (*post_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*post_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+
+  int (*poll_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+  int (*poll_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
+
+  int (*poll_send_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
+  int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
+
+  int (*release_req)      (void*_status, struct nm_pkt_wrap *p_pw);
+
+  const char*       (*get_driver_url)(struct nm_drv *p_drv);
+  const char*       (*get_track_url)(void*_status);
+  struct nm_drv_cap*(*get_capabilities)(struct nm_drv *p_drv);
+  int (*set_capabilities)(struct nm_drv *p_drv, struct nm_drv_cap *);
+
+  int (*post_recv_iov_all)(struct nm_pkt_wrap *p_pw);
+  int (*poll_recv_iov_all)(struct nm_pkt_wrap *p_pw);
+
+#if( defined(PIOMAN) && defined(MA__LWPS))
+  int (*wait_recv_iov)(void*_status, struct nm_pkt_wrap*p_pw);
+  int (*wait_send_iov)(void*_status, struct nm_pkt_wrap*p_pw);
+
+  int (*wait_send_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
+  int (*wait_recv_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
+#endif
+};
+
+PUK_IFACE_TYPE(NewMad_Driver, struct nm_drv_iface_s);
 
 #endif /* NM_DRV_H */

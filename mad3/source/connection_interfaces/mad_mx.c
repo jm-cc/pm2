@@ -38,7 +38,12 @@
  * macros
  * ------
  */
-#ifdef MARCEL
+#ifdef PIOMAN
+#include "pioman.h"
+#define MAD_MX_POLLING_MODE \
+     (PIOM_POLL_AT_TIMER_SIG | PIOM_POLL_AT_YIELD | PIOM_POLL_AT_IDLE)
+
+#elif defined(MARCEL)
 #define MAD_MX_POLLING_MODE \
     (MARCEL_EV_POLL_AT_TIMER_SIG | MARCEL_EV_POLL_AT_YIELD | MARCEL_EV_POLL_AT_IDLE)
 #endif /* MARCEL */
@@ -80,7 +85,20 @@ typedef struct s_mad_mx_link_specific
         int dummy;
 } mad_mx_link_specific_t, *p_mad_mx_link_specific_t;
 
-#ifdef MARCEL
+#ifdef PIOMAN
+typedef struct s_mad_mx_ev {
+	struct piom_req         inst;
+	mx_endpoint_t          endpoint;
+	mx_request_t          *p_request;
+	mx_return_t           *p_rc;
+	mx_status_t           *p_status;
+	uint32_t              *p_result;
+} mad_mx_ev_t, *p_mad_mx_ev_t;
+
+static struct piom_server mad_mx_ev_server = PIOM_SERVER_INIT(mad_mx_ev_server, "Mad/MX I/O");
+static tbx_bool_t mad_mx_ev_server_started = tbx_false;
+
+#elif defined(MARCEL)
 typedef struct s_mad_mx_ev {
 	struct marcel_ev_req	 inst;
         mx_endpoint_t		 endpoint;
@@ -89,9 +107,7 @@ typedef struct s_mad_mx_ev {
         mx_status_t		*p_status;
         uint32_t		*p_result;
 } mad_mx_ev_t, *p_mad_mx_ev_t;
-#endif /* MARCEL */
 
-#ifdef MARCEL
 /* With Marcel/Newsched, the locking is now done on the event server.
  * Since locking may occur outside Madeleine's context in malloc
  * handlers, the server pointer must be global
@@ -213,7 +229,28 @@ mad_mx_startup_info(void) {
         LOG_OUT();
 }
 
-#ifdef MARCEL
+#ifdef PIOMAN
+static
+int
+mad_mx_do_poll(piom_server_t	server,
+               piom_op_t		_op,
+               piom_req_t		req,
+               int			nb_ev,
+               int			option) {
+        p_mad_mx_ev_t	p_ev	= NULL;
+
+        LOG_IN();
+	p_ev = struct_up(req, mad_mx_ev_t, inst);
+
+        *(p_ev->p_rc)	= mx_test(p_ev->endpoint, p_ev->p_request, p_ev->p_status, p_ev->p_result);
+        if (!(*(p_ev->p_rc) == MX_SUCCESS && !*(p_ev->p_result))) {
+                piom_req_success(&(p_ev->inst));
+        }
+        LOG_OUT();
+
+        return 0;
+}
+#elif defined(MARCEL)
 static
 int
 mad_mx_do_poll(marcel_ev_server_t	server,
@@ -236,6 +273,28 @@ mad_mx_do_poll(marcel_ev_server_t	server,
 }
 #endif /* MARCEL */
 
+
+#if( defined(PIOMAN) && defined(MA__LWPS))
+
+static int mad_mx_blockone(piom_server_t server,
+			   piom_op_t _op,
+			   piom_req_t req, int nb_ev, int option)
+{                             // a preciser
+
+	p_mad_mx_ev_t   p_ev    =  struct_up(req, mad_mx_ev_t, inst);
+	if(p_ev->inst.state & PIOM_STATE_OCCURED)
+		return 0;
+
+	*(p_ev->p_rc)   = mx_wait(p_ev->endpoint, p_ev->p_request,
+				  MX_INFINITE, p_ev->p_status, p_ev->p_result);
+
+	if (!(*(p_ev->p_rc) == MX_SUCCESS && !*(p_ev->p_result)))
+		piom_req_success(&(p_ev->inst));
+
+	return 0;
+}
+#endif                                // MA__LWPS
+
 static void
 mad_mx_blocking_test(p_mad_channel_t	 ch,
                      mx_request_t	*p_request,
@@ -254,7 +313,19 @@ mad_mx_blocking_test(p_mad_channel_t	 ch,
                 p_status = &status;
         }
 
-#ifdef MARCEL
+#ifdef PIOMAN
+        struct piom_wait             ev_w;
+	mad_mx_ev_t                   ev     =
+		{
+			.endpoint    =  ep,
+			.p_request   =  p_request,
+			.p_rc                = &rc,
+			.p_status    =  p_status,
+			.p_result    = &result
+		};
+	piom_wait(&mad_mx_ev_server, &(ev.inst), &ev_w, 0);
+
+#elif defined(MARCEL)
  {
          struct marcel_ev_wait		 ev_w;
          mad_mx_ev_t 			 ev	=
@@ -412,7 +483,24 @@ mad_mx_register(p_mad_driver_interface_t interface) {
         interface->send_buffer_group          = mad_mx_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_mx_receive_sub_buffer_group;
 
-#ifdef MARCEL
+#ifdef PIOMAN
+
+#ifdef MA__LWPS
+	/*  Lancement de 4 LWP de communication */
+	piom_server_start_lwp(&mad_mx_ev_server, 4);
+#endif /* MA__LWPS */
+
+	piom_pcallback_t callback={.func=mad_mx_do_poll, .speed=PIOM_CALLBACK_FAST}; /* TODO : PIOM_CALLBACK_IMMEDIATE ? */
+
+	piom_server_set_poll_settings(&mad_mx_ev_server, MAD_MX_POLLING_MODE, 1, -1);
+	piom_server_add_callback(&mad_mx_ev_server, PIOM_FUNCTYPE_POLL_POLLONE, callback);
+
+#ifdef MA__LWPS
+	callback.func=mad_mx_blockone;
+	callback.speed=PIOM_CALLBACK_FAST;
+	piom_server_add_callback(&mad_mx_ev_server, PIOM_FUNCTYPE_BLOCK_WAITONE, callback);
+#endif /* MA__LWPS */
+#elif defined(MARCEL)
         marcel_ev_server_set_poll_settings(&mad_mx_ev_server, MAD_MX_POLLING_MODE, 1);
         marcel_ev_server_add_callback(&mad_mx_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_mx_do_poll);
 #endif /* MARCEL */
@@ -449,7 +537,12 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         mad_mx_startup_info();
 #endif // MX_NO_STARTUP_INFO
 
-#ifdef MARCEL
+#ifdef PIOMAN
+        if (!mad_mx_ev_server_started) {
+                piom_server_start(&mad_mx_ev_server);
+                mad_mx_ev_server_started = tbx_true;
+        }
+#elif defined(MARCEL)
         if (!mad_mx_ev_server_started) {
                 marcel_ev_server_start(&mad_mx_ev_server);
                 mad_mx_ev_server_started = tbx_true;
@@ -742,7 +835,6 @@ mad_mx_receive_message(p_mad_channel_t ch) {
 
         is-> first_incoming_packet_flag		= tbx_true;
         LOG_OUT();
-
         return in;
 }
 

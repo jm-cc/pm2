@@ -21,6 +21,12 @@ LIBDOC=newmadeleine
 MOD_SRC := $(PM2_ROOT)/nmad/core/src
 include $(PM2_ROOT)/make/libs-vars.mak
 
+# Inclusion du cache specifique a madeleine
+#---------------------------------------------------------------------
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
+-include $(PM2_MAK_DIR)/nmad-specific.mak
+endif
+
 # Gestion du scheduler : prise en compte de fichiers sources supplémentaires
 #---------------------------------------------------------------------
 MOD_SRC += $(foreach SCHED, $(NMAD_SCHEDULERS), $(PM2_ROOT)/nmad/schedulers/$(SCHED)/src)
@@ -44,3 +50,11 @@ MOD_SRC += $(PM2_ROOT)/nmad/drivers/sampling/src
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
+
+# Construction du cache specifique a NewMadeleine 
+#---------------------------------------------------------------------
+$(PM2_MAK_DIR)/nmad-specific.mak: $(MOD_STAMP_FLAVOR)
+	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(MODULE)`;\
+	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
+	echo "NMAD_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
+	fi;

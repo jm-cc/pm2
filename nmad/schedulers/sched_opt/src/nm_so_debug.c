@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "tbx.h"
+#include "pm2_common.h"
 #include "nm_so_debug.h"
 
 debug_type_t debug_nm_so_trace=NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");

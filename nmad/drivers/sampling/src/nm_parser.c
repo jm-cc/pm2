@@ -20,9 +20,8 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include <tbx.h>
-#include <nm_public.h>
-#include "nm_drv_ops.h"
+#include "pm2_common.h"
+#include "nm_public.h"
 #include "nm_drv_cap.h"
 #include "nm_drv.h"
 #include "nm_parser.h"
@@ -39,6 +38,7 @@ nm_parse_sampling(struct nm_drv *drv, char *drv_name){
   char *s = NULL;
   int nb_entries = 0;
   int cur_entry = 0;
+  struct nm_drv_cap caps;
 
   char *starting_path = getenv("PM2_ROOT");
   sampling_file_path_len += strlen(starting_path);
@@ -97,9 +97,9 @@ nm_parse_sampling(struct nm_drv *drv, char *drv_name){
     if(isdigit(str[0]))
       nb_entries++;
   }
-  drv->cap.nb_samplings = nb_entries;
+  caps.nb_samplings = nb_entries;
 
-  drv->cap.network_sampling_bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
+  caps.network_sampling_bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
 
   /* process the sampling file */
   fseek(sampling_file, 0L, SEEK_SET);
@@ -113,7 +113,7 @@ nm_parse_sampling(struct nm_drv *drv, char *drv_name){
 
     s = strchr(str, '\t') + 1;
 
-    drv->cap.network_sampling_bandwidth[cur_entry++] = atof(s);
+    caps.network_sampling_bandwidth[cur_entry++] = atof(s);
   }
 
   fclose(sampling_file);

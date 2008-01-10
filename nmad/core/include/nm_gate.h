@@ -16,6 +16,7 @@
 #ifndef NM_GATE_H
 #define NM_GATE_H
 
+#include "nm_drv.h"
 #include "nm_public.h"
 
 struct nm_drv;
@@ -52,13 +53,13 @@ struct nm_gate_drv {
 
         /** Driver.
          */
-        struct nm_drv		 *p_drv;
+        struct nm_drv           *p_drv;
+        struct puk_receptacle_NewMad_Driver_s receptacle;
+        puk_instance_t instance;
 
         /** Array of gate track struct.
          */
         struct nm_gate_trk	**p_gate_trk_array;
-
-        void			 *info;
 
         /** Cumulated number of pending out requests on this driver for
            this gate.
@@ -79,7 +80,6 @@ struct nm_gate {
         uint8_t			  id;
 
 
-
         /*
          * implementation dependent fields *
          */
@@ -93,13 +93,11 @@ struct nm_gate {
         void *sch_private;
 
 
-
         /*
          * connectivity structures *
          */
 
         /** Gate data for each driver.
-
          */
         struct nm_gate_drv	 *p_gate_drv_array[NUMBER_OF_GATES];
 
@@ -128,7 +126,6 @@ struct nm_gate {
 
         /** number of outgoing active rq */
         uint16_t out_req_nb;
-
 
 
         /*

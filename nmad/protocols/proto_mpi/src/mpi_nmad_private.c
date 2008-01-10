@@ -19,7 +19,6 @@
  */
 
 #include <stdint.h>
-#include "madeleine.h"
 #include "mpi.h"
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
@@ -32,24 +31,35 @@ debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log")
 #endif /* NMAD_DEBUG */
 
 int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
+#ifdef CONFIG_PADICO
+		       struct puk_receptacle_NewMad_Launcher_s*r
+#else /* CONFIG_PADICO */
 		       int global_size,
 		       int process_rank,
 		       p_mad_madeleine_t madeleine,
                        struct nm_so_interface *_p_so_sr_if,
-		       nm_so_pack_interface _p_so_pack_if) {
+		       nm_so_pack_interface _p_so_pack_if
+#endif /* CONFIG_PADICO */
+		       ) {
   int i;
   int                              dest;
+#ifdef CONFIG_PADICO
+  const int global_size  = (*r->driver->get_size)(r->_status);
+  const int process_rank = (*r->driver->get_rank)(r->_status);
+  mpir_internal_data->p_so_sr_if   = (*r->driver->get_so_sr_if)(r->_status);
+  mpir_internal_data->p_so_pack_if = (*r->driver->get_so_pack_if)(r->_status);
+#else /* CONFIG_PADICO */
   int                              source;
   p_mad_channel_t                  channel    = NULL;
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
-
   mpir_internal_data->nb_outgoing_msg = 0;
   mpir_internal_data->nb_incoming_msg = 0;
   
   /** Set the NewMadeleine interfaces */
   mpir_internal_data->p_so_sr_if = _p_so_sr_if;
   mpir_internal_data->p_so_pack_if = _p_so_pack_if;
+#endif /* CONFIG_PADICO */
 
   /** Initialise the basic datatypes */
   mpir_internal_data->datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
@@ -157,6 +167,22 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->out_dest = malloc(NUMBER_OF_GATES * sizeof(int));
   mpir_internal_data->in_dest = malloc(NUMBER_OF_GATES * sizeof(int));
 
+#ifdef CONFIG_PADICO
+
+  (*r->driver->get_gate_ids)(r->_status, &mpir_internal_data->out_gate_id[0]);
+  for(dest = 0; dest < global_size; dest++)
+    {
+      const nm_gate_id_t gate_id = mpir_internal_data->out_gate_id[dest];
+      mpir_internal_data->in_gate_id[dest] = gate_id;
+      if(gate_id >= 0)
+	{
+	  mpir_internal_data->out_dest[gate_id] = dest;
+	  mpir_internal_data->in_dest[gate_id] = dest;
+	}
+    }
+
+#else /* CONFIG_PADICO */
+
   /** Get a reference to the channel structure */
   channel = tbx_htable_get(madeleine->channel_htable, "pm2");
 
@@ -198,6 +224,8 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
       mpir_internal_data->in_dest[cs->gate_id] = source;
     }
   }
+
+#endif /* CONFIG_PADICO */
 
   return MPI_SUCCESS;
 }

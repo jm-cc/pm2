@@ -15,9 +15,9 @@
  */
 
 #include "marcel.h"
-#ifdef XPAULETTE
-#include "xpaul.h"
-#endif /* XPAULETTE */
+#ifdef PIOMAN
+#include "pioman.h"
+#endif /* PIOMAN */
 #include "tbx_compiler.h"
 #include <signal.h>
 #include <sys/time.h>
@@ -164,6 +164,13 @@ unsigned marcel_per_lwp_nbthreads()
 	vp = GET_LWP(MARCEL_SELF)->vp_level;
 	num += ma_topo_vpdata(vp, nb_tasks);
 	return num + 1;		/* + 1 pour le main */
+}
+
+unsigned marcel_nbthreads_per_lwp(struct marcel_topo_level * vp)
+{
+	unsigned num = 0;
+	num += ma_topo_vpdata(vp, nb_tasks);
+	return num;		/* + 1 pour le main */
 }
 
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
@@ -449,10 +456,10 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		//PROF_EVENT(idle_tested_need_resched);
 
 		/* no more threads, now poll */
-#ifdef XPAULETTE
-		dopoll = xpaul_polling_is_required(XPAUL_POLL_AT_IDLE);
+#ifdef PIOMAN
+		dopoll = piom_polling_is_required(PIOM_POLL_AT_IDLE);
 		if (dopoll) {
-		        __xpaul_check_polling(XPAUL_POLL_AT_IDLE);
+		        __piom_check_polling(PIOM_POLL_AT_IDLE);
 		}
 #else
 		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);

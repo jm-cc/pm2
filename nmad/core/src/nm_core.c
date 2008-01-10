@@ -13,6 +13,12 @@
  * General Public License for more details.
  */
 
+#ifdef PIOMAN
+#include "nm_piom.h"
+#endif
+#ifdef CONFIG_PADICO
+#include <Padico/Puk.h>
+#endif
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -26,12 +32,14 @@
 #include "nm_core.h"
 #include "nm_core_inline.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_trk_rq.h"
 #include "nm_sched.h"
 #include "nm_proto.h"
 #include "nm_cnx_rq.h"
 #include <nm_public.h>
+#include <nm_drivers.h>
 #include "nm_log.h"
 
 /* Macros
@@ -44,6 +52,20 @@
 p_tbx_memory_t nm_core_pw_mem	= NULL;
 p_tbx_memory_t nm_core_iov1_mem	= NULL;
 p_tbx_memory_t nm_core_iov2_mem	= NULL;
+
+#ifdef PIOMAN
+static piom_spinlock_t piom_big_lock;
+
+void 
+nmad_lock() {
+	piom_spin_lock(&piom_big_lock);
+}
+
+void 
+nmad_unlock() {
+	piom_spin_unlock(&piom_big_lock);
+}
+#endif
 
 /* memory management part						*/
 
@@ -96,7 +118,7 @@ nm_core_trk_alloc(struct nm_core	 * p_core,
 	FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_INPUT_LIST, p_drv->id, p_trk->id, p_drv->nb_tracks);
 	FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv->id, p_trk->id, p_drv->nb_tracks);
 
-        err = p_drv->ops.open_trk(p_trk_rq);
+        err = p_drv->driver->open_trk(p_trk_rq);
         if (err != NM_ESUCCESS) {
                 goto out_free;
         }
@@ -119,7 +141,7 @@ nm_core_trk_free(struct nm_core		*p_core TBX_UNUSED,
 	int	err;
 
         p_drv = p_trk->p_drv;
-        err = p_drv->ops.close_trk(p_trk);
+        err = p_drv->driver->close_trk(p_trk);
 
         TBX_FREE(p_trk);
         p_trk = NULL;
@@ -263,6 +285,130 @@ nm_core_proto_init(struct nm_core	 *p_core,
         return err;
 }
 
+#ifdef PIOMAN
+int nm_piom_core_poll(piom_server_t            server,
+		  piom_op_t                _op,
+		  piom_req_t               req, 
+		  int                       nb_ev, 
+		  int                       option) {
+	struct nm_core *p_core=struct_up(server, struct nm_core, server);
+
+	nmad_lock();
+	nm_piom_post_all(p_core);
+	nmad_unlock();
+	
+	return 0;
+}
+
+/* Initialisation de PIOMan  */
+int 
+nm_core_init_piom(struct nm_core *p_core){
+	LOG_IN();
+
+	piom_spin_lock_init(&piom_big_lock);
+	return 0;
+}
+
+/* Initialisation du serveur utilisé pour les drivers */
+int
+nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {
+	LOG_IN();
+	piom_server_init(&p_drv->server, "NMad IO Server");
+
+#ifdef  MARCEL_REMOTE_TASKLETS
+	marcel_vpmask_t mask;
+	marcel_vpmask_only_vp(&mask, 0);
+	set_vpmask(&p_drv->server.poll_tasklet, &mask);
+#endif
+
+	piom_server_set_poll_settings(&p_drv->server,
+				       PIOM_POLL_AT_TIMER_SIG
+				       | PIOM_POLL_AT_IDLE
+				       | PIOM_POLL_WHEN_FORCED, 1, -1);
+	
+	/* Définition des callbacks */
+	piom_server_add_callback(&p_drv->server,
+				  PIOM_FUNCTYPE_POLL_POLLONE,
+				  (piom_pcallback_t) {
+		.func = &nm_piom_poll,
+			 .speed = PIOM_CALLBACK_NORMAL_SPEED});
+	
+#warning "TODO: Fix the poll_any issues."
+//	piom_server_add_callback(&p_drv->server,
+//				  PIOM_FUNCTYPE_POLL_POLLANY,
+//				  (piom_pcallback_t) {
+//		.func = &nm_piom_poll_any,
+//			 .speed = PIOM_CALLBACK_NORMAL_SPEED});
+
+#ifdef PIOM_BLOCKING_CALLS
+	if((p_drv->driver->get_capabilities(p_drv))->is_exportable){
+		piom_server_start_lwp(&p_drv->server, 1);
+		piom_server_add_callback(&p_drv->server,
+					  PIOM_FUNCTYPE_BLOCK_WAITONE,
+					  (piom_pcallback_t) {
+			.func = &nm_piom_block,
+				 .speed = PIOM_CALLBACK_NORMAL_SPEED});
+		piom_server_add_callback(&p_drv->server,
+					 PIOM_FUNCTYPE_BLOCK_WAITANY,
+					 (piom_pcallback_t) {
+			.func = &nm_piom_block_any,
+				 .speed = PIOM_CALLBACK_NORMAL_SPEED});
+		
+	}
+#endif
+
+	piom_server_start(&p_drv->server);
+
+#ifdef PIO_OFFLOAD
+	/* Very ugly for now */
+	struct nm_pkt_wrap *post_rq = TBX_MALLOC(sizeof(struct nm_pkt_wrap));
+	post_rq->gate_priv	= NULL;
+	post_rq->drv_priv	= NULL;
+
+
+	post_rq->p_drv  = p_drv;
+	post_rq->p_trk  = NULL;
+	post_rq->p_gate = NULL;
+	post_rq->p_gdrv = NULL;
+	post_rq->p_gtrk = NULL;
+	post_rq->p_proto = NULL;
+	post_rq->proto_id = 0;
+	post_rq->seq = 0;
+	post_rq->sched_priv = NULL;
+	post_rq->drv_priv   = NULL;
+	post_rq->gate_priv  = NULL;
+	post_rq->proto_priv = NULL;
+
+	post_rq->pkt_priv_flags = 0;
+	post_rq->length = 0;
+	post_rq->iov_flags = 0;
+
+	post_rq->p_pkt_head = NULL;
+	post_rq->data = NULL;
+	post_rq->len_v = NULL;
+
+	post_rq->iov_priv_flags  = 0;
+	post_rq->v_size          = 0;
+	post_rq->v_first         = 0;
+	post_rq->v_nb            = 0;
+
+	post_rq->v = NULL;
+	post_rq->nm_v = NULL;
+
+	post_rq->slist=NULL;
+	
+	piom_req_init(&post_rq->inst);
+	post_rq->inst.server=&p_drv->server;
+	post_rq->which=NONE;
+	post_rq->err = -NM_EAGAIN;
+	post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
+	piom_req_submit(&p_drv->server, &post_rq->inst);
+#endif  
+
+	return 0;
+}
+#endif
+
 /** Load a driver.
  *
  * Out parameters:
@@ -270,8 +416,8 @@ nm_core_proto_init(struct nm_core	 *p_core,
  */
 int
 nm_core_driver_load(struct nm_core	 *p_core,
-                    int (*drv_load)(struct nm_drv_ops *),
-                    uint8_t *p_id) {
+                    puk_component_t       driver,
+                    uint8_t		 *p_id) {
         struct nm_drv	*p_drv		= NULL;
         int err;
 
@@ -280,25 +426,18 @@ nm_core_driver_load(struct nm_core	 *p_core,
                 err	= -NM_ENOMEM;
                 goto out;
         }
-
-        p_drv	= p_core->driver_array + p_core->nb_drivers;
-
+	assert(driver != NULL);
+        p_drv = p_core->driver_array + p_core->nb_drivers;
         memset(p_drv, 0, sizeof(struct nm_drv));
-
-        p_drv->id	= p_core->nb_drivers;
-        p_drv->p_core	= p_core;
-
-        p_core->nb_drivers++;
-
-        err = drv_load(&p_drv->ops);
-        if (err != NM_ESUCCESS) {
-                NM_DISPF("drv_load returned %d", err);
-                goto out;
-        }
+	p_drv->p_core   = p_core;
+        p_drv->id       = p_core->nb_drivers;
+	p_drv->assembly = driver;
+	p_drv->driver   = puk_adapter_get_driver_NewMad_Driver(p_drv->assembly, NULL);
 
         if (p_id) {
                 *p_id	= p_drv->id;
         }
+        p_core->nb_drivers++;
 
         err = NM_ESUCCESS;
 
@@ -307,6 +446,7 @@ nm_core_driver_load(struct nm_core	 *p_core,
 
         return err;
 }
+
 
 /** Query resources and register them for a driver.
  *
@@ -322,12 +462,12 @@ nm_core_driver_query(struct nm_core	 *p_core,
         NM_LOG_IN();
         p_drv	= p_core->driver_array + id;
 
-	if (!p_drv->ops.query) {
+	if (!p_drv->driver->query) {
 		err = -NM_EINVAL;
                 goto out;
         }
 
-        err = p_drv->ops.query(p_drv, params, nparam);
+        err = p_drv->driver->query(p_drv, params, nparam);
        	if (err != NM_ESUCCESS) {
                 NM_DISPF("drv.query returned %d", err);
        	        goto out;
@@ -354,24 +494,29 @@ nm_core_driver_init(struct nm_core	 *p_core,
         struct nm_drv	*p_drv		= NULL;
         struct nm_sched	*p_sched	= NULL;
         p_tbx_string_t	 url		= NULL;
+	const char *tmp_url             = NULL;
         int err;
 
         NM_LOG_IN();
         p_drv	= p_core->driver_array + id;
-
-	if (!p_drv->ops.init) {
+	p_drv->p_core = p_core;
+	if (!p_drv->driver->init) {
 		err = -NM_EINVAL;
                 goto out;
         }
 
-        err = p_drv->ops.init(p_drv);
+        err = p_drv->driver->init(p_drv);
         if (err != NM_ESUCCESS) {
                 NM_DISPF("drv.init returned %d", err);
                 goto out;
         }
 
+	if(p_drv->driver->get_driver_url != NULL) {
+	  tmp_url = p_drv->driver->get_driver_url(p_drv);
+	}
+
         if (p_url) {
-                *p_url	= p_drv->url;
+	         *p_url	= (char*)tmp_url;
         }
 
         p_sched	= p_core->p_sched;
@@ -386,8 +531,8 @@ nm_core_driver_init(struct nm_core	 *p_core,
 
                 /* driver url
                  */
-                if (p_drv->url) {
-                        url = tbx_string_init_to_cstring(p_drv->url);
+                if (tmp_url) {
+                        url = tbx_string_init_to_cstring(tmp_url);
                 } else {
                         url = tbx_string_init_to_cstring("-");
                 }
@@ -405,14 +550,8 @@ nm_core_driver_init(struct nm_core	 *p_core,
                 *p_url = tbx_string_to_cstring(url);
                 tbx_string_free(url);
         }
-
 	FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
-	if (p_drv->name) {
-		FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->name);
-	}
-	else {
-		FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, "");
-	}
+	FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
         err = NM_ESUCCESS;
 
@@ -429,7 +568,7 @@ nm_core_driver_init(struct nm_core	 *p_core,
 int
 nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 					  int count,
-					  int (**drv_load_array)(struct nm_drv_ops *),
+					  puk_component_t*driver_array,
 					  struct nm_driver_query_param **params_array,
 					  int *nparam_array,
 					  uint8_t *p_id_array,
@@ -445,7 +584,7 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 	for(i=0; i<count; i++) {
 		int err;
 
-		err = nm_core_driver_load(p_core, drv_load_array[i], &id);
+		err = nm_core_driver_load(p_core, driver_array[i], &id);
 		if (err != NM_ESUCCESS) {
 			NM_DISPF("nm_core_driver_load returned %d", err);
 			return err;
@@ -461,7 +600,8 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 
 #ifdef PM2_NUIOA
 		if (nuioa) {
-			int node = (p_core->driver_array + id)->cap.numa_node;
+			struct nm_drv *p_drv = p_core->driver_array + id;
+			int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
 			if (node != PM2_NUIOA_ANY_NODE) {
 				/* if this driver wants something */
 				DISP("marking nuioa node %d as preferred for driver %d", node, id);
@@ -500,8 +640,11 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 			NM_DISPF("nm_core_driver_init returned %d", err);
 			return err;
 		}
-	}
 
+#ifndef CONFIG_PROTO_MAD3
+		printf("driver #%d url: [%s]\n", i, p_url_array[i]);
+#endif
+	}
 	return NM_ESUCCESS;
 }
 
@@ -516,13 +659,18 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   struct nm_gate_drv *p_gdrv	= NULL;
   int i, j, k, err = NM_ESUCCESS;
 
+#ifdef PIOMAN
+  for(i=0;i<p_core->nb_drivers;i++)
+	piom_server_stop(&p_core->driver_array[i].server);
+#endif
+
   p_sched = p_core->p_sched;
   for(i=0 ; i<p_core->nb_gates ; i++) {
     p_gate = p_core->gate_array + i;
 
     for(j=0 ; j<NUMBER_OF_DRIVERS ; j++) {
       if (p_gate->p_gate_drv_array[j] != NULL) {
-        p_gdrv = p_gate->p_gate_drv_array[j];
+	p_gdrv = p_gate->p_gate_drv_array[j];
         p_drv = p_gdrv->p_drv;
         for(k=0 ; k<p_drv->nb_tracks ; k++) {
           struct nm_gate_trk *p_gtrk = p_gdrv->p_gate_trk_array[k];
@@ -534,7 +682,7 @@ nm_core_driver_exit(struct nm_core  *p_core) {
                 .remote_drv_url		= NULL,
                 .remote_trk_url		= NULL
             };
-          rq.p_drv->ops.disconnect(&rq);
+          p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
           TBX_FREE(p_gtrk);
           p_gdrv->p_gate_trk_array[k] = NULL;
         }
@@ -563,6 +711,14 @@ nm_core_driver_exit(struct nm_core  *p_core) {
         TBX_FREE(p_drv->p_track_array);
         p_drv->p_track_array = NULL;
         p_drv->nb_tracks = 0;
+	
+	// Faire destroy sur chaque instance
+	if(p_gdrv->instance != NULL)
+	  {
+	    puk_instance_destroy(p_gdrv->instance);
+	    p_gdrv->instance = NULL;
+	  }
+	
         TBX_FREE(p_gdrv);
         p_gate->p_gate_drv_array[j] = NULL;
       }
@@ -584,11 +740,6 @@ nm_core_driver_exit(struct nm_core  *p_core) {
 
   for(i=0 ; i<p_core->nb_drivers ; i++) {
     p_drv = p_core->driver_array + i;
-    err = p_drv->ops.exit(p_drv);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("drv.exit returned %d", err);
-      return err;
-    }
   }
 
   return err;
@@ -604,7 +755,9 @@ nm_core_gate_init(struct nm_core	*p_core,
                   nm_gate_id_t		*p_id) {
         struct nm_gate	*p_gate		= NULL;
         int err;
-
+#ifdef PIOMAN
+	piom_server_stop(&p_core->server);
+#endif
         err = NM_ESUCCESS;
 
         if (p_core->nb_gates == NUMBER_OF_GATES) {
@@ -636,6 +789,14 @@ nm_core_gate_init(struct nm_core	*p_core,
                 *p_id	= p_gate->id;
         }
 
+#ifdef PIOMAN
+	int i;
+	for(i=0;i<p_core->nb_drivers;i++)
+		nm_core_init_piom_drv(p_core,& p_core->driver_array[i]);
+
+	nm_core_init_piom(p_core);
+#endif
+
   out:
         return err;
 }
@@ -647,7 +808,7 @@ int
 nm_core_gate_connect_accept(struct nm_core	*p_core,
                             nm_gate_id_t	 gate_id,
                             uint8_t		 drv_id,
-                            char		*drv_trk_url,
+                            const char		*drv_trk_url,
                             int			 connect_flag) {
         struct nm_cnx_rq	 rq	= {
                 .p_gate			= NULL,
@@ -657,7 +818,7 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 .remote_trk_url		= NULL
         };
 
-        struct nm_gate_drv	*p_gdrv	= NULL;
+        struct nm_gate_drv	*p_gdrv	= TBX_MALLOC(sizeof(struct nm_gate_drv));
 
         char	*urls[255];
         int i;
@@ -688,13 +849,8 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
 
         /* allocate gate/driver mem
          */
-        p_gdrv	= TBX_MALLOC(sizeof(struct nm_gate_drv));
-        memset(p_gdrv, 0, sizeof(struct nm_gate_drv));
-
-        if (!p_gdrv) {
-                err	= -NM_ENOMEM;
-                goto out;
-        }
+	p_gdrv->instance = puk_adapter_instanciate(rq.p_drv->assembly);
+	puk_instance_indirect_NewMad_Driver(p_gdrv->instance, NULL, &p_gdrv->receptacle);
 
         /* init gate/driver fields
          */
@@ -707,7 +863,7 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 goto out;
         }
 
-        /* store gate/driver struct
+	/* store gate/driver struct
          */
         rq.p_gate->p_gate_drv_array[drv_id]	 = p_gdrv;
 
@@ -758,13 +914,13 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 rq.remote_trk_url	= urls[i];
 
                 if (connect_flag) {
-                        err = rq.p_drv->ops.connect(&rq);
+		        err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, &rq);
                         if (err != NM_ESUCCESS) {
                                 NM_DISPF("drv.ops.connect returned %d", err);
                                 goto out_free;
                         }
                 } else {
-                        err = rq.p_drv->ops.accept(&rq);
+		        err = p_gdrv->receptacle.driver->accept(p_gdrv->receptacle._status, &rq);
                         if (err != NM_ESUCCESS) {
                                 NM_DISPF("drv.ops.accept returned %d", err);
                                 goto out_free;
@@ -772,10 +928,6 @@ nm_core_gate_connect_accept(struct nm_core	*p_core,
                 }
 
         }
-
-        /* update the number of gates
-         */
-        rq.p_drv->nb_gates++;
 
         err = NM_ESUCCESS;
         goto out_free;
@@ -797,7 +949,7 @@ int
 nm_core_gate_accept	(struct nm_core	*p_core,
                          nm_gate_id_t	 gate_id,
                          uint8_t	 drv_id,
-                         char		*drv_trk_url) {
+                         const char	*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
                                            drv_trk_url, 0);
 }
@@ -808,7 +960,7 @@ int
 nm_core_gate_connect	(struct nm_core	*p_core,
                          nm_gate_id_t	 gate_id,
                          uint8_t	 drv_id,
-                         char		*drv_trk_url) {
+                         const char	*drv_trk_url) {
         return nm_core_gate_connect_accept(p_core, gate_id, drv_id,
                                            drv_trk_url, !0);
 }
@@ -851,6 +1003,32 @@ nm_core_post_recv	(struct nm_core		*p_core,
         return __nm_core_post_recv(p_core, p_pw);
 }
 
+/** Load a newmad component from disk. The actual path loaded is
+ * ${PM2_CONF_DIR}/'entity'/'entity'_'driver'.xml
+ */
+puk_component_t
+nm_core_component_load(const char*entity, const char*name){
+  char filename[1024];
+  int rc = 0;
+  const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
+  if(pm2_conf_dir) {
+      rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_conf_dir, entity, entity, name);
+  } else {
+    const char*home = getenv("PM2_HOME");
+    if (!home) {
+      home = getenv("HOME");
+    }
+    assert(home != NULL);
+    rc = snprintf(filename, 1024, "%s/.pm2/%s/%s_%s.xml", home, entity, entity, name);
+  }
+  assert(rc < 1024);
+  puk_component_t component = puk_adapter_parse_file(filename);
+  assert(component != NULL);
+  return component;
+}
+
+
+
 /** Initialize the core struct and the main scheduler.
 
    - sched_load is function that should initialize the
@@ -867,8 +1045,11 @@ nm_core_init		(int			 *argc,
         struct nm_core *p_core	= NULL;
         int err;
 
+#ifndef CONFIG_PADICO
+	padico_puk_init(*argc, argv);
         common_pre_init(argc, argv, NULL);
         common_post_init(argc, argv, NULL);
+#endif
 
 	FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 
@@ -891,6 +1072,21 @@ nm_core_init		(int			 *argc,
 
         *pp_core	= p_core;
         err = NM_ESUCCESS;
+
+#ifndef CONFIG_PADICO
+	/** @note When running inside PadicoTM, drivers are already loaded by NetAccess (don't load here again)
+	 */
+	nm_core_drivers_load();
+#else
+	/** @note we *purposely* check that PadicoTM is running to prevent people
+	 * from mistakenly activating the 'padico_puk' option without PadicoTM.
+	 */
+	if(puk_mod_getattr(NULL, "PADICO_NODE_UUID") == NULL)
+	  {
+	    padico_fatal("NewMad: trying to load a PadicoTM-enabled nmad without PadicoTM.\n");
+	  }
+#endif
+
 
  out:
         return err;

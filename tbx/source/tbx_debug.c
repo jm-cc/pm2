@@ -81,8 +81,8 @@ DEBUG_DECLARE(init)
 #ifdef MARCEL
 DEBUG_DECLARE(marcel)
 #endif
-#ifdef XPAULETTE
-DEBUG_DECLARE(xpaulette)
+#ifdef PIOMAN
+DEBUG_DECLARE(pioman)
 #endif
 #ifdef MAD1
 DEBUG_DECLARE(mad1)

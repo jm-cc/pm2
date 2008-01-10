@@ -1,12 +1,19 @@
 #include <string.h>
 
+#ifdef CONFIG_PROTO_MAD3
 #include <pm2_common.h>
+#include <madeleine.h>
+#include <nm_mad3_private.h>
+#endif
+
+#include <tbx.h>
 #include <nm_public.h>
 #include <nm_so_public.h>
 #include <nm_so_debug.h>
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
 #include <nm_drivers.h>
+#include <Padico/Puk.h>
 
 #ifdef CONFIG_MULTI_RAIL
 #define RAIL_MAX 8
@@ -37,10 +44,12 @@ void init(int *argc, char **argv);
 /** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
 int nmad_exit(void);
 
-#ifdef CONFIG_PROTO_MAD3
+static inline puk_component_t load_driver(const char *driver_name)
+{
+  return nm_core_component_load("driver", driver_name); 
+}
 
-#include <madeleine.h>
-#include <nm_mad3_private.h>
+#ifdef CONFIG_PROTO_MAD3
 
 static p_mad_madeleine_t       madeleine	= NULL;
 static p_mad_session_t         session          = NULL;
@@ -136,8 +145,6 @@ usage(void) {
   exit(EXIT_FAILURE);
 }
 
-typedef int (*nm_driver_load)(struct nm_drv_ops*);
-
 static struct nm_core		*p_core	        = NULL;
 
 int get_rank(void) {
@@ -162,7 +169,7 @@ nm_gate_id_t get_gate_out_id(int dest) {
 
 /** get default drivers if no rails were given on the command line */
 static int
-get_default_driver_loads(nm_driver_load *loads)
+get_default_driver_assemblies(puk_component_t*assemblies)
 {
   int cur_nr_drivers = 0;
 
@@ -171,23 +178,23 @@ get_default_driver_loads(nm_driver_load *loads)
 
 #if defined CONFIG_MX
   printf("Using MX for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_mx_load;
+  assemblies[cur_nr_drivers++] = load_driver("mx");
 #endif
 #ifdef CONFIG_QSNET
   printf("Using QsNet for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_qsnet_load;
+  assemblies[cur_nr_drivers++] = load_driver("qsnet");
 #endif
 #if defined CONFIG_IBVERBS
   printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_ibverbs_load;
+  assemblies[cur_nr_drivers++] = load_driver("ibverbs");
 #endif
 #if defined CONFIG_GM
   printf("Using GM for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_gm_load;
+  assemblies[cur_nr_drivers++] = load_driver("gm");
 #endif
 #if defined CONFIG_TCP
   printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_tcpdg_load;
+  assemblies[cur_nr_drivers++] = load_driver("tcpdg");
 #endif
 
 #else /* !CONFIG_MULTI_RAIL */
@@ -201,21 +208,24 @@ get_default_driver_loads(nm_driver_load *loads)
     return -1;
   }
 
-#if defined CONFIG_MX
+#if defined CONFIG_CUSTOM
+  printf("Using CUSTOM for rail #%d\n", cur_nr_drivers);
+  assemblies[cur_nr_drivers++] = load_driver("custom");
+#elif defined CONFIG_MX
   printf("Using MX for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_mx_load;
+  assemblies[cur_nr_drivers++] = load_driver("mx");
 #elif defined CONFIG_QSNET
   printf("Using QsNet for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_qsnet_load;
+  assemblies[cur_nr_drivers++] = load_driver("qsnet");
 #elif defined CONFIG_IBVERBS
   printf("Using IBVerbs for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_ibverbs_load;
+  assemblies[cur_nr_drivers++] = load_driver("ibverbs");
 #elif defined CONFIG_GM
   printf("Using GM for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_gm_load;
+  assemblies[cur_nr_drivers++] = load_driver("gm");
 #elif defined CONFIG_TCP
-  printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
-  loads[cur_nr_drivers++] = &nm_tcpdg_load;
+  printf("Using TCP for rail #%d\n", cur_nr_drivers);
+  assemblies[cur_nr_drivers++] = load_driver("tcpdg");
 #endif
 
 #endif /* !CONFIG_MULTI_RAIL */
@@ -249,7 +259,7 @@ lookup_rail_driver_and_board_id(const char *rail, const char *driver,
 /** handle one rail from the railstring */
 static int
 handle_one_rail(char *token, int index,
-		nm_driver_load *load,
+		puk_component_t*assembly,
 		struct nm_driver_query_param *param)
 {
 #if defined CONFIG_MX
@@ -260,13 +270,13 @@ handle_one_rail(char *token, int index,
     else
       printf("Using any MX board for rail #%d\n",
 	     index);
-    *load = &nm_mx_load;
+    *assembly = load_driver("mx");
   } else
 #endif
 #ifdef CONFIG_QSNET
   if (!strcmp("qsnet", token)) {
     printf("Using QsNet for rail #%d\n", index);
-    *load = &nm_qsnet_load;
+    *assembly = load_driver("qsnet");
   } else
 #endif
 #if defined CONFIG_IBVERBS
@@ -279,19 +289,19 @@ handle_one_rail(char *token, int index,
     else
       printf("Using any IB device for rail #%d\n",
 	     index);
-    *load = &nm_ibverbs_load;
+    *assembly = load_driver("ibverbs");
   } else
 #endif
 #if defined CONFIG_GM
   if (!strcmp("gm", token)) {
     printf("Using GM for rail #%d\n", index);
-    *load = &nm_gm_load;
+    *assembly = load_driver("gm");
   } else
 #endif
 #if defined CONFIG_TCP
   if (!strcmp("tcp", token) || !strcmp("tcpdg", token)) {
     printf("Using TCPDG for rail #%d\n", index);
-    *load = &nm_tcpdg_load;
+    *assembly = load_driver("tcpdg");
   } else 
 #endif
     {
@@ -304,9 +314,9 @@ handle_one_rail(char *token, int index,
 
 /** get drivers from the railstring from the command line */
 static int
-get_railstring_driver_loads(nm_driver_load *loads,
-			    struct nm_driver_query_param *params,
-			    char * railstring)
+get_railstring_driver_assemblies(puk_component_t*assemblies,
+				 struct nm_driver_query_param *params,
+				 char * railstring)
 {
   int cur_nr_drivers = 0;
   char * token;
@@ -315,7 +325,7 @@ get_railstring_driver_loads(nm_driver_load *loads,
   token = strtok(railstring, "+");
   while (token) {
     err = handle_one_rail(token, cur_nr_drivers,
-			  &loads[cur_nr_drivers],
+			  &assemblies[cur_nr_drivers],
 			  &params[cur_nr_drivers]);
     if (err < 0)
       usage();
@@ -344,7 +354,7 @@ init(int	 *argc,
   char *railstring = NULL;
   int nr_r_urls = 0;
   /* per rail arrays */
-  nm_driver_load driver_loads[RAIL_MAX];
+  puk_component_t driver_assemblies[RAIL_MAX];
   struct nm_driver_query_param params[RAIL_MAX];
   struct nm_driver_query_param *params_array[RAIL_MAX];
   int nparam_array[RAIL_MAX];
@@ -413,10 +423,10 @@ init(int	 *argc,
 
   if (railstring) {
     /* parse railstring to get drivers */
-    nr_rails = get_railstring_driver_loads(driver_loads, params, railstring);
+    nr_rails = get_railstring_driver_assemblies(driver_assemblies, params, railstring);
   } else {
     /* use default drivers */
-    nr_rails = get_default_driver_loads(driver_loads);
+    nr_rails = get_default_driver_assemblies(driver_assemblies);
     if (nr_rails < 0) {
       fprintf(stderr, "Failed to select default drivers automatically\n");
       usage();
@@ -426,7 +436,7 @@ init(int	 *argc,
 #ifndef CONFIG_MULTI_RAIL
   // Check the number of protocols against the strategy
   if (nr_rails > 1) {
-    TBX_FAILURE("Only 1 driver is supported with the current strategy");
+    TBX_FAILURE("Only 1 driver is supported with the current strategy.");
   }
 #endif
 
@@ -447,7 +457,7 @@ init(int	 *argc,
     printf("\n");
   }
 
-  err = nm_core_driver_load_init_some_with_params(p_core, nr_rails, driver_loads, params_array, nparam_array, drv_id, l_url);
+  err = nm_core_driver_load_init_some_with_params(p_core, nr_rails, driver_assemblies, params_array, nparam_array, drv_id, l_url);
   if (err != NM_ESUCCESS) {
     printf("nm_core_driver_load_init_some returned err = %d\n", err);
     goto out_err;

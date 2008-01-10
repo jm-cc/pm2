@@ -13,11 +13,15 @@
  * General Public License for more details.
  */
 
+#ifdef PIOMAN
+#include "nm_piom.h"
+#endif
+
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include "nm_so_private.h"
@@ -30,6 +34,34 @@
 #define NM_SO_STATUS_SEND_COMPLETED  ((uint8_t)1)
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 
+#ifdef PIOMAN
+#define nm_so_cond_test(STATUS, BITMASK)   piom_cond_test((STATUS), (BITMASK))
+#define nm_so_cond_mask(STATUS, BITMASK)   piom_cond_mask(&(STATUS), (BITMASK))
+#define nm_so_cond_signal(STATUS, BITMASK) piom_cond_signal(&(STATUS), (BITMASK))
+#define nm_so_cond_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS), (BITMASK))
+#else
+static inline int  nm_so_cond_test(volatile uint8_t*status, uint8_t bitmask)
+{
+  return ((*status) & bitmask);
+}
+static inline void _nm_so_cond_mask(volatile uint8_t*status, uint8_t bitmask)
+{
+  *status &= bitmask;
+}
+#define nm_so_cond_mask(STATUS, BITMASK)   _nm_so_cond_mask(&(STATUS), (BITMASK))
+#define nm_so_cond_signal(STATUS, BITMASK) ((STATUS) |= (BITMASK))
+static inline void nm_so_cond_wait(volatile uint8_t*status, uint8_t bitmask, struct nm_core*p_core)
+{
+  if(status != NULL)
+    {
+      while(!((*status) & bitmask)) {
+	nm_schedule(p_core);
+      }
+    }
+}
+#endif
+
+
 enum transfer_type{
   datatype_transfer,
   iov_transfer,
@@ -40,14 +72,22 @@ enum transfer_type{
 /** Status for basic receive requests.
  */
 struct status {
+#ifdef PIOMAN
+  piom_cond_t status;
+#else
   volatile uint8_t status;
+#endif
   void *ref;
 };
 
 /** Status for any source receive requests.
  */
 struct any_src_status {
+#ifdef PIOMAN
+  piom_cond_t status;
+#else
   uint8_t status;
+#endif
   nm_gate_id_t gate_id;
   int is_first_request;
   void *ref;
@@ -184,7 +224,7 @@ nm_so_sr_exit(struct nm_so_interface *p_so_interface)
 int
 nm_so_sr_request_init(nm_so_request *p_request) {
   if(p_request) {
-    p_request->status = -1;
+    p_request->status = NULL;
     p_request->seq = -1;
     p_request->gate_id = -1;
   }
@@ -204,51 +244,59 @@ __isend(struct nm_so_interface *p_so_interface,
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   uint8_t seq;
-  volatile uint8_t *p_req;
   int ret;
 
   NM_SO_SR_LOG_IN();
+  nmad_lock();
 
-  if(sending_type == iov_transfer){
-    assert(len < NM_SO_PREALLOC_IOV_LEN);
-  }
+  assert((sending_type != iov_transfer) || (len < NM_SO_PREALLOC_IOV_LEN));
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  p_req = &p_sr_gate->status[tag][seq].status;
-
-  *p_req &= ~NM_SO_STATUS_SEND_COMPLETED;
-
+  nm_so_cond_mask(p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_SEND_COMPLETED);
   if(p_request) {
-    p_request->status = (intptr_t)p_req;
+    p_request->status = &p_sr_gate->status[tag][seq].status;
     p_request->seq = seq;
     p_request->gate_id = gate_id;
   }
 
-  if(sending_type == datatype_transfer){
+  switch(sending_type) {
+  case datatype_transfer:
     NM_SO_SR_TRACE("Sending data described by a datatype\n");
-
+    
     struct DLOOP_Segment *segp = data;
-    return p_so_interface->p_so_sched->current_strategy->pack_datatype(p_gate, tag, seq, segp);
+    ret = p_so_gate->strategy_receptacle.driver->pack_datatype(p_so_gate->strategy_receptacle._status,
+							       p_gate, tag, seq, segp);
+    break;
 
-  } else if (sending_type == iov_transfer) {
+  case iov_transfer:
     NM_SO_SR_TRACE("Sending data described by an iovec\n");
     struct iovec *iov = data;
-    return p_so_interface->p_so_sched->current_strategy->packv(p_gate, tag, seq, iov, len);
+    ret = p_so_gate->strategy_receptacle.driver->packv(p_so_gate->strategy_receptacle._status,
+						       p_gate, tag, seq, iov, len);
+    break;
 
-  } else if (sending_type == extended_transfer) {
+  case extended_transfer:
     NM_SO_SR_TRACE("Extendend sending\n");
-    ret = p_so_interface->p_so_sched->current_strategy->pack_extended(p_gate, tag, seq,
-                                                                      data, len, is_completed);;
+    ret = p_so_gate->strategy_receptacle.driver->pack_extended(p_so_gate->strategy_receptacle._status,
+							       p_gate, tag, seq, data, len, is_completed);
+    break;
 
-  } else if (sending_type == contiguous_transfer) {
+  case contiguous_transfer:
     NM_SO_SR_TRACE("Sending contiguous data\n");
-    ret = p_so_interface->p_so_sched->current_strategy->pack(p_gate, tag, seq, data, len);
-
-  } else {
-    TBX_FAILURE("Sending type incorrect");
+    ret = p_so_gate->strategy_receptacle.driver->pack(p_so_gate->strategy_receptacle._status,
+						      p_gate, tag, seq, data, len);
+    break;
+    
+  default:
+    TBX_FAILURE("Incorrect sending type.");
+    break;
   }
 
+#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
+  nm_piom_post_all(p_core);
+#endif
+  nmad_unlock();
   NM_SO_SR_LOG_OUT();
   return ret;
 }
@@ -267,11 +315,15 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
                         nm_gate_id_t gate_id, uint8_t tag,
                         void *data, uint32_t len,
                         tbx_bool_t is_completed,
-                        nm_so_request *p_request){
+                        nm_so_request *p_request)
+{
   enum transfer_type tt;
   int ret;
 
-  if (p_so_interface->p_so_sched->current_strategy->pack_extended == NULL) {
+  const struct nm_core *p_core = p_so_interface->p_core;
+  const struct nm_gate *p_gate = p_core->gate_array + gate_id;
+  const struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  if (!p_so_gate->strategy_receptacle.driver->pack_extended) {
     NM_DISPF("The current strategy does not provide a extended pack");
     tt = contiguous_transfer;
 
@@ -295,6 +347,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
+  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   enum transfer_type tt = contiguous_transfer;
   int ret = -NM_EAGAIN;
 
@@ -302,33 +355,50 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 
   ret = __isend(p_so_interface, gate_id, tag, tt, data, len, tbx_false, p_request);
 
-  if (ret != NM_ESUCCESS) {
-    NM_SO_SR_LOG_OUT();
-    return ret;
-
-  } else {
-    if(len > NM_SO_MAX_SMALL) {
-      uint8_t seq = p_request->seq;
-      volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
-      NM_SO_SR_TRACE("Waiting for status %p\n", status);
-
-      while(!(*status & NM_SO_STATUS_ACK_HERE)) {
-        nm_schedule(p_core);
-      }
-      NM_SO_SR_TRACE("Waiting for status %p completed\n", status);
+  if (ret != NM_ESUCCESS) 
+    goto exit;
+  
+  if(len > NM_SO_MAX_SMALL) {
+    
+    nmad_lock();
+#ifdef PIOMAN
+    /* TODO : use piom_cond_signal when an ACK arrives in order to have a *real* rsend  */
+    if(! piom_cond_test(p_request->status, NM_SO_STATUS_SEND_COMPLETED)) {
+#ifndef PIO_OFFLOAD
+      nm_piom_post_all(p_core);
+#endif
+      nmad_unlock();
+      piom_cond_wait(p_request->status, NM_SO_STATUS_SEND_COMPLETED);
     }
-
-    NM_SO_SR_LOG_OUT();
-    return NM_ESUCCESS;
+    else {
+      nmad_unlock();
+    }
+    
+#else
+    
+    volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+    NM_SO_SR_TRACE("Waiting for status %p\n", status);
+    while(!(*status & NM_SO_STATUS_ACK_HERE)) {
+      nm_schedule(p_core);
+    }
+    
+#endif
+    NM_SO_SR_TRACE("Waiting for status %p completed\n", p_request->status);
   }
+  
+ exit:
+  NM_SO_SR_LOG_OUT();
+  return ret;
 }
 
 int
 nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
                    nm_gate_id_t gate_id, uint8_t tag,
                    struct iovec *iov, int nb_entries,
-                   nm_so_request *p_request){
-  enum transfer_type tt = iov_transfer;
+                   nm_so_request *p_request)
+
+{
+  const enum transfer_type tt = iov_transfer;
   return __isend(p_so_interface, gate_id, tag, tt, iov, nb_entries, tbx_false, p_request);
 }
 
@@ -337,7 +407,7 @@ nm_so_sr_isend_datatype(struct nm_so_interface *p_so_interface,
                         nm_gate_id_t gate_id, uint8_t tag,
                         struct DLOOP_Segment *segp,
                         nm_so_request *p_request){
-  enum transfer_type tt = datatype_transfer;
+  const enum transfer_type tt = datatype_transfer;
   return __isend(p_so_interface, gate_id, tag, tt, segp, 0, tbx_false, p_request);
 }
 
@@ -350,21 +420,25 @@ int
 nm_so_sr_stest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
-  struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)request.status;
-
+  int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
-  if(*p_request & NM_SO_STATUS_SEND_COMPLETED) {
-    NM_SO_SR_LOG_OUT();
-    return NM_ESUCCESS;
-  }
+  if(nm_so_cond_test(request.status, NM_SO_STATUS_SEND_COMPLETED))
+    goto exit;
 
-  nm_schedule(p_core);
+#ifdef PIOMAN
+  /* Useless ? */
+  __piom_check_polling(PIOM_POLL_AT_IDLE);
+#else
+  nm_schedule(p_so_interface->p_core);
+#endif
 
-  NM_SO_SR_LOG_OUT();
-  return (*p_request & NM_SO_STATUS_SEND_COMPLETED) ?
+  rc = (nm_so_cond_test(request.status, NM_SO_STATUS_SEND_COMPLETED)) ?
     NM_ESUCCESS : -NM_EAGAIN;
+
+ exit:
+  NM_SO_SR_LOG_OUT();
+  return rc;
 }
 
 int
@@ -382,7 +456,8 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t)&p_sr_gate->status[tag][seq].status;
+    request.status = &p_sr_gate->status[tag][seq].status;
+#warning "attention ! ca c'est une structure normalement !"
     request.seq = seq;
     ret = nm_so_sr_stest(p_so_interface, request);
 
@@ -400,14 +475,16 @@ nm_so_sr_stest_range(struct nm_so_interface *p_so_interface,
 int nm_so_sr_flush(struct nm_so_interface *p_so_interface) {
   struct nm_core *p_core = p_so_interface->p_core;
   int ret = NM_EAGAIN;
+  int i;
 
-  NM_SO_SR_LOG_IN();
-  if (p_so_interface->p_so_sched->current_strategy->flush != NULL) {
-    int i;
-    for(i=0 ; i<p_core->nb_gates ; i++) {
-      struct nm_gate *p_gate = p_core->gate_array + i;
+  for(i=0 ; i<p_core->nb_gates ; i++) {
+    struct nm_gate *p_gate = p_core->gate_array + i;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
+    struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
+
+    if (tbx_likely(strategy->flush != NULL)) {
       NM_SO_SR_TRACE("Flushing gate %d\n", i);
-      ret = p_so_interface->p_so_sched->current_strategy->flush(p_gate);
+      ret = strategy->flush(p_so_gate->strategy_receptacle._status, p_gate);
     }
   }
   NM_SO_SR_LOG_OUT();
@@ -418,18 +495,21 @@ int
 nm_so_sr_swait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
-  struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request.status;
-
   NM_SO_SR_LOG_IN();
 
-  if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+  if (p_so_interface->p_so_sched->strategy_driver->flush != NULL) {
     nm_so_sr_flush(p_so_interface);
   }
 
-  if (p_request != NULL) {
-    while(!(*p_request & NM_SO_STATUS_SEND_COMPLETED))
-      nm_schedule(p_core);
+  if(! nm_so_cond_test(request.status, NM_SO_STATUS_SEND_COMPLETED)) {
+#ifdef PIOMAN
+	  /* If PIO_OFFLOAD is set, we still post request. 
+	   * This avoids scheduling a tasklet on another lwp */
+    nmad_lock();
+    nm_piom_post_all(p_so_interface->p_core);
+    nmad_unlock();
+#endif
+    nm_so_cond_wait(request.status, NM_SO_STATUS_SEND_COMPLETED, p_so_interface->p_core);
   }
 
   NM_SO_SR_LOG_OUT();
@@ -451,7 +531,7 @@ nm_so_sr_swait_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
+    request.status = &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     request.gate_id = gate_id;
     nm_so_sr_swait(p_so_interface, request);
@@ -479,32 +559,33 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
                nm_so_request *p_request,
                void *ref){
   struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_req = NULL;
   int ret;
 
   NM_SO_SR_LOG_IN();
-
   if(gate_id == NM_SO_ANY_SRC) {
 
-    if (any_src[tag].is_first_request == 0 && !(any_src[tag].status & NM_SO_STATUS_RECV_COMPLETED)) {
+    if (any_src[tag].is_first_request == 0 && !(nm_so_cond_test(&any_src[tag].status, NM_SO_STATUS_RECV_COMPLETED))) {
       nm_so_request request;
       NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
-      request.status = (intptr_t) &any_src[tag].status;
+      request.status = &any_src[tag].status;
       request.gate_id = -1;
+      nmad_lock();
+#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
+      nm_piom_post_all(p_core);
+#endif
+      nmad_unlock();
       nm_so_sr_rwait(p_so_interface, request);
     }
-
+    nmad_lock();
     any_src[tag].is_first_request = 0;
-    any_src[tag].status &= ~NM_SO_STATUS_RECV_COMPLETED;
     any_src[tag].ref = ref;
-
+    nm_so_cond_mask(any_src[tag].status, ~NM_SO_STATUS_RECV_COMPLETED);
     if(p_request) {
-      p_req = &any_src[tag].status;
-      p_request->status = (intptr_t)p_req;
+      p_request->status = &any_src[tag].status;
       p_request->gate_id = -1;
     }
 
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, &any_src[tag].status);
 
     if(reception_type == datatype_transfer){
       struct DLOOP_Segment *segp = data_description;
@@ -521,32 +602,37 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
     }
 
 
+
+#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
+    nm_piom_post_all(p_core);
+#endif
+    nmad_unlock();
     NM_SO_SR_LOG_OUT();
     return ret;
 
   } else {
+    nmad_lock();
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
     struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
+    struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
     uint8_t seq;
 
-    if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+    if (tbx_likely(strategy->flush != NULL)) {
       nm_so_sr_flush(p_so_interface);
     }
 
     seq = p_so_gate->recv_seq_number[tag]++;
 
-    p_req = &(p_sr_gate->status[tag][seq].status);
-    *p_req &= ~NM_SO_STATUS_RECV_COMPLETED;
+    nm_so_cond_mask(p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_RECV_COMPLETED);
     if(p_request) {
-      p_request->status = (intptr_t)p_req;
+      p_request->status = &p_sr_gate->status[tag][seq].status;
       p_request->seq = seq;
       p_request->gate_id = gate_id;
     }
 
     p_sr_gate->status[tag][seq].ref = ref;
-
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d, request = %p\n", tag, seq, gate_id, p_req);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d\n", tag, seq, gate_id);
 
     if (reception_type == datatype_transfer) {
       struct DLOOP_Segment *segp = data_description;
@@ -563,6 +649,10 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
       TBX_FAILURE("Reception type failed");
     }
 
+#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
+    nm_piom_post_all(p_core);
+#endif
+    nmad_unlock();
     NM_SO_SR_LOG_OUT();
     return ret;
   }
@@ -575,7 +665,7 @@ nm_so_sr_irecv_with_ref(struct nm_so_interface *p_so_interface,
                         void *data, uint32_t len,
                         nm_so_request *p_request,
                         void *ref){
-  enum transfer_type tt= contiguous_transfer;
+  const enum transfer_type tt = contiguous_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, data, len, p_request, ref);
 }
 
@@ -584,7 +674,7 @@ nm_so_sr_irecv(struct nm_so_interface *p_so_interface,
                nm_gate_id_t gate_id, uint8_t tag,
                void *data, uint32_t len,
                nm_so_request *p_request){
-  enum transfer_type tt= contiguous_transfer;
+  const enum transfer_type tt = contiguous_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, data, len, p_request, NULL);
 }
 
@@ -593,7 +683,7 @@ nm_so_sr_irecv_iov_with_ref(struct nm_so_interface *p_so_interface,
                             nm_gate_id_t gate_id, uint8_t tag,
                             struct iovec *iov, int nb_entries,
                             nm_so_request *p_request, void *ref){
-  enum transfer_type tt= iov_transfer;
+  const enum transfer_type tt = iov_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, iov, nb_entries, p_request, ref);
 }
 
@@ -602,7 +692,7 @@ int nm_so_sr_irecv_iov(struct nm_so_interface *p_so_interface,
                        nm_gate_id_t gate_id, uint8_t tag,
                        struct iovec *iov, int nb_entries,
                        nm_so_request *p_request){
-  enum transfer_type tt= iov_transfer;
+  const enum transfer_type tt = iov_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, iov, nb_entries, p_request, NULL);
 }
 
@@ -611,8 +701,8 @@ nm_so_sr_irecv_datatype_with_ref(struct nm_so_interface *p_so_interface,
                                  nm_gate_id_t gate_id, uint8_t tag,
                                  struct DLOOP_Segment *segp,
                                  nm_so_request *p_request,
-                                 void *ref){
-  enum transfer_type tt= datatype_transfer;
+                                 void *ref) {
+  const enum transfer_type tt = datatype_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, segp, 0, p_request, ref);
 }
 
@@ -620,7 +710,7 @@ int nm_so_sr_irecv_datatype(struct nm_so_interface *p_so_interface,
                             nm_gate_id_t gate_id, uint8_t tag,
                             struct DLOOP_Segment *segp,
                             nm_so_request *p_request){
-  enum transfer_type tt= datatype_transfer;
+  const enum transfer_type tt = datatype_transfer;
   return irecv_with_ref(p_so_interface, gate_id, tag, tt, segp, 0, p_request, NULL);
 }
 
@@ -633,21 +723,27 @@ int
 nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
-  struct nm_core *p_core = p_so_interface->p_core;
-  uint8_t *p_request = (uint8_t *)request.status;
-
+  int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
-  if(*p_request & NM_SO_STATUS_RECV_COMPLETED) {
-    NM_SO_SR_LOG_OUT();
-    return NM_ESUCCESS;
+  if(nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) {
+    rc = NM_ESUCCESS;
+    goto exit;
   }
 
-  nm_schedule(p_core);
+#ifdef PIOMAN
+  /* Useless ? */
+  __piom_check_polling(PIOM_POLL_AT_IDLE);
+#else
+  nm_schedule(p_so_interface->p_core);
+#endif
 
-  NM_SO_SR_LOG_OUT();
-  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
+  rc = (nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) ?
     NM_ESUCCESS : -NM_EAGAIN;
+
+ exit:
+  NM_SO_SR_LOG_OUT();
+  return rc;
 }
 
 int
@@ -665,7 +761,7 @@ nm_so_sr_rtest_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
+    request.status = &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     ret = nm_so_sr_rtest(p_so_interface, request);
 
@@ -684,23 +780,24 @@ int
 nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
 	       nm_so_request request)
 {
-  struct nm_core *p_core = p_so_interface->p_core;
-  volatile uint8_t *p_request = (uint8_t *)request.status;
-
   NM_SO_SR_LOG_IN();
 
-  if (tbx_likely(p_so_interface->p_so_sched->current_strategy->flush != NULL)) {
+  if (p_so_interface->p_so_sched->strategy_driver->flush != NULL) {
     nm_so_sr_flush(p_so_interface);
   }
 
-  NM_SO_SR_TRACE("request %p completion = %d\n", p_request, *p_request & NM_SO_STATUS_RECV_COMPLETED ? 1 : 0);
-
-  if (p_request != NULL) {
-    while(!(*p_request & NM_SO_STATUS_RECV_COMPLETED))
-      nm_schedule(p_core);
+  NM_SO_SR_TRACE("request %p completion = %d\n", request.status, 
+		 nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED));
+  if(!nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) {
+#ifdef PIOMAN
+    nmad_lock();
+    nm_piom_post_all(p_so_interface->p_core);
+    nmad_unlock();
+#endif /* PIOMAN */
+    nm_so_cond_wait(request.status, NM_SO_STATUS_RECV_COMPLETED, p_so_interface->p_core);
   }
 
-  NM_SO_SR_TRACE("request %p completed\n", p_request);
+  NM_SO_SR_TRACE("request %p completed\n", request.status);
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
@@ -740,7 +837,12 @@ int
 nm_so_sr_recv_source(struct nm_so_interface *p_so_interface TBX_UNUSED,
                      nm_so_request request, nm_gate_id_t *gate_id)
 {
+#ifdef PIOMAN
+  struct any_src_status *p_status =
+    struct_up(request.status, struct any_src_status, status);
+#else
   struct any_src_status *p_status = outer_any_src_struct(request.status);
+#endif
 
   NM_SO_SR_LOG_IN();
 
@@ -764,11 +866,8 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     for(i = 0; i < p_core->nb_gates; i++) {
       struct nm_gate *p_gate = p_core->gate_array + i;
       struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
       uint8_t seq = p_so_gate->recv_seq_number[tag];
-
       volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
-
       if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
 	*out_gate_id = i ;
         NM_SO_SR_LOG_OUT();
@@ -779,11 +878,8 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
   else {
     struct nm_gate *p_gate = p_core->gate_array + gate_id;
     struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
     uint8_t seq = p_so_gate->recv_seq_number[tag];
-
     volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
-
     if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
       *out_gate_id = gate_id;
       NM_SO_SR_LOG_OUT();
@@ -791,11 +887,15 @@ nm_so_sr_probe(struct nm_so_interface *p_so_interface,
     }
   }
 
+  nmad_lock();
   // Nothing on none of the gates
   for(i = 0; i < p_core->nb_gates; i++) {
     nm_so_refill_regular_recv(&p_core->gate_array[i]);
   }
+  nmad_unlock();
+#ifndef PIOMAN
   nm_schedule(p_core);
+#endif
   *out_gate_id = NM_SO_ANY_SRC;
   NM_SO_SR_LOG_OUT();
   return -NM_EAGAIN;
@@ -816,14 +916,13 @@ nm_so_sr_rwait_range(struct nm_so_interface *p_so_interface,
   NM_SO_SR_LOG_IN();
 
   while(nb--) {
-    request.status = (intptr_t) &p_sr_gate->status[tag][seq].status;
+    request.status = &p_sr_gate->status[tag][seq].status;
     request.seq = seq;
     request.gate_id = gate_id;
 
     NM_SO_SR_TRACE_LEVEL(3, "asking for request %p (tag %d seq %d gate_id %d) completion\n", &p_sr_gate->status[tag][seq].status, tag, seq, gate_id);
 
     nm_so_sr_rwait(p_so_interface, request);
-
     seq++;
   }
 
@@ -891,29 +990,6 @@ nm_so_sr_get_current_recv_seq(struct nm_so_interface *p_so_interface,
   return ret;
 }
 
-int
-nm_so_sr_progress(struct nm_so_interface *p_so_interface)
-{
-  struct nm_core *p_core = p_so_interface->p_core;
-  NM_SO_SR_LOG_IN();
-
-  nm_schedule(p_core);
-
-  return NM_ESUCCESS;
-}
-
-int
-nm_so_sr_req_test(struct nm_so_interface *p_so_interface,
-                  nm_so_request request)
-{
-  uint8_t *p_request = (uint8_t *)request.status;
-
-  NM_SO_SR_LOG_IN();
-
-  return (*p_request & NM_SO_STATUS_RECV_COMPLETED) ?
-    NM_ESUCCESS : -NM_EAGAIN;
-}
-
 /* Callback functions */
 /** Initialize the gate storage for the SR interface.
  *  @param p_gate the pointer to the gate object.
@@ -936,6 +1012,13 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
   INIT_LIST_HEAD(&completed_rreq);
 
   p_so_gate->interface_private = p_sr_gate;
+
+#ifdef PIOMAN
+  int i,j;
+  for(i=0;i<NM_SO_MAX_TAGS;i++)
+   for(j=0;j<NM_SO_PENDING_PACKS_WINDOW;j++)
+     piom_cond_init(&p_sr_gate->status[i][j].status,0);
+#endif
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -975,7 +1058,7 @@ int nm_so_sr_pack_success(struct nm_gate *p_gate,
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", &p_sr_gate->status[tag][seq].status, tag, seq);
 
-  p_sr_gate->status[tag][seq].status |= NM_SO_STATUS_SEND_COMPLETED;
+  nm_so_cond_signal(p_sr_gate->status[tag][seq].status, NM_SO_STATUS_SEND_COMPLETED);
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -1001,11 +1084,12 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
   NM_SO_SR_TRACE("data received for request = %p (any_src request %p) - tag %d, seq %d\n", &p_sr_gate->status[tag][seq].status, is_any_src ? &any_src[tag].status : NULL, tag, seq);
 
-  p_sr_gate->status[tag][seq].status |= NM_SO_STATUS_RECV_COMPLETED;
+  nm_so_cond_signal(p_sr_gate->status[tag][seq].status, NM_SO_STATUS_RECV_COMPLETED);
 
   if(is_any_src) {
     any_src[tag].gate_id = p_gate->id;
-    any_src[tag].status |= NM_SO_STATUS_RECV_COMPLETED;
+    nm_so_cond_signal(any_src[tag].status, NM_SO_STATUS_RECV_COMPLETED);
+
     ref = any_src[tag].ref;
   } else {
     ref = p_sr_gate->status[tag][seq].ref;
@@ -1058,3 +1142,27 @@ nm_so_get_policy(uint8_t tag)
 }
 #endif /* NMAD_QOS */
 
+int
+nm_so_sr_progress(struct nm_so_interface *p_so_interface)
+{
+  /* We assume that PIOMan makes the communications progress */
+#ifndef PIOMAN
+  struct nm_core *p_core = p_so_interface->p_core;
+  NM_SO_SR_LOG_IN();
+  nm_schedule(p_core);
+#endif
+
+  NM_SO_SR_LOG_OUT();
+  return NM_ESUCCESS;
+}
+
+int
+nm_so_sr_req_test(struct nm_so_interface *p_so_interface TBX_UNUSED,
+                  nm_so_request request)
+{
+  NM_SO_SR_LOG_IN();
+  int rc = nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)?
+    NM_ESUCCESS : -NM_EAGAIN;
+  NM_SO_SR_LOG_OUT();
+  return rc;
+}

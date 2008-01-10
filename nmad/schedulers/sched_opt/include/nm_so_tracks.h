@@ -36,14 +36,12 @@
 /*** Primitives de réception ********/
 /************************************/
 
-static __inline__
+static __tbx_inline__
 void
 _nm_so_post_recv(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw,
 		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
-  //p_so_pw->pw.sending = tbx_false;
 
   p_so_pw->pw.p_gate = p_gate;
 
@@ -57,9 +55,13 @@ _nm_so_post_recv(struct nm_gate *p_gate, struct nm_so_pkt_wrap *p_so_pw,
   tbx_slist_append(p_gate->p_sched->post_aux_recv_req, &p_so_pw->pw);
 
   p_so_gate->active_recv[drv_id][track_id] = 1;
+#if (defined(PIOMAN) && !defined(PIO_OFFLOAD))
+  nm_piom_post_all(p_gate->p_core);
+#endif
+
 }
 
-static __inline__
+static __tbx_inline__
 int
 nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
 {
@@ -79,7 +81,7 @@ nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
   return err;
 }
 
-static __inline__
+static __tbx_inline__
 int
 nm_so_refill_regular_recv(struct nm_gate *p_gate)
 {
@@ -93,7 +95,9 @@ nm_so_refill_regular_recv(struct nm_gate *p_gate)
 
     for(drv = 0; drv < nb_drivers; drv++)
       if(!p_so_gate->active_recv[drv][TRK_SMALL])
-	err = nm_so_post_regular_recv(p_gate, drv);
+	{
+	  err = nm_so_post_regular_recv(p_gate, drv);
+	}
   }
 #else
   if(p_so_gate->active_recv[NM_SO_DEFAULT_NET][TRK_SMALL] == 0)
@@ -104,7 +108,7 @@ nm_so_refill_regular_recv(struct nm_gate *p_gate)
 }
 
 
-static __inline__
+static __tbx_inline__
 int
 nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
 		      uint8_t tag, uint8_t seq,
@@ -127,7 +131,7 @@ nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
   return err;
 }
 
-static __inline__
+static __tbx_inline__
 int
 nm_so_post_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src, struct nm_gate *p_gate, int drv_id,
                                          uint8_t tag, uint8_t seq,
@@ -163,7 +167,7 @@ nm_so_post_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src, struct nm_gate *
   return err;
 }
 
-static __inline__
+static __tbx_inline__
 int
 nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
                              struct nm_so_pkt_wrap *p_so_pw)
@@ -176,8 +180,7 @@ nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
   return err;
 }
 
-
-static __inline__
+static __tbx_inline__
 int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
                                   uint8_t tag, uint8_t seq, void *data,
                                   int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
@@ -191,7 +194,7 @@ int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
   return NM_ESUCCESS;
 }
 
-static __inline__
+static __tbx_inline__
 int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
                                 struct nm_so_pkt_wrap *p_so_pw,
                                 int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
@@ -216,15 +219,13 @@ int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
 /*** Primitives d'envoi *************/
 /************************************/
 
-static __inline__
+static __tbx_inline__
 void
 _nm_so_post_send(struct nm_gate *p_gate,
 		 struct nm_so_pkt_wrap *p_so_pw,
 		 int track_id, int drv_id)
 {
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-
-  //p_so_pw->pw.sending = tbx_true;
 
   p_so_pw->pw.p_gate = p_gate;
 
@@ -247,6 +248,9 @@ _nm_so_post_send(struct nm_gate *p_gate,
   tbx_slist_append(p_gate->post_sched_out_list, &p_so_pw->pw);
 
   p_so_gate->active_send[drv_id][track_id]++;
+#if ( defined(PIOMAN) && !defined(PIO_OFFLOAD))
+  nm_piom_post_all(p_gate->p_core);
+#endif
 }
 
 #endif

@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include "nm_pkt_wrap.h"
@@ -36,9 +36,9 @@ int
 nm_so_out_schedule_gate(struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate   = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
 
-  return p_so_sched->current_strategy->try_and_commit(p_gate);
+  return p_so_gate->strategy_receptacle.driver->try_and_commit(p_so_gate->strategy_receptacle._status,
+							       p_gate);
 }
 
 static int data_completion_callback(struct nm_so_pkt_wrap *p_so_pw,

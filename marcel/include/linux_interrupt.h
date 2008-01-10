@@ -107,6 +107,7 @@ static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) {
 
 #section marcel_structures
 #depend "asm/linux_atomic.h[marcel_types]"
+#include "marcel_topology.h"
 struct ma_tasklet_struct
 {
 	struct ma_tasklet_struct *next;
@@ -114,16 +115,30 @@ struct ma_tasklet_struct
 	ma_atomic_t count;
 	void (*func)(unsigned long);
 	unsigned long data;
+#ifdef MARCEL_REMOTE_TASKLETS
+	marcel_vpmask_t vp_mask;
+	struct list_head associated_bubble;
+	unsigned priority;
+#endif
 };
 
 #section marcel_macros
+#ifdef MARCEL_REMOTE_TASKLETS
+#define MA_TASKLET_INIT(name, _func, _data) \
+  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(0), .func=_func, .data=_data, .vp_mask=MARCEL_VPMASK_FULL }
+#define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
+  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(1), .func=_func, .data=_data, .vp_mask=MARCEL_VPMASK_FULL }
+#else
+
 #define MA_TASKLET_INIT(name, _func, _data) \
   { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(0), .func=_func, .data=_data }
-#define MA_DECLARE_TASKLET(name, _func, _data) \
-struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
-
 #define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
   { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(1), .func=_func, .data=_data }
+
+#endif /* MARCEL_REMOTE_TASKLETS */
+
+#define MA_DECLARE_TASKLET(name, _func, _data) \
+struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
 #define MA_DECLARE_TASKLET_DISABLED(name, _func, _data) \
 struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data)
 
@@ -138,15 +153,32 @@ enum
 #depend "asm/linux_bitops.h[]"
 #depend "asm/linux_bitops.h[marcel_macros]"
 #ifdef MA__LWPS
+
+#ifdef MARCEL_REMOTE_TASKLETS
+static __tbx_inline__ void set_vpmask(struct ma_tasklet_struct *t, marcel_vpmask_t * mask)
+{
+       t->vp_mask=*mask;
+}
+#define ma_remote_tasklet_lock(lock) ma_spin_lock(lock)
+#define ma_remote_tasklet_unlock(lock) ma_spin_unlock(lock)
+#else
+#define ma_remote_tasklet_lock(lock) do { } while (0)
+#define ma_remote_tasklet_unlock(lock) do { } while (0)
+#endif
+
+
 static __tbx_inline__ int ma_tasklet_trylock(struct ma_tasklet_struct *t)
 {
 	return !ma_test_and_set_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 }
 
-static __tbx_inline__ void ma_tasklet_unlock(struct ma_tasklet_struct *t)
+/* returns !=0 if somebody else added SCHED while we were running, in which case it's up to us to call ma_tasklet_schedule() again */
+static __tbx_inline__ int ma_tasklet_unlock(struct ma_tasklet_struct *t)
 {
+	unsigned long old_state;
 	ma_smp_mb__before_clear_bit(); 
-	ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+	old_state = ma_xchg(&(t)->state, 0);
+	return old_state & (1<<MA_TASKLET_STATE_SCHED);
 }
 
 static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
@@ -154,20 +186,87 @@ static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
 	while (ma_test_bit(MA_TASKLET_STATE_RUN, &(t)->state)) { ma_barrier(); }
 }
 #else
+#define ma_remote_tasklet_lock(lock) do { } while (0)
+#define ma_remote_tasklet_unlock(lock) do { } while (0)
+#define set_vpmask(t,mask) do{ } while (0)
 #define ma_tasklet_trylock(t) 1
 #define ma_tasklet_unlock_wait(t) do { } while (0)
-#define ma_tasklet_unlock(t) do { } while (0)
+#define ma_tasklet_unlock(t) 0
 #endif
 
 #section marcel_functions
 extern TBX_EXTERN void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
+
+#ifdef MARCEL_REMOTE_TASKLETS
+
+static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct *t, unsigned vp)
+{
+	ma_remote_tasklet_lock(&ma_vp_lwp[vp]->tasklet_lock);	
+	t->next = ma_topo_vpdata(ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list;
+	ma_topo_vpdata( ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list = t;
+	__ma_raise_softirq_vp(MA_TASKLET_SOFTIRQ, vp);
+	ma_remote_tasklet_unlock(&ma_vp_lwp[vp]->tasklet_lock);
+}
+
 static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {
-	if (!ma_test_and_set_bit(MA_TASKLET_STATE_SCHED, &t->state))
-		__ma_tasklet_schedule(t);
+	unsigned long old_state;
+	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
+	switch (old_state) {
+	case 0:
+		/* not running, not scheduled, schedule it here */
+		if( marcel_vpmask_vp_ismember(&(t->vp_mask),marcel_current_vp())) 
+		{			
+			ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+			ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+			__ma_tasklet_schedule(t);
+			break;
+		}
+
+		/* vp_mask doesn't fit. Let's take any vp that match */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+		__ma_tasklet_remote_schedule(t, marcel_vpmask_ffs(&t->vp_mask)-1);
+		break;
+	case 1<<MA_TASKLET_STATE_SCHED:
+		/* not running anywhere, but already scheduled somewhere, so let it run there */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+		/* FALLTHROUGH */
+	case (1<<MA_TASKLET_STATE_RUN):
+		/* already running somewhere and wasn't scheduled yet, let there handle it */
+	case (1<<MA_TASKLET_STATE_RUN)|(1<<MA_TASKLET_STATE_SCHED):
+		/* already running somewhere and still schedule, let there handle it (again) */
+		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+		break;
+	}
 }
+#else
+
+static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
+{
+	unsigned long old_state;
+	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
+	switch (old_state) {
+	case 0:
+		/* not running, not scheduled, schedule it here */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+		__ma_tasklet_schedule(t);
+		break;
+	case 1<<MA_TASKLET_STATE_SCHED:
+		/* not running anywhere, but already scheduled somewhere, so let it run there */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+		/* FALLTHROUGH */
+	case (1<<MA_TASKLET_STATE_RUN):
+		/* already running somewhere and wasn't scheduled yet, let there handle it */
+	case (1<<MA_TASKLET_STATE_RUN)|(1<<MA_TASKLET_STATE_SCHED):
+		/* already running somewhere and still schedule, let there handle it (again) */
+		break;
+	}
+}
+#endif /* MARCEL_REMOTE_TASKLETS */
 
 #section marcel_functions
 extern TBX_EXTERN void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
@@ -175,8 +274,24 @@ extern TBX_EXTERN void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struc
 #section marcel_inline
 static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 {
-	if (!ma_test_and_set_bit(MA_TASKLET_STATE_SCHED, &t->state))
+	unsigned long old_state;
+	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
+	switch (old_state) {
+	case 0:
+		/* not running, not scheduled, schedule it here */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 		__ma_tasklet_hi_schedule(t);
+		break;
+	case 1<<MA_TASKLET_STATE_SCHED:
+		/* not running anywhere, but already scheduled somewhere, so let it run there */
+		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
+		/* FALLTHROUGH */
+	case (1<<MA_TASKLET_STATE_RUN):
+		/* already running somewhere and wasn't scheduled yet, let there handle it */
+	case (1<<MA_TASKLET_STATE_RUN)|(1<<MA_TASKLET_STATE_SCHED):
+		/* already running somewhere and still schedule, let there handle it (again) */
+		break;
+	}
 }
 
 

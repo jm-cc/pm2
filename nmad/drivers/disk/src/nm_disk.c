@@ -24,11 +24,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <tbx.h>
-
+#include "pm2_common.h"
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -44,7 +44,10 @@ enum nm_disk_mode {
 };
 
 struct nm_disk_drv {
-        int _empty;
+        /** url */
+        char*url;
+        /** capabilities */
+        struct nm_drv_cap caps;
 };
 
 struct nm_disk_trk {
@@ -64,6 +67,81 @@ struct nm_disk_pkt_wrap {
         struct nm_iovec_iter vi;
 };
 
+/** Disk NewMad Driver */
+static int nm_disk_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_disk_init(struct nm_drv* p_drv);
+static int nm_disk_open_trk(struct nm_trk_rq*p_trk_rq);
+static int nm_disk_close_trk(struct nm_trk*p_trk);
+static int nm_disk_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_disk_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_disk_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_disk_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_disk_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static struct nm_drv_cap*nm_disk_get_capabilities(struct nm_drv *p_drv);
+static int nm_disk_set_capabilities(struct nm_drv *p_drv, struct nm_drv_cap*);
+static const char*nm_disk_get_driver_url(struct nm_drv *p_drv);
+#ifdef PIOM_BLOCKING_CALLS
+static int nm_disk_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_disk_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+#endif
+
+static const struct nm_drv_iface_s nm_disk_driver =
+  {
+    .query              = &nm_disk_query,
+    .init               = &nm_disk_init,
+
+    .open_trk		= &nm_disk_open_trk,
+    .close_trk	        = &nm_disk_close_trk,
+
+    .connect		= &nm_disk_connect,
+    .accept		= &nm_disk_accept,
+    .disconnect         = &nm_disk_disconnect,
+
+    .post_send_iov	= &nm_disk_send_iov,
+    .post_recv_iov      = &nm_disk_recv_iov,
+
+    .poll_send_iov	= &nm_disk_send_iov,
+    .poll_recv_iov	= &nm_disk_recv_iov,
+    /* TODO: add poll_any callbacks  */
+    .poll_send_any_iov  = NULL,
+    .poll_recv_any_iov  = NULL,
+
+    .get_driver_url     = &nm_disk_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_disk_get_capabilities,
+    .set_capabilities   = &nm_disk_set_capabilities,
+
+#ifdef PIOM_BLOCKING_CALLS
+    .wait_send_iov	= &nm_disk_wait_send_iov,
+    .wait_recv_iov	= &nm_disk_wait_recv_iov,
+
+    .wait_recv_any_iov  = NULL,
+    .wait_send_any_iov  = NULL
+#endif
+  };
+
+/** 'PadicoAdapter' facet for Disk driver */
+static void*nm_disk_instanciate(puk_instance_t, puk_context_t);
+static void nm_disk_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_disk_adapter_driver =
+  {
+    .instanciate = &nm_disk_instanciate,
+    .destroy     = &nm_disk_destroy
+  };
+
+/** Instanciate functions */
+static void*nm_disk_instanciate(puk_instance_t instance, puk_context_t context){
+  struct nm_disk_gate*status = TBX_MALLOC(sizeof (struct nm_disk_gate));
+  memset(status, 0, sizeof(struct nm_disk_gate));
+
+  return status;
+}
+
+static void nm_disk_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
 static
 int
 nm_disk_query			(struct nm_drv *p_drv,
@@ -80,20 +158,40 @@ nm_disk_query			(struct nm_drv *p_drv,
 	}
 
 	memset(p_disk_drv, 0, sizeof (struct nm_disk_drv));
-	p_drv->priv	= p_disk_drv;
 
 	/* driver capabilities encoding					*/
-	p_drv->cap.has_trk_rq_dgram			= 1;
-	p_drv->cap.has_selective_receive		= 0;
-	p_drv->cap.has_concurrent_selective_receive	= 0;
+	p_disk_drv->caps.has_trk_rq_dgram			= 1;
+	p_disk_drv->caps.has_selective_receive		= 0;
+	p_disk_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = PM2_NUIOA_ANY_NODE;
+	p_disk_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
 
+	p_drv->priv	= p_disk_drv;
 	err = NM_ESUCCESS;
 
  out:
 	return err;
+}
+
+static struct nm_drv_cap*nm_disk_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_disk_drv *p_disk_drv = p_drv->priv;
+  return &p_disk_drv->caps;
+}
+
+static int nm_disk_set_capabilities(struct nm_drv *p_drv, struct nm_drv_cap* caps)
+{
+  struct nm_disk_drv *p_disk_drv = p_drv->priv;
+  p_disk_drv->caps = *caps;
+  return 0;
+}
+
+/** Url function */
+static const char*nm_disk_get_driver_url(struct nm_drv *p_drv)
+{
+  struct nm_disk_drv *p_disk_drv = p_drv->priv;
+  return p_disk_drv->url;
 }
 
 static
@@ -103,8 +201,7 @@ nm_disk_init			(struct nm_drv *p_drv) {
 	int err;
 
         /* driver url encoding						*/
-        p_drv->url	= tbx_strdup("-");
-	p_drv->name	= tbx_strdup("disk");
+        p_disk_drv->url	= tbx_strdup("-");
 
 	err = NM_ESUCCESS;
 	return err;
@@ -118,7 +215,7 @@ nm_disk_exit			(struct nm_drv *p_drv) {
 
         p_disk_drv	= p_drv->priv;
 
-        TBX_FREE(p_drv->url);
+        TBX_FREE(p_disk_drv->url);
         TBX_FREE(p_disk_drv);
 
 	err = NM_ESUCCESS;
@@ -180,8 +277,9 @@ nm_disk_close_trk		(struct nm_trk *p_trk) {
 
 static
 int
-nm_disk_connect		(struct nm_cnx_rq *p_crq) {
-        struct nm_disk_gate	*p_disk_gate	= NULL;
+nm_disk_connect		(void*_status,
+			 struct nm_cnx_rq *p_crq) {
+        struct nm_disk_gate	*p_disk_gate	= _status;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -218,7 +316,6 @@ nm_disk_connect		(struct nm_cnx_rq *p_crq) {
         SYSCALL(fd = open(trk_url, flags, 0666));
 
         /* private data				*/
-        p_disk_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
         if (!p_disk_gate) {
                 p_disk_gate	= TBX_MALLOC(sizeof (struct nm_disk_gate));
                 if (!p_disk_gate) {
@@ -230,7 +327,6 @@ nm_disk_connect		(struct nm_cnx_rq *p_crq) {
                 memset(p_disk_gate, 0, sizeof(struct nm_disk_gate));
 
                 /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_disk_gate;
                 p_disk_gate->mode	= mode;
         }
 
@@ -243,14 +339,16 @@ nm_disk_connect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_disk_accept			(struct nm_cnx_rq *p_crq) {
+nm_disk_accept			(void*_status,
+				 struct nm_cnx_rq *p_crq) {
 	return -NM_EINVAL;
 }
 
 static
 int
-nm_disk_disconnect		(struct nm_cnx_rq *p_crq) {
-        struct nm_disk_gate	*p_disk_gate	= NULL;
+nm_disk_disconnect		(void*_status,
+				 struct nm_cnx_rq *p_crq) {
+        struct nm_disk_gate	*p_disk_gate	= _status;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
@@ -259,7 +357,6 @@ nm_disk_disconnect		(struct nm_cnx_rq *p_crq) {
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
         p_trk		= p_crq->p_trk;
-        p_disk_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
 
         SYSCALL(close(p_disk_gate->fd[p_trk->id]));
 
@@ -270,17 +367,16 @@ nm_disk_disconnect		(struct nm_cnx_rq *p_crq) {
 
 static
 int
-nm_disk_outgoing_poll	(struct nm_pkt_wrap *p_pw) {
+nm_disk_outgoing_poll	(void *_status,
+			 struct nm_pkt_wrap *p_pw) {
 	struct pollfd		 pollfd;
-        struct nm_disk_gate	*p_disk_gate	= NULL;
+        struct nm_disk_gate	*p_disk_gate	= _status;
         int			 ret;
         int			 err;
 
         if (!p_pw->gate_priv) {
-                p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
+	        p_pw->gate_priv	= p_disk_gate;
         }
-
-	p_disk_gate	= p_pw->gate_priv;
 
         if (p_disk_gate->mode != ndm_W && p_disk_gate->mode != ndm_A) {
                 err = -NM_EINVAL;
@@ -358,11 +454,9 @@ nm_disk_incoming_poll	(struct nm_pkt_wrap *p_pw) {
         p_gate		= p_pw->p_gate;
 
         if (!p_pw->gate_priv) {
-                p_pw->gate_priv		=
-                        p_pw->p_gate->p_gate_drv_array[p_drv->id]->info;
+	        p_pw->gate_priv = p_disk_gate;
         }
 
-        p_disk_gate	= p_pw->gate_priv;
 
         if (p_disk_gate->mode != ndm_R) {
                 NM_DISPF("invalid file mode for incoming poll");
@@ -428,7 +522,8 @@ nm_disk_incoming_poll	(struct nm_pkt_wrap *p_pw) {
 /* used for post and poll */
 static
 int
-nm_disk_send_iov	(struct nm_pkt_wrap *p_pw) {
+nm_disk_send_iov	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
         struct nm_disk_gate	*p_disk_gate	= NULL;
         struct nm_disk_pkt_wrap	*p_disk_pw	= NULL;
         struct nm_iovec_iter	*p_vi		= NULL;
@@ -436,7 +531,7 @@ nm_disk_send_iov	(struct nm_pkt_wrap *p_pw) {
         int			 ret;
         int			 err;
 
-        err	= nm_disk_outgoing_poll(p_pw);
+        err	= nm_disk_outgoing_poll(_status, p_pw);
         if (err < 0)
                 goto out_complete;
 
@@ -543,7 +638,8 @@ nm_disk_send_iov	(struct nm_pkt_wrap *p_pw) {
 /* used for post and poll */
 static
 int
-nm_disk_recv_iov	(struct nm_pkt_wrap *p_pw) {
+nm_disk_recv_iov	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
         struct nm_disk_gate	*p_disk_gate	= NULL;
         struct nm_disk_pkt_wrap	*p_disk_pw	= NULL;
         struct nm_iovec_iter	*p_vi		= NULL;
@@ -655,23 +751,5 @@ nm_disk_recv_iov	(struct nm_pkt_wrap *p_pw) {
         }
 
         goto out;
-}
-
-int
-nm_disk_load(struct nm_drv_ops *p_ops) {
-        p_ops->query		= nm_disk_query;
-        p_ops->init		= nm_disk_init;
-        p_ops->exit             = nm_disk_exit;
-        p_ops->open_trk		= nm_disk_open_trk;
-        p_ops->close_trk	= nm_disk_close_trk;
-        p_ops->connect		= nm_disk_connect;
-        p_ops->accept		= nm_disk_accept;
-        p_ops->disconnect       = nm_disk_disconnect;
-        p_ops->post_send_iov	= nm_disk_send_iov;
-        p_ops->post_recv_iov    = nm_disk_recv_iov;
-        p_ops->poll_send_iov	= nm_disk_send_iov;
-        p_ops->poll_recv_iov	= nm_disk_recv_iov;
-
-        return NM_ESUCCESS;
 }
 

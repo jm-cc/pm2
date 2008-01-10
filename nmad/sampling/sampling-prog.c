@@ -21,7 +21,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include <nm_so_public.h>
@@ -221,8 +221,8 @@ control_buffer(struct nm_pkt_wrap *p_pw, int len) {
 #endif
 
 static int
-nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
-  struct nm_drv_ops drv_ops = driver->ops;
+nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate, void *status){
+  const struct nm_drv_iface_s *drv_ops = driver->driver;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
   unsigned char *data_send	= NULL;
@@ -265,7 +265,7 @@ nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
     TBX_GET_TICK(t1);
     while (nb_samples++ < param_nb_samples) {
 
-      err = drv_ops.post_send_iov(sending_pw);
+      err = drv_ops->post_send_iov(status, sending_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_ping - post_send_iov",
                           err);
@@ -273,7 +273,7 @@ nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
       }
 
       while(err != NM_ESUCCESS){
-        err = drv_ops.poll_send_iov(sending_pw);
+        err = drv_ops->poll_send_iov(status, sending_pw);
 
         if(err != NM_ESUCCESS && err != -NM_EAGAIN){
           nm_ns_print_errno("nm_ns_ping - poll_send_iov",
@@ -286,7 +286,7 @@ nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
       nm_ns_update_pw(sending_pw,  data_send, size);
 
 
-      err = drv_ops.post_recv_iov(receiving_pw);
+      err = drv_ops->post_recv_iov(status, receiving_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_ping - post_recv_iov",
                           err);
@@ -294,7 +294,7 @@ nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
       }
 
       while(err != NM_ESUCCESS){
-        err = drv_ops.poll_recv_iov(receiving_pw);
+        err = drv_ops->poll_recv_iov(status, receiving_pw);
         if(err != NM_ESUCCESS && err != -NM_EAGAIN){
           nm_ns_print_errno("nm_ns_ping - poll_recv_iov",
                             err);
@@ -328,8 +328,8 @@ nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate){
 }
 
 static int
-nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate){
-  struct nm_drv_ops drv_ops = driver->ops;
+nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate, void *status){
+  const struct nm_drv_iface_s *drv_ops = driver->driver;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
   unsigned char *data_send          = NULL;
@@ -367,14 +367,14 @@ nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate){
     nm_ns_update_pw(sending_pw,    data_send, size);
     nm_ns_update_pw(receiving_pw, data_recv, size);
 
-    err = drv_ops.post_recv_iov(receiving_pw);
+    err = drv_ops->post_recv_iov(status, receiving_pw);
     if(err != NM_ESUCCESS && err != -NM_EAGAIN){
       nm_ns_print_errno("nm_ns_pong - post_recv_iov",
                         err);
       goto out;
     }
     while(err != NM_ESUCCESS){
-      err = drv_ops.poll_recv_iov(receiving_pw);
+      err = drv_ops->poll_recv_iov(status, receiving_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_pong - poll_recv_iov",
                           err);
@@ -384,14 +384,14 @@ nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate){
     //control_buffer(receiving_pw, size);
 
     while (nb_samples++ < param_nb_samples - 1) {
-      err = drv_ops.post_send_iov(sending_pw);
+      err = drv_ops->post_send_iov(status, sending_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_pong - post_send_iov",
                           err);
         goto out;
       }
       while(err != NM_ESUCCESS){
-        err = drv_ops.poll_send_iov(sending_pw);
+        err = drv_ops->poll_send_iov(status, sending_pw);
         if(err != NM_ESUCCESS && err != -NM_EAGAIN){
           nm_ns_print_errno("nm_ns_pong - poll_send_iov",
                             err);
@@ -400,14 +400,14 @@ nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate){
       }
       nm_ns_update_pw(sending_pw,  data_send, size);
 
-      err = drv_ops.post_recv_iov(receiving_pw);
+      err = drv_ops->post_recv_iov(status, receiving_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_pong - post_recv_iov",
                           err);
         goto out;
       }
       while(err != NM_ESUCCESS){
-        err = drv_ops.poll_recv_iov(receiving_pw);
+        err = drv_ops->poll_recv_iov(status, receiving_pw);
         if(err != NM_ESUCCESS && err != -NM_EAGAIN){
           nm_ns_print_errno("nm_ns_pong - poll_recv_iov",
                             err);
@@ -418,14 +418,14 @@ nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate){
       //control_buffer(receiving_pw, size);
     }
 
-    err = drv_ops.post_send_iov(sending_pw);
+    err = drv_ops->post_send_iov(status, sending_pw);
     if(err != NM_ESUCCESS && err != -NM_EAGAIN){
       nm_ns_print_errno("nm_ns_pong - post_send_iov",
                         err);
       goto out;
     }
     while(err != NM_ESUCCESS){
-      err = drv_ops.poll_send_iov(sending_pw);
+      err = drv_ops->poll_send_iov(status, sending_pw);
       if(err != NM_ESUCCESS && err != -NM_EAGAIN){
         nm_ns_print_errno("nm_ns_pong - poll_send_iov",
                           err);
@@ -458,6 +458,7 @@ int main(int argc, char **argv){
   struct nm_core          *p_core     = NULL;
   struct nm_drv           *p_drv = NULL;
   struct nm_gate          *p_gate = NULL;
+  struct nm_gate_drv      *p_gdrv = NULL;
 
   /* Initialisation de l'émulation */
   madeleine    = mad_init(&argc, argv);
@@ -469,14 +470,15 @@ int main(int argc, char **argv){
 
   p_drv  = &p_core->driver_array[0]; // always one activated network
   p_gate = &p_core->gate_array[0];
+  p_gdrv = p_gate->p_gate_drv_array[0];
 
   if(!is_server){
     //printf("Je suis le client\n");
-    nm_ns_ping(p_drv, p_gate);;
+    nm_ns_ping(p_drv, p_gate, p_gdrv->receptacle._status);
 
   } else {
     //printf("Je suis le serveur\n");
-    nm_ns_pong(p_drv, p_gate);
+    nm_ns_pong(p_drv, p_gate, p_gdrv->receptacle._status);
   }
 
   mad_exit(madeleine);
@@ -484,7 +486,7 @@ int main(int argc, char **argv){
 }
 
 #else
-int main() {
+int main(int argc, char **argv) {
   fprintf(stderr, "Require mad3_emu\n");
   exit(EXIT_FAILURE);
 }

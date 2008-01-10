@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include "nm_private.h"
 #include "nm_pkt_wrap.h"
@@ -77,7 +77,6 @@ nm_process_successful_send_rq(struct nm_gate		*p_gate,
  * - requests may be successful or failed, and should be handled appropriately
  * --> this function is responsible for the processing common to both cases
  */
-static
 __inline__
 int
 nm_process_complete_send_rq(struct nm_gate	*p_gate,
@@ -129,11 +128,9 @@ nm_poll_send	(struct nm_gate *p_gate) {
         /* Fast path */
         for (i = 0; i < req_nb; i++) {
                 p_pw	= p_gate->out_req_list[i];
-#ifdef XPAULETTE
-                err	= p_pw->p_drv->ops.wait_iov(p_pw);
-#else
-		err	= p_pw->p_drv->ops.poll_send_iov(p_pw);
-#endif
+		struct nm_gate_drv*p_gdrv = p_gate->p_gate_drv_array[p_pw->p_drv->id];
+		err = p_gdrv->receptacle.driver->poll_send_iov(p_gdrv->receptacle._status, 
+							       p_pw);
                 if (err != -NM_EAGAIN)
                         goto update_needed;
         }
@@ -148,11 +145,9 @@ nm_poll_send	(struct nm_gate *p_gate) {
 
         for (;i < req_nb; i++) {
                 p_pw	= p_gate->out_req_list[i];
-#ifdef XPAULETTE
-                err	= p_pw->p_drv->ops.wait_iov(p_pw);
-#else
-		err	= p_pw->p_drv->ops.poll_send_iov(p_pw);
-#endif
+		struct nm_gate_drv*p_gdrv = p_gate->p_gate_drv_array[p_pw->p_drv->id];
+		err = p_gdrv->receptacle.driver->poll_send_iov(p_gdrv->receptacle._status, 
+							       p_pw);
 
                 if (err == -NM_EAGAIN) {
                         p_gate->out_req_list[j] = p_gate->out_req_list[i];
@@ -208,7 +203,8 @@ nm_post_send	(struct nm_gate *p_gate) {
                      p_pw->proto_id,
                      p_pw->seq);
                 /* post request */
-                err = p_pw->p_gdrv->p_drv->ops.post_send_iov(p_pw);
+		err = p_pw->p_gdrv->receptacle.driver->post_send_iov(p_pw->p_gdrv->receptacle._status, 
+								     p_pw);
 
                 /* process post command status				*/
 
@@ -224,9 +220,6 @@ nm_post_send	(struct nm_gate *p_gate) {
                              p_pw->p_trk->id,
                              p_pw->proto_id,
                              p_pw->seq);
-#ifdef XPAULETTE
-			err = p_pw->p_gdrv->p_drv->ops.wait_iov(p_pw);
-#endif /* XPAULETTE */
  
                 } else {
                         /* Yes, request complete, process it */

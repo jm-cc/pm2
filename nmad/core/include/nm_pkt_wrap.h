@@ -16,10 +16,11 @@
 #ifndef NM_PKT_WRAP_H
 #define NM_PKT_WRAP_H
 
-#ifdef XPAULETTE
-#include "xpaul.h"
-#endif
+#include <sys/uio.h>
 
+#ifdef PIOMAN
+#include "pioman.h"
+#endif
 #include <ccs_public.h>
 
 struct nm_drv;
@@ -62,11 +63,26 @@ struct nm_iovec_iter {
  */
 struct nm_pkt_wrap {
 
-#ifdef XPAULETTE
-	struct xpaul_req	 inst;
+#ifdef PIOMAN
+	struct piom_req	 inst;
 	int err;
-#endif /* XPAULETTE */
+	enum{
+		RECV,
+		SEND,
+		NONE,
+	}which;
+	p_tbx_slist_t           slist;
+#endif /* PIOMAN */
 
+#if(defined(PIOMAN) && defined(PIO_OFFLOAD))
+	void *offload_data;
+	uint32_t offload_len;
+	uint8_t offload_tags;
+	uint8_t offload_seq;
+	uint32_t offload_iov_chunk_offset;
+	uint8_t offload_is_last_chunk;
+	int offload_flags;
+#endif
 
         /* Scheduler fields.
          */

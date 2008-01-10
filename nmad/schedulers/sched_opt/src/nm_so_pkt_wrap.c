@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 
@@ -308,6 +308,9 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
   INIT_LIST_HEAD(&p_so_pw->link);
 
   *pp_so_pw = p_so_pw;
+#ifdef PIOMAN
+  p_so_pw->pw.slist=NULL;
+#endif
 
  out:
   return err;
@@ -323,6 +326,10 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
 {
   int err;
   int flags = p_so_pw->pw.pkt_priv_flags;
+
+#ifdef PIOMAN
+  piom_req_free(&p_so_pw->pw.inst);
+#endif
 
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
   /* Clean iov entries first */
@@ -816,7 +823,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
   void *data = NULL;
 
 #ifdef NMAD_QOS
-  nm_so_strategy *strategy = ((struct nm_so_gate *)p_so_pw->pw.p_gate->sch_private)->p_so_sched->current_strategy;
+  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_so_pw->pw.p_gate->sch_private;
+  struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   unsigned ack_received = 0;
 #endif /* NMAD_QOS */
 
@@ -927,7 +935,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 	    if(strategy->ack_callback != NULL)
 	      {
 		ack_received = 1;
-		r = strategy->ack_callback(p_so_pw,
+		r = strategy->ack_callback(p_so_gate->strategy_receptacle._status,
+                                           p_so_pw,
 					   ch->a.tag_id,
 					   ch->a.seq,
 					   ch->a.track_id,
@@ -1032,7 +1041,8 @@ nm_so_pw_iterate_over_headers(struct nm_so_pkt_wrap *p_so_pw,
 
 #ifdef NMAD_QOS
   if(ack_received)
-    strategy->ack_callback(p_so_pw,
+    strategy->ack_callback(p_so_gate->strategy_receptacle._status,
+                           p_so_pw,
 			   0,
 			   0,
 			   128,

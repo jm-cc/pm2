@@ -96,6 +96,8 @@ struct marcel_lwp {
 		*vp_level;
 
 	char data[MA_PER_LWP_ROOM];
+
+	ma_spinlock_t  tasklet_lock;
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \

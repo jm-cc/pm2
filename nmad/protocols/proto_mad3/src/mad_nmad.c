@@ -200,6 +200,7 @@ static struct nm_so_interface *p_so_if	= NULL;
  * ------------------------
  */
 
+
 struct nm_core	*
 mad_nmad_get_core(void) {
   return p_core;
@@ -355,9 +356,10 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
                      int		  *argc,
                      char		***argv) {
         p_mad_nmad_driver_specific_t	 ds		= NULL;
-        uint8_t			 	 drv_id		=    0;
-        char				*l_url		= NULL;
-        int err;
+        uint8_t			 	 drv_id;
+        char				 *l_url;
+        int                              err;
+	puk_component_t                  driver_config = NULL;
 
         NM_LOG_IN();
         if (!p_core) {
@@ -383,228 +385,9 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #endif
         }
 
-#ifdef CONFIG_TCP
-        if (tbx_streq(d->device_name, "tcp")) {
-                err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
-                goto found;
-        }
-#endif
+	driver_config = nm_core_component_load("driver", "custom");
+	err = nm_core_driver_load_init(p_core, driver_config, &drv_id, &l_url);
 
-#ifdef CONFIG_GM
-        if (tbx_streq(d->device_name, "gm")) {
-                err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
-                goto found;
-        }
-#endif
-
-#ifdef CONFIG_MX
-        if (tbx_streq(d->device_name, "mx")) {
-                err = nm_core_driver_load_init(p_core, nm_mx_load, &drv_id, &l_url);
-                goto found;
-        }
-#endif
-
-#ifdef CONFIG_QSNET
-        if (tbx_streq(d->device_name, "quadrics")) {
-                p_mad_dir_driver_t			 dd		= NULL;
-                ntbx_process_lrank_t        		 process_lrank	=   -1;
-                ntbx_process_lrank_t        		 i_lrank	=   -1;
-                p_ntbx_process_container_t		 dpc		= NULL;
-                int					 nb_processes	=    0;
-                int					 nb_lranks	=    0;
-                int					 nb_nodes	=    0;
-                int					 node_id	=   -1;
-                int					 node_id_min	=   -1;
-                int					 node_id_max	=   -1;
-                int					*node_ids	= NULL;
-                int					 nb_ctxs	=    0;
-                int					 ctx_id		=   -1;
-                int					 ctx_id_max	=   -1;
-                int					*ctx_ids	= NULL;
-                int					*next_node_ctx  = NULL;
-                char                                    *capability_str	= NULL;
-
-                dd		= d->dir_driver;
-                dpc		= dd->pc;
-                process_lrank	= d->process_lrank;
-
-                nb_lranks	= ntbx_pc_local_max(dpc)+1;
-
-                if (nb_lranks < 1)
-                        TBX_FAILURE("invalid state");
-
-                node_ids	= TBX_CALLOC(nb_lranks, sizeof(int));
-                ctx_ids		= TBX_CALLOC(nb_lranks, sizeof(int));
-
-                /* First pass: get the Quadrics node id of each process */
-                TRACE("Quadrics driver - node ids processing: first pass");
-                if (!ntbx_pc_first_local_rank(dpc, &i_lrank))
-                        TBX_FAILURE("invalid state");
-
-                do {
-                        p_mad_dir_driver_process_specific_t	dps 		= NULL;
-                        ntbx_process_lrank_t        		i_grank		=   -1;
-                        int					i_node_id	=   -1;
-
-                        dps	= ntbx_pc_get_local_specific(dpc, i_lrank);
-                        i_grank	= ntbx_pc_local_to_global(dpc, i_lrank);
-
-                        i_node_id	= (int)tbx_cstr_to_long(dps->parameter);
-                        if (i_node_id < 0)
-                                TBX_FAILURE("invalid Quadrics node id");
-
-                        nb_processes++;
-                        TRACE("Quadrics driver - process %d: node id = %d", i_grank, i_node_id);
-
-                        node_ids[i_lrank] = i_node_id;
-
-                        if (i_lrank == process_lrank) {
-                                node_id	= i_node_id;
-                        }
-
-                        if (node_id_min == -1  ||  i_node_id < node_id_min) {
-                                node_id_min = i_node_id;
-                        }
-
-                        if (node_id_max == -1  ||  i_node_id > node_id_max) {
-                                node_id_max = i_node_id;
-                        }
-
-                } while (ntbx_pc_next_local_rank(dpc, &i_lrank));
-
-                nb_nodes	= node_id_max - node_id_min + 1;
-
-                /* Second pass: compute the context id of each process */
-                TRACE("Quadrics driver - node ids processing: second pass");
-                next_node_ctx = TBX_MALLOC(nb_nodes * sizeof(int));
-                {
-                        int i = 0;
-
-                        for (i = 0; i < nb_nodes; i++) {
-                                next_node_ctx[i] = MAD_QUADRICS_CONTEXT_ID_OFFSET;
-                        }
-                }
-
-                if (!ntbx_pc_first_local_rank(dpc, &i_lrank))
-                        TBX_FAILURE("invalid state");
-
-                do {
-                        ntbx_process_lrank_t	i_grank		= -1;
-                        int			i_node_id	= -1;
-                        int			i_ctx_id	= -1;
-
-                        i_grank	= ntbx_pc_local_to_global(dpc, i_lrank);
-
-                        i_node_id	= node_ids[i_lrank];
-                        i_ctx_id	= next_node_ctx[i_node_id - node_id_min]++;
-
-                        TRACE("Quadrics driver - process %d: context id = %d", i_grank, i_ctx_id);
-                        ctx_ids[i_lrank]	= i_ctx_id;
-
-                        if (i_lrank == process_lrank) {
-                                ctx_id	= i_ctx_id;
-                        }
-
-                        if (ctx_id_max == -1  ||  i_ctx_id > ctx_id_max) {
-                                ctx_id_max = i_ctx_id;
-                                nb_ctxs++;
-                        }
-
-                } while (ntbx_pc_next_local_rank(dpc, &i_lrank));
-
-                TRACE_VAL("Quadrics driver - number of processes", nb_processes);
-                TRACE_VAL("Quadrics driver - number of nodes", nb_nodes);
-                TRACE_VAL("Quadrics driver - number of contexts per nodes", nb_ctxs);
-                TRACE_VAL("Quadrics driver - nb_nodes * nb_ctxs", nb_nodes * nb_ctxs);
-
-                if (nb_nodes * nb_ctxs != nb_processes)
-                        TBX_FAILURE("invalid configuration for Quadrics");
-
-                TBX_FREE(next_node_ctx);
-                next_node_ctx	= NULL;
-
-                /* Capability string computation */
-                {
-                        char	*str = NULL;
-                        int 	 alloc_size = 16;
-                        int      size = 0;
-
-                        str = TBX_MALLOC(alloc_size);
-                        size = snprintf(str, alloc_size, "N%dC%d-%d-%dN%d-%dR1b",
-                                        node_id,
-                                        MAD_QUADRICS_CONTEXT_ID_OFFSET,
-                                        ctx_id,
-                                        ctx_id_max,
-                                        node_id_min,
-                                        node_id_max);
-
-                        if (size >= alloc_size) {
-                                alloc_size = size+1;
-                                str	= TBX_REALLOC(str, alloc_size);
-                                size	= snprintf(str, alloc_size, "N%dC%d-%d-%dN%d-%dR1b",
-                                                   node_id,
-                                                   MAD_QUADRICS_CONTEXT_ID_OFFSET,
-                                                   ctx_id,
-                                                   ctx_id_max,
-                                                   node_id_min,
-                                                   node_id_max);
-                        }
-
-                        TRACE_STR("Quadrics driver - capability string", str);
-
-                        capability_str = str;
-                }
-
-                /* Quadrics initialization */
-                if (elan_generateCapability (capability_str) < 0)
-                        TBX_ERROR("elan_generateCapability");
-
-                err = nm_core_driver_load_init(p_core, nm_qsnet_load, &drv_id, &l_url);
-                if (err != NM_ESUCCESS) {
-                        NM_DISPF("nm_core_driver_load_init(qsnet) failed with error code %d", err);
-                        TBX_FAILURE("driver could not be initialized");
-                }
-
-                if (node_id == node_id_min
-                    && ctx_id == MAD_QUADRICS_CONTEXT_ID_OFFSET) {
-                        l_url = tbx_strdup ("");
-                } else {
-                        int alloc_size  = 6;
-                        int size	= 0;
-
-                        l_url = TBX_MALLOC(alloc_size);
-                        size = snprintf(l_url, alloc_size, "%d#-#-", node_id_min);
-                        if (size >= alloc_size) {
-                                alloc_size = size + 1;
-                                l_url = TBX_REALLOC(l_url, alloc_size);
-                        }
-
-                        size = snprintf(l_url, alloc_size, "%d#-#-", node_id_min);
-                }
-
-                NM_TRACEF("l_url = %s", l_url);
-
-                goto found;
-        }
-#endif
-
-#ifdef CONFIG_SISCI
-        if (tbx_streq(d->device_name, "sisci")) {
-                err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
-                goto found;
-        }
-#endif
-
-#ifdef CONFIG_IBVERBS
-        if (tbx_streq(d->device_name, "ibverbs")) {
-                err = nm_core_driver_load_init(p_core, nm_ibverbs_load, &drv_id, &l_url);
-                goto found;
-        }
-#endif
-
-        TBX_FAILURE("driver unavailable");
-
-found:
         NMAD_EVENT_DRV_ID(drv_id);
         NMAD_EVENT_DRV_NAME(d->device_name);
         d->connection_type	= mad_bidirectional_connection;

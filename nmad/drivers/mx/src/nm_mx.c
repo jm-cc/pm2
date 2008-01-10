@@ -21,11 +21,12 @@
 #include <assert.h>
 #include <myriexpress.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -52,6 +53,12 @@ struct nm_mx_drv {
 	mx_endpoint_t ep;
 	/** Endpoint id */
 	uint32_t ep_id;
+        /** Capabilities */
+        struct nm_drv_cap caps;
+        /** Url */
+        char*url;
+        /** nb of gates */
+        int nb_gates;
 };
 
 struct nm_mx_trk {
@@ -74,9 +81,8 @@ struct nm_mx_cnx {
 };
 
 /** MX specific gate data */
-struct nm_mx_gate {
+struct nm_mx {
 	struct nm_mx_cnx cnx_array[255];
-	int ref_cnt;
 };
 
 /** MX specific packet wrapper data */
@@ -146,13 +152,101 @@ struct nm_mx_adm_pkt_2 {
 #define NM_MX_ACCEPT_MATCH_INFO(track) ( UINT64_C(0xbeefdead) | NM_MX_ADMIN_MATCH_MASK | (((uint64_t)track) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
 /*@}*/
 
-/*
- * Forwarded prototypes
- */
+/** Mx NewMad Driver */
+static int nm_mx_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_mx_init(struct nm_drv *p_drv);
+static int nm_mx_open_track(struct nm_trk_rq*p_trk_rq);
+static int nm_mx_close_track(struct nm_trk*p_trk);
+static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
+static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv);
+static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
+#ifdef PIOM_BLOCKING_CALLS
+static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
+#endif
 
-static
-int
-nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw);
+static const struct nm_drv_iface_s nm_mx_driver =
+  {
+    .query              = &nm_mx_query,
+    .init               = &nm_mx_init,
+
+    .open_trk		= &nm_mx_open_track,
+    .close_trk	        = &nm_mx_close_track,
+
+    .connect		= &nm_mx_connect,
+    .accept		= &nm_mx_accept,
+    .disconnect         = &nm_mx_disconnect,
+
+    .post_send_iov	= &nm_mx_post_send_iov,
+    .post_recv_iov      = &nm_mx_post_recv_iov,
+
+    .poll_send_iov      = &nm_mx_poll_iov,
+    .poll_recv_iov      = &nm_mx_poll_iov,
+
+#if MX_API >= 0x301
+    .poll_send_any_iov  = &nm_mx_poll_any_iov,
+    .poll_recv_any_iov  = &nm_mx_poll_any_iov,
+#else
+    .poll_send_any_iov  = NULL,
+    .poll_recv_any_iov  = NULL,
+#endif
+
+    .get_driver_url     = &nm_mx_get_driver_url,
+    .get_track_url      = NULL,
+    .get_capabilities   = &nm_mx_get_capabilities,
+
+#ifdef PIOM_BLOCKING_CALLS
+    .wait_recv_iov      = &nm_mx_block_iov,
+    .wait_send_iov      = &nm_mx_block_iov,
+
+#if MX_API >= 0x301
+    .wait_recv_any_iov  = &nm_mx_block_any_iov,
+    .wait_send_any_iov  = &nm_mx_block_any_iov
+#else
+    .wait_recv_any_iov  = NULL,
+    .wait_send_any_iov  = NULL
+#endif
+#endif
+  };
+
+/** 'PadicoAdapter' facet for Mx driver */
+static void*nm_mx_instanciate(puk_instance_t, puk_context_t);
+static void nm_mx_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_mx_adapter_driver =
+  {
+    .instanciate = &nm_mx_instanciate,
+    .destroy     = &nm_mx_destroy
+  };
+
+/** Return capabilities */
+static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv)
+{
+  struct nm_mx_drv* p_mx_drv = p_drv->priv;
+  return &p_mx_drv->caps;
+}
+
+/** Instanciate functions */
+static void*nm_mx_instanciate(puk_instance_t instance, puk_context_t context){
+  struct nm_mx*status = TBX_MALLOC(sizeof (struct nm_mx));
+  memset(status, 0, sizeof(struct nm_mx));
+  return status;
+}
+
+static void nm_mx_destroy(void*_status){
+  TBX_FREE(_status);
+}
+
+const static char*nm_mx_get_driver_url(struct nm_drv *p_drv){
+  struct nm_mx_drv* p_mx_drv = p_drv->priv;
+  return p_mx_drv->url;
+}
 
 /*
  * Functions
@@ -169,6 +263,14 @@ nm_mx_check_return(const char *msg, mx_return_t return_code) {
 
 		DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
 	}
+}
+
+/** Initialize the MX driver */
+extern int nm_mx_load(){
+  puk_adapter_declare("NewMad_Driver_mx",
+		      puk_adapter_provides("PadicoAdapter", &nm_mx_adapter_driver),
+		      puk_adapter_provides("NewMad_Driver", &nm_mx_driver));
+  return 0;
 }
 
 #ifdef PM2_NUIOA
@@ -237,13 +339,13 @@ nm_mx_init_boards(void)
 static
 int
 nm_mx_query		(struct nm_drv *p_drv,
-			 struct nm_driver_query_param *params,
+                         struct nm_driver_query_param *params,
 			 int nparam) {
-        struct nm_mx_drv	*p_mx_drv	= NULL;
         mx_return_t	mx_ret	= MX_SUCCESS;
 	uint32_t board_number;
 	int i;
 	int err;
+        struct nm_mx_drv*p_mx_drv = NULL;
 
 	/* private data                                                 */
 	p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
@@ -253,7 +355,6 @@ nm_mx_query		(struct nm_drv *p_drv,
 	}
 
         memset(p_mx_drv, 0, sizeof (struct nm_mx_drv));
-        p_drv->priv	= p_mx_drv;
 
 	/* init MX */
         mx_set_error_handler(MX_ERRORS_RETURN);
@@ -309,24 +410,25 @@ nm_mx_query		(struct nm_drv *p_drv,
 	total_use_count++;
 
         /* driver capabilities encoding					*/
-        p_drv->cap.has_trk_rq_dgram			= 1;
-        p_drv->cap.has_selective_receive		= 1;
-        p_drv->cap.has_concurrent_selective_receive	= 0;
+        p_mx_drv->caps.has_trk_rq_dgram			= 1;
+        p_mx_drv->caps.has_selective_receive		= 1;
+        p_mx_drv->caps.has_concurrent_selective_receive	= 0;
+#ifdef PIOM_BLOCKING_CALLS
+	/* disabled for now because mx_wait doesn't work very well... */
+	p_mx_drv->caps.is_exportable                    = 1;
+#endif
 #ifdef PM2_NUIOA
-	p_drv->cap.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
+	p_mx_drv->caps.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
 #endif
 
+        p_drv->priv = p_mx_drv;
         err = NM_ESUCCESS;
 
  out:
         return err;
 }
 
-/** Initialize the MX driver */
-static
-int
-nm_mx_init		(struct nm_drv *p_drv) {
-	struct nm_mx_drv	*p_mx_drv	= p_drv->priv;
+static int nm_mx_init		(struct nm_drv *p_drv) {
 	mx_endpoint_t		 ep;
 	mx_endpoint_addr_t	 ep_addr;
 	uint32_t		 ep_id;
@@ -336,14 +438,17 @@ nm_mx_init		(struct nm_drv *p_drv) {
 	mx_param_t              *ep_params = NULL;
 	uint32_t                 ep_params_count = 0;
         int err;
+        struct nm_mx_drv* p_mx_drv = p_drv->priv;
 
         tbx_malloc_init(&mx_pw_mem,   sizeof(struct nm_mx_pkt_wrap),
                         INITIAL_PW_NUM,   "nmad/mx/pw");
 
+        p_mx_drv->nb_gates++;
         mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
         mx_nic_id_to_hostname(nic_id, hostname);
 
-#if MX_API >= 0x301
+#if 0 && MX_API >= 0x301
+	/* disabled for now since it conflicts with test_any/wait_any, to be reworked */
 	{
 		/* Multiplex internal queues across tracks since we never match
 		 * among multiple tracks. This will reduce the length of the queues
@@ -377,9 +482,8 @@ nm_mx_init		(struct nm_drv *p_drv) {
         p_mx_drv->ep_id	= ep_id;
 
         hostname[MX_MAX_HOSTNAME_LEN-1] = '\0';
-        p_drv->url	= tbx_strdup(hostname);
-        NM_TRACE_STR("p_drv->url", p_drv->url);
-	p_drv->name = tbx_strdup("mx");
+        p_mx_drv->url	= tbx_strdup(hostname);
+        NM_TRACE_STR("p_drv->url", p_mx_drv->url);
 
 #ifdef ENABLE_SAMPLING
         nm_parse_sampling(p_drv, "mx");
@@ -393,12 +497,11 @@ nm_mx_init		(struct nm_drv *p_drv) {
 static
 int
 nm_mx_exit		(struct nm_drv *p_drv) {
-        struct nm_mx_drv	*p_mx_drv	= NULL;
+        struct nm_mx_drv* p_mx_drv = p_drv->priv;
         mx_return_t	mx_ret	= MX_SUCCESS;
         int err;
 
-        p_mx_drv = p_drv->priv;
-
+        p_mx_drv->nb_gates --;
 	mx_ret	= mx_close_endpoint(p_mx_drv->ep);
 	nm_mx_check_return("mx_close_endpoint", mx_ret);
 
@@ -414,10 +517,9 @@ nm_mx_exit		(struct nm_drv *p_drv) {
 	}
 
         TBX_FREE(p_mx_drv);
-        p_drv->priv = NULL;
 
-        TBX_FREE(p_drv->url);
-        p_drv->url = NULL;
+        TBX_FREE(p_mx_drv->url);
+        p_mx_drv->url = NULL;
 
         err = NM_ESUCCESS;
 
@@ -430,12 +532,14 @@ int
 nm_mx_open_track	(struct nm_trk_rq	*p_trk_rq) {
         struct nm_trk		*p_trk		= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
-        struct nm_mx_drv	*p_mx_drv	= NULL;
+        struct nm_drv           *p_drv          = NULL;
+        struct nm_mx_drv        *p_mx_drv       = NULL;
         p_tbx_string_t		 url_string	= NULL;
         int err;
 
         p_trk	= p_trk_rq->p_trk;
-	p_mx_drv        = p_trk->p_drv->priv;
+        p_drv   = p_trk->p_drv;
+        p_mx_drv = p_drv->priv;
 
         /* private data							*/
 	p_mx_trk	= TBX_MALLOC(sizeof (struct nm_mx_trk));
@@ -487,14 +591,15 @@ nm_mx_close_track	(struct nm_trk *p_trk) {
 /** Connect to a new MX peer */
 static
 int
-nm_mx_connect		(struct nm_cnx_rq *p_crq) {
+nm_mx_connect		(void*_status,
+			 struct nm_cnx_rq *p_crq) {
         struct nm_mx_adm_pkt_1   pkt1;
         struct nm_mx_adm_pkt_2   pkt2;
+        struct nm_mx_drv        *p_mx_drv       = NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-	struct nm_mx_drv        *p_mx_drv       = NULL;
-        struct nm_mx_gate	*p_mx_gate	= NULL;
+        struct nm_mx	*status	= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
         struct nm_mx_cnx	*p_mx_cnx	= NULL;
         char			*drv_url	= NULL;
@@ -505,22 +610,13 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
-	p_mx_drv        = p_drv->priv;
+        p_mx_drv        = p_drv->priv;
         p_trk		= p_crq->p_trk;
 
         p_mx_trk	= p_trk->priv;
-        p_mx_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_mx_gate) {
-                p_mx_gate	= TBX_MALLOC(sizeof (struct nm_mx_gate));
-                memset(p_mx_gate, 0, sizeof(struct nm_mx_gate));
+        status	= _status;
 
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
-        } else {
-		p_mx_gate->ref_cnt++;
-        }
-
-        p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
+        p_mx_cnx	= status->cnx_array + p_trk->id;
 
         drv_url		= p_crq->remote_drv_url;
         trk_url		= p_crq->remote_trk_url;
@@ -566,7 +662,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
                 mx_segment_t	sg;
                 uint32_t	r;
 
-                strcpy(pkt1.drv_url, p_drv->url);
+                strcpy(pkt1.drv_url, p_mx_drv->url);
                 strcpy(pkt1.trk_url, p_trk->url);
 		pkt1.match_info	= NM_MX_MATCH_INFO(p_trk->id, p_mx_trk->next_peer_id);
 		p_mx_cnx->recv_match_info = pkt1.match_info;
@@ -576,7 +672,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 
                 NM_TRACEF("connect - pkt1.drv_url: %s",	pkt1.drv_url);
                 NM_TRACEF("connect - pkt1.trk_url: %s",	pkt1.trk_url);
-                NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %lu",	pkt1.match_info);
+                NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %llu",	pkt1.match_info);
 
                 sg.segment_ptr		= &pkt1;
                 sg.segment_length	= sizeof(pkt1);
@@ -607,7 +703,7 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
         NM_TRACEF("recv pkt2 <--");
 
         p_mx_cnx->send_match_info	= pkt2.match_info;
-	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %lu",	pkt2.match_info);
+	NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %llu",	pkt2.match_info);
 
         NMAD_EVENT_NEW_TRK(p_gate->id, p_drv->id, p_trk->id);
         err = NM_ESUCCESS;
@@ -618,14 +714,15 @@ nm_mx_connect		(struct nm_cnx_rq *p_crq) {
 /** Accept the connection request from a MX peer */
 static
 int
-nm_mx_accept		(struct nm_cnx_rq *p_crq) {
+nm_mx_accept		(void*_status,
+			 struct nm_cnx_rq *p_crq) {
+        struct nm_mx_drv        *p_mx_drv       = NULL;
         struct nm_mx_adm_pkt_1   pkt1;
         struct nm_mx_adm_pkt_2   pkt2;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-	struct nm_mx_drv        *p_mx_drv       = NULL;
-        struct nm_mx_gate	*p_mx_gate	= NULL;
+        struct nm_mx	*status	= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
         struct nm_mx_cnx	*p_mx_cnx	= NULL;
         uint64_t		 r_nic_id	= 0;
@@ -634,22 +731,13 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 
         p_gate		= p_crq->p_gate;
         p_drv		= p_crq->p_drv;
- 	p_mx_drv        = p_drv->priv;
         p_trk		= p_crq->p_trk;
+        p_mx_drv        = p_drv->priv;
 
         p_mx_trk	= p_trk->priv;
-        p_mx_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-        if (!p_mx_gate) {
-                p_mx_gate	= TBX_MALLOC(sizeof (struct nm_mx_gate));
-                memset(p_mx_gate, 0, sizeof(struct nm_mx_gate));
+        status	= _status;
 
-                /* update gate private data		*/
-                p_gate->p_gate_drv_array[p_drv->id]->info	= p_mx_gate;
-        } else {
-		p_mx_gate->ref_cnt++;
-        }
-
-        p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
+        p_mx_cnx	= status->cnx_array + p_trk->id;
 
 	if (p_mx_trk->next_peer_id-1) {
                 p_mx_trk->gate_map	=
@@ -691,7 +779,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
         }
 
         p_mx_cnx->send_match_info	= pkt1.match_info;
-	NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %lu",	pkt1.match_info);
+	NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %llu",	pkt1.match_info);
 
         NM_TRACEF("mx_connect -->");
         mx_ret	= mx_connect(p_mx_drv->ep,
@@ -716,7 +804,7 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 		if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
 			DISP("reached maximal number of peers %d", p_mx_trk->next_peer_id);
 
-		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %lu",	pkt2.match_info);
+		NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %llu",	pkt2.match_info);
 
                 sg.segment_ptr		= &pkt2;
                 sg.segment_length	= sizeof(pkt2);
@@ -737,30 +825,9 @@ nm_mx_accept		(struct nm_cnx_rq *p_crq) {
 /** Disconnect from a new MX peer */
 static
 int
-nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
-        struct nm_gate		*p_gate		= NULL;
-        struct nm_drv		*p_drv		= NULL;
-        struct nm_mx_gate	*p_mx_gate	= NULL;
-        struct nm_trk		*p_trk		= NULL;
-        struct nm_mx_trk	*p_mx_trk	= NULL;
+nm_mx_disconnect	(void*_status,
+			 struct nm_cnx_rq *p_crq) {
         int err = NM_ESUCCESS;
-
-        p_gate		= p_crq->p_gate;
-        p_drv		= p_crq->p_drv;
-        p_trk		= p_crq->p_trk;
-
-        p_mx_trk	= p_trk->priv;
-        p_mx_gate	= p_gate->p_gate_drv_array[p_drv->id]->info;
-
-        if (p_mx_gate) {
-          p_mx_gate->ref_cnt--;
-
-          if (!p_mx_gate->ref_cnt) {
-            TBX_FREE(p_mx_gate);
-            p_mx_gate = NULL;
-            p_gate->p_gate_drv_array[p_drv->id]->info = NULL;
-          }
-        }
 
         return err;
 }
@@ -768,12 +835,13 @@ nm_mx_disconnect	(struct nm_cnx_rq *p_crq) {
 /** Post a iov send request to MX */
 static
 int
-nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
+nm_mx_post_send_iov	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+        struct nm_mx_drv        *p_mx_drv       = NULL;
         struct nm_gate		*p_gate		= NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_mx_gate	*p_mx_gate	= NULL;
-        struct nm_mx_drv	*p_mx_drv	= NULL;
+        struct nm_mx	*status	= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
         struct nm_mx_cnx	*p_mx_cnx	= NULL;
         struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
@@ -783,12 +851,12 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
         p_gate		= p_pw->p_gate;
         p_drv		= p_pw->p_drv;
         p_trk		= p_pw->p_trk;
+        p_mx_drv        = p_drv->priv;
 
-        p_mx_drv	= p_drv->priv;
         p_mx_trk	= p_trk->priv;
-        p_pw->gate_priv	= p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id]->info;
-        p_mx_gate	= p_pw->gate_priv;
-        p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
+        p_pw->gate_priv	= _status;
+        status	= p_pw->gate_priv;
+        p_mx_cnx	= status->cnx_array + p_trk->id;
 
 	p_mx_pw	= tbx_malloc(mx_pw_mem);
         p_pw->drv_priv	= p_mx_pw;
@@ -820,12 +888,11 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
                                    p_pw->v_nb,
                                    p_mx_cnx->r_ep_addr,
                                    p_mx_cnx->send_match_info,
-                                   NULL,
+                                   p_pw,
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_isend", mx_ret);
         }
-
-        err = nm_mx_poll_iov(p_pw);
+        err = nm_mx_poll_iov(_status, p_pw);
 
         return err;
 }
@@ -833,10 +900,11 @@ nm_mx_post_send_iov	(struct nm_pkt_wrap *p_pw) {
 /** Post a iov receive request to MX */
 static
 int
-nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
+nm_mx_post_recv_iov	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+        struct nm_mx_drv        *p_mx_drv       = NULL;
         struct nm_drv		*p_drv		= NULL;
         struct nm_trk		*p_trk		= NULL;
-        struct nm_mx_drv	*p_mx_drv	= NULL;
         struct nm_mx_trk	*p_mx_trk	= NULL;
         struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
 	uint64_t		 match_mask	= 0;
@@ -846,19 +914,19 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
 
         p_drv		= p_pw->p_drv;
         p_trk		= p_pw->p_trk;
+        p_mx_drv        = p_drv->priv;
 
-        p_mx_drv	= p_drv->priv;
         p_mx_trk	= p_trk->priv;
 
         if (tbx_likely(p_pw->p_gate)) {
                 struct nm_gate		*p_gate		= NULL;
-                struct nm_mx_gate	*p_mx_gate	= NULL;
+                struct nm_mx	*status	= NULL;
                 struct nm_mx_cnx	*p_mx_cnx	= NULL;
 
                 p_gate		= p_pw->p_gate;
-                p_pw->gate_priv	= p_gate->p_gate_drv_array[p_drv->id]->info;
-                p_mx_gate	= p_pw->gate_priv;
-                p_mx_cnx	= p_mx_gate->cnx_array + p_trk->id;
+                p_pw->gate_priv	= _status;
+                status	= p_pw->gate_priv;
+                p_mx_cnx	= status->cnx_array + p_trk->id;
                 match_mask	= MX_MATCH_MASK_NONE;
                 match_info	= p_mx_cnx->recv_match_info;
         } else {
@@ -885,7 +953,7 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                 p_dst	= seg_list;
 
                 for (i = 0; i < p_pw->v_nb; i++) {
-                        p_dst->segment_ptr	= p_src->iov_base;
+		        p_dst->segment_ptr	= p_src->iov_base;
                         p_dst->segment_length	= p_src->iov_len;
                         p_src++;
                         p_dst++;
@@ -896,37 +964,23 @@ nm_mx_post_recv_iov	(struct nm_pkt_wrap *p_pw) {
                                    p_pw->v_nb,
                                    match_info,
                                    match_mask,
-                                   NULL,
+                                   p_pw,
                                    &p_mx_pw->rq);
                 nm_mx_check_return("mx_irecv", mx_ret);
         }
-
-        err = nm_mx_poll_iov(p_pw);
+        err = nm_mx_poll_iov(_status, p_pw);
 
         return err;
 }
 
-/** Post a iov request completion in MX */
 static
 int
-nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
-        struct nm_mx_drv	*p_mx_drv	= NULL;
+nm_mx_get_err           (struct nm_pkt_wrap *p_pw,
+			 mx_status_t        status,
+			 mx_return_t         mx_ret) {
         struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
-        mx_return_t	mx_ret	= MX_SUCCESS;
-        mx_status_t	status;
-        uint32_t	result;
-        int err;
-        p_mx_drv	= p_pw->p_drv->priv;
         p_mx_pw		= p_pw->drv_priv;
-
-
-        mx_ret	= mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
-        nm_mx_check_return("mx_test", mx_ret);
-
-        if (tbx_unlikely(!result)) {
-                err	= -NM_EAGAIN;
-                goto out;
-        }
+	int err;
 
         if (tbx_unlikely(!p_pw->p_gate)) {
                 struct nm_mx_trk	*p_mx_trk	= NULL;
@@ -999,7 +1053,31 @@ nm_mx_poll_iov    	(struct nm_pkt_wrap *p_pw) {
         return err;
 }
 
+#ifdef PIOM_BLOCKING_CALLS
+static
+int
+nm_mx_block_iov         (void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+        struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
+        mx_return_t	mx_ret	= MX_SUCCESS;
+        mx_status_t	status;
+        uint32_t	result;
+        p_mx_pw		= p_pw->drv_priv;
+
+	mx_ret	= mx_wait(*(p_mx_pw->p_ep), &p_mx_pw->rq,MX_INFINITE, &status, &result);
+        nm_mx_check_return("mx_test", mx_ret);
+
+	if (tbx_unlikely(!result))
+                return  -NM_EAGAIN;
+
+	return nm_mx_get_err(p_pw, status, mx_ret);
+}
+#endif
+
+/** Post a iov request completion in MX */
 static int nm_mx_release_req(struct nm_pkt_wrap *p_pw){
+#warning A reparer
+#if 0
   struct nm_mx_drv	*p_mx_drv	= NULL;
   struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
 
@@ -1008,31 +1086,72 @@ static int nm_mx_release_req(struct nm_pkt_wrap *p_pw){
 
   tbx_free(mx_pw_mem, p_mx_pw);
 
+#endif
   return NM_ESUCCESS;
 }
 
 /** Load MX operations */
 int
-nm_mx_load(struct nm_drv_ops *p_ops) {
-        p_ops->query		= nm_mx_query         ;
-        p_ops->init		= nm_mx_init         ;
-        p_ops->exit             = nm_mx_exit         ;
+nm_mx_poll_iov    	(void*_status,
+			 struct nm_pkt_wrap *p_pw) {
+        struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
+        mx_return_t	mx_ret	= MX_SUCCESS;
+        mx_status_t	status;
+        uint32_t	result;
+        p_mx_pw		= p_pw->drv_priv;
 
-        p_ops->open_trk		= nm_mx_open_track   ;
-        p_ops->close_trk	= nm_mx_close_track  ;
+        mx_ret	= mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
+        nm_mx_check_return("mx_test", mx_ret);
 
-        p_ops->connect		= nm_mx_connect      ;
-        p_ops->accept		= nm_mx_accept       ;
-        p_ops->disconnect       = nm_mx_disconnect   ;
+        if (tbx_unlikely(!result))
+		return -NM_EAGAIN;
 
-        p_ops->post_send_iov	= nm_mx_post_send_iov;
-        p_ops->post_recv_iov    = nm_mx_post_recv_iov;
-
-        p_ops->poll_send_iov    = nm_mx_poll_iov     ;
-        p_ops->poll_recv_iov    = nm_mx_poll_iov     ;
-
-        p_ops->release_req      = nm_mx_release_req;
-
-        return NM_ESUCCESS;
+	return nm_mx_get_err(p_pw, status, mx_ret);
 }
 
+#if MX_API >= 0x301
+/** Poll the completion of any iov request in MX */
+static int
+nm_mx_poll_any_iov	(void*_status,
+			 struct nm_pkt_wrap **pp_pw) {
+	mx_return_t mx_ret = MX_SUCCESS;
+	struct nm_pkt_wrap *p_pw;
+	mx_status_t status;
+	uint32_t result;
+        struct nm_mx_drv* p_mx_drv = (*pp_pw)->p_drv->priv;
+	/* poll any MX request, except the administrative ones */
+	mx_ret = mx_test_any(p_mx_drv->ep, 0, NM_MX_ADMIN_MATCH_MASK, &status, &result);
+	nm_mx_check_return("mx_test_any", mx_ret);
+
+	if (tbx_unlikely(!result))
+		return -NM_EAGAIN;
+
+	p_pw = status.context;
+	*pp_pw = p_pw;
+	return nm_mx_get_err(p_pw, status, mx_ret);
+}
+
+#ifdef PIOM_BLOCKING_CALLS
+/** Wait for the completion of any iov request in MX */
+static int
+nm_mx_block_any_iov	(void*_status,
+			 struct nm_pkt_wrap **pp_pw) {
+	mx_return_t mx_ret = MX_SUCCESS;
+	struct nm_pkt_wrap *p_pw;
+	mx_status_t status;
+	uint32_t result;
+	struct nm_mx_drv* p_mx_drv = (*pp_pw)->p_drv->priv;
+
+	/* Wait for any MX request, except the administrative ones */
+	mx_ret = mx_wait_any(p_mx_drv->ep, MX_INFINITE, 0, NM_MX_ADMIN_MATCH_MASK, &status, &result);
+	nm_mx_check_return("mx_test_any", mx_ret);
+
+	if (tbx_unlikely(!result))
+		return -NM_EAGAIN;
+
+	p_pw = status.context;
+	*pp_pw = p_pw;
+	return nm_mx_get_err(p_pw, status, mx_ret);
+}
+#endif /* PIOM_BLOCKING_CALLS */
+#endif /* MX_API >= 0x301 */

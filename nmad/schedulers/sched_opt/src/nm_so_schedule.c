@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 
@@ -52,7 +52,6 @@ nm_so_schedule_init (struct nm_sched *p_sched)
 {
   struct nm_core *p_core = p_sched->p_core;
   int err;
-
   struct nm_so_sched *p_priv = NULL;
 
   /* Initialize "Lightning Fast" Packet Wrappers Manager */
@@ -69,30 +68,42 @@ nm_so_schedule_init (struct nm_sched *p_sched)
   p_priv->next_gate_id = 0;
   p_priv->pending_any_src_unpacks = 0;
 
-#if defined(CONFIG_STRAT_SPLIT_BALANCE)
-  p_priv->current_strategy = &nm_so_strat_split_balance;
-#elif defined(CONFIG_STRAT_DEFAULT)
-  p_priv->current_strategy = &nm_so_strat_default;
-#elif defined(CONFIG_STRAT_AGGREG)
-  p_priv->current_strategy = &nm_so_strat_aggreg;
+  /* load strategies */
+  nm_so_strat_default_init();
+  nm_so_strat_aggreg_init();
+  nm_so_strat_split_balance_init();
+  nm_so_strat_aggreg_extended_init();
 #ifdef NMAD_QOS
-#elif defined(CONFIG_STRAT_QOS)
-  p_priv->current_strategy = &nm_so_strat_qos;
+  nm_so_strat_qos_init();
 #endif /* NMAD_QOS */
+  nm_so_strat_aggreg_autoextended_init();
+
+  /* which strategy is going to be used */
+  const char*strategy_name = NULL;
+#if defined(CONFIG_STRAT_SPLIT_BALANCE)
+  strategy_name = "split_balance";
+#elif defined(CONFIG_STRAT_DEFAULT)
+  strategy_name = "default";
+#elif defined(CONFIG_STRAT_AGGREG)
+  strategy_name = "aggreg";
 #elif defined(CONFIG_STRAT_AGGREG_EXTENDED)
-  p_priv->current_strategy = &nm_so_strat_aggreg_extended;
+  strategy_name = "aggreg_extended";
 #elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-  p_priv->current_strategy = &nm_so_strat_aggreg_autoextended;
-#else
-  /* Fall back to the default strategy */
-  p_priv->current_strategy = &nm_so_strat_default;
+  strategy_name = "aggreg_autoextended";
+#elif defined(CONFIG_STRAT_QOS)
+#  if defined(NMAD_QOS)
+  strategy_name = "qos";
+#  else
+#    error Strategy Quality of service cannot be selected without enabling the quality of service
+#  endif /* NMAD_QOS */
+#else /*  defined(CONFIG_STRAT_CUSTOM) */
+  strategy_name = "custom";
 #endif
 
-  /* Initialize strategy */
-  p_priv->current_strategy->init();
+  p_priv->strategy_adapter = nm_core_component_load("strategy", strategy_name);
+  p_priv->strategy_driver = puk_adapter_get_driver_NmStrategy(p_priv->strategy_adapter, NULL);
 
   p_sched->sch_private	= p_priv;
-
   tbx_malloc_init(&nm_so_chunk_mem,
                   sizeof(struct nm_so_chunk),
                   INITIAL_CHUNK_NUM, "nmad/.../sched_opt/nm_so_chunk");
@@ -109,11 +120,6 @@ static int
 nm_so_schedule_exit (struct nm_sched *p_sched)
 {
   struct nm_so_sched *p_priv = p_sched->sch_private;
-
-  /* Terminates strategy */
-  if (p_priv->current_strategy->exit != NULL) {
-    p_priv->current_strategy->exit();
-  }
 
   while (!tbx_slist_is_nil(p_sched->post_aux_recv_req)) {
     void *pw = tbx_slist_extract(p_sched->post_aux_recv_req);
@@ -232,7 +238,7 @@ nm_so_close_gate(struct nm_sched	*p_sched,
   struct nm_so_sched *p_so_sched = p_sched->sch_private;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
 
-  p_so_sched->current_strategy->exit_gate(p_gate);
+  puk_instance_destroy(p_so_gate->strategy_instance);
 
   if(!p_so_sched->current_interface)
     TBX_FAILURE("Interface not defined");
@@ -248,8 +254,9 @@ nm_so_close_gate(struct nm_sched	*p_sched,
       struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_aux_slist);
       struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
 
-      if(p_pw->p_drv->ops.release_req){
-        p_pw->p_drv->ops.release_req(p_pw);
+      if(p_pw->p_gdrv->receptacle.driver->release_req){
+        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
+                                                     p_pw);
       }
 
       /* Free the wrapper */
@@ -260,8 +267,9 @@ nm_so_close_gate(struct nm_sched	*p_sched,
       struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_perm_slist);
       struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
 
-      if(p_pw->p_drv->ops.release_req){
-        p_pw->p_drv->ops.release_req(p_pw);
+      if(p_pw->p_gdrv->receptacle.driver->release_req){
+        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
+                                                     p_pw);
       }
 
       /* Free the wrapper */
@@ -304,14 +312,16 @@ nm_so_init_gate	(struct nm_sched	*p_sched,
 
   p_so_gate->pending_unpacks = 0;
 
+  p_gate->sch_private = p_so_gate;
+
   for(i = 0; i < NM_SO_MAX_TAGS; i++)
     INIT_LIST_HEAD(&p_so_gate->pending_large_send[i]);
 
   INIT_LIST_HEAD(&p_so_gate->pending_large_recv);
 
-  p_gate->sch_private = p_so_gate;
-
-  p_so_sched->current_strategy->init_gate(p_gate);
+  p_so_gate->strategy_instance = puk_adapter_instanciate(p_so_sched->strategy_adapter);
+  puk_instance_indirect_NmStrategy(p_so_gate->strategy_instance, NULL,
+				   &p_so_gate->strategy_receptacle);
 
   if(!p_so_sched->current_interface)
     TBX_FAILURE("Interface not defined");

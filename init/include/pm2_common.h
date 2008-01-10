@@ -25,7 +25,7 @@ typedef struct _struct_common_attr_t common_attr_t;
     !defined(MAD3_KERNEL)   && \
     !defined(MAD2_KERNEL)   && \
     !defined(PM2_KERNEL)    && \
-    !defined(XPAUL_KERNEL)   && \
+    !defined(PIOM_KERNEL)   && \
     !defined(TBX_KERNEL)    && \
     !defined(NTBX_KERNEL)   && \
     !defined(DSM_KERNEL)    && \
@@ -36,9 +36,9 @@ typedef struct _struct_common_attr_t common_attr_t;
 #include "tbx.h"
 #endif /* TBX */
 
-#ifdef XPAULETTE
-#include "xpaul.h"
-#endif /* XPAULETTE */
+#ifdef PIOMAN
+#include "pioman.h"
+#endif /* PIOMAN */
 /*
  * If compiler is GNU C, we rename the application 'main'
  * to the expanded value of tbx_main
@@ -62,10 +62,6 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #if defined(MAD) || (defined(NMAD) && defined(CONFIG_PROTO_MAD3))
 #include "madeleine.h"
 #endif /* MAD */
-
-#ifdef XPAULETTE
-#include "xpaul.h"
-#endif /* XPAULETTE */
 
 #ifdef PM2
 #include "pm2.h"

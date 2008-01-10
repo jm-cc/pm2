@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include <nm_public.h>
 #include <ccs_public.h>
@@ -34,7 +34,7 @@ int nm_so_build_multi_ack(struct nm_gate *p_gate,
                           int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   union nm_so_generic_ctrl_header ctrl;
   struct nm_so_pkt_wrap *p_so_acks_pw = NULL;
   uint8_t trk_id = TRK_LARGE;
@@ -43,15 +43,16 @@ int nm_so_build_multi_ack(struct nm_gate *p_gate,
   NM_SO_TRACE("Building of a multi-ack with %d chunks on tag %d and seq %d\n", nb_drv, tag, seq);
 
   nm_so_init_multi_ack(&ctrl, nb_drv, tag, seq, chunk_offset);
-  err = cur_strat->pack_extended_ctrl(p_gate, NM_SO_CTRL_HEADER_SIZE * (nb_drv+1), &ctrl, &p_so_acks_pw);
+  err = strategy->pack_extended_ctrl(p_so_gate->strategy_receptacle._status,
+				     p_gate, NM_SO_CTRL_HEADER_SIZE * (nb_drv+1), &ctrl, &p_so_acks_pw);
 
   for(i = 0; i < nb_drv; i++){
     NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK - drv_id = %d, trk_id = %d, chunk_len =%u\n", drv_ids[i], trk_id, chunk_lens[i]);
     nm_so_add_ack_chunk(&ctrl, drv_ids[i] * NM_SO_MAX_TRACKS + trk_id, chunk_lens[i]);
-    err = cur_strat->pack_ctrl_chunk(p_so_acks_pw, &ctrl);
+    err = strategy->pack_ctrl_chunk(p_so_gate->strategy_receptacle._status, p_so_acks_pw, &ctrl);
   }
 
-  err = cur_strat->pack_extended_ctrl_end(p_gate, p_so_acks_pw);
+  err = strategy->pack_extended_ctrl_end(p_so_gate->strategy_receptacle._status, p_gate, p_so_acks_pw);
 
   return err;
 }
@@ -163,7 +164,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   struct nm_so_pkt_wrap *p_so_acks_pw = NULL;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
@@ -180,7 +181,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
 
   if(offset + iov[i].iov_len >= chunk_offset + len){
     /* Data are contiguous */
-    cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+    strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
     nm_so_post_large_recv(p_gate, drv_id,
                           tag+128, seq,
@@ -204,7 +205,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
   chunk_len = iov[i].iov_len + (chunk_offset - offset);
 
   /* We ask the current strategy to find an available track for transfering this large data chunk.*/
-  err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+  err = strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
   if(err != NM_ESUCCESS){
     /* No free track */
@@ -232,7 +233,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
 
     /* We ask the current strategy to find an available track
        for transfering this large data chunk.*/
-    err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+    err = strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
     if (err != NM_ESUCCESS){
       /* No free track */
@@ -272,13 +273,14 @@ static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
  ack_to_send:
   /* Launch the acks */
   nm_so_init_multi_ack(&ctrl[0], nb_entries-1, tag+128, seq, chunk_offset);
-  cur_strat->pack_extended_ctrl(p_gate, NM_SO_CTRL_HEADER_SIZE * nb_entries, &ctrl[0], &p_so_acks_pw);
+  strategy->pack_extended_ctrl(p_so_gate->strategy_receptacle._status,
+			       p_gate, NM_SO_CTRL_HEADER_SIZE * nb_entries, &ctrl[0], &p_so_acks_pw);
 
   for(i = 1; i < nb_entries; i++){
-    cur_strat->pack_ctrl_chunk(p_so_acks_pw, &ctrl[i]);
+    strategy->pack_ctrl_chunk(p_so_gate->strategy_receptacle._status, p_so_acks_pw, &ctrl[i]);
   }
 
-  cur_strat->pack_extended_ctrl_end(p_gate, p_so_acks_pw);
+  strategy->pack_extended_ctrl_end(p_so_gate->strategy_receptacle._status, p_gate, p_so_acks_pw);
 
  out:
   return NM_ESUCCESS;
@@ -346,7 +348,7 @@ static int init_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src,
 
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
   int err;
@@ -354,7 +356,7 @@ static int init_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src,
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
 #warning Multirail
-  err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+  err = strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
   if(err == NM_ESUCCESS) {
     /* The strategy found an available transfer track */
@@ -365,7 +367,7 @@ static int init_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src,
     nm_so_post_large_datatype_recv_to_tmpbuf(is_any_src, p_gate, drv_id, tag+128, seq, len, segp);
 
     nm_so_init_ack(&ctrl, tag+128, seq, drv_id * NM_SO_MAX_TRACKS + trk_id, 0);
-    err = cur_strat->pack_ctrl(p_gate, &ctrl);
+    err = strategy->pack_ctrl(p_so_gate->strategy_receptacle._status, p_gate, &ctrl);
 
   } else {
     /* No free track: postpone the ack */
@@ -380,7 +382,7 @@ int init_large_datatype_recv_with_multi_ack(struct nm_so_pkt_wrap *p_so_pw){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
 
@@ -396,7 +398,7 @@ int init_large_datatype_recv_with_multi_ack(struct nm_so_pkt_wrap *p_so_pw){
 #warning Multi-rail?
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
-  err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+  err = strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
   if(err == NM_ESUCCESS) {
     int nb_entries = 1;
@@ -509,7 +511,7 @@ static int single_rdv(struct nm_gate *p_gate,
                       void *data, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
   int err;
@@ -518,7 +520,7 @@ static int single_rdv(struct nm_gate *p_gate,
 
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
-  err = cur_strat->rdv_accept(p_gate, &drv_id, &trk_id);
+  err = strategy->rdv_accept(p_so_gate->strategy_receptacle._status, p_gate, &drv_id, &trk_id);
 
   if(err == NM_ESUCCESS) {
     union nm_so_generic_ctrl_header ctrl;
@@ -526,7 +528,7 @@ static int single_rdv(struct nm_gate *p_gate,
     nm_so_post_large_recv(p_gate, drv_id, tag+128, seq, data, len);
 
     nm_so_init_ack(&ctrl, tag+128, seq, drv_id * NM_SO_MAX_TRACKS + trk_id, chunk_offset);
-    err = cur_strat->pack_ctrl(p_gate, &ctrl);
+    err = strategy->pack_ctrl(p_so_gate->strategy_receptacle._status, p_gate, &ctrl);
 
   } else {
     /* No free track: postpone the ack */
@@ -540,7 +542,7 @@ static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
                         void *data, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_so_strategy *cur_strat = p_so_sched->current_strategy;
+  const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t trk_id = TRK_LARGE;
   int nb_drv;
   uint8_t drv_ids[RAIL_MAX];
@@ -549,7 +551,8 @@ static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
 
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
-  err = cur_strat->extended_rdv_accept(p_gate, len, &nb_drv, drv_ids, chunk_lens);
+  err = strategy->extended_rdv_accept(p_so_gate->strategy_receptacle._status, 
+				      p_gate, len, &nb_drv, drv_ids, chunk_lens);
 
   if(err == NM_ESUCCESS){
     if(nb_drv == 1){
@@ -557,7 +560,7 @@ static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
 
       nm_so_post_large_recv(p_gate, drv_ids[0], tag+128, seq, data, len);
       nm_so_init_ack(&ctrl, tag+128, seq, drv_ids[0] * NM_SO_MAX_TRACKS + trk_id, chunk_offset);
-      err = cur_strat->pack_ctrl(p_gate, &ctrl);
+      err = strategy->pack_ctrl(p_so_gate->strategy_receptacle._status, p_gate, &ctrl);
 
     } else {
       err = nm_so_post_multiple_data_recv(p_gate, tag + 128, seq, data, nb_drv, drv_ids, chunk_lens);

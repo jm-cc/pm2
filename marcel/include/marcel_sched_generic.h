@@ -16,6 +16,7 @@
 
 #section common
 #include "tbx_compiler.h"
+
 /****************************************************************/
 /* List of sections
  */
@@ -101,47 +102,12 @@ static __tbx_inline__ void ma_entering_idle(void);
  */
 static __tbx_inline__ void ma_still_idle(void);
 
-#ifndef MA__LWPS
-/** \brief Repeatedly called by schedule on idleness. Gets 0 on first call, else the
- * value returned by previous call
- */
-static __tbx_inline__ int ma_do_idle(int);
-#endif
-
 /** \brief Called by scheduler just before switching from idle thread.  Preemption is
  * disabled
  */
 static __tbx_inline__ void ma_leaving_idle(void);
 
 #section marcel_inline
-#ifndef MA__LWPS
-static __tbx_inline__ int ma_do_idle(int didpoll) {
-#  ifdef XPAULETTE
-	if (!xpaul_polling_is_required(XPAUL_POLL_AT_IDLE)) {	
-#  else
-	if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE)) {	
-#  endif /* XPAULETTE */
-		marcel_sig_disable_interrupts();
-		marcel_sig_pause();
-		marcel_sig_enable_interrupts();
-	} else {
-#  ifdef MARCEL_IDLE_PAUSE
-		if (didpoll)
-			/* already polled a bit, sleep a bit before
-			 * polling again */
-			marcel_sig_nanosleep();
-#  endif
-#  ifdef XPAULETTE
-		__xpaul_check_polling(XPAUL_POLL_AT_IDLE);
-#  else
-		__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-#  endif /* XPAULETTE */
-		didpoll = 1;
-	}
-	return didpoll;
-}
-#endif
-
 #ifdef MA__LWPS
 static __tbx_inline__ void ma_about_to_idle(void) {
 #  ifdef PIOMAN
@@ -226,6 +192,7 @@ void marcel_snapshot(snapshot_func_t f);
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 void marcel_per_lwp_threadslist(int max, marcel_t *pids, int *nb, int which);
 unsigned marcel_per_lwp_nbthreads();
+unsigned marcel_nbthreads_per_lwp(struct marcel_topo_level * vp);
 int pmarcel_sched_get_priority_max(int policy);
 DEC_MARCEL_POSIX(int,sched_get_priority_max,(int policy) __THROW);
 int pmarcel_sched_get_priority_min(int policy);

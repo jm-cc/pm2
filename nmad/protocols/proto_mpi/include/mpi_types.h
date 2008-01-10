@@ -24,6 +24,10 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
+#ifdef CONFIG_PROTO_MAD3
+#include <madeleine.h>
+#include <nm_mad3_private.h>
+#endif
 #include <tbx.h>
 
 /**

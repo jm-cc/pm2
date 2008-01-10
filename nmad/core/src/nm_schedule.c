@@ -18,7 +18,7 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <tbx.h>
+#include <pm2_common.h>
 
 #include "nm_private.h"
 #include "nm_public.h"
@@ -32,6 +32,9 @@
  */
 int
 nm_schedule(struct nm_core *p_core) {
+#ifdef PIOMAN
+	return 0;
+#else
         int err;
         int g;
 
@@ -60,4 +63,5 @@ nm_schedule(struct nm_core *p_core) {
         err = NM_ESUCCESS;
 
         return err;
+#endif
 }

@@ -1,0 +1,42 @@
+PROGS=multi_connect basic_ping bench
+
+FUT=$(PROGS:=.fut)
+LDFLAGS := $(LDFLAGS) 
+
+all: $(PROGS)
+
+multi_connect-objs := multi_connect.o foo.o 
+
+multi_connect.o: foo.o multi_connect.c 
+#multi_connect.o: multi_connect.c multi_connect.h	
+
+basic_ping-objs := basic_ping.o foo.o 
+
+basic_ping.o: foo.o basic_ping.c 
+
+#bench-objs := bench.o foo.o 
+bench-objs := bench.o
+
+bench.o: bench.c 
+
+foo.o : fut
+
+.PHONY: fut
+fut: $(FUT) 
+	pm2-build-fut-table -f ${PM2_FLAVOR} -t app
+	cp $(PM2_HOME)/build/$(PM2_FLAVOR)/profile/include/app_fut_entries.h foo.c
+
+
+%.fut: %.i
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) cp /dev/null $@
+	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$$$$.o && \
+	nm /tmp/foo-$$$$.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@ && \
+	rm -f /tmp/foo-$$$$.o
+	$(COMMON_HIDE) touch fut_stamp
+
+
+#clean:
+#	rm *~ *.o foo.c fut_stamp $(PROGS)
+
+include $(PM2_ROOT)/make/apps.mak

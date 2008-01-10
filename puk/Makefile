@@ -14,7 +14,8 @@
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-PUK_ROOT       := $(shell pm2-config --builddir)
+PM2_BUILD_DIR = $(shell pm2-config --builddir)
+PUK_ROOT       := $(PM2_BUILD_DIR)/puk
 PUK_SRCDIR     := $(CURDIR)
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
 PUK_INSTALLDIR := $(PUK_ROOT)
@@ -30,8 +31,12 @@ CONFIG_FILES   := externals/configure.ac externals/configure externals/Puk/padic
 libs:
 	$(MAKE) $(PUK_BUILDDIR)/config.status
 	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk
+	-@/bin/mkdir $(PM2_BUILD_DIR)/lib/
+	@/bin/cp $(PADICO_ROOT)/lib/libPadicoPuk.a $(PM2_BUILD_DIR)/lib/
 
 link: install
+
+dot_h: install
 
 init-packaging: $(PADICO_ROOT)/etc/padico-setup.sh
 
@@ -80,6 +85,8 @@ externals/configure: externals/configure.ac externals/building-tools/*.m4
 	@echo "# Generating $@ ..."
 	@$(MAKE) check-config-tools
 	( cd externals ; $${AUTOCONF:-autoconf} )
+
+PM2_PUK_CONFIGURE_EXTRA_FLAGS=$(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
 
 $(PUK_BUILDDIR)/config.status: $(CONFIG_FILES) $(PADICO_ROOT)/etc/padico-setup.sh
 	mkdir -p $(PUK_BUILDDIR)

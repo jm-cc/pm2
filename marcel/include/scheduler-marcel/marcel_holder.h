@@ -221,7 +221,6 @@ struct ma_sched_entity {
 	ma_heap_t *heap;
 #endif
 
-/** \brief General-purpose list link for bubble schedulers */
 #ifdef MA__BUBBLES
 	/** \brief General-purpose list link for bubble schedulers */
 	struct list_head next;

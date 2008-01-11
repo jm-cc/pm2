@@ -469,17 +469,22 @@ affinity_sched_exit()
   return 0;
 }
 
+static marcel_bubble_t *b = &marcel_root_bubble;
+
 int
 affinity_sched_submit(marcel_entity_t *e)
 {
-  struct marcel_topo_level *l =  &marcel_topo_vp_level[0];
-  debug("===========[repartition avec affinity]===========\n");
-  __sched_submit(&e, 1, &l);
-  
-    ma_write_lock(&submit_rwlock);
+  struct marcel_topo_level *l =  marcel_topo_level(0,0);
+  b = ma_bubble_entity(e);
+  fprintf(stderr, "submit : %d\n", ma_atomic_read(&ma_init));
+  if (!ma_atomic_read(&ma_init))
+    marcel_bubble_affinity(b, l);
+  else 
+    __sched_submit(&e, 1, &l);
+
+  ma_write_lock(&submit_rwlock);
   list_add_tail(&e->next, &submitted_entities);
   ma_write_unlock(&submit_rwlock);
-
   return 0;
 }
 

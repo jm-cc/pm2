@@ -212,7 +212,7 @@ int ma_numa_not_available;
 
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
-	if (ma_numa_not_available)
+	if (ma_numa_not_available || node == -1)
 		return ma_malloc_nonuma(size,file,line);
 	marcel_extlib_protect();
 	p = numa_alloc_onnode(size, node);
@@ -250,6 +250,8 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 #include <numa.h>
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	/* TODO: utiliser acreate/amalloc plutôt ? */
+	if (node == -1)
+		return ma_malloc_nonuma(size,file,line);
 	memalloc_attr_t mattr;
 	memset(&mattr, 0, sizeof(mattr));
 	mattr.mattr_policy = MPOL_DIRECTED;
@@ -279,6 +281,8 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *ret;
 	rsid_t rsid;
 
+	if (node == -1)
+		return ma_malloc_nonuma(size,file,line);
 	rset = rs_alloc(RS_PARTITION);
 	rad = rs_alloc(RS_EMPTY);
 	rs_getrad(rset, rad, MCMlevel, node, 0);

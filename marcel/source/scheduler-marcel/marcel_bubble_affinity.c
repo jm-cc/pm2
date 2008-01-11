@@ -628,6 +628,9 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp)
   else if (available_threads)
     rq = get_parent_rq(stealable_threads[0]);
   
+  if (!rq)
+    return 0;
+
   PROF_EVENTSTR(sched_status, "stealing subtree");
   for (father = rq->father; father != &top->sched; father = father->father) 
     {

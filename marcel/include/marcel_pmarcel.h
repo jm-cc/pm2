@@ -608,11 +608,11 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 /* #endif */
 
 
-/* #ifdef __USE_XOPEN2K */
+#ifdef __USE_XOPEN2K
 /* Get ID of CPU-time clock for thread THREAD_ID.  */
 extern int pmarcel_getcpuclockid (pmarcel_t __thread_id,
 				  clockid_t *__clock_id) __THROW;
-/* #endif */
+#endif
 
 
 /* Install handlers to be called when a new process is created with FORK.
@@ -639,10 +639,13 @@ extern int pmarcel_mutexattr_getprotocol(__const pmarcel_mutexattr_t *
        __restrict attr, int *__restrict protocol);
 extern int pmarcel_mutexattr_setprotocol(pmarcel_mutexattr_t *attr,
        int protocol);
+
+#ifdef __USE_XOPEN2K
 extern int pmarcel_condattr_getclock(__const pmarcel_condattr_t *__restrict attr,
        clockid_t *__restrict clock_id);
 extern int pmarcel_condattr_setclock(pmarcel_condattr_t *attr,
        clockid_t clock_id); 
+#endif /* __USE_XOPEN2K */
 
 extern int pmarcel_mutex_getprioceiling(__const pmarcel_mutex_t *__restrict mutex,
        int *__restrict prioceiling);

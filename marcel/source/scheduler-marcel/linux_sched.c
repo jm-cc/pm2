@@ -205,12 +205,12 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 #ifdef MA__LWPS
 	ma_preempt_disable();
 	
-	if (tbx_unlikely(ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched))) {
+	if (tbx_unlikely(ma_topo_vpdata(vp, need_resched))) {
 		PROF_EVENT(sched_already_resched);
 		goto out;
 	}
 
-	ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched) = 1;
+	ma_topo_vpdata(vp, need_resched) = 1;
 
 	if (lwp == LWP_SELF) {
 		PROF_EVENT(sched_thats_us);
@@ -228,7 +228,7 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 out:
 	ma_preempt_enable();
 #else
-	ma_topo_vpdata(&marcel_topo_vp_level[vp], need_resched) = 1;
+	ma_topo_vpdata(vp, need_resched) = 1;
 #endif
 }
 
@@ -292,6 +292,9 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
 		PROF_EVENT2(sched_thread_wake, p, old_state);
+#ifdef MARCEL_STATS_ENABLED
+		ma_task_stats_set(long, p, ma_stats_nbready_offset, 1);
+#endif
 		p->sched.state = MA_TASK_RUNNING;
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			PROF_EVENT(sched_thread_wake_unblock);
@@ -405,12 +408,15 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	sched_debug("wake up created thread %p\n",p);
 	if (ma_entity_task(p)->type == MA_THREAD_ENTITY) {
 		MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
-
+#ifdef MARCEL_STATS_ENABLED
 		ma_task_stats_set(long, p, ma_stats_last_ran_offset, marcel_clock());
+#endif
 		PROF_EVENT2(sched_thread_wake, p, p->sched.state);
 		ma_set_task_state(p, MA_TASK_RUNNING);
 	}
-
+#ifdef MARCEL_STATS_ENABLED
+	ma_task_stats_set(long, p, ma_stats_nbready_offset, 1);
+#endif
 #ifdef MA__BUBBLES
 	h = ma_task_init_holder(p);
 
@@ -419,6 +425,9 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 		if (list_empty(&p->sched.internal.entity.bubble_entity_list))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 	}
+#endif
+#ifdef MA__LWPS
+retry:
 #endif
 
 	h = ma_task_sched_holder(p);
@@ -438,6 +447,23 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	MA_BUG_ON(!h);
 	ma_holder_lock_softirq(h);
+
+#ifdef MA__LWPS
+	if (ma_task_sched_holder(p) != h) {
+		ma_holder_unlock_softirq(h);
+		goto retry;
+	}
+#endif
+
+#ifdef MA__BUBBLES
+	if (h->type == MA_BUBBLE_HOLDER
+		&& ma_bubble_holder(h)->sched.sched_holder
+		&& ma_bubble_holder(h)->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
+		/* It got moved just before locking, retry */
+		ma_holder_unlock_softirq(h);
+		goto retry;
+	}
+#endif
 
 	/*
 	 * We decrease the sleep average of forking parents
@@ -552,6 +578,9 @@ static void finish_task_switch(marcel_task_t *prev)
 			MTRACE("going to sleep",prev);
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
+#ifdef MARCEL_STATS_ENABLED
+			ma_task_stats_set(long, prev, ma_stats_nbready_offset, 0);
+#endif
 		}
 	} else {
 		MTRACE("still running",prev);
@@ -789,11 +818,12 @@ void ma_scheduling_functions_start_here(void) { }
 static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now) {
 	tbx_prefetch(next);
 
+#ifdef MARCEL_STATS_ENABLED
 	/* update statistics */
 	ma_task_stats_set(long, prev, ma_stats_last_ran_offset, now);
 	ma_task_stats_set(long, next, ma_stats_nbrunning_offset, 1);
 	ma_task_stats_set(long, prev, ma_stats_nbrunning_offset, 0);
-
+#endif
 	__ma_get_lwp_var(current_thread) = next;
 	ma_dequeue_task(next, nexth);
 
@@ -993,7 +1023,7 @@ restart:
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES
 		if (ma_idle_scheduler)
-		  if (current_sched->vp_is_idle)
+		    if (current_sched->vp_is_idle && LWP_NUMBER(LWP_SELF) < marcel_nbvps())
 		    {
 		      if (current_sched->vp_is_idle(LWP_NUMBER(LWP_SELF))) 
 			goto need_resched_atomic;
@@ -1203,6 +1233,14 @@ out:
 		goto need_resched;
 	}
 	sched_debug("switched\n");
+
+	MA_BUG_ON(ma_preempt_count()<0);
+	if (tbx_unlikely(ma_in_atomic())) {
+		pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
+		ma_show_preempt_backtrace();
+		MA_BUG();
+	}
+
 	LOG_RETURN(didswitch);
 }
 
@@ -1420,7 +1458,10 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
 	ma_task_holder_unlock_softirq(h);
+#ifdef MARCEL_STATS_ENABLED
 	ma_task_stats_set(long, p, ma_stats_nbrunning_offset, 1);
+	ma_task_stats_set(long, p, ma_stats_nbready_offset, 1);
+#endif
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
@@ -1500,7 +1541,8 @@ void __marcel_init ma_linux_sched_init0(void)
 
 
 unsigned long ma_stats_nbthreads_offset, ma_stats_nbthreadseeds_offset,
-		ma_stats_nbrunning_offset, ma_stats_last_ran_offset;
+		ma_stats_nbrunning_offset, ma_stats_nbready_offset,
+		ma_stats_last_ran_offset;
 unsigned long marcel_stats_load_offset;
 
 static void __marcel_init linux_sched_init(void)
@@ -1512,8 +1554,10 @@ static void __marcel_init linux_sched_init(void)
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbthreadseeds_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_nbready_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_task_stats_set(long, __main_thread, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbthreadseeds_offset, 0);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbrunning_offset, 1);

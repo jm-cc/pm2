@@ -56,10 +56,14 @@ extern unsigned long ma_stats_nbthreads_offset;
 extern unsigned long ma_stats_nbthreadseeds_offset;
 /** \brief Offset of the "number of running thread" statistics */
 extern unsigned long ma_stats_nbrunning_offset;
+/** \brief Offset of the "number of ready thread" statistics */
+extern unsigned long ma_stats_nbready_offset;
 /** \brief Offset of the "last ran time" statistics */
 extern unsigned long ma_stats_last_ran_offset;
 /** \brief Offset of the "memory usage" statistics */
 extern unsigned long ma_stats_memory_offset;
+/** \brief Offset of the "memory attraction" statistics */
+extern unsigned long ma_stats_attraction_offset;
 
 #section marcel_types
 #include "tbx_compiler.h"

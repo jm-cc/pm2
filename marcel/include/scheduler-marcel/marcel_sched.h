@@ -227,6 +227,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	}
 	internal->entity.sched_policy = attr->sched.sched_policy;
 	internal->entity.run_holder=NULL;
+	internal->entity.init_holder=NULL;
 	internal->entity.holder_data=NULL;
 #ifdef MA__BUBBLES
 	INIT_LIST_HEAD(&internal->entity.bubble_entity_list);
@@ -263,10 +264,11 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 					rq = &ma_main_runqueue;
 				b->sched.sched_holder = &rq->hold;
 				ma_holder_lock_softirq(&rq->hold);
-				ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_BLOCKED);
+				ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
 				ma_holder_unlock_softirq(&rq->hold);
 			}
 		}
+		internal->entity.sched_holder=NULL;
 		marcel_bubble_insertentity(b, &internal->entity);
 		if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 			/* keep this thread inside the bubble */
@@ -360,10 +362,10 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_reset(&t->sched.internal.entity);
-#endif /* MARCEL_STATS_ENABLED */
-
 	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
+	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
+#endif /* MARCEL_STATS_ENABLED */
 #ifdef MA__NUMA
 	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);
@@ -372,8 +374,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else
 		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
-
 }
+
 #section sched_marcel_functions
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t,

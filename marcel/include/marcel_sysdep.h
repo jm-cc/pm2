@@ -54,13 +54,15 @@ unsigned ma_nbprocessors(void);
 
 TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
 		unsigned line);
-extern void ma_free_node(void *ptr, size_t size, int node,
+extern void ma_free_node(void *ptr, size_t size,
 		char * __restrict file,  unsigned line);
 extern void ma_migrate_mem(void *ptr, size_t size, int node);
+extern int is_numa_available();
 
 #ifndef MA__NUMA
+//refaire un malloc bas de gamme non numa
 #define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
-#define ma_free_node(ptr, size, node, file, line) marcel_free(ptr, file, line)
+#define ma_free_node(ptr, size, file, line) marcel_free(ptr)
 #define ma_migrate_mem(ptr, size, node) (void)0
 #endif
 

@@ -15,11 +15,13 @@
  */
 
 #include "marcel.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+
 #ifdef MA__NUMA
 #include <math.h>
 #endif
@@ -78,7 +80,8 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 		.spare = 0,
 		.needed = -1,
 #endif
-		.leveldata.vpdata = MARCEL_TOPO_VPDATA_INITIALIZER(&marcel_machine_level[0].leveldata.vpdata),
+		.vpdata = MARCEL_TOPO_VPDATA_INITIALIZER(&marcel_machine_level[0].vpdata),
+		.nodedata = MARCEL_TOPO_NODEDATA_INITIALIZER(&marcel_machine_level[0].nodedata),
 	},
 	{
 		.vpset = MARCEL_VPMASK_EMPTY,
@@ -118,6 +121,7 @@ unsigned marcel_cpu_stride = 0;
 unsigned marcel_first_cpu = 0;
 unsigned marcel_vps_per_cpu = 1;
 #ifdef MA__NUMA
+unsigned marcel_nbnodes = 1;
 unsigned marcel_topo_max_arity = 4;
 #endif
 
@@ -366,7 +370,7 @@ static void __marcel_init look_libnuma(void) {
 	marcel_vpmask_empty(&node_level[i].vpset);
 	marcel_vpmask_empty(&node_level[i].cpuset);
 
-	marcel_topo_level_nbitems[discovering_level]=nbnodes;
+	marcel_topo_level_nbitems[discovering_level] = marcel_nbnodes = nbnodes;
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
 
@@ -422,7 +426,7 @@ static void __marcel_init look_libnuma(void) {
 	marcel_vpmask_empty(&node_level[i].vpset);
 	marcel_vpmask_empty(&node_level[i].cpuset);
 
-	marcel_topo_level_nbitems[discovering_level]=nbnodes;
+	marcel_topo_level_nbitems[discovering_level] = marcel_nbnodes = nbnodes;
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
 }
@@ -442,13 +446,10 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	nbnodes = rs_numrads(rset, sdl, 0);
 	if (nbnodes == -1) {
 		perror("rs_numrads");
-		nbnodes = 0;
 		return;
 	}
-	if (nbnodes == 1) {
-		nbnodes = 0;
+	if (nbnodes == 1)
 		return;
-	}
 
 	MA_BUG_ON(nbnodes == 0);
 
@@ -501,10 +502,12 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	marcel_vpmask_empty(&rad_level[r].vpset);
 	marcel_vpmask_empty(&rad_level[r].cpuset);
 
-	marcel_topo_level_nbitems[discovering_level]=nbnodes;
+	marcel_topo_level_nbitems[discovering_level] = nbnodes;
 	marcel_topo_levels[discovering_level++] = rad_level;
-	if (level == MARCEL_LEVEL_NODE)
+	if (level == MARCEL_LEVEL_NODE) {
 		marcel_topo_node_level = rad_level;
+		marcel_nbnodes = nbnodes;
+	}
 #ifdef MARCEL_SMT_IDLE
 	if (level == MARCEL_LEVEL_CORE)
 		marcel_topo_core_level = rad_level;
@@ -942,7 +945,12 @@ static void topo_discover(void) {
 	marcel_vpmask_empty(&marcel_topo_vp_level[i].vpset);
 
 	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
-		level->leveldata.vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->leveldata.vpdata);
+		level->vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->vpdata);
+#ifdef MA__NUMA
+	if (marcel_topo_node_level)
+#endif
+		for (level = &marcel_topo_node_level[0]; level->vpset; level++)
+			level->nodedata = (struct marcel_topo_nodedata) MARCEL_TOPO_NODEDATA_INITIALIZER(&level->nodedata);
 
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; marcel_topo_levels[l][i].vpset; i++)

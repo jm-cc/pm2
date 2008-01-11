@@ -1,6 +1,6 @@
 
 /*
- * PM2: Parallel Multithreaded Machine
+ * PM2 Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,9 @@
 #endif
 #include <fcntl.h>
 #include <errno.h>
+#ifdef MA__NUMA
+#include <numaif.h>
+#endif
 
 #if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
 #include <sys/syscall.h>
@@ -38,6 +41,7 @@ struct memory_area {
 	size_t size;
 };
 ma_allocator_t *memory_area_allocator;
+ma_allocator_t *heapinfo_allocator;
 unsigned long ma_stats_memory_offset;
 
 static void *next_slot;
@@ -99,7 +103,7 @@ static void *mapped_slot_alloc(void *foo)
 	int nb_try_left=1000;
 
 
-retry:
+  retry:
 	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
 	if (!ptr) {
 		if (!ma_in_atomic() && nb_try_left--) {
@@ -115,10 +119,10 @@ retry:
 	/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */
 	VALGRIND_STACK_REGISTER(ptr, ptr + THREAD_SLOT_SIZE);
 	res = mmap(ptr,
-		   THREAD_SLOT_SIZE,
-		   PROT_READ | PROT_WRITE | PROT_EXEC,
-		   MMAP_MASK,
-		   FILE_TO_MAP, 0);
+				  THREAD_SLOT_SIZE,
+				  PROT_READ | PROT_WRITE | PROT_EXEC,
+				  MMAP_MASK,
+				  FILE_TO_MAP, 0);
 
 	if(res == MAP_FAILED) {
 		if (!ma_in_atomic() && nb_try_left--) {
@@ -128,8 +132,8 @@ retry:
 		}
 		perror("mmap");
 		fprintf(stderr,"args %p, %lx, %u, %d", 
-				ptr, THREAD_SLOT_SIZE,
-				MMAP_MASK, FILE_TO_MAP);
+				  ptr, THREAD_SLOT_SIZE,
+				  MMAP_MASK, FILE_TO_MAP);
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 
@@ -229,14 +233,14 @@ static void __marcel_init marcel_slot_init(void)
 	MA_BUG_ON(0 != (SLOT_AREA_TOP & (THREAD_SLOT_SIZE-1)));
 
 	marcel_unmapped_slot_allocator = ma_new_obj_allocator(1,
-			unmapped_slot_alloc, NULL, NULL, NULL,
-			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+																			unmapped_slot_alloc, NULL, NULL, NULL,
+																			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
-			mapped_slot_alloc, NULL, mapped_slot_free, NULL,
-			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
+							    mapped_slot_alloc, NULL, mapped_slot_free, NULL,
+							    POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
 	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
-	    (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
-	    POLICY_HIERARCHICAL_MEMORY, 0);
+						     (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
+						     POLICY_HIERARCHICAL_MEMORY, 0);
 
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
@@ -292,62 +296,502 @@ void marcel_slot_exit(void)
 	ma_obj_allocator_fini(marcel_unmapped_slot_allocator);
 }
 
-/* marcel_malloc, marcel_calloc, marcel_free:
-   avoid locking penalty on trivial requests */
-void *marcel_malloc(unsigned size, char *file, unsigned line)
+#ifdef MA__NUMA
+#include <numa.h>
+#endif
+
+/******************* begin heap *******************/
+#ifdef MA__NUMA
+
+/* Marcel allocator */
+void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local, int node, int level)
 {
-        void *p;
+	/* Which entity ? */
+	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
 
-        if (size) {
-		marcel_extlib_protect();
-                p = __TBX_MALLOC(size, file, line);
-		marcel_extlib_unprotect();
-                if(p == NULL)
-                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
-        } else {
-                return NULL;
-        }
+	marcel_entity_t *upentity = entity;
+	ma_holder_t *h;
+	while (level--) {
+		h = upentity->init_holder;
+		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
+			break;
+		upentity = &ma_bubble_holder(h)->sched;
+	}
 
-        return p;
+	/* New entity heap */
+	if (!upentity->heap)
+		upentity->heap = ma_hcreate_heap();
+	
+	/* Which node ? */
+	unsigned long node_mask;
+	mask_zero(&node_mask, sizeof(unsigned long));
+
+	int local_node = ma_node_entity(upentity);
+
+	if (local)
+	{
+		mask_set(&node_mask, local_node);
+	}
+	else
+	{
+		mask_set(&node_mask, node);
+	}
+
+	int policy = CYCLIC;
+	//int policy = LESS_LOADED;
+	//int policy = SMALL_ACCESSED;
+
+	/* Smallest access */
+	//enum pinfo_weight weight = ma_mem_access(access, size);
+	enum pinfo_weight weight = access;
+	void *data = ma_hmalloc(size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
+	
+	return data;
+}
+
+void* marcel_calloc_customized(size_t nmemb, size_t size, enum pinfo_weight access, int local, int node, int level)
+{
+	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
+	marcel_entity_t *upentity = entity;
+	ma_holder_t *h;
+	while (level--) {
+		h = upentity->init_holder;
+		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
+			break;
+		upentity = &ma_bubble_holder(h)->sched;
+	}
+
+	if (!upentity->heap)
+		upentity->heap = ma_hcreate_heap();
+	
+	unsigned long node_mask;
+	mask_zero(&node_mask, sizeof(unsigned long));
+
+	int local_node = ma_node_entity(upentity);
+
+	if (local)
+	{
+		mask_set(&node_mask, local_node);
+	}
+	else
+	{
+		mask_set(&node_mask, node);
+	}
+
+	int policy = CYCLIC;
+	//int policy = LESS_LOADED;
+	//int policy = SMALL_ACCESSED;
+
+	//enum pinfo_weight weight = ma_mem_access(access, size);
+	enum pinfo_weight weight = access;
+	void *data = ma_hcalloc(nmemb, size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
+	
+	return data;
+}
+
+void *marcel_realloc_customized(void *ptr, unsigned size)
+{
+	return ma_hrealloc(ptr,size);
+}
+
+/* Free memory */
+void marcel_free_customized(void *data)
+{
+	ma_hfree(data);
+}
+
+/* Attach static memory */
+void marcel_attach_memory(void *data, int size, enum pinfo_weight access, int local, int node, int level)
+{
+	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
+	marcel_entity_t *upentity = entity;
+	ma_holder_t *h;
+	while (level--) {
+		h = upentity->init_holder;
+		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
+			break;
+		upentity = &ma_bubble_holder(h)->sched;
+	}
+
+	if (!upentity->heap)
+		upentity->heap = ma_hcreate_heap();
+	
+	unsigned long node_mask;
+	mask_zero(&node_mask, sizeof(unsigned long));
+	
+	int local_node = ma_node_entity(upentity);
+
+	if (local)
+	{
+		mask_set(&node_mask, local_node);
+	}
+	else
+	{
+		mask_set(&node_mask, node);
+	}
+
+	int policy = CYCLIC;
+	//int policy = LESS_LOADED;
+	//int policy = SMALL_ACCESSED;
+
+	//enum pinfo_weight weight = ma_mem_access(access, size);
+	enum pinfo_weight weight = access;
+	ma_hattach_memory(data, size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
+}
+
+/* Minimise access if small data */
+enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size)
+{
+	if (size < MA_CACHE_SIZE)
+	{
+		switch(access)
+		{
+			case HIGH_WEIGHT:
+				return MEDIUM_WEIGHT;
+				break;
+			case MEDIUM_WEIGHT:
+				return LOW_WEIGHT;
+				break;
+			default :
+				return LOW_WEIGHT;
+		}
+	}
+	return access;
+}
+
+/* Bubble thickness */
+//tableau de noeuds
+int ma_bubble_memory_affinity(marcel_bubble_t *bubble)//, ma_nodtab_t *attraction)
+{
+	ma_pinfo_t *pinfo;
+	int total = 0;
+	marcel_entity_t *entity = &bubble->sched;
+	if (entity->heap)
+	{
+		pinfo = NULL;
+		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		{
+			switch (pinfo->weight) 
+			{
+				unsigned node = *pinfo->nodemask;//chercher le noeud du pinfo et ajouter au tableau[noeud]
+				case (HIGH_WEIGHT) :
+					total += HW;
+					break;
+				case (MEDIUM_WEIGHT) :
+					total += MW;
+					break;
+				case (LOW_WEIGHT) :
+					total += LW;
+					break;
+				default :
+					total += 0;
+			}
+		}
+	}
+	return total;
+}
+
+/* Entity allocated memory, lock it recursively before */
+int ma_entity_memory_volume(marcel_entity_t *entity, int recurse)
+{
+	ma_pinfo_t *pinfo;
+	int total = 0;
+	int begin = 1;
+	if (entity->heap)
+	{
+		pinfo = NULL;
+		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		{
+			if (begin)
+			{
+				begin = 0;
+			}
+			total += pinfo->size;
+		}
+		marcel_entity_t *downentity;
+		/* entities in bubble */
+		if (entity->type == MA_BUBBLE_ENTITY)
+		{
+			list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+				{
+					total += ma_entity_memory_volume(downentity, recurse + 1);
+				}
+		}
+	}
+	return total;
+}
+
+/* Memory attraction (weight and touched maps) */
+void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min)
+{
+	ma_pinfo_t *pinfo;
+	int poids;
+	int i;
+
+	for (i = 0 ; i < marcel_nbnodes ; ++i)
+		allocated->array[i] = 0;
+	if (entity->heap)
+	{
+		pinfo = NULL;
+		
+		if (entity->heap)
+			while (ma_hnext_pinfo(&pinfo, entity->heap))
+			{
+				ma_hupdate_memory_nodes(pinfo, entity->heap);
+				
+				switch (pinfo->weight) 
+				{
+					case (HIGH_WEIGHT) :
+						poids = HW;
+						break;
+					case (MEDIUM_WEIGHT) :
+						/* pas considéré avec HIGH */
+						if (access_min == LOW_WEIGHT
+							 || access_min == MEDIUM_WEIGHT)
+							poids = MW;
+						else
+							poids = 0;
+						break;
+						/* pas considéré avec MEDIUM et HIGH */
+					case (LOW_WEIGHT) :
+						if (access_min == LOW_WEIGHT)
+							poids = LW;
+						else
+							poids = 0;
+						break;
+					default :
+						poids = 0;
+				}
+				for (i = 0 ; i < marcel_nbnodes ; ++i)
+				{
+					if (weight_coef)
+						allocated->array[i] += poids * pinfo->nb_touched[i];
+					else 
+						allocated->array[i] += pinfo->nb_touched[i];
+				}
+			}
+	}
+}
+
+/* Recursif memory attraction, lock it recursively before */
+int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min, int recurse)
+{
+	ma_nodtab_t local;
+	marcel_entity_t *downentity;
+	int i, imax;	
+
+	if (!recurse)
+	{
+		/* init sum */
+		for (i = 0 ; i < marcel_nbnodes ; ++i)
+			allocated->array[i] = 0;
+	}
+
+	/* this entity sum */
+	ma_attraction_inentity(entity, &local, weight_coef, access_min);
+	
+	for ( i = 0 ; i < marcel_nbnodes ; i++)
+		allocated->array[i] += local.array[i];
+
+	/* entities in bubble */
+	if (entity->type == MA_BUBBLE_ENTITY)
+	{
+		list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+			{
+				ma_most_attractive_node(downentity, allocated, weight_coef, access_min, recurse + 1);
+			}
+	}
+	if (!recurse) 
+	{  
+		/* return the most allocated node */
+		imax = 0;
+		for (i = 0 ; i < marcel_nbnodes ; ++i)
+		{
+			if (allocated->array[i] > allocated->array[imax])
+				imax = i;
+		}
+		//fprintf(stderr,"ma_most_allocated_node : entity %p on node %d\n", entity, imax);		 
+		return imax;
+	}
+	return -1;
+}
+
+/* Compute attraction or volume with minimal access, lock it recursively before */
+int ma_compute_total_attraction(marcel_entity_t *entity, int weight_coef, int access_min, int attraction, int *pnode)
+{
+	int total = 0;
+
+	/* Nouveau calcul */
+	ma_nodtab_t allocated;
+	if (pnode)
+		*pnode = ma_most_attractive_node(entity, &allocated, weight_coef,access_min,0);
+	else
+		ma_most_attractive_node(entity, &allocated, weight_coef,access_min,0);
+
+	if (!attraction)
+		return -1;
+
+	/* sommer sur tous les noeuds */
+	int i;
+	for (i = 0 ; i < marcel_nbnodes ; i++ )
+	{
+		total += allocated.array[i];
+	}
+	return total;
+}
+
+/* Memory migration, lock it recursively before */
+void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
+{
+	ma_pinfo_t *pinfo;
+	ma_pinfo_t newpinfo;
+	int migration = 0;
+	int load;
+	
+	unsigned long newnodemask = 0;//[8] = {};
+	mask_set(&newnodemask, newnode);
+	if (entity->heap)
+	{
+			pinfo = NULL;
+	
+		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		{
+			switch (pinfo->weight)
+			{
+				case HIGH_WEIGHT :
+					migration = 1;
+					break;
+
+				case MEDIUM_WEIGHT :
+					if (checkload)
+						load = ma_entity_load(entity);
+					else
+						load = MA_DEFAULT_LOAD * ma_count_threads_in_entity(entity);
+					
+					if (load > MA_DEFAULT_LOAD)
+						migration = 1;
+					else
+						migration = 0;
+					break;
+					
+				case LOW_WEIGHT :
+					migration = 0;
+					break;
+			}
+
+			if (migration)
+			{
+				newpinfo.mempolicy = pinfo->mempolicy;
+				newpinfo.weight = pinfo->weight;
+				newpinfo.nodemask = &newnodemask;
+				newpinfo.maxnode = WORD_SIZE;
+				if (ma_hmove_memory(pinfo, newpinfo.mempolicy, newpinfo.weight,newpinfo.nodemask, newpinfo.maxnode, entity->heap))
+				{
+					pinfo = NULL;
+				}
+			}
+		}
+	}
+	marcel_entity_t *downentity;
+	if (entity->type == MA_BUBBLE_ENTITY)
+	{
+		list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+			{
+				ma_move_entity_alldata(downentity, newnode);
+			}
+	}
+}
+
+/* See memory */
+void marcel_see_allocated_memory(marcel_entity_t *entity)
+{
+	ma_nodtab_t allocated;
+	int i;
+	ma_most_attractive_node(entity, &allocated, 1, LOW_WEIGHT, 0);
+	for (i = 0 ; i < marcel_nbnodes ; i++)
+		marcel_fprintf(stderr,"ma_see_allocated_memory : thread %p : node %d -> %d Po\n", MARCEL_SELF, i, (int)allocated.array[i]);
+}
+
+/* find the node from the entity */
+/* TODO => so pas de node level */
+int ma_node_entity(marcel_entity_t *entity)
+{
+	ma_holder_t *holder = entity->sched_holder;
+	/* if entity is scheduled in a bubble, find the first runqueue */
+	while (holder->type == MA_BUBBLE_HOLDER)
+	{
+		holder = (ma_bubble_holder(holder)->sched).sched_holder;
+		//marcel_fprintf(stderr,"holder %p\n",holder);			
+	}	
+	ma_runqueue_t *rq = ma_to_rq_holder(holder);
+	struct marcel_topo_level *level
+		= tbx_container_of(rq, struct marcel_topo_level, sched);
+		
+	if (nodelevel == -1)
+	{
+		//marcel_fprintf(stderr,"pas de nodelevel : level %p, level->level %d, level->number %d\n",level,level->level,level->number);
+		return level->number;
+	}
+	while (level->level > nodelevel)
+	{
+		//marcel_fprintf(stderr,"level %p, level->level %d, level->number %d\n",level,level->level,level->number);
+		if (level->father == NULL)
+			return level->level;
+		level = level->father;
+	}
+	return level->number;
+}
+
+#endif
+
+/*******************end heap**************************/
+
+/* TODO : une fois notre customized ok, gerer ces malloc */
+/* marcel_malloc for the current entity on its level */
+void* marcel_malloc(size_t size, char *file, unsigned line)
+{
+	//if (!is_numa_available())
+	return ma_malloc_nonuma(size, __FILE__ , __LINE__);
+	//else
+	//return ma_malloc(size, __FILE__ , __LINE__);
 }
 
 void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line)
 {
-        void *p;
+	void *p;
 
 	marcel_extlib_protect();
-        p = __TBX_REALLOC(ptr, size, file, line);
+	p = __TBX_REALLOC(ptr, size, file, line);
 	marcel_extlib_unprotect();
-        if(p == NULL)
-                MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+	if(p == NULL)
+		MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 
-        return p;
+	return p;
 }
 
 void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 {
-        void *p;
+	void *p;
 
-        if (nelem && elsize) {
+	if (nelem && elsize) {
 		marcel_extlib_protect();
-                p = __TBX_CALLOC(nelem, elsize, file, line);
+		p = __TBX_CALLOC(nelem, elsize, file, line);
 		marcel_extlib_unprotect();
-                if(p == NULL)
-                        MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
-        } else {
-                return NULL;
-        }
+		if(p == NULL)
+			MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+	} else {
+		return NULL;
+	}
 
-        return p;
+	return p;
 }
 
-void marcel_free(void *ptr, char * __restrict file, unsigned line)
+void marcel_free(void *data)
 {
-        if(ptr) {
-		marcel_extlib_protect();
-                __TBX_FREE((char *)ptr, file, line);
-		marcel_extlib_unprotect();
-        }
+	//if (!is_numa_available())// penser au cas nnon linux (fonction externe, sysdep) si on sait pas, ma_free
+	ma_free_nonuma(data, __FILE__ , __LINE__);
+	//else
+	//ma_free(data, __FILE__, __LINE__);
 }
 
 /* __marcel_malloc, __marcel_calloc, __marcel_free:
@@ -406,6 +850,34 @@ void __marcel_free(void *ptr)
                 free((char *)ptr);
 		marcel_extlib_unprotect();
         }
+}
+
+
+/* no NUMA malloc */
+void* ma_malloc_nonuma(size_t size, char *file, unsigned line)
+{
+	void *p;
+	if (size) {
+		marcel_extlib_protect();
+		p = __TBX_MALLOC(size, file, line);
+		marcel_extlib_unprotect();
+		if(p == NULL)
+			MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
+	} 
+	else {
+		return NULL;
+	}
+	return p;
+}
+
+/* free non NUMA, version préexistante */
+void ma_free_nonuma(void *data, char * __restrict file, unsigned line)
+{
+	if(data) {
+		marcel_extlib_protect();
+		__TBX_FREE((char *)data, file, line);
+		marcel_extlib_unprotect();
+	}	
 }
 
 void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)

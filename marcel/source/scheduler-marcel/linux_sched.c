@@ -1446,7 +1446,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
 	}
 #endif
-	ma_spin_lock_init(&lwp->tasklet_lock);
+	ma_remote_tasklet_init(&lwp->tasklet_lock);
 	LOG_OUT();
 }
 

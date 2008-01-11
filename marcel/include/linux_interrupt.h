@@ -159,9 +159,11 @@ static __tbx_inline__ void set_vpmask(struct ma_tasklet_struct *t, marcel_vpmask
 {
        t->vp_mask=*mask;
 }
+#define ma_remote_tasklet_init(lock) ma_spin_lock_init(lock)
 #define ma_remote_tasklet_lock(lock) ma_spin_lock(lock)
 #define ma_remote_tasklet_unlock(lock) ma_spin_unlock(lock)
 #else
+#define ma_remote_tasklet_init(lock) do { } while (0)
 #define ma_remote_tasklet_lock(lock) do { } while (0)
 #define ma_remote_tasklet_unlock(lock) do { } while (0)
 #endif

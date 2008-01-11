@@ -97,7 +97,9 @@ struct marcel_lwp {
 
 	char data[MA_PER_LWP_ROOM];
 
+#ifdef MARCEL_REMOTE_TASKLETS
 	ma_spinlock_t  tasklet_lock;
+#endif
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \

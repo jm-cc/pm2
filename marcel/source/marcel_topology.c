@@ -327,6 +327,7 @@ static void __marcel_init look_libnuma(void) {
 	nbnodes=numa_max_node()+1;
 	if (nbnodes==1) {
 		nbnodes=0;
+		ma_numa_not_available=1;
 		return;
 	}
 
@@ -975,6 +976,7 @@ void ma_topo_exit(void) {
 __ma_initfunc(topo_discover, MA_INIT_TOPOLOGY, "Finding Topology");
 
 static void topology_lwp_init(ma_lwp_t lwp) {
+	/* FIXME: node_level/core_level/cpu_level are not associated with LWPs but VPs ! */
 #ifdef MA__NUMA
 	int i;
 	if (marcel_topo_node_level) {
@@ -1004,7 +1006,8 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 		}
 	}
 #endif /* MA__NUMA */
-	ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[LWP_NUMBER(lwp)];
+	// Mmm, inutile a priori, c'est déjà fait dans INIT_LWP_NB
+	//ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[LWP_NUMBER(lwp)];
 }
 
 static void topology_lwp_start(ma_lwp_t lwp) {

@@ -261,8 +261,8 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 	int number = LWP_NUMBER(LWP_SELF);
 
 	for_all_vp_from_begin(vp, number) {
-		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));
-		list_for_each_entry(t, &ma_topo_vpdata_l(vp, all_threads),
+		ma_spin_lock_softirq(&ma_topo_vpdata(vp, threadlist_lock));
+		list_for_each_entry(t, &ma_topo_vpdata(vp, all_threads),
 		    all_threads) {
 			ma_spin_lock_softirq(&t->siglock);
 			deliver = 0;
@@ -283,7 +283,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 			if (marcel_sigisemptyset(&gsigpending))
 				break;
 		}
-		ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));	//verrou de liste des threads
+		ma_spin_unlock_softirq(&ma_topo_vpdata(vp, threadlist_lock));	//verrou de liste des threads
 		if (marcel_sigisemptyset(&gsigpending))
 			break;
 	}
@@ -550,7 +550,7 @@ restart:
 		LOG_RETURN(0);
 	}
 
-	if (!marcel_sigisfullset(&cset)) 
+	if (!marcel_sigisfullset(&cset))
 	for (sig = 1; sig < MARCEL_NSIG; sig++)
 		if (marcel_sigismember(&cset, sig))
 			if (csigaction[sig].marcel_sa_handler == SIG_DFL) {

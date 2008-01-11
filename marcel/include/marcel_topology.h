@@ -80,8 +80,6 @@ extern unsigned marcel_vps_per_cpu;
 #ifdef MA__NUMA
 /** \brief Maximum allowed arity in the level tree */
 extern unsigned marcel_topo_max_arity;
-/** \brief Number of NUMA nodes */
-extern unsigned marcel_nbnodes;
 /** \brief Direct access to node levels */
 extern struct marcel_topo_level *marcel_topo_node_level;
 #endif
@@ -423,13 +421,6 @@ struct marcel_topo_vpdata {
 	int need_resched;
 };
 
-struct marcel_topo_nodedata {
-	/* For NUMA levels */
-	size_t allocated;
-	struct list_head memory_areas;
-	ma_spinlock_t memory_areas_lock;
-};
-
 #section marcel_macros
 #ifdef MARCEL_POSTEXIT_ENABLED
 #  define MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER \
@@ -444,12 +435,6 @@ struct marcel_topo_nodedata {
 	.task_number = 0, \
 	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
 	MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER \
-}
-
-#define MARCEL_TOPO_NODEDATA_INITIALIZER(var) { \
-   .allocated = 0, \
-   .memory_areas = LIST_HEAD_INIT((var)->memory_areas), \
-   .memory_areas_lock = MA_SPIN_LOCK_UNLOCKED,\
 }
 
 #section marcel_structures
@@ -489,8 +474,9 @@ struct marcel_topo_level {
 	int needed;
 #endif
 
-	struct marcel_topo_nodedata nodedata; /* for NUMA node levels */
-	struct marcel_topo_vpdata vpdata; /* for VP levels */
+	union {
+		struct marcel_topo_vpdata vpdata; /* for VP levels */
+	} leveldata;
 
 	/* allocated by ma_per_level_alloc() */
 	char data[MA_PER_LEVEL_ROOM];
@@ -511,10 +497,7 @@ struct marcel_topo_level {
 typedef struct marcel_topo_level marcel_topo_level_t;
 
 #section marcel_macros
-#define ma_topo_vpdata_l(vp, field) ((vp)->vpdata.field)
-#define ma_topo_vpdata(vpnum, field) ma_topo_vpdata_l(&marcel_topo_vp_level[vpnum], field)
-#define ma_topo_nodedata_l(node, field) ((node)->nodedata.field)
-#define ma_topo_nodedata(nodenum, field) ma_topo_nodedata_l(&marcel_topo_node_level[nodenum], field)
+#define ma_topo_vpdata(vp, field) ((vp)->leveldata.vpdata.field)
 
 #section marcel_variables
 /** \brief Number of horizontal levels */
@@ -591,7 +574,7 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #endif
 
 #section marcel_macros
-#define ma_need_resched() (ma_topo_vpdata_l(__ma_get_lwp_var(vp_level), need_resched))
+#define ma_need_resched() (ma_topo_vpdata(__ma_get_lwp_var(vp_level), need_resched))
 
 #section functions
 #depend "tbx_compiler.h"
@@ -602,6 +585,6 @@ TBX_FMALLOC extern void *marcel_malloc_node(size_t size, int node);
 /** \brief Free data allocated by marcel_malloc_node() */
 extern void marcel_free_node(void *ptr, size_t size, int node);
 #define marcel_malloc_node(size, node)	ma_malloc_node(size, node, __FILE__, __LINE__)
-#define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, __FILE__, __LINE__)
-//!! unused node
+#define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, node, __FILE__, __LINE__)
+
 /* @} */

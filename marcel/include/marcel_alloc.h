@@ -64,73 +64,24 @@ static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
 
 /* ======= MT-Safe functions from standard library ======= */
 
-#section types
-#ifdef MA__NUMA
-typedef struct nodtab ma_nodtab_t;
-//typedef struct pageinfo ma_pinfo_t;
-#endif
-#section structures
-#ifdef MA__NUMA
-struct nodtab {
-		size_t array[MARCEL_NBMAXNODES];
-};
-#endif
-
 #section macros
-#define tmalloc(size)          ma_malloc_nonuma(size, __FILE__, __LINE__)
+#define tmalloc(size)          marcel_malloc(size, __FILE__, __LINE__)
 #define trealloc(ptr, size)    marcel_realloc(ptr, size, __FILE__, __LINE__)
 #define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
-#define tfree(data)            ma_free_nonuma(data, __FILE__, __LINE__)
-/* access type weight */
-#define HW 1000
-#define MW 100
-#define LW 10
-#define MA_CACHE_SIZE 16384
-#define LOCAL_NODE 1
-
-#section marcel_variables
-extern unsigned long ma_stats_attraction_offset;
+#define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
 
 #section functions
-#ifdef MA__NUMA
-/* heap allocator */
-void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
-void marcel_free_customized(void *data);
+TBX_FMALLOC void *marcel_malloc(unsigned size, char *file, unsigned line);
+TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line);
+TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
+void marcel_free(void *ptr, char * __restrict file, unsigned line);
 
-enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size);
-
-int ma_bubble_memory_affinity(marcel_bubble_t *bubble);
-int ma_entity_memory_volume(marcel_entity_t *entity, int recurse);
-
-void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min);
-int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min, int recurse);
-int ma_compute_total_attraction(marcel_entity_t *entity, int weight_coef, int access_min, int attraction, int *pnode);
-void ma_move_entity_alldata(marcel_entity_t *entity, int newnode);
-
-void marcel_see_allocated_memory(marcel_entity_t *entity);
-void ma_pinfo_init(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
-int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
-#endif
-
-/* malloc */
-void* marcel_malloc(size_t size, char *file, unsigned line);
-void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line);
-void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
-void marcel_free(void *data);
-
-void marcel_memory_attach(marcel_entity_t *e, void *data, size_t size, int node, int level);
-void marcel_memory_detach(marcel_entity_t *e, void *data, size_t *size, int level);
-#define marcel_task_memory_attach(t,d,s,l) marcel_memory_attach(t?&((marcel_t)t)->sched.internal.entity:NULL, (d), (s), 0, (l))
-#define marcel_bubble_memory_attach(t,d,s,l) marcel_memory_attach(&(b)->sched, (d), (s), (l))
 TBX_FMALLOC void *__marcel_malloc(unsigned size);
 TBX_FMALLOC void *__marcel_realloc(void *ptr, unsigned size);
 TBX_FMALLOC void *__marcel_calloc(unsigned nelem, unsigned elsize);
 void __marcel_free(void *ptr);
 
-/* malloc internes */
-void* ma_malloc(size_t size, char * file, unsigned line);
-void ma_free(void *data, char * file, unsigned line);
-
-/* ancien malloc pour archi nonnuma */
-void* ma_malloc_nonuma(size_t size, char *file, unsigned line);
-void ma_free_nonuma(void *data, char * __restrict file, unsigned line);
+void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level);
+void ma_memory_detach(marcel_entity_t *e, void *data, int level);
+#define marcel_task_memory_attach(t,d,s,l) ma_memory_attach(t?&((marcel_t)t)->sched.internal.entity:NULL, (d), (s), (l))
+#define marcel_bubble_memory_attach(t,d,s,l) ma_memory_attach(&(b)->sched, (d), (s), (l))

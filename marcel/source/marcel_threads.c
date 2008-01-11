@@ -274,7 +274,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task = ma_obj_alloc(marcel_thread_seed_allocator);
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
-		marcel_one_more_task(new_task);
 		new_task->f_to_call = func;
 		new_task->arg = arg;
 		new_task->stack_kind = MA_NO_STACK;
@@ -418,17 +417,17 @@ static void* postexit_thread_func(any_t arg)
 	MTRACE("Start Postexit", marcel_self());
 	marcel_atexit(postexit_thread_atexit_func, vp);
 	for(;;) {
-		marcel_sem_P(&ma_topo_vpdata_l(vp,postexit_thread));
+		marcel_sem_P(&ma_topo_vpdata(vp,postexit_thread));
 		MTRACE("Postexit", marcel_self());
-		if (!ma_topo_vpdata_l(vp,postexit_func)) {
+		if (!ma_topo_vpdata(vp,postexit_func)) {
 			mdebug("postexit with NULL function!\n"
 				"Who will desalocate the stack!!!\n");
 		} else {
-			(*ma_topo_vpdata_l(vp,postexit_func))
-				(ma_topo_vpdata_l(vp,postexit_arg));
-			ma_topo_vpdata_l(vp,postexit_func)=NULL;
+			(*ma_topo_vpdata(vp,postexit_func))
+				(ma_topo_vpdata(vp,postexit_arg));
+			ma_topo_vpdata(vp,postexit_func)=NULL;
 		}
-		marcel_sem_V(&ma_topo_vpdata_l(vp,postexit_space));
+		marcel_sem_V(&ma_topo_vpdata(vp,postexit_space));
 	}
 	LOG_OUT();
 	abort(); /* For security */
@@ -552,8 +551,6 @@ static void marcel_exit_internal(any_t val)
 		marcel_funerals(cur->cur_thread_seed);
 		if (!detached)
 			marcel_sem_V(&cur->cur_thread_seed->client);
-
-		marcel_one_task_less(cur->cur_thread_seed);
 
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);

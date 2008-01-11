@@ -6,9 +6,6 @@
 #endif
 #include <marcel.h>
 
-#include <stdio.h>
-#define printf marcel_printf
-#define fprintf marcel_fprintf
 
 #ifndef MA__IFACE_PMARCEL
 #warning "This file can't be used without the pmarcel option in the flavor"

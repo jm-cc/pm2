@@ -18,7 +18,3 @@
 #depend "marcel_bubble_sched_interface.h[types]"
 extern marcel_bubble_sched_t marcel_bubble_affinity_sched;
 extern marcel_bubble_t *registered_bubble;
-
-#section functions
-void marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l);
-

@@ -139,11 +139,6 @@ static void TBX_NORETURN fault_catcher(int sig)
 		pm2debug("OOPS!!! current lwp is %d\n",
 			LWP_NUMBER(LWP_SELF));
 	
-	PROF_EVENT(fut_stop);
-#ifdef PROFILE
-	profile_stop();
-	profile_exit();
-#endif
 #if defined(LINUX_SYS) && defined(MA__LWPS)
 	fprintf(stderr,
 		"OOPS!!! Entering endless loop "

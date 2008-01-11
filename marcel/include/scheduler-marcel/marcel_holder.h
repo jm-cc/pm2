@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHOR file)
+ * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,9 +133,6 @@ ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->hold)
 
-/* \brief Find the number of the numa node where the entity is */ 
-int ma_node_entity(marcel_entity_t *entity);
-
 #section marcel_inline
 #ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
@@ -153,7 +150,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * qu'elle est en cours d'exécution. Sinon, c'est qu'elle est préemptée, prête
  * pour l'exécution dans la liste run_list.
  *
- * On peut ainsi avoir un thread contenu dans une bulle (init_holder), endormi
+ * On peut ainsi avoir un thread contenue dans une bulle (init_holder), endormi
  * (donc run_holder == NULL), mais qui sera réveillé sur une certaine runqueue
  * (sched_holder).
  * */
@@ -194,13 +191,6 @@ struct ma_sched_entity {
 #endif
 	/** \brief List of entities placed for schedule in this holder */
 	struct list_head sched_list;
-
-   /** \brief List of entities on the fake vp */
-	struct list_head next_fake_sched;
-
-	/** \brief Last VP used */
-		int last_vp;
-
 #ifdef MA__LWPS
 	/** \brief Nesting level */
 	int sched_level;
@@ -219,19 +209,10 @@ struct ma_sched_entity {
 #endif
 
 #ifdef MA__BUBBLES
-	/* heap allocator */
-	ma_heap_t *heap;
-#endif
-
-/** \brief General-purpose list link for bubble schedulers */
-#ifdef MA__BUBBLES
 	/** \brief General-purpose list link for bubble schedulers */
 	struct list_head next;
 #endif
 };
-
-#section macros
-#define MARCEL_ENTITY_SELF (&(MARCEL_SELF)->sched.internal.entity)
 
 #section types
 typedef struct ma_sched_entity marcel_entity_t;
@@ -299,9 +280,6 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) \
 	MA_SCHED_LEVEL_INIT \
 	MA_SCHED_MEMORY_AREA_INIT(e) \
-      .heap = NULL,		     \
-      .last_vp = -1,			    \
-      /* .heap_lock = MA_SPIN_LOCK_UNLOCKED,*/	\
 }
 
 #section marcel_macros
@@ -380,7 +358,7 @@ again:
 	sched_debug("ma_entity_holder_rawlocking(%p)\n",h);
 	ma_holder_rawlock(h);
 	if (tbx_unlikely(h != (h2 = ma_entity_some_holder(e)))) {
-		sched_debug("ma_entity_holder_rawunlocking(%p)\n", h);
+		sched_debug("ma_entity_holder_rawunlocking(%p)\n",h);
 		ma_holder_rawunlock(h);
 		h = h2;
 		goto again;
@@ -457,7 +435,7 @@ static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_rawunlock(%p)\n",h);
 	if (h)
 		ma_holder_rawunlock(h);
-	}
+}
 static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock(%p)\n",h);
 	if (h)
@@ -485,7 +463,6 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
 #ifdef MA__BUBBLES
 	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER; ) {
-		/* TODO: n'a plus de sens, enlever run_holder */
 		if (ma_bubble_holder(hh)->sched.run_holder != hh)
 			hh = ma_bubble_holder(hh)->sched.run_holder;
 		else if (ma_bubble_holder(hh)->sched.sched_holder != hh)
@@ -509,7 +486,6 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
-	MA_BUG_ON(e->holder_data);
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
@@ -702,28 +678,9 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 	ma_deactivate_running_task(p,h);
 }
 
-#section marcel_functions
-static __tbx_inline__ void ma_task_check(marcel_task_t *t);
-#section marcel_inline
-static __tbx_inline__ void ma_task_check(marcel_task_t *t) {
-	if (MA_TASK_IS_READY(t)) {
-		/* check that it is reachable from some runqueue */
-		ma_holder_t *h = ma_task_run_holder(t);
-		MA_BUG_ON(!h);
-#ifdef MA__BUBBLES
-		if (h->type == MA_BUBBLE_HOLDER) {
-			marcel_bubble_t *b = ma_bubble_holder(h);
-			MA_BUG_ON(!b->sched.run_holder);
-			MA_BUG_ON(!b->sched.holder_data);
-			MA_BUG_ON(list_empty(&b->queuedentities));
-		}
-#endif
-	}
-}
-
 #section marcel_macros
 #define MA_ENTITY_RUNNING 2
-#define MA_ENTITY_READY 1
+#define MA_ENTITY_BLOCKED 1
 #define MA_ENTITY_SLEEPING 0
 #section marcel_functions
 /* Sets the sched holder of an entity to bubble (which is supposed to be
@@ -744,7 +701,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 		sched_debug("getting entity %p from holder %p\n", e, h);
 
 		if (e->holder_data) {
-			ret = MA_ENTITY_READY;
+			ret = MA_ENTITY_BLOCKED;
 			ma_dequeue_entity(e, h);
 		} else
 			ret = MA_ENTITY_RUNNING;
@@ -753,8 +710,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 
 #ifdef MA__BUBBLES
 	if (e->type == MA_BUBBLE_ENTITY) {
-		/* detach bubble */
-		ret = MA_ENTITY_READY;
+		ret = MA_ENTITY_BLOCKED;
 		ma_set_sched_holder(e, ma_bubble_entity(e), 0);
 	}
 #endif
@@ -763,12 +719,10 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 
 #section marcel_functions
 /** \brief Puts entity \e e into holder \e h (which must be already locked) in
- * state \e state.   If e is a bubble, its hierarchy must be already locked
- * (since it all needs moved). If h is a bubble, the corresponding top-bubble
- * and runqueue must be already locked. */
+ * state \e state.   If entity is a bubble, its hierarchy is supposed to be
+ * already locked*/
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
-#depend "[marcel_types]"
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
@@ -806,12 +760,9 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	if (state == MA_ENTITY_SLEEPING)
 		return;
 
-#ifdef MA__BUBBLES
-	if (!(e->type == MA_BUBBLE_ENTITY && h->type == MA_BUBBLE_HOLDER))
-		ma_activate_running_entity(e, h);
-#endif
+	ma_activate_running_entity(e, h);
 
-	if (state == MA_ENTITY_READY) {
+	if (state == MA_ENTITY_BLOCKED) {
 #ifdef MA__BUBBLES
 		if (h->type == MA_BUBBLE_HOLDER) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
@@ -819,7 +770,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				/* Recursively set the new holder. */
 				ma_set_sched_holder(e, b, 0);
 			else
-				/* Just enqueue, corresponding runqueue must be locked */
+				/* Just enqueue */
 				__ma_bubble_enqueue_entity(e, b);
 		} else
 #endif

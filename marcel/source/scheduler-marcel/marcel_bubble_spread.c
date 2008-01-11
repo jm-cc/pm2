@@ -18,6 +18,14 @@
 
 #ifdef MA__BUBBLES
 
+#if 1
+#define _debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
+#define debug(fmt, ...) fprintf(stderr, "%*s" fmt, recurse, "", ##__VA_ARGS__);
+#else
+#define _debug(fmt, ...) (void)0
+#define debug(fmt, ...) (void)0
+#endif
+
 /* spread entities e on topology levels l */
 /* e has ne items, l has nl items */
 static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl, int recurse) {
@@ -27,32 +35,31 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	unsigned long totload;
 
 	if (!ne) {
-		bubble_sched_debug("no entity, do nothing");
+		debug("no entity, do nothing");
 		return;
 	}
 
 	MA_BUG_ON(!nl);
 
-	bubble_sched_debug("spreading entit%s", ne>1?"ies":"y");
+	debug("spreading entit%s", ne>1?"ies":"y");
 	for (i=0; i<ne; i++)
-		bubble_sched_debug(" %p", e[i]);
-	bubble_sched_debug(" at level%s", nl>1?"s":"");
+		_debug(" %p", e[i]);
+	_debug(" at level%s", nl>1?"s":"");
 	for (i=0; i<nl; i++)
-		bubble_sched_debug(" %s", l[i]->sched.name);
-	bubble_sched_debug("\n");
+		_debug(" %s", l[i]->sched.name);
+	_debug("\n");
 
 	if (nl == 1) {
 		/* Only one level */
-		bubble_sched_debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->sched.name);
+		debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->sched.name);
 		if (l[0]->arity) {
-			bubble_sched_debug("and recurse in levels\n");
+			debug("and recurse in levels\n");
 			return __marcel_bubble_spread(e, ne, l[0]->children, l[0]->arity, recurse+1);
 		}
-		bubble_sched_debug("No more possible level recursion, we're done\n");
+		debug("No more possible level recursion, we're done\n");
 		return;
 	}
 
-#define marcel_stats_load_offset ma_stats_nbready_offset
 	/* compute total load */
 	totload = 0;
 	for (i=0; i<ne; i++) {
@@ -62,7 +69,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			totload += *(long*)ma_task_stats_get(ma_task_entity(e[i]), marcel_stats_load_offset);
 	}
 	per_item_load = (float)totload / nl;
-	bubble_sched_debug("total load %lu = %d*%.2f\n", totload, nl, per_item_load);
+	debug("total load %lu = %d*%.2f\n", totload, nl, per_item_load);
 
 	/* Sort entities by load */
 	qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
@@ -76,7 +83,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		unsigned new_ne = 0;
 		unsigned recursed = 0;
 		int i, j;
-		bubble_sched_debug("e[0]=%ld > %lf=per_item_load || ne=%d < %d=nl, recurse into entities\n", ma_entity_load(e[0]), per_item_load, ne, nl);
+		debug("e[0]=%ld > %lf=per_item_load || ne=%d < %d=nl, recurse into entities\n", ma_entity_load(e[0]), per_item_load, ne, nl);
 
 		/* first count sub-entities */
 		for (i=0; i<ne; i++) {
@@ -91,7 +98,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				new_ne += 1;
 		}
 		if (recursed) {
-			bubble_sched_debug("%d sub-entities\n", new_ne);
+			debug("%d sub-entities\n", new_ne);
 			/* now establish the list */
 			marcel_entity_t *new_e[new_ne], *ee;
 			j = 0;
@@ -104,13 +111,13 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				} else
 					new_e[j++] = e[i];
 			}
-			bubble_sched_debug("recurse into entities\n");
+			debug("recurse into entities\n");
 			return __marcel_bubble_spread(new_e, new_ne, l, nl, recurse+1);
 		}
 		if (ne < nl) {
 			/* Grmpf, really not enough parallelism, only
 			 * use part of the machine */
-			bubble_sched_debug("Not enough parallelism, using only %d item%s\n", ne, ne>1?"s":"");
+			debug("Not enough parallelism, using only %d item%s\n", ne, ne>1?"s":"");
 			return __marcel_bubble_spread(&e[0], ne, l, ne, recurse+1);
 		}
 	}
@@ -133,14 +140,13 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		l_n[i] = 0;
 	}
 	for (i=0; i<ne; i++) {
-		bubble_sched_debug("entity %p(%ld)\n",e[i],ma_entity_load(e[i]));
-
+		debug("entity %p(%ld)\n",e[i],ma_entity_load(e[i]));
 		/* when entities' load is very small, just leave them here */
 		/* TODO: tune */
 		if (ma_entity_load(e[i]) <= per_item_load/30) {
 			int state;
 			ma_runqueue_t *rq;
-			bubble_sched_debug("small(%lx), leave it here\n", ma_entity_load(e[i]));
+			debug("small(%lx), leave it here\n", ma_entity_load(e[i]));
 			PROF_EVENTSTR(sched_status, "spread: small, leave it here");
 			state = ma_get_entity(e[i]);
 			if (l_l[0]->father)
@@ -151,7 +157,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			continue;
 		}
 
-		bubble_sched_debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
+		debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
 		list_add_tail(&e[i]->next,&l_dist[0]);
@@ -159,7 +165,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		l_n[0]++;
 		state = ma_get_entity(e[i]);
 		ma_put_entity(e[i], &l_l[0]->sched.hold, state);
-		bubble_sched_debug(" -> %ld\n",l_load[0]);
+		_debug(" -> %ld\n",l_load[0]);
 
 		/* And sort */
 		if (nl > 1 && l_load[0] > l_load[1]) {
@@ -178,7 +184,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				}
 				m = (j+k)/2;
 
-				bubble_sched_debug("trying %d(%ld) between %d(%ld) and %d(%ld)\n", m, l_load[m], j, l_load[j], k, l_load[k]);
+				debug("trying %d(%ld) between %d(%ld) and %d(%ld)\n", m, l_load[m], j, l_load[j], k, l_load[k]);
 
 				if (l_load[0] == l_load[m])
 					break;
@@ -189,7 +195,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 					j = m;
 			}
 
-			bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[k]->sched.name, l_load[k]);
+			debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[k]->sched.name, l_load[k]);
 			{
 				unsigned long _l_load;
 				struct list_head _l_dist;
@@ -220,7 +226,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		}
 	}
 	for (i=0; i<nl; i++) {
-		bubble_sched_debug("recurse in %s\n",l_l[i]->sched.name);
+		debug("recurse in %s\n",l_l[i]->sched.name);
 		marcel_entity_t *ne[l_n[i]];
 		marcel_entity_t *e;
 		j = 0;
@@ -238,9 +244,8 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	unsigned vp;
 	marcel_entity_t *e = &b->sched;
 	ma_bubble_synthesize_stats(b);
-	/* XXX: suppose that the bubble is not held out of topo hierarchy under
-	 * level l */
-	ma_bubble_lock_all(b, l);
+	ma_preempt_disable();
+	ma_local_bh_disable();
 	/* XXX: suppose that the bubble is not held out of topo hierarchy under
 	 * level l */
 	ma_bubble_lock_all(b, l);
@@ -255,115 +260,21 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	marcel_vpmask_foreach_end()
 
 	ma_bubble_unlock_all(b, l);
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
 }
-
-static marcel_bubble_t *b = &marcel_root_bubble;
 
 int
 spread_sched_submit(marcel_entity_t *e)
 {
   struct marcel_topo_level *l = marcel_topo_level(0,0);
-  b = ma_bubble_entity(e);
-  marcel_bubble_spread(b, l);
+  marcel_bubble_spread(ma_bubble_entity(e), l);
 
   return 0;
 }
 
-#if 0
-
-/* stratégie de respread global à deux balles */
-static int
-spread_sched_vp_is_idle(marcel_vpmask_t vp)
-{
-  static int want[MA_NR_LWPS];
-  static ma_spinlock_t lock = MA_SPIN_LOCK_UNLOCKED;
-  static int n;
-
-  struct marcel_topo_level *l = marcel_topo_level(0,0);
-  long nbready;
-  ma_spin_lock(&lock);
-  if (!want[vp]) {
-    bubble_sched_debug("restart scheduler once on %d\n", vp);
-    /* restart scheduler once */
-    want[vp] = 1;
-    ma_spin_unlock(&lock);
-    return 1;
-  }
-  bubble_sched_debug("respreading from %d\n", vp);
-  ma_bubble_synthesize_stats(b);
-  nbready = *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbready_offset);
-  if (!(SELF_GETMEM(flags) & MA_SF_NORUN)) nbready--;
-  bubble_sched_debug("runnable threads %ld\n", nbready);
-  if (nbready < marcel_nbvps()) {
-    /* less runnable threads than processors, that's normal */
-    memset(want,0,sizeof(want));
-    ma_spin_unlock(&lock);
-    return 0;
-  }
-  tbx_tick_t t;
-  TBX_GET_TICK(t);
-  marcel_printf("%lld %dth respread (%ld/%ld)\n",t,++n,nbready,*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset));
-  marcel_bubble_spread(b, l);
-  /* tell others that things have changed */
-  bubble_sched_debug("%d tells others that things have changed\n", vp);
-  memset(want,0,sizeof(want));
-  ma_spin_unlock(&lock);
-  return 1;
-}
-
-static int
-spread_sched_start()
-{
-  marcel_bubble_activate_idle_scheduler();
-  return 0;
-}
-
-#else
-int
-spread_sched_vp_is_idle(unsigned vp)
-{
-  if (!vp) return 0;
-  ma_write_lock(&ma_idle_scheduler_lock);
-  if (!ma_idle_scheduler) {
-    ma_write_unlock(&ma_idle_scheduler_lock);
-    return 0;
-  }
-  ma_idle_scheduler = 0;
-  int n;
-  struct marcel_topo_level *l = &marcel_topo_vp_level[vp];
-  while (l->father && !marcel_vpmask_vp_ismember(&l->vpset, 0))
-    l = l->father;
-  MA_BUG_ON(!marcel_vpmask_vp_ismember(&l->vpset, 0));
-
-  marcel_threadslist(0,NULL,&n,NOT_BLOCKED_ONLY);
-
-  if (n < 2*marcel_vpmask_weight(&l->vpset)) {
-    //bubble_sched_debug("moins de threads que de VPS, on ne fait rien\n");
-    ma_idle_scheduler = 1;
-    ma_write_unlock(&ma_idle_scheduler_lock);
-    return 0;
-  }
-  while (l->father && n >= 2*marcel_vpmask_weight(&l->father->vpset)) {
-	  l = l->father;
-  }
-  bubble_sched_debug("%d threads pour %d vps dans %s, on respread là\n", n, marcel_vpmask_weight(&l->vpset), l->sched.name);
-
-  bubble_sched_debug("===========[repartition avec spread]===========\n");
-  marcel_bubble_spread(&marcel_root_bubble, l);
-  ma_idle_scheduler = 1;
-  ma_write_unlock(&ma_idle_scheduler_lock);
-  return 1;
-}
-
-#endif
 struct ma_bubble_sched_struct marcel_bubble_spread_sched = {
-#if 0
-  .start = spread_sched_start,
   .submit = spread_sched_submit,
-#else
-  .submit = spread_sched_submit,
-  //.vp_is_idle = spread_sched_vp_is_idle,
-#endif
 };
 
 #endif

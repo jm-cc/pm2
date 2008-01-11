@@ -56,7 +56,7 @@ static inline void ma_wakeup_softirqd(void)
 {
 	/* Interrupts are disabled: no need to stop preemption */
 	/* Avec marcel, seul la preemption est supprimée */
-	marcel_task_t *tsk = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),ksoftirqd);
+	marcel_task_t *tsk = ma_topo_vpdata(__ma_get_lwp_var(vp_level),ksoftirqd);
 
 	if (tsk && tsk->sched.state != MA_TASK_RUNNING)
 		ma_wake_up_thread(tsk);
@@ -244,8 +244,8 @@ fastcall TBX_EXTERN void __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 	//local_irq_save(flags);
 	ma_local_bh_disable();
 	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
+	t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
+	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
 	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	//local_irq_restore(flags);
@@ -258,8 +258,8 @@ fastcall TBX_EXTERN void __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 
 	//local_irq_save(flags);
 	ma_local_bh_disable();
-	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
+	t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
+	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
 	ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
 	//local_irq_restore(flags);
 	ma_local_bh_enable();
@@ -272,9 +272,8 @@ static void tasklet_action(struct ma_softirq_action *a)
 	//local_irq_disable();
 	ma_local_bh_disable();
 	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = NULL;
-	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+	list = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
+	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = NULL;
 	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	//local_irq_enable();
 	ma_local_bh_enable();
@@ -300,9 +299,8 @@ static void tasklet_action(struct ma_softirq_action *a)
 		//local_irq_disable();
 		ma_local_bh_disable();
 		ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
-		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+		t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list;
+		ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
 		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 		//local_irq_enable();
@@ -316,8 +314,8 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 
 	//local_irq_disable();
 	ma_local_bh_disable();
-	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = NULL;
+	list = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
+	ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = NULL;
 	//local_irq_enable();
 	ma_local_bh_enable();
 
@@ -342,8 +340,8 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 
 		//local_irq_disable();
 		ma_local_bh_disable();
-		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
+		t->next = ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
+		ma_topo_vpdata(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
 		__ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
 		//local_irq_enable();
 		ma_local_bh_enable();
@@ -506,8 +504,8 @@ static void ksoftirqd_init(ma_lwp_t lwp)
 	if (LWP_NUMBER(lwp) == -1)
 		return;
 
-	MA_BUG_ON(ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),tasklet_vec).list);
-	MA_BUG_ON(ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),tasklet_hi_vec).list);
+	MA_BUG_ON(ma_topo_vpdata(ma_per_lwp(vp_level, lwp),tasklet_vec).list);
+	MA_BUG_ON(ma_topo_vpdata(ma_per_lwp(vp_level, lwp),tasklet_hi_vec).list);
 }
 
 static void ksoftirqd_start(ma_lwp_t lwp)
@@ -518,7 +516,7 @@ static void ksoftirqd_start(ma_lwp_t lwp)
 		return;
 	p=ksofirqd_start(lwp);
 	marcel_wake_up_created_thread(p);
-	ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),ksoftirqd) = p;
+	ma_topo_vpdata(ma_per_lwp(vp_level, lwp),ksoftirqd) = p;
 }
 
 #if 0

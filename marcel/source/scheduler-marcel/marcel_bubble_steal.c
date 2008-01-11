@@ -78,6 +78,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	bubble_sched_debugl(7,"see %d %d\n", level->type, level->number);
 	if (!rq)
 		return 0;
+	ma_preempt_disable();
 	//if (find_interesting_bubble(rq, up_power, 0)) {
 		ma_holder_rawlock(&rq->hold);
 		/* recommencer une fois verrouillé */
@@ -171,6 +172,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			}
 		}
 	//}
+	ma_preempt_enable();
 	return ret;
 }
 static int see_down(struct marcel_topo_level *level, 
@@ -217,16 +219,16 @@ static int see_up(struct marcel_topo_level *level) {
 
 int marcel_bubble_steal_work(unsigned vp) {
 #ifdef MA__LWPS
-	_ma_raw_read_lock(&ma_idle_scheduler_lock);
+	ma_read_lock(&ma_idle_scheduler_lock);
 	if (ma_idle_scheduler) {
 	  struct marcel_topo_level *me =
 	    &marcel_topo_vp_level[marcel_current_vp()];
 	  bubble_sched_debugl(7,"bubble steal on %d\n", LWP_NUMBER(LWP_SELF));
 	  /* couln't find work on local runqueue, go see elsewhere */
-	  _ma_raw_read_unlock(&ma_idle_scheduler_lock);
+	  ma_read_unlock(&ma_idle_scheduler_lock);
 	  return see_up(me);
 	}
-	_ma_raw_read_unlock(&ma_idle_scheduler_lock);
+	ma_read_unlock(&ma_idle_scheduler_lock);
 #endif
 	return 0;
 }

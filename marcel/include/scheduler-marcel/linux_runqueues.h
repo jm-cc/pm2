@@ -155,11 +155,6 @@ struct ma_runqueue {
 #endif
 	/** \brief Type of the runqueue */
 	enum ma_rq_type type;
-
-#ifdef MA__BUBBLES
-        /** \brief General-purpose list link for bubble schedulers */
-	struct list_head next;
-#endif
 };
 
 #section marcel_variables
@@ -267,7 +262,6 @@ static __tbx_inline__ void ma_array_enqueue_task(marcel_task_t *p, ma_prio_array
 static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
-	MA_BUG_ON(e->holder_data);
 	list_add_tail(&e->run_list, head);
 	e->holder_data = array;
 	MA_BUG_ON(e->run_holder);

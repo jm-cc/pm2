@@ -348,11 +348,11 @@ void marcel_leave_blocking_section(void);
 #define LWP_GETMEM(lwp, member) ((lwp)->member)
 #define LWP_SELF                (GET_LWP(MARCEL_SELF))
 #define ma_softirq_pending_vp(vp) \
-	ma_topo_vpdata(vp,softirq_pending)
+	ma_topo_vpdata(&marcel_topo_vp_level[vp],softirq_pending)
 #define ma_softirq_pending(lwp) \
-	ma_topo_vpdata_l(ma_per_lwp(vp_level, (lwp)),softirq_pending)
+	ma_topo_vpdata(ma_per_lwp(vp_level, (lwp)),softirq_pending)
 #define ma_local_softirq_pending() \
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),softirq_pending)
+	ma_topo_vpdata(__ma_get_lwp_var(vp_level),softirq_pending)
 
 #define ma_lwp_node(lwp)	ma_vp_node[LWP_NUMBER(lwp)]
 

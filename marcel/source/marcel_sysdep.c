@@ -212,25 +212,21 @@ int ma_numa_not_available;
 
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
-	if (ma_numa_not_available)
-		return ma_malloc_nonuma(size,file,line);
+	if (node < 0 || ma_numa_not_available)
+		return marcel_malloc(size, file, line);
 	marcel_extlib_protect();
 	p = numa_alloc_onnode(size, node);
 	marcel_extlib_unprotect();
 	if (p == NULL)
-		return ma_malloc_nonuma(size,file,line);
+		return marcel_malloc(size, file, line);
 	return p;
 }
-void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line) {
-	if (ma_numa_not_available)
-		return ma_free_nonuma(data,file,line);
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
+	if (node < 0 || ma_numa_not_available)
+		return marcel_free(ptr, file, line);
 	marcel_extlib_protect();
-	numa_free(data, size);
+	numa_free(ptr, size);
 	marcel_extlib_unprotect();
-}
-
-int is_numa_available(void) {
-	 return (numa_available() != -1);
 }
 
 #include <numaif.h>
@@ -259,14 +255,9 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	radaddset(mattr.mattr_radset,node);
 	return nmmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0, &mattr);
 }
-void ma_free_node(void *ptr, size_t size, char * __restrict file, unsigned line) {
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
 	munmap(ptr, size);
 }
-
-int is_numa_available(void) {
-	return 0;//TODO
-}
-
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
 #elif defined(AIX_SYS)
@@ -288,14 +279,9 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	rs_free(rad);
 	return ret;
 }
-void ma_free_node(void *ptr, size_t size, char * __restrict file, unsigned line) {
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
 	munmap(ptr, size);
 }
-
-int is_numa_available(void) {
-	return 0;//TODO
-}
-
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
 #else
@@ -303,23 +289,17 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 #endif
 #endif
 #ifndef HAS_NUMA
-	/* TODO: SOLARIS_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
+	/* TODO: SOLARIS_SYS, AIX_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 #warning "don't know how to allocate memory on specific nodes"
 #ifdef WIN_SYS
 #warning TODO: use AllocateUserPhysicalPagesNuma or VirtualAllocExNuma
 #endif
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
-	return ma_malloc_nonuma(size,file,line);
+	return marcel_malloc(size, file, line);
 }
-
-void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line) {
-	ma_free_nonuma(data,file,line);
+void ma_free_node(void *ptr, size_t size, int node, char * __restrict file, unsigned line) {
+	return marcel_free(ptr, file, line);
 }
-
-int is_numa_available(void) {
-	return -1;//TODO
-}
-
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
 #endif

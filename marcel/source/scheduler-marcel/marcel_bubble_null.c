@@ -29,7 +29,7 @@ null_sched_vp_is_idle(unsigned vp)
 }
 
 struct ma_bubble_sched_struct marcel_bubble_null_sched = {
-	.vp_is_idle = null_sched_vp_is_idle,
+//	.vp_is_idle = null_sched_vp_is_idle,
 };
 
 #endif /* MA__BUBBLES */

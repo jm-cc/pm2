@@ -1445,8 +1445,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		mdebug("runqueue %s is a supplementary runqueue\n", name);
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
 	}
-#endif
 	ma_remote_tasklet_init(&lwp->tasklet_lock);
+#endif
 	LOG_OUT();
 }
 

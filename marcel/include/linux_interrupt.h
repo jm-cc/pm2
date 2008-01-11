@@ -124,21 +124,21 @@ struct ma_tasklet_struct
 
 #section marcel_macros
 #ifdef MARCEL_REMOTE_TASKLETS
-#define MA_TASKLET_INIT(name, _func, _data) \
-  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(0), .func=_func, .data=_data, .vp_mask=MARCEL_VPMASK_FULL }
-#define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
-  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(1), .func=_func, .data=_data, .vp_mask=MARCEL_VPMASK_FULL }
-#else
-
-#define MA_TASKLET_INIT(name, _func, _data) \
-  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(0), .func=_func, .data=_data }
-#define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
-  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(1), .func=_func, .data=_data }
-
+#define MA_REMOTE_TASKLET_INIT .vp_mask=MARCEL_VPMASK_FULL,
+#else /* MARCEL_REMOTE_TASKLETS */
+#define MA_REMOTE_TASKLET_INIT
 #endif /* MARCEL_REMOTE_TASKLETS */
 
+#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count) \
+  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(_count), .func=_func, .data=_data, MA_REMOTE_TASKLET_INIT }
+
+#define MA_TASKLET_INIT(name, _func, _data) \
+	MA_TASKLET_INIT_COUNT(name, _func, _data, 0)
 #define MA_DECLARE_TASKLET(name, _func, _data) \
 struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
+
+#define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
+	MA_TASKLET_INIT_COUNT(name, _func, _data, 1)
 #define MA_DECLARE_TASKLET_DISABLED(name, _func, _data) \
 struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data)
 

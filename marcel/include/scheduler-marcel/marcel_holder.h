@@ -805,8 +805,8 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 
 #ifdef MA__BUBBLES
 	if (!(e->type == MA_BUBBLE_ENTITY && h->type == MA_BUBBLE_HOLDER))
-		ma_activate_running_entity(e, h);
 #endif
+		ma_activate_running_entity(e, h);
 
 	if (state == MA_ENTITY_READY) {
 #ifdef MA__BUBBLES

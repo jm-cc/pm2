@@ -750,7 +750,7 @@ int ma_node_entity(marcel_entity_t *entity)
 /* marcel_malloc for the current entity on its level */
 void* marcel_malloc(size_t size, char *file, unsigned line)
 {
-	//if (!is_numa_available())
+	//if (!ma_is_numa_available())
 	return ma_malloc_nonuma(size, __FILE__ , __LINE__);
 	//else
 	//return ma_malloc(size, __FILE__ , __LINE__);
@@ -788,7 +788,7 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 
 void marcel_free(void *data)
 {
-	//if (!is_numa_available())// penser au cas nnon linux (fonction externe, sysdep) si on sait pas, ma_free
+	//if (!ma_is_numa_available())// penser au cas nnon linux (fonction externe, sysdep) si on sait pas, ma_free
 	ma_free_nonuma(data, __FILE__ , __LINE__);
 	//else
 	//ma_free(data, __FILE__, __LINE__);

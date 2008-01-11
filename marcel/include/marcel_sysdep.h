@@ -57,7 +57,7 @@ TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
 extern void ma_free_node(void *ptr, size_t size,
 		char * __restrict file,  unsigned line);
 extern void ma_migrate_mem(void *ptr, size_t size, int node);
-extern int is_numa_available();
+extern int ma_is_numa_available();
 
 #ifndef MA__NUMA
 //refaire un malloc bas de gamme non numa

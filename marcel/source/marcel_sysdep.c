@@ -229,7 +229,7 @@ void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line
 	marcel_extlib_unprotect();
 }
 
-int is_numa_available(void) {
+int ma_is_numa_available(void) {
 	 return (numa_available() != -1);
 }
 
@@ -263,7 +263,7 @@ void ma_free_node(void *ptr, size_t size, char * __restrict file, unsigned line)
 	munmap(ptr, size);
 }
 
-int is_numa_available(void) {
+int ma_is_numa_available(void) {
 	return 0;//TODO
 }
 
@@ -292,7 +292,7 @@ void ma_free_node(void *ptr, size_t size, char * __restrict file, unsigned line)
 	munmap(ptr, size);
 }
 
-int is_numa_available(void) {
+int ma_is_numa_available(void) {
 	return 0;//TODO
 }
 
@@ -316,7 +316,7 @@ void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line
 	ma_free_nonuma(data,file,line);
 }
 
-int is_numa_available(void) {
+int ma_is_numa_available(void) {
 	return -1;//TODO
 }
 

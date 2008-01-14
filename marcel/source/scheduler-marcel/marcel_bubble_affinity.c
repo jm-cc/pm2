@@ -20,7 +20,7 @@
 
 #ifdef MA__BUBBLES
 
-#if 0
+#if 1
 #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #else
 #define debug(fmt, ...) (void)0
@@ -429,8 +429,6 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l)
   marcel_entity_t *e = &b->sched;
 
   debug("adresse de la marcel_root_bubble: %p \n", &marcel_root_bubble);
- 
-  //marcel_bubble_deactivate_idle_scheduler();
 
   ma_bubble_synthesize_stats(b);
   ma_preempt_disable();
@@ -448,8 +446,6 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l)
 
   ma_preempt_enable_no_resched();
   ma_local_bh_enable();
-  
-  //marcel_bubble_activate_idle_scheduler();
 }
 
 int
@@ -488,84 +484,50 @@ affinity_sched_submit(marcel_entity_t *e)
   return 0;
 }
 
-void ma_move_ancestors(marcel_entity_t *entity, 
-		       int is_stolen, 
-		       ma_runqueue_t *common_rq, 
-		       struct marcel_topo_level* otherlevel, 
-		       struct marcel_topo_level *fromlevel)
+marcel_entity_t *
+ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq)
 {
-  marcel_entity_t *upentity, *downentity;
-	
-  /* Counts ancestries */
-  int number = 1;
-  upentity = entity;
-  for (;;) {
-    if (upentity->init_holder == 0)
-      break;
-    
-    if (upentity->sched_holder->type == MA_RUNQUEUE_HOLDER 
-	&& ma_rq_holder(upentity->sched_holder) == common_rq)
-      break;
-    
-    upentity = &ma_bubble_holder(upentity->init_holder)->sched;
-    number ++;
-  }
-  
-  marcel_entity_t *family[number];
-  number = 0;
-  family[number] = entity;
-  for (;;) {
-    if (family[number]->init_holder == 0)
-      break;
-    
-    if (family[number]->sched_holder->type == MA_RUNQUEUE_HOLDER 
-	&& ma_rq_holder(family[number]->sched_holder) == common_rq)
-      break;
-    
-    family[number+1] = &ma_bubble_holder(family[number]->init_holder)->sched;
-    number ++;
-  }
-  
-  number --;
-  
-  while (number) {
-    int state;
-    ma_holder_t *holder = family[number]->sched_holder;
-    if (family[number]->type == MA_BUBBLE_ENTITY) {
-      /* Put family[number] in its bubble */
-      ma_holder_t *rqholder = &ma_to_rq_holder(holder)->hold;
-      if (family[number]->init_holder)
-	state = ma_get_entity(family[number]);
-		
-	/* We leave here scheduled entities we found on the bubble  we want to lift */
-	for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(family[number]))
-	  /* To avoid bubble on mother bubble runqueue */
-	  if (rqholder != &marcel_topo_level(0,0)->sched.hold) {
-	    state = ma_get_entity(downentity);
-	    if (&ma_to_rq_holder(downentity->init_holder)->hold == rqholder)
-	      ma_put_entity(downentity, downentity->init_holder, state);
-	    else
-	      ma_put_entity(downentity, rqholder, state);
-	  }
-	for_each_entity_scheduled_in_bubble_end();
-    } else {
-      if (family[number]->init_holder != holder) {
-	state = ma_get_entity(family[number]);
-      }
+  marcel_entity_t *upper_entity, *chosen_entity = e;
+  int nvp = marcel_vpmask_weight(&rq->vpset);
+
+  for (upper_entity = e; 
+       upper_entity->init_holder != NULL; 
+       upper_entity = &ma_bubble_holder(upper_entity->init_holder)->sched) 
+    {      
+      if (upper_entity->sched_holder->type == MA_RUNQUEUE_HOLDER) 
+	{
+	  ma_runqueue_t *current_rq = ma_rq_holder(upper_entity->sched_holder);
+	  if (current_rq == rq || marcel_vpmask_weight(&current_rq->vpset) > nvp) 
+	    break;
+	}
+      chosen_entity = upper_entity;
     }
-      
-    if (family[number]->init_holder) {
-      ma_put_entity(family[number],family[number]->init_holder,state);
+  return chosen_entity;                                 
+}
+
+int
+ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq)
+{
+  marcel_entity_t *upper_entity = ma_get_upper_ancestor(e, common_rq);
+  if (upper_entity->type == MA_BUBBLE_ENTITY)
+    {
+      marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
+      __ma_bubble_gather(upper_bb, upper_bb);
+      int state = ma_get_entity(upper_entity);
+      ma_put_entity(upper_entity, &common_rq->hold, state);
+      struct marcel_topo_level *root_lvl = struct_up(common_rq, struct marcel_topo_level, sched);
+      __marcel_bubble_affinity(&root_lvl);
+
+      return 1;
     }
-    number --;
-  }
+  return 0;
 }
 
 
 ma_runqueue_t *get_parent_rq(marcel_entity_t *e)  
 {
   if (e) {
-    if (e->sched_holder && e->sched_holder->type == MA_RUNQUEUE_HOLDER)
+    if (e->sched_holder && (e->sched_holder->type == MA_RUNQUEUE_HOLDER))
       return ma_to_rq_holder(e->sched_holder);
     
     /* Si on n'est pas sur une runqueue, et qu'on n'a pas de pere, pb... */
@@ -586,7 +548,6 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp)
   int greater = 0;
   int cpt = 0, available_threads = 0;
   marcel_entity_t *e; 
-  struct marcel_topo_level *from = &marcel_topo_vp_level[from_vp];
   struct marcel_topo_level *top = marcel_topo_level(0,0);
 
   list_for_each_entry(e, &hold->sched_list, sched_list) 
@@ -621,29 +582,25 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp)
 	} 
     }  
 
-  ma_runqueue_t *father = NULL;
+  ma_runqueue_t *common_rq = NULL;
   ma_runqueue_t *rq;
   if (bestbb)
     rq = get_parent_rq(bestbb);
   else if (available_threads)
     rq = get_parent_rq(stealable_threads[0]);
-  
-  if (!rq)
-    return 0;
 
-  PROF_EVENTSTR(sched_status, "stealing subtree");
-  for (father = rq->father; father != &top->sched; father = father->father) 
+  if(rq)
     {
-      if (ma_rq_covers(father, from_vp))
-	break;
+      PROF_EVENTSTR(sched_status, "stealing subtree");
+      for (common_rq = rq->father; common_rq != &top->sched; common_rq = common_rq->father) 
+	{
+	  if (ma_rq_covers(common_rq, from_vp))
+	    break;
+	}
     }
-  if ((bestbb && cpt > 1) || (cpt == 1 && available_threads)) 
-    {
-      ma_move_ancestors(bestbb, -1, father, NULL, NULL);
-      int state = ma_get_entity(bestbb);
-      ma_put_entity(bestbb, &from->sched.hold, state);
-      return 1;
-    }
+ 
+  if (bestbb && cpt) 
+    return ma_redistribute(bestbb, common_rq);
   else if (bestbb && !available_threads) 
     { 
       /* Parcourir la bulle */
@@ -651,17 +608,8 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp)
       return browse_bubble_and_steal(&b->hold, from_vp);
     }
   else if (available_threads)
-    {
-      /* Voler des threads a la place */
-      int k;
-      ma_move_ancestors(stealable_threads[0], -1, father, NULL, NULL);
-      for (k = 0; k < available_threads / 2; k++)
-	{
-	  int state = ma_get_entity(stealable_threads[k]);
-	  ma_put_entity(stealable_threads[k], &from->sched.hold, state);
-	}
-      return 1;
-    }
+    /* Voler des threads a la place */
+    return ma_redistribute(stealable_threads[0], common_rq);
   
   return 0;
 }

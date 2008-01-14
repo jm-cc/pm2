@@ -375,7 +375,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
     }
     
 #else
-    
+    uint8_t seq = p_request->seq;
     volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
     NM_SO_SR_TRACE("Waiting for status %p\n", status);
     while(!(*status & NM_SO_STATUS_ACK_HERE)) {

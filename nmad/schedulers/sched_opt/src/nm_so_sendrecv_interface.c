@@ -347,7 +347,6 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   struct nm_core *p_core = p_so_interface->p_core;
   struct nm_gate *p_gate = p_core->gate_array + gate_id;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sr_gate *p_sr_gate = p_so_gate->interface_private;
   enum transfer_type tt = contiguous_transfer;
   int ret = -NM_EAGAIN;
 

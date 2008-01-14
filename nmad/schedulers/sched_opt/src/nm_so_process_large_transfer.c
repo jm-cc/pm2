@@ -33,7 +33,6 @@ int nm_so_build_multi_ack(struct nm_gate *p_gate,
                           uint8_t tag, uint8_t seq, uint32_t chunk_offset,
                           int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   union nm_so_generic_ctrl_header ctrl;
   struct nm_so_pkt_wrap *p_so_acks_pw = NULL;
@@ -163,7 +162,6 @@ static int store_iov_waiting_transfer(struct nm_gate *p_gate,
 static int init_large_iov_recv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   struct nm_so_pkt_wrap *p_so_acks_pw = NULL;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
@@ -347,7 +345,6 @@ static int init_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src,
                                               struct DLOOP_Segment *segp){
 
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
@@ -381,7 +378,6 @@ static int init_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src,
 int init_large_datatype_recv_with_multi_ack(struct nm_so_pkt_wrap *p_so_pw){
   struct nm_gate *p_gate = p_so_pw->pw.p_gate;
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
@@ -510,7 +506,6 @@ static int single_rdv(struct nm_gate *p_gate,
                       uint8_t tag, uint8_t seq,
                       void *data, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t drv_id = NM_SO_DEFAULT_NET;
   uint8_t trk_id = TRK_LARGE;
@@ -541,7 +536,6 @@ static int single_rdv(struct nm_gate *p_gate,
 static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
                         void *data, uint32_t len, uint32_t chunk_offset){
   struct nm_so_gate *p_so_gate = p_gate->sch_private;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t trk_id = TRK_LARGE;
   int nb_drv;

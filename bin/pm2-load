@@ -474,8 +474,8 @@ prog_args=(${@:+"$@"})
 # set the strategy
 if [ "$PM2_STRATEGY" == "" ] ; then
     STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
-    if [ ! -f $STRAT_DIR/default_strategy.xml ] && [ ! -f $STRAT_DIR/custom_strategy.xml ] ; then
-        $PM2_ROOT/bin/nmad-strategy-conf -d
+    if [ ! -f $STRAT_DIR/strategy_default.xml ] && [ ! -f $STRAT_DIR/strategy_custom.xml ] ; then
+        $PM2_ROOT/bin/nmad-strategy-conf -d -f
     fi
 else
     $PM2_ROOT/bin/nmad-strategy-conf --$PM2_STRATEGY

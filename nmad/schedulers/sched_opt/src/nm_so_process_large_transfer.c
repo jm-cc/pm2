@@ -545,6 +545,10 @@ static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
 
   /* We ask the current strategy to find an available track for
      transfering this large data chunk. */
+  if(!strategy->extended_rdv_accept) {
+    TBX_FAILUREF("sched_opt: strategy %s does not implement method extended_rdv_accept.\n",
+		 p_so_gate->strategy_instance->adapter->name);
+  }
   err = strategy->extended_rdv_accept(p_so_gate->strategy_receptacle._status, 
 				      p_gate, len, &nb_drv, drv_ids, chunk_lens);
 

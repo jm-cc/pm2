@@ -56,7 +56,7 @@ while test $# -gt 0; do
 	    CHOSEN_STRATEGY=aggreg_autoextended
             ;;
 	--split-balance-strategy|--split-balance|-b)
-	    CHOSEN_STRATEGY=balance
+	    CHOSEN_STRATEGY=split_balance
 	    ;;
         --qos-strategy|--qos|-q)
             CHOSEN_STRATEGY=qos

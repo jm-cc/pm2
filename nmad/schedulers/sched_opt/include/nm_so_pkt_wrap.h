@@ -57,7 +57,7 @@ struct nm_so_pkt_wrap {
   struct DLOOP_Segment *segp;
 
   tbx_bool_t datatype_copied_buf;
-  
+
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];
 };
@@ -193,6 +193,11 @@ nm_so_pw_alloc_and_fill_with_control(union nm_so_generic_ctrl_header *ctrl,
     nm_so_pw_free(p_so_pw);
     goto out;
 }
+
+#ifdef PIO_OFFLOAD
+int
+nm_so_pw_offloaded_finalize(struct nm_so_pkt_wrap *p_so_pw);
+#endif
 
 int
 nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw);

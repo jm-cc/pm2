@@ -138,10 +138,6 @@ static int strat_default_pack_ctrl(void*_status,
   if(err != NM_ESUCCESS)
     goto out;
 
-#ifdef PIO_OFFLOAD
-  p_so_pw->pw.offload_data = NULL;
-#endif
-
   /* Add the control packet to the out_list */
   list_add_tail(&p_so_pw->link,
                 &status->out_list);
@@ -221,25 +217,14 @@ static int strat_default_pack(void*_status,
     if(len <= status->nm_so_copy_on_send_threshold)
       flags = NM_SO_DATA_USE_COPY;
 
-#ifdef PIO_OFFLOAD
-    err = nm_so_pw_alloc(flags, &p_so_pw);
-    p_so_pw->pw.offload_data=data;
-    p_so_pw->pw.offload_len=len;
-    p_so_pw->pw.offload_tags=tag+128;
-    p_so_pw->pw.offload_seq=seq;
-    p_so_pw->pw.offload_iov_chunk_offset=0;
-    p_so_pw->pw.offload_is_last_chunk=1;
-    p_so_pw->pw.offload_flags=flags;
-#else
     /* Simply form a new packet wrapper and add it to the out_list */
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
 					    0, 1, flags, &p_so_pw);
-#endif
+
     if(err != NM_ESUCCESS)
       goto out;
 
-    list_add_tail(&p_so_pw->link,
-		  &status->out_list);
+    list_add_tail(&p_so_pw->link, &status->out_list);
 
   } else {
     /* Large packets can not be sent immediately : we have to issue a
@@ -250,10 +235,6 @@ static int strat_default_pack(void*_status,
                                             0, 0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;
-
-#ifdef PIO_OFFLOAD
-    p_so_pw->pw.offload_len=len;
-#endif
 
     /* Then place it into the appropriate list of large pending
        "sends". */

@@ -174,6 +174,8 @@ nm_so_pw_raz(struct nm_so_pkt_wrap *p_so_pw){
   p_so_pw->pw.v = NULL;
   p_so_pw->pw.nm_v = NULL;
 
+  p_so_pw->pw.data_to_offload = tbx_false;
+
   p_so_pw->header_ref_count = 0;
   p_so_pw->pending_skips = 0;
 
@@ -513,8 +515,17 @@ nm_so_pw_add_data(struct nm_so_pkt_wrap *p_so_pw,
         h->len = len;
 
         if(len) {
+#ifdef PIO_OFFLOAD
+          p_so_pw->pw.data_to_offload = tbx_true;
+
+          p_so_pw->pw.v[p_so_pw->pw.v_nb].iov_base = data;
+          p_so_pw->pw.v[p_so_pw->pw.v_nb].iov_len  = len;
+          p_so_pw->pw.v_nb ++;
+
+#else
 	  memcpy(vec->iov_base + vec->iov_len, data, len);
-	  vec->iov_len += size;
+#endif
+          vec->iov_len += size;
 	}
 
 	p_so_pw->pw.length += NM_SO_DATA_HEADER_SIZE + size;
@@ -673,6 +684,74 @@ nm_so_pw_copy_contiguously_datatype(struct nm_so_pkt_wrap *p_so_pw,
   return err;
 }
 
+#ifdef PIO_OFFLOAD
+int
+nm_so_pw_offloaded_finalize(struct nm_so_pkt_wrap *p_so_pw){
+  int err = NM_ESUCCESS;
+  unsigned long remaining_bytes;
+  unsigned long to_skip;
+  void *ptr;
+  struct iovec *vec;
+  struct iovec *last_treated_vec = NULL;
+
+  /* update the length field of the global header
+   */
+  ((struct nm_so_global_header *)(p_so_pw->pw.v->iov_base))->len =
+    p_so_pw->pw.length;
+
+  /* Fix the 'skip' fields */
+  if(!p_so_pw->pending_skips && !p_so_pw->pw.data_to_offload){
+    /* Were're done */
+    goto out;
+  }
+
+  vec = p_so_pw->pw.v;
+
+  ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
+  remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
+  to_skip = 0;
+  last_treated_vec = vec;
+
+  do {
+    if (*(uint8_t *)ptr >= NM_SO_PROTO_DATA_FIRST) {
+      /* Data header */
+      struct nm_so_data_header *h = ptr;
+
+      if(h->skip == 0) {
+        ptr += NM_SO_DATA_HEADER_SIZE;
+        last_treated_vec++;
+
+        memcpy(ptr, last_treated_vec->iov_base, h->len);
+        last_treated_vec->iov_len = 0;
+
+        ptr += nm_so_aligned(h->len);
+        remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+
+      } else {
+        /* Data occupy a separate iovec entry */
+	ptr += NM_SO_DATA_HEADER_SIZE;
+	remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
+	h->skip = remaining_bytes + to_skip;
+
+        last_treated_vec++;
+        to_skip += last_treated_vec->iov_len;
+
+        p_so_pw->pending_skips--;
+      }
+
+    } else {
+      /* Ctrl header */
+      ptr += NM_SO_CTRL_HEADER_SIZE;
+      remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+    }
+
+  } while (p_so_pw->pending_skips);
+
+ out:
+  return err;
+}
+#endif
+
 /** Finalize the incremental building of the packet.
  *
  *  @param p_so_pw the pkt wrapper pointer.
@@ -699,10 +778,20 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
   ((struct nm_so_global_header *)(p_so_pw->pw.v->iov_base))->len =
     p_so_pw->pw.length;
 
+#ifdef PIO_OFFLOAD
+  /* the finalize (actually the copy of the data) is deported in a tasklet
+     it is now done in the nm_so_pw_copy_offloaded_data_and_finalize function
+  */
+  if(p_so_pw->pw.data_to_offload){
+    goto out;
+  }
+#endif
+
   /* Fix the 'skip' fields */
-  if(!p_so_pw->pending_skips)
+  if(!p_so_pw->pending_skips){
     /* Were're done */
     goto out;
+  }
 
   vec = p_so_pw->pw.v;
 
@@ -721,9 +810,10 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
       if(h->skip == 0) {
 	/* Data immediately follows */
 	ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-	remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-     } else {
-       /* Data occupy a separate iovec entry */
+        remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+
+      } else {
+        /* Data occupy a separate iovec entry */
 	ptr += NM_SO_DATA_HEADER_SIZE;
 	remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
 	h->skip = remaining_bytes + to_skip;
@@ -741,61 +831,6 @@ nm_so_pw_finalize(struct nm_so_pkt_wrap *p_so_pw)
     }
 
   } while (p_so_pw->pending_skips);
-
-
-
-
-
-  // A virer très certainement
-//  if(!p_so_pw->nb_seg)
-//    goto out;
-//
-//
-//  vec = p_so_pw->pw.v;
-//  remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
-//  ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
-//
-//  int cur_seg = 0;
-//  struct nm_so_datatype_header *dt = NULL;
-//
-//
-//  // On a introduit des segments dans le wrapper
-//  // il faut mettre à jour le champ skip des headers correspondants
-//  do{
-//    if (*(uint8_t *)ptr == NM_SO_PROTO_DATATYPE) {
-//
-//      struct nm_so_datatype_header *dt = p_so_pw->segment[cur_seg].header;
-//      seg_len = dt->len;
-//
-//      remaining_bytes -= NM_SO_DATATYPE_HEADER_SIZE;
-//      h->skip = remaining_bytes + to_skip;
-//
-//      to_skip += seg_len;
-//      cur_seg++;
-//
-//      ptr += NM_SO_DATATYPE_HEADER_SIZE;
-//
-//    } else {
-//      if (*(uint8_t *)ptr >= NM_SO_PROTO_DATA_FIRST) {
-//        struct nm_so_data_header *h = ptr;
-//
-//        if(h->skip == 0){
-//          remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-//          ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-//
-//        } else {
-//          remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
-//          ptr += NM_SO_DATA_HEADER_SIZE;
-//        }
-//
-//      } else {
-//         /* Ctrl header */
-//        ptr += NM_SO_CTRL_HEADER_SIZE;
-//        remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
-//      }
-//    }
-//
-//  } while(cur_seg != p_so_pw->nb_seg);
 
  out:
   return err;

@@ -119,7 +119,7 @@ nm_ns_init(struct nm_core *p_core){
   for(i = 0; i < nb_drivers; i++){
     p_drv = &p_core->driver_array[i];
 
-    bw_idx = (bw_idx > p_drv->cap.nb_samplings ? bw_idx : p_drv->cap.nb_samplings);
+    bw_idx = (bw_idx > p_drv->driver->get_capabilities(p_drv)->nb_samplings ? bw_idx : p_drv->driver->get_capabilities(p_drv)->nb_samplings);
   }
   bw_idx -= 1;
 
@@ -130,10 +130,10 @@ nm_ns_init(struct nm_core *p_core){
   for(i = 0; i < nb_drivers; i++){
     p_drv = &p_core->driver_array[i];
 
-    drv_bws[i] = p_drv->cap.network_sampling_bandwidth[bw_idx];
-    drv_lats[i] = len / p_drv->cap.network_sampling_bandwidth[LAT_IDX];
+    drv_bws[i] = p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[bw_idx];
+    drv_lats[i] = len / p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX];
 
-    //printf("p_drv->cap.network_sampling_bandwidth[LAT_IDX] = %g\n", p_drv->cap.network_sampling_bandwidth[LAT_IDX]);
+    //printf("p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX] = %g\n", p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX]);
   }
 
 #if 0
@@ -240,10 +240,10 @@ nm_ns_split_ratio(uint32_t len_to_send,
    drv1 = &p_core->driver_array[drv1_id];
    drv2 = &p_core->driver_array[drv2_id];
 
-   bw_idx = (drv1->cap.nb_samplings < drv2->cap.nb_samplings? drv1->cap.nb_samplings:drv2->cap.nb_samplings) - 1;
+   bw_idx = (drv1->driver->get_capabilities(drv1)->nb_samplings < drv2->driver->get_capabilities(drv2)->nb_samplings? drv1->driver->get_capabilities(drv1)->nb_samplings:drv2->driver->get_capabilities(drv2)->nb_samplings) - 1;
 
-   drv1_max_bw = drv1->cap.network_sampling_bandwidth[bw_idx];
-   drv2_max_bw = drv2->cap.network_sampling_bandwidth[bw_idx];
+   drv1_max_bw = drv1->driver->get_capabilities(drv1)->network_sampling_bandwidth[bw_idx];
+   drv2_max_bw = drv2->driver->get_capabilities(drv2)->network_sampling_bandwidth[bw_idx];
 
    sum_bw = drv1_max_bw + drv2_max_bw;
 

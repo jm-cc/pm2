@@ -125,7 +125,7 @@ main(int	  argc,
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
-				  NULL, NULL, NULL);
+				  NULL, NULL);
 
 
     vec = p_so_pw->pw.v;
@@ -157,7 +157,7 @@ main(int	  argc,
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
-				  NULL, NULL, NULL);
+				  NULL, NULL);
 
     nm_so_pw_free(p_so_pw);
 

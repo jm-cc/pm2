@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <glib.h>
 #include <gtk/gtk.h>
+#include <assert.h>
 
 #include "main.h"
 #include "flavor.h"
@@ -448,7 +449,7 @@ void set_current_flavor(const char *name)
 		    "Cancel", NULL, NULL,
 		    NULL, NULL, NULL);
     } else {
-      sprintf(str, "Warning: Flavor \"%s\" was modified! with the options : %s", cur_flavor->name, cur_flavor->options);
+      sprintf(str, "Warning: Flavor \"%s\" was modified!", cur_flavor->name);
 
       dialog_prompt(str,
 		    "Save and proceed", save_and_proceed, (gpointer)TRUE,
@@ -831,63 +832,58 @@ gint flavor_uses_module(const char *module)
 
 gint my_cmp(char *s1, char *s2)
 {
-        int n;
-        char *stop;
+  char *stop;
         
-        stop = strchr(s2, ':');
-        n = (stop -s2);
-        return strncmp(s1, s2, n);
+  stop = strchr(s2, ':');
+
+  /* stop should NEVER be NULL! */
+  assert(stop != NULL);
+
+  return strncmp(s1, s2, (stop - s2));
 }
 
 gint flavor_uses_option(const char *option)
 {
-        char *stop;
-         
-        if(cur_flavor == NULL)
-                return FALSE;
-        else
-                {
-                        stop = strchr(option, ':');
-                        if(stop != NULL)
-                                {
-                                        return g_list_find_custom(cur_flavor->options, option, (GCompareFunc)my_cmp) ? TRUE : FALSE;   
-                                }
-                        else
-                                
-                                return g_list_find_custom(cur_flavor->options, option, (GCompareFunc)strcmp) ?
-                                        TRUE : FALSE;
-                }
+  if(cur_flavor == NULL)
+    return FALSE;
+
+  if(strchr(option, ':') != NULL)
+    return g_list_find_custom(cur_flavor->options, option, 
+			      (GCompareFunc)my_cmp) ? TRUE : FALSE;   
+  else
+    return g_list_find_custom(cur_flavor->options, option, 
+			      (GCompareFunc)strcmp) ? TRUE : FALSE;
 }
 
-int flavor_set_my_option(const char *option, char *buf)
+gint flavor_get_option_value(const char *option, char *value)
 {
-        GList *ptr;
-        char *stop;
-        size_t n;
+  GList *ptr;
+  char *stop;
+  size_t n;
         
-        if(cur_flavor != NULL) 
-                {
-                        stop = strchr(option, ':');
-                        if(stop != NULL) {
-                                n = (stop - option +1);
+  if(cur_flavor == NULL)
+    return FALSE;
+
+  stop = strchr(option, ':');
+
+  if(stop != NULL) {
+    n = (stop - option + 1);
                         
-                                for(ptr = g_list_first(cur_flavor->options); ptr != NULL; ptr = g_list_next(ptr)) {
+    for(ptr = g_list_first(cur_flavor->options);
+	ptr != NULL;
+	ptr = g_list_next(ptr)) {
                                 
-                                        if(strncmp(ptr->data, option, n) == 0){        
-                                                size_t i;
-                                                i = strlen(ptr->data) - n ;
-                                                strncpy(buf, (ptr->data+n), i);
-                                                buf[i] = '\0';
-                                                return 1;
-                                                
-                                        }
-                                        
-                                }                
-                        }
-                }       
-        
-        return 0;
-        
+      if(strncmp(ptr->data, option, n) == 0) {        
+	size_t last;
+	last = strlen(ptr->data) - n + 1;
+	strncpy(value, (ptr->data + n), last);
+
+	return TRUE;
+      }
+    }                
+  }
+
+  return FALSE;
 }
 
                        

@@ -38,7 +38,7 @@
 #include "nm_errno.h"
 #include "nm_log.h"
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
 #include "nm_parser.h"
 #endif
 
@@ -315,7 +315,7 @@ nm_qsnet_init		(struct nm_drv *p_drv) {
         NM_TRACE_STR("p_qsnet_drv->url", p_qsnet_drv->url);
         tbx_string_free(url_string);
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
         nm_parse_sampling(p_drv, "qsnet");
 #endif
 

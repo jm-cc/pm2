@@ -35,7 +35,7 @@
 #include "nm_errno.h"
 #include "nm_log.h"
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
 #include "nm_parser.h"
 #endif
 
@@ -485,7 +485,7 @@ static int nm_mx_init		(struct nm_drv *p_drv) {
         p_mx_drv->url	= tbx_strdup(hostname);
         NM_TRACE_STR("p_drv->url", p_mx_drv->url);
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
         nm_parse_sampling(p_drv, "mx");
 #endif
 

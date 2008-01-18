@@ -29,7 +29,7 @@
 
 #define LAT_IDX 2
 
-#ifndef ENABLE_SAMPLING
+#ifndef SAMPLING
 #define STRAT_ISO_SPLIT
 #endif
 
@@ -38,12 +38,12 @@
 
 static uint8_t *ordered_drv_id_by_lat;
 static uint8_t *ordered_drv_id_by_bw;
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
 static double *drv_bws;
 static double *drv_lats;
 #endif
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
 static int compare_lat(const void *drv1, const void *drv2){
 
   if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] > 0)
@@ -60,7 +60,7 @@ static int order_lat(int nb_drivers){
   for(i = 0; i < nb_drivers; i++){
     ordered_drv_id_by_lat[i] = i;
   }
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
   qsort(ordered_drv_id_by_lat, nb_drivers, sizeof(*ordered_drv_id_by_lat), compare_lat);
 #endif
 
@@ -74,7 +74,7 @@ static int order_lat(int nb_drivers){
   return NM_ESUCCESS;
 }
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
 static int compare_bw(const void *drv1, const void *drv2){
 
   if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] > 0)
@@ -92,7 +92,7 @@ static int order_bw(int nb_drivers){
     ordered_drv_id_by_bw[i] = i;
   }
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
   qsort(ordered_drv_id_by_bw, nb_drivers, sizeof(*ordered_drv_id_by_bw), compare_bw);
 #endif
 
@@ -110,7 +110,7 @@ int
 nm_ns_init(struct nm_core *p_core){
   int nb_drivers = p_core->nb_drivers;
 
-#ifdef ENABLE_SAMPLING
+#ifdef SAMPLING
   struct nm_drv *p_drv = NULL;
   int bw_idx = 0, len;
   int i;

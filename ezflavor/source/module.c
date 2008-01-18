@@ -295,14 +295,11 @@ static void add_inclusive_option_set(char *module,
                 if ( ((char *) (ptr->data))[(strlen(ptr->data)-1)] == ':') {
                         
                         sep = gtk_hseparator_new();
-                        gtk_box_pack_start(GTK_BOX(vbox), sep, FALSE, TRUE, 0);
+                        gtk_box_pack_start(GTK_BOX(vbox), sep, FALSE, FALSE, 0);
                         
-                        hbox = gtk_hbox_new(TRUE, 10);
-                        /* TODO : uncomment me ! */
-                        //gtk_misc_set_alignment(GTK_MISC(hbox), 0,0);
-                        gtk_container_set_border_width (GTK_CONTAINER(hbox), 10);
-                        gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
-                        //gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+                        hbox = gtk_hbox_new(FALSE, 0);
+                        gtk_container_set_border_width (GTK_CONTAINER(hbox), 0);
+                        gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
                         gtk_widget_show(hbox);          
                         
                         parser_start_cmd("%s/bin/pm2-module option=%s --module=%s --defaultvalue",                        
@@ -314,17 +311,14 @@ static void add_inclusive_option_set(char *module,
                                 {
                                         button = gtk_check_button_new_with_label((char *)ptr->data);
                                         ptr_d = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
-                                        gtk_widget_set_uposition(button, 20,-2);
-                                        //gtk_misc_set_alignment(GTK_MISC(button), 0,0);
                                         
                                         gtk_signal_connect(GTK_OBJECT(button), "toggled",
                                                            GTK_SIGNAL_FUNC(button_callback), (gpointer)"inclusive");          
-                                                                          
-                                        gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);                
+                                        gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
                                         
                                         pEntry = gtk_entry_new();
                                         gtk_entry_set_text(GTK_ENTRY(pEntry), (gpointer)string_new(parser_token_image()));
-                                        gtk_box_pack_start(GTK_BOX(hbox), pEntry, TRUE, FALSE, 0);
+                                        gtk_box_pack_start(GTK_BOX(hbox), pEntry, FALSE, FALSE, 0);
                                         gtk_signal_connect(GTK_OBJECT(pEntry), "focus-in-event", GTK_SIGNAL_FUNC(flavor_mark_modified), (GtkWidget *) button);
                                         attach_specific_data(button, module, (char *)ptr->data, pEntry, list);
                                         common_opt_register_option(ptr->data, button);

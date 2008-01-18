@@ -174,7 +174,9 @@ nm_so_pw_raz(struct nm_so_pkt_wrap *p_so_pw){
   p_so_pw->pw.v = NULL;
   p_so_pw->pw.nm_v = NULL;
 
+#ifdef PIO_OFFLOAD
   p_so_pw->pw.data_to_offload = tbx_false;
+#endif
 
   p_so_pw->header_ref_count = 0;
   p_so_pw->pending_skips = 0;
@@ -693,6 +695,7 @@ nm_so_pw_offloaded_finalize(struct nm_so_pkt_wrap *p_so_pw){
   void *ptr;
   struct iovec *vec;
   struct iovec *last_treated_vec = NULL;
+  tbx_bool_t separate_iovec = tbx_false;
 
   /* update the length field of the global header
    */
@@ -737,6 +740,7 @@ nm_so_pw_offloaded_finalize(struct nm_so_pkt_wrap *p_so_pw){
         to_skip += last_treated_vec->iov_len;
 
         p_so_pw->pending_skips--;
+        separate_iovec = tbx_true;
       }
 
     } else {
@@ -746,6 +750,11 @@ nm_so_pw_offloaded_finalize(struct nm_so_pkt_wrap *p_so_pw){
     }
 
   } while (p_so_pw->pending_skips);
+
+  /* all the used iov entries have been copied in contiguous */
+  if(!separate_iovec){
+    p_so_pw->pw.v_nb = 1;
+  }
 
  out:
   return err;

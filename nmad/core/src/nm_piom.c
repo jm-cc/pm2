@@ -34,10 +34,10 @@
 
 int nm_piom_poll(piom_server_t            server,
 		 piom_op_t                _op,
-		 piom_req_t               req, 
-		 int                       nb_ev, 
+		 piom_req_t               req,
+		 int                       nb_ev,
 		 int                       option) {
-	
+
 	nmad_lock();
 	struct nm_pkt_wrap * pkt= struct_up(req, struct nm_pkt_wrap, inst);
 	int err;
@@ -48,7 +48,7 @@ int nm_piom_poll(piom_server_t            server,
 		err = nm_piom_poll_recv(pkt);
 #ifdef PIO_OFFLOAD
 	else
-		err = nm_piom_post_all(pkt->p_drv->p_core);	
+		err = nm_piom_post_all(pkt->p_drv->p_core);
 #endif
 	nmad_unlock();
 	PROF_EVENT(piom_polling_done);
@@ -57,17 +57,17 @@ int nm_piom_poll(piom_server_t            server,
 
 int nm_piom_poll_any(piom_server_t            server,
 		     piom_op_t                _op,
-		     piom_req_t               req, 
-		     int                       nb_ev, 
+		     piom_req_t               req,
+		     int                       nb_ev,
 		     int                       option) {
-	
+
 	nmad_lock();
 	int err;
 	struct nm_drv *p_drv = struct_up(server, struct nm_drv, server);
 	int i;
 	int j=0;
-	
-	struct nm_pkt_wrap *p_pw;		
+
+	struct nm_pkt_wrap *p_pw;
 	err = p_drv->driver->poll_send_any_iov(NULL,
 					       &p_pw);
 	/* process poll command status				*/
@@ -82,11 +82,11 @@ int nm_piom_poll_any(piom_server_t            server,
 			return err;
 		}
 	}
-	
-	if (p_pw->which == SEND) {	
+
+	if (p_pw->which == SEND) {
 		if (err != -NM_EAGAIN){
 			const int req_nb = p_pw->p_gate->out_req_nb;
-			
+
 			struct nm_pkt_wrap *pkt2;
 			p_pw->err = err;
 			/* met a jour la requete */
@@ -109,11 +109,11 @@ int nm_piom_poll_any(piom_server_t            server,
 			tbx_slist_search_and_extract(p_pw->slist,NULL,p_pw);
 			/* process complete request */
 			p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
-	
+
 			if (p_pw->err < 0) { // possible ?
 				NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
 			}
-			
+
 			err = p_pw->err;
 		}
 	}
@@ -127,13 +127,13 @@ nm_piom_poll_send(struct nm_pkt_wrap  *p_pw) {
         const int req_nb = p_pw->p_gate->out_req_nb;
 	int i;
 	int j=0;
-	
+
 	struct nm_gate_drv*p_gdrv = p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id];
 	p_pw->err = p_gdrv->receptacle.driver->poll_send_iov(p_gdrv->receptacle._status,
 							     p_pw);
-	
+
 	if (p_pw->err != -NM_EAGAIN){
-		
+
 		struct nm_pkt_wrap *pkt;
 		/* met a jour la requete */
 		piom_req_success(&p_pw->inst);
@@ -150,7 +150,7 @@ nm_piom_poll_send(struct nm_pkt_wrap  *p_pw) {
 	return p_pw->err;
 }
 
-int 
+int
 nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
 	NM_TRACEF("polling inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
 		  p_pw->p_gate?p_pw->p_gate->id:-1,
@@ -158,11 +158,11 @@ nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
 		  p_pw->p_trk->id,
 		  p_pw->proto_id,
 		  p_pw->seq);
-	
+
 	struct nm_gate_drv*p_gdrv = p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id];
 	p_pw->err = p_gdrv->receptacle.driver->poll_recv_iov(p_gdrv->receptacle._status,
 							     p_pw);
-	
+
 	/* process poll command status				*/
 	if (p_pw->err == -NM_EAGAIN) {
 		/* not complete, try again later
@@ -179,7 +179,7 @@ nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
 	tbx_slist_search_and_extract(p_pw-> slist,NULL,p_pw);
 	/* process complete request */
 	p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
-	
+
 	if (p_pw->err < 0) { // possible ?
 		NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
 	}
@@ -224,7 +224,7 @@ nm_piom_post_all(struct nm_core	 *p_core){
 }
 
 
-int 
+int
 nm_piom_post_all_recv(struct nm_core	 *p_core){
 
         struct nm_sched *p_sched = p_core->p_sched;
@@ -269,7 +269,7 @@ nm_piom_post_all_recv(struct nm_core	 *p_core){
         return err;
 }
 
-int 
+int
 nm_piom_post_all_send(struct nm_gate *p_gate) {
 	int	err;
 
@@ -283,7 +283,7 @@ nm_piom_post_all_send(struct nm_gate *p_gate) {
         while (!tbx_slist_is_nil(p_gate->post_sched_out_list)) {
 		NM_TRACEF("posting outbound requests");
 		err	= nm_piom_post_send(p_gate);
-		
+
 		if (err == -NM_EAGAIN)
 			break;
 		if (err < 0 && err != -NM_EAGAIN) {
@@ -298,12 +298,12 @@ nm_piom_post_all_send(struct nm_gate *p_gate) {
 	return NM_ESUCCESS;
 }
 
-int 
+int
 nm_piom_post_recv(struct nm_sched	*p_sched,
 		  p_tbx_slist_t 	 post_slist,
 		  p_tbx_slist_t 	 pending_slist) {
         int err;
-      
+
 	struct nm_pkt_wrap	*p_pw;
         tbx_slist_ref_to_head(post_slist);
         do {
@@ -352,7 +352,7 @@ nm_piom_post_recv(struct nm_sched	*p_sched,
 			p_pw->slist=pending_slist;
 
 			/* Submit the pkt_wrapper to Pioman */
-			
+
 			p_pw->err = -NM_EAGAIN;
 			p_pw->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
 			p_pw->which=RECV;
@@ -398,7 +398,7 @@ nm_piom_post_recv(struct nm_sched	*p_sched,
 
 int
 nm_piom_post_send(struct nm_gate       *p_gate) {
-	
+
         p_tbx_slist_t 	 const post_slist	= p_gate->post_sched_out_list;
         int err;
 
@@ -428,21 +428,11 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
 		p_pw->inst.server=&p_pw->p_drv->server;
 		p_pw->which=SEND;
 
-#ifdef PIO_OFFLOAD		
+#ifdef PIO_OFFLOAD
 		struct nm_so_pkt_wrap *p_so_pw=NULL;
 		p_so_pw=nm_pw2so(p_pw);
-		
-		if((p_pw->p_trk->cap.rq_type != nm_trk_rq_rdv) && p_so_pw->pw.offload_data){
-			err = nm_so_pw_add_data(p_so_pw, p_so_pw->pw.offload_tags, 
-						p_so_pw->pw.offload_seq,
-						p_so_pw->pw.offload_data,
-						p_so_pw->pw.offload_len,
-						p_so_pw->chunk_offset, 
-						p_so_pw->pw.offload_is_last_chunk, 
-						p_so_pw->pw.offload_flags);
-			PIOM_BUG_ON(err != NM_ESUCCESS);
-			nm_so_pw_finalize(p_so_pw);
-		} 
+
+                nm_so_pw_offloaded_finalize(p_so_pw);
 #endif
                 /* post request */
 		struct nm_gate_drv*p_gdrv = p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id];
@@ -467,7 +457,7 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
 			p_pw->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
 			p_pw->which=SEND;
 			piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-			
+
 			p_gate->out_req_nb++;
 			p_pw->p_gdrv->out_req_nb++;
 			p_pw->p_drv->out_req_nb++;
@@ -481,13 +471,13 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
 				  p_pw->p_trk->id,
 				  p_pw->proto_id,
 				  p_pw->seq);
- 
+
                 } else {
 			p_gate->out_req_nb++;
 			p_pw->p_gdrv->out_req_nb++;
 			p_pw->p_drv->out_req_nb++;
 			p_pw->p_trk->out_req_nb++;
-			
+
                         /* Yes, request complete, process it */
                         NM_TRACEF("request completed immediately");
 
@@ -499,7 +489,7 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
                         if (err < 0) {
                                 NM_DISPF("nm_process_complete send_rq returned %d", err);
                         }
-			
+
                 }
 
                 /* remove request from post list */
@@ -521,11 +511,11 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
 
 #ifdef PIOM_BLOCKING_CALLS
 
-int 
+int
 nm_piom_block(piom_server_t server,
 	      piom_op_t     _op,
-	      piom_req_t    req, 
-	      int            nb_ev, 
+	      piom_req_t    req,
+	      int            nb_ev,
 	      int            option) {
 	nmad_lock();
 	struct nm_pkt_wrap * pkt= struct_up(req, struct nm_pkt_wrap, inst);
@@ -534,26 +524,26 @@ nm_piom_block(piom_server_t server,
 		err = nm_piom_block_send(pkt);
 	else
 		err = nm_piom_block_recv(pkt);
-	
+
 	nmad_unlock();
 	return err;
-	
+
 }
 
-int 
+int
 nm_piom_block_send(struct nm_pkt_wrap  *p_pw) {
         const int req_nb = p_pw->p_gate->out_req_nb;
 	int i;
 	int j=0;
-	
+
 	nmad_unlock();
 	struct nm_gate_drv*p_gdrv = p_pw->p_gate->p_gate_drv_array[p_pw->p_drv->id];
 	p_pw->err = p_gdrv->receptacle.driver->wait_send_iov(p_gdrv->receptacle._status,
 							     p_pw);
 	nmad_lock();
-	
+
 	if (p_pw->err != -NM_EAGAIN) {
-		
+
 		struct nm_pkt_wrap *pkt;
 		/* met a jour la requete */
 		piom_req_success(&p_pw->inst);
@@ -571,7 +561,7 @@ nm_piom_block_send(struct nm_pkt_wrap  *p_pw) {
 
 }
 
-int 
+int
 nm_piom_block_recv(struct nm_pkt_wrap  *p_pw) {
 	NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
 		  p_pw->p_gate?p_pw->p_gate->id:-1,
@@ -585,7 +575,7 @@ nm_piom_block_recv(struct nm_pkt_wrap  *p_pw) {
 	p_pw->err = p_gdrv->receptacle.driver->wait_recv_iov(p_gdrv->receptacle._status,
 							     p_pw);
 	nmad_lock();
-	
+
 	/* process poll command status				*/
 	if (p_pw->err == -NM_EAGAIN) {
 		/* not complete, try again later
@@ -600,7 +590,7 @@ nm_piom_block_recv(struct nm_pkt_wrap  *p_pw) {
 	piom_req_success(&p_pw->inst);
 	/* process complete request */
 	p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
-	
+
 	if (p_pw->err < 0) { // possible ?
 		NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
 	}
@@ -610,17 +600,17 @@ nm_piom_block_recv(struct nm_pkt_wrap  *p_pw) {
 
 int nm_piom_block_any(piom_server_t            server,
 		     piom_op_t                _op,
-		     piom_req_t               req, 
-		     int                       nb_ev, 
+		     piom_req_t               req,
+		     int                       nb_ev,
 		     int                       option) {
-	
+
 	nmad_lock();
 	int err;
 	struct nm_drv *p_drv = struct_up(server, struct nm_drv, server);
 	int i;
 	int j=0;
-	
-	struct nm_pkt_wrap *p_pw;		
+
+	struct nm_pkt_wrap *p_pw;
 	err = p_drv->driver->wait_send_any_iov(NULL,
 					       &p_pw);
 	/* process poll command status				*/
@@ -635,11 +625,11 @@ int nm_piom_block_any(piom_server_t            server,
 			return err;
 		}
 	}
-	
-	if (p_pw->which == SEND) {	
+
+	if (p_pw->which == SEND) {
 		if (err != -NM_EAGAIN){
 			const int req_nb = p_pw->p_gate->out_req_nb;
-			
+
 			struct nm_pkt_wrap *pkt2;
 			p_pw->err = err;
 			/* met a jour la requete */
@@ -662,11 +652,11 @@ int nm_piom_block_any(piom_server_t            server,
 			tbx_slist_search_and_extract(p_pw->slist,NULL,p_pw);
 			/* process complete request */
 			p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
-	
+
 			if (p_pw->err < 0) { // possible ?
 				NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
 			}
-			
+
 			err = p_pw->err;
 		}
 	}

@@ -75,13 +75,7 @@ struct nm_pkt_wrap {
 #endif /* PIOMAN */
 
 #if(defined(PIOMAN) && defined(PIO_OFFLOAD))
-	void *offload_data;
-	uint32_t offload_len;
-	uint8_t offload_tags;
-	uint8_t offload_seq;
-	uint32_t offload_iov_chunk_offset;
-	uint8_t offload_is_last_chunk;
-	int offload_flags;
+  tbx_bool_t data_to_offload;
 #endif
 
         /* Scheduler fields.

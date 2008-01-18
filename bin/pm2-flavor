@@ -29,6 +29,7 @@ PM2_FLAVOR_PROG="${PM2_ROOT}/bin/${PROGNAME}"
 
 MODULES=`"${PM2_ROOT}/bin/pm2-module" modules --with-common`
 
+
 if [ -z "$MODULES" ]; then
     echo "No PM2 module detected." 1>&2
     echo "Check PM2_ROOT environment variable and/or do 'make init'" 1>&2
@@ -407,11 +408,12 @@ do_read_provide() {
 	    $DEBUG providing ${name} by $mod
 	done
 	lst_opt="`eval echo \\$lst_opt_${mod}`"
-	[ -z "$lst_opt" ] && continue
+        [ -z "$lst_opt" ] && continue
 	for opt in $lst_opt; do
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --provide`; do
+                name=${name %%:*}
 		before="`eval echo \\$provide_${name}`"
-		eval provide_${name}='"${before:+$before }${mod}_$opt"'
+                eval provide_${name}='"${before:+$before }${mod}_$opt"'
 		$DEBUG providing ${name} by ${mod}_$opt
 	    done
 	done

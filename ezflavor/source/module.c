@@ -37,6 +37,7 @@ static GtkWidget *module_frame, *general_frame;
 static GtkWidget *select_button;
 static GtkWidget *deselect_button;
 static GtkWidget *builddir_entry, *extension_entry;
+static GtkWidget *pEntry;
 
 static GList *mod_names = NULL;
 static GList *visible_names = NULL;
@@ -46,6 +47,16 @@ typedef struct {
   GtkWidget *page;
   GList *options;
 } module_t;
+
+typedef struct option_data {
+
+        GtkWidget *widget;
+        char str[1];
+
+} option_data_t;
+
+#define _str2data(s) ((struct option_data *)((char *)(s) - (unsigned long)(&((struct option_data *)0)->str)))
+
 
 static GList *the_modules = NULL;
 static GList *the_static_modules = NULL;
@@ -170,10 +181,12 @@ static void module_set_tooltip_msg(GtkWidget *widget, char *module)
 static void attach_specific_data(GtkWidget *widget,
 				 char *module,
 				 char *option,
+                                 GtkWidget *text_entry,
 				 GList **list)
 {
-  char buf[1024], *str;
-
+  char buf[1024];
+  option_data_t *ptr;
+  
   // Insert the toggle button widget in the list
   *list = g_list_append(*list, (gpointer)widget);
 
@@ -182,9 +195,13 @@ static void attach_specific_data(GtkWidget *widget,
     option_set_tooltip_msg(widget, module, option);
 
   sprintf(buf, "--%s=%s", module, option);
-  str = string_new(buf);
 
-  gtk_object_set_user_data(GTK_OBJECT(widget), (gpointer)str);
+  ptr = g_malloc(sizeof(struct option_data)+strlen(buf));
+
+  strcpy(ptr->str, buf);
+  ptr->widget = text_entry; 
+  gtk_object_set_user_data(GTK_OBJECT(widget), (gpointer)(ptr->str));
+  
 }
 
 static void button_callback(GtkWidget *widget,
@@ -195,7 +212,7 @@ static void button_callback(GtkWidget *widget,
     flavor_mark_modified();
 
 #ifdef PM2DEBUG
-    if(GTK_TOGGLE_BUTTON(widget)->active)
+      if(GTK_TOGGLE_BUTTON(widget)->active)
       g_print ("The %s (%s) option was enabled\n",
 	       (char *)gtk_object_get_user_data(GTK_OBJECT(widget)),
 	       (char *)data);
@@ -240,10 +257,11 @@ static void add_exclusive_option_set(char *module,
 	gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(button)),
 					(char *)ptr->data);
     }
+
     gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(button_callback), (gpointer)"exclusive");
 
-    attach_specific_data(button, module, (char *)ptr->data, list);
+    attach_specific_data(button, module, (char *)ptr->data, NULL, list);
 
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
@@ -257,33 +275,90 @@ static void add_inclusive_option_set(char *module,
 				     GtkWidget *vbox,
 				     GList **list)
 {
-  GList *options, *ptr;
-  GtkWidget *button = NULL;
-
-  parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl=%s",
-                   pm2_root(), module, set);
-
-  options = string_list_from_parser();
-
-  parser_stop();
-
-  for(ptr = g_list_first(options);
-      ptr != NULL;
-      ptr = g_list_next(ptr)) {
-
-    button = gtk_check_button_new_with_label((char *)ptr->data);
-    gtk_signal_connect(GTK_OBJECT(button), "toggled",
-		       GTK_SIGNAL_FUNC(button_callback), (gpointer)"inclusive");
-
-    attach_specific_data(button, module, (char *)ptr->data, list);
-
-    gtk_widget_show(button);
-    gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
-
-    common_opt_register_option(ptr->data, button);
-  }
-
-  string_list_destroy(&options);
+        GList *options, *ptr;
+        GtkWidget *sep, *hbox;
+        option_data_t *ptr_d;
+        GtkWidget *button = NULL;
+        
+        parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl=%s",
+                         pm2_root(), module, set);
+        
+        options = string_list_from_parser();
+        
+        parser_stop();
+        
+        for(ptr = g_list_first(options);
+            ptr != NULL;
+            ptr = g_list_next(ptr)) {
+                
+                
+                if ( ((char *) (ptr->data))[(strlen(ptr->data)-1)] == ':') {
+                        
+                        sep = gtk_hseparator_new();
+                        gtk_box_pack_start(GTK_BOX(vbox), sep, FALSE, TRUE, 0);
+                        
+                        hbox = gtk_hbox_new(TRUE, 10);
+                        /* TODO : uncomment me ! */
+                        //gtk_misc_set_alignment(GTK_MISC(hbox), 0,0);
+                        gtk_container_set_border_width (GTK_CONTAINER(hbox), 10);
+                        gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
+                        //gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+                        gtk_widget_show(hbox);          
+                        
+                        parser_start_cmd("%s/bin/pm2-module option=%s --module=%s --defaultvalue",                        
+                                         pm2_root(), ptr->data, module);
+                        token_t tok;
+                        tok = parser_next_token();
+                        
+                        if(tok == IDENT_TOKEN)
+                                {
+                                        button = gtk_check_button_new_with_label((char *)ptr->data);
+                                        ptr_d = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
+                                        gtk_widget_set_uposition(button, 20,-2);
+                                        //gtk_misc_set_alignment(GTK_MISC(button), 0,0);
+                                        
+                                        gtk_signal_connect(GTK_OBJECT(button), "toggled",
+                                                           GTK_SIGNAL_FUNC(button_callback), (gpointer)"inclusive");          
+                                                                          
+                                        gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);                
+                                        
+                                        pEntry = gtk_entry_new();
+                                        gtk_entry_set_text(GTK_ENTRY(pEntry), (gpointer)string_new(parser_token_image()));
+                                        gtk_box_pack_start(GTK_BOX(hbox), pEntry, TRUE, FALSE, 0);
+                                        gtk_signal_connect(GTK_OBJECT(pEntry), "focus-in-event", GTK_SIGNAL_FUNC(flavor_mark_modified), (GtkWidget *) button);
+                                        attach_specific_data(button, module, (char *)ptr->data, pEntry, list);
+                                        common_opt_register_option(ptr->data, button);
+                                        
+                                        gtk_widget_show(button);
+                                        gtk_widget_show(pEntry);
+                                        gtk_widget_show(sep);              
+                                        
+                                }
+                        else 
+                                {
+                                        parser_stop();
+                                }
+                        
+                }
+                
+                else 
+                        {
+                                
+                                button = gtk_check_button_new_with_label((char *)ptr->data);
+                                gtk_signal_connect(GTK_OBJECT(button), "toggled",
+                                                   GTK_SIGNAL_FUNC(button_callback), (gpointer)"inclusive");
+                                
+                                attach_specific_data(button, module, (char *)ptr->data, NULL, list);
+                                
+                                gtk_widget_show(button);
+                                gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
+                                
+                                common_opt_register_option(ptr->data, button);
+                        }
+                
+        }
+        
+        string_list_destroy(&options);
 }
 
 static void add_exclusive_options(char *module,
@@ -533,27 +608,19 @@ static void module_build_notebook(GtkWidget *box)
   for(ptr = g_list_first(module_list());
       ptr != NULL;
       ptr = g_list_next(ptr)) {
-    char *module = (char *)ptr->data;
-
-    cur_mod = (module_t *)g_malloc(sizeof(module_t));
-
-    the_modules = g_list_append(the_modules, (gpointer)cur_mod);
-
-    cur_mod->name = module; // Attention !!!!! On pointe sur une autre liste !
-    cur_mod->options = NULL;
-
-    cur_mod->page = add_options(module, &cur_mod->options);
-
-    set_module_info(cur_mod->page, module);
-
-    label = gtk_label_new(module);
-
-    /* Add the page to the notebook is ONLY if module is visible! */
-    if(g_list_find_custom(visible_names, module, (GCompareFunc)strcmp))
-      gtk_notebook_append_page(GTK_NOTEBOOK(notebook), cur_mod->page, label);
-
-    if(tips_enabled)
-      module_set_tooltip_msg(label, module);
+          char *module = (char *)ptr->data;
+          cur_mod = (module_t *)g_malloc(sizeof(module_t));
+          the_modules = g_list_append(the_modules, (gpointer)cur_mod);
+          cur_mod->name = module; // Attention !!!!! On pointe sur une autre liste !
+          cur_mod->options = NULL;
+          cur_mod->page = add_options(module, &cur_mod->options);
+          set_module_info(cur_mod->page, module);
+          label = gtk_label_new(module);
+          /* Add the page to the notebook is ONLY if module is visible! */
+          if(g_list_find_custom(visible_names, module, (GCompareFunc)strcmp))
+                  gtk_notebook_append_page(GTK_NOTEBOOK(notebook), cur_mod->page, label);
+          if(tips_enabled)
+                  module_set_tooltip_msg(label, module);
   }
 
   hbox = gtk_hbox_new(TRUE, 10);
@@ -635,20 +702,44 @@ static void module_build_general_options(GtkWidget *box)
 static void module_update_module_options(module_t *m)
 {
   GList *opt;
-
+  option_data_t *ptr;
+  
+  
   for(opt = g_list_first(m->options);
       opt != NULL;
       opt = g_list_next(opt)) {
 
-    GtkWidget *button = (GtkWidget *)opt->data;
+          GtkWidget *button = (GtkWidget *)opt->data;
+          ptr = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
 
-    if(flavor_uses_option((char *)gtk_object_get_user_data(GTK_OBJECT(button)))) {
-      gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
-    } else {
-      gtk_toggle_button_set_active((GtkToggleButton *)button, FALSE); 
-    }
+          
+          if(flavor_uses_option(ptr->str)) {
 
+                  gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
+                  if(ptr->widget != NULL)
+                          {
+                                  char buf[1024];
+                                  int val;
+                  
+                                  val = flavor_set_my_option(ptr->str, buf);
+                                  
+                                  if (val) {
+                                          gtk_entry_set_text(GTK_ENTRY(pEntry), buf);
+                                  }
+                                  else {
+                                          /* TODO */
+                                  }
+                                  
+                                          
+                          }
+                  
+          } 
+          
+          else {                
+                  gtk_toggle_button_set_active((GtkToggleButton *)button, FALSE); 
+          }
   }
+  
 }
 
 static void module_update_general_settings(void)
@@ -710,17 +801,34 @@ void module_update_with_current_flavor(void)
 static void module_save_module_options(module_t *m)
 {
   GList *opt;
+  option_data_t *ptr;
 
   for(opt = g_list_first(m->options);
       opt != NULL;
       opt = g_list_next(opt)) {
 
-    GtkWidget *button = (GtkWidget *)opt->data;
-
-    if(gtk_toggle_button_get_active((GtkToggleButton *)button)) {
-      flavor_add_option((char *)gtk_object_get_user_data(GTK_OBJECT(button)));
-    }
+          GtkWidget *button = (GtkWidget *)opt->data;
+          ptr = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
+          
+          if(gtk_toggle_button_get_active((GtkToggleButton *)button)) {
+                  
+                  if(ptr->widget != NULL)
+                          {
+                                  char buf[1024];
+                                  
+                                  strcpy(buf, ptr->str);
+                                  strcat(buf, gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
+                                  gtk_entry_set_text(GTK_ENTRY(pEntry), gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
+                                  flavor_add_option(buf);
+                          }
+                  else
+                          {             
+                                  flavor_add_option(ptr->str);
+                          }
+                  
+          }   
   }
+  
 }
 
 static void module_save_general_settings(void)

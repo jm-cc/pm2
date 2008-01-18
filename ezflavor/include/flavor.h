@@ -62,4 +62,6 @@ void flavor_add_module(const char *name);
 
 void flavor_add_option(const char *name);
 
+int flavor_set_my_option(const char *option, char *buf);
+
 #endif

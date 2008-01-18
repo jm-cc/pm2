@@ -99,12 +99,13 @@ Options for 'option=opt' command
   --module=""  : consider option in this module (default: generic options)
 
 Action for 'option=opt' command
-  --config     : configuration associated with the option
-  --quickhelp  : one line help (default)
-  --help       : long help text
-  --provide    : provide flags
-  --conflict   : conflict flags
-  --depend     : depend expression
+  --config       : configuration associated with the option
+  --quickhelp    : one line help (default)
+  --help         : long help text
+  --provide      : provide flags
+  --conflict     : conflict flags
+  --depend       : depend expression
+  --defaultvalue : default value for the option
 
 EOF
 	;;
@@ -170,9 +171,12 @@ find_field() {
 	done
 }
 
-do_action() { # module option
+do_action() { # module option value
     case "$action" in
     config)
+	if [ -n "$3" ]; then
+	    echo "set \"$3\""
+	fi
 	if [ -f "$directory/$filename.sh" ]; then
 	    cat "$directory/$filename.sh"
 	fi
@@ -214,6 +218,11 @@ do_action() { # module option
 	fi	
 	find_field Depend : < $directory/$filename.dep
 	echo ""
+	;;
+    defaultvalue)
+	if [ -f "$directory/$filename.dft" ]; then
+	    cat "$directory/$filename.dft"
+	fi
 	;;
     esac
 }
@@ -433,10 +442,14 @@ do_option() { # option ...
     action=quickhelp
     module="generic"
     option=$1
+    case "$option" in
+	*:*) value=${option#*:} ; option=${option%%:*}: ;;
+	*) ;;
+    esac
     shift
     while test $# -gt 0; do
 	case "$1" in
-	--config|--quickhelp|--help|--provide|--conflict|--depend)
+	--config|--quickhelp|--help|--provide|--conflict|--depend|--defaultvalue)
 	    set_action $1
 	    ;;
 	--module=*)
@@ -457,7 +470,8 @@ do_option() { # option ...
     else
 	filename="$option"
     fi
-    do_action $module $option
+
+    do_action $module $option $value
 }
 
 CMD="$1"

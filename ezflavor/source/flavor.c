@@ -448,7 +448,7 @@ void set_current_flavor(const char *name)
 		    "Cancel", NULL, NULL,
 		    NULL, NULL, NULL);
     } else {
-      sprintf(str, "Warning: Flavor \"%s\" was modified!", cur_flavor->name);
+      sprintf(str, "Warning: Flavor \"%s\" was modified! with the options : %s", cur_flavor->name, cur_flavor->options);
 
       dialog_prompt(str,
 		    "Save and proceed", save_and_proceed, (gpointer)TRUE,
@@ -829,15 +829,68 @@ gint flavor_uses_module(const char *module)
       TRUE : FALSE;
 }
 
-gint flavor_uses_option(const char *option)
+gint my_cmp(char *s1, char *s2)
 {
-  if(cur_flavor == NULL)
-    return FALSE;
-  else
-    return g_list_find_custom(cur_flavor->options, option, (GCompareFunc)strcmp) ?
-      TRUE : FALSE;
+        int n;
+        char *stop;
+        
+        stop = strchr(s2, ':');
+        n = (stop -s2);
+        return strncmp(s1, s2, n);
 }
 
+gint flavor_uses_option(const char *option)
+{
+        char *stop;
+         
+        if(cur_flavor == NULL)
+                return FALSE;
+        else
+                {
+                        stop = strchr(option, ':');
+                        if(stop != NULL)
+                                {
+                                        return g_list_find_custom(cur_flavor->options, option, (GCompareFunc)my_cmp) ? TRUE : FALSE;   
+                                }
+                        else
+                                
+                                return g_list_find_custom(cur_flavor->options, option, (GCompareFunc)strcmp) ?
+                                        TRUE : FALSE;
+                }
+}
+
+int flavor_set_my_option(const char *option, char *buf)
+{
+        GList *ptr;
+        char *stop;
+        size_t n;
+        
+        if(cur_flavor != NULL) 
+                {
+                        stop = strchr(option, ':');
+                        if(stop != NULL) {
+                                n = (stop - option +1);
+                        
+                                for(ptr = g_list_first(cur_flavor->options); ptr != NULL; ptr = g_list_next(ptr)) {
+                                
+                                        if(strncmp(ptr->data, option, n) == 0){        
+                                                size_t i;
+                                                i = strlen(ptr->data) - n ;
+                                                strncpy(buf, (ptr->data+n), i);
+                                                buf[i] = '\0';
+                                                return 1;
+                                                
+                                        }
+                                        
+                                }                
+                        }
+                }       
+        
+        return 0;
+        
+}
+
+                       
 void flavor_init(GtkWidget *vbox)
 {
   flavor_rescan();
@@ -882,3 +935,4 @@ void flavor_add_option(const char *name)
   cur_flavor->options = g_list_append(cur_flavor->options,
 				      (gpointer)string_new(name));
 }
+

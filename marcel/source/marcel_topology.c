@@ -956,6 +956,9 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; marcel_topo_levels[l][i].vpset; i++)
 			marcel_topo_levels[l][i].level = l;
+
+	/* Now we can set VP levels for main LWP */
+	INIT_LWP_NB(0, &__main_lwp);
 }
 
 void ma_topo_exit(void) {
@@ -1006,8 +1009,6 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 		}
 	}
 #endif /* MA__NUMA */
-	// Mmm, inutile a priori, c'est déjà fait dans INIT_LWP_NB
-	//ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[LWP_NUMBER(lwp)];
 }
 
 static void topology_lwp_start(ma_lwp_t lwp) {

@@ -105,7 +105,6 @@ struct marcel_lwp {
 };
 
 #define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
-	.vp_level = &marcel_machine_level[0], \
 }
 
 #section macros

@@ -830,29 +830,29 @@ gint flavor_uses_module(const char *module)
       TRUE : FALSE;
 }
 
-gint my_cmp(char *s1, char *s2)
+char *flavor_uses_option(const char *option)
 {
-  char *stop;
-        
-  stop = strchr(s2, ':');
-
-  /* stop should NEVER be NULL! */
-  assert(stop != NULL);
-
-  return strncmp(s1, s2, (stop - s2));
-}
-
-gint flavor_uses_option(const char *option)
-{
+  GList *ptr;
+  char *colon;
+  
   if(cur_flavor == NULL)
-    return FALSE;
+    return NULL;
 
-  if(strchr(option, ':') != NULL)
-    return g_list_find_custom(cur_flavor->options, option, 
-			      (GCompareFunc)my_cmp) ? TRUE : FALSE;   
-  else
-    return g_list_find_custom(cur_flavor->options, option, 
-			      (GCompareFunc)strcmp) ? TRUE : FALSE;
+  colon = strchr(option, ':');
+  for( ptr = g_list_first(cur_flavor->options);
+       ptr != NULL;
+       ptr = g_list_next(ptr)){
+         if(colon !=NULL){
+            if(strncmp(ptr->data, option, colon-option+1)==0)
+                 return (colon-option+1);
+          }
+         else{
+             if(strcmp(ptr->data,option) == 0)
+                  return (option + strlen(option)); 
+         }
+  }
+  
+  return NULL;
 }
 
 gint flavor_get_option_value(const char *option, char *value)

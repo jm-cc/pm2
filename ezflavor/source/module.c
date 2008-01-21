@@ -704,7 +704,7 @@ static void module_update_module_options(module_t *m)
   
     ptr = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
 
-    if(flavor_uses_option(ptr->str)) {
+    if(flavor_uses_option(ptr->str) != NULL) {
 
       gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
       if(ptr->widget != NULL) {

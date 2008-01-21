@@ -50,7 +50,7 @@ char *flavor_extension(void);
 gint flavor_uses_module(const char *module);
 
 // Format for option is "--module=option"
-gint flavor_uses_option(const char *option);
+char *flavor_uses_option(const char *option);
 
 void flavor_reset_contents(void);
 

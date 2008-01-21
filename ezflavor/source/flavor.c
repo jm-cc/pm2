@@ -830,11 +830,11 @@ gint flavor_uses_module(const char *module)
       TRUE : FALSE;
 }
 
-char *my_cmp(char *p1, const char *p2)
+static char *my_cmp(char *p1, const char *p2)
 {
   for(;;){
     if(*p1 == '\0' || *p2 == ':')
-       return (*p1==*p2 ? p1+1: NULL);
+       return (*p1==*p2 ? p1 : NULL);
     if(*p1 != *p2)
        return NULL;
     p1++;

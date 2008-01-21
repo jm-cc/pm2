@@ -708,7 +708,7 @@ static void module_update_module_options(module_t *m)
 
       gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
       if(ptr->widget != NULL) {
-	gtk_entry_set_text(GTK_ENTRY(pEntry), value);
+	gtk_entry_set_text(GTK_ENTRY(pEntry), value + 1);
       }
                   
     } else

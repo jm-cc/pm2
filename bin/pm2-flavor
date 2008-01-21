@@ -410,9 +410,9 @@ do_read_provide() {
 	lst_opt="`eval echo \\$lst_opt_${mod}`"
         [ -z "$lst_opt" ] && continue
 	for opt in $lst_opt; do
+            opt=${opt%%:*}
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --provide`; do
-                name=${name %%:*}
-		before="`eval echo \\$provide_${name}`"
+                before="`eval echo \\$provide_${name}`"
                 eval provide_${name}='"${before:+$before }${mod}_$opt"'
 		$DEBUG providing ${name} by ${mod}_$opt
 	    done

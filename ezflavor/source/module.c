@@ -693,26 +693,22 @@ static void module_build_general_options(GtkWidget *box)
 
 static void module_update_module_options(module_t *m)
 {
-  GList *opt;
-  
-  
+  GList *opt;  
   for(opt = g_list_first(m->options);
       opt != NULL;
       opt = g_list_next(opt)) {
     GtkWidget *button = (GtkWidget *)opt->data;
     option_data_t *ptr;
-  
+    char *value;
+    
     ptr = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
-
-    if(flavor_uses_option(ptr->str) != NULL) {
+    value = flavor_uses_option(ptr->str);
+    
+    if(value != NULL) {
 
       gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
       if(ptr->widget != NULL) {
-	char option_value[1024];
-                  
-	assert(flavor_get_option_value(ptr->str, option_value) == TRUE);
-
-	gtk_entry_set_text(GTK_ENTRY(pEntry), option_value);
+	gtk_entry_set_text(GTK_ENTRY(pEntry), value);
       }
                   
     } else

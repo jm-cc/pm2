@@ -830,28 +830,34 @@ gint flavor_uses_module(const char *module)
       TRUE : FALSE;
 }
 
+char *my_cmp(char *p1, const char *p2)
+{
+  for(;;){
+    if(*p1 == '\0' || *p2 == ':')
+       return (*p1==*p2 ? p1+1: NULL);
+    if(*p1 != *p2)
+       return NULL;
+    p1++;
+    p2++;
+  }
+  
+}
+
 char *flavor_uses_option(const char *option)
 {
   GList *ptr;
-  char *colon;
+  char *tmp;
   
   if(cur_flavor == NULL)
     return NULL;
 
-  colon = strchr(option, ':');
   for( ptr = g_list_first(cur_flavor->options);
        ptr != NULL;
        ptr = g_list_next(ptr)){
-         if(colon !=NULL){
-            if(strncmp(ptr->data, option, colon-option+1)==0)
-                 return (colon-option+1);
-          }
-         else{
-             if(strcmp(ptr->data,option) == 0)
-                  return (option + strlen(option)); 
-         }
+         tmp = my_cmp(ptr->data, option);
+         if(tmp !=NULL)
+            return tmp; 
   }
-  
   return NULL;
 }
 

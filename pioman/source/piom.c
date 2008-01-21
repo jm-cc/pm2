@@ -263,7 +263,7 @@ int __piom_need_export(piom_server_t server, piom_req_t req,
 		return 1;
 	int i;
 	for(i=0;i<marcel_nblwps();i++) {
-		if(! marcel_nbthreads_per_lwp(GET_LWP_BY_NUM(i)->vp_level))
+		if(! GET_LWP_BY_NUM(i)->vp_level->nb_tasks)
 			return 0;
 	}
 #endif				// MARCEL

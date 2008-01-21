@@ -166,13 +166,6 @@ unsigned marcel_per_lwp_nbthreads()
 	return num + 1;		/* + 1 pour le main */
 }
 
-unsigned marcel_nbthreads_per_lwp(struct marcel_topo_level * vp)
-{
-	unsigned num = 0;
-	num += ma_topo_vpdata_l(vp, nb_tasks);
-	return num;		/* + 1 pour le main */
-}
-
 /* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
 #define MA_MAX_VP_THREADS 10000000
 

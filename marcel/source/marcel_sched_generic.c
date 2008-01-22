@@ -300,7 +300,6 @@ void marcel_snapshot(snapshot_func_t f)
 // _doit_ etre appelee par la tache "main".
 static void wait_all_tasks_end(void)
 {
-	struct marcel_topo_level *vp_first_wait = NULL;
 	struct marcel_topo_level *vp;
 	LOG_IN();
 
@@ -314,13 +313,12 @@ static void wait_all_tasks_end(void)
 		ma_topo_vpdata_l(vp,main_is_waiting) = tbx_true;
 retry:
 	a_new_thread = tbx_false;
-	for_all_vp(vp) {//, vp_first_wait)
+	for_all_vp(vp) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 		if (ma_topo_vpdata_l(vp,nb_tasks)) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 			ma_schedule();
-			vp_first_wait = vp;
 			goto retry;
 		}
 		ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));

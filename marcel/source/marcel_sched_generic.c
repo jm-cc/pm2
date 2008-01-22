@@ -474,7 +474,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 				continue;
 			}
 			marcel_sig_pause();
-			/* let wakers now that we will shortly poll need_resched and
+			/* let wakers know that we will shortly poll need_resched and
 			 * thus they don't need to send a kill */
 			ma_set_thread_flag(TIF_POLLING_NRFLAG);
 			marcel_sig_enable_interrupts();
@@ -487,7 +487,7 @@ static any_t idle_func(any_t hlwp)
 {
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
-		/* let wakers now that we will shortly poll need_resched and
+		/* let wakers know that we will shortly poll need_resched and
 		 * thus they don't need to send a kill */
 		if (ma_need_resched()) {
 			PROF_EVENT(idle_does_schedule);

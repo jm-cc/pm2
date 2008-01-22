@@ -35,21 +35,23 @@
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 
 #ifdef PIOMAN
-#define nm_so_cond_test(STATUS, BITMASK)   piom_cond_test((STATUS), (BITMASK))
-#define nm_so_cond_mask(STATUS, BITMASK)   piom_cond_mask(&(STATUS), (BITMASK))
-#define nm_so_cond_signal(STATUS, BITMASK) piom_cond_signal(&(STATUS), (BITMASK))
-#define nm_so_cond_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS), (BITMASK))
-#else
+#define nm_so_cond_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
+#define nm_so_cond_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
+#define nm_so_cond_signal(STATUS, BITMASK)     piom_cond_signal((STATUS), (BITMASK))
+#define nm_so_cond_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+#else /* PIOMAN */
 static inline int  nm_so_cond_test(volatile uint8_t*status, uint8_t bitmask)
 {
   return ((*status) & bitmask);
 }
-static inline void _nm_so_cond_mask(volatile uint8_t*status, uint8_t bitmask)
+static inline void nm_so_cond_mask(volatile uint8_t*status, uint8_t bitmask)
 {
   *status &= bitmask;
 }
-#define nm_so_cond_mask(STATUS, BITMASK)   _nm_so_cond_mask(&(STATUS), (BITMASK))
-#define nm_so_cond_signal(STATUS, BITMASK) ((STATUS) |= (BITMASK))
+static inline void nm_so_cond_signal(volatile uint8_t*status, uint8_t bitmask)
+{
+  *status |= bitmask;
+}
 static inline void nm_so_cond_wait(volatile uint8_t*status, uint8_t bitmask, struct nm_core*p_core)
 {
   if(status != NULL)
@@ -59,7 +61,7 @@ static inline void nm_so_cond_wait(volatile uint8_t*status, uint8_t bitmask, str
       }
     }
 }
-#endif
+#endif /* PIOMAN */
 
 
 enum transfer_type{
@@ -253,7 +255,7 @@ __isend(struct nm_so_interface *p_so_interface,
 
   seq = p_so_gate->send_seq_number[tag]++;
 
-  nm_so_cond_mask(p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_SEND_COMPLETED);
+  nm_so_cond_mask(&p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_SEND_COMPLETED);
   if(p_request) {
     p_request->status = &p_sr_gate->status[tag][seq].status;
     p_request->seq = seq;
@@ -576,7 +578,7 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
     nmad_lock();
     any_src[tag].is_first_request = 0;
     any_src[tag].ref = ref;
-    nm_so_cond_mask(any_src[tag].status, ~NM_SO_STATUS_RECV_COMPLETED);
+    nm_so_cond_mask(&any_src[tag].status, ~NM_SO_STATUS_RECV_COMPLETED);
     if(p_request) {
       p_request->status = &any_src[tag].status;
       p_request->gate_id = -1;
@@ -621,7 +623,7 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
 
     seq = p_so_gate->recv_seq_number[tag]++;
 
-    nm_so_cond_mask(p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_RECV_COMPLETED);
+    nm_so_cond_mask(&p_sr_gate->status[tag][seq].status, ~NM_SO_STATUS_RECV_COMPLETED);
     if(p_request) {
       p_request->status = &p_sr_gate->status[tag][seq].status;
       p_request->seq = seq;
@@ -1055,7 +1057,7 @@ int nm_so_sr_pack_success(struct nm_gate *p_gate,
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", &p_sr_gate->status[tag][seq].status, tag, seq);
 
-  nm_so_cond_signal(p_sr_gate->status[tag][seq].status, NM_SO_STATUS_SEND_COMPLETED);
+  nm_so_cond_signal(&p_sr_gate->status[tag][seq].status, NM_SO_STATUS_SEND_COMPLETED);
 
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -1081,11 +1083,11 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
 
   NM_SO_SR_TRACE("data received for request = %p (any_src request %p) - tag %d, seq %d\n", &p_sr_gate->status[tag][seq].status, is_any_src ? &any_src[tag].status : NULL, tag, seq);
 
-  nm_so_cond_signal(p_sr_gate->status[tag][seq].status, NM_SO_STATUS_RECV_COMPLETED);
+  nm_so_cond_signal(&p_sr_gate->status[tag][seq].status, NM_SO_STATUS_RECV_COMPLETED);
 
   if(is_any_src) {
     any_src[tag].gate_id = p_gate->id;
-    nm_so_cond_signal(any_src[tag].status, NM_SO_STATUS_RECV_COMPLETED);
+    nm_so_cond_signal(&any_src[tag].status, NM_SO_STATUS_RECV_COMPLETED);
 
     ref = any_src[tag].ref;
   } else {

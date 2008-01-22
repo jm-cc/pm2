@@ -529,8 +529,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setflags(&attr, MA_SF_POLL | /*MA_SF_NOSCHEDLOCK |*/
-			     MA_SF_NORUN);
+	marcel_attr_setflags(&attr, MA_SF_POLL|MA_SF_NORUN);
 #ifdef PM2
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);

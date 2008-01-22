@@ -411,7 +411,6 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
 				      uint32_t len, struct DLOOP_Segment *segp){
 
   struct nm_so_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
   struct nm_so_strat_split_balance*status = _status;
   int err;
 

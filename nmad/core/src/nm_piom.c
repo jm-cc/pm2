@@ -390,7 +390,6 @@ nm_piom_post_recv(struct nm_sched	*p_sched,
         } while (tbx_slist_ref_forward(post_slist));
 
         err = NM_ESUCCESS;
- out:
         return err;
 }
 
@@ -504,7 +503,6 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
 
         err = NM_ESUCCESS;
 
- out:
         return err;
 }
 

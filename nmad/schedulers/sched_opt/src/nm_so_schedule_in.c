@@ -632,8 +632,8 @@ ack_chunk_callback(struct nm_so_pkt_wrap *p_so_pw,
          || p_so_sched->any_src[tag].status & NM_SO_STATUS_IS_DATATYPE){
 
         int length = p_so_large_pw->pw.length;
-        uint32_t first = p_so_large_pw->pw.datatype_offset;
-        uint32_t last  = first + chunk_len;
+        int32_t first = p_so_large_pw->pw.datatype_offset;
+        int32_t last  = first + chunk_len;
         int nb_entries = 1;
         int nb_blocks = 0;
         CCSI_Segment_count_contig_blocks(p_so_large_pw->pw.segp, first, &last, &nb_blocks);

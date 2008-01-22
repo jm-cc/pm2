@@ -35,11 +35,28 @@
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 
 #ifdef PIOMAN
+typedef piom_cond_t nm_so_status_t;
 #define nm_so_cond_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
 #define nm_so_cond_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
 #define nm_so_cond_signal(STATUS, BITMASK)     piom_cond_signal((STATUS), (BITMASK))
 #define nm_so_cond_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+/** Post PIOMan poll requests (except when offloading PIO)
+ */
+static inline void nm_so_post_all(struct nm_core*p_core)
+{
+#if !defined(PIO_OFFLOAD)
+  nm_piom_post_all(p_core);
+#endif
+}
+/** Post PIOMan poll requests even when offloading PIO.
+ * This avoids scheduling a tasklet on another lwp
+ */
+static inline void nm_so_post_all_force(struct nm_core*p_core)
+{
+  nm_piom_post_all(p_core);
+}
 #else /* PIOMAN */
+typedef volatile uint8_t nm_so_status_t;
 static inline int  nm_so_cond_test(volatile uint8_t*status, uint8_t bitmask)
 {
   return ((*status) & bitmask);
@@ -61,6 +78,10 @@ static inline void nm_so_cond_wait(volatile uint8_t*status, uint8_t bitmask, str
       }
     }
 }
+static inline void nm_so_post_all(struct nm_core*p_core)
+{ /* do nothing */ }
+static inline void nm_so_post_all_force(struct nm_core*p_core)
+{ /* do nothing */ }
 #endif /* PIOMAN */
 
 
@@ -74,22 +95,14 @@ enum transfer_type{
 /** Status for basic receive requests.
  */
 struct status {
-#ifdef PIOMAN
-  piom_cond_t status;
-#else
-  volatile uint8_t status;
-#endif
+  nm_so_status_t status;
   void *ref;
 };
 
 /** Status for any source receive requests.
  */
 struct any_src_status {
-#ifdef PIOMAN
-  piom_cond_t status;
-#else
-  uint8_t status;
-#endif
+  nm_so_status_t status;
   nm_gate_id_t gate_id;
   int is_first_request;
   void *ref;
@@ -295,9 +308,7 @@ __isend(struct nm_so_interface *p_so_interface,
     break;
   }
 
-#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
-  nm_piom_post_all(p_core);
-#endif
+  nm_so_post_all(p_core);
   nmad_unlock();
   NM_SO_SR_LOG_OUT();
   return ret;
@@ -308,7 +319,7 @@ nm_so_sr_isend(struct nm_so_interface *p_so_interface,
 	       nm_gate_id_t gate_id, uint8_t tag,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request){
-  enum transfer_type tt = contiguous_transfer;
+  const enum transfer_type tt = contiguous_transfer;
   return __isend(p_so_interface, gate_id, tag, tt, data, len, tbx_false, p_request);
 }
 
@@ -319,21 +330,17 @@ nm_so_sr_isend_extended(struct nm_so_interface *p_so_interface,
                         tbx_bool_t is_completed,
                         nm_so_request *p_request)
 {
-  enum transfer_type tt;
   int ret;
 
   const struct nm_core *p_core = p_so_interface->p_core;
   const struct nm_gate *p_gate = p_core->gate_array + gate_id;
   const struct nm_so_gate *p_so_gate = p_gate->sch_private;
   if (!p_so_gate->strategy_receptacle.driver->pack_extended) {
+    const enum transfer_type tt = contiguous_transfer;
     NM_DISPF("The current strategy does not provide a extended pack");
-    tt = contiguous_transfer;
-
     ret = __isend(p_so_interface, gate_id, tag, tt, data, len, tbx_false, p_request);
-
   } else {
-    tt = extended_transfer;
-
+    const enum transfer_type tt = extended_transfer;
     ret = __isend(p_so_interface, gate_id, tag, tt, data, len, is_completed, p_request);
   }
 
@@ -347,7 +354,7 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 	       void *data, uint32_t len,
 	       nm_so_request *p_request){
   struct nm_core *p_core = p_so_interface->p_core;
-  enum transfer_type tt = contiguous_transfer;
+  const enum transfer_type tt = contiguous_transfer;
   int ret = -NM_EAGAIN;
 
   NM_SO_SR_LOG_IN();
@@ -501,13 +508,9 @@ nm_so_sr_swait(struct nm_so_interface *p_so_interface,
   }
 
   if(! nm_so_cond_test(request.status, NM_SO_STATUS_SEND_COMPLETED)) {
-#ifdef PIOMAN
-	  /* If PIO_OFFLOAD is set, we still post request. 
-	   * This avoids scheduling a tasklet on another lwp */
     nmad_lock();
-    nm_piom_post_all(p_so_interface->p_core);
+    nm_so_post_all_force(p_so_interface->p_core);
     nmad_unlock();
-#endif
     nm_so_cond_wait(request.status, NM_SO_STATUS_SEND_COMPLETED, p_so_interface->p_core);
   }
 
@@ -569,9 +572,7 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
       request.status = &any_src[tag].status;
       request.gate_id = -1;
       nmad_lock();
-#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
-      nm_piom_post_all(p_core);
-#endif
+      nm_so_post_all(p_core);
       nmad_unlock();
       nm_so_sr_rwait(p_so_interface, request);
     }
@@ -600,11 +601,7 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
       TBX_FAILURE("Reception type failed");
     }
 
-
-
-#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
-    nm_piom_post_all(p_core);
-#endif
+    nm_so_post_all(p_core);
     nmad_unlock();
     NM_SO_SR_LOG_OUT();
     return ret;
@@ -648,9 +645,7 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
       TBX_FAILURE("Reception type failed");
     }
 
-#if defined(PIOMAN) && !defined(PIO_OFFLOAD)
-    nm_piom_post_all(p_core);
-#endif
+    nm_so_post_all(p_core);
     nmad_unlock();
     NM_SO_SR_LOG_OUT();
     return ret;
@@ -788,11 +783,9 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
   NM_SO_SR_TRACE("request %p completion = %d\n", request.status, 
 		 nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED));
   if(!nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) {
-#ifdef PIOMAN
     nmad_lock();
-    nm_piom_post_all(p_so_interface->p_core);
+    nm_so_post_all_force(p_so_interface->p_core);
     nmad_unlock();
-#endif /* PIOMAN */
     nm_so_cond_wait(request.status, NM_SO_STATUS_RECV_COMPLETED, p_so_interface->p_core);
   }
 

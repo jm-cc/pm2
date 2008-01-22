@@ -358,8 +358,6 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 /*  NORUN : ne pas prendre en compte ce thread dans le calcul des */
 /*  taches actives */
 #define MA_SF_NORUN        _TIF_NORUN
-/*  NOSCHEDLOCK : ne pas appeler "sched_lock" dans insert_task... */
-/* #define MA_SF_NOSCHEDLOCK  16 */
 /*  RT_THREAD : ce thread doit être ordonnancé en tant que thread "Real Time" */
 #define MA_SF_RT_THREAD    _TIF_RT_THREAD
 /*  RUNTASK : ce thread démarre un lwp */

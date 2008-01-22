@@ -116,6 +116,37 @@ versioned_symbol(libpthread, pmarcel_sleep, sleep, GLIBC_2_0);
 #endif
 DEF___C(int,sleep,(unsigned long sec),(sec));
 
+DEF_MARCEL_POSIX(int,sched_get_priority_max,(int policy),(policy),
+{
+	LOG_IN();
+	if ((policy == SCHED_RR) || (policy == SCHED_FIFO))
+		LOG_RETURN(MA_MAX_USER_RT_PRIO);
+	else if (policy == SCHED_OTHER)
+		LOG_RETURN(0);
+
+	mdebug("sched_get_priority_max : valeur policy(%d) invalide\n", policy);
+	errno = EINVAL;
+	LOG_RETURN(-1);
+})
+
+DEF_C(int,sched_get_priority_max,(int policy),(policy));
+DEF___C(int,sched_get_priority_max,(int policy),(policy));
+
+DEF_MARCEL_POSIX(int,sched_get_priority_min,(int policy),(policy),
+{
+	LOG_IN();
+	if ((policy == SCHED_RR) || (policy == SCHED_OTHER)
+	    || (policy == SCHED_FIFO))
+		LOG_RETURN(0);
+	mdebug("sched_get_priority_min : valeur policy(%d) invalide\n", policy);
+	errno = EINVAL;
+	LOG_RETURN(-1);
+})
+
+DEF_C(int,sched_get_priority_min,(int policy),(policy));
+DEF___C(int,sched_get_priority_min,(int policy),(policy));
+
+
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
 	MA_BUG_ON(!ma_in_atomic());
@@ -586,37 +617,6 @@ void __marcel_init marcel_gensched_start_lwps(void)
 
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");
 #endif /* MA__LWPS */
-
-DEF_MARCEL_POSIX(int,sched_get_priority_max,(int policy),(policy),
-{
-	LOG_IN();
-	if ((policy == SCHED_RR) || (policy == SCHED_FIFO))
-		LOG_RETURN(MA_MAX_USER_RT_PRIO);
-	else if (policy == SCHED_OTHER)
-		LOG_RETURN(0);
-
-	mdebug("sched_get_priority_max : valeur policy(%d) invalide\n", policy);
-	errno = EINVAL;
-	LOG_RETURN(-1);
-})
-
-DEF_C(int,sched_get_priority_max,(int policy),(policy));
-DEF___C(int,sched_get_priority_max,(int policy),(policy));
-
-DEF_MARCEL_POSIX(int,sched_get_priority_min,(int policy),(policy),
-{
-	LOG_IN();
-	if ((policy == SCHED_RR) || (policy == SCHED_OTHER)
-	    || (policy == SCHED_FIFO))
-		LOG_RETURN(0);
-	mdebug("sched_get_priority_min : valeur policy(%d) invalide\n", policy);
-	errno = EINVAL;
-	LOG_RETURN(-1);
-})
-
-DEF_C(int,sched_get_priority_min,(int policy),(policy));
-DEF___C(int,sched_get_priority_min,(int policy),(policy));
-
 
 int marcel_time_suspend(const struct timespec *abstime)
 {

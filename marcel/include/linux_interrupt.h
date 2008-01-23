@@ -206,8 +206,8 @@ extern TBX_EXTERN void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *
 static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct *t, unsigned vp)
 {
 	ma_remote_tasklet_lock(&ma_vp_lwp[vp]->tasklet_lock);	
-	t->next = ma_topo_vpdata(ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list;
-	ma_topo_vpdata( ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list = t;
+	t->next = ma_topo_vpdata_l(ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list;
+	ma_topo_vpdata_l( ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list = t;
 	__ma_raise_softirq_vp(MA_TASKLET_SOFTIRQ, vp);
 	ma_remote_tasklet_unlock(&ma_vp_lwp[vp]->tasklet_lock);
 }

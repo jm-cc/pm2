@@ -5,30 +5,42 @@
 STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
 NM_SO_MAX_SMALL="32726"
 NM_SO_COPY_ON_SEND_THRESHOLD="32726"
-FORCE_WRITE="false"
+ACTION="write"
 CHOSEN_STRATEGY=""
 
 # Help functions
 usage() {
-    echo "USAGE:"
-    echo " --default-strategy, --default, -d: Choose strategy 'default'"
-    echo " --aggreg-strategy, --aggreg, -a: Choose strategy 'aggreg'"
-    echo " --aggreg-extended-strategy, --aggreg-ext, -e: Choose strategy 'aggreg_extended'"
-    echo " --aggreg-autoextended-strategy, --aggreg-autoext, -ae: Choose strategy 'aggreg_autoextended'"
-    echo " --split-balance-strategy, --split-balance, -b: Choose strategy 'split_balance'"
-    echo " --qos-strategy, --qos, -q: Choose strategy 'qos'"
+    echo "Usage:"
+    echo "$0 [<opt>] <action>"
+    echo "where mandatory <action> is among:"
+    echo "  --help, -h            display this help message"
+    echo "  --get, -g             display the current strategy"
+    echo "  --strat=strat_<strat> choose stratgey <strat>, e.g. --strat=strat_default"
+    echo "    possible <strat> values are: default, aggreg, aggreg_extended, split_balance, qos"
+    echo "    Shortcuts are available:"
+    echo "      --default-strategy, --default, -d"
+    echo "                        for strategy 'default'"
+    echo "      --aggreg-strategy, --aggreg, -a"
+    echo "                        for strategy 'aggreg'"
+    echo "      --aggreg-extended-strategy, --aggreg-ext, -e"
+    echo "                        for strategy 'aggreg_extended'"
+    echo "      --aggreg-autoextended-strategy, --aggreg-autoext, -ae"
+    echo "                        for strategy 'aggreg_autoextended'"
+    echo "      --split-balance-strategy, --split-balance, -b"
+    echo "                        for strategy 'split_balance'"
+    echo "      --qos-strategy, --qos, -q"
+    echo "                        for strategy'qos'"
     echo ""
-    echo " --copy-on-send-threshold=<value>, -c=<value>:"
-    echo "             Change NM_SO_COPY_ON_SEND_THREASHOLD value."
-    echo " --max-small=<value>, -m=<value>:"
-    echo "             Change NM_SO_MAX_SMALL value."
+    echo "options <opt> are mong:"
+    echo "  --copy-on-send-threshold=<value>, -c=<value>:"
+    echo "                        set NM_SO_COPY_ON_SEND_THREASHOLD value."
+    echo "  --max-small=<value>, -m=<value>:"
+    echo "                        set NM_SO_MAX_SMALL value."
+    echo "  --overwrite-files, -f forces overwriting existing strategy files"
     echo ""
-    echo " --help, -h: Display this help"
-    echo " --overwrite-files, -f: Forces overwriting strategy files"
-    echo ""
-    echo " By default: * The strategy is default strategy."
-    echo "             * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD"
-    echo "             * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL"
+    echo " By default: "
+    echo "    * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD"
+    echo "    * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL"
 }
 
 if [ $# = 0 ]; then
@@ -40,8 +52,11 @@ fi
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
+	--get|-g)
+	    ACTION="get"
+	    ;;
 	--overwrite-files|-f)
-	    FORCE_WRITE="true"
+	    ACTION="force_write"
 	    ;;
 	--default-strategy|--default|-d)
 	    CHOSEN_STRATEGY=default
@@ -85,21 +100,12 @@ while test $# -gt 0; do
     shift
 done
 
-if [ -z "$CHOSEN_STRATEGY" ] ; then
-    usage
-    exit 1
-fi
-
-# Create .pm2/strategy directory if it doesn't exist
-if [ ! -e $STRAT_DIR ] ; then
-    mkdir -p ${STRAT_DIR}
-fi
 
 nmad_strat_write() {
     strat=$1
     strat_file=${STRAT_DIR}/strategy_${strat}.xml
 # Write XML strat files if they don't exist
-if [ ! -e  ${strat_file} ] || [ ${FORCE_WRITE} = "true" ] ; then
+if [ ! -e  ${strat_file} ] || [ "${ACTION}" = "force_write" ] ; then
 cat > ${strat_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
@@ -114,19 +120,38 @@ EOF
 fi
 }
 
-nmad_strat_write default
-nmad_strat_write split_balance
-nmad_strat_write aggreg
-nmad_strat_write aggreg_extended
-nmad_strat_write aggreg_autoextended
-nmad_strat_write qos
+case ${ACTION} in
+    write|force_write)
 
+	if [ -z "$CHOSEN_STRATEGY" ] ; then
+	    usage
+	    exit 1
+	fi
+	
+# Create .pm2/strategy directory if it doesn't exist
+	if [ ! -e $STRAT_DIR ] ; then
+	    mkdir -p ${STRAT_DIR}
+	fi
+	
+	nmad_strat_write default
+	nmad_strat_write split_balance
+	nmad_strat_write aggreg
+	nmad_strat_write aggreg_extended
+	nmad_strat_write aggreg_autoextended
+	nmad_strat_write qos
+	
 # Link the chosen strategy
-if [ ! -r ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ]; then
-    echo "$0: strategy \"${CHOSEN_STRATEGY}\" does not exist."
-    echo
-    usage
-    exit 1
-fi
-ln -sf ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ${STRAT_DIR}/strategy_custom.xml
+	if [ ! -r ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ]; then
+	    echo "$0: strategy \"${CHOSEN_STRATEGY}\" does not exist."
+	    echo
+	    usage
+	    exit 1
+	fi
+	ln -sf ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ${STRAT_DIR}/strategy_custom.xml
+	;;
+
+    get)
+	readlink ${STRAT_DIR}/strategy_custom.xml | sed -e "s,${STRAT_DIR}/strategy_\(.*\).xml,\1,g"
+	;;
+esac
 

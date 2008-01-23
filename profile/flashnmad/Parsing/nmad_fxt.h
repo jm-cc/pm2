@@ -1,0 +1,31 @@
+#  define FUT_NMAD_CODE                 0xfe00
+
+#  define FUT_NMAD_INIT_NIC                     FUT_NMAD_CODE + 0x40
+#  define FUT_NMAD_INIT_GATE                    FUT_NMAD_CODE + 0x41
+#  define FUT_NMAD_INIT_CORE                    FUT_NMAD_CODE + 0x42
+#  define FUT_NMAD_INIT_SCHED                   FUT_NMAD_CODE + 0x43
+
+#  define FUT_NMAD_GATE_NEW_INPUT_LIST          FUT_NMAD_CODE + 0x44
+#  define FUT_NMAD_GATE_NEW_OUTPUT_LIST         FUT_NMAD_CODE + 0x45
+
+
+#  define FUT_NMAD_NIC_NEW_INPUT_LIST           FUT_NMAD_CODE + 0x46
+#  define FUT_NMAD_NIC_NEW_OUTPUT_LIST          FUT_NMAD_CODE + 0x47
+
+#  define FUT_NMAD_GATE_OPS_CREATE_PACKET       FUT_NMAD_CODE + 0x48
+#  define FUT_NMAD_GATE_OPS_INSERT_PACKET       FUT_NMAD_CODE + 0x49
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT           FUT_NMAD_CODE + 0x4a
+#  define FUT_NMAD_GATE_OPS_OUT_TO_TRACK        FUT_NMAD_CODE + 0x4b
+
+#  define FUT_NMAD_NIC_OPS_GATE_TO_TRACK        FUT_NMAD_CODE + 0x4c
+#  define FUT_NMAD_NIC_OPS_SEND_PACKET          FUT_NMAD_CODE + 0x4d
+
+#  define FUT_NMAD_NIC_RECV_ACK_RNDV            FUT_NMAD_CODE + 0x4e
+#  define FUT_NMAD_GATE_OPS_CREATE_CTRL_PACKET  FUT_NMAD_CODE + 0x4f
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG     FUT_NMAD_CODE + 0x50
+#  define FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER      FUT_NMAD_CODE + 0x51
+#  define FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT     FUT_NMAD_CODE + 0x52
+
+#  define FUT_NMAD_INIT_NIC_URL                 FUT_NMAD_CODE + 0x53
+
+

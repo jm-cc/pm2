@@ -1,0 +1,35 @@
+You first need to install Ming : 
+	$ wget http://belnet.dl.sourceforge.net/sourceforge/ming/ming-0.4.0.beta5.tar.gz
+	$ tar -xvvzf ming-0.4.0.beta5.tar.gz
+	$ mkdir targetdir
+	$ cd ming-0.4.0.beta5
+	$ ./configure --prefix=$PWD/../targetdir/
+	$ make
+	$ make install
+
+Now we add the proper environment variables in the .bashrc (or .zshrc ...) :
+	export MINGDIR=/path/to/Ming/targetdir/
+	export PATH=${PATH}:$MINGDIR/bin/
+	export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$MINGDIR/lib/
+	export MANPAGE=${MANPAGE}:$MINGDIR/man/
+
+
+Note about the architecture :
+	
+	----------------------------
+	|                          |
+	|        Flash             |
+	|        Engine            |
+	|                          |
+	----------------------------		 ----------------------------
+	|                          |		 |                          | 
+	|       NMad State         | 		 |            Log           |
+	|      description         |		 |         Generation       |
+	|                          |		 |                          |
+	----------------------------		 ----------------------------
+	|                          |		 |                          |
+	|          Log             |		 |           NMad           |
+	|         Parser           | 		 |                          |
+	|                          |		 |                          |
+	----------------------------		 ----------------------------
+          (Post Mortem Analysis)		    	   (Runtime)

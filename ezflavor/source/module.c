@@ -826,24 +826,18 @@ static void module_save_module_options(module_t *m)
           if(gtk_toggle_button_get_active((GtkToggleButton *)button)) {
                   
                   if(ptr->widget != NULL)
-                          {
+		  {
                                   char buf[1024];
                                   
                                   strcpy(buf, ptr->str);
                                   strcat(buf, gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
                                   gtk_entry_set_text(GTK_ENTRY(pEntry), gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
-                                  //printf("autre option : %s\n",GTK_ENTRY(pEntry_excl));
-                                  //gtk_entry_set_text(GTK_ENTRY(pEntry_excl), gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
                                   flavor_add_option(buf);
-                          }
-                  else
-                          {             
+		  } else {             
                                   flavor_add_option(ptr->str);
-                          }
-                  
+		  }
           }   
   }
-  
 }
 
 static void module_save_general_settings(void)

@@ -275,9 +275,18 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
 
-		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
-			return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+			if (niveau_courant) {
+				return ma_per_level_data(niveau_courant, allocator->container.offset);
+			} else {
+				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+				} else {
+					return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+				}
+			}
+		}
 
 		while (niveau_courant) {
 			ma_container_t *container_courant;
@@ -308,9 +317,18 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 		struct marcel_topo_level *niveau_courant =
 		    ma_per_lwp(vp_level, LWP_SELF);
 
-		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
-			return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+			if (niveau_courant) {
+				return ma_per_level_data(niveau_courant, allocator->container.offset);
+			} else {
+				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+				} else {
+					return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+				}
+			}
+		}
 
 		while (niveau_courant) {
 			ma_container_t *container_courant;
@@ -331,8 +349,17 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			/* trop-plein, libérer */
 			return NULL;
 		} else {
-			return ma_per_level_data(marcel_machine_level,
-			    allocator->container.offset);
+			if (niveau_courant) {
+				return ma_per_level_data(niveau_courant,
+						allocator->container.offset);
+			} else {
+				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+				} else {
+					return ma_per_level_data(marcel_machine_level,
+							allocator->container.offset);
+				}
+			}
 		}
 	}
 #endif

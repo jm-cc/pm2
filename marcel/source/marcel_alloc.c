@@ -190,6 +190,7 @@ static void tls_slot_free(void *slot, void *foo) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	_dl_deallocate_tls(tcb, 0);
+	ma_obj_free(marcel_mapped_slot_allocator, slot);
 }
 #endif /* MA__PROVIDE_TLS */
 
@@ -233,8 +234,8 @@ static void __marcel_init marcel_slot_init(void)
 	MA_BUG_ON(0 != (SLOT_AREA_TOP & (THREAD_SLOT_SIZE-1)));
 
 	marcel_unmapped_slot_allocator = ma_new_obj_allocator(1,
-																			unmapped_slot_alloc, NULL, NULL, NULL,
-																			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+			unmapped_slot_alloc, NULL, NULL, NULL,
+			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 							    mapped_slot_alloc, NULL, mapped_slot_free, NULL,
 							    POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);

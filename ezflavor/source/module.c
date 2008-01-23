@@ -238,6 +238,8 @@ static void add_exclusive_option_set(char *module,
 				     GList **list)
 {
   GList *options, *ptr;
+  GtkWidget *hbox;
+  option_data_t *ptr_d;
   GtkWidget *button = NULL;
 
   parser_start_cmd("%s/bin/pm2-module options --module=%s --get-excl=%s",
@@ -251,24 +253,64 @@ static void add_exclusive_option_set(char *module,
       ptr != NULL;
       ptr = g_list_next(ptr)) {
 
-    if(button == NULL) { /* first option */
-      button = gtk_radio_button_new_with_label(NULL, (char *)ptr->data);
-    } else {
-      button =
-	gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(button)),
+          if(button == NULL) { /* first option */
+               button = gtk_radio_button_new_with_label(NULL, (char *)ptr->data);
+               } else {
+                   button =gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(button)),
 					(char *)ptr->data);
-    }
+          }     
 
-    gtk_signal_connect(GTK_OBJECT(button), "toggled",
+          if((((char *) (ptr->data))[(strlen(ptr->data)-1)] == ':')) {
+          token_t tok;
+
+          hbox = gtk_hbox_new(FALSE, 0);
+          gtk_container_set_border_width (GTK_CONTAINER(hbox), 0);
+          gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+          gtk_widget_show(hbox);
+                    
+          parser_start_cmd("%s/bin/pm2-module option=%s --module=%s --defaultvalue",                        
+               pm2_root(), ptr->data, module);
+          tok = parser_next_token();
+          
+          if(tok == IDENT_TOKEN) {
+            ptr_d = _str2data(gtk_object_get_user_data(GTK_OBJECT(button)));
+          
+            gtk_signal_connect(GTK_OBJECT(button), "toggled",
+          	   GTK_SIGNAL_FUNC(button_callback),
+          	   (gpointer)"exclusive");          
+            gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+                                        
+            pEntry = gtk_entry_new();
+            gtk_entry_set_text(GTK_ENTRY(pEntry),
+          	   (gpointer)string_new(parser_token_image()));
+
+            gtk_box_pack_start(GTK_BOX(hbox), pEntry, FALSE, FALSE, 0);
+            gtk_signal_connect(GTK_OBJECT(pEntry), "changed",
+          	   GTK_SIGNAL_FUNC(flavor_mark_modified),
+          	   (GtkWidget *) button);
+
+            attach_specific_data(button, module, (char *)ptr->data, pEntry, list);
+            common_opt_register_option(ptr->data, button);
+
+            gtk_widget_show(button);
+            gtk_widget_show(pEntry);
+
+           } else {
+             parser_stop();
+          }
+          }
+
+          else {
+           gtk_signal_connect(GTK_OBJECT(button), "toggled",
 		       GTK_SIGNAL_FUNC(button_callback), (gpointer)"exclusive");
+           attach_specific_data(button, module, (char *)ptr->data, NULL, list);
+           gtk_widget_show(button);
+           gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
+     }
 
-    attach_specific_data(button, module, (char *)ptr->data, NULL, list);
-
-    gtk_widget_show(button);
-    gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
   }
+  string_list_destroy(&options);  
 
-  string_list_destroy(&options);
 }
 
 static void add_inclusive_option_set(char *module,
@@ -291,9 +333,8 @@ static void add_inclusive_option_set(char *module,
   for(ptr = g_list_first(options);
       ptr != NULL;
       ptr = g_list_next(ptr)) {
-                
-                
-    if ( ((char *) (ptr->data))[(strlen(ptr->data)-1)] == ':') {
+        
+    if (((char *) (ptr->data))[(strlen(ptr->data)-1)] == ':') {
       token_t tok;
                         
       hbox = gtk_hbox_new(FALSE, 0);
@@ -347,9 +388,7 @@ static void add_inclusive_option_set(char *module,
                                 
       common_opt_register_option(ptr->data, button);
     }
-                
-  }
-        
+  }   
   string_list_destroy(&options);
 }
 
@@ -705,12 +744,11 @@ static void module_update_module_options(module_t *m)
     value = flavor_uses_option(ptr->str);
     
     if(value != NULL) {
-
       gtk_toggle_button_set_active((GtkToggleButton *)button, TRUE);
       if(ptr->widget != NULL) {
-	gtk_entry_set_text(GTK_ENTRY(pEntry), value + 1);
+	 gtk_entry_set_text(GTK_ENTRY(pEntry), value+ 1);
+         //         gtk_entry_set_text(GTK_ENTRY(pEntry_excl), value+ 1);
       }
-                  
     } else
       gtk_toggle_button_set_active((GtkToggleButton *)button, FALSE); 
 
@@ -794,6 +832,8 @@ static void module_save_module_options(module_t *m)
                                   strcpy(buf, ptr->str);
                                   strcat(buf, gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
                                   gtk_entry_set_text(GTK_ENTRY(pEntry), gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
+                                  //printf("autre option : %s\n",GTK_ENTRY(pEntry_excl));
+                                  //gtk_entry_set_text(GTK_ENTRY(pEntry_excl), gtk_entry_get_text(GTK_ENTRY(ptr->widget)));
                                   flavor_add_option(buf);
                           }
                   else

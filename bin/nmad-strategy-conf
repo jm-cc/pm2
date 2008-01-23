@@ -10,37 +10,42 @@ CHOSEN_STRATEGY=""
 
 # Help functions
 usage() {
-    echo "Usage:"
-    echo "$0 [<opt>] <action>"
-    echo "where mandatory <action> is among:"
-    echo "  --help, -h            display this help message"
-    echo "  --get, -g             display the current strategy"
-    echo "  --strat=strat_<strat> choose stratgey <strat>, e.g. --strat=strat_default"
-    echo "    possible <strat> values are: default, aggreg, aggreg_extended, split_balance, qos"
-    echo "    Shortcuts are available:"
-    echo "      --default-strategy, --default, -d"
-    echo "                        for strategy 'default'"
-    echo "      --aggreg-strategy, --aggreg, -a"
-    echo "                        for strategy 'aggreg'"
-    echo "      --aggreg-extended-strategy, --aggreg-ext, -e"
-    echo "                        for strategy 'aggreg_extended'"
-    echo "      --aggreg-autoextended-strategy, --aggreg-autoext, -ae"
-    echo "                        for strategy 'aggreg_autoextended'"
-    echo "      --split-balance-strategy, --split-balance, -b"
-    echo "                        for strategy 'split_balance'"
-    echo "      --qos-strategy, --qos, -q"
-    echo "                        for strategy'qos'"
-    echo ""
-    echo "options <opt> are mong:"
-    echo "  --copy-on-send-threshold=<value>, -c=<value>:"
-    echo "                        set NM_SO_COPY_ON_SEND_THREASHOLD value."
-    echo "  --max-small=<value>, -m=<value>:"
-    echo "                        set NM_SO_MAX_SMALL value."
-    echo "  --overwrite-files, -f forces overwriting existing strategy files"
-    echo ""
-    echo " By default: "
-    echo "    * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD"
-    echo "    * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL"
+    cat  2>&1 <<EOF
+
+Usage:
+$0 [<opt>] <action>
+
+where mandatory <action> is among:
+  --help, -h            display this help message
+  --get, -g             display the current strategy
+  --strat=strat_<strat> choose strategy <strat>, e.g. --strat=strat_default
+    possible <strat> values are: default, aggreg, aggreg_extended, split_balance, qos
+    Shortcuts are available:
+      --default-strategy, --default, -d
+                        for strategy 'default'
+      --aggreg-strategy, --aggreg, -a
+                        for strategy 'aggreg'
+      --aggreg-extended-strategy, --aggreg-ext, -e
+                        for strategy 'aggreg_extended'
+      --aggreg-autoextended-strategy, --aggreg-autoext, -ae
+                        for strategy 'aggreg_autoextended'
+      --split-balance-strategy, --split-balance, -b
+                        for strategy 'split_balance'
+      --qos-strategy, --qos, -q
+                        for strategy'qos'
+
+options <opt> are among:
+  --copy-on-send-threshold=<value>, -c=<value>:
+                        set NM_SO_COPY_ON_SEND_THREASHOLD value.
+  --max-small=<value>, -m=<value>:
+                        set NM_SO_MAX_SMALL value.
+  --overwrite-files, -f force overwriting existing strategy files
+
+ By default: 
+    * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD
+    * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL
+
+EOF
 }
 
 if [ $# = 0 ]; then

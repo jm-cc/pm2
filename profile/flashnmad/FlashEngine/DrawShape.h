@@ -1,13 +1,3 @@
-/*
-** DrawShape.h
-** 
-** Made by  Dubois Jonathan Julien
-** Login   <jdubois@camelat.emi.u-bordeaux1.fr>
-** 
-** Started on  Thu Nov  8 11:32:34 2007  Dubois Jonathan Julien
-** Last update Mon Dec  3 15:59:54 2007  Dubois Jonathan Julien
-*/
-
 #ifndef   	DRAWSHAPE_H_
 # define   	DRAWSHAPE_H_
 #include<ming.h>

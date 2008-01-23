@@ -1,13 +1,3 @@
-/*
-** Anim.c
-** 
-** Made by ( Dubois Jonathan Julien)
-** Login   <jdubois@napoljtano>
-** 
-** Started on  Wed Nov 21 10:41:33 2007  Dubois Jonathan Julien
-** Last update Wed Nov 28 11:27:21 2007  Dubois Jonathan Julien
-*/
-
 #include "Anim.h"
 
 #define RATE 24

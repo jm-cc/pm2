@@ -1,13 +1,3 @@
-/*
-** Anim.h
-** 
-** Made by  Dubois Jonathan Julien
-** Login   <jdubois@napoljtano>
-** 
-** Started on  Wed Nov 21 10:41:24 2007  Dubois Jonathan Julien
-** Last update Wed Nov 28 11:23:08 2007  Dubois Jonathan Julien
-*/
-
 #ifndef   	ANIM_H_
 # define   	ANIM_H_
 

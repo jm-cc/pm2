@@ -130,15 +130,6 @@ mad3()
     networks_name=""
     for p in $protocols ; do
         dev=`echo $p | sed 's/nmad-//'`
-        # dirty fix list for devices with multiple drivers
-        case $dev in
-            tcpdg)
-                dev='tcp'
-                ;;
-            *)
-                log "default case"
-                ;;
-        esac
         log "Device: $dev"
         network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
         log "Network $network_name"
@@ -434,16 +425,12 @@ if [ $sampling_activated -eq 1 ] ; then
     for protocol in $protocols
       do
 
-      if [ $protocol = "tcpdg" ]; then
-          echo "tcpdg ignored"
+      sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}_samplings.nm_ns"
+      if [ ! -f $sampling_file ] ; then
+	  log "Launching of sampling.sh"
+	  (cd ${PM2_ROOT}/nmad/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
       else
-          sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}_samplings.nm_ns"
-          if [ ! -f $sampling_file ] ; then
-              log "Launching of sampling.sh"
-              (cd ${PM2_ROOT}/nmad/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
-          else
-              log "${protocol}_${arch}_samplings.nm_ns already exists"
-          fi
+	  log "${protocol}_${arch}_samplings.nm_ns already exists"
       fi
     done
 fi

@@ -12,7 +12,7 @@ usage() {
     echo " --mx: Myrinet driver"
     echo " --qsnet: Quadrics driver"
     echo " --ibverbs, --ib: Infiniband driver"
-    echo " --tcpdg, --tcp: Tcp driver"
+    echo " --tcp: TCP driver"
     echo ""
     echo " --force-overwrite, -f: Erase already created files"
     exit 0
@@ -39,8 +39,8 @@ while test $# -gt 0; do
 	--ibverbs|--ib)
 	    CHOSEN_DRIVER=ibverbs
 	    ;;
-	--tcpdg|--tcp)
-	    CHOSEN_DRIVER=tcpdg
+	--tcp)
+	    CHOSEN_DRIVER=tcp
 	    ;;
 	-h|-help|--help)
 	    usage
@@ -85,7 +85,7 @@ fi
 nmad_driver_write mx
 nmad_driver_write qsnet
 nmad_driver_write ibverbs
-nmad_driver_write tcpdg
+nmad_driver_write tcp
 
 # Link the choosen driver
 if [ ! -r ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ]; then

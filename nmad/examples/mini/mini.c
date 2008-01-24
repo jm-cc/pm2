@@ -79,7 +79,7 @@ main(int	  argc,
         err = nm_core_driver_load_init(p_core, nm_gm_load, &drv_id, &l_url);
 #elif defined CONFIG_TCP
         printf("TCP\n");
-        err = nm_core_driver_load_init(p_core, nm_tcpdg_load, &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_tcp_load, &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);

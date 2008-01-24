@@ -101,7 +101,7 @@ main(int	  argc,
 	err = nm_core_driver_load_init(p_core, load_driver("ibverbs"), &drv_id, &l_url);
 
 #elif defined CONFIG_TCP
-        err = nm_core_driver_load_init(p_core, load_driver("tcpdg"), &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, load_driver("tcp"), &drv_id, &l_url);
 #endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);

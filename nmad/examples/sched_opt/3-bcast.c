@@ -92,7 +92,7 @@ main(int	  argc,
 //#elif defined CONFIG_SISCI
 //	err = nm_core_driver_load_init(p_core, nm_sisci_load, &drv_id, &l_url);
 //#else
-        err = nm_core_driver_load_init(p_core, load_driver("tcpdg"), &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, load_driver("tcp"), &drv_id, &l_url);
 //#endif
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);

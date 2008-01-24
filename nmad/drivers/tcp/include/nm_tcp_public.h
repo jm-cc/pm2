@@ -13,4 +13,4 @@
  * General Public License for more details.
  */
 
-extern int nm_tcpdg_load(void);
+extern int nm_tcp_load(void);

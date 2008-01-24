@@ -53,7 +53,7 @@
 #endif
 
 #if defined CONFIG_TCP
-#  include <nm_tcpdg_public.h>
+#  include <nm_tcp_public.h>
 #  define CONFIG_TCP_ENABLED 1
 #else
 #  define CONFIG_TCP_ENABLED 0
@@ -94,7 +94,7 @@ static inline void nm_core_drivers_load(void)
 #endif
 
 #ifdef CONFIG_TCP
-	nm_tcpdg_load();
+	nm_tcp_load();
 #endif
 
 }

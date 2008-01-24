@@ -28,7 +28,7 @@
 typedef enum
 {
 #ifdef CONFIG_TCP
-  mad_NMAD_TCPDG,
+  mad_NMAD_TCP,
 #endif
 
 #ifdef CONFIG_SCTP

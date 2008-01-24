@@ -193,8 +193,8 @@ get_default_driver_assemblies(puk_component_t*assemblies)
   assemblies[cur_nr_drivers++] = load_driver("gm");
 #endif
 #if defined CONFIG_TCP
-  printf("Using TCPDG for rail #%d\n", cur_nr_drivers);
-  assemblies[cur_nr_drivers++] = load_driver("tcpdg");
+  printf("Using TCP for rail #%d\n", cur_nr_drivers);
+  assemblies[cur_nr_drivers++] = load_driver("tcp");
 #endif
 
 #else /* !CONFIG_MULTI_RAIL */
@@ -225,7 +225,7 @@ get_default_driver_assemblies(puk_component_t*assemblies)
   assemblies[cur_nr_drivers++] = load_driver("gm");
 #elif defined CONFIG_TCP
   printf("Using TCP for rail #%d\n", cur_nr_drivers);
-  assemblies[cur_nr_drivers++] = load_driver("tcpdg");
+  assemblies[cur_nr_drivers++] = load_driver("tcp");
 #endif
 
 #endif /* !CONFIG_MULTI_RAIL */
@@ -299,9 +299,9 @@ handle_one_rail(char *token, int index,
   } else
 #endif
 #if defined CONFIG_TCP
-  if (!strcmp("tcp", token) || !strcmp("tcpdg", token)) {
-    printf("Using TCPDG for rail #%d\n", index);
-    *assembly = load_driver("tcpdg");
+  if (!strcmp("tcp", token)) {
+    printf("Using TCP for rail #%d\n", index);
+    *assembly = load_driver("tcp");
   } else 
 #endif
     {

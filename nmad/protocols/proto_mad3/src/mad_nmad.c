@@ -58,7 +58,7 @@
 #endif
 
 #if defined CONFIG_TCP
-#  include <nm_tcpdg_public.h>
+#  include <nm_tcp_public.h>
 #endif
 
 #include "madeleine.h"

@@ -58,7 +58,7 @@ nm_parse_sampling(struct nm_drv *drv, char *drv_name){
 //#elif defined CONFIG_TCP
 //  drv_name = "tcp";
 //#else
-//  drv_name = "tcpdg";
+//  drv_name = "tcp";
 //#endif
 
   sampling_file_path_len += strlen(drv_name);

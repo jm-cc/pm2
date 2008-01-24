@@ -131,6 +131,25 @@ get_options_text() { # mod help list_options_to_add option/module
 		case $opt in
 		\ )
 		    ;;
+		*:*)
+		    var="${opt%:*}"
+		    case " $listopt " in
+		    *\ $var:\ *)
+			case " $curopts " in
+			*\ $var:*\ *)
+			    curval="${curopts#*$var:}"
+			    curval="${curval% *}"
+			    curopts="${curopts} "
+			    curopts="${curopts/$var:$curval }"
+			    curopts="${curopts% }"
+			    ;;
+			esac
+			curopts="${curopts:+$curopts }$opt"
+			;;
+		    *)
+			echo "Unknown $4 $opt"
+		    esac
+		    ;;
 		*)
 		    case " $curopts " in
 		    *\ $opt\ *)
@@ -155,6 +174,18 @@ get_options_text() { # mod help list_options_to_add option/module
 		case $opt in
 		\ )
 		    ;;
+		*:)
+		    var="${opt%:*}"
+		    case " $curopts " in
+		    *\ $var:*\ *)
+			curval="${curopts#*$var:}"
+			curval="${curval% *}"
+			curopts="${curopts} "
+			curopts="${curopts/$var:$curval }"
+			curopts="${curopts% }"
+			;;
+		    esac
+		    ;;
 		*)
 		    case " $curopts " in
 		    *\ $opt\ *)
@@ -177,6 +208,25 @@ get_options_text() { # mod help list_options_to_add option/module
 	    for opt in $options " "; do
 		case $opt in
 		\ )
+		    ;;
+		*:*)
+		    var="${opt%:*}"
+		    case " $listopt " in
+		    *\ $var:\ *)
+			case " $curopts " in
+			*\ $var:*\ *)
+			    curval="${curopts#*$var:}"
+			    curval="${curval% *}"
+			    curopts="${curopts} "
+			    curopts="${curopts/$var:$curval }"
+			    curopts="${curopts% }"
+			    ;;
+			esac
+			curopts="${curopts:+$curopts }$opt"
+			;;
+		    *)
+			echo "Unknown $4 $opt"
+		    esac
 		    ;;
 		*)
 		    case " $curopts " in

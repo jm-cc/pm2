@@ -47,144 +47,18 @@
 #define cpu_to_node_mask(cpu) (cpu_online_map)
 #endif
 
-/*
- * Convert user-nice values [ -20 ... 0 ... 19 ]
- * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
- * and back.
- */
-#define NICE_TO_PRIO(nice)	(MA_MAX_RT_PRIO + (nice) + 20)
-#define PRIO_TO_NICE(prio)	((prio) - MA_MAX_RT_PRIO - 20)
-#define TASK_NICE(p)		PRIO_TO_NICE((p)->static_prio)
-
-/*
- * 'User priority' is the nice value converted to something we
- * can work with better when scaling various scheduler parameters,
- * it's a [ 0 ... 39 ] range.
- */
-#define USER_PRIO(p)		((p)-MA_MAX_RT_PRIO)
-#define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
-#define MAX_USER_PRIO		(USER_PRIO(MA_MAX_PRIO))
-#define AVG_TIMESLICE	(MIN_TIMESLICE + ((MAX_TIMESLICE - MIN_TIMESLICE) *\
-			(MA_MAX_PRIO-1-NICE_TO_PRIO(0))/(MAX_USER_PRIO - 1)))
-
-/*
- * Some helpers for converting nanosecond timing to jiffy resolution
- */
-#define NS_TO_JIFFIES(TIME)	((TIME) / (1000000000 / HZ))
-#define JIFFIES_TO_NS(TIME)	((TIME) * (1000000000 / HZ))
-
-/*
- * These are the 'tuning knobs' of the scheduler:
- *
- * Minimum timeslice is 10 msecs, default timeslice is 100 msecs,
- * maximum timeslice is 200 msecs. Timeslices get refilled after
- * they expire.
- */
-#define MIN_TIMESLICE		( 10 * HZ / 1000)
-#define MAX_TIMESLICE		(200 * HZ / 1000)
-#define ON_RUNQUEUE_WEIGHT	30
-#define CHILD_PENALTY		95
-#define PARENT_PENALTY		100
-#define EXIT_WEIGHT		3
-#define PRIO_BONUS_RATIO	25
-#define MAX_BONUS		(MAX_USER_PRIO * PRIO_BONUS_RATIO / 100)
-#define INTERACTIVE_DELTA	2
-#define MAX_SLEEP_AVG		(AVG_TIMESLICE * MAX_BONUS)
-#define STARVATION_LIMIT	(MAX_SLEEP_AVG)
-#define NS_MAX_SLEEP_AVG	(JIFFIES_TO_NS(MAX_SLEEP_AVG))
-#define NODE_THRESHOLD		125
-#define CREDIT_LIMIT		100
-
-/*
- * If a task is 'interactive' then we reinsert it in the active
- * array after it has expired its current timeslice. (it will not
- * continue to run immediately, it will still roundrobin with
- * other interactive tasks.)
- *
- * This part scales the interactivity limit depending on niceness.
- *
- * We scale it linearly, offset by the INTERACTIVE_DELTA delta.
- * Here are a few examples of different nice levels:
- *
- *  TASK_INTERACTIVE(-20): [1,1,1,1,1,1,1,1,1,0,0]
- *  TASK_INTERACTIVE(-10): [1,1,1,1,1,1,1,0,0,0,0]
- *  TASK_INTERACTIVE(  0): [1,1,1,1,0,0,0,0,0,0,0]
- *  TASK_INTERACTIVE( 10): [1,1,0,0,0,0,0,0,0,0,0]
- *  TASK_INTERACTIVE( 19): [0,0,0,0,0,0,0,0,0,0,0]
- *
- * (the X axis represents the possible -5 ... 0 ... +5 dynamic
- *  priority range a task can explore, a value of '1' means the
- *  task is rated interactive.)
- *
- * Ie. nice +19 tasks can never get 'interactive' enough to be
- * reinserted into the active array. And only heavily CPU-hog nice -20
- * tasks will be expired. Default nice 0 tasks are somewhere between,
- * it takes some effort for them to get interactive, but it's not
- * too hard.
- */
-
-#define CURRENT_BONUS(p) \
-	(NS_TO_JIFFIES((p)->sleep_avg) * MAX_BONUS / \
-		MAX_SLEEP_AVG)
-
-#ifdef CONFIG_SMP
-#define TIMESLICE_GRANULARITY(p)	(MIN_TIMESLICE * \
-		(1 << (((MAX_BONUS - CURRENT_BONUS(p)) ? : 1) - 1)) * \
-			num_online_cpus())
-#else
-#define TIMESLICE_GRANULARITY(p)	(MIN_TIMESLICE * \
-		(1 << (((MAX_BONUS - CURRENT_BONUS(p)) ? : 1) - 1)))
-#endif
-
-#define SCALE(v1,v1_max,v2_max) \
-	(v1) * (v2_max) / (v1_max)
-
-#define DELTA(p) \
-	(SCALE(TASK_NICE(p), 40, MAX_USER_PRIO*PRIO_BONUS_RATIO/100) + \
-		INTERACTIVE_DELTA)
-
-#define TASK_INTERACTIVE(p) \
-	((p)->prio <= (p)->static_prio - DELTA(p))
-
-#define INTERACTIVE_SLEEP(p) \
-	(JIFFIES_TO_NS(MAX_SLEEP_AVG * \
-		(MAX_BONUS / 2 + DELTA((p)) + 1) / MAX_BONUS - 1))
-
-#define HIGH_CREDIT(p) \
-	((p)->interactive_credit > CREDIT_LIMIT)
-
-#define LOW_CREDIT(p) \
-	((p)->interactive_credit < -CREDIT_LIMIT)
-
 #define TASK_TASK_PREEMPT(p, q) \
 	((q)->sched.internal.entity.prio - (p)->sched.internal.entity.prio)
+
 #define TASK_PREEMPTS_TASK(p, q) \
 	TASK_TASK_PREEMPT(p, q) > 0
+
 #define TASK_PREEMPTS_CURR(p, lwp) \
 	TASK_PREEMPTS_TASK((p), ma_per_lwp(current_thread, (lwp)))
+
 #define TASK_CURR_PREEMPT(p, lwp) \
 	TASK_TASK_PREEMPT((p), ma_per_lwp(current_thread, (lwp)))
 
-
-/*
- * BASE_TIMESLICE scales user-nice values [ -20 ... 19 ]
- * to time slice values.
- *
- * The higher a thread's priority, the bigger timeslices
- * it gets during one round of execution. But even the lowest
- * priority thread gets MIN_TIMESLICE worth of execution time.
- *
- * task_timeslice() is the interface that is used by the scheduler.
- */
-
-#define BASE_TIMESLICE(p) (MIN_TIMESLICE + \
-	((MAX_TIMESLICE - MIN_TIMESLICE) * \
-	 (MA_MAX_PRIO-1 - (p)->static_prio)/(MAX_USER_PRIO - 1)))
-
-//static inline unsigned int task_timeslice(task_t *p)
-//{
-//	return BASE_TIMESLICE(p);
-//}
 
 #ifndef MA__LWPS
 /* mono: no idle thread, but on interrupts we need to when whether we're
@@ -287,7 +161,6 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 	ma_runqueue_t *rq;
 	LOG_IN();
 
-//repeat_lock_task:
 	old_state = p->sched.state;
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
@@ -305,24 +178,6 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 #ifdef PM2_DEV
 #warning TODO
 #endif
-			#if 0
-			if (tbx_unlikely(sync && /*!MA_TASK_IS_RUNNING(p) inutile &&*/
-				(ma_task_lwp(p) != LWP_SELF)
-				&& lwp_isset(LWP_NUMBER(LWP_SELF),
-					  p->sched.lwps_allowed)
-				&& ma_lwp_online(LWP_SELF)
-				)) {
-
-				//ma_deactivate_task(p,h);
-				//ma_activate_task(p,&ma_lwp_vprq(LWP_SELF)->hold);
-
-				//réalisé par ma_schedule()
-				//ma_set_task_lwp(p, LWP_SELF);
-
-				ma_task_holder_unlock_softirq(h);
-				goto repeat_lock_task;
-			}
-			#endif
 			if (old_state == MA_TASK_UNINTERRUPTIBLE){
 				h->nr_uninterruptible--;
 				/*
@@ -651,28 +506,6 @@ unsigned long ma_nr_ready(void)
 	return sum;
 }
 
-#if 0
-/* a priori, c'est l'application qui rebalance les choses */
-static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
-{
-}
-#endif
-
-/*
- * We place interactive tasks back into the active array, if possible.
- *
- * To guarantee that this does not starve expired tasks we ignore the
- * interactivity of a task if the first expired task had to wait more
- * than a 'reasonable' amount of time. This deadline timeout is
- * load-dependent, as the frequency of array switched decreases with
- * increasing number of running tasks. We also ignore the interactivity
- * if a better static_prio task has expired:
- */
-#define EXPIRED_STARVING(rq) \
-	((STARVATION_LIMIT && ((rq)->expired_timestamp && \
- 		(jiffies - (rq)->expired_timestamp >= \
-			STARVATION_LIMIT * ((rq)->nr_ready) + 1))) /*||*/ \
-			/*((rq)->curr->static_prio > (rq)->best_expired_prio)*/)
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -682,12 +515,8 @@ static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
  */
 void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
-	//int cpu = smp_processor_id();
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
-	//ma_runqueue_t *rq;
 	marcel_task_t *p = MARCEL_SELF;
-
-	//LOG_IN();
 
 	PROF_EVENT(sched_tick);
 
@@ -746,17 +575,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		if (ma_atomic_dec_and_test(&p->sched.internal.entity.time_slice)) {
 			ma_need_resched() = 1;
 			sched_debug("scheduler_tick: time slice expired\n");
-			//p->prio = effective_prio(p);
 			ma_atomic_set(&p->sched.internal.entity.time_slice,MARCEL_TASK_TIMESLICE);
-					//task_timeslice(p);
-			//p->first_time_slice = 0;
-
-			//if (!rq->expired_timestamp)
-				//rq->expired_timestamp = jiffies;
-			//if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
-	//			if (p->static_prio < rq->best_expired_prio)
-	//				rq->best_expired_prio = p->static_prio;
-			//}
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
@@ -773,43 +592,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #endif
 		}
 	}
-#if 0
-	else {
-		/*
-		 * Prevent a too long timeslice allowing a task to monopolize
-		 * the CPU. We do this by splitting up the timeslice into
-		 * smaller pieces.
-		 *
-		 * Note: this does not mean the task's timeslices expire or
-		 * get lost in any way, they just might be preempted by
-		 * another task of equal priority. (one with higher
-		 * priority would have preempted this task already.) We
-		 * requeue this task to the end of the list on this priority
-		 * level, which is in essence a round-robin of tasks with
-		 * equal priority.
-		 *
-		 * This only applies to tasks in the interactive
-		 * delta range with at least TIMESLICE_GRANULARITY to requeue.
-		 */
-		if (TASK_INTERACTIVE(p) && !((task_timeslice(p) -
-			p->time_slice) % TIMESLICE_GRANULARITY(p)) &&
-			(p->time_slice >= TIMESLICE_GRANULARITY(p)) &&
-			(p->array == rq->active)) {
-			if (preemption_enabled() && ma_thread_preemptible()) {
-				//ma_dequeue_task(p, &rq->hold);
-				ma_need_resched() = 1;
-//				p->prio = effective_prio(p);
-				//ma_enqueue_task(p, &rq->hold);
-			}
-		}
-	}
-out_unlock:
-	ma_spin_unlock(&rq->lock);
-#endif
 out:
 	(void)0;
-	//rebalance_tick(rq, 0);
-	//LOG_OUT();
 }
 
 void ma_scheduling_functions_start_here(void) { }
@@ -849,7 +633,6 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
  */
 asmlinkage TBX_EXTERN int ma_schedule(void)
 {
-//	long *switch_count;
 	marcel_task_t *prev, *cur, *next, *prev_as_next;
 	marcel_entity_t *nextent;
 	ma_runqueue_t *rq, *currq;
@@ -857,7 +640,6 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
-	//unsigned long run_time;
 	int idx;
 	int max_prio, prev_as_prio;
 	int go_to_sleep;
@@ -899,13 +681,6 @@ need_resched:
 	MA_BUG_ON(!prev);
 
 	now = marcel_clock();
-	//if (likely(now - prev->timestamp < NS_MAX_SLEEP_AVG))
-		//run_time = now - prev->sched.internal.timestamp;
-	/*
-	else
-		run_time = NS_MAX_SLEEP_AVG;
-		*/
-
 	prevh = ma_task_run_holder(prev);
 
 	go_to_sleep_traced = 0;
@@ -928,7 +703,6 @@ need_resched_atomic:
 			 * par simple préemption */
 			((prev->sched.state == MA_TASK_DEAD) ||
 			!(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
-		//switch_count = &prev->nvcsw;
 		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
 			prev->sched.state = MA_TASK_RUNNING;
@@ -1192,13 +966,6 @@ switch_tasks:
 
 //Pour quand on voudra ce mécanisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
-
-//	prev->sleep_avg -= run_time;
-//	if ((long)prev->sleep_avg <= 0) {
-//		prev->sleep_avg = 0;
-//		if (!(HIGH_CREDIT(prev) || LOW_CREDIT(prev)))
-//			prev->interactive_credit--;
-//	}
 
 	if (tbx_likely(didswitch = (prev != next))) {
 		ma_clear_tsk_need_togo(prev);
@@ -1589,14 +1356,6 @@ static void __marcel_init linux_sched_init(void)
 	h = ma_task_holder_lock(MARCEL_SELF);
 	ma_dequeue_task(MARCEL_SELF, h);
 	ma_task_holder_unlock(h);
-
-//	init_timers();
-
-	/*
-	 * The boot idle thread does lazy MMU switching as well:
-	 */
-//	atomic_inc(&init_mm.mm_count);
-//	enter_lazy_tlb(&init_mm, current);
 	LOG_OUT();
 }
 

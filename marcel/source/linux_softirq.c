@@ -78,24 +78,10 @@ inline static unsigned long local_softirq_pending_hardirq(void)
 {
 	unsigned long pending;
 	
-#if 0
-	SELF_SETMEM(softirq_pending_in_hardirq, 0);
-	ma_set_thread_flag(TIF_BLOCK_HARDIRQ);
-	ma_smp_mb__after_clear_bit();
-#endif
 	do {
 		pending=ma_local_softirq_pending();
 	} while (pending != 
 		ma_cmpxchg(&ma_local_softirq_pending(), pending, 0));
-	/* Reset the pending bitmask before enabling irqs */
-#if 0
-	ma_local_softirq_pending() = 0;
-	ma_smp_mb__before_clear_bit();
-	
-	ma_clear_thread_flag(TIF_BLOCK_HARDIRQ);
-	ma_smp_mb__after_clear_bit();
-	pending|= SELF_GETMEM(softirq_pending_in_hardirq);
-#endif
 	return pending;
 }
 
@@ -103,15 +89,12 @@ asmlinkage TBX_EXTERN void ma_do_softirq(void)
 {
 	int max_restart = MAX_SOFTIRQ_RESTART;
 	unsigned long pending;
-	//unsigned long flags;
 
 	if (ma_in_interrupt())
 		return;
 
 	if (LWP_NUMBER(LWP_SELF) == -1)
 		return;
-
-	//local_irq_save(flags);
 	
 	ma_local_bh_disable();
 	pending = local_softirq_pending_hardirq();
@@ -119,14 +102,7 @@ asmlinkage TBX_EXTERN void ma_do_softirq(void)
 	if (pending) {
 		struct ma_softirq_action *h;
 
-		//ma_local_bh_disable();
 restart:
-		/* Reset the pending bitmask before enabling irqs */
-		//ma_local_softirq_pending() = 0;
-
-		//local_irq_enable();
-		//ma_local_hardirq_enable();
-		
 		h = softirq_vec;
 
 		do {
@@ -136,31 +112,18 @@ restart:
 			pending >>= 1;
 		} while (pending);
 
-		//local_irq_disable();
 		
 		pending = local_softirq_pending_hardirq();
 		if (pending && --max_restart)
 			goto restart;
-#if 0
-		if (pending) {
-			pm2debug("Arghhh loosing softirq %lx! Please, correct me\n", pending);
-			/* Il faudrait au moins remettre les pending
-			 * en appelant ma_raise_softirq...(nr)
-			 */
-			ma_local_softirq_pending() |= pending;
-			pending=0;
-		}
-#endif
 		if (pending) {
 			/* On remet les pending en place... */
 			ma_local_softirq_pending() |= pending;
 			ma_smp_wmb();
 			ma_wakeup_softirqd();
 		}
-		//__ma_local_bh_enable();
 	}
 
-	//local_irq_restore(flags);
 	/* S'il reste des softirq, il ne FAUT PAS les traiter maintenant */
 	__ma_local_bh_enable();
 }
@@ -169,7 +132,6 @@ void TBX_EXTERN ma_local_bh_enable(void)
 {
 	
 	__ma_local_bh_enable();
-	//MA_WARN_ON(ma_irqs_disabled());
 	if (tbx_unlikely(!ma_in_interrupt() &&
 		     ma_local_softirq_pending()))
 		ma_invoke_softirq();
@@ -186,7 +148,6 @@ inline void __ma_raise_softirq_bhoff(unsigned int nr)
  */
 inline fastcall TBX_EXTERN void ma_raise_softirq_bhoff(unsigned int nr)
 {
-	//__ma_raise_softirq_irqoff(nr);
 #ifdef MA__DEBUG
 	MA_BUG_ON(!ma_in_atomic());
 #endif
@@ -207,28 +168,15 @@ inline fastcall TBX_EXTERN void ma_raise_softirq_bhoff(unsigned int nr)
 
 fastcall TBX_EXTERN void ma_raise_softirq(unsigned int nr)
 {
-	//unsigned long flags;
-
-	//local_irq_save(flags);
-	//ma_local_bh_disable();
 	ma_preempt_disable();
 	ma_raise_softirq_bhoff(nr);
 	ma_preempt_enable();
-	//local_irq_restore(flags);
-	//ma_local_bh_enable();
 }
 
 fastcall TBX_EXTERN void ma_raise_softirq_from_hardirq(unsigned int nr)
 {
 	MA_BUG_ON(!ma_in_irq());
 	__ma_raise_softirq_bhoff(nr);
-#if 0
-	if (tbx_unlikely(ma_test_thread_flag(TIF_BLOCK_HARDIRQ))) {
-		ma_set_bit(nr, &SELF_GETMEM(softirq_pending_in_hardirq));
-	} else {
-		ma_raise_softirq_bhoff(nr);
-	}
-#endif
 }
 
 TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data)
@@ -239,29 +187,21 @@ TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*
 
 fastcall TBX_EXTERN void __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {
-	//unsigned long flags;
-
-	//local_irq_save(flags);
 	ma_local_bh_disable();
 	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
 	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
 	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	//local_irq_restore(flags);
 	ma_local_bh_enable();
 }
 
 fastcall TBX_EXTERN void __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 {
-	//unsigned long flags;
-
-	//local_irq_save(flags);
 	ma_local_bh_disable();
 	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
 	ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
-	//local_irq_restore(flags);
 	ma_local_bh_enable();
 }
 
@@ -269,13 +209,11 @@ static void tasklet_action(struct ma_softirq_action *a)
 {
 	struct ma_tasklet_struct *list;
 
-	//local_irq_disable();
 	ma_local_bh_disable();
 	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = NULL;
 	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	//local_irq_enable();
 	ma_local_bh_enable();
 
 	while (list) {
@@ -296,14 +234,12 @@ static void tasklet_action(struct ma_softirq_action *a)
 			ma_tasklet_unlock(t);
 		}
 
-		//local_irq_disable();
 		ma_local_bh_disable();
 		ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
 		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
 		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
-		//local_irq_enable();
 		ma_local_bh_enable();
 	}
 }
@@ -312,11 +248,9 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 {
 	struct ma_tasklet_struct *list;
 
-	//local_irq_disable();
 	ma_local_bh_disable();
 	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = NULL;
-	//local_irq_enable();
 	ma_local_bh_enable();
 
 	while (list) {
@@ -338,12 +272,10 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 			ma_tasklet_unlock(t);
 		}
 
-		//local_irq_disable();
 		ma_local_bh_disable();
 		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
 		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
 		__ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
-		//local_irq_enable();
 		ma_local_bh_enable();
 	}
 }
@@ -385,9 +317,6 @@ __ma_initfunc(softirq_init, MA_INIT_SOFTIRQ, "Initialisation des SoftIrq");
 
 static int ksoftirqd(void * __bind_cpu)
 {
-	//set_user_nice(current, 19);
-	//current->flags |= PF_IOTHREAD;
-
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
  
 	while (!ma_kthread_should_stop()) {
@@ -417,61 +346,6 @@ static int ksoftirqd(void * __bind_cpu)
 	return 0;
 }
 
-#if 0
-#ifdef CONFIG_HOTPLUG_CPU
-/*
- * tasklet_kill_immediate is called to remove a tasklet which can already be
- * scheduled for execution on @cpu.
- *
- * Unlike tasklet_kill, this function removes the tasklet
- * _immediately_, even if the tasklet is in TASKLET_STATE_SCHED state.
- *
- * When this function is called, @cpu must be in the CPU_DEAD state.
- */
-void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int cpu)
-{
-	struct tasklet_struct **i;
-
-	BUG_ON(cpu_online(cpu));
-	BUG_ON(test_bit(TASKLET_STATE_RUN, &t->state));
-
-	if (!test_bit(TASKLET_STATE_SCHED, &t->state))
-		return;
-
-	/* CPU is dead, so no lock needed. */
-	for (i = &per_cpu(tasklet_vec, cpu).list; *i; i = &(*i)->next) {
-		if (*i == t) {
-			*i = t->next;
-			return;
-		}
-	}
-	BUG();
-}
-
-static void takeover_tasklets(unsigned int cpu)
-{
-	struct tasklet_struct **i;
-
-	/* CPU is dead, so no lock needed. */
-	local_irq_disable();
-
-	/* Find end, append list for that CPU. */
-	for (i = &__get_cpu_var(tasklet_vec).list; *i; i = &(*i)->next);
-	*i = per_cpu(tasklet_vec, cpu).list;
-	per_cpu(tasklet_vec, cpu).list = NULL;
-	raise_softirq_irqoff(TASKLET_SOFTIRQ);
-
-	for (i = &__get_cpu_var(tasklet_hi_vec).list; *i; i = &(*i)->next);
-	*i = per_cpu(tasklet_hi_vec, cpu).list;
-	per_cpu(tasklet_hi_vec, cpu).list = NULL;
-	raise_softirq_irqoff(HI_SOFTIRQ);
-
-	local_irq_enable();
-}
-#endif /* CONFIG_HOTPLUG_CPU */
-
-#endif /* 0 */
-
 inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 {
 	marcel_attr_t attr;
@@ -499,8 +373,6 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 
 static void ksoftirqd_init(ma_lwp_t lwp)
 {
-	//marcel_task_t *p;
-
 	if (LWP_NUMBER(lwp) == -1)
 		return;
 
@@ -518,20 +390,6 @@ static void ksoftirqd_start(ma_lwp_t lwp)
 	marcel_wake_up_created_thread(p);
 	ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),ksoftirqd) = p;
 }
-
-#if 0
-#ifdef CONFIG_HOTPLUG_CPU
-	case CPU_UP_CANCELED:
-		/* Unbind so it can run.  Fall thru. */
-		kthread_bind(per_cpu(ksoftirqd, hotcpu), smp_processor_id());
-	case CPU_DEAD:
-		p = per_cpu(ksoftirqd, hotcpu);
-		per_cpu(ksoftirqd, hotcpu) = NULL;
-		kthread_stop(p);
-		takeover_tasklets(hotcpu);
-		break;
-#endif /* CONFIG_HOTPLUG_CPU */
-#endif
 
 MA_DEFINE_LWP_NOTIFIER_START(ksoftirqd, "ksoftirqd",
 			     ksoftirqd_init, "Check tasklet lists",

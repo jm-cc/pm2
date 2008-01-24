@@ -278,7 +278,7 @@ __isend(struct nm_so_interface *p_so_interface,
   switch(sending_type) {
   case datatype_transfer:
     NM_SO_SR_TRACE("Sending data described by a datatype\n");
-    
+
     struct DLOOP_Segment *segp = data;
     ret = p_so_gate->strategy_receptacle.driver->pack_datatype(p_so_gate->strategy_receptacle._status,
 							       p_gate, tag, seq, segp);
@@ -302,7 +302,7 @@ __isend(struct nm_so_interface *p_so_interface,
     ret = p_so_gate->strategy_receptacle.driver->pack(p_so_gate->strategy_receptacle._status,
 						      p_gate, tag, seq, data, len);
     break;
-    
+
   default:
     TBX_FAILURE("Incorrect sending type.");
     break;
@@ -361,11 +361,11 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
 
   ret = __isend(p_so_interface, gate_id, tag, tt, data, len, tbx_false, p_request);
 
-  if (ret != NM_ESUCCESS) 
+  if (ret != NM_ESUCCESS)
     goto exit;
-  
+
   if(len > NM_SO_MAX_SMALL) {
-    
+
 #ifdef PIOMAN
     /* TODO : use piom_cond_signal when an ACK arrives in order to have a *real* rsend  */
     nmad_lock();
@@ -374,16 +374,19 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
     }
     nmad_unlock();
     nm_so_cond_wait(p_request->status, NM_SO_STATUS_SEND_COMPLETED, p_core);
-    
+
 #else
+    struct nm_gate *p_gate = p_core->gate_array + gate_id;
+    struct nm_so_gate *p_so_gate = p_gate->sch_private;
     nm_so_status_t *status = &(p_so_gate->status[tag][p_request->seq]);
+
     NM_SO_SR_TRACE("Waiting for status %p\n", status);
     nm_so_cond_wait(status, NM_SO_STATUS_ACK_HERE, p_core);
-    
+
 #endif
     NM_SO_SR_TRACE("Waiting for status %p completed\n", p_request->status);
   }
-  
+
  exit:
   NM_SO_SR_LOG_OUT();
   return ret;
@@ -772,7 +775,7 @@ nm_so_sr_rwait(struct nm_so_interface *p_so_interface,
     nm_so_sr_flush(p_so_interface);
   }
 
-  NM_SO_SR_TRACE("request %p completion = %d\n", request.status, 
+  NM_SO_SR_TRACE("request %p completion = %d\n", request.status,
 		 nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED));
   if(!nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) {
     nmad_lock();

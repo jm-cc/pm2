@@ -57,19 +57,19 @@ static inline void nm_so_post_all_force(struct nm_core*p_core)
 }
 #else /* PIOMAN */
 typedef volatile uint8_t nm_so_status_t;
-static inline int  nm_so_cond_test(volatile uint8_t*status, uint8_t bitmask)
+static inline int  nm_so_cond_test(nm_so_status_t*status, uint8_t bitmask)
 {
   return ((*status) & bitmask);
 }
-static inline void nm_so_cond_mask(volatile uint8_t*status, uint8_t bitmask)
+static inline void nm_so_cond_mask(nm_so_status_t*status, uint8_t bitmask)
 {
   *status &= bitmask;
 }
-static inline void nm_so_cond_signal(volatile uint8_t*status, uint8_t bitmask)
+static inline void nm_so_cond_signal(nm_so_status_t*status, uint8_t bitmask)
 {
   *status |= bitmask;
 }
-static inline void nm_so_cond_wait(volatile uint8_t*status, uint8_t bitmask, struct nm_core*p_core)
+static inline void nm_so_cond_wait(nm_so_status_t*status, uint8_t bitmask, struct nm_core*p_core)
 {
   if(status != NULL)
     {
@@ -366,27 +366,19 @@ nm_so_sr_rsend(struct nm_so_interface *p_so_interface,
   
   if(len > NM_SO_MAX_SMALL) {
     
-    nmad_lock();
 #ifdef PIOMAN
     /* TODO : use piom_cond_signal when an ACK arrives in order to have a *real* rsend  */
-    if(! piom_cond_test(p_request->status, NM_SO_STATUS_SEND_COMPLETED)) {
-#ifndef PIO_OFFLOAD
-      nm_piom_post_all(p_core);
-#endif
-      nmad_unlock();
-      piom_cond_wait(p_request->status, NM_SO_STATUS_SEND_COMPLETED);
+    nmad_lock();
+    if(! nm_so_cond_test(p_request->status, NM_SO_STATUS_SEND_COMPLETED)) {
+      nm_so_post_all(p_core);
     }
-    else {
-      nmad_unlock();
-    }
+    nmad_unlock();
+    nm_so_cond_wait(p_request->status, NM_SO_STATUS_SEND_COMPLETED, p_core);
     
 #else
-    uint8_t seq = p_request->seq;
-    volatile uint8_t *status = &(p_so_gate->status[tag][seq]);
+    nm_so_status_t *status = &(p_so_gate->status[tag][p_request->seq]);
     NM_SO_SR_TRACE("Waiting for status %p\n", status);
-    while(!(*status & NM_SO_STATUS_ACK_HERE)) {
-      nm_schedule(p_core);
-    }
+    nm_so_cond_wait(status, NM_SO_STATUS_ACK_HERE, p_core);
     
 #endif
     NM_SO_SR_TRACE("Waiting for status %p completed\n", p_request->status);

@@ -768,7 +768,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  .vp_is_idle = affinity_steal,
+  //.vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

@@ -77,17 +77,6 @@ asmlinkage TBX_EXTERN int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 
 #section marcel_functions
-#if 0
-#ifdef MA__LWPS
-extern int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new_mask);
-#else
-static __tbx_inline__ int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new_mask)
-{
-	return 0;
-}
-#endif
-#endif
-
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
 extern TBX_EXTERN int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));

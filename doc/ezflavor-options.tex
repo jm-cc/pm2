@@ -1,0 +1,69 @@
+\documentclass[11pt, a4paper ,twoside]{book} 
+\usepackage{epstopdf}   
+\usepackage{natbib}	
+\usepackage{epstopdf}   
+\usepackage[applemac]{inputenc}	
+\usepackage{a4wide}
+\usepackage{fancyheadings}	
+\usepackage{rotating}
+\usepackage{multicol}	
+\usepackage{afterpage} 
+\usepackage{color}
+\usepackage{array}	
+\usepackage{floatflt}	 
+\usepackage[colorlinks=true, linkcolor=blue, bookmarks=true, citecolor=blue, pagebackref]{hyperref} 
+
+\setcounter{secnumdepth}{3} 
+\setcounter{tocdepth}{1} 
+\usepackage[french]{minitoc} 
+\setcounter{parttocdepth}{2} 
+\usepackage{amsmath}
+
+\usepackage[unitcntnoreset]{bibtopic}  
+\usepackage[final]{pdfpages} 
+\usepackage{amssymb}
+\usepackage[english, french]{babel} 
+\pagestyle{fancy}
+
+\begin{document}
+Il existe 2 types d'options pour chaque module:
+\begin{itemize}
+\item inclusives, cases carrées.
+\item exclusives, cases rondes, choix unique par section.
+\end{itemize}
+~\\
+ Pour chacune de ces options, il y a une option avec une boîte de texte permettant de fixer une valeur à cette option et même de définir une valeur par défaut.
+La seule condition est de mettre un ``:'' à la fin du nom de cette option.
+\\
+On aura par exemple: \texttt{--marcel-stacksize:64} (64 étant la valeur définie par défaut).
+\\
+Il faut alors rajouter les fichiers suivants dans \texttt{nom-de-la-flavor/config/options}:
+\begin{enumerate}
+\item si inclusive 
+\begin{itemize}
+\item \texttt{0xx-nom-de-l'option:.sh}
+\item \texttt{0xx-nom-de-l'option:.dft} (pour définir une valeur par défaut)
+\item \texttt{0xx-nom-de-l'option:.dep} (si besoin de dépendances)
+\item \texttt{0xx-nom-de-l'option:.help} (indique ce que fait l'option)
+\end{itemize}
+\item si exclusive
+\begin{itemize}
+\item \texttt{1xx-nom-de-l'option:.sh}
+\item \texttt{1xx-nom-de-l'option:.dft} (pour définir une valeur par défaut)
+\item \texttt{1xx-nom-de-l'option:.dep} (si besoin de dépendances)
+\item \texttt{1xx-nom-de-l'option:.help} (indique ce que fait l'option)
+\end{itemize}
+\end{enumerate}
+~\\
+Une fois cela fait, il suffit de taper la commande : \texttt{pm2-recreate-links}.
+~\\
+Liste des commandes dans pm2 les plus courantes :
+\begin{itemize}
+\item \texttt{pm2-flavor get --flavor=nom-de-la-flavor} : Affiche le contenu de la flavor
+\item \texttt{pm2-flavor list} : Liste les différentes flavor
+\item \texttt{pm2-flavor set --flavor=nom-de-la-flavor} : Si on ne met aucune option a coté du set, on vide toutes les options de la flavor et initialise tout à nulle.
+\item \texttt{pm2-flavor set --flavor=nom-de-la-flavor `cat FICHIER`} : Met le contenu du fichier dans la flavor 
+\item \texttt{xargs pm2-flavor set --flavor=nom-de-la-flavor < FICHIER} : Met le contenu du fichier dans la flavor avec la classe
+\item \texttt{pm2-create-sample-flavor nom-de-la-flavor} : Régénère la flavor avec ses valeurs par défaut
+\end{itemize}
+\end{document}

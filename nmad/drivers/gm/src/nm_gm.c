@@ -446,6 +446,8 @@ nm_gm_query			(struct nm_drv *p_drv,
 	p_gm_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
 	p_gm_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_gm_drv->caps.latency = INT_MAX;
+	p_gm_drv->caps.bandwidth = 0;
 #endif
 
 	err = NM_ESUCCESS;

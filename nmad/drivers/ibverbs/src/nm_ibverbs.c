@@ -662,6 +662,8 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
 	p_ibverbs_drv->caps.rdv_threshold                       = 256 * 1024;
 #ifdef PM2_NUIOA
 	p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
+	p_ibverbs_drv->caps.latency = 373; /* from sr_ping */
+	p_ibverbs_drv->caps.bandwidth = 1400; /* from sr_ping, use 200 * link width instead? */
 #endif
 
         p_drv->priv = p_ibverbs_drv;

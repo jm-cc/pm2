@@ -423,6 +423,8 @@ nm_sisci_query			(struct nm_drv *p_drv,
         p_sisci_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
 	p_sisci_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_sisci_drv->caps.latency = INT_MAX;
+	p_sisci_drv->caps.bandwidth = 0;
 #endif
 
         p_drv->priv = p_sisci_drv;

@@ -74,6 +74,11 @@ struct nm_drv_cap {
 	/** Numa node where the card is attached
 	 */
 	int numa_node;
+
+	/** Approximative performance of the board
+	 */
+	int latency; /* in 10^-8 s */
+	int bandwidth; /* in MB/s */
 #endif
 };
 

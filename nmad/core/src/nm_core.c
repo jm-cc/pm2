@@ -579,6 +579,10 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 #ifdef PM2_NUIOA
 	int preferred_node = PM2_NUIOA_ANY_NODE;
 	int nuioa = (numa_available() >= 0);
+	char * nuioa_criteria = getenv("PM2_NUIOA_CRITERIA");
+	int nuioa_with_latency = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "latency"));
+	int nuioa_with_bandwidth = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "bandwidth"));
+	int nuioa_current_best = 0;
 #endif /* PM2_NUIOA */
 
 	for(i=0; i<count; i++) {
@@ -593,7 +597,7 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 		p_id_array[i] = id;
 
 		err = nm_core_driver_query(p_core, id, params_array[i], nparam_array[i]);
-		if (err != NM_ESUCCESS) {
+		if (err != NM_ESUCCESS) { 
 			NM_DISPF("nm_core_driver_query returned %d", err);
 			return err;
 		}
@@ -606,7 +610,25 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 				/* if this driver wants something */
 				DISP("marking nuioa node %d as preferred for driver %d", node, id);
 
-				if (preferred_node == PM2_NUIOA_ANY_NODE) {
+				if (nuioa_with_latency) {
+					/* choosing by latency: take this network if it's the first one
+					 * or if its latency is lower than the previous one */
+					if (preferred_node == PM2_NUIOA_ANY_NODE
+					    || p_drv->driver->get_capabilities(p_drv)->latency < nuioa_current_best) {
+						preferred_node = node;
+						nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->latency;
+					}
+
+				} else if (nuioa_with_bandwidth) {
+					/* choosing by bandwidth: take this network if it's the first one
+					 * or if its bandwidth is higher than the previous one */
+					if (preferred_node == PM2_NUIOA_ANY_NODE
+					    || p_drv->driver->get_capabilities(p_drv)->bandwidth > nuioa_current_best) {
+						preferred_node = node;
+						nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->bandwidth;
+					}
+
+				} else if (preferred_node == PM2_NUIOA_ANY_NODE) {
 					/* if it's the first driver, take its preference for now */
 					preferred_node = node;
 

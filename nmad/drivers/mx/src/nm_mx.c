@@ -419,6 +419,8 @@ nm_mx_query		(struct nm_drv *p_drv,
 #endif
 #ifdef PM2_NUIOA
 	p_mx_drv->caps.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
+	p_mx_drv->caps.latency = 269 ; /* from sr_ping */ 
+	p_mx_drv->caps.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
 #endif
 
         p_drv->priv = p_mx_drv;

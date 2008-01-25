@@ -165,6 +165,8 @@ nm_disk_query			(struct nm_drv *p_drv,
 	p_disk_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
 	p_disk_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_disk_drv->caps.latency = INT_MAX;
+	p_disk_drv->caps.bandwidth = 0;
 #endif
 
 	p_drv->priv	= p_disk_drv;

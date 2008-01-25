@@ -310,7 +310,7 @@ leo_default_loader_register(p_tbx_htable_t loaders)
   LOG_OUT();
 }
 
-// ... MPI Quadrics loader .................................................. //
+// ... MPI QsNet loader .................................................. //
 static
 void
 leo_mpi_qs_loader(p_leo_settings_t settings,

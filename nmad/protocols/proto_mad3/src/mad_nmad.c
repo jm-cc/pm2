@@ -46,7 +46,6 @@
 #  include <elan/capability.h>
 #  include <qsnet/fence.h>
 #  include <nm_qsnet_public.h>
-#  define MAD_QUADRICS_CONTEXT_ID_OFFSET	2
 #endif
 
 #if defined CONFIG_SISCI

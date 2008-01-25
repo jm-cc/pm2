@@ -49,7 +49,7 @@ def send_drivers(s, cl):
             leo_comm.send_int(cl, process.global_rank)
             leo_comm.send_int(cl, id)
             send_adapters(s, cl)
-            # Driver parameter (for Quadrics)
+            # Driver parameter (for QsNet)
             # not supported for now            
             leo_comm.send_string(cl, '-')
 

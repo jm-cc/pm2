@@ -89,7 +89,7 @@ static char *mad_driver_name[] =
   "mx",
 #endif
 #ifdef CONFIG_QSNET
-  "quadrics",
+  "qsnet",
 #endif
 #ifdef CONFIG_SISCI
   "sisci",

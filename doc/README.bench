@@ -31,7 +31,7 @@ Benchmarks configuration
 <<
 tcp:dalton:jack,william
 mx:dalton_mx:averell,william
-quadrics:dalton_quadrics:joe,jack
+qsnet:dalton_qsnet:joe,jack
 >>
 
 

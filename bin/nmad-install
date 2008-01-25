@@ -20,7 +20,7 @@ echo "Installing NewMadeleine in directory '$1'"
 # Detect networks
 MX_DIR=${MX_DIR:-/opt/mx}
 QSNET_DIR="/opt/qsnet"
-networks="mx:$MX_DIR quadrics:$QSNET_DIR"
+networks="mx:$MX_DIR qsnet:$QSNET_DIR"
 enabled_networks=""
 for network in  $networks ; do
     network_name=$(echo $network | awk -F':' '{print $1}')

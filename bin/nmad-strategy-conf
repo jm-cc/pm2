@@ -10,7 +10,7 @@ CHOSEN_STRATEGY=""
 
 # Help functions
 usage() {
-    cat  2>&1 <<EOF
+    cat  1>&2 <<EOF
 
 Usage:
 $0 [<opt>] <action>
@@ -18,6 +18,7 @@ $0 [<opt>] <action>
 where mandatory <action> is among:
   --help, -h            display this help message
   --get, -g             display the current strategy
+  --gen-default         generate default strategy files
   --strat=strat_<strat> choose strategy <strat>, e.g. --strat=strat_default
     possible <strat> values are: default, aggreg, aggreg_extended, split_balance, qos
     Shortcuts are available:
@@ -59,6 +60,9 @@ while test $# -gt 0; do
     case "$CMD" in
 	--get|-g)
 	    ACTION="get"
+	    ;;
+	--gen-default)
+	    ACTION="gen_default"
 	    ;;
 	--overwrite-files|-f)
 	    ACTION="force_write"
@@ -109,8 +113,13 @@ done
 nmad_strat_write() {
     strat=$1
     strat_file=${STRAT_DIR}/strategy_${strat}.xml
+# Create .pm2/strategy directory if it doesn't exist
+    if [ ! -e $STRAT_DIR ] ; then
+	mkdir -p ${STRAT_DIR}
+    fi
 # Write XML strat files if they don't exist
 if [ ! -e  ${strat_file} ] || [ "${ACTION}" = "force_write" ] ; then
+    echo -n "Writting strategy file: ${strat}... " 1>&2
 cat > ${strat_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
@@ -122,10 +131,31 @@ cat > ${strat_file} <<EOF
   <puk:entry-point iface="NmStrategy" provider-id="0"/>
 </puk:composite>
 EOF
+    echo "done." 1>&2
 fi
 }
 
+nmad_strat_write_default() {
+    
+    nmad_strat_write default
+    nmad_strat_write split_balance
+    nmad_strat_write aggreg
+    nmad_strat_write aggreg_extended
+    nmad_strat_write aggreg_autoextended
+    nmad_strat_write qos
+}
+
 case ${ACTION} in
+    
+    gen_default)
+	echo "Generating default nmad strategy files..." 1>&2
+	nmad_strat_write_default
+	;;
+
+    get)
+	readlink ${STRAT_DIR}/strategy_custom.xml | sed -e "s,${STRAT_DIR}/strategy_\(.*\).xml,\1,g"
+	;;
+
     write|force_write)
 
 	if [ -z "$CHOSEN_STRATEGY" ] ; then
@@ -133,17 +163,8 @@ case ${ACTION} in
 	    exit 1
 	fi
 	
-# Create .pm2/strategy directory if it doesn't exist
-	if [ ! -e $STRAT_DIR ] ; then
-	    mkdir -p ${STRAT_DIR}
-	fi
-	
-	nmad_strat_write default
-	nmad_strat_write split_balance
-	nmad_strat_write aggreg
-	nmad_strat_write aggreg_extended
-	nmad_strat_write aggreg_autoextended
-	nmad_strat_write qos
+
+	nmad_strat_write_default
 	
 # Link the chosen strategy
 	if [ ! -r ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ]; then
@@ -155,8 +176,5 @@ case ${ACTION} in
 	ln -sf ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ${STRAT_DIR}/strategy_custom.xml
 	;;
 
-    get)
-	readlink ${STRAT_DIR}/strategy_custom.xml | sed -e "s,${STRAT_DIR}/strategy_\(.*\).xml,\1,g"
-	;;
 esac
 

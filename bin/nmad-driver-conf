@@ -3,19 +3,31 @@
 
 # Get some variables
 DRIVER_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/driver
-FORCE_WRITE="false"
+ACTION="write"
 CHOSEN_DRIVER=""
 
 # Help functions
 usage() {
-    echo "USAGE:"
-    echo " --mx: Myrinet driver"
-    echo " --qsnet: Quadrics QsNet driver"
-    echo " --ibverbs, --ib: Infiniband Verbs driver"
-    echo " --tcp: TCP driver"
-    echo ""
-    echo " --force-overwrite, -f: Erase already created files"
-    exit 0
+    cat  1>&2 <<EOF
+
+Usage:
+$0 [<opt>] <action>
+
+where mandatory action is among:
+  --help, -h            display this help message
+  --get, -g             display the current driver
+  --gen-default         generate default driver files
+  --driver=<driver>     choose driver <driver>
+    possible <driver> values are: tcp, mx, ibverbs, qsnet
+    Shortcuts are available:
+      --tcp             for --driver=tcp
+      --mx              for --driver=mx
+      --ibverbs         for --driver=ibverbs
+      --qsnet           for --driver=qsnet
+
+options <opt> are among:
+   --force-overwrite, -f  force overwriting existing files
+EOF
 }
 
 if [ $# = 0 ]; then
@@ -27,8 +39,17 @@ fi
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
+	--get|-g)
+	    ACTION="get"
+	    ;;
+	--gen-default)
+	    ACTION="gen_default"
+	    ;;
 	--force-overwrite|-f)
-	    FORCE_WRITE="true"
+	    ACTION="force_write"
+	    ;;
+	--driver=*)
+	    CHOSEN_DRIVER=$( echo "$CMD" | sed -e 's,--driver=,,g' )
 	    ;;
 	--mx)
 	    CHOSEN_DRIVER=mx
@@ -47,7 +68,7 @@ while test $# -gt 0; do
 	    exit 0
 	    ;;
 	*)
-	    echo "Unknown argumnet: $CMD"
+	    echo "Unknown argument: $CMD"
 	    usage
 	    exit 1
 	    ;;
@@ -55,23 +76,18 @@ while test $# -gt 0; do
     shift
 done
 
-if [ -z "$CHOSEN_DRIVER" ] ; then
-    usage
-    exit 1
-fi
-
-# Create .pm2/driver directory if it doesn't exist
-if [ ! -e $DRIVER_DIR ]
-    then
-    mkdir -p ${DRIVER_DIR}
-fi
 
 nmad_driver_write() {
     driver=$1
     driver_file=${DRIVER_DIR}/driver_${driver}.xml
+# Create .pm2/driver directory if it doesn't exist
+    if [ ! -e $DRIVER_DIR ]; then
+	mkdir -p ${DRIVER_DIR}
+    fi
 # Write XML driver files if they don't exist
-if [ ! -e  ${driver_file} ] || [ ${FORCE_WRITE} = "true" ] ; then
-cat > ${driver_file} <<EOF
+    if [ ! -e  ${driver_file} ] || [ ${ACTION} = "force_write" ] ; then
+	echo -n "Writting driver file: ${driver}... " 1>&2
+	cat > ${driver_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
 <puk:composite id="driver-${driver}">
@@ -79,20 +95,43 @@ cat > ${driver_file} <<EOF
   <puk:entry-point iface="NewMad_Driver" provider-id="0"/>
 </puk:composite>
 EOF
-fi
+	echo "done." 1>&2
+    fi
 }
 
-nmad_driver_write mx
-nmad_driver_write qsnet
-nmad_driver_write ibverbs
-nmad_driver_write tcp
+nmad_driver_write_default() {
+    nmad_driver_write tcp
+    nmad_driver_write mx
+    nmad_driver_write qsnet
+    nmad_driver_write ibverbs
+}
+
+case ${ACTION} in
+    gen_default)
+	echo "Generating default nmad drivers files..." 1>&2
+	nmad_driver_write_default
+	;;
+
+    get)
+	readlink ${DRIVER_DIR}/driver_custom.xml | sed -e "s,${DRIVER_DIR}/driver_\(.*\).xml,\1,g"
+	;;
+
+    write|force_write)
+
+	if [ -z "$CHOSEN_DRIVER" ]; then
+	    usage
+	    exit 1
+	fi
+		
+	nmad_driver_write_default
 
 # Link the choosen driver
-if [ ! -r ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ]; then
-    echo "$0: driver \"${CHOSEN_DRIVER}\" does not exist."
-    echo
-    usage
-    exit 1
-fi
-ln -sf ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ${DRIVER_DIR}/driver_custom.xml
-
+	if [ ! -r ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ]; then
+	    echo "$0: driver \"${CHOSEN_DRIVER}\" does not exist."
+	    echo
+	    usage
+	    exit 1
+	fi
+	ln -sf ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ${DRIVER_DIR}/driver_custom.xml
+	;;
+esac

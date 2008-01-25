@@ -189,9 +189,9 @@ distcleandoc:
 
 # Initialisation de la distribution PM2
 #---------------------------------------------------------------------
-.PHONY: init initnoflavor checkmake bkco optionsinit bkinit \
-	cvsinit linksinit flavorinit bkclean
-init: checkmake linksinit optionsinit flavorinit
+.PHONY: init initnoflavor checkmake bkco optionsinit \
+	linksinit flavorinit componentsinit
+init: checkmake linksinit optionsinit flavorinit componentsinit
 initupdateflavor: checkmake linksinit optionsinit flavorupdate
 initnoflavor: checkmake linksinit optionsinit
 
@@ -199,12 +199,6 @@ checkmake:
 	@if ( expr $(MAKE_VERSION) \< 3.81 >> /dev/null ) then \
 	echo "Wrong make version. Upgrade to version 3.81"; exit 1;\
 	fi
-
-bkco:
-ifeq ($(wildcard BitKeeper),BitKeeper)
-	bk -r co || true
-endif
-	$(MAKE) bkinit
 
 README:
 	$(MAKE) bkco
@@ -215,11 +209,7 @@ optionsinit: README modules
 linksinit modules ARCHITECTURES: $(if $(wildcard README),,README)
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-recreate-links --nooptionsets
 
-bkinit: optionsinit
-
 svninit: optionsinit
-
-cvsinit: linksinit optionsinit
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors
@@ -228,6 +218,10 @@ flavorupdate: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors -f -v
 
 flavors:
+
+componentsinit:
+	$(COMMON_HIDE) $(ROOT)/bin/nmad-driver-conf --gen-default
+	$(COMMON_HIDE) $(ROOT)/bin/nmad-strategy-conf --gen-default
 
 # Documentation
 #---------------------------------------------------------------------

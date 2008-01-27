@@ -1519,7 +1519,7 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 		lwp->vp_nb = marcel_add_lwp();
-		marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp->vp_nb));
+		marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(lwp->vp_nb));
 
 		if (pipe(lwp->fds) == -1) {
 			perror("pipe");

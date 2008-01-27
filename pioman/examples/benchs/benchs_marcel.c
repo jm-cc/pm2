@@ -100,9 +100,9 @@ main(int argc, char** argv)
 
 #ifdef MARCEL_REMOTE_TASKLETS
 /* Lancement d'une tasklet à distance */	
-	marcel_vpmask_t mask;
-	marcel_vpmask_only_vp(&mask, 1);
-	set_vpmask(&tasklet, &mask);		
+	marcel_vpset_t set;
+	marcel_vpset_all_but_vp(&set, 1);
+	set_vpset(&tasklet, &set);		
 	printf("tasklet remote scheduling (%d loops):", RTASKLET_LOOPS);
 	TBX_GET_TICK(t1);
 	for(i=0;i<RTASKLET_LOOPS;i++){

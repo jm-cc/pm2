@@ -243,7 +243,7 @@ int main(int argc, char ** argv)
 	{
 		marcel_sem_init(&burner_sem[i], 0);
 		marcel_sem_init(&burner_ready[i], 0);
-		marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(i));		
+		marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(i));		
 		marcel_create(&burners[i], &attr, burn, (void*)(intptr_t)i);
 	}
 

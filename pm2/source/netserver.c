@@ -218,13 +218,13 @@ pm2_net_server_start(p_mad_channel_t channel)
 #ifdef ONE_VP_PER_NET_THREAD
   {
     unsigned vp = marcel_sched_add_vp();
-    extern marcel_vpmask_t __pm2_global_vpmask; // declared in pm2_thread.c
+    extern marcel_vpset_t __pm2_global_vpset; // declared in pm2_thread.c
 
-    marcel_vpmask_add_vp(&__pm2_global_vpmask, vp);
+    marcel_vpset_clr(&__pm2_global_vpset, vp);
 
-    marcel_change_vpmask(&__pm2_global_vpmask);
+    marcel_apply_vpset(&__pm2_global_vpset);
 
-    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp));
+    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(vp));
 
     pm2debug("Extra vp (%d) allocated for netserver thread\n", vp);
   }

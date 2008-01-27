@@ -24,7 +24,7 @@
 #define MAX_THREADS  512
 
 // Also used in netserver.h
-marcel_vpmask_t __pm2_global_vpmask = MARCEL_VPMASK_EMPTY;
+marcel_vpset_t __pm2_global_vpset = MARCEL_VPSET_FULL;
 
 extern marcel_key_t pm2_mad_send_key;
 extern marcel_key_t pm2_mad_recv_key;
@@ -99,10 +99,10 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
   res->class = class;
 
   if(class == PM2_THREAD_REGULAR) {
-    marcel_attr_setvpmask(&res->attr, __pm2_global_vpmask);
+    marcel_attr_setvpset(&res->attr, __pm2_global_vpset);
     marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
   } else {
-    marcel_attr_setvpmask(&res->attr, ~(marcel_self()->sched.lwps_allowed));
+    marcel_attr_setvpset(&res->attr, marcel_self()->sched.lwps_allowed);
     marcel_attr_setrealtime(&res->attr,
 			    MA_TASK_REAL_TIME(marcel_self()) ?
 			       MARCEL_CLASS_REALTIME : MARCEL_CLASS_REGULAR);

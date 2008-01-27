@@ -69,7 +69,7 @@ int marcel_main(int argc, char *argv[])
   TBX_GET_TICK(t1);
 
   for(i=0; i<NB; i++) {
-    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(i % marcel_nbvps()));
+    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(i % marcel_nbvps()));
 
     marcel_create(NULL, &attr, thread_func, (any_t)i);
   }

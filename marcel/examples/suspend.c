@@ -39,7 +39,7 @@ int marcel_main(int argc, char *argv[])
   marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(marcel_nbvps()-1));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps()-1));
 
   marcel_create(&pid, &attr, func, (any_t)"boys");
 

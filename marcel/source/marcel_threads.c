@@ -54,6 +54,7 @@ extern void *_dl_allocate_tls_init(void *) libc_internal_function;
 static __inline__ void init_marcel_thread(marcel_t __restrict t, 
 					  __const marcel_attr_t * __restrict attr)
 {
+	LOG_IN();
 	PROF_THREAD_BIRTH(t);
 
 	/* we need to set the thread number early for tracing tools to early know
@@ -195,6 +196,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	*((marcel_t *) (ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif
 
+	LOG_OUT();
 }
 
 /****************************************************************
@@ -453,7 +455,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2
@@ -536,7 +538,7 @@ static void marcel_exit_internal(any_t val)
 #ifdef MARCEL_POSTEXIT_ENABLED
 	struct marcel_topo_level *vp = NULL;
 #  ifdef MA__LWPS
-	marcel_vpmask_t mask;
+	marcel_vpset_t vpset;
 #  endif
 #endif /* MARCEL_POSTEXIT_ENABLED */
 	
@@ -618,8 +620,8 @@ static void marcel_exit_internal(any_t val)
 
 #  ifdef MA__LWPS
 		/* This thread mustn't be moved any more */
-		mask = MARCEL_VPMASK_ALL_BUT_VP(vp->number);
-		marcel_change_vpmask(&mask);
+		vpset = MARCEL_VPSET_VP(vp->number);
+		marcel_apply_vpset(&vpset);
 #  endif
 		ma_preempt_enable();
 

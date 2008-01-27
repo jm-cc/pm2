@@ -147,220 +147,159 @@ enum marcel_topo_level_e {
 
 #section types
 #include <limits.h>
-#ifdef MA__LWPS
-#  if (1<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
-/** \brief VP mask: useful for selecting the set of "forbidden" LWP for a given thread */
-typedef unsigned marcel_vpmask_t;
-/** \brief Empty VP mask */
-#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
-/** \brief Fill VP mask */
-#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
-/** \brief Mask of VP 0 with suitable type */
-#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1U)
-/** \brief Only set VP \e vp in VP mask */
-#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
-/** \brief Set all VPs but VP \e vp in VP mask */
-#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
-/** \brief Format string snippet suitable for the vpmask datatype */
-#    define MA_PRIxVPM "x"
-#  elif (1<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
-typedef unsigned long marcel_vpmask_t;
-#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0UL)
-#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0UL)
-#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1UL)
-#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1UL << (vp)))
-#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1UL << (vp))))
-#    define MA_PRIxVPM "lx"
-#  elif (1<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
-typedef unsigned long long marcel_vpmask_t;
-#    define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0ULL)
-#    define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0ULL)
-#    define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1ULL)
-#    define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1ULL << (vp)))
-#    define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1ULL << (vp))))
-#    define MA_PRIxVPM "llx"
-#  else
+#if !defined(MA__LWPS) || (1<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
+/** \brief Virtual processor set: defines the set of "allowed" LWP for a given thread */
+typedef unsigned marcel_vpset_t;
+/** \brief Typed unset bit constant. */
+#    define MARCEL_VPSET_CONST_0	0U
+/** \brief Typed set bit constant. */
+#    define MARCEL_VPSET_CONST_1	1U
+/** \brief Format string snippet suitable for the vpset datatype */
+#    define MA_VPSET_x			"x"
+#elif (1<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
+typedef unsigned long marcel_vpset_t;
+#    define MARCEL_VPSET_CONST_0	0UL
+#    define MARCEL_VPSET_CONST_1	1UL
+#    define MA_VPSET_x			"lx"
+#elif (1<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
+typedef unsigned long long marcel_vpset_t;
+#    define MARCEL_VPSET_CONST_0	0ULL
+#    define MARCEL_VPSET_CONST_1	1ULL
+#    define MA_VPSET_x			"llx"
+#else
 #    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
-#  endif
-#else
-typedef unsigned marcel_vpmask_t;
-#  define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
-#  define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
-#  define MARCEL_VPMASK_VP0            ((marcel_vpmask_t)1U)
-#  define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
-#  define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
-#  define MA_PRIxVPM "x"
 #endif
 
-#section functions
-
-/*  Primitives & macros for building "masks" of virtual processors. */
-
-/*  WARNING: a thread may run on a given "vp" iff the corresponding bit
- *  is _cleared_ (_ZERO_) in the mask (following the model of sigset_t
- *  for signal mask management) */
-
-/** \brief Initialize VP mask */
-void marcel_vpmask_init(marcel_vpmask_t * mask);
-#define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
+/** \brief Set with no LWP selected. */
+#define MARCEL_VPSET_ZERO           ((marcel_vpset_t)  MARCEL_VPSET_CONST_0)
+#define MARCEL_VPSET_FULL	    (~MARCEL_VPSET_ZERO)
+/** \brief Set with only \e vp in selected. */
+#define MARCEL_VPSET_VP(vp)         ((marcel_vpset_t)(  MARCEL_VPSET_CONST_1 << (vp)) )
 
 #section functions
-/** \brief Empty VP mask */
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t * mask);
+
+/*  Primitives & macros for building "sets" of virtual processors. */
+
+/** \brief Initialize VP set */
+void marcel_vpset_init(marcel_vpset_t * set);
+#define marcel_vpset_init(m)        marcel_vpset_empty(m)
+
+#section functions
+/** \brief Empty VP set */
+static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set);
 #section inline
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t * mask)
+static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set)
 {
-	*mask = MARCEL_VPMASK_EMPTY;
+	*set = MARCEL_VPSET_ZERO;
 }
 
 #section functions
-/** \brief Test whether VP mask is empty */
-static __tbx_inline__ int marcel_vpmask_is_empty(const marcel_vpmask_t * mask);
+/** \brief Fill VP set */
+static __tbx_inline__ void marcel_vpset_fill(marcel_vpset_t * set);
 #section inline
-static __tbx_inline__ int marcel_vpmask_is_empty(const marcel_vpmask_t * mask)
+static __tbx_inline__ void marcel_vpset_fill(marcel_vpset_t * set)
 {
-	return *mask == MARCEL_VPMASK_EMPTY;
+	*set = MARCEL_VPSET_FULL;
 }
 
 #section functions
-/** \brief Fill VP mask */
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t * mask);
-#section inline
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t * mask)
-{
-	*mask = MARCEL_VPMASK_FULL;
-}
-
-#section functions
-/** \brief Add VP \e vp in VP mask \e mask */
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t * mask,
+/** \brief Clear VP set and set VP \e vp */
+static __tbx_inline__ void marcel_vpset_vp(marcel_vpset_t * set,
     unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t * mask,
+static __tbx_inline__ void marcel_vpset_vp(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask |= MARCEL_VPMASK_VP0 << vp;
+	*set = MARCEL_VPSET_VP(vp);
 #else
-	marcel_vpmask_fill(mask);
+	marcel_vpset_fill(set);
 #endif
 }
 
 #section functions
-/** \brief Clear VP mask and set VP \e vp */
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t * mask,
+/** \brief Clear VP set and set VP \e vp */
+static __tbx_inline__ void marcel_vpset_all_but_vp(marcel_vpset_t * set,
     unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t * mask,
+static __tbx_inline__ void marcel_vpset_all_but_vp(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask = MARCEL_VPMASK_VP0 << vp;
+	*set = ~MARCEL_VPSET_VP(vp);
 #else
-	marcel_vpmask_fill(mask);
+	marcel_vpset_zero(set);
 #endif
 }
 
 #section functions
-/** \brief Remove VP \e vp from VP mask \e mask */
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t * mask,
+/** \brief Add VP \e vp in VP set \e set */
+static __tbx_inline__ void marcel_vpset_set(marcel_vpset_t * set,
     unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t * mask,
+static __tbx_inline__ void marcel_vpset_set(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask &= ~(MARCEL_VPMASK_VP0 << vp);
+	*set |= MARCEL_VPSET_VP(vp);
 #else
-	marcel_vpmask_empty(mask);
+	marcel_vpset_fill(set);
 #endif
 }
 
 #section functions
-/** \brief Fill VP mask and clear VP \e vp */
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
+/** \brief Remove VP \e vp from VP set \e set */
+static __tbx_inline__ void marcel_vpset_clr(marcel_vpset_t * set,
     unsigned vp);
 #section inline
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t * mask,
+static __tbx_inline__ void marcel_vpset_clr(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	*mask = ~(MARCEL_VPMASK_VP0 << vp);
+	*set &= ~(MARCEL_VPSET_VP(vp));
 #else
-	marcel_vpmask_empty(mask);
+	marcel_vpset_zero(set);
 #endif
 }
 
 #section functions
-/** \brief Test whether VP \e vp is part of mask \e mask */
-static __tbx_inline__ int marcel_vpmask_vp_ismember(const marcel_vpmask_t * mask,
+/** \brief Test whether VP \e vp is part of set \e set */
+static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
     unsigned vp);
 #section inline
-static __tbx_inline__ int marcel_vpmask_vp_ismember(const marcel_vpmask_t * mask,
+static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
-	return 1 & (*mask >> vp);
+	return 1 & (*set >> vp);
 #else
-	return *mask;
+	return *set;
 #endif
-}
-
-#section functions
-/** \brief Apply OR mask \e to_or to mask \e mask */
-static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or);
-#section inline
-static __tbx_inline__ void marcel_vpmask_or(marcel_vpmask_t * mask, const marcel_vpmask_t *to_or)
-{
-	*mask |= *to_or;
-}
-
-#section functions
-/** \brief Apply AND mask \e to_and to mask \e mask */
-static __tbx_inline__ void marcel_vpmask_and(marcel_vpmask_t * mask, const marcel_vpmask_t *to_and);
-#section inline
-static __tbx_inline__ void marcel_vpmask_and(marcel_vpmask_t * mask, const marcel_vpmask_t *to_and)
-{
-	*mask &= *to_and;
 }
 
 #section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
-static __tbx_inline__ int marcel_vpmask_weight(const marcel_vpmask_t * mask);
+static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 #section marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-static __tbx_inline__ int marcel_vpmask_weight(const marcel_vpmask_t * mask)
+static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 {
 #ifdef MA__LWPS
-	return ma_hweight_long(*mask);
+	return ma_hweight_long(*vpset);
 #else
-	return *mask;
-#endif
-}
-
-#section marcel_functions
-/** \brief Return the first VP of VP mask + 1, 0 if none.  */
-static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask);
-#section marcel_inline
-#depend "asm/linux_bitops.h[marcel_inline]"
-static __tbx_inline__ int marcel_vpmask_ffs(const marcel_vpmask_t * mask)
-{
-#ifdef MA__LWPS
-	return ma_ffs(*mask);
-#else
-	return *mask;
+	return *vpset;
 #endif
 }
 
 #section marcel_macros
-/** \brief Loop macro iterating on a vpmask and yielding on each vp that
- *  is member of the mask.
- *  Uses variables \e mask (the vp mask) and \e vp (the loop variable) */
-#define marcel_vpmask_foreach_begin(vp, mask) \
-	for (vp = 0; vp < marcel_nbvps() + MARCEL_NBMAXVPSUP; vp++) \
-		if (marcel_vpmask_vp_ismember(mask, vp)) {
-#define marcel_vpmask_foreach_end() \
-		}
+/** \brief Loop macro iterating on a vpset and yielding on each vp that
+ *  is member of the set.
+ *  Uses variables \e set (the vp set) and \e vp (the loop variable) */
+#define marcel_vpset_foreach_begin(vp, vpset) \
+        for (vp = 0; vp < marcel_nbvps() + MARCEL_NBMAXVPSUP; vp++) \
+                if (marcel_vpset_isset(vpset, vp)) {
+#define marcel_vpset_foreach_end() \
+                }
 
 #section functions
 /** \brief Get the current VP number. Note that if preemption is enabled,
@@ -467,8 +406,8 @@ struct marcel_topo_level {
 	signed os_core;			/**< \brief OS-provided core number */
 	signed os_cpu;			/**< \brief OS-provided CPU number */
 
-	marcel_vpmask_t vpset;		/**< \brief VPs covered by this level */
-	marcel_vpmask_t cpuset;		/**< \brief CPUs covered by this level */
+	marcel_vpset_t vpset;		/**< \brief VPs covered by this level */
+	marcel_vpset_t cpuset;		/**< \brief CPUs covered by this level */
 
 	unsigned arity;			/**< \brief Number of children */
 	struct marcel_topo_level **children;	/**< \brief Children, children[0 .. arity -1] */

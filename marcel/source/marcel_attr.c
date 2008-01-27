@@ -317,16 +317,16 @@ int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
 	return 0;
 }
 
-int marcel_attr_setvpmask(marcel_attr_t * attr, marcel_vpmask_t mask)
+int marcel_attr_setvpset(marcel_attr_t * attr, marcel_vpset_t vpset)
 {
-	attr->vpmask = mask;
+	attr->vpset = vpset;
 	return 0;
 }
 
-int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
-    marcel_vpmask_t * __restrict mask)
+int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
+    marcel_vpset_t * __restrict vpset)
 {
-	*mask = attr->vpmask;
+	*vpset = attr->vpset;
 	return 0;
 }
 

@@ -62,9 +62,9 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 			marcel_getschedparam(cthread, &new_attr.__schedpolicy,
 			    &new_attr.__schedparam);
 			/* and scope */
-			marcel_vpmask_t vpmask;
-			marcel_get_vpmask(cthread, &vpmask);
-			if (vpmask == MARCEL_VPMASK_EMPTY)
+			marcel_vpset_t vpset;
+			marcel_get_vpset(cthread, &vpset);
+			if (vpset == MARCEL_VPSET_FULL)
 				marcel_attr_setscope(&new_attr,
 				    PTHREAD_SCOPE_PROCESS);
 			else
@@ -95,8 +95,8 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 
 		if (new_attr.__scope == PTHREAD_SCOPE_SYSTEM) {
 			unsigned lwp = marcel_add_lwp();
-			marcel_attr_setvpmask(&new_attr,
-			    MARCEL_VPMASK_ALL_BUT_VP(lwp));
+			marcel_attr_setvpset(&new_attr,
+			    MARCEL_VPSET_VP(lwp));
 		}
 		attr = (pthread_attr_t *) (void *) &new_attr;
 	}

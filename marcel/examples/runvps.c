@@ -42,7 +42,7 @@ int marcel_main(int argc, char *argv[])
 
   /* on crée un thread par processeur */
   for(i=0; i<marcel_nbvps(); i++) {
-    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(i));
+    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(i));
     marcel_create(NULL, &attr, worker, (any_t)(intptr_t)i);
   }
 

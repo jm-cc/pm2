@@ -90,16 +90,16 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			nbrun = total_nr_ready(b);
 			for (rq2 = rq;
 				/* emmener juste assez haut pour moi */
-				  !marcel_vpmask_vp_ismember(&rq2->vpset, LWP_NUMBER(LWP_SELF))
+				  !marcel_vpset_isset(&rq2->vpset, LWP_NUMBER(LWP_SELF))
 				&& rq2->father
 				/* et juste assez haut par rapport au nombre de threads */
-				&& marcel_vpmask_weight(&rq2->father->vpset) <= nbrun
+				&& marcel_vpset_weight(&rq2->father->vpset) <= nbrun
 				; rq2 = rq2->father)
 				bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->name);
 			if (!rq2 ||
 					/* pas intéressant pour moi, on laisse les autres se débrouiller */
 					/* todo: le faire quand même ? */
-					!marcel_vpmask_vp_ismember(&rq2->vpset,LWP_NUMBER(LWP_SELF))) {
+					!marcel_vpset_isset(&rq2->vpset,LWP_NUMBER(LWP_SELF))) {
 				bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
 				ma_holder_rawunlock(&rq->hold);
 			} else {
@@ -180,7 +180,7 @@ static int see_down(struct marcel_topo_level *level,
 	int i = 0, n = level->arity;
 	bubble_sched_debugl(7,"see_down from %d %d\n", level->type, level->number);
 	if (rq) {
-		power = marcel_vpmask_weight(&rq->vpset);
+		power = marcel_vpset_weight(&rq->vpset);
 	}
 	if (me) {
 		/* si l'appelant fait partie des fils, l'éviter */

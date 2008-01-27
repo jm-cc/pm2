@@ -283,19 +283,19 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 				const marcel_attr_t* __restrict attr)
 {
 	/* t->lwp */
-	t->sched.lwps_allowed = ~attr->vpmask; 
+	t->sched.lwps_allowed = attr->vpset; 
 	ma_set_task_state(t, MA_TASK_BORNING);
 	marcel_sched_internal_init_marcel_thread(t, &t->sched.internal, attr);
 }
 
 #section marcel_functions
 __tbx_inline__ static void 
-marcel_get_vpmask(marcel_task_t* __restrict t, marcel_vpmask_t *mask);
+marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset);
 #section marcel_inline
 __tbx_inline__ static void 
-marcel_get_vpmask(marcel_task_t* __restrict t, marcel_vpmask_t *mask)
+marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset)
 {
-	     *mask = ~t->sched.lwps_allowed;
+	     *vpset = t->sched.lwps_allowed;
 }
 
 #section sched_marcel_functions

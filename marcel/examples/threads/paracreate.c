@@ -19,12 +19,12 @@ void * run(void * arg) {
 	int essais = 3;
 	tick_t t1, t2, t3, t4, t5;
 	int num = (int) arg;
-	marcel_vpmask_t mask = ~(1<<num);
+	marcel_vpset_t set = 1<<num;
 
 	if(nb == 0)
 		return NULL;
 
-	marcel_change_vpmask(&mask);
+	marcel_apply_vpset(&set);
 
 	while(essais--) {
 		

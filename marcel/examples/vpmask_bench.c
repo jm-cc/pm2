@@ -43,7 +43,7 @@ any_t f_idle(any_t arg)
   return NULL;
 }
 
-void bench_change_vpmask(unsigned nb)
+void bench_apply_vpset(unsigned nb)
 {
   tbx_tick_t t1, t2;
   int i = nb;
@@ -51,13 +51,13 @@ void bench_change_vpmask(unsigned nb)
 
   TBX_GET_TICK(t1);
   while(--i) {
-    marcel_vpmask_t vpmask = MARCEL_VPMASK_ALL_BUT_VP(vp);
-    marcel_change_vpmask(&vpmask);
+    marcel_vpset_t vpset = MARCEL_VPSET_VP(vp);
+    marcel_apply_vpset(&vpset);
     vp = 1-vp;
   }
   TBX_GET_TICK(t2);
 
-  marcel_printf("change vpmask =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
+  marcel_printf("apply vpset =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }
@@ -127,7 +127,7 @@ void bench_resched(unsigned long nb)
   marcel_attr_t attr;
 
   marcel_attr_init(&attr);
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(2));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(2));
 
   finished = 0;
   started = 0;
@@ -140,7 +140,7 @@ void bench_resched(unsigned long nb)
   while(--n) {
 	  ma_set_tsk_need_togo(pid);
 	  ma_resched_task(pid, 2, GET_LWP_BY_NUM(2));
-	  ma_topo_vpdata(&marcel_topo_vp_level[2], need_resched) = 0;
+	  ma_topo_vpdata_l(&marcel_topo_vp_level[2], need_resched) = 0;
   }
   TBX_GET_TICK(t2);
   marcel_printf("resched time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
@@ -165,7 +165,7 @@ int marcel_main(int argc, char *argv[])
   }
 
   while(essais--) {
-    bench_change_vpmask(atol(argv[1]));
+    bench_apply_vpset(atol(argv[1]));
     bench_migrate(atol(argv[1])*100, 1);
     bench_migrate(atol(argv[1])*100, 0);
     bench_resched(atol(argv[1])*10);

@@ -1,5 +1,6 @@
 #include "marcel.h"
 
+#ifdef MARCEL_NUMA
 #define NB_THREADS 8
 #define TAB_SIZE 1024 * 256
 #define NB_LOOPS 10000
@@ -78,4 +79,14 @@ marcel_main(int argc, char *argv[])
   marcel_end();
   return 0;
 }
+#else /* MARCEL_NUMA */
+#  warning Marcel NUMA mode must be selected for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel NUMA' mode required in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_NUMA */
 

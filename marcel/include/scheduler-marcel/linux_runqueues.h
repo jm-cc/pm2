@@ -151,7 +151,7 @@ struct ma_runqueue {
 	/** \brief "Level" of the runqueue in the topology */
 	int level;
 	/** \brief Vpset of the runqueue */
-	marcel_vpmask_t vpset;
+	marcel_vpset_t vpset;
 #endif
 	/** \brief Type of the runqueue */
 	enum ma_rq_type type;
@@ -184,7 +184,7 @@ ma_runqueue_t *ma_dontsched_rq(ma_lwp_t lwp);
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
 /** \brief Whether runqueue covers VP \e vpnum */
 int ma_rq_covers(ma_runqueue_t *rq, int vpnum);
-#define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpmask_vp_ismember(&rq->vpset, vpnum))
+#define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpset_isset(&rq->vpset, vpnum))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_lwp_vprq(lwp)		(&ma_main_runqueue)

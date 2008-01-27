@@ -220,7 +220,7 @@ __has_enough_entities(struct marcel_topo_level **l,
 		      load_indicator_t *load_manager)
 {
   int ret = 1, prev_state = 1;
-  int nvp = marcel_vpmask_weight(&l[0]->vpset);
+  int nvp = marcel_vpset_weight(&l[0]->vpset);
   int arity = l[0]->arity;
   int per_item_entities = nvp / arity;
   int i, entities_per_level[arity];
@@ -285,7 +285,7 @@ static
 void __marcel_bubble_affinity(struct marcel_topo_level **l) 
 {  
   int ne;
-  int nvp = marcel_vpmask_weight(&l[0]->vpset); // Nombre de processeurs à arroser
+  int nvp = marcel_vpset_weight(&l[0]->vpset); // Nombre de processeurs à arroser
   int arity = l[0]->arity;
   int i, k;
 
@@ -488,7 +488,7 @@ marcel_entity_t *
 ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq)
 {
   marcel_entity_t *upper_entity, *chosen_entity = e;
-  int nvp = marcel_vpmask_weight(&rq->vpset);
+  int nvp = marcel_vpset_weight(&rq->vpset);
 
   for (upper_entity = e; 
        upper_entity->init_holder != NULL; 
@@ -497,7 +497,7 @@ ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq)
       if (upper_entity->sched_holder->type == MA_RUNQUEUE_HOLDER) 
 	{
 	  ma_runqueue_t *current_rq = ma_rq_holder(upper_entity->sched_holder);
-	  if (current_rq == rq || marcel_vpmask_weight(&current_rq->vpset) > nvp) 
+	  if (current_rq == rq || marcel_vpset_weight(&current_rq->vpset) > nvp) 
 	    break;
 	}
       chosen_entity = upper_entity;
@@ -583,7 +583,7 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp)
     }  
 
   ma_runqueue_t *common_rq = NULL;
-  ma_runqueue_t *rq;
+  ma_runqueue_t *rq = NULL;
   if (bestbb)
     rq = get_parent_rq(bestbb);
   else if (available_threads)
@@ -712,7 +712,7 @@ affinity_steal(unsigned from_vp)
   int arity;
 
   int n, smthg_to_steal = 0;
-  int nvp = marcel_vpmask_weight(&top->vpset);
+  int nvp = marcel_vpset_weight(&top->vpset);
   
   /* Si le dernier steal a echoué trop récemment, on attend un certain
      laps de temps avant de retenter */

@@ -396,7 +396,7 @@ static void marcel_upcall_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
 #ifdef PM2
 	{

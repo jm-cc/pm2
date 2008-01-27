@@ -136,7 +136,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 les #ifdef dans les arguments de macro...
 */
 #ifdef MA__LWPS
-#  define _TIME_SLICE marcel_vpmask_weight(&rq->vpset)
+#  define _TIME_SLICE marcel_vpset_weight(&rq->vpset)
 #else
 #  define _TIME_SLICE 1
 #endif

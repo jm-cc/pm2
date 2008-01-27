@@ -284,8 +284,8 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 			/* Find the index of our node */
 			for (j = 0 ; j < nl ; j++)
 			{
-				MA_BUG_ON(!marcel_vpmask_weight(&l_l[j]->vpset));
-				int nodeperlevel = marcel_vpmask_weight(&l_l[j]->vpset) * marcel_nbnodes / marcel_vpmask_weight(&marcel_topo_level(0,0)->vpset);
+				MA_BUG_ON(!marcel_vpset_weight(&l_l[j]->vpset));
+				int nodeperlevel = marcel_vpset_weight(&l_l[j]->vpset) * marcel_nbnodes / marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 				if (l_l[j]->number == preferred_node % nodeperlevel)
 				{
 					mnode = j;
@@ -327,7 +327,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 				for (j = 0 ; j < nl ; j++)
 				{
 					/* Is our vp here ? */
-					if (l_l[j]->number == e[i]->last_vp % marcel_vpmask_weight(&l_l[j]->vpset))
+					if (l_l[j]->number == e[i]->last_vp % marcel_vpset_weight(&l_l[j]->vpset))
 					{
 						mvp = j;
 						break;
@@ -559,8 +559,8 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 				/* Memory migration */
 				
 				/* Map number to migrate */
-				int weight_coef = 0;
-				int attraction = 1;
+				//int weight_coef = 0;
+				//int attraction = 1;
 
 				//int moving_memory = ma_compute_total_attraction(e, weight_coef, MEDIUM_WEIGHT, attraction, NULL);
 
@@ -603,10 +603,10 @@ void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	PROF_EVENTSTR(sched_status, "spread: done");
 
 /* resched existing threads */
-	marcel_vpmask_foreach_begin(vp,&l->vpset)
+	marcel_vpset_foreach_begin(vp,&l->vpset)
 		ma_lwp_t lwp = ma_vp_lwp[vp];
 	ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-	marcel_vpmask_foreach_end()
+	marcel_vpset_foreach_end()
 
 		ma_bubble_unlock_all(b, l);
 
@@ -622,11 +622,11 @@ void marcel_bubble_spread_entities(marcel_entity_t *e[], int ne, struct marcel_t
 	int i,vp;
 	for (i=0;i<nl;i++)
 	{
-		marcel_vpmask_foreach_begin(vp,&l[i]->vpset)
+		marcel_vpset_foreach_begin(vp,&l[i]->vpset)
 			ma_lwp_t lwp = ma_vp_lwp[vp];
 		ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-		marcel_vpmask_foreach_end()
-			}
+		marcel_vpset_foreach_end()
+	}
 
 	ma_spin_unlock_softirq(&spread_lock);
 }

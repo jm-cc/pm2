@@ -176,22 +176,22 @@ int ma_wake_up_task(marcel_task_t * p);
 #section marcel_functions
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 __tbx_inline__ static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask);
+marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
 
 #section marcel_inline
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 __tbx_inline__ static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask)
+marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 {
-	if (tbx_unlikely(*mask==MARCEL_VPMASK_EMPTY))
+	if (tbx_unlikely(*vpset==MARCEL_VPSET_FULL))
 		return &ma_main_runqueue;
-	else if (tbx_unlikely(*mask==MARCEL_VPMASK_FULL))
+	else if (tbx_unlikely(*vpset==MARCEL_VPSET_ZERO))
 		return &ma_dontsched_runqueue;
 	else {
 		int first_vp;
-		first_vp=ma_ffs(~*mask)-1;
+		first_vp=ma_ffs(*vpset)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
-		MA_BUG_ON(*mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
+		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));
 		/* on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps */
 		/* MA_BUG_ON(first_vp && first_vp>=marcel_nbvps()); */
 		return &marcel_topo_vp_level[first_vp].sched;
@@ -216,6 +216,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
+	LOG_IN();
 	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
@@ -240,8 +241,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			h;
 	} else do {
 		ma_runqueue_t *rq;
-		if (attr->vpmask != MARCEL_VPMASK_EMPTY)
-			rq = marcel_sched_vpmask_init_rq(&attr->vpmask);
+		if (attr->vpset != MARCEL_VPSET_FULL)
+			rq = marcel_sched_vpset_init_rq(&attr->vpset);
 		else {
 #ifdef MA__BUBBLES
 		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
@@ -280,7 +281,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			case MARCEL_SCHED_SHARED:
 				rq = &ma_main_runqueue;
 				break;
-/* TODO: vpmask ? */
+/* TODO: vpset ? */
 			case MARCEL_SCHED_OTHER: {
 				struct marcel_topo_level *vp;
 				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
@@ -374,6 +375,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
 	else
 		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
+	LOG_OUT();
 }
 
 #section sched_marcel_functions
@@ -473,7 +475,7 @@ int marcel_sched_getscheduler(marcel_t t);
 /* ==== SMP scheduling directives ==== */
 #section functions
 
-void marcel_change_vpmask(marcel_vpmask_t *mask);
+void marcel_apply_vpset(marcel_vpset_t *set);
 
 /* ==== scheduler status ==== */
 

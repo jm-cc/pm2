@@ -43,7 +43,7 @@ any_t f_idle(any_t arg)
 }
 #endif
 
-void bench_change_vpmask(unsigned nb)
+void bench_apply_vpset(unsigned nb)
 {
   tick_t t1, t2;
   int i = nb;
@@ -51,13 +51,13 @@ void bench_change_vpmask(unsigned nb)
 
   GET_TICK(t1);
   while(--i) {
-    marcel_vpmask_t vpmask = ~(1<<vp);
-    marcel_change_vpmask(&vpmask);
+    marcel_vpset_t vpset = 1<<vp;
+    marcel_apply_vpset(&vpset);
     vp = 1-vp;
   }
   GET_TICK(t2);
 
-  printf("change vpmask =  %fus\n", TIMING_DELAY(t1, t2) / (double)nb);
+  printf("apply vpset =  %fus\n", TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }
@@ -114,7 +114,7 @@ int marcel_main(int argc, char *argv[])
   }
 
   while(essais--) {
-    bench_change_vpmask(atol(argv[1]));
+    bench_apply_vpset(atol(argv[1]));
 #ifdef PTHREAD
     bench_migrate(atol(argv[1]), 1);
     bench_migrate(atol(argv[1]), 0);

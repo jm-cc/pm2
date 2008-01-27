@@ -4,6 +4,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_NUMA
 int main(int argc, char *argv[]) {
 
 	marcel_init(&argc,argv);
@@ -90,3 +91,14 @@ int main(int argc, char *argv[]) {
 
 	return EXIT_SUCCESS;
 }
+#else /* MARCEL_NUMA */
+#  warning Marcel NUMA mode must be selected for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel NUMA' mode required in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_NUMA */
+

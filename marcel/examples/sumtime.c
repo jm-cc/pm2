@@ -71,7 +71,7 @@ any_t sum(any_t arg)
     marcel_attr_init(&commattr);
     marcel_attr_setdetachstate(&commattr, tbx_true);
 #ifdef CPU0ONLY
-    marcel_attr_setvpmask(&commattr, MARCEL_VPMASK_ALL_BUT_VP(0));
+    marcel_attr_setvpset(&commattr, MARCEL_VPSET_VP(0));
 #endif
 
     marcel_bubble_init(&b1);
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
   marcel_attr_setinheritholder(&attr, tbx_true);
   marcel_attr_setprio(&attr, MA_BATCH_PRIO);
 #ifdef CPU0ONLY
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #endif
 
   marcel_sem_init(&j.sem, 0);

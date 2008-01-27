@@ -445,7 +445,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 
 	while (number)
 	{
-		int state;
+		int state = -1;
 		ma_holder_t *holder = family[number]->sched_holder;
 		if (family[number]->type == MA_BUBBLE_ENTITY) {
 
@@ -538,7 +538,7 @@ int ma_see_up(struct marcel_topo_level *level)
 		
 		int vp;
 		int allthreads, nvp;
-		nvp = marcel_vpmask_weight(&marcel_topo_level(0,0)->vpset);
+		nvp = marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 		marcel_threadslist(0, NULL, &allthreads, NOT_BLOCKED_ONLY);
 		
 		/* Work on our vp */

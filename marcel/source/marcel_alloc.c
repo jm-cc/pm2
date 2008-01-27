@@ -474,7 +474,6 @@ int ma_bubble_memory_affinity(marcel_bubble_t *bubble)//, ma_nodtab_t *attractio
 		{
 			switch (pinfo->weight) 
 			{
-				unsigned node = *pinfo->nodemask;//chercher le noeud du pinfo et ajouter au tableau[noeud]
 				case (HIGH_WEIGHT) :
 					total += HW;
 					break;

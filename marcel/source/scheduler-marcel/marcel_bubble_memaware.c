@@ -69,7 +69,7 @@ void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level)
 		to_spread[num_to_spread] = entity;
 		num_to_spread++;
 		if (level)
-			entity->last_vp = level->number * marcel_vpmask_weight(&level->vpset);
+			entity->last_vp = level->number * marcel_vpset_weight(&level->vpset);
 	}
 	ma_spin_unlock(&to_spread_lock);
 }
@@ -182,10 +182,10 @@ int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menumber, i
 	struct marcel_topo_level *father = me->father;
 	int nbthreads;
 	marcel_threadslist(0, NULL, &nbthreads, NOT_BLOCKED_ONLY);
-	//int nvp = marcel_vpmask_weight(&marcel_topo_level(0,0)->vpset);
+	//int nvp = marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 	//marcel_fprintf(stderr,"nbthreads %d, nvp %d\n", nbthreads, nvp);	
 	//float average = (float)nbthreads/nvp;
-	int meweight = marcel_vpmask_weight(&me->vpset);
+	int meweight = marcel_vpset_weight(&me->vpset);
 	int weight = 0;
 
 	if (!father)
@@ -207,7 +207,7 @@ int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menumber, i
 		ma_work_is_balanced_down(father->children[i],&number,&sum);
 		/* on change de frère */
 		i = (i+1) % father->arity;
-		weight += marcel_vpmask_weight(&father->children[i]->vpset);
+		weight += marcel_vpset_weight(&father->children[i]->vpset);
 	}
 
 	/* marcel_fprintf(stderr,"ma_work_ibup : father %p, menumber %d, mesum %d, number %d, sum %d\n",  */
@@ -272,7 +272,7 @@ int __memaware(unsigned vp) {
 			cspread --;
 			marcel_fprintf(stderr,"steal\n");
 			int allthreads, nvp;
-			nvp = marcel_vpmask_weight(&marcel_topo_level(0,0)->vpset);
+			nvp = marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 			marcel_threadslist(0, NULL, &allthreads, NOT_BLOCKED_ONLY);
 
 			if (MA_RATIO_THREADS_VPS * allthreads >= nvp) 

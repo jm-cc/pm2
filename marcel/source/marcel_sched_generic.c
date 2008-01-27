@@ -364,7 +364,7 @@ void marcel_gensched_shutdown(void)
 {
 #ifdef MA__SMP
 	marcel_lwp_t *lwp, *lwp_found;
-	marcel_vpmask_t mask;
+	marcel_vpset_t vpset;
 #endif
 
 	LOG_IN();
@@ -404,10 +404,10 @@ void marcel_gensched_shutdown(void)
 		while ((lwp = ma_lwp_wait_vp_active())) {
 			if (lwp == &__main_lwp) {
 				mdebug("main LWP is active, jumping to it at vp %d\n", LWP_NUMBER(lwp));
-				mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp));
+				vpset = MARCEL_VPSET_VP(LWP_NUMBER(lwp));
 				/* To match ma_lwp_block() above */
 				ma_preempt_enable();
-				marcel_change_vpmask(&mask);
+				marcel_apply_vpset(&vpset);
 				MA_BUG_ON(LWP_SELF != &__main_lwp);
 				/* Ok, we're in the main kernel thread now */
 				mdebug("block it too\n");

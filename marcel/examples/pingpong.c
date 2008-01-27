@@ -54,7 +54,7 @@ void bench_pingpong(unsigned long nb)
      marcel_printf("can't run SMP pingpong with only one VP\n");
      return;
   }
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(1));
 #endif
   marcel_create(&pid, &attr, f, (any_t)n);
 
@@ -77,8 +77,8 @@ int marcel_main(int argc, char *argv[])
     exit(1);
   }
 
-  marcel_vpmask_t mask = MARCEL_VPMASK_ALL_BUT_VP(0);
-  marcel_change_vpmask(&mask);
+  marcel_vpset_t vpset = MARCEL_VPSET_VP(0);
+  marcel_apply_vpset(&vpset);
 
   while(essais--)
     bench_pingpong(atol(argv[1]));

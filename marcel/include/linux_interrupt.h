@@ -116,7 +116,7 @@ struct ma_tasklet_struct
 	void (*func)(unsigned long);
 	unsigned long data;
 #ifdef MARCEL_REMOTE_TASKLETS
-	marcel_vpmask_t vp_mask;
+	marcel_vpset_t vp_set;
 	struct list_head associated_bubble;
 	unsigned priority;
 #endif
@@ -124,7 +124,7 @@ struct ma_tasklet_struct
 
 #section marcel_macros
 #ifdef MARCEL_REMOTE_TASKLETS
-#define MA_REMOTE_TASKLET_INIT .vp_mask=MARCEL_VPMASK_FULL,
+#define MA_REMOTE_TASKLET_INIT .vp_set=MARCEL_VPSET_ZERO,
 #else /* MARCEL_REMOTE_TASKLETS */
 #define MA_REMOTE_TASKLET_INIT
 #endif /* MARCEL_REMOTE_TASKLETS */
@@ -155,9 +155,9 @@ enum
 #ifdef MA__LWPS
 
 #ifdef MARCEL_REMOTE_TASKLETS
-static __tbx_inline__ void set_vpmask(struct ma_tasklet_struct *t, marcel_vpmask_t * mask)
+static __tbx_inline__ void set_vpset(struct ma_tasklet_struct *t, marcel_vpset_t * vpset)
 {
-       t->vp_mask=*mask;
+       t->vp_set=*vpset;
 }
 #define ma_remote_tasklet_init(lock) ma_spin_lock_init(lock)
 #define ma_remote_tasklet_lock(lock) ma_spin_lock(lock)
@@ -190,7 +190,7 @@ static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
 #else
 #define ma_remote_tasklet_lock(lock) do { } while (0)
 #define ma_remote_tasklet_unlock(lock) do { } while (0)
-#define set_vpmask(t,mask) do{ } while (0)
+#define set_vpset(t,set) do{ } while (0)
 #define ma_tasklet_trylock(t) 1
 #define ma_tasklet_unlock_wait(t) do { } while (0)
 #define ma_tasklet_unlock(t) 0
@@ -220,7 +220,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 	switch (old_state) {
 	case 0:
 		/* not running, not scheduled, schedule it here */
-		if( marcel_vpmask_vp_ismember(&(t->vp_mask),marcel_current_vp())) 
+		if( marcel_vpset_isset(&(t->vp_set),marcel_current_vp())) 
 		{			
 			ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 			ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
@@ -228,10 +228,10 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 			break;
 		}
 
-		/* vp_mask doesn't fit. Let's take any vp that match */
+		/* vp_set doesn't fit. Let's take any vp that match */
 		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-		__ma_tasklet_remote_schedule(t, marcel_vpmask_ffs(&t->vp_mask)-1);
+		__ma_tasklet_remote_schedule(t, ma_ffs(t->vp_set)-1);
 		break;
 	case 1<<MA_TASKLET_STATE_SCHED:
 		/* not running anywhere, but already scheduled somewhere, so let it run there */

@@ -245,10 +245,10 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	PROF_EVENTSTR(sched_status, "spread: done");
 
 	/* resched existing threads */
-	marcel_vpmask_foreach_begin(vp,&l->vpset)
+	marcel_vpset_foreach_begin(vp,&l->vpset)
 		ma_lwp_t lwp = ma_vp_lwp[vp];
 		ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-	marcel_vpmask_foreach_end()
+	marcel_vpset_foreach_end()
 
 	ma_bubble_unlock_all(b, l);
 }
@@ -269,7 +269,7 @@ spread_sched_submit(marcel_entity_t *e)
 
 /* stratégie de respread global à deux balles */
 static int
-spread_sched_vp_is_idle(marcel_vpmask_t vp)
+spread_sched_vp_is_idle(marcel_vpset_t vp)
 {
   static int want[MA_NR_LWPS];
   static ma_spinlock_t lock = MA_SPIN_LOCK_UNLOCKED;
@@ -327,22 +327,22 @@ spread_sched_vp_is_idle(unsigned vp)
   ma_idle_scheduler = 0;
   int n;
   struct marcel_topo_level *l = &marcel_topo_vp_level[vp];
-  while (l->father && !marcel_vpmask_vp_ismember(&l->vpset, 0))
+  while (l->father && !marcel_vpset_isset(&l->vpset, 0))
     l = l->father;
-  MA_BUG_ON(!marcel_vpmask_vp_ismember(&l->vpset, 0));
+  MA_BUG_ON(!marcel_vpset_isset(&l->vpset, 0));
 
   marcel_threadslist(0,NULL,&n,NOT_BLOCKED_ONLY);
 
-  if (n < 2*marcel_vpmask_weight(&l->vpset)) {
+  if (n < 2*marcel_vpset_weight(&l->vpset)) {
     //bubble_sched_debug("moins de threads que de VPS, on ne fait rien\n");
     ma_idle_scheduler = 1;
     ma_write_unlock(&ma_idle_scheduler_lock);
     return 0;
   }
-  while (l->father && n >= 2*marcel_vpmask_weight(&l->father->vpset)) {
+  while (l->father && n >= 2*marcel_vpset_weight(&l->father->vpset)) {
 	  l = l->father;
   }
-  bubble_sched_debug("%d threads pour %d vps dans %s, on respread là\n", n, marcel_vpmask_weight(&l->vpset), l->sched.name);
+  bubble_sched_debug("%d threads pour %d vps dans %s, on respread là\n", n, marcel_vpset_weight(&l->vpset), l->sched.name);
 
   bubble_sched_debug("===========[repartition avec spread]===========\n");
   marcel_bubble_spread(&marcel_root_bubble, l);

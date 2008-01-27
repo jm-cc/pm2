@@ -404,6 +404,7 @@ static void finish_task_switch(marcel_task_t *prev)
 	ma_holder_t *h;
 #endif
 
+	LOG_IN();
 	/*
 	 * A task struct has one reference for the use as "current".
 	 * If a task dies, then it sets TASK_ZOMBIE in tsk->state and calls
@@ -469,6 +470,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		/* mourn it */
 		marcel_funerals(prev);
 	}
+	LOG_OUT();
 }
 
 /**
@@ -1091,19 +1093,19 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
 extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(int, yield, (void), ())
 
-// Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
+// Modifie le 'vpset' du thread courant. Le cas échéant, il faut donc
 // retirer le thread de la file et le replacer dans la file
 // adéquate...
 // IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
 // pour se déplacer sur le LWP courant (cf terminaison des threads)
-void marcel_change_vpmask(marcel_vpmask_t *mask)
+void marcel_apply_vpset(marcel_vpset_t *vpset)
 {
 #ifdef MA__LWPS
 	ma_holder_t *old_h;
 	ma_runqueue_t *new_rq;
 	LOG_IN();
 	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
-	new_rq=marcel_sched_vpmask_init_rq(mask);
+	new_rq=marcel_sched_vpset_init_rq(vpset);
 	if (old_h == &new_rq->hold) {
 		ma_task_holder_unlock_softirq(old_h);
 		LOG_OUT();
@@ -1122,7 +1124,7 @@ void marcel_change_vpmask(marcel_vpmask_t *mask)
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);
 	/* On teste si le LWP courant est interdit ou pas */
-	if (LWP_NUMBER(LWP_SELF) == -1 || marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
+	if (LWP_NUMBER(LWP_SELF) == -1 || !marcel_vpset_isset(vpset,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
@@ -1187,8 +1189,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		rq->father=&marcel_topo_vp_level[num].sched;
 #ifdef MA__SMP
 		if (num < marcel_nbvps()) {
-			marcel_vpmask_add_vp(&ma_main_runqueue.vpset,num);
-			marcel_vpmask_add_vp(&ma_dontsched_runqueue.vpset,num);
+			marcel_vpset_set(&ma_main_runqueue.vpset,num);
+			marcel_vpset_set(&ma_dontsched_runqueue.vpset,num);
 		}
 #endif
 	}
@@ -1199,8 +1201,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
-	marcel_vpmask_only_vp(&(rq->vpset),num);
-	marcel_vpmask_only_vp(&(ma_per_lwp(dontsched_runqueue,lwp).vpset),num);
+	marcel_vpset_vp(&(rq->vpset),num);
+	marcel_vpset_vp(&(ma_per_lwp(dontsched_runqueue,lwp).vpset),num);
 #endif
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
@@ -1208,7 +1210,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		ma_init_rq(rq, name, MA_VP_RQ);
 		rq->level = marcel_topo_nblevels-1;
 		rq->father = NULL;
-		marcel_vpmask_only_vp(&rq->vpset, num);
+		marcel_vpset_vp(&rq->vpset, num);
 		mdebug("runqueue %s is a supplementary runqueue\n", name);
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
 	}
@@ -1297,8 +1299,8 @@ void __marcel_init ma_linux_sched_init0(void)
 #endif
 	ma_init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
-	marcel_vpmask_empty(&ma_main_runqueue.vpset);
-	marcel_vpmask_empty(&ma_dontsched_runqueue.vpset);
+	marcel_vpset_zero(&ma_main_runqueue.vpset);
+	marcel_vpset_zero(&ma_dontsched_runqueue.vpset);
 #endif
 
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);

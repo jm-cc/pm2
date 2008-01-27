@@ -391,11 +391,11 @@ static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
  */
 
 #section marcel_functions
-static __tbx_inline__ int ma_ffs(int word);
+static __tbx_inline__ unsigned long ma_ffs(unsigned long word);
 #section marcel_inline
-static __tbx_inline__ int ma_ffs(int word)
+static __tbx_inline__ unsigned long ma_ffs(unsigned long word)
 {
-	int result = __ma_ffs(word) + 1;
+	unsigned long result = __ma_ffs(word) + 1;
 	return word ? result : 0;
 }
 

@@ -197,7 +197,10 @@ void marcel_sched_internal_create_start_son(void) {
 }
 
 void *marcel_sched_seed_runner(void *arg) {
-	ma_holder_t *h, *h2, *h3;
+#ifdef MA__BUBBLES
+	ma_holder_t *h;
+#endif
+	ma_holder_t *h2, *h3;
 	marcel_t next;
 	void *ret;
 

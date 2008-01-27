@@ -54,7 +54,7 @@ struct __marcel_attr_s {
 	/* int sched_policy; */
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
 	/* TODO: option de flavor */
-	marcel_vpmask_t vpmask;
+	marcel_vpset_t vpset;
 	int flags;
 	char name[MARCEL_MAXNAMESIZE];
 	int id;
@@ -108,7 +108,7 @@ struct __marcel_attr_s {
   MARCEL_ATTR_MIGRATION_INITIALIZER \
   .not_deviatable= 0, \
   .not_preemptible= 0, \
-  .vpmask= MARCEL_VPMASK_EMPTY, \
+  .vpset= MARCEL_VPSET_FULL, \
   .flags= 0, \
   .name= "user_task", \
   .id = -1, \
@@ -151,7 +151,7 @@ struct __marcel_attr_s {
   MARCEL_ATTR_MIGRATION_DESTROYER \
   .not_deviatable= -1, \
   .not_preemptible= -1, \
-  .vpmask= -1, \
+  .vpset= MARCEL_VPSET_ZERO, \
   .flags= -1, \
   .name= "invalid", \
   .id = -2, \
@@ -211,9 +211,9 @@ int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
                             tbx_bool_t * __restrict realtime);
 
 /* TODO: pouvoir directement donner un niveau de topologie */
-int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
-int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
-                          marcel_vpmask_t * __restrict mask);
+int marcel_attr_setvpset(marcel_attr_t *attr, marcel_vpset_t vpset);
+int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
+                          marcel_vpset_t * __restrict vpset);
 
 int marcel_attr_setname(marcel_attr_t * __restrict attr,
                         const char * __restrict name);

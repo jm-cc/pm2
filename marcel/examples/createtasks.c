@@ -55,7 +55,7 @@ any_t main_thread(void *arg)
 #ifdef MA__BUBBLES
   marcel_attr_setinitbubble(&attr, &b);
 #else
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #endif
 
   while(essais--) {
@@ -95,7 +95,7 @@ int marcel_main(int argc, char *argv[])
   }
 
   marcel_attr_init(&attr);
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
   marcel_create(&t, &attr, main_thread, (void *)atol(argv[1]));
   marcel_join(t, NULL);
   seed = 1;

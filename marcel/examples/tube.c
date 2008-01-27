@@ -187,11 +187,11 @@ int marcel_main(int argc, char **argv)
   marcel_attr_init(&attr);
 
 #ifdef SMP
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #endif
   marcel_create (&pid[0], &attr, consommateur, (void *) 0) ;
 #ifdef SMP
-  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(1));
 #endif
   marcel_create (&pid[1], &attr, producteur, (void *) 0) ;
 

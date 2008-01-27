@@ -316,9 +316,9 @@ nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {
 	piom_server_init(&p_drv->server, "NMad IO Server");
 
 #ifdef  MARCEL_REMOTE_TASKLETS
-	marcel_vpmask_t mask;
-	marcel_vpmask_only_vp(&mask, 0);
-	set_vpmask(&p_drv->server.poll_tasklet, &mask);
+	marcel_vpset_t vpset;
+	marcel_vpset_all_but_vp(&vpset, 0);
+	set_vpset(&p_drv->server.poll_tasklet, &vpset);
 #endif
 
 	piom_server_set_poll_settings(&p_drv->server,

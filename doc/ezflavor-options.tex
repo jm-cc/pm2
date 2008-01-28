@@ -1,69 +1,68 @@
-\documentclass[11pt, a4paper ,twoside]{book} 
-\usepackage{epstopdf}   
-\usepackage{natbib}	
-\usepackage{epstopdf}   
-\usepackage[applemac]{inputenc}	
+\documentclass[11pt, a4paper ,twoside]{article}
+\usepackage{epstopdf}
+\usepackage{natbib}
+\usepackage{epstopdf}
+\usepackage[utf8]{inputenc}
 \usepackage{a4wide}
-\usepackage{fancyheadings}	
 \usepackage{rotating}
-\usepackage{multicol}	
-\usepackage{afterpage} 
+\usepackage{multicol}
+\usepackage{afterpage}
 \usepackage{color}
-\usepackage{array}	
-\usepackage{floatflt}	 
-\usepackage[colorlinks=true, linkcolor=blue, bookmarks=true, citecolor=blue, pagebackref]{hyperref} 
+\usepackage{array}
+\usepackage{floatflt}
+\usepackage[colorlinks=true, linkcolor=blue, bookmarks=true, citecolor=blue, pagebackref]{hyperref}
 
-\setcounter{secnumdepth}{3} 
-\setcounter{tocdepth}{1} 
-\usepackage[french]{minitoc} 
-\setcounter{parttocdepth}{2} 
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{1}
+\usepackage[french]{minitoc}
+\setcounter{parttocdepth}{2}
 \usepackage{amsmath}
 
-\usepackage[unitcntnoreset]{bibtopic}  
-\usepackage[final]{pdfpages} 
+\usepackage[unitcntnoreset]{bibtopic}
+\usepackage[final]{pdfpages}
 \usepackage{amssymb}
-\usepackage[english, french]{babel} 
-\pagestyle{fancy}
+\usepackage[english, french]{babel}
+\pagestyle{plain}
 
 \begin{document}
 Il existe 2 types d'options pour chaque module:
 \begin{itemize}
-\item inclusives, cases carrées.
+\item inclusives, cases carr√©es.
 \item exclusives, cases rondes, choix unique par section.
 \end{itemize}
 ~\\
- Pour chacune de ces options, il y a une option avec une boîte de texte permettant de fixer une valeur à cette option et même de définir une valeur par défaut.
-La seule condition est de mettre un ``:'' à la fin du nom de cette option.
+ Pour chacune de ces options, il y a une option avec une bo√Æte de texte permettant de fixer une valeur √† cette option et m√™me de d√©finir une valeur par d√©faut.
+La seule condition est de mettre un ``:'' √† la fin du nom de cette option.
 \\
-On aura par exemple: \texttt{--marcel-stacksize:64} (64 étant la valeur définie par défaut).
+On aura par exemple: \verb|--marcel-stacksize:64| (64 √©tant la valeur d√©finie par d√©faut).
 \\
-Il faut alors rajouter les fichiers suivants dans \texttt{nom-de-la-flavor/config/options}:
+Il faut alors rajouter les fichiers suivants dans \verb|nom-de-la-flavor/config/options|:
 \begin{enumerate}
-\item si inclusive 
+\item si inclusive
 \begin{itemize}
-\item \texttt{0xx-nom-de-l'option:.sh}
-\item \texttt{0xx-nom-de-l'option:.dft} (pour définir une valeur par défaut)
-\item \texttt{0xx-nom-de-l'option:.dep} (si besoin de dépendances)
-\item \texttt{0xx-nom-de-l'option:.help} (indique ce que fait l'option)
+\item \verb|0xx-nom-de-l'option:.sh|
+\item \verb|0xx-nom-de-l'option:.dft| (pour d√©finir une valeur par d√©faut)
+\item \verb|0xx-nom-de-l'option:.dep| (si besoin de d√©pendances)
+\item \verb|0xx-nom-de-l'option:.help| (indique ce que fait l'option)
 \end{itemize}
 \item si exclusive
 \begin{itemize}
-\item \texttt{1xx-nom-de-l'option:.sh}
-\item \texttt{1xx-nom-de-l'option:.dft} (pour définir une valeur par défaut)
-\item \texttt{1xx-nom-de-l'option:.dep} (si besoin de dépendances)
-\item \texttt{1xx-nom-de-l'option:.help} (indique ce que fait l'option)
+\item \verb|1xx-nom-de-l'option:.sh|
+\item \verb|1xx-nom-de-l'option:.dft| (pour d√©finir une valeur par d√©faut)
+\item \verb|1xx-nom-de-l'option:.dep| (si besoin de d√©pendances)
+\item \verb|1xx-nom-de-l'option:.help| (indique ce que fait l'option)
 \end{itemize}
 \end{enumerate}
 ~\\
-Une fois cela fait, il suffit de taper la commande : \texttt{pm2-recreate-links}.
+Une fois cela fait, il suffit de taper la commande : \verb|pm2-recreate-links|.
 ~\\
 Liste des commandes dans pm2 les plus courantes :
 \begin{itemize}
-\item \texttt{pm2-flavor get --flavor=nom-de-la-flavor} : Affiche le contenu de la flavor
-\item \texttt{pm2-flavor list} : Liste les différentes flavor
-\item \texttt{pm2-flavor set --flavor=nom-de-la-flavor} : Si on ne met aucune option a coté du set, on vide toutes les options de la flavor et initialise tout à nulle.
-\item \texttt{pm2-flavor set --flavor=nom-de-la-flavor `cat FICHIER`} : Met le contenu du fichier dans la flavor 
-\item \texttt{xargs pm2-flavor set --flavor=nom-de-la-flavor < FICHIER} : Met le contenu du fichier dans la flavor avec la classe
-\item \texttt{pm2-create-sample-flavor nom-de-la-flavor} : Régénère la flavor avec ses valeurs par défaut
+\item \verb|pm2-flavor get --flavor=nom-de-la-flavor| : Affiche le contenu de la flavor
+\item \verb|pm2-flavor list| : Liste les diff√©rentes flavor
+\item \verb|pm2-flavor set --flavor=nom-de-la-flavor| : Si on ne met aucune option a cot√© du set, on vide toutes les options de la flavor et initialise tout √† nulle.
+\item \verb|pm2-flavor set --flavor=nom-de-la-flavor `cat FICHIER`| : Met le contenu du fichier dans la flavor
+\item \verb|xargs pm2-flavor set --flavor=nom-de-la-flavor < FICHIER| : Met le contenu du fichier dans la flavor avec la classe
+\item \verb|pm2-create-sample-flavor nom-de-la-flavor| : R√©g√©n√®re la flavor avec ses valeurs par d√©faut
 \end{itemize}
 \end{document}

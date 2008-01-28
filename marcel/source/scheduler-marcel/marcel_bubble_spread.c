@@ -265,56 +265,6 @@ spread_sched_submit(marcel_entity_t *e)
   return 0;
 }
 
-#if 0
-
-/* stratégie de respread global à deux balles */
-static int
-spread_sched_vp_is_idle(marcel_vpset_t vp)
-{
-  static int want[MA_NR_LWPS];
-  static ma_spinlock_t lock = MA_SPIN_LOCK_UNLOCKED;
-  static int n;
-
-  struct marcel_topo_level *l = marcel_topo_level(0,0);
-  long nbready;
-  ma_spin_lock(&lock);
-  if (!want[vp]) {
-    bubble_sched_debug("restart scheduler once on %d\n", vp);
-    /* restart scheduler once */
-    want[vp] = 1;
-    ma_spin_unlock(&lock);
-    return 1;
-  }
-  bubble_sched_debug("respreading from %d\n", vp);
-  ma_bubble_synthesize_stats(b);
-  nbready = *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbready_offset);
-  if (!(SELF_GETMEM(flags) & MA_SF_NORUN)) nbready--;
-  bubble_sched_debug("runnable threads %ld\n", nbready);
-  if (nbready < marcel_nbvps()) {
-    /* less runnable threads than processors, that's normal */
-    memset(want,0,sizeof(want));
-    ma_spin_unlock(&lock);
-    return 0;
-  }
-  tbx_tick_t t;
-  TBX_GET_TICK(t);
-  marcel_printf("%lld %dth respread (%ld/%ld)\n",t,++n,nbready,*(long *)ma_bubble_hold_stats_get(b, ma_stats_nbthreads_offset));
-  marcel_bubble_spread(b, l);
-  /* tell others that things have changed */
-  bubble_sched_debug("%d tells others that things have changed\n", vp);
-  memset(want,0,sizeof(want));
-  ma_spin_unlock(&lock);
-  return 1;
-}
-
-static int
-spread_sched_start()
-{
-  marcel_bubble_activate_idle_scheduler();
-  return 0;
-}
-
-#else
 int
 spread_sched_vp_is_idle(unsigned vp)
 {
@@ -351,15 +301,9 @@ spread_sched_vp_is_idle(unsigned vp)
   return 1;
 }
 
-#endif
 struct ma_bubble_sched_struct marcel_bubble_spread_sched = {
-#if 0
-  .start = spread_sched_start,
-  .submit = spread_sched_submit,
-#else
   .submit = spread_sched_submit,
   //.vp_is_idle = spread_sched_vp_is_idle,
-#endif
 };
 
 #endif

@@ -89,11 +89,7 @@ static void printtask(marcel_task_t *t) {
 			case MA_TASK_RUNNING: 		state = 'R'; break;
 			case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;
 			case MA_TASK_UNINTERRUPTIBLE:	state = 'U'; break;
-			//case MA_TASK_STOPPED:		state = 'S'; break;
-			//case MA_TASK_TRACED:		state = 'T'; break;
-			//case MA_TASK_ZOMBIE:		state = 'Z'; break;
 			case MA_TASK_DEAD:		state = 'D'; break;
-			//case MA_TASK_GHOST:		state = 'G'; break;
 			case MA_TASK_MOVING:		state = 'M'; break;
 			case MA_TASK_FROZEN:		state = 'F'; break;
 			case MA_TASK_BORNING:		state = 'B'; break;

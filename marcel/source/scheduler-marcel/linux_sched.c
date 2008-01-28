@@ -109,6 +109,8 @@ out:
 /**
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.
+ *
+ * UNUSED
  */
 int marcel_task_curr(marcel_task_t *p)
 {
@@ -320,30 +322,10 @@ retry:
 	}
 #endif
 
-	/*
-	 * We decrease the sleep average of forking parents
-	 * and children as well, to keep max-interactive tasks
-	 * from forking tasks that are max-interactive.
-	 */
-//	p->prio = effective_prio(p);
-//	ma_set_task_lwp(p, LWP_SELF);
-
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
-//	if (tbx_unlikely(!SELF_GETMEM(sched).internal.entity.array))
 	if (MA_TASK_IS_BLOCKED(p))
 		ma_activate_task(p, h);
-//	else {
-//		p->sched.internal.entity.prio = SELF_GETMEM(sched).internal.entity.prio;
-//		list_add_tail(&p->sched.internal.entity.run_list,
-//			      &SELF_GETMEM(sched).internal.entity.run_list);
-//		p->sched.internal.entity.data = SELF_GETMEM(sched).internal.entity.data;
-//		p->sched.internal.entity.data->nr_active++;
-//#ifdef MA__LWPS
-//		p->sched.internal.entity.cur_holder = &rq.hold;
-//#endif
-//		rq->hold.running++;
-//	}
 	ma_holder_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
@@ -405,17 +387,6 @@ static void finish_task_switch(marcel_task_t *prev)
 #endif
 
 	LOG_IN();
-	/*
-	 * A task struct has one reference for the use as "current".
-	 * If a task dies, then it sets TASK_ZOMBIE in tsk->state and calls
-	 * schedule one last time. The schedule call will never return,
-	 * and the scheduled task must drop that reference.
-	 * The test for TASK_ZOMBIE must occur while the runqueue locks are
-	 * still held, otherwise prev could be scheduled on another cpu, die
-	 * there before we look at prev->state, and then the reference would
-	 * be dropped twice.
-	 * 		Manfred Spraul <manfred@colorfullife.com>
-	 */
 	prev_task_state = prev->sched.state;
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)

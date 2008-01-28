@@ -411,6 +411,14 @@ static void update_one_process(struct marcel_task *p, unsigned long user,
 }	
 
 /*
+ * Called by the local, per-CPU timer interrupt on SMP.
+ */
+static void ma_run_local_timers(void)
+{
+	ma_raise_softirq(MA_TIMER_SOFTIRQ);
+}
+
+/*
  * Called from the timer interrupt handler to charge one tick to the current 
  * process.  user_tick is 1 if the tick is user time, 0 for system.
  */
@@ -437,14 +445,6 @@ static void run_timer_softirq(struct ma_softirq_action *h)
 
 	if (ma_time_after_eq(ma_jiffies, base->timer_jiffies))
 		__run_timers(base);
-}
-
-/*
- * Called by the local, per-CPU timer interrupt on SMP.
- */
-void ma_run_local_timers(void)
-{
-	ma_raise_softirq(MA_TIMER_SOFTIRQ);
 }
 
 void ma_process_timeout(unsigned long __data)

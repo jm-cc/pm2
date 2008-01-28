@@ -145,7 +145,5 @@ static __tbx_inline__ void ma_add_timer(struct ma_timer_list * timer)
 #endif
 
 extern void ma_init_timers(void);
-extern void ma_run_local_timers(void);
-/* extern void ma_it_real_fn(unsigned long); */
 extern void ma_update_process_times(int user_tick);
 

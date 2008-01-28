@@ -263,7 +263,7 @@ static void __marcel_init look_cpuinfo(void) {
 			die_level[j].arity=0;
 			die_level[j].children=NULL;
 			die_level[j].father=NULL;
-			mdebug("die %d has cpuset %"MA_PRIxVPM"\n",j,die_level[j].cpuset);
+			mdebug("die %d has cpuset %"MA_VPSET_x"\n",j,die_level[j].cpuset);
 		}
 
 		marcel_vpset_zero(&die_level[j].vpset);
@@ -293,7 +293,7 @@ static void __marcel_init look_cpuinfo(void) {
 #ifdef MARCEL_SMT_IDLE
 			ma_atomic_set(&core_level[j].nbidle, 0);
 #endif
-			mdebug("core %d has cpuset %"MA_PRIxVPM"\n",j,core_level[j].cpuset);
+			mdebug("core %d has cpuset %"MA_VPSET_x"\n",j,core_level[j].cpuset);
 		}
 
 		marcel_vpset_zero(&core_level[j].vpset);
@@ -359,7 +359,7 @@ static void __marcel_init look_libnuma(void) {
 		ma_topo_set_os_numbers(&node_level[i], i, -1, -1, -1, -1, -1);
 		marcel_vpset_zero(&node_level[i].vpset);
 		node_level[i].cpuset=cpuset=buffer[0];
-		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,cpuset);
+		mdebug("node %d has cpuset %"MA_VPSET_x"\n",i,cpuset);
 		for (j=0;j<marcel_nbvps();j++)
 			if (marcel_vpset_isset(&cpuset,j))
 				ma_vp_node[j]=i;
@@ -417,7 +417,7 @@ static void __marcel_init look_libnuma(void) {
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
 			marcel_vpset_set(&node_level[i].cpuset,cpuid);
-		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",i,node_level[i].cpuset);
+		mdebug("node %d has cpuset %"MA_VPSET_x"\n",i,node_level[i].cpuset);
 		node_level[i].arity=0;
 		node_level[i].children=NULL;
 		node_level[i].father=NULL;
@@ -489,7 +489,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			if (rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
 				marcel_vpset_set(&rad_level[r].cpuset,j);
 		}
-		mdebug("node %d has cpuset %"MA_PRIxVPM"\n",r,rad_level[r].cpuset);
+		mdebug("node %d has cpuset %"MA_VPSET_x"\n",r,rad_level[r].cpuset);
 		rad_level[r].arity=0;
 		rad_level[r].children=NULL;
 		rad_level[r].father=NULL;
@@ -535,7 +535,7 @@ static void look_cpu(void) {
 		ma_topo_set_os_numbers(&cpu_level[cpu], -1, -1, -1, -1, -1, cpu);
 		marcel_vpset_zero(&cpu_level[cpu].vpset);
 		marcel_vpset_vp(&cpu_level[cpu].cpuset, cpu);
-		mdebug("cpu %d has cpuset %"MA_PRIxVPM"\n",cpu,cpu_level[cpu].cpuset);
+		mdebug("cpu %d has cpuset %"MA_VPSET_x"\n",cpu,cpu_level[cpu].cpuset);
 		cpu_level[cpu].arity=0;
 		cpu_level[cpu].children=NULL;
 		cpu_level[cpu].father=NULL;
@@ -567,7 +567,7 @@ static void topo_connect(void) {
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
 			if (marcel_topo_levels[l][i].arity) {
-				mdebug("level %u,%u: cpuset %"MA_PRIxVPM" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
+				mdebug("level %u,%u: cpuset %"MA_VPSET_x" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 				MA_BUG_ON(!(marcel_topo_levels[l][i].children=
 					TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
 
@@ -683,7 +683,7 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
 			marcel_topo_levels[l][i].number = i;
-			mdebug("level %u,%u: cpuset %"MA_PRIxVPM"\n",l,i,marcel_topo_levels[l][i].cpuset);
+			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
 		}
 
 	/* TODO: Brice will probably want the OS->VP function */
@@ -713,7 +713,7 @@ static void topo_discover(void) {
 		vp_level[i].arity=0;
 		vp_level[i].children=NULL;
 		vp_level[i].father=NULL;
-		mdebug("VP %d on %dth proc with cpuset %"MA_PRIxVPM"\n",i,cpu,vp_level[i].cpuset);
+		mdebug("VP %d on %dth proc with cpuset %"MA_VPSET_x"\n",i,cpu,vp_level[i].cpuset);
 
 		/* Follow the machine as nicely as possible, for instance, with two bicore chips and 6 vps:
 		 * chips: [     ] [     ] *
@@ -770,7 +770,7 @@ static void topo_discover(void) {
 	/* And show debug again */
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++)
-			mdebug("level %u,%u: cpuset %"MA_PRIxVPM"\n",l,i,marcel_topo_levels[l][i].cpuset);
+			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
 
 #ifdef MA__NUMA
 	/* merge identical levels */
@@ -820,7 +820,7 @@ static void topo_discover(void) {
 				if (!(marcel_topo_levels[l+1][j].cpuset &
 					~(marcel_topo_levels[l][i].cpuset)))
 					marcel_topo_levels[l][i].arity++;
-			mdebug("level %u,%u: cpuset %"MA_PRIxVPM" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
+			mdebug("level %u,%u: cpuset %"MA_VPSET_x" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 		}
 	}
 	mdebug("arity done.\n");
@@ -903,7 +903,7 @@ static void topo_discover(void) {
 					for (k=0; k<nbsublevels; k++)
 						marcel_topo_levels[l][i].children[k] = &marcel_topo_levels[l+1][j+k];
 
-					mdebug("now level %u,%u: cpuset %"MA_PRIxVPM" has arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
+					mdebug("now level %u,%u: cpuset %"MA_VPSET_x" has arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 					j += nbsublevels;
 				}
 				MA_BUG_ON(j!=level_width);

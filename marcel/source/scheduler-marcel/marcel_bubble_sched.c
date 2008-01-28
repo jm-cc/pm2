@@ -820,51 +820,6 @@ void ma_bubble_unlock(marcel_bubble_t *b) {
  *
  */
 
-#if 0
-// Abandonné: plutôt que parcourir l'arbre des bulles, on a un cache de threads prêts
-/* given an entity, find next running entity within the bubble */
-static marcel_entity_t *ma_next_running_in_bubble(
-		marcel_bubble_t *root,
-		marcel_bubble_t *curb,
-		struct list_head *curhead) {
-	marcel_entity_t *next;
-	marcel_bubble_t *b;
-	struct list_head *nexthead;
-	enum marcel_holder h;
-
-	nexthead = curhead->next;
-	if (tbx_unlikely(nexthead == &curb->queuedentities)) {
-		/* Got at the end of the list of curb bubble, go up */
-		bubble_sched_debugl(7,"got at end of curb, go up\n");
-		if (curb == root)
-			bubble_sched_debugl(7,"finished root\n");
-			/* finished root bubble */
-			return NULL;
-		b = marcel_bubble_holding_bubble(curb);
-		bubble_sched_debugl(7,"up to %p\n",b);
-		return ma_next_running_in_bubble(root,b,&curb->sched.run_list);
-	}
-
-	next = list_entry(nexthead, marcel_entity_t, run_list);
-	bubble_sched_debugl(7,"next %p\n",next);
-
-	if (tbx_likely(next->type != MA_BUBBLE_ENTITY))
-		return next;
-
-	/* bubble, go down */
-	b = ma_bubble_entity(next);
-	bubble_sched_debugl(7,"it is bubble %p\n",b);
-	/* attention, il ne faudrait pas qu'elle bouge entre-temps */
-	ma_holder_rawlock(&b->hold);
-	h = ma_holder_type(b->sched.run_holder);
-	ma_holder_rawunlock(&b->hold);
-	if (h == MA_RUNQUEUE_HOLDER) /* bubble on another rq (probably down
-					elsewhere), don't go down */
-		return ma_next_running_in_bubble(root,curb,&b->sched.run_list);
-	return ma_next_running_in_bubble(root,b,&b->heldentities);
-}
-#endif
-
 /* on détient le verrou du holder de nextent */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *rq, ma_holder_t **nexth, int idx) {

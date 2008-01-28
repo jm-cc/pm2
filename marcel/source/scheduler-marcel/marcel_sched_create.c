@@ -245,7 +245,7 @@ restart:
 	ma_entity_holder_rawunlock(h2);
 
 	/* and go there */
-	h3 = ma_entity_holder_rawlock(ma_entity_task(MARCEL_SELF));
+	h3 = ma_entity_holder_rawlock(ma_entity_task(next));
 	ma_activate_running_task(MARCEL_SELF, h3);
 	ma_entity_holder_rawunlock(h3);
 

@@ -31,17 +31,8 @@ void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 	LOG_IN();
 
 	ma_holder_init(&rq->hold, MA_RUNQUEUE_HOLDER);
-//	rq->nr_switches = 0;
 	strncpy(rq->name,name,sizeof(rq->name)-1);
 	rq->name[sizeof(rq->name)-1]=0;
-	//expired_timestamp, timestamp_last_tick
-	//rq->active = rq->arrays;
-	//rq->expired = rq->arrays + 1;
-//	rq->best_expired_prio = MA_MAX_PRIO;
-
-//	INIT_LIST_HEAD(&rq->migration_queue);
-//	ma_atomic_set(&rq->nr_iowait, 0);
-
 	for (j = 0; j < 1; j++) {
 		array = rq->active + j;
 		array->nr_active = 0;

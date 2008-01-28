@@ -181,27 +181,6 @@ repeat:
 }
 
 /***
- * ma_add_timer_on - start a timer on a particular CPU
- * @timer: the timer to be added
- * @cpu: the CPU to start it on
- *
- * This is not very scalable on SMP. Double adds are not possible.
- */
-void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
-{
-	ma_tvec_base_t *base = &ma_per_lwp(tvec_bases, lwp);
-  
-  	MA_BUG_ON(ma_timer_pending(timer) || !timer->function);
-
-	check_timer(timer);
-
-	ma_spin_lock_softirq(&base->lock);
-	internal_add_timer(base, timer);
-	timer->base = base;
-	ma_spin_unlock_softirq(&base->lock);
-}
-
-/***
  * mod_timer - modify a timer's timeout
  * @timer: the timer to be modified
  *

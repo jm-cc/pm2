@@ -45,6 +45,7 @@ if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/un
 	*,mips)            PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
 	*,IP*)             PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
 	*,ppc)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+	Linux,ppc64)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
 	*,ppc64)  	   PM2_ARCH=PPC64_ARCH ; PM2_ASM=ppc64 ;;
         *,Power*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
         *)                 echo "unknown arch $_os,$_ht, please set in bin/pm2-arch";

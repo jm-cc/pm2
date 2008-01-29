@@ -18,7 +18,8 @@ net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
-flavor="test_mad4_${mpi}_${net2}_${strat}"
+ext="pioman"
+flavor="test_mad4_${mpi}_${net2}_${strat}_${ext}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="larger"

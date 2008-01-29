@@ -19,7 +19,8 @@ net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_aggreg_autoextended"
 net2=$(echo $net | tr ' ' '_')
-flavor="test_nmad_${mpi}_${net2}_${strat}"
+ext="pioman"
+flavor="test_nmad_${mpi}_${net2}_${strat}_${ext}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="aggreg"

@@ -1,0 +1,43 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
+mpi="mpi_emu"
+strat="strat_aggreg_autoextended"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}_${strat}"
+
+appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+prog="aggreg"
+args="--x --p --l"
+sort_output=1
+
+rm -f /tmp/pm2test_"${USER}"_expected
+nb_hosts=$(echo $hosts | wc -w)
+(
+for f in $(seq 1 2 $nb_hosts) ; do
+    echo "The answer to life, the universe, and everything is 42"
+done
+for f in $(seq 1 2 $nb_hosts) ; do
+    echo "There are 7 Wonders of the World"
+done
+) > /tmp/pm2test_"${USER}"_expected
+
+. ./include/nmad_default
+
+# Verification et compilation du lanceur leonie
+compile_leonie

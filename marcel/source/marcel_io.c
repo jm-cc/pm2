@@ -20,15 +20,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifndef max
-#define max(a, b) \
-  (__gnu_extention__ \
-   ({ __typeof__ (a) _a=a; \
-      __typeof__ (b) _b=b; \
-      ((_a) > (_b) ? (_a) : (_b)) \
-   })) 
-#endif
-
 typedef struct unix_io_server {
 	struct marcel_ev_server server;
 	fd_set rfds, wfds;

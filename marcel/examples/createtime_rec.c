@@ -22,7 +22,7 @@
 
 static tbx_tick_t t1, t2;
 marcel_attr_t attr;
-ma_atomic_t max_threads = { .counter = 0 };
+ma_atomic_t max_threads = MA_ATOMIC_INIT(0);
 marcel_sem_t sem;
 unsigned nb_feuilles;
 

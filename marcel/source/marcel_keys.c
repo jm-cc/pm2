@@ -81,14 +81,6 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 		   des threads existants */
 		marcel_lock_release(&marcel_key_lock);
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
-/*        marcel_last_key=0; */
-/*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
-/*  	     (marcel_key_present[marcel_last_key])) { */
-/*        } */
-/*        if(new_key == MAX_KEY_SPECIFIC) { */
-/*  	 marcel_lock_release(&marcel_key_lock); */
-/*  	 MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR); */
-/*        } */
 	}
 
 	*key = marcel_last_key;

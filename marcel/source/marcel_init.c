@@ -27,10 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * Begin: added by O.A.
- * --------------------
- */
 tbx_flag_t marcel_activity = tbx_flag_clear;
 
 int marcel_test_activity(void)
@@ -41,11 +37,6 @@ int marcel_test_activity(void)
 	result = tbx_flag_test(&marcel_activity);
 	LOG_RETURN(result);
 }
-
-/*
- * End: added by O.A.
- * ------------------
- */
 
 #ifdef STACKALIGN
 void marcel_initialize(int* argc, char**argv)

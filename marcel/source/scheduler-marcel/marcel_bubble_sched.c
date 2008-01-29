@@ -17,9 +17,9 @@
 
 int ma_idle_scheduler = 0;
 ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
-ma_atomic_t ma_init = { .counter = 1 };
+ma_atomic_t ma_init = MA_ATOMIC_INIT(1);
 ma_spinlock_t ma_init_lock = MA_SPIN_LOCK_UNLOCKED;
-ma_atomic_t ma_ending = { .counter = 0 };
+ma_atomic_t ma_ending = MA_ATOMIC_INIT(0);
 ma_spinlock_t ma_ending_lock = MA_SPIN_LOCK_UNLOCKED;
 #ifdef MA__BUBBLES
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);

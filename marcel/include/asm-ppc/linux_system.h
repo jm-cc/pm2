@@ -32,6 +32,84 @@
 #section marcel_macros
 
 /*
+ * taken from Linux (include/asm-powerpc/system.h)
+ * Copyright (C) 1999 Cort Dougan <cort@cs.nmt.edu>
+ */
+
+static __tbx_inline__ unsigned long
+__xchg_u32(volatile void *p, unsigned long val)
+{
+        unsigned long prev;
+
+        __asm__ __volatile__(
+        "lwsync \n"
+"1:     lwarx   %0,0,%2 \n"
+"       stwcx.  %3,0,%2 \n\
+        bne-    1b"
+        "\n\tisync\n"
+        : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
+        : "r" (p), "r" (val)
+        : "cc", "memory");
+
+        return prev;
+}
+
+static __tbx_inline__ unsigned long
+__xchg_u32_local(volatile void *p, unsigned long val)
+{
+        unsigned long prev;
+
+        __asm__ __volatile__(
+"1:     lwarx   %0,0,%2 \n"
+"       stwcx.  %3,0,%2 \n\
+        bne-    1b"
+        : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
+        : "r" (p), "r" (val)
+        : "cc", "memory");
+
+        return prev;
+}
+
+static __tbx_inline__ unsigned long
+__xchg(volatile void *ptr, unsigned long x, unsigned int size)
+{
+        switch (size) {
+                case 4:
+                        return __xchg_u32(ptr, x);
+                default:
+                        abort();
+        }
+        return x;
+}
+
+static __tbx_inline__ unsigned long
+__xchg_local(volatile void *ptr, unsigned long x, unsigned int size)
+{
+        switch (size) {
+                case 4:
+                        return __xchg_u32_local(ptr, x);
+                default:
+                        abort();
+        }
+        return x;
+}
+
+#define ma_xchg(ptr,x)                                                          \
+  ({                                                                         \
+     __typeof__(*(ptr)) _x_ = (x);                                           \
+     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
+  })
+
+
+#define xchg_local(ptr,x)                                                    \
+  ({                                                                         \
+     __typeof__(*(ptr)) _x_ = (x);                                           \
+     (__typeof__(*(ptr))) __xchg_local((ptr),                                \
+                (unsigned long)_x_, sizeof(*(ptr)));                         \
+  })
+
+
+/*
  * Macros to force memory ordering.  In these descriptions, "previous"
  * and "subsequent" refer to program order; "visible" means that all
  * architecturally visible effects of a memory access have occurred

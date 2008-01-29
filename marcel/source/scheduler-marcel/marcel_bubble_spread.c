@@ -17,7 +17,108 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
+static inline long
+sum_load(marcel_entity_t *e[], int ne) {
+	long load = 0;
+	int i;
+	for (i=0; i<ne; i++) {
+		if (e[i]->type == MA_BUBBLE_ENTITY)
+			load += *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e[i]), marcel_stats_load_offset);
+		else
+			load += *(long*)ma_task_stats_get(ma_task_entity(e[i]), marcel_stats_load_offset);
+	}
+	return load;
+}
+static inline unsigned
+nb_sub_entities(marcel_entity_t *e[], int ne, int nl, float per_item_load, unsigned *recursed) {
+	int i;
+	unsigned new_ne = 0;
+	for (i=0; i<ne; i++) {
+		if (e[i]->type == MA_BUBBLE_ENTITY &&
+				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
+			unsigned nb = ma_bubble_entity(e[i])->nbentities;
+			if (nb) {
+				*recursed = 1;
+				new_ne += nb;
+			}
+		} else
+			new_ne += 1;
+	}
+	return new_ne;
+}
+static inline void
+build_list(marcel_entity_t *e[], int ne, int nl, float per_item_load, marcel_entity_t *new_e[], int new_ne) {
+	int i, j = 0;
+	for (i=0; i<ne; i++) {
+		if (e[i]->type == MA_BUBBLE_ENTITY &&
+				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
+			marcel_entity_t *ee;
+			marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+			list_for_each_entry(ee, &bb->heldentities, bubble_entity_list)
+				new_e[j++] = ee;
+		} else
+			new_e[j++] = e[i];
+	}
+}
+static inline int
+select_level(unsigned long *l_load, int nl) {
+	/* TODO: optimize this */
+	int j = 1;
+	int k = nl - 1;
+	if (l_load[0] >= l_load[k])
+		return k;
+	while(1) {
+		int m;
+		MA_BUG_ON(l_load[j] >= l_load[0] || l_load[0] >= l_load[k]);
+		/* rough guess by assuming linear distribution */
+		// TODO: fix it
+		//int m = j + (l_load[0] - l_load[j]) * (k - j) / (l_load[k] - l_load[j]);
+		if (j == k-1) {
+			k = j;
+			break;
+		}
+		m = (j+k)/2;
+		bubble_sched_debug("trying %d(%ld) between %d(%ld) and %d(%ld)\n", m, l_load[m], j, l_load[j], k, l_load[k]);
+		if (l_load[0] == l_load[m])
+			break;
+		if (l_load[0] < l_load[m])
+			k = m;
+		else
+			j = m;
+	}
+	return k;
+}
+static inline void
+insert_level(struct marcel_topo_level **l_l,
+		struct list_head *l_dist,
+		unsigned long *l_load,
+		int *l_n,
+		int k) {
+	unsigned long _l_load;
+	struct list_head _l_dist;
+	struct marcel_topo_level *_l;
+	int _l_n;
+	int m;
 
+	/* Save level 0 */
+	INIT_LIST_HEAD(&_l_dist);
+	_l_load = l_load[0];
+	list_splice_init(&l_dist[0],&_l_dist);
+	_l_n = l_n[0];
+	_l = l_l[0];
+	/* Shift levels */
+	for (m=0; m<k; m++) {
+		l_load[m] = l_load[m+1];
+		list_splice_init(&l_dist[m+1],&l_dist[m]);
+		l_n[m] = l_n[m+1];
+		l_l[m] = l_l[m+1];
+	}
+	/* Restore level 0 */
+	l_load[k] = _l_load;
+	list_splice(&_l_dist,&l_dist[k]);
+	l_n[k] = _l_n;
+	l_l[k] = _l;
+}
 /* spread entities e on topology levels l */
 /* e has ne items, l has nl items */
 static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl, int recurse) {
@@ -54,13 +155,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 #define marcel_stats_load_offset ma_stats_nbready_offset
 	/* compute total load */
-	totload = 0;
-	for (i=0; i<ne; i++) {
-		if (e[i]->type == MA_BUBBLE_ENTITY)
-			totload += *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e[i]), marcel_stats_load_offset);
-		else
-			totload += *(long*)ma_task_stats_get(ma_task_entity(e[i]), marcel_stats_load_offset);
-	}
+	totload = sum_load(e, ne);
 	per_item_load = (float)totload / nl;
 	bubble_sched_debug("total load %lu = %d*%.2f\n", totload, nl, per_item_load);
 
@@ -75,35 +170,15 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	/* TODO: être capable de prendre une bulle et une partie des items, plutôt ? */
 		unsigned new_ne = 0;
 		unsigned recursed = 0;
-		int i, j;
 		bubble_sched_debug("e[0]=%ld > %lf=per_item_load || ne=%d < %d=nl, recurse into entities\n", ma_entity_load(e[0]), per_item_load, ne, nl);
 
 		/* first count sub-entities */
-		for (i=0; i<ne; i++) {
-			if (e[i]->type == MA_BUBBLE_ENTITY &&
-				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
-				unsigned nb = ma_bubble_entity(e[i])->nbentities;
-				if (nb) {
-					recursed = 1;
-					new_ne += nb;
-				}
-			} else
-				new_ne += 1;
-		}
+		new_ne = nb_sub_entities(e, ne, nl, per_item_load, &recursed);
 		if (recursed) {
 			bubble_sched_debug("%d sub-entities\n", new_ne);
 			/* now establish the list */
-			marcel_entity_t *new_e[new_ne], *ee;
-			j = 0;
-			for (i=0; i<ne; i++) {
-				if (e[i]->type == MA_BUBBLE_ENTITY &&
-					(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
-					marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-					list_for_each_entry(ee, &bb->heldentities, bubble_entity_list)
-						new_e[j++] = ee;
-				} else
-					new_e[j++] = e[i];
-			}
+			marcel_entity_t *new_e[new_ne];
+			build_list(e, ne, nl, per_item_load, new_e, new_ne);
 			bubble_sched_debug("recurse into entities\n");
 			return __marcel_bubble_spread(new_e, new_ne, l, nl, recurse+1);
 		}
@@ -121,7 +196,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	unsigned long l_load[nl];
 	int l_n[nl];
 
-	int j, k, m, n, state;
+	int j, k, n, state;
 
 	/* Distribute from heaviest to lightest */
 	i = 0;
@@ -149,7 +224,6 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			ma_put_entity(e[i], &rq->hold, state);
 			continue;
 		}
-
 		bubble_sched_debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
@@ -159,63 +233,11 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		state = ma_get_entity(e[i]);
 		ma_put_entity(e[i], &l_l[0]->sched.hold, state);
 		bubble_sched_debug(" -> %ld\n",l_load[0]);
-
 		/* And sort */
 		if (nl > 1 && l_load[0] > l_load[1]) {
-			/* TODO: optimize this */
-			j = 1;
-			k = nl - 1;
-			if (l_load[0] < l_load[k])
-			while(1) {
-				MA_BUG_ON(l_load[j] >= l_load[0] || l_load[0] >= l_load[k]);
-				/* rough guess by assuming linear distribution */
-				// TODO: fix it
-				//int m = j + (l_load[0] - l_load[j]) * (k - j) / (l_load[k] - l_load[j]);
-				if (j == k-1) {
-					k = j;
-					break;
-				}
-				m = (j+k)/2;
-
-				bubble_sched_debug("trying %d(%ld) between %d(%ld) and %d(%ld)\n", m, l_load[m], j, l_load[j], k, l_load[k]);
-
-				if (l_load[0] == l_load[m])
-					break;
-
-				if (l_load[0] < l_load[m])
-					k = m;
-				else
-					j = m;
-			}
-
+			k = select_level(l_load, nl);
 			bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->sched.name, l_load[0], l_l[k]->sched.name, l_load[k]);
-			{
-				unsigned long _l_load;
-				struct list_head _l_dist;
-				struct marcel_topo_level *_l;
-				int _l_n;
-
-				/* Save level 0 */
-				INIT_LIST_HEAD(&_l_dist);
-				_l_load = l_load[0];
-				list_splice_init(&l_dist[0],&_l_dist);
-				_l_n = l_n[0];
-				_l = l_l[0];
-
-				/* Shift levels */
-				for (m=0; m<k; m++) {
-					l_load[m] = l_load[m+1];
-					list_splice_init(&l_dist[m+1],&l_dist[m]);
-					l_n[m] = l_n[m+1];
-					l_l[m] = l_l[m+1];
-				}
-
-				/* Restore level 0 */
-				l_load[k] = _l_load;
-				list_splice(&_l_dist,&l_dist[k]);
-				l_n[k] = _l_n;
-				l_l[k] = _l;
-			}
+			insert_level(l_l, l_dist, l_load, l_n, k);
 		}
 	}
 	for (i=0; i<nl; i++) {

@@ -222,10 +222,6 @@ restart:
 
 	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(next));
 
-	h2 = ma_entity_holder_rawlock(ma_entity_task(next));
-	ma_deactivate_running_task(next, h2);
-	ma_entity_holder_rawunlock(h2);
-
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES
 	h = ma_task_init_holder(next);
@@ -246,6 +242,7 @@ restart:
 
 	/* and go there */
 	h3 = ma_entity_holder_rawlock(ma_entity_task(next));
+	ma_deactivate_running_task(next, h3);
 	ma_activate_running_task(MARCEL_SELF, h3);
 	ma_entity_holder_rawunlock(h3);
 

@@ -622,9 +622,9 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int didpoll = 0;
 #endif
 	int hard_preempt;
-	int need_resched = ma_need_resched();
+	int need_resched;
 	LOG_IN();
-
+	need_resched = ma_regular_lwp() && ma_need_resched();
 	/*
 	 * Test if we are atomic.  Since do_exit() needs to call into
 	 * schedule() atomically, we ignore that path for now.
@@ -641,7 +641,8 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 
 need_resched:
 	/* Say the world we're currently rescheduling */
-	ma_need_resched() = 0;
+	if (ma_regular_lwp())
+	  ma_need_resched() = 0;
 	ma_smp_mb__after_clear_bit();
 	/* Now that we announced we're taking a decision, we can have a look at
 	 * what is available */

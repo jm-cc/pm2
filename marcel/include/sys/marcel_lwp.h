@@ -255,12 +255,14 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void);
 #endif
 
 #section functions
-#ifdef MA__SMP
+#ifdef MARCEL_BLOCKING_ENABLED
+#  ifdef MA__SMP
 void marcel_enter_blocking_section(void);
 void marcel_leave_blocking_section(void);
-#else
-#define marcel_enter_blocking_section() (void)0
-#define marcel_leave_blocking_section() (void)0
+#  else
+#    define marcel_enter_blocking_section() (void)0
+#    define marcel_leave_blocking_section() (void)0
+#  endif
 #endif
 
 #section marcel_macros
@@ -338,7 +340,11 @@ void marcel_leave_blocking_section(void);
 #  define for_all_lwp_from_end() }
 #  define lwp_isset(num, map) 1
 #endif
-
+#ifdef MARCEL_BLOCKING_ENABLED
+#  define ma_regular_lwp() (LWP_NUMBER(LWP_SELF)!=-1)
+#else
+#  define ma_regular_lwp() (1)
+#endif
 #  define for_each_lwp_begin(lwp) \
      for_all_lwp(lwp) {\
         if (ma_lwp_online(lwp)) {

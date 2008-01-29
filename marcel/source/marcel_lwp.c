@@ -325,6 +325,7 @@ int ma_lwp_block(void) {
 	return start_one;
 }
 
+#ifdef MARCEL_BLOCKING_ENABLED
 void marcel_enter_blocking_section(void) {
 	if (ma_lwp_block()) {
 		mdebug("need to start another LWP\n");
@@ -340,6 +341,7 @@ void marcel_leave_blocking_section(void) {
 	ma_schedule();
 	mdebug("we're on an active LWP again\n");
 }
+#endif
 
 /* wait for at least one VP to become active, lwp is a hint of a still running LWP */
 marcel_lwp_t *ma_lwp_wait_vp_active(void) {

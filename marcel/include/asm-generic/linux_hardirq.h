@@ -94,7 +94,7 @@
 do {									\
 		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;			\
 		MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
-		if (!ma_in_interrupt() && ma_local_softirq_pending()) \
+		if (ma_regular_lwp() && !ma_in_interrupt() && ma_local_softirq_pending()) \
 			ma_do_softirq();					\
 		ma_preempt_enable_no_resched();				\
 } while (0)

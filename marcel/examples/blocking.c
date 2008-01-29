@@ -20,6 +20,7 @@
 #include <time.h>
 #include <errno.h>
 
+#ifdef MARCEL_BLOCKING_ENABLED
 #ifndef MA__LWPS
 #  warning blocking.c needs SMP or NUMA option
 #else
@@ -94,6 +95,16 @@ int marcel_main(int argc, char **argv)
 #endif
   return 0;
 }
+#else /* MARCEL_BLOCKING_ENABLED */
+#  warning Marcel blocking must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel blocking' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_BLOCKING_ENABLED */
 
 
 

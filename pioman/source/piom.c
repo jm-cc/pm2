@@ -262,8 +262,8 @@ int __piom_need_export(piom_server_t server, piom_req_t req,
 	if(req->func_to_use==PIOM_FUNC_SYSCALL)
 		return 1;
 	int i;
-	for(i=0;i<marcel_nblwps();i++) {
-		if(! ma_topo_vpdata_l(GET_LWP_BY_NUM(i)->vp_level, nb_tasks))	
+	for(i=0;i<marcel_nbvps();i++) {
+		if(! ma_topo_vpdata(i, nb_tasks))	
 			return 0;
 	}
 #endif				// MARCEL

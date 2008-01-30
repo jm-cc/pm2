@@ -26,13 +26,17 @@
  * as much as PTHREAD_STACK_MIN */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisée
    dans un source assembleur */
-#if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS) && !defined(PM2VALGRIND)) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
-  #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
+#if (defined(PPC_ARCH) || defined(PPC64_ARCH))
+  #define ASM_THREAD_SLOT_SIZE          (0x800000) /* 8 MB */
 #else
-  #ifdef MA__LIBPTHREAD
-    #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+  #if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS) && !defined(PM2VALGRIND)) || defined(IA64_ARCH) || defined(ALPHA_ARCH)
+    #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
   #else
-    #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
+    #ifdef MA__LIBPTHREAD
+      #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+    #else
+      #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
+    #endif
   #endif
 #endif
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)

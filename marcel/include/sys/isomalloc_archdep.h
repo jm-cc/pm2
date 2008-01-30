@@ -71,10 +71,12 @@ extern int __zero_fd;
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(X86_64_ARCH)
 #    ifdef PM2VALGRIND
+       /* Valgrind doesn't like us taking a lot of adressing space. */
 #      define ISOADDR_AREA_TOP       0x20000000
 #      define SLOT_AREA_BOTTOM       0x18000000
 #      define MAIN_STACK_BOT         0xffffffff
 #    elif defined(MA__PROVIDE_TLS)
+       /* segmentation for TLS is restricted to 32bits */
 #      define ISOADDR_AREA_TOP       0x100000000
 #      define SLOT_AREA_BOTTOM       0x10000000
 #      define MAIN_STACK_BOT         0xffffffff

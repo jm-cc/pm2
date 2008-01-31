@@ -196,24 +196,6 @@ static void nm_qsnet_destroy(void*_status){
   TBX_FREE(_status);
 }
 
-#ifdef PROFILE_QSNET
-#warning profiling code activated
-static tbx_tick_t      t1;
-static tbx_tick_t      t2;
-static double sample_array[20000];
-static int next_sample = 0;
-static char   data_array_1[20000];
-static int next_a1 = 0;
-static char   data_array_2[20000];
-static int next_a2 = 0;
-
-#define SAMPLE_BEGIN	TBX_GET_TICK(t1)
-#define SAMPLE_END	TBX_GET_TICK(t2);sample_array[next_sample++] = TBX_TIMING_DELAY(t1, t2)
-#else /* PROFILE_QSNET */
-#define SAMPLE_BEGIN
-#define SAMPLE_END
-#endif /* PROFILE_QSNET */
-
 /* prototypes
  */
 static
@@ -620,8 +602,6 @@ nm_qsnet_post_send_iov	(void*_status,
                 elan_tportTxStart(p_qsnet_trk->p, 0, p_qsnet_cnx->remote_proc,
                                   p_qsnet_drv->proc,
                                   2, p_iov->iov_base, p_iov->iov_len);
-        SAMPLE_BEGIN;
-
 #if 1
         err = nm_qsnet_poll_send_iov(_status, p_pw);
 #else
@@ -684,12 +664,6 @@ nm_qsnet_post_recv_iov	(void*_status,
         err = -NM_EAGAIN;
 #endif
 
-#ifdef PROFILE_QSNET
-#warning profiling code activated
-        data_array_1[next_a1++] = (char)(err == NM_ESUCCESS);
-        data_array_2[next_a2++] = (char)p_trk->id;
-#endif /* PROFILE_QSNET */
-
  out:
         return err;
 }
@@ -747,7 +721,6 @@ nm_qsnet_poll_recv_iov    	(void*_status,
                 goto out;
         }
 
-        SAMPLE_END;
         elan_tportRxWait(p_qsnet_pw->ev, &remote_proc, NULL, NULL);
 
         if (!p_pw->p_gate) {
@@ -769,38 +742,3 @@ out:
         return err;
 }
 
-#ifdef PROFILE_QSNET
-void
-disp_stats() {
-        int i;
-        double _sum = 0;
-        double _min = 0;
-        double _max = 0;
-
-        if (!next_sample)
-                return;
-
-        for (i = 0; i < next_sample; i++) {
-                double s = sample_array[i];
-
-                if (i) {
-                        if (s > _max)
-                                _max = s;
-                        if (s < _min)
-                                _min = s;
-                }else {
-                        _max = _min = s;
-                }
-
-                _sum += s;
-#if 0
-                NM_DISPF("%lf\t\t d1 = %d\t d2 = %d", s, (int)data_array_1[i], (int)data_array_2[i]);
-#endif
-        }
-
-        NM_DISPF("nb_samples = %d", next_sample);
-        NM_DISPF("min = %lf", _min);
-        NM_DISPF("max = %lf", _max);
-        NM_DISPF("avg = %lf", _sum / next_sample);
-}
-#endif /* PROFILE_QSNET */

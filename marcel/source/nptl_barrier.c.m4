@@ -44,6 +44,7 @@ int prefix_barrierattr_init(prefix_barrierattr_t *attr)
 {
         LOG_IN();  
   ((struct prefix_barrierattr *)attr)->pshared = PREFIX_PROCESS_PRIVATE;
+  ((struct prefix_barrierattr *)attr)->mode = MA_BARRIER_SLEEP_MODE;
         LOG_RETURN(0); 
 }
 ]])
@@ -122,6 +123,45 @@ int prefix_barrierattr_setpshared (prefix_barrierattr_t *attr, int pshared)
 }
 ]])
 
+/**************************/
+/* barrierattr_getmode */
+/**************************/
+PRINT_PTHREAD([[dnl
+DEF_LIBPTHREAD(int, barrierattr_getmode,
+	  (pthread_barrierattr_t * __restrict attr, ma_barrier_mode_t * __restrict mode),
+	  (attr, mode))
+]])
+
+REPLICATE_CODE([[dnl
+int prefix_barrierattr_getmode(__const prefix_barrierattr_t *attr, ma_barrier_mode_t *mode)
+{
+	LOG_IN();
+	*mode = ((__const struct prefix_barrierattr *) attr)->mode;
+	LOG_RETURN(0);
+}
+]])
+
+/**************************/
+/* barrierattr_setmode */
+/**************************/
+PRINT_PTHREAD([[dnl
+DEF_LIBPTHREAD(int, barrierattr_setmode,
+	  (pthread_barrierattr_t * attr, ma_barrier_mode_t mode),
+	  (attr, mode))
+]])
+
+REPLICATE_CODE([[dnl
+int prefix_barrierattr_setmode (prefix_barrierattr_t *attr, ma_barrier_mode_t mode)
+{
+	LOG_IN();
+	struct prefix_barrierattr *iattr;
+	iattr = (struct prefix_barrierattr *) attr;
+	iattr->mode = mode;
+	LOG_RETURN(0);
+}
+]])
+
+
 /***************************/
 /* marcel_barrier_setcount */
 /***************************/
@@ -135,8 +175,8 @@ int marcel_barrier_setcount(marcel_barrier_t * barrier, unsigned int count)
 
 	marcel_lock_acquire(&ibarrier->lock.__spinlock);
 	ibarrier->init_count = count;
-	ibarrier->leftB = count;
-	ibarrier->leftE = 0;
+	ma_atomic_set(&ibarrier->leftB, count);
+	ma_atomic_set(&ibarrier->leftE, 0);
 	marcel_lock_release(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(0);
@@ -167,7 +207,7 @@ int marcel_barrier_addcount(marcel_barrier_t * barrier, int addcount)
 
 	marcel_lock_acquire(&ibarrier->lock.__spinlock);
 	ibarrier->init_count += addcount;
-	ibarrier->leftB += addcount;
+	ma_atomic_add(addcount, &ibarrier->leftB);
 	marcel_lock_release(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(0);
@@ -187,6 +227,7 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
                         unsigned int count)
 {
 	LOG_IN();
+	ma_barrier_mode_t mode = MA_BARRIER_SLEEP_MODE;
 	struct prefix_barrier *ibarrier;
 
 	if (__builtin_expect(count == 0, 0)) {
@@ -214,14 +255,17 @@ int prefix_barrier_init(prefix_barrier_t *barrier,
 			    "prefix_barrier_init : process shared nt supported\n");
 			LOG_RETURN(ENOTSUP);
 		}
+		
+		mode = iattr->mode;
 	}
 	ibarrier = (struct prefix_barrier *) barrier;
 
 	/* Initialize the individual fields.  */
 	ibarrier->lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED;
 	ibarrier->init_count = count;
-	ibarrier->leftB = count;
-	ibarrier->leftE = 0;
+	ma_atomic_init(&ibarrier->leftB, count);
+	ma_atomic_init(&ibarrier->leftE, 0);
+	ibarrier->mode = mode;
 
 	LOG_RETURN(0);
 }
@@ -245,23 +289,30 @@ int prefix_barrier_destroy (prefix_barrier_t *barrier)
 
 	ibarrier = (struct prefix_barrier *) barrier;
 
-	prefix_lock_acquire(&ibarrier->lock.__spinlock);
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	  prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
 	/* Are these all?  */
-	while (ibarrier->leftE) {
-		blockcell c;
-		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
-		    &c);
-		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    prefix_lock_release(&ibarrier->lock.__spinlock),
-		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE) {
+	  while (ma_atomic_read(&ibarrier->leftE)) {
+	    blockcell c;
+	    __prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+					 &c);
+	    INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		      prefix_lock_release(&ibarrier->lock.__spinlock),
+		      prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	  }
+	} else {	
+	  while (ma_atomic_read(&ibarrier->leftE))
+	    marcel_yield();
 	}
-
-	if (__builtin_expect(ibarrier->leftB != ibarrier->init_count, 0)) {
-		/* Still used, return with an error.  */
-		result = EBUSY;
+	if (__builtin_expect(ma_atomic_read(&ibarrier->leftB) != ibarrier->init_count, 0)) {
+	  /* Still used, return with an error.  */
+	  result = EBUSY;
 	}
-	prefix_lock_release(&ibarrier->lock.__spinlock);
+	
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	  prefix_lock_release(&ibarrier->lock.__spinlock);
 	LOG_RETURN(result);
 }
 ]])
@@ -300,32 +351,38 @@ int prefix_barrier_wait_begin(prefix_barrier_t *barrier)
 	LOG_IN();
 	struct prefix_barrier *ibarrier = (struct prefix_barrier *) barrier;
 
-	prefix_lock_acquire(&ibarrier->lock.__spinlock);
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	   prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
 	/* Are these all?  */
-	while (ibarrier->leftE) {
-		blockcell c;
-		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
-		    &c);
-		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    prefix_lock_release(&ibarrier->lock.__spinlock),
-		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	  while (ma_atomic_read(&ibarrier->leftE)) {
+	    blockcell c;
+	    __prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+					 &c);
+	    INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+		      prefix_lock_release(&ibarrier->lock.__spinlock),
+		      prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	  }
+	else
+	   while(ma_atomic_read(&ibarrier->leftE))
+		marcel_yield();
+
+	int ret = ma_atomic_dec_return(&ibarrier->leftB);
+
+	if (!ret) {
+	  if (ibarrier->mode == MA_BARRIER_SLEEP_MODE) {
+	    /* Wake up everybody.  */
+	    do {
+	    }
+	    while (__prefix_unlock_spinlocked(&ibarrier->lock));
+	  }
+	  ma_atomic_set(&ibarrier->leftB, ibarrier->init_count);
+	  ma_atomic_set(&ibarrier->leftE, ibarrier->init_count);	
 	}
-
-	ibarrier->leftB--;
-	int ret = ibarrier->leftB;
-
-	if (!ibarrier->leftB) {
-		/* Wake up everybody.  */
-		do {
-		}
-		while (__prefix_unlock_spinlocked(&ibarrier->lock));
-
-		ibarrier->leftB = ibarrier->init_count;
-		ibarrier->leftE = ibarrier->init_count;
-	}
-
-	prefix_lock_release(&ibarrier->lock.__spinlock);
+	
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	  prefix_lock_release(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(ret);
 }
@@ -343,29 +400,35 @@ int prefix_barrier_wait_end(prefix_barrier_t *barrier)
 	LOG_IN();
 
 	/* Make sure we are alone.  */
-	prefix_lock_acquire(&ibarrier->lock.__spinlock);
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE)
+	  prefix_lock_acquire(&ibarrier->lock.__spinlock);
 
 	/* Are these all?  */
-	while (!ibarrier->leftE) {
-		blockcell c;
-		__prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
-		    &c);
-		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE) {
+	  while (!ma_atomic_read(&ibarrier->leftE)) {
+	    blockcell c;
+	    __prefix_register_spinlocked(&ibarrier->lock, marcel_self(),
+					 &c);
+	    INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
 		    prefix_lock_release(&ibarrier->lock.__spinlock),
 		    prefix_lock_acquire(&ibarrier->lock.__spinlock));
+	  }
+	} else {
+	  while(!ma_atomic_read(&ibarrier->leftE))
+	    marcel_yield();
 	}
+	int ret = ma_atomic_dec_return(&ibarrier->leftE);
 
-	ibarrier->leftE--;
-	int ret = ibarrier->leftE;
-
-	if (!ibarrier->leftE) {
-		/* Wake up everybody.  */
-		do {
-		}
-		while (__prefix_unlock_spinlocked(&ibarrier->lock));
+	if (ibarrier->mode == MA_BARRIER_SLEEP_MODE) {
+	  if (!ret) {
+	    /* Wake up everybody.  */
+	    do {
+	    }
+	    while (__prefix_unlock_spinlocked(&ibarrier->lock));
+	  }
+	
+	  prefix_lock_release(&ibarrier->lock.__spinlock);
 	}
-
-	prefix_lock_release(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(ret);
 }

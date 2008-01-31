@@ -22,6 +22,12 @@ dnl  ***************************/
 
 #depend "linux_spinlock.h[macros]"
 
+#section types
+typedef enum marcel_barrier_mode { 
+  MA_BARRIER_SLEEP_MODE, 
+  MA_BARRIER_YIELD_MODE 
+} ma_barrier_mode_t;
+
 #section macros
 
 REPLICATE([[dnl
@@ -34,12 +40,14 @@ REPLICATE([[dnl
   { \
     .init_count = (count),\
     .lock = (struct _prefix_fastlock) MA_PREFIX_FASTLOCK_UNLOCKED, \
-    .leftB = (count), \
-    .leftE = 0, \
+    .leftB = MA_ATOMIC_INIT(count), \
+    .leftE = MA_ATOMIC_INIT(0), \
+    .mode = MA_BARRIER_SLEEP_MODE, \
   }
 ]], [[MARCEL PMARCEL]])
 
 #section types
+#depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_fastlock.h[structures]"
 #depend "marcel_threads.h[types]"
 
@@ -48,6 +56,7 @@ REPLICATE([[dnl
 typedef struct prefix_barrierattr
 {
 	int pshared;
+	ma_barrier_mode_t mode;
 } prefix_barrierattr_t;
 ]], [[MARCEL PMARCEL]])
 
@@ -57,8 +66,9 @@ typedef struct prefix_barrier
 {
   unsigned int init_count;
   struct _prefix_fastlock lock;
-  unsigned int leftB;
-  unsigned int leftE;
+  ma_atomic_t leftB;
+  ma_atomic_t leftE;
+  ma_barrier_mode_t mode;
 } prefix_barrier_t;
 ]], [[MARCEL PMARCEL]])
 
@@ -91,5 +101,12 @@ extern int prefix_barrierattr_getpshared (__const prefix_barrierattr_t *
 
 extern int prefix_barrierattr_setpshared (prefix_barrierattr_t *attr,
                                         int pshared) __THROW;
+
+extern int prefix_barrierattr_getmode (__const prefix_barrierattr_t *
+                                        __restrict attr,
+                                        ma_barrier_mode_t *__restrict mode) __THROW;
+
+extern int prefix_barrierattr_setmode (prefix_barrierattr_t *attr,
+                                        ma_barrier_mode_t mode) __THROW;
 
 ]])dnl END_REPLICATE

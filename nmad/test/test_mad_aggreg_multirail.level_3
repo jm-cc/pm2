@@ -17,7 +17,7 @@
 hosts=${TESTCONFIG:-"localhost localhost"}
 net=${TESTNET:-tcp}
 mpi="mpi_emu"
-strat="multi_rail"
+strat="split_balance"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}_${strat}"
 

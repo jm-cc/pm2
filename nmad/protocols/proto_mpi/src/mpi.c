@@ -1086,7 +1086,11 @@ int MPI_Init_thread(int *argc,
   MPI_NMAD_LOG_IN();
 
   err = MPI_Init(argc, argv);
+#ifndef PIOMAN
   *provided = MPI_THREAD_SINGLE;
+#else
+  *provided = MPI_THREAD_MULTIPLE;
+#endif
 
   MPI_NMAD_LOG_OUT();
   return err;

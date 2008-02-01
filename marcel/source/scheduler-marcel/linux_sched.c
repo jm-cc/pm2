@@ -79,6 +79,14 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 #ifdef MA__LWPS
 	ma_preempt_disable();
 	
+	/* Spare LWPs dont support need_resched */
+	if (vp == -1) {
+		if (lwp != LWP_SELF) {
+			MA_LWP_RESCHED(lwp);
+		}
+		goto out;
+	}
+
 	if (tbx_unlikely(ma_topo_vpdata(vp, need_resched))) {
 		PROF_EVENT(sched_already_resched);
 		goto out;
@@ -97,7 +105,7 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
 
                PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
-		MA_LWP_RESCHED(lwp);
+	       MA_LWP_RESCHED(lwp);
 	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, LWP_NUMBER(lwp));
 out:
 	ma_preempt_enable();
@@ -125,9 +133,20 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 	int max_preempt = 0, preempt, i, chosenvp = -1;
 	if (!rq)
 		return;
-	for (i=0; i<marcel_nbvps()+MARCEL_NBMAXVPSUP; i++) {
-		lwp = GET_LWP_BY_NUM(i);
-		if (lwp && (ma_rq_covers(rq, i) || rq == ma_lwp_rq(lwp))) {
+
+	/* try_to_resched may be called while ma_list_lwp has not been added any item yet */
+	if (list_empty(&ma_list_lwp_head))
+		return;
+
+	for_all_lwp_from_begin(lwp, LWP_SELF) {
+		i = LWP_NUMBER(lwp);
+		if (rq == ma_lwp_rq(lwp)) {
+			/* the rq is an LWP rq, we dont have any other choice */
+			chosen = lwp;
+			chosenvp = i;
+			break; /* no need to go further */
+		} else if ((i != -1) && ma_rq_covers(rq, i)) {
+			/* might be interesting an interesting choice if we dont find anything better */
 			preempt = TASK_CURR_PREEMPT(p, lwp);
 			if (preempt > max_preempt) {
 				max_preempt = preempt;
@@ -135,7 +154,8 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 				chosenvp = i;
 			}
 		}
-	}
+	} for_all_lwp_from_end();
+
 	if (chosen)
 		ma_resched_task(ma_per_lwp(current_thread, chosen), chosenvp, chosen);
 	else
@@ -613,7 +633,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
-	int idx;
+	int idx = -1;
 	int max_prio, prev_as_prio;
 	int go_to_sleep;
 	int didswitch;
@@ -624,7 +644,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int hard_preempt;
 	int need_resched;
 	LOG_IN();
-	need_resched = ma_regular_lwp() && ma_need_resched();
+	need_resched = !ma_regular_lwp() || ma_need_resched();
 	/*
 	 * Test if we are atomic.  Since do_exit() needs to call into
 	 * schedule() atomically, we ignore that path for now.
@@ -642,7 +662,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 need_resched:
 	/* Say the world we're currently rescheduling */
 	if (ma_regular_lwp())
-	  ma_need_resched() = 0;
+		ma_need_resched() = 0;
 	ma_smp_mb__after_clear_bit();
 	/* Now that we announced we're taking a decision, we can have a look at
 	 * what is available */
@@ -968,7 +988,7 @@ out:
 #endif
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (tbx_unlikely(ma_need_resched() && ma_thread_preemptible())) {
+	if (tbx_unlikely((ma_regular_lwp() && ma_need_resched()) && ma_thread_preemptible())) {
 		sched_debug("need resched\n");
 		need_resched = 1;
 		goto need_resched;
@@ -1022,6 +1042,9 @@ void ma_preempt_schedule(int irq)
         marcel_task_t *ti = MARCEL_SELF;
 
 	MA_BUG_ON(ti->preempt_count != irq);
+#ifdef MARCEL_BLOCKING_ENABLED
+#warning "TODO: check compatibility with RESCHED_SIGNAL"
+#endif
 
 need_resched:
 
@@ -1043,7 +1066,7 @@ need_resched:
 
         /* we could miss a preemption opportunity between schedule and now */
         ma_barrier();
-        if (ma_need_resched())
+        if (ma_regular_lwp() && ma_need_resched())
                 goto need_resched;
 }
 

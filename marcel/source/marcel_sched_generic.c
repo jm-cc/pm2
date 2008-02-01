@@ -470,7 +470,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 
 		/* schedule threads */
 		//PROF_EVENT(idle_tests_need_resched);
-		if (ma_need_resched()) {
+		if (!ma_regular_lwp() || ma_need_resched()) {
 			PROF_EVENT(idle_does_schedule);
 			if (ma_schedule())
 				continue;
@@ -557,7 +557,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	/* Création de la tâche Idle (idle_task) */
 	/*****************************************/
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%2d",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setflags(&attr, MA_SF_POLL|MA_SF_NORUN);

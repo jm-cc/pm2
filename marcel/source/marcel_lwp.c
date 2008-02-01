@@ -421,7 +421,7 @@ static void lwp_init(ma_lwp_t lwp)
 	 * - soit par un appel direct à cette fonction (ACTIVATIONS)
 	 */
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%u",LWP_NUMBER(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%2d",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);

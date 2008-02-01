@@ -145,6 +145,20 @@ extern debug_type_t marcel_mtrace_timer;
 #endif
 #define MA_BUG() MA_BUG_ON(1)
 
+#define MA_ALWAYS_BUG_ON(cond) \
+  do { \
+	if (cond) { \
+		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
+		*(int*)0 = 0; \
+	} \
+  } while (0)
+#define MA_ALWAYS_WARN_ON(cond) \
+  do { \
+	if (cond) { \
+		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
+	} \
+  } while (0)
+
 #ifdef DEBUG_SCHED
 #  define sched_debug(fmt, ...) debug_printf(&marcel_sched_debug, \
         fmt, ##__VA_ARGS__)

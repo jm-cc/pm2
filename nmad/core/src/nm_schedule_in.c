@@ -25,6 +25,7 @@
 #include "nm_sched.h"
 #include "nm_gate.h"
 #include "nm_drv.h"
+#include "nm_trk.h"
 #include "nm_core.h"
 #include "nm_errno.h"
 #include "nm_log.h"

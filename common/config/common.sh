@@ -1,6 +1,6 @@
 PM2_COMMON_LIBNAME=common
 
-PM2_COMMON_CFLAGS_KERNEL="$PM2_COMMON_CFLAGS_KERNEL -Wall -fno-common"
+PM2_COMMON_CFLAGS_KERNEL="$PM2_COMMON_CFLAGS_KERNEL -Wall -fno-common -Werror-implicit-function-declaration"
 
 if [ "${PM2_ARCH}" = RS6K_ARCH ]; then
   PM2_COMMON_CFLAGS_KERNEL="$PM2_COMMON_CFLAGS_KERNEL -mcpu=power"

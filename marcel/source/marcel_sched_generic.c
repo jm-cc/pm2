@@ -159,7 +159,7 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 		}
 		debug_printf(&MA_DEBUG_VAR_NAME(default),
 			     "switchto(%p, %p) on LWP(%d)\n",
-		       cur, next, ma_vpnum(GET_LWP(cur)));
+		       cur, next, ma_vpnum(ma_get_task_lwp(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
 	}
@@ -288,7 +288,6 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 {
 	marcel_t t;
 	int nb_pids = 0;
-	MA_DEFINE_CUR_LWP(, TBX_UNUSED =, MA_LWP_SELF);
 	struct marcel_topo_level *vp;
 
 
@@ -317,7 +316,6 @@ void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
 	struct marcel_topo_level *vp;
-	MA_DEFINE_CUR_LWP(, TBX_UNUSED =, MA_LWP_SELF);
 
 	for_all_vp(vp) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));

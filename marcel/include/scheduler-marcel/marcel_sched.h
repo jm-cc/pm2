@@ -216,7 +216,9 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
-	MA_DEFINE_CUR_LWP(register, =, MA_LWP_SELF);
+#ifdef MA__LWPS
+	register marcel_lwp_t *cur_lwp = MA_LWP_SELF;
+#endif
 	LOG_IN();
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;

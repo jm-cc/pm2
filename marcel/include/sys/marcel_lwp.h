@@ -278,14 +278,12 @@ void marcel_leave_blocking_section(void);
  * Accès aux LWP
  */
 
-#define ma_get_task_vpnum(current)		(ma_vpnum(THREAD_GETMEM(current,sched.lwp)))
+#define ma_get_task_vpnum(task)		(ma_vpnum(THREAD_GETMEM(task,sched.lwp)))
 #ifdef MA__LWPS
 #  define ma_vpnum(lwp)				(ma_per_lwp(vpnum, lwp))
 #  define ma_get_lwp_by_vpnum(vpnum)		(ma_vp_lwp[vpnum])
 #  define ma_get_task_lwp(task)			((task)->sched.lwp)
 #  define ma_set_task_lwp(task, value)		((task)->sched.lwp=(value))
-#  define ma_get_cur_lwp()			(cur_lwp)
-#  define ma_set_cur_lwp(value)			(cur_lwp=(value))
 #  define ma_init_lwp_vpnum(vpnum, lwp)		do { \
 	if ((vpnum) == -1) { \
 		ma_vpnum(lwp) = -1; \
@@ -314,8 +312,6 @@ void marcel_leave_blocking_section(void);
 		ma_init_lwp_vpnum(vpnum, lwp); \
 	} \
 } while(0)
-#  define MA_DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
-     OPTIONS marcel_lwp_t *cur_lwp signe lwp
 #  define ma_is_first_lwp(lwp)			(lwp == &__main_lwp)
 
 #  define ma_any_lwp()	(!list_empty(&ma_list_lwp_head))
@@ -334,12 +330,8 @@ void marcel_leave_blocking_section(void);
 #  define ma_get_lwp_by_vpnum(vpnum)		(cur_lwp)
 #  define ma_get_task_lwp(task)			(cur_lwp)
 #  define ma_set_task_lwp(task, value)		((void)0)
-#  define ma_get_cur_lwp()			(cur_lwp)
-#  define ma_set_cur_lwp(value)			((void)0)
 #  define ma_clr_lwp_nb(proc, value)		((void)0)
 #  define ma_set_lwp_nb(proc, value)		((void)0)
-#  define MA_DEFINE_CUR_LWP(OPTIONS, signe, current) \
-	int __cur_lwp_unused__ TBX_UNUSED
 #  define ma_is_first_lwp(lwp)                   (1)
 
 #  define ma_any_lwp()	(cur_lwp != NULL)

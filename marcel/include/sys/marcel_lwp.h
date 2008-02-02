@@ -312,6 +312,7 @@ void marcel_leave_blocking_section(void);
      OPTIONS marcel_lwp_t *cur_lwp signe lwp
 #  define IS_FIRST_LWP(lwp)                   (lwp == &__main_lwp)
 
+#  define any_lwp()	(!list_empty(&ma_list_lwp_head))
 #  define for_all_lwp(lwp) \
      list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
 #  define for_all_lwp_from_begin(lwp, lwp_start) \
@@ -335,6 +336,7 @@ void marcel_leave_blocking_section(void);
      int __cur_lwp_unused__ TBX_UNUSED
 #  define IS_FIRST_LWP(lwp)                   (1)
 
+#  define any_lwp()	(cur_lwp != NULL)
 #  define for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
 #  define for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;0;) {
 #  define for_all_lwp_from_end() }

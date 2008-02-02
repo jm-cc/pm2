@@ -135,7 +135,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 		return;
 
 	/* try_to_resched may be called while ma_list_lwp has not been added any item yet */
-	if (list_empty(&ma_list_lwp_head))
+	if (!any_lwp())
 		return;
 
 	for_all_lwp_from_begin(lwp, LWP_SELF) {

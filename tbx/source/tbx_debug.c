@@ -545,12 +545,12 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		if (get_action_value(type, PM2DEBUG_SHOW_LWP)) {
 			my_print("[P%02d] ", 
 				 ((marcel_printf_allowed()
-				   && LWP_SELF) 
-				  ? GET_LWP_NUMBER(marcel_self()) : -1));
+				   && MA_LWP_SELF) 
+				  ? ma_get_task_vpnum(marcel_self()) : -1));
 		}
 #endif
 		if (get_action_value(type, PM2DEBUG_SHOW_THREAD)) {
-			my_print("(%8p:% 3d:%-15s) ", marcel_printf_allowed() ?
+			my_print("(%12p:% 3d:%-15s) ", marcel_printf_allowed() ?
 			marcel_self():(void*)-1, marcel_printf_allowed() ?
 			marcel_self()->number:-99, marcel_printf_allowed() ?
 			marcel_self()->name:"");

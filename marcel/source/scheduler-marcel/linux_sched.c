@@ -86,7 +86,7 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 
 	ma_set_need_resched_ext(vp, lwp, 1);
 
-	if (lwp == LWP_SELF) {
+	if (lwp == MA_LWP_SELF) {
 		PROF_EVENT(sched_thats_us);
 		goto out;
 	}
@@ -96,9 +96,9 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 	/* minimise the chance of sending an interrupt to poll_idle() */
 	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
 
-               PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
+               PROF_EVENT2(sched_resched_lwp, ma_vpnum(MA_LWP_SELF), ma_vpnum(lwp));
 	       MA_LWP_RESCHED(lwp);
-	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, LWP_NUMBER(lwp));
+	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, ma_vpnum(lwp));
 out:
 	ma_preempt_enable();
 #else
@@ -114,7 +114,7 @@ out:
  */
 int marcel_task_curr(marcel_task_t *p)
 {
-	return ma_lwp_curr(ma_task_lwp(p)) == p;
+	return ma_lwp_curr(ma_get_task_lwp(p)) == p;
 }
 
 /* tries to resched the given task in the given holder */
@@ -127,11 +127,11 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 		return;
 
 	/* try_to_resched may be called while ma_list_lwp has not been added any item yet */
-	if (!any_lwp())
+	if (!ma_any_lwp())
 		return;
 
-	for_all_lwp_from_begin(lwp, LWP_SELF) {
-		i = LWP_NUMBER(lwp);
+	ma_for_all_lwp_from_begin(lwp, MA_LWP_SELF) {
+		i = ma_vpnum(lwp);
 		if (rq == ma_lwp_rq(lwp)) {
 			/* the rq is an LWP rq, we dont have any other choice */
 			chosen = lwp;
@@ -146,7 +146,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 				chosenvp = i;
 			}
 		}
-	} for_all_lwp_from_end();
+	} ma_for_all_lwp_from_end();
 
 	if (chosen)
 		ma_resched_task(ma_per_lwp(current_thread, chosen), chosenvp, chosen);
@@ -216,10 +216,10 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 		}
 
 		rq = ma_to_rq_holder(h);
-		if (rq && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
+		if (rq && ma_rq_covers(rq, ma_vpnum(MA_LWP_SELF)) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
 			/* we can avoid remote reschedule by switching to it */
 			if (!sync) /* only if we won't for sure yield() soon */
-				ma_resched_task(MARCEL_SELF, LWP_NUMBER(LWP_SELF), LWP_SELF);
+				ma_resched_task(MARCEL_SELF, ma_vpnum(MA_LWP_SELF), MA_LWP_SELF);
 		} else try_to_resched(p, h);
 
 		success = 1;
@@ -345,7 +345,7 @@ retry:
 	rq = ma_rq_holder(h);
 	if (ma_entity_task(p)->type == MA_THREAD_ENTITY
 	    && ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic()
-	    && ma_rq_covers(rq, LWP_NUMBER(LWP_SELF))) {
+	    && ma_rq_covers(rq, ma_vpnum(MA_LWP_SELF))) {
 		/* XXX: on pourrait être préempté entre-temps... */
 		PROF_EVENT(exec_woken_up_created_thread);
 		ma_schedule();
@@ -485,7 +485,7 @@ unsigned long ma_nr_ready(void)
 #warning TODO: descendre dans les bulles ...
 #endif
 	for (i = 0; i < MA_NR_LWPS; i++)
-		sum += ma_lwp_rq(GET_LWP_BY_NUM(i))->hold.nr_ready;
+		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->hold.nr_ready;
 	sum += ma_main_runqueue.hold.nr_ready;
 
 	return sum;
@@ -598,7 +598,7 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 
 	sched_debug("unlock(%p)\n",nexth);
 	ma_holder_rawunlock(nexth);
-	ma_set_task_lwp(next, LWP_SELF);
+	ma_set_task_lwp(next, MA_LWP_SELF);
 
 #ifdef MA__LWPS
 	if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task)))
@@ -716,7 +716,7 @@ need_resched_atomic:
 		if (go_to_sleep && !prev->sched.state)
 			goto need_resched_atomic;
 		prev_as_next = NULL;
-		prev_as_h = &ma_dontsched_rq(LWP_SELF)->hold;
+		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->hold;
 		prev_as_prio = MA_IDLE_PRIO;
 	}
 
@@ -731,7 +731,7 @@ restart:
 	/* Iterate over runqueues that cover this LWP */
 #ifdef MA__LWPS
 	sched_debug("default prio: %d\n",max_prio);
-	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
+	for (currq = ma_lwp_rq(MA_LWP_SELF); currq; currq = currq->father) {
 #else
 	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
@@ -759,7 +759,7 @@ restart:
 	}
 #endif
 
-	if (tbx_unlikely(nexth == &ma_dontsched_rq(LWP_SELF)->hold)) {
+	if (tbx_unlikely(nexth == &ma_dontsched_rq(MA_LWP_SELF)->hold)) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		if (prev->sched.state == MA_TASK_INTERRUPTIBLE || prev->sched.state == MA_TASK_UNINTERRUPTIBLE) {
@@ -782,9 +782,9 @@ restart:
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES
 		if (ma_idle_scheduler)
-		    if (current_sched->vp_is_idle && LWP_NUMBER(LWP_SELF) < marcel_nbvps())
+		    if (current_sched->vp_is_idle && ma_vpnum(MA_LWP_SELF) < marcel_nbvps())
 		    {
-		      if (current_sched->vp_is_idle(LWP_NUMBER(LWP_SELF))) 
+		      if (current_sched->vp_is_idle(ma_vpnum(MA_LWP_SELF)))
 			goto need_resched_atomic;
 		    }
 #endif
@@ -923,7 +923,7 @@ restart:
 			marcel_attr_init(&attr);
 			marcel_attr_setdetachstate(&attr, tbx_true);
 			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
-			marcel_attr_setinitrq(&attr, ma_lwp_rq(LWP_SELF));
+			marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
 			marcel_attr_setpreemptible(&attr, tbx_false);
 			/* TODO: on devrait être capable de brancher directement dessus */
 			marcel_create(NULL, &attr, marcel_sched_seed_runner, next);
@@ -1106,7 +1106,7 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);
 	/* On teste si le LWP courant est interdit ou pas */
-	if (LWP_NUMBER(LWP_SELF) == -1 || !marcel_vpset_isset(vpset,LWP_NUMBER(LWP_SELF))) {
+	if (ma_spare_lwp() || !marcel_vpset_isset(vpset,ma_vpnum(MA_LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
@@ -1152,7 +1152,7 @@ TBX_EXTERN void __ma_cond_resched(void)
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 #ifdef MA__LWPS
-	unsigned num = LWP_NUMBER(lwp);
+	unsigned num = ma_vpnum(lwp);
 	char name[16];
 	ma_runqueue_t *rq;
 #endif

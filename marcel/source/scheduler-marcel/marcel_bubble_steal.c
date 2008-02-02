@@ -85,7 +85,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	nbrun = total_nr_ready(b);
 	for (rq2 = rq;
 			/* emmener juste assez haut pour moi */
-			!marcel_vpset_isset(&rq2->vpset, LWP_NUMBER(LWP_SELF))
+			!marcel_vpset_isset(&rq2->vpset, ma_vpnum(MA_LWP_SELF))
 			&& rq2->father
 			/* et juste assez haut par rapport au nombre de threads */
 			&& marcel_vpset_weight(&rq2->father->vpset) <= nbrun
@@ -94,7 +94,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	if (!rq2 ||
 			/* pas intéressant pour moi, on laisse les autres se débrouiller */
 			/* todo: le faire quand même ? */
-			!marcel_vpset_isset(&rq2->vpset,LWP_NUMBER(LWP_SELF))) {
+			!marcel_vpset_isset(&rq2->vpset,ma_vpnum(MA_LWP_SELF))) {
 		bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
 		ma_holder_rawunlock(&rq->hold);
 		return 0;
@@ -203,7 +203,7 @@ int marcel_bubble_steal_work(unsigned vp) {
 	if (ma_idle_scheduler) {
 	  struct marcel_topo_level *me =
 	    &marcel_topo_vp_level[marcel_current_vp()];
-	  bubble_sched_debugl(7,"bubble steal on %d\n", LWP_NUMBER(LWP_SELF));
+	  bubble_sched_debugl(7,"bubble steal on %d\n", ma_vpnum(MA_LWP_SELF));
 	  /* couln't find work on local runqueue, go see elsewhere */
 	  _ma_raw_read_unlock(&ma_idle_scheduler_lock);
 	  return see_up(me);
@@ -223,7 +223,7 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 
 	/* Fresh bubble, put it near us. */
 	if (ma_idle_scheduler && !bubble->settled) {
-		ma_runqueue_t *rq2 = ma_lwp_vprq(LWP_SELF);
+		ma_runqueue_t *rq2 = ma_lwp_vprq(MA_LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);

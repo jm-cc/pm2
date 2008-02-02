@@ -101,7 +101,7 @@ static void printtask(marcel_task_t *t) {
 			(int) (2+2*sizeof(void*)), (unsigned long) t,
 			MARCEL_MAXNAMESIZE, t->name,
 			t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
-			state, schedstate, GET_LWP_NUMBER(t),
+			state, schedstate, ma_get_task_vpnum(t),
 			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
@@ -260,7 +260,7 @@ void marcel_show_top() {
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
 
 	memset(&total_usage, 0, sizeof(total_usage));
-	for_all_lwp(lwp) {
+	ma_for_all_lwp(lwp) {
 		// cette lecture n'est pas atomique, il peut y avoir un tick
 		// entre-temps, ce n'est pas extrêmement grave...
 		struct ma_lwp_usage_stat lst;
@@ -281,7 +281,7 @@ void marcel_show_top() {
 		if (tot)
 			top_printf("\
 lwp %2u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
-			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
+			ma_vpnum(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 	}
 	total_total = total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq + total_usage.idle;
@@ -376,7 +376,7 @@ void marcel_exit_top(void) {
 	if (top_file >= 0)
 		ma_del_timer_sync(&timer);
 #if 1
-	for_all_lwp(lwp) {
+	ma_for_all_lwp(lwp) {
 		struct ma_lwp_usage_stat lst;
 		lst = ma_per_lwp(lwp_usage,lwp);
 		totlst.user += lst.user;

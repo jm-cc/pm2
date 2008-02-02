@@ -202,6 +202,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 					//		addr[0] = (void*)current_heap+0;
 					//	DEBUG_PRINT("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
 					node = -1;
+					extern int syscall6();
 					int ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 					//	int ret = syscall6(__NR_move_pages, 0, nb_pages, addr, NULL, ppinfo->nb_touched, MPOL_MF_MOVE);
 					//move_pages(0,1,addr,NULL,&node,MPOL_MF_MOVE);

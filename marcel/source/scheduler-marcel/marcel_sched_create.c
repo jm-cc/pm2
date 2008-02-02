@@ -70,7 +70,7 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 		return 0;
 	}
 	
-	ma_set_task_lwp(new_task, LWP_SELF);
+	ma_set_task_lwp(new_task, MA_LWP_SELF);
 	/* Ne pas oublier de laisser de la place pour les
 	 * variables locales/empilement de fonctions On prend
 	 * la taille entre le plus haut argument de cette
@@ -155,7 +155,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	/* activer le fils */
 	h = ma_task_sched_holder(new_task);
 	ma_holder_rawlock(h);
-	ma_set_task_lwp(new_task, LWP_SELF);
+	ma_set_task_lwp(new_task, MA_LWP_SELF);
 	MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
 	ma_set_task_state(new_task, MA_TASK_RUNNING);
 	ma_activate_running_task(new_task,h);

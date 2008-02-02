@@ -23,4 +23,4 @@
 
 #section marcel_macros
 #define ma_per_lwp(var,lwp) ((lwp)->var)
-#define __ma_get_lwp_var(var) (LWP_SELF->var)
+#define __ma_get_lwp_var(var) (MA_LWP_SELF->var)

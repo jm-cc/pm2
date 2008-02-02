@@ -258,7 +258,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 	}
 
 	struct marcel_topo_level *vp;
-	int number = LWP_NUMBER(LWP_SELF);
+	int number = ma_vpnum(MA_LWP_SELF);
 
 	for_all_vp_from_begin(vp, number) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));

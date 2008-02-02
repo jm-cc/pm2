@@ -93,7 +93,7 @@ asmlinkage TBX_EXTERN void ma_do_softirq(void)
 	if (ma_in_interrupt())
 		return;
 
-	if (LWP_NUMBER(LWP_SELF) == -1)
+	if (ma_spare_lwp())
 		return;
 	
 	ma_local_bh_disable();
@@ -356,10 +356,10 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 	LOG_IN();
 	/* Démarrage du thread responsable des terminaisons */
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%u",LWP_NUMBER(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%2d",ma_vpnum(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(ma_vpnum(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2
@@ -375,7 +375,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 
 static void ksoftirqd_init(ma_lwp_t lwp)
 {
-	if (LWP_NUMBER(lwp) == -1)
+	if (ma_spare_lwp_ext(lwp))
 		return;
 
 	MA_BUG_ON(ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),tasklet_vec).list);
@@ -386,7 +386,7 @@ static void ksoftirqd_start(ma_lwp_t lwp)
 {
 	marcel_task_t *p;
 
-	if (LWP_NUMBER(lwp) == -1)
+	if (ma_spare_lwp_ext(lwp))
 		return;
 	p=ksofirqd_start(lwp);
 	marcel_wake_up_created_thread(p);

@@ -139,7 +139,7 @@ void bench_resched(unsigned long nb)
   TBX_GET_TICK(t1);
   while(--n) {
 	  ma_set_tsk_need_togo(pid);
-	  ma_resched_task(pid, 2, GET_LWP_BY_NUM(2));
+	  ma_resched_task(pid, 2, ma_get_lwp_by_vpnum(2));
 	  ma_topo_vpdata_l(&marcel_topo_vp_level[2], need_resched) = 0;
   }
   TBX_GET_TICK(t2);

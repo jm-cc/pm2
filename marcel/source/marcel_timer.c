@@ -89,8 +89,8 @@ static void timer_action(struct ma_softirq_action *a)
 #endif
 
 #ifdef MA__DEBUG
-	if(LWP_SELF == NULL) {
-		pm2debug("WARNING!!! LWP_SELF == NULL in thread %p!\n",
+	if(MA_LWP_SELF == NULL) {
+		pm2debug("WARNING!!! MA_LWP_SELF == NULL in thread %p!\n",
 			 MARCEL_SELF);
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
@@ -135,9 +135,9 @@ static void TBX_NORETURN fault_catcher(int sig)
 		sig, MARCEL_SELF, SELF_GETMEM(number),
 		act->si_code, act->si_signo, act->si_addr, data);
 #endif
-	if(LWP_SELF != NULL)
+	if(MA_LWP_SELF != NULL)
 		pm2debug("OOPS!!! current lwp is %d\n",
-			LWP_NUMBER(LWP_SELF));
+			ma_vpnum(MA_LWP_SELF));
 	
 	PROF_EVENT(fut_stop);
 #ifdef PROFILE
@@ -298,10 +298,10 @@ static void timer_interrupt(int sig)
 	{
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
-		for_each_lwp_from_begin(lwp,LWP_SELF)
-			if (lwp->number != -1 && lwp->number < marcel_nbvps())
+		ma_for_each_lwp_from_begin(lwp,MA_LWP_SELF) {
+			if (lwp->vpnum != -1 && lwp->vpnum < marcel_nbvps())
 			        marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
-		for_each_lwp_from_end()
+		} ma_for_each_lwp_from_end();
 	}
 #endif
 
@@ -317,7 +317,7 @@ static void timer_interrupt(int sig)
 #ifdef MA__TIMER
 	if (
 #ifdef MA__LWPS
-	    LWP_SELF->number !=-1 && LWP_SELF->number < marcel_nbvps() &&
+	    MA_LWP_SELF->vpnum !=-1 && MA_LWP_SELF->vpnum < marcel_nbvps() &&
 #endif
 	    (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)) {
 #ifndef MA_HAVE_COMPAREEXCHANGE
@@ -333,7 +333,7 @@ static void timer_interrupt(int sig)
 #if !defined(MA_BOGUS_SIGINFO_CODE)
 		if (!info || info->si_code > 0)
 #elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
-		if (IS_FIRST_LWP(LWP_SELF))
+		if (IS_FIRST_LWP(MA_LWP_SELF))
 #else
 		if (sig == MARCEL_TIMER_SIGNAL)
 #endif
@@ -505,7 +505,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 	marcel_sig_enable_interrupts();
 
 #ifdef DISTRIBUTE_SIGALRM
-	if (IS_FIRST_LWP(lwp))
+	if (ma_is_first_lwp(lwp))
 #endif
 		marcel_sig_reset_timer();
 	
@@ -553,8 +553,8 @@ static void sig_stop_timer(ma_lwp_t lwp)
 
 void marcel_sig_exit(void)
 {
-	fault_catcher_exit(LWP_SELF);
-	sig_stop_timer(LWP_SELF);
+	fault_catcher_exit(MA_LWP_SELF);
+	sig_stop_timer(MA_LWP_SELF);
 	return;
 }
 

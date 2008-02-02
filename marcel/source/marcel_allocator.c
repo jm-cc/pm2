@@ -260,9 +260,9 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 	}
 #ifdef MA__LWPS
 	if (allocator->policy == POLICY_LOCAL) {
-		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps())
+		if (ma_vpnum(MA_LWP_SELF) >= marcel_nbvps())
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
-			return ma_per_lwp_data(GET_LWP_BY_NUM(0), allocator->container.offset);
+			return ma_per_lwp_data(ma_get_lwp_by_vpnum(0), allocator->container.offset);
 
 		return ma_per_lwp_self_data(allocator->container.offset);
 	}
@@ -273,9 +273,9 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && mode == ALLOC_METHOD) {
 		struct marcel_topo_level *niveau_courant =
-		    ma_per_lwp(vp_level, LWP_SELF);
+		    ma_per_lwp(vp_level, MA_LWP_SELF);
 
-		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps()) {
+		if (ma_vpnum(MA_LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
 			if (niveau_courant) {
 				return ma_per_level_data(niveau_courant, allocator->container.offset);
@@ -315,9 +315,9 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
 		struct marcel_topo_level *niveau_courant =
-		    ma_per_lwp(vp_level, LWP_SELF);
+		    ma_per_lwp(vp_level, MA_LWP_SELF);
 
-		if (LWP_NUMBER(LWP_SELF) >= marcel_nbvps()) {
+		if (ma_vpnum(MA_LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
 			if (niveau_courant) {
 				return ma_per_level_data(niveau_courant, allocator->container.offset);
@@ -375,10 +375,10 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 	if (allocator->policy == POLICY_LOCAL) {
 		ma_lwp_t lwp;
 		fprintf(stderr,"local\n");
-		for_all_lwp(lwp)
-			fprintf(stderr,"%4d",LWP_NUMBER(lwp));
+		ma_for_all_lwp(lwp)
+			fprintf(stderr,"%4d",ma_vpnum(lwp));
 		fprintf(stderr,"\n");
-		for_all_lwp(lwp)
+		ma_for_all_lwp(lwp)
 			fprintf(stderr,"%4d",((ma_container_t*)ma_per_lwp_self_data(allocator->container.offset))->nb_element);
 		fprintf(stderr,"\n");
 		return;

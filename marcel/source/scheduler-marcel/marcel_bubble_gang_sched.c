@@ -62,14 +62,14 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		PROF_EVENT1(rq_unlock,work_rq);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
-		for_each_lwp_begin(lwp)
-			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
+		ma_for_each_lwp_begin(lwp)
+			if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq,ma_vpnum(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
-				ma_resched_task(ma_per_lwp(current_thread,lwp),LWP_NUMBER(lwp),lwp);
+				ma_resched_task(ma_per_lwp(current_thread,lwp),ma_vpnum(lwp),lwp);
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
-		for_each_lwp_end();
+		ma_for_each_lwp_end();
 		PROF_EVENTSTR(sched_status,"gang scheduler: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
@@ -96,14 +96,14 @@ any_t marcel_gang_cleaner(any_t foo) {
 		ma_holder_unlock_softirq(&ma_gang_rq.hold);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
-		for_each_lwp_begin(lwp)
-			if (lwp != LWP_SELF && ma_rq_covers(work_rq,LWP_NUMBER(lwp))) {
+		ma_for_each_lwp_begin(lwp)
+			if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq,ma_vpnum(lwp))) {
 				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
-				ma_resched_task(ma_per_lwp(current_thread,lwp),LWP_NUMBER(lwp),lwp);
+				ma_resched_task(ma_per_lwp(current_thread,lwp),ma_vpnum(lwp),lwp);
 				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
 			}
-		for_each_lwp_end();
+		ma_for_each_lwp_end();
 		PROF_EVENTSTR(sched_status,"gang cleaner: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}

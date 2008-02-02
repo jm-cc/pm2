@@ -118,12 +118,12 @@ static __tbx_inline__ void ma_about_to_idle(void) {
 
 static __tbx_inline__ void ma_entering_idle(void) {
 #ifdef MA__LWPS
-	PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
+	PROF_EVENT1(sched_idle_start,ma_vpnum(MA_LWP_SELF));
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		marcel_sig_disable_interrupts();
-		ma_topology_lwp_idle_start(LWP_SELF);
-		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
+		ma_topology_lwp_idle_start(MA_LWP_SELF);
+		if (!(ma_topology_lwp_idle_core(MA_LWP_SELF)))
 			marcel_sig_pause();
 		marcel_sig_enable_interrupts();
 	}
@@ -139,7 +139,7 @@ static __tbx_inline__ void ma_still_idle(void) {
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		marcel_sig_disable_interrupts();
-		if (!ma_topology_lwp_idle_core(LWP_SELF))
+		if (!ma_topology_lwp_idle_core(MA_LWP_SELF))
 			marcel_sig_pause();
 		marcel_sig_enable_interrupts();
 	}
@@ -149,9 +149,9 @@ static __tbx_inline__ void ma_still_idle(void) {
 
 static __tbx_inline__ void ma_leaving_idle(void) {
 #ifdef MA__LWPS
-	PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
+	PROF_EVENT1(sched_idle_stop, ma_vpnum(MA_LWP_SELF));
 #  ifdef MARCEL_SMT_IDLE
-	ma_topology_lwp_idle_end(LWP_SELF);
+	ma_topology_lwp_idle_end(MA_LWP_SELF);
 #  endif
 #endif
 #ifdef PIOMAN

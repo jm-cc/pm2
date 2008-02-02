@@ -958,7 +958,7 @@ static void topo_discover(void) {
 			marcel_topo_levels[l][i].level = l;
 
 	/* Now we can set VP levels for main LWP */
-	INIT_LWP_NB(0, &__main_lwp);
+	ma_init_lwp_vpnum(0, &__main_lwp);
 }
 
 void ma_topo_exit(void) {
@@ -984,7 +984,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 	int i;
 	if (marcel_topo_node_level) {
 		for (i=0; marcel_topo_node_level[i].cpuset; i++) {
-			if (marcel_vpset_isset(&marcel_topo_node_level[i].cpuset,LWP_NUMBER(lwp))) {
+			if (marcel_vpset_isset(&marcel_topo_node_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(node_level,lwp) = &marcel_topo_node_level[i];
 				break;
 			}
@@ -993,7 +993,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 #ifdef MARCEL_SMT_IDLE
 	if (marcel_topo_core_level) {
 		for (i=0; marcel_topo_core_level[i].cpuset; i++) {
-			if (marcel_vpset_isset(&marcel_topo_core_level[i].cpuset,LWP_NUMBER(lwp))) {
+			if (marcel_vpset_isset(&marcel_topo_core_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(core_level,lwp) = &marcel_topo_core_level[i];
 				break;
 			}
@@ -1002,7 +1002,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 #endif /* MARCEL_SMT_IDLE */
 	if (marcel_topo_cpu_level) {
 		for (i=0; marcel_topo_cpu_level[i].cpuset; i++) {
-			if (marcel_vpset_isset(&marcel_topo_cpu_level[i].cpuset,LWP_NUMBER(lwp))) {
+			if (marcel_vpset_isset(&marcel_topo_cpu_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(cpu_level,lwp) = &marcel_topo_cpu_level[i];
 				break;
 			}

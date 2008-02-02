@@ -99,7 +99,7 @@ unsigned long ma_per_level_alloc(size_t size);
 #define ma_per_level_alloc(size) ma_per_sth_alloc(&ma_per_level_cur, size)
 #define ma_per_sth_data(sth, off) ((void*)(&(sth)->data[off]))
 #define ma_per_lwp_data(lwp, off) ma_per_sth_data(lwp, off)
-#define ma_per_lwp_self_data(off) ma_per_lwp_data(LWP_SELF, off)
+#define ma_per_lwp_self_data(off) ma_per_lwp_data(MA_LWP_SELF, off)
 #define ma_per_level_data(level, off) ma_per_sth_data(level, off)
 
 #section marcel_variables

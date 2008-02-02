@@ -159,7 +159,7 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 		}
 		debug_printf(&MA_DEBUG_VAR_NAME(default),
 			     "switchto(%p, %p) on LWP(%d)\n",
-		       cur, next, LWP_NUMBER(GET_LWP(cur)));
+		       cur, next, ma_vpnum(GET_LWP(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
 	}
@@ -192,7 +192,7 @@ unsigned marcel_per_lwp_nbthreads()
 	unsigned num = 0;
 	struct marcel_topo_level *vp;
 
-	vp = GET_LWP(MARCEL_SELF)->vp_level;
+	vp = ma_get_task_lwp(MARCEL_SELF)->vp_level;
 	num += ma_topo_vpdata_l(vp, nb_tasks);
 	return num + 1;		/* + 1 pour le main */
 }
@@ -218,12 +218,12 @@ void marcel_one_more_task(marcel_t pid)
 	/* record this thread on _this_ lwp */
 	ma_local_bh_disable();
 	ma_preempt_disable();
-	vp = &marcel_topo_vp_level[LWP_NUMBER(LWP_SELF)];
+	vp = &marcel_topo_vp_level[ma_vpnum(MA_LWP_SELF)];
 	_ma_raw_spin_lock(&ma_topo_vpdata_l(vp,threadlist_lock));
 
 	task_number = ++ma_topo_vpdata_l(vp,task_number);
 	MA_BUG_ON(task_number == MA_MAX_VP_THREADS);
-	pid->number = LWP_NUMBER(LWP_SELF) * MA_MAX_VP_THREADS + task_number;
+	pid->number = ma_vpnum(MA_LWP_SELF) * MA_MAX_VP_THREADS + task_number;
 	MA_BUG_ON(ma_topo_vpdata_l(vp,task_number) == MA_MAX_VP_THREADS);
 	list_add(&pid->all_threads,&ma_topo_vpdata_l(vp,all_threads));
 	oldnbtasks = ma_topo_vpdata_l(vp,nb_tasks)++;
@@ -288,7 +288,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 {
 	marcel_t t;
 	int nb_pids = 0;
-	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
+	MA_DEFINE_CUR_LWP(, TBX_UNUSED =, MA_LWP_SELF);
 	struct marcel_topo_level *vp;
 
 
@@ -317,7 +317,7 @@ void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
 	struct marcel_topo_level *vp;
-	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
+	MA_DEFINE_CUR_LWP(, TBX_UNUSED =, MA_LWP_SELF);
 
 	for_all_vp(vp) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
@@ -396,19 +396,19 @@ void marcel_gensched_shutdown(void)
 	mdebug("blocking this LWP\n");
 	ma_lwp_block();
 
-	mdebug("stopping LWPs from %p\n", LWP_SELF);
-	if (LWP_SELF != &__main_lwp) {
+	mdebug("stopping LWPs from %p\n", MA_LWP_SELF);
+	if (MA_LWP_SELF != &__main_lwp) {
 		/* We must switch to the main kernel thread for proper
 		 * termination. However, it may be currently a spare LWP, so we
 		 * have to wait for it to become active. */
 		while ((lwp = ma_lwp_wait_vp_active())) {
 			if (lwp == &__main_lwp) {
-				mdebug("main LWP is active, jumping to it at vp %d\n", LWP_NUMBER(lwp));
-				vpset = MARCEL_VPSET_VP(LWP_NUMBER(lwp));
+				mdebug("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
+				vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
 				/* To match ma_lwp_block() above */
 				ma_preempt_enable();
 				marcel_apply_vpset(&vpset);
-				MA_BUG_ON(LWP_SELF != &__main_lwp);
+				MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 				/* Ok, we're in the main kernel thread now */
 				mdebug("block it too\n");
 				ma_lwp_block();
@@ -418,13 +418,13 @@ void marcel_gensched_shutdown(void)
 		}
 	}
 
-	MA_BUG_ON(LWP_SELF != &__main_lwp);
+	MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 
 	mdebug("stopping LWPs for supplementary VPs\n");
 	for(;;) {
 		lwp_found=NULL;
 		lwp_list_lock_read();
-		for_all_lwp(lwp) {
+		ma_for_all_lwp(lwp) {
 			if (lwp != &__main_lwp) {
 				lwp_found=lwp;
 				break;
@@ -545,7 +545,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	LOG_IN();
 
-	if (!IS_FIRST_LWP(lwp))
+	if (!ma_is_first_lwp(lwp))
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	else
@@ -557,7 +557,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	/* Création de la tâche Idle (idle_task) */
 	/*****************************************/
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%2d",LWP_NUMBER(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%2d",ma_vpnum(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setflags(&attr, MA_SF_POLL|MA_SF_NORUN);
@@ -571,7 +571,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
 	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
-			LWP_NUMBER(lwp) == -1 || LWP_NUMBER(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
+			ma_vpnum(lwp) == -1 || ma_vpnum(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
 			(void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 #endif

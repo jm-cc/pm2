@@ -109,7 +109,7 @@ int _marcel_raise_exception(marcel_exception_t ex)
 		ma_preempt_disable();
 		fprintf(stderr, "\nUnhandled exception %s in task %d on LWP(%d)"
 		    "\nFILE : %s, LINE : %d\n",
-		    ex, cur->number, LWP_NUMBER(LWP_SELF), cur->exfile,
+		    ex, cur->number, ma_vpnum(MA_LWP_SELF), cur->exfile,
 		    cur->exline);
 		*(int*)0 = -1;	/* To generate a core file */
 		exit(1);
@@ -143,7 +143,7 @@ void marcel_start_playing(void) {
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 static int rand_lwp_init(ma_lwp_t lwp) {
-	srand48_r(LWP_NUMBER(lwp), &ma_per_lwp(random_buffer, lwp));
+	srand48_r(ma_vpnum(lwp), &ma_per_lwp(random_buffer, lwp));
 	return 0;
 }
 

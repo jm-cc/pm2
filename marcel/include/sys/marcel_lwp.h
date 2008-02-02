@@ -80,7 +80,7 @@ struct marcel_lwp {
 	ma_tvec_base_t tvec_bases;
 
 #ifdef MA__LWPS
-	int number;
+	int vpnum;
 #endif
 	unsigned online;
 	marcel_task_t *run_task;
@@ -278,99 +278,99 @@ void marcel_leave_blocking_section(void);
  * Accès aux LWP
  */
 
-#define GET_LWP_NUMBER(current)             (LWP_NUMBER(THREAD_GETMEM(current,sched.lwp)))
+#define ma_get_task_vpnum(current)		(ma_vpnum(THREAD_GETMEM(current,sched.lwp)))
 #ifdef MA__LWPS
-#  define LWP_NUMBER(lwp)                     (ma_per_lwp(number, lwp))
-#  define GET_LWP_BY_NUM(proc)                (ma_vp_lwp[proc])
-#  define GET_LWP(current)                    ((current)->sched.lwp)
-#  define SET_LWP(current, value)             ((current)->sched.lwp=(value))
-#  define GET_CUR_LWP()                       (cur_lwp)
-#  define SET_CUR_LWP(value)                  (cur_lwp=(value))
-#  define INIT_LWP_NB(number, lwp)	      do { \
-	if ((number) == -1) { \
-		LWP_NUMBER(lwp) = -1; \
+#  define ma_vpnum(lwp)				(ma_per_lwp(vpnum, lwp))
+#  define ma_get_lwp_by_vpnum(vpnum)		(ma_vp_lwp[vpnum])
+#  define ma_get_task_lwp(task)			((task)->sched.lwp)
+#  define ma_set_task_lwp(task, value)		((task)->sched.lwp=(value))
+#  define ma_get_cur_lwp()			(cur_lwp)
+#  define ma_set_cur_lwp(value)			(cur_lwp=(value))
+#  define ma_init_lwp_vpnum(vpnum, lwp)		do { \
+	if ((vpnum) == -1) { \
+		ma_vpnum(lwp) = -1; \
 		ma_lwp_rq(lwp)->father = NULL; \
 	} else { \
-		ma_vp_lwp[number] = (lwp); \
-	        LWP_NUMBER(lwp)=number; \
-		ma_lwp_rq(lwp)->father = &marcel_topo_vp_level[number].sched; \
-		ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[number]; \
+		ma_vp_lwp[vpnum] = (lwp); \
+	        ma_vpnum(lwp) = vpnum; \
+		ma_lwp_rq(lwp)->father = &marcel_topo_vp_level[vpnum].sched; \
+		ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[vpnum]; \
 	} \
 } while(0)
-#  define CLR_LWP_NB(lwp)		      do { \
-	MA_BUG_ON(LWP_NUMBER(lwp) == -1); \
-	MA_BUG_ON(!ma_vp_lwp[LWP_NUMBER(lwp)]); \
+#  define ma_clr_lwp_vpnum(lwp)			do { \
+	MA_BUG_ON(ma_vpnum(lwp) == -1); \
+	MA_BUG_ON(!ma_vp_lwp[ma_vpnum(lwp)]); \
 	MA_BUG_ON(!ma_lwp_rq(lwp)->father); \
-	ma_vp_lwp[LWP_NUMBER(lwp)] = NULL; \
-	INIT_LWP_NB(-1, lwp); \
+	ma_vp_lwp[ma_vpnum(lwp)] = NULL; \
+	ma_init_lwp_vpnum(-1, lwp); \
 } while(0)
-#  define SET_LWP_NB(number, lwp)             do { \
-	if ((number) == -1) { \
-		CLR_LWP_NB(lwp); \
+#  define ma_set_lwp_vpnum(vpnum, lwp)		do { \
+	if ((vpnum) == -1) { \
+		ma_clr_lwp_vpnum(lwp); \
 	} else { \
-		MA_BUG_ON(ma_vp_lwp[number]); \
-		MA_BUG_ON(LWP_NUMBER(lwp) > 0); \
+		MA_BUG_ON(ma_vp_lwp[vpnum]); \
+		MA_BUG_ON(ma_vpnum(lwp) > 0); \
 		MA_BUG_ON(ma_lwp_rq(lwp)->father); \
-		INIT_LWP_NB(number, lwp); \
+		ma_init_lwp_vpnum(vpnum, lwp); \
 	} \
 } while(0)
-#  define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
+#  define MA_DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
      OPTIONS marcel_lwp_t *cur_lwp signe lwp
-#  define IS_FIRST_LWP(lwp)                   (lwp == &__main_lwp)
+#  define ma_is_first_lwp(lwp)			(lwp == &__main_lwp)
 
-#  define any_lwp()	(!list_empty(&ma_list_lwp_head))
-#  define for_all_lwp(lwp) \
+#  define ma_any_lwp()	(!list_empty(&ma_list_lwp_head))
+#  define ma_for_all_lwp(lwp) \
      list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
-#  define for_all_lwp_from_begin(lwp, lwp_start) \
+#  define ma_for_all_lwp_from_begin(lwp, lwp_start) \
      list_for_each_entry_from_begin(lwp, &ma_list_lwp_head, lwp_start, lwp_list)
-#  define for_all_lwp_from_end() \
+#  define ma_for_all_lwp_from_end() \
      list_for_each_entry_from_end()
-#  define lwp_isset(num, map) ma_test_bit(num, &map)
+#  define ma_lwp_isset(num, map)		ma_test_bit(num, &map)
 /* Should rather be the node level where this lwp was started */
-#  define lwp_vpaffinity_level(lwp)	      (&marcel_machine_level[0])
+#  define ma_lwp_vpaffinity_level(lwp)		(&marcel_machine_level[0])
 #else
-#  define cur_lwp                             (&__main_lwp)
-#  define LWP_NUMBER(lwp)                     ((void)(lwp),0)
-#  define GET_LWP_BY_NUM(nb)                  (cur_lwp)
-#  define GET_LWP(current)                    (cur_lwp)
-#  define SET_LWP(current, value)             ((void)0)
-#  define GET_CUR_LWP()                       (cur_lwp)
-#  define SET_CUR_LWP(value)                  ((void)0)
-#  define CLR_LWP_NB(proc, value)             ((void)0)
-#  define SET_LWP_NB(proc, value)             ((void)0)
-#  define DEFINE_CUR_LWP(OPTIONS, signe, current) \
-     int __cur_lwp_unused__ TBX_UNUSED
-#  define IS_FIRST_LWP(lwp)                   (1)
+#  define cur_lwp				(&__main_lwp)
+#  define ma_vpnum(lwp)				((void)(lwp),0)
+#  define ma_get_lwp_by_vpnum(vpnum)		(cur_lwp)
+#  define ma_get_task_lwp(task)			(cur_lwp)
+#  define ma_set_task_lwp(task, value)		((void)0)
+#  define ma_get_cur_lwp()			(cur_lwp)
+#  define ma_set_cur_lwp(value)			((void)0)
+#  define ma_clr_lwp_nb(proc, value)		((void)0)
+#  define ma_set_lwp_nb(proc, value)		((void)0)
+#  define MA_DEFINE_CUR_LWP(OPTIONS, signe, current) \
+	int __cur_lwp_unused__ TBX_UNUSED
+#  define ma_is_first_lwp(lwp)                   (1)
 
-#  define any_lwp()	(cur_lwp != NULL)
-#  define for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
-#  define for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;lwp;lwp=NULL) {
-#  define for_all_lwp_from_end() }
-#  define lwp_isset(num, map) 1
+#  define ma_any_lwp()	(cur_lwp != NULL)
+#  define ma_for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
+#  define ma_for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;lwp;lwp=NULL) {
+#  define ma_for_all_lwp_from_end() }
+#  define ma_lwp_isset(num, map) 1
 #endif
 #ifdef MARCEL_BLOCKING_ENABLED
-#  define ma_spare_lwp_ext(lwp) (LWP_NUMBER(lwp)==-1)
-#  define ma_spare_lwp() (ma_spare_lwp_ext(LWP_SELF))
+#  define ma_spare_lwp_ext(lwp) (ma_vpnum(lwp)==-1)
+#  define ma_spare_lwp() (ma_spare_lwp_ext(MA_LWP_SELF))
 #else
 #  define ma_spare_lwp_ext(lwp) (0)
 #  define ma_spare_lwp() (0)
 #endif
-#  define for_each_lwp_begin(lwp) \
-     for_all_lwp(lwp) {\
-        if (ma_lwp_online(lwp)) {
-#  define for_each_lwp_end() \
-        } \
-     }
+#define ma_for_each_lwp_begin(lwp) \
+	ma_for_all_lwp(lwp) {\
+		if (ma_lwp_online(lwp)) {
+#define ma_for_each_lwp_end() \
+		} \
+	}
 
-#  define for_each_lwp_from_begin(lwp, lwp_start) \
-     for_all_lwp_from_begin(lwp, lwp_start) \
-        if (ma_lwp_online(lwp)) {
-#  define for_each_lwp_from_end() \
-        } \
-     for_all_lwp_from_end()
+#define ma_for_each_lwp_from_begin(lwp, lwp_start) \
+	ma_for_all_lwp_from_begin(lwp, lwp_start) \
+		if (ma_lwp_online(lwp)) {
+#define ma_for_each_lwp_from_end() \
+		} \
+	ma_for_all_lwp_from_end()
 
-#define LWP_GETMEM(lwp, member) ((lwp)->member)
-#define LWP_SELF                (GET_LWP(MARCEL_SELF))
+#define ma_lwp_getmem(lwp, member)		((lwp)->member)
+#define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)
 #define ma_softirq_pending(lwp) \
@@ -378,7 +378,7 @@ void marcel_leave_blocking_section(void);
 #define ma_local_softirq_pending() \
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),softirq_pending)
 
-#define ma_lwp_node(lwp)	ma_vp_node[LWP_NUMBER(lwp)]
+#define ma_lwp_node(lwp)	ma_vp_node[ma_vpnum(lwp)]
 
 #section marcel_macros
 
@@ -461,7 +461,7 @@ void marcel_leave_blocking_section(void);
   void __marcel_init marcel_##name##_call_##PART(void) \
   { \
 	name##_notify(&name##_nb, (unsigned long)MA_LWP_##PART, \
-		   (void *)(ma_lwp_t)LWP_SELF); \
+		   (void *)(ma_lwp_t)MA_LWP_SELF); \
   } \
   __ma_initfunc_prio_internal(marcel_##name##_call_##PART, section, prio, \
                               &name##_helps[MA_LWP_##PART])

@@ -280,7 +280,7 @@ TBX_EXTERN int ma_del_timer_sync(struct ma_timer_list *timer)
 del_again:
 	ret += ma_del_timer(timer);
 
-	for_each_lwp_begin(lwp)
+	ma_for_each_lwp_begin(lwp)
 		base = &ma_per_lwp(tvec_bases, lwp);
 		if (base->running_timer == timer) {
 			while (base->running_timer == timer) {
@@ -289,7 +289,7 @@ del_again:
 			}
 			break;
 		}
-	for_each_lwp_end()
+	ma_for_each_lwp_end()
 	ma_smp_rmb();
 	if (ma_timer_pending(timer))
 		goto del_again;
@@ -404,7 +404,7 @@ static void ma_run_local_timers(void)
 void ma_update_process_times(int user_tick)
 {
 	struct marcel_task *p = MARCEL_SELF;
-	ma_lwp_t lwp = LWP_SELF;
+	ma_lwp_t lwp = MA_LWP_SELF;
 	int system = user_tick ^ 1;
 
 	update_one_process(p, user_tick, system, lwp);
@@ -521,7 +521,7 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 
 	base->timer_jiffies = ma_jiffies;
 
-	if (IS_FIRST_LWP(lwp)) {
+	if (ma_is_first_lwp(lwp)) {
 		ma_open_softirq(MA_TIMER_SOFTIRQ, run_timer_softirq, NULL);
 	}
 }

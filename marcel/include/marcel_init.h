@@ -90,7 +90,7 @@ typedef struct __ma_init_info {
 
 #section macros
 /****************************************************************
- * MARCEL_SELF et LWP_SELF deviennent utilisable
+ * MARCEL_SELF et MA_LWP_SELF deviennent utilisable
  * - Si on utilise la pile, celle-ci doit être correctement positionnée
  * - On remplit les structures si ce n'est pas fait
  *   Avec MA__GLIBC, ça doit être fait au link (sauf %gs)
@@ -135,7 +135,7 @@ typedef struct __ma_init_info {
 #define MA_INIT_MAX_PARTS  MA_INIT_START_LWPS
 
 #section marcel_macros
-/* A besoin de MARCEL_SELF et LWP_SELF */
+/* A besoin de MARCEL_SELF et MA_LWP_SELF */
 #define MA_INIT_PRIO_BASE                          5
 
 #define MA_INIT_TOPOLOGY              MA_INIT_SELF

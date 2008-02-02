@@ -171,7 +171,7 @@ void TBX_EXTERN marcel_freeze_sched(void)
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
-		for_all_lwp(lwp)
+		ma_for_all_lwp(lwp)
 		    ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
 	}
 #endif
@@ -185,7 +185,7 @@ void TBX_EXTERN marcel_unfreeze_sched(void)
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
-		for_all_lwp(lwp)
+		ma_for_all_lwp(lwp)
 		    ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
 	}
 #endif

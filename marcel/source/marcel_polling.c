@@ -60,7 +60,7 @@ int marcel_per_lwp_polling_register(int *data,
         ma_preempt_disable();
 	
 	task = marcel_self();
-	lwp = GET_LWP(task);
+	lwp = ma_get_task_lwp(task);
 
 	cell.data = data;
 	cell.value_to_match = value_to_match;
@@ -78,9 +78,9 @@ int marcel_per_lwp_polling_register(int *data,
 			                        cell.blocked,
 			                        ma_preempt_enable_no_resched(); 
 						ma_local_bh_enable(),
-			                        ma_local_bh_disable(); 
+			                        ma_local_bh_disable();
 						ma_preempt_disable());
-	ma_preempt_enable_no_resched(); 
+	ma_preempt_enable_no_resched();
         ma_local_bh_enable();	
 	return 0;
 }
@@ -96,7 +96,7 @@ void marcel_per_lwp_polling_proceed(){
         ma_preempt_disable();
 	
         task = marcel_self();
-        lwp = GET_LWP(task);			
+        lwp = ma_get_task_lwp(task);
 	
 	new_cell_list = NULL;
 	cur_cell = lwp->polling_list;

@@ -216,8 +216,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
+	MA_DEFINE_CUR_LWP(register, =, MA_LWP_SELF);
 	LOG_IN();
-	DEFINE_CUR_LWP(register, =, LWP_SELF);
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
 #ifdef MA__BUBBLES
@@ -284,8 +284,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 /* TODO: vpset ? */
 			case MARCEL_SCHED_OTHER: {
 				struct marcel_topo_level *vp;
-				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
-					marcel_lwp_t *lwp = GET_LWP_BY_NUM(vp->number);
+				for_vp_from(vp, ma_vpnum(cur_lwp)) {
+					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
 					if (!lwp)
 						continue;
 					if (!ma_per_lwp(online, lwp))
@@ -303,8 +303,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
-				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
-					marcel_lwp_t *lwp = GET_LWP_BY_NUM(vp->number);
+				for_vp_from(vp, ma_vpnum(cur_lwp)) {
+					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
 					if (!lwp)
 						continue;
 					if (!ma_per_lwp(online, lwp))
@@ -326,8 +326,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 				struct marcel_topo_level *vp;
 				ma_runqueue_t *rq2;
 				rq = ma_lwp_vprq(cur_lwp);
-				for_vp_from(vp, LWP_NUMBER(cur_lwp)) {
-					marcel_lwp_t *lwp = GET_LWP_BY_NUM(vp->number);
+				for_vp_from(vp, ma_vpnum(cur_lwp)) {
+					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
 					if (!lwp)
 						continue;
 					if (!ma_per_lwp(online, lwp))
@@ -341,8 +341,8 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 				break;
 			}
 			default: {
-				unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, LWP_NUMBER(cur_lwp));
-				rq = ma_lwp_vprq(GET_LWP_BY_NUM(num));
+				unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, ma_vpnum(cur_lwp));
+				rq = ma_lwp_vprq(ma_get_lwp_by_vpnum(num));
 				break;
 			}
 		}
@@ -546,7 +546,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		|| dont_schedule
 #ifdef MA__LWPS
 		/* On ne peut pas placer ce thread sur le LWP courant */
-		|| (!lwp_isset(LWP_NUMBER(LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
+		|| (!ma_lwp_isset(ma_vpnum(MA_LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
 		/* Si la politique est du type 'placer sur le LWP le moins
 		   chargé', alors on ne peut pas placer ce thread sur le LWP
 		   courant */

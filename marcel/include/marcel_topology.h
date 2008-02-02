@@ -312,7 +312,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void);
 #depend "sys/marcel_lwp.h[variables]"
 static __tbx_inline__ unsigned __marcel_current_vp(void)
 {
-	return LWP_NUMBER(LWP_SELF);
+	return ma_vpnum(MA_LWP_SELF);
 }
 #define marcel_current_vp __marcel_current_vp
 

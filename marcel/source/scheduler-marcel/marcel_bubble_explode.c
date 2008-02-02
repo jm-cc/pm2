@@ -72,7 +72,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 		 * telle priorité (ou encore plus forte) avant nous */
 		bubble_sched_debugl(7,"%p should go down\n", nextent);
 		max_prio = idx;
-		for (currq = ma_lwp_vprq(LWP_SELF); currq != rq; currq = currq->father) {
+		for (currq = ma_lwp_vprq(MA_LWP_SELF); currq != rq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx <= max_prio) {
 				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
@@ -99,7 +99,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 		ma_holder_rawunlock(&rq->hold);
 
 		/* trouver une runqueue qui va bien */
-		for (currq = ma_lwp_vprq(LWP_SELF); currq &&
+		for (currq = ma_lwp_vprq(MA_LWP_SELF); currq &&
 			nextent->sched_level < currq->level;
 			currq = currq->father);
 

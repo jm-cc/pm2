@@ -145,20 +145,6 @@ static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 	}
 }
 
-/*
- * Wrappers for p->thread_info->cpu access. No-op on UP.
- */
-static __tbx_inline__ ma_lwp_t ma_task_lwp(marcel_task_t *p)
-{
-	return GET_LWP(p);
-}
-
-static __tbx_inline__ void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
-{
-	SET_LWP(p, lwp);
-}
-
-
 #section marcel_functions
 int marcel_idle_lwp(ma_lwp_t lwp);
 int marcel_task_prio(marcel_task_t *p);

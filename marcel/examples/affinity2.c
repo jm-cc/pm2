@@ -229,7 +229,9 @@ int main(int argc, char *argv[]) {
    marcel_printf("ok\n");
    marcel_end();
 
+#ifdef PROFILE
    profile_stop();
+#endif
    return 0;
 }
 #else /* MA__BUBBLES */

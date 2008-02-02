@@ -123,7 +123,7 @@ static __tbx_inline__ void ma_task_unlock(marcel_task_t *p)
 extern TBX_EXTERN void __ma_cond_resched(void);
 static __tbx_inline__ void ma_cond_resched(void)
 {
-	if (ma_need_resched())
+	if (ma_get_need_resched())
 		__ma_cond_resched();
 }
 
@@ -137,7 +137,7 @@ static __tbx_inline__ void ma_cond_resched(void)
  */
 static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 {
-	if (ma_need_resched()) {
+	if (ma_get_need_resched()) {
 		_ma_raw_spin_unlock(lock);
 		ma_preempt_enable_no_resched();
 		__ma_cond_resched();

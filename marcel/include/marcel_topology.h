@@ -530,7 +530,41 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #endif
 
 #section marcel_macros
-#define ma_need_resched() (ma_topo_vpdata_l((({MA_BUG_ON(!ma_regular_lwp());}),__ma_get_lwp_var(vp_level)), need_resched))
+#ifdef MARCEL_BLOCKING_ENABLED
+#  define ma_set_need_resched(v) \
+	do { \
+		__ma_get_lwp_var(need_resched) = (v); \
+		if (!ma_spare_lwp()) \
+			ma_topo_vpdata_l((__ma_get_lwp_var(vp_level)), need_resched) = (v); \
+	} while(0)
+#  define ma_get_need_resched() \
+	(__ma_get_lwp_var(need_resched) \
+	 || (!ma_spare_lwp() \
+	     && ma_topo_vpdata_l((__ma_get_lwp_var(vp_level)), need_resched)))
+#  define ma_set_need_resched_ext(vp, lwp, v) \
+	do { \
+		ma_per_lwp(need_resched, lwp) = (v); \
+		if (vp != -1) \
+			ma_topo_vpdata(vp, need_resched) = (v); \
+	} while(0)
+#  define ma_get_need_resched_ext(vp, lwp) \
+	(ma_per_lwp(need_resched, lwp) \
+	 || (vp != -1 \
+	     && ma_topo_vpdata(vp, need_resched)))
+#else
+#  define ma_set_need_resched(v) \
+	do { \
+		ma_topo_vpdata_l((__ma_get_lwp_var(vp_level)), need_resched) = (v); \
+	} while(0)
+#  define ma_get_need_resched() \
+	(ma_topo_vpdata_l((__ma_get_lwp_var(vp_level)), need_resched))
+#  define ma_set_need_resched_ext(vp, lwp, v) \
+	do { \
+		ma_topo_vpdata(vp, need_resched) = (v); \
+	} while(0)
+#  define ma_get_need_resched_ext(vp, lwp) \
+	 (ma_topo_vpdata(vp, need_resched))
+#endif
 
 #section functions
 #depend "tbx_compiler.h"

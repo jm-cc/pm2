@@ -78,21 +78,13 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 	PROF_EVENT2(sched_resched_task, p, vp);
 #ifdef MA__LWPS
 	ma_preempt_disable();
-	
-	/* Spare LWPs dont support need_resched */
-	if (vp == -1) {
-		if (lwp != LWP_SELF) {
-			MA_LWP_RESCHED(lwp);
-		}
-		goto out;
-	}
 
-	if (tbx_unlikely(ma_topo_vpdata(vp, need_resched))) {
+	if (tbx_unlikely(ma_get_need_resched_ext(vp, lwp))) {
 		PROF_EVENT(sched_already_resched);
 		goto out;
 	}
 
-	ma_topo_vpdata(vp, need_resched) = 1;
+	ma_set_need_resched_ext(vp, lwp, 1);
 
 	if (lwp == LWP_SELF) {
 		PROF_EVENT(sched_thats_us);
@@ -110,7 +102,7 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 out:
 	ma_preempt_enable();
 #else
-	ma_topo_vpdata(vp, need_resched) = 1;
+	ma_set_need_resched_ext(vp, lwp, 1);
 #endif
 }
 
@@ -559,14 +551,14 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
 				p->name, ma_task_run_holder(p),
 				ma_task_holder_data(p), __FILE__, __LINE__);
-		ma_need_resched() = 1;
+		ma_set_need_resched(1);
 		goto out;
 	}
 
 	if (preemption_enabled() && ma_thread_preemptible()) {
 		MA_BUG_ON(ma_atomic_read(&p->sched.internal.entity.time_slice)>MARCEL_TASK_TIMESLICE);
 		if (ma_atomic_dec_and_test(&p->sched.internal.entity.time_slice)) {
-			ma_need_resched() = 1;
+			ma_set_need_resched(1);
 			sched_debug("scheduler_tick: time slice expired\n");
 			ma_atomic_set(&p->sched.internal.entity.time_slice,MARCEL_TASK_TIMESLICE);
 		}
@@ -644,7 +636,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	int hard_preempt;
 	int need_resched;
 	LOG_IN();
-	need_resched = !ma_regular_lwp() || ma_need_resched();
+	need_resched = ma_get_need_resched();
 	/*
 	 * Test if we are atomic.  Since do_exit() needs to call into
 	 * schedule() atomically, we ignore that path for now.
@@ -661,8 +653,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 
 need_resched:
 	/* Say the world we're currently rescheduling */
-	if (ma_regular_lwp())
-		ma_need_resched() = 0;
+	ma_set_need_resched(0);
 	ma_smp_mb__after_clear_bit();
 	/* Now that we announced we're taking a decision, we can have a look at
 	 * what is available */
@@ -775,7 +766,7 @@ restart:
 			ma_about_to_idle();
 			if (!prev->sched.state) {
 				/* We got woken up. */
-				if (ma_need_resched()) {
+				if (ma_get_need_resched()) {
 					/* But we need to resched.  Restart in
 					 * case that's for somebody else */
 					goto need_resched_atomic;
@@ -988,7 +979,7 @@ out:
 #endif
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (tbx_unlikely((ma_regular_lwp() && ma_need_resched()) && ma_thread_preemptible())) {
+	if (tbx_unlikely(ma_get_need_resched() && ma_thread_preemptible())) {
 		sched_debug("need resched\n");
 		need_resched = 1;
 		goto need_resched;
@@ -1042,10 +1033,6 @@ void ma_preempt_schedule(int irq)
         marcel_task_t *ti = MARCEL_SELF;
 
 	MA_BUG_ON(ti->preempt_count != irq);
-#ifdef MARCEL_BLOCKING_ENABLED
-#warning "TODO: check compatibility with RESCHED_SIGNAL"
-#endif
-
 need_resched:
 
         ti->preempt_count = MA_PREEMPT_ACTIVE;
@@ -1066,7 +1053,7 @@ need_resched:
 
         /* we could miss a preemption opportunity between schedule and now */
         ma_barrier();
-        if (ma_regular_lwp() && ma_need_resched())
+        if (ma_get_need_resched())
                 goto need_resched;
 }
 
@@ -1078,7 +1065,7 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
   LOG_IN();
 
   marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
-  ma_need_resched() = 1;
+  ma_set_need_resched(1);
   ma_schedule();
 
   LOG_OUT();

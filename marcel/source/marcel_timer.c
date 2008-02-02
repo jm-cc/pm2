@@ -345,12 +345,6 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-	if (sig == MARCEL_RESCHED_SIGNAL) {
-		/* lets do a unconditional preempt_schedule as the preempt_check_resched is sometimes reluctant to resched
-		 *  TODO: avoid redundant cases with preempt_check_resched below
-		 */
-		ma_preempt_schedule(0);
-	}
 #ifdef MA_SIGNAL_NOMASK
 	ma_irq_exit();
 	ma_preempt_check_resched(0);

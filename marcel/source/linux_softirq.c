@@ -132,7 +132,7 @@ void TBX_EXTERN ma_local_bh_enable(void)
 {
 	
 	__ma_local_bh_enable();
-	if (ma_regular_lwp()) {
+	if (!ma_spare_lwp()) {
 	  if (tbx_unlikely(!ma_in_interrupt() &&
 		ma_local_softirq_pending()))
 	    ma_invoke_softirq();

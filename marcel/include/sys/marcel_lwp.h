@@ -102,6 +102,12 @@ struct marcel_lwp {
 	ma_spinlock_t  tasklet_lock;
 #endif
 #endif
+
+#ifdef MA__LWPS
+#  ifdef MARCEL_BLOCKING_ENABLED
+	int need_resched;
+#  endif
+#endif
 };
 
 #ifdef MA__LWPS
@@ -343,9 +349,11 @@ void marcel_leave_blocking_section(void);
 #  define lwp_isset(num, map) 1
 #endif
 #ifdef MARCEL_BLOCKING_ENABLED
-#  define ma_regular_lwp() (LWP_NUMBER(LWP_SELF)!=-1)
+#  define ma_spare_lwp_ext(lwp) (LWP_NUMBER(lwp)==-1)
+#  define ma_spare_lwp() (ma_spare_lwp_ext(LWP_SELF))
 #else
-#  define ma_regular_lwp() (1)
+#  define ma_spare_lwp_ext(lwp) (0)
+#  define ma_spare_lwp() (0)
 #endif
 #  define for_each_lwp_begin(lwp) \
      for_all_lwp(lwp) {\

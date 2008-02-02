@@ -369,7 +369,6 @@ void marcel_leave_blocking_section(void);
 		} \
 	ma_for_all_lwp_from_end()
 
-#define ma_lwp_getmem(lwp, member)		((lwp)->member)
 #define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)

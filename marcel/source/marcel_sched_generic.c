@@ -421,14 +421,14 @@ void marcel_gensched_shutdown(void)
 	mdebug("stopping LWPs for supplementary VPs\n");
 	for(;;) {
 		lwp_found=NULL;
-		lwp_list_lock_read();
+		ma_lwp_list_lock_read();
 		ma_for_all_lwp(lwp) {
 			if (lwp != &__main_lwp) {
 				lwp_found=lwp;
 				break;
 			}
 		}
-		lwp_list_unlock_read();
+		ma_lwp_list_unlock_read();
 		if (!lwp_found) {
 			break;
 		}

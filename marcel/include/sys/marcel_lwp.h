@@ -73,9 +73,9 @@ struct marcel_lwp {
 #endif
 
 #ifdef MA__LWPS
-#if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
+#  if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
 	unsigned long ma_ia64_tp;
-#endif
+#  endif
 #endif
 	ma_tvec_base_t tvec_bases;
 
@@ -88,9 +88,9 @@ struct marcel_lwp {
 	struct marcel_topo_level
 #ifdef MA__NUMA
 		*node_level,
-#ifdef MARCEL_SMT_IDLE
+#  ifdef MARCEL_SMT_IDLE
 		*core_level,
-#endif
+#  endif
 		*cpu_level,
 #endif
 		*vp_level;
@@ -98,9 +98,9 @@ struct marcel_lwp {
 	char data[MA_PER_LWP_ROOM];
 
 #ifdef MA__LWPS
-#ifdef MARCEL_REMOTE_TASKLETS
+#  ifdef MARCEL_REMOTE_TASKLETS
 	ma_spinlock_t  tasklet_lock;
-#endif
+#  endif
 #endif
 
 #ifdef MA__LWPS
@@ -111,9 +111,9 @@ struct marcel_lwp {
 };
 
 #ifdef MA__LWPS
-#define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { }
+#  define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { }
 #else
-#define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
+#  define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
 	.vp_level = &marcel_machine_level[0], \
 }
 #endif
@@ -158,11 +158,11 @@ extern struct list_head ma_list_lwp_head;
 #endif
 
 #section marcel_functions
-static __tbx_inline__ void lwp_list_lock_read(void);
+static __tbx_inline__ void ma_lwp_list_lock_read(void);
 #section marcel_inline
 #depend "linux_spinlock.h[marcel_macros]"
 #depend "linux_spinlock.h[marcel_inline]"
-static __tbx_inline__ void lwp_list_lock_read(void)
+static __tbx_inline__ void ma_lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS
   ma_read_lock(&__ma_lwp_list_lock);
@@ -170,9 +170,9 @@ static __tbx_inline__ void lwp_list_lock_read(void)
 }
 
 #section marcel_functions
-static __tbx_inline__ void lwp_list_unlock_read(void);
+static __tbx_inline__ void ma_lwp_list_unlock_read(void);
 #section marcel_inline
-static __tbx_inline__ void lwp_list_unlock_read(void)
+static __tbx_inline__ void ma_lwp_list_unlock_read(void)
 {
 #ifdef MA__LWPS
   ma_read_unlock(&__ma_lwp_list_lock);
@@ -180,9 +180,9 @@ static __tbx_inline__ void lwp_list_unlock_read(void)
 }
 
 #section marcel_functions
-static __tbx_inline__ void lwp_list_lock_write(void);
+static __tbx_inline__ void ma_lwp_list_lock_write(void);
 #section marcel_inline
-static __tbx_inline__ void lwp_list_lock_write(void)
+static __tbx_inline__ void ma_lwp_list_lock_write(void)
 {
 #ifdef MA__LWPS
   ma_write_lock(&__ma_lwp_list_lock);
@@ -190,9 +190,9 @@ static __tbx_inline__ void lwp_list_lock_write(void)
 }
 
 #section marcel_functions
-static __tbx_inline__ void lwp_list_unlock_write(void);
+static __tbx_inline__ void ma_lwp_list_unlock_write(void);
 #section marcel_inline
-static __tbx_inline__ void lwp_list_unlock_write(void)
+static __tbx_inline__ void ma_lwp_list_unlock_write(void)
 {
 #ifdef MA__LWPS
   ma_write_unlock(&__ma_lwp_list_lock);
@@ -257,7 +257,7 @@ void ma_lwp_wait_active(void);
 int ma_lwp_block(void);
 marcel_lwp_t *ma_lwp_wait_vp_active(void);
 #else
-#define ma_lwp_wait_active() (void)0
+#  define ma_lwp_wait_active() (void)0
 #endif
 
 #section functions
@@ -278,7 +278,7 @@ void marcel_leave_blocking_section(void);
  * Accès aux LWP
  */
 
-#define ma_get_task_vpnum(task)		(ma_vpnum(THREAD_GETMEM(task,sched.lwp)))
+#define ma_get_task_vpnum(task)			(ma_vpnum(THREAD_GETMEM(task,sched.lwp)))
 #ifdef MA__LWPS
 #  define ma_vpnum(lwp)				(ma_per_lwp(vpnum, lwp))
 #  define ma_get_lwp_by_vpnum(vpnum)		(ma_vp_lwp[vpnum])
@@ -314,7 +314,7 @@ void marcel_leave_blocking_section(void);
 } while(0)
 #  define ma_is_first_lwp(lwp)			(lwp == &__main_lwp)
 
-#  define ma_any_lwp()	(!list_empty(&ma_list_lwp_head))
+#  define ma_any_lwp()				(!list_empty(&ma_list_lwp_head))
 #  define ma_for_all_lwp(lwp) \
      list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
 #  define ma_for_all_lwp_from_begin(lwp, lwp_start) \
@@ -325,27 +325,29 @@ void marcel_leave_blocking_section(void);
 /* Should rather be the node level where this lwp was started */
 #  define ma_lwp_vpaffinity_level(lwp)		(&marcel_machine_level[0])
 #else
-#  define cur_lwp				(&__main_lwp)
 #  define ma_vpnum(lwp)				((void)(lwp),0)
-#  define ma_get_lwp_by_vpnum(vpnum)		(cur_lwp)
-#  define ma_get_task_lwp(task)			(cur_lwp)
+#  define ma_get_lwp_by_vpnum(vpnum)		(&__main_lwp)
+#  define ma_get_task_lwp(task)			(&__main_lwp)
 #  define ma_set_task_lwp(task, value)		((void)0)
 #  define ma_clr_lwp_nb(proc, value)		((void)0)
 #  define ma_set_lwp_nb(proc, value)		((void)0)
-#  define ma_is_first_lwp(lwp)                   (1)
+#  define ma_is_first_lwp(lwp)			(1)
 
-#  define ma_any_lwp()	(cur_lwp != NULL)
-#  define ma_for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
-#  define ma_for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;lwp;lwp=NULL) {
-#  define ma_for_all_lwp_from_end() }
-#  define ma_lwp_isset(num, map) 1
+#  define ma_any_lwp()				(1)
+#  define ma_for_all_lwp(lwp) \
+	for (lwp=&__main_lwp;lwp;lwp=NULL)
+#  define ma_for_all_lwp_from_begin(lwp, lwp_start) \
+	for(lwp=lwp_start;lwp;lwp=NULL) {
+#  define ma_for_all_lwp_from_end() \
+	}
+#  define ma_lwp_isset(num, map)		(1)
 #endif
 #ifdef MARCEL_BLOCKING_ENABLED
-#  define ma_spare_lwp_ext(lwp) (ma_vpnum(lwp)==-1)
-#  define ma_spare_lwp() (ma_spare_lwp_ext(MA_LWP_SELF))
+#  define ma_spare_lwp_ext(lwp)			(ma_vpnum(lwp)==-1)
+#  define ma_spare_lwp()			(ma_spare_lwp_ext(MA_LWP_SELF))
 #else
-#  define ma_spare_lwp_ext(lwp) (0)
-#  define ma_spare_lwp() (0)
+#  define ma_spare_lwp_ext(lwp)			(0)
+#  define ma_spare_lwp()			(0)
 #endif
 #define ma_for_each_lwp_begin(lwp) \
 	ma_for_all_lwp(lwp) {\
@@ -369,7 +371,7 @@ void marcel_leave_blocking_section(void);
 #define ma_local_softirq_pending() \
 	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),softirq_pending)
 
-#define ma_lwp_node(lwp)	ma_vp_node[ma_vpnum(lwp)]
+#define ma_lwp_node(lwp)			ma_vp_node[ma_vpnum(lwp)]
 
 #section marcel_macros
 

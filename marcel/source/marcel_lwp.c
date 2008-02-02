@@ -165,9 +165,9 @@ static void *lwp_kthread_start_func(void *arg)
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 
-	lwp_list_lock_write();
+	ma_lwp_list_lock_write();
 	list_del(&lwp->lwp_list);	
-	lwp_list_unlock_write();
+	ma_lwp_list_unlock_write();
 
 	marcel_kthread_exit(NULL);
 	LOG_RETURN(NULL);
@@ -192,12 +192,12 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	// Initialisation de la structure marcel_lwp_t
 	ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
 
-	lwp_list_lock_write();
+	ma_lwp_list_lock_write();
 	{
 		// Ajout dans la liste globale des LWP
 		list_add_tail(&lwp->lwp_list, &ma_list_lwp_head);
 	}
-	lwp_list_unlock_write();
+	ma_lwp_list_unlock_write();
 
 #ifdef MA__SMP
 	// Lancement du thread noyau "propulseur". Il faut désactiver les
@@ -403,9 +403,9 @@ static void lwp_init(ma_lwp_t lwp)
 	if (ma_is_first_lwp(lwp)) {
 		ma_per_lwp(run_task, lwp)=MARCEL_SELF;
 
-		lwp_list_lock_write();
+		ma_lwp_list_lock_write();
 		list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
-		lwp_list_unlock_write();
+		ma_lwp_list_unlock_write();
 
 		LOG_OUT();
 		return;

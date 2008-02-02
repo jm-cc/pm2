@@ -338,7 +338,7 @@ void marcel_leave_blocking_section(void);
 
 #  define any_lwp()	(cur_lwp != NULL)
 #  define for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
-#  define for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;0;) {
+#  define for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;lwp;lwp=NULL) {
 #  define for_all_lwp_from_end() }
 #  define lwp_isset(num, map) 1
 #endif

@@ -1007,17 +1007,12 @@ void marcel_unfreeze(marcel_t * pids, int nb)
 /* WARNING!!! MUST BE LESS CONSTRAINED THAN MARCEL_ALIGN (64) */
 #define ALIGNED_32(addr)(((unsigned long)(addr) + 31) & ~(31L))
 
-// TODO : Vérifier le code avec les activations
 void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
     void *__restrict arg, tbx_bool_t fork)
 {
 	unsigned long depl, blk;
 	unsigned long bottom, top;
 	marcel_t cur = marcel_self();
-
-#ifdef MA__ACTIVATION
-	MARCEL_EXCEPTION_RAISE("Not implemented");
-#endif
 
 	if (t == cur) {
 		ma_preempt_disable();
@@ -1084,14 +1079,9 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 	}
 }
 
-// TODO : Vérifier le code avec les activations
 void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f,
     void *__restrict arg)
 {
-#ifdef MA__ACTIVATION
-	MARCEL_EXCEPTION_RAISE("Not implemented");
-#endif
-
 	memcpy(t->ctx_yield, t->ctx_migr, sizeof(marcel_ctx_t));
 
 	mdebug("end of hibernation for thread %p", t);

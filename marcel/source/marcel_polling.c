@@ -712,8 +712,6 @@ void marcel_ev_poll_force_sync(marcel_ev_server_t server)
 /****************************************************************
  * Attente d'événement
  *
- * TODO: utiliser BLOCK_ONE si on a les activations
- *
  * Remarque: facile à scinder en deux si on veut de l'attente
  * asynchrone. Ne pas oublier alors les impératifs de locking.
  */

@@ -176,11 +176,8 @@ static int unix_io_poll(marcel_ev_server_t server,
 	fd_set rfds, wfds;
 	struct timeval tv, *ptv;
   
-#ifndef MA__ACTIVATION
-	// Trop de messages avec les activations
 	mdebugl(6, "Polling function called on LWP %d\n",
 	       marcel_current_vp());
-#endif
 
 	ma_timerclear(&tv);
 	tv.tv_sec = 0;
@@ -241,11 +238,8 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 	struct timeval tv;
 	int r;
 
-#ifndef MA__ACTIVATION
-	// Trop de messages avec les activations
 	mdebugl(6, "Fast Polling function called on LWP %d\n",
 	       marcel_current_vp());
-#endif
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
@@ -289,18 +283,14 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 int marcel_read(int fildes, void *buf, size_t nbytes)
 {
 	int n;
-#ifndef MA__ACTIVATION
 	struct tcp_ev ev;
 	struct marcel_ev_wait wait;
-#endif	
 	LOG_IN();
 	do {
-#ifndef MA__ACTIVATION
 		ev.op = POLL_READ;
 		ev.FD = fildes;
 		mdebug("Reading in fd %i\n", fildes);
 		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
-#endif
 		LOG("IO reading fd %i", fildes);
 		n = read(fildes, buf, nbytes);
 	} while( n == -1 && errno == EINTR);
@@ -311,17 +301,13 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 #ifndef __MINGW32__
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
-#ifndef MA__ACTIVATION
 	struct tcp_ev ev;
 	struct marcel_ev_wait wait;
-#endif
 	LOG_IN();
-#ifndef MA__ACTIVATION
 	ev.op = POLL_READ;
 	ev.FD = fildes;
 	mdebug("Reading in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
-#endif
 
 	LOG("IO readving fd %i", fildes);
 	LOG_RETURN(readv(fildes, iov, iovcnt));
@@ -331,18 +317,14 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 int marcel_write(int fildes, const void *buf, size_t nbytes)
 {
 	int n;
-#ifndef MA__ACTIVATION
 	struct tcp_ev ev;
 	struct marcel_ev_wait wait;
-#endif
 	LOG_IN();
 	do {
-#ifndef MA__ACTIVATION
 		ev.op = POLL_WRITE;
 		ev.FD = fildes;
 		mdebug("Writing in fd %i\n", fildes);
 		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
-#endif
 
 		LOG("IO writing fd %i", fildes);
 		n = write(fildes, buf, nbytes);
@@ -354,17 +336,13 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 #ifndef __MINGW32__
 int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
-#ifndef MA__ACTIVATION
 	struct tcp_ev ev;
 	struct marcel_ev_wait wait;
-#endif
 	LOG_IN();
-#ifndef MA__ACTIVATION
 	ev.op = POLL_WRITE;
 	ev.FD = fildes;
 	mdebug("Writing in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
-#endif
 
 	LOG("IO writving fd %i", fildes);
 	LOG_RETURN(writev(fildes, iov, iovcnt));
@@ -373,9 +351,6 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 
 int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds)
 {
-#ifdef MA__ACTIVATION
-	return select(nfds, rfds, wfds, NULL, NULL);
-#else
 	struct tcp_ev ev;
 	struct marcel_ev_wait wait;
 	
@@ -388,7 +363,6 @@ int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds)
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 	LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
 			(errno = -ev.ret_val, -1));
-#endif
 }
 
 /* To force the reading/writing of an exact number of bytes */
@@ -444,9 +418,6 @@ int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 int tselect(int width, fd_set * __restrict readfds,
 		fd_set * __restrict writefds, fd_set * __restrict exceptfds)
 {
-#ifdef MA__ACTIVATION
-	return select(width, readfds, writefds, exceptfds, NULL);
-#else
 	int res = 0;
 	struct timeval timeout;
 	fd_set rfds, wfds, efds;
@@ -471,7 +442,6 @@ int tselect(int width, fd_set * __restrict readfds,
 	if(exceptfds) *exceptfds = efds;
    
 	return res;
-#endif /* MA__ACTIVATION */
 }
 
 void __marcel_init marcel_io_init(void)

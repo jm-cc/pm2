@@ -30,7 +30,7 @@ extern tbx_flag_t marcel_activity;
 /*  So do calls to the Unix Fork primitive. */
 void marcel_init_data(int *argc, char *argv[]);
 
-/*  May start some internal threads or activations. */
+/*  May start some internal threads. */
 /*  When completed, fork calls are prohibited. */
 void marcel_start_sched(int *argc, char *argv[]);
 

@@ -36,7 +36,6 @@ enum {
 #define MA_THR_RESTARTED(current, info) \
   do {                                 \
     MA_ARCH_SWITCHTO_LWP_FIX(current); \
-    MA_ACT_SET_THREAD(current); \
     MTRACE(info, current);             \
   } while(0)
 

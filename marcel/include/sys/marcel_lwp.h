@@ -35,9 +35,6 @@ typedef struct marcel_lwp *ma_lwp_t;
 
 struct marcel_lwp {
 	struct list_head lwp_list;
-#ifdef MA__ACTIVATION
-	act_proc_info_t act_infos;
-#endif
 #ifdef MA__SMP
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
@@ -67,10 +64,6 @@ struct marcel_lwp {
 	marcel_task_t *postexit_task;
 
 	marcel_task_t *ksoftirqd_task;
-
-#ifdef MA__ACTIVATION
-	marcel_task_t *upcall_new_task;
-#endif
 
 #ifdef MA__LWPS
 #  if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
@@ -122,17 +115,7 @@ struct marcel_lwp {
 
 #define MARCEL_LWP_EST_DEF
 #ifdef MA__LWPS
-#  ifdef MA__ACTIVATION
-#    include <asm/act.h>
-#    ifndef ACT_NB_MAX_CPU
-#      error Perhaps, you should add CFLAGS=-I/lib/modules/`uname -r`/build/include
-#      undef MA__ACTIVATION
-#    endif
-#    undef MAX_LWP
-#    define MAX_LWP ACT_NB_MAX_CPU
-#  else
-#    define MA_NR_LWPS (MARCEL_NBMAXCPUS+MARCEL_NBMAXVPSUP)
-#  endif
+#  define MA_NR_LWPS (MARCEL_NBMAXCPUS+MARCEL_NBMAXVPSUP)
 #else
 #  define MA_NR_LWPS 1
 #endif

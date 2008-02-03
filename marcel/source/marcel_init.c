@@ -241,7 +241,7 @@ void marcel_strip_cmdline(int *argc, char *argv[])
 	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 }
 
-// Cannot start some internal threads or activations.
+// Does not start any internal threads.
 // When completed, fork calls are still allowed.
 void marcel_init_data(int *argc, char *argv[])
 {
@@ -266,7 +266,7 @@ void marcel_init_data(int *argc, char *argv[])
 	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
-// When completed, some threads/activations may be started
+// When completed, some threads may be started
 // Fork calls are now prohibited in non libpthread versions
 void marcel_start_sched(int *argc, char *argv[])
 {
@@ -369,7 +369,6 @@ int main(int argc, char *argv[])
 
                 __marcel_main_ret = marcel_main(__ma_argc, __ma_argv);
 
-		marcel_upcalls_disallow();
 		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
 	}
 
@@ -451,9 +450,6 @@ extern const __ma_init_info_t ma_init_info_marcel_int_catcher_call_ONLINE;
 #endif // PROFILE
 
 // Section MA_INIT_SCHEDULER
-#ifdef MA__ACTIVATION
-extern const __ma_init_info_t ma_init_info_marcel_upcall_call_UP_PREPARE;
-#endif // MA__ACTIVATION
 extern const __ma_init_info_t ma_init_info_marcel_generic_sched_call_ONLINE;
 #ifdef MARCEL_POSTEXIT_ENABLED
 extern const __ma_init_info_t ma_init_info_marcel_postexit_call_ONLINE;
@@ -466,9 +462,6 @@ extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 #ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
 #endif
-#ifdef MA__ACTIVATION
-extern const __ma_init_info_t ma_init_info_init_upcalls;
-#endif // MA__ACTIVATION
 #ifdef MA__BUBBLES
 extern void __ma_bubble_sched_start(void);
 #endif
@@ -566,9 +559,6 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_timers_notifier_register);
 			call_init_function(&ma_init_info_marcel_lwp_finished);
 		} else if (section == MA_INIT_SCHEDULER) {
-#ifdef MA__ACTIVATION
-			call_init_function(&ma_init_info_marcel_upcall_call_UP_PREPARE);
-#endif				// MA__ACTIVATION
 			call_init_function(&ma_init_info_marcel_generic_sched_call_ONLINE);
 #ifdef MARCEL_POSTEXIT_ENABLED
 			call_init_function(&ma_init_info_marcel_postexit_call_ONLINE);
@@ -580,9 +570,6 @@ void marcel_init_section(int sec)
 #ifdef MA__LWPS
 			call_init_function(&ma_init_info_marcel_gensched_start_lwps);
 #endif				// MA__LWPS
-#ifdef MA__ACTIVATION
-			call_init_function(&ma_init_info_init_upcalls);
-#endif				//MA__ACTIVATION
 #ifdef MA__BUBBLES
 			__ma_bubble_sched_start();
 #endif				//MA__BUBBLES

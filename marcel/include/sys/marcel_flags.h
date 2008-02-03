@@ -21,12 +21,6 @@
 #  define MA__DEBUG
 #endif
 
-#ifdef __ACT__
-#  error use of __ACT__ depreciated. Define MARCEL_ACT instead
-#  undef __ACT__
-#  define MARCEL_ACT
-#endif
-
 #ifdef SMP
 #  error use of SMP depreciated. Define MARCEL_SMP instead
 #  undef SMP
@@ -48,44 +42,20 @@
 #  define MARCEL_NUMA 1
 #endif
 
-#ifdef MARCEL_ACT
-#  undef MARCEL_ACT
-#  define MARCEL_ACT 1
-#endif
-
-#ifdef MARCEL_ACTSMP
-#  undef MARCEL_ACTSMP
-#  define MARCEL_ACTSMP 1
-#endif
-
-#ifdef MARCEL_ACTNUMA
-#  undef MARCEL_ACTNUMA
-#  define MARCEL_ACTNUMA 1
-#endif
-
-#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) == 0)
-#  error No MARCEL_... defined. Choose between MONO SMP NUMA ACT ACTSMP and ACTNUMA Marcel options in the flavor
+#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA) == 0)
+#  error No MARCEL_... defined. Choose between MONO SMP and NUMA Marcel options in the flavor
 //#define MARCEL_MONO 1
 #endif
 
-#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) > 1)
-#  error You must define at most one of MARCEL_MONO, MARCEL_SMP, MARCEL_NUMA, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_ACTNUMA Marcel options in the flavor
+#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA) > 1)
+#  error You must define at most one of MARCEL_MONO, MARCEL_SMP or MARCEL_NUMA Marcel options in the flavor
 #endif
 
 /* MA__LWPS : indique que l'on a plusieurs entités ordonnancées par
  * le noyau en parallèle.
- *
- *  Cela arrive en SMP ou en Activation sur multiprocesseur 
  * */
 #ifdef MA__LWPS
 #  undef MA__LWPS
-#endif
-
-/* MA__ACTIVATION : indique qu'on utilise les activations (mono ou
- * smp). On peut donc utiliser les constantes de act.h
- * */
-#ifdef MA__ACTIVATION
-#  undef MA__ACTIVATION
 #endif
 
 /* MA__BIND_LWP_ON_PROCESSORS : indique qu'il faut utiliser attacher les LWPs
@@ -96,7 +66,7 @@
 #endif
 
 /* MA__TIMER : indique qu'il faut utiliser le timer unix (signaux)
- * pour la préemption. (ne pas valider avec les activations)
+ * pour la préemption.
  * */
 #ifdef MA__TIMER
 #  undef MA__TIMER
@@ -165,25 +135,7 @@
 #  endif
 #endif /* Fin Marcel SMP */
 
-#if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) || defined(MARCEL_ACTNUMA) /* Marcel Activation */
-#  define MA__ACTIVATION
-#  define ACTIVATION
-#  define MA__WORK
-#endif /* Fin Marcel Activation */
-
-#ifdef MARCEL_ACT /* Marcel Activation Mono */
-#  define MA__ACT
-#  undef CONFIG_SMP
-#endif /* Fin Marcel Activation Mono */
-
-#if defined(MARCEL_ACTSMP) || defined(MARCEL_ACTNUMA) /* Marcel Activation SMP */
-#  define MA__ACTSMP
-#  define CONFIG_SMP
-#  define __SMP__
-#  define MA__LWPS
-#endif /* Fin Marcel Activation SMP */
-
-#if defined(MARCEL_NUMA) || defined(MARCEL_ACTNUMA)
+#if defined(MARCEL_NUMA)
 #  define MA__NUMA
 #endif
 

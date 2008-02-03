@@ -83,11 +83,6 @@ void marcel_execute_deviate_work(void)
 	}
 }
 
-#ifdef MA__ACTIVATION
-#ifdef PM2_DEV
-#warning activations non gérées
-#endif
-#endif
 static void insertion_relai(handler_func_t f, void *arg)
 {
 	marcel_ctx_t back;

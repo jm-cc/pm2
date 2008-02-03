@@ -63,25 +63,17 @@ marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
 unsigned  ma__nb_vp = 1;
 
 #if defined(MA__LWPS)
-
 void marcel_lwp_fix_nb_vps(unsigned nb_vp)
 {
 	ma_set_nbprocessors();
-
 	// Choix du nombre de LWP
-#ifdef MA__ACTSMP
-	ma__nb_vp = (nb_vp ? nb_vp : ACT_NB_MAX_CPU);
-#else
 	ma__nb_vp = (nb_vp ? nb_vp : marcel_nbprocessors);
-#endif
-
 	ma_set_processors();
 }
-
 #endif /* MA__LWPS */
 
 /* Fonction exécutée dans le thread run_task au démarrage d'un LWP
- * quelque soit ce LWP (kthread ou activation), sauf le premier.
+ * quelque soit ce LWP, sauf le premier.
  */
 void marcel_lwp_start(marcel_lwp_t *lwp)
 {
@@ -103,9 +95,6 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
 }
 
 /* Fonction du thread run_task pour le démarrage d'un LWP
- * 
- * Dans ce cas des activations, on appelle directement
- * marcel_lwp_start depuis un upcall
  */
 static void* lwp_start_func(void* arg)
 {
@@ -416,9 +405,8 @@ static void lwp_init(ma_lwp_t lwp)
 	/* Cette tâche est lancée aussi tôt que possible
 	 * dès que le lwp est créé.
 	 * Elle exécute la fonction marcel_lwp_start
-	 * - soit grâce au code fournit ici
-	 *   (le thread noyau fait un marcel_longjmp sur cette tâche)
-	 * - soit par un appel direct à cette fonction (ACTIVATIONS)
+	 * grâce au code fournit ici
+	 * (le thread noyau fait un marcel_longjmp sur cette tâche)
 	 */
 	marcel_attr_init(&attr);
 	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%2d",ma_vpnum(lwp));

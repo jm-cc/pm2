@@ -1020,7 +1020,7 @@ int marcel_yield_to(marcel_t next)
 	}
 
 	// we suppose we don't want to go to sleep, and we're not yielding to a
-	// dontsched thread like idle or activations
+	// dontsched thread like idle
 	
 	prev = do_switch(prev, next, nexth, marcel_clock());
 

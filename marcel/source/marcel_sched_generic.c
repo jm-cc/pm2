@@ -29,9 +29,6 @@
 DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
         LOG_IN();
-#ifdef MA__ACTIVATION
-	LOG_RETURN(nanosleep(rqtp, rmtp));
-#else	     
         unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
 
         if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0)) {
@@ -55,7 +52,6 @@ DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmt
 	}
    else
       LOG_RETURN(0);
-#endif
 })
 
 DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
@@ -66,17 +62,10 @@ DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rm
 DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
 	     LOG_IN();
-#ifdef MA__ACTIVATION
-	LOG_RETURN(usleep(usec));
-#else
-	LOG_IN();
-
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
 
 	LOG_RETURN(0);
-
-#endif
 })
 
 DEF_POSIX(int,usleep,(unsigned long usec),(usec),
@@ -101,14 +90,10 @@ DEF___C(int,usleep,(unsigned long usec),(usec));
 DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
 {
 	LOG_IN();
-#ifdef MA__ACTIVATION
-	LOG_RETURN(sleep(sec));
-#else
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((1000000*sec)/marcel_gettimeslice());
 
 	LOG_RETURN(0);
-#endif
 })
 
 #ifdef MA__LIBPTHREAD
@@ -386,7 +371,6 @@ void marcel_gensched_shutdown(void)
 #endif
 
 #ifdef MA__SMP
-
 	/* Stop timer before stopping kernel threads, to avoid running
 	 * pthread_kill() in the middle of pthread_exit() */
 	marcel_sig_stop_itimer();
@@ -435,11 +419,6 @@ void marcel_gensched_shutdown(void)
 		marcel_lwp_stop_lwp(lwp_found);
 	}
 	ma_preempt_enable();
-
-#elif defined(MA__ACTIVATION)
-	// TODO : arrêter les autres activations...
-
-	//act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
 #else
 	/* Destroy master-sched's stack */
 	//marcel_cancel(__main_lwp.sched.idle_task);
@@ -511,7 +490,6 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 #endif
 	}
 }
-#ifndef MA__ACT
 static any_t idle_func(any_t hlwp)
 {
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);
@@ -532,7 +510,6 @@ static any_t idle_func(any_t hlwp)
 	}
 	return NULL;
 }
-#endif
 #endif
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)

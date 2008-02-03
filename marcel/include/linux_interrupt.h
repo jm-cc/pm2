@@ -24,28 +24,21 @@
 #section marcel_macros
 /* SoftIRQ primitives.  */
 #define ma_local_bh_disable() \
-		do { \
-			if ((ma_preempt_count() += MA_SOFTIRQ_OFFSET) \
-					== MA_SOFTIRQ_OFFSET) \
-				ma_record_preempt_backtrace(); \
-			ma_barrier();  \
-		} while (0)
+	do { \
+		if ((ma_preempt_count() += MA_SOFTIRQ_OFFSET) \
+				== MA_SOFTIRQ_OFFSET) \
+			ma_record_preempt_backtrace(); \
+		ma_barrier();  \
+	} while (0)
 
 #define __ma_local_bh_enable() \
-		do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)
+	do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)
 
 #section marcel_functions
 extern void TBX_EXTERN ma_local_bh_enable(void);
 
-/* PLEASE, avoid to allocate new softirqs, if you need not _really_ high
-   frequency threaded job scheduling. For almost all the purposes
-   tasklets are more than enough. F.e. all serial device BHs et
-   al. should be converted to tasklets, not to softirqs.
- */
-
 #section marcel_types
-enum
-{
+enum {
 	MA_TIMER_HARDIRQ=0,
 	MA_HI_SOFTIRQ,
 	MA_TIMER_SOFTIRQ,
@@ -54,21 +47,14 @@ enum
 };
 
 #section marcel_structures
-/* softirq mask and active fields moved to irq_cpustat_t in
- * asm/hardirq.h to get better cache usage.  KAO
- */
-
-struct ma_softirq_action
-{
-	void	(*action)(struct ma_softirq_action *);
-	void	*data;
+struct ma_softirq_action {
+	void (*action)(struct ma_softirq_action *);
+	void *data;
 };
 
 #section marcel_functions
 asmlinkage TBX_EXTERN void ma_do_softirq(void);
 extern TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data);
-extern void ma_softirq_init(void);
-/* #define __ma_raise_softirq_irqoff(nr) do { ma_local_softirq_pending() |= 1UL << (nr); } while (0) */
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq(unsigned int nr));
@@ -81,7 +67,7 @@ static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) {
 }
 
 #ifndef ma_invoke_softirq
-#define ma_invoke_softirq() ma_do_softirq()
+#  define ma_invoke_softirq() ma_do_softirq()
 #endif
 
 #section common
@@ -108,8 +94,7 @@ static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) {
 #section marcel_structures
 #depend "asm/linux_atomic.h[marcel_types]"
 #include "marcel_topology.h"
-struct ma_tasklet_struct
-{
+struct ma_tasklet_struct {
 	struct ma_tasklet_struct *next;
 	unsigned long state;
 	ma_atomic_t count;
@@ -124,27 +109,31 @@ struct ma_tasklet_struct
 
 #section marcel_macros
 #ifdef MARCEL_REMOTE_TASKLETS
-#define MA_REMOTE_TASKLET_INIT .vp_set=MARCEL_VPSET_ZERO,
+#  define MA_REMOTE_TASKLET_INIT		.vp_set=MARCEL_VPSET_ZERO,
 #else /* MARCEL_REMOTE_TASKLETS */
-#define MA_REMOTE_TASKLET_INIT
+#  define MA_REMOTE_TASKLET_INIT
 #endif /* MARCEL_REMOTE_TASKLETS */
 
-#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count) \
-  { .next=NULL, .state=0, .count=MA_ATOMIC_INIT(_count), .func=_func, .data=_data, MA_REMOTE_TASKLET_INIT }
+#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count) { \
+		.next=NULL, \
+		.state=0, \
+		.count=MA_ATOMIC_INIT(_count), \
+		.func=_func, \
+		.data=_data, MA_REMOTE_TASKLET_INIT \
+	}
 
 #define MA_TASKLET_INIT(name, _func, _data) \
 	MA_TASKLET_INIT_COUNT(name, _func, _data, 0)
 #define MA_DECLARE_TASKLET(name, _func, _data) \
-struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
+	struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
 
 #define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
 	MA_TASKLET_INIT_COUNT(name, _func, _data, 1)
 #define MA_DECLARE_TASKLET_DISABLED(name, _func, _data) \
-struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data)
+	struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data)
 
 #section marcel_types
-enum
-{
+enum {
 	MA_TASKLET_STATE_SCHED,	/* Tasklet is scheduled for execution */
 	MA_TASKLET_STATE_RUN	/* Tasklet is running (SMP only) */
 };
@@ -152,48 +141,41 @@ enum
 #section marcel_inline
 #depend "asm/linux_bitops.h[]"
 #depend "asm/linux_bitops.h[marcel_macros]"
-#ifdef MA__LWPS
-
-#ifdef MARCEL_REMOTE_TASKLETS
-static __tbx_inline__ void set_vpset(struct ma_tasklet_struct *t, marcel_vpset_t * vpset)
-{
+#if defined(MA__LWPS) && defined (MARCEL_REMOTE_TASKLETS)
+static __tbx_inline__ void ma_remote_tasklet_set_vpset(struct ma_tasklet_struct *t, marcel_vpset_t * vpset) {
        t->vp_set=*vpset;
 }
-#define ma_remote_tasklet_init(lock) ma_spin_lock_init(lock)
-#define ma_remote_tasklet_lock(lock) ma_spin_lock(lock)
-#define ma_remote_tasklet_unlock(lock) ma_spin_unlock(lock)
+#  define ma_remote_tasklet_init(lock)		ma_spin_lock_init(lock)
+#  define ma_remote_tasklet_lock(lock)		ma_spin_lock(lock)
+#  define ma_remote_tasklet_unlock(lock)	ma_spin_unlock(lock)
 #else
-#define ma_remote_tasklet_init(lock) do { } while (0)
-#define ma_remote_tasklet_lock(lock) do { } while (0)
-#define ma_remote_tasklet_unlock(lock) do { } while (0)
+#  define ma_remote_tasklet_set_vpset(t,vpset)	do { } while (0)
+#  define ma_remote_tasklet_init(lock)		do { } while (0)
+#  define ma_remote_tasklet_lock(lock)		do { } while (0)
+#  define ma_remote_tasklet_unlock(lock)	do { } while (0)
 #endif
 
-
-static __tbx_inline__ int ma_tasklet_trylock(struct ma_tasklet_struct *t)
-{
+#ifdef MA__LWPS
+static __tbx_inline__ int ma_tasklet_trylock(struct ma_tasklet_struct *t) {
 	return !ma_test_and_set_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 }
 
-/* returns !=0 if somebody else added SCHED while we were running, in which case it's up to us to call ma_tasklet_schedule() again */
-static __tbx_inline__ int ma_tasklet_unlock(struct ma_tasklet_struct *t)
-{
+/* returns !=0 if somebody else added SCHED while we were running, in
+ * which case it's up to us to call ma_tasklet_schedule() again */
+static __tbx_inline__ int ma_tasklet_unlock(struct ma_tasklet_struct *t) {
 	unsigned long old_state;
 	ma_smp_mb__before_clear_bit(); 
 	old_state = ma_xchg(&(t)->state, 0);
 	return old_state & (1<<MA_TASKLET_STATE_SCHED);
 }
 
-static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t) {
 	while (ma_test_bit(MA_TASKLET_STATE_RUN, &(t)->state)) { ma_barrier(); }
 }
 #else
-#define ma_remote_tasklet_lock(lock) do { } while (0)
-#define ma_remote_tasklet_unlock(lock) do { } while (0)
-#define set_vpset(t,set) do{ } while (0)
-#define ma_tasklet_trylock(t) 1
-#define ma_tasklet_unlock_wait(t) do { } while (0)
-#define ma_tasklet_unlock(t) 0
+#  define ma_tasklet_trylock(t)			(1)
+#  define ma_tasklet_unlock_wait(t)		do { } while (0)
+#  define ma_tasklet_unlock(t)			(0)
 #endif
 
 #section marcel_functions
@@ -202,26 +184,22 @@ extern TBX_EXTERN void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *
 #section marcel_inline
 
 #ifdef MARCEL_REMOTE_TASKLETS
-
-static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct *t, unsigned vp)
-{
-	ma_remote_tasklet_lock(&ma_vp_lwp[vp]->tasklet_lock);	
+static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct *t, unsigned vp) {
+	ma_remote_tasklet_lock(&ma_vp_lwp[vp]->tasklet_lock);
 	t->next = ma_topo_vpdata_l(ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list;
 	ma_topo_vpdata_l( ma_per_lwp(vp_level, ma_vp_lwp[vp]),tasklet_vec).list = t;
 	__ma_raise_softirq_vp(MA_TASKLET_SOFTIRQ, vp);
 	ma_remote_tasklet_unlock(&ma_vp_lwp[vp]->tasklet_lock);
 }
 
-static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 	unsigned long old_state;
 	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
 	switch (old_state) {
 	case 0:
 		/* not running, not scheduled, schedule it here */
-		if( marcel_vpset_isset(&(t->vp_set),marcel_current_vp())) 
-		{			
+		if( marcel_vpset_isset(&(t->vp_set),marcel_current_vp())) {
 			ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 			ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
 			__ma_tasklet_schedule(t);
@@ -246,9 +224,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 	}
 }
 #else
-
-static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 	unsigned long old_state;
 	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
 	switch (old_state) {
@@ -274,8 +250,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 extern TBX_EXTERN void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
-static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t) {
 	unsigned long old_state;
 	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
 	switch (old_state) {
@@ -296,29 +271,24 @@ static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 	}
 }
 
-
 #section marcel_inline
-static __tbx_inline__ void ma_tasklet_disable_nosync(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_disable_nosync(struct ma_tasklet_struct *t) {
 	ma_atomic_inc(&t->count);
 	ma_smp_mb__after_atomic_inc();
 }
 
-static __tbx_inline__ void ma_tasklet_disable(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_disable(struct ma_tasklet_struct *t) {
 	ma_tasklet_disable_nosync(t);
 	ma_tasklet_unlock_wait(t);
 	ma_smp_mb();
 }
 
-static __tbx_inline__ void ma_tasklet_enable(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_enable(struct ma_tasklet_struct *t) {
 	ma_smp_mb__before_atomic_dec();
 	ma_atomic_dec(&t->count);
 }
 
-static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t)
-{
+static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t) {
 	ma_smp_mb__before_atomic_dec();
 	ma_atomic_dec(&t->count);
 }
@@ -327,6 +297,6 @@ static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t)
 extern TBX_EXTERN void ma_tasklet_kill(struct ma_tasklet_struct *t);
 extern void tasklet_kill_immediate(struct ma_tasklet_struct *t, ma_lwp_t lwp);
 extern TBX_EXTERN void ma_tasklet_init(struct ma_tasklet_struct *t,
-			 void (*func)(unsigned long), unsigned long data);
+			void (*func)(unsigned long), unsigned long data);
 
 

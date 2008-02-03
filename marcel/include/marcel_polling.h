@@ -116,13 +116,6 @@ enum {
 };
 
 #section functions
-int marcel_per_lwp_polling_register(int *data,
-                                    int value_to_match,
-                                    void (*func) (void *),
-                                    void *arg);
-
-void marcel_per_lwp_polling_proceed(void);
-
 /* Un raccourci pratique des fonctions suivantes, utile si l'on ne
  * soumet la requête qu'une seule fois. Les opérations suivantes sont
  * effectuées : initialisation, soumission et attente d'un
@@ -590,100 +583,4 @@ static __tbx_inline__ void marcel_check_polling(unsigned polling_point)
 		__marcel_check_polling(polling_point);
 }
 
-/****************************************************************
- * Compatibility stuff
- *
- * Software using this should switch to the new interface
- * This will be remove later
- */
-
-#section types
-
-struct poll_struct;
-struct poll_cell;
-
-typedef struct poll_struct *marcel_pollid_t;
-typedef struct poll_cell poll_cell_t, *marcel_pollinst_t;
-
-#section marcel_structures
-struct poll_struct {
-	struct marcel_ev_server server;
-	marcel_poll_func_t func;
-	marcel_fastpoll_func_t fastfunc;
-	marcel_pollgroup_func_t gfunc;
-	void *specific;
-	marcel_pollinst_t cur_cell;
-};
-
-struct poll_cell {
-	struct marcel_ev_req inst;
-	any_t arg;
-};
-
-#section types
-typedef void (*marcel_pollgroup_func_t)(marcel_pollid_t id);
-
-typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
-				    unsigned active,
-				    unsigned sleeping,
-				    unsigned blocked);
-
-typedef void *(*marcel_fastpoll_func_t)(marcel_pollid_t id,
-					any_t arg,
-					tbx_bool_t first_call);
-
-#section macros
-#define MARCEL_POLL_AT_TIMER_SIG  MARCEL_EV_POLL_AT_TIMER_SIG
-#define MARCEL_POLL_AT_YIELD      MARCEL_EV_POLL_AT_YIELD
-#define MARCEL_POLL_AT_LIB_ENTRY  MARCEL_EV_POLL_AT_LIB_ENTRY
-#define MARCEL_POLL_AT_IDLE       MARCEL_EV_POLL_AT_IDLE
-
-#section functions
-marcel_pollid_t __tbx_deprecated__
-marcel_pollid_create_X(marcel_pollgroup_func_t g,
-		       marcel_poll_func_t f,
-		       marcel_fastpoll_func_t h,
-		       unsigned polling_points,
-		       char* name);
-#define marcel_pollid_create(g, f, h, polling_points) \
-  marcel_pollid_create_X(g, f, h, polling_points, \
-                         "Auto created ("__BASE_FILE__")")
-
-#section macros
-#define MARCEL_POLL_FAILED                NULL
-#define MARCEL_POLL_OK                    (void*)1
-#define MARCEL_POLL_SUCCESS(id)           ({MARCEL_EV_REQ_SUCCESS(&(id)->cur_cell->inst); (void*)1;})
-#define MARCEL_POLL_SUCCESS_FOR(pollinst) ({MARCEL_EV_REQ_SUCCESS(&(pollinst)->inst); (void*)1;})
-
-
-/*  ATTENTION : changement d interface */
-/*  Remplacer : "FOREACH_POLL(id, _arg) { ..." */
-/*  par : "FOREACH_POLL(id) { GET_ARG(id, _arg); ..." */
-/*  Ou mieux: utiliser FOREACH_EV_POLL[_BASE] */
-#define FOREACH_POLL(id) \
-  FOREACH_REQ_POLL((id)->cur_cell, &(id)->server, inst)
-#define GET_ARG(id, _arg) \
-	_arg = (__typeof__(_arg))((id)->cur_cell->arg)
-
-#define GET_CURRENT_POLLINST(id) ((id)->cur_cell)
-
-#section functions
-void __tbx_deprecated__ marcel_poll(marcel_pollid_t id, any_t arg);
-
-void __tbx_deprecated__ marcel_force_check_polling(marcel_pollid_t id);
-
-static __tbx_inline__ void __tbx_deprecated__ 
-marcel_pollid_setspecific(marcel_pollid_t id, void *specific)
-{
-	id->specific = specific;
-}
-
-void marcel_poll_lock(void);
-void marcel_poll_unlock(void);
-
-static __tbx_inline__ void * __tbx_deprecated__ 
-marcel_pollid_getspecific(marcel_pollid_t id)
-{
-	return id->specific;
-}
 

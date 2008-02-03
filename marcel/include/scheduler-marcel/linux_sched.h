@@ -46,7 +46,6 @@ extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 
 #section marcel_functions
 extern unsigned long ma_nr_ready(void);
-void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
 asmlinkage TBX_EXTERN int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);
@@ -97,4 +96,5 @@ static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 
 #section functions
 extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
+extern void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
 

@@ -69,7 +69,7 @@ static int unix_io_group(marcel_ev_server_t server,
 			  marcel_ev_req_t req, 
 			  int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
+	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
 	tcp_ev_t ev;
 
 	mdebug("Grouping IO poll\n");
@@ -170,7 +170,7 @@ static int unix_io_poll(marcel_ev_server_t server,
 			marcel_ev_req_t req, 
 			int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
+	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
 	tcp_ev_t ev;
 	int r;
 	fd_set rfds, wfds;
@@ -230,8 +230,8 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 			      marcel_ev_req_t req, 
 			      int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
-	tcp_ev_t ev=struct_up(req, struct tcp_ev, inst);
+	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
+	tcp_ev_t ev=tbx_container_of(req, struct tcp_ev, inst);
 
 	fd_set rfds, wfds;
 	unsigned nb = 0;

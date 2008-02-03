@@ -25,17 +25,6 @@
  * Ce ne sont que des indications, pas des contraintes
  ****************************************************************/
 
-#section macros
-/*[SC]****************************************************************
- * Récupère l'adresse d'une structure englobante 
- * Il faut donner :
- * - l'adresse du champ interne
- * - le type de la structure englobante
- * - le nom du champ interne dans la structure englobante
- */
-#define struct_up(ptr, type, member) \
-	tbx_container_of(ptr, type, member)
-
 #section types
 
 /*[U]****************************************************************
@@ -99,7 +88,6 @@ int marcel_ev_server_start(marcel_ev_server_t server);
  */
 int marcel_ev_server_stop(marcel_ev_server_t server);
 
-/*  THESE: PROTO_EV_WAIT START */
 /*[U]****************************************************************
  * Fonctions à l'usage des threads applicatifs
  */
@@ -123,35 +111,6 @@ enum {
 int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 		   marcel_ev_wait_t wait, marcel_time_t timeout);
 
-/* Initialisation d'un événement
- * (à appeler en premier si l'on utilise autre chose que marcel_ev_wait) */
-int marcel_ev_req_init(marcel_ev_req_t req);
-
-/* Ajout d'un attribut spécifique à une requête */
-int marcel_ev_req_attr_set(marcel_ev_req_t req, int attr);
-
-/* Soumission d'une requête (le serveur PEUT commencer à scruter si cela
- * lui convient) */
-int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req);
-
-/* Abandon d'une requête et retour des threads en attente sur cette
- * requête (avec le code de retour fourni) */
-int marcel_ev_req_cancel(marcel_ev_req_t req, int ret_code);
-
-/* Attente bloquante d'un événement sur une requête déjà enregistrée */
-int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_wait_t wait, 
-		       marcel_time_t timeout);
-
-/* Attente bloquante d'un événement sur une quelconque requête du serveur */
-int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout);
-
-/* Renvoie une requête survenue n'ayant pas l'attribut NO_WAKE_SERVER
- * (utile au retour de server_wait())
- * À l'abandon d'une requête (wait, req_cancel ou ONE_SHOT) la requête
- * est également retirée de cette file (donc n'est plus consultable) */
-marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
-
-/*  THESE: PROTO_EV_WAIT STOP */
 /* Exclusion mutuelle pour un serveur d'événements
  *
  * - les call-backs sont TOUJOURS appelés à l'intérieur de cette
@@ -176,14 +135,6 @@ marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
  */
 int marcel_ev_lock(marcel_ev_server_t server);
 int marcel_ev_unlock(marcel_ev_server_t server);
-/* Pour BLOCK_ONE et BLOCK_ALL avant et après l'appel système bloquant */
-int marcel_ev_callback_will_block(marcel_ev_server_t server);
-int marcel_ev_callback_has_blocked(marcel_ev_server_t server);
-
-/* Appel forcé de la fonction de scrutation */
-void marcel_ev_poll_force(marcel_ev_server_t server);
-/* Idem, mais on est sûr que l'appel a été fait quand on retourne */
-void marcel_ev_poll_force_sync(marcel_ev_server_t server);
 
 #section macros
 /*[S]****************************************************************
@@ -206,15 +157,6 @@ typedef enum {
 	MARCEL_EV_FUNCTYPE_POLL_GROUP,
 	/* server, XX, NA, nb_req_grouped, NA */
 	MARCEL_EV_FUNCTYPE_POLL_POLLANY,
-	/* Les suivants ne sont pas encore utilisés... */
-	/* server, XX, req to block, NA, NA */
-	MARCEL_EV_FUNCTYPE_BLOCK_WAITONE,
-	MARCEL_EV_FUNCTYPE_BLOCK_WAITONE_TIMEOUT,
-	MARCEL_EV_FUNCTYPE_BLOCK_GROUP,
-	MARCEL_EV_FUNCTYPE_BLOCK_WAITANY,
-	MARCEL_EV_FUNCTYPE_BLOCK_WAITANY_TIMEOUT,
-	MARCEL_EV_FUNCTYPE_UNBLOCK_WAITONE,
-	MARCEL_EV_FUNCTYPE_UNBLOCK_WAITANY,
 	/* PRIVATE */
 	MA_EV_FUNCTYPE_SIZE
 } marcel_ev_op_t;
@@ -226,19 +168,20 @@ typedef enum {
  * req : pour *(POLL|WAIT)ONE* : la requête à tester en particulier
  * nb_req : pour POLL_* : le nombre de requêtes groupées
  * option : flags dépendant de l'opération
- *  - pour POLL_POLLONE : 
+ *  - pour POLL_POLLONE :
  *     + EV_IS_GROUPED : si la requête est déjà groupée
  *     + EV_ITER : si POLL_POLLONE est appelée sur toutes les requêtes
  *                 en attente (ie POLL_POLLANY n'est pas disponible)
  *
  * La valeur de retour est pour l'instant ignorée.
  */
-typedef int (marcel_ev_callback_t)(marcel_ev_server_t server, 
-				   marcel_ev_op_t op,
-				   marcel_ev_req_t req, 
-				   int nb_ev, int option);
+typedef int (marcel_ev_callback_t)(marcel_ev_server_t server,
+				  marcel_ev_op_t op,
+				  marcel_ev_req_t req,
+				  int nb_ev, int option);
 
 typedef marcel_ev_callback_t *marcel_ev_pcallback_t;
+
 
 /*[C]****************************************************************
  * Les flags des call-backs (voir ci-dessus)
@@ -253,30 +196,6 @@ enum {
 /*[C]****************************************************************
  * Itérateurs pour les call-backs
  */
-
-/****************************************************************
- * Itérateur pour les requêtes enregistrées d'un serveur
- */
-
-/* Itérateur avec le type de base
-   marcel_ev_req_t req : itérateur
-   marcel_ev_server_t server : serveur
-*/
-#define FOREACH_REQ_REGISTERED_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_registered, chain_req_registered)
-
-/* Idem mais protégé (usage interne) */
-#define FOREACH_REQ_REGISTERED_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_registered, chain_req_registered)
-
-/* Itérateur avec un type utilisateur
-   [User Type] req : pointeur sur structure contenant un struct marcel_req
-                     (itérateur)
-   marcel_ev_server_t server : serveur
-   member : nom de struct marcel_ev dans la structure pointée par req
-*/
-#define FOREACH_REQ_REGISTERED(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_registered, member.chain_req_registered)
 
 /****************************************************************
  * Itérateur pour les requêtes groupées de la scrutation (polling)
@@ -301,31 +220,6 @@ enum {
 */
 #define FOREACH_REQ_POLL(req, server, member) \
   list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
-
-
-/****************************************************************
- * Itérateur pour les requêtes groupées de l'attente bloquante
- */
-
-/* Itérateur avec le type de base
-   marcel_ev_req_t req : itérateur
-   marcel_ev_server_t server : serveur
-*/
-#define FOREACH_REQ_BLOCK_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_block, chain_req)
-
-/* Idem mais protégé (usage interne) */
-#define FOREACH_REQ_BLOCK_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_block, chain_req)
-
-/* Itérateur avec un type utilisateur
-   [User Type] req : pointeur sur structure contenant un struct marcel_req
-                     (itérateur)
-   marcel_ev_server_t server : serveur
-   member : nom de struct marcel_ev dans la structure pointée par req
-*/
-#define FOREACH_REQ_BLOCK(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_block, member.chain_req)
 
 
 /****************************************************************
@@ -368,20 +262,6 @@ enum {
   do { \
         list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
   } while(0)
- 
-
-
-/* Macro utilisable dans les call-backs pour réveiller un thread en attente
-   en lui fournissant le code de retour
-   marcel_ev_wait_t wait : l'événement à reveiller
-*/
-#define MARCEL_EV_WAIT_SUCCESS(wait, code) \
-  do { \
-        list_del(&(wait)->chain_wait); \
-        (wait)->ret_code=(code); \
-  } while(0)
- 
-/*  THESE: INTERFACE STOP */
 
 
 /*  =============== PRIVATE =============== */
@@ -393,13 +273,6 @@ enum {
 #depend "[marcel_structures]"
 
 #section inline
-/*  #ifndef __cplusplus */
-/*  __tbx_inline__ static void marcel_ev_server_init(marcel_ev_server_t server, char* name) */
-/*  { */
-/*  	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name); */
-/*  } */
-/*  #endif */
-
 __tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,
 						marcel_ev_pcallback_t func)

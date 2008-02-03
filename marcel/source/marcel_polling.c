@@ -78,14 +78,6 @@ inline static marcel_task_t* ensure_lock_server(marcel_ev_server_t server)
 	LOG_RETURN(NULL);
 }
 
-inline static void lock_server_owner(marcel_ev_server_t server,
-				     marcel_task_t *owner)
-{
-	LOG_IN();
-	__lock_server(server, owner);
-	LOG_OUT();
-}
-
 inline static void restore_lock_server_locked(marcel_ev_server_t server, 
 					      marcel_task_t *old_owner)
 {
@@ -135,21 +127,6 @@ int marcel_ev_unlock(marcel_ev_server_t server)
  * Gestion des événements signalés OK par les call-backs
  *
  */
-
-marcel_ev_req_t marcel_ev_get_success(marcel_ev_server_t server)
-{
-	marcel_ev_req_t req=NULL;
-	LOG_IN();
-	ma_spin_lock_softirq(&server->req_success_lock);
-	if (!list_empty(&server->list_req_success)) {
-		req=list_entry(server->list_req_success.next, 
-			      struct marcel_ev_req, chain_req_success);
-		list_del_init(&req->chain_req_success);
-		mdebug("Getting success req %p pour [%s]\n", req, server->name);
-	}
-	ma_spin_unlock_softirq(&server->req_success_lock);
-	LOG_RETURN(req);
-}
 
 inline static int __del_success_req(marcel_ev_server_t server, 
 				    marcel_ev_req_t req)
@@ -359,31 +336,10 @@ inline static void __update_timer(marcel_ev_server_t server)
 	}
 }
 
-//inline static void __ensure_timer(marcel_ev_server_t server)
-//{
-//	if (id->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
-//		ma_debug(polling,
-//			 "Ensuring timer polling for [%s] at frequency %i\n",
-//			 id->name, id->frequency);
-//		ma_mod_timer(&id->poll_timer, id->poll_timer.expires);
-//	}
-//}
-
 // Checks to see if some polling jobs should be done.
 static void check_polling_for(marcel_ev_server_t server)
 {
 	int nb=__need_poll(server);
-#ifdef MA__DEBUG
-	static int count=0;
-
-	mdebugl(7, "Check polling for [%s]\n", server->name);
-	
-	if (! count--) {
-		mdebugl(6, "Check polling 50000 for [%s]\n", server->name);
-		count=50000;
-	}
-#endif
-
 	if (!nb) 
 		return;
 
@@ -450,12 +406,8 @@ void marcel_poll_timer(unsigned long hid)
  * principalement) */
 void __marcel_check_polling(unsigned polling_point)
 {
-
 	marcel_ev_server_t server;
 
-//	if(polling_point == MARCEL_EV_POLL_AT_IDLE)
-	
-	//debug("Checking polling at %i\n", polling_point);
 	ma_read_lock_softirq(&ev_poll_lock);
 	list_for_each_entry(server, &ma_ev_list_poll, chain_poll) {
 		if (server->poll_points & polling_point) {
@@ -465,36 +417,6 @@ void __marcel_check_polling(unsigned polling_point)
 		}
 	}
 	ma_read_unlock_softirq(&ev_poll_lock);
-}
-
-/* Force une scrutation sur un serveur */
-void marcel_ev_poll_force(marcel_ev_server_t server)
-{
-	LOG_IN();
-	mdebug("Poll forced for [%s]\n", server->name);
-	/* Pas très important si on loupe quelque chose ici (genre
-	 * liste modifiée au même instant)
-	 */
-	if (!__need_poll(server)) {
-		ma_tasklet_schedule(&server->poll_tasklet);
-	}
-	LOG_OUT();
-}
-
-/* Force une scrutation synchrone sur un serveur */
-void marcel_ev_poll_force_sync(marcel_ev_server_t server)
-{
-	marcel_task_t *lock;
-	LOG_IN();
-	mdebug("Sync poll forced for [%s]\n", server->name);
-
-	/* On se synchronise */
-	lock=ensure_lock_server(server);
-
-	check_polling_for(server);
-	
-	restore_lock_server_locked(server, lock);
-	LOG_OUT();
 }
 
 /****************************************************************
@@ -581,86 +503,6 @@ inline static int __unregister_poll(marcel_ev_server_t server,
 	}
 	LOG_RETURN(0);
 }
-
-
-int marcel_req_init(marcel_ev_req_t req)
-{
-	LOG_IN();
-	__init_req(req);
-	LOG_RETURN(0);
-}
-
-/* Ajout d'un attribut spécifique à un événement */
-int marcel_req_attr_set(marcel_ev_req_t req, int attr)
-{
-	LOG_IN();
-	if (attr & MARCEL_EV_ATTR_ONE_SHOT) {
-		req->state |= MARCEL_EV_STATE_ONE_SHOT;
-	}
-	if (attr & MARCEL_EV_ATTR_NO_WAKE_SERVER) {
-		req->state |= MARCEL_EV_STATE_NO_WAKE_SERVER;
-	}
-	if (attr & (~(MARCEL_EV_ATTR_ONE_SHOT|MARCEL_EV_ATTR_NO_WAKE_SERVER))) {
-		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
-	}
-	LOG_RETURN(0);
-}
-
-/* Enregistrement d'un événement */
-int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req)
-{
-	marcel_task_t *lock;
-	LOG_IN();
-
-	lock=ensure_lock_server(server);
-
-	verify_server_state(server);
-	MA_BUG_ON(req->state & MARCEL_EV_STATE_REGISTERED);
-
-/*Entre en conflit avec le test de la fonction __register*/
-//	req->server=server;
-
-	server->registered_req_not_yet_polled++;
-
-	__register(server, req);
-	__register_poll(server, req);
-	
-	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
-	restore_lock_server_locked(server, lock);
-
-	LOG_RETURN(0);
-}
-
-/* Abandon d'un événement et retour des threads en attente sur cet événement */
-int marcel_ev_req_cancel(marcel_ev_req_t req, int ret_code)
-{
-	marcel_task_t *lock;
-	marcel_ev_server_t server;
-	LOG_IN();
-
-	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
-	server=req->server;
-
-	lock=ensure_lock_server(server);
-
-	verify_server_state(server);
-
-	__wake_req_waiters(server, req, ret_code);
-
-	if (__unregister_poll(server, req)) {
-		if (__need_poll(server)) {
-			__poll_group(server, NULL);
-		} else {
-			__poll_stop(server);
-		}
-	}
-	__unregister(server, req);
-
-	restore_lock_server_locked(server, lock);
-
-	LOG_RETURN(0);
-}
-
 inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req, 
 			     marcel_ev_wait_t wait, marcel_time_t timeout)
 {
@@ -680,71 +522,6 @@ inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 	marcel_sem_P(&wait->sem);
 
 	LOG_RETURN(wait->ret);
-}
-
-/* Attente d'un thread sur un événement déjà enregistré */
-int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_wait_t wait,
-		       marcel_time_t timeout)
-{
-	marcel_task_t *lock;
-	int ret=0;
-	marcel_ev_server_t server;
-	LOG_IN();
-
-	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
-	server=req->server;
-
-	lock=ensure_lock_server(server);
-
-	verify_server_state(server);
-
-	req->state &= ~MARCEL_EV_STATE_OCCURED;
-
-	/* TODO: On pourrait faire un check juste sur cet événement 
-	 * (au moins quand on itère avec un poll_one sur tous les req) 
-	 */
-	check_polling_for(server);
-	
-	if (!(req->state & MARCEL_EV_STATE_OCCURED)) {
-		ret=__wait_req(server, req, wait, timeout);
-		restore_lock_server_unlocked(server, lock);
-	} else {
-		restore_lock_server_locked(server, lock);
-	}
-
-	LOG_RETURN(ret);
-}
-
-/* Attente d'un thread sur un quelconque événement du serveur */
-int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout)
-{
-	marcel_task_t *lock;
-	struct marcel_ev_wait wait;
-	LOG_IN();
-
-	lock=ensure_lock_server(server);
-	verify_server_state(server);
-
-	if (timeout) {
-		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-	}
-	
-	list_add(&wait.chain_wait, &server->list_id_waiters);
-	marcel_sem_init(&wait.sem, 0);
-	wait.ret=0;
-#ifdef MA__DEBUG
-	wait.task=MARCEL_SELF;
-#endif
-	/* TODO: on pourrait ne s'enregistrer que si le poll ne fait rien */
-	check_polling_for(server);
-
-	__unlock_server(server);
-
-	marcel_sem_P(&wait.sem);
-
-	restore_lock_server_unlocked(server, lock);
-
-	LOG_RETURN(wait.ret);
 }
 
 /* Enregistrement, attente et désenregistrement d'un événement */
@@ -802,7 +579,7 @@ int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 
 	if (!(req->state & MARCEL_EV_STATE_OCCURED)) {
 		__wait_req(server, req, wait, timeout);
-		lock_server_owner(server, lock);
+		__lock_server(server, lock);
 	}
 
 	__unregister(server, req);

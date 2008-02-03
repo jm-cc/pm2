@@ -515,7 +515,7 @@ ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq)
       __ma_bubble_gather(upper_bb, upper_bb);
       int state = ma_get_entity(upper_entity);
       ma_put_entity(upper_entity, &common_rq->hold, state);
-      struct marcel_topo_level *root_lvl = struct_up(common_rq, struct marcel_topo_level, sched);
+      struct marcel_topo_level *root_lvl = tbx_container_of(common_rq, struct marcel_topo_level, sched);
       __marcel_bubble_affinity(&root_lvl);
 
       return 1;

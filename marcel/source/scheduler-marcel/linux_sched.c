@@ -141,7 +141,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 				chosenvp = i;
 			}
 			break; /* no need to go further */
-		} else if ((i != -1) && ma_rq_covers(rq, i)) {
+		} else if (ma_rq_covers(rq, i)) {
 			/* might be an interesting choice if we dont find anything better */
 			preempt = TASK_CURR_PREEMPT(p, lwp);
 			if (preempt > max_preempt) {
@@ -1187,8 +1187,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
-	marcel_vpset_vp(&(rq->vpset),num);
-	marcel_vpset_vp(&(ma_per_lwp(dontsched_runqueue,lwp).vpset),num);
+       marcel_vpset_zero(&(rq->vpset));
+       marcel_vpset_zero(&(ma_per_lwp(dontsched_runqueue,lwp).vpset));
 #endif
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);

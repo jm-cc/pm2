@@ -68,25 +68,31 @@ to_be_tested() # module
 
 do_the_test()
 {
-    nbl=`wc -l < /tmp/pm2test_${USER}_expected`
+    file_prefix="/tmp/pm2test_${USER}"
+    file_expected="${file_prefix}_expected"
+    file_result="${file_prefix}_result"
+    file_status="${file_prefix}_status"
+    file_filtered="${file_prefix}_filtered"
+
+    nbl=`wc -l < ${file_expected}`
     nbl=`expr $nbl + 0`
 
     # Compilation
     echo "Compiling program $prog..."
     #(cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
-    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor) | sed -e 's/^/..../'
-    [ $? -eq 0 ] || pm2_test_error "Compilation failed"
+    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 
     # Execution
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
     if [ -z "$net" ] ; then
-        (${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
     else
         protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-        (${PM2_ROOT}/bin/pm2-load $protocols -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
     fi
-    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2_test_error_file "Execution failed" /tmp/pm2test_${USER}_result
+    [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution failed" $file_result
 
     # Le moment de verite
     echo "Checking results..."
@@ -105,11 +111,11 @@ do_the_test()
         # expected output file
         head_command="head -$nbl"
     fi
-    grep -v '^####' /tmp/pm2test_${USER}_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > /tmp/pm2test_${USER}_filtered
-    if diff -u /tmp/pm2test_${USER}_expected /tmp/pm2test_${USER}_filtered ; then
+    grep -v '^####' $file_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
+    if diff -u $file_expected $file_filtered ; then
 	echo "Test ok!"
     else
-	pm2_test_error_file "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)" /tmp/pm2test_${USER}_filtered
+	pm2_test_error_file "Test failed: unexpected result (see $file_result)" $file_filtered
     fi
 
     # Destruction de la flavor
@@ -118,7 +124,7 @@ do_the_test()
     #${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
 
     # Destruction des fichiers residuels
-    rm -rf /tmp/pm2test_${USER}_*
+    rm -rf ${file_prefix}_*
 }
 
 # Programme principal

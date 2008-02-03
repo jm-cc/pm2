@@ -102,7 +102,7 @@ main(int argc, char** argv)
 /* Lancement d'une tasklet à distance */	
 	marcel_vpset_t set;
 	marcel_vpset_all_but_vp(&set, 1);
-	set_vpset(&tasklet, &set);		
+	ma_remote_tasklet_set_vpset(&tasklet, &set);		
 	printf("tasklet remote scheduling (%d loops):", RTASKLET_LOOPS);
 	TBX_GET_TICK(t1);
 	for(i=0;i<RTASKLET_LOOPS;i++){

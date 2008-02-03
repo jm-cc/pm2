@@ -254,7 +254,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 	LOG_OUT();
 }
 
-/* wait for ourself to become the active LWP of a VP */
+/* wait for ourself to maybe become the active LWP of a VP */
 void ma_lwp_wait_active(void) {
 	struct marcel_topo_level *level;
 	int vpnum;
@@ -270,7 +270,11 @@ void ma_lwp_wait_active(void) {
 		mdebug("now %d spare LWPs\n", level->spare);
 		while ((vpnum = level->needed) == -1) {
 			mdebug("waiting\n");
+			ma_preempt_enable_no_resched();
+			ma_local_bh_enable();
 			marcel_kthread_cond_wait(&level->kneed, &level->kmutex);
+			ma_local_bh_disable();
+			ma_preempt_disable();
 		}
 		marcel_kthread_cond_signal(&level->kneeddone);
 		mdebug("becoming VP %d\n", vpnum);

@@ -133,12 +133,16 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 	ma_for_all_lwp_from_begin(lwp, MA_LWP_SELF) {
 		i = ma_vpnum(lwp);
 		if (rq == ma_lwp_rq(lwp)) {
-			/* the rq is an LWP rq, we dont have any other choice */
-			chosen = lwp;
-			chosenvp = i;
+			preempt = TASK_CURR_PREEMPT(p, lwp);
+			if (preempt > max_preempt) {
+				max_preempt = preempt;
+				/* the rq is an LWP rq, we dont have any other choice */
+				chosen = lwp;
+				chosenvp = i;
+			}
 			break; /* no need to go further */
 		} else if ((i != -1) && ma_rq_covers(rq, i)) {
-			/* might be interesting an interesting choice if we dont find anything better */
+			/* might be an interesting choice if we dont find anything better */
 			preempt = TASK_CURR_PREEMPT(p, lwp);
 			if (preempt > max_preempt) {
 				max_preempt = preempt;

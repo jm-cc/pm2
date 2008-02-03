@@ -402,7 +402,7 @@ void marcel_gensched_shutdown(void)
 
 	MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 
-	mdebug("stopping LWPs for supplementary VPs\n");
+	mdebug("stopping LWPs\n");
 	for(;;) {
 		lwp_found=NULL;
 		ma_lwp_list_lock_read();
@@ -436,13 +436,21 @@ void marcel_gensched_shutdown(void)
 static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 {
 	int dopoll;
-	if (hlwp == NULL) {
+	struct marcel_lwp *lwp = hlwp;
+	if (lwp == NULL) {
 		/* upcall_new_task est venue ici ? */
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
-	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
-		ma_lwp_wait_active();
+		MA_BUG_ON(lwp != MA_LWP_SELF);
+		if (ma_vpnum(lwp) == -1) {
+			ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+			ma_smp_mb__after_clear_bit();
+
+			if (!ma_get_need_resched())
+				ma_lwp_wait_active();
+			ma_set_thread_flag(TIF_POLLING_NRFLAG);
+		}
 		/* we are the active LWP of this VP */
 
 		/* schedule threads */
@@ -490,6 +498,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 #endif
 	}
 }
+/* Idle function for supplementary VPs: don't poll on idle */
 static any_t idle_func(any_t hlwp)
 {
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);

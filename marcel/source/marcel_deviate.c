@@ -24,7 +24,7 @@ static marcel_lock_t deviate_lock = MARCEL_LOCK_INIT;
 void __marcel_init ma_deviate_init(void)
 {
 	deviate_records = ma_new_obj_allocator(0,
-	    ma_obj_allocator_malloc, (void *) sizeof(ma_allocator_t),
+	    ma_obj_allocator_malloc, (void *) sizeof(deviate_record_t),
 	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
 }
 

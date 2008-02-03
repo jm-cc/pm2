@@ -32,8 +32,10 @@ __tbx_inline__ static int lpt_lock_release(long int *lock)
 	return 0;
 }
 
-#define pmarcel_lock_acquire(lock) marcel_lock_acquire(lock)
-#define pmarcel_lock_release(lock) marcel_lock_release(lock)
+#define marcel_lock_acquire(lock)		ma_spin_lock(lock)
+#define marcel_lock_release(lock)		ma_spin_unlock(lock)
+#define pmarcel_lock_acquire(lock)		ma_spin_lock(lock)
+#define pmarcel_lock_release(lock)		ma_spin_unlock(lock)
 
 typedef struct blockcell_struct {
   marcel_t task;
@@ -191,14 +193,14 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
-			marcel_lock_release(&lock->__spinlock),
-			marcel_lock_acquire(&lock->__spinlock));
-		marcel_lock_release(&lock->__spinlock);
+			ma_spin_unlock(&lock->__spinlock),
+			ma_spin_lock(&lock->__spinlock));
+		ma_spin_unlock(&lock->__spinlock);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 		
 	} else { /* was free */
 		lock->__status = 1;
-		marcel_lock_release(&lock->__spinlock);
+		ma_spin_unlock(&lock->__spinlock);
 	}
 	mdebug("getting lock %p in lock %p\n", self, lock);
 	//LOG_OUT();
@@ -294,7 +296,7 @@ __tbx_inline__ static int __marcel_lock(struct _marcel_fastlock * lock,
   int ret;
 
   //LOG_IN();
-  marcel_lock_acquire(&lock->__spinlock);
+  ma_spin_lock(&lock->__spinlock);
   ret=__marcel_lock_spinlocked(lock, self);
   //LOG_OUT();
   return ret;
@@ -321,15 +323,15 @@ __tbx_inline__ static int __marcel_trylock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
 
-  marcel_lock_acquire(&lock->__spinlock);
+  ma_spin_lock(&lock->__spinlock);
 
   if(lock->__status == 0) { /* free */
     lock->__status = 1;
-    marcel_lock_release(&lock->__spinlock);
+    ma_spin_unlock(&lock->__spinlock);
     //LOG_OUT();
     return 1;
   } else {
-    marcel_lock_release(&lock->__spinlock);
+    ma_spin_unlock(&lock->__spinlock);
     //LOG_OUT();
     return 0;
   }
@@ -362,9 +364,9 @@ __tbx_inline__ static int __marcel_unlock(struct _marcel_fastlock * lock)
   int ret;
 
   //LOG_IN();
-  marcel_lock_acquire(&lock->__spinlock);
+  ma_spin_lock(&lock->__spinlock);
   ret=__marcel_unlock_spinlocked(lock);
-  marcel_lock_release(&lock->__spinlock);
+  ma_spin_unlock(&lock->__spinlock);
   //LOG_OUT();
   return ret;
 }

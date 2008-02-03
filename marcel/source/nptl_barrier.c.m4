@@ -173,11 +173,11 @@ int marcel_barrier_setcount(marcel_barrier_t * barrier, unsigned int count)
 
 	ibarrier = (struct marcel_barrier *) barrier;
 
-	marcel_lock_acquire(&ibarrier->lock.__spinlock);
+	ma_spin_lock(&ibarrier->lock.__spinlock);
 	ibarrier->init_count = count;
 	ma_atomic_set(&ibarrier->leftB, count);
 	ma_atomic_set(&ibarrier->leftE, 0);
-	marcel_lock_release(&ibarrier->lock.__spinlock);
+	ma_spin_unlock(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(0);
 }
@@ -205,10 +205,10 @@ int marcel_barrier_addcount(marcel_barrier_t * barrier, int addcount)
 	struct marcel_barrier *ibarrier;
 	ibarrier = (struct marcel_barrier *) barrier;
 
-	marcel_lock_acquire(&ibarrier->lock.__spinlock);
+	ma_spin_lock(&ibarrier->lock.__spinlock);
 	ibarrier->init_count += addcount;
 	ma_atomic_add(addcount, &ibarrier->leftB);
-	marcel_lock_release(&ibarrier->lock.__spinlock);
+	ma_spin_unlock(&ibarrier->lock.__spinlock);
 
 	LOG_RETURN(0);
 }

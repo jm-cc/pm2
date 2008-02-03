@@ -22,7 +22,7 @@
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
 int marcel_key_present[MAX_KEY_SPECIFIC]={0};
-static marcel_lock_t marcel_key_lock=MARCEL_LOCK_INIT;
+static ma_spinlock_t marcel_key_lock=MA_SPIN_LOCK_UNLOCKED;
 unsigned marcel_nb_keys=1;
 static unsigned marcel_last_key=0;
 
@@ -71,7 +71,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 				   marcel_key_destructor_t func), (key, func),
 {				/* pour l'instant, le destructeur n'est pas utilise */
 	LOG_IN();
-	marcel_lock_acquire(&marcel_key_lock);
+	ma_spin_lock(&marcel_key_lock);
 	while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
 	    (marcel_key_present[marcel_last_key])) {
 	}
@@ -79,7 +79,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 	if (marcel_last_key == MAX_KEY_SPECIFIC) {
 		/* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
 		   des threads existants */
-		marcel_lock_release(&marcel_key_lock);
+		ma_spin_unlock(&marcel_key_lock);
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	}
 
@@ -87,7 +87,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 	marcel_nb_keys++;
 	marcel_key_present[marcel_last_key] = 1;
 	marcel_key_destructor[marcel_last_key] = func;
-	marcel_lock_release(&marcel_key_lock);
+	ma_spin_unlock(&marcel_key_lock);
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, void (*func)(void *)), (key, func)) DEF___PTHREAD(int, key_create, (pthread_key_t *key, 
@@ -96,13 +96,13 @@ DEF_PTHREAD(int, key_create, (pthread_key_t *key, void (*func)(void *)), (key, f
 DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 {				/* pour l'instant, le destructeur n'est pas utilise */
 	LOG_IN();
-	marcel_lock_acquire(&marcel_key_lock);
+	ma_spin_lock(&marcel_key_lock);
 	if (marcel_key_present[key]) {
 		marcel_nb_keys--;
 		marcel_key_present[key] = 0;
 		marcel_key_destructor[key] = NULL;
 	}
-	marcel_lock_release(&marcel_key_lock);
+	ma_spin_unlock(&marcel_key_lock);
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))

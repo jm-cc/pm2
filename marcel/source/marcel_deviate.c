@@ -19,7 +19,7 @@
 #define MAX_RECORDS    1024
 
 static ma_allocator_t * deviate_records;
-static marcel_lock_t deviate_lock = MARCEL_LOCK_INIT;
+static ma_spinlock_t deviate_lock = MA_SPIN_LOCK_UNLOCKED;
 
 void __marcel_init ma_deviate_init(void)
 {
@@ -28,7 +28,7 @@ void __marcel_init ma_deviate_init(void)
 	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
 }
 
-// préemption désactivée et marcel_lock_locked(deviate_lock) == 1
+// préemption désactivée et deviate_lock == 1
 static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 {
 	deviate_record_t *ptr = ma_obj_alloc(deviate_records);
@@ -44,7 +44,7 @@ static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 #endif
 }
 
-// préemption désactivée et marcel_lock_locked(deviate_lock) == 1
+// préemption désactivée et deviate_lock == 1
 static void do_execute_deviate_work(void)
 {
 	marcel_t cur = marcel_self();
@@ -57,13 +57,13 @@ static void do_execute_deviate_work(void)
 		cur->work.deviate_work = ptr->next;
 		ma_obj_free(deviate_records, ptr);
 
-		marcel_lock_release(&deviate_lock);
+		ma_spin_unlock(&deviate_lock);
 		ma_preempt_enable();
 
 		(*h) (arg);
 
 		ma_preempt_disable();
-		marcel_lock_acquire(&deviate_lock);
+		ma_spin_lock(&deviate_lock);
 	}
 
 #ifdef MA__WORK
@@ -75,11 +75,11 @@ static void do_execute_deviate_work(void)
 void marcel_execute_deviate_work(void)
 {
 	if (!SELF_GETMEM(not_deviatable)) {
-		marcel_lock_acquire(&deviate_lock);
+		ma_spin_lock(&deviate_lock);
 
 		do_execute_deviate_work();
 
-		marcel_lock_release(&deviate_lock);
+		ma_spin_unlock(&deviate_lock);
 	}
 }
 
@@ -147,9 +147,9 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	ma_preempt_disable();
 	if (pid == marcel_self()) {
 		if (!ma_last_preempt() || pid->not_deviatable) {
-			marcel_lock_acquire(&deviate_lock);
+			ma_spin_lock(&deviate_lock);
 			marcel_deviate_record(pid, h, arg);
-			marcel_lock_release(&deviate_lock);
+			ma_spin_unlock(&deviate_lock);
 			ma_preempt_enable();
 		} else {
 			ma_preempt_enable();
@@ -161,13 +161,13 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	// On prend ce verrou très tôt pour s'assurer que la tâche cible ne
 	// progresse pas au-delà d'un 'disable_deviation' pendant qu'on
 	// l'inspecte...
-	marcel_lock_acquire(&deviate_lock);
+	ma_spin_lock(&deviate_lock);
 	if (pid->not_deviatable) {
 		// Le thread n'est pas "déviable" en ce moment...
 
 		marcel_deviate_record(pid, h, arg);
 
-		marcel_lock_release(&deviate_lock);
+		ma_spin_unlock(&deviate_lock);
 		ma_preempt_enable();
 
 		LOG_OUT();
@@ -182,7 +182,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 #ifdef MA__WORK
 	marcel_deviate_record(pid, h, arg);
 
-	marcel_lock_release(&deviate_lock);
+	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 
 	ma_wake_up_state(pid, MA_TASK_INTERRUPTIBLE | MA_TASK_FROZEN);
@@ -202,22 +202,22 @@ void marcel_enable_deviation(void)
 	marcel_t cur = marcel_self();
 
 	ma_preempt_disable();
-	marcel_lock_acquire(&deviate_lock);
+	ma_spin_lock(&deviate_lock);
 
 	if (--cur->not_deviatable == 0)
 		do_execute_deviate_work();
 
-	marcel_lock_release(&deviate_lock);
+	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 }
 
 void marcel_disable_deviation(void)
 {
 	ma_preempt_disable();
-	marcel_lock_acquire(&deviate_lock);
+	ma_spin_lock(&deviate_lock);
 
 	++SELF_GETMEM(not_deviatable);
 
-	marcel_lock_release(&deviate_lock);
+	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 }

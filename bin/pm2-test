@@ -79,8 +79,7 @@ do_the_test()
 
     # Compilation
     echo "Compiling program $prog..."
-    #(cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
-    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
+    (cd $appdir && ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
     [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 
     # Execution
@@ -117,11 +116,6 @@ do_the_test()
     else
 	pm2_test_error_file "Test failed: unexpected result (see $file_result)" $file_filtered
     fi
-
-    # Destruction de la flavor
-    #echo "Cleaning flavor & files..."
-    #${PM2_ROOT}/bin/pm2-clean $flavor
-    #${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
 
     # Destruction des fichiers residuels
     rm -rf ${file_prefix}_*

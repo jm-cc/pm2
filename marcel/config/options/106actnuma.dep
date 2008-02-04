@@ -1,4 +1,0 @@
-Provide: marcel_proctype
-Provide: marcel_smp
-Conflict: marcel_proctype
-Provide: blocking_syscalls_allowed

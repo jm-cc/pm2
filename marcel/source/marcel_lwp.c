@@ -123,7 +123,7 @@ static void *lwp_kthread_start_func(void *arg)
 	ma_preempt_enable();
 
 	mdebug("\t\t\t<LWP %d started (self == %lx)>\n",
-	       ma_per_lwp(number,lwp), (unsigned long)marcel_kthread_self());
+	       ma_per_lwp(vpnum,lwp), (unsigned long)marcel_kthread_self());
 
 	marcel_lwp_start(lwp);
 

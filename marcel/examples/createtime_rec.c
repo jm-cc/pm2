@@ -77,7 +77,7 @@ int marcel_main(int argc, char *argv[])
         
         marcel_init(&argc, argv);
         marcel_attr_init(&attr);
-        profondeur = atoi(argv[1]);
+        profondeur = atoi(argv[1]?:"10");
         
         if(argc <= 1) 
                 {

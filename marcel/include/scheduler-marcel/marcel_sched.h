@@ -210,15 +210,146 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 #depend "[marcel_variables]"
+__tbx_inline__ ma_runqueue_t *
+marcel_sched_select_runqueue(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr) {
+	ma_runqueue_t *rq;
+#ifdef MA__LWPS
+	register marcel_lwp_t *cur_lwp = MA_LWP_SELF;
+#  ifdef MA__BUBBLES
+	marcel_bubble_t *b;
+#  endif
+#endif
+	if (attr->vpset != MARCEL_VPSET_FULL)
+		return marcel_sched_vpset_init_rq(&attr->vpset);
+	rq = NULL;
+#ifdef MA__LWPS
+#  ifdef MA__BUBBLES
+	if (SELF_GETMEM(cur_thread_seed)) {
+		ma_holder_t *h;
+		h = ma_task_init_holder(MARCEL_SELF);
+		if (!h)
+			h = &ma_main_runqueue.hold;
+		internal->entity.sched_holder = internal->entity.init_holder = h;
+		rq = ma_to_rq_holder(h);
+		if (!rq)
+			rq = &ma_main_runqueue;
+
+		return rq;
+	}
+	b = &SELF_GETMEM(sched).internal.bubble;
+	if (!b->sched.init_holder) {
+		ma_holder_t *h;
+		marcel_bubble_init(b);
+		h = ma_task_init_holder(MARCEL_SELF);
+		if (!h)
+			h = &ma_main_runqueue.hold;
+		b->sched.init_holder = h;
+		if (h->type != MA_RUNQUEUE_HOLDER) {
+			marcel_bubble_t *bb = ma_bubble_holder(h);
+			b->sched.sched_level = bb->sched.sched_level + 1;
+			marcel_bubble_insertbubble(bb, b);
+		}
+		if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
+			ma_runqueue_t *rq;
+			ma_bubble_detach(b);
+			rq = ma_to_rq_holder(h);
+			if (!rq)
+				rq = &ma_main_runqueue;
+			b->sched.sched_holder = &rq->hold;
+			ma_holder_lock_softirq(&rq->hold);
+			ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
+			ma_holder_unlock_softirq(&rq->hold);
+		}
+	}
+	internal->entity.sched_holder=NULL;
+	marcel_bubble_insertentity(b, &internal->entity);
+	if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
+		/* keep this thread inside the bubble */
+		return NULL;
+#  endif
+	switch (internal->entity.sched_policy) {
+		case MARCEL_SCHED_SHARED:
+			rq = &ma_main_runqueue;
+			break;
+			/* TODO: vpset ? */
+		case MARCEL_SCHED_OTHER: {
+			 struct marcel_topo_level *vp;
+			 for_vp_from(vp, ma_vpnum(cur_lwp)) {
+				marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
+				if (!lwp)
+					continue;
+				if (!ma_per_lwp(online, lwp))
+					continue;
+				rq = &vp->sched;
+				break;
+			}
+			break;
+		}
+		case MARCEL_SCHED_AFFINITY: {
+			/* Le cas echeant, retourne un LWP fortement
+			   sous-charge (nb de threads running <
+			   THREAD_THRESHOLD_LOW), ou alors retourne le
+			   LWP "courant". */
+			struct marcel_topo_level *vp;
+			ma_runqueue_t *rq2;
+			for_vp_from(vp, ma_vpnum(cur_lwp)) {
+				marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
+				if (!lwp)
+					continue;
+				if (!ma_per_lwp(online, lwp))
+					continue;
+				rq2 = &vp->sched;
+				if (rq2->hold.nr_ready < THREAD_THRESHOLD_LOW) {
+					rq = rq2;
+					break;
+				}
+			}
+			if (!rq)
+			        rq = ma_lwp_vprq(cur_lwp);
+			break;
+		}
+		case MARCEL_SCHED_BALANCE: {
+			/* Retourne le LWP le moins charge (ce qui
+			   oblige a parcourir toute la liste) */
+			unsigned best = ma_lwp_vprq(cur_lwp)->hold.nr_ready;
+			struct marcel_topo_level *vp;
+			ma_runqueue_t *rq2;
+			rq = ma_lwp_vprq(cur_lwp);
+			for_vp_from(vp, ma_vpnum(cur_lwp)) {
+				marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
+				if (!lwp)
+					continue;
+				if (!ma_per_lwp(online, lwp))
+					continue;
+				rq2 = &vp->sched;
+				if (rq2->hold.nr_ready < best) {
+					rq = rq2;
+					best = rq2->hold.nr_ready;
+				}
+			}
+			break;
+		}
+		default: {
+			unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, ma_vpnum(cur_lwp));
+			rq = ma_lwp_vprq(ma_get_lwp_by_vpnum(num));
+			break;
+		}
+	}
+	if (!rq)
+#endif
+		rq = &ma_main_runqueue;
+
+	return rq;
+}
+
 __tbx_inline__ static void 
-marcel_sched_internal_init_marcel_task(marcel_task_t* t, 
+marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
-#ifdef MA__LWPS
-	register marcel_lwp_t *cur_lwp = MA_LWP_SELF;
-#endif
 	LOG_IN();
 	if (attr->sched.init_holder) {
 		h = attr->sched.init_holder;
@@ -236,135 +367,17 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	INIT_LIST_HEAD(&internal->entity.bubble_entity_list);
 #endif
 	if (h) {
-		internal->entity.sched_holder =
+		internal->entity.sched_holder = h;
 #ifdef MA__BUBBLES
-			internal->entity.init_holder =
+		internal->entity.init_holder = h;
 #endif
-			h;
-	} else do {
-		ma_runqueue_t *rq;
-		if (attr->vpset != MARCEL_VPSET_FULL)
-			rq = marcel_sched_vpset_init_rq(&attr->vpset);
-		else {
-#ifdef MA__BUBBLES
-		if (SELF_GETMEM(cur_thread_seed)) {
-			h = ma_task_init_holder(MARCEL_SELF);
-			if (!h)
-				h = &ma_main_runqueue.hold;
-			internal->entity.sched_holder = internal->entity.init_holder = h;
-			rq = ma_to_rq_holder(h);
-			if (!rq)
-				rq = &ma_main_runqueue;
-		} else {
-			marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
-			if (!b->sched.init_holder) {
-				marcel_bubble_init(b);
-				h = ma_task_init_holder(MARCEL_SELF);
-				if (!h)
-					h = &ma_main_runqueue.hold;
-				b->sched.init_holder = h;
-				if (h->type != MA_RUNQUEUE_HOLDER) {
-					marcel_bubble_t *bb = ma_bubble_holder(h);
-					b->sched.sched_level = bb->sched.sched_level + 1;
-					marcel_bubble_insertbubble(bb, b);
-				}
-				if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
-					ma_runqueue_t *rq;
-					ma_bubble_detach(b);
-					rq = ma_to_rq_holder(h);
-					if (!rq)
-						rq = &ma_main_runqueue;
-					b->sched.sched_holder = &rq->hold;
-					ma_holder_lock_softirq(&rq->hold);
-					ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
-					ma_holder_unlock_softirq(&rq->hold);
-				}
-			}
-			internal->entity.sched_holder=NULL;
-			marcel_bubble_insertentity(b, &internal->entity);
-			if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
-				/* keep this thread inside the bubble */
-				break;
+	} else {
+		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, internal, attr);
+		if (rq) {
+			internal->entity.sched_holder = &rq->hold;
+			MA_BUG_ON(!rq->name[0]);
 		}
-#endif
-#ifdef MA__LWPS
-		rq = NULL;
-		switch (internal->entity.sched_policy) {
-			case MARCEL_SCHED_SHARED:
-				rq = &ma_main_runqueue;
-				break;
-/* TODO: vpset ? */
-			case MARCEL_SCHED_OTHER: {
-				struct marcel_topo_level *vp;
-				for_vp_from(vp, ma_vpnum(cur_lwp)) {
-					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
-					if (!lwp)
-						continue;
-					if (!ma_per_lwp(online, lwp))
-						continue;
-					rq = &vp->sched;
-					break;
-				}
-				break;
-			}
-			case MARCEL_SCHED_AFFINITY: {
-   			        /* Le cas echeant, retourne un LWP fortement
-				   sous-charge (nb de threads running <
-				   THREAD_THRESHOLD_LOW), ou alors retourne le
-				   LWP "courant". */
-
-				struct marcel_topo_level *vp;
-				ma_runqueue_t *rq2;
-				for_vp_from(vp, ma_vpnum(cur_lwp)) {
-					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
-					if (!lwp)
-						continue;
-					if (!ma_per_lwp(online, lwp))
-						continue;
-					rq2 = &vp->sched;
-					if (rq2->hold.nr_ready < THREAD_THRESHOLD_LOW) {
-						rq = rq2;
-						break;
-					}
-				}
-				if (!rq)
-					rq = ma_lwp_vprq(cur_lwp);
-				break;
-			}
-			case MARCEL_SCHED_BALANCE: {
-			        /* Retourne le LWP le moins charge (ce qui
-				   oblige a parcourir toute la liste) */
-				unsigned best = ma_lwp_vprq(cur_lwp)->hold.nr_ready;
-				struct marcel_topo_level *vp;
-				ma_runqueue_t *rq2;
-				rq = ma_lwp_vprq(cur_lwp);
-				for_vp_from(vp, ma_vpnum(cur_lwp)) {
-					marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
-					if (!lwp)
-						continue;
-					if (!ma_per_lwp(online, lwp))
-						continue;
-					rq2 = &vp->sched;
-					if (rq2->hold.nr_ready < best) {
-						rq = rq2;
-						best = rq2->hold.nr_ready;
-					}
-				}
-				break;
-			}
-			default: {
-				unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, ma_vpnum(cur_lwp));
-				rq = ma_lwp_vprq(ma_get_lwp_by_vpnum(num));
-				break;
-			}
-		}
-		if (!rq)
-#endif
-			rq = &ma_main_runqueue;
-		}
-		internal->entity.sched_holder = &rq->hold;
-		MA_BUG_ON(!rq->name[0]);
-	} while (0);
+	}
 	INIT_LIST_HEAD(&internal->entity.run_list);
 	internal->entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);

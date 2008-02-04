@@ -27,26 +27,20 @@ registering_flavors() {
 	--marcel=enable_keys --marcel=enable_migration \
 	--mad3=tcp
 
-    for i in mono act; do
-	register_flavor marcel-$i \
-	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=marcel_main
-    done
+    register_flavor marcel-mono \
+	--modules="marcel tbx init" $COMMON_OPTIONS \
+	--marcel=mono --marcel=marcel_main
 
-    for i in smp actsmp; do
-	register_flavor marcel-$i \
-	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=marcel_main \
-	    --marcel=smp_bind_proc --marcel=smp_smt_idle
-    done
+    register_flavor marcel-smp \
+	--modules="marcel tbx init" $COMMON_OPTIONS \
+	--marcel=smp --marcel=marcel_main \
+	--marcel=smp_bind_proc --marcel=smp_smt_idle
 
-    for i in numa actnuma; do
-	register_flavor marcel-$i \
-	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=marcel_main \
-	    --marcel=smp_bind_proc --marcel=smp_smt_idle \
-	    --marcel=enable_stats --marcel=bubble_sched_null
-    done
+    register_flavor marcel-numa \
+	--modules="marcel tbx init" $COMMON_OPTIONS \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_bind_proc --marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \

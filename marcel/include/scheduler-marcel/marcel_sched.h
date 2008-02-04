@@ -247,35 +247,45 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			rq = marcel_sched_vpset_init_rq(&attr->vpset);
 		else {
 #ifdef MA__BUBBLES
-		marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
-		if (!b->sched.init_holder) {
-			marcel_bubble_init(b);
+		if (SELF_GETMEM(cur_thread_seed)) {
 			h = ma_task_init_holder(MARCEL_SELF);
 			if (!h)
 				h = &ma_main_runqueue.hold;
-			b->sched.init_holder = h;
-			if (h->type != MA_RUNQUEUE_HOLDER) {
-				marcel_bubble_t *bb = ma_bubble_holder(h);
-				b->sched.sched_level = bb->sched.sched_level + 1;
-				marcel_bubble_insertbubble(bb, b);
+			internal->entity.sched_holder = internal->entity.init_holder = h;
+			rq = ma_to_rq_holder(h);
+			if (!rq)
+				rq = &ma_main_runqueue;
+		} else {
+			marcel_bubble_t *b = &SELF_GETMEM(sched).internal.bubble;
+			if (!b->sched.init_holder) {
+				marcel_bubble_init(b);
+				h = ma_task_init_holder(MARCEL_SELF);
+				if (!h)
+					h = &ma_main_runqueue.hold;
+				b->sched.init_holder = h;
+				if (h->type != MA_RUNQUEUE_HOLDER) {
+					marcel_bubble_t *bb = ma_bubble_holder(h);
+					b->sched.sched_level = bb->sched.sched_level + 1;
+					marcel_bubble_insertbubble(bb, b);
+				}
+				if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
+					ma_runqueue_t *rq;
+					ma_bubble_detach(b);
+					rq = ma_to_rq_holder(h);
+					if (!rq)
+						rq = &ma_main_runqueue;
+					b->sched.sched_holder = &rq->hold;
+					ma_holder_lock_softirq(&rq->hold);
+					ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
+					ma_holder_unlock_softirq(&rq->hold);
+				}
 			}
-			if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
-				ma_runqueue_t *rq;
-				ma_bubble_detach(b);
-				rq = ma_to_rq_holder(h);
-				if (!rq)
-					rq = &ma_main_runqueue;
-				b->sched.sched_holder = &rq->hold;
-				ma_holder_lock_softirq(&rq->hold);
-				ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
-				ma_holder_unlock_softirq(&rq->hold);
-			}
+			internal->entity.sched_holder=NULL;
+			marcel_bubble_insertentity(b, &internal->entity);
+			if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
+				/* keep this thread inside the bubble */
+				break;
 		}
-		internal->entity.sched_holder=NULL;
-		marcel_bubble_insertentity(b, &internal->entity);
-		if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
-			/* keep this thread inside the bubble */
-			break;
 #endif
 #ifdef MA__LWPS
 		rq = NULL;

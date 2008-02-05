@@ -710,6 +710,7 @@ static void topo_discover(void) {
 		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, oscpu);
 		marcel_vpset_vp(&vp_level[i].cpuset, oscpu);
 		marcel_vpset_set(&cpuset, oscpu);
+		marcel_vpset_zero(&vp_level[i].vpset);
 		vp_level[i].arity=0;
 		vp_level[i].children=NULL;
 		vp_level[i].father=NULL;
@@ -727,6 +728,7 @@ static void topo_discover(void) {
 		}
 	}
 	marcel_vpset_zero(&vp_level[i].cpuset);
+	marcel_vpset_zero(&vp_level[i].vpset);
 
 	/* Now see where we will put it. Usually marcel_cpu_stride is 1 and hence we get at bottom */
 	for (l=marcel_topo_nblevels-1; l>0; l--) {

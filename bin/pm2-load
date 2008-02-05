@@ -142,7 +142,9 @@ mad3()
     log "Networks: $networks_name"
 
     log "Create driver configuration file"
-    $PM2_ROOT/bin/nmad-driver-conf --$dev
+    if [ $dev != custom ]; then
+	$PM2_ROOT/bin/nmad-driver-conf --$dev
+    fi
 
     [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
     echo "application: {"                      >  $PM2_LEONIE_FILE
@@ -598,7 +600,9 @@ else
     protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
 fi
 for p in $protocols ; do
-    $PM2_ROOT/bin/nmad-driver-conf --$p
+    if [ $p != custom ]; then
+	$PM2_ROOT/bin/nmad-driver-conf --$p
+    fi
 done
 
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then

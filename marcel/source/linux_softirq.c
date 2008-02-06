@@ -167,74 +167,86 @@ TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*
 }
 
 fastcall TBX_EXTERN void __ma_tasklet_schedule(struct ma_tasklet_struct *t) {
+	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
+
 	ma_local_bh_disable();
-	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
+
+	ma_remote_tasklet_lock(&vp->tasklet_lock);
+	t->next = vp->tasklet_vec.list;
+	vp->tasklet_vec.list = t;
 	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
-	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+	ma_remote_tasklet_unlock(&vp->tasklet_lock);
+
 	ma_local_bh_enable();
 }
 
 fastcall TBX_EXTERN void __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t) {
+	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
+
 	ma_local_bh_disable();
-	t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
+
+	t->next = vp->tasklet_hi_vec.list;
+	vp->tasklet_hi_vec.list = t;
 	ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
+
 	ma_local_bh_enable();
 }
 
 static void tasklet_action(struct ma_softirq_action *a) {
+	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
 	struct ma_tasklet_struct *list;
 
 	ma_local_bh_disable();
-	ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = NULL;
-	ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+
+	ma_remote_tasklet_lock(&vp->tasklet_lock);
+	list = vp->tasklet_vec.list;
+	vp->tasklet_vec.list = NULL;
+	ma_remote_tasklet_unlock(&vp->tasklet_lock);
+	
 	ma_local_bh_enable();
 
 	while (list) {
 		struct ma_tasklet_struct *t = list;
-
 		list = list->next;
 		if (ma_tasklet_trylock(t)) {
 			if (!ma_atomic_read(&t->count)) {
-				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED, &t->state))
+				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED,&t->state))
 					MA_BUG();
 				t->func(t->data);
 				if (ma_tasklet_unlock(t))
 					/* Somebody tried to schedule it, try to reschedule it here */
 					ma_tasklet_schedule(t);
-				continue;				
+				continue;
 			}
 			/* here, SCHED is always set so we already know it would return 1 */
 			ma_tasklet_unlock(t);
 		}
 
 		ma_local_bh_disable();
-		ma_remote_tasklet_lock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
-		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list;
-		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_vec).list = t;
-		ma_remote_tasklet_unlock(&ma_vp_lwp[marcel_current_vp()]->tasklet_lock);
+		ma_remote_tasklet_lock(&vp->tasklet_lock);
+		t->next = vp->tasklet_vec.list;
+		vp->tasklet_vec.list = t;
+		ma_remote_tasklet_unlock(&vp->tasklet_lock);
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
+		
 		ma_local_bh_enable();
 	}
 }
 
 static void tasklet_hi_action(struct ma_softirq_action *a) {
+	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
 	struct ma_tasklet_struct *list;
 
 	ma_local_bh_disable();
-	list = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = NULL;
+	
+	list = vp->tasklet_hi_vec.list;
+	vp->tasklet_hi_vec.list = NULL;
+	
 	ma_local_bh_enable();
-
+	
 	while (list) {
 		struct ma_tasklet_struct *t = list;
-
 		list = list->next;
-
 		if (ma_tasklet_trylock(t)) {
 			if (!ma_atomic_read(&t->count)) {
 				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED, &t->state))
@@ -250,9 +262,11 @@ static void tasklet_hi_action(struct ma_softirq_action *a) {
 		}
 
 		ma_local_bh_disable();
-		t->next = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list;
-		ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),tasklet_hi_vec).list = t;
+		
+		t->next = vp->tasklet_hi_vec.list;
+		vp->tasklet_hi_vec.list = t;
 		__ma_raise_softirq_bhoff(MA_HI_SOFTIRQ);
+		
 		ma_local_bh_enable();
 	}
 }

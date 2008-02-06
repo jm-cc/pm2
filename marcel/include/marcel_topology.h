@@ -337,6 +337,11 @@ struct marcel_topo_vpdata {
 	unsigned long softirq_pending;
 	struct ma_tasklet_head tasklet_vec, tasklet_hi_vec;
 
+#ifdef MA__LWPS
+#  ifdef MARCEL_REMOTE_TASKLETS
+	ma_spinlock_t  tasklet_lock;
+#  endif
+#endif
 	/* For one_more_task, wait_all_tasks, etc. */
 	/* marcel_end() was called */
 	tbx_bool_t main_is_waiting;
@@ -452,6 +457,8 @@ typedef struct marcel_topo_level marcel_topo_level_t;
 #section marcel_macros
 #define ma_topo_vpdata_l(vp, field) ((vp)->vpdata.field)
 #define ma_topo_vpdata(vpnum, field) ma_topo_vpdata_l(&marcel_topo_vp_level[vpnum], field)
+#define ma_topo_vpdata_by_vpnum(vpnum) (&marcel_topo_vp_level[(vpnum)].vpdata)
+#define ma_topo_vpdata_self() (ma_topo_vpdata_by_vpnum(ma_vpnum(MA_LWP_SELF)))
 #define ma_topo_nodedata_l(node, field) ((node)->nodedata.field)
 #define ma_topo_nodedata(nodenum, field) ma_topo_nodedata_l(&marcel_topo_node_level[nodenum], field)
 

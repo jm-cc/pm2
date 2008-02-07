@@ -41,92 +41,84 @@
 #include "nm_errno.h"
 #include "nm_log.h"
 
-/** TCP/datagram specific driver data.
+/** TCP specific driver data.
  */
 struct nm_tcp_drv {
-        /** server socket	*/
-        int	server_fd;
-        /** url */
-        char*url;
-        /** capabilities */
-        struct nm_drv_cap caps;
-        int nb_gates;
+  /** server socket	*/
+  int server_fd;
+  /** url */
+  char*url;
+  /** capabilities */
+  struct nm_drv_cap caps;
+  int nb_gates;
 };
 
-/** TCP/datagram specific track data.
+/** TCP per-track track data.
  */
 struct nm_tcp_trk {
 
-        /** Number of pending poll array entries to process before
-            calling poll again. */
-        int nb_incoming;
-
-        /** Next pending poll array entry to process.
-         */
-        uint8_t next_entry;
-
-        /** Array for polling multiple descriptors.
-         */
-        struct pollfd	*poll_array;
-
-        /** Poll array index to gate id reverse mapping. Allows to
-         *  find the source of a packet when performing gateless
-         *  requests.
-         */
-        uint8_t		*gate_map;
-
-        /** Need this flag to correctly do the disconnection */
-        tbx_bool_t accept;
+  /** Number of pending poll array entries to process before
+      calling poll again. */
+  int nb_incoming;
+  
+  /** Next pending poll array entry to process.
+   */
+  uint8_t next_entry;
+  
+  /** Array for polling multiple descriptors.
+   */
+  struct pollfd*poll_array;
+  
+  /** Poll array index to gate id reverse mapping. Allows to
+   *  find the source of a packet when performing gateless
+   *  requests.
+   */
+  uint8_t*gate_map;
 };
 
-/** TCP/datagram specific gate data.
+/** TCP per-gate data (one for each puk_instance_t).
  */
 struct nm_tcp {
-        /** Array of sockets, one socket per track.
-         */
-        int	fd[255];
-
-        /** Reference counter.
-         */
-        int	ref_count;
+  /** Array of sockets, one socket per track.
+   */
+  int	fd[255];
 };
 
 
-/** TCP/datagram specific pkt wrapper data.
+/** TCP specific pkt wrapper data.
  */
 struct nm_tcp_pkt_wrap {
-        /** Reception state-machine state.
-           0: reading the message length
-           1: reading the message body
-         */
-        uint8_t			state;
-
-        /** Buffer ptr.
-           Current location in sending the header.
-         */
-        uint8_t			*ptr;
-
-        /** Remaining length.
-           Current remaining length in sending either the header
-           or the body (according to the state).
-         */
-        uint64_t		 rem_length;
-
-        /** Actual packet length to receive.
-            May be different from the length that is expected.
-         */
-        uint64_t		 pkt_length;
-
-        /** Message header storage.
-         */
-        struct {
-
-                uint64_t	length;
-        } h;
-
-        /* Message body iovec iterator.
-         */
-        struct nm_iovec_iter	vi;
+  /** Reception state-machine state.
+      0: reading the message length
+      1: reading the message body
+  */
+  uint8_t state;
+  
+  /** Buffer ptr.
+      Current location in sending the header.
+  */
+  uint8_t*ptr;
+  
+  /** Remaining length.
+      Current remaining length in sending either the header
+      or the body (according to the state).
+  */
+  uint64_t rem_length;
+  
+  /** Actual packet length to receive.
+      May be different from the length that is expected.
+  */
+  uint64_t pkt_length;
+  
+  /** Message header storage.
+   */
+  struct {
+      uint64_t length;
+  } h;
+  
+  /* Message body iovec iterator.
+   */
+  struct nm_iovec_iter	vi;
 };
 
 /** Tcp NewMad Driver */
@@ -311,7 +303,7 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
         memset(address->sin_zero, 0, 8);
 }
 
-/** Initialize the TCP driver with datagram emulation.
+/** Initialize the TCP driver.
  *  @param p_drv the driver.
  *  @return The NM status code.
  */
@@ -322,7 +314,7 @@ extern int nm_tcp_load(){
   return 0;
 }
 
-/** Query the TCP driver with datagram emulation.
+/** Query the TCP driver.
  *  @param p_drv the driver.
  *  @return The NM status code.
  */
@@ -402,7 +394,7 @@ nm_tcp_init		(struct nm_drv* p_drv) {
         return err;
 }
 
-/** Cleanup the TCP driver with datagram emulation.
+/** Cleanup the TCP driver.
  *  @param p_drv the driver.
  *  @return The NM status code.
  */
@@ -494,7 +486,6 @@ nm_tcp_connect_accept	(void*_status,
         struct nm_trk		*p_trk		= NULL;
         struct nm_tcp_trk	*p_tcp_trk	= NULL;
         int			 val    	=    1;
-        struct linger            ling         = {1, 10};
         socklen_t		 len    	= sizeof(int);
         int			 n;
         int			 err;
@@ -508,7 +499,6 @@ nm_tcp_connect_accept	(void*_status,
 
         SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
 	SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
-        SYSCALL(setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(struct linger)));
 
         NM_TRACE_VAL("tcp connect/accept trk id", p_trk->id);
         NM_TRACE_VAL("tcp connect/accept gate id", p_gate->id);
@@ -590,9 +580,6 @@ nm_tcp_connect		(void*_status,
 
         err = nm_tcp_connect_accept(_status, p_crq, fd);
 
-        // Flag for the disconnection
-        p_tcp_trk->accept = tbx_false;
-
  out:
 	TBX_FREE(remote_drv_url);
         return err;
@@ -623,68 +610,37 @@ nm_tcp_accept		(void*_status,
 
         err = nm_tcp_connect_accept(_status, p_crq, fd);
 
-        // Flag for the disconnection
-        p_tcp_trk->accept = tbx_true;
-
         return err;
 }
 
 /** Closes a connection.
- *  @warning The function does nothing for now.
  *  @param p_crq the connection request.
  *  @return The NM status code.
  */
 static
 int
-nm_tcp_disconnect	(void*_status,
-			 struct nm_cnx_rq *p_crq) {
-        int	err;
-        struct nm_tcp	*status	= _status;
+nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq)
+{
+  struct nm_tcp*status = (struct nm_tcp*)_status;
+  struct nm_trk*p_trk = p_crq->p_trk;
+  int fd = status->fd[p_trk->id];
+  
+  /* half-close for sending */
+  SYSCALL(shutdown(fd, SHUT_WR));
+ 
+  /* flush (and throw away) remaining bytes in the pipe up to the EOS */
+  int ret = -1;
+  do
+    {
+      int dummy = 0;
+      ret = read(fd, &dummy, sizeof(dummy));
+    }
+  while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
 
-	// Synchronization of the remote node for the disconnection
-	// in order to avoid the connexion ending before that data are not totally received
-
-	char *msg = "closed";
-	int len = strlen(msg)+1;
-	int fd;
-	int ret = 0;
-	struct nm_trk		*p_trk		= p_crq->p_trk;
-	struct nm_tcp_trk	*p_tcp_trk	= p_trk->priv;
-
-	fd = status->fd[p_crq->p_trk->id];
-	
-	
-	if(p_tcp_trk->accept){
-	  while(ret != len){
-	    ret += write(fd, msg+ret, len);
-	  }
-	  assert(ret == len);
-	  
-	} else {
-	  char *buf = TBX_MALLOC(len);
-	  int ret2 = 0;
-	  
-	  while(ret != len){
-	    ret2 = read(fd, buf+ret, len);
-	    
-	    if(ret2 == -1) {
-	      if(errno != EAGAIN)
-		TBX_FAILURE("blurp");
-	    } else {
-	      ret += ret2;
-	    }
-	  }
-	  assert(ret == len);
-	  assert(strcmp(msg, buf) == 0);
-	}
-	close(fd);
-        
-	
-        status->ref_count--;
-	
-        err = NM_ESUCCESS;
-	
-        return err;
+ /* safely close fd when EOS is reached */
+  SYSCALL(close(fd));
+  
+  return NM_ESUCCESS;
 }
 
 

@@ -119,7 +119,7 @@ nmad_strat_write() {
     fi
 # Write XML strat files if they don't exist
 if [ ! -e  ${strat_file} ] || [ "${ACTION}" = "force_write" ] ; then
-    echo -n "Writting strategy file: ${strat}... " 1>&2
+    echo -n "Writing strategy file: ${strat}... " 1>&2
 cat > ${strat_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">

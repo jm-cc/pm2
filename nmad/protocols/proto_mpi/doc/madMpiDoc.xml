@@ -34,7 +34,7 @@
 </P>
 </ABSTRACT>
 
-<SECTION TITLE="Installating Mad-MPI" FILE="./installation.xml" LABEL="installation" NEWPAGE="true"/>
+<SECTION TITLE="Installing Mad-MPI" FILE="./installation.xml" LABEL="installation" NEWPAGE="true"/>
 
 <SECTION TITLE="Running MPI Applications" FILE="./execute.xml" LABEL="execute" NEWPAGE="true"/>
 

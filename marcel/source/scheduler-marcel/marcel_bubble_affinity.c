@@ -265,22 +265,6 @@ __has_enough_entities(struct marcel_topo_level **l,
   return ret;
 }
 
-static
-int __vps_are_loaded(load_indicator_t *load_manager, int arity)
-{
-  int i;
-  int ret = 0;
-
-  for (i = 0; i < arity; i++)
-    if (load_manager[i].load)
-      {
-	ret = 1;
-	break;
-      }
-
-  return ret;
-}
-
 static 
 void __marcel_bubble_affinity(struct marcel_topo_level **l) 
 {  
@@ -320,102 +304,93 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l)
 
   __debug_show_entities("__marcel_bubble_affinity", e, ne, l);
 
-  if (__vps_are_loaded(load_manager, arity))
+  if (ne < nvp) 
     {
-      /* La machine est chargée (partiellement on complètement), on ne perce pas de bulle 
-       * et on attire les entités vers les runqueues les moins chargées */
-      __distribute_entities(l, e, ne, load_manager);
-    }
-  else
-    {
-      if (ne < nvp) 
+      if (ne >= arity && __has_enough_entities(l, e, ne, load_manager))
+	__distribute_entities(l, e, ne, load_manager);
+      else
 	{
-	  if (ne >= arity && __has_enough_entities(l, e, ne, load_manager))
-	    __distribute_entities(l, e, ne, load_manager);
-	  else
+	  /* Il faut vraiment percer des bulles, sous peine de famine */
+	  debug("il faut vraiment percer des bulles, sous peine de famine.\n");
+	  
+	  qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
+	  
+	  /* On commence par compter le nombre de sous-entités */
+	  unsigned new_ne = 0;
+	  int j;
+	  int bubble_has_exploded = 0;
+	  
+	  for (i = 0; i < ne; i++) 
 	    {
-	      /* Il faut vraiment percer des bulles, sous peine de famine */
-	      debug("il faut vraiment percer des bulles, sous peine de famine.\n");
+	      if (!e[i])
+		continue;
 	      
-	      qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
-	      
-	      /* On commence par compter le nombre de sous-entités */
-	      unsigned new_ne = 0;
-	      int j;
-	      int bubble_has_exploded = 0;
-	      
-	      for (i = 0; i < ne; i++) 
+	      /* TODO: C'est ici qu'il faudra choisir la bulle a exploser, en fonction de son épaisseur ou autre */
+	      if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) 
 		{
-		  if (!e[i])
-		    continue;
-
-		  /* TODO: C'est ici qu'il faudra choisir la bulle a exploser, en fonction de son épaisseur ou autre */
-		  if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) 
-		    {
-		      marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-		      marcel_entity_t *ee;
-		      
-		      if (bb->hold.nr_ready) /* Si la bulle n'est pas vide */ 
-			for_each_entity_scheduled_in_bubble_begin(ee,bb)
-			  new_ne++;
-		          bubble_has_exploded = 1; /* On a percé une bulle, c'est peut-être suffisant! */
-			for_each_entity_scheduled_in_bubble_end()
-			
-			debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
-		    }
-		  else
-		    continue; /* On ne touche pas à ce qui est déjà sur la runqueue */
+		  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+		  marcel_entity_t *ee;
+		  
+		  if (bb->hold.nr_ready) /* Si la bulle n'est pas vide */ 
+		    for_each_entity_scheduled_in_bubble_begin(ee,bb)
+		      new_ne++;
+		  bubble_has_exploded = 1; /* On a percé une bulle, c'est peut-être suffisant! */
+		  for_each_entity_scheduled_in_bubble_end()
+		    
+		    debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
 		}
-	      
-	      if (!bubble_has_exploded) /* On n'a rien trouvé à crever, pas la peine d'aller plus loin */
-		{
-		  if (ne >= arity)
-		    {
-		      __distribute_entities(l, e, ne, load_manager);
-		      for (k = 0; k < arity; k++)
-			__marcel_bubble_affinity(&l[0]->children[k]);
-		    }
-		}
-	      
-	      if (!new_ne) /* Il n'y a pas d'entités, on s'arrête */
-		{
-		  debug( "done: !new_ne\n");
-		  return;
-		}
-	      
-	      /* On créé la liste auxiliaire de toutes les entités */
-	      marcel_entity_t *new_e[new_ne], *ee;
-	      j = 0;
-	      bubble_has_exploded = 0;
-	      for (i = 0; i < ne; i++) 
-		{
-		  /* TODO: Là encore élire la bulle à exploser en fonction de son épaisseur, ou d'autres paramètres */
-		  if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) 
-		    {
-		      marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-		      if (bb->hold.nr_ready) { /* Si la bulle n'est pas vide */
-			debug("exploding bubble %p\n", bb);
-			for_each_entity_scheduled_in_bubble_begin(ee,bb)
-			  new_e[j++] = ee;
-			bubble_has_exploded = 1;
-			for_each_entity_scheduled_in_bubble_end()
-			  }
-		    }
-		  else
-		    continue; /* new_e ne contient que les entités extraites de la bulle éclatée */
-		}
-	      MA_BUG_ON(new_ne != j);
-	      
-	      __sched_submit(new_e, new_ne, l);
-	      return __marcel_bubble_affinity(l);
+	      else
+		continue; /* On ne touche pas à ce qui est déjà sur la runqueue */
 	    }
+	  
+	  if (!bubble_has_exploded) /* On n'a rien trouvé à crever, pas la peine d'aller plus loin */
+	    {
+	      if (ne >= arity)
+		{
+		  __distribute_entities(l, e, ne, load_manager);
+		  for (k = 0; k < arity; k++)
+		    __marcel_bubble_affinity(&l[0]->children[k]);
+		}
+	    }
+	  
+	  if (!new_ne) /* Il n'y a pas d'entités, on s'arrête */
+	    {
+	      debug( "done: !new_ne\n");
+	      return;
+	    }
+	  
+	  /* On créé la liste auxiliaire de toutes les entités */
+	  marcel_entity_t *new_e[new_ne], *ee;
+	  j = 0;
+	  bubble_has_exploded = 0;
+	  for (i = 0; i < ne; i++) 
+	    {
+	      /* TODO: Là encore élire la bulle à exploser en fonction de son épaisseur, ou d'autres paramètres */
+	      if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) 
+		{
+		  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+		  if (bb->hold.nr_ready) { /* Si la bulle n'est pas vide */
+		    debug("exploding bubble %p\n", bb);
+		    for_each_entity_scheduled_in_bubble_begin(ee,bb)
+		      new_e[j++] = ee;
+		    bubble_has_exploded = 1;
+		    for_each_entity_scheduled_in_bubble_end()
+		      }
+		}
+	      else
+		continue; /* new_e ne contient que les entités extraites de la bulle éclatée */
+	    }
+	  MA_BUG_ON(new_ne != j);
+	  
+	  __sched_submit(new_e, new_ne, l);
+	  return __marcel_bubble_affinity(l);
 	}
-      else /* ne >= nvp */ 
-	{
-	  /* On retarde au maximum l'éclatement des bulles */
-	  debug("plus d'entites (%d) que de vps (%d), on retarde au maximum l'eclatement des bulles.\n", ne, nvp);
-	  __distribute_entities(l, e, ne, load_manager);
-	}
+    }
+  else /* ne >= nvp */ 
+    {
+      /* On retarde au maximum l'éclatement des bulles */
+      debug("plus d'entites (%d) que de vps (%d), on retarde au maximum l'eclatement des bulles.\n", ne, nvp);
+      __distribute_entities(l, e, ne, load_manager);
     }
 
   /* On poursuit la repartition sur les niveaux d'en dessous */
@@ -426,26 +401,32 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l)
 void 
 marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) 
 {
+  unsigned vp;
   marcel_entity_t *e = &b->sched;
 
   debug("adresse de la marcel_root_bubble: %p \n", &marcel_root_bubble);
 
   ma_bubble_synthesize_stats(b);
-  ma_preempt_disable();
-  ma_local_bh_disable();
+  //ma_preempt_disable();
+  //ma_local_bh_disable();
 
-  ma_bubble_lock_all(b, marcel_machine_level);
+  //ma_bubble_lock_all(b, marcel_machine_level);
+  ma_bubble_lock_all(b, l);
   __ma_bubble_gather(b, b);
   __sched_submit(&e, 1, &l);
   __marcel_bubble_affinity(&l);
   
   /* resched existing threads */
-  ma_resched_existing_threads(l);
+  //ma_resched_existing_threads(l);
+  marcel_vpset_foreach_begin(vp,&l->vpset)
+    ma_lwp_t lwp = ma_vp_lwp[vp];
+  ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
+  marcel_vpset_foreach_end()
   
-  ma_bubble_unlock_all(b, marcel_machine_level);  
+  ma_bubble_unlock_all(b, l);  
 
-  ma_preempt_enable_no_resched();
-  ma_local_bh_enable();
+  //ma_preempt_enable_no_resched();
+  //ma_local_bh_enable();
 }
 
 int
@@ -474,7 +455,7 @@ affinity_sched_submit(marcel_entity_t *e)
   b = ma_bubble_entity(e);
   fprintf(stderr, "submit : %d\n", ma_atomic_read(&ma_init));
   if (!ma_atomic_read(&ma_init))
-    marcel_bubble_affinity(b, l);
+      marcel_bubble_affinity(b, l);
   else 
     __sched_submit(&e, 1, &l);
 
@@ -509,6 +490,7 @@ int
 ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq)
 {
   marcel_entity_t *upper_entity = ma_get_upper_ancestor(e, common_rq);
+  debug("ma_redistribute : upper_entity = %p\n", upper_entity);
   if (upper_entity->type == MA_BUBBLE_ENTITY)
     {
       marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
@@ -768,7 +750,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  //.vp_is_idle = affinity_steal,
+  .vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

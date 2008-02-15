@@ -20,7 +20,7 @@
 
 #ifdef MA__BUBBLES
 
-#if 1
+#if 0
 #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #else
 #define debug(fmt, ...) (void)0
@@ -403,30 +403,26 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l)
 {
   unsigned vp;
   marcel_entity_t *e = &b->sched;
-
+  
   debug("adresse de la marcel_root_bubble: %p \n", &marcel_root_bubble);
-
+  
   ma_bubble_synthesize_stats(b);
-  //ma_preempt_disable();
-  //ma_local_bh_disable();
-
-  //ma_bubble_lock_all(b, marcel_machine_level);
+  ma_preempt_disable();
+  ma_local_bh_disable();
+  
   ma_bubble_lock_all(b, l);
   __ma_bubble_gather(b, b);
   __sched_submit(&e, 1, &l);
   __marcel_bubble_affinity(&l);
-  
-  /* resched existing threads */
-  //ma_resched_existing_threads(l);
+  ma_resched_existing_threads(l);
   marcel_vpset_foreach_begin(vp,&l->vpset)
     ma_lwp_t lwp = ma_vp_lwp[vp];
-  ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
+    ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
   marcel_vpset_foreach_end()
-  
   ma_bubble_unlock_all(b, l);  
 
-  //ma_preempt_enable_no_resched();
-  //ma_local_bh_enable();
+  ma_preempt_enable_no_resched();
+  ma_local_bh_enable();
 }
 
 int
@@ -750,7 +746,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  .vp_is_idle = affinity_steal,
+  //.vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

@@ -20,17 +20,19 @@
 
 #ifdef MA__BUBBLES
 
-#if 0
+#if 1
 #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #else
 #define debug(fmt, ...) (void)0
 #endif
 
-#define MA_VP_IS_IDLE_COOLDOWN 1000
+#define MA_FAILED_STEAL_COOLDOWN 1000
+#define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
 static struct list_head submitted_entities;
 static ma_rwlock_t submit_rwlock = MA_RW_LOCK_UNLOCKED;
 static unsigned long last_failed_steal = 0;
+static unsigned long last_succeeded_steal = 0;
 volatile unsigned long init_mode = 1;
 volatile unsigned long succeeded_steals;
 volatile unsigned long failed_steals;
@@ -115,9 +117,12 @@ load_from_children(struct marcel_topo_level **father)
     for (i = 0; i < arity; i++) 
       {
 	ret += load_from_children(&father[0]->children[i]);
-	debug("count dans load_from_children\n");
 	ret += ma_count_entities_on_rq(&father[0]->children[i]->sched, RECURSIVE_MODE);
       }
+  else
+    {
+      ret += ma_count_entities_on_rq(&father[0]->sched, RECURSIVE_MODE);
+    }
   
   return ret;
 }
@@ -502,7 +507,8 @@ ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq)
 }
 
 
-ma_runqueue_t *get_parent_rq(marcel_entity_t *e)  
+ma_runqueue_t *
+get_parent_rq(marcel_entity_t *e)  
 {
   if (e) {
     if (e->sched_holder && (e->sched_holder->type == MA_RUNQUEUE_HOLDER))
@@ -692,10 +698,8 @@ affinity_steal(unsigned from_vp)
   int n, smthg_to_steal = 0;
   int nvp = marcel_vpset_weight(&top->vpset);
   
-  /* Si le dernier steal a echoué trop récemment, on attend un certain
-     laps de temps avant de retenter */
-  if (last_failed_steal 
-      && ((marcel_clock() - last_failed_steal) < MA_VP_IS_IDLE_COOLDOWN))
+  if ((last_failed_steal && ((marcel_clock() - last_failed_steal) < MA_FAILED_STEAL_COOLDOWN)) 
+      || (last_succeeded_steal && ((marcel_clock() - last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
     return 0;
 
   ma_write_lock(&ma_idle_scheduler_lock);
@@ -732,6 +736,7 @@ affinity_steal(unsigned from_vp)
   
   if (smthg_to_steal) { 
     debug("Le vol a reussi !\n");
+    last_succeeded_steal = marcel_clock();
     succeeded_steals++;
     return 1;
   }
@@ -746,7 +751,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  //.vp_is_idle = affinity_steal,
+  .vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

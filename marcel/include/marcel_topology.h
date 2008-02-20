@@ -218,7 +218,7 @@ static __tbx_inline__ void marcel_vpset_vp(marcel_vpset_t * set,
 }
 
 #section functions
-/** \brief Clear VP set and set VP \e vp */
+/** \brief Clear VP set and set all but the VP \e vp */
 static __tbx_inline__ void marcel_vpset_all_but_vp(marcel_vpset_t * set,
     unsigned vp);
 #section inline

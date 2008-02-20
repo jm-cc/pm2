@@ -31,13 +31,9 @@ endif
 
 SCHED_NAME=marcel
 
-M4_GEN_HEADERS=include/marcel_barrier.h include/marcel_mutex.h include/marcel_cond.h
-M4_GEN_HEADERS_NAMES=$(patsubst include/%,%,$(M4_GEN_HEADERS))
-M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_barrier.c source/nptl_mutex.c source/nptl_cond.c
 MOD_HSPLITS_COMMON:=scripts/splitall_section_def.h
-MOD_HSPLITS_SOURCES:=$(filter-out $(M4_GEN_HEADERS_NAMES), \
-	$(shell echo `pwd` 1>&2 ; cd include ; \
-	grep -l '^\#section' *.h sys/*.h)) $(M4_GEN_HEADERS_NAMES)
+MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd include ; \
+	grep -l '^\#section' *.h sys/*.h)
 
 #MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
 MOD_HSPLITS_GENDIR = $(PM2_ROOT)/marcel/autogen-include
@@ -95,8 +91,8 @@ $(MOD_GEN_INC)/scheduler:
 	$(COMMON_BUILD)
 	-$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
 
-.PHONY: clean_autogen clean_m4gen
-clean: clean_autogen clean_m4gen
+.PHONY: clean_autogen
+clean: clean_autogen
 
 clean_autogen:
 	$(COMMON_CLEAN) $(RM) -r autogen-include
@@ -164,17 +160,5 @@ linux:
 			echo "You should verify and execute : " ; \
 			echo "rm -v $$LST" ; \
 		fi
-
-dot_h: $(M4_GEN_FILES)
-
-$(M4_GEN_FILES): scripts/marcel.m4
-
-$(M4_GEN_FILES): %: %.m4
-	m4 $< > $@
-
-$(MOD_HSPLITS_MAKEFILES): $(M4_GEN_HEADERS)
-
-clean_m4gen:
-	$(COMMON_CLEAN) $(RM) -r $(M4_GEN_FILES)
 
 source/marcel_init.c-cflags=-fno-omit-frame-pointer

@@ -317,7 +317,7 @@ nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {
 
 #ifdef  MARCEL_REMOTE_TASKLETS
 	marcel_vpset_t vpset;
-	marcel_vpset_all_but_vp(&vpset, 0);
+	marcel_vpset_vp(&vpset, 0);
 	ma_remote_tasklet_set_vpset(&p_drv->server.poll_tasklet, &vpset);
 #endif
 

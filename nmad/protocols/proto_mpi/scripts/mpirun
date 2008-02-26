@@ -232,7 +232,7 @@ compile_leonie
 leonie="$LEONIE_ENV leonie"
 
 if [ -n "$debugger" ] ; then
-    $Show $leonie --wd=$PWD $env -d -w $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show $leonie --wd=$PWD $env -d  $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
     if [ -n "$log" ] ; then
         $Show $leonie --wd=$PWD $env -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs

@@ -87,9 +87,6 @@ get_machines() {
         protocols=`${PM2_ROOT}/bin/pm2-config --flavor=$PM2_FLAVOR --protocols`
     fi
 
-    # Fix: tcpdg should be tcp
-    protocols=$(echo $protocols | sed 's/tcpdg/tcp/')
-
     for net in `echo $protocols` ; do
 	network_name=`${PM2_ROOT}/bin/leo-network.pl $NET_FILE $net $host_list2`
 	if [ "$network_name" != "Network not found" ] ; then

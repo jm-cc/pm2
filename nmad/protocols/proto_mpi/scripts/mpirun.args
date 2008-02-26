@@ -45,9 +45,9 @@ mpirun [mpirun_options...] <progname> [options...]
             Log output into files
     -x
             Starts each processus in a graphical console
-    --protocol <name>
+    -protocol <name>
             Uses the specified network protocol to start the application
-    --config <configuration network file>
+    -config <configuration network file>
 
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status (currently, all are one, but this 

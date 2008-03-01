@@ -22,6 +22,8 @@ Mettre en place un cron qui lance posixtestsuite et trace un courbe
 
 Benchs OpenMP EPCC.
 
+Signaux: SA_RESETHAND
+
 topology: level->type devrait plutôt être un | des différents types d'objets matériels (un n½ud NUMA peut très bien correspondre à une puce et à un cache L3 partagé, cf Barcelona). Corriger en même temps le code qui l'utilise (== TRUC) en &TRUC)!=0
 
 topology: on devrait pouvoir spécifier manuellement la topologie de la machine.

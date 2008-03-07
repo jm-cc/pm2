@@ -16,9 +16,6 @@
 #ifdef PIOMAN
 #include "nm_piom.h"
 #endif
-#ifdef CONFIG_PADICO
-#include <Padico/Puk.h>
-#endif
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
@@ -1065,13 +1062,16 @@ nm_core_init		(int			 *argc,
                          struct nm_core		**pp_core,
                          int (*sched_load)(struct nm_sched_ops *)) {
         struct nm_core *p_core	= NULL;
-        int err;
+        int err = NM_ESUCCESS;
 
-#ifndef CONFIG_PADICO
-	padico_puk_init(*argc, argv);
-        common_pre_init(argc, argv, NULL);
-        common_post_init(argc, argv, NULL);
-#endif
+	const int init_done = padico_puk_initialized();
+
+	if(!init_done)
+	  {
+	    padico_puk_init(*argc, argv);
+	    common_pre_init(argc, argv, NULL);
+	    common_post_init(argc, argv, NULL);
+	  }
 
 	FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 
@@ -1095,20 +1095,12 @@ nm_core_init		(int			 *argc,
         *pp_core	= p_core;
         err = NM_ESUCCESS;
 
-#ifndef CONFIG_PADICO
-	/** @note When running inside PadicoTM, drivers are already loaded by NetAccess (don't load here again)
-	 */
-	nm_core_drivers_load();
-#else
-	/** @note we *purposely* check that PadicoTM is running to prevent people
-	 * from mistakenly activating the 'padico_puk' option without PadicoTM.
-	 */
-	if(puk_mod_getattr(NULL, "PADICO_NODE_UUID") == NULL)
+	if(!init_done)
 	  {
-	    padico_fatal("NewMad: trying to load a PadicoTM-enabled nmad without PadicoTM.\n");
+	    /** @note When running inside PadicoTM, drivers are already loaded by NetAccess (don't load here again)
+	     */
+	    nm_core_drivers_load();
 	  }
-#endif
-
 
  out:
         return err;

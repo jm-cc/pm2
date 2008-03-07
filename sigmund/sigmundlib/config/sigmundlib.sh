@@ -1,2 +1,0 @@
-PM2_SIGMUNDLIB_LIBNAME=sigmundlib
-PM2_SIGMUNDLIB_LIBS="-lfl -lfkt -lbfd"

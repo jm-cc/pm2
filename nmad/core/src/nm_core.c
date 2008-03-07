@@ -1064,11 +1064,19 @@ nm_core_init		(int			 *argc,
         struct nm_core *p_core	= NULL;
         int err = NM_ESUCCESS;
 
-	const int init_done = padico_puk_initialized();
-
-	if(!init_done)
+	/*
+	 * Lazy Puk initialization (it may already have been initialized in PadicoTM or MPI_Init)
+	 */
+	if(!padico_puk_initialized())
 	  {
 	    padico_puk_init(*argc, argv);
+	  }
+
+	/*
+	 * Lazy PM2 initialization (it may already have been initialized in PadicoTM)
+	 */
+	if(!tbx_initialized())
+	  {
 	    common_pre_init(argc, argv, NULL);
 	    common_post_init(argc, argv, NULL);
 	  }
@@ -1093,14 +1101,10 @@ nm_core_init		(int			 *argc,
                 goto out_free;
 
         *pp_core	= p_core;
-        err = NM_ESUCCESS;
 
-	if(!init_done)
-	  {
-	    /** @note When running inside PadicoTM, drivers are already loaded by NetAccess (don't load here again)
-	     */
-	    nm_core_drivers_load();
-	  }
+	nm_core_drivers_load();
+
+        err = NM_ESUCCESS;
 
  out:
         return err;

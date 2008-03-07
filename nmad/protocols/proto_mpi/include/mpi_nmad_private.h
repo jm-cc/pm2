@@ -45,9 +45,7 @@
 #include <madeleine.h>
 #include <nm_mad3_private.h>
 #endif
-#ifdef CONFIG_PADICO
 #include <nm_launcher.h>
-#endif
 
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
@@ -276,16 +274,7 @@ typedef struct mpir_internal_data_s {
  * Initialises internal data
  */
 int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
-#ifdef CONFIG_PADICO
-		       struct puk_receptacle_NewMad_Launcher_s*r
-#else /* CONFIG_PADICO */
-		       int global_size,
-		       int process_rank,
-		       p_mad_madeleine_t madeleine,
-                       struct nm_so_interface *_p_so_sr_if,
-		       nm_so_pack_interface _p_so_pack_if
-#endif /* CONFIG_PADICO */
-		       );
+		       struct puk_receptacle_NewMad_Launcher_s*r);
 
 /**
  * Internal shutdown of the application.

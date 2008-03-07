@@ -31,37 +31,19 @@ debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log")
 #endif /* NMAD_DEBUG */
 
 int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
-#ifdef CONFIG_PADICO
-		       struct puk_receptacle_NewMad_Launcher_s*r
-#else /* CONFIG_PADICO */
-		       int global_size,
-		       int process_rank,
-		       p_mad_madeleine_t madeleine,
-                       struct nm_so_interface *_p_so_sr_if,
-		       nm_so_pack_interface _p_so_pack_if
-#endif /* CONFIG_PADICO */
-		       ) {
+		       struct puk_receptacle_NewMad_Launcher_s*r) {
   int i;
-  int                              dest;
+  int dest;
 
+  const int global_size  = (*r->driver->get_size)(r->_status);
+  const int process_rank = (*r->driver->get_rank)(r->_status);
+ 
   mpir_internal_data->nb_outgoing_msg = 0;
   mpir_internal_data->nb_incoming_msg = 0;
 
-#ifdef CONFIG_PADICO
-  const int global_size  = (*r->driver->get_size)(r->_status);
-  const int process_rank = (*r->driver->get_rank)(r->_status);
+  /** Set the NewMadeleine interfaces */
   mpir_internal_data->p_so_sr_if   = (*r->driver->get_so_sr_if)(r->_status);
   mpir_internal_data->p_so_pack_if = (*r->driver->get_so_pack_if)(r->_status);
-#else /* CONFIG_PADICO */
-  int                              source;
-  p_mad_channel_t                  channel    = NULL;
-  p_mad_connection_t               connection = NULL;
-  p_mad_nmad_connection_specific_t cs	      = NULL;
-  
-  /** Set the NewMadeleine interfaces */
-  mpir_internal_data->p_so_sr_if = _p_so_sr_if;
-  mpir_internal_data->p_so_pack_if = _p_so_pack_if;
-#endif /* CONFIG_PADICO */
 
   /** Initialise the basic datatypes */
   mpir_internal_data->datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
@@ -169,8 +151,6 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->out_dest = malloc(NUMBER_OF_GATES * sizeof(int));
   mpir_internal_data->in_dest = malloc(NUMBER_OF_GATES * sizeof(int));
 
-#ifdef CONFIG_PADICO
-
   (*r->driver->get_gate_ids)(r->_status, &mpir_internal_data->out_gate_id[0]);
   for(dest = 0; dest < global_size; dest++)
     {
@@ -182,52 +162,6 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
 	  mpir_internal_data->in_dest[gate_id] = dest;
 	}
     }
-
-#else /* CONFIG_PADICO */
-
-  /** Get a reference to the channel structure */
-  channel = tbx_htable_get(madeleine->channel_htable, "pm2");
-
-  /** If that fails, it means that our process does not belong to the channel */
-  if (!channel) {
-    fprintf(stderr, "I don't belong to this channel");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  for(dest=0 ; dest<global_size ; dest++) {
-    mpir_internal_data->out_gate_id[dest] = NM_ANY_GATE;
-    if (dest == process_rank) continue;
-
-    connection = tbx_darray_get(channel->out_connection_darray, dest);
-    if (!connection) {
-      NM_DISPF("Cannot find a connection between %d and %d", process_rank, dest);
-    }
-    else {
-      cs = connection->specific;
-      mpir_internal_data->out_gate_id[dest] = cs->gate_id;
-      mpir_internal_data->out_dest[cs->gate_id] = dest;
-      MPI_NMAD_TRACE("Connection out (%p) with dest %d is %d\n", connection, dest, cs->gate_id);
-    }
-  }
-
-  for(source=0 ; source<global_size ; source++) {
-    mpir_internal_data->in_gate_id[source] = NM_ANY_GATE;
-    if (source == process_rank) continue;
-
-    connection =  tbx_darray_get(channel->in_connection_darray, source);
-    if (!connection) {
-      NM_DISPF("Cannot find a in connection between %d and %d", process_rank, source);
-    }
-    else {
-      MPI_NMAD_TRACE("Connection in: %p\n", connection);
-      cs = connection->specific;
-      mpir_internal_data->in_gate_id[source] = cs->gate_id;
-      mpir_internal_data->in_dest[cs->gate_id] = source;
-    }
-  }
-
-#endif /* CONFIG_PADICO */
 
   return MPI_SUCCESS;
 }

@@ -20,14 +20,15 @@
 
 #include "mpi.h"
 #include "mpi_nmad_private.h"
-#include "nm_so_parameters.h"
+#include <nm_so_parameters.h>
+#ifdef CONFIG_PROTO_MAD3
+#include <nm_mad3_public.h>
+#endif
 #include <stdint.h>
 #include <assert.h>
 
-#ifndef CONFIG_PADICO
-static p_mad_madeleine_t       madeleine	= NULL;
-#endif
-static mpir_internal_data_t    mpir_internal_data;
+static puk_instance_t launcher_instance = NULL;
+static mpir_internal_data_t mpir_internal_data;
 
 #define MAX_ARG_LEN 64
 
@@ -1002,15 +1003,7 @@ mpir_internal_data_t *get_mpir_internal_data() {
 
 int MPI_Init(int *argc,
              char ***argv) {
-#ifndef CONFIG_PADICO
-  p_mad_session_t                  session    = NULL;
-  struct nm_core                  *p_core     = NULL;
-#endif
-  int                              global_size;
-  int                              process_rank;
-  int                              ret;
-  struct nm_so_interface          *p_so_sr_if;
-  nm_so_pack_interface             p_so_pack_if;
+  int ret;
 
   MPI_NMAD_LOG_IN();
 
@@ -1022,56 +1015,35 @@ int MPI_Init(int *argc,
   MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (long)sizeof(MPI_Request));
   assert(sizeof(mpir_request_t) <= sizeof(MPI_Request));
 
-#ifdef CONFIG_PADICO
+  /*
+   * Lazy Puk initialization (it may already have been initialized in PadicoTM)
+   */
+  if(!padico_puk_initialized())
+    {
+      padico_puk_init(*argc, *argv);
+    }
 
+#ifdef CONFIG_PROTO_MAD3
+  /*
+   * Explicitely load NewMad_Launcher if proto_mad3 is selected
+   */
+  nm_mad3_launcher_init();
+#endif
+
+  /*
+   * NewMad initialization is performed by component 'NewMad_Launcher'
+   * (from proto_mad3 or from PadicoTM)
+   */
   puk_adapter_t launcher = puk_adapter_resolve("NewMad_Launcher");
-  puk_instance_t instance = puk_adapter_instanciate(launcher);
+  launcher_instance = puk_adapter_instanciate(launcher);
   struct puk_receptacle_NewMad_Launcher_s r;
-  puk_instance_indirect_NewMad_Launcher(instance, NULL, &r);
+  puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
   (*r.driver->init)(r._status, argc, *argv, "Mad-MPI", &nm_so_load);
-  process_rank = (*r.driver->get_rank)(r._status);
-  global_size  = (*r.driver->get_size)(r._status);
-  p_so_sr_if   = (*r.driver->get_so_sr_if)(r._status);
-  p_so_pack_if = (*r.driver->get_so_pack_if)(r._status);
-
-  ret = mpir_internal_init(&mpir_internal_data, &r);
-
-#else /* CONFIG_PADICO */
-
-  /*
-   * Initialization of various libraries.
-   * Reference to the Madeleine object.
-   */
-  madeleine    = mad_init(argc, *argv);
-
-  /*
-   * Reference to the session information object
-   */
-  session      = madeleine->session;
-
-  /*
-   * Globally unique process rank.
-   */
-  process_rank = session->process_rank;
-
-  /*
-   * How to obtain the configuration size.
-   */
-  global_size = tbx_slist_get_length(madeleine->dir->process_slist);
-
-  /*
-   * Reference to the NewMadeleine core object
-   */
-  p_core = mad_nmad_get_core();
-  p_so_sr_if = mad_nmad_get_sr_interface();
-  p_so_pack_if = (nm_so_pack_interface)p_so_sr_if;
 
   /*
    * Internal initialisation
    */
-  ret = mpir_internal_init(&mpir_internal_data, global_size, process_rank, madeleine, p_so_sr_if, p_so_pack_if);
-
-#endif /* CONFIG_PADICO*/
+  ret = mpir_internal_init(&mpir_internal_data, &r);
 
   MPI_NMAD_LOG_OUT();
   return ret;
@@ -1102,9 +1074,8 @@ int MPI_Finalize(void) {
   MPI_NMAD_LOG_IN();
 
   err = mpir_internal_exit(&mpir_internal_data);
-#ifndef CONFIG_PADICO
-  mad_exit(madeleine);
-#endif
+
+  puk_instance_destroy(launcher_instance);
 
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1116,9 +1087,9 @@ int MPI_Abort(MPI_Comm comm TBX_UNUSED,
   MPI_NMAD_LOG_IN();
 
   err = mpir_internal_exit(&mpir_internal_data);
-#ifndef CONFIG_PADICO
-  mad_exit(madeleine);
-#endif
+
+  puk_instance_destroy(launcher_instance);
+
   MPI_NMAD_LOG_OUT();
   return errorcode;
 }

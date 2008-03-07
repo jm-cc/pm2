@@ -14,4 +14,3 @@ pm2-custom                : select the machines to use
 pm2-load                  : launch a pm2 application
 pm2-logs                  : see logs of a pm2 application
 pm2-madselect             : choose between Madeleine 1 and Madeleine 2
-pm2-startcons             : launch a pm2 console

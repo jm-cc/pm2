@@ -25,7 +25,7 @@ fi
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
-EXPERT_MODULES="generic|appli|dsm|leonie|mad2|leoparse|ezflavor|stackalign|bubbles|bubblegum|bubblelib"
+EXPERT_MODULES="generic|appli|leonie|leoparse|ezflavor|stackalign|bubbles|bubblegum|bubblelib"
 
 # aide
 usage() # exit_code section

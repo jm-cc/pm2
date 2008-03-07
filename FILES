@@ -9,7 +9,6 @@ bin           : Scripts used in PM2
 common        : Common configuration options
 console       : PM2 console
 doc           : Documentation
-dsm           : Distribuated Shared Memory module
 ezflavor      : A GTK interface to configure PM2
 FILES         : This file!
 generic       : Generic configuration options
@@ -18,8 +17,6 @@ leonie        : Bootstrap module
 leony         : Python version of the bootstrap module
 leoparse      : Parser for the bootstrap module
 lib           : External libraries used by PM2
-mad1          : Madeleine 1 module (communication library)
-mad2          : Madeleine 2 module (communication library)
 mad3          : Madeleine 3 module (communication library)
 make          : Shared makefiles
 marcel        : Marcel module (threads library)

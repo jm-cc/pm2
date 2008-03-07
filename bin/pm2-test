@@ -19,7 +19,7 @@ _PM2_TEST_PROGNAME=pm2-test
 
 _ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
 
-_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad2 mad3 nmad pm2 dsm"
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
 
 pm2_test_error() # msg
 {

@@ -54,7 +54,7 @@ echo Modules
 if [ ! -d ${PM2_ROOT}/modules ] ; then
     mkdir ${PM2_ROOT}/modules
 fi
-for module in appli common dsm ezflavor generic init leonie leoparse \
+for module in appli common ezflavor generic init leonie leoparse \
 	mad3 nmad marcel pioman ntbx pm2 profile stackalign tbx puk
 	do
    make_ln ${PM2_ROOT}/modules ../$module `basename $module`
@@ -68,26 +68,6 @@ make_ln ${PM2_ROOT}/mad3/examples ../../leonie/examples/networks.cfg
 # architecture-specific directories for the storage of binaries, etc.
 
 # Toolbox
-
-# Mad I
-#echo
-#echo Madeleine I
-#make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
-
-#make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
-#make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
-#make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
-#make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
-
-# Mad II
-#echo
-#echo Madeleine II
-#make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
-
-# DSM
-#echo
-#echo DSM
-#make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 if [ "$1" != "--nooptionsets" ]; then
     # Fabrication des catégories d'options

@@ -81,10 +81,6 @@ registering_flavors() {
     register_flavor leoparse \
 	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS
 
-#    register_flavor mad2 \
-#	--modules="mad2 tbx ntbx init" $COMMON_OPTIONS \
-#	--mad2=auto_spawn --mad2=tcp
-
     register_flavor mad3 \
 	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS \
 	--mad3=tcp --marcel=mono --marcel=marcel_main

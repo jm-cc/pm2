@@ -49,11 +49,11 @@ struct nm_so_sched {
     void    *data;
     int32_t cumulated_len;
     int32_t expected_len;
-    int8_t  gate_id;
+    nm_gate_id_t gate_id;
     uint8_t seq;
   } any_src[NM_SO_MAX_TAGS];
 
-  uint8_t next_gate_id;
+  nm_gate_id_t next_gate_id;
 
   unsigned pending_any_src_unpacks;
 };

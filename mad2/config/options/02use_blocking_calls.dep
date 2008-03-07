@@ -1,3 +1,0 @@
-Provide: no_active_poll
-Conflict: no_active_poll
-Depend: blocking_syscalls_allowed

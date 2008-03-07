@@ -1,1 +1,0 @@
-Force the use of blocking syscalls (instead of active polling). This is useful when using activations or SMP with option 'ONE_VP_PER_NET_THREAD'. If unsure, do not select this option.

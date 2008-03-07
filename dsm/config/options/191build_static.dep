@@ -1,3 +1,0 @@
-Provide: dsm_linkmode
-Provide: static_libs
-Conflict: dsm_linkmode

@@ -1,3 +1,0 @@
-Provide: mad2_linkmode
-Provide: dynamic_libs
-Conflict: mad2_linkmode

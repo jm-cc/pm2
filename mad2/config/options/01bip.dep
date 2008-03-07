@@ -1,2 +1,0 @@
-Provide: mad2_proto mad2_spawn bip
-Conflict: mad2_spawn

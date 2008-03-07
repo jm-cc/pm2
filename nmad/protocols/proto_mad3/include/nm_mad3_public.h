@@ -15,3 +15,9 @@
 
 
 #include <madeleine.h>
+
+/**
+ * Initializes the NewMad_Launcher component for proto_mad3
+ */
+extern void nm_mad3_launcher_init(void);
+

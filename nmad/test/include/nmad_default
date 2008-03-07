@@ -36,7 +36,7 @@ if [ "${ext}" == "pioman" ] ; then
 	--ext=\"\" \
 	--modules=\"puk nmad tbx ntbx init pioman marcel\" \
 	--init=\"debug gdb\" \
-	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu nuioa\" \
+	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu\" \
 	--ntbx=\"debug gdb\" \
 	--tbx=\"debug gdb\" \
 	--puk=\"disable_output\" \
@@ -48,7 +48,7 @@ else
 	--ext=\"\" \
 	--modules=\"puk nmad tbx ntbx init \" \
 	--init=\"debug gdb\" \
-	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu nuioa\" \
+	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu\" \
 	--ntbx=\"debug gdb\" \
 	--tbx=\"debug gdb\" \
 	--puk=\"disable_output\" \

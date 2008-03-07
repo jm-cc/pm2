@@ -145,10 +145,6 @@ registering_flavors() {
 	--common=link_pm2_shared \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
-    register_flavor sigmund \
-	--modules="sigmundlib sigmund sigmundps xsigmund supertrace" \
-	--all=build_dynamic
-
     register_flavor tbx \
         --modules="init tbx ntbx" $COMMON_OPTIONS
 

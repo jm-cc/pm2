@@ -21,9 +21,6 @@ X=
 flavor=
 module=
 case "$progname" in
-	sigmund|sigmundps|supertrace|xsigmund)
-		flavor=sigmund
-		;;
 	ezflavor)
 		if [ ! -f /tmp/.X0-lock ] ; then
 		   X=yes

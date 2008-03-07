@@ -26,7 +26,6 @@ ntbx          : Network toolbox for PM2
 pm2           : micro-PM2 module
 profile       : Profiling management routines
 puk           : 
-sigmund       : 
 stackalign    : 
 tbx           : Toolbox module
 xpaulette     : Paulette module

@@ -7,7 +7,6 @@ README        : Quick introduction to PM2
 appli         : Application configuration options
 bin           : Scripts used in PM2
 common        : Common configuration options
-console       : PM2 console
 doc           : Documentation
 ezflavor      : A GTK interface to configure PM2
 FILES         : This file!

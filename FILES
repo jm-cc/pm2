@@ -14,7 +14,6 @@ FILES         : This file!
 generic       : Generic configuration options
 init          : Initialisation code for any PM2 module
 leonie        : Bootstrap module
-leony         : Python version of the bootstrap module
 leoparse      : Parser for the bootstrap module
 lib           : External libraries used by PM2
 mad3          : Madeleine 3 module (communication library)

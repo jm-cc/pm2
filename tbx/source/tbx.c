@@ -29,6 +29,12 @@
 static const    char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
 static volatile tbx_bool_t initialized = tbx_false;
 
+int
+tbx_initialized(void)
+{
+        return initialized;
+}
+
 void
 tbx_dump(unsigned char *p,
          size_t	n) {

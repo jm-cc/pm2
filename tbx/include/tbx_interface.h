@@ -34,6 +34,9 @@
  * Common
  * ------
  */
+int
+tbx_initialized(void);
+
 void
 tbx_init(int    argc,
 	 char **argv);

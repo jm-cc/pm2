@@ -43,6 +43,10 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
 		       ) {
   int i;
   int                              dest;
+
+  mpir_internal_data->nb_outgoing_msg = 0;
+  mpir_internal_data->nb_incoming_msg = 0;
+
 #ifdef CONFIG_PADICO
   const int global_size  = (*r->driver->get_size)(r->_status);
   const int process_rank = (*r->driver->get_rank)(r->_status);
@@ -53,8 +57,6 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   p_mad_channel_t                  channel    = NULL;
   p_mad_connection_t               connection = NULL;
   p_mad_nmad_connection_specific_t cs	      = NULL;
-  mpir_internal_data->nb_outgoing_msg = 0;
-  mpir_internal_data->nb_incoming_msg = 0;
   
   /** Set the NewMadeleine interfaces */
   mpir_internal_data->p_so_sr_if = _p_so_sr_if;

@@ -509,7 +509,6 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 				  uint8_t tag, uint8_t seq,
 				  struct DLOOP_Segment *segp){
   struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->sch_private;
-  struct nm_so_strat_split_balance*status = _status;
 
   DLOOP_Handle handle;
   int data_sz;

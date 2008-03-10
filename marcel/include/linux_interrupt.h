@@ -105,6 +105,7 @@ struct ma_tasklet_struct {
 	struct list_head associated_bubble;
 	unsigned priority;
 #endif
+	int preempt;	/* do send a signal to force quick tasklet scheduling */
 };
 
 #section marcel_macros
@@ -114,23 +115,24 @@ struct ma_tasklet_struct {
 #  define MA_REMOTE_TASKLET_INIT
 #endif /* MARCEL_REMOTE_TASKLETS */
 
-#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count) { \
+#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count, _preempt) { \
 		.next=NULL, \
 		.state=0, \
 		.count=MA_ATOMIC_INIT(_count), \
+                .preempt=_preempt, \
 		.func=_func, \
 		.data=_data, MA_REMOTE_TASKLET_INIT \
 	}
 
-#define MA_TASKLET_INIT(name, _func, _data) \
-	MA_TASKLET_INIT_COUNT(name, _func, _data, 0)
-#define MA_DECLARE_TASKLET(name, _func, _data) \
-	struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data)
+#define MA_TASKLET_INIT(name, _func, _data, _preempt) \
+	MA_TASKLET_INIT_COUNT(name, _func, _data, 0, _preempt)
+#define MA_DECLARE_TASKLET(name, _func, _data, _preempt) \
+	struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data, _preempt)
 
-#define MA_TASKLET_INIT_DISABLED(name, _func, _data) \
-	MA_TASKLET_INIT_COUNT(name, _func, _data, 1)
-#define MA_DECLARE_TASKLET_DISABLED(name, _func, _data) \
-	struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data)
+#define MA_TASKLET_INIT_DISABLED(name, _func, _data, _preempt) \
+	MA_TASKLET_INIT_COUNT(name, _func, _data, 1, _preempt)
+#define MA_DECLARE_TASKLET_DISABLED(name, _func, _data, _preempt) \
+	struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data, _preempt)
 
 #section marcel_types
 enum {
@@ -192,6 +194,13 @@ static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct
 	t->next = vp->tasklet_vec.list;
 	vp->tasklet_vec.list = t;
 	__ma_raise_softirq_vp(MA_TASKLET_SOFTIRQ, vpnum);
+
+	if (t->preempt) {
+		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vpnum);
+		//DISP("sending signal to vp %d", (int)vpnum);
+		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+	}
+
 	
 	ma_remote_tasklet_unlock(&vp->tasklet_lock);
 }
@@ -202,7 +211,9 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 	ma_remote_tasklet_lock(&vp->tasklet_lock);
 	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
 	switch (old_state) {
-	case 0:
+	case 0: {
+		unsigned long target_vp_num_plus_one;
+		//DISP("tasklet schedule, t = %p", t);
 		/* not running, not scheduled, schedule it here */
 		if( marcel_vpset_isset(&(t->vp_set),marcel_current_vp())) {
 			ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
@@ -214,8 +225,13 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 		/* vp_set doesn't fit. Let's take any vp that match */
 		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 		ma_remote_tasklet_unlock(&vp->tasklet_lock);
-		__ma_tasklet_remote_schedule(t, ma_ffs(t->vp_set)-1);
+
+		target_vp_num_plus_one = ma_ffs(t->vp_set);
+		MA_BUG_ON (!target_vp_num_plus_one);
+
+		__ma_tasklet_remote_schedule(t, target_vp_num_plus_one-1);
 		break;
+	}
 	case 1<<MA_TASKLET_STATE_SCHED:
 		/* not running anywhere, but already scheduled somewhere, so let it run there */
 		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
@@ -224,6 +240,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 		/* already running somewhere and wasn't scheduled yet, let there handle it */
 	case (1<<MA_TASKLET_STATE_RUN)|(1<<MA_TASKLET_STATE_SCHED):
 		/* already running somewhere and still schedule, let there handle it (again) */
+		//DISP("tasklet already scheduled, t = %p", t);
 		ma_remote_tasklet_unlock(&vp->tasklet_lock);
 		break;
 	}
@@ -302,6 +319,6 @@ static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t) {
 extern TBX_EXTERN void ma_tasklet_kill(struct ma_tasklet_struct *t);
 extern void tasklet_kill_immediate(struct ma_tasklet_struct *t, ma_lwp_t lwp);
 extern TBX_EXTERN void ma_tasklet_init(struct ma_tasklet_struct *t,
-			void (*func)(unsigned long), unsigned long data);
+			void (*func)(unsigned long), unsigned long data, int preempt);
 
 

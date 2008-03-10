@@ -273,12 +273,16 @@ static void tasklet_hi_action(struct ma_softirq_action *a) {
 
 
 TBX_EXTERN void ma_tasklet_init(struct ma_tasklet_struct *t,
-		     void (*func)(unsigned long), unsigned long data) {
+		     void (*func)(unsigned long), unsigned long data, int preempt) {
 	t->next = NULL;
 	t->state = 0;
 	ma_atomic_set(&t->count, 0);
 	t->func = func;
 	t->data = data;
+	t->preempt = preempt;
+#ifdef MARCEL_REMOTE_TASKLETS
+	marcel_vpset_fill(&t->vp_set);
+#endif /* MARCEL_REMOTE_TASKLETS */
 }
 
 TBX_EXTERN void ma_tasklet_kill(struct ma_tasklet_struct *t) {

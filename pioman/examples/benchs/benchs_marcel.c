@@ -11,8 +11,9 @@
 #define TASKLET2_LOOPS 50000
 #define RTASKLET_LOOPS 50000
 
-
+static volatile int tasklet_lock=0;
 void foo_tasklet(){
+	tasklet_lock++;
 }
 
 /* TODO : faire les tests avec plusieurs threads */
@@ -72,7 +73,7 @@ main(int argc, char** argv)
 	
 /* tasklet disable/enable */
 	struct ma_tasklet_struct tasklet;
-	ma_tasklet_init(&tasklet, &foo_tasklet, 0);
+	ma_tasklet_init(&tasklet, &foo_tasklet, 0, 1);
 	printf("Tasklet enabling (%d loops):", TASKLET_LOOPS);
 
 	TBX_GET_TICK(t1);
@@ -90,7 +91,9 @@ main(int argc, char** argv)
 	printf("Tasklet scheduling (%d loops):", TASKLET2_LOOPS);
 	TBX_GET_TICK(t1);
 	for(i=0;i<TASKLET2_LOOPS;i++){
+		tasklet_lock=0;
 		ma_tasklet_schedule(&tasklet);
+		while(!tasklet_lock);
 	}
 	TBX_GET_TICK(t2);
 	printf("\t%f\n", 
@@ -100,10 +103,25 @@ main(int argc, char** argv)
 
 #ifdef MARCEL_REMOTE_TASKLETS
 /* Lancement d'une tasklet à distance */	
+	/* Lock thread on vp 0 and force tasklet to run on vp 1 */
 	marcel_vpset_t set;
-	marcel_vpset_all_but_vp(&set, 1);
+	marcel_vpset_vp(&set, 0);
+	marcel_apply_vpset(&set);
+	marcel_vpset_all_but_vp(&set, 0);
 	ma_remote_tasklet_set_vpset(&tasklet, &set);		
 	printf("tasklet remote scheduling (%d loops):", RTASKLET_LOOPS);
+	TBX_GET_TICK(t1);
+	for(i=0;i<RTASKLET_LOOPS;i++){
+		tasklet_lock=0;
+		ma_tasklet_schedule(&tasklet);
+		while(!tasklet_lock);
+	}
+	TBX_GET_TICK(t2);
+	printf("%f\n", 
+	       RTASKLET_LOOPS,
+	       tbx_tick2usec(TBX_TICK_RAW_DIFF(t1, t2))/RTASKLET_LOOPS);
+	tasklet.preempt = 0;
+	printf("tasklet remote scheduling without signal (%d loops):", RTASKLET_LOOPS);
 	TBX_GET_TICK(t1);
 	for(i=0;i<RTASKLET_LOOPS;i++){
 		ma_tasklet_schedule(&tasklet);

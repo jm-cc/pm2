@@ -587,7 +587,7 @@ void piom_req_success(piom_req_t req);
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &piom_poll_from_tasklet, \
-                     (unsigned long)(piom_server_t)&(var) ), \
+                     (unsigned long)(piom_server_t)&(var),1 ), \
     .need_manage=0, \
     .poll_timer= MA_TIMER_INITIALIZER(piom_poll_timer, 0, \
                    (unsigned long)(piom_server_t)&(var)), \
@@ -615,7 +615,7 @@ void piom_req_success(piom_req_t req);
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &piom_poll_from_tasklet, \
-                     (unsigned long)(piom_server_t)&(var) ), \
+                     (unsigned long)(piom_server_t)&(var),1 ), \
     .need_manage=0, \
     .poll_timer= MA_TIMER_INITIALIZER(piom_poll_timer, 0, \
                    (unsigned long)(piom_server_t)&(var)), \

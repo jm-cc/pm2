@@ -382,7 +382,7 @@ struct marcel_ev_server {
     .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &marcel_poll_from_tasklet, \
-                     (unsigned long)(marcel_ev_server_t)&(var) ), \
+                     (unsigned long)(marcel_ev_server_t)&(var), 1 ), \
     .poll_timer= MA_TIMER_INITIALIZER(marcel_poll_timer, 0, \
                    (unsigned long)(marcel_ev_server_t)&(var)), \
     .state=MA_EV_SERVER_STATE_INIT, \

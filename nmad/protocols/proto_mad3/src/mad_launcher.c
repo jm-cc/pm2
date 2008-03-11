@@ -177,7 +177,6 @@ static void mad_launcher_get_gate_ids(void*_status, nm_gate_id_t*ids)
     else {
       cs = connection->specific;
       ids[dest] = cs->gate_id;
-      ids[cs->gate_id] = dest;
       NM_TRACEF("Connection out (%p) with dest %d is %d\n", connection, dest, cs->gate_id);
     }
   }
@@ -194,7 +193,6 @@ static void mad_launcher_get_gate_ids(void*_status, nm_gate_id_t*ids)
       NM_TRACEF("Connection in: %p\n", connection);
       cs = connection->specific;
       ids[source] = cs->gate_id;
-      ids[cs->gate_id] = source;
     }
   }
 

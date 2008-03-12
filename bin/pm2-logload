@@ -27,6 +27,7 @@ shift
 args=${@:+"$@"}
 
 title="$prog.${HOST:-`hostname`}"
+USER=$(id -nu)
 
 PS="ps -A"
 ARCH=`uname -m`
@@ -50,8 +51,7 @@ do
     num=`expr $num + 1`
 done
 
-#logfile="/tmp/pm2log-${USER:-nobody}-${num}"
-logfile="/tmp/pm2log-${USER:-nobody}-${rank}"
+logfile="/tmp/pm2log-${USER:-nobody}-${num}-${rank}"
 echo $logfile
 
 [ -f $logfile ] && rm -f $logfile

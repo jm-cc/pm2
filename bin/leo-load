@@ -144,6 +144,8 @@ while [ $# -gt 0 ]; do
 	-l)
 	    shift
 	    PM2_LOGMODE=on
+	    PM2_LOGRANK=$1
+	    shift
 	    ;;
 	-p)
 	    shift
@@ -203,7 +205,7 @@ elif [ "${PM2_VALGRIND}" = on ]; then
 elif [ "${PM2_XMODE}" = on ]; then
     prefix='pm2-xload'
 elif [ "${PM2_LOGMODE}" = on ]; then
-    prefix='pm2-logload'
+    prefix="pm2-logload $PM2_LOGRANK"
 else
     prefix="pm2-wrapper"
 fi

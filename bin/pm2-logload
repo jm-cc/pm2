@@ -20,6 +20,8 @@
 # $1... = command and arguments
 
 echo "##### `hostname`"
+rank=$1
+shift
 prog=$1
 shift
 args=${@:+"$@"}
@@ -48,7 +50,8 @@ do
     num=`expr $num + 1`
 done
 
-logfile="/tmp/pm2log-${USER:-nobody}-${num}"
+#logfile="/tmp/pm2log-${USER:-nobody}-${num}"
+logfile="/tmp/pm2log-${USER:-nobody}-${rank}"
 echo $logfile
 
 [ -f $logfile ] && rm -f $logfile

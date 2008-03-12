@@ -46,6 +46,7 @@ leo_default_loader(p_leo_settings_t settings,
 		   p_ntbx_server_t  net_server,
 		   p_tbx_slist_t    process_slist)
 {
+  int process_rank = 1;
   LOG_IN();
   TRACE("default loader selected");
 
@@ -155,7 +156,10 @@ leo_default_loader(p_leo_settings_t settings,
 
 	if (settings->log_mode)
 	  {
-	    tbx_arguments_append_cstring(args, "-l");
+	    char *rank=malloc(10*sizeof(char));
+	    sprintf(rank,"%d",process_rank);
+	    tbx_arguments_append_cstring_ext(args, "-l", ' ', rank);
+	    free(rank);
 	  }
 
 	if (settings->pause_mode)
@@ -289,6 +293,7 @@ leo_default_loader(p_leo_settings_t settings,
 
         //sleep(3);
       }
+      process_rank ++;
     }
   while (tbx_slist_ref_forward(process_slist));
   LOG_OUT();

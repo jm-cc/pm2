@@ -9,7 +9,7 @@
 %%
 "="[^ \n\t]*	                                { return EQUAL_TOKEN; }
 "--"[-A-Za-z0-9_]*                              { return DASH_DASH_TOKEN; }
-[A-Za-z0-9][-A-Za-z0-9_.]*[:]?[A-Za-z0-9_.]*	{ return IDENT_TOKEN; }
+[A-Za-z0-9/][-A-Za-z0-9_./]*[:]?[A-Za-z0-9_./]*	{ return IDENT_TOKEN; }
 \'.*\'	|
 \".*\"		                                { return STRING_TOKEN; }
 [ \t\n]			                        ;

@@ -20,7 +20,9 @@
 
 #ifdef MA__BUBBLES
 
-#if 1
+#define MA_AFF_DEBUG 1
+
+#if MA_AFF_DEBUG
 #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
 #else
 #define debug(fmt, ...) (void)0
@@ -41,6 +43,7 @@ volatile unsigned long failed_steals;
    the runqueue &l[0]->sched */
 static void
 __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
+#if MA_AFF_DEBUG
   int k;
   debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->sched);
   for (k = 0; k < ne; k++)
@@ -62,6 +65,7 @@ __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struc
     }
   }
   debug("end)\n");
+#endif /* MA_AFF_DEBUG */ 
 }
 
 /* Submits a set of entities on a marcel_topo_level */

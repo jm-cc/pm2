@@ -337,11 +337,8 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-#ifdef MAD2
-	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);
-#else
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
-#endif
+
 	if(!marcel_ctx_setjmp(__ma_initial_main_ctx)) {
 		struct rlimit rlim;
 

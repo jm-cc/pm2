@@ -396,7 +396,7 @@ affinity_sched_init() {
 
 int
 affinity_sched_exit() {
-  fprintf(stderr, "Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
+  debug("Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
   return 0;
 }
 
@@ -406,7 +406,6 @@ int
 affinity_sched_submit(marcel_entity_t *e) {
   struct marcel_topo_level *l =  marcel_topo_level(0,0);
   b = ma_bubble_entity(e);
-  fprintf(stderr, "submit : %d\n", ma_atomic_read(&ma_init));
   if (!ma_atomic_read(&ma_init))
     marcel_bubble_affinity(b, l);
   else 

@@ -103,7 +103,6 @@ void marcel_bubble_sched_begin()
       ma_atomic_dec(&ma_init);
       ma_spin_unlock(&ma_init_lock);
       current_sched->submit(&marcel_root_bubble.sched);
-      fprintf(stderr, "C'est parti!\n");
       ma_idle_scheduler = 1;
     }
   else

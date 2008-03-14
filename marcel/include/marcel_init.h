@@ -47,14 +47,15 @@ void marcel_strip_cmdline(int *argc, char *argv[]);
 #section functions
 #ifdef STANDARD_MAIN
 #define marcel_main main
-#else
+#else  /* STANDARD_MAIN */
 #ifdef MARCEL_MAIN_AS_FUNC
-int go_marcel_main(int argc, char *argv[]);
-#endif
+int go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
+#else  /* MARCEL_MAIN_AS_FUNC */
 #ifdef MARCEL_KERNEL
 extern int marcel_main(int argc, char *argv[]);
-#endif /*  MARCEL_KERNEL */
-#endif
+#endif /* MARCEL_KERNEL */
+#endif /* MARCEL_MAIN_AS_FUNC */
+#endif /* STANDARD_MAIN */
 
 #section marcel_macros
 #ifdef OSF_SYS

@@ -303,8 +303,6 @@ void marcel_finish(void)
 
 #ifndef STANDARD_MAIN
 
-extern int marcel_main(int argc, char *argv[]);
-
 #ifdef WIN_SYS
 void win_stack_allocate(unsigned n)
 {
@@ -318,13 +316,16 @@ volatile int __marcel_main_ret;
 marcel_ctx_t __ma_initial_main_ctx;
 
 #ifdef MARCEL_MAIN_AS_FUNC
-int go_marcel_main(int argc, char *argv[])
-#else
+int go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[])
+#else /* MARCEL_MAIN_AS_FUNC */
+extern int marcel_main(int argc, char *argv[]);
+
 int main(int argc, char *argv[])
-#endif // MARCEL_MAIN_AS_FUNC
+#endif /* MARCEL_MAIN_AS_FUNC */
 {
 	static int __ma_argc;
 	static char **__ma_argv;
+	static int (*__ma_main)(int, char*[]);
 	unsigned long new_sp;
 
 #ifdef LINUX_SYS
@@ -349,7 +350,11 @@ int main(int argc, char *argv[])
 		mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
                 __ma_argc = argc; __ma_argv = argv;
-
+#ifdef MARCEL_MAIN_AS_FUNC
+		__ma_main = main_func;
+#else
+		__ma_main = &marcel_main;
+#endif
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
 		getrlimit(RLIMIT_STACK, &rlim);
@@ -364,7 +369,7 @@ int main(int argc, char *argv[])
 #endif
 		set_sp(new_sp);
 
-                __marcel_main_ret = marcel_main(__ma_argc, __ma_argv);
+                __marcel_main_ret = (*__ma_main)(__ma_argc, __ma_argv);
 
 		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
 	}

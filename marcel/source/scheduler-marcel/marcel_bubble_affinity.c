@@ -20,7 +20,7 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_AFF_DEBUG 1
+#define MA_AFF_DEBUG 0
 
 #if MA_AFF_DEBUG
 #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);

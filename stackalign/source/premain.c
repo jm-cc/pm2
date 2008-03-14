@@ -4,8 +4,8 @@
 
 #include <dlfcn.h>
 
-extern int __attribute__ ((weak)) go_marcel_main();
-extern int __attribute__ ((weak)) marcel_initialize();
+extern int __attribute__ ((weak)) go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
+extern int __attribute__ ((weak)) marcel_initialize(int *argc, char *argv[]);
 
 int  __attribute__ ((weak)) marcel_a_demare=0;
 
@@ -130,7 +130,7 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 #ifdef PM2DEBUG
 		printf("running go_marcel_main at %p\n", go_marcel_main);
 #endif
-		ret = go_marcel_main(argc, ubp_av);
+		ret = go_marcel_main(marcel_main, argc, ubp_av);
 #ifdef PM2DEBUG
 		printf("coming back from marcel\n");
 #endif

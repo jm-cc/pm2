@@ -181,9 +181,8 @@ struct nm_ibverbs_drv {
 		uint64_t page_size_cap; /**< maximum page size for device */
 		uint64_t max_msg_size;  /**< maximum message size */
 	} ib_caps;
-        char*url;               /**< url */
+        char*url;               /**< Infiniband url for this node */
         struct nm_drv_cap caps; /**< capabilities */
-        int nb_gates;
 };
 
 enum nm_ibverbs_trk_kind {
@@ -628,7 +627,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
 	}
 
 	dev_number = 0;
-	for(i=0; i<nparam; i++) {
+	for(i = 0; i < nparam; i++) {
 		switch (params[i].key) {
 		case NM_DRIVER_QUERY_BY_INDEX:
 			dev_number = params[i].value.index;
@@ -679,7 +678,6 @@ static int nm_ibverbs_init(struct nm_drv *p_drv)
 	int rc;
         struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
 
-        p_ibverbs_drv->nb_gates++;
 	srand48(getpid() * time(NULL));
 
 	/* get IB context attributes */
@@ -768,18 +766,14 @@ static int nm_ibverbs_init(struct nm_drv *p_drv)
 
 static int nm_ibverbs_exit(struct nm_drv *p_drv)
 {
-	int err;
         struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
 
-        p_ibverbs_drv->nb_gates--;
 	close(p_ibverbs_drv->server_sock);
 
         TBX_FREE(p_ibverbs_drv->url);
         TBX_FREE(p_ibverbs_drv);
 
-	err = NM_ESUCCESS;
-
-	return err;
+	return NM_ESUCCESS;
 }
 
 static int nm_ibverbs_open_trk(struct nm_trk_rq	*p_trk_rq)

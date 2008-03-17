@@ -165,7 +165,7 @@ disp() {
 }
 
 usage() {
-    echo "Usage: `basename $0` [-f|--force] [-h|--help] [-v|--verbose] [-l|--list] [flavors...]"
+    echo "Usage: `basename $0` [-f|--force] [-h|--help] [-v|--verbose] [-l|--list] [-x|--expansion] [flavors...]"
 }
 
 erreur() {
@@ -176,6 +176,7 @@ FORCE=no
 LIST_FLAVORS=""
 PRINT=":"
 SHOW_LIST=no
+EXPANSION=off
 
 while [ $# != 0 ]; do
     case "$1" in
@@ -188,6 +189,8 @@ while [ $# != 0 ]; do
         PRINT=echo;;
     -l|--list)
 	SHOW_LIST=yes;;
+    -x|--expansion)
+	EXPANSION=on;;
     -*)
     	erreur "Unknown option $1"
 	usage
@@ -264,13 +267,22 @@ if [ $SHOW_LIST = yes ]; then
     exit 0
 fi
 
+if [ $EXPANSION = on ] ; then
+    NEW_LIST_FLAVORS=""
+    for flavor in $LIST_FLAVORS ; do
+	TMP_FLAVORS=$(echo $REGISTERED_FLAVORS | tr ' ' '\012' | grep $flavor)
+	NEW_LIST_FLAVORS="$NEW_LIST_FLAVORS $TMP_FLAVORS"
+    done
+    LIST_FLAVORS="$NEW_LIST_FLAVORS"
+fi
+
 if [ -z "$LIST_FLAVORS" ]; then
     # All flavors (registered + exinsting)
     LIST_FLAVORS="$REGISTERED_FLAVORS"
     for flavor in `${PM2_ROOT}/bin/pm2-flavor list` ; do
 	case " $LIST_FLAVORS " in
-	    *" $flavor "*) ;;
-	    *) LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
+	    *" $flavor "*) echo $flavor ko ;;
+	    *) echo $flavor ok ; LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
 	esac
     done
 fi

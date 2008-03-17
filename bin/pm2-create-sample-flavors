@@ -281,8 +281,8 @@ if [ -z "$LIST_FLAVORS" ]; then
     LIST_FLAVORS="$REGISTERED_FLAVORS"
     for flavor in `${PM2_ROOT}/bin/pm2-flavor list` ; do
 	case " $LIST_FLAVORS " in
-	    *" $flavor "*) echo $flavor ko ;;
-	    *) echo $flavor ok ; LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
+	    *" $flavor "*) ;;
+	    *) LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
 	esac
     done
 fi

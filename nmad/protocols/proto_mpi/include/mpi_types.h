@@ -134,7 +134,7 @@ typedef struct MPI_Request_s MPI_Request;
 /** The special value MPI_REQUEST_NULL is used to indicate an invalid
  *  request handle.
  */
-#define MPI_REQUEST_NULL   ((MPI_Request){'\0'})
+#define MPI_REQUEST_NULL   ((MPI_Request){{'\0'}})
 /* @} */
 
 /** Group handle */

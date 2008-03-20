@@ -1666,17 +1666,24 @@ int MPI_Testany(int count,
                 int *flag,
                 MPI_Status *status) {
   int i, err = 0;
+  mpir_request_t *mpir_request;
 
   MPI_NMAD_LOG_IN();
 
   for(i=0 ; i<count ; i++) {
-    err = MPI_Test(&array_of_requests[i], flag, status);
+    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      *flag = 1;
+      goto out;
+    }
+    err = MPI_Test(&(array_of_requests[i]), flag, status);
     if (*flag == 1) {
       *rqindex = i;
       MPI_NMAD_LOG_OUT();
       return err;
     }
   }
+ out:
   *rqindex = MPI_UNDEFINED;
 
   MPI_NMAD_LOG_OUT();

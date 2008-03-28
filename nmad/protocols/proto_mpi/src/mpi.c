@@ -1627,7 +1627,7 @@ int MPI_Waitany(int count,
         count_null++;
         continue;
       }
-      err = MPI_Test(&request, &flag, status);
+      err = MPI_Test(&array_of_requests[i], &flag, status);
       if (flag) {
         *rqindex = i;
 

@@ -363,6 +363,7 @@ void mpi_test_(int *request,
 /**
  * Fortran version for MPI_TESTANY
  */
+/* TODO : il est fait comme l'ancienne version C */
 void mpi_testany_(int *count,
                   int  array_of_requests[][MPI_REQUEST_SIZE],
                   int *rqindex,
@@ -1613,23 +1614,32 @@ int MPI_Waitany(int count,
                 int *rqindex,
                 MPI_Status *status) {
   int flag, i, err;
+  int count_null;
 
   MPI_NMAD_LOG_IN();
 
   while (1) {
+    count_null = 0;
     for(i=0 ; i<count ; i++) {
-      MPI_Request request = array_of_requests[i];
+            /*      MPI_Request request = array_of_requests[i];*/
+      mpir_request_t *mpir_request = (mpir_request_t *)(&(array_of_requests[i]));
+      if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+        count_null++;
+        continue;
+      }
       err = MPI_Test(&request, &flag, status);
       if (flag) {
-        mpir_request_t *mpir_request = (mpir_request_t *)(&request);
-
-        mpir_request->request_type = MPI_REQUEST_ZERO;
         *rqindex = i;
 
 	MPI_NMAD_LOG_OUT();
         return err;
       }
     }
+      if (count_null == count) {
+        *rqindex = MPI_UNDEFINED;
+        MPI_NMAD_LOG_OUT();
+        return MPI_SUCCESS;
+      }
   }
 }
 

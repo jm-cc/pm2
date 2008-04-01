@@ -180,6 +180,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
 
 #section marcel_inline
 #depend "scheduler/linux_runqueues.h[marcel_types]"
+#depend "sys/marcel_lwp.h[marcel_inline]"
 __tbx_inline__ static ma_runqueue_t *
 marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 {
@@ -192,8 +193,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		first_vp=ma_ffs(*vpset)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));
-		/* on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps */
-		/* MA_BUG_ON(first_vp && first_vp>=marcel_nbvps()); */
+		MA_BUG_ON(first_vp && first_vp>=marcel_nballvps());
 		return &marcel_topo_vp_level[first_vp].sched;
 	}
 }

@@ -204,12 +204,12 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	LOG_RETURN(ma_per_lwp(vpnum, lwp));
 }
 
-ma_atomic_t ma__nb_lwp = MA_ATOMIC_INIT(0);
+ma_atomic_t ma__nb_allvps = MA_ATOMIC_INIT(0);
 unsigned marcel_lwp_add_vp(void)
 {
 	unsigned num;
 
-	num = ma_atomic_inc_return(&ma__nb_lwp);
+	num = ma_atomic_inc_return(&ma__nb_allvps);
 
 	if (num >= marcel_nbvps() + MARCEL_NBMAXVPSUP)
 		MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");

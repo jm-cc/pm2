@@ -97,8 +97,12 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
       Element *element_i = liste->element;
       TypeElement type = GetTypeElement(element_i);
       int id = GetId(element_i);
-      if (type == BULLE)
+      if (type == BULLE) {
+         fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
+         fprintf(fw,"      marcel_bubble_setinitlevel(&b%d, marcel_topo_level(0,0));\n", id);
+         fprintf(fw,"#endif\n");
          fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
+      }
    }
 
    fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");

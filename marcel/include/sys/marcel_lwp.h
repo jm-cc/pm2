@@ -176,6 +176,9 @@ static __tbx_inline__ void ma_lwp_list_unlock_write(void)
 #endif
 }
 
+/*
+ * Expected number of VPs, i.e. number of CPUs or argument of --marcel-nvp
+ */
 #section functions
 static __tbx_inline__ unsigned marcel_nbvps(void);
 #section inline
@@ -189,6 +192,10 @@ static __tbx_inline__ unsigned marcel_nbvps(void)
 #endif
 }
 
+/*
+ * Current number of VPs, can be less than marcel_nbvps() during the start of
+ * Marcel, can be more than marcel_nbvps() if supplementary VPs have been added.
+ */
 #section marcel_functions
 static __tbx_inline__ unsigned marcel_nballvps(void);
 #section marcel_inline

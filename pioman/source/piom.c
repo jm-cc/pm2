@@ -263,7 +263,7 @@ int __piom_need_export(piom_server_t server, piom_req_t req,
 		return 1;
 	int i;
 	for(i=0;i<marcel_nbvps();i++) {
-		if(! ma_topo_vpdata(i, nb_tasks))	
+		if(marcel_idle_lwp(ma_get_lwp_by_vpnum(i)))
 			return 0;
 	}
 #endif				// MARCEL

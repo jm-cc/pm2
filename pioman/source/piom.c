@@ -803,6 +803,37 @@ void piom_poll_timer(unsigned long hid)
 	return;
 }
 
+
+#ifdef MARCEL_REMOTE_TASKLETS
+
+/* Appelé par le code en divers points (idle et timer
+ * principalement) */
+void __piom_check_polling(unsigned polling_point)
+{
+	if( list_empty(&piom_list_poll))
+		return;	
+
+	PROF_IN();
+	piom_server_t server, bak=NULL;
+
+	/* TODO: if the vpset does not match idle core, remote schedule the tasklet 
+	   (or schedule the tasklet somewhere else) */
+	list_for_each_entry_safe(server,bak, &piom_list_poll, chain_poll) {		
+		if( marcel_vpset_isset(&(server->poll_tasklet.vp_set),
+				       marcel_current_vp())) 
+		{
+			if (server->poll_points & polling_point) {
+				_piom_spin_lock_softirq(&piom_poll_lock);
+				ma_tasklet_schedule(&server->poll_tasklet);
+				_piom_spin_unlock_softirq(&piom_poll_lock);
+			}
+		}
+	}
+	PROF_OUT();
+}
+
+#else
+
 /* Appelé par le code en divers points (idle et timer
  * principalement) */
 void __piom_check_polling(unsigned polling_point)
@@ -822,14 +853,14 @@ void __piom_check_polling(unsigned polling_point)
 		if(bak==server){
 			break;	
 		}
-		if (server->poll_points & polling_point) {				
+		if (server->poll_points & polling_point) {		
 #ifdef MARCEL		
 			job_scheduled=1;
 			scheduled++;
 			ma_tasklet_schedule(&server->poll_tasklet);
 #else
 			piom_check_polling_for(server);
-#endif				// MARCEL
+#endif /* MARCEL */
 			bak=server;			
 		}
 	}
@@ -845,10 +876,11 @@ void __piom_check_polling(unsigned polling_point)
 			bak=server;			
 		}
 	}
-#endif
 	_piom_spin_unlock_softirq(&piom_poll_lock);
+#endif /* MARCEL */
 	PROF_OUT();
 }
+#endif /* MARCEL_REMOTE_TASKLETS */
 
 /* Poll 'req' for 'usec' micro secondes*/
 void piom_poll_req(piom_req_t req, unsigned usec){

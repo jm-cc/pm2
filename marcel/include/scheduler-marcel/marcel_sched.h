@@ -193,7 +193,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		first_vp=ma_ffs(*vpset)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));
-		MA_BUG_ON(first_vp && first_vp>=marcel_nballvps());
+		MA_BUG_ON(first_vp >= marcel_nbvps() && first_vp>=marcel_nballvps());
 		return &marcel_topo_vp_level[first_vp].sched;
 	}
 }

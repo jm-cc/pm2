@@ -48,10 +48,10 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   /** Initialise the basic datatypes */
   mpir_internal_data->datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
 
-  for(i=MPI_DATATYPE_NULL ; i<=MPI_INTEGER ; i++) {
+  for(i=MPI_DATATYPE_NULL ; i<=MPI_PACKED ; i++) {
     mpir_internal_data->datatypes[i] = malloc(sizeof(mpir_datatype_t));
   }
-  for(i=MPI_DATATYPE_NULL ; i<=MPI_INTEGER ; i++) {
+  for(i=MPI_DATATYPE_NULL ; i<=MPI_PACKED ; i++) {
     mpir_internal_data->datatypes[i]->basic = 1;
     mpir_internal_data->datatypes[i]->committed = 1;
     mpir_internal_data->datatypes[i]->is_contig = 1;
@@ -83,13 +83,14 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_REAL8]->size = 8*sizeof(char);
   mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
   mpir_internal_data->datatypes[MPI_INTEGER]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_PACKED]->size = sizeof(char);
 
-  for(i=MPI_DATATYPE_NULL ; i<=MPI_INTEGER ; i++) {
+  for(i=MPI_DATATYPE_NULL ; i<=MPI_PACKED ; i++) {
     mpir_internal_data->datatypes[i]->extent = mpir_internal_data->datatypes[i]->size;
   }
 
   mpir_internal_data->available_datatypes = tbx_slist_nil();
-  for(i=MPI_INTEGER+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
+  for(i=MPI_PACKED+1 ; i<=NUMBER_OF_DATATYPES ; i++) {
     int *ptr;
     ptr = malloc(sizeof(int));
     *ptr = i;
@@ -171,7 +172,7 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
 int mpir_internal_exit(mpir_internal_data_t *mpir_internal_data) {
   int i;
 
-  for(i=0 ; i<=MPI_INTEGER ; i++) {
+  for(i=0 ; i<=MPI_PACKED ; i++) {
     FREE_AND_SET_NULL(mpir_internal_data->datatypes[i]);
   }
   FREE_AND_SET_NULL(mpir_internal_data->datatypes);

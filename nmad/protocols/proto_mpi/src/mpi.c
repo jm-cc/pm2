@@ -1572,7 +1572,7 @@ int MPI_Wait(MPI_Request *request,
   }
 
   // Release one active communication for that type
-  if (mpir_request->request_datatype > MPI_INTEGER) {
+  if (mpir_request->request_datatype > MPI_PACKED) {
     err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
   }
 

@@ -182,7 +182,7 @@ typedef struct mpir_operator_s {
 /** @name Datatypes */
 /* @{ */
 /** Maximum number of datatypes */
-#define NUMBER_OF_DATATYPES (MPI_INTEGER + 2020)
+#define NUMBER_OF_DATATYPES 2048
 
 /** Types of datatypes */
 typedef enum {

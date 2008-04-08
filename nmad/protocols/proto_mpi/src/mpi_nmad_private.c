@@ -79,6 +79,7 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
   mpir_internal_data->datatypes[MPI_LOGICAL]->size = sizeof(float);
   mpir_internal_data->datatypes[MPI_REAL]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_REAL8]->size = 8*sizeof(float);
   mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
   mpir_internal_data->datatypes[MPI_INTEGER]->size = sizeof(float);
 

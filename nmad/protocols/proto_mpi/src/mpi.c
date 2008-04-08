@@ -1446,6 +1446,30 @@ int MPI_Ssend(void* buffer,
   return err;
 }
 
+int MPI_Pack(void* inbuf,
+             int incount,
+             MPI_Datatype datatype,
+             void *outbuf,
+             int outsize,
+             int *position,
+             MPI_Comm comm) {
+  size_t size_datatype;
+  void *ptr = outbuf;
+
+  MPI_NMAD_LOG_IN();
+
+  MPI_NMAD_TRACE("Packing %d data of datatype %d at position %d\n", incount, datatype, *position);
+
+  size_datatype = mpir_sizeof_datatype(&mpir_internal_data, datatype);
+
+  ptr += *position;
+  memcpy(ptr, inbuf, incount*size_datatype);
+  *position += incount*size_datatype;
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
+}
+
 int MPI_Recv(void *buffer,
              int count,
              MPI_Datatype datatype,
@@ -1549,6 +1573,30 @@ int MPI_Sendrecv(void *sendbuf,
 
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+int MPI_Unpack(void* inbuf,
+               int insize,
+               int *position,
+               void *outbuf,
+               int outcount,
+               MPI_Datatype datatype,
+               MPI_Comm comm) {
+  size_t size_datatype;
+  void *ptr = inbuf;
+
+  MPI_NMAD_LOG_IN();
+
+  MPI_NMAD_TRACE("Unpacking %d data of datatype %d at position %d\n", outcount, datatype, *position);
+
+  size_datatype = mpir_sizeof_datatype(&mpir_internal_data, datatype);
+
+  ptr += *position;
+  memcpy(outbuf, ptr, outcount*size_datatype);
+  *position += outcount*size_datatype;
+
+  MPI_NMAD_LOG_OUT();
+  return MPI_SUCCESS;
 }
 
 int MPI_Wait(MPI_Request *request,

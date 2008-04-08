@@ -120,6 +120,29 @@ int MPI_Esend(void *buffer,
               MPI_Request *request);
 
 /**
+ * Packs a message specified by inbuf, incount, datatype, comm into
+ * the buffer space specified by outbuf and outsize. The input buffer
+ * can be any communication buffer allowed in MPI_SEND. The output
+ * buffer is a contiguous storage area containing outsize bytes,
+ * starting at the address outbuf.
+ * @param inbuf initial address of send buffer
+ * @param incount number of elements in send buffer
+ * @param datatype datatype of each send buffer element
+ * @param outbuf
+ * @param outsize
+ * @param position
+ * @param comm communicator
+ * @return MPI status
+ */
+int MPI_Pack(void* inbuf,
+             int incount,
+             MPI_Datatype datatype,
+             void *outbuf,
+             int outsize,
+             int *position,
+             MPI_Comm comm);
+
+/**
  * Performs a standard-mode, blocking receive.
  * @param buffer initial address of receive buffer
  * @param count number of elements in receive buffer
@@ -156,6 +179,33 @@ int MPI_Irecv(void* buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request);
+
+/**
+ * Unpacks a message into the receive buffer specified by outbuf,
+ * outcount, datatype from the buffer space specified by inbuf and
+ * insize. The output buffer can be any communication buffer allowed
+ * in MPI_RECV. The input buffer is a contiguous storage area
+ * containing insize bytes, starting at address inbuf. The input value
+ * of position is the position in the input buffer where one wishes
+ * the unpacking to begin. The output value of position is incremented
+ * by the size of the packed message, so that it can be used as input
+ * to a subsequent call to MPI_UNPACK.
+ * @param inbuf initial address of receive buffer
+ * @param incount number of elements in receive buffer
+ * @param datatype datatype of each receive buffer element
+ * @param outbuf
+ * @param outsize
+ * @param position
+ * @param comm communicator
+ * @return MPI status
+ */
+int MPI_Unpack(void* inbuf,
+               int insize,
+               int *position,
+               void *outbuf,
+               int outcount,
+               MPI_Datatype datatype,
+               MPI_Comm comm);
 
 /**
  * Executes a blocking send and receive operation.

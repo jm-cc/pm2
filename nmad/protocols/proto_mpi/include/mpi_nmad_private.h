@@ -638,9 +638,9 @@ int mpir_comm_free(mpir_internal_data_t *mpir_internal_data,
 /**
  * Gets the NM tag for the given user tag and communicator.
  */
-int mpir_project_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
-			      mpir_communicator_t *mpir_communicator,
-			      int tag);
+int mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
+		      mpir_communicator_t *mpir_communicator,
+		      int tag);
 
 /* Termination functionalities */
 

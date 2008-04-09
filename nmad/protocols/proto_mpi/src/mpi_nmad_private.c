@@ -639,7 +639,7 @@ int mpir_isend_init(mpir_internal_data_t *mpir_internal_data,
 
   mpir_request->gate_id = mpir_internal_data->out_gate_id[mpir_communicator->global_ranks[dest]];
   mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
-  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
+  mpir_request->request_tag = mpir_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
 
   if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
     fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, NM_SO_MAX_TAGS);
@@ -803,7 +803,7 @@ int mpir_irecv_init(mpir_internal_data_t *mpir_internal_data,
   }
 
   mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
-  mpir_request->request_tag = mpir_project_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
+  mpir_request->request_tag = mpir_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
   mpir_request->request_source = source;
 
   if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
@@ -1542,9 +1542,9 @@ int mpir_comm_free(mpir_internal_data_t *mpir_internal_data,
   }
 }
 
-int mpir_project_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
-			      mpir_communicator_t *mpir_communicator,
-			      int tag) {
+int mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
+		      mpir_communicator_t *mpir_communicator,
+		      int tag) {
   /*
    * NewMadeleine only allows us 7 bits!
    * We suppose that comm is represented on 3 bits and tag on 4 bits.

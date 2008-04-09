@@ -298,6 +298,36 @@ void mpi_unpack_(void *inbuf,
   *ierr = MPI_Unpack(inbuf, *insize, position, outbuf, *outcount, *datatype, *comm);
 }
 
+/**
+ * Fortran stub for MPI_BSEND (not implemented)
+ */
+void mpi_bsend_(void *buf,
+		int *count,
+		int *datatype,
+		int *dest,
+		int *tag,
+		int *comm,
+		int *ierr) {
+  *ierr = MPI_ERR_UNKNOWN;
+}
+
+/**
+ * Fortran stub for MPI_BUFFER_ATTACH (not implemented)
+ */
+void mpi_buffer_attach_(void *buffer,
+			int *size,
+			int *ierr) {
+  *ierr = MPI_ERR_UNKNOWN;
+}
+
+/**
+ * Fortran stub for MPI_BUFFER_DETACH (not implemented)
+ */
+void mpi_buffer_detach_(void *buffer,
+			int *size,
+			int *ierr) {
+  *ierr = MPI_ERR_UNKNOWN;
+}
 
 /**
  * Fortran version for MPI_WAIT

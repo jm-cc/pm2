@@ -131,6 +131,14 @@ int MPI_Error_string(int errorcode,
 		     int *resultlen);
 
 /**
+ * Sets the error handler for a communicator.
+ * @note this function is mostly not implemented yet.
+ */
+int MPI_Errhandler_set(MPI_Comm comm,
+		       MPI_Errhandler errhandler);
+
+
+/**
  * Returns the version
  * @param version version number
  * @param subversion subversion number

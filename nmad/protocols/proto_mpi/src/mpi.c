@@ -772,6 +772,15 @@ void mpi_error_string_(int *errorcode,
   *ierr = MPI_Error_string(*errorcode, string, resultlen);
 }
 
+/*
+ * Fortran version for  MPI_ERRHANDLER_SET
+ */
+void mpi_errhandler_set_(int *comm,
+			 int *errhandler,
+			 int *ierr) {
+  *ierr = MPI_Errhandler_set(*comm, *errhandler);
+}
+
 /**
  * Fortran version for MPI_GET_VERSION
  */
@@ -1288,6 +1297,21 @@ int MPI_Error_string(int errorcode,
     }
   }
   return MPI_SUCCESS;
+}
+
+int MPI_Errhandler_set(MPI_Comm comm,
+		       MPI_Errhandler errhandler) {
+  int err;
+  switch(errhandler) {
+  case MPI_ERRORS_RETURN:
+    err = MPI_SUCCESS;
+    break;
+  case MPI_ERRORS_ARE_FATAL:
+  default:
+    err = MPI_ERR_UNKNOWN;
+    break;
+  }
+  return err;
 }
 
 int MPI_Get_version(int *version,

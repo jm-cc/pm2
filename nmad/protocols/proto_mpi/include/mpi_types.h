@@ -218,7 +218,10 @@ typedef int MPI_Communication_Mode;
 /** @name Error handlers */
 /* @{ */
 typedef int MPI_Errhandler;
-#define MPI_ERRHANDLER_NULL ((MPI_Errhandler)0)
+#define MPI_ERRHANDLER_NULL  ((MPI_Errhandler)0)
+
+#define MPI_ERRORS_ARE_FATAL ((MPI_Errhandler)1)
+#define MPI_ERRORS_RETURN    ((MPI_Errhandler)2)
 /* @} */
 
 /* @}*/

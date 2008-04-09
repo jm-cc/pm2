@@ -252,6 +252,35 @@ void mpi_sendrecv_(void *sendbuf,
 }
 
 /**
+ * Fortran version for MPI_PACK
+ */
+void mpi_pack_(void *inbuf,
+	       int  *incount,
+	       int  *datatype,
+	       void *outbuf,
+	       int  *outcount,
+	       int  *position,
+	       int  *comm,
+	       int  *ierr) {
+  *ierr = MPI_Pack(inbuf, *incount, *datatype, outbuf, *outcount, position, *comm);
+}
+
+/**
+ * Fortran version for MPI_UNPACK
+ */
+void mpi_unpack_(void *inbuf,
+		 int  *insize,
+		 int  *position,
+		 void *outbuf,
+		 int  *outcount,
+		 int  *datatype,
+		 int  *comm,
+		 int  *ierr) {
+  *ierr = MPI_Unpack(inbuf, *insize, position, outbuf, *outcount, *datatype, *comm);
+}
+
+
+/**
  * Fortran version for MPI_WAIT
  */
 void mpi_wait_(int *request,

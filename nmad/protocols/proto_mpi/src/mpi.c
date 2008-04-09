@@ -123,6 +123,17 @@ void mpi_comm_rank_(int *comm,
 }
 
 /**
+ * Fortran version for MPI_ATTR_GET
+ */
+void mpi_attr_get_(int *comm,
+		   int *keyval,
+		   int *attr_value,
+		   int *flag,
+		   int *ierr) {
+  *ierr = MPI_Attr_get(*comm, *keyval, attr_value, flag);
+}
+
+/**
  * Fortran version for MPI_GET_PROCESSOR_NAME
  */
 void mpi_get_processor_name_(char *name,
@@ -1167,6 +1178,34 @@ int MPI_Comm_rank(MPI_Comm comm,
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
+
+int MPI_Attr_get(MPI_Comm comm,
+		 int keyval,
+		 void *attr_value,
+		 int *flag ) {
+  int err = MPI_SUCCESS;
+  switch(keyval) {
+  case MPI_TAG_UB:
+    *(int*)attr_value = 15;
+    *flag = 1;
+    break;
+  case MPI_HOST:
+    *flag = 0;
+    break;
+  case MPI_IO:
+    *flag = 0;
+    break;
+  case MPI_WTIME_IS_GLOBAL:
+    *(int*)attr_value = 0;
+    *flag = 1;
+    break;
+  default:
+    *flag = 0;
+    break;
+  }
+  return err;
+}
+
 
 int MPI_Get_processor_name(char *name,
 			   int *resultlen) {

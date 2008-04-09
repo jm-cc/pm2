@@ -94,6 +94,13 @@ int MPI_Comm_size(MPI_Comm comm,
 int MPI_Comm_rank(MPI_Comm comm,
                   int *rank);
 
+/** This function returns attributes values from communicators.
+ */
+int MPI_Attr_get(MPI_Comm comm,
+		 int keyval,
+		 void *attr_value,
+		 int *flag );
+
 /**
  * This routine returns the name of the processor on which it was
  * called at the moment of the call.

@@ -224,6 +224,14 @@ typedef int MPI_Errhandler;
 #define MPI_ERRORS_RETURN    ((MPI_Errhandler)2)
 /* @} */
 
+/** @name Communicator attributes */
+/* @{ */
+#define MPI_TAG_UB          1
+#define MPI_HOST            2
+#define MPI_IO              3
+#define MPI_WTIME_IS_GLOBAL 4
+/* @] */
+
 /* @}*/
 
 #endif /* MPI_TYPES_H */

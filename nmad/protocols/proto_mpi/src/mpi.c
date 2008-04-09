@@ -87,6 +87,14 @@ void mpi_init_thread_(int *argc,
                       int *provided)	__attribute__ ((alias ("MPI_Init_thread")));
 
 /**
+ * Fortran version for MPI_INITIALIZED
+ */
+void mpi_initialized_(int *flag,
+		      int *ierr) {
+  *ierr = MPI_Initialized(flag);
+}
+
+/**
  * Fortran version for MPI_FINALIZE
  */
 void mpi_finalize_(void)			__attribute__ ((alias ("MPI_Finalize")));
@@ -1096,6 +1104,11 @@ int MPI_Init_thread(int *argc,
 
   MPI_NMAD_LOG_OUT();
   return err;
+}
+
+int MPI_Initialized(int *flag) {
+  *flag = (launcher_instance != NULL);
+  return MPI_SUCCESS;
 }
 
 int MPI_Finalize(void) {

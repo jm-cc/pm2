@@ -53,6 +53,12 @@ int MPI_Init_thread(int *argc,
                     int *provided);
 
 /**
+ * Indicates whether MPI_Init has been called.
+ * @param flag a pointer to an int set to 1 if MPI_Init has been called, 0 otherwise.
+ */
+int MPI_Initialized(int *flag);
+
+/**
  * This routine must be called by each process before it exits. The
  * call cleans up all MPI state.
  * @return MPI status

@@ -339,7 +339,7 @@ nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {
 
 #ifdef PIOM_BLOCKING_CALLS
 	if((p_drv->driver->get_capabilities(p_drv))->is_exportable){
-		piom_server_start_lwp(&p_drv->server, 1);
+          //		piom_server_start_lwp(&p_drv->server, 1);
 		piom_server_add_callback(&p_drv->server,
 					  PIOM_FUNCTYPE_BLOCK_WAITONE,
 					  (piom_pcallback_t) {

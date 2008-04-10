@@ -47,6 +47,7 @@ leo_settings_init(void)
   object->env_mode      = tbx_false; //GM
   object->valgrind_mode = tbx_false;
   object->numactl_mode  = tbx_false;
+  object->x11_mode      = tbx_true;
   LOG_OUT();
 
   return object;

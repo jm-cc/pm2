@@ -235,6 +235,10 @@ process_command_line(int    argc,
 	    {
 	      settings->wait_mode = tbx_false;
 	    }
+	  else if (tbx_argit_arg_equals("--x11"))
+	    {
+	      settings->x11_mode = tbx_false;
+	    }
 	  else
 	    tbx_argit_invalid_arg();
 

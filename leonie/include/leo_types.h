@@ -187,6 +187,7 @@ typedef struct s_leo_settings
   tbx_bool_t         valgrind_mode;
   tbx_bool_t         numactl_mode;
   char               *numactl_value;
+  tbx_bool_t         x11_mode;
 } leo_settings_t;
 
 typedef struct s_leonie

@@ -242,7 +242,7 @@ leo_default_loader(p_leo_settings_t settings,
 	    // tbx_arguments_append_cstring(args, "-f");
 	    tbx_arguments_append_cstring(args, "-n");
 
-	    if (!(settings->xterm_mode))
+	    if (!(settings->x11_mode))
 	      {
 		tbx_arguments_append_cstring(args, "-x");
 	      }

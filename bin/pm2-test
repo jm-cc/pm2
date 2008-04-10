@@ -86,10 +86,10 @@ do_the_test()
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
     if [ -z "$net" ] ; then
-        (${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
     else
         protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-        (${PM2_ROOT}/bin/pm2-load $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+        (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
     fi
     [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution failed" $file_result
 

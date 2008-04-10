@@ -184,6 +184,7 @@ mad3()
     [ "$PM2_VALGRIND" = "off" ]       && pm2_load_args="${pm2_load_args} --vg"
     [ "$PM2_XMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -x"
     [ "$PM2_XMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --x"
+    [ "$PM2_X11MODE" = "off" ]        && pm2_load_args="${pm2_load_args} --x11"
     [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -p"
     [ "$PM2_PMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --p"
     [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2_load_args="${pm2_load_args} -l"
@@ -238,6 +239,7 @@ PM2_NUMACTL=off
 PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
 PM2_XMODE=off
+PM2_X11MODE=on
 PM2_PMODE=off
 PM2_CDMODE=off
 PM2_WDIR=""
@@ -328,6 +330,10 @@ while [ $# -gt 0 ]; do
 	--x) # XTerm mode off
 	    shift
 	    PM2_XMODE=off
+	    ;;
+	--x11) # X11 mode off
+	    shift
+	    PM2_X11MODE=off
 	    ;;
 	-p) # Pause mode on
 	    shift

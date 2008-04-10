@@ -120,7 +120,7 @@ registering_flavors() {
 	--puk=disable_output \
 	--nmad=sched_opt --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
-        --marcel=mono --marcel=marcel_main \
+        --marcel=smp --marcel=marcel_main \
         --common=fortran_target_none
 
     register_flavor nmad-distrib \

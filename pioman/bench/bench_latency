@@ -1,0 +1,31 @@
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+. include/pioman_default
+
+# pm2-bench settings
+flavor="bench_pioman"
+flavor_options=""
+appdir="${PM2_ROOT}/nmad/examples/sched_opt/piom"
+prog="piom_ping_bench"
+loop=${BENCHNET:-tcp}
+
+# bench settings used by 'nmad_default' include
+bench_setting_file="${BENCHCONFIG:-${PM2_HOME:-${HOME}}/.pm2/bench/pioman}"
+leo_cfg_file="/tmp/bench_pioman_${prog}_${USER}.cfg"
+leo_args="--x --p --l"
+leo_appli_args=""
+
+#
+

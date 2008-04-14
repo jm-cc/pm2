@@ -35,7 +35,6 @@
 #define NM_SO_STATUS_RECV_COMPLETED  ((uint8_t)2)
 
 #ifdef PIOMAN
-typedef piom_cond_t nm_so_status_t;
 #define nm_so_cond_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
 #define nm_so_cond_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
 #define nm_so_cond_signal(STATUS, BITMASK)     piom_cond_signal((STATUS), (BITMASK))
@@ -56,7 +55,6 @@ static inline void nm_so_post_all_force(struct nm_core*p_core)
   nm_piom_post_all(p_core);
 }
 #else /* PIOMAN */
-typedef volatile uint8_t nm_so_status_t;
 static inline int  nm_so_cond_test(nm_so_status_t*status, uint8_t bitmask)
 {
   return ((*status) & bitmask);

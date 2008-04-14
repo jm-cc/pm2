@@ -18,18 +18,18 @@
 
 #ifdef PIOMAN
 #include <pioman.h>
-#endif
+typedef piom_cond_t nm_so_status_t;
+#else /* PIOMAN */
+typedef volatile uint8_t nm_so_status_t;
+#endif /* PIOMAN */
+
 struct nm_so_interface {
   struct nm_core *p_core;
   struct nm_so_sched *p_so_sched;
 };
 
 struct nm_so_request_s {
-#ifdef PIOMAN
-  piom_cond_t *status;
-#else
-  volatile uint8_t *status;
-#endif /* PIOMAN */
+  nm_so_status_t*status;
   uint8_t seq;
   long gate_id;
 };

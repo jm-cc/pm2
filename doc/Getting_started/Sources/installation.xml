@@ -41,6 +41,7 @@ distribution:
 
 <SUBSUBSECTION TITLE="Communication: Madeleine">
 
+<IGNORE>
 <P>
 PM2 was initially designed with a preliminary version of the
 Madeleine. This version and the following version are now obsolete and
@@ -53,9 +54,10 @@ preliminary ones. This manual only introduces the <EM>Madeleine<SPACE/>III</EM>
 communication interface, simply referred to as <EM>Madeleine</EM>
 hereafter when no confusion may occur.
 </P>
+</IGNORE>
 
 <P>
-Madeleine (that is, Madeleine<SPACE/>III) is a generic communication interface
+Madeleine is a generic communication interface
 which is able to fully exploit the low latency and the high bandwidth
 of high-speed networks such as Myrinet or SCI. This PM2 communication
 subsystem currently supports the following communication interfaces:
@@ -219,17 +221,12 @@ Once extracted, the PM2 distribution should be available under the
 <DT><TT>appli</TT> </DT>       <DD>Application configuration</DD>
 <DT><TT>bin</TT> </DT>         <DD>PM2 scripts</DD>
 <DT><TT>common</TT> </DT>      <DD>Common configuration scripts to all modules</DD>
-<DT><TT>console</TT> </DT>     <DD>PM2 console</DD>
 <DT><TT>doc</TT> </DT>         <DD>Documentation files</DD>
-<DT><TT>dsm</TT> </DT>         <DD>Distributed shared memory manager</DD>
 <DT><TT>ezflavor</TT> </DT>    <DD>Flavor configuration graphic interface</DD>
 <DT><TT>generic</TT> </DT>     <DD>Common configuration options</DD>
 <DT><TT>leonie</TT> </DT>      <DD>Bootstrap code for PM2 applications</DD>
-<DT><TT>leony</TT> </DT>       <DD>Perl version of the bootstrap code</DD>
 <DT><TT>leoparse</TT> </DT>    <DD>Parser for PM2 configuration files</DD>
 <DT><TT>lib</TT> </DT>         <DD>External libraries used by PM2</DD>
-<DT><TT>mad1</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
-<DT><TT>mad2</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
 <DT><TT>mad3</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
 <DT><TT>nmad</TT> </DT>        <DD>Communication subsystem (current version)</DD>
 <DT><TT>make</TT> </DT>        <DD>PM2 makefile system</DD>
@@ -237,17 +234,12 @@ Once extracted, the PM2 distribution should be available under the
 <DT><TT>modules</TT> </DT>     <DD>Link to all the PM2 modules</DD>
 <DT><TT>ntbx</TT> </DT>        <DD>Generic network management utility toolbox</DD>
 <DT><TT>pm2</TT> </DT>         <DD>PM2 <EM>en personne</EM>! </DD>
+<DT><TT>pioman</TT> </DT>      <DD>Generic I/O manager</DD>
 <DT><TT>profile</TT> </DT>     <DD>PM2 profiling utilities</DD>
-<DT><TT>sigmund</TT> </DT>     <DD>PM2 trace system</DD>
+<DT><TT>puk</TT></DT>          <DD>Padico micro-kernel</DD>
 <DT><TT>stackalign</TT> </DT>  <DD>Stack initialization for Marcel</DD>
 <DT><TT>tbx</TT> </DT>         <DD>Generic PM2 utility toolbox </DD>
 </DL>
-
-<P>
-The <TT>mad1</TT> and <TT>mad2</TT> directories contain obsolete
-versions of the Madeleine communication subsystem for backward
-reference, they should no longer be used and can be safely ignored.
-</P>
 
 </SUBSECTION>
 

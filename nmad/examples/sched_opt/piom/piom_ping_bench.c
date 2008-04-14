@@ -166,7 +166,7 @@ main(int	  argc,
   marcel_attr_init(&attr);
   fini = 0;
   pid = malloc(sizeof(marcel_t) * marcel_nbvps());
-  threads = marcel_nbvps();
+  threads = marcel_nbvps() -  2;
   fprintf(stderr, "[%d Computing threads]\n", threads);
 
   marcel_sem_init(&ready_sem,0);

@@ -64,6 +64,7 @@ initialize_bench()
          --modules=\"puk init nmad ntbx tbx pioman marcel\" \
          --marcel=\"smp marcel_main\" \
          --nmad=\"sched_opt strat_default mad3_emu ${dev}\" \
+         --pioman=\"blocking_calls\" \
          --common=\"fortran_target_none\" \
          --all=\"build_static opt\" $flavor_options
 

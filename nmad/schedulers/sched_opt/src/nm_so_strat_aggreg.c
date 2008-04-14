@@ -394,7 +394,7 @@ strat_aggreg_packv(void *_status,
     }
 
     if(iov[i].iov_len <= status->nm_so_max_small) {
-      NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, iov[i].iov_len, offset, last_chunk);
+      NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, (unsigned int)iov[i].iov_len, offset, last_chunk);
 
       /* Small packet */
       try_to_agregate_small(_status, p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);

@@ -510,7 +510,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
-	if (e->prio >= MA_BATCH_PRIO)
+	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->sched_list, &h->sched_list);
 	else
 		list_add_tail(&e->sched_list, &h->sched_list);

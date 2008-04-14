@@ -751,7 +751,7 @@ restart:
 			/* let polling know that this context switch is urging */
 			hard_preempt = 1;
 		}
-		if (cur && need_resched && idx == prev_as_prio && idx < MA_BATCH_PRIO) {
+		if (cur && need_resched && idx == prev_as_prio && idx < MA_IDLE_PRIO) {
 		/* still wanted to schedule prev, but it needs resched
 		 * and this is same prio
 		 */

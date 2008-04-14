@@ -26,6 +26,7 @@
  *
  * - MA_NOSCHED_PRIO (never scheduled)
  * - MA_IDLE_PRIO (idle thread)
+ * - MA_LOWBATCH_PRIO (usually used for blocked batch thread)
  * - MA_BATCH_PRIO (batch thread)
  * - MA_DEF_PRIO .. MA_DEF_PRIO + MAX_MAX_NICE (default priority)
  * - MA_RT_PRIO .. MA_MAX_RT_PRIO == MA_RT_PRIO + MA_MAX_USER_RT_PRIO (application real-time priority)
@@ -67,7 +68,8 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #define MA_RT_PRIO		(MA_MAX_RT_PRIO+MA_MAX_USER_RT_PRIO)
 #define MA_DEF_PRIO		(MA_RT_PRIO+MA_MAX_NICE+1)
 #define MA_BATCH_PRIO		(MA_DEF_PRIO+1)
-#define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)
+#define MA_LOWBATCH_PRIO        (MA_BATCH_PRIO+1)
+#define MA_IDLE_PRIO		(MA_LOWBATCH_PRIO+1)
 #define MA_NOSCHED_PRIO		(MA_IDLE_PRIO+1)
 #define MA_MAX_PRIO		(MA_NOSCHED_PRIO+1)
 
@@ -247,7 +249,7 @@ static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *p, ma_prio_a
 static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
-	if (e->prio >= MA_BATCH_PRIO)
+	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->run_list, ma_array_queue(array, e->prio));
 	else
 		list_add_tail(&e->run_list, ma_array_queue(array, e->prio));

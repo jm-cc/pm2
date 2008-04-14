@@ -367,7 +367,7 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 				ma_rq_enqueue_entity(&b->sched, ma_rq_holder(h));
 		}
 	}
-	if (e->prio >= MA_BATCH_PRIO)
+	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->run_list, &b->queuedentities);
 	else
 		list_add_tail(&e->run_list, &b->queuedentities);
@@ -415,7 +415,7 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 			}
 		}
 	}
-	if (e->prio >= MA_BATCH_PRIO)
+	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->run_list, &b->queuedentities);
 	else
 		list_add_tail(&e->run_list, &b->queuedentities);

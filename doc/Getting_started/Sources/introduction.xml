@@ -155,7 +155,7 @@ Mad-MPI is a new light implementation of the MPI standard. This
 simple, straightforward proof-of-concept implementation is a subset of
 the MPI API, that allows MPI applications to benefit from the
 NewMadeleine communication engine.
-<P>
+</P>
 
 <P>
 Mad-MPI also implements some optimizations mechanisms for derived

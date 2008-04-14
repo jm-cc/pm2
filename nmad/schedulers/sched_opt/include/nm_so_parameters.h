@@ -91,8 +91,14 @@
 #define nm_so_network_bandwidth(n)  \
   (n)
 
+/** Threshold (in bytes) between by-copy / zero-copy with multi-ack methods
+ * for datatype transfers
+ */
+#define NM_SO_DATATYPE_BLOCKSIZE (2*1024)
 
-#define DATATYPE_DENSITY 2*1024
-#define RAIL_MAX 8
+/** Maximum number of rails.
+ * @note There should *not* be a hard-coded value.
+ */
+#define NM_SO_RAIL_MAX 8
 
 #endif

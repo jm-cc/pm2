@@ -326,7 +326,7 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 
   CCSI_Segment_count_contig_blocks(segp, 0, &last, &nb_blocks);
   density = len / nb_blocks; // taille moyenne des blocs
-  if(density <= DATATYPE_DENSITY){
+  if(density <= NM_SO_DATATYPE_BLOCKSIZE){
     NM_SO_TRACE("Reception in an intermediate buffer because there are lot of small blocks\n");
     init_large_datatype_recv_to_tmpbuf(is_any_src, p_gate, tag, seq, len, chunk_offset, segp);
 
@@ -539,8 +539,8 @@ static int multiple_rdv(struct nm_gate *p_gate, uint8_t tag, uint8_t seq,
   const struct nm_so_strategy_driver *strategy = p_so_gate->strategy_receptacle.driver;
   uint8_t trk_id = TRK_LARGE;
   int nb_drv;
-  uint8_t drv_ids[RAIL_MAX];
-  uint32_t chunk_lens[RAIL_MAX];
+  uint8_t drv_ids[NM_SO_RAIL_MAX];
+  uint32_t chunk_lens[NM_SO_RAIL_MAX];
   int err;
 
   /* We ask the current strategy to find an available track for

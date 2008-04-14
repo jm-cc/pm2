@@ -27,8 +27,6 @@
 #include "nm_so_parameters.h"
 #include "nm_log.h"
 
-#define DATATYPE_DENSITY 2*1024
-
 /* Components structures:
  */
 

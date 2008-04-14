@@ -924,8 +924,8 @@ nm_so_in_process_success_rq(struct nm_sched	*p_sched,
 
         } else {
           int nb_drv;
-          uint8_t drv_ids[RAIL_MAX];
-          uint32_t chunk_lens[RAIL_MAX];
+          uint8_t drv_ids[NM_SO_RAIL_MAX];
+          uint32_t chunk_lens[NM_SO_RAIL_MAX];
 
           /* We ask the current strategy to find other available tracks for
              transfering this large data chunk. */

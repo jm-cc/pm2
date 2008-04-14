@@ -87,6 +87,28 @@ environment was rewritten to rely exclusively on this runtime system.
 
 <SUBSECTION TITLE="Communication Libraries">
 
+<SUBSUBSECTION TITLE="NewMadeleine">
+
+<P>
+NewMadeleine is a complete redesign and rewrite of Madeleine. The new
+architecture aims at enabling the use of a much wider range of
+communication flow optimization technics. It is entirely modular: The
+request scheduler itself is interchangeable, allowing experimentations
+with multiple approaches or on multiple issues with regard to
+processing communication flows. In particular we implemented an
+optimizing scheduler called SchedOpt. SchedOpt targets applications
+with irregular, multi-flow communication schemes such as found in the
+increasingly common application conglomerates made of multiple
+programming environments and coupled pieces of code, for instance.
+SchedOpt itself is easily extensible through the concepts of
+optimization strategies  (what to optimize for, what the optimization
+goal is) expressed in terms of tactics (how to optimize to reach the
+optimization goal). Tactics themselves are made of basic communication
+flows operations such as packet merging or reordering.
+</P>
+
+</SUBSUBSECTION>
+
 <SUBSUBSECTION TITLE="Madeleine">
 
 <P>
@@ -113,12 +135,40 @@ WindowsNT/IA32.
 <SUBSUBSECTION TITLE="MPICH-Madeleine">
 
 <P>
-MPICH-Madeleine is an implementation of the MPI (Message Passing Interface) communication standard. This standard is widely used in scientific parallel computing applications. This library is an adaptation of the well known MPICH (MPI CHameleon), which has the property to be relatively easily adaptable on top of new network technologies thanks to a well defined layered architecture.
+MPICH-Madeleine is an implementation of the MPI (Message Passing
+Interface) communication standard. This standard is widely used in
+scientific parallel computing applications. This library is an
+adaptation of the well known MPICH (MPI CHameleon), which has the
+property to be relatively easily adaptable on top of new network
+technologies thanks to a well defined layered architecture.
 </P>
 
 <P>
 To have more information about MPICH-Madeleine, please consult the
 following URL: <URL>http://runtime.futurs.inria.fr/mpi/</URL>.
+</P>
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="Mad-MPI">
+<P>
+Mad-MPI is a new light implementation of the MPI standard. This
+simple, straightforward proof-of-concept implementation is a subset of
+the MPI API, that allows MPI applications to benefit from the
+NewMadeleine communication engine.
+<P>
+
+<P>
+Mad-MPI also implements some optimizations mechanisms for derived
+datatypes. MPI derived datatypes deal with noncontiguous
+memory locations. The advanced optimizations of NewMadeleine allowing
+to reorder packets lead to a significant gain when sending and
+receiving data based on derived datatypes. 
+</P>
+
+<P>
+To have more information about Mad-MPI, please consult the following
+URL: <URL>http://runtime.futurs.inria.fr/MadMPI/</URL>
+
 </P>
 </SUBSUBSECTION>
 

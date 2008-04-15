@@ -1,11 +1,12 @@
 0 . Requirement +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-To be compiled, pm2 software needs:
+To be compiled, pm2 software need:
 
 * make (GNU version >= 3.81)
 * gcc (version >= 3.3)
 * a shell that understand substitutions like ${var/find/replace}, for
     instance bash, zsh, ksh, ...
+* autoconf and autoheader (version > 2.50) when using newMadeleine with puk.
 
 TO BE COMPLETED
 

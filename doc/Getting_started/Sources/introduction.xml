@@ -77,7 +77,7 @@ multithreading management, communication management and elementary
 shared memory management. Its interface is reduced to simple RPC
 paradigm as well as the classical multithreading primitives. Its
 implementation is somewhat a software glue in-between the Marcel and
-Madeleine libraries and a iso-adress memory management module. The PM2
+Madeleine libraries and a iso-address memory management module. The PM2
 environment was rewritten to rely exclusively on this runtime system.
 </P>
 
@@ -92,7 +92,7 @@ environment was rewritten to rely exclusively on this runtime system.
 <P>
 NewMadeleine is a complete redesign and rewrite of Madeleine. The new
 architecture aims at enabling the use of a much wider range of
-communication flow optimization technics. It is entirely modular: The
+communication flow optimization techniques. It is entirely modular: The
 request scheduler itself is interchangeable, allowing experimentations
 with multiple approaches or on multiple issues with regard to
 processing communication flows. In particular we implemented an
@@ -189,28 +189,36 @@ To have more information about PadicoTM, please consult the following URL: <URL>
 <SUBSUBSECTION TITLE="Marcel">
 
 <P>
-Marcel is a user-level multithreading library. It is available as
-several flavors in accordance with the platform and programmer
-needs. In order to be able to benefit from SMP machines, Marcel is
-able to use a two-level scheduler based on kernel threads provided by
-the operating system. With the Linux system, Marcel is also able to
-use activations (see LinuxActivations below) which provide a remedy to
-the classical limitation of user level multithreading libraries,
-namely the blocking system calls. Marcel also has good scheduling
-behavior on NUMA machines thanks to a powerful mechanism that lets the
-programmer express the structure of his application. All these flavors
-are based on top of a unique multithreading management kernel and are
-specialized during compilation.
+ Marcel is a thread library that provides a POSIX-compliant interface
+ and a set of original extensions. It can also be compiled to provide
+ ABI-compabiblity with NTPL threads under Linux, so that multithreaded
+ applications can use Marcel without being recompiled.
+</P>
+
+<P>
+Marcel features a two-level thread scheduler (also called N:M
+scheduler) that achieves the performance of a user-level thread
+package while being able to exploit multiprocessor machines. The
+architecture of Marcel was carefully designed to support a high number
+of threads and to efficiently exploit hierarchical architectures (e.g.
+multi-core chips, NUMA machines).
+</P>
+
+<P>
+So as to avoid the blocking of kernel threads when the application
+ makes blocking system calls, Marcel uses Scheduler Activations when
+ they are available, or just intercepts such blocking calls at dynamic
+ symbols level. 
 </P>
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="PIOMan">
 
 <P>
-PIOMan is an event detector server of the PM2 software suite. It is
-dedicated to the reactivity, typically communication events. PIOMan
-provides the NewMadeleine library with methods to detect quickly
-communication queries. 
+PIOMan is an event detector server that is dedicated to the
+reactivity, typically communication events. PIOMan provides the
+NewMadeleine library with methods to detect quickly communication
+queries.
 </P>
 
 <P>

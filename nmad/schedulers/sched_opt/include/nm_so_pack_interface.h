@@ -27,6 +27,8 @@
 #define NM_SO_ANY_SRC  ((nm_gate_id_t)-1)
 #endif
 
+#include <nm_public.h>
+
 typedef intptr_t nm_so_pack_interface;
 
 struct nm_so_cnx {

@@ -1,2 +1,2 @@
 ravel% pm2-which hello
-/home/nfurmento/build/mad3/examples/bin/hello
+/home/nfurmento/build/i386/mad3/examples/bin/hello

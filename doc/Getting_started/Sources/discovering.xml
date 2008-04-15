@@ -47,7 +47,7 @@ Observe that the source file <TT>hello.c</TT> should be mentioned
 Well... Such a command line is rather tedious to enter! You will find
 on Program <REF LABEL="prog:Makefile1"/> a <TT>Makefile</TT> which does
 all the work for you. Executing <TT>make hello</TT> will compile
-source file <TT>hello.c</TT> with all the necessary parameters.
+the source file <TT>hello.c</TT> with all the necessary parameters.
 </P>
 
 <PROGRAM FILE="./Progs/Makefile1" TITLE="A minimal GNU Makefile for PM2 programs" LABEL="prog:Makefile1"/>
@@ -97,7 +97,8 @@ barrier) among all the PM2 nodes so that each process is assigned a
 unique <EM>rank number</EM> on return from the functions. In
 consequence, it makes no sense to call functions concerned with the
 global execution environment (such as node numbers, etc.)
-<EM>before</EM> this point.
+<EM>before</EM> this point. Please, refer to Section <REF
+LABEL="sec:rank"/> for details.
 </P>
 
 <P>
@@ -106,16 +107,6 @@ The first two arguments of the function are the usual pair
 last argument is <TT>common_attr_t</TT>, it is used to specify
 parameters for the configuration of the application, in most cases,
 the value <TT>NULL</TT> will do.
-</P>
-
-<P>
-The PM2 initialization step involves a global synchronization phase
-(actually, a global synchronization barrier) among all the PM2 nodes
-so that each process is assigned a unique <EM>rank number</EM>. In
-consequence, it makes no sense to call functions concerned with the
-global execution environment (such as node numbers, etc.)
-<EM>before</EM> this point.  Please, refer to Section <REF
-LABEL="sec:rank"/> for details.
 </P>
 
 <P>
@@ -217,8 +208,8 @@ location in user-space, and directly placed into its final destination
 in user-space, without any additional copy. Designing communication
 interfaces which can efficiently deal with messages featuring a
 complex structure, or messages of unpredictable size, is a
-difficult task. The approach of PM2, or more accurately of the
-underlying communication library called Madeleine, is to control the
+difficult task. The approach of PM2, or more accurately of its
+underlying communication library Madeleine, is to control the
 packing and unpacking operations with additional <EM>flags</EM>.
 </P>
 
@@ -241,7 +232,7 @@ The critical point of a sending operation is obviously the series of
 <EM>packing</EM> calls. Such packing operations simply <EM>virtually</EM>
 append the piece of data to a message under construction. In addition
 to the address of data and its size, the packing primitive features a
-<EM>flag</EM> parameter which specifies the semantics of the operation.
+<EM>flag</EM> parameter which specifies the behaviour of the operation.
 Available sending flags are defined as follows:
 </P>
 
@@ -269,7 +260,7 @@ Available sending flags are defined as follows:
   will access the data. Thus, the corresponding data should be left
   unchanged until the send operation has completed. Note that most
   data transmissions involved in parallel applications can accommodate
-  this <TT>mad_send_CHEAPER</TT> semantics.
+  this <TT>mad_send_CHEAPER</TT> behaviour.
 </DD>
 </DL>
 
@@ -282,15 +273,15 @@ The following flags control the reception of user data packets:
 <DT><TT>mad_receive_EXPRESS</TT></DT>
 <DD> This flag forces PM2 to guarantee that the
   corresponding data are immediately available after the the
-  <EM>unpacking</EM> operation. Typically, this flag is mandatory the
-  data is needed to determine the next forthcoming <EM>unpacking</EM>
+  <EM>unpacking</EM> operation. Typically, this flag is mandatory when
+  the data is needed to determine the next forthcoming <EM>unpacking</EM>
   calls.  On some network protocols, this functionality may be
   available for free. On some others, it could penalize the latency and
-  the bandwidth. Users should therefore extract data using this semantics 
+  the bandwidth. Users should therefore extract data using this behaviour 
   only when necessary.
 </DD>
 
-<DT><TT>receive_CHEAPER</TT></DT>
+<DT><TT>mad_receive_CHEAPER</TT></DT>
 <DD> This flag allows PM2 to defer the extraction of
   the corresponding data until the execution of the
   <TT>mad_end_unpacking</TT> routine.  Thus, no assumption can be made
@@ -954,7 +945,7 @@ on. Any machine you have access to can do it as well!
 <SUBSECTION TITLE="Leonie">
 
 <P>
-So far, we used the tools <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use <TT>leonie</TT>, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. <TT>leonie</TT> uses two configuration files:
+So far, we used <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use Leonie, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. Leonie uses two configuration files:
 </P>
 
 <OL>

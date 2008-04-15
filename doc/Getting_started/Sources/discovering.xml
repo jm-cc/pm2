@@ -942,7 +942,7 @@ on. Any machine you have access to can do it as well!
 <CLEARPAGE/>
 </SUBSECTION>
 
-<SUBSECTION TITLE="NewMadeleine">
+<SUBSECTION TITLE="A minimal NewMadeleine program: Hello World!">
 
 <P>
   NewMadeleine provides two API's : a send/receive interface similar
@@ -950,8 +950,8 @@ on. Any machine you have access to can do it as well!
   pack/unpack interface similar to the one provided by Madeleine.
 </P>
 
-<PROGRAM FILE="./Progs/hello.c"/>
-<PROGRAM FILE="./Progs/sr_hello.c"/>
+<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface"/>
+<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface"/>
 
 </SUBSECTION>
 

@@ -4,7 +4,7 @@
 <TEXT>
 
 <P>
-This section describe how to install PM2 on your own machine.
+This section describes how to install PM2 on your own machine.
 Please, first check that your system configuration fits the
 installation pre-requisites, especially with respect to the GNU
 utilities as mentioned in Section <REF LABEL="sec:tools"/>.
@@ -41,21 +41,6 @@ distribution:
 
 <SUBSUBSECTION TITLE="Communication: Madeleine">
 
-<IGNORE>
-<P>
-PM2 was initially designed with a preliminary version of the
-Madeleine. This version and the following version are now obsolete and
-no longer maintained; they are referred to as
-<EM>Madeleine<SPACE/>I</EM> and <EM>Madeleine<SPACE/>II</EM>. The
-current version of the interface is called
-<EM>Madeleine<SPACE/>III</EM>. The internal design is completely
-different, and the new version is only partly compatible with the
-preliminary ones. This manual only introduces the <EM>Madeleine<SPACE/>III</EM>
-communication interface, simply referred to as <EM>Madeleine</EM>
-hereafter when no confusion may occur.
-</P>
-</IGNORE>
-
 <P>
 Madeleine is a generic communication interface
 which is able to fully exploit the low latency and the high bandwidth
@@ -91,25 +76,13 @@ GNU <TT>make</TT> (version <TT>3.81</TT> and higher).
 
 <P>
 Also, PM2 includes a large number of shell scripts, which are assumed
-to be run with the <EM>GNU utilities</EM>. This is specially important
-for <TT>expr</TT>, <TT>tr</TT>, <TT>head</TT>, <TT>cut</TT>,
-<TT>test</TT>, etc. (version 2.0 or higher), <TT>grep</TT> (version
-2.3), <TT>tar</TT>, etc.
+to be run with the <EM>GNU utilities</EM> such
+as <TT>expr</TT>, <TT>tr</TT>, <TT>head</TT>, <TT>cut</TT>, <TT>test</TT>.
+A shell that understands substitutions
+like <TT>${var/find/replace}</TT>, for
+instance <TT>bash</TT>, <TT>zsh</TT>, <TT>ksh</TT>, is needed to run
+these scripts.
 </P>
-
-<WARNING>
-  <EM>
-  If you encounter installation problems, please first make sure that you
-  actually use the right version of these utilities!
-  </EM>
-</WARNING>
- 
-<NOTE>
-  <EM>
-  Luc: There should be a way of listing all utilities used in the
-  scripts.
-  </EM>
-</NOTE>
 
 </SUBSUBSECTION>
 
@@ -301,7 +274,7 @@ directory.
 <P>
 Please note that these two directories have to be reachable from any
 machine used when running PM2 programs. Using the <TT>/tmp</TT>
-directory could for example not be suitable!
+directory would not be suitable!
 </P>
 </LI>
 </UL>
@@ -611,7 +584,7 @@ This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
 <P>
 The PM2 library should now be fully configured.  You are ready to
 compile and execute the example programs of the distribution.  Let's
-start with the simplest one: <EM>Hello world!</EM>, located the in file
+start with the simplest one: <EM>Hello world!</EM>, located in the file
 <TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
 </P>
 
@@ -621,7 +594,7 @@ start with the simplest one: <EM>Hello world!</EM>, located the in file
 The compiled version of the program is automatically placed into your
 own <TT>build/${PM2_FLAVOR}</TT> directory, but you do need not bother with
 this detail at this point: PM2 cares about it for you! Use the
-<TT>pm2-which</TT> command to learn where a file is physically located;
+<TT>pm2-which</TT> command to learn where a file is physically located:
 </P>
 
 <PROGRAM FILE="./Progs/whichHello.txt"/>
@@ -706,23 +679,13 @@ This results into a listing of your current configuration, attempts to
 rebuild the flavor database and clears the compiled PM2 library as
 cleanly as possible. It should then restore a fresh and safe
 configuration for you, ready to restart the whole compilation. The
-output of the command may look like:
+output of the command should look like:
 </P>
 
 <PROGRAM FILE="./Progs/makeSos2.txt"/>
 
 <P>
 Note that the final message is automatically generated!
-</P>
-
-</SUBSECTION>
-
-<SUBSECTION TITLE="If everything else fails...">
-
-<P>
-Feedback from PM2 users showed that several common pitfalls may be
-encountered at this time. If this is your case, please refer to
-the Frequently Asked Questions, Section <REF LABEL="sec:faq"/>.
 </P>
 
 </SUBSECTION>

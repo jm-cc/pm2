@@ -6,7 +6,6 @@ To be compiled, pm2 software needs:
 * gcc (version >= 3.3)
 * a shell that understand substitutions like ${var/find/replace}, for
     instance bash, zsh, ksh, ...
-* a recent version of the m4 compiler (how recent???)
 
 TO BE COMPLETED
 

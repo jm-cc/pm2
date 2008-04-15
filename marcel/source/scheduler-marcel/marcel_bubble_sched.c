@@ -94,9 +94,9 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 
 void marcel_bubble_sched_begin() 
 {
-  ma_spin_lock(&ma_init_lock);
-  if (ma_atomic_read(&ma_init))
-    {
+  if (ma_atomic_read(&ma_init)) {
+    ma_spin_lock(&ma_init_lock);
+    if (ma_atomic_read(&ma_init)) {
       /* Application is entering steady state, let's start
 	 thread/bubble distribution and active work stealing
 	 algorithm */ 
@@ -105,19 +105,21 @@ void marcel_bubble_sched_begin()
       current_sched->submit(&marcel_root_bubble.sched);
       ma_idle_scheduler = 1;
     }
-  else
-    ma_spin_unlock(&ma_init_lock);
+    else
+      ma_spin_unlock(&ma_init_lock);
+  }
 }
 
 void marcel_bubble_sched_end() 
 {
-  ma_spin_lock(&ma_ending_lock);
-  if (!ma_atomic_read(&ma_ending))
-    {
+  if (!ma_atomic_read(&ma_ending)) {
+    ma_spin_lock(&ma_ending_lock);
+    if (!ma_atomic_read(&ma_ending)) {
       ma_atomic_inc(&ma_ending);
       ma_idle_scheduler = 0;
     }
-  ma_spin_unlock(&ma_ending_lock);
+    ma_spin_unlock(&ma_ending_lock);
+  }
 }
 
 void marcel_bubble_shake() 

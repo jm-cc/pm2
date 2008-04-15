@@ -942,6 +942,19 @@ on. Any machine you have access to can do it as well!
 <CLEARPAGE/>
 </SUBSECTION>
 
+<SUBSECTION TITLE="NewMadeleine">
+
+<P>
+  NewMadeleine provides two API's : a send/receive interface similar
+  to the point-to-point communication interface in MPI and a
+  pack/unpack interface similar to the one provided by Madeleine.
+</P>
+
+<PROGRAM FILE="./Progs/hello.c"/>
+<PROGRAM FILE="./Progs/sr_hello.c"/>
+
+</SUBSECTION>
+
 <SUBSECTION TITLE="Leonie">
 
 <P>

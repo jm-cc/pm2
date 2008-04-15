@@ -46,8 +46,7 @@ consumes time and resources.
 <P>
 All these motivations have led to the notion of <EM>PM2 flavors</EM>. A PM2
 flavor is simply a set of compiling and linking options for the user
-program and the various modules of PM2: Marcel, Madeleine, DSM, and
-various other ancillary modules. It is always assumed that the user
+program and the various modules of PM2. It is always assumed that the user
 program and the modules have been compiled and linked with the
 <EM>same</EM> flavor. Unfortunately, there is no easy way to enforce
 this in the C/Unix framework. The method used in PM2 to enforce global
@@ -363,15 +362,10 @@ may be detected early. You may also wish to concentrate on memory
 allocations by enabling the <TT>safe_malloc</TT> and the <TT>parano_malloc</TT>
 options of the module <TT>tbx</TT>, the toolbox used by all PM2 modules. If
 you suspect a problem with synchronization objects, you will find
-useful options in the <TT>marcel</TT> module, and in the <TT>dsm</TT> module for
-the inter-node synchronization actions induced by the DSM consistency
-protocols. If you wish to use the <TT>valgrind</TT> debugger on a program using
-<TT>marcel</TT>, you need to set the <TT>valgrind</TT> option of the <TT>marcel</TT>
-module to let <TT>valgrind</TT> know about <TT>marcel</TT> stacks. If your version
-of <TT>valgrind</TT> is previous to 3.0, you will also need to recompile it
-after setting, in the file <TT>coregrind/vg_memory.c</TT>, the
-<TT>VG_PLAUSIBLE_STACK_SIZE</TT> constant to the size of <TT>marcel</TT> stacks
-(65536 by default).
+useful options in the <TT>marcel</TT> module. If you wish to use
+the <TT>valgrind</TT> debugger on a program using <TT>marcel</TT>, you
+need to set the <TT>valgrind</TT> option of the <TT>marcel</TT> 
+module to let <TT>valgrind</TT> know about <TT>marcel</TT> stacks.
 </P>
 
 <P>

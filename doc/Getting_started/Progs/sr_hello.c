@@ -23,18 +23,18 @@ int main(int argc, char	**argv) {
     nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, len, &r_request); /* Here */
     nm_so_sr_rwait(sr_if, r_request);
 
-    gate_id = nm_so_get_gate_out_id(1);    /* Here */
+    nm_so_get_gate_out_id(1, &gate_id);    /* Here */
     nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &s_request); /* Here */
     nm_so_sr_swait(sr_if, s_request);
   }
   else if (rank == 1) {
     strcpy(buf, msg);
 
-    gate_id = nm_so_get_gate_out_id(0); /* Here */
+    nm_so_get_gate_out_id(0, &gate_id); /* Here */
     nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &s_request);
     nm_so_sr_swait(sr_if, s_request);
 
-    gate_id = nm_so_get_gate_in_id(0); /* Here */
+    nm_so_get_gate_in_id(0, &gate_id); /* Here */
     nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &r_request);
     nm_so_sr_rwait(sr_if, r_request);
 

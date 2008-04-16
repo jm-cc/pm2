@@ -12,19 +12,7 @@
 #include <nm_so_debug.h>
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
-#include <nm_drivers.h>
 #include <Padico/Puk.h>
-
-#ifdef CONFIG_MULTI_RAIL
-#define RAIL_MAX 8
-#else
-#define RAIL_MAX 1
-#endif
-
-static inline puk_component_t load_driver(const char *driver_name)
-{
-  return nm_core_component_load("driver", driver_name); 
-}
 
 #ifdef CONFIG_PROTO_MAD3
 
@@ -95,6 +83,17 @@ int nm_so_exit(void) {
 }
 
 #else /* ! CONFIG_PROTO_MAD3 */
+
+static inline puk_component_t load_driver(const char *driver_name)
+{
+  return nm_core_component_load("driver", driver_name); 
+}
+
+#ifdef CONFIG_MULTI_RAIL
+#define RAIL_MAX 8
+#else
+#define RAIL_MAX 1
+#endif
 
 static void
 usage(void) {

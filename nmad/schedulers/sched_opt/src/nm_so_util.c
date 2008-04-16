@@ -15,11 +15,12 @@
 
 #include <nm_so_util.h>
 #include <Padico/Puk.h>
+#include <nm_drivers.h>
+#include <nm_launcher.h>
 
 #ifdef CONFIG_PROTO_MAD3
 
 #include <nm_mad3_public.h>
-#include <nm_launcher.h>
 
 static puk_instance_t launcher_instance = NULL;
 static struct puk_receptacle_NewMad_Launcher_s r;
@@ -90,6 +91,8 @@ int nm_so_exit(void) {
 }
 
 #else /* ! CONFIG_PROTO_MAD3 */
+
+#include <nm_so_debug.h>
 
 static inline puk_component_t load_driver(const char *driver_name)
 {
@@ -341,7 +344,7 @@ get_railstring_driver_assemblies(puk_component_t*assemblies,
 static char *l_url[RAIL_MAX];
 static int nr_rails = 0;
 
-void nm_so_init(int *argc, char	**argv) {
+int nm_so_init(int *argc, char	**argv) {
   int i,j, err;
   /* rails */
   char *railstring = NULL;
@@ -483,7 +486,7 @@ void nm_so_init(int *argc, char	**argv) {
 
   }
 
-  return;
+  return NM_ESUCCESS;
 
  out_err:
   exit(EXIT_FAILURE);

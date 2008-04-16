@@ -21,11 +21,14 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
+#include <nm_so_util.h>
 #include "helper.h"
 
 #define ANY_SRC 1
 
 static int r_gate_id = -1;
+static struct nm_so_interface *sr_if;
+static nm_gate_id_t gate_id;
 
 const char *msg	 = "h ell o!";
 const char *msg2 = "hello!";
@@ -48,7 +51,7 @@ static void index_vers_contig(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -69,7 +72,7 @@ static void index_vers_contig(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     if(strcmp(buf, msg2) == 0){
       printf("**************************************\n");
       printf("********* index_vers_contig OK *******\n");
@@ -99,7 +102,7 @@ static void index_vers_index(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -120,7 +123,7 @@ static void index_vers_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     if(strcmp(buf, msg) == 0){
       printf("**************************************\n");
       printf("********* index_vers_index OK ********\n");
@@ -141,7 +144,7 @@ static void index_vers_index_different(void){
   char *buf = NULL;
   char * res = "hello world";
 
-  if (is_server) {
+  if (is_server()) {
     int count = 1;
     int blocklengths[2] = {5, 5};
     int strides[2] = {0, 6};
@@ -193,7 +196,7 @@ static void index_vers_index_different(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     if(strcmp(buf, res) == 0){
       printf("**************************************\n");
       printf("*** index_vers_index_different OK ****\n");
@@ -214,7 +217,7 @@ static void index_vers_iov(void){
   //struct iovec iov[2];
   struct iovec *iov = NULL;
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -257,7 +260,7 @@ static void index_vers_iov(void){
     free(buf);
   }
 
-  if (is_server) {
+  if (is_server()) {
     int i;
 
     for(i = 0; i < strlen(hello); i++){
@@ -299,7 +302,7 @@ static void contig_vers_index(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -320,7 +323,7 @@ static void contig_vers_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     if(strcmp(buf, msg) == 0){
       printf("**************************************\n");
       printf("******** contig_vers_index OK ********\n");
@@ -339,7 +342,7 @@ static void iov_vers_index(void){
   char *hello_world = "hello world";
   char *buf = NULL;
 
-  if (is_server) {
+  if (is_server()) {
     CCS_datadesc_t my_type;
     struct CCSI_Segment seg;
     int count = 1;
@@ -377,7 +380,7 @@ static void iov_vers_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     if(strcmp(buf, hello_world) == 0){
       printf("**************************************\n");
       printf("******** iov_vers_index OK ********\n");
@@ -406,7 +409,7 @@ static void large_index_vers_contig(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -444,7 +447,7 @@ static void large_index_vers_contig(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     char *hello000000world = malloc(SIZE);
     {
       char *src, *dst;
@@ -491,7 +494,7 @@ static void large_index_vers_index(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -529,7 +532,7 @@ static void large_index_vers_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     char *hello000000world = malloc(SIZE);
     {
       char *src, *dst;
@@ -581,7 +584,7 @@ static void large_index_vers_index_different(void){
 
   char *buf = malloc(count * SIZE);
 
-  if (is_server) {
+  if (is_server()) {
 
     nm_so_request request;
     /* server
@@ -628,7 +631,7 @@ static void large_index_vers_index_different(void){
   }
 
 
-  if(is_server){
+  if(is_server()){
     char check_char = 'a';
     int  ajout = 0;
     char *cur_char = buf;
@@ -679,7 +682,7 @@ static void large_index_vers_iov(void){
 
   struct iovec * iov= NULL;
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     int i;
     /* server
@@ -741,7 +744,7 @@ static void large_index_vers_iov(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if(is_server){
+  if(is_server()){
     char check_char = 'a';
     int  ajout = 0;
     char *cur_char = iov[0].iov_base;
@@ -804,7 +807,7 @@ static void large_contig_vers_index(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -842,7 +845,7 @@ static void large_contig_vers_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     char *hello000000world = malloc(SIZE);
     {
       char *src, *dst;
@@ -919,7 +922,7 @@ static void large_index_avec_bcp_blocs_vers_contig(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -939,7 +942,7 @@ static void large_index_avec_bcp_blocs_vers_contig(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     char check_char = 'a';
     int  ajout = 0;
     char *cur_char = buf;
@@ -1017,7 +1020,7 @@ static void large_contig_vers_index_avec_bcp_blocs(void){
 
   CCSI_Segment_init (buf, count, my_type, &seg, 0);
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request;
     /* server
      */
@@ -1037,7 +1040,7 @@ static void large_contig_vers_index_avec_bcp_blocs(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server) {
+  if (is_server()) {
     char check_char = 'a';
     char *cur_char = buf;
     int ajout = 0;
@@ -1083,7 +1086,7 @@ static void iov_vers_index_avec_bcp_blocs(void){
 
   char * buf = NULL;
 
-  if (is_server) {
+  if (is_server()) {
     CCS_datadesc_t my_type;
     struct CCSI_Segment seg;
     int count = 1;
@@ -1150,7 +1153,7 @@ static void iov_vers_index_avec_bcp_blocs(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if(is_server){
+  if(is_server()){
     char check_char = 'a';
     int  ajout = 0;
     char *cur_char = buf;
@@ -1194,7 +1197,7 @@ static void iov_vers_large_index(void){
   char *buf = NULL;
 
 
-  if(is_server){
+  if(is_server()){
     CCS_datadesc_t my_type;
     struct CCSI_Segment seg;
 
@@ -1251,7 +1254,7 @@ static void iov_vers_large_index(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if(is_server){
+  if(is_server()){
     char check_char = 'a';
     int  ajout = 0;
     char *cur_char = buf;
@@ -1294,7 +1297,15 @@ int
 main(int	  argc,
      char	**argv) {
 
-  init(&argc, argv);
+  nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
+
+  if (is_server()) {
+    nm_so_get_gate_in_id(1, &gate_id);
+  }
+  else {
+    nm_so_get_gate_out_id(0, &gate_id);
+  }
 
 #ifdef ANY_SRC
   r_gate_id = NM_SO_ANY_SRC;
@@ -1334,6 +1345,6 @@ main(int	  argc,
   iov_vers_index_avec_bcp_blocs();
   iov_vers_large_index();
 
-  nmad_exit();
+  nm_so_exit();
   exit(0);
 }

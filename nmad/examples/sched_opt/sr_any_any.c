@@ -29,12 +29,23 @@ int
 main(int	  argc,
      char	**argv) {
         char			*buf		= NULL;
+	struct nm_so_interface *sr_if;
+	nm_gate_id_t gate_id;
 
-        init(&argc, argv);
+        nm_so_init(&argc, argv);
+	nm_so_get_sr_if(&sr_if);
+
+	if (is_server()) {
+	  nm_so_get_gate_in_id(1, &gate_id);
+	}
+	else {
+	  nm_so_get_gate_out_id(0, &gate_id);
+	}
+
         buf = malloc(SIZE);
 	memset(buf, 0, SIZE);
 
-        if (is_server) {
+        if (is_server()) {
           /* server
            */
           nm_so_request request[5];
@@ -75,6 +86,6 @@ main(int	  argc,
         }
 
 	free(buf);
-        nmad_exit();
+        nm_so_exit();
         return 0;
 }

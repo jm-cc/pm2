@@ -15,6 +15,7 @@
 
 #include <nm_so_util.h>
 #include <nm_so_sendrecv_interface.h>
+#include "helper.h"
 
 const char *msg	= "hello, world!";
 

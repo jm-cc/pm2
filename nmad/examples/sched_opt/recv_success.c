@@ -26,9 +26,12 @@
 
 int
 main(int argc, char **argv) {
-  init(&argc, argv);
+  struct nm_so_interface *sr_if;
 
-  if(is_server){
+  nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
+
+  if(is_server()){
     //void *data = "rien";
     //nm_so_request request;
     //int ref;
@@ -42,6 +45,6 @@ main(int argc, char **argv) {
     printf("Sortie\n");
   }
 
-  nmad_exit();
+  nm_so_exit();
   exit(0);
 }

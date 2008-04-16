@@ -27,15 +27,18 @@ int rank;
 #define PRINT(str, ...)		fprintf(stderr, "[%d] " str "\n", rank, ## __VA_ARGS__)
 
 int main(int argc, char **argv) {
-  int numtasks, dest, source, gate;
+  int numtasks, dest, source;
   int tag = 1;
   float buffer[2], r_buffer[2];
   nm_so_request out_request;
   nm_so_request in_request;
+  struct nm_so_interface *sr_if;
+  nm_gate_id_t gate;
 
-  init(&argc, argv);
-  rank = get_rank();
-  numtasks = get_size();
+  nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
+  nm_so_get_rank(&rank);
+  nm_so_get_size(&numtasks);
 
   PRINT("");
 
@@ -45,12 +48,12 @@ int main(int argc, char **argv) {
     buffer[0] = 12.45;
     buffer[1] = 3.14;
 
-    gate = get_gate_out_id(dest);
+    nm_so_get_gate_out_id(dest, &gate);
     PRINT("sending to node %d, gate %d", dest, gate);
     nm_so_sr_isend(sr_if, gate, tag, buffer, 2*sizeof(float), &out_request);
     nm_so_sr_swait(sr_if, out_request);
 
-    gate = get_gate_in_id(source);
+    nm_so_get_gate_in_id(source, &gate);
     PRINT("receiving from node %d, gate %d", source, gate);
     nm_so_sr_irecv(sr_if, gate, tag, r_buffer, 2*sizeof(float), &in_request);
     nm_so_sr_rwait(sr_if, in_request);
@@ -66,17 +69,17 @@ int main(int argc, char **argv) {
       dest = rank + 1;
     }
 
-    gate = get_gate_in_id(source);
+    nm_so_get_gate_in_id(source, &gate);
     PRINT("receiving from node %d, gate %d", source, gate);
     nm_so_sr_irecv(sr_if, gate, tag, buffer, 2*sizeof(float), &in_request);
     nm_so_sr_rwait(sr_if, in_request);
 
-    gate = get_gate_out_id(dest);
+    nm_so_get_gate_out_id(dest, &gate);
     PRINT("sending to node %d, gate %d", dest, gate);
     nm_so_sr_isend(sr_if, gate, tag, buffer, 2*sizeof(float), &out_request);
     nm_so_sr_swait(sr_if, out_request);
   }
 
-  nmad_exit();
+  nm_so_exit();
   exit(0);
 }

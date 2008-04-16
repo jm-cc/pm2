@@ -1,19 +1,43 @@
-#include <string.h>
+/*
+ * NewMadeleine
+ * Copyright (C) 2006 (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
-#ifdef CONFIG_PROTO_MAD3
-#include <pm2_common.h>
-#include <madeleine.h>
-#include <nm_mad3_private.h>
-#endif
-
-#include <tbx.h>
 #include <nm_public.h>
-#include <nm_so_public.h>
-#include <nm_so_debug.h>
+#include <Padico/Puk.h>
 #include <nm_so_sendrecv_interface.h>
 #include <nm_so_pack_interface.h>
+#include <nm_so_util.h>
+
+#ifdef CONFIG_PROTO_MAD3
+
+static inline puk_component_t load_driver(const char *driver_name)
+{
+  return nm_core_component_load("driver", driver_name);
+}
+
+int is_server() {
+  int rank;
+  nm_so_get_rank(&rank);
+  return !rank;
+}
+
+#else
+#include <string.h>
+#include <tbx.h>
+#include <nm_so_public.h>
+#include <nm_so_debug.h>
 #include <nm_drivers.h>
-#include <Padico/Puk.h>
 
 #ifdef CONFIG_MULTI_RAIL
 #define RAIL_MAX 8
@@ -21,104 +45,19 @@
 #define RAIL_MAX 1
 #endif
 
-static int                     is_server        = -1;
-static struct nm_so_interface *sr_if            = NULL;
-static nm_so_pack_interface    pack_if;
-static nm_gate_id_t	       gate_id	        = 0;
+static int                     _is_server        = -1;
+static struct nm_so_interface *_sr_if            = NULL;
+static nm_so_pack_interface    _pack_if;
+static nm_gate_id_t	       _gate_id	        = 0;
 
-/** Returns process rank */
-int get_rank(void);
-
-/** Returns the number of nodes */
-int get_size(void);
-
-/** Returns the out gate id of the process dest */
-nm_gate_id_t get_gate_out_id(int dest);
-
-/** Returns the in gate id of the process dest */
-nm_gate_id_t get_gate_in_id(int dest);
-
-/** Initializes everything. Returns 1 if server, 0 if client. */
-void init(int *argc, char **argv);
-
-/** Cleans session. Returns NM_ESUCCESS or EXIT_FAILURE. */
-int nmad_exit(void);
+int is_server() {
+  return _is_server;
+}
 
 static inline puk_component_t load_driver(const char *driver_name)
 {
   return nm_core_component_load("driver", driver_name); 
 }
-
-#ifdef CONFIG_PROTO_MAD3
-
-static p_mad_madeleine_t       madeleine	= NULL;
-static p_mad_session_t         session          = NULL;
-
-int get_rank(void) {
-  return session->process_rank;
-}
-
-int get_size(void) {
-  return tbx_slist_get_length(madeleine->dir->process_slist);
-}
-
-nm_gate_id_t get_gate_out_id(int dest) {
-  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
-  p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, dest);
-  p_mad_nmad_connection_specific_t cs = connection->specific;
-  return cs->gate_id;
-}
-
-nm_gate_id_t get_gate_in_id(int dest) {
-  p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
-  p_mad_connection_t connection = tbx_darray_get(channel->in_connection_darray, dest);
-  p_mad_nmad_connection_specific_t cs = connection->specific;
-  return cs->gate_id;
-}
-
-void
-init(int	 *argc,
-     char	**argv) {
-  struct nm_core         *p_core     = NULL;
-
-  /*
-   * Initialization of various libraries.
-   * Reference to the Madeleine object.
-   */
-  madeleine    = mad_init(argc, argv);
-
-  /*
-   * Reference to the session information object
-   */
-  session      = madeleine->session;
-
-  /*
-   * Globally unique process rank.
-   */
-  is_server = session->process_rank;
-
-  if (!is_server) {
-    /* client needs gate_id to connect to the server */
-    p_mad_channel_t channel = tbx_htable_get(madeleine->channel_htable, "pm2");
-    p_mad_connection_t connection = tbx_darray_get(channel->out_connection_darray, 1);
-    p_mad_nmad_connection_specific_t cs = connection->specific;
-    gate_id = cs->gate_id;
-  }
-
-  /*
-   * Reference to the NewMadeleine core object
-   */
-  p_core = mad_nmad_get_core();
-  sr_if = mad_nmad_get_sr_interface();
-  pack_if = (nm_so_pack_interface)sr_if;
-}
-
-int nmad_exit(void) {
-  mad_exit(madeleine);
-  return NM_ESUCCESS;
-}
-
-#else /* ! CONFIG_PROTO_MAD3 */
 
 static void
 usage(void) {
@@ -147,24 +86,33 @@ usage(void) {
 
 static struct nm_core		*p_core	        = NULL;
 
-int get_rank(void) {
-  fprintf(stderr, "get_rank not implemented. Try using the mad3 protocol.\n");
+int nm_so_get_rank(int *rank) {
+  fprintf(stderr, "nm_so_get_rank not implemented. Try using another launcher: Leonie, PadicoTM, ...\n");
   exit(EXIT_FAILURE);
 }
 
-int get_size(void) {
-  fprintf(stderr, "get_size not implemented. Try using the mad3 protocol.\n");
+int nm_so_get_size(int *size) {
+  fprintf(stderr, "nm_so_get_size not implemented. Try using another launcher: Leonie, PadicoTM, ...\n");
   exit(EXIT_FAILURE);
 }
 
-nm_gate_id_t get_gate_in_id(int dest) {
-  fprintf(stderr, "get_gate_in_id not implemented. Try using the mad3 protocol.\n");
-  exit(EXIT_FAILURE);
+int nm_so_get_sr_if(struct nm_so_interface **sr_if) {
+  *sr_if = _sr_if;
+  return NM_ESUCCESS;
 }
 
-nm_gate_id_t get_gate_out_id(int dest) {
-  fprintf(stderr, "get_gate_out_id not implemented. Try using the mad3 protocol.\n");
-  exit(EXIT_FAILURE);
+int nm_so_get_pack_if(nm_so_pack_interface *pack_if) {
+  *pack_if = _pack_if;
+}
+
+int nm_so_get_gate_in_id(int dest, nm_gate_id_t *gate_id) {
+  *gate_id = _gate_id;
+  return NM_ESUCCESS;
+}
+
+int nm_so_get_gate_out_id(int dest, nm_gate_id_t *gate_id) {
+  *gate_id = _gate_id;
+  return NM_ESUCCESS;
 }
 
 /** get default drivers if no rails were given on the command line */
@@ -345,10 +293,7 @@ get_railstring_driver_assemblies(puk_component_t*assemblies,
 static char *l_url[RAIL_MAX];
 static int nr_rails = 0;
 
-void
-init(int	 *argc,
-     char	**argv)
-{
+int nm_so_init(int *argc, char **argv) {
   int i,j, err;
   /* rails */
   char *railstring = NULL;
@@ -376,18 +321,13 @@ init(int	 *argc,
     goto out_err;
   }
 
-  err = nm_so_sr_init(p_core, &sr_if);
+  err = nm_so_sr_init(p_core, &_sr_if);
   if(err != NM_ESUCCESS) {
     printf("nm_so_sr_init return err = %d\n", err);
     goto out_err;
   }
 
-//  err = nm_so_pack_interface_init(p_core, &pack_if);
-//  if(err != NM_ESUCCESS) {
-//    printf("nm_so_pack_interface_init return err = %d\n", err);
-//    goto out_err;
-//  }
-  pack_if = (nm_so_pack_interface)sr_if;
+  _pack_if = (nm_so_pack_interface)_sr_if;
 
   i=1;
   while (i<*argc) {
@@ -440,15 +380,15 @@ init(int	 *argc,
   }
 #endif
 
-  is_server = (!nr_r_urls);
+  _is_server = (!nr_r_urls);
 
   /* if client, we need as many url as drivers */
-  if (!is_server && nr_r_urls < nr_rails) {
+  if (!_is_server && nr_r_urls < nr_rails) {
     fprintf(stderr, "Need %d url for these %d rails\n", nr_r_urls, nr_rails);
     usage();
   }
 
-  if (is_server) {
+  if (_is_server) {
     printf("running as server\n");
   } else {
     printf("running as client using remote url:");
@@ -468,16 +408,16 @@ init(int	 *argc,
 
   nm_ns_init(p_core);
 
-  err = nm_core_gate_init(p_core, &gate_id);
+  err = nm_core_gate_init(p_core, &_gate_id);
   if (err != NM_ESUCCESS) {
     printf("nm_core_gate_init returned err = %d\n", err);
     goto out_err;
   }
 
-  if (is_server) {
+  if (_is_server) {
     /* server  */
     for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_accept(p_core, gate_id, drv_id[j], NULL);
+      err = nm_core_gate_accept(p_core, _gate_id, drv_id[j], NULL);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -486,7 +426,7 @@ init(int	 *argc,
   } else {
     /* client */
     for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_connect(p_core, gate_id, drv_id[j], r_url[j]);
+      err = nm_core_gate_connect(p_core, _gate_id, drv_id[j], r_url[j]);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -501,7 +441,7 @@ init(int	 *argc,
   exit(EXIT_FAILURE);
 }
 
-int nmad_exit(void) {
+int nm_so_exit(void) {
   int j, err, ret = NM_ESUCCESS;
 
   for(j=0; j<nr_rails; j++) {
@@ -523,7 +463,7 @@ int nmad_exit(void) {
     printf("nm_core__exit return err = %d\n", err);
     ret = EXIT_FAILURE;
   }
-  err = nm_so_sr_exit(sr_if);
+  err = nm_so_sr_exit(_sr_if);
   if(err != NM_ESUCCESS) {
     printf("nm_so_sr_exit return err = %d\n", err);
     ret = EXIT_FAILURE;

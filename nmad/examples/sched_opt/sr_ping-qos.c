@@ -110,7 +110,7 @@ main(int	  argc,
   nm_so_set_policy(tag[0], NM_SO_POLICY_FIFO);
   nm_so_set_policy(tag[1], NM_SO_POLICY_FIFO);
 
-  if (is_server) {
+  if (is_server()) {
     int k;
     /* server
      */

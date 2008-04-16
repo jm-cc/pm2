@@ -29,12 +29,16 @@ int main(int argc, char **argv) {
   int numtasks;
   int rank;
 
-  init(&argc, argv);
-  rank = get_rank();
-  numtasks = get_size();
+  struct nm_so_interface *sr_if;
+
+  nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
+  nm_so_get_rank(&rank);
+  nm_so_get_size(&numtasks);
 
   if (rank == 0) {
-    int child, gate;
+    int child;
+    nm_gate_id_t gate;
     nm_so_request *out_requests;
     nm_so_request *in_requests;
     float buffer[2], r_buffer[2];
@@ -46,7 +50,7 @@ int main(int argc, char **argv) {
     in_requests = malloc(numtasks * sizeof(nm_so_request));
 
     for(child=1 ; child<numtasks ; child++) {
-      gate = get_gate_out_id(child);
+      nm_so_get_gate_out_id(child, &gate);
       nm_so_sr_isend(sr_if, gate, child, buffer, 2*sizeof(float), &out_requests[child-1]);
 #ifdef STAR_DEBUG
       PRINT("Isending to child %d completed", child);
@@ -61,7 +65,7 @@ int main(int argc, char **argv) {
     }
 
     for(child=1 ; child<numtasks ; child++) {
-      gate = get_gate_in_id(child);
+      nm_so_get_gate_in_id(child, &gate);
 #ifdef STAR_DEBUG
       PRINT("Waiting from child %d", child);
 #endif
@@ -81,11 +85,11 @@ int main(int argc, char **argv) {
   }
   else {
     float r_buffer[2];
-    int gate;
+    nm_gate_id_t gate;
     nm_so_request out_request;
     nm_so_request in_request;
 
-    gate = get_gate_in_id(0);
+    nm_so_get_gate_in_id(0, &gate);
     nm_so_sr_irecv(sr_if, gate, rank, r_buffer, 2*sizeof(float), &in_request);
     nm_so_sr_rwait(sr_if, in_request);
 
@@ -93,7 +97,7 @@ int main(int argc, char **argv) {
     PRINT("Received from father and sending back");
 #endif
 
-    gate = get_gate_out_id(0);
+    nm_so_get_gate_out_id(0, &gate);
     nm_so_sr_isend(sr_if, gate, rank, r_buffer, 2*sizeof(float), &out_request);
     nm_so_sr_swait(sr_if, out_request);
 #ifdef STAR_DEBUG
@@ -101,6 +105,6 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  nmad_exit();
+  nm_so_exit();
   exit(0);
 }

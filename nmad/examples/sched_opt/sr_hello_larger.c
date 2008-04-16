@@ -22,10 +22,13 @@
 
 #include "helper.h"
 
+struct nm_so_interface *sr_if;
+nm_gate_id_t gate_id;
+
 static void process(char *msg) {
   uint64_t len;
 
-  if (is_server) {
+  if (is_server()) {
     nm_so_request request1, request2;
     char *buf, *buf2;
 
@@ -75,8 +78,15 @@ const char *msg_end   = "world!";
 #define SIZE  (32 * 1024)
 
 int main(int argc, char	**argv) {
+  nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
 
-  init(&argc, argv);
+  if (is_server()) {
+    nm_so_get_gate_in_id(1, &gate_id);
+  }
+  else {
+    nm_so_get_gate_out_id(0, &gate_id);
+  }
 
   process((char *)short_msg);
 
@@ -99,6 +109,6 @@ int main(int argc, char	**argv) {
     free(long_msg);
   }
 
-  nmad_exit();
+  nm_so_exit();
   exit(0);
 }

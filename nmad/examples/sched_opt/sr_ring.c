@@ -28,15 +28,13 @@ int rank;
 
 int main(int argc, char **argv) {
   int numtasks, dest, source;
+  nm_gate_id_t gate;
   int tag = 1;
   float buffer[2], r_buffer[2];
   nm_so_request out_request;
   nm_so_request in_request;
-  struct nm_so_interface *sr_if;
-  nm_gate_id_t gate;
 
   nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
   nm_so_get_rank(&rank);
   nm_so_get_size(&numtasks);
 
@@ -80,6 +78,6 @@ int main(int argc, char **argv) {
     nm_so_sr_swait(sr_if, out_request);
   }
 
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

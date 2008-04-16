@@ -19,20 +19,36 @@
 #include <nm_so_pack_interface.h>
 #include <nm_so_util.h>
 
+static int                     is_server        = -1;
+static struct nm_so_interface *sr_if            = NULL;
+static nm_so_pack_interface    pack_if;
+static nm_gate_id_t	       gate_id	        = 0;
+
+void nmad_exit() {
+  nm_so_exit();
+}
+
 #ifdef CONFIG_PROTO_MAD3
+
+void init(int *argc, char **argv) {
+  int rank;
+
+  nm_so_init(argc, argv);
+  nm_so_get_gate_out_id(0, &gate_id);
+  nm_so_get_pack_if(&pack_if);
+  nm_so_get_sr_if(&sr_if);
+
+  nm_so_get_rank(&rank);
+  is_server = !rank;
+}
 
 static inline puk_component_t load_driver(const char *driver_name)
 {
   return nm_core_component_load("driver", driver_name);
 }
 
-int is_server() {
-  int rank;
-  nm_so_get_rank(&rank);
-  return !rank;
-}
+#else /* !CONFIG_PROTO_MAD3 */
 
-#else
 #include <string.h>
 #include <tbx.h>
 #include <nm_so_public.h>
@@ -45,13 +61,8 @@ int is_server() {
 #define RAIL_MAX 1
 #endif
 
-static int                     _is_server        = -1;
-static struct nm_so_interface *_sr_if            = NULL;
-static nm_so_pack_interface    _pack_if;
-static nm_gate_id_t	       _gate_id	        = 0;
-
-int is_server() {
-  return _is_server;
+void init(int *argc, char **argv) {
+  nm_so_init(argc, argv);
 }
 
 static inline puk_component_t load_driver(const char *driver_name)
@@ -96,22 +107,22 @@ int nm_so_get_size(int *size) {
   exit(EXIT_FAILURE);
 }
 
-int nm_so_get_sr_if(struct nm_so_interface **sr_if) {
-  *sr_if = _sr_if;
+int nm_so_get_sr_if(struct nm_so_interface **sr_if_) {
+  *sr_if_ = sr_if;
   return NM_ESUCCESS;
 }
 
-int nm_so_get_pack_if(nm_so_pack_interface *pack_if) {
-  *pack_if = _pack_if;
+int nm_so_get_pack_if(nm_so_pack_interface *pack_if_) {
+  *pack_if_ = pack_if;
 }
 
-int nm_so_get_gate_in_id(int dest, nm_gate_id_t *gate_id) {
-  *gate_id = _gate_id;
+int nm_so_get_gate_in_id(int dest, nm_gate_id_t *gate_id_) {
+  *gate_id_ = gate_id;
   return NM_ESUCCESS;
 }
 
-int nm_so_get_gate_out_id(int dest, nm_gate_id_t *gate_id) {
-  *gate_id = _gate_id;
+int nm_so_get_gate_out_id(int dest, nm_gate_id_t *gate_id_) {
+  *gate_id_ = gate_id;
   return NM_ESUCCESS;
 }
 
@@ -321,13 +332,13 @@ int nm_so_init(int *argc, char **argv) {
     goto out_err;
   }
 
-  err = nm_so_sr_init(p_core, &_sr_if);
+  err = nm_so_sr_init(p_core, &sr_if);
   if(err != NM_ESUCCESS) {
     printf("nm_so_sr_init return err = %d\n", err);
     goto out_err;
   }
 
-  _pack_if = (nm_so_pack_interface)_sr_if;
+  pack_if = (nm_so_pack_interface)sr_if;
 
   i=1;
   while (i<*argc) {
@@ -380,15 +391,15 @@ int nm_so_init(int *argc, char **argv) {
   }
 #endif
 
-  _is_server = (!nr_r_urls);
+  is_server = (!nr_r_urls);
 
   /* if client, we need as many url as drivers */
-  if (!_is_server && nr_r_urls < nr_rails) {
+  if (!is_server && nr_r_urls < nr_rails) {
     fprintf(stderr, "Need %d url for these %d rails\n", nr_r_urls, nr_rails);
     usage();
   }
 
-  if (_is_server) {
+  if (is_server) {
     printf("running as server\n");
   } else {
     printf("running as client using remote url:");
@@ -408,16 +419,16 @@ int nm_so_init(int *argc, char **argv) {
 
   nm_ns_init(p_core);
 
-  err = nm_core_gate_init(p_core, &_gate_id);
+  err = nm_core_gate_init(p_core, &gate_id);
   if (err != NM_ESUCCESS) {
     printf("nm_core_gate_init returned err = %d\n", err);
     goto out_err;
   }
 
-  if (_is_server) {
+  if (is_server) {
     /* server  */
     for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_accept(p_core, _gate_id, drv_id[j], NULL);
+      err = nm_core_gate_accept(p_core, gate_id, drv_id[j], NULL);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -426,7 +437,7 @@ int nm_so_init(int *argc, char **argv) {
   } else {
     /* client */
     for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_connect(p_core, _gate_id, drv_id[j], r_url[j]);
+      err = nm_core_gate_connect(p_core, gate_id, drv_id[j], r_url[j]);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -463,7 +474,7 @@ int nm_so_exit(void) {
     printf("nm_core__exit return err = %d\n", err);
     ret = EXIT_FAILURE;
   }
-  err = nm_so_sr_exit(_sr_if);
+  err = nm_so_sr_exit(sr_if);
   if(err != NM_ESUCCESS) {
     printf("nm_so_sr_exit return err = %d\n", err);
     ret = EXIT_FAILURE;

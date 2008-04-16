@@ -20,7 +20,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <nm_so_util.h>
 #include "helper.h"
 
 #define SIZE  (64 * 1024)
@@ -33,11 +32,8 @@ main(int	  argc,
   char *message = NULL;
   char *src, *dst;
   struct nm_so_cnx         cnx;
-  nm_so_pack_interface     pack_if;
-  nm_gate_id_t             gate_id;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_pack_if(&pack_if);
+  init(&argc, argv);
 
   /* Build the message to be sent */
   message = malloc(SIZE+1);
@@ -56,14 +52,13 @@ main(int	  argc,
   dst = message + SIZE - 1;
   *dst = '\0';
 
-  if (is_server()) {
+  if (is_server) {
     char *buf	= NULL;
     buf = malloc(SIZE+1);
 
     memset(buf, 'z', SIZE);
     *(buf + SIZE - 1) = '\0';
 
-    nm_so_get_gate_in_id(1, &gate_id);
     nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
     nm_so_unpack(&cnx, buf, SIZE);
     nm_so_end_unpacking(&cnx);
@@ -81,8 +76,6 @@ main(int	  argc,
      */
     //printf("Here's the message we're going to send : [%s]\n", buf);
 
-    nm_so_get_gate_out_id(0, &gate_id);
-
     nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
 
     nm_so_pack(&cnx, message, SIZE);
@@ -91,6 +84,6 @@ main(int	  argc,
   }
 
   free(message);
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

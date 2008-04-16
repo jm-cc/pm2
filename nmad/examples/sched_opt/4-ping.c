@@ -20,7 +20,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <nm_so_util.h>
 #include "helper.h"
 
 #define MAX     (8*1024)
@@ -32,19 +31,15 @@ main(int	  argc,
         char			*buf		= NULL;
         uint32_t		 len;
 	struct nm_so_cnx         cnx;
-	nm_so_pack_interface     pack_if;
-	nm_gate_id_t             gate_id;
 
-        nm_so_init(&argc, argv);
-	nm_so_get_pack_if(&pack_if);
+        init(&argc, argv);
         buf = malloc(MAX);
 	memset(buf, 0, MAX);
 
-        if (is_server()) {
+        if (is_server) {
 	  int k;
                 /* server
                  */
-	        nm_so_get_gate_in_id(1, &gate_id);
 		for(len = 16; len <= MAX; len *= 2) {
 		  for(k = 0; k < LOOPS; k++) {
 
@@ -70,7 +65,6 @@ main(int	  argc,
 	  int k;
                 /* client
                  */
-	        nm_so_get_gate_out_id(0, &gate_id);
 		for(len = 16; len <= MAX; len *= 2) {
 
 		  TBX_GET_TICK(t1);
@@ -97,6 +91,6 @@ main(int	  argc,
 		}
         }
 
-        nm_so_exit();
+        nmad_exit();
         exit(0);
 }

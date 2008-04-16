@@ -29,10 +29,7 @@ int main(int argc, char **argv) {
   int numtasks;
   int rank;
 
-  struct nm_so_interface *sr_if;
-
   nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
   nm_so_get_rank(&rank);
   nm_so_get_size(&numtasks);
 
@@ -105,6 +102,6 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

@@ -21,8 +21,6 @@
 const char *msg	= "hello, world!";
 
 int main(int argc, char	**argv) {
-  struct nm_so_interface *sr_if = NULL;
-  nm_so_request s_request, r_request;
   nm_gate_id_t gate_id;
   nm_so_pack_interface    pack_if;
   struct nm_so_cnx      cnx;

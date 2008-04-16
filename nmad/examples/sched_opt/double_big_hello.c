@@ -31,18 +31,8 @@ int main(int	  argc,
   char *message = NULL;
   char *src, *dst;
   struct nm_so_cnx cnx;
-  nm_so_pack_interface     pack_if;
-  nm_gate_id_t             gate_id;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_pack_if(&pack_if);
-
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
+  init(&argc, argv);
 
   /* Build the message to be sent */
   message = malloc(SIZE+1);
@@ -59,7 +49,7 @@ int main(int	  argc,
   while(*src)
     *dst++ = *src++;
 
-  if (is_server()) {
+  if (is_server) {
     char *buf	= NULL;
     buf = calloc(1, SIZE+1);
 
@@ -93,6 +83,6 @@ int main(int	  argc,
   }
 
   free(message);
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

@@ -26,9 +26,6 @@
 
 #define PRINT_CONTENT 0
 
-struct nm_so_interface *sr_if;
-nm_gate_id_t gate_id;
-
 const char *msg1 = "hello";
 const char *msg2 = ", ";
 const char *msg3 = "world";
@@ -39,7 +36,7 @@ void court_contigu_vers_court_contigu(void){
   struct iovec iov[1];
   nm_so_request request;
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     iov[0].iov_len  = strlen(buf)+1;
     iov[0].iov_base = malloc(strlen(buf)+1);
@@ -55,7 +52,7 @@ void court_contigu_vers_court_contigu(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     assert (strcmp ((char *)iov[0].iov_base, buf) == 0);
 
     printf("court_contigu_vers_court_contigu OK\n");
@@ -72,7 +69,7 @@ void court_contigu_vers_court_contigu_plus_long(void){
   struct iovec iov[1];
   nm_so_request request;
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     iov[0].iov_len  = strlen(buf) + 10;
     iov[0].iov_base = malloc(strlen(buf)+10);
@@ -88,7 +85,7 @@ void court_contigu_vers_court_contigu_plus_long(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     assert (strcmp ((char *)iov[0].iov_base, buf) == 0);
 
     printf("court_contigu_vers_court_contigu_plus_long OK\n");
@@ -105,7 +102,7 @@ void court_contigu_vers_court_disperse(void){
   struct iovec iov[3];
   nm_so_request request;
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     buf1 = malloc(strlen(msg1));
     buf2 = malloc(strlen(msg2));
@@ -133,7 +130,7 @@ void court_contigu_vers_court_disperse(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     char *entree0 = malloc(iov[0].iov_len + 1);
     strncpy(entree0, (char *)iov[0].iov_base, iov[0].iov_len);
     entree0[iov[0].iov_len] = '\0';
@@ -168,7 +165,7 @@ void court_disperse_vers_court_disperse_identique(void){
   char *buf2 = malloc(strlen(msg2));
   char *buf3 = malloc(1+strlen(msg3));
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     memset(buf1, 0, strlen(msg1));
     memset(buf2, 0, strlen(msg2));
@@ -201,7 +198,7 @@ void court_disperse_vers_court_disperse_identique(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     char *entree0 = malloc(iov[0].iov_len + 1);
     strncpy(entree0, (char *)iov[0].iov_base, iov[0].iov_len);
     entree0[iov[0].iov_len] = '\0';
@@ -233,7 +230,7 @@ void court_disperse_vers_court_disperse_disymetrique(void){
   struct iovec iov[3];
   nm_so_request request;
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     buf1 = malloc(strlen(msg1) + strlen(msg2));
     buf2 = malloc(1+strlen(msg3));
@@ -270,7 +267,7 @@ void court_disperse_vers_court_disperse_disymetrique(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     char *test = malloc(strlen(msg1) + strlen(msg2)+1);
     strcpy(test, msg1);
     strcat(test, msg2);
@@ -305,7 +302,7 @@ void court_disperse_vers_court_contigu(void){
   struct iovec iov[3];
   nm_so_request request;
 
-  if (is_server()) {
+  if (is_server) {
     /* server */
     buf = malloc(strlen(msg1) + strlen(msg2) + strlen(msg3) + 1);
 
@@ -338,7 +335,7 @@ void court_disperse_vers_court_contigu(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     char *test = malloc(strlen(msg1) + strlen(msg2) + strlen(msg3) + 1);
 
     strcpy(test, msg1);
@@ -366,15 +363,7 @@ int
 main(int argc, char **argv) {
   int i = 0;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
-
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
+  init(&argc, argv);
 
   while(i++ < 100){
     court_contigu_vers_court_contigu();
@@ -385,6 +374,6 @@ main(int argc, char **argv) {
     court_disperse_vers_court_contigu();
   }
 
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

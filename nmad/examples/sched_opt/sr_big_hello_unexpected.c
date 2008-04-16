@@ -30,23 +30,12 @@ int
 main(int	  argc,
      char	**argv) {
   char			*buf		= NULL;
-  struct nm_so_interface *sr_if;
-  nm_gate_id_t gate_id;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
-
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
-
+  init(&argc, argv);
   buf = malloc(SIZE+1);
   memset(buf, 0, SIZE+1);
 
-  if (is_server()) {
+  if (is_server) {
     nm_so_request request;
     nm_so_request request0;
 
@@ -99,7 +88,7 @@ main(int	  argc,
     nm_so_sr_swait(sr_if, request);
   }
 
-  if (is_server()) {
+  if (is_server) {
     printf("buffer contents: %s\n", buf);
   }
 

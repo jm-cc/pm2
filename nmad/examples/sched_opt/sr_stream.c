@@ -60,22 +60,11 @@ main(int	  argc,
   int		 warmups	= WARMUPS_DEFAULT;
   int		 i;
 
-  struct nm_so_interface *sr_if;
-  nm_gate_id_t gate_id;
-
-  nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
-
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
+  init(&argc, argv);
 
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nm_so_exit();
+    nmad_exit();
     exit(0);
   }
 
@@ -101,14 +90,14 @@ main(int	  argc,
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nm_so_exit();
+      nmad_exit();
       exit(0);
     }
   }
 
   buf = malloc(end_len);
 
-  if (is_server()) {
+  if (is_server) {
     tbx_tick_t t1, t2;
     double sum, lat, bw_million_byte, bw_mbyte;
     int k;
@@ -165,6 +154,6 @@ main(int	  argc,
   }
 
   free(buf);
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

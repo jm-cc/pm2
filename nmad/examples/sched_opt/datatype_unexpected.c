@@ -20,14 +20,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <nm_so_util.h>
 #include "helper.h"
 
 //#define ANY_SRC 1
 
 static int r_gate_id = -1;
-static struct nm_so_interface *sr_if;
-static nm_gate_id_t gate_id;
 
 #define SIZE  (64 * 1024)
 
@@ -35,7 +32,7 @@ static void short_unexpected(void){
   char *msg	= "helloworld";
   char * buf = NULL;
 
-  if(is_server()){
+  if(is_server){
     CCS_datadesc_t my_type;
     struct CCSI_Segment seg;
     int count = 1;
@@ -82,7 +79,7 @@ static void short_unexpected(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if(is_server()){
+  if(is_server){
     int i, j;
 
     for(i = 0; i < 5; i++){
@@ -108,7 +105,7 @@ static void large_unexpected(void){
   char *msg	= "helloworld";
   char *buf1 = NULL, *buf2 = NULL;
 
-  if(is_server()){
+  if(is_server){
     CCS_datadesc_t my_type;
     struct CCSI_Segment seg;
     int count = 1;
@@ -162,7 +159,7 @@ static void large_unexpected(void){
     nm_so_sr_swait(sr_if, request);
   }
 
-  if(is_server()){
+  if(is_server){
     char cur_char = 'a';
     int ajout = 0;
     int i, j;
@@ -203,16 +200,7 @@ static void large_unexpected(void){
 int
 main(int	  argc,
      char	**argv) {
-
-  nm_so_init(&argc, argv);
-  nm_so_get_sr_if(&sr_if);
-
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
+  init(&argc, argv);
 
   r_gate_id = gate_id;
   short_unexpected();
@@ -222,6 +210,6 @@ main(int	  argc,
   short_unexpected();
   large_unexpected();
   
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

@@ -29,20 +29,9 @@
 int
 main(int	  argc,
      char	**argv) {
+        init(&argc, argv);
 
-	struct nm_so_interface *sr_if;
-	nm_gate_id_t gate_id;
-
-        nm_so_init(&argc, argv);
-	nm_so_get_sr_if(&sr_if);
-	if (is_server()) {
-	  nm_so_get_gate_in_id(1, &gate_id);
-	}
-	else {
-	  nm_so_get_gate_out_id(0, &gate_id);
-	}
-
-        if (is_server()) {
+        if (is_server) {
                 int k;
                 /* server
                  */
@@ -147,6 +136,6 @@ main(int	  argc,
         }
 
 
-        nm_so_exit();
+        nmad_exit();
         exit(0);
 }

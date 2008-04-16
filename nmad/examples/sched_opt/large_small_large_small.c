@@ -46,8 +46,6 @@ main(int	  argc,
         char			*buf1		= NULL;
         char			*buf2		= NULL;
 	struct nm_so_cnx         cnx;
-	nm_gate_id_t gate_id;
-	nm_so_pack_interface    pack_if;
 
         buf1 = malloc(SMALL_SIZE);
 	memset(buf1, 0, SMALL_SIZE);
@@ -55,16 +53,9 @@ main(int	  argc,
         buf2 = malloc(LARGE_SIZE);
 	memset(buf2, 0, LARGE_SIZE);
 
-        nm_so_init(&argc, argv);
-	nm_so_get_pack_if(&pack_if);
-	if (is_server()) {
-	  nm_so_get_gate_in_id(1, &gate_id);
-	}
-	else {
-	  nm_so_get_gate_out_id(0, &gate_id);
-	}
+        init(&argc, argv);
 
-        if (is_server()) {
+        if (is_server) {
 	  int n, k;
 
           /* server */
@@ -116,6 +107,6 @@ main(int	  argc,
 
 	free(buf1);
 	free(buf2);
-        nm_so_exit();
+        nmad_exit();
         exit(0);
 }

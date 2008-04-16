@@ -44,22 +44,13 @@ main(int	  argc,
   char			*buf		= NULL;
   uint32_t		 len;
   struct nm_so_cnx         cnx;
-  nm_gate_id_t gate_id;
-  nm_so_pack_interface    pack_if;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_pack_if(&pack_if);
-  if (is_server()) {
-    nm_so_get_gate_in_id(1, &gate_id);
-  }
-  else {
-    nm_so_get_gate_out_id(0, &gate_id);
-  }
+  init(&argc, argv);
 
   buf = malloc(MAX);
   memset(buf, 0, MAX);
 
-  if (is_server()) {
+  if (is_server) {
     int k;
     /* server
      */
@@ -101,6 +92,6 @@ main(int	  argc,
   }
 
   free(buf);
-  nm_so_exit();
+  nmad_exit();
   exit(0);
 }

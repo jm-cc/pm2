@@ -1011,9 +1011,9 @@ available:
 
 </SUBSUBSECTION>
 
-<SUBSECTION TITLE="Communication interface">
+<SUBSUBSECTION TITLE="Communication interface">
 
-<SUBSUBSECTION TITLE="The send/receive interface">
+<SUBSUBSUBSECTION TITLE="The send/receive interface">
 
 <P>
 The send/receive interface mainly provides methods to send or receive
@@ -1021,9 +1021,9 @@ data in a asynchronous way, and to test and to wait for the completion
 of a communication request.
 </P>
 
-</SUBSUBSECTION>
+</SUBSUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="The pack/unpack interface">
+<SUBSUBSUBSECTION TITLE="The pack/unpack interface">
 
 <P>
 A call to <TT>nm_so_begin_packing()</TT> initialises a sending
@@ -1054,9 +1054,9 @@ to <TT>nm_so_flush_unpacks(...)</TT> will insure previously requested
 data are available.
 </P>
 
-</SUBSUBSECTION>
+</SUBSUBSUBSECTION>
 
-</SUBSECTION>
+</SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="The MPI interface">
 <P>

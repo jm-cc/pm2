@@ -291,7 +291,7 @@ sos:
 	echo "********* Checking environment variables *********" ; \
 	echo "PM2_HOME = $(PM2_HOME)" ; \
 	echo "FLAVOR = $(FLAVOR)" ; \
-	if [ ! -f `./bin/pm2-flavor_file -f $(FLAVOR)` ] ; then \
+	if [ ! -f `./bin/pm2-flavor-file -f $(FLAVOR)` ] ; then \
 		echo "ERROR: the flavor \"$(FLAVOR)\" does not exist." ; \
 		exit 1 ; \
 	fi ; \

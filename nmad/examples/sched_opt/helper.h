@@ -34,12 +34,18 @@ void init(int *argc, char **argv) {
   int rank;
 
   nm_so_init(argc, argv);
-  nm_so_get_gate_out_id(0, &gate_id);
   nm_so_get_pack_if(&pack_if);
   nm_so_get_sr_if(&sr_if);
 
   nm_so_get_rank(&rank);
   is_server = !rank;
+
+  if (is_server) {
+    nm_so_get_gate_out_id(1, &gate_id);
+  }
+  else {
+    nm_so_get_gate_in_id(0, &gate_id);
+  }
 }
 
 static inline puk_component_t load_driver(const char *driver_name)

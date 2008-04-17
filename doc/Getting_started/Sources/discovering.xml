@@ -980,7 +980,7 @@ at the following URL: <URL>http://runtime.futurs.inria.fr/MadMPI/</URL>.
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Leonie" REF="Sec:leonie">
+<SUBSECTION TITLE="Leonie" LABEL="Sec:leonie">
 
 <P>
 So far, we used <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use Leonie, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. Leonie uses two configuration files:

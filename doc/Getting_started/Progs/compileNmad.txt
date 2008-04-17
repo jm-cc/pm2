@@ -1,0 +1,26 @@
+ravel% setenv PM2_FLAVOR nmad-mpi
+ravel% make hello
+...
+<<< Generating libraries: done
+    building hello.o
+    linking hello
+ravel% pm2-conf ravel debussy
+The current PM2 configuration contains 2 host(s) :
+0 : ravel
+1 : debussy
+ravel% pm2-load hello
+##### ravel
+##### debussy
+buffer contents: <hello, world!>
+ravel%
+ravel%
+ravel% make sr_hello
+...
+<<< Generating libraries: done
+    building sr_hello.o
+    linking sr_hello
+ravel% pm2-load sr_hello
+##### ravel
+##### debussy
+buffer contents: <hello, world!>
+ravel%

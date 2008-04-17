@@ -945,17 +945,42 @@ on. Any machine you have access to can do it as well!
 <SUBSECTION TITLE="A minimal NewMadeleine program: Hello World!">
 
 <P>
-  NewMadeleine provides two API's : a send/receive interface similar
-  to the point-to-point communication interface in MPI and a
-  pack/unpack interface similar to the one provided by Madeleine.
+NewMadeleine provides two API's : a send/receive interface similar to
+the point-to-point communication interface in MPI and a pack/unpack
+interface similar to the one provided by Madeleine. Programs
+<REF LABEL="prog:hello"/> and <REF LABEL="prog:srhello"/> show
+minimal NewMadeleine programs. You can compile and execute them.
 </P>
 
-<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface"/>
-<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface"/>
+<PROGRAM FILE="./Progs/compileNmad.txt"/>
+<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface" LABEL="prog:hello"/>
+<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface" LABEL="prog:srhello"/>
+
+<SUBSUBSECTION TITLE="Initialisation and termination">
+
+<P>
+NewMadeleine applications can be started using different bootstrap
+mechanisms, either the leonie bootstrap (See Section
+<REF LABEL="Sec:leonie"/>), or PadicoTM, or your own bootstrap. The
+core of NewMadeleine is completely independant on how the application
+has been started. To help end-users, NewMadeleine provides an
+initialisation interface which can be implemented on top of any
+bootstrap mechanism.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="The MPI interface">
+<P>
+A minimal MPI implementation has been developed on top of
+NewMadeleine. More informations on this implementation are available
+at the following URL: <URL>http://runtime.futurs.inria.fr/MadMPI/</URL>.
+</P>
+</SUBSUBSECTION>
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Leonie">
+<SUBSECTION TITLE="Leonie" REF="Sec:leonie">
 
 <P>
 So far, we used <TT>pm2-conf</TT> to specify which machines to run applications on, and <TT>pm2-load</TT> to actually start the application. These tools are written on top of and use Leonie, the PM2 bootstrap code, which reads the configuration files and then bootstraps the application. Leonie uses two configuration files:

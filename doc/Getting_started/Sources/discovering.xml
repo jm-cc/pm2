@@ -968,7 +968,95 @@ initialisation interface which can be implemented on top of any
 bootstrap mechanism.
 </P>
 
+<P>
+Programs <REF LABEL="prog:hello"/> and <REF LABEL="prog:srhello"/> use
+this interface, but there is no requirement to do so. Users can choose
+to ignore this interface and start their applications <EM>by
+    hand</EM>. One just need to make sure the different internal
+NewMadeleine objects are correctly initialised.
+</P>
+
+<P>
+When using this interface, the following functionnalities are
+available:
+<UL>
+<LI> <TT>int nm_so_init(int *argc, char	**argv);</TT> which
+  initialises all the necessary NewMadeleine components.
+</LI>
+<LI> <TT>int nm_so_exit(void);</TT> which terminates a NewMadeleine
+  application.
+</LI>
+<LI> <TT>int nm_so_get_rank(int *);</TT> which returns the rank of
+  the local process
+</LI>
+<LI> <TT>int nm_so_get_size(int *);</TT> which returns the number of
+  processes in the application
+</LI>
+<LI> <TT>int nm_so_get_sr_if(struct nm_so_interface **sr_if);</TT>
+  which returns the send/receive interface.
+</LI>
+<LI> <TT>int nm_so_get_pack_if(nm_so_pack_interface *pack_if);</TT>
+  which returns the pack/unpack interface.
+</LI>
+<LI> <TT>int nm_so_get_gate_out_id(int dest, nm_gate_id_t
+    *gate_id);</TT> which returns the gate id to send data to the
+    specified process.
+</LI>
+<LI> <TT>int nm_so_get_gate_in_id(int dest, nm_gate_id_t
+    *gate_id);</TT> which returns the gate id to receive data from
+    the specified process.
+</LI>
+</UL>
+</P>
+
 </SUBSUBSECTION>
+
+<SUBSECTION TITLE="Communication interface">
+
+<SUBSUBSECTION TITLE="The send/receive interface">
+
+<P>
+The send/receive interface mainly provides methods to send or receive
+data in a asynchronous way, and to test and to wait for the completion
+of a communication request.
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="The pack/unpack interface">
+
+<P>
+A call to <TT>nm_so_begin_packing()</TT> initialises a sending
+connection. Data can then be packed into this connection using
+succcessive calls to the
+function <TT>nm_so_pack()</TT>. <TT>nm_so_end_packing()</TT> ends the
+building of the message and flush the data.
+</P>
+
+<P>
+On the receiving side, <TT>nm_so_begin_unpacking()</TT> starts
+receiving and extracting a new message, data can be extracted from the
+current message using successive calls to <TT>nm_so_unpack()</TT> and
+finally, <TT>nm_so_end_unpacking</TT> ends the reception of the
+message.
+</P>
+
+<P>
+Users have to be careful when handling data involved in a
+communication. Packed data should not be modified between the call
+to <TT>nm_so_pack(...)</TT> and <TT>nm_so_end_pack(...)</TT>, as it
+may modify the message contents. To overcome this restriction, a call
+to the function <TT>nm_so_flush_packs(...)</TT> will only return once
+ongoing send requests have completed. Similarly, on the receiving
+side, the extraction of the data may be defered until the call
+to <TT>nm_so_end_unpacking(...)</TT>. A call
+to <TT>nm_so_flush_unpacks(...)</TT> will insure previously requested
+data are available.
+</P>
+
+</SUBSUBSECTION>
+
+</SUBSECTION>
 
 <SUBSUBSECTION TITLE="The MPI interface">
 <P>

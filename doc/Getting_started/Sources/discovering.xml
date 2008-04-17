@@ -948,13 +948,13 @@ on. Any machine you have access to can do it as well!
 NewMadeleine provides two API's : a send/receive interface similar to
 the point-to-point communication interface in MPI and a pack/unpack
 interface similar to the one provided by Madeleine. Programs
-<REF LABEL="prog:hello"/> and <REF LABEL="prog:srhello"/> show
+<REF LABEL="prog:nmHello"/> and <REF LABEL="prog:nmSrhello"/> show
 minimal NewMadeleine programs. You can compile and execute them.
 </P>
 
 <PROGRAM FILE="./Progs/compileNmad.txt"/>
-<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface" LABEL="prog:hello"/>
-<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface" LABEL="prog:srhello"/>
+<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface" LABEL="prog:nmHello"/>
+<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface" LABEL="prog:nmSrhello"/>
 
 <SUBSUBSECTION TITLE="Initialisation and termination">
 
@@ -969,7 +969,7 @@ bootstrap mechanism.
 </P>
 
 <P>
-Programs <REF LABEL="prog:hello"/> and <REF LABEL="prog:srhello"/> use
+Programs <REF LABEL="prog:nmHello"/> and <REF LABEL="prog:nmSrhello"/> use
 this interface, but there is no requirement to do so. Users can choose
 to ignore this interface and start their applications <EM>by
     hand</EM>. One just need to make sure the different internal

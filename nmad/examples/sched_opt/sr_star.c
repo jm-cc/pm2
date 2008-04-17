@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "helper.h"
+#include <nm_so_util.h>
 
 //#define STAR_DEBUG
 #define PRINT(str, ...)		fprintf(stderr, "[%d] " str "\n", rank, ## __VA_ARGS__)
@@ -28,10 +29,12 @@
 int main(int argc, char **argv) {
   int numtasks;
   int rank;
+  struct nm_so_interface *sr_if            = NULL;
 
   nm_so_init(&argc, argv);
   nm_so_get_rank(&rank);
   nm_so_get_size(&numtasks);
+  nm_so_get_sr_if(&sr_if);
 
   if (rank == 0) {
     int child;

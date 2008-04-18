@@ -33,12 +33,12 @@ int main(int argc, char **argv) {
   float buffer[2], r_buffer[2];
   nm_so_request out_request;
   nm_so_request in_request;
+  struct nm_so_interface *sr_if            = NULL;
 
   nm_so_init(&argc, argv);
+  nm_so_get_sr_if(&sr_if);
   nm_so_get_rank(&rank);
   nm_so_get_size(&numtasks);
-
-  PRINT("");
 
   if (rank == 0) {
     dest = 1;
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     nm_so_sr_irecv(sr_if, gate, tag, r_buffer, 2*sizeof(float), &in_request);
     nm_so_sr_rwait(sr_if, in_request);
 
-    fprintf(stdout, "Message [%f,%f]\n", r_buffer[0], r_buffer[1]);
+    PRINT("Message [%f,%f]\n", r_buffer[0], r_buffer[1]);
   }
   else {
     source = rank - 1;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     else {
       dest = rank + 1;
     }
-
+    
     nm_so_get_gate_in_id(source, &gate);
     PRINT("receiving from node %d, gate %d", source, gate);
     nm_so_sr_irecv(sr_if, gate, tag, buffer, 2*sizeof(float), &in_request);

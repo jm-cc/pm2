@@ -68,9 +68,7 @@ for clusters and clusters of clusters presented in the following sections.
 
 <SUBSECTION TITLE="Runtime Systems">
 
-<SUBSUBSECTION>
-<TITLE><MU/>PM2</TITLE>
-
+<SUBSUBSECTION><TITLE><MU/>PM2</TITLE>
 <P>
 <MU/>PM2 is a low level generic runtime system which integrates
 multithreading management, communication management and elementary
@@ -80,37 +78,13 @@ implementation is somewhat a software glue in-between the Marcel and
 Madeleine libraries and a iso-address memory management module. The PM2
 environment was rewritten to rely exclusively on this runtime system.
 </P>
-
 </SUBSUBSECTION>
 
 </SUBSECTION>
 
 <SUBSECTION TITLE="Communication Libraries">
 
-<SUBSUBSECTION TITLE="NewMadeleine">
-
-<P>
-NewMadeleine is a complete redesign and rewrite of Madeleine. The new
-architecture aims at enabling the use of a much wider range of
-communication flow optimization techniques. It is entirely modular: The
-request scheduler itself is interchangeable, allowing experimentations
-with multiple approaches or on multiple issues with regard to
-processing communication flows. In particular we implemented an
-optimizing scheduler called SchedOpt. SchedOpt targets applications
-with irregular, multi-flow communication schemes such as found in the
-increasingly common application conglomerates made of multiple
-programming environments and coupled pieces of code, for instance.
-SchedOpt itself is easily extensible through the concepts of
-optimization strategies  (what to optimize for, what the optimization
-goal is) expressed in terms of tactics (how to optimize to reach the
-optimization goal). Tactics themselves are made of basic communication
-flows operations such as packet merging or reordering.
-</P>
-
-</SUBSUBSECTION>
-
 <SUBSUBSECTION TITLE="Madeleine">
-
 <P>
 Madeleine is a communication multi-cluster library which implements a
 concept of communication channel that can be either physical (an
@@ -129,11 +103,9 @@ and runs on the following architectures: Linux/IA32, Linux/Alpha,
 Linux/Sparc, Linux/PowerPC, Solaris/Sparc, Solaris/IA32, AIX/PowerPC,
 WindowsNT/IA32.
 </P>
-
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="MPICH-Madeleine">
-
 <P>
 MPICH-Madeleine is an implementation of the MPI (Message Passing
 Interface) communication standard. This standard is widely used in
@@ -146,6 +118,26 @@ technologies thanks to a well defined layered architecture.
 <P>
 To have more information about MPICH-Madeleine, please consult the
 following URL: <URL>http://runtime.futurs.inria.fr/mpi/</URL>.
+</P>
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="NewMadeleine">
+<P>
+NewMadeleine is a complete redesign and rewrite of Madeleine. The new
+architecture aims at enabling the use of a much wider range of
+communication flow optimization techniques. It is entirely modular: The
+request scheduler itself is interchangeable, allowing experimentations
+with multiple approaches or on multiple issues with regard to
+processing communication flows. In particular we implemented an
+optimizing scheduler called SchedOpt. SchedOpt targets applications
+with irregular, multi-flow communication schemes such as found in the
+increasingly common application conglomerates made of multiple
+programming environments and coupled pieces of code, for instance.
+SchedOpt itself is easily extensible through the concepts of
+optimization strategies  (what to optimize for, what the optimization
+goal is) expressed in terms of tactics (how to optimize to reach the
+optimization goal). Tactics themselves are made of basic communication
+flows operations such as packet merging or reordering.
 </P>
 </SUBSUBSECTION>
 
@@ -168,12 +160,10 @@ receiving data based on derived datatypes.
 <P>
 To have more information about Mad-MPI, please consult the following
 URL: <URL>http://runtime.futurs.inria.fr/MadMPI/</URL>
-
 </P>
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="PadicoTM">
-
 <P>
 PadicoTM is a communication framework for grids, built upon Madeleine. It is able to make a large spectrum of middleware systems (MPI, CORBA, JXTA, SOAP, HLA, JVM, etc.) work over Madeleine.
 </P>
@@ -187,7 +177,6 @@ To have more information about PadicoTM, please consult the following URL: <URL>
 <SUBSECTION TITLE="Multithreading Libraries">
 
 <SUBSUBSECTION TITLE="Marcel">
-
 <P>
  Marcel is a thread library that provides a POSIX-compliant interface
  and a set of original extensions. It can also be compiled to provide
@@ -224,7 +213,6 @@ queries.
 <P>
 To have more information about PIOMan, please consult the following URL: <URL>http://runtime.futurs.inria.fr/pioman/</URL>
 </P>
-
 </SUBSUBSECTION>
 
 <IGNORE>

@@ -665,6 +665,24 @@ You can now compile and execute a sample Madeleine application.
 
 </SUBSECTION>
 
+<SUBSECTION TITLE="Compiling your first NewMadeleine program">
+
+<WARNING>
+  <EM>
+  Please, make sure that your flavor is actually set to <TT>nmad-mpi</TT>:
+  </EM>
+
+  <PROGRAM FILE="./Progs/setNmadFlavor.txt"/>
+</WARNING>
+
+<P>
+You can now compile and execute a sample NewMadeleine application.
+</P>
+
+<PROGRAM FILE="./Progs/checkPm2-4.txt"/>
+
+</SUBSECTION>
+
 <SUBSECTION TITLE="Solving problems">
 
 <P>

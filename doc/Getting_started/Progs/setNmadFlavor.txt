@@ -1,0 +1,1 @@
+ravel% setenv PM2_FLAVOR nmad-mpi

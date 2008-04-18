@@ -48,9 +48,11 @@ If you have any questions concerning PM2, please, send an email to
 
 <SECTION TITLE="Customizing and debugging PM2" FILE="./Sources/customizing.xml" LABEL="customizing" NEWPAGE="true"/>
 
+<!--
 <SECTION TITLE="Mastering PM2" FILE="./Sources/mastering.xml" LABEL="mastering" NEWPAGE="true"/>
 
 <SECTION TITLE="Wizarding PM2: advanced features" FILE="./Sources/wizarding.xml" LABEL="wizarding" NEWPAGE="true"/>
+-->
 
 <SECTION TITLE="Additional PM2 material" FILE="./Sources/appendicing.xml" LABEL="appendicing" NEWPAGE="true"/>
 

@@ -3,6 +3,7 @@
 
 <TEXT>
 
+<IGNORE>
 <SUBSECTION TITLE="Using a standard main" LABEL="sec:tradimain">
 
 <NOTE>
@@ -22,6 +23,7 @@ this unless explicitly required.
 </P>
 
 </SUBSECTION>
+</IGNORE>
 
 <SUBSECTION TITLE="Synopsis of PM2 scripts" LABEL="sec:scripts">
 

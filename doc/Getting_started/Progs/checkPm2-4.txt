@@ -1,0 +1,24 @@
+% cd ${PM2_ROOT}/nmad/examples/sched_opt
+% make clean
+% make sr_ping
+...
+<<< Generating libraries: done
+    building sr_ping.o
+    linking sr_ping
+% pm2-conf ravel debussy faure
+The current PM2 configuration contains 3 host(s) :
+0 : ravel
+1: debussy
+2: faure
+% pm2-load sr_ping
+##### ravel
+##### debussy
+##### faure
+[2] receiving from node 1, gate 1
+[1] receiving from node 0, gate 0
+[0] sending to node 1, gate 0
+[0] receiving from node 2, gate 1
+[1] sending to node 2, gate 1
+[2] sending to node 0, gate 0
+[0] Message [12.450000,3.140000]
+%

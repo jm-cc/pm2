@@ -1804,13 +1804,12 @@ int MPI_Waitany(int count,
   while (1) {
     count_null = 0;
     for(i=0 ; i<count ; i++) {
-            /*      MPI_Request request = array_of_requests[i];*/
       mpir_request_t *mpir_request = (mpir_request_t *)(&(array_of_requests[i]));
       if (mpir_request->request_type == MPI_REQUEST_ZERO) {
         count_null++;
         continue;
       }
-      err = MPI_Test(&array_of_requests[i], &flag, status);
+      err = MPI_Test(&(array_of_requests[i]), &flag, status);
       if (flag) {
         *rqindex = i;
 
@@ -1833,7 +1832,6 @@ int MPI_Test(MPI_Request *request,
   int             err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
-
   err = mpir_test(&mpir_internal_data, mpir_request);
 
   if (err == NM_ESUCCESS) {
@@ -1859,6 +1857,7 @@ int MPI_Testany(int count,
                 int *flag,
                 MPI_Status *status) {
   int i, err = 0;
+  int count_inactive = 0;  
   mpir_request_t *mpir_request;
 
   MPI_NMAD_LOG_IN();
@@ -1866,9 +1865,10 @@ int MPI_Testany(int count,
   for(i=0 ; i<count ; i++) {
     mpir_request = (mpir_request_t *)&(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
-      *flag = 1;
-      goto out;
+      count_inactive++;
+      continue;
     }
+
     err = MPI_Test(&(array_of_requests[i]), flag, status);
     if (*flag == 1) {
       *rqindex = i;
@@ -1876,9 +1876,11 @@ int MPI_Testany(int count,
       return err;
     }
   }
- out:
-  *rqindex = MPI_UNDEFINED;
-
+  if (count_inactive == count){
+    *flag = 1;
+    *rqindex = MPI_UNDEFINED;
+  }
+  
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -2094,8 +2096,8 @@ int MPI_Startall(int count,
 
   MPI_NMAD_LOG_IN();
   for(i=0 ; i<count ; i++) {
-    MPI_Request request = array_of_requests[i];
-    err = MPI_Start(&request);
+          /*    MPI_Request request = array_of_requests[i];*/
+    err = MPI_Start(&(array_of_requests[i]));
     if (err != MPI_SUCCESS) {
       MPI_NMAD_LOG_OUT();
       return err;

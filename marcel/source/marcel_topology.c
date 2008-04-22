@@ -679,13 +679,6 @@ static void topo_discover(void) {
 	}
 #endif
 
-	/* Now we can put numbers on levels. */
-	for (l=0; l<marcel_topo_nblevels; l++)
-		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
-			marcel_topo_levels[l][i].number = i;
-			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
-		}
-
 	/* TODO: Brice will probably want the OS->VP function */
 
 	/* create the VP level: now we decide which CPUs we will really use according to nvp and stride */
@@ -706,7 +699,6 @@ static void topo_discover(void) {
 		unsigned oscpu = cpu;
 #endif
 		vp_level[i].type=MARCEL_LEVEL_VP;
-		vp_level[i].number=i;
 		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, oscpu);
 		marcel_vpset_vp(&vp_level[i].cpuset, oscpu);
 		marcel_vpset_set(&cpuset, oscpu);
@@ -762,12 +754,22 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++) {
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
 			marcel_topo_levels[l][i].cpuset &= cpuset;
+			mdebug("level %u,%u: cpuset becomes %"MA_VPSET_x"\n", l, i, marcel_topo_levels[l][i].cpuset);
 			if (!marcel_topo_levels[l][i].cpuset) {
-				marcel_topo_level_nbitems[l] = i;
-				break;
+				mdebug("became empty, dropping it\n");
+				marcel_topo_level_nbitems[l]--;
+				memcpy(&marcel_topo_levels[l][i], &marcel_topo_levels[l][i+1], sizeof(marcel_topo_levels[l][i]) * (marcel_topo_level_nbitems[l]-i+1));
+				i--;
 			}
 		}
 	}
+
+	/* Now we can put numbers on levels. */
+	for (l=0; l<marcel_topo_nblevels; l++)
+		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
+			marcel_topo_levels[l][i].number = i;
+			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
+		}
 
 	/* And show debug again */
 	for (l=0; l<marcel_topo_nblevels; l++)
@@ -825,6 +827,8 @@ static void topo_discover(void) {
 			mdebug("level %u,%u: cpuset %"MA_VPSET_x" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
 		}
 	}
+	for (i=0; marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset; i++)
+		mdebug("level %u,%u: cpuset %"MA_VPSET_x" leaf\n",marcel_topo_nblevels-1,i,marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset);
 	mdebug("arity done.\n");
 
 	/* and finally connect levels */

@@ -68,12 +68,26 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=bubble_sched_spread \
 	--all=debug --all=gdb --all=noinline
 
-    register_flavor marcel-gomp \
+    register_flavor marcel-forestgomp-opt \
         --modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=smp_bind_proc \
 	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
-	--marcel=enable_stats --marcel=bubble_sched_spread \
+	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys
+
+    register_flavor marcel-forestgomp-debug \
+        --modules="marcel tbx init" $COMMON_OPTIONS \
+	--marcel=numa --marcel=smp_bind_proc \
+	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
+	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--all=debug --all=gdb --all=noinline
+
+    register_flavor marcel-forestgomp-fxtdebug \
+        --modules="marcel tbx init bubblelib bubbles profile" $COMMON_OPTIONS \
+	--marcel=numa --marcel=smp_bind_proc \
+	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
+	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
+	--profile=autostart \
+	--all=debug --all=gdb --all=noinline --all=profile
 
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" --all=debug --all=gdb $COMMON_OPTIONS

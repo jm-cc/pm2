@@ -226,30 +226,32 @@ EOF
 ) > $appli_file
 
 PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
-if [ "$OMP_NUM_THREADS" == "" ] ; then
-    env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}\""
-else
-    env="--env=\"LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} OMP_NUM_THREADS=$OMP_NUM_THREADS\""
+env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+if [ "$PM2_CONF_DIR" != "" ] ; then
+    env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+if [ "$OMP_NUM_THREADS" != "" ] ; then
+    env="$env OMP_NUM_THREADS=$OMP_NUM_THREADS"
 fi
 
 compile_leonie
 leonie="$LEONIE_ENV leonie"
 
 if [ -n "$debugger" ] ; then
-    $Show $leonie --wd=$PWD $env -d  $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show $leonie --wd=$PWD --env="\"$env\"" -d  $LEONIE_ARGS $appli_file $cmdLineArgs
 elif [ -n "$valgrind" ] ; then
     if [ -n "$log" ] ; then
-        $Show $leonie --wd=$PWD $env -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD --env="\"$env\"" -vg -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show $leonie --wd=$PWD $env -vg $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD --env="\"$env\"" -vg $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 elif [ -n "$MPI_NMAD_X" ] ; then
-    $Show $leonie --wd=$PWD $env $LEONIE_ARGS $appli_file $cmdLineArgs
+    $Show $leonie --wd=$PWD --env="\"$env\"" $LEONIE_ARGS $appli_file $cmdLineArgs
 else
     if [ -n "$log" ] ; then
-        $Show $leonie --wd=$PWD $env -l $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD --env="\"$env\"" -l $LEONIE_ARGS $appli_file $cmdLineArgs
     else
-        $Show $leonie --wd=$PWD $env --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
+        $Show $leonie --wd=$PWD --env="\"$env\"" --x --p $LEONIE_ARGS $appli_file $cmdLineArgs
     fi
 fi
 

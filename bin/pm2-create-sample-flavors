@@ -156,7 +156,8 @@ registering_flavors() {
 
     register_flavor pmarcel \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_static \
-	--marcel=smp --marcel=marcel_main --marcel=pmarcel
+	--marcel=smp --marcel=smp_bind_proc \
+	--marcel=marcel_main --marcel=pmarcel
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \

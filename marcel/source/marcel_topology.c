@@ -273,6 +273,8 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_levels[discovering_level++]=die_level;
 	}
 
+	/* TODO: here, parse /sys/devices/system/cpu/cpu* /cache/index* /shared_cpu_map */
+
 	struct marcel_topo_level *core_level;
 
 	if (numcores>1) {

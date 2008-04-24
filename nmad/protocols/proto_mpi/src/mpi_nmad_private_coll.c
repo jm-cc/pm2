@@ -129,6 +129,14 @@ void mpir_op_sum(void *invec,
       }
       break;
     }
+    case MPI_LONG : {
+      long *i_invec = (long *) invec;
+      long *i_inoutvec = (long *) inoutvec;
+      for(i=0 ; i<*len*2 ; i++) {
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    }
     default : {
       ERROR("Datatype %d for SUM Reduce operation", *type);
       break;

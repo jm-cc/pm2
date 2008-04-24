@@ -392,28 +392,39 @@ void mpi_waitany_(int *count,
 		  int *status,
 		  int *ierr) {
   int err = NM_ESUCCESS;
-  int i, flag;
+  int i, flag, count_null;
   MPI_Status _status;
 
   while(1) {
+    count_null = 0;
     for (i = 0; i < *count; i++) {
       MPI_Request *p_request = (void *)request[i];
-      MPI_Test(p_request, &flag, &_status);
-      if (flag) {
-	mpir_request_t *mpir_request = (mpir_request_t *)(&request);
-
-	mpir_request->request_type = MPI_REQUEST_ZERO;
-	*rqindex = i;
-
-	if (*status) {
-	  status[0] = _status.MPI_SOURCE;
-	  status[1] = _status.MPI_TAG;
-	  status[2] = _status.MPI_ERROR;
-	}
-
-	*ierr = err;
-	return;
+      if (p_request->request_type == MPI_REQUEST_ZERO) {
+        count_null ++;
       }
+      else {
+        MPI_Test(p_request, &flag, &_status);
+        if (flag) {
+          mpir_request_t *mpir_request = (mpir_request_t *)(&request);
+
+          mpir_request->request_type = MPI_REQUEST_ZERO;
+          *rqindex = i;
+
+          if (*status) {
+            status[0] = _status.MPI_SOURCE;
+            status[1] = _status.MPI_TAG;
+            status[2] = _status.MPI_ERROR;
+          }
+
+          *ierr = err;
+          return;
+        }
+      }
+    }
+    if (count_null == count) {
+      *rqindex = MPI_UNDEFINED;
+      *ierr = MPI_SUCCESS;
+      return;
     }
   }
 }
@@ -449,27 +460,35 @@ void mpi_testany_(int *count,
                   int *status,
 		  int *ierr) {
   int err = NM_ESUCCESS;
-  int i, _flag;
+  int i, _flag, count_null=0;
   MPI_Status _status;
 
   for (i = 0; i < *count; i++) {
     MPI_Request *p_request = (void *)array_of_requests[i];
-    err = MPI_Test(p_request, &_flag, &_status);
-    if (_flag) {
-      *rqindex = i;
-      *flag = _flag;
-      *ierr = MPI_SUCCESS;
+    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      count_null ++;
+    }
+    else {
+      err = MPI_Test(p_request, &_flag, &_status);
+      if (_flag) {
+        *rqindex = i;
+        *flag = _flag;
+        *ierr = MPI_SUCCESS;
 
-      if (*status) {
-	status[0] = _status.MPI_SOURCE;
-	status[1] = _status.MPI_TAG;
-	status[2] = _status.MPI_ERROR;
+        if (*status) {
+          status[0] = _status.MPI_SOURCE;
+          status[1] = _status.MPI_TAG;
+          status[2] = _status.MPI_ERROR;
+        }
+
+        return;
       }
-
-      return;
     }
   }
   *rqindex = MPI_UNDEFINED;
+  if (count_null == count) {
+    *flag = 1;
+  }
   *ierr = err;
 }
 
@@ -1817,11 +1836,11 @@ int MPI_Waitany(int count,
         return err;
       }
     }
-      if (count_null == count) {
-        *rqindex = MPI_UNDEFINED;
-        MPI_NMAD_LOG_OUT();
-        return MPI_SUCCESS;
-      }
+    if (count_null == count) {
+      *rqindex = MPI_UNDEFINED;
+      MPI_NMAD_LOG_OUT();
+      return MPI_SUCCESS;
+    }
   }
 }
 
@@ -1857,7 +1876,7 @@ int MPI_Testany(int count,
                 int *flag,
                 MPI_Status *status) {
   int i, err = 0;
-  int count_inactive = 0;  
+  int count_inactive = 0;
   mpir_request_t *mpir_request;
 
   MPI_NMAD_LOG_IN();
@@ -1876,11 +1895,12 @@ int MPI_Testany(int count,
       return err;
     }
   }
-  if (count_inactive == count){
-    *flag = 1;
+
+  if (count_inactive == count) {
     *rqindex = MPI_UNDEFINED;
+    *flag = 1;
   }
-  
+
   MPI_NMAD_LOG_OUT();
   return err;
 }

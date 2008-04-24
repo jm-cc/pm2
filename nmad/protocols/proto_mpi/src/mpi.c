@@ -2116,7 +2116,6 @@ int MPI_Startall(int count,
 
   MPI_NMAD_LOG_IN();
   for(i=0 ; i<count ; i++) {
-          /*    MPI_Request request = array_of_requests[i];*/
     err = MPI_Start(&(array_of_requests[i]));
     if (err != MPI_SUCCESS) {
       MPI_NMAD_LOG_OUT();

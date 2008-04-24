@@ -1896,8 +1896,8 @@ int MPI_Testany(int count,
     }
   }
 
+  *rqindex = MPI_UNDEFINED;
   if (count_inactive == count) {
-    *rqindex = MPI_UNDEFINED;
     *flag = 1;
   }
 

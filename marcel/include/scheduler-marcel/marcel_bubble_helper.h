@@ -19,35 +19,34 @@ enum counting_mode { ITERATIVE_MODE, RECURSIVE_MODE };
 
 #section marcel_functions
 #depend "scheduler/marcel_holder.h[types]"
-/* Calcule récursivement la charge d'une entité. Nécessite un appel préalable
-   à la méthode ma_bubble_synthesize_stats(). */
+/* Recusively computes the considered entity's load. 
+   A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
 
-/* Renvoie 1 si l'entité considérée est une graine ou une bulle ne contenant 
-   que des graines */
+/* Returns true if the considered entity is en seed or a bubble that only contains seeds */
 unsigned ma_is_a_seed(marcel_entity_t *);
 
-/* Gestion de ma_idle_scheduler */
+/* Activates/deactivates work-stealing algorithms */
 void marcel_bubble_activate_idle_scheduler();
 void marcel_bubble_deactivate_idle_scheduler();
 
-/* Fontions de comparaison de charges */
+/* Compares load attribute only */
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2);
 int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2);
 
-/* Fontions de comparaison d'affinity */
+/* Compares memory attraction only */
 int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 
-/* Fonctions de comparaison des deux */
+/* Compares load attribute and memory attraction */
 int decreasing_order_entity_both_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_both_compar(const void *_e1, const void *_e2);
 
-/* Fonctions du nombre de threads */
+/* Compares the number of threads*/
 int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2);
 int ma_increasing_order_threads_compar(const void *_e1, const void *_e2);
 
-/* Gestion des entités sur une runqueue */
+/* Handling threads on a runqueue */
 int ma_count_entities_on_rq(ma_runqueue_t *rq, enum counting_mode recursive);
 /* \e rq must be already locked because else entities may die under your hand.  */
 int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne);
@@ -57,7 +56,7 @@ int ma_count_threads_in_entity(marcel_entity_t *entity);
 
 #section marcel_macros
 
-/* Itère sur toutes les entités qui sont ordonnancées directement dans cette bubble */
+/* Iterates over every entity directly scheduled in bubble b */
 #define for_each_entity_scheduled_in_bubble_begin(e,b) \
 	list_for_each_entry(e,&b->heldentities, bubble_entity_list) { \
       if(e->sched_holder)\
@@ -68,7 +67,7 @@ int ma_count_threads_in_entity(marcel_entity_t *entity);
       } \
    }
 
-/* Itère sur toutes les entités contenues dans cette bubble */
+/* Iterates over all the entities contained in bubble b */
 #define for_each_entity_held_in_bubble(e,b) \
    list_for_each_entry(e,&b->heldentities, bubble_entity_list)
 

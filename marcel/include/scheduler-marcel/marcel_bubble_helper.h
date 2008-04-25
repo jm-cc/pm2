@@ -72,3 +72,6 @@ int ma_count_threads_in_entity(marcel_entity_t *entity);
 #define for_each_entity_held_in_bubble(e,b) \
    list_for_each_entry(e,&b->heldentities, bubble_entity_list)
 
+/* Iterates over every entity scheduled on the runqueue r */
+#define for_each_entity_scheduled_on_runqueue(e,r) \
+  list_for_each_entry(e, &rq->hold.sched_list, sched_list)

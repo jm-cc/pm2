@@ -20,14 +20,6 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_AFF_DEBUG 0
-
-#if MA_AFF_DEBUG
-#define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__);
-#else
-#define debug(fmt, ...) (void)0
-#endif
-
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
@@ -45,26 +37,26 @@ static void
 __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
 #if MA_AFF_DEBUG
   int k;
-  debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->sched);
+  bubble_sched_debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->sched);
   for (k = 0; k < ne; k++)
-    debug("[%p, %d]", e[k], e[k]->type);
-  debug("end)\n");
-  debug("names :\n(");
+    bubble_sched_debug("[%p, %d]", e[k], e[k]->type);
+  bubble_sched_debug("end)\n");
+  bubble_sched_debug("names :\n(");
   for (k = 0; k < ne; k++) {
     if (e[k]->type == MA_BUBBLE_ENTITY) {
-      debug("bubble, ");
+      bubble_sched_debug("bubble, ");
     }
     else if (e[k]->type == MA_THREAD_ENTITY) {
       marcel_task_t *t = ma_task_entity(e[k]);
-      debug("%s, ", t->name);
+      bubble_sched_debug("%s, ", t->name);
     }
     else if (e[k]->type == MA_THREAD_SEED_ENTITY) {
-      debug("thread_seed, ");
+      bubble_sched_debug("thread_seed, ");
     } else { 
-      debug("unknown!, ");
+      bubble_sched_debug("unknown!, ");
     }
   }
-  debug("end)\n");
+  bubble_sched_debug("end)\n");
 #endif /* MA_AFF_DEBUG */ 
 }
 
@@ -156,7 +148,7 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
   int arity = l[0]->arity;
 
   if (!arity) {
-    debug("__distribute_entities: done !arity\n");
+    bubble_sched_debug("__distribute_entities: done !arity\n");
     return;
   }
   
@@ -167,7 +159,7 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
       if (e[i]->type == MA_BUBBLE_ENTITY) {
 	marcel_bubble_t *b = ma_bubble_entity(e[i]);
 	if (!b->hold.nr_ready) { /* We don't pick empty bubbles */         
-	  debug("bubble %p is empty\n",b);
+	  bubble_sched_debug("bubble %p is empty\n",b);
 	  continue;                     
 	}
       }
@@ -177,7 +169,7 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
       
       load_manager[0].load += nbthreads;
       ma_put_entity(e[i], &load_manager[0].l->sched.hold, state);
-      debug("%p on %s\n",e[i],load_manager[0].l->sched.name);
+      bubble_sched_debug("%p on %s\n",e[i],load_manager[0].l->sched.name);
       __rearrange_load_manager(load_manager, arity);
     }
   }
@@ -243,13 +235,13 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   int i, k;
   
   if (!arity) {
-    debug("done: !arity\n");
+    bubble_sched_debug("done: !arity\n");
     return;
   }
   
-  debug("count in __marcel_bubble__affinity\n");
+  bubble_sched_debug("count in __marcel_bubble__affinity\n");
   ne = ma_count_entities_on_rq(&l[0]->sched, ITERATIVE_MODE);
-  debug("ne = %d on runqueue %p\n", ne, &l[0]->sched);  
+  bubble_sched_debug("ne = %d on runqueue %p\n", ne, &l[0]->sched);  
 
   if (!ne) {
     for (k = 0; k < arity; k++)
@@ -257,7 +249,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
     return;
   }
 
-  debug("affinity found %d entities to distribute.\n", ne);
+  bubble_sched_debug("affinity found %d entities to distribute.\n", ne);
   
   load_indicator_t load_manager[arity];
   initialize_load_manager(load_manager, l);
@@ -265,7 +257,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   qsort(load_manager, arity, sizeof(load_manager[0]), &rq_load_compar);
 
   marcel_entity_t *e[ne];
-  debug("get in __marcel_bubble_affinity\n");
+  bubble_sched_debug("get in __marcel_bubble_affinity\n");
   ma_get_entities_from_rq(&l[0]->sched, e, ne);
 
   __debug_show_entities("__marcel_bubble_affinity", e, ne, l);
@@ -275,7 +267,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
       __distribute_entities(l, e, ne, load_manager);
     else {
       /* We really have to explode at least one bubble */
-      debug("We have to explode bubbles...\n");
+      bubble_sched_debug("We have to explode bubbles...\n");
       
       qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
       
@@ -301,7 +293,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	      bubble_has_exploded = 1; /* We exploded one bubble,
 					  it may be enough ! */
 	    for_each_entity_scheduled_in_bubble_end()
-	    debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
+	    bubble_sched_debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
 	}
 	else
 	  continue; 
@@ -317,7 +309,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
       }
 	  
       if (!new_ne) {
-	debug( "done: !new_ne\n");
+	bubble_sched_debug( "done: !new_ne\n");
 	return;
       }
       
@@ -332,7 +324,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  if (bb->hold.nr_ready) { 
-	    debug("exploding bubble %p\n", bb);
+	    bubble_sched_debug("exploding bubble %p\n", bb);
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_e[j++] = ee;
 	      bubble_has_exploded = 1;
@@ -351,7 +343,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   }
   else { /* ne >= nvp */ 
     /* We can delay bubble explosion ! */
-    debug("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
+    bubble_sched_debug("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
     __distribute_entities(l, e, ne, load_manager);
   }
   
@@ -365,7 +357,7 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   unsigned vp;
   marcel_entity_t *e = &b->sched;
   
-  debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
+  bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats(b);
   ma_preempt_disable();
@@ -397,7 +389,7 @@ affinity_sched_init() {
 
 int
 affinity_sched_exit() {
-  debug("Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
+  bubble_sched_debug("Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
   return 0;
 }
 
@@ -439,7 +431,7 @@ ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
 int
 ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
   marcel_entity_t *upper_entity = ma_get_upper_ancestor(e, common_rq);
-  debug("ma_redistribute : upper_entity = %p\n", upper_entity);
+  bubble_sched_debug("ma_redistribute : upper_entity = %p\n", upper_entity);
   if (upper_entity->type == MA_BUBBLE_ENTITY) {
     marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
     __ma_bubble_gather(upper_bb, upper_bb);
@@ -545,13 +537,13 @@ see_down(struct marcel_topo_level *level,
 	 struct marcel_topo_level *me, 
 	 unsigned from_vp) {
   if (!level) {
-    debug("down done");
+    bubble_sched_debug("down done");
     return 0;
   }
   
   int i = 0, n = level->arity;
 
-  debug("see_down from %d %d\n", level->type, level->number);
+  bubble_sched_debug("see_down from %d %d\n", level->type, level->number);
   
   if (me) {
     /* Avoid me if I'm one of the children */
@@ -569,7 +561,7 @@ see_down(struct marcel_topo_level *level,
     }
   }
   
-  debug("down done\n");
+  bubble_sched_debug("down done\n");
   
   return 0;
 }
@@ -577,9 +569,9 @@ see_down(struct marcel_topo_level *level,
 int 
 see_up(struct marcel_topo_level *level, unsigned from_vp) {
   struct marcel_topo_level *father = level->father;
-  debug("see_up from %d %d\n", level->type, level->number);
+  bubble_sched_debug("see_up from %d %d\n", level->type, level->number);
   if (!father) {
-    debug("up done\n");
+    bubble_sched_debug("up done\n");
     return 0;
   }
   
@@ -641,7 +633,7 @@ affinity_steal(unsigned from_vp) {
     return 0;
   }
   
-  debug("===[Processor %u is idle]===\n", from_vp);
+  bubble_sched_debug("===[Processor %u is idle]===\n", from_vp);
 
   if (father)
     arity = father->arity;
@@ -659,14 +651,14 @@ affinity_steal(unsigned from_vp) {
   ma_write_unlock(&ma_idle_scheduler_lock);
   
   if (smthg_to_steal) { 
-    debug("We successfuly stole one or several entities !\n");
+    bubble_sched_debug("We successfuly stole one or several entities !\n");
     last_succeeded_steal = marcel_clock();
     succeeded_steals++;
     return 1;
   }
 
   last_failed_steal = marcel_clock();
-  debug("We didn't manage to steal anything !\n");
+  bubble_sched_debug("We didn't manage to steal anything !\n");
   failed_steals++;
   return 0;
 }

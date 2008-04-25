@@ -41,7 +41,7 @@
 //#define HEAP_DEBUG
 
 int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
-        int err, i, idx_node;
+        int err, i, idx_node = 0;
         long long node_free_size, max_free_size = 0;
         long long node_hits, min_hits = LONG_MAX;
         unsigned long newnodemask[MARCEL_NBMAXNODES];

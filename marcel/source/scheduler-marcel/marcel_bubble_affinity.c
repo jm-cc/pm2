@@ -294,13 +294,13 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  marcel_entity_t *ee;
 	  
-	  if (bb->hold.nr_ready) /* If the bubble is not empty */ 
+	  if (bb->hold.nr_ready && (ma_entity_load(e[i]) != 1)) 
+	    /* If the bubble is not empty, and contains more than one thread */ 
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_ne++;
-	  bubble_has_exploded = 1; /* We exploded one bubble,
-				      it may be enough ! */
-	  for_each_entity_scheduled_in_bubble_end()
-	    
+	      bubble_has_exploded = 1; /* We exploded one bubble,
+					  it may be enough ! */
+	    for_each_entity_scheduled_in_bubble_end()
 	    debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
 	}
 	else
@@ -312,6 +312,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	  __distribute_entities(l, e, ne, load_manager);
 	  for (k = 0; k < arity; k++)
 	    __marcel_bubble_affinity(&l[0]->children[k]);
+	  return;
 	}
       }
 	  

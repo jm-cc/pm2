@@ -1167,6 +1167,7 @@ marcel_t __main_thread;
 
 /*************************set/getconcurrency**********************/
 /*The implementation shall use this as a hint, not a requirement.*/
+/* TODO: change the current number of VP? Quit hard to augment it... */
 static int concurrency = 0;
 DEF_MARCEL_POSIX(int, setconcurrency,(int new_level),(new_level),
 {

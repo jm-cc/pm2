@@ -452,7 +452,6 @@ void mpi_test_(int *request,
 /**
  * Fortran version for MPI_TESTANY
  */
-/* TODO : il est fait comme l'ancienne version C */
 void mpi_testany_(int *count,
                   int  array_of_requests[][MPI_REQUEST_SIZE],
                   int *rqindex,

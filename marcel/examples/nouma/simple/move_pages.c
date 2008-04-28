@@ -36,20 +36,22 @@ int main(int argc, char * argv[])
 	void * addr;
 	int node;
 	addr = malloc(sizeof(int));
-	int ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	int ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
 
 	return 0;
 }

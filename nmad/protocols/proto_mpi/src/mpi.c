@@ -399,13 +399,13 @@ void mpi_waitany_(int *count,
     count_null = 0;
     for (i = 0; i < *count; i++) {
       MPI_Request *p_request = (void *)request[i];
-      if (p_request->request_type == MPI_REQUEST_ZERO) {
+      mpir_request_t *mpir_request = (mpir_request_t *)(&request);
+      if (mpir_request->request_type == MPI_REQUEST_ZERO) {
         count_null ++;
       }
       else {
         MPI_Test(p_request, &flag, &_status);
         if (flag) {
-          mpir_request_t *mpir_request = (mpir_request_t *)(&request);
 
           mpir_request->request_type = MPI_REQUEST_ZERO;
           *rqindex = i;
@@ -421,7 +421,7 @@ void mpi_waitany_(int *count,
         }
       }
     }
-    if (count_null == count) {
+    if (count_null == *count) {
       *rqindex = MPI_UNDEFINED;
       *ierr = MPI_SUCCESS;
       return;
@@ -464,6 +464,7 @@ void mpi_testany_(int *count,
 
   for (i = 0; i < *count; i++) {
     MPI_Request *p_request = (void *)array_of_requests[i];
+    mpir_request_t *mpir_request = (mpir_request_t *)(&array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_null ++;
     }
@@ -485,7 +486,7 @@ void mpi_testany_(int *count,
     }
   }
   *rqindex = MPI_UNDEFINED;
-  if (count_null == count) {
+  if (count_null == *count) {
     *flag = 1;
   }
   *ierr = err;

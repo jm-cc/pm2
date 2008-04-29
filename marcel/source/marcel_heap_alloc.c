@@ -311,7 +311,7 @@ void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 			while(IS_HEAP(current_heap->next_heap)) {
 				current_heap = current_heap->next_heap;
 			}
-			if(ma_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)NULL) {
+			if(ma_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)0) {
 				valid = 1;
 				DEBUG_PRINT("ma_aconcat_global link %p with %p\n",hsrc,htgt);
 				//DEBUG_LIST("ma_aconcat_global\n",hsrc);
@@ -334,7 +334,7 @@ void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 			while(IS_HEAP(current_heap->next_same_heap)) {
 				current_heap = current_heap->next_same_heap;
 			}
-			if(ma_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)NULL) {
+			if(ma_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)0) {
 				valid = 1;
 				DEBUG_PRINT("ma_aconcat_local link %p with %p\n",hsrc,htgt);
 				//DEBUG_LIST("ma_aconcat_local\n",hsrc);

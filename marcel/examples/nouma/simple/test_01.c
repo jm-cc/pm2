@@ -12,13 +12,12 @@ marcel_bubble_t b0;
 
 marcel_t *threads;
 marcel_barrier_t barrier;
-marcel_barrier_t allbarrier;
+marcel_barrier_t startbarrier;
 marcel_cond_t cond;
 marcel_mutex_t mutex;
 
 struct timeval start, finish;
 
-int started = 0;
 int finished = 0;
 
 any_t alloc(any_t arg) {
@@ -28,7 +27,6 @@ any_t alloc(any_t arg) {
 
   marcel_fprintf(stderr,"launched for i %d\n", id);
 
-  marcel_barrier_wait(&allbarrier);
   data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 
   marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, id, data);
@@ -37,11 +35,7 @@ any_t alloc(any_t arg) {
   /* ready for main */
   marcel_barrier_wait(&barrier);
   //marcel_start_remix();
-  if (id == 1) {
-    started = 1;
-    marcel_cond_signal(&cond);
-    marcel_fprintf(stderr,"signal thread\n");
-  }
+  marcel_barrier_wait(&startbarrier);
 
   int load = *marcel_stats_get(MARCEL_SELF, load);
 
@@ -78,7 +72,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   marcel_barrier_init(&barrier, NULL, NB_THREADS);
-  marcel_barrier_init(&allbarrier, NULL, NB_THREADS + 1);
+  marcel_barrier_init(&startbarrier, NULL, NB_THREADS + 1);
   marcel_cond_init(&cond, NULL);
   marcel_mutex_init(&mutex, NULL);
 
@@ -106,14 +100,9 @@ int main(int argc, char *argv[]) {
   marcel_start_playing();
   //marcel_bubble_badspread(&b0, marcel_topo_level(2,0), 0);
 
-  /* threads places */
-  marcel_barrier_wait(&allbarrier);
-
   /* commencer par les threads */
-  if (!started) {
-    marcel_fprintf(stderr,"waiting for threads to start\n");
-    marcel_cond_wait(&cond, &mutex);
-  }
+  marcel_fprintf(stderr,"waiting for threads to start\n");
+  marcel_barrier_wait(&startbarrier);
   gettimeofday(&start, NULL);
   
   /* attente de liberation */
@@ -127,7 +116,7 @@ int main(int argc, char *argv[]) {
 
   /* destroy */
   marcel_barrier_destroy(&barrier);
-  marcel_barrier_destroy(&allbarrier);
+  marcel_barrier_destroy(&startbarrier);
   marcel_cond_destroy(&cond);
   marcel_mutex_destroy(&mutex);
 

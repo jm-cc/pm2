@@ -20,23 +20,23 @@ struct timeval start, finish;
 
 int finished = 0;
 
-any_t alloc(any_t foo) {
+any_t alloc(any_t arg) {
   void *data;
   int i;
-  int *id = (int *)foo;
+  int id = (intptr_t) arg;
 
-  marcel_fprintf(stderr,"launched for i %d\n", *id);
+  marcel_fprintf(stderr,"launched for i %d\n", id);
 
   marcel_barrier_wait(&allbarrier);
   data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 
-  marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, *id, data);
-  marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+  marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, id, data);
+  //  marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
 
   /* ready for main */
   marcel_barrier_wait(&barrier);
   //marcel_start_remix();
-  if (*id == 1) {
+  if (id == 1) {
     marcel_cond_signal(&cond);
   }
 
@@ -53,7 +53,7 @@ any_t alloc(any_t foo) {
 
   /* liberation */
   marcel_free_customized(data);
-  marcel_fprintf(stderr,"thread %p (%d) fait free -> data %p\n", MARCEL_SELF, *id, data);
+  marcel_fprintf(stderr,"thread %p (%d) fait free -> data %p\n", MARCEL_SELF, id, data);
 
   //   marcel_fprintf(stderr,"*\n");
   finished ++;
@@ -63,13 +63,12 @@ any_t alloc(any_t foo) {
     marcel_cond_signal(&cond);
   }
 
-  marcel_fprintf(stderr,"thread %p (%d) returns\n", MARCEL_SELF, *id);
+  marcel_fprintf(stderr,"thread %p (%d) returns\n", MARCEL_SELF, id);
   return NULL;
 }
 
 int main(int argc, char *argv[]) {
   int j;
-  int *ids;
   marcel_init(&argc,argv);
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -84,7 +83,6 @@ int main(int argc, char *argv[]) {
   marcel_bubble_init(&b0);
 
   threads = malloc(NB_THREADS * sizeof(marcel_t));
-  ids = malloc(NB_THREADS * sizeof(int));
   /* lancement des threads pour allouer */
   for(j=0 ; j<NB_THREADS ; j++) {
     marcel_attr_t attr;
@@ -94,8 +92,7 @@ int main(int argc, char *argv[]) {
     marcel_attr_setid(&attr,0);
     marcel_attr_setprio(&attr,0);
     marcel_attr_setname(&attr,"thread");
-    ids[j] = j;
-    marcel_create(&t, &attr, alloc, (any_t)&(ids[j]));
+    marcel_create(&t, &attr, alloc, (any_t) (intptr_t) j);
     *marcel_stats_get(t, load) = 1000;
   }
 

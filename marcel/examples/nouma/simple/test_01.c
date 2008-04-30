@@ -18,6 +18,7 @@ marcel_mutex_t mutex;
 
 struct timeval start, finish;
 
+int started = 0;
 int finished = 0;
 
 any_t alloc(any_t arg) {
@@ -31,13 +32,15 @@ any_t alloc(any_t arg) {
   data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 
   marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, id, data);
-  //  marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+  //marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
 
   /* ready for main */
   marcel_barrier_wait(&barrier);
   //marcel_start_remix();
   if (id == 1) {
+    started = 1;
     marcel_cond_signal(&cond);
+    marcel_fprintf(stderr,"signal thread\n");
   }
 
   int load = *marcel_stats_get(MARCEL_SELF, load);
@@ -63,7 +66,7 @@ any_t alloc(any_t arg) {
     marcel_cond_signal(&cond);
   }
 
-  marcel_fprintf(stderr,"thread %p (%d) returns\n", MARCEL_SELF, id);
+  marcel_fprintf(stderr,"thread %p (%d) returns and %d are finished\n", MARCEL_SELF, id, finished);
   return NULL;
 }
 
@@ -92,7 +95,7 @@ int main(int argc, char *argv[]) {
     marcel_attr_setid(&attr,0);
     marcel_attr_setprio(&attr,0);
     marcel_attr_setname(&attr,"thread");
-    marcel_create(&t, &attr, alloc, (any_t) (intptr_t) j);
+    marcel_create(&t, &attr, alloc, (any_t) (intptr_t) (j+1));
     *marcel_stats_get(t, load) = 1000;
   }
 
@@ -107,11 +110,16 @@ int main(int argc, char *argv[]) {
   marcel_barrier_wait(&allbarrier);
 
   /* commencer par les threads */
-  marcel_cond_wait(&cond, &mutex);
+  if (!started) {
+    marcel_fprintf(stderr,"waiting for threads to start\n");
+    marcel_cond_wait(&cond, &mutex);
+  }
   gettimeofday(&start, NULL);
-
+  
   /* attente de liberation */
-  marcel_cond_wait(&cond, &mutex);
+  if (finished != NB_THREADS) {
+    marcel_cond_wait(&cond, &mutex);
+  }
   gettimeofday(&finish, NULL);
 
   long time = (1000000 * finish.tv_sec + finish.tv_usec) - (1000000 * start.tv_sec + start.tv_usec);

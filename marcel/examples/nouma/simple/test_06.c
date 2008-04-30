@@ -92,7 +92,7 @@ any_t alloc(any_t foo) {
 	/* ready for main */
 
 	marcel_barrier_wait(&barrier);
-	marcel_start_remix();
+	//marcel_start_remix();
 	if (id == 1)
 	{
 		marcel_cond_signal(&cond);
@@ -126,7 +126,7 @@ any_t alloc(any_t foo) {
 	
 	if (finished == 18)
 	{
-		marcel_stop_remix();
+	  //marcel_stop_remix();
 		marcel_cond_signal(&cond);
 	}
 	return NULL;

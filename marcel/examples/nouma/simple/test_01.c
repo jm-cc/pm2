@@ -23,20 +23,20 @@ int finished = 0;
 any_t alloc(any_t foo) {
   void *data;
   int i;
-  int id = (intptr_t)foo;
+  int *id = (int *)foo;
 
-  marcel_fprintf(stderr,"launched for i %d\n", id);
+  marcel_fprintf(stderr,"launched for i %d\n", *id);
 
   marcel_barrier_wait(&allbarrier);
   data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 
-  marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, id, data);
+  marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, *id, data);
   marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
 
   /* ready for main */
   marcel_barrier_wait(&barrier);
   //marcel_start_remix();
-  if (id == 1) {
+  if (*id == 1) {
     marcel_cond_signal(&cond);
   }
 
@@ -53,7 +53,7 @@ any_t alloc(any_t foo) {
 
   /* liberation */
   marcel_free_customized(data);
-  marcel_fprintf(stderr,"thread %p (%d) fait free -> data %p\n", MARCEL_SELF, id, data);
+  marcel_fprintf(stderr,"thread %p (%d) fait free -> data %p\n", MARCEL_SELF, *id, data);
 
   //   marcel_fprintf(stderr,"*\n");
   finished ++;
@@ -63,7 +63,7 @@ any_t alloc(any_t foo) {
     marcel_cond_signal(&cond);
   }
 
-  marcel_fprintf(stderr,"thread %p (%d) returns\n", MARCEL_SELF, id);
+  marcel_fprintf(stderr,"thread %p (%d) returns\n", MARCEL_SELF, *id);
   return NULL;
 }
 
@@ -93,10 +93,7 @@ int main(int argc, char *argv[]) {
     marcel_attr_setid(&attr,0);
     marcel_attr_setprio(&attr,0);
     marcel_attr_setname(&attr,"thread");
-    marcel_create(&t,
-		  &attr,
-		  alloc,
-		  &j);
+    marcel_create(&t, &attr, alloc, (any_t)&j);
     *marcel_stats_get(t, load) = 1000;
   }
 

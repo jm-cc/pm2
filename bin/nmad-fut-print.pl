@@ -136,7 +136,7 @@ sub init_read_event($$$) {
 
     if (${$self}{'arch_word'} == 64) {
         $bh	= ${$bh_hash}{'user raw 64'};
-        die "unimplemented parsing routine for user raw 64 blocks\n";
+        ${$self}{'read_user_event'}	= \&read_user64_event;
     } else {
         $bh	= ${$bh_hash}{'user raw 32'};
         ${$self}{'read_user_event'}	= \&read_user32_event;
@@ -226,6 +226,76 @@ sub read_user32_event($$) {
             or die "read param: $!";
         ${$self}{'pos'}	+= 4;
         ($param)	= unpack "${$self}{swapl}", $buf;
+        ${$a}[$i]	= $param;
+    }
+
+    my $event	= {};
+    if (exists (${$self}{'time_offset'})) {
+    } else {
+        ${$self}{'time_offset'}	= $time->copy();
+    }
+
+    ${$event}{'time_stamp'}	= $time->copy();
+    ${$event}{'time'}		= $time->bsub(${$self}{'time_offset'});
+    ${$event}{'tid'}		= $tid;
+    ${$event}{'code'}		= $code;
+    ${$event}{'num'}		= $num;
+    ${$event}{'nb_params'}	= $nb_params;
+    ${$event}{'param_array'}	= $a;
+
+    ${$self}{'ev_event'}	= $event;
+    return $event;
+}
+
+# 64bit version of the event block parsing routine
+sub read_user64_event($$) {
+    my $self	= shift;
+    my $fh	= ${$self}{'file_handle'};
+    my $buf;
+
+    sysread $fh, $buf, 24
+        or die "sysread event: $!";
+    ${$self}{'pos'}	+= 24;
+    my @unpack_buf = unpack "${$self}{'swapl'}6", $buf;
+
+    my $time;
+    if (${$self}{'is_little_endian'}) {
+        $time = Math::BigInt->new($unpack_buf[1])->blsft(32)->badd($unpack_buf[0]);
+    } else {
+        $time = Math::BigInt->new($unpack_buf[0])->blsft(32)->badd($unpack_buf[1]);
+    }
+
+    my $tid;
+    if (${$self}{'is_little_endian'}) {
+        $tid = Math::BigInt->new($unpack_buf[3])->blsft(32)->badd($unpack_buf[2]);
+    } else {
+        $tid = Math::BigInt->new($unpack_buf[2])->blsft(32)->badd($unpack_buf[3]);
+    }
+    
+    my $code;
+    if (${$self}{'is_little_endian'}) {
+        $code = Math::BigInt->new($unpack_buf[5])->blsft(32)->badd($unpack_buf[4]);
+    } else {
+        $code = Math::BigInt->new($unpack_buf[4])->blsft(32)->badd($unpack_buf[5]);
+    }
+
+    my $nb_params	= ($code & 0xff) - 1;
+    my $num	= $code >> 8;
+
+    my $a	= [];
+    my $i;
+    for $i (0..$nb_params-1) {
+        sysread $fh, $buf, 8
+            or die "read param: $!";
+        ${$self}{'pos'}	+= 8;
+        my ($param_0, $param_1)	= unpack "${$self}{swapl}", $buf;
+	my $param;
+	if (${$self}{'is_little_endian'}) {
+		$param = Math::BigInt->new($param_1)->blsft(32)->badd($param_0);
+	} else {
+		$param = Math::BigInt->new($param_0)->blsft(32)->badd($param_1);
+	}
+
         ${$a}[$i]	= $param;
     }
 

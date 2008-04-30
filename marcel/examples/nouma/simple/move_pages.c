@@ -14,6 +14,7 @@
 #ifdef LINUX_SYS
 
 #ifndef __NR_move_pages
+#warning __NR_move_pages not defined
 
 #ifdef X86_64_ARCH
 #define __NR_move_pages 279

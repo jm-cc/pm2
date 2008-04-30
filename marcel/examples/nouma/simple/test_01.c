@@ -68,8 +68,8 @@ any_t alloc(any_t foo) {
 }
 
 int main(int argc, char *argv[]) {
-  int i;
   int j;
+  int *ids;
   marcel_init(&argc,argv);
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
   marcel_bubble_init(&b0);
 
   threads = malloc(NB_THREADS * sizeof(marcel_t));
+  ids = malloc(NB_THREADS * sizeof(int));
   /* lancement des threads pour allouer */
   for(j=0 ; j<NB_THREADS ; j++) {
     marcel_attr_t attr;
@@ -93,7 +94,8 @@ int main(int argc, char *argv[]) {
     marcel_attr_setid(&attr,0);
     marcel_attr_setprio(&attr,0);
     marcel_attr_setname(&attr,"thread");
-    marcel_create(&t, &attr, alloc, (any_t)&j);
+    ids[j] = j;
+    marcel_create(&t, &attr, alloc, (any_t)&(ids[j]));
     *marcel_stats_get(t, load) = 1000;
   }
 

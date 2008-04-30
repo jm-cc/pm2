@@ -152,6 +152,11 @@ registering_flavors() {
         --nmad=quality_of_service \
         --common=fortran_target_none
 
+    register_flavor nmad-open-mx \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
+	--puk=disable_output \
+	--nmad=sched_opt --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
+
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \
 	--ezflavor=gtk2

@@ -16,7 +16,7 @@ marcel_barrier_t startbarrier;
 marcel_cond_t cond;
 marcel_mutex_t mutex;
 
-struct timeval start, finish;
+tbx_tick_t t1, t2;
 
 int finished = 0;
 
@@ -66,6 +66,8 @@ any_t alloc(any_t arg) {
 
 int main(int argc, char *argv[]) {
   int j;
+  double temps;
+
   marcel_init(&argc,argv);
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -103,16 +105,16 @@ int main(int argc, char *argv[]) {
   /* commencer par les threads */
   marcel_fprintf(stderr,"waiting for threads to start\n");
   marcel_barrier_wait(&startbarrier);
-  gettimeofday(&start, NULL);
+  TBX_GET_TICK(t1);
   
   /* attente de liberation */
   if (finished != NB_THREADS) {
     marcel_cond_wait(&cond, &mutex);
   }
-  gettimeofday(&finish, NULL);
+  TBX_GET_TICK(t2);
 
-  long time = (1000000 * finish.tv_sec + finish.tv_usec) - (1000000 * start.tv_sec + start.tv_usec);
-  marcel_fprintf(stderr,"TIME %ld\n", time);
+  temps = TBX_TIMING_DELAY(t1, t2);
+  marcel_printf("time = %d usec\n", temps);
 
   /* destroy */
   marcel_barrier_destroy(&barrier);

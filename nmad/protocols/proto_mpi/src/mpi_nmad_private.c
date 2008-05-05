@@ -652,9 +652,9 @@ int mpir_isend_init(mpir_internal_data_t *mpir_internal_data,
       MPI_NMAD_TRACE("Reaching critical maximum sequence number in emission. Force completed mode\n");
       mpir_request->communication_mode = MPI_IS_COMPLETED;
     }
+    MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d) and seq %d\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, seq);
   }
 
-  MPI_NMAD_TRACE("Sending to %d with tag %d (%d, %d)\n", dest, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
   }

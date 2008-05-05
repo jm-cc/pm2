@@ -26,7 +26,6 @@
 
 #endif /* __NR_move_pages */
 
-
 int main(int argc, char * argv[])
 {
 	marcel_init(&argc,argv);
@@ -35,20 +34,20 @@ int main(int argc, char * argv[])
 #endif
 
 	void * addr;
-	int node;
+	int status;
 	addr = malloc(sizeof(int));
-	int ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);	
-	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, node %d\n", ret, node);
+	int ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+	ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
 
 #ifdef PROFILE
 	profile_stop();

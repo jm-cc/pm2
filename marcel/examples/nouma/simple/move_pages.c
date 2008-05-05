@@ -34,32 +34,32 @@ int move_pages(const pid_t pid, const unsigned long count,
 
 int main(int argc, char * argv[])
 {
-	marcel_init(&argc,argv);
+  marcel_init(&argc,argv);
 #ifdef PROFILE
-   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+  profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 
-        void* addr;
-	int status;
-	addr = malloc(sizeof(int));
-	int ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-	ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-	ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-	ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-	ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-	ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
-	fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
+  void* addr;
+  int status;
+  addr = malloc(sizeof(int));
+  int ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
+  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
 
 #ifdef PROFILE
-	profile_stop();
+  profile_stop();
 #endif
 
-	return 0;
+  return 0;
 }
 
 #endif

@@ -740,24 +740,26 @@ restart:
 	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
 #endif
-		if (!currq->hold.nr_ready)
+		if (!currq->hold.nr_ready) {
 			sched_debug("apparently nobody in %s\n",currq->name);
-		idx = ma_sched_find_first_bit(currq->active->bitmap);
-		if (idx < max_prio) {
-			sched_debug("found better prio %d in rq %s\n",idx,currq->name);
-			cur = NULL;
-			max_prio = idx;
-			nexth = &currq->hold;
-			/* let polling know that this context switch is urging */
-			hard_preempt = 1;
-		}
-		if (cur && need_resched && idx == prev_as_prio && idx < MA_IDLE_PRIO) {
-		/* still wanted to schedule prev, but it needs resched
-		 * and this is same prio
-		 */
-			sched_debug("found same prio %d in rq %s\n",idx,currq->name);
-			cur = NULL;
-			nexth = &currq->hold;
+		} else {
+			idx = ma_sched_find_first_bit(currq->active->bitmap);
+			if (idx < max_prio) {
+				sched_debug("found better prio %d in rq %s\n",idx,currq->name);
+				cur = NULL;
+				max_prio = idx;
+				nexth = &currq->hold;
+				/* let polling know that this context switch is urging */
+				hard_preempt = 1;
+			}
+			if (cur && need_resched && idx == prev_as_prio && idx < MA_IDLE_PRIO) {
+			/* still wanted to schedule prev, but it needs resched
+			 * and this is same prio
+			 */
+				sched_debug("found same prio %d in rq %s\n",idx,currq->name);
+				cur = NULL;
+				nexth = &currq->hold;
+			}
 		}
 #ifdef MA__LWPS
 	}

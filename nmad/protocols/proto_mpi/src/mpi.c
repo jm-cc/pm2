@@ -2104,6 +2104,8 @@ int MPI_Start(MPI_Request *request) {
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Start request\n");
 
+  mpir_request->request_type = mpir_request->request_persistent_type;
+
   err =  mpir_start(&mpir_internal_data, mpir_request);
 
   MPI_NMAD_LOG_OUT();

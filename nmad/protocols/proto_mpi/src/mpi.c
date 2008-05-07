@@ -1979,6 +1979,7 @@ int MPI_Cancel(MPI_Request *request) {
 
   MPI_NMAD_TRACE("Request is cancelled\n");
 
+  mpir_cancel(&mpir_internal_data, mpir_request);
   mpir_request->request_type = MPI_REQUEST_CANCELLED;
   if (mpir_request->contig_buffer != NULL) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);

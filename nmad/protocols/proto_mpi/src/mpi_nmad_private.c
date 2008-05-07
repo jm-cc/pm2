@@ -1572,12 +1572,14 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     MPI_NMAD_TRACE("Beginning of 1st phase.\n");
     global_nb_incoming_msg = mpir_internal_data->nb_incoming_msg;
     global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
+    MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
     for(i=1 ; i<global_size ; i++) {
       MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
       global_nb_incoming_msg += remote_counters[0];
       global_nb_outgoing_msg += remote_counters[1];
+      MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
     }
-    MPI_NMAD_TRACE("Counter [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
+    MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
 
     tbx_bool_t answer = tbx_true;
     if (global_nb_incoming_msg != global_nb_outgoing_msg) {
@@ -1596,13 +1598,15 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
       global_nb_incoming_msg = mpir_internal_data->nb_incoming_msg;
       global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
+      MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
       for(i=1 ; i<global_size ; i++) {
         MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
         global_nb_incoming_msg += remote_counters[0];
         global_nb_outgoing_msg += remote_counters[1];
+        MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
       }
 
-      MPI_NMAD_TRACE("Counter [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
+      MPI_NMAD_TRACE("Global counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
       answer = tbx_true;
       if (global_nb_incoming_msg != global_nb_outgoing_msg) {
         answer = tbx_false;
@@ -1622,6 +1626,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     local_counters[0] = mpir_internal_data->nb_incoming_msg;
     local_counters[1] = mpir_internal_data->nb_outgoing_msg;
     MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
+    MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
 
     MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
     if (answer == tbx_false) {
@@ -1633,6 +1638,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       local_counters[0] = mpir_internal_data->nb_incoming_msg;
       local_counters[1] = mpir_internal_data->nb_outgoing_msg;
       MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
+      MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
 
       MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
       return answer;

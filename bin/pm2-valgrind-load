@@ -56,11 +56,11 @@ done
 
 VALGRIND_OPTIONS=${PM2_VALGRIND_OPTIONS:--v -q --show-reachable=yes --leak-check=yes --db-attach=no}
 if [ "$PM2_XMODE" == on ] ; then
-    ${LEO_XTERM} -sl 10000 -title $title -e pm2-wrapper-valgrind valgrind --db-command="gdb -x $file -nw %f %p" $VALGRIND_OPTIONS $prog $save_args
+    ${LEO_XTERM} -sl 10000 -title $title -e pm2-wrapper-valgrind valgrind $VALGRIND_OPTIONS --db-command="gdb -x $file -nw %f %p" $prog $save_args
 elif [ "${PM2_LOGMODE}" == on ]; then
     pm2-logload valgrind $VALGRIND_OPTIONS $prog $save_args
 else
-    pm2-wrapper-valgrind valgrind --db-command="gdb -x $file -nw %f %p" $VALGRIND_OPTIONS $prog $save_args
+    pm2-wrapper-valgrind valgrind $VALGRIND_OPTIONS --db-command="gdb -x $file -nw %f %p" $prog $save_args
 fi
 
 rm -f $file

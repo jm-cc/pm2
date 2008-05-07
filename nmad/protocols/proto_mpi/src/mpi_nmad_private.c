@@ -1071,6 +1071,22 @@ int mpir_probe(mpir_internal_data_t *mpir_internal_data,
   return nm_so_sr_probe(mpir_internal_data->p_so_sr_if, gate_id, out_gate_id, tag);
 }
 
+int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
+                mpir_request_t *mpir_request) {
+  if (mpir_request->request_type == MPI_REQUEST_RECV) {
+    mpir_dec_nb_incoming_msg(mpir_internal_data);
+  }
+  else if (mpir_request->request_type == MPI_REQUEST_SEND) {
+    mpir_dec_nb_outgoing_msg(mpir_internal_data);
+  }
+  else {
+    MPI_NMAD_TRACE("Request type %d incorrect\n", mpir_request->request_type);
+  }
+
+  return MPI_SUCCESS;
+}
+
+
 /**
  * Gets the id of the next available datatype.
  */
@@ -1652,4 +1668,12 @@ void mpir_inc_nb_incoming_msg(mpir_internal_data_t *mpir_internal_data) {
 
 void mpir_inc_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data) {
   mpir_internal_data->nb_outgoing_msg ++;
+}
+
+void mpir_dec_nb_incoming_msg(mpir_internal_data_t *mpir_internal_data) {
+  //mpir_internal_data->nb_incoming_msg --;
+}
+
+void mpir_dec_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data) {
+  //mpir_internal_data->nb_outgoing_msg --;
 }

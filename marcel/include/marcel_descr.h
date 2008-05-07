@@ -272,6 +272,8 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 #else
 		self = ma_slot_sp_task(sp);
 #endif
+		/* Detect stack overflow. If you encounter
+		 * this, increase THREAD_SLOT_SIZE */
 		MA_BUG_ON(sp >= (unsigned long) self
 		    && sp < (unsigned long) (self + 1));
 	}

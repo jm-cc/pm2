@@ -36,6 +36,10 @@
 /* Alignment of marcel_t */
 #define MARCEL_ALIGN		64
 
+/* Size of stacks, must be a power of two, and be at least twice as much
+ * as PTHREAD_STACK_MIN */
+/* #define MARCEL_THREAD_SLOT_SIZE 0x10000 */
+
 /* Room for per-something variables */
 #define MA_PER_LWP_ROOM		32768
 #define MA_PER_LEVEL_ROOM	4096

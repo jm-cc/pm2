@@ -17,25 +17,32 @@
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
+#include <marcel_config.h>
+
 /* SLOT_AREA_TOP doit être un multiple de THREAD_SLOT_SIZE
  * et THREAD_SLOT_SIZE doit être une puissance de deux */
 
+// TOFIX
 #define ISOADDR_PAGES                 (128*1024)
-/* Attention : ASM_THREAD_SLOT_SIZE redéfini pour certaines archis */
 /* Warning: ASM_THREAD_SLOT_SIZE must be a power of two, and be at least twice
  * as much as PTHREAD_STACK_MIN */
-/* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisÃ©e
-   dans un source assembleur */
-#if defined(PPC_ARCH)
-  #define ASM_THREAD_SLOT_SIZE          (0x40000) /* 256 KB */
+
+#if MARCEL_THREAD_SLOT_SIZE
+  #define ASM_THREAD_SLOT_SIZE MARCEL_THREAD_SLOT_SIZE
 #else
-  #if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS) && !defined(PM2VALGRIND)) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
-    #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
+/* Note: for x86_64 with TLS or valgrind, we have to restrict to 32bit, thus
+ * the same stack size as for x86_32 */
+  #if defined(PPC_ARCH)
+    #define ASM_THREAD_SLOT_SIZE          (0x40000) /* 256 KB */
   #else
-    #ifdef MA__LIBPTHREAD
-      #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+    #if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS) && !defined(PM2VALGRIND)) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
+      #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
     #else
-      #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
+      #ifdef MA__LIBPTHREAD
+        #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+      #else
+        #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
+      #endif
     #endif
   #endif
 #endif

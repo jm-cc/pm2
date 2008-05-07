@@ -594,6 +594,8 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
       TBX_FAILURE("Reception type failed");
     }
 
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC completed : tag = %d, request = %p\n", tag, &any_src[tag].status);
+
     nm_so_post_all(p_core);
     nmad_unlock();
     NM_SO_SR_LOG_OUT();
@@ -621,7 +623,8 @@ irecv_with_ref(struct nm_so_interface *p_so_interface,
     }
 
     p_sr_gate->status[tag][seq].ref = ref;
-    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d\n", tag, seq, gate_id);
+    NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate_id = %d request %p\n", tag, seq, gate_id,
+                         &p_sr_gate->status[tag][seq].status);
 
     if (reception_type == datatype_transfer) {
       struct DLOOP_Segment *segp = data_description;
@@ -712,6 +715,9 @@ nm_so_sr_rtest(struct nm_so_interface *p_so_interface,
 {
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
+
+  NM_SO_SR_TRACE("request %p completion = %d\n", request.status,
+  		 nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED));
 
   if(nm_so_cond_test(request.status, NM_SO_STATUS_RECV_COMPLETED)) {
     rc = NM_ESUCCESS;
@@ -807,14 +813,15 @@ nm_so_sr_get_size(struct nm_so_interface *p_so_interface,
   p_so_gate = p_gate->sch_private;
   p_so_sched =  p_so_gate->p_so_sched;
 
-  NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %ld\n", tag, request->seq, request->gate_id);
-
   if (is_any_source) {
     *size = p_so_sched->any_src[tag].expected_len;
   }
   else {
     *size = p_so_gate->recv[tag][request->seq].unpack_here.expected_len;
   }
+
+  NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %ld --> %d\n", tag, request->seq, request->gate_id, *size);
+
   return NM_ESUCCESS;
 }
 
@@ -1088,6 +1095,7 @@ int nm_so_sr_unpack_success(struct nm_gate *p_gate,
     list_add_tail(&ref_link->link, &completed_rreq);
   }
 
+  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -1132,12 +1140,12 @@ nm_so_sr_progress(struct nm_so_interface *p_so_interface)
 {
   /* We assume that PIOMan makes the communications progress */
 #ifndef PIOMAN
-  struct nm_core *p_core = p_so_interface->p_core;
   NM_SO_SR_LOG_IN();
+  struct nm_core *p_core = p_so_interface->p_core;
   nm_schedule(p_core);
+  NM_SO_SR_LOG_OUT();
 #endif
 
-  NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
 

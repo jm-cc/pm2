@@ -392,6 +392,12 @@ int mpir_probe(mpir_internal_data_t *mpir_internal_data,
 	       nm_gate_id_t *out_gate_id,
 	       int tag);
 
+/**
+ * Cancels a request.
+ */
+int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
+                mpir_request_t *mpir_request);
+
 /* Datatype functionalities */
 
 /**
@@ -664,6 +670,18 @@ void mpir_inc_nb_incoming_msg(mpir_internal_data_t *mpir_internal_data);
  * used for termination detection.
  */
 void mpir_inc_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data);
+
+/**
+ * Decreases by one the counter of incoming messages. The counter is
+ * used for termination detection.
+ */
+void mpir_dec_nb_incoming_msg(mpir_internal_data_t *mpir_internal_data);
+
+/**
+ * Decreases by one the counter of outgoing messages. The counter is
+ * used for termination detection.
+ */
+void mpir_dec_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data);
 
 /* @} */
 

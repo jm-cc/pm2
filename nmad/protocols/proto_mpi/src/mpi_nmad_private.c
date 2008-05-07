@@ -1061,6 +1061,9 @@ int mpir_test(mpir_internal_data_t *mpir_internal_data,
     struct nm_so_cnx *connection = &(mpir_request->request_cnx);
     err = nm_so_test_end_packing(connection);
   }
+  else {
+    MPI_NMAD_TRACE("Request type %d invalid\n", mpir_request->request_type);
+  }
   return err;
 }
 

@@ -1235,7 +1235,7 @@ int MPI_Attr_get(MPI_Comm comm,
   int err = MPI_SUCCESS;
   switch(keyval) {
   case MPI_TAG_UB:
-    *(int*)attr_value = 15;
+    *(int*)attr_value = MAX_VALUE_TAG;
     *flag = 1;
     break;
   case MPI_HOST:
@@ -2150,7 +2150,7 @@ int MPI_Bcast(void* buffer,
               MPI_Datatype datatype,
               int root,
               MPI_Comm comm) {
-  int tag = 1;
+  int tag = 30;
   int err = NM_ESUCCESS;
   mpir_communicator_t *mpir_communicator;
 
@@ -2200,7 +2200,7 @@ int MPI_Gather(void *sendbuf,
                MPI_Datatype recvtype,
                int root,
                MPI_Comm comm) {
-  int tag = 2;
+  int tag = 29;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -2251,7 +2251,7 @@ int MPI_Gatherv(void *sendbuf,
                 MPI_Datatype recvtype,
                 int root,
                 MPI_Comm comm) {
-  int tag = 3;
+  int tag = 28;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -2361,7 +2361,7 @@ int MPI_Scatter(void *sendbuf,
                 MPI_Datatype recvtype,
                 int root,
                 MPI_Comm comm) {
-  int tag = 4;
+  int tag = 27;
   mpir_communicator_t *mpir_communicator;
 
   MPI_NMAD_LOG_IN();
@@ -2410,7 +2410,7 @@ int MPI_Alltoall(void* sendbuf,
 		 int recvcount,
 		 MPI_Datatype recvtype,
 		 MPI_Comm comm) {
-  int tag = 5;
+  int tag = 26;
   int err;
   int i;
   MPI_Request *send_requests, *recv_requests;
@@ -2468,7 +2468,7 @@ int MPI_Alltoallv(void* sendbuf,
 		  int *rdispls,
 		  MPI_Datatype recvtype,
 		  MPI_Comm comm) {
-  int tag = 6;
+  int tag = 25;
   int err;
   int i;
   MPI_Request *send_requests, *recv_requests;
@@ -2544,7 +2544,7 @@ int MPI_Reduce(void* sendbuf,
                MPI_Op op,
                int root,
                MPI_Comm comm) {
-  int tag = 7;
+  int tag = 24;
   mpir_operator_t *operator;
   mpir_communicator_t *mpir_communicator;
 
@@ -2628,7 +2628,7 @@ int MPI_Reduce_scatter(void *sendbuf,
   int err=MPI_SUCCESS, count=0, i;
   mpir_communicator_t *mpir_communicator;
   mpir_datatype_t *mpir_datatype;
-  int tag = 8;
+  int tag = 23;
   void *reducebuf = NULL;
 
   MPI_NMAD_LOG_IN();

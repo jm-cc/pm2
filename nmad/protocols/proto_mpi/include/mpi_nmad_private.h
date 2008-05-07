@@ -96,8 +96,8 @@ extern debug_type_t debug_mpi_nmad_log;
 
 #define FREE_AND_SET_NULL(p) free(p); p = NULL;
 
-/** Maximum value of the tag used internally in MAD-MPI */
-#define MAX_INTERNAL_TAG 10
+/** Maximum value of the tag specified by the end-user */
+#define MAX_VALUE_TAG 22
 
 /** @name Communicators */
 /* @{ */

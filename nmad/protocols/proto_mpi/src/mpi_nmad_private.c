@@ -1566,11 +1566,10 @@ int mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
 		      int tag) {
   /*
    * NewMadeleine only allows us 7 bits!
-   * We suppose that comm is represented on 3 bits and tag on 4 bits.
+   * We suppose that comm is represented on 2 bits and tag on 5 bits.
    * We stick both of them into a new 7-bits representation
    */
-  tag += MAX_INTERNAL_TAG;
-  int newtag = (mpir_communicator->communicator_id-MPI_COMM_WORLD) << 4;
+  int newtag = (mpir_communicator->communicator_id-MPI_COMM_WORLD) << 5;
   newtag += tag;
   return newtag;
 }
@@ -1580,7 +1579,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
   int process_rank, global_size;
   MPI_Comm_rank(comm, &process_rank);
   MPI_Comm_size(comm, &global_size);
-  int tag = 49;
+  int tag = 31;
 
   if (process_rank == 0) {
     // 1st phase

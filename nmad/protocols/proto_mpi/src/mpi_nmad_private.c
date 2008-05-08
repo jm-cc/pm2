@@ -1673,9 +1673,9 @@ void mpir_inc_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data) {
 }
 
 void mpir_dec_nb_incoming_msg(mpir_internal_data_t *mpir_internal_data) {
-  //mpir_internal_data->nb_incoming_msg --;
+  mpir_internal_data->nb_incoming_msg --;
 }
 
 void mpir_dec_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_data) {
-  //mpir_internal_data->nb_outgoing_msg --;
+  mpir_internal_data->nb_outgoing_msg --;
 }

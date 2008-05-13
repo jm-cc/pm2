@@ -1010,6 +1010,8 @@ int nm_so_sr_init_gate(struct nm_gate *p_gate)
   for(i=0;i<NM_SO_MAX_TAGS;i++)
    for(j=0;j<NM_SO_PENDING_PACKS_WINDOW;j++)
      piom_cond_init(&p_sr_gate->status[i][j].status,0);
+  for(i=0;i<NM_SO_MAX_TAGS;i++)
+     piom_cond_init(&any_src[i].status,0);
 #endif
 
   NM_SO_SR_LOG_OUT();

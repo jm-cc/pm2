@@ -951,11 +951,11 @@ int mpir_irecv_start(mpir_internal_data_t *mpir_internal_data,
 
 int mpir_irecv(mpir_internal_data_t *mpir_internal_data,
 	       mpir_request_t *mpir_request,
-               int dest,
+               int source,
                mpir_communicator_t *mpir_communicator) {
   int err;
 
-  err = mpir_irecv_init(mpir_internal_data, mpir_request, dest, mpir_communicator);
+  err = mpir_irecv_init(mpir_internal_data, mpir_request, source, mpir_communicator);
   if (err == MPI_SUCCESS) {
     err = mpir_irecv_start(mpir_internal_data, mpir_request);
   }

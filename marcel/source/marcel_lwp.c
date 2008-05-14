@@ -149,6 +149,19 @@ static void *lwp_kthread_start_func(void *arg)
 			marcel_kthread_cond_signal(&level->kneed);
 		}
 		marcel_kthread_mutex_unlock(&level->kmutex);
+	} else {
+		level = ma_lwp_vpaffinity_level(lwp);
+		marcel_kthread_mutex_lock(&level->kmutex);
+		lwp->exiting = 1;
+		while (!lwp->exiting_ack) {
+			ma_preempt_enable_no_resched();
+			ma_local_bh_enable();
+			marcel_kthread_cond_signal(&level->kneed);
+			marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
+			ma_local_bh_disable();
+			ma_preempt_disable();
+		}
+		marcel_kthread_mutex_unlock(&level->kmutex);
 	}
 #endif /* MA__SMP */
 	ma_preempt_enable_no_resched();
@@ -277,11 +290,14 @@ void ma_lwp_wait_active(void) {
 			ma_preempt_disable();
 		}
 		marcel_kthread_cond_signal(&level->kneeddone);
-		mdebug("becoming VP %d\n", vpnum);
-		level->needed = -1;
 		level->spare--;
-		ma_set_lwp_vpnum(vpnum, MA_LWP_SELF);
-		mdebug("now %d spare LWPs\n", level->spare);
+		if (!MA_LWP_SELF->exiting) {
+			level->needed = -1;
+			mdebug("becoming VP %d\n", vpnum);
+			ma_set_lwp_vpnum(vpnum, MA_LWP_SELF);
+			mdebug("now %d spare LWPs\n", level->spare);
+		}
+		MA_LWP_SELF->exiting_ack = 1;
 		marcel_kthread_mutex_unlock(&level->kmutex);
 	}
 	ma_preempt_enable_no_resched();
@@ -388,6 +404,8 @@ static void lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 
 #ifdef MA__SMP
+	lwp->exiting = 0;
+	lwp->exiting_ack = 0;
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
  

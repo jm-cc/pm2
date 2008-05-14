@@ -38,6 +38,8 @@ struct marcel_lwp {
 #ifdef MA__SMP
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
+	volatile int exiting;
+	volatile int exiting_ack;
 #endif
 	/*Polling par LWP*/
 	struct marcel_per_lwp_polling_s* polling_list;

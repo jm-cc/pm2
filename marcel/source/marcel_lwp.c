@@ -158,6 +158,7 @@ static void *lwp_kthread_start_func(void *arg)
 			ma_local_bh_enable();
 			marcel_kthread_cond_signal(&level->kneed);
 			marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
+			ma_barrier();
 			ma_local_bh_disable();
 			ma_preempt_disable();
 		}

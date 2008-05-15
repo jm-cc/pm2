@@ -245,7 +245,7 @@ mad_dir_driver_init(p_mad_madeleine_t    madeleine,
 #ifndef CONFIG_MULTI_RAIL
   // Check the number of protocols against the strategy
   if (dir_driver_htable->nb_element > 1) {
-    TBX_FAILURE("Only 1 driver is supported with the current strategy");
+    TBX_FAILURE("Only 1 driver is supported with the current strategy. pm2-load has an option --protocol to specify the protocol.");
   }
 #endif
 

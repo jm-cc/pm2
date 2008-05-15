@@ -378,31 +378,27 @@ void marcel_gensched_shutdown(void)
 	mdebug("blocking this LWP\n");
 	ma_lwp_block();
 
-	mdebug("stopping LWPs from %p\n", MA_LWP_SELF);
-	if (MA_LWP_SELF != &__main_lwp) {
-		/* We must switch to the main kernel thread for proper
-		 * termination. However, it may be currently a spare LWP, so we
-		 * have to wait for it to become active. */
-		while ((lwp = ma_lwp_wait_vp_active())) {
-			if (lwp == &__main_lwp) {
-				mdebug("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
-				vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
-				/* To match ma_lwp_block() above */
-				ma_preempt_enable();
-				marcel_apply_vpset(&vpset);
-				MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
-				/* Ok, we're in the main kernel thread now */
-				mdebug("block it too\n");
-				ma_lwp_block();
-				/* Now we can simply terminate other LWPs */
-				break;
-			} else marcel_lwp_stop_lwp(lwp);
-		}
+	mdebug("stopping LWPs (1)\n");
+	/* We must switch to the main kernel thread for proper
+	 * termination. However, it may be currently a spare LWP, so we
+	 * have to wait for it to become active. */
+	while ((lwp = ma_lwp_wait_vp_active())) {
+		if (lwp == &__main_lwp) {
+			mdebug("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
+			vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
+			/* To match ma_lwp_block() above */
+			ma_preempt_enable();
+			marcel_apply_vpset(&vpset);
+			MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
+			/* Ok, we're in the main kernel thread now */
+			mdebug("block it too\n");
+			ma_lwp_block();
+		} else marcel_lwp_stop_lwp(lwp);
 	}
 
 	MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 
-	mdebug("stopping LWPs\n");
+	mdebug("stopping LWPs (2)\n");
 	for(;;) {
 		lwp_found=NULL;
 		ma_lwp_list_lock_read();
@@ -416,9 +412,11 @@ void marcel_gensched_shutdown(void)
 		if (!lwp_found) {
 			break;
 		}
+
+		MA_BUG(); /* should not happen (tm) */
+
 		marcel_lwp_stop_lwp(lwp_found);
 	}
-	ma_preempt_enable();
 #else
 	/* Destroy master-sched's stack */
 	//marcel_cancel(__main_lwp.sched.idle_task);

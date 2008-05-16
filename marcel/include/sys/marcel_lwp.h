@@ -65,11 +65,10 @@ struct marcel_lwp {
 
 	marcel_task_t *ksoftirqd_task;
 
-#ifdef MA__LWPS
-#  if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
+#if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
 	unsigned long ma_ia64_tp;
-#  endif
 #endif
+
 	ma_tvec_base_t tvec_bases;
 
 #ifdef MA__LWPS

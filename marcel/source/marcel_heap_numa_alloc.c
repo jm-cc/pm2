@@ -17,13 +17,10 @@
 #include <sys/mman.h>
 #include <sys/syscall.h>
 
-#ifdef MA__NUMA
-#include <numaif.h>
-#endif
-
 #include "marcel.h"
 
 #ifdef MA__NUMA
+#include <numaif.h>
 
 #ifdef LINUX_SYS
 #include <linux/mempolicy.h>
@@ -202,9 +199,13 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 					//		addr[0] = (void*)current_heap+0;
 					//	DEBUG_PRINT("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
 					node = -1;
+#if defined (X86_64_ARCH) && defined (X86_ARCH)
 					extern int syscall6();
 					int ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 					//	int ret = syscall6(__NR_move_pages, 0, nb_pages, addr, NULL, ppinfo->nb_touched, MPOL_MF_MOVE);
+#else
+					int ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
+#endif
 					//move_pages(0,1,addr,NULL,&node,MPOL_MF_MOVE);
 					if (ret != 0)
 					{

@@ -349,6 +349,7 @@ nm_piom_post_recv(struct nm_sched	*p_sched,
 
                         /* No, put it in pending list */
                         tbx_slist_append(pending_slist, p_pw);
+                        NM_TRACEF("adding a pw (%p) to the list %p", p_pw, pending_slist);
 			p_pw->slist=pending_slist;
 
 			/* Submit the pkt_wrapper to Pioman */

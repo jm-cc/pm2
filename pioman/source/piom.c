@@ -773,6 +773,11 @@ void piom_poll_from_tasklet(unsigned long hid)
 	piom_server_t server = (piom_server_t) hid;
 	PIOM_LOGF("Tasklet function for [%s]\n", server->name);
 
+	if(server->state == PIOM_SERVER_STATE_HALTED || server->state == PIOM_SERVER_STATE_NONE) {
+          PIOM_LOGF("polling on a dead server\n");
+          return;
+        }
+
 	piom_check_polling_for(server);
 #ifdef MARCEL
         _piom_spin_lock(&piom_poll_lock);

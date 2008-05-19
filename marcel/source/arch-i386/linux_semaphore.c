@@ -31,7 +31,8 @@ asm(
 	"jne	1b\n\t"
 	MA_LOCK_PREFIX "subl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n\t"
 	"jnz	__ma_write_lock_failed\n\t"
-	"ret"
+	"ret\n\t"
+".size __ma_write_lock_failed,.-__ma_write_lock_failed"
 );
 
 asm(
@@ -45,6 +46,7 @@ asm(
 	"js	1b\n\t"
 	MA_LOCK_PREFIX "decl	(%eax)\n\t"
 	"js	__ma_read_lock_failed\n\t"
-	"ret"
+	"ret\n\t"
+".size __ma_read_lock_failed,.-__ma_read_lock_failed"
 );
 #endif

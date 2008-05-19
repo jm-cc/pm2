@@ -772,11 +772,12 @@ void piom_poll_from_tasklet(unsigned long hid)
 {
 	piom_server_t server = (piom_server_t) hid;
 	PIOM_LOGF("Tasklet function for [%s]\n", server->name);
+
 	piom_check_polling_for(server);
 #ifdef MARCEL
-	_piom_spin_lock(&piom_poll_lock);
-	job_scheduled=0;
-	_piom_spin_unlock(&piom_poll_lock);
+        _piom_spin_lock(&piom_poll_lock);
+        job_scheduled=0;
+        _piom_spin_unlock(&piom_poll_lock);
 #endif
 	return;
 }
@@ -1657,16 +1658,20 @@ int piom_server_stop(piom_server_t server)
 {
 	LOG_IN();
 	piom_req_t req, tmp;
-	if(server->state != PIOM_SERVER_STATE_LAUNCHED)
-		return 0;
+	if(server->state != PIOM_SERVER_STATE_LAUNCHED) {
+          PIOM_LOGF("server %p not started (%d)\n", server, server->state);
+          return 0;
+        }
 
 #ifdef MARCEL
 	marcel_task_t *lock;
-	lock = piom_ensure_lock_server(server);
+        lock = piom_ensure_lock_server(server);
 #endif				//MARCEL
 
 	piom_verify_server_state(server);
 	server->state = PIOM_SERVER_STATE_HALTED;
+        PIOM_LOGF("server %p is stopped\n", server);
+
 #ifdef PIOM_BLOCKING_CALLS
 /* arret des LWPs de comm */
 	piom_comm_lwp_t lwp;
@@ -1688,6 +1693,7 @@ int piom_server_stop(piom_server_t server)
 	list_for_each_entry_safe(req, tmp,
 				 &server->list_req_registered,
 				 chain_req_registered) {
+                PIOM_LOGF("stopping req %p\n", req);
 		__piom_wake_req_waiters(server, req, -ECANCELED);
 		__piom_unregister_poll(server, req);
 		__piom_unregister(server, req);

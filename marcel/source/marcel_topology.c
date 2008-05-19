@@ -194,6 +194,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 	/* Just record information and count number of dies and cores */
 
+	mdebug("\n\n * Topology extraction from /proc/cpuinfo *\n\n");
 	while (fgets(string,sizeof(string),fd)!=NULL) {
 #    define getprocnb_begin(field, var) \
 		if ( !strncmp(field,string,strlen(field))) { \
@@ -244,10 +245,17 @@ static void __marcel_init look_cpuinfo(void) {
 	}
 	fclose(fd);
 
+	mdebug("\n\n * Topology summary *\n\n");
 	mdebug("%ld processors\n", processor+1);
+
+	if (numdies>1)
+		mdebug("%d dies\n", numdies);
+	if (numcores>1)
+		mdebug("%d cores\n", numcores);
 
 	struct marcel_topo_level *die_level;
 
+	mdebug("\n\n * cpusets details *\n\n");
 	if (numdies>1) {
 		mdebug("%d dies\n", numdies);
 		MA_BUG_ON(!(die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
@@ -271,6 +279,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 		marcel_topo_level_nbitems[discovering_level]=numdies;
 		marcel_topo_levels[discovering_level++]=die_level;
+		mdebug("\n");
 	}
 
 	/* TODO: here, parse /sys/devices/system/cpu/cpu* /cache/index* /shared_cpu_map */
@@ -306,6 +315,7 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_core_level =
 #    endif
 		marcel_topo_levels[discovering_level++]=core_level;
+		mdebug("\n");
 	}
 }
 #  endif /* LINUX_SYS */
@@ -532,6 +542,7 @@ static void look_cpu(void) {
 
 	MA_BUG_ON(!(cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level))));
 
+	mdebug("\n\n * CPU cpusets *\n\n");
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
 		ma_topo_set_os_numbers(&cpu_level[cpu], -1, -1, -1, -1, -1, cpu);
@@ -655,7 +666,7 @@ static void topo_discover(void) {
 #endif /* MA__NUMA */
 
 	marcel_topo_nblevels=discovering_level;
-	mdebug("discovered %d levels\n", marcel_topo_nblevels);
+	mdebug("\n\n--> discovered %d levels\n\n", marcel_topo_nblevels);
 
 #ifdef MA__NUMA
 
@@ -691,7 +702,9 @@ static void topo_discover(void) {
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
 	unsigned cpu = marcel_first_cpu;
 	unsigned vps = 0;
-	for (i=0; i<marcel_nbvps(); i++) {
+
+	mdebug("\n\n * VP mapping details *\n\n");
+	for (i=0; i<marcel_nbvps(); i++)  {
 #ifdef MA__NUMA
 		MA_BUG_ON(cpu>=marcel_nbprocessors);
 		marcel_vpset_t oscpuset = marcel_topo_levels[marcel_topo_nblevels-1][cpu].cpuset;
@@ -721,6 +734,7 @@ static void topo_discover(void) {
 			vps = 0;
 		}
 	}
+	mdebug("\n\n");
 	marcel_vpset_zero(&vp_level[i].cpuset);
 	marcel_vpset_zero(&vp_level[i].vpset);
 

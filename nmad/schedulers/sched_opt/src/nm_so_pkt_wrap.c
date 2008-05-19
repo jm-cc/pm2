@@ -311,6 +311,8 @@ nm_so_pw_alloc(int flags, struct nm_so_pkt_wrap **pp_so_pw)
 
   INIT_LIST_HEAD(&p_so_pw->link);
 
+  NM_SO_TRACE_LEVEL(3,"creating a pw %p (%d bytes)\n", p_so_pw, p_so_pw->pw.length);
+
   *pp_so_pw = p_so_pw;
 #ifdef PIOMAN
   p_so_pw->pw.slist=NULL;
@@ -330,6 +332,8 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
 {
   int err;
   int flags = p_so_pw->pw.pkt_priv_flags;
+
+  NM_SO_TRACE_LEVEL(3,"destructing the pw %p\n", p_so_pw);
 
 #ifdef PIOMAN
   piom_req_free(&p_so_pw->pw.inst);
@@ -359,10 +363,14 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
     tbx_free(nm_so_pw_recv_mem, p_so_pw);
   }
 
-  else if(flags & NM_SO_NO_HEADER)
+  else if(flags & NM_SO_NO_HEADER) {
+    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_nohd_mem\n", p_so_pw);
     tbx_free(nm_so_pw_nohd_mem, p_so_pw);
-  else
+  }
+  else {
+    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_send_mem\n", p_so_pw);
     tbx_free(nm_so_pw_send_mem, p_so_pw);
+  }
 
   err = NM_ESUCCESS;
   return err;

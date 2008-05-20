@@ -263,7 +263,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   __debug_show_entities("__marcel_bubble_affinity", e, ne, l);
 
   if (ne < nvp) {
-    if (ne >= arity && __has_enough_entities(l, e, ne, load_manager))
+    if (ne >= arity || __has_enough_entities(l, e, ne, load_manager))
       __distribute_entities(l, e, ne, load_manager);
     else {
       /* We really have to explode at least one bubble */

@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
 
    //création de la bulle 0 :
    marcel_bubble_init(&b0);
+   marcel_bubble_insertbubble(&marcel_root_bubble, &b0);
    //création de la bulle 1 :
    marcel_bubble_init(&b1);
    marcel_bubble_insertbubble(&b0, &b1);
@@ -223,8 +224,7 @@ int main(int argc, char *argv[]) {
    }
 
    marcel_start_playing();
-   fprintf(stderr, "wake up de la bulle %p\n", &b0);
-   marcel_wake_up_bubble(&b0);
+   marcel_bubble_sched_begin();
 
    marcel_printf("ok\n");
    marcel_end();

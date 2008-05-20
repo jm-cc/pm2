@@ -361,8 +361,8 @@ nm_so_pw_free(struct nm_so_pkt_wrap *p_so_pw)
   /* Finally clean packet wrapper itself */
   if(flags & NM_SO_RECV_PW){
     tbx_free(nm_so_pw_recv_mem, p_so_pw);
+    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_recv_mem\n", p_so_pw);
   }
-
   else if(flags & NM_SO_NO_HEADER) {
     NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_nohd_mem\n", p_so_pw);
     tbx_free(nm_so_pw_nohd_mem, p_so_pw);

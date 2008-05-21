@@ -82,7 +82,11 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 		       "movl 16(%0), %%esp\n\t"
 		       "movl 20(%0), %0\n\t"
 		       "jmp *%0"
+#ifdef __INTEL_COMPILER
+		       : : "c,d" (buf), "a" (val));
+#else
 		       : : "c,d" (buf), "a,a" (val));
+#endif
   // to make gcc believe us that the above statement doesn't return
   for(;;);
 }
@@ -125,7 +129,11 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 		       "movq 48(%0), %%rsp\n\t"
 		       "movq 56(%0), %0\n\t"
 		       "jmp *%0"
+#ifdef __INTEL_COMPILER
+		       : : "D" (buf), "a" (val));
+#else
 		       : : "D" (buf), "a,a" (val));
+#endif
   // to make gcc believe us that the above statement doesn't return
   for(;;);
 }

@@ -431,8 +431,79 @@ do { \
 	__typeof__ ((x)) _x = (x); \
         _n > 0?_x >> _n:_x << -_n;\
 })
-
-
+ 
+#define tbx_c2b(c) ({ \
+		unsigned char _c = (c); \
+		unsigned int  _b = 0; \
+		unsigned int  _m = 1; \
+		while (_c) { \
+			if (_c & 1) { \
+				_b += _m; \
+			} \
+			_c >>= 1; \
+			_m *= 10; \
+		} \
+		_b; \
+	})
+#define tbx_i2b(v) ({ \
+		__typeof__ ((MARCEL_VPSET_CONST_0)) _v = (v); \
+		char *a; \
+		int i; \
+\
+		a = alloca(sizeof(_v)*8+1); \
+		\
+		for (i = 0; i < sizeof(_v); i++) { \
+			sprintf(a + i*8, "%08u", tbx_c2b((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)); \
+		} \
+		a; \
+	})
+#define tbx_i2mb(v) ({ \
+		__typeof__ ((MARCEL_VPSET_CONST_0)) _v = (v); \
+		char *a; \
+		int i; \
+		int j;\
+\
+		a = alloca(sizeof(_v)*8+1); \
+		\
+		for (i = 0, j = 0; i < sizeof(_v); i++) { \
+			if ((i < sizeof(_v) - 1) && !((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)) \
+				continue; \
+			sprintf(a + j*8, "%08u", tbx_c2b((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)); \
+			j++;\
+		} \
+		a; \
+	})
+#define tbx_i2sb(v) ({ \
+		__typeof__ ((MARCEL_VPSET_CONST_0)) _v = (v); \
+		char *a; \
+		int i; \
+\
+		a = alloca(sizeof(_v)*9); \
+		\
+		for (i = 0; i < sizeof(_v); i++) { \
+			if (i) \
+				*(a + i*9 - 1) = '_'; \
+			sprintf(a + i*9, "%08u", tbx_c2b((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)); \
+		} \
+		a; \
+	})
+#define tbx_i2smb(v) ({ \
+		__typeof__ ((MARCEL_VPSET_CONST_0)) _v = (v); \
+		char *a; \
+		int i; \
+		int j; \
+\
+		a = alloca(sizeof(_v)*9); \
+		\
+		for (i = 0, j = 0; i < sizeof(_v); i++) { \
+			if ((i < sizeof(_v) - 1) && !((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)) \
+				continue; \
+			if (j) \
+				*(a + j*9 - 1) = '_'; \
+			sprintf(a + j*9, "%08u", tbx_c2b((_v >> (8*(sizeof(_v) - i - 1))) & 0xff)); \
+		} \
+		a; \
+	})
 /*
  * Fields access macros _____________________________________________
  * ____________________//////////////////////////////////////////////

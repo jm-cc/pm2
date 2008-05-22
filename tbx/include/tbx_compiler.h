@@ -101,7 +101,19 @@ void __memory_barrier(void);
 #define __TBX_ALWAYS_INLINE
 #endif
 
-#if __GNUC__ >= 4
+#if defined __INTEL_COMPILER
+#  define __TBX_FUNCTION__		__func__
+#  define TBX_FMALLOC			__attribute__ ((__malloc__))
+#  define __tbx_inline__	__inline__ __TBX_ALWAYS_INLINE
+#  define __tbx_setjmp_inline__	__inline__
+#  define __tbx_deprecated__		__attribute__((deprecated))
+#  define __tbx_attribute_used__	__attribute__((__used__))
+#  define __tbx_attribute_pure__	__attribute__((pure))
+#  define __tbx_warn_unused_result__
+#  define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
+#  define TBX_RETURNS_TWICE
+
+#elif __GNUC__ >= 4
 #  define __TBX_FUNCTION__		__func__
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  define __tbx_inline__	__inline__ __TBX_ALWAYS_INLINE
@@ -178,10 +190,10 @@ void __memory_barrier(void);
 #endif
 
 #ifndef TBX_VISIBILITY
-#define TBX_VISIBILITY(vis)
-#define TBX_VISIBILITY_PUSH_DEFAULT
-#define TBX_VISIBILITY_PUSH_INTERNAL
-#define TBX_VISIBILITY_POP
+#  define TBX_VISIBILITY(vis)
+#  define TBX_VISIBILITY_PUSH_DEFAULT
+#  define TBX_VISIBILITY_PUSH_INTERNAL
+#  define TBX_VISIBILITY_POP
 #endif
 #define TBX_EXTERN TBX_VISIBILITY("default")
 #define TBX_HIDDEN TBX_VISIBILITY("hidden")

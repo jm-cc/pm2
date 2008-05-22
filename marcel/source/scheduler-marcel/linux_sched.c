@@ -1014,6 +1014,31 @@ int marcel_yield_to(marcel_t next)
 	LOG_IN();
 
 	nexth = ma_task_holder_lock_softirq(next);
+	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
+		if (!next->cur_thread_seed_runner) {
+			marcel_t runner;
+			marcel_attr_t attr; // = *next->shared_attr;
+			marcel_attr_init(&attr);
+			marcel_attr_setdetachstate(&attr, tbx_true);
+			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+			marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
+			marcel_attr_setpreemptible(&attr, tbx_false);
+			/* TODO: on devrait être capable de brancher directement dessus */
+			marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, next);
+			next->cur_thread_seed_runner = runner;
+			ma_dequeue_task(next, nexth);
+			ma_holder_unlock(nexth);
+
+			marcel_wake_up_created_thread(runner);
+			next = runner;
+		} else {
+			next = next->cur_thread_seed_runner;
+
+			ma_task_holder_unlock_softirq(nexth);
+		}
+
+		nexth = ma_task_holder_lock_softirq(next);
+	}
 
 	if (!MA_TASK_IS_READY(next)) {
 		busy = MA_TASK_IS_RUNNING(next);
@@ -1419,8 +1444,4 @@ TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock)
 	} while (!_ma_raw_write_trylock(lock));
 }
 #endif 
-
-
-
-
 

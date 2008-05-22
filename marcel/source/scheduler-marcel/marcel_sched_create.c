@@ -215,6 +215,7 @@ restart:
 
 	next = SELF_GETMEM(cur_thread_seed);
 
+	next->cur_thread_seed_runner = MARCEL_SELF;
 	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(next));
 
 	/* mimic his scheduling situation */

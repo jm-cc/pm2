@@ -93,6 +93,7 @@ struct marcel_task {
 
 	//marcel_attr_t *shared_attr;
 	marcel_t cur_thread_seed;
+	marcel_t cur_thread_seed_runner;
 
 	/* Gestion de la terminaison */
 	tbx_bool_t detached;

@@ -40,7 +40,7 @@
  * Headers
  * -------
  */
-#if (defined(_REENTRANT) && !defined(MARCEL)) || (defined(MARCEL_POSIX))
+#if defined(_REENTRANT) && !defined(MARCEL)
 #include <pthread.h>
 #endif /* _REENTRANT */
 

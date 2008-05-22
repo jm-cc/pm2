@@ -24,12 +24,6 @@
 /** \addtogroup mpi_interface */
 /* @{ */
 
-#ifdef CONFIG_PROTO_MAD3
-#include <madeleine.h>
-#include <nm_mad3_private.h>
-#endif
-#include <tbx.h>
-
 /**
  * Specify a "dummy" source or destination for communication. Can be
  * used instead of a rank wherever a source or a destination argument
@@ -209,8 +203,8 @@ typedef int MPI_Op;
 /** @name Extended modes */
 /* @{ */
 typedef int MPI_Communication_Mode;
-#define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)tbx_false)
-#define MPI_IS_COMPLETED        ((MPI_Communication_Mode)tbx_true)
+#define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)0)
+#define MPI_IS_COMPLETED        ((MPI_Communication_Mode)1)
 #define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
 #define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
 /* @} */

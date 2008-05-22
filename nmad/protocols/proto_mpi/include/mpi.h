@@ -46,6 +46,8 @@ extern "C"
 {
 #endif
 
+#include <sys/types.h>
+
 #include "mpi_types.h"
 
 #include "mpi_config.h"

@@ -1008,7 +1008,6 @@ int marcel_yield_to(marcel_t next)
 	ma_holder_t *nexth;
 	int busy;
 
-	MA_BUG_ON(ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY);
 	if (next==prev)
 		return 0;
 

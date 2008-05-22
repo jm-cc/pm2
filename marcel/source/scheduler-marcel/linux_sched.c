@@ -1023,7 +1023,6 @@ int marcel_yield_to(marcel_t next)
 			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 			marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
 			marcel_attr_setpreemptible(&attr, tbx_false);
-			/* TODO: on devrait être capable de brancher directement dessus */
 			marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, next);
 			next->cur_thread_seed_runner = runner;
 			ma_dequeue_task(next, nexth);

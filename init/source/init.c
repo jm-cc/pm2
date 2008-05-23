@@ -65,34 +65,42 @@ void common_attr_init(common_attr_t *attr)
   } \
 
 
-#define get_args() \
-  int new_argc, *argc = &new_argc; \
-  char **argv; \
-  char *pm2_args, *c; \
-  int pm2_argc = 0; \
-  char quoted = '\0'; \
-  int separated; \
-  static int null_argc; \
-  static char *null_argv[] = { "prog", NULL }; \
-  if (!_argc) { \
-    _argc = &null_argc; \
-    _argv = null_argv; \
-  } \
-  pm2_args = getenv("PM2_ARGS"); \
-  if (pm2_args) { \
-    pm2_args = strdup(pm2_args); \
-    parse(,,pm2_argc++); \
-  } \
-  if (quoted) \
+#define get_args()							\
+  int new_argc, *argc = &new_argc;					\
+  char **argv;								\
+  char *pm2_args, *c;							\
+  int pm2_argc = 0;							\
+  char quoted = '\0';							\
+  int separated;							\
+  static int null_argc;							\
+  static char *null_argv[] = { "prog", NULL };				\
+  if (!_argc) {								\
+    _argc = &null_argc;							\
+    _argv = null_argv;							\
+  }									\
+  pm2_args = getenv("PM2_ARGS");					\
+  if (pm2_args) {							\
+    pm2_args = strdup(pm2_args);					\
+    parse(,,pm2_argc++);						\
+  }									\
+  if (quoted)								\
     fprintf(stderr,"Warning: unterminated quotation mark in PM2_ARGS: %c\n",quoted); \
-  quoted = '\0'; \
-  argv = alloca((*_argc + pm2_argc + 1) * sizeof(char*)); \
-  memcpy(argv, _argv, *_argc * sizeof(char*)); \
-  new_argc = *_argc; \
-  if (pm2_args) { \
-    char *d; \
-    d = pm2_args; \
-    parse(strcpy(c, c+1), *c = '\0', argv[new_argc++] = c) \
+  quoted = '\0';							\
+  argv = alloca((*_argc + pm2_argc + 1) * sizeof(char*));		\
+  memcpy(argv, _argv, *_argc * sizeof(char*));				\
+  new_argc = *_argc;							\
+  if (pm2_args) {							\
+    char *d;								\
+    d = pm2_args;							\
+    parse({								\
+	    /* Remove the leading quotation mark.  */			\
+	    char *unquoted;						\
+	    unquoted = alloca(strlen (c));				\
+	    strcpy(unquoted, c + 1);					\
+	    strcpy(c, unquoted);					\
+	  },								\
+	  *c = '\0',							\
+	  argv[new_argc++] = c)						\
   }
 
 #define purge_args() \

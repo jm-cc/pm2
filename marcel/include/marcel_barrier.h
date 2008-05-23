@@ -31,6 +31,16 @@ typedef enum marcel_barrier_mode {
 #  define PMARCEL_BARRIER_SERIAL_THREAD (MARCEL_BARRIER_SERIAL_THREAD)
 #endif
 
+#ifdef MA_BARRIER_USE_MUTEX
+#define MARCEL_BARRIER_INITIALIZER(count) { \
+	.init_count	= (count),\
+        .m              = MARCEL_MUTEX_INITIALIZER,		\
+        .c              = MARCEL_COND_INITIALIZER,		\
+	.leftB		= MA_ATOMIC_INIT(count), \
+	.leftE		= MA_ATOMIC_INIT(0), \
+	.mode		= MA_BARRIER_SLEEP_MODE, \
+}
+#else
 #define MARCEL_BARRIER_INITIALIZER(count) { \
 	.init_count	= (count),\
 	.lock		= (struct _marcel_fastlock) MA_MARCEL_FASTLOCK_UNLOCKED, \
@@ -38,6 +48,8 @@ typedef enum marcel_barrier_mode {
 	.leftE		= MA_ATOMIC_INIT(0), \
 	.mode		= MA_BARRIER_SLEEP_MODE, \
 }
+#endif
+
 #ifdef MA__IFACE_PMARCEL
 #  define PMARCEL_BARRIER_INITIALIZER(count) MARCEL_BARRIER_INITIALIZER(count)
 #endif

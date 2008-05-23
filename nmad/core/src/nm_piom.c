@@ -172,15 +172,18 @@ nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
 	}
 
 	if (p_pw->err != NM_ESUCCESS) {
-		NM_DISPF("drv->poll_recv returned %d", p_pw->err);
+          NM_DISPF("drv->poll_recv returned %d", p_pw->err);
+          return p_pw->err;
 	}
+
 	piom_req_success(&p_pw->inst);
 	/* supprimer la req de la liste des requetes pending */
-	tbx_slist_search_and_extract(p_pw-> slist,NULL,p_pw);
-	/* process complete request */
-	p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
+        tbx_slist_search_and_extract(p_pw-> slist,NULL,p_pw);
 
-	if (p_pw->err < 0) { // possible ?
+	/* process complete request */
+        p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
+
+        if (p_pw->err < 0) { // possible ?
 		NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
 	}
 

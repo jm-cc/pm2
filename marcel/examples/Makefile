@@ -33,6 +33,8 @@ tsp-ldflags := -lm
 
 balance-ldflags := -lm
 
+barrier-1-cflags := -I$(PM2_ROOT)/marcel/include/pthread
+
 hello: CC=g++
 
 # Applications dont le nom n'a pas de .c correspondant

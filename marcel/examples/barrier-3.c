@@ -61,7 +61,8 @@ tf (void *arg)
 }
 
 
-int main(void)
+int
+main (int argc, char *argv[])
 {
   pthread_attr_t at;
   int cnt;

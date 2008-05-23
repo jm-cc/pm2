@@ -22,7 +22,8 @@
 #include <stdio.h>
 
 
-int main(void)
+int
+main (int argc, char *argv[])
 {
   pthread_barrier_t b;
   int e;
@@ -40,7 +41,7 @@ int main(void)
       return 1;
     }
 
-  if (pthread_barrier_init (&b, NULL, 5) != 0)
+  if (pthread_barrier_init (&b, NULL, 1) != 0)
     {
       fprintf(stderr,"real barrier_init failed");
       return 1;

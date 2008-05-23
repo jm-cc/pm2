@@ -6,9 +6,14 @@
 #endif
 #include <marcel.h>
 
+#include <stdlib.h>
 #include <stdio.h>
-#define printf marcel_printf
+#define printf  marcel_printf
 #define fprintf marcel_fprintf
+#define malloc  tmalloc
+#define calloc  tcalloc
+#define realloc trealloc
+#define free    tfree
 
 #ifndef MA__IFACE_PMARCEL
 #warning "This file can't be used without the pmarcel option in the flavor"

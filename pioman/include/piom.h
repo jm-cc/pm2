@@ -706,6 +706,8 @@ int piom_test_activity(void);
  */
 void piom_server_init(piom_server_t server, char *name);
 
+void piom_server_kill(piom_server_t server);
+
 void piom_server_start_lwp(piom_server_t server, unsigned nb_lwps);
 
 /* Polling setup */

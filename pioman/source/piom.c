@@ -426,7 +426,7 @@ extern unsigned long volatile ma_jiffies;
 __tbx_inline__ static void __piom_poll_start(piom_server_t server)
 {
 	_piom_spin_lock_softirq(&piom_poll_lock);
-	PIOM_LOGF("Starting polling for %s\n", server->name);
+	PIOM_LOGF("Starting polling for %s (%p)\n", server->name, server);
 	list_add(&server->chain_poll, &piom_list_poll);
 	if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
 		PIOM_LOGF("Starting timer polling for [%s] at period %i\n",
@@ -439,6 +439,14 @@ __tbx_inline__ static void __piom_poll_start(piom_server_t server)
 			     ma_jiffies + server->period);
 #endif				// MARCEL
 	}
+	_piom_spin_unlock_softirq(&piom_poll_lock);
+}
+
+void piom_server_kill(piom_server_t server)
+{
+	_piom_spin_lock_softirq(&piom_poll_lock);
+	PIOM_LOGF("Killing polling for %p (%d)\n", server, server->state);
+	list_del_init(&server->chain_poll);
 	_piom_spin_unlock_softirq(&piom_poll_lock);
 }
 

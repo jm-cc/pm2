@@ -121,24 +121,55 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
 {
   struct nm_so_sched *p_priv = p_sched->sch_private;
 
+  nmad_lock();
+
   while (!tbx_slist_is_nil(p_sched->post_aux_recv_req)) {
+    NM_SO_SR_TRACE("extracting pw from post_aux_recv_req\n");
     void *pw = tbx_slist_extract(p_sched->post_aux_recv_req);
     nm_so_pw_free(pw);
   }
 
   while (!tbx_slist_is_nil(p_sched->post_perm_recv_req)) {
+    NM_SO_SR_TRACE("extracting pw from post_perm_recv_req\n");
     void *pw = tbx_slist_extract(p_sched->post_perm_recv_req);
     nm_so_pw_free(pw);
   }
 
-  while (!tbx_slist_is_nil(p_sched->pending_aux_recv_req)) {
-    void *pw = tbx_slist_extract(p_sched->pending_aux_recv_req);
-    nm_so_pw_free(pw);
-  }
+  /* Release the last pw always in use */
+  {
+    p_tbx_slist_t pending_aux_slist, pending_perm_slist;
+    pending_aux_slist = p_sched->pending_aux_recv_req;
+    pending_perm_slist = p_sched->pending_perm_recv_req;
 
-  while (!tbx_slist_is_nil(p_sched->pending_perm_recv_req)) {
-    void *pw = tbx_slist_extract(p_sched->pending_perm_recv_req);
-    nm_so_pw_free(pw);
+    while (!tbx_slist_is_nil(pending_aux_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_aux_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      NM_SO_SR_TRACE("extracting pw from pending_aux_recv_req\n");
+
+      if(p_pw->p_gdrv->receptacle.driver->release_req){
+        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
+                                                     p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
+
+    while (!tbx_slist_is_nil(pending_perm_slist)) {
+      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_perm_slist);
+      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
+
+      NM_SO_SR_TRACE("extracting pw from pending_perm_recv_req\n");
+
+      if(p_pw->p_gdrv->receptacle.driver->release_req){
+        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
+                                                     p_pw);
+      }
+
+      /* Free the wrapper */
+      nm_so_pw_free(p_so_pw);
+    }
   }
 
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
@@ -148,6 +179,7 @@ nm_so_schedule_exit (struct nm_sched *p_sched)
 
   TBX_FREE(p_priv);
   p_sched->sch_private = NULL;
+  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -243,39 +275,6 @@ nm_so_close_gate(struct nm_sched	*p_sched,
   if(!p_so_sched->current_interface)
     TBX_FAILURE("Interface not defined");
   p_so_sched->current_interface->exit_gate(p_gate);
-
-  /* Release the last pw always in use */
-  {
-    p_tbx_slist_t pending_aux_slist, pending_perm_slist;
-    pending_aux_slist = p_sched->pending_aux_recv_req;
-    pending_perm_slist = p_sched->pending_perm_recv_req;
-
-    while (!tbx_slist_is_nil(pending_aux_slist)) {
-      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_aux_slist);
-      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
-
-      if(p_pw->p_gdrv->receptacle.driver->release_req){
-        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
-                                                     p_pw);
-      }
-
-      /* Free the wrapper */
-      nm_so_pw_free(p_so_pw);
-    }
-
-    while (!tbx_slist_is_nil(pending_perm_slist)) {
-      struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_perm_slist);
-      struct nm_so_pkt_wrap *p_so_pw =  nm_pw2so(p_pw);
-
-      if(p_pw->p_gdrv->receptacle.driver->release_req){
-        p_pw->p_gdrv->receptacle.driver->release_req(p_pw->p_gdrv->receptacle._status,
-                                                     p_pw);
-      }
-
-      /* Free the wrapper */
-      nm_so_pw_free(p_so_pw);
-    }
-  }
 
   TBX_FREE(p_so_gate);
   return NM_ESUCCESS;

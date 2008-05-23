@@ -40,7 +40,7 @@ if [ "${ext}" == "pioman" ] ; then
 	--ntbx=\"debug gdb\" \
 	--tbx=\"debug gdb\" \
 	--puk=\"disable_output\" \
-	--marcel=\"debug mono marcel_main\" \
+	--marcel=\"debug mono standard_main\" \
 	--common=\"debug gdb fortran_target_none\" \
 	--all=\"build_static\"
 else

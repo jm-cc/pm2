@@ -306,6 +306,13 @@ nm_core_init_piom(struct nm_core *p_core){
 	return 0;
 }
 
+int 
+nm_core_exit_piom(struct nm_core *p_core) {
+  int i;
+  for(i=0;i<p_core->nb_drivers;i++)
+    piom_server_kill(&p_core->driver_array[i].server);
+}
+
 /* Initialisation du serveur utilisé pour les drivers */
 int
 nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {

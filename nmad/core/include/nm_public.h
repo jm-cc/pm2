@@ -195,6 +195,9 @@ nmad_unlock(void);
 int
 nm_piom_post_all        (struct nm_core	         *p_core);
 
+int
+nm_core_exit_piom(struct nm_core *p_core);
+
 #else /* PIOMAN */
 
 static inline void 

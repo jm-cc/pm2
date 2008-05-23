@@ -323,6 +323,10 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
 
   if (p_core == NULL) return;
 
+#ifdef PIOMAN
+  nm_core_exit_piom(p_core);
+#endif
+
 #ifdef CONFIG_SCHED_OPT
   err = nm_so_sr_exit(p_so_if);
   if(err != NM_ESUCCESS) {

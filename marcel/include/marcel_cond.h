@@ -40,6 +40,8 @@ struct timespec {
 struct marcel_condattr {
 	int value;
 };
+#section types
+#depend "marcel_cond.h[structures]"
 typedef union {
 	struct marcel_condattr __data;
 	long int __align;

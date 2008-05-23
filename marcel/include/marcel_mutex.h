@@ -111,6 +111,8 @@ struct marcel_mutexattr {
 	int mutexkind;
 };
 
+#section types
+#depend "marcel_mutex.h[structures]"
 typedef union {
 	struct marcel_mutexattr __data;
 	long int __align;

@@ -16,6 +16,8 @@
  */
 
 #depend "linux_spinlock.h[macros]"
+#section common
+#define MA_BARRIER_USE_MUTEX 0
 
 #section types
 typedef enum marcel_barrier_mode { 
@@ -44,6 +46,8 @@ typedef enum marcel_barrier_mode {
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_fastlock.h[structures]"
 #depend "marcel_threads.h[types]"
+#depend "marcel_mutex.h[types]"
+#depend "marcel_cond.h[types]"
 
 typedef struct marcel_barrierattr {
 	int pshared;
@@ -55,7 +59,12 @@ typedef marcel_barrierattr_t pmarcel_barrierattr_t;
 
 typedef struct marcel_barrier {
 	unsigned int init_count;
+#ifdef  MA_BARRIER_USE_MUTEX
+	marcel_mutex_t m;
+	marcel_cond_t c;
+#else
 	struct _marcel_fastlock lock;
+#endif
 	ma_atomic_t leftB;
 	ma_atomic_t leftE;
 	ma_barrier_mode_t mode;

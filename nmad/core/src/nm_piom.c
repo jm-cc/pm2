@@ -172,7 +172,7 @@ nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
 	}
 
 	if (p_pw->err != NM_ESUCCESS) {
-          NM_DISPF("drv->poll_recv returned %d", p_pw->err);
+          NM_LOGF("drv->poll_recv returned %d", p_pw->err);
           return p_pw->err;
 	}
 

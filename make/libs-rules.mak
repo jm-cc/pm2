@@ -135,7 +135,7 @@ $(STAMP_LINK_LIB): $(foreach name,$(MOD_PM2_SHLIBS), \
 # Target provided for convenience, similar to that found in
 # Automake-generated makefiles.
 check:
-	module_name="$(shell basename $(realpath .))"		\
+	module_name="$(shell basename $(realpath .))" ;		\
 	$(PM2_ROOT)/bin/pm2-test --torture $$module_name
 
 .PHONY: check

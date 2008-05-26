@@ -8,12 +8,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#define printf  marcel_printf
-#define fprintf marcel_fprintf
-#define malloc  tmalloc
-#define calloc  tcalloc
-#define realloc trealloc
-#define free    tfree
+#define printf(format, ...)          marcel_printf(format,##__VA_ARGS__)
+#define fprintf(stream, format, ...) marcel_fprintf(stream, format,##__VA_ARGS__)
+#define malloc(size)        tmalloc(size)
+#define calloc(nmemb, size) tcalloc(nmemb, size)
+#define realloc(ptr, size)  trealloc(ptr, size)
+#define free(ptr)           tfree(ptr)
 
 #ifndef MA__IFACE_PMARCEL
 #warning "This file can't be used without the pmarcel option in the flavor"

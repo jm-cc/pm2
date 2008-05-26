@@ -387,7 +387,7 @@ strat_split_balance_packv(void *_status,
     }
 
     if(iov[i].iov_len <= NM_SO_MAX_SMALL) {
-      NM_SO_TRACE("PACK of a small iov entry - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, iov[i].iov_len, offset, last_chunk);
+      NM_SO_TRACE("PACK of a small iov entry - tag = %u, seq = %u, len = %ld, offset = %u, is_last_chunk = %u\n", tag, seq, (long)iov[i].iov_len, offset, last_chunk);
       /* Small packet */
       strat_split_balance_try_to_agregate_small(_status, p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
 

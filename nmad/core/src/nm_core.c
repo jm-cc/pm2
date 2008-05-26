@@ -311,6 +311,7 @@ nm_core_exit_piom(struct nm_core *p_core) {
   int i;
   for(i=0;i<p_core->nb_drivers;i++)
     piom_server_kill(&p_core->driver_array[i].server);
+  return NM_ESUCCESS;
 }
 
 /* Initialisation du serveur utilisé pour les drivers */

@@ -222,10 +222,10 @@ void ma_top_del_bubble(marcel_bubble_t *b) {
 #endif
 
 void marcel_show_top() {
-	marcel_lwp_t *lwp;
-	unsigned long now;
+        marcel_lwp_t *lwp;
+        unsigned long now;
 #define NBPIDS 22
-	marcel_t pids[NBPIDS];
+        marcel_t pids[NBPIDS];
 	int nbpids;
 	unsigned char cmd;
 	struct ma_lwp_usage_stat total_usage;
@@ -241,6 +241,27 @@ void marcel_show_top() {
 			break;
 #endif
 		case 'h':
+                        top_printf("b - Activate bubble view\r\n");
+                        top_printf("h - This help message\r\n");
+                        top_printf("s - Print verbose information about thread status\r\n");
+                        break;
+                case 's':
+                        top_printf("About state letters:\r\n");
+                        top_printf("Marcel threads status are represented by a combination of two letters.\r\n");
+                        top_printf("The first one represents the state that Marcel requires, and can be defined to:\r\n");
+                        top_printf("\r'R' : Running state\r\n"); 
+                        top_printf("\r'I' : Interruptible state\r\n"); 
+                        top_printf("\r'U' : Uninterruptible state\r\n"); 
+                        top_printf("\r'D' : Dead state\r\n"); 
+                        top_printf("\r'M' : Moving state\r\n"); 
+                        top_printf("\r'F' : Frozen state\r\n"); 
+                        top_printf("\r'B' : Borning state\r\n\n");
+                        top_printf("The second one represents the current state of the thread, and can be defined to:\r\n");
+                        top_printf("\r'R' : Currently running\r\n");
+                        top_printf("\r'r' : Currently ready\r\n");
+                        top_printf("\r'B' : Currently blocked\r\n\n");
+                        top_printf("For example, the 'RB' state corresponds to a formally blocked thread that Marcel wants to execute.\r\n\n");
+                        break;
 		case '?':
 #ifdef MA__BUBBLES
 			top_printf("b:\ttoggle bubble / lwp view\r\n");

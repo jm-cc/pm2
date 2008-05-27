@@ -47,7 +47,14 @@ void print_level(struct marcel_topo_level *l, int i) {
   if (l->arity || (!i && !l->arity)) {
     marcel_fprintf(output, "\\pstree");
   }
-  marcel_fprintf(output, "{\\TR{%s}}\n", level_descriptions[l->type]);
+  marcel_fprintf(output, "{\\Level{c}{%s", level_descriptions[l->type]);
+  if (l->os_node != -1) marcel_fprintf(output, "\\\\Node %u", l->os_node);
+  if (l->os_die != -1)  marcel_fprintf(output, "\\\\Die %u" , l->os_die);
+  if (l->os_l3 != -1)   marcel_fprintf(output, "\\\\L3 %u"  , l->os_l3);
+  if (l->os_l2 != -1)   marcel_fprintf(output, "\\\\L2 %u"  , l->os_l2);
+  if (l->os_core != -1) marcel_fprintf(output, "\\\\Core %u", l->os_core);
+  if (l->os_cpu != -1)  marcel_fprintf(output, "\\\\CPU %u" , l->os_cpu);
+  marcel_fprintf(output,"}}\n");
 }
 
 void f(struct marcel_topo_level *l, int i) {
@@ -74,7 +81,9 @@ int main(int argc, char **argv) {
   output = marcel_fopen("topology.tex", "w");
   marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");
   marcel_fprintf(output, "\\usepackage{fullpage}\n");
-  marcel_fprintf(output, "\\usepackage{pstricks,pst-node,pst-tree}\n");
+  marcel_fprintf(output, "\\usepackage{pst-tree}\n");
+  marcel_fprintf(output, "% Macro to define one level\n");
+  marcel_fprintf(output, "\\newcommand{\\Level}[3][]{\\TR[#1]{\\setlength{\\tabcolsep}{0mm}\\begin{tabular}[t]{#2}#3\\end{tabular}}}\n\n");
   marcel_fprintf(output, "\\begin{document}\n");
   marcel_fprintf(output, "\\title{%s: Topology}\n", hostname);
   marcel_fprintf(output, "\\author{Marcel}\n");
@@ -94,6 +103,3 @@ int main(int argc, char **argv) {
   marcel_end();
   return 0;
 }
-
-
-

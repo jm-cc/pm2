@@ -1026,7 +1026,7 @@ int marcel_yield_to(marcel_t next)
 			marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, next);
 			next->cur_thread_seed_runner = runner;
 			ma_dequeue_task(next, nexth);
-			ma_holder_unlock(nexth);
+			ma_task_holder_unlock_softirq(nexth);
 
 			marcel_wake_up_created_thread(runner);
 			next = runner;

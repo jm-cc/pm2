@@ -73,12 +73,13 @@ void f(struct marcel_topo_level *l, int i) {
 
 int main(int argc, char **argv) {
   struct marcel_topo_level *l;
-  char hostname[256];
+  char hostname[256], filename[256];
 
   marcel_init(&argc, argv);
   gethostname(hostname, 256);
+  marcel_sprintf(filename, "%s_topology.tex", hostname);
 
-  output = marcel_fopen("topology.tex", "w");
+  output = marcel_fopen(filename, "w");
   marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");
   marcel_fprintf(output, "\\usepackage{fullpage}\n");
   marcel_fprintf(output, "\\usepackage{pst-tree}\n");
@@ -96,10 +97,10 @@ int main(int argc, char **argv) {
   marcel_fprintf(output, "\\end{document}\n");
   marcel_fclose(output);
 
-  marcel_fprintf(stdout, "The file topology.tex has been created. Compile it as follows:\n");
-  marcel_fprintf(stdout, "\tlatex topology\n");
-  marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape topology.dvi\n");
-  marcel_fprintf(stdout, "\tps2pdf topology.ps\n");
+  marcel_fprintf(stdout, "The file %s_topology.tex has been created. Compile it as follows:\n", hostname);
+  marcel_fprintf(stdout, "\tlatex %s_topology\n", hostname);
+  marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape %s_topology.dvi\n", hostname);
+  marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
   marcel_end();
   return 0;
 }

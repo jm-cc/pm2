@@ -47,7 +47,7 @@ void print_level(struct marcel_topo_level *l, int i) {
   if (l->arity || (!i && !l->arity)) {
     marcel_fprintf(output, "\\pstree");
   }
-  marcel_fprintf(output, "{\\TR{%s}}\n", level_descriptions[l->level]);
+  marcel_fprintf(output, "{\\TR{%s}}\n", level_descriptions[l->type]);
 }
 
 void f(struct marcel_topo_level *l, int i) {

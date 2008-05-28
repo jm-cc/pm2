@@ -111,7 +111,7 @@ int nm_piom_poll_any(piom_server_t            server,
 			p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
 
 			if (p_pw->err < 0) { // possible ?
-				NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
+				NM_LOGF("nm_process_complete_rq returned %d", p_pw->err);
 			}
 
 			err = p_pw->err;
@@ -184,7 +184,7 @@ nm_piom_poll_recv(struct nm_pkt_wrap  *p_pw) {
         p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
 
         if (p_pw->err < 0) { // possible ?
-		NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
+		NM_LOGF("nm_process_complete_rq returned %d", p_pw->err);
 	}
 
         return p_pw->err;
@@ -209,7 +209,7 @@ nm_piom_post_all(struct nm_core	 *p_core){
 		err= nm_piom_post_all_send(p_core->gate_array + g);
 
 		if (err < 0) {
-			NM_DISPF("nm_piom_post_all_send(%p, %d) returned %d",
+			NM_LOGF("nm_piom_post_all_send(%p, %d) returned %d",
 				 p_core, g, err);
 		}
 	}
@@ -217,7 +217,7 @@ nm_piom_post_all(struct nm_core	 *p_core){
 	/* Receive */
 	err = nm_piom_post_all_recv(p_core);
 	if (err<0) {
-		NM_DISPF("nm_piom_post_all_recv(%p) returned %d",
+		NM_LOGF("nm_piom_post_all_recv(%p) returned %d",
 			 p_core, err);
 	}
 
@@ -236,7 +236,7 @@ nm_piom_post_all_recv(struct nm_core	 *p_core){
         /* schedule new reception requests				*/
         err	= p_core->p_sched->ops.in_schedule(p_sched);
         if (err < 0) {
-                NM_DISPF("sched.in_schedule returned %d", err);
+                NM_LOGF("sched.in_schedule returned %d", err);
         }
 
         /* post new requests 						*/
@@ -250,7 +250,7 @@ nm_piom_post_all_recv(struct nm_core	 *p_core){
 		if (err == -NM_EAGAIN)
 			break;
                 if (err < 0 && err != -NM_EAGAIN) {
-                        NM_DISPF("nm_piom_post_recv (aux) returned %d", err);
+                        NM_LOGF("nm_piom_post_recv (aux) returned %d", err);
                 }
         }
 
@@ -263,7 +263,7 @@ nm_piom_post_all_recv(struct nm_core	 *p_core){
 		if (err == -NM_EAGAIN)
 			break;
                 if (err < 0 && err != -NM_EAGAIN) {
-                        NM_DISPF("nm_piom_post_recv (perm) returned %d", err);
+                        NM_LOGF("nm_piom_post_recv (perm) returned %d", err);
                 }
         }
 
@@ -279,7 +279,7 @@ nm_piom_post_all_send(struct nm_gate *p_gate) {
         /* schedule new requests	*/
 	err	= p_gate->p_sched->ops.out_schedule_gate(p_gate);
 	if (err < 0) {
-		NM_DISPF("sched.schedule_out returned %d", err);
+		NM_LOGF("sched.schedule_out returned %d", err);
 	}
 
         /* post new requests	*/
@@ -290,11 +290,11 @@ nm_piom_post_all_send(struct nm_gate *p_gate) {
 		if (err == -NM_EAGAIN)
 			break;
 		if (err < 0 && err != -NM_EAGAIN) {
-			NM_DISPF("nm_piom_post_send returned %d", err);
+			NM_LOGF("nm_piom_post_send returned %d", err);
 		}
 		err	= p_gate->p_sched->ops.out_schedule_gate(p_gate);
 		if (err < 0) {
-			NM_DISPF("sched.schedule_out returned %d", err);
+			NM_LOGF("sched.schedule_out returned %d", err);
 		}
 
         }
@@ -373,12 +373,12 @@ nm_piom_post_recv(struct nm_sched	*p_sched,
 
                         /* Yes, request complete, process it */
                         if (err != NM_ESUCCESS) {
-                                NM_DISPF("drv->post_recv returned %d", err);
+                                NM_LOGF("drv->post_recv returned %d", err);
                         }
 
                         err = nm_process_complete_recv_rq(p_sched, p_pw, err);
                         if (err < 0) {
-                                NM_DISPF("nm_process_complete_rq returned %d", err);
+                                NM_LOGF("nm_process_complete_rq returned %d", err);
                         }
 
 		}
@@ -485,12 +485,12 @@ nm_piom_post_send(struct nm_gate       *p_gate) {
                         NM_TRACEF("request completed immediately");
 
                         if (err != NM_ESUCCESS) {
-                                NM_DISPF("drv->post_send returned %d", err);
+                                NM_LOGF("drv->post_send returned %d", err);
                         }
 
                         err = nm_process_complete_send_rq(p_gate, p_pw, err);
                         if (err < 0) {
-                                NM_DISPF("nm_process_complete send_rq returned %d", err);
+                                NM_LOGF("nm_process_complete send_rq returned %d", err);
                         }
 
                 }
@@ -587,14 +587,14 @@ nm_piom_block_recv(struct nm_pkt_wrap  *p_pw) {
 	}
 
 	if (p_pw->err != NM_ESUCCESS) {
-		NM_DISPF("drv->wait_recv returned %d", p_pw->err);
+		NM_LOGF("drv->wait_recv returned %d", p_pw->err);
 	}
 	piom_req_success(&p_pw->inst);
 	/* process complete request */
 	p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
 
 	if (p_pw->err < 0) { // possible ?
-		NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
+		NM_LOGF("nm_process_complete_rq returned %d", p_pw->err);
 	}
 
         return p_pw->err;
@@ -656,7 +656,7 @@ int nm_piom_block_any(piom_server_t            server,
 			p_pw->err = nm_process_complete_recv_rq(p_pw->p_gate->p_core->p_sched, p_pw, p_pw->err);
 
 			if (p_pw->err < 0) { // possible ?
-				NM_DISPF("nm_process_complete_rq returned %d", p_pw->err);
+				NM_LOGF("nm_process_complete_rq returned %d", p_pw->err);
 			}
 
 			err = p_pw->err;

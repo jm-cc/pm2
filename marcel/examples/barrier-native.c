@@ -56,6 +56,7 @@ main (int argc, char *argv[])
       marcel_t threads[THREADS];
       marcel_barrier_t barrier;
       marcel_barrierattr_t battr;
+      unsigned seen_barrier_serial_thread = 0;
 
       marcel_barrierattr_init (&battr);
       marcel_barrierattr_setmode (&battr, barrier_modes[mode]);
@@ -64,7 +65,8 @@ main (int argc, char *argv[])
 
       for (thread = 0; thread < THREADS; thread++)
 	{
-	  err = marcel_create (&threads[thread], &tattr, start_thread, &barrier);
+	  err = marcel_create (&threads[thread], &tattr,
+			       start_thread, &barrier);
 	  if (err != 0)
 	    {
 	      printf ("failed to create thread %u: error %i\n",
@@ -85,11 +87,16 @@ main (int argc, char *argv[])
 	      return 1;
 	    }
 
-	  if (ret != NULL)
-	    {
-	      printf ("thread %u failed with %p\n", thread, ret);
-	      return 2;
-	    }
+	  if (ret == (void *) MARCEL_BARRIER_SERIAL_THREAD)
+	    seen_barrier_serial_thread++;
+	}
+
+      if (seen_barrier_serial_thread != 1)
+	{
+	  printf ("didn't get `MARCEL_BARRIER_SERIAL_THREAD' "
+		  "once as expected: %u\n",
+		  seen_barrier_serial_thread);
+	  return 1;
 	}
 
       err = marcel_barrier_destroy (&barrier);
@@ -99,7 +106,16 @@ main (int argc, char *argv[])
 		  (int) barrier_modes[mode]);
 	  return 1;
 	}
+
+      err = marcel_barrierattr_destroy (&battr);
+      if (err != 0)
+	{
+	  printf ("failed to destroy barrier attribute\n");
+	  return 1;
+	}
     }
+
+  marcel_end ();
 
   return 0;
 }

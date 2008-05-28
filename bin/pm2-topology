@@ -1,0 +1,33 @@
+#!/usr/bin/env pm2-sh
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Create the flavor if needed
+flavor=$(pm2-flavor get --flavor=marcel-numa 2>/dev/null)
+if [ -z "$flavor" ] ; then
+    pm2-create-sample-flavors marcel-numa
+fi
+
+# Compile the application
+make -C $PM2_ROOT/marcel/examples FLAVOR=marcel-numa read_topology
+echo
+echo
+
+# Execute the application
+$(pm2-which --flavor marcel-numa read_topology)
+
+
+
+

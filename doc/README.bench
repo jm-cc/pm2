@@ -19,12 +19,15 @@ running their benchmarks. See the "Benchmarks configuration" section below.
 Benchmarks configuration
 ========================
 
-- Module Mad3
-  -----------
+- Modules Mad3 and Nmad
+  ---------------------
 
-  This module benchmark requires some information about mapping devices onto actual
-  networks and computers. This information should be written in the
-  ${HOME}|${PM2_HOME}/.pm2/bench/mad3 file according to the following format:
+  These modules benchmarks require some information about mapping
+  devices onto actual networks and computers. This information should
+  be written in the
+  ${HOME}|${PM2_HOME}/.pm2/bench/mad3
+  ${HOME}|${PM2_HOME}/.pm2/bench/nmad
+  files according to the following format:
   <dev>:<net>:<comma separated host list>
 
   Example:
@@ -34,6 +37,11 @@ mx:dalton_mx:averell,william
 qsnet:dalton_qsnet:joe,jack
 >>
 
+  By default, Nmad will run the benchmarks for tcp. If you wish to
+  specify another network, you can set the environment variable
+  BENCHNET as follows:
+
+  % BENCHNET=mx pm2-bench nmad
 
 Adding new benchmarks
 =====================

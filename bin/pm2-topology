@@ -14,20 +14,32 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+# Check if the application should be launched remotely
+SSH=""
+if [ -n "$1" ] ; then
+    SSH="ssh $1"
+fi
+
 # Create the flavor if needed
-flavor=$(pm2-flavor get --flavor=marcel-numa 2>/dev/null)
+flavor=$($SSH pm2-flavor get --flavor=marcel-numa 2>/dev/null)
 if [ -z "$flavor" ] ; then
-    pm2-create-sample-flavors marcel-numa
+    $SSH pm2-create-sample-flavors marcel-numa
 fi
 
 # Compile the application
-make -C $PM2_ROOT/marcel/examples FLAVOR=marcel-numa read_topology
+$SSH make -C $PM2_ROOT/marcel/examples FLAVOR=marcel-numa read_topology
 echo
 echo
 
 # Execute the application
-$(pm2-which --flavor marcel-numa read_topology)
+$SSH $($SSH pm2-which --flavor marcel-numa read_topology) > /tmp/topology_$$.out
+cat /tmp/topology_$$.out
 
-
-
-
+# If the application has been launched remotely, download the file and run latex on it
+if [ -n "$1" ] ; then
+    file=$(grep latex /tmp/topology_$$.out | awk '{print $2}')
+    scp $1:$file.tex .
+    latex $file
+    dvips -Ppdf  -t landscape $file.dvi
+    ps2pdf $file.ps
+fi

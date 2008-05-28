@@ -195,6 +195,7 @@ Prints the state of a thread
 end
 
 define marcel-threads
+  printf "marcel_t         NAME PRIO ST CPU INIT   SCHED   RUN\n"
   set $num=0
   while $num<ma__nb_vp
     set $vp=&marcel_topo_vp_level[$num]

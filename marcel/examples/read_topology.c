@@ -71,7 +71,7 @@ void f(struct marcel_topo_level *l, int i) {
   }
 }
 
-int main(int argc, char **argv) {
+int marcel_main(int argc, char **argv) {
   struct marcel_topo_level *l;
   char hostname[256], filename[256];
 

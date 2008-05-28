@@ -1,1 +1,1 @@
-Enable the 'blocking' sections support of Marcel.
+Enable the marcel_enter/leave_blocking_section functions.

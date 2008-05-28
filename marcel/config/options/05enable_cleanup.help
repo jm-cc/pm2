@@ -1,1 +1,1 @@
-Enable the cleanup mechanisms of Marcel.
+Enable the marcel_cleanup_push/pop functions.

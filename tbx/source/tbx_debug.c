@@ -424,7 +424,7 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	debug_flags &= (~op_done);
 	op_done |= (debug_flags & PM2DEBUG_DO_OPT);
 
-	for (opt = 0;
+	for (opt = 1;
 	     (opt < *argc) && (argv[opt] != NULL);
 	     opt++)
 	{

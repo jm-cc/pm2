@@ -112,6 +112,8 @@ nm_so_out_process_success_rq(struct nm_sched *p_sched TBX_UNUSED,
     nm_so_pw_free(p_so_pw);
   }
 
+  nm_so_out_schedule_gate(p_gate);
+
   err = NM_ESUCCESS;
   return err;
 }

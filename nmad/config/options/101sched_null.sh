@@ -1,4 +1,0 @@
-PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -DCONFIG_SCHED_NULL"
-PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/schedulers/sched_null/include"
-
-PM2_NMAD_SCHED="sched_null"

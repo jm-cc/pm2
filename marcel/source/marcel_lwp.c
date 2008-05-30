@@ -193,12 +193,26 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	// signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
 	// correct.
 	marcel_sig_disable_interrupts();
-	marcel_kthread_create(&lwp->pid,
-	    ma_per_lwp(run_task,
-		lwp) ? (void *) THREAD_GETMEM(ma_per_lwp(run_task, lwp),
-		initial_sp) : NULL, ma_per_lwp(run_task,
-		lwp) ? THREAD_GETMEM(ma_per_lwp(run_task, lwp), stack_base) : 0,
-	    lwp_kthread_start_func, (void *) lwp);
+
+	{
+		void *initial_sp, *stack_base;
+		const marcel_task_t *run_task;
+
+		run_task = ma_per_lwp(run_task, lwp);
+
+		if (run_task != NULL)
+			{
+				initial_sp = (void *) THREAD_GETMEM(run_task, initial_sp);
+				stack_base = THREAD_GETMEM(run_task, stack_base);
+			}
+		else
+			initial_sp = stack_base = NULL;
+
+		marcel_kthread_create(&lwp->pid,
+													initial_sp, stack_base,
+													lwp_kthread_start_func, lwp);
+	}
+
 	marcel_sig_enable_interrupts();
 #endif
 	LOG_RETURN(ma_per_lwp(vpnum, lwp));

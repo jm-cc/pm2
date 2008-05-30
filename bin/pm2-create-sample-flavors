@@ -79,7 +79,7 @@ registering_flavors() {
 	--marcel=numa --marcel=smp_bind_proc \
 	--marcel=smp_smt_idle --marcel=pmarcel --marcel=standard_main \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
-	--marcel=debug_bubblesched \
+	--marcel=debug_bubblesched --marcel=valgrind \
 	--all=debug --all=gdb --all=noinline
 
     register_flavor marcel-forestgomp-fxtdebug \

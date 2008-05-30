@@ -82,8 +82,9 @@ static inline void nm_so_post_all_force(struct nm_core*p_core)
 { /* do nothing */ }
 #endif /* PIOMAN */
 
-
-enum transfer_type{
+/** Transfer types for isend/irecv code factorization
+ */
+enum transfer_type {
   datatype_transfer,
   iov_transfer,
   contiguous_transfer,

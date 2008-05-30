@@ -18,6 +18,12 @@
 
 #include <tbx_macros.h>
 
+/* from legacy nm_proto_id.h:
+ *   - Scheduler protocol flows: 1-16
+ *   - General purpose protocol flows: 17-127   (obsolete)
+ *   - User channels: 128-255
+ */
+
 #define NM_SO_PROTO_DATA_FIRST   128
 #define NM_SO_PROTO_RDV          11
 #define NM_SO_PROTO_ACK          12

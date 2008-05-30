@@ -33,7 +33,6 @@
 #include "nm_trk.h"
 #include "nm_trk_rq.h"
 #include "nm_sched.h"
-#include "nm_proto.h"
 #include "nm_cnx_rq.h"
 #include <nm_public.h>
 #include <nm_drivers.h>
@@ -238,50 +237,6 @@ nm_core_schedule_exit(struct nm_core *p_core) {
         return err;
 }
 
-
-/** Load and initialize a protocol.
- *
- * out parameters:
- * pp_proto - structure representing the protocol (allocated by nm_core)
- */
-int
-nm_core_proto_init(struct nm_core	 *p_core,
-                   int (*proto_load)(struct nm_proto_ops *),
-                   struct nm_proto	**pp_proto) {
-        struct nm_proto	*p_proto	= NULL;
-        int err;
-
-        p_proto	= TBX_MALLOC(sizeof(struct nm_proto));
-        if (!p_proto) {
-                err = -NM_ENOMEM;
-                goto out;
-        }
-
-        p_proto->p_core	= p_core;
-        p_proto->priv	= NULL;
-
-        memset(&p_proto->ops, 0, sizeof(struct nm_proto_ops));
-        memset(&p_proto->cap, 0, sizeof(struct nm_proto_cap));
-
-        err = proto_load(&p_proto->ops);
-        if (err != NM_ESUCCESS) {
-                NM_DISPF("proto_load returned %d", err);
-                goto out;
-        }
-
-        err = p_proto->ops.init(p_proto);
-        if (err != NM_ESUCCESS) {
-                NM_DISPF("proto.init returned %d", err);
-                goto out;
-        }
-
-        *pp_proto	= p_proto;
-        err = NM_ESUCCESS;
-
- out:
-        return err;
-}
-
 #ifdef PIOMAN
 int nm_piom_core_poll(piom_server_t            server,
 		  piom_op_t                _op,
@@ -376,7 +331,6 @@ nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv) {
 	post_rq->p_gate = NULL;
 	post_rq->p_gdrv = NULL;
 	post_rq->p_gtrk = NULL;
-	post_rq->p_proto = NULL;
 	post_rq->proto_id = 0;
 	post_rq->seq = 0;
 	post_rq->sched_priv = NULL;

@@ -26,7 +26,6 @@
 struct nm_drv;
 struct nm_trk;
 struct nm_gate;
-struct nm_proto;
 struct nm_pkt_head;
 
 /** IO vector entry meta-data.
@@ -100,10 +99,6 @@ struct nm_pkt_wrap {
         /** Assignated gate track, if relevant.
          */
         struct nm_gate_trk	*p_gtrk;
-
-        /** Assignated protocol if relevant.
-         */
-        struct nm_proto		*p_proto;
 
         /** Protocol id.
            - communication flow this packet belongs to

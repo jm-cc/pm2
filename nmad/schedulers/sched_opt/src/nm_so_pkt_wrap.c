@@ -150,7 +150,6 @@ nm_so_pw_raz(struct nm_so_pkt_wrap *p_so_pw){
   p_so_pw->pw.p_gate = NULL;
   p_so_pw->pw.p_gdrv = NULL;
   p_so_pw->pw.p_gtrk = NULL;
-  p_so_pw->pw.p_proto = NULL;
   p_so_pw->pw.proto_id = 0;
   p_so_pw->pw.seq = 0;
   p_so_pw->pw.sched_priv = NULL;
@@ -398,7 +397,6 @@ int nm_so_pw_split(struct nm_so_pkt_wrap *p_so_pw,
   p_so_pw2->pw.p_gate = p_so_pw->pw.p_gate;
   p_so_pw2->pw.p_gdrv = p_so_pw->pw.p_gdrv;
   p_so_pw2->pw.p_gtrk = p_so_pw->pw.p_gtrk;
-  p_so_pw2->pw.p_proto = p_so_pw->pw.p_proto;
   p_so_pw2->pw.proto_id = p_so_pw->pw.proto_id;
   p_so_pw2->pw.seq = p_so_pw->pw.seq;
   p_so_pw2->pw.length = p_so_pw->pw.length - offset;

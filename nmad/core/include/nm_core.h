@@ -55,7 +55,6 @@
 #include "nm_gate.h"
 #include "nm_drv.h"
 
-struct nm_proto;
 struct nm_sched;
 
 /** Core NewMadeleine structure.
@@ -77,10 +76,6 @@ struct nm_core {
         /** Array of drivers.
          */
         struct nm_drv	 	 driver_array[NUMBER_OF_DRIVERS];
-
-        /** Array of protocols.
-         */
-        struct nm_proto		*p_proto_array[NUMBER_OF_PROTOCOLS];
 
         /** Compiled-in scheduler.
          */

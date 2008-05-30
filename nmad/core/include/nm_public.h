@@ -23,8 +23,6 @@
 struct nm_core;
 struct nm_drv_ops;
 struct nm_pkt_wrap;
-struct nm_proto;
-struct nm_proto_ops;
 struct nm_sched_ops;
 struct nm_trk;
 struct nm_trk_rq;
@@ -51,11 +49,6 @@ nm_core_init		(int			 *argc,
 
 int
 nm_core_exit           (struct nm_core		*p_core);
-
-int
-nm_core_proto_init	(struct nm_core		 *p_core,
-                         int (*proto_load)(struct nm_proto_ops *),
-                         struct nm_proto	**pp_proto);
 
 int
 nm_core_driver_load	(struct nm_core		 *p_core,

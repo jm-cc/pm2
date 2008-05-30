@@ -372,19 +372,6 @@ __nm_core_wrap_buffer	(struct nm_core		 *p_core,
                 NM_DISPF("nm_iov_append_buf returned %d", err);
         }
 
-        /* protocol
-         */
-        if (proto_id) {
-                if (proto_id > 254) {
-                        err = -NM_EINVAL;
-                        goto out;
-                }
-
-                p_pw->p_proto	= p_core->p_proto_array[proto_id];
-        } else {
-                p_pw->p_proto	= NULL;
-        }
-
         /* initialize other fields
          */
         p_pw->p_gate	= p_gate;

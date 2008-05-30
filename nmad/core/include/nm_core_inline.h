@@ -385,45 +385,5 @@ __nm_core_wrap_buffer	(struct nm_core		 *p_core,
         return err;
 }
 
-/** Post a pkt wrapper to the pre-sched output list.
- */
-static
-__inline__
-int
-__nm_core_post_send	(struct nm_core		*p_core TBX_UNUSED,
-                         struct nm_pkt_wrap	*p_pw) {
-        int err;
-
-        if (!p_pw->p_gate) {
-                err	= -NM_EINVAL;
-                goto out;
-        }
-
-        tbx_slist_append(p_pw->p_gate->pre_sched_out_list, p_pw);
-        err = NM_ESUCCESS;
-
- out:
-        return err;
-}
-
-/** Post a pkt wrapper to the pre-sched input list.
- */
-static
-__inline__
-int
-__nm_core_post_recv	(struct nm_core		*p_core,
-                         struct nm_pkt_wrap	*p_pw) {
-        int err;
-
-        if (p_pw->p_gate) {
-                tbx_slist_append(p_core->p_sched->submit_aux_recv_req, p_pw);
-        } else {
-                tbx_slist_append(p_core->p_sched->submit_perm_recv_req, p_pw);
-        }
-
-        err = NM_ESUCCESS;
-
-        return err;
-}
 
 #endif /* NM_CORE_INLINE_H */

@@ -178,10 +178,8 @@ nm_core_schedule_init(struct nm_core *p_core,
 
         p_sched->pending_aux_recv_req	= tbx_slist_nil();
         p_sched->post_aux_recv_req	= tbx_slist_nil();
-        p_sched->submit_aux_recv_req	= tbx_slist_nil();
         p_sched->pending_perm_recv_req	= tbx_slist_nil();
         p_sched->post_perm_recv_req	= tbx_slist_nil();
-        p_sched->submit_perm_recv_req	= tbx_slist_nil();
 
         err = p_sched->ops.init(p_sched);
         if (err != NM_ESUCCESS)
@@ -195,10 +193,8 @@ nm_core_schedule_init(struct nm_core *p_core,
  out_free_lists:
         tbx_slist_free(p_sched->pending_aux_recv_req);
         tbx_slist_free(p_sched->post_aux_recv_req);
-        tbx_slist_free(p_sched->submit_aux_recv_req);
         tbx_slist_free(p_sched->pending_perm_recv_req);
         tbx_slist_free(p_sched->post_perm_recv_req);
-        tbx_slist_free(p_sched->submit_perm_recv_req);
 
  out_free:
         TBX_FREE(p_sched);
@@ -219,17 +215,13 @@ nm_core_schedule_exit(struct nm_core *p_core) {
 
         tbx_slist_clear(p_sched->pending_aux_recv_req);
         tbx_slist_clear(p_sched->post_aux_recv_req);
-        tbx_slist_clear(p_sched->submit_aux_recv_req);
         tbx_slist_clear(p_sched->pending_perm_recv_req);
         tbx_slist_clear(p_sched->post_perm_recv_req);
-        tbx_slist_clear(p_sched->submit_perm_recv_req);
 
         tbx_slist_free(p_sched->pending_aux_recv_req);
         tbx_slist_free(p_sched->post_aux_recv_req);
-        tbx_slist_free(p_sched->submit_aux_recv_req);
         tbx_slist_free(p_sched->pending_perm_recv_req);
         tbx_slist_free(p_sched->post_perm_recv_req);
-        tbx_slist_free(p_sched->submit_perm_recv_req);
 
         TBX_FREE(p_sched);
         p_core->p_sched = NULL;
@@ -715,7 +707,6 @@ nm_core_driver_exit(struct nm_core  *p_core) {
       return err;
     }
 
-    tbx_slist_free(p_gate->pre_sched_out_list);
     tbx_slist_free(p_gate->post_sched_out_list);
   }
 
@@ -753,7 +744,6 @@ nm_core_gate_init(struct nm_core	*p_core,
         p_gate->id	= p_core->nb_gates;
         p_gate->p_core	= p_core;
         p_gate->p_sched	= p_core->p_sched;
-        p_gate->pre_sched_out_list	= tbx_slist_nil();
         p_gate->post_sched_out_list	= tbx_slist_nil();
 
         p_core->nb_gates++;
@@ -962,27 +952,6 @@ nm_core_wrap_buffer	(struct nm_core		 *p_core,
         return __nm_core_wrap_buffer(p_core, gate_id, proto_id, seq, buf, len, pp_pw);
 }
 
-/** Public function to post a send request.
- *
- * Mostly for debugging purpose. The wrapping is usually done by
- * internal code that has at least access to protected methods
- */
-int
-nm_core_post_send	(struct nm_core		*p_core,
-                         struct nm_pkt_wrap	*p_pw) {
-        return __nm_core_post_send(p_core, p_pw);
-}
-
-/** Public function to post a receive request.
- *
- * Mostly for debugging purpose. The wrapping is usually done by
- * internal code that has at least access to protected methods
- */
-int
-nm_core_post_recv	(struct nm_core		*p_core,
-                         struct nm_pkt_wrap	*p_pw) {
-        return __nm_core_post_recv(p_core, p_pw);
-}
 
 /** Load a newmad component from disk. The actual path loaded is
  * ${PM2_CONF_DIR}/'entity'/'entity'_'driver'.xml

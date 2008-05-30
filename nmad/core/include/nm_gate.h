@@ -109,11 +109,6 @@ struct nm_gate {
          * outgoing *
          */
 
-        /** Pre-scheduler outgoing packet wrap.
-           - list filled from outside the scheduler
-	*/
-        p_tbx_slist_t pre_sched_out_list;
-
         /** Post-scheduler outgoing packet wrap lists.
            - list filled by the implementation-dependent scheduling code
 	*/

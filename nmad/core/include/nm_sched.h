@@ -60,9 +60,6 @@ struct nm_sched {
         /** Aux requests to post. */
         p_tbx_slist_t	 post_aux_recv_req;
 
-        /** Aux requests submitted to scheduler from external code. */
-        p_tbx_slist_t	 submit_aux_recv_req;
-
 
         /** Pending permissive input request list.
          */
@@ -70,9 +67,6 @@ struct nm_sched {
 
         /** Permissive requests to post. */
         p_tbx_slist_t	 post_perm_recv_req;
-
-        /** Permissive requests submitted to scheduler from external code. */
-        p_tbx_slist_t	 submit_perm_recv_req;
 
 
 };

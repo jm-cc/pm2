@@ -25,13 +25,7 @@
 #include <assert.h>
 
 #include <nm_public.h>
-#if defined CONFIG_SCHED_MINI_ALT
-#  include <nm_mini_alt_public.h>
-#elif defined CONFIG_SCHED_OPT
-#  include <nm_so_public.h>
-#else
-#  error mad_nmad.c requires the mini alt scheduler for now
-#endif
+#include <nm_so_public.h>
 
 #if defined CONFIG_MX
 #  include <nm_mx_public.h>
@@ -149,46 +143,13 @@ mad_nmad_after_open_channel(p_mad_channel_t);
 static void
 mad_nmad_disconnect(p_mad_connection_t);
 
-#if defined CONFIG_SCHED_MINI_ALT
-#  ifdef MAD_MESSAGE_POLLING
-static p_mad_connection_t
-mad_nmad_poll_message(p_mad_channel_t);
-#  endif /* MAD_MESSAGE_POLLING */
-
-static void
-mad_nmad_new_message(p_mad_connection_t);
-
-static p_mad_connection_t
-mad_nmad_receive_message(p_mad_channel_t);
-
-static void
-mad_nmad_send_buffer(p_mad_link_t,
-                     p_mad_buffer_t);
-
-static void
-mad_nmad_receive_buffer(p_mad_link_t,
-                        p_mad_buffer_t *);
-
-static void
-mad_nmad_send_buffer_group(p_mad_link_t,
-                           p_mad_buffer_group_t);
-
-static void
-mad_nmad_receive_sub_buffer_group(p_mad_link_t,
-                                  tbx_bool_t,
-                                  p_mad_buffer_group_t);
-#endif
 
 /* static vars
  */
 
 /* core and proto objects */
 static struct nm_core	*p_core		= NULL;
-#if defined CONFIG_SCHED_MINI_ALT
-static struct nm_proto	*p_proto	= NULL;
-#elif defined CONFIG_SCHED_OPT
 static struct nm_so_interface *p_so_if	= NULL;
-#endif
 
 /*
  * Driver private functions
@@ -262,20 +223,6 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->choice                     = NULL;
         interface->get_static_buffer          = NULL;
         interface->return_static_buffer       = NULL;
-#if defined CONFIG_SCHED_MINI_ALT
-        interface->new_message                = NULL;
-        interface->finalize_message           = NULL;
-#  ifdef MAD_MESSAGE_POLLING
-        interface->poll_message               = mad_nmad_poll_message;
-#  endif // MAD_MESSAGE_POLLING
-        interface->new_message                = mad_nmad_new_message;
-        interface->receive_message            = mad_nmad_receive_message;
-        interface->message_received           = NULL;
-        interface->send_buffer                = mad_nmad_send_buffer;
-        interface->receive_buffer             = mad_nmad_receive_buffer;
-        interface->send_buffer_group          = mad_nmad_send_buffer_group;
-        interface->receive_sub_buffer_group   = mad_nmad_receive_sub_buffer_group;
-#else
         interface->new_message                = NULL;
         interface->finalize_message           = NULL;
 #  ifdef MAD_MESSAGE_POLLING
@@ -288,7 +235,6 @@ mad_nmad_register(p_mad_driver_interface_t interface) {
         interface->receive_buffer             = NULL;
         interface->send_buffer_group          = NULL;
         interface->receive_sub_buffer_group   = NULL;
-#endif
         NM_LOG_OUT();
 
         return "nmad";

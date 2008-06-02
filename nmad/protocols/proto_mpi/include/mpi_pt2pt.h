@@ -191,11 +191,11 @@ int MPI_Irecv(void* buffer,
  * by the size of the packed message, so that it can be used as input
  * to a subsequent call to MPI_UNPACK.
  * @param inbuf initial address of receive buffer
- * @param incount number of elements in receive buffer
- * @param datatype datatype of each receive buffer element
- * @param outbuf
- * @param outsize
+ * @param insize number of elements in receive buffer
  * @param position
+ * @param outbuf
+ * @param outcount
+ * @param datatype datatype of each receive buffer element
  * @param comm communicator
  * @return MPI status
  */

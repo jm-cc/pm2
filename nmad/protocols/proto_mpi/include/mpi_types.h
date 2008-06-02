@@ -224,7 +224,7 @@ typedef int MPI_Errhandler;
 #define MPI_HOST            2
 #define MPI_IO              3
 #define MPI_WTIME_IS_GLOBAL 4
-/* @] */
+/* @} */
 
 /* @}*/
 

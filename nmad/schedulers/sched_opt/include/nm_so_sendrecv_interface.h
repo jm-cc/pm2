@@ -135,7 +135,10 @@ nm_so_sr_isend_iov(struct nm_so_interface *p_so_interface,
 
 /** Test for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
- *  @param request the request to check.
+ *  @param gate_id the destination gate id.
+ *  @param tag the message tag.
+ *  @param segp
+ *  @param p_request the request to check.
  *  @return The NM status.
  */
 extern int

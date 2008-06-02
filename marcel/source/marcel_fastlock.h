@@ -202,7 +202,7 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 		lock->__status = 1;
 		ma_spin_unlock(&lock->__spinlock);
 	}
-	mdebug("getting lock %p in lock %p\n", self, lock);
+	mdebug("getting lock %p in task %p\n", lock, self);
 	//LOG_OUT();
 	return ret;
 }
@@ -229,7 +229,7 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 		lock->__status = 1;
 		lpt_lock_release(&lock->__spinlock);
 	}
-	mdebug("getting lock %p in lock %p\n", self, lock);
+	mdebug("getting lock %p in task %p\n", lock, self);
 	//LOG_OUT();
 	return ret;
 }
@@ -246,14 +246,14 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
     if (first->next) {
       first->next->last=first->last;
     }
-    mdebug("releasing lock %p in lock %p to %p\n", marcel_self(), lock, 
+    mdebug("releasing lock %p in task %p to %p\n", lock, marcel_self(),
 	   first->task);
     first->blocked=0;
     ma_smp_wmb();
     ma_wake_up_thread(first->task);
     ret=1;
   } else {
-    mdebug("releasing lock %p in lock %p\n", marcel_self(), lock);
+    mdebug("releasing lock %p in task %p\n", lock, marcel_self());
     lock->__status = 0; /* free */
     ret=0;
   }
@@ -274,14 +274,14 @@ __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
     if (first->next) {
       first->next->last=first->last;
     }
-    mdebug("releasing lock %p in lock %p to %p\n", marcel_self(), lock, 
+    mdebug("releasing lock %p in task %p to %p\n", lock, marcel_self(),
 	   first->task);
     first->blocked=0;
     ma_smp_wmb();
     ma_wake_up_thread(first->task);
     ret=1;
   } else {
-    mdebug("releasing lock %p in lock %p\n", marcel_self(), lock);
+    mdebug("releasing lock %p in task %p\n", lock, marcel_self());
     lock->__status = 0; /* free */
     ret=0;
   }

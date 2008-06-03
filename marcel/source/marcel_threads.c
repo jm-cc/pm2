@@ -303,6 +303,9 @@ marcel_create_internal(marcel_t * __restrict pid,
 		}
 		stack_base = attr->__stackaddr - attr->__stacksize;
 		stack_kind = MA_STATIC_STACK;
+
+		/* FIXME/TODO: Initialize TLS (LDT descriptor).  */
+
 	} else {		/* (!attr->stack_base) */
 		char *bottom;
 #ifdef MA__DEBUG

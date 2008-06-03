@@ -286,19 +286,19 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  marcel_entity_t *ee;
 	  
-	  if (bb->hold.nr_ready && (ma_entity_load(e[i]) != 1)) 
+	  if (bb->hold.nr_ready && (ma_entity_load(e[i]) != 1)) {
 	    /* If the bubble is not empty, and contains more than one thread */ 
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_ne++;
-	      bubble_has_exploded = 1; /* We exploded one bubble,
-					  it may be enough ! */
 	    for_each_entity_scheduled_in_bubble_end()
+	    bubble_has_exploded = 1; /* We exploded one bubble,
+					it may be enough ! */
 	    bubble_sched_debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
-	}
-	else
-	  continue; 
+	    break;
+	  }
+	} 
       }
-	  
+      
       if (!bubble_has_exploded) {
 	if (ne >= arity) {
 	  __distribute_entities(l, e, ne, load_manager);
@@ -327,21 +327,18 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	    bubble_sched_debug("exploding bubble %p\n", bb);
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_e[j++] = ee;
-	      bubble_has_exploded = 1;
 	    for_each_entity_scheduled_in_bubble_end()
+	    bubble_has_exploded = 1;
+	    break;
 	  }
 	}
-	else
-	  continue; /* new_e only refers to the newly extracted
-		       entities */
       }
       MA_BUG_ON(new_ne != j);
       
       __sched_submit(new_e, new_ne, l);
       return __marcel_bubble_affinity(l);
     }
-  }
-  else { /* ne >= nvp */ 
+  } else { /* ne >= nvp */ 
     /* We can delay bubble explosion ! */
     bubble_sched_debug("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
     __distribute_entities(l, e, ne, load_manager);

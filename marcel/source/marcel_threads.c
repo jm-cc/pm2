@@ -249,7 +249,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	marcel_attr_t myattr;
 #endif
 	void *stack_base;
-	int stack_kind;
+	int stack_kind, err;
 
 	LOG_IN();
 
@@ -303,7 +303,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 		}
 		stack_base = attr->__stackaddr - attr->__stacksize;
 		stack_kind = MA_STATIC_STACK;
-		/* TODO: Initialize TLS */
 	} else {		/* (!attr->stack_base) */
 		char *bottom;
 #ifdef MA__DEBUG
@@ -359,7 +358,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	/* Le nouveau thread est démarré par le scheduler choisi */
 	/* Seul le père revient... */
-	marcel_sched_create(cur, new_task, attr, special_mode, base_stack);
+	err = marcel_sched_create(cur, new_task, attr, special_mode, base_stack);
+	MA_BUG_ON(err != 0);
 
 	if (cur->child)
 		/* pour les processus normaux, on réveille le fils nous-même */

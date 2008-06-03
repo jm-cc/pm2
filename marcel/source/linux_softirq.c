@@ -338,6 +338,7 @@ static int ksoftirqd(void * __bind_cpu) {
 }
 
 inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
+	int err;
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
 
@@ -357,7 +358,9 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	marcel_create_special(&lwp->ksoftirqd_task, &attr, (void*(*)(void*))ksoftirqd, lwp);
+	err = marcel_create_special(&lwp->ksoftirqd_task, &attr, (void*(*)(void*))ksoftirqd, lwp);
+	MA_BUG_ON(err != 0);
+
 	LOG_RETURN(lwp->ksoftirqd_task);
 }
 

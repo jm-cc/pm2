@@ -219,7 +219,7 @@ mad3()
 	fi
     fi
 
-    $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
+    $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE $LEONIE_ARGS "${prog_args[@]}"
 
     exit $?
 }

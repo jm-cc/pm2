@@ -725,7 +725,7 @@ int ma_node_entity(marcel_entity_t *entity)
 	}	
 	ma_runqueue_t *rq = ma_to_rq_holder(holder);
 	struct marcel_topo_level *level
-		= tbx_container_of(rq, struct marcel_topo_level, sched);
+		= tbx_container_of(rq, struct marcel_topo_level, rq);
 		
 	if (nodelevel == -1)
 	{

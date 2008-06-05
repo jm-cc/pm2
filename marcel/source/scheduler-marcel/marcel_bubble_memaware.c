@@ -91,7 +91,7 @@ void ma_clear_spread(void)
  * On place aussi les entites remontees dans un tableau de SPREAD */
 void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_level *level, int recurse)
 {
-	ma_runqueue_t *rqlevel = &level->sched;
+	ma_runqueue_t *rqlevel = &level->rq;
 
 	/* on regarde ce qui s'execute sur le niveau */
 	int j = 0;
@@ -140,7 +140,7 @@ void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *su
 {
 	//marcel_fprintf(stderr,"down me %p\n",me);
 	/* Calcul du nombre d'entités sur me */
-	ma_runqueue_t *rq =&me->sched;
+	ma_runqueue_t *rq =&me->rq;
 	ma_holder_t *h = &rq->as_holder;
 	marcel_entity_t *e;
 	ma_holder_rawlock(h);

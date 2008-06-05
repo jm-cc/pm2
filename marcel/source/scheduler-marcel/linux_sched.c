@@ -1227,7 +1227,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		/* "extra" LWPs are apart */
 		rq->father=NULL;
 	else {
-		rq->father=&marcel_topo_vp_level[num].sched;
+		rq->father=&marcel_topo_vp_level[num].rq;
 #ifdef MA__SMP
 		if (num < marcel_nbvps()) {
 			marcel_vpset_set(&ma_main_runqueue.vpset,num);
@@ -1247,7 +1247,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 #endif
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
-		rq = &marcel_topo_vp_level[num].sched;
+		rq = &marcel_topo_vp_level[num].rq;
 		ma_init_rq(rq, name, MA_VP_RQ);
 		rq->level = marcel_topo_nblevels-1;
 		rq->father = NULL;
@@ -1320,7 +1320,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		else
 			snprintf(name,sizeof(name), "%s%d",
 				base[level->children[i]->type], level->children[i]->number);
-		newrq = &level->children[i]->sched;
+		newrq = &level->children[i]->rq;
 		ma_init_rq(newrq, name, rqtypes[level->children[i]->type]);
 		newrq->level = levelnum;
 		newrq->father = rq;

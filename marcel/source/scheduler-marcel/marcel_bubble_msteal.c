@@ -280,7 +280,7 @@ void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int 
 							ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
 							ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->as_holder, totalload, penalty, score, stolen, recurse + 1);
 							ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
-							*fromlevel = tbx_container_of(ma_rq_holder(h), struct marcel_topo_level, sched);
+							*fromlevel = tbx_container_of(ma_rq_holder(h), struct marcel_topo_level, rq);
 						}
 					}
 				}
@@ -321,7 +321,7 @@ void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int 
 /* Find an entity on level */
 void ma_see(struct marcel_topo_level *level, int *totalload, int penalty, int *score, marcel_entity_t **stolen, struct marcel_topo_level **fromlevel) 
 {
-	ma_runqueue_t *rq = &level->sched;
+	ma_runqueue_t *rq = &level->rq;
 	
 	if (!rq)
 		return;
@@ -416,7 +416,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 		}
 		
 		if (upentity->sched_holder->type == MA_RUNQUEUE_HOLDER 
-			 && ma_rq_holder(upentity->sched_holder) == &father->sched)
+			 && ma_rq_holder(upentity->sched_holder) == &father->rq)
 			break;
 			 
 		upentity = &ma_bubble_holder(upentity->init_holder)->as_entity;
@@ -434,7 +434,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 		}
 		
 		if (family[number]->sched_holder->type == MA_RUNQUEUE_HOLDER 
-			 && ma_rq_holder(family[number]->sched_holder) == &father->sched)
+			 && ma_rq_holder(family[number]->sched_holder) == &father->rq)
 			break;
 			 
 		family[number+1] = &ma_bubble_holder(family[number]->init_holder)->as_entity;
@@ -464,7 +464,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 			/* We leave here scheduled entities we found on the bubble  we want to lift */
 			for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(family[number]))
 				/* To avoid bubble on mother bubble runqueue */
-				if (rqholder != &marcel_topo_level(0,0)->sched.as_holder)
+				if (rqholder != &marcel_topo_level(0,0)->rq.as_holder)
 				{
 					state = ma_get_entity(downentity);
 					if (&ma_to_rq_holder(downentity->init_holder)->as_holder == rqholder)
@@ -551,7 +551,7 @@ int ma_see_up(struct marcel_topo_level *level)
 		int state = ma_get_entity(stolen);
 		if (holder)
 			ma_holder_rawunlock(holder);
-		holder = &marcel_topo_vp_level[vp].sched.as_holder;
+		holder = &marcel_topo_vp_level[vp].rq.as_holder;
 	
 		ma_holder_rawlock(holder);
 		marcel_fprintf(stderr,"MOVE : !!put stolen entity %p onto vp %d\n", stolen, vp);

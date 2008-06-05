@@ -26,7 +26,7 @@ static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_leve
   for (i = 0; i < ne; i++) 
     {	      
       int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->sched.as_holder, state);
+      ma_put_entity(e[i], &l[0]->rq.as_holder, state);
     }
 
   marcel_bubble_activate_idle_scheduler();

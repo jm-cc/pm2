@@ -170,7 +170,7 @@ struct ma_runqueue {
 
 /** \brief The main runqueue (for the whole machine) */
 extern ma_runqueue_t ma_main_runqueue;
-#define ma_main_runqueue (marcel_machine_level[0].sched)
+#define ma_main_runqueue (marcel_machine_level[0].rq)
 extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
@@ -180,7 +180,7 @@ ma_runqueue_t *ma_lwp_rq(ma_lwp_t lwp);
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 /** \brief Runqueue of VP run by LWP \e lwp */
 ma_runqueue_t *ma_lwp_vprq(ma_lwp_t lwp);
-#define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->sched)
+#define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->rq)
 /* \brief "Don't sched" runqueue of LWP \e lwp (for idle & such) */
 ma_runqueue_t *ma_dontsched_rq(ma_lwp_t lwp);
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))

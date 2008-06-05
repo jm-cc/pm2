@@ -274,7 +274,7 @@ void marcel_leave_blocking_section(void);
 	} else { \
 		ma_vp_lwp[vpnum] = (lwp); \
 	        ma_vpnum(lwp) = vpnum; \
-		ma_lwp_rq(lwp)->father = &marcel_topo_vp_level[vpnum].sched; \
+		ma_lwp_rq(lwp)->father = &marcel_topo_vp_level[vpnum].rq; \
 		ma_per_lwp(vp_level, lwp) = &marcel_topo_vp_level[vpnum]; \
 	} \
 } while(0)

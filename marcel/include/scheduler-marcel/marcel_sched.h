@@ -194,7 +194,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));
 		MA_BUG_ON(first_vp >= marcel_nbvps() && first_vp>=marcel_nballvps());
-		return &marcel_topo_vp_level[first_vp].sched;
+		return &marcel_topo_vp_level[first_vp].rq;
 	}
 }
 
@@ -282,7 +282,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 					continue;
 				if (!ma_per_lwp(online, lwp))
 					continue;
-				rq = &vp->sched;
+				rq = &vp->rq;
 				break;
 			}
 			break;
@@ -300,7 +300,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 					continue;
 				if (!ma_per_lwp(online, lwp))
 					continue;
-				rq2 = &vp->sched;
+				rq2 = &vp->rq;
 				if (rq2->as_holder.nr_ready < THREAD_THRESHOLD_LOW) {
 					rq = rq2;
 					break;
@@ -323,7 +323,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 					continue;
 				if (!ma_per_lwp(online, lwp))
 					continue;
-				rq2 = &vp->sched;
+				rq2 = &vp->rq;
 				if (rq2->as_holder.nr_ready < best) {
 					rq = rq2;
 					best = rq2->as_holder.nr_ready;

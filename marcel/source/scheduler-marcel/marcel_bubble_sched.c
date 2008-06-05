@@ -72,7 +72,7 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	//current_sched->submit(&marcel_root_bubble.as_entity);
 	ma_bubble_gather(&marcel_root_bubble);
 	int state = ma_get_entity(&marcel_root_bubble.as_entity);
-	ma_put_entity(&marcel_root_bubble.as_entity, &(&marcel_topo_vp_level[0])->sched.as_holder, state);
+	ma_put_entity(&marcel_root_bubble.as_entity, &(&marcel_topo_vp_level[0])->rq.as_holder, state);
 	
 	marcel_mutex_unlock(&current_sched_mutex);
 }
@@ -139,7 +139,7 @@ int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 }
 
 int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level) {
-	marcel_bubble_setinitrq(bubble, &level->sched);
+	marcel_bubble_setinitrq(bubble, &level->rq);
 	return 0;
 }
 
@@ -630,7 +630,7 @@ static void __ma_topo_lock(struct marcel_topo_level *level) {
 
 	/* Lock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->sched.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -645,7 +645,7 @@ static void __ma_topo_lock(struct marcel_topo_level *level) {
 
 static void ma_topo_lock(struct marcel_topo_level *level) {
 	/* Lock the runqueue */
-	ma_holder_rawlock(&level->sched.as_holder);
+	ma_holder_rawlock(&level->rq.as_holder);
 	__ma_topo_lock(level);
 }
 
@@ -662,7 +662,7 @@ static void __ma_topo_unlock(struct marcel_topo_level *level) {
 
 	/* Unlock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->sched.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -673,7 +673,7 @@ static void __ma_topo_unlock(struct marcel_topo_level *level) {
 static void ma_topo_unlock(struct marcel_topo_level *level) {
 	__ma_topo_unlock(level);
 	/* Now unlock the unqueue */
-	ma_holder_rawunlock(&level->sched.as_holder);
+	ma_holder_rawunlock(&level->rq.as_holder);
 }
 
 void ma_topo_lock_levels(struct marcel_topo_level *level) {
@@ -762,7 +762,7 @@ static void ma_topo_lock_bubbles(struct marcel_topo_level *level) {
 	int i;
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->sched.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_lock_subbubbles(ma_bubble_entity(e));
 		}
@@ -786,7 +786,7 @@ static void ma_topo_unlock_bubbles(struct marcel_topo_level *level) {
 
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->sched.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_subbubbles(ma_bubble_entity(e));
 		}

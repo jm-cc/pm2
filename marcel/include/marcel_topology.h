@@ -422,7 +422,7 @@ struct marcel_topo_level {
 	ma_atomic_t nbidle;		/**< \brief Number of currently idle SMT processors, for SMT Idleness */
 #endif
 
-	ma_runqueue_t sched;		/**< \brief data for the scheduler (runqueue for Marcel) */
+	ma_runqueue_t rq;		/**< \brief data for the scheduler (runqueue for Marcel) */
 
 #ifdef MA__SMP
 	/* for LWPs/VPs management */

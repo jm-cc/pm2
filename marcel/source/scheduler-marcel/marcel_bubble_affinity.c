@@ -32,12 +32,12 @@ volatile unsigned long succeeded_steals;
 volatile unsigned long failed_steals;
 
 /* Debug function that prints information about entities scheduled on
-   the runqueue &l[0]->sched */
+   the runqueue &l[0]->rq */
 static void
 __debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
 #if MA_AFF_DEBUG
   int k;
-  bubble_sched_debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->sched);
+  bubble_sched_debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->rq);
   for (k = 0; k < ne; k++)
     bubble_sched_debug("[%p, %d]", e[k], e[k]->type);
   bubble_sched_debug("end)\n");
@@ -68,7 +68,7 @@ __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
   for (i = 0; i < ne; i++) {	      
     if (e[i]) {
       int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->sched.as_holder, state);
+      ma_put_entity(e[i], &l[0]->rq.as_holder, state);
     }
   }
 }
@@ -98,9 +98,9 @@ load_from_children(struct marcel_topo_level **father) {
   if (arity)
     for (i = 0; i < arity; i++) {
       ret += load_from_children(&father[0]->children[i]);
-      ret += ma_count_entities_on_rq(&father[0]->children[i]->sched, RECURSIVE_MODE);
+      ret += ma_count_entities_on_rq(&father[0]->children[i]->rq, RECURSIVE_MODE);
     } else {
-    ret += ma_count_entities_on_rq(&father[0]->sched, RECURSIVE_MODE);
+    ret += ma_count_entities_on_rq(&father[0]->rq, RECURSIVE_MODE);
   }
   return ret;
 }
@@ -168,8 +168,8 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
       int nbthreads = ma_entity_load(e[i]);
       
       load_manager[0].load += nbthreads;
-      ma_put_entity(e[i], &load_manager[0].l->sched.as_holder, state);
-      bubble_sched_debug("%p on %s\n",e[i],load_manager[0].l->sched.name);
+      ma_put_entity(e[i], &load_manager[0].l->rq.as_holder, state);
+      bubble_sched_debug("%p on %s\n",e[i],load_manager[0].l->rq.name);
       __rearrange_load_manager(load_manager, arity);
     }
   }
@@ -240,8 +240,8 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   }
   
   bubble_sched_debug("count in __marcel_bubble__affinity\n");
-  ne = ma_count_entities_on_rq(&l[0]->sched, ITERATIVE_MODE);
-  bubble_sched_debug("ne = %d on runqueue %p\n", ne, &l[0]->sched);  
+  ne = ma_count_entities_on_rq(&l[0]->rq, ITERATIVE_MODE);
+  bubble_sched_debug("ne = %d on runqueue %p\n", ne, &l[0]->rq);  
 
   if (!ne) {
     for (k = 0; k < arity; k++)
@@ -258,7 +258,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 
   marcel_entity_t *e[ne];
   bubble_sched_debug("get in __marcel_bubble_affinity\n");
-  ma_get_entities_from_rq(&l[0]->sched, e, ne);
+  ma_get_entities_from_rq(&l[0]->rq, e, ne);
 
   __debug_show_entities("__marcel_bubble_affinity", e, ne, l);
 
@@ -434,7 +434,7 @@ ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
     __ma_bubble_gather(upper_bb, upper_bb);
     int state = ma_get_entity(upper_entity);
     ma_put_entity(upper_entity, &common_rq->as_holder, state);
-    struct marcel_topo_level *root_lvl = tbx_container_of(common_rq, struct marcel_topo_level, sched);
+    struct marcel_topo_level *root_lvl = tbx_container_of(common_rq, struct marcel_topo_level, rq);
     __marcel_bubble_affinity(&root_lvl);
      return 1;
   }
@@ -503,7 +503,7 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
 
   if(rq) {
     PROF_EVENTSTR(sched_status, "stealing subtree");
-    for (common_rq = rq->father; common_rq != &top->sched; common_rq = common_rq->father) {
+    for (common_rq = rq->father; common_rq != &top->rq; common_rq = common_rq->father) {
       if (ma_rq_covers(common_rq, from_vp))
 	break;
     }
@@ -525,7 +525,7 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
 
 static int 
 see(struct marcel_topo_level *level, unsigned from_vp) {
-  ma_runqueue_t *rq = &level->sched;
+  ma_runqueue_t *rq = &level->rq;
   return browse_bubble_and_steal(&rq->as_holder, from_vp);
 }
 

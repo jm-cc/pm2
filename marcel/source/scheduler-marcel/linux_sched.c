@@ -617,6 +617,38 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 	return prev;
 }
 
+/* Instantiate SEED, a thread seed, and store the resulting seed runner in
+   RESULT, unless RESULT is NULL.  If SCHEDULE is true, schedule the
+   resulting thread.  */
+static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t *result)
+{
+	int err;
+	marcel_attr_t attr;
+	marcel_t runner = NULL;
+
+	MA_BUG_ON(ma_entity_task(seed)->type == MA_THREAD_SEED_ENTITY);
+	MA_BUG_ON(seed->cur_thread_seed_runner == NULL);
+
+	marcel_attr_init(&attr);
+	marcel_attr_setdetachstate(&attr, tbx_true);
+	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+	marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
+	marcel_attr_setpreemptible(&attr, tbx_false);
+
+	if (schedule)
+		err = marcel_create(&runner, &attr, marcel_sched_seed_runner, seed);
+	else
+		err = marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, seed);
+
+	seed->cur_thread_seed_runner = runner;
+
+	if (result != NULL)
+		*result = runner;
+
+	return err;
+}
+
+
 /*
  * schedule() is the main scheduler function.
  */
@@ -924,15 +956,11 @@ restart:
 			else
 				marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
 		} else {
-			/* gasp, create a launcher thread */
-			marcel_attr_t attr; // = *next->shared_attr;
-			marcel_attr_init(&attr);
-			marcel_attr_setdetachstate(&attr, tbx_true);
-			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
-			marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
-			marcel_attr_setpreemptible(&attr, tbx_false);
-			/* TODO: on devrait être capable de brancher directement dessus */
-			marcel_create(NULL, &attr, marcel_sched_seed_runner, next);
+			int err;
+
+			err = instantiate_thread_seed(next, tbx_true, NULL);
+			MA_BUG_ON(err != 0);
+
 			goto need_resched_atomic;
 		}
 	}
@@ -1016,15 +1044,12 @@ int marcel_yield_to(marcel_t next)
 	nexth = ma_task_holder_lock_softirq(next);
 	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
 		if (!next->cur_thread_seed_runner) {
+			int err;
 			marcel_t runner;
-			marcel_attr_t attr; // = *next->shared_attr;
-			marcel_attr_init(&attr);
-			marcel_attr_setdetachstate(&attr, tbx_true);
-			marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
-			marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
-			marcel_attr_setpreemptible(&attr, tbx_false);
-			marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, next);
-			next->cur_thread_seed_runner = runner;
+
+			err = instantiate_thread_seed(next, tbx_false, &runner);
+			MA_BUG_ON(err != 0);
+
 			ma_dequeue_task(next, nexth);
 			ma_task_holder_unlock_softirq(nexth);
 

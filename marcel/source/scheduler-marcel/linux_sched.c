@@ -310,7 +310,7 @@ retry:
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */
 		marcel_bubble_t *b = ma_bubble_holder(h);
 		ma_holder_t *hh;
-		while ((hh = b->sched.sched_holder) && hh->type == MA_BUBBLE_HOLDER) {
+		while ((hh = b->as_entity.sched_holder) && hh->type == MA_BUBBLE_HOLDER) {
 			h = hh;
 			b = ma_bubble_holder(hh);
 		}
@@ -330,8 +330,8 @@ retry:
 
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER
-		&& ma_bubble_holder(h)->sched.sched_holder
-		&& ma_bubble_holder(h)->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
+		&& ma_bubble_holder(h)->as_entity.sched_holder
+		&& ma_bubble_holder(h)->as_entity.sched_holder->type == MA_BUBBLE_HOLDER) {
 		/* It got moved just before locking, retry */
 		ma_holder_unlock_softirq(h);
 		goto retry;
@@ -575,7 +575,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			if ((h = ma_task_init_holder(p)) && 
 					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);
-				if (ma_atomic_dec_and_test(&b->sched.time_slice) && current_sched->tick)
+				if (ma_atomic_dec_and_test(&b->as_entity.time_slice) && current_sched->tick)
 					current_sched->tick(b);
 			}
 #endif
@@ -719,7 +719,7 @@ need_resched_atomic:
 #ifdef MA__BUBBLES
 	if (prev_as_h && prev_as_h->type != MA_RUNQUEUE_HOLDER) {
 		/* the real priority is the holding bubble's */
-		prev_as_prio = ma_bubble_holder(prev_as_h)->sched.prio;
+		prev_as_prio = ma_bubble_holder(prev_as_h)->as_entity.prio;
 	} else
 #endif
 		prev_as_prio = prev->sched.internal.entity.prio;

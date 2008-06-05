@@ -125,7 +125,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	}
 	ma_holder_rawunlock(&b->hold);
 	/* enlever b de rq */
-	int bstate = ma_get_entity(&b->sched);
+	int bstate = ma_get_entity(&b->as_entity);
 	ma_holder_rawunlock(&rq->hold);
 	ma_holder_rawlock(&rq2->hold);
 	ma_holder_rawlock(&b->hold);
@@ -149,8 +149,8 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	}
 	ma_holder_rawunlock(&b->hold);
 	/* mettre b sur rq2 */
-	ma_put_entity(&b->sched, &rq2->hold, bstate);
-	b->sched.sched_level = rq2->level;
+	ma_put_entity(&b->as_entity, &rq2->hold, bstate);
+	b->as_entity.sched_level = rq2->level;
 	ma_holder_rawunlock(&rq2->hold);
 
 	return ret;
@@ -227,14 +227,14 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 		bubble->settled = 1;
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);
-			ma_deactivate_entity(&bubble->sched, &rq->hold);
+			ma_deactivate_entity(&bubble->as_entity, &rq->hold);
 			ma_holder_rawunlock(&rq->hold);
 			ma_holder_rawunlock(&bubble->hold);
 
 			ma_holder_rawlock(&rq2->hold);
 			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
 			ma_holder_rawlock(&bubble->hold);
-			ma_activate_entity(&bubble->sched, &rq2->hold);
+			ma_activate_entity(&bubble->as_entity, &rq2->hold);
 			ma_holder_rawunlock(&rq2->hold);
 			ma_holder_unlock(&bubble->hold);
 			return NULL;

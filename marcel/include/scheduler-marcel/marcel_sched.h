@@ -239,33 +239,33 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		return rq;
 	}
 	b = &SELF_GETMEM(sched).internal.bubble;
-	if (!b->sched.init_holder) {
+	if (!b->as_entity.init_holder) {
 		ma_holder_t *h;
 		marcel_bubble_init(b);
 		h = ma_task_init_holder(MARCEL_SELF);
 		if (!h)
 			h = &ma_main_runqueue.hold;
-		b->sched.init_holder = h;
+		b->as_entity.init_holder = h;
 		if (h->type != MA_RUNQUEUE_HOLDER) {
 			marcel_bubble_t *bb = ma_bubble_holder(h);
-			b->sched.sched_level = bb->sched.sched_level + 1;
+			b->as_entity.sched_level = bb->as_entity.sched_level + 1;
 			marcel_bubble_insertbubble(bb, b);
 		}
-		if (b->sched.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
+		if (b->as_entity.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
 			ma_runqueue_t *rq;
 			ma_bubble_detach(b);
 			rq = ma_to_rq_holder(h);
 			if (!rq)
 				rq = &ma_main_runqueue;
-			b->sched.sched_holder = &rq->hold;
+			b->as_entity.sched_holder = &rq->hold;
 			ma_holder_lock_softirq(&rq->hold);
-			ma_put_entity(&b->sched, &rq->hold, MA_ENTITY_READY);
+			ma_put_entity(&b->as_entity, &rq->hold, MA_ENTITY_READY);
 			ma_holder_unlock_softirq(&rq->hold);
 		}
 	}
 	internal->entity.sched_holder=NULL;
 	marcel_bubble_insertentity(b, &internal->entity);
-	if (b->sched.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
+	if (b->as_entity.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 		/* keep this thread inside the bubble */
 		return NULL;
 #  endif
@@ -421,7 +421,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
-	internal->bubble.sched.init_holder = NULL;
+	internal->bubble.as_entity.init_holder = NULL;
 #endif
 	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
 	LOG_OUT();

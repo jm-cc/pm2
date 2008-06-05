@@ -250,7 +250,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
 #endif
 /** \brief Converts marcel_bubble_t *b into marcel_entity_t * */
 marcel_entity_t *ma_entity_bubble(marcel_bubble_t *b);
-#define ma_entity_bubble(b) (&(b)->sched)
+#define ma_entity_bubble(b) (&(b)->as_entity)
 /** \brief Converts marcel_task_t *b into marcel_entity_t * */
 marcel_entity_t *ma_entity_task(marcel_task_t *t);
 #define ma_entity_task(t) (&(t)->sched.internal.entity)
@@ -262,7 +262,7 @@ static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
 #ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
-	return tbx_container_of(e, marcel_bubble_t, sched);
+	return tbx_container_of(e, marcel_bubble_t, as_entity);
 }
 #endif
 
@@ -364,9 +364,9 @@ ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
 #define ma_task_holder_lock(t) ma_entity_holder_lock(&(t)->sched.internal.entity)
 #define ma_task_holder_lock_softirq(t) ma_entity_holder_lock_softirq(&(t)->sched.internal.entity)
 #define ma_task_holder_lock_softirq_async(t) ma_entity_holder_lock_softirq_async(&(t)->sched.internal.entity)
-#define ma_bubble_holder_rawlock(b) ma_entity_holder_rawlock(&(b)->sched)
-#define ma_bubble_holder_lock(b) ma_entity_holder_lock(&(b)->sched)
-#define ma_bubble_holder_lock_softirq(b) ma_entity_holder_lock_softirq(&(b)->sched)
+#define ma_bubble_holder_rawlock(b) ma_entity_holder_rawlock(&(b)->as_entity)
+#define ma_bubble_holder_lock(b) ma_entity_holder_lock(&(b)->as_entity)
+#define ma_bubble_holder_lock_softirq(b) ma_entity_holder_lock_softirq(&(b)->as_entity)
 #section marcel_inline
 static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
 	ma_holder_t *h, *h2;
@@ -483,10 +483,10 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 #ifdef MA__BUBBLES
 	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER; ) {
 		/* TODO: n'a plus de sens, enlever run_holder */
-		if (ma_bubble_holder(hh)->sched.run_holder != hh)
-			hh = ma_bubble_holder(hh)->sched.run_holder;
-		else if (ma_bubble_holder(hh)->sched.sched_holder != hh)
-			hh = ma_bubble_holder(hh)->sched.sched_holder;
+		if (ma_bubble_holder(hh)->as_entity.run_holder != hh)
+			hh = ma_bubble_holder(hh)->as_entity.run_holder;
+		else if (ma_bubble_holder(hh)->as_entity.sched_holder != hh)
+			hh = ma_bubble_holder(hh)->as_entity.sched_holder;
 		else break;
 	}
 #else
@@ -710,8 +710,8 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t) {
 #ifdef MA__BUBBLES
 		if (h->type == MA_BUBBLE_HOLDER) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
-			MA_BUG_ON(!b->sched.run_holder);
-			MA_BUG_ON(!b->sched.holder_data);
+			MA_BUG_ON(!b->as_entity.run_holder);
+			MA_BUG_ON(!b->as_entity.holder_data);
 			MA_BUG_ON(list_empty(&b->queuedentities));
 		}
 #endif
@@ -791,8 +791,8 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 	if (h->type == MA_BUBBLE_HOLDER) {
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */
 		marcel_bubble_t *b = ma_bubble_holder(h);
-		while (b->sched.sched_holder && b->sched.sched_holder->type == MA_BUBBLE_HOLDER) {
-			h = b->sched.sched_holder;
+		while (b->as_entity.sched_holder && b->as_entity.sched_holder->type == MA_BUBBLE_HOLDER) {
+			h = b->as_entity.sched_holder;
 			b = ma_bubble_holder(h);
 		}
 	}

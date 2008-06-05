@@ -78,10 +78,10 @@ int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
 
 int marcel_bubble_submit();
 
-#define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->sched)
+#define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->as_entity)
 #define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->sched.internal.entity)
 
-#define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->sched)
+#define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->as_entity)
 #define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->sched.internal.entity)
 
 /** \brief Sets the "scheduling level" of entity \e entity to \e level. This
@@ -90,8 +90,8 @@ int marcel_bubble_submit();
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level);
 int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
-#define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->sched,level)
-#define marcel_bubble_getschedlevel(bubble,level) marcel_entity_getschedlevel(&(bubble)->sched,level)
+#define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->as_entity,level)
+#define marcel_bubble_getschedlevel(bubble,level) marcel_entity_getschedlevel(&(bubble)->as_entity,level)
 #define marcel_task_setschedlevel(task,level) marcel_entity_setschedlevel(&(task)->sched.internal.entity,level)
 #define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->sched.internal.entity,level)
 
@@ -140,7 +140,7 @@ marcel_bubble_t *marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
 /** \brief Returns the bubble that holds entity \e entity. */
 marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
-#define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
+#define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->as_entity)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
 
 /**
@@ -193,7 +193,7 @@ struct marcel_bubble {
 	/* garder en premier, pour que les conversions bubble / entity soient
 	 * triviales */
 	/** \brief Entity information */
-	struct ma_sched_entity sched;
+	struct ma_sched_entity as_entity;
 	/** \brief Holder information */
 	struct ma_holder hold;
 	/** \brief List of the held entities */
@@ -229,7 +229,7 @@ struct marcel_bubble {
 
 /* Attention: ne doit être utilisé que par marcel_bubble_init */
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
-	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
+	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
 	.hold = MA_HOLDER_INITIALIZER((b).hold, MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
 	.nbentities = 0, \
@@ -244,7 +244,7 @@ struct marcel_bubble {
 
 #section marcel_macros
 /** \brief Gets a statistic value of a bubble */
-#define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->sched, (offset))
+#define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->as_entity, (offset))
 /** \brief Gets a synthesis of a statistic value of the content of a bubble, as
  * collected during the last call to ma_bubble_synthesize_stats() */
 #define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->hold, (offset))
@@ -328,13 +328,13 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_enqueue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal.entity,b)
-#define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->sched,b)
+#define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->as_entity,b)
 /* dequeue entity \e e from bubble \b, which must be locked */
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal.entity,b)
-#define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->sched,b)
+#define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->as_entity,b)
 
 #section functions
 /* Endort la bulle (qui est verrouillée) */
@@ -359,12 +359,12 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	MA_BUG_ON(e->run_holder != &b->hold);
 	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->sched.run_holder;
+		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			if (!b->sched.holder_data)
-				ma_rq_enqueue_entity(&b->sched, ma_rq_holder(h));
+			if (!b->as_entity.holder_data)
+				ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
@@ -380,11 +380,11 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	list_del(&e->run_list);
 	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->sched.run_holder;
+		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			if (b->sched.holder_data)
-				ma_rq_dequeue_entity(&b->sched, ma_rq_holder(h));
+			if (b->as_entity.holder_data)
+				ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
 	MA_BUG_ON(!e->holder_data);
@@ -398,18 +398,18 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->sched.run_holder;
+		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			if (!b->sched.holder_data) {
+			if (!b->as_entity.holder_data) {
 				ma_holder_rawunlock(&b->hold);
 				h = ma_bubble_holder_rawlock(b);
 				ma_holder_rawlock(&b->hold);
 				if (list_empty(&b->queuedentities) && h) {
 					MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-					if (!b->sched.holder_data)
-						ma_rq_enqueue_entity(&b->sched, ma_rq_holder(h));
+					if (!b->as_entity.holder_data)
+						ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 				}
 				ma_bubble_holder_rawunlock(h);
 			}
@@ -429,15 +429,15 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 	list_del(&e->run_list);
 #if 0 /* On ne peut pas se le permettre, ce n'est pas très gênant. */
 	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->sched.run_holder;
+		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			if (b->sched.holder_data) {
+			if (b->as_entity.holder_data) {
 				ma_holder_rawunlock(&b->hold);
 				h = ma_bubble_holder_rawlock(b);
 				if (list_empty(&b->queuedentities) && h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-					if (b->sched.holder_data)
-						ma_rq_dequeue_entity(&b->sched, ma_rq_holder(h));
+					if (b->as_entity.holder_data)
+						ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 				}
 				ma_bubble_holder_rawunlock(h);
 				ma_holder_rawlock(&b->hold);

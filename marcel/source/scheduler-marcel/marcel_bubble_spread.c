@@ -257,7 +257,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	unsigned vp;
-	marcel_entity_t *e = &b->sched;
+	marcel_entity_t *e = &b->as_entity;
 	ma_bubble_synthesize_stats(b);
 	/* XXX: suppose that the bubble is not held out of topo hierarchy under
 	 * level l */

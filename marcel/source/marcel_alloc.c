@@ -316,7 +316,7 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 		h = upentity->init_holder;
 		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
 			break;
-		upentity = &ma_bubble_holder(h)->sched;
+		upentity = &ma_bubble_holder(h)->as_entity;
 	}
 
 	/* New entity heap */
@@ -359,7 +359,7 @@ void* marcel_calloc_customized(size_t nmemb, size_t size, enum pinfo_weight acce
 		h = upentity->init_holder;
 		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
 			break;
-		upentity = &ma_bubble_holder(h)->sched;
+		upentity = &ma_bubble_holder(h)->as_entity;
 	}
 
 	if (!upentity->heap)
@@ -411,7 +411,7 @@ void marcel_attach_memory(void *data, int size, enum pinfo_weight access, int lo
 		h = upentity->init_holder;
 		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
 			break;
-		upentity = &ma_bubble_holder(h)->sched;
+		upentity = &ma_bubble_holder(h)->as_entity;
 	}
 
 	if (!upentity->heap)
@@ -466,7 +466,7 @@ int ma_bubble_memory_affinity(marcel_bubble_t *bubble)//, ma_nodtab_t *attractio
 {
 	ma_pinfo_t *pinfo;
 	int total = 0;
-	marcel_entity_t *entity = &bubble->sched;
+	marcel_entity_t *entity = &bubble->as_entity;
 	if (entity->heap)
 	{
 		pinfo = NULL;
@@ -720,7 +720,7 @@ int ma_node_entity(marcel_entity_t *entity)
 	/* if entity is scheduled in a bubble, find the first runqueue */
 	while (holder->type == MA_BUBBLE_HOLDER)
 	{
-		holder = (ma_bubble_holder(holder)->sched).sched_holder;
+		holder = (ma_bubble_holder(holder)->as_entity).sched_holder;
 		//marcel_fprintf(stderr,"holder %p\n",holder);			
 	}	
 	ma_runqueue_t *rq = ma_to_rq_holder(holder);
@@ -891,7 +891,7 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 		ma_holder_t *h;
 		h = e->init_holder;
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
-		e = &ma_bubble_holder(h)->sched;
+		e = &ma_bubble_holder(h)->as_entity;
 	}
 #endif
 	area = ma_obj_alloc(memory_area_allocator);
@@ -915,7 +915,7 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 		ma_holder_t *h;
 		h = e->init_holder;
 		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
-		e = &ma_bubble_holder(h)->sched;
+		e = &ma_bubble_holder(h)->as_entity;
 	}
 #endif
 	ma_spin_lock(&e->memory_areas_lock);

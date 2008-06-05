@@ -162,10 +162,10 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 		(int) (2+2*sizeof(void*)), (unsigned long) b,
         	MARCEL_MAXNAMESIZE-7, "",
 		buf4,
-		b->sched.prio,
-		get_holder_name(b->sched.init_holder,buf1,sizeof(buf1)),
-		get_holder_name(b->sched.sched_holder,buf2,sizeof(buf2)),
-		get_holder_name(b->sched.run_holder,buf3,sizeof(buf3)));
+		b->as_entity.prio,
+		get_holder_name(b->as_entity.init_holder,buf1,sizeof(buf1)),
+		get_holder_name(b->as_entity.sched_holder,buf2,sizeof(buf2)),
+		get_holder_name(b->as_entity.run_holder,buf3,sizeof(buf3)));
 #ifdef MARCEL_STATS_ENABLED
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, marcel_stats_load_offset)))
 		top_printf(" (%ld)",load);

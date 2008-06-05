@@ -419,7 +419,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 			 && ma_rq_holder(upentity->sched_holder) == &father->sched)
 			break;
 			 
-		upentity = &ma_bubble_holder(upentity->init_holder)->sched;
+		upentity = &ma_bubble_holder(upentity->init_holder)->as_entity;
 		number ++;
 	}
 
@@ -437,7 +437,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 			 && ma_rq_holder(family[number]->sched_holder) == &father->sched)
 			break;
 			 
-		family[number+1] = &ma_bubble_holder(family[number]->init_holder)->sched;
+		family[number+1] = &ma_bubble_holder(family[number]->init_holder)->as_entity;
 		number ++;
 	}
 

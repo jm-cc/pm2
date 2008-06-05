@@ -352,7 +352,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 void 
 marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   unsigned vp;
-  marcel_entity_t *e = &b->sched;
+  marcel_entity_t *e = &b->as_entity;
   
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
@@ -414,7 +414,7 @@ ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
   
   for (upper_entity = e; 
        upper_entity->init_holder != NULL; 
-       upper_entity = &ma_bubble_holder(upper_entity->init_holder)->sched) {      
+       upper_entity = &ma_bubble_holder(upper_entity->init_holder)->as_entity) {      
     if (upper_entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
       ma_runqueue_t *current_rq = ma_rq_holder(upper_entity->sched_holder);
       if (current_rq == rq || marcel_vpset_weight(&current_rq->vpset) > nvp) 
@@ -453,7 +453,7 @@ get_parent_rq(marcel_entity_t *e) {
     MA_BUG_ON(!e->init_holder);
 
     marcel_entity_t *upentity;
-    upentity = &ma_bubble_holder(e->init_holder)->sched;
+    upentity = &ma_bubble_holder(e->init_holder)->as_entity;
     return get_parent_rq(upentity);
   }
   

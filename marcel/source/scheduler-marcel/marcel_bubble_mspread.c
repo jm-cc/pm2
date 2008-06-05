@@ -593,7 +593,7 @@ ma_spinlock_t spread_lock = MA_SPIN_LOCK_UNLOCKED;
 void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	ma_spin_lock_softirq(&spread_lock);
 	unsigned vp;
-	marcel_entity_t *e = &b->sched;
+	marcel_entity_t *e = &b->as_entity;
 	ma_bubble_synthesize_stats(b);
 /* XXX: suppose that the bubble is not held out of topo hierarchy under
  * level l */

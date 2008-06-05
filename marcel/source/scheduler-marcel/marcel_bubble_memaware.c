@@ -99,7 +99,7 @@ void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_leve
 	list_for_each_entry(entity, &rqlevel->hold.sched_list, sched_list)
 		{
 			/* on rassemble la bulle */
-			if (entity->type == MA_BUBBLE_ENTITY && entity != &marcel_root_bubble.sched)
+			if (entity->type == MA_BUBBLE_ENTITY && entity != &marcel_root_bubble.as_entity)
 			{
 					ma_bubble_lock_all_but_levels(ma_bubble_entity(entity));
 				__ma_bubble_gather(ma_bubble_entity(entity), ma_bubble_entity(entity));
@@ -379,7 +379,7 @@ void ma_see_level(struct marcel_topo_level *level, int recurse)
 /* Debogage : permet de lister la structure de bulles */
 void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 {
-	marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse, number, &bubble->sched);
+	marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse, number, &bubble->as_entity);
 	marcel_entity_t *downentity;
 	int downnumber = 0;
 	for_each_entity_scheduled_in_bubble_begin(downentity,bubble)

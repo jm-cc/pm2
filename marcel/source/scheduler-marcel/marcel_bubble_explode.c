@@ -129,7 +129,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
-	ma_dequeue_entity(&bubble->sched,&rq->hold);
+	ma_dequeue_entity(&bubble->as_entity,&rq->hold);
 	ma_holder_rawlock(&bubble->hold);
 	/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
@@ -140,9 +140,9 @@ les #ifdef dans les arguments de macro...
 #else
 #  define _TIME_SLICE 1
 #endif
-	ma_atomic_set(&bubble->sched.time_slice, MARCEL_BUBBLE_TIMESLICE*_TIME_SLICE);
+	ma_atomic_set(&bubble->as_entity.time_slice, MARCEL_BUBBLE_TIMESLICE*_TIME_SLICE);
 #undef _TIME_SLICE
-	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
+	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->as_entity.time_slice));
 	//__do_bubble_explode(bubble,rq);
 	//ma_atomic_set(&bubble->sched.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list)

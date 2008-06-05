@@ -631,7 +631,11 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 
 	marcel_attr_init(&attr);
 	marcel_attr_setdetachstate(&attr, tbx_true);
+
+	/* Start the seed runner with the highest priority so that it's scheduled
+		 right after it's been created (or woken up).  */
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+
 	marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
 	marcel_attr_setpreemptible(&attr, tbx_false);
 
@@ -640,7 +644,8 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 	else
 		err = marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, seed);
 
-	seed->cur_thread_seed_runner = runner;
+	/* Note: `seed->cur_thread_seed_runner' will be assigned in
+		 `marcel_sched_seed_runner ()' when RUNNER is actually scheduled.  */
 
 	if (result != NULL)
 		*result = runner;

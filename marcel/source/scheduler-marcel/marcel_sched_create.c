@@ -203,6 +203,9 @@ void *marcel_sched_seed_runner(void *arg) {
 
 	/* first thread seed */
 	SELF_GETMEM(cur_thread_seed) = arg;
+
+	/* Switch to a batch priority to make sure seed runners don't preempt each
+		 other.  */
 	ma_sched_change_prio(MARCEL_SELF, MA_BATCH_PRIO);
 
 	ma_preempt_disable();

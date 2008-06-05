@@ -169,7 +169,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * ::holder_data is NULL when the entity is currently running. Else, it was
  * preempted and put in ::run_list.
  */
-struct ma_sched_entity {
+struct ma_entity {
 	/** \brief Entity type */
 	enum marcel_entity type;
 	/** \brief Initial holder, i.e. the one that the programmer provides (the holding bubble, typically). */
@@ -231,7 +231,7 @@ struct ma_sched_entity {
 #define MARCEL_ENTITY_SELF (&(MARCEL_SELF)->as_entity)
 
 #section types
-typedef struct ma_sched_entity marcel_entity_t;
+typedef struct ma_entity marcel_entity_t;
 
 #section marcel_macros
 /** \brief Returns type of entity \e e */

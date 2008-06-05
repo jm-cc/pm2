@@ -86,7 +86,7 @@ struct marcel_task {
 	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
 	unsigned long lwps_allowed; /* Contraintes sur le placement sur les LWP */
 	unsigned int state; /* État du thread */
-	struct ma_sched_entity as_entity;
+	struct ma_entity as_entity;
 #ifdef MA__BUBBLES
 	/* bubble where we automatically put the children of this task */
 	marcel_bubble_t bubble;

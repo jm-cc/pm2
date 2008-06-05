@@ -193,7 +193,7 @@ struct marcel_bubble {
 	/* garder en premier, pour que les conversions bubble / entity soient
 	 * triviales */
 	/** \brief Entity information */
-	struct ma_sched_entity as_entity;
+	struct ma_entity as_entity;
 	/** \brief Holder information */
 	struct ma_holder as_holder;
 	/** \brief List of the held entities */

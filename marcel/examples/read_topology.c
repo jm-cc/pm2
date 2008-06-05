@@ -35,15 +35,13 @@ char* level_descriptions[MARCEL_LEVEL_LAST+1] =
 #endif
   };
 
-FILE *output;
-
-void indent(int i) {
+void indent(FILE *output, int i) {
   int x;
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
-void print_level(struct marcel_topo_level *l, int i) {
-  indent(i);
+void print_level(struct marcel_topo_level *l, FILE *output, int i) {
+  indent(output, i);
   if (l->arity || (!i && !l->arity)) {
     marcel_fprintf(output, "\\pstree");
   }
@@ -57,16 +55,16 @@ void print_level(struct marcel_topo_level *l, int i) {
   marcel_fprintf(output,"}}\n");
 }
 
-void f(struct marcel_topo_level *l, int i) {
+void f(struct marcel_topo_level *l, FILE *output, int i) {
   int x;
 
-  print_level(l, i);
+  print_level(l, output, i);
   if (l->arity || (!i && !l->arity)) {
-    indent(i);
+    indent(output, i);
     marcel_fprintf(output, "{\n");
     for(x=0; x<l->arity; x++)
-      f(l->children[x], i+1);
-    indent(i);
+      f(l->children[x], output, i+1);
+    indent(output, i);
     marcel_fprintf(output, "}\n");
   }
 }
@@ -74,6 +72,7 @@ void f(struct marcel_topo_level *l, int i) {
 int marcel_main(int argc, char **argv) {
   struct marcel_topo_level *l;
   char hostname[256], filename[256];
+  FILE *output;
 
   marcel_init(&argc, argv);
   gethostname(hostname, 256);
@@ -92,7 +91,7 @@ int marcel_main(int argc, char **argv) {
   marcel_fprintf(output, "\\tiny\n");
 
   l = &marcel_topo_levels[0][0];
-  f(l, 0);
+  f(l, output, 0);
 
   marcel_fprintf(output, "\\end{document}\n");
   marcel_fclose(output);

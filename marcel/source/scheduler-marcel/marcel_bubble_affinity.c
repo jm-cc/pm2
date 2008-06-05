@@ -68,7 +68,7 @@ __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
   for (i = 0; i < ne; i++) {	      
     if (e[i]) {
       int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->sched.hold, state);
+      ma_put_entity(e[i], &l[0]->sched.as_holder, state);
     }
   }
 }
@@ -168,7 +168,7 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
       int nbthreads = ma_entity_load(e[i]);
       
       load_manager[0].load += nbthreads;
-      ma_put_entity(e[i], &load_manager[0].l->sched.hold, state);
+      ma_put_entity(e[i], &load_manager[0].l->sched.as_holder, state);
       bubble_sched_debug("%p on %s\n",e[i],load_manager[0].l->sched.name);
       __rearrange_load_manager(load_manager, arity);
     }
@@ -433,7 +433,7 @@ ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
     marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
     __ma_bubble_gather(upper_bb, upper_bb);
     int state = ma_get_entity(upper_entity);
-    ma_put_entity(upper_entity, &common_rq->hold, state);
+    ma_put_entity(upper_entity, &common_rq->as_holder, state);
     struct marcel_topo_level *root_lvl = tbx_container_of(common_rq, struct marcel_topo_level, sched);
     __marcel_bubble_affinity(&root_lvl);
      return 1;
@@ -526,7 +526,7 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
 static int 
 see(struct marcel_topo_level *level, unsigned from_vp) {
   ma_runqueue_t *rq = &level->sched;
-  return browse_bubble_and_steal(&rq->hold, from_vp);
+  return browse_bubble_and_steal(&rq->as_holder, from_vp);
 }
 
 static int 

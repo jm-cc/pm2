@@ -72,7 +72,7 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	//current_sched->submit(&marcel_root_bubble.as_entity);
 	ma_bubble_gather(&marcel_root_bubble);
 	int state = ma_get_entity(&marcel_root_bubble.as_entity);
-	ma_put_entity(&marcel_root_bubble.as_entity, &(&marcel_topo_vp_level[0])->sched.hold, state);
+	ma_put_entity(&marcel_root_bubble.as_entity, &(&marcel_topo_vp_level[0])->sched.as_holder, state);
 	
 	marcel_mutex_unlock(&current_sched_mutex);
 }
@@ -134,7 +134,7 @@ int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 }
 
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
-	bubble->as_entity.sched_holder = &rq->hold;
+	bubble->as_entity.sched_holder = &rq->as_holder;
 	return 0;
 }
 
@@ -394,9 +394,9 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		new_holder = ma_to_rq_holder(bubble->as_entity.sched_holder);
 		if (!new_holder)
 			new_holder = ma_lwp_vprq(MA_LWP_SELF);
-		ma_holder_rawlock(&new_holder->hold);
-		ma_put_entity(entity, &new_holder->hold, state);
-		ma_holder_unlock_softirq(&new_holder->hold);
+		ma_holder_rawlock(&new_holder->as_holder);
+		ma_put_entity(entity, &new_holder->as_holder, state);
+		ma_holder_unlock_softirq(&new_holder->as_holder);
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);
@@ -645,7 +645,7 @@ static void __ma_topo_lock(struct marcel_topo_level *level) {
 
 static void ma_topo_lock(struct marcel_topo_level *level) {
 	/* Lock the runqueue */
-	ma_holder_rawlock(&level->sched.hold);
+	ma_holder_rawlock(&level->sched.as_holder);
 	__ma_topo_lock(level);
 }
 
@@ -673,7 +673,7 @@ static void __ma_topo_unlock(struct marcel_topo_level *level) {
 static void ma_topo_unlock(struct marcel_topo_level *level) {
 	__ma_topo_unlock(level);
 	/* Now unlock the unqueue */
-	ma_holder_rawunlock(&level->sched.hold);
+	ma_holder_rawunlock(&level->sched.as_holder);
 }
 
 void ma_topo_lock_levels(struct marcel_topo_level *level) {
@@ -851,7 +851,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		if (bubble->as_entity.holder_data)
 			ma_rq_dequeue_entity(&bubble->as_entity, rq);
 		sched_debug("unlock(%p)\n", rq);
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&rq->as_holder);
 		ma_holder_unlock(&bubble->as_holder);
 		LOG_RETURN(NULL);
 	}
@@ -865,7 +865,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 			ma_rq_dequeue_entity(&bubble->as_entity, rq);
 			ma_rq_enqueue_entity(&bubble->as_entity, rq);
 		}
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&rq->as_holder);
 		ma_holder_unlock(&bubble->as_holder);
 		LOG_RETURN(NULL);
 	}
@@ -877,7 +877,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	MA_BUG_ON(nextent->type == MA_BUBBLE_ENTITY);
 
 	sched_debug("unlock(%p)\n", rq);
-	ma_holder_rawunlock(&rq->hold);
+	ma_holder_rawunlock(&rq->as_holder);
 	*nexth = &bubble->as_holder;
 	LOG_RETURN(nextent);
 }
@@ -889,17 +889,17 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
  */
 
 static void __marcel_init bubble_sched_init() {
-        marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.hold;
-	ma_activate_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.hold);
+        marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.as_holder;
+	ma_activate_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
 }
 
 void ma_bubble_sched_init2(void) {
 	/* Having main on the main runqueue is both faster and respects priorities */
 	ma_deactivate_running_entity(&MARCEL_SELF->sched.internal.entity, &marcel_root_bubble.as_holder);
-	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.hold;
+	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.as_holder;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
-	ma_activate_running_entity(&MARCEL_SELF->sched.internal.entity, &ma_main_runqueue.hold);
+	ma_activate_running_entity(&MARCEL_SELF->sched.internal.entity, &ma_main_runqueue.as_holder);
 
 	marcel_mutex_lock(&current_sched_mutex);
 	if (current_sched->init)

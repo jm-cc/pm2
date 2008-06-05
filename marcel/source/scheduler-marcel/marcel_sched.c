@@ -166,13 +166,13 @@ void ma_unfreeze_thread(marcel_task_t * p)
 
 void TBX_EXTERN marcel_freeze_sched(void)
 {
-	ma_holder_lock_softirq(&ma_main_runqueue.hold);
+	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
 	/* TODO: other levels */
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
 		ma_for_all_lwp(lwp)
-		    ma_holder_rawlock(&ma_lwp_rq(lwp)->hold);
+		    ma_holder_rawlock(&ma_lwp_rq(lwp)->as_holder);
 	}
 #endif
 	frozen_scheduler++;
@@ -186,8 +186,8 @@ void TBX_EXTERN marcel_unfreeze_sched(void)
 	{
 		ma_lwp_t lwp;
 		ma_for_all_lwp(lwp)
-		    ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
+		    ma_holder_rawunlock(&ma_lwp_rq(lwp)->as_holder);
 	}
 #endif
-	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 }

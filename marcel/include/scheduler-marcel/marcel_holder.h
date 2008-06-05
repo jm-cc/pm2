@@ -143,7 +143,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 }
 #endif
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
-	return tbx_container_of(h, ma_runqueue_t, hold);
+	return tbx_container_of(h, ma_runqueue_t, as_holder);
 }
 
 #section structures
@@ -521,7 +521,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
-	MA_BUG_ON(e->run_holder != &rq->hold);
+	MA_BUG_ON(e->run_holder != &rq->as_holder);
 	ma_array_enqueue_entity(e, rq->active);
 }
 
@@ -638,7 +638,7 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_
 #section marcel_inline
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->holder_data);
-	MA_BUG_ON(e->run_holder != &rq->hold);
+	MA_BUG_ON(e->run_holder != &rq->as_holder);
 }
 
 #section marcel_functions

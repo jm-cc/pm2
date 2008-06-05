@@ -26,7 +26,7 @@ static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_leve
   for (i = 0; i < ne; i++) 
     {	      
       int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->sched.hold, state);
+      ma_put_entity(e[i], &l[0]->sched.as_holder, state);
     }
 
   marcel_bubble_activate_idle_scheduler();
@@ -77,7 +77,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 			if (idx <= max_prio) {
 				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
 				sched_debug("unlock(%p)\n", rq);
-				ma_holder_unlock(&rq->hold);
+				ma_holder_unlock(&rq->as_holder);
 				return NULL;
 			}
 		}
@@ -86,17 +86,17 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 			if (idx < max_prio) {
 				bubble_sched_debugl(7,"better prio %d on rq %s in the meanwhile\n", idx, currq->name);
 				sched_debug("unlock(%p)\n", rq);
-				ma_holder_unlock(&rq->hold);
+				ma_holder_unlock(&rq->as_holder);
 				return NULL;
 			}
 		}
 
-		ma_deactivate_entity(nextent,&rq->hold);
+		ma_deactivate_entity(nextent,&rq->as_holder);
 
 		/* nextent est RUNNING, on peut déverrouiller la runqueue,
 		 * personne n'y touchera */
 		sched_debug("unlock(%p)\n", rq);
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&rq->as_holder);
 
 		/* trouver une runqueue qui va bien */
 		for (currq = ma_lwp_vprq(MA_LWP_SELF); currq &&
@@ -112,10 +112,10 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
 
 		/* on descend, l'ordre des adresses est donc correct */
-		ma_holder_rawlock(&currq->hold);
-		nextent->sched_holder = &currq->hold;
-		ma_activate_entity(nextent,&currq->hold);
-		ma_holder_rawunlock(&currq->hold);
+		ma_holder_rawlock(&currq->as_holder);
+		nextent->sched_holder = &currq->as_holder;
+		ma_activate_entity(nextent,&currq->as_holder);
+		ma_holder_rawunlock(&currq->as_holder);
 		if (rq != currq) {
 			ma_preempt_enable();
 			return NULL;
@@ -129,7 +129,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
-	ma_dequeue_entity(&bubble->as_entity,&rq->hold);
+	ma_dequeue_entity(&bubble->as_entity,&rq->as_holder);
 	ma_holder_rawlock(&bubble->as_holder);
 	/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
@@ -146,11 +146,11 @@ les #ifdef dans les arguments de macro...
 	//__do_bubble_explode(bubble,rq);
 	//ma_atomic_set(&bubble->sched.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list)
-		ma_move_entity(e, &rq->hold);
+		ma_move_entity(e, &rq->as_holder);
 
 	ma_holder_rawunlock(&bubble->as_holder);
 	sched_debug("unlock(%p)\n", rq);
-	ma_holder_unlock(&rq->hold);
+	ma_holder_unlock(&rq->as_holder);
 	return NULL;
 }
 

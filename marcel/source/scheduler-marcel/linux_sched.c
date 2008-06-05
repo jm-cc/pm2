@@ -489,8 +489,8 @@ unsigned long ma_nr_ready(void)
 #warning TODO: descendre dans les bulles ...
 #endif
 	for (i = 0; i < MA_NR_LWPS; i++)
-		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->hold.nr_ready;
-	sum += ma_main_runqueue.hold.nr_ready;
+		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->as_holder.nr_ready;
+	sum += ma_main_runqueue.as_holder.nr_ready;
 
 	return sum;
 }
@@ -757,7 +757,7 @@ need_resched_atomic:
 		if (go_to_sleep && !prev->sched.state)
 			goto need_resched_atomic;
 		prev_as_next = NULL;
-		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->hold;
+		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->as_holder;
 		prev_as_prio = MA_IDLE_PRIO;
 	}
 
@@ -777,7 +777,7 @@ restart:
 	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
 #endif
-		if (!currq->hold.nr_ready) {
+		if (!currq->as_holder.nr_ready) {
 			sched_debug("apparently nobody in %s\n",currq->name);
 		} else {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
@@ -785,7 +785,7 @@ restart:
 				sched_debug("found better prio %d in rq %s\n",idx,currq->name);
 				cur = NULL;
 				max_prio = idx;
-				nexth = &currq->hold;
+				nexth = &currq->as_holder;
 				/* let polling know that this context switch is urging */
 				hard_preempt = 1;
 			}
@@ -795,14 +795,14 @@ restart:
 			 */
 				sched_debug("found same prio %d in rq %s\n",idx,currq->name);
 				cur = NULL;
-				nexth = &currq->hold;
+				nexth = &currq->as_holder;
 			}
 		}
 #ifdef MA__LWPS
 	}
 #endif
 
-	if (tbx_unlikely(nexth == &ma_dontsched_rq(MA_LWP_SELF)->hold)) {
+	if (tbx_unlikely(nexth == &ma_dontsched_rq(MA_LWP_SELF)->as_holder)) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		if (prev->sched.state == MA_TASK_INTERRUPTIBLE || prev->sched.state == MA_TASK_UNINTERRUPTIBLE) {
@@ -906,7 +906,7 @@ restart:
 #ifdef MA__LWPS
 	if (tbx_unlikely(!(rq->active->nr_active))) { //+rq->expired->nr_active))) {
 		sched_debug("someone stole the task we saw, restart\n");
-		ma_holder_unlock(&rq->hold);
+		ma_holder_unlock(&rq->as_holder);
 		goto restart;
 	}
 #endif
@@ -928,7 +928,7 @@ restart:
 	if (tbx_unlikely(idx > max_prio)) {
 	        /* We had seen a high-priority task, but it's not there any more */
 		sched_debug("someone stole the high-priority task we saw, restart\n");
-		ma_holder_unlock(&rq->hold);
+		ma_holder_unlock(&rq->as_holder);
 		goto restart;
 	}
 #endif
@@ -1147,7 +1147,7 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 	LOG_IN();
 	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
 	new_rq=marcel_sched_vpset_init_rq(vpset);
-	if (old_h == &new_rq->hold) {
+	if (old_h == &new_rq->as_holder) {
 		ma_task_holder_unlock_softirq(old_h);
 		LOG_OUT();
 		return;
@@ -1160,10 +1160,10 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
 		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
 #endif
-	ma_holder_rawlock(&new_rq->hold);
-	ma_task_sched_holder(MARCEL_SELF) = &new_rq->hold;
-	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
-	ma_holder_rawunlock(&new_rq->hold);
+	ma_holder_rawlock(&new_rq->as_holder);
+	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;
+	ma_activate_running_task(MARCEL_SELF,&new_rq->as_holder);
+	ma_holder_rawunlock(&new_rq->as_holder);
 	/* On teste si le LWP courant est interdit ou pas */
 	if (ma_spare_lwp() || !marcel_vpset_isset(vpset,ma_vpnum(MA_LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);

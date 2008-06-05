@@ -35,39 +35,39 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 	while(1) {
 		/* First clean the work_rq runqueue */
 		PROF_EVENT1(rq_lock,work_rq);
-		ma_holder_lock_softirq(&work_rq->hold);
+		ma_holder_lock_softirq(&work_rq->as_holder);
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
-		ma_holder_rawlock(&ma_gang_rq.hold);
+		ma_holder_rawlock(&ma_gang_rq.as_holder);
 		PROF_EVENTSTR(sched_status,"gang scheduler: cleaning gang runqueue");
-		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
+		list_for_each_entry_safe(e, ee, &work_rq->as_holder.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
-				ma_put_entity(e, &ma_gang_rq.hold, state);
+				ma_put_entity(e, &ma_gang_rq.as_holder, state);
 			}
 		}
 		/* Then put one job on work_rq */
 		PROF_EVENTSTR(sched_status,"gang scheduler: putting one job");
-		list_for_each_entry(e, &ma_gang_rq.hold.sched_list, sched_list) {
+		list_for_each_entry(e, &ma_gang_rq.as_holder.sched_list, sched_list) {
 			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 			b = ma_bubble_entity(e);
 			if (b->as_holder.nr_ready) {
 				int state = ma_get_entity(e);
-				ma_put_entity(e, &work_rq->hold, state);
+				ma_put_entity(e, &work_rq->as_holder, state);
 				break;
 			}
 		}
-		ma_holder_rawunlock(&ma_gang_rq.hold);
+		ma_holder_rawunlock(&ma_gang_rq.as_holder);
 		PROF_EVENT1(rq_unlock,&ma_gang_rq);
-		ma_holder_unlock_softirq(&work_rq->hold);
+		ma_holder_unlock_softirq(&work_rq->as_holder);
 		PROF_EVENT1(rq_unlock,work_rq);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
 		ma_for_each_lwp_begin(lwp)
 			if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq,ma_vpnum(lwp))) {
-				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
+				ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
 				ma_resched_task(ma_per_lwp(current_thread,lwp),ma_vpnum(lwp),lwp);
-				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
+				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
 			}
 		ma_for_each_lwp_end();
 		PROF_EVENTSTR(sched_status,"gang scheduler: done");
@@ -83,25 +83,25 @@ any_t marcel_gang_cleaner(any_t foo) {
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	marcel_usleep(1);
 	while(1) {
-		ma_holder_lock_softirq(&work_rq->hold);
-		ma_holder_rawlock(&ma_gang_rq.hold);
+		ma_holder_lock_softirq(&work_rq->as_holder);
+		ma_holder_rawlock(&ma_gang_rq.as_holder);
 		PROF_EVENTSTR(sched_status,"gang cleaner: cleaning gang runqueue");
-		list_for_each_entry_safe(e, ee, &work_rq->hold.sched_list, sched_list) {
+		list_for_each_entry_safe(e, ee, &work_rq->as_holder.sched_list, sched_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
-				ma_put_entity(e, &ma_gang_rq.hold, state);
+				ma_put_entity(e, &ma_gang_rq.as_holder, state);
 			}
 		}
-		ma_holder_rawunlock(&work_rq->hold);
-		ma_holder_unlock_softirq(&ma_gang_rq.hold);
+		ma_holder_rawunlock(&work_rq->as_holder);
+		ma_holder_unlock_softirq(&ma_gang_rq.as_holder);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
 		ma_for_each_lwp_begin(lwp)
 			if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq,ma_vpnum(lwp))) {
-				ma_holder_rawlock(&ma_lwp_vprq(lwp)->hold);
+				ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
 				ma_set_tsk_need_togo(ma_per_lwp(current_thread,lwp));
 				ma_resched_task(ma_per_lwp(current_thread,lwp),ma_vpnum(lwp),lwp);
-				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->hold);
+				ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
 			}
 		ma_for_each_lwp_end();
 		PROF_EVENTSTR(sched_status,"gang cleaner: done");
@@ -171,15 +171,15 @@ static int gang_sched_exit(void) {
 	CANCEL(gang_thread3)
 	CANCEL(gang_thread4)
 	PROF_EVENT1(rq_lock,&ma_main_runqueue);
-	ma_holder_lock_softirq(&ma_main_runqueue.hold);
+	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
 	PROF_EVENT1(rq_lock,&ma_gang_rq);
-	ma_holder_rawlock(&ma_gang_rq.hold);
-	list_for_each_entry_safe(e, ee, &ma_gang_rq.hold.sched_list, sched_list) {
+	ma_holder_rawlock(&ma_gang_rq.as_holder);
+	list_for_each_entry_safe(e, ee, &ma_gang_rq.as_holder.sched_list, sched_list) {
 		int state = ma_get_entity(e);
-		ma_put_entity(e, &ma_main_runqueue.hold, state);
+		ma_put_entity(e, &ma_main_runqueue.as_holder, state);
 	}
-	ma_holder_rawunlock(&ma_gang_rq.hold);
-	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
+	ma_holder_rawunlock(&ma_gang_rq.as_holder);
+	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 	return 0;
 }
 

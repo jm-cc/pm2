@@ -221,7 +221,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 				rq = &l_l[0]->father->sched;
 			else
 				rq = &marcel_machine_level[0].sched;
-			ma_put_entity(e[i], &rq->hold, state);
+			ma_put_entity(e[i], &rq->as_holder, state);
 			continue;
 		}
 		bubble_sched_debug("add to level %s(%ld)",l_l[0]->sched.name,l_load[0]);
@@ -231,7 +231,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		l_load[0] += ma_entity_load(e[i]);
 		l_n[0]++;
 		state = ma_get_entity(e[i]);
-		ma_put_entity(e[i], &l_l[0]->sched.hold, state);
+		ma_put_entity(e[i], &l_l[0]->sched.as_holder, state);
 		bubble_sched_debug(" -> %ld\n",l_load[0]);
 		/* And sort */
 		if (nl > 1 && l_load[0] > l_load[1]) {

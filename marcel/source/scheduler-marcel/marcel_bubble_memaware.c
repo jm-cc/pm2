@@ -96,7 +96,7 @@ void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_leve
 	/* on regarde ce qui s'execute sur le niveau */
 	int j = 0;
 	marcel_entity_t *entity;
-	list_for_each_entry(entity, &rqlevel->hold.sched_list, sched_list)
+	list_for_each_entry(entity, &rqlevel->as_holder.sched_list, sched_list)
 		{
 			/* on rassemble la bulle */
 			if (entity->type == MA_BUBBLE_ENTITY && entity != &marcel_root_bubble.as_entity)
@@ -141,7 +141,7 @@ void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *su
 	//marcel_fprintf(stderr,"down me %p\n",me);
 	/* Calcul du nombre d'entités sur me */
 	ma_runqueue_t *rq =&me->sched;
-	ma_holder_t *h = &rq->hold;
+	ma_holder_t *h = &rq->as_holder;
 	marcel_entity_t *e;
 	ma_holder_rawlock(h);
 	list_for_each_entry(e, &h->sched_list, sched_list)

@@ -101,7 +101,7 @@ int marcel_attr_getinitholder(__const marcel_attr_t *attr, ma_holder_t **h) __TH
 
 
 int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
-#define marcel_sched_attr_setinitrq(attr, rq) marcel_sched_attr_setinitholder(attr, &(rq)->hold)
+#define marcel_sched_attr_setinitrq(attr, rq) marcel_sched_attr_setinitholder(attr, &(rq)->as_holder)
 /** Sets the initial runqueue for created thread */
 int marcel_attr_setinitrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
 #define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
@@ -230,7 +230,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		ma_holder_t *h;
 		h = ma_task_init_holder(MARCEL_SELF);
 		if (!h)
-			h = &ma_main_runqueue.hold;
+			h = &ma_main_runqueue.as_holder;
 		internal->entity.sched_holder = internal->entity.init_holder = h;
 		rq = ma_to_rq_holder(h);
 		if (!rq)
@@ -244,7 +244,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		marcel_bubble_init(b);
 		h = ma_task_init_holder(MARCEL_SELF);
 		if (!h)
-			h = &ma_main_runqueue.hold;
+			h = &ma_main_runqueue.as_holder;
 		b->as_entity.init_holder = h;
 		if (h->type != MA_RUNQUEUE_HOLDER) {
 			marcel_bubble_t *bb = ma_bubble_holder(h);
@@ -257,10 +257,10 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 			rq = ma_to_rq_holder(h);
 			if (!rq)
 				rq = &ma_main_runqueue;
-			b->as_entity.sched_holder = &rq->hold;
-			ma_holder_lock_softirq(&rq->hold);
-			ma_put_entity(&b->as_entity, &rq->hold, MA_ENTITY_READY);
-			ma_holder_unlock_softirq(&rq->hold);
+			b->as_entity.sched_holder = &rq->as_holder;
+			ma_holder_lock_softirq(&rq->as_holder);
+			ma_put_entity(&b->as_entity, &rq->as_holder, MA_ENTITY_READY);
+			ma_holder_unlock_softirq(&rq->as_holder);
 		}
 	}
 	internal->entity.sched_holder=NULL;
@@ -301,7 +301,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 				if (!ma_per_lwp(online, lwp))
 					continue;
 				rq2 = &vp->sched;
-				if (rq2->hold.nr_ready < THREAD_THRESHOLD_LOW) {
+				if (rq2->as_holder.nr_ready < THREAD_THRESHOLD_LOW) {
 					rq = rq2;
 					break;
 				}
@@ -313,7 +313,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		case MARCEL_SCHED_BALANCE: {
 			/* Retourne le LWP le moins charge (ce qui
 			   oblige a parcourir toute la liste) */
-			unsigned best = ma_lwp_vprq(cur_lwp)->hold.nr_ready;
+			unsigned best = ma_lwp_vprq(cur_lwp)->as_holder.nr_ready;
 			struct marcel_topo_level *vp;
 			ma_runqueue_t *rq2;
 			rq = ma_lwp_vprq(cur_lwp);
@@ -324,9 +324,9 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 				if (!ma_per_lwp(online, lwp))
 					continue;
 				rq2 = &vp->sched;
-				if (rq2->hold.nr_ready < best) {
+				if (rq2->as_holder.nr_ready < best) {
 					rq = rq2;
-					best = rq2->hold.nr_ready;
+					best = rq2->as_holder.nr_ready;
 				}
 			}
 			break;
@@ -374,7 +374,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	} else {
 		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, internal, attr);
 		if (rq) {
-			internal->entity.sched_holder = &rq->hold;
+			internal->entity.sched_holder = &rq->as_holder;
 			MA_BUG_ON(!rq->name[0]);
 		}
 	}

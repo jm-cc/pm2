@@ -44,7 +44,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 	//thread prêt...
 	marcel_entity_t *e;
 	marcel_bubble_t *b;
-	if (!rq->hold.nr_ready)
+	if (!rq->as_holder.nr_ready)
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
 		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), run_list) {
@@ -73,11 +73,11 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	bubble_sched_debugl(7,"see %d %d\n", level->type, level->number);
 	if (!rq)
 		return 0;
-	ma_holder_rawlock(&rq->hold);
+	ma_holder_rawlock(&rq->as_holder);
 	/* recommencer une fois verrouillé */
 	b = find_interesting_bubble(rq, up_power);
 	if (!b) {
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&rq->as_holder);
 		bubble_sched_debugl(7,"no interesting bubble\n");
 		return 0;
 	}
@@ -96,7 +96,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			/* todo: le faire quand même ? */
 			!marcel_vpset_isset(&rq2->vpset,ma_vpnum(MA_LWP_SELF))) {
 		bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
-		ma_holder_rawunlock(&rq->hold);
+		ma_holder_rawunlock(&rq->as_holder);
 		return 0;
 	}
 
@@ -121,13 +121,13 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				continue;
 			bubble_sched_debug("detaching running task %p from %p\n", t, b);
 		}
-		ma_move_entity(e, &rq->hold);
+		ma_move_entity(e, &rq->as_holder);
 	}
 	ma_holder_rawunlock(&b->as_holder);
 	/* enlever b de rq */
 	int bstate = ma_get_entity(&b->as_entity);
-	ma_holder_rawunlock(&rq->hold);
-	ma_holder_rawlock(&rq2->hold);
+	ma_holder_rawunlock(&rq->as_holder);
+	ma_holder_rawlock(&rq2->as_holder);
 	ma_holder_rawlock(&b->as_holder);
 	/* b contient encore tout ce qui n'est pas ordonnancé, les distribuer */
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
@@ -143,15 +143,15 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			t = ma_task_entity(e);
 			bubble_sched_debug("detaching task %p from %p\n", t, b);
 		}
-		ma_move_entity(e, &rq2->hold);
+		ma_move_entity(e, &rq2->as_holder);
 		/* et forcer à redescendre au même niveau qu'avant */
 		e->sched_level = rq->level;
 	}
 	ma_holder_rawunlock(&b->as_holder);
 	/* mettre b sur rq2 */
-	ma_put_entity(&b->as_entity, &rq2->hold, bstate);
+	ma_put_entity(&b->as_entity, &rq2->as_holder, bstate);
 	b->as_entity.sched_level = rq2->level;
-	ma_holder_rawunlock(&rq2->hold);
+	ma_holder_rawunlock(&rq2->as_holder);
 
 	return ret;
 }
@@ -227,15 +227,15 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 		bubble->settled = 1;
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);
-			ma_deactivate_entity(&bubble->as_entity, &rq->hold);
-			ma_holder_rawunlock(&rq->hold);
+			ma_deactivate_entity(&bubble->as_entity, &rq->as_holder);
+			ma_holder_rawunlock(&rq->as_holder);
 			ma_holder_rawunlock(&bubble->as_holder);
 
-			ma_holder_rawlock(&rq2->hold);
+			ma_holder_rawlock(&rq2->as_holder);
 			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
 			ma_holder_rawlock(&bubble->as_holder);
-			ma_activate_entity(&bubble->as_entity, &rq2->hold);
-			ma_holder_rawunlock(&rq2->hold);
+			ma_activate_entity(&bubble->as_entity, &rq2->as_holder);
+			ma_holder_rawunlock(&rq2->as_holder);
 			ma_holder_unlock(&bubble->as_holder);
 			return NULL;
 		}

@@ -93,7 +93,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 					else
 						rq = &marcel_machine_level[0].sched;
 					//marcel_fprintf(stderr,"leave entity %p\n",e[i]);
-					ma_put_entity(e[i], &rq->hold, state);
+					ma_put_entity(e[i], &rq->as_holder, state);
 				}
 			}  
 			__marcel_bubble_mspread(valid_e,valid_ne,l,nl,recurse+1);
@@ -390,7 +390,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		/* Add this entity (heaviest) to least loaded level item from begin */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
 		int state = ma_get_entity(e[i]);
-		ma_put_entity(e[i], &l_l[begin]->sched.hold, state);
+		ma_put_entity(e[i], &l_l[begin]->sched.as_holder, state);
 
 		bubble_sched_debug(" -> %ld\n",l_load[begin]);
 		marcel_fprintf(stderr,"put entity %p on %d\n",e[i],l_l[begin]->number);
@@ -481,7 +481,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		/* Add this entity (heaviest) to least loaded level item from 0 */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
 		int state = ma_get_entity(later[i]);
-		ma_put_entity(later[i], &l_l[0]->sched.hold, state);
+		ma_put_entity(later[i], &l_l[0]->sched.as_holder, state);
 
 		bubble_sched_debug(" -> %ld\n",l_load[0]);
 		marcel_fprintf(stderr,"put entity %p on %d\n",later[i],l_l[0]->number);

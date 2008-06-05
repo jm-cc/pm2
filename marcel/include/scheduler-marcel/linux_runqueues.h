@@ -126,7 +126,7 @@ enum ma_rq_type {
  */
 struct ma_runqueue {
 	/** \brief Holder information */
-	struct ma_holder hold;
+	struct ma_holder as_holder;
 	/* Number of switches */
 	//unsigned long long nr_switches;
 	/** \brief Name of the runqueue */
@@ -273,7 +273,7 @@ static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marc
 	list_add_tail(&e->run_list, head);
 	e->holder_data = array;
 	MA_BUG_ON(e->run_holder);
-	e->run_holder = &rq->hold;
+	e->run_holder = &rq->as_holder;
 }
 
 #section marcel_functions

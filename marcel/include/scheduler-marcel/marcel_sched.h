@@ -114,7 +114,7 @@ int marcel_attr_getinitrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THR
 
 #ifdef MA__BUBBLES
 int marcel_sched_attr_setinitbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
-#define marcel_sched_attr_setinitbubble(attr, bubble) marcel_sched_attr_setinitholder(attr, &(bubble)->hold)
+#define marcel_sched_attr_setinitbubble(attr, bubble) marcel_sched_attr_setinitholder(attr, &(bubble)->as_holder)
 /** Sets the initial bubbles for created thread */
 int marcel_attr_setinitbubble(marcel_attr_t *attr, marcel_bubble_t *bubble) __THROW;
 #define marcel_attr_setinitbubble(attr,bubble) marcel_sched_attr_setinitbubble(&(attr)->sched,bubble)

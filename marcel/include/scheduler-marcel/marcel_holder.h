@@ -128,7 +128,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
 /** \brief Converts marcel_bubble_t *b into ma_holder_t * */
 ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
-#define ma_holder_bubble(b) (&(b)->hold)
+#define ma_holder_bubble(b) (&(b)->as_holder)
 /** \brief Converts ma_runqueue_t *b into ma_holder_t * */
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->hold)
@@ -139,7 +139,7 @@ int ma_node_entity(marcel_entity_t *entity);
 #section marcel_inline
 #ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
-	return tbx_container_of(h, marcel_bubble_t, hold);
+	return tbx_container_of(h, marcel_bubble_t, as_holder);
 }
 #endif
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {

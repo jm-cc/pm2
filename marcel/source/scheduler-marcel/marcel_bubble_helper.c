@@ -101,7 +101,7 @@ int ma_count_entities_on_rq(ma_runqueue_t *rq, enum counting_mode recursive)
       if (ee->type == MA_BUBBLE_ENTITY)
 	{
 	  marcel_bubble_t *bb = ma_bubble_entity(ee);
-	  if (bb->hold.nr_ready)
+	  if (bb->as_holder.nr_ready)
 	    {
 	      if (recursive)
 		ne += ma_entity_load(ee);
@@ -126,7 +126,7 @@ int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne)
       if (ee->type == MA_BUBBLE_ENTITY)
 	{
 	  marcel_bubble_t *bb = ma_bubble_entity(ee);
-	  if (bb->hold.nr_ready)
+	  if (bb->as_holder.nr_ready)
 	    e[i++] = ee;
 	}
       else

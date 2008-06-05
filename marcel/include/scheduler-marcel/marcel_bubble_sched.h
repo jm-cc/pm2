@@ -195,7 +195,7 @@ struct marcel_bubble {
 	/** \brief Entity information */
 	struct ma_sched_entity as_entity;
 	/** \brief Holder information */
-	struct ma_holder hold;
+	struct ma_holder as_holder;
 	/** \brief List of the held entities */
 	struct list_head heldentities;
 	/** \brief Number of held entities */
@@ -230,7 +230,7 @@ struct marcel_bubble {
 /* Attention: ne doit être utilisé que par marcel_bubble_init */
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
 	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
-	.hold = MA_HOLDER_INITIALIZER((b).hold, MA_BUBBLE_HOLDER), \
+	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
 	.nbentities = 0, \
 	.join = MARCEL_SEM_INITIALIZER(1), \
@@ -247,7 +247,7 @@ struct marcel_bubble {
 #define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->as_entity, (offset))
 /** \brief Gets a synthesis of a statistic value of the content of a bubble, as
  * collected during the last call to ma_bubble_synthesize_stats() */
-#define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->hold, (offset))
+#define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->as_holder, (offset))
 
 #section marcel_functions
 /**
@@ -357,7 +357,7 @@ void marcel_sched_exit(marcel_t t);
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	MA_BUG_ON(e->run_holder != &b->hold);
+	MA_BUG_ON(e->run_holder != &b->as_holder);
 	if (list_empty(&b->queuedentities)) {
 		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
@@ -389,7 +389,7 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 	}
 	MA_BUG_ON(!e->holder_data);
 	e->holder_data = NULL;
-	MA_BUG_ON(e->run_holder != &b->hold);
+	MA_BUG_ON(e->run_holder != &b->as_holder);
 #endif
 }
 
@@ -403,9 +403,9 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 			if (!b->as_entity.holder_data) {
-				ma_holder_rawunlock(&b->hold);
+				ma_holder_rawunlock(&b->as_holder);
 				h = ma_bubble_holder_rawlock(b);
-				ma_holder_rawlock(&b->hold);
+				ma_holder_rawlock(&b->as_holder);
 				if (list_empty(&b->queuedentities) && h) {
 					MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 					if (!b->as_entity.holder_data)
@@ -433,21 +433,21 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 			if (b->as_entity.holder_data) {
-				ma_holder_rawunlock(&b->hold);
+				ma_holder_rawunlock(&b->as_holder);
 				h = ma_bubble_holder_rawlock(b);
 				if (list_empty(&b->queuedentities) && h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 					if (b->as_entity.holder_data)
 						ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 				}
 				ma_bubble_holder_rawunlock(h);
-				ma_holder_rawlock(&b->hold);
+				ma_holder_rawlock(&b->as_holder);
 			}
 		}
 	}
 #endif
 	MA_BUG_ON(!e->holder_data);
 	e->holder_data = NULL;
-	MA_BUG_ON(e->run_holder != &b->hold);
+	MA_BUG_ON(e->run_holder != &b->as_holder);
 #endif
 }
 

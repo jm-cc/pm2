@@ -77,15 +77,15 @@ static int ma_entity_is_active(marcel_entity_t *e)
 	{
 		MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 		marcel_entity_t *downentity;
-		ma_holder_rawlock(&ma_bubble_entity(e)->hold);
+		ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
 		list_for_each_entry(downentity, &ma_bubble_entity(e)->heldentities, bubble_entity_list)
 			{
 				if (ma_entity_is_active(downentity) == 1) {
-					ma_holder_rawunlock(&ma_bubble_entity(e)->hold);
+					ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 					return 1;
 				}
 			}
-		ma_holder_rawunlock(&ma_bubble_entity(e)->hold);
+		ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 		return 0;
 	}
 	return -1;
@@ -165,9 +165,9 @@ void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload, int pe
 				if (!ma_bubble_entity(e)->old)
 				{
 					MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
-					ma_holder_rawlock(&ma_bubble_entity(e)->hold);
-					ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->hold, totalload, penalty, score, stolen, recurse + 1);
-					ma_holder_rawunlock(&ma_bubble_entity(e)->hold);
+					ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
+					ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->as_holder, totalload, penalty, score, stolen, recurse + 1);
+					ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 				}
 			}
 			for_each_entity_scheduled_in_bubble_end();
@@ -277,9 +277,9 @@ void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int 
 						MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 						if (!ma_bubble_entity(e)->old)
 						{
-							ma_holder_rawlock(&ma_bubble_entity(e)->hold);
-							ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->hold, totalload, penalty, score, stolen, recurse + 1);
-							ma_holder_rawunlock(&ma_bubble_entity(e)->hold);
+							ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
+							ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->as_holder, totalload, penalty, score, stolen, recurse + 1);
+							ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 							*fromlevel = tbx_container_of(ma_rq_holder(h), struct marcel_topo_level, sched);
 						}
 					}

@@ -158,7 +158,7 @@ __distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne
     if (e[i]) {
       if (e[i]->type == MA_BUBBLE_ENTITY) {
 	marcel_bubble_t *b = ma_bubble_entity(e[i]);
-	if (!b->hold.nr_ready) { /* We don't pick empty bubbles */         
+	if (!b->as_holder.nr_ready) { /* We don't pick empty bubbles */         
 	  bubble_sched_debug("bubble %p is empty\n",b);
 	  continue;                     
 	}
@@ -286,7 +286,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  marcel_entity_t *ee;
 	  
-	  if (bb->hold.nr_ready && (ma_entity_load(e[i]) != 1)) {
+	  if (bb->as_holder.nr_ready && (ma_entity_load(e[i]) != 1)) {
 	    /* If the bubble is not empty, and contains more than one thread */ 
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_ne++;
@@ -323,7 +323,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	   bubble to explode.*/
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-	  if (bb->hold.nr_ready) { 
+	  if (bb->as_holder.nr_ready) { 
 	    bubble_sched_debug("exploding bubble %p\n", bb);
 	    for_each_entity_scheduled_in_bubble_begin(ee,bb)
 	      new_e[j++] = ee;
@@ -514,7 +514,7 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
   else if (bestbb && !available_threads) { 
     /* Browse the bubble */
     marcel_bubble_t *b = ma_bubble_entity(bestbb);
-    return browse_bubble_and_steal(&b->hold, from_vp);
+    return browse_bubble_and_steal(&b->as_holder, from_vp);
   }
   else if (available_threads)
     /* Steal threads instead */

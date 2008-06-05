@@ -50,7 +50,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		list_for_each_entry(e, &ma_gang_rq.hold.sched_list, sched_list) {
 			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 			b = ma_bubble_entity(e);
-			if (b->hold.nr_ready) {
+			if (b->as_holder.nr_ready) {
 				int state = ma_get_entity(e);
 				ma_put_entity(e, &work_rq->hold, state);
 				break;

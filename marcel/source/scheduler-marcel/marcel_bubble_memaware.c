@@ -122,7 +122,7 @@ void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 {
 	//marcel_fprintf(stderr,"bubble entity %p\n", &bubble->sched);	
 	marcel_entity_t *downentity;
-	ma_holder_lock(&bubble->hold);
+	ma_holder_lock(&bubble->as_holder);
 	for_each_entity_scheduled_in_bubble_begin(downentity,bubble)
 			if (downentity->type == MA_BUBBLE_ENTITY)
 					ma_count_in_bubble(ma_bubble_entity(downentity),number);
@@ -132,7 +132,7 @@ void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 				(*number) ++;
 			}
 	for_each_entity_scheduled_in_bubble_end();
-   ma_holder_unlock(&bubble->hold);
+   ma_holder_unlock(&bubble->as_holder);
 }
 
 /* Travail équilibré sous un niveau */

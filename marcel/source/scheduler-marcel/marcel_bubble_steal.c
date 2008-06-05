@@ -25,14 +25,14 @@
 #ifdef MA__BUBBLES
 
 static int total_nr_ready(marcel_bubble_t *b) {
-	int nr_ready = b->hold.nr_ready;
+	int nr_ready = b->as_holder.nr_ready;
 	marcel_entity_t *e;
 	// XXX: pas fiable du tout ! Il faudrait verrouiller la bulle !
-	ma_holder_rawlock(&b->hold);
+	ma_holder_rawlock(&b->as_holder);
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list)
 		if (e->type == MA_BUBBLE_ENTITY)
 			nr_ready += total_nr_ready(ma_bubble_entity(e));
-	ma_holder_rawunlock(&b->hold);
+	ma_holder_rawunlock(&b->as_holder);
 	return nr_ready;
 }
 
@@ -104,7 +104,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	ret = 1;
 	PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 	/* laisser d'abord ce qui est ordonnancé sur place */
-	ma_holder_rawlock(&b->hold);
+	ma_holder_rawlock(&b->as_holder);
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			/* laisser la première bulle */
@@ -123,15 +123,15 @@ static int see(struct marcel_topo_level *level, int up_power) {
 		}
 		ma_move_entity(e, &rq->hold);
 	}
-	ma_holder_rawunlock(&b->hold);
+	ma_holder_rawunlock(&b->as_holder);
 	/* enlever b de rq */
 	int bstate = ma_get_entity(&b->as_entity);
 	ma_holder_rawunlock(&rq->hold);
 	ma_holder_rawlock(&rq2->hold);
-	ma_holder_rawlock(&b->hold);
+	ma_holder_rawlock(&b->as_holder);
 	/* b contient encore tout ce qui n'est pas ordonnancé, les distribuer */
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
-		if (e->sched_holder == &b->hold)
+		if (e->sched_holder == &b->as_holder)
 			continue;
 		/* encore dans la bulle, faire sortir cela */
 		/* TODO: prendre tout de suite du boulot pour soi ? */
@@ -147,7 +147,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 		/* et forcer à redescendre au même niveau qu'avant */
 		e->sched_level = rq->level;
 	}
-	ma_holder_rawunlock(&b->hold);
+	ma_holder_rawunlock(&b->as_holder);
 	/* mettre b sur rq2 */
 	ma_put_entity(&b->as_entity, &rq2->hold, bstate);
 	b->as_entity.sched_level = rq2->level;
@@ -229,14 +229,14 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);
 			ma_deactivate_entity(&bubble->as_entity, &rq->hold);
 			ma_holder_rawunlock(&rq->hold);
-			ma_holder_rawunlock(&bubble->hold);
+			ma_holder_rawunlock(&bubble->as_holder);
 
 			ma_holder_rawlock(&rq2->hold);
 			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
-			ma_holder_rawlock(&bubble->hold);
+			ma_holder_rawlock(&bubble->as_holder);
 			ma_activate_entity(&bubble->as_entity, &rq2->hold);
 			ma_holder_rawunlock(&rq2->hold);
-			ma_holder_unlock(&bubble->hold);
+			ma_holder_unlock(&bubble->as_holder);
 			return NULL;
 		}
 	}

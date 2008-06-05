@@ -130,7 +130,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
 	ma_dequeue_entity(&bubble->as_entity,&rq->hold);
-	ma_holder_rawlock(&bubble->hold);
+	ma_holder_rawlock(&bubble->as_holder);
 	/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
 les #ifdef dans les arguments de macro...
@@ -148,7 +148,7 @@ les #ifdef dans les arguments de macro...
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list)
 		ma_move_entity(e, &rq->hold);
 
-	ma_holder_rawunlock(&bubble->hold);
+	ma_holder_rawunlock(&bubble->as_holder);
 	sched_debug("unlock(%p)\n", rq);
 	ma_holder_unlock(&rq->hold);
 	return NULL;

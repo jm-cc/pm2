@@ -32,7 +32,6 @@ typedef int16_t nm_gate_id_t;                 /* needs to support -1 */
 
 #define NUMBER_OF_GATES          255
 #define NUMBER_OF_DRIVERS        255
-#define NUMBER_OF_PROTOCOLS      255
 #define NUMBER_OF_TRACKS         255
 
 #define NM_ANY_GATE ((nm_gate_id_t)-1)

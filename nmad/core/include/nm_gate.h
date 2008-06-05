@@ -99,7 +99,7 @@ struct nm_gate {
 
         /** Gate data for each driver.
          */
-        struct nm_gate_drv	 *p_gate_drv_array[NUMBER_OF_GATES];
+        struct nm_gate_drv	 *p_gate_drv_array[NUMBER_OF_DRIVERS];
 
         /* packet scheduling structures					*/
 

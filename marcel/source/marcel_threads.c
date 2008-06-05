@@ -283,7 +283,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
 		if (!attr->__detachstate)
 			marcel_sem_init(&new_task->client, 0);
-		marcel_sched_init_thread_seed(new_task, &new_task->sched.internal, attr);
+		marcel_sched_init_thread_seed(new_task, attr);
 		marcel_wake_up_created_thread(new_task);
 		if (pid)
 			*pid = new_task;
@@ -1351,7 +1351,7 @@ DEF_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio),(thread,prio),
 	int policy;
 
 	/* détermination de la police POSIX d'après la priorité Marcel et la préemption */
-	int mprio = thread->sched.internal.entity.prio;
+	int mprio = thread->as_entity.prio;
 	if (mprio >= MA_DEF_PRIO)
 		policy = SCHED_OTHER;
 	else if (mprio <= MA_RT_PRIO) {
@@ -1460,7 +1460,7 @@ DEF_POSIX(int, getschedparam,(pmarcel_t pmthread, int *__restrict policy,
 	}
 
 	/* détermination de la police et priority POSIX d'après la priorité Marcel et la préemption */
-	int mprio = thread->sched.internal.entity.prio;
+	int mprio = thread->as_entity.prio;
 
 	if (mprio >= MA_DEF_PRIO) {
 		param->__sched_priority = 0;

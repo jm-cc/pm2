@@ -234,18 +234,6 @@ DEC_MARCEL_POSIX(int, yield, (void) __THROW);
 /*               Scheduler et threads                           */
 /****************************************************************/
 
-#section marcel_types
-typedef struct marcel_sched_task marcel_sched_task_t;
-
-#section marcel_structures
-#depend "scheduler/marcel_sched.h[marcel_types]"
-struct marcel_sched_task {
-	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
-	unsigned long lwps_allowed; /* Contraintes sur le placement sur les LWP */
-	unsigned int state; /* État du thread */
-	marcel_sched_internal_task_t internal;
-};
-
 #section marcel_macros
 /* Ces valeurs représentent ce que l'utilisateur voudrait comme état */
 
@@ -258,16 +246,16 @@ struct marcel_sched_task {
 #define MA_TASK_BORNING		256
 
 #define __ma_set_task_state(tsk, state_value)		\
-	do { (tsk)->sched.state = (state_value); } while (0)
+	do { (tsk)->state = (state_value); } while (0)
 #define ma_set_task_state(tsk, state_value)		\
-	ma_set_mb((tsk)->sched.state, (state_value))
+	ma_set_mb((tsk)->state, (state_value))
 
 #define __ma_set_current_state(state_value)			\
-	do { SELF_GETMEM(sched).state = (state_value); } while (0)
+	do { SELF_GETMEM(state) = (state_value); } while (0)
 #define ma_set_current_state(state_value)		\
-	ma_set_mb(SELF_GETMEM(sched).state, (state_value))
+	ma_set_mb(SELF_GETMEM(state), (state_value))
 
-#define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
+#define MA_TASK_IS_FROZEN(tsk) (!(tsk)->state == MA_TASK_FROZEN)
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
@@ -279,9 +267,9 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 				const marcel_attr_t* __restrict attr)
 {
 	/* t->lwp */
-	t->sched.lwps_allowed = attr->vpset; 
+	t->lwps_allowed = attr->vpset; 
 	ma_set_task_state(t, MA_TASK_BORNING);
-	marcel_sched_internal_init_marcel_thread(t, &t->sched.internal, attr);
+	marcel_sched_internal_init_marcel_thread(t, attr);
 }
 
 #section marcel_functions
@@ -291,7 +279,7 @@ marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset);
 __tbx_inline__ static void 
 marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset)
 {
-	     *vpset = t->sched.lwps_allowed;
+	     *vpset = t->lwps_allowed;
 }
 
 #section sched_marcel_functions

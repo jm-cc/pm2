@@ -85,7 +85,7 @@ static void printtask(marcel_task_t *t) {
 		schedstate = '?';
 
 	if (ma_entity_task(t)->type == MA_THREAD_ENTITY) {
-		switch (t->sched.state) {
+		switch (t->state) {
 			case MA_TASK_RUNNING: 		state = 'R'; break;
 			case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;
 			case MA_TASK_UNINTERRUPTIBLE:	state = 'U'; break;
@@ -100,7 +100,7 @@ static void printtask(marcel_task_t *t) {
 		top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s",
 			(int) (2+2*sizeof(void*)), (unsigned long) t,
 			MARCEL_MAXNAMESIZE, t->name,
-			t->sched.internal.entity.prio, cpu/10UL, cpu%10UL,
+			t->as_entity.prio, cpu/10UL, cpu%10UL,
 			state, schedstate, ma_get_task_vpnum(t),
 			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
@@ -120,7 +120,7 @@ static void printtask(marcel_task_t *t) {
 		top_printf("%-#*lx %*s %2d        %c    %-10s %-10s %-10s",
 			(int) (2+2*sizeof(void*)), (unsigned long) t,
 			MARCEL_MAXNAMESIZE, "",
-			t->sched.internal.entity.prio,
+			t->as_entity.prio,
 			schedstate,
 			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),

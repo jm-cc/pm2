@@ -45,12 +45,15 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "asm/marcel_ctx.h[structures]"
 #depend "sys/marcel_work.h[marcel_structures]"
-#depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_attr.h[macros]"
 #depend "marcel_sem.h[structures]"
 #depend "marcel_exception.h[structures]"
 #depend "marcel_signal.h[marcel_types]"
 #depend "linux_timer.h[structures]"
+#depend "scheduler/marcel_sched.h[marcel_types]"
+#depend "scheduler/marcel_holder.h[marcel_structures]"
+#depend "scheduler/marcel_bubble_sched.h[types]"
+#depend "scheduler/marcel_bubble_sched.h[structures]"
  /* Pour struct __res_state */
 #ifdef MA__LIBPTHREAD
 #define __need_res_state
@@ -80,7 +83,14 @@ struct marcel_task {
 	/* Idem, but just for timer preemption */
 	int not_preemptible;
 	/* Données relatives au scheduler */
-	struct marcel_sched_task sched;
+	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
+	unsigned long lwps_allowed; /* Contraintes sur le placement sur les LWP */
+	unsigned int state; /* État du thread */
+	struct ma_sched_entity as_entity;
+#ifdef MA__BUBBLES
+	/* bubble where we automatically put the children of this task */
+	marcel_bubble_t bubble;
+#endif
 	/* Changements de contexte (sauvegarde état) */
 	marcel_ctx_t ctx_yield, ctx_restart;
 

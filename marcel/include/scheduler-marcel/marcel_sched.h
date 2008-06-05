@@ -47,13 +47,6 @@
 #section sched_marcel_inline
 
 /****************************************************************/
-/* Protections
- */
-#section common
-#ifndef MARCEL_SCHED_INTERNAL_INCLUDE
-#error This file should not be directely included. Use "marcel_sched.h" instead
-#endif
-/****************************************************************/
 /* Attributs
  */
 
@@ -162,13 +155,6 @@ unsigned marcel_add_lwp(void);
 #depend "scheduler/marcel_holder.h[marcel_structures]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 #depend "scheduler/marcel_bubble_sched.h[structures]"
-typedef struct {
-	struct ma_sched_entity entity;
-#ifdef MA__BUBBLES
-	/* bubble where we automatically put the children of this task */
-	marcel_bubble_t bubble;
-#endif
-} marcel_sched_internal_task_t;
 
 #section marcel_functions
 int ma_wake_up_task(marcel_task_t * p);
@@ -201,7 +187,6 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 #section sched_marcel_functions
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_task(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
@@ -212,7 +197,6 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #depend "[marcel_variables]"
 __tbx_inline__ ma_runqueue_t *
 marcel_sched_select_runqueue(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr) {
 	ma_runqueue_t *rq;
 #ifdef MA__LWPS
@@ -231,14 +215,14 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		h = ma_task_init_holder(MARCEL_SELF);
 		if (!h)
 			h = &ma_main_runqueue.as_holder;
-		internal->entity.sched_holder = internal->entity.init_holder = h;
+		t->as_entity.sched_holder = t->as_entity.init_holder = h;
 		rq = ma_to_rq_holder(h);
 		if (!rq)
 			rq = &ma_main_runqueue;
 
 		return rq;
 	}
-	b = &SELF_GETMEM(sched).internal.bubble;
+	b = &SELF_GETMEM(bubble);
 	if (!b->as_entity.init_holder) {
 		ma_holder_t *h;
 		marcel_bubble_init(b);
@@ -263,13 +247,13 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 			ma_holder_unlock_softirq(&rq->as_holder);
 		}
 	}
-	internal->entity.sched_holder=NULL;
-	marcel_bubble_insertentity(b, &internal->entity);
+	t->as_entity.sched_holder=NULL;
+	marcel_bubble_insertentity(b, &t->as_entity);
 	if (b->as_entity.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 		/* keep this thread inside the bubble */
 		return NULL;
 #  endif
-	switch (internal->entity.sched_policy) {
+	switch (t->as_entity.sched_policy) {
 		case MARCEL_SCHED_SHARED:
 			rq = &ma_main_runqueue;
 			break;
@@ -332,7 +316,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 			break;
 		}
 		default: {
-			unsigned num = ma_user_policy[internal->entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, ma_vpnum(cur_lwp));
+			unsigned num = ma_user_policy[t->as_entity.sched_policy - __MARCEL_SCHED_AVAILABLE](t, ma_vpnum(cur_lwp));
 			rq = ma_lwp_vprq(ma_get_lwp_by_vpnum(num));
 			break;
 		}
@@ -346,7 +330,6 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_task(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	ma_holder_t *h = NULL;
@@ -359,88 +342,84 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		h = ma_task_init_holder(MARCEL_SELF);
 #endif
 	}
-	internal->entity.sched_policy = attr->sched.sched_policy;
-	internal->entity.run_holder=NULL;
-	internal->entity.init_holder=NULL;
-	internal->entity.holder_data=NULL;
+	t->as_entity.sched_policy = attr->sched.sched_policy;
+	t->as_entity.run_holder=NULL;
+	t->as_entity.init_holder=NULL;
+	t->as_entity.holder_data=NULL;
 #ifdef MA__BUBBLES
-	INIT_LIST_HEAD(&internal->entity.bubble_entity_list);
+	INIT_LIST_HEAD(&t->as_entity.bubble_entity_list);
 #endif
 	if (h) {
-		internal->entity.sched_holder = h;
+		t->as_entity.sched_holder = h;
 #ifdef MA__BUBBLES
-		internal->entity.init_holder = h;
+		t->as_entity.init_holder = h;
 #endif
 	} else {
-		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, internal, attr);
+		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, attr);
 		if (rq) {
-			internal->entity.sched_holder = &rq->as_holder;
+			t->as_entity.sched_holder = &rq->as_holder;
 			MA_BUG_ON(!rq->name[0]);
 		}
 	}
-	INIT_LIST_HEAD(&internal->entity.run_list);
-	internal->entity.prio=attr->__schedparam.__sched_priority;
-	PROF_EVENT2(sched_setprio,ma_task_entity(&internal->entity),internal->entity.prio);
+	INIT_LIST_HEAD(&t->as_entity.run_list);
+	t->as_entity.prio=attr->__schedparam.__sched_priority;
+	PROF_EVENT2(sched_setprio,ma_task_entity(&t->as_entity),t->as_entity.prio);
 	/* TODO: only for the spread scheduler */
 #ifdef MA__LWPS
-	internal->entity.sched_level=MARCEL_LEVEL_DEFAULT;
+	t->as_entity.sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
 
 #ifdef MARCEL_STATS_ENABLED
-	ma_stats_reset(&t->sched.internal.entity);
+	ma_stats_reset(&t->as_entity);
 	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
 #endif /* MARCEL_STATS_ENABLED */
 #ifdef MA__NUMA
-	ma_spin_lock_init(&t->sched.internal.entity.memory_areas_lock);
-	INIT_LIST_HEAD(&t->sched.internal.entity.memory_areas);
+	ma_spin_lock_init(&t->as_entity.memory_areas_lock);
+	INIT_LIST_HEAD(&t->as_entity.memory_areas);
 #endif
-	if (ma_holder_type(internal->entity.sched_holder) == MA_RUNQUEUE_HOLDER)
-		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->entity.sched_holder)->name, internal->entity.prio);
+	if (ma_holder_type(t->as_entity.sched_holder) == MA_RUNQUEUE_HOLDER)
+		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(t->as_entity.sched_holder)->name, t->as_entity.prio);
 	else
-		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->entity.sched_holder), internal->entity.prio);
+		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(t->as_entity.sched_holder), t->as_entity.prio);
 	LOG_OUT();
 }
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	LOG_IN();
-	internal->entity.type = MA_THREAD_ENTITY;
-	marcel_sched_internal_init_marcel_task(t, internal, attr);
+	t->as_entity.type = MA_THREAD_ENTITY;
+	marcel_sched_internal_init_marcel_task(t, attr);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
-	internal->bubble.as_entity.init_holder = NULL;
+	t->bubble.as_entity.init_holder = NULL;
 #endif
-	ma_atomic_init(&internal->entity.time_slice,MARCEL_TASK_TIMESLICE);
+	ma_atomic_init(&t->as_entity.time_slice,MARCEL_TASK_TIMESLICE);
 	LOG_OUT();
 }
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
 marcel_sched_init_thread_seed(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 __tbx_inline__ static void 
 marcel_sched_init_thread_seed(marcel_task_t* t,
-		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
 	LOG_IN();
-	internal->entity.type = MA_THREAD_SEED_ENTITY;
-	marcel_sched_internal_init_marcel_task(t, internal, attr);
+	t->as_entity.type = MA_THREAD_SEED_ENTITY;
+	marcel_sched_internal_init_marcel_task(t, attr);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 1);
 	LOG_OUT();
@@ -491,8 +470,8 @@ int marcel_sched_getscheduler(marcel_t t);
 
 #section marcel_macros
 #ifdef MARCEL_STATS_ENABLED
-#define ma_task_stats_get(t,offset) ma_stats_get(&(t)->sched.internal.entity,(offset))
-#define ma_task_stats_set(cast,t,offset,val) ma_stats_set(cast, &(t)->sched.internal.entity,(offset),val)
+#define ma_task_stats_get(t,offset) ma_stats_get(&(t)->as_entity,(offset))
+#define ma_task_stats_set(cast,t,offset,val) ma_stats_set(cast, &(t)->as_entity,(offset),val)
 #else /* MARCEL_STATS_ENABLED */
 #define ma_task_stats_set(cast,t,offset,val)
 #endif /* MARCEL_STATS_ENABLED */
@@ -571,15 +550,15 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		|| dont_schedule
 #ifdef MA__LWPS
 		/* On ne peut pas placer ce thread sur le LWP courant */
-		|| (!ma_lwp_isset(ma_vpnum(MA_LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
+		|| (!ma_lwp_isset(ma_vpnum(MA_LWP_SELF), THREAD_GETMEM(new_task, lwps_allowed)))
 		/* Si la politique est du type 'placer sur le LWP le moins
 		   chargé', alors on ne peut pas placer ce thread sur le LWP
 		   courant */
-		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_OTHER)
-		|| (new_task->sched.internal.entity.sched_policy == MARCEL_SCHED_BALANCE)
+		|| (new_task->as_entity.sched_policy == MARCEL_SCHED_OTHER)
+		|| (new_task->as_entity.sched_policy == MARCEL_SCHED_BALANCE)
 		/* If the new task is less prioritized than us, don't schedule it yet */
 #endif
-		|| (new_task->sched.internal.entity.prio > SELF_GETMEM(sched.internal.entity.prio))
+		|| (new_task->as_entity.prio > SELF_GETMEM(as_entity.prio))
 #ifdef MA__BUBBLES
 		/* on est placé dans une bulle (on ne sait donc pas si l'on a
 		   le droit d'être ordonnancé tout de suite)

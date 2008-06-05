@@ -144,7 +144,7 @@ int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *lev
 }
 
 int marcel_bubble_setinithere(marcel_bubble_t *bubble) {
-	ma_holder_t *h = SELF_GETMEM(sched.internal.entity.sched_holder);
+	ma_holder_t *h = SELF_GETMEM(as_entity.sched_holder);
 	
 	MA_BUG_ON(!h);
 	if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
@@ -358,7 +358,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 
 	if (entity->type == MA_THREAD_ENTITY) {
-		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->sched.internal.bubble;
+		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->bubble;
 		if (thread_bubble->as_entity.init_holder)
 			marcel_bubble_insertentity(bubble,ma_entity_bubble(thread_bubble));
 	}
@@ -482,7 +482,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 
 #undef marcel_sched_exit
 void marcel_sched_exit(marcel_t t) {
-	marcel_bubble_t *b = &t->sched.internal.bubble;
+	marcel_bubble_t *b = &t->bubble;
 	if (b->as_entity.init_holder) {
 		/* bubble initialized */
 		marcel_bubble_join(b);
@@ -514,7 +514,7 @@ static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 			ma_stats_synthesize(&bubble->as_holder, &b->as_holder);
 		} else {
 			t = ma_task_entity(e);
-			ma_stats_synthesize(&bubble->as_holder, &t->sched.internal.entity);
+			ma_stats_synthesize(&bubble->as_holder, &t->as_entity);
 		}
 	}
 }
@@ -896,10 +896,10 @@ static void __marcel_init bubble_sched_init() {
 
 void ma_bubble_sched_init2(void) {
 	/* Having main on the main runqueue is both faster and respects priorities */
-	ma_deactivate_running_entity(&MARCEL_SELF->sched.internal.entity, &marcel_root_bubble.as_holder);
-	SELF_GETMEM(sched.internal.entity.sched_holder) = &ma_main_runqueue.as_holder;
+	ma_deactivate_running_entity(&MARCEL_SELF->as_entity, &marcel_root_bubble.as_holder);
+	SELF_GETMEM(as_entity.sched_holder) = &ma_main_runqueue.as_holder;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
-	ma_activate_running_entity(&MARCEL_SELF->sched.internal.entity, &ma_main_runqueue.as_holder);
+	ma_activate_running_entity(&MARCEL_SELF->as_entity, &ma_main_runqueue.as_holder);
 
 	marcel_mutex_lock(&current_sched_mutex);
 	if (current_sched->init)

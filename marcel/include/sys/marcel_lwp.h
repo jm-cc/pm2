@@ -25,13 +25,13 @@ typedef struct marcel_lwp *ma_lwp_t;
 
 #section marcel_structures
 #depend "pm2_list.h"
-#depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_sem.h[structures]"
 #depend "sys/marcel_kthread.h[marcel_types]"
 #depend "linux_timer.h[marcel_types]"
 #depend "scheduler/linux_runqueues.h[types]"
 #depend "scheduler/linux_runqueues.h[marcel_structures]"
 #depend "marcel_topology.h[marcel_structures]"
+#depend "scheduler/marcel_sched.h[marcel_structures]"
 
 struct marcel_lwp {
 	struct list_head lwp_list;
@@ -261,12 +261,12 @@ void marcel_leave_blocking_section(void);
  * Accès aux LWP
  */
 
-#define ma_get_task_vpnum(task)			(ma_vpnum(THREAD_GETMEM(task,sched.lwp)))
+#define ma_get_task_vpnum(task)			(ma_vpnum(THREAD_GETMEM(task,lwp)))
 #ifdef MA__LWPS
 #  define ma_vpnum(lwp)				(ma_per_lwp(vpnum, lwp))
 #  define ma_get_lwp_by_vpnum(vpnum)		(ma_vp_lwp[vpnum])
-#  define ma_get_task_lwp(task)			((task)->sched.lwp)
-#  define ma_set_task_lwp(task, value)		((task)->sched.lwp=(value))
+#  define ma_get_task_lwp(task)			((task)->lwp)
+#  define ma_set_task_lwp(task, value)		((task)->lwp=(value))
 #  define ma_init_lwp_vpnum(vpnum, lwp)		do { \
 	if ((vpnum) == -1) { \
 		ma_vpnum(lwp) = -1; \

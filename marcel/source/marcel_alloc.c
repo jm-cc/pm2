@@ -308,7 +308,7 @@ void marcel_slot_exit(void)
 void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local, int node, int level)
 {
 	/* Which entity ? */
-	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
+	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
 
 	marcel_entity_t *upentity = entity;
 	ma_holder_t *h;
@@ -352,7 +352,7 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 
 void* marcel_calloc_customized(size_t nmemb, size_t size, enum pinfo_weight access, int local, int node, int level)
 {
-	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
+	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
 	marcel_entity_t *upentity = entity;
 	ma_holder_t *h;
 	while (level--) {
@@ -404,7 +404,7 @@ void marcel_free_customized(void *data)
 /* Attach static memory */
 void marcel_attach_memory(void *data, int size, enum pinfo_weight access, int local, int node, int level)
 {
-	marcel_entity_t *entity = &MARCEL_SELF->sched.internal.entity;
+	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
 	marcel_entity_t *upentity = entity;
 	ma_holder_t *h;
 	while (level--) {
@@ -885,7 +885,7 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 #ifdef MA__NUMA
 	struct memory_area *area;
 	if (!e)
-		e = &MARCEL_SELF->sched.internal.entity;
+		e = &MARCEL_SELF->as_entity;
 #ifdef MA__BUBBLES
 	while (level--) {
 		ma_holder_t *h;
@@ -909,7 +909,7 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 #ifdef MA__NUMA
 	struct memory_area *area;
 	if (!e)
-		e = &MARCEL_SELF->sched.internal.entity;
+		e = &MARCEL_SELF->as_entity;
 #ifdef MA__BUBBLES
 	while (level--) {
 		ma_holder_t *h;

@@ -79,10 +79,10 @@ int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
 int marcel_bubble_submit();
 
 #define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->as_entity)
-#define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->sched.internal.entity)
+#define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->as_entity)
 
 #define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->as_entity)
-#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->sched.internal.entity)
+#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->as_entity)
 
 /** \brief Sets the "scheduling level" of entity \e entity to \e level. This
  * information is used by the Burst Scheduler.
@@ -92,8 +92,8 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 #define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->as_entity,level)
 #define marcel_bubble_getschedlevel(bubble,level) marcel_entity_getschedlevel(&(bubble)->as_entity,level)
-#define marcel_task_setschedlevel(task,level) marcel_entity_setschedlevel(&(task)->sched.internal.entity,level)
-#define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->sched.internal.entity,level)
+#define marcel_task_setschedlevel(task,level) marcel_entity_setschedlevel(&(task)->as_entity,level)
+#define marcel_task_getschedlevel(task,level) marcel_entity_getschedlevel(&(task)->as_entity,level)
 
 /** \brief Sets the priority of bubble \e bubble to \e prio. */
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
@@ -141,7 +141,7 @@ marcel_bubble_t *marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
 marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->as_entity)
-#define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal.entity)
+#define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->as_entity)
 
 /**
  * \brief Changes the current bubble scheduler, returns the old one.
@@ -327,13 +327,13 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_enqueue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
-#define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal.entity,b)
+#define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->entity,b)
 #define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->as_entity,b)
 /* dequeue entity \e e from bubble \b, which must be locked */
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
-#define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal.entity,b)
+#define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->entity,b)
 #define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->as_entity,b)
 
 #section functions

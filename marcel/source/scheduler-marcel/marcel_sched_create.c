@@ -153,7 +153,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	h = ma_task_sched_holder(new_task);
 	ma_holder_rawlock(h);
 	ma_set_task_lwp(new_task, MA_LWP_SELF);
-	MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
+	MA_BUG_ON(new_task->state != MA_TASK_BORNING);
 	ma_set_task_state(new_task, MA_TASK_RUNNING);
 	ma_activate_running_task(new_task,h);
 	ma_holder_rawunlock(h);

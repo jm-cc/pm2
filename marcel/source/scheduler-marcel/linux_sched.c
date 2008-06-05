@@ -48,7 +48,7 @@
 #endif
 
 #define TASK_TASK_PREEMPT(p, q) \
-	((q)->sched.internal.entity.prio - (p)->sched.internal.entity.prio)
+	((q)->as_entity.prio - (p)->as_entity.prio)
 
 #define TASK_PREEMPTS_TASK(p, q) \
 	TASK_TASK_PREEMPT(p, q) > 0
@@ -179,14 +179,14 @@ int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_hold
 	ma_runqueue_t *rq;
 	LOG_IN();
 
-	old_state = p->sched.state;
+	old_state = p->state;
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
 		PROF_EVENT2(sched_thread_wake, p, old_state);
 #ifdef MARCEL_STATS_ENABLED
 		ma_task_stats_set(long, p, ma_stats_nbready_offset, 1);
 #endif
-		p->sched.state = MA_TASK_RUNNING;
+		p->state = MA_TASK_RUNNING;
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			PROF_EVENT(sched_thread_wake_unblock);
 			/*
@@ -280,11 +280,11 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	sched_debug("wake up created thread %p\n",p);
 	if (ma_entity_task(p)->type == MA_THREAD_ENTITY) {
-		MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
+		MA_BUG_ON(p->state != MA_TASK_BORNING);
 #ifdef MARCEL_STATS_ENABLED
 		ma_task_stats_set(long, p, ma_stats_last_ran_offset, marcel_clock());
 #endif
-		PROF_EVENT2(sched_thread_wake, p, p->sched.state);
+		PROF_EVENT2(sched_thread_wake, p, p->state);
 		ma_set_task_state(p, MA_TASK_RUNNING);
 	}
 #ifdef MARCEL_STATS_ENABLED
@@ -295,7 +295,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
-		if (list_empty(&p->sched.internal.entity.bubble_entity_list))
+		if (list_empty(&p->as_entity.bubble_entity_list))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 	}
 #endif
@@ -373,7 +373,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	if ((requeue = (MA_TASK_IS_READY(t) &&
 			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))
 		ma_dequeue_task(t,h);
-	t->sched.internal.entity.prio=prio;
+	t->as_entity.prio=prio;
 	if (requeue)
 		ma_enqueue_task(t,h);
 	ma_task_holder_unlock_softirq(h);
@@ -403,15 +403,15 @@ static void finish_task_switch(marcel_task_t *prev)
 #endif
 
 	LOG_IN();
-	prev_task_state = prev->sched.state;
+	prev_task_state = prev->state;
 
-	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
+	if (prev->state && ((prev->state == MA_TASK_DEAD)
 				|| !(THREAD_GETMEM(prev,preempt_count) & MA_PREEMPT_ACTIVE))
 			) {
-		if (prev->sched.state & MA_TASK_MOVING) {
+		if (prev->state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
 			MTRACE("moving",prev);
-			PROF_EVENT2(sched_thread_wake, prev, prev->sched.state);
+			PROF_EVENT2(sched_thread_wake, prev, prev->state);
 			ma_set_task_state(prev, MA_TASK_RUNNING);
 			/* still runnable */
 			ma_enqueue_task(prev,prevh);
@@ -439,7 +439,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		&& h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		int remove_from_bubble;
-		if ((remove_from_bubble = (prev->sched.state & MA_TASK_DEAD)))
+		if ((remove_from_bubble = (prev->state & MA_TASK_DEAD)))
 			ma_task_sched_holder(prev) = NULL;
 		ma_task_holder_unlock_softirq(prevh);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
@@ -527,7 +527,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 
 #ifdef MA__LWPS
-	if (p->sched.internal.entity.prio == MA_IDLE_PRIO)
+	if (p->as_entity.prio == MA_IDLE_PRIO)
 #else
 	if (currently_idle)
 #endif
@@ -540,7 +540,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		//rebalance_tick(rq, 1);
 		//return;
 		sys_ticks = 0;
-	} else if (p->sched.internal.entity.prio >= MA_BATCH_PRIO)
+	} else if (p->as_entity.prio >= MA_BATCH_PRIO)
 		lwpstat->nice += user_ticks;
 	else
 		lwpstat->user += user_ticks;
@@ -548,7 +548,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #undef sys_ticks
 
 	/* Task might have expired already, but not scheduled off yet */
-	//if (p->sched.internal.entity.array != rq->active) {
+	//if (p->as_entity.array != rq->active) {
 	
 	// C'est normal quand le thread est en cours de migration par exemple. Il faudrait prendre le verrou pour faire cette vérification
 	if (0 && !MA_TASK_IS_RUNNING(p)) {
@@ -560,11 +560,11 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 
 	if (preemption_enabled() && ma_thread_preemptible()) {
-		MA_BUG_ON(ma_atomic_read(&p->sched.internal.entity.time_slice)>MARCEL_TASK_TIMESLICE);
-		if (ma_atomic_dec_and_test(&p->sched.internal.entity.time_slice)) {
+		MA_BUG_ON(ma_atomic_read(&p->as_entity.time_slice)>MARCEL_TASK_TIMESLICE);
+		if (ma_atomic_dec_and_test(&p->as_entity.time_slice)) {
 			ma_set_need_resched(1);
 			sched_debug("scheduler_tick: time slice expired\n");
-			ma_atomic_set(&p->sched.internal.entity.time_slice,MARCEL_TASK_TIMESLICE);
+			ma_atomic_set(&p->as_entity.time_slice,MARCEL_TASK_TIMESLICE);
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
@@ -684,7 +684,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	 * Otherwise, whine if we are scheduling when we should not be.
 	 */
 	MA_BUG_ON(ma_preempt_count()<0);
-	if (tbx_likely(!(SELF_GETMEM(sched).state & MA_TASK_DEAD))) {
+	if (tbx_likely(!(SELF_GETMEM(state) & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
 			ma_show_preempt_backtrace();
@@ -722,16 +722,16 @@ need_resched_atomic:
 		prev_as_prio = ma_bubble_holder(prev_as_h)->as_entity.prio;
 	} else
 #endif
-		prev_as_prio = prev->sched.internal.entity.prio;
+		prev_as_prio = prev->as_entity.prio;
 
-	if (prev->sched.state &&
+	if (prev->state &&
 			/* garde-fou pour éviter de s'endormir
 			 * par simple préemption */
-			((prev->sched.state == MA_TASK_DEAD) ||
+			((prev->state == MA_TASK_DEAD) ||
 			!(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
-		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
+		if (tbx_unlikely((prev->state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
-			prev->sched.state = MA_TASK_RUNNING;
+			prev->state = MA_TASK_RUNNING;
 		else
 			go_to_sleep = 1;
 	}
@@ -754,7 +754,7 @@ need_resched_atomic:
 #endif
 		/* Now we said that, check again that nobody woke us in the
 		 * meanwhile. */
-		if (go_to_sleep && !prev->sched.state)
+		if (go_to_sleep && !prev->state)
 			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->as_holder;
@@ -805,9 +805,9 @@ restart:
 	if (tbx_unlikely(nexth == &ma_dontsched_rq(MA_LWP_SELF)->as_holder)) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
-		if (prev->sched.state == MA_TASK_INTERRUPTIBLE || prev->sched.state == MA_TASK_UNINTERRUPTIBLE) {
+		if (prev->state == MA_TASK_INTERRUPTIBLE || prev->state == MA_TASK_UNINTERRUPTIBLE) {
 			ma_about_to_idle();
-			if (!prev->sched.state) {
+			if (!prev->state) {
 				/* We got woken up. */
 				if (ma_get_need_resched()) {
 					/* But we need to resched.  Restart in
@@ -948,7 +948,7 @@ restart:
 		ma_dequeue_task(next, nexth);
 		ma_holder_unlock(nexth);
 
-		if (prev->sched.state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {
+		if (prev->state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
 			prev->cur_thread_seed = next;
 			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
@@ -983,7 +983,7 @@ switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
 
-	if (go_to_sleep && ((prev->sched.state == MA_TASK_DEAD) ||
+	if (go_to_sleep && ((prev->state == MA_TASK_DEAD) ||
 				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
 		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
@@ -1188,7 +1188,7 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
  */
 int marcel_task_prio(marcel_task_t *p)
 {
-	return p->sched.internal.entity.prio - MA_MAX_RT_PRIO;
+	return p->as_entity.prio - MA_MAX_RT_PRIO;
 }
 
 /**

@@ -486,7 +486,7 @@ fastcall TBX_EXTERN signed long ma_schedule_timeout(signed long timeout)
 			pm2debug("schedule_timeout: wrong timeout "
 				 "value %lx from %p\n", timeout,
 				 __builtin_return_address(0));
-			SELF_GETMEM(sched).state = MA_TASK_RUNNING;
+			SELF_GETMEM(state) = MA_TASK_RUNNING;
 			goto out;
 		}
 	}

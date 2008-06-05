@@ -97,7 +97,7 @@ enum
 #define MAX_ATEXIT_FUNCS	5
 
 #define MARCEL_THREAD_ISALIVE(thread) \
-   (((thread)->sched.state != MA_TASK_DEAD)||(!(thread)->detached))
+   (((thread)->state != MA_TASK_DEAD)||(!(thread)->detached))
 
 
 /****************************************************************/

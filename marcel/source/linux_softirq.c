@@ -52,7 +52,7 @@ static inline void ma_wakeup_softirqd(void) {
 	/* Avec marcel, seul la preemption est supprimée */
 	marcel_task_t *tsk = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),ksoftirqd);
 
-	if (tsk && tsk->sched.state != MA_TASK_RUNNING)
+	if (tsk && tsk->state != MA_TASK_RUNNING)
 		ma_wake_up_thread(tsk);
 }
 

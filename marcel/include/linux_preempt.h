@@ -71,7 +71,7 @@ do { \
 #else
 #define ma_check_work() \
 do { \
-	if (!(SELF_GETMEM(sched).state & ~MA_TASK_INTERRUPTIBLE) \
+	if (!(SELF_GETMEM(state) & ~MA_TASK_INTERRUPTIBLE) \
 			&& HAS_DEVIATE_WORK(MARCEL_SELF)) \
 		ma_do_work(MARCEL_SELF); \
 } while (0)

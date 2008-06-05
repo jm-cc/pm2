@@ -239,7 +239,7 @@ static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *e, ma_prio_a
 static __tbx_inline__ void ma_array_dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
 	sched_debug("dequeueing %d:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.entity.prio,array);
-	ma_array_dequeue_entity(&p->sched.internal.entity, array);
+	ma_array_dequeue_entity(&p->as_entity, array);
 }
 
 #section marcel_functions
@@ -261,8 +261,8 @@ static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_a
 }
 static __tbx_inline__ void ma_array_enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
-	sched_debug("enqueueing %d:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.entity.prio,array);
-	ma_array_enqueue_entity(&p->sched.internal.entity,array);
+	sched_debug("enqueueing %d:%s (prio %d) in %p\n",p->number,p->name,p->as_entity.prio,array);
+	ma_array_enqueue_entity(&p->as_entity,array);
 }
 
 #section marcel_functions

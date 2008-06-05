@@ -23,20 +23,34 @@
  * @{
  */
 
-#ifndef NM_SO_ANY_SRC
-#define NM_SO_ANY_SRC  ((nm_gate_id_t)-1)
-#endif
-
 #include <nm_public.h>
+#include "nm_so_sendrecv_interface.h"
 
 typedef intptr_t nm_so_pack_interface;
 
+/** Connection storage for the pack interface.
+ */
 struct nm_so_cnx {
-  intptr_t interface;
-  nm_gate_id_t gate;
-  long tag;
-  long first_seq_number;
-  long nb_paquets;
+
+        /** Interface used on the connexion.
+         */
+  struct nm_so_interface *p_interface;
+
+        /** Source or destination gate id.
+         */
+  nm_gate_id_t gate_id;
+
+        /** Message tag.
+         */
+  unsigned long tag;
+
+        /** Sequence number of the first fragment.
+         */
+  unsigned long first_seq_number;
+
+        /** Number of fragments.
+         */
+  unsigned long nb_paquets;
 };
 
 /** Initialize the interface.

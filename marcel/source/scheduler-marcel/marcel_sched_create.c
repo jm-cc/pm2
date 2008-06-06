@@ -196,7 +196,7 @@ void *marcel_sched_seed_runner(void *arg) {
 	ma_holder_t *h;
 #endif
 	ma_holder_t *h2, *h3;
-	marcel_t next;
+	marcel_t seed;
 	void *ret;
 
 	marcel_setname(MARCEL_SELF, "seed runner");
@@ -216,23 +216,23 @@ void *marcel_sched_seed_runner(void *arg) {
 restart:
 	SELF_SETMEM(f_to_call, marcel_sched_seed_runner);
 
-	next = SELF_GETMEM(cur_thread_seed);
+	seed = SELF_GETMEM(cur_thread_seed);
 
-	next->cur_thread_seed_runner = MARCEL_SELF;
-	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(next));
+	seed->cur_thread_seed_runner = MARCEL_SELF;
+	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(seed));
 
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES
-	h = ma_task_init_holder(next);
+	h = ma_task_init_holder(seed);
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
-		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
-		marcel_bubble_removetask(bubble, next);
+		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
+		marcel_bubble_removetask(bubble, seed);
 	} else
 #endif
-		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(next);
+		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
 
 	/* get out of here */
 	h2 = ma_entity_holder_rawlock(ma_entity_task(MARCEL_SELF));
@@ -240,8 +240,8 @@ restart:
 	ma_entity_holder_rawunlock(h2);
 
 	/* and go there */
-	h3 = ma_entity_holder_rawlock(ma_entity_task(next));
-	ma_deactivate_running_task(next, h3);
+	h3 = ma_entity_holder_rawlock(ma_entity_task(seed));
+	ma_deactivate_running_task(seed, h3);
 	ma_activate_running_task(MARCEL_SELF, h3);
 	ma_entity_holder_rawunlock(h3);
 
@@ -251,7 +251,7 @@ restart:
 
 	/* TODO: transférer les stats aussi? */
 
-	ret = next->f_to_call(next->arg);
+	ret = seed->f_to_call(seed->arg);
 
 	/* we returned from the caller function, we can avoid longjumping */
 	SELF_SETMEM(f_to_call, NULL);

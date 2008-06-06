@@ -1043,6 +1043,7 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
+                         LINUX_SYS \
 			 DOXYGEN
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 

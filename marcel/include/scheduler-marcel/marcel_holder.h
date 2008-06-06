@@ -582,44 +582,6 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 	ma_enqueue_task(p,h);
 }
 
-/* activating whole lists of tasks */
-#section marcel_functions
-void ma_holder_task_list_add(struct list_head *head, marcel_task_t *p, int prio, ma_holder_t *h, void *data);
-static __tbx_inline__ void ma_holder_entity_list_add(struct list_head *head, marcel_entity_t *e, int prio, ma_holder_t *h, void *data);
-#define ma_holder_task_list_add(head,t,p,h,data) ma_holder_entity_list_add(head,&(t)->as_entity,p,h,data)
-#section marcel_inline
-static __tbx_inline__ void ma_holder_entity_list_add(struct list_head *head, marcel_entity_t *e, int prio, ma_holder_t *h, void *data)
-{
-	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-	ma_array_entity_list_add(head, e, (ma_prio_array_t *) data, ma_rq_holder(h));
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
-{
-	h->nr_ready += num;
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_enqueue_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
-#section marcel_inline
-static __tbx_inline__ void ma_enqueue_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
-{
-	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-	ma_array_enqueue_entity_list(head, num, prio, (ma_prio_array_t *) data, ma_rq_holder(h));
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_activate_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
-{
-	ma_activate_running_task_list(head, num, prio, h, data);
-	ma_enqueue_task_list(head, num, prio, h, data);
-}
-
 /* deactivation */
 
 #section marcel_functions

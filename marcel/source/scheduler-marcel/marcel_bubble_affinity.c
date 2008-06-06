@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2006, 2008 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -293,7 +293,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 	    for_each_entity_scheduled_in_bubble_end()
 	    bubble_has_exploded = 1; /* We exploded one bubble,
 					it may be enough ! */
-	    bubble_sched_debug("counting: nr_ready: %ld, new_ne: %d\n", bb->hold.nr_ready, new_ne);
+	    bubble_sched_debug("counting: nr_ready: %ld, new_ne: %d\n", bb->as_holder.nr_ready, new_ne);
 	    break;
 	  }
 	} 

@@ -473,6 +473,7 @@ INPUT                  = \
                          ../marcel/include/scheduler-marcel/marcel_bubble_gang_sched.h \
                          ../marcel/include/scheduler-marcel/marcel_bubble_spread.h \
                          ../marcel/include/scheduler-marcel/marcel_bubble_steal.h \
+                         ../marcel/include/marcel_heap_numa_alloc.h
 
 # This tag can be used to specify the character encoding of the source files that 
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default 

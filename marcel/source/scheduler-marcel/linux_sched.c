@@ -554,7 +554,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	if (0 && !MA_TASK_IS_RUNNING(p)) {
 		pm2debug("Strange: %s running, but not running (run_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
 				p->name, ma_task_run_holder(p),
-				ma_task_holder_data(p), __FILE__, __LINE__);
+				ma_task_run_holder_data(p), __FILE__, __LINE__);
 		ma_set_need_resched(1);
 		goto out;
 	}

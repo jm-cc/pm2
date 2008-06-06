@@ -363,7 +363,7 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			if (!b->as_entity.holder_data)
+			if (!b->as_entity.run_holder_data)
 				ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
@@ -371,8 +371,8 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		list_add(&e->run_list, &b->queuedentities);
 	else
 		list_add_tail(&e->run_list, &b->queuedentities);
-	MA_BUG_ON(e->holder_data);
-	e->holder_data = (void *)1;
+	MA_BUG_ON(e->run_holder_data);
+	e->run_holder_data = (void *)1;
 #endif
 }
 static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
@@ -383,12 +383,12 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			if (b->as_entity.holder_data)
+			if (b->as_entity.run_holder_data)
 				ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
-	MA_BUG_ON(!e->holder_data);
-	e->holder_data = NULL;
+	MA_BUG_ON(!e->run_holder_data);
+	e->run_holder_data = NULL;
 	MA_BUG_ON(e->run_holder != &b->as_holder);
 #endif
 }
@@ -402,13 +402,13 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			if (!b->as_entity.holder_data) {
+			if (!b->as_entity.run_holder_data) {
 				ma_holder_rawunlock(&b->as_holder);
 				h = ma_bubble_holder_rawlock(b);
 				ma_holder_rawlock(&b->as_holder);
 				if (list_empty(&b->queuedentities) && h) {
 					MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-					if (!b->as_entity.holder_data)
+					if (!b->as_entity.run_holder_data)
 						ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 				}
 				ma_bubble_holder_rawunlock(h);
@@ -419,8 +419,8 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 		list_add(&e->run_list, &b->queuedentities);
 	else
 		list_add_tail(&e->run_list, &b->queuedentities);
-	MA_BUG_ON(e->holder_data);
-	e->holder_data = (void *)1;
+	MA_BUG_ON(e->run_holder_data);
+	e->run_holder_data = (void *)1;
 #endif
 }
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
@@ -432,11 +432,11 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			if (b->as_entity.holder_data) {
+			if (b->as_entity.run_holder_data) {
 				ma_holder_rawunlock(&b->as_holder);
 				h = ma_bubble_holder_rawlock(b);
 				if (list_empty(&b->queuedentities) && h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-					if (b->as_entity.holder_data)
+					if (b->as_entity.run_holder_data)
 						ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 				}
 				ma_bubble_holder_rawunlock(h);
@@ -445,8 +445,8 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 		}
 	}
 #endif
-	MA_BUG_ON(!e->holder_data);
-	e->holder_data = NULL;
+	MA_BUG_ON(!e->run_holder_data);
+	e->run_holder_data = NULL;
 	MA_BUG_ON(e->run_holder != &b->as_holder);
 #endif
 }

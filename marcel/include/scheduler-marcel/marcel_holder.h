@@ -766,7 +766,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state);
 #section marcel_inline
 #depend "[marcel_types]"
-static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+static __tbx_inline__ void _ma_put_entity_check(marcel_entity_t *e, ma_holder_t *h) {
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
 		MA_BUG_ON(h != e->init_holder);
@@ -786,7 +786,9 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 				(void*) ma_task_entity(e),
 				ma_rq_holder(h));
 	}
-
+}
+static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+	_ma_put_entity_check(e, h);
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
 		/* Don't directly enqueue in holding bubble, but in the thread cache. */

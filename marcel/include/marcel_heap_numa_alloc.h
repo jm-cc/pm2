@@ -35,27 +35,40 @@
 #section structures
 /** weights of pages */
 enum pinfo_weight {
+        /** */
 	HIGH_WEIGHT,
+        /** */
 	MEDIUM_WEIGHT,
+        /** */
 	LOW_WEIGHT
 };
 
 /** mapping policies over numa nodes */
 enum mem_policy {
+        /** */
 	CYCLIC,
+        /** */
 	LESS_LOADED,
+        /** */
 	SMALL_ACCESSED
 };
 
 /** structure used to describe the mapping of a set of pages over numa bloc */
 struct pageinfo {
-//	int new_pinfo;				/* set to one when the structure is newly created */
-	int mempolicy;				/* mapping policy */
-	int weight;				/* pages weights */
-	unsigned long *nodemask;		/* numa nodes mask */
-	unsigned long maxnode;			/* number of bits of mask */
+//        /** set to one when the structure is newly created */
+//	int new_pinfo;				
+        /** mapping policy */
+	int mempolicy;
+        /** pages weights */
+	int weight;
+        /** numa nodes mask */
+	unsigned long *nodemask;
+        /** number of bits of mask */
+	unsigned long maxnode;
+        /** */
 	size_t size;
-	int nb_touched[MARCEL_NBMAXNODES];	/* distribution of pages over numa nodes */
+        /** distribution of pages over numa nodes */
+	int nb_touched[MARCEL_NBMAXNODES];
  };
 
 
@@ -74,32 +87,78 @@ typedef struct pageinfo ma_pinfo_t;
 #section functions
 #ifdef LINUX_SYS
 
-/** Memory allocators */
+/**
+ * Call ma_amalloc to allocate memory
+ * bind heap if is not already binded
+ */
 void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
+
+/**
+ * Realloc memory, call to ma_arealloc
+ */
 void *ma_hrealloc(void *ptr, size_t size);
+
+/**
+ * Call ma_acalloc to allocate memory
+ * bind heap if is not already binded
+ */
 void *ma_hcalloc(size_t nmemb, size_t size, int policy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
+
+/**
+ * free memory by calling ma_afree
+ */
 void ma_hfree(void *ptr);
 
-/** Attach and detach of memory area to heap */
+/**
+ * Attach memory to a heap
+ * first a ma_hamalloc is done with a size of 0, then the created bloc is set with the mem_stat pointer and the stat_size of the bloc
+ * Note that for the mbind to sucess it needs a static size aligned to page sizes 
+ */
 void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap);
+
+/**
+ * Detach a memory attached to a heap
+ */
 void ma_hdetach_memory(void *ptr, ma_heap_t *heap);
 
-/** Memory migration */
+/**
+ * Move touched  physical pages to numa paramter: mempolicy, weight and nodemask of each heap having the ppinfo numa parameter
+ * Static memory attached to heap are also moved, however the mbind will only success if the static memory are aligned to pages
+ */
 int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
 
-/** Get pages information */
+/**
+ * Get pages information. Retrieve the numa information of (void*)ptr into ppinfo from heap
+ * Works also if (void*)ptr is a static memory attached to heap
+ */
 void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap);
 
-/** Get all pages information from heap */
+/**
+ * Get all pages information from heap
+ * Iterate over the different numa information of a list of heap
+ * To initiate the iteration ppinfo has to be null
+ * ppinfo is allocated inside this method one time
+ */
 int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t *heap);
 
-/** Check pages location */
+/**
+ * Check pages location 
+ * Retrieve the number of pages touched for each numa nodes
+ * Data are stored in ppinfo, and concerne each heap and static memory associated to numa information of ppinfo
+ * To have this information the method call the syscall __NR_move_pages
+ */
 void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap);
 
-/** Heap creation */
+/**
+ * Heap creation
+ * Create a heap with a minimum size
+ */
 ma_heap_t* ma_hcreate_heap(void);
 
-/** Heap destruction */
+/**
+ * Heap destruction
+ * Delete a heap
+ */
 void ma_hdelete_heap(ma_heap_t *heap);
 
 /** merge two heaps */

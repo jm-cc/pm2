@@ -36,10 +36,6 @@
 
 #endif /* __NR_move_pages */
 
-/* --- ma_hmove_memory ---
- * Move touched  physical pages to numa paramter: mempolicy, weight and nodemask of each heap having the ppinfo numa parameter
- * Static memory attached to heap are also moved, however the mbind will only success if the static memory are aligned to pages
- */
 int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap)  {
 	ma_heap_t *current_heap, *next_same_heap, *match_heap;
 	ma_ub_t* current_bloc_used;
@@ -106,10 +102,6 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 	return 1;
 }
 
-/* --- ma_hget_pinfo ---
- * Retrieve the numa information of (void*)ptr into ppinfo from heap
- * Works also if (void*)ptr is a static memory attached to heap
- */
 void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
 	ma_heap_t* current_heap;
 	ma_ub_t* current_bloc_used;
@@ -165,11 +157,6 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
 	}
 }
 
-/* --- ma_hupdate_memory ---
- * Retrieve the number of pages touched for each numa nodes
- * Data are stored in ppinfo, and concerne each heap and static memory associated to numa information of ppinfo
- * To have this information the method call the syscall __NR_move_pages
- */
 void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 	ma_heap_t* current_heap;
 	ma_ub_t* current_bloc_used;
@@ -270,12 +257,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 	}
 }
 
-/* --- ma_hnext_pinfo ---
- * Iterate over the different numa information of a list of heap
- * To initiate the iteration ppinfo has to be null
- * ppinfo is allocated inside this method one time
- */
-	int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
+int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 		ma_heap_t *current_heap, *current_same_heap;
 		int i,iterator_num = HEAP_ITERATOR_ID_UNDEFINED;
 
@@ -360,6 +342,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 		}
 		return -1;
 	}
+
 /* --- ma_hfusion_heap
  * merge heaps
  * note: the iterator of (ma_heao_t*)h is freed
@@ -390,29 +373,16 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 		}
 	}
 
-/* --- ma_hcreate_heap
- * Create a heap with a minimum size
- */
-	ma_heap_t* ma_hcreate_heap(void) {
-		unsigned int pagesize = getpagesize();
-		return ma_acreate(HEAP_MINIMUM_PAGES*pagesize, HEAP_DYN_ALLOC);
-	}
+ma_heap_t* ma_hcreate_heap(void) {
+  unsigned int pagesize = getpagesize();
+  return ma_acreate(HEAP_MINIMUM_PAGES*pagesize, HEAP_DYN_ALLOC);
+}
 
+void ma_hdelete_heap(ma_heap_t *heap) {
+  ma_adelete(&heap);
+}
 
-/* --- ma_hdelete_heap
- * Delete a heap
- */
-	void ma_hdelete_heap(ma_heap_t *heap) {
-		ma_adelete(&heap);
-	}
-
-
-/* --- ma_hattach_memory
- * Attach memory to a heap
- * first a ma_hamalloc is done with a size of 0, then the created bloc is set with the mem_stat pointer and the stat_size of the bloc
- * Note that for the mbind to sucess it needs a static size aligned to page sizes 
- */
-	void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
+void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
 		ma_ub_t* current_bloc_used;
 		ma_heap_t* current_heap;
 		void* local_ptr;
@@ -429,10 +399,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 		ma_spin_unlock(&current_heap->lock_heap);
 	}
 
-/* --- ma_hdetach_memory
- * Detach a memory attached to a heap
- */
-	void ma_hdetach_memory(void *ptr, ma_heap_t *heap) {
+void ma_hdetach_memory(void *ptr, ma_heap_t *heap) {
 		int found = 0;
 		ma_ub_t* current_bloc_used;
 		ma_heap_t* current_heap;
@@ -469,11 +436,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 
 	}
 
-/* --- ma_hmalloc
- * Call ma_amalloc to allocate memory
- * bind heap if is not already binded
- */
-	void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
+void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
 		ma_heap_t* current_heap;
 //marcel_fprintf(stderr,"ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask); 
 		DEBUG_PRINT("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask); 
@@ -496,24 +459,17 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 		return ma_amalloc(size,current_heap);
 	}
 
-/* --- ma_hrealloc
- * Realloc memory, call to ma_arealloc
- */
-	void *ma_hrealloc(void *ptr, size_t size) {
-		ma_ub_t* current_bloc_used;
-		ma_heap_t *current_heap;
+void *ma_hrealloc(void *ptr, size_t size) {
+  ma_ub_t* current_bloc_used;
+  ma_heap_t *current_heap;
 
-		current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
-		current_heap = current_bloc_used->heap;
-		return ma_arealloc(ptr,size,current_heap);
-	}
+  current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+  current_heap = current_bloc_used->heap;
+  return ma_arealloc(ptr,size,current_heap);
+}
 
-/* --- ma_hcalloc
- * Call ma_acalloc to allocate memory
- * bind heap if is not already binded
- */
-	void *ma_hcalloc(size_t nmemb, size_t size, int mempolicy, int weight, unsigned long* nodemask, unsigned long maxnode, ma_heap_t *heap) {
-		ma_heap_t* current_heap;
+void *ma_hcalloc(size_t nmemb, size_t size, int mempolicy, int weight, unsigned long* nodemask, unsigned long maxnode, ma_heap_t *heap) {
+  ma_heap_t* current_heap;
 
 /* look for corresponding heap */
 		current_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
@@ -534,12 +490,10 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 		}
 		return ma_acalloc(nmemb,size,current_heap);
 	}
-/* --- ma_hfree ---
- *  free memory by calling ma_afree
- */
-	void ma_hfree(void *data) {
-		ma_afree(data);
-	}
+
+void ma_hfree(void *data) {
+  ma_afree(data);
+}
 
 #endif /* LINUX_SYS */
 

@@ -31,9 +31,6 @@
 
 
 #ifdef HEAP_DEBUG
-/* --- print_list ---
- ** Display the list of heap starting from (ma_heap_t*)heap
- */
 void ma_print_list(const char* str, ma_heap_t* heap) {
 	ma_heap_t* h;
 	int count = 0;
@@ -61,9 +58,7 @@ void ma_print_list(const char* str, ma_heap_t* heap) {
 		h = h->next_heap;
 	}
 }
-/* --- print heap ---
- * Display the list of bloc starting from (ma_ub_t*)root
- */
+
 void ma_print_heap(struct ub* root) {
 	int count = 0;
 	while(root != NULL) {
@@ -83,9 +78,6 @@ void ma_print_heap(struct ub* root) {
 }
 #endif /* HEAP_DEBUG */
 
-/* --- memalign ---
- * Align (size_t)mem to a multiple of HMALLOC_ALIGNMENT
- */
 size_t ma_memalign(size_t mem) {
 	unsigned long nb;
 	if (mem == 0) return 0;
@@ -100,7 +92,7 @@ size_t ma_memalign(size_t mem) {
     	return (nb+1) * HMALLOC_ALIGNMENT;
 }
 
-/* --- ma_at_cmpchg
+/**
  * Atomic compare and swap
  */
 #define ma_at_cmpchg(p,o,n,s) pm2_compareexchange(p,o,n,s)
@@ -137,9 +129,6 @@ static inline unsigned long ma_at_cmpchg(volatile void *ptr, unsigned long old,u
 }
 #endif
 
-/* --- ma_amaparea ---
- * Mbind a heap and set its numa data: mempolicy, weight and nodemask
- */
 int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
 	int err;
 	int i;
@@ -156,13 +145,6 @@ int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodem
 	return err;
 }
 
-
-/* --- ma_acreate ---
- * Return an adress pointing to a heap of size (size_t)size.
- * This method call mmap to reserve memory.
- * In case of mmap failed or the initialization of the mutex failed the returning adress is NULL.
- * Size is aligned to pagesize.
- */
 ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 	ma_heap_t* heap;	
 	unsigned int pagesize, i; //nb_pages;
@@ -228,12 +210,6 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 	return heap;
 }
 
-/* --- acreatenuma ---
- * Return an adress pointing to a heap of size (size_t)size
- * This method is different to ma_acreate in the way that physical pages
- * are mapped to the numa bloc following the numa parameter: mempolicy, weight and nodemask
- * Size is aligned to pagesize.
- */
 ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
 	ma_heap_t *heap;
 
@@ -246,11 +222,6 @@ ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weig
 	return heap;
 }
 
-/* --- ma_adelete --- 
- * This method call munmap to give back  memory adresses of each heap of the list starting at (ma_heap_t**)heap.
- * If the mutex is already lock by another thread this method has an undefined behavior (mainly the methode do nothing).
- * If the munmap call failed, the method do nothing and heap is set to NULL.
- */
 void ma_adelete(ma_heap_t **heap) {
 	size_t size_heap;
 	int failed = 0;
@@ -281,9 +252,6 @@ void ma_adelete(ma_heap_t **heap) {
 	}
 }
 
-/* --- ma_is_empty_heap ---
- * Returns true if the heap has no malloc set or memory attached
- */
 int ma_is_empty_heap(ma_heap_t* heap) {
 	ma_heap_t* current_heap;
 
@@ -297,10 +265,6 @@ int ma_is_empty_heap(ma_heap_t* heap) {
 	return 1;
 }
 
-/* --- ma_aconcat_global_list ---
- * Concat htgt at the end of hsrc
- * This method call an atomic cmp&swap method to link both lists
- */
 void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 	ma_heap_t *current_heap;
 	int valid = 0;
@@ -320,10 +284,6 @@ void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 	}
 }
 
-/* --- ma_aconcat_local_list ---
- * Concat htgt at the end of hsrc for list of heaps with same numa inforamtion
- * This method call an atomic cmp&swap method to link both lists
- */
 void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 	ma_heap_t *current_heap;
 	int valid = 0;
@@ -343,43 +303,6 @@ void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 	}
 }
 
-/* --- ma_amalloc --- 
- * Allocate memory into the (ma_heap_t*)heap memory area.
- * This allocation is structured by a double chained list of used bloc.
- * A used bloc is a structure including pointers to next and previous
- * bloc the current used size and the size, which it's free between this current
- * bloc and the previous bloc
- * This data structure are addressed inside the heap as follow:
- *
- * 				|	heap			|
- * 				| ...(list of blocs)...		|
- * 				|	.......			|
- * 		new bloc ->	+-------------------------------+ 
- * 				| current size			|
- * 				+-------------------------------+
- * 				| previous size			|
- * 				+-------------------------------+
- * 				| adress of the current heap	|
- * 				+-------------------------------+
- *	 			| address of previous bloc	|
- *	 			+-------------------------------+
- *	 			| address of next bloc		|
- *	 			+-------------------------------+
- *	 			| address of static memory	|
- *	 			+-------------------------------+
- * 				| size of static memory		|
- * 	returned address -> 	+-------------------------------+
- * 				| user data ...			|
- * 				|				|
- * 				+-------------------------------+
- * 				|				|
- * 				|				|
- *
- * The research of enough free space between blocs is done by a first-fit method.
- * If the heap has not enough memory to allocate the caller request , the method create a new heap
- * binded in cases of numa information are set
- * If the memory cannot ba allocated the returning adress to the caller is NULL.
- */
 void *ma_amalloc(size_t size, ma_heap_t* heap) {
 	ma_ub_t *current_bloc_used, *current_bloc_used_prev, *temp_bloc_used;
 	ma_heap_t *temp_heap, *next_same_heap, *prev_next_same_heap;
@@ -510,10 +433,6 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 	return NULL;
 }
 
-/* --- ma_acalloc ---
- * This method reserve a memory space of num_elts*elt_size in (void*)heap
- * The memory is set to zero
- */
 void *ma_acalloc(size_t nmemb, size_t size, ma_heap_t* heap) {
 	void* ptr;
 	size_t local_size = ma_memalign(nmemb*size);
@@ -531,14 +450,6 @@ void *ma_acalloc(size_t nmemb, size_t size, ma_heap_t* heap) {
 	return ptr;
 }
 
-/* --- ma_arealloc ---
- * ma_arealloc try to realloc a memory reserved area with a new size and return the adress of the new allocated memory.
- * If the new size is equal to zero, the ma_arealloc call ma_afree to remove the bloc from the list.
- * If the (void*)ptr memory reference is NULL, the ma_arealloc call ma_amalloc.
- * The reallocation try to find first to augment the reserved space of the bloc adressed by (void*)ptr.
- * If the space between its previous and next bloc is not enough, a new bloc is allocated.
- * Data are moved in case of the returning adress is different to (void*)ptr.
- */
 void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	ma_ub_t *current_bloc_used;
 	//ma_ub_t *current_bloc_used_prev;
@@ -622,11 +533,6 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	return ptr;
 }
 
-/* --- ma_apagealloc ---
- * Allocate per pages in a heap.
- * TODO: If no enough contiguous page is found a new heap is created.
- * Allocated and free pages are managed by a bitmap vector.
- */
 void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
 	unsigned int c, i;
 	unsigned int pagesize = getpagesize () ;
@@ -672,11 +578,6 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
 
 }
 
-
-/* --- ma_apagefree ---
- * Free pages in a heap with an allocation per pages
- * Pages are set as free in the bitmap vector.
- */
 void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
 	unsigned int i,c;
 	unsigned int pagesize;
@@ -694,10 +595,6 @@ void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
 	}
 }
 
-/* --- ma_afree ---
- * Free the memory of (void*)ptr by calling ma_afree_heap.
- * Matching heap was stored in the used bloc referencing by (void*)ptr.
- */
 void ma_afree(void *ptr) {
 	ma_ub_t *current_bloc_used;
 	if (ptr != NULL) {
@@ -707,12 +604,6 @@ void ma_afree(void *ptr) {
 	}
 }
 
-/* --- ma_afree_heap --- 
- * A call to ma_afree_heap consists to remove the used bloc pointed by (void*)ptr
- * from the list of used bloc.
- * In case of a next bloc follow the removed bloc,
- * previous free size of next bloc is increased by the free space of the removed bloc.
- */
 void ma_afree_heap(void *ptr, ma_heap_t* heap) {
 	ma_ub_t *current_bloc_used;
 	size_t size;
@@ -743,14 +634,6 @@ void ma_afree_heap(void *ptr, ma_heap_t* heap) {
 	}
 }
 
-/* --- ma_amallinfo --- 
- * Return a structure with information of the usage of the heap:
- * - free memory remaining
- * - used memory
- * - touch memory
- * - attached memory size
- * - number of heaps
- */
 ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 	ma_heap_t * next_heap;
 	ma_amalloc_stat_t stats;
@@ -775,10 +658,6 @@ ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 	return stats;
 }
 
-/* --- ma_aget_heap_from_list ---
- * Return the heap of the list which has numa information: mempolicy, weight and nodemask
- * In case of heap is not found the call return null
- */
 ma_heap_t* ma_aget_heap_from_list(int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t* heap) {
 	ma_heap_t *current_heap;
 

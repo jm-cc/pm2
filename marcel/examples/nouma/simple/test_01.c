@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
   marcel_fprintf(stderr,"waiting for threads to start\n");
   marcel_barrier_wait(&startbarrier);
   TBX_GET_TICK(t1);
-  
+
   /* attente de liberation */
   if (finished != NB_THREADS) {
     marcel_cond_wait(&cond, &mutex);
@@ -122,6 +122,8 @@ int main(int argc, char *argv[]) {
   marcel_cond_destroy(&cond);
   marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
   profile_stop();
+#endif
   return 0;
 }

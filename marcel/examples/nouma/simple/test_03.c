@@ -27,11 +27,11 @@ any_t alloc(any_t foo) {
 
 	int i;
    int id = (intptr_t)foo;
-	
+
 	fprintf(stderr,"launched for i %d\n", id);
 
 	marcel_barrier_wait(&allbarrier);
-	   
+
 	data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 	fprintf(stderr,"thread %p fait malloc -> data %p\n", MARCEL_SELF, data);
 
@@ -41,7 +41,7 @@ any_t alloc(any_t foo) {
 		fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	/* ready for main */
 	marcel_barrier_wait(&barrier);
@@ -49,7 +49,7 @@ any_t alloc(any_t foo) {
 		marcel_cond_signal(&cond);
 
 	int load = *marcel_stats_get(MARCEL_SELF, load);
-	
+
 	int sum;
 	for (i = 0 ; i < load*100000 ; ++i)
 	{
@@ -73,13 +73,13 @@ any_t alloc(any_t foo) {
 	marcel_barrier_wait(&barrier);
 	if (id == 1)
 		marcel_cond_signal(&cond);
-	
+
 	return NULL;
 }
 
 int main(int argc, char *argv[]) {
 	int i;
-	
+
    marcel_init(&argc,argv);
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 	/* ordonnancement */
 	marcel_start_playing();
    marcel_bubble_spread(&b0, marcel_topo_level(0,0), 0);
-	
+
 	/* threads places */
 	marcel_barrier_wait(&allbarrier);
 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&finish, NULL);
 
 	long time = (1000000 * finish.tv_sec + finish.tv_usec) - (1000000 * start.tv_sec + start.tv_usec);
-	fprintf(stderr,"TIME %ld\n", time);	
+	fprintf(stderr,"TIME %ld\n", time);
 
    /* destroy */
 	marcel_barrier_destroy(&barrier);
@@ -170,6 +170,8 @@ int main(int argc, char *argv[]) {
 	marcel_cond_destroy(&cond);
 	marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
    return 0;
 }

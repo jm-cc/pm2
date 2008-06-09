@@ -54,7 +54,7 @@ any_t alloc(any_t foo) {
 	fprintf(stderr,"launched for i %d\n", id);
 
 	marcel_barrier_wait(&allbarrier);
-	   
+
 	if (id == 2 || id == 3 || id == 4 || id == 5 || id == 6
 		 || id == 11 || id == 12 || id == 13 || id == 14 || id == 15)
 		data = marcel_malloc_customized(SIZE, LOW_WEIGHT, 1, -1, 0);
@@ -71,21 +71,21 @@ any_t alloc(any_t foo) {
 		fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	if (id == 2 
+	if (id == 2
 		 || id == 11)
 	{
 		bdata = marcel_malloc_customized(SIZE, LOW_WEIGHT, 1, -1, 1);
 		fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	if (id == 3 || id == 5 
+	if (id == 3 || id == 5
 		 || id == 12 || id == 14)
 	{
 		bdata = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 1);
 		fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	/* ready for main */
 	marcel_barrier_wait(&barrier);
@@ -96,7 +96,7 @@ any_t alloc(any_t foo) {
 	}
 
 	int load = *marcel_stats_get(MARCEL_SELF, load);
-	
+
 	int sum;
 	for (i = 0 ; i < load*100000 ; ++i)
 	{
@@ -119,7 +119,7 @@ any_t alloc(any_t foo) {
 
 	/* ready for main */
 	fprintf(stderr,"*\n");
-	
+
 	finished ++;
 	if (finished == 18)
 	{
@@ -157,15 +157,15 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr,"bulle mere %p\n",&marcel_root_bubble);
 	marcel_bubble_insertbubble(&b0, &b1);
 	marcel_bubble_insertbubble(&b0, &b2);
-	fprintf(stderr,"%p et %p dans %p\n",&b1,&b2,&b0);	
+	fprintf(stderr,"%p et %p dans %p\n",&b1,&b2,&b0);
 	marcel_bubble_insertbubble(&b1, &b3);
 	marcel_bubble_insertbubble(&b1, &b4);
-	fprintf(stderr,"%p et %p dans %p\n",&b3,&b4,&b1);	
+	fprintf(stderr,"%p et %p dans %p\n",&b3,&b4,&b1);
 
 	fprintf(stderr,"bulle mere %p\n",&b5);
 	marcel_bubble_insertbubble(&b5, &b6);
 	marcel_bubble_insertbubble(&b5, &b7);
-	fprintf(stderr,"%p et %p dans %p\n",&b6,&b7,&b5);	
+	fprintf(stderr,"%p et %p dans %p\n",&b6,&b7,&b5);
 	marcel_bubble_insertbubble(&b6, &b8);
 	marcel_bubble_insertbubble(&b6, &b9);
 	fprintf(stderr,"%p et %p dans %p\n",&b8,&b9,&b6);
@@ -393,7 +393,7 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&finish, NULL);
 
 	long time = (1000000 * finish.tv_sec + finish.tv_usec) - (1000000 * start.tv_sec + start.tv_usec);
-	fprintf(stderr,"TIME %ld\n", time);	
+	fprintf(stderr,"TIME %ld\n", time);
 
    /* destroy */
 	marcel_barrier_destroy(&barrier);
@@ -401,6 +401,8 @@ int main(int argc, char *argv[]) {
 	marcel_cond_destroy(&cond);
 	marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
    return 0;
 }

@@ -56,7 +56,7 @@ any_t alloc(any_t foo) {
 	marcel_fprintf(stderr,"launched for i %d\n", id);
 
 	marcel_barrier_wait(&allbarrier);
-	   
+
 	if (id == 2 || id == 3 || id == 4 || id == 5 || id == 6
 		 || id == 11 || id == 12 || id == 13 || id == 14 || id == 15)
 		data = marcel_malloc_customized(SIZE, LOW_WEIGHT, 1, -1, 0);
@@ -73,14 +73,14 @@ any_t alloc(any_t foo) {
 		marcel_fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	if (id == 2 
+	if (id == 2
 		 || id == 11)
 	{
 		bdata = marcel_malloc_customized(SIZE, LOW_WEIGHT, 1, -1, 1);
 		marcel_fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	if (id == 3 || id == 5 
+	if (id == 3 || id == 5
 		 || id == 12 || id == 14)
 	{
 		bdata = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 1);
@@ -99,7 +99,7 @@ any_t alloc(any_t foo) {
 	}
 
 	int load = *marcel_stats_get(MARCEL_SELF, load);
-	
+
 	int sum;
 	for (i = 0 ; i < load*100000 ; ++i)
 	{
@@ -123,7 +123,7 @@ any_t alloc(any_t foo) {
 	/* ready for main */
 	marcel_fprintf(stderr,"*\n");
 	finished ++;
-	
+
 	if (finished == 18)
 	{
 	  //marcel_stop_remix();
@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
 		marcel_create(&t18, &attr, alloc, (any_t)18);
 		*marcel_stats_get(t18, load) = 1000;
 	}
- 
+
 	/* lancer la bulle */
 	marcel_wake_up_bubble(&b0);
 
@@ -388,14 +388,16 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&finish, NULL);
 
 	long time = (1000000 * finish.tv_sec + finish.tv_usec) - (1000000 * start.tv_sec + start.tv_usec);
-	marcel_fprintf(stderr,"TIME %ld\n", time);	
-	
+	marcel_fprintf(stderr,"TIME %ld\n", time);
+
    /* destroy */
 	marcel_barrier_destroy(&barrier);
 	marcel_barrier_destroy(&allbarrier);
 	marcel_cond_destroy(&cond);
 	marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
    return 0;
 }

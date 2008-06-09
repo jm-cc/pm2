@@ -106,6 +106,8 @@ extern debug_type_t marcel_bubble_sched_debug;
 
 extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
+
+extern debug_type_t marcel_heap_debug;
 #endif
 
 #section macros
@@ -123,6 +125,8 @@ extern debug_type_t marcel_mtrace_timer;
     debug_printf(&marcel_debug_deviate, fmt , ##__VA_ARGS__)
 #define mdebug_sched_q(fmt, ...) \
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
+#define mdebug_heap(fmt, ...) \
+    debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
 
 #ifdef PM2_OPT
 #define MA_BUG_ON(cond) (void)(cond)

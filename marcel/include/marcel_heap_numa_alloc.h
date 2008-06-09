@@ -7,9 +7,9 @@
  *
  * Author: Martinasso Maxime
  *
- * (C) Copyright 2007 INRIA 
+ * (C) Copyright 2007 INRIA
  * Projet: MESCAL / ANR NUMASIS
- * 
+ *
  */
 
 /** \defgroup marcel_heap Heap Allocator Interface
@@ -56,7 +56,7 @@ enum mem_policy {
 /** structure used to describe the mapping of a set of pages over numa bloc */
 struct pageinfo {
 //        /** set to one when the structure is newly created */
-//	int new_pinfo;				
+//	int new_pinfo;
         /** mapping policy */
 	int mempolicy;
         /** pages weights */
@@ -110,7 +110,7 @@ void ma_hfree(void *ptr);
 /**
  * Attach memory to a heap
  * first a ma_hamalloc is done with a size of 0, then the created bloc is set with the mem_stat pointer and the stat_size of the bloc
- * Note that for the mbind to sucess it needs a static size aligned to page sizes 
+ * Note that for the mbind to sucess it needs a static size aligned to page sizes
  */
 void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap);
 
@@ -140,7 +140,7 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap);
 int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t *heap);
 
 /**
- * Check pages location 
+ * Check pages location
  * Retrieve the number of pages touched for each numa nodes
  * Data are stored in ppinfo, and concerne each heap and static memory associated to numa information of ppinfo
  * To have this information the method call the syscall __NR_move_pages

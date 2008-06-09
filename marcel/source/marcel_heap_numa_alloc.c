@@ -3,10 +3,10 @@
  *
  * Definition of memory allocator inside a predefined heap
  * working for  NUMA architecture and multithread environements.
- * 
+ *
  * Author: Martinasso Maxime
  *
- * (C) Copyright 2007 INRIA 
+ * (C) Copyright 2007 INRIA
  * Projet: MESCAL / ANR NUMASIS
  *
  */
@@ -24,7 +24,7 @@
 
 #ifdef LINUX_SYS
 #include <linux/mempolicy.h>
-#ifndef __NR_move_pages 
+#ifndef __NR_move_pages
 
 #ifdef X86_64_ARCH
 #define __NR_move_pages 279
@@ -38,8 +38,8 @@
 
 void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
 	ma_heap_t* current_heap;
-	//marcel_fprintf(stderr,"ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask); 
-	DEBUG_PRINT("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask); 
+	//marcel_fprintf(stderr,"ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask);
+	DEBUG_PRINT("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
 	/* look for corresponding heap */
 	current_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
 	//marcel_fprintf(stderr,"ma_hmalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", mempolicy, *nodemask, maxnode, MARCEL_SELF);
@@ -161,7 +161,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 	if (ppinfo->mempolicy == mempolicy && ppinfo->weight == weight && mask_equal(ppinfo->nodemask,ppinfo->maxnode,nodemask,maxnode)) {
 		return 0;
 	}
-	
+
 	/* 	int i,j; */
 	/* 	for (i=0;i<MA_HEAP_NBPAGES;i++) */
 	/* 	{ */
@@ -202,7 +202,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 		ma_spin_unlock(&next_same_heap->lock_heap);
 		next_same_heap = next_same_heap->next_same_heap;
 	}
-	
+
 	/* rebuild list */
 	if(match_heap != NULL) {
 		if (current_heap > match_heap) {
@@ -227,7 +227,7 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
 			ppinfo->size = HEAP_GET_SIZE(current_heap);
 			ppinfo->mempolicy = current_heap->mempolicy;
 			ppinfo->weight = current_heap->weight;
-			for (i = 0; i < current_heap->maxnode/WORD_SIZE; ++i) {		
+			for (i = 0; i < current_heap->maxnode/WORD_SIZE; ++i) {
 				ppinfo->nodemask[i] = current_heap->nodemask[i];
 			}
 			ppinfo->maxnode = current_heap->maxnode;
@@ -251,12 +251,12 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
 				if (current_bloc_used->data == ptr) {
 					ppinfo->mempolicy = current_heap->mempolicy;
 					ppinfo->weight = current_heap->weight;
-					for (i = 0; i < current_heap->maxnode/WORD_SIZE; ++i) {		
+					for (i = 0; i < current_heap->maxnode/WORD_SIZE; ++i) {
 						ppinfo->nodemask[i] = current_heap->nodemask[i];
 					}
 					ppinfo->maxnode = current_heap->maxnode;
 					for(i = 0; i < marcel_nbnodes; ++i) {
-						ppinfo->nb_touched[i] = 0;	
+						ppinfo->nb_touched[i] = 0;
 					}
 					found = 1;
 					break;
@@ -284,7 +284,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 			(*ppinfo)->mempolicy = HEAP_UNSPECIFIED_POLICY;
 			(*ppinfo)->weight = HEAP_UNSPECIFIED_WEIGHT;
 			(*ppinfo)->maxnode = 0;
-			(*ppinfo)->nodemask = heap->iterator+sizeof(ma_pinfo_t); 
+			(*ppinfo)->nodemask = heap->iterator+sizeof(ma_pinfo_t);
 
 			/* reset iterator, some node may have changed */
 			current_heap = heap;
@@ -313,11 +313,11 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 					ma_spin_unlock(&current_same_heap->lock_heap);
 					current_same_heap = current_same_heap->next_same_heap;
 				}
-			} 
+			}
 			current_heap = current_heap->next_heap;
 		}
 		DEBUG_LIST("ma_hnext_pinfo list:\n",heap);
-	
+
 		/* goes to next heap higher iterator_num */
 		current_heap = ma_aget_heap_from_list((*ppinfo)->mempolicy,(*ppinfo)->weight,(*ppinfo)->nodemask,(*ppinfo)->maxnode,heap);
 		if (current_heap == NULL) {
@@ -342,9 +342,9 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 		(*ppinfo)->size = HEAP_GET_SIZE(current_heap);
 		(*ppinfo)->mempolicy = current_heap->mempolicy;
 		(*ppinfo)->weight = current_heap->weight;
-		for (i = 0; i < current_heap->maxnode/sizeof(unsigned long); ++i) {		
+		for (i = 0; i < current_heap->maxnode/sizeof(unsigned long); ++i) {
 			(*ppinfo)->nodemask[i] = current_heap->nodemask[i];
-		}	
+		}
 		(*ppinfo)->maxnode = current_heap->maxnode;
 		for(i = 0; i < marcel_nbnodes; ++i) {
 			(*ppinfo)->nb_touched[i] = 0;
@@ -360,11 +360,11 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 	ma_ub_t* current_bloc_used;
 	int i, nb_pages, pagesize, node, nb_attach;
 	const void *addr[1];
-	
+
 	if (IS_HEAP(heap)) {
 		pagesize = getpagesize();
 		for(i = 0; i < marcel_nbnodes; ++i) {
-			ppinfo->nb_touched[i] = 0;	
+			ppinfo->nb_touched[i] = 0;
 		}
 		/* look for corresponding heap */
 		current_heap = ma_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
@@ -373,7 +373,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 			while(IS_HEAP(current_heap)) {
 				ma_spin_lock(&current_heap->lock_heap);
 				nb_pages = HEAP_GET_SIZE(current_heap)/pagesize;
-				
+
 				for(i = 0; i < nb_pages; ++i) {
 					/* if page is not touched */
 					//if (current_heap->pages[i] == 0)
@@ -418,7 +418,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 						if (current_bloc_used->data != NULL) {
 							nb_pages = current_bloc_used->stat_size/pagesize;
 							for(i = 0; i < nb_pages; ++i) {
-							
+
 								/* if page is not touched */
 								//if (current_heap->pages[i] == 0)
 								//{
@@ -431,7 +431,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 								if (node >= 0) {
 									ppinfo->nb_touched[node]++;
 								}
-							
+
 								/* set the page touched */
 								//current_heap->pages[i] = node;
 								//}

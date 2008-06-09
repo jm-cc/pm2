@@ -7,9 +7,9 @@
  *
  * Author: Martinasso Maxime
  *
- * (C) Copyright 2007 INRIA 
+ * (C) Copyright 2007 INRIA
  * Projet: MESCAL / ANR NUMASIS
- * 
+ *
  */
 
 /** \addtogroup marcel_heap */
@@ -70,7 +70,7 @@ static inline int mask_equal(unsigned long *a, unsigned long sa, unsigned long *
 }
 
 static inline int mask_isset(unsigned long *a, unsigned long sa, int node) {
-	if ((unsigned int)node >= sa*8) return 0; 
+	if ((unsigned int)node >= sa*8) return 0;
 	return bit_is_marked(a,node);
 }
 
@@ -132,7 +132,7 @@ struct heap {
         /** */
 	struct ub *used;
         /** */
-	ma_spinlock_t lock_heap; 
+	ma_spinlock_t lock_heap;
         /** */
 	struct heap *next_heap;
         /** */
@@ -275,7 +275,7 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap);
  * 				|	heap			|
  * 				| ...(list of blocs)...		|
  * 				|	.......			|
- * 		new bloc ->	+-------------------------------+ 
+ * 		new bloc ->	+-------------------------------+
  * 				| current size			|
  * 				+-------------------------------+
  * 				| previous size			|
@@ -365,7 +365,7 @@ void ma_print_heap(struct ub* root);
 #ifdef HEAP_DEBUG
 #define DEBUG_LIST(str,root) ma_print_list(str,root)
 #else
-#define	DEBUG_LIST(...) 
+#define	DEBUG_LIST(...)
 #endif
 
 #ifdef HEAP_DEBUG

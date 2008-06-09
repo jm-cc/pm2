@@ -1,13 +1,13 @@
 /*
  * src/maheap_numa.c
  *
- * Reservation of memory adresses 
+ * Reservation of memory adresses
  * and NUMA binding of physical pages
  *
  * Author: 	Jean-Francois Mehaut
  * 		Martinasso Maxime
  *
- * (C) Copyright 2007 INRIA 
+ * (C) Copyright 2007 INRIA
  * Projet: MESCAL / ANR NUMASIS
  *
  */

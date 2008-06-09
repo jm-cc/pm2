@@ -3,10 +3,10 @@
  *
  * Definition of memory allocator inside a predefined heap
  * working for  NUMA architecture and multithread environements.
- * 
+ *
  * Author: Martinasso Maxime
  *
- * (C) Copyright 2007 INRIA 
+ * (C) Copyright 2007 INRIA
  * Projet: MESCAL / ANR NUMASIS
  *
  */
@@ -94,7 +94,7 @@ ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weig
 }
 
 ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
-	ma_heap_t* heap;	
+	ma_heap_t* heap;
 	unsigned int pagesize, i; //nb_pages;
 
 	pagesize = getpagesize () ;
@@ -141,7 +141,7 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 				clearbit(heap->bitmap,i);
 			}
 		}
-		
+
 		//for(i = 0; i < MA_HEAP_NBPAGES; ++i) {
 		//	heap->pages[i] = 0;
 		//}
@@ -210,9 +210,9 @@ int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodem
 		heap->mempolicy = mempolicy;
 		heap->weight = weight;
 		heap-> maxnode = maxnode;
-		for (i = 0; i < heap->maxnode/WORD_SIZE; ++i) {		
+		for (i = 0; i < heap->maxnode/WORD_SIZE; ++i) {
 			heap->nodemask[i] = nodemask[i];
-		}	
+		}
 	}
 	return err;
 }
@@ -282,7 +282,7 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
 
 	if (!IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
 		DEBUG_PRINT("ma_apagealloc: bad heap\n");
-		return NULL;	
+		return NULL;
 	}
 	ma_spin_lock(&heap->lock_heap);
 	c = 0;
@@ -301,14 +301,14 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
 		/* TODO add a new heap */
 		DEBUG_PRINT("ma_apagealloc: not enough pages available\n");
 		ma_spin_unlock(&heap->lock_heap);
-		return NULL;	
+		return NULL;
 	}
-	
+
 	i -= nb_pages;
 	ptr = (char*)heap + i * pagesize;
 
 	HEAP_ADD_USED_SIZE(nb_pages*pagesize,heap);
-	if (heap->touch_size/pagesize < i+nb_pages) { 
+	if (heap->touch_size/pagesize < i+nb_pages) {
 		heap->touch_size =  (char*)ptr+nb_pages*pagesize-(char*)heap;
 	}
 	for(c = i;c < i + nb_pages; c++) {
@@ -330,7 +330,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 	DEBUG_PRINT("ma_amalloc size=%d ",(int)size);
 	if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
 		DEBUG_PRINT("bad heap\n");
-		return NULL;	
+		return NULL;
 	}
 	next_same_heap = prev_next_same_heap = heap;
 	/* check for heap with enough remaining free space */
@@ -355,20 +355,20 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 		ma_aconcat_local_list(prev_next_same_heap,temp_heap);
 		return ma_amalloc(size,temp_heap);
 	}
-	/* enough space in heap */	
+	/* enough space in heap */
 	while(IS_HEAP(next_same_heap)) {
-		
+
 		ma_spin_lock(&next_same_heap->lock_heap);
 
 		if (next_same_heap->used == NULL) { /* first used bloc in list of current heap */
 			DEBUG_PRINT("first bloc of list\n");
 			next_same_heap->used = (ma_ub_t*)((char*)next_same_heap + HEAP_SIZE_T);
-		
+
 			set_bloc(next_same_heap->used, size, 0, next_same_heap, NULL, NULL);
-		
+
 			HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
 			next_same_heap->touch_size = size + BLOCK_SIZE_T;
-	
+
 			ma_spin_unlock(&next_same_heap->lock_heap);
 			DEBUG_LIST("->",next_same_heap);
 			return (void*)((char*)(next_same_heap->used) + BLOCK_SIZE_T);
@@ -384,17 +384,17 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 
 		if (current_bloc_used == NULL) { /* not enough free space between used bloc */
 			DEBUG_PRINT("no free space between used bloc found ");
-		
+
 			/* goes to offset of the last used bloc */
 			current_bloc_used = current_bloc_used_prev;
 
 			/* check for enough remaining contigous free space */
-			if ( (char*)next_same_heap+HEAP_GET_SIZE(next_same_heap) - ((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size) < size + BLOCK_SIZE_T) { 
+			if ( (char*)next_same_heap+HEAP_GET_SIZE(next_same_heap) - ((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size) < size + BLOCK_SIZE_T) {
 				/* goes to next heap */
 				ma_spin_unlock(&next_same_heap->lock_heap);
 				if (IS_HEAP(next_same_heap->next_same_heap)) {
 					next_same_heap = next_same_heap->next_same_heap;
-					continue; 
+					continue;
 				} else {
 					/* no bloc was found in each heap and no heap has enough contiguous space remaining */
 					/* we need to create a new heap */
@@ -412,12 +412,12 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 			set_bloc(current_bloc_used->next, size, 0, next_same_heap, current_bloc_used, NULL);
 			next_same_heap->touch_size = (unsigned long)current_bloc_used->next + size + BLOCK_SIZE_T - (unsigned long)next_same_heap;
 			HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
-		
+
 			ptr = (char*)(current_bloc_used->next) + BLOCK_SIZE_T;
-	
+
 		} else { /* free space found between block */
 			DEBUG_PRINT("free space between used bloc found\n");
-		
+
 			if(current_bloc_used->prev != NULL) {
 				/* goes to offset of the last used bloc */
 				temp_bloc_used = current_bloc_used;
@@ -461,8 +461,8 @@ void *ma_acalloc(size_t nmemb, size_t size, ma_heap_t* heap) {
 		return NULL;
 	}
 	/* zeroing memory: only memory area specified */
-	MALLOC_ZERO(ptr,local_size);	
-	
+	MALLOC_ZERO(ptr,local_size);
+
 	return ptr;
 }
 
@@ -471,12 +471,12 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	//ma_ub_t *current_bloc_used_prev;
 	//ma_ub_t *temp_bloc_used;
 	void* new_ptr;
-	
+
 	size = ma_memalign(size);
 
 	if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
 		DEBUG_PRINT("ma_arealloc: bad heap\n");
-		return NULL;	
+		return NULL;
 	}
 
 	if (ptr == NULL) { /* call amalloc */
@@ -494,7 +494,7 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	}
 
 	ma_spin_lock(&heap->lock_heap);
-	
+
 	current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
 	if (current_bloc_used->heap == heap) {
 		if (current_bloc_used->size == size) { /* do nothing */
@@ -512,15 +512,15 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 			HEAP_ADD_FREE_SIZE(current_bloc_used->size - size,heap);
 			ma_spin_unlock(&heap->lock_heap);
 			return ptr;
-		}	
-	
+		}
+
 		/* size area need to be increased */
-		/* first check enough space after bloc then if not call amalloc, move data and free ptr */ 
+		/* first check enough space after bloc then if not call amalloc, move data and free ptr */
 
 		if (current_bloc_used->next != NULL && current_bloc_used->next->prev_free_size >= size - current_bloc_used->size) {
-			/* enough space after bloc and not last bloc */ 
+			/* enough space after bloc and not last bloc */
 			DEBUG_PRINT("ma_arealloc: enough space after bloc not last bloc\n");
-			current_bloc_used->next->prev_free_size -= (size - current_bloc_used->size); 
+			current_bloc_used->next->prev_free_size -= (size - current_bloc_used->size);
 			HEAP_ADD_USED_SIZE(size - current_bloc_used->size,heap);
 			current_bloc_used->size = size;
 			ma_spin_unlock(&heap->lock_heap);
@@ -533,7 +533,7 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 			current_bloc_used->size = size;
 			ma_spin_unlock(&heap->lock_heap);
 			return ptr;
-		}	
+		}
 	}
 
 	/* make a malloc */
@@ -541,7 +541,7 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	new_ptr = ma_amalloc(size,heap);
 	if (new_ptr != NULL) {
 		/* move data */
-		MALLOC_COPY(new_ptr,ptr,size);	
+		MALLOC_COPY(new_ptr,ptr,size);
 		/* make a free */
 		ma_afree_heap(ptr,heap);
 		return new_ptr;
@@ -554,14 +554,14 @@ void ma_afree(void *ptr) {
 	if (ptr != NULL) {
 		current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
 		DEBUG_PRINT("afree: heap=%p\n",current_bloc_used->heap);
-		ma_afree_heap(ptr,current_bloc_used->heap);		
+		ma_afree_heap(ptr,current_bloc_used->heap);
 	}
 }
 
 void ma_afree_heap(void *ptr, ma_heap_t* heap) {
 	ma_ub_t *current_bloc_used;
 	size_t size;
-	
+
 	if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
 		ma_spin_lock(&heap->lock_heap);
 		current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
@@ -613,7 +613,7 @@ ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 	stats.touch_size = 0;
 	stats.attached_size = 0;
 	stats.npinfo = 0;
-	
+
 	next_heap = heap;
 	while(IS_HEAP(next_heap)) {
 		ma_spin_lock(&next_heap->lock_heap);
@@ -673,7 +673,7 @@ void ma_print_heap(struct ub* root) {
 		printf("\n");
 	} else {
 		printf("Empty\n");
-	}	
+	}
 }
 #endif /* HEAP_DEBUG */
 

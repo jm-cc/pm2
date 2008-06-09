@@ -92,56 +92,56 @@ define ma-printrq
 end
 
 define ma_rq_holder
-  set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->hold))))
+  set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
   print *$rq
   print $rq
 end
 
 define ma_holder_rq
-  set $h = &((ma_holder_t *)$arg0)->hold
+  set $h = &((ma_holder_t *)$arg0)->as_holder
   print *$h
   print $h
 end
 
 define ma_bubble_holder
-  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->hold))))
+  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->as_holder))))
   print *$b
   print $b
 end
 
 define ma_holder_bubble
-  set $h = &((marcel_bubble_t *)$arg0)->hold
+  set $h = &((marcel_bubble_t *)$arg0)->as_holder
   print *$h
   print $h
 end
 
 define ma_bubble_entity
-  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->sched))))
+  set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->as_entity))))
   print *$b
   print $b
 end
 
 define ma_entity_bubble
-  set $e = &((marcel_bubble_t *)$arg0)->sched
+  set $e = &((marcel_bubble_t *)$arg0)->as_entity
   print *$e
   print $e
 end
 
 define ma_task_entity
-  set $t = ((marcel_task_t *)(((char*)$arg0)-(unsigned)(&(((marcel_task_t *)0)->sched.internal.entity))))
+  set $t = ((marcel_task_t *)(((char*)$arg0)-(unsigned)(&(((marcel_task_t *)0)->as_entity))))
   print *$t
   print $t
 end
 
 define ma_entity_task
-  set $e = &((marcel_task_t *)$arg0)->sched.internal.entity
+  set $e = &((marcel_task_t *)$arg0)->as_entity
   print *$e
   print $e
 end
 
 define ma-printholder
   if ($arg0) && ($arg0)->type == 0
-    set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->hold))))
+    set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
     ma-printrq $rq
   else
     printf " 0x%lx", $arg0
@@ -150,29 +150,29 @@ end
 
 define marcel-printthread
   set $state='?'
-  if $arg0->sched.state == 0
+  if $arg0->state == 0
     set $state='R'
   end
-  if $arg0->sched.state == 1
+  if $arg0->state == 1
     set $state='I'
   end
-  if $arg0->sched.state == 2
+  if $arg0->state == 2
     set $state='U'
   end
-  if $arg0->sched.state == 16
+  if $arg0->state == 16
     set $state='D'
   end
-  if $arg0->sched.state == 64
+  if $arg0->state == 64
     set $state='M'
   end
-  if $arg0->sched.state == 128
+  if $arg0->state == 128
     set $state='F'
   end
-  if $arg0->sched.state == 256
+  if $arg0->state == 256
     set $state='B'
   end
-  if $arg0->sched.internal.entity.run_holder
-    if $arg0->sched.internal.entity.holder_data
+  if $arg0->as_entity.run_holder
+    if $arg0->as_entity.run_holder_data
       set $sched_state='r'
     else
       set $sched_state='R'
@@ -181,13 +181,13 @@ define marcel-printthread
     set $sched_state='B'
   end
   printf "0x%lx %16s %2d %c%c", \
-    $arg0, $arg0->name, $arg0->sched.internal.entity.prio, $state, $sched_state
-  if $arg0->sched.lwp
-    printf " %2d", $arg0->sched.lwp->vpnum
+    $arg0, $arg0->name, $arg0->as_entity.prio, $state, $sched_state
+  if $arg0->lwp
+    printf " %2d", $arg0->lwp->vpnum
   end
-  ma-printholder $arg0->sched.internal.entity.init_holder
-  ma-printholder $arg0->sched.internal.entity.sched_holder
-  ma-printholder $arg0->sched.internal.entity.run_holder
+  ma-printholder $arg0->as_entity.init_holder
+  ma-printholder $arg0->as_entity.sched_holder
+  ma-printholder $arg0->as_entity.run_holder
   printf "\n"
 end
 document marcel-printthread

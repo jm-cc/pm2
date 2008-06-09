@@ -161,6 +161,7 @@ void ma_hdelete_heap(ma_heap_t *heap);
 
 /**
  * merge two heaps
+ * note: the iterator of (ma_heap_t*)h is freed
  */
 void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
 

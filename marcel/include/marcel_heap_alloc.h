@@ -203,8 +203,6 @@ struct malloc_stats {
 
 #section functions
 #ifdef LINUX_SYS
-/* --- function prototypes --- */
-
 /**
  * Return an adress pointing to a heap of size (size_t)size
  * This method is different to ma_acreate in the way that physical pages
@@ -361,8 +359,6 @@ void ma_print_list(const char* str, ma_heap_t* heap);
 void ma_print_heap(struct ub* root);
 
 /* --- debug functions --- */
-
-//#define HEAP_DEBUG
 
 #ifdef HEAP_DEBUG
 #define DEBUG_LIST(str,root) ma_print_list(str,root)

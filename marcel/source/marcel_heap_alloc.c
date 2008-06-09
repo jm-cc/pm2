@@ -29,55 +29,6 @@
 #include <numaif.h>
 #include <numa.h>
 
-
-#ifdef HEAP_DEBUG
-void ma_print_list(const char* str, ma_heap_t* heap) {
-	ma_heap_t* h;
-	int count = 0;
-  	unsigned int i, max_node = (unsigned int) (marcel_nbnodes - 1) ;
-
-	printf("%s",str);
-	h = heap;
-	while (IS_HEAP(h)) {
-		ma_spin_lock(&h->lock_heap);
-		printf("heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
-		for(i = 0; i < h->maxnode/WORD_SIZE; i++) {
-			printf("%ld|",h->nodemask[i]);
-		}
-		for(i = 0; i < max_node+1; ++i) {
-			if(mask_isset(h->nodemask,h->maxnode,i)) {
-				printf("%d-",i);
-			}
-		}
-		printf(" : next_same=%p|",h->next_same_heap);
-		printf(" : next=%p|",h->next_heap);
-		printf(" : %d : ",(int)HEAP_GET_SIZE(h));
-		ma_print_heap(h->used);
-		count++;
-		ma_spin_unlock(&h->lock_heap);
-		h = h->next_heap;
-	}
-}
-
-void ma_print_heap(struct ub* root) {
-	int count = 0;
-	while(root != NULL) {
-		printf("[%d| %p (u:%zu,f:%zu,s:%zu) (p:%p,n:%p)",count, root, root->size, root->prev_free_size, root->stat_size, root->prev, root->next);
-		if (root->data != NULL) {
-			printf("S:%p",root->data);
-		}
-		printf("]");
-		root = root->next;
-		count++;
-	}
-	if (count != 0) {
-		printf("\n");
-	} else {
-		printf("Empty\n");
-	}	
-}
-#endif /* HEAP_DEBUG */
-
 size_t ma_memalign(size_t mem) {
 	unsigned long nb;
 	if (mem == 0) return 0;
@@ -130,20 +81,16 @@ static inline unsigned long ma_at_cmpchg(volatile void *ptr, unsigned long old,u
 }
 #endif
 
-int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
-	int err;
-	int i;
-	//fprintf(stderr,"ma_amaparea nodemask %ld maxnode %ld thread %p\n", *nodemask, maxnode, MARCEL_SELF);
-	err = ma_maparea(heap,HEAP_GET_SIZE(heap),mempolicy, nodemask, maxnode);
-	if (err == 0) {
-		heap->mempolicy = mempolicy;
-		heap->weight = weight;
-		heap-> maxnode = maxnode;
-		for (i = 0; i < heap->maxnode/WORD_SIZE; ++i) {		
-			heap->nodemask[i] = nodemask[i];
-		}	
+ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
+	ma_heap_t *heap;
+
+	heap = ma_acreate(size,alloc_policy);
+	if (mempolicy != HEAP_UNSPECIFIED_POLICY && weight != HEAP_UNSPECIFIED_WEIGHT && maxnode != 0) {
+		ma_spin_lock(&heap->lock_heap);
+		ma_amaparea(heap, mempolicy, weight, nodemask, maxnode);
+		ma_spin_unlock(&heap->lock_heap);
 	}
-	return err;
+	return heap;
 }
 
 ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
@@ -211,18 +158,6 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 	return heap;
 }
 
-ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
-	ma_heap_t *heap;
-
-	heap = ma_acreate(size,alloc_policy);
-	if (mempolicy != HEAP_UNSPECIFIED_POLICY && weight != HEAP_UNSPECIFIED_WEIGHT && maxnode != 0) {
-		ma_spin_lock(&heap->lock_heap);
-		ma_amaparea(heap, mempolicy, weight, nodemask, maxnode);
-		ma_spin_unlock(&heap->lock_heap);
-	}
-	return heap;
-}
-
 void ma_adelete(ma_heap_t **heap) {
 	size_t size_heap;
 	int failed = 0;
@@ -266,6 +201,22 @@ int ma_is_empty_heap(ma_heap_t* heap) {
 	return 1;
 }
 
+int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
+	int err;
+	int i;
+	//fprintf(stderr,"ma_amaparea nodemask %ld maxnode %ld thread %p\n", *nodemask, maxnode, MARCEL_SELF);
+	err = ma_maparea(heap,HEAP_GET_SIZE(heap),mempolicy, nodemask, maxnode);
+	if (err == 0) {
+		heap->mempolicy = mempolicy;
+		heap->weight = weight;
+		heap-> maxnode = maxnode;
+		for (i = 0; i < heap->maxnode/WORD_SIZE; ++i) {		
+			heap->nodemask[i] = nodemask[i];
+		}	
+	}
+	return err;
+}
+
 void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 	ma_heap_t *current_heap;
 	int valid = 0;
@@ -302,6 +253,71 @@ void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 			}
 		}
 	}
+}
+
+ma_heap_t* ma_aget_heap_from_list(int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t* heap) {
+	ma_heap_t *current_heap;
+
+	DEBUG_PRINT("ma_aget_heap_from_list from %p (%d,%d) numa=%ld ",heap,mempolicy,weight,*nodemask);
+	current_heap = heap;
+	while (IS_HEAP(current_heap)) {
+		ma_spin_lock(&current_heap->lock_heap);
+	//	DEBUG_PRINT("[check %d = %d && %d = %d && %d = %d]",*nodemask,*current_heap->nodemask,maxnode, current_heap->maxnode,mempolicy,current_heap->mempolicy,weight,current_heap->weight);
+		if (mask_equal(nodemask,maxnode,current_heap->nodemask,current_heap->maxnode) && mempolicy == current_heap->mempolicy && weight == current_heap->weight) {
+			ma_spin_unlock(&current_heap->lock_heap);
+			DEBUG_PRINT(" found: %p\n",current_heap);
+			return current_heap;
+		}
+		ma_spin_unlock(&current_heap->lock_heap);
+		current_heap = current_heap->next_heap;
+	}
+	DEBUG_PRINT(" not found\n");
+	return NULL;
+}
+
+void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
+	unsigned int c, i;
+	unsigned int pagesize = getpagesize () ;
+	void* ptr;
+
+	if (!IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
+		DEBUG_PRINT("ma_apagealloc: bad heap\n");
+		return NULL;	
+	}
+	ma_spin_lock(&heap->lock_heap);
+	c = 0;
+	i = 1;
+	while(i < HEAP_BINMAP_MAX_PAGES) {
+		if (bit_is_marked(heap->bitmap,i)) {
+			c = 0;
+		} else {
+			c++;
+		}
+		i++;
+		if (c == nb_pages) break;
+	}
+	DEBUG_PRINT("i = %d c = %d bitmap=%d max=%d\n",i,c,(int)heap->bitmap,(int)HEAP_BINMAP_MAX_PAGES);
+	if (c < nb_pages) {
+		/* TODO add a new heap */
+		DEBUG_PRINT("ma_apagealloc: not enough pages available\n");
+		ma_spin_unlock(&heap->lock_heap);
+		return NULL;	
+	}
+	
+	i -= nb_pages;
+	ptr = (char*)heap + i * pagesize;
+
+	HEAP_ADD_USED_SIZE(nb_pages*pagesize,heap);
+	if (heap->touch_size/pagesize < i+nb_pages) { 
+		heap->touch_size =  (char*)ptr+nb_pages*pagesize-(char*)heap;
+	}
+	for(c = i;c < i + nb_pages; c++) {
+		markbit(heap->bitmap,c);
+	}
+
+	ma_spin_unlock(&heap->lock_heap);
+	return ptr;
+
 }
 
 void *ma_amalloc(size_t size, ma_heap_t* heap) {
@@ -533,68 +549,6 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 	return ptr;
 }
 
-void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
-	unsigned int c, i;
-	unsigned int pagesize = getpagesize () ;
-	void* ptr;
-
-	if (!IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
-		DEBUG_PRINT("ma_apagealloc: bad heap\n");
-		return NULL;	
-	}
-	ma_spin_lock(&heap->lock_heap);
-	c = 0;
-	i = 1;
-	while(i < HEAP_BINMAP_MAX_PAGES) {
-		if (bit_is_marked(heap->bitmap,i)) {
-			c = 0;
-		} else {
-			c++;
-		}
-		i++;
-		if (c == nb_pages) break;
-	}
-	DEBUG_PRINT("i = %d c = %d bitmap=%d max=%d\n",i,c,(int)heap->bitmap,(int)HEAP_BINMAP_MAX_PAGES);
-	if (c < nb_pages) {
-		/* TODO add a new heap */
-		DEBUG_PRINT("ma_apagealloc: not enough pages available\n");
-		ma_spin_unlock(&heap->lock_heap);
-		return NULL;	
-	}
-	
-	i -= nb_pages;
-	ptr = (char*)heap + i * pagesize;
-
-	HEAP_ADD_USED_SIZE(nb_pages*pagesize,heap);
-	if (heap->touch_size/pagesize < i+nb_pages) { 
-		heap->touch_size =  (char*)ptr+nb_pages*pagesize-(char*)heap;
-	}
-	for(c = i;c < i + nb_pages; c++) {
-		markbit(heap->bitmap,c);
-	}
-
-	ma_spin_unlock(&heap->lock_heap);
-	return ptr;
-
-}
-
-void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
-	unsigned int i,c;
-	unsigned int pagesize;
-
-	if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
-		ma_spin_lock(&heap->lock_heap);
-		pagesize = getpagesize () ;
-		i = ((unsigned long)ptr-(unsigned long)heap)/pagesize;
-		DEBUG_PRINT("i = %d\n",i);
-		for(c = i;c < i + nb_pages; c++) {
-			clearbit(heap->bitmap,c);
-		}
-		HEAP_ADD_FREE_SIZE(nb_pages*pagesize,heap);
-		ma_spin_unlock(&heap->lock_heap);
-	}
-}
-
 void ma_afree(void *ptr) {
 	ma_ub_t *current_bloc_used;
 	if (ptr != NULL) {
@@ -634,6 +588,23 @@ void ma_afree_heap(void *ptr, ma_heap_t* heap) {
 	}
 }
 
+void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
+	unsigned int i,c;
+	unsigned int pagesize;
+
+	if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
+		ma_spin_lock(&heap->lock_heap);
+		pagesize = getpagesize () ;
+		i = ((unsigned long)ptr-(unsigned long)heap)/pagesize;
+		DEBUG_PRINT("i = %d\n",i);
+		for(c = i;c < i + nb_pages; c++) {
+			clearbit(heap->bitmap,c);
+		}
+		HEAP_ADD_FREE_SIZE(nb_pages*pagesize,heap);
+		ma_spin_unlock(&heap->lock_heap);
+	}
+}
+
 ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 	ma_heap_t * next_heap;
 	ma_amalloc_stat_t stats;
@@ -658,25 +629,54 @@ ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 	return stats;
 }
 
-ma_heap_t* ma_aget_heap_from_list(int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t* heap) {
-	ma_heap_t *current_heap;
+#ifdef HEAP_DEBUG
+void ma_print_list(const char* str, ma_heap_t* heap) {
+	ma_heap_t* h;
+	int count = 0;
+  	unsigned int i, max_node = (unsigned int) (marcel_nbnodes - 1) ;
 
-	DEBUG_PRINT("ma_aget_heap_from_list from %p (%d,%d) numa=%ld ",heap,mempolicy,weight,*nodemask);
-	current_heap = heap;
-	while (IS_HEAP(current_heap)) {
-		ma_spin_lock(&current_heap->lock_heap);
-	//	DEBUG_PRINT("[check %d = %d && %d = %d && %d = %d]",*nodemask,*current_heap->nodemask,maxnode, current_heap->maxnode,mempolicy,current_heap->mempolicy,weight,current_heap->weight);
-		if (mask_equal(nodemask,maxnode,current_heap->nodemask,current_heap->maxnode) && mempolicy == current_heap->mempolicy && weight == current_heap->weight) {
-			ma_spin_unlock(&current_heap->lock_heap);
-			DEBUG_PRINT(" found: %p\n",current_heap);
-			return current_heap;
+	printf("%s",str);
+	h = heap;
+	while (IS_HEAP(h)) {
+		ma_spin_lock(&h->lock_heap);
+		printf("heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
+		for(i = 0; i < h->maxnode/WORD_SIZE; i++) {
+			printf("%ld|",h->nodemask[i]);
 		}
-		ma_spin_unlock(&current_heap->lock_heap);
-		current_heap = current_heap->next_heap;
+		for(i = 0; i < max_node+1; ++i) {
+			if(mask_isset(h->nodemask,h->maxnode,i)) {
+				printf("%d-",i);
+			}
+		}
+		printf(" : next_same=%p|",h->next_same_heap);
+		printf(" : next=%p|",h->next_heap);
+		printf(" : %d : ",(int)HEAP_GET_SIZE(h));
+		ma_print_heap(h->used);
+		count++;
+		ma_spin_unlock(&h->lock_heap);
+		h = h->next_heap;
 	}
-	DEBUG_PRINT(" not found\n");
-	return NULL;
 }
+
+void ma_print_heap(struct ub* root) {
+	int count = 0;
+	while(root != NULL) {
+		printf("[%d| %p (u:%zu,f:%zu,s:%zu) (p:%p,n:%p)",count, root, root->size, root->prev_free_size, root->stat_size, root->prev, root->next);
+		if (root->data != NULL) {
+			printf("S:%p",root->data);
+		}
+		printf("]");
+		root = root->next;
+		count++;
+	}
+	if (count != 0) {
+		printf("\n");
+	} else {
+		printf("Empty\n");
+	}	
+}
+#endif /* HEAP_DEBUG */
+
 
 #endif /* LINUX_SYS */
 #endif

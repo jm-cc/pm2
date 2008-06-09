@@ -75,7 +75,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 /** \brief Whether the thread has Real-Time priority */
 #define ma_rt_task(p)		\
-	((p)->sched.internal.entity.prio < MA_RT_PRIO)
+	((p)->as_entity.prio < MA_RT_PRIO)
 
 #section marcel_macros
 #depend "[macros]"
@@ -238,7 +238,7 @@ static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *e, ma_prio_a
 }
 static __tbx_inline__ void ma_array_dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
-	sched_debug("dequeueing %d:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.entity.prio,array);
+	sched_debug("dequeueing %d:%s (prio %d) from %p\n",p->number,p->name,p->as_entity.prio,array);
 	ma_array_dequeue_entity(&p->as_entity, array);
 }
 

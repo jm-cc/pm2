@@ -204,10 +204,6 @@ void *marcel_sched_seed_runner(void *arg) {
 	/* first thread seed */
 	SELF_GETMEM(cur_thread_seed) = arg;
 
-	/* Switch to a batch priority to make sure seed runners don't preempt each
-		 other.  */
-	ma_sched_change_prio(MARCEL_SELF, MA_BATCH_PRIO);
-
 	ma_preempt_disable();
 	ma_local_bh_disable();
 
@@ -217,6 +213,14 @@ restart:
 	SELF_SETMEM(f_to_call, marcel_sched_seed_runner);
 
 	seed = SELF_GETMEM(cur_thread_seed);
+
+	if (MARCEL_SELF->as_entity.prio != seed->as_entity.prio) {
+		/* Inherit SEED's priority.  */
+		int err;
+
+		err = ma_sched_change_prio(MARCEL_SELF, seed->as_entity.prio);
+		MA_BUG_ON(err != 0);
+	}
 
 	seed->cur_thread_seed_runner = MARCEL_SELF;
 	PROF_EVENT1(thread_seed_run, MA_PROFILE_TID(seed));

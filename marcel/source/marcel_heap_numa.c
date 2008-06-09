@@ -38,50 +38,50 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
         unsigned long newmaxnode;
 
         DEBUG_PRINT("ma_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
-		  switch(mempolicy) {
-			  case SMALL_ACCESSED:
-				  /* marcel_nbnodes = numa_max_node() + 1 */
-				  for(i = 0; i < marcel_nbnodes; ++i) {
-					  if (mask_isset(nodemask,maxnode,i)) {
-						  node_hits = ma_hits_mem_node(i);
-						  //DEBUG_PRINT("node=%d hits=%lld\n",i,node_hits);
-						  if (min_hits > node_hits) {
-							  min_hits = node_hits;
-							  idx_node = i;
-						  }
-					  }
-				  }
-				  newmaxnode = maxnode;
-				  mask_zero(newnodemask,newmaxnode);
-				  mask_set(newnodemask,idx_node);
-				  err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
-				  break;
-			  case LESS_LOADED:
-				  for(i = 0; i < marcel_nbnodes; ++i) {
-					  if (mask_isset(nodemask,maxnode,i)) {
-						  node_free_size = ma_free_mem_node(i);
-						  //DEBUG_PRINT("node=%d size=%lld\n",i,node_free_size);
-						  if (node_free_size > max_free_size) {
-							  max_free_size = node_free_size;
-							  idx_node = i;
-						  }
-					  }
-				  }
-				  newmaxnode = maxnode;
-				  mask_zero(newnodemask,newmaxnode);
-				  mask_set(newnodemask,idx_node);
-				  err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
-				  break;
-			  case CYCLIC:
-			  default:
-				  err = mbind (ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
-				  if (err) {
-				  	perror("mbind error:");
-				  	DEBUG_PRINT("mbind args %p %ld %d %d %d 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, nodemask, maxnode);
-				  } else {
-					  DEBUG_PRINT("mbind returns %d : Success\n", err);
-				  }
-				  break;
+	switch(mempolicy) {
+	case SMALL_ACCESSED:
+		/* marcel_nbnodes = numa_max_node() + 1 */
+		for(i = 0; i < marcel_nbnodes; ++i) {
+			if (mask_isset(nodemask,maxnode,i)) {
+				node_hits = ma_hits_mem_node(i);
+				//DEBUG_PRINT("node=%d hits=%lld\n",i,node_hits);
+				if (min_hits > node_hits) {
+					min_hits = node_hits;
+					idx_node = i;
+				}
+			}
+		}
+		newmaxnode = maxnode;
+		mask_zero(newnodemask,newmaxnode);
+		mask_set(newnodemask,idx_node);
+		err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
+		break;
+	case LESS_LOADED:
+		for(i = 0; i < marcel_nbnodes; ++i) {
+			if (mask_isset(nodemask,maxnode,i)) {
+				node_free_size = ma_free_mem_node(i);
+				//DEBUG_PRINT("node=%d size=%lld\n",i,node_free_size);
+				if (node_free_size > max_free_size) {
+					max_free_size = node_free_size;
+					idx_node = i;
+				}
+			}
+		}
+		newmaxnode = maxnode;
+		mask_zero(newnodemask,newmaxnode);
+		mask_set(newnodemask,idx_node);
+		err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
+		break;
+	case CYCLIC:
+	default:
+		err = mbind (ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
+		if (err) {
+			perror("mbind error:");
+			DEBUG_PRINT("mbind args %p %ld %d %d %d 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, nodemask, maxnode);
+		} else {
+			DEBUG_PRINT("mbind returns %d : Success\n", err);
+		}
+		break;
         }
         return err;
 }
@@ -138,9 +138,6 @@ long long ma_hits_mem_node(int node) {
         free(line);
         return hits;
 }
-
-
-
 
 #endif /* LINUX_SYS */
 #endif

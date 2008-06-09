@@ -71,8 +71,6 @@ struct pageinfo {
 	int nb_touched[MARCEL_NBMAXNODES];
  };
 
-
-
 #section types
 typedef struct pageinfo ma_pinfo_t;
 
@@ -161,7 +159,9 @@ ma_heap_t* ma_hcreate_heap(void);
  */
 void ma_hdelete_heap(ma_heap_t *heap);
 
-/** merge two heaps */
+/**
+ * merge two heaps
+ */
 void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
 
 #endif /* LINUX_SYS */

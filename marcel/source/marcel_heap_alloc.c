@@ -65,7 +65,7 @@ void ma_print_heap(struct ub* root) {
 		printf("[%d| %p (u:%zu,f:%zu,s:%zu) (p:%p,n:%p)",count, root, root->size, root->prev_free_size, root->stat_size, root->prev, root->next);
 		if (root->data != NULL) {
 			printf("S:%p",root->data);
-		} 
+		}
 		printf("]");
 		root = root->next;
 		count++;
@@ -96,6 +96,7 @@ size_t ma_memalign(size_t mem) {
  * Atomic compare and swap
  */
 #define ma_at_cmpchg(p,o,n,s) pm2_compareexchange(p,o,n,s)
+
 #if 0
 static inline unsigned long ma_at_cmpchg(volatile void *ptr, unsigned long old,unsigned long new, int size) {
 	unsigned long prev;
@@ -200,11 +201,11 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 
 		ma_spin_lock_init(&heap->lock_heap);
 
-	/* 	if (ma_spin_lock_init(&heap->lock_heap) != 0) { */
-/* 			heap = NULL; */
-/* 			perror("Initilization of the mutex failed in acreate\n"); */
-/* 			DEBUG_PRINT("ma_acreate: mutex_init failed\n"); */
-/* 		} */
+		/* 	if (ma_spin_lock_init(&heap->lock_heap) != 0) { */
+		/* 			heap = NULL; */
+		/* 			perror("Initilization of the mutex failed in acreate\n"); */
+		/* 			DEBUG_PRINT("ma_acreate: mutex_init failed\n"); */
+		/* 		} */
 	}
 	DEBUG_PRINT("ma_acreate: heap created at %p size=%ld\n",heap,size);
 	return heap;
@@ -236,16 +237,16 @@ void ma_adelete(ma_heap_t **heap) {
 			next_heap_tmp = next_heap->next_heap;
 			ma_spin_unlock(&next_heap->lock_heap);
 			//if (marcel_mutex_destroy(&next_heap->lock_heap) == 0) {
-				/* if mutex destroy success mainly no other thread has locked the mutex */
+			/* if mutex destroy success mainly no other thread has locked the mutex */
 			if (munmap(next_heap,size_heap) != 0) {
 				DEBUG_PRINT("ma_adelete: freearea error addr=%p size=%d\n",next_heap, (int)size_heap);
 			}
 			DEBUG_PRINT("ma_adelete: succeed\n");
-				//} else {
-				/* may destroy an locked mutex: undefined behavior */
-				//DEBUG_PRINT("ma_adelete: may destroy a locked mutex: undefined behavior\n");
-				//failed = 1;
-				//}
+			//} else {
+			/* may destroy an locked mutex: undefined behavior */
+			//DEBUG_PRINT("ma_adelete: may destroy a locked mutex: undefined behavior\n");
+			//failed = 1;
+			//}
 			next_heap = next_heap_tmp;
 		}
 		if (!failed) *heap = NULL;
@@ -356,8 +357,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 			DEBUG_LIST("->",next_same_heap);
 			return (void*)((char*)(next_same_heap->used) + BLOCK_SIZE_T);
 		}
-	
-		
+
 		/* find first free block: first fit */
 		current_bloc_used_prev = current_bloc_used = next_same_heap->used;
 		while(current_bloc_used != NULL && current_bloc_used->prev_free_size < size + BLOCK_SIZE_T) {

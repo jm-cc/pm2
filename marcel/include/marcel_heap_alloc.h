@@ -90,14 +90,21 @@ static inline void mask_clr(unsigned long *a, int node) {
 
 #section structures
 /* --- heap and used block structures --- */
-/* used memory bloc definition inside heap*/
+/** used memory bloc definition inside heap*/
 struct ub {
+	/** */
 	size_t size;
+	/** */
 	size_t prev_free_size;
+	/** */
 	void *data;
+	/** */
 	size_t stat_size;
+	/** */
 	struct heap *heap;
+	/** */
 	struct ub *prev;
+	/** */
 	struct ub *next;
 };
 
@@ -161,10 +168,15 @@ struct heap {
 
 /** malloc statistics */
 struct malloc_stats {
+	/** */
 	size_t free_size;
+	/** */
 	size_t used_size;
+	/** */
 	size_t touch_size;
+	/** */
 	size_t attached_size;
+	/** */
 	int npinfo;
 };
 
@@ -214,7 +226,7 @@ ma_heap_t *ma_acreate(size_t size, int flag_heap);
  * If the mutex is already lock by another thread this method has an undefined behavior (mainly the methode do nothing).
  * If the munmap call failed, the method do nothing and heap is set to NULL.
  */
-void  ma_adelete(ma_heap_t **heap);
+void ma_adelete(ma_heap_t **heap);
 
 /**
  * Returns true if the heap has no malloc set or memory attached
@@ -353,18 +365,15 @@ void ma_print_heap(struct ub* root);
 //#define HEAP_DEBUG
 
 #ifdef HEAP_DEBUG
-
-#define DEBUG_LIST(str,root) \
- 		ma_print_list(str,root)
+#define DEBUG_LIST(str,root) ma_print_list(str,root)
 #else
 #define	DEBUG_LIST(...) 
 #endif
 
 #ifdef HEAP_DEBUG
-#define	DEBUG_PRINT(...) \
-      fprintf(stderr,__VA_ARGS__)
+#define	DEBUG_PRINT(...) fprintf(stderr,__VA_ARGS__)
 #else
-#define	DEBUG_PRINT(...) 
+#define	DEBUG_PRINT(...)
 #endif
 
 #endif /* LINUX_SYS */

@@ -270,6 +270,7 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap);
  * bloc the current used size and the size, which it's free between this current
  * bloc and the previous bloc
  * This data structure are addressed inside the heap as follow:
+ * <pre>
  *
  * 				|	heap			|
  * 				| ...(list of blocs)...		|
@@ -295,6 +296,7 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap);
  * 				|				|
  * 				|				|
  *
+ * </pre>
  * The research of enough free space between blocs is done by a first-fit method.
  * If the heap has not enough memory to allocate the caller request , the method create a new heap
  * binded in cases of numa information are set

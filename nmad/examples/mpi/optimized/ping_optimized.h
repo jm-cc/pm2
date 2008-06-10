@@ -55,13 +55,13 @@
 //#define DEBUG
 
 #if defined(DEBUG)
-#define DEBUG_PRINTF(...) { fprintf(stderr,__VA_ARGS__) ; }
+#define DEBUG_OPTIMIZED(...) { fprintf(stderr,__VA_ARGS__) ; }
 #undef LOOPS
 #define LOOPS 1
 #undef MAX_SIZE 
 #define MAX_SIZE 16
 #else /* ! DEBUG */
-#define DEBUG_PRINTF(...) { }
+#define DEBUG_OPTIMIZED(...) { }
 #endif /* DEBUG */
 
 /*

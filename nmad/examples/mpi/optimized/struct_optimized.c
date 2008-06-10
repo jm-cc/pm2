@@ -96,7 +96,7 @@ void pack_datatype_struct(nm_so_pack_interface  interface,
   int              numberOfBlocks, numberOfElements, i, j, size, pack=0;
   void           **tmp_buf;
 
-  DEBUG_PRINTF("Sending struct datatype, count=%d indices[0]=%d blocklen[0]=%d oldtype[0].size=%d elements=%d at address %p\n",
+  DEBUG_OPTIMIZED("Sending struct datatype, count=%d indices[0]=%d blocklen[0]=%d oldtype[0].size=%d elements=%d at address %p\n",
         datatype->nb_elements, datatype->indices[0], datatype->blocklens[0], datatype->old_types[0]->size, datatype->elements, s_ptr);
 
   numberOfBlocks = 1;
@@ -104,9 +104,9 @@ void pack_datatype_struct(nm_so_pack_interface  interface,
   while(numberOfElements != datatype->elements) {
     numberOfBlocks ++;
     numberOfElements += datatype->blocklens[numberOfBlocks-1];
-    DEBUG_PRINTF("Adding %d elements for %d blocks\n", datatype->blocklens[numberOfBlocks-1], numberOfBlocks);
+    DEBUG_OPTIMIZED("Adding %d elements for %d blocks\n", datatype->blocklens[numberOfBlocks-1], numberOfBlocks);
   }
-  DEBUG_PRINTF("Number of blocks %d\n", numberOfBlocks);
+  DEBUG_OPTIMIZED("Number of blocks %d\n", numberOfBlocks);
 
   /*  Pack the needed information to unpack on the other side (number of elements, number of blocks in an element) */
   nm_so_begin_packing(interface, gate_id, 0, &cnx);
@@ -123,7 +123,7 @@ void pack_datatype_struct(nm_so_pack_interface  interface,
   nm_so_begin_packing(interface, gate_id, 0, &cnx);
   for(i=0 ; i<numberOfBlocks ; i++) {
     size = datatype->old_types[i]->size;
-    DEBUG_PRINTF("Send data for block %d : %d elements from indice %d with size %d\n", i, datatype->blocklens[i], datatype->indices[i], size);
+    DEBUG_OPTIMIZED("Send data for block %d : %d elements from indice %d with size %d\n", i, datatype->blocklens[i], datatype->indices[i], size);
     nm_so_pack(&cnx, &size, sizeof(int));
   }
   nm_so_end_packing(&cnx);
@@ -136,11 +136,11 @@ void pack_datatype_struct(nm_so_pack_interface  interface,
   for(j=0 ; j<datatype->nb_elements ; j++) {
     for(i=0 ; i<numberOfBlocks ; i++) {
       size = datatype->old_types[i]->size;
-      DEBUG_PRINTF("Sending element %d Block %d Size %d at address %p\n", j, i, datatype->blocklens[i]*size, tmp_buf[pack]);
+      DEBUG_OPTIMIZED("Sending element %d Block %d Size %d at address %p\n", j, i, datatype->blocklens[i]*size, tmp_buf[pack]);
       nm_so_pack(&cnx, tmp_buf[pack], datatype->blocklens[i]*size);
       pack++;
       if (pack % 256 == 0) {
-        DEBUG_PRINTF("closing connection element %d Block %d Size %d at address %p\n", j, i, datatype->blocklens[i]*size, tmp_buf[pack-1]);
+        DEBUG_OPTIMIZED("closing connection element %d Block %d Size %d at address %p\n", j, i, datatype->blocklens[i]*size, tmp_buf[pack-1]);
         nm_so_end_packing(&cnx);
         nm_so_begin_packing(interface, gate_id, 0, &cnx);
       }
@@ -159,14 +159,14 @@ void unpack_datatype_struct(nm_so_pack_interface interface,
   int              i, j, unpack;
   void           **tmp_buf;
 
-  DEBUG_PRINTF("Receiving struct type at address %p...\n", r_ptr);
+  DEBUG_OPTIMIZED("Receiving struct type at address %p...\n", r_ptr);
 
   /*  Unpack the following information : count, number of blocks */
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
   nm_so_unpack(&cnx, &count, sizeof(int));
   nm_so_unpack(&cnx, &numberOfBlocks, sizeof(int));
   nm_so_end_unpacking(&cnx);
-  DEBUG_PRINTF("Count %d - Number of blocks %d\n", count, numberOfBlocks);
+  DEBUG_OPTIMIZED("Count %d - Number of blocks %d\n", count, numberOfBlocks);
 
   /*  unpack the needed information for the blocks */
   block_size = (int *) malloc(numberOfBlocks * sizeof(int));
@@ -184,7 +184,7 @@ void unpack_datatype_struct(nm_so_pack_interface interface,
   nm_so_end_unpacking(&cnx);
 
   for(i=0 ; i<numberOfBlocks ; i++) {
-    DEBUG_PRINTF("Received data for block %d : %d elements from indice %d with size %d\n", i, block_elements[i], block_offset[i], block_size[i]);
+    DEBUG_OPTIMIZED("Received data for block %d : %d elements from indice %d with size %d\n", i, block_elements[i], block_offset[i], block_size[i]);
   }
 
   /*  for each block, unpack the elements in the block */
@@ -194,20 +194,20 @@ void unpack_datatype_struct(nm_so_pack_interface interface,
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
   for(j=0 ; j<count ; j++) {
     for(i=0 ; i<numberOfBlocks ; i++) {
-      DEBUG_PRINTF("Going to unpack element %d, block %d of size %d at address %p\n", j, i, block_elements[i]*block_size[i], tmp_buf[unpack]);
+      DEBUG_OPTIMIZED("Going to unpack element %d, block %d of size %d at address %p\n", j, i, block_elements[i]*block_size[i], tmp_buf[unpack]);
       nm_so_unpack(&cnx, tmp_buf[unpack], block_elements[i]*block_size[i]);
       unpack++;
       if (unpack % 256 == 0) {
-        DEBUG_PRINTF("closing connection element %d, block %d of size %d at address %p\n", j, i, block_elements[i]*block_size[i], tmp_buf[unpack-1]);
+        DEBUG_OPTIMIZED("closing connection element %d, block %d of size %d at address %p\n", j, i, block_elements[i]*block_size[i], tmp_buf[unpack-1]);
         nm_so_end_unpacking(&cnx);
         nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
       }
       tmp_buf[unpack] = tmp_buf[unpack-1] + block_elements[i]*block_size[i];
     }
   }
-  DEBUG_PRINTF("End of unpacking ....\n");
+  DEBUG_OPTIMIZED("End of unpacking ....\n");
   nm_so_end_unpacking(&cnx);
-  DEBUG_PRINTF("After unpacking ....\n");
+  DEBUG_OPTIMIZED("After unpacking ....\n");
 
   free(tmp_buf);
   free(block_size);

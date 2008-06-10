@@ -38,12 +38,12 @@ void check_correctness_datatype_indexed(struct MPIR_DATATYPE *datatype,
       j++;
       if (j >= datatype->count) j = datatype->count-1;
       else {
-        DEBUG_PRINTF("Jumping to next block %d\n", j);
+        DEBUG_OPTIMIZED("Jumping to next block %d\n", j);
         value = datatype->indices[j];
       }
     }
   }
-  DEBUG_PRINTF("Received buffer is correct\n");
+  DEBUG_OPTIMIZED("Received buffer is correct\n");
 }
 
 void pingpong_datatype_indexed(nm_so_pack_interface interface,
@@ -126,14 +126,14 @@ void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
   for(i=1 ; i<datatype->count ; i++) {
     datatype->indices[i] = datatype->blocklens[i-1] + datatype->indices[i-1] + 2;
     if (datatype->indices[i] + datatype->blocklens[i] > number_of_elements*2) {
-      DEBUG_PRINTF("OVERFLOW! indice %d blocklens %d number_of_elements %d\n",
+      DEBUG_OPTIMIZED("OVERFLOW! indice %d blocklens %d number_of_elements %d\n",
                    datatype->indices[i], datatype->blocklens[i], number_of_elements*2);
       datatype->indices[i] = number_of_elements*2 - datatype->blocklens[i];
     }
   }
 
   for(i=0 ; i<datatype->count ; i++) {
-    DEBUG_PRINTF("Block %d has length %d and indice %d\n", i, datatype->blocklens[i], datatype->indices[i]);
+    DEBUG_OPTIMIZED("Block %d has length %d and indice %d\n", i, datatype->blocklens[i], datatype->indices[i]);
   }
 
 }
@@ -146,7 +146,7 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
   float           *tmp_buf;
   int              size, numberOfBlocks, numberOfElements, i, j;
 
-  DEBUG_PRINTF("Sending (h)indexed datatype, indices[0]=%d blocklen[0]=%d size=%d elements=%d\n", datatype->indices[0], datatype->blocklens[0],
+  DEBUG_OPTIMIZED("Sending (h)indexed datatype, indices[0]=%d blocklen[0]=%d size=%d elements=%d\n", datatype->indices[0], datatype->blocklens[0],
                datatype->size, datatype->elements);
 
   size = datatype->size / datatype->elements;
@@ -156,7 +156,7 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
     numberOfBlocks ++;
     numberOfElements += datatype->blocklens[numberOfBlocks-1];
   }
-  DEBUG_PRINTF("Elements = %d -- Blocks = %d\n", numberOfElements, numberOfBlocks);
+  DEBUG_OPTIMIZED("Elements = %d -- Blocks = %d\n", numberOfElements, numberOfBlocks);
 
   /*  Pack the needed information to unpack on the other side (number of blocks, size of each element) */
   nm_so_begin_packing(interface, gate_id, 0, &cnx);
@@ -181,10 +181,10 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     tmp_buf = s_ptr + datatype->indices[i];
-    DEBUG_PRINTF("Packing block %d with %d elements of size %d at address %p\n", i, datatype->blocklens[i], size, tmp_buf);
-    DEBUG_PRINTF("Values: ");
-    for(j=0 ; j<datatype->blocklens[i] ; j++) DEBUG_PRINTF("%3.2f ", tmp_buf[j]);
-    DEBUG_PRINTF("\n");
+    DEBUG_OPTIMIZED("Packing block %d with %d elements of size %d at address %p\n", i, datatype->blocklens[i], size, tmp_buf);
+    DEBUG_OPTIMIZED("Values: ");
+    for(j=0 ; j<datatype->blocklens[i] ; j++) DEBUG_OPTIMIZED("%3.2f ", tmp_buf[j]);
+    DEBUG_OPTIMIZED("\n");
     nm_so_pack(&cnx, tmp_buf, datatype->blocklens[i]*size);
   }
   nm_so_end_packing(&cnx);
@@ -197,7 +197,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
   float          **tmp_buf;
   int              numberOfBlocks, size, *numberOfElements, i;
 
-  DEBUG_PRINTF("Receiving (h)indexed datatype at address %p...\n", r_ptr);
+  DEBUG_OPTIMIZED("Receiving (h)indexed datatype at address %p...\n", r_ptr);
 
   /*  Unpack the following information : number of blocks, size of each element */
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
@@ -208,7 +208,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
 #else
   nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
-  DEBUG_PRINTF("Number of blocks %d Size %d\n", numberOfBlocks, size);
+  DEBUG_OPTIMIZED("Number of blocks %d Size %d\n", numberOfBlocks, size);
 
   /*  unpack the number of elements in the blocks */
   numberOfElements = malloc(numberOfBlocks * sizeof(int));
@@ -229,7 +229,7 @@ void unpack_datatype_indexed(nm_so_pack_interface interface,
   nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
-    DEBUG_PRINTF("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
+    DEBUG_OPTIMIZED("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
     nm_so_unpack(&cnx, tmp_buf[i], numberOfElements[i]*size);
     tmp_buf[i+1] = tmp_buf[i] + numberOfElements[i];
   }

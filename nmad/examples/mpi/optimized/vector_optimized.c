@@ -57,9 +57,9 @@ void pingpong_datatype_vector(nm_so_pack_interface interface,
   for(i=0 ; i<vector_size ; i++) {
     for(j=0 ; j<vector_size ; j++) {
       buffer[i*vector_size+j] = get_value(i, j, vector_size);
-      DEBUG_PRINTF("%3.1f ", buffer[i*vector_size+j]);
+      DEBUG_OPTIMIZED("%3.1f ", buffer[i*vector_size+j]);
     }
-    DEBUG_PRINTF("\n");
+    DEBUG_OPTIMIZED("\n");
   }
 
   datatype_vector = malloc(sizeof(struct MPIR_DATATYPE));
@@ -98,7 +98,7 @@ void init_datatype_vector(struct MPIR_DATATYPE *datatype,
   int vector_size;
   vector_size = get_vector_size(sqrt(number_of_elements), number_of_blocks);
 
-  DEBUG_PRINTF("Creating datatype vector with %d elements and %d blocks with %d vector size\n", number_of_elements, number_of_blocks, vector_size);
+  DEBUG_OPTIMIZED("Creating datatype vector with %d elements and %d blocks with %d vector size\n", number_of_elements, number_of_blocks, vector_size);
   datatype->dte_type = MPIR_VECTOR;
   datatype->count = number_of_blocks;
   datatype->blocklen = number_of_elements / datatype->count;
@@ -115,7 +115,7 @@ void pack_datatype_vector(nm_so_pack_interface  interface,
   int              size, numberOfElements, i, j;
   float           *tmp_buf;
 
-  DEBUG_PRINTF("Sending (h)vector type: stride %d - blocklen %d - count %d - size %d\n", datatype->stride, datatype->blocklen,
+  DEBUG_OPTIMIZED("Sending (h)vector type: stride %d - blocklen %d - count %d - size %d\n", datatype->stride, datatype->blocklen,
         datatype->count, datatype->size);
   numberOfElements = datatype->blocklen * datatype->count;
   size = datatype->size / numberOfElements;
@@ -135,10 +135,10 @@ void pack_datatype_vector(nm_so_pack_interface  interface,
 #endif /* NO_RWAIT */
   tmp_buf = s_ptr;
   for(i=0 ; i<datatype->count ; i++) {
-    DEBUG_PRINTF("Packing block %d at address %p\n", i, tmp_buf);
-    DEBUG_PRINTF("Values: ");
-    for(j=0 ; j<datatype->blocklen ; j++) DEBUG_PRINTF("%3.2f ", tmp_buf[j]);
-    DEBUG_PRINTF("\n");
+    DEBUG_OPTIMIZED("Packing block %d at address %p\n", i, tmp_buf);
+    DEBUG_OPTIMIZED("Values: ");
+    for(j=0 ; j<datatype->blocklen ; j++) DEBUG_OPTIMIZED("%3.2f ", tmp_buf[j]);
+    DEBUG_OPTIMIZED("\n");
     nm_so_pack(&cnx, tmp_buf, datatype->blocklen*size);
     tmp_buf += datatype->stride;
   }
@@ -152,7 +152,7 @@ void unpack_datatype_vector(nm_so_pack_interface interface,
   int              numberOfBlocks, size, blockLength, i;
   float          **tmp_buf;
 
-  DEBUG_PRINTF("Receiving (h)vector type\n");
+  DEBUG_OPTIMIZED("Receiving (h)vector type\n");
 
   /*  Unpack the following informations: numberOfBlocks, size of each element, block length */
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
@@ -164,7 +164,7 @@ void unpack_datatype_vector(nm_so_pack_interface interface,
 #else
   nm_so_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
-  DEBUG_PRINTF("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);
+  DEBUG_OPTIMIZED("Number of blocks %d Size %d Block length %d\n", numberOfBlocks, size, blockLength);
 
   /*  unpack the elements for each block */
   tmp_buf = malloc((numberOfBlocks+1) * sizeof(float *));
@@ -173,7 +173,7 @@ void unpack_datatype_vector(nm_so_pack_interface interface,
   nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
-    DEBUG_PRINTF("Going to unpack block %d at address %p\n", i, tmp_buf[i]);
+    DEBUG_OPTIMIZED("Going to unpack block %d at address %p\n", i, tmp_buf[i]);
     nm_so_unpack(&cnx, tmp_buf[i], blockLength*size);
     tmp_buf[i+1] = tmp_buf[i] + blockLength;
   }

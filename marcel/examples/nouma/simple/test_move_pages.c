@@ -40,12 +40,12 @@ void print_pagenodes(unsigned long *pageaddrs) {
   }
 }
 
-void move_pagenodes(unsigned long *pageaddrs, const int *nodemask) {
+void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
   int pagenodes[PAGES];
   int i;
   int err;
 
-  err = move_pages(0, PAGES, pageaddrs, nodemask, pagenodes, MPOL_MF_MOVE);
+  err = move_pages(0, PAGES, pageaddrs, nodes, pagenodes, MPOL_MF_MOVE);
   if (err < 0) {
     perror("move_pages");
     exit(-1);

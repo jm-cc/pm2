@@ -27,9 +27,6 @@
 #include <linux/mempolicy.h>
 #include <ctype.h>
 
-
-//#define HEAP_DEBUG
-
 int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
         int err, i, idx_node = 0;
         long long node_free_size, max_free_size = 0;
@@ -37,14 +34,14 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
         unsigned long newnodemask[MARCEL_NBMAXNODES];
         unsigned long newmaxnode;
 
-        DEBUG_PRINT("ma_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
+        mdebug_heap("ma_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
 	switch(mempolicy) {
 	case SMALL_ACCESSED:
 		/* marcel_nbnodes = numa_max_node() + 1 */
 		for(i = 0; i < marcel_nbnodes; ++i) {
 			if (mask_isset(nodemask,maxnode,i)) {
 				node_hits = ma_hits_mem_node(i);
-				//DEBUG_PRINT("node=%d hits=%lld\n",i,node_hits);
+				//mdebug_heap("node=%d hits=%lld\n",i,node_hits);
 				if (min_hits > node_hits) {
 					min_hits = node_hits;
 					idx_node = i;
@@ -60,7 +57,7 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
 		for(i = 0; i < marcel_nbnodes; ++i) {
 			if (mask_isset(nodemask,maxnode,i)) {
 				node_free_size = ma_free_mem_node(i);
-				//DEBUG_PRINT("node=%d size=%lld\n",i,node_free_size);
+				//mdebug_heap("node=%d size=%lld\n",i,node_free_size);
 				if (node_free_size > max_free_size) {
 					max_free_size = node_free_size;
 					idx_node = i;
@@ -77,9 +74,9 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
 		err = mbind (ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
 		if (err) {
 			perror("mbind error:");
-			DEBUG_PRINT("mbind args %p %ld %d %d %d 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, nodemask, maxnode);
+			mdebug_heap("mbind args %p %ld %d %ld %ld 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, *nodemask, maxnode);
 		} else {
-			DEBUG_PRINT("mbind returns %d : Success\n", err);
+			mdebug_heap("mbind returns %d : Success\n", err);
 		}
 		break;
         }

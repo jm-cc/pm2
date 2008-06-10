@@ -59,6 +59,19 @@ void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
   }
 }
 
+void test_pagenodes(unsigned long *buffer, unsigned long pagesize, unsigned long value) {
+  int i, valid=1;
+  for(i=0 ; i<PAGES*pagesize ; i++) {
+    if (buffer[i] != value) {
+      printf("buffer[%d] incorrect = %u\n", i, buffer[i]);
+      valid=0;
+    }
+  }
+  if (valid) {
+    printf("buffer correct\n");  
+  }
+}
+
 int main(int argc, char * argv[])
 {
   unsigned long *buffer;
@@ -92,6 +105,7 @@ int main(int argc, char * argv[])
   for(i=0 ; i<PAGES*pagesize ; i++) {
     buffer[i] = (unsigned long)42;
   }
+  test_pagenodes(buffer, pagesize, 42);
 
   print_pagenodes(pageaddrs);
 
@@ -99,6 +113,7 @@ int main(int argc, char * argv[])
   for(i=0; i<PAGES ; i++)
     nodes[i] = 1;
   move_pagenodes(pageaddrs, nodes);
+  test_pagenodes(buffer, pagesize, 42);
 
 #ifdef PROFILE
   profile_stop();

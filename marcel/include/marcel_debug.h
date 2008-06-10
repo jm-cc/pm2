@@ -129,9 +129,16 @@ extern debug_type_t marcel_heap_debug;
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
 
 #ifdef PM2_OPT
+
+#ifdef __GNUC__
+# warning "`MA_BUG_ON' and friends are disabled"
+#endif
+
 #define MA_BUG_ON(cond) (void)(cond)
 #define MA_WARN_ON(cond) (void)(cond)
-#else
+
+#else /* !PM2_OPT */
+
 #depend "marcel_signal.h[marcel_macros]"
 #define MA_BUG_ON(cond) \
   do { \
@@ -146,7 +153,9 @@ extern debug_type_t marcel_heap_debug;
 		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
   } while (0)
-#endif
+
+#endif /* !PM2_OPT */
+
 #define MA_BUG() MA_BUG_ON(1)
 
 #define MA_ALWAYS_BUG_ON(cond) \

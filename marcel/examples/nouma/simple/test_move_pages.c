@@ -22,40 +22,40 @@ int move_pages(const pid_t pid, const unsigned long count,
 }
 
 void print_pagenodes(unsigned long *pageaddrs) {
-  int pagenodes[PAGES];
+  int status[PAGES];
   int i;
   int err;
 
-  err = move_pages(0, PAGES, pageaddrs, NULL, pagenodes, 0);
+  err = move_pages(0, PAGES, pageaddrs, NULL, status, 0);
   if (err < 0) {
     perror("move_pages");
     exit(-1);
   }
 
   for(i=0; i<PAGES; i++) {
-    if (pagenodes[i] == -ENOENT)
+    if (status[i] == -ENOENT)
       printf("  page #%d is not allocated\n", i);
     else
-      printf("  page #%d is on node #%d\n", i, pagenodes[i]);
+      printf("  page #%d is on node #%d\n", i, status[i]);
   }
 }
 
 void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
-  int pagenodes[PAGES];
+  int status[PAGES];
   int i;
   int err;
 
-  err = move_pages(0, PAGES, pageaddrs, nodes, pagenodes, MPOL_MF_MOVE);
+  err = move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     perror("move_pages");
     exit(-1);
   }
 
   for(i=0; i<PAGES; i++) {
-    if (pagenodes[i] == -ENOENT)
+    if (status[i] == -ENOENT)
       printf("  page #%d is not allocated\n", i);
     else
-      printf("  page #%d is on node #%d\n", i, pagenodes[i]);
+      printf("  page #%d is on node #%d\n", i, status[i]);
   }
 }
 

@@ -362,16 +362,10 @@ void ma_print_heap(struct ub* root);
 
 /* --- debug functions --- */
 
-#ifdef HEAP_DEBUG
-#define DEBUG_LIST(str,root) ma_print_list(str,root)
+#ifdef PM2DEBUG
+#define mdebug_heap_list(str,root) ma_print_list(str,root)
 #else
-#define	DEBUG_LIST(...)
-#endif
-
-#ifdef HEAP_DEBUG
-#define	DEBUG_PRINT(...) fprintf(stderr,__VA_ARGS__)
-#else
-#define	DEBUG_PRINT(...)
+#define	mdebug_heap_list(...)
 #endif
 
 #endif /* LINUX_SYS */

@@ -176,7 +176,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 	/* 		current_heap->pages[i]= j; */
 	/* 	} */
 
-	DEBUG_LIST("ma_hmove_memory before\n",current_heap);
+	mdebug_heap_list("ma_hmove_memory before\n",current_heap);
 
 	/* look for a existing matching heap to link */
 	match_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
@@ -316,7 +316,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 			}
 			current_heap = current_heap->next_heap;
 		}
-		DEBUG_LIST("ma_hnext_pinfo list:\n",heap);
+		mdebug_heap_list("ma_hnext_pinfo list:\n",heap);
 
 		/* goes to next heap higher iterator_num */
 		current_heap = ma_aget_heap_from_list((*ppinfo)->mempolicy,(*ppinfo)->weight,(*ppinfo)->nodemask,(*ppinfo)->maxnode,heap);

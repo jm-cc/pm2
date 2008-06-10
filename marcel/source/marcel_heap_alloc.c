@@ -230,7 +230,7 @@ void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 			if(ma_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)0) {
 				valid = 1;
 				mdebug_heap("ma_aconcat_global link %p with %p\n",hsrc,htgt);
-				//DEBUG_LIST("ma_aconcat_global\n",hsrc);
+				//mdebug_heap_list("ma_aconcat_global\n",hsrc);
 			}
 		}
 	}
@@ -249,7 +249,7 @@ void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
 			if(ma_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)0) {
 				valid = 1;
 				mdebug_heap("ma_aconcat_local link %p with %p\n",hsrc,htgt);
-				//DEBUG_LIST("ma_aconcat_local\n",hsrc);
+				//mdebug_heap_list("ma_aconcat_local\n",hsrc);
 			}
 		}
 	}
@@ -370,7 +370,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
 			next_same_heap->touch_size = size + BLOCK_SIZE_T;
 
 			ma_spin_unlock(&next_same_heap->lock_heap);
-			DEBUG_LIST("->",next_same_heap);
+			mdebug_heap_list("->",next_same_heap);
 			return (void*)((char*)(next_same_heap->used) + BLOCK_SIZE_T);
 		}
 
@@ -581,7 +581,7 @@ void ma_afree_heap(void *ptr, ma_heap_t* heap) {
 		}
 		HEAP_ADD_FREE_SIZE(size+BLOCK_SIZE_T,heap);
 		ma_spin_unlock(&heap->lock_heap);
-		DEBUG_LIST("ma_afree_heap\n",heap);
+		mdebug_heap_list("ma_afree_heap\n",heap);
 	} else {
 		/* argument = NULL: undefined behavior */
 		mdebug_heap("ma_afree_heap: passing NULL as argument caused undefined behavior\n");
@@ -625,17 +625,19 @@ ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 		ma_spin_unlock(&next_heap->lock_heap);
 		next_heap = next_heap->next_heap;
 	}
-	DEBUG_LIST("ma_amallinfo:\n",heap);
+	mdebug_heap_list("ma_amallinfo:\n",heap);
 	return stats;
 }
 
-#ifdef HEAP_DEBUG
+#ifdef PM2DEBUG
 void ma_print_list(const char* str, ma_heap_t* heap) {
 	ma_heap_t* h;
 	int count = 0;
   	unsigned int i, max_node = (unsigned int) (marcel_nbnodes - 1) ;
 
-	printf("%s",str);
+	if (marcel_heap_debug.show < PM2DEBUG_STDLEVEL) return;
+
+	debug_printf(&marcel_heap_debug,"%s",str);
 	h = heap;
 	while (IS_HEAP(h)) {
 		ma_spin_lock(&h->lock_heap);
@@ -675,7 +677,7 @@ void ma_print_heap(struct ub* root) {
 		printf("Empty\n");
 	}
 }
-#endif /* HEAP_DEBUG */
+#endif /* PM2DEBUG */
 
 
 #endif /* LINUX_SYS */

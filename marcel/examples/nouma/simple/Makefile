@@ -15,40 +15,5 @@
 
 export FLAVOR_DEFAULT:=marcel
 
-# Fichiers C à ne pas considérer comme but
-#----------------------------------------------------------------------
-APPS_EXCLUDE = $(basename $(wildcard *-posix.c))
-
-# Programmes multi-objects et flags spécifics
-#----------------------------------------------------------------------
-eclone-objs := clone.o eclone.o
-eclone-cflags := -O0
-stackjump-cflags := -fno-omit-frame-pointer
-
-tsp-objs := tsp-main.o tsp-job.o tsp.o
-tsp-cflags := -DMT
-tsp-main-cflags := -DMT
-tsp-job-cflags := -DMT
-tsp-ldflags := -lm
-
-balance-ldflags := -lm
-
-hello: CC=g++
-
-# Applications dont le nom n'a pas de .c correspondant
-#----------------------------------------------------------------------
-APPS :=
-
-#----------------------------------------------------------------------
-# Les applications compilées sont :
-# $(PROGS)
-# Ou, si $(PROGS) n'est pas défini :
-# (%.c -> %)
-# - $(APPS_EXCLUDE)
-# - (%.c -> % qui apparaissent dans un %-objs)
-# + $(APPS)
-# + (%.c -> % qui ont un %-objs)
-#----------------------------------------------------------------------
-
 include $(PM2_ROOT)/make/apps.mak
 

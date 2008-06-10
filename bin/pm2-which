@@ -234,7 +234,7 @@ shift
 pm2_which_calc "$_PM2_WHICH_PROG"
 if [ $_PM2_WHICH_SOURCE_MODE = no ]; then
     if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
-        echo "pm2_which: '${_PROG}' exec file not found" 1>&2
+        echo "$_PM2_WHICH_PROGNAME: '${_PROG}' exec file not found" 1>&2
     else
         pm2_which_prettyprint $_PM2_WHICH_RESULT
     fi
@@ -245,10 +245,10 @@ if [ $_PM2_WHICH_SOURCE_MODE = no ]; then
     fi
 else
     if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
-        pm2_which_error "pm2_which: '${_PROG}' exec file not found"
+        pm2_which_error "$_PM2_WHICH_PROGNAME: '${_PROG}' exec file not found"
     fi
     if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
-        pm2_which_error "pm2_which: multiple ${_PROG} example binaries found"
+        pm2_which_error "$_PM2_WHICH_PROGNAME: multiple ${_PROG} example binaries found"
     fi
 fi
 

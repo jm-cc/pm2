@@ -131,7 +131,7 @@ ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 #define ma_holder_bubble(b) (&(b)->as_holder)
 /** \brief Converts ma_runqueue_t *b into ma_holder_t * */
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
-#define ma_holder_rq(rq) (&(rq)->hold)
+#define ma_holder_rq(rq) (&(rq)->as_holder)
 
 /* \brief Find the number of the numa node where the entity is */ 
 int ma_node_entity(marcel_entity_t *entity);

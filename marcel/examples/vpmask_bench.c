@@ -92,7 +92,7 @@ void bench_migrate(unsigned long nb, int active)
   while (!started);
 
 #ifdef MA__BUBBLES
-  h[0] = &b.hold;
+  h[0] = &b.as_holder;
 #else
   h[0] = &marcel_topo_vp_level[2].rq.as_holder;
 #endif

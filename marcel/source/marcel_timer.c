@@ -111,6 +111,44 @@ static void __marcel_init timer_start(void)
 __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
 
 
+#ifndef __MINGW32__
+#ifdef PROFILE
+static void int_catcher_exit(ma_lwp_t lwp)
+{
+	LOG_IN();
+	signal(SIGINT, SIG_DFL);
+	LOG_OUT();
+}
+static void int_catcher(int signo)
+{
+	static int got;
+	if (got) {
+		fprintf(stderr,"SIGINT caught a second time, exitting\n");
+		exit(EXIT_FAILURE);
+	}
+	got = 1;
+	fprintf(stderr,"SIGINT caught, saving profile\n");
+	PROF_EVENT(fut_stop);
+	profile_stop();
+	profile_exit();
+	int_catcher_exit(NULL);
+	raise(SIGINT);
+}
+static void int_catcher_init(ma_lwp_t lwp)
+{
+	LOG_IN();
+	signal(SIGINT, int_catcher);
+	LOG_OUT();
+}
+MA_DEFINE_LWP_NOTIFIER_ONOFF(int_catcher, "Int catcher",
+			     int_catcher_init, "Start int catcher",
+			     int_catcher_exit, "Stop int catcher");
+
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_CATCHER_PRIO);
+
+#endif /* PROFILE */
+#endif /* __MINGW32__ */
+
 /****************************************************************
  * Le signal TIMER
  *

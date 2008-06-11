@@ -120,6 +120,7 @@ int nm_so_get_sr_if(struct nm_so_interface **sr_if_) {
 
 int nm_so_get_pack_if(nm_so_pack_interface *pack_if_) {
   *pack_if_ = pack_if;
+  return NM_ESUCCESS;
 }
 
 int nm_so_get_gate_in_id(int dest, nm_gate_id_t *gate_id_) {

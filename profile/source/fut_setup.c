@@ -83,6 +83,7 @@ void dumptime( time_t *the_time, clock_t *the_jiffies)
 	returns number of bytes allocated if all ok, else a negative error code.
 */
 int fut_setup( unsigned int nlongs, unsigned int keymask, unsigned int threadid )
+	/* TODO: move to libfxt */
 	{
 	unsigned int	nbytes;
 	unsigned long	*iptr;

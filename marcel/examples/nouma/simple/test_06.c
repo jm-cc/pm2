@@ -87,7 +87,7 @@ any_t alloc(any_t foo) {
 		marcel_fprintf(stderr,"thread %p fait malloc pour bulle -> data %p\n", MARCEL_SELF, bdata);
 	}
 
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	/* ready for main */
 
@@ -118,7 +118,7 @@ any_t alloc(any_t foo) {
 		marcel_free_customized(bdata);
 		marcel_fprintf(stderr,"thread %p fait free -> data %p\n", MARCEL_SELF, bdata);
 	}
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	/* ready for main */
 	marcel_fprintf(stderr,"*\n");

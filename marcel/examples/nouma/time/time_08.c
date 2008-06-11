@@ -58,7 +58,7 @@ any_t run(any_t foo) {
 		mem_array_low[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, LOW_WEIGHT, 0, node, 0);
 		mem_array_medium[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, MEDIUM_WEIGHT, 0, node, 0);
 		mem_array_high[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, node, 0);
-		//fprintf(stderr,"marcel_malloc_customized on node %d, data %p, size %d, level %d, entity %p\n", node, mem_array[node], MEMSIZE, 0, &MARCEL_SELF->sched.internal.entity);
+		//fprintf(stderr,"marcel_malloc_customized on node %d, data %p, size %d, level %d, entity %p\n", node, mem_array[node], MEMSIZE, 0, &MARCEL_SELF->as_entity);
 	}
 
 	int onnode = ma_node_entity(&MARCEL_SELF->as_entity);

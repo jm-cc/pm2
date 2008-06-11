@@ -72,7 +72,7 @@ void marcel_rien_() {
 #ifdef MA__BUBBLES
 /* TODO: rajouter la bulle qu'on soumet en parametre */
 void marcel_bubble_submit_() {
-  current_sched->submit(&marcel_root_bubble.sched);
+  current_sched->submit(&marcel_root_bubble.as_entity);
 }
 
 void marcel_spread_() {

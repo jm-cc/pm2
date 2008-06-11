@@ -30,7 +30,7 @@ any_t alloc(any_t arg) {
   data = marcel_malloc_customized(SIZE, HIGH_WEIGHT, 1, -1, 0);
 
   marcel_fprintf(stderr,"thread %p (%d) fait malloc -> data %p\n", MARCEL_SELF, id, data);
-  //marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+  //marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
   /* ready for main */
   marcel_barrier_wait(&barrier);

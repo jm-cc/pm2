@@ -45,7 +45,7 @@ static void snap(marcel_t p)
    old_mad_pack_long(MAD_IN_HEADER, &tamp, 1);
    temp=1;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);
-   temp=p->sched.state;
+   temp=p->state;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);
    temp=64*1024;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);

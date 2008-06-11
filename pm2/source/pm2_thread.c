@@ -102,7 +102,7 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
     marcel_attr_setvpset(&res->attr, __pm2_global_vpset);
     marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
   } else {
-    marcel_attr_setvpset(&res->attr, marcel_self()->sched.lwps_allowed);
+    marcel_attr_setvpset(&res->attr, marcel_self()->lwps_allowed);
     marcel_attr_setrealtime(&res->attr,
 			    MA_TASK_REAL_TIME(marcel_self()) ?
 			       MARCEL_CLASS_REALTIME : MARCEL_CLASS_REGULAR);

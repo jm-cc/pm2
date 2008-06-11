@@ -69,7 +69,7 @@ any_t run(any_t foo) {
 	mem_array_high[onnode] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 1, -1, 0);
 	mem_array_high[7-onnode] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, 7-onnode, 0);
 
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 	
 
 
@@ -122,7 +122,7 @@ any_t run(any_t foo) {
    /* liberation memoire */
 	marcel_free_customized((void* ) mem_array_high[onnode]);
 	marcel_free_customized((void* ) mem_array_high[7-onnode]);
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 	
 	/* fin */
 	marcel_fprintf(stderr,"*\n");

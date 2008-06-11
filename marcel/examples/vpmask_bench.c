@@ -74,7 +74,7 @@ void bench_migrate(unsigned long nb, int active)
   marcel_bubble_t b;
   marcel_bubble_init(&b);
   marcel_attr_setinitbubble(&attr, &b);
-  marcel_bubble_setinitrq(&b, &marcel_topo_vp_level[2].sched);
+  marcel_bubble_setinitrq(&b, &marcel_topo_vp_level[2].rq);
   marcel_wake_up_bubble(&b);
 #endif
 
@@ -94,9 +94,9 @@ void bench_migrate(unsigned long nb, int active)
 #ifdef MA__BUBBLES
   h[0] = &b.hold;
 #else
-  h[0] = &marcel_topo_vp_level[2].sched.hold;
+  h[0] = &marcel_topo_vp_level[2].rq.as_holder;
 #endif
-  h[1] = &marcel_topo_vp_level[3].sched.hold;
+  h[1] = &marcel_topo_vp_level[3].rq.as_holder;
 
   TBX_GET_TICK(t1);
   while(--n) {

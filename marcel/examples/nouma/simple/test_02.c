@@ -52,7 +52,7 @@ any_t alloc(any_t foo) {
 	marcel_free_customized(data);
 	fprintf(stderr,"thread %p fait free -> data %p\n", MARCEL_SELF, data);
 
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	/* ready for main */
 	marcel_barrier_wait(&barrier);

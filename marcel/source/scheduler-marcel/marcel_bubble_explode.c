@@ -144,7 +144,7 @@ les #ifdef dans les arguments de macro...
 #undef _TIME_SLICE
 	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->as_entity.time_slice));
 	//__do_bubble_explode(bubble,rq);
-	//ma_atomic_set(&bubble->sched.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
+	//ma_atomic_set(&bubble->as_entity.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
 	list_for_each_entry(e, &bubble->heldentities, bubble_entity_list)
 		ma_move_entity(e, &rq->as_holder);
 

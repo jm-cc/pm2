@@ -73,7 +73,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 
 			/* détermination de la policy POSIX du thread courant
 			   d'après la priorité Marcel et la préemption */
-			int mprio = cthread->sched.internal.entity.prio;
+			int mprio = cthread->as_entity.prio;
 			if (mprio >= MA_DEF_PRIO)
 				policy = SCHED_OTHER;
 			else if (mprio <= MA_RT_PRIO) {

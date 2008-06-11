@@ -59,10 +59,11 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "\\\\VP %u", l->number);
   }
-  if (!txt_mode) {
+  if (txt_mode) {
     marcel_fprintf(output,"\n");
+  } else {
+    marcel_fprintf(output,"}}\n");
   }
-  marcel_fprintf(output,"\n");
 }
 
 void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {

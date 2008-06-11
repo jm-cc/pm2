@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char* level_descriptions[MARCEL_LEVEL_LAST+1] = 
+char* level_descriptions[MARCEL_LEVEL_LAST+1] =
   {
     "Whole machine",
 #ifdef MA__LWPS
@@ -40,12 +40,14 @@ void indent(FILE *output, int i) {
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
-void print_level(struct marcel_topo_level *l, FILE *output, int i) {
+void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
   indent(output, i);
-  if (l->arity || (!i && !l->arity)) {
+  if (!txt_mode && (l->arity || (!i && !l->arity))) {
     marcel_fprintf(output, "\\pstree");
   }
-  marcel_fprintf(output, "{\\Level{c}{%s", level_descriptions[l->type]);
+  if (!txt_mode) {
+    marcel_fprintf(output, "{\\Level{c}{%s", level_descriptions[l->type]);
+  }
   if (l->os_node != -1) marcel_fprintf(output, "\\\\Node %u", l->os_node);
   if (l->os_die != -1)  marcel_fprintf(output, "\\\\Die %u" , l->os_die);
   if (l->os_l3 != -1)   marcel_fprintf(output, "\\\\L3 %u"  , l->os_l3);
@@ -56,18 +58,21 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i) {
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "\\\\VP %u", l->number);
   }
-  marcel_fprintf(output,"}}\n");
+  if (!txt_mode) {
+    marcel_fprintf(output,"\n");
+  }
+  marcel_fprintf(output,"\n");
 }
 
-void f(struct marcel_topo_level *l, FILE *output, int i) {
+void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
   int x;
 
-  print_level(l, output, i);
+  print_level(l, output, i, txt_mode);
   if (l->arity || (!i && !l->arity)) {
     indent(output, i);
     marcel_fprintf(output, "{\n");
     for(x=0; x<l->arity; x++)
-      f(l->children[x], output, i+1);
+      f(l->children[x], output, i+1, txt_mode);
     indent(output, i);
     marcel_fprintf(output, "}\n");
   }
@@ -77,33 +82,46 @@ int marcel_main(int argc, char **argv) {
   struct marcel_topo_level *l;
   char hostname[256], filename[256];
   FILE *output;
+  int txt_mode = 0;
 
   marcel_init(&argc, argv);
-  gethostname(hostname, 256);
-  marcel_sprintf(filename, "%s_topology.tex", hostname);
+  if (argc >= 2 && !strcmp(argv[1], "--txt")) {
+    txt_mode = 1;
+  }
 
-  output = marcel_fopen(filename, "w");
-  marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");
-  marcel_fprintf(output, "\\usepackage{fullpage}\n");
-  marcel_fprintf(output, "\\usepackage{pst-tree}\n");
-  marcel_fprintf(output, "% Macro to define one level\n");
-  marcel_fprintf(output, "\\newcommand{\\Level}[3][]{\\TR[#1]{\\setlength{\\tabcolsep}{0mm}\\begin{tabular}[t]{#2}#3\\end{tabular}}}\n\n");
-  marcel_fprintf(output, "\\begin{document}\n");
-  marcel_fprintf(output, "\\title{%s: Topology}\n", hostname);
-  marcel_fprintf(output, "\\author{Marcel}\n");
-  marcel_fprintf(output, "\\maketitle\n");
-  marcel_fprintf(output, "\\tiny\n");
+  if (txt_mode) {
+    output = stdout;
+  }
+  else {
+    gethostname(hostname, 256);
+    marcel_sprintf(filename, "%s_topology.tex", hostname);
+    output = marcel_fopen(filename, "w");
+
+    marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");
+    marcel_fprintf(output, "\\usepackage{fullpage}\n");
+    marcel_fprintf(output, "\\usepackage{pst-tree}\n");
+    marcel_fprintf(output, "% Macro to define one level\n");
+    marcel_fprintf(output, "\\newcommand{\\Level}[3][]{\\TR[#1]{\\setlength{\\tabcolsep}{0mm}\\begin{tabular}[t]{#2}#3\\end{tabular}}}\n\n");
+    marcel_fprintf(output, "\\begin{document}\n");
+    marcel_fprintf(output, "\\title{%s: Topology}\n", hostname);
+    marcel_fprintf(output, "\\author{Marcel}\n");
+    marcel_fprintf(output, "\\maketitle\n");
+    marcel_fprintf(output, "\\tiny\n");
+  }
 
   l = &marcel_topo_levels[0][0];
-  f(l, output, 0);
+  f(l, output, 0, txt_mode);
 
-  marcel_fprintf(output, "\\end{document}\n");
-  marcel_fclose(output);
+  if (!txt_mode) {
+    marcel_fprintf(output, "\\end{document}\n");
+    marcel_fclose(output);
 
-  marcel_fprintf(stdout, "The file %s_topology.tex has been created. Compile it as follows:\n", hostname);
-  marcel_fprintf(stdout, "\tlatex %s_topology\n", hostname);
-  marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape %s_topology.dvi\n", hostname);
-  marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
+    marcel_fprintf(stdout, "The file %s_topology.tex has been created. Compile it as follows:\n", hostname);
+    marcel_fprintf(stdout, "\tlatex %s_topology\n", hostname);
+    marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape %s_topology.dvi\n", hostname);
+    marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
+  }
+
   marcel_end();
   return 0;
 }

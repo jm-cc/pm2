@@ -300,12 +300,10 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
       }
       
       if (!bubble_has_exploded) {
-	if (ne >= arity) {
-	  __distribute_entities(l, e, ne, load_manager);
-	  for (k = 0; k < arity; k++)
-	    __marcel_bubble_affinity(&l[0]->children[k]);
-	  return;
-	}
+	__distribute_entities(l, e, ne, load_manager);
+	for (k = 0; k < arity; k++)
+	  __marcel_bubble_affinity(&l[0]->children[k]);
+	return;
       }
 	  
       if (!new_ne) {

@@ -279,6 +279,16 @@ marcel_create_internal(marcel_t * __restrict pid,
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 		marcel_one_more_task(new_task);
+
+		/* Seeds are never scheduled directly but instead have support from a
+			 "seed runner" thread.  Therefore, seeds are never actually
+			 `MA_TASK_RUNNING'.  */
+		new_task->state = MA_TASK_BORNING;
+
+		/* Eventually, NEW_TASK will be assigned a seed runner.  */
+		new_task->cur_thread_seed_runner = NULL;
+
+		new_task->cur_thread_seed = NULL;
 		new_task->f_to_call = func;
 		new_task->arg = arg;
 		new_task->stack_kind = MA_NO_STACK;

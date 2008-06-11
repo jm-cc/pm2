@@ -126,7 +126,7 @@ any_t run(any_t foo) {
 	int id = (intptr_t)foo;
 
 	/* allocation memoire */	
-	int onnode = ma_node_entity(&MARCEL_SELF->sched.internal.entity);
+	int onnode = ma_node_entity(&MARCEL_SELF->as_entity);
 	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);	
 	highown = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 1, -1, 0);
 
@@ -184,7 +184,7 @@ any_t run(any_t foo) {
 			break;
 	}
 
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 
 	struct timeval start, finish;
 	long time, mem;
@@ -276,7 +276,7 @@ any_t run(any_t foo) {
    /* liberation memoire */
 
 	marcel_free_customized((void* ) highown);
-	//marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 	
 	/* fin */
 	marcel_fprintf(stderr,"*\n");
@@ -1098,6 +1098,8 @@ int main(int argc, char *argv[])
 	marcel_cond_destroy(&cond);
 	marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
    return 0;
 }

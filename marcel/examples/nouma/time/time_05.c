@@ -58,9 +58,9 @@ any_t run(any_t foo) {
 		mem_array_high[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, node, 0);
 	}
 
-	int onnode = ma_node_entity(&MARCEL_SELF->sched.internal.entity);
+	int onnode = ma_node_entity(&MARCEL_SELF->as_entity);
 	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);	
-	marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 	
 	struct timeval start, finish;
 	long time, mem;
@@ -75,7 +75,7 @@ any_t run(any_t foo) {
 	}
 	/* ici commence le test de perf */
 	marcel_barrier_wait(&allbarrier);
-	marcel_start_remix();
+	//marcel_start_remix();
 
 	gettimeofday(&start, NULL);
 	i = 0;
@@ -97,7 +97,7 @@ any_t run(any_t foo) {
 		}
 		//marcel_fprintf(stderr,"time for id %d : %ld\n", id, time);
 		marcel_fprintf(stderr,"%d ",id);	
-		*marcel_stats_get(MARCEL_SELF, marcel_stats_load_offset) -= 1000;
+		*marcel_stats_get(MARCEL_SELF, load) -= 1000;
 	}
 	gettimeofday(&finish, NULL);
 	time = TIME_DIFF(start, finish);
@@ -112,7 +112,7 @@ any_t run(any_t foo) {
 	}
 	
 	
-	marcel_see_allocated_memory(&MARCEL_SELF->sched.internal.entity);
+	marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
 	
 	/* fin */
 	marcel_fprintf(stderr,"*\n");
@@ -120,7 +120,7 @@ any_t run(any_t foo) {
 
 	if (finished == NB_THREADS)
 	{
-		marcel_stop_remix();
+	  //marcel_stop_remix();
 		marcel_cond_signal(&cond);
 	}
 		
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 		marcel_fprintf(stderr,"avant create\n");
       marcel_create(&t1, &attr, run, (any_t)1);
 		marcel_fprintf(stderr,"apres create\n");
-		*marcel_stats_get(t1, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t1, load) = NBSHIFTS*1000;
 	}
 
    {
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t2, &attr, run, (any_t)2);
-      *marcel_stats_get(t2, marcel_stats_load_offset) = NBSHIFTS*1000;
+      *marcel_stats_get(t2, load) = NBSHIFTS*1000;
    }
 
 	{
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t3, &attr, run, (any_t)3);
-		*marcel_stats_get(t3, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t3, load) = NBSHIFTS*1000;
 	}
 
 	{
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t4, &attr, run, (any_t)4);
-		*marcel_stats_get(t4, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t4, load) = NBSHIFTS*1000;
 	}
 
 	 {
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t5, &attr, run, (any_t)5);
-		*marcel_stats_get(t5, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t5, load) = NBSHIFTS*1000;
 	}
 
    {
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t6, &attr, run, (any_t)6);
-      *marcel_stats_get(t6, marcel_stats_load_offset) = NBSHIFTS*1000;
+      *marcel_stats_get(t6, load) = NBSHIFTS*1000;
    }
 
 	{
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t7, &attr, run, (any_t)7);
-		*marcel_stats_get(t7, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t7, load) = NBSHIFTS*1000;
 	}
 
 	{
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
       marcel_attr_setprio(&attr,0);
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t8, &attr, run, (any_t)8);
-		*marcel_stats_get(t8, marcel_stats_load_offset) = NBSHIFTS*1000;
+		*marcel_stats_get(t8, load) = NBSHIFTS*1000;
 	}
 
 
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 
 	/* ordonnancement */
 	marcel_start_playing();
-   marcel_bubble_badspread(&b0, marcel_topo_level(DOWN,0), 0);
+        //marcel_bubble_badspread(&b0, marcel_topo_level(DOWN,0), 0);
 
 	struct timeval start, finish;
 	gettimeofday(&start, NULL);
@@ -271,6 +271,8 @@ int main(int argc, char *argv[])
 	marcel_cond_destroy(&cond);
 	marcel_mutex_destroy(&mutex);
 
+#ifdef PROFILE
 	profile_stop();
+#endif
    return 0;
 }

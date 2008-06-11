@@ -52,6 +52,10 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i) {
   if (l->os_l2 != -1)   marcel_fprintf(output, "\\\\L2 %u"  , l->os_l2);
   if (l->os_core != -1) marcel_fprintf(output, "\\\\Core %u", l->os_core);
   if (l->os_cpu != -1)  marcel_fprintf(output, "\\\\CPU %u" , l->os_cpu);
+
+  if (l->level == marcel_topo_nblevels-1) {
+    marcel_fprintf(output, "\\\\VP %u", l->number);
+  }
   marcel_fprintf(output,"}}\n");
 }
 

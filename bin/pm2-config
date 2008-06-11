@@ -723,11 +723,10 @@ pm2_config_parse_cmdline() # args
     # On a demandé les CFLAGS
     if [ "$_cflags" = true ] ; then
 	if [ "$_kernel" = true ] ; then
-	    eval echo \$_PM2_CONFIG_${_libs}_KERNEL_CFLAGS
+	    eval echo -n \$_PM2_CONFIG_${_libs}_KERNEL_CFLAGS " "
 	else
-	    echo $_PM2_CONFIG_CFLAGS
+	    echo -n "$_PM2_CONFIG_CFLAGS "
 	fi
-	exit 0
     fi
 
     # on a demandé les LDFLAGS

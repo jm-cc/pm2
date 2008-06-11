@@ -46,8 +46,9 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
     marcel_fprintf(output, "\\pstree");
   }
   if (!txt_mode) {
-    marcel_fprintf(output, "{\\Level{c}{%s", level_descriptions[l->type]);
+    marcel_fprintf(output, "{\\Level{c}{");
   }
+  marcel_fprintf(output, "%s", level_descriptions[l->type]);
   if (l->os_node != -1) marcel_fprintf(output, "\\\\Node %u", l->os_node);
   if (l->os_die != -1)  marcel_fprintf(output, "\\\\Die %u" , l->os_die);
   if (l->os_l3 != -1)   marcel_fprintf(output, "\\\\L3 %u"  , l->os_l3);

@@ -1678,7 +1678,9 @@ int piom_server_stop(piom_server_t server)
 
 #ifdef MARCEL
 	marcel_task_t *lock;
-        lock = piom_ensure_lock_server(server);
+       	lock = piom_ensure_trylock_from_tasklet(server);
+	/* peut être la solution d'un bug... */
+	//lock = piom_ensure_lock_server(server);
 #endif				//MARCEL
 
 	piom_verify_server_state(server);

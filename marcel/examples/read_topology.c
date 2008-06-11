@@ -40,7 +40,10 @@ void indent(FILE *output, int i) {
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
+static const char * separators[2] = { "\\\\", " " };
+
 void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
+  char * separator = separators[txt_mode];
   indent(output, i);
   if (!txt_mode && (l->arity || (!i && !l->arity))) {
     marcel_fprintf(output, "\\pstree");
@@ -49,15 +52,15 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
     marcel_fprintf(output, "{\\Level{c}{");
   }
   marcel_fprintf(output, "%s", level_descriptions[l->type]);
-  if (l->os_node != -1) marcel_fprintf(output, "\\\\Node %u", l->os_node);
-  if (l->os_die != -1)  marcel_fprintf(output, "\\\\Die %u" , l->os_die);
-  if (l->os_l3 != -1)   marcel_fprintf(output, "\\\\L3 %u"  , l->os_l3);
-  if (l->os_l2 != -1)   marcel_fprintf(output, "\\\\L2 %u"  , l->os_l2);
-  if (l->os_core != -1) marcel_fprintf(output, "\\\\Core %u", l->os_core);
-  if (l->os_cpu != -1)  marcel_fprintf(output, "\\\\CPU %u" , l->os_cpu);
+  if (l->os_node != -1) marcel_fprintf(output, "%sNode %u", separator, l->os_node);
+  if (l->os_die != -1)  marcel_fprintf(output, "%sDie %u" , separator, l->os_die);
+  if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %u"  , separator, l->os_l3);
+  if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2 %u"  , separator, l->os_l2);
+  if (l->os_core != -1) marcel_fprintf(output, "%sCore %u", separator, l->os_core);
+  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU %u" , separator, l->os_cpu);
 
   if (l->level == marcel_topo_nblevels-1) {
-    marcel_fprintf(output, "\\\\VP %u", l->number);
+    marcel_fprintf(output, "%sVP %u", separator, l->number);
   }
   if (txt_mode) {
     marcel_fprintf(output,"\n");
@@ -71,12 +74,16 @@ void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
 
   print_level(l, output, i, txt_mode);
   if (l->arity || (!i && !l->arity)) {
-    indent(output, i);
-    marcel_fprintf(output, "{\n");
+    if (!txt_mode) {
+      indent(output, i);
+      marcel_fprintf(output, "{\n");
+    }
     for(x=0; x<l->arity; x++)
       f(l->children[x], output, i+1, txt_mode);
-    indent(output, i);
-    marcel_fprintf(output, "}\n");
+    if (!txt_mode) {
+      indent(output, i);
+      marcel_fprintf(output, "}\n");
+    }
   }
 }
 

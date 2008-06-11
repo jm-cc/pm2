@@ -111,124 +111,6 @@ static void __marcel_init timer_start(void)
 __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
 
 
-#ifndef __MINGW32__
-/****************************************************************
- * Trappeur de SIGSEGV, de manière à obtenir des indications sur le
- * thread fautif (ça aide pour le debug !)
- */
-#ifdef SA_SIGINFO
-#ifndef WIN_SYS
-#include <ucontext.h>
-#endif
-static void TBX_NORETURN fault_catcher(int sig, siginfo_t *act, void *data)
-#else
-static void TBX_NORETURN fault_catcher(int sig)
-#endif
-{
-#ifdef SA_SIGINFO
-#ifndef WIN_SYS
-	TBX_UNUSED ucontext_t *ctx =(ucontext_t *)data;
-#endif
-	pm2debug("OOPS!!! Signal %d catched on thread %p (%d)\n"
-			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n"
-			,
-		sig, MARCEL_SELF, SELF_GETMEM(number),
-		act->si_code, act->si_signo, act->si_addr, data);
-#endif
-	if(MA_LWP_SELF != NULL)
-		pm2debug("OOPS!!! current lwp is %d\n",
-			ma_vpnum(MA_LWP_SELF));
-	
-	PROF_EVENT(fut_stop);
-#ifdef PROFILE
-	profile_stop();
-	profile_exit();
-#endif
-#if defined(LINUX_SYS) && defined(MA__LWPS)
-	fprintf(stderr,
-		"OOPS!!! Entering endless loop "
-		"so you can try to attach process to gdb (pid = %d)\n",
-		marcel_gettid());
-	for(;;) ;
-#endif
-
-	abort();
-}
-
-static void fault_catcher_init(ma_lwp_t lwp)
-{
-	struct sigaction sa;
-	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
-
-	LOG_IN();
-	// On va essayer de rattraper SIGSEGV, etc.
-	sigemptyset(&sa.sa_mask);
-#ifdef SA_SIGINFO
-	sa.sa_sigaction = fault_catcher;
-	sa.sa_flags = SA_SIGINFO;
-#else
-	sa.sa_handler = fault_catcher;
-	sa.sa_flags = 0;
-#endif
-	sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
-	LOG_OUT();
-}
-
-static void fault_catcher_exit(ma_lwp_t lwp)
-{
-	struct sigaction sa;
-
-	LOG_IN();
-	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = SIG_DFL;
-	sa.sa_flags = 0;
-	sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
-	LOG_OUT();
-}
-
-MA_DEFINE_LWP_NOTIFIER_ONOFF(fault_catcher, "Fault catcher",
-			     fault_catcher_init, "Start fault catcher",
-			     fault_catcher_exit, "Stop fault catcher");
-
-//MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER, MA_INIT_FAULT_CATCHER_PRIO);
-
-#ifdef PROFILE
-static void int_catcher_exit(ma_lwp_t lwp)
-{
-	LOG_IN();
-	signal(SIGINT, SIG_DFL);
-	LOG_OUT();
-}
-static void int_catcher(int signo)
-{
-	static int got;
-	if (got) {
-		fprintf(stderr,"SIGINT caught a second time, exitting\n");
-		exit(EXIT_FAILURE);
-	}
-	got = 1;
-	fprintf(stderr,"SIGINT caught, saving profile\n");
-	PROF_EVENT(fut_stop);
-	profile_stop();
-	profile_exit();
-	int_catcher_exit(NULL);
-	raise(SIGINT);
-}
-static void int_catcher_init(ma_lwp_t lwp)
-{
-	LOG_IN();
-	signal(SIGINT, int_catcher);
-	LOG_OUT();
-}
-MA_DEFINE_LWP_NOTIFIER_ONOFF(int_catcher, "Int catcher",
-			     int_catcher_init, "Start int catcher",
-			     int_catcher_exit, "Stop int catcher");
-
-MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_CATCHER_PRIO);
-
-#endif
-#endif
-
 /****************************************************************
  * Le signal TIMER
  *
@@ -553,7 +435,6 @@ static void sig_stop_timer(ma_lwp_t lwp)
 
 void marcel_sig_exit(void)
 {
-	fault_catcher_exit(MA_LWP_SELF);
 	sig_stop_timer(MA_LWP_SELF);
 	return;
 }

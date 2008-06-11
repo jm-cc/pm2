@@ -421,7 +421,6 @@ extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;
 #ifndef __MINGW32__
 extern const __ma_init_info_t ma_init_info_sig_init;
-extern const __ma_init_info_t ma_init_info_marcel_fault_catcher_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
 #endif
 extern const __ma_init_info_t ma_init_info_timer_start;
@@ -554,7 +553,6 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_postexit_notifier_register);
 #endif /* MARCEL_POSTEXIT_ENABLED */
 #ifndef __MINGW32__
-			call_init_function(&ma_init_info_marcel_fault_catcher_notifier_register);
 			call_init_function(&ma_init_info_marcel_sig_timer_notifier_register);
 #endif
 			call_init_function(&ma_init_info_marcel_linux_sched_notifier_register);

@@ -272,7 +272,9 @@ marcel_create_internal(marcel_t * __restrict pid,
 	 * the thread won't block, in which case we don't even need to use a
 	 * stack, idle can run it! */
 	if (attr->seed) {
-		MA_BUG_ON(attr->__schedparam.__sched_priority != MA_BATCH_PRIO);
+		/* Seeds are allowed to choose a priority, which is then inherited by
+			 their seed runner in `marcel_sched_seed_runner ()'.  */
+
 		new_task = ma_obj_alloc(marcel_thread_seed_allocator);
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;

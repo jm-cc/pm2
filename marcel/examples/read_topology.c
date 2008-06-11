@@ -97,17 +97,6 @@ int marcel_main(int argc, char **argv) {
   l = &marcel_topo_levels[0][0];
   f(l, output, 0);
 
-#if 0
-  {
-    int j;
-    for (j=0; j<marcel_topo_level_nbitems[marcel_topo_nblevels-1]; j++) {
-      struct marcel_topo_level *l = &marcel_topo_levels[marcel_topo_nblevels-1][j];
-      fprintf(stdout, "VP %d : ", j);
-      f(l, stdout, 0);
-    }
-  }
-#endif
-
   marcel_fprintf(output, "\\end{document}\n");
   marcel_fclose(output);
 

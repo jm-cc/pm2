@@ -1106,7 +1106,7 @@ int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates) {
       continue;
     
     /* ... and is not currently running (!RR). */
-    if (ma_task_run_holder(team[i]) && !ma_task_run_holder_data(team[i]))
+    if (MA_TASK_IS_RUNNING(team[i]))
       continue;
 
     /* Hurray ! We finally found someone !*/

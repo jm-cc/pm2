@@ -1094,23 +1094,28 @@ int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates) {
   unsigned i;
 
   for (i = 0; i < nb_teammates; i++) {
-    if (!mask[i]) {
-      /* We're looking for ready (R*) thread... */
-      if (team[i] && team[i] != marcel_self() && team[i]->state == MA_TASK_RUNNING) {
-	/* ... that is scheduled on the same runqueue we're being executed... */
-	if (ma_task_sched_holder(marcel_self()) == ma_task_sched_holder(team[i])) {
-	  /* ... and is not currently running (!RR). */
-	  if (!ma_task_run_holder(team[i]) || ma_task_run_holder_data(team[i])) {
-	    /* Hurray ! We finally found someone !*/
-	    if (marcel_yield_to(team[i]) == 0) {
-	      marcel_printf("We succesfully yielded to thread %d::%p\n", i, team[i]);
-	      return 0;
-	    }
-	  }
-	}
-      }
+    if (mask[i])
+      continue;
+    
+    /* We're looking for ready (R*) thread... */
+    if (!team[i] || team[i] == marcel_self() || team[i]->state != MA_TASK_RUNNING)
+      continue;
+      
+    /* ... that is scheduled on the same runqueue we're being executed... */
+    if (ma_task_sched_holder(marcel_self()) != ma_task_sched_holder(team[i]))
+      continue;
+    
+    /* ... and is not currently running (!RR). */
+    if (ma_task_run_holder(team[i]) && !ma_task_run_holder_data(team[i]))
+      continue;
+
+    /* Hurray ! We finally found someone !*/
+    if (marcel_yield_to(team[i]) == 0) {
+      sched_debug("marcel_yield_to_team: We succesfully yielded to thread %d::%p\n", i, team[i]);
+      return 0;
     }
   }
+  
   return -1;
 }
 

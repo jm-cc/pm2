@@ -205,7 +205,7 @@ __has_enough_entities(struct marcel_topo_level **l,
 
   qsort(entities_per_level, arity, sizeof(int), &int_compar);
   
-  for (i = 0; i < ne; i++) {	
+  for (i = 0; i < ne; i++) {
     int k, tmp;
     entities_per_level[0] += ma_entity_load(e[i]); 
     
@@ -662,7 +662,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  .vp_is_idle = affinity_steal,
+  //.vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

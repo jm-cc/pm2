@@ -16,14 +16,13 @@
 
 /* yield-to-team.c */
 
-/* This program exercises the yield_to_team function */
+/* This program exercises the marcel_yield_to_team function */
 
 #include "marcel.h"
 
 #define NB_YIELDS 512
 
-struct yield_info
-{
+struct yield_info {
   unsigned nb_buddies;
   marcel_t *buddies;
   double *mask;
@@ -63,21 +62,20 @@ main (int argc, char **argv)
   
   for (i = 0; i < nb_threads; i++) {
     outer_info.mask[i] = i%2;
-    marcel_printf("Thread %d::%p is %savailable.\n", i, outer_info.buddies[i], i%2 ? "not ":"");
   }
  
-  for (i = 0; i < nb_threads; i++)
-    {
-      marcel_create (threads + i, &thread_attr, f, &outer_info);
-    }
-
+  for (i = 0; i < nb_threads; i++) {
+    marcel_create (threads + i, &thread_attr, f, &outer_info);
+    marcel_printf("Thread %d::%p is %savailable.\n", i, threads[i], i%2 ? "not ":"");
+  }
+  
   f(&outer_info);
 
-  for (i = 0; i < nb_threads; i++)
-    {
-      marcel_join(threads[i], NULL);
-    }      
+  for (i = 0; i < nb_threads; i++) {
+    marcel_join(threads[i], NULL);
+  }      
   
+  free(outer_info.mask);
   marcel_end();
   return 0;
 }

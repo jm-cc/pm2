@@ -1097,7 +1097,7 @@ int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates) {
     if (mask[i])
       continue;
     
-    /* We're looking for ready (R*) thread... */
+    /* We're looking for a ready (R*) thread... */
     if (!team[i] || team[i] == marcel_self() || team[i]->state != MA_TASK_RUNNING)
       continue;
       

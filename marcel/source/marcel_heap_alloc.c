@@ -154,7 +154,7 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
 		/* 			mdebug_heap("ma_acreate: mutex_init failed\n"); */
 		/* 		} */
 	}
-	mdebug_heap("ma_acreate: heap created at %p size=%ld\n",heap,size);
+	mdebug_heap("ma_acreate: heap created at %p size=%zd\n",heap,size);
 	return heap;
 }
 

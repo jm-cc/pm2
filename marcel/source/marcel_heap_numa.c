@@ -74,7 +74,7 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
 		err = mbind (ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
 		if (err) {
 			perror("mbind error:");
-			mdebug_heap("mbind args %p %ld %d %ld %ld 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, *nodemask, maxnode);
+			mdebug_heap("mbind args %p %zd %d %ld %ld 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, *nodemask, maxnode);
 		} else {
 			mdebug_heap("mbind returns %d : Success\n", err);
 		}

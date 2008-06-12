@@ -70,35 +70,31 @@ any_t run(any_t foo) {
 	int id = (intptr_t)foo;
 
 	/* allocation memoire */
-	   
-/* 	for (node = 0 ; node <= numa_max_node() ; ++node) */
-/*    { */
-/* 		//mem_array_low[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, LOW_WEIGHT, 0, node, 0); */
-/* 		//mem_array_medium[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, MEDIUM_WEIGHT, 0, node, 0); */
-/* 		mem_array_high[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, node, 0); */
-/* 	} */
-	
-	
+	/* 	for (node = 0 ; node <= numa_max_node() ; ++node) */
+	/*    { */
+	/* 		//mem_array_low[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, LOW_WEIGHT, 0, node, 0); */
+	/* 		//mem_array_medium[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, MEDIUM_WEIGHT, 0, node, 0); */
+	/* 		mem_array_high[node] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, node, 0); */
+	/* 	} */
+
 	int onnode = ma_node_entity(&MARCEL_SELF->as_entity);
-	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);	
+	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);
 	mem_array_high[onnode] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 1, -1, 0);
 	mem_array_high[7-onnode] = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 0, 7-onnode, 0);
 
 	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
-	
-
 
 	struct timeval start, finish;
 	long time, mem;
 	int mems, k, m;
 	unsigned int gold;
 	char sum;
-/* 	for (node = 0 ; node <= numa_max_node() ; ++node) */
-/* 	{ */
-/* 		memset((void*) mem_array_high[node], 0, MEMSIZE); */
-/* 		//memset((void*) mem_array_medium[node], 0, MEMSIZE); */
-/* 		//memset((void*) mem_array_low[node], 0, MEMSIZE); */
-/* 	} */
+	/* 	for (node = 0 ; node <= numa_max_node() ; ++node) */
+	/* 	{ */
+	/* 		memset((void*) mem_array_high[node], 0, MEMSIZE); */
+	/* 		//memset((void*) mem_array_medium[node], 0, MEMSIZE); */
+	/* 		//memset((void*) mem_array_low[node], 0, MEMSIZE); */
+	/* 	} */
 
 	memset((void*) mem_array_high[onnode], 0, MEMSIZE);
 	//memset((void*) mem_array_high[7-onnode], 0, MEMSIZE);
@@ -109,14 +105,11 @@ any_t run(any_t foo) {
 
 	gettimeofday(&start, NULL);
 	i = 0;
-	for (mems = STARTMEMSHIFT, mem = 1<<mems ; mems <= MAXMEMSHIFT ; mems += MEMSHIFT, mem<<=MEMSHIFT) 
-	{
+	for (mems = STARTMEMSHIFT, mem = 1<<mems ; mems <= MAXMEMSHIFT ; mems += MEMSHIFT, mem<<=MEMSHIFT) {
 		gold = ((float) mem *((sqrt(5)-1.)/2.));
-		for (m = 0 ; m < NLOOPS ; m++) 
-		{
+		for (m = 0 ; m < NLOOPS ; m++) {
 			//gettimeofday(&start, NULL);
-			for ( k = 0 ; k < mem ; k++) 
-			{
+			for ( k = 0 ; k < mem ; k++) {
 				sum += mem_array_high[onnode][i];
 				//sum += mem_array_high[7-onnode][i];
 				i += gold;
@@ -127,39 +120,36 @@ any_t run(any_t foo) {
 			//time = (TIME_DIFF(start, finish) * 1000UL) >> (mems);
 		}
 		//marcel_fprintf(stderr,"time for id %d : %ld\n", id, time);
-		marcel_fprintf(stderr,"%d ",id);	
+		marcel_fprintf(stderr,"%d ",id);
 		*marcel_stats_get(MARCEL_SELF, load) -= 1000;
 	}
 	gettimeofday(&finish, NULL);
 	time = TIME_DIFF(start, finish);
 	marcel_fprintf(stderr,"\ntime for id %d : %ld\n", id, time);
 
-   /* liberation memoire */
-	
+	/* liberation memoire */
 	marcel_free_customized((void* ) mem_array_high[onnode]);
 	marcel_free_customized((void* ) mem_array_high[7-onnode]);
 	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
-	
+
 	/* fin */
 	marcel_fprintf(stderr,"*\n");
 	finished ++;
 
-	if (finished == NB_THREADS)
-	{
-	  //marcel_stop_remix();
+	if (finished == NB_THREADS) {
+		//marcel_stop_remix();
 		marcel_cond_signal(&cond);
 	}
-		
+
 	return NULL;
 }
 
-int main(int argc, char *argv[]) 
-{
+int main(int argc, char *argv[]) {
 	int i;
-	
-   marcel_init(&argc,argv);
+
+	marcel_init(&argc,argv);
 #ifdef PROFILE
-   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 
 	marcel_barrier_init(&barrier, NULL, NB_THREADS);
@@ -167,359 +157,359 @@ int main(int argc, char *argv[])
 	marcel_cond_init(&cond, NULL);
 	marcel_mutex_init(&mutex, NULL);
 
-   /* construction */
-   marcel_bubble_init(&b0);
+	/* construction */
+	marcel_bubble_init(&b0);
 
-   /* lancement des threads pour allouer */
-   {
+	/* lancement des threads pour allouer */
+	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t1, &attr, run, (any_t)1);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t1, &attr, run, (any_t)1);
 		*marcel_stats_get(t1, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t2, &attr, run, (any_t)2);
-      *marcel_stats_get(t2, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t2, &attr, run, (any_t)2);
+		*marcel_stats_get(t2, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t3, &attr, run, (any_t)3);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t3, &attr, run, (any_t)3);
 		*marcel_stats_get(t3, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t4, &attr, run, (any_t)4);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t4, &attr, run, (any_t)4);
 		*marcel_stats_get(t4, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t5, &attr, run, (any_t)5);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t5, &attr, run, (any_t)5);
 		*marcel_stats_get(t5, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t6, &attr, run, (any_t)6);
-      *marcel_stats_get(t6, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t6, &attr, run, (any_t)6);
+		*marcel_stats_get(t6, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t7, &attr, run, (any_t)7);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t7, &attr, run, (any_t)7);
 		*marcel_stats_get(t7, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t8, &attr, run, (any_t)8);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t8, &attr, run, (any_t)8);
 		*marcel_stats_get(t8, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t9, &attr, run, (any_t)9);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t9, &attr, run, (any_t)9);
 		*marcel_stats_get(t9, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t10, &attr, run, (any_t)10);
-      *marcel_stats_get(t10, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t10, &attr, run, (any_t)10);
+		*marcel_stats_get(t10, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t11, &attr, run, (any_t)11);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t11, &attr, run, (any_t)11);
 		*marcel_stats_get(t11, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t12, &attr, run, (any_t)12);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t12, &attr, run, (any_t)12);
 		*marcel_stats_get(t12, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t13, &attr, run, (any_t)13);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t13, &attr, run, (any_t)13);
 		*marcel_stats_get(t13, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t14, &attr, run, (any_t)14);
-      *marcel_stats_get(t14, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t14, &attr, run, (any_t)14);
+		*marcel_stats_get(t14, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t15, &attr, run, (any_t)15);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t15, &attr, run, (any_t)15);
 		*marcel_stats_get(t15, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t16, &attr, run, (any_t)16);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t16, &attr, run, (any_t)16);
 		*marcel_stats_get(t16, load) = NBSHIFTS*1000;
 	}
 
-   {
+	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t17, &attr, run, (any_t)17);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t17, &attr, run, (any_t)17);
 		*marcel_stats_get(t17, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t18, &attr, run, (any_t)18);
-      *marcel_stats_get(t18, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t18, &attr, run, (any_t)18);
+		*marcel_stats_get(t18, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t19, &attr, run, (any_t)19);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t19, &attr, run, (any_t)19);
 		*marcel_stats_get(t19, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t20, &attr, run, (any_t)20);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t20, &attr, run, (any_t)20);
 		*marcel_stats_get(t20, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t21, &attr, run, (any_t)21);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t21, &attr, run, (any_t)21);
 		*marcel_stats_get(t21, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t22, &attr, run, (any_t)22);
-      *marcel_stats_get(t22, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t22, &attr, run, (any_t)22);
+		*marcel_stats_get(t22, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t23, &attr, run, (any_t)23);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t23, &attr, run, (any_t)23);
 		*marcel_stats_get(t23, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t24, &attr, run, (any_t)24);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t24, &attr, run, (any_t)24);
 		*marcel_stats_get(t24, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t25, &attr, run, (any_t)25);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t25, &attr, run, (any_t)25);
 		*marcel_stats_get(t25, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t26, &attr, run, (any_t)26);
-      *marcel_stats_get(t26, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t26, &attr, run, (any_t)26);
+		*marcel_stats_get(t26, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t27, &attr, run, (any_t)27);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t27, &attr, run, (any_t)27);
 		*marcel_stats_get(t27, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t28, &attr, run, (any_t)28);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t28, &attr, run, (any_t)28);
 		*marcel_stats_get(t28, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t29, &attr, run, (any_t)29);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t29, &attr, run, (any_t)29);
 		*marcel_stats_get(t29, load) = NBSHIFTS*1000;
 	}
 
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t30, &attr, run, (any_t)30);
-      *marcel_stats_get(t30, load) = NBSHIFTS*1000;
-   }
+	{
+		marcel_attr_t attr;
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t30, &attr, run, (any_t)30);
+		*marcel_stats_get(t30, load) = NBSHIFTS*1000;
+	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t31, &attr, run, (any_t)31);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t31, &attr, run, (any_t)31);
 		*marcel_stats_get(t31, load) = NBSHIFTS*1000;
 	}
 
 	{
 		marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setinitbubble(&attr, &b0);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr,0);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t32, &attr, run, (any_t)32);
+		marcel_attr_init(&attr);
+		marcel_attr_setinitbubble(&attr, &b0);
+		marcel_attr_setid(&attr,0);
+		marcel_attr_setprio(&attr,0);
+		marcel_attr_setname(&attr,"thread");
+		marcel_create(&t32, &attr, run, (any_t)32);
 		*marcel_stats_get(t32, load) = NBSHIFTS*1000;
 	}
 
@@ -529,24 +519,24 @@ int main(int argc, char *argv[])
 
 	/* ordonnancement */
 	marcel_start_playing();
-   //marcel_bubble_badspread(&b0, marcel_topo_level(DOWN,0), 0);
+	//marcel_bubble_badspread(&b0, marcel_topo_level(DOWN,0), 0);
 
 	struct timeval start, finish;
 	gettimeofday(&start, NULL);
-	
+
 	/* threads places */
 	marcel_barrier_wait(&allbarrier);
 
 	/* execution des threads */
 
-   /* attente de liberation */
+	/* attente de liberation */
 	marcel_cond_wait(&cond, &mutex);
 	gettimeofday(&finish, NULL);
-	
-	long time = TIME_DIFF(start, finish);
-   marcel_fprintf(stderr,"TOTAL TIME : %ld\n", time);
 
-   /* destroy */
+	long time = TIME_DIFF(start, finish);
+	marcel_fprintf(stderr,"TOTAL TIME : %ld\n", time);
+
+	/* destroy */
 	marcel_barrier_destroy(&barrier);
 	marcel_barrier_destroy(&allbarrier);
 	marcel_cond_destroy(&cond);

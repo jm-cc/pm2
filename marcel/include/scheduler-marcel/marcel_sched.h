@@ -175,7 +175,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 	else if (tbx_unlikely(*vpset==MARCEL_VPSET_ZERO))
 		return &ma_dontsched_runqueue;
 	else {
-		int first_vp;
+		unsigned int first_vp;
 		first_vp=ma_ffs(*vpset)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));

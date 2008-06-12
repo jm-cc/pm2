@@ -748,7 +748,7 @@ int ma_node_entity(marcel_entity_t *entity)
 
 /* TODO : une fois notre customized ok, gerer ces malloc */
 /* marcel_malloc for the current entity on its level */
-void* marcel_malloc(size_t size, char *file, unsigned line)
+void* marcel_malloc(size_t size, const char *file, unsigned line)
 {
 	//if (!ma_is_numa_available())
 	return ma_malloc_nonuma(size, __FILE__ , __LINE__);
@@ -756,7 +756,7 @@ void* marcel_malloc(size_t size, char *file, unsigned line)
 	//return ma_malloc(size, __FILE__ , __LINE__);
 }
 
-void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line)
+void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, unsigned line)
 {
 	void *p;
 
@@ -769,7 +769,7 @@ void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned 
 	return p;
 }
 
-void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
+void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned line)
 {
 	void *p;
 
@@ -847,14 +847,14 @@ void __marcel_free(void *ptr)
 {
         if(ptr) {
 		marcel_extlib_protect();
-                free((char *)ptr);
+                free(ptr);
 		marcel_extlib_unprotect();
         }
 }
 
 
 /* no NUMA malloc */
-void* ma_malloc_nonuma(size_t size, char *file, unsigned line)
+void* ma_malloc_nonuma(size_t size, const char *file, unsigned line)
 {
 	void *p;
 	if (size) {
@@ -871,11 +871,11 @@ void* ma_malloc_nonuma(size_t size, char *file, unsigned line)
 }
 
 /* free non NUMA, version préexistante */
-void ma_free_nonuma(void *data, char * __restrict file, unsigned line)
+void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 {
 	if(data) {
 		marcel_extlib_protect();
-		__TBX_FREE((char *)data, file, line);
+		__TBX_FREE(data, file, line);
 		marcel_extlib_unprotect();
 	}	
 }

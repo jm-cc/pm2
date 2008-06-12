@@ -77,6 +77,12 @@ typedef struct _marcel_rwlock_info {
 	int pr_lock_count;
 } marcel_readlock_info;
 
+enum stack_kind_type {
+	MA_DYNAMIC_STACK,
+	MA_STATIC_STACK,
+	MA_NO_STACK,
+};
+
 struct marcel_task {
 	/* =0 : preemption allowed, <0 : BUG */
 	int preempt_count;
@@ -115,11 +121,7 @@ struct marcel_task {
 
 	/* Pile */
 	any_t stack_base;
-	enum {
-		MA_DYNAMIC_STACK,
-		MA_STATIC_STACK,
-		MA_NO_STACK,
-	} stack_kind;
+	enum stack_kind_type stack_kind;
 	long initial_sp;
 
 	/* Identification du thread */

@@ -70,7 +70,7 @@ MOD_REP_TO_BUILD := \
 # Sources
 #---------------------------------------------------------------------
 MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
-MOD_CXX_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.C))
+MOD_CXX_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.cpp))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
@@ -139,9 +139,9 @@ MOD_PICS   =  $(MOD_C_PICS) $(MOD_CXX_PICS) $(MOD_S_PICS)
 
 # Preprocs
 #---------------------------------------------------------------------
-MOD_C_PREPROCESSED = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).C)
+MOD_C_PREPROCESSED = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).cpp)
 MOD_C_PREPROC = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).i)
-MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).Ci)
+MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).cppi)
 MOD_S_PREPROC = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).si)
 MOD_PREPROC   = $(MOD_C_PREPROC) $(MOD_CXX_PREPROC) $(MOD_S_PREPROC)
 

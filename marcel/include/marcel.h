@@ -17,6 +17,10 @@
 #ifndef MARCEL_EST_DEF
 #define MARCEL_EST_DEF
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MARCEL_VERSION 0x020000 /* Version 2.0000 */
 
 #include <sys/types.h>
@@ -121,9 +125,11 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "marcel-master___marcel_types.h"
 #  include "scheduler/marcel-master___marcel_types.h"
 
+TBX_VISIBILITY_PUSH_DEFAULT
 /*#  include "asm/marcel-master___marcel_structures.h"*/
 #  include "marcel-master___marcel_structures.h"
 #  include "scheduler/marcel-master___marcel_structures.h"
+TBX_VISIBILITY_POP
 
 #  include "asm/marcel-master___marcel_functions.h"
 #  include "marcel-master___marcel_functions.h"
@@ -182,5 +188,9 @@ DEC_MARCEL_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*c
 
 
 __TBX_END_DECLS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MARCEL_EST_DEF */

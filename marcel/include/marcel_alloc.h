@@ -113,9 +113,9 @@ int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum
 #endif
 
 /* malloc */
-void* marcel_malloc(size_t size, char *file, unsigned line);
-void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line);
-void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
+void* marcel_malloc(size_t size, const char *file, unsigned line);
+void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, unsigned line);
+void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned line);
 void marcel_free(void *data);
 
 void marcel_memory_attach(marcel_entity_t *e, void *data, size_t size, int node, int level);
@@ -128,9 +128,9 @@ TBX_FMALLOC void *__marcel_calloc(unsigned nelem, unsigned elsize);
 void __marcel_free(void *ptr);
 
 /* malloc internes */
-void* ma_malloc(size_t size, char * file, unsigned line);
-void ma_free(void *data, char * file, unsigned line);
+void* ma_malloc(size_t size, const char * file, unsigned line);
+void ma_free(void *data, const char * file, unsigned line);
 
 /* ancien malloc pour archi nonnuma */
-void* ma_malloc_nonuma(size_t size, char *file, unsigned line);
-void ma_free_nonuma(void *data, char * __restrict file, unsigned line);
+void* ma_malloc_nonuma(size_t size, const char *file, unsigned line);
+void ma_free_nonuma(void *data, const char * __restrict file, unsigned line);

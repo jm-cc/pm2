@@ -229,6 +229,7 @@ extern void ma_process_timeout(unsigned long __data);
 /* ==== explicit preemption ==== */
 int marcel_yield_to(marcel_t next);
 DEC_MARCEL_POSIX(int, yield, (void) __THROW);
+int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates);
 
 /****************************************************************/
 /*               Scheduler et threads                           */

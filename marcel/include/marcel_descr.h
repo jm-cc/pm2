@@ -77,7 +77,7 @@ typedef struct _marcel_rwlock_info {
 	int pr_lock_count;
 } marcel_readlock_info;
 
-enum stack_kind_type {
+enum ma_stack_kind_type {
 	MA_DYNAMIC_STACK,
 	MA_STATIC_STACK,
 	MA_NO_STACK,

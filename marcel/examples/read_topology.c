@@ -25,7 +25,7 @@ char* level_descriptions[MARCEL_LEVEL_LAST+1] =
     "Fake", // level for meeting the marcel_topo_max_arity constraint
 #  ifdef MA__NUMA
     "NUMA node",
-    "Chip", // Physical chip
+    "Die", // Physical chip
     "L3 cache",
     "L2 cache",
     "Core",
@@ -40,10 +40,11 @@ void indent(FILE *output, int i) {
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
-static const char * separators[2] = { "\\\\", " " };
-
 void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
-  char * separator = separators[txt_mode];
+  const char * separator = txt_mode ? " " : "\\\\";
+  const char * indexprefix = txt_mode ? "#" : "";
+  const char * labelseparator = txt_mode ? ":" : "";
+
   indent(output, i);
   if (!txt_mode && (l->arity || (!i && !l->arity))) {
     marcel_fprintf(output, "\\pstree");
@@ -51,16 +52,16 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
   if (!txt_mode) {
     marcel_fprintf(output, "{\\Level{c}{");
   }
-  marcel_fprintf(output, "%s", level_descriptions[l->type]);
-  if (l->os_node != -1) marcel_fprintf(output, "%sNode %u", separator, l->os_node);
-  if (l->os_die != -1)  marcel_fprintf(output, "%sDie %u" , separator, l->os_die);
-  if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %u"  , separator, l->os_l3);
-  if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2 %u"  , separator, l->os_l2);
-  if (l->os_core != -1) marcel_fprintf(output, "%sCore %u", separator, l->os_core);
-  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU %u" , separator, l->os_cpu);
+  marcel_fprintf(output, "%s%s", level_descriptions[l->type], labelseparator);
+  if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);
+  if (l->os_die != -1)  marcel_fprintf(output, "%sDie %s%u" , separator, indexprefix, l->os_die);
+  if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %s%u"  , separator, indexprefix, l->os_l3);
+  if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2 %s%u"  , separator, indexprefix, l->os_l2);
+  if (l->os_core != -1) marcel_fprintf(output, "%sCore %s%u", separator, indexprefix, l->os_core);
+  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU %s%u" , separator, indexprefix, l->os_cpu);
 
   if (l->level == marcel_topo_nblevels-1) {
-    marcel_fprintf(output, "%sVP %u", separator, l->number);
+    marcel_fprintf(output, "%sVP %s%u", separator, indexprefix, l->number);
   }
   if (txt_mode) {
     marcel_fprintf(output,"\n");

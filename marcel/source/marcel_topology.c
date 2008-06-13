@@ -352,8 +352,15 @@ static void __marcel_init look_cpuinfo(void) {
 		MA_BUG_ON(!(core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
 
 		for (j = 0; j < numcores; j++) {
+			/* if we didn't get the shared cache maps, assume there's a shared l3 per die */
+			long l3 = numl3 ? proc_l3cacheid[j] : core_osphysids[j];
+			/* ... and no shared l2 */
+			long l2 = numl2 ? proc_l2cacheid[j] : -1;
+			/* TODO: stop creating a fake shared l3 cache above, it's not used anyway */
+			/* TODO: add a sharedl3 and a sharedl2 level and store the cache info there */
+
 			core_level[j].type = MARCEL_LEVEL_CORE;
-			ma_topo_set_os_numbers(&core_level[j], -1, -1, core_osphysids[j], -1, oscoreids[j], -1);
+			ma_topo_set_os_numbers(&core_level[j], -1, -1, l3, l2, oscoreids[j], -1);
 			marcel_vpset_zero(&core_level[j].vpset);
 			marcel_vpset_zero(&core_level[j].cpuset);
 			for (k=0; k <= processor; k++)

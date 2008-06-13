@@ -174,6 +174,8 @@ static void __marcel_init look_cpuinfo(void) {
 	unsigned proc_oscoreid[MARCEL_NBMAXCPUS];
 	unsigned proc_coreid[MARCEL_NBMAXCPUS];
 	unsigned oscoreids[MARCEL_NBMAXCPUS];
+	unsigned proc_l2cacheid[MARCEL_NBMAXCPUS];
+	unsigned proc_l3cacheid[MARCEL_NBMAXCPUS];
 	/* Core numbers are not unique, we have to combine them with physical IDs */
 	unsigned core_osphysids[MARCEL_NBMAXCPUS];
 	long coreid;
@@ -181,6 +183,8 @@ static void __marcel_init look_cpuinfo(void) {
 
 	unsigned numdies=0;
 	unsigned numcores=0;
+	unsigned numl2=0;
+	unsigned numl3=0;
 
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
 		fprintf(stderr,"could not open /proc/cpuinfo\n");
@@ -285,7 +289,61 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("\n");
 	}
 
-	/* TODO: here, parse /sys/devices/system/cpu/cpu* /cache/index* /shared_cpu_map */
+	for(j=0; j<=processor; j++) {
+		proc_l3cacheid[j] = -1;
+		proc_l2cacheid[j] = -1;
+	}
+	for(j=0; j<=processor; j++) {
+		long map, mask;
+		char mappath[PATH_MAX];
+		FILE * fd;
+
+		/* read the L2 map */
+		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index1/shared_cpu_map", j);
+		fd = fopen(mappath, "r");
+		if (fd) {
+			if (fgets(string,sizeof(string), fd)) {
+				map = strtol(string, NULL, 16);
+				for(k=0, mask=1; k<=processor; k++, mask<<=1)
+					if (mask & map) {
+						if (proc_l2cacheid[k] != -1)
+							/* already got this cache map */
+							break;
+
+						for(; k<=processor; k++, mask<<=1)
+							if (mask & map) {
+								mdebug("--- proc %d has l2 cache number %d\n", k, numl2);
+								proc_l2cacheid[k] = numl2;
+							}
+						numl2++;
+					}
+			}
+			fclose(fd);
+		}
+		
+		/* read the L3 map */
+		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index2/shared_cpu_map", j);
+		fd = fopen(mappath, "r");
+		if (fd) {
+			if (fgets(string,sizeof(string), fd)) {
+				map = strtol(string, NULL, 16);
+				for(k=0, mask=1; k<=processor; k++, mask<<=1)
+					if (mask & map) {
+						if (proc_l3cacheid[k] != -1)
+							/* already got this cache map */
+							break;
+
+						for(; k<=processor; k++, mask<<=1)
+							if (mask & map) {
+								mdebug("--- proc %d has l3 cache number %d\n", k, numl3);
+								proc_l3cacheid[k] = numl3;
+							}
+						numl3++;
+					}
+			}
+			fclose(fd);
+		}
+	}
 
 	struct marcel_topo_level *core_level;
 

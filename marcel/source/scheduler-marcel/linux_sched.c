@@ -1210,6 +1210,45 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 #endif
 }
 
+void marcel_bind_to_topo_level(marcel_topo_level_t *level)
+{
+#ifdef MA__LWPS
+	ma_holder_t *old_h;
+	ma_runqueue_t *new_rq;
+	LOG_IN();
+	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
+	new_rq=&level->rq;
+	if (old_h == &new_rq->as_holder) {
+		ma_task_holder_unlock_softirq(old_h);
+		LOG_OUT();
+		return;
+	}
+	ma_deactivate_running_task(MARCEL_SELF,old_h);
+	ma_task_sched_holder(MARCEL_SELF) = NULL;
+	ma_holder_rawunlock(old_h);
+#ifdef MA__BUBBLES
+	old_h = ma_task_init_holder(MARCEL_SELF);
+	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
+		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
+#endif
+	ma_holder_rawlock(&new_rq->as_holder);
+	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;
+	ma_activate_running_task(MARCEL_SELF,&new_rq->as_holder);
+	ma_holder_rawunlock(&new_rq->as_holder);
+	/* On teste si le LWP courant est interdit ou pas */
+	if (ma_spare_lwp() || !marcel_vpset_isset(&level->vpset,ma_vpnum(MA_LWP_SELF))) {
+		ma_set_current_state(MA_TASK_MOVING);
+		ma_local_bh_enable();
+		ma_preempt_enable_no_resched();
+		ma_schedule();
+	} else {
+		ma_local_bh_enable();
+		ma_preempt_enable();
+	}
+	LOG_OUT();
+#endif
+}
+
 /**
  * task_prio - return the priority value of a given task.
  * @p: the task in question.

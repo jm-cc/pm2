@@ -295,7 +295,8 @@ static void __marcel_init look_cpuinfo(void) {
 	}
 	for(j=0; j<=processor; j++) {
 		long map, mask;
-		char mappath[PATH_MAX];
+#define SHARED_CPU_MAP_STRLEN (27+9+12+1+15+1)
+		char mappath[SHARED_CPU_MAP_STRLEN];
 		FILE * fd;
 
 		/* read the L2 map */
@@ -320,7 +321,7 @@ static void __marcel_init look_cpuinfo(void) {
 			}
 			fclose(fd);
 		}
-		
+
 		/* read the L3 map */
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index2/shared_cpu_map", j);
 		fd = fopen(mappath, "r");

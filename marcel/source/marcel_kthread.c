@@ -153,8 +153,10 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
 	if (syscall(SYS_tkill, pid, sig) == -1) {
+		int err;
 		MA_BUG_ON(errno != ENOSYS);
-		MA_BUG_ON(kill(pid, sig));
+		err = kill(pid, sig);
+		MA_BUG_ON(err);
 	}
 }
 
@@ -279,7 +281,8 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
 
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
-	MA_BUG_ON(__register_atfork(prepare,parent,child,NULL));
+	int err = __register_atfork(prepare, parent, child, NULL);
+	MA_BUG_ON(err);
 }
 #else
 
@@ -344,7 +347,8 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 #endif
 		abort();
 	}
-	MA_BUG_ON(pthread_create(pid, &attr, func, arg));
+	err = pthread_create(pid, &attr, func, arg);
+	MA_BUG_ON(err);
 	LOG_OUT();
 }
 
@@ -375,27 +379,32 @@ marcel_kthread_t marcel_kthread_self(void)
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
-	MA_BUG_ON(pthread_sigmask(how, newmask, oldmask));
+	int ret TBX_UNUSED = pthread_sigmask(how, newmask, oldmask);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-	MA_BUG_ON(pthread_kill(pid, sig));
+	int ret TBX_UNUSED = pthread_kill(pid, sig);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)
 {
-	MA_BUG_ON(pthread_mutex_init(lock,NULL));
+	int ret TBX_UNUSED = pthread_mutex_init(lock, NULL);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock)
 {
-	MA_BUG_ON(pthread_mutex_lock(lock));
+	int ret TBX_UNUSED = pthread_mutex_lock(lock);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock)
 {
-	MA_BUG_ON(pthread_mutex_unlock(lock));
+	int ret TBX_UNUSED = pthread_mutex_unlock(lock);
+	MA_BUG_ON(ret);
 }
 
 int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
@@ -405,7 +414,8 @@ int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock)
 
 void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value)
 {
-	MA_BUG_ON(sem_init(sem,pshared,value));
+	int ret TBX_UNUSED = sem_init(sem, pshared, value);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
@@ -415,7 +425,8 @@ void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem)
 
 void marcel_kthread_sem_post(marcel_kthread_sem_t *sem)
 {
-	MA_BUG_ON(sem_post(sem));
+	int ret TBX_UNUSED = sem_post(sem);
+	MA_BUG_ON(ret);
 }
 
 int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
@@ -425,17 +436,20 @@ int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 
 void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
 {
-	MA_BUG_ON(pthread_cond_init(cond, NULL));
+	int ret TBX_UNUSED = pthread_cond_init(cond, NULL);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
 {
-	MA_BUG_ON(pthread_cond_signal(cond));
+	int ret TBX_UNUSED = pthread_cond_signal(cond);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 {
-	MA_BUG_ON(pthread_cond_broadcast(cond));
+	int ret TBX_UNUSED = pthread_cond_broadcast(cond);
+	MA_BUG_ON(ret);
 }
 
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
@@ -446,7 +460,8 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 }
 
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
-	MA_BUG_ON(pthread_atfork(prepare,parent,child));
+	int ret TBX_UNUSED = pthread_atfork(prepare, parent, child);
+	MA_BUG_ON(ret);
 }
 #endif
 

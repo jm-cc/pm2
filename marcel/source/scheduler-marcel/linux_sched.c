@@ -1166,19 +1166,12 @@ DEF_MARCEL_POSIX(int, yield, (void), (),
 extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(int, yield, (void), ())
 
-// Modifie le 'vpset' du thread courant. Le cas échéant, il faut donc
-// retirer le thread de la file et le replacer dans la file
-// adéquate...
-// IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
-// pour se déplacer sur le LWP courant (cf terminaison des threads)
-void marcel_apply_vpset(marcel_vpset_t *vpset)
-{
 #ifdef MA__LWPS
+static
+void __marcel_apply_vpset(marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 	ma_holder_t *old_h;
-	ma_runqueue_t *new_rq;
 	LOG_IN();
 	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
-	new_rq=marcel_sched_vpset_init_rq(vpset);
 	if (old_h == &new_rq->as_holder) {
 		ma_task_holder_unlock_softirq(old_h);
 		LOG_OUT();
@@ -1207,44 +1200,30 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 		ma_preempt_enable();
 	}
 	LOG_OUT();
+}
+#endif
+
+// Modifie le 'vpset' du thread courant. Le cas échéant, il faut donc
+// retirer le thread de la file et le replacer dans la file
+// adéquate...
+// IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
+// pour se déplacer sur le LWP courant (cf terminaison des threads)
+void marcel_apply_vpset(marcel_vpset_t *vpset)
+{
+#ifdef MA__LWPS
+	ma_runqueue_t *new_rq;
+	LOG_IN();
+	new_rq=marcel_sched_vpset_init_rq(vpset);
+	__marcel_apply_vpset(vpset, new_rq);
+	LOG_OUT();
 #endif
 }
 
 void marcel_bind_to_topo_level(marcel_topo_level_t *level)
 {
 #ifdef MA__LWPS
-	ma_holder_t *old_h;
-	ma_runqueue_t *new_rq;
 	LOG_IN();
-	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
-	new_rq=&level->rq;
-	if (old_h == &new_rq->as_holder) {
-		ma_task_holder_unlock_softirq(old_h);
-		LOG_OUT();
-		return;
-	}
-	ma_deactivate_running_task(MARCEL_SELF,old_h);
-	ma_task_sched_holder(MARCEL_SELF) = NULL;
-	ma_holder_rawunlock(old_h);
-#ifdef MA__BUBBLES
-	old_h = ma_task_init_holder(MARCEL_SELF);
-	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
-		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
-#endif
-	ma_holder_rawlock(&new_rq->as_holder);
-	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;
-	ma_activate_running_task(MARCEL_SELF,&new_rq->as_holder);
-	ma_holder_rawunlock(&new_rq->as_holder);
-	/* On teste si le LWP courant est interdit ou pas */
-	if (ma_spare_lwp() || !marcel_vpset_isset(&level->vpset,ma_vpnum(MA_LWP_SELF))) {
-		ma_set_current_state(MA_TASK_MOVING);
-		ma_local_bh_enable();
-		ma_preempt_enable_no_resched();
-		ma_schedule();
-	} else {
-		ma_local_bh_enable();
-		ma_preempt_enable();
-	}
+	__marcel_apply_vpset(&level->vpset, &level->rq);
 	LOG_OUT();
 #endif
 }

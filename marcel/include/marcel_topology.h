@@ -30,7 +30,7 @@
  * 	for (int i=0; i<l->arity; i++)
  * 		// avoid recursing into where we came from
  * 		if (l->children[i] != son)
- * 			f(l->children[i]);
+ * 			f(l, l->children[i]);
  * 	...
  *	// then look up
  * 	f(l->father, l);

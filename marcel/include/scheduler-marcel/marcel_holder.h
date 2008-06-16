@@ -665,6 +665,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 static __tbx_inline__ void ma_task_check(marcel_task_t *t);
 #section marcel_inline
 static __tbx_inline__ void ma_task_check(marcel_task_t *t) {
+#ifdef PM2_BUG_ON
 	if (MA_TASK_IS_READY(t)) {
 		/* check that it is reachable from some runqueue */
 		ma_holder_t *h = ma_task_run_holder(t);
@@ -678,6 +679,7 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t) {
 		}
 #endif
 	}
+#endif
 }
 
 #section marcel_macros

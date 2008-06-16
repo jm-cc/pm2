@@ -263,7 +263,8 @@ static void __marcel_init look_cpuinfo(void) {
 	mdebug("\n\n * cpusets details *\n\n");
 	if (numdies>1) {
 		mdebug("%d dies\n", numdies);
-		MA_BUG_ON(!(die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level))));
+		die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level));
+		MA_BUG_ON(!die_level);
 
 		for (j = 0; j < numdies; j++) {
 			die_level[j].type = MARCEL_LEVEL_DIE;
@@ -352,7 +353,8 @@ static void __marcel_init look_cpuinfo(void) {
 
 	if (numl3 > 1) {
 		mdebug("%d l3 caches\n", numl3);
-		MA_BUG_ON(!(l3_level=__marcel_malloc((numl3+MARCEL_NBMAXVPSUP+1)*sizeof(*l3_level))));
+		l3_level=__marcel_malloc((numl3+MARCEL_NBMAXVPSUP+1)*sizeof(*l3_level));
+		MA_BUG_ON(!l3_level);
 
 		for (j = 0; j < numl3; j++) {
 			l3_level[j].type = MARCEL_LEVEL_L3;
@@ -384,7 +386,8 @@ static void __marcel_init look_cpuinfo(void) {
 
 	if (numl2 > 1) {
 		mdebug("%d l2 caches\n", numl2);
-		MA_BUG_ON(!(l2_level=__marcel_malloc((numl2+MARCEL_NBMAXVPSUP+1)*sizeof(*l2_level))));
+		l2_level=__marcel_malloc((numl2+MARCEL_NBMAXVPSUP+1)*sizeof(*l2_level));
+		MA_BUG_ON(!l2_level);
 
 		for (j = 0; j < numl2; j++) {
 			l2_level[j].type = MARCEL_LEVEL_L2;
@@ -416,7 +419,8 @@ static void __marcel_init look_cpuinfo(void) {
 
 	if (numcores>1) {
 		mdebug("%d cores\n", numcores);
-		MA_BUG_ON(!(core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level))));
+		core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level));
+		MA_BUG_ON(!core_level);
 
 		for (j = 0; j < numcores; j++) {
 			core_level[j].type = MARCEL_LEVEL_CORE;
@@ -478,7 +482,8 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
+	MA_BUG_ON(!node_level);
 
 	if (!(buffer=TBX_MALLOC(buffersize))) {
 		fprintf(stderr,"no room for storing cpu set\n");
@@ -546,7 +551,8 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_BUG_ON(nbnodes==0);
 
-	MA_BUG_ON(!(node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level))));
+	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
+	MA_BUG_ON(!node_level);
 
 	cpusetcreate(&cpuset);
 	for (radid = 0; radid < nbnodes; radid++) {
@@ -601,7 +607,8 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 
 	MA_BUG_ON(nbnodes == 0);
 
-	MA_BUG_ON(!(rad_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level))));
+	rad_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level));
+	MA_BUG_ON(!rad_level);
 
 	for (r = 0, i = 0; i < nbnodes; i++) {
 		if (rs_getrad(rset, rad, sdl, i, 0)) {
@@ -675,7 +682,8 @@ static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
 	unsigned cpu;
 
-	MA_BUG_ON(!(cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level))));
+	cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level));
+	MA_BUG_ON(!cpu_level);
 
 	mdebug("\n\n * CPU cpusets *\n\n");
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {

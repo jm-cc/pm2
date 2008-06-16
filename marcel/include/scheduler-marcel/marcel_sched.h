@@ -182,7 +182,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		/* start from here up to the root of the tree to find the level vpset
 		 * that entirely contains the submitted vpset */
 		do {
-			if (*vpset & level->vpset == *vpset)
+			if ((*vpset & level->vpset) == *vpset)
 				return &level->rq;
 			level = level->father;
 		} while (level);
@@ -213,7 +213,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 #  endif
 #endif
 	if (attr->topo_level) {
-		MA_BUG_ON(attr->vpset & attr->topo_level->vpset != attr->topo_level->vpset);
+		MA_BUG_ON((attr->vpset & attr->topo_level->vpset) != attr->topo_level->vpset);
 		return &attr->topo_level->rq;
 	}
 	if (attr->vpset != MARCEL_VPSET_FULL)

@@ -330,6 +330,19 @@ int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
 	return 0;
 }
 
+int marcel_attr_settopo_level(marcel_attr_t * attr, marcel_topo_level_t topo_level)
+{
+	attr->topo_level = topo_level;
+	return 0;
+}
+
+int marcel_attr_gettopo_level(__const marcel_attr_t * __restrict attr,
+    marcel_topo_level_t * __restrict topo_level)
+{
+	*topo_level = attr->topo_level;
+	return 0;
+}
+
 static void setname(char *__restrict dest, const char *__restrict src)
 {
 	strncpy(dest, src, MARCEL_MAXNAMESIZE - 1);

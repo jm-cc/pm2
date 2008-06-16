@@ -21,6 +21,7 @@ typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 #section structures
 
 #depend "marcel_sched_generic.h[types]"
+#depend "marcel_topology.h[marcel_structures]"
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_sched.h[types]"
 
@@ -55,6 +56,7 @@ struct __marcel_attr_s {
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
 	/* TODO: option de flavor */
 	marcel_vpset_t vpset;
+	marcel_topo_level_t topo_level;
 	int flags;
 	char name[MARCEL_MAXNAMESIZE];
 	int id;

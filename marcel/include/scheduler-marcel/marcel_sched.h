@@ -177,10 +177,31 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 	else {
 		unsigned int first_vp;
 		first_vp=ma_ffs(*vpset)-1;
-		/* pour l'instant, on ne gère qu'un vp activé */
-		MA_BUG_ON(*vpset!=MARCEL_VPSET_VP(first_vp));
-		MA_BUG_ON(first_vp >= marcel_nbvps() && first_vp>=marcel_nballvps());
-		return &marcel_topo_vp_level[first_vp].rq;
+		/* optimize the case where the vpset has a single bit set */
+		if (*vpset==MARCEL_VPSET_VP(first_vp)) {
+			MA_BUG_ON(first_vp >= marcel_nbvps() && first_vp>=marcel_nballvps());
+			return &marcel_topo_vp_level[first_vp].rq;
+		} else {
+			int i;
+			for (i=0; i<marcel_nbvps(); i++) {
+				struct marcel_topo_level *level = &marcel_topo_vp_level[i];
+				/* check if submitted vpset and level vpset have something in common */
+				if (! *vpset & level->vpset)
+					continue;
+				/* yes, start from here up to the root of the tree to find the level vpset
+				 * that entirely contains the submitted vpset */
+				while (level) {
+					if (*vpset & level->vpset == *vpset)
+						return &level->rq;
+					level = level->father;
+				}
+				/* even the machine level did not catch the vpset, there must be something wrong */
+				MA_BUG();
+			}
+			/* no VP belongs to the vpset, and yet the submitted *vpset is not ZERO, there must be
+			 * something wrong */
+			MA_BUG();
+		}
 	}
 }
 

@@ -226,6 +226,10 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 	marcel_bubble_t *b;
 #  endif
 #endif
+	if (attr->topo_level) {
+		MA_BUG_ON(attr->vpset & attr->topo_level->vpset != attr->topo_level->vpset);
+		return &attr->topo_level->rq;
+	}
 	if (attr->vpset != MARCEL_VPSET_FULL)
 		return marcel_sched_vpset_init_rq(&attr->vpset);
 	rq = NULL;

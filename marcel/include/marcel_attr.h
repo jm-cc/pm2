@@ -56,7 +56,7 @@ struct __marcel_attr_s {
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
 	/* TODO: option de flavor */
 	marcel_vpset_t vpset;
-	marcel_topo_level_t topo_level;
+	marcel_topo_level_t *topo_level;
 	int flags;
 	char name[MARCEL_MAXNAMESIZE];
 	int id;

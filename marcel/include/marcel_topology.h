@@ -401,6 +401,7 @@ struct marcel_topo_nodedata {
 /** Structure of a topology level */
 struct marcel_topo_level {
 	enum marcel_topo_level_e type;	/**< \brief Type of level */
+	unsigned long merged_type;	/**< \brief Pretty-printing type generated from merged levels, bitmask */
 	unsigned level;			/**< \brief Vertical index in marcel_topo_levels */
 	unsigned number;		/**< \brief Horizontal index in marcel_topo_levels[l.level] */
 	unsigned index;			/**< \brief Index in fathers' children[] array */

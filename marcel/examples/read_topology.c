@@ -18,22 +18,63 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char* level_descriptions[MARCEL_LEVEL_LAST+1] =
-  {
-    "Whole machine",
+void print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode)
+{
+  unsigned long type = l->merged_type;
+  const char * separator = " + ";
+  const char * current_separator = ""; /* not prefix for the first one */
+
+  /* don't print "vp" if there's something else (including "fake") */
+  if (type & ~(1<<MARCEL_LEVEL_VP))
+     type &= ~(1<<MARCEL_LEVEL_VP);
+  /* don't print "fake" if there's something else */
+  if (type & ~(1<<MARCEL_LEVEL_FAKE))
+     type &= ~(1<<MARCEL_LEVEL_FAKE);
+  /* don't print smtproc or caches if there's also core or die */
+  if (type & ((1<<MARCEL_LEVEL_CORE) | (1<<MARCEL_LEVEL_DIE)))
+    type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
+
+  if (type & (1<<MARCEL_LEVEL_MACHINE)) {
+    marcel_fprintf(output, "%sMachine", current_separator);
+    current_separator = separator;
+  }
 #ifdef MA__LWPS
-    "Fake", // level for meeting the marcel_topo_max_arity constraint
+  if (type & (1<<MARCEL_LEVEL_FAKE)) {
+    marcel_fprintf(output, "%sFake", current_separator);
+    current_separator = separator;
+  }
 #  ifdef MA__NUMA
-    "NUMA node",
-    "Die", // Physical chip
-    "L3 cache",
-    "L2 cache",
-    "Core",
-    "SMT Processor in a core",
+  if (type & (1<<MARCEL_LEVEL_NODE)) {
+    marcel_fprintf(output, "%sNUMAnode", current_separator);
+    current_separator = separator;
+  }
+  if (type & (1<<MARCEL_LEVEL_DIE)) {
+    marcel_fprintf(output, "%sDie", current_separator);
+    current_separator = separator;
+  }
+  if (type & (1<<MARCEL_LEVEL_L3)) {
+    marcel_fprintf(output, "%sL3cache", current_separator);
+    current_separator = separator;
+  }
+  if (type & (1<<MARCEL_LEVEL_L2)) {
+    marcel_fprintf(output, "%sL2cache", current_separator);
+    current_separator = separator;
+  }
+  if (type & (1<<MARCEL_LEVEL_CORE)) {
+    marcel_fprintf(output, "%sCore", current_separator);
+    current_separator = separator;
+  }
+  if (type & (1<<MARCEL_LEVEL_PROC)) {
+    marcel_fprintf(output, "%sSMTprocessor", current_separator);
+    current_separator = separator;
+  }
 #  endif
-    "VP"
+  if (type & (1 << MARCEL_LEVEL_VP)) {
+    marcel_fprintf(output, "%sVP", current_separator);
+    current_separator = separator;
+  }
 #endif
-  };
+}
 
 void indent(FILE *output, int i) {
   int x;
@@ -52,7 +93,8 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
   if (!txt_mode) {
     marcel_fprintf(output, "{\\Level{c}{");
   }
-  marcel_fprintf(output, "%s%s", level_descriptions[l->type], labelseparator);
+  print_level_description(l, output, txt_mode);
+  marcel_fprintf(output, labelseparator);
   if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);
   if (l->os_die != -1)  marcel_fprintf(output, "%sDie %s%u" , separator, indexprefix, l->os_die);
   if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %s%u"  , separator, indexprefix, l->os_l3);

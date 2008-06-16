@@ -725,8 +725,8 @@ static void topo_connect(void) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
 			if (marcel_topo_levels[l][i].arity) {
 				mdebug("level %u,%u: cpuset %"MA_VPSET_x" arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
-				MA_BUG_ON(!(marcel_topo_levels[l][i].children=
-					TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
+				marcel_topo_levels[l][i].children=TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *));
+				MA_BUG_ON(!marcel_topo_levels[l][i].children);
 
 				m=0;
 				for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)

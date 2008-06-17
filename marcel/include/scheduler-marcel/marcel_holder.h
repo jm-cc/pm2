@@ -89,7 +89,7 @@ struct ma_holder {
 /* \brief Holder type */
 typedef struct ma_holder ma_holder_t;
 
-#section marcel_functions
+#section marcel_macros
 #ifdef MA__BUBBLES
 /** \brief Returns type of holder \e h */
 enum marcel_holder ma_holder_type(ma_holder_t *h);

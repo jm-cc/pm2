@@ -1102,9 +1102,11 @@ int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates) {
       continue;
       
     /* ... that is scheduled on the same runqueue we're being executed... */
-    if (ma_task_sched_holder(marcel_self()) != ma_task_sched_holder(team[i]))
+    /* TODO: handle cases where the team[i] runqueue is inside the
+       subtree under the marcel_self() runqueue. */
+    if (ma_to_rq_holder(ma_task_sched_holder(marcel_self())) != ma_to_rq_holder(ma_task_sched_holder(team[i])))
       continue;
-    
+      
     /* ... and is not currently running (!RR). */
     if (MA_TASK_IS_RUNNING(team[i]))
       continue;

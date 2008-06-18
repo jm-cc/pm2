@@ -1089,12 +1089,21 @@ int marcel_yield_to(marcel_t next)
 
 /* This function tries to yield to one of the threads contained in
    _team_. Candidates are determined by the _mask_, and have to be on
-   the same runqueue to respect cache affinity relations. */
-int marcel_yield_to_team(marcel_t *team, double *mask, unsigned nb_teammates) {
+   the same runqueue to respect cache affinity relations.  The
+   _padding_ argument represents the "gap" between two values in
+   _mask_.*/
+int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned nb_teammates) {
   unsigned i;
 
+  MA_BUG_ON(!padding);
+
+  /* To be on the safe side (MA_BUG_ON could be disabled, depending on
+     flavor configuration)*/
+  if (!padding)
+    padding = 1;
+
   for (i = 0; i < nb_teammates; i++) {
-    if (mask[i])
+    if (mask[i * padding])
       continue;
     
     /* We're looking for a ready (R*) thread... */

@@ -18,21 +18,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode)
+void print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode)
 {
   unsigned long type = l->merged_type;
   const char * separator = " + ";
   const char * current_separator = ""; /* not prefix for the first one */
 
-  /* don't print "vp" if there's something else (including "fake") */
-  if (type & ~(1<<MARCEL_LEVEL_VP))
-     type &= ~(1<<MARCEL_LEVEL_VP);
-  /* don't print "fake" if there's something else */
-  if (type & ~(1<<MARCEL_LEVEL_FAKE))
-     type &= ~(1<<MARCEL_LEVEL_FAKE);
-  /* don't print smtproc or caches if there's also core or die */
-  if (type & ((1<<MARCEL_LEVEL_CORE) | (1<<MARCEL_LEVEL_DIE)))
-    type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
+  if (!verbose_mode) {
+    /* don't print "vp" if there's something else (including "fake") */
+    if (type & ~(1<<MARCEL_LEVEL_VP))
+      type &= ~(1<<MARCEL_LEVEL_VP);
+    /* don't print "fake" if there's something else */
+    if (type & ~(1<<MARCEL_LEVEL_FAKE))
+      type &= ~(1<<MARCEL_LEVEL_FAKE);
+    /* don't print smtproc or caches if there's also core or die */
+    if (type & ((1<<MARCEL_LEVEL_CORE) | (1<<MARCEL_LEVEL_DIE)))
+      type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
+  }
 
   if (type & (1<<MARCEL_LEVEL_MACHINE)) {
     marcel_fprintf(output, "%sMachine", current_separator);
@@ -81,7 +83,7 @@ void indent(FILE *output, int i) {
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
-void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
+void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
   const char * separator = txt_mode ? " " : "\\\\";
   const char * indexprefix = txt_mode ? "#" : "";
   const char * labelseparator = txt_mode ? ":" : "";
@@ -93,7 +95,7 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
   if (!txt_mode) {
     marcel_fprintf(output, "{\\Level{c}{");
   }
-  print_level_description(l, output, txt_mode);
+  print_level_description(l, output, txt_mode, verbose_mode);
   marcel_fprintf(output, labelseparator);
   if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);
   if (l->os_die != -1)  marcel_fprintf(output, "%sDie %s%u" , separator, indexprefix, l->os_die);
@@ -112,17 +114,17 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode)
   }
 }
 
-void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode) {
+void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
   int x;
 
-  print_level(l, output, i, txt_mode);
+  print_level(l, output, i, txt_mode, verbose_mode);
   if (l->arity || (!i && !l->arity)) {
     if (!txt_mode) {
       indent(output, i);
       marcel_fprintf(output, "{\n");
     }
     for(x=0; x<l->arity; x++)
-      f(l->children[x], output, i+1, txt_mode);
+      f(l->children[x], output, i+1, txt_mode, verbose_mode);
     if (!txt_mode) {
       indent(output, i);
       marcel_fprintf(output, "}\n");
@@ -135,10 +137,20 @@ int marcel_main(int argc, char **argv) {
   char hostname[256], filename[256];
   FILE *output;
   int txt_mode = 0;
+  int verbose_mode = 0;
 
   marcel_init(&argc, argv);
-  if (argc >= 2 && !strcmp(argv[1], "--txt")) {
-    txt_mode = 1;
+
+  while (argc >= 2) {
+    if (!strcmp(argv[1], "-t") || !strcmp(argv[1], "--txt")) {
+      txt_mode = 1;
+    } else if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--verbose")) {
+      verbose_mode = 1;
+    } else {
+      marcel_fprintf(stderr, "Unrecognized options: %s\n", argv[1]);
+    }
+    argc--;
+    argv++;
   }
 
   if (txt_mode) {
@@ -162,7 +174,7 @@ int marcel_main(int argc, char **argv) {
   }
 
   l = &marcel_topo_levels[0][0];
-  f(l, output, 0, txt_mode);
+  f(l, output, 0, txt_mode, verbose_mode);
 
   if (!txt_mode) {
     marcel_fprintf(output, "\\end{document}\n");

@@ -269,12 +269,12 @@ int ma_increasing_order_threads_compar(const void *_e1, const void *_e2)
 	return l1 - l2; /* increasing order */
 }
 
-/* Debug function that prints information about entities scheduled on
-   the runqueue &l[0]->rq */
+/* Debug function that prints information about the _ne_ entities
+   stored in _e_ */
 void
-ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
+ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne) {
   int k;
-  bubble_sched_debug("in %s: I found %d entities on runqueue %p: adresses :\n(", func_name, ne, &l[0]->rq);
+  bubble_sched_debug("in %s: There are %d entities: adresses :\n(", func_name, ne);
   for (k = 0; k < ne; k++)
     bubble_sched_debug("[%p, %d]", e[k], e[k]->type);
   bubble_sched_debug("end)\n");

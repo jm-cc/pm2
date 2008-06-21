@@ -54,10 +54,9 @@ int ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq);
 void ma_resched_existing_threads(struct marcel_topo_level *l);
 int ma_count_threads_in_entity(marcel_entity_t *entity);
 
-/* Debug function that prints information about entities scheduled on
-   the runqueue &l[0]->rq */
-void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne, struct marcel_topo_level **l);
-
+/* Debug function that prints information about the _ne_ entities
+   stored in _e_ */
+void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne);
 
 #section marcel_macros
 

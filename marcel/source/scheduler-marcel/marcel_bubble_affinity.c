@@ -35,7 +35,8 @@ volatile unsigned long failed_steals;
 static void
 __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
   int i;
-  ma_debug_show_entities("__sched_submit", e, ne, l);
+  bubble_sched_debug("Submitting entities on runqueue %p:\n", &l[0]->rq);
+  ma_debug_show_entities("__sched_submit", e, ne);
   for (i = 0; i < ne; i++) {	      
     if (e[i]) {
       int state = ma_get_entity(e[i]);
@@ -231,7 +232,8 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   bubble_sched_debug("get in __marcel_bubble_affinity\n");
   ma_get_entities_from_rq(&l[0]->rq, e, ne);
 
-  ma_debug_show_entities("__marcel_bubble_affinity", e, ne, l);
+  bubble_sched_debug("Entities were taken from runqueue %p:\n", &l[0]->rq);
+  ma_debug_show_entities("__marcel_bubble_affinity", e, ne);
 
   if (ne < nvp) {
     if (ne >= arity || __has_enough_entities(l, e, ne, load_manager))

@@ -51,6 +51,6 @@ int ma_topo_level_see_down (struct marcel_topo_level *from,
 			    struct marcel_topo_level *source, 
 			    ma_see_func_t my_see);
 
-int ma_topo_level_see (struct marcel_topo_level *from, 
+int ma_topo_level_see_up (struct marcel_topo_level *from, 
 		       struct marcel_topo_level *source, 
 		       ma_see_func_t my_see);

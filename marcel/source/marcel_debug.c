@@ -89,6 +89,7 @@ void __marcel_init marcel_debug_init_auto(void)
 	else
 		__ma_debug_size_entry = (void*)&ma_dummy2-(void*)&ma_dummy1;
 
+	(void)__ma_debug_size;
 	MA_BUG_ON(__ma_debug_size_entry != __ma_debug_size);
 	for(var=__ma_debug_start; var < __ma_debug_end; var++) {
 		pm2debug_register(&var->d);

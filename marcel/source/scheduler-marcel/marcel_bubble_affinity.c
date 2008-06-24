@@ -432,7 +432,7 @@ get_parent_rq(marcel_entity_t *e) {
 }
 
 int
-browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
+browse_bubble_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
   marcel_entity_t *bestbb = NULL;
   int greater = 0;
   int cpt = 0, available_threads = 0;
@@ -475,7 +475,10 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
   if(rq) {
     PROF_EVENTSTR(sched_status, "stealing subtree");
     for (common_rq = rq->father; common_rq != &top->rq; common_rq = common_rq->father) {
-      if (ma_rq_covers(common_rq, from_vp))
+      /* This only works because _source_ is the level vp_is_idle() is
+	 called from (i.e. it's one of the leaves in the topo_level
+	 tree). */
+      if (ma_rq_covers(common_rq, source->number))
 	break;
     }
   }
@@ -485,70 +488,13 @@ browse_bubble_and_steal(ma_holder_t *hold, unsigned from_vp) {
   else if (bestbb && !available_threads) { 
     /* Browse the bubble */
     marcel_bubble_t *b = ma_bubble_entity(bestbb);
-    return browse_bubble_and_steal(&b->as_holder, from_vp);
+    return browse_bubble_and_steal(&b->as_holder, source);
   }
   else if (available_threads)
     /* Steal threads instead */
     return ma_redistribute(stealable_threads[0], common_rq);
   
   return 0;
-}
-
-static int 
-see(struct marcel_topo_level *level, unsigned from_vp) {
-  ma_runqueue_t *rq = &level->rq;
-  return browse_bubble_and_steal(&rq->as_holder, from_vp);
-}
-
-static int 
-see_down(struct marcel_topo_level *level, 
-	 struct marcel_topo_level *me, 
-	 unsigned from_vp) {
-  if (!level) {
-    bubble_sched_debug("down done");
-    return 0;
-  }
-  
-  int i = 0, n = level->arity;
-
-  bubble_sched_debug("see_down from %d %d\n", level->type, level->number);
-  
-  if (me) {
-    /* Avoid me if I'm one of the children */
-    n--;
-    i = (me->index + 1) % level->arity;
-  }
-  
-  /* If we do have children... */
-  if (level->arity) {
-    while (n--) {
-      /* ... let's examine them ! */
-      if (see(level->children[i], from_vp) || see_down(level->children[i], NULL, from_vp))
-	return 1;
-      i = (i+1) % level->arity;
-    }
-  }
-  
-  bubble_sched_debug("down done\n");
-  
-  return 0;
-}
-
-int 
-see_up(struct marcel_topo_level *level, unsigned from_vp) {
-  struct marcel_topo_level *father = level->father;
-  bubble_sched_debug("see_up from %d %d\n", level->type, level->number);
-  if (!father) {
-    bubble_sched_debug("up done\n");
-    return 0;
-  }
-  
-  /* Looking downward begins with looking upward ! */
-  if (see_down(father, level, from_vp))
-    return 1;
-  /* Then look to the father's */
-  else
-    return see_up(father, from_vp);
 }
 
 /* Moves every entity from every list contained in __from__ to the
@@ -610,7 +556,7 @@ affinity_steal(unsigned from_vp) {
   ma_local_bh_disable();  
   ma_bubble_synthesize_stats(&marcel_root_bubble);
   ma_bubble_lock_all(&marcel_root_bubble, marcel_topo_level(0,0));
-  smthg_to_steal = see_up(me, from_vp);
+  smthg_to_steal = ma_topo_level_browse (me, browse_bubble_and_steal);
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();

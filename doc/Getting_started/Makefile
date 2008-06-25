@@ -1,4 +1,4 @@
-.PHONY: all upload wml-upload pdf-upload wml ps inria labri emph clean emph-clean wml-clean ps-clean labri-clean inria-clean
+.PHONY: all upload wml-upload pdf-upload wml ps emph clean emph-clean wml-clean ps-clean
 
 XML2HTML		:=	../xml2html
 
@@ -82,45 +82,15 @@ html: $(BUILD)/html/$(TARGET)/index.html
 $(BUILD)/html/$(TARGET)/%.html: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
 	$(XML2HTML)/bin/shell/xml2html.sh $(TARGET).xml $(BUILD)/html/$(TARGET) $(SECTIONS)
 
-inria: $(BUILD)/inria/$(TARGET).ps
-
-$(BUILD)/inria/$(TARGET).ps: $(BUILD)/inria/$(TARGET).tex
-	cd $(BUILD)/inria/ && ln -sf ../../Figures
-	cd $(BUILD)/inria/ && ln -sf ../../Progs
-	cd $(BUILD)/inria/ && ln -sf ../../$(XML2HTML)/data/latex/* .
-	cd $(BUILD)/inria/ && latex $(TARGET)
-	cd $(BUILD)/inria/ && latex $(TARGET)
-	cd $(BUILD)/inria/ && latex $(TARGET)
-	cd $(BUILD)/inria/ && dvips $(TARGET) -o
-
-$(BUILD)/inria/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
-	mkdir -p $(BUILD)/inria
-	$(XML2HTML)/bin/shell/xml2inriaReport.sh $(TARGET).xml $(BUILD)/inria $(SECTIONS)
-
-labri: $(BUILD)/labri/$(TARGET).ps
-
-$(BUILD)/labri/$(TARGET).ps: $(BUILD)/labri/$(TARGET).tex
-	cd $(BUILD)/labri/ && ln -sf ../../Figures
-	cd $(BUILD)/labri/ && ln -sf ../../Progs
-	cd $(BUILD)/labri/ && ln -sf ../../$(XML2HTML)/data/latex/* .
-	cd $(BUILD)/labri/ && latex $(TARGET)
-	cd $(BUILD)/labri/ && latex $(TARGET)
-	cd $(BUILD)/labri/ && latex $(TARGET)
-	cd $(BUILD)/labri/ && dvips $(TARGET) -o
-
-$(BUILD)/labri/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
-	mkdir -p $(BUILD)/labri
-	$(XML2HTML)/bin/shell/xml2labriReport.sh $(TARGET).xml $(BUILD)/labri $(SECTIONS)
-
 emph: $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 $(EMPHCFILES_PS): %_emph_ps: %
-	@perl -w Progs/emph.pl $< $@ ps 
+	@perl -w Progs/emph.pl $< $@ ps
 $(EMPHCFILES_HTML): %_emph_html: %
 	@perl -w Progs/emph.pl $< $@ html
 
 distclean: clean
 
-clean: wml-clean html-clean ps-clean inria-clean labri-clean emph-clean
+clean: wml-clean html-clean ps-clean emph-clean
 	rm -rf $(BUILD)
 
 emph-clean:; rm -f $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
@@ -130,6 +100,3 @@ html-clean:; rm -rf $(BUILD)/html
 
 ps-clean:; rm -rf $(BUILD)/ps $(THISDIR)/$(TARGET).ps
 
-inria-clean:; rm -rf $(BUILD)/inria
-
-labri-clean:; rm -rf $(BUILD)/labri

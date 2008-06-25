@@ -8,8 +8,6 @@
 
 <WML INCLUDE="my_macros.txt"/>
 
-<LABRI/> <!-- NUMBER="RR-1375-05" -->
-
 <ABSTRACT TABLEOFPROGRAMS="true">
 <P>
 PM2 (<EM>Parallel Multithreaded Machine</EM>) is a distributed
@@ -33,12 +31,6 @@ If you have any questions concerning PM2, please, send an email to
 </P>
 <KEYWORD>RPC, Communication, Thread, Distributed Programming.</KEYWORD>
 </ABSTRACT>
-
-<INRIA TYPE="RT" TITRE="Démarrer avec PM2">
-<RESUME>
-<MOTCLE></MOTCLE>
-</RESUME>
-</INRIA>
 
 <SECTION TITLE="Introducing PM2" FILE="./Sources/introduction.xml" LABEL="introduction" NEWPAGE="true"/>
 

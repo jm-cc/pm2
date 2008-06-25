@@ -83,13 +83,12 @@ void __marcel_init marcel_debug_init_auto(void)
 #ifdef PM2DEBUG
 	debug_type_aligned_t *var;
 	unsigned long __ma_debug_size_entry;
-	unsigned long __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
+	unsigned long TBX_UNUSED __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
 	if (&ma_dummy2 < &ma_dummy1)
 		__ma_debug_size_entry = (void*)&ma_dummy1-(void*)&ma_dummy2;
 	else
 		__ma_debug_size_entry = (void*)&ma_dummy2-(void*)&ma_dummy1;
 
-	(void)__ma_debug_size;
 	MA_BUG_ON(__ma_debug_size_entry != __ma_debug_size);
 	for(var=__ma_debug_start; var < __ma_debug_end; var++) {
 		pm2debug_register(&var->d);

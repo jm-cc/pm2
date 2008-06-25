@@ -348,14 +348,14 @@ static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
 	MA_BUG_ON(!THREAD_GETMEM(t, not_preemptible));
 #endif
         ma_barrier();
-	THREAD_GETMEM(t, not_preemptible)--;
+	THREAD_GETMEM(t, not_preemptible) = 0;
 }
 static __tbx_inline__ void marcel_some_thread_preemption_enable(marcel_t t) {
 	__marcel_some_thread_preemption_enable(t);
 }
 
 static __tbx_inline__ void __marcel_some_thread_preemption_disable(marcel_t t) {
-	THREAD_GETMEM(t, not_preemptible)++;
+	THREAD_GETMEM(t, not_preemptible) = 1;
         ma_barrier();
 }
 

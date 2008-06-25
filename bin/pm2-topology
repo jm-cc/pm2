@@ -14,10 +14,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+
+args=""
+
 # Check if the application should be launched remotely
 SSH=""
 if [ -n "$1" ] ; then
-    SSH="ssh $1"
+    if [ "$1" == "--txt" ] ; then
+        args="--txt"
+    else
+        SSH="ssh $1"
+    fi
 fi
 
 # Create the flavor if needed
@@ -32,11 +39,11 @@ echo
 echo
 
 # Execute the application
-$SSH $($SSH pm2-which --flavor marcel-numa read_topology) > /tmp/topology_$$.out
+$SSH $($SSH pm2-which --flavor marcel-numa read_topology) $args > /tmp/topology_$$.out
 cat /tmp/topology_$$.out
 
 # If the application has been launched remotely, download the file and run latex on it
-if [ -n "$1" ] ; then
+if [ -n "$SSH" ] ; then
     file=$(grep latex /tmp/topology_$$.out | awk '{print $2}')
     scp $1:$file.tex .
     latex $file

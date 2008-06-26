@@ -83,16 +83,15 @@ void indent(FILE *output, int i) {
   for(x=0 ; x<i ; x++) marcel_fprintf(output, "  ");
 }
 
-void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
+void print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode) {
   const char * separator = txt_mode ? " " : "\\\\";
   const char * indexprefix = txt_mode ? "#" : "";
   const char * labelseparator = txt_mode ? ":" : "";
 
-  indent(output, i);
-  if (!txt_mode && (l->arity || (!i && !l->arity))) {
-    marcel_fprintf(output, "\\pstree");
-  }
   if (!txt_mode) {
+    if (l->arity) {
+      marcel_fprintf(output, "\\pstree");
+    }
     marcel_fprintf(output, "{\\Level{c}{");
   }
   print_level_description(l, output, txt_mode, verbose_mode);
@@ -117,7 +116,8 @@ void print_level(struct marcel_topo_level *l, FILE *output, int i, int txt_mode,
 void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
   int x;
 
-  print_level(l, output, i, txt_mode, verbose_mode);
+  indent(output, i);
+  print_level(l, output, txt_mode, verbose_mode);
   if (l->arity || (!i && !l->arity)) {
     if (!txt_mode) {
       indent(output, i);

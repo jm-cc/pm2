@@ -47,8 +47,13 @@ void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
 
   err = move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
-    perror("move_pages");
-    exit(-1);
+    if (errno == ENOENT) {
+      printf("warning. cannot move pages which have not been allocated\n");
+    }
+    else {
+      perror("move_pages");
+      exit(-1);
+    }
   }
 
   for(i=0; i<PAGES; i++) {

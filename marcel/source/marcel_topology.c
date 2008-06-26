@@ -174,12 +174,8 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 #endif
 }
 
-void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode) {
-  const char * separator = txt_mode ? " " : "\\\\";
-  const char * indexprefix = txt_mode ? "#" : "\\#";
-  const char * labelseparator = txt_mode ? ":" : "";
-  const char * levelterm = txt_mode ? "" : "}}";
-
+void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode,
+			const char *separator, const char *indexprefix, const char* labelseparator, const char* levelterm) {
   marcel_print_level_description(l, output, txt_mode, verbose_mode);
   marcel_fprintf(output, labelseparator);
   if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);

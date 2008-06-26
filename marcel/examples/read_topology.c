@@ -25,6 +25,10 @@ void indent(FILE *output, int i) {
 
 void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
   int x;
+  const char * separator = txt_mode ? " " : "\\\\";
+  const char * indexprefix = txt_mode ? "#" : "\\#";
+  const char * labelseparator = txt_mode ? ":" : "";
+  const char * levelterm = txt_mode ? "" : "}}";
 
   indent(output, i);
   if (!txt_mode) {
@@ -33,7 +37,7 @@ void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbo
     }
     marcel_fprintf(output, "{\\Level{c}{");
   }
-  marcel_print_level(l, output, txt_mode, verbose_mode);
+  marcel_print_level(l, output, txt_mode, verbose_mode, separator, indexprefix, labelseparator, levelterm);
   if (l->arity || (!i && !l->arity)) {
     if (!txt_mode) {
       indent(output, i);

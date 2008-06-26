@@ -268,7 +268,10 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 				const marcel_attr_t* __restrict attr)
 {
 	/* t->lwp */
-	t->lwps_allowed = attr->vpset; 
+	if (attr->topo_level)
+		t->lwps_allowed = attr->topo_level->vpset;
+	else
+		t->lwps_allowed = attr->vpset; 
 	ma_set_task_state(t, MA_TASK_BORNING);
 	marcel_sched_internal_init_marcel_thread(t, attr);
 }

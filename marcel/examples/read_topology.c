@@ -55,14 +55,14 @@ int marcel_main(int argc, char **argv) {
   struct marcel_topo_level *l;
   char hostname[256], filename[256];
   FILE *output;
-  int txt_mode = 0;
+  int txt_mode = 1;
   int verbose_mode = 0;
 
   marcel_init(&argc, argv);
 
   while (argc >= 2) {
-    if (!strcmp(argv[1], "-t") || !strcmp(argv[1], "--txt")) {
-      txt_mode = 1;
+    if (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--latex")) {
+      txt_mode = 0;
     } else if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--verbose")) {
       verbose_mode = 1;
     } else {

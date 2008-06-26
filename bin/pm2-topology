@@ -15,17 +15,19 @@
 # General Public License for more details.
 
 
+# Read the arguments
 args=""
-
-# Check if the application should be launched remotely
 SSH=""
-if [ -n "$1" ] ; then
-    if [ "$1" == "--txt" ] ; then
-        args="--txt"
+while [ "$1" ] ; do
+    if [ "$1" == "--latex" ] ; then
+        args="--latex"
     else
+	# the application should be launched remotely
+	host=$1
         SSH="ssh $1"
     fi
-fi
+    shift
+done
 
 # Create the flavor if needed
 flavor=$($SSH pm2-flavor get --flavor=marcel-numa 2>/dev/null)
@@ -44,9 +46,11 @@ cat /tmp/topology_$$.out
 
 # If the application has been launched remotely, download the file and run latex on it
 if [ -n "$SSH" ] ; then
-    file=$(grep latex /tmp/topology_$$.out | awk '{print $2}')
-    scp $1:$file.tex .
-    latex $file
-    dvips -Ppdf  -t landscape $file.dvi
-    ps2pdf $file.ps
+    if [ "$args" == "--latex" ] ; then
+	file=$(grep latex /tmp/topology_$$.out | awk '{print $2}')
+	scp $host:$file.tex .
+	latex $file
+	dvips -Ppdf  -t landscape $file.dvi
+	ps2pdf $file.ps
+    fi
 fi

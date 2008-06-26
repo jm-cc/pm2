@@ -27,6 +27,12 @@ void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbo
   int x;
 
   indent(output, i);
+  if (!txt_mode) {
+    if (l->arity) {
+      marcel_fprintf(output, "\\pstree");
+    }
+    marcel_fprintf(output, "{\\Level{c}{");
+  }
   marcel_print_level(l, output, txt_mode, verbose_mode);
   if (l->arity || (!i && !l->arity)) {
     if (!txt_mode) {

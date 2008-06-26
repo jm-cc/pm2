@@ -176,15 +176,10 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 
 void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode) {
   const char * separator = txt_mode ? " " : "\\\\";
-  const char * indexprefix = txt_mode ? "#" : "";
+  const char * indexprefix = txt_mode ? "#" : "\\#";
   const char * labelseparator = txt_mode ? ":" : "";
+  const char * levelterm = txt_mode ? "" : "}}";
 
-  if (!txt_mode) {
-    if (l->arity) {
-      marcel_fprintf(output, "\\pstree");
-    }
-    marcel_fprintf(output, "{\\Level{c}{");
-  }
   marcel_print_level_description(l, output, txt_mode, verbose_mode);
   marcel_fprintf(output, labelseparator);
   if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);
@@ -197,11 +192,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "%sVP %s%u", separator, indexprefix, l->number);
   }
-  if (txt_mode) {
-    marcel_fprintf(output,"\n");
-  } else {
-    marcel_fprintf(output,"}}\n");
-  }
+  marcel_fprintf(output,"%s\n", levelterm);
 }
 
 #ifdef MA__LWPS

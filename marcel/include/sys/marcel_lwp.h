@@ -304,7 +304,6 @@ void marcel_leave_blocking_section(void);
      list_for_each_entry_from_begin(lwp, &ma_list_lwp_head, lwp_start, lwp_list)
 #  define ma_for_all_lwp_from_end() \
      list_for_each_entry_from_end()
-#  define ma_lwp_isset(num, map)		ma_test_bit(num, &map)
 /* Should rather be the node level where this lwp was started */
 #  define ma_lwp_vpaffinity_level(lwp)		(&marcel_machine_level[0])
 #else
@@ -323,7 +322,6 @@ void marcel_leave_blocking_section(void);
 	for(lwp=lwp_start;lwp;lwp=NULL) {
 #  define ma_for_all_lwp_from_end() \
 	}
-#  define ma_lwp_isset(num, map)		(1)
 #endif
 #ifdef MARCEL_BLOCKING_ENABLED
 #  define ma_spare_lwp_ext(lwp)			(ma_vpnum(lwp)==-1)

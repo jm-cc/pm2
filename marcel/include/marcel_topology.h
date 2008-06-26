@@ -477,6 +477,9 @@ extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LA
 /** \brief indexes into ::marcel_topo_levels, but available from application */
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index);
 
+/** \brief print a human-readable form of the given topology level */
+void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode);
+
 #section marcel_macros
 /** \brief Iterate over VPs */
 #define for_all_vp(vp) \

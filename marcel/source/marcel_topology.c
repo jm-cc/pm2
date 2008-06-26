@@ -121,15 +121,19 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
   const char * current_separator = ""; /* not prefix for the first one */
 
   if (!verbose_mode) {
+#ifdef MA__LWPS
     /* don't print "vp" if there's something else (including "fake") */
     if (type & ~(1<<MARCEL_LEVEL_VP))
       type &= ~(1<<MARCEL_LEVEL_VP);
+#  ifdef MA__NUMA
     /* don't print "fake" if there's something else */
     if (type & ~(1<<MARCEL_LEVEL_FAKE))
       type &= ~(1<<MARCEL_LEVEL_FAKE);
     /* don't print smtproc or caches if there's also core or die */
     if (type & ((1<<MARCEL_LEVEL_CORE) | (1<<MARCEL_LEVEL_DIE)))
       type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
+#  endif
+#endif
   }
 
   if (type & (1<<MARCEL_LEVEL_MACHINE)) {

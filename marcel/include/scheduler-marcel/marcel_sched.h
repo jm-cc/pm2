@@ -561,7 +561,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		|| dont_schedule
 #ifdef MA__LWPS
 		/* On ne peut pas placer ce thread sur le LWP courant */
-		|| (!ma_lwp_isset(ma_vpnum(MA_LWP_SELF), THREAD_GETMEM(new_task, lwps_allowed)))
+		|| (!marcel_vpset_isset(&THREAD_GETMEM(new_task,vpset),ma_vpnum(MA_LWP_SELF)))
 		/* Si la politique est du type 'placer sur le LWP le moins
 		   chargé', alors on ne peut pas placer ce thread sur le LWP
 		   courant */

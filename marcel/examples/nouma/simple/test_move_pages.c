@@ -93,6 +93,12 @@ int main(int argc, char * argv[])
 
   maxnode = numa_max_node();
   printf("numa_max_node %d\n", maxnode);
+
+  if (!maxnode) {
+    printf("Need more than one NUMA node. Abort\n");
+    exit(1);
+  }
+
   pagesize = getpagesize();
   buffer = malloc(PAGES * pagesize * sizeof(unsigned long));
   for(i=0; i<PAGES; i++)

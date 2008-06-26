@@ -90,7 +90,7 @@ struct marcel_task {
 	int not_preemptible;
 	/* Données relatives au scheduler */
 	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
-	marcel_vpset_t vpset; /* Contraintes sur le placement sur les LWP */
+	marcel_vpset_t vpset; /* Constraints on the VPs eligible for running the task */
 	unsigned int state; /* État du thread */
 	struct ma_entity as_entity;
 #ifdef MA__BUBBLES

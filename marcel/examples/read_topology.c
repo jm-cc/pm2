@@ -12,7 +12,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-#define MARCEL_KERNEL
 #include "marcel.h"
 #include "marcel_topology.h"
 #include <stdio.h>
@@ -93,7 +92,7 @@ int marcel_main(int argc, char **argv) {
     marcel_fprintf(output, "\\tiny\n");
   }
 
-  l = &marcel_topo_levels[0][0];
+  l = marcel_topo_level(0, 0);
   f(l, output, 0, txt_mode, verbose_mode);
 
   if (!txt_mode) {

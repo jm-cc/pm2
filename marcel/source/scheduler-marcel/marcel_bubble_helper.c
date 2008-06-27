@@ -269,6 +269,24 @@ int ma_increasing_order_threads_compar(const void *_e1, const void *_e2)
 	return l1 - l2; /* increasing order */
 }
 
+int
+ma_burst_bubble (marcel_bubble_t *bubble) {
+  int extracted_entities = 0;
+  marcel_entity_t *e;
+
+  MA_BUG_ON (!bubble); 
+  
+  if ((&bubble->as_entity)->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+    ma_holder_t *target_holder = (&bubble->as_entity)->sched_holder;
+    for_each_entity_scheduled_in_bubble_begin (e, bubble)
+      ma_move_entity (e, target_holder);
+      extracted_entities++;
+    for_each_entity_scheduled_in_bubble_end ()
+  }
+  
+  return extracted_entities;
+}
+
 /* Debug function that prints information about the _ne_ entities
    stored in _e_ */
 void

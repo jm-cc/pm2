@@ -369,15 +369,21 @@ affinity_sched_submit(marcel_entity_t *e) {
   return 0;
 }
 
+/* This function moves _entity_to_steal_ to the _starving_rq_
+   runqueue, while moving everything that needs to be moved to avoid
+   locking issues. */
 static int
 steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t *starving_rq) {
   int i, nb_ancestors = 0, max_ancestors = 128, nvp = marcel_vpset_weight (&common_rq->vpset);
   marcel_entity_t **ancestors = calloc (max_ancestors, sizeof(marcel_entity_t));
   marcel_entity_t *e;
   
+  /* Before moving the target entity, we have to move up some of its
+     ancestors to avoid locking problems. */
   for (e = &ma_bubble_holder(entity_to_steal->init_holder)->as_entity;
        e->init_holder; 
        e = &ma_bubble_holder(e->init_holder)->as_entity) {
+    /* In here, we try to find these ancestors */
     if (e->sched_holder->type == MA_RUNQUEUE_HOLDER)
       if ((e->sched_holder == &common_rq->as_holder) 
 	  || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))
@@ -387,12 +393,18 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
   }
   
   if (nb_ancestors) {
+    /* Then we burst everyone of them, to let their content where it
+       was scheduled, and we move them to the common_rq, covering the
+       source and destination runqueue. */
     for (i = nb_ancestors - 1; i > -1; i--) {
       MA_BUG_ON (ancestors[i]->type != MA_BUBBLE_ENTITY);
       ma_burst_bubble (ma_bubble_entity (ancestors[i]));
       ma_move_entity (ancestors[i], &common_rq->as_holder); 
     }
   }
+
+  /* Now that every ancestor is at the right place, we can steal the
+     target entity. */
   ma_move_entity (entity_to_steal, &starving_rq->as_holder);
 
   free (ancestors);

@@ -25,9 +25,8 @@
 
 static unsigned long last_failed_steal = 0;
 static unsigned long last_succeeded_steal = 0;
-static volatile unsigned long init_mode = 1;
-static volatile unsigned long succeeded_steals;
-static volatile unsigned long failed_steals;
+static ma_atomic_t succeeded_steals = MA_ATOMIC_INIT(0);
+static ma_atomic_t failed_steals = MA_ATOMIC_INIT(0);
 
 /* Submits a set of entities on a marcel_topo_level */
 static void
@@ -346,15 +345,18 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
 
 static int
 affinity_sched_init() {
+  last_succeeded_steal = 0;
   last_failed_steal = 0;
-  succeeded_steals = 0;
-  failed_steals = 0;
+  ma_atomic_init(&succeeded_steals, 0);
+  ma_atomic_init(&failed_steals, 0);
   return 0;
 }
 
 static int
 affinity_sched_exit() {
-  bubble_sched_debug("Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
+  bubble_sched_debug("Succeeded steals : %d, failed steals : %d\n", 
+		     ma_atomic_read(&succeeded_steals), 
+		     ma_atomic_read(&failed_steals));
   return 0;
 }
 
@@ -553,13 +555,13 @@ affinity_steal(unsigned from_vp) {
   if (smthg_to_steal) { 
     bubble_sched_debug("We successfuly stole one or several entities !\n");
     last_succeeded_steal = marcel_clock();
-    succeeded_steals++;
+    ma_atomic_inc(&succeeded_steals);
     return 1;
   }
 
   last_failed_steal = marcel_clock();
   bubble_sched_debug("We didn't manage to steal anything !\n");
-  failed_steals++;
+  ma_atomic_inc(&failed_steals);
   return 0;
 }
 

@@ -30,21 +30,21 @@
 #define THREADS 17
 
 /* Thread-local storage.  */
-static __thread struct { int i; char buf[64]; } tls_data;
+static __thread int tls_data;
 
 
 static void *
 thread_main (void *arg)
 {
   /* Initialize our TLS.  */
-  tls_data.i = (int) arg;
+  tls_data = (int) arg;
 
   /* Just leave enough time for others to override TLS_DATA (provided TLS is
      broken).  */
-  sleep (random () % 3);
+  marcel_sleep (marcel_random () % 3);
 
   /* Return the last value seen.  */
-  return (void *) tls_data.i;
+  return (void *) tls_data;
 }
 
 
@@ -57,7 +57,7 @@ main (int argc, char *argv[])
 
   marcel_init (&argc, argv);
 
-  tls_data.i = -1;
+  tls_data = -1;
 
   for (i = 0; i < THREADS; i++)
     {
@@ -82,9 +82,9 @@ main (int argc, char *argv[])
 	}
     }
 
-  if (tls_data.i != -1)
+  if (tls_data != -1)
     {
-      printf ("main thread got %i instead of -1\n", tls_data.i);
+      printf ("main thread got %i instead of -1\n", tls_data);
       return 4;
     }
 

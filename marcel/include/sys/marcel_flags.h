@@ -143,6 +143,10 @@
 #  define MA__IFACE_PMARCEL
 #endif
 
+#ifdef MARCEL_DONT_USE_POSIX_THREADS
+#  define MA__PROVIDE_TLS
+#endif
+
 #ifdef MARCEL_LIBPTHREAD
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD

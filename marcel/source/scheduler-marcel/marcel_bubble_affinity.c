@@ -23,8 +23,6 @@
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
-static struct list_head submitted_entities;
-static ma_rwlock_t submit_rwlock = MA_RW_LOCK_UNLOCKED;
 static unsigned long last_failed_steal = 0;
 static unsigned long last_succeeded_steal = 0;
 static volatile unsigned long init_mode = 1;
@@ -348,7 +346,6 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
 
 static int
 affinity_sched_init() {
-  INIT_LIST_HEAD(&submitted_entities);
   last_failed_steal = 0;
   succeeded_steals = 0;
   failed_steals = 0;
@@ -372,9 +369,6 @@ affinity_sched_submit(marcel_entity_t *e) {
   else 
     __sched_submit(&e, 1, &l);
   
-  ma_write_lock(&submit_rwlock);
-  list_add_tail(&e->next, &submitted_entities);
-  ma_write_unlock(&submit_rwlock);
   return 0;
 }
 
@@ -573,7 +567,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  //.vp_is_idle = affinity_steal,
+  .vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

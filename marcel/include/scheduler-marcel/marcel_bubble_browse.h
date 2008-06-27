@@ -34,7 +34,7 @@
    that using a ma_holder_t type instead of directly using a
    ma_runqueue_t allows a function of this type to be applied for
    browsing the content of a bubble too. */
-typedef int (ma_see_func_t)(void *);
+typedef int (ma_see_func_t)(ma_holder_t*, void *);
 
 #section marcel_functions
 #depend "marcel_topology.h[types]"

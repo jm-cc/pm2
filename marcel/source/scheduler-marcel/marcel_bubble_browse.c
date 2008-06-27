@@ -40,7 +40,7 @@ ma_topo_level_see_down (struct marcel_topo_level *father,
 	/* Avoid me if I'm one of the children */
 	continue;
       
-      if (my_see (args) 
+      if (my_see (&(&father->children[i]->rq)->as_holder, args) 
 	  || ma_topo_level_see_down (father->children[i], NULL, my_see, args))
 	return 1; 
     }

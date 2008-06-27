@@ -27,9 +27,9 @@ static struct list_head submitted_entities;
 static ma_rwlock_t submit_rwlock = MA_RW_LOCK_UNLOCKED;
 static unsigned long last_failed_steal = 0;
 static unsigned long last_succeeded_steal = 0;
-volatile unsigned long init_mode = 1;
-volatile unsigned long succeeded_steals;
-volatile unsigned long failed_steals;
+static volatile unsigned long init_mode = 1;
+static volatile unsigned long succeeded_steals;
+static volatile unsigned long failed_steals;
 
 /* Submits a set of entities on a marcel_topo_level */
 static void
@@ -346,7 +346,7 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_local_bh_enable();
 }
 
-int
+static int
 affinity_sched_init() {
   INIT_LIST_HEAD(&submitted_entities);
   last_failed_steal = 0;
@@ -355,7 +355,7 @@ affinity_sched_init() {
   return 0;
 }
 
-int
+static int
 affinity_sched_exit() {
   bubble_sched_debug("Succeeded steals : %lu, failed steals : %lu\n", succeeded_steals, failed_steals);
   return 0;
@@ -363,7 +363,7 @@ affinity_sched_exit() {
 
 static marcel_bubble_t *b = &marcel_root_bubble;
 
-int
+static int
 affinity_sched_submit(marcel_entity_t *e) {
   struct marcel_topo_level *l =  marcel_topo_level(0,0);
   b = ma_bubble_entity(e);
@@ -378,8 +378,8 @@ affinity_sched_submit(marcel_entity_t *e) {
   return 0;
 }
 
-marcel_entity_t *
-ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
+static marcel_entity_t *
+get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
   marcel_entity_t *upper_entity, *chosen_entity = e;
   int nvp = marcel_vpset_weight(&rq->vpset);
   
@@ -396,10 +396,10 @@ ma_get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
   return chosen_entity;                                 
 }
 
-int
-ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
-  marcel_entity_t *upper_entity = ma_get_upper_ancestor(e, common_rq);
-  bubble_sched_debug("ma_redistribute : upper_entity = %p\n", upper_entity);
+static int
+redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
+  marcel_entity_t *upper_entity = get_upper_ancestor(e, common_rq);
+  bubble_sched_debug("redistribute : upper_entity = %p\n", upper_entity);
   if (upper_entity->type == MA_BUBBLE_ENTITY) {
     marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
     __ma_bubble_gather(upper_bb, upper_bb);
@@ -413,7 +413,7 @@ ma_redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
 }
 
 
-ma_runqueue_t *
+static ma_runqueue_t *
 get_parent_rq(marcel_entity_t *e) {
   if (e) {
     if (e->sched_holder && (e->sched_holder->type == MA_RUNQUEUE_HOLDER))
@@ -431,8 +431,8 @@ get_parent_rq(marcel_entity_t *e) {
   return NULL;
 }
 
-int
-browse_bubble_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
+static int
+browse_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
   marcel_entity_t *bestbb = NULL;
   int greater = 0;
   int cpt = 0, available_threads = 0;
@@ -484,41 +484,20 @@ browse_bubble_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
   }
  
   if (bestbb && cpt) 
-    return ma_redistribute(bestbb, common_rq);
+    return redistribute(bestbb, common_rq);
   else if (bestbb && !available_threads) { 
     /* Browse the bubble */
     marcel_bubble_t *b = ma_bubble_entity(bestbb);
-    return browse_bubble_and_steal(&b->as_holder, source);
+    return browse_and_steal(&b->as_holder, source);
   }
   else if (available_threads)
     /* Steal threads instead */
-    return ma_redistribute(stealable_threads[0], common_rq);
+    return redistribute(stealable_threads[0], common_rq);
   
   return 0;
 }
 
-/* Moves every entity from every list contained in __from__ to the
-   list __to__ */
-int
-move_entities(struct list_head *from, struct marcel_topo_level *to)
-{
-  ma_runqueue_t *rq;
-  int ret = 0;
-
-  list_for_each_entry(rq, from, next) {
-    int nb = ma_count_entities_on_rq(rq, ITERATIVE_MODE);
-    if (nb) {
-      marcel_entity_t *entities[nb];
-      ma_get_entities_from_rq(rq, entities, nb);
-      __sched_submit(entities, nb, &to);
-      ret += nb;
-    }
-  }
-  
-  return ret;
-}
-
-int
+static int
 affinity_steal(unsigned from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
   struct marcel_topo_level *father = me->father;
@@ -556,7 +535,7 @@ affinity_steal(unsigned from_vp) {
   ma_local_bh_disable();  
   ma_bubble_synthesize_stats(&marcel_root_bubble);
   ma_bubble_lock_all(&marcel_root_bubble, marcel_topo_level(0,0));
-  smthg_to_steal = ma_topo_level_browse (me, browse_bubble_and_steal);
+  smthg_to_steal = ma_topo_level_browse (me, browse_and_steal);
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();

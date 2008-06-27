@@ -319,7 +319,6 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 
 void 
 marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
-  unsigned vp;
   marcel_entity_t *e = &b->as_entity;
   
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
@@ -370,38 +369,34 @@ affinity_sched_submit(marcel_entity_t *e) {
   return 0;
 }
 
-static marcel_entity_t *
-get_upper_ancestor(marcel_entity_t *e, ma_runqueue_t *rq) {
-  marcel_entity_t *upper_entity, *chosen_entity = e;
-  int nvp = marcel_vpset_weight(&rq->vpset);
-  
-  for (upper_entity = e; 
-       upper_entity->init_holder != NULL; 
-       upper_entity = &ma_bubble_holder(upper_entity->init_holder)->as_entity) {      
-    if (upper_entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
-      ma_runqueue_t *current_rq = ma_rq_holder(upper_entity->sched_holder);
-      if (current_rq == rq || marcel_vpset_weight(&current_rq->vpset) > nvp) 
-	break;
-    }
-    chosen_entity = upper_entity;
-  }
-  return chosen_entity;                                 
-}
-
 static int
-redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
-  marcel_entity_t *upper_entity = get_upper_ancestor(e, common_rq);
-  bubble_sched_debug("redistribute : upper_entity = %p\n", upper_entity);
-  if (upper_entity->type == MA_BUBBLE_ENTITY) {
-    marcel_bubble_t *upper_bb = ma_bubble_entity(upper_entity);
-    __ma_bubble_gather(upper_bb, upper_bb);
-    int state = ma_get_entity(upper_entity);
-    ma_put_entity(upper_entity, &common_rq->as_holder, state);
-    struct marcel_topo_level *root_lvl = tbx_container_of(common_rq, struct marcel_topo_level, rq);
-    __marcel_bubble_affinity(&root_lvl);
-     return 1;
+steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t *starving_rq) {
+  int i, nb_ancestors = 0, max_ancestors = 128, nvp = marcel_vpset_weight (&common_rq->vpset);
+  marcel_entity_t **ancestors = calloc (max_ancestors, sizeof(marcel_entity_t));
+  marcel_entity_t *e;
+  
+  for (e = &ma_bubble_holder(entity_to_steal->init_holder)->as_entity;
+       e->init_holder; 
+       e = &ma_bubble_holder(e->init_holder)->as_entity) {
+    if (e->sched_holder->type == MA_RUNQUEUE_HOLDER)
+      if ((e->sched_holder == &common_rq->as_holder) 
+	  || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))
+	break;
+    ancestors[nb_ancestors] = e;
+    nb_ancestors++;
   }
-  return 0;
+  
+  if (nb_ancestors) {
+    for (i = nb_ancestors - 1; i > -1; i--) {
+      MA_BUG_ON (ancestors[i]->type != MA_BUBBLE_ENTITY);
+      ma_burst_bubble (ma_bubble_entity (ancestors[i]));
+      ma_move_entity (ancestors[i], &common_rq->as_holder); 
+    }
+  }
+  ma_move_entity (entity_to_steal, &starving_rq->as_holder);
+
+  free (ancestors);
+  return 1;
 }
 
 
@@ -480,7 +475,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
  
   if (bestbb) {
     if (available_entities > 1) 
-      return redistribute(bestbb, common_rq);
+      return steal(bestbb, common_rq, &source->rq);
     else {
       /* Browse the bubble */
       struct browse_and_steal_args new_args = {
@@ -492,7 +487,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
   } else if (thread_to_steal) {
     /* There are no more bubbles to browse... Let's steal the bad
        soccer player... */
-    redistribute(thread_to_steal, common_rq);
+    return steal(thread_to_steal, common_rq, &source->rq);
   }
 
   return 0;
@@ -565,7 +560,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  .vp_is_idle = affinity_steal,
+  //.vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

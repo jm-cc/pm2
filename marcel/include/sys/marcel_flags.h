@@ -150,7 +150,6 @@
 #ifdef MARCEL_LIBPTHREAD
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD
-#  define MA__PROVIDE_TLS
 #endif
 
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)

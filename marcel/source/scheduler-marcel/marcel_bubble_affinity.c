@@ -427,54 +427,55 @@ get_parent_rq(marcel_entity_t *e) {
   return NULL;
 }
 
+/* This structure contains arguments to pass the browse_and_steal
+   function. */
 struct browse_and_steal_args {
-  ma_holder_t *hold;
+  /* Level we were originally called from (i.e. the one we need to
+     feed with stolen entities) */
   struct marcel_topo_level *source;
+  /* Thread to be stolen if we can't find better candidates */
+  marcel_entity_t *thread_to_steal;
 };
 
+/* This function browses the content of the _hold_ holder, in order to
+   find something to steal (a bubble if possible) to the _source_
+   topo_level. It recursively look at bubbles content too. 
+
+   If we didn't find any bubble to steal, we resign to steal
+   _thread_to_steal_, which can be seen as the guy you always choose
+   last when forming a soccer team with your pals. */
 static int
 browse_and_steal(ma_holder_t *hold, void *args) {
-  marcel_entity_t *bestbb = NULL;
-  int greater = 0;
-  int cpt = 0, available_threads = 0;
-  marcel_entity_t *e; 
+  marcel_entity_t *e, *bestbb = NULL; 
+  marcel_entity_t *thread_to_steal = (*(struct browse_and_steal_args *)args).thread_to_steal;
+  int greater = 0, available_entities = 0;
   struct marcel_topo_level *top = marcel_topo_level(0,0);
-  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;
+  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;  
 
   list_for_each_entry(e, &hold->sched_list, sched_list) {
+    long load = ma_entity_load(e);
     if (e->type == MA_BUBBLE_ENTITY) {
-      long nbthreads = *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), ma_stats_nbthreads_offset);
-      long nbthreadseeds = *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), ma_stats_nbthreadseeds_offset);
-      
-      if (nbthreads + nbthreadseeds > greater) {
-	greater = nbthreads + nbthreadseeds;
+      if (load > greater) {
+	greater = load;
 	bestbb = e;
       }
-      cpt++;
     } else {
-	available_threads++;
+      /* If we don't find any bubble to steal, we may steal a
+	 thread. In that case, we try to steal the higher thread we
+	 find in the entities hierarchy. This kind of behaviour favors
+	 load balancing of OpenMP nested applications for example. */
+      thread_to_steal = (thread_to_steal == NULL) ? e : thread_to_steal;
     }
+    available_entities++;
   }
   
-  marcel_entity_t *stealable_threads[available_threads];
-  if (!bestbb && available_threads) {
-    int pos = 0;
-    list_for_each_entry(e, &hold->sched_list, sched_list) {
-      if (e->type != MA_BUBBLE_ENTITY) {
-	stealable_threads[pos] = e;
-	pos++;
-      }
-    } 
-  }  
-
-  ma_runqueue_t *common_rq = NULL;
-  ma_runqueue_t *rq = NULL;
+  ma_runqueue_t *common_rq = NULL, *rq = NULL;
   if (bestbb)
     rq = get_parent_rq(bestbb);
-  else if (available_threads)
-    rq = get_parent_rq(stealable_threads[0]);
+  else if (thread_to_steal)
+    rq = get_parent_rq(thread_to_steal);
 
-  if(rq) {
+  if (rq) {
     PROF_EVENTSTR(sched_status, "stealing subtree");
     for (common_rq = rq->father; common_rq != &top->rq; common_rq = common_rq->father) {
       /* This only works because _source_ is the level vp_is_idle() is
@@ -485,20 +486,23 @@ browse_and_steal(ma_holder_t *hold, void *args) {
     }
   }
  
-  if (bestbb && cpt) 
-    return redistribute(bestbb, common_rq);
-  else if (bestbb && !available_threads) { 
-    /* Browse the bubble */
-    marcel_bubble_t *b = ma_bubble_entity(bestbb);
-    struct browse_and_steal_args next_args = {
-      .source = source,
-    };
-    return browse_and_steal(&b->as_holder, &next_args);
+  if (bestbb) {
+    if (available_entities > 1) 
+      return redistribute(bestbb, common_rq);
+    else {
+      /* Browse the bubble */
+      struct browse_and_steal_args new_args = {
+	.source = source,
+	.thread_to_steal = thread_to_steal,
+      };
+      return browse_and_steal(&ma_bubble_entity(bestbb)->as_holder, &new_args);
+    }
+  } else if (thread_to_steal) {
+    /* There are no more bubbles to browse... Let's steal the bad
+       soccer player... */
+    redistribute(thread_to_steal, common_rq);
   }
-  else if (available_threads)
-    /* Steal threads instead */
-    return redistribute(stealable_threads[0], common_rq);
-  
+
   return 0;
 }
 
@@ -542,6 +546,7 @@ affinity_steal(unsigned from_vp) {
   ma_bubble_lock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   struct browse_and_steal_args args = {
     .source = me,
+    .thread_to_steal = NULL,
   };
   smthg_to_steal = ma_topo_level_browse (me, browse_and_steal, &args);
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));

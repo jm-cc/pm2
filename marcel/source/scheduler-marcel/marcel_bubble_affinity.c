@@ -416,18 +416,14 @@ redistribute(marcel_entity_t *e, ma_runqueue_t *common_rq) {
 static ma_runqueue_t *
 get_parent_rq(marcel_entity_t *e) {
   if (e) {
-    if (e->sched_holder && (e->sched_holder->type == MA_RUNQUEUE_HOLDER))
-      return ma_to_rq_holder(e->sched_holder);
+    ma_holder_t *sh = e->sched_holder;
+    if (sh && (sh->type == MA_RUNQUEUE_HOLDER))
+      return ma_to_rq_holder(sh);
     
-    /* If we are not scheduled on a runqueue and we don't have a
-       father, there is something wrong... */
-    MA_BUG_ON(!e->init_holder);
-
-    marcel_entity_t *upentity;
-    upentity = &ma_bubble_holder(e->init_holder)->as_entity;
-    return get_parent_rq(upentity);
+    marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
+    MA_BUG_ON(upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
+    return ma_to_rq_holder(upper_e->sched_holder);
   }
-  
   return NULL;
 }
 

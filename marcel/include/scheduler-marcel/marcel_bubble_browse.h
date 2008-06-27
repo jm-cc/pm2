@@ -34,23 +34,25 @@
    that using a ma_holder_t type instead of directly using a
    ma_runqueue_t allows a function of this type to be applied for
    browsing the content of a bubble too. */
-typedef int (ma_see_func_t)(ma_holder_t *, struct marcel_topo_level *);
+typedef int (ma_see_func_t)(void *);
 
 #section marcel_functions
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_holder.h[types]"
 /* Main browsing function, applies the _my_see_ to each browsed
    runqueue */
-int ma_topo_level_browse (struct marcel_topo_level *from, ma_see_func_t my_see);
+int ma_topo_level_browse (struct marcel_topo_level *from, 
+			  ma_see_func_t my_see, 
+			  void *args);
 
 /* Auxiliary functions, called by ma_topo_level_browse(). */
 /* TODO: Is it a good idea to make these functions available?
    Shouldn't they be internal? */
 int ma_topo_level_see_down (struct marcel_topo_level *from, 
 			    struct marcel_topo_level *me, 
-			    struct marcel_topo_level *source, 
-			    ma_see_func_t my_see);
+			    ma_see_func_t my_see,
+			    void *args);
 
 int ma_topo_level_see_up (struct marcel_topo_level *from, 
-		       struct marcel_topo_level *source, 
-		       ma_see_func_t my_see);
+			  ma_see_func_t my_see,
+			  void *args);

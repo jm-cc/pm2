@@ -18,8 +18,8 @@
 /* Browse the entire topology from level _from_, until the criterias
    exposed in _my_see_ are met.*/
 int
-ma_topo_level_browse (struct marcel_topo_level *from, ma_see_func_t my_see) {
-  return ma_topo_level_see_up (from, from, my_see);
+ma_topo_level_browse (struct marcel_topo_level *from, ma_see_func_t my_see, void *args) {
+  return ma_topo_level_see_up (from, my_see, args);
 }
 
 /* Browse each children level of level _father_, applying the _my_see_
@@ -27,8 +27,8 @@ ma_topo_level_browse (struct marcel_topo_level *from, ma_see_func_t my_see) {
 int 
 ma_topo_level_see_down (struct marcel_topo_level *father, 
 			struct marcel_topo_level *me, 
-			struct marcel_topo_level *source,
-			ma_see_func_t my_see) {
+			ma_see_func_t my_see, 
+			void *args) {
   int i;
   bubble_sched_debug ("ma_topo_level_see_down from %d %d\n", father->type, father->number);
   
@@ -40,8 +40,8 @@ ma_topo_level_see_down (struct marcel_topo_level *father,
 	/* Avoid me if I'm one of the children */
 	continue;
       
-      if (my_see (&(&father->children[i]->rq)->as_holder, source) 
-	  || ma_topo_level_see_down (father->children[i], NULL, source, my_see))
+      if (my_see (args) 
+	  || ma_topo_level_see_down (father->children[i], NULL, my_see, args))
 	return 1; 
     }
   }
@@ -54,8 +54,8 @@ ma_topo_level_see_down (struct marcel_topo_level *father,
    each children of _from_'s father. */
 int 
 ma_topo_level_see_up (struct marcel_topo_level *from, 
-		      struct marcel_topo_level *source, 
-		      ma_see_func_t my_see) {
+		      ma_see_func_t my_see,
+		      void *args) {
   struct marcel_topo_level *father = from->father;
   bubble_sched_debug ("ma_topo_level_see_up from %d %d\n", from->type, from->number);
   if (!father) {
@@ -64,9 +64,9 @@ ma_topo_level_see_up (struct marcel_topo_level *from,
   }
   
   /* Looking upward begins with looking downward ! */
-  if (ma_topo_level_see_down (father, from, source, my_see))
+  if (ma_topo_level_see_down (father, from, my_see, args))
     return 1;
   else
     /* Then look from the father's */
-    return ma_topo_level_see_up (father, source, my_see);
+    return ma_topo_level_see_up (father, my_see, args);
 }

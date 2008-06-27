@@ -427,14 +427,21 @@ get_parent_rq(marcel_entity_t *e) {
   return NULL;
 }
 
+struct browse_and_steal_args {
+  ma_holder_t *hold;
+  struct marcel_topo_level *source;
+};
+
 static int
-browse_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
+browse_and_steal(void *args) {
   marcel_entity_t *bestbb = NULL;
   int greater = 0;
   int cpt = 0, available_threads = 0;
   marcel_entity_t *e; 
   struct marcel_topo_level *top = marcel_topo_level(0,0);
-  
+  ma_holder_t *hold = (*(struct browse_and_steal_args *)args).hold;
+  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;
+
   list_for_each_entry(e, &hold->sched_list, sched_list) {
     if (e->type == MA_BUBBLE_ENTITY) {
       long nbthreads = *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), ma_stats_nbthreads_offset);
@@ -484,7 +491,11 @@ browse_and_steal(ma_holder_t *hold, struct marcel_topo_level *source) {
   else if (bestbb && !available_threads) { 
     /* Browse the bubble */
     marcel_bubble_t *b = ma_bubble_entity(bestbb);
-    return browse_and_steal(&b->as_holder, source);
+    struct browse_and_steal_args next_args = {
+      .hold = &b->as_holder,
+      .source = source,
+    };
+    return browse_and_steal(&next_args);
   }
   else if (available_threads)
     /* Steal threads instead */
@@ -531,7 +542,11 @@ affinity_steal(unsigned from_vp) {
   ma_local_bh_disable();  
   ma_bubble_synthesize_stats(&marcel_root_bubble);
   ma_bubble_lock_all(&marcel_root_bubble, marcel_topo_level(0,0));
-  smthg_to_steal = ma_topo_level_browse (me, browse_and_steal);
+  struct browse_and_steal_args args = {
+    .hold = &(&me->rq)->as_holder,
+    .source = me,
+  };
+  smthg_to_steal = ma_topo_level_browse (me, browse_and_steal, &args);
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();

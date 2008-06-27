@@ -333,10 +333,6 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   __sched_submit(&e, 1, &l);
   __marcel_bubble_affinity(&l);
   ma_resched_existing_threads(l);
-  marcel_vpset_foreach_begin(vp,&l->vpset)
-    ma_lwp_t lwp = ma_vp_lwp[vp];
-    ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-  marcel_vpset_foreach_end()
   ma_bubble_unlock_all(b, l);  
 
   ma_preempt_enable_no_resched();

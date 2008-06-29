@@ -565,7 +565,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 				//int moving_memory = ma_compute_total_attraction(e, weight_coef, MEDIUM_WEIGHT, attraction, NULL);
 
 				/* Migration on nodes */
-				if (l_l[0]->type == MARCEL_LEVEL_NODE)
+				if (l_l[0]->merged_type & (1<<MARCEL_LEVEL_NODE))
 				{
 					/* Migration time */
 				        //TBX_GET_TICK(start);

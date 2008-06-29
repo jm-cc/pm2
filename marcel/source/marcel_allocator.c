@@ -157,7 +157,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 			}
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+					(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
 				/* Last memory level, stop here */
 				break;
 #endif
@@ -224,7 +224,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 				}
 #ifdef MA__NUMA
 				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-						marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+						(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
 					/* Last memory level, stop here */
 					break;
 #endif
@@ -297,7 +297,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 				return container_courant;
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					niveau_courant->type == MARCEL_LEVEL_NODE)
+					(niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE))
 				/* Last memory level, stop here */
 				break;
 #endif
@@ -339,7 +339,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 				return container_courant;
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					niveau_courant->type == MARCEL_LEVEL_NODE)
+					(niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE))
 				/* Last memory level, stop here */
 				break;
 #endif
@@ -395,7 +395,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 			fprintf(stderr,"\n");
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					marcel_topo_levels[j][0].type == MARCEL_LEVEL_NODE)
+					(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE))
 				/* Last memory level, stop here */
 				break;
 #endif

@@ -161,7 +161,10 @@ __has_enough_entities(struct marcel_topo_level **l,
   int arity = l[0]->arity;
   int per_item_entities = nvp / arity;
   int i, entities_per_level[arity];
-  
+
+  if (ne < arity)
+    return 0;
+
   for (i = 0; i < arity; i++)
     if (load_manager[i].load < per_item_entities)
       prev_state = 0;
@@ -171,7 +174,7 @@ __has_enough_entities(struct marcel_topo_level **l,
   
   for (i = 0; i < arity; i++)
     entities_per_level[i] = load_manager[i].load;
-
+  
   qsort(entities_per_level, arity, sizeof(int), &int_compar);
   
   for (i = 0; i < ne; i++) {
@@ -188,7 +191,7 @@ __has_enough_entities(struct marcel_topo_level **l,
 	continue;
     } 
   } 
-
+  
   for (i = 0; i < arity; i++)
     if (entities_per_level[i] < per_item_entities)
       ret = 0;
@@ -233,7 +236,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   ma_debug_show_entities("__marcel_bubble_affinity", e, ne);
 
   if (ne < nvp) {
-    if (ne >= arity || __has_enough_entities(l, e, ne, load_manager))
+    if (__has_enough_entities(l, e, ne, load_manager))
       __distribute_entities(l, e, ne, load_manager);
     else {
       /* We really have to explode at least one bubble */

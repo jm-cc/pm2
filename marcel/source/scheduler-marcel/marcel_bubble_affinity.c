@@ -499,7 +499,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       };
       return browse_and_steal(&ma_bubble_entity(bestbb)->as_holder, &new_args);
     }
-  } else if (thread_to_steal) {
+  } else if (thread_to_steal && (available_entities > 1)) {
     /* There are no more bubbles to browse... Let's steal the bad
        soccer player... */
     return steal(thread_to_steal, common_rq, &source->rq);

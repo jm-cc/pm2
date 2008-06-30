@@ -14,14 +14,20 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
 if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/uname \) ]; then
+        if [ -n "$PM2_HT" ] ; then
+                _ht="$PM2_HT"
+        else if [ -f /bin/uname ]; then
+                _ht="`/bin/uname -m`"
+	else
+                _ht="`/usr/bin/uname -m`"
+	fi
+        fi
+
 	if [ -f /bin/uname ]; then
 		_os="`/bin/uname -s`"
-		_ht="`/bin/uname -m`"
 	else
 		_os="`/usr/bin/uname -s`"
-		_ht="`/usr/bin/uname -m`"
 	fi
 
 	case "$_os,$_ht" in

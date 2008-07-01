@@ -51,6 +51,20 @@ unsigned ma_is_a_seed(marcel_entity_t *e)
     return 0;
 }
 
+unsigned ma_entity_is_running (marcel_entity_t *e) {
+  if (e->type == MA_BUBBLE_ENTITY) {
+    marcel_entity_t *ee;
+    for_each_entity_held_in_bubble (ee, ma_bubble_entity (e)) {
+      if ((ee->type != MA_BUBBLE_ENTITY) && MA_TASK_IS_RUNNING (ma_task_entity (ee)))
+	return 1;
+    }
+  } else {
+    if (MA_TASK_IS_RUNNING (ma_task_entity (e)))
+      return 1;
+  }
+  return 0;
+}
+
 void
 marcel_bubble_activate_idle_scheduler()
 {

@@ -26,6 +26,11 @@ long ma_entity_load(marcel_entity_t *);
 /* Returns true if the considered entity is en seed or a bubble that only contains seeds */
 unsigned ma_is_a_seed(marcel_entity_t *);
 
+/* Returns true if the considered entity is currently running (i.e.,
+   if e is a thread, e is running, if e is a bubble, e contains a
+   running thread.) */
+unsigned ma_entity_is_running (marcel_entity_t *e);
+
 /* Activates/deactivates work-stealing algorithms */
 void marcel_bubble_activate_idle_scheduler();
 void marcel_bubble_deactivate_idle_scheduler();

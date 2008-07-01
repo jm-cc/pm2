@@ -439,6 +439,32 @@ struct browse_and_steal_args {
   marcel_entity_t *thread_to_steal;
 };
 
+/* This function is just a way to factorize the code called by
+   _browse_and_steal_ when testing if an entity is worth to be
+   stolen. */
+static int
+test_entity (int *greater, 
+	     marcel_entity_t **bestbb, 
+	     marcel_entity_t **thread_to_steal, 
+	     marcel_entity_t **tested_entity) {
+  int found = 0;
+  long load = ma_entity_load (*tested_entity);
+  if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
+    if (load > *greater) {
+      *greater = load;
+      *bestbb = *tested_entity;
+      found = 1;
+    }
+  } else {
+    /* If we don't find any bubble to steal, we may steal a
+       thread. In that case, we try to steal the higher thread we
+       find in the entities hierarchy. This kind of behaviour favors
+       load balancing of OpenMP nested applications for example. */
+    *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
+  }
+  return found;
+}
+
 /* This function browses the content of the _hold_ holder, in order to
    find something to steal (a bubble if possible) to the _source_
    topo_level. It recursively look at bubbles content too. 
@@ -454,23 +480,20 @@ browse_and_steal(ma_holder_t *hold, void *args) {
   struct marcel_topo_level *top = marcel_topo_level(0,0);
   struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;  
 
-  list_for_each_entry(e, &hold->sched_list, sched_list) {
-    long load = ma_entity_load(e);
-    if (e->type == MA_BUBBLE_ENTITY) {
-      if (load > greater) {
-	greater = load;
-	bestbb = e;
-      }
-    } else {
-      /* If we don't find any bubble to steal, we may steal a
-	 thread. In that case, we try to steal the higher thread we
-	 find in the entities hierarchy. This kind of behaviour favors
-	 load balancing of OpenMP nested applications for example. */
-      thread_to_steal = (thread_to_steal == NULL) ? e : thread_to_steal;
+  /* We don't want to browse runqueues and bubbles the same
+     way. (i.e., we want to browse directly included entities first,
+     to steal the upper bubble we find.) */
+  if (hold->type == MA_BUBBLE_HOLDER) {
+    for_each_entity_scheduled_in_bubble_begin (e, ma_bubble_holder(hold)) 
+      test_entity (&greater, &bestbb, &thread_to_steal, &e);
+      available_entities++;
+    for_each_entity_scheduled_in_bubble_end () 
+  } else {
+    list_for_each_entry(e, &hold->sched_list, sched_list) {
+      test_entity (&greater, &bestbb, &thread_to_steal, &e);
+      available_entities++;
     }
-    available_entities++;
   }
-  
   ma_runqueue_t *common_rq = NULL, *rq = NULL;
   if (bestbb)
     rq = get_parent_rq(bestbb);

@@ -441,9 +441,11 @@ struct browse_and_steal_args {
 
 /* This function is just a way to factorize the code called by
    _browse_and_steal_ when testing if an entity is worth to be
-   stolen. */
+   stolen. It tests if the load of _tested_entity_ is greater than
+   _greater_. If so, the considered entity is backed up in
+   _bestbb_. */
 static int
-test_entity (int *greater, 
+is_entity_worth_stealing (int *greater, 
 	     marcel_entity_t **bestbb, 
 	     marcel_entity_t **thread_to_steal, 
 	     marcel_entity_t **tested_entity) {
@@ -485,12 +487,12 @@ browse_and_steal(ma_holder_t *hold, void *args) {
      to steal the upper bubble we find.) */
   if (hold->type == MA_BUBBLE_HOLDER) {
     for_each_entity_scheduled_in_bubble_begin (e, ma_bubble_holder(hold)) 
-      test_entity (&greater, &bestbb, &thread_to_steal, &e);
+      is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e);
       available_entities++;
     for_each_entity_scheduled_in_bubble_end () 
   } else {
     list_for_each_entry(e, &hold->sched_list, sched_list) {
-      test_entity (&greater, &bestbb, &thread_to_steal, &e);
+      is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e);
       available_entities++;
     }
   }

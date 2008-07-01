@@ -28,11 +28,6 @@ PUBLISHDIR	:= webruntime@runtime:/home/webruntime/html/pm2-doc
 
 THISDIR			:=	$(CURDIR)
 
-all: $(THISDIR)/$(TARGET).pdf
-
-$(THISDIR)/$(TARGET).pdf: $(BUILD)/ps/$(TARGET).ps
-	ps2pdf $< $@
-
 upload: pdf-upload html-upload
 
 html-upload: html

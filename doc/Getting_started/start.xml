@@ -6,7 +6,7 @@
 
 <!-- DATE="December 2005" -->
 
-<WML INCLUDE="my_macros.txt"/>
+<RUNTIME INCLUDE="Sources/menu.xml"/>
 
 <ABSTRACT TABLEOFPROGRAMS="true">
 <P>

@@ -1,0 +1,8 @@
+<define-tag menu_en>
+<div class=menu>
+&nbsp;&nbsp; <a class=menu href="/MadMPI/doc/"                       >Mad-MPI Manual homepage</a>
+&nbsp;|&nbsp; <a class=menu href="/MadMPI/"                       >Mad-MPI homepage</a>
+&nbsp;|&nbsp; <a class=menu href="/Runtime/"                      >RUNTIME homepage</a>
+&nbsp; &nbsp;
+</div>
+</define-tag>

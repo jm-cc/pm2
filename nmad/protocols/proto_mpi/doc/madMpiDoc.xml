@@ -2,7 +2,7 @@
 <!DOCTYPE DOCUMENT SYSTEM "file:./xml2html/data/xml/DOCUMENT.dtd">
 <DOCUMENT TITLE="Mad-MPI: Installation and User's Guide" AUTHOR="The PM2 Team" EMAIL="runtime@labri.fr">
 
-<WML INCLUDE="my_macros.txt"/>
+<RUNTIME INCLUDE="menu.xml"/>
 
 <MACRO NAME="madmpi" VALUE="Mad-MPI"/>
 
@@ -27,9 +27,9 @@
 </P>
 <P>
   The latest version of this document is available from the following
-  URL: 
+  URL:
   <LATEX>\begin{quote}</LATEX>
-  <URL>http://runtime.futurs.inria.fr/MadMPI/doc/</URL>
+  <URL>http://runtime.bordeaux.inria.fr/MadMPI/doc/</URL>
   <LATEX>\end{quote}</LATEX>
 </P>
 </ABSTRACT>

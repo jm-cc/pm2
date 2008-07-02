@@ -1,8 +1,0 @@
-<define-tag menu_en>
-<div class=menu>
-&nbsp;&nbsp; <a class=menu href="<get-var ROOT>/MadMPI/doc/"                       >Mad-MPI Manual homepage</a>
-&nbsp;|&nbsp; <a class=menu href="<get-var ROOT>/MadMPI/"                       >Mad-MPI homepage</a>
-&nbsp;|&nbsp; <a class=menu href="<get-var ROOT>/Runtime/"                      >RUNTIME homepage</a>
-&nbsp; &nbsp;
-</div>
-</define-tag>

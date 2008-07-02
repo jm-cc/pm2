@@ -1062,7 +1062,7 @@ data are available.
 <P>
 A minimal MPI implementation has been developed on top of
 NewMadeleine. More informations on this implementation are available
-at the following URL: <URL>http://runtime.futurs.inria.fr/MadMPI/</URL>.
+at the following URL: <URL>http://runtime.bordeaux.inria.fr/MadMPI/</URL>.
 </P>
 </SUBSUBSECTION>
 

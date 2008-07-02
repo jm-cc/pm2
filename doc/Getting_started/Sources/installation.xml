@@ -17,7 +17,7 @@ PM2 is a highly portable and efficient environment and the current
 software is yet available on a wide range of architectures. The
 implementation is built on top of several distinct software
 components: Marcel and Madeleine. we briefly review the currently
-supported architectures and systems. 
+supported architectures and systems.
 </P>
 
 <NOTE>
@@ -93,7 +93,7 @@ these scripts.
 <P>
 PM2 files are hosted on the InriaGforge server at
 <URL>https://gforge.inria.fr/projects/pm2/</URL>, also accessible from
-the PM2 web site at <URL>http://runtime.futurs.inria.fr/pm2/</URL>.
+the PM2 web site at <URL>http://runtime.bordeaux.inria.fr/pm2/</URL>.
 </P>
 
 <P>
@@ -109,7 +109,7 @@ your problem is not already listed in the <EM>Frequently Asked
 The latest release for the package <TT>pm2</TT> is available from the
 main page of the project PM2 at
 <URL>https://gforge.inria.fr/projects/pm2/</URL> under the tab
-<B>Files</B>. It can be extracted with the following command 
+<B>Files</B>. It can be extracted with the following command
 entered at the shell prompt:
 </P>
 
@@ -140,7 +140,7 @@ To become a member of the project <TT>pm2</TT>. For this, you first
 need to get an account to the gForge server. You can then become a
 member of the project by contacting one of the project administrators.
 The list of the project administrators is available from the main
-project page. 
+project page.
 </P>
 <P>
 You can also choose to check out the project's SVN repository through
@@ -161,7 +161,7 @@ instructions).
 
 <P>
 You can now check out the latest version from the <TT>Subversion</TT>
-server 
+server
 </P>
 <UL>
 <LI>
@@ -224,7 +224,7 @@ works.
 </P>
 
 <UL>
-  
+
 <LI>
 <P>
 The <TT>PM2_ROOT</TT> variable contains the path to the PM2
@@ -250,10 +250,10 @@ in the active search path.
 <P>
 The <TT>PM2_HOME</TT> variable contains the path to the PM2
 administrative directory. The default is your home directory
-<TT>${HOME}</TT>. 
+<TT>${HOME}</TT>.
 </P>
 </LI>
-    
+
 <LI>
 <P>
 By default, configuration files are stored in the
@@ -385,11 +385,11 @@ the flavor one wishes to use.
 <SUBSECTION TITLE="Compiling the library">
 
 <P>
-You are now ready for the big step: compiling the whole library. 
+You are now ready for the big step: compiling the whole library.
 
 <IGNORE>
 No files are created in the <TT>${PM2_ROOT}</TT> directory, so that
-you can compile and install PM2 from a CDROM. 
+you can compile and install PM2 from a CDROM.
 </IGNORE>
 
 All the files will be created in the <TT>${PM2_BUILD_DIR}</TT>

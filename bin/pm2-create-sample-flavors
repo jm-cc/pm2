@@ -71,13 +71,13 @@ registering_flavors() {
     register_flavor marcel-forestgomp-opt \
         --modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=smp_bind_proc \
-	--marcel=pmarcel --marcel=standard_main \
+	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys
 
     register_flavor marcel-forestgomp-debug \
         --modules="marcel tbx init" \
 	--marcel=numa --marcel=smp_bind_proc \
-	--marcel=pmarcel --marcel=standard_main \
+	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=valgrind --marcel=bug_on \
 	--all=debug --all=gdb --all=noinline --all=build_static
@@ -85,7 +85,7 @@ registering_flavors() {
     register_flavor marcel-forestgomp-fxtdebug \
         --modules="marcel tbx init bubblelib bubbles profile" \
 	--marcel=numa --marcel=smp_bind_proc \
-	--marcel=pmarcel --marcel=standard_main \
+	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=profile --marcel=bug_on \
 	--profile=autostart \

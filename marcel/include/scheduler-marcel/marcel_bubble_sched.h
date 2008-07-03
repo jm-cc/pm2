@@ -76,8 +76,6 @@ int marcel_bubble_removebubble(marcel_bubble_t *bubble, marcel_bubble_t *little_
 /** \brief Removes thread \e task from bubble \e bubble. */
 int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
 
-int marcel_bubble_submit();
-
 #define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->as_entity)
 #define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->as_entity)
 
@@ -143,19 +141,20 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->as_entity)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->as_entity)
 
-/**
- * \brief Changes the current bubble scheduler, returns the old one.
- */
+/** \brief Changes the current bubble scheduler, returns the old one. */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
 
 /** \brief Informs the scheduler that the application initialization
     phase has terminated */
-void marcel_bubble_sched_begin();
+void marcel_bubble_sched_begin ();
 /** \brief Informs the scheduler that the application is entering
     ending phase */
-void marcel_bubble_sched_end();
+void marcel_bubble_sched_end ();
 /** \brief Re-distributes the active entities on the topology */
-void marcel_bubble_shake();
+void marcel_bubble_shake ();
+/** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
+int marcel_bubble_submit (marcel_bubble_t *b);
+
 
 /* @} */
 

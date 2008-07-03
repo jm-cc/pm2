@@ -92,40 +92,48 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	return old;
 }
 
-void marcel_bubble_sched_begin() 
-{
-  if (ma_atomic_read(&ma_init)) {
-    ma_spin_lock(&ma_init_lock);
-    if (ma_atomic_read(&ma_init)) {
+void marcel_bubble_sched_begin () {
+  if (ma_atomic_read (&ma_init)) {
+    ma_spin_lock (&ma_init_lock);
+    if (ma_atomic_read (&ma_init)) {
       /* Application is entering steady state, let's start
 	 thread/bubble distribution and active work stealing
 	 algorithm */ 
-      ma_atomic_dec(&ma_init);
-      ma_spin_unlock(&ma_init_lock);
-      current_sched->submit(&marcel_root_bubble.as_entity);
+      ma_atomic_dec (&ma_init);
+      ma_spin_unlock (&ma_init_lock);
+      current_sched->submit (&marcel_root_bubble.as_entity);
       ma_idle_scheduler = 1;
     }
     else
-      ma_spin_unlock(&ma_init_lock);
+      ma_spin_unlock (&ma_init_lock);
   }
 }
 
-void marcel_bubble_sched_end() 
-{
+int
+marcel_bubble_submit (marcel_bubble_t *b) {
+  if (current_sched) {
+    if (current_sched->submit) {
+      current_sched->submit (&b->as_entity);
+      return 0;
+    }
+  }
+  return 1;
+}
+
+void marcel_bubble_sched_end () {
   if (!ma_atomic_read(&ma_ending)) {
-    ma_spin_lock(&ma_ending_lock);
-    if (!ma_atomic_read(&ma_ending)) {
-      ma_atomic_inc(&ma_ending);
+    ma_spin_lock (&ma_ending_lock);
+    if (!ma_atomic_read (&ma_ending)) {
+      ma_atomic_inc (&ma_ending);
       ma_idle_scheduler = 0;
     }
-    ma_spin_unlock(&ma_ending_lock);
+    ma_spin_unlock (&ma_ending_lock);
   }
 }
 
-void marcel_bubble_shake() 
-{
-  ma_bubble_gather(&marcel_root_bubble);
-  current_sched->submit(&marcel_root_bubble.as_entity);
+void marcel_bubble_shake () {
+  ma_bubble_gather (&marcel_root_bubble);
+  current_sched->submit (&marcel_root_bubble.as_entity);
 }
 
 int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
@@ -226,16 +234,6 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 	}
 	bubble_sched_debugl(7,"entity %p is held by bubble %p\n", e, ma_bubble_holder(h));
 	return ma_bubble_holder(h);
-}
-
-int
-marcel_bubble_submit()
-{
-  if (current_sched)
-    if (current_sched->submit)
-      current_sched->submit(&marcel_root_bubble.as_entity);
-
-  return 0;
 }
 
 /******************************************************************************

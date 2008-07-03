@@ -30,14 +30,14 @@ static ma_atomic_t failed_steals = MA_ATOMIC_INIT(0);
 
 /* Submits a set of entities on a marcel_topo_level */
 static void
-__sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l) {
+__sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
   int i;
-  bubble_sched_debug("Submitting entities on runqueue %p:\n", &l[0]->rq);
+  bubble_sched_debug("Submitting entities on runqueue %p:\n", &l->rq);
   ma_debug_show_entities("__sched_submit", e, ne);
   for (i = 0; i < ne; i++) {	      
     if (e[i]) {
-      int state = ma_get_entity(e[i]);
-      ma_put_entity(e[i], &l[0]->rq.as_holder, state);
+      int state = ma_get_entity (e[i]);
+      ma_put_entity(e[i], &l->rq.as_holder, state);
     }
   }
 }
@@ -59,29 +59,29 @@ rq_load_compar(const void *_li1, const void *_li2) {
 }
 
 static int
-load_from_children(struct marcel_topo_level **father) {
-  int arity = father[0]->arity;
+load_from_children(struct marcel_topo_level *father) {
+  int arity = father->arity;
   int ret = 0;
   int i;
   
   if (arity)
     for (i = 0; i < arity; i++) {
-      ret += load_from_children(&father[0]->children[i]);
-      ret += ma_count_entities_on_rq(&father[0]->children[i]->rq, RECURSIVE_MODE);
+      ret += load_from_children(father->children[i]);
+      ret += ma_count_entities_on_rq(&father->children[i]->rq, RECURSIVE_MODE);
     } else {
-    ret += ma_count_entities_on_rq(&father[0]->rq, RECURSIVE_MODE);
+    ret += ma_count_entities_on_rq(&father->rq, RECURSIVE_MODE);
   }
   return ret;
 }
 
 static void
-initialize_load_manager(load_indicator_t *load_manager, struct marcel_topo_level **from) {
-  int arity = from[0]->arity;
+initialize_load_manager(load_indicator_t *load_manager, struct marcel_topo_level *from) {
+  int arity = from->arity;
   int k;
   
   for (k = 0; k < arity; k++) { 
-    load_manager[k].load = load_from_children(&from[0]->children[k]);
-    load_manager[k].l = from[0]->children[k];
+    load_manager[k].load = load_from_children(from->children[k]);
+    load_manager[k].l = from->children[k];
   }
 }
 
@@ -112,9 +112,9 @@ __rearrange_load_manager(load_indicator_t *load_manager, int arity) {
 /* Distributes a set of entities regarding the load of the underlying
    levels */
 static void 
-__distribute_entities(struct marcel_topo_level **l, marcel_entity_t *e[], int ne, load_indicator_t *load_manager) {                      
+__distribute_entities(struct marcel_topo_level *l, marcel_entity_t *e[], int ne, load_indicator_t *load_manager) {                      
   int i;    
-  int arity = l[0]->arity;
+  int arity = l->arity;
 
   if (!arity) {
     bubble_sched_debug("__distribute_entities: done !arity\n");
@@ -152,13 +152,13 @@ int_compar(const void *_e1, const void *_e2) {
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
 static int
-__has_enough_entities(struct marcel_topo_level **l, 
+__has_enough_entities(struct marcel_topo_level *l, 
 		      marcel_entity_t *e[], 
 		      int ne, 
 		      load_indicator_t *load_manager) {
   int ret = 1, prev_state = 1;
-  int nvp = marcel_vpset_weight(&l[0]->vpset);
-  int arity = l[0]->arity;
+  int nvp = marcel_vpset_weight(&l->vpset);
+  int arity = l->arity;
   int per_item_entities = nvp / arity;
   int i, entities_per_level[arity];
 
@@ -200,10 +200,10 @@ __has_enough_entities(struct marcel_topo_level **l,
 }
 
 static 
-void __marcel_bubble_affinity(struct marcel_topo_level **l) {  
+void __marcel_bubble_affinity (struct marcel_topo_level *l) {  
   int ne;
-  int nvp = marcel_vpset_weight(&l[0]->vpset);
-  int arity = l[0]->arity;
+  int nvp = marcel_vpset_weight(&l->vpset);
+  int arity = l->arity;
   int i, k;
   
   if (!arity) {
@@ -212,12 +212,12 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   }
   
   bubble_sched_debug("count in __marcel_bubble__affinity\n");
-  ne = ma_count_entities_on_rq(&l[0]->rq, ITERATIVE_MODE);
-  bubble_sched_debug("ne = %d on runqueue %p\n", ne, &l[0]->rq);  
+  ne = ma_count_entities_on_rq(&l->rq, ITERATIVE_MODE);
+  bubble_sched_debug("ne = %d on runqueue %p\n", ne, &l->rq);  
 
   if (!ne) {
     for (k = 0; k < arity; k++)
-      __marcel_bubble_affinity(&l[0]->children[k]);
+      __marcel_bubble_affinity(l->children[k]);
     return;
   }
 
@@ -230,9 +230,9 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
 
   marcel_entity_t *e[ne];
   bubble_sched_debug("get in __marcel_bubble_affinity\n");
-  ma_get_entities_from_rq(&l[0]->rq, e, ne);
+  ma_get_entities_from_rq(&l->rq, e, ne);
 
-  bubble_sched_debug("Entities were taken from runqueue %p:\n", &l[0]->rq);
+  bubble_sched_debug("Entities were taken from runqueue %p:\n", &l->rq);
   ma_debug_show_entities("__marcel_bubble_affinity", e, ne);
 
   if (ne < nvp) {
@@ -275,7 +275,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
       if (!bubble_has_exploded) {
 	__distribute_entities(l, e, ne, load_manager);
 	for (k = 0; k < arity; k++)
-	  __marcel_bubble_affinity(&l[0]->children[k]);
+	  __marcel_bubble_affinity(l->children[k]);
 	return;
       }
 	  
@@ -306,7 +306,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
       }
       MA_BUG_ON(new_ne != j);
       
-      __sched_submit(new_e, new_ne, l);
+      __sched_submit (new_e, new_ne, l);
       return __marcel_bubble_affinity(l);
     }
   } else { /* ne >= nvp */ 
@@ -317,7 +317,7 @@ void __marcel_bubble_affinity(struct marcel_topo_level **l) {
   
   /* Keep distributing on the underlying levels */
   for (i = 0; i < arity; i++)
-    __marcel_bubble_affinity(&l[0]->children[i]);
+    __marcel_bubble_affinity(l->children[i]);
 }
 
 void 
@@ -332,8 +332,8 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   
   ma_bubble_lock_all(b, l);
   __ma_bubble_gather(b, b);
-  __sched_submit(&e, 1, &l);
-  __marcel_bubble_affinity(&l);
+  __sched_submit(&e, 1, l);
+  __marcel_bubble_affinity(l);
   ma_resched_existing_threads(l);
   ma_bubble_unlock_all(b, l);  
 
@@ -361,13 +361,13 @@ affinity_sched_exit() {
 static marcel_bubble_t *b = &marcel_root_bubble;
 
 static int
-affinity_sched_submit(marcel_entity_t *e) {
-  struct marcel_topo_level *l =  marcel_topo_level(0,0);
-  b = ma_bubble_entity(e);
-  if (!ma_atomic_read(&ma_init))
-    marcel_bubble_affinity(b, l);
+affinity_sched_submit (marcel_entity_t *e) {
+  struct marcel_topo_level *l = marcel_topo_level (0,0);
+  b = ma_bubble_entity (e);
+  if (!ma_atomic_read (&ma_init))
+    marcel_bubble_affinity (b, l);
   else 
-    __sched_submit(&e, 1, &l);
+    __sched_submit (&e, 1, l);
   
   return 0;
 }
@@ -416,15 +416,15 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
 
 
 static ma_runqueue_t *
-get_parent_rq(marcel_entity_t *e) {
+get_parent_rq (marcel_entity_t *e) {
   if (e) {
     ma_holder_t *sh = e->sched_holder;
     if (sh && (sh->type == MA_RUNQUEUE_HOLDER))
       return ma_to_rq_holder(sh);
     
     marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
-    MA_BUG_ON(upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
-    return ma_to_rq_holder(upper_e->sched_holder);
+    MA_BUG_ON (upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
+    return ma_to_rq_holder (upper_e->sched_holder);
   }
   return NULL;
 }

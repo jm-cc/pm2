@@ -1073,7 +1073,10 @@ static void topo_discover(void) {
 						MA_BUG_ON(marcel_topo_levels[l][i].os_##component != marcel_topo_levels[l+1][i].os_##component);
 				merge_os_components(node);
 				merge_os_components(die);
+				merge_os_components(l3);
+				merge_os_components(l2);
 				merge_os_components(core);
+				merge_os_components(l1);
 				merge_os_components(cpu);
 			}
 			__marcel_free(marcel_topo_levels[l+1]);

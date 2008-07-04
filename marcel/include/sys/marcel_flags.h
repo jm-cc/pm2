@@ -126,7 +126,6 @@
 #endif /* Fin Marcel Mono */
 
 #if defined(MARCEL_SMP) || defined(MARCEL_NUMA) /* Marcel SMP */
-#  define MA__SMP /* Utilisation des pthreads pour les lwp */
 #  define MA__LWPS
 #  define MA__TIMER
 #  define MA__WORK

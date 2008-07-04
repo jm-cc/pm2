@@ -104,7 +104,6 @@ static void* lwp_start_func(void* arg)
 }
 
 #ifdef MA__LWPS
-#ifdef MA__SMP
 /* Fonction exécutée par les kthreads lancées
  *
  * La pile de run_task est utilisée pour l'exécution de ce code
@@ -159,7 +158,6 @@ static void *lwp_kthread_start_func(void *arg)
 	marcel_kthread_exit(NULL);
 	LOG_RETURN(NULL);
 }
-#endif /* MA__SMP */
 
 //static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
 //static struct ma_notifier_block lwp_nb;
@@ -186,7 +184,6 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	}
 	ma_lwp_list_unlock_write();
 
-#ifdef MA__SMP
 	// Lancement du thread noyau "propulseur". Il faut désactiver les
 	// signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
 	// correct.
@@ -212,7 +209,6 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	}
 
 	marcel_sig_enable_interrupts();
-#endif
 	LOG_RETURN(ma_per_lwp(vpnum, lwp));
 }
 
@@ -234,7 +230,7 @@ unsigned marcel_lwp_add_vp(void)
 
 #endif // MA__LWPS
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 /* TODO: the stack of the lwp->sched_task is currently *NOT FREED* as
    run_task, and other system threads.
 
@@ -372,7 +368,7 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	ma_preempt_enable();
 	return lwp;
 }
-#endif // MA__SMP
+#endif // MA__LWPS
 
 /* Initialisation d'une structure LWP */
 /* On crée deux threads : run_task et idle_task
@@ -398,7 +394,7 @@ static void lwp_init(ma_lwp_t lwp)
 
 	LOG_IN();
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
  
@@ -458,7 +454,7 @@ static int lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
 
-#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
+#if defined(MA__LWPS) && defined(MA__BIND_LWP_ON_PROCESSORS)
 	if (ma_vpnum(lwp)<marcel_nbvps()) {
 		unsigned long target = marcel_topo_vp_level[ma_vpnum(lwp)].os_cpu;
 		ma_bind_on_processor(target);

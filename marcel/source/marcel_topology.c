@@ -74,7 +74,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #ifdef MARCEL_SMT_IDLE
 		.nbidle = MA_ATOMIC_INIT(0),
 #endif
-#ifdef MA__SMP
+#ifdef MA__LWPS
 		.kmutex = MARCEL_KTHREAD_MUTEX_INITIALIZER,
 		.kneed = MARCEL_KTHREAD_COND_INITIALIZER,
 		.kneeddone = MARCEL_KTHREAD_COND_INITIALIZER,

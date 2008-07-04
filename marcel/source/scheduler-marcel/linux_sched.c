@@ -1289,12 +1289,10 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		rq->father=NULL;
 	else {
 		rq->father=&marcel_topo_vp_level[num].rq;
-#ifdef MA__SMP
 		if (num < marcel_nbvps()) {
 			marcel_vpset_set(&ma_main_runqueue.vpset,num);
 			marcel_vpset_set(&ma_dontsched_runqueue.vpset,num);
 		}
-#endif
 	}
 	if (rq->father)
 		mdebug("runqueue %s has father %s\n",name,rq->father->name);
@@ -1302,10 +1300,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
-#ifdef MA__SMP
        marcel_vpset_zero(&(rq->vpset));
        marcel_vpset_zero(&(ma_per_lwp(dontsched_runqueue,lwp).vpset));
-#endif
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
 		rq = &marcel_topo_vp_level[num].rq;
@@ -1341,7 +1337,7 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
 	unsigned i;
 	char name[16];
@@ -1434,7 +1430,7 @@ static void __marcel_init linux_sched_init(void)
 	ma_task_stats_set(long, __main_thread, ma_stats_nbrunning_offset, 1);
 #endif /* MARCEL_STATS_ENABLED */
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	if (marcel_topo_nblevels>1) {
 #ifdef MA__NUMA
 		unsigned i,j;

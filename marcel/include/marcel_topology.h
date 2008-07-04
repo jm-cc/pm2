@@ -425,7 +425,7 @@ struct marcel_topo_level {
 
 	ma_runqueue_t rq;		/**< \brief data for the scheduler (runqueue for Marcel) */
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	/* for LWPs/VPs management */
 	marcel_kthread_mutex_t kmutex;
 	marcel_kthread_cond_t kneed;

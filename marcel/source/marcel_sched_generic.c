@@ -345,7 +345,7 @@ retry:
 
 void marcel_gensched_shutdown(void)
 {
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	marcel_lwp_t *lwp, *lwp_found;
 	marcel_vpset_t vpset;
 #endif
@@ -370,7 +370,7 @@ void marcel_gensched_shutdown(void)
 		current_sched->exit();
 #endif
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	/* Stop timer before stopping kernel threads, to avoid running
 	 * pthread_kill() in the middle of pthread_exit() */
 	marcel_sig_stop_itimer();

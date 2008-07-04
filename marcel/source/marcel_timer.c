@@ -353,7 +353,7 @@ unsigned long marcel_gettimeslice(void)
 #ifndef __MINGW32__
 void marcel_sig_enable_interrupts(void)
 {
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
@@ -366,7 +366,7 @@ void marcel_sig_enable_interrupts(void)
 
 void marcel_sig_disable_interrupts(void)
 {
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
@@ -417,7 +417,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 #endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 #ifdef DISTRIBUTE_SIGALRM
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
@@ -497,7 +497,7 @@ static void __marcel_init sig_init(void)
 #endif
 #endif
 	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	/* bloquer les signaux avant de lancer les lwps, pour que les lwps
 	 * lancés par la librairie de threads n'en recoivent pas */
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);

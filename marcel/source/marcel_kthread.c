@@ -36,7 +36,7 @@ int marcel_gettid(void) {
 #endif
 #endif
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 
@@ -465,4 +465,4 @@ void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*c
 }
 #endif
 
-#endif // MA__SMP
+#endif // MA__LWPS

@@ -15,7 +15,7 @@
  */
 
 #section types
-#ifdef MA__SMP
+#ifdef MA__LWPS
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <semaphore.h>
 # else
@@ -29,7 +29,7 @@
 #endif
 
 #section marcel_types
-#ifdef MA__SMP
+#ifdef MA__LWPS
 typedef void * (*marcel_kthread_func_t)(void *arg);
 
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
@@ -54,14 +54,12 @@ typedef int marcel_kthread_cond_t;
 #     error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
 #   endif
 # endif
-#endif // MA__SMP
+#endif // MA__LWPS
 
 #section marcel_functions
 #ifdef MA__LWPS
 int marcel_gettid(void);
-#endif
 
-#ifdef MA__SMP
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   void *stack_base,
 			   marcel_kthread_func_t func, void *arg);
@@ -90,6 +88,6 @@ void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex);
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
-#endif // MA__SMP
+#endif // MA__LWPS
 
 

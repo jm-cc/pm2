@@ -35,7 +35,7 @@ typedef struct marcel_lwp *ma_lwp_t;
 
 struct marcel_lwp {
 	struct list_head lwp_list;
-#ifdef MA__SMP
+#ifdef MA__LWPS
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
 #endif
@@ -232,7 +232,7 @@ __tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp)
 void marcel_lwp_fix_nb_vps(unsigned nb_lwp);
 #endif
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
 unsigned marcel_lwp_add_vp(void);
 unsigned marcel_lwp_add_lwp(int num);
 void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
@@ -245,7 +245,7 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void);
 
 #section functions
 #ifdef MARCEL_BLOCKING_ENABLED
-#  ifdef MA__SMP
+#  ifdef MA__LWPS
 void marcel_enter_blocking_section(void);
 void marcel_leave_blocking_section(void);
 #  else

@@ -43,7 +43,7 @@ do { \
 #define cpu_relax() SCHED_YIELD()
 
 #section functions
-#if defined(MA__SMP) && defined(MA__BIND_LWP_ON_PROCESSORS)
+#if defined(MA__LWPS) && defined(MA__BIND_LWP_ON_PROCESSORS)
 void ma_bind_on_processor(unsigned target);
 void ma_unbind_from_processor();
 #endif

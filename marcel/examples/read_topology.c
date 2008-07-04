@@ -104,6 +104,13 @@ int marcel_main(int argc, char **argv) {
     marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape %s_topology.dvi\n", hostname);
     marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
   }
+  
+
+  if (verbose_mode) {
+    int i;
+    for (i = 0; i <= MARCEL_LEVEL_LAST; i++)
+      marcel_fprintf(output, "marcel type %d on lvl %d.\n", i, ma_get_topo_type_level (i));
+  }
 
   marcel_end();
   return 0;

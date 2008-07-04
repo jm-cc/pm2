@@ -93,7 +93,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #ifdef MA__NUMA
 int ma_vp_node[MA_NR_LWPS];
 #endif
-
+static int ma_topo_type_level[MARCEL_LEVEL_LAST + 1];
 #undef marcel_topo_vp_level
 struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
 
@@ -1019,8 +1019,11 @@ static void topo_discover(void) {
 			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
 
 #  ifdef MA__NUMA
+	for (l=0; l <= MARCEL_LEVEL_LAST; l++)
+	  ma_topo_type_level[l] = -1;
 	/* merge identical levels */
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
+	  ma_topo_type_level[marcel_topo_levels[l][0].type] = l;
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++);
 		for (j=0; j<i && marcel_topo_levels[l+1][j].cpuset; j++)
 			if (marcel_topo_levels[l+1][j].cpuset != marcel_topo_levels[l][j].cpuset)
@@ -1055,6 +1058,13 @@ static void topo_discover(void) {
 			marcel_topo_levels[marcel_topo_nblevels] = NULL;
 			l--;
 		}
+	}
+	int type, previous_level = -1;
+	for (type = 0; type <= MARCEL_LEVEL_LAST; type++) {
+	  if (ma_topo_type_level[type] == -1)
+	    ma_topo_type_level[type] = previous_level;
+	  else
+	    previous_level = ma_topo_type_level[type];
 	}
 #  endif /* MA__NUMA */
 
@@ -1269,5 +1279,10 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(topology, 400, "Topology",
 				  topology_lwp_start, "Activation de la topologie");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
+
+int
+ma_get_topo_type_level (enum marcel_topo_level_e type) {
+  return ma_topo_type_level[type];
+}
 
 #endif /* MA__LWPS */

@@ -588,5 +588,6 @@ TBX_FMALLOC extern void *marcel_malloc_node(size_t size, int node);
 extern void marcel_free_node(void *ptr, size_t size, int node);
 #define marcel_malloc_node(size, node)	ma_malloc_node(size, node, __FILE__, __LINE__)
 #define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, __FILE__, __LINE__)
+extern int ma_get_topo_type_level (enum marcel_topo_level_e type);
 //!! unused node
 /* @} */

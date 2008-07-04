@@ -136,7 +136,6 @@ static void *lwp_kthread_start_func(void *arg)
 	vpnum = ma_vpnum(lwp);
 	mdebug("\t\t\t<LWP %d exiting>\n", vpnum);
 
-#ifdef MA__SMP
 	if (vpnum != -1) {
 		mdebug("we were the active LWP of VP %d\n", vpnum);
 		level = ma_lwp_vpaffinity_level(lwp);
@@ -152,7 +151,6 @@ static void *lwp_kthread_start_func(void *arg)
 	} else {
 		mdebug("we were an inactive LWP\n");
 	}
-#endif /* MA__SMP */
 
 	ma_lwp_list_lock_write();
 	list_del(&lwp->lwp_list);	

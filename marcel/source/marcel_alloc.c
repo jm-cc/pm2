@@ -259,11 +259,13 @@ static void __marcel_init marcel_slot_init(void)
 	/* Record the main thread's TLS register */
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
+	asm("movl %0, %%gs:(0x0c)":"=r" (1)); /* multiple_threads */
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 	asm("movl %%gs:(0x14), %0":"=r" (stack_guard));
 	asm("movl %%gs:(0x18), %0":"=r" (pointer_guard));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
+	asm("movl %0, %%fs:(0x18)":"=r" (1)); /* multiple_threads */
 	asm("movq %%fs:(0x20), %0":"=r" (sysinfo));
 	asm("movq %%fs:(0x28), %0":"=r" (stack_guard));
 	asm("movq %%fs:(0x30), %0":"=r" (pointer_guard));

@@ -114,6 +114,26 @@ marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 	return &marcel_topo_levels[level][index];
 }
 
+const char * marcel_topo_level_string(enum marcel_topo_level_e l)
+{
+  switch (l) {
+  case MARCEL_LEVEL_MACHINE: return "Machine";
+#ifdef MA__LWPS
+  case MARCEL_LEVEL_FAKE: return "Fake";
+#  ifdef MA__NUMA
+  case MARCEL_LEVEL_NODE: return "NUMANode";
+  case MARCEL_LEVEL_DIE: return "Die";
+  case MARCEL_LEVEL_L3: return "L3Cache";
+  case MARCEL_LEVEL_L2:	return "L2Cache";
+  case MARCEL_LEVEL_CORE: return "Core";
+  case MARCEL_LEVEL_PROC: return "SMTproc";
+#  endif
+  case MARCEL_LEVEL_VP: return "VP";
+#endif
+  }
+  return "Unknown";
+}
+
 void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode)
 {
   unsigned long type = l->merged_type;
@@ -136,45 +156,24 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 #endif
   }
 
-  if (type & (1<<MARCEL_LEVEL_MACHINE)) {
-    marcel_fprintf(output, "%sMachine", current_separator);
-    current_separator = separator;
+#define marcel_print_level_description_level(_l) \
+  if (type & (1<<_l)) { \
+    marcel_fprintf(output, "%s%s", current_separator, marcel_topo_level_string(_l)); \
+    current_separator = separator; \
   }
+
+  marcel_print_level_description_level(MARCEL_LEVEL_MACHINE)
 #ifdef MA__LWPS
-  if (type & (1<<MARCEL_LEVEL_FAKE)) {
-    marcel_fprintf(output, "%sFake", current_separator);
-    current_separator = separator;
-  }
+  marcel_print_level_description_level(MARCEL_LEVEL_FAKE)
 #  ifdef MA__NUMA
-  if (type & (1<<MARCEL_LEVEL_NODE)) {
-    marcel_fprintf(output, "%sNUMAnode", current_separator);
-    current_separator = separator;
-  }
-  if (type & (1<<MARCEL_LEVEL_DIE)) {
-    marcel_fprintf(output, "%sDie", current_separator);
-    current_separator = separator;
-  }
-  if (type & (1<<MARCEL_LEVEL_L3)) {
-    marcel_fprintf(output, "%sL3cache", current_separator);
-    current_separator = separator;
-  }
-  if (type & (1<<MARCEL_LEVEL_L2)) {
-    marcel_fprintf(output, "%sL2cache", current_separator);
-    current_separator = separator;
-  }
-  if (type & (1<<MARCEL_LEVEL_CORE)) {
-    marcel_fprintf(output, "%sCore", current_separator);
-    current_separator = separator;
-  }
-  if (type & (1<<MARCEL_LEVEL_PROC)) {
-    marcel_fprintf(output, "%sSMTprocessor", current_separator);
-    current_separator = separator;
-  }
+  marcel_print_level_description_level(MARCEL_LEVEL_NODE)
+  marcel_print_level_description_level(MARCEL_LEVEL_DIE)
+  marcel_print_level_description_level(MARCEL_LEVEL_L3)
+  marcel_print_level_description_level(MARCEL_LEVEL_L2)
+  marcel_print_level_description_level(MARCEL_LEVEL_CORE)
+  marcel_print_level_description_level(MARCEL_LEVEL_PROC)
 #  endif
-  if (type & (1 << MARCEL_LEVEL_VP)) {
-    marcel_fprintf(output, "%sVP", current_separator);
-    current_separator = separator;
-  }
+  marcel_print_level_description_level(MARCEL_LEVEL_VP)
 #endif
 }
 

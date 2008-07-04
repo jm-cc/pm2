@@ -115,7 +115,7 @@ registering_flavors() {
     register_flavor nmad-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS \
 	--puk=disable_output \
-        --marcel=mono --marcel=marcel_main \
+        --marcel=mono --marcel=standard_main \
 	--nmad=sched_opt --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-basic \
@@ -136,7 +136,7 @@ registering_flavors() {
 	--puk=disable_output \
 	--nmad=sched_opt --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
-        --marcel=smp --marcel=marcel_main \
+        --marcel=smp --marcel=standard_main \
         --common=fortran_target_none
 
     register_flavor nmad-distrib \

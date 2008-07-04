@@ -16,10 +16,11 @@
 #include "marcel.h"
 
 /* Browse the entire topology from level _from_, until the criterias
-   exposed in _my_see_ are met.*/
+   exposed in _my_see_ are met, or we reach a level of height
+   scope. */
 int
-ma_topo_level_browse (struct marcel_topo_level *from, ma_see_func_t my_see, void *args) {
-  return ma_topo_level_see_up (from, my_see, args);
+ma_topo_level_browse (struct marcel_topo_level *from, int scope, ma_see_func_t my_see, void *args) {
+  return ma_topo_level_see_up (from, scope, my_see, args);
 }
 
 /* Browse each children level of level _father_, applying the _my_see_
@@ -54,6 +55,7 @@ ma_topo_level_see_down (struct marcel_topo_level *father,
    each children of _from_'s father. */
 int 
 ma_topo_level_see_up (struct marcel_topo_level *from, 
+		      int scope,
 		      ma_see_func_t my_see,
 		      void *args) {
   struct marcel_topo_level *father = from->father;
@@ -66,7 +68,20 @@ ma_topo_level_see_up (struct marcel_topo_level *from,
   /* Looking upward begins with looking downward ! */
   if (ma_topo_level_see_down (father, from, my_see, args))
     return 1;
-  else
-    /* Then look from the father's */
-    return ma_topo_level_see_up (father, my_see, args);
+  else {
+    if (ma_topo_level_is_in_scope (father, scope)) {
+      /* Then look from the father's */
+      return ma_topo_level_see_up (father, scope, my_see, args);
+    } else {
+      /* Return something different to inform the caller we actually
+	 did reached _scope_ and didn't find anything. */
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int
+ma_topo_level_is_in_scope (struct marcel_topo_level *l, int scope) {
+  return (l->level >= scope) ? 1 : 0;
 }

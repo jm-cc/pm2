@@ -65,6 +65,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 		.os_l3 = -1,
 		.os_l2 = -1,
 		.os_core = -1,
+		.os_l1 = -1,
 		.os_cpu = -1,
 		.vpset = MARCEL_VPSET_FULL,
 		.cpuset = MARCEL_VPSET_FULL,
@@ -124,8 +125,9 @@ const char * marcel_topo_level_string(enum marcel_topo_level_e l)
   case MARCEL_LEVEL_NODE: return "NUMANode";
   case MARCEL_LEVEL_DIE: return "Die";
   case MARCEL_LEVEL_L3: return "L3Cache";
-  case MARCEL_LEVEL_L2:	return "L2Cache";
+  case MARCEL_LEVEL_L2: return "L2Cache";
   case MARCEL_LEVEL_CORE: return "Core";
+  case MARCEL_LEVEL_L1: return "L1Cache";
   case MARCEL_LEVEL_PROC: return "SMTproc";
 #  endif
   case MARCEL_LEVEL_VP: return "VP";
@@ -151,7 +153,7 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
       type &= ~(1<<MARCEL_LEVEL_FAKE);
     /* don't print smtproc or caches if there's also core or die */
     if (type & ((1<<MARCEL_LEVEL_CORE) | (1<<MARCEL_LEVEL_DIE)))
-      type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
+      type &= ~( (1<<MARCEL_LEVEL_PROC) | (1<<MARCEL_LEVEL_L1) | (1<<MARCEL_LEVEL_L2) | (1<<MARCEL_LEVEL_L3) );
 #  endif
 #endif
   }
@@ -171,6 +173,7 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
   marcel_print_level_description_level(MARCEL_LEVEL_L3)
   marcel_print_level_description_level(MARCEL_LEVEL_L2)
   marcel_print_level_description_level(MARCEL_LEVEL_CORE)
+  marcel_print_level_description_level(MARCEL_LEVEL_L1)
   marcel_print_level_description_level(MARCEL_LEVEL_PROC)
 #  endif
   marcel_print_level_description_level(MARCEL_LEVEL_VP)
@@ -186,6 +189,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
   if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %s%u"  , separator, indexprefix, l->os_l3);
   if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2 %s%u"  , separator, indexprefix, l->os_l2);
   if (l->os_core != -1) marcel_fprintf(output, "%sCore %s%u", separator, indexprefix, l->os_core);
+  if (l->os_l1 != -1)   marcel_fprintf(output, "%sL1 %s%u"  , separator, indexprefix, l->os_l1);
   if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU %s%u" , separator, indexprefix, l->os_cpu);
 
   if (l->level == marcel_topo_nblevels-1) {
@@ -288,6 +292,7 @@ static void __marcel_init look_cpuinfo(void) {
 	unsigned proc_oscoreid[MARCEL_NBMAXCPUS];
 	unsigned proc_coreid[MARCEL_NBMAXCPUS];
 	unsigned oscoreids[MARCEL_NBMAXCPUS];
+	unsigned proc_l1cacheid[MARCEL_NBMAXCPUS];
 	unsigned proc_l2cacheid[MARCEL_NBMAXCPUS];
 	unsigned proc_l3cacheid[MARCEL_NBMAXCPUS];
 	/* Core numbers are not unique, we have to combine them with physical IDs */
@@ -297,6 +302,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 	unsigned numdies=0;
 	unsigned numcores=0;
+	unsigned numl1=0;
 	unsigned numl2=0;
 	unsigned numl3=0;
 
@@ -382,7 +388,7 @@ static void __marcel_init look_cpuinfo(void) {
 		for (j = 0; j < numdies; j++) {
 			die_level[j].type = MARCEL_LEVEL_DIE;
 			die_level[j].merged_type = 1<<MARCEL_LEVEL_DIE;
-			ma_topo_set_os_numbers(&die_level[j], -1, osphysids[j], -1, -1, -1, -1);
+			ma_topo_set_os_numbers(&die_level[j], -1, osphysids[j], -1, -1, -1, -1, -1);
 			marcel_vpset_zero(&die_level[j].vpset);
 			marcel_vpset_zero(&die_level[j].cpuset);
 			for (k=0; k <= processor; k++)
@@ -408,10 +414,12 @@ static void __marcel_init look_cpuinfo(void) {
 	for(j=0; j<=processor; j++) {
 		proc_l3cacheid[j] = -1;
 		proc_l2cacheid[j] = -1;
+		proc_l1cacheid[j] = -1;
 	}
 	for(j=0; j<=processor; j++) {
 		ma_parse_shared_cpu_maps(j, processor, 3, proc_l3cacheid, &numl3);
 		ma_parse_shared_cpu_maps(j, processor, 2, proc_l2cacheid, &numl2);
+		ma_parse_shared_cpu_maps(j, processor, 1, proc_l1cacheid, &numl1);
 	}
 
 	struct marcel_topo_level *l3_level;
@@ -424,7 +432,7 @@ static void __marcel_init look_cpuinfo(void) {
 		for (j = 0; j < numl3; j++) {
 			l3_level[j].type = MARCEL_LEVEL_L3;
 			l3_level[j].merged_type = 1<<MARCEL_LEVEL_L3;
-			ma_topo_set_os_numbers(&l3_level[j], -1, -1, j, -1, -1, -1);
+			ma_topo_set_os_numbers(&l3_level[j], -1, -1, j, -1, -1, -1, -1);
 			marcel_vpset_zero(&l3_level[j].vpset);
 			marcel_vpset_zero(&l3_level[j].cpuset);
 			for (k=0; k <= processor; k++)
@@ -457,7 +465,7 @@ static void __marcel_init look_cpuinfo(void) {
 		for (j = 0; j < numl2; j++) {
 			l2_level[j].type = MARCEL_LEVEL_L2;
 			l2_level[j].merged_type = 1<<MARCEL_LEVEL_L2;
-			ma_topo_set_os_numbers(&l2_level[j], -1, -1, -1, j, -1, -1);
+			ma_topo_set_os_numbers(&l2_level[j], -1, -1, -1, j, -1, -1, -1);
 			marcel_vpset_zero(&l2_level[j].vpset);
 			marcel_vpset_zero(&l2_level[j].cpuset);
 			for (k=0; k <= processor; k++)
@@ -490,7 +498,7 @@ static void __marcel_init look_cpuinfo(void) {
 		for (j = 0; j < numcores; j++) {
 			core_level[j].type = MARCEL_LEVEL_CORE;
 			core_level[j].merged_type = 1<<MARCEL_LEVEL_CORE;
-			ma_topo_set_os_numbers(&core_level[j], -1, -1, -1, -1, oscoreids[j], -1);
+			ma_topo_set_os_numbers(&core_level[j], -1, -1, -1, -1, oscoreids[j], -1, -1);
 			marcel_vpset_zero(&core_level[j].vpset);
 			marcel_vpset_zero(&core_level[j].cpuset);
 			for (k=0; k <= processor; k++)
@@ -517,6 +525,39 @@ static void __marcel_init look_cpuinfo(void) {
 		marcel_topo_core_level =
 #      endif
 		marcel_topo_levels[discovering_level++]=core_level;
+		mdebug("\n");
+	}
+
+	struct marcel_topo_level *l1_level;
+
+	if (numl1 > 1) {
+		mdebug("%d l1 caches\n", numl1);
+		l1_level=__marcel_malloc((numl1+MARCEL_NBMAXVPSUP+1)*sizeof(*l1_level));
+		MA_BUG_ON(!l1_level);
+
+		for (j = 0; j < numl1; j++) {
+			l1_level[j].type = MARCEL_LEVEL_L1;
+			l1_level[j].merged_type = 1<<MARCEL_LEVEL_L1;
+			ma_topo_set_os_numbers(&l1_level[j], -1, -1, -1, -1, -1, j, -1);
+			marcel_vpset_zero(&l1_level[j].vpset);
+			marcel_vpset_zero(&l1_level[j].cpuset);
+			for (k=0; k <= processor; k++)
+				if (proc_l1cacheid[k] == j)
+					marcel_vpset_set(&l1_level[j].cpuset,k);
+			l1_level[j].arity=0;
+			l1_level[j].children=NULL;
+			l1_level[j].father=NULL;
+			mdebug("l1 cache %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,l1_level[j].cpuset,
+					tbx_i2smb(l1_level[j].cpuset));
+		}
+		mdebug("\n");
+
+		marcel_vpset_zero(&l1_level[j].vpset);
+		marcel_vpset_zero(&l1_level[j].cpuset);
+
+		marcel_topo_level_nbitems[discovering_level]=numl1;
+		mdebug("--- shared l1 level has number %d\n", discovering_level);
+		marcel_topo_levels[discovering_level++]=l1_level;
 		mdebug("\n");
 	}
 }
@@ -572,7 +613,7 @@ static void __marcel_init look_libnuma(void) {
 		}
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].merged_type = 1<<MARCEL_LEVEL_NODE;
-		ma_topo_set_os_numbers(&node_level[i], i, -1, -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&node_level[i], i, -1, -1, -1, -1, -1, -1);
 		marcel_vpset_zero(&node_level[i].vpset);
 		node_level[i].cpuset=cpuset=buffer[0];
 		mdebug("node %d has cpuset %"MA_VPSET_x"\n",i,cpuset);
@@ -629,7 +670,7 @@ static void __marcel_init look_libnuma(void) {
 
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].merged_type = 1<<MARCEL_LEVEL_NODE;
-		ma_topo_set_os_numbers(&node_level[i], radid, -1, -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&node_level[i], radid, -1, -1, -1, -1, -1, -1);
 		marcel_vpset_zero(&node_level[i].vpset);
 		marcel_vpset_zero(&node_level[i].cpuset);
 		cursor = SET_CURSOR_INIT;
@@ -684,7 +725,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			continue;
 
 		rad_level[r].type = level;
-		ma_topo_set_os_numbers(&rad_level[r], -1, -1, -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&rad_level[r], -1, -1, -1, -1, -1, -1, -1);
 		switch(level) {
 			case MARCEL_LEVEL_NODE:
 				rad_level[r].os_node = r;
@@ -754,7 +795,7 @@ static void look_cpu(void) {
 	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
 		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
 		cpu_level[cpu].merged_type = 1<<MARCEL_LEVEL_PROC;
-		ma_topo_set_os_numbers(&cpu_level[cpu], -1, -1, -1, -1, -1, cpu);
+		ma_topo_set_os_numbers(&cpu_level[cpu], -1, -1, -1, -1, -1, -1, cpu);
 		marcel_vpset_zero(&cpu_level[cpu].vpset);
 		marcel_vpset_vp(&cpu_level[cpu].cpuset, cpu);
 		mdebug("cpu %d has cpuset %"MA_VPSET_x" \t(%s)\n",cpu,cpu_level[cpu].cpuset, tbx_i2smb(cpu_level[cpu].cpuset));
@@ -924,7 +965,7 @@ static void topo_discover(void) {
 #  endif
 		vp_level[i].type=MARCEL_LEVEL_VP;
 		vp_level[i].merged_type=1<<MARCEL_LEVEL_VP;
-		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, oscpu);
+		ma_topo_set_os_numbers(&vp_level[i], -1, -1, -1, -1, -1, -1, oscpu);
 		marcel_vpset_vp(&vp_level[i].cpuset, oscpu);
 		marcel_vpset_set(&cpuset, oscpu);
 		marcel_vpset_zero(&vp_level[i].vpset);
@@ -1106,7 +1147,7 @@ static void topo_discover(void) {
 						level->merged_type = 1<<MARCEL_LEVEL_FAKE;
 						level->number = j+k;
 						level->index = k;
-						ma_topo_set_os_numbers(level, -1, -1, -1, -1, -1, -1);
+						ma_topo_set_os_numbers(level, -1, -1, -1, -1, -1, -1, -1);
 						marcel_vpset_zero(&level->cpuset);
 						marcel_vpset_zero(&level->vpset);
 						level->arity = 0;
@@ -1179,7 +1220,7 @@ static void topo_discover(void) {
 		marcel_topo_vp_level[i].type=MARCEL_LEVEL_VP;
 		marcel_topo_vp_level[i].merged_type=1<<MARCEL_LEVEL_VP;
 		marcel_topo_vp_level[i].number=i;
-		ma_topo_set_os_numbers(&marcel_topo_vp_level[i], -1, -1, -1, -1, -1, -1);
+		ma_topo_set_os_numbers(&marcel_topo_vp_level[i], -1, -1, -1, -1, -1, -1, -1);
 		marcel_vpset_vp(&marcel_topo_vp_level[i].vpset,i);
 		marcel_vpset_zero(&marcel_topo_vp_level[i].cpuset);
 		marcel_topo_vp_level[i].arity=0;

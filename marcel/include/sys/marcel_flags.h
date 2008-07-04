@@ -21,12 +21,6 @@
 #  define MA__DEBUG
 #endif
 
-#ifdef SMP
-#  error use of SMP depreciated. Define MARCEL_SMP instead
-#  undef SMP
-#  define MARCEL_SMP
-#endif
-
 #ifdef MARCEL_MONO
 #  undef MARCEL_MONO
 #  define MARCEL_MONO 1

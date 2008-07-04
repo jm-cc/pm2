@@ -227,6 +227,39 @@ void ma_set_processors(void) {
 	mdebug("%d LWP%s per cpu, stride %d, from %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride, marcel_first_cpu);
 }
 
+static void
+ma_parse_shared_cpu_maps(int proc_index, int nr_procs, int cache_index, unsigned *cacheids, unsigned *nr_caches)
+{
+	long map, mask;
+#define SHARED_CPU_MAP_STRLEN (27+9+12+1+15+1)
+	char mappath[SHARED_CPU_MAP_STRLEN];
+	char string[9+1];
+	FILE * fd;
+	int k;
+
+	sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, cache_index-1);
+	fd = fopen(mappath, "r");
+	if (fd) {
+		if (fgets(string,sizeof(string), fd)) {
+		map = strtol(string, NULL, 16);
+		for(k=0, mask=1; k<=nr_procs; k++, mask<<=1)
+			if (mask & map) {
+				if (cacheids[k] != -1)
+					/* already got this cache map */
+					break;
+
+				for(; k<=nr_procs; k++, mask<<=1)
+					if (mask & map) {
+						mdebug("--- proc %d has L%d cache number %d\n", k, cache_index, *nr_caches);
+						cacheids[k] = *nr_caches;
+					}
+				(*nr_caches)++;
+			}
+		}
+		fclose(fd);
+	}
+}
+
 #  ifdef MA__NUMA
 
 #    ifdef MARCEL_SMT_IDLE
@@ -377,56 +410,8 @@ static void __marcel_init look_cpuinfo(void) {
 		proc_l2cacheid[j] = -1;
 	}
 	for(j=0; j<=processor; j++) {
-		long map, mask;
-#define SHARED_CPU_MAP_STRLEN (27+9+12+1+15+1)
-		char mappath[SHARED_CPU_MAP_STRLEN];
-		FILE * fd;
-
-		/* read the L2 map */
-		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index1/shared_cpu_map", j);
-		fd = fopen(mappath, "r");
-		if (fd) {
-			if (fgets(string,sizeof(string), fd)) {
-				map = strtol(string, NULL, 16);
-				for(k=0, mask=1; k<=processor; k++, mask<<=1)
-					if (mask & map) {
-						if (proc_l2cacheid[k] != -1)
-							/* already got this cache map */
-							break;
-
-						for(; k<=processor; k++, mask<<=1)
-							if (mask & map) {
-								mdebug("--- proc %d has l2 cache number %d\n", k, numl2);
-								proc_l2cacheid[k] = numl2;
-							}
-						numl2++;
-					}
-			}
-			fclose(fd);
-		}
-
-		/* read the L3 map */
-		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index2/shared_cpu_map", j);
-		fd = fopen(mappath, "r");
-		if (fd) {
-			if (fgets(string,sizeof(string), fd)) {
-				map = strtol(string, NULL, 16);
-				for(k=0, mask=1; k<=processor; k++, mask<<=1)
-					if (mask & map) {
-						if (proc_l3cacheid[k] != -1)
-							/* already got this cache map */
-							break;
-
-						for(; k<=processor; k++, mask<<=1)
-							if (mask & map) {
-								mdebug("--- proc %d has l3 cache number %d\n", k, numl3);
-								proc_l3cacheid[k] = numl3;
-							}
-						numl3++;
-					}
-			}
-			fclose(fd);
-		}
+		ma_parse_shared_cpu_maps(j, processor, 3, proc_l3cacheid, &numl3);
+		ma_parse_shared_cpu_maps(j, processor, 2, proc_l2cacheid, &numl2);
 	}
 
 	struct marcel_topo_level *l3_level;

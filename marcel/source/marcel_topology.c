@@ -1281,7 +1281,7 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(topology, 400, "Topology",
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 
 int
-ma_get_topo_type_level (enum marcel_topo_level_e type) {
+ma_get_topo_type_depth (enum marcel_topo_level_e type) {
   return ma_topo_type_level[type];
 }
 

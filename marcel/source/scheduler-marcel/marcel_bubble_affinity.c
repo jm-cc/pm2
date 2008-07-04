@@ -576,7 +576,7 @@ affinity_steal(unsigned from_vp) {
     .source = me,
     .thread_to_steal = NULL,
   };
-  smthg_to_steal = ma_topo_level_browse (me, ma_get_topo_type_depth (MARCEL_LEVEL_DIE), browse_and_steal, &args);
+  smthg_to_steal = ma_topo_level_browse (me, ma_get_topo_type_depth (MARCEL_LEVEL_NODE), browse_and_steal, &args);
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();

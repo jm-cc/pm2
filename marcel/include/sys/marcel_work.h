@@ -44,9 +44,7 @@ struct deviate_record_struct_t {
 };
 
 struct marcel_work {
-  //#ifdef MA__WORK
   volatile unsigned has_work;
-  //#endif
   deviate_record_t *deviate_work;  
 };
 
@@ -55,7 +53,6 @@ struct marcel_work {
         .deviate_work=NULL \
 })
 
-#ifdef MA__WORK
 
 /* flags indiquant le type de travail à faire */
 enum {
@@ -72,7 +69,4 @@ enum {
   do { (pid)->work.has_work &= ~MARCEL_WORK_DEVIATE; } while(0)
 
 void ma_do_work(marcel_t self);
-
-#endif /* MA__WORK */
-
 

@@ -66,16 +66,12 @@ do { \
         ma_barrier(); \
 } while (0)
 
-#ifndef MA__WORK
-#define ma_check_work()
-#else
 #define ma_check_work() \
 do { \
 	if (!(SELF_GETMEM(state) & ~MA_TASK_INTERRUPTIBLE) \
 			&& HAS_DEVIATE_WORK(MARCEL_SELF)) \
 		ma_do_work(MARCEL_SELF); \
 } while (0)
-#endif
 
 #define ma_preempt_enable_no_resched() \
 do { \

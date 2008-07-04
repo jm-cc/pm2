@@ -81,12 +81,6 @@
 #  undef MA__INTERRUPTS_FIX_LWP
 #endif
 
-/* MA__WORK : utilisation des files de travail à la fin des ma_preempt_enable()
- * */
-#ifdef MA__WORK
-#  undef MA__WORK
-#endif
-
 /* MA__IFACE_PMARCEL : définit les symboles/structures pmarcel_...
  * (compatible API avec la norme POSIX)
  * */
@@ -122,13 +116,11 @@
 #ifdef MARCEL_MONO /* Marcel Mono */
 #  define MA__MONO
 #  define MA__TIMER
-#  define MA__WORK
 #endif /* Fin Marcel Mono */
 
 #if defined(MARCEL_SMP) || defined(MARCEL_NUMA) /* Marcel SMP */
 #  define MA__LWPS
 #  define MA__TIMER
-#  define MA__WORK
 #  ifdef MARCEL_BIND_LWP_ON_PROCESSORS
 #    define MA__BIND_LWP_ON_PROCESSORS
 #  endif

@@ -39,9 +39,7 @@ static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 	ptr->next = pid->work.deviate_work;
 	pid->work.deviate_work = ptr;
 
-#ifdef MA__WORK
 	SET_DEVIATE_WORK(pid);
-#endif
 }
 
 // préemption désactivée et deviate_lock == 1
@@ -66,9 +64,7 @@ static void do_execute_deviate_work(void)
 		ma_spin_lock(&deviate_lock);
 	}
 
-#ifdef MA__WORK
 	CLR_DEVIATE_WORK(cur);
-#endif
 }
 
 // préemption désactivée lorsque l'on exécute cette fonction
@@ -179,20 +175,12 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
 	// TODO: quand le thread n'est pas actif, utiliser marcel_do_deviate()
 	// (plus efficace)
-#ifdef MA__WORK
 	marcel_deviate_record(pid, h, arg);
 
 	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 
 	ma_wake_up_state(pid, MA_TASK_INTERRUPTIBLE | MA_TASK_FROZEN);
-
-	LOG_OUT();
-	return;
-#else
-	// Tant pis !
-	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-#endif
 
 	LOG_OUT();
 }

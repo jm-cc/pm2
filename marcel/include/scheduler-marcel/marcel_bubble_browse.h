@@ -40,8 +40,10 @@ typedef int (ma_see_func_t)(ma_holder_t*, void *);
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_holder.h[types]"
 /* Main browsing function, applies the _my_see_ to each browsed
-   runqueue */
+   runqueue, and stops if nothing has been found before reaching the
+   _scope_ level. */
 int ma_topo_level_browse (struct marcel_topo_level *from, 
+			  int scope,
 			  ma_see_func_t my_see, 
 			  void *args);
 
@@ -54,5 +56,10 @@ int ma_topo_level_see_down (struct marcel_topo_level *from,
 			    void *args);
 
 int ma_topo_level_see_up (struct marcel_topo_level *from, 
+			  int scope,
 			  ma_see_func_t my_see,
 			  void *args);
+
+/* Determines whether the _l_ level is inside the scope (i.e., if _l_
+   is localized under the "height" limit represented by _scope_.) */
+int ma_topo_level_is_in_scope (struct marcel_topo_level *l, int scope);

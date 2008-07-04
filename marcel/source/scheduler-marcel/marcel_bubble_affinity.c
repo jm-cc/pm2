@@ -576,7 +576,17 @@ affinity_steal(unsigned from_vp) {
     .source = me,
     .thread_to_steal = NULL,
   };
-  smthg_to_steal = ma_topo_level_browse (me, ma_get_topo_type_depth (MARCEL_LEVEL_NODE), browse_and_steal, &args);
+  /* We try to steal an interesting bubble from one of our neighbour
+     runqueues (i.e. from our numa node) */
+  smthg_to_steal = ma_topo_level_browse (me, 
+					 ma_get_topo_type_depth (MARCEL_LEVEL_NODE), 
+					 browse_and_steal, 
+					 &args);
+  /* If we didn't find anything, there's certainly some balance
+     issue... Let's shake everything and distribute again! */
+  if (smthg_to_steal == -1)
+    marcel_bubble_shake ();
+
   ma_bubble_unlock_all(&marcel_root_bubble, marcel_topo_level(0,0));
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();

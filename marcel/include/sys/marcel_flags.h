@@ -58,13 +58,6 @@
 #  undef MA__LWPS
 #endif
 
-/* MA__BIND_LWP_ON_PROCESSORS : indique qu'il faut utiliser attacher les LWPs
- * aux processeurs. (utile uniquement en SMP)
- * */
-#ifdef MA__BIND_LWP_ON_PROCESSORS
-#  undef MA__BIND_LWP_ON_PROCESSORS
-#endif
-
 /* MA__TIMER : indique qu'il faut utiliser le timer unix (signaux)
  * pour la préemption.
  * */
@@ -120,9 +113,6 @@
 #if defined(MARCEL_SMP) || defined(MARCEL_NUMA) /* Marcel SMP */
 #  define MA__LWPS
 #  define MA__TIMER
-#  ifdef MARCEL_BIND_LWP_ON_PROCESSORS
-#    define MA__BIND_LWP_ON_PROCESSORS
-#  endif
 #endif /* Fin Marcel SMP */
 
 #if defined(MARCEL_NUMA)

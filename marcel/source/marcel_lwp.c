@@ -454,7 +454,7 @@ static int lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
 
-#if defined(MA__LWPS) && defined(MA__BIND_LWP_ON_PROCESSORS)
+#if defined(MA__LWPS)
 	if (ma_vpnum(lwp)<marcel_nbvps()) {
 		unsigned long target = marcel_topo_vp_level[ma_vpnum(lwp)].os_cpu;
 		ma_bind_on_processor(target);

@@ -30,7 +30,7 @@
  * How to bind a thread on a given processor
  */
 
-#if defined(MA__LWPS) && defined(MA__BIND_LWP_ON_PROCESSORS)
+#if defined(MA__LWPS)
 #ifdef LINUX_SYS
 #include <sched.h>
 #ifndef CPU_SET
@@ -65,7 +65,7 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #endif
 #endif
 
-#if defined(MA__LWPS) && defined(MA__BIND_LWP_ON_PROCESSORS)
+#if defined(MA__LWPS)
 void ma_bind_on_processor(unsigned target) {
 #if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,

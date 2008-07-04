@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 
 
@@ -30,14 +31,14 @@
 #define THREADS 17
 
 /* Thread-local storage.  */
-static __thread int tls_data;
+static __thread intptr_t tls_data;
 
 
 static void *
 thread_main (void *arg)
 {
   /* Initialize our TLS.  */
-  tls_data = (int) arg;
+  tls_data = (intptr_t) arg;
 
   /* Just leave enough time for others to override TLS_DATA (provided TLS is
      broken).  */
@@ -52,7 +53,7 @@ int
 main (int argc, char *argv[])
 {
   int err;
-  unsigned i;
+  intptr_t i;
   marcel_t threads[THREADS];
 
   marcel_init (&argc, argv);
@@ -75,9 +76,9 @@ main (int argc, char *argv[])
       if (err)
 	return 2;
 
-      if (i != (int) ret)
+      if (i != (intptr_t) ret)
 	{
-	  printf ("got %i instead of %i\n", (int) ret, i);
+	  printf ("got %i instead of %i\n", (intptr_t) ret, i);
 	  return 3;
 	}
     }

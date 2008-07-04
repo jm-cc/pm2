@@ -120,8 +120,6 @@ __distribute_entities(struct marcel_topo_level *l, marcel_entity_t *e[], int ne,
     bubble_sched_debug("__distribute_entities: done !arity\n");
     return;
   }
-  
-  qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
 
   for (i = 0; i < ne; i++) {
     if (e[i]) {
@@ -235,14 +233,14 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
   bubble_sched_debug("Entities were taken from runqueue %p:\n", &l->rq);
   ma_debug_show_entities("__marcel_bubble_affinity", e, ne);
 
+  qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
+
   if (ne < nvp) {
     if (__has_enough_entities(l, e, ne, load_manager))
       __distribute_entities(l, e, ne, load_manager);
     else {
       /* We really have to explode at least one bubble */
       bubble_sched_debug("We have to explode bubbles...\n");
-      
-      qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
       
       /* Let's start by counting sub-entities */
       unsigned new_ne = 0;

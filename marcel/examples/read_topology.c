@@ -109,7 +109,7 @@ int marcel_main(int argc, char **argv) {
   if (verbose_mode) {
     int i;
     for (i = 0; i <= MARCEL_LEVEL_LAST; i++)
-      marcel_fprintf(output, "marcel type %d on lvl %d.\n", i, ma_get_topo_type_level (i));
+      marcel_fprintf(output, "marcel type %d on lvl %d.\n", i, ma_get_topo_type_depth (i));
   }
 
   marcel_end();

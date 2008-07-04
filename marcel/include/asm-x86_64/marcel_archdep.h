@@ -99,6 +99,8 @@ typedef struct {
   uintptr_t sysinfo;
   uintptr_t stack_guard;
   uintptr_t pointer_guard;
+  unsigned long int vgetcpu_cache[2];
+  int private_futex;
   char padding[128]; //pour la structure thread de nptl...
 } lpt_tcb_t;
 

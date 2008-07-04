@@ -114,7 +114,6 @@
 #endif
 
 #ifdef MARCEL_MONO /* Marcel Mono */
-#  define MA__MONO
 #  define MA__TIMER
 #endif /* Fin Marcel Mono */
 

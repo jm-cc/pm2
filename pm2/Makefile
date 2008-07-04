@@ -23,8 +23,6 @@ dot_h: $(MOD_GEN_INC)/dsm_page_size.h
 
 include $(PM2_ROOT)/make/libs-rules.mak
 
-source/console.c-cflags = -fno-strict-aliasing
-
 $(MOD_GEN_INC)/dsm_page_size.h:
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(MOD_GEN_OBJ)/dsm_page_size${LIB_EXT}

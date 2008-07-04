@@ -30,11 +30,11 @@ void pm2_printf(char *format, ...)
   char *ptr;
 
   if(!__pm2_self) {
-    lock_task();
+    ma_preempt_disable();
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
-    unlock_task();
+    ma_preempt_enable();
   } else {
     marcel_sem_P(&print_mutex);
     sprintf(_pm2_print_buf, "[n%x] ", __pm2_self);

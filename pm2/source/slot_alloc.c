@@ -40,11 +40,11 @@ void slot_slot_busy(void *addr)
     may be asked for again before its getting liberated, due to a ping-pong
     effect.
   */
-  lock_task();
+  ma_preempt_disable();
 
   isoaddr_add_busy_slot(slot_get_header_address(addr));
 
-  unlock_task();
+  ma_preempt_enable();
 }
 
 
@@ -55,7 +55,7 @@ void slot_list_busy(slot_descr_t *descr)
   if (descr == NULL)
     return;
 
-  lock_task();
+  ma_preempt_disable();
 
   slot_ptr = slot_get_first(descr);
   while (slot_ptr != NULL)
@@ -64,7 +64,7 @@ void slot_list_busy(slot_descr_t *descr)
       slot_ptr = slot_get_next(slot_ptr);
     }
 
-  unlock_task();
+  ma_preempt_enable();
 }
 
 

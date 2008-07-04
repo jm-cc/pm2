@@ -219,11 +219,11 @@ static void display_RECT_func(int param)
   int x = param % XRESOLUTION;
   int y = (param % (XRESOLUTION * YRESOLUTION)) / XRESOLUTION;
 
-  lock_task();
+  ma_preempt_disable();
   my_gc_values.foreground = node2pix(node);
   XChangeGC( my_display_ptr, my_GC, GCForeground, &my_gc_values);
   XDrawRectangle(my_display_ptr, my_first_window, my_GC,x,y,RECTSIZE,RECTSIZE);
-  unlock_task();
+  ma_preempt_enable();
 
   XFlush(my_display_ptr);
   return;
@@ -257,11 +257,11 @@ static void display_BALL_func(int param)
   int x = param % XRESOLUTION;
   int y = (param % (XRESOLUTION * YRESOLUTION)) / XRESOLUTION;
 
-  lock_task();
+  ma_preempt_disable();
   my_gc_values.foreground = node2pix(node);
   XChangeGC( my_display_ptr, my_GC, GCForeground, &my_gc_values);
   XDrawRectangle(my_display_ptr, my_first_window, my_GC,x,y,BALLSIZE,BALLSIZE);
-  unlock_task();
+  ma_preempt_enable();
 
   XFlush(my_display_ptr);
   return;
@@ -294,11 +294,11 @@ static void black_RECT_func(int param)
   int x = param % XRESOLUTION;
   int y = param / XRESOLUTION;
 
-  lock_task();
+  ma_preempt_disable();
   my_gc_values.foreground = black.pixel;
   XChangeGC( my_display_ptr, my_GC, GCForeground, &my_gc_values);
   XDrawRectangle(my_display_ptr, my_first_window, my_GC,x,y,RECTSIZE,RECTSIZE);
-  unlock_task();
+  ma_preempt_enable();
 
   XFlush(my_display_ptr);
   return;
@@ -331,11 +331,11 @@ static void black_BALL_func(int param)
   int x = param % XRESOLUTION;
   int y = param / XRESOLUTION;
 
-  lock_task();
+  ma_preempt_disable();
   my_gc_values.foreground = black.pixel;
   XChangeGC( my_display_ptr, my_GC, GCForeground, &my_gc_values);
   XDrawRectangle(my_display_ptr, my_first_window, my_GC,x,y,BALLSIZE,BALLSIZE);
-  unlock_task();
+  ma_preempt_enable();
 
   XFlush(my_display_ptr);
   return;
@@ -345,13 +345,13 @@ static void black_BALL_func(int param)
 
 static __inline__ int next_proc(void)
 {
-  lock_task();
+  ma_preempt_disable();
 
   do {
     cur_proc = (cur_proc+1) % pm2_config_size();
   } while(cur_proc == pm2_self());
 
-  unlock_task();
+  ma_preempt_enable();
   return cur_proc;
 }
 

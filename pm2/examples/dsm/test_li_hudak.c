@@ -147,7 +147,7 @@ void prof_dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int
   if (dsm_get_access(index) >= READ_ACCESS) // there is a local copy of the page
     {
       dsm_add_to_copyset(index, req_node);
-      //      lock_task();
+      //      ma_preempt_disable();
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, WRITE_ACCESS); // the local copy will be read_only
@@ -156,7 +156,7 @@ void prof_dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int
 
       dsm_send_page(req_node, index, READ_ACCESS, tag);
       dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
-      //      unlock_task();
+      //      ma_preempt_enable();
     }
   else // no access; maybe a pending access ?
     if (dsm_get_pending_access(index) != NO_ACCESS && !dsm_next_owner_is_set(index))
@@ -193,13 +193,13 @@ void prof_dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t r
     {
       if (dsm_get_access(index) == READ_ACCESS)//20/10/99
 	dsm_invalidate_copyset(index, req_node);
-      //      lock_task();
+      //      ma_preempt_disable();
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, WRITE_ACCESS); // the local copy will become read-only
       dsm_send_page(req_node, index, WRITE_ACCESS, tag);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
-      //      unlock_task();
+      //      ma_preempt_enable();
     }
   else // no access; maybe a pending access ?
     if (dsm_get_pending_access(index) == WRITE_ACCESS && !dsm_next_owner_is_set(index))
@@ -315,11 +315,11 @@ void prof_dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t re
 #ifdef DSM_PROT_TRACE
 	     tfprintf(stderr,"invalidated copyset\n");
 #endif
-	     //lock_task();
+	     //ma_preempt_disable();
 	     dsm_set_prob_owner(index, dsm_self());
     	     dsm_set_access(index, WRITE_ACCESS);
 	     dsm_set_pending_access(index, NO_ACCESS);
-	     //unlock_task();
+	     //ma_preempt_enable();
 	   }
 	 else
 	   {

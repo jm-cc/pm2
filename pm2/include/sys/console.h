@@ -30,12 +30,12 @@ END_LRPC_LIST
 
 
 /*******************************************************/
-LRPC_DECL_REQ(LRPC_CONSOLE_MIGRATE, int destination; char *thread_id; long thread;);
+LRPC_DECL_REQ(LRPC_CONSOLE_MIGRATE, int destination; char *thread_id; marcel_t thread;);
 LRPC_DECL_RES(LRPC_CONSOLE_MIGRATE,);
 
 
 /*******************************************************/
-LRPC_DECL_REQ(LRPC_CONSOLE_FREEZE, char *thread_id; long thread;);
+LRPC_DECL_REQ(LRPC_CONSOLE_FREEZE, char *thread_id; marcel_t thread;);
 LRPC_DECL_RES(LRPC_CONSOLE_FREEZE,);
 
 

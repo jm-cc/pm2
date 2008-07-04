@@ -144,7 +144,7 @@ END_SERVICE(TILE)
 
 BEGIN_SERVICE(RESULT)
 
-  lock_task();
+  ma_preempt_disable();
 
   if(!req.changed && req.module != pm2_self())
      gimp_pixel_rgn_get_rect(&src_rgn, req.data, 
@@ -159,7 +159,7 @@ BEGIN_SERVICE(RESULT)
   if(req.changed)
      courageux++;
 
-  unlock_task();
+  ma_preempt_enable();
 
   marcel_sem_V(&sem_wait);
 
@@ -287,10 +287,10 @@ do_pixelize ( GDrawable *drawable, gint pixelwidth, gint tile_width )
 
 	  req.num++;
 
-	  lock_task();
+	  ma_preempt_disable();
 	  gimp_pixel_rgn_get_rect(&src_rgn, req.data, 
 				  req.area.x, req.area.y, req.area.w, req.area.h);
-	  unlock_task();
+	  ma_preempt_enable();
 
 	  ASYNC_LRPC((*distrib_func[pvals.distrib])(), TILE, STD_PRIO, DEFAULT_STACK, &req);
 	}

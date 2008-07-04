@@ -63,11 +63,11 @@ static struct pm2_thread_arg *__thread_alloc(void)
 {
   struct pm2_thread_arg *res;
 
-  lock_task();
+  ma_preempt_disable();
   if(next_free != NULL) {
     res = next_free;
     next_free = next_free->next;
-    unlock_task();
+    ma_preempt_enable();
 
     pm2debug("Params allocated in cache\n");
 
@@ -76,7 +76,7 @@ static struct pm2_thread_arg *__thread_alloc(void)
       MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
     res = &thread_param[next_unalloc];
     next_unalloc++;
-    unlock_task();
+    ma_preempt_enable();
 
     marcel_attr_init(&res->attr);
     marcel_attr_setdetachstate(&res->attr, tbx_true);
@@ -102,7 +102,7 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
     marcel_attr_setvpset(&res->attr, __pm2_global_vpset);
     marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
   } else {
-    marcel_attr_setvpset(&res->attr, marcel_self()->lwps_allowed);
+    marcel_attr_setvpset(&res->attr, marcel_self()->vpset);
     marcel_attr_setrealtime(&res->attr,
 			    MA_TASK_REAL_TIME(marcel_self()) ?
 			       MARCEL_CLASS_REALTIME : MARCEL_CLASS_REGULAR);
@@ -113,10 +113,10 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
 
 static __inline__ void pm2_thread_free(struct pm2_thread_arg *ta)
 {
-  lock_task();
+  ma_preempt_disable();
   ta->next = next_free;
   next_free = ta;
-  unlock_task();
+  ma_preempt_enable();
 }
 
 static void pm2_thread_term_func(void *arg)

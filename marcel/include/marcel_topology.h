@@ -331,6 +331,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 #endif
 #depend "linux_spinlock.h[types]"
 #depend "sys/marcel_kthread.h[marcel_types]"
+#depend "marcel_sem.h[structures]"
 
 struct marcel_topo_vpdata {
 	/* For VP levels */

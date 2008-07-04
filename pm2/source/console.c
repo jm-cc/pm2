@@ -187,7 +187,7 @@ END_STUB
 
 static BEGIN_SERVICE(LRPC_CONSOLE_MIGRATE)
    pm2_freeze();
-   pm2_migrate((marcel_t)req.thread, req.destination);    
+   pm2_migrate(req.thread, req.destination);    
 END_SERVICE(LRPC_CONSOLE_MIGRATE)
 
 PACK_REQ_STUB(LRPC_CONSOLE_MIGRATE)
@@ -200,7 +200,7 @@ UNPACK_REQ_STUB(LRPC_CONSOLE_MIGRATE)
 
 	old_mad_unpack_int(MAD_BY_COPY, &arg->destination, 1);
         old_mad_unpack_str(MAD_IN_HEADER, thread_id);
-	arg->thread = xtoi(thread_id);
+	arg->thread = (marcel_t) xtoi(thread_id);
 END_STUB
 
 PACK_RES_STUB(LRPC_CONSOLE_MIGRATE)
@@ -210,7 +210,7 @@ UNPACK_RES_STUB(LRPC_CONSOLE_MIGRATE)
 END_STUB
 
 static BEGIN_SERVICE(LRPC_CONSOLE_FREEZE)
-   marcel_freeze((marcel_t *)&req.thread, 1);
+   marcel_freeze(&req.thread, 1);
 END_SERVICE(LRPC_CONSOLE_FREEZE)
 
 PACK_REQ_STUB(LRPC_CONSOLE_FREEZE)
@@ -221,7 +221,7 @@ UNPACK_REQ_STUB(LRPC_CONSOLE_FREEZE)
 	char thread_id[16];
 
         old_mad_unpack_str(MAD_IN_HEADER, thread_id);
-	arg->thread = xtoi(thread_id);
+	arg->thread = (marcel_t) xtoi(thread_id);
 END_STUB
 
 PACK_RES_STUB(LRPC_CONSOLE_FREEZE)

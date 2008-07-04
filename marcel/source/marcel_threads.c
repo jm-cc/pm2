@@ -462,15 +462,15 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 
 	LOG_IN();
 	/* Démarrage du thread responsable des terminaisons */
-	if (LWP_NUMBER(lwp) == -1)  {
+	if (ma_vpnum(lwp) == -1)  {
 		LOG_OUT();
 		return;
 	}
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",LWP_NUMBER(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",ma_vpnum(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(ma_vpnum(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2
@@ -631,7 +631,7 @@ static void marcel_exit_internal(any_t val)
 #ifdef MARCEL_POSTEXIT_ENABLED
 	if (cur->postexit_func) {
 		ma_preempt_disable();
-		vp = GET_LWP(cur)->vp_level;
+		vp = ma_get_task_lwp(cur)->vp_level;
 
 #  ifdef MA__LWPS
 		/* This thread mustn't be moved any more */
@@ -641,9 +641,9 @@ static void marcel_exit_internal(any_t val)
 		ma_preempt_enable();
 
 	/* we need to acquire postexit semaphore before disabling preemption */
-		marcel_sem_P(&ma_topo_vpdata(vp,postexit_space));
-		ma_topo_vpdata(vp,postexit_func)=cur->postexit_func;
-		ma_topo_vpdata(vp,postexit_arg)=cur->postexit_arg;
+		marcel_sem_P(&ma_topo_vpdata_l(vp,postexit_space));
+		ma_topo_vpdata_l(vp,postexit_func)=cur->postexit_func;
+		ma_topo_vpdata_l(vp,postexit_arg)=cur->postexit_arg;
 	}
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
@@ -654,7 +654,7 @@ static void marcel_exit_internal(any_t val)
 	if (cur->postexit_func)
 		/* we can't wake joiner ourself, since it may get scheduled
 		 * somewhere else on the machine */
-		marcel_sem_V(&ma_topo_vpdata(vp,postexit_thread));
+		marcel_sem_V(&ma_topo_vpdata_l(vp,postexit_thread));
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
 	common_cleanup(cur);

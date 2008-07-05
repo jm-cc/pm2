@@ -259,13 +259,13 @@ ma_parse_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsig
 	int i, k;
 
 	for(i=0; i<10; i++) {
-		int level;
+		int level; /* 0 for L1, .... */
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/level", proc_index, i);
 		fd = fopen(mappath, "r");
 		if (fd) {
 			if (fgets(string,sizeof(string), fd))
-				level = strtol(string, NULL, 10);
+				level = strtol(string, NULL, 10)-1;
 			else
 				continue;
 			fclose(fd);
@@ -291,16 +291,16 @@ ma_parse_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsig
 				map = strtol(string, NULL, 16);
 				for(k=0, mask=1; k<=nr_procs; k++, mask<<=1)
 					if (mask & map) {
-						if (cacheids[(level-1)*MARCEL_NBMAXCPUS+k] != -1)
+						if (cacheids[level*MARCEL_NBMAXCPUS+k] != -1)
 							/* already got this cache map */
 							break;
 
 						for(; k<=nr_procs; k++, mask<<=1)
 							if (mask & map) {
-								mdebug("--- proc %d has L%d cache number %d\n", k, level, nr_caches[level-1]);
-								cacheids[(level-1)*MARCEL_NBMAXCPUS+k] = nr_caches[level-1];
+								mdebug("--- proc %d has L%d cache number %d\n", k, level+1, nr_caches[level]);
+								cacheids[level*MARCEL_NBMAXCPUS+k] = nr_caches[level];
 							}
-						nr_caches[level-1]++;
+						nr_caches[level]++;
 					}
 			}
 			fclose(fd);

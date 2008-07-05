@@ -308,6 +308,46 @@ ma_parse_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsig
 	}
 }
 
+static void
+ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int nr_procs,
+			  unsigned *numcaches, unsigned *cacheids)
+{
+	struct marcel_topo_level *level;
+	int j,k;
+
+	mdebug("%d L%d caches\n", cachelevel+1, numcaches[cachelevel]);
+	level=__marcel_malloc((numcaches[cachelevel]+MARCEL_NBMAXVPSUP+1)*sizeof(*level));
+	MA_BUG_ON(!level);
+
+	for (j = 0; j < numcaches[cachelevel]; j++) {
+		level[j].type = topotype;
+		level[j].merged_type = 1<<topotype;
+		switch (cachelevel) {
+		case 2: ma_topo_set_os_numbers(&level[j], -1, -1, j, -1, -1, -1, -1); break;
+		case 1: ma_topo_set_os_numbers(&level[j], -1, -1, -1, j, -1, -1, -1); break;
+		case 0: ma_topo_set_os_numbers(&level[j], -1, -1, -1, -1, -1, j, -1); break;
+		default: MA_BUG_ON(1);
+		}
+		marcel_vpset_zero(&level[j].vpset);
+		marcel_vpset_zero(&level[j].cpuset);
+		for (k=0; k <= nr_procs; k++)
+			if (cacheids[cachelevel*MARCEL_NBMAXCPUS+k] == j)
+				marcel_vpset_set(&level[j].cpuset,k);
+		level[j].arity=0;
+		level[j].children=NULL;
+		level[j].father=NULL;
+		mdebug("L%d cache %d has cpuset %"MA_VPSET_x" \t(%s)\n", cachelevel+1,
+		       j, level[j].cpuset, tbx_i2smb(level[j].cpuset));
+	}
+	mdebug("\n");
+	marcel_vpset_zero(&level[j].vpset);
+	marcel_vpset_zero(&level[j].cpuset);
+	marcel_topo_level_nbitems[discovering_level]=numcaches[cachelevel];
+	mdebug("--- shared L%d level has number %d\n", cachelevel+1, discovering_level);
+	marcel_topo_levels[discovering_level++]=level;
+	mdebug("\n");
+}
+
 /* Look at Linux' /proc/cpuinfo */
 static void __marcel_init look_cpuinfo(void) {
 	FILE *fd;
@@ -445,70 +485,14 @@ static void __marcel_init look_cpuinfo(void) {
 		ma_parse_shared_cpu_maps(j, processor, proc_cacheids, numcaches);
 	}
 
-	struct marcel_topo_level *l3_level;
-
 	if (numcaches[2] > 1) {
-		mdebug("%d L3 caches\n", numcaches[2]);
-		l3_level=__marcel_malloc((numcaches[2]+MARCEL_NBMAXVPSUP+1)*sizeof(*l3_level));
-		MA_BUG_ON(!l3_level);
-
-		for (j = 0; j < numcaches[2]; j++) {
-			l3_level[j].type = MARCEL_LEVEL_L3;
-			l3_level[j].merged_type = 1<<MARCEL_LEVEL_L3;
-			ma_topo_set_os_numbers(&l3_level[j], -1, -1, j, -1, -1, -1, -1);
-			marcel_vpset_zero(&l3_level[j].vpset);
-			marcel_vpset_zero(&l3_level[j].cpuset);
-			for (k=0; k <= processor; k++)
-				if (proc_cacheids[2*MARCEL_NBMAXCPUS+k] == j)
-					marcel_vpset_set(&l3_level[j].cpuset,k);
-			l3_level[j].arity=0;
-			l3_level[j].children=NULL;
-			l3_level[j].father=NULL;
-			mdebug("l3 cache %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,l3_level[j].cpuset,
-					tbx_i2smb(l3_level[j].cpuset));
-		}
-		mdebug("\n");
-
-		marcel_vpset_zero(&l3_level[j].vpset);
-		marcel_vpset_zero(&l3_level[j].cpuset);
-
-		marcel_topo_level_nbitems[discovering_level]=numcaches[2];
-		mdebug("--- shared l3 level has number %d\n", discovering_level);
-		marcel_topo_levels[discovering_level++]=l3_level;
-		mdebug("\n");
+		/* setup L3 caches */
+		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, processor, numcaches, proc_cacheids);
 	}
 
-	struct marcel_topo_level *l2_level;
-
 	if (numcaches[1] > 1) {
-		mdebug("%d L2 caches\n", numcaches[1]);
-		l2_level=__marcel_malloc((numcaches[1]+MARCEL_NBMAXVPSUP+1)*sizeof(*l2_level));
-		MA_BUG_ON(!l2_level);
-
-		for (j = 0; j < numcaches[1]; j++) {
-			l2_level[j].type = MARCEL_LEVEL_L2;
-			l2_level[j].merged_type = 1<<MARCEL_LEVEL_L2;
-			ma_topo_set_os_numbers(&l2_level[j], -1, -1, -1, j, -1, -1, -1);
-			marcel_vpset_zero(&l2_level[j].vpset);
-			marcel_vpset_zero(&l2_level[j].cpuset);
-			for (k=0; k <= processor; k++)
-				if (proc_cacheids[MARCEL_NBMAXCPUS+k] == j)
-					marcel_vpset_set(&l2_level[j].cpuset,k);
-			l2_level[j].arity=0;
-			l2_level[j].children=NULL;
-			l2_level[j].father=NULL;
-			mdebug("l2 cache %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,l2_level[j].cpuset,
-					tbx_i2smb(l2_level[j].cpuset));
-		}
-		mdebug("\n");
-
-		marcel_vpset_zero(&l2_level[j].vpset);
-		marcel_vpset_zero(&l2_level[j].cpuset);
-
-		marcel_topo_level_nbitems[discovering_level]=numcaches[1];
-		mdebug("--- shared l2 level has number %d\n", discovering_level);
-		marcel_topo_levels[discovering_level++]=l2_level;
-		mdebug("\n");
+		/* setup L2 caches */
+		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, processor, numcaches, proc_cacheids);
 	}
 
 	struct marcel_topo_level *core_level;
@@ -551,37 +535,9 @@ static void __marcel_init look_cpuinfo(void) {
 		mdebug("\n");
 	}
 
-	struct marcel_topo_level *l1_level;
-
 	if (numcaches[0] > 1) {
-		mdebug("%d L1 caches\n", numcaches[0]);
-		l1_level=__marcel_malloc((numcaches[0]+MARCEL_NBMAXVPSUP+1)*sizeof(*l1_level));
-		MA_BUG_ON(!l1_level);
-
-		for (j = 0; j < numcaches[0]; j++) {
-			l1_level[j].type = MARCEL_LEVEL_L1;
-			l1_level[j].merged_type = 1<<MARCEL_LEVEL_L1;
-			ma_topo_set_os_numbers(&l1_level[j], -1, -1, -1, -1, -1, j, -1);
-			marcel_vpset_zero(&l1_level[j].vpset);
-			marcel_vpset_zero(&l1_level[j].cpuset);
-			for (k=0; k <= processor; k++)
-				if (proc_cacheids[k] == j)
-					marcel_vpset_set(&l1_level[j].cpuset,k);
-			l1_level[j].arity=0;
-			l1_level[j].children=NULL;
-			l1_level[j].father=NULL;
-			mdebug("l1 cache %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,l1_level[j].cpuset,
-					tbx_i2smb(l1_level[j].cpuset));
-		}
-		mdebug("\n");
-
-		marcel_vpset_zero(&l1_level[j].vpset);
-		marcel_vpset_zero(&l1_level[j].cpuset);
-
-		marcel_topo_level_nbitems[discovering_level]=numcaches[0];
-		mdebug("--- shared l1 level has number %d\n", discovering_level);
-		marcel_topo_levels[discovering_level++]=l1_level;
-		mdebug("\n");
+		/* setup L1 caches */
+		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, processor, numcaches, proc_cacheids);
 	}
 }
 #    endif /* LINUX_SYS */

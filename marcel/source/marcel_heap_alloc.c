@@ -296,7 +296,7 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
 		i++;
 		if (c == nb_pages) break;
 	}
-	mdebug_heap("i = %d c = %d bitmap=%d max=%d\n",i,c,(int)heap->bitmap,(int)HEAP_BINMAP_MAX_PAGES);
+	mdebug_heap("i = %d c = %d bitmap=%p max=%d\n",i,c,heap->bitmap,(int)HEAP_BINMAP_MAX_PAGES);
 	if (c < nb_pages) {
 		/* TODO add a new heap */
 		mdebug_heap("ma_apagealloc: not enough pages available\n");

@@ -91,7 +91,7 @@ int marcel_main(int argc, char **argv)
 #endif
       snprintf(name,sizeof(name),"%d-%d",i,j);
       marcel_attr_setname(&attr,name);
-      marcel_create(NULL,&attr,work,(any_t)(i*100+j));
+      marcel_create(NULL,&attr,work,(any_t)(uintptr_t)(i*100+j));
     }
 #ifdef MARCEL_GANG_SCHEDULER
     marcel_wake_up_bubble(&gang[i]);

@@ -595,10 +595,13 @@ TBX_FMALLOC extern void *marcel_malloc_node(size_t size, int node);
 extern void marcel_free_node(void *ptr, size_t size, int node);
 #define marcel_malloc_node(size, node)	ma_malloc_node(size, node, __FILE__, __LINE__)
 #define marcel_free_node(ptr, size, node)	ma_free_node(ptr, size, __FILE__, __LINE__)
+
+#ifdef MA__NUMA
 /** \brief Returns the depth of levels of type _type_. If no level of
     this type is present on the underlying architecture, the function
     returns the depth of the first "present" level we find uppon
     _type_. */
 extern int ma_get_topo_type_depth (enum marcel_topo_level_e type);
+#endif
 //!! unused node
 /* @} */

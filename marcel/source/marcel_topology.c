@@ -94,7 +94,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #ifdef MA__NUMA
 int ma_vp_node[MA_NR_LWPS];
 #endif
-static int ma_topo_type_level[MARCEL_LEVEL_LAST + 1];
+
 #undef marcel_topo_vp_level
 struct marcel_topo_level *marcel_topo_vp_level = marcel_machine_level;
 
@@ -232,6 +232,12 @@ void ma_set_processors(void) {
 }
 
 #  ifdef MA__NUMA
+
+static int ma_topo_type_level[MARCEL_LEVEL_LAST + 1];
+
+int ma_get_topo_type_depth (enum marcel_topo_level_e type) {
+  return ma_topo_type_level[type];
+}
 
 #    ifdef MARCEL_SMT_IDLE
 static struct marcel_topo_level *marcel_topo_core_level;
@@ -1309,10 +1315,5 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(topology, 400, "Topology",
 				  topology_lwp_start, "Activation de la topologie");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
-
-int
-ma_get_topo_type_depth (enum marcel_topo_level_e type) {
-  return ma_topo_type_level[type];
-}
 
 #endif /* MA__LWPS */

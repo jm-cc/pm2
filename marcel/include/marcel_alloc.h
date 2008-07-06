@@ -118,10 +118,10 @@ void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, uns
 void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned line);
 void marcel_free(void *data);
 
-void marcel_memory_attach(marcel_entity_t *e, void *data, size_t size, int node, int level);
-void marcel_memory_detach(marcel_entity_t *e, void *data, size_t *size, int level);
-#define marcel_task_memory_attach(t,d,s,l) marcel_memory_attach(t?&((marcel_t)t)->as_entity:NULL, (d), (s), 0, (l))
-#define marcel_bubble_memory_attach(t,d,s,l) marcel_memory_attach(&(b)->as_entity, (d), (s), (l))
+void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level);
+void ma_memory_detach(marcel_entity_t *e, void *data, int level);
+#define marcel_task_memory_attach(t,d,s,l) ma_memory_attach(t?&((marcel_t)t)->as_entity:NULL, (d), (s), (l))
+#define marcel_bubble_memory_attach(t,d,s,l) ma_memory_attach(&(b)->as_entity, (d), (s), (l))
 TBX_FMALLOC void *__marcel_malloc(unsigned size);
 TBX_FMALLOC void *__marcel_realloc(void *ptr, unsigned size);
 TBX_FMALLOC void *__marcel_calloc(unsigned nelem, unsigned elsize);

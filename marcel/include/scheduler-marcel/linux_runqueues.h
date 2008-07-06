@@ -100,13 +100,14 @@ enum ma_rq_type {
 	MA_DONTSCHED_RQ,
 	MA_MACHINE_RQ,
 #ifdef MA__LWPS
-	MA_FAKE_RQ,
 #ifdef MA__NUMA
+	MA_FAKE_RQ,
 	MA_NODE_RQ,
 	MA_DIE_RQ,
 	MA_L3_RQ,
 	MA_L2_RQ,
 	MA_CORE_RQ,
+	MA_L1_RQ,
 	MA_PROC_RQ,
 #endif
 	MA_VP_RQ,

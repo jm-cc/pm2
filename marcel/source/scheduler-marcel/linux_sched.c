@@ -1350,6 +1350,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		[MARCEL_LEVEL_L3]	= MA_L3_RQ,
 		[MARCEL_LEVEL_L2]	= MA_L2_RQ,
 		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
+		[MARCEL_LEVEL_L1]	= MA_L1_RQ,
 		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
 #endif /* MA__NUMA */
 		[MARCEL_LEVEL_VP]	= MA_VP_RQ,

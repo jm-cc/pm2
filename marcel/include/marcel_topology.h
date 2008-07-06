@@ -127,8 +127,8 @@ enum marcel_topo_level_e {
 #  define MARCEL_LEVEL_VP MARCEL_LEVEL_MACHINE
 #  define MARCEL_LEVEL_NODE MARCEL_LEVEL_MACHINE
 #else
-	MARCEL_LEVEL_FAKE,	/**< \brief Fake level for meeting the marcel_topo_max_arity constraint */
 #  ifdef MA__NUMA
+	MARCEL_LEVEL_FAKE,	/**< \brief Fake level for meeting the marcel_topo_max_arity constraint */
 	MARCEL_LEVEL_NODE,	/**< \brief NUMA node */
 	MARCEL_LEVEL_DIE,	/**< \brief Physical chip */
 	MARCEL_LEVEL_L3,	/**< \brief L3 cache */

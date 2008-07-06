@@ -120,8 +120,8 @@ const char * marcel_topo_level_string(enum marcel_topo_level_e l)
   switch (l) {
   case MARCEL_LEVEL_MACHINE: return "Machine";
 #ifdef MA__LWPS
-  case MARCEL_LEVEL_FAKE: return "Fake";
 #  ifdef MA__NUMA
+  case MARCEL_LEVEL_FAKE: return "Fake";
   case MARCEL_LEVEL_NODE: return "NUMANode";
   case MARCEL_LEVEL_DIE: return "Die";
   case MARCEL_LEVEL_L3: return "L3Cache";
@@ -166,8 +166,8 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 
   marcel_print_level_description_level(MARCEL_LEVEL_MACHINE)
 #ifdef MA__LWPS
-  marcel_print_level_description_level(MARCEL_LEVEL_FAKE)
 #  ifdef MA__NUMA
+  marcel_print_level_description_level(MARCEL_LEVEL_FAKE)
   marcel_print_level_description_level(MARCEL_LEVEL_NODE)
   marcel_print_level_description_level(MARCEL_LEVEL_DIE)
   marcel_print_level_description_level(MARCEL_LEVEL_L3)

@@ -1371,10 +1371,12 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 	}
 
 	for (i=0;i<level->arity;i++) {
+#ifdef MA__NUMA
 		if (level->children[i]->type == MARCEL_LEVEL_FAKE)
 			snprintf(name, sizeof(name), "fake%d-%d",
 				levelnum, level->children[i]->number);
 		else
+#endif
 			snprintf(name,sizeof(name), "%s%d",
 				base[level->children[i]->type], level->children[i]->number);
 		newrq = &level->children[i]->rq;

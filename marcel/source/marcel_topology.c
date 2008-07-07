@@ -605,80 +605,58 @@ static void __marcel_init look_cpuinfo(void) {
 		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, processor, numcaches, proc_cacheids);
 	}
 }
-#    endif /* LINUX_SYS */
 
-#    ifdef LINUX_SYS
-#      include <numa.h>
-/* Ask libnuma for NUMA nodes */
-static void __marcel_init look_libnuma(void) {
-	unsigned long *buffer,*buffer2;
-	unsigned buffersize=tbx_max(MARCEL_NBMAXCPUS/8,8); /* make sure libnuma v2 won't complain about our buffer size */
-	unsigned i,j;
+static void __marcel_init look_sysfsnode(void) {
+	unsigned i;
 	unsigned nbnodes;
 	struct marcel_topo_level *node_level;
-	marcel_vpset_t cpuset;
 
-	numa_exit_on_error=1;
-
-	if ((ma_numa_not_available = (numa_available())==-1))
-		return;
-
-	nbnodes=numa_max_node()+1;
-	if (nbnodes==1) {
-		nbnodes=0;
+	if ((access("/sys/devices/system/node", X_OK) < 0 
+	     || access("/sys/devices/system/node/node0", X_OK) < 0)
+	    && errno == ENOENT) {
 		ma_numa_not_available=1;
 		return;
 	}
 
-	MA_BUG_ON(nbnodes==0);
-
 	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
 	MA_BUG_ON(!node_level);
 
-	if (!(buffer=TBX_MALLOC(buffersize))) {
-		fprintf(stderr,"no room for storing cpu set\n");
-		return;
-	}
+	for (i=0;;i++) {
+#define NUMA_NODE_STRLEN (29+9+7+1)
+		char nodepath[NUMA_NODE_STRLEN];
+		unsigned long maps[MAX_KERNEL_CPU_MASK];
+		int j;
 
-	while (numa_node_to_cpus(0, buffer, buffersize)==-1 && errno==ERANGE) {
-		buffersize*=2;
-		if (!(buffer2 = TBX_REALLOC(buffer, buffersize))) {
-			fprintf(stderr,"no room for storing cpu set\n");
-			TBX_FREE(buffer);
-			return;
-		}
-		buffer=buffer2;
-	}
+		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", i);
+		if (!ma_parse_cpumap(nodepath, maps))
+			break;
 
-	/* TODO: use /sys/devices/system/node/node%d/cpumap ? it exists since 2.6.0 */
-
-	for (i=0;i<nbnodes;i++) {
-		if (numa_node_to_cpus(i, buffer, buffersize)) {
-			fprintf(stderr,"numa_node_to_cpus(%d) failed: %s\n",i,strerror(errno));
-			continue;
-		}
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].merged_type = 1<<MARCEL_LEVEL_NODE;
 		ma_topo_set_os_numbers(&node_level[i], i, -1, -1, -1, -1, -1, -1);
+
 		marcel_vpset_zero(&node_level[i].vpset);
-		node_level[i].cpuset=cpuset=buffer[0];
-		mdebug("node %d has cpuset %"MA_VPSET_x"\n",i,cpuset);
-		for (j=0;j<marcel_nbvps();j++)
-			if (marcel_vpset_isset(&cpuset,j))
-				ma_vp_node[j]=i;
+		marcel_vpset_zero(&node_level[i].cpuset);
+		for(j=0;j<marcel_nbvps();j++) {
+			if (maps[j/KERNEL_CPU_MASK_BITS] & (1<<(j%KERNEL_CPU_MASK_BITS))) {
+				ma_vp_node[j] = i;
+				marcel_vpset_set(&node_level[i].cpuset, j);
+			}
+		}
+
+		mdebug("node %d has cpuset %"MA_VPSET_x"\n", i, node_level[i].vpset);
 		node_level[i].arity=0;
 		node_level[i].children=NULL;
 		node_level[i].father=NULL;
 	}
+	nbnodes = i;
 
-	marcel_vpset_zero(&node_level[i].vpset);
-	marcel_vpset_zero(&node_level[i].cpuset);
+	marcel_vpset_zero(&node_level[nbnodes].vpset);
+	marcel_vpset_zero(&node_level[nbnodes].cpuset);
 
 	marcel_topo_level_nbitems[discovering_level] = marcel_nbnodes = nbnodes;
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
-
-	TBX_FREE(buffer);
 }
 #    endif /* LINUX_SYS */
 
@@ -926,7 +904,7 @@ static void topo_discover(void) {
 		ma_vp_node[i]=-1;
 
 #    ifdef LINUX_SYS
-	look_libnuma();
+	look_sysfsnode();
 	look_cpuinfo();
 #    endif
 #    ifdef OSF_SYS

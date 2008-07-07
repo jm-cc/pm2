@@ -576,7 +576,7 @@ static void __marcel_init look_cpuinfo(void) {
 /* Ask libnuma for NUMA nodes */
 static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
-	unsigned buffersize=MARCEL_NBMAXCPUS/8;
+	unsigned buffersize=tbx_max(MARCEL_NBMAXCPUS/8,8); /* make sure libnuma v2 won't complain about our buffer size */
 	unsigned i,j;
 	unsigned nbnodes;
 	struct marcel_topo_level *node_level;

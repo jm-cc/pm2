@@ -252,19 +252,77 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #      define COREID		"core id"
 //#  define THREADID	"thread id"
 
+void ma_process_cpumap(const char *mappath, const char * mapname,
+		       int nr_procs, unsigned *ids,
+		       unsigned *nr_ids, unsigned givenid)
+{
+#define MAX_KERNEL_CPU_MASK 8
+#define KERNEL_CPU_MASK_BITS 32
+#define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
+	FILE * fd;
+	char string[KERNEL_CPU_MAP_LEN]; /* enough for a shared map mask (32bits hexa) */
+	int k;
+
+	fd = fopen(mappath, "r");
+	if (fd) {
+		/* parse the whole mask */
+		unsigned long maps[MAX_KERNEL_CPU_MASK]; /* support kernels with upto 8*32 processors */
+		int nr_maps = 0;
+		while (fgets(string, KERNEL_CPU_MAP_LEN, fd)) { /* read one kernel cpu mask and the ending comma */
+			unsigned long map = strtol(string, NULL, 16);
+			memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
+			maps[0] = map;
+			nr_maps++;
+		}
+
+		unsigned long mask;
+		int mask_shift;
+		for(k=0, mask=1, mask_shift=0; k<=nr_procs; ) {
+			if (mask & maps[mask_shift]) {
+				/* we found a cpu in the map */
+				unsigned newid;
+
+				if (ids[k] != -1)
+					/* already got this map, stop using it */
+					break;
+
+				/* allocate a new id, either by incrementing the global counter, or by using the given id */
+				newid = nr_ids ? (*nr_ids)++ : givenid;
+
+				/* this cpu didn't have any such id yet, set this id for all cpus in the map */
+				for(; k<=nr_procs; ) {
+					if (mask & maps[mask_shift]) {
+						mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
+						ids[k] = newid;
+					}
+					/* update cpu + mask + shift */
+					if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
+				}
+
+				break;
+			}
+
+			/* update cpu + mask + shift */
+			if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
+		}
+		fclose(fd);
+	}
+}
+
 #define CACHE_LEVEL_MAX 3
 
 static void
-ma_parse_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsigned *nr_caches)
+ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsigned *nr_caches)
 {
-#define SHARED_CPU_MAP_STRLEN (27+9+12+1+15+1)
-	char mappath[SHARED_CPU_MAP_STRLEN];
-	char string[20]; /* enough for a shared map mask (32bits hexa), a level (one digit) or a type (Data/Instruction/Unified) */
-	FILE * fd;
-	int i, k;
+	int i;
 
 	for(i=0; i<10; i++) {
+#define SHARED_CPU_MAP_STRLEN (27+9+12+1+15+1)
+		char mappath[SHARED_CPU_MAP_STRLEN];
+		char string[20]; /* enough for a level number (one digit) or a type (Data/Instruction/Unified) */
+		char cachename[8+1];
 		int level; /* 0 for L1, .... */
+		FILE * fd;
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/level", proc_index, i);
 		fd = fopen(mappath, "r");
@@ -290,50 +348,10 @@ ma_parse_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsig
 			continue;
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, i);
-		fd = fopen(mappath, "r");
-		if (fd) {
-			/* parse the whole mask */
-#define MAX_KERNEL_CPU_MASK 8
-#define KERNEL_CPU_MASK_BITS 32
-			unsigned long maps[MAX_KERNEL_CPU_MASK]; /* support kernels with upto 8*32 processors */
-			int nr_maps = 0;
-			while (fgets(string, KERNEL_CPU_MASK_BITS/4+2, fd)) { /* read one kernel cpu mask and the ending comma */
-				unsigned long map = strtol(string, NULL, 16);
-				memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
-				maps[0] = map;
-				nr_maps++;
-			}
-
-			unsigned long mask;
-			int mask_shift;
-			for(k=0, mask=1, mask_shift=0; k<=nr_procs; ) {
-				if (mask & maps[mask_shift]) {
-					/* we found a cpu in the map */
-
-					if (cacheids[level*MARCEL_NBMAXCPUS+k] != -1)
-						/* already got this cache map, stop using it */
-						break;
-
-					/* this cpu didn't have any such cache yet, set this cache id for all cpus in the map */
-					for(; k<=nr_procs; ) {
-						if (mask & maps[mask_shift]) {
-							mdebug("--- proc %d has L%d cache number %d\n", k, level+1, nr_caches[level]);
-							cacheids[level*MARCEL_NBMAXCPUS+k] = nr_caches[level];
-						}
-						/* update cpu + mask + shift */
-						if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
-					}
-
-					/* increase the number of caches for this level and stop using this map */
-					nr_caches[level]++;
-					break;
-				}
-
-				/* update cpu + mask + shift */
-				if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
-			}
-			fclose(fd);
-		}
+		sprintf(cachename, "L%d cache", level+1);
+		ma_process_cpumap(mappath, cachename,
+				  nr_procs, cacheids+level*MARCEL_NBMAXCPUS,
+				  &nr_caches[level], -1);
 	}
 }
 
@@ -518,7 +536,7 @@ static void __marcel_init look_cpuinfo(void) {
 			proc_cacheids[j*MARCEL_NBMAXCPUS+k] = -1;
 	}
 	for(j=0; j<=processor; j++) {
-		ma_parse_shared_cpu_maps(j, processor, proc_cacheids, numcaches);
+		ma_parse_cache_shared_cpu_maps(j, processor, proc_cacheids, numcaches);
 	}
 
 	if (numcaches[2] > 1) {

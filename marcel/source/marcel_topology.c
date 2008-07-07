@@ -252,60 +252,71 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #      define COREID		"core id"
 //#  define THREADID	"thread id"
 
+#define MAX_KERNEL_CPU_MASK 8
+#define KERNEL_CPU_MASK_BITS 32
+#define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
+
+int ma_parse_cpumap(const char *mappath, unsigned long *maps)
+{
+	char string[KERNEL_CPU_MAP_LEN]; /* enough for a shared map mask (32bits hexa) */
+	int nr_maps = 0;
+	FILE * fd;
+
+	fd = fopen(mappath, "r");
+	if (!fd)
+		return 0;
+
+	/* parse the whole mask */
+	while (fgets(string, KERNEL_CPU_MAP_LEN, fd)) { /* read one kernel cpu mask and the ending comma */
+		unsigned long map = strtol(string, NULL, 16);
+		memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
+		maps[0] = map;
+		nr_maps++;
+	}
+
+	fclose(fd);
+
+	return nr_maps;
+}
+
 void ma_process_cpumap(const char *mappath, const char * mapname,
 		       int nr_procs, unsigned *ids,
 		       unsigned *nr_ids, unsigned givenid)
 {
-#define MAX_KERNEL_CPU_MASK 8
-#define KERNEL_CPU_MASK_BITS 32
-#define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
-	FILE * fd;
-	char string[KERNEL_CPU_MAP_LEN]; /* enough for a shared map mask (32bits hexa) */
+	unsigned long maps[MAX_KERNEL_CPU_MASK];
+	unsigned long mask;
+	int mask_shift;
 	int k;
 
-	fd = fopen(mappath, "r");
-	if (fd) {
-		/* parse the whole mask */
-		unsigned long maps[MAX_KERNEL_CPU_MASK]; /* support kernels with upto 8*32 processors */
-		int nr_maps = 0;
-		while (fgets(string, KERNEL_CPU_MAP_LEN, fd)) { /* read one kernel cpu mask and the ending comma */
-			unsigned long map = strtol(string, NULL, 16);
-			memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
-			maps[0] = map;
-			nr_maps++;
-		}
+	ma_parse_cpumap(mappath, maps);
 
-		unsigned long mask;
-		int mask_shift;
-		for(k=0, mask=1, mask_shift=0; k<=nr_procs; ) {
-			if (mask & maps[mask_shift]) {
-				/* we found a cpu in the map */
-				unsigned newid;
+	for(k=0, mask=1, mask_shift=0; k<=nr_procs; ) {
+		if (mask & maps[mask_shift]) {
+			/* we found a cpu in the map */
+			unsigned newid;
 
-				if (ids[k] != -1)
-					/* already got this map, stop using it */
-					break;
-
-				/* allocate a new id, either by incrementing the global counter, or by using the given id */
-				newid = nr_ids ? (*nr_ids)++ : givenid;
-
-				/* this cpu didn't have any such id yet, set this id for all cpus in the map */
-				for(; k<=nr_procs; ) {
-					if (mask & maps[mask_shift]) {
-						mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
-						ids[k] = newid;
-					}
-					/* update cpu + mask + shift */
-					if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
-				}
-
+			if (ids[k] != -1)
+				/* already got this map, stop using it */
 				break;
+
+			/* allocate a new id, either by incrementing the global counter, or by using the given id */
+			newid = nr_ids ? (*nr_ids)++ : givenid;
+
+			/* this cpu didn't have any such id yet, set this id for all cpus in the map */
+			for(; k<=nr_procs; ) {
+				if (mask & maps[mask_shift]) {
+					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
+					ids[k] = newid;
+				}
+				/* update cpu + mask + shift */
+				if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
 			}
 
-			/* update cpu + mask + shift */
-			if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
+			break;
 		}
-		fclose(fd);
+
+		/* update cpu + mask + shift */
+		if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
 	}
 }
 

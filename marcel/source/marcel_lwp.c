@@ -82,6 +82,10 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
+#ifdef __GNU_LIBRARY__
+	__ma_get_lwp_var(in_libc_malloc)=0;
+#endif
+
 	ret = ma_call_lwp_notifier(MA_LWP_ONLINE, lwp);
         if (ret == MA_NOTIFY_BAD) {
                 pm2debug("%s: attempt to bring up LWP %p failed\n",

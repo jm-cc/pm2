@@ -27,13 +27,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __GNU_LIBRARY__
+#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
 # include <malloc.h>
 #endif
 
 tbx_flag_t marcel_activity = tbx_flag_clear;
 
-#ifdef __GNU_LIBRARY__
+#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
 
 /* Malloc hooks.  */
 
@@ -167,7 +167,12 @@ static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
 /* Initialize Marcel's `malloc' debugging tools.  */
 static void marcel_malloc_debug_init(void)
 {
-#ifdef __GNU_LIBRARY__
+#ifdef MARCEL_MALLOC_PREEMPTION_DEBUG
+# ifndef __GNU_LIBRARY__
+#  ifdef __GNUC__
+#   warning "The `MARCEL_MALLOC_PREEMPTION_DEBUG' option has no effect on non-GNU systems"
+#  endif
+# else
 	/* Use glibc's malloc hooks to detect "unprotected" uses of `malloc ()',
 		 `free ()' and friends.  "Unprotected" means that preemption is not
 		 disabled while one of these functions is called; `marcel_malloc ()' and
@@ -179,13 +184,14 @@ static void marcel_malloc_debug_init(void)
 	previous_memalign_hook = __memalign_hook;
 
 	INSTALL_MARCEL_MALLOC_HOOKS ();
+# endif
 #endif
 }
 
 /* Reinstall the initial `malloc' hooks.  */
 static void marcel_malloc_debug_finish(void)
 {
-#ifdef __GNU_LIBRARY__
+#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
 	INSTALL_INITIAL_MALLOC_HOOKS ();
 #endif
 }

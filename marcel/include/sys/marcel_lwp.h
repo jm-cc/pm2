@@ -95,7 +95,7 @@ struct marcel_lwp {
 #  endif
 #endif
 
-#if 1 /*  __GNU_LIBRARY__ */
+#if MARCEL_MALLOC_PREEMPTION_DEBUG
 	/* Indicate whether this LWP is currently executing one of libc's
 		 `malloc'-related functions.  This allows Marcel to make sure the LWP is
 		 not preempted while invoking one of these functions.  */

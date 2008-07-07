@@ -1,0 +1,4 @@
+Calls to libc `malloc'-related functions should not be preempted.
+This option enables debugging code that aborts Marcel programs on GNU
+systems when this restriction is violated, i.e., when a call to a
+glibc `malloc'-related function is preempted.

@@ -412,6 +412,13 @@ static void __marcel_init look_cpuinfo(void) {
 
 	/* Just record information and count number of dies and cores */
 
+	/* TODO: use /sys/devices/system/cpu/cpu*/topology/* instead:
+	 * core_siblings contains the map of cores in the die
+	 * thread_siblings contains the map of smtprocs in the core
+	 *
+	 * revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16)
+	 */
+
 	mdebug("\n\n * Topology extraction from /proc/cpuinfo *\n\n");
 	while (fgets(string,sizeof(string),fd)!=NULL) {
 #      define getprocnb_begin(field, var) \
@@ -613,6 +620,8 @@ static void __marcel_init look_libnuma(void) {
 		}
 		buffer=buffer2;
 	}
+
+	/* TODO: use /sys/devices/system/node/node*/cpumap ? it exists since 2.6.0 */
 
 	for (i=0;i<nbnodes;i++) {
 		if (numa_node_to_cpus(i, buffer, buffersize)) {

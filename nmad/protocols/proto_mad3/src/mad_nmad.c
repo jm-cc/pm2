@@ -252,6 +252,9 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
   if (p_core == NULL) return;
 
 #ifdef PIOMAN
+  /* TODO: just kill the driver specific pioman server 
+     for now *every* pioman server is killed. This may 
+     do crap when several drivers are loaded */
   nm_core_exit_piom(p_core);
 #endif
 

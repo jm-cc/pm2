@@ -531,7 +531,7 @@ static void __marcel_init look_cpuinfo(void) {
 			marcel_vpset_zero(&die_level[j].vpset);
 			marcel_vpset_zero(&die_level[j].cpuset);
 			for (k=0; k <= processor; k++)
-				if (proc_osphysid[k] == osphysids[j])
+				if (proc_physid[k] == j)
 					marcel_vpset_set(&die_level[j].cpuset,k);
 			die_level[j].arity=0;
 			die_level[j].children=NULL;
@@ -583,7 +583,7 @@ static void __marcel_init look_cpuinfo(void) {
 			marcel_vpset_zero(&core_level[j].vpset);
 			marcel_vpset_zero(&core_level[j].cpuset);
 			for (k=0; k <= processor; k++)
-				if (proc_oscoreid[k] == oscoreids[j] && proc_osphysid[k] == core_osphysids[j])
+				if (proc_coreid[k] == j)
 					marcel_vpset_set(&core_level[j].cpuset,k);
 			core_level[j].arity=0;
 			core_level[j].children=NULL;

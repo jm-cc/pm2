@@ -252,6 +252,23 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #      define COREID		"core id"
 //#  define THREADID	"thread id"
 
+int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
+{
+	char string[11];
+	FILE * fd;
+
+	fd = fopen(mappath, "r");
+	if (!fd)
+		return -1;
+
+	fgets(string, 11, fd);
+	*value = strtol(string, NULL, 10);
+
+	fclose(fd);
+
+	return 0;
+}
+
 #define MAX_KERNEL_CPU_MASK 8
 #define KERNEL_CPU_MASK_BITS 32
 #define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
@@ -415,47 +432,105 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 	mdebug("\n");
 }
 
+/* Look at Linux' /sys/devices/system/cpu/cpu%d/topology/ */
+static void look__sysfscpu(long *nr_procs,
+			   unsigned *nr_cores,
+			   unsigned *nr_dies,
+			   unsigned *proc_physids,
+			   unsigned *osphysids,
+			   unsigned *proc_coreids,
+			   unsigned *oscoreids
+) {
+#define CPU_TOPOLOGY_STR_LEN (27+9+29+1)
+	char string[CPU_TOPOLOGY_STR_LEN];
+	int i,j,k;
+
+	for(i=0; ; i++) {
+		marcel_vpset_t dieset, coreset;
+		unsigned mydieid, mycoreid;
+
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology", i);
+
+		if (access(string, R_OK) < 0
+		    && errno == ENOENT)
+			break;
+
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/physical_package_id", i);
+		ma_parse_sysfs_unsigned(string, &mydieid);
+
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/core_id", i);
+		ma_parse_sysfs_unsigned(string, &mycoreid);
+
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/core_siblings", i);
+		ma_parse_cpumap(string, &dieset);
+		/* make sure we are in the set, in case the cpumap was crap */
+		marcel_vpset_set(&dieset, i);
+
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/thread_siblings", i);
+		ma_parse_cpumap(string, &coreset);
+		/* make sure we are in the set, in case the cpumap was crap */
+		marcel_vpset_set(&coreset, i);
+
+		for(j=0; j<i; j++)
+			if (marcel_vpset_isset(&dieset, j))
+				break;
+		if (j==i) {
+			/* new die cpumap fill it */
+			for(k=i; k<MARCEL_NBMAXCPUS; k++)
+				if (marcel_vpset_isset(&dieset, k))
+					proc_physids[k] = (*nr_dies);
+			mdebug("die %d (os %d) has cpuset %"MA_VPSET_x" \t(%s)\n",
+			       (*nr_dies), mydieid, dieset, tbx_i2smb(dieset));
+			osphysids[(*nr_dies)++] = mydieid;
+		}
+
+		for(j=0; j<i; j++)
+			if (marcel_vpset_isset(&coreset, j))
+				break;
+		if (j==i) {
+			/* new core cpumap fill it */
+			for(k=i; k<MARCEL_NBMAXCPUS; k++)
+				if (marcel_vpset_isset(&coreset, k))
+					proc_coreids[k] = (*nr_cores);
+			mdebug("core %d (os %d) has cpuset %"MA_VPSET_x" \t(%s)\n",
+			       (*nr_cores), mycoreid, coreset, tbx_i2smb(coreset));
+			oscoreids[(*nr_cores)++] = mycoreid;
+		}
+	}
+
+	*nr_procs = i;
+}
+
 /* Look at Linux' /proc/cpuinfo */
-static void __marcel_init look_cpuinfo(void) {
+static void look_cpuinfo(long *nr_procs,
+			 unsigned *nr_cores,
+			 unsigned *nr_dies,
+			 unsigned *proc_physids,
+			 unsigned *osphysids,
+			 unsigned *proc_coreids,
+			 unsigned *oscoreids
+) {
 	FILE *fd;
 	char string[strlen(PHYSID)+1+9+1+1];
 	char *endptr;
-	long processor=-1;
-	unsigned proc_osphysid[MARCEL_NBMAXCPUS];
-	unsigned proc_physid[MARCEL_NBMAXCPUS];
-	unsigned osphysids[MARCEL_NBMAXCPUS];
-	long physid;
-	unsigned proc_oscoreid[MARCEL_NBMAXCPUS];
-	unsigned proc_coreid[MARCEL_NBMAXCPUS];
-	unsigned oscoreids[MARCEL_NBMAXCPUS];
-	unsigned proc_cacheids[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
-	/* Core numbers are not unique, we have to combine them with physical IDs */
+	unsigned proc_osphysids[MARCEL_NBMAXCPUS];
+	unsigned proc_oscoreids[MARCEL_NBMAXCPUS];
 	unsigned core_osphysids[MARCEL_NBMAXCPUS];
+	long physid;
 	long coreid;
-	int i,j,k;
+	int i;
 
-	unsigned numdies=0;
-	unsigned numcores=0;
-	unsigned numcaches[CACHE_LEVEL_MAX];
+	memset(proc_physids,0,sizeof(proc_physids));
+	memset(proc_osphysids,0,sizeof(proc_osphysids));
+	memset(proc_coreids,0,sizeof(proc_coreids));
+	memset(proc_oscoreids,0,sizeof(proc_oscoreids));
 
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
 		fprintf(stderr,"could not open /proc/cpuinfo\n");
 		return;
 	}
 
-	memset(proc_osphysid,0,sizeof(proc_osphysid));
-	memset(proc_physid,0,sizeof(proc_physid));
-	memset(proc_oscoreid,0,sizeof(proc_oscoreid));
-	memset(proc_coreid,0,sizeof(proc_coreid));
-
 	/* Just record information and count number of dies and cores */
-
-	/* TODO: use /sys/devices/system/cpu/cpu%d/topology/ instead:
-	 * /core_siblings contains the map of cores in the die
-	 * /thread_siblings contains the map of smtprocs in the core
-	 *
-	 * revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16)
-	 */
 
 	mdebug("\n\n * Topology extraction from /proc/cpuinfo *\n\n");
 	while (fgets(string,sizeof(string),fd)!=NULL) {
@@ -469,36 +544,36 @@ static void __marcel_init look_cpuinfo(void) {
 			} else if (var==LONG_MIN) { \
 				fprintf(stderr,"too small "field" number in /proc/cpuinfo\n"); \
 				break; \
-			} else if (processor==LONG_MAX) { \
+			} else if (*nr_procs==LONG_MAX) { \
 				fprintf(stderr,"too big "field" number in /proc/cpuinfo\n"); \
 				break; \
 			} \
 			mdebug(field " %ld\n", var)
 #      define getprocnb_end() \
 		}
-		getprocnb_begin(PROCESSOR,processor);
+		getprocnb_begin(PROCESSOR,*nr_procs);
 		getprocnb_end() else
 		getprocnb_begin(PHYSID,physid);
-			proc_osphysid[processor]=physid;
-			for (i=0; i<numdies; i++)
+			proc_osphysids[*nr_procs]=physid;
+			for (i=0; i<*nr_dies; i++)
 				if (physid == osphysids[i])
 					break;
-			proc_physid[processor]=i;
-			mdebug("%ld on die %d (%lx)\n", processor, i, physid);
-			if (i==numdies)
-				osphysids[numdies++] = physid;
+			proc_physids[*nr_procs]=i;
+			mdebug("%ld on die %d (%lx)\n", *nr_procs, i, physid);
+			if (i==*nr_dies)
+				osphysids[(*nr_dies)++] = physid;
 		getprocnb_end() else
 		getprocnb_begin(COREID,coreid);
-			proc_oscoreid[processor]=coreid;
-			for (i=0; i<numcores; i++)
-				if (coreid == oscoreids[i] && proc_osphysid[processor] == core_osphysids[i])
+			proc_oscoreids[*nr_procs]=coreid;
+			for (i=0; i<*nr_cores; i++)
+				if (coreid == oscoreids[i] && proc_osphysids[*nr_procs] == core_osphysids[i])
 					break;
-			proc_coreid[processor]=i;
-			mdebug("%ld on core %d (%lx:%x)\n", processor, i, coreid, proc_osphysid[processor]);
-			if (i==numcores) {
-				core_osphysids[numcores] = proc_osphysid[processor];
-				oscoreids[numcores] = coreid;
-				numcores++;
+			proc_coreids[*nr_procs]=i;
+			mdebug("%ld on core %d (%lx:%x)\n", *nr_procs, i, coreid, proc_osphysids[*nr_procs]);
+			if (i==*nr_cores) {
+				core_osphysids[*nr_cores] = proc_osphysids[*nr_procs];
+				oscoreids[*nr_cores] = coreid;
+				(*nr_cores)++;
 			}
 		getprocnb_end()
 		if (string[strlen(string)-1]!='\n') {
@@ -507,6 +582,34 @@ static void __marcel_init look_cpuinfo(void) {
 		}
 	}
 	fclose(fd);
+}
+
+static void __marcel_init look_sysfscpu(void) {
+	long processor=-1;
+	unsigned proc_physids[MARCEL_NBMAXCPUS];
+	unsigned osphysids[MARCEL_NBMAXCPUS];
+	unsigned proc_coreids[MARCEL_NBMAXCPUS];
+	unsigned oscoreids[MARCEL_NBMAXCPUS];
+	unsigned proc_cacheids[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
+	int j,k;
+
+	unsigned numdies=0;
+	unsigned numcores=0;
+	unsigned numcaches[CACHE_LEVEL_MAX];
+
+	if (access("/sys/devices/system/cpu/cpu0/topology/core_id", R_OK) < 0
+	    || access("/sys/devices/system/cpu/cpu0/topology/core_siblings", R_OK) < 0
+	    || access("/sys/devices/system/cpu/cpu0/topology/physical_package_id", R_OK) < 0
+	    || access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK) < 0) {
+	  /* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16) */
+	  look_cpuinfo(&processor, &numcores, &numdies,
+		       proc_physids, osphysids,
+		       proc_coreids, oscoreids);
+	} else {
+	  look__sysfscpu(&processor, &numcores, &numdies,
+		       proc_physids, osphysids,
+		       proc_coreids, oscoreids);
+	}
 
 	mdebug("\n\n * Topology summary *\n\n");
 	mdebug("%ld processors\n", processor+1);
@@ -531,7 +634,7 @@ static void __marcel_init look_cpuinfo(void) {
 			marcel_vpset_zero(&die_level[j].vpset);
 			marcel_vpset_zero(&die_level[j].cpuset);
 			for (k=0; k <= processor; k++)
-				if (proc_physid[k] == j)
+				if (proc_physids[k] == j)
 					marcel_vpset_set(&die_level[j].cpuset,k);
 			die_level[j].arity=0;
 			die_level[j].children=NULL;
@@ -583,7 +686,7 @@ static void __marcel_init look_cpuinfo(void) {
 			marcel_vpset_zero(&core_level[j].vpset);
 			marcel_vpset_zero(&core_level[j].cpuset);
 			for (k=0; k <= processor; k++)
-				if (proc_coreid[k] == j)
+				if (proc_coreids[k] == j)
 					marcel_vpset_set(&core_level[j].cpuset,k);
 			core_level[j].arity=0;
 			core_level[j].children=NULL;
@@ -911,7 +1014,7 @@ static void topo_discover(void) {
 
 #    ifdef LINUX_SYS
 	look_sysfsnode();
-	look_cpuinfo();
+	look_sysfscpu();
 #    endif
 #    ifdef OSF_SYS
 	look_libnuma();

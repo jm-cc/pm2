@@ -621,7 +621,7 @@ static void __marcel_init look_sysfsnode(void) {
 	struct marcel_topo_level *node_level;
 
 	if ((access("/sys/devices/system/node", X_OK) < 0 
-	     || access("/sys/devices/system/node/node0", X_OK) < 0)
+	     || access("/sys/devices/system/node/node1", X_OK) < 0)
 	    && errno == ENOENT) {
 		ma_numa_not_available=1;
 		return;

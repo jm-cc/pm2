@@ -26,9 +26,9 @@
 
 #endif /* __NR_move_pages */
 
-int move_pages(const pid_t pid, const unsigned long count,
-	       const unsigned long *pages, const int *nodes,
-	       int *status, int flags) {
+int my_move_pages(const pid_t pid, const unsigned long count,
+                  const unsigned long *pages, const int *nodes,
+                  int *status, int flags) {
   return syscall(__NR_move_pages, pid, count, pages, nodes, status, flags);
 }
 
@@ -42,17 +42,17 @@ int main(int argc, char * argv[])
   void* addr;
   int status;
   addr = malloc(sizeof(int));
-  int ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  int ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);	
-  ret = move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
+  ret = my_move_pages(0, 1, addr, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
 
 #ifdef PROFILE

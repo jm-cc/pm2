@@ -15,18 +15,18 @@
 
 #ifdef LINUX_SYS
 
-int move_pages(const pid_t pid, const unsigned long count,
-	       const unsigned long *pages, const int *nodes,
-	       int *status, int flags) {
+int my_move_pages(const pid_t pid, const unsigned long count,
+                  const unsigned long *pages, const int *nodes,
+                  int *status, int flags) {
   return syscall(__NR_move_pages, pid, count, pages, nodes, status, flags);
 }
 
-void print_pagenodes(unsigned long *pageaddrs) {
+void my_print_pagenodes(unsigned long *pageaddrs) {
   int status[PAGES];
   int i;
   int err;
 
-  err = move_pages(0, PAGES, pageaddrs, NULL, status, 0);
+  err = my_move_pages(0, PAGES, pageaddrs, NULL, status, 0);
   if (err < 0) {
     perror("move_pages");
     exit(-1);
@@ -45,7 +45,7 @@ void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
   int i;
   int err;
 
-  err = move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
+  err = my_move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     if (errno == ENOENT) {
       printf("warning. cannot move pages which have not been allocated\n");
@@ -105,7 +105,7 @@ int main(int argc, char * argv[])
     pageaddrs[i] = (unsigned long) (buffer + i*pagesize);
 
   printf("before touching the pages\n");
-  print_pagenodes(pageaddrs);
+  my_print_pagenodes(pageaddrs);
 
   printf("move pages to node %d\n", maxnode);
   for(i=0; i<PAGES ; i++)
@@ -118,7 +118,7 @@ int main(int argc, char * argv[])
   }
   test_pagenodes(buffer, pagesize, 42);
 
-  print_pagenodes(pageaddrs);
+  my_print_pagenodes(pageaddrs);
 
   printf("move pages to node %d\n", 1);
   for(i=0; i<PAGES ; i++)

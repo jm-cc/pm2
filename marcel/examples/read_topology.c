@@ -104,13 +104,15 @@ int marcel_main(int argc, char **argv) {
     marcel_fprintf(stdout, "\tdvips -Ppdf  -t landscape %s_topology.dvi\n", hostname);
     marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
   }
-  
 
-  if (verbose_mode) {
-    int i;
-    for (i = 0; i <= MARCEL_LEVEL_LAST; i++)
-      marcel_fprintf(output, "marcel type #%d (%s) at depth %d\n",
-		     i, marcel_topo_level_string(i), ma_get_topo_type_depth (i));
+  if (verbose_mode && txt_mode) {
+    int l,i;
+    for (l = 0; l <= MARCEL_LEVEL_LAST; l++) {
+      int depth = ma_get_topo_type_depth (l);
+      for (i = 0; i<depth; i++)
+	marcel_fprintf(output, " ");
+      marcel_fprintf(output, "depth %d:\tmarcel type #%d (%s)\n", depth, l, marcel_topo_level_string(l));
+    }
   }
 
   marcel_end();

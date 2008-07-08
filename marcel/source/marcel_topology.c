@@ -233,10 +233,10 @@ void ma_set_processors(void) {
 
 #  ifdef MA__NUMA
 
-static int ma_topo_type_level[MARCEL_LEVEL_LAST + 1];
+static int ma_topo_type_depth[MARCEL_LEVEL_LAST + 1];
 
 int ma_get_topo_type_depth (enum marcel_topo_level_e type) {
-  return ma_topo_type_level[type];
+  return ma_topo_type_depth[type];
 }
 
 #    ifdef MARCEL_SMT_IDLE
@@ -1141,11 +1141,8 @@ static void topo_discover(void) {
 			mdebug("level %u,%u: cpuset %"MA_VPSET_x"\n",l,i,marcel_topo_levels[l][i].cpuset);
 
 #  ifdef MA__NUMA
-	for (l=0; l <= MARCEL_LEVEL_LAST; l++)
-	  ma_topo_type_level[l] = -1;
 	/* merge identical levels */
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
-	  ma_topo_type_level[marcel_topo_levels[l][0].type] = l;
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++);
 		for (j=0; j<i && marcel_topo_levels[l+1][j].cpuset; j++)
 			if (marcel_topo_levels[l+1][j].cpuset != marcel_topo_levels[l][j].cpuset)
@@ -1183,13 +1180,6 @@ static void topo_discover(void) {
 			marcel_topo_levels[marcel_topo_nblevels] = NULL;
 			l--;
 		}
-	}
-	int type, previous_level = -1;
-	for (type = 0; type <= MARCEL_LEVEL_LAST; type++) {
-	  if (ma_topo_type_level[type] == -1)
-	    ma_topo_type_level[type] = previous_level;
-	  else
-	    previous_level = ma_topo_type_level[type];
 	}
 #  endif /* MA__NUMA */
 
@@ -1298,6 +1288,23 @@ static void topo_discover(void) {
 					MA_BUG();
 			}
 		}
+	}
+
+	/* intialize all depth to unknown */
+	for (l=0; l <= MARCEL_LEVEL_LAST; l++)
+		ma_topo_type_depth[l] = -1;
+
+	/* walk the existing levels to set their depth */
+	for (l=0; l<marcel_topo_nblevels; l++)
+		ma_topo_type_depth[marcel_topo_levels[l][0].type] = l;
+
+	/* setup the depth of all still unknown levels (the one that got merged or never created */
+	int type, prevdepth = -1;
+	for (type = 0; type <= MARCEL_LEVEL_LAST; type++) {
+	  if (ma_topo_type_depth[type] == -1)
+	    ma_topo_type_depth[type] = prevdepth;
+	  else
+	    prevdepth = ma_topo_type_depth[type];
 	}
 #  endif /* MA__NUMA */
 

@@ -256,7 +256,12 @@ static void __marcel_init marcel_slot_init(void)
 		fprintf(stderr,"Marcel has only %lu bytes for TLS while %ld are needed, please increase MA_TLS_AREA_SIZE. Aborting.\n", MA_TLS_AREA_SIZE, (unsigned long) (static_tls_size + sizeof(lpt_tcb_t)));
 		abort();
 	}
-	/* Record the main thread's TLS register */
+	/* Record the main thread's TLS register
+	 * - extract infos from the main thread's control block (TCB)
+	 *   --> see glibc-2.7/nptl/sysdeps/<ARCH>/tls.h for the NPTL's TCB layout
+	 * - set the 'multiple_threads' field to 1; otherwise the NPTL's atomic ops are
+	 *   optimized out as long as the program does not create any extra LWP.
+	 * */
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
 	asm("movl %0, %%gs:(0x0c)"::"r" (1)); /* multiple_threads */

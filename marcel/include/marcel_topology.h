@@ -444,16 +444,42 @@ struct marcel_topo_level {
 	char data[MA_PER_LEVEL_ROOM];
 };
 
-#define ma_topo_set_os_numbers(l, node, die, l3, l2, core, l1, cpu) do { \
+#define ma_topo_set_empty_os_numbers(l) do { \
 		struct marcel_topo_level *__l = (l); \
-		__l->os_node = node; \
-		__l->os_die  = die;  \
-		__l->os_l3   = l3;  \
-		__l->os_l2   = l2;  \
-		__l->os_core = core; \
-		__l->os_l1   = l1;  \
-		__l->os_cpu  = cpu;  \
+		__l->os_node = -1; \
+		__l->os_die  = -1;  \
+		__l->os_l3   = -1;  \
+		__l->os_l2   = -1;  \
+		__l->os_core = -1; \
+		__l->os_l1   = -1;  \
+		__l->os_cpu  = -1;  \
 	} while(0)
+
+#define ma_topo_set_os_numbers(l, _field, _val) do { \
+		struct marcel_topo_level *__l = (l); \
+		ma_topo_set_empty_os_numbers(l); \
+		__l->os_##_field = _val; \
+	} while(0)
+
+#define ma_topo_setup_level(l, _type) do { \
+		struct marcel_topo_level *__l = (l); \
+		__l->type = _type; \
+		__l->merged_type = 1<<_type; \
+		marcel_vpset_zero(&__l->vpset); \
+		marcel_vpset_zero(&__l->vpset); \
+		__l->arity = 0; \
+		__l->children = NULL; \
+		__l->father = NULL; \
+	} while (0)
+
+#define ma_topo_level_cpuset_from_array(l, _value, _array, _max) do { \
+		struct marcel_topo_level *__l = (l); \
+		unsigned int *__a = (_array); \
+		int k; \
+		for(k=0; k<_max; k++) \
+			if (__a[k] == _value) \
+				marcel_vpset_set(&__l->cpuset, k); \
+	} while (0)
 
 #section types
 /** \brief Type of a topology level */

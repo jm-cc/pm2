@@ -256,42 +256,56 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #define KERNEL_CPU_MASK_BITS 32
 #define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
 
-int ma_parse_cpumap(const char *mappath, unsigned long *maps)
+int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 {
 	char string[KERNEL_CPU_MAP_LEN]; /* enough for a shared map mask (32bits hexa) */
+	unsigned long maps[MAX_KERNEL_CPU_MASK];
 	int nr_maps = 0;
 	FILE * fd;
+	int i;
+
+	/* reset to zero first */
+	marcel_vpset_zero(set);
 
 	fd = fopen(mappath, "r");
 	if (!fd)
-		return 0;
+		return -1;
 
 	/* parse the whole mask */
 	while (fgets(string, KERNEL_CPU_MAP_LEN, fd)) { /* read one kernel cpu mask and the ending comma */
 		unsigned long map = strtol(string, NULL, 16);
+		if (!map && !nr_maps)
+			/* ignore the first map if it's empty */
+			continue;
 		memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
 		maps[0] = map;
 		nr_maps++;
 	}
 
+	/* check that the map can be stored in our vpset */
+	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS <= MARCEL_NBMAXCPUS);
+
+	/* convert into a set */
+	for(i=0; i<MAX_KERNEL_CPU_MASK*KERNEL_CPU_MASK_BITS && i<marcel_nbvps(); i++)
+		if (maps[i/KERNEL_CPU_MASK_BITS] & 1<<(i%KERNEL_CPU_MASK_BITS))
+			marcel_vpset_set(set, i);
+
 	fclose(fd);
 
-	return nr_maps;
+	return 0;
 }
 
 void ma_process_cpumap(const char *mappath, const char * mapname,
 		       int nr_procs, unsigned *ids,
 		       unsigned *nr_ids, unsigned givenid)
 {
-	unsigned long maps[MAX_KERNEL_CPU_MASK];
-	unsigned long mask;
-	int mask_shift;
+	marcel_vpset_t set;
 	int k;
 
-	ma_parse_cpumap(mappath, maps);
+	ma_parse_cpumap(mappath, &set);
 
-	for(k=0, mask=1, mask_shift=0; k<=nr_procs; ) {
-		if (mask & maps[mask_shift]) {
+	for(k=0; k<=nr_procs; k++) {
+		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */
 			unsigned newid;
 
@@ -303,20 +317,15 @@ void ma_process_cpumap(const char *mappath, const char * mapname,
 			newid = nr_ids ? (*nr_ids)++ : givenid;
 
 			/* this cpu didn't have any such id yet, set this id for all cpus in the map */
-			for(; k<=nr_procs; ) {
-				if (mask & maps[mask_shift]) {
+			for(; k<=nr_procs; k++) {
+				if (marcel_vpset_isset(&set, k)) {
 					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;
 				}
-				/* update cpu + mask + shift */
-				if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
 			}
 
 			break;
 		}
-
-		/* update cpu + mask + shift */
-		if (!((++k)%KERNEL_CPU_MASK_BITS)) { mask_shift++; mask=1; } else { mask<<=1; }
 	}
 }
 
@@ -624,11 +633,11 @@ static void __marcel_init look_sysfsnode(void) {
 	for (i=0;;i++) {
 #define NUMA_NODE_STRLEN (29+9+7+1)
 		char nodepath[NUMA_NODE_STRLEN];
-		unsigned long maps[MAX_KERNEL_CPU_MASK];
+		marcel_vpset_t cpuset;
 		int j;
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", i);
-		if (!ma_parse_cpumap(nodepath, maps))
+		if (ma_parse_cpumap(nodepath, &cpuset) < 0)
 			break;
 
 		node_level[i].type = MARCEL_LEVEL_NODE;
@@ -636,13 +645,10 @@ static void __marcel_init look_sysfsnode(void) {
 		ma_topo_set_os_numbers(&node_level[i], i, -1, -1, -1, -1, -1, -1);
 
 		marcel_vpset_zero(&node_level[i].vpset);
-		marcel_vpset_zero(&node_level[i].cpuset);
-		for(j=0;j<marcel_nbvps();j++) {
-			if (maps[j/KERNEL_CPU_MASK_BITS] & (1<<(j%KERNEL_CPU_MASK_BITS))) {
+		node_level[i].cpuset = cpuset;
+		for(j=0;j<marcel_nbvps();j++)
+			if (marcel_vpset_isset(&cpuset, j))
 				ma_vp_node[j] = i;
-				marcel_vpset_set(&node_level[i].cpuset, j);
-			}
-		}
 
 		mdebug("node %d has cpuset %"MA_VPSET_x"\n", i, node_level[i].vpset);
 		node_level[i].arity=0;

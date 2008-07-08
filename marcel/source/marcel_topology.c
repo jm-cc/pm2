@@ -300,7 +300,7 @@ int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	}
 
 	/* check that the map can be stored in our vpset */
-	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS <= MARCEL_NBMAXCPUS);
+	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS > MARCEL_NBMAXCPUS);
 
 	/* convert into a set */
 	for(i=0; i<MAX_KERNEL_CPU_MASK*KERNEL_CPU_MASK_BITS && i<marcel_nbvps(); i++)

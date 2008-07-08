@@ -15,6 +15,11 @@
 # General Public License for more details.
 
 
+if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
+    echo "Syntax: $0 [ --latex ] [ <host> ]"
+    exit 1
+fi
+
 # Read the arguments
 args=""
 SSH=""
@@ -41,7 +46,7 @@ echo
 echo
 
 # Execute the application
-$SSH $($SSH pm2-which --flavor marcel-numa read_topology) $args > /tmp/topology_$$.out
+$SSH $($SSH pm2-which --flavor marcel-numa read_topology) --verbose $args > /tmp/topology_$$.out
 cat /tmp/topology_$$.out
 
 # If the application has been launched remotely, download the file and run latex on it

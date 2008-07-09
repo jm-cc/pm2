@@ -597,10 +597,10 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 
 #ifdef PM2_NUIOA
 	if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
-		nodemask_t mask;
-		nodemask_zero(&mask);
+		struct bitmask mask;
+		numa_bitmask_clearall(&mask);
 		DISP("binding to nuioa node %d", preferred_node);
-		nodemask_set(&mask, preferred_node);
+		numa_bitmask_setbit(&mask, preferred_node);
 		numa_bind(&mask);
 	}
 #endif /* PM2_NUIOA */

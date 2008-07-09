@@ -4,29 +4,18 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
-
-/* used to get node pages by calling move_pages syscall */
-#include <sys/syscall.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <numaif.h>
 
 #define PAGES 4
 
-#ifdef LINUX_SYS
-
-int my_move_pages(const pid_t pid, const unsigned long count,
-                  const unsigned long *pages, const int *nodes,
-                  int *status, int flags) {
-  return syscall(__NR_move_pages, pid, count, pages, nodes, status, flags);
-}
-
-void my_print_pagenodes(unsigned long *pageaddrs) {
+void my_print_pagenodes(void **pageaddrs) {
   int status[PAGES];
   int i;
   int err;
 
-  err = my_move_pages(0, PAGES, pageaddrs, NULL, status, 0);
+  err = move_pages(0, PAGES, pageaddrs, NULL, status, 0);
   if (err < 0) {
     perror("move_pages");
     exit(-1);
@@ -40,12 +29,12 @@ void my_print_pagenodes(unsigned long *pageaddrs) {
   }
 }
 
-void move_pagenodes(unsigned long *pageaddrs, const int *nodes) {
+void move_pagenodes(void **pageaddrs, const int *nodes) {
   int status[PAGES];
   int i;
   int err;
 
-  err = my_move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
+  err = move_pages(0, PAGES, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     if (errno == ENOENT) {
       printf("warning. cannot move pages which have not been allocated\n");
@@ -80,7 +69,7 @@ void test_pagenodes(unsigned long *buffer, unsigned long pagesize, unsigned long
 int main(int argc, char * argv[])
 {
   unsigned long *buffer;
-  unsigned long pageaddrs[PAGES];
+  void **pageaddrs;
   int i, status[PAGES];
   unsigned long pagesize;
   unsigned long maxnode;
@@ -101,8 +90,9 @@ int main(int argc, char * argv[])
 
   pagesize = getpagesize();
   buffer = malloc(PAGES * pagesize * sizeof(unsigned long));
+  pageaddrs = malloc(PAGES * sizeof(void *));
   for(i=0; i<PAGES; i++)
-    pageaddrs[i] = (unsigned long) (buffer + i*pagesize);
+    pageaddrs[i] = buffer + i*pagesize;
 
   printf("before touching the pages\n");
   my_print_pagenodes(pageaddrs);
@@ -132,5 +122,3 @@ int main(int argc, char * argv[])
 
   return 0;
 }
-
-#endif

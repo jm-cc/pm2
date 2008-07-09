@@ -6,8 +6,6 @@
 
 #define PAGES 4
 
-void print_pagenodes(int id, void **pageaddrs, int nbpages);
-
 typedef struct thread_memory_s {
   void *address;
   size_t size;
@@ -21,7 +19,7 @@ typedef struct thread_memory_s {
 } thread_memory_t;
 
 int thread_memory_attach(void *address, size_t size, thread_memory_t* thread_memory) {
-  int i;
+  int i, err;
 
   thread_memory->address = address;
   thread_memory->size = size;
@@ -39,24 +37,36 @@ int thread_memory_attach(void *address, size_t size, thread_memory_t* thread_mem
     thread_memory->pageaddrs[i] = address + i*thread_memory->pagesize;
 
   // fill in the nodes
-  print_pagenodes(thread_memory->thread_id,
-                  thread_memory->pageaddrs, thread_memory->nbpages);
+  thread_memory->nodes = malloc(thread_memory->nbpages * sizeof(int));
+  err = move_pages(0, thread_memory->nbpages, thread_memory->pageaddrs, NULL, thread_memory->nodes, 0);
+  if (err < 0) {
+    perror("move_pages");
+    exit(-1);
+  }
+
+  // Display information
+  for(i=0; i<thread_memory->nbpages; i++) {
+    if (thread_memory->nodes[i] == -ENOENT)
+      marcel_printf("[%d]  page #%d is not allocated\n", thread_memory->thread_id, i);
+    else
+      marcel_printf("[%d]  page #%d is on node #%d\n", thread_memory->thread_id, i, thread_memory->nodes[i]);
+  }
+
   return 0;
 }
 
 int thread_memory_move(thread_memory_t* thread_memory, int node) {
   int i, err;
-  int *status, *nodes;
+  int *status;
 
   status = malloc(thread_memory->nbpages * sizeof(int));
-  nodes = malloc(thread_memory->nbpages * sizeof(int));
-  for(i=0; i<thread_memory->nbpages ; i++) nodes[i] = node;
+  for(i=0; i<thread_memory->nbpages ; i++) thread_memory->nodes[i] = node;
 
   err = move_pages(0, thread_memory->nbpages, thread_memory->pageaddrs,
-                   nodes, status, MPOL_MF_MOVE);
+                   thread_memory->nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     if (errno == ENOENT) {
-      printf("[%d] warning. cannot move pages which have not been allocated\n",
+      printf("[%d] warning. either the pages are not allocated or the pages are already standing at the asked location\n",
              thread_memory->thread_id);
     }
     else {
@@ -64,36 +74,17 @@ int thread_memory_move(thread_memory_t* thread_memory, int node) {
       exit(-1);
     }
   }
-
-  for(i=0; i<PAGES; i++) {
-    if (status[i] == -ENOENT)
-      printf("[%d] page #%d is not allocated\n", thread_memory->thread_id, i);
-    else
-      printf("[%d] page #%d is on node #%d\n", thread_memory->thread_id, i, status[i]);
+  else {
+    for(i=0; i<PAGES; i++) {
+      if (status[i] == -ENOENT)
+        printf("[%d] page #%d is not allocated\n", thread_memory->thread_id, i);
+      else
+        printf("[%d] page #%d is on node #%d\n", thread_memory->thread_id, i, status[i]);
+    }
   }
-
 }
 
 int thread_memory_detach(thread_memory_t* thread_memory) {
-}
-
-void print_pagenodes(int id, void **pageaddrs, int nbpages) {
-  int status[nbpages];
-  int i;
-  int err;
-
-  err = move_pages(0, nbpages, pageaddrs, NULL, status, 0);
-  if (err < 0) {
-    perror("move_pages");
-    exit(-1);
-  }
-
-  for(i=0; i<nbpages; i++) {
-    if (status[i] == -ENOENT)
-      marcel_printf("[%d]  page #%d is not allocated\n", id, i);
-    else
-      marcel_printf("[%d]  page #%d is on node #%d\n", id, i, status[i]);
-  }
 }
 
 any_t memory(any_t arg) {

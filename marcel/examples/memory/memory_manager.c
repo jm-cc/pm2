@@ -138,10 +138,27 @@ void add_memory_with_pages(bt_memory_t **memory_node, void **pageaddrs, int nbpa
   }
 }
 
+void locate_memory(bt_memory_t *memory_node, void *address, int *node) {
+  if (memory_node==NULL) {
+    // We did not find the address
+    *node = -1;
+  }
+  else if (address < memory_node->data->startaddress) {
+    locate_memory(memory_node->leftchild, address, node);
+  }
+  else if (address > memory_node->data->endaddress) {
+    locate_memory(memory_node->rightchild, address, node);
+  }
+  else { // the address is stored on the current memory_node
+    int offset = address - memory_node->data->startaddress;
+    *node = memory_node->data->nodes[offset / getpagesize()];
+  }
+}
+
 void print_memory(bt_memory_t *memory_node) {
   if (memory_node) {
     print_memory(memory_node->leftchild);
-    marcel_printf("%d\n", memory_node->data->pageaddrs[0]);
+    marcel_printf("[%p, %p]\n", memory_node->data->startaddress, memory_node->data->endaddress);
     print_memory(memory_node->rightchild);
   }
 }
@@ -151,9 +168,9 @@ void print_memory(bt_memory_t *memory_node) {
 int marcel_main(int argc, char * argv[]) {
   bt_memory_t *memory_root = NULL;
   int *a, *b, *c, *d, *e;
-  char *buffer;
+  char *buffer, *buffer2;
   void *pageaddrs[PAGES];
-  int i;
+  int i, node;
 
   marcel_init(&argc,argv);
 
@@ -174,4 +191,13 @@ int marcel_main(int argc, char * argv[]) {
   add_memory_with_pages(&memory_root, pageaddrs, PAGES, NULL);
 
   print_memory(memory_root);
+
+  locate_memory(memory_root, &(buffer[0]), &node);
+  marcel_printf("Address %p is located on node %d\n", &(buffer[0]), node);
+  locate_memory(memory_root, &(buffer[10000]), &node);
+  marcel_printf("Address %p is located on node %d\n", &(buffer[10000]), node);
+
+  buffer2 = malloc(sizeof(char));
+  locate_memory(memory_root, buffer2, &node);
+  marcel_printf("Address %p is located on node %d\n", buffer2, node);
 }

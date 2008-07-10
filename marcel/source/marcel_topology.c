@@ -450,9 +450,11 @@ static void look__sysfscpu(long *nr_procs,
 		    && errno == ENOENT)
 			break;
 
+		mydieid = 0; /* shut-up the compiler */
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/physical_package_id", i);
 		ma_parse_sysfs_unsigned(string, &mydieid);
 
+		mycoreid = 0; /* shut-up the compiler */
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/core_id", i);
 		ma_parse_sysfs_unsigned(string, &mycoreid);
 
@@ -697,14 +699,30 @@ static void __marcel_init look_sysfscpu(void) {
 	}
 }
 
+#include <dirent.h>
+#include <sys/types.h>
+
 static void __marcel_init look_sysfsnode(void) {
 	unsigned i;
-	unsigned nbnodes;
+	unsigned nbnodes = 1;
 	struct marcel_topo_level *node_level;
+	DIR *dir;
+	struct dirent *dirent;
 
-	if ((access("/sys/devices/system/node", X_OK) < 0
-	     || access("/sys/devices/system/node/node1", X_OK) < 0)
-	    && errno == ENOENT) {
+	dir = opendir("/sys/devices/system/node");
+	if (dir) {
+		while ((dirent = readdir(dir)) != NULL) {
+			unsigned long node;
+			if (strncmp(dirent->d_name, "node", 4))
+				continue;
+			node = strtoul(dirent->d_name+4, NULL, 0);
+			if (nbnodes < node+1)
+				nbnodes = node+1;
+		}
+		closedir(dir);
+	}
+
+	if (nbnodes <= 1) {
 		ma_numa_not_available=1;
 		return;
 	}

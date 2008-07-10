@@ -20,10 +20,13 @@
 #include <errno.h>
 
 typedef struct memory_s {
-  int *nodes;
-  unsigned long pagesize;
+  void *startaddress;
+  void *endaddress;
+  size_t size;
+
   void **pageaddrs;
   int nbpages;
+  int *nodes;
 } memory_t; 
 
 typedef struct bt_memory_s {
@@ -37,15 +40,19 @@ void new_memory(memory_t **memory, void *address, size_t size) {
 
   *memory = malloc(sizeof(memory_t));
 
+  // Set the interval addresses and the length
+  (*memory)->startaddress = address;
+  (*memory)->endaddress = address+size;
+  (*memory)->size = size;
+
   // Count the number of pages
-  (*memory)->pagesize = getpagesize();
-  (*memory)->nbpages = size / (*memory)->pagesize;
-  if ((*memory)->nbpages * (*memory)->pagesize != size) (*memory)->nbpages++;
+  (*memory)->nbpages = size / getpagesize();
+  if ((*memory)->nbpages * getpagesize() != size) (*memory)->nbpages++;
 
   // Set the page addresses
   (*memory)->pageaddrs = malloc((*memory)->nbpages * sizeof(void *));
   for(i=0; i<(*memory)->nbpages ; i++)
-    (*memory)->pageaddrs[i] = address + i*(*memory)->pagesize;
+    (*memory)->pageaddrs[i] = address + i*getpagesize();
 
   // fill in the nodes
   (*memory)->nodes = malloc((*memory)->nbpages * sizeof(int));
@@ -68,9 +75,14 @@ void new_memory_with_pages(memory_t **memory, void **pageaddrs, int nbpages, int
   int i, err;
 
   *memory = malloc(sizeof(memory_t));
-  (*memory)->nbpages = nbpages;
+
+  // Set the interval addresses and the length
+  (*memory)->startaddress = pageaddrs[0];
+  (*memory)->endaddress = pageaddrs[nbpages-1]+getpagesize();
+  (*memory)->size = nbpages * getpagesize();
 
   // Set the page addresses
+  (*memory)->nbpages = nbpages;
   (*memory)->pageaddrs = malloc((*memory)->nbpages * sizeof(void *));
   memcpy((*memory)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
 

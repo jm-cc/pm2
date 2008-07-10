@@ -466,7 +466,7 @@ struct marcel_topo_level {
 		__l->type = _type; \
 		__l->merged_type = 1<<_type; \
 		marcel_vpset_zero(&__l->vpset); \
-		marcel_vpset_zero(&__l->vpset); \
+		marcel_vpset_zero(&__l->cpuset); \
 		__l->arity = 0; \
 		__l->children = NULL; \
 		__l->father = NULL; \

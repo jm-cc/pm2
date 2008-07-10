@@ -64,6 +64,38 @@ void new_memory(memory_t **memory, void *address, size_t size) {
   }
 }
 
+void new_memory_with_pages(memory_t **memory, void **pageaddrs, int nbpages, int *nodes) {
+  int i, err;
+
+  *memory = malloc(sizeof(memory_t));
+  (*memory)->nbpages = nbpages;
+
+  // Set the page addresses
+  (*memory)->pageaddrs = malloc((*memory)->nbpages * sizeof(void *));
+  memcpy((*memory)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
+
+  // fill in the nodes
+  (*memory)->nodes = malloc((*memory)->nbpages * sizeof(int));
+  if (nodes) {
+    memcpy((*memory)->nodes, nodes, nbpages*sizeof(int));
+  }
+  else {
+    err = move_pages(0, (*memory)->nbpages, (*memory)->pageaddrs, NULL, (*memory)->nodes, 0);
+    if (err < 0) {
+      perror("move_pages");
+      exit(-1);
+    }
+  }
+
+  // Display information
+  for(i=0; i<(*memory)->nbpages; i++) {
+    if ((*memory)->nodes[i] == -ENOENT)
+      marcel_printf("  page #%d is not allocated\n", i);
+    else
+      marcel_printf("  page #%d is on node #%d\n", i, (*memory)->nodes[i]);
+  }
+}
+
 void add_memory(bt_memory_t **memory_node, void *address, size_t size) {
   if (*memory_node==NULL) {
     *memory_node = malloc(sizeof(bt_memory_t));
@@ -79,6 +111,21 @@ void add_memory(bt_memory_t **memory_node, void *address, size_t size) {
   }
 }
 
+void add_memory_with_pages(bt_memory_t **memory_node, void **pageaddrs, int nbpages, int *nodes) {
+  if (*memory_node==NULL) {
+    *memory_node = malloc(sizeof(bt_memory_t));
+    (*memory_node)->leftchild = NULL;
+    (*memory_node)->rightchild = NULL;
+    new_memory_with_pages(&((*memory_node)->data), pageaddrs, nbpages, nodes);
+  }
+  else {
+    if (pageaddrs[0] < (*memory_node)->data->pageaddrs[0])
+      add_memory_with_pages(&((*memory_node)->leftchild), pageaddrs, nbpages, nodes);
+    else
+      add_memory_with_pages(&((*memory_node)->rightchild), pageaddrs, nbpages, nodes);
+  }
+}
+
 void print_memory(bt_memory_t *memory_node) {
   if (memory_node) {
     print_memory(memory_node->leftchild);
@@ -87,9 +134,14 @@ void print_memory(bt_memory_t *memory_node) {
   }
 }
 
+#define PAGES 5
+
 int marcel_main(int argc, char * argv[]) {
   bt_memory_t *memory_root = NULL;
   int *a, *b, *c, *d, *e;
+  char *buffer;
+  void *pageaddrs[PAGES];
+  int i;
 
   marcel_init(&argc,argv);
 
@@ -104,6 +156,10 @@ int marcel_main(int argc, char * argv[]) {
   add_memory(&memory_root, a, 100*sizeof(int));
   add_memory(&memory_root, c, 100*sizeof(int));
   add_memory(&memory_root, d, 100*sizeof(int));
+
+  buffer = malloc(PAGES * getpagesize());
+  for(i=0; i<PAGES; i++) pageaddrs[i] = (buffer + i*getpagesize());
+  add_memory_with_pages(&memory_root, pageaddrs, PAGES, NULL);
 
   print_memory(memory_root);
 }

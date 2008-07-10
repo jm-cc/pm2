@@ -413,7 +413,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 		default: MA_BUG_ON(1);
 		}
 
-		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], nr_procs+1);
+		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], nr_procs);
 
 		mdebug("L%d cache %d has cpuset %"MA_VPSET_x" \t(%s)\n", cachelevel+1,
 		       j, level[j].cpuset, tbx_i2smb(level[j].cpuset));
@@ -428,7 +428,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 }
 
 /* Look at Linux' /sys/devices/system/cpu/cpu%d/topology/ */
-static void look__sysfscpu(long *nr_procs,
+static void look__sysfscpu(unsigned *nr_procs,
 			   unsigned *nr_cores,
 			   unsigned *nr_dies,
 			   unsigned *proc_physids,
@@ -499,7 +499,7 @@ static void look__sysfscpu(long *nr_procs,
 }
 
 /* Look at Linux' /proc/cpuinfo */
-static void look_cpuinfo(long *nr_procs,
+static void look_cpuinfo(unsigned *nr_procs,
 			 unsigned *nr_cores,
 			 unsigned *nr_dies,
 			 unsigned *proc_physids,
@@ -515,6 +515,7 @@ static void look_cpuinfo(long *nr_procs,
 	unsigned core_osphysids[MARCEL_NBMAXCPUS];
 	long physid;
 	long coreid;
+	long processor = -1;
 	int i;
 
 	memset(proc_physids,0,sizeof(proc_physids));
@@ -541,34 +542,34 @@ static void look_cpuinfo(long *nr_procs,
 			} else if (var==LONG_MIN) { \
 				fprintf(stderr,"too small "field" number in /proc/cpuinfo\n"); \
 				break; \
-			} else if (*nr_procs==LONG_MAX) { \
+			} else if (var==LONG_MAX) { \
 				fprintf(stderr,"too big "field" number in /proc/cpuinfo\n"); \
 				break; \
 			} \
 			mdebug(field " %ld\n", var)
 #      define getprocnb_end() \
 		}
-		getprocnb_begin(PROCESSOR,*nr_procs);
+		getprocnb_begin(PROCESSOR,processor);
 		getprocnb_end() else
 		getprocnb_begin(PHYSID,physid);
-			proc_osphysids[*nr_procs]=physid;
+			proc_osphysids[processor]=physid;
 			for (i=0; i<*nr_dies; i++)
 				if (physid == osphysids[i])
 					break;
-			proc_physids[*nr_procs]=i;
-			mdebug("%ld on die %d (%lx)\n", *nr_procs, i, physid);
+			proc_physids[processor]=i;
+			mdebug("%ld on die %d (%lx)\n", processor, i, physid);
 			if (i==*nr_dies)
 				osphysids[(*nr_dies)++] = physid;
 		getprocnb_end() else
 		getprocnb_begin(COREID,coreid);
-			proc_oscoreids[*nr_procs]=coreid;
+			proc_oscoreids[processor]=coreid;
 			for (i=0; i<*nr_cores; i++)
-				if (coreid == oscoreids[i] && proc_osphysids[*nr_procs] == core_osphysids[i])
+				if (coreid == oscoreids[i] && proc_osphysids[processor] == core_osphysids[i])
 					break;
-			proc_coreids[*nr_procs]=i;
-			mdebug("%ld on core %d (%lx:%x)\n", *nr_procs, i, coreid, proc_osphysids[*nr_procs]);
+			proc_coreids[processor]=i;
+			mdebug("%ld on core %d (%lx:%x)\n", processor, i, coreid, proc_osphysids[processor]);
 			if (i==*nr_cores) {
-				core_osphysids[*nr_cores] = proc_osphysids[*nr_procs];
+				core_osphysids[*nr_cores] = proc_osphysids[processor];
 				oscoreids[*nr_cores] = coreid;
 				(*nr_cores)++;
 			}
@@ -579,10 +580,12 @@ static void look_cpuinfo(long *nr_procs,
 		}
 	}
 	fclose(fd);
+
+	/* setup the final number of procs */
+	*nr_procs = processor + 1;
 }
 
 static void __marcel_init look_sysfscpu(void) {
-	long processor=-1;
 	unsigned proc_physids[MARCEL_NBMAXCPUS];
 	unsigned osphysids[MARCEL_NBMAXCPUS];
 	unsigned proc_coreids[MARCEL_NBMAXCPUS];
@@ -590,6 +593,7 @@ static void __marcel_init look_sysfscpu(void) {
 	unsigned proc_cacheids[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
 	int j,k;
 
+	unsigned numprocs=0;
 	unsigned numdies=0;
 	unsigned numcores=0;
 	unsigned numcaches[CACHE_LEVEL_MAX];
@@ -599,17 +603,17 @@ static void __marcel_init look_sysfscpu(void) {
 	    || access("/sys/devices/system/cpu/cpu0/topology/physical_package_id", R_OK) < 0
 	    || access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK) < 0) {
 	  /* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16) */
-	  look_cpuinfo(&processor, &numcores, &numdies,
+	  look_cpuinfo(&numprocs, &numcores, &numdies,
 		       proc_physids, osphysids,
 		       proc_coreids, oscoreids);
 	} else {
-	  look__sysfscpu(&processor, &numcores, &numdies,
+	  look__sysfscpu(&numprocs, &numcores, &numdies,
 		       proc_physids, osphysids,
 		       proc_coreids, oscoreids);
 	}
 
 	mdebug("\n\n * Topology summary *\n\n");
-	mdebug("%ld processors\n", processor+1);
+	mdebug("%d processors\n", numprocs);
 
 	if (numdies>1)
 		mdebug("%d dies\n", numdies);
@@ -627,7 +631,7 @@ static void __marcel_init look_sysfscpu(void) {
 		for (j = 0; j < numdies; j++) {
 			ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
 			ma_topo_set_os_numbers(&die_level[j], die, osphysids[j]);
-			ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, processor+1);
+			ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, numprocs);
 			mdebug("die %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,die_level[j].cpuset,
 					tbx_i2smb(die_level[j].cpuset));
 		}
@@ -644,21 +648,21 @@ static void __marcel_init look_sysfscpu(void) {
 
 	for(j=0; j<CACHE_LEVEL_MAX; j++) {
 		numcaches[j] = 0;
-		for(k=0; k<=processor; k++)
+		for(k=0; k<numprocs; k++)
 			proc_cacheids[j*MARCEL_NBMAXCPUS+k] = -1;
 	}
-	for(j=0; j<=processor; j++) {
-		ma_parse_cache_shared_cpu_maps(j, processor, proc_cacheids, numcaches);
+	for(j=0; j<numprocs; j++) {
+		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, numcaches);
 	}
 
 	if (numcaches[2] > 1) {
 		/* setup L3 caches */
-		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, processor, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids);
 	}
 
 	if (numcaches[1] > 1) {
 		/* setup L2 caches */
-		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, processor, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids);
 	}
 
 	struct marcel_topo_level *core_level;
@@ -671,7 +675,7 @@ static void __marcel_init look_sysfscpu(void) {
 		for (j = 0; j < numcores; j++) {
 			ma_topo_setup_level(&core_level[j], MARCEL_LEVEL_CORE);
 			ma_topo_set_os_numbers(&core_level[j], core, oscoreids[j]);
-			ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, processor+1);
+			ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, numprocs);
 #      ifdef MARCEL_SMT_IDLE
 			ma_atomic_set(&core_level[j].nbidle, 0);
 #      endif
@@ -695,7 +699,7 @@ static void __marcel_init look_sysfscpu(void) {
 
 	if (numcaches[0] > 1) {
 		/* setup L1 caches */
-		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, processor, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids);
 	}
 }
 

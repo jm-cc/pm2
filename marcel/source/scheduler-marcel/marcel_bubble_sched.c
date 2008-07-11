@@ -16,7 +16,7 @@
 #include "marcel.h"
 
 ma_atomic_t ma_idle_scheduler = MA_ATOMIC_INIT(0);
-ma_spinlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
+ma_spinlock_t ma_idle_scheduler_lock = MA_SPIN_LOCK_UNLOCKED;
 ma_atomic_t ma_init = MA_ATOMIC_INIT(1);
 ma_spinlock_t ma_init_lock = MA_SPIN_LOCK_UNLOCKED;
 ma_atomic_t ma_ending = MA_ATOMIC_INIT(0);

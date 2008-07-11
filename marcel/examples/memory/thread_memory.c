@@ -170,19 +170,19 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
 
   marcel_attr_init(&attr);
-  // Start the 1st thread on the first VP 
+  // Start the 1st thread on the first VP
   //  marcel_print_level(&marcel_topo_vp_level[0], stderr, 1, 1, " ", "#", ":", "");
   marcel_attr_setid(&attr, 0);
   marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
   marcel_create(&threads[0], &attr, memory, (any_t) (intptr_t) 0);
 
-  // Start the 2nd thread on the last VP 
+  // Start the 2nd thread on the last VP
   //  marcel_print_level(&marcel_topo_vp_level[marcel_nbvps()-1], stderr, 1, 1, " ", "#", ":", "");
   marcel_attr_setid(&attr, 1);
   marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
   marcel_create(&threads[1], &attr, memory, (any_t) (intptr_t) 1);
 
-  // Start the thread on the first VP 
+  // Start the thread on the first VP
   marcel_attr_setid(&attr, 2);
   marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
   marcel_create(&threads[2], &attr, memory2, (any_t) (intptr_t) 0);

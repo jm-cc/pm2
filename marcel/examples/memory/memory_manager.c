@@ -141,15 +141,11 @@ void print_memory(memory_tree_t *memory_tree) {
 }
 
 #define PAGES 5
-
-int marcel_main(int argc, char * argv[]) {
+any_t memory(any_t arg) {
   int *a, *b, *c, *d, *e;
   char *buffer, *buffer2;
   void *pageaddrs[PAGES];
   int i, node;
-
-  marcel_init(&argc,argv);
-  marcel_spin_init(&memory_lock, 0);
 
   a = malloc(100*sizeof(int));
   b = malloc(100*sizeof(int));
@@ -164,15 +160,45 @@ int marcel_main(int argc, char * argv[]) {
   add_memory(&memory_root, d, 100*sizeof(int));
 
   buffer = malloc(PAGES * getpagesize());
+  memset(buffer, 0, PAGES * getpagesize());
   for(i=0; i<PAGES; i++) pageaddrs[i] = (buffer + i*getpagesize());
   add_memory_with_pages(&memory_root, pageaddrs, PAGES, PAGES * getpagesize(), NULL);
 
-  print_memory(memory_root);
+  buffer2 = malloc(PAGES * getpagesize());
+  for(i=0; i<PAGES; i++) pageaddrs[i] = (buffer2 + i*getpagesize());
+  add_memory_with_pages(&memory_root, pageaddrs, PAGES, PAGES * getpagesize(), NULL);
 
   locate_memory(memory_root, &(buffer[0]), &node);
-  marcel_printf("Address %p is located on node %d\n", &(buffer[0]), node);
-  locate_memory(memory_root, &(buffer[10000]), &node);
-  marcel_printf("Address %p is located on node %d\n", &(buffer[10000]), node);
+  marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
+  locate_memory(memory_root, &(buffer2[10000]), &node);
+  marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[10000]), node);
+}
+
+int marcel_main(int argc, char * argv[]) {
+  marcel_t threads[2];
+  marcel_attr_t attr;
+  char *buffer2;
+  int node;
+
+  marcel_init(&argc,argv);
+  marcel_spin_init(&memory_lock, 0);
+  marcel_attr_init(&attr);
+
+  // Start the 1st thread on the first VP
+  marcel_attr_setid(&attr, 0);
+  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
+  marcel_create(&threads[0], &attr, memory, NULL);
+
+  // Start the 2nd thread on the last VP
+  marcel_attr_setid(&attr, 1);
+  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
+  marcel_create(&threads[1], &attr, memory, NULL);
+
+  // Wait for the threads to complete
+  marcel_join(threads[0], NULL);
+  marcel_join(threads[1], NULL);
+
+  print_memory(memory_root);
 
   buffer2 = malloc(sizeof(char));
   locate_memory(memory_root, buffer2, &node);

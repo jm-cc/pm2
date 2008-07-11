@@ -15,8 +15,8 @@
 
 #include "marcel.h"
 
-int ma_idle_scheduler = 0;
-ma_rwlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
+ma_atomic_t ma_idle_scheduler = MA_ATOMIC_INIT(0);
+ma_spinlock_t ma_idle_scheduler_lock = MA_RW_LOCK_UNLOCKED;
 ma_atomic_t ma_init = MA_ATOMIC_INIT(1);
 ma_spinlock_t ma_init_lock = MA_SPIN_LOCK_UNLOCKED;
 ma_atomic_t ma_ending = MA_ATOMIC_INIT(0);
@@ -92,17 +92,55 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	return old;
 }
 
+/* Turns idle scheduler on. This function returns 1 if an idle
+   scheduler was already running. */
+int
+ma_activate_idle_scheduler () {
+  int ret = 1;
+  if (!ma_idle_scheduler_is_running ()) {
+    ma_spin_lock (&ma_idle_scheduler_lock);
+    if (!ma_idle_scheduler_is_running ()) {
+      ma_atomic_inc (&ma_idle_scheduler);
+      ret = 0;
+    }
+    ma_spin_unlock (&ma_idle_scheduler_lock);
+  }
+  return ret;
+}
+
+/* Turns idle scheduler off. This function returns 1 if no idle
+   scheduler was previously running. */
+int
+ma_deactivate_idle_scheduler () {
+  int ret = 1;
+  if (ma_idle_scheduler_is_running ()) {
+    ma_spin_lock (&ma_idle_scheduler_lock);
+    if (ma_idle_scheduler_is_running ()) {
+      ma_atomic_dec (&ma_idle_scheduler);
+      ret = 0;
+    }
+    ma_spin_unlock (&ma_idle_scheduler_lock);
+  }
+  return ret;
+}
+
+/* Checks whether an idle scheduler is currently running. */
+int
+ma_idle_scheduler_is_running () {
+  return ma_atomic_read (&ma_idle_scheduler);
+}
+
+ /* Application is entering steady state, let's start
+    thread/bubble distribution and active work stealing
+    algorithm */ 
 void marcel_bubble_sched_begin () {
   if (ma_atomic_read (&ma_init)) {
     ma_spin_lock (&ma_init_lock);
     if (ma_atomic_read (&ma_init)) {
-      /* Application is entering steady state, let's start
-	 thread/bubble distribution and active work stealing
-	 algorithm */ 
       ma_atomic_dec (&ma_init);
       ma_spin_unlock (&ma_init_lock);
       current_sched->submit (&marcel_root_bubble.as_entity);
-      ma_idle_scheduler = 1;
+      ma_activate_idle_scheduler ();
     }
     else
       ma_spin_unlock (&ma_init_lock);
@@ -120,12 +158,14 @@ marcel_bubble_submit (marcel_bubble_t *b) {
   return 1;
 }
 
+ /* Application is entering ending state, let's prevent idle
+    schedulers from stealing anything. */ 
 void marcel_bubble_sched_end () {
   if (!ma_atomic_read(&ma_ending)) {
     ma_spin_lock (&ma_ending_lock);
     if (!ma_atomic_read (&ma_ending)) {
       ma_atomic_inc (&ma_ending);
-      ma_idle_scheduler = 0;
+      ma_deactivate_idle_scheduler ();
     }
     ma_spin_unlock (&ma_ending_lock);
   }

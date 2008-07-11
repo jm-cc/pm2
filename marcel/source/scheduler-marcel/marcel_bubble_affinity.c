@@ -28,6 +28,11 @@ static unsigned long last_succeeded_steal = 0;
 static ma_atomic_t succeeded_steals = MA_ATOMIC_INIT(0);
 static ma_atomic_t failed_steals = MA_ATOMIC_INIT(0);
 
+#if 1
+#undef bubble_sched_debug
+#define bubble_sched_debug printf
+#endif
+
 /* Submits a set of entities on a marcel_topo_level */
 static void
 __sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
@@ -449,7 +454,7 @@ is_entity_worth_stealing (int *greater,
 	     marcel_entity_t **tested_entity) {
   int found = 0;
   /* We try to avoid currently running entities. */
-  if (!ma_entity_is_running (*tested_entity)) {
+  //if (!ma_entity_is_running (*tested_entity)) {
     long load = ma_entity_load (*tested_entity);
     if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
       if (load > *greater) {
@@ -464,7 +469,7 @@ is_entity_worth_stealing (int *greater,
 	 load balancing of OpenMP nested applications for example. */
       *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
     }
-  }
+    // }
   return found;
 }
 
@@ -538,31 +543,25 @@ static int
 affinity_steal(unsigned from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
   struct marcel_topo_level *father = me->father;
-  struct marcel_topo_level *top = marcel_topo_level(0,0);
+  struct marcel_topo_level *top = marcel_topo_level (0,0);
   int arity;
   
   int n, smthg_to_steal = 0;
-  int nvp = marcel_vpset_weight(&top->vpset);
+  int nvp = marcel_vpset_weight (&top->vpset);
   
-  if ((last_failed_steal && ((marcel_clock() - last_failed_steal) < MA_FAILED_STEAL_COOLDOWN)) 
-      || (last_succeeded_steal && ((marcel_clock() - last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
-    return 0;
+  /* if ((last_failed_steal && ((marcel_clock() - last_failed_steal) < MA_FAILED_STEAL_COOLDOWN))  */
+/*       || (last_succeeded_steal && ((marcel_clock() - last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN))) */
+/*     return 0; */
   
-  ma_write_lock(&ma_idle_scheduler_lock);
-  if (!ma_idle_scheduler) {
-    ma_write_unlock(&ma_idle_scheduler_lock);
+  if (!ma_idle_scheduler_is_running ()) {
+    bubble_sched_debug("===[Processor %u is idle but ma_idle_scheduler is off! (%d)]===\n", from_vp, ma_idle_scheduler_is_running ());
     return 0;
   }
-  ma_idle_scheduler = 0;
+  
+  ma_deactivate_idle_scheduler ();
   
   marcel_threadslist(0,NULL,&n,NOT_BLOCKED_ONLY);
 
-  if (n < nvp) {
-    ma_idle_scheduler = 1;
-    ma_write_unlock(&ma_idle_scheduler_lock);
-    return 0;
-  }
-  
   bubble_sched_debug("===[Processor %u is idle]===\n", from_vp);
 
   if (father)
@@ -589,14 +588,13 @@ affinity_steal(unsigned from_vp) {
      function starts with locking every entity and gather the
      root_bubble, that's why we need to call it outside the
      bubble_lock_all critical section. */
-  if (smthg_to_steal == -1)
+  if ((smthg_to_steal == -1) && (n >= nvp))
     marcel_bubble_shake ();
   
   ma_resched_existing_threads(me);    
   ma_preempt_enable_no_resched();
   ma_local_bh_enable();
-  ma_idle_scheduler = 1;
-  ma_write_unlock(&ma_idle_scheduler_lock);
+  ma_activate_idle_scheduler ();
   
   if (smthg_to_steal) { 
     bubble_sched_debug("We successfuly stole one or several entities !\n");
@@ -615,7 +613,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  //.vp_is_idle = affinity_steal,
+  .vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

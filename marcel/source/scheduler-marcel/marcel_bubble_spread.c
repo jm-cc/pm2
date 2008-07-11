@@ -291,12 +291,11 @@ int
 spread_sched_vp_is_idle(unsigned vp)
 {
   if (!vp) return 0;
-  ma_write_lock(&ma_idle_scheduler_lock);
-  if (!ma_idle_scheduler) {
-    ma_write_unlock(&ma_idle_scheduler_lock);
+  if (!ma_idle_scheduler_is_running ()) 
     return 0;
-  }
-  ma_idle_scheduler = 0;
+
+  ma_deactivate_idle_scheduler ();
+
   int n;
   struct marcel_topo_level *l = &marcel_topo_vp_level[vp];
   while (l->father && !marcel_vpset_isset(&l->vpset, 0))
@@ -307,8 +306,7 @@ spread_sched_vp_is_idle(unsigned vp)
 
   if (n < 2*marcel_vpset_weight(&l->vpset)) {
     //bubble_sched_debug("moins de threads que de VPS, on ne fait rien\n");
-    ma_idle_scheduler = 1;
-    ma_write_unlock(&ma_idle_scheduler_lock);
+    ma_activate_idle_scheduler ();
     return 0;
   }
   while (l->father && n >= 2*marcel_vpset_weight(&l->father->vpset)) {
@@ -318,8 +316,7 @@ spread_sched_vp_is_idle(unsigned vp)
 
   bubble_sched_debug("===========[repartition avec spread]===========\n");
   marcel_bubble_spread(&marcel_root_bubble, l);
-  ma_idle_scheduler = 1;
-  ma_write_unlock(&ma_idle_scheduler_lock);
+  ma_activate_idle_scheduler ();
   return 1;
 }
 

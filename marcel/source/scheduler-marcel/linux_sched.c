@@ -824,7 +824,7 @@ restart:
 		sched_debug("rebalance\n");
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES
-		if (ma_idle_scheduler)
+		if (ma_idle_scheduler_is_running ())
 		    if (current_sched->vp_is_idle && ma_vpnum(MA_LWP_SELF) < marcel_nbvps())
 		    {
 		      if (current_sched->vp_is_idle(ma_vpnum(MA_LWP_SELF)))

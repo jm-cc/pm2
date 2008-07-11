@@ -65,28 +65,6 @@ unsigned ma_entity_is_running (marcel_entity_t *e) {
   return 0;
 }
 
-void
-marcel_bubble_activate_idle_scheduler()
-{
-  if (!ma_idle_scheduler)
-    {
-      ma_write_lock(&ma_idle_scheduler_lock);
-      ma_idle_scheduler = 1;
-      ma_write_unlock(&ma_idle_scheduler_lock);
-    }
-}
-
-void
-marcel_bubble_deactivate_idle_scheduler()
-{
-  if (ma_idle_scheduler)
-    {
-      ma_write_lock(&ma_idle_scheduler_lock);
-      ma_idle_scheduler = 0;
-      ma_write_unlock(&ma_idle_scheduler_lock);
-    }
-}
-
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2) 
 {
 	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;

@@ -31,10 +31,6 @@ unsigned ma_is_a_seed(marcel_entity_t *);
    running thread.) */
 unsigned ma_entity_is_running (marcel_entity_t *e);
 
-/* Activates/deactivates work-stealing algorithms */
-void marcel_bubble_activate_idle_scheduler();
-void marcel_bubble_deactivate_idle_scheduler();
-
 /* Compares load attribute only */
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2);
 int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2);

@@ -244,8 +244,8 @@ int __memaware(unsigned vp) {
 #ifdef MA__LWPS
 	int gotwork = 0;
 	struct marcel_topo_level *me = &marcel_topo_vp_level[vp];		
-	ma_read_lock(&ma_idle_scheduler_lock);
-	if (ma_idle_scheduler) {	
+	ma_spin_lock(&ma_idle_scheduler_lock);
+	if (ma_atomic_read (&ma_idle_scheduler)) {	
 		/* On teste ici l'equilibrage pour savoir 
 			si on vole ou si on respread localement */
 		struct marcel_topo_level *uplevel = NULL;
@@ -288,7 +288,7 @@ int __memaware(unsigned vp) {
 			}
 		}
 	}
-	ma_read_unlock(&ma_idle_scheduler_lock);
+	ma_spin_unlock(&ma_idle_scheduler_lock);
 
 #endif
 	return gotwork;
@@ -297,13 +297,13 @@ int __memaware(unsigned vp) {
 /****************************************************/
 int marcel_start_idle_memaware(void)
 {
-	marcel_bubble_activate_idle_scheduler();
+	ma_activate_idle_scheduler ();
 	return 0;
 }
 
 int marcel_stop_idle_memaware(void)
 {
-	marcel_bubble_deactivate_idle_scheduler();
+	ma_deactivate_idle_scheduler ();
 	return 0;
 }
 

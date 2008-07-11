@@ -199,16 +199,16 @@ static int see_up(struct marcel_topo_level *level) {
 
 int marcel_bubble_steal_work(unsigned vp) {
 #ifdef MA__LWPS
-	_ma_raw_read_lock(&ma_idle_scheduler_lock);
-	if (ma_idle_scheduler) {
+	ma_spin_lock(&ma_idle_scheduler_lock);
+	if (ma_atomic_read (&ma_idle_scheduler)) {
 	  struct marcel_topo_level *me =
 	    &marcel_topo_vp_level[marcel_current_vp()];
 	  bubble_sched_debugl(7,"bubble steal on %d\n", ma_vpnum(MA_LWP_SELF));
 	  /* couln't find work on local runqueue, go see elsewhere */
-	  _ma_raw_read_unlock(&ma_idle_scheduler_lock);
+	  ma_spin_unlock(&ma_idle_scheduler_lock);
 	  return see_up(me);
 	}
-	_ma_raw_read_unlock(&ma_idle_scheduler_lock);
+	ma_spin_unlock(&ma_idle_scheduler_lock);
 #endif
 	return 0;
 }
@@ -222,7 +222,7 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 	marcel_bubble_t *bubble = ma_bubble_entity(nextent);
 
 	/* Fresh bubble, put it near us. */
-	if (ma_idle_scheduler && !bubble->settled) {
+	if (ma_idle_scheduler_is_running () && !bubble->settled) {
 		ma_runqueue_t *rq2 = ma_lwp_vprq(MA_LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {
@@ -246,7 +246,7 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 static int
 steal_sched_start()
 {
-	marcel_bubble_activate_idle_scheduler();
+	ma_activate_idle_scheduler();
 	return 0;
 }
 

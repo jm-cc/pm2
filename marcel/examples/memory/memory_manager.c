@@ -45,7 +45,7 @@ void memory_manager_init(memory_manager_t *memory_manager) {
   memory_manager->pagesize = getpagesize();
 }
 
-void new_memory_with_pages(memory_manager_t *memory_manager, memory_node_t **memory_node, void **pageaddrs, int nbpages, size_t size, int *nodes) {
+void memory_manager_create_memory_node(memory_manager_t *memory_manager, void **pageaddrs, int nbpages, size_t size, int *nodes, memory_node_t **memory_node) {
   int i, err;
 
   *memory_node = malloc(sizeof(memory_node_t));
@@ -87,28 +87,28 @@ void new_memory_with_pages(memory_manager_t *memory_manager, memory_node_t **mem
   }
 }
 
-void add_memory_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
+void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
   if (*memory_tree==NULL) {
     *memory_tree = malloc(sizeof(memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    new_memory_with_pages(memory_manager, &((*memory_tree)->data), pageaddrs, nbpages, size, nodes);
+    memory_manager_create_memory_node(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      add_memory_internal(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
+      memory_manager_add_internal(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
     else
-      add_memory_internal(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
+      memory_manager_add_internal(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
   }
 }
 
-void add_memory_with_pages(memory_manager_t *memory_manager, void **pageaddrs, int nbpages, size_t size, int *nodes) {
+void memory_manager_add_with_pages(memory_manager_t *memory_manager, void **pageaddrs, int nbpages, size_t size, int *nodes) {
   marcel_spin_lock(&(memory_manager->lock));
-  add_memory_internal(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, NULL);
+  memory_manager_add_internal(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, NULL);
   marcel_spin_unlock(&(memory_manager->lock));
 }
 
-void add_memory(memory_manager_t *memory_manager, void *address, size_t size) {
+void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t size) {
   int nbpages, i;
   void **pageaddrs;
 
@@ -121,19 +121,19 @@ void add_memory(memory_manager_t *memory_manager, void *address, size_t size) {
   for(i=0; i<nbpages ; i++) pageaddrs[i] = address + i*memory_manager->pagesize;
 
   // Add memory
-  add_memory_with_pages(memory_manager, pageaddrs, nbpages, size, NULL);
+  memory_manager_add_with_pages(memory_manager, pageaddrs, nbpages, size, NULL);
 }
 
-void locate_memory(memory_manager_t *memory_manager, memory_tree_t *memory_tree, void *address, int *node) {
+void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memory_tree, void *address, int *node) {
   if (memory_tree==NULL) {
     // We did not find the address
     *node = -1;
   }
   else if (address < memory_tree->data->startaddress) {
-    locate_memory(memory_manager, memory_tree->leftchild, address, node);
+    memory_manager_locate(memory_manager, memory_tree->leftchild, address, node);
   }
   else if (address > memory_tree->data->endaddress) {
-    locate_memory(memory_manager, memory_tree->rightchild, address, node);
+    memory_manager_locate(memory_manager, memory_tree->rightchild, address, node);
   }
   else { // the address is stored on the current memory_node
     int offset = address - memory_tree->data->startaddress;
@@ -141,11 +141,11 @@ void locate_memory(memory_manager_t *memory_manager, memory_tree_t *memory_tree,
   }
 }
 
-void print_memory(memory_tree_t *memory_tree) {
+void memory_manager_print(memory_tree_t *memory_tree) {
   if (memory_tree) {
-    print_memory(memory_tree->leftchild);
+    memory_manager_print(memory_tree->leftchild);
     marcel_printf("[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
-    print_memory(memory_tree->rightchild);
+    memory_manager_print(memory_tree->rightchild);
   }
 }
 
@@ -164,24 +164,24 @@ any_t memory(any_t arg) {
   d = malloc(100*sizeof(int));
   e = malloc(100*sizeof(int));
 
-  add_memory(&memory_manager, e, 100*sizeof(int));
-  add_memory(&memory_manager, b, 100*sizeof(int));
-  add_memory(&memory_manager, a, 100*sizeof(int));
-  add_memory(&memory_manager, c, 100*sizeof(int));
-  add_memory(&memory_manager, d, 100*sizeof(int));
+  memory_manager_add(&memory_manager, e, 100*sizeof(int));
+  memory_manager_add(&memory_manager, b, 100*sizeof(int));
+  memory_manager_add(&memory_manager, a, 100*sizeof(int));
+  memory_manager_add(&memory_manager, c, 100*sizeof(int));
+  memory_manager_add(&memory_manager, d, 100*sizeof(int));
 
   buffer = malloc(PAGES * memory_manager.pagesize);
   memset(buffer, 0, PAGES * memory_manager.pagesize);
   for(i=0; i<PAGES; i++) pageaddrs[i] = (buffer + i*memory_manager.pagesize);
-  add_memory_with_pages(&memory_manager, pageaddrs, PAGES, PAGES * memory_manager.pagesize, NULL);
+  memory_manager_add_with_pages(&memory_manager, pageaddrs, PAGES, PAGES * memory_manager.pagesize, NULL);
 
   buffer2 = malloc(PAGES * memory_manager.pagesize);
   for(i=0; i<PAGES; i++) pageaddrs[i] = (buffer2 + i*memory_manager.pagesize);
-  add_memory_with_pages(&memory_manager, pageaddrs, PAGES, PAGES * memory_manager.pagesize, NULL);
+  memory_manager_add_with_pages(&memory_manager, pageaddrs, PAGES, PAGES * memory_manager.pagesize, NULL);
 
-  locate_memory(&memory_manager, memory_manager.root, &(buffer[0]), &node);
+  memory_manager_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
   marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
-  locate_memory(&memory_manager, memory_manager.root, &(buffer2[10000]), &node);
+  memory_manager_locate(&memory_manager, memory_manager.root, &(buffer2[10000]), &node);
   marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[10000]), node);
 }
 
@@ -209,10 +209,10 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[0], NULL);
   marcel_join(threads[1], NULL);
 
-  print_memory(memory_manager.root);
+  memory_manager_print(memory_manager.root);
 
   buffer2 = malloc(sizeof(char));
-  locate_memory(&memory_manager, memory_manager.root, buffer2, &node);
+  memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
   marcel_printf("Address %p is located on node %d\n", buffer2, node);
 }
 

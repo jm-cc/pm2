@@ -13,6 +13,7 @@
  * General Public License for more details.
  */
 
+#include <sys/mman.h>
 #include <numaif.h>
 #include <errno.h>
 #include "marcel.h"
@@ -125,7 +126,13 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
 }
 
 void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size) {
-  void *ptr = malloc(size);
+  void *ptr;
+
+  ptr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  if (ptr == MAP_FAILED) {
+    perror("mmap");
+    exit(-1);
+  }
 
   memory_manager_add(memory_manager, ptr, size);
 

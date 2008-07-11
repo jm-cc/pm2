@@ -56,8 +56,13 @@ void new_memory_with_pages(memory_node_t **memory_node, void **pageaddrs, int nb
   else {
     err = move_pages(0, (*memory_node)->nbpages, (*memory_node)->pageaddrs, NULL, (*memory_node)->nodes, 0);
     if (err < 0) {
-      perror("move_pages");
-      exit(-1);
+      if (errno == ENOSYS) {
+        marcel_printf("Warning: Function not implemented. Assume the value 0\n");
+      }
+      else {
+        perror("move_pages");
+        exit(-1);
+      }
     }
   }
 

@@ -765,7 +765,6 @@ static void __marcel_init look_sysfsnode(void) {
 }
 #    endif /* LINUX_SYS */
 
-
 #    ifdef OSF_SYS
 #       include <numa.h>
 /* Ask libnuma for topology */
@@ -907,6 +906,69 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 #      warning TODO: use GetLogicalProcessorInformation, GetNumaHighestNodeNumber, and GetNumaNodeProcessorMask
 #    endif
 
+static unsigned *
+ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_level_e ctype,
+	       unsigned *subarity, unsigned *sublevels)
+{
+	unsigned * array = NULL;
+#ifdef MA__NUMA
+	if (0 && /* disabled for now */
+	    ptype == MARCEL_LEVEL_MACHINE && ctype == MARCEL_LEVEL_NODE) {
+		/* splitting machine->numanode arity */
+
+#ifdef LINUX_SYS
+		/* get DMI board vendor and name */
+#define DMI_BOARD_STRINGS_LEN 50
+		char vendor[DMI_BOARD_STRINGS_LEN], device[DMI_BOARD_STRINGS_LEN];
+		FILE *fd;
+
+		vendor[0]='\0';
+		fd = fopen("/sys/class/dmi/id/board_vendor", "r");
+		if (fd) {
+			fgets(vendor, DMI_BOARD_STRINGS_LEN, fd);
+			fclose (fd);
+		}
+
+		device[0]='\0';
+		fd = fopen("/sys/class/dmi/id/board_name", "r");
+		if (fd) {
+			fgets(device, DMI_BOARD_STRINGS_LEN, fd);
+			fclose (fd);
+		}
+
+		/* quirk for tyan 8-opteron machines */
+		if (arity == 8
+		    && !strncasecmp(vendor, "tyan", 4)
+		    && (!strncasecmp(device, "S4881", 5)
+			|| !strncasecmp(device, "S4885", 5)
+			|| !strncasecmp(device, "S4985", 5))) {
+
+			mdebug("splitting machine->numanode on Tyan 8 opteron board, apply split quirk\n");
+
+			array = malloc(8*sizeof(*array));
+			MA_BUG_ON(!array);
+
+			/* create 4 fake levels with 2 nodes that are
+			 * actually connected through a single link
+			 */
+			*subarity = 2;
+			*sublevels = 4;
+		
+			array[0] = 0;
+			array[1] = 0;
+			array[2] = 1;
+			array[3] = 1;
+			array[4] = 2;
+			array[5] = 3;
+			array[6] = 3;
+			array[7] = 2;
+		}
+#endif /* LINUX_SYS */
+	}
+#endif /* MA_NUMA */
+
+	return array;
+}
 
 /* Use the value returned by ma_nbprocessors() */
 static void look_cpu(void) {
@@ -1250,7 +1312,13 @@ static void topo_discover(void) {
 				/* fill it with split items */
 				for (i=0,j=0; marcel_topo_levels[l][i].cpuset; i++) {
 					/* split one item */
-					split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
+
+					unsigned * quirk_array;
+					quirk_array = ma_split_quirk(marcel_topo_levels[l][i].type, marcel_topo_levels[l][i].arity, marcel_topo_levels[l+2][0].type,
+								     &sublevelarity, &nbsublevels);
+					if (!quirk_array)
+						split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
+
 					mdebug("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelarity);
 					/* initialize subitems */
 					for (k=0; k<nbsublevels; k++) {
@@ -1270,27 +1338,48 @@ static void topo_discover(void) {
 					/* distribute cpus to subitems */
 					/* give cpus of sublevelarity items to each fake item */
 
-					/* first fake item */
-					k = 0;
-					/* will get first item's cpus */
-					m = 0;
-					for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
-						level = &marcel_topo_levels[l+1][j+k];
-						level->cpuset |=
-							marcel_topo_levels[l][i].children[n]->cpuset;
-						level->arity++;
-						level->children[m] = marcel_topo_levels[l][i].children[n];
-						marcel_topo_levels[l][i].children[n]->index = m;
-						marcel_topo_levels[l][i].children[n]->father = level;
-						if (++m == sublevelarity) {
-							k++;
-							m = 0;
+					if (quirk_array) {
+						/* use the quirk array to connect new levels */
+						for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
+							unsigned quirk_father = quirk_array[n];
+							unsigned child_index;
+							level = &marcel_topo_levels[l+1][j+quirk_father];
+							level->cpuset |=
+								marcel_topo_levels[l][i].children[n]->cpuset;
+							child_index = level->arity;
+							level->children[child_index] = marcel_topo_levels[l][i].children[n];
+							marcel_topo_levels[l][i].children[n]->index = child_index;
+							marcel_topo_levels[l][i].children[n]->father = level;
+							level->arity++;
+							MA_BUG_ON(level->arity > sublevelarity);
 						}
+						free(quirk_array);
+
+					} else {
+						/* linear split */
+
+						/* first fake item */
+						k = 0;
+						/* will get first item's cpus */
+						m = 0;
+						for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
+							level = &marcel_topo_levels[l+1][j+k];
+							level->cpuset |=
+								marcel_topo_levels[l][i].children[n]->cpuset;
+							level->arity++;
+							level->children[m] = marcel_topo_levels[l][i].children[n];
+							marcel_topo_levels[l][i].children[n]->index = m;
+							marcel_topo_levels[l][i].children[n]->father = level;
+							if (++m == sublevelarity) {
+								k++;
+								m = 0;
+							}
+						}
+						if (m)
+							/* Incomplete last level */
+							k++;
+						MA_BUG_ON(k!=nbsublevels);
 					}
-					if (m)
-						/* Incomplete last level */
-						k++;
-					MA_BUG_ON(k!=nbsublevels);
 
 					/* reconnect */
 					marcel_topo_levels[l][i].arity = nbsublevels;

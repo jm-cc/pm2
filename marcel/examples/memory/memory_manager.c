@@ -33,6 +33,9 @@ typedef struct memory_tree_s {
   memory_node_t *data;
 } memory_tree_t;
 
+memory_tree_t *memory_root = NULL;
+marcel_spinlock_t memory_lock;
+
 void new_memory_with_pages(memory_node_t **memory_node, void **pageaddrs, int nbpages, size_t size, int *nodes) {
   int i, err;
 
@@ -75,7 +78,7 @@ void new_memory_with_pages(memory_node_t **memory_node, void **pageaddrs, int nb
   }
 }
 
-void add_memory_with_pages(memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
+void add_memory_internal(memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
   if (*memory_tree==NULL) {
     *memory_tree = malloc(sizeof(memory_tree_t));
     (*memory_tree)->leftchild = NULL;
@@ -84,10 +87,16 @@ void add_memory_with_pages(memory_tree_t **memory_tree, void **pageaddrs, int nb
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      add_memory_with_pages(&((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
+      add_memory_internal(&((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
     else
-      add_memory_with_pages(&((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
+      add_memory_internal(&((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
   }
+}
+
+void add_memory_with_pages(memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
+  marcel_spin_lock(&memory_lock);
+  add_memory_internal(memory_tree, pageaddrs, nbpages, size, NULL);
+  marcel_spin_unlock(&memory_lock);
 }
 
 void add_memory(memory_tree_t **memory_tree, void *address, size_t size) {
@@ -134,13 +143,13 @@ void print_memory(memory_tree_t *memory_tree) {
 #define PAGES 5
 
 int marcel_main(int argc, char * argv[]) {
-  memory_tree_t *memory_root = NULL;
   int *a, *b, *c, *d, *e;
   char *buffer, *buffer2;
   void *pageaddrs[PAGES];
   int i, node;
 
   marcel_init(&argc,argv);
+  marcel_spin_init(&memory_lock, 0);
 
   a = malloc(100*sizeof(int));
   b = malloc(100*sizeof(int));

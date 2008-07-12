@@ -125,6 +125,10 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
   memory_manager_add_with_pages(memory_manager, pageaddrs, nbpages, size, NULL);
 }
 
+void memory_manager_prealloc(memory_manager_t *memory_manager) {
+#warning not implemented yet
+}
+
 void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size) {
   void *ptr;
 
@@ -145,6 +149,10 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
   memory_manager_add(memory_manager, ptr, nmemb*size);
 
   return ptr;
+}
+
+void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
+#warning not implemented yet
 }
 
 void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memory_tree, void *address, int *node) {

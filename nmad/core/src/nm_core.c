@@ -598,7 +598,7 @@ nm_core_driver_load_init_some_with_params(struct nm_core *p_core,
 #ifdef PM2_NUIOA
 	if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
 #if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
-		struct bitmask * mask = numa_bitmask_alloc(numa_max_possible_node());
+		struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
 		numa_bitmask_setbit(mask, preferred_node);
 		numa_bind(mask); 
 		numa_bitmask_free(mask);

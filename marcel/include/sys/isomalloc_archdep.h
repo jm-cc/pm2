@@ -47,6 +47,12 @@
   #endif
 #endif
 #define THREAD_SLOT_SIZE              ((unsigned long) ASM_THREAD_SLOT_SIZE)
+/* 8192 is a rough approximation for marcel_t + some stack, more precise check
+ * done at runtime in marcel_init.c */
+#if (ASM_THREAD_SLOT_SIZE < MA_TLS_AREA_SIZE + 8192)
+#  error THREAD_SLOT_SIZE is too small for TLS_AREA_SIZE, please increase it in marcel/include/sys/isomalloc_archdep.h
+#endif
+
 #define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM

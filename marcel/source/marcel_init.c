@@ -535,8 +535,11 @@ int main(int argc, char *argv[])
 			fprintf(stderr,"The current stack resource limit is too small (%ld) for the chosen marcel stack size (%ld).  Please increase it (ulimit -s, and maximum is %ld) or decrease THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h\n", (long)rlim.rlim_cur, (long)THREAD_SLOT_SIZE, (long) rlim.rlim_max);
 			abort();
 		}
-		if (THREAD_SLOT_SIZE < sizeof(marcel_t)) {
-			fprintf(stderr,"THREAD_SLOT_SIZE is too small (%ld) for marcel_t (%ld) to fit in.  Please increase it in marcel/include/sys/isomalloc_archdep.h\n", THREAD_SLOT_SIZE, sizeof(marcel_t));
+		if (THREAD_SLOT_SIZE <= sizeof(struct marcel_task)) {
+			fprintf(stderr,"THREAD_SLOT_SIZE is too small (%ld) to hold "
+							"`marcel_t' (%ld) and the thread's stack.  Please "
+							"increase it in marcel/include/sys/isomalloc_archdep.h\n",
+							THREAD_SLOT_SIZE, sizeof(struct marcel_task));
 			abort();
 		}
 

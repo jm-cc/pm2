@@ -321,7 +321,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	} else {		/* (!attr->stack_base) */
 		char *bottom;
 #ifdef MA__DEBUG
-		if (attr->__stacksize > THREAD_SLOT_SIZE) {
+		if (attr->__stacksize + sizeof(marcel_t) > THREAD_SLOT_SIZE) {
 			MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 		}
 #endif

@@ -25,7 +25,7 @@
 // TOFIX
 #define ISOADDR_PAGES                 (128*1024)
 /* Warning: ASM_THREAD_SLOT_SIZE must be a power of two, and be at least twice
- * as much as PTHREAD_STACK_MIN */
+ * as much as PTHREAD_STACK_MIN, must be usable in assembly source */
 
 #if MARCEL_THREAD_SLOT_SIZE
   #define ASM_THREAD_SLOT_SIZE MARCEL_THREAD_SLOT_SIZE
@@ -33,26 +33,20 @@
 /* Note: for x86_64 with TLS or valgrind, we have to restrict to 32bit, thus
  * the same stack size as for x86_32 */
   #if defined(PPC_ARCH)
-    #define ASM_THREAD_SLOT_SIZE          (0x40000UL) /* 256 KB */
+    #define ASM_THREAD_SLOT_SIZE          (0x40000) /* 256 KB */
   #else
     #if (defined(X86_64_ARCH) && !defined(MA__PROVIDE_TLS) && !defined(PM2VALGRIND)) || defined(IA64_ARCH) || defined(ALPHA_ARCH) || defined(PPC64_ARCH)
-      #define ASM_THREAD_SLOT_SIZE          (0x400000UL) /* 4 MB */
+      #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
     #else
       #ifdef MA__LIBPTHREAD
-        #define ASM_THREAD_SLOT_SIZE          (0x100000UL) /* 1 MB */
+        #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
       #else
-        #define ASM_THREAD_SLOT_SIZE          (0x10000UL) /* 64 KB */
+        #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
       #endif
     #endif
   #endif
 #endif
-#define THREAD_SLOT_SIZE              (ASM_THREAD_SLOT_SIZE)
-/* THREAD_SLOT_SIZE must be larger than sizeof(marcel_t) 
- * Currently, the maximum limit is an estimation */
-#if (THREAD_SLOT_SIZE < MA_TLS_AREA_SIZE + 7000)
-  #error THREAD_SLOT_SIZE is too small !
-#endif
-
+#define THREAD_SLOT_SIZE              ((unsigned long) ASM_THREAD_SLOT_SIZE)
 #define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM

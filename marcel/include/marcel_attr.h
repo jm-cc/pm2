@@ -105,7 +105,7 @@ struct __marcel_attr_s {
   .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
-  .__stacksize= THREAD_SLOT_SIZE, \
+  .__stacksize= (THREAD_SLOT_SIZE - sizeof(struct marcel_task)),	\
   MARCEL_ATTR_USERSPACE_INITIALIZER \
   MARCEL_ATTR_MIGRATION_INITIALIZER \
   .not_deviatable= 0, \

@@ -28,11 +28,6 @@ static unsigned long last_succeeded_steal = 0;
 static ma_atomic_t succeeded_steals = MA_ATOMIC_INIT(0);
 static ma_atomic_t failed_steals = MA_ATOMIC_INIT(0);
 
-#if 1
-#undef bubble_sched_debug
-#define bubble_sched_debug printf
-#endif
-
 /* Submits a set of entities on a marcel_topo_level */
 static void
 __sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {

@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
 		}
 		if (THREAD_SLOT_SIZE <= sizeof(struct marcel_task)) {
 			fprintf(stderr,"THREAD_SLOT_SIZE is too small (%ld) to hold "
-							"`marcel_t' (%d) and the thread's stack.  Please "
+							"`marcel_t' (%zd) and the thread's stack.  Please "
 							"increase it in marcel/include/sys/isomalloc_archdep.h\n",
 							THREAD_SLOT_SIZE, sizeof(struct marcel_task));
 			abort();

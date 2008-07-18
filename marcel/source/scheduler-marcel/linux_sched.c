@@ -1371,6 +1371,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 				 marcel_topo_level_string(level->children[i]->type),
 				 level->children[i]->number);
 		newrq = &level->children[i]->rq;
+		rq->topolevel = level;
 		ma_init_rq(newrq, name, rqtypes[level->children[i]->type]);
 		newrq->level = levelnum;
 		newrq->father = rq;
@@ -1384,6 +1385,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 
 void __marcel_init ma_linux_sched_init0(void)
 {
+	ma_main_runqueue.topolevel = marcel_machine_level;
 	ma_init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;

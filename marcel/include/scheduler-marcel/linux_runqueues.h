@@ -158,6 +158,8 @@ struct ma_runqueue {
 #endif
 	/** \brief Type of the runqueue */
 	enum ma_rq_type type;
+	/** \brief Corresponding topo-level */
+	struct marcel_topo_level *topolevel;
 
 #ifdef MA__BUBBLES
         /** \brief General-purpose list link for bubble schedulers */

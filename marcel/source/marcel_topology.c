@@ -376,13 +376,15 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids,
 		fd = fopen(mappath, "r");
 		if (fd) {
 			if (fgets(string,sizeof(string), fd)) {
+				fclose(fd);
 				if (!strncmp(string,"Instruction", 11))
 					continue;
-			} else
+			} else {
+				fclose(fd);
 				continue;
-			fclose(fd);
+			}
 		} else
-			continue;
+		  continue;
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, i);
 		sprintf(cachename, "L%d cache", level+1);

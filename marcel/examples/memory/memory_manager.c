@@ -18,7 +18,7 @@
 #include <errno.h>
 #include "marcel.h"
 
-typedef struct memory_node_s {
+typedef struct memory_data_s {
   void *startaddress;
   void *endaddress;
   size_t size;
@@ -26,12 +26,12 @@ typedef struct memory_node_s {
   void **pageaddrs;
   int nbpages;
   int *nodes;
-} memory_node_t;
+} memory_data_t;
 
 typedef struct memory_tree_s {
   struct memory_tree_s *leftchild;
   struct memory_tree_s *rightchild;
-  memory_node_t *data;
+  memory_data_t *data;
 } memory_tree_t;
 
 typedef struct memory_manager_s {
@@ -46,28 +46,28 @@ void memory_manager_init(memory_manager_t *memory_manager) {
   memory_manager->pagesize = getpagesize();
 }
 
-void memory_manager_create_memory_node(memory_manager_t *memory_manager, void **pageaddrs, int nbpages, size_t size, int *nodes, memory_node_t **memory_node) {
+void memory_manager_create_memory_data(memory_manager_t *memory_manager, void **pageaddrs, int nbpages, size_t size, int *nodes, memory_data_t **memory_data) {
   int i, err;
 
-  *memory_node = malloc(sizeof(memory_node_t));
+  *memory_data = malloc(sizeof(memory_data_t));
 
   // Set the interval addresses and the length
-  (*memory_node)->startaddress = pageaddrs[0];
-  (*memory_node)->endaddress = pageaddrs[nbpages-1]+memory_manager->pagesize;
-  (*memory_node)->size = size;
+  (*memory_data)->startaddress = pageaddrs[0];
+  (*memory_data)->endaddress = pageaddrs[nbpages-1]+memory_manager->pagesize;
+  (*memory_data)->size = size;
 
   // Set the page addresses
-  (*memory_node)->nbpages = nbpages;
-  (*memory_node)->pageaddrs = malloc((*memory_node)->nbpages * sizeof(void *));
-  memcpy((*memory_node)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
+  (*memory_data)->nbpages = nbpages;
+  (*memory_data)->pageaddrs = malloc((*memory_data)->nbpages * sizeof(void *));
+  memcpy((*memory_data)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
 
   // fill in the nodes
-  (*memory_node)->nodes = malloc((*memory_node)->nbpages * sizeof(int));
+  (*memory_data)->nodes = malloc((*memory_data)->nbpages * sizeof(int));
   if (nodes) {
-    memcpy((*memory_node)->nodes, nodes, nbpages*sizeof(int));
+    memcpy((*memory_data)->nodes, nodes, nbpages*sizeof(int));
   }
   else {
-    err = move_pages(0, (*memory_node)->nbpages, (*memory_node)->pageaddrs, NULL, (*memory_node)->nodes, 0);
+    err = move_pages(0, (*memory_data)->nbpages, (*memory_data)->pageaddrs, NULL, (*memory_data)->nodes, 0);
     if (err < 0) {
       if (errno == ENOSYS) {
         marcel_printf("Warning: Function not implemented. Assume the value 0\n");
@@ -80,11 +80,11 @@ void memory_manager_create_memory_node(memory_manager_t *memory_manager, void **
   }
 
   // Display information
-  for(i=0; i<(*memory_node)->nbpages; i++) {
-    if ((*memory_node)->nodes[i] == -ENOENT)
+  for(i=0; i<(*memory_data)->nbpages; i++) {
+    if ((*memory_data)->nodes[i] == -ENOENT)
       marcel_printf("  page #%d is not allocated\n", i);
     else
-      marcel_printf("  page #%d is on node #%d\n", i, (*memory_node)->nodes[i]);
+      marcel_printf("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
   }
 }
 
@@ -93,7 +93,7 @@ void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t
     *memory_tree = malloc(sizeof(memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    memory_manager_create_memory_node(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
+    memory_manager_create_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
@@ -166,7 +166,7 @@ void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memo
   else if (address > memory_tree->data->endaddress) {
     memory_manager_locate(memory_manager, memory_tree->rightchild, address, node);
   }
-  else { // the address is stored on the current memory_node
+  else { // the address is stored on the current memory_data
     int offset = address - memory_tree->data->startaddress;
     *node = memory_tree->data->nodes[offset / memory_manager->pagesize];
   }

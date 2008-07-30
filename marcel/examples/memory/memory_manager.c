@@ -70,7 +70,7 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager, void **
     err = move_pages(0, (*memory_data)->nbpages, (*memory_data)->pageaddrs, NULL, (*memory_data)->nodes, 0);
     if (err < 0) {
       if (errno == ENOSYS) {
-        marcel_printf("Warning: Function not implemented. Assume the value 0\n");
+	marcel_printf("Warning: Function not implemented. Assume the value 0\n");
       }
       else {
         perror("move_pages");
@@ -86,6 +86,56 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager, void **
     else
       marcel_printf("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
   }
+}
+
+void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t **memory_tree) {
+  if ((*memory_tree)->leftchild == NULL) {
+    //memory_tree_t **temp = memory_tree;
+    (*memory_tree) = (*memory_tree)->rightchild;
+    //free(*temp);
+  }
+  else if ((*memory_tree)->rightchild == NULL) {
+    //memory_tree_t **temp = memory_tree;
+    (*memory_tree) = (*memory_tree)->leftchild;
+    //free(*temp);
+  }
+  else {
+    // In-order predecessor (rightmost child of left subtree)
+    // Node has two children - get max of left subtree
+    memory_tree_t *temp = (*memory_tree)->leftchild; // get left node of the original node
+
+    // find the rightmost child of the subtree of the left node
+    while (temp->rightchild != NULL) {
+      temp = temp->rightchild;
+    }
+
+    // copy the value from the in-order predecessor to the original node
+    (*memory_tree)->data = temp->data;
+
+    // then delete the predecessor
+    memory_manager_delete_tree(memory_manager, &temp);
+  }
+}
+
+void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer) {
+  if (*memory_tree!=NULL) {
+    if (buffer == (*memory_tree)->data->pageaddrs[0]) {
+      memory_manager_delete_tree(memory_manager, memory_tree);
+      //      free((*memory_tree)->data->pageaddrs);
+      //free((*memory_tree)->data->nodes);
+      //free((*memory_tree)->data);
+    }
+    else if (buffer < (*memory_tree)->data->pageaddrs[0])
+      memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), buffer);
+    else
+      memory_manager_delete_internal(memory_manager, &((*memory_tree)->rightchild), buffer);
+  }
+}
+
+void memory_manager_delete(memory_manager_t *memory_manager, void *buffer) {
+  marcel_spin_lock(&(memory_manager->lock));
+  memory_manager_delete_internal(memory_manager, &(memory_manager->root), buffer);
+  marcel_spin_unlock(&(memory_manager->lock));
 }
 
 void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void **pageaddrs, int nbpages, size_t size, int *nodes) {
@@ -152,7 +202,8 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
 }
 
 void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
-#warning not implemented yet
+  memory_manager_delete(memory_manager, buffer);
+  free(buffer);
 }
 
 void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memory_tree, void *address, int *node) {

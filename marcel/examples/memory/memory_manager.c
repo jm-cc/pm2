@@ -101,12 +101,12 @@ void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t 
   if ((*memory_tree)->leftchild == NULL) {
     memory_tree_t *temp = (*memory_tree);
     (*memory_tree) = (*memory_tree)->rightchild;
-    free(temp);
+    //free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
     memory_tree_t *temp = *memory_tree;
     (*memory_tree) = (*memory_tree)->leftchild;
-    free(temp);
+    //free(temp);
   }
   else {
     // In-order predecessor (rightmost child of left subtree)
@@ -131,16 +131,16 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       memory_tree_t *tmp = *memory_tree;
       // Free memory
-      if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
-	free(buffer);
-      else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
-	munmap(buffer, (*memory_tree)->data->size);
+      //      if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
+      //	free(buffer);
+      //      else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
+      //	munmap(buffer, (*memory_tree)->data->size);
 
       // Delete corresponding tree
       memory_manager_delete_tree(memory_manager, memory_tree);
-      free(tmp->data->pageaddrs);
-      free(tmp->data->nodes);
-      free(tmp->data);
+      //free(tmp->data->pageaddrs);
+      //free(tmp->data->nodes);
+      //free(tmp->data);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
       memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), buffer);

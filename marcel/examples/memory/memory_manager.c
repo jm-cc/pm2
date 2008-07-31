@@ -99,14 +99,14 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager,
 
 void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t **memory_tree) {
   if ((*memory_tree)->leftchild == NULL) {
-    //memory_tree_t **temp = memory_tree;
+    memory_tree_t *temp = (*memory_tree);
     (*memory_tree) = (*memory_tree)->rightchild;
-    //free(*temp);
+    free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
-    //memory_tree_t **temp = memory_tree;
+    memory_tree_t *temp = *memory_tree;
     (*memory_tree) = (*memory_tree)->leftchild;
-    //free(*temp);
+    free(temp);
   }
   else {
     // In-order predecessor (rightmost child of left subtree)
@@ -129,6 +129,7 @@ void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t 
 void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer) {
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
+      memory_tree_t *tmp = *memory_tree;
       // Free memory
       if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
 	free(buffer);
@@ -137,9 +138,9 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
 
       // Delete corresponding tree
       memory_manager_delete_tree(memory_manager, memory_tree);
-      //free((*memory_tree)->data->pageaddrs);
-      //free((*memory_tree)->data->nodes);
-      //free((*memory_tree)->data);
+      free(tmp->data->pageaddrs);
+      free(tmp->data->nodes);
+      free(tmp->data);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
       memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), buffer);
@@ -280,9 +281,13 @@ any_t memory(any_t arg) {
   marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[10000]), node);
 
   memory_manager_free(&memory_manager, a);
-  memory_manager_free(&memory_manager, buffer2);
   memory_manager_free(&memory_manager, b);
   memory_manager_free(&memory_manager, c);
+  memory_manager_free(&memory_manager, d);
+  memory_manager_free(&memory_manager, e);
+  memory_manager_free(&memory_manager, buffer);
+  memory_manager_free(&memory_manager, buffer2);
+  memory_manager_free(&memory_manager, buffer3);
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -314,6 +319,7 @@ int marcel_main(int argc, char * argv[]) {
   buffer2 = malloc(sizeof(char));
   memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
   marcel_printf("Address %p is located on node %d\n", buffer2, node);
+  free(buffer2);
 
   marcel_end();
 }

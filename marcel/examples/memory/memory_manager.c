@@ -314,6 +314,8 @@ int marcel_main(int argc, char * argv[]) {
   buffer2 = malloc(sizeof(char));
   memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
   marcel_printf("Address %p is located on node %d\n", buffer2, node);
+
+  marcel_end();
 }
 
 // TODO: use memalign

@@ -45,16 +45,32 @@ typedef struct memory_tree_s {
   memory_data_t *data;
 } memory_tree_t;
 
+typedef struct memory_space_s {
+  void *start;
+  int nbpages;
+  struct memory_space_s *next;
+} memory_space_t;
+
+typedef struct memory_heap_s {
+  void *start;
+  memory_space_t* available;
+  memory_space_t* occupied;
+} memory_heap_t;
+  
 typedef struct memory_manager_s {
   memory_tree_t *root;
+  memory_heap_t **heaps;
   marcel_spinlock_t lock;
   int pagesize;
 } memory_manager_t;
+
+void memory_manager_prealloc(memory_manager_t *memory_manager);
 
 void memory_manager_init(memory_manager_t *memory_manager) {
   memory_manager->root = NULL;
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
+  memory_manager_prealloc(memory_manager);
 }
 
 void memory_manager_create_memory_data(memory_manager_t *memory_manager,
@@ -205,7 +221,24 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
 }
 
 void memory_manager_prealloc(memory_manager_t *memory_manager) {
-#warning not implemented yet
+  // for each numa node preallocate some memory
+  int node;
+  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(memory_heap_t *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    unsigned long nodemask = (1<<node);
+    void *buffer = mmap(NULL, 1000*memory_manager->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    mbind(buffer, 1000*memory_manager->pagesize, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+    memset(buffer, 0, 1000*memory_manager->pagesize);
+
+    memory_manager->heaps[node] = malloc(sizeof(memory_heap_t));
+    memory_manager->heaps[node]->start = buffer;
+    memory_manager->heaps[node]->available = malloc(sizeof(memory_space_t));
+    memory_manager->heaps[node]->available->start = buffer;
+    memory_manager->heaps[node]->available->nbpages = 1000;
+    memory_manager->heaps[node]->available->next = NULL;
+
+    printf("Preallocating %p for node #%d\n", buffer, node);
+  }
 }
 
 /**

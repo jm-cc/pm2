@@ -16,7 +16,12 @@
 #include <sys/mman.h>
 #include <numaif.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "marcel.h"
+
+#define printf marcel_printf
 
 typedef int memory_allocation_mode_t;
 #define MEMORY_ALLOCATION_MMAP	 ((memory_allocation_mode_t)1)
@@ -79,7 +84,7 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager,
     err = move_pages(0, (*memory_data)->nbpages, (*memory_data)->pageaddrs, NULL, (*memory_data)->nodes, 0);
     if (err < 0) {
       if (errno == ENOSYS) {
-	marcel_printf("Warning: Function not implemented. Assume the value 0\n");
+	printf("Warning: Function not implemented. Assume the value 0\n");
       }
       else {
         perror("move_pages");
@@ -91,22 +96,24 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager,
   // Display information
   for(i=0; i<(*memory_data)->nbpages; i++) {
     if ((*memory_data)->nodes[i] == -ENOENT)
-      marcel_printf("  page #%d is not allocated\n", i);
+      printf("  page #%d is not allocated\n", i);
     else
-      marcel_printf("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
+      printf("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
   }
 }
+
+void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer);
 
 void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t **memory_tree) {
   if ((*memory_tree)->leftchild == NULL) {
     memory_tree_t *temp = (*memory_tree);
     (*memory_tree) = (*memory_tree)->rightchild;
-    //free(temp);
+    free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
     memory_tree_t *temp = *memory_tree;
     (*memory_tree) = (*memory_tree)->leftchild;
-    //free(temp);
+    free(temp);
   }
   else {
     // In-order predecessor (rightmost child of left subtree)
@@ -122,25 +129,25 @@ void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t 
     (*memory_tree)->data = temp->data;
 
     // then delete the predecessor
-    memory_manager_delete_tree(memory_manager, &temp);
+    memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
   }
 }
 
 void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer) {
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
-      memory_tree_t *tmp = *memory_tree;
+      memory_data_t *data = (*memory_tree)->data;
       // Free memory
-      //      if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
-      //	free(buffer);
-      //      else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
-      //	munmap(buffer, (*memory_tree)->data->size);
-
+      if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
+	free(buffer);
+      else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
+	munmap(buffer, (*memory_tree)->data->size);
+  
       // Delete corresponding tree
+      free(data->pageaddrs);
+      free(data->nodes);
+      free(data);
       memory_manager_delete_tree(memory_manager, memory_tree);
-      //free(tmp->data->pageaddrs);
-      //free(tmp->data->nodes);
-      //free(tmp->data);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
       memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), buffer);
@@ -173,6 +180,7 @@ void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t
 
 void memory_manager_add_with_pages(memory_manager_t *memory_manager,
 				   void **pageaddrs, int nbpages, size_t size, int *nodes, memory_allocation_mode_t mode) {
+  //printf("Adding [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
   marcel_spin_lock(&(memory_manager->lock));
   memory_manager_add_internal(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, NULL, mode);
   marcel_spin_unlock(&(memory_manager->lock));
@@ -192,6 +200,8 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
 
   // Add memory
   memory_manager_add_with_pages(memory_manager, pageaddrs, nbpages, size, NULL, mode);
+
+  free(pageaddrs);
 }
 
 void memory_manager_prealloc(memory_manager_t *memory_manager) {
@@ -237,6 +247,7 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
 }
 
 void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
+  //printf("Removing [%p]\n", buffer);
   memory_manager_delete(memory_manager, buffer);
 }
 
@@ -257,13 +268,20 @@ void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memo
   }
 }
 
-void memory_manager_print(memory_tree_t *memory_tree) {
+void memory_manager_print_aux(memory_tree_t *memory_tree, int indent) {
   if (memory_tree) {
-    memory_manager_print(memory_tree->leftchild);
-    marcel_printf("[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
-    memory_manager_print(memory_tree->rightchild);
+    int x;
+    memory_manager_print_aux(memory_tree->leftchild, indent+2);
+    for(x=0 ; x<indent ; x++) printf(" ");
+    printf("[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
+    memory_manager_print_aux(memory_tree->rightchild, indent+2);
   }
 }
+
+void memory_manager_print(memory_tree_t *memory_tree) {
+  memory_manager_print_aux(memory_tree, 0);
+}
+
 
 #define PAGES 2
 memory_manager_t memory_manager;
@@ -292,13 +310,13 @@ any_t memory(any_t arg) {
   memory_manager_add_with_pages(&memory_manager, pageaddrs, PAGES, PAGES * memory_manager.pagesize, NULL, MEMORY_ALLOCATION_MALLOC);
 
   memory_manager_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
-  marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
+  printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
   memory_manager_locate(&memory_manager, memory_manager.root, &(buffer3[10000]), &node);
-  marcel_printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[10000]), node);
+  printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[10000]), node);
 
   memory_manager_free(&memory_manager, a);
-  memory_manager_free(&memory_manager, b);
   memory_manager_free(&memory_manager, c);
+  memory_manager_free(&memory_manager, b);
   memory_manager_free(&memory_manager, d);
   memory_manager_free(&memory_manager, e);
   memory_manager_free(&memory_manager, buffer);
@@ -334,11 +352,16 @@ int marcel_main(int argc, char * argv[]) {
 
   buffer2 = malloc(sizeof(char));
   memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
-  marcel_printf("Address %p is located on node %d\n", buffer2, node);
+  printf("Address %p is located on node %d\n", buffer2, node);
   free(buffer2);
 
+  void **buffers;
+  buffers = malloc(marcel_nbnodes * sizeof(void *));
   for(node=0 ; node<marcel_nbnodes ; node++)
-    memory_manager_allocate_on_node(&memory_manager, 100, node);
+    buffers[node] = memory_manager_allocate_on_node(&memory_manager, 100, node);
+  for(node=0 ; node<marcel_nbnodes ; node++)
+    memory_manager_free(&memory_manager, buffers[node]);
+  free(buffers);
 
   marcel_end();
 }

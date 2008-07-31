@@ -19,52 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "marcel.h"
+#include "memory_manager.h"
 
 #define printf marcel_printf
-
-typedef int memory_allocation_mode_t;
-#define MEMORY_ALLOCATION_MMAP	 ((memory_allocation_mode_t)1)
-#define MEMORY_ALLOCATION_MALLOC ((memory_allocation_mode_t)2)
-
-typedef struct memory_data_s {
-  void *startaddress;
-  void *endaddress;
-  size_t size;
-
-  void **pageaddrs;
-  int nbpages;
-  int *nodes;
-
-  memory_allocation_mode_t allocation_mode;
-} memory_data_t;
-
-typedef struct memory_tree_s {
-  struct memory_tree_s *leftchild;
-  struct memory_tree_s *rightchild;
-  memory_data_t *data;
-} memory_tree_t;
-
-typedef struct memory_space_s {
-  void *start;
-  int nbpages;
-  struct memory_space_s *next;
-} memory_space_t;
-
-typedef struct memory_heap_s {
-  void *start;
-  memory_space_t* available;
-  memory_space_t* occupied;
-} memory_heap_t;
-  
-typedef struct memory_manager_s {
-  memory_tree_t *root;
-  memory_heap_t **heaps;
-  marcel_spinlock_t lock;
-  int pagesize;
-} memory_manager_t;
-
-void memory_manager_prealloc(memory_manager_t *memory_manager);
 
 void memory_manager_init(memory_manager_t *memory_manager) {
   memory_manager->root = NULL;
@@ -118,8 +75,6 @@ void memory_manager_create_memory_data(memory_manager_t *memory_manager,
   }
 }
 
-void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer);
-
 void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t **memory_tree) {
   if ((*memory_tree)->leftchild == NULL) {
     memory_tree_t *temp = (*memory_tree);
@@ -170,12 +125,6 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
     else
       memory_manager_delete_internal(memory_manager, &((*memory_tree)->rightchild), buffer);
   }
-}
-
-void memory_manager_delete(memory_manager_t *memory_manager, void *buffer) {
-  marcel_spin_lock(&(memory_manager->lock));
-  memory_manager_delete_internal(memory_manager, &(memory_manager->root), buffer);
-  marcel_spin_unlock(&(memory_manager->lock));
 }
 
 void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree,
@@ -241,9 +190,6 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
   }
 }
 
-/**
- * Allocates memory on a specific node.
- */
 void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node) {
   void *buffer;
   unsigned long nodemask = (1<<node);
@@ -281,7 +227,9 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
 
 void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
   //printf("Removing [%p]\n", buffer);
-  memory_manager_delete(memory_manager, buffer);
+  marcel_spin_lock(&(memory_manager->lock));
+  memory_manager_delete_internal(memory_manager, &(memory_manager->root), buffer);
+  marcel_spin_unlock(&(memory_manager->lock));
 }
 
 void memory_manager_locate(memory_manager_t *memory_manager, memory_tree_t *memory_tree, void *address, int *node) {
@@ -314,7 +262,6 @@ void memory_manager_print_aux(memory_tree_t *memory_tree, int indent) {
 void memory_manager_print(memory_tree_t *memory_tree) {
   memory_manager_print_aux(memory_tree, 0);
 }
-
 
 #define PAGES 2
 memory_manager_t memory_manager;

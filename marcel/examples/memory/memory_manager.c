@@ -198,6 +198,22 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
 #warning not implemented yet
 }
 
+/**
+ * Allocates memory on a specific node.
+ */
+void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node) {
+  void *buffer;
+  unsigned long nodemask = (1<<node);
+
+  buffer = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  mbind(buffer, size, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+  memset(buffer, 0, size);
+
+  memory_manager_add(memory_manager, buffer, size, MEMORY_ALLOCATION_MMAP);
+
+  return buffer;
+}
+
 void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size) {
   void *ptr;
 
@@ -320,6 +336,9 @@ int marcel_main(int argc, char * argv[]) {
   memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
   marcel_printf("Address %p is located on node %d\n", buffer2, node);
   free(buffer2);
+
+  for(node=0 ; node<marcel_nbnodes ; node++)
+    memory_manager_allocate_on_node(&memory_manager, 100, node);
 
   marcel_end();
 }

@@ -54,6 +54,7 @@ typedef struct memory_manager_s {
   memory_heap_t **heaps;
   marcel_spinlock_t lock;
   int pagesize;
+  int initialpreallocatedpages;
 } memory_manager_t;
 
 void memory_manager_init(memory_manager_t *memory_manager);

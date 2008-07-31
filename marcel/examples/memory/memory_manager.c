@@ -113,7 +113,7 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
 	free(buffer);
       else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
 	munmap(buffer, (*memory_tree)->data->size);
-  
+
       // Delete corresponding tree
       free(data->pageaddrs);
       free(data->nodes);
@@ -172,18 +172,22 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
 void memory_manager_prealloc(memory_manager_t *memory_manager) {
   // for each numa node preallocate some memory
   int node;
+  size_t length;
+
+  memory_manager->initialpreallocatedpages = 1000;
+  length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
   memory_manager->heaps = malloc(marcel_nbnodes * sizeof(memory_heap_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     unsigned long nodemask = (1<<node);
-    void *buffer = mmap(NULL, 1000*memory_manager->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-    mbind(buffer, 1000*memory_manager->pagesize, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-    memset(buffer, 0, 1000*memory_manager->pagesize);
+    void *buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+    memset(buffer, 0, length);
 
     memory_manager->heaps[node] = malloc(sizeof(memory_heap_t));
     memory_manager->heaps[node]->start = buffer;
     memory_manager->heaps[node]->available = malloc(sizeof(memory_space_t));
     memory_manager->heaps[node]->available->start = buffer;
-    memory_manager->heaps[node]->available->nbpages = 1000;
+    memory_manager->heaps[node]->available->nbpages = memory_manager->initialpreallocatedpages;
     memory_manager->heaps[node]->available->next = NULL;
 
     printf("Preallocating %p for node #%d\n", buffer, node);
@@ -191,14 +195,26 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
 }
 
 void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node) {
+  memory_heap_t *heap = memory_manager->heaps[node];
   void *buffer;
-  unsigned long nodemask = (1<<node);
+  int nbpages;
+  size_t realsize;
 
-  buffer = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-  mbind(buffer, size, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-  memset(buffer, 0, size);
+  // Round-up the size
+  nbpages = size / memory_manager->pagesize;
+  if (nbpages * memory_manager->pagesize != size) nbpages++;
+  realsize = nbpages * memory_manager->pagesize;
 
-  memory_manager_add(memory_manager, buffer, size, MEMORY_ALLOCATION_MMAP);
+  // Is there enough space left in the heap
+  if (heap->available->nbpages <= nbpages) {
+    marcel_fprintf(stderr, "not enough pages\n");
+    marcel_exit(NULL);
+  }
+
+  buffer = heap->available->start;
+  heap->available->start += realsize;
+  heap->available->nbpages -= nbpages;
+  memory_manager_add(memory_manager, buffer, realsize, MEMORY_ALLOCATION_MMAP);
 
   return buffer;
 }
@@ -308,7 +324,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_t threads[2];
   marcel_attr_t attr;
   char *buffer2;
-  int node;
+  int i, node;
 
   marcel_init(&argc,argv);
   memory_manager_init(&memory_manager);
@@ -337,10 +353,12 @@ int marcel_main(int argc, char * argv[]) {
 
   void **buffers;
   buffers = malloc(marcel_nbnodes * sizeof(void *));
-  for(node=0 ; node<marcel_nbnodes ; node++)
-    buffers[node] = memory_manager_allocate_on_node(&memory_manager, 100, node);
-  for(node=0 ; node<marcel_nbnodes ; node++)
-    memory_manager_free(&memory_manager, buffers[node]);
+  for(i=0 ; i<5 ; i++) {
+    for(node=0 ; node<marcel_nbnodes ; node++)
+      buffers[node] = memory_manager_allocate_on_node(&memory_manager, 100, node);
+    for(node=0 ; node<marcel_nbnodes ; node++)
+      memory_manager_free(&memory_manager, buffers[node]);
+  }
   free(buffers);
 
   marcel_end();

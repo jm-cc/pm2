@@ -360,36 +360,16 @@ any_t memory(any_t arg) {
   memory_manager_free(&memory_manager, buffer3);
 }
 
-int marcel_main(int argc, char * argv[]) {
-  marcel_t threads[2];
-  marcel_attr_t attr;
-  char *buffer2;
+any_t memory2(any_t arg) {
+  int *c;
   int i, node;
-
-  marcel_init(&argc,argv);
-  memory_manager_init(&memory_manager, 1000);
-  marcel_attr_init(&attr);
-
-  // Start the 1st thread on the first VP
-  marcel_attr_setid(&attr, 0);
-  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
-  marcel_create(&threads[0], &attr, memory, NULL);
-
-  // Start the 2nd thread on the last VP
-  marcel_attr_setid(&attr, 1);
-  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
-  marcel_create(&threads[1], &attr, memory, NULL);
-
-  // Wait for the threads to complete
-  marcel_join(threads[0], NULL);
-  marcel_join(threads[1], NULL);
 
   memory_manager_print(memory_manager.root);
 
-  buffer2 = malloc(sizeof(char));
-  memory_manager_locate(&memory_manager, memory_manager.root, buffer2, &node);
-  printf("Address %p is located on node %d\n", buffer2, node);
-  free(buffer2);
+  c = malloc(sizeof(char));
+  memory_manager_locate(&memory_manager, memory_manager.root, c, &node);
+  printf("Address %p is located on node %d\n", c, node);
+  free(c);
 
   {
     void **buffers;
@@ -414,7 +394,38 @@ int marcel_main(int argc, char * argv[]) {
     free(buffers);
     free(buffers2);
   }
+}
 
+
+int marcel_main(int argc, char * argv[]) {
+  marcel_t threads[2];
+  marcel_attr_t attr;
+
+  marcel_init(&argc,argv);
+  memory_manager_init(&memory_manager, 1000);
+  marcel_attr_init(&attr);
+
+  // Start the 1st thread on the first VP
+  marcel_attr_setid(&attr, 0);
+  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
+  marcel_create(&threads[0], &attr, memory, NULL);
+
+  // Start the 2nd thread on the last VP
+  marcel_attr_setid(&attr, 1);
+  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
+  marcel_create(&threads[1], &attr, memory, NULL);
+
+  // Wait for the threads to complete
+  marcel_join(threads[0], NULL);
+  marcel_join(threads[1], NULL);
+
+  // Start the thread on the last VP
+  marcel_attr_setid(&attr, 1);
+  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
+  marcel_create(&threads[1], &attr, memory2, NULL);
+  marcel_join(threads[1], NULL);
+
+  // Finish marcel
   marcel_end();
 }
 

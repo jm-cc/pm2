@@ -47,7 +47,6 @@ typedef struct memory_space_s {
 typedef struct memory_heap_s {
   void *start;
   memory_space_t* available;
-  memory_space_t* occupied;
 } memory_heap_t;
   
 typedef struct memory_manager_s {

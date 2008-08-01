@@ -172,7 +172,6 @@ void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t 
 }
 
 void memory_manager_prealloc(memory_manager_t *memory_manager) {
-  // for each numa node preallocate some memory
   int node;
   size_t length;
 
@@ -221,8 +220,17 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
     available = available->next;
   }
   if (available == NULL) {
-    marcel_fprintf(stderr, "no space available\n");
-    marcel_exit(NULL);
+    unsigned long nodemask = (1<<node);
+    size_t length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
+    void *ptr = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    mbind(ptr, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+    memset(ptr, 0, length);
+
+    available = malloc(sizeof(memory_space_t));
+    available->start = ptr;
+    available->nbpages = memory_manager->initialpreallocatedpages;
+
+    prev->next = available;
   }
 
   buffer = available->start;

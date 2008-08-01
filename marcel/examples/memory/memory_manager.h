@@ -76,6 +76,9 @@ void memory_manager_add_with_pages(memory_manager_t *memory_manager,
 
 void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t size, memory_allocation_mode_t mode);
 
+/**
+ * Preallocates some memory (in number of pages) for each numa node.
+ */
 void memory_manager_prealloc(memory_manager_t *memory_manager);
 
 /**

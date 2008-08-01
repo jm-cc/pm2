@@ -109,10 +109,12 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       memory_data_t *data = (*memory_tree)->data;
       // Free memory
-      if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
+      if (data->allocation_mode == MEMORY_ALLOCATION_MALLOC)
 	free(buffer);
-      else if ((*memory_tree)->data->allocation_mode == MEMORY_ALLOCATION_MMAP)
-	munmap(buffer, (*memory_tree)->data->size);
+      else if (data->allocation_mode == MEMORY_ALLOCATION_MMAP)
+	munmap(buffer, data->size);
+      else if (data->allocation_mode == MEMORY_ALLOCATION_PREALLOC)
+	memory_manager_free_from_node(memory_manager, buffer, data->nbpages, data->nodes[0]);
 
       // Delete corresponding tree
       free(data->pageaddrs);
@@ -190,12 +192,13 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
     memory_manager->heaps[node]->available->nbpages = memory_manager->initialpreallocatedpages;
     memory_manager->heaps[node]->available->next = NULL;
 
-    printf("Preallocating %p for node #%d\n", buffer, node);
+    //printf("Preallocating %p for node #%d\n", buffer, node);
   }
 }
 
 void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node) {
   memory_heap_t *heap = memory_manager->heaps[node];
+  memory_space_t *prev, *available = NULL;
   void *buffer;
   int nbpages;
   size_t realsize;
@@ -205,18 +208,47 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
   if (nbpages * memory_manager->pagesize != size) nbpages++;
   realsize = nbpages * memory_manager->pagesize;
 
-  // Is there enough space left in the heap
-  if (heap->available->nbpages <= nbpages) {
-    marcel_fprintf(stderr, "not enough pages\n");
+  //printf("Requiring space of %d pages\n", nbpages);
+
+  // Look for a space big enough
+  prev = heap->available;
+  available = heap->available;
+  while (available != NULL) {
+    //printf("Current space from %p with %d pages\n", available->start, available->nbpages);
+    if (available->nbpages >= nbpages)
+      break;
+    prev = available;
+    available = available->next;
+  }
+  if (available == NULL) {
+    marcel_fprintf(stderr, "no space available\n");
     marcel_exit(NULL);
   }
 
-  buffer = heap->available->start;
-  heap->available->start += realsize;
-  heap->available->nbpages -= nbpages;
-  memory_manager_add(memory_manager, buffer, realsize, MEMORY_ALLOCATION_MMAP);
+  buffer = available->start;
+  if (nbpages == available->nbpages) {
+    prev->next = available->next;
+  }
+  else {
+    available->start += realsize;
+    available->nbpages -= nbpages;
+  }
 
+  memory_manager_add(memory_manager, buffer, realsize, MEMORY_ALLOCATION_PREALLOC);
+
+  //printf("Allocating %p on node #%d\n", buffer, node);
   return buffer;
+}
+
+void* memory_manager_free_from_node(memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
+  memory_heap_t *heap = memory_manager->heaps[node];
+
+  memory_space_t *available = malloc(sizeof(memory_space_t));
+  //printf("Freeing space from %p with %d pages\n", buffer, nbpages);
+  available->start = buffer;
+  available->nbpages = nbpages;
+  available->next = heap->available;
+  heap->available = available;
 }
 
 void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size) {
@@ -351,15 +383,29 @@ int marcel_main(int argc, char * argv[]) {
   printf("Address %p is located on node %d\n", buffer2, node);
   free(buffer2);
 
-  void **buffers;
-  buffers = malloc(marcel_nbnodes * sizeof(void *));
-  for(i=0 ; i<5 ; i++) {
-    for(node=0 ; node<marcel_nbnodes ; node++)
-      buffers[node] = memory_manager_allocate_on_node(&memory_manager, 100, node);
-    for(node=0 ; node<marcel_nbnodes ; node++)
+  {
+    void **buffers;
+    void **buffers2;
+    int maxnode = marcel_nbnodes;
+    buffers = malloc(maxnode * sizeof(void *));
+    buffers2 = malloc(maxnode * sizeof(void *));
+    for(i=1 ; i<=5 ; i++) {
+      for(node=0 ; node<maxnode ; node++)
+	buffers[node] = memory_manager_allocate_on_node(&memory_manager, i*memory_manager.pagesize, node);
+      for(node=0 ; node<maxnode ; node++)
+      	memory_manager_free(&memory_manager, buffers[node]);
+    }
+    for(node=0 ; node<maxnode ; node++) {
+      buffers[node] = memory_manager_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
+      buffers2[node] = memory_manager_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
+    }
+    for(node=0 ; node<maxnode ; node++) {
       memory_manager_free(&memory_manager, buffers[node]);
+      memory_manager_free(&memory_manager, buffers2[node]);
+    }
+    free(buffers);
+    free(buffers2);
   }
-  free(buffers);
 
   marcel_end();
 }

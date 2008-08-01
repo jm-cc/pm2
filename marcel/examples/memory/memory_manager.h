@@ -16,8 +16,9 @@
 #include "marcel.h"
 
 typedef int memory_allocation_mode_t;
-#define MEMORY_ALLOCATION_MMAP	 ((memory_allocation_mode_t)1)
-#define MEMORY_ALLOCATION_MALLOC ((memory_allocation_mode_t)2)
+#define MEMORY_ALLOCATION_MMAP	   ((memory_allocation_mode_t)1)
+#define MEMORY_ALLOCATION_MALLOC   ((memory_allocation_mode_t)2)
+#define MEMORY_ALLOCATION_PREALLOC ((memory_allocation_mode_t)3)
 
 typedef struct memory_data_s {
   void *startaddress;
@@ -81,6 +82,8 @@ void memory_manager_prealloc(memory_manager_t *memory_manager);
  * Allocates memory on a specific node. Size will be rounded up to the system page size.
  */
 void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node);
+
+void* memory_manager_free_from_node(memory_manager_t *memory_manager, void *buffer, int nbpages, int node);
 
 void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size);
 

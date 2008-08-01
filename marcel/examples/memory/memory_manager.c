@@ -23,10 +23,11 @@
 
 #define printf marcel_printf
 
-void memory_manager_init(memory_manager_t *memory_manager) {
+void memory_manager_init(memory_manager_t *memory_manager, int initialpreallocatedpages) {
   memory_manager->root = NULL;
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
+  memory_manager->initialpreallocatedpages = initialpreallocatedpages;
   memory_manager_prealloc(memory_manager);
 }
 
@@ -175,7 +176,6 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
   int node;
   size_t length;
 
-  memory_manager->initialpreallocatedpages = 1000;
   length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
   memory_manager->heaps = malloc(marcel_nbnodes * sizeof(memory_heap_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
@@ -367,7 +367,7 @@ int marcel_main(int argc, char * argv[]) {
   int i, node;
 
   marcel_init(&argc,argv);
-  memory_manager_init(&memory_manager);
+  memory_manager_init(&memory_manager, 1000);
   marcel_attr_init(&attr);
 
   // Start the 1st thread on the first VP

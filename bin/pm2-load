@@ -168,7 +168,7 @@ mad3()
             echo "                    },"                        >> $PM2_CHANNEL_FILE
         done
         first_network=$(echo $networks_name | cut -d" " -f1)
-        cat $PM2_CHANNEL_FILE | tr '\012' '-'| sed 's/,-$//' | sed "s/name : pm2_${first_network};/name : pm2;/" | tr '-' '\012' >> $PM2_LEONIE_FILE
+        cat $PM2_CHANNEL_FILE | tr '\012' '&'| sed 's/,&$//' | sed "s/name : pm2_${first_network};/name : pm2;/" | tr '&' '\012' >> $PM2_LEONIE_FILE
         echo "" >> $PM2_LEONIE_FILE
     fi
     echo "                  );"                >> $PM2_LEONIE_FILE

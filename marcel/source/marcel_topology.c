@@ -109,6 +109,12 @@ unsigned marcel_current_vp(void)
 	return __marcel_current_vp();
 }
 
+unsigned marcel_current_node(void)
+{
+  unsigned vp = marcel_current_vp();
+  return ma_vp_node[vp];
+}
+
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 	if (index > marcel_topo_level_nbitems[level])
 		return NULL;

@@ -24,7 +24,9 @@
 #include <numa.h>
 #include <stddef.h>
 #include <sys/mman.h>
-#include <linux/mempolicy.h>
+#if 0
+#  include <linux/mempolicy.h>
+#endif
 #include <ctype.h>
 
 int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {

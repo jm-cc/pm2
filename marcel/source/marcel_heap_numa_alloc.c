@@ -23,7 +23,9 @@
 #include <numaif.h>
 
 #ifdef LINUX_SYS
-#include <linux/mempolicy.h>
+#if 0
+#  include <linux/mempolicy.h>
+#endif
 #ifndef __NR_move_pages
 
 #ifdef X86_64_ARCH

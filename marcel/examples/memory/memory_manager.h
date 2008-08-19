@@ -15,11 +15,6 @@
 
 #include "marcel.h"
 
-typedef int memory_allocation_mode_t;
-#define MEMORY_ALLOCATION_MMAP	   ((memory_allocation_mode_t)1)
-#define MEMORY_ALLOCATION_MALLOC   ((memory_allocation_mode_t)2)
-#define MEMORY_ALLOCATION_PREALLOC ((memory_allocation_mode_t)3)
-
 typedef struct memory_data_s {
   void *startaddress;
   void *endaddress;
@@ -28,8 +23,6 @@ typedef struct memory_data_s {
   void **pageaddrs;
   int nbpages;
   int *nodes;
-
-  memory_allocation_mode_t allocation_mode;
 } memory_data_t;
 
 typedef struct memory_tree_s {
@@ -60,7 +53,7 @@ typedef struct memory_manager_s {
 void memory_manager_init(memory_manager_t *memory_manager, int initialpreallocatedpages);
 
 void memory_manager_create_memory_data(memory_manager_t *memory_manager,
-				       void **pageaddrs, int nbpages, size_t size, int *nodes, memory_allocation_mode_t mode,
+				       void **pageaddrs, int nbpages, size_t size, int *nodes,
 				       memory_data_t **memory_data);
 
 void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t **memory_tree);
@@ -68,12 +61,12 @@ void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t 
 void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer);
 
 void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree,
-				 void **pageaddrs, int nbpages, size_t size, int *nodes, memory_allocation_mode_t mode);
+				 void **pageaddrs, int nbpages, size_t size, int *nodes);
 
 void memory_manager_add_with_pages(memory_manager_t *memory_manager,
-				   void **pageaddrs, int nbpages, size_t size, int *nodes, memory_allocation_mode_t mode);
+				   void **pageaddrs, int nbpages, size_t size, int *nodes);
 
-void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t size, memory_allocation_mode_t mode);
+void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t size);
 
 /**
  * Preallocates some memory (in number of pages) for each numa node.

@@ -117,7 +117,7 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       memory_data_t *data = (*memory_tree)->data;
-      //printf("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
+      mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       // Free memory
       memory_manager_free_from_node(memory_manager, buffer, data->nbpages, data->nodes[0]);
 
@@ -156,7 +156,7 @@ void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t
 void memory_manager_add_with_pages(memory_manager_t *memory_manager,
 				   void **pageaddrs, int nbpages, size_t size, int *nodes) {
   LOG_IN();
-  //printf("Adding [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
+  mdebug_heap("Adding [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
   //  marcel_spin_lock(&(memory_manager->lock));
   memory_manager_add_internal(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes);
   //  marcel_spin_unlock(&(memory_manager->lock));
@@ -206,7 +206,7 @@ void memory_manager_prealloc(memory_manager_t *memory_manager) {
     memory_manager->heaps[node]->available->nbpages = memory_manager->initialpreallocatedpages;
     memory_manager->heaps[node]->available->next = NULL;
 
-    //printf("Preallocating %p for node #%d\n", buffer, node);
+    mdebug_heap("Preallocating %p for node #%d\n", buffer, node);
   }
   LOG_OUT();
 }
@@ -227,13 +227,13 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
   if (nbpages * memory_manager->pagesize != size) nbpages++;
   realsize = nbpages * memory_manager->pagesize;
 
-  //printf("Requiring space of %d pages\n", nbpages);
+  mdebug_heap("Requiring space of %d pages\n", nbpages);
 
   // Look for a space big enough
   prev = heap->available;
   available = heap->available;
   while (available != NULL) {
-    //printf("Current space from %p with %d pages\n", available->start, available->nbpages);
+    mdebug_heap("Current space from %p with %d pages\n", available->start, available->nbpages);
     if (available->nbpages >= nbpages)
       break;
     prev = available;
@@ -265,7 +265,7 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
   memory_manager_add(memory_manager, buffer, realsize);
 
   marcel_spin_unlock(&(memory_manager->lock));
-  //printf("Allocating %p on node #%d\n", buffer, node);
+  mdebug_heap("Allocating %p on node #%d\n", buffer, node);
   LOG_OUT();
   return buffer;
 }
@@ -276,7 +276,7 @@ void* memory_manager_free_from_node(memory_manager_t *memory_manager, void *buff
 
   LOG_IN();
 
-  //printf("Freeing space from %p with %d pages\n", buffer, nbpages);
+  mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
   available->start = buffer;
   available->nbpages = nbpages;
   available->next = heap->available;
@@ -313,7 +313,7 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
 
 void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
   LOG_IN();
-  //printf("Freeing [%p]\n", buffer);
+  mdebug_heap("Freeing [%p]\n", buffer);
   marcel_spin_lock(&(memory_manager->lock));
   memory_manager_delete_internal(memory_manager, &(memory_manager->root), buffer);
   marcel_spin_unlock(&(memory_manager->lock));
@@ -351,9 +351,9 @@ void memory_manager_print_aux(memory_tree_t *memory_tree, int indent) {
 
 void memory_manager_print(memory_tree_t *memory_tree) {
   LOG_IN();
-  printf("******************** TREE BEGIN *********************************\n");
+  mdebug_heap("******************** TREE BEGIN *********************************\n");
   memory_manager_print_aux(memory_tree, 0);
-  printf("******************** TREE END *********************************\n");
+  mdebug_heap("******************** TREE END *********************************\n");
   LOG_OUT();
 }
 

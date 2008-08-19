@@ -92,15 +92,7 @@ void common_attr_init(common_attr_t *attr)
   if (pm2_args) {							\
     char *d;								\
     d = pm2_args;							\
-    parse({								\
-	    /* Remove the leading quotation mark.  */			\
-	    char *unquoted;						\
-	    unquoted = alloca(strlen (c));				\
-	    strcpy(unquoted, c + 1);					\
-	    strcpy(c, unquoted);					\
-	  },								\
-	  *c = '\0',							\
-	  argv[new_argc++] = c)						\
+    parse(memmove(c, c + 1, strlen(c + 1)), *c = '\0', argv[new_argc++] = c) \
   }
 
 #define purge_args() \

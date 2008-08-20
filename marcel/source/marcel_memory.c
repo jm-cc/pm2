@@ -13,6 +13,14 @@
  * General Public License for more details.
  */
 
+#include "marcel.h"
+#include <errno.h>
+#include <sys/mman.h>
+#include <numaif.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialpreallocatedpages) {
   int node;
 
@@ -82,12 +90,12 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree) {
   LOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
-    marcel_memory_tree_t *temp = (*memory_tree);
+    //marcel_memory_tree_t *temp = (*memory_tree);
     (*memory_tree) = (*memory_tree)->rightchild;
     //free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
-    marcel_memory_tree_t *temp = *memory_tree;
+    //marcel_memory_tree_t *temp = *memory_tree;
     (*memory_tree) = (*memory_tree)->leftchild;
     //free(temp);
   }
@@ -242,7 +250,7 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   return buffer;
 }
 
-void* ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
+void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
   marcel_memory_space_t *available;
 
   LOG_IN();
@@ -331,27 +339,4 @@ void marcel_memory_print(marcel_memory_tree_t *memory_tree) {
   LOG_OUT();
 }
 
-#define PAGES 2
-marcel_memory_manager_t memory_manager;
-
-any_t memory(any_t arg) {
-  int *b, *c, *d, *e;
-  char *buffer;
-  int node;
-
-  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.pagesize);
-
-  marcel_memory_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
-  printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
-
-  marcel_memory_free(&memory_manager, c);
-  marcel_memory_free(&memory_manager, b);
-  marcel_memory_free(&memory_manager, d);
-  marcel_memory_free(&memory_manager, e);
-  marcel_memory_free(&memory_manager, buffer);
-}
 

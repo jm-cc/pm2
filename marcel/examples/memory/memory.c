@@ -13,14 +13,31 @@
  * General Public License for more details.
  */
 
-#include <sys/mman.h>
-#include <numaif.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "marcel.h"
+
+#define PAGES 2
+marcel_memory_manager_t memory_manager;
+
+any_t memory(any_t arg) {
+  int *b, *c, *d, *e;
+  char *buffer;
+  int node;
+
+  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
+  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
+  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
+  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
+  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.pagesize);
+
+  marcel_memory_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
+  printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
+
+  marcel_memory_free(&memory_manager, c);
+  marcel_memory_free(&memory_manager, b);
+  marcel_memory_free(&memory_manager, d);
+  marcel_memory_free(&memory_manager, e);
+  marcel_memory_free(&memory_manager, buffer);
+}
 
 any_t memory2(any_t arg) {
   int *c;

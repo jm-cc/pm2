@@ -112,10 +112,10 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 /**
  *
  */
-void* ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
-			       void *buffer,
-			       int nbpages,
-			       int node);
+void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
+			      void *buffer,
+			      int nbpages,
+			      int node);
 
 #section functions
 

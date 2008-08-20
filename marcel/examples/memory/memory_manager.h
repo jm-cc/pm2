@@ -16,7 +16,7 @@
 #include "marcel.h"
 
 /** */
-typedef struct memory_data_s {
+typedef struct marcel_memory_data_s {
   /** */
   void *startaddress;
   /** */
@@ -30,133 +30,133 @@ typedef struct memory_data_s {
   int nbpages;
   /** */
   int *nodes;
-} memory_data_t;
+} marcel_memory_data_t;
 
 /** */
-typedef struct memory_tree_s {
+typedef struct marcel_memory_tree_s {
   /** */
-  struct memory_tree_s *leftchild;
+  struct marcel_memory_tree_s *leftchild;
   /** */
-  struct memory_tree_s *rightchild;
+  struct marcel_memory_tree_s *rightchild;
   /** */
-  memory_data_t *data;
-} memory_tree_t;
+  marcel_memory_data_t *data;
+} marcel_memory_tree_t;
 
 /** */
-typedef struct memory_space_s {
+typedef struct marcel_memory_space_s {
   /** */
   void *start;
   /** */
   int nbpages;
   /** */
-  struct memory_space_s *next;
-} memory_space_t;
+  struct marcel_memory_space_s *next;
+} marcel_memory_space_t;
 
 /** */
-typedef struct memory_manager_s {
+typedef struct marcel_memory_manager_s {
   /** */
-  memory_tree_t *root;
+  marcel_memory_tree_t *root;
   /** */
-  memory_space_t **heaps;
+  marcel_memory_space_t **heaps;
   /** */
   marcel_spinlock_t lock;
   /** */
   int pagesize;
   /** */
   int initialpreallocatedpages;
-} memory_manager_t;
+} marcel_memory_manager_t;
 
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
  * @param initialpreallocatedpages number of initial preallocated pages on each node
  */
-void memory_manager_init(memory_manager_t *memory_manager,
-			 int initialpreallocatedpages);
+void marcel_memory_init(marcel_memory_manager_t *memory_manager,
+			int initialpreallocatedpages);
 
 /**
  *
  */
-void memory_manager_init_memory_data(memory_manager_t *memory_manager,
-				     void **pageaddrs,
-				     int nbpages,
-				     size_t size,
-				     int *nodes,
-				     memory_data_t **memory_data);
+void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
+				void **pageaddrs,
+				int nbpages,
+				size_t size,
+				int *nodes,
+				marcel_memory_data_t **memory_data);
 
 /**
  *
  */
-void memory_manager_delete_tree(memory_manager_t *memory_manager,
-				memory_tree_t **memory_tree);
+void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
+			   marcel_memory_tree_t **memory_tree);
 
 /**
  *
  */
-void memory_manager_delete(memory_manager_t *memory_manager,
-			   memory_tree_t **memory_tree,
-			   void *buffer);
+void ma_memory_delete(marcel_memory_manager_t *memory_manager,
+		      marcel_memory_tree_t **memory_tree,
+		      void *buffer);
 
 /**
  *
  */
-void memory_manager_register(memory_manager_t *memory_manager,
-			     memory_tree_t **memory_tree,
-			     void **pageaddrs,
-			     int nbpages,
-			     size_t size,
-			     int *nodes);
+void ma_memory_register(marcel_memory_manager_t *memory_manager,
+			marcel_memory_tree_t **memory_tree,
+			void **pageaddrs,
+			int nbpages,
+			size_t size,
+			int *nodes);
 
 /**
  * Preallocates some memory (in number of pages) on the specified numa node.
  */
-void memory_manager_preallocate(memory_manager_t *memory_manager,
-				memory_space_t **space,
-				int node);
+void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
+			   marcel_memory_space_t **space,
+			   int node);
 
 /**
  * Allocates memory on a specific node. Size will be rounded up to the system page size.
  */
-void* memory_manager_allocate_on_node(memory_manager_t *memory_manager,
-				      size_t size,
-				      int node);
+void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
+				     size_t size,
+				     int node);
 
 /**
  *
  */
-void* memory_manager_free_from_node(memory_manager_t *memory_manager,
-				    void *buffer,
-				    int nbpages,
-				    int node);
+void* ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
+			       void *buffer,
+			       int nbpages,
+			       int node);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
  */
-void* memory_manager_malloc(memory_manager_t *memory_manager,
-			    size_t size);
+void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
+			   size_t size);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
  */
-void* memory_manager_calloc(memory_manager_t *memory_manager,
-			    size_t nmemb,
-			    size_t size);
+void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
+			   size_t nmemb,
+			   size_t size);
 
 /**
  *
  */
-void memory_manager_free(memory_manager_t *memory_manager,
-			 void *buffer);
+void marcel_memory_free(marcel_memory_manager_t *memory_manager,
+			void *buffer);
 
 /**
  *
  */
-void memory_manager_locate(memory_manager_t *memory_manager,
-			   memory_tree_t *memory_tree,
-			   void *address,
-			   int *node);
+void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
+			  marcel_memory_tree_t *memory_tree,
+			  void *address,
+			  int *node);
 
 /**
  *
  */
-void memory_manager_print(memory_tree_t *memory_tree);
+void marcel_memory_print(marcel_memory_tree_t *memory_tree);

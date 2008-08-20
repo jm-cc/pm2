@@ -330,8 +330,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			    "--marcel-xtop		Same as above, in a freshly created xterm\n"
 #ifdef MA__LWPS
 			    "--marcel-nvp n		Force number of VPs to n\n"
-			    "--marcel-firstcpu cpu	Allocate VPs from the given cpu\n"
-			    "--marcel-cpustride stride	Allocate VPs every stride cpus\n"
+			    "--marcel-firstcpu cpu	Allocate VPs from the given cpu (topologic number, not OS number)\n"
+			    "--marcel-cpustride stride	Allocate VPs every stride cpus (topologic numbers, not OS numbers)\n"
 #ifdef MA__NUMA
 			    "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
 #endif

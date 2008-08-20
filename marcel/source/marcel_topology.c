@@ -109,7 +109,7 @@ unsigned marcel_current_vp(void)
 	return __marcel_current_vp();
 }
 
-unsigned marcel_current_node(void)
+int marcel_current_node(void)
 {
 #ifdef MA__NUMA
   unsigned vp = marcel_current_vp();

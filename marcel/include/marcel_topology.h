@@ -306,7 +306,7 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 /** \brief Get the current VP number. Note that if preemption is enabled,
  *  this may change just after the function call. */
 unsigned marcel_current_vp(void);
-unsigned marcel_current_node(void);
+int marcel_current_node(void);
 
 #section marcel_functions
 /* Internal version, for inlining */

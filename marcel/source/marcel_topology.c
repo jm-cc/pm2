@@ -111,8 +111,12 @@ unsigned marcel_current_vp(void)
 
 unsigned marcel_current_node(void)
 {
+#ifdef MA__NUMA
   unsigned vp = marcel_current_vp();
   return ma_vp_node[vp];
+#else
+  return -1;
+#endif
 }
 
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {

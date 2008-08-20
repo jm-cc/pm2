@@ -24,12 +24,20 @@
 #define printf marcel_printf
 
 void memory_manager_init(memory_manager_t *memory_manager, int initialpreallocatedpages) {
+  int node;
+
   LOG_IN();
   memory_manager->root = NULL;
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
   memory_manager->initialpreallocatedpages = initialpreallocatedpages;
-  memory_manager_prealloc(memory_manager);
+
+  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(memory_space_t *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    memory_manager_preallocate(memory_manager, &(memory_manager->heaps[node]), node);
+    mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
+  }
+
   LOG_OUT();
 }
 
@@ -153,35 +161,27 @@ void memory_manager_register(memory_manager_t *memory_manager, memory_tree_t **m
   LOG_OUT();
 }
 
-void memory_manager_prealloc(memory_manager_t *memory_manager) {
-  int node;
+void memory_manager_preallocate(memory_manager_t *memory_manager, memory_space_t **space, int node) {
+  unsigned long nodemask;
   size_t length;
+  void *buffer;
 
-  LOG_IN();
-
+  nodemask = (1<<node);
   length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
-  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(memory_heap_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    unsigned long nodemask = (1<<node);
-    void *buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-    mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-    memset(buffer, 0, length);
 
-    memory_manager->heaps[node] = malloc(sizeof(memory_heap_t));
-    memory_manager->heaps[node]->start = buffer;
-    memory_manager->heaps[node]->available = malloc(sizeof(memory_space_t));
-    memory_manager->heaps[node]->available->start = buffer;
-    memory_manager->heaps[node]->available->nbpages = memory_manager->initialpreallocatedpages;
-    memory_manager->heaps[node]->available->next = NULL;
+  buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+  memset(buffer, 0, length);
 
-    mdebug_heap("Preallocating %p for node #%d\n", buffer, node);
-  }
-  LOG_OUT();
+  (*space) = malloc(sizeof(memory_space_t));
+  (*space)->start = buffer;
+  (*space)->nbpages = memory_manager->initialpreallocatedpages;
+  (*space)->next = NULL;
 }
 
 void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t size, int node) {
-  memory_heap_t *heap = memory_manager->heaps[node];
-  memory_space_t *prev, *available = NULL;
+  memory_space_t *heap = memory_manager->heaps[node];
+  memory_space_t *prev = NULL;
   void *buffer;
   int i, nbpages;
   size_t realsize;
@@ -197,40 +197,40 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
   if (nbpages * memory_manager->pagesize != size) nbpages++;
   realsize = nbpages * memory_manager->pagesize;
 
-  mdebug_heap("Requiring space of %d pages\n", nbpages);
+  mdebug_heap("Requiring space of %d pages from heap %p on node %d\n", nbpages, heap, node);
 
   // Look for a space big enough
-  prev = heap->available;
-  available = heap->available;
-  while (available != NULL) {
-    mdebug_heap("Current space from %p with %d pages\n", available->start, available->nbpages);
-    if (available->nbpages >= nbpages)
+  prev = heap;
+  while (heap != NULL) {
+    mdebug_heap("Current space from %p with %d pages\n", heap->start, heap->nbpages);
+    if (heap->nbpages >= nbpages)
       break;
-    prev = available;
-    available = available->next;
+    prev = heap;
+    heap = heap->next;
   }
-  if (available == NULL) {
-    unsigned long nodemask = (1<<node);
-    size_t length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
-    void *ptr = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-    mbind(ptr, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-    memset(ptr, 0, length);
+  if (heap == NULL) {
+    mdebug_heap("not enough space, let's allocate some more\n");
+    memory_manager_preallocate(memory_manager, &heap, node);
 
-    available = malloc(sizeof(memory_space_t));
-    available->start = ptr;
-    available->nbpages = memory_manager->initialpreallocatedpages;
-    available->next = NULL;
-
-    prev->next = available;
+    if (prev == NULL) {
+      memory_manager->heaps[node] = heap;
+      prev = heap;
+    }
+    else {
+      prev->next = heap;
+    }
   }
 
-  buffer = available->start;
-  if (nbpages == available->nbpages) {
-    prev->next = available->next;
+  buffer = heap->start;
+  if (nbpages == heap->nbpages) {
+    if (prev == heap)
+      memory_manager->heaps[node] = NULL;
+    else
+      prev->next = heap->next;
   }
   else {
-    available->start += realsize;
-    available->nbpages -= nbpages;
+    heap->start += realsize;
+    heap->nbpages -= nbpages;
   }
 
   // Set the page addresses and the node location
@@ -253,16 +253,16 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
 }
 
 void* memory_manager_free_from_node(memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
-  memory_heap_t *heap = memory_manager->heaps[node];
-  memory_space_t *available = malloc(sizeof(memory_space_t));
+  memory_space_t *available;
 
   LOG_IN();
 
   mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
+  available = malloc(sizeof(memory_space_t));
   available->start = buffer;
   available->nbpages = nbpages;
-  available->next = heap->available;
-  heap->available = available;
+  available->next = memory_manager->heaps[node];
+  memory_manager->heaps[node] = available;
 
   LOG_OUT();
 }
@@ -399,6 +399,19 @@ any_t memory2(any_t arg) {
   }
 }
 
+void memory_bis() {
+  memory_manager_t memory_manager;
+  void *b;
+
+  memory_manager_init(&memory_manager, 2);
+  b = memory_manager_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 2*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 2*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b = memory_manager_malloc(&memory_manager, 1*memory_manager.pagesize);
+}
 
 int marcel_main(int argc, char * argv[]) {
   marcel_t threads[2];
@@ -427,6 +440,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
   marcel_create(&threads[1], &attr, memory2, NULL);
   marcel_join(threads[1], NULL);
+
+  memory_bis();
 
   // Finish marcel
   marcel_end();

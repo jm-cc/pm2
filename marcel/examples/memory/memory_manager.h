@@ -53,19 +53,11 @@ typedef struct memory_space_s {
 } memory_space_t;
 
 /** */
-typedef struct memory_heap_s {
-  /** */
-  void *start;
-  /** */
-  memory_space_t* available;
-} memory_heap_t;
-  
-/** */
 typedef struct memory_manager_s {
   /** */
   memory_tree_t *root;
   /** */
-  memory_heap_t **heaps;
+  memory_space_t **heaps;
   /** */
   marcel_spinlock_t lock;
   /** */
@@ -116,9 +108,11 @@ void memory_manager_register(memory_manager_t *memory_manager,
 			     int *nodes);
 
 /**
- * Preallocates some memory (in number of pages) for each numa node.
+ * Preallocates some memory (in number of pages) on the specified numa node.
  */
-void memory_manager_prealloc(memory_manager_t *memory_manager);
+void memory_manager_preallocate(memory_manager_t *memory_manager,
+				memory_space_t **space,
+				int node);
 
 /**
  * Allocates memory on a specific node. Size will be rounded up to the system page size.

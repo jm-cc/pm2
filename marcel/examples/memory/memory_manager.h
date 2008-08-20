@@ -15,6 +15,7 @@
 
 #include "marcel.h"
 
+#section types
 /** */
 typedef struct marcel_memory_data_s {
   /** */
@@ -66,13 +67,7 @@ typedef struct marcel_memory_manager_s {
   int initialpreallocatedpages;
 } marcel_memory_manager_t;
 
-/**
- * Initialises the memory manager.
- * @param memory_manager pointer to the memory manager
- * @param initialpreallocatedpages number of initial preallocated pages on each node
- */
-void marcel_memory_init(marcel_memory_manager_t *memory_manager,
-			int initialpreallocatedpages);
+#section marcel_functions
 
 /**
  *
@@ -115,19 +110,29 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 			   int node);
 
 /**
- * Allocates memory on a specific node. Size will be rounded up to the system page size.
- */
-void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
-				     size_t size,
-				     int node);
-
-/**
  *
  */
 void* ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 			       void *buffer,
 			       int nbpages,
 			       int node);
+
+#section functions
+
+/**
+ * Initialises the memory manager.
+ * @param memory_manager pointer to the memory manager
+ * @param initialpreallocatedpages number of initial preallocated pages on each node
+ */
+void marcel_memory_init(marcel_memory_manager_t *memory_manager,
+			int initialpreallocatedpages);
+
+/**
+ * Allocates memory on a specific node. Size will be rounded up to the system page size.
+ */
+void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
+				     size_t size,
+				     int node);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.

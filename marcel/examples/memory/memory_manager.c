@@ -107,12 +107,12 @@ void memory_manager_delete_tree(memory_manager_t *memory_manager, memory_tree_t 
     (*memory_tree)->data = temp->data;
 
     // then delete the predecessor
-    memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
+    memory_manager_delete(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
   }
   LOG_OUT();
 }
 
-void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer) {
+void memory_manager_delete(memory_manager_t *memory_manager, memory_tree_t **memory_tree, void *buffer) {
   LOG_IN();
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
@@ -128,15 +128,15 @@ void memory_manager_delete_internal(memory_manager_t *memory_manager, memory_tre
       memory_manager_delete_tree(memory_manager, memory_tree);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
-      memory_manager_delete_internal(memory_manager, &((*memory_tree)->leftchild), buffer);
+      memory_manager_delete(memory_manager, &((*memory_tree)->leftchild), buffer);
     else
-      memory_manager_delete_internal(memory_manager, &((*memory_tree)->rightchild), buffer);
+      memory_manager_delete(memory_manager, &((*memory_tree)->rightchild), buffer);
   }
   LOG_OUT();
 }
 
-void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t **memory_tree,
-				 void **pageaddrs, int nbpages, size_t size, int *nodes) {
+void memory_manager_register(memory_manager_t *memory_manager, memory_tree_t **memory_tree,
+			     void **pageaddrs, int nbpages, size_t size, int *nodes) {
   LOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = malloc(sizeof(memory_tree_t));
@@ -146,42 +146,10 @@ void memory_manager_add_internal(memory_manager_t *memory_manager, memory_tree_t
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      memory_manager_add_internal(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
+      memory_manager_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
     else
-      memory_manager_add_internal(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
+      memory_manager_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
   }
-  LOG_OUT();
-}
-
-void memory_manager_add_with_pages(memory_manager_t *memory_manager,
-				   void **pageaddrs, int nbpages, size_t size, int *nodes) {
-  LOG_IN();
-  mdebug_heap("Adding [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-  //  marcel_spin_lock(&(memory_manager->lock));
-  memory_manager_add_internal(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes);
-  //  marcel_spin_unlock(&(memory_manager->lock));
-  LOG_OUT();
-}
-
-void memory_manager_add(memory_manager_t *memory_manager, void *address, size_t size) {
-  int nbpages, i;
-  void **pageaddrs;
-
-  LOG_IN();
-
-  // Count the number of pages
-  nbpages = size / memory_manager->pagesize;
-  if (nbpages * memory_manager->pagesize != size) nbpages++;
-
-  // Set the page addresses
-  pageaddrs = malloc(nbpages * sizeof(void *));
-  for(i=0; i<nbpages ; i++) pageaddrs[i] = address + i*memory_manager->pagesize;
-
-  // Add memory
-  memory_manager_add_with_pages(memory_manager, pageaddrs, nbpages, size, NULL);
-
-  free(pageaddrs);
-
   LOG_OUT();
 }
 
@@ -215,8 +183,10 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
   memory_heap_t *heap = memory_manager->heaps[node];
   memory_space_t *prev, *available = NULL;
   void *buffer;
-  int nbpages;
+  int i, nbpages;
   size_t realsize;
+  void **pageaddrs;
+  int *nodes;
 
   LOG_IN();
 
@@ -249,6 +219,7 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
     available = malloc(sizeof(memory_space_t));
     available->start = ptr;
     available->nbpages = memory_manager->initialpreallocatedpages;
+    available->next = NULL;
 
     prev->next = available;
   }
@@ -262,7 +233,18 @@ void* memory_manager_allocate_on_node(memory_manager_t *memory_manager, size_t s
     available->nbpages -= nbpages;
   }
 
-  memory_manager_add(memory_manager, buffer, realsize);
+  // Set the page addresses and the node location
+  pageaddrs = malloc(nbpages * sizeof(void *));
+  for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->pagesize;
+  nodes = malloc(nbpages * sizeof(int));
+  for(i=0; i<nbpages ; i++) nodes[i] = node;
+
+  // Register memory
+  mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
+  memory_manager_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes);
+
+  free(pageaddrs);
+  free(nodes);
 
   marcel_spin_unlock(&(memory_manager->lock));
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
@@ -315,7 +297,7 @@ void memory_manager_free(memory_manager_t *memory_manager, void *buffer) {
   LOG_IN();
   mdebug_heap("Freeing [%p]\n", buffer);
   marcel_spin_lock(&(memory_manager->lock));
-  memory_manager_delete_internal(memory_manager, &(memory_manager->root), buffer);
+  memory_manager_delete(memory_manager, &(memory_manager->root), buffer);
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
 }

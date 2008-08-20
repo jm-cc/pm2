@@ -41,9 +41,9 @@ void memory_manager_init(memory_manager_t *memory_manager, int initialpreallocat
   LOG_OUT();
 }
 
-void memory_manager_create_memory_data(memory_manager_t *memory_manager,
-				       void **pageaddrs, int nbpages, size_t size, int *nodes,
-				       memory_data_t **memory_data) {
+void memory_manager_init_memory_data(memory_manager_t *memory_manager,
+				     void **pageaddrs, int nbpages, size_t size, int *nodes,
+				     memory_data_t **memory_data) {
   int i, err;
 
   LOG_IN();
@@ -150,7 +150,7 @@ void memory_manager_register(memory_manager_t *memory_manager, memory_tree_t **m
     *memory_tree = malloc(sizeof(memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    memory_manager_create_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
+    memory_manager_init_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])

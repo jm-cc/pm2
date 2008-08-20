@@ -77,12 +77,12 @@ void memory_manager_init(memory_manager_t *memory_manager,
 /**
  *
  */
-void memory_manager_create_memory_data(memory_manager_t *memory_manager,
-				       void **pageaddrs,
-				       int nbpages,
-				       size_t size,
-				       int *nodes,
-				       memory_data_t **memory_data);
+void memory_manager_init_memory_data(memory_manager_t *memory_manager,
+				     void **pageaddrs,
+				     int nbpages,
+				     size_t size,
+				     int *nodes,
+				     memory_data_t **memory_data);
 
 /**
  *

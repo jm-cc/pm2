@@ -19,7 +19,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "memory_manager.h"
+
+#include "marcel.h"
 
 #define printf marcel_printf
 

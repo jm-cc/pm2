@@ -164,4 +164,4 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
 /**
  *
  */
-void marcel_memory_print(marcel_memory_tree_t *memory_tree);
+void marcel_memory_print(marcel_memory_manager_t *memory_manager);

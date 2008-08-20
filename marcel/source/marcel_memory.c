@@ -331,10 +331,10 @@ void ma_memory_print_aux(marcel_memory_tree_t *memory_tree, int indent) {
   }
 }
 
-void marcel_memory_print(marcel_memory_tree_t *memory_tree) {
+void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   LOG_IN();
   mdebug_heap("******************** TREE BEGIN *********************************\n");
-  ma_memory_print_aux(memory_tree, 0);
+  ma_memory_print_aux(memory_manager->root, 0);
   mdebug_heap("******************** TREE END *********************************\n");
   LOG_OUT();
 }

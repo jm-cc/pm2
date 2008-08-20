@@ -32,6 +32,8 @@ any_t memory(any_t arg) {
   marcel_memory_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
   printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
 
+  marcel_memory_print(&memory_manager);
+
   marcel_memory_free(&memory_manager, c);
   marcel_memory_free(&memory_manager, b);
   marcel_memory_free(&memory_manager, d);

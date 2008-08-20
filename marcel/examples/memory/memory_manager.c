@@ -274,6 +274,7 @@ void* memory_manager_malloc(memory_manager_t *memory_manager, size_t size) {
   LOG_IN();
 
   numanode = marcel_current_node();
+  if (tbx_unlikely(numanode == -1)) numanode=0;
   ptr = memory_manager_allocate_on_node(memory_manager, size, numanode);
 
   LOG_OUT();
@@ -287,6 +288,7 @@ void* memory_manager_calloc(memory_manager_t *memory_manager, size_t nmemb, size
   LOG_IN();
 
   numanode = marcel_current_node();
+  if (tbx_unlikely(numanode == -1)) numanode=0;
   ptr = memory_manager_allocate_on_node(memory_manager, nmemb*size, numanode);
 
   LOG_OUT();

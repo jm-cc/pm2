@@ -15,6 +15,10 @@
 
 #include "marcel.h"
 
+#if !defined(MARCEL_NUMA)
+#error This application needs NUMA to be enabled
+#else
+
 #define PAGES 2
 marcel_memory_manager_t memory_manager;
 
@@ -124,3 +128,5 @@ int marcel_main(int argc, char * argv[]) {
 }
 
 // TODO: use memalign
+
+#endif

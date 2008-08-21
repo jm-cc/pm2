@@ -176,7 +176,6 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
  * @param node returns the location of the given memory, or -1 when not found
  */
 void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
-			  marcel_memory_tree_t *memory_tree,
 			  void *address,
 			  int *node);
 

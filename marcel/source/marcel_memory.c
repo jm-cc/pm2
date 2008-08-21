@@ -302,17 +302,17 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_OUT();
 }
 
-void marcel_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node) {
-  LOG_IN();
+void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node) {
+ LOG_IN();
   if (memory_tree==NULL) {
     // We did not find the address
     *node = -1;
   }
   else if (address < memory_tree->data->startaddress) {
-    marcel_memory_locate(memory_manager, memory_tree->leftchild, address, node);
+    ma_memory_locate(memory_manager, memory_tree->leftchild, address, node);
   }
   else if (address > memory_tree->data->endaddress) {
-    marcel_memory_locate(memory_manager, memory_tree->rightchild, address, node);
+    ma_memory_locate(memory_manager, memory_tree->rightchild, address, node);
   }
   else { // the address is stored on the current memory_data
     int offset = address - memory_tree->data->startaddress;
@@ -321,20 +321,24 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory
   LOG_OUT();
 }
 
-void ma_memory_print_aux(marcel_memory_tree_t *memory_tree, int indent) {
+void marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address, int *node) {
+  ma_memory_locate(memory_manager, memory_manager->root, address, node);
+}
+
+void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent) {
   if (memory_tree) {
     int x;
-    ma_memory_print_aux(memory_tree->leftchild, indent+2);
+    ma_memory_print(memory_tree->leftchild, indent+2);
     for(x=0 ; x<indent ; x++) printf(" ");
     printf("[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
-    ma_memory_print_aux(memory_tree->rightchild, indent+2);
+    ma_memory_print(memory_tree->rightchild, indent+2);
   }
 }
 
 void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   LOG_IN();
   mdebug_heap("******************** TREE BEGIN *********************************\n");
-  ma_memory_print_aux(memory_manager->root, 0);
+  ma_memory_print(memory_manager->root, 0);
   mdebug_heap("******************** TREE END *********************************\n");
   LOG_OUT();
 }

@@ -29,7 +29,7 @@ any_t memory(any_t arg) {
   e = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
   buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.pagesize);
 
-  marcel_memory_locate(&memory_manager, memory_manager.root, &(buffer[0]), &node);
+  marcel_memory_locate(&memory_manager, &(buffer[0]), &node);
   printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
 
   marcel_memory_print(&memory_manager);
@@ -46,7 +46,7 @@ any_t memory2(any_t arg) {
   int i, node;
 
   c = malloc(sizeof(char));
-  marcel_memory_locate(&memory_manager, memory_manager.root, c, &node);
+  marcel_memory_locate(&memory_manager, c, &node);
   printf("Address %p is located on node %d\n", c, node);
   free(c);
 

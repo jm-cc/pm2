@@ -124,6 +124,8 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 			      int nbpages,
 			      int node);
 
+void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent);
+
 #section functions
 
 /**

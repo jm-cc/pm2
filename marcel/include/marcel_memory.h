@@ -23,54 +23,55 @@
 #section types
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
-/** */
+
+/** Type of a tree node */
 typedef struct marcel_memory_data_s {
-  /** */
+  /** Start address of the memory area */
   void *startaddress;
-  /** */
+  /** End address of the memory area */
   void *endaddress;
-  /** */
+  /** Size of the memory area */
   size_t size;
 
-  /** */
+  /** Page addresses of the memory area */
   void **pageaddrs;
-  /** */
+  /** Number of pages holding the memory area */
   int nbpages;
-  /** */
+  /** Nodes where the memory area is located */
   int *nodes;
 } marcel_memory_data_t;
 
-/** */
+/** Sorted-binary tree of allocated memory areas */
 typedef struct marcel_memory_tree_s {
-  /** */
+  /** Left child of the tree */
   struct marcel_memory_tree_s *leftchild;
-  /** */
+  /** Right child of the tree */
   struct marcel_memory_tree_s *rightchild;
-  /** */
+  /** Node of the tree */
   marcel_memory_data_t *data;
 } marcel_memory_tree_t;
 
-/** */
+/** Represent a pre-allocated space (start address + number of pages) */
 typedef struct marcel_memory_space_s {
-  /** */
+  /** Start address of the memory space */
   void *start;
-  /** */
+  /** Number of pages of the memory space */
   int nbpages;
-  /** */
+  /** Next pre-allocated space */
   struct marcel_memory_space_s *next;
 } marcel_memory_space_t;
 
-/** */
+/** Memory manager */
 typedef struct marcel_memory_manager_s {
-  /** */
+  /** Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
-  /** */
+  /** List of pre-allocated memory areas */
   marcel_memory_space_t **heaps;
-  /** */
+  /** Lock to manipulate the data */
   marcel_spinlock_t lock;
-  /** */
+  /** System page size */
   int pagesize;
-  /** */
+  /** Number of initially pre-allocated pages */
   int initialpreallocatedpages;
 } marcel_memory_manager_t;
 
@@ -124,7 +125,11 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 			      int nbpages,
 			      int node);
 
-void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent);
+/*
+ *
+ */
+void ma_memory_print(marcel_memory_tree_t *memory_tree,
+		     int indent);
 
 #section functions
 

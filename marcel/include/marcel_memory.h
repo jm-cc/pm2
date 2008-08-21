@@ -13,6 +13,13 @@
  * General Public License for more details.
  */
 
+/** \defgroup marcel_memory Memory Interface
+ *
+ * This is the interface for memory management
+ *
+ * @{
+ */
+
 #section types
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
@@ -129,6 +136,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager,
 
 /**
  * Allocates memory on a specific node. Size will be rounded up to the system page size.
+ * @param memory_manager pointer to the memory manager
  */
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
 				     size_t size,
@@ -136,25 +144,27 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
+ * @param memory_manager pointer to the memory manager
  */
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
 			   size_t size);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
+ * @param memory_manager pointer to the memory manager
  */
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 			   size_t nmemb,
 			   size_t size);
 
 /**
- *
+ * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_free(marcel_memory_manager_t *memory_manager,
 			void *buffer);
 
 /**
- *
+ * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
 			  marcel_memory_tree_t *memory_tree,
@@ -162,6 +172,6 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
 			  int *node);
 
 /**
- *
+ * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);

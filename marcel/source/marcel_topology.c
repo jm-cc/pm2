@@ -208,6 +208,8 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
   marcel_fprintf(output,"%s\n", levelterm);
 }
 
+unsigned marcel_nbnodes = 1;
+
 #ifdef MA__LWPS
 
 static int discovering_level = 1;
@@ -216,7 +218,6 @@ unsigned marcel_cpu_stride = 0;
 unsigned marcel_first_cpu = 0;
 unsigned marcel_vps_per_cpu = 1;
 #  ifdef MA__NUMA
-unsigned marcel_nbnodes = 1;
 unsigned marcel_topo_max_arity = 4;
 #  endif
 

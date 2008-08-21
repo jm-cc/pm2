@@ -77,11 +77,11 @@ extern unsigned marcel_cpu_stride;
 extern unsigned marcel_first_cpu;
 /** \brief Number of VPs per physical processor */
 extern unsigned marcel_vps_per_cpu;
+/** \brief Number of NUMA nodes */
+extern unsigned marcel_nbnodes;
 #ifdef MA__NUMA
 /** \brief Maximum allowed arity in the level tree */
 extern unsigned marcel_topo_max_arity;
-/** \brief Number of NUMA nodes */
-extern unsigned marcel_nbnodes;
 /** \brief Direct access to node levels */
 extern struct marcel_topo_level *marcel_topo_node_level;
 #endif

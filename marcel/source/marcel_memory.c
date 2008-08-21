@@ -76,13 +76,15 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
     }
   }
 
+#ifdef PM2DEBUG
   // Display information
   for(i=0; i<(*memory_data)->nbpages; i++) {
     if ((*memory_data)->nodes[i] == -ENOENT)
-      printf("  page #%d is not allocated\n", i);
+      mdebug_heap("  page #%d is not allocated\n", i);
     else
-      printf("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
+      mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
   }
+#endif
 
   LOG_OUT();
 }

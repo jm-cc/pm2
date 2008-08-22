@@ -122,10 +122,11 @@ int marcel_main(int argc, char * argv[]) {
   marcel_create(&threads[1], &attr, memory2, NULL);
   marcel_join(threads[1], NULL);
 
+  marcel_memory_exit(&memory_manager);
+
   memory_bis();
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
   marcel_end();
 }
 

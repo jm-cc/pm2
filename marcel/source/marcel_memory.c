@@ -42,7 +42,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 				void **pageaddrs, int nbpages, size_t size, int *nodes,
 				marcel_memory_data_t **memory_data) {
-  int i, err;
+  int err;
 
   LOG_IN();
 
@@ -77,13 +77,16 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   }
 
 #ifdef PM2DEBUG
-  // Display information
-  for(i=0; i<(*memory_data)->nbpages; i++) {
-    if ((*memory_data)->nodes[i] == -ENOENT)
-      mdebug_heap("  page #%d is not allocated\n", i);
-    else
-      mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
-  }
+ {
+   int i;
+   // Display information
+   for(i=0; i<(*memory_data)->nbpages; i++) {
+     if ((*memory_data)->nodes[i] == -ENOENT)
+       mdebug_heap("  page #%d is not allocated\n", i);
+     else
+       mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
+   }
+ }
 #endif
 
   LOG_OUT();

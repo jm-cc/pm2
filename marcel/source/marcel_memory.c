@@ -39,6 +39,19 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   LOG_OUT();
 }
 
+void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
+  int node;
+
+  LOG_IN();
+
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
+  }
+  free(memory_manager->heaps);
+
+  LOG_OUT();
+}
+
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 				void **pageaddrs, int nbpages, size_t size, int *nodes,
 				marcel_memory_data_t **memory_data) {
@@ -186,6 +199,19 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space)->start = buffer;
   (*space)->nbpages = memory_manager->initialpreallocatedpages;
   (*space)->next = NULL;
+}
+
+void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_space_t **space, int node) {
+  marcel_memory_space_t *ptr;
+
+  LOG_IN();
+  ptr  = (*space);
+  while (ptr != NULL) {
+    mdebug_heap("Unmapping memory area from %p\n", ptr->start);
+    munmap(ptr->start, ptr->nbpages * memory_manager->pagesize);
+    ptr = ptr->next;
+  }
+  LOG_OUT();
 }
 
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {

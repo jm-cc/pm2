@@ -91,6 +91,7 @@ void memory_bis() {
   b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
   b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
   b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  marcel_memory_exit(&memory_manager);
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -124,6 +125,7 @@ int marcel_main(int argc, char * argv[]) {
   memory_bis();
 
   // Finish marcel
+  marcel_memory_exit(&memory_manager);
   marcel_end();
 }
 

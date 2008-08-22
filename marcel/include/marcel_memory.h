@@ -118,6 +118,13 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 			   int node);
 
 /*
+ * Deallocate the memory from the specified numa node.
+ */
+void ma_memory_deallocate(marcel_memory_manager_t *memory_manager,
+			  marcel_memory_space_t **space,
+			  int node);
+
+/*
  *
  */
 void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
@@ -140,6 +147,12 @@ void ma_memory_print(marcel_memory_tree_t *memory_tree,
  */
 void marcel_memory_init(marcel_memory_manager_t *memory_manager,
 			int initialpreallocatedpages);
+
+/**
+ * Shutdowns the memory manager.
+ * @param memory_manager pointer to the memory manager
+ */
+void marcel_memory_exit(marcel_memory_manager_t *memory_manager);
 
 /**
  * Allocates memory on a specific node. Size will be rounded up to the system page size.

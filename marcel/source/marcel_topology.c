@@ -263,7 +263,7 @@ static struct marcel_topo_level *marcel_topo_cpu_level;
 #      define COREID		"core id"
 //#  define THREADID	"thread id"
 
-int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
+static int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
 {
 	char string[11];
 	FILE * fd;
@@ -284,7 +284,7 @@ int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
 #define KERNEL_CPU_MASK_BITS 32
 #define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
 
-int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
+static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 {
 	char string[KERNEL_CPU_MAP_LEN]; /* enough for a shared map mask (32bits hexa) */
 	unsigned long maps[MAX_KERNEL_CPU_MASK];
@@ -323,7 +323,7 @@ int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	return 0;
 }
 
-void ma_process_cpumap(const char *mappath, const char * mapname,
+static void ma_process_cpumap(const char *mappath, const char * mapname,
 		       int nr_procs, unsigned *ids,
 		       unsigned *nr_ids, unsigned givenid)
 {

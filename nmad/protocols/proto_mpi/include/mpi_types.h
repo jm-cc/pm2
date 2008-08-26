@@ -228,4 +228,19 @@ typedef int MPI_Errhandler;
 
 /* @}*/
 
+/* Programs that need to convert types used in MPICH should use these */
+typedef int MPI_Fint; 
+#define MPI_Comm_c2f(comm) (MPI_Fint)(comm)
+#define MPI_Comm_f2c(comm) (MPI_Comm)(comm)
+#define MPI_Type_c2f(datatype) (MPI_Fint)(datatype)
+#define MPI_Type_f2c(datatype) (MPI_Datatype)(datatype)
+#define MPI_Group_c2f(group) (MPI_Fint)(group)
+#define MPI_Group_f2c(group) (MPI_Group)(group)
+#define MPI_Info_c2f(info) (MPI_Fint)(info)
+#define MPI_Info_f2c(info) (MPI_Info)(info)
+#define MPI_Request_f2c(request) (MPI_Request)(request)
+#define MPI_Request_c2f(request) (MPI_Fint)(request)
+#define MPI_Op_c2f(op) (MPI_Fint)(op)
+#define MPI_Op_f2c(op) (MPI_Op)(op)
+
 #endif /* MPI_TYPES_H */

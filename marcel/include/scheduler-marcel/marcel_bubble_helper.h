@@ -82,4 +82,4 @@ void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne)
 
 /* Iterates over every entity scheduled on the runqueue r */
 #define for_each_entity_scheduled_on_runqueue(e,r) \
-  list_for_each_entry(e, &rq->as_holder.sched_list, sched_list)
+  list_for_each_entry(e, &(r)->as_holder.sched_list, sched_list)

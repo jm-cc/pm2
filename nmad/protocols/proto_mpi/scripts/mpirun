@@ -54,7 +54,7 @@ get_machines() {
 	    exit 1
 	fi
     elif [ -f "$OAR_NODEFILE" ] ; then
-	host_list=`cat $OAR_NODEFILE | sort | uniq`
+	host_list=`cat $OAR_NODEFILE | sort | uniq | sed 's/\..*//'`
     elif [ -f "$MPI_HOST_FILE" ] ; then
 	host_list=`cat $MPI_HOST_FILE`
     else

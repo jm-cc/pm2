@@ -21,6 +21,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION >= 1)
+#include <numaif.h>
+#else
+#warning fix for deprecated old numa libraries
+extern long move_pages(int pid, unsigned long count,
+                void **pages, const int *nodes, int *status, int flags);
+#endif
+
 void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialpreallocatedpages) {
   int node;
 

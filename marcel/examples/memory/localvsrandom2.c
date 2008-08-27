@@ -38,6 +38,9 @@ any_t compute(any_t arg) {
   //marcel_memory_locate(&memory_manager, buffer, &where);
   //marcel_fprintf(stderr,"[%d] Memory on node #%d\n", marcel_self()->id, where);
 
+  // TODO: faire un access aleatoire au lieu de lineaire
+  // TODO: utiliser de l'assembleur ...
+
   for(j=0 ; j<LOOPS ; j++) {
     for(i=0 ; i<SIZE ; i++) {
       buffer[i] ++;
@@ -87,7 +90,4 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_exit(&memory_manager);
   marcel_end();
 }
-
-// TODO: use memalign
-
 #endif

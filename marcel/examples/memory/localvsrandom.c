@@ -111,6 +111,4 @@ int marcel_main(int argc, char * argv[]) {
   marcel_end();
 }
 
-// TODO: use memalign
-
 #endif

@@ -83,6 +83,8 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_REAL8]->size = 8*sizeof(char);
   mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
   mpir_internal_data->datatypes[MPI_INTEGER]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_INTEGER4]->size = sizeof(int32_t);
+  mpir_internal_data->datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
   mpir_internal_data->datatypes[MPI_PACKED]->size = sizeof(char);
 
   for(i=MPI_DATATYPE_NULL ; i<=MPI_PACKED ; i++) {

@@ -173,8 +173,10 @@ typedef int MPI_Datatype;
 #define MPI_REAL8	     ((MPI_Datatype)28)
 #define MPI_DOUBLE_PRECISION ((MPI_Datatype)29)
 #define MPI_INTEGER	     ((MPI_Datatype)30)
+#define MPI_INTEGER4	     ((MPI_Datatype)31)
+#define MPI_INTEGER8	     ((MPI_Datatype)32)
 
-#define MPI_PACKED           ((MPI_Datatype)31)
+#define MPI_PACKED           ((MPI_Datatype)33)
 /* @} */
 
 /** @name Collective operations */

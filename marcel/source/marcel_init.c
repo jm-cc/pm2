@@ -218,6 +218,43 @@ void marcel_initialize(int* argc, char**argv)
 }
 #endif
 
+static void show_synthetic_topology_help(void)
+{
+	fprintf(stderr,
+					"<topology-description> is a space-separated list of positive integers,\n"
+					"each of which denotes the number of children attached to a each node of the\n"
+					"corresponding topology level.\n\n"
+					"Example: \"2 4 2\" denotes a 2-node machine with 4 dual-core CPUs.\n");
+}
+
+/* Read from DESCRIPTION a series of integers describing a symmetrical
+	 topology and update `ma_synthetic_topology_description' accordingly.  On
+	 success, return zero.  */
+static int parse_synthetic_topology_description(const char *description) {
+	const char *pos, *next_pos;
+	unsigned long item, count;
+
+	for (pos = description, count = 0;
+			 *pos;
+			 pos = next_pos) {
+		item = strtoul(pos, (char **)&next_pos, 10);
+		if(next_pos == pos)
+			return 1;
+
+		MA_BUG_ON(count + 1 >= MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH);
+		MA_BUG_ON(item > UINT_MAX);
+
+		ma_synthetic_topology_description[count++] = (unsigned)item;
+	}
+
+	if(count > 0) {
+		ma_synthetic_topology_description[count + 1] = 0;
+		ma_use_synthetic_topology = 1;
+	}
+
+	return (count > 0) ? 0 : 1;
+}
+
 static void marcel_parse_cmdline_early(int *argc, char **argv,
     tbx_bool_t do_not_strip)
 {
@@ -323,6 +360,23 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 		} else
 #endif
 #endif
+		if (!strcmp(argv[i], "--marcel-synthetic-topology")) {
+			int err;
+			if (i == *argc - 1) {
+				fprintf(stderr,
+								"Fatal error: --marcel-synthetic-topology option must be followed "
+								"by <topology-description>.\n");
+				show_synthetic_topology_help();
+				exit(1);
+			}
+			err = parse_synthetic_topology_description(argv[++i]);
+			if (err) {
+				fprintf (stderr,
+								 "Fatal error: invalid argument for --marcel-synthetic-topology.\n");
+				show_synthetic_topology_help();
+				exit(1);
+			}
+		} else
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"
 			    "--marcel-top file		Dump a top-like output to file\n"
@@ -344,6 +398,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			    "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
 #endif
 #endif
+					"--marcel-synthetic-topology topo  Create a synthetic or \"fake\" topology\n"
+					"                                  according to the given description\n"
 			    );
 			exit(1);
 		} else
@@ -589,7 +645,7 @@ int ma_init_done[MA_INIT_MAX_PARTS+1]={0,};
 extern void ma_check_lpt_sizes(void);
 #endif
 #ifdef MA__LWPS
-extern const __ma_init_info_t ma_init_info_topo_discover;
+extern const __ma_init_info_t ma_init_info_initialize_topology;
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;
 extern const __ma_init_info_t ma_init_info_marcel_topology_call_UP_PREPARE;
 #endif // MA__LWPS
@@ -694,7 +750,7 @@ void marcel_init_section(int sec)
 #endif
 			call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
-			call_init_function(&ma_init_info_topo_discover);
+			call_init_function(&ma_init_info_initialize_topology);
 			call_init_function(&ma_init_info_marcel_topology_notifier_register);
 			call_init_function(&ma_init_info_marcel_topology_call_UP_PREPARE);
 #endif				// MA__LWPS

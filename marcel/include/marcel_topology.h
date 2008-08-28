@@ -495,6 +495,9 @@ typedef struct marcel_topo_level marcel_topo_level_t;
 #define ma_topo_nodedata_l(node, field) ((node)->nodedata.field)
 #define ma_topo_nodedata(nodenum, field) ma_topo_nodedata_l(&marcel_topo_node_level[nodenum], field)
 
+/** \brief The maximum depth of a synthetic or "fake" topology tree.  */
+#define MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH   128
+
 #section marcel_variables
 /** \brief Number of horizontal levels */
 extern TBX_EXTERN unsigned marcel_topo_nblevels;
@@ -504,6 +507,17 @@ extern TBX_EXTERN struct marcel_topo_level marcel_machine_level[];
 extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
 /** \brief Direct access to levels, marcel_topo_levels[l = 0 .. marcel_topo_nblevels-1][0..marcel_topo_level_nbitems[l]] */
 extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
+
+/** \brief A zero-terminated array describing a "synthetic" topology.  Each
+		integer denotes the number of children attached to a each node of the
+		corresponding topology level.  For example, { 2, 4, 2, 0 } denotes a
+		2-node machine with 4 dual-core CPUs.  */
+extern TBX_EXTERN unsigned ma_synthetic_topology_description[];
+
+/** \brief A boolean indicating whether to use the "synthetic" topology
+		described by `ma_synthetic_topology_description' instead of the actual
+		host topology.  Only has an effect at startup-time.  */
+extern TBX_EXTERN tbx_bool_t ma_use_synthetic_topology;
 
 #section functions
 /** \brief indexes into ::marcel_topo_levels, but available from application */

@@ -103,6 +103,14 @@ struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 	marcel_machine_level
 };
 
+
+/* Support for synthetic topologies.  */
+
+unsigned   ma_synthetic_topology_description[MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH];
+tbx_bool_t ma_use_synthetic_topology = tbx_false;
+
+
+
 #undef marcel_current_vp
 unsigned marcel_current_vp(void)
 {
@@ -1472,9 +1480,6 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; marcel_topo_levels[l][i].vpset; i++)
 			marcel_topo_levels[l][i].level = l;
-
-	/* Now we can set VP levels for main LWP */
-	ma_init_lwp_vpnum(0, &__main_lwp);
 }
 
 void ma_topo_exit(void) {
@@ -1492,8 +1497,232 @@ void ma_topo_exit(void) {
 	}
 }
 
-__ma_initfunc(topo_discover, MA_INIT_TOPOLOGY, "Finding Topology");
+
+/* Synthetic or "fake" topology creation, for testing purposes.
 
+	 Uses the `synth_' name space, except for global variables.  */
+
+
+/* Allocate COUNT nodes of type TYPE as children of LEVEL, with numbers
+	 starting from FIRST_NUMBER.  Individual nodes are allocated from
+	 NODE_POOL, which must point to an array of at least COUNT items (children
+	 N's storage will be NODE_POOL[N]).  */
+static void
+synth_make_children(struct marcel_topo_level *level, unsigned count,
+										enum marcel_topo_level_e type, unsigned first_number,
+										struct marcel_topo_level *node_pool)
+{
+	unsigned i;
+
+	level->children = TBX_CALLOC(count, sizeof(*level->children));
+	MA_BUG_ON(level->children == NULL);
+
+	for (i = 0; i < count; i++) {
+		level->children[i] = &node_pool[i];
+		MA_BUG_ON(level->children[i] == NULL);
+
+		level->arity = count;
+
+		level->children[i]->father = level;
+		level->children[i]->index = i;
+		level->children[i]->children = NULL;
+		level->children[i]->arity = 0;
+		level->children[i]->level = level->level + 1;
+		level->children[i]->number = first_number + i;
+		level->children[i]->type = type;
+		level->children[i]->merged_type = 1 << (int) type;
+
+		if (type == MARCEL_LEVEL_VP) {
+			level->children[i]->os_cpu =
+					level->children[i]->os_die = level->children[i]->os_node = -1;
+			level->children[i]->os_core =
+					level->children[i]->os_l3 =
+					level->children[i]->os_l2 = level->children[i]->os_l1 = i;
+		} else {
+			level->children[i]->os_cpu =
+					level->children[i]->os_die =
+					level->children[i]->os_l3 =
+					level->children[i]->os_l2 =
+					level->children[i]->os_l1 = level->children[i]->os_core = -1;
+			level->children[i]->os_node = i;
+		}
+	}
+}
+
+/* Recursively populate the topology starting from LEVEL according to
+   LEVEL_BREADTH, and number VPs starting at FIRST_VP.  Return the total
+   number of VPs beneath LEVEL.  */
+static unsigned
+synth_populate_topology(struct marcel_topo_level *level,
+												const unsigned *level_breadth, unsigned first_vp)
+{
+	unsigned i, vp_count;
+	enum marcel_topo_level_e type;
+
+	/* Increment the total breadth for this level.  */
+	marcel_topo_level_nbitems[level->level]++;
+
+	/* Recursion ends when *LEVEL_BREADTH is zero, meaning that LEVEL has no
+	   children.  */
+	if (*level_breadth > 0) {
+		unsigned siblings;
+
+		/* Cores don't have children.  */
+		MA_BUG_ON(level->type == MARCEL_LEVEL_CORE);
+
+		/* Automatically determine a level type.  */
+		type = *(level_breadth + 1) == 0
+				? MARCEL_LEVEL_CORE
+				: (*(level_breadth + 2) == 0
+					 ? MARCEL_LEVEL_DIE : MARCEL_LEVEL_FAKE);
+
+		/* Current number of siblings on our children's level to our left.  */
+		siblings = marcel_topo_level_nbitems[level->level + 1];
+
+		synth_make_children(level, *level_breadth, type, siblings,
+												&marcel_topo_levels[level->level + 1][siblings]);
+
+		for (i = 0, vp_count = 0; i < *level_breadth; i++)
+			vp_count += synth_populate_topology(level->children[i],
+																					level_breadth + 1,
+																					first_vp + vp_count);
+
+		/* Aggregate the VP sets of our kids.  */
+		marcel_vpset_zero(&level->vpset);
+		for (i = 0; i < *level_breadth; i++)
+			level->vpset |= level->children[i]->vpset;
+
+		/* XXX: We don't pay attention to the CPU set as it doesn't seem to be
+			 used output of `marcel_topology.c'; we just initialize it so that it's
+			 non-zero.  */
+		level->cpuset = level->vpset;
+	} else {
+		/* Only cores have no children.  */
+		MA_BUG_ON(level->type != MARCEL_LEVEL_CORE);
+
+		level->merged_type |= 1 << MARCEL_LEVEL_VP;
+
+		marcel_vpset_zero(&level->vpset);
+		marcel_vpset_set(&level->vpset, first_vp);
+		level->cpuset = level->vpset;
+
+		vp_count = 1;
+	}
+
+	return vp_count;
+}
+
+/* Allocate an array for each topology level described by TOPOLOGY.  These
+	 arrays are stored in the global `marcel_topo_levels' variable.  */
+static void
+synth_allocate_topology_levels(const unsigned *topology) {
+	const unsigned *level_breadth;
+	unsigned level, total_level_breadth;
+
+	marcel_topo_nblevels = 1;
+	marcel_topo_levels[0] = marcel_machine_level;
+
+	for (level = 1, level_breadth = topology, total_level_breadth = 1;
+			 *level_breadth > 0;
+			 level++, level_breadth++) {
+		total_level_breadth *= *level_breadth;
+
+		mdebug("synthetic topology: creating level %u with breadth %u (%u children per father)\n",
+					 marcel_topo_nblevels, total_level_breadth, *level_breadth);
+		marcel_topo_levels[level] =
+			TBX_CALLOC(total_level_breadth + 1, sizeof(marcel_topo_levels[0][0]));
+
+		MA_BUG_ON(marcel_topo_levels[level] == NULL);
+
+		/* Each level is terminated by an item with zeroed VP sets.  */
+		marcel_topo_levels[level][total_level_breadth].vpset = 0;
+		marcel_topo_levels[level][total_level_breadth].cpuset = 0;
+
+		marcel_topo_nblevels++;
+	}
+
+	MA_BUG_ON(marcel_topo_nblevels <= 1);
+
+	mdebug("synthetic topology: total number of levels: %u\n",
+				 marcel_topo_nblevels);
+
+	/* The leaves of the topology tree are assumed to be VPs.  */
+	marcel_topo_vp_level = marcel_topo_levels[level - 1];
+}
+
+static struct marcel_topo_level *
+synth_make_simple_topology(const unsigned *topology_description) {
+	struct marcel_topo_level *root, *vp;
+
+	synth_allocate_topology_levels(topology_description);
+
+	root = &marcel_machine_level[0];
+
+	root->father = NULL;
+	root->index = 0;
+	root->level = 0;
+	root->type = MARCEL_LEVEL_MACHINE;
+	root->merged_type = 1 << (int) root->type;
+
+	root->os_cpu =
+			root->os_die =
+			root->os_l3 =
+			root->os_l2 = root->os_l1 = root->os_core = root->os_node = -1;
+
+	synth_populate_topology(root, topology_description, 0);
+	MA_BUG_ON(root->arity != *topology_description);
+
+	/* Set the total number of VPs and processors.  */
+	ma__nb_vp = marcel_topo_level_nbitems[marcel_topo_nblevels - 1];
+
+#ifndef marcel_nbprocessors
+	if (marcel_topo_nblevels > 2)
+		/* Assume the next-to-last level is the CPU level.  */
+		marcel_nbprocessors = marcel_topo_level_nbitems[marcel_topo_nblevels - 2];
+	else
+		marcel_nbprocessors = ma__nb_vp;
+#endif
+
+	/* Update `marcel_vps_per_cpu' et al. accordingly.  */
+	ma_set_processors();
+
+	/* Initialize information associated with VPs.  */
+	for (vp = &marcel_topo_vp_level[0];
+			 vp < &marcel_topo_vp_level[ma__nb_vp];
+			 vp++)
+		vp->vpdata =
+			(struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&vp->vpdata);
+
+	mdebug("synthetic topology: %u levels, %u VPs, %u processors\n",
+				 marcel_topo_nblevels, ma__nb_vp, marcel_nbprocessors);
+
+	return root;
+}
+
+static void
+synth_install_topology (void) {
+	struct marcel_topo_level *topology;
+
+	topology = synth_make_simple_topology(ma_synthetic_topology_description);
+}
+
+
+/* Topology initialization.  */
+
+static void
+initialize_topology(void) {
+	if (!ma_use_synthetic_topology)
+		topo_discover();
+	else
+		synth_install_topology();
+
+	/* Now we can set VP levels for main LWP */
+	ma_init_lwp_vpnum(0, &__main_lwp);
+}
+
+__ma_initfunc(initialize_topology, MA_INIT_TOPOLOGY, "Finding Topology");
+
+
 static void topology_lwp_init(ma_lwp_t lwp) {
 	/* FIXME: node_level/core_level/cpu_level are not associated with LWPs but VPs ! */
 #  ifdef MA__NUMA

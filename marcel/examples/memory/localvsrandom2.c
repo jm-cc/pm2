@@ -19,31 +19,44 @@
 #error This application needs NUMA to be enabled
 #else
 
-#define SIZE  100000
+#define SIZE  100
 #define LOOPS 100000
 
 marcel_memory_manager_t memory_manager;
 int **buffers;
 int **buffers;
 
-any_t compute(any_t arg) {
+any_t writer(any_t arg) {
   int *buffer;
   int i, j, node;//, where;
+  unsigned int gold = 1.457869;
 
   node = marcel_self()->id;
-
-  //  marcel_fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", marcel_self()->id, marcel_current_node(), marcel_current_vp());
   buffer = buffers[node];
 
-  //marcel_memory_locate(&memory_manager, buffer, &where);
-  //marcel_fprintf(stderr,"[%d] Memory on node #%d\n", marcel_self()->id, where);
-
   // TODO: faire un access aleatoire au lieu de lineaire
-  // TODO: utiliser de l'assembleur ...
 
   for(j=0 ; j<LOOPS ; j++) {
     for(i=0 ; i<SIZE ; i++) {
-      buffer[i] ++;
+      __builtin_ia32_movnti((void*) &buffer[i], gold);
+    }
+  }
+}
+
+any_t reader(any_t arg) {
+  int *buffer;
+  int i, j, node;//, where;
+  unsigned int gold = 1.457869;
+
+  node = marcel_self()->id;
+  buffer = buffers[node];
+
+  // TODO: faire un access aleatoire au lieu de lineaire
+
+  for(j=0 ; j<LOOPS ; j++) {
+    for(i=0 ; i<SIZE ; i++) {
+      __builtin_prefetch((void*)&buffer[i]);
+      __builtin_ia32_clflush((void*)&buffer[i]);
     }
   }
 }
@@ -54,11 +67,19 @@ int marcel_main(int argc, char * argv[]) {
   int t, node;
 
   struct timeval tv1, tv2;
-  unsigned long us, ns;
+  unsigned long us;
+  unsigned long **rtimes, **wtimes;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
   marcel_attr_init(&attr);
+
+  rtimes = (unsigned long **) malloc(marcel_nbnodes * sizeof(unsigned long *));
+  wtimes = (unsigned long **) malloc(marcel_nbnodes * sizeof(unsigned long *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    rtimes[node] = (unsigned long *) malloc(marcel_nbnodes * sizeof(unsigned long));
+    wtimes[node] = (unsigned long *) malloc(marcel_nbnodes * sizeof(unsigned long));
+  }
 
   buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
 
@@ -73,7 +94,7 @@ int marcel_main(int argc, char * argv[]) {
       gettimeofday(&tv1, NULL);
       marcel_attr_setid(&attr, node);
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
-      marcel_create(&thread, &attr, compute, NULL);
+      marcel_create(&thread, &attr, writer, NULL);
 
       // Wait for the thread to complete
       marcel_join(thread, NULL);
@@ -81,8 +102,32 @@ int marcel_main(int argc, char * argv[]) {
       gettimeofday(&tv2, NULL);
 
       us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
-      ns = us * 1000;
-      printf("Thread #%d\tNode #%d\t%ld\n", t, node, ns);
+      wtimes[node][t] = us * 1000;
+    }
+  }
+
+  // Create a thread on node t to work on memory allocated on node node
+  for(t=0 ; t<marcel_nbnodes ; t++) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
+      gettimeofday(&tv1, NULL);
+      marcel_attr_setid(&attr, node);
+      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+      marcel_create(&thread, &attr, reader, NULL);
+
+      // Wait for the thread to complete
+      marcel_join(thread, NULL);
+
+      gettimeofday(&tv2, NULL);
+
+      us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+      rtimes[node][t] = us * 1000;
+    }
+  }
+
+  printf("Thread\tNode\tReader\tWriter\n");
+  for(t=0 ; t<marcel_nbnodes ; t++) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
+      printf("%d\t%d\t%ld\t%ld\n", t, node, rtimes[node][t], wtimes[node][t]);
     }
   }
 

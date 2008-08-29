@@ -174,8 +174,8 @@ fastcall TBX_EXTERN void __ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 	ma_remote_tasklet_lock(&vp->tasklet_lock);
 	t->next = vp->tasklet_vec.list;
 	vp->tasklet_vec.list = t;
-	ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
-	ma_remote_tasklet_unlock(&vp->tasklet_lock);
+        ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
+        ma_remote_tasklet_unlock(&vp->tasklet_lock);
 
 	ma_local_bh_enable();
 }
@@ -213,18 +213,23 @@ static void tasklet_action(struct ma_softirq_action *a) {
 				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED,&t->state))
 					MA_BUG();
 				t->func(t->data);
-				if (ma_tasklet_unlock(t))
-					/* Somebody tried to schedule it, try to reschedule it here */
-					ma_tasklet_schedule(t);
+                                
+				/***********************************************************************************
+                                 * if (ma_tasklet_unlock(t))                                                       *
+				 * 	/\* Somebody tried to schedule it, try to reschedule it here *\/           *
+				 * 	ma_tasklet_schedule(t);x                                                   *
+                                 ***********************************************************************************/
+                                
+				ma_tasklet_unlock(t);
 				continue;
 			}
 			/* here, SCHED is always set so we already know it would return 1 */
 			ma_tasklet_unlock(t);
 		}
 
-		ma_local_bh_disable();
-		ma_remote_tasklet_lock(&vp->tasklet_lock);
-		t->next = vp->tasklet_vec.list;
+		ma_local_bh_disable();  
+                ma_remote_tasklet_lock(&vp->tasklet_lock);
+                t->next = vp->tasklet_vec.list;
 		vp->tasklet_vec.list = t;
 		ma_remote_tasklet_unlock(&vp->tasklet_lock);
 		__ma_raise_softirq_bhoff(MA_TASKLET_SOFTIRQ);
@@ -252,9 +257,14 @@ static void tasklet_hi_action(struct ma_softirq_action *a) {
 				if (!ma_test_and_clear_bit(MA_TASKLET_STATE_SCHED, &t->state))
 					MA_BUG();
 				t->func(t->data);
-				if (ma_tasklet_unlock(t))
-					/* Somebody tried to schedule it, try to reschedule it here */
-					ma_tasklet_hi_schedule(t);
+
+				/***********************************************************************************
+                                 * if (ma_tasklet_unlock(t))                                                       *
+				 * 	/\* Somebody tried to schedule it, try to reschedule it here *\/           *
+				 * 	ma_tasklet_hi_schedule(t);                                                 *
+                                 ***********************************************************************************/
+
+                                ma_tasklet_unlock(t);
 				continue;
 			}
 			/* here, SCHED is always set so we already know it would return 1 */
@@ -290,9 +300,10 @@ TBX_EXTERN void ma_tasklet_kill(struct ma_tasklet_struct *t) {
 		mdebug("Attempt to kill tasklet from interrupt\n");
 
 	while (ma_test_and_set_bit(MA_TASKLET_STATE_SCHED, &t->state)) {
-		do
-			marcel_yield();
-		while (ma_test_bit(MA_TASKLET_STATE_SCHED, &t->state));
+		do{
+			//marcel_yield();
+                } while (ma_test_bit(MA_TASKLET_STATE_SCHED, &t->state));
+                
 	}
 	ma_tasklet_unlock_wait(t);
 	ma_clear_bit(MA_TASKLET_STATE_SCHED, &t->state);

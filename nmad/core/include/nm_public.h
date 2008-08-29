@@ -188,7 +188,8 @@ int
 nm_piom_post_all        (struct nm_core	         *p_core);
 
 int
-nm_core_exit_piom(struct nm_core *p_core);
+nm_core_exit_piom(struct nm_core *p_core,
+                  uint8_t         drv_id);
 
 #else /* PIOMAN */
 

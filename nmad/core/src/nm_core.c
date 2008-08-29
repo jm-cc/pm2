@@ -254,10 +254,8 @@ nm_core_init_piom(struct nm_core *p_core){
 }
 
 int 
-nm_core_exit_piom(struct nm_core *p_core) {
-  int i;
-  for(i=0;i<p_core->nb_drivers;i++)
-    piom_server_kill(&p_core->driver_array[i].server);
+nm_core_exit_piom(struct nm_core *p_core, uint8_t drv_id) {
+  piom_server_stop(&p_core->driver_array[drv_id].server);
   return NM_ESUCCESS;
 }
 
@@ -639,9 +637,11 @@ nm_core_driver_exit(struct nm_core  *p_core) {
   struct nm_gate_drv *p_gdrv	= NULL;
   int i, j, k, err = NM_ESUCCESS;
 
+  
 #ifdef PIOMAN
-  for(i=0;i<p_core->nb_drivers;i++)
-	piom_server_stop(&p_core->driver_array[i].server);
+  for(i=0;i<p_core->nb_drivers;i++) {
+          piom_server_stop(&p_core->driver_array[i].server);
+  }
 #endif
 
   p_sched = p_core->p_sched;

@@ -22,6 +22,7 @@
 
 #include <errno.h>
 
+
 /****************************************************************
  * Voir piom_io.c pour un exemple d'implémentation
  */
@@ -93,9 +94,9 @@ __tbx_inline__ static void __piom_trylock_server(piom_server_t server,
 
 __tbx_inline__ static void __piom_unlock_server(piom_server_t server)
 {
-	server->lock_owner = NULL;
-	ma_tasklet_enable(&server->poll_tasklet);
-	ma_spin_unlock_softirq(&server->lock);
+        server->lock_owner = NULL;
+ 	ma_tasklet_enable(&server->poll_tasklet);
+        ma_spin_unlock_softirq(&server->lock);
 }
 __tbx_inline__ static void __piom_tryunlock_server(piom_server_t server)
 {
@@ -446,7 +447,7 @@ void piom_server_kill(piom_server_t server)
 {
 	_piom_spin_lock_softirq(&piom_poll_lock);
 	PIOM_LOGF("Killing polling for %p (%d)\n", server, server->state);
-	list_del_init(&server->chain_poll);
+        list_del_init(&server->chain_poll);
 	_piom_spin_unlock_softirq(&piom_poll_lock);
 }
 
@@ -459,9 +460,10 @@ __tbx_inline__ static void __piom_poll_stop(piom_server_t server)
 {
 	_piom_spin_lock_softirq(&piom_poll_lock);
 	PIOM_LOGF("Stopping polling for [%s]\n", server->name);
-	list_del_init(&server->chain_poll);
+        list_del_init(&server->chain_poll);
 	if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
 		PIOM_LOGF("Stopping timer polling for [%s]\n", server->name);
+		
 #ifdef MARCEL
 		// TODO: support du timer sans Marcel
 		ma_del_timer(&server->poll_timer);
@@ -780,7 +782,7 @@ void piom_poll_from_tasklet(unsigned long hid)
 {
 	piom_server_t server = (piom_server_t) hid;
 	PIOM_LOGF("Tasklet function for [%s]\n", server->name);
-
+	
 	if(server->state == PIOM_SERVER_STATE_HALTED || server->state == PIOM_SERVER_STATE_NONE) {
           PIOM_LOGF("polling on a dead server\n");
           return;
@@ -806,9 +808,15 @@ void piom_manage_from_tasklet(unsigned long hid)
 /* call-back pour le timer */
 void piom_poll_timer(unsigned long hid)
 {
-	piom_server_t server = (piom_server_t) hid;
+	piom_server_t server = (piom_server_t) hid;        
+        if(server->state == PIOM_SERVER_STATE_HALTED){
+                return;
+        }
+        
+        
 #ifdef MARCEL
 	PIOM_LOGF("Timer function for [%s]\n", server->name);
+                
 	ma_tasklet_schedule(&server->poll_tasklet);
 #else
 	// TODO: lancement du polling
@@ -838,7 +846,7 @@ void __piom_check_polling(unsigned polling_point)
 		{
 			if (server->poll_points & polling_point) {
 				_piom_spin_lock_softirq(&piom_poll_lock);
-				ma_tasklet_schedule(&server->poll_tasklet);
+                                ma_tasklet_schedule(&server->poll_tasklet);
 				_piom_spin_unlock_softirq(&piom_poll_lock);
 			}
 		}
@@ -853,7 +861,7 @@ void __piom_check_polling(unsigned polling_point)
 void __piom_check_polling(unsigned polling_point)
 {
 #ifdef MARCEL
-	if( job_scheduled || list_empty(&piom_list_poll))
+        if( job_scheduled || list_empty(&piom_list_poll))
 		return;
 	if( ! _piom_spin_trylock_softirq(&piom_poll_lock))
 		return;
@@ -871,6 +879,7 @@ void __piom_check_polling(unsigned polling_point)
 #ifdef MARCEL		
 			job_scheduled=1;
 			scheduled++;
+                        
 			ma_tasklet_schedule(&server->poll_tasklet);
 #else
 			piom_check_polling_for(server);
@@ -881,16 +890,18 @@ void __piom_check_polling(unsigned polling_point)
 #ifdef MARCEL
 	if(!scheduled)
 	{
-		list_for_each_entry(server, &piom_list_poll, chain_poll) {
+                list_for_each_entry(server, &piom_list_poll, chain_poll) {
 			if(bak==server){
 				break;	
 			}
 			job_scheduled=1;
+                        
 			ma_tasklet_schedule(&server->poll_tasklet);
 			bak=server;			
 		}
 	}
-	_piom_spin_unlock_softirq(&piom_poll_lock);
+
+      	_piom_spin_unlock_softirq(&piom_poll_lock);
 #endif /* MARCEL */
 	PROF_OUT();
 }
@@ -960,6 +971,7 @@ void piom_poll_force(piom_server_t server)
 	 */
 	if (__piom_need_poll(server)) {
 #ifdef MARCEL
+                
 		ma_tasklet_schedule(&server->poll_tasklet);
 #else
 		piom_check_polling_for(server);
@@ -1423,7 +1435,7 @@ int piom_server_wait(piom_server_t server, piom_time_t timeout)
 	struct piom_wait wait;
 #ifdef MARCEL
 	marcel_task_t *lock;
-	lock = piom_ensure_lock_server(server);
+        lock = piom_ensure_lock_server(server);
 #endif				// MARCEL
 
 	piom_verify_server_state(server);
@@ -1463,7 +1475,7 @@ int piom_wait(piom_server_t server, piom_req_t req,
 
 #ifdef MARCEL
 	marcel_task_t *lock;
-	lock = piom_ensure_lock_server(server);
+        lock = piom_ensure_lock_server(server);
 #endif				// MARCEL
 
 	piom_verify_server_state(server);
@@ -1677,20 +1689,30 @@ int piom_server_stop(piom_server_t server)
         }
 
 #ifdef MARCEL
-	marcel_task_t *lock;
+        marcel_task_t *lock;
 	lock = piom_ensure_lock_server(server);
+	server->state = PIOM_SERVER_STATE_HALTED;
+        piom_restore_lock_server_locked(server, lock);
+        __piom_poll_stop(server);
+                
+        ma_tasklet_kill(&server->poll_tasklet);
+                
+	lock = piom_ensure_lock_server(server);
+        //_piom_spin_lock_softirq(&piom_poll_lock);
+	ma_tasklet_disable(&server->poll_tasklet);
+
 	/* peut être la solution d'un bug... */
-       	//lock = piom_ensure_trylock_from_tasklet(server);
+        //lock = piom_ensure_trylock_from_tasklet(server);
 #endif				//MARCEL
 
-	piom_verify_server_state(server);
-	server->state = PIOM_SERVER_STATE_HALTED;
+	//piom_verify_server_state(server);
+        //server->state= PIOM_SERVER_STATE_HALTED;
         PIOM_LOGF("server %p is stopped\n", server);
-
+                
 #ifdef PIOM_BLOCKING_CALLS
 /* arret des LWPs de comm */
 	piom_comm_lwp_t lwp;
-
+       
 	while(!list_empty(server->list_lwp_ready.next)){
 		char foo=42;
 		lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
@@ -1701,25 +1723,28 @@ int piom_server_stop(piom_server_t server)
 		lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 		write(lwp->fds[1], &foo, 1);
 	}
+
 #endif
 #ifndef ECANCELED
 #define ECANCELED EIO
 #endif
-	list_for_each_entry_safe(req, tmp,
+      
+        list_for_each_entry_safe(req, tmp,
 				 &server->list_req_registered,
 				 chain_req_registered) {
                 PIOM_LOGF("stopping req %p\n", req);
-		__piom_wake_req_waiters(server, req, -ECANCELED);
+                __piom_wake_req_waiters(server, req, -ECANCELED);
 		__piom_unregister_poll(server, req);
 		__piom_unregister(server, req);
 	}
 	__piom_wake_id_waiters(server, -ECANCELED);
-
+       
 #ifdef MARCEL
 	piom_restore_lock_server_locked(server, lock);
+	//_piom_spin_unlock_softirq(&piom_poll_lock);
+	ma_tasklet_enable(&server->poll_tasklet);
 #endif				//MARCEL
-
-	LOG_RETURN(0);
+        LOG_RETURN(0);
 
 	return 0;
 }

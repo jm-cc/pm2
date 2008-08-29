@@ -25,6 +25,7 @@
 
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
+#include "tbx_pointers.h"
 
 /** Type of a tree node */
 typedef struct marcel_memory_data_s {
@@ -63,8 +64,17 @@ typedef struct marcel_memory_space_s {
   struct marcel_memory_space_s *next;
 } marcel_memory_space_t;
 
+/** Memory migration cost from node to node */
+typedef struct marcel_memory_migration_cost_s {
+  int nbpages_min;
+  int nbpages_max;
+  int cost;
+} marcel_memory_migration_cost_t;
+  
 /** Memory manager */
 typedef struct marcel_memory_manager_s {
+  /** \brief Memory migration costs from all the nodes to all the nodes */
+  p_tbx_slist_t **migration_costs;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas */
@@ -143,6 +153,14 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
  */
 void ma_memory_print(marcel_memory_tree_t *memory_tree,
 		     int indent);
+
+
+/*
+ *
+ */
+void ma_memory_sampling_migration(p_tbx_slist_t *migration_cost,
+                                  int source,
+                                  int dest);
 
 #endif /* MARCEL_MAMI_ENABLED */
 

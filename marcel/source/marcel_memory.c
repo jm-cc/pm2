@@ -27,7 +27,7 @@ extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
 void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialpreallocatedpages) {
-  int node;
+  int node, dest;
 
   LOG_IN();
   memory_manager->root = NULL;
@@ -35,14 +35,60 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   memory_manager->pagesize = getpagesize();
   memory_manager->initialpreallocatedpages = initialpreallocatedpages;
 
+  // Preallocate memory on each node
   memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_space_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), node);
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
+  // Sampling the migration costs
+  memory_manager->migration_costs = (p_tbx_slist_t **) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    memory_manager->migration_costs[node] = (p_tbx_slist_t *) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
+    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+      mdebug_heap("Sampling memory migration from node #%d to node #%d\n", node, dest);
+      ma_memory_sampling_migration(&memory_manager->migration_costs[node][dest], node, dest);
+    }
+  }
+
+#ifdef PM2DEBUG
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+      p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
+      tbx_slist_ref_to_head(migration_costs);
+      do {
+        marcel_memory_migration_cost_t *object = NULL;
+        object = tbx_slist_ref_get(migration_costs);
+
+        mdebug_heap("[%d->%d] [%d:%d] %d\n", node, dest, object->nbpages_min, object->nbpages_max, object->cost);
+      } while (tbx_slist_ref_forward(migration_costs));
+    }
+  }
+#endif /* PM2DEBUG */
+
   LOG_OUT();
 }
+
+static size_t _next(size_t size) {
+  if (!size) return 512; else return size*4;
+}
+
+void ma_memory_sampling_migration(p_tbx_slist_t *migration_costs,
+                                  int source,
+                                  int dest) {
+  size_t size;
+
+  (*migration_costs) = tbx_slist_nil();
+  for(size=0 ; size<8192 ; size=_next(size)) {
+    marcel_memory_migration_cost_t *migration_cost = malloc(sizeof(marcel_memory_migration_cost_t));
+    migration_cost->nbpages_min = size;
+    migration_cost->nbpages_max = _next(size);
+    migration_cost->cost = 12;
+    tbx_slist_push(*migration_costs, migration_cost);
+  }
+}
+
 
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   int node;

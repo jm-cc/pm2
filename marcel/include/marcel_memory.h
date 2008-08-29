@@ -21,6 +21,8 @@
  */
 
 #section types
+#ifdef MARCEL_MAMI_ENABLED
+
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
 
@@ -75,7 +77,11 @@ typedef struct marcel_memory_manager_s {
   int initialpreallocatedpages;
 } marcel_memory_manager_t;
 
+#endif /* MARCEL_MAMI_ENABLED */
+
 #section marcel_functions
+#ifdef MARCEL_MAMI_ENABLED
+
 
 /*
  *
@@ -138,7 +144,11 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 void ma_memory_print(marcel_memory_tree_t *memory_tree,
 		     int indent);
 
+#endif /* MARCEL_MAMI_ENABLED */
+
 #section functions
+#ifdef MARCEL_MAMI_ENABLED
+
 
 /**
  * Initialises the memory manager.
@@ -203,5 +213,7 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);
+
+#endif /* MARCEL_MAMI_ENABLED */
 
 /* @} */

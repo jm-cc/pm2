@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifdef MARCEL_MAMI_ENABLED
+
 #include "marcel.h"
 #include <errno.h>
 #include <numaif.h>
@@ -22,7 +24,7 @@
 #include <string.h>
 
 extern long move_pages(int pid, unsigned long count,
-                void **pages, const int *nodes, int *status, int flags);
+                       void **pages, const int *nodes, int *status, int flags);
 
 void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialpreallocatedpages) {
   int node;
@@ -383,4 +385,4 @@ void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   LOG_OUT();
 }
 
-
+#endif /* MARCEL_MAMI_ENABLED */

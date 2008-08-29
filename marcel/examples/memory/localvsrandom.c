@@ -15,8 +15,8 @@
 
 #include "marcel.h"
 
-#if !defined(MARCEL_NUMA)
-#error This application needs NUMA to be enabled
+#if !defined(MARCEL_MAMI_ENABLED)
+#error This application needs MAMI to be enabled
 #else
 
 #define SIZE  100000

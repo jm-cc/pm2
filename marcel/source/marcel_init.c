@@ -218,6 +218,8 @@ void marcel_initialize(int* argc, char**argv)
 }
 #endif
 
+#ifdef MA__NUMA
+
 static void show_synthetic_topology_help(void)
 {
 	fprintf(stderr,
@@ -255,6 +257,9 @@ static int parse_synthetic_topology_description(const char *description) {
 	return (count > 0) ? 0 : 1;
 }
 
+#endif /* MA__NUMA */
+
+
 static void marcel_parse_cmdline_early(int *argc, char **argv,
     tbx_bool_t do_not_strip)
 {
@@ -360,6 +365,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 		} else
 #endif
 #endif
+#ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-synthetic-topology")) {
 			int err;
 			if (i == *argc - 1) {
@@ -377,6 +383,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 		} else
+#endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"
 			    "--marcel-top file		Dump a top-like output to file\n"

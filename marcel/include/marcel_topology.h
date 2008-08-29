@@ -508,6 +508,8 @@ extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
 /** \brief Direct access to levels, marcel_topo_levels[l = 0 .. marcel_topo_nblevels-1][0..marcel_topo_level_nbitems[l]] */
 extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 
+#ifdef MA__NUMA
+
 /** \brief A zero-terminated array describing a "synthetic" topology.  Each
 		integer denotes the number of children attached to a each node of the
 		corresponding topology level.  For example, { 2, 4, 2, 0 } denotes a
@@ -518,6 +520,14 @@ extern TBX_EXTERN unsigned ma_synthetic_topology_description[];
 		described by `ma_synthetic_topology_description' instead of the actual
 		host topology.  Only has an effect at startup-time.  */
 extern TBX_EXTERN tbx_bool_t ma_use_synthetic_topology;
+
+#else /* !MA__NUMA */
+
+/* Support for synthetic topologies requires `MA__NUMA'.  */
+# define ma_use_synthetic_topology  0
+
+#endif /* MA__NUMA */
+
 
 #section functions
 /** \brief indexes into ::marcel_topo_levels, but available from application */

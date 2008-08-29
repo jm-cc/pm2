@@ -106,8 +106,10 @@ struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 
 /* Support for synthetic topologies.  */
 
+#ifdef MA__NUMA
 unsigned   ma_synthetic_topology_description[MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH];
 tbx_bool_t ma_use_synthetic_topology = tbx_false;
+#endif
 
 
 
@@ -1498,6 +1500,8 @@ void ma_topo_exit(void) {
 }
 
 
+#ifdef MA__NUMA
+
 /* Synthetic or "fake" topology creation, for testing purposes.
 
 	 Uses the `synth_' name space, except for global variables.  */
@@ -1706,6 +1710,8 @@ synth_install_topology (void) {
 	topology = synth_make_simple_topology(ma_synthetic_topology_description);
 }
 
+#endif /* MA__NUMA */
+
 
 /* Topology initialization.  */
 
@@ -1713,8 +1719,10 @@ static void
 initialize_topology(void) {
 	if (!ma_use_synthetic_topology)
 		topo_discover();
+#ifdef MA__NUMA
 	else
 		synth_install_topology();
+#endif
 
 	/* Now we can set VP levels for main LWP */
 	ma_init_lwp_vpnum(0, &__main_lwp);

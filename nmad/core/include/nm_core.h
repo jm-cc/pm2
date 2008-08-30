@@ -35,7 +35,7 @@
  *  made of basic communication flows operations such as packet
  *  merging or reordering.
  *  More information on NewMadeleine can be
- *  found at http://runtime.futurs.inria.fr/newmadeleine/.
+ *  found at http://runtime.bordeaux.inria.fr/newmadeleine/.
  * </div>
  *
  * \section user_apis User APIs

@@ -31,7 +31,7 @@
  * number of threads and to efficiently exploit hierarchical
  * architectures (e.g. multi-core chips, NUMA machines).</P>
  * <P>More information about Marcel can be found at
- *  found at http://runtime.futurs.inria.fr/marcel/.</P>
+ *  found at http://runtime.bordeaux.inria.fr/marcel/.</P>
  * </div>
  */
 

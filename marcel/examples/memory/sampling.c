@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #define LOOPS 1000
 
@@ -46,7 +47,7 @@ static void migrate(void **pageaddrs, int pages, int *nodes, int *status) {
   }
 }
 
-static void sampling(unsigned long source, unsigned long dest, int pages, unsigned long maxnode, unsigned long pagesize) {
+static void sampling(unsigned long source, unsigned long dest, int pages, unsigned long maxnode, unsigned long pagesize, FILE *f) {
   void *buffer;
   void **pageaddrs;
   unsigned long nodemask;
@@ -111,32 +112,67 @@ static void sampling(unsigned long source, unsigned long dest, int pages, unsign
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
-  ns /= LOOPS;
+  ns /= (LOOPS * 2);
+  fprintf(f, "%d\t%d\t%d\t%ld\n", source, dest, pages, ns);
   printf("%d\t%d\t%d\t%ld\n", source, dest, pages, ns);
+}
+
+static void get_filename(char *filename) {
+  char directory[1024];
+  char hostname[1024];
+  int rc = 0;
+  const char* pm2_conf_dir;
+
+  if (gethostname(hostname, 1023) < 0) {
+    perror("gethostname");
+    exit(1);
+  }
+  pm2_conf_dir = getenv("PM2_CONF_DIR");
+  if (pm2_conf_dir) {
+    rc = snprintf(directory, 1024, "%s/marcel", pm2_conf_dir);
+  }
+  else {
+    const char* home = getenv("PM2_HOME");
+    if (!home) {
+      home = getenv("HOME");
+    }
+    assert(home != NULL);
+    rc = snprintf(filename, 1024, "%s/.pm2/marcel", home);
+  }
+  assert(rc < 1024);
+  snprintf(filename, 1024, "%s/sampling_%s.txt", directory, hostname);
+  assert(rc < 1024);
+  printf("File %s\n", filename);
+
+  mkdir(directory, 0755);
 }
 
 int main(int argc, char **argv) {
   unsigned long pagesize;
   unsigned long maxnode;
   unsigned long source, dest;
+  char filename[1024];
+  FILE *out;
+  int nbpages[] = { 10, 50, 100, 500, 1000, 5000, -1 };
 
   pagesize = getpagesize();
   maxnode = numa_max_node()+1;
 
-  printf("Source\tDest\tNb_pages\tMigration_Time\n");
+  get_filename(filename);
+  out = fopen(filename, "w");
+  fprintf(out, "Source\tDest\tNb_pages\tMigration_Time\n");
 
   for(source=0; source<maxnode ; source++) {
     for(dest=0; dest<maxnode ; dest++) {
+      int *pages = nbpages;
 
-      if (source == dest) continue;
+      if (source >= dest) continue;
 
-      sampling(source, dest, 10, maxnode, pagesize);
-      sampling(source, dest, 50, maxnode, pagesize);
-      sampling(source, dest, 100, maxnode, pagesize);
-      sampling(source, dest, 500, maxnode, pagesize);
-      sampling(source, dest, 1000, maxnode, pagesize);
-      sampling(source, dest, 5000, maxnode, pagesize);
-
+      while (*pages != -1) {
+        sampling(source, dest, *pages, maxnode, pagesize, out);
+        pages ++;
+      }
     }
   }
+  fclose(out);
 }

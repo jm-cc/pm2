@@ -166,7 +166,7 @@ void ma_memory_sampling_get_filename(char *filename) {
   mkdir(directory, 0755);
 }
 
-void marcel_memory_sampling_cost_migration() {
+void marcel_memory_sampling_migration_cost() {
   unsigned long pagesize;
   unsigned long maxnode;
   unsigned long source, dest;

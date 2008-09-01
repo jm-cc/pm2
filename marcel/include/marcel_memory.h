@@ -246,6 +246,11 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   size_t size,
                                   unsigned long *cost);
 
+/**
+ *
+ */
+void marcel_memory_sampling_cost_migration();
+
 #endif /* MARCEL_MAMI_ENABLED */
 
 /* @} */

@@ -61,7 +61,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
         marcel_memory_migration_cost_t *object = NULL;
         object = tbx_slist_ref_get(migration_costs);
 
-        mdebug_heap("[%d->%d] [%d:%d] %d\n", node, dest, object->nbpages_min, object->nbpages_max, object->cost);
+        mdebug_heap("[%d->%d] [%d:%d] %ld\n", node, dest, object->nbpages_min, object->nbpages_max, object->cost);
       } while (tbx_slist_ref_forward(migration_costs));
     }
   }

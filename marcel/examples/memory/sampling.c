@@ -20,6 +20,6 @@
 #endif
 
 int main(int argc, char **argv) {
-  marcel_memory_sampling_cost_migration();
+  marcel_memory_sampling_migration_cost();
 }
 

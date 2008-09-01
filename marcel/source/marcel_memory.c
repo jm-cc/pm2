@@ -453,7 +453,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int source,
                                   int dest,
                                   size_t size,
-                                  int *cost) {
+                                  unsigned long *cost) {
   p_tbx_slist_t migration_costs;
 
   LOG_IN();

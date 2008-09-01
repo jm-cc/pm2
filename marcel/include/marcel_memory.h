@@ -68,7 +68,7 @@ typedef struct marcel_memory_space_s {
 typedef struct marcel_memory_migration_cost_s {
   int nbpages_min;
   int nbpages_max;
-  int cost;
+  unsigned long cost;
 } marcel_memory_migration_cost_t;
   
 /** Memory manager */
@@ -244,7 +244,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int source,
                                   int dest,
                                   size_t size,
-                                  int *cost);
+                                  unsigned long *cost);
 
 #endif /* MARCEL_MAMI_ENABLED */
 

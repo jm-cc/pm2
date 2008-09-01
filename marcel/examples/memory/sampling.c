@@ -13,7 +13,7 @@
 
 #define LOOPS 1000
 
-static void check_location(void **pageaddrs, int pages, int node) {
+void ma_memory_sampling_check_location(void **pageaddrs, int pages, int node) {
   int *pagenodes;
   int i;
   int err;
@@ -34,7 +34,7 @@ static void check_location(void **pageaddrs, int pages, int node) {
   free(pagenodes);
 }
 
-static void migrate(void **pageaddrs, int pages, int *nodes, int *status) {
+void ma_memory_sampling_migrate(void **pageaddrs, int pages, int *nodes, int *status) {
   int err;
 
   //printf("binding on numa node #%d\n", nodes[0]);
@@ -47,7 +47,7 @@ static void migrate(void **pageaddrs, int pages, int *nodes, int *status) {
   }
 }
 
-static void sampling(unsigned long source, unsigned long dest, int pages, unsigned long maxnode, unsigned long pagesize, FILE *f) {
+void ma_memory_sampling(unsigned long source, unsigned long dest, int pages, unsigned long maxnode, unsigned long pagesize, FILE *f) {
   void *buffer;
   void **pageaddrs;
   unsigned long nodemask;
@@ -80,7 +80,7 @@ static void sampling(unsigned long source, unsigned long dest, int pages, unsign
   memset(buffer, 0, pages*pagesize);
 
   // Check the location of the pages
-  check_location(pageaddrs, pages, source);
+  ma_memory_sampling_check_location(pageaddrs, pages, source);
 
   // Move all the pages on node dest
   status = malloc(pages * sizeof(int));
@@ -91,10 +91,10 @@ static void sampling(unsigned long source, unsigned long dest, int pages, unsign
 
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<LOOPS ; i++) {
-    migrate(pageaddrs, pages, dests, status);
-    migrate(pageaddrs, pages, sources, status);
+    ma_memory_sampling_migrate(pageaddrs, pages, dests, status);
+    ma_memory_sampling_migrate(pageaddrs, pages, sources, status);
   }
-  migrate(pageaddrs, pages, dests, status);
+  ma_memory_sampling_migrate(pageaddrs, pages, dests, status);
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
@@ -117,7 +117,7 @@ static void sampling(unsigned long source, unsigned long dest, int pages, unsign
   printf("%d\t%d\t%d\t%ld\n", source, dest, pages, ns);
 }
 
-static void get_filename(char *filename) {
+void ma_memory_sampling_get_filename(char *filename) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;
@@ -147,7 +147,7 @@ static void get_filename(char *filename) {
   mkdir(directory, 0755);
 }
 
-int main(int argc, char **argv) {
+void marcel_memory_sampling() {
   unsigned long pagesize;
   unsigned long maxnode;
   unsigned long source, dest;
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   pagesize = getpagesize();
   maxnode = numa_max_node()+1;
 
-  get_filename(filename);
+  ma_memory_sampling_get_filename(filename);
   out = fopen(filename, "w");
   fprintf(out, "Source\tDest\tNb_pages\tMigration_Time\n");
 
@@ -169,10 +169,14 @@ int main(int argc, char **argv) {
       if (source >= dest) continue;
 
       while (*pages != -1) {
-        sampling(source, dest, *pages, maxnode, pagesize, out);
+        ma_memory_sampling(source, dest, *pages, maxnode, pagesize, out);
         pages ++;
       }
     }
   }
   fclose(out);
+}
+
+int main(int argc, char **argv) {
+  marcel_memory_sampling();
 }

@@ -89,9 +89,19 @@ void ma_memory_sampling_migration(p_tbx_slist_t *migration_costs,
   }
 }
 
+void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
+  
+  while (tbx_slist_is_nil(migration_costs) == tbx_false) {
+    marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
+    free(ptr);
+  }
+  tbx_slist_clear(migration_costs);
+  //tbx_slist_free(migration_costs);
+}
+
 
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
-  int node;
+  int node, dest;
 
   LOG_IN();
 
@@ -99,6 +109,14 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
   }
   free(memory_manager->heaps);
+
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+      ma_memory_sampling_free(memory_manager->migration_costs[node][dest]);
+    }
+    free(memory_manager->migration_costs[node]);
+  }
+  free(memory_manager->migration_costs);
 
   LOG_OUT();
 }
@@ -430,5 +448,29 @@ void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   mdebug_heap("******************** TREE END *********************************\n");
   LOG_OUT();
 }
+
+void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
+                                  int source,
+                                  int dest,
+                                  size_t size,
+                                  int *cost) {
+  p_tbx_slist_t migration_costs;
+
+  LOG_IN();
+  *cost = -1;
+  migration_costs = memory_manager->migration_costs[source][dest];
+  tbx_slist_ref_to_head(migration_costs);
+  do {
+    marcel_memory_migration_cost_t *object = NULL;
+    object = tbx_slist_ref_get(migration_costs);
+
+    if (size >= object->nbpages_min && size <= object->nbpages_max) {
+      *cost = object->cost;
+      break;
+    }
+  } while (tbx_slist_ref_forward(migration_costs));
+  LOG_OUT();
+}
+
 
 #endif /* MARCEL_MAMI_ENABLED */

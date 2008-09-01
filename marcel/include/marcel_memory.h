@@ -232,6 +232,20 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
  */
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);
 
+/**
+ * Indicates the migration cost for SIZE bits from node SOURCE to node DEST.
+ * @param memory_manager pointer to the memory manager
+ * @param source source node
+ * @param dest destination node
+ * @param size how many bits do we want to migrate
+ * @param cost estimated cost of the migration
+ */
+void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
+                                  int source,
+                                  int dest,
+                                  size_t size,
+                                  int *cost);
+
 #endif /* MARCEL_MAMI_ENABLED */
 
 /* @} */

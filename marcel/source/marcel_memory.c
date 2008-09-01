@@ -96,7 +96,7 @@ void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
     free(ptr);
   }
   tbx_slist_clear(migration_costs);
-  //tbx_slist_free(migration_costs);
+  tbx_slist_free(migration_costs);
 }
 
 

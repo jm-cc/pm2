@@ -1641,7 +1641,7 @@ synth_allocate_topology_levels(const unsigned *topology) {
 		mdebug("synthetic topology: creating level %u with breadth %u (%u children per father)\n",
 					 marcel_topo_nblevels, total_level_breadth, *level_breadth);
 		marcel_topo_levels[level] =
-			TBX_CALLOC(count, sizeof(marcel_topo_levels[0][0]));
+			__marcel_malloc(count * sizeof(marcel_topo_levels[0][0]));
 
 		MA_BUG_ON(marcel_topo_levels[level] == NULL);
 

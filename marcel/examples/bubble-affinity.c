@@ -32,6 +32,9 @@
 # error "You need bubble scheduling support for this test."
 #endif
 
+#ifndef MA__NUMA
+# error "Synthetic topology support depends on NUMA support."
+#endif
 
 
 /* Topology pretty printing.  */

@@ -1,0 +1,16 @@
+/build
+autogen-include
+*.o
+*.a
+*.so
+a.out
+TAGS
+cscope.out
+cscope.files
+core
+core.[0-9]*
+vgcore.[0-9]*
+*~
+,*
+[0-9][0-9].incl
+[0-9][0-9].excl

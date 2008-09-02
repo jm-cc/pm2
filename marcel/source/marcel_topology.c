@@ -1629,12 +1629,19 @@ synth_allocate_topology_levels(const unsigned *topology) {
 	for (level = 1, level_breadth = topology, total_level_breadth = 1;
 			 *level_breadth > 0;
 			 level++, level_breadth++) {
+		unsigned count;
+
 		total_level_breadth *= *level_breadth;
+
+		count = total_level_breadth + 1;
+		if (*(level_breadth + 1) == 0)
+			/* Things like `for_all_vp ()' except that many elements.  */
+			count += MARCEL_NBMAXVPSUP;
 
 		mdebug("synthetic topology: creating level %u with breadth %u (%u children per father)\n",
 					 marcel_topo_nblevels, total_level_breadth, *level_breadth);
 		marcel_topo_levels[level] =
-			TBX_CALLOC(total_level_breadth + 1, sizeof(marcel_topo_levels[0][0]));
+			TBX_CALLOC(count, sizeof(marcel_topo_levels[0][0]));
 
 		MA_BUG_ON(marcel_topo_levels[level] == NULL);
 
@@ -1692,7 +1699,7 @@ synth_make_simple_topology(const unsigned *topology_description) {
 
 	/* Initialize information associated with VPs.  */
 	for (vp = &marcel_topo_vp_level[0];
-			 vp < &marcel_topo_vp_level[ma__nb_vp];
+			 vp < &marcel_topo_vp_level[ma__nb_vp + MARCEL_NBMAXVPSUP];
 			 vp++)
 		vp->vpdata =
 			(struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&vp->vpdata);

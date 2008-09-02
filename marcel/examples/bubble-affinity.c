@@ -37,22 +37,68 @@
 #endif
 
 
+/* Logging.  */
+
+/* The stream where verbose debugging output should be sent.  */
+static FILE *verbose_output = NULL;
+
+
+static void
+indent (FILE *out, unsigned count)
+{
+	unsigned i;
+
+	for (i = 0; i < count; i++)
+		fprintf (out, " ");
+}
+
+static void level_log (FILE *, const struct marcel_topo_level *,
+											 const char *, ...)
+#ifdef __GNUC__
+	__attribute__ ((__format__ (__printf__, 3, 4)))
+#endif
+	;
+
+/* A nice level-sensitive logging facility.  */
+static void
+level_log (FILE *out, const struct marcel_topo_level *level,
+					 const char *format, ...)
+{
+	va_list args;
+	char prefix[50];
+	char *long_format;
+
+	if (out == NULL)
+		return;
+
+	indent (out, level->level * 3);
+
+	snprintf (prefix, sizeof (prefix), "[%2u] ", level->number);
+	long_format = alloca (strlen (format) + strlen (prefix) + 2);
+	strcpy (long_format, prefix);
+	strcat (long_format, format);
+	strcat (long_format, "\n");
+
+	va_start (args, format);
+	vfprintf (out, long_format, args);
+	va_end (args);
+}
+
+
 /* Topology pretty printing.  */
 
 /* Print the topology rooted at LEVEL to OUTPUT in a human-readable way.  */
 static void
 print_topology (struct marcel_topo_level *level, FILE *output,
-								unsigned indent)
+								unsigned indent_level)
 {
   unsigned i;
 
-  for (i = 0; i < indent; i++)
-    fprintf (output, " ");
-
+	indent (output, indent_level);
   marcel_print_level (level, output, 1, 0, " ", "#", ":", "");
 
   for (i = 0; i < level->arity; i++)
-    print_topology (level->children[i], output, indent + 2);
+    print_topology (level->children[i], output, indent_level + 2);
 }
 
 
@@ -82,7 +128,8 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 					marcel_attr_init (&attr);
 					marcel_attr_setinitbubble (&attr, bubble);
 
-					printf ("creating %u threads\n", *level_breadth);
+					if (verbose_output)
+						printf ("creating %u threads\n", *level_breadth);
 
 					/* We must account for the main thread, hence "-1" below.  */
 					for (i = 0; i < *level_breadth - 1; i++)
@@ -96,7 +143,9 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 					/* Creating child bubbles.  */
 					marcel_bubble_t *child;
 
-					printf ("creating %u bubbles\n", *level_breadth);
+					if (verbose_output)
+						printf ("creating %u bubbles\n", *level_breadth);
+
 					for (i = 0; i < *level_breadth; i++)
 						{
 							child = malloc (sizeof (*child));
@@ -148,44 +197,6 @@ struct tree_item
 typedef struct tree_item tree_t;
 
 
-static void
-indent (FILE *out, unsigned count)
-{
-	unsigned i;
-
-	for (i = 0; i < count; i++)
-		fprintf (out, " ");
-}
-
-static void level_log (FILE *, const struct marcel_topo_level *,
-											 const char *, ...)
-#ifdef __GNUC__
-	__attribute__ ((__format__ (__printf__, 3, 4)))
-#endif
-	;
-
-/* A nice level-sensitive logging facility.  */
-static void
-level_log (FILE *out, const struct marcel_topo_level *level,
-					 const char *format, ...)
-{
-	va_list args;
-	char prefix[50];
-	char *long_format;
-
-	indent (out, level->level * 3);
-
-	snprintf (prefix, sizeof (prefix), "[%2u] ", level->number);
-	long_format = alloca (strlen (format) + strlen (prefix) + 2);
-	strcpy (long_format, prefix);
-	strcat (long_format, format);
-	strcat (long_format, "\n");
-
-	va_start (args, format);
-	vfprintf (out, long_format, args);
-	va_end (args);
-}
-
 /* Return true (non-zero) if the distribution of scheduling entities (threads
    and bubbles) rooted at LEVEL matches EXPECTED.  */
 static int
@@ -216,13 +227,13 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
       entities++;
     }
 
-  level_log (stdout, level, "%u entities (expected %u)",
+  level_log (verbose_output, level, "%u entities (expected %u)",
 						 entities, expected->entity_count);
   if (entities != expected->entity_count)
     return 0;
 
   /* Make sure children match, recursively.  */
-  level_log (stdout, level, "%u children (expected %u)",
+  level_log (verbose_output, level, "%u children (expected %u)",
 						 level->arity, expected->children_count);
   if (expected->children_count != level->arity)
     return 0;
@@ -281,9 +292,15 @@ main (int argc, char *argv[])
 #undef BUBBLE
 
 
-  int ret;
+  int ret, i;
   char **new_argv;
   marcel_bubble_t *root_bubble;
+
+	for (i = 1; i < argc; i++)
+		{
+			if (!strcmp ("--verbose", argv[i]))
+				verbose_output = stdout;
+		}
 
   /* Pass the topology description to Marcel.  Yes, it looks hackish to
      communicate with the library via command-line arguments.  */
@@ -298,8 +315,10 @@ main (int argc, char *argv[])
 		 TOPOLOGY_DESCRIPTION.  */
   marcel_init (&argc, new_argv);
 
-  print_topology (&marcel_machine_level[0], stdout, 0);
+	if (verbose_output)
+		print_topology (&marcel_machine_level[0], stdout, 0);
 
+	/* Create a bubble hierarchy.  */
   root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description);
 
   marcel_bubble_sched_begin ();

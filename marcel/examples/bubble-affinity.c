@@ -105,13 +105,21 @@ print_topology (struct marcel_topo_level *level, FILE *output,
 /* Bubble hierarchies.  */
 
 static void *
-phony_thread_entry_point (void *unused)
+phony_thread_entry_point (void *arg)
 {
-  while (1);
+	ma_atomic_t *exit_signal;
+
+	/* We have to poll here rather than wait on a condition variable or a
+		 barrier to make sure that the thread remains on a runqueue.  */
+	exit_signal = (ma_atomic_t *) arg;
+	while (!ma_atomic_read (exit_signal));
+
+	return NULL;
 }
 
 static void
-populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadth)
+populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadth,
+													 ma_atomic_t *thread_exit_signal)
 {
   unsigned i;
 
@@ -135,8 +143,8 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 					for (i = 0; i < *level_breadth - 1; i++)
 						/* Note: We can't use `dontsched' since THREAD would not appear
 							 on the runqueue.  */
-						marcel_create (&thread, &attr,
-													 phony_thread_entry_point, NULL);
+						marcel_create (&thread, &attr, phony_thread_entry_point,
+													 (void *) thread_exit_signal);
 				}
       else
 				{
@@ -155,7 +163,8 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 									marcel_bubble_insertbubble (bubble, child);
 
 									/* Recurse into CHILD.  */
-									populate_bubble_hierarchy (child, level_breadth + 1);
+									populate_bubble_hierarchy (child, level_breadth + 1,
+																						 thread_exit_signal);
 								}
 							else
 								abort ();
@@ -165,11 +174,14 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 }
 
 /* Create a simple bubble hierarchy according to LEVEL_BREADTH.  As a
-   side-effect, update `marcel_root_bubble'.  */
+   side-effect, update `marcel_root_bubble'.  All newly created threads will
+   poll *THREAD_EXIT_SIGNAL and exit when it's non-zero.  */
 static marcel_bubble_t *
-make_simple_bubble_hierarchy (const unsigned *level_breadth)
+make_simple_bubble_hierarchy (const unsigned *level_breadth,
+															ma_atomic_t *thread_exit_signal)
 {
-  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth);
+  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth,
+														 thread_exit_signal);
 
   return &marcel_root_bubble;
 }
@@ -295,6 +307,7 @@ main (int argc, char *argv[])
   int ret, i;
   char **new_argv;
   marcel_bubble_t *root_bubble;
+	ma_atomic_t thread_exit_signal;
 
 	for (i = 1; i < argc; i++)
 		{
@@ -318,8 +331,14 @@ main (int argc, char *argv[])
 	if (verbose_output)
 		print_topology (&marcel_machine_level[0], stdout, 0);
 
+ 	/* Before creating any threads, initialize the variable that they'll
+ 		 poll.  */
+ 	ma_atomic_init (&thread_exit_signal, 0);
+
 	/* Create a bubble hierarchy.  */
-  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description);
+  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
+																							&thread_exit_signal);
+
 
   marcel_bubble_sched_begin ();
 
@@ -342,6 +361,11 @@ main (int argc, char *argv[])
     }
   else
     printf ("FAIL: Affinity did not accept scheduling submission\n");
+
+	/* Tell threads to leave.  */
+	ma_atomic_inc (&thread_exit_signal);
+
+	marcel_end ();
 
   return ret;
 }

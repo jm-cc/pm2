@@ -324,7 +324,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS > MARCEL_NBMAXCPUS);
 
 	/* convert into a set */
-	for(i=0; i<MAX_KERNEL_CPU_MASK*KERNEL_CPU_MASK_BITS && i<marcel_nbvps(); i++)
+	for(i=0; i<MAX_KERNEL_CPU_MASK*KERNEL_CPU_MASK_BITS && i<MARCEL_NBMAXCPUS; i++)
 		if (maps[i/KERNEL_CPU_MASK_BITS] & 1<<(i%KERNEL_CPU_MASK_BITS))
 			marcel_vpset_set(set, i);
 
@@ -771,7 +771,7 @@ static void __marcel_init look_sysfsnode(void) {
 		ma_topo_set_os_numbers(&node_level[i], node, i);
 
 		node_level[i].cpuset = cpuset;
-		for(j=0;j<marcel_nbvps();j++)
+		for(j=0;j<MARCEL_NBMAXCPUS;j++)
 			if (marcel_vpset_isset(&cpuset, j))
 				ma_vp_node[j] = i;
 

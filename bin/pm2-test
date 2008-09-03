@@ -79,6 +79,7 @@ do_the_test()
 
     # Compilation
     echo "Compiling program $prog..."
+    CC=${CC:-$(pm2-config --flavor=$flavor --cc)}
     (cd $appdir && ${PM2_MAKE:-make} "CC=$CC" $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
     [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 

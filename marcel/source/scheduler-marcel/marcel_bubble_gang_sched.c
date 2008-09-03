@@ -132,7 +132,7 @@ marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
 }
 
 static int gang_sched_init() {
-	ma_init_rq(&ma_gang_rq, "gang", MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_gang_rq, "gang");
 	return 0;
 }
 

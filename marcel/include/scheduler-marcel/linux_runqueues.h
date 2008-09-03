@@ -94,27 +94,6 @@ struct prio_array {
 #section marcel_types
 typedef struct prio_array ma_prio_array_t;
 
-#section types
-/** \brief Type of runqueue (machine, node, processor, ...) */
-enum ma_rq_type {
-	MA_DONTSCHED_RQ,
-	MA_MACHINE_RQ,
-#ifdef MA__LWPS
-#ifdef MA__NUMA
-	MA_FAKE_RQ,
-	MA_NODE_RQ,
-	MA_DIE_RQ,
-	MA_L3_RQ,
-	MA_L2_RQ,
-	MA_CORE_RQ,
-	MA_L1_RQ,
-	MA_PROC_RQ,
-#endif
-	MA_VP_RQ,
-	MA_LWP_RQ,
-#endif
-};
-
 #section marcel_structures
 #depend "[types]"
 #depend "marcel_topology.h[types]"
@@ -156,8 +135,6 @@ struct ma_runqueue {
 	/** \brief Vpset of the runqueue */
 	marcel_vpset_t vpset;
 #endif
-	/** \brief Type of the runqueue */
-	enum ma_rq_type type;
 	/** \brief Corresponding topo-level */
 	struct marcel_topo_level *topolevel;
 
@@ -308,6 +285,6 @@ static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 #endif
 
 #section marcel_functions
-extern void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type);
+extern void ma_init_rq(ma_runqueue_t *rq, char *name);
 
 /* @} */

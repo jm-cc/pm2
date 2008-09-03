@@ -23,7 +23,7 @@
 
 ma_runqueue_t ma_dontsched_runqueue;
 
-void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
+void ma_init_rq(ma_runqueue_t *rq, char *name)
 {
 	int j, k;
 	ma_prio_array_t *array;
@@ -47,7 +47,7 @@ void ma_init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 	// level set by topology
 	// cpuset set by topology
 #endif
-	rq->type = type;
+	rq->topolevel = NULL; /* will be set by the caller if needed */
 
 	LOG_OUT();
 }

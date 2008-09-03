@@ -1282,7 +1282,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq = ma_lwp_rq(lwp);
 	snprintf(name,sizeof(name),"lwp%d",num);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
-	ma_init_rq(rq, name, MA_LWP_RQ);
+	ma_init_rq(rq, name);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
 	if (num == -1)
 		/* "extra" LWPs are apart */
@@ -1297,15 +1297,15 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	if (rq->father)
 		mdebug("runqueue %s has father %s\n",name,rq->father->name);
 	snprintf(name,sizeof(name),"dontsched%d",num);
-	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
-       marcel_vpset_zero(&(rq->vpset));
-       marcel_vpset_zero(&(ma_per_lwp(dontsched_runqueue,lwp).vpset));
+	marcel_vpset_zero(&(rq->vpset));
+	marcel_vpset_zero(&(ma_per_lwp(dontsched_runqueue,lwp).vpset));
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
 		rq = &marcel_topo_vp_level[num].rq;
-		ma_init_rq(rq, name, MA_VP_RQ);
+		ma_init_rq(rq, name);
 		rq->level = marcel_topo_nblevels-1;
 		rq->father = NULL;
 		marcel_vpset_vp(&rq->vpset, num);
@@ -1342,19 +1342,6 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 	unsigned i;
 	char name[16];
 	ma_runqueue_t *newrq;
-	static const enum ma_rq_type rqtypes[] = {
-#ifdef MA__NUMA
-		[MARCEL_LEVEL_FAKE]	= MA_FAKE_RQ,
-		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
-		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
-		[MARCEL_LEVEL_L3]	= MA_L3_RQ,
-		[MARCEL_LEVEL_L2]	= MA_L2_RQ,
-		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
-		[MARCEL_LEVEL_L1]	= MA_L1_RQ,
-		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
-#endif /* MA__NUMA */
-		[MARCEL_LEVEL_VP]	= MA_VP_RQ,
-	};
 
 	if (!level->arity || level->type == MARCEL_LEVEL_LAST) {
 		return;
@@ -1371,8 +1358,8 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 				 marcel_topo_level_string(level->children[i]->type),
 				 level->children[i]->number);
 		newrq = &level->children[i]->rq;
+		ma_init_rq(newrq, name);
 		rq->topolevel = level;
-		ma_init_rq(newrq, name, rqtypes[level->children[i]->type]);
 		newrq->level = levelnum;
 		newrq->father = rq;
 		newrq->vpset = level->children[i]->vpset;
@@ -1385,12 +1372,12 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 
 void __marcel_init ma_linux_sched_init0(void)
 {
+	ma_init_rq(&ma_main_runqueue,"machine");
 	ma_main_runqueue.topolevel = marcel_machine_level;
-	ma_init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
 #endif
-	ma_init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
+	ma_init_rq(&ma_dontsched_runqueue,"dontsched");
 #ifdef MA__LWPS
 	marcel_vpset_zero(&ma_main_runqueue.vpset);
 	marcel_vpset_zero(&ma_dontsched_runqueue.vpset);

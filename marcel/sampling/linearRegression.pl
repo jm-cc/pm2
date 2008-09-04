@@ -54,6 +54,16 @@ sub linearRegression {
     return ($a, $b, $r);
 }
 
+sub help {
+    print "Syntax: linearRegression.pl [<hostname>] [-file <sampling filename>] \n";
+    print "            [-min minimum value for the x coordinates] [-max maximum value for the x coordinates]\n";
+    print "            [-graphics] [-nodumb]\n";
+    print "  Performs a linear regression for the cost of the memory migration on hostname\n";
+    print "  with:\n";
+    print "      -graphics displays the plot for the sampling result (by default does not display the plot)\n";
+    print "      -nodumb   displays the plot in graphical mode (by default in dumb mode)\n";
+    exit;
+}
 # Main program
 # Linear regression to exhibit a cost model y = a*x + b.
 #      x = number of pages,
@@ -74,7 +84,10 @@ my $x_max = 100000;          # Maximum size for the x coordinates
 
 # Read the command-line parameters
 for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
-    if ($ARGV[$i] eq "-min") {
+    if ($ARGV[$i] eq "-help") {
+        help();
+    }
+    elsif ($ARGV[$i] eq "-min") {
 	$x_min=$ARGV[$i+1];
 	$i++;
     }

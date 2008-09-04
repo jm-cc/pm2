@@ -1063,6 +1063,10 @@ static void look_cpu(void) {
 #  ifdef MA__NUMA
 /* split arity into nbsublevels of size sublevelarity */
 static void split(unsigned arity, unsigned * __restrict sublevelarity, unsigned * __restrict nbsublevels) {
+	if(!arity){
+		*sublevelarity = *nbsublevels = 0;
+		return;
+	}
 	*sublevelarity = sqrt(arity);
 	*nbsublevels = (arity + *sublevelarity-1) / *sublevelarity;
 	if (*nbsublevels > marcel_topo_max_arity) {

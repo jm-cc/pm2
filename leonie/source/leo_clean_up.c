@@ -874,13 +874,13 @@ wait_processes(p_leonie_t leonie)
       }
 
       if (WIFEXITED(status)) {
-	DISP("%d : termine, code=%d\n", ret, WEXITSTATUS(status));
+	TRACE("%d : termine, code=%d\n", ret, WEXITSTATUS(status));
       } else if (WIFSIGNALED(status)) {
-	DISP("%d : tue par le signal %d", ret, WTERMSIG(status));
+	TRACE("%d : tue par le signal %d", ret, WTERMSIG(status));
       } else if (WIFSTOPPED(status)) {
-	DISP("%d : arrete par le signal %d", ret, WSTOPSIG(status));
+	TRACE("%d : arrete par le signal %d", ret, WSTOPSIG(status));
       } else if (WIFCONTINUED(status)) {
-	DISP("%d : relance", ret);
+	TRACE("%d : relance", ret);
       }
 
       nb_clientsl++;

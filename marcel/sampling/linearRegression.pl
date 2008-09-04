@@ -55,10 +55,6 @@ sub linearRegression {
 }
 
 # Main program
-my $hostname=$ARGV[0];
-my $maxnode=$ARGV[1];
-if ($maxnode eq "") { die "Missing argument\n"; }
-
 # Linear regression to exhibit a cost model y = a*x + b.
 #      x = number of pages,
 #      y = migration cost.
@@ -66,6 +62,40 @@ if ($maxnode eq "") { die "Missing argument\n"; }
 # [source][dest] of the x (resp. y) matrix will contain all the x
 # (resp. y) values for the sampling done between the nodes source and
 # dest.
+
+# Set the default parameters
+my $maxnode=10;
+my $graphics = 0;
+my $dumb = 1;
+my $filename = "";
+my $hostname = "";
+my $x_min = 0;               # Minimum size for the x coordinates
+my $x_max = 100000;          # Maximum size for the x coordinates
+
+# Read the command-line parameters
+for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
+    if ($ARGV[$i] eq "-min") {
+	$x_min=$ARGV[$i+1];
+	$i++;
+    }
+    elsif ($ARGV[$i] eq "-max") {
+	$x_max=$ARGV[$i+1];
+	$i++;
+    }
+    elsif ($ARGV[$i] eq "-graphics") {
+	$graphics = 1;
+    }
+    elsif ($ARGV[$i] eq "-nodumb") {
+	$dumb = 0;
+    }
+    elsif ($ARGV[$i] eq "-file") {
+	$filename = $ARGV[$i+1];
+        $i++;
+    }
+    else {
+        $hostname = $ARGV[$i];
+    }
+}
 
 # Initialise the datas to store the x and y values.
 my @xdatas;
@@ -86,45 +116,21 @@ for $source (0 .. $maxnode) {
     }
 }
 
-# Set the minimum and maximum size for the x coordinates
-my $x_min = 0;
-my $x_max = 100000;
-
-# Set the other default parameters
-my $graphics = 0;
-my $dumb = 1;
-
-# Read the command-line parameters
-for(my $i=2 ; $i<scalar(@ARGV) ; $i++) {
-    if ($ARGV[$i] eq "-min") {
-	$x_min=$ARGV[$i+1];
-	$i++;
-    }
-    elsif ($ARGV[$i] eq "-max") {
-	$x_max=$ARGV[$i+1];
-	$i++;
-    }
-    elsif ($ARGV[$i] eq "-graphics") {
-	$graphics = 1;
-    }
-    elsif ($ARGV[$i] eq "-nodumb") {
-	$dumb = 0;
-    }
-}
-
 # Get the location of the sampling results output file
-my $pathname = $ENV{PM2_CONF_DIR};
-if ($pathname ne "") {
-    $pathname .= "/marcel";
-}
-else {
-    $pathname = $ENV{PM2_HOME};
-    if ($pathname eq "") {
-        $pathname = $ENV{HOME};
+if ($filename eq "") {
+    my $pathname = $ENV{PM2_CONF_DIR};
+    if ($pathname ne "") {
+        $pathname .= "/marcel";
     }
-    $pathname .= "/.pm2/marcel";
+    else {
+        $pathname = $ENV{PM2_HOME};
+        if ($pathname eq "") {
+            $pathname = $ENV{HOME};
+        }
+        $pathname .= "/.pm2/marcel";
+    }
+    $filename = "$pathname/sampling_$hostname.txt";
 }
-my $filename = "$pathname/sampling_$hostname.txt";
 
 # Read the x and y values and store them in the appropriate list
 open input,$input="$filename" or die "Cannot open $input: $!";

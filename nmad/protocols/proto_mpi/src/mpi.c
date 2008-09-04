@@ -1860,7 +1860,17 @@ int MPI_Test(MPI_Request *request,
       err = mpir_set_status(&mpir_internal_data, request, status);
     }
 
-    mpir_request->request_type = MPI_REQUEST_ZERO;
+    if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
+      mpir_request->request_type = MPI_REQUEST_ZERO;
+    }
+    if (mpir_request->request_ptr != NULL) {
+      FREE_AND_SET_NULL(mpir_request->request_ptr);
+    }
+
+    // Release one active communication for that type
+    if (mpir_request->request_datatype > MPI_PACKED) {
+      err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
+    }
   }
   else { /* err == -NM_EAGAIN */
     *flag = 0;

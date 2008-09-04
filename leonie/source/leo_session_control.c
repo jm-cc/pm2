@@ -441,6 +441,9 @@ exit_session(p_leonie_t leonie)
   nb_clients    = tbx_slist_get_length(dir->process_slist);
   client_array  = TBX_CALLOC(nb_clients, sizeof(ntbx_client_t));
 
+  /* Sauvegarde du nombre de client pour attente des processus fils */
+  leonie->settings->nbclient = nb_clients;
+
   {
     int i = 0;
     void _fill_array(p_ntbx_client_t client) {

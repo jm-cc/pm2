@@ -795,6 +795,11 @@ static __tbx_inline__ void ma_move_entity(marcel_entity_t *e, ma_holder_t *h) {
 	/* TODO: optimiser ! */
 	int state = ma_get_entity(e);
 	ma_put_entity(e, h, state);
+#ifdef MARCEL_STATS_ENABLED
+	if (ma_holder_type (h) == MA_RUNQUEUE_HOLDER) {
+	   *(struct marcel_topo_level **) ma_stats_get (e, ma_stats_last_topo_level_offset) = ma_rq_holder(h)->topolevel;
+	}
+#endif /* MARCEL_STATS_ENABLED */
 }
 
 #section marcel_structures

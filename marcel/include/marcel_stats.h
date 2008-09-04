@@ -84,6 +84,10 @@ extern unsigned long ma_stats_memory_offset;
     last_vps, so we can't elect any vp to be the "last_vp" of the
     whole considered bubble. */
 extern unsigned long ma_stats_last_vp_offset;
+/** \brief Offset of the "last topo_level" statistics, used by bubble
+    schedulers to keep track of where the entities were scheduled
+    before. */
+extern unsigned long ma_stats_last_topo_level_offset;
 /* TODO: Never used! Remove it? */
 /** \brief Offset of the "memory attraction" statistics */
 extern unsigned long ma_stats_attraction_offset;

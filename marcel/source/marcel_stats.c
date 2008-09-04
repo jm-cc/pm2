@@ -96,6 +96,11 @@ void ma_stats_last_vp_sum_synthesis (void * __restrict dest, const void * __rest
   }
 }
 
+void ma_stats_last_topo_level_sum_reset (void *dest) {
+  struct marcel_topo_level **data = dest;
+  *data = NULL;
+}
+
 void __ma_stats_reset(ma_stats_t stats) {
 	unsigned long offset;
 	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))

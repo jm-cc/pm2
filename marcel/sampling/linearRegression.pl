@@ -57,11 +57,11 @@ sub linearRegression {
 sub help {
     print "Syntax: linearRegression.pl [<hostname>] [-file <sampling filename>] \n";
     print "            [-min minimum value for the x coordinates] [-max maximum value for the x coordinates]\n";
-    print "            [-graphics] [-nodumb]\n";
+    print "            [-plot] [-nodumb]\n";
     print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
-    print "      -graphics displays the plot for the sampling result (by default does not display the plot)\n";
-    print "      -nodumb   displays the plot in graphical mode (by default in dumb mode)\n";
+    print "      -plot   displays the plot for the sampling result (by default does not display the plot)\n";
+    print "      -nodumb displays the plot in graphical mode (by default in dumb mode)\n";
     exit;
 }
 # Main program
@@ -75,7 +75,7 @@ sub help {
 
 # Set the default parameters
 my $maxnode=10;
-my $graphics = 0;
+my $plot = 0;
 my $dumb = 1;
 my $filename = "";
 my $hostname = "";
@@ -95,8 +95,8 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
 	$x_max=$ARGV[$i+1];
 	$i++;
     }
-    elsif ($ARGV[$i] eq "-graphics") {
-	$graphics = 1;
+    elsif ($ARGV[$i] eq "-plot") {
+	$plot = 1;
     }
     elsif ($ARGV[$i] eq "-nodumb") {
 	$dumb = 0;
@@ -172,7 +172,7 @@ for $source (0 .. $maxnode) {
 	    print "y = $a * x + $b\n";
 	    print "r (pearson coefficient) = $r\n";
 
-	    if ($graphics) {
+	    if ($plot) {
 		my $filename = "sampling_${source}_${dest}";
 		open output,$output=">${filename}.txt" or die "Cannot open $output: $!";
 		my $l = scalar(@$xlistref);

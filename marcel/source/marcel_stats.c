@@ -23,6 +23,7 @@ unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesi
 	unsigned long offset;
 	size = (size + sizeof(void(*)())-1) & ~(sizeof(void(*)())-1);
 	offset = ma_per_sth_alloc(&stats_cur, size);
+	MA_BUG_ON (offset >= MARCEL_STATS_ROOM);
 	ma_stats_reset_func(offset) = reset_function;
 	ma_stats_synthesis_func(offset) = synthesis_function;
 	ma_stats_size(offset) = size;

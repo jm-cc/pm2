@@ -857,9 +857,7 @@ wait_processes(p_leonie_t leonie)
 
   LOG_IN();
 
-  spawn_groups = leonie->spawn_groups;
   settings     = leonie->settings;
-  dir          = leonie->directory;
 
   nb_clients   = settings->nbclient;
   pid          = (-getpid());
@@ -870,11 +868,11 @@ wait_processes(p_leonie_t leonie)
       int                   status;
 
       ret = waitpid(-1, &status, 0);
-      
+
       if (ret == -1) {
 	leo_error("waitpid", settings);
       }
-	    
+
       if (WIFEXITED(status)) {
 	DISP("%d : termine, code=%d\n", ret, WEXITSTATUS(status));
       } else if (WIFSIGNALED(status)) {

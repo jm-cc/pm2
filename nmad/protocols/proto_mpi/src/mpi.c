@@ -1200,10 +1200,8 @@ int MPI_Abort(MPI_Comm comm TBX_UNUSED,
 
   err = mpir_internal_exit(&mpir_internal_data);
 
-  puk_instance_destroy(launcher_instance);
-
   MPI_NMAD_LOG_OUT();
-  return errorcode;
+  exit(errorcode);
 }
 
 int MPI_Comm_size(MPI_Comm comm,

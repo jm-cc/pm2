@@ -60,6 +60,7 @@ sub help {
     print "            [-plot] [-nodumb]\n";
     print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
+    print "      -file   force the filename for the sampling results (by default get the result file of the machine hostname from the PM2 directory)\n";
     print "      -plot   displays the plot for the sampling result (by default does not display the plot)\n";
     print "      -nodumb displays the plot in graphical mode (by default in dumb mode)\n";
     exit;

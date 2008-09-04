@@ -55,6 +55,7 @@ sub linearRegression {
 }
 
 # Main program
+my $hostname=$ARGV[0];
 my $maxnode=$ARGV[1];
 if ($maxnode eq "") { die "Missing argument\n"; }
 
@@ -111,8 +112,22 @@ for(my $i=2 ; $i<scalar(@ARGV) ; $i++) {
     }
 }
 
+# Get the location of the sampling results output file
+my $pathname = $ENV{PM2_CONF_DIR};
+if ($pathname ne "") {
+    $pathname .= "/marcel";
+}
+else {
+    $pathname = $ENV{PM2_HOME};
+    if ($pathname eq "") {
+        $pathname = $ENV{HOME};
+    }
+    $pathname .= "/.pm2/marcel";
+}
+my $filename = "$pathname/sampling_$hostname.txt";
+
 # Read the x and y values and store them in the appropriate list
-open input,$input="$ARGV[0]" or die "Cannot open $input: $!";
+open input,$input="$filename" or die "Cannot open $input: $!";
 my $head = <input>; # read out the first line
 while(<input>) {
     chomp;

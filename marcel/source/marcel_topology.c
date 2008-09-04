@@ -260,6 +260,47 @@ int ma_get_topo_type_depth (enum marcel_topo_level_e type) {
   return ma_topo_type_depth[type];
 }
 
+marcel_topo_level_t *
+ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
+  marcel_topo_level_t *l1 = NULL, *l2 = NULL;
+
+  MA_BUG_ON (!lvl1 || !lvl2);
+  
+  /* There can't be any upper level in that case. */
+  if (!lvl1->father)
+    return lvl1;
+  if (!lvl2->father)
+    return lvl2;
+
+  /* We always store the lower level in l1 to simplify the following
+     code. */
+  l1 = (lvl1->level < lvl2->level) ? lvl1 : lvl2;
+  l2 = (lvl1->level < lvl2->level) ? lvl2 : lvl1;
+
+  /* We already know that l2 is the uppered-level topo_level, let's
+     lift l1 up to the same level before going any further. */
+  while (l1->level < l2->level)
+    l1 = l1->father;
+    
+  /* l1 and l2 should be at the same level now. */
+  MA_BUG_ON (l1->level != l2->level);
+
+  /* Maybe l2 is the one we're looking for! (i.e. l1 was originally
+     somewhere behind l2, l2 is so the lower ancestor) */
+  if (l2->index == l1->index)
+    return l2;
+
+  /* If it's not the case, we have to look up until we find fathers
+     with the same index (same level + same index = same
+     topo_level! */
+  while (l2->index != l1->index) {
+    MA_BUG_ON (!l1->father || !l2->father);
+    l1 = l1->father;
+    l2 = l2->father;
+  }
+  return l2;
+}
+
 #    ifdef MARCEL_SMT_IDLE
 static struct marcel_topo_level *marcel_topo_core_level;
 #    endif

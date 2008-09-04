@@ -34,6 +34,9 @@ ma_bubble_sched_t current_sched =
 #elif defined(BUBBLE_SCHED_AFFINITY)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32maffinity[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_affinity_sched;
+#elif defined(BUBBLE_SCHED_MEMOMP)
+#warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemomp[1;37m selected[1;33m >>>[0m"
+	&marcel_bubble_memomp_sched;
 #elif defined(BUBBLE_SCHED_NULL)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mnull[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_null_sched;
@@ -172,6 +175,7 @@ void marcel_bubble_sched_end () {
 }
 
 void marcel_bubble_shake () {
+  ma_bubble_synthesize_stats (&marcel_root_bubble);
   ma_bubble_gather (&marcel_root_bubble);
   current_sched->submit (&marcel_root_bubble.as_entity);
 }

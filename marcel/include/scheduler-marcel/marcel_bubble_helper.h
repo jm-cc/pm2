@@ -23,6 +23,18 @@ enum counting_mode { ITERATIVE_MODE, RECURSIVE_MODE };
    A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
 
+/* Returns the last vp the entity was running on. Returns
+   MA_VPSTATS_NO_LAST_VP if the entity has never been executed, and
+   MA_VPSTATS_CONFLICT if the entity is a bubble containing
+   conflicting last_vp statistics.
+   A previous call to ma_bubble_synthesize_stats() is needed. */
+long ma_favourite_vp (marcel_entity_t *e);
+
+/* Returns the last time (cpu cycles) the entity was running. If the
+   entity is a bubble, it returns the last time one of its contained
+   entity was running. */
+long ma_last_ran (marcel_entity_t *e);
+
 /* Returns true if the considered entity is en seed or a bubble that only contains seeds */
 unsigned ma_is_a_seed(marcel_entity_t *);
 

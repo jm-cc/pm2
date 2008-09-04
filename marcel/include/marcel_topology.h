@@ -540,6 +540,9 @@ const char * marcel_topo_level_string(enum marcel_topo_level_e l);
 void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode,
 			const char *separator, const char *indexprefix, const char* labelseparator, const char* levelterm);
 
+/** \brief Returns the lower common father level to levels lvl1 and lvl2 */
+marcel_topo_level_t *ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2);
+
 #section marcel_macros
 /** \brief Iterate over VPs */
 #define for_all_vp(vp) \

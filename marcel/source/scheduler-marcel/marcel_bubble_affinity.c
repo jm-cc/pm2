@@ -50,6 +50,11 @@ struct load_indicator {
 typedef struct load_indicator load_indicator_t;
 
 static int 
+int_compar(const void *_e1, const void *_e2) {
+  return *(int *)_e2 - *(int *)_e1;
+}
+
+static int 
 rq_load_compar(const void *_li1, const void *_li2) {
   load_indicator_t *li1 = (load_indicator_t *) _li1;
   load_indicator_t *li2 = (load_indicator_t *) _li2;
@@ -75,8 +80,7 @@ load_from_children(struct marcel_topo_level *father) {
 }
 
 static void
-initialize_load_manager(load_indicator_t *load_manager, struct marcel_topo_level *from) {
-  int arity = from->arity;
+initialize_load_manager(load_indicator_t *load_manager, struct marcel_topo_level *from, int arity) {
   int k;
   
   for (k = 0; k < arity; k++) { 
@@ -108,11 +112,14 @@ __rearrange_load_manager(load_indicator_t *load_manager, int arity) {
   load_manager[index].load = tmp.load;
   load_manager[index].l = tmp.l;
 }
-
+ 
 /* Distributes a set of entities regarding the load of the underlying
    levels */
 static void 
-__distribute_entities(struct marcel_topo_level *l, marcel_entity_t *e[], int ne, load_indicator_t *load_manager) {                      
+__distribute_entities_load (struct marcel_topo_level *l, 
+			    marcel_entity_t *e[], 
+			    int ne, 
+			    load_indicator_t *load_manager) {       
   int i;    
   int arity = l->arity;
 
@@ -142,9 +149,286 @@ __distribute_entities(struct marcel_topo_level *l, marcel_entity_t *e[], int ne,
   }
 }
 
+typedef marcel_entity_t * ma_entity_ptr_t;
+
+/* Structure that describes entities attracted to a specific level. */
+struct attracting_level {
+  /* Array of entities drawn to level _level_ */
+  ma_entity_ptr_t *entities;
+  /* Number of elements of the _entities_ array */
+  unsigned nb_entities;
+  /* Maximum size of entities array */
+  unsigned max_entities;
+  /* Total load of entities on the current array */
+  unsigned total_load;
+  /* Attraction level for the _entities_ entities */
+  struct marcel_topo_level *level;
+};
+typedef struct attracting_level attracting_level_t;
+
+/* Initialize an array of attracting_level_t describing the relations
+   between the _nb_entities_ entities scheduled on level _from_ and
+   the underlying runqueues (from->children). */
+static void
+attracting_levels_init (attracting_level_t *attracting_levels,
+			const struct marcel_topo_level *from,
+			unsigned arity,
+			unsigned nb_entities) {
+  unsigned i;
+  arity = arity ? arity : 1;
+  for (i = 0; i < arity; i++) {
+    attracting_levels[i].entities = marcel_malloc (nb_entities * sizeof (ma_entity_ptr_t),
+						    __FILE__, __LINE__);
+    attracting_levels[i].nb_entities = 0;
+    attracting_levels[i].level = from ? from->children[i] : NULL;
+    attracting_levels[i].max_entities = nb_entities;
+    attracting_levels[i].total_load = from ? load_from_children (from->children[i]) : 0;
+    MA_BUG_ON (!attracting_levels[i].entities);
+    fprintf (stderr, "%s: initial load for level %p is %u.\n", __func__, &attracting_levels[i], attracting_levels[i].total_load); 
+  }
+}
+
+/* Destroy an array of _arity_ elements of attracting_level_t. */
+static void
+attracting_levels_destroy (attracting_level_t *attracting_levels, unsigned arity) {
+  unsigned i;
+  for (i = 0; i < arity; i++) {
+    marcel_free (attracting_levels[i].entities);
+  }
+}
+
+/* Add the _e_ entity at the tail of the _attracting_level_->entities
+   array. */
+static void
+attracting_levels_add_tail (marcel_entity_t *e, attracting_level_t *attracting_level) {
+  MA_BUG_ON (attracting_level->nb_entities >= attracting_level->max_entities);
+  attracting_level->entities[attracting_level->nb_entities] = e;
+  attracting_level->nb_entities++;
+  attracting_level->total_load += ma_entity_load (e);
+  fprintf (stderr, "%s: Adding the load of entity %p (%ld) to %p (total_load = %u).\n", __func__, e, ma_entity_load (e), attracting_level, attracting_level->total_load); 
+}
+
+/* Add the _e_ entity at position _j_ in the
+   _attracting_level_->entities array. */
+static void
+attracting_levels_add (marcel_entity_t *e, 
+		       attracting_level_t *attracting_level, 
+		       unsigned position) {
+  MA_BUG_ON (position >= attracting_level->nb_entities);
+  MA_BUG_ON (attracting_level->nb_entities >= attracting_level->max_entities);
+  if (attracting_level->entities[position]) {
+    unsigned size = sizeof (attracting_level->entities[0]);
+    memmove (&attracting_level->entities[position+1],
+	     &attracting_level->entities[position], 
+	     (attracting_level->nb_entities - position) * size);
+  }
+  attracting_level->entities[position] = e;
+  attracting_level->nb_entities++;
+  attracting_level->total_load += ma_entity_load (e);
+  fprintf (stderr, "%s: Adding the load of entity %p (%ld) to %p (total_load = %u).\n", __func__, e, ma_entity_load (e), attracting_level, attracting_level->total_load); 
+}
+
+/* Remove and return the last entity from the
+   _attracting_level->entities array. */
+static marcel_entity_t *
+attracting_levels_remove_tail (attracting_level_t *attracting_level) {
+  MA_BUG_ON (!attracting_level->nb_entities);
+  marcel_entity_t *removed_entity = attracting_level->entities[attracting_level->nb_entities - 1];
+  attracting_level->nb_entities--;
+  attracting_level->total_load -= ma_entity_load (removed_entity);
+  fprintf (stderr, "%s: Removing the load of entity %p (%ld) from %p (total_load = %u).\n", __func__, removed_entity, ma_entity_load (removed_entity), attracting_level, attracting_level->total_load); 
+
+  return removed_entity;
+}
+
+/* Return the index of the least loaded children topo_level, according
+   to the information gathered in _attracting_levels_. */
+static unsigned
+attracting_levels_least_loaded_index (attracting_level_t *attracting_levels, unsigned arity) {
+  unsigned i, res = 0;
+  for (i = 1; i < arity; i++) {
+    if (attracting_levels[i].nb_entities < attracting_levels[res].nb_entities)
+      res = i;
+  }
+  
+  return res;
+}
+
+/* Return the index of the most loaded children topo_level, according
+   to the information gathered in _attracting_levels_. */
+static unsigned
+attracting_levels_most_loaded_index (attracting_level_t *attracting_levels, unsigned arity) {
+  unsigned i, res = 0;
+  for (i = 1; i < arity; i++) {
+    if (attracting_levels[i].nb_entities > attracting_levels[res].nb_entities)
+      res = i;
+  }
+  
+  return res;
+}
+
+/* Debugging function that prints the address of every entity on each
+   attracting level included in _attracting_levels_. */
+static void
+print_attracting_levels (attracting_level_t *attracting_levels, unsigned arity) {
+  unsigned i, j;
+  for (i = 0; i < arity; i++) {
+    fprintf (stderr, "children[%d] = {", i);
+    if (!attracting_levels[i].nb_entities)
+      fprintf (stderr, " }\n");
+    for (j = 0; j < attracting_levels[i].nb_entities; j++) {
+      fprintf (stderr, (j != attracting_levels[i].nb_entities - 1) ? " %p, " : " %p }\n", attracting_levels[i].entities[j]);
+    }
+  }
+}
+
+/* This function translates a vp index into a from->children
+   index. (i.e., sometimes you're not distributing on vp-level
+   runqueues, so you have to know which child topo_level covers the
+   _favourite_vp_ vp.) */
+static int
+translate_favorite_vp (int favorite_vp, struct marcel_topo_level *from) {
+  unsigned i;
+  int translated_index = -1;
+  for (i = 0; i < from->arity; i++) {
+    if (marcel_vpset_isset (&from->children[i]->vpset, (unsigned) favorite_vp)) {
+      translated_index = i;
+      break;
+    }
+  }
+  return translated_index;
+}
+
+/* This function puts the _e_ entity on the right attracting level
+   entities array, according to the vp (_favorite_vp_) it's attracted
+   to. If _e_ is not attracted anywhere, it's moved to a specific
+   attracting level (_load_balancing_entities_) that holds entities
+   used for load balancing.*/
+static void
+strict_cache_distribute (marcel_entity_t *e, 
+			 int favorite_vp, 
+			 attracting_level_t *attracting_levels, 
+			 attracting_level_t *load_balancing_entities) {
+  if (favorite_vp == -1) {
+    attracting_levels_add_tail (e, load_balancing_entities);
+  } else {
+    if (!attracting_levels[favorite_vp].nb_entities) {
+      attracting_levels_add_tail (e, &attracting_levels[favorite_vp]);
+    } else {
+      unsigned i, done = 0;
+      unsigned long last_ran = ma_last_ran (e);
+      for (i = 0; i < attracting_levels[favorite_vp].nb_entities; i++) {
+      	if (last_ran > ma_last_ran (attracting_levels[favorite_vp].entities[i])) {
+      	  attracting_levels_add (e, &attracting_levels[favorite_vp], i);
+      	  done = 1;
+	  break;
+      	}
+      }
+      if (!done) {
+	attracting_levels_add_tail (e, &attracting_levels[favorite_vp]);
+      }
+    }
+  }
+}
+
+/* Greedily distributes entities stored in _load_balancing_entities_
+   over the _arity_ levels described in _attracting_levels_.*/
+static void
+spread_load_balancing_entities (attracting_level_t *attracting_levels, 
+				attracting_level_t *load_balancing_entities,
+				unsigned arity) {
+  while (load_balancing_entities->nb_entities) {
+    unsigned target = attracting_levels_least_loaded_index (attracting_levels, arity);
+    attracting_levels_add_tail (attracting_levels_remove_tail (load_balancing_entities), &attracting_levels[target]);
+  }
+}
+
+/* Even the load by taking entities from the most loaded levels and
+   put them on the least loaded levels, until each level holds more than
+   _load_per_level_ entities. */
 static int 
-int_compar(const void *_e1, const void *_e2) {
-  return *(int *)_e2 - *(int *)_e1;
+global_load_balance (attracting_level_t *attracting_levels, unsigned arity, unsigned load_per_level) {
+  /* TODO: Deal with load_per_level stuff */
+  fprintf (stderr, "%s: per_level_entities = %d\n", __func__, load_per_level);
+  int least_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
+  int most_loaded = attracting_levels_most_loaded_index (attracting_levels, arity);
+  fprintf (stderr, "%s: least_loaded_level = %d\n", __func__, attracting_levels[least_loaded].total_load);
+  while (attracting_levels[least_loaded].total_load < load_per_level) {
+    if (attracting_levels[most_loaded].nb_entities > 1) {
+      attracting_levels_add_tail (attracting_levels_remove_tail (&attracting_levels[most_loaded]), 
+				  &attracting_levels[least_loaded]);
+      least_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
+      most_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
+    } else {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* Physically moves entities according to the logical distribution
+   proposed in _attracting_levels_. */
+static void
+distribute_according_to_attracting_levels (attracting_level_t *attracting_levels, unsigned arity) {
+  unsigned i;
+  for (i = 0; i < arity; i++) {
+    unsigned j;
+    for (j = 0; j < attracting_levels[i].nb_entities; j++) {
+      ma_move_entity (attracting_levels[i].entities[j], &attracting_levels[i].level->rq.as_holder);
+    }
+  }
+}
+
+/* Distributes a set of entities regarding cache affinities */
+static int
+__distribute_entities_cache (struct marcel_topo_level *l, 
+			     marcel_entity_t *e[], 
+			     int ne) {
+  unsigned i;
+  unsigned arity = l->arity;
+  unsigned entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
+  attracting_level_t attracting_levels[arity];
+  attracting_level_t load_balancing_entities;
+  
+  attracting_levels_init (attracting_levels, l, arity, ne);
+  attracting_levels_init (&load_balancing_entities, NULL, 0, ne);
+
+  /* First, we add each entity stored in _e[]_ to the
+     _attracting_levels_ structure, by putting it into the array
+     corresponding to the level it's attracted to. */
+  for (i = 0; i < ne; i++) {
+    long last_vp = ma_favourite_vp (e[i]);
+    long last_vp_index = -1; 
+    
+    if (last_vp != -1) {
+      last_vp_index = translate_favorite_vp (last_vp, l);
+    }
+    
+    strict_cache_distribute (e[i], 
+			     last_vp_index, 
+			     attracting_levels, 
+			     &load_balancing_entities);
+  }
+  
+  /* Then, we greedily distribute the non-constraint entities to even
+     the load. */
+  spread_load_balancing_entities (attracting_levels, 
+				  &load_balancing_entities, 
+				  arity);
+  
+  /* At this point, we verify if every underlying topo_level will be
+     occupied. If not, we even the load by taking entities from the
+     most loaded levels to the least loaded ones. */
+  global_load_balance (attracting_levels, arity, entities_per_level);
+
+  /* We now have a satisfying logical distribution, let's physically
+     move entities according it. */
+  distribute_according_to_attracting_levels (attracting_levels, arity);
+
+  attracting_levels_destroy (attracting_levels, arity);
+  attracting_levels_destroy (&load_balancing_entities, 1);
+
+  return 0; 
 }
 
 /* Checks wether enough entities are already positionned on
@@ -153,10 +437,10 @@ static int
 __has_enough_entities(struct marcel_topo_level *l, 
 		      marcel_entity_t *e[], 
 		      int ne, 
-		      load_indicator_t *load_manager) {
+		      const load_indicator_t *load_manager) {
   int ret = 1, prev_state = 1;
   int nvp = marcel_vpset_weight(&l->vpset);
-  int arity = l->arity;
+  unsigned arity = l->arity;
   int per_item_entities = nvp / arity;
   int i, entities_per_level[arity];
 
@@ -201,7 +485,7 @@ static
 void __marcel_bubble_affinity (struct marcel_topo_level *l) {  
   int ne;
   int nvp = marcel_vpset_weight(&l->vpset);
-  int arity = l->arity;
+  unsigned arity = l->arity;
   int i, k;
   
   if (!arity) {
@@ -222,7 +506,7 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
   bubble_sched_debug("affinity found %d entities to distribute.\n", ne);
   
   load_indicator_t load_manager[arity];
-  initialize_load_manager(load_manager, l);
+  initialize_load_manager(load_manager, l, arity);
   
   qsort(load_manager, arity, sizeof(load_manager[0]), &rq_load_compar);
 
@@ -234,10 +518,10 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
   ma_debug_show_entities("__marcel_bubble_affinity", e, ne);
 
   qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
-
+   
   if (ne < nvp) {
     if (__has_enough_entities(l, e, ne, load_manager))
-      __distribute_entities(l, e, ne, load_manager);
+      __distribute_entities_cache (l, e, ne);
     else {
       /* We really have to explode at least one bubble */
       bubble_sched_debug("We have to explode bubbles...\n");
@@ -271,7 +555,7 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
       }
       
       if (!bubble_has_exploded) {
-	__distribute_entities(l, e, ne, load_manager);
+	__distribute_entities_cache (l, e, ne);
 	for (k = 0; k < arity; k++)
 	  __marcel_bubble_affinity(l->children[k]);
 	return;
@@ -310,7 +594,7 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
   } else { /* ne >= nvp */ 
     /* We can delay bubble explosion ! */
     bubble_sched_debug("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
-    __distribute_entities(l, e, ne, load_manager);
+    __distribute_entities_cache (l, e, ne);
   }
   
   /* Keep distributing on the underlying levels */
@@ -539,7 +823,7 @@ affinity_steal(unsigned from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
   struct marcel_topo_level *father = me->father;
   struct marcel_topo_level *top = marcel_topo_level (0,0);
-  int arity;
+  unsigned arity;
   
   int n, smthg_to_steal = 0;
   int nvp = marcel_vpset_weight (&top->vpset);
@@ -608,7 +892,7 @@ struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  .vp_is_idle = affinity_steal,
+  //.vp_is_idle = affinity_steal,
 };
 
 #endif /* MA__BUBBLES */

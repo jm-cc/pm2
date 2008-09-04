@@ -48,6 +48,54 @@ void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict
 		*dest_data = *src_data;
 }
 
+void ma_stats_memnode_sum_reset(void *dest) {
+  memset (dest, 0, marcel_nbnodes * sizeof (long));
+}
+void ma_stats_memnode_sum_synthesis(void * __restrict dest, const void * __restrict src) {
+  int i;
+  for (i = 0; i < marcel_nbnodes; i++) {
+    ((long *)dest)[i] += ((long *)src)[i];
+  }
+}
+
+void ma_stats_last_vp_sum_reset (void *dest) {
+  long *data = dest;
+  *data = -1;
+}
+void ma_stats_last_vp_sum_synthesis (void * __restrict dest, const void * __restrict src) {
+  long *dest_data = dest;
+  const long *src_data = src;
+    
+  switch (*dest_data) {
+  case MA_VPSTATS_CONFLICT:
+    /* if someone already told that this subtree contains different
+       last_vps, the job is done. */
+    break;
+
+  case MA_VPSTATS_NO_LAST_VP:
+    /* dest is not set yet, whatever src contains will be fine. */
+    *dest_data = *src_data;
+    break;
+    
+  default:
+    /* dest has already been set to something, we have to check if src
+       holds something different. */
+    switch (*src_data) {
+    case MA_VPSTATS_CONFLICT:
+      *dest_data = MA_VPSTATS_CONFLICT;
+      break;
+    
+    case MA_VPSTATS_NO_LAST_VP:
+      break;
+
+    default:
+      if (*dest_data != *src_data)
+	*dest_data = MA_VPSTATS_CONFLICT;
+    }
+    break;
+  }
+}
+
 void __ma_stats_reset(ma_stats_t stats) {
 	unsigned long offset;
 	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
@@ -56,9 +104,9 @@ void __ma_stats_reset(ma_stats_t stats) {
 
 void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
 	unsigned long offset;
-	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
-		ma_stats_synthesis_func(offset)(__ma_stats_get(dest,offset),
-			__ma_stats_get(src,offset));
+	  for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
+	    ma_stats_synthesis_func(offset)(__ma_stats_get(dest,offset),
+					    __ma_stats_get(src,offset));
 }
 
 long *marcel_task_stats_get(marcel_t t, unsigned long offset) {

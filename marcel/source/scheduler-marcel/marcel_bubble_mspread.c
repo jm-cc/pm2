@@ -319,15 +319,15 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		{
 			/** Second case : cache **/ 
 			if (l_l[0]->level > nodelevel /* Inside node */ 
-				 && e[0]->last_vp != -1)/* Preferred vp */
+			    && ma_favourite_vp (e[0]) != -1)/* Preferred vp */
 			{	
-				bubble_sched_debug("\n********* mode VP : last_vp = %d *********\n",e[0]->last_vp);
+			  bubble_sched_debug("\n********* mode VP : last_vp = %ld *********\n", ma_favourite_vp (e[0]));
 				int mvp = -1;
 				/* Find the index of our last_vp */
 				for (j = 0 ; j < nl ; j++)
 				{
 					/* Is our vp here ? */
-					if (l_l[j]->number == e[i]->last_vp % marcel_vpset_weight(&l_l[j]->vpset))
+				  if (l_l[j]->number == ma_favourite_vp (e[i]) % marcel_vpset_weight(&l_l[j]->vpset))
 					{
 						mvp = j;
 						break;

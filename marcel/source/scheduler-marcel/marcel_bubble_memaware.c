@@ -69,7 +69,7 @@ void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level)
 		to_spread[num_to_spread] = entity;
 		num_to_spread++;
 		if (level)
-			entity->last_vp = level->number * marcel_vpset_weight(&level->vpset);
+		  ma_stats_set (long, entity, ma_stats_last_vp_offset, level->number * marcel_vpset_weight(&level->vpset));
 	}
 	ma_spin_unlock(&to_spread_lock);
 }

@@ -65,6 +65,25 @@ unsigned ma_entity_is_running (marcel_entity_t *e) {
   return 0;
 }
 
+/* This function is called by bubble schedulers to determine the
+  "cache friendly" runqueues where entities should be attracted to, if
+  possible. */
+long 
+ma_favourite_vp (marcel_entity_t *e) {
+  return e->type == MA_BUBBLE_ENTITY ?     
+    *(long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_last_vp_offset) :
+    *(long *) ma_stats_get (e, ma_stats_last_vp_offset);
+}
+
+/* This function returns the last time the entity passed in argument
+   was running. */
+long 
+ma_last_ran (marcel_entity_t *e) {
+  return e->type == MA_BUBBLE_ENTITY ?     
+    *(long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_last_ran_offset) :
+    *(long *) ma_stats_get (e, ma_stats_last_ran_offset);
+}
+
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2) 
 {
 	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;

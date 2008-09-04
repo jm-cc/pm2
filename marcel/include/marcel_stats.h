@@ -46,8 +46,19 @@
 #ifdef MARCEL_STATS_ENABLED
 
 #section variables
+#define MA_VPSTATS_NO_LAST_VP -1
+#define MA_VPSTATS_CONFLICT -2
+
 /** \brief Offset of the "load" statistics (arbitrary user-provided) */
 extern unsigned long marcel_stats_load_offset;
+
+/* TODO: Watch out! We make this available outside of Marcel for now
+   to be able to set artificial memory guidelines in example
+   programs. This should move to the marcel_variable section soon. */
+/** \brief Offset of the "per node allocated memory" (i.e. the total
+    amount of memory per node allocated by the considered entity)
+    statistics*/
+extern unsigned long ma_stats_memnode_offset;
 
 #section marcel_variables
 /** \brief Offset of the "number of thread" statistics */
@@ -60,8 +71,20 @@ extern unsigned long ma_stats_nbrunning_offset;
 extern unsigned long ma_stats_nbready_offset;
 /** \brief Offset of the "last ran time" statistics */
 extern unsigned long ma_stats_last_ran_offset;
-/** \brief Offset of the "memory usage" statistics */
+/** \brief Offset of the "memory usage" (i.e. the total amount of
+    memory attached to the considered entity) statistics */
 extern unsigned long ma_stats_memory_offset;
+/** \brief Offset of the "last vp" statistics. The value stored at
+    this offset represents the number of the last vp the considered
+    entity was running on. MA_NO_LAST_VP means that the entity has
+    never been executed (in case of a bubble, the whole set of
+    included entities has never been
+    executed.). MA_CONFLICTING_LAST_VP (only used for bubble entities)
+    means that at least two of the contained entities have different
+    last_vps, so we can't elect any vp to be the "last_vp" of the
+    whole considered bubble. */
+extern unsigned long ma_stats_last_vp_offset;
+/* TODO: Never used! Remove it? */
 /** \brief Offset of the "memory attraction" statistics */
 extern unsigned long ma_stats_attraction_offset;
 
@@ -123,6 +146,21 @@ ma_stats_reset_t ma_stats_long_sum_reset;
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
 /** \brief "Max" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_max_reset;
+/** \brief "Sum" synthesis function for the array of long describing
+    the amount of memory allocated on each node. */
+ma_stats_synthesis_t ma_stats_memnode_sum_synthesis;
+/** \brief "Sum" reset function for the array of long describing the
+    amount of memory allocated on each node. */
+ma_stats_reset_t ma_stats_memnode_sum_reset;
+/** \brief "Sum" synthesis function for the last_vp statistics. */ 
+ma_stats_synthesis_t ma_stats_last_vp_sum_synthesis;
+/** \brief "Sum" reset function for the last_vp statistics (set to -1) */
+ma_stats_reset_t ma_stats_last_vp_sum_reset;
+/** \brief "Sum" reset function for the last_topo_level statistics (set to nil) */
+ma_stats_reset_t ma_stats_last_topo_level_sum_reset;
+/* TODO: unused, just defined to avoid ma_stats_alloc issues
+   (ma_stats_alloc doesn't handle NULL functions) */
+ma_stats_synthesis_t ma_stats_last_topo_level_sum_synthesis;
 
 #ifdef DOXYGEN
 /** \brief Returns the reset function for the statistics at the given offset */

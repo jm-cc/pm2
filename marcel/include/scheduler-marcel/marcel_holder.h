@@ -198,9 +198,6 @@ struct ma_entity {
    /** \brief List of entities on the fake vp */
 	struct list_head next_fake_sched;
 
-	/** \brief Last VP used */
-		int last_vp;
-
 #ifdef MA__LWPS
 	/** \brief Nesting level */
 	int sched_level;
@@ -297,7 +294,6 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	MA_SCHED_LEVEL_INIT \
 	MA_SCHED_MEMORY_AREA_INIT(e) \
    .heap = NULL, \
-   .last_vp = -1, \
    /* .heap_lock = MA_SPIN_LOCK_UNLOCKED,*/ \
 }
 

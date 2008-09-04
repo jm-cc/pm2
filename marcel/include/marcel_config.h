@@ -67,7 +67,7 @@
 #define MARCEL_LEVEL_KEEPCLOSED	INT_MAX
 
 /* Room for threads/bubbles statistics */
-#define MARCEL_STATS_ROOM	64
+#define MARCEL_STATS_ROOM	64 + (MARCEL_NBMAXNODES * sizeof (long))
 
 /* Number of distinct real-time priorities */
 #if defined(MA__IFACE_LPT)

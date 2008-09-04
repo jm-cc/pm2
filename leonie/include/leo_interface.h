@@ -135,6 +135,9 @@ spawn_processes(p_leonie_t leonie);
 void
 send_directory(p_leonie_t leonie);
 
+void
+wait_processes(p_leonie_t leonie);
+
 // Session Control
 //-----------------////////////////////////////////////////////////////////
 void

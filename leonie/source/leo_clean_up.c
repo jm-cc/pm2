@@ -845,3 +845,49 @@ directory_exit(p_leonie_t leonie)
   LOG_OUT();
 }
 
+
+void
+wait_processes(p_leonie_t leonie)
+{
+  p_leo_settings_t     settings     = NULL;
+
+  int                  nb_clients   =    0;
+  int                  nb_clientsl  =    0;
+  int                  pid;
+
+  LOG_IN();
+
+  spawn_groups = leonie->spawn_groups;
+  settings     = leonie->settings;
+  dir          = leonie->directory;
+
+  nb_clients   = settings->nbclient;
+  pid          = (-getpid());
+
+  while(nb_clientsl < nb_clients)
+    {
+      int                   ret;
+      int                   status;
+
+      ret = waitpid(-1, &status, 0);
+      
+      if (ret == -1) {
+	leo_error("waitpid", settings);
+      }
+	    
+      if (WIFEXITED(status)) {
+	DISP("%d : termine, code=%d\n", ret, WEXITSTATUS(status));
+      } else if (WIFSIGNALED(status)) {
+	DISP("%d : tue par le signal %d", ret, WTERMSIG(status));
+      } else if (WIFSTOPPED(status)) {
+	DISP("%d : arrete par le signal %d", ret, WSTOPSIG(status));
+      } else if (WIFCONTINUED(status)) {
+	DISP("%d : relance", ret);
+      }
+
+      nb_clientsl++;
+    }
+
+  LOG_OUT();
+}
+

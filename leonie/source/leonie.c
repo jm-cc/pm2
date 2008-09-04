@@ -411,6 +411,9 @@ main(int    argc,
   TRACE("== Freeing data structures");
   directory_exit(leonie);
 
+  TRACE("== Wait processes end");
+  wait_processes(leonie);
+
   if (leonie->settings->pause_mode || leonie->settings->gdb_mode || leonie->settings->valgrind_mode)
     {
       DISP("Session cleaned");

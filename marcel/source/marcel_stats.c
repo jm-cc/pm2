@@ -104,9 +104,14 @@ void __ma_stats_reset(ma_stats_t stats) {
 
 void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
 	unsigned long offset;
+	/* Passing NULL as the ma_stats_synthesis_t argument of
+	   ma_stats_alloc() indicates that we don't need to sum things
+	   up into bubbles for the considered statistics. */
+	if (ma_stats_synthesis_func(offset)) {
 	  for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
 	    ma_stats_synthesis_func(offset)(__ma_stats_get(dest,offset),
 					    __ma_stats_get(src,offset));
+	}
 }
 
 long *marcel_task_stats_get(marcel_t t, unsigned long offset) {

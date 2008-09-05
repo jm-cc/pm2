@@ -1703,6 +1703,13 @@ synth_allocate_topology_levels(const unsigned *topology) {
 		marcel_topo_levels[level][total_level_breadth].vpset = 0;
 		marcel_topo_levels[level][total_level_breadth].cpuset = 0;
 
+		/* Update the level type to level mapping.  */
+		ma_topo_type_depth[synth_level_type (level_breadth)] = level;
+		if (synth_level_type (level_breadth) == MARCEL_LEVEL_CORE)
+			/* We don't have a separate VP level, but the core level is
+				 conceptually also the VP level.  */
+			ma_topo_type_depth[MARCEL_LEVEL_VP] = level;
+
 		marcel_topo_nblevels++;
 	}
 
@@ -1717,7 +1724,13 @@ synth_allocate_topology_levels(const unsigned *topology) {
 
 static struct marcel_topo_level *
 synth_make_simple_topology(const unsigned *topology_description) {
+	unsigned level;
 	struct marcel_topo_level *root, *vp;
+
+	/* Initialize level depths.  */
+	for (level = 0; level <= MARCEL_LEVEL_LAST; level++)
+		ma_topo_type_depth[level] = -1;
+	ma_topo_type_depth[MARCEL_LEVEL_MACHINE] = 0;
 
 	synth_allocate_topology_levels(topology_description);
 

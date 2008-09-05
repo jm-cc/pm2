@@ -137,6 +137,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 
 					marcel_attr_init (&attr);
 					marcel_attr_setinitbubble (&attr, bubble);
+					marcel_attr_setprio (&attr, MA_BATCH_PRIO);
 
 					thread_count = *level_breadth;
 
@@ -173,6 +174,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 								{
 									marcel_bubble_init (child);
 									marcel_bubble_insertbubble (bubble, child);
+									marcel_bubble_setprio (bubble, MA_BATCH_PRIO);
 
 									/* Recurse into CHILD.  */
 									populate_bubble_hierarchy (child, level_breadth + 1,

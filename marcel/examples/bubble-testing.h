@@ -52,6 +52,14 @@ indent (FILE *out, unsigned count)
 		fprintf (out, " ");
 }
 
+/* Debugging message buffering.  */
+
+#define MAX_MESSAGE_COUNT  256
+#define MAX_MESSAGE_LENGTH 128
+
+static char messages[MAX_MESSAGE_COUNT][MAX_MESSAGE_LENGTH];
+static unsigned message_count = 0;
+
 static void level_log (FILE *, const struct marcel_topo_level *,
 											 const char *, ...)
 #ifdef __GNUC__
@@ -65,23 +73,40 @@ level_log (FILE *out, const struct marcel_topo_level *level,
 					 const char *format, ...)
 {
 	va_list args;
-	char prefix[50];
+	char prefix[100];
 	char *long_format;
+	unsigned indent;
 
-	if (out == NULL)
-		return;
+	indent = level->level * 3;
+	memset (prefix, ' ', indent);
 
-	indent (out, level->level * 3);
-
-	snprintf (prefix, sizeof (prefix), "[%2u] ", level->number);
+	snprintf (prefix + indent, sizeof (prefix) - indent - 1,
+						"[%2u] ", level->number);
 	long_format = alloca (strlen (format) + strlen (prefix) + 2);
 	strcpy (long_format, prefix);
 	strcat (long_format, format);
 	strcat (long_format, "\n");
 
 	va_start (args, format);
-	vfprintf (out, long_format, args);
+	if (out == NULL)
+		{
+			/* Buffer the message.  */
+			assert (message_count < MAX_MESSAGE_COUNT);
+			vsnprintf (messages[message_count++], sizeof (messages[0]),
+								 long_format, args);
+		}
+	else
+		vfprintf (out, long_format, args);
 	va_end (args);
+}
+
+static void
+dump_log (FILE *out)
+{
+	unsigned i;
+
+	for (i = 0; i < message_count; i++)
+		fprintf (out, "%s", messages[i]);
 }
 
 
@@ -242,7 +267,8 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
     {
       if (entities >= expected->entity_count)
 				{
-					level_log (stderr, level,"more entities than expected (expected %u)",
+					level_log (stderr, level,"more entities than expected (%lu, expected %u)",
+										 level->rq.as_holder.nr_ready,
 										 expected->entity_count);
 					return 0;
 				}
@@ -347,6 +373,10 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 		printf ("PASS: scheduling entities were distributed as expected\n");
 	else
 		printf ("FAIL: scheduling entities were NOT distributed as expected\n");
+
+	if ((!verbose_output) && (!matches_p))
+		/* Give feedback as to what failed.  */
+		dump_log (stderr);
 
 	ret = (matches_p ? 0 : 1);
 

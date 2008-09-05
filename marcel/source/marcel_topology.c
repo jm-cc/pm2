@@ -1598,6 +1598,18 @@ synth_make_children(struct marcel_topo_level *level, unsigned count,
 	}
 }
 
+/* Determine a level type for for the level whose description is pointed to
+	 by LEVEL_BREADTH.  */
+static enum marcel_topo_level_e
+synth_level_type (const unsigned *level_breadth)
+{
+	return (*(level_breadth + 1) == 0
+					? MARCEL_LEVEL_CORE
+					: (*(level_breadth + 2) == 0
+						 ? MARCEL_LEVEL_NODE
+						 : MARCEL_LEVEL_FAKE));
+}
+
 /* Recursively populate the topology starting from LEVEL according to
    LEVEL_BREADTH, and number VPs starting at FIRST_VP.  Return the total
    number of VPs beneath LEVEL.  */
@@ -1619,11 +1631,8 @@ synth_populate_topology(struct marcel_topo_level *level,
 		/* Cores don't have children.  */
 		MA_BUG_ON(level->type == MARCEL_LEVEL_CORE);
 
-		/* Automatically determine a level type.  */
-		type = *(level_breadth + 1) == 0
-				? MARCEL_LEVEL_CORE
-				: (*(level_breadth + 2) == 0
-					 ? MARCEL_LEVEL_DIE : MARCEL_LEVEL_FAKE);
+		/* Determine the children level type.  */
+		type = synth_level_type (level_breadth);
 
 		/* Current number of siblings on our children's level to our left.  */
 		siblings = marcel_topo_level_nbitems[level->level + 1];

@@ -332,8 +332,17 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 	/* Submit the generated bubble hierarchy to Affinity.  */
   marcel_bubble_sched_begin ();
 
-	/* Did we get what we expected?  */
+	/* Did we get what we expected?  We need to lock the whole topology and
+		 bubble hiearchy so that the entity distribution doesn't change while we
+		 examine it.  */
+	marcel_thread_preemption_disable ();
+	ma_bubble_lock_all (&marcel_root_bubble, marcel_machine_level);
+
 	matches_p = topology_matches_tree_p (marcel_machine_level, expected_result);
+
+	ma_bubble_unlock_all (&marcel_root_bubble, marcel_machine_level);
+	marcel_thread_preemption_enable ();
+
 	if (matches_p)
 		printf ("PASS: scheduling entities were distributed as expected\n");
 	else

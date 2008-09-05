@@ -200,33 +200,43 @@ for $source (0 .. $maxnode) {
                 print "y = $a * $b ** x\n";
             }
 
+            my $outputfile;
 	    if ($plot) {
-		my $filename = "sampling_${source}_${dest}";
-		open output,$output=">${filename}.txt" or die "Cannot open $output: $!";
-		my $l = scalar(@$xlistref);
-                for(my $i=0 ; $i<$l ; $i++) {
-                    my $reg;
-                    if ($regression eq "linear") {
-                        $reg=$a * @$xlistref[$i] + $b;
-                    }
-                    else {
-                        $reg=$a * $b ** @$xlistref[$i];
-                    }
-                    my $error = ($reg  /@$ylistref[$i] * 100) - 100;
-		    print output "@$xlistref[$i] @$ylistref[$i] $reg $error\n";
-		}
+		$outputfile = "sampling_${source}_${dest}";
+		open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+            }
+		
+            my $l = scalar(@$xlistref);
+            for(my $i=0 ; $i<$l ; $i++) {
+                my $reg;
+                if ($regression eq "linear") {
+                    $reg=$a * @$xlistref[$i] + $b;
+                }
+                else {
+                    $reg=$a * $b ** @$xlistref[$i];
+                }
+                my $error = ($reg  /@$ylistref[$i] * 100) - 100;
+                if ($error >= 5 || $error <= -5) {
+                    print "Warning. The value for @$xlistref[$i] differs by more than 5% to the estimation \n";
+                }
+                if ($plot) {
+                    print output "@$xlistref[$i] @$ylistref[$i] $reg $error\n";
+                }
+            }
+
+            if (plot) {
 		close(output);
-		open gnuplot,$gnuplot=">${filename}.gnu" or die "Cannot open $gnuplot: $!";
+                open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
 		if ($dumb) {
 		    print gnuplot "set terminal dumb\n";
 		}
 		print gnuplot "set title \"Source $source - Dest $dest\"\n";
-		print gnuplot "plot '${filename}.txt' using 1:2 title \"Original\" with lines, '${filename}.txt' using 1:3 title \"Regression\" with lines\n";
+		print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
 		print gnuplot "pause -1\n";
-		print gnuplot "plot '${filename}.txt' using 1:4 title \"Error\" with lines\n";
+		print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
 		print gnuplot "pause -1\n";
 		close(gnuplot);
-		system("gnuplot $filename.gnu");
+		system("gnuplot $outputfile.gnu");
 	    }
 	}
     }

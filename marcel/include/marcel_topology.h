@@ -278,6 +278,21 @@ static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
 #endif
 }
 
+#section functions
+/** \brief Test whether set \e sub_set is part of set \e super_set */
+static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_set,
+						   const marcel_vpset_t *sub_set);
+#section inline
+static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_set,
+						   const marcel_vpset_t *sub_set);
+{
+#ifdef MA__LWPS
+        return (*super_set == (*super_set | *sub_set));
+#else
+	return *super_set;
+#endif
+}
+
 #section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);

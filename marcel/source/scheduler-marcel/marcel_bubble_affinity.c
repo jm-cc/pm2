@@ -184,7 +184,6 @@ attracting_levels_init (attracting_level_t *attracting_levels,
     attracting_levels[i].max_entities = nb_entities;
     attracting_levels[i].total_load = from ? load_from_children (from->children[i]) : 0;
     MA_BUG_ON (!attracting_levels[i].entities);
-    fprintf (stderr, "%s: initial load for level %p is %u.\n", __func__, &attracting_levels[i], attracting_levels[i].total_load); 
   }
 }
 
@@ -205,7 +204,6 @@ attracting_levels_add_tail (marcel_entity_t *e, attracting_level_t *attracting_l
   attracting_level->entities[attracting_level->nb_entities] = e;
   attracting_level->nb_entities++;
   attracting_level->total_load += ma_entity_load (e);
-  fprintf (stderr, "%s: Adding the load of entity %p (%ld) to %p (total_load = %u).\n", __func__, e, ma_entity_load (e), attracting_level, attracting_level->total_load); 
 }
 
 /* Add the _e_ entity at position _j_ in the
@@ -225,7 +223,6 @@ attracting_levels_add (marcel_entity_t *e,
   attracting_level->entities[position] = e;
   attracting_level->nb_entities++;
   attracting_level->total_load += ma_entity_load (e);
-  fprintf (stderr, "%s: Adding the load of entity %p (%ld) to %p (total_load = %u).\n", __func__, e, ma_entity_load (e), attracting_level, attracting_level->total_load); 
 }
 
 /* Remove and return the last entity from the
@@ -236,8 +233,7 @@ attracting_levels_remove_tail (attracting_level_t *attracting_level) {
   marcel_entity_t *removed_entity = attracting_level->entities[attracting_level->nb_entities - 1];
   attracting_level->nb_entities--;
   attracting_level->total_load -= ma_entity_load (removed_entity);
-  fprintf (stderr, "%s: Removing the load of entity %p (%ld) from %p (total_load = %u).\n", __func__, removed_entity, ma_entity_load (removed_entity), attracting_level, attracting_level->total_load); 
-
+  
   return removed_entity;
 }
 
@@ -349,10 +345,8 @@ spread_load_balancing_entities (attracting_level_t *attracting_levels,
 static int 
 global_load_balance (attracting_level_t *attracting_levels, unsigned arity, unsigned load_per_level) {
   /* TODO: Deal with load_per_level stuff */
-  fprintf (stderr, "%s: per_level_entities = %d\n", __func__, load_per_level);
   int least_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
   int most_loaded = attracting_levels_most_loaded_index (attracting_levels, arity);
-  fprintf (stderr, "%s: least_loaded_level = %d\n", __func__, attracting_levels[least_loaded].total_load);
   while (attracting_levels[least_loaded].total_load < load_per_level) {
     if (attracting_levels[most_loaded].nb_entities > 1) {
       attracting_levels_add_tail (attracting_levels_remove_tail (&attracting_levels[most_loaded]), 

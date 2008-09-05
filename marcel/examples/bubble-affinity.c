@@ -304,7 +304,7 @@ main (int argc, char *argv[])
 #undef BUBBLE
 
 
-  int ret, i;
+  int ret, matches_p, i;
   char **new_argv;
   marcel_bubble_t *root_bubble;
 	ma_atomic_t thread_exit_signal;
@@ -339,28 +339,20 @@ main (int argc, char *argv[])
   root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
 																							&thread_exit_signal);
 
-
-  marcel_bubble_sched_begin ();
+  marcel_bubble_change_sched (&marcel_bubble_affinity_sched);
 
 	/* Submit the generated bubble hierarchy to Affinity.  */
-  marcel_bubble_change_sched (&marcel_bubble_affinity_sched);
-  ret = marcel_bubble_submit (root_bubble);
+  marcel_bubble_sched_begin ();
 
-  if (!ret)
-    {
-      int matches_p;
+	/* Did we get what we expected?  */
+	matches_p = topology_matches_tree_p (marcel_machine_level, &result_root);
+	if (matches_p)
+		printf ("PASS: scheduling entities were distributed as expected\n");
+	else
+		printf ("FAIL: scheduling entities were NOT distributed as expected\n");
 
-      matches_p = topology_matches_tree_p (marcel_machine_level,
-																					 &result_root);
-      if (matches_p)
-				printf ("PASS: scheduling entities were distributed as expected\n");
-      else
-				printf ("FAIL: scheduling entities were NOT distributed as expected\n");
+	ret = (matches_p ? 0 : 1);
 
-      ret = (matches_p ? 0 : 1);
-    }
-  else
-    printf ("FAIL: Affinity did not accept scheduling submission\n");
 
 	/* Tell threads to leave.  */
 	ma_atomic_inc (&thread_exit_signal);

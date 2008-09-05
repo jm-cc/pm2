@@ -22,7 +22,7 @@ then
 fi
 
 # Configuration
-flavor="test_marcel"
+flavor="test_marcel_bubble"
 appdir="${PM2_ROOT}/marcel/examples"
 args=""
 hosts="localhost"

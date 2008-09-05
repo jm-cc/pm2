@@ -99,6 +99,8 @@ my $x_min = 0;               # Minimum size for the x coordinates
 my $x_max = 100000;          # Maximum size for the x coordinates
 my $regression = "linear";
 
+my $correctError = 10;
+
 # Read the command-line parameters
 for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
     if ($ARGV[$i] eq "-help") {
@@ -216,8 +218,8 @@ for $source (0 .. $maxnode) {
                     $reg=$a * $b ** @$xlistref[$i];
                 }
                 my $error = ($reg  /@$ylistref[$i] * 100) - 100;
-                if ($error >= 5 || $error <= -5) {
-                    print "Warning. The value for @$xlistref[$i] differs by more than 5% to the estimation \n";
+                if ($error >= $correctError || $error <= -$correctError) {
+                    print "Warning. The value for @$xlistref[$i] differs by more than $correctError% to the estimation \n";
                 }
                 if ($plot) {
                     print output "@$xlistref[$i] @$ylistref[$i] $reg $error\n";

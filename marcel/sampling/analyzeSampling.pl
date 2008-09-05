@@ -226,7 +226,7 @@ for $source (0 .. $maxnode) {
                 }
             }
 
-            if (plot) {
+            if ($plot) {
 		close(output);
                 open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
 		if ($dumb) {

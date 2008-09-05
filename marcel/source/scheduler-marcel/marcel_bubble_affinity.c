@@ -344,7 +344,6 @@ spread_load_balancing_entities (attracting_level_t *attracting_levels,
    _load_per_level_ entities. */
 static int 
 global_load_balance (attracting_level_t *attracting_levels, unsigned arity, unsigned load_per_level) {
-  /* TODO: Deal with load_per_level stuff */
   int least_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
   int most_loaded = attracting_levels_most_loaded_index (attracting_levels, arity);
   while (attracting_levels[least_loaded].total_load < load_per_level) {

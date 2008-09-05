@@ -54,30 +54,15 @@ sub linearRegression {
     return ($a, $b, $r);
 }
 
-sub exponentialRegression {
-    my ($xdataref, $ydataref) = @_;
-
-    my @yloglist = ();
-    foreach $value (@$ydataref) {
-        my $logvalue = log($value);
-        push(@yloglist, $logvalue);
-    }
-    my ($a_2, $b_2, $r) = linearRegression($xdataref, \@yloglist);
-    my $a = 10**$b_2;
-    my $b = 10**$a_2;
-    return ($a, $b, $r);
-}
-
 sub help {
     print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
     print "            [-min minimum value for the x coordinates] [-max maximum value for the x coordinates]\n";
-    print "            [-plot] [-nodumb] [-exponential]\n";
-    print "  Performs a regression for the cost of the memory migration on hostname\n";
+    print "            [-plot] [-nodumb]\n";
+    print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
     print "      -file        force the filename for the sampling results (by default get the result file of the machine hostname from the PM2 directory)\n";
     print "      -plot        displays the plot for the sampling result (by default does not display the plot)\n";
     print "      -nodumb      displays the plot in graphical mode (by default in dumb mode)\n";
-    print "      -exponential performs a exponential regression (by default a linear regression)\n";
     exit;
 }
 # Main program
@@ -97,7 +82,6 @@ my $filename = "";
 my $hostname = "";
 my $x_min = 0;               # Minimum size for the x coordinates
 my $x_max = 100000;          # Maximum size for the x coordinates
-my $regression = "linear";
 
 my $correctError = 10;
 
@@ -123,9 +107,6 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
     elsif ($ARGV[$i] eq "-file") {
 	$filename = $ARGV[$i+1];
         $i++;
-    }
-    elsif ($ARGV[$i] eq "-exponential") {
-        $regression = "exponential";
     }
     else {
         $hostname = $ARGV[$i];
@@ -191,16 +172,9 @@ for $source (0 .. $maxnode) {
 	if (scalar(@$xlistref) != 0) {
 	    print "\n\nProcessing values for source = $source and dest = $dest\n";
 
-            my $a, $b, $r;
-            if ($regression eq "linear") {
-                ($a, $b, $r) = linearRegression($xlistref, $ylistref);
-                print "y = $a * x + $b\n";
-                print "r (pearson coefficient) = $r\n";
-            }
-            else {
-                ($a, $b, $r) = exponentialRegression($xlistref, $ylistref);
-                print "y = $a * $b ** x\n";
-            }
+            my ($a, $b, $r) = linearRegression($xlistref, $ylistref);
+            print "y = $a * x + $b\n";
+            print "r (pearson coefficient) = $r\n";
 
             my $outputfile;
 	    if ($plot) {
@@ -210,13 +184,7 @@ for $source (0 .. $maxnode) {
 		
             my $l = scalar(@$xlistref);
             for(my $i=0 ; $i<$l ; $i++) {
-                my $reg;
-                if ($regression eq "linear") {
-                    $reg=$a * @$xlistref[$i] + $b;
-                }
-                else {
-                    $reg=$a * $b ** @$xlistref[$i];
-                }
+                my $reg=$a * @$xlistref[$i] + $b;
                 my $error = ($reg  /@$ylistref[$i] * 100) - 100;
                 if ($error >= $correctError || $error <= -$correctError) {
                     print "Warning. The value for @$xlistref[$i] differs by more than $correctError% to the estimation \n";

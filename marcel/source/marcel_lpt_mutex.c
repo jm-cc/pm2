@@ -34,7 +34,7 @@ DEF_LIBPTHREAD	(int,	mutexattr_getpshared,	(pthread_mutexattr_t *__restrict a, i
 
 #  ifdef MARCEL_ONCE_ENABLED
 DEF_LIBPTHREAD	(int,	once,			(pthread_once_t *ctrl, void (*init)(void)),(ctrl, init));
-DEF___LIBPTHREAD(void,	once_fork_child,	(void), ());
+//DEF___LIBPTHREAD(void,	once_fork_child,	(void), ());
 #  endif /* MARCEL_ONCE_ENABLED */
 
 DEF___LIBPTHREAD(int,	mutex_init,		(pthread_mutex_t *m, const pthread_mutexattr_t * a), (m, a));
@@ -416,6 +416,21 @@ int lpt_mutexattr_getpshared(const lpt_mutexattr_t * __restrict attr,
 }
 #include <limits.h>
 #  ifdef MARCEL_ONCE_ENABLED
+static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
+static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
+static int fork_generation = 0;	/* Child process increments this after fork. */
+
+enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
+
+static void marcel_once_cancelhandler(void *arg)
+{
+	marcel_once_t *once_control = arg;
+
+	marcel_mutex_lock(&once_masterlock);
+	*once_control = NEVER;
+	marcel_mutex_unlock(&once_masterlock);
+	marcel_cond_broadcast(&once_finished);
+}
 int lpt_once(lpt_once_t * once_control, 
 	void (*init_routine)(void)) {
         LOG_IN();

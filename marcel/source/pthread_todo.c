@@ -75,4 +75,5 @@ NDP(,condattr_setclock) NDP(,condattr_getclock)
 
 NDSSP(unwind)
 
-NDC(tcdrain) NDC(msync) NDC(sendmsg) NDC(sendto)
+NDC(tcdrain) NDC(msync) NDC(sendmsg) 
+//NDC(sendto)

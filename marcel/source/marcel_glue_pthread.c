@@ -286,4 +286,17 @@ cancellable_call(pid_t, waitpid, (pid_t pid, int *status, int options), pid, sta
 #endif
 cancellable_call(ssize_t, write, (int fd, const void *buf, size_t count), fd, buf, count)
 
+cancellable_call(int, connect, (int sockfd, const struct sockaddr *serv_addr,
+				socklen_t addrlen), sockfd, serv_addr, addrlen)
+cancellable_call(int, accept, (int sockfd, struct sockaddr *addr, 
+				socklen_t *addrlen), sockfd, addr, addrlen)
+cancellable_call(ssize_t, sendto, (int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen), s, buf, len, flags, to, tolen)
+cancellable_call(ssize_t, recvfrom, (int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen), s, buf, len, flags, from, fromlen)
+
+ssize_t send (int s, const void *buf, size_t len, int flags) {
+	return sendto(s, buf, len, flags, NULL, 0);
+}
+ssize_t recv (int s, void *buf, size_t len, int flags) {
+	return recvfrom(s, buf, len, flags, NULL, NULL);
+}
 #endif /* MA__LIBPTHREAD */

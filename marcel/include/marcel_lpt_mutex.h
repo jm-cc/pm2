@@ -100,6 +100,9 @@ extern int lpt_mutexattr_settype (lpt_mutexattr_t *__attr, int __kind)
 #  ifdef MA__IFACE_LPT
 extern int lpt_once (lpt_once_t *__once_control,
 		void (*__init_routine) (void)) __THROW;
+extern void lpt_once_fork_prepare (void);
+extern void lpt_once_fork_parent (void);
+extern void lpt_once_fork_child (void);
 #  endif
 #  ifdef MA__LIBPTHREAD
 extern void __pthread_once_fork_prepare (void);

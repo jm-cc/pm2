@@ -831,3 +831,25 @@ void marcel_init_section(int sec)
 	mdebug("Init running level %d (%s) done\n",
 	    ma_init_start[sec].prio, ma_init_start[sec].debug);
 }
+
+#ifdef MA__LIBPTHREAD
+#  ifndef STACKALIGN
+#    ifdef STANDARD_MAIN
+static
+void
+marcel_constructor(void) __attribute__((constructor));
+
+static
+void
+marcel_constructor(void) {
+	if (!marcel_test_activity()) {
+		LOG_IN();
+		marcel_init(0, NULL);
+		LOG_OUT();
+	}
+}
+#    else
+#      error STANDARD_MAIN option required
+#    endif
+#  endif
+#endif

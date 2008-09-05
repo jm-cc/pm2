@@ -657,21 +657,24 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
   int i, nb_ancestors = 0, nvp = marcel_vpset_weight (&common_rq->vpset);
   marcel_entity_t *ancestors[MAX_ANCESTORS];
   marcel_entity_t *e;
-  
-  /* Before moving the target entity, we have to move up some of its
-     ancestors to avoid locking problems. */
-  for (e = &ma_bubble_holder(entity_to_steal->init_holder)->as_entity;
-       e->init_holder; 
-       e = &ma_bubble_holder(e->init_holder)->as_entity) {
-    /* In here, we try to find these ancestors */
-    if (e->sched_holder->type == MA_RUNQUEUE_HOLDER)
-      if ((e->sched_holder == &common_rq->as_holder) 
-	  || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))
-	break;
-    ancestors[nb_ancestors] = e;
-    nb_ancestors++;
+
+  /* The main thread doesn't have an `init_holder'.  */
+  if (entity_to_steal->init_holder) {
+    /* Before moving the target entity, we have to move up some of its
+       ancestors to avoid locking problems. */
+    for (e = &ma_bubble_holder(entity_to_steal->init_holder)->as_entity;
+	 e->init_holder; 
+	 e = &ma_bubble_holder(e->init_holder)->as_entity) {
+      /* In here, we try to find these ancestors */
+      if (e->sched_holder->type == MA_RUNQUEUE_HOLDER)
+	if ((e->sched_holder == &common_rq->as_holder) 
+	    || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))
+	  break;
+      ancestors[nb_ancestors] = e;
+      nb_ancestors++;
+    }
   }
-  
+
   if (nb_ancestors) {
     /* Then we burst everyone of them, to let their content where it
        was scheduled, and we move them to the common_rq, covering the

@@ -66,7 +66,7 @@ void ma_memory_sampling_migrate(void **pageaddrs, int pages, int *nodes, int *st
   }
 }
 
-void ma_memory_sampling(unsigned long source, unsigned long dest, int minpages, int pages, unsigned long maxnode, unsigned long pagesize, FILE *f) {
+void ma_memory_sampling(unsigned long source, unsigned long dest, int pages, unsigned long maxnode, unsigned long pagesize, FILE *f) {
   void *buffer;
   void **pageaddrs;
   unsigned long nodemask;
@@ -128,12 +128,13 @@ void ma_memory_sampling(unsigned long source, unsigned long dest, int minpages, 
   free(status);
   free(sources);
   free(dests);
+  munmap(buffer, pages * pagesize);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
   ns /= (LOOPS * 2);
-  fprintf(f, "%ld\t%ld\t%ld\t%ld\t%ld\n", source, dest, pagesize*minpages, pagesize*pages, ns);
-  printf("%ld\t%ld\t%ld\t%ld\t%ld\n", source, dest, pagesize*minpages, pagesize*pages, ns);
+  fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns);
+  printf("%ld\t%ld\t%d\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns);
 }
 
 void ma_memory_sampling_get_filename(char *filename) {
@@ -166,11 +167,10 @@ void ma_memory_sampling_get_filename(char *filename) {
   mkdir(directory, 0755);
 }
 
-void ma_memory_insert_cost(p_tbx_slist_t migration_costs, unsigned long minsize, unsigned long maxsize, unsigned long cost) {
+void ma_memory_insert_cost(p_tbx_slist_t migration_costs, unsigned long maxsize, unsigned long cost) {
   marcel_memory_migration_cost_t *migration_cost;
 
   migration_cost = malloc(sizeof(marcel_memory_migration_cost_t));
-  migration_cost->nbpages_min = minsize;
   migration_cost->nbpages_max = maxsize;
   migration_cost->cost = cost;
 
@@ -184,9 +184,9 @@ void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_m
   char line[1024];
   unsigned long source;
   unsigned long dest;
-  unsigned long minsize;
   unsigned long maxsize;
   unsigned long cost;
+  int pages;
 
   ma_memory_sampling_get_filename(filename);
   out = fopen(filename, "r");
@@ -197,11 +197,10 @@ void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_m
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
-    fscanf(out, "%ld\t%ld\t%ld\t%ld\t%ld\n", &source, &dest, &minsize, &maxsize, &cost);
-    //printf("%ld\t%ld\t%ld\t%ld\t%ld\n", source, dest, minsize, maxsize, cost);
+    fscanf(out, "%ld\t%ld\t%d\t%ld\t%ld\n", &source, &dest, &pages, &maxsize, &cost);
 
-    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], minsize, maxsize, cost);
-    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], minsize, maxsize, cost);
+    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], maxsize, cost);
+    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], maxsize, cost);
   }
   fclose(out);
 }
@@ -212,27 +211,40 @@ void marcel_memory_sampling_of_migration_cost() {
   unsigned long source, dest;
   char filename[1024];
   FILE *out;
-  int nbpages[] = { 10, 50, 100, 500, 1000, 5000, -1 };
+  //int nbpages[] = { 200, 400, 500, 1000, 1500, 2000, 3000, 4000, 5000, 10000, 15000, 20000, 25000, -1 };
 
   pagesize = getpagesize();
   maxnode = numa_max_node()+1;
 
   ma_memory_sampling_get_filename(filename);
   out = fopen(filename, "w");
-  fprintf(out, "Source\tDest\tMin_size\tMax_size\tMigration_Time\n");
-  printf("Source\tDest\tMin_size\tMax_size\tMigration_Time\n");
+  fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
+  printf("Source\tDest\tPages\tSize\tMigration_Time\n");
 
   for(source=0; source<maxnode ; source++) {
     for(dest=0; dest<maxnode ; dest++) {
-      int min = 0;
-      int *pages = nbpages;
-
       if (source >= dest) continue;
 
-      while (*pages != -1) {
-        ma_memory_sampling(source, dest, min, *pages, maxnode, pagesize, out);
-        min = *pages;
-        pages ++;
+      {
+        int pages;
+        for(pages=1; pages<=100 ; pages++) {
+          ma_memory_sampling(source, dest, pages, maxnode, pagesize, out);
+        }
+        fflush(out);
+      }
+      {
+        int pages;
+        for(pages=200; pages<5000 ; pages+=100) {
+          ma_memory_sampling(source, dest, pages, maxnode, pagesize, out);
+        }
+        fflush(out);
+      }
+      {
+        int pages;
+        for(pages=5000; pages<25000 ; pages+=1000) {
+          ma_memory_sampling(source, dest, pages, maxnode, pagesize, out);
+        }
+        fflush(out);
       }
     }
   }

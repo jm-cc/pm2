@@ -653,8 +653,9 @@ affinity_sched_submit (marcel_entity_t *e) {
    locking issues. */
 static int
 steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t *starving_rq) {
-  int i, nb_ancestors = 0, max_ancestors = 128, nvp = marcel_vpset_weight (&common_rq->vpset);
-  marcel_entity_t **ancestors = calloc (max_ancestors, sizeof(marcel_entity_t));
+#define MAX_ANCESTORS 128
+  int i, nb_ancestors = 0, nvp = marcel_vpset_weight (&common_rq->vpset);
+  marcel_entity_t *ancestors[MAX_ANCESTORS];
   marcel_entity_t *e;
   
   /* Before moving the target entity, we have to move up some of its
@@ -686,8 +687,8 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
      target entity. */
   ma_move_entity (entity_to_steal, &starving_rq->as_holder);
 
-  free (ancestors);
   return 1;
+#undef MAX_ANCESTORS
 }
 
 

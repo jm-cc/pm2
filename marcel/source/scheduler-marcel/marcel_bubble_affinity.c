@@ -292,13 +292,12 @@ translate_favorite_vp (int favorite_vp, marcel_entity_t *e, struct marcel_topo_l
        topo_level it was scheduled on. */
     MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
     struct marcel_topo_level *last_topo_level = (struct marcel_topo_level *) ma_stats_get (e, ma_stats_last_topo_level_offset);
-    if (!last_topo_level) {
-      break;
-    }
-    for (i = 0; i < from->arity; i++) {
-      if (marcel_vpset_isincluded (&from->children[i]->vpset, &last_topo_level->vpset)) {
-	translated_index = i;
-	break;
+    if (last_topo_level) {
+      for (i = 0; i < from->arity; i++) {
+	if (marcel_vpset_isincluded (&from->children[i]->vpset, &last_topo_level->vpset)) {
+	  translated_index = i;
+	  break;
+	}
       }
     }
   } else {

@@ -283,13 +283,30 @@ print_attracting_levels (attracting_level_t *attracting_levels, unsigned arity) 
    runqueues, so you have to know which child topo_level covers the
    _favourite_vp_ vp.) */
 static int
-translate_favorite_vp (int favorite_vp, struct marcel_topo_level *from) {
+translate_favorite_vp (int favorite_vp, marcel_entity_t *e, struct marcel_topo_level *from) {
   unsigned i;
-  int translated_index = -1;
-  for (i = 0; i < from->arity; i++) {
-    if (marcel_vpset_isset (&from->children[i]->vpset, (unsigned) favorite_vp)) {
-      translated_index = i;
+  int translated_index = MA_VPSTATS_NO_LAST_VP;
+  if (favorite_vp == MA_VPSTATS_CONFLICT) {
+    /* If the considered entity is a bubble that contains conflicting
+       last_vp informations, we try to attract this bubble to the last
+       topo_level it was scheduled on. */
+    MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+    struct marcel_topo_level *last_topo_level = (struct marcel_topo_level *) ma_stats_get (e, ma_stats_last_topo_level_offset);
+    if (!last_topo_level) {
       break;
+    }
+    for (i = 0; i < from->arity; i++) {
+      if (marcel_vpset_isincluded (&from->children[i]->vpset, &last_topo_level->vpset)) {
+	translated_index = i;
+	break;
+      }
+    }
+  } else {
+    for (i = 0; i < from->arity; i++) {
+      if (marcel_vpset_isset (&from->children[i]->vpset, (unsigned) favorite_vp)) {
+	translated_index = i;
+	break;
+      }
     }
   }
   return translated_index;
@@ -305,7 +322,7 @@ strict_cache_distribute (marcel_entity_t *e,
 			 int favorite_vp, 
 			 attracting_level_t *attracting_levels, 
 			 attracting_level_t *load_balancing_entities) {
-  if (favorite_vp == -1) {
+  if (favorite_vp == MA_VPSTATS_NO_LAST_VP) {
     attracting_levels_add_tail (e, load_balancing_entities);
   } else {
     if (!attracting_levels[favorite_vp].nb_entities) {
@@ -393,10 +410,8 @@ __distribute_entities_cache (struct marcel_topo_level *l,
     long last_vp = ma_favourite_vp (e[i]);
     long last_vp_index = -1; 
     
-    if (last_vp != -1) {
-      last_vp_index = translate_favorite_vp (last_vp, l);
-    }
-    
+    last_vp_index = translate_favorite_vp (last_vp, e[i], l);
+        
     strict_cache_distribute (e[i], 
 			     last_vp_index, 
 			     attracting_levels, 

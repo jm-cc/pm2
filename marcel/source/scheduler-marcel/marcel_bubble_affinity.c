@@ -417,7 +417,7 @@ __distribute_entities_cache (struct marcel_topo_level *l,
 			     &load_balancing_entities);
   }
   
-  /* Then, we greedily distribute the non-constraint entities to even
+  /* Then, we greedily distribute the unconstrained entities to balance
      the load. */
   spread_load_balancing_entities (attracting_levels, 
 				  &load_balancing_entities, 

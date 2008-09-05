@@ -352,7 +352,7 @@ global_load_balance (attracting_level_t *attracting_levels, unsigned arity, unsi
       attracting_levels_add_tail (attracting_levels_remove_tail (&attracting_levels[most_loaded]), 
 				  &attracting_levels[least_loaded]);
       least_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
-      most_loaded = attracting_levels_least_loaded_index (attracting_levels, arity);
+      most_loaded = attracting_levels_most_loaded_index (attracting_levels, arity);
     } else {
       return 1;
     }

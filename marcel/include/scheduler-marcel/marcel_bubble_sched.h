@@ -278,6 +278,11 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
  */
 void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
 
+/** \brief Remember the current threads and bubble distribution by
+    updating the last_topo_level statistics on every entity currently
+    scheduled. */
+void ma_bubble_snapshot (void);
+
 /** \brief
  * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on
  * the first runqueue encountering when following holding bubbles.

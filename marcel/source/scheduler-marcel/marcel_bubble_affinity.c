@@ -611,6 +611,8 @@ marcel_bubble_affinity(marcel_bubble_t *b, struct marcel_topo_level *l) {
   __sched_submit(&e, 1, l);
   __marcel_bubble_affinity(l);
   ma_resched_existing_threads(l);
+  /* Remember the distribution we've just applied. */
+  ma_bubble_snapshot ();
   ma_bubble_unlock_all(b, l);  
 
   ma_preempt_enable_no_resched();

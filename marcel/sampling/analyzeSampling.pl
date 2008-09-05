@@ -212,7 +212,8 @@ for $source (0 .. $maxnode) {
                     else {
                         $reg=$a * $b ** @$xlistref[$i];
                     }
-		    print output "@$xlistref[$i] @$ylistref[$i] $reg\n";
+                    my $error = ($reg  /@$ylistref[$i] * 100) - 100;
+		    print output "@$xlistref[$i] @$ylistref[$i] $reg $error\n";
 		}
 		close(output);
 		open gnuplot,$gnuplot=">${filename}.gnu" or die "Cannot open $gnuplot: $!";
@@ -221,6 +222,8 @@ for $source (0 .. $maxnode) {
 		}
 		print gnuplot "set title \"Source $source - Dest $dest\"\n";
 		print gnuplot "plot '${filename}.txt' using 1:2 title \"Original\" with lines, '${filename}.txt' using 1:3 title \"Regression\" with lines\n";
+		print gnuplot "pause -1\n";
+		print gnuplot "plot '${filename}.txt' using 1:4 title \"Error\" with lines\n";
 		print gnuplot "pause -1\n";
 		close(gnuplot);
 		system("gnuplot $filename.gnu");

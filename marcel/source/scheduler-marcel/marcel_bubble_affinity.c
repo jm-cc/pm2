@@ -243,7 +243,7 @@ static unsigned
 attracting_levels_least_loaded_index (attracting_level_t *attracting_levels, unsigned arity) {
   unsigned i, res = 0;
   for (i = 1; i < arity; i++) {
-    if (attracting_levels[i].nb_entities < attracting_levels[res].nb_entities)
+    if (attracting_levels[i].total_load < attracting_levels[res].total_load)
       res = i;
   }
   
@@ -256,7 +256,7 @@ static unsigned
 attracting_levels_most_loaded_index (attracting_level_t *attracting_levels, unsigned arity) {
   unsigned i, res = 0;
   for (i = 1; i < arity; i++) {
-    if (attracting_levels[i].nb_entities > attracting_levels[res].nb_entities)
+    if (attracting_levels[i].total_load > attracting_levels[res].total_load)
       res = i;
   }
   

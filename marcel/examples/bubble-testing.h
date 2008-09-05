@@ -119,6 +119,7 @@ phony_thread_entry_point (void *arg)
 
 static void
 populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadth,
+													 int use_main_thread,
 													 ma_atomic_t *thread_exit_signal)
 {
   unsigned i;
@@ -132,15 +133,26 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 					/* Creating threads as leaves of the hierarchy.  */
 					marcel_t thread;
 					marcel_attr_t attr;
+					unsigned thread_count;
 
 					marcel_attr_init (&attr);
 					marcel_attr_setinitbubble (&attr, bubble);
 
-					if (verbose_output)
-						printf ("creating %u threads\n", *level_breadth);
+					thread_count = *level_breadth;
 
-					/* We must account for the main thread, hence "-1" below.  */
-					for (i = 0; i < *level_breadth - 1; i++)
+					if (use_main_thread)
+						{
+							/* We must account for the main thread, thus we put it in the
+								 first bubble we create and we're left with fewer threads to
+								 create.  */
+							marcel_bubble_inserttask (bubble, marcel_self ());
+							thread_count -= 1;
+						}
+
+					if (verbose_output)
+						printf ("creating %u threads\n", thread_count);
+
+					for (i = 0; i < thread_count; i++)
 						/* Note: We can't use `dontsched' since THREAD would not appear
 							 on the runqueue.  */
 						marcel_create (&thread, &attr, phony_thread_entry_point,
@@ -164,7 +176,11 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 
 									/* Recurse into CHILD.  */
 									populate_bubble_hierarchy (child, level_breadth + 1,
+																						 use_main_thread,
 																						 thread_exit_signal);
+
+									/* The main thread is no longer available.  */
+									use_main_thread = 0;
 								}
 							else
 								abort ();
@@ -180,7 +196,7 @@ static marcel_bubble_t *
 make_simple_bubble_hierarchy (const unsigned *level_breadth,
 															ma_atomic_t *thread_exit_signal)
 {
-  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth,
+  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth, 1,
 														 thread_exit_signal);
 
   return &marcel_root_bubble;

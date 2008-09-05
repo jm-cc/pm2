@@ -77,7 +77,7 @@ void ma_memory_sampling(unsigned long source, unsigned long dest, int pages, uns
 
   // Allocate the pages
   buffer = mmap(NULL, pages * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-  if (err < 0) {
+  if (buffer < 0) {
     perror("mmap");
     exit(-1);
   }

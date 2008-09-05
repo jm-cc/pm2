@@ -261,6 +261,78 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
 }
 
 
+/* High-level test framework.  */
+
+/* Run a test program that checks whether distributing the bubble hierarchy
+	 described by BUBBLE_HIERARCHY_DESCRIPTION over the topology described by
+	 TOPOLOGY_DESCRIPTION yields the entity distribution described by
+	 EXPECTED_RESULT.  Return zero on success.  */
+static int
+test_marcel_bubble_scheduler (int argc, char *argv[],
+															marcel_bubble_sched_t *bubble_scheduler,
+															const char *topology_description,
+															const unsigned *bubble_hierarchy_description,
+															const tree_t *expected_result)
+{
+  int ret, matches_p, i;
+  char **new_argv;
+  marcel_bubble_t *root_bubble;
+	ma_atomic_t thread_exit_signal;
+
+	for (i = 1; i < argc; i++)
+		{
+			if (!strcmp ("--verbose", argv[i]))
+				verbose_output = stdout;
+		}
+
+  /* Pass the topology description to Marcel.  Yes, it looks hackish to
+     communicate with the library via command-line arguments.  */
+  new_argv = alloca ((argc + 2) * sizeof (*new_argv));
+  new_argv[0] = argv[0];
+  new_argv[1] = (char *) "--marcel-synthetic-topology";
+  new_argv[2] = (char *) topology_description;
+  memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
+	argc += 2;
+
+  /* Initialize Marcel.  It should pick use the "fake" topology described in
+		 TOPOLOGY_DESCRIPTION.  */
+  marcel_init (&argc, new_argv);
+
+	if (verbose_output)
+		print_topology (&marcel_machine_level[0], stdout, 0);
+
+ 	/* Before creating any threads, initialize the variable that they'll
+ 		 poll.  */
+ 	ma_atomic_init (&thread_exit_signal, 0);
+
+	/* Create a bubble hierarchy.  */
+  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
+																							&thread_exit_signal);
+
+  marcel_bubble_change_sched (bubble_scheduler);
+
+	/* Submit the generated bubble hierarchy to Affinity.  */
+  marcel_bubble_sched_begin ();
+
+	/* Did we get what we expected?  */
+	matches_p = topology_matches_tree_p (marcel_machine_level, expected_result);
+	if (matches_p)
+		printf ("PASS: scheduling entities were distributed as expected\n");
+	else
+		printf ("FAIL: scheduling entities were NOT distributed as expected\n");
+
+	ret = (matches_p ? 0 : 1);
+
+
+	/* Tell threads to leave.  */
+	ma_atomic_inc (&thread_exit_signal);
+
+	marcel_end ();
+
+  return ret;
+}
+
+
 int
 main (int argc, char *argv[])
 {
@@ -303,61 +375,9 @@ main (int argc, char *argv[])
 #undef THREAD
 #undef BUBBLE
 
-
-  int ret, matches_p, i;
-  char **new_argv;
-  marcel_bubble_t *root_bubble;
-	ma_atomic_t thread_exit_signal;
-
-	for (i = 1; i < argc; i++)
-		{
-			if (!strcmp ("--verbose", argv[i]))
-				verbose_output = stdout;
-		}
-
-  /* Pass the topology description to Marcel.  Yes, it looks hackish to
-     communicate with the library via command-line arguments.  */
-  new_argv = alloca ((argc + 2) * sizeof (*new_argv));
-  new_argv[0] = argv[0];
-  new_argv[1] = (char *) "--marcel-synthetic-topology";
-  new_argv[2] = (char *) topology_description;
-  memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
-	argc += 2;
-
-  /* Initialize Marcel.  It should pick use the "fake" topology described in
-		 TOPOLOGY_DESCRIPTION.  */
-  marcel_init (&argc, new_argv);
-
-	if (verbose_output)
-		print_topology (&marcel_machine_level[0], stdout, 0);
-
- 	/* Before creating any threads, initialize the variable that they'll
- 		 poll.  */
- 	ma_atomic_init (&thread_exit_signal, 0);
-
-	/* Create a bubble hierarchy.  */
-  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
-																							&thread_exit_signal);
-
-  marcel_bubble_change_sched (&marcel_bubble_affinity_sched);
-
-	/* Submit the generated bubble hierarchy to Affinity.  */
-  marcel_bubble_sched_begin ();
-
-	/* Did we get what we expected?  */
-	matches_p = topology_matches_tree_p (marcel_machine_level, &result_root);
-	if (matches_p)
-		printf ("PASS: scheduling entities were distributed as expected\n");
-	else
-		printf ("FAIL: scheduling entities were NOT distributed as expected\n");
-
-	ret = (matches_p ? 0 : 1);
-
-
-	/* Tell threads to leave.  */
-	ma_atomic_inc (&thread_exit_signal);
-
-	marcel_end ();
-
-  return ret;
+	return test_marcel_bubble_scheduler (argc, argv,
+																			 &marcel_bubble_affinity_sched,
+																			 topology_description,
+																			 bubble_hierarchy_description,
+																			 &result_root);
 }

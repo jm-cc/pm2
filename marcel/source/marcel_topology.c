@@ -1727,9 +1727,11 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	unsigned level;
 	struct marcel_topo_level *root, *vp;
 
-	/* Initialize level depths.  */
-	for (level = 0; level <= MARCEL_LEVEL_LAST; level++)
+	/* Initialize level breadth and depth.  */
+	for (level = 0; level <= MARCEL_LEVEL_LAST; level++) {
+		marcel_topo_level_nbitems[level] = 0;
 		ma_topo_type_depth[level] = -1;
+	}
 	ma_topo_type_depth[MARCEL_LEVEL_MACHINE] = 0;
 
 	synth_allocate_topology_levels(topology_description);

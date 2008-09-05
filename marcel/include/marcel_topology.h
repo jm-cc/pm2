@@ -284,7 +284,7 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 						   const marcel_vpset_t *sub_set);
 #section inline
 static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_set,
-						   const marcel_vpset_t *sub_set);
+						   const marcel_vpset_t *sub_set)
 {
 #ifdef MA__LWPS
         return (*super_set == (*super_set | *sub_set));

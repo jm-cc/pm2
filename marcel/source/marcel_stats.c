@@ -113,10 +113,11 @@ void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
 	/* Passing NULL as the ma_stats_synthesis_t argument of
 	   ma_stats_alloc() indicates that we don't need to sum things
 	   up into bubbles for the considered statistics. */
-	if (ma_stats_synthesis_func(offset)) {
-	  for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset))
+	for (offset = 0; offset < stats_cur.cur; offset += ma_stats_size(offset)) {
+	  if (ma_stats_synthesis_func(offset)) {
 	    ma_stats_synthesis_func(offset)(__ma_stats_get(dest,offset),
 					    __ma_stats_get(src,offset));
+	  }
 	}
 }
 

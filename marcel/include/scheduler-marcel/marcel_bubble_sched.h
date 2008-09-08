@@ -468,12 +468,16 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 #endif
 }
 
+/** \brief Tell whether bubble \e b is preemptible, i.e., whether one of its
+ * threads can be preempted by a thread from another bubble.  */
 static __tbx_inline__ void marcel_bubble_set_preemptible(marcel_bubble_t *b, tbx_bool_t preemptible) {
 #ifdef MA__BUBBLES
 	b->not_preemptible = !preemptible;
 #endif
 }
 
+/** \brief Return true if bubble \e b is preemptible, i.e., if one of its
+ * threads can be preempted by a thread from another bubble.  */
 static __tbx_inline__ tbx_bool_t marcel_bubble_is_preemptible(const marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	return !b->not_preemptible;

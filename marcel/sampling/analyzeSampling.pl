@@ -56,7 +56,8 @@ sub linearRegression {
 
 sub help {
     print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
-    print "            [-min minimum value for the x coordinates] [-max maximum value for the x coordinates]\n";
+    print "            [-min <minimum value for the x coordinates>] [-max <maximum value for the x coordinates>]\n";
+    print "            [-source <node identifier>] [-dest <node identifier>]\n";
     print "            [-plot] [-nodumb]\n";
     print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
@@ -76,13 +77,16 @@ sub help {
 # dest.
 
 # Set the default parameters
-my $maxnode=10;
 my $plot = 0;
 my $dumb = 1;
 my $filename = "";
 my $hostname = "";
 my $x_min = 0;               # Minimum size for the x coordinates
 my $x_max = 100000;          # Maximum size for the x coordinates
+my $source_min=0;
+my $source_max=10;
+my $dest_min=0;
+my $dest_max=10;
 
 my $correctError = 10;
 
@@ -97,6 +101,14 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
     }
     elsif ($ARGV[$i] eq "-max") {
 	$x_max=$ARGV[$i+1];
+	$i++;
+    }
+    elsif ($ARGV[$i] eq "-source") {
+	$source_min=$source_max=$ARGV[$i+1];
+	$i++;
+    }
+    elsif ($ARGV[$i] eq "-dest") {
+	$dest_min=$dest_max=$ARGV[$i+1];
 	$i++;
     }
     elsif ($ARGV[$i] eq "-plot") {
@@ -117,16 +129,16 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
 # Initialise the datas to store the x and y values.
 my @xdatas;
 my @ydatas;
-for $source (0 .. $maxnode) {
-    for $dest (0 .. $maxnode) {
+for $source ($source_min .. $source_max) {
+    for $dest ($dest_min .. $dest_max) {
 	my @xlist = ();
 	$xdatas[$source][$dest] = \@xlist;
 	my @ylist = ();
 	$ydatas[$source][$dest] = \@ylist;
     }
 }
-for $source (0 .. $maxnode) {
-    for $dest (0 .. $maxnode) {
+for $source ($source_min .. $source_max) {
+    for $dest ($dest_min .. $dest_max) {
 	my $xlistref = $xdatas[$source][$dest];
 	my $ylistref = $ydatas[$source][$dest];
 	#print "Lists $xlistref $ylistref\n";
@@ -170,8 +182,8 @@ close(input);
 
 # For each pair $source $dest, perform the linear regression and plot
 # the result
-for $source (0 .. $maxnode) {
-    for $dest (0 .. $maxnode) {
+for $source ($source_min .. $source_max) {
+    for $dest ($dest_min .. $dest_max) {
 	my $xlistref = $xdatas[$source][$dest];
 	my $ylistref = $ydatas[$source][$dest];
 	if (scalar(@$xlistref) != 0) {

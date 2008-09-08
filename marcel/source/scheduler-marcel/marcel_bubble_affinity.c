@@ -20,6 +20,9 @@
 
 #ifdef MA__BUBBLES
 
+#define MA_AFFINITY_USE_WORK_STEALING 0
+#define MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS 0
+
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
@@ -123,7 +126,7 @@ attracting_levels_add_tail (marcel_entity_t *e, attracting_level_t *attracting_l
 /* Add the _e_ entity at position _j_ in the
    _attracting_level_->entities array. */
 static void
-attracting_levels_add (marcel_entity_t *e, 
+attracting_levels_add (marcel_entity_t *e,
 		       attracting_level_t *attracting_level, 
 		       unsigned position) {
   MA_BUG_ON (position >= attracting_level->nb_entities);
@@ -177,6 +180,7 @@ attracting_levels_most_loaded_index (attracting_level_t *attracting_levels, unsi
   return res;
 }
 
+#if MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS
 /* Debugging function that prints the address of every entity on each
    attracting level included in _attracting_levels_. */
 static void
@@ -191,6 +195,7 @@ print_attracting_levels (attracting_level_t *attracting_levels, unsigned arity) 
     }
   }
 }
+#endif /* MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS */
 
 /* This function translates a vp index into a from->children
    index. (i.e., sometimes you're not distributing on vp-level
@@ -614,6 +619,7 @@ affinity_sched_submit (marcel_entity_t *e) {
   return 0;
 }
 
+#if MA_AFFINITY_USE_WORK_STEALING
 /* This function moves _entity_to_steal_ to the _starving_rq_
    runqueue, while moving everything that needs to be moved to avoid
    locking issues. */
@@ -851,12 +857,14 @@ affinity_steal(unsigned from_vp) {
   ma_atomic_inc(&failed_steals);
   return 0;
 }
+#endif /* MA_AFFINITY_USE_WORK_STEALING */
 
 struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
   .init = affinity_sched_init,
   .exit = affinity_sched_exit,
   .submit = affinity_sched_submit,
-  //.vp_is_idle = affinity_steal,
+#if MA_AFFINITY_USE_WORK_STEALING
+  .vp_is_idle = affinity_steal,
+#endif /* MA_AFFINITY_USE_WORK_STEALING */
 };
-
 #endif /* MA__BUBBLES */

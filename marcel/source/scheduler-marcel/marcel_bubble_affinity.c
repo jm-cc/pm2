@@ -308,9 +308,9 @@ ma_distribute_according_to_attracting_levels (ma_attracting_level_t *attracting_
 /* Distributes a set of entities regarding cache affinities */
 static int
 ma_aff_distribute_entities_cache (struct marcel_topo_level *l, 
-			     marcel_entity_t *e[], 
-			     int ne,
-			     ma_attracting_level_t *attracting_levels) {
+				  marcel_entity_t *e[], 
+				  int ne,
+				  ma_attracting_level_t *attracting_levels) {
   unsigned int i, arity = l->arity, entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
   ma_attracting_level_t load_balancing_entities;
   ma_attracting_levels_init (&load_balancing_entities, NULL, 0, ne);
@@ -461,7 +461,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
   bubble_sched_debug ("Entities were taken from runqueue %p:\n", &l->rq);
   ma_debug_show_entities ("ma_aff_distribute_from", e, ne);
 
-  qsort (e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
+  qsort (e, ne, sizeof(e[0]), &ma_increasing_order_entity_load_compar);
    
   if (ne < nvp) {
     if (ma_aff_has_enough_entities (l, e, ne, attracting_levels))

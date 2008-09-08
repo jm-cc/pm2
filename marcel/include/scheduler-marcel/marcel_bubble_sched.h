@@ -222,7 +222,7 @@ struct marcel_bubble {
 
 	/** \brief Whether the bubble is preemptible, i.e., whether one of its
 			threads can be preempted by a thread from another bubble.  */
-	tbx_bool_t is_preemptible;
+	tbx_bool_t not_preemptible;
 
    /** \brief Dead bubbles (temporary field)*/
 	int old;
@@ -249,7 +249,7 @@ struct marcel_bubble {
 	.num_schedules = 0, \
 	.settled = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
-	.is_preemptible = tbx_true, \
+	.not_preemptible = tbx_false, \
    .old = 0, \
 }
 
@@ -470,13 +470,13 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 
 static __tbx_inline__ void marcel_bubble_set_preemptible(marcel_bubble_t *b, tbx_bool_t preemptible) {
 #ifdef MA__BUBBLES
-	b->is_preemptible = preemptible;
+	b->not_preemptible = !preemptible;
 #endif
 }
 
 static __tbx_inline__ tbx_bool_t marcel_bubble_is_preemptible(const marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
-	return b->is_preemptible;
+	return !b->not_preemptible;
 #else
 	return tbx_true;
 #endif

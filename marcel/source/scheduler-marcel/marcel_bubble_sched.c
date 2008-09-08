@@ -927,7 +927,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		LOG_RETURN(NULL);
 	}
 
-	if (bubble->is_preemptible && bubble->num_schedules >= bubble->as_holder.nr_ready) {
+	if (!bubble->not_preemptible && bubble->num_schedules >= bubble->as_holder.nr_ready) {
 		/* we expired our threads, let others execute */
 		bubble->num_schedules = 0;
 		if (bubble->as_entity.run_holder_data) {

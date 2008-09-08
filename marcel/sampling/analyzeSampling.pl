@@ -225,42 +225,60 @@ for $source ($source_min .. $source_max) {
         # Filter the values
         my @xfiltered = ();
         my @yfiltered = ();
-        filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_min, $x_max);
-	next if (scalar(@xfiltered) == 0);
- 
-        # Performs the linear regression
         my @yreg = ();
         my @yerror = ();
-        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
+        my $a, $b, $r;
 
-        if ($r <= 0.992) {
-            print color 'bold red';
-        }
-        print "$source\t$dest\t$x_min\t$x_max\t$a\t$b\t$r\n";
-        if ($r <= 0.992) {
-            print color 'reset';
-        }
+        $x_max = @$xlistref[scalar(@$xlistref)-1];
 
-        if ($plot) {
-            my $outputfile = "sampling_${source}_${dest}";
-            open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-            my $l = scalar(@xfiltered);
-            for(my $i=0 ; $i<$l ; $i++) {
-                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
+        my $x_current_min = $x_min;
+        my $x_current_max = $x_max;
+
+        do {
+            do {
+                @xfiltered = ();
+                @yfiltered = ();
+                @yreg = ();
+                @yerror = ();
+
+                # filters data
+                filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
+                next if (scalar(@xfiltered) == 0);
+ 
+                # Performs the linear regression
+                ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
+
+                if ($r <= 0.992) {
+                    $x_current_max -= 1;
+                }
+            } while ($r < 0.992);
+
+            print "$source\t$dest\t$x_current_min\t$x_current_max\t$a\t$b\t$r\n";
+
+            if ($plot) {
+                my $outputfile = "sampling_${source}_${dest}";
+                open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+                my $l = scalar(@xfiltered);
+                for(my $i=0 ; $i<$l ; $i++) {
+                    print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
+                }
+                close(output);
+
+                open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
+                if ($dumb) {
+                    print gnuplot "set terminal dumb\n";
+                }
+                print gnuplot "set title \"Source $source - Dest $dest\"\n";
+                print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
+                print gnuplot "pause -1\n";
+                print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
+                print gnuplot "pause -1\n";
+                close(gnuplot);
+                system("gnuplot $outputfile.gnu");
             }
-            close(output);
-
-            open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
-            if ($dumb) {
-                print gnuplot "set terminal dumb\n";
-            }
-            print gnuplot "set title \"Source $source - Dest $dest\"\n";
-            print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
-            print gnuplot "pause -1\n";
-            print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
-            print gnuplot "pause -1\n";
-            close(gnuplot);
-            system("gnuplot $outputfile.gnu");
-        }
+            
+            $x_current_min = $x_current_max;
+            $x_current_max = $x_max;
+        } while ($x_current_min < $x_max);
     }
 }

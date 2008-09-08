@@ -42,25 +42,9 @@ __sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
   }
 }
 
-struct load_indicator {
-  int load;
-  struct marcel_topo_level *l; 
-};
-
-typedef struct load_indicator load_indicator_t;
-
 static int 
 int_compar(const void *_e1, const void *_e2) {
   return *(int *)_e2 - *(int *)_e1;
-}
-
-static int 
-rq_load_compar(const void *_li1, const void *_li2) {
-  load_indicator_t *li1 = (load_indicator_t *) _li1;
-  load_indicator_t *li2 = (load_indicator_t *) _li2;
-  long l1 = li1->load;
-  long l2 = li2->load;
-  return l1 - l2;
 }
 
 static int
@@ -77,76 +61,6 @@ load_from_children(struct marcel_topo_level *father) {
     ret += ma_count_entities_on_rq(&father->rq, RECURSIVE_MODE);
   }
   return ret;
-}
-
-static void
-initialize_load_manager(load_indicator_t *load_manager, struct marcel_topo_level *from, int arity) {
-  int k;
-  
-  for (k = 0; k < arity; k++) { 
-    load_manager[k].load = load_from_children(from->children[k]);
-    load_manager[k].l = from->children[k];
-  }
-}
-
-static int
-__find_index(load_indicator_t *load_manager, int begin, int end) {
-  int value = load_manager[0].load;
-  if (begin >= end - 1)
-    return begin;
-  int pivot = (begin + end) / 2;
-  if (value > load_manager[pivot].load)
-    return __find_index(load_manager, pivot, end);
-  else
-    return __find_index(load_manager, begin, pivot);
-}
-
-/* Inserts an element in a sorted load_manager */
-static void
-__rearrange_load_manager(load_indicator_t *load_manager, int arity) {
-  load_indicator_t tmp;
-  tmp.load = load_manager[0].load;
-  tmp.l = load_manager[0].l;
-  int index = __find_index(load_manager, 0, arity);
-  memmove(&load_manager[0], &load_manager[1], index * sizeof(struct load_indicator));
-  load_manager[index].load = tmp.load;
-  load_manager[index].l = tmp.l;
-}
- 
-/* Distributes a set of entities regarding the load of the underlying
-   levels */
-static void 
-__distribute_entities_load (struct marcel_topo_level *l, 
-			    marcel_entity_t *e[], 
-			    int ne, 
-			    load_indicator_t *load_manager) {       
-  int i;    
-  int arity = l->arity;
-
-  if (!arity) {
-    bubble_sched_debug("__distribute_entities: done !arity\n");
-    return;
-  }
-
-  for (i = 0; i < ne; i++) {
-    if (e[i]) {
-      if (e[i]->type == MA_BUBBLE_ENTITY) {
-	marcel_bubble_t *b = ma_bubble_entity(e[i]);
-	if (!b->as_holder.nr_ready) { /* We don't pick empty bubbles */         
-	  bubble_sched_debug("bubble %p is empty\n",b);
-	  continue;                     
-	}
-      }
-      
-      int state = ma_get_entity(e[i]);
-      int nbthreads = ma_entity_load(e[i]);
-      
-      load_manager[0].load += nbthreads;
-      ma_put_entity(e[i], &load_manager[0].l->rq.as_holder, state);
-      bubble_sched_debug("%p on %s\n",e[i],load_manager[0].l->rq.name);
-      __rearrange_load_manager(load_manager, arity);
-    }
-  }
 }
 
 typedef marcel_entity_t * ma_entity_ptr_t;
@@ -392,14 +306,13 @@ distribute_according_to_attracting_levels (attracting_level_t *attracting_levels
 static int
 __distribute_entities_cache (struct marcel_topo_level *l, 
 			     marcel_entity_t *e[], 
-			     int ne) {
+			     int ne,
+			     attracting_level_t *attracting_levels) {
   unsigned i;
   unsigned arity = l->arity;
   unsigned entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
-  attracting_level_t attracting_levels[arity];
-  attracting_level_t load_balancing_entities;
   
-  attracting_levels_init (attracting_levels, l, arity, ne);
+  attracting_level_t load_balancing_entities;
   attracting_levels_init (&load_balancing_entities, NULL, 0, ne);
 
   /* First, we add each entity stored in _e[]_ to the
@@ -432,10 +345,45 @@ __distribute_entities_cache (struct marcel_topo_level *l,
      move entities according it. */
   distribute_according_to_attracting_levels (attracting_levels, arity);
 
-  attracting_levels_destroy (attracting_levels, arity);
   attracting_levels_destroy (&load_balancing_entities, 1);
 
   return 0; 
+}
+
+/* Distributes a set of entities regarding the load of the underlying
+   levels */
+static void 
+__distribute_entities_load (struct marcel_topo_level *l, 
+			    marcel_entity_t *e[], 
+			    int ne, 
+			    attracting_level_t *attracting_levels) {       
+  unsigned int i;    
+  unsigned int arity = l->arity;
+
+  if (!arity) {
+    bubble_sched_debug("__distribute_entities: done !arity\n");
+    return;
+  }
+
+  for (i = 0; i < ne; i++) {
+    if (e[i]) {
+      if (e[i]->type == MA_BUBBLE_ENTITY) {
+	marcel_bubble_t *b = ma_bubble_entity(e[i]);
+	if (!b->as_holder.nr_ready) { /* We don't pick empty bubbles */         
+	  bubble_sched_debug("bubble %p is empty\n",b);
+	  continue;                     
+	}
+      }
+      
+      int state = ma_get_entity(e[i]);
+      unsigned int load = ma_entity_load(e[i]);
+      
+      unsigned int least = attracting_levels_least_loaded_index (attracting_levels, arity);
+      attracting_levels[least].total_load += load;
+      ma_put_entity(e[i], &attracting_levels[least].level->rq.as_holder, state);
+      bubble_sched_debug("%p on %s\n",e[i],attracting_levels[least].level->rq.name);
+    }
+  }
 }
 
 /* Checks wether enough entities are already positionned on
@@ -444,7 +392,7 @@ static int
 __has_enough_entities(struct marcel_topo_level *l, 
 		      marcel_entity_t *e[], 
 		      int ne, 
-		      const load_indicator_t *load_manager) {
+		      const attracting_level_t *attracting_levels) {
   int ret = 1, prev_state = 1;
   int nvp = marcel_vpset_weight(&l->vpset);
   unsigned arity = l->arity;
@@ -455,14 +403,14 @@ __has_enough_entities(struct marcel_topo_level *l,
     return 0;
 
   for (i = 0; i < arity; i++)
-    if (load_manager[i].load < per_item_entities)
+    if (attracting_levels[i].total_load < per_item_entities)
       prev_state = 0;
   
   if (prev_state)
     return prev_state;
   
   for (i = 0; i < arity; i++)
-    entities_per_level[i] = load_manager[i].load;
+    entities_per_level[i] = attracting_levels[i].total_load;
   
   qsort(entities_per_level, arity, sizeof(int), &int_compar);
   
@@ -512,11 +460,9 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
 
   bubble_sched_debug("affinity found %d entities to distribute.\n", ne);
   
-  load_indicator_t load_manager[arity];
-  initialize_load_manager(load_manager, l, arity);
+  attracting_level_t attracting_levels[arity];
+  attracting_levels_init (attracting_levels, l, arity, ne);
   
-  qsort(load_manager, arity, sizeof(load_manager[0]), &rq_load_compar);
-
   marcel_entity_t *e[ne];
   bubble_sched_debug("get in __marcel_bubble_affinity\n");
   ma_get_entities_from_rq(&l->rq, e, ne);
@@ -527,8 +473,8 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
   qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
    
   if (ne < nvp) {
-    if (__has_enough_entities(l, e, ne, load_manager))
-      __distribute_entities_cache (l, e, ne);
+    if (__has_enough_entities(l, e, ne, attracting_levels))
+      __distribute_entities_cache (l, e, ne, attracting_levels);
     else {
       /* We really have to explode at least one bubble */
       bubble_sched_debug("We have to explode bubbles...\n");
@@ -562,14 +508,16 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
       }
       
       if (!bubble_has_exploded) {
-	__distribute_entities_cache (l, e, ne);
+	__distribute_entities_cache (l, e, ne, attracting_levels);
 	for (k = 0; k < arity; k++)
 	  __marcel_bubble_affinity(l->children[k]);
+	attracting_levels_destroy (attracting_levels, arity);
 	return;
       }
 	  
       if (!new_ne) {
 	bubble_sched_debug( "done: !new_ne\n");
+	attracting_levels_destroy (attracting_levels, arity);
 	return;
       }
       
@@ -596,17 +544,20 @@ void __marcel_bubble_affinity (struct marcel_topo_level *l) {
       MA_BUG_ON(new_ne != j);
       
       __sched_submit (new_e, new_ne, l);
+      attracting_levels_destroy (attracting_levels, arity);
       return __marcel_bubble_affinity(l);
     }
   } else { /* ne >= nvp */ 
     /* We can delay bubble explosion ! */
     bubble_sched_debug("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
-    __distribute_entities_cache (l, e, ne);
+    __distribute_entities_cache (l, e, ne, attracting_levels);
   }
   
   /* Keep distributing on the underlying levels */
   for (i = 0; i < arity; i++)
     __marcel_bubble_affinity(l->children[i]);
+
+  attracting_levels_destroy (attracting_levels, arity);
 }
 
 void 

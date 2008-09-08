@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use Term::ANSIColor;
+
 sub mean {
     my ($dataref) = @_;
 
@@ -49,7 +51,7 @@ sub linearRegression {
 
     my $a = $covar_xy / $var_x;
     my $b = -$a * $mean_x + $mean_y;
-    my $r = $covar_xy / sqrt($var_x) / sqrt($var_y);
+    my $r = $covar_xy / sqrt($var_x) / sqrt($var_y); # pearson coefficient
 
     my $l = scalar(@$xdataref);
     for(my $i=0 ; $i<$l ; $i++) {
@@ -58,9 +60,9 @@ sub linearRegression {
         my $error = ($reg /@$ydataref[$i] * 100) - 100;
         push(@$yerrorref, $error);
 
-        if ($error >= $correctError || $error <= -$correctError) {
-            print "Warning. The value for @$xdataref[$i] ($error) differs by more than $correctError% to the estimation \n";
-        }
+        #if ($error >= $correctError || $error <= -$correctError) {
+        #print "Warning. The value for @$xdataref[$i] ($error) differs by more than $correctError% to the estimation \n";
+        #}
     }
 
     return ($a, $b, $r);
@@ -210,6 +212,8 @@ while(<input>) {
 }
 close(input);
 
+print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
+
 # For each pair $source $dest, perform the linear regression and plot
 # the result
 for $source ($source_min .. $source_max) {
@@ -224,14 +228,18 @@ for $source ($source_min .. $source_max) {
         filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_min, $x_max);
 	next if (scalar(@xfiltered) == 0);
  
-        print "\n\nProcessing values for source = $source and dest = $dest\n";
-
         # Performs the linear regression
         my @yreg = ();
         my @yerror = ();
         my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
-        print "y = $a * x + $b\n";
-        print "r (pearson coefficient) = $r\n";
+
+        if ($r <= 0.992) {
+            print color 'bold red';
+        }
+        print "$source\t$dest\t$x_min\t$x_max\t$a\t$b\t$r\n";
+        if ($r <= 0.992) {
+            print color 'reset';
+        }
 
         if ($plot) {
             my $outputfile = "sampling_${source}_${dest}";

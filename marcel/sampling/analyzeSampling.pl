@@ -38,7 +38,7 @@ sub var {
 }
 
 sub linearRegression {
-    my ($xdataref, $ydataref, $yregref) = @_;
+    my ($xdataref, $ydataref, $yregref, $yerrorref, $correctError) = @_;
     my $mean_x = mean($xdataref);
     my $mean_y = mean($ydataref);
 
@@ -55,7 +55,14 @@ sub linearRegression {
     for(my $i=0 ; $i<$l ; $i++) {
         my $reg=$a * @$xdataref[$i] + $b;
         push(@$yregref, $reg);
+        my $error = ($reg /@$ydataref[$i] * 100) - 100;
+        push(@$yerrorref, $error);
+
+        if ($error >= $correctError || $error <= -$correctError) {
+            print "Warning. The value for @$xdataref[$i] ($error) differs by more than $correctError% to the estimation \n";
+        }
     }
+
     return ($a, $b, $r);
 }
 
@@ -221,29 +228,20 @@ for $source ($source_min .. $source_max) {
 
         # Performs the linear regression
         my @yreg = ();
-        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg);
+        my @yerror = ();
+        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
         print "y = $a * x + $b\n";
         print "r (pearson coefficient) = $r\n";
 
-        my $outputfile;
         if ($plot) {
-            $outputfile = "sampling_${source}_${dest}";
+            my $outputfile = "sampling_${source}_${dest}";
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-        }
-		
-        my $l = scalar(@xfiltered);
-        for(my $i=0 ; $i<$l ; $i++) {
-            my $error = (@yreg[$i] /@yfiltered[$i] * 100) - 100;
-            if ($error >= $correctError || $error <= -$correctError) {
-                print "Warning. The value for @xfiltered[$i] ($error) differs by more than $correctError% to the estimation \n";
+            my $l = scalar(@xfiltered);
+            for(my $i=0 ; $i<$l ; $i++) {
+                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
             }
-            if ($plot) {
-                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $error\n";
-            }
-        }
-
-        if ($plot) {
             close(output);
+
             open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
             if ($dumb) {
                 print gnuplot "set terminal dumb\n";

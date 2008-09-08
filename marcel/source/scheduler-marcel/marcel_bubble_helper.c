@@ -108,6 +108,11 @@ ma_count_entities_on_rq (ma_runqueue_t *rq) {
   unsigned int ne = 0;
   
   for_each_entity_scheduled_on_runqueue (ee, rq) {
+    if (ee->type == MA_BUBBLE_ENTITY) { 
+      if (!(ma_bubble_entity (ee))->as_holder.nr_ready) {
+	continue;
+      }
+    }       
     ne++;
   }
   

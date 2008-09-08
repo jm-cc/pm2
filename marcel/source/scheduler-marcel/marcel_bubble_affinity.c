@@ -773,11 +773,12 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 static int
 affinity_steal (unsigned int from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father, *top = marcel_topo_level (0,0);
-  unsigned int arity, n, smthg_to_steal = 0, nvp = marcel_vpset_weight (&top->vpset);
-  
+  unsigned int arity, smthg_to_steal = 0, nvp = marcel_vpset_weight (&top->vpset);
+  int n;
+
 #if 0
-  if ((last_failed_steal && ((marcel_clock() - last_failed_steal) < MA_FAILED_STEAL_COOLDOWN))
-      || (last_succeeded_steal && ((marcel_clock() - last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
+  if ((ma_last_failed_steal && ((marcel_clock() - ma_last_failed_steal) < MA_FAILED_STEAL_COOLDOWN))
+      || (ma_last_succeeded_steal && ((marcel_clock() - ma_last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
     return 0;
 #endif
   
@@ -826,14 +827,14 @@ affinity_steal (unsigned int from_vp) {
   
   if (smthg_to_steal) { 
     bubble_sched_debug("We successfuly stole one or several entities !\n");
-    last_succeeded_steal = marcel_clock ();
-    ma_atomic_inc (&succeeded_steals);
+    ma_last_succeeded_steal = marcel_clock ();
+    ma_atomic_inc (&ma_succeeded_steals);
     return 1;
   }
 
-  last_failed_steal = marcel_clock();
+  ma_last_failed_steal = marcel_clock();
   bubble_sched_debug ("We didn't manage to steal anything !\n");
-  ma_atomic_inc (&failed_steals);
+  ma_atomic_inc (&ma_failed_steals);
   return 0;
 }
 #endif /* MA_AFFINITY_USE_WORK_STEALING */

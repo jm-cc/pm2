@@ -235,11 +235,15 @@ for $source ($source_min .. $source_max) {
         my $x_current_max = $x_max;
 
         do {
+            my $done = 1;
             do {
+                $done = 1;
                 @xfiltered = ();
                 @yfiltered = ();
                 @yreg = ();
                 @yerror = ();
+
+                #print "performs regression for $x_current_min .. $x_current_max\n";
 
                 # filters data
                 filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
@@ -248,15 +252,16 @@ for $source ($source_min .. $source_max) {
                 # Performs the linear regression
                 ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
 
-                if ($r <= 0.992) {
+                if (($b <= 0 && $x_current_min == 0) || ($r < 0.992)) {
+                    $done = 0;
                     $x_current_max -= 1;
                 }
-            } while ($r < 0.992);
+            } while ($done == 0);
 
             print "$source\t$dest\t$x_current_min\t$x_current_max\t$a\t$b\t$r\n";
 
             if ($plot) {
-                my $outputfile = "sampling_${source}_${dest}";
+                my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
                 open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
                 my $l = scalar(@xfiltered);
                 for(my $i=0 ; $i<$l ; $i++) {
@@ -277,7 +282,7 @@ for $source ($source_min .. $source_max) {
                 system("gnuplot $outputfile.gnu");
             }
             
-            $x_current_min = $x_current_max;
+            $x_current_min = $x_current_max+1;
             $x_current_max = $x_max;
         } while ($x_current_min < $x_max);
     }

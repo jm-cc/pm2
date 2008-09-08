@@ -133,7 +133,7 @@ my $dumb = 1;
 my $filename = "";
 my $hostname = "";
 my $x_min = 0;               # Minimum size for the x coordinates
-my $x_max = 100000;          # Maximum size for the x coordinates
+my $x_max = -1;              # Maximum size for the x coordinates
 my $source_min=0;
 my $source_max=10;
 my $dest_min=0;
@@ -229,7 +229,9 @@ for $source ($source_min .. $source_max) {
         my @yerror = ();
         my $a, $b, $r;
 
-        $x_max = @$xlistref[scalar(@$xlistref)-1];
+        if ($x_max == -1) {
+            $x_max = @$xlistref[scalar(@$xlistref)-1];
+        }
 
         my $x_current_min = $x_min;
         my $x_current_max = $x_max;

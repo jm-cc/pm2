@@ -54,6 +54,42 @@ sub linearRegression {
     return ($a, $b, $r);
 }
 
+sub fixFilenameAndHostname {
+    my ($filename, $hostname) = @_;
+
+    if ($filename eq "") {
+        my $pathname = $ENV{PM2_CONF_DIR};
+        if ($pathname ne "") {
+            $pathname .= "/marcel";
+        }
+        else {
+            $pathname = $ENV{PM2_HOME};
+            if ($pathname eq "") {
+                $pathname = $ENV{HOME};
+            }
+            $pathname .= "/.pm2/marcel";
+        }
+        if ($hostname eq "") {
+            use Sys::Hostname;
+            $hostname = hostname();
+        }
+        $filename = "$pathname/sampling_$hostname.txt";   
+    }
+    return ($filename, $hostname);
+}
+
+sub filter {
+    my ($xlistref, $ylistref, $xfilteredref, $yfilteredref, $x_min, $x_max) = @_;
+
+    my $l = scalar(@$xlistref);
+    for(my $i=0 ; $i<$l ; $i++) {
+        if (@$xlistref[$i] >= $x_min && @$xlistref[$i] <= $x_max) {
+            push(@$xfilteredref, @$xlistref[$i]);
+            push(@$yfilteredref, @$ylistref[$i]);
+        }
+    }
+}
+
 sub help {
     print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
     print "            [-min <minimum value for the x coordinates>] [-max <maximum value for the x coordinates>]\n";
@@ -67,6 +103,7 @@ sub help {
     print "      -nodumb      displays the plot in graphical mode (by default in dumb mode)\n";
     exit;
 }
+
 # Main program
 # Linear regression to exhibit a cost model y = a*x + b.
 #      x = number of pages,
@@ -126,6 +163,9 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
     }
 }
 
+# Get the location of the sampling results output file
+($filename, $hostname) = fixFilenameAndHostname($filename, $hostname);
+
 # Initialise the datas to store the x and y values.
 my @xdatas;
 my @ydatas;
@@ -145,38 +185,16 @@ for $source ($source_min .. $source_max) {
     }
 }
 
-# Get the location of the sampling results output file
-if ($filename eq "") {
-    my $pathname = $ENV{PM2_CONF_DIR};
-    if ($pathname ne "") {
-        $pathname .= "/marcel";
-    }
-    else {
-        $pathname = $ENV{PM2_HOME};
-        if ($pathname eq "") {
-            $pathname = $ENV{HOME};
-        }
-        $pathname .= "/.pm2/marcel";
-    }
-    if ($hostname eq "") {
-        use Sys::Hostname;
-        $hostname = hostname();
-    }
-    $filename = "$pathname/sampling_$hostname.txt";
-}
-
 # Read the x and y values and store them in the appropriate list
 open input,$input="$filename" or die "Cannot open $input: $!";
 my $head = <input>; # read out the first line
 while(<input>) {
     chomp;
     ($source, $dest, $pages, $size, $cost) = split();
-    if ($pages >= $x_min && $pages <= $x_max) {
-	my $xlistref = $xdatas[$source][$dest];
-	push(@$xlistref, $pages);
-	my $ylistref = $ydatas[$source][$dest];
-	push(@$ylistref, $cost);
-    }
+    my $xlistref = $xdatas[$source][$dest];
+    my $ylistref = $ydatas[$source][$dest];
+    push(@$xlistref, $pages);
+    push(@$ylistref, $cost);
 }
 close(input);
 
@@ -186,45 +204,51 @@ for $source ($source_min .. $source_max) {
     for $dest ($dest_min .. $dest_max) {
 	my $xlistref = $xdatas[$source][$dest];
 	my $ylistref = $ydatas[$source][$dest];
-	if (scalar(@$xlistref) != 0) {
-	    print "\n\nProcessing values for source = $source and dest = $dest\n";
+	next if (scalar(@$xlistref) == 0);
 
-            my ($a, $b, $r) = linearRegression($xlistref, $ylistref);
-            print "y = $a * x + $b\n";
-            print "r (pearson coefficient) = $r\n";
+        # Filter the values
+        my @xfiltered = ();
+        my @yfiltered = ();
+        filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_min, $x_max);
+	next if (scalar(@xfiltered) == 0);
+ 
+        print "\n\nProcessing values for source = $source and dest = $dest\n";
 
-            my $outputfile;
-	    if ($plot) {
-		$outputfile = "sampling_${source}_${dest}";
-		open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-            }
+        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered);
+        print "y = $a * x + $b\n";
+        print "r (pearson coefficient) = $r\n";
+
+        my $outputfile;
+        if ($plot) {
+            $outputfile = "sampling_${source}_${dest}";
+            open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+        }
 		
-            my $l = scalar(@$xlistref);
-            for(my $i=0 ; $i<$l ; $i++) {
-                my $reg=$a * @$xlistref[$i] + $b;
-                my $error = ($reg  /@$ylistref[$i] * 100) - 100;
-                if ($error >= $correctError || $error <= -$correctError) {
-                    print "Warning. The value for @$xlistref[$i] differs by more than $correctError% to the estimation \n";
-                }
-                if ($plot) {
-                    print output "@$xlistref[$i] @$ylistref[$i] $reg $error\n";
-                }
+        my $l = scalar(@xfiltered);
+        for(my $i=0 ; $i<$l ; $i++) {
+            my $reg=$a * @xfiltered[$i] + $b;
+            my $error = ($reg  /@yfiltered[$i] * 100) - 100;
+            if ($error >= $correctError || $error <= -$correctError) {
+                print "Warning. The value for @xfiltered[$i] ($error) differs by more than $correctError% to the estimation \n";
             }
-
             if ($plot) {
-		close(output);
-                open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
-		if ($dumb) {
-		    print gnuplot "set terminal dumb\n";
-		}
-		print gnuplot "set title \"Source $source - Dest $dest\"\n";
-		print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
-		print gnuplot "pause -1\n";
-		print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
-		print gnuplot "pause -1\n";
-		close(gnuplot);
-		system("gnuplot $outputfile.gnu");
-	    }
-	}
+                print output "@xfiltered[$i] @yfiltered[$i] $reg $error\n";
+            }
+        }
+
+        if ($plot) {
+            close(output);
+            open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
+            if ($dumb) {
+                print gnuplot "set terminal dumb\n";
+            }
+            print gnuplot "set title \"Source $source - Dest $dest\"\n";
+            print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
+            print gnuplot "pause -1\n";
+            print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
+            print gnuplot "pause -1\n";
+            close(gnuplot);
+            system("gnuplot $outputfile.gnu");
+        }
     }
 }

@@ -38,7 +38,7 @@ sub var {
 }
 
 sub linearRegression {
-    my ($xdataref, $ydataref) = @_;
+    my ($xdataref, $ydataref, $yregref) = @_;
     my $mean_x = mean($xdataref);
     my $mean_y = mean($ydataref);
 
@@ -50,6 +50,12 @@ sub linearRegression {
     my $a = $covar_xy / $var_x;
     my $b = -$a * $mean_x + $mean_y;
     my $r = $covar_xy / sqrt($var_x) / sqrt($var_y);
+
+    my $l = scalar(@$xdataref);
+    for(my $i=0 ; $i<$l ; $i++) {
+        my $reg=$a * @$xdataref[$i] + $b;
+        push(@$yregref, $reg);
+    }
 
     return ($a, $b, $r);
 }
@@ -214,7 +220,9 @@ for $source ($source_min .. $source_max) {
  
         print "\n\nProcessing values for source = $source and dest = $dest\n";
 
-        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered);
+        # Performs the linear regression
+        my @yreg = ();
+        my ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg);
         print "y = $a * x + $b\n";
         print "r (pearson coefficient) = $r\n";
 
@@ -226,8 +234,7 @@ for $source ($source_min .. $source_max) {
 		
         my $l = scalar(@xfiltered);
         for(my $i=0 ; $i<$l ; $i++) {
-            my $reg=$a * @xfiltered[$i] + $b;
-            my $error = ($reg  /@yfiltered[$i] * 100) - 100;
+            my $error = (@yreg[i] /@yfiltered[$i] * 100) - 100;
             if ($error >= $correctError || $error <= -$correctError) {
                 print "Warning. The value for @xfiltered[$i] ($error) differs by more than $correctError% to the estimation \n";
             }

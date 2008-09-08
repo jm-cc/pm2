@@ -15,7 +15,6 @@
 
 #section marcel_types
 enum lock_mode { UNLOCKED_MODE, LOCKED_MODE };
-enum counting_mode { ITERATIVE_MODE, RECURSIVE_MODE };
 
 #section marcel_functions
 #depend "scheduler/marcel_holder.h[types]"
@@ -60,7 +59,11 @@ int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2);
 int ma_increasing_order_threads_compar(const void *_e1, const void *_e2);
 
 /* Handling threads on a runqueue */
-int ma_count_entities_on_rq(ma_runqueue_t *rq, enum counting_mode recursive);
+/* Returns the number of entities directly included in _rq_. */
+unsigned int ma_count_entities_on_rq (ma_runqueue_t *rq);
+/* Returns the load recursively computed from the entities scheduled
+   on _rq_. */
+unsigned int ma_load_on_rq (ma_runqueue_t *rq);
 /* \e rq must be already locked because else entities may die under your hand.  */
 int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne);
 int ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq);

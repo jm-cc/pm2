@@ -102,29 +102,28 @@ int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2)
 	return l1 - l2; /* increasing order */
 }
 
-int ma_count_entities_on_rq(ma_runqueue_t *rq, enum counting_mode recursive)
-{
+unsigned int 
+ma_count_entities_on_rq (ma_runqueue_t *rq) {
   marcel_entity_t *ee;
-  int ne = 0;
-
-  for_each_entity_scheduled_on_runqueue(ee, rq)
-    {
-      if (ee->type == MA_BUBBLE_ENTITY)
-	{
-	  marcel_bubble_t *bb = ma_bubble_entity(ee);
-	  if (bb->as_holder.nr_ready)
-	    {
-	      if (recursive)
-		ne += ma_entity_load(ee);
-	      else
-		ne++;
-	    }
-	}
-      else 
-	ne++;
-    }
+  unsigned int ne = 0;
+  
+  for_each_entity_scheduled_on_runqueue (ee, rq) {
+    ne++;
+  }
   
   return ne;
+}
+
+unsigned int
+ma_load_on_rq (ma_runqueue_t *rq) {
+  marcel_entity_t *ee;
+  unsigned int load = 0;
+  
+  for_each_entity_scheduled_on_runqueue (ee, rq) {
+    load += ma_entity_load (ee);
+  }
+  
+  return load;
 }
 
 int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne)

@@ -82,15 +82,14 @@ ma_favourite_location (marcel_entity_t *e) {
 
 static int
 ma_memory_schedule_from (struct marcel_topo_level *from) {
-  int i, ne;
-  int arity = from->arity;
+  unsigned int i, ne, arity = from->arity;
 
   /* There are no other runqueues to browse underneath, distribution
      is over. */
   if (!arity)
     return 0;
 
-  ne = ma_count_entities_on_rq (&from->rq, ITERATIVE_MODE);
+  ne = ma_count_entities_on_rq (&from->rq);
 
   /* If nothing was found on the current runqueue, let's browse its
      children. */

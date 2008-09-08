@@ -50,16 +50,16 @@ int_compar (const void *_e1, const void *_e2) {
   return *(int *)_e2 - *(int *)_e1;
 }
 
-static unsigned
+static unsigned int
 ma_load_from_children (struct marcel_topo_level *father) {
   unsigned int arity = father->arity, ret = 0, i;
   
   if (arity)
     for (i = 0; i < arity; i++) {
       ret += ma_load_from_children (father->children[i]);
-      ret += ma_count_entities_on_rq (&father->children[i]->rq, RECURSIVE_MODE);
+      ret += ma_load_on_rq (&father->children[i]->rq);
     } else {
-    ret += ma_count_entities_on_rq (&father->rq, RECURSIVE_MODE);
+    ret += ma_load_on_rq (&father->rq);
   }
   return ret;
 }
@@ -440,7 +440,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
   }
   
   bubble_sched_debug ("count in __marcel_bubble__affinity\n");
-  ne = ma_count_entities_on_rq (&l->rq, ITERATIVE_MODE);
+  ne = ma_count_entities_on_rq (&l->rq);
   bubble_sched_debug ("ne = %d on runqueue %p\n", ne, &l->rq);  
 
   if (!ne) {

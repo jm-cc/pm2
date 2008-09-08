@@ -260,7 +260,7 @@ for $source ($source_min .. $source_max) {
                 }
             } while ($done == 0);
 
-            print "$source\t$dest\t$x_current_min\t$x_current_max\t$a\t$b\t$r\n";
+            printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
 
             if ($plot) {
                 my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";

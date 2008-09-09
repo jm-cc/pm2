@@ -70,9 +70,10 @@ sub linearRegression {
 
 sub fixFilenameAndHostname {
     my ($filename, $hostname) = @_;
+    my $pathname = ".";
 
     if ($filename eq "") {
-        my $pathname = $ENV{PM2_CONF_DIR};
+        $pathname = $ENV{PM2_CONF_DIR};
         if ($pathname ne "") {
             $pathname .= "/marcel";
         }
@@ -89,7 +90,7 @@ sub fixFilenameAndHostname {
         }
         $filename = "$pathname/sampling_for_memory_migration_$hostname.txt";
     }
-    return ($filename, $hostname);
+    return ($pathname, $filename, $hostname);
 }
 
 sub filter {
@@ -132,6 +133,7 @@ my $plot = 0;
 my $dumb = 1;
 my $filename = "";
 my $hostname = "";
+my $pathname = "";
 my $x_min = 0;               # Minimum size for the x coordinates
 my $x_max = -1;              # Maximum size for the x coordinates
 my $source_min=0;
@@ -178,7 +180,7 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
 }
 
 # Get the location of the sampling results output file
-($filename, $hostname) = fixFilenameAndHostname($filename, $hostname);
+($pathname, $filename, $hostname) = fixFilenameAndHostname($filename, $hostname);
 
 # Initialise the datas to store the x and y values.
 my @xdatas;
@@ -212,7 +214,9 @@ while(<input>) {
 }
 close(input);
 
+open result,$result=">$pathname/model_for_memory_migration_$hostname.txt" or die "Cannot open $result: $!";
 print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
+print result "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
 
 # For each pair $source $dest, perform the linear regression and plot
 # the result
@@ -264,6 +268,7 @@ for $source ($source_min .. $source_max) {
                 }
             } while ($done == 0);
 
+            printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
 
             my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
@@ -293,3 +298,5 @@ for $source ($source_min .. $source_max) {
         } while ($x_current_min < $x_max);
     }
 }
+
+close(result);

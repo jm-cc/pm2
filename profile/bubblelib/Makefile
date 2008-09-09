@@ -28,7 +28,7 @@ endif
 
 .PHONY: default libs
 
-libs: $(MOD_GEN_INC)/fut_entries.h
+libs: $(MOD_GEN_INC)/fut_entries.h $(MOD_GEN_INC)/ming-version.h
 
 
 $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
@@ -38,5 +38,27 @@ $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-bui
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) touch $@
+
+# Ming's `MING_VERSION' macro isn't usable from the C preprocessor, so
+# generate something more convenient.
+$(MOD_GEN_INC)/ming-version.h:
+	if pkg-config libming; then						\
+	  full_version="`pkg-config libming --modversion`";			\
+	  major="`echo $$full_version | cut -d . -f 1`";			\
+	  minor="`echo $$full_version | cut -d . -f 2`";			\
+	  micro="`echo $$full_version | cut -d . -f 3`";			\
+	else									\
+	  major="0";								\
+	  minor="3";								\
+	  micro="0";								\
+	  echo "WARNING: assuming Ming version $$major.$$minor.$$micro";	\
+	fi;									\
+	( echo "/* Automatically generated, do not edit.  */";			\
+	  echo "#ifndef BUBBLES_MING_VERSION_H";				\
+	  echo "# define BUBBLES_MING_VERSION_H";				\
+	  echo "# define BUBBLES_MING_VERSION_MAJOR $$major";			\
+	  echo "# define BUBBLES_MING_VERSION_MINOR $$minor";			\
+	  echo "# define BUBBLES_MING_VERSION_MICRO $$micro";			\
+	  echo "#endif" ) > "$@"
 
 include $(PM2_ROOT)/make/libs-rules.mak

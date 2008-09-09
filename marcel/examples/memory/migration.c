@@ -24,13 +24,13 @@ marcel_memory_manager_t memory_manager;
 int marcel_main(int argc, char * argv[]) {
   marcel_t threads[2];
   marcel_attr_t attr;
-  unsigned long cost;
+  float cost;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
 
   marcel_memory_migration_cost(&memory_manager, 0, 1, 100, &cost);
-  marcel_printf("Cost for migrating %d bits from #%d to #%d = %ld\n", 100, 0, 1, cost);
+  marcel_printf("Cost for migrating %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
 
   marcel_memory_exit(&memory_manager);
 

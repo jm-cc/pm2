@@ -54,17 +54,19 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   ma_memory_load_sampling_of_migration_cost(memory_manager);
 
 #ifdef PM2DEBUG
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
-      p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
-      if (!tbx_slist_is_nil(migration_costs)) {
-        tbx_slist_ref_to_head(migration_costs);
-        do {
-          marcel_memory_migration_cost_t *object = NULL;
-          object = tbx_slist_ref_get(migration_costs);
+  if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
+      for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+        p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
+        if (!tbx_slist_is_nil(migration_costs)) {
+          tbx_slist_ref_to_head(migration_costs);
+          do {
+            marcel_memory_migration_cost_t *object = NULL;
+            object = tbx_slist_ref_get(migration_costs);
 
-          mdebug_heap("[%d->%d] [%d:%d] %ld\n", node, dest, object->nbpages_min, object->nbpages_max, object->cost);
-        } while (tbx_slist_ref_forward(migration_costs));
+            marcel_printf("[%d:%d] [%ld:%ld] %f %f %f\n", node, dest, object->size_min, object->size_max, object->slope, object->intercept, object->correlation);
+          } while (tbx_slist_ref_forward(migration_costs));
+        }
       }
     }
   }
@@ -437,7 +439,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int source,
                                   int dest,
                                   size_t size,
-                                  unsigned long *cost) {
+                                  float *cost) {
   p_tbx_slist_t migration_costs;
 
   LOG_IN();
@@ -448,8 +450,8 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
     marcel_memory_migration_cost_t *object = NULL;
     object = tbx_slist_ref_get(migration_costs);
 
-    if (size >= object->nbpages_min && size <= object->nbpages_max) {
-      *cost = object->cost;
+    if (size >= object->size_min && size <= object->size_max) {
+      *cost = (object->slope * size) + object->intercept;
       break;
     }
   } while (tbx_slist_ref_forward(migration_costs));

@@ -66,9 +66,11 @@ typedef struct marcel_memory_space_s {
 
 /** Memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s {
-  int nbpages_min;
-  int nbpages_max;
-  unsigned long cost;
+  size_t size_min;
+  size_t size_max;
+  float slope;
+  float intercept;
+  float correlation;
 } marcel_memory_migration_cost_t;
   
 /** Memory manager */
@@ -249,7 +251,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int source,
                                   int dest,
                                   size_t size,
-                                  unsigned long *cost);
+                                  float *cost);
 
 /**
  *

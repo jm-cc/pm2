@@ -137,7 +137,7 @@ void ma_memory_sampling(unsigned long source, unsigned long dest, int pages, uns
   printf("%ld\t%ld\t%d\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns);
 }
 
-void ma_memory_sampling_get_filename(char *filename) {
+void ma_memory_get_filename(char *type, char *filename) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;
@@ -160,19 +160,22 @@ void ma_memory_sampling_get_filename(char *filename) {
     rc = snprintf(filename, 1024, "%s/.pm2/marcel", home);
   }
   assert(rc < 1024);
-  snprintf(filename, 1024, "%s/sampling_for_memory_migration_%s.txt", directory, hostname);
+  snprintf(filename, 1024, "%s/%s_for_memory_migration_%s.txt", directory, type, hostname);
   assert(rc < 1024);
   //printf("File %s\n", filename);
 
   mkdir(directory, 0755);
 }
 
-void ma_memory_insert_cost(p_tbx_slist_t migration_costs, unsigned long maxsize, unsigned long cost) {
+void ma_memory_insert_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   marcel_memory_migration_cost_t *migration_cost;
 
   migration_cost = malloc(sizeof(marcel_memory_migration_cost_t));
-  migration_cost->nbpages_max = maxsize;
-  migration_cost->cost = cost;
+  migration_cost->size_min = size_min;
+  migration_cost->size_max = size_max;
+  migration_cost->slope = slope;
+  migration_cost->intercept = intercept;
+  migration_cost->correlation = correlation;
 
   tbx_slist_push(migration_costs, migration_cost);
 }
@@ -184,23 +187,33 @@ void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_m
   char line[1024];
   unsigned long source;
   unsigned long dest;
-  unsigned long maxsize;
-  unsigned long cost;
-  int pages;
+  unsigned long min_pages;
+  unsigned long max_pages;
+  float slope;
+  float intercept;
+  float correlation;
+  unsigned long pagesize;
 
-  ma_memory_sampling_get_filename(filename);
+  pagesize = getpagesize();
+  ma_memory_get_filename("model", filename);
   out = fopen(filename, "r");
   if (!out) {
-    printf("Sampling information is not available\n");
+    printf("The model for the cost of the memory migration is not available\n");
     return;
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
-    fscanf(out, "%ld\t%ld\t%d\t%ld\t%ld\n", &source, &dest, &pages, &maxsize, &cost);
+    fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", &source, &dest, &min_pages, &max_pages, &slope, &intercept, &correlation);
 
-    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], maxsize, cost);
-    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], maxsize, cost);
+#ifdef PM2DEBUG
+    if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+      marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", source, dest, min_pages, max_pages, slope, intercept, correlation);
+    }
+#endif /* PM2DEBUG */
+
+    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], min_pages*pagesize, max_pages*pagesize, slope, intercept, correlation);
+    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], min_pages*pagesize, max_pages*pagesize, slope, intercept, correlation);
   }
   fclose(out);
 }
@@ -216,7 +229,7 @@ void marcel_memory_sampling_of_migration_cost() {
   pagesize = getpagesize();
   maxnode = numa_max_node()+1;
 
-  ma_memory_sampling_get_filename(filename);
+  ma_memory_get_filename("sampling", filename);
   out = fopen(filename, "w");
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");

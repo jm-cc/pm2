@@ -106,11 +106,11 @@ main (int argc, char *argv[])
 
 	for (i = 0; i < NB_THREADS; i++) {
 		if (vp_levels[i] != expected_result[i]) {
-			fprintf (stderr, "FAILED: Bad distribution.\n");
+			printf ("FAILED: Bad distribution.\n");
 			return 1;
 		}
 	}
-	fprintf (stderr, "PASS: Distribution is like we expected.\n");
+	printf ("PASS: scheduling entities were distributed as expected\n");
 	
 	marcel_end ();
 	return 0;

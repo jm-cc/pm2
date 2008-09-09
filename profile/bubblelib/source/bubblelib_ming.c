@@ -70,7 +70,7 @@ static void sig(int sig) {
 }
 
 /* Draw an arrow */
-SWFShape newArrow(float width, float height, int right) {
+SWFShape newArrow(coordinate_t width, coordinate_t height, int right) {
 	SWFShape shape = newSWFShape();
 	SWFFillStyle style = SWFShape_addSolidFillStyle(shape,0,0,0,255);
 	SWFShape_setRightFillStyle(shape,style);
@@ -180,8 +180,8 @@ BubbleDisplayItem mySWFMovie_add(BubbleMovie movie, BubbleBlock block) {
 	return SWFMovie_add(movie->swf, block);
 }
 
-void mySWFMovie_pause(BubbleMovie movie, float sec) {
-	float i;
+void mySWFMovie_pause(BubbleMovie movie, coordinate_t sec) {
+	coordinate_t i;
 	if (!sec) {
 		/* grmbl marche pas */
 		SWFDisplayItem item;

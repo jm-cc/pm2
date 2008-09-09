@@ -387,3 +387,10 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
   return ret;
 }
 
+/*
+	 Local Variable:
+	 tab-width: 2
+	 End:
+
+	 vim:ts=2
+ */

@@ -216,6 +216,8 @@ print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
 
 # For each pair $source $dest, perform the linear regression and plot
 # the result
+# The interval [$x_min .. $x_max] is going to be split in
+# sub-intervals in which the linear regression gives good results.
 for $source ($source_min .. $source_max) {
     for $dest ($dest_min .. $dest_max) {
 	my $xlistref = $xdatas[$source][$dest];
@@ -238,6 +240,8 @@ for $source ($source_min .. $source_max) {
 
         do {
             my $done = 1;
+            # We look for the biggest interval [$x_current_min .. $X] with
+            # $X <= $x_current_max for which the correlation is good.
             do {
                 $done = 1;
                 @xfiltered = ();
@@ -254,7 +258,7 @@ for $source ($source_min .. $source_max) {
                 # Performs the linear regression
                 ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
 
-                if (($b <= 0 && $x_current_min == 0) || ($r < 0.992)) {
+                if ((@yreg[0] < 0) || ($r < 0.992)) {
                     $done = 0;
                     $x_current_max -= 1;
                 }
@@ -262,15 +266,15 @@ for $source ($source_min .. $source_max) {
 
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
 
-            if ($plot) {
-                my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
-                open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-                my $l = scalar(@xfiltered);
-                for(my $i=0 ; $i<$l ; $i++) {
-                    print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
-                }
-                close(output);
+            my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
+            open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+            my $l = scalar(@xfiltered);
+            for(my $i=0 ; $i<$l ; $i++) {
+                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
+            }
+            close(output);
 
+            if ($plot) {
                 open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
                 if ($dumb) {
                     print gnuplot "set terminal dumb\n";

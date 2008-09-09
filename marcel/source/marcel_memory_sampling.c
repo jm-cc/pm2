@@ -160,7 +160,7 @@ void ma_memory_sampling_get_filename(char *filename) {
     rc = snprintf(filename, 1024, "%s/.pm2/marcel", home);
   }
   assert(rc < 1024);
-  snprintf(filename, 1024, "%s/sampling_%s.txt", directory, hostname);
+  snprintf(filename, 1024, "%s/sampling_for_memory_migration_%s.txt", directory, hostname);
   assert(rc < 1024);
   //printf("File %s\n", filename);
 

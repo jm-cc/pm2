@@ -87,7 +87,7 @@ sub fixFilenameAndHostname {
             use Sys::Hostname;
             $hostname = hostname();
         }
-        $filename = "$pathname/sampling_$hostname.txt";   
+        $filename = "$pathname/sampling_for_memory_migration_$hostname.txt";
     }
     return ($filename, $hostname);
 }

@@ -39,12 +39,32 @@
  *  A boolean 
  *  \sa tbx_bool_t, p_tbx_bool_t
  */
+#if (defined __cplusplus) || (__STDC_VERSION__ >= 199901L)
+
+/* C++ and C99 have their own boolean type, which we must use to allow
+   `tbx_bool_t' to be used as the native `bool' type.  Otherwise, problems
+   about invalid casts may arise in situations like:
+
+     tbx_bool_t foo (int x) { return (x >= 2); }
+
+   where the return expression has type `bool', which is incompatible with
+   `tbx_bool_t'.  */
+
+typedef bool tbx_bool_t;
+typedef tbx_bool_t *p_tbx_bool_t;
+
+#define tbx_false false
+#define tbx_true  true
+
+#else
+
 typedef enum e_tbx_bool
 {
   tbx_false = 0, /* !< condition is false */
   tbx_true       /* !< condition is true */
 } tbx_bool_t, *p_tbx_bool_t;
 
+#endif
 
 /*! \typedef tbx_flag_t
  *  The general purpose flag type.

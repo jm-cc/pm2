@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2007, 2008 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -290,15 +290,17 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 			case FUT_RQS_NEWLEVEL: {
 				unsigned num = ev.ev64.param[0];
 				unsigned rqlevel = nrqlevels++;
+				float y = rqlevel * 150 + 100
+#ifdef BUBBLES
+				          + 200
+#endif
+				  ;
+
 				rqnums = realloc(rqnums,(nrqlevels)*sizeof(*rqnums));
 				rqnums[rqlevel] = 0;
 				rqs = realloc(rqs,(nrqlevels)*sizeof(*rqs));
-				setRqs(&rqs[rqlevel],num,0,(rqlevel)*150+
-#ifdef BUBBLES
-						200+
-#endif
-						100
-						,MOVIEX,150);
+				setRqs(&rqs[rqlevel], num, 0, y,
+				       MOVIEX, 150);
 				for (i=0;i<num;i++)
 					showEntity(&rqs[rqlevel][i].entity);
 				verbprintf("new runqueue level %u with %d rqs\n", rqlevel, num);

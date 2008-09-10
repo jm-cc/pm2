@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2007, 2008 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ static void sig(int sig) {
 }
 
 /* Draw an arrow */
-SWFShape newArrow(coordinate_t width, coordinate_t height, int right) {
+static SWFShape newArrow(coordinate_t width, coordinate_t height, int right) {
 	SWFShape shape = newSWFShape();
 	SWFFillStyle style = SWFShape_addSolidFillStyle(shape,0,0,0,255);
 	SWFShape_setRightFillStyle(shape,style);
@@ -176,11 +176,11 @@ static void mySWFMovie_nextFrame(BubbleMovie movie) {
 	}
 }
 
-BubbleDisplayItem mySWFMovie_add(BubbleMovie movie, BubbleBlock block) {
+static BubbleDisplayItem mySWFMovie_add(BubbleMovie movie, BubbleBlock block) {
 	return SWFMovie_add(movie->swf, block);
 }
 
-void mySWFMovie_pause(BubbleMovie movie, coordinate_t sec) {
+static void mySWFMovie_pause(BubbleMovie movie, coordinate_t sec) {
 	coordinate_t i;
 	if (!sec) {
 		/* grmbl marche pas */
@@ -216,12 +216,12 @@ void mySWFMovie_pause(BubbleMovie movie, coordinate_t sec) {
 	}
 }
 
-int mySWFMovie_save(BubbleMovie movie, const char *filename) {
+static int mySWFMovie_save(BubbleMovie movie, const char *filename) {
 	unlink(filename);
 	return SWFMovie_save(movie->swf, filename);
 }
 
-void mySWFMovie_status(BubbleMovie movie, const char *str) {
+static void mySWFMovie_status(BubbleMovie movie, const char *str) {
 	SWFShape shape;
 	int i;
 	if (!font)

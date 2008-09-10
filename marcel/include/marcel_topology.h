@@ -142,6 +142,17 @@ enum marcel_topo_level_e {
 #endif
 };
 
+/** \brief Type of memory attached to the topology level */
+enum marcel_topo_level_memory_type_e {
+#ifdef MA__NUMA
+	MARCEL_TOPO_LEVEL_MEMORY_L1 = 0,
+	MARCEL_TOPO_LEVEL_MEMORY_L2 = 1,
+	MARCEL_TOPO_LEVEL_MEMORY_L3 = 2,
+	MARCEL_TOPO_LEVEL_MEMORY_NODE = 3,
+#endif
+	MARCEL_TOPO_LEVEL_MEMORY_TYPE_MAX
+};
+
 /****************************************************************/
 /*               Virtual Processors                             */
 /****************************************************************/
@@ -456,6 +467,8 @@ struct marcel_topo_level {
 
 	struct marcel_topo_nodedata nodedata; /* for NUMA node levels */
 	struct marcel_topo_vpdata vpdata; /* for VP levels */
+
+	unsigned long memory_kB[MARCEL_TOPO_LEVEL_MEMORY_TYPE_MAX];
 
 	/* allocated by ma_per_level_alloc() */
 	char data[MA_PER_LEVEL_ROOM];

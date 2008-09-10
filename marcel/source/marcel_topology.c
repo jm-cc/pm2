@@ -204,13 +204,13 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 			const char *separator, const char *indexprefix, const char* labelseparator, const char* levelterm) {
   marcel_print_level_description(l, output, txt_mode, verbose_mode);
   marcel_fprintf(output, labelseparator);
-  if (l->os_node != -1) marcel_fprintf(output, "%sNode %s%u", separator, indexprefix, l->os_node);
-  if (l->os_die != -1)  marcel_fprintf(output, "%sDie %s%u" , separator, indexprefix, l->os_die);
-  if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3 %s%u"  , separator, indexprefix, l->os_l3);
-  if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2 %s%u"  , separator, indexprefix, l->os_l2);
-  if (l->os_core != -1) marcel_fprintf(output, "%sCore %s%u", separator, indexprefix, l->os_core);
-  if (l->os_l1 != -1)   marcel_fprintf(output, "%sL1 %s%u"  , separator, indexprefix, l->os_l1);
-  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU %s%u" , separator, indexprefix, l->os_cpu);
+  if (l->os_node != -1) marcel_fprintf(output, "%sNode%s%u(%ldkB)", separator, indexprefix, l->os_node, l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]);
+  if (l->os_die != -1)  marcel_fprintf(output, "%sDie%s%u" , separator, indexprefix, l->os_die);
+  if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3%s%u(%ldkB)", separator, indexprefix, l->os_l3, l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3]);
+  if (l->os_l2 != -1)   marcel_fprintf(output, "%sL2%s%u(%ldkB)", separator, indexprefix, l->os_l2, l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2]);
+  if (l->os_core != -1) marcel_fprintf(output, "%sCore%s%u", separator, indexprefix, l->os_core);
+  if (l->os_l1 != -1)   marcel_fprintf(output, "%sL1%s%u(%ldkB)", separator, indexprefix, l->os_l1, l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]);
+  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU%s%u" , separator, indexprefix, l->os_cpu);
 
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "%sVP %s%u", separator, indexprefix, l->number);
@@ -374,8 +374,8 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	return 0;
 }
 
-static void ma_process_cpumap(const char *mappath, const char * mapname,
-		       int nr_procs, unsigned *ids,
+static void ma_process_cpumap(const char *mappath, const char * mapname, unsigned long val,
+		       int nr_procs, unsigned *ids, unsigned long *vals,
 		       unsigned *nr_ids, unsigned givenid)
 {
 	marcel_vpset_t set;
@@ -400,6 +400,7 @@ static void ma_process_cpumap(const char *mappath, const char * mapname,
 				if (marcel_vpset_isset(&set, k)) {
 					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;
+					vals[k] = val;
 				}
 			}
 
@@ -411,7 +412,7 @@ static void ma_process_cpumap(const char *mappath, const char * mapname,
 #define CACHE_LEVEL_MAX 3
 
 static void
-ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsigned *nr_caches)
+ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsigned long *cachesizes, unsigned *nr_caches)
 {
 	int i;
 
@@ -420,6 +421,7 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids,
 		char mappath[SHARED_CPU_MAP_STRLEN];
 		char string[20]; /* enough for a level number (one digit) or a type (Data/Instruction/Unified) */
 		char cachename[8+1];
+		unsigned long kB = 0;
 		int level; /* 0 for L1, .... */
 		FILE * fd;
 
@@ -446,19 +448,28 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids,
 				continue;
 			}
 		} else
-		  continue;
+			continue;
+
+		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/size", proc_index, i);
+		fd = fopen(mappath, "r");
+		if (fd) {
+			if (fgets(string,sizeof(string), fd))
+				kB = atol(string); /* in kB */
+			fclose(fd);
+		}
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, i);
 		sprintf(cachename, "L%d cache", level+1);
-		ma_process_cpumap(mappath, cachename,
+		ma_process_cpumap(mappath, cachename, kB,
 				  nr_procs, cacheids+level*MARCEL_NBMAXCPUS,
+				  cachesizes+level*MARCEL_NBMAXCPUS,
 				  &nr_caches[level], -1);
 	}
 }
 
 static void
 ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int nr_procs,
-			  unsigned *numcaches, unsigned *cacheids)
+			  unsigned *numcaches, unsigned *cacheids, unsigned long *cachesizes)
 {
 	struct marcel_topo_level *level;
 	int j;
@@ -476,6 +487,8 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 		case 0: ma_topo_set_os_numbers(&level[j], l1, j); break;
 		default: MA_BUG_ON(1);
 		}
+
+		level[j].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1+cachelevel] = cachesizes[cachelevel*MARCEL_NBMAXCPUS+j];
 
 		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], nr_procs);
 
@@ -655,6 +668,7 @@ static void __marcel_init look_sysfscpu(void) {
 	unsigned proc_coreids[MARCEL_NBMAXCPUS];
 	unsigned oscoreids[MARCEL_NBMAXCPUS];
 	unsigned proc_cacheids[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
+	unsigned long proc_cachesizes[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
 	int j,k;
 
 	unsigned numprocs=0;
@@ -716,17 +730,17 @@ static void __marcel_init look_sysfscpu(void) {
 			proc_cacheids[j*MARCEL_NBMAXCPUS+k] = -1;
 	}
 	for(j=0; j<numprocs; j++) {
-		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, numcaches);
+		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, proc_cachesizes, numcaches);
 	}
 
 	if (numcaches[2] > 1) {
 		/* setup L3 caches */
-		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
 
 	if (numcaches[1] > 1) {
 		/* setup L2 caches */
-		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
 
 	struct marcel_topo_level *core_level;
@@ -763,8 +777,30 @@ static void __marcel_init look_sysfscpu(void) {
 
 	if (numcaches[0] > 1) {
 		/* setup L1 caches */
-		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids);
+		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
+}
+
+static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
+{
+	char string[64];
+	FILE *fd;
+
+	fd = fopen(path, "r");
+	if (!fd)
+		return 0;
+
+	while (fgets(string, sizeof(string), fd)) {
+		int node;
+		unsigned long size;
+		if (sscanf(string, "Node %d MemTotal: %ld kB", &node, &size) == 2) {
+			fclose(fd);
+			return size;
+		}
+	}
+
+	fclose(fd);
+	return 0;
 }
 
 #include <dirent.h>
@@ -799,17 +835,22 @@ static void __marcel_init look_sysfsnode(void) {
 	MA_BUG_ON(!node_level);
 
 	for (i=0;;i++) {
-#define NUMA_NODE_STRLEN (29+9+7+1)
+#define NUMA_NODE_STRLEN (29+9+8+1)
 		char nodepath[NUMA_NODE_STRLEN];
 		marcel_vpset_t cpuset;
+		unsigned long size;
 		int j;
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", i);
 		if (ma_parse_cpumap(nodepath, &cpuset) < 0)
 			break;
 
+		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", i);
+		size = ma_sysfs_node_meminfo_to_memsize(nodepath);
+
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
 		ma_topo_set_os_numbers(&node_level[i], node, i);
+		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
 
 		node_level[i].cpuset = cpuset;
 		for(j=0;j<MARCEL_NBMAXCPUS;j++)
@@ -862,6 +903,7 @@ static void __marcel_init look_libnuma(void) {
 
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
 		ma_topo_set_os_numbers(&node_level[i], node, radid);
+		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
 
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
@@ -917,9 +959,11 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		switch(level) {
 			case MARCEL_LEVEL_NODE:
 				rad_level[r].os_node = r;
+				rad_level[r].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
 				break;
 			case MARCEL_LEVEL_L2:
 				rad_level[r].os_l2 = r;
+				rad_level[r].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] = 0; /* unknown */
 				break;
 			case MARCEL_LEVEL_CORE:
 				rad_level[r].os_core = r;
@@ -1310,7 +1354,6 @@ static void topo_discover(void) {
 			else if (marcel_topo_levels[l+1] == marcel_topo_node_level)
 				marcel_topo_node_level = marcel_topo_levels[l];
 			for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
-				marcel_topo_levels[l][i].merged_type |= marcel_topo_levels[l+1][i].merged_type;
 #    define merge_os_components(component) \
 				if (marcel_topo_levels[l][i].os_##component == -1) \
 					marcel_topo_levels[l][i].os_##component = marcel_topo_levels[l+1][i].os_##component; \
@@ -1324,6 +1367,20 @@ static void topo_discover(void) {
 				merge_os_components(core);
 				merge_os_components(l1);
 				merge_os_components(cpu);
+
+#    define merge_memory_kB(_type) \
+				if (marcel_topo_levels[l+1][i].merged_type & (1<<MARCEL_LEVEL_##_type)) { \
+					MA_BUG_ON(marcel_topo_levels[l][i].merged_type & (1<<MARCEL_LEVEL_##_type)); \
+					marcel_topo_levels[l][i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_##_type] \
+						= marcel_topo_levels[l+1][i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_##_type]; \
+				}
+				merge_memory_kB(L1);
+				merge_memory_kB(L2);
+				merge_memory_kB(L3);
+				merge_memory_kB(NODE);
+
+				/* merge types at the end so that the above assertions work */
+				marcel_topo_levels[l][i].merged_type |= marcel_topo_levels[l+1][i].merged_type;
 			}
 			__marcel_free(marcel_topo_levels[l+1]);
 			memmove(&marcel_topo_level_nbitems[l+1],&marcel_topo_level_nbitems[l+2],(marcel_topo_nblevels-(l+2))*sizeof(*marcel_topo_level_nbitems));

@@ -22,30 +22,27 @@
 #define LITTLE_LOAD 1
 
 static unsigned int vp_levels[4], expected_result[4]; 
-static int dummy = 0;
-static marcel_mutex_t write_mutex;
 
 static void *
 thread_entry_point (void *arg) {
-	unsigned int i, my_id = marcel_self ()->id;
+	ma_atomic_t *start;
 	unsigned long current_vp = *(unsigned long *) ma_task_stats_get (marcel_self (), ma_stats_last_vp_offset);
 
-	/* Dummy work */
-	for (i = 0; i < 10000000; i++) {
-		dummy += (i - my_id);
-	}
+	start = (ma_atomic_t *) arg;
+	while (!ma_atomic_read (start));
 
-	marcel_mutex_lock (&write_mutex);
 	vp_levels[current_vp] += ma_entity_load (&marcel_self ()->as_entity); 
-	marcel_mutex_unlock (&write_mutex);
+
 	return NULL;
 }
 
 int
 main (int argc, char *argv[])
 {
+	int ret;
 	unsigned int i;
 	char **new_argv;
+	ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
 
 	/* A bi-dual-core computer */
   static const char topology_description[] = "2 2";
@@ -60,7 +57,6 @@ main (int argc, char *argv[])
 	argc += 2;
 
 	marcel_init (&argc, new_argv);
-	marcel_mutex_init (&write_mutex, NULL);
 
 	/* Creating threads as leaves of the hierarchy.  */
 	marcel_t threads[NB_THREADS];
@@ -79,7 +75,7 @@ main (int argc, char *argv[])
 		/* Note: We can't use `dontsched' since THREAD would not appear
 			 on the runqueue.  */
 		marcel_attr_setid (&attr, i);
-		marcel_create (threads + i, &attr, thread_entry_point, NULL);
+		marcel_create (threads + i, &attr, thread_entry_point, &start_signal);
 		ma_task_stats_set (unsigned long, 
 											 threads[i], 
 											 marcel_stats_load_offset, 
@@ -89,8 +85,10 @@ main (int argc, char *argv[])
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();
 
+	ma_atomic_inc (&start_signal);
+
 	/* The main has to do its part of the job like everyone else. */
-	thread_entry_point (NULL);
+	thread_entry_point (&start_signal);
 
 	/* Wait for other threads to end. */
 	for (i = 1; i < NB_THREADS; i++) {
@@ -107,11 +105,16 @@ main (int argc, char *argv[])
 	for (i = 0; i < NB_THREADS; i++) {
 		if (vp_levels[i] != expected_result[i]) {
 			printf ("FAILED: Bad distribution.\n");
-			return 1;
+			ret = 1;
+			goto end;
 		}
 	}
 	printf ("PASS: scheduling entities were distributed as expected\n");
-	
+	ret = 0;
+
+end:
+	marcel_attr_destroy (&attr);
 	marcel_end ();
-	return 0;
+
+	return ret;
 }

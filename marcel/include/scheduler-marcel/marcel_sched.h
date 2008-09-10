@@ -409,6 +409,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	t->as_entity.type = MA_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, attr);
+	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
 #ifdef MA__BUBBLES

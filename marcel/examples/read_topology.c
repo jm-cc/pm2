@@ -105,6 +105,7 @@ int marcel_main(int argc, char **argv) {
     marcel_fprintf(stdout, "\tps2pdf %s_topology.ps\n", hostname);
   }
 
+#ifdef MA__NUMA
   if (verbose_mode && txt_mode) {
     int l,i;
     for (l = 0; l <= MARCEL_LEVEL_LAST; l++) {
@@ -114,6 +115,7 @@ int marcel_main(int argc, char **argv) {
       marcel_fprintf(output, "depth %d:\tmarcel type #%d (%s)\n", depth, l, marcel_topo_level_string(l));
     }
   }
+#endif
 
   marcel_end();
   return 0;

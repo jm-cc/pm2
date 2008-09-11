@@ -298,7 +298,8 @@ tbx_safe_realloc(void     *ptr,
 
   new_ptr = tbx_safe_malloc(size, file, line);
 
-  if (new_ptr)
+  /* The GNU C Library (among others) allows PTR to be NULL.  */
+  if ((new_ptr != NULL) && (ptr != NULL))
     {
       memcpy(new_ptr, ptr, size);
     }

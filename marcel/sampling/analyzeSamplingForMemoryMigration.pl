@@ -132,7 +132,7 @@ sub gnuplot {
     print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
     print gnuplot "pause -1\n";
 
-    print gnuplot "set ylabel \"Migration time (nanosecondes) / Number of pages\"\n";
+    print gnuplot "set ylabel \"Number of pages / Migration time (nanosecondes)\"\n";
     print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
     print gnuplot "pause -1\n";
 
@@ -302,8 +302,8 @@ for $source ($source_min .. $source_max) {
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
-                my $bandwidth = @yfiltered[$i] / @xfiltered[$i];
-                my $bandwidth2 = @yreg[$i] / @xfiltered[$i];
+                my $bandwidth = @xfiltered[$i] / @yfiltered[$i];
+                my $bandwidth2 = @xfiltered[$i] / @yreg[$i];
                 print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
                 print globaloutput "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
             }

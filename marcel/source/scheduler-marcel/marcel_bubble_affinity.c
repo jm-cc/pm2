@@ -54,13 +54,12 @@ static unsigned int
 ma_load_from_children (struct marcel_topo_level *father) {
   unsigned int arity = father->arity, ret = 0, i;
   
-  if (arity)
+  if (arity) {
     for (i = 0; i < arity; i++) {
       ret += ma_load_from_children (father->children[i]);
-      ret += ma_load_on_rq (&father->children[i]->rq);
-    } else {
-    ret += ma_load_on_rq (&father->rq);
-  }
+    } 
+  } 
+  ret += ma_load_on_rq (&father->rq);
   return ret;
 }
 

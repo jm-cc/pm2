@@ -119,6 +119,30 @@ sub help {
     exit;
 }
 
+sub gnuplot {
+    my ($outputfile, $dumb, $source, $dest) = @_;
+
+    open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
+    if ($dumb) {
+        print gnuplot "set terminal dumb\n";
+    }
+    print gnuplot "set title \"Source $source - Dest $dest\"\n";
+    print gnuplot "set xlabel \"Number of pages\"\n";
+    print gnuplot "set ylabel \"Migration time (nanosecondes)\"\n";
+    print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
+    print gnuplot "pause -1\n";
+
+    print gnuplot "set ylabel \"Migration time (nanosecondes) / Number of pages\"\n";
+    print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
+    print gnuplot "pause -1\n";
+
+    print gnuplot "set ylabel \"Error (Original vs. Regression)\"\n";
+    print gnuplot "plot '${outputfile}.txt' using 1:6 title \"Error\" with lines\n";
+    print gnuplot "pause -1\n";
+    close(gnuplot);
+    system("gnuplot $outputfile.gnu");
+}
+
 # Main program
 # Linear regression to exhibit a cost model y = a*x + b.
 #      x = number of pages,
@@ -239,6 +263,9 @@ for $source ($source_min .. $source_max) {
             $x_max = @$xlistref[scalar(@$xlistref)-1];
         }
 
+        my $globaloutputfile = "sampling_${source}_${dest}";
+        open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
+
         my $x_current_min = $x_min;
         my $x_current_max = $x_max;
 
@@ -278,35 +305,24 @@ for $source ($source_min .. $source_max) {
                 my $bandwidth = @yfiltered[$i] / @xfiltered[$i];
                 my $bandwidth2 = @yreg[$i] / @xfiltered[$i];
                 print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
+                print globaloutput "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
             }
             close(output);
 
             if ($plot) {
-                open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
-                if ($dumb) {
-                    print gnuplot "set terminal dumb\n";
-                }
-                print gnuplot "set title \"Source $source - Dest $dest\"\n";
-                print gnuplot "set xlabel \"Number of pages\"\n";
-                print gnuplot "set ylabel \"Migration time (nanosecondes)\"\n";
-                print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
-                print gnuplot "pause -1\n";
-
-                print gnuplot "set ylabel \"Migration time (nanosecondes) / Number of pages\"\n";
-                print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
-                print gnuplot "pause -1\n";
-
-                print gnuplot "set ylabel \"Error (Original vs. Regression)\"\n";
-                print gnuplot "plot '${outputfile}.txt' using 1:6 title \"Error\" with lines\n";
-                print gnuplot "pause -1\n";
-                close(gnuplot);
-                system("gnuplot $outputfile.gnu");
+                gnuplot($outputfile, $dumb, $source, $dest);
             }
             
             $x_current_min = $x_current_max+1;
             $x_current_max = $x_max;
         } while ($x_current_min < $x_max);
+
+        close(globaloutput);
+        if ($plot) {
+            gnuplot($globaloutputfile, $dumb, $source, $dest);
+        }
     }
 }
 
 close(result);
+

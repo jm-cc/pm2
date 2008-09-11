@@ -109,13 +109,13 @@ sub help {
     print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
     print "            [-min <minimum value for the x coordinates>] [-max <maximum value for the x coordinates>]\n";
     print "            [-source <node identifier>] [-dest <node identifier>]\n";
-    print "            [-plot] [-nodumb]\n";
+    print "            [-plot] [-dumb]\n";
     print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
     print "      <hostname>   specifies the name of the machine for the sampling results (by default, uses the result of the command 'uname -m')\n";
     print "      -file        specifies the filename for the sampling results (by default get the result file of the specified machine from the PM2 directory)\n";
     print "      -plot        displays the plot for the sampling result (by default does not display the plot)\n";
-    print "      -nodumb      displays the plot in graphical mode (by default in dumb mode)\n";
+    print "      -dumb        displays the plot in dumb mode (by default in graphical mode)\n";
     exit;
 }
 
@@ -130,7 +130,7 @@ sub help {
 
 # Set the default parameters
 my $plot = 0;
-my $dumb = 1;
+my $dumb = 0;
 my $filename = "";
 my $hostname = "";
 my $pathname = "";
@@ -167,8 +167,8 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
     elsif ($ARGV[$i] eq "-plot") {
 	$plot = 1;
     }
-    elsif ($ARGV[$i] eq "-nodumb") {
-	$dumb = 0;
+    elsif ($ARGV[$i] eq "-dumb") {
+	$dumb = 1;
     }
     elsif ($ARGV[$i] eq "-file") {
 	$filename = $ARGV[$i+1];

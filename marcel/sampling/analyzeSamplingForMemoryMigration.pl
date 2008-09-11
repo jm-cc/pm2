@@ -275,7 +275,9 @@ for $source ($source_min .. $source_max) {
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
-                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] @yerror[$i]\n";
+                my $bandwidth = @yfiltered[$i] / @xfiltered[$i];
+                my $bandwidth2 = @yreg[$i] / @xfiltered[$i];
+                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
             }
             close(output);
 
@@ -285,9 +287,17 @@ for $source ($source_min .. $source_max) {
                     print gnuplot "set terminal dumb\n";
                 }
                 print gnuplot "set title \"Source $source - Dest $dest\"\n";
+                print gnuplot "set xlabel \"Number of pages\"\n";
+                print gnuplot "set ylabel \"Migration time (nanosecondes)\"\n";
                 print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
                 print gnuplot "pause -1\n";
-                print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Error\" with lines\n";
+
+                print gnuplot "set ylabel \"Migration time (nanosecondes) / Number of pages\"\n";
+                print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
+                print gnuplot "pause -1\n";
+
+                print gnuplot "set ylabel \"Error (Original vs. Regression)\"\n";
+                print gnuplot "plot '${outputfile}.txt' using 1:6 title \"Error\" with lines\n";
                 print gnuplot "pause -1\n";
                 close(gnuplot);
                 system("gnuplot $outputfile.gnu");

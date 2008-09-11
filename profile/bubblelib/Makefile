@@ -42,7 +42,7 @@ $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 # Ming's `MING_VERSION' macro isn't usable from the C preprocessor, so
 # generate something more convenient.
 $(MOD_GEN_INC)/ming-version.h:
-	if pkg-config libming; then						\
+	@if pkg-config libming; then						\
 	  full_version="`pkg-config libming --modversion`";			\
 	  major="`echo $$full_version | cut -d . -f 1`";			\
 	  minor="`echo $$full_version | cut -d . -f 2`";			\

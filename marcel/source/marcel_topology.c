@@ -352,7 +352,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 		return -1;
 
 	/* parse the whole mask */
-	while (fgets(string, KERNEL_CPU_MAP_LEN, fd)) { /* read one kernel cpu mask and the ending comma */
+	while (fgets(string, KERNEL_CPU_MAP_LEN, fd) && *string != '\0') { /* read one kernel cpu mask and the ending comma */
 		unsigned long map = strtol(string, NULL, 16);
 		if (!map && !nr_maps)
 			/* ignore the first map if it's empty */
@@ -791,7 +791,7 @@ static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
 	if (!fd)
 		return 0;
 
-	while (fgets(string, sizeof(string), fd)) {
+	while (fgets(string, sizeof(string), fd) && *string != '\0') {
 		int node;
 		unsigned long size;
 		if (sscanf(string, "Node %d MemTotal: %ld kB", &node, &size) == 2) {

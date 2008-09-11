@@ -353,39 +353,6 @@ ma_aff_distribute_entities_cache (struct marcel_topo_level *l,
   return 0; 
 }
 
-/* Distributes a set of entities regarding the load of the underlying
-   levels */
-static void 
-ma_aff_distribute_entities_load (struct marcel_topo_level *l, 
-				 marcel_entity_t *e[], 
-				 int ne, 
-				 ma_attracting_level_t *attracting_levels) {       
-  unsigned int i, arity = l->arity;
-  if (!arity) {
-    bubble_sched_debug("ma_aff_distribute_entities: done !arity\n");
-    return;
-  }
-
-  for (i = 0; i < ne; i++) {
-    if (e[i]) {
-      if (e[i]->type == MA_BUBBLE_ENTITY) {
-	marcel_bubble_t *b = ma_bubble_entity(e[i]);
-	if (!b->as_holder.nr_ready) { /* We don't pick empty bubbles */         
-	  bubble_sched_debug("bubble %p is empty\n",b);
-	  continue;                     
-	}
-      }
-      
-      int state = ma_get_entity (e[i]);
-      unsigned int load = ma_entity_load (e[i]);
-      unsigned int least = ma_attracting_levels_least_loaded_index (attracting_levels, arity);
-      attracting_levels[least].total_load += load;
-      ma_put_entity (e[i], &attracting_levels[least].level->rq.as_holder, state);
-      bubble_sched_debug ("%p on %s\n", e[i], attracting_levels[least].level->rq.name);
-    }
-  }
-}
-
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
 static int

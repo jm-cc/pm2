@@ -184,7 +184,6 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
   unsigned long pagesize;
   char filename[1024];
   FILE *out;
-  //int nbpages[] = { 200, 400, 500, 1000, 1500, 2000, 3000, 4000, 5000, 10000, 15000, 20000, 25000, -1 };
   void *buffer;
   int i, err;
   unsigned long source;
@@ -193,6 +192,7 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
   int *status, *sources, *dests;
   void **pageaddrs;
   unsigned long maxnode;
+  int pages;
 
   pagesize = getpagesize();
   maxnode = numa_max_node();
@@ -236,26 +236,29 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
       for(i=0; i<25000 ; i++) dests[i] = dest;
       for(i=0; i<25000 ; i++) sources[i] = source;
 
-      {
-        int pages;
-        for(pages=1; pages<=100 ; pages++) {
-          ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-        }
-        fflush(out);
+      for(pages=1; pages<10 ; pages++) {
+	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
       }
-      {
-        int pages;
-        for(pages=200; pages<5000 ; pages+=100) {
-          ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-          fflush(out);
-        }
+      fflush(out);
+
+      for(pages=10; pages<100 ; pages+=10) {
+	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	fflush(out);
       }
-      {
-        int pages;
-        for(pages=5000; pages<=25000 ; pages+=1000) {
-          ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-          fflush(out);
-        }
+
+      for(pages=100; pages<1000 ; pages+=100) {
+	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	fflush(out);
+      }
+
+      for(pages=1000; pages<10000 ; pages+=1000) {
+	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	fflush(out);
+      }
+
+      for(pages=10000; pages<=25000 ; pages+=5000) {
+	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	fflush(out);
       }
 
       munmap(buffer, 25000 * pagesize);

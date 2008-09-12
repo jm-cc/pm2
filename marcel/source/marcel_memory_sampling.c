@@ -149,14 +149,13 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
   char line[1024];
   unsigned long source;
   unsigned long dest;
-  unsigned long min_pages;
-  unsigned long max_pages;
+  unsigned long min_size;
+  unsigned long max_size;
   float slope;
   float intercept;
   float correlation;
   unsigned long pagesize;
 
-  pagesize = getpagesize();
   ma_memory_get_filename("model", filename);
   out = fopen(filename, "r");
   if (!out) {
@@ -166,16 +165,16 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
-    fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", &source, &dest, &min_pages, &max_pages, &slope, &intercept, &correlation);
+    fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation);
 
 #ifdef PM2DEBUG
     if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
-      marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", source, dest, min_pages, max_pages, slope, intercept, correlation);
+      marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation);
     }
 #endif /* PM2DEBUG */
 
-    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], min_pages*pagesize, max_pages*pagesize, slope, intercept, correlation);
-    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], min_pages*pagesize, max_pages*pagesize, slope, intercept, correlation);
+    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
+    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
   }
   fclose(out);
 }

@@ -288,6 +288,7 @@ for $source ($source_min .. $source_max) {
         my $globaloutputfile = "sampling_${source}_${dest}";
         open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
 
+        my $intervals = 0;
         my $x_current_min = $x_min;
         my $x_current_max = $x_max;
 
@@ -317,6 +318,7 @@ for $source ($source_min .. $source_max) {
                 }
             } while ($done == 0);
 
+            $intervals += 1;
             printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
 
@@ -340,7 +342,7 @@ for $source ($source_min .. $source_max) {
         } while ($x_current_min < $x_max);
 
         close(globaloutput);
-        if ($plot) {
+        if ($plot && $intervals != 1) {
             gnuplot($globaloutputfile, $terminal, $source, $dest);
         }
     }

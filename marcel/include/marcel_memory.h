@@ -256,7 +256,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
 /**
  *
  */
-void marcel_memory_sampling_of_migration_cost(unsigned long maxnode);
+void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
 
 #endif /* MARCEL_MAMI_ENABLED */
 

@@ -180,7 +180,7 @@ void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_m
   fclose(out);
 }
 
-void marcel_memory_sampling_of_migration_cost(unsigned long maxnode) {
+void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest) {
   unsigned long pagesize;
   char filename[1024];
   FILE *out;
@@ -192,19 +192,18 @@ void marcel_memory_sampling_of_migration_cost(unsigned long maxnode) {
   unsigned long nodemask;
   int *status, *sources, *dests;
   void **pageaddrs;
+  unsigned long maxnode;
 
   pagesize = getpagesize();
-  if (maxnode == -1) {
-    maxnode = numa_max_node();
-  }
+  maxnode = numa_max_node();
 
   ma_memory_get_filename("sampling", filename);
   out = fopen(filename, "w");
-  //fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
+  fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");
 
-  for(source=0; source<=maxnode ; source++) {
-    for(dest=0; dest<=maxnode ; dest++) {
+  for(source=minsource; source<=maxsource ; source++) {
+    for(dest=mindest; dest<=maxdest ; dest++) {
       if (source >= dest) continue;
 
       // Allocate the pages

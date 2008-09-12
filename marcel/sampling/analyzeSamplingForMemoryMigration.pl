@@ -109,7 +109,7 @@ sub help {
     print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
     print "            [-min <minimum value for the x coordinates>] [-max <maximum value for the x coordinates>]\n";
     print "            [-source <node identifier>] [-dest <node identifier>]\n";
-    print "            [-plot] [-dumb]\n";
+    print "            [-plot] [-dumb] [-jpeg]\n";
     print "  Performs a linear regression for the cost of the memory migration on hostname\n";
     print "  with:\n";
     print "      <hostname>   specifies the name of the machine for the sampling results (by default, uses the result of the command 'uname -m')\n";
@@ -120,25 +120,44 @@ sub help {
 }
 
 sub gnuplot {
-    my ($outputfile, $dumb, $source, $dest) = @_;
+    my ($outputfile, $terminal, $source, $dest) = @_;
 
     open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
-    if ($dumb) {
-        print gnuplot "set terminal dumb\n";
+    if ($terminal ne "") {
+        print gnuplot "set terminal $terminal\n";
     }
     print gnuplot "set title \"Source $source - Dest $dest\"\n";
     print gnuplot "set xlabel \"Number of pages\"\n";
     print gnuplot "set ylabel \"Migration time (nanosecondes)\"\n";
+    if ($terminal eq "jpeg") {
+        print gnuplot "set output \"${outputfile}_model.jpg\"\n";
+    }
     print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
-    print gnuplot "pause -1\n";
+
+    if ($terminal ne "jpeg") {
+        print gnuplot "pause -1\n";
+    }
 
     print gnuplot "set ylabel \"Number of pages / Migration time (nanosecondes)\"\n";
+    if ($terminal eq "jpeg") {
+        print gnuplot "set output \"${outputfile}_bandwidth.jpg\"\n";
+    }
     print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
-    print gnuplot "pause -1\n";
+
+    if ($terminal ne "jpeg") {
+        print gnuplot "pause -1\n";
+    }
 
     print gnuplot "set ylabel \"Error (Original vs. Regression)\"\n";
+    if ($terminal eq "jpeg") {
+        print gnuplot "set output \"${outputfile}_error.jpg\"\n";
+    }
     print gnuplot "plot '${outputfile}.txt' using 1:6 title \"Error\" with lines\n";
-    print gnuplot "pause -1\n";
+
+    if ($terminal ne "jpeg") {
+        print gnuplot "pause -1\n";
+    }
+
     close(gnuplot);
     system("gnuplot $outputfile.gnu");
 }
@@ -154,7 +173,7 @@ sub gnuplot {
 
 # Set the default parameters
 my $plot = 0;
-my $dumb = 0;
+my $terminal = "";
 my $filename = "";
 my $hostname = "";
 my $pathname = "";
@@ -192,7 +211,10 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
 	$plot = 1;
     }
     elsif ($ARGV[$i] eq "-dumb") {
-	$dumb = 1;
+	$terminal = "dumb";
+    }
+    elsif ($ARGV[$i] eq "-jpeg") {
+	$terminal = "jpeg";
     }
     elsif ($ARGV[$i] eq "-file") {
 	$filename = $ARGV[$i+1];
@@ -310,7 +332,7 @@ for $source ($source_min .. $source_max) {
             close(output);
 
             if ($plot) {
-                gnuplot($outputfile, $dumb, $source, $dest);
+                gnuplot($outputfile, $terminal, $source, $dest);
             }
             
             $x_current_min = $x_current_max+1;
@@ -319,7 +341,7 @@ for $source ($source_min .. $source_max) {
 
         close(globaloutput);
         if ($plot) {
-            gnuplot($globaloutputfile, $dumb, $source, $dest);
+            gnuplot($globaloutputfile, $terminal, $source, $dest);
         }
     }
 }

@@ -287,6 +287,7 @@ for $source ($source_min .. $source_max) {
 
         my $globaloutputfile = "sampling_${source}_${dest}";
         open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
+	print globaloutput "Pages\tMigration_time\tRegression\tMeasured_Bandwidth\tRegression_Bandwidth\tError\n";
 
         my $intervals = 0;
         my $x_current_min = $x_min;
@@ -324,12 +325,13 @@ for $source ($source_min .. $source_max) {
 
             my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+	    print output "Pages\tMigration_time\tRegression\tMeasured_Bandwidth\tRegression_Bandwidth\tError\n";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
                 my $bandwidth = @xfiltered[$i] / @yfiltered[$i];
                 my $bandwidth2 = @xfiltered[$i] / @yreg[$i];
-                print output "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
-                print globaloutput "@xfiltered[$i] @yfiltered[$i] @yreg[$i] $bandwidth $bandwidth2 @yerror[$i]\n";
+                print output "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
+                print globaloutput "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
             }
             close(output);
 

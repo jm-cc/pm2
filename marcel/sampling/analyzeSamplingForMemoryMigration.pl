@@ -138,7 +138,7 @@ sub gnuplot {
         print gnuplot "pause -1\n";
     }
 
-    print gnuplot "set ylabel \"Number of pages / Migration time (nanosecondes)\"\n";
+    print gnuplot "set ylabel \"Bandwidth (Gbytes/secondes)\"\n";
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_bandwidth.jpg\"\n";
     }

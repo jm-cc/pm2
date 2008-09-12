@@ -171,7 +171,7 @@ void ma_memory_sampling_migration(p_tbx_slist_t *migration_cost,
 /*
  *
  */
-void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_manager);
+void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_manager);
 
 #endif /* MARCEL_MAMI_ENABLED */
 

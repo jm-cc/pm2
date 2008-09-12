@@ -42,16 +42,15 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
-  // Sampling the migration costs
+  // Load the model for the migration costs
   memory_manager->migration_costs = (p_tbx_slist_t **) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     memory_manager->migration_costs[node] = (p_tbx_slist_t *) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
     for(dest=0 ; dest<marcel_nbnodes ; dest++) {
-      mdebug_heap("Sampling memory migration from node #%d to node #%d\n", node, dest);
       memory_manager->migration_costs[node][dest] = tbx_slist_nil();
     }
   }
-  ma_memory_load_sampling_of_migration_cost(memory_manager);
+  ma_memory_load_model_for_migration_cost(memory_manager);
 
 #ifdef PM2DEBUG
   if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {

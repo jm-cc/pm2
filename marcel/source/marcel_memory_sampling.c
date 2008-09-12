@@ -143,7 +143,7 @@ void ma_memory_insert_cost(p_tbx_slist_t migration_costs, size_t size_min, size_
 }
 
 
-void ma_memory_load_sampling_of_migration_cost(marcel_memory_manager_t *memory_manager) {
+void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];

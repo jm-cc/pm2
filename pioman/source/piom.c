@@ -1740,9 +1740,9 @@ int piom_server_stop(piom_server_t server)
 	__piom_wake_id_waiters(server, -ECANCELED);
        
 #ifdef MARCEL
-	piom_restore_lock_server_locked(server, lock);
-	//_piom_spin_unlock_softirq(&piom_poll_lock);
-	ma_tasklet_enable(&server->poll_tasklet);
+        //_piom_spin_unlock_softirq(&piom_poll_lock);
+      ma_tasklet_enable(&server->poll_tasklet);  
+      piom_restore_lock_server_locked(server, lock);
 #endif				//MARCEL
         LOG_RETURN(0);
 

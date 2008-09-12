@@ -255,7 +255,7 @@ while(<input>) {
     ($source, $dest, $pages, $size, $cost) = split();
     my $xlistref = $xdatas[$source][$dest];
     my $ylistref = $ydatas[$source][$dest];
-    push(@$xlistref, $pages);
+    push(@$xlistref, $size);
     push(@$ylistref, $cost);
 }
 close(input);
@@ -328,8 +328,8 @@ for $source ($source_min .. $source_max) {
 	    print output "Pages\tMigration_time\tRegression\tMeasured_Bandwidth\tRegression_Bandwidth\tError\n";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
-                my $bandwidth = @xfiltered[$i] / @yfiltered[$i];
-                my $bandwidth2 = @xfiltered[$i] / @yreg[$i];
+                my $bandwidth = @xfiltered[$i] / @yfiltered[$i] * 1000000000 / 1024 / 1024;
+                my $bandwidth2 = @xfiltered[$i] / @yreg[$i] * 1000000000 / 1024 / 1024;
                 print output "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
                 print globaloutput "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
             }

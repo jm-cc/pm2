@@ -20,6 +20,27 @@
 #endif
 
 int main(int argc, char **argv) {
-  marcel_memory_sampling_of_migration_cost(1, 1, 2, 2);
+  int i;
+  int minsource, maxsource, mindest, maxdest;
+
+  minsource = 0;
+  maxsource = numa_max_node();
+  mindest = 0;
+  maxdest = numa_max_node();
+
+  for(i=1 ; i<argc ; i++) {
+    if (!strcmp(argv[i], "-src")) {
+      if (i+1 >= argc) abort();
+      minsource = atoi(argv[i+1]);
+      maxsource = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-dest")) {
+      if (i+1 >= argc) abort();
+      mindest = atoi(argv[i+1]);
+      maxdest = atoi(argv[i+1]);
+    }
+  }
+
+  marcel_memory_sampling_of_migration_cost(minsource, maxsource, mindest, maxdest);
 }
 

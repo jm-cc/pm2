@@ -89,6 +89,10 @@ typedef struct marcel_memory_manager_s {
   int initialpreallocatedpages;
 } marcel_memory_manager_t;
 
+/** Node selection policy */
+typedef int marcel_memory_node_selection_policy_t;
+#define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
+
 #endif /* MARCEL_MAMI_ENABLED */
 
 #section marcel_functions
@@ -257,6 +261,16 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
  *
  */
 void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
+
+/**
+ * Select the "best" node based on the given policy.
+ * @param memory_manager pointer to the memory manager
+ * @param policy selection policy
+ * @param node returns the id of the node
+ */
+void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
+                               marcel_memory_node_selection_policy_t policy,
+                               int *node);
 
 #endif /* MARCEL_MAMI_ENABLED */
 

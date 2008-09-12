@@ -460,5 +460,36 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
   LOG_OUT();
 }
 
+void ma_memory_get_free_space(marcel_memory_manager_t *memory_manager,
+                              int node,
+                              int *space) {
+  marcel_memory_space_t *heap = memory_manager->heaps[node];
+  *space = 0;
+  while (heap != NULL) {
+    *space += heap->nbpages;
+    heap = heap->next;
+  }
+}
+
+void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
+                               marcel_memory_node_selection_policy_t policy,
+                               int *node) {
+  marcel_spin_lock(&(memory_manager->lock));
+
+  if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
+    int i, space, maxspace;
+    maxspace = 0;
+    for(i=0 ; i<marcel_nbnodes ; i++) {
+      ma_memory_get_free_space(memory_manager, i, &space);
+      if (space > maxspace) {
+        maxspace = space;
+        *node = i;
+      }
+    }
+  }
+
+  marcel_spin_unlock(&(memory_manager->lock));
+}
+
 
 #endif /* MARCEL_MAMI_ENABLED */

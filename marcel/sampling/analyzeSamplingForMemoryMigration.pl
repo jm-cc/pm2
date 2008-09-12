@@ -306,7 +306,7 @@ for $source ($source_min .. $source_max) {
 
                 # filters data
                 filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
-                next if (scalar(@xfiltered) == 0);
+                next if (scalar(@xfiltered) == 0) || (scalar(@xfiltered) == 1);
  
                 # Performs the linear regression
                 ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);

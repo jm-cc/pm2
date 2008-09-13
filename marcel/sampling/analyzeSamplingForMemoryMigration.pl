@@ -106,7 +106,7 @@ sub filter {
 }
 
 sub help {
-    print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename>] \n";
+    print "Syntax: analyzeSampling.pl [<hostname>] [-file <sampling filename> -model <model filename>] \n";
     print "            [-min <minimum value for the x coordinates>] [-max <maximum value for the x coordinates>]\n";
     print "            [-source <node identifier>] [-dest <node identifier>]\n";
     print "            [-plot] [-dumb] [-jpeg]\n";
@@ -175,6 +175,7 @@ sub gnuplot {
 my $plot = 0;
 my $terminal = "";
 my $filename = "";
+my $modelfilename = "";
 my $hostname = "";
 my $pathname = "";
 my $x_min = 0;               # Minimum size for the x coordinates
@@ -220,6 +221,10 @@ for(my $i=0 ; $i<scalar(@ARGV) ; $i++) {
 	$filename = $ARGV[$i+1];
         $i++;
     }
+    elsif ($ARGV[$i] eq "-model") {
+	$modelfilename = $ARGV[$i+1];
+        $i++;
+    }
     else {
         $hostname = $ARGV[$i];
     }
@@ -260,7 +265,10 @@ while(<input>) {
 }
 close(input);
 
-open result,$result=">$pathname/model_for_memory_migration_$hostname.txt" or die "Cannot open $result: $!";
+if ($modelfilename eq "") {
+    $modelfilename = "$pathname/model_for_memory_migration_$hostname.txt";
+}
+open result,$result=">$modelfilename" or die "Cannot open $result: $!";
 print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
 print result "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
 

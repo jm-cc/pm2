@@ -195,10 +195,14 @@ init: checkmake linksinit optionsinit flavorinit componentsinit
 initupdateflavor: checkmake linksinit optionsinit flavorupdate
 initnoflavor: checkmake linksinit optionsinit
 
+ifneq ($(FORCEOLDMAKE),1)
 checkmake:
 	@if ( expr $(MAKE_VERSION) \< 3.81 >> /dev/null ) then \
 	echo "Wrong make version. Upgrade to version 3.81"; exit 1;\
 	fi
+else
+checkmake:
+endif
 
 README:
 	$(MAKE) bkco

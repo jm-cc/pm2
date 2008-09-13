@@ -138,7 +138,7 @@ sub gnuplot {
         print gnuplot "pause -1\n";
     }
 
-    print gnuplot "set ylabel \"Bandwidth (Gbytes/secondes)\"\n";
+    print gnuplot "set ylabel \"Bandwidth (Mbytes/secondes)\"\n";
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_bandwidth.jpg\"\n";
     }
@@ -287,7 +287,7 @@ for $source ($source_min .. $source_max) {
 
         my $globaloutputfile = "sampling_${source}_${dest}";
         open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
-	print globaloutput "Pages\tMigration_time\tRegression\tMeasured_Bandwidth\tRegression_Bandwidth\tError\n";
+	print globaloutput "Pages\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
 
         my $intervals = 0;
         my $x_current_min = $x_min;
@@ -309,7 +309,7 @@ for $source ($source_min .. $source_max) {
                 # filters data
                 filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
                 next if (scalar(@xfiltered) == 0) || (scalar(@xfiltered) == 1);
- 
+
                 # Performs the linear regression
                 ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
 
@@ -325,7 +325,7 @@ for $source ($source_min .. $source_max) {
 
             my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-	    print output "Pages\tMigration_time\tRegression\tMeasured_Bandwidth\tRegression_Bandwidth\tError\n";
+	    print output "Pages\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
                 my $bandwidth = @xfiltered[$i] / @yfiltered[$i] * 1000000000 / 1024 / 1024;
@@ -338,7 +338,7 @@ for $source ($source_min .. $source_max) {
             if ($plot) {
                 gnuplot($outputfile, $terminal, $source, $dest);
             }
-            
+
             $x_current_min = $x_current_max+1;
             $x_current_max = $x_max;
         } while ($x_current_min < $x_max);

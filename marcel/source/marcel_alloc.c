@@ -24,6 +24,7 @@
 #include <errno.h>
 #ifdef MA__NUMA
 #include <numaif.h>
+#include <numa.h>
 #endif
 
 #if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
@@ -303,10 +304,6 @@ void marcel_slot_exit(void)
 	ma_obj_allocator_fini(marcel_mapped_slot_allocator);
 	ma_obj_allocator_fini(marcel_unmapped_slot_allocator);
 }
-
-#ifdef MA__NUMA
-#include <numa.h>
-#endif
 
 /******************* begin heap *******************/
 #ifdef MA__NUMA

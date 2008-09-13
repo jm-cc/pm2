@@ -205,10 +205,11 @@ unsigned ma_nbprocessors(void) {
  */
 
 #ifdef MA__NUMA
+int ma_numa_not_available = 0;
+
 #ifdef LINUX_SYS
 #define HAS_NUMA
 #include <numa.h>
-int ma_numa_not_available;
 
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
@@ -230,7 +231,7 @@ void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line
 }
 
 int ma_is_numa_available(void) {
-	 return (numa_available() != -1);
+	return (ma_numa_not_available == 0) && (numa_available() != -1);
 }
 
 #include <numaif.h>
@@ -305,13 +306,18 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 #else
 #warning "Only AIX >= 5.3 has the NUMA API"
 #endif
-#endif
-#ifndef HAS_NUMA
-	/* TODO: SOLARIS_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
-#warning "don't know how to allocate memory on specific nodes"
+
+#else
+
+/* TODO: SOLARIS_SYS, WIN_SYS, GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 #ifdef WIN_SYS
 #warning TODO: use AllocateUserPhysicalPagesNuma or VirtualAllocExNuma
 #endif
+
+#endif
+
+#ifndef HAS_NUMA
+#warning "don't know how to allocate memory on specific nodes"
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	return ma_malloc_nonuma(size,file,line);
 }
@@ -327,4 +333,5 @@ int ma_is_numa_available(void) {
 void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
 #endif
-#endif
+
+#endif /* MA__NUMA */

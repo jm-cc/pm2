@@ -99,7 +99,7 @@ void ma_memory_sampling(unsigned long source, unsigned long dest, void *buffer, 
   printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
 }
 
-void ma_memory_get_filename(char *type, char *filename) {
+void ma_memory_get_filename(char *type, char *filename, long source, long dest) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;
@@ -122,8 +122,21 @@ void ma_memory_get_filename(char *type, char *filename) {
     rc = snprintf(filename, 1024, "%s/.pm2/marcel", home);
   }
   assert(rc < 1024);
-  snprintf(filename, 1024, "%s/%s_for_memory_migration_%s.txt", directory, type, hostname);
+
+  if (source == -1) {
+    if (dest == -1)
+      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s.txt", directory, type, hostname);
+    else
+      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_dest_%ld.txt", directory, type, hostname, dest);
+  }
+  else {
+    if (dest == -1)
+      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_source_%ld.txt", directory, type, hostname, source);
+    else
+      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_source_%ld_dest_%ld.txt", directory, type, hostname, source, dest);
+  }
   assert(rc < 1024);
+
   //printf("File %s\n", filename);
 
   mkdir(directory, 0755);
@@ -154,9 +167,8 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
   float slope;
   float intercept;
   float correlation;
-  unsigned long pagesize;
 
-  ma_memory_get_filename("model", filename);
+  ma_memory_get_filename("model", filename, -1, -1);
   out = fopen(filename, "r");
   if (!out) {
     printf("The model for the cost of the memory migration is not available\n");
@@ -196,7 +208,13 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
   pagesize = getpagesize();
   maxnode = numa_max_node();
 
-  ma_memory_get_filename("sampling", filename);
+  {
+    long source = -1;
+    long dest = -1;
+    if (minsource == maxsource) source = minsource;
+    if (mindest == maxdest) dest = mindest;
+    ma_memory_get_filename("sampling", filename, source, dest);
+  }
   out = fopen(filename, "w");
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");

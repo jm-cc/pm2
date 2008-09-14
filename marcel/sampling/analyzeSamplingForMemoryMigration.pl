@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-use Term::ANSIColor;
-
 sub mean {
     my ($dataref) = @_;
 
@@ -269,8 +267,8 @@ if ($modelfilename eq "") {
     $modelfilename = "$pathname/model_for_memory_migration_$hostname.txt";
 }
 open result,$result=">$modelfilename" or die "Cannot open $result: $!";
-print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
-print result "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\n";
+print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\tBandwidth(MB/s)\n";
+print result "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\tBandwidth(MB/s)\n";
 
 # For each pair $source $dest, perform the linear regression and plot
 # the result

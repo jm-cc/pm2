@@ -127,7 +127,7 @@ sub gnuplot {
         print gnuplot "set terminal $terminal\n";
     }
     print gnuplot "set title \"Source $source - Dest $dest\"\n";
-    print gnuplot "set xlabel \"Number of pages\"\n";
+    print gnuplot "set xlabel \"Number of bytes\"\n";
     print gnuplot "set ylabel \"Migration time (nanosecondes)\"\n";
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_model.jpg\"\n";
@@ -164,7 +164,7 @@ sub gnuplot {
 
 # Main program
 # Linear regression to exhibit a cost model y = a*x + b.
-#      x = number of pages,
+#      x = number of bytes
 #      y = migration cost.
 # xdatas and ydatas are matrices indiced on the node id. The cell
 # [source][dest] of the x (resp. y) matrix will contain all the x
@@ -295,7 +295,7 @@ for $source ($source_min .. $source_max) {
 
         my $globaloutputfile = "sampling_${source}_${dest}";
         open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
-	print globaloutput "Pages\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
+	print globaloutput "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
 
         my $intervals = 0;
         my $x_current_min = $x_min;
@@ -328,16 +328,18 @@ for $source ($source_min .. $source_max) {
             } while ($done == 0);
 
             $intervals += 1;
-            printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
-            printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r;
+	    my $l = scalar(@xfiltered) - 1;
+	    my $bandwidth = @xfiltered[$l] / @yreg[$l] * 1000000000 / 1024 / 1024;
+            printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
+            printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
 
             my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
             open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
-	    print output "Pages\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
+	    print output "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {
                 my $bandwidth = @xfiltered[$i] / @yfiltered[$i] * 1000000000 / 1024 / 1024;
-                my $bandwidth2 = @xfiltered[$i] / @yreg[$i] * 1000000000 / 1024 / 1024;
+		my $bandwidth2 = @xfiltered[$i] / @yreg[$i] * 1000000000 / 1024 / 1024;
                 print output "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
                 print globaloutput "@xfiltered[$i]\t@yfiltered[$i]\t@yreg[$i]\t$bandwidth\t$bandwidth2\t@yerror[$i]\n";
             }

@@ -77,7 +77,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_attr_settopo_level(&attr, &marcel_topo_node_level[node]);
     marcel_create(&threads[node], &attr, compute, NULL);
   }
-  
+
   // Wait for the threads to complete
   for(node=0 ; node<marcel_nbnodes ; node++) {
     marcel_join(threads[node], NULL);
@@ -90,7 +90,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_attr_setid(&attr2, node);
     marcel_create(&threads[node], &attr2, compute, NULL);
   }
-  
+
   // Wait for the threads to complete
   for(node=0 ; node<marcel_nbnodes ; node++) {
     marcel_join(threads[node], NULL);

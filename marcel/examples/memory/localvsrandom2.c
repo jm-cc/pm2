@@ -151,10 +151,10 @@ int marcel_main(int argc, char * argv[]) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
       printf("%d\t%d\t%lld\t%lld\t%f\t%f\t%lld\t%f\t%f\n",
              t, node, LOOPS*SIZE*4,
-             rtimes[node][t], 
+             rtimes[node][t],
              (((float)(rtimes[node][t])) / ((float)cycles_per_second)),
              ((float)LOOPS*SIZE*4) / (((float)(rtimes[node][t])) / ((float)cycles_per_second)) / 1000000,
-             wtimes[node][t], 
+             wtimes[node][t],
              (((float)(wtimes[node][t])) / ((float)cycles_per_second)),
              ((float)LOOPS*SIZE*4) / (((float)(wtimes[node][t])) / ((float)cycles_per_second)) / 1000000);
     }

@@ -72,7 +72,7 @@ typedef struct marcel_memory_migration_cost_s {
   float intercept;
   float correlation;
 } marcel_memory_migration_cost_t;
-  
+
 /** Memory manager */
 typedef struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */

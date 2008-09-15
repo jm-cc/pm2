@@ -77,7 +77,7 @@ void test_pagenodes(unsigned long *buffer, unsigned long pagesize, unsigned long
     }
   }
   if (valid) {
-    printf("buffer correct\n");  
+    printf("buffer correct\n");
   }
 }
 

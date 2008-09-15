@@ -1046,6 +1046,7 @@ INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
+			 MARCEL_MAMI_ENABLED \
                          LINUX_SYS \
 			 DOXYGEN
 

@@ -221,8 +221,6 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
 
   for(source=minsource; source<=maxsource ; source++) {
     for(dest=mindest; dest<=maxdest ; dest++) {
-      if (source >= dest) continue;
-
       // Allocate the pages
       buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
       if (buffer < 0) {

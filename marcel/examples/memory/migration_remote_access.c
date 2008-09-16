@@ -32,6 +32,12 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_migration_cost(&memory_manager, 0, 1, 100, &cost);
   marcel_printf("Cost for migrating %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
 
+  marcel_memory_writing_remote_access_cost(&memory_manager, 0, 1, 100, &cost);
+  marcel_printf("Cost for remote writing %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
+
+  marcel_memory_reading_remote_access_cost(&memory_manager, 0, 1, 100, &cost);
+  marcel_printf("Cost for remote reading %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
+
   marcel_memory_exit(&memory_manager);
 
   // Finish marcel

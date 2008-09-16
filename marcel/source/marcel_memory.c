@@ -52,6 +52,17 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   }
   ma_memory_load_model_for_migration_cost(memory_manager);
 
+  // Load the model for the remote access costs
+  memory_manager->writing_remote_access_costs = (marcel_remote_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    memory_manager->writing_remote_access_costs[node] = (marcel_remote_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t));
+  }
+  memory_manager->reading_remote_access_costs = (marcel_remote_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    memory_manager->reading_remote_access_costs[node] = (marcel_remote_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t));
+  }
+#warning load the remote acces costs
+
 #ifdef PM2DEBUG
   if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
@@ -456,6 +467,28 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
       }
     } while (tbx_slist_ref_forward(migration_costs));
   }
+  LOG_OUT();
+}
+
+void marcel_memory_writing_remote_access_cost(marcel_memory_manager_t *memory_manager,
+                                              int source,
+                                              int dest,
+                                              size_t size,
+                                              float *cost) {
+  LOG_IN();
+  marcel_remote_access_cost_t remote_cost = memory_manager->writing_remote_access_costs[source][dest];
+  *cost = (size/64) * remote_cost.cost;
+  LOG_OUT();
+}
+
+void marcel_memory_reading_remote_access_cost(marcel_memory_manager_t *memory_manager,
+                                              int source,
+                                              int dest,
+                                              size_t size,
+                                              float *cost) {
+  LOG_IN();
+  marcel_remote_access_cost_t remote_cost = memory_manager->reading_remote_access_costs[source][dest];
+  *cost = (size/64) * remote_cost.cost;
   LOG_OUT();
 }
 

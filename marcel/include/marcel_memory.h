@@ -64,6 +64,11 @@ typedef struct marcel_memory_space_s {
   struct marcel_memory_space_s *next;
 } marcel_memory_space_t;
 
+/** Reading and writing remote access cost from node to node */
+typedef struct marcel_remote_access_cost_s {
+  float cost;
+} marcel_remote_access_cost_t;
+
 /** Memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s {
   size_t size_min;
@@ -77,6 +82,10 @@ typedef struct marcel_memory_migration_cost_s {
 typedef struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
+  /** \brief Reading remote access costs from all the nodes to all the nodes */
+  marcel_remote_access_cost_t **reading_remote_access_costs;
+  /** \brief Writing remote access costs from all the nodes to all the nodes */
+  marcel_remote_access_cost_t **writing_remote_access_costs;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas */
@@ -256,6 +265,34 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int dest,
                                   size_t size,
                                   float *cost);
+
+/**
+ * Indicates the writing remote access cost for SIZE bits from node SOURCE to node DEST.
+ * @param memory_manager pointer to the memory manager
+ * @param source source node
+ * @param dest destination node
+ * @param size how many bits do we want to access
+ * @param cost estimated cost of the migration
+ */
+void marcel_memory_writing_remote_access_cost(marcel_memory_manager_t *memory_manager,
+                                              int source,
+                                              int dest,
+                                              size_t size,
+                                              float *cost);
+
+/**
+ * Indicates the reading remote access cost for SIZE bits from node SOURCE to node DEST.
+ * @param memory_manager pointer to the memory manager
+ * @param source source node
+ * @param dest destination node
+ * @param size how many bits do we want to access
+ * @param cost estimated cost of the migration
+ */
+void marcel_memory_reading_remote_access_cost(marcel_memory_manager_t *memory_manager,
+                                              int source,
+                                              int dest,
+                                              size_t size,
+                                              float *cost);
 
 /**
  *

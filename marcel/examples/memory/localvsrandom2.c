@@ -21,6 +21,7 @@
 
 #define SIZE  100
 #define LOOPS 100000
+#define CACHE_LINE_SIZE 64
 
 marcel_memory_manager_t memory_manager;
 int **buffers;
@@ -76,7 +77,7 @@ any_t reader(any_t arg) {
   // TODO: faire un access aleatoire au lieu de lineaire
 
   for(j=0 ; j<LOOPS ; j++) {
-    for(i=0 ; i<SIZE ; i++) {
+    for(i=0 ; i<SIZE ; i+=CACHE_LINE_SIZE/4) {
       __builtin_prefetch((void*)&buffer[i]);
       __builtin_ia32_clflush((void*)&buffer[i]);
     }
@@ -146,16 +147,16 @@ int marcel_main(int argc, char * argv[]) {
     }
   }
 
-  printf("Thread\tNode\tBytes\tReader Cycles\tReader Seconds\tReader MB/s\tWriter Cycles\tWriter Seconds\tWriter MB/s\n");
+  printf("Thread\tNode\tBytes\t\tReader (s)\tCache Line (ns)\tMB/s\tWriter (s)\tCache Line (ns)\tMB/s\n");
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      printf("%d\t%d\t%lld\t%lld\t%f\t%f\t%lld\t%f\t%f\n",
+      printf("%d\t%d\t%lld\t%f\t%f\t%f\t%f\t%f\t%f\n",
              t, node, LOOPS*SIZE*4,
-             rtimes[node][t],
              (((float)(rtimes[node][t])) / ((float)cycles_per_second)),
+             (((float)(rtimes[node][t])) / ((float)cycles_per_second)) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE * (1000*1000*1000),
              ((float)LOOPS*SIZE*4) / (((float)(rtimes[node][t])) / ((float)cycles_per_second)) / 1000000,
-             wtimes[node][t],
              (((float)(wtimes[node][t])) / ((float)cycles_per_second)),
+             (((float)(wtimes[node][t])) / ((float)cycles_per_second)) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE * (1000*1000*1000),
              ((float)LOOPS*SIZE*4) / (((float)(wtimes[node][t])) / ((float)cycles_per_second)) / 1000000);
     }
   }

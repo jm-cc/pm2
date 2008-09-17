@@ -747,12 +747,12 @@ static void __marcel_init look_sysfscpu(void) {
 		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, proc_cachesizes, numcaches);
 	}
 
-	if (numcaches[2] > 1) {
+	if (numcaches[2] > 0) {
 		/* setup L3 caches */
 		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
 
-	if (numcaches[1] > 1) {
+	if (numcaches[1] > 0) {
 		/* setup L2 caches */
 		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
@@ -789,7 +789,7 @@ static void __marcel_init look_sysfscpu(void) {
 		mdebug("\n");
 	}
 
-	if (numcaches[0] > 1) {
+	if (numcaches[0] > 0) {
 		/* setup L1 caches */
 		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}

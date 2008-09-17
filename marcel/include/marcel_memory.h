@@ -27,12 +27,39 @@
 #section types
 #ifdef MARCEL_MAMI_ENABLED
 
+/** \brief Type of a tree node */
+typedef struct marcel_memory_data_s marcel_memory_data_t;
+
+/** \brief Type of a sorted-binary tree of allocated memory areas */
+typedef struct marcel_memory_tree_s marcel_memory_tree_t;
+
+/** \brief Type of a pre-allocated space (start address + number of pages) */
+typedef struct marcel_memory_space_s marcel_memory_space_t;
+
+/** \brief Type of a reading or writing access cost from node to node */
+typedef struct marcel_access_cost_s marcel_access_cost_t;
+
+/** \brief Type of a memory migration cost from node to node */
+typedef struct marcel_memory_migration_cost_s marcel_memory_migration_cost_t;
+
+/** \brief Type of a memory manager */
+typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
+
+/** \brief Node selection policy */
+typedef int marcel_memory_node_selection_policy_t;
+#define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
+
+#endif /* MARCEL_MAMI_ENABLED */
+
+#section structures
+#ifdef MARCEL_MAMI_ENABLED
+
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
 #include "tbx_pointers.h"
 
-/** \brief Type of a tree node */
-typedef struct marcel_memory_data_s {
+/** \brief Structure of a tree node */
+struct marcel_memory_data_s {
   /** \brief Start address of the memory area */
   void *startaddress;
   /** \brief End address of the memory area */
@@ -46,44 +73,44 @@ typedef struct marcel_memory_data_s {
   int nbpages;
   /** \brief Nodes where the memory area is located */
   int *nodes;
-} marcel_memory_data_t;
+};
 
-/** \brief Sorted-binary tree of allocated memory areas */
-typedef struct marcel_memory_tree_s {
+/** \brief Structure of a sorted-binary tree of allocated memory areas */
+struct marcel_memory_tree_s {
   /** \brief Left child of the tree */
   struct marcel_memory_tree_s *leftchild;
   /** \brief Right child of the tree */
   struct marcel_memory_tree_s *rightchild;
   /** \brief Node of the tree */
   marcel_memory_data_t *data;
-} marcel_memory_tree_t;
+};
 
-/** \brief Represent a pre-allocated space (start address + number of pages) */
-typedef struct marcel_memory_space_s {
+/** \brief Structure of a pre-allocated space (start address + number of pages) */
+struct marcel_memory_space_s {
   /** \brief Start address of the memory space */
   void *start;
   /** \brief Number of pages of the memory space */
   int nbpages;
   /** \brief Next pre-allocated space */
   struct marcel_memory_space_s *next;
-} marcel_memory_space_t;
+};
 
-/** \brief Reading and writing access cost from node to node */
-typedef struct marcel_access_cost_s {
+/** \brief Structure of a reading or writing access cost from node to node */
+struct marcel_access_cost_s {
   float cost;
-} marcel_access_cost_t;
+};
 
-/** \brief Memory migration cost from node to node */
-typedef struct marcel_memory_migration_cost_s {
+/** \brief Structure of a memory migration cost from node to node */
+struct marcel_memory_migration_cost_s {
   size_t size_min;
   size_t size_max;
   float slope;
   float intercept;
   float correlation;
-} marcel_memory_migration_cost_t;
+};
 
-/** \brief Memory manager */
-typedef struct marcel_memory_manager_s {
+/** \brief Structure of a memory manager */
+struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */
@@ -102,11 +129,7 @@ typedef struct marcel_memory_manager_s {
   int initially_preallocated_pages;
   /** \brief Cache line size */
   int cache_line_size;
-} marcel_memory_manager_t;
-
-/** \brief Node selection policy */
-typedef int marcel_memory_node_selection_policy_t;
-#define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
+};
 
 #endif /* MARCEL_MAMI_ENABLED */
 

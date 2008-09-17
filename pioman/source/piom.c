@@ -1063,7 +1063,7 @@ int piom_req_submit(piom_server_t server, piom_req_t req)
 
 	if (__piom_need_export(server, req, NULL, NULL) )
 	{
-		piom_callback_will_block(server, req);
+		piom_wakeup_lwp(server, req);
 	}
 	else
 #endif /* PIOM_BLOCKING_CALLS */
@@ -1121,31 +1121,42 @@ int piom_req_cancel(piom_req_t req, int ret_code)
 }
 
 #ifdef PIOM_BLOCKING_CALLS
-/* Previent un LWP de comm qu'il y a des requetes à exporter */
-int piom_callback_will_block(piom_server_t server, piom_req_t req) 
+/* Wakeup a LWP to perform a blocking call */
+int piom_wakeup_lwp(piom_server_t server, piom_req_t req) 
 {
 	piom_comm_lwp_t lwp=NULL;	
 	int foo=42;
 
 	__piom_register_block(server, req);
 
-	/* Choisit un LWP */
+	/* Choose a LWP from the pool */
+	_piom_spin_lock(&server->lwp_lock);
 	do {
 		if(!list_empty(server->list_lwp_ready.next))
 			lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
 		else if( server->stopable && !list_empty(server->list_lwp_working.next))
 			lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
-		else 		/* Cree un autre LWP (attention, c'est TRES cher) */
+		else {
+			/* No ready LWP in the poll, create one and retry 
+			   (this may be *very* expensive) */
+			_piom_spin_unlock(&server->lwp_lock);
 			piom_server_start_lwp(server, 1);
+			_piom_spin_lock(&server->lwp_lock);
+		}
 	}while(! lwp);
+	_piom_spin_unlock(&server->lwp_lock);
 
-	/* wakeup LWP */
+	/* wakeup the LWP */
 	PIOM_LOGF("Waiking up comm LWP #%d\n",lwp->vp_nb);
 	PROF_EVENT(writing_tube);
+
 	write(lwp->fds[1], &foo, 1);
 	PROF_EVENT(writing_tube_done);
+
 #ifdef EXPORT_THREADS
-	marcel_task_t *lock;	/* recupere les requetes à poster */
+	/* TODO: this can be factorized (same code as in __piom_syscall_loop) */
+	/* A LWP is waking up, so we can execute the blocking callback function */
+	marcel_task_t *lock;
 	piom_req_t prev, tmp, req2=NULL;
 	if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
 	{
@@ -1165,14 +1176,14 @@ int piom_callback_will_block(piom_server_t server, piom_req_t req)
 				if(req2==prev)
 					break;
 				PIOM_WARN_ON(req2->state &PIOM_STATE_OCCURED);
-				/* Place la req dans la liste des req exportées */
+				/* Set the request as exported */
 				list_del_init(&req2->chain_req_to_export);
 				list_add(&req2->chain_req_exported, &server->list_req_exported);
 				req2->state|=PIOM_STATE_EXPORTED;
 				
 				__piom_tryunlock_server(server);
 					
-				/* appel a fonction bloquante */		
+				/* execute the blocking callback function */		
 				(*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].
 				 func) (server, PIOM_FUNCTYPE_BLOCK_WAITONE, req2,
 					server->req_poll_grouped_nb, lwp->fds[0]);
@@ -1189,7 +1200,6 @@ int piom_callback_will_block(piom_server_t server, piom_req_t req)
 			PIOM_EXCEPTION_RAISE(PIOM_CALLBACK_ERROR);
 		
 	}
-	/* traitement des requetes terminees */
 	__piom_manage_ready(server);
 	lock = piom_ensure_trylock_server(server);
 	
@@ -1197,8 +1207,10 @@ int piom_callback_will_block(piom_server_t server, piom_req_t req)
 	return 0;
 }
 
-/* TODO : lors de la création du serveur : spécifier le nombre de LWPs a lancer */
-/* attend d'etre débloqué pour lancer un appel systeme */
+/* TODO : Specify the number of LWP at the server's initialization */
+/* Function executed on a spare LWP.
+ * Wait for a command (using a pipe) and call blocking callbacks
+ */
 void *__piom_syscall_loop(void * param)
 {
 	piom_comm_lwp_t lwp=(piom_comm_lwp_t) param;
@@ -1206,9 +1218,11 @@ void *__piom_syscall_loop(void * param)
 	piom_req_t prev, tmp, req=NULL;
 	int foo=0;
 	marcel_task_t *lock;
+	lwp->state=PIOM_LWP_STATE_LAUNCHED;
 #ifdef EXPORT_THREADS
 
-	/* On met la priorite au minimum */
+	/* Set priority to minimum to avoid the LWP to be woken up as soon 
+	   as it is unblocked. */
 	struct sched_param pthread_param;
 	if(sched_getparam(0, &pthread_param)) {
 		fprintf(stderr, "couldn't get my priority !\n");
@@ -1228,14 +1242,16 @@ void *__piom_syscall_loop(void * param)
 		fprintf(stderr, "couldn't lower my priority\n");
 	}
 #endif
-	lock = piom_ensure_trylock_server(server);
+
+	/* Main loop: wait for commands until the server is halted */
 	do {
-		/* etat working -> ready */
+		_piom_spin_lock(&server->lwp_lock);
 		list_del_init(&lwp->chain_lwp_working);
 		list_add_tail(&lwp->chain_lwp_ready, &server->list_lwp_ready);
-		__piom_tryunlock_server(server);
+		lwp->state=PIOM_LWP_STATE_READY;		
+		_piom_spin_unlock(&server->lwp_lock);
 
-                /* Lit n'importe quoi */		
+                /* Wait for a command */		
 		PROF_EVENT2(syscall_waiting, lwp->vp_nb, lwp->fds[0]);
 #ifdef EXPORT_THREADS
 		/* TODO : faire vraiment qqchose ! */
@@ -1245,29 +1261,34 @@ void *__piom_syscall_loop(void * param)
 #else
 		read(lwp->fds[0], &foo, 1); 
 #endif
+	process_blocking_call:
+
 		PROF_EVENT2(syscall_read_done, lwp->vp_nb, lwp->fds[0]);
 		PIOM_LOGF("Comm LWP #%d is working\n",lwp->vp_nb);
 
+		_piom_spin_lock(&server->lwp_lock);
+		/* Check the server state */
 		if( lwp->server->state == PIOM_SERVER_STATE_HALTED ){
 			list_del_init(&lwp->chain_lwp_ready);
+			_piom_spin_unlock(&server->lwp_lock);
 			return NULL;
 		}
 		
-		/* etat ready->working */
-		lock = piom_ensure_trylock_server(server);
-
+		/* Remove the LWP from the ready list and add it to the working list */
+		lwp->state=PIOM_LWP_STATE_WORKING;
 		list_del_init(&lwp->chain_lwp_ready);
 		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
-		
-		/* recupere les requetes à poster */
+		_piom_spin_unlock(&server->lwp_lock);
+
+		lock = piom_ensure_trylock_server(server);
+		/* Get the requests to be posted */
 		if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
 		{
+			/* Wait for a group of requests */
 			__piom_tryunlock_server(server);
-
 			(*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].
 			 func) (server, PIOM_FUNCTYPE_BLOCK_WAITANY, req,
 				server->req_block_grouped_nb, lwp->fds[0]);
-
 			lock = piom_ensure_trylock_server(server);
 		}
 		else{
@@ -1278,18 +1299,16 @@ void *__piom_syscall_loop(void * param)
 					if(req==prev)
 						break;
 					PIOM_WARN_ON(req->state &PIOM_STATE_OCCURED);
-					/* Place la req dans la liste des req exportées */
+					/* Set request as exported */
 					list_del_init(&req->chain_req_to_export);
 					list_add(&req->chain_req_exported, &server->list_req_exported);
 					req->state|=PIOM_STATE_EXPORTED;
 					
 					__piom_tryunlock_server(server);
-					
-					/* appel a fonction bloquante */		
+					/* Call the blocking callback function */		
 					(*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].
 					 func) (server, PIOM_FUNCTYPE_BLOCK_WAITONE, req,
 						server->req_poll_grouped_nb, lwp->fds[0]);
-					
 					list_del_init(&req->chain_req_exported);
 					
 					lock = piom_ensure_trylock_server(server);
@@ -1302,14 +1321,15 @@ void *__piom_syscall_loop(void * param)
 				PIOM_EXCEPTION_RAISE(PIOM_CALLBACK_ERROR);
 
 		}
-		/* traitement des requetes terminees */
+		/* Treat completed requests */
 		__piom_manage_ready(server);
-		lock = piom_ensure_trylock_server(server);
+		__piom_tryunlock_server(server);
+
 
 	} while(lwp->server->state!=PIOM_SERVER_STATE_HALTED);
-	__piom_tryunlock_server(server);
-	return NULL;}
 
+	return NULL;
+}
 
 #endif /* PIOM_BLOCKING_CALLS */
 
@@ -1333,7 +1353,7 @@ __tbx_inline__ static int __piom_wait_req(piom_server_t server, piom_req_t req,
 #ifdef PIOM_BLOCKING_CALLS
 	if (__piom_need_export(server, req, wait, timeout) )
 	{
-		piom_callback_will_block(server, req);
+		piom_wakeup_lwp(server, req);
 	}
 #endif /* PIOM_BLOCKING_CALLS */
 
@@ -1557,10 +1577,11 @@ void
 piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 {
 #ifdef PIOM_BLOCKING_CALLS
-	/* Lancement des LWP de comm */
+	/* Create LWPs  to perform blocking calls */
 	int i;
 	marcel_attr_t attr;
-	
+	int foo;
+
 	marcel_attr_init(&attr);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setname(&attr, "piom_receiver");
@@ -1571,10 +1592,15 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 	{
 		PIOM_LOGF("Creating a lwp for server %p\n", server);
 		piom_comm_lwp_t lwp=(piom_comm_lwp_t) malloc(sizeof(struct piom_comm_lwp));
+		
 		__piom_init_lwp(lwp);
+		lwp->state=PIOM_LWP_STATE_NONE;
 		lwp->server=server;
-		/* le LWP est considéré comme Working pendant l'initialisation */
+
+		_piom_spin_lock(&server->lwp_lock);
+		/* the LWP is considered working during initialization */
 		list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+		_piom_spin_unlock(&server->lwp_lock);
 
 		lwp->vp_nb = marcel_add_lwp();
 		marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(lwp->vp_nb));
@@ -1583,8 +1609,12 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 			perror("pipe");
 			exit(EXIT_FAILURE);
 		}
+		lwp->state=PIOM_LWP_STATE_INITIALIZED;
+		/* Create a thread on the LWP */
 		marcel_create(&lwp->pid, &attr, (void*) &__piom_syscall_loop, lwp);
 
+		/* Wait for the lwp to be ready before continuing */
+		while(lwp->state!=PIOM_LWP_STATE_READY);
 	}
 #endif /* PIOM_BLOCKING_CALLS */
 }
@@ -1714,14 +1744,16 @@ int piom_server_stop(piom_server_t server)
 	piom_comm_lwp_t lwp;
        
 	while(!list_empty(server->list_lwp_ready.next)){
-		char foo=42;
+		char foo=43;
 		lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
 		write(lwp->fds[1], &foo, 1);
+		sched_yield();
 	}
 	while(!list_empty(server->list_lwp_working.next)){
-		char foo=42;
+		char foo=44;
 		lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 		write(lwp->fds[1], &foo, 1);
+		sched_yield();
 	}
 
 #endif

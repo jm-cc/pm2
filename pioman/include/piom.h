@@ -189,6 +189,15 @@ typedef struct {
 
 
 #ifdef MA__LWPS
+/* Available kinds of callbacks */
+typedef enum {
+	PIOM_LWP_STATE_NONE, 	/* LWP not initialized */
+	PIOM_LWP_STATE_INITIALIZED,/* LWP initialized but not running*/
+	PIOM_LWP_STATE_LAUNCHED, /* LWP is running, but not yet ready */
+	PIOM_LWP_STATE_WORKING,	/* LWP is running but performing a blocling call*/
+	PIOM_LWP_STATE_READY	/* LWP is running and waiting for work */
+} piom_lwp_state_t;
+
 /* Communications specialized LWP */
 struct piom_comm_lwp {
 	int vp_nb; 		/* LWP number */
@@ -197,6 +206,7 @@ struct piom_comm_lwp {
 	struct list_head chain_lwp_working;
 	piom_server_t server;
 	marcel_t pid;
+	volatile piom_lwp_state_t state; 
 };
 #endif /* MA__LWPS */
 
@@ -229,6 +239,9 @@ struct piom_server {
 	struct list_head list_req_to_export;
 	/* Liste des requêtes exportées */
 	struct list_head list_req_exported;
+
+	/* spinlock to modify the lists of lwp */
+	ma_spinlock_t lwp_lock;
 	/* List of ready LWPs */
 	struct list_head list_lwp_ready;
 	/* List of working LWPs */
@@ -577,6 +590,7 @@ void piom_req_success(piom_req_t req);
     .list_req_block_grouped=LIST_HEAD_INIT((var).list_req_block_grouped), \
     .list_req_to_export=LIST_HEAD_INIT((var).list_req_to_export), \
     .list_req_exported=LIST_HEAD_INIT((var).list_req_exported), \
+    .lwp_lock=MA_SPIN_LOCK_UNLOCKED, \
     .list_lwp_ready=LIST_HEAD_INIT((var).list_lwp_ready), \
     .list_lwp_working=LIST_HEAD_INIT((var).list_lwp_working), \
     .req_poll_grouped_nb=0, \
@@ -786,8 +800,7 @@ piom_req_t piom_get_success_req(piom_server_t server);
 int piom_lock(piom_server_t server);
 int piom_unlock(piom_server_t server);
 /* Used by BLOCK_ONE and BLOCK_ALL before and after the syscall */
-int piom_callback_will_block(piom_server_t server, piom_req_t req);
-int piom_callback_has_blocked(piom_server_t server);
+int piom_wakeup_lwp(piom_server_t server, piom_req_t req);
 
 /* Forced polling */
 void piom_poll_force(piom_server_t server);

@@ -360,3 +360,4 @@ for $source ($source_min .. $source_max) {
 
 close(result);
 
+print "Model saved in <$modelfilename>\n";

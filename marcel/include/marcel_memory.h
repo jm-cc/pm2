@@ -277,7 +277,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
- * @param cost estimated cost of the migration
+ * @param cost estimated cost of the access
  */
 void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
                                        int source,
@@ -291,7 +291,7 @@ void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
- * @param cost estimated cost of the migration
+ * @param cost estimated cost of the access
  */
 void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        int source,

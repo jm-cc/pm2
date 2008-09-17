@@ -25,29 +25,6 @@
 
 marcel_memory_manager_t memory_manager;
 int **buffers;
-int **buffers;
-
-static inline unsigned long long get_cycles(void) {
-#if defined __i386__ || defined __x86_64__
-  unsigned int l,h;
-  __asm__ __volatile__ ("rdtsc": "=a" (l), "=d" (h));
-  return l + (((unsigned long long)h) << 32);
-#elif defined __ia64__
-  unsigned long long t;
-  __asm__ __volatile__ ("mov %0=ar.itc" : "=r" (t));
-  return t;
-#else
-#error Only i386, x86_64 and ia64 supporte so far
-#endif
-}
-
-static inline unsigned long long get_cycles_per_second(void) {
-  unsigned long long start, end;
-  start = get_cycles();
-  sleep(1);
-  end = get_cycles();
-  return end - start;
-}
 
 any_t writer(any_t arg) {
   int *buffer;
@@ -89,10 +66,6 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_t attr;
   int t, node;
   unsigned long long **rtimes, **wtimes;
-  unsigned long long cycles_per_second;
-
-  cycles_per_second = get_cycles_per_second();
-  printf("%lld cycles per second\n", cycles_per_second);
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
@@ -114,50 +87,52 @@ int marcel_main(int argc, char * argv[]) {
   // Create a thread on node t to work on memory allocated on node node
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      unsigned long long start, end;
-      start = get_cycles();
+      struct timeval tv1, tv2;
+      unsigned long us;
 
       marcel_attr_setid(&attr, node);
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
-      marcel_create(&thread, &attr, writer, NULL);
 
+      gettimeofday(&tv1, NULL);
+      marcel_create(&thread, &attr, writer, NULL);
       // Wait for the thread to complete
       marcel_join(thread, NULL);
+      gettimeofday(&tv2, NULL);
 
-      end = get_cycles();
-      wtimes[node][t] = end-start;
+      us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+      wtimes[node][t] = us*1000;
     }
   }
 
   // Create a thread on node t to work on memory allocated on node node
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      unsigned long long start, end;
-      start = get_cycles();
+      struct timeval tv1, tv2;
+      unsigned long us;
 
       marcel_attr_setid(&attr, node);
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
-      marcel_create(&thread, &attr, reader, NULL);
 
+      gettimeofday(&tv1, NULL);
+      marcel_create(&thread, &attr, reader, NULL);
       // Wait for the thread to complete
       marcel_join(thread, NULL);
+      gettimeofday(&tv2, NULL);
 
-      end = get_cycles();
-      rtimes[node][t] = end-start;
+      us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+      rtimes[node][t] = us*1000;
     }
   }
 
-  printf("Thread\tNode\tBytes\t\tReader (s)\tCache Line (ns)\tMB/s\tWriter (s)\tCache Line (ns)\tMB/s\n");
+  printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      printf("%d\t%d\t%lld\t%f\t%f\t%f\t%f\t%f\t%f\n",
+      printf("%d\t%d\t%lld\t%lld\t%f\t%lld\t%f\n",
              t, node, LOOPS*SIZE*4,
-             (((float)(rtimes[node][t])) / ((float)cycles_per_second)),
-             (((float)(rtimes[node][t])) / ((float)cycles_per_second)) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE * (1000*1000*1000),
-             ((float)LOOPS*SIZE*4) / (((float)(rtimes[node][t])) / ((float)cycles_per_second)) / 1000000,
-             (((float)(wtimes[node][t])) / ((float)cycles_per_second)),
-             (((float)(wtimes[node][t])) / ((float)cycles_per_second)) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE * (1000*1000*1000),
-             ((float)LOOPS*SIZE*4) / (((float)(wtimes[node][t])) / ((float)cycles_per_second)) / 1000000);
+             rtimes[node][t],
+             (float)(rtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE,
+             wtimes[node][t],
+             (float)(wtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE);
     }
   }
 

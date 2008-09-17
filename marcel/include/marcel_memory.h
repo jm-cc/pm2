@@ -300,6 +300,11 @@ void marcel_memory_reading_remote_access_cost(marcel_memory_manager_t *memory_ma
 void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
 
 /**
+ *
+ */
+void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_manager);
+
+/**
  * Select the "best" node based on the given policy.
  * @param memory_manager pointer to the memory manager
  * @param policy selection policy

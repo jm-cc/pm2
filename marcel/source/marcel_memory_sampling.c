@@ -16,21 +16,15 @@
 #ifdef MARCEL_MAMI_ENABLED
 
 #include "marcel.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
+#include <assert.h>
 #include <numa.h>
 #include <numaif.h>
 #include <sys/mman.h>
-#include <asm/unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
+#include <sys/types.h>
 
-#define LOOPS 1000
+#define LOOPS_FOR_MIGRATION     1000
+#define LOOPS_FOR_REMOTE_ACCESS 100000
 
 void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node) {
   int *pagenodes;
@@ -78,7 +72,7 @@ void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long de
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
-  for(i=0 ; i<LOOPS ; i++) {
+  for(i=0 ; i<LOOPS_FOR_MIGRATION ; i++) {
     ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
     ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
   }
@@ -93,7 +87,7 @@ void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long de
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
-  ns /= (LOOPS * 2);
+  ns /= (LOOPS_FOR_MIGRATION * 2);
   bandwidth = ns / pages;
   fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
   printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
@@ -125,7 +119,7 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
 
   if (source == -1) {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s.txt", directory, type, hostname);
+      snprintf(filename, 1024, "%s/%s_%s.txt", directory, type, hostname);
     else
       snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_dest_%ld.txt", directory, type, hostname, dest);
   }
@@ -168,7 +162,7 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
   float intercept;
   float correlation;
 
-  ma_memory_get_filename("model", filename, -1, -1);
+  ma_memory_get_filename("model_for_memory_migration", filename, -1, -1);
   out = fopen(filename, "r");
   if (!out) {
     printf("The model for the cost of the memory migration is not available\n");
@@ -213,7 +207,7 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
     long dest = -1;
     if (minsource == maxsource) source = minsource;
     if (mindest == maxdest) dest = mindest;
-    ma_memory_get_filename("sampling", filename, source, dest);
+    ma_memory_get_filename("sampling_for_memory_migration", filename, source, dest);
   }
   out = fopen(filename, "w");
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
@@ -284,6 +278,131 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
     }
   }
   fclose(out);
+}
+
+void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_manager) {
+  char filename[1024];
+  FILE *out;
+  unsigned long t, node;
+  unsigned long maxnode;
+  unsigned long long **rtimes, **wtimes;
+  marcel_t thread;
+  marcel_attr_t attr;
+  int **buffers;
+  float cache_line_size=64;
+  long long int size=100;
+
+  any_t writer(any_t arg) {
+    int *buffer;
+    int i, j, node;
+    unsigned int gold = 1.457869;
+
+    node = marcel_self()->id;
+    buffer = buffers[node];
+
+    for(j=0 ; j<LOOPS_FOR_REMOTE_ACCESS ; j++) {
+      for(i=0 ; i<size ; i++) {
+        __builtin_ia32_movnti((void*) &buffer[i], gold);
+      }
+    }
+    return NULL;
+  }
+  any_t reader(any_t arg) {
+    int *buffer;
+    int i, j, node;
+
+    node = marcel_self()->id;
+    buffer = buffers[node];
+
+    for(j=0 ; j<LOOPS_FOR_REMOTE_ACCESS ; j++) {
+      for(i=0 ; i<size ; i+=cache_line_size/4) {
+        __builtin_prefetch((void*)&buffer[i]);
+        __builtin_ia32_clflush((void*)&buffer[i]);
+      }
+    }
+    return NULL;
+  }
+
+  maxnode = numa_max_node();
+  marcel_attr_init(&attr);
+
+  ma_memory_get_filename("sampling_for_remote_access", filename, -1, -1);
+  out = fopen(filename, "w");
+
+  rtimes = (unsigned long long **) malloc(maxnode * sizeof(unsigned long long *));
+  wtimes = (unsigned long long **) malloc(maxnode * sizeof(unsigned long long *));
+  for(node=0 ; node<maxnode ; node++) {
+    rtimes[node] = (unsigned long long *) malloc(maxnode * sizeof(unsigned long long));
+    wtimes[node] = (unsigned long long *) malloc(maxnode * sizeof(unsigned long long));
+  }
+
+  buffers = (int **) malloc(maxnode * sizeof(int *));
+  // Allocate memory on each node
+  for(node=0 ; node<maxnode ; node++) {
+    buffers[node] = marcel_memory_allocate_on_node(memory_manager, size*sizeof(int), node);
+  }
+
+  // Create a thread on node t to work on memory allocated on node node
+  for(t=0 ; t<maxnode ; t++) {
+    for(node=0 ; node<maxnode ; node++) {
+      struct timeval tv1, tv2;
+      unsigned long us;
+
+      marcel_attr_setid(&attr, node);
+      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+
+      gettimeofday(&tv1, NULL);
+      marcel_create(&thread, &attr, writer, NULL);
+      // Wait for the thread to complete
+      marcel_join(thread, NULL);
+      gettimeofday(&tv2, NULL);
+
+      us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+      wtimes[node][t] = us*1000;
+    }
+  }
+
+  // Create a thread on node t to work on memory allocated on node node
+  for(t=0 ; t<maxnode ; t++) {
+    for(node=0 ; node<maxnode ; node++) {
+      struct timeval tv1, tv2;
+      unsigned long us;
+
+      marcel_attr_setid(&attr, node);
+      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+
+      gettimeofday(&tv1, NULL);
+      marcel_create(&thread, &attr, reader, NULL);
+      // Wait for the thread to complete
+      marcel_join(thread, NULL);
+      gettimeofday(&tv2, NULL);
+
+      us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+      rtimes[node][t] = us*1000;
+    }
+  }
+
+  printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  for(t=0 ; t<maxnode ; t++) {
+    for(node=0 ; node<maxnode ; node++) {
+      printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+             t, node, LOOPS_FOR_REMOTE_ACCESS*size*4,
+             rtimes[node][t],
+             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size,
+             wtimes[node][t],
+             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size);
+      fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+              t, node, LOOPS_FOR_REMOTE_ACCESS*size*4,
+              rtimes[node][t],
+              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size,
+              wtimes[node][t],
+              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size);
+    }
+  }
+
+  fclose(out);
+  printf("Sampling saved in <%s>\n", filename);
 }
 
 #endif /* MAMI_ENABLED */

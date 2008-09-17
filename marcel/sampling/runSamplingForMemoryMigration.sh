@@ -12,12 +12,9 @@ if [ -z "$x" ] ; then
         --all=\"build_static opt\"
 fi
 
-prog=$(pm2-which -f $flavor sampling_for_memory_migration 2>/dev/null)
-if [ -z "$prog" ] ; then
-    make -C $PM2_ROOT/marcel FLAVOR=$flavor -j 
-    make -C $PM2_ROOT/marcel/examples/memory FLAVOR=$flavor sampling_for_memory_migration
-    prog=$(pm2-which -f $flavor sampling_for_memory_migration)
-fi
+make -C $PM2_ROOT/marcel FLAVOR=$flavor -j 
+make -C $PM2_ROOT/marcel/examples/memory FLAVOR=$flavor sampling_for_memory_migration
+prog=$(pm2-which -f $flavor sampling_for_memory_migration)
 
 nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
 

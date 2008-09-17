@@ -31,7 +31,7 @@
 #depend "marcel_spin.h[types]"
 #include "tbx_pointers.h"
 
-/** Type of a tree node */
+/** \brief Type of a tree node */
 typedef struct marcel_memory_data_s {
   /** \brief Start address of the memory area */
   void *startaddress;
@@ -48,7 +48,7 @@ typedef struct marcel_memory_data_s {
   int *nodes;
 } marcel_memory_data_t;
 
-/** Sorted-binary tree of allocated memory areas */
+/** \brief Sorted-binary tree of allocated memory areas */
 typedef struct marcel_memory_tree_s {
   /** \brief Left child of the tree */
   struct marcel_memory_tree_s *leftchild;
@@ -58,7 +58,7 @@ typedef struct marcel_memory_tree_s {
   marcel_memory_data_t *data;
 } marcel_memory_tree_t;
 
-/** Represent a pre-allocated space (start address + number of pages) */
+/** \brief Represent a pre-allocated space (start address + number of pages) */
 typedef struct marcel_memory_space_s {
   /** \brief Start address of the memory space */
   void *start;
@@ -68,12 +68,12 @@ typedef struct marcel_memory_space_s {
   struct marcel_memory_space_s *next;
 } marcel_memory_space_t;
 
-/** Reading and writing access cost from node to node */
+/** \brief Reading and writing access cost from node to node */
 typedef struct marcel_access_cost_s {
   float cost;
 } marcel_access_cost_t;
 
-/** Memory migration cost from node to node */
+/** \brief Memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s {
   size_t size_min;
   size_t size_max;
@@ -82,7 +82,7 @@ typedef struct marcel_memory_migration_cost_s {
   float correlation;
 } marcel_memory_migration_cost_t;
 
-/** Memory manager */
+/** \brief Memory manager */
 typedef struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
@@ -104,7 +104,7 @@ typedef struct marcel_memory_manager_s {
   int cache_line_size;
 } marcel_memory_manager_t;
 
-/** Node selection policy */
+/** \brief Node selection policy */
 typedef int marcel_memory_node_selection_policy_t;
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 

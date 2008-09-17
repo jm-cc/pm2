@@ -19,9 +19,11 @@
 #error This application needs MAMI to be enabled
 #endif
 
-int main(int argc, char **argv) {
+int marcel_main(int argc, char **argv) {
   int i;
   int minsource, maxsource, mindest, maxdest;
+
+  marcel_init(&argc,argv);
 
   minsource = 0;
   maxsource = numa_max_node();

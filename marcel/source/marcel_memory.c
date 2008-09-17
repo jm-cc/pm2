@@ -50,18 +50,18 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
       memory_manager->migration_costs[node][dest] = tbx_slist_nil();
     }
   }
-  ma_memory_load_model_for_migration_cost(memory_manager);
+  ma_memory_load_model_for_memory_migration(memory_manager);
 
-  // Load the model for the remote access costs
-  memory_manager->writing_remote_access_costs = (marcel_remote_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t *));
+  // Load the model for the access costs
+  memory_manager->writing_access_costs = (marcel_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->writing_remote_access_costs[node] = (marcel_remote_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t));
+    memory_manager->writing_access_costs[node] = (marcel_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
-  memory_manager->reading_remote_access_costs = (marcel_remote_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t *));
+  memory_manager->reading_access_costs = (marcel_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->reading_remote_access_costs[node] = (marcel_remote_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_remote_access_cost_t));
+    memory_manager->reading_access_costs[node] = (marcel_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
-#warning load the remote acces costs
+#warning load the acces costs
 
 #ifdef PM2DEBUG
   if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
@@ -470,25 +470,25 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
   LOG_OUT();
 }
 
-void marcel_memory_writing_remote_access_cost(marcel_memory_manager_t *memory_manager,
-                                              int source,
-                                              int dest,
-                                              size_t size,
-                                              float *cost) {
+void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost) {
   LOG_IN();
-  marcel_remote_access_cost_t remote_cost = memory_manager->writing_remote_access_costs[source][dest];
-  *cost = (size/64) * remote_cost.cost;
+  marcel_access_cost_t access_cost = memory_manager->writing_access_costs[source][dest];
+  *cost = (size/64) * access_cost.cost;
   LOG_OUT();
 }
 
-void marcel_memory_reading_remote_access_cost(marcel_memory_manager_t *memory_manager,
-                                              int source,
-                                              int dest,
-                                              size_t size,
-                                              float *cost) {
+void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost) {
   LOG_IN();
-  marcel_remote_access_cost_t remote_cost = memory_manager->reading_remote_access_costs[source][dest];
-  *cost = (size/64) * remote_cost.cost;
+  marcel_access_cost_t access_cost = memory_manager->reading_access_costs[source][dest];
+  *cost = (size/64) * access_cost.cost;
   LOG_OUT();
 }
 

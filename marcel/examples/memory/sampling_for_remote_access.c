@@ -25,7 +25,7 @@ int marcel_main(int argc, char **argv) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
 
-  marcel_memory_sampling_of_remote_access(&memory_manager);
+  marcel_memory_sampling_of_memory_access(&memory_manager);
 
   // Finish marcel
   marcel_memory_exit(&memory_manager);

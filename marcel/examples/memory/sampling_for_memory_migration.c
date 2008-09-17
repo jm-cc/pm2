@@ -41,6 +41,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  marcel_memory_sampling_of_migration_cost(minsource, maxsource, mindest, maxdest);
+  marcel_memory_sampling_of_memory_migration(minsource, maxsource, mindest, maxdest);
 }
 

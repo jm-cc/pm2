@@ -23,8 +23,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define LOOPS_FOR_MIGRATION     1000
-#define LOOPS_FOR_REMOTE_ACCESS 100000
+#define LOOPS_FOR_MEMORY_MIGRATION  1000
+#define LOOPS_FOR_MEMORY_ACCESS     100000
 
 void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node) {
   int *pagenodes;
@@ -60,9 +60,9 @@ void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, i
   }
 }
 
-void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long dest, void *buffer, int pages,
-                                          void **pageaddrs, int *sources, int *dests, int *status,
-                                          unsigned long pagesize, FILE *f) {
+void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages,
+                                            void **pageaddrs, int *sources, int *dests, int *status,
+                                            unsigned long pagesize, FILE *f) {
   int i;
   struct timeval tv1, tv2;
   unsigned long us, ns, bandwidth;
@@ -72,7 +72,7 @@ void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long de
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
-  for(i=0 ; i<LOOPS_FOR_MIGRATION ; i++) {
+  for(i=0 ; i<LOOPS_FOR_MEMORY_MIGRATION ; i++) {
     ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
     ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
   }
@@ -87,7 +87,7 @@ void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long de
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
-  ns /= (LOOPS_FOR_MIGRATION * 2);
+  ns /= (LOOPS_FOR_MEMORY_MIGRATION * 2);
   bandwidth = ns / pages;
   fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
   printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
@@ -150,7 +150,7 @@ void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_
 }
 
 
-void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_manager) {
+void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -185,7 +185,7 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
   fclose(out);
 }
 
-void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest) {
+void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest) {
   unsigned long pagesize;
   char filename[1024];
   FILE *out;
@@ -246,27 +246,27 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
       for(i=0; i<25000 ; i++) sources[i] = source;
 
       for(pages=1; pages<10 ; pages++) {
-	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
       }
       fflush(out);
 
       for(pages=10; pages<100 ; pages+=10) {
-	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=100; pages<1000 ; pages+=100) {
-	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=1000; pages<10000 ; pages+=1000) {
-	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=10000; pages<=25000 ; pages+=5000) {
-	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
@@ -280,7 +280,7 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
   fclose(out);
 }
 
-void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_manager) {
+void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   unsigned long t, node;
@@ -300,7 +300,7 @@ void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_man
     node = marcel_self()->id;
     buffer = buffers[node];
 
-    for(j=0 ; j<LOOPS_FOR_REMOTE_ACCESS ; j++) {
+    for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
       for(i=0 ; i<size ; i++) {
         __builtin_ia32_movnti((void*) &buffer[i], gold);
       }
@@ -314,7 +314,7 @@ void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_man
     node = marcel_self()->id;
     buffer = buffers[node];
 
-    for(j=0 ; j<LOOPS_FOR_REMOTE_ACCESS ; j++) {
+    for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
       for(i=0 ; i<size ; i+=cache_line_size/4) {
         __builtin_prefetch((void*)&buffer[i]);
         __builtin_ia32_clflush((void*)&buffer[i]);
@@ -326,7 +326,7 @@ void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_man
   maxnode = numa_max_node();
   marcel_attr_init(&attr);
 
-  ma_memory_get_filename("sampling_for_remote_access", filename, -1, -1);
+  ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
   out = fopen(filename, "w");
 
   rtimes = (unsigned long long **) malloc(maxnode * sizeof(unsigned long long *));
@@ -387,17 +387,17 @@ void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_man
   for(t=0 ; t<maxnode ; t++) {
     for(node=0 ; node<maxnode ; node++) {
       printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-             t, node, LOOPS_FOR_REMOTE_ACCESS*size*4,
+             t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
              rtimes[node][t],
-             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size,
+             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size,
              wtimes[node][t],
-             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size);
+             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size);
       fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-              t, node, LOOPS_FOR_REMOTE_ACCESS*size*4,
+              t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
               rtimes[node][t],
-              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size,
+              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size,
               wtimes[node][t],
-              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_REMOTE_ACCESS*size*4) / (float)cache_line_size);
+              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size);
     }
   }
 

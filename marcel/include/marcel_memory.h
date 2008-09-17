@@ -64,10 +64,10 @@ typedef struct marcel_memory_space_s {
   struct marcel_memory_space_s *next;
 } marcel_memory_space_t;
 
-/** Reading and writing remote access cost from node to node */
-typedef struct marcel_remote_access_cost_s {
+/** Reading and writing access cost from node to node */
+typedef struct marcel_access_cost_s {
   float cost;
-} marcel_remote_access_cost_t;
+} marcel_access_cost_t;
 
 /** Memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s {
@@ -82,10 +82,10 @@ typedef struct marcel_memory_migration_cost_s {
 typedef struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
-  /** \brief Reading remote access costs from all the nodes to all the nodes */
-  marcel_remote_access_cost_t **reading_remote_access_costs;
-  /** \brief Writing remote access costs from all the nodes to all the nodes */
-  marcel_remote_access_cost_t **writing_remote_access_costs;
+  /** \brief Reading access costs from all the nodes to all the nodes */
+  marcel_access_cost_t **reading_access_costs;
+  /** \brief Writing access costs from all the nodes to all the nodes */
+  marcel_access_cost_t **writing_access_costs;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas */
@@ -180,7 +180,7 @@ void ma_memory_sampling_migration(p_tbx_slist_t *migration_cost,
 /*
  *
  */
-void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_manager);
+void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager);
 
 #endif /* MARCEL_MAMI_ENABLED */
 
@@ -267,42 +267,42 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   float *cost);
 
 /**
- * Indicates the writing remote access cost for SIZE bits from node SOURCE to node DEST.
+ * Indicates the writing access cost for SIZE bits from node SOURCE to node DEST.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param cost estimated cost of the migration
  */
-void marcel_memory_writing_remote_access_cost(marcel_memory_manager_t *memory_manager,
-                                              int source,
-                                              int dest,
-                                              size_t size,
-                                              float *cost);
+void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost);
 
 /**
- * Indicates the reading remote access cost for SIZE bits from node SOURCE to node DEST.
+ * Indicates the reading access cost for SIZE bits from node SOURCE to node DEST.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param cost estimated cost of the migration
  */
-void marcel_memory_reading_remote_access_cost(marcel_memory_manager_t *memory_manager,
-                                              int source,
-                                              int dest,
-                                              size_t size,
-                                              float *cost);
+void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost);
 
 /**
  *
  */
-void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
+void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
 
 /**
  *
  */
-void marcel_memory_sampling_of_remote_access(marcel_memory_manager_t *memory_manager);
+void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager);
 
 /**
  * Select the "best" node based on the given policy.

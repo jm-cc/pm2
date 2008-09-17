@@ -320,7 +320,6 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
   marcel_t thread;
   marcel_attr_t attr;
   int **buffers;
-  float cache_line_size=64;
   long long int size=100;
 
   any_t writer(any_t arg) {
@@ -346,7 +345,7 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
     buffer = buffers[node];
 
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
-      for(i=0 ; i<size ; i+=cache_line_size/4) {
+      for(i=0 ; i<size ; i+=memory_manager->cache_line_size/4) {
         __builtin_prefetch((void*)&buffer[i]);
         __builtin_ia32_clflush((void*)&buffer[i]);
       }
@@ -419,15 +418,15 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
       printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
              t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
              rtimes[node][t],
-             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size,
+             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
              wtimes[node][t],
-             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size);
+             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
       fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
               t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
               rtimes[node][t],
-              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size,
+              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
               wtimes[node][t],
-              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)cache_line_size);
+              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
     }
   }
 

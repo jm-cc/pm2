@@ -96,6 +96,8 @@ typedef struct marcel_memory_manager_s {
   int pagesize;
   /** \brief Number of initially pre-allocated pages */
   int initialpreallocatedpages;
+  /** \brief Cache line size */
+  int cache_line_size;
 } marcel_memory_manager_t;
 
 /** Node selection policy */

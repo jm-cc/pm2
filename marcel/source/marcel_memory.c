@@ -34,6 +34,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
   memory_manager->initialpreallocatedpages = initialpreallocatedpages;
+  memory_manager->cache_line_size = 64;
 
   // Preallocate memory on each node
   memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_space_t *));
@@ -485,7 +486,7 @@ void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost) {
   LOG_IN();
   marcel_access_cost_t access_cost = memory_manager->writing_access_costs[source][dest];
-  *cost = (size/64) * access_cost.cost;
+  *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
   LOG_OUT();
 }
 
@@ -496,7 +497,7 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost) {
   LOG_IN();
   marcel_access_cost_t access_cost = memory_manager->reading_access_costs[source][dest];
-  *cost = (size/64) * access_cost.cost;
+  *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
   LOG_OUT();
 }
 

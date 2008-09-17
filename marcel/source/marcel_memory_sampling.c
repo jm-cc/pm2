@@ -281,6 +281,7 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
     }
   }
   fclose(out);
+  printf("Sampling saved in <%s>\n", filename);
 }
 
 void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager) {

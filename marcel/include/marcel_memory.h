@@ -196,7 +196,7 @@ void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_mana
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
- * @param initialpreallocatedpages number of initially preallocated pages on each node
+ * @param preallocatedpages number of initially preallocated pages on each node
  */
 void marcel_memory_init(marcel_memory_manager_t *memory_manager,
 			int preallocatedpages);
@@ -300,12 +300,17 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost);
 
 /**
- *
+ * Performs the sampling for the memory migration between the specified nodes.
+ * @param minsource
+ * @param maxsource
+ * @param mindest
+ * @param maxdest
  */
 void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
 
 /**
- *
+ * Performs the sampling for the memory access between all the nodes.
+ * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager);
 

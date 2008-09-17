@@ -22,16 +22,11 @@ for node in $(echo $nodes) ; do
     numactl --physcpubind=$node $prog -src $node
 done
 
-pathname=$PM2_CONF_DIR
-if [ -n "$pathname" ] ; then
-    pathname=$pathname"/marcel"
-else
-    pathname=$PM2_HOME
-    if [ -z "$pathname" ] ; then
-        pathname=$HOME
-    fi
-    pathname=$pathname"/.pm2/marcel"
+pathname=$PM2_SAMPLING_DIR
+if [ -z "$pathname" ] ; then
+    pathname="/var/local/pm2"
 fi
+pathname=$pathname"/marcel"
 
 hostname=$(uname -n)
 (

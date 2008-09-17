@@ -71,17 +71,11 @@ sub fixFilenameAndHostname {
     my $pathname = ".";
 
     if ($filename eq "") {
-        $pathname = $ENV{PM2_CONF_DIR};
-        if ($pathname ne "") {
-            $pathname .= "/marcel";
+        $pathname = $ENV{PM2_SAMPLING_DIR};
+        if ($pathname eq "") {
+            $pathname = "/var/local/pm2";
         }
-        else {
-            $pathname = $ENV{PM2_HOME};
-            if ($pathname eq "") {
-                $pathname = $ENV{HOME};
-            }
-            $pathname .= "/.pm2/marcel";
-        }
+        $pathname .= "/marcel";
         if ($hostname eq "") {
             use Sys::Hostname;
             $hostname = hostname();

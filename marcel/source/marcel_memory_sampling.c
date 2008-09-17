@@ -20,8 +20,6 @@
 #include <numa.h>
 #include <numaif.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #define LOOPS_FOR_MEMORY_MIGRATION  1000
 #define LOOPS_FOR_MEMORY_ACCESS     100000
@@ -99,26 +97,21 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
   char directory[1024];
   char hostname[1024];
   int rc = 0;
-  const char* pm2_conf_dir;
+  const char* pathname;
 
   if (gethostname(hostname, 1023) < 0) {
     perror("gethostname");
     exit(1);
   }
-  pm2_conf_dir = getenv("PM2_CONF_DIR");
-  if (pm2_conf_dir) {
-    rc = snprintf(directory, 1024, "%s/marcel", pm2_conf_dir);
+  pathname = getenv("PM2_SAMPLING_DIR");
+  if (pathname) {
+    rc = snprintf(directory, 1024, "%s/marcel", pathname);
   }
   else {
-    const char* home = getenv("PM2_HOME");
-    if (!home) {
-      home = getenv("HOME");
-    }
-    assert(home != NULL);
-    rc = snprintf(filename, 1024, "%s/.pm2/marcel", home);
+    rc = snprintf(directory, 1024, "/var/local/pm2/marcel");
   }
   assert(rc < 1024);
-
+  
   if (source == -1) {
     if (dest == -1)
       snprintf(filename, 1024, "%s/%s_%s.txt", directory, type, hostname);
@@ -132,10 +125,6 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
       snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.txt", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
-
-  //printf("File %s\n", filename);
-
-  mkdir(directory, 0755);
 }
 
 void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {

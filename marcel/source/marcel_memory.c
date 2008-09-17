@@ -27,7 +27,7 @@ extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
 void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocatedpages) {
-  int ndoe, dest;
+  int node, dest;
 
   LOG_IN();
   memory_manager->root = NULL;

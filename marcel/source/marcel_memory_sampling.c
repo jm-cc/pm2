@@ -31,6 +31,8 @@ void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int no
   int i;
   int err;
 
+  mdebug_heap("check location is #%d\n", node);
+
   pagenodes = malloc(pages * sizeof(int));
   err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
   if (err < 0) {
@@ -50,7 +52,7 @@ void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int no
 void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, int *status) {
   int err;
 
-  //printf("binding on numa node #%d\n", nodes[0]);
+  mdebug_heap("binding on numa node #%d\n", nodes[0]);
 
   err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
 
@@ -121,13 +123,13 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
     if (dest == -1)
       snprintf(filename, 1024, "%s/%s_%s.txt", directory, type, hostname);
     else
-      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_dest_%ld.txt", directory, type, hostname, dest);
+      snprintf(filename, 1024, "%s/%s_%s_dest_%ld.txt", directory, type, hostname, dest);
   }
   else {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_source_%ld.txt", directory, type, hostname, source);
+      snprintf(filename, 1024, "%s/%s_%s_source_%ld.txt", directory, type, hostname, source);
     else
-      snprintf(filename, 1024, "%s/%s_for_memory_migration_%s_source_%ld_dest_%ld.txt", directory, type, hostname, source, dest);
+      snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.txt", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
 
@@ -196,11 +198,9 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
   unsigned long nodemask;
   int *status, *sources, *dests;
   void **pageaddrs;
-  unsigned long maxnode;
   int pages;
 
   pagesize = getpagesize();
-  maxnode = numa_max_node();
 
   {
     long source = -1;
@@ -215,6 +215,9 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
 
   for(source=minsource; source<=maxsource ; source++) {
     for(dest=mindest; dest<=maxdest ; dest++) {
+
+      if (dest == source) continue;
+
       // Allocate the pages
       buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
       if (buffer < 0) {
@@ -224,7 +227,7 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
 
       // Set the memory policy on node source
       nodemask = (1<<source);
-      err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
+      err = set_mempolicy(MPOL_BIND, &nodemask, marcel_nbnodes+1);
       if (err < 0) {
         perror("set_mempolicy");
         exit(-1);
@@ -280,11 +283,39 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
   fclose(out);
 }
 
+void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager) {
+  char filename[1024];
+  FILE *out;
+  char line[1024];
+  unsigned long source, dest;
+  long long int size, wtime, rtime;
+  float rcacheline, wcacheline;
+
+  ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
+  out = fopen(filename, "r");
+  if (!out) {
+    printf("The model for the cost of the memory access is not available\n");
+    return;
+  }
+  mdebug_heap("Reading file %s\n", filename);
+  fgets(line, 1024, out);
+  while (!feof(out)) {
+    fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline);
+
+#ifdef PM2DEBUG
+    if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+      marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
+    }
+#endif /* PM2DEBUG */
+    memory_manager->writing_access_costs[source][dest].cost = wcacheline;
+    memory_manager->reading_access_costs[source][dest].cost = rcacheline;
+  }
+}
+
 void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   unsigned long t, node;
-  unsigned long maxnode;
   unsigned long long **rtimes, **wtimes;
   marcel_t thread;
   marcel_attr_t attr;
@@ -323,28 +354,27 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
     return NULL;
   }
 
-  maxnode = numa_max_node();
   marcel_attr_init(&attr);
 
   ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
   out = fopen(filename, "w");
 
-  rtimes = (unsigned long long **) malloc(maxnode * sizeof(unsigned long long *));
-  wtimes = (unsigned long long **) malloc(maxnode * sizeof(unsigned long long *));
-  for(node=0 ; node<maxnode ; node++) {
-    rtimes[node] = (unsigned long long *) malloc(maxnode * sizeof(unsigned long long));
-    wtimes[node] = (unsigned long long *) malloc(maxnode * sizeof(unsigned long long));
+  rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
+  wtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    rtimes[node] = (unsigned long long *) malloc(marcel_nbnodes * sizeof(unsigned long long));
+    wtimes[node] = (unsigned long long *) malloc(marcel_nbnodes * sizeof(unsigned long long));
   }
 
-  buffers = (int **) malloc(maxnode * sizeof(int *));
+  buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
   // Allocate memory on each node
-  for(node=0 ; node<maxnode ; node++) {
+  for(node=0 ; node<marcel_nbnodes ; node++) {
     buffers[node] = marcel_memory_allocate_on_node(memory_manager, size*sizeof(int), node);
   }
 
   // Create a thread on node t to work on memory allocated on node node
-  for(t=0 ; t<maxnode ; t++) {
-    for(node=0 ; node<maxnode ; node++) {
+  for(t=0 ; t<marcel_nbnodes ; t++) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
       struct timeval tv1, tv2;
       unsigned long us;
 
@@ -363,8 +393,8 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
   }
 
   // Create a thread on node t to work on memory allocated on node node
-  for(t=0 ; t<maxnode ; t++) {
-    for(node=0 ; node<maxnode ; node++) {
+  for(t=0 ; t<marcel_nbnodes ; t++) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
       struct timeval tv1, tv2;
       unsigned long us;
 
@@ -384,8 +414,8 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 
   printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
-  for(t=0 ; t<maxnode ; t++) {
-    for(node=0 ; node<maxnode ; node++) {
+  for(t=0 ; t<marcel_nbnodes ; t++) {
+    for(node=0 ; node<marcel_nbnodes ; node++) {
       printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
              t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
              rtimes[node][t],

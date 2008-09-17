@@ -61,7 +61,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
   for(node=0 ; node<marcel_nbnodes ; node++) {
     memory_manager->reading_access_costs[node] = (marcel_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
-#warning load the acces costs
+  ma_memory_load_model_for_memory_access(memory_manager);
 
 #ifdef PM2DEBUG
   if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
@@ -79,9 +79,17 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialprea
         }
       }
     }
+
+    for(node=0 ; node<marcel_nbnodes ; node++) {
+      for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+        marcel_access_cost_t wcost = memory_manager->writing_access_costs[node][dest];
+        marcel_access_cost_t rcost = memory_manager->writing_access_costs[node][dest];
+        marcel_printf("[%d:%d] %f %f\n", node, dest, wcost.cost, rcost.cost);
+      }
+    }
   }
 #endif /* PM2DEBUG */
-
+ 
   LOG_OUT();
 }
 

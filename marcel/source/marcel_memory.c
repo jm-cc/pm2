@@ -26,14 +26,14 @@
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
-void marcel_memory_init(marcel_memory_manager_t *memory_manager, int initialpreallocatedpages) {
-  int node, dest;
+void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocatedpages) {
+  int ndoe, dest;
 
   LOG_IN();
   memory_manager->root = NULL;
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
-  memory_manager->initialpreallocatedpages = initialpreallocatedpages;
+  memory_manager->initially_preallocated_pages = preallocatedpages;
   memory_manager->cache_line_size = 64;
 
   // Preallocate memory on each node
@@ -261,7 +261,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   void *buffer;
 
   nodemask = (1<<node);
-  length = memory_manager->initialpreallocatedpages * memory_manager->pagesize;
+  length = memory_manager->initially_preallocated_pages * memory_manager->pagesize;
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 #ifdef MARCEL_NUMA
@@ -271,7 +271,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
 
   (*space) = malloc(sizeof(marcel_memory_space_t));
   (*space)->start = buffer;
-  (*space)->nbpages = memory_manager->initialpreallocatedpages;
+  (*space)->nbpages = memory_manager->initially_preallocated_pages;
   (*space)->next = NULL;
 }
 

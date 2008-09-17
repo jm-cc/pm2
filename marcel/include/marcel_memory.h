@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-/** \defgroup marcel_memory Memory Interface
+/** \defgroup marcel_memory MAMI: MArcel Memory Interface
  *
- * This is the interface for memory management
+ * This is the interface for memory management.
  *
  * @{
  */
@@ -95,7 +95,7 @@ typedef struct marcel_memory_manager_s {
   /** \brief System page size */
   int pagesize;
   /** \brief Number of initially pre-allocated pages */
-  int initialpreallocatedpages;
+  int initially_preallocated_pages;
   /** \brief Cache line size */
   int cache_line_size;
 } marcel_memory_manager_t;
@@ -108,7 +108,6 @@ typedef int marcel_memory_node_selection_policy_t;
 
 #section marcel_functions
 #ifdef MARCEL_MAMI_ENABLED
-
 
 /*
  *
@@ -194,14 +193,13 @@ void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_mana
 #section functions
 #ifdef MARCEL_MAMI_ENABLED
 
-
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
- * @param initialpreallocatedpages number of initial preallocated pages on each node
+ * @param initialpreallocatedpages number of initially preallocated pages on each node
  */
 void marcel_memory_init(marcel_memory_manager_t *memory_manager,
-			int initialpreallocatedpages);
+			int preallocatedpages);
 
 /**
  * Shutdowns the memory manager.

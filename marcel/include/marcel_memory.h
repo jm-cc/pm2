@@ -13,6 +13,10 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief MAMI: MArcel Memory Interface
+ */
+
 /** \defgroup marcel_memory MAMI: MArcel Memory Interface
  *
  * This is the interface for memory management.

@@ -21,3 +21,24 @@ nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/n
 for node in $(echo $nodes) ; do
     numactl --physcpubind=$node $prog -src $node
 done
+
+pathname=$PM2_CONF_DIR
+if [ -n "$pathname" ] ; then
+    pathname=$pathname"/marcel"
+else
+    pathname=$PM2_HOME
+    if [ -z "$pathname" ] ; then
+        pathname=$HOME
+    fi
+    pathname=$pathname"/.pm2/marcel"
+fi
+
+hostname=$(uname -n)
+(
+    head -1 $pathname/sampling_for_memory_migration_${hostname}_source_0.txt
+    for node in $(echo $nodes) ; do
+        grep -v Source "$pathname/sampling_for_memory_migration_${hostname}_source_${node}.txt"
+    done
+) > $pathname/sampling_for_memory_migration_${hostname}.txt
+
+$(dirname $0)/analyzeSamplingForMemoryMigration.pl

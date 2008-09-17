@@ -32,7 +32,7 @@
 
 #define LOOPS 1000
 
-void ma_memory_sampling_check_location(void **pageaddrs, int pages, int node) {
+void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node) {
   int *pagenodes;
   int i;
   int err;
@@ -40,7 +40,7 @@ void ma_memory_sampling_check_location(void **pageaddrs, int pages, int node) {
   pagenodes = malloc(pages * sizeof(int));
   err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
   if (err < 0) {
-    perror("move_pages (check_location)");
+    perror("move_pages (check_pages_location)");
     exit(-1);
   }
 
@@ -53,7 +53,7 @@ void ma_memory_sampling_check_location(void **pageaddrs, int pages, int node) {
   free(pagenodes);
 }
 
-void ma_memory_sampling_migrate(void **pageaddrs, int pages, int *nodes, int *status) {
+void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, int *status) {
   int err;
 
   //printf("binding on numa node #%d\n", nodes[0]);
@@ -66,30 +66,30 @@ void ma_memory_sampling_migrate(void **pageaddrs, int pages, int *nodes, int *st
   }
 }
 
-void ma_memory_sampling(unsigned long source, unsigned long dest, void *buffer, int pages,
-                        void **pageaddrs, int *sources, int *dests, int *status,
-                        unsigned long pagesize, FILE *f) {
+void ma_memory_sampling_of_migration_cost(unsigned long source, unsigned long dest, void *buffer, int pages,
+                                          void **pageaddrs, int *sources, int *dests, int *status,
+                                          unsigned long pagesize, FILE *f) {
   int i;
   struct timeval tv1, tv2;
   unsigned long us, ns, bandwidth;
 
   // Check the location of the pages
-  ma_memory_sampling_check_location(pageaddrs, pages, source);
+  ma_memory_sampling_check_pages_location(pageaddrs, pages, source);
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<LOOPS ; i++) {
-    ma_memory_sampling_migrate(pageaddrs, pages, dests, status);
-    ma_memory_sampling_migrate(pageaddrs, pages, sources, status);
+    ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
+    ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
   }
-  ma_memory_sampling_migrate(pageaddrs, pages, dests, status);
+  ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
-  ma_memory_sampling_check_location(pageaddrs, pages, dest);
+  ma_memory_sampling_check_pages_location(pageaddrs, pages, dest);
 
   // Move the pages back to the node source
-  ma_memory_sampling_migrate(pageaddrs, pages, sources, status);
+  ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
@@ -142,7 +142,7 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
   mkdir(directory, 0755);
 }
 
-void ma_memory_insert_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
+void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   marcel_memory_migration_cost_t *migration_cost;
 
   migration_cost = malloc(sizeof(marcel_memory_migration_cost_t));
@@ -185,8 +185,8 @@ void ma_memory_load_model_for_migration_cost(marcel_memory_manager_t *memory_man
     }
 #endif /* PM2DEBUG */
 
-    ma_memory_insert_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
-    ma_memory_insert_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
+    ma_memory_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
+    ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
   }
   fclose(out);
 }
@@ -252,27 +252,27 @@ void marcel_memory_sampling_of_migration_cost(unsigned long minsource, unsigned 
       for(i=0; i<25000 ; i++) sources[i] = source;
 
       for(pages=1; pages<10 ; pages++) {
-	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
       }
       fflush(out);
 
       for(pages=10; pages<100 ; pages+=10) {
-	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=100; pages<1000 ; pages+=100) {
-	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=1000; pages<10000 ; pages+=1000) {
-	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 
       for(pages=10000; pages<=25000 ; pages+=5000) {
-	ma_memory_sampling(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+	ma_memory_sampling_of_migration_cost(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
 	fflush(out);
       }
 

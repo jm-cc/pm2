@@ -15,23 +15,31 @@
 
 export FLAVOR_DEFAULT:=marcel
 
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    export FLAVOR:=$(FLAVOR_DEFAULT)
+  endif # PM2_FLAVOR
+endif # FLAVOR
+
 # Fichiers C à ne pas considérer comme but
 #----------------------------------------------------------------------
 APPS_EXCLUDE = $(basename $(wildcard *-posix.c))
 
-FLAVOR_WITH_PMARCEL :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get | grep pmarcel)
+FLAVOR_WITH_PMARCEL :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep pmarcel)
 ifeq (,$(FLAVOR_WITH_PMARCEL))
 APPS_EXCLUDE += $(basename $(wildcard barrier*.c))
 endif
 
-FLAVOR_WITH_NUMA :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get | grep numa)
+FLAVOR_WITH_NUMA :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep numa)
 ifeq (,$(FLAVOR_WITH_NUMA))
 APPS_EXCLUDE += $(basename $(wildcard bubble-*.c))
 APPS_EXCLUDE += $(basename $(wildcard memomp-*.c))
 APPS_EXCLUDE += $(basename $(wildcard krazu-bubbles.c))
 endif
 
-FLAVOR_WITH_TLS :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get | grep tls)
+FLAVOR_WITH_TLS :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep tls)
 ifeq (,$(FLAVOR_WITH_TLS))
 APPS_EXCLUDE += $(basename $(wildcard tls*.c))
 endif

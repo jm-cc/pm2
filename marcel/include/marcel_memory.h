@@ -24,9 +24,10 @@
  * @{
  */
 
-#section types
+#section common
 #ifdef MARCEL_MAMI_ENABLED
 
+#section types
 /** \brief Type of a tree node */
 typedef struct marcel_memory_data_s marcel_memory_data_t;
 
@@ -49,10 +50,7 @@ typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 typedef int marcel_memory_node_selection_policy_t;
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 
-#endif /* MARCEL_MAMI_ENABLED */
-
 #section structures
-#ifdef MARCEL_MAMI_ENABLED
 
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
@@ -131,10 +129,7 @@ struct marcel_memory_manager_s {
   int cache_line_size;
 };
 
-#endif /* MARCEL_MAMI_ENABLED */
-
 #section marcel_functions
-#ifdef MARCEL_MAMI_ENABLED
 
 /*
  *
@@ -215,10 +210,7 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
  */
 void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
 
-#endif /* MARCEL_MAMI_ENABLED */
-
 #section functions
-#ifdef MARCEL_MAMI_ENABLED
 
 /**
  * Initialises the memory manager.
@@ -351,6 +343,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                                marcel_memory_node_selection_policy_t policy,
                                int *node);
 
+#section common
 #endif /* MARCEL_MAMI_ENABLED */
 
 /* @} */

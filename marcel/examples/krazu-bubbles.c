@@ -68,8 +68,10 @@ marcel_main(int argc, char *argv[])
       marcel_create(&pid[i], &attr, f, NULL);
     }
 
-  if (BUBBLE_MODE)
-    marcel_bubble_submit();
+  if (BUBBLE_MODE) {
+    for (i = 0; i < 4; i++)
+      marcel_bubble_submit(&b[i]);
+  }
   else
     {
       for (i = 0; i < NB_THREADS; i++)

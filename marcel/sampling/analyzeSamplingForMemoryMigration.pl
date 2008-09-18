@@ -298,30 +298,36 @@ for $source ($source_min .. $source_max) {
             # We look for the biggest interval [$x_current_min .. $X] with
             # $X <= $x_current_max for which the correlation is good.
             do {
-                $done = 1;
-                @xfiltered = ();
-                @yfiltered = ();
-                @yreg = ();
-                @yerror = ();
+              DO_NEXT: {
+                  $done = 1;
+                  @xfiltered = ();
+                  @yfiltered = ();
+                  @yreg = ();
+                  @yerror = ();
 
-                #print "performs regression for $x_current_min .. $x_current_max\n";
+                  #print "performs regression for $x_current_min .. $x_current_max\n";
 
-                # filters data
-                filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
-                next if (scalar(@xfiltered) == 0) || (scalar(@xfiltered) == 1);
+                  # filters data
+                  filter($xlistref, $ylistref, \@xfiltered, \@yfiltered, $x_current_min, $x_current_max);
+                  next DO_NEXT if (scalar(@xfiltered) == 0) || (scalar(@xfiltered) == 1);
 
-                # Performs the linear regression
-                ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
+                  # Performs the linear regression
+                  ($a, $b, $r) = linearRegression(\@xfiltered, \@yfiltered, \@yreg, \@yerror, $correctError);
 
-                if ((@yreg[0] < 0) || ($r < 0.992)) {
-                    $done = 0;
-                    $x_current_max = @xfiltered[scalar(@xfilerered)-2];
-                }
+                  if ((@yreg[0] < 0) || ($r < 0.992)) {
+                      $done = 0;
+                      $x_current_max = @xfiltered[scalar(@xfilerered)-2];
+                  }
+              }
             } while ($done == 0);
+
 
             $intervals += 1;
 	    my $l = scalar(@xfiltered) - 1;
-	    my $bandwidth = @xfiltered[$l] / @yreg[$l] * 1000000000 / 1024 / 1024;
+            if ( $l == 0 ) {
+                push(@yreg, @yfiltered[0]);
+            }
+            my $bandwidth = @xfiltered[$l] / @yreg[$l] * 1000000000 / 1024 / 1024;
             printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
 

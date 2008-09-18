@@ -315,7 +315,7 @@ for $source ($source_min .. $source_max) {
 
                 if ((@yreg[0] < 0) || ($r < 0.992)) {
                     $done = 0;
-                    $x_current_max -= 1;
+                    $x_current_max = @xfiltered[scalar(@xfilerered)-2];
                 }
             } while ($done == 0);
 

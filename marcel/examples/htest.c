@@ -4,7 +4,7 @@
 
 #include "marcel.h"
 
-#ifdef MARCEL_NUMA
+#if defined(MARCEL_NUMA) && defined(BROKEN)
 int main(int argc, char *argv[]) {
 
 	marcel_init(&argc,argv);
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		printf("Allocation failed\n");
 	}
-	
+
 	offset2 = ma_hmalloc(20*sizeof(int),h);
 	printf("offset2=%x\n",offset2);
 	if (offset1 != NULL) {
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 		printf("%d ",offset3[i]+offset1[i]+offset2[i]);
 	}
 	printf("\n");
-	
+
 	offset3 = ma_hrealloc(offset3,10*sizeof(int),h);
 	printf("offset3=%x\n",offset3);
 	ma_hmallinfo(h);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 	offset3 = ma_hcalloc(30,sizeof(int),h);
 	printf("offset3=%x\n",offset3);
 	ma_hmallinfo(h);
-	
+
 	offset2 = ma_hrealloc(offset2,60*sizeof(int),h);
 	printf("offset2=%x\n",offset2);
 	ma_hmallinfo(h);

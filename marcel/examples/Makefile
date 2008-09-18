@@ -39,7 +39,7 @@ APPS_EXCLUDE += $(basename $(wildcard memomp-*.c))
 APPS_EXCLUDE += $(basename $(wildcard krazu-bubbles.c))
 endif
 
-FLAVOR_WITH_TLS :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep tls)
+FLAVOR_WITH_TLS :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep dont_use_pthread)
 ifeq (,$(FLAVOR_WITH_TLS))
 APPS_EXCLUDE += $(basename $(wildcard tls*.c))
 endif

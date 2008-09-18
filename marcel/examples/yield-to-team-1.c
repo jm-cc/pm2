@@ -25,7 +25,7 @@
 struct yield_info {
   unsigned nb_buddies;
   marcel_t *buddies;
-  double *mask;
+  char *mask;
 };
 
 static void * f (void *arg)
@@ -58,7 +58,7 @@ main (int argc, char **argv)
   struct yield_info outer_info;
   outer_info.nb_buddies = nb_threads;
   outer_info.buddies = threads;
-  outer_info.mask = calloc(nb_threads, sizeof(double));
+  outer_info.mask = calloc(nb_threads, sizeof(char));
 
   for (i = 0; i < nb_threads; i++) {
     outer_info.mask[i] = i%2;

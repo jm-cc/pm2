@@ -199,6 +199,10 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
     ma_memory_get_filename("sampling_for_memory_migration", filename, source, dest);
   }
   out = fopen(filename, "w");
+  if (!out) {
+    printf("Error when opening file <%s>\n", filename);
+    return;
+  }
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");
 
@@ -347,6 +351,10 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 
   ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
   out = fopen(filename, "w");
+  if (!out) {
+    printf("Error when opening file <%s>\n", filename);
+    return;
+  }
 
   rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
   wtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));

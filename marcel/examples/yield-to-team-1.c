@@ -33,11 +33,11 @@ static void * f (void *arg)
   int i;
   struct yield_info *info = (struct yield_info *)arg;
   for (i = 0; i < NB_YIELDS; i++)
-    if (marcel_yield_to_team(info->buddies, info->mask, info->nb_buddies) == 0) {
+    if (marcel_yield_to_team(info->buddies, info->mask, 0, info->nb_buddies) == 0) {
       marcel_printf("Yeepee thread %p did its job!\n", marcel_self());
       break;
     }
-     
+
   return 0;
 }
 
@@ -47,8 +47,8 @@ main (int argc, char **argv)
   marcel_init(&argc, argv);
   int i;
   /* Oversubscribe the machine */
-  unsigned nb_threads = marcel_nbprocessors * 2; 
-  
+  unsigned nb_threads = marcel_nbprocessors * 2;
+
   marcel_t threads[nb_threads];
   marcel_attr_t thread_attr;
   marcel_attr_init(&thread_attr);
@@ -59,22 +59,22 @@ main (int argc, char **argv)
   outer_info.nb_buddies = nb_threads;
   outer_info.buddies = threads;
   outer_info.mask = calloc(nb_threads, sizeof(double));
-  
+
   for (i = 0; i < nb_threads; i++) {
     outer_info.mask[i] = i%2;
   }
- 
+
   for (i = 0; i < nb_threads; i++) {
     marcel_create (threads + i, &thread_attr, f, &outer_info);
     marcel_printf("Thread %d::%p is %savailable.\n", i, threads[i], i%2 ? "not ":"");
   }
-  
+
   f(&outer_info);
 
   for (i = 0; i < nb_threads; i++) {
     marcel_join(threads[i], NULL);
-  }      
-  
+  }
+
   free(outer_info.mask);
   marcel_end();
   return 0;

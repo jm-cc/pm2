@@ -113,6 +113,10 @@
 #  define MA__NUMA
 #endif
 
+#if defined(MARCEL_NUMA_MEMORY)
+#  define MA__NUMA_MEMORY
+#endif
+
 #ifdef MARCEL_POSIX
 #  define MA__IFACE_PMARCEL
 #endif

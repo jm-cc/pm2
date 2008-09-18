@@ -19,7 +19,7 @@
 //#define __HEAP_ALLOC_H
 
 #section common
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 
 #include<stddef.h>
 #include<stdio.h>
@@ -371,6 +371,6 @@ void ma_print_heap(struct ub* root);
 #endif /* LINUX_SYS */
 
 #section common
-#endif
+#endif /* MA__NUMA_MEMORY */
 
 /* @} */

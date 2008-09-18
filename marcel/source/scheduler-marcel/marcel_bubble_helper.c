@@ -170,6 +170,7 @@ ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq)
   return ret;
 }
 
+#ifdef MA__NUMA_MEMORY
 int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2) 
 {
 	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
@@ -238,6 +239,7 @@ int increasing_order_entity_both_compar(const void *_e1, const void *_e2)
 
 	return (MA_LOAD_COEF * l1 + MA_VOLUME_COEF * v1) - (MA_LOAD_COEF * l2 + MA_VOLUME_COEF * v2); /* increasing order */
 }
+#endif /* MA__NUMA_MEMORY */
 
 void
 ma_resched_existing_threads(struct marcel_topo_level *l)

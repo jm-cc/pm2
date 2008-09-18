@@ -23,11 +23,9 @@
 
 #include "marcel.h"
 
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 
 #ifdef LINUX_SYS
-#include <numaif.h>
-#include <numa.h>
 
 size_t ma_memalign(size_t mem) {
 	unsigned long nb;
@@ -681,4 +679,5 @@ void ma_print_heap(struct ub* root) {
 
 
 #endif /* LINUX_SYS */
-#endif
+
+#endif /* MA__NUMA_MEMORY */

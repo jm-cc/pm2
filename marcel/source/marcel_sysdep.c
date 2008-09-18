@@ -206,7 +206,9 @@ unsigned ma_nbprocessors(void) {
 
 #ifdef MA__NUMA
 int ma_numa_not_available = 0;
+#endif
 
+#ifdef MA__NUMA_MEMORY
 #ifdef LINUX_SYS
 #define HAS_NUMA
 #include <numa.h>
@@ -334,4 +336,4 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 }
 #endif
 
-#endif /* MA__NUMA */
+#endif /* MA__NUMA_MEMORY */

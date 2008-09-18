@@ -92,7 +92,7 @@ struct nodtab {
 extern unsigned long ma_stats_attraction_offset;
 
 #section functions
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 /* heap allocator */
 void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
 void marcel_free_customized(void *data);
@@ -110,7 +110,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode);
 void marcel_see_allocated_memory(marcel_entity_t *entity);
 void ma_pinfo_init(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
 int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
-#endif
+#endif /* MA__NUMA_MEMORY */
 
 /* malloc */
 void* marcel_malloc(size_t size, const char *file, unsigned line);

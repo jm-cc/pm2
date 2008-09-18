@@ -386,7 +386,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
 #endif /* MARCEL_STATS_ENABLED */
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 	ma_spin_lock_init(&t->as_entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->as_entity.memory_areas);
 #endif

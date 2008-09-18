@@ -14,6 +14,10 @@
  * General Public License for more details.
  */
 
+#section common
+#ifdef MA__NUMA_MEMORY
+/* possible conflit avec broq ? */
+
 /** \file
  * \brief Bubble Spread scheduler functions
  * \defgroup marcel_bubble_spread Bubble Spread scheduler
@@ -27,3 +31,6 @@
 
 #section functions
 extern int ma_see_up(struct marcel_topo_level *level);
+
+#section common
+#endif /* MA__NUMA_MEMORY */

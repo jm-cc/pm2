@@ -22,10 +22,6 @@
 #endif
 #include <fcntl.h>
 #include <errno.h>
-#ifdef MA__NUMA
-#include <numaif.h>
-#include <numa.h>
-#endif
 
 #if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && (defined(X86_ARCH) || defined(X86_64_ARCH))
 #include <sys/syscall.h>
@@ -306,7 +302,7 @@ void marcel_slot_exit(void)
 }
 
 /******************* begin heap *******************/
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 
 /* Marcel allocator */
 void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local, int node, int level)
@@ -746,7 +742,7 @@ int ma_node_entity(marcel_entity_t *entity)
 	return level->number;
 }
 
-#endif
+#endif /* MA__NUMA_MEMORY */
 
 /*******************end heap**************************/
 
@@ -886,7 +882,7 @@ void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 
 void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 {
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 	struct memory_area *area;
 	if (!e)
 		e = &MARCEL_SELF->as_entity;
@@ -905,12 +901,12 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 	list_add(&area->list, &e->memory_areas);
 	ma_spin_unlock(&e->memory_areas_lock);
 	ma_stats_add(long, e, ma_stats_memory_offset, size);
-#endif
+#endif /* MA__NUMA_MEMORY */
 }
 
 void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 {
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 	struct memory_area *area;
 	if (!e)
 		e = &MARCEL_SELF->as_entity;
@@ -933,5 +929,5 @@ void ma_memory_detach(marcel_entity_t *e, void *data, int level)
 	ma_spin_unlock(&e->memory_areas_lock);
 	ma_stats_sub(long, e, ma_stats_memory_offset, area->size);
 	ma_obj_free(memory_area_allocator, area);
-#endif
+#endif /* MA__NUMA_MEMORY */
 }

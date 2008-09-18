@@ -21,6 +21,7 @@
  *
  ******************************************************************/
 
+#ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
 #include <math.h>
@@ -587,4 +588,5 @@ int ma_see_up(struct marcel_topo_level *level)
 	}
 }
 
-#endif /* MA_BUBBLES */
+#endif /* MA__BUBBLES */
+#endif /* MA__NUMA_MEMORY */

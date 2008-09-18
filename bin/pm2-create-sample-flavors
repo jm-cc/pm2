@@ -38,7 +38,7 @@ registering_flavors() {
 
     register_flavor marcel-numa \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
@@ -55,7 +55,7 @@ registering_flavors() {
 
     register_flavor marcel-bubbles \
 	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats --marcel=bubble_sched_spread \
@@ -63,13 +63,13 @@ registering_flavors() {
 
     register_flavor marcel-distrib \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=pmarcel --marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" --all=build_static --common=static \
-	--marcel=numa --marcel=marcel_main \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats --marcel=bubble_sched_spread \
@@ -77,13 +77,13 @@ registering_flavors() {
 
     register_flavor marcel-forestgomp-opt \
         --modules="marcel tbx init" $COMMON_OPTIONS \
-	--marcel=numa \
+	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys
 
     register_flavor marcel-forestgomp-debug \
         --modules="marcel tbx init" \
-	--marcel=numa \
+	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=valgrind --marcel=bug_on \
@@ -92,7 +92,7 @@ registering_flavors() {
 
     register_flavor marcel-forestgomp-fxtdebug \
         --modules="marcel tbx init bubblelib bubbles profile" \
-	--marcel=numa \
+	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=profile --marcel=bug_on \
@@ -179,7 +179,7 @@ registering_flavors() {
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
-	--marcel=numa --marcel=main_as_func --marcel=dont_use_pthread \
+	--marcel=numa --marcel=enable_numa_memory --marcel=main_as_func --marcel=dont_use_pthread \
 	--marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--common=link_pm2_shared \

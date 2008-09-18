@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
 /* Bouger la memoire avec les entites */
@@ -631,4 +632,5 @@ void marcel_bubble_spread_entities(marcel_entity_t *e[], int ne, struct marcel_t
 	ma_spin_unlock_softirq(&spread_lock);
 }
 
-#endif /* BUBBLES */
+#endif /* MA__BUBBLES */
+#endif /* MA__NUMA_MEMORY */

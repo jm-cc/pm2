@@ -1,0 +1,2 @@
+Provide: marcel_numa_memory
+Depend: marcel_numa

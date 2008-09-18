@@ -133,8 +133,10 @@ ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->as_holder)
 
+#ifdef MA__NUMA_MEMORY
 /* \brief Find the number of the numa node where the entity is */ 
 int ma_node_entity(marcel_entity_t *entity);
+#endif
 
 #section marcel_inline
 #ifdef MA__BUBBLES
@@ -208,7 +210,7 @@ struct ma_entity {
 	ma_stats_t stats;
 #endif /* MARCEL_STATS_ENABLED */
 
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 	/** \brief List of attached memory areas */
 	struct list_head memory_areas;
 	/** \brief Lock for ::memory_areas */
@@ -274,12 +276,15 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #else
 #define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 #define MA_SCHED_MEMORY_AREA_INIT(e) \
 	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.memory_areas = LIST_HEAD_INIT((e).memory_areas),
+#define MA_SCHED_ENTITY_HEAP_INIT(e) \
+	.heap = NULL,
 #else
 #define MA_SCHED_MEMORY_AREA_INIT(e)
+#define MA_SCHED_ENTITY_HEAP_INIT(e)
 #endif
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
@@ -293,7 +298,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) \
 	MA_SCHED_LEVEL_INIT \
 	MA_SCHED_MEMORY_AREA_INIT(e) \
-   .heap = NULL, \
+	MA_SCHED_ENTITY_HEAP_INIT(e) \
    /* .heap_lock = MA_SPIN_LOCK_UNLOCKED,*/ \
 }
 

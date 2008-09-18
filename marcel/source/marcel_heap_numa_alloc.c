@@ -19,13 +19,10 @@
 
 #include "marcel.h"
 
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 #include <numaif.h>
 
 #ifdef LINUX_SYS
-#if 0
-#  include <linux/mempolicy.h>
-#endif
 #ifndef __NR_move_pages
 
 #ifdef X86_64_ARCH
@@ -503,4 +500,4 @@ void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h) {
 
 #endif /* LINUX_SYS */
 
-#endif
+#endif /* MA__NUMA_MEMORY */

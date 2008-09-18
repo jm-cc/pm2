@@ -25,6 +25,9 @@
  * @{
  */
 
+#section common
+#ifdef MA__NUMA_MEMORY
+
 #section variables
 #depend "scheduler/marcel_bubble_sched_interface.h[types]"
 extern marcel_bubble_sched_t marcel_bubble_spread_sched;
@@ -37,5 +40,8 @@ void marcel_bubble_spread_entities(marcel_entity_t *e[], int ne, struct marcel_t
 
 #section marcel_variables
 extern marcel_bubble_t *ma_registered_bubble; 
+
+#section common
+#endif /* MA__NUMA_MEMORY */
 
 /* @} */

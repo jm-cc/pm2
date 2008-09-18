@@ -21,6 +21,7 @@
  *
  */
 
+#ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
 int checkload = 1;
@@ -415,3 +416,4 @@ struct ma_bubble_sched_struct marcel_bubble_memaware_sched = {
 };
 
 #endif /* BUBBLES */
+#endif /* MA__NUMA_MEMORY */

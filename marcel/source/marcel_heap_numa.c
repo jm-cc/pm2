@@ -17,7 +17,7 @@
 
 #include "marcel.h"
 
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 
 #if defined LINUX_SYS
 #include <numaif.h>
@@ -139,4 +139,4 @@ long long ma_hits_mem_node(int node) {
 }
 
 #endif /* LINUX_SYS */
-#endif
+#endif /* MA__NUMA_MEMORY */

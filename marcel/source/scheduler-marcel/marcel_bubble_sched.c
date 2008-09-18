@@ -28,7 +28,7 @@ ma_bubble_sched_t current_sched =
 #if defined(BUBBLE_SCHED_SPREAD)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mspread[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_spread_sched;
-#elif defined(BUBBLE_SCHED_MSPREAD)
+#elif defined(BUBBLE_SCHED_MSPREAD) && defined(MA__NUMA_MEMORY)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mmspread[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_mspread_sched;
 #elif defined(BUBBLE_SCHED_AFFINITY)
@@ -46,7 +46,7 @@ ma_bubble_sched_t current_sched =
 #elif defined(BUBBLE_SCHED_STEAL)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32msteal[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_steal_sched;
-#elif defined(BUBBLE_SCHED_MEMAWARE)
+#elif defined(BUBBLE_SCHED_MEMAWARE) && defined(MA__NUMA_MEMORY)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemaware[1;37m selected[1;33m >>>[0m"
 &marcel_bubble_memaware_sched;
 #elif defined(BUBBLE_SCHED_GANG)

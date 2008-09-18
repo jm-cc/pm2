@@ -42,10 +42,7 @@ unsigned ma_is_a_seed(marcel_entity_t *);
    running thread.) */
 unsigned ma_entity_is_running (marcel_entity_t *e);
 
-/* Compares load attribute only */
-int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2);
-int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2);
-
+#ifdef MA__NUMA_MEMORY
 /* Compares memory attraction only */
 int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
@@ -53,6 +50,11 @@ int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 /* Compares load attribute and memory attraction */
 int decreasing_order_entity_both_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_both_compar(const void *_e1, const void *_e2);
+#endif /* MA__NUMA_MEMORY */
+
+/* Compares load attribute only */
+int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2);
+int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2);
 
 /* Compares the number of threads*/
 int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2);

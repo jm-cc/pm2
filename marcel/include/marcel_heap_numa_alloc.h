@@ -20,7 +20,7 @@
  */
 
 #section common
-#ifdef MA__NUMA
+#ifdef MA__NUMA_MEMORY
 
 //#ifndef __MAHEAP_NUMA_ALLOC_H
 //#define __MAHEAP_NUMA_ALLOC_H
@@ -169,6 +169,6 @@ void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
 
 //#endif
 #section common
-#endif
+#endif /* MA__NUMA_MEMORY */
 
 /* @} */

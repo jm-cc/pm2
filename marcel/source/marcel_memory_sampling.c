@@ -189,8 +189,10 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
   int *status, *sources, *dests;
   void **pageaddrs;
   int pages;
+  int maxnode;
 
   pagesize = getpagesize();
+  maxnode = numa_max_node();
 
   {
     long source = -1;
@@ -221,7 +223,7 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
 
       // Set the memory policy on node source
       nodemask = (1<<source);
-      err = set_mempolicy(MPOL_BIND, &nodemask, marcel_nbnodes+1);
+      err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
       if (err < 0) {
         perror("set_mempolicy");
         exit(-1);

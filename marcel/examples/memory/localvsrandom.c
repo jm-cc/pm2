@@ -15,9 +15,7 @@
 
 #include "marcel.h"
 
-#if !defined(MARCEL_MAMI_ENABLED)
-#error This application needs MAMI to be enabled
-#else
+#if defined(MARCEL_MAMI_ENABLED)
 
 #define SIZE  100000
 #define LOOPS 100000
@@ -111,4 +109,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_end();
 }
 
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
 #endif

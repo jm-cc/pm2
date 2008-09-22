@@ -15,9 +15,7 @@
 
 #include "marcel.h"
 
-#if !defined(MARCEL_MAMI_ENABLED)
-#error This application needs MAMI to be enabled
-#else
+#if defined(MARCEL_MAMI_ENABLED)
 
 marcel_memory_manager_t memory_manager;
 
@@ -44,4 +42,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_end();
 }
 
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
 #endif

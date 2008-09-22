@@ -210,6 +210,13 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
  */
 void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
 
+/*
+ *
+ */
+void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, int *status);
+
+void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node);
+
 #section functions
 
 /**
@@ -342,6 +349,13 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                                marcel_memory_node_selection_policy_t policy,
                                int *node);
+
+/**
+ * Migrate the pages to the specified node.
+ * @param memory_manager pointer to the memory manager
+ */
+void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
+                                 void *buffer, size_t size, int dest);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

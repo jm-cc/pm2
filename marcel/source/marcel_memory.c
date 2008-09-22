@@ -90,7 +90,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
     }
   }
 #endif /* PM2DEBUG */
- 
+
   LOG_OUT();
 }
 
@@ -166,19 +166,20 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
     memset((*memory_data)->nodes, 0, (*memory_data)->nbpages);
 #endif
   }
+  mdebug_heap("Location of the new pages: %d\n", (*memory_data)->nodes[0]);
 
-#ifdef PM2DEBUG
- {
-   int i;
-   // Display information
-   for(i=0; i<(*memory_data)->nbpages; i++) {
-     if ((*memory_data)->nodes[i] == -ENOENT)
-       mdebug_heap("  page #%d is not allocated\n", i);
-     else
-       mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
-   }
- }
-#endif
+//#ifdef PM2DEBUG
+// {
+//   int i;
+//   // Display information
+//   for(i=0; i<(*memory_data)->nbpages; i++) {
+//     if ((*memory_data)->nodes[i] == -ENOENT)
+//       mdebug_heap("  page #%d is not allocated\n", i);
+//     else
+//       mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
+//   }
+// }
+//#endif
 
   LOG_OUT();
 }
@@ -413,27 +414,35 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_OUT();
 }
 
-void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node) {
+void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node, marcel_memory_data_t **data) {
  LOG_IN();
   if (memory_tree==NULL) {
     // We did not find the address
     *node = -1;
   }
-  else if (address < memory_tree->data->startaddress) {
-    ma_memory_locate(memory_manager, memory_tree->leftchild, address, node);
-  }
-  else if (address > memory_tree->data->endaddress) {
-    ma_memory_locate(memory_manager, memory_tree->rightchild, address, node);
-  }
-  else { // the address is stored on the current memory_data
+  else if (address >= memory_tree->data->startaddress && address < memory_tree->data->endaddress) {
+    // the address is stored on the current memory_data
     int offset = address - memory_tree->data->startaddress;
+    mdebug_heap("Found address %p in [%p:%p]\n", address, memory_tree->data->startaddress, memory_tree->data->endaddress);
     *node = memory_tree->data->nodes[offset / memory_manager->pagesize];
+    mdebug_heap("Address %p is located on node %d (%d)\n", address, *node, offset / memory_manager->pagesize);
+    if (data) *data = memory_tree->data;
+  }
+  else if (address <= memory_tree->data->startaddress) {
+    ma_memory_locate(memory_manager, memory_tree->leftchild, address, node, data);
+  }
+  else if (address >= memory_tree->data->endaddress) {
+    ma_memory_locate(memory_manager, memory_tree->rightchild, address, node, data);
+  }
+  else {
+    *node = -1;
   }
   LOG_OUT();
 }
 
 void marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address, int *node) {
-  ma_memory_locate(memory_manager, memory_manager->root, address, node);
+  marcel_memory_data_t *data = NULL;
+  ma_memory_locate(memory_manager, memory_manager->root, address, node, &data);
 }
 
 void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent) {
@@ -497,7 +506,7 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost) {
   LOG_IN();
   marcel_access_cost_t access_cost = memory_manager->reading_access_costs[source][dest];
-  *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
+  *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
   LOG_OUT();
 }
 
@@ -532,5 +541,31 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
   marcel_spin_unlock(&(memory_manager->lock));
 }
 
+void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
+                                 void *buffer, size_t size, int dest) {
+  int i, *dests, *status;
+  int source;
+  marcel_memory_data_t *data = NULL;
+
+  marcel_spin_lock(&(memory_manager->lock));
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  if (source == -1) {
+    marcel_printf("The given address is not managed by MAMI.\n");
+    return;
+  }
+  else if (source == dest) {
+    marcel_printf("The given address is already located at the required node.\n");
+    return;
+  }
+
+  dests = (int *) malloc(data->nbpages * sizeof(int));
+  status = (int *) malloc(data->nbpages * sizeof(int));
+  for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
+  ma_memory_sampling_migrate_pages(data->pageaddrs, data->nbpages, dests, status);
+  ma_memory_sampling_check_pages_location(data->pageaddrs, data->nbpages, dest);
+  for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
+
+  marcel_spin_unlock(&(memory_manager->lock));
+}
 
 #endif /* MARCEL_MAMI_ENABLED */

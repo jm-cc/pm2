@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=marcel-numa
+export FLAVOR_DEFAULT:=marcel-mami
 
 include $(PM2_ROOT)/make/apps.mak
 

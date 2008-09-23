@@ -551,10 +551,12 @@ void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     marcel_printf("The given address is not managed by MAMI.\n");
+    marcel_spin_unlock(&(memory_manager->lock));
     return;
   }
   else if (source == dest) {
     marcel_printf("The given address is already located at the required node.\n");
+    marcel_spin_unlock(&(memory_manager->lock));
     return;
   }
 
@@ -574,7 +576,7 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   ucontext_t *context = _context;
   void *addr;
-  int source, dest;
+  int err, source, dest;
   marcel_memory_data_t *data = NULL;
 
 #ifdef __x86_64__
@@ -587,7 +589,10 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 
   ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, &source, &data);
   dest = marcel_current_node();
-  mprotect(addr, getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
+  mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
+  if (err < 0) {
+    perror("mprotect (handler)");
+  }
   marcel_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
 }
 
@@ -601,7 +606,7 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
   sigaction(SIGSEGV, &act, NULL);
   g_memory_manager = memory_manager;
 
-  err = mprotect(buffer, size, PROT_NONE);
+  err = mprotect((void *)(((uintptr_t) buffer) & ~(memory_manager->pagesize - 1)), size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");
   }

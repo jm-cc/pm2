@@ -36,7 +36,7 @@ any_t reader(any_t arg) {
   marcel_memory_locate(&memory_manager, b, &node);
   marcel_printf("Address %p is located on node %d\n", b, node);
 
-  b[0] = 12;
+  b[1] = 42;
 
   marcel_memory_locate(&memory_manager, b, &node);
   marcel_printf("Address %p is located on node %d\n", b, node);

@@ -357,6 +357,12 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                                  void *buffer, size_t size, int dest);
 
+/**
+ *
+ */
+void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
+                                         void *buffer, size_t size);
+
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

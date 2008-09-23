@@ -558,6 +558,7 @@ void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     return;
   }
 
+  mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
   dests = (int *) malloc(data->nbpages * sizeof(int));
   status = (int *) malloc(data->nbpages * sizeof(int));
   for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
@@ -566,6 +567,44 @@ void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
 
   marcel_spin_unlock(&(memory_manager->lock));
+}
+
+marcel_memory_manager_t *g_memory_manager = NULL;
+
+void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
+  ucontext_t *context = _context;
+  void *addr;
+  int source, dest;
+  marcel_memory_data_t *data = NULL;
+
+#ifdef __x86_64__
+  addr = (void *)(context->uc_mcontext.gregs[REG_CR2]);
+#elif __i386__
+  addr = (void *)(context->uc_mcontext.cr2);
+#else
+#error Unsupported architecture
+#endif
+
+  ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, &source, &data);
+  dest = marcel_current_node();
+  mprotect(addr, getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
+  marcel_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
+}
+
+void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
+                                         void *buffer, size_t size) {
+  struct sigaction act;
+  int err;
+
+  act.sa_flags = SA_SIGINFO;
+  act.sa_sigaction = ma_memory_segv_handler;
+  sigaction(SIGSEGV, &act, NULL);
+  g_memory_manager = memory_manager;
+
+  err = mprotect(buffer, size, PROT_NONE);
+  if (err < 0) {
+    perror("mprotect");
+  }
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

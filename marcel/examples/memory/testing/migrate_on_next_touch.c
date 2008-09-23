@@ -75,7 +75,8 @@ void segv_handler(int sig, siginfo_t *info, void *_context) {
   pageaddrs = malloc(sizeof(void *));
   pageaddrs[0] = addr;
 
-  mprotect(addr, 1000, PROT_READ|PROT_WRITE|PROT_EXEC);
+  int pagesize = getpagesize();
+  mprotect(addr, pagesize, PROT_READ|PROT_WRITE|PROT_EXEC);
 
   int dest=1;
   move_pagenodes(pageaddrs, 1, &dest);

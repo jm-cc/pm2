@@ -581,6 +581,8 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   int err, source, dest;
   marcel_memory_data_t *data = NULL;
 
+  marcel_spin_lock(&(g_memory_manager->lock));
+
 #ifdef __x86_64__
   addr = (void *)(context->uc_mcontext.gregs[REG_CR2]);
 #elif __i386__
@@ -589,7 +591,6 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 #error Unsupported architecture
 #endif
 
-  marcel_spin_lock(&(g_memory_manager->lock));
   ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, &source, &data);
   dest = marcel_current_node();
   mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);

@@ -157,8 +157,6 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   ma_local_bh_disable ();
 
   ma_bubble_lock_all (bubble, from);
-  __ma_bubble_gather (bubble, bubble);
-  ma_move_entity (e, &from->rq.as_holder);
   ma_memory_schedule_from (from);
   ma_resched_existing_threads (from);
   ma_bubble_unlock_all (bubble, from);  

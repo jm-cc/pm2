@@ -18,6 +18,7 @@
 #define FUT_PM2_IS_DEF
 
 #include "tbx_types.h"
+#include "tbx_compiler.h"
 
 #define MARCEL_PROF_MASK  0x01
 #define MAD_PROF_MASK     0x02
@@ -93,7 +94,9 @@
 
 #define __GEN_PREPROC(name,str,line)                          \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern int foo##name##line asm ("this_is_the_fut_" str "_code"); \
+  TBX_VISIBILITY_POP					\
     foo##name##line = 1;                                              \
   } while(0)
 #define __GEN_PREPROC1(name,str,line,arg1) __GEN_PREPROC(name,str,line)
@@ -114,25 +117,33 @@
 
 #define __GEN_PREPROC(name,str,line)                          \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_PROBE0(PROFILE_KEYMASK, __code_##name##_##line);            \
   } while(0)
 
 #define __GEN_PREPROC1(name,str,line,arg1)                    \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_PROBE1(PROFILE_KEYMASK, __code_##name##_##line, arg1);      \
   } while(0)
 
 #define __GEN_PREPROC2(name,str,line,arg1,arg2)               \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_PROBE2(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2); \
   } while(0)
 
 #define __GEN_PREPROCSTR(name,str,line,s,...)                     \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     char __s[FXT_MAX_DATA];                                   \
     snprintf(__s,sizeof(__s)-1,s,##__VA_ARGS__);              \
     __s[sizeof(__s)-1] = 0;                                   \
@@ -141,25 +152,33 @@
 
 #define __GEN_PREPROC_ALWAYS(name,str,line)                   \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_DO_PROBE0(__code_##name##_##line);                          \
   } while(0)
 
 #define __GEN_PREPROC1_ALWAYS(name,str,line,arg1)             \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_DO_PROBE1(__code_##name##_##line, arg1);                    \
   } while(0)
 
 #define __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2)        \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     FUT_DO_PROBE2(__code_##name##_##line, arg1,arg2);               \
   } while(0)
 
 #define __GEN_PREPROCSTR_ALWAYS(name,str,line,s,...)      \
   do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
     char __s[FXT_MAX_DATA];                                   \
     snprintf(__s,sizeof(__s)-1,s,##__VA_ARGS__);              \
     __s[sizeof(__s)-1] = 0;                                   \
@@ -278,6 +297,8 @@ void profile_stop(void);
 
 void profile_exit(void);
 
+TBX_VISIBILITY_PUSH_DEFAULT
 extern volatile tbx_bool_t __pm2_profile_active;
+TBX_VISIBILITY_POP
 
 #endif

@@ -35,7 +35,7 @@ random_write (int *tab, unsigned length) {
 
 static 
 void * f (void *arg) {
-  int i;
+  unsigned int i;
 
   for (i = 0; i < NB_TIMES; i++) {
     random_write (tabs[marcel_self ()->id], TAB_SIZE);
@@ -49,7 +49,7 @@ int
 main (int argc, char **argv) {
   marcel_init (&argc, argv);
 
-  int i, j;
+  unsigned int i, j;
   marcel_bubble_t main_bubble;
   marcel_t threads[NUM_THREADS];
   marcel_attr_t thread_attr;
@@ -59,7 +59,7 @@ main (int argc, char **argv) {
   
   tabs = marcel_malloc (NUM_THREADS * sizeof (int *), __FILE__, __LINE__);
   for (i = 0; i < NUM_THREADS; i++) {
-    int node = i % (numa_max_node () + 1);
+    unsigned int node = i % (numa_max_node () + 1);
     tabs[i] = numa_alloc_onnode (TAB_SIZE * sizeof (int), node);
   }
   
@@ -71,8 +71,10 @@ main (int argc, char **argv) {
   for (i = 0; i < NUM_THREADS; i++) {
     marcel_attr_setid (&thread_attr, i);
     marcel_create (threads + i, &thread_attr, f, NULL);
-    for (j = 0; j < numa_max_node() + 1; j++)
-      ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] = (j == i % (numa_max_node () + 1)) ? TAB_SIZE : 0;
+    for (j = 0; j < numa_max_node() + 1; j++) {
+      ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] = 
+	(j == i % (numa_max_node () + 1)) ? TAB_SIZE : 0;
+    }
   }
 
   marcel_bubble_sched_begin ();

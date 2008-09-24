@@ -76,7 +76,7 @@ main (int argc, char **argv)
   }
 
   if (argc < 2) {
-    fprintf (stderr, "Usage: ./membind-3 <node0> <node1> (where nodei is the node you want to put thread i on.)\n");
+    fprintf (stderr, "Usage: ./membind-4 <node> (where node is the node you want to put the second thread on.)\n");
     return -1;
   }
 

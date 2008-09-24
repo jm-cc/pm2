@@ -142,11 +142,15 @@ void marcel_bubble_sched_begin () {
     if (ma_atomic_read (&ma_init)) {
       ma_atomic_dec (&ma_init);
       ma_spin_unlock (&ma_init_lock);
+      /* Make sure the root bubble is located on the top level before
+	 calling the bubble scheduler distribution algorithm */
+      ma_bubble_gather (&marcel_root_bubble);
+      ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
       current_sched->submit (&marcel_root_bubble.as_entity);
       ma_activate_idle_scheduler ();
-    }
-    else
+    } else {
       ma_spin_unlock (&ma_init_lock);
+    }
   }
 }
 

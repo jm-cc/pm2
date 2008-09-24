@@ -521,8 +521,6 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
 
 void 
 marcel_bubble_affinity (marcel_bubble_t *b, struct marcel_topo_level *l) {
-  marcel_entity_t *e = &b->as_entity;
-  
   bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats (b);
@@ -530,8 +528,6 @@ marcel_bubble_affinity (marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_local_bh_disable ();
   
   ma_bubble_lock_all (b, l);
-  __ma_bubble_gather (b, b);
-  ma_aff_sched_submit (&e, 1, l);
   ma_aff_distribute_from (l);
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */

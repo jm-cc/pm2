@@ -146,7 +146,11 @@ void marcel_bubble_sched_begin () {
 	 calling the bubble scheduler distribution algorithm */
       ma_bubble_gather (&marcel_root_bubble);
       ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
-      current_sched->submit (&marcel_root_bubble.as_entity);
+      if (current_sched) {
+	if (current_sched->submit) {
+	  current_sched->submit (&marcel_root_bubble.as_entity);
+	}
+      }
       ma_activate_idle_scheduler ();
     } else {
       ma_spin_unlock (&ma_init_lock);

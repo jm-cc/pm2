@@ -24,12 +24,15 @@ marcel_mutex_t mutex;  /* mutex semaphore for the barrier */
 marcel_cond_t go;      /* condition variable for leaving */
 int nb_arrived = 0;    /* count of the number who have arrived */
 
+marcel_memory_manager_t memory_manager;
+
 int grid_size, nb_workers, nb_iters, strip_size;
 double *local_max_diff;
 double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
   marcel_init(&argc, argv);
+  marcel_memory_init(&memory_manager, 1000);
 
   /* initialize mutex and condition variable */
   marcel_mutex_init(&mutex, NULL);
@@ -81,7 +84,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters) {
  * The main worker loop does two computations to avoid copying from
  * one grid to the other.
  */
-any_t worker(any_t *arg) {
+any_t worker(any_t arg) {
   int myid = (intptr_t) arg;
   double maxdiff, temp;
   int i, j, iters;
@@ -130,11 +133,11 @@ any_t worker(any_t *arg) {
 void initialize_grids() {
   int i, j;
 
-  grid1 = (double **) malloc((grid_size+2) * sizeof(double *));
-  grid2 = (double **) malloc((grid_size+2) * sizeof(double *));
+  grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
+  grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
   for (i = 0; i <= grid_size+1; i++) {
-    grid1[i] = (double *) malloc((grid_size+2) * sizeof(double));
-    grid2[i] = (double *) malloc((grid_size+2) * sizeof(double));
+    grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double));
+    grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double));
   }
 
   for (i = 0; i <= grid_size+1; i++)

@@ -149,7 +149,6 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 
 static int
 ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from) {
-  marcel_entity_t *e = &bubble->as_entity;
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats (bubble);

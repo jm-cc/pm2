@@ -14,6 +14,10 @@
  * General Public License for more details.
  */
 
+/* This test creates one working thread that will work on a chunk of
+ * memory previously distributed upon the closest nodes to the node
+ * the thread is running on. */
+
 #define MARCEL_INTERNAL_INCLUDE
 
 #include <marcel.h>
@@ -63,6 +67,11 @@ main (int argc, char **argv)
   unsigned long tab_len = TAB_SIZE * sizeof (int);
   unsigned long nodemask = 0;
   unsigned long maxnode = numa_max_node () +  1;
+
+  if (numa_max_node () != 7) {
+    fprintf (stderr, "This test targets Hagrid, or some 8-node computer. Please buy one!\n");
+    return -1;
+  }
 
   marcel_init (&argc, argv);
   

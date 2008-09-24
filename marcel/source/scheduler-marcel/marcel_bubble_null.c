@@ -17,7 +17,8 @@
 
 #ifdef MA__BUBBLES
 
-int
+#if 0
+static int
 null_sched_vp_is_idle(unsigned vp)
 {
 #ifdef MARCEL_BUBBLE_STEAL
@@ -27,6 +28,7 @@ null_sched_vp_is_idle(unsigned vp)
   return 0;
 #endif
 }
+#endif
 
 struct ma_bubble_sched_struct marcel_bubble_null_sched = {
 //	.vp_is_idle = null_sched_vp_is_idle,

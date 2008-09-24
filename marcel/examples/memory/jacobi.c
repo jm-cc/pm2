@@ -17,21 +17,19 @@
 
 void jacobi(int grid_size, int nb_workers, int nb_iters);
 any_t worker(any_t arg);
-void initialize_grids(double** grid1, double** grid2);
+void initialize_grids();
 void barrier();
 
 marcel_mutex_t mutex;  /* mutex semaphore for the barrier */
 marcel_cond_t go;      /* condition variable for leaving */
 int nb_arrived = 0;    /* count of the number who have arrived */
 
-marcel_memory_manager_t memory_manager;
-
 int grid_size, nb_workers, nb_iters, strip_size;
 double *local_max_diff;
+double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
   marcel_init(&argc, argv);
-  marcel_memory_init(&memory_manager, 1000);
 
   /* initialize mutex and condition variable */
   marcel_mutex_init(&mutex, NULL);
@@ -60,6 +58,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters) {
   strip_size = grid_size/nb_workers;
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
+  initialize_grids();
 
   /* create the workers, then wait for them to finish */
   for (i = 0; i < nb_workers; i++) {
@@ -82,38 +81,28 @@ void jacobi(int grid_size, int nb_workers, int nb_iters) {
  * The main worker loop does two computations to avoid copying from
  * one grid to the other.
  */
-any_t worker(any_t arg) {
+any_t worker(any_t *arg) {
   int myid = (intptr_t) arg;
   double maxdiff, temp;
   int i, j, iters;
   int first, last;
-  double **grid1;
-  double **grid2;
 
   //marcel_printf("Thread #%d located on node #%d\n", myid, marcel_current_node());
 
-  barrier();
-
-  grid1 = (double**)marcel_memory_malloc(&memory_manager, (strip_size+3)*sizeof(double*));
-  grid2 = (double**)marcel_memory_malloc(&memory_manager, (strip_size+3)*sizeof(double*));
-  for(i = 0; i <= strip_size; i++) {
-    grid1[i] = (double*)marcel_memory_malloc(&memory_manager, (grid_size+3)*sizeof(double));
-    grid2[i] = (double*)marcel_memory_malloc(&memory_manager, (grid_size+3)*sizeof(double));
-  }
-
-  initialize_grids(grid1, grid2);
-
   /* determine first and last rows of my strip of the grids */
+  first = myid*strip_size + 1;
+  last = first + strip_size - 1;
+
   for (iters = 1; iters <= nb_iters; iters++) {
     /* update my points */
-    for (i = 1; i < strip_size; i++) {
+    for (i = first; i <= last; i++) {
       for (j = 1; j <= grid_size; j++) {
         grid2[i][j] = (grid1[i-1][j] + grid1[i+1][j] + grid1[i][j-1] + grid1[i][j+1]) * 0.25;
       }
     }
     barrier();
     /* update my points again */
-    for (i = 1; i < strip_size; i++) {
+    for (i = first; i <= last; i++) {
       for (j = 1; j <= grid_size; j++) {
         grid1[i][j] = (grid2[i-1][j] + grid2[i+1][j] + grid2[i][j-1] + grid2[i][j+1]) * 0.25;
       }
@@ -122,7 +111,7 @@ any_t worker(any_t arg) {
   }
   /* compute the maximum difference in my strip and set global variable */
   maxdiff = 0.0;
-  for (i = 1; i <= strip_size; i++) {
+  for (i = first; i <= last; i++) {
     for (j = 1; j <= grid_size; j++) {
       temp = grid1[i][j]-grid2[i][j];
       if (temp < 0)
@@ -138,16 +127,22 @@ any_t worker(any_t arg) {
  * Initialize the grids (grid1 and grid2)
  * set boundaries to 1.0 and interior points to 0.0
  */
-void initialize_grids(double **grid1, double **grid2) {
+void initialize_grids() {
   int i, j;
 
-  for (i = 0; i <= strip_size; i++) {
+  grid1 = (double **) malloc((grid_size+2) * sizeof(double *));
+  grid2 = (double **) malloc((grid_size+2) * sizeof(double *));
+  for (i = 0; i <= grid_size+1; i++) {
+    grid1[i] = (double *) malloc((grid_size+2) * sizeof(double));
+    grid2[i] = (double *) malloc((grid_size+2) * sizeof(double));
+  }
+
+  for (i = 0; i <= grid_size+1; i++)
     for (j = 0; j <= grid_size+1; j++) {
       grid1[i][j] = 0.0;
       grid2[i][j] = 0.0;
     }
-  }
-  for (i = 0; i <= strip_size; i++) {
+  for (i = 0; i <= grid_size+1; i++) {
     grid1[i][0] = 1.0;
     grid1[i][grid_size+1] = 1.0;
     grid2[i][0] = 1.0;
@@ -156,8 +151,8 @@ void initialize_grids(double **grid1, double **grid2) {
   for (j = 0; j <= grid_size+1; j++) {
     grid1[0][j] = 1.0;
     grid2[0][j] = 1.0;
-    grid1[strip_size][j] = 1.0;
-    grid2[strip_size][j] = 1.0;
+    grid1[grid_size+1][j] = 1.0;
+    grid2[grid_size+1][j] = 1.0;
   }
 }
 

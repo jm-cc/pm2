@@ -549,11 +549,11 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
-    mdebug_heap("The given address is not managed by MAMI.\n");
+    mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
     return;
   }
   else if (source == dest) {
-    mdebug_heap("The given address is already located at the required node.\n");
+    mdebug_heap("The address %p is already located at the required node.\n", buffer);
     return;
   }
 
@@ -592,6 +592,12 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 #endif
 
   ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, &source, &data);
+  if (source == -1) {
+    // The address is not managed by MAMI. Reset the segv handler to its default action, to cause a segfault
+    struct sigaction act;
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGSEGV, &act, NULL);
+  }
   dest = marcel_current_node();
   mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
   if (err < 0) {
@@ -605,7 +611,7 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
                                          void *buffer, size_t size) {
   int err;
   static int handler_set = 0;
-  
+
   if (!handler_set) {
     handler_set = 1;
     struct sigaction act;

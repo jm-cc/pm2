@@ -139,6 +139,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->startaddress = pageaddrs[0];
   (*memory_data)->endaddress = pageaddrs[nbpages-1]+memory_manager->pagesize;
   (*memory_data)->size = size;
+  (*memory_data)->status = MARCEL_MEMORY_DATA_INITIAL;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -425,7 +426,7 @@ void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tre
     int offset = address - memory_tree->data->startaddress;
     mdebug_heap("Found address %p in [%p:%p]\n", address, memory_tree->data->startaddress, memory_tree->data->endaddress);
     *node = memory_tree->data->nodes[offset / memory_manager->pagesize];
-    mdebug_heap("Address %p is located on node %d (%d)\n", address, *node, offset / memory_manager->pagesize);
+    mdebug_heap("Address %p is located on node %d\n", address, *node);
     if (data) *data = memory_tree->data;
   }
   else if (address <= memory_tree->data->startaddress) {
@@ -598,11 +599,14 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
-  dest = marcel_current_node();
-  ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
-  mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
-  if (err < 0) {
-    perror("mprotect (handler)");
+  if (data->status != MARCEL_MEMORY_DATA_NEXT_TOUCHED) {
+    data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
+    dest = marcel_current_node();
+    ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
+    mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
+    if (err < 0) {
+      perror("mprotect (handler)");
+    }
   }
   marcel_spin_unlock(&(g_memory_manager->lock));
 }

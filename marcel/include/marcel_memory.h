@@ -50,6 +50,11 @@ typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 typedef int marcel_memory_node_selection_policy_t;
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 
+/** \brief Data status */
+typedef int marcel_memory_data_status_t;
+#define MARCEL_MEMORY_DATA_INITIAL	((marcel_memory_data_status_t)0)
+#define MARCEL_MEMORY_DATA_NEXT_TOUCHED	((marcel_memory_data_status_t)1)
+
 #section structures
 
 #depend "linux_spinlock.h[types]"
@@ -71,6 +76,9 @@ struct marcel_memory_data_s {
   int nbpages;
   /** \brief Nodes where the memory area is located */
   int *nodes;
+
+  /** \brief Tag indicating the memory status */
+  marcel_memory_data_status_t status;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */

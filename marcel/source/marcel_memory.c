@@ -605,7 +605,11 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
     err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
     if (err < 0) {
-      perror("mprotect (handler)");
+      char *msg = "mprotect(handler): ";
+      write(2, msg, strlen(msg));
+      char *error = strerror(errno);
+      write(2, error, strlen(error));
+      write(2, "\n", 1);
     }
   }
   marcel_spin_unlock(&(g_memory_manager->lock));

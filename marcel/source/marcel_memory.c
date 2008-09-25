@@ -599,11 +599,11 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     sigaction(SIGSEGV, &act, NULL);
   }
   dest = marcel_current_node();
+  ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
   mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
   if (err < 0) {
     perror("mprotect (handler)");
   }
-  ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
   marcel_spin_unlock(&(g_memory_manager->lock));
 }
 

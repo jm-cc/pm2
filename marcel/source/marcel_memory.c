@@ -629,7 +629,10 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
     struct sigaction act;
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = ma_memory_segv_handler;
-    sigaction(SIGSEGV, &act, NULL);
+    err = sigaction(SIGSEGV, &act, NULL);
+    if (err < 0) {
+      perror("sigaction");
+    }
   }
 
   g_memory_manager = memory_manager;

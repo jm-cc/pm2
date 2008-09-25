@@ -607,9 +607,13 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     if (err < 0) {
       char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
-      char *error = strerror(errno);
-      write(2, error, strlen(error));
-      write(2, "\n", 1);
+      switch (errno) {
+      case -EACCES: write(2, "The memory cannot be given the specified access.\n", 50);
+      case -EFAULT: write(2, "The memory cannot be accessed.\n", 32);
+      case -EINVAL: write(2, "Invalid pointer.\n", 18);
+      case -ENOMEM: write(2, "Out of memory\n", 15);
+      default: write(2, "Error\n", 6);
+      }
     }
   }
   marcel_spin_unlock(&(g_memory_manager->lock));

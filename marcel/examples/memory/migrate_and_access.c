@@ -72,4 +72,5 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_free(&memory_manager, buffer);
   marcel_memory_exit(&memory_manager);
   marcel_end();
+  return 0;
 }

@@ -19,8 +19,6 @@
  * the first thread is running on. The second thread location is user
  * defined. */
 
-#define MARCEL_INTERNAL_INCLUDE
-
 #include <marcel.h>
 #include <numa.h>
 #include <numaif.h>
@@ -125,6 +123,12 @@ main (int argc, char **argv)
   }
   marcel_printf ("\n\n");
   
+  /* Check the thread location node is valid */
+  if (threads_location > numa_max_node()) {
+    fprintf (stderr, "Specified thread location node out of bounds [0 - %lu]\n", numa_max_node ());
+    return -1;
+  }
+
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_nodes; i++) {
     if (nodes[i] > numa_max_node ()) {
@@ -161,12 +165,8 @@ main (int argc, char **argv)
 
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[threads_location]);
     marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
-  }
-
-  /* Move the working threads to the nodes passed in argument. */
-  for (i = 0; i < nb_threads; i++) {
-    ma_move_entity (&working_threads[i]->as_entity, &marcel_topo_node_level[threads_location].rq.as_holder);
   }
 
   TBX_GET_TICK (t1);

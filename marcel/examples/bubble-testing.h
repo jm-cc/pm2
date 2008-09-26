@@ -388,7 +388,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 }
 
 /*
-	 Local Variable:
+	 Local Variables:
 	 tab-width: 2
 	 End:
 

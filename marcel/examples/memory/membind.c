@@ -232,9 +232,9 @@ parse_command_line_arguments (unsigned int nb_args,
   /* Fill the mbind policy */
   if (!nb_args)
     return -1;
-  if (strcmp (args[0], "bind")) {
+  if (!strcmp (args[0], "bind")) {
     *mpol = BIND_POL;
-  } else if (strcmp (args[0], "interleave")) {
+  } else if (!strcmp (args[0], "interleave")) {
     *mpol = INTERLEAVE_POL;
   } else {
     return -1;

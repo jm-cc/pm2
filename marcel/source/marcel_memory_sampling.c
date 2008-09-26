@@ -60,6 +60,7 @@ void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, i
   }
 }
 
+static
 void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages,
                                             void **pageaddrs, int *sources, int *dests, int *status,
                                             unsigned long pagesize, FILE *f) {

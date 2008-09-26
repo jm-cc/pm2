@@ -94,8 +94,8 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   LOG_OUT();
 }
 
+static
 void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
-
   while (tbx_slist_is_nil(migration_costs) == tbx_false) {
     marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
     free(ptr);
@@ -126,9 +126,10 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   LOG_OUT();
 }
 
+static
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-				void **pageaddrs, int nbpages, size_t size, int *nodes, int protection,
-				marcel_memory_data_t **memory_data) {
+                                void **pageaddrs, int nbpages, size_t size, int *nodes, int protection,
+                                marcel_memory_data_t **memory_data) {
   int err;
 
   LOG_IN();
@@ -240,6 +241,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
   LOG_OUT();
 }
 
+static
 void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
 			void **pageaddrs, int nbpages, size_t size, int *nodes, int protection) {
   LOG_IN();
@@ -417,6 +419,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_OUT();
 }
 
+static
 void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node, marcel_memory_data_t **data) {
  LOG_IN();
   if (memory_tree==NULL) {
@@ -448,6 +451,7 @@ void marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address
   ma_memory_locate(memory_manager, memory_manager->root, address, node, &data);
 }
 
+static
 void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent) {
   if (memory_tree) {
     int x;
@@ -513,6 +517,7 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
   LOG_OUT();
 }
 
+static
 void ma_memory_get_free_space(marcel_memory_manager_t *memory_manager,
                               int node,
                               int *space) {
@@ -544,6 +549,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
   marcel_spin_unlock(&(memory_manager->lock));
 }
 
+static
 void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                              void *buffer, size_t size, int dest) {
   int i, *dests, *status;
@@ -578,6 +584,7 @@ void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
 marcel_memory_manager_t *g_memory_manager = NULL;
 
+static
 void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   ucontext_t *context = _context;
   void *addr;

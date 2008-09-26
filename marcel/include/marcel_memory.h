@@ -146,17 +146,6 @@ struct marcel_memory_manager_s {
 /*
  *
  */
-void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-				void **pageaddrs,
-				int nbpages,
-				size_t size,
-                                int *nodes,
-                                int protection,
-				marcel_memory_data_t **memory_data);
-
-/*
- *
- */
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 			   marcel_memory_tree_t **memory_tree);
 
@@ -166,17 +155,6 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 void ma_memory_delete(marcel_memory_manager_t *memory_manager,
 		      marcel_memory_tree_t **memory_tree,
 		      void *buffer);
-
-/*
- *
- */
-void ma_memory_register(marcel_memory_manager_t *memory_manager,
-			marcel_memory_tree_t **memory_tree,
-			void **pageaddrs,
-			int nbpages,
-			size_t size,
-			int *nodes,
-                        int protection);
 
 /*
  * Preallocates some memory (in number of pages) on the specified numa node.
@@ -203,16 +181,17 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 /*
  *
  */
-void ma_memory_print(marcel_memory_tree_t *memory_tree,
-		     int indent);
-
+void ma_memory_sampling_check_pages_location(void **pageaddrs,
+                                             int pages,
+                                             int node);
 
 /*
  *
  */
-void ma_memory_sampling_migration(p_tbx_slist_t *migration_cost,
-                                  int source,
-                                  int dest);
+void ma_memory_sampling_migrate_pages(void **pageaddrs,
+                                      int pages,
+                                      int *nodes,
+                                      int *status);
 
 /*
  *
@@ -223,13 +202,6 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
  *
  */
 void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
-
-/*
- *
- */
-void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, int *status);
-
-void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node);
 
 #section functions
 

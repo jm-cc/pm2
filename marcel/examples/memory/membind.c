@@ -25,6 +25,7 @@
 #include <numa.h>
 #include <numaif.h>
 #include <errno.h>
+#include <string.h>
 #include <malloc.h>
 
 #define TAB_SIZE 1024*1024*64
@@ -111,6 +112,17 @@ main (int argc, char **argv)
   marcel_init (&argc, argv);
   tbx_timing_init ();
   marcel_t working_threads[nb_threads];
+
+  /* Print a pretty and welcoming message */
+  marcel_printf ("Launching membind with %lu threads located on node %lu.\nThe global array is %s %s", 
+		 nb_threads, 
+		 threads_location, 
+		 (mpol == BIND_POL) ? "bound to" : "distributed over",
+		 nb_nodes == 1 ? "node " : "nodes ");
+  for (i = 0; i < nb_nodes; i++) {
+    marcel_printf ("%lu ", nodes[i]);
+  }
+  marcel_printf ("\n\n");
   
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_nodes; i++) {

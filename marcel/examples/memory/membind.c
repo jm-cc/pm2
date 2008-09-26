@@ -106,7 +106,8 @@ main (int argc, char **argv)
 
   int err_parse = parse_command_line_arguments (argc, argv, &nb_threads, &threads_location, &mpol, nodes);
   if (err_parse < 0) {
-    perror ("parse_command_line_arguments");
+    usage();
+    exit(1);
   }
 
   marcel_init (&argc, argv);

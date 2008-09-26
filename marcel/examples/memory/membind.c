@@ -29,6 +29,7 @@
 
 #define TAB_SIZE 1024*1024*64
 #define NB_TIMES 1024*1024*32
+#define ACCESS_PATTERN_SIZE 1024*64
 
 enum mbind_policy {
   BIND_POL,
@@ -46,18 +47,22 @@ static int parse_command_line_arguments (unsigned int nb_args,
 					  enum mbind_policy *mpol,
 					  unsigned int *nodes);
 
-static int
-random_read (int *tab, unsigned length) {
-  return tab[marcel_random () % length];
-}
-
-static void
-random_write (int *tab, unsigned length) {
-  tab[marcel_random () % length] = marcel_random () % 1000;
+static void 
+initialize_access_pattern_vectors (long **access_pattern, 
+				   unsigned int nb_threads,
+				   unsigned int access_pattern_len,
+				   unsigned int tab_size) {
+  unsigned int i, j;
+  for (i = 0; i < nb_threads; i++) {
+    for (j = 0; j < access_pattern_len; j++) {
+      access_pattern[i][j] = marcel_random () % tab_size;
+    }
+  }
 }
 
 static 
 void * f (void *arg) {
+  long *access_pattern = (long *)arg;
   unsigned int i;
   
   /* Wait for the master thread to ask us to start. */
@@ -66,8 +71,8 @@ void * f (void *arg) {
   
   /* Let's do the job. */
   for (i = 0; i < NB_TIMES; i++) {
-    random_write (tab, TAB_SIZE);
-    random_read (tab, TAB_SIZE);
+    int dummy = tab[access_pattern[i % ACCESS_PATTERN_SIZE]];
+    tab[access_pattern[(NB_TIMES - i) % ACCESS_PATTERN_SIZE]] = dummy;
   }
   
   return 0;
@@ -81,6 +86,7 @@ main (int argc, char **argv)
   unsigned long nodemask = 0;
   unsigned long maxnode = numa_max_node () + 1;
   unsigned int nb_nodes, i;
+  long **access_pattern;
 
   if (argc < 5) {
     usage ();
@@ -113,6 +119,12 @@ main (int argc, char **argv)
     nodemask |= (1 << nodes[i]);
   }
 
+  /* Bind the access pattern vectors next to the accessing threads. */
+  access_pattern = numa_alloc_onnode (nb_threads * sizeof (long *), threads_location);
+  for (i = 0; i < nb_threads; i++) {
+    access_pattern[i] = numa_alloc_onnode (ACCESS_PATTERN_SIZE * sizeof (long), threads_location);
+  }
+
   /* Bind the accessed data to the nodes. */
   tab = memalign (getpagesize(), tab_len);
   int err_mbind;
@@ -125,13 +137,16 @@ main (int argc, char **argv)
     perror ("mbind");
   }
 
+  /* Build the access pattern vectors */
+  initialize_access_pattern_vectors (access_pattern, nb_threads, ACCESS_PATTERN_SIZE, TAB_SIZE);
+
   marcel_attr_init (&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);
   marcel_thread_preemption_disable ();
 
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
-    marcel_create (working_threads + i, &thread_attr, f, NULL);
+    marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
   }
 
   /* Move the working threads to the nodes passed in argument. */
@@ -146,8 +161,13 @@ main (int argc, char **argv)
   for (i = 0; i < nb_threads; i++) {
     marcel_join (working_threads[i], NULL);
   }
-
+  
+  for (i = 0; i < nb_threads; i++) {
+    numa_free (access_pattern[i], ACCESS_PATTERN_SIZE * sizeof (long));
+  }
+  numa_free (access_pattern, nb_threads * sizeof (long *));
   free (tab);
+
   marcel_end ();
 }
 

@@ -37,7 +37,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   memory_manager->cache_line_size = 64;
 
   // Preallocate memory on each node
-  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_space_t *));
+  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), node);
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
@@ -257,7 +257,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_t
   LOG_OUT();
 }
 
-void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_space_t **space, int node) {
+void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
   unsigned long nodemask;
   size_t length;
   void *buffer;
@@ -271,14 +271,14 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
 #endif
   memset(buffer, 0, length);
 
-  (*space) = malloc(sizeof(marcel_memory_space_t));
+  (*space) = malloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
   (*space)->nbpages = memory_manager->initially_preallocated_pages;
   (*space)->next = NULL;
 }
 
-void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_space_t **space, int node) {
-  marcel_memory_space_t *ptr;
+void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
+  marcel_memory_area_t *ptr;
 
   LOG_IN();
   ptr  = (*space);
@@ -291,8 +291,8 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 }
 
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
-  marcel_memory_space_t *heap = memory_manager->heaps[node];
-  marcel_memory_space_t *prev = NULL;
+  marcel_memory_area_t *heap = memory_manager->heaps[node];
+  marcel_memory_area_t *prev = NULL;
   void *buffer;
   int i, nbpages;
   size_t realsize;
@@ -364,12 +364,12 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
 }
 
 void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
-  marcel_memory_space_t *available;
+  marcel_memory_area_t *available;
 
   LOG_IN();
 
   mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
-  available = malloc(sizeof(marcel_memory_space_t));
+  available = malloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
   available->nbpages = nbpages;
   available->next = memory_manager->heaps[node];
@@ -514,7 +514,7 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
 void ma_memory_get_free_space(marcel_memory_manager_t *memory_manager,
                               int node,
                               int *space) {
-  marcel_memory_space_t *heap = memory_manager->heaps[node];
+  marcel_memory_area_t *heap = memory_manager->heaps[node];
   *space = 0;
   while (heap != NULL) {
     *space += heap->nbpages;
@@ -603,7 +603,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
     dest = marcel_current_node();
     ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
-    err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE|PROT_EXEC);
+    err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE);
     if (err < 0) {
       char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));

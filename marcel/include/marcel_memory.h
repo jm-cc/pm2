@@ -35,7 +35,7 @@ typedef struct marcel_memory_data_s marcel_memory_data_t;
 typedef struct marcel_memory_tree_s marcel_memory_tree_t;
 
 /** \brief Type of a pre-allocated space (start address + number of pages) */
-typedef struct marcel_memory_space_s marcel_memory_space_t;
+typedef struct marcel_memory_area_s marcel_memory_area_t;
 
 /** \brief Type of a reading or writing access cost from node to node */
 typedef struct marcel_access_cost_s marcel_access_cost_t;
@@ -92,13 +92,13 @@ struct marcel_memory_tree_s {
 };
 
 /** \brief Structure of a pre-allocated space (start address + number of pages) */
-struct marcel_memory_space_s {
-  /** \brief Start address of the memory space */
+struct marcel_memory_area_s {
+  /** \brief Start address of the memory area */
   void *start;
-  /** \brief Number of pages of the memory space */
+  /** \brief Number of pages of the memory area */
   int nbpages;
   /** \brief Next pre-allocated space */
-  struct marcel_memory_space_s *next;
+  struct marcel_memory_area_s *next;
 };
 
 /** \brief Structure of a reading or writing access cost from node to node */
@@ -126,7 +126,7 @@ struct marcel_memory_manager_s {
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas */
-  marcel_memory_space_t **heaps;
+  marcel_memory_area_t **heaps;
   /** \brief Lock to manipulate the data */
   marcel_spinlock_t lock;
   /** \brief System page size */
@@ -176,14 +176,14 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
  * Preallocates some memory (in number of pages) on the specified numa node.
  */
 void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
-			   marcel_memory_space_t **space,
+			   marcel_memory_area_t **space,
 			   int node);
 
 /*
  * Deallocate the memory from the specified numa node.
  */
 void ma_memory_deallocate(marcel_memory_manager_t *memory_manager,
-			  marcel_memory_space_t **space,
+			  marcel_memory_area_t **space,
 			  int node);
 
 /*

@@ -958,7 +958,7 @@ restart:
 			if (!prev->f_to_call)
 				/* marcel_exit was called directly from the
 				 * runner loop, just return (faster) */
-				return 0;
+				LOG_RETURN(0);
 			else
 				marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
 		} else {

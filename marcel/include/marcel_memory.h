@@ -69,6 +69,8 @@ struct marcel_memory_data_s {
   void *endaddress;
   /** \brief Size of the memory area */
   size_t size;
+  /** \brief Protection of the memory area */
+  int protection;
 
   /** \brief Page addresses of the memory area */
   void **pageaddrs;
@@ -97,6 +99,8 @@ struct marcel_memory_area_s {
   void *start;
   /** \brief Number of pages of the memory area */
   int nbpages;
+  /** \brief Protection of the memory area */
+  int protection;
   /** \brief Next pre-allocated space */
   struct marcel_memory_area_s *next;
 };
@@ -146,7 +150,8 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 				void **pageaddrs,
 				int nbpages,
 				size_t size,
-				int *nodes,
+                                int *nodes,
+                                int protection,
 				marcel_memory_data_t **memory_data);
 
 /*
@@ -170,7 +175,8 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
 			void **pageaddrs,
 			int nbpages,
 			size_t size,
-			int *nodes);
+			int *nodes,
+                        int protection);
 
 /*
  * Preallocates some memory (in number of pages) on the specified numa node.

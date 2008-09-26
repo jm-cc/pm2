@@ -127,7 +127,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 }
 
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-				void **pageaddrs, int nbpages, size_t size, int *nodes,
+				void **pageaddrs, int nbpages, size_t size, int *nodes, int protection,
 				marcel_memory_data_t **memory_data) {
   int err;
 
@@ -140,6 +140,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->endaddress = pageaddrs[nbpages-1]+memory_manager->pagesize;
   (*memory_data)->size = size;
   (*memory_data)->status = MARCEL_MEMORY_DATA_INITIAL;
+  (*memory_data)->protection = protection;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -240,19 +241,19 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
 }
 
 void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
-			void **pageaddrs, int nbpages, size_t size, int *nodes) {
+			void **pageaddrs, int nbpages, size_t size, int *nodes, int protection) {
   LOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = malloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, &((*memory_tree)->data));
+    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, protection, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes);
+      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes, protection);
     else
-      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes);
+      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes, protection);
   }
   LOG_OUT();
 }
@@ -274,6 +275,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space) = malloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
   (*space)->nbpages = memory_manager->initially_preallocated_pages;
+  (*space)->protection = PROT_READ|PROT_WRITE;
   (*space)->next = NULL;
 }
 
@@ -352,7 +354,7 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
 
   // Register memory
   mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-  ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes);
+  ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes, heap->protection);
 
   free(pageaddrs);
   free(nodes);
@@ -603,7 +605,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
     dest = marcel_current_node();
     ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
-    err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), PROT_READ|PROT_WRITE);
+    err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), data->protection);
     if (err < 0) {
       char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));

@@ -96,12 +96,14 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
 
 static
 void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
+  LOG_IN();
   while (tbx_slist_is_nil(migration_costs) == tbx_false) {
     marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
     free(ptr);
   }
   tbx_slist_clear(migration_costs);
   tbx_slist_free(migration_costs);
+  LOG_OUT();
 }
 
 
@@ -262,6 +264,8 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   void *buffer;
   int err;
 
+  LOG_IN();
+
   nodemask = (1<<node);
   length = memory_manager->initially_preallocated_pages * memory_manager->pagesize;
 
@@ -277,6 +281,8 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space)->nbpages = memory_manager->initially_preallocated_pages;
   (*space)->protection = PROT_READ|PROT_WRITE;
   (*space)->next = NULL;
+
+  LOG_OUT();
 }
 
 void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
@@ -520,16 +526,19 @@ void ma_memory_get_free_space(marcel_memory_manager_t *memory_manager,
                               int node,
                               int *space) {
   marcel_memory_area_t *heap = memory_manager->heaps[node];
+  LOG_IN();
   *space = 0;
   while (heap != NULL) {
     *space += heap->nbpages;
     heap = heap->next;
   }
+  LOG_OUT();
 }
 
 void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                                marcel_memory_node_selection_policy_t policy,
                                int *node) {
+  LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
 
   if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
@@ -545,6 +554,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
   }
 
   marcel_spin_unlock(&(memory_manager->lock));
+  LOG_OUT();
 }
 
 static
@@ -553,6 +563,8 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   int i, *dests, *status;
   int source;
   marcel_memory_data_t *data = NULL;
+
+  LOG_IN();
 
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
@@ -573,13 +585,17 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   ma_memory_sampling_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
   for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
+
+  LOG_OUT();
 }
 
 void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                                  void *buffer, size_t size, int dest) {
+  LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
   ma_memory_migrate_pages(memory_manager, buffer, size, dest);
   marcel_spin_unlock(&(memory_manager->lock));
+  LOG_OUT();
 }
 
 marcel_memory_manager_t *g_memory_manager = NULL;
@@ -633,6 +649,8 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
   int err;
   static int handler_set = 0;
 
+  LOG_IN();
+
   if (!handler_set) {
     handler_set = 1;
     struct sigaction act;
@@ -650,6 +668,8 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
   if (err < 0) {
     perror("mprotect");
   }
+
+  LOG_OUT();
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

@@ -29,17 +29,17 @@ any_t reader(any_t arg) {
   int node;
 
   marcel_memory_locate(&memory_manager, b, &node);
-  marcel_printf("Address %p is located on node %d\n", b, node);
+  marcel_printf("Address is located on node %d\n", node);
 
   marcel_memory_migrate_on_next_touch(&memory_manager, b, 3*memory_manager.pagesize);
 
   marcel_memory_locate(&memory_manager, b, &node);
-  marcel_printf("Address %p is located on node %d\n", b, node);
+  marcel_printf("Address is located on node %d\n", node);
 
   b[1] = 42;
 
   marcel_memory_locate(&memory_manager, b, &node);
-  marcel_printf("Address %p is located on node %d\n", b, node);
+  marcel_printf("Address is located on node %d\n", node);
 
   marcel_memory_free(&memory_manager, b);
 }
@@ -65,6 +65,7 @@ int marcel_main(int argc, char * argv[]) {
   // Finish marcel
   marcel_memory_exit(&memory_manager);
   marcel_end();
+  return 0;
 }
 
 #else

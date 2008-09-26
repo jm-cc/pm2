@@ -38,6 +38,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Finish marcel
   marcel_end();
+  return 0;
 }
 
 #else

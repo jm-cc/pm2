@@ -112,7 +112,7 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
     rc = snprintf(directory, 1024, "/var/local/pm2/marcel");
   }
   assert(rc < 1024);
-  
+
   if (source == -1) {
     if (dest == -1)
       snprintf(filename, 1024, "%s/%s_%s.txt", directory, type, hostname);

@@ -154,20 +154,16 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
     memcpy((*memory_data)->nodes, nodes, nbpages*sizeof(int));
   }
   else {
-#ifdef MARCEL_NUMA
     err = move_pages(0, (*memory_data)->nbpages, (*memory_data)->pageaddrs, NULL, (*memory_data)->nodes, 0);
     if (err < 0) {
       if (errno == ENOSYS) {
-	printf("Warning: Function not implemented. Assume the value 0\n");
+	marcel_printf("Warning: Function not implemented. Assume the value 0\n");
       }
       else {
         perror("move_pages");
         exit(-1);
       }
     }
-#else
-    memset((*memory_data)->nodes, 0, (*memory_data)->nbpages);
-#endif
   }
   mdebug_heap("Location of the new pages: %d\n", (*memory_data)->nodes[0]);
 
@@ -264,14 +260,16 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   unsigned long nodemask;
   size_t length;
   void *buffer;
+  int err;
 
   nodemask = (1<<node);
   length = memory_manager->initially_preallocated_pages * memory_manager->pagesize;
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-#ifdef MARCEL_NUMA
-  mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-#endif
+  err = mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+  if (err < 0) {
+    perror("mbind");
+  }
   memset(buffer, 0, length);
 
   (*space) = malloc(sizeof(marcel_memory_area_t));
@@ -571,7 +569,9 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   status = (int *) malloc(data->nbpages * sizeof(int));
   for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
   ma_memory_sampling_migrate_pages(data->pageaddrs, data->nbpages, dests, status);
+#ifdef PM2DEBUG
   ma_memory_sampling_check_pages_location(data->pageaddrs, data->nbpages, dest);
+#endif /* PM2DEBUG */
   for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
 }
 

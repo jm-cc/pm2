@@ -92,6 +92,9 @@ main (int argc, char **argv)
     usage ();
     return -1;
   }
+
+  marcel_init (&argc, argv);
+  tbx_timing_init ();
   
   /* Trust me, it's true! */
   nb_nodes = argc - 4;
@@ -108,8 +111,6 @@ main (int argc, char **argv)
     exit(1);
   }
 
-  marcel_init (&argc, argv);
-  tbx_timing_init ();
   marcel_t working_threads[nb_threads];
 
   /* Print a pretty and welcoming message */
@@ -165,7 +166,7 @@ main (int argc, char **argv)
 
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[threads_location]);
+    marcel_attr_settopo_level(&thread_attr, &marcel_topo_node_level[threads_location]);
     marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
   }
 

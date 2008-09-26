@@ -87,6 +87,7 @@ main (int argc, char **argv)
   unsigned long maxnode = numa_max_node () + 1;
   unsigned int nb_nodes, i;
   long **access_pattern;
+  tbx_tick_t t1, t2;
 
   if (argc < 5) {
     usage ();
@@ -108,6 +109,7 @@ main (int argc, char **argv)
   }
 
   marcel_init (&argc, argv);
+  tbx_timing_init ();
   marcel_t working_threads[nb_threads];
   
   /* Set the nodemask to contain the nodes passed in argument. */
@@ -154,6 +156,8 @@ main (int argc, char **argv)
     ma_move_entity (&working_threads[i]->as_entity, &marcel_topo_node_level[threads_location].rq.as_holder);
   }
 
+  TBX_GET_TICK (t1);
+
   /* Let the working threads start their work. */
   __sync_fetch_and_add (&begin, 1);
 
@@ -162,12 +166,16 @@ main (int argc, char **argv)
     marcel_join (working_threads[i], NULL);
   }
   
+  TBX_GET_TICK (t2);
+
   for (i = 0; i < nb_threads; i++) {
     numa_free (access_pattern[i], ACCESS_PATTERN_SIZE * sizeof (long));
   }
   numa_free (access_pattern, nb_threads * sizeof (long *));
   free (tab);
 
+  marcel_printf ("Test computed in %lfs!\n", (double)(TBX_TIMING_DELAY (t1, t2) / 1000000));
+  
   marcel_end ();
 }
 

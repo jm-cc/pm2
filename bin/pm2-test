@@ -174,6 +174,11 @@ while [ $# -gt 0 ]; do
 	    _init_level=$_level
 	    shift
 	    ;;
+	-L5)
+	    _level=5
+	    _init_level=$_level
+	    shift
+	    ;;
 	--jobs|-j)
 	    jobs="$1 $2"
 	    shift

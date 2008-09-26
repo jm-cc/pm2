@@ -88,14 +88,14 @@ main (int argc, char **argv)
   long **access_pattern;
   tbx_tick_t t1, t2;
 
+  marcel_init (&argc, argv);
+  tbx_timing_init ();
+  
   if (argc < 5) {
     usage ();
     return -1;
   }
 
-  marcel_init (&argc, argv);
-  tbx_timing_init ();
-  
   /* Trust me, it's true! */
   nb_nodes = argc - 4;
 

@@ -55,10 +55,11 @@ any_t migration(any_t arg) {
                                  size, &migration_cost);
     marcel_printf("\n[%d:%d] Migration cost %f - Reading access cost %f\n", cpu, mem, migration_cost, reading_cost);
     if (migration_cost < reading_cost) {
-      marcel_printf("Migration is cheaper than remote reading. Let's migrate...\n", mem, cpu);
+      marcel_printf("Migration is cheaper than remote reading. Let's migrate...\n");
       allocation_and_migration(cpu, mem);
     }
   }
+  return 0;
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -86,10 +87,12 @@ int marcel_main(int argc, char * argv[]) {
   // Finish marcel
   marcel_memory_exit(&memory_manager);
   marcel_end();
+  return 0;
 }
 
 #else
 int marcel_main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MAMI to be enabled\n");
+  return 0;
 }
 #endif

@@ -41,6 +41,7 @@ any_t memory(any_t arg) {
   marcel_memory_free(&memory_manager, d);
   marcel_memory_free(&memory_manager, e);
   marcel_memory_free(&memory_manager, buffer);
+  return 0;
 }
 
 any_t memory2(any_t arg) {
@@ -75,6 +76,7 @@ any_t memory2(any_t arg) {
     free(buffers);
     free(buffers2);
   }
+  return 0;
 }
 
 void memory_bis() {
@@ -126,6 +128,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Finish marcel
   marcel_end();
+  return 0;
 }
 
 #else

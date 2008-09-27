@@ -14,6 +14,7 @@
  */
 
 #include "marcel.h"
+#include <numa.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
   }
 
   marcel_memory_sampling_of_memory_migration(minsource, maxsource, mindest, maxdest);
+  return 0;
 }
 
 #else

@@ -24,6 +24,7 @@ int *b;
 any_t writer(any_t arg) {
   b = marcel_memory_malloc(&memory_manager, 3*memory_manager.pagesize);
   marcel_memory_migrate_on_next_touch(&memory_manager, b, 3*memory_manager.pagesize);
+  return 0;
 }
 
 any_t reader(any_t arg) {
@@ -36,6 +37,7 @@ any_t reader(any_t arg) {
 
   marcel_memory_locate(&memory_manager, b, &node);
   marcel_printf("Address is located on node %d\n", node);
+  return 0;
 }
 
 int marcel_main(int argc, char * argv[]) {

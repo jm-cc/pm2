@@ -41,6 +41,7 @@ any_t compute(any_t arg) {
       buffer[i] ++;
     }
   }
+  return 0;
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -107,6 +108,7 @@ int marcel_main(int argc, char * argv[]) {
   // Finish marcel
   marcel_memory_exit(&memory_manager);
   marcel_end();
+  return 0;
 }
 
 #else

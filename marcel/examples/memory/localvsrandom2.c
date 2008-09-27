@@ -39,12 +39,12 @@ any_t writer(any_t arg) {
       __builtin_ia32_movnti((void*) &buffer[i], gold);
     }
   }
+  return 0;
 }
 
 any_t reader(any_t arg) {
   int *buffer;
-  int i, j, node;//, where;
-  unsigned int gold = 1.457869;
+  int i, j, node;
 
   node = marcel_self()->id;
   buffer = buffers[node];
@@ -57,6 +57,7 @@ any_t reader(any_t arg) {
       __builtin_ia32_clflush((void*)&buffer[i]);
     }
   }
+  return 0;
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -125,7 +126,7 @@ int marcel_main(int argc, char * argv[]) {
   printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      printf("%d\t%d\t%lld\t%lld\t%f\t%lld\t%f\n",
+      printf("%d\t%d\t%d\t%lld\t%f\t%lld\t%f\n",
              t, node, LOOPS*SIZE*4,
              rtimes[node][t],
              (float)(rtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE,
@@ -137,6 +138,7 @@ int marcel_main(int argc, char * argv[]) {
   // Finish marcel
   marcel_memory_exit(&memory_manager);
   marcel_end();
+  return 0;
 }
 
 #else

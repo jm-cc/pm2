@@ -20,8 +20,6 @@
 marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
-  marcel_t threads[2];
-  marcel_attr_t attr;
   float cost;
 
   marcel_init(&argc,argv);
@@ -40,6 +38,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Finish marcel
   marcel_end();
+  return 0;
 }
 
 #else

@@ -34,6 +34,7 @@ any_t t_migrate(any_t arg) {
     }
     //if (i %1000) marcel_printf("Migrate ...\n");
   }
+  return 0;
 }
 
 any_t t_access(any_t arg) {
@@ -49,6 +50,7 @@ any_t t_access(any_t arg) {
     }
     //if (i %1000) marcel_printf("Access ...\n");
   }
+  return 0;
 }
 
 int marcel_main(int argc, char * argv[]) {

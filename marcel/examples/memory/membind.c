@@ -114,26 +114,26 @@ main (int argc, char **argv)
   marcel_t working_threads[nb_threads];
 
   /* Print a pretty and welcoming message */
-  marcel_printf ("Launching membind with %lu threads located on node %lu.\nThe global array is %s %s", 
+  marcel_printf ("Launching membind with %u threads located on node %u.\nThe global array is %s %s", 
 		 nb_threads, 
 		 threads_location, 
 		 (mpol == BIND_POL) ? "bound to" : "distributed over",
 		 nb_nodes == 1 ? "node " : "nodes ");
   for (i = 0; i < nb_nodes; i++) {
-    marcel_printf ("%lu ", nodes[i]);
+    marcel_printf ("%u ", nodes[i]);
   }
   marcel_printf ("\n\n");
   
   /* Check the thread location node is valid */
   if (threads_location > numa_max_node()) {
-    fprintf (stderr, "Specified thread location node out of bounds [0 - %lu]\n", numa_max_node ());
+    fprintf (stderr, "Specified thread location node out of bounds [0 - %u]\n", numa_max_node ());
     return -1;
   }
 
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_nodes; i++) {
     if (nodes[i] > numa_max_node ()) {
-      fprintf (stderr, "Specified node out of bounds [0 - %lu]\n", numa_max_node ());
+      fprintf (stderr, "Specified node out of bounds [0 - %u]\n", numa_max_node ());
       return -1;
     }
     nodemask |= (1 << nodes[i]);
@@ -191,6 +191,7 @@ main (int argc, char **argv)
   marcel_printf ("Test computed in %lfs!\n", (double)(TBX_TIMING_DELAY (t1, t2) / 1000000));
   
   marcel_end ();
+  return 0;
 }
 
 static void

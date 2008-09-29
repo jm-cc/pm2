@@ -85,6 +85,7 @@ static void *unmapped_slot_alloc(void *foo)
 	}
 	ptr = next_slot -= 
 #if defined(PM2VALGRIND) || defined(PM2STACKSGUARD) || defined(PM2DEBUG)
+		/* Put a hole between slots to catch overflows */
 		2*
 #endif
 		THREAD_SLOT_SIZE;

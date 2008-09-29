@@ -179,21 +179,89 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
 }
 
 void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest) {
-  unsigned long pagesize;
   char filename[1024];
   FILE *out;
-  void *buffer;
-  int i, err;
+  int i;
   unsigned long source;
   unsigned long dest;
-  unsigned long nodemask;
-  int *status, *sources, *dests;
-  void **pageaddrs;
-  int pages;
-  int maxnode;
+  marcel_t thread;
+  marcel_attr_t attr;
 
-  pagesize = getpagesize();
-  maxnode = numa_max_node();
+  any_t migration(any_t arg) {
+    void *buffer;
+    unsigned long nodemask;
+    void **pageaddrs;
+    int *status, *sources, *dests;
+    int maxnode;
+    int pages;
+    int err;
+    unsigned long pagesize;
+
+    pagesize = getpagesize();
+    maxnode = numa_max_node();
+
+    // Allocate the pages
+    buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    if (buffer < 0) {
+      perror("mmap");
+      exit(-1);
+    }
+
+    // Set the memory policy on node source
+    nodemask = (1<<source);
+    err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
+    if (err < 0) {
+      perror("set_mempolicy");
+      exit(-1);
+    }
+
+    // Fill in the whole memory
+    memset(buffer, 0, 25000*pagesize);
+
+    // Set the page addresses
+    pageaddrs = malloc(25000 * sizeof(void *));
+    for(i=0; i<25000; i++)
+      pageaddrs[i] = buffer + i*pagesize;
+
+    // Set the other variables
+    status = malloc(25000 * sizeof(int));
+    sources = malloc(25000 * sizeof(int));
+    dests = malloc(25000 * sizeof(int));
+    for(i=0; i<25000 ; i++) dests[i] = dest;
+    for(i=0; i<25000 ; i++) sources[i] = source;
+
+    for(pages=1; pages<10 ; pages++) {
+      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+    }
+    fflush(out);
+
+    for(pages=10; pages<100 ; pages+=10) {
+      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+      fflush(out);
+    }
+
+    for(pages=100; pages<1000 ; pages+=100) {
+      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+      fflush(out);
+    }
+
+    for(pages=1000; pages<10000 ; pages+=1000) {
+      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+      fflush(out);
+    }
+
+    for(pages=10000; pages<=25000 ; pages+=5000) {
+      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+      fflush(out);
+    }
+
+    munmap(buffer, 25000 * pagesize);
+    free(pageaddrs);
+    free(status);
+    free(sources);
+    free(dests);
+    return 0;
+  }
 
   {
     long source = -1;
@@ -210,71 +278,16 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");
 
+  marcel_attr_init(&attr);
   for(source=minsource; source<=maxsource ; source++) {
     for(dest=mindest; dest<=maxdest ; dest++) {
 
       if (dest == source) continue;
 
-      // Allocate the pages
-      buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-      if (buffer < 0) {
-        perror("mmap");
-        exit(-1);
-      }
-
-      // Set the memory policy on node source
-      nodemask = (1<<source);
-      err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
-      if (err < 0) {
-        perror("set_mempolicy");
-        exit(-1);
-      }
-
-      // Fill in the whole memory
-      memset(buffer, 0, 25000*pagesize);
-
-      // Set the page addresses
-      pageaddrs = malloc(25000 * sizeof(void *));
-      for(i=0; i<25000; i++)
-        pageaddrs[i] = buffer + i*pagesize;
-
-      // Set the other variables
-      status = malloc(25000 * sizeof(int));
-      sources = malloc(25000 * sizeof(int));
-      dests = malloc(25000 * sizeof(int));
-      for(i=0; i<25000 ; i++) dests[i] = dest;
-      for(i=0; i<25000 ; i++) sources[i] = source;
-
-      for(pages=1; pages<10 ; pages++) {
-	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-      }
-      fflush(out);
-
-      for(pages=10; pages<100 ; pages+=10) {
-	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-	fflush(out);
-      }
-
-      for(pages=100; pages<1000 ; pages+=100) {
-	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-	fflush(out);
-      }
-
-      for(pages=1000; pages<10000 ; pages+=1000) {
-	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-	fflush(out);
-      }
-
-      for(pages=10000; pages<=25000 ; pages+=5000) {
-	ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-	fflush(out);
-      }
-
-      munmap(buffer, 25000 * pagesize);
-      free(pageaddrs);
-      free(status);
-      free(sources);
-      free(dests);
+      // Create a thread on node source
+      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
+      marcel_create(&thread, &attr, migration, NULL);
+      marcel_join(thread, NULL);
     }
   }
   fclose(out);

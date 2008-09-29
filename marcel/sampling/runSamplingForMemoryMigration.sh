@@ -19,7 +19,7 @@ prog=$(pm2-which -f $flavor sampling_for_memory_migration)
 nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
 
 for node in $(echo $nodes) ; do
-    numactl --physcpubind=$node $prog -src $node
+    $prog -src $node
 done
 
 pathname=$PM2_SAMPLING_DIR

@@ -14,7 +14,6 @@
  */
 
 #include "marcel.h"
-#include <numa.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -22,10 +21,12 @@ int main(int argc, char **argv) {
   int i;
   int minsource, maxsource, mindest, maxdest;
 
+  marcel_init(&argc,argv);
+
   minsource = 0;
-  maxsource = numa_max_node();
+  maxsource = marcel_nbnodes-1;
   mindest = 0;
-  maxdest = numa_max_node();
+  maxdest = marcel_nbnodes-1;
 
   for(i=1 ; i<argc ; i++) {
     if (!strcmp(argv[i], "-src")) {
@@ -47,5 +48,6 @@ int main(int argc, char **argv) {
 #else
 int marcel_main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MAMI to be enabled\n");
+  return 0;
 }
 #endif

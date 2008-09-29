@@ -62,10 +62,10 @@ int marcel_main(int argc, char *argv[]) {
     jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
   }
   else {
-    for(nb_workers=2 ; nb_workers<=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE] ; nb_workers+=2) {
-      for(nb_iters=10 ; nb_iters<=110 ; nb_iters+=50) {
-        jacobi(100, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
-        jacobi(100, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+    for(grid_size=100 ; grid_size<=500 ; grid_size+=100) {
+      for(nb_workers=2 ; nb_workers<=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE] ; nb_workers+=2) {
+        jacobi(grid_size, nb_workers, 1000, JACOBI_MIGRATE_NOTHING);
+        jacobi(grid_size, nb_workers, 1000, JACOBI_MIGRATE_ON_NEXT_TOUCH);
       }
     }
   }
@@ -79,6 +79,8 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   int i;
   double maxdiff = 0.0;
   jacobi_t *args;
+  struct timeval tv1, tv2;
+  unsigned long us, ns;
 
   marcel_attr_init(&attr);
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
@@ -87,6 +89,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   initialize_grids(grid_size, migration_policy);
 
   /* create the workers, then wait for them to finish */
+  gettimeofday(&tv1, NULL);
   for (i = 0; i < nb_workers; i++) {
     args[i].grid_size = grid_size;
     args[i].nb_workers = nb_workers;
@@ -99,12 +102,18 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   for (i = 0; i < nb_workers; i++) {
     marcel_join(workerid[i], NULL);
   }
+  gettimeofday(&tv2, NULL);
 
   for (i = 0; i < nb_workers; i++) {
     if (maxdiff < local_max_diff[i]) maxdiff = local_max_diff[i];
   }
+
+  us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+  ns = us * 1000;
+  ns /= nb_iters;
+
   /* print the results */
-  marcel_printf("%11d %15d %13d\t%e\t%d\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy);
+  marcel_printf("%11d %15d %13d\t%e\t%d\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy, ns);
 
   // Free the memory
   for (i = 0; i <= grid_size+1; i++) {

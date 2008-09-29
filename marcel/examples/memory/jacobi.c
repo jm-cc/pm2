@@ -13,15 +13,24 @@
  * General Public License for more details.
  */
 
+#define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
 
 #define JACOBI_MIGRATE_NOTHING       0
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH 1
 
+typedef struct jacobi_s {
+  int thread_id;
+  int grid_size;
+  int nb_workers;
+  int nb_iters;
+  int strip_size;
+} jacobi_t;
+
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
 any_t worker(any_t arg);
-void initialize_grids(int migration_policy);
-void barrier();
+void initialize_grids(int grid_size, int migration_policy);
+void barrier(int nb_workers);
 
 marcel_mutex_t mutex;  /* mutex semaphore for the barrier */
 marcel_cond_t go;      /* condition variable for leaving */
@@ -29,11 +38,12 @@ int nb_arrived = 0;    /* count of the number who have arrived */
 
 marcel_memory_manager_t memory_manager;
 
-int grid_size, nb_workers, nb_iters, strip_size;
 double *local_max_diff;
 double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
+  int grid_size, nb_workers, nb_iters;
+
   marcel_init(&argc, argv);
   marcel_memory_init(&memory_manager, 1000);
 
@@ -41,18 +51,25 @@ int marcel_main(int argc, char *argv[]) {
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
-  /* read command line and initialize grids */
-  if (argc < 4) {
-    printf("jacobi size n_thread n_iter\n");
-    exit(0);
-  }
-  grid_size = atoi(argv[1]);
-  nb_workers = atoi(argv[2]);
-  nb_iters = atoi(argv[3]);
-
   marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\tmigration_policy\n");
-  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
-  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+
+  if (argc == 4) {
+    grid_size = atoi(argv[1]);
+    nb_workers = atoi(argv[2]);
+    nb_iters = atoi(argv[3]);
+
+    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
+    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+  }
+  else {
+    for(nb_workers=2 ; nb_workers<=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE] ; nb_workers+=2) {
+      for(nb_iters=10 ; nb_iters<=110 ; nb_iters+=50) {
+        jacobi(100, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
+        jacobi(100, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+      }
+    }
+  }
+  
   return 0;
 }
 
@@ -61,17 +78,23 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   marcel_attr_t attr;
   int i;
   double maxdiff = 0.0;
+  jacobi_t *args;
 
   marcel_attr_init(&attr);
-  strip_size = grid_size/nb_workers;
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
-  initialize_grids(migration_policy);
+  args = (jacobi_t *) malloc(nb_workers * sizeof(jacobi_t));
+  initialize_grids(grid_size, migration_policy);
 
   /* create the workers, then wait for them to finish */
   for (i = 0; i < nb_workers; i++) {
+    args[i].grid_size = grid_size;
+    args[i].nb_workers = nb_workers;
+    args[i].nb_iters = nb_iters;
+    args[i].thread_id = i;
+    args[i].strip_size = grid_size/nb_workers;
     marcel_attr_settopo_level(&attr, &marcel_topo_node_level[(i+1)%marcel_nbnodes]);
-    marcel_create(&workerid[i], &attr, worker, (any_t) (intptr_t) i);
+    marcel_create(&workerid[i], &attr, worker, (any_t) &args[i]);
   }
   for (i = 0; i < nb_workers; i++) {
     marcel_join(workerid[i], NULL);
@@ -100,7 +123,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
  * one grid to the other.
  */
 any_t worker(any_t arg) {
-  int myid = (intptr_t) arg;
+  jacobi_t *mydata = (jacobi_t *) arg;
   double maxdiff, temp;
   int i, j, iters;
   int first, last;
@@ -108,29 +131,29 @@ any_t worker(any_t arg) {
   //marcel_printf("Thread #%d located on node #%d\n", myid, marcel_current_node());
 
   /* determine first and last rows of my strip of the grids */
-  first = myid*strip_size + 1;
-  last = first + strip_size - 1;
+  first = mydata->thread_id*mydata->strip_size + 1;
+  last = first + mydata->strip_size - 1;
 
-  for (iters = 1; iters <= nb_iters; iters++) {
+  for (iters = 1; iters <= mydata->nb_iters; iters++) {
     /* update my points */
     for (i = first; i <= last; i++) {
-      for (j = 1; j <= grid_size; j++) {
+      for (j = 1; j <= mydata->grid_size; j++) {
         grid2[i][j] = (grid1[i-1][j] + grid1[i+1][j] + grid1[i][j-1] + grid1[i][j+1]) * 0.25;
       }
     }
-    barrier();
+    barrier(mydata->nb_workers);
     /* update my points again */
     for (i = first; i <= last; i++) {
-      for (j = 1; j <= grid_size; j++) {
+      for (j = 1; j <= mydata->grid_size; j++) {
         grid1[i][j] = (grid2[i-1][j] + grid2[i+1][j] + grid2[i][j-1] + grid2[i][j+1]) * 0.25;
       }
     }
-    barrier();
+    barrier(mydata->nb_workers);
   }
   /* compute the maximum difference in my strip and set global variable */
   maxdiff = 0.0;
   for (i = first; i <= last; i++) {
-    for (j = 1; j <= grid_size; j++) {
+    for (j = 1; j <= mydata->grid_size; j++) {
       temp = grid1[i][j]-grid2[i][j];
       if (temp < 0)
         temp = -temp;
@@ -138,7 +161,7 @@ any_t worker(any_t arg) {
         maxdiff = temp;
     }
   }
-  local_max_diff[myid] = maxdiff;
+  local_max_diff[mydata->thread_id] = maxdiff;
   return 0;
 }
 
@@ -146,7 +169,7 @@ any_t worker(any_t arg) {
  * Initialize the grids (grid1 and grid2)
  * set boundaries to 1.0 and interior points to 0.0
  */
-void initialize_grids(int migration_policy) {
+void initialize_grids(int grid_size, int migration_policy) {
   int i, j;
 
   grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
@@ -184,7 +207,7 @@ void initialize_grids(int migration_policy) {
   }
 }
 
-void barrier() {
+void barrier(int nb_workers) {
   marcel_mutex_lock(&mutex);
   nb_arrived++;
   if (nb_arrived == nb_workers) {

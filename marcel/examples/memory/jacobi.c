@@ -15,9 +15,12 @@
 
 #include "marcel.h"
 
-void jacobi(int grid_size, int nb_workers, int nb_iters);
+#define JACOBI_MIGRATE_NOTHING       0
+#define JACOBI_MIGRATE_ON_NEXT_TOUCH 1
+
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
 any_t worker(any_t arg);
-void initialize_grids();
+void initialize_grids(int migration_policy);
 void barrier();
 
 marcel_mutex_t mutex;  /* mutex semaphore for the barrier */
@@ -47,21 +50,23 @@ int marcel_main(int argc, char *argv[]) {
   nb_workers = atoi(argv[2]);
   nb_iters = atoi(argv[3]);
 
-  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\n");
-  jacobi(grid_size, nb_workers, nb_iters);
+  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\tmigration_policy\n");
+  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
+  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+  return 0;
 }
 
-void jacobi(int grid_size, int nb_workers, int nb_iters) {
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   marcel_t *workerid;
   marcel_attr_t attr;
-  int i, j;
+  int i;
   double maxdiff = 0.0;
 
   marcel_attr_init(&attr);
   strip_size = grid_size/nb_workers;
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
-  initialize_grids();
+  initialize_grids(migration_policy);
 
   /* create the workers, then wait for them to finish */
   for (i = 0; i < nb_workers; i++) {
@@ -76,7 +81,17 @@ void jacobi(int grid_size, int nb_workers, int nb_iters) {
     if (maxdiff < local_max_diff[i]) maxdiff = local_max_diff[i];
   }
   /* print the results */
-  marcel_printf("%11d %15d %13d\t%e\n", grid_size, nb_workers, nb_iters, maxdiff);
+  marcel_printf("%11d %15d %13d\t%e\t%d\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy);
+
+  // Free the memory
+  for (i = 0; i <= grid_size+1; i++) {
+    marcel_memory_free(&memory_manager, grid1[i]);
+    marcel_memory_free(&memory_manager, grid2[i]);
+  }
+  marcel_memory_free(&memory_manager, grid1);
+  marcel_memory_free(&memory_manager, grid2);
+  free(workerid);
+  free(local_max_diff);
 }
 
 /*
@@ -124,13 +139,14 @@ any_t worker(any_t arg) {
     }
   }
   local_max_diff[myid] = maxdiff;
+  return 0;
 }
 
 /*
  * Initialize the grids (grid1 and grid2)
  * set boundaries to 1.0 and interior points to 0.0
  */
-void initialize_grids() {
+void initialize_grids(int migration_policy) {
   int i, j;
 
   grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
@@ -156,6 +172,15 @@ void initialize_grids() {
     grid2[0][j] = 1.0;
     grid1[grid_size+1][j] = 1.0;
     grid2[grid_size+1][j] = 1.0;
+  }
+
+  if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
+    for (i = 0; i <= grid_size+1; i++) {
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], (grid_size+2) * sizeof(double));
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i], (grid_size+2) * sizeof(double));
+    }
+    //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1, (grid_size+2) * sizeof(double *));
+    //marcel_memory_migrate_on_next_touch(&memory_manager, grid2, (grid_size+2) * sizeof(double *));
   }
 }
 

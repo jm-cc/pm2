@@ -27,7 +27,8 @@ typedef struct jacobi_s {
   int strip_size;
 } jacobi_t;
 
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters);
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns);
 any_t worker(any_t arg);
 void initialize_grids(int grid_size, int migration_policy);
 void barrier(int nb_workers);
@@ -51,36 +52,49 @@ int marcel_main(int argc, char *argv[]) {
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
-  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\tmigration_policy\ttime_(ns)\n");
+  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_no_migration(ns)\ttime_migrate_on_next_touch(ns)\n");
 
   if (argc == 4) {
     grid_size = atoi(argv[1]);
     nb_workers = atoi(argv[2]);
     nb_iters = atoi(argv[3]);
 
-    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING);
-    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+    compare_jacobi(grid_size, nb_workers, nb_iters);
   }
   else {
     for(grid_size=100 ; grid_size<=500 ; grid_size+=100) {
       for(nb_workers=2 ; nb_workers<=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE] ; nb_workers+=2) {
-        jacobi(grid_size, nb_workers, 1000, JACOBI_MIGRATE_NOTHING);
-        jacobi(grid_size, nb_workers, 1000, JACOBI_MIGRATE_ON_NEXT_TOUCH);
+        compare_jacobi(grid_size, nb_workers, 100);
       }
     }
   }
-  
+
   return 0;
 }
 
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters) {
+  double maxdiff_nothing=0.0, maxdiff_migrate_on_next_touch=0.0;
+  unsigned long time_nothing, time_migrate_on_next_touch;
+
+  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING, &maxdiff_nothing, &time_nothing);
+  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH, &maxdiff_migrate_on_next_touch, &time_migrate_on_next_touch);
+
+  if (maxdiff_nothing == maxdiff_migrate_on_next_touch) {
+    /* print the results */
+    marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, time_nothing, time_migrate_on_next_touch);
+  }
+  else {
+    marcel_printf("#Results differ: %11d %14d %13d\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, maxdiff_migrate_on_next_touch);
+  }
+}
+
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns) {
   marcel_t *workerid;
   marcel_attr_t attr;
   int i;
-  double maxdiff = 0.0;
   jacobi_t *args;
   struct timeval tv1, tv2;
-  unsigned long us, ns;
+  unsigned long us;
 
   marcel_attr_init(&attr);
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
@@ -105,15 +119,12 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   gettimeofday(&tv2, NULL);
 
   for (i = 0; i < nb_workers; i++) {
-    if (maxdiff < local_max_diff[i]) maxdiff = local_max_diff[i];
+    if (*maxdiff < local_max_diff[i]) *maxdiff = local_max_diff[i];
   }
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
-  ns = us * 1000;
-  ns /= nb_iters;
-
-  /* print the results */
-  marcel_printf("%11d %15d %13d\t%e\t%16d\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy, ns);
+  *ns = us * 1000;
+  *ns /= nb_iters;
 
   // Free the memory
   for (i = 0; i <= grid_size+1; i++) {

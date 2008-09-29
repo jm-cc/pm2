@@ -51,7 +51,7 @@ int marcel_main(int argc, char *argv[]) {
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
-  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\tmigration_policy\n");
+  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\tmigration_policy\ttime_(ns)\n");
 
   if (argc == 4) {
     grid_size = atoi(argv[1]);
@@ -113,7 +113,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   ns /= nb_iters;
 
   /* print the results */
-  marcel_printf("%11d %15d %13d\t%e\t%d\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy, ns);
+  marcel_printf("%11d %15d %13d\t%e\t%16d\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff, migration_policy, ns);
 
   // Free the memory
   for (i = 0; i <= grid_size+1; i++) {

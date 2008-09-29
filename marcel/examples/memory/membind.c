@@ -55,6 +55,13 @@ static int parse_command_line_arguments (unsigned int nb_args,
 					 unsigned int *memory_nodes,
 					 unsigned int *nb_memory_nodes);
 
+static void print_welcoming_message (unsigned int nb_threads,
+				     enum sched_policy spol,
+				     unsigned int *threads_nodes,
+				     unsigned int nb_threads_nodes,
+				     enum mbind_policy mpol,
+				     unsigned int *memory_nodes,
+				     unsigned int nb_memory_nodes);
 static void 
 initialize_access_pattern_vectors (long **access_pattern, 
 				   unsigned int nb_threads,
@@ -115,31 +122,32 @@ main (int argc, char **argv)
   enum sched_policy spol;
   enum mbind_policy mpol;
 
-  int err_parse = parse_command_line_arguments (argc, argv, &nb_threads, &spol, threads_nodes, &nb_threads_nodes, &mpol, memory_nodes, &nb_memory_nodes);
+  int err_parse = parse_command_line_arguments (argc, 
+						argv, 
+						&nb_threads, 
+						&spol, 
+						threads_nodes, 
+						&nb_threads_nodes, 
+						&mpol, 
+						memory_nodes, 
+						&nb_memory_nodes);
   if (err_parse < 0) {
     usage();
     exit(1);
   }
 
+ /* Print a pretty and welcoming message */
+  print_welcoming_message (nb_threads, 
+			   spol, 
+			   threads_nodes, 
+			   nb_threads_nodes, 
+			   mpol, 
+			   memory_nodes, 
+			   nb_memory_nodes);
+
   marcel_t working_threads[nb_threads];
 
-  /* Print a pretty and welcoming message */
-  marcel_printf ("Launching membind with %u %s %s %s ", 
-		 nb_threads,
-		 nb_threads > 1 ? "threads" : "thread",
-		 spol == LOCAL_POL ? "bound to" : "distributed over", 
-		 spol == LOCAL_POL ? "node" : "nodes");
-  for (i = 0; i < nb_threads_nodes; i++) {
-    marcel_printf ("%u ", threads_nodes[i]);
-  } 
-  marcel_printf (".\n");
-  marcel_printf ("The global array is %s %s", (mpol == BIND_POL) ? "bound to" : "distributed over",
-		 nb_memory_nodes == 1 ? "node " : "nodes ");
-  for (i = 0; i < nb_memory_nodes; i++) {
-    marcel_printf ("%u ", memory_nodes[i]);
-  }
-  marcel_printf (".\n\n");
-  
+
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_memory_nodes; i++) {
     if (memory_nodes[i] > numa_max_node ()) {
@@ -212,6 +220,32 @@ usage () {
   marcel_fprintf (stderr, "                 -node1 node2 .. nodeN: The nodes the threads will be distributed over. If you specify more nodes than threads, the exceeding nodes will be ignored.\n");
   marcel_fprintf (stderr, "                 -mbind policy: The mbind policy used to bind accessed data (can be 'bind' or 'interleave').\n");
   marcel_fprintf (stderr, "                 -node1 node2 .. nodeN: The nodes the memory will be bound to (if the mbind policy is 'bind', only the first one will be taken into account.)\n");
+}
+
+static void
+print_welcoming_message (unsigned int nb_threads,
+			 enum sched_policy spol,
+			 unsigned int *threads_nodes,
+			 unsigned int nb_threads_nodes,
+			 enum mbind_policy mpol,
+			 unsigned int *memory_nodes,
+			 unsigned int nb_memory_nodes) {
+  unsigned int i;
+  marcel_printf ("Launching membind with %u %s %s %s ", 
+		 nb_threads,
+		 nb_threads > 1 ? "threads" : "thread",
+		 spol == LOCAL_POL ? "bound to" : "distributed over", 
+		 spol == LOCAL_POL ? "node" : "nodes");
+  for (i = 0; i < nb_threads_nodes; i++) {
+    marcel_printf ("%u ", threads_nodes[i]);
+  } 
+  marcel_printf (".\n");
+  marcel_printf ("The global array is %s %s", (mpol == BIND_POL) ? "bound to" : "distributed over",
+		 nb_memory_nodes == 1 ? "node " : "nodes ");
+  for (i = 0; i < nb_memory_nodes; i++) {
+    marcel_printf ("%u ", memory_nodes[i]);
+  }
+  marcel_printf (".\n\n");
 }
 
 static int

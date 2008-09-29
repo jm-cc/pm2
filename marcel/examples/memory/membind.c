@@ -1,4 +1,5 @@
 
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
@@ -28,23 +29,31 @@
 
 #define TAB_SIZE 1024*1024*64
 #define NB_TIMES 1024*1024*32
-#define ACCESS_PATTERN_SIZE 1024*64
+#define ACCESS_PATTERN_SIZE 1024*1024*64
 
 enum mbind_policy {
   BIND_POL,
   INTERLEAVE_POL
 };
 
+enum sched_policy {
+  LOCAL_POL,
+  DISTRIBUTED_POL
+};
+
 static int *tab;
 static int begin = 0;
 
 static void usage (void);
-static int parse_command_line_arguments (unsigned int nb_args, 
-					  char **args, 
-					  unsigned int *nb_threads,
-					  unsigned int *threads_location,
-					  enum mbind_policy *mpol,
-					  unsigned int *nodes);
+static int parse_command_line_arguments (unsigned int nb_args,
+					 char **args,
+					 unsigned int *nb_threads,
+					 enum sched_policy *spol,
+					 unsigned int *threads_nodes,
+					 unsigned int *nb_threads_nodes,
+					 enum mbind_policy *mpol,
+					 unsigned int *memory_nodes,
+					 unsigned int *nb_memory_nodes);
 
 static void 
 initialize_access_pattern_vectors (long **access_pattern, 
@@ -100,12 +109,13 @@ main (int argc, char **argv)
   nb_nodes = argc - 4;
 
   /* Variables to be filled when parsing command line arguments */
-  unsigned int nodes[nb_nodes];
-  unsigned int nb_threads;
-  unsigned int threads_location;
+  unsigned int memory_nodes[nb_nodes];
+  unsigned int threads_nodes[nb_nodes];
+  unsigned int nb_threads, threads_location, nb_threads_nodes, nb_memory_nodes;
+  enum sched_policy spol;
   enum mbind_policy mpol;
 
-  int err_parse = parse_command_line_arguments (argc, argv, &nb_threads, &threads_location, &mpol, nodes);
+  int err_parse = parse_command_line_arguments (argc, argv, &nb_threads, &spol, threads_nodes, &nb_threads_nodes, &mpol, memory_nodes, &nb_memory_nodes);
   if (err_parse < 0) {
     usage();
     exit(1);
@@ -114,35 +124,35 @@ main (int argc, char **argv)
   marcel_t working_threads[nb_threads];
 
   /* Print a pretty and welcoming message */
-  marcel_printf ("Launching membind with %u threads located on node %u.\nThe global array is %s %s", 
-		 nb_threads, 
-		 threads_location, 
-		 (mpol == BIND_POL) ? "bound to" : "distributed over",
-		 nb_nodes == 1 ? "node " : "nodes ");
-  for (i = 0; i < nb_nodes; i++) {
-    marcel_printf ("%u ", nodes[i]);
+  marcel_printf ("Launching membind with %u %s %s %s ", 
+		 nb_threads,
+		 nb_threads > 1 ? "threads" : "thread",
+		 spol == LOCAL_POL ? "bound to" : "distributed over", 
+		 spol == LOCAL_POL ? "node" : "nodes");
+  for (i = 0; i < nb_threads_nodes; i++) {
+    marcel_printf ("%u ", threads_nodes[i]);
+  } 
+  marcel_printf (".\n");
+  marcel_printf ("The global array is %s %s", (mpol == BIND_POL) ? "bound to" : "distributed over",
+		 nb_memory_nodes == 1 ? "node " : "nodes ");
+  for (i = 0; i < nb_memory_nodes; i++) {
+    marcel_printf ("%u ", memory_nodes[i]);
   }
-  marcel_printf ("\n\n");
+  marcel_printf (".\n\n");
   
-  /* Check the thread location node is valid */
-  if (threads_location > numa_max_node()) {
-    fprintf (stderr, "Specified thread location node out of bounds [0 - %u]\n", numa_max_node ());
-    return -1;
-  }
-
   /* Set the nodemask to contain the nodes passed in argument. */
-  for (i = 0; i < nb_nodes; i++) {
-    if (nodes[i] > numa_max_node ()) {
+  for (i = 0; i < nb_memory_nodes; i++) {
+    if (memory_nodes[i] > numa_max_node ()) {
       fprintf (stderr, "Specified node out of bounds [0 - %u]\n", numa_max_node ());
       return -1;
     }
-    nodemask |= (1 << nodes[i]);
+    nodemask |= (1 << memory_nodes[i]);
   }
 
   /* Bind the access pattern vectors next to the accessing threads. */
-  access_pattern = numa_alloc_onnode (nb_threads * sizeof (long *), threads_location);
+  access_pattern = numa_alloc_onnode (nb_threads * sizeof (long *), threads_nodes[0]);
   for (i = 0; i < nb_threads; i++) {
-    access_pattern[i] = numa_alloc_onnode (ACCESS_PATTERN_SIZE * sizeof (long), threads_location);
+    access_pattern[i] = numa_alloc_onnode (ACCESS_PATTERN_SIZE * sizeof (long), spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]);
   }
 
   /* Bind the accessed data to the nodes. */
@@ -166,7 +176,7 @@ main (int argc, char **argv)
 
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
-    marcel_attr_settopo_level(&thread_attr, &marcel_topo_node_level[threads_location]);
+    marcel_attr_settopo_level (&thread_attr, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
     marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
   }
 
@@ -196,20 +206,24 @@ main (int argc, char **argv)
 
 static void
 usage () {
-  fprintf (stderr, "Usage: ./membind <nb threads> <threads location> <mbind policy> node1 [node2 .. nodeN]\n");
-  fprintf (stderr, "                 -nb threads: The number of created threads.\n");
-  fprintf (stderr, "                 -threads location: The numa node the threads will be scheduled from.\n");
-  fprintf (stderr, "                 -mbind policy: The mbind policy used to bind accessed data (can be 'bind' or 'interleave').\n");
-  fprintf (stderr, "                 -node1 node2 .. nodeN: The nodes the memory will be bound to (if the mbind policy is 'bind', only the first one will be taken into account.).\n");
+  marcel_fprintf (stderr, "Usage: ./membind <nb threads> <sched policy> node1 [node2 .. nodeN] <mbind policy> node1 [node2 .. nodeN]\n");
+  marcel_fprintf (stderr, "                 -nb threads: The number of created threads.\n");
+  marcel_fprintf (stderr, "                 -sched policy: The way the created threads will be scheduled (can be 'local' for moving the whole group of threads to the first node passed in argument, or 'distributed' to distribute the threads over the nodes).\n");
+  marcel_fprintf (stderr, "                 -node1 node2 .. nodeN: The nodes the threads will be distributed over. If you specify more nodes than threads, the exceeding nodes will be ignored.\n");
+  marcel_fprintf (stderr, "                 -mbind policy: The mbind policy used to bind accessed data (can be 'bind' or 'interleave').\n");
+  marcel_fprintf (stderr, "                 -node1 node2 .. nodeN: The nodes the memory will be bound to (if the mbind policy is 'bind', only the first one will be taken into account.)\n");
 }
 
 static int
 parse_command_line_arguments (unsigned int nb_args, 
 			      char **args, 
 			      unsigned int *nb_threads,
-			      unsigned int *threads_location,
+			      enum sched_policy *spol,
+			      unsigned int *threads_nodes,
+			      unsigned int *nb_threads_nodes,
 			      enum mbind_policy *mpol,
-			      unsigned int *nodes) {
+			      unsigned int *memory_nodes,
+			      unsigned int *nb_memory_nodes) {
   unsigned int i;
 
   /* First remove the application's name from the arguments */
@@ -225,12 +239,30 @@ parse_command_line_arguments (unsigned int nb_args,
   nb_args--;
   args++;
   
-  /* Fill the threads location */
+  /* Fill the scheduling policy */
   if (!nb_args)
     return -1;
-  *threads_location = atoi(args[0]);
+  if (!strcmp (args[0], "local")) {
+    *spol = LOCAL_POL;
+  } else if (!strcmp (args[0], "distributed")) {
+    *spol = DISTRIBUTED_POL;
+  } else {
+    return -1;
+  }
   nb_args--;
   args++;
+
+  /* Fill the threads location */
+  long val;
+  char *endptr;
+  errno = 0;
+  *nb_threads_nodes = 0;
+  for (val = 0; endptr != args[0]; args++, nb_args--, val = strtol (args[0], &endptr, 10)) {
+    if (!nb_args)
+      return -1;
+    threads_nodes[*nb_threads_nodes] = atoi(args[0]);
+    *nb_threads_nodes = *nb_threads_nodes + 1;
+  }
 
   /* Fill the mbind policy */
   if (!nb_args)
@@ -246,8 +278,10 @@ parse_command_line_arguments (unsigned int nb_args,
   args++;
 
   /* Eventually fill the nodes array */
+  *nb_memory_nodes = 0;
   for (i = 0; i < nb_args; i++) {
-    nodes[i] = atoi(args[i]);
+    memory_nodes[i] = atoi(args[i]);
+    *nb_memory_nodes = *nb_memory_nodes + 1;
   }
 
   return 0;

@@ -1,5 +1,9 @@
 TODOs dans le code :)
 
+pmarcel + valgrind a l'air de merder sur la TLS: valgrind met 0x3 pour le gs du main, mais dans le traitant de signal on se retrouve avec un gs = 0
+
+Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle marcel_extlib_protect puis __printf, __malloc, etc.
+
 Pouvoir choisir l'ordonnanceur à bulle par une option --marcel-.
 
 examples/create: mesurer séparément création sur le même processeur et sur un autre processeur

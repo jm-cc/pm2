@@ -302,8 +302,12 @@ struct ma_alt_instr {
 #define ma_read_barrier_depends()	do { } while(0)
 
 #define ma_mb() ma_alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
-#define ma_wmb()	__asm__ __volatile__ ("": : :"memory")
-#define ma_rmb()	__asm__ __volatile__ ("": : :"memory")
+/*
+ * Some non-Intel clones support out of order store. wmb() ceases to be a
+ * nop for these.
+ */
+#define ma_rmb() ma_alternative("lock; addl $0,0(%%esp)", "lfence", X86_FEATURE_XMM2)
+#define ma_wmb() ma_alternative("lock; addl $0,0(%%esp)", "sfence", X86_FEATURE_XMM)
 
 
 #ifdef MA__LWPS

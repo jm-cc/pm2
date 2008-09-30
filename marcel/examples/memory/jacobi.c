@@ -27,7 +27,7 @@ typedef struct jacobi_s {
   int strip_size;
 } jacobi_t;
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters);
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f);
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns);
 any_t worker(any_t arg);
 void initialize_grids(int grid_size, int migration_policy);
@@ -44,6 +44,7 @@ double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
   int grid_size, nb_workers, nb_iters;
+  FILE *out;
 
   marcel_init(&argc, argv);
   marcel_memory_init(&memory_manager, 1000);
@@ -52,27 +53,42 @@ int marcel_main(int argc, char *argv[]) {
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
+  out = fopen("output", "w");
+  if (!out) {
+    printf("Error when opening file <output>\n");
+    return;
+  }
+
   marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_no_migration(ns)\ttime_migrate_on_next_touch(ns)\n");
+  fprintf(out, "# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_no_migration(ns)\ttime_migrate_on_next_touch(ns)\n");
 
   if (argc == 4) {
     grid_size = atoi(argv[1]);
     nb_workers = atoi(argv[2]);
     nb_iters = atoi(argv[3]);
 
-    compare_jacobi(grid_size, nb_workers, nb_iters);
+    compare_jacobi(grid_size, nb_workers, nb_iters, out);
   }
   else {
-    for(grid_size=100 ; grid_size<=500 ; grid_size+=100) {
-      for(nb_workers=2 ; nb_workers<=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE] ; nb_workers+=2) {
-        compare_jacobi(grid_size, nb_workers, 100);
-      }
+    // small matrix
+    for(nb_iters=100 ; nb_iters<=400 ; nb_iters+=100) {
+      compare_jacobi(128, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
+    }
+    // medium matrix
+    for(nb_iters=100 ; nb_iters<=400 ; nb_iters+=100) {
+      compare_jacobi(1024, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
+    }
+    // big matrix
+    for(nb_iters=100 ; nb_iters<=400 ; nb_iters+=100) {
+      compare_jacobi(4096, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
     }
   }
 
+  fclose(out);
   return 0;
 }
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters) {
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f) {
   double maxdiff_nothing=0.0, maxdiff_migrate_on_next_touch=0.0;
   unsigned long time_nothing, time_migrate_on_next_touch;
 
@@ -82,10 +98,13 @@ void compare_jacobi(int grid_size, int nb_workers, int nb_iters) {
   if (maxdiff_nothing == maxdiff_migrate_on_next_touch) {
     /* print the results */
     marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, time_nothing, time_migrate_on_next_touch);
+    fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, time_nothing, time_migrate_on_next_touch);
   }
   else {
     marcel_printf("#Results differ: %11d %14d %13d\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, maxdiff_migrate_on_next_touch);
+    fprintf(f, "#Results differ: %11d %14d %13d\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, maxdiff_migrate_on_next_touch);
   }
+  fflush(f);
 }
 
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns) {

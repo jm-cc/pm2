@@ -625,10 +625,11 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     sigaction(SIGSEGV, &act, NULL);
   }
   if (data->status != MARCEL_MEMORY_DATA_NEXT_TOUCHED) {
+    void *ptr = (void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1));
     data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
     dest = marcel_current_node();
-    ma_memory_migrate_pages(g_memory_manager, addr, data->nbpages*g_memory_manager->pagesize, dest);
-    err = mprotect((void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1)), getpagesize(), data->protection);
+    ma_memory_migrate_pages(g_memory_manager, ptr, getpagesize(), dest);
+    err = mprotect(ptr, getpagesize(), data->protection);
     if (err < 0) {
       char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
@@ -664,7 +665,7 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   g_memory_manager = memory_manager;
 
-  err = mprotect((void *)(((uintptr_t) buffer) & ~(memory_manager->pagesize - 1)), size, PROT_NONE);
+  err = mprotect((void *)(((uintptr_t) buffer) & ~(memory_manager->pagesize - 1)), getpagesize(), PROT_NONE);
   if (err < 0) {
     perror("mprotect");
   }

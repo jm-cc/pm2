@@ -274,7 +274,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   if (err < 0) {
     perror("mbind");
   }
-  memset(buffer, 0, length);
+  buffer = memset(buffer, 0, length);
 
   (*space) = malloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;

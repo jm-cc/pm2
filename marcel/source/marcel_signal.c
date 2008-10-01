@@ -1076,7 +1076,7 @@ int ma_savesigs(sigjmp_buf env, int savemask)
 	}
 	return 0;
 }
-extern void __libc_longjmp(jmp_buf env, int val);
+extern void __libc_longjmp(sigjmp_buf env, int val);
 DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 {
 	LOG_IN();

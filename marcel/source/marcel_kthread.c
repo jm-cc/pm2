@@ -107,7 +107,7 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	    arg, pid, &dummy, pid);
 	MA_BUG_ON(ret == -1);
 #else
-	int ret = clone((int (*)(void *)) func,
+	int TBX_UNUSED ret = clone((int (*)(void *)) func,
 	    sp,
 	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_DETACHED |
 	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
@@ -281,7 +281,7 @@ void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_
 extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
 
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
-	int err = __register_atfork(prepare, parent, child, NULL);
+	int TBX_UNUSED err = __register_atfork(prepare, parent, child, NULL);
 	MA_BUG_ON(err);
 }
 #else

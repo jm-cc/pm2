@@ -475,7 +475,7 @@ pm2_config_set_vars()
     if [ $PM2_SYS = "LINUX_SYS" -o $PM2_SYS = "GNU_SYS" ]; then
     	_PM2_CONFIG_LD_LIBS="-Xlinker --start-group $_PM2_CONFIG_LD_LIBS $_extra -Xlinker --end-group"
     else
-    # repeating libs thrice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)
+    # repeating libs thrice should be sufficient for back-dependencies (tbx uses marcel_mutex_init/lock/unlock for instance)
     	_PM2_CONFIG_LD_LIBS="$_PM2_CONFIG_LD_LIBS $_PM2_CONFIG_LD_LIBS $_PM2_CONFIG_LD_LIBS $_extra"
     fi
 

@@ -112,7 +112,7 @@ TBX_VISIBILITY_POP
 #if defined(MA__LIBPTHREAD) || defined(MA__IFACE_LPT) || !defined(MARCEL_DONT_USE_POSIX_THREADS)
 #include <pthread.h>
 #endif
-TBX_VISIBILITY_PUSH_INTERNAL
+/* TBX_VISIBILITY_PUSH_INTERNAL */
 /*#  include "asm/marcel-master___marcel_compiler.h"*/
 #  include "marcel-master___marcel_compiler.h"
 /*#  include "scheduler/marcel-master___marcel_compiler.h"*/
@@ -142,7 +142,7 @@ TBX_VISIBILITY_POP
 #  include "asm/marcel-master___marcel_inline.h"
 #  include "marcel-master___marcel_inline.h"
 #  include "scheduler/marcel-master___marcel_inline.h"
-TBX_VISIBILITY_POP
+/* TBX_VISIBILITY_POP */
 
 /*#  include "asm/marcel-master___all.h"*/
 /*#  include "marcel-master___all.h"*/

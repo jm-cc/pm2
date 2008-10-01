@@ -82,7 +82,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
-#ifdef MARCEL_MALLOC_PREEMPTION_DEBUG
+#ifdef MA__HAS_GNU_MALLOC_HOOKS
 	__ma_get_lwp_var(in_libc_malloc)=0;
 #endif
 

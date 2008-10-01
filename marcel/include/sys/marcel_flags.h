@@ -17,6 +17,8 @@
 #ifndef MARCEL_FLAGS_EST_DEF
 #define MARCEL_FLAGS_EST_DEF
 
+#include <stdlib.h>
+
 #ifdef PM2DEBUG
 #  define MA__DEBUG
 #endif
@@ -160,6 +162,10 @@
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 #  define MA__HAS_SUBSECTION
+#endif
+
+#if defined(__GLIBC__)
+#  define MA__HAS_GNU_MALLOC_HOOKS
 #endif
 
 #endif /* MARCEL_FLAGS_EST_DEF */

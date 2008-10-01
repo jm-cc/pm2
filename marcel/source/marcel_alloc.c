@@ -761,9 +761,14 @@ void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, uns
 {
 	void *p;
 
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 	marcel_extlib_protect();
+#endif
 	p = __TBX_REALLOC(ptr, size, file, line);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 	marcel_extlib_unprotect();
+#endif
+
 	if(p == NULL)
 		MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 
@@ -775,9 +780,13 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned 
 	void *p;
 
 	if (nelem && elsize) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
 		p = __TBX_CALLOC(nelem, elsize, file, line);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
 		if(p == NULL)
 			MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 	} else {
@@ -802,9 +811,13 @@ void *__marcel_malloc(unsigned size)
         void *p;
 
         if (size) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
                 p = malloc(size);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
                 if(p == NULL)
                         MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
         } else {
@@ -818,9 +831,13 @@ void *__marcel_realloc(void *ptr, unsigned size)
 {
         void *p;
 
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 	marcel_extlib_protect();
+#endif
         p = realloc(ptr, size);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 	marcel_extlib_unprotect();
+#endif
         if(p == NULL)
                 MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 
@@ -832,9 +849,13 @@ void *__marcel_calloc(unsigned nelem, unsigned elsize)
         void *p;
 
         if (nelem && elsize) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
                 p = calloc(nelem, elsize);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
                 if(p == NULL)
                         MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
         } else {
@@ -847,9 +868,13 @@ void *__marcel_calloc(unsigned nelem, unsigned elsize)
 void __marcel_free(void *ptr)
 {
         if(ptr) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
                 free(ptr);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
         }
 }
 
@@ -859,9 +884,13 @@ void* ma_malloc_nonuma(size_t size, const char *file, unsigned line)
 {
 	void *p;
 	if (size) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
 		p = __TBX_MALLOC(size, file, line);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
 		if(p == NULL)
 			MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
 	} 
@@ -875,9 +904,13 @@ void* ma_malloc_nonuma(size_t size, const char *file, unsigned line)
 void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 {
 	if(data) {
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_protect();
+#endif
 		__TBX_FREE(data, file, line);
+#ifndef MA__HAS_GNU_MALLOC_HOOKS
 		marcel_extlib_unprotect();
+#endif
 	}	
 }
 

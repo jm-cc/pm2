@@ -27,13 +27,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
+#ifdef MA__HAS_GNU_MALLOC_HOOKS
 # include <malloc.h>
 #endif
 
 tbx_flag_t marcel_activity = tbx_flag_clear;
 
-#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
+#ifdef MA__HAS_GNU_MALLOC_HOOKS
 
 /* Malloc hooks.  */
 
@@ -46,6 +46,9 @@ static void *ma_malloc_hook(size_t size, const void *caller);
 static void *ma_realloc_hook(void *ptr, size_t size, const void *caller);
 static void  ma_free_hook(void *ptr, const void *caller);
 static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller);
+
+/* Mutex to synchronize accesses to glibc's malloc hooks.  */
+static marcel_mutex_t malloc_hook_mutex = MARCEL_MUTEX_INITIALIZER;
 
 
 /* Install the `malloc' hooks that were current before Marcel was
@@ -78,14 +81,41 @@ static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
 	} while (0)
 
 
+/* Enter a non-preemptible "malloc section" within a glibc malloc
+	 hook.  */
+static __tbx_inline__ void
+enter_malloc_section(void)
+{
+	marcel_mutex_lock(&malloc_hook_mutex);
+	INSTALL_INITIAL_MALLOC_HOOKS();
+
+	/* Disable preemption so that libc's malloc functions can execute
+		 without being preempted.  */
+	marcel_extlib_protect();
+
+	ASSERT_LWP_NOT_IN_LIBC_MALLOC();
+	__ma_get_lwp_var(in_libc_malloc)++;
+}
+
+/* Leave a non-preemptible "malloc section" within a glibc malloc
+	 hook.  */
+static __tbx_inline__ void
+leave_malloc_section(void)
+{
+	__ma_get_lwp_var(in_libc_malloc)--;
+
+	marcel_extlib_unprotect();
+
+	INSTALL_MARCEL_MALLOC_HOOKS();
+	marcel_mutex_unlock(&malloc_hook_mutex);
+}
+
+
 static void *ma_malloc_hook(size_t size, const void *caller)
 {
 	void *result;
 
-	ASSERT_LWP_NOT_IN_LIBC_MALLOC ();
-
-	INSTALL_INITIAL_MALLOC_HOOKS ();
-	__ma_get_lwp_var(in_libc_malloc)++;
+	enter_malloc_section();
 
 	if (__malloc_hook != NULL) {
 		MA_BUG_ON(__malloc_hook == ma_malloc_hook);
@@ -94,8 +124,7 @@ static void *ma_malloc_hook(size_t size, const void *caller)
 	else
 		result = malloc(size);
 
-	__ma_get_lwp_var(in_libc_malloc)--;
-	INSTALL_MARCEL_MALLOC_HOOKS ();
+	leave_malloc_section();
 
 	return result;
 }
@@ -104,10 +133,7 @@ static void *ma_realloc_hook(void *ptr, size_t size, const void *caller)
 {
 	void *result;
 
-	ASSERT_LWP_NOT_IN_LIBC_MALLOC ();
-
-	INSTALL_INITIAL_MALLOC_HOOKS ();
-	__ma_get_lwp_var(in_libc_malloc)++;
+	enter_malloc_section();
 
 	if (__realloc_hook != NULL) {
 		MA_BUG_ON(__realloc_hook == ma_realloc_hook);
@@ -116,18 +142,14 @@ static void *ma_realloc_hook(void *ptr, size_t size, const void *caller)
 	else
 		result = realloc(ptr, size);
 
-	__ma_get_lwp_var(in_libc_malloc)--;
-	INSTALL_MARCEL_MALLOC_HOOKS ();
+	leave_malloc_section();
 
 	return result;
 }
 
 static void ma_free_hook(void *ptr, const void *caller)
 {
-	ASSERT_LWP_NOT_IN_LIBC_MALLOC ();
-
-	INSTALL_INITIAL_MALLOC_HOOKS ();
-	__ma_get_lwp_var(in_libc_malloc)++;
+	enter_malloc_section();
 
 	if (__free_hook != NULL) {
 		MA_BUG_ON(__free_hook == ma_free_hook);
@@ -136,18 +158,14 @@ static void ma_free_hook(void *ptr, const void *caller)
 	else
 		free(ptr);
 
-	__ma_get_lwp_var(in_libc_malloc)--;
-	INSTALL_MARCEL_MALLOC_HOOKS ();
+	leave_malloc_section();
 }
 
 static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
 {
 	void *result;
 
-	ASSERT_LWP_NOT_IN_LIBC_MALLOC ();
-
-	INSTALL_INITIAL_MALLOC_HOOKS ();
-	__ma_get_lwp_var(in_libc_malloc)++;
+	enter_malloc_section();
 
 	if (__memalign_hook != NULL) {
 		MA_BUG_ON(__memalign_hook == ma_memalign_hook);
@@ -156,8 +174,7 @@ static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
 	else
 		result = memalign(alignment, size);
 
-	__ma_get_lwp_var(in_libc_malloc)--;
-	INSTALL_MARCEL_MALLOC_HOOKS ();
+	leave_malloc_section();
 
 	return result;
 }
@@ -167,31 +184,25 @@ static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
 /* Initialize Marcel's `malloc' debugging tools.  */
 static void marcel_malloc_debug_init(void)
 {
-#ifdef MARCEL_MALLOC_PREEMPTION_DEBUG
-# ifndef __GNU_LIBRARY__
-#  ifdef __GNUC__
-#   warning "The `MARCEL_MALLOC_PREEMPTION_DEBUG' option has no effect on non-GNU systems"
-#  endif
-# else
-	/* Use glibc's malloc hooks to detect "unprotected" uses of `malloc ()',
-		 `free ()' and friends.  "Unprotected" means that preemption is not
-		 disabled while one of these functions is called; `marcel_malloc ()' and
-		 friends do make sure that preemption is disabled before calling the libc
-		 functions.  */
+#ifdef MA__HAS_GNU_MALLOC_HOOKS
+	/* Use glibc's malloc hooks to protect uses of `malloc ()',
+		 `free ()' and friends so they are not preempted.  This is
+		 required as glibc's low-level locks, which are used in these
+		 functions are oblivious to Marcel threads and don't play well
+		 with them.  */
 	previous_malloc_hook = __malloc_hook;
 	previous_realloc_hook = __realloc_hook;
 	previous_free_hook = __free_hook;
 	previous_memalign_hook = __memalign_hook;
 
 	INSTALL_MARCEL_MALLOC_HOOKS ();
-# endif
 #endif
 }
 
 /* Reinstall the initial `malloc' hooks.  */
 static void marcel_malloc_debug_finish(void)
 {
-#if (defined MARCEL_MALLOC_PREEMPTION_DEBUG) && (defined __GNU_LIBRARY__)
+#ifdef MA__HAS_GNU_MALLOC_HOOKS
 	INSTALL_INITIAL_MALLOC_HOOKS ();
 #endif
 }

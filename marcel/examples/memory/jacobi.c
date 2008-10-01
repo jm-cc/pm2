@@ -20,6 +20,8 @@
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH  1
 #define JACOBI_MIGRATE_ON_FIRST_TOUCH 2
 
+#define LOOPS 10
+
 typedef struct jacobi_s {
   int thread_id;
   int grid_size;
@@ -92,18 +94,31 @@ int marcel_main(int argc, char *argv[]) {
 
 void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f) {
   double maxdiff_nothing=0.0, maxdiff_migrate_on_next_touch=0.0, maxdiff_migrate_on_first_touch=0.0;
-  unsigned long time_nothing, time_migrate_on_next_touch, time_migrate_on_first_touch;
+  unsigned long time_nothing[LOOPS], time_migrate_on_next_touch[LOOPS], time_migrate_on_first_touch[LOOPS];
+  unsigned long mean_nothing=0, mean_migrate_on_next_touch=0, mean_migrate_on_first_touch=0;
+  int i;
 
-  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING, &maxdiff_nothing, &time_nothing);
-  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH, &maxdiff_migrate_on_next_touch, &time_migrate_on_next_touch);
-  jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_FIRST_TOUCH, &maxdiff_migrate_on_first_touch, &time_migrate_on_first_touch);
+  for(i=0 ; i<LOOPS ; i++) {
+    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_NOTHING, &maxdiff_nothing, &time_nothing[i]);
+    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH, &maxdiff_migrate_on_next_touch, &time_migrate_on_next_touch[i]);
+    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_FIRST_TOUCH, &maxdiff_migrate_on_first_touch, &time_migrate_on_first_touch[i]);
+  }
+
+  for(i=0 ; i<LOOPS ; i++) {
+    mean_nothing += time_nothing[i];
+    mean_migrate_on_next_touch += time_migrate_on_next_touch[i];
+    mean_migrate_on_first_touch += time_migrate_on_first_touch[i];
+  }
+  mean_nothing /= LOOPS;
+  mean_migrate_on_next_touch /= LOOPS;
+  mean_migrate_on_first_touch /= LOOPS;
 
   if (maxdiff_nothing == maxdiff_migrate_on_next_touch && maxdiff_nothing == maxdiff_migrate_on_first_touch) {
     /* print the results */
-    marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, time_nothing,
-                  time_migrate_on_next_touch, time_migrate_on_first_touch);
-    fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, time_nothing,
-            time_migrate_on_next_touch, time_migrate_on_first_touch);
+    marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, mean_nothing,
+                  mean_migrate_on_next_touch, mean_migrate_on_first_touch);
+    fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, mean_nothing,
+            mean_migrate_on_next_touch, mean_migrate_on_first_touch);
   }
   else {
     marcel_printf("#Results differ: %11d %14d %13d\t%e\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_nothing,

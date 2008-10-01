@@ -742,6 +742,11 @@ static void call_init_function(const __ma_init_info_t *infos) {
         infos->func();
 }
 
+#ifdef MARCEL_LIBNUMA
+extern void numa_init(void);
+#pragma weak numa_init
+#endif
+
 void marcel_init_section(int sec)
 {
 	int section;
@@ -759,6 +764,10 @@ void marcel_init_section(int sec)
 		    ma_init_start[section].prio, ma_init_start[section].debug);
 
 		if (section == MA_INIT_SELF) {
+#ifdef MARCEL_LIBNUMA
+			if (numa_init)
+				numa_init();
+#endif
 #ifdef PROFILE
 			profile_init();
 #endif

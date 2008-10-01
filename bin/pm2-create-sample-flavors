@@ -183,6 +183,7 @@ registering_flavors() {
 	--marcel=numa --marcel=enable_numa_memory --marcel=main_as_func --marcel=dont_use_pthread \
 	--marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable-cleanup \
 	--common=link_pm2_shared \
 	--marcel=enable_stats --marcel=bubble_sched_null
 

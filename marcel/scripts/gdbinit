@@ -15,6 +15,7 @@ Use rest-ctx to restore it
 end
 
 define set-ctx
+  set language c
   if $marcel_saved==0
     save-ctx
   end
@@ -26,6 +27,7 @@ Switch to another marcel thread's context
 end
 
 define rest-ctx
+  set language c
   if $marcel_saved==0
     echo no context saved !\n
   else
@@ -38,6 +40,7 @@ so as to be able to continue execution
 end
 
 define marcel-continue
+  set language c
   handle SIGALRM pass
   handle SIGVTALRM pass
   if $marcel_saved==1
@@ -46,6 +49,7 @@ define marcel-continue
 end
 
 define marcel-step
+  set language c
   handle SIGALRM nopass
   handle SIGVTALRM nopass
   if $marcel_saved==1
@@ -88,58 +92,68 @@ define hook-advance
 end
 
 define ma-printrq
+  set language c
   printf " %s", ($arg0)->name
 end
 
 define ma_rq_holder
+  set language c
   set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
   print *$rq
   print $rq
 end
 
 define ma_holder_rq
+  set language c
   set $h = &((ma_holder_t *)$arg0)->as_holder
   print *$h
   print $h
 end
 
 define ma_bubble_holder
+  set language c
   set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->as_holder))))
   print *$b
   print $b
 end
 
 define ma_holder_bubble
+  set language c
   set $h = &((marcel_bubble_t *)$arg0)->as_holder
   print *$h
   print $h
 end
 
 define ma_bubble_entity
+  set language c
   set $b = ((marcel_bubble_t *)(((char*)$arg0)-(unsigned)(&(((marcel_bubble_t *)0)->as_entity))))
   print *$b
   print $b
 end
 
 define ma_entity_bubble
+  set language c
   set $e = &((marcel_bubble_t *)$arg0)->as_entity
   print *$e
   print $e
 end
 
 define ma_task_entity
+  set language c
   set $t = ((marcel_task_t *)(((char*)$arg0)-(unsigned)(&(((marcel_task_t *)0)->as_entity))))
   print *$t
   print $t
 end
 
 define ma_entity_task
+  set language c
   set $e = &((marcel_task_t *)$arg0)->as_entity
   print *$e
   print $e
 end
 
 define ma-printholder
+  set language c
   if ($arg0) && ($arg0)->type == 0
     set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
     ma-printrq $rq
@@ -149,6 +163,7 @@ define ma-printholder
 end
 
 define marcel-printthread
+  set language c
   set $state='?'
   if $arg0->state == 0
     set $state='R'
@@ -195,6 +210,7 @@ Prints the state of a thread
 end
 
 define marcel-threads
+  set language c
   printf "marcel_t         NAME PRIO ST CPU INIT   SCHED   RUN\n"
   set $num=0
   while $num<ma__nb_vp
@@ -215,6 +231,7 @@ Prints a list of marcel threads
 end
 
 define marcel-allthreads
+  set language c
   marcel-threads
   set $first = &ma_list_lwp_head
   set $lwp = (ma_lwp_t) $first->next

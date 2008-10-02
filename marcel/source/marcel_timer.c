@@ -498,9 +498,11 @@ static void __marcel_init sig_init(void)
 #endif
 	sigaddset(&sigalrmset, MARCEL_RESCHED_SIGNAL);
 #ifdef MA__LWPS
-	/* bloquer les signaux avant de lancer les lwps, pour que les lwps
-	 * lancés par la librairie de threads n'en recoivent pas */
+	/* Block signals before starting LWPs, so that LWPs started by the
+	 * pthread library do not get signals at first. */
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
+	/* On fork, disable the timer in the child, to prevent letting it slip
+	 * into an executed program. Ideally that should rather be an atexec() */
 	marcel_kthread_atfork(NULL,NULL,marcel_sig_exit);
 #endif
 }

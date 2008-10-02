@@ -88,7 +88,6 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=valgrind --marcel=bug_on \
-	--marcel=malloc_preempt_debug \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
     register_flavor marcel-forestgomp-fxtdebug \
@@ -97,7 +96,6 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
 	--marcel=debug_bubblesched --marcel=profile --marcel=bug_on \
-	--marcel=malloc_preempt_debug \
 	--profile=autostart \
 	--all=debug --all=gdb --all=noinline --all=build_static
 

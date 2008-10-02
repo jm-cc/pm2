@@ -168,4 +168,7 @@ void bubbleExplode(bubble_t *b);
 void switchRunqueues(rq_t *rq2, entity_t *e);
 void switchBubble(bubble_t *rq2, entity_t *e);
 
+/* The one SWF movie.  */
+extern BubbleMovie movie;
+
 #endif /* BUBBLELIB_ANIM_H */

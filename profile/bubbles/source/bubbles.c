@@ -43,7 +43,6 @@
 /*******************************************************************************
  * SWF Stuff
  */
-BubbleMovie movie;
 #define bubble_pause(sec) BubbleMovie_pause(movie, sec)
 
 

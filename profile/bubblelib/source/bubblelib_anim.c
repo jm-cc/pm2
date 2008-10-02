@@ -18,8 +18,8 @@
 #include "bubblelib_anim.h"
 #include "bubblelib_output.h"
 
-/* XXX TO MOVE */
-extern BubbleMovie movie;
+/* The SWF movie.  */
+BubbleMovie movie;
 
 /*******************************************************************************
  * Configuration

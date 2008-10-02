@@ -70,6 +70,7 @@ unsigned long __main_thread_tls_base;
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 static uintptr_t sysinfo;
 static unsigned long stack_guard, pointer_guard;
+static int gscope_flag, private_futex;
 #endif
 #endif
 
@@ -155,6 +156,8 @@ static void *tls_slot_alloc(void *foo) {
 	tcb->sysinfo = sysinfo;
 	tcb->stack_guard = stack_guard;
 	tcb->pointer_guard = pointer_guard;
+	tcb->gscope_flag = gscope_flag;
+	tcb->private_futex = private_futex;
 #endif
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
@@ -266,12 +269,16 @@ static void __marcel_init marcel_slot_init(void)
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 	asm("movl %%gs:(0x14), %0":"=r" (stack_guard));
 	asm("movl %%gs:(0x18), %0":"=r" (pointer_guard));
+	asm("movl %%gs:(0x1c), %0":"=r" (gscope_flag));
+	asm("movl %%gs:(0x20), %0":"=r" (private_futex));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
 	asm("movl %0, %%fs:(0x18)"::"r" (1)); /* multiple_threads */
+	asm("movl %%fs:(0x1c), %0":"=r" (gscope_flag));
 	asm("movq %%fs:(0x20), %0":"=r" (sysinfo));
 	asm("movq %%fs:(0x28), %0":"=r" (stack_guard));
 	asm("movq %%fs:(0x30), %0":"=r" (pointer_guard));
+	asm("movl %%fs:(0x48), %0":"=r" (private_futex));
 #elif defined(IA64_ARCH)
 	register unsigned long base asm("r13");
 	__main_thread_tls_base = base;

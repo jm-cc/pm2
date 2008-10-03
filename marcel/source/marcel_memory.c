@@ -625,11 +625,13 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     sigaction(SIGSEGV, &act, NULL);
   }
   if (data->status != MARCEL_MEMORY_DATA_NEXT_TOUCHED) {
-    void *ptr = (void *)(((uintptr_t) addr) & ~(g_memory_manager->pagesize - 1));
     data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
     dest = marcel_current_node();
-    ma_memory_migrate_pages(g_memory_manager, ptr, getpagesize(), dest);
-    err = mprotect(ptr, getpagesize(), data->protection);
+    FILE *f = fopen("/home/nfurmento/foo", "a");
+    fprintf(f, "Migrating %d bytes from %p\n", data->size, data->startaddress);
+    fclose(f);
+    ma_memory_migrate_pages(g_memory_manager, data->startaddress, data->size, dest);
+    err = mprotect(data->startaddress, data->size, data->protection);
     if (err < 0) {
       char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
@@ -647,9 +649,11 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 
 void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
                                          void *buffer, size_t size) {
-  int err;
+  int err, source;
   static int handler_set = 0;
+  marcel_memory_data_t *data = NULL;
 
+  marcel_spin_lock(&(memory_manager->lock));
   LOG_IN();
 
   if (!handler_set) {
@@ -664,12 +668,16 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
   }
 
   g_memory_manager = memory_manager;
-
-  err = mprotect((void *)(((uintptr_t) buffer) & ~(memory_manager->pagesize - 1)), getpagesize(), PROT_NONE);
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  FILE *f = fopen("/home/nfurmento/foo", "a");
+  fprintf(f, "Marked for next touch %d bytes from %p\n", data->size, data->startaddress);
+  fclose(f);
+  err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");
   }
 
+  marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
 }
 

@@ -627,9 +627,6 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (data->status != MARCEL_MEMORY_DATA_NEXT_TOUCHED) {
     data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
     dest = marcel_current_node();
-    FILE *f = fopen("/home/nfurmento/foo", "a");
-    fprintf(f, "Migrating %d bytes from %p\n", data->size, data->startaddress);
-    fclose(f);
     ma_memory_migrate_pages(g_memory_manager, data->startaddress, data->size, dest);
     err = mprotect(data->startaddress, data->size, data->protection);
     if (err < 0) {
@@ -669,9 +666,6 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   g_memory_manager = memory_manager;
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
-  FILE *f = fopen("/home/nfurmento/foo", "a");
-  fprintf(f, "Marked for next touch %d bytes from %p\n", data->size, data->startaddress);
-  fclose(f);
   err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");

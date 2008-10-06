@@ -115,15 +115,15 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
 
   if (source == -1) {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_%s.txt", directory, type, hostname);
+      snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
     else
-      snprintf(filename, 1024, "%s/%s_%s_dest_%ld.txt", directory, type, hostname, dest);
+      snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
   }
   else {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_%s_source_%ld.txt", directory, type, hostname, source);
+      snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
     else
-      snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.txt", directory, type, hostname, source, dest);
+      snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
 }

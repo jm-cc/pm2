@@ -80,7 +80,7 @@ sub fixFilenameAndHostname {
             use Sys::Hostname;
             $hostname = hostname();
         }
-        $filename = "$pathname/sampling_for_memory_migration_$hostname.txt";
+        $filename = "$pathname/sampling_for_memory_migration_$hostname.dat";
     }
     return ($pathname, $filename, $hostname);
 }
@@ -124,7 +124,7 @@ sub gnuplot {
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_model.jpg\"\n";
     }
-    print gnuplot "plot '${outputfile}.txt' using 1:2 title \"Original\" with lines, '${outputfile}.txt' using 1:3 title \"Regression\" with lines\n";
+    print gnuplot "plot '${outputfile}.dat' using 1:2 title \"Original\" with lines, '${outputfile}.dat' using 1:3 title \"Regression\" with lines\n";
 
     if ($terminal ne "jpeg") {
         print gnuplot "pause -1\n";
@@ -134,7 +134,7 @@ sub gnuplot {
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_bandwidth.jpg\"\n";
     }
-    print gnuplot "plot '${outputfile}.txt' using 1:4 title \"Original\" with lines, '${outputfile}.txt' using 1:5 title \"Regression\" with lines\n";
+    print gnuplot "plot '${outputfile}.dat' using 1:4 title \"Original\" with lines, '${outputfile}.dat' using 1:5 title \"Regression\" with lines\n";
 
     if ($terminal ne "jpeg") {
         print gnuplot "pause -1\n";
@@ -144,7 +144,7 @@ sub gnuplot {
     if ($terminal eq "jpeg") {
         print gnuplot "set output \"${outputfile}_error.jpg\"\n";
     }
-    print gnuplot "plot '${outputfile}.txt' using 1:6 title \"Error\" with lines\n";
+    print gnuplot "plot '${outputfile}.dat' using 1:6 title \"Error\" with lines\n";
 
     if ($terminal ne "jpeg") {
         print gnuplot "pause -1\n";
@@ -258,7 +258,7 @@ while(<input>) {
 close(input);
 
 if ($modelfilename eq "") {
-    $modelfilename = "$pathname/model_for_memory_migration_$hostname.txt";
+    $modelfilename = "$pathname/model_for_memory_migration_$hostname.dat";
 }
 open result,$result=">$modelfilename" or die "Cannot open $result: $!";
 print "Source\tDest\tX_min\tX_max\tSlope\tIntercept\tCorrelation\tBandwidth(MB/s)\n";
@@ -286,7 +286,7 @@ for $source ($source_min .. $source_max) {
         }
 
         my $globaloutputfile = "sampling_${source}_${dest}";
-        open globaloutput,$globaloutput=">${globaloutputfile}.txt" or die "Cannot open $globaloutput: $!";
+        open globaloutput,$globaloutput=">${globaloutputfile}.dat" or die "Cannot open $globaloutput: $!";
 	print globaloutput "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
 
         my $intervals = 0;
@@ -332,7 +332,7 @@ for $source ($source_min .. $source_max) {
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
 
             my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
-            open output,$output=">${outputfile}.txt" or die "Cannot open $output: $!";
+            open output,$output=">${outputfile}.dat" or die "Cannot open $output: $!";
 	    print output "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
             my $l = scalar(@xfiltered);
             for(my $i=0 ; $i<$l ; $i++) {

@@ -1,5 +1,3 @@
-
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
@@ -26,10 +24,13 @@
 #include <errno.h>
 #include <string.h>
 #include <malloc.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_TIMES 1024*1024*32
+#define NB_ITER 1024*1024*1024
 #define ACCESS_PATTERN_SIZE 1024*1024*64
+#define NB_TIMES 10
 
 enum mbind_policy {
   BIND_POL,
@@ -43,6 +44,7 @@ enum sched_policy {
 
 static int *tab;
 static int begin = 0;
+static marcel_barrier_t barrier;
 
 static void usage (void);
 static int parse_command_line_arguments (unsigned int nb_args,
@@ -78,18 +80,18 @@ initialize_access_pattern_vectors (long **access_pattern,
 static 
 void * f (void *arg) {
   long *access_pattern = (long *)arg;
-  unsigned int i;
+  unsigned int i, j;
   
-  /* Wait for the master thread to ask us to start. */
-  while (!__sync_fetch_and_add (&begin, 0))
-    ;
-  
-  /* Let's do the job. */
   for (i = 0; i < NB_TIMES; i++) {
-    int dummy = tab[access_pattern[i % ACCESS_PATTERN_SIZE]];
-    tab[access_pattern[(NB_TIMES - i) % ACCESS_PATTERN_SIZE]] = dummy;
+    marcel_barrier_wait (&barrier);
+    
+    /* Let's do the job. */
+    for (j = 0; j < NB_ITER; j++) {
+      int dummy = tab[access_pattern[i % ACCESS_PATTERN_SIZE]];
+      tab[access_pattern[(NB_ITER - i) % ACCESS_PATTERN_SIZE]] = dummy;
+    }
   }
-  
+
   return 0;
 }
 
@@ -106,7 +108,7 @@ main (int argc, char **argv)
 
   marcel_init (&argc, argv);
   tbx_timing_init ();
-  
+
   if (argc < 5) {
     usage ();
     return -1;
@@ -146,7 +148,7 @@ main (int argc, char **argv)
 			   nb_memory_nodes);
 
   marcel_t working_threads[nb_threads];
-
+  marcel_barrier_init (&barrier, NULL, nb_threads + 1);
 
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_memory_nodes; i++) {
@@ -187,18 +189,17 @@ main (int argc, char **argv)
     marcel_attr_settopo_level (&thread_attr, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
     marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
   }
-
+  
   TBX_GET_TICK (t1);
-
-  /* Let the working threads start their work. */
-  __sync_fetch_and_add (&begin, 1);
-
+  for (i = 0; i < NB_TIMES; i++) {
+    marcel_barrier_wait (&barrier);
+  }
+  TBX_GET_TICK (t2); 
+    
   /* Wait for the working threads to finish. */
   for (i = 0; i < nb_threads; i++) {
     marcel_join (working_threads[i], NULL);
   }
-  
-  TBX_GET_TICK (t2);
 
   for (i = 0; i < nb_threads; i++) {
     numa_free (access_pattern[i], ACCESS_PATTERN_SIZE * sizeof (long));
@@ -206,8 +207,8 @@ main (int argc, char **argv)
   numa_free (access_pattern, nb_threads * sizeof (long *));
   free (tab);
 
-  marcel_printf ("Test computed in %lfs!\n", (double)(TBX_TIMING_DELAY (t1, t2) / 1000000));
-  
+  marcel_printf ("Test computed in %lfs!\n", (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000));
+
   marcel_end ();
   return 0;
 }

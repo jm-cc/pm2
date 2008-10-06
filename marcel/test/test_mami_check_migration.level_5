@@ -24,7 +24,7 @@ cat > /tmp/pm2test_"${USER}"_expected <<EOF
 move pages to node 1
   page #0 returned the status -2
   page #1 is on node #1
-  page #2 returned the status -17
+  page #2 returned the status -16
   page #3 returned the status -2
 EOF
 

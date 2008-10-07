@@ -29,7 +29,7 @@
 
 #define TAB_SIZE 1024*1024*64
 #define NB_ITER 1024*1024*1024
-#define ACCESS_PATTERN_SIZE 1024*1024*64
+#define ACCESS_PATTERN_SIZE 1024*64
 #define NB_TIMES 10
 
 enum mbind_policy {

@@ -74,17 +74,18 @@ int marcel_main(int argc, char *argv[]) {
     compare_jacobi(grid_size, nb_workers, nb_iters, out);
   }
   else {
+    nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
     // small matrix
     for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(128, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
+      compare_jacobi(128, nb_workers, nb_iters, out);
     }
     // medium matrix
     for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(1024, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
+      compare_jacobi(1024, nb_workers, nb_iters, out);
     }
     // big matrix
     for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(4096, marcel_topo_level_nbitems[MARCEL_LEVEL_CORE], nb_iters, out);
+      compare_jacobi(4096, nb_workers, nb_iters, out);
     }
   }
 

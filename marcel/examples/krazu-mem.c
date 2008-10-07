@@ -15,6 +15,8 @@
  */
 
 #include "marcel.h"
+
+#ifdef MARCEL_NUMA
 #include <numa.h>
 
 #define NUM_THREADS 16
@@ -33,7 +35,7 @@ random_write (int *tab, unsigned length) {
   tab[marcel_random () % length] = marcel_random () % 1000;
 }
 
-static 
+static
 void * f (void *arg) {
   unsigned int i;
 
@@ -56,13 +58,13 @@ main (int argc, char **argv) {
 
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
-  
+
   tabs = marcel_malloc (NUM_THREADS * sizeof (int *), __FILE__, __LINE__);
   for (i = 0; i < NUM_THREADS; i++) {
     unsigned int node = i % (numa_max_node () + 1);
     tabs[i] = numa_alloc_onnode (TAB_SIZE * sizeof (int), node);
   }
-  
+
   marcel_attr_init(&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);
   marcel_thread_preemption_disable();
@@ -72,13 +74,13 @@ main (int argc, char **argv) {
     marcel_attr_setid (&thread_attr, i);
     marcel_create (threads + i, &thread_attr, f, NULL);
     for (j = 0; j < numa_max_node() + 1; j++) {
-      ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] = 
+      ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] =
 	(j == i % (numa_max_node () + 1)) ? TAB_SIZE : 0;
     }
   }
 
   marcel_bubble_sched_begin ();
-  
+
   marcel_bubble_join (&main_bubble);
 
   for (i = 0; i < NUM_THREADS; i++)
@@ -87,3 +89,11 @@ main (int argc, char **argv) {
 
   marcel_end ();
 }
+#else
+#  warning Option numa must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr, "'numa' feature disabled in the flavor\n");
+  return 0;
+}
+#endif

@@ -80,9 +80,7 @@ struct marcel_lwp {
 	struct marcel_topo_level
 #ifdef MA__NUMA
 		*node_level,
-#  ifdef MARCEL_SMT_IDLE
 		*core_level,
-#  endif
 		*cpu_level,
 #endif
 		*vp_level;

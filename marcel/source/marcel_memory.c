@@ -75,7 +75,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
             marcel_memory_migration_cost_t *object = NULL;
             object = tbx_slist_ref_get(migration_costs);
 
-            marcel_printf("[%d:%d] [%ld:%ld] %f %f %f\n", node, dest, object->size_min, object->size_max, object->slope, object->intercept, object->correlation);
+            marcel_printf("[%d:%d] [%ld:%ld] %f %f %f\n", node, dest, (long)object->size_min, (long)object->size_max, object->slope, object->intercept, object->correlation);
           } while (tbx_slist_ref_forward(migration_costs));
         }
       }

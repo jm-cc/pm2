@@ -285,7 +285,7 @@ for $source ($source_min .. $source_max) {
             $x_max = @$xlistref[scalar(@$xlistref)-1];
         }
 
-        my $globaloutputfile = "sampling_${source}_${dest}";
+        my $globaloutputfile = "$pathname/sampling_${source}_${dest}";
         open globaloutput,$globaloutput=">${globaloutputfile}.dat" or die "Cannot open $globaloutput: $!";
 	print globaloutput "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
 
@@ -331,7 +331,7 @@ for $source ($source_min .. $source_max) {
             printf result "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
             printf "$source\t$dest\t$x_current_min\t$x_current_max\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", $a, $b, $r, $bandwidth;
 
-            my $outputfile = "sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
+            my $outputfile = "$pathname/sampling_${source}_${dest}_${x_current_min}_${x_current_max}";
             open output,$output=">${outputfile}.dat" or die "Cannot open $output: $!";
 	    print output "Bytes\tMigration_time_(nanosec)\tRegression_(nanosec)\tMeasured_Bandwidth_(MB/s)\tRegression_Bandwidth_(MB/s)\tError\n";
             my $l = scalar(@xfiltered);

@@ -80,6 +80,27 @@ $(if $(MOD_ARCH),$(eval $(call ADD_SUBDIR,asm-$(MOD_ARCH),ARCH)))
 $(if $(SCHED_NAME),$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED)))
 
 .PHONY: symlinks
+
+# Make sure `marcel_abi.h' is a prerequisite for all `.o' files.
+MOD_GEN_C_INC += $(MOD_GEN_INC)/marcel_abi.h
+
+# Building `marcel_abi.h'.  Conceptually, `marcel_abi.h' depends on all the
+# generated `.h' files.  However, `dot_h' is a phony target, so we have to
+# depend on the source `.h' files rather than on the generated ones.
+$(MOD_GEN_INC)/marcel_abi.h: $(wildcard include/*.h)				\
+          $(foreach subdir,asm-generic asm-$(MOD_ARCH),include/$(subdir)/*.h)
+	$(COMMON_BUILD)
+	@: > "$@"
+	$(info computing header hash for flavor `$(FLAVOR)')
+	@( hash=`$(PM2_ROOT)/marcel/scripts/cpp-hash.sh "$(FLAVOR)"	\
+	             $(PM2_ROOT)/marcel/include/marcel.h` ;		\
+	echo "/* Automatically generated, do not edit.  */" ;		\
+	echo "#ifndef MARCEL_HEADER_HASH" ;				\
+	echo "/** \\brief A hash of Marcel's headers for flavor" ;	\
+	echo "    \`$(FLAVOR)'.  */" ;					\
+	echo "# define MARCEL_HEADER_HASH \"$$hash\"" ;			\
+	echo "#endif" ) > "$@"
+
 dot_h: symlinks
 
 symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler

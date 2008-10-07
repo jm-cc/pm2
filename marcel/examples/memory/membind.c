@@ -75,6 +75,7 @@ initialize_access_pattern_vectors (long **access_pattern,
       access_pattern[i][j] = marcel_random () % tab_size;
     }
   }
+  marcel_printf ("Access pattern vectors initialized!\n");
 }
 
 static 

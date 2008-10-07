@@ -84,6 +84,8 @@ extern unsigned marcel_nbnodes;
 extern unsigned marcel_topo_max_arity;
 /** \brief Direct access to node levels */
 extern struct marcel_topo_level *marcel_topo_node_level;
+/** \brief Direct access to core levels */
+extern struct marcel_topo_level *marcel_topo_core_level;
 #endif
 /** \brief Direct access to VP levels */
 extern struct marcel_topo_level *marcel_topo_vp_level;

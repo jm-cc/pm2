@@ -315,9 +315,7 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
   return l2;
 }
 
-#    ifdef MARCEL_SMT_IDLE
-static struct marcel_topo_level *marcel_topo_core_level;
-#    endif
+struct marcel_topo_level *marcel_topo_core_level;
 #    undef marcel_topo_node_level
 struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
@@ -782,10 +780,7 @@ static void __marcel_init look_sysfscpu(void) {
 
 		marcel_topo_level_nbitems[discovering_level]=numcores;
 		mdebug("--- core level has number %d\n", discovering_level);
-#      ifdef MARCEL_SMT_IDLE
-		marcel_topo_core_level =
-#      endif
-		marcel_topo_levels[discovering_level++]=core_level;
+		marcel_topo_core_level = marcel_topo_levels[discovering_level++]=core_level;
 		mdebug("\n");
 	}
 
@@ -1015,10 +1010,8 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		marcel_topo_node_level = rad_level;
 		marcel_nbnodes = nbnodes;
 	}
-#      ifdef MARCEL_SMT_IDLE
 	if (level == MARCEL_LEVEL_CORE)
 		marcel_topo_core_level = rad_level;
-#      endif
 	rs_free(rset);
 	rs_free(rad);
 }
@@ -1308,10 +1301,8 @@ static void topo_discover(void) {
 #  ifdef MA__NUMA
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_cpu_level)
 			marcel_topo_cpu_level = NULL;
-#    ifdef MARCEL_SMT_IDLE
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_core_level)
 			marcel_topo_core_level = NULL;
-#    endif
 		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_node_level)
 			marcel_topo_node_level = NULL;
 #  endif
@@ -1361,10 +1352,8 @@ static void topo_discover(void) {
 			mdebug("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");
 			if (marcel_topo_levels[l+1] == marcel_topo_cpu_level)
 				marcel_topo_cpu_level = marcel_topo_levels[l];
-#    ifdef MARCEL_SMT_IDLE
 			else if (marcel_topo_levels[l+1] == marcel_topo_core_level)
 				marcel_topo_core_level = marcel_topo_levels[l];
-#    endif
 			else if (marcel_topo_levels[l+1] == marcel_topo_node_level)
 				marcel_topo_node_level = marcel_topo_levels[l];
 			for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
@@ -1890,7 +1879,6 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 			}
 		}
 	}
-#    ifdef MARCEL_SMT_IDLE
 	if (marcel_topo_core_level) {
 		for (i=0; marcel_topo_core_level[i].cpuset; i++) {
 			if (marcel_vpset_isset(&marcel_topo_core_level[i].cpuset,ma_vpnum(lwp))) {
@@ -1899,7 +1887,6 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 			}
 		}
 	}
-#    endif /* MARCEL_SMT_IDLE */
 	if (marcel_topo_cpu_level) {
 		for (i=0; marcel_topo_cpu_level[i].cpuset; i++) {
 			if (marcel_vpset_isset(&marcel_topo_cpu_level[i].cpuset,ma_vpnum(lwp))) {

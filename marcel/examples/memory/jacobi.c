@@ -132,7 +132,7 @@ void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f) {
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns) {
   marcel_t *workerid;
   marcel_attr_t attr;
-  int i;
+  int i, nb_cores;
   jacobi_t *args;
   struct timeval tv1, tv2;
   unsigned long us;
@@ -142,6 +142,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
   args = (jacobi_t *) malloc(nb_workers * sizeof(jacobi_t));
   initialize_grids(grid_size, migration_policy);
+  nb_cores=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
   /* create the workers, then wait for them to finish */
   gettimeofday(&tv1, NULL);
@@ -152,7 +153,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
     args[i].thread_id = i;
     args[i].strip_size = grid_size/nb_workers;
     args[i].migration_policy = migration_policy;
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[(i+1)%marcel_nbnodes]);
+    marcel_attr_settopo_level(&attr, &marcel_topo_core_level[i%nb_cores]);
     marcel_create(&workerid[i], &attr, worker, (any_t) &args[i]);
   }
   for (i = 0; i < nb_workers; i++) {

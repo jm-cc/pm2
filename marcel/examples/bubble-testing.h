@@ -339,6 +339,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
   /* Initialize Marcel.  It should pick use the "fake" topology described in
 		 TOPOLOGY_DESCRIPTION.  */
   marcel_init (&argc, new_argv);
+	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
 	if (verbose_output)
 		print_topology (&marcel_machine_level[0], stdout, 0);

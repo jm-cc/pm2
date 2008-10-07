@@ -46,6 +46,7 @@ main (int argc, char *argv[])
   unsigned mode, thread, yesno;
 
   marcel_init (&argc, argv);
+	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
   for (yesno = 0; yesno < 2; yesno++)
     {

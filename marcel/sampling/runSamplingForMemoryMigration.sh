@@ -30,10 +30,10 @@ pathname=$pathname"/marcel"
 
 hostname=$(uname -n)
 (
-    head -1 $pathname/sampling_for_memory_migration_${hostname}_source_0.txt
+    head -1 $pathname/sampling_for_memory_migration_${hostname}_source_0.dat
     for node in $(echo $nodes) ; do
-        grep -v Source "$pathname/sampling_for_memory_migration_${hostname}_source_${node}.txt"
+        grep -v Source "$pathname/sampling_for_memory_migration_${hostname}_source_${node}.dat"
     done
-) > $pathname/sampling_for_memory_migration_${hostname}.txt
+) > $pathname/sampling_for_memory_migration_${hostname}.dat
 
 $(dirname $0)/analyzeSamplingForMemoryMigration.pl

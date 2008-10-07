@@ -42,12 +42,20 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
-    register_flavor marcel-mami \
+    register_flavor marcel-mami-opt \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
         --marcel=enable_mami
+
+    register_flavor marcel-mami-debug \
+	--modules="marcel tbx init" \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=bubble_sched_null \
+        --marcel=enable_mami \
+	--all=debug --all=gdb --all=noinline --all=build_both
 
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \

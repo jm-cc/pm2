@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <numaif.h>
 
-int main(int argc, char **argv) {
+int marcel_main(int argc, char **argv) {
   int nbpages=4;
   void *buffer;
   void *pageaddrs[nbpages];

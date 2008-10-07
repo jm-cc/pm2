@@ -556,6 +556,27 @@ void marcel_finish(void)
 	ma_topo_exit();
 }
 
+static const char valid_header_hash[] = MARCEL_HEADER_HASH;
+
+tbx_bool_t marcel_header_hash_matches_binary(const char *header_hash)
+{
+	if (!strcmp(valid_header_hash, header_hash))
+		return tbx_true;
+
+	return tbx_false;
+}
+
+void marcel_ensure_abi_compatibility(const char *header_hash)
+{
+	if (!marcel_header_hash_matches_binary (header_hash))
+	{
+		fprintf(stderr, "error: Marcel binary incompatibility detected\n");
+		fprintf(stderr, "client header hash:  %s\n", header_hash);
+		fprintf(stderr, "library header hash: %s\n", valid_header_hash);
+		exit(1);
+	}
+}
+
 #ifndef STANDARD_MAIN
 
 #ifdef WIN_SYS

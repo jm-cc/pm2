@@ -23,6 +23,21 @@
 #define marcel_init(argc, argv) common_init(argc, argv, NULL)
 #define marcel_end() common_exit(NULL)
 
+/**
+ * Return #tbx_true if @param header_hash matches the library's header hash.
+ * @param header_hash The user-visible Marcel header hash, i.e.,
+ * #MARCEL_HEADER_HASH.
+ */
+extern tbx_bool_t marcel_header_hash_matches_binary(const char *header_hash);
+
+
+/**
+ * Do nothing if @param header_hash matches the library's header hash,
+ * otherwise exit with a non-zero exit code.
+ * @param header_hash The user-visible Marcel header hash, i.e., #MARCEL_HEADER_HASH.
+ */
+extern void marcel_ensure_abi_compatibility(const char *header_hash);
+
 int  marcel_test_activity(void);
 extern tbx_flag_t marcel_activity;
 

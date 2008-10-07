@@ -34,6 +34,9 @@ extern "C" {
 #include "marcel_config.h"
 #include "marcel_valgrind.h"
 
+#include "marcel_abi.h"
+
+
 #if (defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL)) && !defined (MARCEL_INTERNAL_INCLUDE)
 #define MARCEL_INTERNAL_INCLUDE
 #endif

@@ -530,7 +530,7 @@ typedef struct marcel_topo_level marcel_topo_level_t;
 /** \brief The maximum depth of a synthetic or "fake" topology tree.  */
 #define MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH   128
 
-#section marcel_variables
+#section variables
 /** \brief Number of horizontal levels */
 extern TBX_EXTERN unsigned marcel_topo_nblevels;
 /** \brief Machine level */
@@ -540,6 +540,7 @@ extern TBX_EXTERN unsigned marcel_topo_level_nbitems[2*MARCEL_LEVEL_LAST+1];
 /** \brief Direct access to levels, marcel_topo_levels[l = 0 .. marcel_topo_nblevels-1][0..marcel_topo_level_nbitems[l]] */
 extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1];
 
+#section marcel_variables
 #ifdef MA__NUMA
 
 /** \brief A zero-terminated array describing a "synthetic" topology.  Each

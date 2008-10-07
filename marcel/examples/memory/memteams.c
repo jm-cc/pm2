@@ -26,9 +26,9 @@
 #include <sys/resource.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_ITER 1024*1024*1024
-#define NB_TIMES 100
-#define ACCESS_PATTERN_SIZE 1024*256
+#define NB_ITER 1024*1024
+#define NB_TIMES 20
+#define ACCESS_PATTERN_SIZE 1024*1024
 
 enum mbind_policy {
   BIND_POL,

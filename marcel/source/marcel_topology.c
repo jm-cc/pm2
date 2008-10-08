@@ -1816,14 +1816,14 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	ma__nb_vp = marcel_topo_level_nbitems[marcel_topo_nblevels - 1];
 
 #ifndef marcel_nbprocessors
-	if (marcel_topo_nblevels > 2)
+	if (marcel_topo_nblevels > 1)
 		/* Assume the next-to-last level is the CPU level.  */
 		marcel_nbprocessors = marcel_topo_level_nbitems[marcel_topo_nblevels - 2];
 	else
 		marcel_nbprocessors = ma__nb_vp;
 #endif
 
-	if (marcel_topo_nblevels > 3) {
+	if (marcel_topo_nblevels > 2) {
 		/* Assume this level is the node level.  */
 		unsigned node_level = ma_topo_type_depth[MARCEL_LEVEL_NODE];
 

@@ -68,13 +68,13 @@ main (int argc, char *argv[])
 
 	/* Creating threads and bubbles hierarchy.  */
 	marcel_bubble_t bubbles[NB_BUBBLES];
-	marcel_t threads[NB_BUBBLES][THREADS_PER_BUBBLE];
+	marcel_t threads[NB_BUBBLES * THREADS_PER_BUBBLE];
 	marcel_attr_t attr;
 	unsigned int team;
 	
 	/* The main thread is thread 0 of team 0. */
 	marcel_self ()->id = 0;
-	threads[0][0] = marcel_self ();
+	threads[0] = marcel_self ();
 
 	marcel_attr_init (&attr);
 
@@ -89,15 +89,15 @@ main (int argc, char *argv[])
 		}
 		marcel_attr_setinitbubble (&attr, bubbles + team);
 	
-		for (i = 0; i < THREADS_PER_BUBBLE; i++) {
+		for (i = team; i < team * THREADS_PER_BUBBLE; i++) {
 			/* Note: We can't use `dontsched' since THREAD would not appear
 				 on the runqueue.  */
 			if ((team == 0) && (i == 0)) {
 				continue; /* The main thread has already been created. */
 			}
- 			marcel_create (&threads[team][i], &attr, thread_entry_point, &start_signal);
-			((long *) ma_task_stats_get (threads[team][i], ma_stats_memnode_offset))[0] = (team == 0) ? 0 : 1024;
-			((long *) ma_task_stats_get (threads[team][i], ma_stats_memnode_offset))[1] = (team == 0) ? 1024 : 0;
+ 			marcel_create (threads + i, &attr, thread_entry_point, &start_signal);
+			((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[0] = (team == 0) ? 0 : 1024;
+			((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[1] = (team == 0) ? 1024 : 0;
 		}
 	}
 
@@ -111,11 +111,11 @@ main (int argc, char *argv[])
 
 	/* Wait for other threads to end. */
 	for (team = 0; team < NB_BUBBLES; team++) {
-		for (i = 0; i < THREADS_PER_BUBBLE; i++) {
+		for (i = team; i < team * THREADS_PER_BUBBLE; i++) {
 			if ((team == 0) && (i == 0)) {
 				continue; /* Avoid the main thread */
 			}
-			marcel_join (threads[team][i], NULL);
+			marcel_join (threads[i], NULL);
 		}
 	}
 

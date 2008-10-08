@@ -89,7 +89,7 @@ main (int argc, char *argv[])
 		}
 		marcel_attr_setinitbubble (&attr, bubbles + team);
 	
-		for (i = team; i < team * THREADS_PER_BUBBLE; i++) {
+		for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
 			/* Note: We can't use `dontsched' since THREAD would not appear
 				 on the runqueue.  */
 			if ((team == 0) && (i == 0)) {
@@ -111,7 +111,7 @@ main (int argc, char *argv[])
 
 	/* Wait for other threads to end. */
 	for (team = 0; team < NB_BUBBLES; team++) {
-		for (i = team; i < team * THREADS_PER_BUBBLE; i++) {
+		for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
 			if ((team == 0) && (i == 0)) {
 				continue; /* Avoid the main thread */
 			}

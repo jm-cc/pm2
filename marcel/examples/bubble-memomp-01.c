@@ -20,7 +20,7 @@
 #include "bubble-testing.h"
 
 #define NB_BUBBLES 4
-#define PER_BUBBLE_THREADS 2
+#define THREADS_PER_BUBBLE 2
 
 static unsigned int node_levels[2], expected_result[2]; 
 static marcel_mutex_t write_lock;
@@ -68,7 +68,7 @@ main (int argc, char *argv[])
 
 	/* Creating threads and bubbles hierarchy.  */
 	marcel_bubble_t bubbles[NB_BUBBLES];
-	marcel_t threads[NB_BUBBLES][PER_BUBBLE_THREADS];
+	marcel_t threads[NB_BUBBLES][THREADS_PER_BUBBLE];
 	marcel_attr_t attr;
 	unsigned int team;
 	
@@ -78,6 +78,9 @@ main (int argc, char *argv[])
 
 	marcel_attr_init (&attr);
 
+	((long *) ma_task_stats_get (marcel_self (), ma_stats_memnode_offset))[0] = 0;
+	((long *) ma_task_stats_get (marcel_self (), ma_stats_memnode_offset))[1] = 1024;
+	
 	for (team = 0; team < NB_BUBBLES; team++) {
 		marcel_bubble_init (bubbles + team);
 		marcel_bubble_insertbubble (&marcel_root_bubble, bubbles + team);
@@ -86,7 +89,7 @@ main (int argc, char *argv[])
 		}
 		marcel_attr_setinitbubble (&attr, bubbles + team);
 	
-		for (i = 0; i < PER_BUBBLE_THREADS; i++) {
+		for (i = 0; i < THREADS_PER_BUBBLE; i++) {
 			/* Note: We can't use `dontsched' since THREAD would not appear
 				 on the runqueue.  */
 			if ((team == 0) && (i == 0)) {
@@ -108,7 +111,7 @@ main (int argc, char *argv[])
 
 	/* Wait for other threads to end. */
 	for (team = 0; team < NB_BUBBLES; team++) {
-		for (i = 0; i < PER_BUBBLE_THREADS; i++) {
+		for (i = 0; i < THREADS_PER_BUBBLE; i++) {
 			if ((team == 0) && (i == 0)) {
 				continue; /* Avoid the main thread */
 			}

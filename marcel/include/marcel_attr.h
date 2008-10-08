@@ -42,8 +42,8 @@ struct __marcel_attr_s {
 	void *__stackaddr;
 	size_t __stacksize;
 	/* Affinity map.  */
-	void *__cpuset;
-	size_t __cpusetsize;
+	marcel_vpset_t *__cpuset;
+	size_t __cpusetsize; /* Unused */
 
 	/* marcel attributes */
 	/* unsigned stack_size; */

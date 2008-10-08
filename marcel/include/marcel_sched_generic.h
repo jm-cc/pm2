@@ -270,6 +270,8 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 	/* t->lwp */
 	if (attr->topo_level)
 		t->vpset = attr->topo_level->vpset;
+	else if (attr->__cpuset)
+		t->vpset = *attr->__cpuset; 
 	else
 		t->vpset = attr->vpset; 
 	ma_set_task_state(t, MA_TASK_BORNING);

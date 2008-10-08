@@ -1813,6 +1813,7 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	MA_BUG_ON(root->arity != *topology_description);
 
 	/* Set the total number of VPs and processors.  */
+	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_VP] == -1);
 	ma__nb_vp = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_VP]];
 
 #ifndef marcel_nbprocessors

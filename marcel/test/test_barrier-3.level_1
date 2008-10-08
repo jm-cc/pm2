@@ -14,7 +14,7 @@
 
 
 # Configuration
-flavor="test_marcel"
+flavor="test_marcel_barrier"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="barrier-3"
 args=""

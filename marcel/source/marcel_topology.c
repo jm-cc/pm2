@@ -1813,12 +1813,12 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	MA_BUG_ON(root->arity != *topology_description);
 
 	/* Set the total number of VPs and processors.  */
-	ma__nb_vp = marcel_topo_level_nbitems[marcel_topo_nblevels - 1];
+	ma__nb_vp = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_VP]];
 
 #ifndef marcel_nbprocessors
 	if (ma_topo_type_depth[MARCEL_LEVEL_PROC] != -1)
 		/* Assume the next-to-last level is the PROC level.  */
-		marcel_nbprocessors = marcel_topo_level_nbitems[marcel_topo_nblevels - 2];
+		marcel_nbprocessors = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_PROC]];
 	else
 		marcel_nbprocessors = ma__nb_vp;
 #endif

@@ -53,6 +53,8 @@
 #define MARCEL_NBMAXDIES	8
 #define MARCEL_NBMAXNODES	8
 #endif
+#else
+#define MARCEL_NBMAXCPUS	1
 #endif
 
 /* Max number of marcel_add_lwp() calls */

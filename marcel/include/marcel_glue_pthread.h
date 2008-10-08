@@ -15,3 +15,7 @@
  */
 
 #section marcel_functions
+#include <sched.h>
+
+int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset);
+int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_t *cpuset);

@@ -77,6 +77,9 @@
 #undef sem_t
 #define sem_t pmarcel_sem_t
 
+#undef cpu_set_t
+#define cpu_set_t pmarcel_cpu_set_t
+
 /* macros */
 
 #undef PTHREAD_ATTR_INITIALIZER
@@ -468,6 +471,29 @@
 #define pthread_barrierattr_setpshared(attr,pshared) pmarcel_barrierattr_setpshared(attr,pshared)
 #undef pthread_barrierattr_getpshared
 #define pthread_barrierattr_getpshared(attr,pshared) pmarcel_barrierattr_getpshared(attr,pshared)
+
+#undef CPU_SETSIZE
+#define CPU_SETSIZE PMARCEL_CPU_SETSIZE
+#undef CPU_SET
+#define CPU_SET(cpu, cpusetp) PMARCEL_CPU_SET(cpu, cpusetp)
+#undef CPU_CLR
+#define CPU_CLR(cpu, cpusetp) PMARCEL_CPU_CLR(cpu, cpusetp)
+#undef CPU_ISSET
+#define CPU_ISSET(cpu, cpusetp) PMARCEL_CPU_ISSET(cpu, cpusetp)
+#undef CPU_ZERO
+#define CPU_ZERO(cpu) PMARCEL_CPU_ZERO(cpu)
+#undef CPU_COUNT
+#define CPU_COUNT(cpu) PMARCEL_CPU_COUNT(cpu)
+#undef CPU_SET_S
+#define CPU_SET_S(cpu, cpusetp) PMARCEL_CPU_SET_S(cpu, cpusetp)
+#undef CPU_CLR_S
+#define CPU_CLR_S(cpu, cpusetp) PMARCEL_CPU_CLR_S(cpu, cpusetp)
+#undef CPU_ISSET_S
+#define CPU_ISSET_S(cpu, cpusetp) PMARCEL_CPU_ISSET_S(cpu, cpusetp)
+#undef CPU_ZERO_S
+#define CPU_ZERO_S(cpu) PMARCEL_CPU_ZERO_S(cpu)
+#undef CPU_COUNT_S
+#define CPU_COUNT_S(cpu) PMARCEL_CPU_COUNT_S(cpu)
 
 #if defined(__cplusplus)
 #define pthread_once pmarcel_once

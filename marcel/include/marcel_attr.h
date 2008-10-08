@@ -28,16 +28,22 @@ typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 /* Attributes for threads.  */
 struct __marcel_attr_s {
 	/* begin of pthread, don't modify */
-	int __detachstate;
-	int __schedpolicy;
+	/* Scheduler parameters and priority.  */
 	struct marcel_sched_param __schedparam;
-	int __inheritsched;
-	int __scope;
+	int __schedpolicy;
+	/* Various flags like detachstate, scope, etc. */
+	int __flags;
+#define MA_ATTR_FLAG_DETACHSTATE	0x0001
+#define MA_ATTR_FLAG_INHERITSCHED	0x0002
+#define MA_ATTR_FLAG_SCOPESYSTEM	0x0004
+	/* Size of guard area.  */
 	size_t __guardsize;
-	int __stackaddr_set;
+	/* Stack handling.  */
 	void *__stackaddr;
 	size_t __stacksize;
-	/* end of pthread */
+	/* Affinity map.  */
+	void *__cpuset;
+	size_t __cpusetsize;
 
 	/* marcel attributes */
 	/* unsigned stack_size; */
@@ -97,15 +103,14 @@ struct __marcel_attr_s {
 #endif /* MARCEL_MIGRATION_ENABLED */
 
 #define MARCEL_ATTR_INITIALIZER { \
-  .__detachstate= MARCEL_CREATE_JOINABLE, \
-  .__schedpolicy= SCHED_OTHER, \
   .__schedparam= {MA_DEF_PRIO,}, \
-  .__inheritsched= 0, \
-  .__scope= MARCEL_SCOPE_PROCESS, \
+  .__schedpolicy= SCHED_OTHER, \
+  .__flags = 0, \
   .__guardsize= MARCEL_STACKSGUARD, \
-  .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
   .__stacksize= (THREAD_SLOT_SIZE - sizeof(struct marcel_task)),	\
+  .__cpuset = NULL, \
+  .__cpusetsize = 0, \
   MARCEL_ATTR_USERSPACE_INITIALIZER \
   MARCEL_ATTR_MIGRATION_INITIALIZER \
   .not_deviatable= 0, \
@@ -140,15 +145,14 @@ struct __marcel_attr_s {
 #endif /* MARCEL_MIGRATION_ENABLED */
 
 #define MARCEL_ATTR_DESTROYER { \
-  .__detachstate= -1, \
-  .__schedpolicy= MARCEL_SCHED_INVALID, \
   .__schedparam= {-1,}, \
-  .__inheritsched= -1, \
-  .__scope= MARCEL_SCOPE_INVALID, \
+  .__schedpolicy= MARCEL_SCHED_INVALID, \
+  .__flags = -1, \
   .__guardsize= -1, \
-  .__stackaddr_set= -1, \
   .__stackaddr= NULL, \
   .__stacksize= -1, \
+  .__cpuset = NULL, \
+  .__cpusetsize = -1, \
   MARCEL_ATTR_USERSPACE_DESTROYER \
   MARCEL_ATTR_MIGRATION_DESTROYER \
   .not_deviatable= -1, \

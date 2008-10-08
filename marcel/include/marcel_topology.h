@@ -183,12 +183,15 @@ typedef unsigned long long marcel_vpset_t;
 #else
 #    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
 #endif
+typedef marcel_vpset_t pmarcel_cpu_set_t;
 
 /** \brief Set with no LWP selected. */
 #define MARCEL_VPSET_ZERO           ((marcel_vpset_t)  MARCEL_VPSET_CONST_0)
 #define MARCEL_VPSET_FULL	    (~MARCEL_VPSET_ZERO)
 /** \brief Set with only \e vp in selected. */
 #define MARCEL_VPSET_VP(vp)         ((marcel_vpset_t)(  MARCEL_VPSET_CONST_1 << (vp)) )
+
+#define PMARCEL_CPU_SETSIZE MARCEL_NBMAXCPUS
 
 #section functions
 
@@ -206,6 +209,9 @@ static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set)
 {
 	*set = MARCEL_VPSET_ZERO;
 }
+
+#define PMARCEL_CPU_ZERO(cpusetp) marcel_vpset_zero(cpusetp)
+#define PMARCEL_CPU_ZERO_S(setsize, cpusetp) ({ MA_BUG_ON(setsize > PMARCEL_CPU_ZEROSIZE); PMARCEL_CPU_ZERO(cpusetp); })
 
 #section functions
 /** \brief Fill VP set */
@@ -260,6 +266,8 @@ static __tbx_inline__ void marcel_vpset_set(marcel_vpset_t * set,
 	marcel_vpset_fill(set);
 #endif
 }
+#define PMARCEL_CPU_SET(cpu, cpusetp) marcel_vpset_set(cpusetp, cpu)
+#define PMARCEL_CPU_SET_S(cpu, setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_SET(cpu, cpusetp); })
 
 #section functions
 /** \brief Remove VP \e vp from VP set \e set */
@@ -276,6 +284,9 @@ static __tbx_inline__ void marcel_vpset_clr(marcel_vpset_t * set,
 #endif
 }
 
+#define PMARCEL_CPU_CLR(cpu, cpusetp) marcel_vpset_clr(cpusetp, cpu)
+#define PMARCEL_CPU_CLR_S(cpu, setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_CLR(cpu, cpusetp); })
+
 #section functions
 /** \brief Test whether VP \e vp is part of set \e set */
 static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
@@ -290,6 +301,9 @@ static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
 	return *set;
 #endif
 }
+
+#define PMARCEL_CPU_ISSET(cpu, cpusetp) marcel_vpset_isset(cpusetp, cpu)
+#define PMARCEL_CPU_ISSET_S(cpu, setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_ISSET(cpu, cpusetp); })
 
 #section functions
 /** \brief Test whether set \e sub_set is part of set \e super_set */
@@ -319,6 +333,9 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 	return *vpset;
 #endif
 }
+
+#define PMARCEL_CPU_COUNT(cpusetp) marcel_vpset_weight(cpusetp)
+#define PMARCEL_CPU_COUNT_S(setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_COUNT(cpusetp); })
 
 #section marcel_macros
 /** \brief Loop macro iterating on a vpset and yielding on each vp that

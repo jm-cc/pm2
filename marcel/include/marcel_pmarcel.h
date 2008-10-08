@@ -148,7 +148,7 @@ __TBX_BEGIN_DECLS
 extern int pmarcel_create (pmarcel_t *__restrict __newthread,
 			   __const pmarcel_attr_t *__restrict __attr,
 			   void *(*__start_routine) (void *),
-			   void *__restrict __arg) __THROW;
+			   void *__restrict __arg) __THROW __tbx_attribute_nonnull__ ((1, 3));
 
 /* Terminate calling thread.  */
 extern void pmarcel_exit (void *__retval)
@@ -156,8 +156,11 @@ extern void pmarcel_exit (void *__retval)
 
 /* Make calling thread wait for termination of the thread TH.  The
    exit status of the thread is stored in *THREAD_RETURN, if THREAD_RETURN
-   is not NULL.  */
-extern int pmarcel_join (pmarcel_t __th, void **__thread_return) __THROW;
+   is not NULL.
+
+   This function is a cancellation point and therefore not marked with
+   __THROW.  */
+extern int pmarcel_join (pmarcel_t __th, void **__thread_return);
 
 /* #ifdef __USE_GNU */
 /* Check whether thread TH has terminated.  If yes return the status of
@@ -166,9 +169,12 @@ extern int pmarcel_tryjoin_np (pmarcel_t __th, void **__thread_return) __THROW;
 
 /* Make calling thread wait for termination of the thread TH, but only
    until TIMEOUT.  The exit status of the thread is stored in
-   *THREAD_RETURN, if THREAD_RETURN is not NULL.  */
+   *THREAD_RETURN, if THREAD_RETURN is not NULL.
+
+   This function is a cancellation point and therefore not marked with
+   __THROW.  */
 extern int pmarcel_timedjoin_np (pmarcel_t __th, void **__thread_return,
-				 __const struct timespec *__abstime) __THROW;
+				 __const struct timespec *__abstime);
 /* #endif */
 
 /* Indicate that the thread TH is never to be joined with PMARCEL_JOIN.
@@ -190,124 +196,151 @@ extern pmarcel_t pmarcel_self (void) __THROW TBX_CONST;
 /* Initialize thread attribute *ATTR with default attributes
    (detachstate is PMARCEL_JOINABLE, scheduling policy is SCHED_OTHER,
     no user-provided stack).  */
-extern int pmarcel_attr_init (pmarcel_attr_t *__attr) __THROW;
+extern int pmarcel_attr_init (pmarcel_attr_t *__attr) __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Destroy thread attribute *ATTR.  */
-extern int pmarcel_attr_destroy (pmarcel_attr_t *__attr) __THROW;
+extern int pmarcel_attr_destroy (pmarcel_attr_t *__attr)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Get detach state attribute.  */
 extern int pmarcel_attr_getdetachstate (__const pmarcel_attr_t *__attr,
-					int *__detachstate) __THROW;
+					int *__detachstate)
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set detach state attribute.  */
 extern int pmarcel_attr_setdetachstate (pmarcel_attr_t *__attr,
-					int __detachstate) __THROW;
+					int __detachstate)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 
 /* Get the size of the guard area created for stack overflow protection.  */
 extern int pmarcel_attr_getguardsize (__const pmarcel_attr_t *__attr,
-				      size_t *__guardsize) __THROW;
+				      size_t *__guardsize)
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set the size of the guard area created for stack overflow protection.  */
 extern int pmarcel_attr_setguardsize (pmarcel_attr_t *__attr,
-				      size_t __guardsize) __THROW;
+				      size_t __guardsize)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 
 /* Return in *PARAM the scheduling parameters of *ATTR.  */
 extern int pmarcel_attr_getschedparam (__const pmarcel_attr_t *__restrict
 				       __attr,
 				       struct sched_param *__restrict __param)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set scheduling parameters (priority, etc) in *ATTR according to PARAM.  */
 extern int pmarcel_attr_setschedparam (pmarcel_attr_t *__restrict __attr,
 				       __const struct sched_param *__restrict
-				       __param) __THROW;
+				       __param) __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Return in *POLICY the scheduling policy of *ATTR.  */
 extern int pmarcel_attr_getschedpolicy (__const pmarcel_attr_t *__restrict
 					__attr, int *__restrict __policy)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set scheduling policy in *ATTR according to POLICY.  */
 extern int pmarcel_attr_setschedpolicy (pmarcel_attr_t *__attr, int __policy)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Return in *INHERIT the scheduling inheritance mode of *ATTR.  */
 extern int pmarcel_attr_getinheritsched (__const pmarcel_attr_t *__restrict
 					 __attr, int *__restrict __inherit)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set scheduling inheritance mode in *ATTR according to INHERIT.  */
 extern int pmarcel_attr_setinheritsched (pmarcel_attr_t *__attr,
-					 int __inherit) __THROW;
+					 int __inherit)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 
 /* Return in *SCOPE the scheduling contention scope of *ATTR.  */
 extern int pmarcel_attr_getscope (__const pmarcel_attr_t *__restrict __attr,
-				  int *__restrict __scope) __THROW;
+				  int *__restrict __scope)
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set scheduling contention scope in *ATTR according to SCOPE.  */
 extern int pmarcel_attr_setscope (pmarcel_attr_t *__attr, int __scope)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Return the previously set address for the stack.  */
 extern int pmarcel_attr_getstackaddr (__const pmarcel_attr_t *__restrict
 				      __attr, void **__restrict __stackaddr)
-     __THROW /*__attribute_deprecated__*/;
+     __THROW __tbx_attribute_nonnull__ ((1, 2)) /*__attribute_deprecated__*/;
 
 /* Set the starting address of the stack of the thread to be created.
    Depending on whether the stack grows up or down the value must either
    be higher or lower than all the address in the memory block.  The
-   minimal size of the block must be PMARCEL_STACK_SIZE.  */
+   minimal size of the block must be PMARCEL_STACK_MIN.  */
 extern int pmarcel_attr_setstackaddr (pmarcel_attr_t *__attr,
 				      void *__stackaddr)
-     __THROW/* __attribute_deprecated__*/;
+     __THROW __tbx_attribute_nonnull__ ((1)) /* __attribute_deprecated__*/;
 
 /* Return the currently used minimal stack size.  */
 extern int pmarcel_attr_getstacksize (__const pmarcel_attr_t *__restrict
 				      __attr, size_t *__restrict __stacksize)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Add information about the minimum stack size needed for the thread
-   to be started.  This size must never be less than PMARCEL_STACK_SIZE
+   to be started.  This size must never be less than PMARCEL_STACK_MIN
    and must also not exceed the system limits.  */
 extern int pmarcel_attr_setstacksize (pmarcel_attr_t *__attr,
-				      size_t __stacksize) __THROW;
+				      size_t __stacksize)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Return the previously set address for the stack.  */
 extern int pmarcel_attr_getstack (__const pmarcel_attr_t *__restrict __attr,
 				  void **__restrict __stackaddr,
-				  size_t *__restrict __stacksize) __THROW;
+				  size_t *__restrict __stacksize)
+     __THROW __tbx_attribute_nonnull__ ((1, 2, 3));
 
 /* The following two interfaces are intended to replace the last two.  They
    require setting the address as well as the size since only setting the
    address will make the implementation on some architectures impossible.  */
 extern int pmarcel_attr_setstack (pmarcel_attr_t *__attr, void *__stackaddr,
-				  size_t __stacksize) __THROW;
+				  size_t __stacksize) __THROW __tbx_attribute_nonnull__ ((1));
 
 //#ifdef __USE_GNU
-/* Get thread attributes corresponding to the already running thread TH.  */
-extern int pmarcel_getattr_np (pmarcel_t __th, pmarcel_attr_t *__attr) __THROW;
+/* Thread created with attribute ATTR will be limited to run only on
+   the processors represented in CPUSET.  */
+extern int pmarcel_attr_setaffinity_np (pmarcel_attr_t *__attr,
+					size_t __cpusetsize,
+					__const marcel_vpset_t *__cpuset)
+     __THROW __tbx_attribute_nonnull__ ((1, 3));
+
+/* Get bit set in CPUSET representing the processors threads created with
+   ATTR can run on.  */
+extern int pmarcel_attr_getaffinity_np (__const pmarcel_attr_t *__attr,
+					size_t __cpusetsize,
+					marcel_vpset_t *__cpuset)
+     __THROW __tbx_attribute_nonnull__ ((1, 3));
+
+
+/* Initialize thread attribute *ATTR with attributes corresponding to the
+   already running thread TH.  It shall be called on unitialized ATTR
+   and destroyed with pmarcel_attr_destroy when no longer needed.  */
+extern int pmarcel_getattr_np (pmarcel_t __th, pmarcel_attr_t *__attr)
+     __THROW __tbx_attribute_nonnull__ ((2));
 //#endif
 
 
 /* Functions for scheduling control.  */
 
-/* Set the priority for TARGET_THREAD according to PRIO */
-extern int pmarcel_setschedprio(pmarcel_t thread,int prio)
-     __THROW;
-
 /* Set the scheduling parameters for TARGET_THREAD according to POLICY
    and *PARAM.  */
 extern int pmarcel_setschedparam (pmarcel_t __target_thread, int __policy,
 				  __const struct sched_param *__param)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((3));
 
 /* Return in *POLICY and *PARAM the scheduling parameters for TARGET_THREAD. */
 extern int pmarcel_getschedparam (pmarcel_t __target_thread,
 				  int *__restrict __policy,
 				  struct sched_param *__restrict __param)
+     __THROW __tbx_attribute_nonnull__ ((2, 3));
+
+/* Set the scheduling priority for TARGET_THREAD.  */
+extern int pmarcel_setschedprio (pmarcel_t __target_thread, int __prio)
      __THROW;
 
 
@@ -325,6 +358,18 @@ extern int pmarcel_setconcurrency (int __level) __THROW;
    might be differently implemented in the case of a m-on-n thread
    implementation.  */
 extern int pmarcel_yield (void) __THROW;
+
+
+/* Limit specified thread TH to run only on the processors represented
+   in CPUSET.  */
+extern int pmarcel_setaffinity_np (pmarcel_t __th, size_t __cpusetsize,
+				   __const marcel_vpset_t *__cpuset)
+     __THROW __tbx_attribute_nonnull__ ((3));
+
+/* Get bit set in CPUSET representing the processors TH can run on.  */
+extern int pmarcel_getaffinity_np (pmarcel_t __th, size_t __cpusetsize,
+				   marcel_vpset_t *__cpuset)
+     __THROW __tbx_attribute_nonnull__ ((3));
 /* #endif */
 
 
@@ -334,29 +379,37 @@ extern int pmarcel_yield (void) __THROW;
 /* Guarantee that the initialization function INIT_ROUTINE will be called
    only once, even if pmarcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
-   extern variable initialized to PMARCEL_ONCE_INIT.  */
+   extern variable initialized to PMARCEL_ONCE_INIT.
+
+   The initialization functions might throw exception which is why
+   this function is not marked with __THROW.  */
 extern int pmarcel_once (pmarcel_once_t *__once_control,
-			 void (*__init_routine) (void)) __THROW;
+		void (*__init_routine) (void)) __tbx_attribute_nonnull__ ((1, 2));
 #endif /* MARCEL_ONCE_ENABLED */
 
 
-/* Functions for handling cancellation.  */
+/* Functions for handling cancellation.
+
+   Note that these functions are explicitly not marked to not throw an
+   exception in C++ code.  If cancellation is implemented by unwinding
+   this is necessary to have the compiler generate the unwind information.  */
 
 /* Set cancelability state of current thread to STATE, returning old
    state in *OLDSTATE if OLDSTATE is not NULL.  */
-extern int pmarcel_setcancelstate (int __state, int *__oldstate) __THROW;
+extern int pmarcel_setcancelstate (int __state, int *__oldstate);
 
 /* Set cancellation state of current thread to TYPE, returning the old
    type in *OLDTYPE if OLDTYPE is not NULL.  */
-extern int pmarcel_setcanceltype (int __type, int *__oldtype) __THROW;
+extern int pmarcel_setcanceltype (int __type, int *__oldtype);
 
 /* Cancel THREAD immediately or at the next possibility.  */
-extern int pmarcel_cancel (pmarcel_t __th) __THROW;
+extern int pmarcel_cancel (pmarcel_t __th);
 
 /* Test for pending cancellation for the current thread and terminate
    the thread as per pmarcel_exit(PMARCEL_CANCELED) if it has been
    cancelled.  */
-extern void pmarcel_testcancel (void) __THROW;
+extern void pmarcel_testcancel (void);
+
 
 
 #ifdef MARCEL_CLEANUP_ENABLED
@@ -417,62 +470,73 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
    the default values if later is NULL.  */
 extern int pmarcel_rwlock_init (pmarcel_rwlock_t *__restrict __rwlock,
 				__const pmarcel_rwlockattr_t *__restrict
-				__attr) __THROW;
+				__attr) __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Destroy read-write lock RWLOCK.  */
-extern int pmarcel_rwlock_destroy (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_destroy (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Acquire read lock for RWLOCK.  */
-extern int pmarcel_rwlock_rdlock (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_rdlock (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Try to acquire read lock for RWLOCK.  */
-extern int pmarcel_rwlock_tryrdlock (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_tryrdlock (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 //# ifdef __USE_XOPEN2K
 /* Try to acquire read lock for RWLOCK or return after specfied time.  */
 extern int pmarcel_rwlock_timedrdlock (pmarcel_rwlock_t *__restrict __rwlock,
 				       __const struct timespec *__restrict
-				       __abstime) __THROW;
+				       __abstime) __THROW __tbx_attribute_nonnull__ ((1, 2));
 //# endif
 
 /* Acquire write lock for RWLOCK.  */
-extern int pmarcel_rwlock_wrlock (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_wrlock (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Try to acquire write lock for RWLOCK.  */
-extern int pmarcel_rwlock_trywrlock (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_trywrlock (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 //# ifdef __USE_XOPEN2K
 /* Try to acquire write lock for RWLOCK or return after specfied time.  */
 extern int pmarcel_rwlock_timedwrlock (pmarcel_rwlock_t *__restrict __rwlock,
 				       __const struct timespec *__restrict
-				       __abstime) __THROW;
+				       __abstime) __THROW __tbx_attribute_nonnull__ ((1, 2));
 //# endif
 
 /* Unlock RWLOCK.  */
-extern int pmarcel_rwlock_unlock (pmarcel_rwlock_t *__rwlock) __THROW;
+extern int pmarcel_rwlock_unlock (pmarcel_rwlock_t *__rwlock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 
 /* Functions for handling read-write lock attributes.  */
 
 /* Initialize attribute object ATTR with default values.  */
-extern int pmarcel_rwlockattr_init (pmarcel_rwlockattr_t *__attr) __THROW;
+extern int pmarcel_rwlockattr_init (pmarcel_rwlockattr_t *__attr)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Destroy attribute object ATTR.  */
-extern int pmarcel_rwlockattr_destroy (pmarcel_rwlockattr_t *__attr) __THROW;
+extern int pmarcel_rwlockattr_destroy (pmarcel_rwlockattr_t *__attr)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Return current setting of process-shared attribute of ATTR in PSHARED.  */
 extern int pmarcel_rwlockattr_getpshared (__const pmarcel_rwlockattr_t *
 					  __restrict __attr,
-					  int *__restrict __pshared) __THROW;
+					  int *__restrict __pshared)
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set process-shared attribute of ATTR to PSHARED.  */
 extern int pmarcel_rwlockattr_setpshared (pmarcel_rwlockattr_t *__attr,
-					  int __pshared) __THROW;
+					  int __pshared)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Return current setting of reader/writer preference.  */
 extern int pmarcel_rwlockattr_getkind_np (__const pmarcel_rwlockattr_t *
 					  __restrict __attr,
-					  int *__restrict __pref) __THROW;
+					  int *__restrict __pref)
+     __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set reader/write preference.  */
 extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
@@ -492,19 +556,23 @@ extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 /* Initialize the spinlock LOCK.  If PSHARED is nonzero the spinlock can
    be shared between different processes.  */
 extern int pmarcel_spin_init (pmarcel_spinlock_t *__lock, int __pshared)
-     __THROW;
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Destroy the spinlock LOCK.  */
-extern int pmarcel_spin_destroy (pmarcel_spinlock_t *__lock) __THROW;
+extern int pmarcel_spin_destroy (pmarcel_spinlock_t *__lock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Wait until spinlock LOCK is retrieved.  */
-extern int pmarcel_spin_lock (pmarcel_spinlock_t *__lock) __THROW;
+extern int pmarcel_spin_lock (pmarcel_spinlock_t *__lock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Try to lock spinlock LOCK.  */
-extern int pmarcel_spin_trylock (pmarcel_spinlock_t *__lock) __THROW;
+extern int pmarcel_spin_trylock (pmarcel_spinlock_t *__lock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Release spinlock LOCK.  */
-extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
+extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock)
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 
 /* /\* Functions to handle barriers.  *\/ */
@@ -549,7 +617,8 @@ extern int pmarcel_spin_unlock (pmarcel_spinlock_t *__lock) __THROW;
    DESTR_FUNCTION is not called if the value associated is NULL when
    the key is destroyed.  */
 extern int pmarcel_key_create (pmarcel_key_t *__key,
-			       void (*__destr_function) (void *)) __THROW;
+			       void (*__destr_function) (void *))
+     __THROW __tbx_attribute_nonnull__ ((1));
 
 /* Destroy KEY.  */
 extern int pmarcel_key_delete (pmarcel_key_t __key) __THROW;
@@ -559,7 +628,7 @@ extern void *pmarcel_getspecific (pmarcel_key_t __key) __THROW;
 
 /* Store POINTER in the thread-specific data slot identified by KEY. */
 extern int pmarcel_setspecific (pmarcel_key_t __key,
-				__const void *__pointer) __THROW;
+				__const void *__pointer) __THROW ;
 
 #endif /* MARCEL_KEYS_ENABLED */
 
@@ -611,7 +680,8 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 #ifdef __USE_XOPEN2K
 /* Get ID of CPU-time clock for thread THREAD_ID.  */
 extern int pmarcel_getcpuclockid (pmarcel_t __thread_id,
-				  clockid_t *__clock_id) __THROW;
+				  clockid_t *__clock_id)
+     __THROW __tbx_attribute_nonnull__ ((2));
 #endif
 
 

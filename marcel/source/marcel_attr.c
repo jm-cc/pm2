@@ -58,7 +58,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 		LOG_RETURN(EINVAL);
 	}
 
-	if (attr->__stackaddr_set)
+	if (attr->__stackaddr)
 		attr->__stackaddr += stack - attr->__stacksize;
 
 	attr->__stacksize = stack;
@@ -88,7 +88,6 @@ DEF___PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *sta
 DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
 	LOG_IN();
-	attr->__stackaddr_set = 1;
 	/* addr est le bas de la pile */
 	attr->__stackaddr = addr + attr->__stacksize;
 	LOG_RETURN(0);
@@ -97,7 +96,6 @@ DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, add
 DEF_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr),
 {
 	LOG_IN();
-	attr->__stackaddr_set = 1;
 	/* addr est le haut de la pile */
 	attr->__stackaddr = addr;
 	LOG_RETURN(0);
@@ -131,7 +129,6 @@ DEF_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t sta
 	}
 	/* stackaddr est le bas de la pile */
 	attr->__stacksize = stacksize;
-	attr->__stackaddr_set = 1;
 	attr->__stackaddr = stackaddr + stacksize;
 	LOG_RETURN(0);
 })
@@ -181,7 +178,10 @@ DEF_MARCEL(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr,
 		LOG_RETURN(ret);
 	}
 #endif
-	attr->__detachstate = detached;
+	if (detached)
+		attr->__flags |= MA_ATTR_FLAG_DETACHSTATE;
+	else
+		attr->__flags &= ~MA_ATTR_FLAG_DETACHSTATE;
 	LOG_RETURN(0);
 })
 
@@ -195,7 +195,10 @@ DEF_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr, 
 	}
 	/* fin error checking */
 
-	attr->__detachstate = detached;
+	if (detached)
+		attr->__flags |= MA_ATTR_FLAG_DETACHSTATE;
+	else
+		attr->__flags &= ~MA_ATTR_FLAG_DETACHSTATE;
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, int detached), (attr, detached))
@@ -204,7 +207,7 @@ DEF___PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, int detached), (a
 DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, int *detached), (attr, detached),
 {
 	LOG_IN();
-	*detached = attr->__detachstate;
+	*detached = !!(attr->__flags & MA_ATTR_FLAG_DETACHSTATE);
 	LOG_RETURN(0);
 })
 
@@ -323,12 +326,53 @@ int marcel_attr_setvpset(marcel_attr_t * attr, marcel_vpset_t vpset)
 	return 0;
 }
 
+DEF_POSIX(int, attr_setaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize, const pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
+{
+	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
+	return marcel_attr_setvpset(attr, *cpuset);
+})
+#ifdef MA__LIBPTHREAD
+int lpt_attr_setaffinity_np(lpt_attr_t *__attr, size_t cpusetsize, const cpu_set_t *cpuset)
+{
+	marcel_attr_t *attr = (marcel_attr_t *) __attr;
+	marcel_vpset_t *vpset;
+	if (attr->__cpuset)
+		vpset = attr->__cpuset;
+	else {
+		attr->__cpuset = vpset = TBX_MALLOC(sizeof(marcel_vpset_t));
+		marcel_vpset_fill(vpset);
+	}
+	return marcel_cpuset2vpset(cpusetsize, cpuset, vpset);
+}
+versioned_symbol(libpthread, lpt_attr_setaffinity_np, pthread_attr_setaffinity_np, GLIBC_2_3_4);
+#endif
+
 int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
     marcel_vpset_t * __restrict vpset)
 {
 	*vpset = attr->vpset;
 	return 0;
 }
+
+DEF_POSIX(int, attr_getaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize, pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
+{
+	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
+	return marcel_attr_getvpset(attr, cpuset);
+})
+#ifdef MA__LIBPTHREAD
+int lpt_attr_getaffinity_np(lpt_attr_t *__attr, size_t cpusetsize, cpu_set_t *cpuset)
+{
+	marcel_attr_t *attr = (marcel_attr_t *) __attr;
+	marcel_vpset_t *vpset;
+	static marcel_vpset_t full_vpset = MARCEL_VPSET_FULL;
+	if (attr->__cpuset)
+		vpset = attr->__cpuset;
+	else
+		vpset = &full_vpset;
+	return marcel_vpset2cpuset(vpset, cpusetsize, cpuset);
+}
+versioned_symbol(libpthread, lpt_attr_getaffinity_np, pthread_attr_getaffinity_np, GLIBC_2_3_4);
+#endif
 
 int marcel_attr_settopo_level(marcel_attr_t * attr, marcel_topo_level_t *topo_level)
 {
@@ -444,9 +488,12 @@ DEF_MARCEL_POSIX(int,attr_destroy,(marcel_attr_t * attr),(attr),
 })
 
 #ifdef MA__LIBPTHREAD
-int lpt_attr_destroy(lpt_attr_t * attr)
+int lpt_attr_destroy(lpt_attr_t * __attr)
 {
+	marcel_attr_t *attr = (marcel_attr_t *) __attr;
 	LOG_IN();
+	if (attr->__cpuset)
+		TBX_FREE(attr->__cpuset);
 	memcpy(attr, &marcel_attr_destroyer, sizeof(lpt_attr_t));
 	LOG_RETURN(0);
 }
@@ -474,7 +521,10 @@ DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr
 		LOG_RETURN(EINVAL);
 	}
 
-	attr->__inheritsched = inheritsched;
+	if (inheritsched)
+		attr->__flags |= MA_ATTR_FLAG_INHERITSCHED;
+	else
+		attr->__flags &= ~MA_ATTR_FLAG_INHERITSCHED;
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int,attr_setinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
@@ -489,7 +539,7 @@ DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * attr,int * inherits
 		LOG_RETURN(EINVAL);
 	}
 
-	*inheritsched = attr->__inheritsched;
+	*inheritsched = !!(attr->__flags & MA_ATTR_FLAG_INHERITSCHED);
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
@@ -513,7 +563,10 @@ DEF_MARCEL_POSIX(int,attr_setscope,(pmarcel_attr_t *__restrict attr, int content
 	}
 	/* error checking end */
 
-	attr->__scope = contentionscope;
+	if (contentionscope == MARCEL_SCOPE_SYSTEM)
+		attr->__flags |= MA_ATTR_FLAG_SCOPESYSTEM;
+	else
+		attr->__flags &= ~MA_ATTR_FLAG_SCOPESYSTEM;
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int,attr_setscope,(pthread_attr_t *__restrict attr, int contentionscope),(attr,contentionscope))
@@ -528,7 +581,7 @@ DEF_MARCEL_POSIX(int,attr_getscope,(__const pmarcel_attr_t *__restrict attr, int
 	}
 	/* error checking end */
 
-	*contentionscope = attr->__scope;
+	*contentionscope = attr->__flags & MA_ATTR_FLAG_SCOPESYSTEM ? MARCEL_SCOPE_SYSTEM : MARCEL_SCOPE_PROCESS;
 	LOG_RETURN(0);
 })
 DEF_PTHREAD(int,attr_getscope,(pthread_attr_t *__restrict attr, int *contentionscope),(attr,contentionscope))
@@ -674,8 +727,8 @@ int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)
         marcel_attr_t *attr = (marcel_attr_t *)__attr;
         marcel_t t = (marcel_t) __t;
         marcel_attr_init(__attr);
-        attr->__detachstate = t->detached;     
-        attr->__stackaddr_set = t->stack_kind == MA_STATIC_STACK;
+	if (t->detached)
+		attr->__flags |= MA_ATTR_FLAG_DETACHSTATE;
         attr->__stackaddr = t;
         attr->__stacksize = THREAD_SLOT_SIZE - MAL(sizeof(*t));
         LOG_RETURN(0);
@@ -687,8 +740,8 @@ int lpt_getattr_np(lpt_t t,lpt_attr_t *__attr)
 	LOG_IN();
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
 	lpt_attr_init(__attr);
-	attr->__detachstate = t->detached;
-	attr->__stackaddr_set = t->stack_kind == MA_STATIC_STACK;
+	if (t->detached)
+		attr->__flags |= MA_ATTR_FLAG_DETACHSTATE;
 	attr->__stackaddr = t;
 	attr->__stacksize = THREAD_SLOT_SIZE - MAL(sizeof(*t));
 	LOG_RETURN(0);

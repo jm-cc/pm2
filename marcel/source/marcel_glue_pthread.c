@@ -52,7 +52,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 
 		memcpy(&new_attr, attr, tbx_offset_of(marcel_attr_t, __stacksize) + sizeof(new_attr.__stacksize));
 
-		if (new_attr.__inheritsched == PTHREAD_INHERIT_SCHED) {
+		if (new_attr.__flags & MA_ATTR_FLAG_INHERITSCHED) {
 			/* détermination des attributs du thread courant 
 			   (marcel priority, scope, marcel policy) */
 
@@ -93,7 +93,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 		if (policy == SCHED_FIFO)
 			marcel_attr_setpreemptible(&new_attr, 0);
 
-		if (new_attr.__scope == PTHREAD_SCOPE_SYSTEM) {
+		if (new_attr.__flags & MA_ATTR_FLAG_SCOPESYSTEM) {
 			unsigned lwp = marcel_add_lwp();
 			marcel_attr_setvpset(&new_attr,
 			    MARCEL_VPSET_VP(lwp));
@@ -307,4 +307,48 @@ ssize_t send (int s, const void *buf, size_t len, int flags) {
 ssize_t recv (int s, void *buf, size_t len, int flags) {
 	return recvfrom(s, buf, len, flags, NULL, NULL);
 }
+
+int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset)
+{
+	int i;
+	marcel_vpset_zero(vpset);
+	for (i = 0; i < cpusetsize * CHAR_BIT; i++) {
+		if (CPU_ISSET(i, cpuset)) {
+			if (i >= MARCEL_NBMAXCPUS) {
+#ifdef MA__DEBUG
+				mdebug("cpuset2vpset: invalid VP %d\n", i);
+#endif
+				return EINVAL;
+			}
+			marcel_vpset_set(vpset, i);
+		} else {
+			if (i < MARCEL_NBMAXCPUS)
+				marcel_vpset_clr(vpset, i);
+		}
+	}
+	return 0;
+}
+
+int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_t *cpuset)
+{
+	int i;
+	CPU_ZERO_S(cpusetsize, cpuset);
+	for (i = 0; i < MARCEL_NBMAXCPUS; i++) {
+		if (marcel_vpset_isset(vpset, i)) {
+			fprintf(stderr,"%d is set\n", i);
+			if (i >= cpusetsize * CHAR_BIT) {
+#ifdef MA__DEBUG
+				mdebug("cpuset2vpset: VP %d beyond user-provided buffer\n", i);
+#endif
+				return EINVAL;
+			}
+			CPU_SET(i, cpuset);
+		} else {
+			if (i < cpusetsize * CHAR_BIT)
+				CPU_CLR(i, cpuset);
+		}
+	}
+	return 0;
+}
+
 #endif /* MA__LIBPTHREAD */

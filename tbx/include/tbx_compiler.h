@@ -122,6 +122,7 @@ void __memory_barrier(void);
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
 #  define __tbx_warn_unused_result__	__attribute__((warn_unused_result))
+#  define __tbx_attribute_nonnull__(list)	__attribute__((__nonnull__ list))
 #  if !defined(AIX_SYS) && !defined(DARWIN_SYS)
 #    define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
 #    define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
@@ -156,6 +157,7 @@ void __memory_barrier(void);
 
 #  if __GNUC_MINOR__ >= 3
 #    define __tbx_attribute_used__	__attribute__((__used__))
+#    define __tbx_attribute_nonnull__(list)	__attribute__((__nonnull__ list))
 #  else
 #    define __tbx_attribute_used__	__attribute__((__unused__))
 #  endif
@@ -296,6 +298,11 @@ void __memory_barrier(void);
 #ifndef __tbx_attribute_pure__
 # define __tbx_attribute_pure__	/* unimplemented */
 #endif
+
+#ifndef __tbx_attribute_nonnull__
+# define __tbx_attribute_nonnull__	/* unimplemented */
+#endif
+
 #define TBX_PURE __tbx_attribute_pure__
 
 /*

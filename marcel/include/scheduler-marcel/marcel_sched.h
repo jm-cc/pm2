@@ -491,7 +491,7 @@ int marcel_sched_getscheduler(marcel_t t);
 /* ==== SMP scheduling directives ==== */
 #section functions
 
-void marcel_apply_vpset(marcel_vpset_t *set);
+void marcel_apply_vpset(const marcel_vpset_t *set);
 
 /* ==== scheduler status ==== */
 

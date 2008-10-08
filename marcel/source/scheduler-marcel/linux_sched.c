@@ -37,6 +37,7 @@
 
 
 #include "marcel.h"
+#include <errno.h>
 
 #ifdef PIOMAN
 #include "pioman.h"
@@ -1180,7 +1181,7 @@ DEF_PTHREAD_STRONG(int, yield, (void), ())
 
 #ifdef MA__LWPS
 static
-void __marcel_apply_vpset(marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
+void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 	ma_holder_t *old_h;
 	LOG_IN();
 	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
@@ -1220,7 +1221,7 @@ void __marcel_apply_vpset(marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 // adéquate...
 // IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
 // pour se déplacer sur le LWP courant (cf terminaison des threads)
-void marcel_apply_vpset(marcel_vpset_t *vpset)
+void marcel_apply_vpset(const marcel_vpset_t *vpset)
 {
 #ifdef MA__LWPS
 	ma_runqueue_t *new_rq;
@@ -1230,6 +1231,57 @@ void marcel_apply_vpset(marcel_vpset_t *vpset)
 	LOG_OUT();
 #endif
 }
+
+DEF_POSIX(int, setaffinity_np, (pmarcel_t pid, size_t cpusetsize, const pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+{
+	MA_BUG_ON((marcel_t) pid != marcel_self());
+	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
+	marcel_apply_vpset(cpuset);
+	return 0;
+})
+
+#ifdef MA__LIBPTHREAD
+int lpt_setaffinity_np(pthread_t pid, size_t cpusetsize, const cpu_set_t *cpuset)
+{
+	marcel_vpset_t vpset;
+	int ret;
+	if ((ret = marcel_cpuset2vpset(cpusetsize, cpuset, &vpset)))
+		return ret;
+	marcel_apply_vpset(&vpset);
+	return 0;
+}
+versioned_symbol(libpthread, lpt_setaffinity_np, pthread_setaffinity_np, GLIBC_2_3_4);
+#endif
+
+DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+{
+	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
+#ifdef MA__LWPS
+	marcel_t task = (marcel_t) pid;
+	ma_holder_t *h = ma_task_sched_holder(task);
+	ma_runqueue_t *rq = ma_to_rq_holder(h);
+	if (!rq)
+		return EIO;
+	*cpuset = rq->vpset;
+	fprintf(stderr,"%x\n", *cpuset);
+#else
+	*cpuset = MARCEL_VPSET_VP(1);
+#endif
+	return 0;
+})
+#ifdef MA__LIBPTHREAD
+int lpt_getaffinity_np(pthread_t pid, size_t cpusetsize, cpu_set_t *cpuset)
+{
+	marcel_vpset_t vpset;
+	int ret;
+	if ((ret = pmarcel_getaffinity_np(pid, PMARCEL_CPU_SETSIZE, &vpset)))
+		return ret;
+	if ((ret = marcel_vpset2cpuset(&vpset, cpusetsize, cpuset)))
+		return ret;
+	return 0;
+}
+versioned_symbol(libpthread, lpt_getaffinity_np, pthread_getaffinity_np, GLIBC_2_3_4);
+#endif
 
 void marcel_bind_to_topo_level(marcel_topo_level_t *level)
 {

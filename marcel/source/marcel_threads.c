@@ -86,8 +86,8 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	t->cur_thread_seed = NULL;
 
-	t->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
-	if (!attr->__detachstate)
+	t->detached = !!(attr->__flags & MA_ATTR_FLAG_DETACHSTATE);
+	if (!t->detached)
 		marcel_sem_init(&t->client, 0);
 	//t->ret_val
 
@@ -292,8 +292,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task->f_to_call = func;
 		new_task->arg = arg;
 		new_task->stack_kind = MA_NO_STACK;
-		new_task->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
-		if (!attr->__detachstate)
+		new_task->detached = !!(attr->__flags & MA_ATTR_FLAG_DETACHSTATE);
+		if (!new_task->detached)
 			marcel_sem_init(&new_task->client, 0);
 		marcel_sched_init_thread_seed(new_task, attr);
 		marcel_wake_up_created_thread(new_task);
@@ -302,7 +302,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		LOG_RETURN(0);
 	}
 
-	if (attr->__stackaddr_set) {
+	if (attr->__stackaddr) {
 		register unsigned long top = ((unsigned long) attr->__stackaddr)
 		    & ~(THREAD_SLOT_SIZE - 1);
 		mdebug("top=%lx, stack_top=%p\n", top, attr->__stackaddr);

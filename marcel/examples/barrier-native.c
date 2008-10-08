@@ -31,7 +31,7 @@ start_thread (void *data)
 
   err = marcel_barrier_wait (barrier);
 
-  return (void *) err;
+  return (void *) (intptr_t) err;
 }
 
 

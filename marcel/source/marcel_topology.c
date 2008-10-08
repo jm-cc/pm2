@@ -1823,11 +1823,17 @@ synth_make_simple_topology(const unsigned *topology_description) {
 		marcel_nbprocessors = ma__nb_vp;
 #endif
 
-	if (marcel_topo_nblevels > 3)
+	if (marcel_topo_nblevels > 3) {
 		/* Assume this level is the node level.  */
-		marcel_nbnodes = marcel_topo_level_nbitems[marcel_topo_nblevels - 3];
-	else
+		unsigned node_level = ma_topo_type_depth[MARCEL_LEVEL_NODE];
+
+		marcel_nbnodes = marcel_topo_level_nbitems[node_level];
+		/* Link the marcel_topo_node_level pointer to the `node level' in
+			 the marcel_topo_levels tree. */
+		marcel_topo_node_level = marcel_topo_levels[node_level];
+	}	else {
 		marcel_nbnodes = 1;
+	}
 
 	/* Update `marcel_vps_per_cpu' et al. accordingly.  */
 	ma_set_processors();

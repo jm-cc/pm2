@@ -44,8 +44,7 @@ thread_entry_point (void *arg) {
 }
 
 int
-main (int argc, char *argv[])
-{
+main (int argc, char *argv[]) {
 	int ret;
 	unsigned int i;
 	char **new_argv;
@@ -65,6 +64,9 @@ main (int argc, char *argv[])
 
 	marcel_init (&argc, new_argv);
 	marcel_mutex_init (&write_lock, NULL); 
+
+	/* Make sure we're currently testing the memomp scheduler. */
+	marcel_bubble_change_sched (&marcel_bubble_memomp_sched);
 
 	/* Creating threads and bubbles hierarchy.  */
 	marcel_bubble_t bubbles[NB_BUBBLES];

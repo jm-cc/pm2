@@ -18,6 +18,7 @@
 #include <numaif.h>
 
 #define LOOPS 100000
+#define SIZE  100000
 
 int *buffer;
 marcel_memory_manager_t memory_manager;
@@ -60,7 +61,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager, 1000);
 
   // Allocate the buffer
-  buffer = marcel_memory_malloc(&memory_manager, LOOPS*sizeof(int));
+  buffer = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int));
 
   // Start the threads
   marcel_create(&threads[0], NULL, t_migrate, NULL);

@@ -25,6 +25,11 @@
 #ifdef MA__INTERRUPT_FIX_LWP
 /* TODO: ne pas le faire lorsqu'on fournit la TLS */
 
+/* When delivering a signal, the kernel will have saved r13 (the TLS pointer)
+ * on the current thread's stack.
+ * When we do not provide TLS ourselves and switch thread in the signal
+ * handler, we thus have to put back the value for this kernel thread in the
+ * next thread's ucontext_t area of its stack. */
 #define MA_ARCH_SWITCHTO_LWP_FIX(current) \
   do { \
 	unsigned long *p_tp=__ma_get_lwp_var(ma_ia64_tp); \

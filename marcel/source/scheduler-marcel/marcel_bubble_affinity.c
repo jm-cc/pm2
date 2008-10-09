@@ -363,10 +363,6 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
   unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
   unsigned int arity = l->arity, per_item_entities = nvp / arity, entities_per_level[arity];
 
-  if (ne < arity) {
-    return 0;
-  }
-
   for (i = 0; i < arity; i++) {
     if (attracting_levels[i].total_load < per_item_entities) {
       prev_state = 0;

@@ -101,7 +101,7 @@ $(MOD_GEN_INC)/marcel_abi.h: $(wildcard include/*.h)				\
 	echo "# define MARCEL_HEADER_HASH \"$$hash\"" ;			\
 	echo "#endif" ) > "$@"
 
-dot_h: symlinks
+dot_h: symlinks $(MOD_GEN_INC)/marcel_abi.h
 
 symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler
 

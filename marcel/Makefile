@@ -85,10 +85,9 @@ $(if $(SCHED_NAME),$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED)))
 MOD_GEN_C_INC += $(MOD_GEN_INC)/marcel_abi.h
 
 # Building `marcel_abi.h'.  Conceptually, `marcel_abi.h' depends on all the
-# generated `.h' files.  However, `dot_h' is a phony target, so we have to
-# depend on the source `.h' files rather than on the generated ones.
-$(MOD_GEN_INC)/marcel_abi.h: $(wildcard include/*.h)				\
-          $(foreach subdir,asm-generic asm-$(MOD_ARCH),include/$(subdir)/*.h)
+# generated `.h' files, and it turns out that they are generated at the same
+# time as $(MOD_HSPLITS_MAKEFILES) by `pm2-split-h-file'.
+$(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 	$(COMMON_BUILD)
 	@: > "$@"
 	$(info computing header hash for flavor `$(FLAVOR)')

@@ -70,16 +70,16 @@ sub fixFilenameAndHostname {
     my ($filename, $hostname) = @_;
     my $pathname = ".";
 
+    if ($hostname eq "") {
+        use Sys::Hostname;
+        $hostname = hostname();
+    }
     if ($filename eq "") {
         $pathname = $ENV{PM2_SAMPLING_DIR};
         if ($pathname eq "") {
             $pathname = "/var/local/pm2";
         }
         $pathname .= "/marcel";
-        if ($hostname eq "") {
-            use Sys::Hostname;
-            $hostname = hostname();
-        }
         $filename = "$pathname/sampling_for_memory_migration_$hostname.dat";
     }
     return ($pathname, $filename, $hostname);

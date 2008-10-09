@@ -46,8 +46,8 @@ ma_aff_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) 
 }
 
 static int 
-int_compar (const void *_e1, const void *_e2) {
-  return *(int *)_e2 - *(int *)_e1;
+decreasing_int_compar (const void *_e1, const void *_e2) {
+  return *(int *)_e1 - *(int *)_e2;
 }
 
 static unsigned int
@@ -383,7 +383,7 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
 
   /* Make sure that entities_per_level[0] always points to the
      least-loaded level. */
-  qsort (entities_per_level, arity, sizeof(int), &int_compar);
+  qsort (entities_per_level, arity, sizeof(int), &decreasing_int_compar);
   
   for (i = 0; i < ne; i++) {
     unsigned int k, tmp;

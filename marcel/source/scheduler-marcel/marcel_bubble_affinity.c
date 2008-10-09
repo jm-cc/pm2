@@ -363,6 +363,8 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
   unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
   unsigned int arity = l->arity, per_item_entities = nvp / arity, entities_per_level[arity];
 
+  /* First, check if enough entities are already scheduled over the
+     underlying levels. */
   for (i = 0; i < arity; i++) {
     if (attracting_levels[i].total_load < per_item_entities) {
       prev_state = 0;
@@ -373,16 +375,22 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
     return prev_state;
   }  
 
+  /* If not, initialize the entities_per_level array with the load of
+     all entities scheduled in each topology subtree. */
   for (i = 0; i < arity; i++) {
     entities_per_level[i] = attracting_levels[i].total_load;
   }
 
+  /* Make sure that entities_per_level[0] always points to the
+     least-loaded level. */
   qsort (entities_per_level, arity, sizeof(int), &int_compar);
   
   for (i = 0; i < ne; i++) {
     unsigned int k, tmp;
+    /* Put the bigger entity on the least-loaded level. */
     entities_per_level[0] += ma_entity_load (e[i]); 
     
+    /* Rearrange the entities_per_level array. */
     for (k = 0; k < arity - 1; k++) {
       if (entities_per_level[k] > entities_per_level[k + 1]) {
 	tmp = entities_per_level[k + 1];
@@ -394,6 +402,8 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
     } 
   } 
   
+  /* Eventually checks if every underlying core will be occupied this
+     way. */
   for (i = 0; i < arity; i++) {
     if (entities_per_level[i] < per_item_entities) {
       ret = 0;

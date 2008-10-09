@@ -360,42 +360,49 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
 			    marcel_entity_t *e[], 
 			    unsigned int ne, 
 			    const ma_attracting_level_t *attracting_levels) {
-  unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight(&l->vpset);
+  unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
   unsigned int arity = l->arity, per_item_entities = nvp / arity, entities_per_level[arity];
 
-  if (ne < arity)
+  if (ne < arity) {
     return 0;
+  }
 
-  for (i = 0; i < arity; i++)
-    if (attracting_levels[i].total_load < per_item_entities)
+  for (i = 0; i < arity; i++) {
+    if (attracting_levels[i].total_load < per_item_entities) {
       prev_state = 0;
+    }
+  }
   
-  if (prev_state)
+  if (prev_state) {
     return prev_state;
-  
-  for (i = 0; i < arity; i++)
+  }  
+
+  for (i = 0; i < arity; i++) {
     entities_per_level[i] = attracting_levels[i].total_load;
-  
+  }
+
   qsort (entities_per_level, arity, sizeof(int), &int_compar);
   
   for (i = 0; i < ne; i++) {
     unsigned int k, tmp;
-    entities_per_level[0] += ma_entity_load(e[i]); 
+    entities_per_level[0] += ma_entity_load (e[i]); 
     
     for (k = 0; k < arity - 1; k++) {
       if (entities_per_level[k] > entities_per_level[k + 1]) {
 	tmp = entities_per_level[k + 1];
 	entities_per_level[k + 1] = entities_per_level[k];
 	entities_per_level[k] = tmp;
-      }
-      else
+      } else {
 	continue;
+      }
     } 
   } 
   
-  for (i = 0; i < arity; i++)
-    if (entities_per_level[i] < per_item_entities)
+  for (i = 0; i < arity; i++) {
+    if (entities_per_level[i] < per_item_entities) {
       ret = 0;
+    }
+  }
   
   return ret;
 }

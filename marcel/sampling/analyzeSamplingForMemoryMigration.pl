@@ -112,7 +112,7 @@ sub help {
 }
 
 sub gnuplot {
-    my ($outputfile, $terminal, $source, $dest) = @_;
+    my ($outputfile, $terminal, $source, $dest, $plot) = @_;
 
     open gnuplot,$gnuplot=">${outputfile}.gnu" or die "Cannot open $gnuplot: $!";
     if ($terminal ne "") {
@@ -151,7 +151,9 @@ sub gnuplot {
     }
 
     close(gnuplot);
-    system("gnuplot $outputfile.gnu");
+    if ($plot) {
+        system("gnuplot $outputfile.gnu");
+    }
 }
 
 # Main program
@@ -343,17 +345,15 @@ for $source ($source_min .. $source_max) {
             }
             close(output);
 
-            if ($plot) {
-                gnuplot($outputfile, $terminal, $source, $dest);
-            }
+            gnuplot($outputfile, $terminal, $source, $dest, $plot);
 
             $x_current_min = $x_current_max+1;
             $x_current_max = $x_max;
         } while ($x_current_min < $x_max);
 
         close(globaloutput);
-        if ($plot && $intervals != 1) {
-            gnuplot($globaloutputfile, $terminal, $source, $dest);
+        if ($intervals != 1) {
+            gnuplot($globaloutputfile, $terminal, $source, $dest, $plot);
         }
     }
 }

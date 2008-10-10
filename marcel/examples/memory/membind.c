@@ -28,8 +28,8 @@
 #include <sys/resource.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_ITER 1024*1024*1024
-#define ACCESS_PATTERN_SIZE 1024*1024*64
+#define NB_ITER 1024*1024*4
+#define ACCESS_PATTERN_SIZE 1024*1024*4
 #define NB_TIMES 10
 
 enum mbind_policy {
@@ -88,8 +88,8 @@ void * f (void *arg) {
     
     /* Let's do the job. */
     for (j = 0; j < NB_ITER; j++) {
-      int dummy = tab[access_pattern[i % ACCESS_PATTERN_SIZE]];
-      tab[access_pattern[(NB_ITER - i) % ACCESS_PATTERN_SIZE]] = dummy;
+      int dummy = tab[access_pattern[j % ACCESS_PATTERN_SIZE]];
+      tab[access_pattern[(NB_ITER - j) % ACCESS_PATTERN_SIZE]] = dummy;
     }
   }
 

@@ -26,9 +26,8 @@
 #include <sys/resource.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_ITER 1024*1024
+#define NB_ITERATIONS 1024*1024*16
 #define NB_TIMES 20
-#define ACCESS_PATTERN_SIZE 1024*1024
 
 enum mbind_policy {
   BIND_POL,
@@ -82,9 +81,9 @@ void * f (void *arg) {
     marcel_barrier_wait (&barrier);
     
     /* Let's do the job. */
-    for (j = 0; j < NB_ITER; j++) {
-      int dummy = tab[team][access_pattern_vector[j % ACCESS_PATTERN_SIZE]];
-      tab[team][access_pattern_vector[(NB_ITER - j) % ACCESS_PATTERN_SIZE]] = dummy;
+    for (j = 0; j < NB_ITERATIONS; j++) {
+      int dummy = tab[team][access_pattern_vector[j]];
+      tab[team][access_pattern_vector[NB_ITERATIONS - j - 1]] = dummy;
     }
   }
 
@@ -180,8 +179,8 @@ main (int argc, char **argv)
     access_pattern[team] = numa_alloc_onnode (nb_threads * sizeof (unsigned long *), 0);
     for (i = 0; i < nb_threads; i++) {
       unsigned int dest_node = spol == LOCAL_POL ? team : ((team * nb_threads) + i) % (numa_max_node () + 1);
-      access_pattern[team][i] = numa_alloc_onnode (ACCESS_PATTERN_SIZE * sizeof (unsigned long), dest_node);
-      initialize_access_pattern_vector (access_pattern[team][i], ACCESS_PATTERN_SIZE, TAB_SIZE);
+      access_pattern[team][i] = numa_alloc_onnode (NB_ITERATIONS * sizeof (unsigned long), dest_node);
+      initialize_access_pattern_vector (access_pattern[team][i], NB_ITERATIONS, TAB_SIZE);
       struct thread_args ta = {
 	.team = team,
 	.access_pattern_vector = access_pattern[team][i]

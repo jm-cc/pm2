@@ -33,8 +33,7 @@
 #include <sys/uio.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_ITER 1024*1024*8
-#define ACCESS_PATTERN_SIZE 1024*1024*8
+#define NB_ITERATIONS 1024*1024*256
 #define NB_TIMES 10
 
 enum mbind_policy {
@@ -125,9 +124,9 @@ void * f (void *arg) {
     marcel_barrier_wait (&barrier);
     
     /* Let's do the job. */
-    for (j = 0; j < NB_ITER; j++) {
-      int dummy = tab[access_pattern[j % ACCESS_PATTERN_SIZE]];
-      tab[access_pattern[(NB_ITER - j) % ACCESS_PATTERN_SIZE]] = dummy;
+    for (j = 0; j < NB_ITERATIONS; j++) {
+      int dummy = tab[access_pattern[j]];
+      tab[access_pattern[NB_ITERATIONS - j - 1]] = dummy;
     }
   }
 
@@ -201,7 +200,7 @@ main (int argc, char **argv)
   /* Bind the access pattern vectors next to the accessing threads. */
   access_pattern = numa_alloc_onnode (nb_threads * sizeof (long *), threads_nodes[0]);
   for (i = 0; i < nb_threads; i++) {
-    access_pattern[i] = numa_alloc_onnode (ACCESS_PATTERN_SIZE * sizeof (long), spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]);
+    access_pattern[i] = numa_alloc_onnode (NB_ITERATIONS * sizeof (long), spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]);
   }
 
   /* Bind the accessed data to the nodes. */
@@ -217,7 +216,7 @@ main (int argc, char **argv)
   }
 
   /* Build the access pattern vectors */
-  initialize_access_pattern_vectors_from_file ("membind_pattern.dat", access_pattern, nb_threads, ACCESS_PATTERN_SIZE, TAB_SIZE);
+  initialize_access_pattern_vectors_from_file ("membind_pattern.dat", access_pattern, nb_threads, NB_ITERATIONS, TAB_SIZE);
 
   marcel_attr_init (&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);
@@ -241,7 +240,7 @@ main (int argc, char **argv)
   }
 
   for (i = 0; i < nb_threads; i++) {
-    numa_free (access_pattern[i], ACCESS_PATTERN_SIZE * sizeof (long));
+    numa_free (access_pattern[i], NB_ITERATIONS * sizeof (long));
   }
   numa_free (access_pattern, nb_threads * sizeof (long *));
   free (tab);
